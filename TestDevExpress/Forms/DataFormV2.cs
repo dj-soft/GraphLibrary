@@ -103,6 +103,20 @@ namespace TestDevExpress.Forms
             group.Items.Add(new DataRibbonItem() { ItemId = "LogClear", Text = "Clear Log", ToolTipText = "Smaže obsah logu vpravo", Image = imageLogClear, RibbonStyle = RibbonItemStyles.Large });
             group.Items.Add(new DataRibbonItem() { ItemId = "LogVisible", Text = "Show Log", ToolTipText = "Zobrazit log v pravé části hlavního okna.\r\nPOZOR: pokud je log stále zobrazený, pak veškeré logované změny jsou zatíženy časem refreshe textu Logu. \r\n Je vhodnější log zavřít, provést testy, a pak log otevřít a přečíst.", RibbonItemType = RibbonItemType.CheckBoxToggle, Checked = _DxShowLog, RibbonStyle = RibbonItemStyles.Large });
 
+            
+            string imageTestRefresh = "svgimages/spreadsheet/refreshpivottable.svg";
+            string imageTestRepaint = "svgimages/dashboards/striped.svg";
+
+
+            group = new DataRibbonGroup() { GroupText = "TESTY VÝKONU" };
+            page.Groups.Add(group);
+            group.Items.Add(new DataRibbonItem() { ItemId = "Refresh1", Text = "Refresh 1", ToolTipText = "Provede kompletní refresh standardní", Image = imageTestRefresh });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Refresh100", Text = "Refresh 100", ToolTipText = "Provede kompletní refresh pro 100x obsah", Image = imageTestRefresh });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Refresh2000", Text = "Refresh  2000", ToolTipText = "Provede kompletní refresh pro 2000x obsah", Image = imageTestRefresh });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Repaint1", Text = "Repaint 1", ToolTipText = "Provede pouze repaint standardní", Image = imageTestRepaint });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Repaint100", Text = "Repaint 100", ToolTipText = "Provede pouze repaint pro 100x obsah", Image = imageTestRepaint });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Repaint2000", Text = "Repaint 2000", ToolTipText = "Provede pouze repaint pro 2000x obsah", Image = imageTestRepaint });
+
             group = new DataRibbonGroup() { GroupText = "VZORKY" };
             page.Groups.Add(group);
             group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Sample.Sample1", Text = "Ukázka 1", Image = imageTest, Tag = "Sample1", Enabled = true });
@@ -140,6 +154,25 @@ namespace TestDevExpress.Forms
                     _DxMainSplit.Collapsed = !_DxShowLog;
                     _RefreshLog();
                     break;
+                case "Refresh1":
+                    _TestPerformance(1, true);
+                    break;
+                case "Refresh100":
+                    _TestPerformance(100, true);
+                    break;
+                case "Refresh2000":
+                    _TestPerformance(2000, true);
+                    break;
+                case "Repaint1":
+                    _TestPerformance(1, false);
+                    break;
+                case "Repaint100":
+                    _TestPerformance(100, false);
+                    break;
+                case "Repaint2000":
+                    _TestPerformance(2000, false);
+                    break;
+
                 default:
                     DxComponent.LogClear();
                     if (e.Item.Tag is DxDataFormTestDefinition sampleData)
@@ -257,6 +290,17 @@ namespace TestDevExpress.Forms
             _DxShowTimeStart = DateTime.Now;               // Určení času End a času Elapsed proběhne v DxDataForm_GotFocus
 
             RefreshStatusCurrent();
+        }
+        private void _TestPerformance(int count, bool forceRefresh)
+        {
+            if (_DxDataFormV2 == null)
+                _AddDataFormSampleName("Sample1");
+
+            int itemsCount = this._DxDataFormV2.ItemsCount; ;
+            int totalCount = count * itemsCount;
+            var sampleStartTime = DxComponent.LogTimeCurrent;
+            _DxDataFormV2.TestPerformance(count, forceRefresh);
+            DxComponent.LogAddLineTime($"TestPerformance: Count: {totalCount}; Time: {DxComponent.LogTokenTimeMilisec}", sampleStartTime);
         }
         private void _AddDataFormSampleName(string sampleName)
         {

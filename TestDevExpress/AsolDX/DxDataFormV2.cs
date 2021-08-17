@@ -18,35 +18,38 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             this.DoubleBuffered = true;
 
-            _Label = new DxLabelControl() { Bounds = new Rectangle(20, 52, 70, 18), Text = "Popis" };
-            this.Controls.Add(_Label);
-            _TextBox = new DxTextEdit() { Bounds = new Rectangle(100, 50, 80, 20), Text = "Pokus" };
-            this.Controls.Add(_TextBox);
-            _CheckBox = new DxCheckEdit() { Bounds = new Rectangle(210, 50, 100, 20), Text = "Předvolba" };
-            this.Controls.Add(_CheckBox);
-
             InitializeContent();
 
+            _Label = new DxLabelControl() { Bounds = new Rectangle(20, 52, 70, 18), Text = "Popis" };
+            _ContentPanel.Controls.Add(_Label);
+            _TextBox = new DxTextEdit() { Bounds = new Rectangle(100, 50, 80, 20), Text = "Pokus" };
+            _ContentPanel.Controls.Add(_TextBox);
+            _CheckBox = new DxCheckEdit() { Bounds = new Rectangle(210, 50, 100, 20), Text = "Předvolba" };
+            _ContentPanel.Controls.Add(_CheckBox);
 
-            Items = new List<DxDataFormItemV2>();
 
-            Items.Add(new DxDataFormItemV2(this, DataFormItemType.Label, "Popisek 2") { DesignBounds = new Rectangle(20, 82, 70, 18) });
-            Items.Add(new DxDataFormItemV2(this, DataFormItemType.Label, "Popisek 3") { DesignBounds = new Rectangle(20, 112, 70, 18) });
-            Items.Add(new DxDataFormItemV2(this, DataFormItemType.Label, "Popisek 4") { DesignBounds = new Rectangle(20, 142, 70, 18) });
 
-            Items.Add(new DxDataFormItemV2(this, DataFormItemType.TextBox, "Pokus 2") { DesignBounds = new Rectangle(100, 80, 80, 20) });
-            Items.Add(new DxDataFormItemV2(this, DataFormItemType.TextBox, "Pokus 3") { DesignBounds = new Rectangle(100, 110, 80, 20) });
-            Items.Add(new DxDataFormItemV2(this, DataFormItemType.TextBox, "Pokus 4") { DesignBounds = new Rectangle(100, 140, 80, 20) });
+            _Items = new List<DxDataFormItemV2>();
 
-            Items.Add(new DxDataFormItemV2(this, DataFormItemType.CheckBox, "Předvolba 2") { DesignBounds = new Rectangle(210, 80, 100, 20) });
-            Items.Add(new DxDataFormItemV2(this, DataFormItemType.CheckBox, "Předvolba 3") { DesignBounds = new Rectangle(210, 110, 100, 20) });
-            Items.Add(new DxDataFormItemV2(this, DataFormItemType.CheckBox, "Předvolba 4") { DesignBounds = new Rectangle(210, 140, 100, 20) });
+            _Items.Add(new DxDataFormItemV2(this, DataFormItemType.Label, "Popisek 2") { DesignBounds = new Rectangle(20, 82, 70, 18) });
+            _Items.Add(new DxDataFormItemV2(this, DataFormItemType.Label, "Popisek 3") { DesignBounds = new Rectangle(20, 112, 70, 18) });
+            _Items.Add(new DxDataFormItemV2(this, DataFormItemType.Label, "Popisek 4") { DesignBounds = new Rectangle(20, 142, 70, 18) });
+
+            _Items.Add(new DxDataFormItemV2(this, DataFormItemType.TextBox, "Pokus 2") { DesignBounds = new Rectangle(100, 80, 80, 20) });
+            _Items.Add(new DxDataFormItemV2(this, DataFormItemType.TextBox, "Pokus 3") { DesignBounds = new Rectangle(100, 110, 80, 20) });
+            _Items.Add(new DxDataFormItemV2(this, DataFormItemType.TextBox, "Pokus 4") { DesignBounds = new Rectangle(100, 140, 80, 20) });
+
+            _Items.Add(new DxDataFormItemV2(this, DataFormItemType.CheckBox, "Předvolba 2") { DesignBounds = new Rectangle(210, 80, 100, 20) });
+            _Items.Add(new DxDataFormItemV2(this, DataFormItemType.CheckBox, "Předvolba 3") { DesignBounds = new Rectangle(210, 110, 100, 20) });
+            _Items.Add(new DxDataFormItemV2(this, DataFormItemType.CheckBox, "Předvolba 4") { DesignBounds = new Rectangle(210, 140, 100, 20) });
         }
+        public int ItemsCount { get { return _Items.Count; } }
+        public DxDataFormItemV2[] Items { get { return _Items.ToArray(); } }
         public DxTextEdit TextBox { get { return _TextBox; } }
         private DxLabelControl _Label;
         private DxTextEdit _TextBox;
         private DxCheckEdit _CheckBox;
-        private List<DxDataFormItemV2> Items;
+        private List<DxDataFormItemV2> _Items;
         protected override void OnSizeChanged(EventArgs e)
         {
             DoLayoutContent();
@@ -64,27 +67,56 @@ namespace Noris.Clients.Win.Components.AsolDX
         protected override void OnPaint(PaintEventArgs e)
         {
             base.OnPaint(e);
-            if (!_PaintingItems)
+        }
+        void IDxDataFormV2.OnPaintContent(PaintEventArgs e)
+        {
+            if (_PaintingItems) return;
+            int count = (_PaintingPerformaceTestCount > 1 ? _PaintingPerformaceTestCount : 1);
+            bool forceRefresh = _PaintingPerformaceForceRefresh;
+            try
             {
-                try
-                {
-                    _PaintingItems = true;
-                    Items.ForEachExec(i => i.OnPaint(e));
+                _PaintingItems = true;
+                if (count == 1 && !forceRefresh)
+                {   // Standard:
+                    _Items.ForEachExec(i => i.OnPaint(e));
                 }
-                finally
-                {
-                    _PaintingItems = false;
+                else
+                {   // Performance test:
+                    int x = 0;
+                    int y = 0;
+                    while (count > 0)
+                    {
+                        Point offset = new Point(x, y);
+                        _Items.ForEachExec(i => i.OnPaint(e, forceRefresh, offset));
+                        y += 12;
+                        if (y > 500)
+                        {
+                            y = 0;
+                            x += 36;
+                            if (x > 1200)
+                                x = 0;
+                        }
+                        count--;
+                    }
                 }
+            }
+            finally
+            {
+                _PaintingItems = false;
+                _PaintingPerformaceTestCount = 1;
+                _PaintingPerformaceForceRefresh = false;
             }
         }
         private bool _PaintingItems = false;
+        private int _PaintingPerformaceTestCount;
+        private bool _PaintingPerformaceForceRefresh;
         protected override void OnMouseMove(MouseEventArgs e)
         {
             base.OnMouseMove(e);
             if (e.Button == MouseButtons.None)
             {
                 var cursor = Cursors.Default;
-                if (Items.TryGetFirst(i => i.IsActivePoint(e.Location), out var found) && found.DefaultCursor != null)
+                if (_Items.TryGetFirst(i => i.IsActivePoint(e.Location), out var found) && found.DefaultCursor != null)
                     cursor = found.DefaultCursor;
                 this.Cursor = cursor;
             }
@@ -100,11 +132,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         protected void DxAfterStyleChanged()
         {
             this.DoLayoutContent();
-            Items.ForEachExec(i => i.Invalidate());
+            _Items.ForEachExec(i => i.Invalidate());
         }
         protected void DxAfterDpiChanged()
         {
-            Items.ForEachExec(i => i.Invalidate());
+            _Items.ForEachExec(i => i.Invalidate());
         }
         int IDxDataFormV2.DeviceDpi { get { return this.DeviceDpi; } }
         Control IDxDataFormV2.GetControl(DataFormItemType itemType, DxDataFormControlMode mode)
@@ -124,14 +156,25 @@ namespace Noris.Clients.Win.Components.AsolDX
                           (itemType == DataFormItemType.TextBox ? (Control)new DxTextEdit() :
                           (itemType == DataFormItemType.CheckBox ? (Control)new DxCheckEdit() : (Control)null)));
 
+                if (control != null)
+                {
+                    control.Location = new Point(5, 5);
+                    control.Visible = false;
+                    _ContentPanel.Controls.Add(control);
+                }
                 modeControls.Add(mode, control);
-                control.Visible = false;
-                this.Controls.Add(control);
             }
             return control;
         }
         private Dictionary<DataFormItemType, Dictionary<DxDataFormControlMode, Control>> _DataFormControls;
 
+        public void TestPerformance(int count, bool forceRefresh)
+        {
+            _PaintingPerformaceTestCount = count;
+            _PaintingPerformaceForceRefresh = forceRefresh;
+            this._ContentPanel.Invalidate();
+            Application.DoEvents();
+        }
 
         #region ContentPanel, ScrollBars a velikost obsahu
 
@@ -142,15 +185,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         private Size _ContentSize;
         private void InitializeContent()
         {
-            _ContentPanel = new DxPanelControl() { Visible = true, BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder };
+            _ContentPanel = new DxDataFormContentV2(this) { Visible = true, BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder };
             _ContentPanel.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.Style3D;
             this.Controls.Add(_ContentPanel);
             _VScrollBar = new DevExpress.XtraEditors.VScrollBar() { Visible = false };
             this.Controls.Add(_VScrollBar);
             _HScrollBar = new DevExpress.XtraEditors.HScrollBar() { Visible = false };
             this.Controls.Add(_HScrollBar);
-            _BottomRightPanel = new DxPanelControl() { Visible = false, BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder };
-            this.Controls.Add(_BottomRightPanel);
             
             DoLayoutContent();
         }
@@ -196,27 +237,23 @@ namespace Noris.Clients.Win.Components.AsolDX
                 hScrollSize = 0;
             }
 
-            bool rVisible = vVisible && hVisible;
-
             _ContentPanel.SetBounds(new Rectangle(0, 0, clientWidth, clientHeight));
             if (vVisible) _VScrollBar.SetBounds(new Rectangle(clientWidth, 0, vScrollSize, clientHeight));
             if (hVisible) _HScrollBar.SetBounds(new Rectangle(0, clientHeight, clientWidth, hScrollSize));
-            if (rVisible) _BottomRightPanel.SetBounds(new Rectangle(clientWidth, clientHeight, vScrollSize, hScrollSize));
 
             if (_VScrollBar.IsSetVisible() != vVisible) _VScrollBar.Visible = vVisible;
             if (_HScrollBar.IsSetVisible() != hVisible) _HScrollBar.Visible = hVisible;
-            if (_BottomRightPanel.IsSetVisible() != rVisible) _BottomRightPanel.Visible = rVisible;
         }
-        private DxPanelControl _ContentPanel;
+        private DxDataFormContentV2 _ContentPanel;
         private DevExpress.XtraEditors.VScrollBar _VScrollBar;
         private DevExpress.XtraEditors.HScrollBar _HScrollBar;
-        private DxPanelControl _BottomRightPanel;
         #endregion
     }
     public interface IDxDataFormV2
     {
         int DeviceDpi { get; }
         Control GetControl(DataFormItemType itemType, DxDataFormControlMode mode);
+        void OnPaintContent(PaintEventArgs e);
     }
     public enum DxDataFormControlMode
     {
@@ -224,6 +261,20 @@ namespace Noris.Clients.Win.Components.AsolDX
         Inactive,
         HotMouse,
         Focused
+    }
+    public class DxDataFormContentV2 : DxPanelControl
+    {
+        public DxDataFormContentV2(IDxDataFormV2 owner)
+        {
+            _Owner = owner;
+        }
+        private IDxDataFormV2 _Owner;
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            base.OnPaint(e);
+            _Owner?.OnPaintContent(e);
+        }
+
     }
     public class DxDataFormItemV2
     {
@@ -274,17 +325,17 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             _Image = null;
         }
-        public void OnPaint(PaintEventArgs e)
+        public void OnPaint(PaintEventArgs e, bool forceRefresh = false, Point? offset = null)
         {
             var bounds = this.CurrentBounds;
-            if (_Image == null)
+            bool withOffset = (offset.HasValue && !offset.Value.IsEmpty);
+            if (_Image == null || forceRefresh)
             {
                 var source = _Owner.GetControl(this._ItemType, DxDataFormControlMode.Inactive);
                 if (source == null) return;
 
                 Cursor cursor = null;
-                if (source.Size != bounds.Size)
-                    source.Size = bounds.Size;
+                source.SetBounds(bounds);                  // Nastavím správné umístění, to kvůli obrázkům na pozadí panelu (různé skiny!), aby obrázky odpovídaly aktuální pozici...
                 source.Text = this._Text;
 
                 var size = source.Size;
@@ -304,10 +355,15 @@ namespace Noris.Clients.Win.Components.AsolDX
                 }
                 source.DrawToBitmap(image, new Rectangle(0, 0, w, h));
                 _Image = image;
-                DefaultCursor = cursor ?? Cursors.Default;
-                ActiveBounds = CurrentBounds.Sub(source.Margin);
+                if (!withOffset)
+                {
+                    DefaultCursor = cursor ?? Cursors.Default;
+                    ActiveBounds = bounds.Sub(source.Margin);
+                }
             }
-            e.Graphics.DrawImage(_Image, CurrentBounds.Location);
+            Point location = bounds.Location;
+            if (withOffset) location = location.Add(offset.Value);
+            e.Graphics.DrawImage(_Image, location);
         }
         public bool IsActivePoint(Point point)
         {
