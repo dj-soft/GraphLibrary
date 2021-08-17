@@ -3224,7 +3224,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 var oldBounds = control.Bounds;
                 bool equalLocation = (newBounds.Location == oldBounds.Location);
-                bool equalSize = (newBounds.Location == oldBounds.Location);
+                bool equalSize = (newBounds.Size == oldBounds.Size);
                 if (!equalLocation && !equalSize)
                     control.Bounds = newBounds;
                 else if (!equalSize)

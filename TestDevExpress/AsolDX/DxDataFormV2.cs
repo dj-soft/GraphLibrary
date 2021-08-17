@@ -197,6 +197,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
 
             bool rVisible = vVisible && hVisible;
+
             _ContentPanel.SetBounds(new Rectangle(0, 0, clientWidth, clientHeight));
             if (vVisible) _VScrollBar.SetBounds(new Rectangle(clientWidth, 0, vScrollSize, clientHeight));
             if (hVisible) _HScrollBar.SetBounds(new Rectangle(0, clientHeight, clientWidth, hScrollSize));
