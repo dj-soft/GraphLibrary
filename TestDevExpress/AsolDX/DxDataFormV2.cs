@@ -31,17 +31,17 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             _Items = new List<DxDataFormItemV2>();
 
-            _Items.Add(new DxDataFormItemV2(this, DataFormItemType.Label, "Popisek 2") { DesignBounds = new Rectangle(20, 82, 70, 18) });
-            _Items.Add(new DxDataFormItemV2(this, DataFormItemType.Label, "Popisek 3") { DesignBounds = new Rectangle(20, 112, 70, 18) });
-            _Items.Add(new DxDataFormItemV2(this, DataFormItemType.Label, "Popisek 4") { DesignBounds = new Rectangle(20, 142, 70, 18) });
+            _Items.Add(new DxDataFormItemV2(this, DataFormItemType.TextBox, "Popisek 2") { DesignBounds = new Rectangle(20, 82, 70, 18) });
+            _Items.Add(new DxDataFormItemV2(this, DataFormItemType.TextBox, "Popisek 3") { DesignBounds = new Rectangle(20, 112, 70, 18) });
+            _Items.Add(new DxDataFormItemV2(this, DataFormItemType.TextBox, "Popisek 4") { DesignBounds = new Rectangle(20, 142, 70, 18) });
 
             _Items.Add(new DxDataFormItemV2(this, DataFormItemType.TextBox, "Pokus 2") { DesignBounds = new Rectangle(100, 80, 80, 20) });
             _Items.Add(new DxDataFormItemV2(this, DataFormItemType.TextBox, "Pokus 3") { DesignBounds = new Rectangle(100, 110, 80, 20) });
             _Items.Add(new DxDataFormItemV2(this, DataFormItemType.TextBox, "Pokus 4") { DesignBounds = new Rectangle(100, 140, 80, 20) });
 
-            _Items.Add(new DxDataFormItemV2(this, DataFormItemType.CheckBox, "Předvolba 2") { DesignBounds = new Rectangle(210, 80, 100, 20) });
-            _Items.Add(new DxDataFormItemV2(this, DataFormItemType.CheckBox, "Předvolba 3") { DesignBounds = new Rectangle(210, 110, 100, 20) });
-            _Items.Add(new DxDataFormItemV2(this, DataFormItemType.CheckBox, "Předvolba 4") { DesignBounds = new Rectangle(210, 140, 100, 20) });
+            _Items.Add(new DxDataFormItemV2(this, DataFormItemType.TextBox, "Předvolba 2") { DesignBounds = new Rectangle(210, 80, 100, 20) });
+            _Items.Add(new DxDataFormItemV2(this, DataFormItemType.TextBox, "Předvolba 3") { DesignBounds = new Rectangle(210, 110, 100, 20) });
+            _Items.Add(new DxDataFormItemV2(this, DataFormItemType.TextBox, "Předvolba 4") { DesignBounds = new Rectangle(210, 140, 100, 20) });
         }
         public int ItemsCount { get { return _Items.Count; } }
         public DxDataFormItemV2[] Items { get { return _Items.ToArray(); } }
