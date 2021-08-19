@@ -11,7 +11,7 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Runtime.InteropServices;
 
-using System.Windows.Forms;
+using SWF = System.Windows.Forms;
 using System.Drawing;
 
 using DevExpress.Utils;
@@ -176,8 +176,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             this.AutoScroll = true;
             this.SetAutoScrollMargin(40, 6);
-            this.Padding = new Padding(10);
-            this.SetStyle(ControlStyles.UserPaint, true);
+            this.Padding = new SWF.Padding(10);
+            this.SetStyle(SWF.ControlStyles.UserPaint, true);
         }
         #region VisibleBounds
         /// <summary>
@@ -222,11 +222,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Volá se při kreslení pozadí.
         /// Potomci zde mohou detekovat nové <see cref="VisibleBounds"/> a podle nich zobrazit potřebné controly.
-        /// V této metodě budou controly zobrazeny bez blikání = ještě dříve, než se Panel naroluje na novou souřadnici
-        /// 
+        /// V této metodě budou controly zobrazeny bez blikání = ještě dříve, než se Panel naroluje na novou souřadnici.
         /// </summary>
         /// <param name="e"></param>
-        protected override void OnPaintBackground(PaintEventArgs e)
+        protected override void OnPaintBackground(SWF.PaintEventArgs e)
         {
             this._CheckVisibleBoundsChange();
             base.OnPaintBackground(e);
@@ -282,8 +281,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         public DxPanelControl()
         {
             this.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder;
-            this.Margin = new Padding(0);
-            this.Padding = new Padding(0);
+            this.Margin = new SWF.Padding(0);
+            this.Padding = new SWF.Padding(0);
             DxComponent.RegisterListener(this);
         }
         /// <summary>
@@ -306,7 +305,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Základní kreslení
         /// </summary>
         /// <param name="e"></param>
-        protected override void OnPaint(PaintEventArgs e)
+        protected override void OnPaint(SWF.PaintEventArgs e)
         {
             base.OnPaint(e);
             this.PaintBackColorUser(e);
@@ -315,7 +314,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Overlay kreslení BackColorUser
         /// </summary>
         /// <param name="e"></param>
-        protected void PaintBackColorUser(PaintEventArgs e)
+        protected void PaintBackColorUser(SWF.PaintEventArgs e)
         {
             var backColorUser = BackColorUser;
             if (!backColorUser.HasValue) return;
@@ -343,10 +342,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Obsahuje true u controlu, který sám by byl Visible, i když aktuálně je na Invisible parentu.
         /// <para/>
-        /// Vrátí true, pokud control sám na sobě má nastavenou hodnotu <see cref="Control.Visible"/> = true.
-        /// Hodnota <see cref="Control.Visible"/> běžně obsahuje součin všech hodnot <see cref="Control.Visible"/> od controlu přes všechny jeho parenty,
+        /// Vrátí true, pokud control sám na sobě má nastavenou hodnotu <see cref="SWF.Control.Visible"/> = true.
+        /// Hodnota <see cref="SWF.Control.Visible"/> běžně obsahuje součin všech hodnot <see cref="SWF.Control.Visible"/> od controlu přes všechny jeho parenty,
         /// kdežto tato vlastnost <see cref="VisibleInternal"/> vrací hodnotu pouze z tohoto controlu.
-        /// Například každý control před tím, než je zobrazen jeho formulář, má <see cref="Control.Visible"/> = false, ale tato metoda vrací hodnotu reálně vloženou do <see cref="Control.Visible"/>.
+        /// Například každý control před tím, než je zobrazen jeho formulář, má <see cref="SWF.Control.Visible"/> = false, ale tato metoda vrací hodnotu reálně vloženou do <see cref="SWF.Control.Visible"/>.
         /// </summary>
         public bool VisibleInternal { get { return this.IsSetVisible(); } set { this.Visible = value; } }
         /// <summary>
@@ -424,7 +423,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.LookAndFeel.Style = DevExpress.LookAndFeel.LookAndFeelStyle.Style3D;
             this.LookAndFeel.UseWindowsXPTheme = true;
             this.OverlayResizeZoneThickness = 20;
-            this.ItemOrientation = Orientation.Horizontal;                       // Vertical = kreslí řadu záhlaví vodorovně, ale obsah jednotlivého buttonu svisle :-(
+            this.ItemOrientation = SWF.Orientation.Horizontal;                       // Vertical = kreslí řadu záhlaví vodorovně, ale obsah jednotlivého buttonu svisle :-(
 
             this.TransitionType = DxTabPaneTransitionType.FadeFast;
 
@@ -668,37 +667,61 @@ namespace Noris.Clients.Win.Components.AsolDX
     [Flags]
     public enum DxTabPaneTransitionType
     {
+        /// <summary>Žádný efekt</summary>
         None = 0,
 
+        /// <summary>Rychlý</summary>
         Fast = 0x0001,
+        /// <summary>Střední</summary>
         Medium = 0x0002,
+        /// <summary>Pomalý</summary>
         Slow = 0x0004,
+        /// <summary>Extra pomalý</summary>
         VerySlow = 0x0008,
 
+        /// <summary></summary>
         Fade = 0x0100,
+        /// <summary></summary>
         Slide = 0x0200,
+        /// <summary></summary>
         Push = 0x0400,
+        /// <summary></summary>
         Shape = 0x0800,
 
+        /// <summary>Kombinace</summary>
         FadeFast = Fade | Fast,
+        /// <summary>Kombinace</summary>
         FadeMedium = Fade | Medium,
+        /// <summary>Kombinace</summary>
         FadeSlow = Fade | Slow,
 
+        /// <summary>Kombinace</summary>
         SlideFast = Slide | Fast,
+        /// <summary>Kombinace</summary>
         SlideMedium = Slide | Medium,
+        /// <summary>Kombinace</summary>
         SlideSlow = Slide | Slow,
 
+        /// <summary>Kombinace</summary>
         PushFast = Push | Fast,
+        /// <summary>Kombinace</summary>
         PushMedium = Push | Medium,
+        /// <summary>Kombinace</summary>
         PushSlow = Push | Slow,
 
+        /// <summary>Kombinace</summary>
         ShapeFast = Shape | Fast,
+        /// <summary>Kombinace</summary>
         ShapeMedium = Shape | Medium,
+        /// <summary>Kombinace</summary>
         ShapeSlow = Shape | Slow,
 
+        /// <summary>Kombinace</summary>
         Default = FadeFast,
 
+        /// <summary>Kombinace</summary>
         AllTimes = Fast | Medium | Slow | VerySlow,
+        /// <summary>Kombinace</summary>
         AllTypes = Fade | Slide | Push | Shape
     }
     #endregion
@@ -720,10 +743,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Obsahuje true u controlu, který sám by byl Visible, i když aktuálně je na Invisible parentu.
         /// <para/>
-        /// Vrátí true, pokud control sám na sobě má nastavenou hodnotu <see cref="Control.Visible"/> = true.
-        /// Hodnota <see cref="Control.Visible"/> běžně obsahuje součin všech hodnot <see cref="Control.Visible"/> od controlu přes všechny jeho parenty,
+        /// Vrátí true, pokud control sám na sobě má nastavenou hodnotu <see cref="SWF.Control.Visible"/> = true.
+        /// Hodnota <see cref="SWF.Control.Visible"/> běžně obsahuje součin všech hodnot <see cref="SWF.Control.Visible"/> od controlu přes všechny jeho parenty,
         /// kdežto tato vlastnost <see cref="VisibleInternal"/> vrací hodnotu pouze z tohoto controlu.
-        /// Například každý control před tím, než je zobrazen jeho formulář, má <see cref="Control.Visible"/> = false, ale tato metoda vrací hodnotu reálně vloženou do <see cref="Control.Visible"/>.
+        /// Například každý control před tím, než je zobrazen jeho formulář, má <see cref="SWF.Control.Visible"/> = false, ale tato metoda vrací hodnotu reálně vloženou do <see cref="SWF.Control.Visible"/>.
         /// </summary>
         public bool VisibleInternal { get { return this.IsSetVisible(); } set { this.Visible = value; } }
         /// <summary>
@@ -734,7 +757,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         #endregion
     }
     #endregion
-    #region DxLabelControl
+    #region DxTextEdit
     /// <summary>
     /// TextEdit
     /// </summary>
@@ -751,10 +774,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Obsahuje true u controlu, který sám by byl Visible, i když aktuálně je na Invisible parentu.
         /// <para/>
-        /// Vrátí true, pokud control sám na sobě má nastavenou hodnotu <see cref="Control.Visible"/> = true.
-        /// Hodnota <see cref="Control.Visible"/> běžně obsahuje součin všech hodnot <see cref="Control.Visible"/> od controlu přes všechny jeho parenty,
+        /// Vrátí true, pokud control sám na sobě má nastavenou hodnotu <see cref="SWF.Control.Visible"/> = true.
+        /// Hodnota <see cref="SWF.Control.Visible"/> běžně obsahuje součin všech hodnot <see cref="SWF.Control.Visible"/> od controlu přes všechny jeho parenty,
         /// kdežto tato vlastnost <see cref="VisibleInternal"/> vrací hodnotu pouze z tohoto controlu.
-        /// Například každý control před tím, než je zobrazen jeho formulář, má <see cref="Control.Visible"/> = false, ale tato metoda vrací hodnotu reálně vloženou do <see cref="Control.Visible"/>.
+        /// Například každý control před tím, než je zobrazen jeho formulář, má <see cref="SWF.Control.Visible"/> = false, ale tato metoda vrací hodnotu reálně vloženou do <see cref="SWF.Control.Visible"/>.
         /// </summary>
         public bool VisibleInternal { get { return this.IsSetVisible(); } set { this.Visible = value; } }
         /// <summary>
@@ -789,10 +812,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Obsahuje true u controlu, který sám by byl Visible, i když aktuálně je na Invisible parentu.
         /// <para/>
-        /// Vrátí true, pokud control sám na sobě má nastavenou hodnotu <see cref="Control.Visible"/> = true.
-        /// Hodnota <see cref="Control.Visible"/> běžně obsahuje součin všech hodnot <see cref="Control.Visible"/> od controlu přes všechny jeho parenty,
+        /// Vrátí true, pokud control sám na sobě má nastavenou hodnotu <see cref="SWF.Control.Visible"/> = true.
+        /// Hodnota <see cref="SWF.Control.Visible"/> běžně obsahuje součin všech hodnot <see cref="SWF.Control.Visible"/> od controlu přes všechny jeho parenty,
         /// kdežto tato vlastnost <see cref="VisibleInternal"/> vrací hodnotu pouze z tohoto controlu.
-        /// Například každý control před tím, než je zobrazen jeho formulář, má <see cref="Control.Visible"/> = false, ale tato metoda vrací hodnotu reálně vloženou do <see cref="Control.Visible"/>.
+        /// Například každý control před tím, než je zobrazen jeho formulář, má <see cref="SWF.Control.Visible"/> = false, ale tato metoda vrací hodnotu reálně vloženou do <see cref="SWF.Control.Visible"/>.
         /// </summary>
         public bool VisibleInternal { get { return this.IsSetVisible(); } set { this.Visible = value; } }
         /// <summary>
@@ -827,10 +850,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Obsahuje true u controlu, který sám by byl Visible, i když aktuálně je na Invisible parentu.
         /// <para/>
-        /// Vrátí true, pokud control sám na sobě má nastavenou hodnotu <see cref="Control.Visible"/> = true.
-        /// Hodnota <see cref="Control.Visible"/> běžně obsahuje součin všech hodnot <see cref="Control.Visible"/> od controlu přes všechny jeho parenty,
+        /// Vrátí true, pokud control sám na sobě má nastavenou hodnotu <see cref="SWF.Control.Visible"/> = true.
+        /// Hodnota <see cref="SWF.Control.Visible"/> běžně obsahuje součin všech hodnot <see cref="SWF.Control.Visible"/> od controlu přes všechny jeho parenty,
         /// kdežto tato vlastnost <see cref="VisibleInternal"/> vrací hodnotu pouze z tohoto controlu.
-        /// Například každý control před tím, než je zobrazen jeho formulář, má <see cref="Control.Visible"/> = false, ale tato metoda vrací hodnotu reálně vloženou do <see cref="Control.Visible"/>.
+        /// Například každý control před tím, než je zobrazen jeho formulář, má <see cref="SWF.Control.Visible"/> = false, ale tato metoda vrací hodnotu reálně vloženou do <see cref="SWF.Control.Visible"/>.
         /// </summary>
         public bool VisibleInternal { get { return this.IsSetVisible(); } set { this.Visible = value; } }
         /// <summary>
@@ -865,10 +888,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Obsahuje true u controlu, který sám by byl Visible, i když aktuálně je na Invisible parentu.
         /// <para/>
-        /// Vrátí true, pokud control sám na sobě má nastavenou hodnotu <see cref="Control.Visible"/> = true.
-        /// Hodnota <see cref="Control.Visible"/> běžně obsahuje součin všech hodnot <see cref="Control.Visible"/> od controlu přes všechny jeho parenty,
+        /// Vrátí true, pokud control sám na sobě má nastavenou hodnotu <see cref="SWF.Control.Visible"/> = true.
+        /// Hodnota <see cref="SWF.Control.Visible"/> běžně obsahuje součin všech hodnot <see cref="SWF.Control.Visible"/> od controlu přes všechny jeho parenty,
         /// kdežto tato vlastnost <see cref="VisibleInternal"/> vrací hodnotu pouze z tohoto controlu.
-        /// Například každý control před tím, než je zobrazen jeho formulář, má <see cref="Control.Visible"/> = false, ale tato metoda vrací hodnotu reálně vloženou do <see cref="Control.Visible"/>.
+        /// Například každý control před tím, než je zobrazen jeho formulář, má <see cref="SWF.Control.Visible"/> = false, ale tato metoda vrací hodnotu reálně vloženou do <see cref="SWF.Control.Visible"/>.
         /// </summary>
         public bool VisibleInternal { get { return this.IsSetVisible(); } set { this.Visible = value; } }
         /// <summary>
@@ -903,10 +926,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Obsahuje true u controlu, který sám by byl Visible, i když aktuálně je na Invisible parentu.
         /// <para/>
-        /// Vrátí true, pokud control sám na sobě má nastavenou hodnotu <see cref="Control.Visible"/> = true.
-        /// Hodnota <see cref="Control.Visible"/> běžně obsahuje součin všech hodnot <see cref="Control.Visible"/> od controlu přes všechny jeho parenty,
+        /// Vrátí true, pokud control sám na sobě má nastavenou hodnotu <see cref="SWF.Control.Visible"/> = true.
+        /// Hodnota <see cref="SWF.Control.Visible"/> běžně obsahuje součin všech hodnot <see cref="SWF.Control.Visible"/> od controlu přes všechny jeho parenty,
         /// kdežto tato vlastnost <see cref="VisibleInternal"/> vrací hodnotu pouze z tohoto controlu.
-        /// Například každý control před tím, než je zobrazen jeho formulář, má <see cref="Control.Visible"/> = false, ale tato metoda vrací hodnotu reálně vloženou do <see cref="Control.Visible"/>.
+        /// Například každý control před tím, než je zobrazen jeho formulář, má <see cref="SWF.Control.Visible"/> = false, ale tato metoda vrací hodnotu reálně vloženou do <see cref="SWF.Control.Visible"/>.
         /// </summary>
         public bool VisibleInternal { get { return this.IsSetVisible(); } set { this.Visible = value; } }
         /// <summary>
@@ -1079,10 +1102,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Obsahuje true u controlu, který sám by byl Visible, i když aktuálně je na Invisible parentu.
         /// <para/>
-        /// Vrátí true, pokud control sám na sobě má nastavenou hodnotu <see cref="Control.Visible"/> = true.
-        /// Hodnota <see cref="Control.Visible"/> běžně obsahuje součin všech hodnot <see cref="Control.Visible"/> od controlu přes všechny jeho parenty,
+        /// Vrátí true, pokud control sám na sobě má nastavenou hodnotu <see cref="SWF.Control.Visible"/> = true.
+        /// Hodnota <see cref="SWF.Control.Visible"/> běžně obsahuje součin všech hodnot <see cref="SWF.Control.Visible"/> od controlu přes všechny jeho parenty,
         /// kdežto tato vlastnost <see cref="VisibleInternal"/> vrací hodnotu pouze z tohoto controlu.
-        /// Například každý control před tím, než je zobrazen jeho formulář, má <see cref="Control.Visible"/> = false, ale tato metoda vrací hodnotu reálně vloženou do <see cref="Control.Visible"/>.
+        /// Například každý control před tím, než je zobrazen jeho formulář, má <see cref="SWF.Control.Visible"/> = false, ale tato metoda vrací hodnotu reálně vloženou do <see cref="SWF.Control.Visible"/>.
         /// </summary>
         public bool VisibleInternal { get { return this.IsSetVisible(); } set { this.Visible = value; } }
         /// <summary>
@@ -1109,7 +1132,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Při vykreslování
         /// </summary>
         /// <param name="e"></param>
-        protected override void OnPaint(PaintEventArgs e)
+        protected override void OnPaint(SWF.PaintEventArgs e)
         {
             base.OnPaint(e);
             this.PaintList?.Invoke(this, e);
@@ -1119,13 +1142,18 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Po stisku klávesy
         /// </summary>
         /// <param name="e"></param>
-        protected override void OnKeyDown(KeyEventArgs e)
+        protected override void OnKeyDown(SWF.KeyEventArgs e)
         {
             base.OnKeyDown(e);
             OnMouseItemIndex = -1;
         }
         #endregion
         #region Images
+        /// <summary>
+        /// Vrátí Image pro daný index
+        /// </summary>
+        /// <param name="index"></param>
+        /// <returns></returns>
         public override Image GetItemImage(int index)
         {
             var menuItem = this.ListItems[index];
@@ -1134,6 +1162,11 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             return base.GetItemImage(index);
         }
+        /// <summary>
+        /// Vrátí ImageSize pro daný index
+        /// </summary>
+        /// <param name="index"></param>
+        /// <returns></returns>
         public override Size GetItemImageSize(int index)
         {
             return new Size(16, 16);
@@ -1215,7 +1248,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.KeyDown += DxListBoxControl_KeyDown;
             this.EnabledKeyActions = KeyActionType.None;
         }
-        private void DxListBoxControl_PreviewKeyDown(object sender, PreviewKeyDownEventArgs e)
+        private void DxListBoxControl_PreviewKeyDown(object sender, SWF.PreviewKeyDownEventArgs e)
         {
             
         }
@@ -1224,34 +1257,34 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void DxListBoxControl_KeyDown(object sender, KeyEventArgs e)
+        private void DxListBoxControl_KeyDown(object sender, SWF.KeyEventArgs e)
         {
             var enabledActions = EnabledKeyActions;
             switch (e.KeyData)
             {
-                case Keys.Delete:
+                case SWF.Keys.Delete:
                     _DoKeyAction(KeyActionType.Delete);
                     break;
-                case Keys.Control | Keys.A:
+                case SWF.Keys.Control | SWF.Keys.A:
                     _DoKeyAction(KeyActionType.CtrlA);
                     break;
-                case Keys.Control | Keys.C:
+                case SWF.Keys.Control | SWF.Keys.C:
                     _DoKeyAction(KeyActionType.CtrlC);
                     break;
-                case Keys.Control | Keys.X:
+                case SWF.Keys.Control | SWF.Keys.X:
                     // Ctrl+X : pokud je povoleno, provedu; pokud nelze provést Ctrl+X ale lze provést Ctrl+C, tak se provede to:
                     if (EnabledKeyActions.HasFlag(KeyActionType.CtrlX))
                         _DoKeyAction(KeyActionType.CtrlX);
                     else if (EnabledKeyActions.HasFlag(KeyActionType.CtrlC))
                         _DoKeyAction(KeyActionType.CtrlC);
                     break;
-                case Keys.Control | Keys.V:
+                case SWF.Keys.Control | SWF.Keys.V:
                     _DoKeyAction(KeyActionType.CtrlV);
                     break;
-                case Keys.Alt | Keys.Up:
+                case SWF.Keys.Alt | SWF.Keys.Up:
                     _DoKeyAction(KeyActionType.AltUp);
                     break;
-                case Keys.Alt | Keys.Down:
+                case SWF.Keys.Alt | SWF.Keys.Down:
                     _DoKeyAction(KeyActionType.AltDown);
                     break;
             }
@@ -1523,7 +1556,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             args.TargetIndex = null;
             args.InsertIndex = null;
             var selectedItemsInfo = args.SourceObject as Tuple<int, IMenuItem, Rectangle?>[];
-            if (selectedItemsInfo != null && (args.TargetIsSource || args.CurrentEffect == DragDropEffects.Move))
+            if (selectedItemsInfo != null && (args.TargetIsSource || args.CurrentEffect == SWF.DragDropEffects.Move))
             {
                 // Pokud provádíme přesun v rámci jednoho Listu (tj. Target == Source),
                 //  pak si musíme najít správný TargetIndex nyní = uživatel chce přemístit prvky před/za určitý prvek, a jeho index se odebráním prvků změní:
@@ -1612,24 +1645,24 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         private IndexRatio DoDragSearchIndexRatio(Point targetPoint)
         {
-            return IndexRatio.Create(targetPoint, this.ClientRectangle, p => this.IndexFromPoint(p), i => GetItemBounds(i, false), this.ItemCount, Orientation.Vertical);
+            return IndexRatio.Create(targetPoint, this.ClientRectangle, p => this.IndexFromPoint(p), i => GetItemBounds(i, false), this.ItemCount, SWF.Orientation.Vertical);
         }
         /// <summary>
         /// Informace o prvku, nad kterým je myš, pro umístění obsahu v procesu Drag and Drop.
         /// Pokud je null, pak pro this prvek neprobíhá Drag and Drop.
         /// <para/>
-        /// Tuto hodnotu vykresluje metoda <see cref="MouseDragPaint(PaintEventArgs)"/>.
+        /// Tuto hodnotu vykresluje metoda <see cref="MouseDragPaint(SWF.PaintEventArgs)"/>.
         /// </summary>
         private IndexRatio MouseDragTargetIndex;
         /// <summary>
-        /// Obsahuje true, pokud v procesu Paint má být volána metoda <see cref="MouseDragPaint(PaintEventArgs)"/>.
+        /// Obsahuje true, pokud v procesu Paint má být volána metoda <see cref="MouseDragPaint(SWF.PaintEventArgs)"/>.
         /// </summary>
         private bool MouseDragNeedRePaint { get { return (MouseDragTargetIndex != null); } }
         /// <summary>
         /// Volá se proto, aby this prvek mohl vykreslit Target pozici pro MouseDrag proces
         /// </summary>
         /// <param name="e"></param>
-        private void MouseDragPaint(PaintEventArgs e)
+        private void MouseDragPaint(SWF.PaintEventArgs e)
         {
             if (!MouseDragNeedRePaint) return;
             var bounds = MouseDragTargetIndex.GetMarkLineBounds();
@@ -1702,7 +1735,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Událost volaná po vykreslení základu Listu, před vykreslením Reorder ikony
         /// </summary>
-        public event PaintEventHandler PaintList;
+        public event SWF.PaintEventHandler PaintList;
 
         #endregion
     }
@@ -1717,10 +1750,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Obsahuje true u controlu, který sám by byl Visible, i když aktuálně je na Invisible parentu.
         /// <para/>
-        /// Vrátí true, pokud control sám na sobě má nastavenou hodnotu <see cref="Control.Visible"/> = true.
-        /// Hodnota <see cref="Control.Visible"/> běžně obsahuje součin všech hodnot <see cref="Control.Visible"/> od controlu přes všechny jeho parenty,
+        /// Vrátí true, pokud control sám na sobě má nastavenou hodnotu <see cref="SWF.Control.Visible"/> = true.
+        /// Hodnota <see cref="SWF.Control.Visible"/> běžně obsahuje součin všech hodnot <see cref="SWF.Control.Visible"/> od controlu přes všechny jeho parenty,
         /// kdežto tato vlastnost <see cref="VisibleInternal"/> vrací hodnotu pouze z tohoto controlu.
-        /// Například každý control před tím, než je zobrazen jeho formulář, má <see cref="Control.Visible"/> = false, ale tato metoda vrací hodnotu reálně vloženou do <see cref="Control.Visible"/>.
+        /// Například každý control před tím, než je zobrazen jeho formulář, má <see cref="SWF.Control.Visible"/> = false, ale tato metoda vrací hodnotu reálně vloženou do <see cref="SWF.Control.Visible"/>.
         /// </summary>
         public bool VisibleInternal { get { return this.IsSetVisible(); } set { this.Visible = value; } }
         /// <summary>
@@ -1758,10 +1791,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Obsahuje true u controlu, který sám by byl Visible, i když aktuálně je na Invisible parentu.
         /// <para/>
-        /// Vrátí true, pokud control sám na sobě má nastavenou hodnotu <see cref="Control.Visible"/> = true.
-        /// Hodnota <see cref="Control.Visible"/> běžně obsahuje součin všech hodnot <see cref="Control.Visible"/> od controlu přes všechny jeho parenty,
+        /// Vrátí true, pokud control sám na sobě má nastavenou hodnotu <see cref="SWF.Control.Visible"/> = true.
+        /// Hodnota <see cref="SWF.Control.Visible"/> běžně obsahuje součin všech hodnot <see cref="SWF.Control.Visible"/> od controlu přes všechny jeho parenty,
         /// kdežto tato vlastnost <see cref="VisibleInternal"/> vrací hodnotu pouze z tohoto controlu.
-        /// Například každý control před tím, než je zobrazen jeho formulář, má <see cref="Control.Visible"/> = false, ale tato metoda vrací hodnotu reálně vloženou do <see cref="Control.Visible"/>.
+        /// Například každý control před tím, než je zobrazen jeho formulář, má <see cref="SWF.Control.Visible"/> = false, ale tato metoda vrací hodnotu reálně vloženou do <see cref="SWF.Control.Visible"/>.
         /// </summary>
         public bool VisibleInternal { get { return this.IsSetVisible(); } set { this.Visible = value; } }
         /// <summary>
@@ -1796,10 +1829,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Obsahuje true u controlu, který sám by byl Visible, i když aktuálně je na Invisible parentu.
         /// <para/>
-        /// Vrátí true, pokud control sám na sobě má nastavenou hodnotu <see cref="Control.Visible"/> = true.
-        /// Hodnota <see cref="Control.Visible"/> běžně obsahuje součin všech hodnot <see cref="Control.Visible"/> od controlu přes všechny jeho parenty,
+        /// Vrátí true, pokud control sám na sobě má nastavenou hodnotu <see cref="SWF.Control.Visible"/> = true.
+        /// Hodnota <see cref="SWF.Control.Visible"/> běžně obsahuje součin všech hodnot <see cref="SWF.Control.Visible"/> od controlu přes všechny jeho parenty,
         /// kdežto tato vlastnost <see cref="VisibleInternal"/> vrací hodnotu pouze z tohoto controlu.
-        /// Například každý control před tím, než je zobrazen jeho formulář, má <see cref="Control.Visible"/> = false, ale tato metoda vrací hodnotu reálně vloženou do <see cref="Control.Visible"/>.
+        /// Například každý control před tím, než je zobrazen jeho formulář, má <see cref="SWF.Control.Visible"/> = false, ale tato metoda vrací hodnotu reálně vloženou do <see cref="SWF.Control.Visible"/>.
         /// </summary>
         public bool VisibleInternal { get { return this.IsSetVisible(); } set { this.Visible = value; } }
         /// <summary>
@@ -1874,6 +1907,368 @@ namespace Noris.Clients.Win.Components.AsolDX
         #endregion
     }
     #endregion
+    #region DxScrollableContent a DxScrollBars
+    /// <summary>
+    /// Panel, který v sobě hostuje virtuální control <see cref="ContentControl"/>
+    /// a dovoluje uživateli pomocí scrollbarů posouvat jeho virtuální obsah.
+    /// </summary>
+    public class DxScrollableContent : DxPanelControl
+    {
+        #region Konstrukce, proměnné a základní public property
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public DxScrollableContent()
+        {
+            _ContentControl = null;
+            _SuppressEvent = false;
+            _ContentTotalSize = Size.Empty;
+            _ContentVirtualBounds = Rectangle.Empty;
+            _ContentVisualSize = this.ClientSize;
+            _VScrollBarVisible = false;
+            _HScrollBarVisible = false;
+
+            _VScrollBar = new DxVScrollBar() { Visible = false, Minimum = 0, SmallChange = 40 };
+            _VScrollBar.ValueChanged += _ScrollBar_ValueChanged;
+            Controls.Add(_VScrollBar);
+
+            _HScrollBar = new DxHScrollBar() { Visible = false, Minimum = 0, SmallChange = 80 };
+            _HScrollBar.ValueChanged += _ScrollBar_ValueChanged;
+            Controls.Add(_HScrollBar);
+        }
+
+        private SWF.Control _ContentControl;
+        private DxVScrollBar _VScrollBar;
+        private bool _VScrollBarVisible;
+        private DxHScrollBar _HScrollBar;
+        private bool _HScrollBarVisible;
+        private Size _ContentTotalSize;
+        private Rectangle _ContentVirtualBounds;
+        private Size _ContentVisualSize;
+        /// <summary>
+        /// Aktuálně zobrazený obsah.
+        /// Jeho fyzický rozměr bude vždy odpovídat aktuálně viditelnému prostoru.
+        /// Je třeba zadat celkovou velikost obsahu do <see cref="ContentTotalSize"/>, na tuto velikost budou dimenzovány scrollbary a jejich posuny.
+        /// Virtuálně zobrazené souřadnice controlu <see cref="ContentControl"/> jsou vždy uloženy v <see cref="ContentVirtualBounds"/>.
+        /// Na změny virtuálních souřadnic (dané změnou fyzického prostoru anebo posunem scrollbarů) lze reagovat v handleru události <see cref="ContentVirtualBoundsChanged"/>.
+        /// <para/>
+        /// Setování instance do této property ji zařadí do this controlu jako Child , změna instance vyřadí dosavadní z this.Controls atd.
+        /// <para/>
+        /// Uživatel by nikdy neměl řídit pozici tohoto vnitřního objektu, ta je dána prostorem uvnitř this panelu <see cref="DxScrollableContent"/>.
+        /// Při každé změně rozměru this panelu bude správně umístěn i tento <see cref="ContentControl"/>.
+        /// </summary>
+        public SWF.Control ContentControl
+        {
+            get { return _ContentControl; }
+            set
+            {
+                SWF.Control contentControl = _ContentControl;
+                if (contentControl != null)
+                {
+                    if (this.Controls.Contains(contentControl))
+                        this.Controls.Remove(contentControl);
+                    _ContentControl = null;
+                }
+                contentControl = value;
+                if (contentControl != null)
+                {
+                    this.Controls.Add(contentControl);
+                    _ContentControl = contentControl;
+                    DoLayoutContent();
+                }
+            }
+        }
+        /// <summary>
+        /// Celková (virtuální) velikost obsahu. Na tuto plochu jsou dimenzovány ScrollBary a tato plocha je posouvána.
+        /// </summary>
+        public Size ContentTotalSize { get { return _ContentTotalSize; } set { _ContentTotalSize = value; DoLayoutContent(); } }
+        /// <summary>
+        /// Aktuální viditelné souřadnice virtuálního obsahu. 
+        /// Počáteční bod je dán ScrollBary, velikost je dána fyzickou velikostí this panelu (mínus prostor ScrollBarů).
+        /// </summary>
+        public Rectangle ContentVirtualBounds
+        {
+            get { return _ContentVirtualBounds; }
+            private set
+            {   // Tady nebudeme řešit kontroly ani návaznosti na ScrollBary, to musel řešit volající. Tady jen hlídáme změnu a voláme event:
+                var oldValue = _ContentVirtualBounds;
+                var newValue = value;
+                if (oldValue != newValue)
+                {
+                    _ContentVirtualBounds = newValue;
+                    _RunContentVirtualBoundsChanged();
+                }
+            }
+        }
+        /// <summary>
+        /// Souřadnice počátku viditelné části obsahu <see cref="ContentVirtualBounds"/>.
+        /// Tuto hodnotu je možno setovat a tak programově řídit posuny obsahu.
+        /// </summary>
+        public Point ContentVirtualLocation { get { return _ContentVirtualBounds.Location; } set { SetVirtualLocation(value); } }
+        /// <summary>
+        /// Tuto událost vyvolá this panel <see cref="DxScrollableContent"/> 
+        /// při každé změně velikosti nebo pozice virtuálního prostoru <see cref="ContentVirtualBounds"/>.
+        /// </summary>
+        public EventHandler ContentVirtualBoundsChanged;
+        /// <summary>
+        /// Obsahuje true pokud je viditelný Horizontální (=vodorovný) ScrollBar
+        /// </summary>
+        public bool HScrollBarVisible{ get { return _HScrollBarVisible; } }
+        /// <summary>
+        /// Obsahuje true pokud je viditelný Vertikální (=svislý) ScrollBar
+        /// </summary>
+        public bool VScrollBarVisible { get { return _VScrollBarVisible; } }
+        #endregion
+        #region Layout a řízení ScrollBarů
+        /// <summary>
+        /// Na základě aktuálních fyzických rozměrů a podle <see cref="ContentTotalSize"/> určí potřebnou viditelnost ScrollBarů,
+        /// určí souřadnice prvků (Content i ScrollBary), určí vlastnosti pro ScrollBary a velikost prosotru pro vlastní obsah (<see cref="_ContentVisualSize"/>).
+        /// Pokud dojde k jakékoli změně, vyvolá jedenkrát událost <see cref="ContentVirtualBoundsChanged"/>.
+        /// </summary>
+        protected void DoLayoutContent()
+        {
+            Size clientSize = this.ClientSize;
+            if (this.Parent == null)
+            {
+                _ContentVisualSize = clientSize;
+                return;
+            }
+
+            Size contentTotalSize = this.ContentTotalSize;
+            Rectangle contentVirtualBounds = this.ContentVirtualBounds;
+            int clientWidth = clientSize.Width;
+            int clientHeight = clientSize.Height;
+
+            // Vertikální (svislý) ScrollBar: bude viditelný, když výška obsahu je větší než výška klienta, a zmenší šířku klienta:
+            bool vVisible = (contentTotalSize.Height > clientHeight);
+            int vScrollSize = (vVisible ? _VScrollBar.GetDefaultVerticalScrollBarWidth() : 0);
+            if (vVisible) clientWidth -= vScrollSize;
+
+            // Horizontální (vodorovný) ScrollBar: bude viditelný, když šířka obsahu je větší než šířka klienta, a zmenší výšku klienta:
+            bool hVisible = (contentTotalSize.Width > clientWidth);
+            int hScrollSize = (hVisible ? _VScrollBar.GetDefaultHorizontalScrollBarHeight() : 0);
+            if (hVisible) clientHeight -= hScrollSize;
+
+            // Pokud dosud nebyl viditelný Vertikální (svislý) ScrollBar, ale je viditelný Horizontální (vodorovný) ScrollBar:
+            //  pak Horizontální ScrollBar zmenšil výšku obsahu (clientHeight), a může se stát, že bude třeba zobrazit i Vertikální ScrollBar:
+            if (!vVisible && hVisible && (contentTotalSize.Height > clientHeight))
+            {
+                vVisible = true;
+                vScrollSize = _VScrollBar.GetDefaultVerticalScrollBarWidth();
+                clientWidth -= vScrollSize;
+            }
+
+            // Pokud je přílš malá šířka a je viditelný Vertikální (svislý) ScrollBar: vrátit plnou šířku a zrušit scrollBar:
+            if (clientWidth < 10 && vVisible)
+            {
+                clientWidth = clientSize.Width;
+                vVisible = false;
+                vScrollSize = 0;
+            }
+            // Pokud je přílš malá výška a je viditelný Horizontální (vodorovný) ScrollBar: vrátit plnou výšku a zrušit scrollBar:
+            if (clientHeight < 10 && hVisible)
+            {
+                clientHeight = clientSize.Height;
+                hVisible = false;
+                hScrollSize = 0;
+            }
+
+            // bool reCalcVirtualBounds = (clientWidth != contentVirtualBounds.Width || clientHeight != contentVirtualBounds.Height);
+
+            _ContentControl?.SetBounds(new Rectangle(0, 0, clientWidth, clientHeight));
+            _ContentVisualSize = new Size(clientWidth, clientHeight);
+            _VScrollBarVisible = vVisible;
+            _HScrollBarVisible = hVisible;
+
+            bool suppressEvent = _SuppressEvent;
+            try
+            {
+                _SuppressEvent = true;
+
+                if (vVisible)
+                {
+                    _VScrollBar.SetBounds(new Rectangle(clientWidth, 0, vScrollSize, clientHeight));
+                    _VScrollBar.Maximum = contentTotalSize.Height;
+                    _VScrollBar.LargeChange = clientHeight;
+                }
+                if (hVisible)
+                {
+                    _HScrollBar.SetBounds(new Rectangle(0, clientHeight, clientWidth, hScrollSize));
+                    _HScrollBar.Maximum = contentTotalSize.Width;
+                    _HScrollBar.LargeChange = clientWidth;
+                }
+
+                if (_VScrollBar.VisibleInternal != vVisible) _VScrollBar.Visible = vVisible;
+                if (_HScrollBar.VisibleInternal != hVisible) _HScrollBar.Visible = hVisible;
+            }
+            finally
+            {
+                _SuppressEvent = suppressEvent;
+            }
+
+            // Tady se vezmou souřadnice X a Y ze ScrollBarů (z těch viditelných), vezme se i aktuální _ContentVisualSize,
+            //  určí se a uloží reálné souřadnice ContentVirtualBounds a pokud dojde ke změně, vyvolá se patřičný event:
+            ApplyScrollBarToVirtualLocation();
+        }
+        /// <summary>
+        /// OnParentChanged
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void OnParentChanged(EventArgs e)
+        {
+            base.OnParentChanged(e);
+            DoLayoutContent();
+        }
+        /// <summary>
+        /// OnClientSizeChanged
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void OnClientSizeChanged(EventArgs e)
+        {
+            base.OnClientSizeChanged(e);
+            this.DoLayoutContent();
+        }
+        /// <summary>
+        /// OnStyleChanged
+        /// </summary>
+        protected override void OnStyleChanged()
+        {
+            base.OnStyleChanged();
+            DoLayoutContent();
+        }
+        #endregion
+        #region Výpočty virtuální souřadnice a reakce a interaktivní posuny
+        /// <summary>
+        /// Nastaví počáteční souřadnici virtuálního prostoru podle daného bodu, před tím provede veškeré kontroly, při změně reálné hodnoty vyvolá událost
+        /// </summary>
+        /// <param name="virtualLocation"></param>
+        protected void SetVirtualLocation(Point virtualLocation)
+        {
+            Size contentVisualSize = _ContentVisualSize;
+            int x = virtualLocation.X;
+            int y = virtualLocation.Y;
+            int vw = contentVisualSize.Width;
+            int vh = contentVisualSize.Height;
+
+            Size contentTotalSize = _ContentTotalSize;
+            int tw = contentTotalSize.Width;
+            int th = contentTotalSize.Height;
+            if ((x + vw) > tw) x = tw - vw;                // Pokud by aktuální X bylo větší, takže by viditelná šířka přesahovala celkovou šířku, pak posunu X doleva...
+            if ((y + vh) > th) y = th - vh;                //  stejně tak výška a Y
+            if (x < 0) x = 0;
+            if (y < 0) y = 0;
+
+            // Scrollbary a jejich hodnota:
+            // (změna souřadnice Location nemění šířku - a to ani vizuální, ani celkovou, proto nemění Visible ScrollBarů ani jejich maximum a LargeChange).
+            bool hv = _HScrollBarVisible;
+            bool vv = _VScrollBarVisible;
+            int sx = (hv ? _HScrollBar.Value : 0);
+            int sy = (vv ? _VScrollBar.Value : 0);
+            bool changeX = (hv && x != sx);
+            bool changeY = (vv && y != sy);
+            if (changeX || changeY)
+            {
+                bool suppressEvent = _SuppressEvent;
+                try
+                {
+                    _SuppressEvent = true;
+                    if (changeX) _HScrollBar.Value = x;
+                    if (changeY) _VScrollBar.Value = y;
+                }
+                finally
+                {
+                    _SuppressEvent = suppressEvent;
+                }
+            }
+
+            this.ContentVirtualBounds = new Rectangle(x, y, vw, vh);
+        }
+        /// <summary>
+        /// Pokud není potlačen event <see cref="_SuppressEvent"/>, pak vyvolá háček <see cref="OnContentVirtualBoundsChanged"/> a event <see cref="ContentVirtualBoundsChanged"/>
+        /// </summary>
+        private void _RunContentVirtualBoundsChanged()
+        {
+            if (!_SuppressEvent)
+            {
+                OnContentVirtualBoundsChanged();
+                ContentVirtualBoundsChanged?.Invoke(this, EventArgs.Empty);
+            }
+        }
+        /// <summary>
+        /// Je voláno pokud dojde ke změně hodnoty <see cref="ContentVirtualBounds"/>, před eventem <see cref="ContentVirtualBoundsChanged"/>
+        /// </summary>
+        protected virtual void OnContentVirtualBoundsChanged() { }
+        /// <summary>
+        /// Po změně hodnoty na ScrollBarech - přemístí <see cref="ContentVirtualLocation"/> (a vyvolá události, pokud nejsou potlačené)
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _ScrollBar_ValueChanged(object sender, EventArgs e)
+        {
+            if (!_SuppressEvent)
+                ApplyScrollBarToVirtualLocation();
+        }
+        /// <summary>
+        /// Hodnoty ze ScrollBarů (pokud jsou viditelné) aplikuje do <see cref="SetVirtualLocation(Point)"/>
+        /// </summary>
+        private void ApplyScrollBarToVirtualLocation()
+        {
+            int x = (_HScrollBarVisible ? _HScrollBar.Value : 0);
+            int y = (_VScrollBarVisible ? _VScrollBar.Value : 0);
+            Point virtualLocation = new Point(x, y);
+            SetVirtualLocation(virtualLocation);
+        }
+        /// <summary>
+        /// Hodnota true potlačí vyvolání události <see cref="OnContentVirtualBoundsChanged"/> a eventu <see cref="ContentVirtualBoundsChanged"/>.
+        /// </summary>
+        private bool _SuppressEvent;
+        #endregion
+    }
+    /// <summary>
+    /// Horizontální ScrollBar (vodorovný = zleva doprava)
+    /// </summary>
+    public class DxHScrollBar : DevExpress.XtraEditors.HScrollBar
+    {
+        #region Rozšířené property
+        /// <summary>
+        /// Obsahuje true u controlu, který sám by byl Visible, i když aktuálně je na Invisible parentu.
+        /// <para/>
+        /// Vrátí true, pokud control sám na sobě má nastavenou hodnotu <see cref="SWF.Control.Visible"/> = true.
+        /// Hodnota <see cref="SWF.Control.Visible"/> běžně obsahuje součin všech hodnot <see cref="SWF.Control.Visible"/> od controlu přes všechny jeho parenty,
+        /// kdežto tato vlastnost <see cref="VisibleInternal"/> vrací hodnotu pouze z tohoto controlu.
+        /// Například každý control před tím, než je zobrazen jeho formulář, má <see cref="SWF.Control.Visible"/> = false, ale tato metoda vrací hodnotu reálně vloženou do <see cref="SWF.Control.Visible"/>.
+        /// </summary>
+        public bool VisibleInternal { get { return this.IsSetVisible(); } set { this.Visible = value; } }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString() { return this.GetTypeName(); }
+        #endregion
+    }
+    /// <summary>
+    /// Vertikální ScrollBar (svislý = zeshora dolů)
+    /// </summary>
+    public class DxVScrollBar : DevExpress.XtraEditors.VScrollBar
+    {
+        #region Rozšířené property
+        /// <summary>
+        /// Obsahuje true u controlu, který sám by byl Visible, i když aktuálně je na Invisible parentu.
+        /// <para/>
+        /// Vrátí true, pokud control sám na sobě má nastavenou hodnotu <see cref="SWF.Control.Visible"/> = true.
+        /// Hodnota <see cref="SWF.Control.Visible"/> běžně obsahuje součin všech hodnot <see cref="SWF.Control.Visible"/> od controlu přes všechny jeho parenty,
+        /// kdežto tato vlastnost <see cref="VisibleInternal"/> vrací hodnotu pouze z tohoto controlu.
+        /// Například každý control před tím, než je zobrazen jeho formulář, má <see cref="SWF.Control.Visible"/> = false, ale tato metoda vrací hodnotu reálně vloženou do <see cref="SWF.Control.Visible"/>.
+        /// </summary>
+        public bool VisibleInternal { get { return this.IsSetVisible(); } set { this.Visible = value; } }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString() { return this.GetTypeName(); }
+        #endregion
+    }
+    #endregion
     #region DxImagePickerListBox
     /// <summary>
     /// ListBox nabízející DevExpress Resources
@@ -1912,7 +2307,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             _ListCopyButton.MouseEnter += _AnyControlEnter;
             _ListCopyButton.Enter += _AnyControlEnter;
 
-            _ListBox = DxComponent.CreateDxListBox(DockStyle.None, parent: this, selectionMode: SelectionMode.MultiExtended, itemHeight: 32,
+            _ListBox = DxComponent.CreateDxListBox(SWF.DockStyle.None, parent: this, selectionMode: SWF.SelectionMode.MultiExtended, itemHeight: 32,
                 toolTipTitle: "Seznam Resources", toolTipText: "Označte jeden nebo více řádků, klávesou Ctrl+C zkopírujete názvy Resources jako kód C#.");
             _ListBox.MouseEnter += _AnyControlEnter;
             _ListBox.Enter += _AnyControlEnter;
@@ -1985,13 +2380,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void _FilterText_KeyUp(object sender, KeyEventArgs e)
+        private void _FilterText_KeyUp(object sender, SWF.KeyEventArgs e)
         {
-            if (e.KeyCode == Keys.Down || e.KeyCode == Keys.Enter)
+            if (e.KeyCode == SWF.Keys.Down || e.KeyCode == SWF.Keys.Enter)
                 _ListBox.Focus();
-            else if (e.KeyCode == Keys.Home || e.KeyCode == Keys.End || e.KeyCode == Keys.Up /* || e.KeyCode == Keys.Down */ || e.KeyCode == Keys.Left || e.KeyCode == Keys.Right || e.KeyCode == Keys.PageUp || e.KeyCode == Keys.PageDown || e.KeyCode == Keys.Tab || e.KeyCode == Keys.Escape)
+            else if (e.KeyCode == SWF.Keys.Home || e.KeyCode == SWF.Keys.End || e.KeyCode == SWF.Keys.Up /* || e.KeyCode == Keys.Down */ || e.KeyCode == SWF.Keys.Left || e.KeyCode == SWF.Keys.Right || e.KeyCode == SWF.Keys.PageUp || e.KeyCode == SWF.Keys.PageDown || e.KeyCode == SWF.Keys.Tab || e.KeyCode == SWF.Keys.Escape)
             { }
-            else if (e.Modifiers == Keys.Control)
+            else if (e.Modifiers == SWF.Keys.Control)
             { }
             else
                 _FillListByFilter();
@@ -2011,9 +2406,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void _ListBox_KeyUp(object sender, KeyEventArgs e)
+        private void _ListBox_KeyUp(object sender, SWF.KeyEventArgs e)
         {
-            if (e.KeyData == (Keys.Control | Keys.C)) _DoCopyClipboard();
+            if (e.KeyData == (SWF.Keys.Control | SWF.Keys.C)) _DoCopyClipboard();
         }
         /// <summary>
         /// Po změně řádku v ListBoxu
@@ -2030,7 +2425,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void _ListBox_PaintList(object sender, PaintEventArgs e)
+        private void _ListBox_PaintList(object sender, SWF.PaintEventArgs e)
         {
             DevExpress.Utils.Design.ISvgPaletteProvider svgPalette = DxComponent.GetSvgPalette();
             var visibleItems = _ListBox.VisibleItems;
@@ -2118,8 +2513,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 }
                 if (sb.Length > 0)
                 {
-                    Clipboard.Clear();
-                    Clipboard.SetText(sb.ToString());
+                    DxComponent.ClipboardInsert(sb.ToString());
                 }
 
                 StatusText = "Položky zkopírovány do schránky: " + rowCount.ToString();
@@ -2443,10 +2837,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Obsahuje true u controlu, který sám by byl Visible, i když aktuálně je na Invisible parentu.
         /// <para/>
-        /// Vrátí true, pokud control sám na sobě má nastavenou hodnotu <see cref="Control.Visible"/> = true.
-        /// Hodnota <see cref="Control.Visible"/> běžně obsahuje součin všech hodnot <see cref="Control.Visible"/> od controlu přes všechny jeho parenty,
+        /// Vrátí true, pokud control sám na sobě má nastavenou hodnotu <see cref="SWF.Control.Visible"/> = true.
+        /// Hodnota <see cref="SWF.Control.Visible"/> běžně obsahuje součin všech hodnot <see cref="SWF.Control.Visible"/> od controlu přes všechny jeho parenty,
         /// kdežto tato vlastnost <see cref="VisibleInternal"/> vrací hodnotu pouze z tohoto controlu.
-        /// Například každý control před tím, než je zobrazen jeho formulář, má <see cref="Control.Visible"/> = false, ale tato metoda vrací hodnotu reálně vloženou do <see cref="Control.Visible"/>.
+        /// Například každý control před tím, než je zobrazen jeho formulář, má <see cref="SWF.Control.Visible"/> = false, ale tato metoda vrací hodnotu reálně vloženou do <see cref="SWF.Control.Visible"/>.
         /// </summary>
         public bool VisibleInternal { get { return this.IsSetVisible(); } set { this.Visible = value; } }
         /// <summary>
@@ -2527,7 +2921,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             chartDesigner.Caption = caption;
             chartDesigner.ShowActualData = showActualData;
             var result = chartDesigner.ShowDialog(topMost);
-            return (result == DialogResult.OK);
+            return (result == SWF.DialogResult.OK);
         }
         /// <summary>
         /// Desktop okno hlídá klávesu Escape: 
@@ -2587,7 +2981,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             MenuAction = source.MenuAction;
         }
         /// <summary>
-        /// Text zobrazovaný v debuggeru namísto <see cref="ToString()"/>
+        /// Text zobrazovaný v debuggeru namísto <see cref="DataTextItem.ToString()"/>
         /// </summary>
         protected override string DebugText
         {

@@ -72,11 +72,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         public TreeListCheckBoxMode CheckBoxMode { get { return _TreeListNative.CheckBoxMode; } set { _TreeListNative.CheckBoxMode = value; } }
         /// <summary>
         /// Režim kreslení ikon u nodů.
-        /// Výchozí je <see cref="TreeListImageMode.ImageStatic"/> = zobrazuje se standardní ikona <see cref="IMenuItem.Image"/> 
+        /// Výchozí je <see cref="TreeListImageMode.ImageStatic"/> = zobrazuje se standardní ikona <see cref="ITextItem.Image"/> 
         /// (ale nezobrazují se ikony <see cref="ITreeListNode.ImageDynamicDefault"/> a <see cref="ITreeListNode.ImageDynamicSelected"/>).
         /// Aplikační kód musí dodat objekt do <see cref="ImageList"/>, jinak se ikony zobrazovat nebudou, 
         /// dále musí dodat metodu <see cref="ImageIndexSearcher"/> (která převede jméno ikony z nodu do indexu v <see cref="ImageList"/>)
-        /// a musí plnit jména ikon do <see cref="IMenuItem.Image"/>, <see cref="ITreeListNode.ImageDynamicDefault"/> a <see cref="ITreeListNode.ImageDynamicSelected"/>.
+        /// a musí plnit jména ikon do <see cref="ITextItem.Image"/>, <see cref="ITreeListNode.ImageDynamicDefault"/> a <see cref="ITreeListNode.ImageDynamicSelected"/>.
         /// </summary>
         public TreeListImageMode ImageMode { get { return _TreeListNative.ImageMode; } set { _TreeListNative.ImageMode = value; } }
         /// <summary>
@@ -123,9 +123,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public bool ToolTipAllowHtmlText { get { return _TreeListNative.ToolTipAllowHtmlText; } set { _TreeListNative.ToolTipAllowHtmlText = value; } }
         /// <summary>
-        /// DoubleClick provede Expand/Collapse?
+        /// Co provede DoubleClick na textu anebo Click na ikoně
         /// </summary>
-        public bool AllowExpandOnDblClick { get { return _TreeListNative.AllowExpandOnDblClick; } set { _TreeListNative.AllowExpandOnDblClick = value; } }
+        public NodeMainClickMode MainClickMode { get { return _TreeListNative.MainClickMode; } set { _TreeListNative.MainClickMode = value; } }
         /// <summary>
         /// Zobrazovat Root node?
         /// Má se nastavit po inicializaci nebo po <see cref="ClearNodes"/>. Změna nastavení později nemá význam.
@@ -166,7 +166,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public ITreeListNode FocusedNodeInfo { get { return _TreeListNative.FocusedNodeInfo; } }
         /// <summary>
-        /// Obsahuje <see cref="ITreeListNode.ItemId"/> aktuálně focusovaného nodu.
+        /// Obsahuje <see cref="ITextItem.ItemId"/> aktuálně focusovaného nodu.
         /// Lze setovat. Pokud bude setován neexistující ID, pak focusovaný node bude null.
         /// </summary>
         public string FocusedNodeFullId { get { return _TreeListNative.FocusedNodeFullId; } set { _TreeListNative.FocusedNodeFullId = value; } }
@@ -189,7 +189,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         public ITreeListNode[] GetChildNodeInfos(string parentKey) { return _TreeListNative.GetChildNodeInfos(parentKey); }
         /// <summary>
-        /// Přidá jeden node. Není to příliš efektivní. Raději používejme <see cref="AddNodes(IEnumerable{ITreeListNode})"/>.
+        /// Přidá jeden node. Není to příliš efektivní. Raději používejme <see cref="AddNodes(IEnumerable{ITreeListNode}, bool, PreservePropertiesMode)"/>.
         /// </summary>
         /// <param name="nodeInfo"></param>
         /// <param name="atIndex">Zařadit na danou pozici v kolekci Child nodů: 0=dá node na první pozici, 1=na druhou pozici, null = default = na poslední pozici.</param>
@@ -204,7 +204,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="addNodes"></param>
         /// <param name="clear">Smazat všechny aktuální nody?</param>
         /// <param name="preserveProperties"></param>
-        public void AddNodes(IEnumerable<ITreeListNode> addNodes, bool clear = false, PreservePropertiesMode preserveProperties = PreservePropertiesMode.None) { _TreeListNative.AddNodes(addNodes, clear, preserveProperties); }
+        public void AddNodes(IEnumerable<ITreeListNode> addNodes, bool clear = false, PreservePropertiesMode preserveProperties = PreservePropertiesMode.None)
+        {
+            _TreeListNative.AddNodes(addNodes, clear, preserveProperties);
+        }
         /// <summary>
         /// Přidá řadu nodů, které jsou donačteny k danému parentu. Současné nody ponechává. Lze tak přidat například jednu podvětev.
         /// Nejprve najde daného parenta, a zruší z něj příznak LazyLoad (protože právě tímto načtením jsou jeho nody vyřešeny). Současně odebere "wait" node (prázdný node, simulující načítání dat).
@@ -543,7 +546,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             this._MainColumn.OptionsColumn.AllowEdit = false;
             this._MainColumn.OptionsColumn.AllowSort = false;
 
-            this.OptionsBehavior.AllowExpandOnDblClick = false;
+            // this.OptionsBehavior.AllowExpandOnDblClick = false;             // Neřeš to explicitně, to řeší property this.MainClickMode !!!
             this.OptionsBehavior.AllowPixelScrolling = DevExpress.Utils.DefaultBoolean.False;                // Nezapínej to, DevExpress mají (v 20.1.6.0) problém s vykreslováním!
             this.OptionsBehavior.Editable = true;
             this.OptionsBehavior.EditingMode = DevExpress.XtraTreeList.TreeListEditingMode.Inplace;
@@ -565,6 +568,7 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             this.IncrementalSearchMode = TreeListIncrementalSearchMode.InExpandedNodesOnly;
             this.SelectNodeBeforeShowContextMenu = true;
+            this.MainClickMode = NodeMainClickMode.RunEvent;
 
             this.OptionsSelection.EnableAppearanceFocusedRow = true;
             this.OptionsSelection.EnableAppearanceHotTrackedRow = DefaultBoolean.True;
@@ -811,7 +815,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Při Dispose uvolním svůj lokální <see cref="CurrentViewInfo"/>
         /// </summary>
-        /// <param name="disposing"></param>
         protected void CurrentViewDispose()
         {
             if (CurrentViewInfo != null)
@@ -1129,7 +1132,12 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 ITreeListNode nodeInfo = this.FocusedNodeInfo;
                 if (nodeInfo != null)
-                    this.OnNodeIconClick(nodeInfo, hit.PartType);
+                {
+                    if (_IsMainActionRunEvent(nodeInfo, hit.IsInCell))
+                        this.OnNodeIconClick(nodeInfo, hit.PartType);
+                    if (_IsMainActionExpandCollapse(nodeInfo, hit.IsInCell))
+                        this._NodeExpandCollapse(hit);
+                }
             }
         }
         /// <summary>
@@ -1168,7 +1176,12 @@ namespace Noris.Clients.Win.Components.AsolDX
             var hit = _GetNodeHit();
             ITreeListNode nodeInfo = this.FocusedNodeInfo;
             if (nodeInfo != null)
-                this.OnNodeDoubleClick(nodeInfo, hit.PartType);
+            {
+                if (_IsMainActionRunEvent(nodeInfo, hit.IsInCell))
+                    this.OnNodeDoubleClick(nodeInfo, hit.PartType);
+                if (_IsMainActionExpandCollapse(nodeInfo, hit.IsInCell))
+                    this._NodeExpandCollapse(hit);
+            }
         }
         /// <summary>
         /// V okamžiku zahájení editace
@@ -1224,7 +1237,10 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (nodeInfo != null)
             {
                 nodeInfo.TextEdited = this.EditingValue as string;
-                this.OnEditorDoubleClick(nodeInfo, this.EditingValue);
+                if (_IsMainActionRunEvent(nodeInfo, true))
+                    this.OnEditorDoubleClick(nodeInfo, this.EditingValue);
+                if (_IsMainActionExpandCollapse(nodeInfo, true))
+                    this._NodeExpandCollapse(nodeInfo);
             }
         }
         /// <summary>
@@ -1330,6 +1346,79 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
         }
         /// <summary>
+        /// Vrátí true pokud se po hlavní akci má provést RunEvent odpovídající aktuální aktivitě
+        /// </summary>
+        /// <param name="nodeInfo"></param>
+        /// <param name="isOnText"></param>
+        /// <returns></returns>
+        private bool _IsMainActionRunEvent(ITreeListNode nodeInfo, bool isOnText)
+        {
+            switch (this.MainClickMode)
+            {
+                case NodeMainClickMode.RunEvent:
+                case NodeMainClickMode.ExpandCollapseRunEvent:
+                    return true;
+                case NodeMainClickMode.AcceptNodeSetting:
+                    if (nodeInfo != null)
+                    {
+                        var actions = nodeInfo.MainClickAction;
+                        return ((actions.HasFlag(NodeMainClickActionType.IconClickRunEvent) && !isOnText) ||
+                                (actions.HasFlag(NodeMainClickActionType.TextDoubleClickRunEvent) && isOnText));
+                    }
+                    break;
+            }
+            return false;
+        }
+        /// <summary>
+        /// Vrátí true pokud se po hlavní akci má provést explicitní Expand/Collapse nodu.
+        /// Tedy: pokud TreeList samo má nastaveno DoubleClick (ted: OptionsBehavior.AllowExpandOnDblClick) = true;
+        /// pak vracíme false - protože Expand/Collapse si provádí TreeList automaticky a nebudeme mu do toho mluvit.
+        /// </summary>
+        /// <param name="nodeInfo"></param>
+        /// <param name="isOnText"></param>
+        /// <returns></returns>
+        private bool _IsMainActionExpandCollapse(ITreeListNode nodeInfo, bool isOnText)
+        {
+            switch (this.MainClickMode)
+            {
+                // Následující řádky jsou sice pravdivé, ale zbytečné:
+                //    pro dané dva režimy vrátíme false = protože Expand/Collapse provádí TreeList automaticky,
+                //    protože jsme mu nastavili: OptionsBehavior.AllowExpandOnDblClick = true (v metodě _MainClickModeSet(NodeMainClickMode mainClickMode)).
+                // case NodeMainClickMode.ExpandCollapse:
+                // case NodeMainClickMode.ExpandCollapseRunEvent:
+                //    return false;
+
+                case NodeMainClickMode.AcceptNodeSetting:
+                    if (nodeInfo != null)
+                    {
+                        var actions = nodeInfo.MainClickAction;
+                        return ((actions.HasFlag(NodeMainClickActionType.IconClickExpandCollapse) && !isOnText) ||
+                                (actions.HasFlag(NodeMainClickActionType.TextDoubleClickExpandCollapse) && isOnText));
+                    }
+                    break;
+            }
+            return false;
+        }
+        /// <summary>
+        /// Zajistí provedení Expand/Collapse daného nodu
+        /// </summary>
+        /// <param name="hit"></param>
+        private void _NodeExpandCollapse(TreeListVisualNodeInfo hit)
+        {
+            var treeNode = hit?.TreeHit?.Node;
+            if (treeNode != null)
+                treeNode.Expanded = !treeNode.Expanded;
+        }
+        /// <summary>
+        /// Zajistí provedení Expand/Collapse daného nodu
+        /// </summary>
+        /// <param name="nodeInfo"></param>
+        private void _NodeExpandCollapse(ITreeListNode nodeInfo)
+        {
+            if (this._TryGetTreeNode(nodeInfo?.ItemId, out var treeNode))
+                treeNode.Expanded = !treeNode.Expanded;
+        }
+        /// <summary>
         /// Najde node a jeho část, na které se nachází daný relativní bod.
         /// Pokud bod není daný (je null), pak použije aktuální pozici myši.
         /// </summary>
@@ -1360,7 +1449,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         #endregion
         #region Správa nodů (přidání, odebrání, smazání, změny)
         /// <summary>
-        /// Přidá jeden node. Není to příliš efektivní. Raději používejme <see cref="AddNodes(IEnumerable{ITreeListNode})"/>.
+        /// Přidá jeden node. Není to příliš efektivní. Raději používejme <see cref="AddNodes(IEnumerable{ITreeListNode}, bool, PreservePropertiesMode)"/>.
         /// </summary>
         /// <param name="nodeInfo"></param>
         /// <param name="atIndex">Zařadit na danou pozici v kolekci Child nodů: 0=dá node na první pozici, 1=na druhou pozici, null = default = na poslední pozici.</param>
@@ -1613,10 +1702,10 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
         }
         /// <summary>
-        /// Zajistí synchronizaci hodnot <see cref="ITreeListNode.Selected"/> a <see cref="ITreeListNode.Checked"/> ve všech evidovaných nodech podle aktuálního stavu v komponentě.
+        /// Zajistí synchronizaci hodnot <see cref="ITreeListNode.Selected"/> a <see cref="ITextItem.Checked"/> ve všech evidovaných nodech podle aktuálního stavu v komponentě.
         /// Vrací Tuple, jehož:
         /// Item1 = byla nalezena změna v hodnotě <see cref="ITreeListNode.Selected"/>,
-        /// Item2 = byla nalezena změna v hodnotě <see cref="ITreeListNode.Checked"/>.
+        /// Item2 = byla nalezena změna v hodnotě <see cref="ITextItem.Checked"/>.
         /// </summary>
         /// <remarks>Nebyl by problém vracet pole nodů, kde došlo ke změně, ale zatím není důvod.</remarks>
         /// <returns></returns>
@@ -1808,7 +1897,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="nodeInfo">Data pro tvorbu nodu</param>
         /// <param name="firstPair">Ref první vytvořený pár</param>
-        /// <param name="selectionMode"></param>
         /// <param name="atIndex">Zařadit na danou pozici v kolekci Child nodů: 0=dá node na první pozici, 1=na druhou pozici, null = default = na poslední pozici.</param>
         private void _AddNode(ITreeListNode nodeInfo, ref NodePair firstPair, int? atIndex)
         {
@@ -2452,11 +2540,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Informace o prvku, nad kterým je myš, pro umístění obsahu v procesu Drag and Drop.
         /// Pokud je null, pak pro this prvek neprobíhá Drag and Drop.
         /// <para/>
-        /// Tuto hodnotu vykresluje metoda <see cref="MouseDragPaint(PaintEventArgs)"/>.
+        /// Tuto hodnotu vykresluje metoda Paint
         /// </summary>
         private IndexRatio MouseDragTargetIndex;
-
-
         #endregion
         #region Public vlastnosti, kolekce nodů, vyhledání nodu podle klíče, vyhledání child nodů
         /// <summary>
@@ -2506,9 +2592,19 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public bool SelectNodeBeforeShowContextMenu { get; set; }
         /// <summary>
-        /// DoubleClick provede Expand/Collapse?
+        /// Co provede DoubleClick na textu anebo Click na ikoně
         /// </summary>
-        public bool AllowExpandOnDblClick { get { return this.OptionsBehavior.AllowExpandOnDblClick; } set { this.OptionsBehavior.AllowExpandOnDblClick = value; } }
+        public NodeMainClickMode MainClickMode { get { return _MainClickMode; } set { _MainClickModeSet(value); } } private NodeMainClickMode _MainClickMode;
+        /// <summary>
+        /// Uloží daný režim do proměnné a nastaví podle něj nativní chování TreeListu
+        /// </summary>
+        /// <param name="mainClickMode"></param>
+        private void _MainClickModeSet(NodeMainClickMode mainClickMode)
+        {
+            bool allowExpandOnDblClick = (mainClickMode == NodeMainClickMode.ExpandCollapse || mainClickMode == NodeMainClickMode.ExpandCollapseRunEvent);
+            this.OptionsBehavior.AllowExpandOnDblClick = allowExpandOnDblClick;
+            _MainClickMode = mainClickMode;
+        }
         /// <summary>
         /// Zobrazovat Root node?
         /// Má se nastavit po inicializaci nebo po <see cref="ClearNodes"/>. Změna nastavení později nemá význam.
@@ -2534,11 +2630,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         private TreeListCheckBoxMode _CheckBoxMode;
         /// <summary>
         /// Režim kreslení ikon u nodů.
-        /// Výchozí je <see cref="TreeListImageMode.ImageStatic"/> = zobrazuje se standardní ikona <see cref="IMenuItem.Image"/> 
+        /// Výchozí je <see cref="TreeListImageMode.ImageStatic"/> = zobrazuje se standardní ikona <see cref="ITextItem.Image"/> 
         /// (ale nezobrazují se ikony <see cref="ITreeListNode.ImageDynamicDefault"/> a <see cref="ITreeListNode.ImageDynamicSelected"/>).
         /// Aplikační kód musí dodat objekt do <see cref="ImageList"/>, jinak se ikony zobrazovat nebudou, 
         /// dále musí dodat metodu <see cref="ImageIndexSearcher"/> (která převede jméno ikony z nodu do indexu v <see cref="ImageList"/>)
-        /// a musí plnit jména ikon do <see cref="IMenuItem.Image"/>, <see cref="ITreeListNode.ImageDynamicDefault"/> a <see cref="ITreeListNode.ImageDynamicSelected"/>.
+        /// a musí plnit jména ikon do <see cref="ITextItem.Image"/>, <see cref="ITreeListNode.ImageDynamicDefault"/> a <see cref="ITreeListNode.ImageDynamicSelected"/>.
         /// </summary>
         public TreeListImageMode ImageMode
         {
@@ -2597,7 +2693,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public ITreeListNode FocusedNodeInfo { get { return _GetNodeInfo(this.FocusedNode); } }
         /// <summary>
-        /// Obsahuje <see cref="ITreeListNode.ItemId"/> aktuálně focusovaného nodu.
+        /// Obsahuje <see cref="ITextItem.ItemId"/> aktuálně focusovaného nodu.
         /// Lze setovat. Pokud bude setován neexistující ID, pak focusovaný node bude null.
         /// </summary>
         public string FocusedNodeFullId
@@ -2988,13 +3084,17 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public TreeListPartType PartType { get; private set; }
         /// <summary>
-        /// Obsahuje true, pokud <see cref="PartType"/> je (Cell nebo SelectImage nebo StateImage)
-        /// </summary>
-        public bool IsInImagesOrCell { get { return IsType(TreeListPartType.Cell, TreeListPartType.StateImage, TreeListPartType.SelectImage); } }
-        /// <summary>
         /// Obsahuje true, pokud <see cref="PartType"/> je (SelectImage nebo StateImage)
         /// </summary>
         public bool IsInImages { get { return IsType(TreeListPartType.StateImage, TreeListPartType.SelectImage); } }
+        /// <summary>
+        /// Obsahuje true, pokud <see cref="PartType"/> je (Cell)
+        /// </summary>
+        public bool IsInCell { get { return IsType(TreeListPartType.Cell); } }
+        /// <summary>
+        /// Obsahuje true, pokud <see cref="PartType"/> je (Cell nebo SelectImage nebo StateImage)
+        /// </summary>
+        public bool IsInImagesOrCell { get { return IsType(TreeListPartType.Cell, TreeListPartType.StateImage, TreeListPartType.SelectImage); } }
         /// <summary>
         /// Vrátí true, pokud aktuální typ <see cref="PartType"/> odpovídá některé ze zadaných hodnot
         /// </summary>
@@ -3091,7 +3191,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         ImageDynamic,
         /// <summary>
-        /// Pouze ikona vpravo, statická, přebírá se z <see cref="IMenuItem.Image"/>
+        /// Pouze ikona vpravo, statická, přebírá se z <see cref="ITextItem.Image"/>
         /// </summary>
         ImageStatic,
         /// <summary>
@@ -3300,7 +3400,7 @@ namespace Noris.Clients.Win.Components.AsolDX
     }
     #endregion
     #endregion
-    #region class TreeListNode a interface ITreeListNode : Data o jednom Node
+    #region class DataTreeListNode a interface ITreeListNode : Data o jednom Node
     /// <summary>
     /// Data o jednom Node
     /// </summary>
@@ -3332,10 +3432,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="fontStyleDelta"></param>
         /// <param name="backColor"></param>
         /// <param name="foreColor"></param>
+        /// <param name="mainClickAction"></param>
         public DataTreeListNode(string nodeId, string parentNodeId, string text,
             NodeItemType nodeType = NodeItemType.DefaultText, bool canEdit = false, bool canDelete = false, bool expanded = false, bool lazyExpandable = false,
             string imageName = null, string imageNameSelected = null, string imageNameStatic = null, string toolTipTitle = null, string toolTipText = null,
-            int? fontSizeDelta = null, FontStyle? fontStyleDelta = null, Color? backColor = null, Color? foreColor = null)
+            int? fontSizeDelta = null, FontStyle? fontStyleDelta = null, Color? backColor = null, Color? foreColor = null, NodeMainClickActionType? mainClickAction = null)
         {
             _Id = -1;
             this.ItemId = nodeId;
@@ -3355,6 +3456,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.FontStyleDelta = fontStyleDelta;
             this.BackColor = backColor;
             this.ForeColor = foreColor;
+            this.MainClickAction = mainClickAction ?? NodeMainClickActionType.RunEvent;
         }
         /// <summary>
         /// Vizualizace
@@ -3412,7 +3514,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public virtual bool Selected { get; set; }
         /// <summary>
-        /// Node je zaškrtnutý. Na rozdíl od <see cref="IMenuItem.Checked"/> (což je bool?) je zdejší property pouze bool.
+        /// Node je zaškrtnutý. Na rozdíl od <see cref="ITextItem.Checked"/> (což je bool?) je zdejší property pouze bool.
         /// </summary>
         public virtual bool NodeChecked { get { return this.Checked ?? false; } set { this.Checked = value; } }
         /// <summary>
@@ -3436,6 +3538,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Uživatel může stisknout Delete nad uzlem, bude vyvolána událost <see cref="DxTreeListNative.NodeDelete"/>
         /// </summary>
         public virtual bool CanDelete { get; set; }
+        /// <summary>
+        /// Co provede DoubleClick na textu anebo Click na ikoně?
+        /// Pro akceptování této hodnoty musí <see cref="DxTreeList"/> mít nastaveno <see cref="DxTreeList.MainClickMode"/> == <see cref="NodeMainClickMode.AcceptNodeSetting"/>.
+        /// </summary>
+        public virtual NodeMainClickActionType MainClickAction { get; set; }
         /// <summary>
         /// Node je otevřený.
         /// Pokud je změněn po vytvoření, je třeba provést <see cref="Refresh"/> tohoto uzlu.
@@ -3543,6 +3650,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         bool CanDelete { get; }
         /// <summary>
+        /// Co provede DoubleClick na textu anebo Click na ikoně?
+        /// Pro akceptování této hodnoty musí <see cref="DxTreeList"/> mít nastaveno <see cref="DxTreeList.MainClickMode"/> == <see cref="NodeMainClickMode.AcceptNodeSetting"/>.
+        /// </summary>
+        NodeMainClickActionType MainClickAction { get; }
+        /// <summary>
         /// Node má zobrazovat prostor pro zaškrtávátko, i když node sám zaškrtávátko nezobrazuje.
         /// Je to proto, aby nody nacházející se v jedné řadě pod sebou byly "svisle zarovnané" i když některé zaškrtávátko mají, a jiné nemají.
         /// </summary>
@@ -3554,7 +3666,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         bool Selected { get; set; }
         /// <summary>
-        /// Node je zaškrtnutý. Na rozdíl od <see cref="IMenuItem.Checked"/> (což je bool?) je zdejší property pouze bool.
+        /// Node je zaškrtnutý. Na rozdíl od <see cref="ITextItem.Checked"/> (což je bool?) je zdejší property pouze bool.
         /// </summary>
         bool NodeChecked { get; set; }
         /// <summary>
@@ -3642,6 +3754,71 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Prvek umístěný jako poslední v poli Childs, reprezentuje např. text "DoubleKlik načte další data..."
         /// </summary>
         OnDoubleClickLoadNext
+    }
+    /// <summary>
+    /// Druh akce, kterou provede DoubleClick na textu anebo Click na ikoně
+    /// </summary>
+    public enum NodeMainClickMode
+    {
+        /// <summary>
+        /// Neprovede se nic
+        /// </summary>
+        None = 0,
+        /// <summary>
+        /// Provede se Expand node nebo Collapse node, ale nevolá se odpovídající událost
+        /// </summary>
+        ExpandCollapse,
+        /// <summary>
+        /// Volá se odpovídající událost, ale neprovede se Expand node nebo Collapse node
+        /// </summary>
+        RunEvent,
+        /// <summary>
+        /// Provede se Expand node nebo Collapse node, a zavolá se odpovídající událost
+        /// </summary>
+        ExpandCollapseRunEvent,
+        /// <summary>
+        /// Provede se pouze aktivita, uvedená na konkrétním nodu - podle hodnoty <see cref="ITreeListNode.MainClickAction"/>.
+        /// <para/>
+        /// V tomto případě je nezbytné nastavit na každém nodu tuto vlastnost, jinak bude default = None = nebude se dělat nic!!!
+        /// </summary>
+        AcceptNodeSetting
+    }
+    /// <summary>
+    /// Druh akce na Click na ikonu anebo text.
+    /// Akceptuje se pouze tehdy, když (<see cref="DxTreeList.MainClickMode"/> == <see cref="NodeMainClickMode.AcceptNodeSetting"/>);
+    /// </summary>
+    [Flags]
+    public enum NodeMainClickActionType
+    {
+        /// <summary>
+        /// Neprovádí se nic, typicky je aktivita řízena pro všechny nody společně pomocí <see cref="DxTreeList.MainClickMode"/>
+        /// </summary>
+        None = 0,
+        /// <summary>
+        /// Jedno kliknutí na ikonu provede Expand / Collapse nodu, pokud to je možné
+        /// </summary>
+        IconClickExpandCollapse = 0x01,
+        /// <summary>
+        /// Jedno kliknutí na ikonu vyvolá event <see cref="DxTreeList.NodeIconClick"/>
+        /// </summary>
+        IconClickRunEvent = 0x02,
+        /// <summary>
+        /// Dvojklik na text provede Expand / Collapse nodu, pokud to je možné
+        /// </summary>
+        TextDoubleClickExpandCollapse = 0x110,
+        /// <summary>
+        /// Dvojklik na text vyvolá event <see cref="DxTreeList.NodeDoubleClick"/>
+        /// </summary>
+        TextDoubleClickRunEvent = 0x20,
+
+        /// <summary>
+        /// Souhrn <see cref="IconClickExpandCollapse"/> + <see cref="TextDoubleClickExpandCollapse"/>
+        /// </summary>
+        ExpandCollapse = IconClickExpandCollapse | TextDoubleClickExpandCollapse,
+        /// <summary>
+        /// Souhrn <see cref="IconClickRunEvent"/> + <see cref="TextDoubleClickRunEvent"/>
+        /// </summary>
+        RunEvent = IconClickRunEvent | TextDoubleClickRunEvent
     }
     #endregion
 }

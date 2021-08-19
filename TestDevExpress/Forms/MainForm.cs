@@ -2229,6 +2229,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
             _TreeList.FilterBoxOperators = DxFilterBox.CreateDefaultOperatorItems(FilterBoxOperatorItems.DefaultText);
             _TreeList.FilterBoxChangedSources = DxFilterBoxChangeEventSource.Default;
             _TreeList.MultiSelectEnabled = true;
+            _TreeList.MainClickMode = NodeMainClickMode.AcceptNodeSetting;
 
             _TreeList.Parent = this;
             _SplitContainer.Panel1.Controls.Add(_TreeList);               // Musí být dřív než se začne pracovat s daty!!!
@@ -2346,6 +2347,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
                 if (args.Node is DataTreeListNode node)
                 {
                     node.Text = text.Substring(0, text.Length - 4);
+                    node.MainClickAction = NodeMainClickActionType.ExpandCollapse;
                     node.Refresh();
                 }
             }
@@ -2494,6 +2496,8 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
                 string text = Random.GetSentence(2, 5) + (isLazy ? " ..." : "");
                 FontStyle fontStyleDelta = FontStyle.Bold;
                 DataTreeListNode rootNode = new DataTreeListNode(rootKey, null, text, nodeType: NodeItemType.DefaultText, expanded: isExpanded, lazyExpandable: isLazy, fontStyleDelta: fontStyleDelta);
+                // Node v první úrovni: LazyLoad má MainClick = RunEvent, a naplněný node má MainClick = Expand/Collapse:
+                rootNode.MainClickAction = (isLazy ? NodeMainClickActionType.RunEvent : NodeMainClickActionType.ExpandCollapse);
                 _FillNode(rootNode);
                 list.Add(rootNode);
 

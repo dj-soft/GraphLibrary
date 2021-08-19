@@ -21,6 +21,7 @@ using DevExpress.XtraPdfViewer;
 using DevExpress.XtraEditors;
 using DevExpress.XtraRichEdit.Layout;
 using Noris.Clients.Win.Components.AsolDX.InternalPersistor;
+using System.Diagnostics;
 
 // using BAR = DevExpress.XtraBars;
 // using EDI = DevExpress.XtraEditors;
@@ -122,7 +123,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         public static TimeSpan? ApplicationStartUpTime { get { return Instance._ApplicationStartUpTime; } }
         private TimeSpan? _ApplicationStartUpTime
         {
-            get 
+            get
             {
                 var startTime = _ApplicationStartTime;
                 var readyTime = _ApplicationReadyTime;
@@ -1055,7 +1056,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 dock, visible, tabStop, false);
         }
         public static DxListBoxControl CreateDxListBox(int x, int y, int w, int h, Control parent = null, EventHandler selectedIndexChanged = null,
-            bool? multiColumn = null, SelectionMode? selectionMode = null, int? itemHeight = null, int? itemHeightPadding = null, 
+            bool? multiColumn = null, SelectionMode? selectionMode = null, int? itemHeight = null, int? itemHeightPadding = null,
             KeyActionType? enabledKeyActions = null, DxDragDropActionType? dragDropActions = null,
             string toolTipTitle = null, string toolTipText = null,
             DockStyle? dock = null, bool? visible = null, bool? tabStop = null)
@@ -1067,7 +1068,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 dock, visible, tabStop, false);
         }
         public static DxListBoxControl CreateDxListBox(int x, ref int y, int w, int h, Control parent = null, EventHandler selectedIndexChanged = null,
-            bool? multiColumn = null, SelectionMode? selectionMode = null, int? itemHeight = null, int? itemHeightPadding = null, 
+            bool? multiColumn = null, SelectionMode? selectionMode = null, int? itemHeight = null, int? itemHeightPadding = null,
             KeyActionType? enabledKeyActions = null, DxDragDropActionType? dragDropActions = null,
             string toolTipTitle = null, string toolTipText = null,
             DockStyle? dock = null, bool? visible = null, bool? tabStop = null, bool shiftY = false)
@@ -1228,7 +1229,7 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             return statusLabel;
         }
-        public static DxBarButtonItem CreateDxStatusButton(DevExpress.XtraBars.Ribbon.RibbonStatusBar statusBar = null, string text = null, 
+        public static DxBarButtonItem CreateDxStatusButton(DevExpress.XtraBars.Ribbon.RibbonStatusBar statusBar = null, string text = null,
             int? width = null, int? height = null,
             string toolTipTitle = null, string toolTipText = null,
             bool? visible = null, int? fontSizeDelta = null,
@@ -1280,7 +1281,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             string toolTipTitle = null, string toolTipText = null,
             bool? visible = null, bool? enabled = null, bool? tabStop = null)
         {
-            return CreateDxDropDownButton(x, ref y, w, h, parent, text, 
+            return CreateDxDropDownButton(x, ref y, w, h, parent, text,
                 click, itemClick,
                 dropDownControl, subItemsText, subItems,
                 paintStyles,
@@ -1288,7 +1289,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 toolTipTitle, toolTipText,
                 visible, enabled, tabStop, false);
         }
-        public static DxDropDownButton CreateDxDropDownButton(int x, ref int y, int w, int h, Control parent, string text, 
+        public static DxDropDownButton CreateDxDropDownButton(int x, ref int y, int w, int h, Control parent, string text,
             EventHandler click = null, EventHandler<TEventArgs<IMenuItem>> itemClick = null,
             DevExpress.Utils.Menu.IDXDropDownControl dropDownControl = null, string subItemsText = null, IEnumerable<IMenuItem> subItems = null,
             DevExpress.XtraEditors.Controls.PaintStyles? paintStyles = null,
@@ -1715,7 +1716,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="dataFormItem"></param>
         /// <returns></returns>
-        private Control _CreateDataFormControl(IDataFormItem dataFormItem) 
+        private Control _CreateDataFormControl(IDataFormItem dataFormItem)
         {
             switch (dataFormItem.ItemType)
             {
@@ -1746,7 +1747,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             var bounds = dataFormItem.Bounds;
             var label = CreateDxLabel(bounds.X, bounds.Y, bounds.Width, null, dataFormItem.Text,
-                dataFormItem.LabelStyle, dataFormItem.LabelWordWrap, dataFormItem.LabelAutoSize, dataFormItem.LabelHAlignment, 
+                dataFormItem.LabelStyle, dataFormItem.LabelWordWrap, dataFormItem.LabelAutoSize, dataFormItem.LabelHAlignment,
                 dataFormItem.Visible);
             return label;
         }
@@ -1755,7 +1756,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="dataFormItem"></param>
         /// <returns></returns>
-        private Control _CreateDataFormTextBox(IDataFormItem dataFormItem) 
+        private Control _CreateDataFormTextBox(IDataFormItem dataFormItem)
         {
             var bounds = dataFormItem.Bounds;
             var textEdit = CreateDxTextEdit(bounds.X, bounds.Y, bounds.Width, null, null,
@@ -1768,7 +1769,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="dataFormItem"></param>
         /// <returns></returns>
-        private Control _CreateDataFormEditBox(IDataFormItem dataFormItem) 
+        private Control _CreateDataFormEditBox(IDataFormItem dataFormItem)
         {
             var bounds = dataFormItem.Bounds;
             var memoEdit = CreateDxMemoEdit(bounds.X, bounds.Y, bounds.Width, bounds.Height, null, null,
@@ -1842,7 +1843,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="dataFormItem"></param>
         /// <returns></returns>
-        private Control _CreateDataFormButton(IDataFormItem dataFormItem) 
+        private Control _CreateDataFormButton(IDataFormItem dataFormItem)
         {
             var bounds = dataFormItem.Bounds;
             var checkBox = CreateDxSimpleButton(bounds.X, bounds.Y, bounds.Width, bounds.Height, null, dataFormItem.Text, null,
@@ -1871,10 +1872,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="dataFormItem"></param>
         /// <returns></returns>
-        private Control _CreateDataFormDropDownButton(IDataFormItem dataFormItem) 
+        private Control _CreateDataFormDropDownButton(IDataFormItem dataFormItem)
         {
             var bounds = dataFormItem.Bounds;
-            var checkBox = CreateDxDropDownButton(bounds.X, bounds.Y, bounds.Width, bounds.Height, null, dataFormItem.Text, 
+            var checkBox = CreateDxDropDownButton(bounds.X, bounds.Y, bounds.Width, bounds.Height, null, dataFormItem.Text,
                 null, null,
                 null, null, null,
                 DevExpress.XtraEditors.Controls.PaintStyles.Default,
@@ -1980,10 +1981,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Aktivita logu
         /// </summary>
-        private bool _LogActive 
+        private bool _LogActive
         {
             get { return __LogActive; }
-            set 
+            set
             {
                 if (value && (_LogWatch == null || _LogSB == null))
                 {   // Inicializace:
@@ -2303,7 +2304,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="svgPalette">Paleta pro vykreslení SVG Image</param>
         /// <param name="svgState">Stav objektu pro vykreslení SVG Image, implicitní je <see cref="DevExpress.Utils.Drawing.ObjectState.Normal"/></param>
         /// <returns></returns>
-        public static Image GetImageFromResource(string resourceName, 
+        public static Image GetImageFromResource(string resourceName,
             Size? maxSize = null, Size? optimalSvgSize = null, DevExpress.Utils.Design.ISvgPaletteProvider svgPalette = null, DevExpress.Utils.Drawing.ObjectState? svgState = null)
         {
             return GetImageFromResource(resourceName, out Size size,
@@ -2399,7 +2400,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         public static DevExpress.Utils.SvgImageCollection SvgImageCollection { get { return Instance._SvgImageCollection; } }
         public static DevExpress.Utils.Svg.SvgImage GetSvgImage(string key) { return Instance._GetSvgImage(key); }
-        public static void ApplyImage(ImageOptions imageOptions, string resourceName = null, Image image = null, Size? imageSize = null, bool smallButton = false) 
+        public static void ApplyImage(ImageOptions imageOptions, string resourceName = null, Image image = null, Size? imageSize = null, bool smallButton = false)
         { Instance._ApplyImage(imageOptions, resourceName, image, imageSize, smallButton); }
         private void _ApplyImage(ImageOptions imageOptions, string resourceName, Image image, Size? imageSize, bool smallButton)
         {
@@ -2422,7 +2423,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                     else
                     {   // Externí zdroje:
                         imageOptions.Image = ComponentConnector.GraphicsCache.GetResourceContent(resourceName, WinFormServices.Drawing.UserGraphicsSize.Medium);
-                        
+
                     }
                 }
                 catch { }
@@ -2481,8 +2482,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (smallButton)
             {
                 imageOptions.Location = DevExpress.XtraEditors.ImageLocation.MiddleCenter;
-//                imageOptions.ImageToTextIndent = 0;
-  //              imageOptions.ImageToTextAlignment = DevExpress.XtraEditors.ImageAlignToText.BottomCenter;
+                //                imageOptions.ImageToTextIndent = 0;
+                //              imageOptions.ImageToTextAlignment = DevExpress.XtraEditors.ImageAlignToText.BottomCenter;
             }
         }
         /// <summary>
@@ -2588,9 +2589,9 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
         }
         private Dictionary<string, string> __ImageResourceDictionary;
-        private DevExpress.Utils.SvgImageCollection _SvgImageCollection 
-        { 
-            get 
+        private DevExpress.Utils.SvgImageCollection _SvgImageCollection
+        {
+            get
             {
                 if (__SvgImageCollection == null)
                     __SvgImageCollection = new SvgImageCollection();
@@ -5840,7 +5841,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 var dictionary = items.CreateDictionary(keySelector, true);
                 foreach (var key in keys)
                 {
-                    if (dictionary.TryGetValue(key, out var value)) 
+                    if (dictionary.TryGetValue(key, out var value))
                         return value;
                 }
             }
@@ -5875,6 +5876,268 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         #endregion
     }
+    #endregion
+    #region class XRange
+    /// <summary>
+    /// Rozsah Od-Do v rámci Int32
+    /// </summary>
+    [DebuggerDisplay("{DebugText}")]
+    public class Int32Range : AnyRange<int, int>
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="begin"></param>
+        /// <param name="end"></param>
+        public Int32Range(int begin, int end) : base(begin, end) { }
+        /// <summary>
+        /// Vrátí new instanci vytvořenou klonováním this instance
+        /// </summary>
+        /// <returns></returns>
+        public Int32Range Clone() { return new Int32Range(Begin, End); }
+        /// <summary>
+        /// Vrátí délku prostoru od <paramref name="begin"/> do <paramref name="end"/>, 
+        /// vrací tedy výsledek operace (<paramref name="end"/> - <paramref name="begin"/>)
+        /// </summary>
+        /// <param name="begin">Hodnota počátku</param>
+        /// <param name="end">Hodnota konce</param>
+        /// <returns></returns>
+        protected override int Distance(int begin, int end) { return end - begin; }
+        /// <summary>
+        /// Porovná dvě hodnoty a vrátí jejich pozici na ose.
+        /// Vrací -1 pokud <paramref name="a"/> je menší než <paramref name="b"/>;
+        /// Vrací 0 pokud <paramref name="a"/> je rovno <paramref name="b"/>;
+        /// Vrací +1 pokud <paramref name="a"/> je větší než <paramref name="b"/>;
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
+        protected override int Compare(int a, int b) { return a.CompareTo(b); }
+        /// <summary>
+        /// Vrátí klon this instance
+        /// </summary>
+        /// <returns></returns>
+        protected override AnyRange<int, int> CreateClone() { return new Int32Range(Begin, End); }
+        /// <summary>
+        /// Vrátí new instanci shodné třídy
+        /// </summary>
+        /// <returns></returns>
+        protected override AnyRange<int, int> CreateNew(int begin, int end) { return new Int32Range(begin, end); }
+    }
+    /// <summary>
+    /// Rozsah Od-Do abstraktní
+    /// </summary>
+    [DebuggerDisplay("{DebugText}")]
+    public abstract class AnyRange<TEdge, TSize>
+    {
+        #region Public vrstva - konstruktor, property
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="begin"></param>
+        /// <param name="end"></param>
+        public AnyRange(TEdge begin, TEdge end) { _Begin = begin; _End = end; _Size = Distance(begin, end); }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return $"{Begin} ÷ {End}";
+        }
+        /// <summary>
+        /// DebugText
+        /// </summary>
+        protected virtual string DebugText { get { return $"Begin: {Begin}; End: {End}"; } }
+        /// <summary>
+        /// Počátek rozsahu (včetně)
+        /// </summary>
+        public TEdge Begin { get { return _Begin; } } TEdge _Begin;
+        /// <summary>
+        /// Konec rozsahu (mimo)
+        /// </summary>
+        public TEdge End { get { return _End; } } TEdge _End;
+        /// <summary>
+        /// Délka rozsahu
+        /// </summary>
+        public TSize Size { get { return _Size; } } TSize _Size;
+        /// <summary>
+        /// Obsahuje true u hodnot, kdy <see cref="End"/> je větší než <see cref="Begin"/>, tedy <see cref="Size"/> je kladné
+        /// </summary>
+        public bool IsPositive { get { return (Sign > 0); } }
+        /// <summary>
+        /// Obsahuje true u hodnot, kdy <see cref="End"/> je rovno <see cref="Begin"/>, tedy <see cref="Size"/> je nula
+        /// </summary>
+        public bool IsZero { get { return (Sign == 0); } }
+        /// <summary>
+        /// Obsahuje true u hodnot, kdy <see cref="End"/> je menší než <see cref="Begin"/>, tedy <see cref="Size"/> je záporné
+        /// </summary>
+        public bool IsNegative { get { return (Sign < 0); } }
+        /// <summary>
+        /// Obsahuje výsledek porovnání <see cref="Compare(TEdge, TEdge)"/>(<see cref="End"/>, <see cref="Begin"/>) : 
+        /// -1 pokud <see cref="End"/> je menší než <see cref="Begin"/>;  
+        /// 0 pokud <see cref="End"/> == <see cref="Begin"/>,  
+        /// +1 pokud <see cref="End"/> je bětší než <see cref="Begin"/>
+        /// </summary>
+        protected int Sign { get { return Compare(End, Begin); } }
+        #endregion
+        #region Abstract protected
+        /// <summary>
+        /// Vrátí délku prostoru od <paramref name="begin"/> do <paramref name="end"/>, 
+        /// vrací tedy výsledek operace (<paramref name="end"/> - <paramref name="begin"/>)
+        /// </summary>
+        /// <param name="begin">Hodnota počátku</param>
+        /// <param name="end">Hodnota konce</param>
+        /// <returns></returns>
+        protected abstract TSize Distance(TEdge begin, TEdge end);
+        /// <summary>
+        /// Porovná dvě hodnoty a vrátí jejich pozici na ose.
+        /// Vrací -1 pokud <paramref name="a"/> je menší než <paramref name="b"/>;
+        /// Vrací 0 pokud <paramref name="a"/> je rovno <paramref name="b"/>;
+        /// Vrací +1 pokud <paramref name="a"/> je větší než <paramref name="b"/>;
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
+        protected abstract int Compare(TEdge a, TEdge b);
+        /// <summary>
+        /// Vrátí klon this instance
+        /// </summary>
+        /// <returns></returns>
+        protected abstract AnyRange<TEdge, TSize> CreateClone();
+        /// <summary>
+        /// Vrátí new instanci shodné třídy
+        /// </summary>
+        /// <returns></returns>
+        protected abstract AnyRange<TEdge, TSize> CreateNew(TEdge begin, TEdge end);
+        /// <summary>
+        /// Vrátí menší z daných hodnot
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
+        protected TEdge Min(TEdge a, TEdge b)
+        {
+            int compare = Compare(a, b);
+            return (compare < 0 ? a : b);
+        }
+        /// <summary>
+        /// Vrátí větší z daných hodnot
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
+        protected TEdge Max(TEdge a, TEdge b)
+        {
+            int compare = Compare(a, b);
+            return (compare > 0 ? a : b);
+        }
+        #endregion
+        #region Contains
+        /// <summary>
+        /// Vrátí true, pokud this instance pokrývá daný bod <paramref name="point"/>.
+        /// Hodnota rovná <see cref="End"/> se akceptuje podle parametru <paramref name="acceptEnd"/>.
+        /// </summary>
+        /// <param name="point">Testovaný bod</param>
+        /// <param name="acceptEnd">Akceptovat jako vyhovující bod i ten, který je roven End?</param>
+        /// <returns></returns>
+        public bool Contains(TEdge point, bool acceptEnd = false)
+        {
+            int sign = Sign;
+            if (sign < 0) return false;                    // Tudy odejde situace, kdy this je negativní (End < Begin)
+
+            int compareBegin = Compare(point, Begin);      // (point - Begin): -1 = point je menší než Begin
+            int compareEnd = Compare(point, End);          // (point - End):   +1 = point je větší než End
+            return ((compareBegin >= 0) && (compareEnd < 0 || (compareEnd == 0 && acceptEnd)));      // (point >= Begin) and ((point < End) or (point == End and acceptEnd))
+        }
+        #endregion
+        #region HashCode, Equals, Operátory
+        /// <summary>
+        /// GetHashCode
+        /// </summary>
+        /// <returns></returns>
+        public override int GetHashCode()
+        {
+            return this.Begin.GetHashCode() ^ this.End.GetHashCode();
+        }
+        /// <summary>
+        /// Equals
+        /// </summary>
+        /// <param name="obj"></param>
+        /// <returns></returns>
+        public override bool Equals(object obj)
+        {
+            if (!(obj is AnyRange<TEdge, TSize> other)) return false;
+            return (Compare(this.Begin, other.Begin) == 0 && Compare(this.End, other.End) == 0);
+        }
+        /// <summary>
+        /// Porovná dvě instance, zda obsahují shodné hodnoty
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
+        public static bool operator ==(AnyRange<TEdge, TSize> a, AnyRange<TEdge, TSize> b)
+        {
+            bool aEmpty = ((object)a == null);
+            bool bEmpty = ((object)b == null);
+            if (aEmpty && bEmpty) return true;
+            else if (aEmpty || bEmpty) return false;
+
+            int compareBegins = a.Compare(a.Begin, b.Begin);
+            int compareEnds = a.Compare(a.End, b.End);
+            return (compareBegins == 0 && compareEnds == 0);
+        }
+        /// <summary>
+        /// Porovná dvě instance, zda obsahují neshodné hodnoty
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
+        public static bool operator !=(AnyRange<TEdge, TSize> a, AnyRange<TEdge, TSize> b)
+        {
+            return (!(a == b));
+        }
+        /// <summary>
+        /// Násobení dvou intervalů = výsledkem je průnik (=společný interval). 
+        /// Výsledkem může být null, pokud vstupní data nejsou platná (jsou záporná) nebo neexistuje průnik.
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
+        public static AnyRange<TEdge, TSize> operator *(AnyRange<TEdge, TSize> a, AnyRange<TEdge, TSize> b)
+        {
+            bool aEmpty = ((object)a == null || a.IsNegative);
+            bool bEmpty = ((object)b == null || b.IsNegative);
+            if (aEmpty && bEmpty) return null;
+            if (bEmpty) return a.CreateClone();
+            if (aEmpty) return b.CreateClone();
+
+            TEdge resultBegin = a.Max(a.Begin, b.Begin);
+            TEdge resultEnd = a.Min(a.End, b.End);
+            int resultCompare = a.Compare(resultEnd, resultBegin);
+            return (resultCompare < 0 ? null : a.CreateNew(resultBegin, resultEnd));
+        }
+        /// <summary>
+        /// Sčítání dvou intervalů = výsledkem je souhrn (=od menšího Begin po větší End)
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
+        public static AnyRange<TEdge, TSize> operator +(AnyRange<TEdge, TSize> a, AnyRange<TEdge, TSize> b)
+        {
+            bool aEmpty = ((object)a == null || a.IsNegative);
+            bool bEmpty = ((object)b == null || b.IsNegative);
+            if (aEmpty && bEmpty) return null;
+            if (bEmpty) return a.CreateClone();
+            if (aEmpty) return b.CreateClone();
+
+            TEdge resultBegin = a.Min(a.Begin, b.Begin);
+            TEdge resultEnd = a.Max(a.End, b.End);
+            return a.CreateNew(resultBegin, resultEnd);
+        }
+        #endregion
+    }
+
     #endregion
     #region class UsingScope : Jednoduchý scope, který provede při vytvoření akci OnBegin, a při Dispose akci OnEnd
     /// <summary>
