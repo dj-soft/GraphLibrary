@@ -64,7 +64,7 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             // Create an Address Info group.
             var groupAddress = new DevExpress.XtraLayout.LayoutControlGroup();
-            groupAddress.Text = "Address Info";
+            groupAddress.Text = "Addresa";
             groupAddress.Name = "addressInfoGroup";
 
             // Move the Address, City and Country fields to this group.
@@ -80,14 +80,22 @@ namespace Noris.Clients.Win.Components.AsolDX
             colPhoto.ColumnEdit = riPictureEdit;
 
             // Customize card field options.
-            colFirstName.Caption = "First Name";
-            colLastName.Caption = "Last Name";
+            colFirstName.Caption = "Křestní jméno";
+            colLastName.Caption = "Příjmení";
+            colAddress.Caption = "Ulice a č.p.";
+            colCity.Caption = "Městečko";
+            colCountry.Caption = "Okres / země";
+            colPhoto.Caption = "Foťka";
             // Set the card's minimum size.
-            lView.CardMinSize = new Size(250, 180);
+            lView.CardMinSize = new Size(350, 220);
+            lView.CardCaptionFormat = "Xxxxx xxx";
+
+            fieldLastName.Location = new Point(220, 20);
 
             fieldPhoto.TextVisible = false;
             fieldPhoto.SizeConstraintsType = DevExpress.XtraLayout.SizeConstraintsType.Custom;
-            fieldPhoto.MaxSize = fieldPhoto.MinSize = new Size(150, 150);
+            fieldPhoto.MinSize = new Size(150, 150);
+            fieldPhoto.MaxSize = new Size(200, 200);
 
         }
 
