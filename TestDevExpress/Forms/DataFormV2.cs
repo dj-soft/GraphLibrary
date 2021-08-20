@@ -296,7 +296,7 @@ namespace TestDevExpress.Forms
             if (_DxDataFormV2 == null)
                 _AddDataFormSampleName("Sample1");
 
-            int itemsCount = this._DxDataFormV2.ItemsCount;
+            int itemsCount = this._DxDataFormV2.VisibleItemsCount;
             int totalCount = count * itemsCount;
             var sampleStartTime = DxComponent.LogTimeCurrent;
             _DxDataFormV2.TestPerformance(count, forceRefresh);
@@ -320,7 +320,8 @@ namespace TestDevExpress.Forms
             _DxShowTimeStart = DateTime.Now;               // Určení času End a času Elapsed proběhne v DxDataForm_GotFocus
             _DxShowTimeSpan = null;
             DxDataFormV2 dataForm = new DxDataFormV2();
-            // dataForm.ContentTotalSize = new Size(1000, 600);
+            string[] texts = Random.GetSentencesArray(1, 3, 120, 240, false);
+            dataForm.CreateSampleItems(texts, 2000);
             dataForm.GotFocus += DxDataForm_GotFocus;
 
             _DxDataFormV2 = dataForm;

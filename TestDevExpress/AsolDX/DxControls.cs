@@ -2048,7 +2048,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
 
             Size contentTotalSize = this.ContentTotalSize;
-            Rectangle contentVirtualBounds = this.ContentVirtualBounds;
             int clientWidth = clientSize.Width;
             int clientHeight = clientSize.Height;
 

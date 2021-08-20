@@ -52,6 +52,27 @@ namespace TestDevExpress
             return sentences;
         }
         /// <summary>
+        /// Vrať pole náhodných vět
+        /// </summary>
+        /// <param name="minWordCount"></param>
+        /// <param name="maxWordCount"></param>
+        /// <param name="minSentenceCount"></param>
+        /// <param name="maxSentenceCount"></param>
+        /// <param name="addDot"></param>
+        /// <returns></returns>
+        public static string[] GetSentencesArray(int minWordCount, int maxWordCount, int minSentenceCount, int maxSentenceCount, bool addDot = false)
+        {
+            List<string> sentences = new List<string>();
+            int sentenceCount = Rand.Next(minSentenceCount, maxSentenceCount);
+            string eol = Environment.NewLine;
+            for (int s = 0; s < sentenceCount; s++)
+            {
+                string sentence = GetSentence(minWordCount, maxWordCount, addDot);
+                sentences.Add(sentence);
+            }
+            return sentences.ToArray();
+        }
+        /// <summary>
         /// Vrať náhodnou větu
         /// </summary>
         /// <param name="minCount"></param>

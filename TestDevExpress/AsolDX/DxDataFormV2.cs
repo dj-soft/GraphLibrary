@@ -265,19 +265,85 @@ namespace Noris.Clients.Win.Components.AsolDX
         public DxDataFormV2source()
         {
             this.DoubleBuffered = true;
+            this.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.Style3D;
 
-            InitializeContent();
+            InitializeContentPanel();
             InitializeItems();
+
             InitializeSampleControls();
+            // InitializeSampleItems();
+
+            Refresh(RefreshParts.RecalculateContentTotalSize | RefreshParts.ReloadVisibleItems);
         }
-        private void InitializeContent()
+        /// <summary>
+        /// Inicializuje panel <see cref="_ContentPanel"/>
+        /// </summary>
+        private void InitializeContentPanel()
         {
-            _ContentPanel = new DxDataFormContentV2(this) { Visible = true, BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.Flat };
-            _ContentPanel.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.Style3D;
-            this.ContentControl = _ContentPanel;
+            this._ContentPanel = new DxDataFormContentV2(this) { Visible = true, BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder };
+            this.ContentControl = this._ContentPanel;
         }
         private DxDataFormContentV2 _ContentPanel;
+        /// <summary>
+        /// Inicializuje pole prvků
+        /// </summary>
+        private void InitializeItems()
+        {
+            _Items = new List<DxDataFormItemV2>();
+            _VisibleItems = new List<DxDataFormItemV2>();
+            _ContentPadding = new Padding(0);
+        }
+        private List<DxDataFormItemV2> _Items;
+        private List<DxDataFormItemV2> _VisibleItems;
+        private Padding _ContentPadding;
 
+
+
+
+        /// <summary>
+        /// Okraje kolem vlastních prvků
+        /// </summary>
+        public Padding ContentPadding 
+        { 
+            get { return _ContentPadding; } 
+            set 
+            { 
+                _ContentPadding = value; 
+                Refresh(RefreshParts.RecalculateContentTotalSize | RefreshParts.ReloadVisibleItems | RefreshParts.InvalidateControl); 
+            }
+        }
+        /// <summary>
+        /// Počet prvků
+        /// </summary>
+        public int ItemsCount { get { return _Items.Count; } }
+        /// <summary>
+        /// Počet aktuálně viditelných prvků
+        /// </summary>
+        public int VisibleItemsCount { get { return _VisibleItems.Count; } }
+        /// <summary>
+        /// Pole prvků.
+        /// Přídávání a odebírání řeší metody Add a Remove.
+        /// </summary>
+        public DxDataFormItemV2[] Items { get { return _Items.ToArray(); } }
+        /// <summary>
+        /// Souhrnná souřadnice všech prvků v <see cref="Items"/>
+        /// </summary>
+        public Rectangle? ItemsSummaryBounds { get { return DrawingExtensions.SummaryRectangle(_Items.Select(i => (Rectangle?)i.CurrentBounds)); } }
+
+        protected override void OnMouseMove(MouseEventArgs e)
+        {
+            base.OnMouseMove(e);
+            if (e.Button == MouseButtons.None)
+            {
+                var cursor = Cursors.Default;
+                if (_VisibleItems.TryGetFirst(i => i.IsActivePoint(e.Location), out var found) && found.DefaultCursor != null)
+                    cursor = found.DefaultCursor;
+                this.Cursor = cursor;
+            }
+        }
+        int IDxDataFormV2.DeviceDpi { get { return this.DeviceDpi; } }
+
+        #region Testovací prvky
 
         private void InitializeSampleControls()
         {
@@ -293,15 +359,15 @@ namespace Noris.Clients.Win.Components.AsolDX
         private DxTextEdit _TextBox;
         private DxCheckEdit _CheckBox;
 
-        private void InitializeItems()
+        public void CreateSampleItems(string[] texts, int rowCount)
         {
-            _Items = new List<DxDataFormItemV2>();
-            _VisibleItems = new List<DxDataFormItemV2>();
-            _ContentPadding = new Padding(0);
+            _Items.Clear();
+            Random random = new Random();
+            int textsCount = texts.Length;
 
             string text;
             int[] widths = new int[] { 80, 150, 80, 40, 100, 120, 160, 40, 120 };
-            int count = 50;
+            int count = rowCount;
             int y = 80;
             int maxX = 0;
             for (int r = 0; r < count; r++)
@@ -312,7 +378,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 x += 80;
                 foreach (int width in widths)
                 {
-                    text = $"Hodnota {width}";
+                    text = texts[random.Next(textsCount)];
                     _Items.Add(new DxDataFormItemV2(this, DataFormItemType.TextBox, text) { DesignBounds = new Rectangle(x, y, width, 20) });
                     x += width + 3;
                 }
@@ -320,56 +386,39 @@ namespace Noris.Clients.Win.Components.AsolDX
                 y += 23;
             }
 
-            this.ContentTotalSize = new Size(maxX + 12, y + 12);
-
-            //_Items.Add(new DxDataFormItemV2(this, DataFormItemType.Label, "Popisek 2") { DesignBounds = new Rectangle(20, 82, 70, 18) });
-            //_Items.Add(new DxDataFormItemV2(this, DataFormItemType.Label, "Popisek 3") { DesignBounds = new Rectangle(20, 112, 70, 18) });
-            //_Items.Add(new DxDataFormItemV2(this, DataFormItemType.Label, "Popisek 4") { DesignBounds = new Rectangle(20, 142, 70, 18) });
-
-            //_Items.Add(new DxDataFormItemV2(this, DataFormItemType.TextBox, "Pokus 2") { DesignBounds = new Rectangle(100, 80, 80, 20) });
-            //_Items.Add(new DxDataFormItemV2(this, DataFormItemType.TextBox, "Pokus 3") { DesignBounds = new Rectangle(100, 110, 80, 20) });
-            //_Items.Add(new DxDataFormItemV2(this, DataFormItemType.TextBox, "Pokus 4") { DesignBounds = new Rectangle(100, 140, 80, 20) });
-            //_Items.Add(new DxDataFormItemV2(this, DataFormItemType.TextBox, "Pokus 5") { DesignBounds = new Rectangle(20, 170, 290, 20) });
-
-            //_Items.Add(new DxDataFormItemV2(this, DataFormItemType.CheckBox, "Předvolba 2") { DesignBounds = new Rectangle(210, 80, 100, 20) });
-            //_Items.Add(new DxDataFormItemV2(this, DataFormItemType.CheckBox, "Předvolba 3") { DesignBounds = new Rectangle(210, 110, 100, 20) });
-            //_Items.Add(new DxDataFormItemV2(this, DataFormItemType.CheckBox, "Předvolba 4") { DesignBounds = new Rectangle(210, 140, 100, 20) });
+            Refresh(RefreshParts.RecalculateContentTotalSize | RefreshParts.ReloadVisibleItems | RefreshParts.InvalidateCache);
         }
+        #endregion
+        #region Refresh
         /// <summary>
-        /// Okraje kolem vlastních prvků
+        /// Provede refresh daných částí
         /// </summary>
-        public Padding ContentPadding { get { return _ContentPadding; } set { _ContentPadding = value; RecalculateContentTotalSize(); InvalidateContent(); } }
-        private Padding _ContentPadding;
-        /// <summary>
-        /// Počet prvků
-        /// </summary>
-        public int ItemsCount { get { return _Items.Count; } }
-        public DxDataFormItemV2[] Items { get { return _Items.ToArray(); } }
-        private List<DxDataFormItemV2> _Items;
-        private List<DxDataFormItemV2> _VisibleItems;
-        /// <summary>
-        /// Souhrnná souřadnice všech prvků v <see cref="Items"/>
-        /// </summary>
-        public Rectangle? ItemsSummaryBounds { get { return DrawingExtensions.SummaryRectangle(_Items.Select(i => (Rectangle?)i.CurrentBounds)); } }
+        /// <param name="refreshParts"></param>
+        public void Refresh(RefreshParts refreshParts)
+        {
+            bool isRecalc = refreshParts.HasFlag(RefreshParts.RecalculateContentTotalSize);
+            bool isVisibl = refreshParts.HasFlag(RefreshParts.ReloadVisibleItems);
+            if (isRecalc && isVisibl)                                                    // Pokud jsou oba požadavky společně,
+                this.RecalculateContentAndVisibleItems();                                //  pak provedu specifickou metodu, která enumeruje prvky jen jedenkrát
+            else if (isRecalc)
+                this.RecalculateContentTotalSize();                                      // Anebo jednoúčelová metoda
+            else if (isVisibl)
+                this.PrepareVisibleItems();                                              // Anebo jiná jednoúčelová metoda
+
+            if (refreshParts.HasFlag(RefreshParts.InvalidateCache))
+                this.InvalidateImageCache();
+
+            if (refreshParts.HasFlag(RefreshParts.InvalidateControl))
+                this.ContentControl.Invalidate();
+        }
         /// <summary>
         /// Je vyvoláno po změně DPI, po změně Zoomu a po změně skinu. Volá se po přepočtu layoutu.
         /// Může vést k invalidaci interních dat v <see cref="DxScrollableContent.ContentControl"/>.
         /// </summary>
         protected override void OnInvalidateContentAfter()
         {
-            this.RecalculateContentTotalSize();
-            this.InvalidateCache();
-            this.InvalidateContent();
-        }
-        /// <summary>
-        /// Podle aktuálního seznamu prvků a jejich velikostí určí sumární velikost obsahu.
-        /// Za poslední prvek přidává okraj definovaný v 
-        /// </summary>
-        protected void RecalculateContentTotalSize()
-        {
-            var summaryBounds = ItemsSummaryBounds;
-            if (summaryBounds.HasValue)
-                ContentTotalSize = new Size(summaryBounds.Value.Right + 6, summaryBounds.Value.Bottom + 6);
+            base.OnInvalidateContentAfter();
+            Refresh(RefreshParts.RecalculateContentTotalSize | RefreshParts.ReloadVisibleItems | RefreshParts.InvalidateCache | RefreshParts.InvalidateControl);
         }
         /// <summary>
         /// Je voláno pokud dojde ke změně hodnoty <see cref="DxScrollableContent.ContentVirtualBounds"/>, před eventem <see cref="DxScrollableContent.ContentVirtualBoundsChanged"/>
@@ -377,16 +426,23 @@ namespace Noris.Clients.Win.Components.AsolDX
         protected override void OnContentVirtualBoundsChanged()
         {
             base.OnContentVirtualBoundsChanged();
-            this.InvalidateContent();
+            Refresh(RefreshParts.ReloadVisibleItems | RefreshParts.InvalidateControl);
         }
         /// <summary>
-        /// Invaliduje prvek <see cref="DxScrollableContent.ContentControl"/> = vyžádá si jeho překreslení.
-        /// Má se provádět po změnách souřadnic nebo po změnách prvků. 
+        /// Optimalizovaná metoda, která v jedné enumeraci vyhodnotí sumu souřadnic i viditelné prvky
         /// </summary>
-        private void InvalidateContent()
+        private void RecalculateContentAndVisibleItems()
+        {
+#warning TODO pro optimální běh doprogramovat metodu, která v jedné enumeraci vyhodnotí sumu souřadnic i viditelné prvky !!!
+            RecalculateContentTotalSize();
+            PrepareVisibleItems();
+        }
+        /// <summary>
+        /// Určí seznam aktuálně viditelných prvků
+        /// </summary>
+        private void PrepareVisibleItems()
         {
             this._VisibleItems = GetVisibleItems(this.ContentVirtualBounds);
-            this.ContentControl.Invalidate();
         }
         /// <summary>
         /// Vrátí List prvků z pole <see cref="Items"/>, které jsou alespoň zčásti viditelné v aktuálním prostoru
@@ -397,6 +453,48 @@ namespace Noris.Clients.Win.Components.AsolDX
             List<DxDataFormItemV2> visibleItems = _Items.Where(i => i.IsVisible && bounds.Contains(i.CurrentBounds, true)).ToList();
             return visibleItems;
         }
+        /// <summary>
+        /// Podle aktuálního seznamu prvků a jejich velikostí určí sumární velikost obsahu.
+        /// Za poslední prvek přidává okraj definovaný v 
+        /// </summary>
+        private void RecalculateContentTotalSize()
+        {
+            Rectangle summaryBounds = ItemsSummaryBounds ?? Rectangle.Empty;
+            var padding = this.ContentPadding;
+            int w = padding.Left + summaryBounds.Right + padding.Right;
+            int h = padding.Top + summaryBounds.Bottom + padding.Bottom;
+            ContentTotalSize = new Size(w, h);
+        }
+        /// <summary>
+        /// Položky pro refresh
+        /// </summary>
+        [Flags]
+        public enum RefreshParts
+        {
+            /// <summary>
+            /// Nic
+            /// </summary>
+            None = 0,
+            /// <summary>
+            /// Přepočítat celkovou velikost obsahu
+            /// </summary>
+            RecalculateContentTotalSize = 0x0001,
+            /// <summary>
+            /// Určit aktuálně viditelné prvky
+            /// </summary>
+            ReloadVisibleItems = 0x0004,
+            /// <summary>
+            /// Resetovat cache předvykreslených controlů
+            /// </summary>
+            InvalidateCache = 0x0010,
+            /// <summary>
+            /// Znovuvykreslit grafiku
+            /// </summary>
+            InvalidateControl = 0x0100
+        }
+        #endregion
+        #region Vykreslování a Bitmap cache
+        #region Vykreslení celého Contentu
         void IDxDataFormV2.OnPaintContent(PaintEventArgs e)
         {
             if (_PaintingItems) return;
@@ -466,56 +564,36 @@ namespace Noris.Clients.Win.Components.AsolDX
         private bool _PaintingItems = false;
         private int _PaintingPerformaceTestCount;
         private bool _PaintingPerformaceForceRefresh;
-        protected override void OnMouseMove(MouseEventArgs e)
+
+        #endregion
+        #region Fyzické controly - tvorba, správa, vykreslení bitmapy skrze control
+        private Control GetControl(DataFormItemType itemType, DxDataFormControlMode mode)
         {
-            base.OnMouseMove(e);
-            if (e.Button == MouseButtons.None)
+            if (_DataFormControls == null) _DataFormControls = new Dictionary<DataFormItemType, Dictionary<DxDataFormControlMode, Control>>();
+            var dataFormControls = _DataFormControls;
+            Dictionary<DxDataFormControlMode, Control> modeControls;
+            if (!dataFormControls.TryGetValue(itemType, out modeControls))
             {
-                var cursor = Cursors.Default;
-                if (_VisibleItems.TryGetFirst(i => i.IsActivePoint(e.Location), out var found) && found.DefaultCursor != null)
-                    cursor = found.DefaultCursor;
-                this.Cursor = cursor;
+                modeControls = new Dictionary<DxDataFormControlMode, Control>();
+                dataFormControls.Add(itemType, modeControls);
             }
-        }
-        int IDxDataFormV2.DeviceDpi { get { return this.DeviceDpi; } }
+            Control control;
+            if (!modeControls.TryGetValue(mode, out control))
+            {
+                control = (itemType == DataFormItemType.Label ? (Control)new DxLabelControl() :
+                          (itemType == DataFormItemType.TextBox ? (Control)new DxTextEdit() :
+                          (itemType == DataFormItemType.CheckBox ? (Control)new DxCheckEdit() : (Control)null)));
 
-
-
-        #region Bitmap cache
-        /// <summary>
-        /// Zruší veškerý obsah z cache uložených Image <see cref="_ItemBitmapCache"/>, kde jsou uloženy obrázky pro jednotlivé ne-aktivní controly...
-        /// Je nutno volat po změně skinu nebo Zoomu.
-        /// </summary>
-        private void InvalidateCache()
-        {
-            _ItemBitmapCache = null;
-        }
-        /// <summary>
-        /// Najde a vrátí <see cref="Image"/> pro obsah daného prvku.
-        /// Obrázek hledá nejprve v cache, a pokud tam není pak jej vygeneruje a do cache uloží.
-        /// </summary>
-        /// <param name="item"></param>
-        /// <returns></returns>
-        private Image GetImage(DxDataFormItemV2 item)
-        {
-            if (_ItemBitmapCache == null) _ItemBitmapCache = new Dictionary<string, Image>();
-
-            string key = item.ContentKey;
-            if (key == null) return null;
-            if (_ItemBitmapCache.TryGetValue(key, out Image image)) return image;
-
-            image = CreateBitmapForItem(item);
-
-            lock (_ItemBitmapCache)
-            {   // Do cache přidám i image == null, tím ušetřím opakované vytváření / testování obrázku.
-                // Pro přidávání aplikuji lock(), i když tedy tahle činnost má probíhat jen v jednom threadu = GUI:
-                if (!_ItemBitmapCache.ContainsKey(key))
-                    _ItemBitmapCache.Add(key, image);
+                if (control != null)
+                {
+                    control.Location = new Point(5, 5);
+                    control.Visible = false;
+                    _ContentPanel.Controls.Add(control);
+                }
+                modeControls.Add(mode, control);
             }
-
-            return image;
+            return control;
         }
-        private Dictionary<string, Image> _ItemBitmapCache;
         private Image CreateBitmapForItem(DxDataFormItemV2 item)
         {
             /*   Časomíra:
@@ -565,47 +643,94 @@ namespace Noris.Clients.Win.Components.AsolDX
             //}
             return image;
         }
-        private Control GetControl(DataFormItemType itemType, DxDataFormControlMode mode)
-        {
-            if (_DataFormControls == null) _DataFormControls = new Dictionary<DataFormItemType, Dictionary<DxDataFormControlMode, Control>>();
-            var dataFormControls = _DataFormControls;
-            Dictionary<DxDataFormControlMode, Control> modeControls;
-            if (!dataFormControls.TryGetValue(itemType, out modeControls))
-            {
-                modeControls = new Dictionary<DxDataFormControlMode, Control>();
-                dataFormControls.Add(itemType, modeControls);
-            }
-            Control control;
-            if (!modeControls.TryGetValue(mode, out control))
-            {
-                control = (itemType == DataFormItemType.Label ? (Control)new DxLabelControl() :
-                          (itemType == DataFormItemType.TextBox ? (Control)new DxTextEdit() :
-                          (itemType == DataFormItemType.CheckBox ? (Control)new DxCheckEdit() : (Control)null)));
 
-                if (control != null)
-                {
-                    control.Location = new Point(5, 5);
-                    control.Visible = false;
-                    _ContentPanel.Controls.Add(control);
-                }
-                modeControls.Add(mode, control);
-            }
-            return control;
-        }
         private Dictionary<DataFormItemType, Dictionary<DxDataFormControlMode, Control>> _DataFormControls;
-        private void ResetImage(DxDataFormItemV2 item)
+        #endregion
+        #region Bitmap cache
+        /// <summary>
+        /// Najde a vrátí <see cref="Image"/> pro obsah daného prvku.
+        /// Obrázek hledá nejprve v cache, a pokud tam není pak jej vygeneruje a do cache uloží.
+        /// </summary>
+        /// <param name="item"></param>
+        /// <returns></returns>
+        private Image GetImage(DxDataFormItemV2 item)
         {
-            if (_ItemBitmapCache == null) return;
+            if (ImageCache == null) ImageCache = new Dictionary<string, ImageCacheItem>();
+
+            string key = item.ContentKey;
+            if (key == null) return null;
+            if (ImageCache.TryGetValue(key, out ImageCacheItem imageInfo))
+            {
+                imageInfo.AddHit();
+                return imageInfo.Image;
+            }
+
+            Image image = CreateBitmapForItem(item);
+
+            lock (ImageCache)
+            {   // Do cache přidám i image == null, tím ušetřím opakované vytváření / testování obrázku.
+                // Pro přidávání aplikuji lock(), i když tedy tahle činnost má probíhat jen v jednom threadu = GUI:
+                if (!ImageCache.ContainsKey(key))
+                {
+                    CleanImageCache();
+                    ImageCache.Add(key, new ImageCacheItem(image));
+                }
+            }
+
+            return image;
+        }
+        private void CleanImageCache()
+        { }
+        /// <summary>
+        /// Zruší veškerý obsah z cache uložených Image <see cref="ImageCache"/>, kde jsou uloženy obrázky pro jednotlivé ne-aktivní controly...
+        /// Je nutno volat po změně skinu nebo Zoomu.
+        /// </summary>
+        private void InvalidateImageCache()
+        {
+            ImageCache = null;
+        }
+        /// <summary>
+        /// Zruší informaci v cache uložených Image pro jeden prvek
+        /// </summary>
+        /// <param name="item"></param>
+        private void InvalidateImageCache(DxDataFormItemV2 item)
+        {
+            if (ImageCache == null) return;
 
             string key = item.ContentKey;
             if (key == null) return;
 
-            lock (_ItemBitmapCache)
+            lock (ImageCache)
             {
-                if (_ItemBitmapCache.ContainsKey(key))
-                    _ItemBitmapCache.Remove(key);
+                if (ImageCache.ContainsKey(key))
+                    ImageCache.Remove(key);
             }
         }
+        private Dictionary<string, ImageCacheItem> ImageCache;
+        private class ImageCacheItem
+        {
+            public ImageCacheItem(Image image)
+            {
+                this.Image = image;
+                this.Length = 0;
+                if (image != null)
+                {
+                    var size = image.Size;
+                    this.Length = size.Width * size.Height;
+                }
+                this.HitCount = 1L;
+
+            }
+
+            public Image Image { get; private set; }
+            public int Length { get; private set; }
+            public long HitCount { get; private set; }
+            /// <summary>
+            /// Přidá jednu trefu v použití prvku
+            /// </summary>
+            public void AddHit() { HitCount++; }
+        }
+        #endregion
         #endregion
         public void TestPerformance(int count, bool forceRefresh)
         {
