@@ -3234,6 +3234,21 @@ namespace Noris.Clients.Win.Components.AsolDX
                     control.Location = newBounds.Location;
             }
         }
+        /// <summary>
+        /// Do this controlu vloží zadanou velikost, pokud je změněna.
+        /// </summary>
+        /// <param name="control"></param>
+        /// <param name="newSize"></param>
+        public static void SetSize(this Control control, Size newSize)
+        {
+            if (control != null)
+            {
+                var oldSize = control.Size;
+                bool equalSize = (newSize == oldSize);
+                if (!equalSize)
+                    control.Size = newSize;
+            }
+        }
         #endregion
         #region Invoke to GUI: run, get, set
         /// <summary>
@@ -5087,47 +5102,35 @@ namespace Noris.Clients.Win.Components.AsolDX
             return d;
         }
         /// <summary>
-        /// Vrací Rectangle, který je souhrnem všech zadaných Rectangle.
+        /// Vrací <see cref="Rectangle"/>, který je souhrnem všech <see cref="Rectangle"/>.
         /// Akceptuje i neviditelné Rectangle (který má Width nebo Height nula nebo záporné), i z nich střádá jejich souřadnice.
         /// </summary>
         /// <param name="items"></param>
         /// <returns></returns>
-        public static Rectangle SummaryRectangle(params Rectangle[] items)
-        {
-            return _SummaryRectangle(items as IEnumerable<Rectangle>, false);
-        }
+        public static Rectangle SummaryRectangle(params Rectangle[] items) { return _SummaryRectangle(items as IEnumerable<Rectangle>, false); }
         /// <summary>
-        /// Vrací Rectangle, který je souhrnem viditelných Rectangle.
+        /// Vrací <see cref="Rectangle"/>, který je souhrnem těch <see cref="Rectangle"/>, které jsou viditelné.
         /// Viditelný = ten který má Width a Height kladné.
         /// </summary>
         /// <param name="items"></param>
         /// <returns></returns>
-        public static Rectangle SummaryVisibleRectangle(params Rectangle[] items)
-        {
-            return _SummaryRectangle(items as IEnumerable<Rectangle>, true);
-        }
+        public static Rectangle SummaryVisibleRectangle(params Rectangle[] items) { return _SummaryRectangle(items as IEnumerable<Rectangle>, true); }
         /// <summary>
-        /// Vrací RectangleF, který je souhrnem všech zadaných Rectangle.
+        /// Vrací <see cref="Rectangle"/>, který je souhrnem všech <see cref="Rectangle"/>.
         /// Akceptuje i neviditelné Rectangle (který má Width nebo Height nula nebo záporné), i z nich střádá jejich souřadnice.
         /// </summary>
         /// <param name="items"></param>
         /// <returns></returns>
-        public static Rectangle SummaryRectangle(IEnumerable<Rectangle> items)
-        {
-            return _SummaryRectangle(items as IEnumerable<Rectangle>, false);
-        }
+        public static Rectangle SummaryRectangle(IEnumerable<Rectangle> items) { return _SummaryRectangle(items as IEnumerable<Rectangle>, false); }
         /// <summary>
-        /// Vrací RectangleF, který je souhrnem viditelných Rectangle.
+        /// Vrací <see cref="Rectangle"/>, který je souhrnem těch <see cref="Rectangle"/>, které jsou viditelné.
         /// Viditelný = ten který má Width a Height kladné.
         /// </summary>
         /// <param name="items"></param>
         /// <returns></returns>
-        public static Rectangle SummaryVisibleRectangle(IEnumerable<Rectangle> items)
-        {
-            return _SummaryRectangle(items as IEnumerable<Rectangle>, true);
-        }
+        public static Rectangle SummaryVisibleRectangle(IEnumerable<Rectangle> items) { return _SummaryRectangle(items as IEnumerable<Rectangle>, true); }
         /// <summary>
-        /// Vrací RectangleF, který je souhrnem zadaných Rectangle.
+        /// Vrací <see cref="Rectangle"/>, který je souhrnem zadaných <see cref="Rectangle"/>.
         /// </summary>
         /// <param name="items"></param>
         /// <param name="onlyVisible"></param>
@@ -5162,11 +5165,36 @@ namespace Noris.Clients.Win.Components.AsolDX
             return Rectangle.FromLTRB(l, t, r, b);
         }
         /// <summary>
-        /// Vrací Rectangle, který je souhrnem všech zadaných Rectangle.
+        /// Vrací <see cref="Rectangle"/>?, který je souhrnem všech zadaných <see cref="Rectangle"/>?, které nejsou null.
         /// </summary>
         /// <param name="items"></param>
         /// <returns></returns>
-        public static Rectangle? SummaryRectangle(params Rectangle?[] items)
+        public static Rectangle? SummaryRectangle(params Rectangle?[] items) { return _SummaryRectangle(items, false); }
+        /// <summary>
+        /// Vrací <see cref="Rectangle"/>?, který je souhrnem všech zadaných <see cref="Rectangle"/>?, které nejsou null a mají Width i Height kladné.
+        /// </summary>
+        /// <param name="items"></param>
+        /// <returns></returns>
+        public static Rectangle? SummaryVisibleRectangle(params Rectangle?[] items) { return _SummaryRectangle(items, true); }
+        /// <summary>
+        /// Vrací <see cref="Rectangle"/>?, který je souhrnem všech zadaných <see cref="Rectangle"/>?, které nejsou null.
+        /// </summary>
+        /// <param name="items"></param>
+        /// <returns></returns>
+        public static Rectangle? SummaryRectangle(IEnumerable<Rectangle?> items) { return _SummaryRectangle(items, false); }
+        /// <summary>
+        /// Vrací <see cref="Rectangle"/>?, který je souhrnem všech zadaných <see cref="Rectangle"/>?, které nejsou null a mají Width i Height kladné.
+        /// </summary>
+        /// <param name="items"></param>
+        /// <returns></returns>
+        public static Rectangle? SummaryVisibleRectangle(IEnumerable<Rectangle?> items) { return _SummaryRectangle(items, true); }
+        /// <summary>
+        /// Vrací <see cref="Rectangle"/>?, který je souhrnem všech zadaných <see cref="Rectangle"/>?.
+        /// </summary>
+        /// <param name="items"></param>
+        /// <param name="onlyVisible"></param>
+        /// <returns></returns>
+        private static Rectangle? _SummaryRectangle(IEnumerable<Rectangle?> items, bool onlyVisible)
         {
             int l = 0;
             int t = 0;
@@ -5178,6 +5206,8 @@ namespace Noris.Clients.Win.Components.AsolDX
                 if (itemN.HasValue)
                 {
                     Rectangle item = itemN.Value;
+                    if (onlyVisible && (item.Width <= 0 || item.Height <= 0)) continue;
+
                     if (empty)
                     {
                         l = item.Left;
@@ -5198,7 +5228,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             return (!empty ? (Rectangle?)Rectangle.FromLTRB(l, t, r, b) : (Rectangle?)null);
         }
         /// <summary>
-        /// Vrací RectangleF, který je souhrnem všech zadaných Rectangle.
+        /// Vrací <see cref="RectangleF"/>, který je souhrnem všech zadaných <see cref="RectangleF"/>.
         /// </summary>
         /// <param name="items"></param>
         /// <returns></returns>
@@ -5633,6 +5663,46 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (y < dy) y = dy;
 
             return new PointF(x, y);
+        }
+        /// <summary>
+        /// Vrátí true, pokud dané souřadnice <paramref name="testBounds"/> jsou zcela nebo zčásti viditelné v this prostoru.
+        /// </summary>
+        /// <param name="bounds"></param>
+        /// <param name="testBounds"></param>
+        /// <param name="partial"></param>
+        /// <returns></returns>
+        public static bool Contains(this Rectangle bounds, Rectangle testBounds, bool partial)
+        {
+            if (!Contains(bounds.Left, bounds.Right, testBounds.Left, testBounds.Right, partial)) return false;
+            if (!Contains(bounds.Top, bounds.Bottom, testBounds.Top, testBounds.Bottom, partial)) return false;
+            return true;
+        }
+        /// <summary>
+        /// Vrací true, pokud daný rozsah area (<paramref name="areaBegin"/> až <paramref name="areaEnd"/>) 
+        /// plně nebo částečně (<paramref name="partial"/>)
+        /// obsahuje daný rozsah test (<paramref name="testBegin"/> až <paramref name="testEnd"/>).
+        /// </summary>
+        /// <param name="areaBegin"></param>
+        /// <param name="areaEnd"></param>
+        /// <param name="testBegin"></param>
+        /// <param name="testEnd"></param>
+        /// <param name="partial"></param>
+        /// <returns></returns>
+        private static bool Contains(int areaBegin, int areaEnd, int testBegin, int testEnd, bool partial)
+        {
+            int compare(int a, int b) { return (a < b ? -1 : (a > b ? 1 : 0)); }         // anonymní metoda
+
+            int areaC = compare(areaEnd, areaBegin);                 // +1 když area je kladné, 0 když nulové, -1 když záporné
+            int testC = compare(testEnd, testBegin);                 // +1 když test je kladné, 0 když nulové, -1 když záporné
+            int beginC = compare(testBegin, areaBegin);              // +1 když testBegin je větší než areaBegin, 0 když jsou shodné, -1 když testBegin je menší než areaBegin
+            int endC = compare(testEnd, areaEnd);                    // +1 když testEnd je větší než areaEnd, 0 když jsou shodné, -1 když testEnd je menší než areaEnd
+
+            if (partial)                                                       // Částečná viditelnost:
+                return ((areaBegin < areaEnd && testBegin < testEnd) &&        //   Oblasti musí mít kladnou délku, a:
+                       !(testEnd <= areaBegin || testBegin >= areaEnd));       //   pokud Test končí dřív, než začne Area, anebo Test začíná později než končí Area, pak Contains = false = nic není viditelné
+            else                                                               // Úplná viditelnost:
+                return ((areaBegin < areaEnd && testBegin < testEnd) &&        //   Oblasti musí mít kladnou délku, a:
+                        (testBegin >= areaBegin && testEnd <= areaEnd));       //   test musí být zcela uvnitř area (test musí začínat v/za začátkem area, a současně musí končit před/v konci area)
         }
         #endregion
         #region Rectangle: GetBorders

@@ -1911,6 +1911,12 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// <summary>
     /// Panel, který v sobě hostuje virtuální control <see cref="ContentControl"/>
     /// a dovoluje uživateli pomocí scrollbarů posouvat jeho virtuální obsah.
+    /// <para/>
+    /// Rozdíly od standardního <see cref="DxAutoScrollPanelControl"/> panelu:
+    /// Tato třída (<see cref="DxScrollableContent"/>) dává prostor pro umístění uživatelského controlu do <see cref="ContentControl"/>, 
+    /// kterému pak udržuje maximální možnou velikost v rámci své velikosti [mínus potřebné scrollbary].
+    /// Eviduje se zde virtuální celkovou velikost uživatelského controlu v <see cref="ContentTotalSize"/> a pro tuto velikost zajišťuje ScrollBary, 
+    /// a s jejich pomocí řídí virtuální zobrazený prostor v <see cref="ContentVirtualBounds"/> (plus event <see cref="ContentVirtualBoundsChanged"/>).
     /// </summary>
     public class DxScrollableContent : DxPanelControl
     {
@@ -1929,14 +1935,15 @@ namespace Noris.Clients.Win.Components.AsolDX
             _HScrollBarVisible = false;
 
             _VScrollBar = new DxVScrollBar() { Visible = false, Minimum = 0, SmallChange = 40 };
-            _VScrollBar.ValueChanged += _ScrollBar_ValueChanged;
+            _VScrollBar.ValueChanged += ScrollBar_ValueChanged;
+            _VScrollBar.MouseWheel += _VScrollBar_MouseWheel;
             Controls.Add(_VScrollBar);
 
             _HScrollBar = new DxHScrollBar() { Visible = false, Minimum = 0, SmallChange = 80 };
-            _HScrollBar.ValueChanged += _ScrollBar_ValueChanged;
+            _HScrollBar.ValueChanged += ScrollBar_ValueChanged;
+            _HScrollBar.MouseWheel += _HScrollBar_MouseWheel;
             Controls.Add(_HScrollBar);
         }
-
         private SWF.Control _ContentControl;
         private DxVScrollBar _VScrollBar;
         private bool _VScrollBarVisible;
@@ -1967,6 +1974,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 {
                     if (this.Controls.Contains(contentControl))
                         this.Controls.Remove(contentControl);
+                    contentControl.MouseWheel -= ContentControl_MouseWheel;
                     _ContentControl = null;
                 }
                 contentControl = value;
@@ -1974,10 +1982,15 @@ namespace Noris.Clients.Win.Components.AsolDX
                 {
                     this.Controls.Add(contentControl);
                     _ContentControl = contentControl;
+                    contentControl.MouseWheel += ContentControl_MouseWheel;
                     DoLayoutContent();
                 }
             }
         }
+        /// <summary>
+        /// Aktuální viditelná velikost obsahu
+        /// </summary>
+        public Size ContentVisualSize { get { return _ContentVisualSize; } }
         /// <summary>
         /// Celková (virtuální) velikost obsahu. Na tuto plochu jsou dimenzovány ScrollBary a tato plocha je posouvána.
         /// </summary>
@@ -2129,13 +2142,38 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.DoLayoutContent();
         }
         /// <summary>
+        /// OnZoomChanged
+        /// </summary>
+        protected override void OnZoomChanged()
+        {
+            base.OnZoomChanged();
+            DoLayoutContent();
+            OnInvalidateContentAfter();
+        }
+        /// <summary>
         /// OnStyleChanged
         /// </summary>
         protected override void OnStyleChanged()
         {
             base.OnStyleChanged();
             DoLayoutContent();
+            OnInvalidateContentAfter();
         }
+        /// <summary>
+        /// OnDpiChangedAfterParent
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void OnDpiChangedAfterParent(EventArgs e)
+        {
+            base.OnDpiChangedAfterParent(e);
+            DoLayoutContent();
+            OnInvalidateContentAfter();
+        }
+        /// <summary>
+        /// Je vyvoláno po změně DPI, po změně Zoomu a po změně skinu. Volá se po přepočtu layoutu.
+        /// Může vést k invalidaci interních dat v <see cref="DxScrollableContent.ContentControl"/>.
+        /// </summary>
+        protected virtual void OnInvalidateContentAfter() { }
         #endregion
         #region Výpočty virtuální souřadnice a reakce a interaktivní posuny
         /// <summary>
@@ -2195,7 +2233,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
         }
         /// <summary>
-        /// Je voláno pokud dojde ke změně hodnoty <see cref="ContentVirtualBounds"/>, před eventem <see cref="ContentVirtualBoundsChanged"/>
+        /// Je voláno pokud dojde ke změně hodnoty <see cref="DxScrollableContent.ContentVirtualBounds"/>, před eventem <see cref="DxScrollableContent.ContentVirtualBoundsChanged"/>
         /// </summary>
         protected virtual void OnContentVirtualBoundsChanged() { }
         /// <summary>
@@ -2203,10 +2241,54 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void _ScrollBar_ValueChanged(object sender, EventArgs e)
+        private void ScrollBar_ValueChanged(object sender, EventArgs e)
         {
             if (!_SuppressEvent)
                 ApplyScrollBarToVirtualLocation();
+        }
+        /// <summary>
+        /// Na controlu <see cref="ContentControl"/> bylo otočeno myškou
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void ContentControl_MouseWheel(object sender, SWF.MouseEventArgs e)
+        {
+            DevExpress.XtraEditors.ScrollBarBase scrollBar = (_VScrollBarVisible ? (DevExpress.XtraEditors.ScrollBarBase)_VScrollBar : (_HScrollBarVisible ? (DevExpress.XtraEditors.ScrollBarBase)_HScrollBar : null));
+            ContentControl_MouseWheel(scrollBar, e.Delta);
+        }
+        /// <summary>
+        /// Na controlu <see cref="_VScrollBar"/> bylo otočeno myškou
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _VScrollBar_MouseWheel(object sender, SWF.MouseEventArgs e)
+        {
+            ContentControl_MouseWheel(_VScrollBar, e.Delta);
+        }
+        /// <summary>
+        /// Na controlu <see cref="_HScrollBar"/> bylo otočeno myškou
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _HScrollBar_MouseWheel(object sender, SWF.MouseEventArgs e)
+        {
+            ContentControl_MouseWheel(_HScrollBar, e.Delta);
+        }
+        /// <summary>
+        /// Na daném scrollbaru bylo otočeno myškou
+        /// </summary>
+        /// <param name="scrollBar"></param>
+        /// <param name="delta"></param>
+        private void ContentControl_MouseWheel(DevExpress.XtraEditors.ScrollBarBase scrollBar, int delta)
+        {
+            if (scrollBar == null) return;
+            int diff = (delta < 0 ? 3 : (delta > 0 ? -3 : 0));
+            int value = scrollBar.Value;
+            int maxValue = scrollBar.Maximum - scrollBar.LargeChange + 1;
+            int newValue = value + diff * scrollBar.SmallChange;
+            newValue = (newValue < 0 ? 0 : (newValue > maxValue ? maxValue : newValue));
+            if (newValue != value)
+                scrollBar.Value = newValue;
         }
         /// <summary>
         /// Hodnoty ze ScrollBarů (pokud jsou viditelné) aplikuje do <see cref="SetVirtualLocation(Point)"/>
@@ -2937,7 +3019,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
     }
     #endregion
-    #region DataMenuItem a interface IMenuItem + IToolTipItem
+    #region DataMenuItem + DataTextItem, interface IMenuItem + ITextItem + IToolTipItem
     /// <summary>
     /// Definice prvku umístěného v Ribbonu nebo podpoložka prvku Ribbonu (položka menu / split ribbonu atd) nebo jako prvek ListBoxu nebo ComboBoxu
     /// </summary>

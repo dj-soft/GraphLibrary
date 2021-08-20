@@ -52,7 +52,7 @@ namespace TestDevExpress.Forms
 
             _DxTestPanel = DxComponent.CreateDxPanel(_DxMainSplit.Panel1, System.Windows.Forms.DockStyle.Fill, borderStyles: DevExpress.XtraEditors.Controls.BorderStyles.NoBorder);
             _DxTestPanel.SizeChanged += _DxMainPanel_SizeChanged;
-            DxComponent.CreateDxLabel(10, 10, 500, _DxTestPanel, "Zde bude DataForm", styleType: LabelStyleType.SubTitle);
+            _DxTitleLabel = DxComponent.CreateDxLabel(10, 10, 500, _DxTestPanel, "Zde bude DataForm", styleType: LabelStyleType.SubTitle);
 
             _DxLogMemoEdit = DxComponent.CreateDxMemoEdit(_DxMainSplit.Panel2, System.Windows.Forms.DockStyle.Fill, readOnly: true, tabStop: false);
 
@@ -72,6 +72,7 @@ namespace TestDevExpress.Forms
             _DoLayoutAnyDataForm();
         }
         private DxSplitContainerControl _DxMainSplit;
+        private DxLabelControl _DxTitleLabel;
         private DxPanelControl _DxTestPanel;
         private DxMemoEdit _DxLogMemoEdit;
         #endregion
@@ -223,7 +224,6 @@ namespace TestDevExpress.Forms
         }
         private void WinProcessReadAfterShown()
         {
-
             if (WinProcessInfoAfterShown == null)
                 WinProcessInfoAfterShown = DxComponent.WinProcessInfo.GetCurent();
             RefreshStatus();
@@ -320,7 +320,7 @@ namespace TestDevExpress.Forms
             _DxShowTimeStart = DateTime.Now;               // Určení času End a času Elapsed proběhne v DxDataForm_GotFocus
             _DxShowTimeSpan = null;
             DxDataFormV2 dataForm = new DxDataFormV2();
-            dataForm.ContentSize = new Size(1000, 600);
+            // dataForm.ContentTotalSize = new Size(1000, 600);
             dataForm.GotFocus += DxDataForm_GotFocus;
 
             _DxDataFormV2 = dataForm;
@@ -352,16 +352,19 @@ namespace TestDevExpress.Forms
             _DxShowTimeStart = null;
             _DxShowTimeSpan = null;
 
+            GCCollect();
+            WinProcessInfoAfterShown = DxComponent.WinProcessInfo.GetCurent();
+
             RefreshStatusCurrent();
         }
-
         private void _DoLayoutAnyDataForm()
         {
             var dataForm = _DxDataFormV2;
             if (dataForm != null)
             {
                 var clientSize = _DxTestPanel.ClientSize;
-                dataForm.Bounds = new System.Drawing.Rectangle(6, 32, clientSize.Width - 12, clientSize.Height - 38);
+                int y = _DxTitleLabel.Bounds.Bottom + 6;
+                dataForm.Bounds = new System.Drawing.Rectangle(6, y, clientSize.Width - 12, clientSize.Height - y - 6);
             }
         }
         private void DxDataForm_GotFocus(object sender, EventArgs e)

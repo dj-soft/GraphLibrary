@@ -50,7 +50,7 @@ namespace TestDevExpress.Forms
 
             _DxTestPanel = DxComponent.CreateDxPanel(_DxMainSplit.Panel1, System.Windows.Forms.DockStyle.Fill, borderStyles: DevExpress.XtraEditors.Controls.BorderStyles.NoBorder);
             _DxTestPanel.SizeChanged += _DxMainPanel_SizeChanged;
-            DxComponent.CreateDxLabel(10, 10, 500, _DxTestPanel, "Zde bude DataForm", styleType: LabelStyleType.SubTitle);
+            _DxTitleLabel = DxComponent.CreateDxLabel(10, 10, 500, _DxTestPanel, "Zde bude DataForm", styleType: LabelStyleType.SubTitle);
 
             _DxLogMemoEdit = DxComponent.CreateDxMemoEdit(_DxMainSplit.Panel2, System.Windows.Forms.DockStyle.Fill, readOnly: true, tabStop: false);
 
@@ -68,6 +68,7 @@ namespace TestDevExpress.Forms
         }
 
         private DxSplitContainerControl _DxMainSplit;
+        private DxLabelControl _DxTitleLabel;
         private DxPanelControl _DxTestPanel;
         private DxMemoEdit _DxLogMemoEdit;
         #endregion
@@ -438,11 +439,12 @@ namespace TestDevExpress.Forms
         }
         private void _DoLayoutAnyDataForm()
         {
-            var anyDataForm = _AnyDataForm;
-            if (anyDataForm != null)
+            var dataForm = _AnyDataForm;
+            if (dataForm != null)
             {
                 var clientSize = _DxTestPanel.ClientSize;
-                anyDataForm.Bounds = new System.Drawing.Rectangle(6, 32, clientSize.Width - 12, clientSize.Height - 38);
+                int y = _DxTitleLabel.Bounds.Bottom + 6;
+                dataForm.Bounds = new System.Drawing.Rectangle(6, y, clientSize.Width - 12, clientSize.Height - y - 6);
             }
         }
         private DxDataFormV1 _DxDataForm;
