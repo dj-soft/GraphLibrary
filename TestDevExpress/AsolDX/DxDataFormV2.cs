@@ -297,6 +297,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             _Items = new List<DxDataFormItemV2>();
             _VisibleItems = new List<DxDataFormItemV2>();
+            _ContentPadding = new Padding(0);
 
             string text;
             int[] widths = new int[] { 80, 150, 80, 40, 100, 120, 160, 40, 120 };
@@ -334,8 +335,14 @@ namespace Noris.Clients.Win.Components.AsolDX
             //_Items.Add(new DxDataFormItemV2(this, DataFormItemType.CheckBox, "Předvolba 3") { DesignBounds = new Rectangle(210, 110, 100, 20) });
             //_Items.Add(new DxDataFormItemV2(this, DataFormItemType.CheckBox, "Předvolba 4") { DesignBounds = new Rectangle(210, 140, 100, 20) });
         }
-
-
+        /// <summary>
+        /// Okraje kolem vlastních prvků
+        /// </summary>
+        public Padding ContentPadding { get { return _ContentPadding; } set { _ContentPadding = value; RecalculateContentTotalSize(); InvalidateContent(); } }
+        private Padding _ContentPadding;
+        /// <summary>
+        /// Počet prvků
+        /// </summary>
         public int ItemsCount { get { return _Items.Count; } }
         public DxDataFormItemV2[] Items { get { return _Items.ToArray(); } }
         private List<DxDataFormItemV2> _Items;
@@ -350,12 +357,19 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         protected override void OnInvalidateContentAfter()
         {
+            this.RecalculateContentTotalSize();
+            this.InvalidateCache();
+            this.InvalidateContent();
+        }
+        /// <summary>
+        /// Podle aktuálního seznamu prvků a jejich velikostí určí sumární velikost obsahu.
+        /// Za poslední prvek přidává okraj definovaný v 
+        /// </summary>
+        protected void RecalculateContentTotalSize()
+        {
             var summaryBounds = ItemsSummaryBounds;
             if (summaryBounds.HasValue)
                 ContentTotalSize = new Size(summaryBounds.Value.Right + 6, summaryBounds.Value.Bottom + 6);
-
-            this.InvalidateCache();
-            this.InvalidateContent();
         }
         /// <summary>
         /// Je voláno pokud dojde ke změně hodnoty <see cref="DxScrollableContent.ContentVirtualBounds"/>, před eventem <see cref="DxScrollableContent.ContentVirtualBoundsChanged"/>
