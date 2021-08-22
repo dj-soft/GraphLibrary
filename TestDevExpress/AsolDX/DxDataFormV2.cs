@@ -366,7 +366,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             int textsCount = texts.Length;
 
             string text;
-            int[] widths = new int[] { 80, 150, 80, 40, 100, 120, 160, 40, 120 };
+            int[] widths = new int[] { 80, 150, 80, 60, 100, 120, 160, 40, 120, 180, 80, 40, 60, 250 };
             int count = rowCount;
             int y = 80;
             int maxX = 0;
@@ -379,7 +379,13 @@ namespace Noris.Clients.Win.Components.AsolDX
                 foreach (int width in widths)
                 {
                     text = texts[random.Next(textsCount)];
-                    _Items.Add(new DxDataFormItemV2(this, DataFormItemType.TextBox, text) { DesignBounds = new Rectangle(x, y, width, 20) });
+                    int q = random.Next(100);
+                    DataFormItemType itemType = (q < 5 ? DataFormItemType.None :
+                                                (q < 10 ? DataFormItemType.CheckBox :
+                                                (q < 15 ? DataFormItemType.Button :
+                                                DataFormItemType.TextBox)));
+                    if (itemType != DataFormItemType.None)
+                        _Items.Add(new DxDataFormItemV2(this, itemType, text) { DesignBounds = new Rectangle(x, y, width, 20) });
                     x += width + 3;
                 }
                 maxX = x;
@@ -540,18 +546,18 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         private void PaintItem(DxDataFormItemV2 item, PaintEventArgs e, bool forceRefresh = false, Point? offset = null)
         {
-            var image = GetImage(item);
-
-            if (image != null)
+            using (var image = CreateImage(item))
             {
-                var origin = this.ContentVirtualLocation;
-                var bounds = item.CurrentBounds;
-                bool withOffset = (offset.HasValue && !offset.Value.IsEmpty);
-                Point location = bounds.Location.Sub(origin);
-                if (withOffset) location = location.Add(offset.Value);
-                e.Graphics.DrawImage(image, location);
+                if (image != null)
+                {
+                    var origin = this.ContentVirtualLocation;
+                    var bounds = item.CurrentBounds;
+                    bool withOffset = (offset.HasValue && !offset.Value.IsEmpty);
+                    Point location = bounds.Location.Sub(origin);
+                    if (withOffset) location = location.Add(offset.Value);
+                    e.Graphics.DrawImage(image, location);
+                }
             }
-
             //var bounds = this.CurrentBounds;
             //bool withOffset = (offset.HasValue && !offset.Value.IsEmpty);
             //if (_Image == null || forceRefresh)
@@ -582,7 +588,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 control = (itemType == DataFormItemType.Label ? (Control)new DxLabelControl() :
                           (itemType == DataFormItemType.TextBox ? (Control)new DxTextEdit() :
-                          (itemType == DataFormItemType.CheckBox ? (Control)new DxCheckEdit() : (Control)null)));
+                          (itemType == DataFormItemType.CheckBox ? (Control)new DxCheckEdit() :
+                          (itemType == DataFormItemType.Button ? (Control)new DxSimpleButton() : (Control)null))));
 
                 if (control != null)
                 {
@@ -653,32 +660,44 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="item"></param>
         /// <returns></returns>
-        private Image GetImage(DxDataFormItemV2 item)
+        private Image CreateImage(DxDataFormItemV2 item)
         {
             if (ImageCache == null) ImageCache = new Dictionary<string, ImageCacheItem>();
 
             string key = item.ContentKey;
             if (key == null) return null;
-            if (ImageCache.TryGetValue(key, out ImageCacheItem imageInfo))
+
+            ImageCacheItem imageInfo = null;
+            if (ImageCache.TryGetValue(key, out imageInfo))
             {
                 imageInfo.AddHit();
-                return imageInfo.Image;
             }
-
-            Image image = CreateBitmapForItem(item);
-
-            lock (ImageCache)
-            {   // Do cache přidám i image == null, tím ušetřím opakované vytváření / testování obrázku.
-                // Pro přidávání aplikuji lock(), i když tedy tahle činnost má probíhat jen v jednom threadu = GUI:
-                if (!ImageCache.ContainsKey(key))
+            else
+            {
+                using (Image image = CreateBitmapForItem(item))
                 {
-                    CleanImageCache();
-                    ImageCache.Add(key, new ImageCacheItem(image));
+                    lock (ImageCache)
+                    {
+                        if (ImageCache.TryGetValue(key, out imageInfo))
+                        {
+                            imageInfo.AddHit();
+                        }
+                        else
+                        {   // Do cache přidám i image == null, tím ušetřím opakované vytváření / testování obrázku.
+                            // Pro přidávání aplikuji lock(), i když tedy tahle činnost má probíhat jen v jednom threadu = GUI:
+                            CleanImageCache();
+                            imageInfo = new ImageCacheItem(image);
+                            ImageCache.Add(key, imageInfo);
+                        }
+                    }
                 }
             }
-
-            return image;
+            return imageInfo.CreateImage();
         }
+        /// <summary>
+        /// Před přidáním nového prvku do cache provede úklid zastaralých prvků v cache, podle potřeby.
+        /// Volá se za stavu, kdy cache <see cref="ImageCache"/> je locknutá.
+        /// </summary>
         private void CleanImageCache()
         { }
         /// <summary>
@@ -711,22 +730,23 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             public ImageCacheItem(Image image)
             {
-                this.Image = image;
-                this.Length = 0;
-                if (image != null)
+                using (System.IO.MemoryStream ms = new System.IO.MemoryStream())
                 {
-                    var size = image.Size;
-                    this.Length = size.Width * size.Height;
+                    image.Save(ms, System.Drawing.Imaging.ImageFormat.Png);
+                    _ImageContent = ms.ToArray();
                 }
                 this.HitCount = 1L;
-
             }
-
-            public Image Image { get; private set; }
-            public int Length { get; private set; }
+            private byte[] _ImageContent;
+            public Image CreateImage()
+            {
+                using (System.IO.MemoryStream ms = new System.IO.MemoryStream(_ImageContent))
+                    return Image.FromStream(ms);
+            }
+            public int Length { get { return _ImageContent.Length; } } 
             public long HitCount { get; private set; }
             /// <summary>
-            /// Přidá jednu trefu v použití prvku
+            /// Přidá jednu trefu v použití prvku (nápočet statistiky prvku)
             /// </summary>
             public void AddHit() { HitCount++; }
         }
