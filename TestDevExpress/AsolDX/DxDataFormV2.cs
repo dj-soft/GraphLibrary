@@ -269,6 +269,7 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             InitializeContentPanel();
             InitializeItems();
+            InitializePaint();
 
             InitializeSampleControls();
             // InitializeSampleItems();
@@ -501,40 +502,72 @@ namespace Noris.Clients.Win.Components.AsolDX
         #endregion
         #region Vykreslování a Bitmap cache
         #region Vykreslení celého Contentu
+        private void InitializePaint()
+        {
+            _PaintingItems = false;
+            _PaintLoop = 0L;
+        }
+        public void TestPerformance(int count, bool forceRefresh)
+        {
+            _PaintingPerformaceTestCount = count;
+            _PaintingPerformaceForceRefresh = forceRefresh;
+            this._ContentPanel.Invalidate();
+            Application.DoEvents();
+        }
         void IDxDataFormV2.OnPaintContent(PaintEventArgs e)
         {
             if (_PaintingItems) return;
-            var size = this.ContentVisualSize;
-            int count = (_PaintingPerformaceTestCount > 1 ? _PaintingPerformaceTestCount : 1);
-            bool forceRefresh = _PaintingPerformaceForceRefresh;
+
+            _PaintLoop++;
+            if (!_PaintingPerformaceForceRefresh && _PaintingPerformaceTestCount <= 1)
+                OnPaintContentStandard(e);
+            else
+                OnPaintContentPerformaceTest(e);
+
+        }
+        private void OnPaintContentStandard(PaintEventArgs e)
+        {
+            var startTime = DxComponent.LogTimeCurrent;
             try
             {
                 _PaintingItems = true;
-                if (count == 1 && !forceRefresh)
-                {   // Standard:
-                    _VisibleItems.ForEachExec(i => this.PaintItem(i, e));
-                }
-                else
-                {   // Performance test:
-                    int x = 0;
-                    int y = 0;
-                    Rectangle? sumBounds = ItemsSummaryBounds;
-                    int maxX = size.Width - (sumBounds?.Right ?? 0) - 12;
-                    int maxY = size.Height - (sumBounds?.Bottom ?? 0) - 12;
-                    while (count > 0)
+                _VisibleItems.ForEachExec(i => PaintItem(i, e));
+            }
+            finally
+            {
+                _PaintingItems = false;
+            }
+            DxComponent.LogAddLineTime($"DxDataFormV2 Paint Standard() Items: {_VisibleItems.Count}; Time: {DxComponent.LogTokenTimeMilisec}", startTime);
+        }
+        private void OnPaintContentPerformaceTest(PaintEventArgs e)
+        {
+            bool forceRefresh = _PaintingPerformaceForceRefresh;
+            int count = (_PaintingPerformaceTestCount > 1 ? _PaintingPerformaceTestCount : 1);
+            var size = this.ContentVisualSize;
+            var startTime = DxComponent.LogTimeCurrent;
+            try
+            {
+                _PaintingItems = true;
+                int x = 0;
+                int y = 0;
+                Rectangle? sumBounds = ItemsSummaryBounds;
+                int maxX = size.Width - (sumBounds?.Right ?? 0) - 12;
+                int maxY = size.Height - (sumBounds?.Bottom ?? 0) - 12;
+                while (count > 0)
+                {
+                    if (forceRefresh) ImageCache = null;
+
+                    Point offset = new Point(x, y);
+                    _VisibleItems.ForEachExec(i => PaintItem(i, e, offset));
+                    y += 7;
+                    if (y >= maxY)
                     {
-                        Point offset = new Point(x, y);
-                        _VisibleItems.ForEachExec(i => PaintItem(i, e, forceRefresh, offset));
-                        y += 12;
-                        if (y >= maxY)
-                        {
-                            y = 0;
-                            x += 36;
-                            if (x >= maxX)
-                                x = 0;
-                        }
-                        count--;
+                        y = 0;
+                        x += 36;
+                        if (x >= maxX)
+                            x = 0;
                     }
+                    count--;
                 }
             }
             finally
@@ -543,8 +576,15 @@ namespace Noris.Clients.Win.Components.AsolDX
                 _PaintingPerformaceTestCount = 1;
                 _PaintingPerformaceForceRefresh = false;
             }
+            DxComponent.LogAddLineTime($"DxDataFormV2 Paint PerformanceTest() Items: {_VisibleItems.Count}; Loops: {count}; Time: {DxComponent.LogTokenTimeMilisec}", startTime);
         }
-        private void PaintItem(DxDataFormItemV2 item, PaintEventArgs e, bool forceRefresh = false, Point? offset = null)
+        /// <summary>
+        /// Provede vykreslení jednoho daného prvku
+        /// </summary>
+        /// <param name="item"></param>
+        /// <param name="e"></param>
+        /// <param name="offset"></param>
+        private void PaintItem(DxDataFormItemV2 item, PaintEventArgs e, Point? offset = null)
         {
             using (var image = CreateImage(item))
             {
@@ -566,7 +606,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             //if (withOffset) location = location.Add(offset.Value);
             //if (_Image != null) e.Graphics.DrawImage(_Image, location);
         }
-
+        private long _PaintLoop;
         private bool _PaintingItems = false;
         private int _PaintingPerformaceTestCount;
         private bool _PaintingPerformaceForceRefresh;
@@ -752,13 +792,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         #endregion
         #endregion
-        public void TestPerformance(int count, bool forceRefresh)
-        {
-            _PaintingPerformaceTestCount = count;
-            _PaintingPerformaceForceRefresh = forceRefresh;
-            this._ContentPanel.Invalidate();
-            Application.DoEvents();
-        }
+        
     }
     public interface IDxDataFormV2
     {
