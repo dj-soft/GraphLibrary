@@ -220,7 +220,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (e.Button == MouseButtons.None)
             {
                 var cursor = Cursors.Default;
-                if (_Items.TryGetFirst(i => i.IsActivePoint(e.Location), out var found) && found.DefaultCursor != null)
+                if (_Items.TryGetFirst(i => i.IsVisibleOnPoint(e.Location), out var found) && found.DefaultCursor != null)
                     cursor = found.DefaultCursor;
                 this.Cursor = cursor;
             }
@@ -455,7 +455,21 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private void PrepareVisibleItems()
         {
+            // Z prvků, které jsou viditelné nyní, odstraním vizuální souřadnici:
+            //  některé prvky budou sice viditelné i nadále, ale budou překresleny a přitom dostanou platnou souřadnici,
+            //  a jiné prvky viditelné nebudou = těm je třeba zrušit viditelnou souřadnici (ale je zbytečné ji rušit všem prvkům v poli _Items):
+            if (this._VisibleItems != null)
+                this._VisibleItems.ForEachExec(i => i.VisibleBounds = null);
+
+            // Najdu a uložím soupis aktuálně viditelných prvků:
             this._VisibleItems = GetVisibleItems(this.ContentVirtualBounds);
+
+            // Po změně viditelných prvků je třeba provést MouseLeave = prvek pod myší už není ten, co býval:
+            this.MouseItemLeave();
+
+            // A zajistit, že po vykreslení prvků bude aktivován prvek, který se nachází pod myší:
+            // Až po vykreslení proto, že proces vykreslení určí aktuální viditelné souřadnice prvků!
+            this._AfterPaintSearchActiveItem = true;
         }
         /// <summary>
         /// Vrátí List prvků z pole <see cref="Items"/>, které jsou alespoň zčásti viditelné v aktuálním prostoru
@@ -512,7 +526,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             _CurrentFocusedItem = null;
             _CurrentOnMouseItem = null;
             this._ContentPanel.MouseMove += _ContentPanel_MouseMove;
-
+            this._ContentPanel.MouseDown += _ContentPanel_MouseDown;
         }
         /// <summary>
         /// Myš se pohybuje po Content panelu
@@ -524,13 +538,30 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (e.Button == MouseButtons.None)
                 PrepareItemForPoint(e.Location);
         }
+        /// <summary>
+        /// Myš klikla v Content panelu = nejspíš bychom měli zařídit přípravi prvku a předání focusu ondoň
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _ContentPanel_MouseDown(object sender, MouseEventArgs e)
+        {
+
+        }
+
+        private void PrepareItemForCurrentPoint()
+        {
+            Point absoluteLocation = Control.MousePosition;
+            Point relativeLocation = _ContentPanel.PointToClient(absoluteLocation);
+            PrepareItemForPoint(relativeLocation);
+        }
+
         private void PrepareItemForPoint(Point location)
         {
             if (_VisibleItems == null) return;
 
             DxDataFormItemV2 oldItem = _CurrentOnMouseItem;
             bool oldExists = (oldItem != null);
-            bool newExists = _VisibleItems.TryGetLast(i => i.IsActivePoint(location), out var newItem);
+            bool newExists = _VisibleItems.TryGetLast(i => i.IsVisibleOnPoint(location), out var newItem);
 
             bool isMouseLeave = (oldExists && (!newExists || (newExists && !Object.ReferenceEquals(oldItem, newItem))));
             if (isMouseLeave)
@@ -539,7 +570,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             bool isMouseEnter = (newExists && (!oldExists || (oldExists && !Object.ReferenceEquals(oldItem, newItem))));
             if (isMouseEnter)
                 MouseItemEnter(newItem);
-
         }
         private void MouseItemLeave()
         {
@@ -555,23 +585,34 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         private void MouseItemEnter(DxDataFormItemV2 item)
         {
-            var newControl = GetControl(item.ItemType, DxDataFormControlMode.HotMouse);
-            newControl.SetBounds(item.CurrentBounds);
-            newControl.Text = item.Text;
-            newControl.Enabled = true;
-            newControl.Visible = true;
+            if (item.VisibleBounds.HasValue)
+            {
+                var newControl = GetControl(item.ItemType, DxDataFormControlMode.HotMouse);
+                newControl.SetBounds(item.VisibleBounds.Value);
+                newControl.Text = item.Text;
+                newControl.Enabled = true;
+                newControl.Visible = true;
 
-            _CurrentOnMouseControl = newControl;
-            _CurrentOnMouseItem = item;
+                _CurrentOnMouseControl = newControl;
+                _CurrentOnMouseItem = item;
+            }
         }
         private DxDataFormItemV2 _CurrentFocusedItem;
+
+        /// <summary>
+        /// Vizuální control nacházející se nyní pod myší
+        /// </summary>
         private System.Windows.Forms.Control _CurrentOnMouseControl;
+        /// <summary>
+        /// Prvek nacházející se nyní pod myší
+        /// </summary>
         private DxDataFormItemV2 _CurrentOnMouseItem;
         #endregion
         #region Vykreslování a Bitmap cache
         #region Vykreslení celého Contentu
         private void InitializePaint()
         {
+            _AfterPaintSearchActiveItem = false;
             _PaintingItems = false;
             _PaintLoop = 0L;
         }
@@ -586,11 +627,16 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             if (_PaintingItems) return;
 
+            bool afterPaintSearchActiveItem = _AfterPaintSearchActiveItem;
+            _AfterPaintSearchActiveItem = false;
             _PaintLoop++;
             if (!_PaintingPerformaceForceRefresh && _PaintingPerformaceTestCount <= 1)
                 OnPaintContentStandard(e);
             else
                 OnPaintContentPerformaceTest(e);
+
+            if (afterPaintSearchActiveItem)
+                PrepareItemForCurrentPoint();
 
         }
         private void OnPaintContentStandard(PaintEventArgs e)
@@ -625,7 +671,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 {
                     if (forceRefresh) ImageCache = null;
 
-                    Point offset = new Point(x, y);
+                    Point? offset = null;                  // První smyčka má offset == null, bude tedy generovat VisibleBounds
                     _VisibleItems.ForEachExec(i => PaintItem(i, e, offset));
                     y += 7;
                     if (y >= maxY)
@@ -636,6 +682,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                             x = 0;
                     }
                     count--;
+                    offset = new Point(x, y);              // Další smyčky budou kreslit posunuté obrázky, ale nebudou ukládat VisibleBounds do prvků
                 }
             }
             finally
@@ -659,23 +706,17 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 if (image != null)
                 {
-                    var origin = this.ContentVirtualLocation;
-                    bool withOffset = (offset.HasValue && !offset.Value.IsEmpty);
-                    Point location = bounds.Location.Sub(origin);
-                    if (withOffset) location = location.Add(offset.Value);
+                    var visibleOrigin = this.ContentVirtualLocation;
+                    Point location = bounds.Location.Sub(visibleOrigin);
+                    if (offset.HasValue)
+                        location = location.Add(offset.Value);                      // když má offset hodnotu, pak kreslím "posunutý" obraz (jen pro testy), ale nejde o VisibleBounds
+                    else
+                        item.VisibleBounds = new Rectangle(location, bounds.Size);  // Hodnota offset = null: kreslím "platný obraz", takže si uložím vizuální souřadnici
                     e.Graphics.DrawImage(image, location);
                 }
             }
-            item.ActiveBounds = bounds;
-
-            //var bounds = this.CurrentBounds;
-            //bool withOffset = (offset.HasValue && !offset.Value.IsEmpty);
-            //if (_Image == null || forceRefresh)
-            //    _Image = CreateImageWithControl(bounds, !withOffset);
-            //Point location = bounds.Location;
-            //if (withOffset) location = location.Add(offset.Value);
-            //if (_Image != null) e.Graphics.DrawImage(_Image, location);
         }
+        private bool _AfterPaintSearchActiveItem;
         private long _PaintLoop;
         private bool _PaintingItems = false;
         private int _PaintingPerformaceTestCount;
@@ -898,6 +939,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
 
     }
+    /// <summary>
+    /// Třída reprezentující jeden každý vizuální prvek v <see cref="DxDataFormV2"/>.
+    /// </summary>
     public class DxDataFormItemV2 : DataTextItem
     {
         public DxDataFormItemV2(IDxDataFormV2 owner, DataFormItemType itemType, string text)
@@ -928,10 +972,16 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 var size = CurrentBounds.Size;
                 string text = Text ?? "";
-                string key = $"{size.Width}.{size.Height}.{__CurrentDpi}::{text}";
+                string key = $"{size.Width}.{size.Height}.{__CurrentDpi};{ItemType}::{text}";
                 return key;
             }
         }
+
+        #region Souřadnice designové, aktuální, viditelné
+        /// <summary>
+        /// Souřadnice designové, v logických koordinátech (kde bod {0,0} je absolutní počátek, bez posunu ScrollBarem).
+        /// Typicky se vztahují k 96 DPI.
+        /// </summary>
         public Rectangle DesignBounds 
         { 
             get { return __DesignBounds; } 
@@ -944,8 +994,19 @@ namespace Noris.Clients.Win.Components.AsolDX
                 __CurrentDpi = currentDpi;
             }
         }
+        /// <summary>
+        /// Souřadnice designové, v logických koordinátech (kde bod {0,0} je absolutní počátek, bez posunu ScrollBarem).
+        /// </summary>
         private Rectangle __DesignBounds;
+        /// <summary>
+        /// Hodnota DPI, pro kterou jsou určeny souřadnice <see cref="__DesignBounds"/>.
+        /// </summary>
         private int __DesignDpi;
+        /// <summary>
+        /// Aktuální logické koordináty - přepočtené z <see cref="DesignBounds"/> na aktuálně platné DPI.
+        /// Tato souřadnice není posunuta ScrollBarem. 
+        /// Posunutá vizuální souřadnice je v <see cref="VisibleBounds"/>.
+        /// </summary>
         public Rectangle CurrentBounds { get { this.CheckDesignBounds(); return __CurrentBounds.Value; } }
         /// <summary>
         /// Aktuální velikost prvku. Lze setovat (nezmění se umístění = <see cref="CurrentBounds"/>.Location).
@@ -962,11 +1023,17 @@ namespace Noris.Clients.Win.Components.AsolDX
                 __CurrentBounds = new Rectangle(__CurrentBounds.Value.Location, value);
             }
         }
+        /// <summary>
+        /// Úložiště pro <see cref="CurrentBounds"/>, po přepočtech DPI
+        /// </summary>
         private Rectangle? __CurrentBounds;
+        /// <summary>
+        /// Hodnota DPI, ke které jsou přepočteny souřadnice <see cref="CurrentBounds"/> a <see cref="VisibleBounds"/>.
+        /// </summary>
         private int __CurrentDpi;
-        public Rectangle ActiveBounds { get; set; }
-        public Cursor DefaultCursor { get; set; }
-
+        /// <summary>
+        /// Zajistí, že souřadnice <see cref="__CurrentBounds"/> budou platné k souřadnicím designovým a k hodnotám DPI designovým a aktuálním
+        /// </summary>
         private void CheckDesignBounds()
         {
             var ownerDpi = _Owner.DeviceDpi;
@@ -976,6 +1043,27 @@ namespace Noris.Clients.Win.Components.AsolDX
             __CurrentBounds = __DesignBounds.ConvertToDpi(designDpi, ownerDpi);
             __CurrentDpi = ownerDpi;
         }
+        /// <summary>
+        /// Fyzické pixelové souřadnice tohoto prvku na vizuálním controlu, kde se nyní tento prvek nachází.
+        /// Může být null, pak prvek není zobrazen.
+        /// Tuto hodnotu ukládá řídící třída v procesu kreslení jako reálné souřadnice, kam byl prvek vykreslen.
+        /// </summary>
+        public Rectangle? VisibleBounds { get; set; }
+        /// <summary>
+        /// Vrátí true, pokud this prvek má nastaveny viditelné souřadnice v <see cref="VisibleBounds"/> 
+        /// a pokud daný bod se nachází ve viditelné oblasti
+        /// </summary>
+        /// <param name="point"></param>
+        /// <returns></returns>
+        public bool IsVisibleOnPoint(Point point)
+        {
+            return (VisibleBounds.HasValue && VisibleBounds.Value.Contains(point));
+        }
+        #endregion
+
+
+        public Cursor DefaultCursor { get; set; }
+
 
         /*   Časomíra:
                         Získat control   Vložit Bounds    Vložit Text   Selection   DrawToBitmap   PaintImage      Čas mikrosekund
@@ -1014,9 +1102,5 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
 
 
-        public bool IsActivePoint(Point point)
-        {
-            return (ActiveBounds.Contains(point));
-        }
     }
 }
