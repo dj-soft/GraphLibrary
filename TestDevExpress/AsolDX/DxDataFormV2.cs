@@ -511,7 +511,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             _PaintingPerformaceTestCount = count;
             _PaintingPerformaceForceRefresh = forceRefresh;
-            this._ContentPanel.Invalidate();
+            this.Refresh(RefreshParts.InvalidateControl);
             Application.DoEvents();
         }
         void IDxDataFormV2.OnPaintContent(PaintEventArgs e)
