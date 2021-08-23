@@ -81,11 +81,7 @@ namespace TestDevExpress.Forms
         {
             _DxShowLog = true;
 
-            string imageStatusRefresh = "svgimages/xaf/action_refresh.svg";
-            string imageDataFormRemove = "svgimages/spreadsheet/removetablerows.svg";
-            string imageLogClear = "svgimages/spreadsheet/removetablerows.svg";
             // string imageAdd = "svgimages/icon%20builder/actions_addcircled.svg";
-            string imageTest = "svgimages/xaf/actiongroup_easytestrecorder.svg";
 
             List<DataRibbonPage> pages = new List<DataRibbonPage>();
             DataRibbonPage page;
@@ -97,6 +93,9 @@ namespace TestDevExpress.Forms
             group.Items.Add(ImagePickerForm.CreateRibbonButton());
             page.Groups.Add(group);
 
+            string imageStatusRefresh = "svgimages/xaf/action_refresh.svg";
+            string imageDataFormRemove = "svgimages/spreadsheet/removetablerows.svg";
+            string imageLogClear = "svgimages/spreadsheet/removetablerows.svg";
             group = new DataRibbonGroup() { GroupText = "ZÁKLADNÍ" };
             page.Groups.Add(group);
             group.Items.Add(new DataRibbonItem() { ItemId = "StatusRefresh", Text = "Refresh Status", ToolTipText = "Znovu načíst údaje o spotřebě systémových zdrojů do statusbaru", Image = imageStatusRefresh });
@@ -104,26 +103,26 @@ namespace TestDevExpress.Forms
             group.Items.Add(new DataRibbonItem() { ItemId = "LogClear", Text = "Clear Log", ToolTipText = "Smaže obsah logu vpravo", Image = imageLogClear, RibbonStyle = RibbonItemStyles.Large });
             group.Items.Add(new DataRibbonItem() { ItemId = "LogVisible", Text = "Show Log", ToolTipText = "Zobrazit log v pravé části hlavního okna.\r\nPOZOR: pokud je log stále zobrazený, pak veškeré logované změny jsou zatíženy časem refreshe textu Logu. \r\n Je vhodnější log zavřít, provést testy, a pak log otevřít a přečíst.", RibbonItemType = RibbonItemType.CheckBoxToggle, Checked = _DxShowLog, RibbonStyle = RibbonItemStyles.Large });
 
-            
+
+            string imageTest = "svgimages/xaf/actiongroup_easytestrecorder.svg";
+            group = new DataRibbonGroup() { GroupText = "VZORKY" };
+            page.Groups.Add(group);
+            group.Items.Add(new DataRibbonItem() { ItemId = "CreateSample1", Text = "Ukázka 1", Image = imageTest, Tag = "Sample1", Enabled = true });
+            group.Items.Add(new DataRibbonItem() { ItemId = "CreateSample2", Text = "Ukázka 2", Image = imageTest, Tag = "Sample2", Enabled = true });
+            // group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Sample.Sample3", Text = "Ukázka 3", Image = imageTest, Tag = "Sample3", Enabled = true });
+            // group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Sample.Sample4", Text = "Ukázka 4", Image = imageTest, Tag = "Sample4", Enabled = true });
+
+
             string imageTestRefresh = "svgimages/spreadsheet/refreshpivottable.svg";
             string imageTestRepaint = "svgimages/dashboards/striped.svg";
-
-
             group = new DataRibbonGroup() { GroupText = "TESTY VÝKONU" };
             page.Groups.Add(group);
             group.Items.Add(new DataRibbonItem() { ItemId = "Refresh1", Text = "Refresh 1", ToolTipText = "Provede kompletní refresh standardní", Image = imageTestRefresh });
-            group.Items.Add(new DataRibbonItem() { ItemId = "Refresh100", Text = "Refresh 100", ToolTipText = "Provede kompletní refresh pro 100x obsah", Image = imageTestRefresh });
-            group.Items.Add(new DataRibbonItem() { ItemId = "Refresh2000", Text = "Refresh  2000", ToolTipText = "Provede kompletní refresh pro 2000x obsah", Image = imageTestRefresh });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Refresh10", Text = "Refresh 10", ToolTipText = "Provede kompletní refresh pro 10x obsah", Image = imageTestRefresh });
+            // group.Items.Add(new DataRibbonItem() { ItemId = "Refresh2000", Text = "Refresh  2000", ToolTipText = "Provede kompletní refresh pro 2000x obsah", Image = imageTestRefresh });
             group.Items.Add(new DataRibbonItem() { ItemId = "Repaint1", Text = "Repaint 1", ToolTipText = "Provede pouze repaint standardní", Image = imageTestRepaint });
-            group.Items.Add(new DataRibbonItem() { ItemId = "Repaint100", Text = "Repaint 100", ToolTipText = "Provede pouze repaint pro 100x obsah", Image = imageTestRepaint });
-            group.Items.Add(new DataRibbonItem() { ItemId = "Repaint2000", Text = "Repaint 2000", ToolTipText = "Provede pouze repaint pro 2000x obsah", Image = imageTestRepaint });
-
-            group = new DataRibbonGroup() { GroupText = "VZORKY" };
-            page.Groups.Add(group);
-            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Sample.Sample1", Text = "Ukázka 1", Image = imageTest, Tag = "Sample1", Enabled = true });
-            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Sample.Sample2", Text = "Ukázka 2", Image = imageTest, Tag = "Sample2", Enabled = true });
-            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Sample.Sample3", Text = "Ukázka 3", Image = imageTest, Tag = "Sample3", Enabled = true });
-            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Sample.Sample4", Text = "Ukázka 4", Image = imageTest, Tag = "Sample4", Enabled = true });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Repaint10", Text = "Repaint 10", ToolTipText = "Provede pouze repaint pro 10x obsah", Image = imageTestRepaint });
+            // group.Items.Add(new DataRibbonItem() { ItemId = "Repaint2000", Text = "Repaint 2000", ToolTipText = "Provede pouze repaint pro 2000x obsah", Image = imageTestRepaint });
 
             this.DxRibbon.Clear();
             this.DxRibbon.AddPages(pages);
@@ -158,6 +157,9 @@ namespace TestDevExpress.Forms
                 case "Refresh1":
                     _TestPerformance(1, true);
                     break;
+                case "Refresh10":
+                    _TestPerformance(10, true);
+                    break;
                 case "Refresh100":
                     _TestPerformance(100, true);
                     break;
@@ -167,13 +169,21 @@ namespace TestDevExpress.Forms
                 case "Repaint1":
                     _TestPerformance(1, false);
                     break;
+                case "Repaint10":
+                    _TestPerformance(10, false);
+                    break;
                 case "Repaint100":
                     _TestPerformance(100, false);
                     break;
                 case "Repaint2000":
                     _TestPerformance(2000, false);
                     break;
-
+                case "CreateSample1":
+                    _AddDataFormSample(1);
+                    break;
+                case "CreateSample2":
+                    _AddDataFormSample(2);
+                    break;
                 default:
                     DxComponent.LogClear();
                     if (e.Item.Tag is DxDataFormTestDefinition sampleData)
@@ -184,7 +194,6 @@ namespace TestDevExpress.Forms
             }
         }
         #endregion
-
         #region Status - proměnné, Zobrazení spotřeby paměti
         /// <summary>
         /// Tvorba StatusBaru
@@ -280,8 +289,6 @@ namespace TestDevExpress.Forms
         private DevExpress.XtraBars.BarStaticItem _StatusItemTime;
         private DevExpress.XtraBars.BarStaticItem _StatusItemCurrent;
         #endregion
-
-
         #region DxDataFormV2
         private void _AddDataFormSampleData(DxDataFormTestDefinition sampleData)
         {
@@ -302,6 +309,44 @@ namespace TestDevExpress.Forms
             _DxDataFormV2.TestPerformance(count, forceRefresh);
             DxComponent.LogAddLineTime($"TestPerformance: Count: {totalCount}; Time: {DxComponent.LogTokenTimeMilisec}", sampleStartTime);
         }
+        private void _AddDataFormSample(int sampleId)
+        {
+            if (!(sampleId == 1 || sampleId == 2)) return;
+
+            string[] texts = Random.GetSentencesArray(1, 3, 120, 240, false);
+
+            _RemoveDataForms();
+
+            var sampleStartTime = DxComponent.LogTimeCurrent;
+            _DxShowTimeStart = DateTime.Now;               // Určení času End a času Elapsed proběhne v DxDataForm_GotFocus
+            _DxShowTimeSpan = null;
+            DxDataFormV2 dataForm = new DxDataFormV2();
+            dataForm.GotFocus += DxDataForm_GotFocus;
+
+            _DxDataFormV2 = dataForm;
+            _DoLayoutAnyDataForm();
+            DxComponent.LogAddLineTime($"Create DxDataFormV2: Time: {DxComponent.LogTokenTimeMilisec}", sampleStartTime);
+
+            var addStartTime = DxComponent.LogTimeCurrent;
+            switch (sampleId)
+            {
+                case 1:
+                    dataForm.CreateSampleItems(texts, 1, 60);
+                    break;
+                case 2:
+                    dataForm.CreateSampleItems(texts, 2, 2000);
+                    break;
+            }
+            _DxTestPanel.Controls.Add(dataForm);
+
+            _DoLayoutAnyDataForm();
+            dataForm.Focus();
+
+            RefreshStatusCurrent();
+
+            int count = dataForm.ItemsCount;
+            DxComponent.LogAddLineTime($"AddItems: Items.Count: {count}; Time: {DxComponent.LogTokenTimeMilisec}", sampleStartTime);
+        }
         private void _AddDataFormSampleName(string sampleName)
         {
             int sampleId = 0;
@@ -321,7 +366,7 @@ namespace TestDevExpress.Forms
             _DxShowTimeSpan = null;
             DxDataFormV2 dataForm = new DxDataFormV2();
             string[] texts = Random.GetSentencesArray(1, 3, 120, 240, false);
-            dataForm.CreateSampleItems(texts, 2000);
+            dataForm.CreateSampleItems(texts, 2, 2000);
             dataForm.GotFocus += DxDataForm_GotFocus;
 
             _DxDataFormV2 = dataForm;

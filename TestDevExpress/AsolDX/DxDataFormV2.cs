@@ -360,14 +360,26 @@ namespace Noris.Clients.Win.Components.AsolDX
         private DxTextEdit _TextBox;
         private DxCheckEdit _CheckBox;
 
-        public void CreateSampleItems(string[] texts, int rowCount)
+        public void CreateSampleItems(string[] texts, int sampleId, int rowCount)
         {
             _Items.Clear();
             Random random = new Random();
             int textsCount = texts.Length;
 
             string text;
-            int[] widths = new int[] { 80, 150, 80, 60, 100, 120, 160, 40, 120, 180, 80, 40, 60, 250 };
+            int[] widths = null;
+            int addY = 0;
+            switch (sampleId)
+            {
+                case 1:
+                    widths = new int[] { 140, 260, 40, 300, 120 };
+                    addY = 28;
+                    break;
+                case 2:
+                    widths = new int[] { 80, 150, 80, 60, 100, 120, 160, 40, 120, 180, 80, 40, 60, 250 };
+                    addY = 22;
+                    break;
+            }
             int count = rowCount;
             int y = 80;
             int maxX = 0;
@@ -390,7 +402,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                     x += width + 3;
                 }
                 maxX = x;
-                y += 23;
+                y += addY;
             }
 
             Refresh(RefreshParts.RecalculateContentTotalSize | RefreshParts.ReloadVisibleItems | RefreshParts.InvalidateCache);
