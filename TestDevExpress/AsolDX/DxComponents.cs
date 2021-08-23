@@ -5939,7 +5939,42 @@ namespace Noris.Clients.Win.Components.AsolDX
                     {
                         found = item;
                         result = true;
+                        break;
                     }
+                }
+            }
+            return result;
+        }
+        /// <summary>
+        /// V dané kolekci najde poslední prvek vyhovující filtru (nebo pokud není dán filtr, pak najde první prvek) a vrátí true = existuje.
+        /// Prvek uloží do out parametru <paramref name="found"/>.
+        /// <para/>
+        /// Tato metoda akceptuje na vstupu IList a k enumeraci používá standardní přístup k prvkům pomocí indexeru se sestupným indexem. 
+        /// Najde tedy "První vyhovující prvek při procházení od posledního prvku směrem k indexu [0]".
+        /// </summary>
+        /// <typeparam name="TItem"></typeparam>
+        /// <param name="items"></param>
+        /// <param name="predicate"></param>
+        /// <param name="found"></param>
+        /// <returns></returns>
+        public static bool TryGetLast<TItem>(this IList<TItem> items, Func<TItem, bool> predicate, out TItem found)
+        {
+            found = default;
+            bool result = false;
+            if (items != null)
+            {
+                bool hasPredicate = (predicate != null);
+                int i = items.Count - 1;
+                while (i >= 0)
+                {
+                    var item = items[i];
+                    if (!hasPredicate || predicate(item))
+                    {
+                        found = item;
+                        result = true;
+                        break;
+                    }
+                    i--;
                 }
             }
             return result;

@@ -12,7 +12,7 @@ using DevExpress.XtraEditors;
 
 namespace Noris.Clients.Win.Components.AsolDX
 {
-    public class DxDataFormV2 : DxDataFormV2source
+    public class DxDataFormV2 : DxDataFormV2source // DxDataFormV2grid 
     { }
     public class DxDataFormV2grid : DevExpress.XtraGrid.GridControl
     {
@@ -100,6 +100,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             fieldPhoto.MaxSize = new Size(200, 200);
 
         }
+        public int VisibleItemsCount;
+        public void CreateSampleItems(string[] texts, int sample, int count) { }
 
         public int ItemsCount;
         public void TestPerformance(int count, bool forceRefresh) { }
@@ -268,6 +270,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.Style3D;
 
             InitializeContentPanel();
+            InitializeInteractivity();
             InitializeItems();
             InitializePaint();
 
@@ -284,6 +287,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             this._ContentPanel = new DxDataFormContentV2(this) { Visible = true, BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder };
             this.ContentControl = this._ContentPanel;
         }
+
         private DxDataFormContentV2 _ContentPanel;
         /// <summary>
         /// Inicializuje pole prvků
@@ -331,17 +335,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public Rectangle? ItemsSummaryBounds { get { return DrawingExtensions.SummaryRectangle(_Items.Select(i => (Rectangle?)i.CurrentBounds)); } }
 
-        protected override void OnMouseMove(MouseEventArgs e)
-        {
-            base.OnMouseMove(e);
-            if (e.Button == MouseButtons.None)
-            {
-                var cursor = Cursors.Default;
-                if (_VisibleItems.TryGetFirst(i => i.IsActivePoint(e.Location), out var found) && found.DefaultCursor != null)
-                    cursor = found.DefaultCursor;
-                this.Cursor = cursor;
-            }
-        }
+        
         int IDxDataFormV2.DeviceDpi { get { return this.DeviceDpi; } }
 
         #region Testovací prvky
@@ -512,6 +506,68 @@ namespace Noris.Clients.Win.Components.AsolDX
             InvalidateControl = 0x0100
         }
         #endregion
+        #region Interaktivita
+        private void InitializeInteractivity()
+        {
+            _CurrentFocusedItem = null;
+            _CurrentOnMouseItem = null;
+            this._ContentPanel.MouseMove += _ContentPanel_MouseMove;
+
+        }
+        /// <summary>
+        /// Myš se pohybuje po Content panelu
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _ContentPanel_MouseMove(object sender, MouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.None)
+                PrepareItemForPoint(e.Location);
+        }
+        private void PrepareItemForPoint(Point location)
+        {
+            if (_VisibleItems == null) return;
+
+            DxDataFormItemV2 oldItem = _CurrentOnMouseItem;
+            bool oldExists = (oldItem != null);
+            bool newExists = _VisibleItems.TryGetLast(i => i.IsActivePoint(location), out var newItem);
+
+            bool isMouseLeave = (oldExists && (!newExists || (newExists && !Object.ReferenceEquals(oldItem, newItem))));
+            if (isMouseLeave)
+                MouseItemLeave();
+
+            bool isMouseEnter = (newExists && (!oldExists || (oldExists && !Object.ReferenceEquals(oldItem, newItem))));
+            if (isMouseEnter)
+                MouseItemEnter(newItem);
+
+        }
+        private void MouseItemLeave()
+        {
+            var oldControl = _CurrentOnMouseControl;
+            if (oldControl != null)
+            {
+                oldControl.Enabled = false;
+                oldControl.Visible = false;
+                oldControl.Location = new Point(0, -20 - oldControl.Height);
+            }
+            _CurrentOnMouseControl = null;
+            _CurrentOnMouseItem = null;
+        }
+        private void MouseItemEnter(DxDataFormItemV2 item)
+        {
+            var newControl = GetControl(item.ItemType, DxDataFormControlMode.HotMouse);
+            newControl.SetBounds(item.CurrentBounds);
+            newControl.Text = item.Text;
+            newControl.Enabled = true;
+            newControl.Visible = true;
+
+            _CurrentOnMouseControl = newControl;
+            _CurrentOnMouseItem = item;
+        }
+        private DxDataFormItemV2 _CurrentFocusedItem;
+        private System.Windows.Forms.Control _CurrentOnMouseControl;
+        private DxDataFormItemV2 _CurrentOnMouseItem;
+        #endregion
         #region Vykreslování a Bitmap cache
         #region Vykreslení celého Contentu
         private void InitializePaint()
@@ -598,18 +654,20 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="offset"></param>
         private void PaintItem(DxDataFormItemV2 item, PaintEventArgs e, Point? offset = null)
         {
+            var bounds = item.CurrentBounds;
             using (var image = CreateImage(item))
             {
                 if (image != null)
                 {
                     var origin = this.ContentVirtualLocation;
-                    var bounds = item.CurrentBounds;
                     bool withOffset = (offset.HasValue && !offset.Value.IsEmpty);
                     Point location = bounds.Location.Sub(origin);
                     if (withOffset) location = location.Add(offset.Value);
                     e.Graphics.DrawImage(image, location);
                 }
             }
+            item.ActiveBounds = bounds;
+
             //var bounds = this.CurrentBounds;
             //bool withOffset = (offset.HasValue && !offset.Value.IsEmpty);
             //if (_Image == null || forceRefresh)
@@ -645,9 +703,17 @@ namespace Noris.Clients.Win.Components.AsolDX
 
                 if (control != null)
                 {
-                    control.Location = new Point(5, 5);
-                    control.Visible = false;
-                    _ContentPanel.Controls.Add(control);
+
+                    Control parent = (mode == DxDataFormControlMode.Focused ? (Control)_ContentPanel :
+                                     (mode == DxDataFormControlMode.HotMouse ? (Control)_ContentPanel :
+                                     (mode == DxDataFormControlMode.Inactive ? (Control)this : (Control)null)));
+
+                    if (parent != null)
+                    {
+                        control.Location = new Point(5, 5);
+                        control.Visible = false;
+                        parent.Controls.Add(control);
+                    }
                 }
                 modeControls.Add(mode, control);
             }
