@@ -314,6 +314,7 @@ namespace TestDevExpress.Forms
             if (!(sampleId == 1 || sampleId == 2)) return;
 
             string[] texts = Random.GetSentencesArray(1, 3, 120, 240, false);
+            string[] tooltips = Random.GetSentencesArray(7, 16, 120, 240, true);
 
             _RemoveDataForms();
 
@@ -331,10 +332,10 @@ namespace TestDevExpress.Forms
             switch (sampleId)
             {
                 case 1:
-                    dataForm.CreateSampleItems(texts, 1, 60);
+                    dataForm.CreateSampleItems(texts, tooltips, 1, 60);
                     break;
                 case 2:
-                    dataForm.CreateSampleItems(texts, 2, 2000);
+                    dataForm.CreateSampleItems(texts, tooltips, 2, 2000);
                     break;
             }
             _DxTestPanel.Controls.Add(dataForm);
@@ -366,7 +367,8 @@ namespace TestDevExpress.Forms
             _DxShowTimeSpan = null;
             DxDataFormV2 dataForm = new DxDataFormV2();
             string[] texts = Random.GetSentencesArray(1, 3, 120, 240, false);
-            dataForm.CreateSampleItems(texts, 2, 2000);
+            string[] tooltips = Random.GetSentencesArray(7, 16, 120, 240, true);
+            dataForm.CreateSampleItems(texts, tooltips, 2, 2000);
             dataForm.GotFocus += DxDataForm_GotFocus;
 
             _DxDataFormV2 = dataForm;

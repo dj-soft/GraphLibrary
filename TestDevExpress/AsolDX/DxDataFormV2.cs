@@ -354,13 +354,14 @@ namespace Noris.Clients.Win.Components.AsolDX
         private DxTextEdit _TextBox;
         private DxCheckEdit _CheckBox;
 
-        public void CreateSampleItems(string[] texts, int sampleId, int rowCount)
+        public void CreateSampleItems(string[] texts, string[] tooltips, int sampleId, int rowCount)
         {
             _Items.Clear();
             Random random = new Random();
             int textsCount = texts.Length;
+            int tooltipsCount = tooltips.Length;
 
-            string text;
+            string text, tooltip;
             int[] widths = null;
             int addY = 0;
             switch (sampleId)
@@ -386,13 +387,14 @@ namespace Noris.Clients.Win.Components.AsolDX
                 foreach (int width in widths)
                 {
                     text = texts[random.Next(textsCount)];
+                    tooltip = tooltips[random.Next(tooltipsCount)];
                     int q = random.Next(100);
                     DataFormItemType itemType = (q < 5 ? DataFormItemType.None :
                                                 (q < 10 ? DataFormItemType.CheckBox :
                                                 (q < 15 ? DataFormItemType.Button :
                                                 DataFormItemType.TextBox)));
                     if (itemType != DataFormItemType.None)
-                        _Items.Add(new DxDataFormItemV2(this, itemType, text) { DesignBounds = new Rectangle(x, y, width, 20) });
+                        _Items.Add(new DxDataFormItemV2(this, itemType, text) { DesignBounds = new Rectangle(x, y, width, 20), ToolTipText = tooltip });
                     x += width + 3;
                 }
                 maxX = x;
@@ -401,6 +403,98 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             Refresh(RefreshParts.RecalculateContentTotalSize | RefreshParts.ReloadVisibleItems | RefreshParts.InvalidateCache);
         }
+        #endregion
+        #region Interaktivita
+        private void InitializeInteractivity()
+        {
+            _CurrentFocusedItem = null;
+            _CurrentOnMouseItem = null;
+            this._ContentPanel.MouseMove += _ContentPanel_MouseMove;
+            this._ContentPanel.MouseDown += _ContentPanel_MouseDown;
+        }
+        /// <summary>
+        /// Myš se pohybuje po Content panelu
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _ContentPanel_MouseMove(object sender, MouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.None)
+                PrepareItemForPoint(e.Location);
+        }
+        /// <summary>
+        /// Myš klikla v Content panelu = nejspíš bychom měli zařídit přípravi prvku a předání focusu ondoň
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _ContentPanel_MouseDown(object sender, MouseEventArgs e)
+        {
+
+        }
+
+        private void PrepareItemForCurrentPoint()
+        {
+            Point absoluteLocation = Control.MousePosition;
+            Point relativeLocation = _ContentPanel.PointToClient(absoluteLocation);
+            PrepareItemForPoint(relativeLocation);
+        }
+
+        private void PrepareItemForPoint(Point location)
+        {
+            if (_VisibleItems == null) return;
+
+            DxDataFormItemV2 oldItem = _CurrentOnMouseItem;
+            bool oldExists = (oldItem != null);
+            bool newExists = _VisibleItems.TryGetLast(i => i.IsVisibleOnPoint(location), out var newItem);
+
+            bool isMouseLeave = (oldExists && (!newExists || (newExists && !Object.ReferenceEquals(oldItem, newItem))));
+            if (isMouseLeave)
+                MouseItemLeave();
+
+            bool isMouseEnter = (newExists && (!oldExists || (oldExists && !Object.ReferenceEquals(oldItem, newItem))));
+            if (isMouseEnter)
+                MouseItemEnter(newItem);
+        }
+        private void MouseItemEnter(DxDataFormItemV2 item)
+        {
+            if (item.VisibleBounds.HasValue)
+            {
+                var newControl = GetControl(item.ItemType, DxDataFormControlMode.HotMouse);
+                newControl.SetBounds(item.VisibleBounds.Value);
+                newControl.Text = item.Text;
+                newControl.Enabled = true;
+                newControl.Visible = true;
+                if (newControl is DxTextEdit dxTextEdit)
+                    dxTextEdit.ToolTip = item.ToolTipText;
+                else if (newControl is BaseControl baseControl)
+                    baseControl.ToolTip = item.ToolTipText;
+
+                _CurrentOnMouseControl = newControl;
+                _CurrentOnMouseItem = item;
+            }
+        }
+        private void MouseItemLeave()
+        {
+            var oldControl = _CurrentOnMouseControl;
+            if (oldControl != null)
+            {
+                oldControl.Visible = false;
+                oldControl.Location = new Point(0, -20 - oldControl.Height);
+                oldControl.Enabled = false;
+            }
+            _CurrentOnMouseControl = null;
+            _CurrentOnMouseItem = null;
+        }
+        private DxDataFormItemV2 _CurrentFocusedItem;
+
+        /// <summary>
+        /// Vizuální control nacházející se nyní pod myší
+        /// </summary>
+        private System.Windows.Forms.Control _CurrentOnMouseControl;
+        /// <summary>
+        /// Prvek nacházející se nyní pod myší
+        /// </summary>
+        private DxDataFormItemV2 _CurrentOnMouseItem;
         #endregion
         #region Refresh
         /// <summary>
@@ -519,94 +613,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// </summary>
             InvalidateControl = 0x0100
         }
-        #endregion
-        #region Interaktivita
-        private void InitializeInteractivity()
-        {
-            _CurrentFocusedItem = null;
-            _CurrentOnMouseItem = null;
-            this._ContentPanel.MouseMove += _ContentPanel_MouseMove;
-            this._ContentPanel.MouseDown += _ContentPanel_MouseDown;
-        }
-        /// <summary>
-        /// Myš se pohybuje po Content panelu
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void _ContentPanel_MouseMove(object sender, MouseEventArgs e)
-        {
-            if (e.Button == MouseButtons.None)
-                PrepareItemForPoint(e.Location);
-        }
-        /// <summary>
-        /// Myš klikla v Content panelu = nejspíš bychom měli zařídit přípravi prvku a předání focusu ondoň
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void _ContentPanel_MouseDown(object sender, MouseEventArgs e)
-        {
-
-        }
-
-        private void PrepareItemForCurrentPoint()
-        {
-            Point absoluteLocation = Control.MousePosition;
-            Point relativeLocation = _ContentPanel.PointToClient(absoluteLocation);
-            PrepareItemForPoint(relativeLocation);
-        }
-
-        private void PrepareItemForPoint(Point location)
-        {
-            if (_VisibleItems == null) return;
-
-            DxDataFormItemV2 oldItem = _CurrentOnMouseItem;
-            bool oldExists = (oldItem != null);
-            bool newExists = _VisibleItems.TryGetLast(i => i.IsVisibleOnPoint(location), out var newItem);
-
-            bool isMouseLeave = (oldExists && (!newExists || (newExists && !Object.ReferenceEquals(oldItem, newItem))));
-            if (isMouseLeave)
-                MouseItemLeave();
-
-            bool isMouseEnter = (newExists && (!oldExists || (oldExists && !Object.ReferenceEquals(oldItem, newItem))));
-            if (isMouseEnter)
-                MouseItemEnter(newItem);
-        }
-        private void MouseItemLeave()
-        {
-            var oldControl = _CurrentOnMouseControl;
-            if (oldControl != null)
-            {
-                oldControl.Enabled = false;
-                oldControl.Visible = false;
-                oldControl.Location = new Point(0, -20 - oldControl.Height);
-            }
-            _CurrentOnMouseControl = null;
-            _CurrentOnMouseItem = null;
-        }
-        private void MouseItemEnter(DxDataFormItemV2 item)
-        {
-            if (item.VisibleBounds.HasValue)
-            {
-                var newControl = GetControl(item.ItemType, DxDataFormControlMode.HotMouse);
-                newControl.SetBounds(item.VisibleBounds.Value);
-                newControl.Text = item.Text;
-                newControl.Enabled = true;
-                newControl.Visible = true;
-
-                _CurrentOnMouseControl = newControl;
-                _CurrentOnMouseItem = item;
-            }
-        }
-        private DxDataFormItemV2 _CurrentFocusedItem;
-
-        /// <summary>
-        /// Vizuální control nacházející se nyní pod myší
-        /// </summary>
-        private System.Windows.Forms.Control _CurrentOnMouseControl;
-        /// <summary>
-        /// Prvek nacházející se nyní pod myší
-        /// </summary>
-        private DxDataFormItemV2 _CurrentOnMouseItem;
         #endregion
         #region Vykreslování a Bitmap cache
         #region Vykreslení celého Contentu
