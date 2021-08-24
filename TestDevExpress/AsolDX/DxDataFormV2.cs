@@ -297,10 +297,12 @@ namespace Noris.Clients.Win.Components.AsolDX
             _Items = new List<DxDataFormItemV2>();
             _VisibleItems = new List<DxDataFormItemV2>();
             _ContentPadding = new Padding(0);
+            _DxSuperToolTip = new DxSuperToolTip() { AcceptTitleOnlyAsValid = false };
         }
         private List<DxDataFormItemV2> _Items;
         private List<DxDataFormItemV2> _VisibleItems;
         private Padding _ContentPadding;
+        private DxSuperToolTip _DxSuperToolTip;
 
 
 
@@ -378,6 +380,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             int count = rowCount;
             int y = 80;
             int maxX = 0;
+            int q;
             for (int r = 0; r < count; r++)
             {
                 int x = 20;
@@ -386,9 +389,11 @@ namespace Noris.Clients.Win.Components.AsolDX
                 x += 80;
                 foreach (int width in widths)
                 {
-                    text = texts[random.Next(textsCount)];
-                    tooltip = tooltips[random.Next(tooltipsCount)];
-                    int q = random.Next(100);
+                    bool blank = (random.Next(100) == 68);
+                    text = (!blank ? texts[random.Next(textsCount)] : "");
+                    tooltip = (!blank ? tooltips[random.Next(tooltipsCount)] : "");
+
+                    q = random.Next(100);
                     DataFormItemType itemType = (q < 5 ? DataFormItemType.None :
                                                 (q < 10 ? DataFormItemType.CheckBox :
                                                 (q < 15 ? DataFormItemType.Button :
@@ -460,14 +465,17 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (item.VisibleBounds.HasValue)
             {
                 var newControl = GetControl(item.ItemType, DxDataFormControlMode.HotMouse);
+                string text = item.Text;
                 newControl.SetBounds(item.VisibleBounds.Value);
-                newControl.Text = item.Text;
+                newControl.Text = text;
                 newControl.Enabled = true;
                 newControl.Visible = true;
-                if (newControl is DxTextEdit dxTextEdit)
-                    dxTextEdit.ToolTip = item.ToolTipText;
-                else if (newControl is BaseControl baseControl)
-                    baseControl.ToolTip = item.ToolTipText;
+                if (newControl is BaseControl baseControl)
+                {
+                    _DxSuperToolTip.LoadValues(item);
+                    if (_DxSuperToolTip.IsValid)
+                        baseControl.SuperTip = _DxSuperToolTip;
+                }
 
                 _CurrentOnMouseControl = newControl;
                 _CurrentOnMouseItem = item;
@@ -481,6 +489,8 @@ namespace Noris.Clients.Win.Components.AsolDX
                 oldControl.Visible = false;
                 oldControl.Location = new Point(0, -20 - oldControl.Height);
                 oldControl.Enabled = false;
+                if (oldControl is BaseControl baseControl)
+                    baseControl.SuperTip = null;
             }
             _CurrentOnMouseControl = null;
             _CurrentOnMouseItem = null;

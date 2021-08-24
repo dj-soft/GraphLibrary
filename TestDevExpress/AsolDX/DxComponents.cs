@@ -1572,43 +1572,20 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="title"></param>
         /// <param name="text"></param>
         /// <param name="defaultTitle"></param>
+        /// <param name="toolTipIcon"></param>
         /// <returns></returns>
-        public static SuperToolTip CreateDxSuperTip(string title, string text, string defaultTitle = null)
+        public static DxSuperToolTip CreateDxSuperTip(string title, string text, string defaultTitle = null, string toolTipIcon = null)
         {
-            if (String.IsNullOrEmpty(title) && String.IsNullOrEmpty(text) && String.IsNullOrEmpty(defaultTitle)) return null;
-
-            var superTip = new DevExpress.Utils.SuperToolTip();
-            string currentTitle = title ?? defaultTitle;
-            if (currentTitle != null) superTip.Items.AddTitle(currentTitle);
-            superTip.Items.Add(text);
-
-            return superTip;
+            return DxSuperToolTip.CreateDxSuperTip(title, text, defaultTitle, toolTipIcon);
         }
         /// <summary>
         /// Vytvoří a vrátí SuperTooltip
         /// </summary>
-        /// <param name="menuItem"></param>
+        /// <param name="textItem"></param>
         /// <returns></returns>
-        public static SuperToolTip CreateDxSuperTip(IMenuItem menuItem)
+        public static SuperToolTip CreateDxSuperTip(IMenuItem textItem)
         {
-            if (menuItem == null || (String.IsNullOrEmpty(menuItem.ToolTipTitle) && String.IsNullOrEmpty(menuItem.ToolTipText))) return null;
-
-            string title = (menuItem.ToolTipTitle ?? menuItem.Text);
-
-            var superTip = new DevExpress.Utils.SuperToolTip();
-            if (title != null)
-            {
-                var dxTitle = superTip.Items.AddTitle(title);
-                if (menuItem.ToolTipIcon != null)
-                {
-                    dxTitle.ImageOptions.Images = ComponentConnector.GraphicsCache.GetImageList(WinFormServices.Drawing.UserGraphicsSize.Large);
-                    dxTitle.ImageOptions.ImageIndex = ComponentConnector.GraphicsCache.GetResourceIndex(menuItem.ToolTipIcon, WinFormServices.Drawing.UserGraphicsSize.Large);
-                    dxTitle.ImageOptions.ImageToTextDistance = 12;
-                }
-                superTip.Items.AddSeparator();
-            }
-            superTip.Items.Add(menuItem.ToolTipText);
-            return superTip;
+            return DxSuperToolTip.CreateDxSuperTip(textItem);
         }
         #endregion
         #region Factory metody pro tvorbu komponent DataFormu
@@ -2599,6 +2576,27 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
         }
         private DevExpress.Utils.SvgImageCollection __SvgImageCollection;
+        #endregion
+        #region Static helpers
+        /// <summary>
+        /// Vrátí <see cref="DefaultBoolean"/> z hodnoty nullable <see cref="Boolean"/>.
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        public static DefaultBoolean Convert(bool? value)
+        {
+            return (value.HasValue ? (value.Value ? DefaultBoolean.True : DefaultBoolean.False) : DefaultBoolean.Default);
+        }
+        /// <summary>
+        /// Vrátí nullable <see cref="Boolean"/> z hodnoty <see cref="DefaultBoolean"/>.
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        public static bool? Convert(DefaultBoolean value)
+        {
+            return (value == DefaultBoolean.True ? (bool?)true :
+                   (value == DefaultBoolean.False ? (bool?)false : (bool?)null));
+        }
         #endregion
         #region DxClipboard : obálka nad systémovým clipboardem
         /// <summary>

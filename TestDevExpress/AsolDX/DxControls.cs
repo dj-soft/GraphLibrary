@@ -21,6 +21,7 @@ using DevExpress.XtraPdfViewer;
 using DevExpress.XtraEditors;
 using DevExpress.Office.History;
 using System.Diagnostics;
+using DevExpress.XtraEditors.Filtering.Templates;
 
 namespace Noris.Clients.Win.Components.AsolDX
 {
@@ -1858,6 +1859,180 @@ namespace Noris.Clients.Win.Components.AsolDX
         #region Resize a SvgImage
 
         #endregion
+    }
+    #endregion
+    #region DxSuperToolTip
+    /// <summary>
+    /// SuperToolTip s přímým přístupem do standardních textů v ToolTipu
+    /// </summary>
+    public class DxSuperToolTip : DevExpress.Utils.SuperToolTip
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public DxSuperToolTip() 
+            : base()
+        {
+            _TitleItem = this.Items.AddTitle("");
+            _TitleItem.ImageOptions.Images = ComponentConnector.GraphicsCache.GetImageList(WinFormServices.Drawing.UserGraphicsSize.Large);
+            _TitleItem.ImageOptions.ImageToTextDistance = 12;
+
+            _SeparatorItem = this.Items.AddSeparator();
+
+            _TextItem = this.Items.Add("");
+
+            AcceptTitleOnlyAsValid = false;
+        }
+        private ToolTipTitleItem _TitleItem;
+        private ToolTipSeparatorItem _SeparatorItem;
+        private ToolTipItem _TextItem;
+        /// <summary>
+        /// Řídí určení hodnoty <see cref="IsValid"/> (= ToolTip je platný) :
+        /// <para/>
+        /// a) Pokud <see cref="AcceptTitleOnlyAsValid"/> = true: pak <see cref="IsValid"/> je true tehdy, když je vyplněn i jen titulek.
+        /// Tedy, když je zadán <see cref="Title"/> a nemusí být zadán <see cref="Text"/> = tehdy se zobrazuje ToolTip obsahující pouze titulek
+        /// <para/>
+        /// b) Pokud <see cref="AcceptTitleOnlyAsValid"/> = false: pak <see cref="IsValid"/> je true jen tehdy, když je vyplněn text (bez ohledu na vyplnění titulku).
+        /// Tedy, když je zadán <see cref="Text"/> (a může i nemusí být zadán <see cref="Title"/>) = tedy zobrazuje se ToolTip obsahující [titulek když je], a obsahuje Text.
+        /// <para/>
+        /// Výchozí je false = pro platný ToolTip je třeba zadat jeho <see cref="Text"/>, nestačí zadat pouze <see cref="Title"/>.
+        /// </summary>
+        public bool AcceptTitleOnlyAsValid { get; set; }
+        /// <summary>
+        /// Text titulku
+        /// </summary>
+        public string Title { get { return _TitleItem.Text; } set { _TitleItem.Text = value; } }
+        /// <summary>
+        /// Titulek může obsahovat HTML kódy
+        /// </summary>
+        public bool? TitleContainsHtml { get { return DxComponent.Convert(_TitleItem.AllowHtmlText); } set { _TitleItem.AllowHtmlText = DxComponent.Convert(value); } }
+        /// <summary>
+        /// Jméno ikony
+        /// </summary>
+        public string IconName { get { return _IconName; } set { _SetIconName(value); } }
+        private void _SetIconName(string iconName)
+        {
+            _IconName = iconName;
+            _TitleItem.ImageOptions.ImageIndex = ((!String.IsNullOrEmpty(iconName)) ? ComponentConnector.GraphicsCache.GetResourceIndex(iconName, WinFormServices.Drawing.UserGraphicsSize.Large) : -1);
+        }
+        private string _IconName;
+        /// <summary>
+        /// Text tooltipu
+        /// </summary>
+        public string Text { get { return _TextItem.Text; } set { _TextItem.Text = value; } }
+        /// <summary>
+        /// Text tooltipu může obsahovat HTML kódy
+        /// </summary>
+        public bool? TextContainsHtml { get { return DxComponent.Convert(_TextItem.AllowHtmlText); } set { _TextItem.AllowHtmlText = DxComponent.Convert(value); } }
+        /// <summary>
+        /// Obsahuje true v případě, že ToolTip má text alespoň v titulku <see cref="Title"/> anebo v textu <see cref="Text"/>, pak má význam aby byl zobrazen.
+        /// Pokud texty nemá, neměl by být zobrazován.
+        /// </summary>
+        public bool IsValid
+        {
+            get
+            {
+                bool acceptTitleOnlyAsValid = this.AcceptTitleOnlyAsValid;
+                bool hasTitle = !String.IsNullOrEmpty(this.Title);
+                bool hasText = !String.IsNullOrEmpty(this.Text);
+                return ((acceptTitleOnlyAsValid && hasTitle) || hasText);
+            }
+        }
+        /// <summary>
+        /// Nuluje svůj obsah
+        /// </summary>
+        public void ClearValues()
+        {
+            Title = "";
+            TitleContainsHtml = null;
+            IconName = null;
+            Text = "";
+            TextContainsHtml = null;
+        }
+        /// <summary>
+        /// Naplní do sebe hodnoty z dané definice
+        /// </summary>
+        /// <param name="toolTipItem"></param>
+        public void LoadValues(IToolTipItem toolTipItem)
+        {
+            if (toolTipItem == null)
+                ClearValues();
+            else
+                LoadValues(toolTipItem.ToolTipTitle, toolTipItem.ToolTipText, toolTipIcon: toolTipItem.ToolTipIcon);
+        }
+        /// <summary>
+        /// Naplní do sebe hodnoty z dané definice
+        /// </summary>
+        /// <param name="textItem"></param>
+        public void LoadValues(ITextItem textItem)
+        {
+            if (textItem == null)
+                ClearValues();
+            else
+                LoadValues(textItem.ToolTipTitle, textItem.ToolTipText, textItem.Text, textItem.ToolTipIcon);
+        }
+        /// <summary>
+        /// Naplní do sebe hodnoty z daných parametrů
+        /// </summary>
+        /// <param name="title"></param>
+        /// <param name="text"></param>
+        /// <param name="defaultTitle"></param>
+        /// <param name="toolTipIcon"></param>
+        public void LoadValues(string title, string text, string defaultTitle = null, string toolTipIcon = null)
+        {
+            if (String.IsNullOrEmpty(title) && String.IsNullOrEmpty(text) && String.IsNullOrEmpty(defaultTitle))
+                ClearValues();
+            else
+            {
+                Title = (title ?? defaultTitle);
+                TitleContainsHtml = null;
+                IconName = toolTipIcon;
+                Text = text;
+                TextContainsHtml = null;
+            }
+        }
+        /// <summary>
+        /// Vytvoří a vrátí SuperTooltip
+        /// </summary>
+        /// <param name="toolTipItem"></param>
+        /// <returns></returns>
+        public static SuperToolTip CreateDxSuperTip(IToolTipItem toolTipItem)
+        {
+            if (toolTipItem == null) return null;
+            return CreateDxSuperTip(toolTipItem.ToolTipTitle, toolTipItem.ToolTipText, toolTipIcon: toolTipItem.ToolTipIcon);
+        }
+        /// <summary>
+        /// Vytvoří a vrátí SuperTooltip
+        /// </summary>
+        /// <param name="textItem"></param>
+        /// <returns></returns>
+        public static SuperToolTip CreateDxSuperTip(ITextItem textItem)
+        {
+            if (textItem == null) return null;
+            return CreateDxSuperTip(textItem.ToolTipTitle, textItem.ToolTipText, textItem.Text, textItem.ToolTipIcon);
+        }
+        /// <summary>
+        /// Vytvoří a vrátí standardní SuperToolTip pro daný titulek a text.
+        /// Pokud nebude zadán text <paramref name="text"/>, ani titulek (<paramref name="title"/> nebo <paramref name="defaultTitle"/>), pak vrátí null.
+        /// </summary>
+        /// <param name="title"></param>
+        /// <param name="text"></param>
+        /// <param name="defaultTitle"></param>
+        /// <param name="toolTipIcon"></param>
+        /// <returns></returns>
+        public static DxSuperToolTip CreateDxSuperTip(string title, string text, string defaultTitle = null, string toolTipIcon = null)
+        {
+            if (String.IsNullOrEmpty(title) && String.IsNullOrEmpty(text) && String.IsNullOrEmpty(defaultTitle)) return null;
+
+            var superTip = new DxSuperToolTip()
+            {
+                Title = (title ?? defaultTitle),
+                IconName = toolTipIcon,
+                Text = text
+            };
+
+            return superTip;
+        }
     }
     #endregion
     #region DxStatus
