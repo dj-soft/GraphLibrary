@@ -1417,25 +1417,56 @@ namespace TestDevExpress.Forms
         #region Animace
         private void InitAnimation()
         {
-            AddNewPage("Animace", PrepareAnimation);
+            AddNewPage("Animace", PrepareAnimation, ActivateAnimation);
             
         }
         private DxPanelControl _PanelAnimation;
+        private DxSplitContainerControl _SplitAnimation;
         private void PrepareAnimation(DxPanelControl panel)
         {
             _PanelAnimation = panel;
-            string imgFile = @"D:\Asol\Práce\Tools\TestDevExpress\TestDevExpress\Images\Animated kitty.gif";
-            if (System.IO.File.Exists(imgFile))
-            {
-                System.Windows.Forms.PictureBox pcb = new PictureBox();
-                pcb.Image = System.Drawing.Bitmap.FromFile(imgFile);
-                var size = pcb.Image.Size;
-                pcb.SizeMode = PictureBoxSizeMode.Zoom;
-                pcb.Bounds = new Rectangle(new Point(20, 20), new Size(size.Width / 2, size.Height / 2));
-                pcb.BackColor = Color.Transparent;
-                _PanelAnimation.Controls.Add(pcb);
-            }
+            _PanelAnimation.ClientSizeChanged += _PanelAnimation_AnySizeChanged;
+
+            _SplitAnimation = DxComponent.CreateDxSplitContainer(_PanelAnimation, splitterPositionChanged: _PanelAnimation_AnySizeChanged, dock: DockStyle.Fill, splitLineOrientation: Orientation.Vertical, fixedPanel: DevExpress.XtraEditors.SplitFixedPanel.Panel2, showSplitGlyph: true);
+            _SplitAnimation.ClientSizeChanged += _PanelAnimation_AnySizeChanged;
+
+            _PanelAnimationGraphic = new DxBufferedGraphic() { LogActive = true };
+            _SplitAnimation.Panel1.Controls.Add(_PanelAnimationGraphic);
+
+            _LogTextAnimation = DxComponent.CreateDxMemoEdit(_SplitAnimation.Panel2, System.Windows.Forms.DockStyle.Fill, readOnly: true, tabStop: false);
+
+
+            //string imgFile = @"D:\Asol\Práce\Tools\TestDevExpress\TestDevExpress\Images\Animated kitty.gif";
+            //if (System.IO.File.Exists(imgFile))
+            //{
+            //    System.Windows.Forms.PictureBox pcb = new PictureBox();
+            //    pcb.Image = System.Drawing.Bitmap.FromFile(imgFile);
+            //    var size = pcb.Image.Size;
+            //    pcb.SizeMode = PictureBoxSizeMode.Zoom;
+            //    pcb.Bounds = new Rectangle(new Point(20, 20), new Size(size.Width / 2, size.Height / 2));
+            //    pcb.BackColor = Color.Transparent;
+            //    _PanelAnimation.Controls.Add(pcb);
+            //}
+
+            _PanelAnimation_DoLayout();
         }
+        private void ActivateAnimation()
+        {
+            DxComponent.LogClear();
+            CurrentLogControl = _LogTextAnimation;
+        }
+        private void _PanelAnimation_AnySizeChanged(object sender, EventArgs e)
+        {
+            _PanelAnimation_DoLayout();
+        }
+        private void _PanelAnimation_DoLayout()
+        {
+            var size = _SplitAnimation.Panel1.ClientSize;
+            if (size.Width > 24 && size.Height > 24)
+                _PanelAnimationGraphic.Bounds = new Rectangle(12, 12, size.Width - 24, size.Height - 24);
+        }
+        private DxBufferedGraphic _PanelAnimationGraphic;
+        private DxMemoEdit _LogTextAnimation;
         #endregion
         #region Resize
         private void InitResize()
@@ -2260,8 +2291,8 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
             _TreeList.LazyLoadChilds += _TreeList_LazyLoadChilds;
 
             int y = 0;
-            _MemoEdit = DxComponent.CreateDxMemoEdit(0, ref y, 100, 100, this._SplitContainer.Panel2, readOnly: true);
-            _MemoEdit.Dock = DockStyle.Fill;
+            _TreeListMemoEdit = DxComponent.CreateDxMemoEdit(0, ref y, 100, 100, this._SplitContainer.Panel2, readOnly: true);
+            _TreeListMemoEdit.Dock = DockStyle.Fill;
             _LogId = 0;
             _Log = "";
 
@@ -2478,7 +2509,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
             int id = ++_LogId;
             string log = id.ToString() + ". " + line + Environment.NewLine + _Log;
             _Log = log;
-            _MemoEdit.Text = log;
+            _TreeListMemoEdit.Text = log;
         }
         int _InternalNodeId;
         private List<DataTreeListNode> _CreateSampleList(ItemCountType countType = ItemCountType.Standard)
@@ -2584,7 +2615,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
         DxSplitContainerControl _SplitContainer;
         DxCheckEdit _TreeMultiCheckBox;
         DxTreeList _TreeList;
-        DxMemoEdit _MemoEdit;
+        DxMemoEdit _TreeListMemoEdit;
         string _Log;
         int _LogId;
         NewNodePositionType _NewNodePosition;

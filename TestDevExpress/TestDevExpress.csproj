@@ -155,6 +155,9 @@
     <Compile Include="AsolDX\DxFilterBox.cs">
       <SubType>Component</SubType>
     </Compile>
+    <Compile Include="AsolDX\DxBufferedGraphic.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="AsolDX\WatchTimer.cs" />
     <Compile Include="Components\ChartControl.cs">
       <SubType>Component</SubType>

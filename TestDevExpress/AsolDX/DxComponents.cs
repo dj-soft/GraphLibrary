@@ -815,6 +815,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (borderStyles.HasValue) container.BorderStyle = borderStyles.Value;
             container.ShowSplitGlyph = (showSplitGlyph.HasValue ? (showSplitGlyph.Value ? DevExpress.Utils.DefaultBoolean.True : DevExpress.Utils.DefaultBoolean.False) : DevExpress.Utils.DefaultBoolean.Default);
 
+            if (splitterPositionChanged != null) container.SplitterMoved += splitterPositionChanged;
+
             return container;
         }
         public static DxLabelControl CreateDxLabel(int x, int y, int w, Control parent, string text,
