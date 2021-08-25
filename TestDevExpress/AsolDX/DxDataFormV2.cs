@@ -516,95 +516,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         private bool _PaintingPerformaceForceRefresh;
 
         #endregion
-        #region Fyzické controly - tvorba, správa, vykreslení bitmapy skrze control
-        private Control GetControl(DataFormItemType itemType, DxDataFormControlMode mode)
-        {
-            if (_DataFormControls == null) _DataFormControls = new Dictionary<DataFormItemType, Dictionary<DxDataFormControlMode, Control>>();
-            var dataFormControls = _DataFormControls;
-            Dictionary<DxDataFormControlMode, Control> modeControls;
-            if (!dataFormControls.TryGetValue(itemType, out modeControls))
-            {
-                modeControls = new Dictionary<DxDataFormControlMode, Control>();
-                dataFormControls.Add(itemType, modeControls);
-            }
-            Control control;
-            if (!modeControls.TryGetValue(mode, out control))
-            {
-                control = (itemType == DataFormItemType.Label ? (Control)new DxLabelControl() :
-                          (itemType == DataFormItemType.TextBox ? (Control)new DxTextEdit() :
-                          (itemType == DataFormItemType.CheckBox ? (Control)new DxCheckEdit() :
-                          (itemType == DataFormItemType.Button ? (Control)new DxSimpleButton() : (Control)null))));
-
-                if (control != null)
-                {
-
-                    Control parent = (mode == DxDataFormControlMode.Focused ? (Control)_ContentPanel :
-                                     (mode == DxDataFormControlMode.HotMouse ? (Control)_ContentPanel :
-                                     (mode == DxDataFormControlMode.Inactive ? (Control)this : (Control)null)));
-
-                    if (parent != null)
-                    {
-                        control.Location = new Point(5, 5);
-                        control.Visible = false;
-                        parent.Controls.Add(control);
-                    }
-                }
-                modeControls.Add(mode, control);
-            }
-            return control;
-        }
-        private Image CreateBitmapForItem(DxDataFormItemV2 item)
-        {
-            /*   Časomíra:
-                           Získat control   Vložit Bounds    Vložit Text   Selection   DrawToBitmap   PaintImage      Čas mikrosekund
-           0. Nic:                                                                                                   :        6  (režie smyčky)
-           1. PaintImage                                                                                  ANO        :       15
-           2. Bez Bounds        ANO                                                                                  :       25
-           3. Bez Text          ANO             ANO                                                                  :      320
-           4. Bez Selection     ANO             ANO             ANO                                                  :      470
-           5. Bez obrázku       ANO             ANO             ANO           ANO                                    :      470
-           6. Bez kreslení      ANO             ANO             ANO           ANO                         ANO        :      500
-           7. Komplet           ANO             ANO             ANO           ANO         ANO             ANO        :      990
-
-           */
-            var source = GetControl(item.ItemType, DxDataFormControlMode.Inactive);
-            if (source == null) return null;
-
-            var bounds = item.CurrentBounds;
-
-            Cursor cursor = null;
-
-            // source.SetBounds(bounds);                  // Nastavím správné umístění, to kvůli obrázkům na pozadí panelu (různé skiny!), aby obrázky odpovídaly aktuální pozici...
-            Rectangle sourceBounds = new Rectangle(4, 4, bounds.Width, bounds.Height);
-            source.SetBounds(sourceBounds);
-            source.Text = item.Text;
-
-            var size = source.Size;
-            if (size != bounds.Size)
-            {
-                item.CurrentSize = size;
-                bounds = item.CurrentBounds;
-            }
-            int w = size.Width;
-            int h = size.Height;
-            Bitmap image = new Bitmap(w, h);
-            if (source is DxTextEdit textEdit)
-            {
-                textEdit.DeselectAll();
-                textEdit.SelectionStart = 0;
-                cursor = Cursors.IBeam;
-            }
-            source.DrawToBitmap(image, new Rectangle(0, 0, w, h));
-            //if (storeValues)
-            //{
-            //    DefaultCursor = cursor ?? Cursors.Default;
-            //    ActiveBounds = bounds.Sub(source.Margin);
-            //}
-            return image;
-        }
-
-        private Dictionary<DataFormItemType, Dictionary<DxDataFormControlMode, Control>> _DataFormControls;
-        #endregion
         #region Bitmap cache
         /// <summary>
         /// Najde a vrátí <see cref="Image"/> pro obsah daného prvku.
@@ -703,6 +614,107 @@ namespace Noris.Clients.Win.Components.AsolDX
             public void AddHit() { HitCount++; }
         }
         #endregion
+        #endregion
+        #region Fyzické controly - tvorba, správa, vykreslení bitmapy skrze control
+        private Control GetControl(DataFormItemType itemType, DxDataFormControlMode mode)
+        {
+            if (_DataFormControls == null) _DataFormControls = new Dictionary<DataFormItemType, ControlSetInfo>();
+            var dataFormControls = _DataFormControls;
+
+            ControlSetInfo controlSet;
+            if (!dataFormControls.TryGetValue(itemType, out controlSet))
+            {
+                controlSet = new ControlSetInfo(itemType);
+                dataFormControls.Add(itemType, controlSet);
+            }
+            Control control;
+            if (!controlSet.TryGetValue(mode, out control))
+            {
+                control = (itemType == DataFormItemType.Label ? (Control)new DxLabelControl() :
+                          (itemType == DataFormItemType.TextBox ? (Control)new DxTextEdit() :
+                          (itemType == DataFormItemType.CheckBox ? (Control)new DxCheckEdit() :
+                          (itemType == DataFormItemType.Button ? (Control)new DxSimpleButton() : (Control)null))));
+
+                if (control != null)
+                {
+
+                    Control parent = (mode == DxDataFormControlMode.Focused ? (Control)_ContentPanel :
+                                     (mode == DxDataFormControlMode.HotMouse ? (Control)_ContentPanel :
+                                     (mode == DxDataFormControlMode.Inactive ? (Control)this : (Control)null)));
+
+                    if (parent != null)
+                    {
+                        control.Location = new Point(5, 5);
+                        control.Visible = false;
+                        parent.Controls.Add(control);
+                    }
+                }
+                controlSet.Add(mode, control);
+            }
+            return control;
+        }
+        private Image CreateBitmapForItem(DxDataFormItemV2 item)
+        {
+            /*   Časomíra:
+                           Získat control   Vložit Bounds    Vložit Text   Selection   DrawToBitmap   PaintImage      Čas mikrosekund
+           0. Nic:                                                                                                   :        6  (režie smyčky)
+           1. PaintImage                                                                                  ANO        :       15
+           2. Bez Bounds        ANO                                                                                  :       25
+           3. Bez Text          ANO             ANO                                                                  :      320
+           4. Bez Selection     ANO             ANO             ANO                                                  :      470
+           5. Bez obrázku       ANO             ANO             ANO           ANO                                    :      470
+           6. Bez kreslení      ANO             ANO             ANO           ANO                         ANO        :      500
+           7. Komplet           ANO             ANO             ANO           ANO         ANO             ANO        :      990
+
+           */
+            var source = GetControl(item.ItemType, DxDataFormControlMode.Inactive);
+            if (source == null) return null;
+
+            var bounds = item.CurrentBounds;
+
+            Cursor cursor = null;
+
+            // source.SetBounds(bounds);                  // Nastavím správné umístění, to kvůli obrázkům na pozadí panelu (různé skiny!), aby obrázky odpovídaly aktuální pozici...
+            Rectangle sourceBounds = new Rectangle(4, 4, bounds.Width, bounds.Height);
+            source.SetBounds(sourceBounds);
+            source.Text = item.Text;
+
+            var size = source.Size;
+            if (size != bounds.Size)
+            {
+                item.CurrentSize = size;
+                bounds = item.CurrentBounds;
+            }
+            int w = size.Width;
+            int h = size.Height;
+            Bitmap image = new Bitmap(w, h);
+            if (source is DxTextEdit textEdit)
+            {
+                textEdit.DeselectAll();
+                textEdit.SelectionStart = 0;
+                cursor = Cursors.IBeam;
+            }
+            source.DrawToBitmap(image, new Rectangle(0, 0, w, h));
+            //if (storeValues)
+            //{
+            //    DefaultCursor = cursor ?? Cursors.Default;
+            //    ActiveBounds = bounds.Sub(source.Margin);
+            //}
+            return image;
+        }
+
+        private Dictionary<DataFormItemType, ControlSetInfo> _DataFormControls;
+        private class ControlSetInfo
+        {
+            public ControlSetInfo(DataFormItemType itemType)
+            {
+                _ItemType = itemType;
+            }
+            private DataFormItemType _ItemType;
+
+
+            // Dictionary<DxDataFormControlMode, Control>
+        }
         #endregion
     }
     public interface IDxDataFormV2
