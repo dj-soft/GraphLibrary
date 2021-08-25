@@ -1433,7 +1433,7 @@ namespace TestDevExpress.Forms
             _SplitAnimation.Panel1.SizeChanged += _PanelAnimation_AnySizeChanged;
             _SplitAnimation.ClientSizeChanged += _PanelAnimation_AnySizeChanged;
 
-            _PanelAnimationGraphic = new DxBufferedGraphic() { LogActive = true };
+            _PanelAnimationGraphic = new DxPanelBufferedGraphic() { LogActive = true };
             _PanelAnimationGraphic.Layers = new DxBufferedLayer[] { DxBufferedLayer.AppBackground, DxBufferedLayer.MainLayer };
             _PanelAnimationGraphic.PaintLayer += _PanelAnimationGraphic_PaintLayer;
             _PanelAnimationGraphic.MouseDown += _PanelAnimationGraphic_MouseDown;
@@ -1566,7 +1566,7 @@ namespace TestDevExpress.Forms
             if (size.Width > 24 && size.Height > 24)
                 _PanelAnimationGraphic.Bounds = new Rectangle(12, 12, size.Width - 24, size.Height - 24);
         }
-        private DxBufferedGraphic _PanelAnimationGraphic;
+        private DxPanelBufferedGraphic _PanelAnimationGraphic;
         private DxMemoEdit _LogTextAnimation;
         #endregion
         #region Resize

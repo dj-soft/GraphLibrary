@@ -13,13 +13,13 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// Po vytvoření je vhodné definovat soupis potřebných grafických vrstev do <see cref="Layers"/> a navázat handler události <see cref="PaintLayer"/>.
     /// za provozu je možno volat invalidaci vrstev pomocí metod <see cref="InvalidateLayers(object)"/>.
     /// </summary>
-    public class DxBufferedGraphic : DxPanelControl
+    public class DxPanelBufferedGraphic : DxPanelControl
     {
         #region Konstrukce
         /// <summary>
         /// Konstruktor. Implementuje pouze vrstvu nativního pozadí.
         /// </summary>
-        public DxBufferedGraphic()
+        public DxPanelBufferedGraphic()
         {
             this.SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint | ControlStyles.SupportsTransparentBackColor | ControlStyles.OptimizedDoubleBuffer, true);
             this.ResizeRedraw = true;
@@ -339,7 +339,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// </summary>
             /// <param name="owner"></param>
             /// <param name="layerId"></param>
-            public GraphicLayer(DxBufferedGraphic owner, DxBufferedLayer layerId)
+            public GraphicLayer(DxPanelBufferedGraphic owner, DxBufferedLayer layerId)
             {
                 _Owner = owner;
                 _LayerId = layerId;
@@ -367,7 +367,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// <summary>
             /// Vlastník
             /// </summary>
-            private DxBufferedGraphic _Owner;
+            private DxPanelBufferedGraphic _Owner;
             /// <summary>
             /// ID vrstvy
             /// </summary>
@@ -412,7 +412,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             public void RenderTo(Graphics targetGraphics, bool logActive = false)
             {
                 if (targetGraphics == null) return;
-                DxBufferedGraphic.CopyGraphicsData(this.GraphicsData, targetGraphics, logActive, this.LayerId.ToString());
+                DxPanelBufferedGraphic.CopyGraphicsData(this.GraphicsData, targetGraphics, logActive, this.LayerId.ToString());
             }
             #endregion
             /// <summary>
@@ -504,7 +504,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// </summary>
             protected Size OwnerGraphicsSize { get { return _Owner.GraphicsSize; } }
             /// <summary>
-            /// UserData předaná do metod <see cref="DxBufferedGraphic.InvalidateLayers(object)"/>, a přenášená při kreslení do eventhandleru <see cref="DxBufferedGraphic.PaintLayer"/>.
+            /// UserData předaná do metod <see cref="DxPanelBufferedGraphic.InvalidateLayers(object)"/>, a přenášená při kreslení do eventhandleru <see cref="DxPanelBufferedGraphic.PaintLayer"/>.
             /// </summary>
             protected object OwnerUserData { get { return _Owner.InvalidateUserData; } }
             /// <summary>
@@ -528,7 +528,7 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// <summary>
     /// Grafické vrstvy
     /// </summary>
-    /// <remarks>Tento enum lze podle potřeby rozšiřovat, nově deklarované vrstvy pak lze ve správném pořadí vložit do <see cref="DxBufferedGraphic.Layers"/> a budou fungovat.</remarks>
+    /// <remarks>Tento enum lze podle potřeby rozšiřovat, nově deklarované vrstvy pak lze ve správném pořadí vložit do <see cref="DxPanelBufferedGraphic.Layers"/> a budou fungovat.</remarks>
     public enum DxBufferedLayer
     {
         /// <summary>
@@ -536,7 +536,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         None = 0,
         /// <summary>
-        /// Nativní pozadí panelu, není nutno explicitně požadovat, tuto vrstvu řeší <see cref="DxBufferedGraphic"/> interně
+        /// Nativní pozadí panelu, není nutno explicitně požadovat, tuto vrstvu řeší <see cref="DxPanelBufferedGraphic"/> interně
         /// </summary>
         NativeBackground,
         /// <summary>
@@ -555,7 +555,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         Overlay
     }
     /// <summary>
-    /// Předpis pro eventhandlery události Paint v třídě <see cref="DxBufferedGraphic"/>
+    /// Předpis pro eventhandlery události Paint v třídě <see cref="DxPanelBufferedGraphic"/>
     /// </summary>
     /// <param name="sender"></param>
     /// <param name="args"></param>
@@ -609,7 +609,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void _CheckGraphics()
         {
             if (_GraphicsIsUsed) return;
-            if (_SourceGraphicsData != null) DxBufferedGraphic.CopyGraphicsData(_SourceGraphicsData, _Graphics, _LogActive, _LayerId.ToString());
+            if (_SourceGraphicsData != null) DxPanelBufferedGraphic.CopyGraphicsData(_SourceGraphicsData, _Graphics, _LogActive, _LayerId.ToString());
             _GraphicsIsUsed = true;
         }
         /// <summary>
@@ -621,7 +621,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public Size Size { get { return _Size; } }
         /// <summary>
-        /// Uživatelská data, předaná do invalidace <see cref="DxBufferedGraphic.InvalidateLayers(object)"/>
+        /// Uživatelská data, předaná do invalidace <see cref="DxPanelBufferedGraphic.InvalidateLayers(object)"/>
         /// </summary>
         public object UserData { get { return _UserData; } }
     }
