@@ -30,7 +30,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             var startTime = DxComponent.LogTimeCurrent;
 
-            // base.OnPaintBackground(e);
+            _PaintGraphics = e.Graphics;
+
+            base.OnPaintBackground(e);   // jen barva pozadí
+
             // e.Graphics.Clear(Color.LightGreen);
             e.Graphics.FillRectangle(Brushes.LightSkyBlue, new Rectangle(24, 48, 120, 20));
 
@@ -40,13 +43,17 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             var startTime = DxComponent.LogTimeCurrent;
 
-            // base.OnPaint(e);
+            base.OnPaint(e);            // celý motiv pozadí (obrázky)
+
             // e.Graphics.Clear(Color.LightSalmon);
             var size = this.Size;
             e.Graphics.DrawRectangle(System.Drawing.Pens.Violet, new System.Drawing.Rectangle(1, 1, size.Width - 3, size.Height - 3));
-            
+
+            bool isEqualInstance = Object.ReferenceEquals(_PaintGraphics, e.Graphics);
+            _PaintGraphics = null;
+
             if (LogActive) DxComponent.LogAddLineTime($"DxBufferedGraphic.OnPaint; Time: {DxComponent.LogTokenTimeMilisec}", startTime);
         }
-
+        private Graphics _PaintGraphics;
     }
 }
