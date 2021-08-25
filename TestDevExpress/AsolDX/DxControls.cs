@@ -22,6 +22,7 @@ using DevExpress.XtraEditors;
 using DevExpress.Office.History;
 using System.Diagnostics;
 using DevExpress.XtraEditors.Filtering.Templates;
+using System.Windows.Forms;
 
 namespace Noris.Clients.Win.Components.AsolDX
 {
@@ -2118,6 +2119,39 @@ namespace Noris.Clients.Win.Components.AsolDX
             _HScrollBar.ValueChanged += ScrollBar_ValueChanged;
             _HScrollBar.MouseWheel += _HScrollBar_MouseWheel;
             Controls.Add(_HScrollBar);
+
+            _CurrentDpi = DxComponent.DesignDpi;
+            _LastDpi = 0;
+            this.ParentChanged += _ParentChanged;
+            this.DpiChangedAfterParent += _DpiChangedAfterParent;
+            this.Invalidated += _Invalidated;
+        }
+        /// <summary>
+        /// Po změně Parenta
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _ParentChanged(object sender, EventArgs e)
+        {
+            DeviceDpiCheck();
+        }
+        /// <summary>
+        /// Po změně DPI (neuhlídá ale všechny situace)
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _DpiChangedAfterParent(object sender, EventArgs e)
+        {
+            DeviceDpiCheck();
+        }
+        /// <summary>
+        /// Po Invalidaci
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _Invalidated(object sender, SWF.InvalidateEventArgs e)
+        {
+            DeviceDpiCheck();
         }
         private SWF.Control _ContentControl;
         private DxVScrollBar _VScrollBar;
@@ -2207,6 +2241,57 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public bool VScrollBarVisible { get { return _VScrollBarVisible; } }
         #endregion
+        #region DPI - podpora pro MultiMonitory s různým rozlišením / pro jiné DPI než designové
+        /// <summary>
+        /// Aktuálně platná hodnota DeviceDpi
+        /// </summary>
+        public int CurrentDpi { get { return this._CurrentDpi; } }
+        /// <summary>
+        /// Aktuální hodnota DeviceDpi z formuláře / anebo z this controlu
+        /// </summary>
+        private int _CurrentDpi;
+        /// <summary>
+        /// Znovu načte hodnotu DeviceDpi z formuláře / anebo z this controlu
+        /// </summary>
+        /// <returns></returns>
+        private int _ReloadCurrentDpi()
+        {
+            _CurrentDpi = this.FindForm()?.DeviceDpi ?? this.DeviceDpi;
+            return _CurrentDpi;
+        }
+        /// <summary>
+        /// Hodnota DeviceDpi, pro kterou byly naposledy přepočteny souřadnice prostoru
+        /// </summary>
+        private int _LastDpi;
+        /// <summary>
+        /// Obsahuje true, pokud se nyní platné DPI liší od DPI posledně použitého pro přepočet souřadnic
+        /// </summary>
+        private bool _DpiChanged { get { return (this._CurrentDpi != this._LastDpi); } }
+        /// <summary>
+        /// Ověří, zda nedošlo ke změně DeviceDpi, a pokud ano pak zajistí vyvolání metod <see cref="OnDpiChanged()"/> a eventu <see cref="DpiChanged"/>.
+        /// Pokud this panel není umístěn na formuláři, neprovede nic, protože DPI nemůže být platné.
+        /// </summary>
+        protected void DeviceDpiCheck()
+        {
+            if (this.FindForm() == null) return;
+            var currentDpi = _ReloadCurrentDpi();
+            if (_DpiChanged)
+            {
+                OnDpiChanged();
+                DpiChanged?.Invoke(this, EventArgs.Empty);
+                _LastDpi = currentDpi;
+            }
+        }
+        /// <summary>
+        /// Po jakékoli změně DPI
+        /// </summary>
+        protected virtual void OnDpiChanged() { }
+        /// <summary>
+        /// Po jakékoli změně DPI
+        /// </summary>
+        public event EventHandler DpiChanged;
+        #endregion
+
         #region Layout a řízení ScrollBarů
         /// <summary>
         /// Na základě aktuálních fyzických rozměrů a podle <see cref="ContentTotalSize"/> určí potřebnou viditelnost ScrollBarů,

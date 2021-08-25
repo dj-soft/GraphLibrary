@@ -12,259 +12,11 @@ using DevExpress.XtraEditors;
 
 namespace Noris.Clients.Win.Components.AsolDX
 {
-    public class DxDataFormV2 : DxDataFormV2source // DxDataFormV2grid 
-    { }
-    public class DxDataFormV2grid : DevExpress.XtraGrid.GridControl
+    public class DxDataFormV2 : DxScrollableContent, IDxDataFormV2
     {
-        public DxDataFormV2grid()
-        {
-            System.Data.DataTable employeesBindingSource = new System.Data.DataTable();
-            employeesBindingSource.Columns.Add("FirstName", typeof(string));
-            employeesBindingSource.Columns.Add("LastName", typeof(string));
-            employeesBindingSource.Columns.Add("Address", typeof(string));
-            employeesBindingSource.Columns.Add("City", typeof(string));
-            employeesBindingSource.Columns.Add("Country", typeof(string));
-            employeesBindingSource.Columns.Add("Photo", typeof(byte[]));
-            employeesBindingSource.Rows.Add("Jan", "Novotný", "Nádražní 46", "Kolín", "CZE", null);
-            employeesBindingSource.Rows.Add("Markéta", "Králová", "Pobřežní 1A", "Chrudim", "CZE", null);
-            employeesBindingSource.Rows.Add("Karel", "Starý", "Severní 15", "Přelouč", "CZE", null);
-            employeesBindingSource.Rows.Add("Lucie", "Vodičková", "Točitá 8", "Skuteč", "CZE", null);
+        #region Konstruktor
 
-
-            DevExpress.XtraGrid.Views.Layout.LayoutView lView = new DevExpress.XtraGrid.Views.Layout.LayoutView(this);
-            this.MainView = lView;
-            lView.OptionsBehavior.AutoPopulateColumns = false;
-            lView.OptionsHeaderPanel.ShowCarouselModeButton = false;
-
-            // this.Dock = DockStyle.Fill;
-
-            this.DataSource = employeesBindingSource;
-
-            // Create columns.
-            var colFirstName = lView.Columns.AddVisible("FirstName") as DevExpress.XtraGrid.Columns.LayoutViewColumn;
-            var colLastName = lView.Columns.AddVisible("LastName") as DevExpress.XtraGrid.Columns.LayoutViewColumn;
-            var colAddress = lView.Columns.AddVisible("Address") as DevExpress.XtraGrid.Columns.LayoutViewColumn;
-            var colCity = lView.Columns.AddVisible("City") as DevExpress.XtraGrid.Columns.LayoutViewColumn;
-            var colCountry = lView.Columns.AddVisible("Country") as DevExpress.XtraGrid.Columns.LayoutViewColumn;
-            var colPhoto = lView.Columns.AddVisible("Photo") as DevExpress.XtraGrid.Columns.LayoutViewColumn;
-
-            // Access corresponding card fields.
-            DevExpress.XtraGrid.Views.Layout.LayoutViewField fieldFirstName = colFirstName.LayoutViewField;
-            DevExpress.XtraGrid.Views.Layout.LayoutViewField fieldLastName = colLastName.LayoutViewField;
-            DevExpress.XtraGrid.Views.Layout.LayoutViewField fieldAddress = colAddress.LayoutViewField;
-            DevExpress.XtraGrid.Views.Layout.LayoutViewField fieldCity = colCity.LayoutViewField;
-            DevExpress.XtraGrid.Views.Layout.LayoutViewField fieldCountry = colCountry.LayoutViewField;
-            DevExpress.XtraGrid.Views.Layout.LayoutViewField fieldPhoto = colPhoto.LayoutViewField;
-
-            // Position the FirstName field to the right of the Photo field.
-            fieldFirstName.Move(new DevExpress.XtraLayout.Customization.LayoutItemDragController(fieldFirstName, fieldPhoto,
-                DevExpress.XtraLayout.Utils.InsertLocation.After, DevExpress.XtraLayout.Utils.LayoutType.Horizontal));
-
-            // Position the LastName field below the FirstName field.
-            fieldLastName.Move(new DevExpress.XtraLayout.Customization.LayoutItemDragController(fieldLastName, fieldFirstName,
-                DevExpress.XtraLayout.Utils.InsertLocation.After, DevExpress.XtraLayout.Utils.LayoutType.Vertical));
-
-            // Create an Address Info group.
-            var groupAddress = new DevExpress.XtraLayout.LayoutControlGroup();
-            groupAddress.Text = "Addresa";
-            groupAddress.Name = "addressInfoGroup";
-
-            // Move the Address, City and Country fields to this group.
-            groupAddress.AddItem(fieldAddress);
-            fieldCity.Move(fieldAddress, DevExpress.XtraLayout.Utils.InsertType.Bottom);
-            fieldCountry.Move(fieldCity, DevExpress.XtraLayout.Utils.InsertType.Bottom);
-
-            lView.TemplateCard.AddGroup(groupAddress, fieldLastName, DevExpress.XtraLayout.Utils.InsertType.Bottom);
-
-            // Assign editors to card fields.
-            var riPictureEdit = this.RepositoryItems.Add("PictureEdit") as DevExpress.XtraEditors.Repository.RepositoryItemPictureEdit;
-            riPictureEdit.SizeMode = DevExpress.XtraEditors.Controls.PictureSizeMode.Squeeze;
-            colPhoto.ColumnEdit = riPictureEdit;
-
-            // Customize card field options.
-            colFirstName.Caption = "Křestní jméno";
-            colLastName.Caption = "Příjmení";
-            colAddress.Caption = "Ulice a č.p.";
-            colCity.Caption = "Městečko";
-            colCountry.Caption = "Okres / země";
-            colPhoto.Caption = "Foťka";
-            // Set the card's minimum size.
-            lView.CardMinSize = new Size(350, 220);
-            lView.CardCaptionFormat = "Xxxxx xxx";
-
-            fieldLastName.Location = new Point(220, 20);
-
-            fieldPhoto.TextVisible = false;
-            fieldPhoto.SizeConstraintsType = DevExpress.XtraLayout.SizeConstraintsType.Custom;
-            fieldPhoto.MinSize = new Size(150, 150);
-            fieldPhoto.MaxSize = new Size(200, 200);
-
-        }
-        public int VisibleItemsCount;
-        public void CreateSampleItems(string[] texts, int sample, int count) { }
-
-        public int ItemsCount;
-        public void TestPerformance(int count, bool forceRefresh) { }
-        public Size ContentSize;
-    }
-    public class DxDataFormV2paint : DxScrollableContent, IDxDataFormV2
-    {
-        public DxDataFormV2paint()
-        {
-            this.DoubleBuffered = true;
-
-            InitializeContent();
-
-            _Label = new DxLabelControl() { Bounds = new Rectangle(20, 52, 70, 18), Text = "Popis" };
-            _ContentPanel.Controls.Add(_Label);
-            _TextBox = new DxTextEdit() { Bounds = new Rectangle(100, 50, 300, 20), Text = "Pokus" };
-            _ContentPanel.Controls.Add(_TextBox);
-            _CheckBox = new DxCheckEdit() { Bounds = new Rectangle(410, 50, 100, 20), Text = "Předvolba" };
-            _ContentPanel.Controls.Add(_CheckBox);
-
-
-
-            _Items = new List<DxDataFormItemV2>();
-
-            _Items.Add(new DxDataFormItemV2(this, DataFormItemType.TextBox, "Popisek 2") { DesignBounds = new Rectangle(20, 82, 70, 18) });
-            _Items.Add(new DxDataFormItemV2(this, DataFormItemType.TextBox, "Popisek 3") { DesignBounds = new Rectangle(20, 112, 70, 18) });
-            _Items.Add(new DxDataFormItemV2(this, DataFormItemType.TextBox, "Popisek 4") { DesignBounds = new Rectangle(20, 142, 70, 18) });
-
-            _Items.Add(new DxDataFormItemV2(this, DataFormItemType.TextBox, "Pokus 2") { DesignBounds = new Rectangle(100, 80, 80, 20) });
-            _Items.Add(new DxDataFormItemV2(this, DataFormItemType.TextBox, "Pokus 3") { DesignBounds = new Rectangle(100, 110, 80, 20) });
-            _Items.Add(new DxDataFormItemV2(this, DataFormItemType.TextBox, "Pokus 4") { DesignBounds = new Rectangle(100, 140, 80, 20) });
-            _Items.Add(new DxDataFormItemV2(this, DataFormItemType.TextBox, "Pokus 5") { DesignBounds = new Rectangle(100, 170, 80, 20) });
-
-            _Items.Add(new DxDataFormItemV2(this, DataFormItemType.TextBox, "Předvolba 2") { DesignBounds = new Rectangle(210, 80, 100, 20) });
-            _Items.Add(new DxDataFormItemV2(this, DataFormItemType.TextBox, "Předvolba 3") { DesignBounds = new Rectangle(210, 110, 100, 20) });
-            _Items.Add(new DxDataFormItemV2(this, DataFormItemType.TextBox, "Předvolba 4") { DesignBounds = new Rectangle(210, 140, 100, 20) });
-
-            this.ContentTotalSize = new Size(1100, 650);
-        }
-        public int ItemsCount { get { return _Items.Count; } }
-        public DxDataFormItemV2[] Items { get { return _Items.ToArray(); } }
-        public DxTextEdit TextBox { get { return _TextBox; } }
-        private DxLabelControl _Label;
-        private DxTextEdit _TextBox;
-        private DxCheckEdit _CheckBox;
-        private List<DxDataFormItemV2> _Items;
-        protected override void OnInvalidateContentAfter()
-        {
-            this.ContentControl.Invalidate();
-        }
-        void IDxDataFormV2.OnPaintContent(PaintEventArgs e)
-        {
-            if (_PaintingItems) return;
-            int count = (_PaintingPerformaceTestCount > 1 ? _PaintingPerformaceTestCount : 1);
-            var size = this.ContentVisualSize;
-            bool forceRefresh = _PaintingPerformaceForceRefresh;
-            try
-            {
-                _PaintingItems = true;
-                if (count == 1 && !forceRefresh)
-                {   // Standard:
-                    _Items.ForEachExec(i => PaintItem(i, e));
-                }
-                else
-                {   // Performance test:
-                    int x = 0;
-                    int y = 0;
-                    while (count > 0)
-                    {
-                        Point offset = new Point(x, y);
-                        _Items.ForEachExec(i => PaintItem(i, e, forceRefresh, offset));
-                        y += 12;
-                        if (y >= size.Height)
-                        {
-                            y = 0;
-                            x += 36;
-                            if (x >= size.Width)
-                                x = 0;
-                        }
-                        count--;
-                    }
-                }
-            }
-            finally
-            {
-                _PaintingItems = false;
-                _PaintingPerformaceTestCount = 1;
-                _PaintingPerformaceForceRefresh = false;
-            }
-        }
-        private bool _PaintingItems = false;
-        private int _PaintingPerformaceTestCount;
-        private bool _PaintingPerformaceForceRefresh;
-
-        private void PaintItem(DxDataFormItemV2 item, PaintEventArgs e, bool forceRefresh = false, Point? offset = null)
-        {
-            DevExpress.Utils.AppearanceObject app = DevExpress.Utils.AppearanceObject.ControlAppearance;
-            // DevExpress.Utils.Drawing.BorderPainter.DrawTextOnGlass(e.Graphics, app, this._Text, this.CurrentBounds);
-            // DevExpress.Utils.Drawing.TextFlatBorderPainter.DrawTextOnGlass(e.Graphics, app, this._Text, this.CurrentBounds);
-            // DevExpress.Utils.Drawing.ToggleObjectPainter.DrawTextOnGlass(e.Graphics, app, this._Text, this.CurrentBounds);
-
-            DevExpress.Utils.Drawing.Border3DSunkenPainter.DrawTextOnGlass(e.Graphics, app, item.Text, item.CurrentBounds);
-
-            //this.gra
-            //DevExpress.XtraEditors.Drawing.TextEditPainter p = new DevExpress.XtraEditors.Drawing.TextEditPainter();
-            //DevExpress.XtraEditors.ViewInfo.TextEditViewInfo tve = new DevExpress.XtraEditors.ViewInfo.TextEditViewInfo();
-            //DevExpress.Utils.Drawing.GraphicsCache c = DevExpress.Utils.Drawing.GraphicsCache.
-            //DevExpress.XtraEditors.Drawing.ControlGraphicsInfoArgs args = new DevExpress.XtraEditors.Drawing.ControlGraphicsInfoArgs(tve, 
-            //    new DevExpress.XtraEditors.ViewInfo.BaseControlViewInfo)
-            //p.Draw(new DevExpress.XtraEditors.Drawing.ControlGraphicsInfoArgs)
-        }
-
-        protected override void OnMouseMove(MouseEventArgs e)
-        {
-            base.OnMouseMove(e);
-            if (e.Button == MouseButtons.None)
-            {
-                var cursor = Cursors.Default;
-                if (_Items.TryGetFirst(i => i.IsVisibleOnPoint(e.Location), out var found) && found.DefaultCursor != null)
-                    cursor = found.DefaultCursor;
-                this.Cursor = cursor;
-            }
-        }
-        protected override void OnContentVirtualBoundsChanged()
-        {
-            base.OnContentVirtualBoundsChanged();
-            this.TextBox.Text = this.ContentVirtualBounds.ToString();
-            this.InvalidateItems();
-        }
-
-        protected void InvalidateItems()
-        {
-            this._ContentPanel.Invalidate();
-        }
-        int IDxDataFormV2.DeviceDpi { get { return this.DeviceDpi; } }
-        private Dictionary<DataFormItemType, Dictionary<DxDataFormControlMode, Control>> _DataFormControls;
-
-        public void TestPerformance(int count, bool forceRefresh)
-        {
-            _PaintingPerformaceTestCount = count;
-            _PaintingPerformaceForceRefresh = forceRefresh;
-            this._ContentPanel.Invalidate();
-            Application.DoEvents();
-        }
-        #region ContentPanel, ScrollBars a velikost obsahu
-
-        /// <summary>
-        /// Velikost dat obsažených v tomto containeru, má vliv na Scrollbary a posouvání
-        /// </summary>
-        public Size ContentSize { get { return _ContentSize; } set { _ContentSize = value; DoLayoutContent(); } }
-        private Size _ContentSize;
-        private void InitializeContent()
-        {
-            _ContentPanel = new DxDataFormContentV2(this) { Visible = true, BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder };
-            _ContentPanel.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.Style3D;
-            this.ContentControl = _ContentPanel;
-        }
-        DxDataFormContentV2 _ContentPanel;
-        #endregion
-    }
-    public class DxDataFormV2source : DxScrollableContent, IDxDataFormV2
-    {
-        public DxDataFormV2source()
+        public DxDataFormV2()
         {
             this.DoubleBuffered = true;
             this.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.Style3D;
@@ -279,16 +31,24 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             Refresh(RefreshParts.RecalculateContentTotalSize | RefreshParts.ReloadVisibleItems);
         }
+        protected override void Dispose(bool disposing)
+        {
+            base.Dispose(disposing);
+            this.InvalidateImageCache();
+            this._Items.Clear();
+        }
         /// <summary>
         /// Inicializuje panel <see cref="_ContentPanel"/>
         /// </summary>
         private void InitializeContentPanel()
         {
-            this._ContentPanel = new DxDataFormContentV2(this) { Visible = true, BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder };
+            this._ContentPanel = new DxPanelBufferedGraphic() { Visible = true, BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder };
+            this._ContentPanel.LogActive = true;
+            this._ContentPanel.Layers = new DxBufferedLayer[] { DxBufferedLayer.MainLayer };       // Tady můžu přidat další vrstvy, když budu chtít kreslit 'pod' anebo 'nad' hlavní prvky
+            this._ContentPanel.PaintLayer += _ContentPanel_PaintLayer;                             // A tady bych pak musel reagovat na kreslení přidaných vrstev...
             this.ContentControl = this._ContentPanel;
         }
-
-        private DxDataFormContentV2 _ContentPanel;
+        private DxPanelBufferedGraphic _ContentPanel;
         /// <summary>
         /// Inicializuje pole prvků
         /// </summary>
@@ -337,9 +97,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public Rectangle? ItemsSummaryBounds { get { return DrawingExtensions.SummaryRectangle(_Items.Select(i => (Rectangle?)i.CurrentBounds)); } }
 
-        
-        int IDxDataFormV2.DeviceDpi { get { return this.DeviceDpi; } }
-
+        /// <summary>
+        /// Aktuálně platná hodnota DeviceDpi
+        /// </summary>
+        int IDxDataFormV2.DeviceDpi { get { return this.CurrentDpi; } }
+        #endregion
         #region Testovací prvky
 
         private void InitializeSampleControls()
@@ -515,6 +277,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             bool isRecalc = refreshParts.HasFlag(RefreshParts.RecalculateContentTotalSize);
             bool isVisibl = refreshParts.HasFlag(RefreshParts.ReloadVisibleItems);
+            //_DeviceDpiReload();
+            //if (!isRecalc && this._DeviceDpiChanged) isRecalc = true;                    // Pokud je nyní jiné DPI než posledně...
             if (isRecalc && isVisibl)                                                    // Pokud jsou oba požadavky společně,
                 this.RecalculateContentAndVisibleItems();                                //  pak provedu specifickou metodu, která enumeruje prvky jen jedenkrát
             else if (isRecalc)
@@ -526,7 +290,12 @@ namespace Noris.Clients.Win.Components.AsolDX
                 this.InvalidateImageCache();
 
             if (refreshParts.HasFlag(RefreshParts.InvalidateControl))
-                this.ContentControl.Invalidate();
+                this._ContentPanel.InvalidateLayers(DxBufferedLayer.MainLayer);
+        }
+        protected override void OnDpiChanged()
+        {
+            base.OnDpiChanged();
+            Refresh(RefreshParts.RecalculateContentTotalSize | RefreshParts.ReloadVisibleItems | RefreshParts.InvalidateCache | RefreshParts.InvalidateControl);
         }
         /// <summary>
         /// Je vyvoláno po změně DPI, po změně Zoomu a po změně skinu. Volá se po přepočtu layoutu.
@@ -639,10 +408,18 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.Refresh(RefreshParts.InvalidateControl);
             Application.DoEvents();
         }
-        void IDxDataFormV2.OnPaintContent(PaintEventArgs e)
-        {
-            if (_PaintingItems) return;
 
+        private void _ContentPanel_PaintLayer(object sender, DxBufferedGraphicPaintArgs args)
+        {
+            switch (args.LayerId)
+            {
+                case DxBufferedLayer.MainLayer:
+                    PaintContentMainLayer(args);
+                    break;
+            }
+        }
+        private void PaintContentMainLayer(DxBufferedGraphicPaintArgs e)
+        { 
             bool afterPaintSearchActiveItem = _AfterPaintSearchActiveItem;
             _AfterPaintSearchActiveItem = false;
             _PaintLoop++;
@@ -653,9 +430,8 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             if (afterPaintSearchActiveItem)
                 PrepareItemForCurrentPoint();
-
         }
-        private void OnPaintContentStandard(PaintEventArgs e)
+        private void OnPaintContentStandard(DxBufferedGraphicPaintArgs e)
         {
             var startTime = DxComponent.LogTimeCurrent;
             try
@@ -669,7 +445,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
             DxComponent.LogAddLineTime($"DxDataFormV2 Paint Standard() Items: {_VisibleItems.Count}; Time: {DxComponent.LogTokenTimeMilisec}", startTime);
         }
-        private void OnPaintContentPerformaceTest(PaintEventArgs e)
+        private void OnPaintContentPerformaceTest(DxBufferedGraphicPaintArgs e)
         {
             bool forceRefresh = _PaintingPerformaceForceRefresh;
             int count = (_PaintingPerformaceTestCount > 1 ? _PaintingPerformaceTestCount : 1);
@@ -715,7 +491,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="item"></param>
         /// <param name="e"></param>
         /// <param name="offset"></param>
-        private void PaintItem(DxDataFormItemV2 item, PaintEventArgs e, Point? offset = null)
+        private void PaintItem(DxDataFormItemV2 item, DxBufferedGraphicPaintArgs e, Point? offset = null)
         {
             var bounds = item.CurrentBounds;
             using (var image = CreateImage(item))
@@ -927,12 +703,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         #endregion
         #endregion
-        
     }
     public interface IDxDataFormV2
     {
         int DeviceDpi { get; }
-        void OnPaintContent(PaintEventArgs e);
     }
     public enum DxDataFormControlMode
     {
@@ -941,20 +715,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         HotMouse,
         Focused
     }
-    public class DxDataFormContentV2 : DxPanelControl
-    {
-        public DxDataFormContentV2(IDxDataFormV2 owner)
-        {
-            _Owner = owner;
-        }
-        private IDxDataFormV2 _Owner;
-        protected override void OnPaint(PaintEventArgs e)
-        {
-            base.OnPaint(e);
-            _Owner?.OnPaintContent(e);
-        }
-
-    }
+  
     /// <summary>
     /// Třída reprezentující jeden každý vizuální prvek v <see cref="DxDataFormV2"/>.
     /// </summary>
@@ -1005,7 +766,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 var currentDpi = _Owner.DeviceDpi;
                 __DesignBounds = value;
-                __DesignDpi = currentDpi;
                 __CurrentBounds = value;
                 __CurrentDpi = currentDpi;
             }
@@ -1014,10 +774,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Souřadnice designové, v logických koordinátech (kde bod {0,0} je absolutní počátek, bez posunu ScrollBarem).
         /// </summary>
         private Rectangle __DesignBounds;
-        /// <summary>
-        /// Hodnota DPI, pro kterou jsou určeny souřadnice <see cref="__DesignBounds"/>.
-        /// </summary>
-        private int __DesignDpi;
         /// <summary>
         /// Aktuální logické koordináty - přepočtené z <see cref="DesignBounds"/> na aktuálně platné DPI.
         /// Tato souřadnice není posunuta ScrollBarem. 
@@ -1055,8 +811,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             var ownerDpi = _Owner.DeviceDpi;
             var currentDpi = __CurrentDpi;
             if (__CurrentBounds.HasValue && currentDpi == ownerDpi) return;
-            var designDpi = __DesignDpi;
-            __CurrentBounds = __DesignBounds.ConvertToDpi(designDpi, ownerDpi);
+            __CurrentBounds = __DesignBounds.ConvertToDpi(ownerDpi);
             __CurrentDpi = ownerDpi;
         }
         /// <summary>

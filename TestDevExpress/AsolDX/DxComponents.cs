@@ -377,6 +377,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             _DefaultButtonWidth = 150;
             _DefaultButtonHeight = 32;
 
+            _DesignDpi = 96;
+
             _DefaultBarManager = new DevExpress.XtraBars.BarManager();
             _DefaultToolTipController = new ToolTipController();
         }
@@ -475,6 +477,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public static int DefaultButtonHeight { get { return ZoomToGuiInt(Instance._DefaultButtonHeight); } }
         /// <summary>
+        /// Hodnota DPI, ke které se vztahují velikosti prvků zadávané jako DesignBounds.
+        /// Reálná velikost prvků se pak konvertuje na cílové DPI monitoru.
+        /// </summary>
+        public static int DesignDpi { get { return Instance._DesignDpi; } set { Instance._DesignDpi = (value < 72 ? 72 : (value > 600 ? 600 : value)); } }
+        /// <summary>
         /// Defaultní BarManager pro obecné použití
         /// </summary>
         public static DevExpress.XtraBars.BarManager DefaultBarManager { get { return Instance._DefaultBarManager; } }
@@ -533,6 +540,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         private int _DefaultButtonPanelHeight;
         private int _DefaultButtonWidth;
         private int _DefaultButtonHeight;
+        private int _DesignDpi;
         private DevExpress.XtraBars.BarManager _DefaultBarManager;
         private ToolTipController _DefaultToolTipController;
         #endregion
@@ -5774,36 +5782,66 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Vrátí this <see cref="Point"/> transformovaný do cílového DPI
         /// </summary>
         /// <param name="designValue"></param>
-        /// <param name="designDpi"></param>
-        /// <param name="currentDpi"></param>
+        /// <param name="targetDpi"></param>
         /// <returns></returns>
-        public static Point ConvertToDpi(this Point designValue, int designDpi, int currentDpi)
+        public static Point ConvertToDpi(this Point designValue, int targetDpi)
         {
-            if (!ConvertDpiIsChanged(designDpi, currentDpi, out var ratio)) return designValue;
+            return ConvertToDpi(designValue, DxComponent.DesignDpi, targetDpi);
+        }
+        /// <summary>
+        /// Vrátí this <see cref="Point"/> transformovaný do cílového DPI
+        /// </summary>
+        /// <param name="designValue"></param>
+        /// <param name="designDpi"></param>
+        /// <param name="targetDpi"></param>
+        /// <returns></returns>
+        public static Point ConvertToDpi(this Point designValue, int designDpi, int targetDpi)
+        {
+            if (!ConvertDpiIsChanged(designDpi, targetDpi, out var ratio)) return designValue;
             return Point.Round(new PointF(ratio * (float)designValue.X, ratio * (float)designValue.Y));
         }
         /// <summary>
         /// Vrátí this <see cref="Size"/> transformovaný do cílového DPI
         /// </summary>
         /// <param name="designValue"></param>
-        /// <param name="designDpi"></param>
-        /// <param name="currentDpi"></param>
+        /// <param name="targetDpi"></param>
         /// <returns></returns>
-        public static Size ConvertToDpi(this Size designValue, int designDpi, int currentDpi)
+        public static Size ConvertToDpi(this Size designValue, int targetDpi)
         {
-            if (!ConvertDpiIsChanged(designDpi, currentDpi, out var ratio)) return designValue;
+            return ConvertToDpi(designValue, DxComponent.DesignDpi, targetDpi);
+        }
+        /// <summary>
+        /// Vrátí this <see cref="Size"/> transformovaný do cílového DPI
+        /// </summary>
+        /// <param name="designValue"></param>
+        /// <param name="designDpi"></param>
+        /// <param name="targetDpi"></param>
+        /// <returns></returns>
+        public static Size ConvertToDpi(this Size designValue, int designDpi, int targetDpi)
+        {
+            if (!ConvertDpiIsChanged(designDpi, targetDpi, out var ratio)) return designValue;
             return Size.Round(new SizeF(ratio * (float)designValue.Width, ratio * (float)designValue.Height));
         }
         /// <summary>
         /// Vrátí this <see cref="Rectangle"/> transformovaný do cílového DPI
         /// </summary>
         /// <param name="designValue"></param>
-        /// <param name="designDpi"></param>
-        /// <param name="currentDpi"></param>
+        /// <param name="targetDpi"></param>
         /// <returns></returns>
-        public static Rectangle ConvertToDpi(this Rectangle designValue, int designDpi, int currentDpi)
+        public static Rectangle ConvertToDpi(this Rectangle designValue, int targetDpi)
         {
-            if (!ConvertDpiIsChanged(designDpi, currentDpi, out var ratio)) return designValue;
+            return ConvertToDpi(designValue, DxComponent.DesignDpi, targetDpi);
+        }
+        /// <summary>
+        /// Vrátí this <see cref="Rectangle"/> transformovaný do cílového DPI
+        /// </summary>
+        /// <param name="designValue"></param>
+        /// <param name="designDpi"></param>
+        /// <param name="targetDpi"></param>
+        /// <returns></returns>
+        public static Rectangle ConvertToDpi(this Rectangle designValue, int designDpi, int targetDpi)
+        {
+            if (!ConvertDpiIsChanged(designDpi, targetDpi, out var ratio)) return designValue;
             return Rectangle.Round(new RectangleF(ratio * (float)designValue.X, ratio * (float)designValue.Y, ratio * (float)designValue.Width, ratio * (float)designValue.Height));
         }
         /// <summary>
