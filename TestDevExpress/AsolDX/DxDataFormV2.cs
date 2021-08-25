@@ -12,6 +12,9 @@ using DevExpress.XtraEditors;
 
 namespace Noris.Clients.Win.Components.AsolDX
 {
+    /// <summary>
+    /// DataForm
+    /// </summary>
     public class DxDataFormV2 : DxScrollableContent, IDxDataFormV2
     {
         #region Konstruktor
@@ -31,11 +34,16 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             Refresh(RefreshParts.RecalculateContentTotalSize | RefreshParts.ReloadVisibleItems);
         }
+        /// <summary>
+        /// Dispose panelu
+        /// </summary>
+        /// <param name="disposing"></param>
         protected override void Dispose(bool disposing)
         {
-            base.Dispose(disposing);
+            this.DisposeControls();
             this.InvalidateImageCache();
             this._Items.Clear();
+            base.Dispose(disposing);
         }
         /// <summary>
         /// Inicializuje panel <see cref="_ContentPanel"/>
@@ -175,7 +183,15 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void InitializeInteractivity()
         {
             _CurrentFocusedItem = null;
-            _CurrentOnMouseItem = null;
+
+            InitializeInteractivityMouse();
+        }
+        #region Myš - Move, Down
+        private void InitializeInteractivityMouse()
+        {
+            this._CurrentOnMouseItem = null;
+            this._CurrentOnMouseControlSet = null;
+            this._CurrentOnMouseControl = null;
             this._ContentPanel.MouseMove += _ContentPanel_MouseMove;
             this._ContentPanel.MouseDown += _ContentPanel_MouseDown;
         }
@@ -190,13 +206,14 @@ namespace Noris.Clients.Win.Components.AsolDX
                 PrepareItemForPoint(e.Location);
         }
         /// <summary>
-        /// Myš klikla v Content panelu = nejspíš bychom měli zařídit přípravi prvku a předání focusu ondoň
+        /// Myš klikla v Content panelu = nejspíš bychom měli zařídit přípravu prvku a předání focusu ondoň
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
         private void _ContentPanel_MouseDown(object sender, MouseEventArgs e)
         {
-
+            // toto je nonsens, protože když pod myší existuje prvek, pak MouseDown přejde ondoň nativně, a nikoli z _ContentPanel_MouseDown.
+            // Sem se dostanu jen tehdy, když myš klikne na panelu _ContentPanel v místě, kde není žádný prvek.
         }
 
         private void PrepareItemForCurrentPoint()
@@ -226,21 +243,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             if (item.VisibleBounds.HasValue)
             {
-                var newControl = GetControl(item.ItemType, DxDataFormControlMode.HotMouse);
-                string text = item.Text;
-                newControl.SetBounds(item.VisibleBounds.Value);
-                newControl.Text = text;
-                newControl.Enabled = true;
-                newControl.Visible = true;
-                if (newControl is BaseControl baseControl)
-                {
-                    _DxSuperToolTip.LoadValues(item);
-                    if (_DxSuperToolTip.IsValid)
-                        baseControl.SuperTip = _DxSuperToolTip;
-                }
-
-                _CurrentOnMouseControl = newControl;
                 _CurrentOnMouseItem = item;
+                _CurrentOnMouseControlSet = GetControlSet(item);
+                _CurrentOnMouseControl = _CurrentOnMouseControlSet.GetControlForMouse(item);
             }
         }
         private void MouseItemLeave()
@@ -254,19 +259,28 @@ namespace Noris.Clients.Win.Components.AsolDX
                 if (oldControl is BaseControl baseControl)
                     baseControl.SuperTip = null;
             }
-            _CurrentOnMouseControl = null;
             _CurrentOnMouseItem = null;
+            _CurrentOnMouseControlSet = null;
+            _CurrentOnMouseControl = null;
         }
-        private DxDataFormItemV2 _CurrentFocusedItem;
 
         /// <summary>
-        /// Vizuální control nacházející se nyní pod myší
-        /// </summary>
-        private System.Windows.Forms.Control _CurrentOnMouseControl;
-        /// <summary>
-        /// Prvek nacházející se nyní pod myší
+        /// Datový prvek, nacházející se nyní pod myší
         /// </summary>
         private DxDataFormItemV2 _CurrentOnMouseItem;
+        /// <summary>
+        /// Datový set popisující control, nacházející se nyní pod myší
+        /// </summary>
+        private ControlSetInfo _CurrentOnMouseControlSet;
+        /// <summary>
+        /// Vizuální control, nacházející se nyní pod myší
+        /// </summary>
+        private System.Windows.Forms.Control _CurrentOnMouseControl;
+        #endregion
+
+
+        private DxDataFormItemV2 _CurrentFocusedItem;
+
         #endregion
         #region Refresh
         /// <summary>
@@ -616,119 +630,407 @@ namespace Noris.Clients.Win.Components.AsolDX
         #endregion
         #endregion
         #region Fyzické controly - tvorba, správa, vykreslení bitmapy skrze control
-        private Control GetControl(DataFormItemType itemType, DxDataFormControlMode mode)
+        /// <summary>
+        /// Uvolní z paměti veškerá data fyzických controlů
+        /// </summary>
+        private void DisposeControls()
+        {
+            if (_DataFormControls == null) return;
+            foreach (ControlSetInfo controlSet in _DataFormControls.Values)
+                controlSet.Dispose();
+            _DataFormControls.Clear();
+        }
+        private ControlSetInfo GetControlSet(DxDataFormItemV2 item)
         {
             if (_DataFormControls == null) _DataFormControls = new Dictionary<DataFormItemType, ControlSetInfo>();
             var dataFormControls = _DataFormControls;
 
             ControlSetInfo controlSet;
+            DataFormItemType itemType = item.ItemType;
             if (!dataFormControls.TryGetValue(itemType, out controlSet))
             {
-                controlSet = new ControlSetInfo(itemType);
+                controlSet = new ControlSetInfo(this, itemType);
                 dataFormControls.Add(itemType, controlSet);
             }
-            Control control;
-            if (!controlSet.TryGetValue(mode, out control))
-            {
-                control = (itemType == DataFormItemType.Label ? (Control)new DxLabelControl() :
-                          (itemType == DataFormItemType.TextBox ? (Control)new DxTextEdit() :
-                          (itemType == DataFormItemType.CheckBox ? (Control)new DxCheckEdit() :
-                          (itemType == DataFormItemType.Button ? (Control)new DxSimpleButton() : (Control)null))));
+            return controlSet;
 
-                if (control != null)
-                {
+            //Control control;
+            //if (!controlSet.TryGetValue(mode, out control))
+            //{
+            //    control = (itemType == DataFormItemType.Label ? (Control)new DxLabelControl() :
+            //              (itemType == DataFormItemType.TextBox ? (Control)new DxTextEdit() :
+            //              (itemType == DataFormItemType.CheckBox ? (Control)new DxCheckEdit() :
+            //              (itemType == DataFormItemType.Button ? (Control)new DxSimpleButton() : (Control)null))));
 
-                    Control parent = (mode == DxDataFormControlMode.Focused ? (Control)_ContentPanel :
-                                     (mode == DxDataFormControlMode.HotMouse ? (Control)_ContentPanel :
-                                     (mode == DxDataFormControlMode.Inactive ? (Control)this : (Control)null)));
+            //    if (control != null)
+            //    {
 
-                    if (parent != null)
-                    {
-                        control.Location = new Point(5, 5);
-                        control.Visible = false;
-                        parent.Controls.Add(control);
-                    }
-                }
-                controlSet.Add(mode, control);
-            }
-            return control;
+            //        Control parent = (mode == DxDataFormControlMode.Focused ? (Control)_ContentPanel :
+            //                         (mode == DxDataFormControlMode.HotMouse ? (Control)_ContentPanel :
+            //                         (mode == DxDataFormControlMode.Inactive ? (Control)this : (Control)null)));
+
+            //        if (parent != null)
+            //        {
+            //            control.Location = new Point(5, 5);
+            //            control.Visible = false;
+            //            parent.Controls.Add(control);
+            //        }
+            //    }
+            //    controlSet.Add(mode, control);
+            //}
+            //return control;
         }
         private Image CreateBitmapForItem(DxDataFormItemV2 item)
         {
             /*   Časomíra:
-                           Získat control   Vložit Bounds    Vložit Text   Selection   DrawToBitmap   PaintImage      Čas mikrosekund
-           0. Nic:                                                                                                   :        6  (režie smyčky)
-           1. PaintImage                                                                                  ANO        :       15
-           2. Bez Bounds        ANO                                                                                  :       25
-           3. Bez Text          ANO             ANO                                                                  :      320
-           4. Bez Selection     ANO             ANO             ANO                                                  :      470
-           5. Bez obrázku       ANO             ANO             ANO           ANO                                    :      470
-           6. Bez kreslení      ANO             ANO             ANO           ANO                         ANO        :      500
-           7. Komplet           ANO             ANO             ANO           ANO         ANO             ANO        :      990
+
+               1. Vykreslení bitmapy z paměti do Graphics                    10 mikrosekund
+               2. Nastavení souřadnic (Bounds) do controlu                  300 mikrosekund
+               3. Vložení textu (Text) do controlu                          150 mikrosekund
+               4. Zrušení Selection v TextBoxu                                5 mikrosekund
+               5. Vykreslení controlu do bitmapy                            480 mikrosekund
 
            */
-            var source = GetControl(item.ItemType, DxDataFormControlMode.Inactive);
-            if (source == null) return null;
 
-            var bounds = item.CurrentBounds;
+            ControlSetInfo controlSet = GetControlSet(item);
+            Control drawControl = controlSet.GetControlForDraw(item);
 
-            Cursor cursor = null;
-
-            // source.SetBounds(bounds);                  // Nastavím správné umístění, to kvůli obrázkům na pozadí panelu (různé skiny!), aby obrázky odpovídaly aktuální pozici...
-            Rectangle sourceBounds = new Rectangle(4, 4, bounds.Width, bounds.Height);
-            source.SetBounds(sourceBounds);
-            source.Text = item.Text;
-
-            var size = source.Size;
-            if (size != bounds.Size)
-            {
-                item.CurrentSize = size;
-                bounds = item.CurrentBounds;
-            }
-            int w = size.Width;
-            int h = size.Height;
+            int w = drawControl.Width;
+            int h = drawControl.Height;
             Bitmap image = new Bitmap(w, h);
-            if (source is DxTextEdit textEdit)
-            {
-                textEdit.DeselectAll();
-                textEdit.SelectionStart = 0;
-                cursor = Cursors.IBeam;
-            }
-            source.DrawToBitmap(image, new Rectangle(0, 0, w, h));
-            //if (storeValues)
+            drawControl.DrawToBitmap(image, new Rectangle(0, 0, w, h));
+
+            //// source.SetBounds(bounds);                  // Nastavím správné umístění, to kvůli obrázkům na pozadí panelu (různé skiny!), aby obrázky odpovídaly aktuální pozici...
+            //Rectangle sourceBounds = new Rectangle(4, 4, bounds.Width, bounds.Height);
+            //source.SetBounds(sourceBounds);
+            //source.Text = item.Text;
+
+            //var size = source.Size;
+            //if (size != bounds.Size)
             //{
-            //    DefaultCursor = cursor ?? Cursors.Default;
-            //    ActiveBounds = bounds.Sub(source.Margin);
+            //    item.CurrentSize = size;
+            //    bounds = item.CurrentBounds;
             //}
+            //int w = size.Width;
+            //int h = size.Height;
+            //Bitmap image = new Bitmap(w, h);
+            //if (source is DxTextEdit textEdit)
+            //{
+            //    textEdit.DeselectAll();
+            //    textEdit.SelectionStart = 0;
+            //    cursor = Cursors.IBeam;
+            //}
+            //source.DrawToBitmap(image, new Rectangle(0, 0, w, h));
+            ////if (storeValues)
+            ////{
+            ////    DefaultCursor = cursor ?? Cursors.Default;
+            ////    ActiveBounds = bounds.Sub(source.Margin);
+            ////}
             return image;
         }
 
         private Dictionary<DataFormItemType, ControlSetInfo> _DataFormControls;
-        private class ControlSetInfo
+        /// <summary>
+        /// Instance třídy, která obhospodařuje jeden typ (<see cref="DataFormItemType"/>) vizuálního controlu, a má až tři instance (Draw, Mouse, Focus)
+        /// </summary>
+        private class ControlSetInfo : IDisposable
         {
-            public ControlSetInfo(DataFormItemType itemType)
+            #region Konstruktor
+            /// <summary>
+            /// Vytvoří <see cref="ControlSetInfo"/> pro daný typ controlu
+            /// </summary>
+            /// <param name="owner"></param>
+            /// <param name="itemType"></param>
+            public ControlSetInfo(IDxDataFormV2 owner, DataFormItemType itemType)
             {
+                _Owner = owner;
                 _ItemType = itemType;
+                switch (itemType)
+                {
+                    case DataFormItemType.Label:
+                        _CreateControlFunction = _LabelCreate;
+                        _FillControlAction = _LabelFill;
+                        _ReadControlAction = _LabelRead;
+                        break;
+                    case DataFormItemType.TextBox:
+                        _CreateControlFunction = _TextBoxCreate;
+                        _FillControlAction = _TextBoxFill;
+                        _ReadControlAction = _TextBoxRead;
+                        break;
+                    case DataFormItemType.CheckBox:
+                        _CreateControlFunction = _CheckBoxCreate;
+                        _FillControlAction = _CheckBoxFill;
+                        _ReadControlAction = _CheckBoxRead;
+                        break;
+                    case DataFormItemType.Button:
+                        _CreateControlFunction = _ButtonCreate;
+                        _FillControlAction = _ButtonFill;
+                        _ReadControlAction = _ButtonRead;
+                        break;
+                    default:
+                        throw new ArgumentException($"Není možno vytvořit 'ControlSetInfo' pro typ prvku '{itemType}'.");
+                }
+                _Disposed = false;
             }
+            /// <summary>
+            /// Dispose prvků
+            /// </summary>
+            public void Dispose()
+            {
+                DisposeControl(ref _ControlDraw, ControlUseMode.Draw);
+                DisposeControl(ref _ControlMouse, ControlUseMode.Mouse);
+                DisposeControl(ref _ControlFocus, ControlUseMode.Focus);
+
+                _CreateControlFunction = null;
+                _FillControlAction = null;
+                _ReadControlAction = null;
+
+                _Disposed = true;
+            }
+            /// <summary>
+            /// Pokud je objekt disposován, vyhodí chybu.
+            /// </summary>
+            private void CheckNonDisposed()
+            {
+                if (_Disposed) throw new InvalidOperationException($"Nelze pracovat s objektem 'ControlSetInfo', protože je zrušen.");
+            }
+            private IDxDataFormV2 _Owner;
             private DataFormItemType _ItemType;
+            private Func<Control> _CreateControlFunction;
+            private Action<DxDataFormItemV2, Control, ControlUseMode> _FillControlAction;
+            private Action<DxDataFormItemV2, Control> _ReadControlAction;
+            private bool _Disposed;
+            #endregion
+            #region Label
+            private Control _LabelCreate() { return new DxLabelControl(); }
+            private void _LabelFill(DxDataFormItemV2 item, Control control, ControlUseMode mode)
+            {
+                if (!(control is DxLabelControl label)) throw new InvalidOperationException($"Nelze naplnit data do objektu typu {control.GetType().Name}, je očekáván objekt typu {typeof(DxLabelControl).Name}.");
+                CommonFill(item, label, mode);
+            }
+            private void _LabelRead(DxDataFormItemV2 item, Control control)
+            { }
+            #endregion
+            #region TextBox
+            private Control _TextBoxCreate() { return new DxTextEdit(); }
+            private void _TextBoxFill(DxDataFormItemV2 item, Control control, ControlUseMode mode)
+            {
+                if (!(control is DxTextEdit textEdit)) throw new InvalidOperationException($"Nelze naplnit data do objektu typu {control.GetType().Name}, je očekáván objekt typu {typeof(DxTextEdit).Name}.");
+                CommonFill(item, textEdit, mode);
+                textEdit.DeselectAll();
+                textEdit.SelectionStart = 0;
+            }
+            private void _TextBoxRead(DxDataFormItemV2 item, Control control)
+            { }
+            #endregion
+            // EditBox
+            // SpinnerBox
+            #region CheckBox
+            private Control _CheckBoxCreate() { return new DxCheckEdit(); }
+            private void _CheckBoxFill(DxDataFormItemV2 item, Control control, ControlUseMode mode)
+            {
+                if (!(control is DxCheckEdit checkEdit)) throw new InvalidOperationException($"Nelze naplnit data do objektu typu {control.GetType().Name}, je očekáván objekt typu {typeof(DxCheckEdit).Name}.");
+                CommonFill(item, checkEdit, mode);
+            }
+            private void _CheckBoxRead(DxDataFormItemV2 item, Control control)
+            { }
+            #endregion
+            // BreadCrumb
+            // ComboBoxList
+            // ComboBoxEdit
+            // ListView
+            // TreeView
+            // RadioButtonBox
+            #region Button
+            private Control _ButtonCreate() { return new DxSimpleButton(); }
+            private void _ButtonFill(DxDataFormItemV2 item, Control control, ControlUseMode mode)
+            {
+                if (!(control is DxSimpleButton button)) throw new InvalidOperationException($"Nelze naplnit data do objektu typu {control.GetType().Name}, je očekáván objekt typu {typeof(DxSimpleButton).Name}.");
+                CommonFill(item, button, mode);
+            }
+            private void _ButtonRead(DxDataFormItemV2 item, Control control)
+            { }
+            #endregion
+            // CheckButton
+            // DropDownButton
+            // Image
+            #region Společné metody pro všechny typy prvků
+            /// <summary>
+            /// Naplní obecně platné hodnoty do daného controlu
+            /// </summary>
+            /// <param name="item"></param>
+            /// <param name="control"></param>
+            /// <param name="mode"></param>
+            private void CommonFill(DxDataFormItemV2 item, BaseControl control, ControlUseMode mode)
+            {
+                Rectangle bounds = item.CurrentBounds;
+                if (mode == ControlUseMode.Draw)
+                {
+                    bounds.Location = new Point(4, 4);
+                }
+                else if (item.VisibleBounds.HasValue)
+                {
+                    bounds.Location = item.VisibleBounds.Value.Location;
+                }
+
+                control.Text = item.Text;
+                control.Enabled = item.Enabled;
+                control.SetBounds(bounds);
+                control.Visible = true;
+                control.SuperTip = GetSuperTip(item, mode);
+            }
+            /// <summary>
+            /// Vrátí instanci <see cref="DxSuperToolTip"/> připravenou pro daný prvek a daný režim. Může vrátit null.
+            /// </summary>
+            /// <param name="item"></param>
+            /// <param name="mode"></param>
+            /// <returns></returns>
+            private DxSuperToolTip GetSuperTip(DxDataFormItemV2 item, ControlUseMode mode)
+            {
+                if (mode != ControlUseMode.Mouse) return null;
+                var superTip = _Owner.DxSuperToolTip;
+                superTip.LoadValues(item);
+                if (!superTip.IsValid) return null;
+                return superTip;
+            }
+            #endregion
+            #region Získání a naplnění controlu z datového Itemu, a reverzní zpětné načtení hodnot z controlu do datového Itemu
+            internal Control GetControlForDraw(DxDataFormItemV2 item)
+            {
+                CheckNonDisposed();
+                if (_ControlDraw == null)
+                    _ControlDraw = _CreateControl(ControlUseMode.Draw);
+                _FillControl(item, _ControlDraw, ControlUseMode.Draw);
+                return _ControlDraw;
+            }
+            internal Control GetControlForMouse(DxDataFormItemV2 item)
+            {
+                CheckNonDisposed();
+                if (_ControlMouse == null)
+                    _ControlMouse = _CreateControl(ControlUseMode.Mouse);
+                _FillControl(item, _ControlMouse, ControlUseMode.Mouse);
+                return _ControlMouse;
+            }
+            internal Control GetControlForFocus(DxDataFormItemV2 item)
+            {
+                CheckNonDisposed();
+                if (_ControlFocus == null)
+                    _ControlFocus = _CreateControl(ControlUseMode.Focus);
+                _FillControl(item, _ControlFocus, ControlUseMode.Focus);
+                return _ControlFocus;
+            }
+            /// <summary>
+            /// Vytvoří new instanci zdejšího controlu, umístí ji do neviditelné souřadnice, přidá do Ownera a vrátí.
+            /// </summary>
+            /// <returns></returns>
+            private Control _CreateControl(ControlUseMode mode)
+            {
+                var control = _CreateControlFunction();
+                Size size = control.Size;
+                Point location = new Point(10, -10 - size.Height);
+                Rectangle bounds = new Rectangle(location, size);
+                control.Visible = false;
+                control.SetBounds(bounds);
+                bool addToBackground = (mode == ControlUseMode.Draw);
+                _Owner.AddControl(control, addToBackground);
+                return control;
+            }
+            private void _FillControl(DxDataFormItemV2 item, Control control, ControlUseMode mode)
+            {
+                _FillControlAction(item, control, mode);
 
 
-            // Dictionary<DxDataFormControlMode, Control>
+                //// source.SetBounds(bounds);                  // Nastavím správné umístění, to kvůli obrázkům na pozadí panelu (různé skiny!), aby obrázky odpovídaly aktuální pozici...
+                //Rectangle sourceBounds = new Rectangle(4, 4, bounds.Width, bounds.Height);
+                //source.SetBounds(sourceBounds);
+                //source.Text = item.Text;
+
+                //var size = source.Size;
+                //if (size != bounds.Size)
+                //{
+                //    item.CurrentSize = size;
+                //    bounds = item.CurrentBounds;
+                //}
+
+            }
+            /// <summary>
+            /// Odebere daný control z Ownera, disposuje jej a nulluje ref proměnnou.
+            /// </summary>
+            /// <param name="control"></param>
+            /// <param name="mode"></param>
+            private void DisposeControl(ref Control control, ControlUseMode mode)
+            {
+                if (control == null) return;
+                bool removeFromBackground = (mode == ControlUseMode.Draw);
+                _Owner.RemoveControl(control, removeFromBackground);
+                control.Dispose();
+                control = null;
+            }
+            private Control _ControlDraw;
+            private Control _ControlMouse;
+            private Control _ControlFocus;
+            #endregion
+        }
+        private enum ControlUseMode { None, Draw, Mouse, Focus }
+        /// <summary>
+        /// Sdílený objekt ToolTipu do všech controlů
+        /// </summary>
+        DxSuperToolTip IDxDataFormV2.DxSuperToolTip { get { return this._DxSuperToolTip; } }
+        /// <summary>
+        /// Daný control přidá do panelu na pozadí (control jen pro kreslení) anebo na popředí (control pro interakci).
+        /// </summary>
+        /// <param name="control"></param>
+        /// <param name="addToBackground"></param>
+        void IDxDataFormV2.AddControl(Control control, bool addToBackground)
+        {
+            if (control == null) return;
+            if (addToBackground)
+                this.Controls.Add(control);
+            else
+                this._ContentPanel.Controls.Add(control);
+        }
+        /// <summary>
+        /// Daný control odebere z panelu na pozadí (control jen pro kreslení) anebo na popředí (control pro interakci).
+        /// </summary>
+        /// <param name="control"></param>
+        /// <param name="addToBackground"></param>
+        void IDxDataFormV2.RemoveControl(Control control, bool addToBackground)
+        {
+            if (control == null) return;
+            if (addToBackground)
+            {
+                if (this.Controls.Contains(control))
+                    this.Controls.Remove(control);
+            }
+            else
+            {
+                if (this._ContentPanel.Controls.Contains(control))
+                    this._ContentPanel.Controls.Remove(control);
+            }
         }
         #endregion
     }
     public interface IDxDataFormV2
     {
         int DeviceDpi { get; }
+        /// <summary>
+        /// Sdílený objekt ToolTipu do všech controlů
+        /// </summary>
+        DxSuperToolTip DxSuperToolTip { get; }
+        /// <summary>
+        /// Daný control přidá do panelu na pozadí (control jen pro kreslení) anebo na popředí (control pro interakci).
+        /// </summary>
+        /// <param name="control"></param>
+        /// <param name="addToBackground"></param>
+        void AddControl(Control control, bool addToBackground);
+        /// <summary>
+        /// Daný control odebere z panelu na pozadí (control jen pro kreslení) anebo na popředí (control pro interakci).
+        /// </summary>
+        /// <param name="control"></param>
+        /// <param name="addToBackground"></param>
+        void RemoveControl(Control control, bool addToBackground);
     }
-    public enum DxDataFormControlMode
-    {
-        None,
-        Inactive,
-        HotMouse,
-        Focused
-    }
-  
+   
     /// <summary>
     /// Třída reprezentující jeden každý vizuální prvek v <see cref="DxDataFormV2"/>.
     /// </summary>
