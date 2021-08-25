@@ -1418,7 +1418,6 @@ namespace TestDevExpress.Forms
         private void InitAnimation()
         {
             AddNewPage("Animace", PrepareAnimation, ActivateAnimation);
-            
         }
         private DxPanelControl _PanelAnimation;
         private DxSplitContainerControl _SplitAnimation;
@@ -1427,10 +1426,18 @@ namespace TestDevExpress.Forms
             _PanelAnimation = panel;
             _PanelAnimation.ClientSizeChanged += _PanelAnimation_AnySizeChanged;
 
+            PointOfAnimation = new List<AnimationPoint>();
+
             _SplitAnimation = DxComponent.CreateDxSplitContainer(_PanelAnimation, splitterPositionChanged: _PanelAnimation_AnySizeChanged, dock: DockStyle.Fill, splitLineOrientation: Orientation.Vertical, fixedPanel: DevExpress.XtraEditors.SplitFixedPanel.Panel2, showSplitGlyph: true);
+            _SplitAnimation.SizeChanged += _PanelAnimation_AnySizeChanged;
+            _SplitAnimation.Panel1.SizeChanged += _PanelAnimation_AnySizeChanged;
             _SplitAnimation.ClientSizeChanged += _PanelAnimation_AnySizeChanged;
 
             _PanelAnimationGraphic = new DxBufferedGraphic() { LogActive = true };
+            _PanelAnimationGraphic.Layers = new DxBufferedLayer[] { DxBufferedLayer.AppBackground, DxBufferedLayer.MainLayer };
+            _PanelAnimationGraphic.PaintLayer += _PanelAnimationGraphic_PaintLayer;
+            _PanelAnimationGraphic.MouseDown += _PanelAnimationGraphic_MouseDown;
+            _PanelAnimationGraphic.MouseMove += _PanelAnimationGraphic_MouseMove;
             _SplitAnimation.Panel1.Controls.Add(_PanelAnimationGraphic);
 
             _LogTextAnimation = DxComponent.CreateDxMemoEdit(_SplitAnimation.Panel2, System.Windows.Forms.DockStyle.Fill, readOnly: true, tabStop: false);
@@ -1450,10 +1457,104 @@ namespace TestDevExpress.Forms
 
             _PanelAnimation_DoLayout();
         }
+
+        private void _PanelAnimationGraphic_MouseDown(object sender, MouseEventArgs e)
+        {
+            Point point = e.Location;
+            _AnimationLastTime = DateTime.Now;
+            _AnimationLastPoint = point;
+            PointOfAnimation.Add(new AnimationPoint(_PanelAnimationGraphic.ClientRectangle, point));
+            _PanelAnimationGraphic.InvalidateLayers(DxBufferedLayer.MainLayer);
+        }
+        private void _PanelAnimationGraphic_MouseMove(object sender, MouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.None) return;
+
+            var now = DateTime.Now;
+            var time = now - _AnimationLastTime;
+            if (time.TotalMilliseconds < 70) return;
+
+            var point = e.Location;
+            int dx = point.X - _AnimationLastPoint.X;
+            bool nox = (dx > -12 && dx < 12);
+            int dy = point.Y - _AnimationLastPoint.Y;
+            bool noy = (dy > -12 && dy < 12);
+            if (nox && noy) return;
+
+            _AnimationLastTime = now;
+            _AnimationLastPoint = point;
+            PointOfAnimation.Add(new AnimationPoint(_PanelAnimationGraphic.ClientRectangle, point));
+            _PanelAnimationGraphic.InvalidateLayers(DxBufferedLayer.MainLayer);
+        }
+        private DateTime _AnimationLastTime;
+        private Point _AnimationLastPoint;
+
+        private void _PanelAnimationGraphic_PaintLayer(object sender, DxBufferedGraphicPaintArgs args)
+        {
+            var size = args.Size;
+            switch (args.LayerId)
+            {
+                case DxBufferedLayer.AppBackground:
+                    args.Graphics.DrawRectangle(System.Drawing.Pens.Violet, new System.Drawing.Rectangle(1, 1, size.Width - 3, size.Height - 3));
+                    break;
+                case DxBufferedLayer.MainLayer:
+                    if (PointOfAnimation == null || PointOfAnimation.Count == 0)
+                        PaintAnimationCircle(args, null);
+                    else
+                    {
+                        args.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+                        PointOfAnimation.ForEach(p => PaintAnimationCircle(args, p));
+                    }
+                    //args.Graphics.FillRectangle(System.Drawing.Brushes.LightBlue, new System.Drawing.Rectangle(40, 16, 120, 20));
+                    //args.Graphics.FillRectangle(System.Drawing.Brushes.LightCyan, new System.Drawing.Rectangle(80, 42, 40, 60));
+                    break;
+            }
+        }
+        private void PaintAnimationCircle(DxBufferedGraphicPaintArgs args, AnimationPoint animationPoint)
+        {
+            if (animationPoint == null) return;
+            using (SolidBrush b = new SolidBrush(animationPoint.Color))
+                args.Graphics.FillEllipse(b, animationPoint.Bounds);
+        }
+        private List<AnimationPoint> PointOfAnimation;
+        private class AnimationPoint
+        {
+            public AnimationPoint(Rectangle bounds)
+            {
+                int w = Random.Rand.Next(16, 64);
+                int h = Random.Rand.Next(16, 64);
+                int x = Random.Rand.Next(8, bounds.Width - w - 8);
+                int y = Random.Rand.Next(8, bounds.Height - h - 8);
+                Bounds = new Rectangle(x, y, w, h);
+
+                int r = Random.Rand.Next(32, 224);
+                int g = Random.Rand.Next(32, 224);
+                int b = Random.Rand.Next(32, 224);
+                Color = Color.FromArgb(r, g, b);
+            }
+            public AnimationPoint(Rectangle bounds, Point center)
+            {
+                int w = Random.Rand.Next(16, 64);
+                int h = Random.Rand.Next(16, 64);
+                int x = center.X - (w / 2);
+                int y = center.Y - (h / 2);
+                Bounds = new Rectangle(x, y, w, h);
+
+                int r = Random.Rand.Next(32, 224);
+                int g = Random.Rand.Next(32, 224);
+                int b = Random.Rand.Next(32, 224);
+                Color = Color.FromArgb(r, g, b);
+            }
+            public Rectangle Bounds;
+            public Color Color;
+        }
         private void ActivateAnimation()
         {
             DxComponent.LogClear();
             CurrentLogControl = _LogTextAnimation;
+
+            PointOfAnimation = new List<AnimationPoint>();
+            _PanelAnimationGraphic.InvalidateLayers(DxBufferedLayer.MainLayer);
         }
         private void _PanelAnimation_AnySizeChanged(object sender, EventArgs e)
         {

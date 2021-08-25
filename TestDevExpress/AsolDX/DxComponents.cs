@@ -1871,6 +1871,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         #endregion
         #endregion
         #region TryRun
+        /// <summary>
+        /// Provede danou akci v bloku try - catch, volitelně s potlačením chybové hlášky
+        /// </summary>
+        /// <param name="action"></param>
+        /// <param name="hideException"></param>
         public static void TryRun(Action action, bool hideException = false) { Instance._TryRun(action, hideException); }
         private void _TryRun(Action action, bool hideException)
         {
@@ -5866,6 +5871,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         /// <summary>
         /// Sloučí dané prvky do jednoho stringu.
+        /// Mezi prvky vkládá daný oddělovač. Oddělovač nebude vložen před první prvek ani za poslední prvek.
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="items">Kolekce prvků</param>
@@ -5879,12 +5885,18 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 bool hasConverter = (convertor != null);
                 if (delimiter == null) delimiter = "\r\n";
+                bool prefixDelimiter = false;
                 foreach (T item in items)
                 {
                     if (item == null && skipNull) continue;
+                    
                     string text = (hasConverter ? convertor(item) : (item?.ToString() ?? ""));
+                    if (prefixDelimiter)
+                        sb.Append(delimiter);
+                    else
+                        prefixDelimiter = true;
+
                     sb.Append(text);
-                    sb.Append(delimiter);
                 }
             }
             return sb.ToString();
