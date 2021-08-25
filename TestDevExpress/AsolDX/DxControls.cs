@@ -3513,7 +3513,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public virtual int ItemOrder { get; set; }
         /// <summary>
-        /// Obsahuje tre tehdy, když před prvkem má být oddělovač
+        /// Obsahuje true tehdy, když před prvkem má být oddělovač
         /// </summary>
         public virtual bool ItemIsFirstInGroup { get; set; }
         /// <summary>

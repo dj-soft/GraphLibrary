@@ -277,8 +277,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             bool isRecalc = refreshParts.HasFlag(RefreshParts.RecalculateContentTotalSize);
             bool isVisibl = refreshParts.HasFlag(RefreshParts.ReloadVisibleItems);
-            //_DeviceDpiReload();
-            //if (!isRecalc && this._DeviceDpiChanged) isRecalc = true;                    // Pokud je nyní jiné DPI než posledně...
             if (isRecalc && isVisibl)                                                    // Pokud jsou oba požadavky společně,
                 this.RecalculateContentAndVisibleItems();                                //  pak provedu specifickou metodu, která enumeruje prvky jen jedenkrát
             else if (isRecalc)
@@ -292,6 +290,9 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (refreshParts.HasFlag(RefreshParts.InvalidateControl))
                 this._ContentPanel.InvalidateLayers(DxBufferedLayer.MainLayer);
         }
+        /// <summary>
+        /// Po změně DPI je třeba provést kompletní refresh (souřadnice, cache, atd)
+        /// </summary>
         protected override void OnDpiChanged()
         {
             base.OnDpiChanged();
