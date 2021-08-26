@@ -393,12 +393,13 @@ namespace Noris.Clients.Win.Components.AsolDX
                     var startTime = DxComponent.LogTimeCurrent;
                     var size = this._GraphicsSize;
                     if (!clipRectangle.HasValue) clipRectangle = new Rectangle(Point.Empty, size);
-                    DxBufferedGraphicPaintArgs args = new DxBufferedGraphicPaintArgs(this.Graphics, this.LayerId, sourceLayer._GraphicsData, size, clipRectangle.Value, this.OwnerUserData, logActive);
+                    DxBufferedGraphicPaintArgs args = new DxBufferedGraphicPaintArgs(this.Graphics, this.LayerId, sourceLayer._GraphicsData, size, clipRectangle.Value, this.InvalidateUserData, this.LayerUserData, logActive);
                     // Info: třída DxBufferedGraphicPaintArgs v sobě obsahuje referenci na zdejší grafiku (this.Graphics) a na zdrojovou grafiku (sourceLayer._GraphicsData).
                     // Při prvním použití zdejší grafiky (DxBufferedGraphicPaintArgs.Graphics) si do ní zkopíruje obsah zdrojové grafiky (sourceLayer._GraphicsData)
                     //  a nahodí příznak GraphicsIsUsed = true.
                     // Pokud ale v události RunOnPaintLayer() nikdo nepoužije grafiku DxBufferedGraphicPaintArgs.Graphics, pak tato vrstva nebude mít svůj obsah, a jako sourceLayer zůstane ta předchozí...
                     _Owner.RunOnPaintLayer(args);
+                    this.LayerUserData = args.LayerUserData;
                     if (logActive) DxComponent.LogAddLineTime($"DxBufferedGraphic.PaintLayer({LayerId}); Time: {DxComponent.LogTokenTimeMilisec}", startTime);
 
                     this._IsInvalidated = false;
@@ -512,7 +513,12 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// <summary>
             /// UserData předaná do metod <see cref="DxPanelBufferedGraphic.InvalidateLayers(object)"/>, a přenášená při kreslení do eventhandleru <see cref="DxPanelBufferedGraphic.PaintLayer"/>.
             /// </summary>
-            protected object OwnerUserData { get { return _Owner.InvalidateUserData; } }
+            protected object InvalidateUserData { get { return _Owner.InvalidateUserData; } }
+            /// <summary>
+            /// UserData konkrétní vrstvy, řídí si aplikační logika
+            /// </summary>
+            protected object LayerUserData { get { return _LayerUserData; } set { _LayerUserData = value; } }
+            private object _LayerUserData;
             /// <summary>
             /// Obsahuje true, pokud aktuálně existuje Bufferovaná grafika (<see cref="_GraphicsData"/>) a má velikost odpovídající požadované velikosti panelu <see cref="OwnerGraphicsSize"/>.
             /// </summary>
@@ -543,7 +549,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         None = 0,
         /// <summary>
-        /// Nativní pozadí panelu, není nutno explicitně požadovat, tuto vrstvu řeší <see cref="DxPanelBufferedGraphic"/> interně
+        /// Nativní pozadí panelu, není nutno explicitně požadovat, tuto vrstvu řeší <see cref="DxPanelBufferedGraphic"/> interně.
+        /// Tuto vrstvu nekreslí aplikační logika, ale nativní control.
         /// </summary>
         NativeBackground,
         /// <summary>
@@ -582,16 +589,18 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="sourceGraphicsData"></param>
         /// <param name="size"></param>
         /// <param name="clientRectangle"></param>
-        /// <param name="userData"></param>
+        /// <param name="invalidateUserData"></param>
+        /// <param name="layerUserData"></param>
         /// <param name="logActive"></param>
-        public DxBufferedGraphicPaintArgs(Graphics graphics, DxBufferedLayer layerId, BufferedGraphics sourceGraphicsData, Size size, Rectangle clientRectangle, object userData, bool logActive = false)
+        public DxBufferedGraphicPaintArgs(Graphics graphics, DxBufferedLayer layerId, BufferedGraphics sourceGraphicsData, Size size, Rectangle clientRectangle, object invalidateUserData, object layerUserData, bool logActive = false)
         {
             _LayerId = layerId;
             _Graphics = graphics;
             _SourceGraphicsData = sourceGraphicsData;
             _GraphicsIsUsed = false;
             _Size = size;
-            _UserData = userData;
+            _InvalidateUserData = invalidateUserData;
+            _LayerUserData = layerUserData;
             _LogActive = logActive;
         }
         private DxBufferedLayer _LayerId;
@@ -599,7 +608,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         private BufferedGraphics _SourceGraphicsData;
         private bool _GraphicsIsUsed;
         private Size _Size;
-        private object _UserData;
+        private object _InvalidateUserData;
+        private object _LayerUserData;
         private bool _LogActive;
         /// <summary>
         /// ID vrstvy
@@ -627,13 +637,26 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public bool GraphicsIsUsed { get { return _GraphicsIsUsed; } }
         /// <summary>
+        /// Metoda sdělí controlu <see cref="DxPanelBufferedGraphic"/>, že aktuální vrstva má být použita, i když je prázdná.
+        /// </summary>
+        public void UseBlankGraphics()
+        {
+            _CheckGraphics();
+        }
+        /// <summary>
         /// Velikost prostoru
         /// </summary>
         public Size Size { get { return _Size; } }
         /// <summary>
         /// Uživatelská data, předaná do invalidace <see cref="DxPanelBufferedGraphic.InvalidateLayers(object)"/>
         /// </summary>
-        public object UserData { get { return _UserData; } }
+        public object InvalidateUserData { get { return _InvalidateUserData; } }
+        /// <summary>
+        /// Uživatelská data, která jsou uložena permanentně v rámci jedné konkrétní vrstvy.
+        /// Aplikační logika je sem může v procesu kreslení vepsat, i číst. Vepsaná data v jednom procesu PaintLayer budou k dispozici i v příštím procesu.
+        /// Data se ztratí pouze při změně vrstev - po zápisu do <see cref="DxPanelBufferedGraphic.Layers"/>.
+        /// </summary>
+        public object LayerUserData { get { return _LayerUserData; } set { _LayerUserData = value; } }
     }
     #endregion
 }

@@ -54,7 +54,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             this._ContentPanel = new DxPanelBufferedGraphic() { Visible = true, BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder };
             this._ContentPanel.LogActive = true;
-            this._ContentPanel.Layers = new DxBufferedLayer[] { DxBufferedLayer.MainLayer };       // Tady můžu přidat další vrstvy, když budu chtít kreslit 'pod' anebo 'nad' hlavní prvky
+            this._ContentPanel.Layers = new DxBufferedLayer[] { DxBufferedLayer.AppBackground, DxBufferedLayer.MainLayer };       // Tady můžu přidat další vrstvy, když budu chtít kreslit 'pod' anebo 'nad' hlavní prvky
             this._ContentPanel.PaintLayer += _ContentPanel_PaintLayer;                             // A tady bych pak musel reagovat na kreslení přidaných vrstev...
             this.ContentControl = this._ContentPanel;
         }
@@ -237,6 +237,9 @@ namespace Noris.Clients.Win.Components.AsolDX
             bool isMouseEnter = (newExists && (!oldExists || (oldExists && !Object.ReferenceEquals(oldItem, newItem))));
             if (isMouseEnter)
                 MouseItemEnter(newItem);
+
+            if (isMouseLeave || isMouseEnter)
+                this._ContentPanel.InvalidateLayers(DxBufferedLayer.AppBackground);
         }
         private void MouseItemEnter(DxDataFormItemV2 item)
         {
@@ -301,7 +304,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 this.InvalidateImageCache();
 
             if (refreshParts.HasFlag(RefreshParts.InvalidateControl))
-                this._ContentPanel.InvalidateLayers(DxBufferedLayer.MainLayer);
+                this._ContentPanel.InvalidateLayers(DxBufferedLayer.AppBackground, DxBufferedLayer.MainLayer);
         }
         /// <summary>
         /// Po změně DPI je třeba provést kompletní refresh (souřadnice, cache, atd)
@@ -409,12 +412,15 @@ namespace Noris.Clients.Win.Components.AsolDX
         #endregion
         #region Vykreslování a Bitmap cache
         #region Vykreslení celého Contentu
+        /// <summary>
+        /// Inicializace kreslení
+        /// </summary>
         private void InitializePaint()
         {
             _AfterPaintSearchActiveItem = false;
             _PaintingItems = false;
             _PaintLoop = 0L;
-            _NextCleanPaintLoop = _CACHECLEAN_AFTER_LOOPS;
+            _NextCleanPaintLoop = _CACHECLEAN_OLD_LOOPS + 1;         // První pokus o úklid proběhne po tomto počtu PaintLoop, protože i kdyby bylo potřeba uklidit staré položky, tak stejně nemůže zahodit starší položky - žádné by nevyhovovaly...
         }
         public void TestPerformance(int count, bool forceRefresh)
         {
@@ -423,15 +429,49 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.Refresh(RefreshParts.InvalidateControl);
             Application.DoEvents();
         }
-
+        /// <summary>
+        /// ContentPanel chce vykreslit některou vrstvu
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="args"></param>
         private void _ContentPanel_PaintLayer(object sender, DxBufferedGraphicPaintArgs args)
         {
             switch (args.LayerId)
             {
+                case DxBufferedLayer.AppBackground:
+                    PaintContentAppBackground(args);
+                    break;
                 case DxBufferedLayer.MainLayer:
                     PaintContentMainLayer(args);
                     break;
             }
+        }
+        /// <summary>
+        /// Metoda zajistí vykreslení aplikačního pozadí (okraj aktivních prvků)
+        /// </summary>
+        /// <param name="e"></param>
+        private void PaintContentAppBackground(DxBufferedGraphicPaintArgs e)
+        {
+            bool isPainted = false;
+            var mouseControl = _CurrentOnMouseControl;
+            if (mouseControl != null)
+                PaintBorder(e, mouseControl.Bounds, Color.DarkViolet, ref isPainted);
+
+            //  Specifikum bufferované grafiky:
+            // - pokud do konkrétní vrstvy jednou něco vepíšu, zůstane to tam (až do nějakého většího refreshe).
+            // - pokud v procesu PaintLayer do předaného argumentu do e.Graphics nic nevepíšu, znamená to "beze změny".
+            // - pokud tedy nyní nemám žádný control k vykreslení, ale posledně jsem něco vykreslil, měl bych grafiku smazat:
+            // - k tomu používám e.LayerUserData
+            bool oldPainted = (e.LayerUserData is bool && (bool)e.LayerUserData);
+            if (oldPainted && !isPainted)
+                e.UseBlankGraphics();
+            e.LayerUserData = isPainted;
+        }
+        private void PaintBorder(DxBufferedGraphicPaintArgs e, Rectangle bounds, Color color, ref bool isPainted)
+        {
+            e.Graphics.FillRectangle(DxComponent.PaintGetSolidBrush(color, 32), bounds.Enlarge(3));
+            e.Graphics.FillRectangle(DxComponent.PaintGetSolidBrush(color, 96), bounds.Enlarge(1));
+            isPainted = true;
         }
         private void PaintContentMainLayer(DxBufferedGraphicPaintArgs e)
         { 
@@ -575,6 +615,8 @@ namespace Noris.Clients.Win.Components.AsolDX
                 }
                 return image;
             }
+
+            
         }
         /// <summary>
         /// Před přidáním nového prvku do cache provede úklid zastaralých prvků v cache, podle potřeby.
@@ -726,7 +768,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 using (System.IO.MemoryStream ms = new System.IO.MemoryStream())
                 {
-                    image.Save(ms, System.Drawing.Imaging.ImageFormat.Png);
+                    image.Save(ms, System.Drawing.Imaging.ImageFormat.Png);    // PNG: čas v testu 20-24ms, spotřeba paměti 0.5MB.    BMP: čas 18-20ms, pamět 5MB.    TIFF: čas 50ms, paměť 1.5MB
                     _ImageContent = ms.ToArray();
                 }
                 this.HitCount = 1L;

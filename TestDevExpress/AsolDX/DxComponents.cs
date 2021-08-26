@@ -2204,17 +2204,44 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         public static SolidBrush PaintGetSolidBrush(Color color) { return Instance._GetSolidBrush(color); }
         /// <summary>
+        /// Okamžitě vrací SolidBrush pro kreslení danou barvou.
+        /// Explicitně je dána hodnota alpha kanálu: 0 = zcela průhledná barva ... 255 = zcela plná barva
+        /// Nesmí být Disposován!
+        /// </summary>
+        /// <param name="color"></param>
+        /// <param name="alpha"></param>
+        /// <returns></returns>
+        public static SolidBrush PaintGetSolidBrush(Color color, int alpha) { return Instance._GetSolidBrush(Color.FromArgb(alpha, color)); }
+        /// <summary>
         /// Okamžitě vrací Pen pro kreslení danou barvou. Nesmí být Disposován!
         /// </summary>
         /// <param name="color"></param>
         /// <returns></returns>
         public static Pen PaintGetPen(Color color) { return Instance._GetPen(color); }
-
+        /// <summary>
+        /// Okamžitě vrací Pen pro kreslení danou barvou. 
+        /// Explicitně je dána hodnota alpha kanálu: 0 = zcela průhledná barva ... 255 = zcela plná barva
+        /// Nesmí být Disposován!
+        /// </summary>
+        /// <param name="color"></param>
+        /// <param name="alpha"></param>
+        /// <returns></returns>
+        public static Pen PaintGetPen(Color color, int alpha) { return Instance._GetPen(Color.FromArgb(alpha, color)); }
+        /// <summary>
+        /// Okamžitě vrací SolidBrush dané barvy
+        /// </summary>
+        /// <param name="color"></param>
+        /// <returns></returns>
         private SolidBrush _GetSolidBrush(Color color)
         {
             _SolidBrush.Color = color;
             return _SolidBrush;
         }
+        /// <summary>
+        /// Okamžitě vrací Pendané barvy
+        /// </summary>
+        /// <param name="color"></param>
+        /// <returns></returns>
         private Pen _GetPen(Color color)
         {
             _Pen.Color = color;
