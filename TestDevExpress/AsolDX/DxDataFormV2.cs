@@ -214,14 +214,19 @@ namespace Noris.Clients.Win.Components.AsolDX
             // toto je nonsens, protože když pod myší existuje prvek, pak MouseDown přejde ondoň nativně, a nikoli z _ContentPanel_MouseDown.
             // Sem se dostanu jen tehdy, když myš klikne na panelu _ContentPanel v místě, kde není žádný prvek.
         }
-
+        /// <summary>
+        /// Vyhledá prvek nacházející se pod aktuální souřadnicí myši a zajistí pro prvky <see cref="MouseItemLeave()"/> a <see cref="MouseItemEnter(DxDataFormItemV2)"/>.
+        /// </summary>
         private void PrepareItemForCurrentPoint()
         {
             Point absoluteLocation = Control.MousePosition;
             Point relativeLocation = _ContentPanel.PointToClient(absoluteLocation);
             PrepareItemForPoint(relativeLocation);
         }
-
+        /// <summary>
+        /// Vyhledá prvek nacházející se pod danou souřadnicí myši a zajistí pro prvky <see cref="MouseItemLeave()"/> a <see cref="MouseItemEnter(DxDataFormItemV2)"/>.
+        /// </summary>
+        /// <param name="location"></param>
         private void PrepareItemForPoint(Point location)
         {
             if (_VisibleItems == null) return;
@@ -241,6 +246,10 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (isMouseLeave || isMouseEnter)
                 this._ContentPanel.InvalidateLayers(DxBufferedLayer.AppBackground);
         }
+        /// <summary>
+        /// Je voláno při příchodu myši na daný prvek.
+        /// </summary>
+        /// <param name="item"></param>
         private void MouseItemEnter(DxDataFormItemV2 item)
         {
             if (item.VisibleBounds.HasValue)
@@ -250,6 +259,9 @@ namespace Noris.Clients.Win.Components.AsolDX
                 _CurrentOnMouseControl = _CurrentOnMouseControlSet.GetControlForMouse(item);
             }
         }
+        /// <summary>
+        /// Je voláno při opuštění myši z aktuálního prvku.
+        /// </summary>
         private void MouseItemLeave()
         {
             var oldControl = _CurrentOnMouseControl;
@@ -587,7 +599,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             if (ImageCache == null) ImageCache = new Dictionary<string, ImageCacheItem>();
 
-            string key = item.ContentKey;
+            ControlSetInfo controlSet = GetControlSet(item);
+            string key = controlSet.GetKeyToCache(item);
             if (key == null) return null;
 
             ImageCacheItem imageInfo = null;
@@ -729,23 +742,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             ImageCache = null;
         }
         /// <summary>
-        /// Zruší informaci v cache uložených Image pro jeden prvek
-        /// </summary>
-        /// <param name="item"></param>
-        private void InvalidateImageCache(DxDataFormItemV2 item)
-        {
-            if (ImageCache == null) return;
-
-            string key = item.ContentKey;
-            if (key == null) return;
-
-            lock (ImageCache)
-            {
-                if (ImageCache.ContainsKey(key))
-                    ImageCache.Remove(key);
-            }
-        }
-        /// <summary>
         /// Počet prvků v cache
         /// </summary>
         private int ImageCacheCount { get { return ImageCache?.Count ?? 0; } }
@@ -879,32 +875,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             Bitmap image = new Bitmap(w, h);
             drawControl.DrawToBitmap(image, new Rectangle(0, 0, w, h));
 
-            //// source.SetBounds(bounds);                  // Nastavím správné umístění, to kvůli obrázkům na pozadí panelu (různé skiny!), aby obrázky odpovídaly aktuální pozici...
-            //Rectangle sourceBounds = new Rectangle(4, 4, bounds.Width, bounds.Height);
-            //source.SetBounds(sourceBounds);
-            //source.Text = item.Text;
-
-            //var size = source.Size;
-            //if (size != bounds.Size)
-            //{
-            //    item.CurrentSize = size;
-            //    bounds = item.CurrentBounds;
-            //}
-            //int w = size.Width;
-            //int h = size.Height;
-            //Bitmap image = new Bitmap(w, h);
-            //if (source is DxTextEdit textEdit)
-            //{
-            //    textEdit.DeselectAll();
-            //    textEdit.SelectionStart = 0;
-            //    cursor = Cursors.IBeam;
-            //}
-            //source.DrawToBitmap(image, new Rectangle(0, 0, w, h));
-            ////if (storeValues)
-            ////{
-            ////    DefaultCursor = cursor ?? Cursors.Default;
-            ////    ActiveBounds = bounds.Sub(source.Margin);
-            ////}
             return image;
         }
 
@@ -928,21 +898,25 @@ namespace Noris.Clients.Win.Components.AsolDX
                 {
                     case DataFormItemType.Label:
                         _CreateControlFunction = _LabelCreate;
+                        _GetKeyFunction = _LabelGetKey;
                         _FillControlAction = _LabelFill;
                         _ReadControlAction = _LabelRead;
                         break;
                     case DataFormItemType.TextBox:
                         _CreateControlFunction = _TextBoxCreate;
+                        _GetKeyFunction = _TextBoxGetKey;
                         _FillControlAction = _TextBoxFill;
                         _ReadControlAction = _TextBoxRead;
                         break;
                     case DataFormItemType.CheckBox:
                         _CreateControlFunction = _CheckBoxCreate;
+                        _GetKeyFunction = _CheckBoxGetKey;
                         _FillControlAction = _CheckBoxFill;
                         _ReadControlAction = _CheckBoxRead;
                         break;
                     case DataFormItemType.Button:
                         _CreateControlFunction = _ButtonCreate;
+                        _GetKeyFunction = _ButtonGetKey;
                         _FillControlAction = _ButtonFill;
                         _ReadControlAction = _ButtonRead;
                         break;
@@ -976,12 +950,18 @@ namespace Noris.Clients.Win.Components.AsolDX
             private IDxDataFormV2 _Owner;
             private DataFormItemType _ItemType;
             private Func<Control> _CreateControlFunction;
+            private Func<DxDataFormItemV2, string> _GetKeyFunction;
             private Action<DxDataFormItemV2, Control, ControlUseMode> _FillControlAction;
             private Action<DxDataFormItemV2, Control> _ReadControlAction;
             private bool _Disposed;
             #endregion
             #region Label
             private Control _LabelCreate() { return new DxLabelControl(); }
+            private string _LabelGetKey(DxDataFormItemV2 item) 
+            {
+                string key = GetStandardKeyForItem(item);
+                return key;
+            }
             private void _LabelFill(DxDataFormItemV2 item, Control control, ControlUseMode mode)
             {
                 if (!(control is DxLabelControl label)) throw new InvalidOperationException($"Nelze naplnit data do objektu typu {control.GetType().Name}, je očekáván objekt typu {typeof(DxLabelControl).Name}.");
@@ -992,6 +972,11 @@ namespace Noris.Clients.Win.Components.AsolDX
             #endregion
             #region TextBox
             private Control _TextBoxCreate() { return new DxTextEdit(); }
+            private string _TextBoxGetKey(DxDataFormItemV2 item)
+            {
+                string key = GetStandardKeyForItem(item);
+                return key;
+            }
             private void _TextBoxFill(DxDataFormItemV2 item, Control control, ControlUseMode mode)
             {
                 if (!(control is DxTextEdit textEdit)) throw new InvalidOperationException($"Nelze naplnit data do objektu typu {control.GetType().Name}, je očekáván objekt typu {typeof(DxTextEdit).Name}.");
@@ -1006,6 +991,11 @@ namespace Noris.Clients.Win.Components.AsolDX
             // SpinnerBox
             #region CheckBox
             private Control _CheckBoxCreate() { return new DxCheckEdit(); }
+            private string _CheckBoxGetKey(DxDataFormItemV2 item)
+            {
+                string key = GetStandardKeyForItem(item);
+                return key;
+            }
             private void _CheckBoxFill(DxDataFormItemV2 item, Control control, ControlUseMode mode)
             {
                 if (!(control is DxCheckEdit checkEdit)) throw new InvalidOperationException($"Nelze naplnit data do objektu typu {control.GetType().Name}, je očekáván objekt typu {typeof(DxCheckEdit).Name}.");
@@ -1022,6 +1012,11 @@ namespace Noris.Clients.Win.Components.AsolDX
             // RadioButtonBox
             #region Button
             private Control _ButtonCreate() { return new DxSimpleButton(); }
+            private string _ButtonGetKey(DxDataFormItemV2 item)
+            {
+                string key = GetStandardKeyForItem(item);
+                return key;
+            }
             private void _ButtonFill(DxDataFormItemV2 item, Control control, ControlUseMode mode)
             {
                 if (!(control is DxSimpleButton button)) throw new InvalidOperationException($"Nelze naplnit data do objektu typu {control.GetType().Name}, je očekáván objekt typu {typeof(DxSimpleButton).Name}.");
@@ -1072,6 +1067,20 @@ namespace Noris.Clients.Win.Components.AsolDX
                 if (!superTip.IsValid) return null;
                 return superTip;
             }
+            /// <summary>
+            /// Vrátí standardní klíč daného prvku do ImageCache
+            /// </summary>
+            /// <param name="item"></param>
+            /// <returns></returns>
+            private string GetStandardKeyForItem(DxDataFormItemV2 item)
+            {
+                var size = item.CurrentBounds.Size;
+                string text = item.Text ?? "";
+                string dpi = item.CurrentDpi.ToString();
+                string type = ((int)item.ItemType).ToString();
+                string key = $"{size.Width}.{size.Height}.{dpi};{type}::{text}";
+                return key;
+            }
             #endregion
             #region Získání a naplnění controlu z datového Itemu, a reverzní zpětné načtení hodnot z controlu do datového Itemu
             internal Control GetControlForDraw(DxDataFormItemV2 item)
@@ -1097,6 +1106,19 @@ namespace Noris.Clients.Win.Components.AsolDX
                     _ControlFocus = _CreateControl(ControlUseMode.Focus);
                 _FillControl(item, _ControlFocus, ControlUseMode.Focus);
                 return _ControlFocus;
+            }
+            /// <summary>
+            /// Metoda vrátí stringový klíč do ImageCache pro konkrétní prvek.
+            /// Vrácený klíč zohledňuje všechny potřebné a specifické hodnoty z konkrétního prvku.
+            /// Je tedy jisté, že dva různé objekty, které vrátí stejný klíč, budou mít stejný vzhled.
+            /// </summary>
+            /// <param name="item"></param>
+            /// <returns></returns>
+            internal string GetKeyToCache(DxDataFormItemV2 item)
+            {
+                CheckNonDisposed();
+                string key = _GetKeyFunction?.Invoke(item);
+                return key;
             }
             /// <summary>
             /// Vytvoří new instanci zdejšího controlu, umístí ji do neviditelné souřadnice, přidá do Ownera a vrátí.
@@ -1189,8 +1211,14 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         #endregion
     }
+    /// <summary>
+    /// Rozhraní na interní věci DataForm panelu
+    /// </summary>
     public interface IDxDataFormV2
     {
+        /// <summary>
+        /// DPI panelu
+        /// </summary>
         int DeviceDpi { get; }
         /// <summary>
         /// Sdílený objekt ToolTipu do všech controlů
@@ -1230,23 +1258,6 @@ namespace Noris.Clients.Win.Components.AsolDX
 
         public DataFormItemType ItemType { get { return _ItemType; } }
         public bool IsVisible { get; set; }
-
-        /// <summary>
-        /// Klíč obsahu. 
-        /// Pokud dva různé prvky budou mít shodný klíč obsahu, pak oba prvky vypadají shodně.
-        /// Klíč pokrývá: Typ objektu, velikost, obsah, vzhled, barvy, písmo.
-        /// Slouží k tomu, aby v paměti bylo možno uložit sadu Image pro jednotlivé prvky, ale nikoli zbytečně opakované shodné Image.
-        /// </summary>
-        public string ContentKey
-        {
-            get
-            {
-                var size = CurrentBounds.Size;
-                string text = Text ?? "";
-                string key = $"{size.Width}.{size.Height}.{__CurrentDpi};{ItemType}::{text}";
-                return key;
-            }
-        }
 
         #region Souřadnice designové, aktuální, viditelné
         /// <summary>
@@ -1294,6 +1305,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private Rectangle? __CurrentBounds;
         /// <summary>
+        /// Aktuální DPI
+        /// </summary>
+        public int CurrentDpi { get { return __CurrentDpi; } }
+        /// <summary>
         /// Hodnota DPI, ke které jsou přepočteny souřadnice <see cref="CurrentBounds"/> a <see cref="VisibleBounds"/>.
         /// </summary>
         private int __CurrentDpi;
@@ -1325,47 +1340,5 @@ namespace Noris.Clients.Win.Components.AsolDX
             return (VisibleBounds.HasValue && VisibleBounds.Value.Contains(point));
         }
         #endregion
-
-
-        public Cursor DefaultCursor { get; set; }
-
-
-        /*   Časomíra:
-                        Získat control   Vložit Bounds    Vložit Text   Selection   DrawToBitmap   PaintImage      Čas mikrosekund
-        0. Nic:                                                                                                   :        6  (režie smyčky)
-        1. PaintImage                                                                                  ANO        :       15
-        2. Bez Bounds        ANO                                                                                  :       25
-        3. Bez Text          ANO             ANO                                                                  :      320
-        4. Bez Selection     ANO             ANO             ANO                                                  :      470
-        5. Bez obrázku       ANO             ANO             ANO           ANO                                    :      470
-        6. Bez kreslení      ANO             ANO             ANO           ANO                         ANO        :      500
-        7. Komplet           ANO             ANO             ANO           ANO         ANO             ANO        :      990
-
-        */
-            
-
-      
-        private Bitmap CreateImageNative(Rectangle bounds, bool storeValues)
-        {
-            int w = bounds.Width;
-            int h = bounds.Height;
-            Bitmap image = new Bitmap(w, h);
-
-            //DevExpress.Utils.Drawing.BorderPainter.DrawTextOnGlass
-            //    DevExpress.Utils.Drawing.SimpleBorderPainter.
-            //DevExpress.XtraEditors.RangeControlBorderPainter.
-
-
-            int r = w - 1;
-            int b = h - 1;
-            image.SetPixel(0, 0, Color.DarkBlue);
-            image.SetPixel(r, 0, Color.DarkViolet);
-            image.SetPixel(0, b, Color.DarkGreen);
-            image.SetPixel(r, b, Color.DarkMagenta);
-
-            return image;
-        }
-
-
     }
 }
