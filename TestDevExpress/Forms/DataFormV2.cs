@@ -322,6 +322,7 @@ namespace TestDevExpress.Forms
             _DxShowTimeStart = DateTime.Now;               // Určení času End a času Elapsed proběhne v DxDataForm_GotFocus
             _DxShowTimeSpan = null;
             DxDataFormV2 dataForm = new DxDataFormV2();
+            dataForm.LogActive = true;
             dataForm.GotFocus += DxDataForm_GotFocus;
 
             _DxDataFormV2 = dataForm;

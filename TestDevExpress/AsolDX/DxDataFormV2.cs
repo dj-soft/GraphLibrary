@@ -18,7 +18,9 @@ namespace Noris.Clients.Win.Components.AsolDX
     public class DxDataFormV2 : DxScrollableContent, IDxDataFormV2
     {
         #region Konstruktor
-
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
         public DxDataFormV2()
         {
             this.DoubleBuffered = true;
@@ -71,9 +73,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         private List<DxDataFormItemV2> _VisibleItems;
         private Padding _ContentPadding;
         private DxSuperToolTip _DxSuperToolTip;
-
-
-
 
         /// <summary>
         /// Okraje kolem vlastních prvků
@@ -415,6 +414,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             _AfterPaintSearchActiveItem = false;
             _PaintingItems = false;
             _PaintLoop = 0L;
+            _NextCleanPaintLoop = _CACHECLEAN_AFTER_LOOPS;
         }
         public void TestPerformance(int count, bool forceRefresh)
         {
@@ -438,10 +438,14 @@ namespace Noris.Clients.Win.Components.AsolDX
             bool afterPaintSearchActiveItem = _AfterPaintSearchActiveItem;
             _AfterPaintSearchActiveItem = false;
             _PaintLoop++;
+            int cacheCount = ImageCacheCount;
             if (!_PaintingPerformaceForceRefresh && _PaintingPerformaceTestCount <= 1)
                 OnPaintContentStandard(e);
             else
                 OnPaintContentPerformaceTest(e);
+
+            if (ImageCacheCount > cacheCount || _NextCleanLiable)
+                CleanImageCache();
 
             if (afterPaintSearchActiveItem)
                 PrepareItemForCurrentPoint();
@@ -534,6 +538,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Najde a vrátí <see cref="Image"/> pro obsah daného prvku.
         /// Obrázek hledá nejprve v cache, a pokud tam není pak jej vygeneruje a do cache uloží.
+        /// <para/>
+        /// POZOR: výstupem této metody je vždy new instance Image, a volající ji musí použít v using { } patternu, jinak zlikviduje paměť.
         /// </summary>
         /// <param name="item"></param>
         /// <returns></returns>
@@ -546,37 +552,132 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             ImageCacheItem imageInfo = null;
             if (ImageCache.TryGetValue(key, out imageInfo))
-            {
-                imageInfo.AddHit();
+            {   // Pokud mám Image již uloženu v Cache, je tam uložena jako byte[], a tady z ní vygenerujeme new Image a vrátíme, uživatel ji Disposuje sám:
+                imageInfo.AddHit(_PaintLoop);
+                return imageInfo.CreateImage();
             }
             else
-            {
-                using (Image image = CreateBitmapForItem(item))
+            {   // Image v cache nemáme, takže nyní vytvoříme skutečný Image s pomocí controlu, obsah Image uložíme jako byte[] do cache, a uživateli vrátíme ten živý obraz:
+                // Tímto postupem šetřím čas, protože Image použiju jak pro uložení do Cache, tak pro vykreslení do grafiky v controlu:
+                Image image = CreateBitmapForItem(item);
+                lock (ImageCache)
                 {
-                    lock (ImageCache)
+                    if (ImageCache.TryGetValue(key, out imageInfo))
                     {
-                        if (ImageCache.TryGetValue(key, out imageInfo))
-                        {
-                            imageInfo.AddHit();
-                        }
-                        else
-                        {   // Do cache přidám i image == null, tím ušetřím opakované vytváření / testování obrázku.
-                            // Pro přidávání aplikuji lock(), i když tedy tahle činnost má probíhat jen v jednom threadu = GUI:
-                            CleanImageCache();
-                            imageInfo = new ImageCacheItem(image);
-                            ImageCache.Add(key, imageInfo);
-                        }
+                        imageInfo.AddHit(_PaintLoop);
+                    }
+                    else
+                    {   // Do cache přidám i image == null, tím ušetřím opakované vytváření / testování obrázku.
+                        // Pro přidávání aplikuji lock(), i když tedy tahle činnost má probíhat jen v jednom threadu = GUI:
+                        imageInfo = new ImageCacheItem(image, _PaintLoop);
+                        ImageCache.Add(key, imageInfo);
                     }
                 }
+                return image;
             }
-            return imageInfo.CreateImage();
         }
         /// <summary>
         /// Před přidáním nového prvku do cache provede úklid zastaralých prvků v cache, podle potřeby.
-        /// Volá se za stavu, kdy cache <see cref="ImageCache"/> je locknutá.
+        /// <para/>
+        /// Časová náročnost: kontroly se provednou v řádu 0.2 milisekundy, reálný úklid (kontroly + odstranění starých a nepoužívaných položek cache) trvá cca 0.8 milisekundy.
+        /// Obecně se pracuje s počtem prvků řádově pod 10000, což není problém.
         /// </summary>
         private void CleanImageCache()
-        { }
+        {
+            if (ImageCacheCount == 0) return;
+
+            var startTime = DxComponent.LogTimeCurrent;
+
+            long paintLoop = _PaintLoop;
+            if (!_NextCleanLiable && paintLoop < _NextCleanPaintLoop)   // Pokud není úklid povinný, a velikost jsme kontrolovali nedávno, nebudu to ještě řešit.
+                return;
+
+            long currentCacheSize = ImageCacheSize;
+            if (currentCacheSize < _CACHESIZE_MIN)                   // Pokud mám v cache málo dat (pod 4MB), nebudeme uklízet.
+            {
+                _NextCleanLiable = false;
+                _NextCleanPaintLoop = paintLoop + _CACHECLEAN_AFTER_LOOPS;
+                if (LogActive) DxComponent.LogAddLineTime($"DxDataForm.CleanCache(): CacheSize={currentCacheSize}B; úklid není nutný. Čas akce: {DxComponent.LogTokenTimeMilisec}", startTime);
+                return;
+            }
+
+            // Budu pracovat jen s těmi prvky, které nebyly dlouho použity:
+            long lastLoop = paintLoop - _CACHECLEAN_OLD_LOOPS;
+            var items = ImageCache.Where(kvp => kvp.Value.LastPaintLoop <= lastLoop).ToList();
+            if (items.Count == 0)                                    // Pokud všechny prvky pravidelně používám, nebudu je zahazovat.
+            {
+                _NextCleanLiable = false;
+                _NextCleanPaintLoop = paintLoop + _CACHECLEAN_AFTER_LOOPS_SMALL;
+                if (LogActive) DxComponent.LogAddLineTime($"DxDataForm.CleanCache(): CacheSize={currentCacheSize}B; úklid není možný, všechny položky se používají. Čas akce: {DxComponent.LogTokenTimeMilisec}", startTime);
+                return;
+            }
+
+            // Z nich zahodím ty, které byly použity méně než je průměr:
+            string[] keys1 = null;
+            decimal? averageUse = items.Average(kvp => (decimal)kvp.Value.HitCount);
+            if (averageUse.HasValue)
+                keys1 = items.Where(kvp => (decimal)kvp.Value.HitCount < averageUse.Value).Select(kvp => kvp.Key).ToArray();
+
+            CleanImageCache(keys1);
+
+            long cleanedCacheSize = ImageCacheSize;
+            if (LogActive) DxComponent.LogAddLineTime($"DxDataForm.CleanCache(): CacheSize={currentCacheSize}B; Odstraněno {keys1?.Length ?? 0} položek; Po provedení úklidu: {cleanedCacheSize}B. Čas akce: {DxComponent.LogTokenTimeMilisec}", startTime);
+
+            // Co a jak příště:
+            if (cleanedCacheSize < _CACHESIZE_MIN)                   // Pokud byl tento úklid úspěšný z hlediska minimální paměti, pak příští úklid bude až za daný počet cyklů
+            {
+                _NextCleanLiable = false;
+                _NextCleanPaintLoop = paintLoop + _CACHECLEAN_AFTER_LOOPS;
+            }
+            else                                                     // Tento úklid byl potřebný (z hlediska času nebo velikosti paměti), ale nedostali jsme se pod _CACHESIZE_MIN:
+            {
+                _NextCleanLiable = true;                             // Příště budeme volat úklid povinně!
+                if (cleanedCacheSize < currentCacheSize)             // Sice jsme neuklidili pod minimum, ale něco jsme uklidili: příští kontrolu zaplánujeme o něco dříve:
+                    _NextCleanPaintLoop = paintLoop + _CACHECLEAN_AFTER_LOOPS_SMALL;
+            }
+        }
+        /// <summary>
+        /// Z cache vyhodí záznamy pro dané klíče. 
+        /// Tato metoda si v případě potřeby (tj. když jsou zadané nějaké klíče) zamkne cache na dobu úklidu.
+        /// </summary>
+        /// <param name="keys"></param>
+        private void CleanImageCache(string[] keys)
+        {
+            if (keys == null || keys.Length == 0) return;
+            lock (ImageCache)
+            {
+                foreach (string key in keys)
+                {
+                    if (ImageCache.ContainsKey(key))
+                        ImageCache.Remove(key);
+                }
+            }
+        }
+        /// <summary>
+        /// Po kterém vykreslení <see cref="_PaintLoop"/> budeme dělat další úklid
+        /// </summary>
+        private long _NextCleanPaintLoop;
+        /// <summary>
+        /// Po příštím vykreslení zavolat úklid cache i když nedojde k navýšení počtu prvků v cache, protože poslední úklid byl potřebný ale ne zcela úspěšný
+        /// </summary>
+        private bool _NextCleanLiable;
+        /// <summary>
+        /// Jaká velikost cache nám nepřekáží? Pokud bude cache menší, nebude probíhat její čištění.
+        /// </summary>
+        private const long _CACHESIZE_MIN = 1572864L;            // Pro provoz nechme 6MB:  6291456L;      Pro testování úklidu je vhodné mít 1.5MB = 1572864L
+        /// <summary>
+        /// Po kolika vykresleních controlu budeme ochotni provést další úklid cache?
+        /// </summary>
+        private const long _CACHECLEAN_AFTER_LOOPS = 6L;
+        /// <summary>
+        /// Po tolika vykresleních provedeme kontrolu velikosti cache když poslední kontrola neuklidila pod _CACHESIZE_MIN
+        /// </summary>
+        private const long _CACHECLEAN_AFTER_LOOPS_SMALL = 4L;
+        /// <summary>
+        /// Jak staré prvky z cache můžeme vyhodit? Počet vykreslovacích cyklů, kdy byl prvek použit.
+        /// Pokud prvek nebyl posledních (NNN) cyklů potřeba, můžeme uvažovat o jeho zahození.
+        /// </summary>
+        private const long _CACHECLEAN_OLD_LOOPS = 12;
         /// <summary>
         /// Zruší veškerý obsah z cache uložených Image <see cref="ImageCache"/>, kde jsou uloženy obrázky pro jednotlivé ne-aktivní controly...
         /// Je nutno volat po změně skinu nebo Zoomu.
@@ -602,10 +703,26 @@ namespace Noris.Clients.Win.Components.AsolDX
                     ImageCache.Remove(key);
             }
         }
+        /// <summary>
+        /// Počet prvků v cache
+        /// </summary>
+        private int ImageCacheCount { get { return ImageCache?.Count ?? 0; } }
+        /// <summary>
+        /// Sumární velikost dat v cache
+        /// </summary>
+        private long ImageCacheSize { get { return (ImageCache != null ? ImageCache.Values.Select(i => i.Length).Sum() : 0L); } }
+        /// <summary>
+        /// Cache obrázků controlů
+        /// </summary>
         private Dictionary<string, ImageCacheItem> ImageCache;
         private class ImageCacheItem
         {
-            public ImageCacheItem(Image image)
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="image"></param>
+            /// <param name="paintLoop"></param>
+            public ImageCacheItem(Image image, long paintLoop)
             {
                 using (System.IO.MemoryStream ms = new System.IO.MemoryStream())
                 {
@@ -613,19 +730,39 @@ namespace Noris.Clients.Win.Components.AsolDX
                     _ImageContent = ms.ToArray();
                 }
                 this.HitCount = 1L;
+                this.LastPaintLoop = paintLoop;
             }
             private byte[] _ImageContent;
+            /// <summary>
+            /// Metoda vrací new Image vytvořený z this položky cache
+            /// </summary>
+            /// <returns></returns>
             public Image CreateImage()
             {
                 using (System.IO.MemoryStream ms = new System.IO.MemoryStream(_ImageContent))
                     return Image.FromStream(ms);
             }
-            public int Length { get { return _ImageContent.Length; } } 
+            /// <summary>
+            /// Počet byte uložených jako Image v této položce cache
+            /// </summary>
+            public long Length { get { return _ImageContent.Length; } } 
+            /// <summary>
+            /// Počet použití této položky cache
+            /// </summary>
             public long HitCount { get; private set; }
+            /// <summary>
+            /// Poslední číslo smyčky, kdy byl prvek použit
+            /// </summary>
+            public long LastPaintLoop { get; private set; }
             /// <summary>
             /// Přidá jednu trefu v použití prvku (nápočet statistiky prvku)
             /// </summary>
-            public void AddHit() { HitCount++; }
+            public void AddHit(long paintLoop)
+            { 
+                HitCount++;
+                if (LastPaintLoop < paintLoop)
+                    LastPaintLoop = paintLoop;
+            }
         }
         #endregion
         #endregion

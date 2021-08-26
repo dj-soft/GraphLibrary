@@ -23,7 +23,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             this.SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint | ControlStyles.SupportsTransparentBackColor | ControlStyles.OptimizedDoubleBuffer, true);
             this.ResizeRedraw = true;
-            this.LogActive = false;
             InitLayers();
         }
         /// <summary>
@@ -37,10 +36,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         #endregion
         #region Nativní události kreslení a nativní invalidace, a jejich napojení na vrstvy
-        /// <summary>
-        /// Jsou aktivní zápisy do logu? Default = false
-        /// </summary>
-        public bool LogActive { get; set; }
         /// <summary>
         /// OnInvalidated
         /// </summary>

@@ -285,6 +285,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder;
             this.Margin = new SWF.Padding(0);
             this.Padding = new SWF.Padding(0);
+            this.LogActive = false;
             this._CurrentDpi = DxComponent.DesignDpi;
             this._LastDpi = 0;
 
@@ -304,6 +305,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public Color? BackColorUser { get { return _BackColorUser; } set { _BackColorUser = value; Invalidate(); } }
         private Color? _BackColorUser;
+        /// <summary>
+        /// Jsou aktivní zápisy do logu? Default = false
+        /// </summary>
+        public virtual bool LogActive { get; set; }
         #endregion
         #region Paint
         /// <summary>
@@ -2235,6 +2240,8 @@ namespace Noris.Clients.Win.Components.AsolDX
                     if (this.Controls.Contains(contentControl))
                         this.Controls.Remove(contentControl);
                     contentControl.MouseWheel -= ContentControl_MouseWheel;
+                    if (contentControl is DxPanelControl dxPanel)
+                        dxPanel.LogActive = false;
                     _ContentControl = null;
                 }
                 contentControl = value;
@@ -2243,8 +2250,23 @@ namespace Noris.Clients.Win.Components.AsolDX
                     this.Controls.Add(contentControl);
                     _ContentControl = contentControl;
                     contentControl.MouseWheel += ContentControl_MouseWheel;
+                    if (contentControl is DxPanelControl dxPanel)
+                        dxPanel.LogActive = this.LogActive;
                     DoLayoutContent();
                 }
+            }
+        }
+        /// <summary>
+        /// Jsou aktivní zápisy do logu? Default = false
+        /// </summary>
+        public override bool LogActive 
+        {
+            get { return base.LogActive; }
+            set
+            {
+                base.LogActive = value;
+                if (_ContentControl != null && _ContentControl is DxPanelControl dxPanel)
+                    dxPanel.LogActive = value;
             }
         }
         /// <summary>
