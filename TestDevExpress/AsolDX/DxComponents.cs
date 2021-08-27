@@ -377,7 +377,9 @@ namespace Noris.Clients.Win.Components.AsolDX
             _DefaultButtonWidth = 150;
             _DefaultButtonHeight = 32;
 
+            _Zoom = 1m;
             _DesignDpi = 96;
+            _RecalcZoomDpi();
 
             _DefaultBarManager = new DevExpress.XtraBars.BarManager();
             _DefaultToolTipController = new ToolTipController();
@@ -477,11 +479,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public static int DefaultButtonHeight { get { return ZoomToGuiInt(Instance._DefaultButtonHeight); } }
         /// <summary>
-        /// Hodnota DPI, ke které se vztahují velikosti prvků zadávané jako DesignBounds.
-        /// Reálná velikost prvků se pak konvertuje na cílové DPI monitoru.
-        /// </summary>
-        public static int DesignDpi { get { return Instance._DesignDpi; } set { Instance._DesignDpi = (value < 72 ? 72 : (value > 600 ? 600 : value)); } }
-        /// <summary>
         /// Defaultní BarManager pro obecné použití
         /// </summary>
         public static DevExpress.XtraBars.BarManager DefaultBarManager { get { return Instance._DefaultBarManager; } }
@@ -540,7 +537,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         private int _DefaultButtonPanelHeight;
         private int _DefaultButtonWidth;
         private int _DefaultButtonHeight;
-        private int _DesignDpi;
         private DevExpress.XtraBars.BarManager _DefaultBarManager;
         private ToolTipController _DefaultToolTipController;
         #endregion
@@ -581,7 +577,15 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="value"></param>
         /// <returns></returns>
-        internal static Point? ZoomToGuiInt(Point? value) { if (!value.HasValue) return null; decimal zoom = Instance._Zoom; return new Point(_ZoomToGuiInt(value.Value.X, zoom), _ZoomToGuiInt(value.Value.Y, zoom)); }
+        internal static Point? ZoomToGuiInt(Point? value) { if (!value.HasValue) return null; decimal zoom = Instance._Zoom; var v = value.Value; return new Point(_ZoomToGuiInt(v.X, zoom), _ZoomToGuiInt(v.Y, zoom)); }
+        /// <summary>
+        /// Vrátí danou designovou hodnotu přepočtenou dle aktuálního Zoomu do vizuální hodnoty
+        /// </summary>
+        /// <param name="value">Designová hodnota (96DPI, 100%)</param>
+        /// <param name="targetDpi">Cílové DPI</param>
+        /// <returns></returns>
+        internal static Point ZoomToGuiInt(Point value, int targetDpi) { decimal zoomDpi = Instance._ZoomDpi; return new Point(_ZoomDpiToGuiInt(value.X, zoomDpi, targetDpi), _ZoomDpiToGuiInt(value.Y, zoomDpi, targetDpi)); }
+
         /// <summary>
         /// Vrátí danou designovou hodnotu přepočtenou dle aktuálního Zoomu do vizuální hodnoty
         /// </summary>
@@ -593,7 +597,57 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="value"></param>
         /// <returns></returns>
-        internal static Size? ZoomToGuiInt(Size? value) { if (!value.HasValue) return null; decimal zoom = Instance._Zoom; return new Size(_ZoomToGuiInt(value.Value.Width, zoom), _ZoomToGuiInt(value.Value.Height, zoom)); }
+        internal static Size? ZoomToGuiInt(Size? value) { if (!value.HasValue) return null; decimal zoom = Instance._Zoom; var v = value.Value; return new Size(_ZoomToGuiInt(v.Width, zoom), _ZoomToGuiInt(v.Height, zoom)); }
+        /// <summary>
+        /// Vrátí danou designovou hodnotu přepočtenou dle aktuálního Zoomu do vizuální hodnoty
+        /// </summary>
+        /// <param name="value">Designová hodnota (96DPI, 100%)</param>
+        /// <param name="targetDpi">Cílové DPI</param>
+        /// <returns></returns>
+        internal static Size ZoomToGuiInt(Size value, int targetDpi) { decimal zoomDpi = Instance._ZoomDpi; return new Size(_ZoomDpiToGuiInt(value.Width, zoomDpi, targetDpi), _ZoomDpiToGuiInt(value.Height, zoomDpi, targetDpi)); }
+
+        /// <summary>
+        /// Vrátí danou designovou hodnotu přepočtenou dle aktuálního Zoomu do vizuální hodnoty
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        internal static Rectangle ZoomToGuiInt(Rectangle value) { decimal zoom = Instance._Zoom; return new Rectangle(_ZoomToGuiInt(value.X, zoom), _ZoomToGuiInt(value.Y, zoom), _ZoomToGuiInt(value.Width, zoom), _ZoomToGuiInt(value.Height, zoom)); }
+        /// <summary>
+        /// Vrátí danou designovou hodnotu přepočtenou dle aktuálního Zoomu do vizuální hodnoty
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        internal static Rectangle? ZoomToGuiInt(Rectangle? value) { if (!value.HasValue) return null; decimal zoom = Instance._Zoom; var v = value.Value; return new Rectangle(_ZoomToGuiInt(v.X, zoom), _ZoomToGuiInt(v.Y, zoom), _ZoomToGuiInt(v.Width, zoom), _ZoomToGuiInt(v.Height, zoom)); }
+        /// <summary>
+        /// Vrátí danou designovou hodnotu přepočtenou dle aktuálního Zoomu do vizuální hodnoty
+        /// </summary>
+        /// <param name="value">Designová hodnota (96DPI, 100%)</param>
+        /// <param name="targetDpi">Cílové DPI</param>
+        /// <returns></returns>
+        internal static Rectangle ZoomToGuiInt(Rectangle value, int targetDpi) { decimal zoomDpi = Instance._ZoomDpi; return new Rectangle(_ZoomDpiToGuiInt(value.X, zoomDpi, targetDpi), _ZoomDpiToGuiInt(value.Y, zoomDpi, targetDpi), _ZoomDpiToGuiInt(value.Width, zoomDpi, targetDpi), _ZoomDpiToGuiInt(value.Height, zoomDpi, targetDpi)); }
+
+        /// <summary>
+        /// Vrátí danou designovou hodnotu přepočtenou dle aktuálního Zoomu do vizuální hodnoty
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        internal static Padding ZoomToGuiInt(Padding value) { decimal zoom = Instance._Zoom; return new Padding(_ZoomToGuiInt(value.Left, zoom), _ZoomToGuiInt(value.Top, zoom), _ZoomToGuiInt(value.Right, zoom), _ZoomToGuiInt(value.Bottom, zoom)); }
+        /// <summary>
+        /// Vrátí danou designovou hodnotu přepočtenou dle aktuálního Zoomu do vizuální hodnoty
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        internal static Padding? ZoomToGuiInt(Padding? value) { if (!value.HasValue) return null; decimal zoom = Instance._Zoom; var v = value.Value; return new Padding(_ZoomToGuiInt(v.Left, zoom), _ZoomToGuiInt(v.Top, zoom), _ZoomToGuiInt(v.Right, zoom), _ZoomToGuiInt(v.Bottom, zoom)); }
+        /// <summary>
+        /// Vrátí danou designovou hodnotu přepočtenou dle aktuálního Zoomu do vizuální hodnoty
+        /// </summary>
+        /// <param name="value">Designová hodnota (96DPI, 100%)</param>
+        /// <param name="targetDpi">Cílové DPI</param>
+        /// <returns></returns>
+        internal static Padding ZoomToGuiInt(Padding value, int targetDpi) { decimal zoomDpi = Instance._ZoomDpi; return new Padding(_ZoomDpiToGuiInt(value.Left, zoomDpi, targetDpi), _ZoomDpiToGuiInt(value.Top, zoomDpi, targetDpi), _ZoomDpiToGuiInt(value.Right, zoomDpi, targetDpi), _ZoomDpiToGuiInt(value.Bottom, zoomDpi, targetDpi)); }
+
+
+
         /// <summary>
         /// Vrátí danou designovou hodnotu přepočtenou dle daného Zoomu do vizuální hodnoty
         /// </summary>
@@ -602,9 +656,27 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         private static int _ZoomToGuiInt(int value, decimal zoom) { return (int)Math.Round((decimal)value * zoom, 0); }
         /// <summary>
+        /// Vrátí danou designovou hodnotu přepočtenou dle daného (Zoom / DesignDpi) a dané TargetDpi do vizuální hodnoty
+        /// </summary>
+        /// <param name="value">Designová hodnota</param>
+        /// <param name="zoomDpi"></param>
+        /// <param name="targetDpi"></param>
+        /// <returns></returns>
+        private static int _ZoomDpiToGuiInt(int value, decimal zoomDpi, decimal targetDpi) { return (int)Math.Round((decimal)value * targetDpi * targetDpi, 0); }
+        /// <summary>
         /// Aktuální hodnota Zoomu
         /// </summary>
         internal static decimal Zoom { get { return Instance._Zoom; } }
+        /// <summary>
+        /// Hodnota DPI, ke které se vztahují velikosti prvků zadávané jako DesignBounds.
+        /// Reálná velikost prvků se pak konvertuje na cílové DPI monitoru.
+        /// </summary>
+        public static int DesignDpi { get { return Instance._DesignDpi; } set { Instance._SetDesignDpi(value); } }
+
+        /// <summary>
+        /// Aktuální hodnota Zoomu a SourceDpi
+        /// </summary>
+        internal static decimal ZoomDpi { get { return Instance._Zoom; } }
         /// <summary>
         /// Reload hodnoty Zoomu
         /// </summary>
@@ -612,8 +684,32 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Reload hodnoty Zoomu uvnitř instance
         /// </summary>
-        private void _ReloadZoom() { _Zoom = ((decimal)Common.SupportScaling.GetScaledValue(100000)) / 100000m; }
+        private void _ReloadZoom() 
+        {
+            _Zoom = ((decimal)Common.SupportScaling.GetScaledValue(100000)) / 100000m;
+            _RecalcZoomDpi();
+        }
+        /// <summary>
+        /// Uloží hodnotu DesignDpi a přepočte další...
+        /// </summary>
+        /// <param name="designDpi"></param>
+        private void _SetDesignDpi(int designDpi)
+        {
+            _DesignDpi = (designDpi < 72 ? 72 : (designDpi > 600 ? 600 : designDpi));
+            _RecalcZoomDpi();
+        }
+        private void _RecalcZoomDpi()
+        {
+            // Hodnota _ZoomDpi slouží k rychlému přepočtu Designové hodnoty (int)
+            // s pomocí Zoomu (kde 1.5 = 150%) a konverze rozměru pomocí DPI Design - Current (kde Design = 96, a UHD má Target = 144)
+            // na cílovou Current hodnotu (int):
+            // Current = (Design * _ZoomDpi * TargetDpi)
+
+            _ZoomDpi = _Zoom / (decimal)_DesignDpi;
+        }
         private decimal _Zoom;
+        private int _DesignDpi;
+        private decimal _ZoomDpi;
         #endregion
         #region Listenery
         /// <summary>
@@ -6055,6 +6151,30 @@ namespace Noris.Clients.Win.Components.AsolDX
                 }
             }
             return result;
+        }
+        #endregion
+        #region Int
+        /// <summary>
+        /// Vrátí true pokud dané číslo má pouze jeden bit s hodnotou 1.
+        /// Vrací tedy true pro čísla: 1, 2, 4, 8, 16, 32, 64, 128...
+        /// Vrací false pro čísla: 0, 3, 5, 6, 7, 9, 10, 11, ...
+        /// Nepoužívejme pro záporá čísla.
+        /// <para/>
+        /// Metoda je primárně určena pro ověření, zda (int)hodnota enumu typu [Flags] je základní = jednobitová, anebo zda je kombinovaná z více bitů.
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        public static bool HasOneBit(this int value)
+        {
+            int count = 0;
+            for (int c = 0; c < 31; c++)
+            {
+                if ((value & 1) == 1) count++;
+                if (count > 1) break;
+                value = value >> 1;
+            }
+
+            return count == 1;
         }
         #endregion
     }

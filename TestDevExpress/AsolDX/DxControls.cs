@@ -2178,6 +2178,9 @@ namespace Noris.Clients.Win.Components.AsolDX
             _HScrollBar.MouseWheel += _HScrollBar_MouseWheel;
             Controls.Add(_HScrollBar);
 
+            ScrollToBoundsBasicPadding = new Padding(3);
+            ScrollToBoundsScrollPadding = new Padding(24);
+
             this.ParentChanged += _ParentChanged;
             this.DpiChangedAfterParent += _DpiChangedAfterParent;
             this.Invalidated += _Invalidated;
@@ -2218,6 +2221,21 @@ namespace Noris.Clients.Win.Components.AsolDX
         private Rectangle _ContentVirtualBounds;
         private Size _ContentVisualSize;
         /// <summary>
+        /// Jsou aktivní zápisy do logu? Default = false
+        /// </summary>
+        public override bool LogActive
+        {
+            get { return base.LogActive; }
+            set
+            {
+                base.LogActive = value;
+                if (_ContentControl != null && _ContentControl is DxPanelControl dxPanel)
+                    dxPanel.LogActive = value;
+            }
+        }
+        #endregion
+        #region Public vlastnosti - ContentPanel, Size, ContentVirtualBounds...
+        /// <summary>
         /// Aktuálně zobrazený obsah.
         /// Jeho fyzický rozměr bude vždy odpovídat aktuálně viditelnému prostoru.
         /// Je třeba zadat celkovou velikost obsahu do <see cref="ContentTotalSize"/>, na tuto velikost budou dimenzovány scrollbary a jejich posuny.
@@ -2257,19 +2275,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
         }
         /// <summary>
-        /// Jsou aktivní zápisy do logu? Default = false
-        /// </summary>
-        public override bool LogActive 
-        {
-            get { return base.LogActive; }
-            set
-            {
-                base.LogActive = value;
-                if (_ContentControl != null && _ContentControl is DxPanelControl dxPanel)
-                    dxPanel.LogActive = value;
-            }
-        }
-        /// <summary>
         /// Aktuální viditelná velikost obsahu
         /// </summary>
         public Size ContentVisualSize { get { return _ContentVisualSize; } }
@@ -2280,6 +2285,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Aktuální viditelné souřadnice virtuálního obsahu. 
         /// Počáteční bod je dán ScrollBary, velikost je dána fyzickou velikostí this panelu (mínus prostor ScrollBarů).
+        /// <para/>
+        /// Tuto hodnotu není možno změnit, je odvozena od fyzické velikosti celého controlu, zmenšené o případné ScrollBary, a pozice je dána hodnotou ScrollBarů.
+        /// Setovat lze <see cref="ContentVirtualLocation"/>.
         /// </summary>
         public Rectangle ContentVirtualBounds
         {
@@ -2298,6 +2306,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Souřadnice počátku viditelné části obsahu <see cref="ContentVirtualBounds"/>.
         /// Tuto hodnotu je možno setovat a tak programově řídit posuny obsahu.
+        /// Setovaná hodnota bude zkonrolována, upravena a následně vložena do <see cref="ContentVirtualBounds"/>. 
+        /// Po změně dojde k volání události <see cref="ContentVirtualBoundsChanged"/>.
         /// </summary>
         public Point ContentVirtualLocation { get { return _ContentVirtualBounds.Location; } set { SetVirtualLocation(value); } }
         /// <summary>
@@ -2306,11 +2316,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public EventHandler ContentVirtualBoundsChanged;
         /// <summary>
-        /// Obsahuje true pokud je viditelný Horizontální (=vodorovný) ScrollBar
+        /// Obsahuje true, pokud je viditelný Horizontální (=vodorovný) ScrollBar
         /// </summary>
         public bool HScrollBarVisible{ get { return _HScrollBarVisible; } }
         /// <summary>
-        /// Obsahuje true pokud je viditelný Vertikální (=svislý) ScrollBar
+        /// Obsahuje true, pokud je viditelný Vertikální (=svislý) ScrollBar
         /// </summary>
         public bool VScrollBarVisible { get { return _VScrollBarVisible; } }
         #endregion
@@ -2457,9 +2467,35 @@ namespace Noris.Clients.Win.Components.AsolDX
         protected virtual void OnInvalidateContentAfter() { }
         #endregion
         #region Scroll to control / to virtual bounds
+        public bool ScrollToBounds(Rectangle controlVirtualBounds, Rectangle? groupVirtualBounds = null)
+        {
+            Rectangle currentBounds = this.ContentVirtualBounds;
+            if (currentBounds.Contains(controlVirtualBounds)) return false;    // Požadovaný prostor je zcela vidět
 
+
+
+            return true;
+        }
+        /// <summary>
+        /// Okraje, přidávané k požadovaném prostoru controlu v metodě <see cref="ScrollToBounds(Rectangle, Rectangle?)"/> před tím, než se ověří jeho aktuální viditelnost.
+        /// Tyto okraje "zvětšují" control, tak aby se Scroll provedl i tehdy, když vlastní control sice je vidět, ale je těsně na okraji viditelného prostoru.
+        /// <para/>
+        /// Výchozí hodnota = 3 pixely.
+        /// Jde o designové pixely = bez aplikování odlišného DPI a Zoomu, ty se aplikují interně.
+        /// </summary>
+        public Padding ScrollToBoundsBasicPadding { get; set; }
+        protected Padding ScrollToBoundsBasicPaddingCurrent { get { return DxComponent.ZoomToGuiInt(ScrollToBoundsBasicPadding, CurrentDpi); } }
+        /// <summary>
+        /// Okraje, přidávané ke scrollu prováděnému v metodě <see cref="ScrollToBounds(Rectangle, Rectangle?)"/> v situaci, kdy je potřeba reálně posunout obsah.
+        /// Tedy: pokud požadovaný obsah je celý viditelný, pak se scrollovat nebude ani když nebude dodržen zde uvedený okraj.
+        /// Jakmile ale bude část obsahu neviditelná, pak se provede Scroll tak, aby okolo obsahu byl právě tento okraj.
+        /// <para/>
+        /// Výchozí hodnota = 24 pixelů.
+        /// Jde o designové pixely = bez aplikování odlišného DPI a Zoomu, ty se aplikují interně.
+        /// </summary>
+        public Padding ScrollToBoundsScrollPadding { get; set; }
         #endregion
-        #region Výpočty virtuální souřadnice a reakce a interaktivní posuny
+        #region Výpočty virtuální souřadnice a reakce na interaktivní posuny
         /// <summary>
         /// Nastaví počáteční souřadnici virtuálního prostoru podle daného bodu, před tím provede veškeré kontroly, při změně reálné hodnoty vyvolá událost
         /// </summary>

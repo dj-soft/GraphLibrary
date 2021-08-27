@@ -143,7 +143,10 @@ namespace Noris.Clients.Win.Components.AsolDX
             AddLayer(DxBufferedLayer.NativeBackground);
         }
         /// <summary>
-        /// Obsahuje používané vrstvy. Lze setovat, setování způsobí invalidaci.
+        /// Obsahuje používané vrstvy. 
+        /// Lze setovat, setování připraví požadované vrstvy a způsobí invalidaci.
+        /// Setovat lze pole jednotlivých vrstev, nelze ale vložit jako jednu hodnotu kombinaci více vrstev (enum <see cref="DxBufferedLayer"/> má charakteristiku [Flags]).
+        /// Tímto principem lze vyžádat konkrétní pořadí vrstev.
         /// </summary>
         public DxBufferedLayer[] Layers
         {
@@ -161,7 +164,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (layersId == null) return;
             foreach (var layerId in layersId)
             {
-                if (layerId == DxBufferedLayer.None || layerId == DxBufferedLayer.NativeBackground) continue;
+                if (layerId == DxBufferedLayer.None || layerId == DxBufferedLayer.NativeBackground) continue;          // Tyto dva požadavky tiše ignorujeme
+                if (!((int)layerId).HasOneBit()) throw new ArgumentException($"DxBufferedGraphic.Layers : cannot create one layer with MultiID '{layerId}'.");
                 if (_LayersDict.ContainsKey(layerId)) throw new ArgumentException($"DxBufferedGraphic.Layers : cannot create duplicite layer '{layerId}'.");
                 AddLayer(layerId);
             }
@@ -203,10 +207,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Invaliduje všechny vrstvy a zajistí nové vykreslení celého controlu.
         /// Pro každou vrstvu bude volán event <see cref="PaintLayer"/>.
         /// </summary>
-        /// <param name="userData"></param>
-        public void InvalidateLayers(object userData = null)
+        /// <param name="invalidateUserData">Objekt, který bude předáván do události <see cref="PaintLayer"/> v argumentu, pro všechny kreslené vrstvy</param>
+        public void InvalidateLayers(object invalidateUserData)
         {
-            _InvalidateLayers(null, userData, true);
+            _InvalidateLayers(DxBufferedLayer.All, invalidateUserData, true);
         }
         /// <summary>
         /// Invaliduje zadané vrstvy a zajistí nové vykreslení celého controlu.
@@ -215,44 +219,58 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="layers"></param>
         public void InvalidateLayers(params DxBufferedLayer[] layers)
         {
-            _InvalidateLayers(layers, null, true);
+            DxBufferedLayer layersSum = DxBufferedLayer.None;
+            if (layers == null || layers.Length == 0)
+                layersSum = DxBufferedLayer.All;                     // Default = všechny
+            else
+                layers.ForEachExec(l => layersSum |= l);             // Sečtu bity (DxBufferedLayer je bitové pole)
+
+            _InvalidateLayers(layersSum, null, true);
+        }
+        /// <summary>
+        /// Invaliduje zadané vrstvy a zajistí nové vykreslení celého controlu.
+        /// Pro každou zadanou vrstvu bude volán event <see cref="PaintLayer"/>.
+        /// </summary>
+        /// <param name="layers">Vrstvy k invalidaci, složené do jedné hodnoty (jde o Flags)</param>
+        /// <param name="invalidateUserData">Objekt, který bude předáván do události <see cref="PaintLayer"/> v argumentu, pro všechny kreslené vrstvy</param>
+        /// <param name="invalidateControl">Fyzicky vyžádat invalidaci celého controlu = následovat bude překreslení</param>
+        public void InvalidateLayers(DxBufferedLayer layers, object invalidateUserData, bool invalidateControl)
+        {
+            _InvalidateLayers(layers, invalidateUserData, invalidateControl);
         }
         /// <summary>
         /// Invalidace vrstev, volaná v libovolném threadu
         /// </summary>
         /// <param name="layers"></param>
-        /// <param name="userData"></param>
+        /// <param name="invalidateUserData">Objekt, který bude předáván do události <see cref="PaintLayer"/> v argumentu, pro všechny kreslené vrstvy</param>
         /// <param name="invalidateControl"></param>
-        private void _InvalidateLayers(DxBufferedLayer[] layers, object userData, bool invalidateControl)
+        private void _InvalidateLayers(DxBufferedLayer layers, object invalidateUserData, bool invalidateControl)
         {
-            this.RunInGui(() => _InvalidateLayersGui(layers, userData, invalidateControl));
+            this.RunInGui(() => _InvalidateLayersGui(layers, invalidateUserData, invalidateControl));
         }
         /// <summary>
         /// Invalidace vrstev, volaná v GUI threadu
         /// </summary>
         /// <param name="layers"></param>
-        /// <param name="userData"></param>
+        /// <param name="invalidateUserData"></param>
         /// <param name="invalidateControl"></param>
-        private void _InvalidateLayersGui(DxBufferedLayer[] layers, object userData, bool invalidateControl)
+        private void _InvalidateLayersGui(DxBufferedLayer layers, object invalidateUserData, bool invalidateControl)
         { 
-            InvalidateUserData = userData;
-            if (layers == null || layers.Length == 0)
+            InvalidateUserData = invalidateUserData;
+
+            // Invalidace existujících vrstev (tj. které reálně evidujeme), a které jsou v požadavku (layers):
+            _Layers.ForEachExec(layer =>
             {
-                if (LogActive) DxComponent.LogAddLine($"DxBufferedGraphic.InvalidateLayers(all)");
-                _Layers.ForEachExec(layer => layer.Invalidate());
-            }
-            else
-            {
-                if (LogActive) DxComponent.LogAddLine($"DxBufferedGraphic.InvalidateLayers({(layers.ToOneString(delimiter: ","))})");
-                layers.ForEachExec(l => { if (_LayersDict.TryGetValue(l, out var layer)) layer.Invalidate(); });
-            }
+                if (((int)layer.LayerId & (int)layers) != 0)
+                    layer.Invalidate();
+            });
+
             if (invalidateControl) this.Invalidate();
         }
         /// <summary>
         /// UserData předaná do metod <see cref="InvalidateLayers(object)"/>, a přenášená při kreslení do eventhandleru <see cref="PaintLayer"/>.
         /// </summary>
         protected object InvalidateUserData;
-
         /// <summary>
         /// Velikost prostoru, do kterého se vykresluje grafika. Na tuto velikost musí být vytvořena grafika v jednotlivých vrstvách.
         /// </summary>
@@ -542,7 +560,8 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// Grafické vrstvy
     /// </summary>
     /// <remarks>Tento enum lze podle potřeby rozšiřovat, nově deklarované vrstvy pak lze ve správném pořadí vložit do <see cref="DxPanelBufferedGraphic.Layers"/> a budou fungovat.</remarks>
-    public enum DxBufferedLayer
+    [Flags]
+    public enum DxBufferedLayer : int
     {
         /// <summary>
         /// Neurčeno, taková vrstva se negeneruje
@@ -552,21 +571,26 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Nativní pozadí panelu, není nutno explicitně požadovat, tuto vrstvu řeší <see cref="DxPanelBufferedGraphic"/> interně.
         /// Tuto vrstvu nekreslí aplikační logika, ale nativní control.
         /// </summary>
-        NativeBackground,
+        NativeBackground = 0x01,
         /// <summary>
         /// Aplikační pozadí, typicky určeno pro kreslení přímo na pozadí panelu, pod vrstvu <see cref="MainLayer"/>.
         /// Není vždy nutné definovat.
         /// </summary>
-        AppBackground,
+        AppBackground = 0x10,
         /// <summary>
         /// Typicky hlavní vrstva, kam se kreslí kontroly.
         /// </summary>
-        MainLayer,
+        MainLayer = 0x20,
         /// <summary>
         /// Overlay, kreslí se typicky nad controly (nad vrstvu <see cref="MainLayer"/>).
         /// Není vždy nutné definovat.
         /// </summary>
-        Overlay
+        Overlay = 0x40,
+
+        /// <summary>
+        /// Všechny vrstvy. Lze použít pro Invalidaci, ale ne jako požadavek na vytváření vrstev <see cref="DxPanelBufferedGraphic.Layers"/> - tam se musí specifikovat pole jednotlivých vrstev!
+        /// </summary>
+        All = NativeBackground | AppBackground | MainLayer | Overlay
     }
     #endregion
     #region delegate DxBufferedGraphicPaintHandler, class DxBufferedGraphicPaintArgs

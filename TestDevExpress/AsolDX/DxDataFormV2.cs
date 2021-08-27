@@ -34,7 +34,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             InitializeSampleControls();
             // InitializeSampleItems();
 
-            Refresh(RefreshParts.RecalculateContentTotalSize | RefreshParts.ReloadVisibleItems);
+            Refresh(RefreshParts.AfterItemsChangedSilent);
         }
         /// <summary>
         /// Dispose panelu
@@ -60,6 +60,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         private DxPanelBufferedGraphic _ContentPanel;
         /// <summary>
+        /// Souhrn vrstev použitých v this controlu, používá se při invalidaci všech vrstev
+        /// </summary>
+        private static DxBufferedLayer UsedLayers { get { return DxBufferedLayer.AppBackground | DxBufferedLayer.MainLayer; } }
+        /// <summary>
         /// Inicializuje pole prvků
         /// </summary>
         private void InitializeItems()
@@ -83,7 +87,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             set 
             { 
                 _ContentPadding = value; 
-                Refresh(RefreshParts.RecalculateContentTotalSize | RefreshParts.ReloadVisibleItems | RefreshParts.InvalidateControl); 
+                Refresh(RefreshParts.AfterItemsChanged); 
             }
         }
         /// <summary>
@@ -175,7 +179,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 y += addY;
             }
 
-            Refresh(RefreshParts.RecalculateContentTotalSize | RefreshParts.ReloadVisibleItems | RefreshParts.InvalidateCache);
+            Refresh(RefreshParts.Default);
         }
         #endregion
         #region Interaktivita
@@ -257,6 +261,8 @@ namespace Noris.Clients.Win.Components.AsolDX
                 _CurrentOnMouseItem = item;
                 _CurrentOnMouseControlSet = GetControlSet(item);
                 _CurrentOnMouseControl = _CurrentOnMouseControlSet.GetControlForMouse(item);
+                bool isScrolled = this.ScrollToBounds(item.CurrentBounds);
+                if (isScrolled) Refresh(RefreshParts.AfterScroll);
             }
         }
         /// <summary>
@@ -298,10 +304,26 @@ namespace Noris.Clients.Win.Components.AsolDX
         #endregion
         #region Refresh
         /// <summary>
+        /// Provede refresh prvku
+        /// </summary>
+        public override void Refresh()
+        {
+            Refresh(RefreshParts.Default | RefreshParts.RefreshControl, UsedLayers);
+        }
+        /// <summary>
         /// Provede refresh daných částí
         /// </summary>
         /// <param name="refreshParts"></param>
         public void Refresh(RefreshParts refreshParts)
+        {
+            Refresh(refreshParts, UsedLayers);
+        }
+        /// <summary>
+        /// Provede refresh daných částí a vrstev
+        /// </summary>
+        /// <param name="refreshParts"></param>
+        /// <param name="layers"></param>
+        public void Refresh(RefreshParts refreshParts, DxBufferedLayer layers)
         {
             bool isRecalc = refreshParts.HasFlag(RefreshParts.RecalculateContentTotalSize);
             bool isVisibl = refreshParts.HasFlag(RefreshParts.ReloadVisibleItems);
@@ -315,8 +337,21 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (refreshParts.HasFlag(RefreshParts.InvalidateCache))
                 this.InvalidateImageCache();
 
+            if (refreshParts.HasFlag(RefreshParts.InvalidateControl) || refreshParts.HasFlag(RefreshParts.RefreshControl))
+                this.RunInGui(() => RefreshGuiParts(refreshParts, layers));              // Tyhle dva refreshe se mají volat v GUI threadu
+        }
+        /// <summary>
+        /// Refreshe těch částí, které musí být prováděny v GUI threadu
+        /// </summary>
+        /// <param name="refreshParts"></param>
+        /// <param name="layers"></param>
+        private void RefreshGuiParts(RefreshParts refreshParts, DxBufferedLayer layers)
+        {
             if (refreshParts.HasFlag(RefreshParts.InvalidateControl))
-                this._ContentPanel.InvalidateLayers(DxBufferedLayer.AppBackground, DxBufferedLayer.MainLayer);
+                this._ContentPanel.InvalidateLayers(layers);
+
+            if (refreshParts.HasFlag(RefreshParts.RefreshControl))
+                base.Refresh();
         }
         /// <summary>
         /// Po změně DPI je třeba provést kompletní refresh (souřadnice, cache, atd)
@@ -324,7 +359,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         protected override void OnDpiChanged()
         {
             base.OnDpiChanged();
-            Refresh(RefreshParts.RecalculateContentTotalSize | RefreshParts.ReloadVisibleItems | RefreshParts.InvalidateCache | RefreshParts.InvalidateControl);
+            Refresh(RefreshParts.All);
         }
         /// <summary>
         /// Je vyvoláno po změně DPI, po změně Zoomu a po změně skinu. Volá se po přepočtu layoutu.
@@ -333,7 +368,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         protected override void OnInvalidateContentAfter()
         {
             base.OnInvalidateContentAfter();
-            Refresh(RefreshParts.RecalculateContentTotalSize | RefreshParts.ReloadVisibleItems | RefreshParts.InvalidateCache | RefreshParts.InvalidateControl);
+            Refresh(RefreshParts.All);
         }
         /// <summary>
         /// Je voláno pokud dojde ke změně hodnoty <see cref="DxScrollableContent.ContentVirtualBounds"/>, před eventem <see cref="DxScrollableContent.ContentVirtualBoundsChanged"/>
@@ -341,7 +376,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         protected override void OnContentVirtualBoundsChanged()
         {
             base.OnContentVirtualBoundsChanged();
-            Refresh(RefreshParts.ReloadVisibleItems | RefreshParts.InvalidateControl);
+            Refresh(RefreshParts.AfterScroll);
         }
         /// <summary>
         /// Optimalizovaná metoda, která v jedné enumeraci vyhodnotí sumu souřadnic i viditelné prvky
@@ -419,7 +454,38 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// <summary>
             /// Znovuvykreslit grafiku
             /// </summary>
-            InvalidateControl = 0x0100
+            InvalidateControl = 0x0100,
+            /// <summary>
+            /// Explicitně vyvolat i metodu <see cref="Control.Refresh()"/>
+            /// </summary>
+            RefreshControl = 0x0200,
+
+            /// <summary>
+            /// Po změně prvků (přidání, odebrání, změna hodnot) (<see cref="RecalculateContentTotalSize"/> + <see cref="ReloadVisibleItems"/>).
+            /// Tato hodnota je Silent = neobsahuje <see cref="InvalidateControl"/>.
+            /// </summary>
+            AfterItemsChangedSilent = RecalculateContentTotalSize | ReloadVisibleItems,
+            /// <summary>
+            /// Po změně prvků (přidání, odebrání, změna hodnot) (<see cref="RecalculateContentTotalSize"/> + <see cref="ReloadVisibleItems"/> + <see cref="InvalidateControl"/>).
+            /// Tato hodnota není Silent = obsahuje i invalidaci <see cref="InvalidateControl"/> = překreslení controlu.
+            /// <para/>
+            /// Toto je standardní refresh.
+            /// </summary>
+            AfterItemsChanged = RecalculateContentTotalSize | ReloadVisibleItems | InvalidateControl,
+            /// <summary>
+            /// Po scrollování (<see cref="ReloadVisibleItems"/> + <see cref="InvalidateControl"/>)
+            /// </summary>
+            AfterScroll = ReloadVisibleItems | InvalidateControl,
+            /// <summary>
+            /// Po změně prvků (přidání, odebrání, změna hodnot) (<see cref="RecalculateContentTotalSize"/> + <see cref="ReloadVisibleItems"/> + <see cref="InvalidateControl"/>).
+            /// <para/>
+            /// Toto je standardní refresh.
+            /// </summary>
+            Default = AfterItemsChanged,
+            /// <summary>
+            /// Všechny akce, včetně invalidace cache (brutální refresh)
+            /// </summary>
+            All = RecalculateContentTotalSize | ReloadVisibleItems | InvalidateCache | InvalidateControl
         }
         #endregion
         #region Vykreslování a Bitmap cache
@@ -438,7 +504,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             _PaintingPerformaceTestCount = count;
             _PaintingPerformaceForceRefresh = forceRefresh;
-            this.Refresh(RefreshParts.InvalidateControl);
+            Refresh(RefreshParts.InvalidateControl);
             Application.DoEvents();
         }
         /// <summary>
