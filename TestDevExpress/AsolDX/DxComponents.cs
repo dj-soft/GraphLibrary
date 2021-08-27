@@ -540,7 +540,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         private DevExpress.XtraBars.BarManager _DefaultBarManager;
         private ToolTipController _DefaultToolTipController;
         #endregion
-        #region Rozhraní na Zoom
+        #region Rozhraní na Zoom, přepočty Design => Visual
         /// <summary>
         /// Inicializace Zoomu
         /// </summary>
@@ -567,6 +567,14 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         internal static int ZoomToGuiInt(int value) { decimal zoom = Instance._Zoom; return _ZoomToGuiInt(value, zoom); }
         /// <summary>
+        /// Vrátí danou designovou hodnotu přepočtenou dle aktuálního Zoomu a rozdílu TargetDpi / DesignDpi do vizuální hodnoty
+        /// </summary>
+        /// <param name="value">Designová hodnota (96DPI, 100%)</param>
+        /// <param name="targetDpi">Cílové DPI</param>
+        /// <returns></returns>
+        internal static int ZoomToGuiInt(int value, int targetDpi) { decimal zoomDpi = Instance._ZoomDpi; return _ZoomDpiToGuiInt(value, zoomDpi, targetDpi); }
+
+        /// <summary>
         /// Vrátí danou designovou hodnotu přepočtenou dle aktuálního Zoomu do vizuální hodnoty
         /// </summary>
         /// <param name="value"></param>
@@ -579,7 +587,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         internal static Point? ZoomToGuiInt(Point? value) { if (!value.HasValue) return null; decimal zoom = Instance._Zoom; var v = value.Value; return new Point(_ZoomToGuiInt(v.X, zoom), _ZoomToGuiInt(v.Y, zoom)); }
         /// <summary>
-        /// Vrátí danou designovou hodnotu přepočtenou dle aktuálního Zoomu do vizuální hodnoty
+        /// Vrátí danou designovou hodnotu přepočtenou dle aktuálního Zoomu a rozdílu TargetDpi / DesignDpi do vizuální hodnoty
         /// </summary>
         /// <param name="value">Designová hodnota (96DPI, 100%)</param>
         /// <param name="targetDpi">Cílové DPI</param>
@@ -599,7 +607,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         internal static Size? ZoomToGuiInt(Size? value) { if (!value.HasValue) return null; decimal zoom = Instance._Zoom; var v = value.Value; return new Size(_ZoomToGuiInt(v.Width, zoom), _ZoomToGuiInt(v.Height, zoom)); }
         /// <summary>
-        /// Vrátí danou designovou hodnotu přepočtenou dle aktuálního Zoomu do vizuální hodnoty
+        /// Vrátí danou designovou hodnotu přepočtenou dle aktuálního Zoomu a rozdílu TargetDpi / DesignDpi do vizuální hodnoty
         /// </summary>
         /// <param name="value">Designová hodnota (96DPI, 100%)</param>
         /// <param name="targetDpi">Cílové DPI</param>
@@ -619,7 +627,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         internal static Rectangle? ZoomToGuiInt(Rectangle? value) { if (!value.HasValue) return null; decimal zoom = Instance._Zoom; var v = value.Value; return new Rectangle(_ZoomToGuiInt(v.X, zoom), _ZoomToGuiInt(v.Y, zoom), _ZoomToGuiInt(v.Width, zoom), _ZoomToGuiInt(v.Height, zoom)); }
         /// <summary>
-        /// Vrátí danou designovou hodnotu přepočtenou dle aktuálního Zoomu do vizuální hodnoty
+        /// Vrátí danou designovou hodnotu přepočtenou dle aktuálního Zoomu a rozdílu TargetDpi / DesignDpi do vizuální hodnoty
         /// </summary>
         /// <param name="value">Designová hodnota (96DPI, 100%)</param>
         /// <param name="targetDpi">Cílové DPI</param>
@@ -639,14 +647,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         internal static Padding? ZoomToGuiInt(Padding? value) { if (!value.HasValue) return null; decimal zoom = Instance._Zoom; var v = value.Value; return new Padding(_ZoomToGuiInt(v.Left, zoom), _ZoomToGuiInt(v.Top, zoom), _ZoomToGuiInt(v.Right, zoom), _ZoomToGuiInt(v.Bottom, zoom)); }
         /// <summary>
-        /// Vrátí danou designovou hodnotu přepočtenou dle aktuálního Zoomu do vizuální hodnoty
+        /// Vrátí danou designovou hodnotu přepočtenou dle aktuálního Zoomu a rozdílu TargetDpi / DesignDpi do vizuální hodnoty
         /// </summary>
         /// <param name="value">Designová hodnota (96DPI, 100%)</param>
         /// <param name="targetDpi">Cílové DPI</param>
         /// <returns></returns>
         internal static Padding ZoomToGuiInt(Padding value, int targetDpi) { decimal zoomDpi = Instance._ZoomDpi; return new Padding(_ZoomDpiToGuiInt(value.Left, zoomDpi, targetDpi), _ZoomDpiToGuiInt(value.Top, zoomDpi, targetDpi), _ZoomDpiToGuiInt(value.Right, zoomDpi, targetDpi), _ZoomDpiToGuiInt(value.Bottom, zoomDpi, targetDpi)); }
-
-
 
         /// <summary>
         /// Vrátí danou designovou hodnotu přepočtenou dle daného Zoomu do vizuální hodnoty
@@ -672,7 +678,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Reálná velikost prvků se pak konvertuje na cílové DPI monitoru.
         /// </summary>
         public static int DesignDpi { get { return Instance._DesignDpi; } set { Instance._SetDesignDpi(value); } }
-
         /// <summary>
         /// Aktuální hodnota Zoomu a SourceDpi
         /// </summary>
