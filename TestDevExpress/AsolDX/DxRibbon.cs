@@ -1064,15 +1064,20 @@ namespace Noris.Clients.Win.Components.AsolDX
                     checkItem.CheckBoxVisibility = DevExpress.XtraBars.CheckBoxVisibility.BeforeText;
                     barItem = checkItem;
                     break;
+                case RibbonItemType.CheckBoxToggle:
+                    count++;
+                    DxBarCheckBoxToggle toggleSwitch = new DxBarCheckBoxToggle(this.BarManager, iRibbonItem.Text);
+                    barItem = toggleSwitch;
+                    break;
                 case RibbonItemType.RadioItem:
                     count++;
                     DevExpress.XtraBars.BarCheckItem radioItem = Items.CreateCheckItem(iRibbonItem.Text, iRibbonItem.Checked ?? false);
                     barItem = radioItem;
                     break;
-                case RibbonItemType.CheckBoxToggle:
-                    count++;
-                    DxBarCheckBoxToggle toggleSwitch = new DxBarCheckBoxToggle(this.BarManager, iRibbonItem.Text);
-                    barItem = toggleSwitch;
+                case RibbonItemType.TrackBar:
+                    //count++;
+                    //DevExpress.XtraBars.BarCheckItem trackBarItem = Items.createtr .CreateCheckItem(iRibbonItem.Text, iRibbonItem.Checked ?? false);
+                    //barItem = radioItem;
                     break;
                 case RibbonItemType.Menu:
                     count++;
@@ -2356,7 +2361,8 @@ namespace Noris.Clients.Win.Components.AsolDX
                 ItemId = "_SYS__DevExpress_UhdSupportCheckBox", Text = "UHD Paint", ToolTipText = "Zapíná podporu pro Full vykreslování na UHD monitoru",
                 RibbonItemType = RibbonItemType.CheckBoxToggle, 
                 // ImageUnChecked = "svgimages/zoom/zoomout.svg", ImageChecked = "svgimages/zoom/zoomin.svg",
-                Checked = DxComponent.UhdPaintEnabled, MenuAction = SetUhdPaint });
+                Checked = DxComponent.UhdPaintEnabled, MenuAction = SetUhdPaint 
+            });
 
             return iGroup;
         }
@@ -3052,6 +3058,160 @@ namespace Noris.Clients.Win.Components.AsolDX
         private string _ImageNameChecked;
     }
     #endregion
+    #region TrackBar
+    [DevExpress.XtraEditors.Registrator.UserRepositoryItem("RegisterMyTrackBar")]
+    public class RepositoryItemMyTrackBar : DevExpress.XtraEditors.Repository.RepositoryItemTrackBar
+    {
+        static RepositoryItemMyTrackBar()
+        {
+            RegisterMyTrackBar();
+        }
+        public static void RegisterMyTrackBar()
+        {
+            Image img = null;
+            DevExpress.XtraEditors.Registrator.EditorRegistrationInfo.Default.Editors.Add(new DevExpress.XtraEditors.Registrator.EditorClassInfo(CustomEditName, typeof(MyTrackBar), typeof(RepositoryItemMyTrackBar), typeof(MyTrackBarViewInfo), new MyTrackBarPainter(), true, img));
+        }
+
+
+        protected override int ConvertValue(object val)
+        {
+            return base.ConvertValue(val);
+        }
+
+        public const string CustomEditName = "MyTrackBar";
+
+        public RepositoryItemMyTrackBar() { }
+
+
+
+        //---
+
+        public static RepositoryItemMyTrackBar SetupTrackBarDouble(double paramValue)
+        {
+
+            int paramValueInt = Convert.ToInt32(paramValue * 100);
+
+            RepositoryItemMyTrackBar trackbar = new RepositoryItemMyTrackBar()
+            {
+                Minimum = paramValueInt - 500,
+                Maximum = paramValueInt + 500,
+                SmallChange = 5,
+                ShowLabels = true
+            };
+
+            trackbar.Labels.Add(new DevExpress.XtraEditors.Repository.TrackBarLabel((Convert.ToDouble(trackbar.Minimum / 100d)).ToString(),
+              trackbar.Minimum));
+            trackbar.Labels.Add(new DevExpress.XtraEditors.Repository.TrackBarLabel((Convert.ToDouble(trackbar.Maximum / 100d)).ToString(),
+              trackbar.Maximum));
+            trackbar.Labels.Add(new DevExpress.XtraEditors.Repository.TrackBarLabel(paramValue.ToString(), paramValueInt));
+
+            return trackbar;
+        }
+
+        //---
+
+
+
+
+        public override string EditorTypeName { get { return CustomEditName; } }
+
+      
+
+        public override void Assign(DevExpress.XtraEditors.Repository.RepositoryItem item)
+        {
+            BeginUpdate();
+            try
+            {
+                base.Assign(item);
+                RepositoryItemMyTrackBar source = item as RepositoryItemMyTrackBar;
+                if (source == null) return;
+                //
+            }
+            finally
+            {
+                EndUpdate();
+            }
+        }
+    }
+
+    [System.ComponentModel.ToolboxItem(true)]
+    public class MyTrackBar : DevExpress.XtraEditors.TrackBarControl
+    {
+        static MyTrackBar()
+        {
+            RepositoryItemMyTrackBar.RegisterMyTrackBar();
+        }
+
+        public MyTrackBar()
+        {
+        }
+
+        public override object EditValue { get { return base.EditValue; } set { base.EditValue = value; } }
+
+        [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Content)]
+        public new RepositoryItemMyTrackBar Properties { get { return base.Properties as RepositoryItemMyTrackBar; } }
+
+        protected override object ConvertCheckValue(object val)
+        {
+            return base.ConvertCheckValue(val);
+        }
+
+        public override string EditorTypeName { get { return RepositoryItemMyTrackBar.CustomEditName; } }
+    }
+
+    public class MyTrackBarViewInfo : DevExpress.XtraEditors.ViewInfo.TrackBarViewInfo
+    {
+        public MyTrackBarViewInfo(DevExpress.XtraEditors.Repository.RepositoryItem item)
+            : base(item)
+        {
+        }
+
+
+
+        public override object EditValue
+        {
+            get
+            {
+                return base.EditValue;
+            }
+            set
+            {
+                try
+                {
+                    if (value is float)
+                    {
+                        int result = 0;
+                        result = (int)(Convert.ToSingle(value) * 100);
+                        base.EditValue = result;
+                    }
+                    else
+                        base.EditValue = value;
+                }
+                catch { }
+            }
+        }
+
+        public override DevExpress.XtraEditors.Drawing.TrackBarObjectPainter GetTrackPainter()
+        {
+            return new SkinMyTrackBarObjectPainter(LookAndFeel);
+        }
+    }
+
+    public class MyTrackBarPainter : DevExpress.XtraEditors.Drawing.TrackBarPainter
+    {
+        public MyTrackBarPainter()
+        {
+        }
+    }
+
+    public class SkinMyTrackBarObjectPainter : DevExpress.XtraEditors.Drawing.SkinTrackBarObjectPainter
+    {
+        public SkinMyTrackBarObjectPainter(DevExpress.Skins.ISkinProvider provider)
+            : base(provider)
+        {
+        }
+    }
+    #endregion
     #region DxRibbonStatusBar
     /// <summary>
     /// Potomek StatusBaru
@@ -3729,6 +3889,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         CheckBoxToggle,
         RadioItem,
+        TrackBar,
         Menu,
         InRibbonGallery,
         SkinSetDropDown,

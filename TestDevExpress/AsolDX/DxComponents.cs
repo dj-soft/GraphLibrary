@@ -668,7 +668,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="zoomDpi"></param>
         /// <param name="targetDpi"></param>
         /// <returns></returns>
-        private static int _ZoomDpiToGuiInt(int value, decimal zoomDpi, decimal targetDpi) { return (int)Math.Round((decimal)value * targetDpi * targetDpi, 0); }
+        private static int _ZoomDpiToGuiInt(int value, decimal zoomDpi, decimal targetDpi) { return (int)Math.Round((decimal)value * zoomDpi * targetDpi, 0); }
         /// <summary>
         /// Aktuální hodnota Zoomu
         /// </summary>
@@ -679,9 +679,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public static int DesignDpi { get { return Instance._DesignDpi; } set { Instance._SetDesignDpi(value); } }
         /// <summary>
-        /// Aktuální hodnota Zoomu a SourceDpi
+        /// Aktuální hodnota Zoomu a SourceDpi, vyjádřená jako <see cref="DesignDpi"/> / <see cref="ZoomDpi"/>.
+        /// Tuto hodnotu lze vynásobit aktuálním DPI a máme k dispozici koeficient pro výpočet CurrentPixel = (DesignPixel * ZoomDpi * CurrentDpi)
         /// </summary>
-        internal static decimal ZoomDpi { get { return Instance._Zoom; } }
+        internal static decimal ZoomDpi { get { return Instance._ZoomDpi; } }
         /// <summary>
         /// Reload hodnoty Zoomu
         /// </summary>
@@ -2049,6 +2050,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="line"></param>
         public static void LogAddLine(string line) { Instance._LogAddLine(line, false); }
         /// <summary>
+        /// Přidá dodanou chybu do logu. 
+        /// </summary>
+        /// <param name="exc"></param>
+        public static void LogAddException(Exception exc) { Instance._LogAddException(exc, null); }
+        /// <summary>
         /// Poslední řádek v logu
         /// </summary>
         public static string LogLastLine { get { return Instance._LogLastLine; } }
@@ -2212,6 +2218,16 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
             _LogLastWriteTicks = _LogWatch.ElapsedTicks;
             RunLogTextChanged();
+        }
+        /// <summary>
+        /// Přidá dodanou chybu do logu. 
+        /// </summary>
+        /// <param name="exc"></param>
+        /// <param name="info"></param>
+        private void _LogAddException(Exception exc, string info)
+        {
+            string line = exc.Message;
+            _LogAddLine(line, false);
         }
         /// <summary>
         /// Poslední řádek v logu
@@ -5500,6 +5516,16 @@ namespace Noris.Clients.Win.Components.AsolDX
             return new Rectangle(r.X + x, r.Y + y, r.Width, r.Height);
         }
         /// <summary>
+        /// Vrací nový <see cref="Rectangle"/>, který je dán aktuálním prostorem, zvětšeným o dané vnější okraje.
+        /// </summary>
+        /// <param name="r"></param>
+        /// <param name="padding"></param>
+        /// <returns></returns>
+        public static Rectangle Add(this Rectangle r, Padding padding)
+        {
+            return new Rectangle(r.X - padding.Left, r.Y - padding.Top, r.Width + padding.Horizontal, r.Height + padding.Vertical);
+        }
+        /// <summary>
         /// Returns a Rectangle, which is this rectangle minus point (=new Rectangle(this.X - point.X, this.Y - point.Y, this.Width, this.Height))
         /// </summary>
         /// <param name="r"></param>
@@ -5808,9 +5834,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Vrátí true, pokud dané souřadnice <paramref name="testBounds"/> jsou zcela nebo zčásti viditelné v this prostoru.
         /// </summary>
-        /// <param name="bounds"></param>
-        /// <param name="testBounds"></param>
-        /// <param name="partial"></param>
+        /// <param name="bounds">this = souřadnice např. části owner panelu</param>
+        /// <param name="testBounds">Testované souřadnice = např. prostor malého controlu</param>
+        /// <param name="partial">Stačí nám částečná viditelnost oblasti <paramref name="testBounds"/> v rámci <paramref name="bounds"/> ?  true = částečná / false = musí být viditelný zcela</param>
         /// <returns></returns>
         public static bool Contains(this Rectangle bounds, Rectangle testBounds, bool partial)
         {
@@ -5851,21 +5877,21 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Metoda vrací souřadnice okrajů daného Rectangle.
         /// Tyto souřadnice lze poté vyplnit (Fill), a budou uvnitř daného Rectangle.
         /// </summary>
-        /// <param name="r"></param>
+        /// <param name="value"></param>
         /// <param name="thick"></param>
         /// <param name="sides"></param>
         /// <returns></returns>
-        public static Rectangle[] GetBorders(this Rectangle r, int thick, params RectangleSide[] sides)
+        public static Rectangle[] GetBorders(this Rectangle value, int thick, params RectangleSide[] sides)
         {
             int count = sides.Length;
             Rectangle[] borders = new Rectangle[count];
 
-            int x0 = r.X;
-            int x1 = r.Right;
-            int w = r.Width;
-            int y0 = r.Y;
-            int y1 = r.Bottom;
-            int h = r.Height;
+            int x0 = value.X;
+            int x1 = value.Right;
+            int w = value.Width;
+            int y0 = value.Y;
+            int y1 = value.Bottom;
+            int h = value.Height;
             int t = (thick >= 0 ? thick : 0);
             int tx = (t < w ? t : w);
             int ty = (t < h ? t : h);

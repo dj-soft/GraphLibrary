@@ -69,22 +69,37 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             if (!OnPaintStartTime.HasValue) OnPaintStartTime = DxComponent.LogTimeCurrent;
 
-            bool contentIsChanged = false;
-            if (!_NativeBackgroundIsValid)
+            try
             {
-                var startTime = DxComponent.LogTimeCurrent;
-                PaintEventArgs ee = _GetNativeBackgroundPaintArgs(e);     // Jiný argument = obsahuje grafiku z vrstvy _NativeBackgroundLayer. Do té grafiky se následně vykreslí Background.
-                base.OnPaint(ee);                                         // Tady se do grafiky z vrstvy _NativeBackgroundLayer (která zatím obsahuje pouze barvu pozadí) vykreslí celý motiv pozadí (=obrázky skinu)
-                _NativeBackgroundIsValid = true;
-                contentIsChanged = true;
-                if (LogActive) DxComponent.LogAddLineTime($"DxBufferedGraphic.Prepare(NativeBackground); Time: {DxComponent.LogTokenTimeMilisec}", startTime);
+                IsPaintLayersInProgress = true;
+                bool contentIsChanged = false;
+                if (!_NativeBackgroundIsValid)
+                {
+                    var startTime = DxComponent.LogTimeCurrent;
+                    PaintEventArgs ee = _GetNativeBackgroundPaintArgs(e);     // Jiný argument = obsahuje grafiku z vrstvy _NativeBackgroundLayer. Do té grafiky se následně vykreslí Background.
+                    base.OnPaint(ee);                                         // Tady se do grafiky z vrstvy _NativeBackgroundLayer (která zatím obsahuje pouze barvu pozadí) vykreslí celý motiv pozadí (=obrázky skinu)
+                    _NativeBackgroundIsValid = true;
+                    contentIsChanged = true;
+                    if (LogActive) DxComponent.LogAddLineTime($"DxBufferedGraphic.Prepare(NativeBackground); Time: {DxComponent.LogTokenTimeMilisec}", startTime);
+                }
+
+                OnPaintLayers(e.Graphics, e.ClipRectangle, contentIsChanged);
             }
-
-            OnPaintLayers(e.Graphics, e.ClipRectangle, contentIsChanged);
-
+            catch (Exception exc)
+            {
+                DxComponent.LogAddLine($"DxPanelBufferedGraphic.OnPaint() error: {exc.Message}");
+            }
+            finally
+            {
+                IsPaintLayersInProgress = false;
+            }
             if (LogActive && OnPaintStartTime.HasValue) DxComponent.LogAddLineTime($"DxBufferedGraphic.Paint(); TotalTime: {DxComponent.LogTokenTimeMilisec}", OnPaintStartTime.Value);
             OnPaintStartTime = null;
         }
+        /// <summary>
+        /// Obsahuje true v okamžiku, kdy probíhá proces vykreslování.
+        /// </summary>
+        public bool IsPaintLayersInProgress { get; private set; }
         /// <summary>
         /// Čas, kdy byl zahájen proces Paint, kvůli Logu
         /// </summary>

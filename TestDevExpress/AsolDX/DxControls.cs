@@ -2467,14 +2467,64 @@ namespace Noris.Clients.Win.Components.AsolDX
         protected virtual void OnInvalidateContentAfter() { }
         #endregion
         #region Scroll to control / to virtual bounds
-        public bool ScrollToBounds(Rectangle controlVirtualBounds, Rectangle? groupVirtualBounds = null)
+        public bool ScrollToBounds(Rectangle controlVirtualBounds, Rectangle? groupVirtualBounds = null, bool skipEvent = false)
         {
+            Size totalSize = this.ContentTotalSize;
             Rectangle currentBounds = this.ContentVirtualBounds;
-            if (currentBounds.Contains(controlVirtualBounds)) return false;    // Požadovaný prostor je zcela vidět
+            Rectangle controlBounds = controlVirtualBounds.Add(ScrollToBoundsBasicPaddingCurrent);
+            if (currentBounds.Contains(controlBounds)) return false;           // Požadovaný prostor je zcela vidět
 
+            // Budeme muset Scrollovat:
+            Point oldVirtualOrigin = currentBounds.Location;
+            bool suppressEvent = _SuppressEvent;
+            try
+            {
+                _SuppressEvent = true;
 
+                if (groupVirtualBounds.HasValue)
+                { }
+
+                controlBounds = controlVirtualBounds.Add(ScrollToBoundsScrollPaddingCurrent);
+                ScrollToBounds(controlBounds.X, controlBounds.Right, currentBounds.X, currentBounds.Right, totalSize.Width, HScrollBarVisible, _HScrollBar);
+                ScrollToBounds(controlBounds.Y, controlBounds.Bottom, currentBounds.Y, currentBounds.Bottom, totalSize.Height, VScrollBarVisible, _VScrollBar);
+            }
+            finally
+            {
+                _SuppressEvent = suppressEvent;
+            }
+
+            Point newVirtualOrigin = this.ContentVirtualBounds.Location;
+            if (newVirtualOrigin == oldVirtualOrigin) return false;
+
+            if (!skipEvent)
+                _RunContentVirtualBoundsChanged();
 
             return true;
+        }
+        protected void ScrollToBounds(int targetBegin, int targetEnd, int currentBegin, int currentEnd, int totalSize, bool scrollBarVisible, ScrollBarBase scrollBar)
+        {
+            if (!scrollBarVisible || scrollBar == null) return;
+            int currentStart = currentBegin;
+            int currentSize = currentEnd - currentBegin;
+
+            if (targetEnd > currentEnd)
+            {
+                currentEnd = targetEnd;
+                if (currentEnd > totalSize) currentEnd = totalSize;
+                currentBegin = currentEnd - currentSize;
+            }
+
+            if (targetBegin < currentBegin)
+            {
+                currentBegin = targetBegin;
+                if (currentBegin < 0) currentBegin = 0;
+                currentEnd = currentBegin + currentSize;
+            }
+
+            if (currentBegin != currentStart)
+            {
+                scrollBar.Value = currentBegin;
+            }
         }
         /// <summary>
         /// Okraje, přidávané k požadovaném prostoru controlu v metodě <see cref="ScrollToBounds(Rectangle, Rectangle?)"/> před tím, než se ověří jeho aktuální viditelnost.
@@ -2484,16 +2534,23 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Jde o designové pixely = bez aplikování odlišného DPI a Zoomu, ty se aplikují interně.
         /// </summary>
         public Padding ScrollToBoundsBasicPadding { get; set; }
+        /// <summary>
+        /// Aktuální hodnota <see cref="ScrollToBoundsBasicPadding"/> (pro aktuální Zoom a DPI)
+        /// </summary>
         protected Padding ScrollToBoundsBasicPaddingCurrent { get { return DxComponent.ZoomToGuiInt(ScrollToBoundsBasicPadding, CurrentDpi); } }
         /// <summary>
         /// Okraje, přidávané ke scrollu prováděnému v metodě <see cref="ScrollToBounds(Rectangle, Rectangle?)"/> v situaci, kdy je potřeba reálně posunout obsah.
-        /// Tedy: pokud požadovaný obsah je celý viditelný, pak se scrollovat nebude ani když nebude dodržen zde uvedený okraj.
-        /// Jakmile ale bude část obsahu neviditelná, pak se provede Scroll tak, aby okolo obsahu byl právě tento okraj.
+        /// Tedy: pokud požadovaný obsah (s přidáním <see cref="ScrollToBoundsBasicPadding"/>) je celý viditelný, pak se scrollovat nebude ani když nebude dodržen zde uvedený okraj.
+        /// Jakmile ale bude část (zvětšeného) obsahu neviditelná, pak se provede Scroll tak, aby okolo obsahu byl právě tento okraj.
         /// <para/>
         /// Výchozí hodnota = 24 pixelů.
         /// Jde o designové pixely = bez aplikování odlišného DPI a Zoomu, ty se aplikují interně.
         /// </summary>
         public Padding ScrollToBoundsScrollPadding { get; set; }
+        /// <summary>
+        /// Aktuální hodnota <see cref="ScrollToBoundsScrollPadding"/> (pro aktuální Zoom a DPI)
+        /// </summary>
+        protected Padding ScrollToBoundsScrollPaddingCurrent { get { return DxComponent.ZoomToGuiInt(ScrollToBoundsScrollPadding, CurrentDpi); } }
         #endregion
         #region Výpočty virtuální souřadnice a reakce na interaktivní posuny
         /// <summary>
@@ -2563,8 +2620,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="e"></param>
         private void ScrollBar_ValueChanged(object sender, EventArgs e)
         {
-            if (!_SuppressEvent)
-                ApplyScrollBarToVirtualLocation();
+            ApplyScrollBarToVirtualLocation();
         }
         /// <summary>
         /// Na controlu <see cref="ContentControl"/> bylo otočeno myškou

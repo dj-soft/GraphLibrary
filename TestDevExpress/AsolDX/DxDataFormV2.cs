@@ -230,7 +230,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Vyhledá prvek nacházející se pod danou souřadnicí myši a zajistí pro prvky <see cref="MouseItemLeave()"/> a <see cref="MouseItemEnter(DxDataFormItemV2)"/>.
         /// </summary>
-        /// <param name="location"></param>
+        /// <param name="location">Souřadnice myši relativně k controlu <see cref="_ContentPanel"/> = reálný parent prvků</param>
         private void PrepareItemForPoint(Point location)
         {
             if (_VisibleItems == null) return;
@@ -261,8 +261,11 @@ namespace Noris.Clients.Win.Components.AsolDX
                 _CurrentOnMouseItem = item;
                 _CurrentOnMouseControlSet = GetControlSet(item);
                 _CurrentOnMouseControl = _CurrentOnMouseControlSet.GetControlForMouse(item);
-                bool isScrolled = this.ScrollToBounds(item.CurrentBounds);
-                if (isScrolled) Refresh(RefreshParts.AfterScroll);
+                if (!_ContentPanel.IsPaintLayersInProgress)
+                {   // V době, kdy probíhá proces Paint, NEBUDU provádět Scroll:
+                    bool isScrolled = this.ScrollToBounds(item.CurrentBounds, null, true);
+                    if (isScrolled) Refresh(RefreshParts.AfterScroll);
+                }
             }
         }
         /// <summary>
@@ -308,7 +311,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public override void Refresh()
         {
-            Refresh(RefreshParts.Default | RefreshParts.RefreshControl, UsedLayers);
+            this.RunInGui(() => _RefreshInGui(RefreshParts.Default | RefreshParts.RefreshControl, UsedLayers));
         }
         /// <summary>
         /// Provede refresh daných částí
@@ -316,7 +319,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="refreshParts"></param>
         public void Refresh(RefreshParts refreshParts)
         {
-            Refresh(refreshParts, UsedLayers);
+            this.RunInGui(() => _RefreshInGui(refreshParts, UsedLayers));
         }
         /// <summary>
         /// Provede refresh daných částí a vrstev
@@ -325,34 +328,282 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="layers"></param>
         public void Refresh(RefreshParts refreshParts, DxBufferedLayer layers)
         {
-            bool isRecalc = refreshParts.HasFlag(RefreshParts.RecalculateContentTotalSize);
-            bool isVisibl = refreshParts.HasFlag(RefreshParts.ReloadVisibleItems);
-            if (isRecalc && isVisibl)                                                    // Pokud jsou oba požadavky společně,
-                this.RecalculateContentAndVisibleItems();                                //  pak provedu specifickou metodu, která enumeruje prvky jen jedenkrát
-            else if (isRecalc)
-                this.RecalculateContentTotalSize();                                      // Anebo jednoúčelová metoda
-            else if (isVisibl)
-                this.PrepareVisibleItems();                                              // Anebo jiná jednoúčelová metoda
-
-            if (refreshParts.HasFlag(RefreshParts.InvalidateCache))
-                this.InvalidateImageCache();
-
-            if (refreshParts.HasFlag(RefreshParts.InvalidateControl) || refreshParts.HasFlag(RefreshParts.RefreshControl))
-                this.RunInGui(() => RefreshGuiParts(refreshParts, layers));              // Tyhle dva refreshe se mají volat v GUI threadu
+            this.RunInGui(() => _RefreshInGui(refreshParts, layers));
         }
         /// <summary>
-        /// Refreshe těch částí, které musí být prováděny v GUI threadu
+        /// Refresh prováděný v GUI threadu
         /// </summary>
         /// <param name="refreshParts"></param>
         /// <param name="layers"></param>
-        private void RefreshGuiParts(RefreshParts refreshParts, DxBufferedLayer layers)
+        private void _RefreshInGui(RefreshParts refreshParts, DxBufferedLayer layers)
         {
-            if (refreshParts.HasFlag(RefreshParts.InvalidateControl))
-                this._ContentPanel.InvalidateLayers(layers);
+            // Protože jsme v GUI threadu, nemusím řešit zamykání hodnot - nikdy nebudou dvě vlákna přistupovat k jednomu objektu současně!
+            // Spíše jde o to, že některá část procesu Refresh způsobí požadavek na refresh jiné části, což ale může být část před i za aktuální.
+            
+            // Zapamatuji si úkoly ke zpracování:
+            _RefreshPartCurrentBounds |= refreshParts.HasFlag(RefreshParts.InvalidateCurrentBounds);
+            _RefreshPartContentTotalSize |= refreshParts.HasFlag(RefreshParts.RecalculateContentTotalSize);
+            _RefreshPartVisibleItems |= refreshParts.HasFlag(RefreshParts.ReloadVisibleItems);
+            _RefreshPartCache |= refreshParts.HasFlag(RefreshParts.InvalidateCache);
+            _RefreshPartInvalidateControl |= refreshParts.HasFlag(RefreshParts.InvalidateControl);
+            _RefreshPartRefreshControl |= refreshParts.HasFlag(RefreshParts.RefreshControl);
+            _RefreshLayers |= layers;
 
-            if (refreshParts.HasFlag(RefreshParts.RefreshControl))
-                base.Refresh();
+            // Pokud právě nyní probíhá Refresh, nebudu jej provádět rekurzivně, ale nechám dřívější iteraci doběhnout a zpracovat nově požadované úkoly:
+            if (_RefreshInProgress) return;
+
+            _RefreshInProgress = true;
+            try
+            {
+                while (true)
+                {
+                    // Autodetekce dalších požadavků:
+                    _RefreshPartsAutoDetect();
+
+                    // Pokud nebude co dělat, skončíme:
+                    bool doAny = _RefreshPartCurrentBounds || _RefreshPartContentTotalSize || _RefreshPartVisibleItems ||
+                                 _RefreshPartCache || _RefreshPartInvalidateControl || _RefreshPartRefreshControl;
+                    if (!doAny) return;
+
+                    // Provedeme požadované akce; každá akce nejprve shodí svůj příznak (a teoreticky může nahodit jiný příznak):
+                    if (_RefreshPartCurrentBounds) _DoRefreshPartCurrentBounds();
+                    if (_RefreshPartContentTotalSize) _DoRefreshPartContentTotalSize();
+                    if (_RefreshPartVisibleItems) _DoRefreshPartVisibleItems();
+                    if (_RefreshPartCache) _DoRefreshPartCache();
+                    if (_RefreshPartInvalidateControl) _DoRefreshPartInvalidateControl();
+                    if (_RefreshPartRefreshControl) _DoRefreshPartRefreshControl();
+                }
+            }
+            catch (Exception exc)
+            {
+                DxComponent.LogAddException(exc);
+            }
+            finally
+            {
+                _RefreshInProgress = false;
+            }
         }
+        /// <summary>
+        /// Refresh právě probíhá
+        /// </summary>
+        private bool _RefreshInProgress;
+        /// <summary>
+        /// Zajistit přepočet CurrentBounds v prvcích (=provést InvalidateBounds) = provádí se po změně Zoomu a/nebo DPI
+        /// </summary>
+        private bool _RefreshPartCurrentBounds;
+        /// <summary>
+        /// Přepočítat celkovou velikost obsahu
+        /// </summary>
+        private bool _RefreshPartContentTotalSize;
+        /// <summary>
+        /// Určit aktuálně viditelné prvky
+        /// </summary>
+        private bool _RefreshPartVisibleItems;
+        /// <summary>
+        /// Resetovat cache předvykreslených controlů
+        /// </summary>
+        private bool _RefreshPartCache;
+        /// <summary>
+        /// Znovuvykreslit grafiku
+        /// </summary>
+        private bool _RefreshPartInvalidateControl;
+        /// <summary>
+        /// Explicitně vyvolat i metodu <see cref="Control.Refresh()"/>
+        /// </summary>
+        private bool _RefreshPartRefreshControl;
+        /// <summary>
+        /// Invalidovat tyto vrstvy v rámci _RefreshPartInvalidateControl
+        /// </summary>
+        private DxBufferedLayer _RefreshLayers;
+        /// <summary>
+        /// Detekuje automatické požadavky na Refresh
+        /// </summary>
+        private void _RefreshPartsAutoDetect()
+        {
+            if (!_RefreshPartCurrentBounds)
+            {
+                decimal currentZoom = DxComponent.Zoom;
+                int currentDpi = this.CurrentDpi;
+                if (_LastCalcZoom != currentZoom || _LastCalcDeviceDpi != currentDpi)
+                    _RefreshPartCurrentBounds = true;
+            }
+        }
+        /// <summary>
+        /// Provede akci Refresh, <see cref="RefreshParts.InvalidateCurrentBounds"/>
+        /// </summary>
+        private void _DoRefreshPartCurrentBounds()
+        {
+            _RefreshPartCurrentBounds = false;
+
+            _Items.ForEachExec(i => i.InvalidateBounds());
+
+            _LastCalcZoom = DxComponent.Zoom;
+            _LastCalcDeviceDpi = this.CurrentDpi;
+        }
+        /// <summary>
+        /// Provede akci Refresh, <see cref="RefreshParts.RecalculateContentTotalSize"/>
+        /// </summary>
+        private void _DoRefreshPartContentTotalSize()
+        {
+            _RefreshPartContentTotalSize = false;
+
+            Rectangle summaryContentBounds = this.ItemsSummaryBounds ?? Rectangle.Empty;
+            var padding = DxComponent.ZoomToGuiInt(this.ContentPadding, this.CurrentDpi);
+            int w = padding.Left + summaryContentBounds.Right + padding.Right;
+            int h = padding.Top + summaryContentBounds.Bottom + padding.Bottom;
+            ContentTotalSize = new Size(w, h);
+        }
+        /// <summary>
+        /// Provede akci Refresh, <see cref="RefreshParts.ReloadVisibleItems"/>
+        /// </summary>
+        private void _DoRefreshPartVisibleItems()
+        {
+            _RefreshPartVisibleItems = false;
+
+            // Uložím soupis aktuálně viditelných prvků:
+            Rectangle virtualBounds = this.ContentVirtualBounds;
+            this._VisibleItems = this._Items.Where(i => i.IsVisibleInVirtualBounds(virtualBounds)).ToList();
+
+            // Po změně viditelných prvků je třeba provést MouseLeave = prvek pod myší už není ten, co býval:
+            this.MouseItemLeave();
+
+            // A zajistit, že po vykreslení prvků bude aktivován prvek, který se nachází pod myší:
+            // Až po vykreslení proto, že proces vykreslení určí aktuální viditelné souřadnice prvků!
+            this._AfterPaintSearchActiveItem = true;
+        }
+        /// <summary>
+        /// Provede akci Refresh, <see cref="RefreshParts.InvalidateCache"/>
+        /// </summary>
+        private void _DoRefreshPartCache()
+        {
+            _RefreshPartCache = false;
+
+            this.InvalidateImageCache();
+        }
+        /// <summary>
+        /// Provede akci Refresh, <see cref="RefreshParts.InvalidateControl"/>
+        /// </summary>
+        private void _DoRefreshPartInvalidateControl()
+        {
+            _RefreshPartInvalidateControl = false;
+
+            var layers = this._RefreshLayers;
+            if (layers != DxBufferedLayer.None)
+                this._ContentPanel.InvalidateLayers(layers);
+            this._RefreshLayers = DxBufferedLayer.None;
+        }
+        /// <summary>
+        /// Provede akci Refresh, <see cref="RefreshParts.RefreshControl"/>
+        /// </summary>
+        private void _DoRefreshPartRefreshControl()
+        {
+            _RefreshPartRefreshControl = false;
+
+            base.Refresh();
+        }
+
+
+        // odstranit:
+
+        /// <summary>
+        /// Zajistí provedení refreshů pro jednotlivé položky, vše v jednom cyklu přes všechny položky
+        /// </summary>
+        /// <param name="refreshParts"></param>
+        private void RefreshItems(RefreshParts refreshParts)
+        {   // Tento algoritmus NENÍ REÁLNĚ POUŽITELNÝ.
+            // Proč? Protože nelze současně určovat SUMÁRNÍ VELIKOST všech prvků (ContentTotalSize), a přitom určovat VIDITELNOST prvků.
+            // Proč? Protože SUMÁRNÍ VELIKOST ovlivňuje ContentVirtualBounds a přitom její hodnota je známa AŽ PO ZPACOVÁNÍ VŠECH PRVKŮ
+            //       a přitom tedy NELZE průběžně určovat VIDITELNOST PRVKŮ v prostoru ContentVirtualBounds,
+            //       protože dokud nebudou zmapovaány všechny prvky do ContentTotalSize => ContentVirtualBounds,
+            //       tak není možno pouívat ContentVirtualBounds pro vyhodnocení viditelnosti prvku.
+            bool doInvalidBounds = refreshParts.HasFlag(RefreshParts.InvalidateCurrentBounds);
+            decimal currentZoom = DxComponent.Zoom;
+            int currentDpi = this.CurrentDpi;
+            if (_LastCalcZoom != currentZoom || _LastCalcDeviceDpi != currentDpi)
+                doInvalidBounds = true;
+            bool doRecalcTotalSize = refreshParts.HasFlag(RefreshParts.RecalculateContentTotalSize);
+            bool doVisibleItems = refreshParts.HasFlag(RefreshParts.ReloadVisibleItems);
+
+            // Pokud není třeba dělat nic s položkami, skončíme hned:
+            if (!doInvalidBounds && !doRecalcTotalSize && !doVisibleItems) return;
+
+            int count = _Items.Count;
+            Rectangle virtualBounds = this.ContentVirtualBounds;
+            List<DxDataFormItemV2> visibleItems = new List<DxDataFormItemV2>();
+            int l = 0, t = 0, r = 0, b = 0;
+            for (int i = 0; i < count; i++)
+            {   // Všechny refreshe, týkající se prvků provedu v jednom cyklu:
+                var item = _Items[i];
+
+                // Nejprve invalidace souřadnic; protože jejich následné čtení zajistí jejich přepočet:
+                if (doInvalidBounds) item.InvalidateBounds();
+
+                if (doRecalcTotalSize || doVisibleItems)
+                {
+                    Rectangle currentBounds = item.CurrentBounds;
+
+                    // TotalContentSize:
+                    if (doRecalcTotalSize)
+                    {
+                        if (i == 0)
+                        {
+                            l = currentBounds.Left;
+                            t = currentBounds.Top;
+                            r = currentBounds.Right;
+                            b = currentBounds.Bottom;
+                        }
+                        else
+                        {
+                            if (currentBounds.Left < l) l = currentBounds.Left;
+                            if (currentBounds.Top < t) t = currentBounds.Top;
+                            if (currentBounds.Right > r) r = currentBounds.Right;
+                            if (currentBounds.Bottom > b) b = currentBounds.Bottom;
+                        }
+                    }
+
+                    // VisibleItems:
+                    if (doVisibleItems)
+                    {
+                        bool isVisible = (item.IsVisible && virtualBounds.Contains(currentBounds, true));
+                        if (isVisible)
+                            visibleItems.Add(item);
+                        if (item.VisibleBounds.HasValue)
+                            item.VisibleBounds = null;               // Souřadnici VisibleBounds nulujeme tehdy, když tam je nenulová - tj. i pro Visible prvky. (Protože jejich Visible souřadnici teprve určíme v procesu Paint, tady ji počítat nebudu)
+                    }
+                }
+            }
+
+            // Závěrečné výpočty
+
+            // TotalContentSize:
+            if (doRecalcTotalSize)
+            {
+                Rectangle summaryBounds = Rectangle.FromLTRB(l, t, r, b);
+                var padding = DxComponent.ZoomToGuiInt(this.ContentPadding, currentDpi);
+                int w = padding.Left + summaryBounds.Right + padding.Right;
+                int h = padding.Top + summaryBounds.Bottom + padding.Bottom;
+                ContentTotalSize = new Size(w, h);
+            }
+
+            // VisibleItems:
+            if (doVisibleItems)
+            {
+                // Uložím soupis aktuálně viditelných prvků:
+                this._VisibleItems = visibleItems;
+
+                // Po změně viditelných prvků je třeba provést MouseLeave = prvek pod myší už není ten, co býval:
+                this.MouseItemLeave();
+
+                // A zajistit, že po vykreslení prvků bude aktivován prvek, který se nachází pod myší:
+                // Až po vykreslení proto, že proces vykreslení určí aktuální viditelné souřadnice prvků!
+                this._AfterPaintSearchActiveItem = true;
+            }
+            _LastCalcZoom = currentZoom;
+            _LastCalcDeviceDpi = currentDpi;
+        }
+
+
+
         /// <summary>
         /// Po změně DPI je třeba provést kompletní refresh (souřadnice, cache, atd)
         /// </summary>
@@ -379,56 +630,13 @@ namespace Noris.Clients.Win.Components.AsolDX
             Refresh(RefreshParts.AfterScroll);
         }
         /// <summary>
-        /// Optimalizovaná metoda, která v jedné enumeraci vyhodnotí sumu souřadnic i viditelné prvky
+        /// Systémový Zoom, po který byly posledně přepočteny CurrentBounds
         /// </summary>
-        private void RecalculateContentAndVisibleItems()
-        {
-#warning TODO pro optimální běh doprogramovat metodu, která v jedné enumeraci vyhodnotí sumu souřadnic i viditelné prvky !!!
-            RecalculateContentTotalSize();
-            PrepareVisibleItems();
-        }
+        private decimal _LastCalcZoom;
         /// <summary>
-        /// Určí seznam aktuálně viditelných prvků
+        /// DPI this controlu, po který byly posledně přepočteny CurrentBounds
         /// </summary>
-        private void PrepareVisibleItems()
-        {
-            // Z prvků, které jsou viditelné nyní, odstraním vizuální souřadnici:
-            //  některé prvky budou sice viditelné i nadále, ale budou překresleny a přitom dostanou platnou souřadnici,
-            //  a jiné prvky viditelné nebudou = těm je třeba zrušit viditelnou souřadnici (ale je zbytečné ji rušit všem prvkům v poli _Items):
-            if (this._VisibleItems != null)
-                this._VisibleItems.ForEachExec(i => i.VisibleBounds = null);
-
-            // Najdu a uložím soupis aktuálně viditelných prvků:
-            this._VisibleItems = GetVisibleItems(this.ContentVirtualBounds);
-
-            // Po změně viditelných prvků je třeba provést MouseLeave = prvek pod myší už není ten, co býval:
-            this.MouseItemLeave();
-
-            // A zajistit, že po vykreslení prvků bude aktivován prvek, který se nachází pod myší:
-            // Až po vykreslení proto, že proces vykreslení určí aktuální viditelné souřadnice prvků!
-            this._AfterPaintSearchActiveItem = true;
-        }
-        /// <summary>
-        /// Vrátí List prvků z pole <see cref="Items"/>, které jsou alespoň zčásti viditelné v aktuálním prostoru
-        /// </summary>
-        /// <returns></returns>
-        private List<DxDataFormItemV2> GetVisibleItems(Rectangle bounds)
-        {
-            List<DxDataFormItemV2> visibleItems = _Items.Where(i => i.IsVisible && bounds.Contains(i.CurrentBounds, true)).ToList();
-            return visibleItems;
-        }
-        /// <summary>
-        /// Podle aktuálního seznamu prvků a jejich velikostí určí sumární velikost obsahu.
-        /// Za poslední prvek přidává okraj definovaný v 
-        /// </summary>
-        private void RecalculateContentTotalSize()
-        {
-            Rectangle summaryBounds = ItemsSummaryBounds ?? Rectangle.Empty;
-            var padding = this.ContentPadding;
-            int w = padding.Left + summaryBounds.Right + padding.Right;
-            int h = padding.Top + summaryBounds.Bottom + padding.Bottom;
-            ContentTotalSize = new Size(w, h);
-        }
+        private int _LastCalcDeviceDpi;
         /// <summary>
         /// Položky pro refresh
         /// </summary>
@@ -440,9 +648,13 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// </summary>
             None = 0,
             /// <summary>
+            /// Zajistit přepočet CurrentBounds v prvcích (=provést InvalidateBounds) = provádí se po změně Zoomu a/nebo DPI
+            /// </summary>
+            InvalidateCurrentBounds = 0x0001,
+            /// <summary>
             /// Přepočítat celkovou velikost obsahu
             /// </summary>
-            RecalculateContentTotalSize = 0x0001,
+            RecalculateContentTotalSize = 0x0002,
             /// <summary>
             /// Určit aktuálně viditelné prvky
             /// </summary>
@@ -1142,9 +1354,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 var size = item.CurrentBounds.Size;
                 string text = item.Text ?? "";
-                string dpi = item.CurrentDpi.ToString();
                 string type = ((int)item.ItemType).ToString();
-                string key = $"{size.Width}.{size.Height}.{dpi};{type}::{text}";
+                string key = $"{size.Width}.{size.Height};{type}::{text}";
                 return key;
             }
             #endregion
@@ -1316,6 +1527,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             _ItemType = itemType;
             Text = text;
             IsVisible = true;
+            HotTrackingEnabled = (itemType != DataFormItemType.Label);
         }
 
         private IDxDataFormV2 _Owner;
@@ -1325,21 +1537,36 @@ namespace Noris.Clients.Win.Components.AsolDX
         public DataFormItemType ItemType { get { return _ItemType; } }
         public bool IsVisible { get; set; }
 
+        #region Vzhled
+        /// <summary>
+        /// Prvek bude podsvícen při pohybu myší nad ním
+        /// </summary>
+        public bool HotTrackingEnabled { get; set; }
+
+        #endregion
+
         #region Souřadnice designové, aktuální, viditelné
         /// <summary>
         /// Souřadnice designové, v logických koordinátech (kde bod {0,0} je absolutní počátek, bez posunu ScrollBarem).
         /// Typicky se vztahují k 96 DPI.
+        /// Setování hodnoty provede invalidaci fyzických souřadnic <see cref="InvalidateBounds()"/>, tedy hodnot <see cref="CurrentBounds"/> a <see cref="VisibleBounds"/>.
         /// </summary>
         public Rectangle DesignBounds 
         { 
             get { return __DesignBounds; } 
             set 
             {
-                var currentDpi = _Owner.DeviceDpi;
                 __DesignBounds = value;
-                __CurrentBounds = value;
-                __CurrentDpi = currentDpi;
+                InvalidateBounds();
             }
+        }
+        /// <summary>
+        /// Invaliduje souřadnice <see cref="CurrentBounds"/> a <see cref="VisibleBounds"/>.
+        /// </summary>
+        public void InvalidateBounds()
+        {
+            __CurrentBounds = null;
+            __VisibleBounds = null;
         }
         /// <summary>
         /// Souřadnice designové, v logických koordinátech (kde bod {0,0} je absolutní počátek, bez posunu ScrollBarem).
@@ -1371,39 +1598,40 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private Rectangle? __CurrentBounds;
         /// <summary>
-        /// Aktuální DPI
-        /// </summary>
-        public int CurrentDpi { get { return __CurrentDpi; } }
-        /// <summary>
-        /// Hodnota DPI, ke které jsou přepočteny souřadnice <see cref="CurrentBounds"/> a <see cref="VisibleBounds"/>.
-        /// </summary>
-        private int __CurrentDpi;
-        /// <summary>
-        /// Zajistí, že souřadnice <see cref="__CurrentBounds"/> budou platné k souřadnicím designovým a k hodnotám DPI designovým a aktuálním
+        /// Zajistí, že souřadnice <see cref="__CurrentBounds"/> budou platné k souřadnicím designovým a k hodnotám aktuálním DPI
         /// </summary>
         private void CheckDesignBounds()
         {
-            var ownerDpi = _Owner.DeviceDpi;
-            var currentDpi = __CurrentDpi;
-            if (__CurrentBounds.HasValue && currentDpi == ownerDpi) return;
-            __CurrentBounds = __DesignBounds.ConvertToDpi(ownerDpi);
-            __CurrentDpi = ownerDpi;
+            if (!__CurrentBounds.HasValue)
+                __CurrentBounds = DxComponent.ZoomToGuiInt(__DesignBounds, _Owner.DeviceDpi);
         }
         /// <summary>
         /// Fyzické pixelové souřadnice tohoto prvku na vizuálním controlu, kde se nyní tento prvek nachází.
-        /// Může být null, pak prvek není zobrazen.
+        /// Jde o vizuální souřadnice v koordinátech controlu, odpovídají např. pohybu myši.
+        /// Může být null, pak prvek není zobrazen. Null je i po invalidaci <see cref="InvalidateBounds()"/>.
         /// Tuto hodnotu ukládá řídící třída v procesu kreslení jako reálné souřadnice, kam byl prvek vykreslen.
         /// </summary>
-        public Rectangle? VisibleBounds { get; set; }
+        public Rectangle? VisibleBounds { get { return __VisibleBounds; } set { __VisibleBounds = value; } }
+        private Rectangle? __VisibleBounds;
+        /// <summary>
+        /// Vrátí true, pokud this prvek se nachází v rámci dané virtuální souřadnice.
+        /// Tedy pokud souřadnice <see cref="CurrentBounds"/> se alespoň zčásti nacházejí uvnitř souřadného prostoru dle parametru <paramref name="virtualBounds"/>.
+        /// </summary>
+        /// <param name="virtualBounds"></param>
+        /// <returns></returns>
+        public bool IsVisibleInVirtualBounds(Rectangle virtualBounds)
+        {
+            return (IsVisible && virtualBounds.Contains(CurrentBounds, true));
+        }
         /// <summary>
         /// Vrátí true, pokud this prvek má nastaveny viditelné souřadnice v <see cref="VisibleBounds"/> 
-        /// a pokud daný bod se nachází ve viditelné oblasti
+        /// a pokud daný bod (souřadný systém shodný s <see cref="VisibleBounds"/>) se nachází v prostoru this prvku
         /// </summary>
         /// <param name="point"></param>
         /// <returns></returns>
         public bool IsVisibleOnPoint(Point point)
         {
-            return (VisibleBounds.HasValue && VisibleBounds.Value.Contains(point));
+            return (IsVisible && VisibleBounds.HasValue && VisibleBounds.Value.Contains(point));
         }
         #endregion
     }
