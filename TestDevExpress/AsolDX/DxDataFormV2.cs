@@ -117,11 +117,11 @@ namespace Noris.Clients.Win.Components.AsolDX
 
         private void InitializeSampleControls()
         {
-            _Label = new DxLabelControl() { Bounds = new Rectangle(20, 52, 70, 18), Text = "Popis" };
+            _Label = new DxLabelControl() { Bounds = new Rectangle(20, 52, 70, 18), Text = "Popis", TabIndex = 1 };
             _ContentPanel.Controls.Add(_Label);
-            _TextBox = new DxTextEdit() { Bounds = new Rectangle(100, 50, 80, 20), Text = "Pokus" };
+            _TextBox = new DxTextEdit() { Bounds = new Rectangle(100, 50, 80, 20), Text = "Pokus", TabIndex = 2, TabStop = false };
             _ContentPanel.Controls.Add(_TextBox);
-            _CheckBox = new DxCheckEdit() { Bounds = new Rectangle(210, 50, 100, 20), Text = "Předvolba" };
+            _CheckBox = new DxCheckEdit() { Bounds = new Rectangle(210, 50, 100, 20), Text = "Předvolba", TabIndex = 3, TabStop = false };
             _ContentPanel.Controls.Add(_CheckBox);
         }
         public DxTextEdit TextBox { get { return _TextBox; } }
@@ -186,9 +186,24 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void InitializeInteractivity()
         {
             _CurrentFocusedItem = null;
-
+            InitializeInteractivityKeyboard();
             InitializeInteractivityMouse();
         }
+        #region Keyboard a Focus
+        private void InitializeInteractivityKeyboard()
+        {
+            this._CurrentFocusedItem = null;
+
+            Control parent = this._ContentPanel;        // finálně bude parentem this, pak buttony nebudou vidět
+            _FocusInButton = DxComponent.CreateDxSimpleButton(142, 5, 140, 25, parent, " Focus in...", tabStop: true);
+            _FocusInButton.TabIndex = 0;
+            _FocusOutButton = DxComponent.CreateDxSimpleButton(352, 5, 140, 25, parent, "... focus out.", tabStop: true);
+            _FocusOutButton.TabIndex = 29;
+        }
+        private DxSimpleButton _FocusInButton;
+        private DxSimpleButton _FocusOutButton;
+        private DxDataFormItemV2 _CurrentFocusedItem;
+        #endregion
         #region Myš - Move, Down
         private void InitializeInteractivityMouse()
         {
@@ -286,7 +301,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             _CurrentOnMouseControlSet = null;
             _CurrentOnMouseControl = null;
         }
-
         /// <summary>
         /// Datový prvek, nacházející se nyní pod myší
         /// </summary>
@@ -300,10 +314,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private System.Windows.Forms.Control _CurrentOnMouseControl;
         #endregion
-
-
-        private DxDataFormItemV2 _CurrentFocusedItem;
-
         #endregion
         #region Refresh
         /// <summary>
@@ -383,6 +393,10 @@ namespace Noris.Clients.Win.Components.AsolDX
                 _RefreshInProgress = false;
             }
         }
+        /// <summary>
+        /// Refresh právě probíhá
+        /// </summary>
+        public bool IsRefreshInProgress { get { return _RefreshInProgress; } }
         /// <summary>
         /// Refresh právě probíhá
         /// </summary>
@@ -1416,7 +1430,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             private void _FillControl(DxDataFormItemV2 item, Control control, ControlUseMode mode)
             {
                 _FillControlAction(item, control, mode);
-
+                control.TabIndex = 10;
 
                 //// source.SetBounds(bounds);                  // Nastavím správné umístění, to kvůli obrázkům na pozadí panelu (různé skiny!), aby obrázky odpovídaly aktuální pozici...
                 //Rectangle sourceBounds = new Rectangle(4, 4, bounds.Width, bounds.Height);

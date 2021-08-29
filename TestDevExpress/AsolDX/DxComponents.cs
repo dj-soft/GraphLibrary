@@ -924,7 +924,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             container.PanelVisibility = (panelVisibility ?? DevExpress.XtraEditors.SplitPanelVisibility.Both);
             if (borderStyles.HasValue) container.BorderStyle = borderStyles.Value;
             container.ShowSplitGlyph = (showSplitGlyph.HasValue ? (showSplitGlyph.Value ? DevExpress.Utils.DefaultBoolean.True : DevExpress.Utils.DefaultBoolean.False) : DevExpress.Utils.DefaultBoolean.Default);
-
+            container.TabStop = false;
+            
             if (splitterPositionChanged != null) container.SplitterMoved += splitterPositionChanged;
 
             return container;

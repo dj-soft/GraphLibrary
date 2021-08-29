@@ -52,7 +52,11 @@ namespace TestDevExpress.Forms
 
             _DxTestPanel = DxComponent.CreateDxPanel(_DxMainSplit.Panel1, System.Windows.Forms.DockStyle.Fill, borderStyles: DevExpress.XtraEditors.Controls.BorderStyles.NoBorder);
             _DxTestPanel.SizeChanged += _DxMainPanel_SizeChanged;
-            _DxTitleLabel = DxComponent.CreateDxLabel(10, 10, 500, _DxTestPanel, "Zde bude DataForm", styleType: LabelStyleType.SubTitle);
+            _FocusInButton = DxComponent.CreateDxSimpleButton(5, 8, 140, 25, _DxTestPanel, " Button před...", tabStop: true);
+            _FocusInButton.TabIndex = 0;
+            _DxTitleLabel = DxComponent.CreateDxLabel(250, 10, 500, _DxTestPanel, "Zde bude DataForm", styleType: LabelStyleType.SubTitle);
+            _FocusOutButton = DxComponent.CreateDxSimpleButton(500, 8, 140, 25, _DxTestPanel, "... Button za.", tabStop: true);
+            _FocusOutButton.TabIndex = 2;
 
             _DxLogMemoEdit = DxComponent.CreateDxMemoEdit(_DxMainSplit.Panel2, System.Windows.Forms.DockStyle.Fill, readOnly: true, tabStop: false);
 
@@ -73,6 +77,9 @@ namespace TestDevExpress.Forms
         }
         private DxSplitContainerControl _DxMainSplit;
         private DxLabelControl _DxTitleLabel;
+        private DxSimpleButton _FocusInButton;
+        private DxSimpleButton _FocusOutButton;
+
         private DxPanelControl _DxTestPanel;
         private DxMemoEdit _DxLogMemoEdit;
         #endregion
@@ -322,6 +329,7 @@ namespace TestDevExpress.Forms
             _DxShowTimeStart = DateTime.Now;               // Určení času End a času Elapsed proběhne v DxDataForm_GotFocus
             _DxShowTimeSpan = null;
             DxDataFormV2 dataForm = new DxDataFormV2();
+            dataForm.TabIndex = 1;
             dataForm.LogActive = true;
             dataForm.GotFocus += DxDataForm_GotFocus;
 
@@ -348,6 +356,8 @@ namespace TestDevExpress.Forms
 
             int count = dataForm.ItemsCount;
             DxComponent.LogAddLineTime($"AddItems: Items.Count: {count}; Time: {DxComponent.LogTokenTimeMilisec}", sampleStartTime);
+
+            _FocusInButton.Focus();
         }
         private void _AddDataFormSampleName(string sampleName)
         {
@@ -429,8 +439,6 @@ namespace TestDevExpress.Forms
         private DateTime? _DxShowTimeStart;
         private TimeSpan? _DxShowTimeSpan;
         #endregion
-
-
         #region Log
         private void DxComponent_LogTextChanged(object sender, EventArgs e)
         {
