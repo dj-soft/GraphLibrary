@@ -540,7 +540,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         private DevExpress.XtraBars.BarManager _DefaultBarManager;
         private ToolTipController _DefaultToolTipController;
         #endregion
-        #region Rozhraní na Zoom, přepočty Design => Visual
+        #region Rozhraní na Zoom
         /// <summary>
         /// Inicializace Zoomu
         /// </summary>
@@ -567,14 +567,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         internal static int ZoomToGuiInt(int value) { decimal zoom = Instance._Zoom; return _ZoomToGuiInt(value, zoom); }
         /// <summary>
-        /// Vrátí danou designovou hodnotu přepočtenou dle aktuálního Zoomu a rozdílu TargetDpi / DesignDpi do vizuální hodnoty
-        /// </summary>
-        /// <param name="value">Designová hodnota (96DPI, 100%)</param>
-        /// <param name="targetDpi">Cílové DPI</param>
-        /// <returns></returns>
-        internal static int ZoomToGuiInt(int value, int targetDpi) { decimal zoomDpi = Instance._ZoomDpi; return _ZoomDpiToGuiInt(value, zoomDpi, targetDpi); }
-
-        /// <summary>
         /// Vrátí danou designovou hodnotu přepočtenou dle aktuálního Zoomu do vizuální hodnoty
         /// </summary>
         /// <param name="value"></param>
@@ -587,7 +579,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         internal static Point? ZoomToGuiInt(Point? value) { if (!value.HasValue) return null; decimal zoom = Instance._Zoom; var v = value.Value; return new Point(_ZoomToGuiInt(v.X, zoom), _ZoomToGuiInt(v.Y, zoom)); }
         /// <summary>
-        /// Vrátí danou designovou hodnotu přepočtenou dle aktuálního Zoomu a rozdílu TargetDpi / DesignDpi do vizuální hodnoty
+        /// Vrátí danou designovou hodnotu přepočtenou dle aktuálního Zoomu do vizuální hodnoty
         /// </summary>
         /// <param name="value">Designová hodnota (96DPI, 100%)</param>
         /// <param name="targetDpi">Cílové DPI</param>
@@ -607,7 +599,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         internal static Size? ZoomToGuiInt(Size? value) { if (!value.HasValue) return null; decimal zoom = Instance._Zoom; var v = value.Value; return new Size(_ZoomToGuiInt(v.Width, zoom), _ZoomToGuiInt(v.Height, zoom)); }
         /// <summary>
-        /// Vrátí danou designovou hodnotu přepočtenou dle aktuálního Zoomu a rozdílu TargetDpi / DesignDpi do vizuální hodnoty
+        /// Vrátí danou designovou hodnotu přepočtenou dle aktuálního Zoomu do vizuální hodnoty
         /// </summary>
         /// <param name="value">Designová hodnota (96DPI, 100%)</param>
         /// <param name="targetDpi">Cílové DPI</param>
@@ -627,7 +619,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         internal static Rectangle? ZoomToGuiInt(Rectangle? value) { if (!value.HasValue) return null; decimal zoom = Instance._Zoom; var v = value.Value; return new Rectangle(_ZoomToGuiInt(v.X, zoom), _ZoomToGuiInt(v.Y, zoom), _ZoomToGuiInt(v.Width, zoom), _ZoomToGuiInt(v.Height, zoom)); }
         /// <summary>
-        /// Vrátí danou designovou hodnotu přepočtenou dle aktuálního Zoomu a rozdílu TargetDpi / DesignDpi do vizuální hodnoty
+        /// Vrátí danou designovou hodnotu přepočtenou dle aktuálního Zoomu do vizuální hodnoty
         /// </summary>
         /// <param name="value">Designová hodnota (96DPI, 100%)</param>
         /// <param name="targetDpi">Cílové DPI</param>
@@ -647,12 +639,14 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         internal static Padding? ZoomToGuiInt(Padding? value) { if (!value.HasValue) return null; decimal zoom = Instance._Zoom; var v = value.Value; return new Padding(_ZoomToGuiInt(v.Left, zoom), _ZoomToGuiInt(v.Top, zoom), _ZoomToGuiInt(v.Right, zoom), _ZoomToGuiInt(v.Bottom, zoom)); }
         /// <summary>
-        /// Vrátí danou designovou hodnotu přepočtenou dle aktuálního Zoomu a rozdílu TargetDpi / DesignDpi do vizuální hodnoty
+        /// Vrátí danou designovou hodnotu přepočtenou dle aktuálního Zoomu do vizuální hodnoty
         /// </summary>
         /// <param name="value">Designová hodnota (96DPI, 100%)</param>
         /// <param name="targetDpi">Cílové DPI</param>
         /// <returns></returns>
         internal static Padding ZoomToGuiInt(Padding value, int targetDpi) { decimal zoomDpi = Instance._ZoomDpi; return new Padding(_ZoomDpiToGuiInt(value.Left, zoomDpi, targetDpi), _ZoomDpiToGuiInt(value.Top, zoomDpi, targetDpi), _ZoomDpiToGuiInt(value.Right, zoomDpi, targetDpi), _ZoomDpiToGuiInt(value.Bottom, zoomDpi, targetDpi)); }
+
+
 
         /// <summary>
         /// Vrátí danou designovou hodnotu přepočtenou dle daného Zoomu do vizuální hodnoty
@@ -668,7 +662,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="zoomDpi"></param>
         /// <param name="targetDpi"></param>
         /// <returns></returns>
-        private static int _ZoomDpiToGuiInt(int value, decimal zoomDpi, decimal targetDpi) { return (int)Math.Round((decimal)value * zoomDpi * targetDpi, 0); }
+        private static int _ZoomDpiToGuiInt(int value, decimal zoomDpi, decimal targetDpi) { return (int)Math.Round((decimal)value * targetDpi * targetDpi, 0); }
         /// <summary>
         /// Aktuální hodnota Zoomu
         /// </summary>
@@ -678,11 +672,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Reálná velikost prvků se pak konvertuje na cílové DPI monitoru.
         /// </summary>
         public static int DesignDpi { get { return Instance._DesignDpi; } set { Instance._SetDesignDpi(value); } }
+
         /// <summary>
-        /// Aktuální hodnota Zoomu a SourceDpi, vyjádřená jako <see cref="DesignDpi"/> / <see cref="ZoomDpi"/>.
-        /// Tuto hodnotu lze vynásobit aktuálním DPI a máme k dispozici koeficient pro výpočet CurrentPixel = (DesignPixel * ZoomDpi * CurrentDpi)
+        /// Aktuální hodnota Zoomu a SourceDpi
         /// </summary>
-        internal static decimal ZoomDpi { get { return Instance._ZoomDpi; } }
+        internal static decimal ZoomDpi { get { return Instance._Zoom; } }
         /// <summary>
         /// Reload hodnoty Zoomu
         /// </summary>
@@ -924,8 +918,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             container.PanelVisibility = (panelVisibility ?? DevExpress.XtraEditors.SplitPanelVisibility.Both);
             if (borderStyles.HasValue) container.BorderStyle = borderStyles.Value;
             container.ShowSplitGlyph = (showSplitGlyph.HasValue ? (showSplitGlyph.Value ? DevExpress.Utils.DefaultBoolean.True : DevExpress.Utils.DefaultBoolean.False) : DevExpress.Utils.DefaultBoolean.Default);
-            container.TabStop = false;
-            
+
             if (splitterPositionChanged != null) container.SplitterMoved += splitterPositionChanged;
 
             return container;
@@ -1708,97 +1701,97 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="dataFormItem"></param>
         /// <returns></returns>
-        public static Control CreateDataFormControl(IDataFormItem dataFormItem) { return Instance._CreateDataFormControl(dataFormItem); }
+        public static Control CreateDataFormControl(IDataFormItemX dataFormItem) { return Instance._CreateDataFormControl(dataFormItem); }
         /// <summary>
         /// Vygeneruje a vrátí vizuální Control typu Label pro danou definici prvku DataForm
         /// </summary>
         /// <param name="dataFormItem"></param>
         /// <returns></returns>
-        public static Control CreateDataFormLabel(IDataFormItem dataFormItem) { return Instance._CreateDataFormLabel(dataFormItem); }
+        public static Control CreateDataFormLabel(IDataFormItemX dataFormItem) { return Instance._CreateDataFormLabel(dataFormItem); }
         /// <summary>
         /// Vygeneruje a vrátí vizuální Control typu TextBox pro danou definici prvku DataForm
         /// </summary>
         /// <param name="dataFormItem"></param>
         /// <returns></returns>
-        public static Control CreateDataFormTextBox(IDataFormItem dataFormItem) { return Instance._CreateDataFormTextBox(dataFormItem); }
+        public static Control CreateDataFormTextBox(IDataFormItemX dataFormItem) { return Instance._CreateDataFormTextBox(dataFormItem); }
         /// <summary>
         /// Vygeneruje a vrátí vizuální Control typu EditBox pro danou definici prvku DataForm
         /// </summary>
         /// <param name="dataFormItem"></param>
         /// <returns></returns>
-        public static Control CreateDataFormEditBox(IDataFormItem dataFormItem) { return Instance._CreateDataFormEditBox(dataFormItem); }
+        public static Control CreateDataFormEditBox(IDataFormItemX dataFormItem) { return Instance._CreateDataFormEditBox(dataFormItem); }
         /// <summary>
         /// Vygeneruje a vrátí vizuální Control typu SpinnerBox pro danou definici prvku DataForm
         /// </summary>
         /// <param name="dataFormItem"></param>
         /// <returns></returns>
-        public static Control CreateDataFormSpinnerBox(IDataFormItem dataFormItem) { return Instance._CreateDataFormSpinnerBox(dataFormItem); }
+        public static Control CreateDataFormSpinnerBox(IDataFormItemX dataFormItem) { return Instance._CreateDataFormSpinnerBox(dataFormItem); }
         /// <summary>
         /// Vygeneruje a vrátí vizuální Control typu CheckBox pro danou definici prvku DataForm
         /// </summary>
         /// <param name="dataFormItem"></param>
         /// <returns></returns>
-        public static Control CreateDataFormCheckBox(IDataFormItem dataFormItem) { return Instance._CreateDataFormCheckBox(dataFormItem); }
+        public static Control CreateDataFormCheckBox(IDataFormItemX dataFormItem) { return Instance._CreateDataFormCheckBox(dataFormItem); }
         /// <summary>
         /// Vygeneruje a vrátí vizuální Control typu BreadCrumb pro danou definici prvku DataForm
         /// </summary>
         /// <param name="dataFormItem"></param>
         /// <returns></returns>
-        public static Control CreateDataFormBreadCrumb(IDataFormItem dataFormItem) { return Instance._CreateDataFormBreadCrumb(dataFormItem); }
+        public static Control CreateDataFormBreadCrumb(IDataFormItemX dataFormItem) { return Instance._CreateDataFormBreadCrumb(dataFormItem); }
         /// <summary>
         /// Vygeneruje a vrátí vizuální Control typu ComboBoxList pro danou definici prvku DataForm
         /// </summary>
         /// <param name="dataFormItem"></param>
         /// <returns></returns>
-        public static Control CreateDataFormComboBoxList(IDataFormItem dataFormItem) { return Instance._CreateDataFormComboBoxList(dataFormItem); }
+        public static Control CreateDataFormComboBoxList(IDataFormItemX dataFormItem) { return Instance._CreateDataFormComboBoxList(dataFormItem); }
         /// <summary>
         /// Vygeneruje a vrátí vizuální Control typu ComboBoxEdit pro danou definici prvku DataForm
         /// </summary>
         /// <param name="dataFormItem"></param>
         /// <returns></returns>
-        public static Control CreateDataFormComboBoxEdit(IDataFormItem dataFormItem) { return Instance._CreateDataFormComboBoxEdit(dataFormItem); }
+        public static Control CreateDataFormComboBoxEdit(IDataFormItemX dataFormItem) { return Instance._CreateDataFormComboBoxEdit(dataFormItem); }
         /// <summary>
         /// Vygeneruje a vrátí vizuální Control typu ListView pro danou definici prvku DataForm
         /// </summary>
         /// <param name="dataFormItem"></param>
         /// <returns></returns>
-        public static Control CreateDataFormListView(IDataFormItem dataFormItem) { return Instance._CreateDataFormListView(dataFormItem); }
+        public static Control CreateDataFormListView(IDataFormItemX dataFormItem) { return Instance._CreateDataFormListView(dataFormItem); }
         /// <summary>
         /// Vygeneruje a vrátí vizuální Control typu TreeView pro danou definici prvku DataForm
         /// </summary>
         /// <param name="dataFormItem"></param>
         /// <returns></returns>
-        public static Control CreateDataFormTreeView(IDataFormItem dataFormItem) { return Instance._CreateDataFormTreeView(dataFormItem); }
+        public static Control CreateDataFormTreeView(IDataFormItemX dataFormItem) { return Instance._CreateDataFormTreeView(dataFormItem); }
         /// <summary>
         /// Vygeneruje a vrátí vizuální Control typu RadioButtonBox pro danou definici prvku DataForm
         /// </summary>
         /// <param name="dataFormItem"></param>
         /// <returns></returns>
-        public static Control CreateDataFormRadioButtonBox(IDataFormItem dataFormItem) { return Instance._CreateDataFormRadioButtonBox(dataFormItem); }
+        public static Control CreateDataFormRadioButtonBox(IDataFormItemX dataFormItem) { return Instance._CreateDataFormRadioButtonBox(dataFormItem); }
         /// <summary>
         /// Vygeneruje a vrátí vizuální Control typu Button pro danou definici prvku DataForm
         /// </summary>
         /// <param name="dataFormItem"></param>
         /// <returns></returns>
-        public static Control CreateDataFormButton(IDataFormItem dataFormItem) { return Instance._CreateDataFormButton(dataFormItem); }
+        public static Control CreateDataFormButton(IDataFormItemX dataFormItem) { return Instance._CreateDataFormButton(dataFormItem); }
         /// <summary>
         /// Vygeneruje a vrátí vizuální Control typu CheckButton pro danou definici prvku DataForm
         /// </summary>
         /// <param name="dataFormItem"></param>
         /// <returns></returns>
-        public static Control CreateDataFormCheckButton(IDataFormItem dataFormItem) { return Instance._CreateDataFormCheckButton(dataFormItem); }
+        public static Control CreateDataFormCheckButton(IDataFormItemX dataFormItem) { return Instance._CreateDataFormCheckButton(dataFormItem); }
         /// <summary>
         /// Vygeneruje a vrátí vizuální Control typu DropDownButton pro danou definici prvku DataForm
         /// </summary>
         /// <param name="dataFormItem"></param>
         /// <returns></returns>
-        public static Control CreateDataFormDropDownButton(IDataFormItem dataFormItem) { return Instance._CreateDataFormDropDownButton(dataFormItem); }
+        public static Control CreateDataFormDropDownButton(IDataFormItemX dataFormItem) { return Instance._CreateDataFormDropDownButton(dataFormItem); }
         /// <summary>
         /// Vygeneruje a vrátí vizuální Control typu Image pro danou definici prvku DataForm
         /// </summary>
         /// <param name="dataFormItem"></param>
         /// <returns></returns>
-        public static Control CreateDataFormImage(IDataFormItem dataFormItem) { return Instance._CreateDataFormImage(dataFormItem); }
+        public static Control CreateDataFormImage(IDataFormItemX dataFormItem) { return Instance._CreateDataFormImage(dataFormItem); }
         #endregion
         #region private rozcestník a výkonné metody
         /// <summary>
@@ -1806,7 +1799,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="dataFormItem"></param>
         /// <returns></returns>
-        private Control _CreateDataFormControl(IDataFormItem dataFormItem)
+        private Control _CreateDataFormControl(IDataFormItemX dataFormItem)
         {
             switch (dataFormItem.ItemType)
             {
@@ -1833,7 +1826,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="dataFormItem"></param>
         /// <returns></returns>
-        private Control _CreateDataFormLabel(IDataFormItem dataFormItem)
+        private Control _CreateDataFormLabel(IDataFormItemX dataFormItem)
         {
             var bounds = dataFormItem.Bounds;
             var label = CreateDxLabel(bounds.X, bounds.Y, bounds.Width, null, dataFormItem.Text,
@@ -1846,7 +1839,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="dataFormItem"></param>
         /// <returns></returns>
-        private Control _CreateDataFormTextBox(IDataFormItem dataFormItem)
+        private Control _CreateDataFormTextBox(IDataFormItemX dataFormItem)
         {
             var bounds = dataFormItem.Bounds;
             var textEdit = CreateDxTextEdit(bounds.X, bounds.Y, bounds.Width, null, null,
@@ -1859,7 +1852,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="dataFormItem"></param>
         /// <returns></returns>
-        private Control _CreateDataFormEditBox(IDataFormItem dataFormItem)
+        private Control _CreateDataFormEditBox(IDataFormItemX dataFormItem)
         {
             var bounds = dataFormItem.Bounds;
             var memoEdit = CreateDxMemoEdit(bounds.X, bounds.Y, bounds.Width, bounds.Height, null, null,
@@ -1871,7 +1864,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="dataFormItem"></param>
         /// <returns></returns>
-        private Control _CreateDataFormSpinnerBox(IDataFormItem dataFormItem)
+        private Control _CreateDataFormSpinnerBox(IDataFormItemX dataFormItem)
         {
             var bounds = dataFormItem.Bounds;
             var checkBox = CreateDxSpinEdit(bounds.X, bounds.Y, bounds.Width, null, null,
@@ -1884,7 +1877,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="dataFormItem"></param>
         /// <returns></returns>
-        private Control _CreateDataFormCheckBox(IDataFormItem dataFormItem)
+        private Control _CreateDataFormCheckBox(IDataFormItemX dataFormItem)
         {
             var bounds = dataFormItem.Bounds;
             var checkBox = CreateDxCheckEdit(bounds.X, bounds.Y, bounds.Width, null, dataFormItem.Text, null,
@@ -1897,43 +1890,43 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="dataFormItem"></param>
         /// <returns></returns>
-        private Control _CreateDataFormBreadCrumb(IDataFormItem dataFormItem) { return null; }
+        private Control _CreateDataFormBreadCrumb(IDataFormItemX dataFormItem) { return null; }
         /// <summary>
         /// Vygeneruje a vrátí vizuální Control typu ComboBoxList pro danou definici prvku DataForm
         /// </summary>
         /// <param name="dataFormItem"></param>
         /// <returns></returns>
-        private Control _CreateDataFormComboBoxList(IDataFormItem dataFormItem) { return null; }
+        private Control _CreateDataFormComboBoxList(IDataFormItemX dataFormItem) { return null; }
         /// <summary>
         /// Vygeneruje a vrátí vizuální Control typu ComboBoxEdit pro danou definici prvku DataForm
         /// </summary>
         /// <param name="dataFormItem"></param>
         /// <returns></returns>
-        private Control _CreateDataFormComboBoxEdit(IDataFormItem dataFormItem) { return null; }
+        private Control _CreateDataFormComboBoxEdit(IDataFormItemX dataFormItem) { return null; }
         /// <summary>
         /// Vygeneruje a vrátí vizuální Control typu ListView pro danou definici prvku DataForm
         /// </summary>
         /// <param name="dataFormItem"></param>
         /// <returns></returns>
-        private Control _CreateDataFormListView(IDataFormItem dataFormItem) { return null; }
+        private Control _CreateDataFormListView(IDataFormItemX dataFormItem) { return null; }
         /// <summary>
         /// Vygeneruje a vrátí vizuální Control typu TreeView pro danou definici prvku DataForm
         /// </summary>
         /// <param name="dataFormItem"></param>
         /// <returns></returns>
-        private Control _CreateDataFormTreeView(IDataFormItem dataFormItem) { return null; }
+        private Control _CreateDataFormTreeView(IDataFormItemX dataFormItem) { return null; }
         /// <summary>
         /// Vygeneruje a vrátí vizuální Control typu RadioButtonBox pro danou definici prvku DataForm
         /// </summary>
         /// <param name="dataFormItem"></param>
         /// <returns></returns>
-        private Control _CreateDataFormRadioButtonBox(IDataFormItem dataFormItem) { return null; }
+        private Control _CreateDataFormRadioButtonBox(IDataFormItemX dataFormItem) { return null; }
         /// <summary>
         /// Vygeneruje a vrátí vizuální Control typu Button pro danou definici prvku DataForm
         /// </summary>
         /// <param name="dataFormItem"></param>
         /// <returns></returns>
-        private Control _CreateDataFormButton(IDataFormItem dataFormItem)
+        private Control _CreateDataFormButton(IDataFormItemX dataFormItem)
         {
             var bounds = dataFormItem.Bounds;
             var checkBox = CreateDxSimpleButton(bounds.X, bounds.Y, bounds.Width, bounds.Height, null, dataFormItem.Text, null,
@@ -1947,7 +1940,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="dataFormItem"></param>
         /// <returns></returns>
-        private Control _CreateDataFormCheckButton(IDataFormItem dataFormItem)
+        private Control _CreateDataFormCheckButton(IDataFormItemX dataFormItem)
         {
             var bounds = dataFormItem.Bounds;
             var checkBox = CreateDxCheckButton(bounds.X, bounds.Y, bounds.Width, bounds.Height, null, dataFormItem.Text, null,
@@ -1962,7 +1955,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="dataFormItem"></param>
         /// <returns></returns>
-        private Control _CreateDataFormDropDownButton(IDataFormItem dataFormItem)
+        private Control _CreateDataFormDropDownButton(IDataFormItemX dataFormItem)
         {
             var bounds = dataFormItem.Bounds;
             var checkBox = CreateDxDropDownButton(bounds.X, bounds.Y, bounds.Width, bounds.Height, null, dataFormItem.Text,
@@ -1978,7 +1971,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="dataFormItem"></param>
         /// <returns></returns>
-        private Control _CreateDataFormImage(IDataFormItem dataFormItem) { return null; }
+        private Control _CreateDataFormImage(IDataFormItemX dataFormItem) { return null; }
         #endregion
         #endregion
         #region TryRun
@@ -2051,11 +2044,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="line"></param>
         public static void LogAddLine(string line) { Instance._LogAddLine(line, false); }
         /// <summary>
-        /// Přidá dodanou chybu do logu. 
-        /// </summary>
-        /// <param name="exc"></param>
-        public static void LogAddException(Exception exc) { Instance._LogAddException(exc, null); }
-        /// <summary>
         /// Poslední řádek v logu
         /// </summary>
         public static string LogLastLine { get { return Instance._LogLastLine; } }
@@ -2071,6 +2059,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Token, který se očekává v textu v metodě <see cref="LogAddLineTime(string, long)"/>, za který se dosaví uplynulý čas v mikrosekundách
         /// </summary>
         public static string LogTokenTimeMicrosec { get { return "{MICROSEC}"; } }
+        /// <summary>
+        /// Zaloguje výjimku
+        /// </summary>
+        /// <param name="exc"></param>
+        public static void LogAddException(Exception exc) { Instance._LogAddLine(exc.Message, false); }
         /// <summary>
         /// Init systému Log
         /// </summary>
@@ -2219,16 +2212,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
             _LogLastWriteTicks = _LogWatch.ElapsedTicks;
             RunLogTextChanged();
-        }
-        /// <summary>
-        /// Přidá dodanou chybu do logu. 
-        /// </summary>
-        /// <param name="exc"></param>
-        /// <param name="info"></param>
-        private void _LogAddException(Exception exc, string info)
-        {
-            string line = exc.Message;
-            _LogAddLine(line, false);
         }
         /// <summary>
         /// Poslední řádek v logu
@@ -5517,7 +5500,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             return new Rectangle(r.X + x, r.Y + y, r.Width, r.Height);
         }
         /// <summary>
-        /// Vrací nový <see cref="Rectangle"/>, který je dán aktuálním prostorem, zvětšeným o dané vnější okraje.
+        /// Vrací nový <see cref="Rectangle"/>, který je dán aktuálním prostorem, zvětšeným o dané vnitřní okraje.
         /// </summary>
         /// <param name="r"></param>
         /// <param name="padding"></param>
@@ -5835,9 +5818,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Vrátí true, pokud dané souřadnice <paramref name="testBounds"/> jsou zcela nebo zčásti viditelné v this prostoru.
         /// </summary>
-        /// <param name="bounds">this = souřadnice např. části owner panelu</param>
-        /// <param name="testBounds">Testované souřadnice = např. prostor malého controlu</param>
-        /// <param name="partial">Stačí nám částečná viditelnost oblasti <paramref name="testBounds"/> v rámci <paramref name="bounds"/> ?  true = částečná / false = musí být viditelný zcela</param>
+        /// <param name="bounds"></param>
+        /// <param name="testBounds"></param>
+        /// <param name="partial"></param>
         /// <returns></returns>
         public static bool Contains(this Rectangle bounds, Rectangle testBounds, bool partial)
         {
@@ -5878,21 +5861,21 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Metoda vrací souřadnice okrajů daného Rectangle.
         /// Tyto souřadnice lze poté vyplnit (Fill), a budou uvnitř daného Rectangle.
         /// </summary>
-        /// <param name="value"></param>
+        /// <param name="r"></param>
         /// <param name="thick"></param>
         /// <param name="sides"></param>
         /// <returns></returns>
-        public static Rectangle[] GetBorders(this Rectangle value, int thick, params RectangleSide[] sides)
+        public static Rectangle[] GetBorders(this Rectangle r, int thick, params RectangleSide[] sides)
         {
             int count = sides.Length;
             Rectangle[] borders = new Rectangle[count];
 
-            int x0 = value.X;
-            int x1 = value.Right;
-            int w = value.Width;
-            int y0 = value.Y;
-            int y1 = value.Bottom;
-            int h = value.Height;
+            int x0 = r.X;
+            int x1 = r.Right;
+            int w = r.Width;
+            int y0 = r.Y;
+            int y1 = r.Bottom;
+            int h = r.Height;
             int t = (thick >= 0 ? thick : 0);
             int tx = (t < w ? t : w);
             int ty = (t < h ? t : h);

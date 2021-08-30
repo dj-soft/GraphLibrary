@@ -10,7 +10,7 @@ using Noris.Clients.Win.Components.AsolDX;
 namespace TestDevExpress.Forms
 {
     /// <summary>
-    /// Formulář pro testy komponenty <see cref="DxDataFormV1"/>
+    /// Formulář pro testy komponenty <see cref="DxDataFormX"/>
     /// </summary>
     public class DataFormV2 : DxRibbonForm
     {

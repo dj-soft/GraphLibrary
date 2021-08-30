@@ -9,7 +9,7 @@ using Noris.Clients.Win.Components.AsolDX;
 namespace TestDevExpress.Forms
 {
     /// <summary>
-    /// Formulář pro testy komponenty <see cref="DxDataFormV1"/>
+    /// Formulář pro testy komponenty <see cref="DxDataFormX"/>
     /// </summary>
     public class DataFormV1 : DxRibbonForm
     {
@@ -341,7 +341,7 @@ namespace TestDevExpress.Forms
             _RemoveDataForms();
 
             _DxShowTimeStart = DateTime.Now;               // Určení času End a času Elapsed proběhne v DxDataForm_GotFocus
-            DxDataFormV1 dxDataForm = CreateValidDxDataForm();
+            DxDataFormX dxDataForm = CreateValidDxDataForm();
 
             _DxDataForm = dxDataForm;
             _AnyDataForm = dxDataForm;
@@ -360,7 +360,7 @@ namespace TestDevExpress.Forms
         }
         private void _AddDataFormDx(DxDataFormTestDefinition sample)
         {
-            DxDataFormV1 dxDataForm = CreateValidDxDataForm();
+            DxDataFormX dxDataForm = CreateValidDxDataForm();
 
             _DxDataForm = dxDataForm;
             _AnyDataForm = dxDataForm;
@@ -391,9 +391,9 @@ namespace TestDevExpress.Forms
 
             _DxTestPanel.Controls.Add(wfDataForm);
         }
-        private DxDataFormV1 CreateValidDxDataForm()
+        private DxDataFormX CreateValidDxDataForm()
         {
-            DxDataFormV1 dxDataForm = new DxDataFormV1();
+            DxDataFormX dxDataForm = new DxDataFormX();
             dxDataForm.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.HotFlat;
             dxDataForm.MemoryMode = (_DxDataFormMemoryOptimized ? DxDataFormMemoryMode.Default2 : DxDataFormMemoryMode.HostAllways);
             dxDataForm.GotFocus += DxDataForm_GotFocus;
@@ -447,7 +447,7 @@ namespace TestDevExpress.Forms
                 dataForm.Bounds = new System.Drawing.Rectangle(6, y, clientSize.Width - 12, clientSize.Height - y - 6);
             }
         }
-        private DxDataFormV1 _DxDataForm;
+        private DxDataFormX _DxDataForm;
         private WfDataForm _WfDataForm;
         private System.Windows.Forms.Control _AnyDataForm;
         private bool _DxDataFormMemoryOptimized;

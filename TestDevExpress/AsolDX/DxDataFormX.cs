@@ -14,29 +14,29 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// <summary>
     /// Panel reprezentující DataForm - včetně záložek a scrollování
     /// </summary>
-    public partial class DxDataFormV1 : DxPanelControl, IDxDataForm
+    public partial class DxDataFormX : DxPanelControl, IDxDataFormX
     {
         #region Konstruktor a proměnné, Dispose
         /// <summary>
         /// Konstruktor
         /// </summary>
-        public DxDataFormV1()
+        public DxDataFormX()
         {
-            __Pages = new Dictionary<string, DxDataFormPage>();
-            __Items = new Dictionary<string, DxDataFormControlItem>();
+            __Pages = new Dictionary<string, DxDataFormXPage>();
+            __Items = new Dictionary<string, DxDataFormXControlItem>();
             this.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder;
             this.MemoryMode = DxDataFormMemoryMode.Default;
         }
         /// <summary>
         /// Souhrn stránek
         /// </summary>
-        public DxDataFormPage[] Pages { get { return __Pages.Values.ToArray(); } }
-        private Dictionary<string, DxDataFormPage> __Pages;
+        public DxDataFormXPage[] Pages { get { return __Pages.Values.ToArray(); } }
+        private Dictionary<string, DxDataFormXPage> __Pages;
         /// <summary>
         /// Souhrn aktuálních prvků
         /// </summary>
-        public DxDataFormControlItem[] Items { get { return __Items.Values.ToArray(); } }
-        private Dictionary<string, DxDataFormControlItem> __Items;
+        public DxDataFormXControlItem[] Items { get { return __Items.Values.ToArray(); } }
+        private Dictionary<string, DxDataFormXControlItem> __Items;
         /// <summary>
         /// Dispose prvku
         /// </summary>
@@ -84,19 +84,19 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Přidá řadu controlů, řeší záložky
         /// </summary>
         /// <param name="items"></param>
-        internal void AddItems(IEnumerable<IDataFormItem> items)
+        internal void AddItems(IEnumerable<IDataFormItemX> items)
         {
             if (items == null) return;
-            foreach (IDataFormItem item in items)
+            foreach (IDataFormItemX item in items)
                 _AddItem(item, true);
             _FinalisePages();
         }
         /// <summary>
         /// Přidá jeden control, řeší záložky.
-        /// Pro více controlů prosím volejme <see cref="AddItems(IEnumerable{IDataFormItem})"/>!
+        /// Pro více controlů prosím volejme <see cref="AddItems(IEnumerable{IDataFormItemX})"/>!
         /// </summary>
         /// <param name="item"></param>
-        internal void AddItem(IDataFormItem item)
+        internal void AddItem(IDataFormItemX item)
         {
             _AddItem(item, true);
             _FinalisePages();
@@ -106,22 +106,22 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="item"></param>
         /// <param name="skipFinalise"></param>
-        private void _AddItem(IDataFormItem item, bool skipFinalise = false)
+        private void _AddItem(IDataFormItemX item, bool skipFinalise = false)
         {
             if (item == null) throw new ArgumentNullException("DxDataForm.AddItem(item) error: item is null.");
             string itemKey = _CheckNewItemKey(item);
-            DxDataFormPage page = _GetPage(item);
-            DxDataFormControlItem controlItem = page.AddItem(item, skipFinalise);        // I stránka sama si přidá prvek do svého pole, ale jen pro své zobrazovací potřeby.
+            DxDataFormXPage page = _GetPage(item);
+            DxDataFormXControlItem controlItem = page.AddItem(item, skipFinalise);        // I stránka sama si přidá prvek do svého pole, ale jen pro své zobrazovací potřeby.
             __Items.Add(itemKey, controlItem);             // Prvek přidávám do Dictionary bez obav, protože unikátnost klíče jsem prověřil v metodě _CheckNewItemKey() před chvilkou
         }
         /// <summary>
-        /// Najde a nebo vytvoří a vrátí stránku <see cref="DxDataFormPage"/> podle dat v definici prvku.
+        /// Najde a nebo vytvoří a vrátí stránku <see cref="DxDataFormXPage"/> podle dat v definici prvku.
         /// </summary>
         /// <param name="item"></param>
         /// <returns></returns>
-        private DxDataFormPage _GetPage(IDataFormItem item)
+        private DxDataFormXPage _GetPage(IDataFormItemX item)
         {
-            DxDataFormPage page;
+            DxDataFormXPage page;
             string pageKey = _GetKey(item.PageName);
             if (!__Pages.TryGetValue(pageKey, out page))
             {
@@ -131,16 +131,16 @@ namespace Noris.Clients.Win.Components.AsolDX
             return page;
         }
         /// <summary>
-        /// Vytvoří a vrátí instanci <see cref="DxDataFormPage"/> podle dat v definici prvku.
+        /// Vytvoří a vrátí instanci <see cref="DxDataFormXPage"/> podle dat v definici prvku.
         /// Vytvoří prvek, který není aktivní = to proto, aby v rámci inicializací nebyly generovány zbytečně controly.
         /// Pokud instance bude použita jako samostatná, musí ji aplikace aktivovat.
         /// Pokud instance bude na TabPane, pak aktivaci řídí přepínání záložek.
         /// </summary>
         /// <param name="item"></param>
         /// <returns></returns>
-        private DxDataFormPage _CreatePage(IDataFormItem item)
+        private DxDataFormXPage _CreatePage(IDataFormItemX item)
         {
-            DxDataFormPage page = new DxDataFormPage(this);
+            DxDataFormXPage page = new DxDataFormXPage(this);
             page.FillFrom(item);
             return page;
         }
@@ -155,11 +155,11 @@ namespace Noris.Clients.Win.Components.AsolDX
             PrepareTabForPages();
         }
         /// <summary>
-        /// Zkontroluje, že daný <see cref="IDataFormItem"/> má neprázdný klíč <see cref="IDataFormItem.ItemName"/> a že tento klíč dosud není v this dataformu použit.
+        /// Zkontroluje, že daný <see cref="IDataFormItemX"/> má neprázdný klíč <see cref="IDataFormItemX.ItemName"/> a že tento klíč dosud není v this dataformu použit.
         /// Může vyhodit chybu.
         /// </summary>
         /// <param name="item"></param>
-        private string _CheckNewItemKey(IDataFormItem item)
+        private string _CheckNewItemKey(IDataFormItemX item)
         {
             string itemKey = _GetKey(item.ItemName);
             if (itemKey == "") throw new ArgumentNullException("DxDataForm.AddItem(item) error: ItemName is empty.");
@@ -180,7 +180,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="panel"></param>
         /// <returns></returns>
-        int IDxDataForm.IndexOf(DxDataFormScrollPanel panel) { return __Pages.Values.ToList().FindIndex(p => Object.ReferenceEquals(p, panel)); }
+        int IDxDataFormX.IndexOf(DxDataFormXScrollPanel panel) { return __Pages.Values.ToList().FindIndex(p => Object.ReferenceEquals(p, panel)); }
         /// <summary>
         /// Vrátí true pokud se control (s danými souřadnicemi) má brát jako viditelný v dané oblasti.
         /// Tato metoda může provádět optimalizaci v tom, že jako "viditelné" určí i controly nedaleko od reálně viditelné souřadnice.
@@ -188,7 +188,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="controlBounds"></param>
         /// <param name="visibleBounds"></param>
         /// <returns></returns>
-        bool IDxDataForm.IsInVisibleBounds(Rectangle? controlBounds, Rectangle visibleBounds)
+        bool IDxDataFormX.IsInVisibleBounds(Rectangle? controlBounds, Rectangle visibleBounds)
         {
             if (!controlBounds.HasValue) return false;
             int distX = 90;                                // Vzdálenost na ose X, kterou akceptujeme jako viditelnou 
@@ -240,7 +240,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                     pageData.Dock = WF.DockStyle.Fill;
                 }
 
-                DxDataFormPage selectedPage = this.SelectedPage;
+                DxDataFormXPage selectedPage = this.SelectedPage;
                 if (selectedPage != null && !selectedPage.IsActiveContent)
                     selectedPage.IsActiveContent = true;
             }
@@ -248,7 +248,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Aktuálně viditelná stránka (záložka), resp. její obsah
         /// </summary>
-        public DxDataFormPage SelectedPage 
+        public DxDataFormXPage SelectedPage 
         {
             get
             {
@@ -260,14 +260,14 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void _TabPane_PageChangingPrepare(object sender, TEventArgs<DevExpress.XtraBars.Navigation.TabNavigationPage> e)
         {
             _TabPaneChangeStart = DxComponent.LogTimeCurrent;
-            DxDataFormPage page = GetDataFormPage(e.Item);
+            DxDataFormXPage page = GetDataFormPage(e.Item);
             _TabPaneChangeNameNew = page?.DebugName;
             if (page != null) page.IsActiveContent = true;
         }
 
         private void _TabPane_PageChangingRelease(object sender, TEventArgs<DevExpress.XtraBars.Navigation.TabNavigationPage> e)
         {
-            DxDataFormPage page = GetDataFormPage(e.Item);
+            DxDataFormXPage page = GetDataFormPage(e.Item);
             if (page != null) page.IsActiveContent = false;
             _TabPaneChangeNameOld = page?.DebugName;
             RunTabChangeDone();
@@ -278,13 +278,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         private string _TabPaneChangeNameOld;
         private string _TabPaneChangeNameNew;
         /// <summary>
-        /// Vrátí <see cref="DxDataFormPage"/> nacházející se na daném controlu
+        /// Vrátí <see cref="DxDataFormXPage"/> nacházející se na daném controlu
         /// </summary>
         /// <param name="parent"></param>
         /// <returns></returns>
-        private DxDataFormPage GetDataFormPage(WF.Control parent)
+        private DxDataFormXPage GetDataFormPage(WF.Control parent)
         {
-            return parent?.Controls.OfType<DxDataFormPage>().FirstOrDefault();
+            return parent?.Controls.OfType<DxDataFormXPage>().FirstOrDefault();
         }
 
         private DxTabPane _TabPane;
@@ -335,16 +335,16 @@ namespace Noris.Clients.Win.Components.AsolDX
         
     }
     /// <summary>
-    /// Interní přístup do <see cref="DxDataFormV1"/> pro jeho podřízené třídy
+    /// Interní přístup do <see cref="DxDataFormX"/> pro jeho podřízené třídy
     /// </summary>
-    internal interface IDxDataForm
+    internal interface IDxDataFormX
     {
         /// <summary>
         /// Vrátí index daného panelu
         /// </summary>
         /// <param name="panel"></param>
         /// <returns></returns>
-        int IndexOf(DxDataFormScrollPanel panel);
+        int IndexOf(DxDataFormXScrollPanel panel);
         /// <summary>
         /// Vrátí true pokud se control (s danými souřadnicemi) má brát jako viditelný v dané oblasti.
         /// Tato metoda může provádět optimalizaci v tom, že jako "viditelné" určí i controly nedaleko od reálně viditelné souřadnice.
@@ -354,20 +354,20 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         bool IsInVisibleBounds(Rectangle? controlBounds, Rectangle visibleBounds);
     }
-    #region class DxDataFormPage : Data jedné stránky (záložky) DataFormu
+    #region class DxDataFormXPage : Data jedné stránky (záložky) DataFormu
     /// <summary>
-    /// Data jedné stránky (záložky) DataFormu: ID, titulek, ikona, vizuální control <see cref="DxDataFormScrollPanel"/>.
-    /// Tento vizuální control může být umístěn přímo v <see cref="DxDataFormV1"/> (což je vizuální panel),
+    /// Data jedné stránky (záložky) DataFormu: ID, titulek, ikona, vizuální control <see cref="DxDataFormXScrollPanel"/>.
+    /// Tento vizuální control může být umístěn přímo v <see cref="DxDataFormX"/> (což je vizuální panel),
     /// anebo může být umístěn na záložce.
     /// </summary>
-    public class DxDataFormPage : DxDataFormScrollPanel
+    public class DxDataFormXPage : DxDataFormXScrollPanel
     {
         #region Konstruktor, proměnné, Dispose
         /// <summary>
         /// Konstruktor
         /// </summary>
         /// <param name="dataForm"></param>
-        public DxDataFormPage(DxDataFormV1 dataForm)
+        public DxDataFormXPage(DxDataFormX dataForm)
             : base(dataForm)
         {
             IsActiveContentInternal = false;
@@ -410,7 +410,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Vepíše do svých proměnných data z daného prvku
         /// </summary>
         /// <param name="item"></param>
-        public void FillFrom(IDataFormItem item)
+        public void FillFrom(IDataFormItemX item)
         {
             this.PageName = item.PageName;
             this.PageText = item.PageText;
@@ -420,24 +420,24 @@ namespace Noris.Clients.Win.Components.AsolDX
         #endregion
     }
     #endregion
-    #region class DxDataFormScrollPanel : Container, který hostuje DxDataFormContentPanel, a který se dokuje do parenta
+    #region class DxDataFormXScrollPanel : Container, který hostuje DxDataFormContentPanel, a který se dokuje do parenta
     /// <summary>
     /// Container, který hostuje DxDataFormContentPanel, a který se dokuje do parenta = jeho velikost je omezená, 
-    /// a hostuje v sobě <see cref="DxDataFormContentPanel"/>, který má velikost odpovídající svému obsahu a tento Content je pak posouván uvnitř this panelu = Scroll obsahu.
-    /// Tento container v sobě obsahuje List <see cref="Items"/> jeho jednotlivých Controlů typu <see cref="DxDataFormControlItem"/>.
+    /// a hostuje v sobě <see cref="DxDataFormXContentPanel"/>, který má velikost odpovídající svému obsahu a tento Content je pak posouván uvnitř this panelu = Scroll obsahu.
+    /// Tento container v sobě obsahuje List <see cref="Items"/> jeho jednotlivých Controlů typu <see cref="DxDataFormXControlItem"/>.
     /// </summary>
-    public class DxDataFormScrollPanel : DxAutoScrollPanelControl, IDxDataFormScrollPanel
+    public class DxDataFormXScrollPanel : DxAutoScrollPanelControl, IDxDataFormXScrollPanel
     {
         #region Konstruktor, proměnné, Dispose
         /// <summary>
         /// Konstruktor
         /// </summary>
         /// <param name="dataForm"></param>
-        public DxDataFormScrollPanel(DxDataFormV1 dataForm)
+        public DxDataFormXScrollPanel(DxDataFormX dataForm)
         {
             __DataForm = dataForm;
-            __ContentPanel = new DxDataFormContentPanel(this);
-            __Items = new List<DxDataFormControlItem>();
+            __ContentPanel = new DxDataFormXContentPanel(this);
+            __Items = new List<DxDataFormXControlItem>();
             __IsActiveContent = true;
             __CurrentlyFocusedDataItem = null;
             this.Controls.Add(ContentPanel);
@@ -480,22 +480,22 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Odkaz na main instanci DataForm
         /// </summary>
-        public DxDataFormV1 DataForm { get { return __DataForm; } }
-        private DxDataFormV1 __DataForm;
+        public DxDataFormX DataForm { get { return __DataForm; } }
+        private DxDataFormX __DataForm;
         /// <summary>
         /// Odkaz na main instanci DataForm typovanou pro interní přístup
         /// </summary>
-        private IDxDataForm IDataForm { get { return __DataForm; } }
+        private IDxDataFormX IDataForm { get { return __DataForm; } }
         /// <summary>
         /// Vizuální panel, který má velikost pokrývající všechny Controly, je umístěn v this, a je posouván pomocí AutoScrollu
         /// </summary>
-        internal DxDataFormContentPanel ContentPanel { get { return __ContentPanel; } }
-        private DxDataFormContentPanel __ContentPanel;
+        internal DxDataFormXContentPanel ContentPanel { get { return __ContentPanel; } }
+        private DxDataFormXContentPanel __ContentPanel;
         /// <summary>
         /// Soupis controlů, které jsou obsaženy v this ScrollPanelu (fyzicky jsou ale umístěny v <see cref="ContentPanel"/>)
         /// </summary>
-        internal List<DxDataFormControlItem> Items { get { return __Items; } }
-        private List<DxDataFormControlItem> __Items;
+        internal List<DxDataFormXControlItem> Items { get { return __Items; } }
+        private List<DxDataFormXControlItem> __Items;
         /// <summary>
         /// Obsahuje true pokud this page neobsahuje žádný control
         /// </summary>
@@ -505,22 +505,22 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Control, který má aktuálně focus. Lze setovat hodnotu, ve vizuálním containeru dostane daný prvek Focus.
         /// Při jakékoli změně focusu je volán event <see cref="FocusedItemChanged"/>.
-        /// Zde se pracuje s popisnými daty typu <see cref="IDataFormItem"/>, které se vkládají do metody <see cref="AddItem(IDataFormItem, bool)"/>.
+        /// Zde se pracuje s popisnými daty typu <see cref="IDataFormItemX"/>, které se vkládají do metody <see cref="AddItem(IDataFormItemX, bool)"/>.
         /// </summary>
-        public IDataFormItem FocusedItem { get { return __CurrentlyFocusedDataItem?.DataFormItem; } set { _SetFocusToItem(value); } }
+        public IDataFormItemX FocusedItem { get { return __CurrentlyFocusedDataItem?.DataFormItem; } set { _SetFocusToItem(value); } }
         /// <summary>
         /// Aktivní prvek, hodnotu do této property setuje vlastní prvek ve své události GotFocus.
         /// Setování hodnoty tedy nemá měnit aktivní focus (to bychom nikdy neskončili), ale má řešit následky skutečné změny focusu.
         /// </summary>
-        DxDataFormControlItem IDxDataFormScrollPanel.ActiveItem { get { return __CurrentlyFocusedDataItem; } set { _ActivatedItem(value); } }
+        DxDataFormXControlItem IDxDataFormXScrollPanel.ActiveItem { get { return __CurrentlyFocusedDataItem; } set { _ActivatedItem(value); } }
         /// <summary>
         /// Zajistí předání focusu do daného prvku, pokud to je možné.
         /// Pokud vstupní prvek neodpovídá existujícímu controlu, ke změně focusu nedojde.
         /// </summary>
         /// <param name="item"></param>
-        private void _SetFocusToItem(IDataFormItem item)
+        private void _SetFocusToItem(IDataFormItemX item)
         {
-            DxDataFormControlItem dataItem = (item != null ? this.__Items.FirstOrDefault(i => i.ContainsItem(item) && i.IsFocusableControl) : null);
+            DxDataFormXControlItem dataItem = (item != null ? this.__Items.FirstOrDefault(i => i.ContainsItem(item) && i.IsFocusableControl) : null);
             if (dataItem == null) return;
 
             // Prvek (dataItem) má mít focus (z logiky toho, že jsme tady),
@@ -538,11 +538,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Je voláno poté, kdy byl aktivován daný control.
         /// To může být jak z aplikačního kódu (setování <see cref="FocusedItem"/>, tak z GUI, pohybem po controlech a následně event GotFocus, 
-        /// který setuje focusovaný prvek do <see cref="IDxDataFormScrollPanel.ActiveItem"/>. 
+        /// který setuje focusovaný prvek do <see cref="IDxDataFormXScrollPanel.ActiveItem"/>. 
         /// Nikdy se nesetuje NULL.
         /// </summary>
         /// <param name="dataItem"></param>
-        private void _ActivatedItem(DxDataFormControlItem dataItem)
+        private void _ActivatedItem(DxDataFormXControlItem dataItem)
         {
             bool isChange = !Object.ReferenceEquals(dataItem, __CurrentlyFocusedDataItem);
 
@@ -554,11 +554,11 @@ namespace Noris.Clients.Win.Components.AsolDX
                 RunFocusedItemChanged();
         }
         /// <summary>
-        /// Vyvolá události <see cref="OnFocusedItemChanged(TEventArgs{DxDataFormControlItem})"/> a <see cref="FocusedItemChanged"/>
+        /// Vyvolá události <see cref="OnFocusedItemChanged(TEventArgs{DxDataFormXControlItem})"/> a <see cref="FocusedItemChanged"/>
         /// </summary>
         private void RunFocusedItemChanged()
         {
-            TEventArgs<DxDataFormControlItem> args = new TEventArgs<DxDataFormControlItem>(__CurrentlyFocusedDataItem);
+            TEventArgs<DxDataFormXControlItem> args = new TEventArgs<DxDataFormXControlItem>(__CurrentlyFocusedDataItem);
             OnFocusedItemChanged(args);
             FocusedItemChanged?.Invoke(this, args);
         }
@@ -566,19 +566,19 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Proběhne po změně focusovaného prvku <see cref="FocusedItem"/>
         /// </summary>
         /// <param name="args"></param>
-        protected virtual void OnFocusedItemChanged(TEventArgs<DxDataFormControlItem> args) { }
+        protected virtual void OnFocusedItemChanged(TEventArgs<DxDataFormXControlItem> args) { }
         /// <summary>
         /// Vyvoolá se po změně focusovaného prvku <see cref="FocusedItem"/>
         /// </summary>
-        public event EventHandler<TEventArgs<DxDataFormControlItem>> FocusedItemChanged;
+        public event EventHandler<TEventArgs<DxDataFormXControlItem>> FocusedItemChanged;
         /// <summary>
         /// Najde a zapamatuje si referenci na nejbližší controly před a za daným prvkem.
         /// Tyto prvky jsou ty, které budou dosažitelné z daného prvku pomocí Tab a ShiftTab, a musí tedy být fyzicky přítomny na <see cref="ContentPanel"/>, aby focus správně chodil.
         /// </summary>
         /// <param name="dataItem"></param>
-        private void _SearchNearControls(DxDataFormControlItem dataItem)
+        private void _SearchNearControls(DxDataFormXControlItem dataItem)
         {
-            List<DxDataFormControlItem> items = this.Items;
+            List<DxDataFormXControlItem> items = this.Items;
 
             //   Izolovat a setřídit?
             // items = items.ToList();
@@ -596,7 +596,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="step"></param>
         /// <param name="acceptIndex"></param>
         /// <returns></returns>
-        private DxDataFormControlItem _SearchNearControl(List<DxDataFormControlItem> items, int index, int step, bool acceptIndex)
+        private DxDataFormXControlItem _SearchNearControl(List<DxDataFormXControlItem> items, int index, int step, bool acceptIndex)
         {
             int count = items.Count;
             if (count == 0) return null;
@@ -643,7 +643,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="dataItem"></param>
         /// <returns></returns>
-        bool IDxDataFormScrollPanel.IsNearFocusableItem(DxDataFormControlItem dataItem)
+        bool IDxDataFormXScrollPanel.IsNearFocusableItem(DxDataFormXControlItem dataItem)
         {
             if (dataItem != null)
             {
@@ -656,15 +656,15 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Prvek, který má aktuálně focus
         /// </summary>
-        DxDataFormControlItem __CurrentlyFocusedDataItem;
+        DxDataFormXControlItem __CurrentlyFocusedDataItem;
         /// <summary>
         /// Prvek, který je vlevo od focusu (má být zobrazen i když není vidět)
         /// </summary>
-        DxDataFormControlItem __PreviousFocusableDataItem;
+        DxDataFormXControlItem __PreviousFocusableDataItem;
         /// <summary>
         /// Prvek, který je vpravo od focusu (má být zobrazen i když není vidět)
         /// </summary>
-        DxDataFormControlItem __NextFocusableDataItem;
+        DxDataFormXControlItem __NextFocusableDataItem;
 
         #endregion
 
@@ -693,9 +693,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="item"></param>
         /// <param name="skipFinalise"></param>
         /// <returns></returns>
-        internal DxDataFormControlItem AddItem(IDataFormItem item, bool skipFinalise = false)
+        internal DxDataFormXControlItem AddItem(IDataFormItemX item, bool skipFinalise = false)
         {
-            DxDataFormControlItem controlItem = new DxDataFormControlItem(this, item);
+            DxDataFormXControlItem controlItem = new DxDataFormXControlItem(this, item);
             Items.Add(controlItem);
             if (!skipFinalise)
                 FinaliseContent();
@@ -773,7 +773,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Tohle bychom měli umět...
         /// </summary>
         /// <param name="items"></param>
-        private void RemoveItems(IEnumerable<DxDataFormControlItem> items)
+        private void RemoveItems(IEnumerable<DxDataFormXControlItem> items)
         {
 
         }
@@ -867,7 +867,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         #region class RefreshItemsInfo : sumarizační třída pro RefreshItems mezi ScrollPanel a ControlInfo
         /// <summary>
-        /// Sumarizační třída pro RefreshItems mezi <see cref="DxDataFormScrollPanel"/> a <see cref="DxDataFormControlItem"/>
+        /// Sumarizační třída pro RefreshItems mezi <see cref="DxDataFormXScrollPanel"/> a <see cref="DxDataFormXControlItem"/>
         /// </summary>
         internal class RefreshItemsInfo
         {
@@ -886,8 +886,8 @@ namespace Noris.Clients.Win.Components.AsolDX
                 this.OptimizeControls = optimizeControls;
                 this.IsActiveContent = isActiveContent;
                 this.MemoryMode = memoryMode;
-                this.AddedItems = new List<DxDataFormControlItem>();
-                this.RemovedItems = new List<DxDataFormControlItem>();
+                this.AddedItems = new List<DxDataFormXControlItem>();
+                this.RemovedItems = new List<DxDataFormXControlItem>();
             }
             public Size TotalSize { get; private set; }
             public Rectangle VisibleBounds { get; private set; }
@@ -927,11 +927,11 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// <summary>
             /// Pole controlů, které je třeba přidat hromadně do ContentPanelu
             /// </summary>
-            public List<DxDataFormControlItem> AddedItems { get; private set; }
+            public List<DxDataFormXControlItem> AddedItems { get; private set; }
             /// <summary>
             /// Pole controlů, které je třeba přidat hromadně do ContentPanelu
             /// </summary>
-            public List<DxDataFormControlItem> RemovedItems { get; private set; }
+            public List<DxDataFormXControlItem> RemovedItems { get; private set; }
             /// <summary>
             /// Obsahuje true pokud je třeba změnit obsah Content panelu (tedy máme controly k přidání anebo k odebrání)
             /// </summary>
@@ -969,36 +969,36 @@ namespace Noris.Clients.Win.Components.AsolDX
 
     }
     /// <summary>
-    /// Interní přístup do <see cref="DxDataFormScrollPanel"/>
+    /// Interní přístup do <see cref="DxDataFormXScrollPanel"/>
     /// </summary>
-    public interface IDxDataFormScrollPanel
+    public interface IDxDataFormXScrollPanel
     {
         /// <summary>
         /// Aktivní prvek, hodnotu do této property setuje prvek ve své události GotFocus.
         /// Setování hodnoty tedy nemá měnit aktivní focus (to bychom nikdy neskončili), ale má řešit následky skutečné změny focusu.
         /// </summary>
-        DxDataFormControlItem ActiveItem { get; set; }
+        DxDataFormXControlItem ActiveItem { get; set; }
         /// <summary>
         /// Vrátí true pokud daný prvek má být zařazen mezi hostované prvky z důvodu Focusu (aktuální, předchozí, následující)
         /// </summary>
         /// <param name="dataItem"></param>
         /// <returns></returns>
-        bool IsNearFocusableItem(DxDataFormControlItem dataItem);
+        bool IsNearFocusableItem(DxDataFormXControlItem dataItem);
     }
     #endregion
-    #region class DxDataFormContentPanel : Hostitelský panel pro jednotlivé Controly
+    #region class DxDataFormXContentPanel : Hostitelský panel pro jednotlivé Controly
     /// <summary>
     /// Hostitelský panel pro jednotlivé Controly.
     /// Tento panel si udržuje svoji velikost odpovídající všem svým Controlům, 
-    /// není Dock, není AutoScroll (to je jeho Parent = <see cref="DxDataFormScrollPanel"/>).
+    /// není Dock, není AutoScroll (to je jeho Parent = <see cref="DxDataFormXScrollPanel"/>).
     /// </summary>
-    public class DxDataFormContentPanel : DxPanelControl
+    public class DxDataFormXContentPanel : DxPanelControl
     {
         /// <summary>
         /// Konstruktor
         /// </summary>
         /// <param name="scrollPanel"></param>
-        public DxDataFormContentPanel(DxDataFormScrollPanel scrollPanel)
+        public DxDataFormXContentPanel(DxDataFormXScrollPanel scrollPanel)
             : base()
         {
             this.__ScrollPanel = scrollPanel;
@@ -1028,16 +1028,16 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Main DataForm
         /// </summary>
-        public DxDataFormV1 DataForm { get { return __ScrollPanel?.DataForm; } }
+        public DxDataFormX DataForm { get { return __ScrollPanel?.DataForm; } }
         /// <summary>
         /// Odkaz na main instanci DataForm typovanou pro interní přístup
         /// </summary>
-        private IDxDataForm IDataForm { get { return DataForm; } }
+        private IDxDataFormX IDataForm { get { return DataForm; } }
         /// <summary>
         /// ScrollPanel, který řídí zobrazení zdejšího panelu
         /// </summary>
-        public DxDataFormScrollPanel ScrollPanel { get { return __ScrollPanel; } }
-        private DxDataFormScrollPanel __ScrollPanel;
+        public DxDataFormXScrollPanel ScrollPanel { get { return __ScrollPanel; } }
+        private DxDataFormXScrollPanel __ScrollPanel;
         /// <summary>
         /// Aktuálně viditelná oblast this controlu
         /// </summary>
@@ -1050,11 +1050,11 @@ namespace Noris.Clients.Win.Components.AsolDX
             _ContentVisibleBounds = contentVisibleBounds;
         }
         /// <summary>
-        /// Zajistí hromadné přidání nových controlů z <paramref name="refreshInfo"/> z <see cref="DxDataFormScrollPanel.RefreshItemsInfo.RemovedItems"/>, 
-        /// a odebrání (bohužel jednotkové) controlů z <see cref="DxDataFormScrollPanel.RefreshItemsInfo.RemovedItems"/>
+        /// Zajistí hromadné přidání nových controlů z <paramref name="refreshInfo"/> z <see cref="DxDataFormXScrollPanel.RefreshItemsInfo.RemovedItems"/>, 
+        /// a odebrání (bohužel jednotkové) controlů z <see cref="DxDataFormXScrollPanel.RefreshItemsInfo.RemovedItems"/>
         /// </summary>
         /// <param name="refreshInfo"></param>
-        internal void RefreshVisibleItems(DxDataFormScrollPanel.RefreshItemsInfo refreshInfo)
+        internal void RefreshVisibleItems(DxDataFormXScrollPanel.RefreshItemsInfo refreshInfo)
         {
             long startTime;
             int count;
@@ -1155,14 +1155,14 @@ namespace Noris.Clients.Win.Components.AsolDX
 
     }
     #endregion
-    #region class DxDataFormControlItem : Třída obsahující každý jeden prvek controlu v rámci DataFormu
+    #region class DxDataFormXControlItem : Třída obsahující každý jeden prvek controlu v rámci DataFormu
     /// <summary>
-    /// <see cref="DxDataFormControlItem"/> : Třída obsahující každý jeden prvek controlu v rámci DataFormu:
-    /// jeho definici <see cref="IDataFormItem"/> i fyzický control.
+    /// <see cref="DxDataFormXControlItem"/> : Třída obsahující každý jeden prvek controlu v rámci DataFormu:
+    /// jeho definici <see cref="IDataFormItemX"/> i fyzický control.
     /// Umožňuje řešit jeho tvorbu a uvolnění OnDemand = podle viditelnosti v rámci Parenta.
     /// Šetří tak čas a paměťové nároky.
     /// </summary>
-    public class DxDataFormControlItem : IDisposable
+    public class DxDataFormXControlItem : IDisposable
     {
         #region Konstruktor, Dispose, proměnné
         /// <summary>
@@ -1171,7 +1171,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="scrollPanel"></param>
         /// <param name="dataFormItem"></param>
         /// <param name="control"></param>
-        public DxDataFormControlItem(DxDataFormScrollPanel scrollPanel, IDataFormItem dataFormItem, WF.Control control = null)
+        public DxDataFormXControlItem(DxDataFormXScrollPanel scrollPanel, IDataFormItemX dataFormItem, WF.Control control = null)
         {
             if (dataFormItem is null)
                 throw new ArgumentNullException("dataFormItem", "DxDataFormControlItem(dataFormItem) is null.");
@@ -1179,7 +1179,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             __ScrollPanel = scrollPanel;
             __DataFormItem = dataFormItem;
             __Control = control;
-            __IsFocusableControl = DxDataFormV1.IsFocusableControl(dataFormItem.ItemType);
+            __IsFocusableControl = DxDataFormX.IsFocusableControl(dataFormItem.ItemType);
             if (control != null)
             {
                 __ControlIsExternal = true;
@@ -1213,11 +1213,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Main DataForm
         /// </summary>
-        public DxDataFormV1 DataForm { get { return __ScrollPanel?.DataForm; } }
+        public DxDataFormX DataForm { get { return __ScrollPanel?.DataForm; } }
         /// <summary>
         /// Odkaz na main instanci DataForm typovanou pro interní přístup
         /// </summary>
-        private IDxDataForm IDataForm { get { return DataForm; } }
+        private IDxDataFormX IDataForm { get { return DataForm; } }
         /// <summary>
         /// Režim práce s pamětí
         /// </summary>
@@ -1225,16 +1225,16 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// ScrollPanel, který řídí zobrazení našeho <see cref="ContentPanel"/>
         /// </summary>
-        public DxDataFormScrollPanel ScrollPanel { get { return __ScrollPanel; } }
+        public DxDataFormXScrollPanel ScrollPanel { get { return __ScrollPanel; } }
         /// <summary>
         /// ScrollPanel pro interní přístup
         /// </summary>
-        protected IDxDataFormScrollPanel IScrollPanel { get { return __ScrollPanel; } }
-        private DxDataFormScrollPanel __ScrollPanel;
+        protected IDxDataFormXScrollPanel IScrollPanel { get { return __ScrollPanel; } }
+        private DxDataFormXScrollPanel __ScrollPanel;
         /// <summary>
         /// Panel, v němž bude this control fyzicky umístěn
         /// </summary>
-        public DxDataFormContentPanel ContentPanel { get { return __ScrollPanel?.ContentPanel; } }
+        public DxDataFormXContentPanel ContentPanel { get { return __ScrollPanel?.ContentPanel; } }
         /// <summary>
         /// Fyzický control
         /// </summary>
@@ -1248,8 +1248,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Definice jednoho prvku
         /// </summary>
-        public IDataFormItem DataFormItem { get { return __DataFormItem; } }
-        private IDataFormItem __DataFormItem;
+        public IDataFormItemX DataFormItem { get { return __DataFormItem; } }
+        private IDataFormItemX __DataFormItem;
         /// <summary>
         /// Obsahuje true tehdy, když zdejší prvek <see cref="DataFormItem"/> může dostat Focus podle svého typu.
         /// </summary>
@@ -1307,7 +1307,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Zajistí, že this prvek bude zobrazen podle toho, zda se nachází v dané viditelné oblasti
         /// </summary>
         /// <param name="refreshInfo"></param>
-        internal void PrepareVisibleItem(DxDataFormScrollPanel.RefreshItemsInfo refreshInfo)
+        internal void PrepareVisibleItem(DxDataFormXScrollPanel.RefreshItemsInfo refreshInfo)
         {
             bool needHost = _IsVisibleItem(refreshInfo);             // Zdejší control MÁ BÝT umístěn v Content panelu?
             bool isHosted = IsHosted && (__Control != null);         // Zdejší control JE NYNÍ umístěn v Content panelu?
@@ -1331,7 +1331,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Dokončovací práce po výměně komponenty v ContentPanelu - po přidání nové komponenty pro tento prvek
         /// </summary>
         /// <param name="refreshInfo"></param>
-        internal void FinaliseVisibleItemAdd(DxDataFormScrollPanel.RefreshItemsInfo refreshInfo)
+        internal void FinaliseVisibleItemAdd(DxDataFormXScrollPanel.RefreshItemsInfo refreshInfo)
         {
             // Fyzické přidání controlu do ContentPanelu provedl ContentPanel hromadně, tady si jen označíme že jsme hostování:
             IsHosted = true;
@@ -1340,12 +1340,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Dokončovací práce po výměně komponenty v ContentPanelu - po odebrání zdejší komponenty pro tento prvek
         /// </summary>
         /// <param name="refreshInfo"></param>
-        internal void FinaliseVisibleItemRemoved(DxDataFormScrollPanel.RefreshItemsInfo refreshInfo)
+        internal void FinaliseVisibleItemRemoved(DxDataFormXScrollPanel.RefreshItemsInfo refreshInfo)
         {
             ReleaseControl(refreshInfo, false);
         }
         /// <summary>
-        /// Obsahuje true pokud this prvek má být někdy viditelný podle definice dat <see cref="IDataFormItem.Visible"/>.
+        /// Obsahuje true pokud this prvek má být někdy viditelný podle definice dat <see cref="IDataFormItemX.Visible"/>.
         /// Pokud je tam null, považuje se to za true.
         /// </summary>
         internal bool ItemVisible
@@ -1362,7 +1362,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="refreshInfo"></param>
         /// <returns></returns>
-        private bool _IsVisibleItem(DxDataFormScrollPanel.RefreshItemsInfo refreshInfo)
+        private bool _IsVisibleItem(DxDataFormXScrollPanel.RefreshItemsInfo refreshInfo)
         {
             // Pokud má být prvek Invisible, je to bez další diskuse:
             if (!ItemVisible) return false;
@@ -1399,7 +1399,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="refreshInfo"></param>
         /// <returns></returns>
-        private void PrepareControl(DxDataFormScrollPanel.RefreshItemsInfo refreshInfo)
+        private void PrepareControl(DxDataFormXScrollPanel.RefreshItemsInfo refreshInfo)
         {
             WF.Control control = __Control;
             if (control == null || control.IsDisposed)
@@ -1414,7 +1414,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="refreshInfo"></param>
         /// <param name="isFinal"></param>
-        private void ReleaseControl(DxDataFormScrollPanel.RefreshItemsInfo refreshInfo, bool isFinal)
+        private void ReleaseControl(DxDataFormXScrollPanel.RefreshItemsInfo refreshInfo, bool isFinal)
         {
             // Fyzické odebrání controlu z ContentPanelu provedl ContentPanel hromadně, tady si jen označíme že už NEJSME jsme hostování:
             IsHosted = false;
@@ -1487,7 +1487,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="item"></param>
         /// <returns></returns>
-        internal bool ContainsItem(IDataFormItem item)
+        internal bool ContainsItem(IDataFormItemX item)
         {
             return (item != null && Object.ReferenceEquals(this.__DataFormItem, item));
         }
@@ -1496,9 +1496,9 @@ namespace Noris.Clients.Win.Components.AsolDX
     #endregion
     #region class DataFormItem : Deklarace každého jednoho prvku v rámci DataFormu, implementace IDataFormItem
     /// <summary>
-    /// Deklarace každého jednoho prvku v rámci DataFormu, implementace <see cref="IDataFormItem"/>
+    /// Deklarace každého jednoho prvku v rámci DataFormu, implementace <see cref="IDataFormItemX"/>
     /// </summary>
-    public class DataFormItem : IDataFormItem
+    public class DataFormItemX : IDataFormItemX
     {
         public string ItemName { get; set; }
         public int? TabIndex { get; set; }
@@ -1534,7 +1534,7 @@ namespace Noris.Clients.Win.Components.AsolDX
     }
     #endregion
     #region interface IDataFormItem, enums DataFormItemType, DxDataFormMemoryMode
-    public interface IDataFormItem
+    public interface IDataFormItemX
     {
         string ItemName { get; }
         int? TabIndex { get; }
@@ -1568,29 +1568,7 @@ namespace Noris.Clients.Win.Components.AsolDX
     }
 
     /// <summary>
-    /// Druh prvku v DataFormu
-    /// </summary>
-    public enum DataFormItemType
-    {
-        None = 0,
-        Label,
-        TextBox,
-        EditBox,
-        SpinnerBox,
-        CheckBox,
-        BreadCrumb,
-        ComboBoxList,
-        ComboBoxEdit,
-        ListView,
-        TreeView,
-        RadioButtonBox,
-        Button,
-        CheckButton,
-        DropDownButton,
-        Image
-    }
-    /// <summary>
-    /// Režim práce při zobrazování controlů v <see cref="DxDataFormV1"/>
+    /// Režim práce při zobrazování controlů v <see cref="DxDataFormX"/>
     /// </summary>
     [Flags]
     public enum DxDataFormMemoryMode
@@ -1637,7 +1615,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="sampleId"></param>
         /// <returns></returns>
-        public static IEnumerable<IDataFormItem> CreateSample(int sampleId)
+        public static IEnumerable<IDataFormItemX> CreateSample(int sampleId)
         {
             switch (sampleId)
             {
@@ -1651,10 +1629,10 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
             return null;
         }
-        private static IEnumerable<IDataFormItem> _CreateSample1()
+        private static IEnumerable<IDataFormItemX> _CreateSample1()
         {
             int x1, y1, x2, y2;
-            List<DataFormItem> items = new List<DataFormItem>();
+            List<DataFormItemX> items = new List<DataFormItemX>();
 
             // Stránka 0
             x1 = 6;
@@ -1768,9 +1746,9 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             return items;
         }
-        private static IEnumerable<IDataFormItem> _CreateSample2()
+        private static IEnumerable<IDataFormItemX> _CreateSample2()
         {
-            List<DataFormItem> items = new List<DataFormItem>();
+            List<DataFormItemX> items = new List<DataFormItemX>();
             Random rand = _SampleRandom;
 
             int x, y, rows;
@@ -1827,12 +1805,12 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             return items;
         }
-        private static IEnumerable<IDataFormItem> _CreateSample3()
+        private static IEnumerable<IDataFormItemX> _CreateSample3()
         {
             Random rand = _SampleRandom;
 
             int x1, y1, x2, y2;
-            List<DataFormItem> items = new List<DataFormItem>();
+            List<DataFormItemX> items = new List<DataFormItemX>();
 
             // Stránka 0
             x1 = 6;
@@ -1893,12 +1871,12 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             return items;
         }
-        private static IEnumerable<IDataFormItem> _CreateSample4()
+        private static IEnumerable<IDataFormItemX> _CreateSample4()
         {
             Random rand = _SampleRandom;
 
             int x1, y1, x2, y2;
-            List<DataFormItem> items = new List<DataFormItem>();
+            List<DataFormItemX> items = new List<DataFormItemX>();
 
             // Stránka 0
             x1 = 6;
@@ -1973,17 +1951,17 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             return items;
         }
-        private static IEnumerable<IDataFormItem> _CreateSample5()
+        private static IEnumerable<IDataFormItemX> _CreateSample5()
         {
-            List<IDataFormItem> items = new List<IDataFormItem>();
+            List<IDataFormItemX> items = new List<IDataFormItemX>();
             Random rand = _SampleRandom;
 
 
             return items;
         }
-        private static IEnumerable<IDataFormItem> _CreateSample6()
+        private static IEnumerable<IDataFormItemX> _CreateSample6()
         {
-            List<IDataFormItem> items = new List<IDataFormItem>();
+            List<IDataFormItemX> items = new List<IDataFormItemX>();
             Random rand = _SampleRandom;
 
 
@@ -1991,7 +1969,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
 
         // Specifické skupiny pro samply:
-        private static void _CreateSample3Naklady(List<DataFormItem> items, string label, int x, ref int y)
+        private static void _CreateSample3Naklady(List<DataFormItemX> items, string label, int x, ref int y)
         {
             int ha = 44;
 
@@ -2007,7 +1985,7 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             _CreateSampleAddAttributeText2(items, "Skladová cena:", x, y, 166); y += ha;
         }
-        private static void _CreateSample3CenovyVektor(List<DataFormItem> items, string pageName, string pageText)
+        private static void _CreateSample3CenovyVektor(List<DataFormItemX> items, string pageName, string pageText)
         {
             int x = 6;
             int y = 6;
@@ -2032,7 +2010,7 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             _CreateSampleSetPage(items, pageName, pageText, "Tato záložka obsahuje údaje o cenovém vektoru", null);
         }
-        private static void _CreateSample4Head(List<DataFormItem> items, string lockLabel, int x, ref int y)
+        private static void _CreateSample4Head(List<DataFormItemX> items, string lockLabel, int x, ref int y)
         {
             int x2 = x + 118 + 2 + 222 + 2;
             int hl = 18;
@@ -2066,7 +2044,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             _CreateSampleAddButton(items, "Editace procedury", x + 265, y, 155, 20);
             y += has;
         }
-        private static void _CreateSample4DimensionDate(List<DataFormItem> items, string label, int x, ref int y)
+        private static void _CreateSample4DimensionDate(List<DataFormItemX> items, string label, int x, ref int y)
         {
             int x2 = x + 118 + 2 + 222 + 2;
             int hl = 18;
@@ -2085,7 +2063,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             _CreateSampleAddAttributeText1(items, "Od počátku roku:", x2, y, 126, 155); 
             y += has;
         }
-        private static void _CreateSample4DimensionOther(List<DataFormItem> items, string label, int x, ref int y)
+        private static void _CreateSample4DimensionOther(List<DataFormItemX> items, string label, int x, ref int y)
         {
             int x2 = x + 118 + 2 + 222 + 2;
             int x3 = x + 400;
@@ -2118,9 +2096,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
 
         // Primární jednotlivé prvky:
-        private static void _CreateSampleAddLabel(List<DataFormItem> items, string label, int x, int y, int? w = null, DevExpress.Utils.HorzAlignment? labelHalignment = null, LabelStyleType? labelStyle = null)
+        private static void _CreateSampleAddLabel(List<DataFormItemX> items, string label, int x, int y, int? w = null, DevExpress.Utils.HorzAlignment? labelHalignment = null, LabelStyleType? labelStyle = null)
         {
-            items.Add(new DataFormItem()
+            items.Add(new DataFormItemX()
             {
                 ItemName = _SampleItemName(items),
                 ItemType = DataFormItemType.Label,
@@ -2131,10 +2109,10 @@ namespace Noris.Clients.Win.Components.AsolDX
                 LabelStyle = labelStyle
             });
         }
-        private static void _CreateSampleAddText(List<DataFormItem> items, int x, int y, int? w = null, DevExpress.XtraEditors.Mask.MaskType? maskType = null, string mask = null,
+        private static void _CreateSampleAddText(List<DataFormItemX> items, int x, int y, int? w = null, DevExpress.XtraEditors.Mask.MaskType? maskType = null, string mask = null,
             string toolTipText = null, string toolTipTitle = null)
         {
-            items.Add(new DataFormItem()
+            items.Add(new DataFormItemX()
             {
                 ItemName = _SampleItemName(items),
                 ItemType = DataFormItemType.TextBox,
@@ -2145,9 +2123,9 @@ namespace Noris.Clients.Win.Components.AsolDX
                 ToolTipTitle = toolTipTitle
             });
         }
-        private static void _CreateSampleAddMemo(List<DataFormItem> items, int x, int y, int w, int h)
+        private static void _CreateSampleAddMemo(List<DataFormItemX> items, int x, int y, int w, int h)
         {
-            items.Add(new DataFormItem()
+            items.Add(new DataFormItemX()
             {
                 ItemName = _SampleItemName(items),
                 ItemType = DataFormItemType.EditBox,
@@ -2156,9 +2134,9 @@ namespace Noris.Clients.Win.Components.AsolDX
                 ToolTipText = "Zde můžete zadat libovolný text"
             });
         }
-        private static void _CreateSampleAddCheckBox(List<DataFormItem> items, string label, int x, int y, int w, int addx = 0, DevExpress.XtraEditors.Controls.CheckBoxStyle? style = null, DevExpress.Utils.HorzAlignment? labelHalignment = null)
+        private static void _CreateSampleAddCheckBox(List<DataFormItemX> items, string label, int x, int y, int w, int addx = 0, DevExpress.XtraEditors.Controls.CheckBoxStyle? style = null, DevExpress.Utils.HorzAlignment? labelHalignment = null)
         {
-            items.Add(new DataFormItem()
+            items.Add(new DataFormItemX()
             {
                 ItemName = _SampleItemName(items),
                 ItemType = DataFormItemType.CheckBox,
@@ -2168,9 +2146,9 @@ namespace Noris.Clients.Win.Components.AsolDX
                 LabelHAlignment = labelHalignment
             });
         }
-        private static void _CreateSampleAddButton(List<DataFormItem> items, string label, int x, int y, int w, int h)
+        private static void _CreateSampleAddButton(List<DataFormItemX> items, string label, int x, int y, int w, int h)
         {
-            items.Add(new DataFormItem()
+            items.Add(new DataFormItemX()
             {
                 ItemName = _SampleItemName(items),
                 ItemType = DataFormItemType.Button,
@@ -2180,55 +2158,55 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
 
         // Standardní atributy a vztahy:
-        private static void _CreateSampleAddAttributeText1(List<DataFormItem> items, string label, int x, int y, int wl, int wt, string tooltip = null)
+        private static void _CreateSampleAddAttributeText1(List<DataFormItemX> items, string label, int x, int y, int wl, int wt, string tooltip = null)
         {
             _CreateSampleAddLabel(items, label, x, y + 0, wl, DevExpress.Utils.HorzAlignment.Far);
             _CreateSampleAddText(items, x + wl + 2, y, wt, toolTipText: tooltip ?? "Zde vyplňte atribut " + label);
         }
-        private static void _CreateSampleAddAttributeText2(List<DataFormItem> items, string label, int x, int y, int w, string tooltip = null)
+        private static void _CreateSampleAddAttributeText2(List<DataFormItemX> items, string label, int x, int y, int w, string tooltip = null)
         {
             _CreateSampleAddLabel(items, label, x + 2, y, w - 4, DevExpress.Utils.HorzAlignment.Near);
             _CreateSampleAddText(items, x, y + 20, w, toolTipText: tooltip ?? "Zde vyplňte atribut " + label);
         }
-        private static void _CreateSampleAddAttributeMemo1(List<DataFormItem> items, string label, int x, int y, int wl, int wt, int ht, string tooltip = null)
+        private static void _CreateSampleAddAttributeMemo1(List<DataFormItemX> items, string label, int x, int y, int wl, int wt, int ht, string tooltip = null)
         {
             _CreateSampleAddLabel(items, label, x, y + 0, wl, DevExpress.Utils.HorzAlignment.Far);
             _CreateSampleAddMemo(items, x + wl + 2, y, wt, ht);
         }
-        private static void _CreateSampleAddAttributeMemo2(List<DataFormItem> items, string label, int x, int y, int w, int h)
+        private static void _CreateSampleAddAttributeMemo2(List<DataFormItemX> items, string label, int x, int y, int w, int h)
         {
             _CreateSampleAddLabel(items, label, x + 2, y, w - 4, DevExpress.Utils.HorzAlignment.Near);
             _CreateSampleAddMemo(items, x, y + 20, w, h);
         }
-        private static void _CreateSampleAddAttributeCheck1(List<DataFormItem> items, string label, string text, int x, int y, int wl, int wc, string tooltip = null)
+        private static void _CreateSampleAddAttributeCheck1(List<DataFormItemX> items, string label, string text, int x, int y, int wl, int wc, string tooltip = null)
         {
             _CreateSampleAddLabel(items, label, x, y + 2, wl, DevExpress.Utils.HorzAlignment.Far);
             _CreateSampleAddCheckBox(items, text, x + wl + 2, y, wc, 0, DevExpress.XtraEditors.Controls.CheckBoxStyle.Default);
         }
-        private static void _CreateSampleAddAttributeCheck2(List<DataFormItem> items, string label, string text, int x, int y, int w, string tooltip = null)
+        private static void _CreateSampleAddAttributeCheck2(List<DataFormItemX> items, string label, string text, int x, int y, int w, string tooltip = null)
         {
             _CreateSampleAddLabel(items, label, x + 2, y, w - 4, DevExpress.Utils.HorzAlignment.Near);
             _CreateSampleAddCheckBox(items, text, x, y + 20, w, 0, DevExpress.XtraEditors.Controls.CheckBoxStyle.Default);
         }
-        private static void _CreateSampleAddRelation1(List<DataFormItem> items, string label, int x, int y, int wl = 180, int wr = 150, int wn = 250)
+        private static void _CreateSampleAddRelation1(List<DataFormItemX> items, string label, int x, int y, int wl = 180, int wr = 150, int wn = 250)
         {
             _CreateSampleAddLabel(items, label, x, y + 0, wl, DevExpress.Utils.HorzAlignment.Far);
 
-            items.Add(new DataFormItem()
+            items.Add(new DataFormItemX()
             {
                 ItemName = _SampleItemName(items),
                 ItemType = DataFormItemType.TextBox,
                 Bounds = new Rectangle(x + wl + 2, y, wr, 20)
             });
 
-            items.Add(new DataFormItem()
+            items.Add(new DataFormItemX()
             {
                 ItemName = _SampleItemName(items),
                 ItemType = DataFormItemType.TextBox,
                 Bounds = new Rectangle(x + wl + 2 + wr + 2, y, wn, 20)
             });
         }
-        private static void _CreateSampleAddRelation2(List<DataFormItem> items, string label, int x, int y, int wr, int wn, string tooltip = null)
+        private static void _CreateSampleAddRelation2(List<DataFormItemX> items, string label, int x, int y, int wr, int wn, string tooltip = null)
         {
             _CreateSampleAddLabel(items, label, x + 0, y, wr - 4, DevExpress.Utils.HorzAlignment.Near);
             _CreateSampleAddText(items, x, y + 20, wr, toolTipText: tooltip ?? "Zde vyplňte referenci vztahu " + label);
@@ -2236,11 +2214,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
 
         // Testovací sample řádky:
-        private static void _CreateSampleAddAttribute3Prices(List<DataFormItem> items, string label, int x, int y)
+        private static void _CreateSampleAddAttribute3Prices(List<DataFormItemX> items, string label, int x, int y)
         {
             _CreateSampleAddLabel(items, label, x, y);
 
-            items.Add(new DataFormItem()
+            items.Add(new DataFormItemX()
             {
                 ItemName = _SampleItemName(items),
                 ItemType = DataFormItemType.TextBox,
@@ -2249,7 +2227,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 TextEditMask = "### ### ##0.00"
             });
 
-            items.Add(new DataFormItem()
+            items.Add(new DataFormItemX()
             {
                 ItemName = _SampleItemName(items),
                 ItemType = DataFormItemType.TextBox,
@@ -2258,7 +2236,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 TextEditMask = "### ### ##0.00"
             });
 
-            items.Add(new DataFormItem()
+            items.Add(new DataFormItemX()
             {
                 ItemName = _SampleItemName(items),
                 ItemType = DataFormItemType.TextBox,
@@ -2267,11 +2245,11 @@ namespace Noris.Clients.Win.Components.AsolDX
                 TextEditMask = "### ### ##0.00"
             });
         }
-        private static void _CreateSampleAddDate2(List<DataFormItem> items, string label, int x, int y)
+        private static void _CreateSampleAddDate2(List<DataFormItemX> items, string label, int x, int y)
         {
             _CreateSampleAddLabel(items, label, x, y);
 
-            items.Add(new DataFormItem()
+            items.Add(new DataFormItemX()
             {
                 ItemName = _SampleItemName(items),
                 ItemType = DataFormItemType.TextBox,
@@ -2284,7 +2262,7 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             _CreateSampleAddLabel(items, "...", x + 311, y, 30, DevExpress.Utils.HorzAlignment.Center);
 
-            items.Add(new DataFormItem()
+            items.Add(new DataFormItemX()
             {
                 ItemName = _SampleItemName(items),
                 ItemType = DataFormItemType.TextBox,
@@ -2295,11 +2273,11 @@ namespace Noris.Clients.Win.Components.AsolDX
                 ToolTipText = "Tento den se událost skončila"
             });
         }
-        private static void _CreateSampleAddCheckBox3(List<DataFormItem> items, string label1, string label2, string label3, int x, int y)
+        private static void _CreateSampleAddCheckBox3(List<DataFormItemX> items, string label1, string label2, string label3, int x, int y)
         {
             DevExpress.XtraEditors.Controls.CheckBoxStyle style = DevExpress.XtraEditors.Controls.CheckBoxStyle.Default;
 
-            items.Add(new DataFormItem()
+            items.Add(new DataFormItemX()
             {
                 ItemName = _SampleItemName(items),
                 ItemType = DataFormItemType.CheckBox,
@@ -2308,7 +2286,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 CheckBoxStyle = style
             });
 
-            items.Add(new DataFormItem()
+            items.Add(new DataFormItemX()
             {
                 ItemName = _SampleItemName(items),
                 ItemType = DataFormItemType.CheckBox,
@@ -2317,7 +2295,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 CheckBoxStyle = style
             });
 
-            items.Add(new DataFormItem()
+            items.Add(new DataFormItemX()
             {
                 ItemName = _SampleItemName(items),
                 ItemType = DataFormItemType.CheckBox,
@@ -2326,7 +2304,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 CheckBoxStyle = style
             });
         }
-        private static void _CreateSampleAddSampleRow(List<DataFormItem> items, string label, int[] widths, ref int x, ref int y)
+        private static void _CreateSampleAddSampleRow(List<DataFormItemX> items, string label, int[] widths, ref int x, ref int y)
         {
             _CreateSampleAddLabel(items, label, x, y);
 
@@ -2343,7 +2321,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
 
         // Stránky - setování a analýza:
-        private static void _CreateSampleSetPage(List<DataFormItem> items, string pageName, string pageText, string pageToolTipText, string pageIconName)
+        private static void _CreateSampleSetPage(List<DataFormItemX> items, string pageName, string pageText, string pageToolTipText, string pageIconName)
         {
             var pageItems = items.Where(i => i.PageName == null).ToArray();
 
@@ -2362,7 +2340,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="pageItems"></param>
         /// <returns></returns>
-        private static string _CreateSampleAnalyse(DataFormItem[] pageItems)
+        private static string _CreateSampleAnalyse(DataFormItemX[] pageItems)
         {
             string info = "";
             string eol = "\r\n";
@@ -2400,12 +2378,12 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             return info;
         }
-        private static string _SampleItemName(List<DataFormItem> items) { return "item_" + (items.Count + 1000).ToString(); }
+        private static string _SampleItemName(List<DataFormItemX> items) { return "item_" + (items.Count + 1000).ToString(); }
 
         // Tvorba podle předpisu DxDataFormSample:
-        public static IEnumerable<IDataFormItem> CreateSample(DxDataFormTestDefinition sample)
+        public static IEnumerable<IDataFormItemX> CreateSample(DxDataFormTestDefinition sample)
         {
-            List<DataFormItem> items = new List<DataFormItem>();
+            List<DataFormItemX> items = new List<DataFormItemX>();
             Random rand = _SampleRandom;
 
             int w;
@@ -2417,38 +2395,38 @@ namespace Noris.Clients.Win.Components.AsolDX
                 if (sample.LabelCount >= 1)
                 {
                     w = rand.Next(100, 200);
-                    items.Add(new DataFormItem() { ItemName = _SampleItemName(items), ItemType = DataFormItemType.Label, LabelHAlignment = DevExpress.Utils.HorzAlignment.Far, LabelAutoSize = LabelAutoSizeMode.None, Bounds = new Rectangle(x, y, w, 20), Text = "Řádek " + (i + 1).ToString() + ":" });
+                    items.Add(new DataFormItemX() { ItemName = _SampleItemName(items), ItemType = DataFormItemType.Label, LabelHAlignment = DevExpress.Utils.HorzAlignment.Far, LabelAutoSize = LabelAutoSizeMode.None, Bounds = new Rectangle(x, y, w, 20), Text = "Řádek " + (i + 1).ToString() + ":" });
                     x += w + 6;
                 }
                 if (sample.TextCount >= 1)
                 {
                     w = rand.Next(180, 350);
-                    items.Add(new DataFormItem() { ItemName = _SampleItemName(items), ItemType = DataFormItemType.TextBox, Bounds = new Rectangle(x, y, w, 20) });
+                    items.Add(new DataFormItemX() { ItemName = _SampleItemName(items), ItemType = DataFormItemType.TextBox, Bounds = new Rectangle(x, y, w, 20) });
                     x += w + 6;
                 }
                 if (sample.CheckCount >= 1)
                 {
                     w = rand.Next(200, 250);
                     var style = _SampleCheckBoxStyle();
-                    items.Add(new DataFormItem() { ItemName = _SampleItemName(items), ItemType = DataFormItemType.CheckBox, CheckBoxStyle = style, Bounds = new Rectangle(x, y, w, 20), Text = "Volba " + (i + 1).ToString() + "a. (" + style.ToString() + ")" });
+                    items.Add(new DataFormItemX() { ItemName = _SampleItemName(items), ItemType = DataFormItemType.CheckBox, CheckBoxStyle = style, Bounds = new Rectangle(x, y, w, 20), Text = "Volba " + (i + 1).ToString() + "a. (" + style.ToString() + ")" });
                     x += w + 6;
                 }
                 if (sample.LabelCount >= 2)
                 {
                     w = rand.Next(100, 200);
-                    items.Add(new DataFormItem() { ItemName = _SampleItemName(items), ItemType = DataFormItemType.Label, LabelHAlignment = DevExpress.Utils.HorzAlignment.Far, LabelAutoSize = LabelAutoSizeMode.None, Bounds = new Rectangle(x, y, w, 20), Text = "Řádek " + (i + 1).ToString() + ":" });
+                    items.Add(new DataFormItemX() { ItemName = _SampleItemName(items), ItemType = DataFormItemType.Label, LabelHAlignment = DevExpress.Utils.HorzAlignment.Far, LabelAutoSize = LabelAutoSizeMode.None, Bounds = new Rectangle(x, y, w, 20), Text = "Řádek " + (i + 1).ToString() + ":" });
                     x += w + 6;
                 }
                 if (sample.TextCount >= 2)
                 {
                     w = rand.Next(250, 450);
-                    items.Add(new DataFormItem() { ItemName = _SampleItemName(items), ItemType = DataFormItemType.TextBox, Bounds = new Rectangle(x, y, w, 20) });
+                    items.Add(new DataFormItemX() { ItemName = _SampleItemName(items), ItemType = DataFormItemType.TextBox, Bounds = new Rectangle(x, y, w, 20) });
                     x += w + 6;
                 }
                 if (sample.CheckCount >= 2)
                 {
                     w = rand.Next(100, 200);
-                    items.Add(new DataFormItem() { ItemName = _SampleItemName(items), ItemType = DataFormItemType.CheckBox, Bounds = new Rectangle(x, y, w, 20), Text = "Volba " + (i + 1).ToString() + "a." });
+                    items.Add(new DataFormItemX() { ItemName = _SampleItemName(items), ItemType = DataFormItemType.CheckBox, Bounds = new Rectangle(x, y, w, 20), Text = "Volba " + (i + 1).ToString() + "a." });
                     x += w + 6;
                 }
                 y += 30;
