@@ -5551,6 +5551,33 @@ namespace Noris.Clients.Win.Components.AsolDX
             return (r.HasValue && point.HasValue ? (Rectangle?)(new Rectangle(r.Value.Location.Add(point.Value), r.Value.Size)) : (Rectangle?)null);
         }
         /// <summary>
+        /// Vrací nový <see cref="Rectangle"/>, který je dán aktuálním prostorem, zvětšeným o dané vnější okraje.
+        /// Pokud Rectangle je null, vrací Rectangle daný pouze velikostí Padding, počínaje v bodě 0/0.
+        /// </summary>
+        /// <param name="r"></param>
+        /// <param name="padding"></param>
+        /// <returns></returns>
+        public static Rectangle Add(this Rectangle? r, Padding padding)
+        {
+            if (!r.HasValue) return new Rectangle(0, 0, padding.Horizontal, padding.Vertical);
+            return Add(r.Value, padding);
+        }
+        /// <summary>
+        /// Vrací nový <see cref="Rectangle"/>, který je dán aktuálním prostorem, zvětšeným o dané vnější okraje.
+        /// Pokud Padding je null, vrací vstupní Rectangle.
+        /// Pokud Rectangle je null a Padding není null, vrací Rectangle daný pouze velikostí Padding, počínaje v bodě 0/0.
+        /// </summary>
+        /// <param name="r"></param>
+        /// <param name="padding"></param>
+        /// <returns></returns>
+        public static Rectangle? Add(this Rectangle? r, Padding? padding)
+        {
+            if (!r.HasValue && !padding.HasValue) return null;
+            if (!padding.HasValue) return r;
+            if (!r.HasValue) return new Rectangle(0, 0, padding.Value.Horizontal, padding.Value.Vertical);
+            return Add(r.Value, padding.Value);
+        }
+        /// <summary>
         /// Returns a Rectangle?, which is this rectangle plus point (=new Rectangle?(this.X + point.X, this.Y + point.Y, this.Width, this.Height))
         /// </summary>
         /// <param name="r"></param>
@@ -5581,6 +5608,17 @@ namespace Noris.Clients.Win.Components.AsolDX
         public static Rectangle? Sub(this Rectangle? r, int x, int y)
         {
             return (r.HasValue ? (Rectangle?)(new Rectangle(r.Value.X - x, r.Value.Y - y, r.Value.Width, r.Value.Height)) : (Rectangle?)null);
+        }
+        /// <summary>
+        /// Vrací nový <see cref="Rectangle"/>, který je dán aktuálním prostorem, zmenšeným o dané vnitřní okraje.
+        /// </summary>
+        /// <param name="r"></param>
+        /// <param name="padding"></param>
+        /// <returns></returns>
+        public static Rectangle? Sub(this Rectangle? r, Padding? padding)
+        {
+            if (!r.HasValue || !padding.HasValue) return null;
+            return Sub(r.Value, padding.Value);
         }
         /// <summary>
         /// Returns a RectangleF, which is this rectangle plus point (=new RectangleF(this.X + point.X, this.Y + point.Y, this.Width, this.Height))

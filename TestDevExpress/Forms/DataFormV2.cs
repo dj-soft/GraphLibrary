@@ -328,7 +328,7 @@ namespace TestDevExpress.Forms
             var sampleStartTime = DxComponent.LogTimeCurrent;
             _DxShowTimeStart = DateTime.Now;               // Určení času End a času Elapsed proběhne v DxDataForm_GotFocus
             _DxShowTimeSpan = null;
-            DxDataFormV2 dataForm = new DxDataFormV2();
+            DxDataForm dataForm = new DxDataForm();
             dataForm.TabIndex = 1;
             dataForm.LogActive = true;
             dataForm.GotFocus += DxDataForm_GotFocus;
@@ -376,7 +376,7 @@ namespace TestDevExpress.Forms
 
             _DxShowTimeStart = DateTime.Now;               // Určení času End a času Elapsed proběhne v DxDataForm_GotFocus
             _DxShowTimeSpan = null;
-            DxDataFormV2 dataForm = new DxDataFormV2();
+            DxDataForm dataForm = new DxDataForm();
             string[] texts = Random.GetSentencesArray(1, 3, 120, 240, false);
             string[] tooltips = Random.GetSentencesArray(7, 16, 120, 240, true);
             dataForm.CreateSampleItems(texts, tooltips, 2, 2000);
@@ -435,7 +435,7 @@ namespace TestDevExpress.Forms
             }
         }
 
-        private DxDataFormV2 _DxDataFormV2;
+        private DxDataForm _DxDataFormV2;
         private DateTime? _DxShowTimeStart;
         private TimeSpan? _DxShowTimeSpan;
         #endregion

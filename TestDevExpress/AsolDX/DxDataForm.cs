@@ -12,17 +12,230 @@ using DevExpress.XtraEditors;
 
 namespace Noris.Clients.Win.Components.AsolDX
 {
+    using Noris.Clients.Win.Components.AsolDX.DataForm;
+
     /// <summary>
     /// DataForm
     /// </summary>
-    public class DxDataFormV2 : DxScrollableContent, IDxDataForm
+    public class DxDataForm : DxPanelControl
     {
         #region Konstruktor
         /// <summary>
         /// Konstruktor
         /// </summary>
-        public DxDataFormV2()
+        public DxDataForm()
         {
+            InitializeDataFormPanel();
+        }
+        /// <summary>
+        /// Dispose panelu
+        /// </summary>
+        /// <param name="disposing"></param>
+        protected override void Dispose(bool disposing)
+        {
+            DisposeDataFormPanel();
+            base.Dispose(disposing);
+        }
+        /// <summary>
+        /// Okraje kolem vlastních prvků
+        /// </summary>
+        public Padding ContentPadding { get { return _DataFormPanel.ContentPadding; } set { _DataFormPanel.ContentPadding = value; } }
+
+
+        /*
+
+        /// <summary>
+        /// Počet prvků
+        /// </summary>
+        public int ItemsCount { get { return _Items.Count; } }
+        /// <summary>
+        /// Počet aktuálně viditelných prvků
+        /// </summary>
+        public int VisibleItemsCount { get { return _VisibleItems.Count; } }
+        /// <summary>
+        /// Pole prvků.
+        /// Přídávání a odebírání řeší metody Add a Remove.
+        /// </summary>
+        public DxDataFormItem[] Items { get { return _Items.ToArray(); } }
+        /// <summary>
+        /// Souhrnná souřadnice všech prvků v <see cref="Items"/>
+        /// </summary>
+        public Rectangle? ItemsSummaryBounds { get { return DrawingExtensions.SummaryRectangle(_Items.Select(i => (Rectangle?)i.CurrentBounds)); } }
+
+        */
+        #endregion
+        #region Zobrazované prvky = data stránek a vlastní data
+        /// <summary>
+        /// Definice vzhledu.
+        /// Dokud nebude vložena definice vzhledu, bude prvek prázdný.
+        /// </summary>
+        public IEnumerable<IDataFormPage> Pages { get { return _Pages.ToArray(); } set { _SetPages(value); } }
+        private List<IDataFormPage> _Pages;
+        /// <summary>
+        /// Vlastní data
+        /// </summary>
+        public System.Data.DataTable DataTable { get { return _DataTable; } set { _DataTable = value; this.Refresh(RefreshParts.InvalidateControl); } }
+        private System.Data.DataTable _DataTable;
+
+        /// <summary>
+        /// Vloží dané stránky do this instance
+        /// </summary>
+        /// <param name="pages"></param>
+        private void _SetPages(IEnumerable<IDataFormPage> pages)
+        {
+            _FillPages(pages);
+            _PreparePages();
+            _ActivatePage();
+        }
+        /// <summary>
+        /// Z dodaných stránek vytvoří zdejší datové struktury: naplní pole <see cref="_Pages"/> a <see cref="_DataFormPages"/>, nic dalšího nedělá
+        /// </summary>
+        /// <param name="pages"></param>
+        private void _FillPages(IEnumerable<IDataFormPage> pages)
+        {
+            _DataFormPages = DxDataFormPage.CreateList(this, pages);
+            _Pages = _DataFormPages.Select(p => p.IPage).ToList();
+        }
+
+        private void _PreparePages()
+        {
+            // Nějaká optimalizace podle prostoru!
+
+        }
+
+        private void _ActivatePage(string pageId = null)
+        {
+
+        }
+
+        private void Refresh(RefreshParts refreshParts)
+        { }
+
+        /// <summary>
+        /// Data jednotlivých stránek
+        /// </summary>
+        private List<DxDataFormPage> _DataFormPages;
+        /// <summary>
+        /// Vytvoří vlastní panel DataForm
+        /// </summary>
+        private void InitializeDataFormPanel()
+        {
+            _DataFormPanel = new DxDataFormPanel(this);
+        }
+        /// <summary>
+        /// Disposuje vlastní panel DataForm
+        /// </summary>
+        private void DisposeDataFormPanel()
+        {
+            _DataFormPanel?.Dispose();
+            _DataFormPanel = null;
+        }
+        /// <summary>
+        /// vlastní panel DataForm
+        /// </summary>
+        private DxDataFormPanel _DataFormPanel;
+        #endregion
+    }
+    /// <summary>
+    /// Třída, která generuje testovací předpisy a data pro testy <see cref="DxDataForm"/>
+    /// </summary>
+    public class DxDataFormSamples
+    {
+        /// <summary>
+        /// Vytvoří a vrátí data pro definici DataFormu
+        /// </summary>
+        /// <param name="texts"></param>
+        /// <param name="tooltips"></param>
+        /// <param name="sampleId"></param>
+        /// <param name="rowCount"></param>
+        /// <returns></returns>
+        public static List<IDataFormPage> CreateSampleData(string[] texts, string[] tooltips, int sampleId, int rowCount)
+        {
+            List<IDataFormPage> pages = new List<IDataFormPage>();
+            DataFormPage page = new DataFormPage();
+            pages.Add(page);
+            DataFormGroup group = new DataFormGroup();
+            page.Groups.Add(group);
+
+            Random random = new Random();
+            int textsCount = texts.Length;
+            int tooltipsCount = tooltips.Length;
+
+            string text, tooltip;
+            int[] widths = null;
+            int addY = 0;
+            switch (sampleId)
+            {
+                case 1:
+                    widths = new int[] { 140, 260, 40, 300, 120 };
+                    addY = 28;
+                    break;
+                case 2:
+                    widths = new int[] { 80, 150, 80, 60, 100, 120, 160, 40, 120, 180, 80, 40, 60, 250 };
+                    addY = 22;
+                    break;
+            }
+            int count = rowCount;
+            int y = 80;
+            int maxX = 0;
+            int q;
+            for (int r = 0; r < count; r++)
+            {
+                int x = 20;
+                text = $"Řádek {(r + 1)}";
+                DataFormItemImageText label = new DataFormItemImageText() { ItemType = DataFormItemType.Label, Text = text, DesignBounds = new Rectangle(x, y + 2, 70, 18) };
+                group.Items.Add(label);
+
+                x += 80;
+                foreach (int width in widths)
+                {
+                    bool blank = (random.Next(100) == 68);
+                    text = (!blank ? texts[random.Next(textsCount)] : "");
+                    tooltip = (!blank ? tooltips[random.Next(tooltipsCount)] : "");
+
+                    q = random.Next(100);
+                    DataFormItemType itemType = (q < 5 ? DataFormItemType.None :
+                                                (q < 10 ? DataFormItemType.CheckBox :
+                                                (q < 15 ? DataFormItemType.Button :
+                                                DataFormItemType.TextBox)));
+                    switch (itemType)
+                    {
+                        case DataFormItemType.TextBox:
+                            DataFormItemImageText textBox = new DataFormItemImageText() { ItemType = itemType, Text = text, ToolTipText = tooltip, DesignBounds = new Rectangle(x, y, width, 20) };
+                            group.Items.Add(textBox);
+                            break;
+                        case DataFormItemType.CheckBox:
+                            DataFormItemCheckItem checkBox = new DataFormItemCheckItem() { ItemType = itemType, Text = text, ToolTipText = tooltip, DesignBounds = new Rectangle(x, y, width, 20) };
+                            group.Items.Add(checkBox);
+                            break;
+                        case DataFormItemType.Button:
+                            DataFormItemImageText button = new DataFormItemImageText() { ItemType = itemType, Text = text, ToolTipText = tooltip, DesignBounds = new Rectangle(x, y, width, 20) };
+                            group.Items.Add(button);
+                            break;
+                    }
+                    x += width + 3;
+                }
+                maxX = x;
+                y += addY;
+            }
+
+            return pages;
+        }
+    }
+}
+
+namespace Noris.Clients.Win.Components.AsolDX.DataForm
+{
+    /// <summary>
+    /// Jeden panel dataformu
+    /// </summary>
+    internal class DxDataFormPanel : DxScrollableContent
+    {
+        #region Konstruktor a vztah na DxDataForm
+        public DxDataFormPanel(DxDataForm dataForm)
+        {
+            _DataForm = dataForm;
+
             this.DoubleBuffered = true;
             this.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.Style3D;
 
@@ -31,11 +244,9 @@ namespace Noris.Clients.Win.Components.AsolDX
             InitializeItems();
             InitializePaint();
 
-            InitializeSampleControls();
-            // InitializeSampleItems();
 
-            Refresh(RefreshParts.AfterItemsChangedSilent);
         }
+        private DxDataForm _DataForm;
         /// <summary>
         /// Dispose panelu
         /// </summary>
@@ -46,6 +257,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.InvalidateImageCache();
             this._Items.Clear();
             base.Dispose(disposing);
+
+            _DataForm = null;
         }
         /// <summary>
         /// Inicializuje panel <see cref="_ContentPanel"/>
@@ -78,41 +291,25 @@ namespace Noris.Clients.Win.Components.AsolDX
         private Padding _ContentPadding;
         private DxSuperToolTip _DxSuperToolTip;
 
+
+
+        #endregion
+        #region Public vlastnosti
         /// <summary>
         /// Okraje kolem vlastních prvků
         /// </summary>
-        public Padding ContentPadding 
-        { 
-            get { return _ContentPadding; } 
-            set 
-            { 
-                _ContentPadding = value; 
-                Refresh(RefreshParts.AfterItemsChanged); 
+        public Padding ContentPadding
+        {
+            get { return _ContentPadding; }
+            set
+            {
+                _ContentPadding = value;
+                Refresh(RefreshParts.AfterItemsChanged);
             }
         }
-        /// <summary>
-        /// Počet prvků
-        /// </summary>
-        public int ItemsCount { get { return _Items.Count; } }
-        /// <summary>
-        /// Počet aktuálně viditelných prvků
-        /// </summary>
-        public int VisibleItemsCount { get { return _VisibleItems.Count; } }
-        /// <summary>
-        /// Pole prvků.
-        /// Přídávání a odebírání řeší metody Add a Remove.
-        /// </summary>
-        public DxDataFormItem[] Items { get { return _Items.ToArray(); } }
-        /// <summary>
-        /// Souhrnná souřadnice všech prvků v <see cref="Items"/>
-        /// </summary>
-        public Rectangle? ItemsSummaryBounds { get { return DrawingExtensions.SummaryRectangle(_Items.Select(i => (Rectangle?)i.CurrentBounds)); } }
 
-        /// <summary>
-        /// Aktuálně platná hodnota DeviceDpi
-        /// </summary>
-        int IDxDataForm.DeviceDpi { get { return this.CurrentDpi; } }
         #endregion
+
         #region Testovací prvky
 
         private void InitializeSampleControls()
@@ -129,59 +326,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         private DxTextEdit _TextBox;
         private DxCheckEdit _CheckBox;
 
-        public void CreateSampleItems(string[] texts, string[] tooltips, int sampleId, int rowCount)
-        {
-            _Items.Clear();
-            Random random = new Random();
-            int textsCount = texts.Length;
-            int tooltipsCount = tooltips.Length;
-
-            string text, tooltip;
-            int[] widths = null;
-            int addY = 0;
-            switch (sampleId)
-            {
-                case 1:
-                    widths = new int[] { 140, 260, 40, 300, 120 };
-                    addY = 28;
-                    break;
-                case 2:
-                    widths = new int[] { 80, 150, 80, 60, 100, 120, 160, 40, 120, 180, 80, 40, 60, 250 };
-                    addY = 22;
-                    break;
-            }
-            int count = rowCount;
-            int y = 80;
-            int maxX = 0;
-            int q;
-            for (int r = 0; r < count; r++)
-            {
-                int x = 20;
-                text = $"Řádek {(r + 1)}";
-                _Items.Add(new DxDataFormItem(this, DataFormItemType.Label, text) { DesignBounds = new Rectangle(x, y + 2, 70, 18) });
-                x += 80;
-                foreach (int width in widths)
-                {
-                    bool blank = (random.Next(100) == 68);
-                    text = (!blank ? texts[random.Next(textsCount)] : "");
-                    tooltip = (!blank ? tooltips[random.Next(tooltipsCount)] : "");
-
-                    q = random.Next(100);
-                    DataFormItemType itemType = (q < 5 ? DataFormItemType.None :
-                                                (q < 10 ? DataFormItemType.CheckBox :
-                                                (q < 15 ? DataFormItemType.Button :
-                                                DataFormItemType.TextBox)));
-                    if (itemType != DataFormItemType.None)
-                        _Items.Add(new DxDataFormItem(this, itemType, text) { DesignBounds = new Rectangle(x, y, width, 20), ToolTipText = tooltip });
-                    x += width + 3;
-                }
-                maxX = x;
-                y += addY;
-            }
-
-            Refresh(RefreshParts.Default);
-        }
         #endregion
+
         #region Interaktivita
         private void InitializeInteractivity()
         {
@@ -654,67 +800,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private int _LastCalcDeviceDpi;
         /// <summary>
-        /// Položky pro refresh
+        /// Aktuálně platná hodnota DeviceDpi
         /// </summary>
-        [Flags]
-        public enum RefreshParts
-        {
-            /// <summary>
-            /// Nic
-            /// </summary>
-            None = 0,
-            /// <summary>
-            /// Zajistit přepočet CurrentBounds v prvcích (=provést InvalidateBounds) = provádí se po změně Zoomu a/nebo DPI
-            /// </summary>
-            InvalidateCurrentBounds = 0x0001,
-            /// <summary>
-            /// Přepočítat celkovou velikost obsahu
-            /// </summary>
-            RecalculateContentTotalSize = 0x0002,
-            /// <summary>
-            /// Určit aktuálně viditelné prvky
-            /// </summary>
-            ReloadVisibleItems = 0x0004,
-            /// <summary>
-            /// Resetovat cache předvykreslených controlů
-            /// </summary>
-            InvalidateCache = 0x0010,
-            /// <summary>
-            /// Znovuvykreslit grafiku
-            /// </summary>
-            InvalidateControl = 0x0100,
-            /// <summary>
-            /// Explicitně vyvolat i metodu <see cref="Control.Refresh()"/>
-            /// </summary>
-            RefreshControl = 0x0200,
-
-            /// <summary>
-            /// Po změně prvků (přidání, odebrání, změna hodnot) (<see cref="RecalculateContentTotalSize"/> + <see cref="ReloadVisibleItems"/>).
-            /// Tato hodnota je Silent = neobsahuje <see cref="InvalidateControl"/>.
-            /// </summary>
-            AfterItemsChangedSilent = RecalculateContentTotalSize | ReloadVisibleItems,
-            /// <summary>
-            /// Po změně prvků (přidání, odebrání, změna hodnot) (<see cref="RecalculateContentTotalSize"/> + <see cref="ReloadVisibleItems"/> + <see cref="InvalidateControl"/>).
-            /// Tato hodnota není Silent = obsahuje i invalidaci <see cref="InvalidateControl"/> = překreslení controlu.
-            /// <para/>
-            /// Toto je standardní refresh.
-            /// </summary>
-            AfterItemsChanged = RecalculateContentTotalSize | ReloadVisibleItems | InvalidateControl,
-            /// <summary>
-            /// Po scrollování (<see cref="ReloadVisibleItems"/> + <see cref="InvalidateControl"/>)
-            /// </summary>
-            AfterScroll = ReloadVisibleItems | InvalidateControl,
-            /// <summary>
-            /// Po změně prvků (přidání, odebrání, změna hodnot) (<see cref="RecalculateContentTotalSize"/> + <see cref="ReloadVisibleItems"/> + <see cref="InvalidateControl"/>).
-            /// <para/>
-            /// Toto je standardní refresh.
-            /// </summary>
-            Default = AfterItemsChanged,
-            /// <summary>
-            /// Všechny akce, včetně invalidace cache (brutální refresh)
-            /// </summary>
-            All = RecalculateContentTotalSize | ReloadVisibleItems | InvalidateCache | InvalidateControl
-        }
+        int IDxDataForm.DeviceDpi { get { return this.CurrentDpi; } }
         #endregion
         #region Vykreslování a Bitmap cache
         #region Vykreslení celého Contentu
@@ -1104,15 +1192,15 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private void DisposeControls()
         {
-            if (_DataFormControls == null) return;
-            foreach (ControlSetInfo controlSet in _DataFormControls.Values)
+            if (_ControlsSets == null) return;
+            foreach (ControlSetInfo controlSet in _ControlsSets.Values)
                 controlSet.Dispose();
-            _DataFormControls.Clear();
+            _ControlsSets.Clear();
         }
         private ControlSetInfo GetControlSet(DxDataFormItem item)
         {
-            if (_DataFormControls == null) _DataFormControls = new Dictionary<DataFormItemType, ControlSetInfo>();
-            var dataFormControls = _DataFormControls;
+            if (_ControlsSets == null) _ControlsSets = new Dictionary<DataFormItemType, ControlSetInfo>();
+            var dataFormControls = _ControlsSets;
 
             ControlSetInfo controlSet;
             DataFormItemType itemType = item.ItemType;
@@ -1172,7 +1260,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             return image;
         }
 
-        private Dictionary<DataFormItemType, ControlSetInfo> _DataFormControls;
+        private Dictionary<DataFormItemType, ControlSetInfo> _ControlsSets;
         /// <summary>
         /// Instance třídy, která obhospodařuje jeden typ (<see cref="DataFormItemType"/>) vizuálního controlu, a má až tři instance (Draw, Mouse, Focus)
         /// </summary>
@@ -1182,11 +1270,11 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// <summary>
             /// Vytvoří <see cref="ControlSetInfo"/> pro daný typ controlu
             /// </summary>
-            /// <param name="owner"></param>
+            /// <param name="dataForm"></param>
             /// <param name="itemType"></param>
-            public ControlSetInfo(IDxDataForm owner, DataFormItemType itemType)
+            public ControlSetInfo(DxDataForm dataForm, DataFormItemType itemType)
             {
-                _Owner = owner;
+                _DataForm = dataForm;
                 _ItemType = itemType;
                 switch (itemType)
                 {
@@ -1241,7 +1329,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 if (_Disposed) throw new InvalidOperationException($"Nelze pracovat s objektem 'ControlSetInfo', protože je zrušen.");
             }
-            private IDxDataForm _Owner;
+            /// <summary>Vlastník - <see cref="DxDataForm"/></summary>
+            private DxDataForm _DataForm;
             private DataFormItemType _ItemType;
             private Func<Control> _CreateControlFunction;
             private Func<DxDataFormItem, string> _GetKeyFunction;
@@ -1356,7 +1445,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             private DxSuperToolTip GetSuperTip(DxDataFormItem item, ControlUseMode mode)
             {
                 if (mode != ControlUseMode.Mouse) return null;
-                var superTip = _Owner.DxSuperToolTip;
+                var superTip = _DataForm.DxSuperToolTip;
                 superTip.LoadValues(item);
                 if (!superTip.IsValid) return null;
                 return superTip;
@@ -1426,7 +1515,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 control.Visible = false;
                 control.SetBounds(bounds);
                 bool addToBackground = (mode == ControlUseMode.Draw);
-                _Owner.AddControl(control, addToBackground);
+                _DataForm.AddControl(control, addToBackground);
                 return control;
             }
             private void _FillControl(DxDataFormItem item, Control control, ControlUseMode mode)
@@ -1456,7 +1545,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 if (control == null) return;
                 bool removeFromBackground = (mode == ControlUseMode.Draw);
-                _Owner.RemoveControl(control, removeFromBackground);
+                _DataForm.RemoveControl(control, removeFromBackground);
                 control.Dispose();
                 control = null;
             }
@@ -1469,13 +1558,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Sdílený objekt ToolTipu do všech controlů
         /// </summary>
-        DxSuperToolTip IDxDataForm.DxSuperToolTip { get { return this._DxSuperToolTip; } }
+        internal DxSuperToolTip DxSuperToolTip { get { return this._DxSuperToolTip; } }
         /// <summary>
         /// Daný control přidá do panelu na pozadí (control jen pro kreslení) anebo na popředí (control pro interakci).
         /// </summary>
         /// <param name="control"></param>
         /// <param name="addToBackground"></param>
-        void IDxDataForm.AddControl(Control control, bool addToBackground)
+        internal void AddControl(Control control, bool addToBackground)
         {
             if (control == null) return;
             if (addToBackground)
@@ -1488,7 +1577,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="control"></param>
         /// <param name="addToBackground"></param>
-        void IDxDataForm.RemoveControl(Control control, bool addToBackground)
+        internal void RemoveControl(Control control, bool addToBackground)
         {
             if (control == null) return;
             if (addToBackground)
@@ -1507,7 +1596,7 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// <summary>
     /// Rozhraní na interní věci DataForm panelu
     /// </summary>
-    public interface IDxDataForm
+    internal interface IDxDataFormxxx
     {
         /// <summary>
         /// DPI panelu
@@ -1534,31 +1623,164 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// Třída reprezentující jednu stránku v dataformu.
     /// Stránka obsahuje grupy.
     /// </summary>
-    public class DxDataFormPage : DataTextItem
+    internal class DxDataFormPage
     {
-        private IDxDataForm _Owner;
-        public DxDataFormGroup[] Groups { get; set; }
+        #region Konstruktor, vlastník, prvky
+        /// <summary>
+        /// Vytvoří a vrátí List obsahující <see cref="DxDataFormPage"/>, vytvořený z dodaných instancí <see cref="IDataFormPage"/>.
+        /// </summary>
+        /// <param name="dataForm"></param>
+        /// <param name="iPages"></param>
+        /// <returns></returns>
+        public static List<DxDataFormPage> CreateList(DxDataForm dataForm, IEnumerable<IDataFormPage> iPages)
+        {
+            List<DxDataFormPage> dataPages = new List<DxDataFormPage>();
+            if (iPages != null)
+            {
+                foreach (IDataFormPage iPage in iPages)
+                {
+                    if (iPage == null) continue;
+                    DxDataFormPage dataPage = new DxDataFormPage(dataForm, iPage);
+                    dataPages.Add(dataPage);
+                }
+            }
+            return dataPages;
+        }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="dataForm"></param>
+        /// <param name="iPage"></param>
+        public DxDataFormPage(DxDataForm dataForm, IDataFormPage iPage)
+        {
+            _DataForm = dataForm;
+            _IPage = iPage;
+            _Groups = DxDataFormGroup.CreateList(this, iPage?.Groups);
+        }
+        /// <summary>Vlastník - <see cref="DxDataForm"/></summary>
+        private DxDataForm _DataForm;
+        /// <summary>Deklarace stránky</summary>
+        private IDataFormPage _IPage;
+        /// <summary>Grupy</summary>
+        private List<DxDataFormGroup> _Groups;
+        /// <summary>
+        /// Vlastník - <see cref="DxDataForm"/>
+        /// </summary>
+        public DxDataForm DataForm { get { return _DataForm; } }
+        /// <summary>
+        /// Deklarace stránky
+        /// </summary>
+        public IDataFormPage IPage { get { return _IPage; } }
+        /// <summary>
+        /// Pole skupin na této stránce
+        /// </summary>
+        public IList<DxDataFormGroup> Groups { get { return _Groups; } }
+        /// <summary>
+        /// Stránka je aktivní? 
+        /// Po iniciaci se přebírá do GUI, následně udržuje GUI.
+        /// V jeden okamžik může být aktivních více stránek najednou, pokud je více stránek <see cref="IDataFormPage"/> mergováno do jedné záložky.
+        /// </summary>
+        public bool Active { get; set; }
+        #endregion
+
+
     }
     /// <summary>
-    /// Třída reprezentující jednu stránku v dataformu.
-    /// Stránka obsahuje grupy.
+    /// Třída reprezentující jednu grupu na stránce.
+    /// Grupa obsahuje prvky.
     /// </summary>
-    public class DxDataFormGroup
+    internal class DxDataFormGroup
     {
-        private IDxDataForm _Owner;
+        #region Konstruktor, vlastník, prvky
         /// <summary>
-        /// Velikost grupy daná designem = pro Zoom 100% a DPI = 96
+        /// Vytvoří a vrátí List obsahující <see cref="DxDataFormGroup"/>, vytvořený z dodaných instancí <see cref="IDataFormGroup"/>.
         /// </summary>
-        public Size DesignSize
+        /// <param name="dataPage"></param>
+        /// <param name="iGroups"></param>
+        /// <returns></returns>
+        public static List<DxDataFormGroup> CreateList(DxDataFormPage dataPage, IEnumerable<IDataFormGroup> iGroups)
         {
-            get { return __DesignSize; }
-            set
+            List<DxDataFormGroup> dataGroups = new List<DxDataFormGroup>();
+            if (iGroups != null)
             {
-                __DesignSize = value;
-                InvalidateBounds();
+                foreach (IDataFormGroup iGroup in iGroups)
+                {
+                    if (iGroup == null) continue;
+                    DxDataFormGroup dataGroup = new DxDataFormGroup(dataPage, iGroup);
+                    dataGroups.Add(dataGroup);
+                }
             }
+            return dataGroups;
         }
-        private Size __DesignSize;
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="dataPage"></param>
+        /// <param name="iGroup"></param>
+        public DxDataFormGroup(DxDataFormPage dataPage, IDataFormGroup iGroup)
+        {
+            _DataPage = dataPage;
+            _IGroup = iGroup;
+            _Items = DxDataFormItem.CreateList(this, iGroup?.Items);
+            _DetectContentLayout();
+        }
+        /// <summary>Vlastník - <see cref="DxDataFormPage"/></summary>
+        private DxDataFormPage _DataPage;
+        /// <summary>Deklarace grupy</summary>
+        private IDataFormGroup _IGroup;
+        /// <summary>Prvky</summary>
+        private List<DxDataFormItem> _Items;
+        /// <summary>
+        /// Vlastník - <see cref="DxDataForm"/>
+        /// </summary>
+        public DxDataForm DataForm { get { return this._DataPage?.DataForm; } }
+        /// <summary>
+        /// Vlastník - <see cref="DxDataFormPage"/>
+        /// </summary>
+        public DxDataFormPage DataPage { get { return _DataPage; } }
+        /// <summary>
+        /// Deklarace grupy
+        /// </summary>
+        public IDataFormGroup IGroup { get { return _IGroup; } }
+        /// <summary>
+        /// Jednotlivé prvky grupy
+        /// </summary>
+        public IList<DxDataFormItem> Items { get { return _Items; } }
+        /// <summary>
+        /// Metoda určí potřebné vnitřní designové hodnoty pro aktuální obsah
+        /// </summary>
+        /// <returns></returns>
+        private void _DetectContentLayout()
+        {
+            Padding padding = this._IGroup.DesignPadding;
+            _ContentDesignOrigin = new Point(padding.Left, padding.Top);
+
+            Rectangle contentBounds = DrawingExtensions.SummaryVisibleRectangle(this._Items.Select(i => (Rectangle?)i.DesignBounds)).Add(padding);
+            _ContentDesignSize = new Size(contentBounds.Right, contentBounds.Bottom);
+        }
+        #endregion
+        #region Souřadnice designové, aktuální, viditelné
+        /// <summary>
+        /// Na této souřadnici (designové) v rámci grupy začíná souřadnice 0/0 prvků.
+        /// </summary>
+        public Point ContentDesignOrigin { get { return _ContentDesignOrigin; } }
+        /// <summary>
+        /// Na této souřadnici (designové) v rámci grupy začíná souřadnice 0/0 prvků.
+        /// </summary>
+        private Point _ContentDesignOrigin;
+        /// <summary>
+        /// Vnější velikost grupy daná designem = pro Zoom 100% a DPI = 96.
+        /// Obsahuje Padding a sumu prostoru prvků Items uvnitř tohoto Padding.
+        /// </summary>
+        public Size ContentDesignSize { get { return _ContentDesignSize; } }
+        /// <summary>
+        /// Designová vnější velikost grupy, daná okraji Padding a sumou prostoru prvků.
+        /// </summary>
+        private Size _ContentDesignSize;
+
+
+
+
         /// <summary>
         /// Invaliduje souřadnice <see cref="CurrentSize"/> a <see cref="VisibleBounds"/>.
         /// </summary>
@@ -1579,7 +1801,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void CheckDesignSize()
         {
             if (!__CurrentSize.HasValue)
-                __CurrentSize = DxComponent.ZoomToGuiInt(__DesignSize, _Owner.DeviceDpi);
+                __CurrentSize = DxComponent.ZoomToGuiInt(__DesignSize, DataForm.DeviceDpi);
         }
         /// <summary>
         /// Aktuální logické koordináty - přepočtené z <see cref="DesignBounds"/> na aktuálně platné DPI.
@@ -1604,31 +1826,68 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public Rectangle? VisibleBounds { get { return __VisibleBounds; } set { __VisibleBounds = value; } }
         private Rectangle? __VisibleBounds;
-        /// <summary>
-        /// Jednotlivé prvky grupy
-        /// </summary>
-        public DxDataFormItem[] Items { get; set; }
+        #endregion
     }
     /// <summary>
-    /// Třída reprezentující jeden každý vizuální prvek v <see cref="DxDataFormV2"/>.
+    /// Třída reprezentující jeden každý vizuální prvek v <see cref="DxDataForm"/>.
     /// </summary>
-    public class DxDataFormItem : DataTextItem
+    internal class DxDataFormItem
     {
-        public DxDataFormItem(IDxDataForm owner, DataFormItemType itemType, string text)
+        #region Konstruktor, vlastník, prvky
+        /// <summary>
+        /// Vytvoří a vrátí List obsahující <see cref="DxDataFormItem"/>, vytvořený z dodaných instancí <see cref="IDataFormItem"/>.
+        /// </summary>
+        /// <param name="dataGroup"></param>
+        /// <param name="iItems"></param>
+        /// <returns></returns>
+        public static List<DxDataFormItem> CreateList(DxDataFormGroup dataGroup, IEnumerable<IDataFormItem> iItems)
+        {
+            List<DxDataFormItem> dataItems = new List<DxDataFormItem>();
+            if (iItems != null)
+            {
+                foreach (IDataFormItem iItem in iItems)
+                {
+                    if (iItem == null) continue;
+                    DxDataFormItem dataItem = new DxDataFormItem(dataGroup, iItem);
+                    dataItems.Add(dataItem);
+                }
+            }
+            return dataItems;
+        }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="dataGroup"></param>
+        /// <param name="iItem"></param>
+        public DxDataFormItem(DxDataFormGroup dataGroup, IDataFormItem iItem)
             : base()
         {
-            _Owner = owner;
-            _ItemType = itemType;
-            Text = text;
-            IsVisible = true;
-            HotTrackingEnabled = (itemType != DataFormItemType.Label);
+            _DataGroup = dataGroup;
+            _IItem = iItem;
         }
+        /// <summary>Vlastník - <see cref="DxDataFormGroup"/></summary>
+        private DxDataFormGroup _DataGroup;
+        /// <summary>Deklarace prvku</summary>
+        private IDataFormItem _IItem;
+        /// <summary>
+        /// Vlastník - <see cref="DxDataForm"/>
+        /// </summary>
+        public DxDataForm DataForm { get { return this._DataGroup?.DataPage?.DataForm; } }
+        /// <summary>
+        /// Vlastník - <see cref="DxDataFormPage"/>
+        /// </summary>
+        public DxDataFormPage DataPage { get { return _DataGroup?.DataPage; } }
+        /// <summary>
+        /// Vlastník - <see cref="DxDataFormGroup"/>
+        /// </summary>
+        public DxDataFormGroup DataGroup { get { return _DataGroup; } }
+        /// <summary>
+        /// Deklarace prvku
+        /// </summary>
+        public IDataFormItem IItem { get { return _IItem; } }
+        #endregion
 
-        private IDxDataForm _Owner;
-        private DataFormItemType _ItemType;
-        private string _Text;
-
-        public DataFormItemType ItemType { get { return _ItemType; } }
+        public DataFormItemType ItemType { get { return _IItem.ItemType; } }
         public bool IsVisible { get; set; }
 
         #region Vzhled
@@ -1697,7 +1956,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void CheckDesignBounds()
         {
             if (!__CurrentBounds.HasValue)
-                __CurrentBounds = DxComponent.ZoomToGuiInt(__DesignBounds, _Owner.DeviceDpi);
+                __CurrentBounds = DxComponent.ZoomToGuiInt(__DesignBounds, _DataForm.DeviceDpi);
         }
         /// <summary>
         /// Fyzické pixelové souřadnice tohoto prvku na vizuálním controlu, kde se nyní tento prvek nachází.
@@ -1729,37 +1988,68 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         #endregion
     }
+    #region Enum RefreshParts
     /// <summary>
-    /// Viditelnost grupy
+    /// Položky pro refresh
     /// </summary>
-    public enum DataFormGroupVisibility
+    [Flags]
+    internal enum RefreshParts
     {
+        /// <summary>
+        /// Nic
+        /// </summary>
         None = 0,
-        VisibleAll,
-        VisibleHead,
-        Invisible
-    }
-    /// <summary>
-    /// Druh prvku v DataFormu
-    /// </summary>
-    public enum DataFormItemType
-    {
-        None = 0,
-        Label,
-        TextBox,
-        EditBox,
-        SpinnerBox,
-        CheckBox,
-        BreadCrumb,
-        ComboBoxList,
-        ComboBoxEdit,
-        ListView,
-        TreeView,
-        RadioButtonBox,
-        Button,
-        CheckButton,
-        DropDownButton,
-        Image
-    }
+        /// <summary>
+        /// Zajistit přepočet CurrentBounds v prvcích (=provést InvalidateBounds) = provádí se po změně Zoomu a/nebo DPI
+        /// </summary>
+        InvalidateCurrentBounds = 0x0001,
+        /// <summary>
+        /// Přepočítat celkovou velikost obsahu
+        /// </summary>
+        RecalculateContentTotalSize = 0x0002,
+        /// <summary>
+        /// Určit aktuálně viditelné prvky
+        /// </summary>
+        ReloadVisibleItems = 0x0004,
+        /// <summary>
+        /// Resetovat cache předvykreslených controlů
+        /// </summary>
+        InvalidateCache = 0x0010,
+        /// <summary>
+        /// Znovuvykreslit grafiku
+        /// </summary>
+        InvalidateControl = 0x0100,
+        /// <summary>
+        /// Explicitně vyvolat i metodu <see cref="Control.Refresh()"/>
+        /// </summary>
+        RefreshControl = 0x0200,
 
+        /// <summary>
+        /// Po změně prvků (přidání, odebrání, změna hodnot) (<see cref="RecalculateContentTotalSize"/> + <see cref="ReloadVisibleItems"/>).
+        /// Tato hodnota je Silent = neobsahuje <see cref="InvalidateControl"/>.
+        /// </summary>
+        AfterItemsChangedSilent = RecalculateContentTotalSize | ReloadVisibleItems,
+        /// <summary>
+        /// Po změně prvků (přidání, odebrání, změna hodnot) (<see cref="RecalculateContentTotalSize"/> + <see cref="ReloadVisibleItems"/> + <see cref="InvalidateControl"/>).
+        /// Tato hodnota není Silent = obsahuje i invalidaci <see cref="InvalidateControl"/> = překreslení controlu.
+        /// <para/>
+        /// Toto je standardní refresh.
+        /// </summary>
+        AfterItemsChanged = RecalculateContentTotalSize | ReloadVisibleItems | InvalidateControl,
+        /// <summary>
+        /// Po scrollování (<see cref="ReloadVisibleItems"/> + <see cref="InvalidateControl"/>)
+        /// </summary>
+        AfterScroll = ReloadVisibleItems | InvalidateControl,
+        /// <summary>
+        /// Po změně prvků (přidání, odebrání, změna hodnot) (<see cref="RecalculateContentTotalSize"/> + <see cref="ReloadVisibleItems"/> + <see cref="InvalidateControl"/>).
+        /// <para/>
+        /// Toto je standardní refresh.
+        /// </summary>
+        Default = AfterItemsChanged,
+        /// <summary>
+        /// Všechny akce, včetně invalidace cache (brutální refresh)
+        /// </summary>
+        All = RecalculateContentTotalSize | ReloadVisibleItems | InvalidateCache | InvalidateControl
+    }
+    #endregion
 }
