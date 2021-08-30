@@ -1,4 +1,9 @@
-﻿using System;
+﻿// Supervisor: David Janáček, od 01.02.2021
+// Part of Helios Nephrite, proprietary software, (c) Asseco Solutions, a. s.
+// Redistribution and use in source and binary forms, with or without modification, 
+// is not permitted without valid contract with Asseco Solutions, a. s.
+
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
@@ -6,7 +11,6 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
-using System.Drawing;
 
 using DevExpress.XtraEditors;
 
@@ -19,7 +23,7 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// </summary>
     public class DxDataForm : DxPanelControl
     {
-        #region Konstruktor
+        #region Konstruktor a jednoduché property
         /// <summary>
         /// Konstruktor
         /// </summary>
@@ -37,32 +41,32 @@ namespace Noris.Clients.Win.Components.AsolDX
             base.Dispose(disposing);
         }
         /// <summary>
+        /// Vytvoří vlastní panel DataForm
+        /// </summary>
+        private void InitializeDataFormPanel()
+        {
+            _DataFormPanel = new DxDataFormPanel(this);
+        }
+        /// <summary>
+        /// Disposuje vlastní panel DataForm
+        /// </summary>
+        private void DisposeDataFormPanel()
+        {
+            _DataFormPanel?.Dispose();
+            _DataFormPanel = null;
+        }
+        /// <summary>
+        /// Vlastní panel DataForm
+        /// </summary>
+        private DxDataFormPanel _DataFormPanel;
+        /// <summary>
         /// Okraje kolem vlastních prvků
         /// </summary>
-        public Padding ContentPadding { get { return _DataFormPanel.ContentPadding; } set { _DataFormPanel.ContentPadding = value; } }
-
-
-        /*
-
+        public Padding ContentPadding { get { return _DataFormPanel.DesignContentPadding; } set { _DataFormPanel.DesignContentPadding = value; } }
         /// <summary>
-        /// Počet prvků
+        /// Jsou aktivní zápisy do logu? Default = false
         /// </summary>
-        public int ItemsCount { get { return _Items.Count; } }
-        /// <summary>
-        /// Počet aktuálně viditelných prvků
-        /// </summary>
-        public int VisibleItemsCount { get { return _VisibleItems.Count; } }
-        /// <summary>
-        /// Pole prvků.
-        /// Přídávání a odebírání řeší metody Add a Remove.
-        /// </summary>
-        public DxDataFormItem[] Items { get { return _Items.ToArray(); } }
-        /// <summary>
-        /// Souhrnná souřadnice všech prvků v <see cref="Items"/>
-        /// </summary>
-        public Rectangle? ItemsSummaryBounds { get { return DrawingExtensions.SummaryRectangle(_Items.Select(i => (Rectangle?)i.CurrentBounds)); } }
-
-        */
+        public override bool LogActive { get { return base.LogActive; } set { base.LogActive = value; _DataFormPanel.LogActive = value; } }
         #endregion
         #region Zobrazované prvky = data stránek a vlastní data
         /// <summary>
@@ -115,25 +119,26 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Data jednotlivých stránek
         /// </summary>
         private List<DxDataFormPage> _DataFormPages;
+
+        #endregion
+        #region Vztah do DxDataFormPanel
         /// <summary>
-        /// Vytvoří vlastní panel DataForm
+        /// Sdílený objekt ToolTipu do všech controlů
         /// </summary>
-        private void InitializeDataFormPanel()
-        {
-            _DataFormPanel = new DxDataFormPanel(this);
-        }
+        internal DxSuperToolTip DxSuperToolTip { get { return _DataFormPanel?.DxSuperToolTip; } }
+
         /// <summary>
-        /// Disposuje vlastní panel DataForm
+        /// Daný control přidá do panelu na pozadí (control jen pro kreslení) anebo na popředí (control pro interakci).
         /// </summary>
-        private void DisposeDataFormPanel()
-        {
-            _DataFormPanel?.Dispose();
-            _DataFormPanel = null;
-        }
+        /// <param name="control"></param>
+        /// <param name="addToBackground"></param>
+        internal void AddControl(Control control, bool addToBackground) { _DataFormPanel?.AddControl(control, addToBackground); }
         /// <summary>
-        /// vlastní panel DataForm
+        /// Daný control odebere z panelu na pozadí (control jen pro kreslení) anebo na popředí (control pro interakci).
         /// </summary>
-        private DxDataFormPanel _DataFormPanel;
+        /// <param name="control"></param>
+        /// <param name="removeFromBackground"></param>
+        internal void RemoveControl(Control control, bool removeFromBackground) { _DataFormPanel?.RemoveControl(control, removeFromBackground); }
         #endregion
     }
     /// <summary>
@@ -227,11 +232,21 @@ namespace Noris.Clients.Win.Components.AsolDX
 namespace Noris.Clients.Win.Components.AsolDX.DataForm
 {
     /// <summary>
-    /// Jeden panel dataformu
+    /// Jeden panel dataformu: reprezentuje základní panel, hostuje v sobě dva ScrollBary 
+    /// a ContentPanel, v němž se zobrazují grupy a v nich itemy.
+    /// <para/>
+    /// Panel <see cref="DxDataFormPanel"/> je zobrazován v <see cref="DxDataForm"/> buď v celé jeho ploše (to když DataForm obsahuje jen jednu stránku),
+    /// anebo je v <see cref="DxDataForm"/> zobrazen záložkovník <see cref="DxTabPane"/>, a v každé záložce je zobrazován zdejší panel <see cref="DxDataFormPanel"/>,
+    /// obsahuje pak jen grupy jedné konkrétní stránky.
+    /// Toto řídí třída <see cref="DxDataForm"/> podle dodaných stránek a podle dynamického layoutu.
     /// </summary>
     internal class DxDataFormPanel : DxScrollableContent
     {
         #region Konstruktor a vztah na DxDataForm
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="dataForm"></param>
         public DxDataFormPanel(DxDataForm dataForm)
         {
             _DataForm = dataForm;
@@ -240,12 +255,12 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             this.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.Style3D;
 
             InitializeContentPanel();
-            InitializeInteractivity();
-            InitializeItems();
+            InitializeGroups();
+            InitializeControls();
             InitializePaint();
-
-
+            InitializeInteractivity();
         }
+        /// <summary>Vlastník - <see cref="DxDataForm"/></summary>
         private DxDataForm _DataForm;
         /// <summary>
         /// Dispose panelu
@@ -253,9 +268,11 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="disposing"></param>
         protected override void Dispose(bool disposing)
         {
-            this.DisposeControls();
-            this.InvalidateImageCache();
-            this._Items.Clear();
+            DisposeControls();
+            InvalidateImageCache();
+            _Groups?.Clear();
+            DisposeGroups();
+            DisposeContentPanel();
             base.Dispose(disposing);
 
             _DataForm = null;
@@ -266,67 +283,144 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         private void InitializeContentPanel()
         {
             this._ContentPanel = new DxPanelBufferedGraphic() { Visible = true, BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder };
-            this._ContentPanel.LogActive = true;
-            this._ContentPanel.Layers = new DxBufferedLayer[] { DxBufferedLayer.AppBackground, DxBufferedLayer.MainLayer };       // Tady můžu přidat další vrstvy, když budu chtít kreslit 'pod' anebo 'nad' hlavní prvky
-            this._ContentPanel.PaintLayer += _ContentPanel_PaintLayer;                             // A tady bych pak musel reagovat na kreslení přidaných vrstev...
+            this._ContentPanel.LogActive = this.LogActive;
+            this._ContentPanel.Layers = BufferedLayers;                        // Tady můžu přidat další vrstvy, když budu chtít kreslit 'pod' anebo 'nad' hlavní prvky
+            this._ContentPanel.PaintLayer += _ContentPanel_PaintLayer;         // A tady bych pak musel reagovat na kreslení přidaných vrstev...
             this.ContentControl = this._ContentPanel;
         }
-        private DxPanelBufferedGraphic _ContentPanel;
         /// <summary>
-        /// Souhrn vrstev použitých v this controlu, používá se při invalidaci všech vrstev
+        /// Disposuje panel <see cref="_ContentPanel"/>
         /// </summary>
-        private static DxBufferedLayer UsedLayers { get { return DxBufferedLayer.AppBackground | DxBufferedLayer.MainLayer; } }
-        /// <summary>
-        /// Inicializuje pole prvků
-        /// </summary>
-        private void InitializeItems()
+        private void DisposeContentPanel()
         {
-            _Items = new List<DxDataFormItem>();
-            _VisibleItems = new List<DxDataFormItem>();
-            _ContentPadding = new Padding(0);
-            _DxSuperToolTip = new DxSuperToolTip() { AcceptTitleOnlyAsValid = false };
+            this.ContentControl = null;
+            if (this._ContentPanel != null)
+            {
+                this._ContentPanel.PaintLayer -= _ContentPanel_PaintLayer;
+                this._ContentPanel.Dispose();
+                this._ContentPanel = null;
+            }
         }
-        private List<DxDataFormItem> _Items;
-        private List<DxDataFormItem> _VisibleItems;
-        private Padding _ContentPadding;
-        private DxSuperToolTip _DxSuperToolTip;
+        /// <summary>
+        /// Panel, ve kterém se vykresluje i hostuje obsah DataFormu. Panel je <see cref="DxPanelBufferedGraphic"/>, 
+        /// ale z hlediska <see cref="DxDataForm"/> nemá žádnou funkcionalitu, ta je soustředěna do <see cref="DxDataFormPanel"/>.
+        /// </summary>
+        private DxPanelBufferedGraphic _ContentPanel;
+       
 
 
 
         #endregion
         #region Public vlastnosti
+        
+
+        #endregion
+
+        #region Grupy a jejich Items, viditelné grupy a viditelné itemy
         /// <summary>
-        /// Okraje kolem vlastních prvků
+        /// Zobrazované grupy a jejich prvky
         /// </summary>
-        public Padding ContentPadding
+        public List<DxDataFormGroup> Groups { get { return _Groups; } set { _SetGroups(value); } }
+        /// <summary>
+        /// Okraje kolem vlastních prvků, designová hodnota
+        /// </summary>
+        public Padding DesignContentPadding { get { return _DesignContentPadding; } set { _DesignContentPadding = value; _RecalcDesignPanelValues(); Refresh(RefreshParts.AfterItemsChanged); } }
+        /// <summary>
+        /// Okraje kolem vlastních prvků, aktuální reálná hodnota
+        /// </summary>
+        private Padding CurrentContentPadding { get { return _CurrentContentPadding; } } private Padding _CurrentContentPadding;
+        /// <summary>
+        /// Inicializuje pole prvků
+        /// </summary>
+        private void InitializeGroups()
         {
-            get { return _ContentPadding; }
-            set
+            _VisibleItems = new List<DxDataFormItem>();
+            _DesignContentPadding = new Padding(0);
+            _CurrentContentPadding = new Padding(0);
+        }
+        /// <summary>
+        /// Vloží do sebe dané grupy a zajistí minimální potřebné refreshe
+        /// </summary>
+        /// <param name="groups"></param>
+        private void _SetGroups(List<DxDataFormGroup> groups)
+        {
+            DisposeGroups();
+            if (groups != null)
+                _Groups = groups.ToList();
+
+            Refresh(RefreshParts.AfterItemsChangedSilent);
+        }
+        /// <summary>
+        /// Invaliduje aktuální rozměry všech grup v this objektu
+        /// </summary>
+        /// <returns></returns>
+        private void _InvalidatGroupsCurrentBounds()
+        {
+            _RecalcDesignPanelValues();
+            _Groups?.ForEachExec(g => g.InvalidateBounds());
+
+            _LastCalcZoom = DxComponent.Zoom;
+            _LastCalcDeviceDpi = this.CurrentDpi;
+        }
+        /// <summary>
+        /// Přepočte zdejší Current souřadnice podle Design hodnot, nikoli ale souřadnice pro grupy a items. 
+        /// To zařizuje metoda <see cref="_InvalidatGroupsCurrentBounds()"/>.
+        /// </summary>
+        private void _RecalcDesignPanelValues()
+        {
+            _CurrentContentPadding = DxComponent.ZoomToGuiInt(this.DesignContentPadding, this.CurrentDpi);
+        }
+        /// <summary>
+        /// Metoda projde aktuální grupy a vrátí velikost prostoru, do kterého se vejde souhrn jejich aktuálních souřadnic včetně okrajů.
+        /// Tato velikost se pak používá pro řízení scrollování.
+        /// </summary>
+        /// <returns></returns>
+        private Size _GetGroupsTotalCurrentSize()
+        {
+            if (_Groups == null) return Size.Empty;
+            Rectangle bounds = _Groups.Select(g => g.CurrentBounds).SummaryVisibleRectangle() ?? Rectangle.Empty;
+            var padding = CurrentContentPadding;
+            int w = padding.Left + bounds.Right + padding.Right;
+            int h = padding.Top + bounds.Bottom + padding.Bottom;
+            return  new Size(w, h);
+        }
+        /// <summary>
+        /// Připraví souhrn viditelných grup a prvků
+        /// </summary>
+        private void _PrepareVisibleGroupsItems()
+        {
+            Rectangle virtualBounds = this.ContentVirtualBounds;
+            this._VisibleGroups = this._Groups?.Where(g => g.IsVisibleInVirtualBounds(virtualBounds)).ToList();
+            this._VisibleItems = this._VisibleGroups?.SelectMany(g => g.Items).Where(i => i.IsVisibleInVirtualBounds(virtualBounds)).ToList();
+        }
+        /// <summary>
+        /// Zahodí všechny položky o grupách a prvcích z this instance
+        /// </summary>
+        private void DisposeGroups()
+        {
+            if (_Groups != null)
             {
-                _ContentPadding = value;
-                Refresh(RefreshParts.AfterItemsChanged);
+                _Groups.Clear();
+                _Groups = null;
+            }
+            if (_VisibleGroups != null)
+            {
+                _VisibleGroups.Clear();
+                _VisibleGroups = null;
+            }
+            if (_VisibleItems != null)
+            {
+                _VisibleItems.Clear();
+                _VisibleItems = null;
             }
         }
-
+        private List<DxDataFormGroup> _Groups;
+        private List<DxDataFormGroup> _VisibleGroups;
+        // private List<DxDataFormItem> _Items;
+        private List<DxDataFormItem> _VisibleItems;
+        private Padding _DesignContentPadding;
         #endregion
 
-        #region Testovací prvky
-
-        private void InitializeSampleControls()
-        {
-            _Label = new DxLabelControl() { Bounds = new Rectangle(20, 52, 70, 18), Text = "Popis", TabIndex = 1 };
-            _ContentPanel.Controls.Add(_Label);
-            _TextBox = new DxTextEdit() { Bounds = new Rectangle(100, 50, 80, 20), Text = "Pokus", TabIndex = 2, TabStop = false };
-            _ContentPanel.Controls.Add(_TextBox);
-            _CheckBox = new DxCheckEdit() { Bounds = new Rectangle(210, 50, 100, 20), Text = "Předvolba", TabIndex = 3, TabStop = false };
-            _ContentPanel.Controls.Add(_CheckBox);
-        }
-        public DxTextEdit TextBox { get { return _TextBox; } }
-        private DxLabelControl _Label;
-        private DxTextEdit _TextBox;
-        private DxCheckEdit _CheckBox;
-
-        #endregion
 
         #region Interaktivita
         private void InitializeInteractivity()
@@ -597,10 +691,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         {
             _RefreshPartCurrentBounds = false;
 
-            _Items.ForEachExec(i => i.InvalidateBounds());
-
-            _LastCalcZoom = DxComponent.Zoom;
-            _LastCalcDeviceDpi = this.CurrentDpi;
+            _InvalidatGroupsCurrentBounds();
         }
         /// <summary>
         /// Provede akci Refresh, <see cref="RefreshParts.RecalculateContentTotalSize"/>
@@ -609,11 +700,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         {
             _RefreshPartContentTotalSize = false;
 
-            Rectangle summaryContentBounds = this.ItemsSummaryBounds ?? Rectangle.Empty;
-            var padding = DxComponent.ZoomToGuiInt(this.ContentPadding, this.CurrentDpi);
-            int w = padding.Left + summaryContentBounds.Right + padding.Right;
-            int h = padding.Top + summaryContentBounds.Bottom + padding.Bottom;
-            ContentTotalSize = new Size(w, h);
+            ContentTotalSize = _GetGroupsTotalCurrentSize();
         }
         /// <summary>
         /// Provede akci Refresh, <see cref="RefreshParts.ReloadVisibleItems"/>
@@ -622,12 +709,11 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         {
             _RefreshPartVisibleItems = false;
 
-            // Uložím soupis aktuálně viditelných prvků:
-            Rectangle virtualBounds = this.ContentVirtualBounds;
-            this._VisibleItems = this._Items.Where(i => i.IsVisibleInVirtualBounds(virtualBounds)).ToList();
-
             // Po změně viditelných prvků je třeba provést MouseLeave = prvek pod myší už není ten, co býval:
             this.MouseItemLeave();
+
+            // Připravím soupis aktuálně viditelných prvků:
+            _PrepareVisibleGroupsItems();
 
             // A zajistit, že po vykreslení prvků bude aktivován prvek, který se nachází pod myší:
             // Až po vykreslení proto, že proces vykreslení určí aktuální viditelné souřadnice prvků!
@@ -663,109 +749,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
 
             base.Refresh();
         }
-
-
-        // odstranit:
-
-        /// <summary>
-        /// Zajistí provedení refreshů pro jednotlivé položky, vše v jednom cyklu přes všechny položky
-        /// </summary>
-        /// <param name="refreshParts"></param>
-        private void RefreshItems(RefreshParts refreshParts)
-        {   // Tento algoritmus NENÍ REÁLNĚ POUŽITELNÝ.
-            // Proč? Protože nelze současně určovat SUMÁRNÍ VELIKOST všech prvků (ContentTotalSize), a přitom určovat VIDITELNOST prvků.
-            // Proč? Protože SUMÁRNÍ VELIKOST ovlivňuje ContentVirtualBounds a přitom její hodnota je známa AŽ PO ZPACOVÁNÍ VŠECH PRVKŮ
-            //       a přitom tedy NELZE průběžně určovat VIDITELNOST PRVKŮ v prostoru ContentVirtualBounds,
-            //       protože dokud nebudou zmapovaány všechny prvky do ContentTotalSize => ContentVirtualBounds,
-            //       tak není možno pouívat ContentVirtualBounds pro vyhodnocení viditelnosti prvku.
-            bool doInvalidBounds = refreshParts.HasFlag(RefreshParts.InvalidateCurrentBounds);
-            decimal currentZoom = DxComponent.Zoom;
-            int currentDpi = this.CurrentDpi;
-            if (_LastCalcZoom != currentZoom || _LastCalcDeviceDpi != currentDpi)
-                doInvalidBounds = true;
-            bool doRecalcTotalSize = refreshParts.HasFlag(RefreshParts.RecalculateContentTotalSize);
-            bool doVisibleItems = refreshParts.HasFlag(RefreshParts.ReloadVisibleItems);
-
-            // Pokud není třeba dělat nic s položkami, skončíme hned:
-            if (!doInvalidBounds && !doRecalcTotalSize && !doVisibleItems) return;
-
-            int count = _Items.Count;
-            Rectangle virtualBounds = this.ContentVirtualBounds;
-            List<DxDataFormItem> visibleItems = new List<DxDataFormItem>();
-            int l = 0, t = 0, r = 0, b = 0;
-            for (int i = 0; i < count; i++)
-            {   // Všechny refreshe, týkající se prvků provedu v jednom cyklu:
-                var item = _Items[i];
-
-                // Nejprve invalidace souřadnic; protože jejich následné čtení zajistí jejich přepočet:
-                if (doInvalidBounds) item.InvalidateBounds();
-
-                if (doRecalcTotalSize || doVisibleItems)
-                {
-                    Rectangle currentBounds = item.CurrentBounds;
-
-                    // TotalContentSize:
-                    if (doRecalcTotalSize)
-                    {
-                        if (i == 0)
-                        {
-                            l = currentBounds.Left;
-                            t = currentBounds.Top;
-                            r = currentBounds.Right;
-                            b = currentBounds.Bottom;
-                        }
-                        else
-                        {
-                            if (currentBounds.Left < l) l = currentBounds.Left;
-                            if (currentBounds.Top < t) t = currentBounds.Top;
-                            if (currentBounds.Right > r) r = currentBounds.Right;
-                            if (currentBounds.Bottom > b) b = currentBounds.Bottom;
-                        }
-                    }
-
-                    // VisibleItems:
-                    if (doVisibleItems)
-                    {
-                        bool isVisible = (item.IsVisible && virtualBounds.Contains(currentBounds, true));
-                        if (isVisible)
-                            visibleItems.Add(item);
-                        if (item.VisibleBounds.HasValue)
-                            item.VisibleBounds = null;               // Souřadnici VisibleBounds nulujeme tehdy, když tam je nenulová - tj. i pro Visible prvky. (Protože jejich Visible souřadnici teprve určíme v procesu Paint, tady ji počítat nebudu)
-                    }
-                }
-            }
-
-            // Závěrečné výpočty
-
-            // TotalContentSize:
-            if (doRecalcTotalSize)
-            {
-                Rectangle summaryBounds = Rectangle.FromLTRB(l, t, r, b);
-                var padding = DxComponent.ZoomToGuiInt(this.ContentPadding, currentDpi);
-                int w = padding.Left + summaryBounds.Right + padding.Right;
-                int h = padding.Top + summaryBounds.Bottom + padding.Bottom;
-                ContentTotalSize = new Size(w, h);
-            }
-
-            // VisibleItems:
-            if (doVisibleItems)
-            {
-                // Uložím soupis aktuálně viditelných prvků:
-                this._VisibleItems = visibleItems;
-
-                // Po změně viditelných prvků je třeba provést MouseLeave = prvek pod myší už není ten, co býval:
-                this.MouseItemLeave();
-
-                // A zajistit, že po vykreslení prvků bude aktivován prvek, který se nachází pod myší:
-                // Až po vykreslení proto, že proces vykreslení určí aktuální viditelné souřadnice prvků!
-                this._AfterPaintSearchActiveItem = true;
-            }
-            _LastCalcZoom = currentZoom;
-            _LastCalcDeviceDpi = currentDpi;
-        }
-
-
-
         /// <summary>
         /// Po změně DPI je třeba provést kompletní refresh (souřadnice, cache, atd)
         /// </summary>
@@ -799,10 +782,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// DPI this controlu, po který byly posledně přepočteny CurrentBounds
         /// </summary>
         private int _LastCalcDeviceDpi;
-        /// <summary>
-        /// Aktuálně platná hodnota DeviceDpi
-        /// </summary>
-        int IDxDataForm.DeviceDpi { get { return this.CurrentDpi; } }
         #endregion
         #region Vykreslování a Bitmap cache
         #region Vykreslení celého Contentu
@@ -909,7 +888,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 _PaintingItems = true;
                 int x = 0;
                 int y = 0;
-                Rectangle? sumBounds = ItemsSummaryBounds;
+                Rectangle? sumBounds = new Rectangle(Point.Empty, this.ContentTotalSize);
                 int maxX = size.Width - (sumBounds?.Right ?? 0) - 12;
                 int maxY = size.Height - (sumBounds?.Bottom ?? 0) - 12;
                 while (count > 0)
@@ -961,6 +940,15 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 }
             }
         }
+        /// <summary>
+        /// Pole jednotlivých vrstev bufferované grafiky
+        /// </summary>
+        private static DxBufferedLayer[] BufferedLayers { get { return new DxBufferedLayer[] { DxBufferedLayer.AppBackground, DxBufferedLayer.MainLayer }; } }
+        /// <summary>
+        /// Souhrn vrstev použitých v this controlu, používá se při invalidaci všech vrstev
+        /// </summary>
+        private static DxBufferedLayer UsedLayers { get { return DxBufferedLayer.AppBackground | DxBufferedLayer.MainLayer; } }
+
         private bool _AfterPaintSearchActiveItem;
         private long _PaintLoop;
         private bool _PaintingItems = false;
@@ -1188,6 +1176,14 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         #endregion
         #region Fyzické controly - tvorba, správa, vykreslení bitmapy skrze control
         /// <summary>
+        /// Inicializuje data fyzických controlů (<see cref="_ControlsSets"/>, <see cref="_DxSuperToolTip"/>)
+        /// </summary>
+        private void InitializeControls()
+        {
+            _ControlsSets = new Dictionary<DataFormItemType, ControlSetInfo>();
+            _DxSuperToolTip = new DxSuperToolTip() { AcceptTitleOnlyAsValid = false };
+        }
+        /// <summary>
         /// Uvolní z paměti veškerá data fyzických controlů
         /// </summary>
         private void DisposeControls()
@@ -1199,14 +1195,13 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         }
         private ControlSetInfo GetControlSet(DxDataFormItem item)
         {
-            if (_ControlsSets == null) _ControlsSets = new Dictionary<DataFormItemType, ControlSetInfo>();
             var dataFormControls = _ControlsSets;
 
             ControlSetInfo controlSet;
             DataFormItemType itemType = item.ItemType;
             if (!dataFormControls.TryGetValue(itemType, out controlSet))
             {
-                controlSet = new ControlSetInfo(this, itemType);
+                controlSet = new ControlSetInfo(this._DataForm, itemType);
                 dataFormControls.Add(itemType, controlSet);
             }
             return controlSet;
@@ -1430,8 +1425,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                     bounds.Location = item.VisibleBounds.Value.Location;
                 }
 
-                control.Text = item.Text;
-                control.Enabled = item.Enabled;
+                if (item.IItem is IDataFormItemImageText iit)
+                    control.Text = iit.Text;
+                control.Enabled = true; // item.Enabled;
                 control.SetBounds(bounds);
                 control.Visible = true;
                 control.SuperTip = GetSuperTip(item, mode);
@@ -1446,7 +1442,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             {
                 if (mode != ControlUseMode.Mouse) return null;
                 var superTip = _DataForm.DxSuperToolTip;
-                superTip.LoadValues(item);
+                superTip.LoadValues(item.IItem);
                 if (!superTip.IsValid) return null;
                 return superTip;
             }
@@ -1458,7 +1454,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             private string GetStandardKeyForItem(DxDataFormItem item)
             {
                 var size = item.CurrentBounds.Size;
-                string text = item.Text ?? "";
+                string text = "";
+                if (item.IItem is IDataFormItemImageText iit)
+                    text = iit.Text;
                 string type = ((int)item.ItemType).ToString();
                 string key = $"{size.Width}.{size.Height};{type}::{text}";
                 return key;
@@ -1556,10 +1554,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         }
         private enum ControlUseMode { None, Draw, Mouse, Focus }
         /// <summary>
-        /// Sdílený objekt ToolTipu do všech controlů
-        /// </summary>
-        internal DxSuperToolTip DxSuperToolTip { get { return this._DxSuperToolTip; } }
-        /// <summary>
         /// Daný control přidá do panelu na pozadí (control jen pro kreslení) anebo na popředí (control pro interakci).
         /// </summary>
         /// <param name="control"></param>
@@ -1576,11 +1570,11 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Daný control odebere z panelu na pozadí (control jen pro kreslení) anebo na popředí (control pro interakci).
         /// </summary>
         /// <param name="control"></param>
-        /// <param name="addToBackground"></param>
-        internal void RemoveControl(Control control, bool addToBackground)
+        /// <param name="removeFromBackground"></param>
+        internal void RemoveControl(Control control, bool removeFromBackground)
         {
             if (control == null) return;
-            if (addToBackground)
+            if (removeFromBackground)
             {
                 if (this.Controls.Contains(control))
                     this.Controls.Remove(control);
@@ -1591,33 +1585,30 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                     this._ContentPanel.Controls.Remove(control);
             }
         }
-        #endregion
-    }
-    /// <summary>
-    /// Rozhraní na interní věci DataForm panelu
-    /// </summary>
-    internal interface IDxDataFormxxx
-    {
-        /// <summary>
-        /// DPI panelu
-        /// </summary>
-        int DeviceDpi { get; }
         /// <summary>
         /// Sdílený objekt ToolTipu do všech controlů
         /// </summary>
-        DxSuperToolTip DxSuperToolTip { get; }
-        /// <summary>
-        /// Daný control přidá do panelu na pozadí (control jen pro kreslení) anebo na popředí (control pro interakci).
-        /// </summary>
-        /// <param name="control"></param>
-        /// <param name="addToBackground"></param>
-        void AddControl(Control control, bool addToBackground);
-        /// <summary>
-        /// Daný control odebere z panelu na pozadí (control jen pro kreslení) anebo na popředí (control pro interakci).
-        /// </summary>
-        /// <param name="control"></param>
-        /// <param name="addToBackground"></param>
-        void RemoveControl(Control control, bool addToBackground);
+        internal DxSuperToolTip DxSuperToolTip { get { return this._DxSuperToolTip; } }
+        private DxSuperToolTip _DxSuperToolTip;
+        #endregion
+        #region Testovací prvky - zrušit!
+
+        private void InitializeSampleControls()
+        {
+            _Label = new DxLabelControl() { Bounds = new Rectangle(20, 52, 70, 18), Text = "Popis", TabIndex = 1 };
+            _ContentPanel.Controls.Add(_Label);
+            _TextBox = new DxTextEdit() { Bounds = new Rectangle(100, 50, 80, 20), Text = "Pokus", TabIndex = 2, TabStop = false };
+            _ContentPanel.Controls.Add(_TextBox);
+            _CheckBox = new DxCheckEdit() { Bounds = new Rectangle(210, 50, 100, 20), Text = "Předvolba", TabIndex = 3, TabStop = false };
+            _ContentPanel.Controls.Add(_CheckBox);
+        }
+        public DxTextEdit TextBox { get { return _TextBox; } }
+        private DxLabelControl _Label;
+        private DxTextEdit _TextBox;
+        private DxCheckEdit _CheckBox;
+
+        #endregion
+
     }
     /// <summary>
     /// Třída reprezentující jednu stránku v dataformu.
@@ -1826,6 +1817,18 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         public Rectangle? VisibleBounds { get { return __VisibleBounds; } set { __VisibleBounds = value; } }
         private Rectangle? __VisibleBounds;
+
+        /// <summary>
+        /// Vrátí true, pokud this prvek se nachází v rámci dané virtuální souřadnice.
+        /// Tedy pokud souřadnice <see cref="CurrentBounds"/> se alespoň zčásti nacházejí uvnitř souřadného prostoru dle parametru <paramref name="virtualBounds"/>.
+        /// </summary>
+        /// <param name="virtualBounds"></param>
+        /// <returns></returns>
+        public bool IsVisibleInVirtualBounds(Rectangle virtualBounds)
+        {
+            return (IsVisible && virtualBounds.Contains(CurrentBounds, true));
+        }
+
         #endregion
     }
     /// <summary>

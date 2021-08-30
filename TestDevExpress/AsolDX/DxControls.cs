@@ -2223,16 +2223,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Jsou aktivní zápisy do logu? Default = false
         /// </summary>
-        public override bool LogActive
-        {
-            get { return base.LogActive; }
-            set
-            {
-                base.LogActive = value;
-                if (_ContentControl != null && _ContentControl is DxPanelControl dxPanel)
-                    dxPanel.LogActive = value;
-            }
-        }
+        public override bool LogActive { get { return base.LogActive; } set { base.LogActive = value; if (_ContentControl != null && _ContentControl is DxPanelControl dxPanel) dxPanel.LogActive = value; } }
         #endregion
         #region Public vlastnosti - ContentPanel, Size, ContentVirtualBounds...
         /// <summary>
