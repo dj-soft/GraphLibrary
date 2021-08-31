@@ -673,7 +673,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="zoomDpi"></param>
         /// <param name="targetDpi"></param>
         /// <returns></returns>
-        private static int _ZoomDpiToGuiInt(int value, decimal zoomDpi, decimal targetDpi) { return (int)Math.Round((decimal)value * targetDpi * targetDpi, 0); }
+        private static int _ZoomDpiToGuiInt(int value, decimal zoomDpi, decimal targetDpi) { return (int)Math.Round((decimal)value * zoomDpi * targetDpi, 0); }
         /// <summary>
         /// Aktuální hodnota Zoomu
         /// </summary>

@@ -422,7 +422,7 @@ namespace TestDevExpress.Forms
             if (dataForm != null)
             {
                 var clientSize = _DxTestPanel.ClientSize;
-                int y = _DxTitleLabel.Bounds.Bottom + 6;
+                int y = _FocusInButton.Bounds.Bottom + 6;
                 dataForm.Bounds = new System.Drawing.Rectangle(6, y, clientSize.Width - 12, clientSize.Height - y - 6);
             }
         }

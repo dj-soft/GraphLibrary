@@ -196,6 +196,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             _AddControlToParent(_DataFormPanel, this);               // Zajistíme, že DataFormPanel bude přítomný jako náš přímý Child control
 
             _DataFormPanel.Groups = _DataFormTabs.FirstOrDefault()?.Groups;
+            _DataFormPanel.Visible = true;
         }
         private void PrepareTabPages()
         {
@@ -205,8 +206,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             _AddControlToParent(_DataFormTabPane, this);             // Zajistíme, že TabPane bude přítomný jako náš přímý Child control
 
 
-            _DataFormTabPane.Visible = false;
-
+            _DataFormTabPane.Visible = true;
         }
 
         /// <summary>
@@ -241,11 +241,19 @@ namespace Noris.Clients.Win.Components.AsolDX
             tabPane.SelectedPageChanging += TabPane_SelectedPageChanging;
             _DataFormTabPane = tabPane;
         }
-        private void TabPane_SelectedPageChanged(object sender, DevExpress.XtraBars.Navigation.SelectedPageChangedEventArgs e)
-        {
-        }
         private void TabPane_SelectedPageChanging(object sender, DevExpress.XtraBars.Navigation.SelectedPageChangingEventArgs e)
         {
+        }
+        private void TabPane_SelectedPageChanged(object sender, DevExpress.XtraBars.Navigation.SelectedPageChangedEventArgs e)
+        {
+            _PrepareDataFormPanel();
+            var type = e.Page.GetType();
+            var tabPage = e.Page as DevExpress.XtraBars.Navigation.TabNavigationPage;
+            var tabName = tabPage.Name;
+
+            _AddControlToParent(_DataFormPanel, tabPage);               // Zajistíme, že DataFormPanel bude přítomný jako náš přímý Child control
+            _DataFormPanel.Groups = null;
+            _DataFormPanel.Visible = true;
         }
 
         private void _PrepareDataFormTabPages()
@@ -253,7 +261,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             _DataFormTabPane.ClearPages();
             foreach (var dataTab in _DataFormTabs)
             {
-                _DataFormTabPane.AddNewPage(dataTab.TabName, dataTab.TabText);
+                _DataFormTabPane.AddNewPage(dataTab.TabName, dataTab.TabText, dataTab.TabToolTipText);
             };
         }
         /// <summary>
@@ -364,8 +372,26 @@ namespace Noris.Clients.Win.Components.AsolDX
         public static List<IDataFormPage> CreateSampleData(string[] texts, string[] tooltips, int sampleId, int rowCount)
         {
             List<IDataFormPage> pages = new List<IDataFormPage>();
-            DataFormPage page = new DataFormPage();
+            DataFormPage page;
+
+            page = CreateSamplePage(texts, tooltips, sampleId, rowCount, "Základní stránka", "Obsahuje běžné informace");
             pages.Add(page);
+
+            if (sampleId == 2)
+            {
+                page = CreateSamplePage(texts, tooltips, 3, 125, "Doplňková stránka", "Obsahuje další málo používané informace");
+                pages.Add(page);
+            }
+
+            return pages;
+        }
+        private static DataFormPage CreateSamplePage(string[] texts, string[] tooltips, int sampleId, int rowCount, string pageText, string pageToolTip)
+        {
+            DataFormPage page = new DataFormPage();
+            page.PageText = pageText;
+            page.ToolTipTitle = pageText;
+            page.ToolTipText = pageToolTip;
+
             DataFormGroup group = new DataFormGroup();
             group.AutoGroupSizePadding = new Padding(12, 12, 12, 12);
             page.Groups.Add(group);
@@ -385,7 +411,11 @@ namespace Noris.Clients.Win.Components.AsolDX
                     break;
                 case 2:
                     widths = new int[] { 80, 150, 80, 60, 100, 120, 160, 40, 120, 180, 80, 40, 60, 250 };
-                    addY = 22;
+                    addY = 21;
+                    break;
+                case 3:
+                    widths = new int[] { 250, 250, 60, 250, 250, 60, 250 };
+                    addY = 30;
                     break;
             }
             int count = rowCount;
@@ -432,7 +462,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 y += addY;
             }
 
-            return pages;
+            return page;
         }
     }
 }
@@ -520,7 +550,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         
 
         #endregion
-
         #region Grupy a jejich Items, viditelné grupy a viditelné itemy
         /// <summary>
         /// Zobrazované grupy a jejich prvky
@@ -1065,7 +1094,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             {
                 _PaintingItems = false;
             }
-            DxComponent.LogAddLineTime($"DxDataFormV2 Paint Standard() Items: {_VisibleItems.Count}; Time: {DxComponent.LogTokenTimeMilisec}", startTime);
+            DxComponent.LogAddLineTime($"DxDataFormV2 Paint Standard() Items: {_VisibleItems?.Count}; Time: {DxComponent.LogTokenTimeMilisec}", startTime);
         }
         private void OnPaintContentPerformaceTest(DxBufferedGraphicPaintArgs e)
         {
@@ -1844,6 +1873,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Titulek záložky = <see cref="IDataFormPage.PageText"/>, případně sloučený z více stránek
         /// </summary>
         public string TabText { get { return Pages.Select(p => p.PageText).ToOneString(" + "); } }
+        public string TabToolTipTitle { get { return Pages.Select(p => p.ToolTipTitle).ToOneString(); } }
+        public string TabToolTipText { get { return Pages.Select(p => p.ToolTipText).ToOneString(); } }
         /// <summary>
         /// Zobrazované grupy a jejich prvky. Jde o souhrn skupin z přítomných stránek.
         /// </summary>
@@ -1920,6 +1951,18 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Titulek stránky
         /// </summary>
         public string PageText { get { return IPage.PageText; } }
+        /// <summary>
+        /// Titulek ToolTipu. Pokud nebude naplněn, vezme se text prvku.
+        /// </summary>
+        public string ToolTipTitle { get { return IPage.ToolTipTitle; } }
+        /// <summary>
+        /// Text ToolTipu
+        /// </summary>
+        public string ToolTipText { get { return IPage.ToolTipText; } }
+        /// <summary>
+        /// Název obrázku stránky
+        /// </summary>
+        public string PageImageName { get { return IPage.PageImageName; } }
         /// <summary>
         /// Počet celkem deklarovaných prvků
         /// </summary>
