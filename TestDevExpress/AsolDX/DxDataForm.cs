@@ -29,7 +29,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public DxDataForm()
         {
-            InitializeDataFormPanel();
         }
         /// <summary>
         /// Dispose panelu
@@ -37,38 +36,15 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="disposing"></param>
         protected override void Dispose(bool disposing)
         {
-            DisposeDataFormPanel();
+            DisposeVisualControls();
             base.Dispose(disposing);
         }
         /// <summary>
-        /// Vytvoří vlastní panel DataForm
-        /// </summary>
-        private void InitializeDataFormPanel()
-        {
-            _DataFormPanel = new DxDataFormPanel(this);
-        }
-        /// <summary>
-        /// Disposuje vlastní panel DataForm
-        /// </summary>
-        private void DisposeDataFormPanel()
-        {
-            _DataFormPanel?.Dispose();
-            _DataFormPanel = null;
-        }
-        /// <summary>
-        /// Vlastní panel DataForm
-        /// </summary>
-        private DxDataFormPanel _DataFormPanel;
-        /// <summary>
-        /// Okraje kolem vlastních prvků
-        /// </summary>
-        public Padding ContentPadding { get { return _DataFormPanel.DesignContentPadding; } set { _DataFormPanel.DesignContentPadding = value; } }
-        /// <summary>
         /// Jsou aktivní zápisy do logu? Default = false
         /// </summary>
-        public override bool LogActive { get { return base.LogActive; } set { base.LogActive = value; _DataFormPanel.LogActive = value; } }
+        public override bool LogActive { get { return base.LogActive; } set { base.LogActive = value; if (_DataFormPanel != null) _DataFormPanel.LogActive = value; } }
         #endregion
-        #region Zobrazované prvky = data stránek a vlastní data
+        #region Zobrazované prvky = definice stránek a vlastní data
         /// <summary>
         /// Definice vzhledu.
         /// Dokud nebude vložena definice vzhledu, bude prvek prázdný.
@@ -88,7 +64,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void _SetPages(IEnumerable<IDataFormPage> pages)
         {
             _FillPages(pages);
-            _PreparePages();
+            _PrepareDataTabs();
             _ActivatePage();
         }
         /// <summary>
@@ -100,33 +76,247 @@ namespace Noris.Clients.Win.Components.AsolDX
             _DataFormPages = DxDataFormPage.CreateList(this, pages);
             _Pages = _DataFormPages.Select(p => p.IPage).ToList();
         }
-
-        private void _PreparePages()
+        /// <summary>
+        /// Metoda invaliduje všechny souřadnice na stránkách, které jsou závislé na Zoomu a na DPI.
+        /// Metoda sama neprovádí další přepočty layoutu ani tvorbu záložek, to je úkolem metody <see cref="_PreparePagesLayout"/>.
+        /// </summary>
+        private void _InvalidateCurrentBounds()
         {
-            // Nějaká optimalizace podle prostoru!
-
+            _DataFormPages?.ForEachExec(p => p.InvalidateBounds());
         }
+        /// <summary>
+        /// Metoda zajistí, že ve všech definicích stránek v <see cref="_DataFormPages"/> budou správně určeny souřadnice skupin, 
+        /// a budou z nich vytvořeny data pro záložky do <see cref="_DataFormTabs"/>.
+        /// Následně budou připraveny vizuální controly a do nich naplněny patřičné grupy pro zobrazení.
+        /// </summary>
+        private void _PrepareDataTabs()
+        {
+            if (_DataFormPages == null) return;
+            _PreparePagesLayout();
+            _PrepareVisualControl();
+        }
+        /// <summary>
+        /// Určí souřadnice skupin na jednotlivých stránkách.
+        /// Mohl by dělat i dynamický layout, v budoucnu...
+        /// Výstupem je struktura záložek v <see cref="_DataFormTabs"/>.
+        /// </summary>
+        private void _PreparePagesLayout()
+        {
+            if (_DataFormPages == null) return;
 
+            // Začněme základním layoutem:
+            foreach (var dataPage in _DataFormPages)
+            {
+                Point location = new Point(0, 0);
+                foreach (var dataGroup in dataPage.Groups)
+                {
+                    dataGroup.CurrentGroupOrigin = location;
+                    var size = dataGroup.CurrentGroupBounds.Size;    // Tady dojde k vyhodnocení souřadnice CurrentGroupOrigin a k přepočtu DesignSize na CurrentSize.
+                    location.Y += size.Height;
+                }
+            }
+
+            // Analýza dynamického layoutu:
+
+
+
+
+            // Finalizace:
+            _DataFormTabs = new List<DxDataFormTab>();
+            int pageIndex = 0;
+            foreach (var dataPage in _DataFormPages)
+            {
+                DxDataFormTab dataTab = new DxDataFormTab(this, "TabPage" + (pageIndex++).ToString());
+                dataTab.Add(dataPage);
+                _DataFormTabs.Add(dataTab);
+            }
+        }
         private void _ActivatePage(string pageId = null)
         {
-
+        }
+        private void _ActivateTab(string tabName = null)
+        {
+        }
+        /// <summary>
+        /// Po změně velikosti
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void OnSizeChanged(EventArgs e)
+        {
+            base.OnSizeChanged(e);
+            _PreparePagesLayout();
+        }
+        /// <summary>
+        /// Tento háček je vyvolán po jakékoli akci, která může vést k přepočtu vnitřních velikostí controlů.
+        /// Je volán: po změně Zoomu, po změně Skinu, po změně DPI hostitelského okna.
+        /// <para/>
+        /// Potomek by v této metodě měl provést přepočty velikosti svých controlů, pokud závisejí na Zoomu a DPI (a možná Skinu) (rozdílnost DesignSize a CurrentSize).
+        /// <para/>
+        /// Metoda není volána po změně velikosti controlu samotného ani po změně ClientBounds, ta změna nezakládá důvod k přepočtu velikosti obsahu
+        /// </summary>
+        protected override void OnContentSizeChanged()
+        {
+            base.OnContentSizeChanged();
+            _InvalidateCurrentBounds();
+            _PreparePagesLayout();
         }
 
         private void Refresh(RefreshParts refreshParts)
-        { }
+        {
+
+        }
 
         /// <summary>
         /// Data jednotlivých stránek
         /// </summary>
         private List<DxDataFormPage> _DataFormPages;
+        /// <summary>
+        /// Data jednotlivých záložek.
+        /// Jedna záložka může obsahovat jednu nebo více stránek <see cref="DxDataFormPage"/>.
+        /// Pokud záložka obsahuje více stránek, pak další stránky už mají vypočtené souřadnice skupin <see cref="DxDataFormGroup.CurrentGroupBounds"/> správně (a tedy i jejich prvky mají správné souřadnice).
+        /// <para/>
+        /// Toto pole je vytvořeno v metodě <see cref="_PreparePagesLayout"/>.
+        /// </summary>
+        private List<DxDataFormTab> _DataFormTabs;
 
         #endregion
-        #region Vztah do DxDataFormPanel
+        #region Práce s controly DxDataFormPanel (jednoduchá DataForm) a / nebo TabPane (záložky)
+        private void _PrepareVisualControl()
+        {
+            if (_DataFormTabs.Count <= 1)
+                _PrepareSinglePanel();
+            else
+                PrepareTabPages();
+
+        }
+        private void _PrepareSinglePanel()
+        {
+            _PrepareDataFormPanel();
+            _RemoveControlFromParent(_DataFormTabPane, this);        // Pokud máme jako náš Child control přítomný TabPane, odebereme jej
+            _AddControlToParent(_DataFormPanel, this);               // Zajistíme, že DataFormPanel bude přítomný jako náš přímý Child control
+
+            _DataFormPanel.Groups = _DataFormTabs.FirstOrDefault()?.Groups;
+        }
+        private void PrepareTabPages()
+        {
+            _PrepareDataFormTabPane();
+            _RemoveControlFromParent(_DataFormPanel, this);          // Pokud máme jako náš Child control přítomný DataFormPanel, odebereme jej
+            _PrepareDataFormTabPages();
+            _AddControlToParent(_DataFormTabPane, this);             // Zajistíme, že TabPane bude přítomný jako náš přímý Child control
+
+
+            _DataFormTabPane.Visible = false;
+
+        }
+
+        /// <summary>
+        /// Vytvoří vlastní panel DataForm
+        /// </summary>
+        private void _PrepareDataFormPanel()
+        {
+            if (_DataFormPanel != null) return;
+            _DataFormPanel = new DxDataFormPanel(this);
+            _DataFormPanel.Dock = DockStyle.Fill;
+            _DataFormPanel.LogActive = this.LogActive;
+        }
+        /// <summary>
+        /// Disposuje vlastní panel DataForm
+        /// </summary>
+        private void _DisposeDataFormPanel()
+        {
+            _DataFormPanel?.Dispose();
+            _DataFormPanel = null;
+        }
+        /// <summary>
+        /// Vlastní panel DataForm. Buď bude zobrazen rovnou, anebo na aktivní záložce.
+        /// </summary>
+        private DxDataFormPanel _DataFormPanel;
+
+        private void _PrepareDataFormTabPane()
+        {
+            if (_DataFormTabPane != null) return;
+            DxTabPane tabPane = new DxTabPane() { Dock = DockStyle.Fill };
+            tabPane.Visible = false;
+            tabPane.SelectedPageChanged += TabPane_SelectedPageChanged;
+            tabPane.SelectedPageChanging += TabPane_SelectedPageChanging;
+            _DataFormTabPane = tabPane;
+        }
+        private void TabPane_SelectedPageChanged(object sender, DevExpress.XtraBars.Navigation.SelectedPageChangedEventArgs e)
+        {
+        }
+        private void TabPane_SelectedPageChanging(object sender, DevExpress.XtraBars.Navigation.SelectedPageChangingEventArgs e)
+        {
+        }
+
+        private void _PrepareDataFormTabPages()
+        {
+            _DataFormTabPane.ClearPages();
+            foreach (var dataTab in _DataFormTabs)
+            {
+                _DataFormTabPane.AddNewPage(dataTab.TabName, dataTab.TabText);
+            };
+        }
+        /// <summary>
+        /// Disposuje vlastní panel DataForm
+        /// </summary>
+        private void _DisposeDataFormTabPane()
+        {
+            _DataFormTabPane?.Dispose();
+            _DataFormPanel = null;
+        }
+        /// <summary>
+        /// Úložiště pro objekt se záložkami. Ve výchozím stavu je null, vytvoří se on-demand.
+        /// </summary>
+        private DxTabPane _DataFormTabPane;
+
+        /// <summary>
+        /// Zajistí vložení daného controlu do daného parenta, pokud tam není.
+        /// Pokud by control před tím byl v jiném parentu, odebere jej tamodtud.
+        /// Před změnou provede zhasnutí controlu.
+        /// </summary>
+        /// <param name="control"></param>
+        /// <param name="parent"></param>
+        private void _AddControlToParent(Control control, Control parent)
+        {
+            if (control == null || parent == null) return;
+            if (control.Parent != null && !Object.ReferenceEquals(control.Parent, parent))
+            {   // Pokud mám parenta, a ten je jiný než má být:
+                control.Visible = false;
+                control.Parent.Controls.Remove(control);
+            }
+            if (control.Parent == null)
+            {   // Pokud nemám parenta:
+                control.Visible = false;
+                parent.Controls.Add(control);
+            }
+        }
+        /// <summary>
+        /// Zajistí odebrání daného controlu z daného parenta, pokud tam je.
+        /// Před tím provede zhasnutí controlu.
+        /// </summary>
+        /// <param name="control"></param>
+        /// <param name="parent"></param>
+        private void _RemoveControlFromParent(Control control, Control parent)
+        {
+            if (control == null || parent == null) return;
+            control.Visible = false;
+            if (control.Parent != null && Object.ReferenceEquals(control.Parent, parent))
+                control.Parent.Controls.Remove(control);
+        }
+        /// <summary>
+        /// Dispose vizuálních controlů
+        /// </summary>
+        private void DisposeVisualControls()
+        {
+            _DisposeDataFormPanel();
+            _DisposeDataFormTabPane();
+        }
+        #endregion
+        #region Služby pro controly se vztahem do DxDataFormPanel
         /// <summary>
         /// Sdílený objekt ToolTipu do všech controlů
         /// </summary>
         internal DxSuperToolTip DxSuperToolTip { get { return _DataFormPanel?.DxSuperToolTip; } }
-
         /// <summary>
         /// Daný control přidá do panelu na pozadí (control jen pro kreslení) anebo na popředí (control pro interakci).
         /// </summary>
@@ -139,6 +329,23 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="control"></param>
         /// <param name="removeFromBackground"></param>
         internal void RemoveControl(Control control, bool removeFromBackground) { _DataFormPanel?.RemoveControl(control, removeFromBackground); }
+        /// <summary>
+        /// Test výkonu
+        /// </summary>
+        /// <param name="count"></param>
+        /// <param name="forceRefresh"></param>
+        public void TestPerformance(int count, bool forceRefresh)
+        {
+            _DataFormPanel?.TestPerformance(count, forceRefresh);
+        }
+        /// <summary>
+        /// Počet celkem deklarovaných prvků
+        /// </summary>
+        internal int ItemsCount { get { return _DataFormPages.Select(p => p.ItemsCount).Sum(); } }
+        /// <summary>
+        /// Počet aktuálně viditelných prvků
+        /// </summary>
+        internal int VisibleItemsCount { get { return _DataFormPanel?.VisibleItemsCount ?? 0; } }
         #endregion
     }
     /// <summary>
@@ -160,6 +367,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             DataFormPage page = new DataFormPage();
             pages.Add(page);
             DataFormGroup group = new DataFormGroup();
+            group.AutoGroupSizePadding = new Padding(12, 12, 12, 12);
             page.Groups.Add(group);
 
             Random random = new Random();
@@ -260,7 +468,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             InitializePaint();
             InitializeInteractivity();
         }
-        /// <summary>Vlastník - <see cref="DxDataForm"/></summary>
+        /// <summary>Vlastník - <see cref="DxDataForm"/>, ale nemusí to být Parent!</summary>
         private DxDataForm _DataForm;
         /// <summary>
         /// Dispose panelu
@@ -273,6 +481,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             _Groups?.Clear();
             DisposeGroups();
             DisposeContentPanel();
+
             base.Dispose(disposing);
 
             _DataForm = null;
@@ -306,10 +515,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// ale z hlediska <see cref="DxDataForm"/> nemá žádnou funkcionalitu, ta je soustředěna do <see cref="DxDataFormPanel"/>.
         /// </summary>
         private DxPanelBufferedGraphic _ContentPanel;
-       
-
-
-
         #endregion
         #region Public vlastnosti
         
@@ -322,21 +527,11 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         public List<DxDataFormGroup> Groups { get { return _Groups; } set { _SetGroups(value); } }
         /// <summary>
-        /// Okraje kolem vlastních prvků, designová hodnota
-        /// </summary>
-        public Padding DesignContentPadding { get { return _DesignContentPadding; } set { _DesignContentPadding = value; _RecalcDesignPanelValues(); Refresh(RefreshParts.AfterItemsChanged); } }
-        /// <summary>
-        /// Okraje kolem vlastních prvků, aktuální reálná hodnota
-        /// </summary>
-        private Padding CurrentContentPadding { get { return _CurrentContentPadding; } } private Padding _CurrentContentPadding;
-        /// <summary>
         /// Inicializuje pole prvků
         /// </summary>
         private void InitializeGroups()
         {
             _VisibleItems = new List<DxDataFormItem>();
-            _DesignContentPadding = new Padding(0);
-            _CurrentContentPadding = new Padding(0);
         }
         /// <summary>
         /// Vloží do sebe dané grupy a zajistí minimální potřebné refreshe
@@ -356,33 +551,21 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <returns></returns>
         private void _InvalidatGroupsCurrentBounds()
         {
-            _RecalcDesignPanelValues();
             _Groups?.ForEachExec(g => g.InvalidateBounds());
 
             _LastCalcZoom = DxComponent.Zoom;
             _LastCalcDeviceDpi = this.CurrentDpi;
         }
         /// <summary>
-        /// Přepočte zdejší Current souřadnice podle Design hodnot, nikoli ale souřadnice pro grupy a items. 
-        /// To zařizuje metoda <see cref="_InvalidatGroupsCurrentBounds()"/>.
-        /// </summary>
-        private void _RecalcDesignPanelValues()
-        {
-            _CurrentContentPadding = DxComponent.ZoomToGuiInt(this.DesignContentPadding, this.CurrentDpi);
-        }
-        /// <summary>
-        /// Metoda projde aktuální grupy a vrátí velikost prostoru, do kterého se vejde souhrn jejich aktuálních souřadnic včetně okrajů.
+        /// Metoda projde aktuální grupy a vrátí velikost prostoru, do kterého se vejde souhrn jejich aktuálních souřadnic.
         /// Tato velikost se pak používá pro řízení scrollování.
         /// </summary>
         /// <returns></returns>
         private Size _GetGroupsTotalCurrentSize()
         {
             if (_Groups == null) return Size.Empty;
-            Rectangle bounds = _Groups.Select(g => g.CurrentBounds).SummaryVisibleRectangle() ?? Rectangle.Empty;
-            var padding = CurrentContentPadding;
-            int w = padding.Left + bounds.Right + padding.Right;
-            int h = padding.Top + bounds.Bottom + padding.Bottom;
-            return  new Size(w, h);
+            Rectangle bounds = _Groups.Select(g => g.CurrentGroupBounds).SummaryVisibleRectangle() ?? Rectangle.Empty;
+            return new Size(bounds.Right, bounds.Bottom);
         }
         /// <summary>
         /// Připraví souhrn viditelných grup a prvků
@@ -414,14 +597,16 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 _VisibleItems = null;
             }
         }
+
+        /// <summary>
+        /// Počet aktuálně viditelných prvků
+        /// </summary>
+        internal int? VisibleItemsCount { get { return _VisibleItems?.Count; } }
+
         private List<DxDataFormGroup> _Groups;
         private List<DxDataFormGroup> _VisibleGroups;
-        // private List<DxDataFormItem> _Items;
         private List<DxDataFormItem> _VisibleItems;
-        private Padding _DesignContentPadding;
         #endregion
-
-
         #region Interaktivita
         private void InitializeInteractivity()
         {
@@ -795,7 +980,12 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             _PaintLoop = 0L;
             _NextCleanPaintLoop = _CACHECLEAN_OLD_LOOPS + 1;         // První pokus o úklid proběhne po tomto počtu PaintLoop, protože i kdyby bylo potřeba uklidit staré položky, tak stejně nemůže zahodit starší položky - žádné by nevyhovovaly...
         }
-        public void TestPerformance(int count, bool forceRefresh)
+        /// <summary>
+        /// Test výkonu
+        /// </summary>
+        /// <param name="count"></param>
+        /// <param name="forceRefresh"></param>
+        internal void TestPerformance(int count, bool forceRefresh)
         {
             _PaintingPerformaceTestCount = count;
             _PaintingPerformaceForceRefresh = forceRefresh;
@@ -1611,8 +1801,60 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
 
     }
     /// <summary>
-    /// Třída reprezentující jednu stránku v dataformu.
-    /// Stránka obsahuje grupy.
+    /// Data jedné záložky
+    /// </summary>
+    internal class DxDataFormTab
+    {
+        #region Konstruktor, vlastník, prvky
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="dataForm"></param>
+        /// <param name="tabName"></param>
+        public DxDataFormTab(DxDataForm dataForm, string tabName)
+        {
+            _DataForm = dataForm;
+            _TabName = tabName;
+            _Pages = new List<DxDataFormPage>();
+        }
+        /// <summary>Vlastník - <see cref="DxDataForm"/></summary>
+        private DxDataForm _DataForm;
+        /// <summary>Jednoznačné jméno záložky, pro spárování TabPane.Page a dat</summary>
+        private string _TabName;
+        private List<DxDataFormPage> _Pages;
+        public void Add(DxDataFormPage dataPage)
+        {
+            _Pages.Add(dataPage);
+        }
+        /// <summary>
+        /// Vlastník - <see cref="DxDataForm"/>
+        /// </summary>
+        public DxDataForm DataForm { get { return _DataForm; } }
+        /// <summary>
+        /// Jednoznačné jméno záložky, pro spárování TabPane.Page a dat
+        /// </summary>
+        public string TabName { get { return _TabName; } }
+        #endregion
+        #region Data ze stránek a z jejich skupin
+        /// <summary>
+        /// Stránky na této záložce
+        /// </summary>
+        public List<DxDataFormPage> Pages { get { return _Pages; } }
+        /// <summary>
+        /// Titulek záložky = <see cref="IDataFormPage.PageText"/>, případně sloučený z více stránek
+        /// </summary>
+        public string TabText { get { return Pages.Select(p => p.PageText).ToOneString(" + "); } }
+        /// <summary>
+        /// Zobrazované grupy a jejich prvky. Jde o souhrn skupin z přítomných stránek.
+        /// </summary>
+        public List<DxDataFormGroup> Groups { get { return Pages.SelectMany(p => p.Groups).ToList(); } }
+        #endregion
+
+    }
+    /// <summary>
+    /// Třída reprezentující jednu designem definovanou stránku v dataformu.
+    /// V dynamickém layoutu může jedna fyzická vizuální záložka obsahovat více designových stránek vedle sebe.
+    /// Stránka obsahuje deklarované grupy. Stránka neobsahuje svoje souřadnice, stránka není vizuální element. To je až grupa.
     /// </summary>
     internal class DxDataFormPage
     {
@@ -1673,7 +1915,28 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         public bool Active { get; set; }
         #endregion
+        #region Data o stránce
+        /// <summary>
+        /// Titulek stránky
+        /// </summary>
+        public string PageText { get { return IPage.PageText; } }
+        /// <summary>
+        /// Počet celkem deklarovaných prvků
+        /// </summary>
+        internal int ItemsCount { get { return Groups.Select(g => g.ItemsCount).Sum(); } }
+        #endregion
+        #region Souřadnice a další služby
+        /// <summary>
+        /// Invaliduje souřadnice všech svých skupin. To s sebou nese i invalidaci souřadnic prvků těchto skupin.
+        /// Invalidují se souřadnice typu Current a Visible. 
+        /// Tyto souřadnice budou on-demand přepočteny ze souřadnic typu Design, podle aktuálních hodnot Zoom a DPI.
+        /// </summary>
+        public void InvalidateBounds()
+        {
+            _Groups.ForEachExec(g => g.InvalidateBounds());
+        }
 
+        #endregion
 
     }
     /// <summary>
@@ -1713,7 +1976,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             _DataPage = dataPage;
             _IGroup = iGroup;
             _Items = DxDataFormItem.CreateList(this, iGroup?.Items);
-            _DetectContentLayout();
+            _CalculateAutoSize();
         }
         /// <summary>Vlastník - <see cref="DxDataFormPage"/></summary>
         private DxDataFormPage _DataPage;
@@ -1738,111 +2001,122 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         public IList<DxDataFormItem> Items { get { return _Items; } }
         /// <summary>
-        /// Metoda určí potřebné vnitřní designové hodnoty pro aktuální obsah
+        /// Zajistí provedení výpočtu automatické velikosti grupy.
         /// </summary>
-        /// <returns></returns>
-        private void _DetectContentLayout()
+        private void _CalculateAutoSize()
         {
-            Padding padding = this._IGroup.DesignPadding;
-            _ContentDesignOrigin = new Point(padding.Left, padding.Top);
-
-            Rectangle contentBounds = DrawingExtensions.SummaryVisibleRectangle(this._Items.Select(i => (Rectangle?)i.DesignBounds)).Add(padding);
-            _ContentDesignSize = new Size(contentBounds.Right, contentBounds.Bottom);
+            ItemDesignOrigin = Point.Empty;
+            if (!IGroup.AutoGroupSizePadding.HasValue) return;
+            var padding = IGroup.AutoGroupSizePadding.Value;
+            var itemSummaryBounds = this.Items.Select(i => i.DesignBounds).SummaryVisibleRectangle() ?? Rectangle.Empty;
+            int w = itemSummaryBounds.Right + padding.Horizontal;
+            int h = itemSummaryBounds.Bottom + padding.Vertical;
+            ItemDesignOrigin = new Point(padding.Left, padding.Top);
+            _DesignGroupAutoSize = new Size(w, h);
         }
+        private Size? _DesignGroupAutoSize;
         #endregion
-        #region Souřadnice designové, aktuální, viditelné
-        /*   JAK JE TO SE SOUŘADNÝM SYSTÉMEM:
-          1. Grupa deklaruje svoji vnější designovou šířku jako Int, 
-              to proto aby všechny grupy pod sebou mohly mít stejnou šířku i když nebudou využívat celou šířku pro controly.
-          2. Výška grupy není explicitně definovaná, ta se určí podle souřadnic obsahu
-          3. Dojde k určení vnitřního prostoru, obsazeného definovanými controly = ContentDesignSize
-          4. K vnitřnímu prostoru se přičítá vnitřní okraj Padding (ten se vykresluje jako prázdný) 
-              plus šířka borderu grupy Border (ten se vykresluje jako něčím vyplněný),
-              přičemž oba (Padding i Border) jsou definovány na stránce - aby grupy byly všechny vizuálně stejně,
-              ale mohou být přepsány stejnojmennými nullable hodnotami v grupě.
-              Obě hodnoty jsou designové, a přepočítávají se Zoomem a DPI na Current hodnoty.
+        /// <summary>
+        /// Počet celkem deklarovaných prvků
+        /// </summary>
+        internal int ItemsCount { get { return Items.Count; } }
 
+        #region Souřadnice designové, aktuální, viditelné
+
+        /*   JAK JE TO SE SOUŘADNÝM SYSTÉMEM:
+
+          1. Grupa deklaruje svoji vnější designovou velikost = DesignSize.
+          2. Je na autorovi designu, aby se vnitřní prvky Items svými souřadnicemi vešly do prostoru grupy.
+          3. Pokud autor designu chce aplikovat nějaké okraje (Padding), pak nechť je započítá do souřadnic prvků Items. DataForm je explicitně nepřidává.
+          4. Grupy jsou skládány pod sebe = grupa 2 má svůj počátek přesně pod koncem grupy 1, na stejné souřadnici X, počínaje bodem { 0, 0 }.
+          5. Veškeré souřadnice na vstupu jsou Designové = vztahují se k zoomu 100% a monitoru 96DPI. Reálné souřadnice přepočítává DataForm.
 
         */
 
         /// <summary>
-        /// Na této souřadnici (designové) v rámci grupy začíná souřadnice 0/0 prvků.
+        /// Souřadnice počátku, ke kterému jsou zadány designové souřadnice jednotlivých Items = <see cref="DxDataFormItem.DesignBounds"/>.
         /// </summary>
-        public Point ContentDesignOrigin { get { return _ContentDesignOrigin; } }
+        internal Point ItemDesignOrigin { get; private set; }
         /// <summary>
-        /// Na této souřadnici (designové) v rámci grupy začíná souřadnice 0/0 prvků.
+        /// Velikost grupy daná designem = pro Zoom 100% a DPI = 96.
+        /// Pokud v grupě je povolen AutoSize (<see cref="IDataFormGroup.AutoGroupSizePadding"/>, pak je zde velikost daná obsahem + daný Padding.
         /// </summary>
-        private Point _ContentDesignOrigin;
+        public Size DesignGroupSize { get { return _DesignGroupAutoSize ?? IGroup.GroupSize; } }
         /// <summary>
-        /// Vnější velikost grupy daná designem = pro Zoom 100% a DPI = 96.
-        /// Obsahuje Padding a sumu prostoru prvků Items uvnitř tohoto Padding.
+        /// Viditelnost grupy
         /// </summary>
-        public Size ContentDesignSize { get { return _ContentDesignSize; } }
+        public bool IsVisible { get { return IGroup.IsVisible; } }
         /// <summary>
-        /// Designová vnější velikost grupy, daná okraji Padding a sumou prostoru prvků.
+        /// Vzhled grupy
         /// </summary>
-        private Size _ContentDesignSize;
-
-
-
-
+        public IDataFormAppearance Appearance { get { return IGroup.Appearance; } }
         /// <summary>
-        /// Invaliduje souřadnice <see cref="CurrentSize"/> a <see cref="VisibleBounds"/>.
+        /// Aktuální velikost grupy, je daná designovou velikostí <see cref="DesignGroupSize"/> a je přepočtená Zoomem a DPI
+        /// </summary>
+        public Size CurrentGroupSize { get { this.CheckCurrentBounds(); return _CurrentGroupSize.Value; } }
+        private Size? _CurrentGroupSize;
+        /// <summary>
+        /// Na této souřadnici (reálné) v rámci grupy začíná souřadnice 0/0 jejcih prvků.
+        /// Tuto hodnotu určuje správce DataFormu při tvorbě layoutu (Statický i dynamický laoyut).
+        /// Tvorba layoutu probíhá po každé změně rozměru DataFormu i změně Zoomu a DPI.
+        /// <para/>
+        /// Po setování této souřadnice proběhne invalidace souřadnic Current i Visible, i jednotlivých prvků.
+        /// Následně jsou tyto souřadnice on-demand přepočteny.
+        /// </summary>
+        public Point CurrentGroupOrigin { get { return _CurrentGroupOrigin; } set { _CurrentGroupOrigin = value; InvalidateBounds(); } }
+        private Point _CurrentGroupOrigin;
+        /// <summary>
+        /// Aktuální reálná absolutní souřadnice této grupy. 
+        /// Souřadnice je daná počátkem <see cref="CurrentGroupOrigin"/>, který musí setovat koordinátor stránky, 
+        /// a velikostí grupy <see cref="CurrentGroupSize"/>, která vychází z deklarace grupy <see cref="IDataFormGroup.GroupSize"/> a je přepočtena Zoomem a DPI.
+        /// <para/>
+        /// Tato souřadnice ale není posunuta ScrollBarem (je absolutní).
+        /// Posunutá vizuální souřadnice je v <see cref="VisibleBounds"/>.
+        /// </summary>
+        public Rectangle CurrentGroupBounds { get { this.CheckCurrentBounds(); return _CurrentGroupBounds.Value; } }
+        private Rectangle? _CurrentGroupBounds;
+        /// <summary>
+        /// Invaliduje souřadnice <see cref="CurrentGroupSize"/>, <see cref="CurrentGroupBounds"/> a <see cref="VisibleBounds"/>.
+        /// Invaliduje i svoje Items.
+        /// Invalidují se souřadnice typu Current a Visible. 
+        /// Tyto souřadnice budou on-demand přepočteny ze souřadnic typu Design, podle aktuálních hodnot Zoom a DPI.
         /// </summary>
         public void InvalidateBounds()
         {
-            __CurrentBounds = null;
-            __CurrentSize = null;
-            __VisibleBounds = null;
+            _CurrentGroupSize = null;
+            _CurrentGroupBounds = null;
+            _VisibleBounds = null;
+            _Items.ForEachExec(i => i.InvalidateBounds());
         }
         /// <summary>
-        /// Aktuální velikost grupy, je daná velikostí designovou <see cref="DesignSize"/> a aktuálním zoomem
+        /// Zajistí, že souřadnice <see cref="_CurrentGroupSize"/> a budou platné k souřadnicím designovým a k hodnotám aktuálním DPI
         /// </summary>
-        public Size CurrentSize { get { this.CheckDesignSize(); return __CurrentSize.Value; } }
-        private Size? __CurrentSize;
-        /// <summary>
-        /// Zajistí, že souřadnice <see cref="__CurrentBounds"/> budou platné k souřadnicím designovým a k hodnotám aktuálním DPI
-        /// </summary>
-        private void CheckDesignSize()
+        private void CheckCurrentBounds()
         {
-            if (!__CurrentSize.HasValue)
-                __CurrentSize = DxComponent.ZoomToGuiInt(__DesignSize, DataForm.DeviceDpi);
-        }
-        /// <summary>
-        /// Aktuální logické koordináty - přepočtené z <see cref="DesignBounds"/> na aktuálně platné DPI.
-        /// Tato souřadnice není posunuta ScrollBarem. 
-        /// Posunutá vizuální souřadnice je v <see cref="VisibleBounds"/>.
-        /// </summary>
-        public Rectangle CurrentBounds { get { this.CheckDesignBounds(); return __CurrentBounds.Value; } }
-        private Rectangle? __CurrentBounds;
-        /// <summary>
-        /// Zajistí, že souřadnice <see cref="__CurrentBounds"/> budou platné k souřadnicím designovým a k hodnotám aktuálním DPI
-        /// </summary>
-        private void CheckDesignBounds()
-        {
-            if (!__CurrentBounds.HasValue)
-                __CurrentBounds = new Rectangle(Point.Empty, CurrentSize);
+            if (!_CurrentGroupSize.HasValue)
+                _CurrentGroupSize = DxComponent.ZoomToGuiInt(DesignGroupSize, DataForm.CurrentDpi);
+            if (!_CurrentGroupBounds.HasValue)
+                _CurrentGroupBounds = new Rectangle(_CurrentGroupOrigin, _CurrentGroupSize.Value);
         }
         /// <summary>
         /// Fyzické pixelové souřadnice této grupy na vizuálním controlu, kde se nyní tento prvek nachází.
         /// Jde o vizuální souřadnice v koordinátech controlu, odpovídají např. pohybu myši.
         /// Může být null, pak prvek není zobrazen. Null je i po invalidaci <see cref="InvalidateBounds()"/>.
-        /// Tuto hodnotu ukládá řídící třída v procesu kreslení jako reálné souřadnice, kam byl prvek vykreslen.
+        /// Tuto hodnotu sem ukládá řídící třída v procesu kreslení jako reálné souřadnice, kam byl prvek vykreslen.
         /// </summary>
-        public Rectangle? VisibleBounds { get { return __VisibleBounds; } set { __VisibleBounds = value; } }
-        private Rectangle? __VisibleBounds;
+        public Rectangle? VisibleBounds { get { return _VisibleBounds; } set { _VisibleBounds = value; } }
+        private Rectangle? _VisibleBounds;
 
         /// <summary>
         /// Vrátí true, pokud this prvek se nachází v rámci dané virtuální souřadnice.
-        /// Tedy pokud souřadnice <see cref="CurrentBounds"/> se alespoň zčásti nacházejí uvnitř souřadného prostoru dle parametru <paramref name="virtualBounds"/>.
+        /// Tedy pokud souřadnice <see cref="CurrentGroupBounds"/> se alespoň zčásti nacházejí uvnitř souřadného prostoru dle parametru <paramref name="virtualBounds"/>.
         /// </summary>
         /// <param name="virtualBounds"></param>
         /// <returns></returns>
         public bool IsVisibleInVirtualBounds(Rectangle virtualBounds)
         {
-            return (IsVisible && virtualBounds.Contains(CurrentBounds, true));
+            return (IsVisible && virtualBounds.Contains(CurrentGroupBounds, true));
         }
-
         #endregion
     }
     /// <summary>
@@ -1903,31 +2177,53 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         public IDataFormItem IItem { get { return _IItem; } }
         #endregion
-
+        #region Data z prvku
+        /// <summary>
+        /// Typ prvku
+        /// </summary>
         public DataFormItemType ItemType { get { return _IItem.ItemType; } }
-        public bool IsVisible { get; set; }
-
-        #region Vzhled
+        /// <summary>
+        /// Prvek je viditelný
+        /// </summary>
+        public bool IsVisible { get { return IItem.IsVisible; } }
         /// <summary>
         /// Prvek bude podsvícen při pohybu myší nad ním
         /// </summary>
         public bool HotTrackingEnabled { get; set; }
-
         #endregion
-
         #region Souřadnice designové, aktuální, viditelné
         /// <summary>
-        /// Souřadnice designové, v logických koordinátech (kde bod {0,0} je absolutní počátek, bez posunu ScrollBarem).
-        /// Typicky se vztahují k 96 DPI.
-        /// Setování hodnoty provede invalidaci fyzických souřadnic <see cref="InvalidateBounds()"/>, tedy hodnot <see cref="CurrentBounds"/> a <see cref="VisibleBounds"/>.
+        /// Souřadnice designové, v logických koordinátech (kde bod {0,0} je počátek zdejší grupy, bez posunu ScrollBarem).
+        /// Typicky se vztahují k 96 DPI a Zoom 100%.
+        /// Hodnota se přebírá z datového prvku <see cref="IItem"/>.
         /// </summary>
-        public Rectangle DesignBounds 
-        { 
-            get { return __DesignBounds; } 
-            set 
+        public Rectangle DesignBounds { get { return IItem.DesignBounds; } }
+        /// <summary>
+        /// Aktuální logické koordináty - přepočtené z <see cref="DesignBounds"/> na aktuálně platné DPI a Zoom.
+        /// <para/>
+        /// Jde o souřadnici absolutní v rámci <see cref="DxDataFormPanel"/>, tedy nejde o souřadnici relativní vzhledem ke grupě, kam prvek patří; 
+        /// tato souřadnice <see cref="CurrentBounds"/> již zahrnuje posun o počátek grupy <see cref="DxDataFormGroup.CurrentGroupOrigin"/>.
+        /// <para/>
+        /// Tato souřadnice ale není posunuta ScrollBarem (je absolutní).
+        /// Posunutá vizuální souřadnice je v <see cref="VisibleBounds"/>.
+        /// </summary>
+        public Rectangle CurrentBounds { get { this.CheckCurrentBounds(); return _CurrentBounds.Value; } }
+        private Rectangle? _CurrentBounds;
+        /// <summary>
+        /// Aktuální velikost prvku. Lze setovat (nezmění se umístění = <see cref="CurrentBounds"/>.Location).
+        /// <para/>
+        /// Setujme opatrně a jen v případě nutné potřeby, typicky tehdy, když konkrétní vizuální control nechce akceptovat předepsanou velikost (např. výška textboxu v jiném než očekávaném fontu).
+        /// Vložená hodnota zde zůstane (a bude obsažena i v <see cref="CurrentBounds"/>) do doby invalidace = než se změní Zoom nebo Skin aplikace.
+        /// </summary>
+        public Size CurrentSize
+        {
+            get { this.CheckCurrentBounds(); return _CurrentBounds.Value.Size; }
+            set
             {
-                __DesignBounds = value;
-                InvalidateBounds();
+                this.CheckCurrentBounds();
+                _CurrentBounds = new Rectangle(_CurrentBounds.Value.Location, value);
+                if (_VisibleBounds.HasValue)
+                    _VisibleBounds = new Rectangle(_VisibleBounds.Value.Location, value);
             }
         }
         /// <summary>
@@ -1935,45 +2231,20 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         public void InvalidateBounds()
         {
-            __CurrentBounds = null;
-            __VisibleBounds = null;
+            _CurrentBounds = null;
+            _VisibleBounds = null;
         }
         /// <summary>
-        /// Souřadnice designové, v logických koordinátech (kde bod {0,0} je absolutní počátek, bez posunu ScrollBarem).
+        /// Zajistí, že souřadnice <see cref="_CurrentBounds"/> budou platné k souřadnicím designovým a k hodnotám aktuálním DPI
         /// </summary>
-        private Rectangle __DesignBounds;
-        /// <summary>
-        /// Aktuální logické koordináty - přepočtené z <see cref="DesignBounds"/> na aktuálně platné DPI.
-        /// Tato souřadnice není posunuta ScrollBarem. 
-        /// Posunutá vizuální souřadnice je v <see cref="VisibleBounds"/>.
-        /// </summary>
-        public Rectangle CurrentBounds { get { this.CheckDesignBounds(); return __CurrentBounds.Value; } }
-        /// <summary>
-        /// Aktuální velikost prvku. Lze setovat (nezmění se umístění = <see cref="CurrentBounds"/>.Location).
-        /// <para/>
-        /// Setujme opatrně a jen v případě nutné potřeby, typicky tehdy, když konkrétní vizuální control nechce akceptovat předepsanou velikost (např. výška textboxu v jiném než očekávaném fontu).
-        /// Vložená hodnota zde zůstane (a bude obsažena i v <see cref="CurrentBounds"/>) do doby, než se změní Zoom nebo Skin aplikace.
-        /// </summary>
-        public Size CurrentSize 
-        { 
-            get { this.CheckDesignBounds(); return __CurrentBounds.Value.Size; }
-            set
-            {
-                this.CheckDesignBounds();
-                __CurrentBounds = new Rectangle(__CurrentBounds.Value.Location, value);
-            }
-        }
-        /// <summary>
-        /// Úložiště pro <see cref="CurrentBounds"/>, po přepočtech DPI
-        /// </summary>
-        private Rectangle? __CurrentBounds;
-        /// <summary>
-        /// Zajistí, že souřadnice <see cref="__CurrentBounds"/> budou platné k souřadnicím designovým a k hodnotám aktuálním DPI
-        /// </summary>
-        private void CheckDesignBounds()
+        private void CheckCurrentBounds()
         {
-            if (!__CurrentBounds.HasValue)
-                __CurrentBounds = DxComponent.ZoomToGuiInt(__DesignBounds, _DataForm.DeviceDpi);
+            if (!_CurrentBounds.HasValue)
+            {
+                var designBounds = this.DesignBounds.Add(this.DataGroup.ItemDesignOrigin);                   // Posunutí souřadnic o Padding (vlevo a nahoře)
+                var currentRelativeBounds = DxComponent.ZoomToGuiInt(designBounds, DataForm.CurrentDpi);     // Přepočet pomocí Zoomu a DPI
+                _CurrentBounds = currentRelativeBounds.Add(this.DataGroup.CurrentGroupOrigin);               // Posunutí o reálný počátek parent grupy
+            }
         }
         /// <summary>
         /// Fyzické pixelové souřadnice tohoto prvku na vizuálním controlu, kde se nyní tento prvek nachází.
@@ -1981,11 +2252,13 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Může být null, pak prvek není zobrazen. Null je i po invalidaci <see cref="InvalidateBounds()"/>.
         /// Tuto hodnotu ukládá řídící třída v procesu kreslení jako reálné souřadnice, kam byl prvek vykreslen.
         /// </summary>
-        public Rectangle? VisibleBounds { get { return __VisibleBounds; } set { __VisibleBounds = value; } }
-        private Rectangle? __VisibleBounds;
+        public Rectangle? VisibleBounds { get { return _VisibleBounds; } set { _VisibleBounds = value; } }
+        private Rectangle? _VisibleBounds;
         /// <summary>
         /// Vrátí true, pokud this prvek se nachází v rámci dané virtuální souřadnice.
         /// Tedy pokud souřadnice <see cref="CurrentBounds"/> se alespoň zčásti nacházejí uvnitř souřadného prostoru dle parametru <paramref name="virtualBounds"/>.
+        /// <para/>
+        /// Souřadnice <see cref="CurrentBounds"/> jsou evidovány v koordinátech controlu (tj. nejsou relativní ke své grupě), proto se mohou napřímo porovnávat s <paramref name="virtualBounds"/>, bez transformací.
         /// </summary>
         /// <param name="virtualBounds"></param>
         /// <returns></returns>

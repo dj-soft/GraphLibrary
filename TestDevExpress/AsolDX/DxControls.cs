@@ -23,6 +23,7 @@ using DevExpress.Office.History;
 using System.Diagnostics;
 using DevExpress.XtraEditors.Filtering.Templates;
 using System.Windows.Forms;
+using DevExpress.Utils.Extensions;
 
 namespace Noris.Clients.Win.Components.AsolDX
 {
@@ -288,7 +289,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.LogActive = false;
             this._CurrentDpi = DxComponent.DesignDpi;
             this._LastDpi = 0;
-
             DxComponent.RegisterListener(this);
         }
         /// <summary>
@@ -332,12 +332,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         #endregion
         #region Style & Zoom Changed
-        void IListenerZoomChange.ZoomChanged() { OnZoomChanged(); DeviceDpiCheck(); }
+        void IListenerZoomChange.ZoomChanged() { OnZoomChanged(); DeviceDpiCheck(false); OnContentSizeChanged(); }
         /// <summary>
         /// Volá se po změně zoomu
         /// </summary>
         protected virtual void OnZoomChanged() { }
-        void IListenerStyleChanged.StyleChanged() { OnStyleChanged(); DeviceDpiCheck(); }
+        void IListenerStyleChanged.StyleChanged() { OnStyleChanged(); DeviceDpiCheck(false); OnContentSizeChanged(); }
         /// <summary>
         /// Volá se po změně skinu
         /// </summary>
@@ -347,6 +347,42 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Zavolá se v situaci, kdy aplikace nemá zrovna co na práci
         /// </summary>
         protected virtual void OnApplicationIdle() { }
+        /// <summary>
+        /// Po změně Parenta prověříme DPI a případně zareagujeme
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void OnParentChanged(EventArgs e)
+        {
+            base.OnParentChanged(e);
+            DeviceDpiCheck(true);
+        }
+        /// <summary>
+        /// Po změně DPI v parentu prověříme DPI a případně zareagujeme
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void OnDpiChangedAfterParent(EventArgs e)
+        {
+            base.OnDpiChangedAfterParent(e);
+            DeviceDpiCheck(true);
+        }
+        /// <summary>
+        /// Při invalidaci prověříme DPI a případně zareagujeme
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void OnInvalidated(InvalidateEventArgs e)
+        {
+            DeviceDpiCheck(true);
+            base.OnInvalidated(e);
+        }
+        /// <summary>
+        /// Tento háček je vyvolán po jakékoli akci, která může vést k přepočtu vnitřních velikostí controlů.
+        /// Je volán: po změně Zoomu, po změně Skinu, po změně DPI hostitelského okna.
+        /// <para/>
+        /// Potomek by v této metodě měl provést přepočty velikosti svých controlů, pokud závisejí na Zoomu a DPI (a možná Skinu) (rozdílnost DesignSize a CurrentSize).
+        /// <para/>
+        /// Metoda není volána po změně velikosti controlu samotného ani po změně ClientBounds, ta změna nezakládá důvod k přepočtu velikosti obsahu
+        /// </summary>
+        protected virtual void OnContentSizeChanged() { }
         #endregion
         #region DPI - podpora pro MultiMonitory s různým rozlišením / pro jiné DPI než designové
         /// <summary>
@@ -378,13 +414,16 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Ověří, zda nedošlo ke změně DeviceDpi, a pokud ano pak zajistí vyvolání metod <see cref="OnDpiChanged()"/> a eventu <see cref="DpiChanged"/>.
         /// Pokud this panel není umístěn na formuláři, neprovede nic, protože DPI nemůže být platné.
         /// </summary>
-        protected void DeviceDpiCheck()
+        /// <param name="callContentSizeChanged">Pokud došlo ke změně DPI, má být volán háček <see cref="OnContentSizeChanged()"/>? Někdy to není nutné, protože se bude volat po této metodě vždy (i bez změny DPI).</param>
+        protected void DeviceDpiCheck(bool callContentSizeChanged)
         {
             if (this.FindForm() == null) return;
             var currentDpi = _ReloadCurrentDpi();
             if (_DpiChanged)
             {
                 OnDpiChanged();
+                if (callContentSizeChanged)
+                    OnContentSizeChanged();
                 DpiChanged?.Invoke(this, EventArgs.Empty);
                 _LastDpi = currentDpi;
             }
@@ -460,6 +499,29 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.Pages.Add(page);
 
             return page;
+        }
+        /// <summary>
+        /// Odebere danou stránku
+        /// </summary>
+        /// <param name="page"></param>
+        public void RemovePage(DevExpress.XtraBars.Navigation.TabNavigationPage page)
+        {
+            this.Pages.Remove(page);
+        }
+        /// <summary>
+        /// Odebere stránku daného jména
+        /// </summary>
+        /// <param name="pageName"></param>
+        public void RemovePage(string pageName)
+        {
+            this.Pages.Remove(p => p.Name == pageName);
+        }
+        /// <summary>
+        /// Zahodí všechny stránky
+        /// </summary>
+        public void ClearPages()
+        {
+            this.Pages.Clear();
         }
         /// <summary>
         /// Dispose
@@ -2180,37 +2242,6 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             ScrollToBoundsBasicPadding = new Padding(3);
             ScrollToBoundsScrollPadding = new Padding(24);
-
-            this.ParentChanged += _ParentChanged;
-            this.DpiChangedAfterParent += _DpiChangedAfterParent;
-            this.Invalidated += _Invalidated;
-        }
-        /// <summary>
-        /// Po změně Parenta
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void _ParentChanged(object sender, EventArgs e)
-        {
-            DeviceDpiCheck();
-        }
-        /// <summary>
-        /// Po změně DPI (neuhlídá ale všechny situace)
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void _DpiChangedAfterParent(object sender, EventArgs e)
-        {
-            DeviceDpiCheck();
-        }
-        /// <summary>
-        /// Po Invalidaci
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void _Invalidated(object sender, SWF.InvalidateEventArgs e)
-        {
-            DeviceDpiCheck();
         }
         private SWF.Control _ContentControl;
         private DxVScrollBar _VScrollBar;
@@ -2458,12 +2489,20 @@ namespace Noris.Clients.Win.Components.AsolDX
         protected virtual void OnInvalidateContentAfter() { }
         #endregion
         #region Scroll to control / to virtual bounds
+        /// <summary>
+        /// Zajistí nascrollování obsahu tak, aby daný prostor byl viditelný.
+        /// Akceptuje přídavek k rozměru daný v <see cref="ScrollToBoundsBasicPaddingCurrent"/>.
+        /// </summary>
+        /// <param name="controlVirtualBounds"></param>
+        /// <param name="groupVirtualBounds"></param>
+        /// <param name="skipEvent"></param>
+        /// <returns></returns>
         public bool ScrollToBounds(Rectangle controlVirtualBounds, Rectangle? groupVirtualBounds = null, bool skipEvent = false)
         {
             Size totalSize = this.ContentTotalSize;
             Rectangle currentBounds = this.ContentVirtualBounds;
-            Rectangle controlBounds = controlVirtualBounds.Add(ScrollToBoundsBasicPaddingCurrent);
-            if (currentBounds.Contains(controlBounds)) return false;           // Požadovaný prostor je zcela vidět
+            Rectangle targetBounds = controlVirtualBounds.Add(ScrollToBoundsBasicPaddingCurrent);           // Malý přídavek, jen aby daný control nebyl zobrazen úplně na hraně
+            if (currentBounds.Contains(targetBounds)) return false;                                         // Požadovaný prostor je zcela vidět
 
             // Budeme muset Scrollovat:
             Point oldVirtualOrigin = currentBounds.Location;
@@ -2473,11 +2512,13 @@ namespace Noris.Clients.Win.Components.AsolDX
                 _SuppressEvent = true;
 
                 if (groupVirtualBounds.HasValue)
-                { }
+                {   // Když už scrollovat, tak se pokusíme narolovat na větší prostor:
+                    targetBounds = groupVirtualBounds.Value.Add(ScrollToBoundsScrollPaddingCurrent);        // Například control plus jeho label nebo celá grupa...  Plus větší přídavek.
+                    ScrollToBounds(currentBounds, targetBounds, totalSize);
+                }
 
-                controlBounds = controlVirtualBounds.Add(ScrollToBoundsScrollPaddingCurrent);
-                ScrollToBounds(controlBounds.X, controlBounds.Right, currentBounds.X, currentBounds.Right, totalSize.Width, HScrollBarVisible, _HScrollBar);
-                ScrollToBounds(controlBounds.Y, controlBounds.Bottom, currentBounds.Y, currentBounds.Bottom, totalSize.Height, VScrollBarVisible, _VScrollBar);
+                targetBounds = controlVirtualBounds.Add(ScrollToBoundsScrollPaddingCurrent);                // Větší přídavek, když už scrollujeme, aby cílový prostor nebyl úplně na okraji
+                ScrollToBounds(currentBounds, targetBounds, totalSize);
             }
             finally
             {
@@ -2487,11 +2528,33 @@ namespace Noris.Clients.Win.Components.AsolDX
             Point newVirtualOrigin = this.ContentVirtualBounds.Location;
             if (newVirtualOrigin == oldVirtualOrigin) return false;
 
+            // Nyní víme, že došlo ke změně:
             if (!skipEvent)
                 _RunContentVirtualBoundsChanged();
 
             return true;
         }
+        /// <summary>
+        /// Zajistí scrollování podle patřičných pravidel, pro požadované souřadnice, pro aktuální zobrazené souřadnice a celkovou velikost obsahu
+        /// </summary>
+        /// <param name="currentBounds">Aktuální zobrazený prostor</param>
+        /// <param name="targetBounds">Požadovaný prostor, který má být zobrazen</param>
+        /// <param name="totalSize">Velikost obsahu</param>
+        protected void ScrollToBounds(Rectangle currentBounds, Rectangle targetBounds, Size totalSize)
+        {
+            ScrollToBounds(targetBounds.X, targetBounds.Right, currentBounds.X, currentBounds.Right, totalSize.Width, HScrollBarVisible, _HScrollBar);
+            ScrollToBounds(targetBounds.Y, targetBounds.Bottom, currentBounds.Y, currentBounds.Bottom, totalSize.Height, VScrollBarVisible, _VScrollBar);
+        }
+        /// <summary>
+        /// Zajistí scrollování podle patřičných pravidel v jednom směru (Vertikální nebo Horizontální)
+        /// </summary>
+        /// <param name="targetBegin"></param>
+        /// <param name="targetEnd"></param>
+        /// <param name="currentBegin"></param>
+        /// <param name="currentEnd"></param>
+        /// <param name="totalSize"></param>
+        /// <param name="scrollBarVisible"></param>
+        /// <param name="scrollBar"></param>
         protected void ScrollToBounds(int targetBegin, int targetEnd, int currentBegin, int currentEnd, int totalSize, bool scrollBarVisible, ScrollBarBase scrollBar)
         {
             if (!scrollBarVisible || scrollBar == null) return;
@@ -2518,7 +2581,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
         }
         /// <summary>
-        /// Okraje, přidávané k požadovaném prostoru controlu v metodě <see cref="ScrollToBounds(Rectangle, Rectangle?)"/> před tím, než se ověří jeho aktuální viditelnost.
+        /// Okraje, přidávané k požadovaném prostoru controlu v metodě <see cref="ScrollToBounds(Rectangle, Rectangle?, bool)"/> před tím, než se ověří jeho aktuální viditelnost.
         /// Tyto okraje "zvětšují" control, tak aby se Scroll provedl i tehdy, když vlastní control sice je vidět, ale je těsně na okraji viditelného prostoru.
         /// <para/>
         /// Výchozí hodnota = 3 pixely.

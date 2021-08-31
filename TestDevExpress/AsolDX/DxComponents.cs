@@ -566,6 +566,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="value"></param>
         /// <returns></returns>
         internal static int ZoomToGuiInt(int value) { decimal zoom = Instance._Zoom; return _ZoomToGuiInt(value, zoom); }
+
         /// <summary>
         /// Vrátí danou designovou hodnotu přepočtenou dle aktuálního Zoomu do vizuální hodnoty
         /// </summary>
@@ -607,24 +608,36 @@ namespace Noris.Clients.Win.Components.AsolDX
         internal static Size ZoomToGuiInt(Size value, int targetDpi) { decimal zoomDpi = Instance._ZoomDpi; return new Size(_ZoomDpiToGuiInt(value.Width, zoomDpi, targetDpi), _ZoomDpiToGuiInt(value.Height, zoomDpi, targetDpi)); }
 
         /// <summary>
-        /// Vrátí danou designovou hodnotu přepočtenou dle aktuálního Zoomu do vizuální hodnoty
+        /// Vrátí danou designovou hodnotu přepočtenou dle aktuálního Zoomu do vizuální hodnoty.
+        /// <para/>
+        /// Rectangle je vytvářen z přepočtených souřadnic (Left, Top, Right, Bottom), 
+        /// tím je zaručeno, že pravý a dolní okraj výsledných Rectangle bude zarovnán stejně jako v Designu, 
+        /// tedy že nebude "rozházený" vlivem zaokrouhlení, kdy se může stát, že (Round(X,0) + Round(Width,0)) != Round(Right,0) !!!
         /// </summary>
         /// <param name="value"></param>
         /// <returns></returns>
-        internal static Rectangle ZoomToGuiInt(Rectangle value) { decimal zoom = Instance._Zoom; return new Rectangle(_ZoomToGuiInt(value.X, zoom), _ZoomToGuiInt(value.Y, zoom), _ZoomToGuiInt(value.Width, zoom), _ZoomToGuiInt(value.Height, zoom)); }
+        internal static Rectangle ZoomToGuiInt(Rectangle value) { decimal zoom = Instance._Zoom; return Rectangle.FromLTRB(_ZoomToGuiInt(value.Left, zoom), _ZoomToGuiInt(value.Top, zoom), _ZoomToGuiInt(value.Right, zoom), _ZoomToGuiInt(value.Bottom, zoom)); }
         /// <summary>
-        /// Vrátí danou designovou hodnotu přepočtenou dle aktuálního Zoomu do vizuální hodnoty
+        /// Vrátí danou designovou hodnotu přepočtenou dle aktuálního Zoomu do vizuální hodnoty.
+        /// <para/>
+        /// Rectangle je vytvářen z přepočtených souřadnic (Left, Top, Right, Bottom), 
+        /// tím je zaručeno, že pravý a dolní okraj výsledných Rectangle bude zarovnán stejně jako v Designu, 
+        /// tedy že nebude "rozházený" vlivem zaokrouhlení, kdy se může stát, že (Round(X,0) + Round(Width,0)) != Round(Right,0) !!!
         /// </summary>
         /// <param name="value"></param>
         /// <returns></returns>
-        internal static Rectangle? ZoomToGuiInt(Rectangle? value) { if (!value.HasValue) return null; decimal zoom = Instance._Zoom; var v = value.Value; return new Rectangle(_ZoomToGuiInt(v.X, zoom), _ZoomToGuiInt(v.Y, zoom), _ZoomToGuiInt(v.Width, zoom), _ZoomToGuiInt(v.Height, zoom)); }
+        internal static Rectangle? ZoomToGuiInt(Rectangle? value) { if (!value.HasValue) return null; decimal zoom = Instance._Zoom; var v = value.Value; return Rectangle.FromLTRB(_ZoomToGuiInt(v.Left, zoom), _ZoomToGuiInt(v.Top, zoom), _ZoomToGuiInt(v.Right, zoom), _ZoomToGuiInt(v.Bottom, zoom)); }
         /// <summary>
-        /// Vrátí danou designovou hodnotu přepočtenou dle aktuálního Zoomu do vizuální hodnoty
+        /// Vrátí danou designovou hodnotu přepočtenou dle aktuálního Zoomu do vizuální hodnoty.
+        /// <para/>
+        /// Rectangle je vytvářen z přepočtených souřadnic (Left, Top, Right, Bottom), 
+        /// tím je zaručeno, že pravý a dolní okraj výsledných Rectangle bude zarovnán stejně jako v Designu, 
+        /// tedy že nebude "rozházený" vlivem zaokrouhlení, kdy se může stát, že (Round(X,0) + Round(Width,0)) != Round(Right,0) !!!
         /// </summary>
         /// <param name="value">Designová hodnota (96DPI, 100%)</param>
         /// <param name="targetDpi">Cílové DPI</param>
         /// <returns></returns>
-        internal static Rectangle ZoomToGuiInt(Rectangle value, int targetDpi) { decimal zoomDpi = Instance._ZoomDpi; return new Rectangle(_ZoomDpiToGuiInt(value.X, zoomDpi, targetDpi), _ZoomDpiToGuiInt(value.Y, zoomDpi, targetDpi), _ZoomDpiToGuiInt(value.Width, zoomDpi, targetDpi), _ZoomDpiToGuiInt(value.Height, zoomDpi, targetDpi)); }
+        internal static Rectangle ZoomToGuiInt(Rectangle value, int targetDpi) { decimal zoomDpi = Instance._ZoomDpi; return Rectangle.FromLTRB(_ZoomDpiToGuiInt(value.Left, zoomDpi, targetDpi), _ZoomDpiToGuiInt(value.Top, zoomDpi, targetDpi), _ZoomDpiToGuiInt(value.Right, zoomDpi, targetDpi), _ZoomDpiToGuiInt(value.Bottom, zoomDpi, targetDpi)); }
 
         /// <summary>
         /// Vrátí danou designovou hodnotu přepočtenou dle aktuálního Zoomu do vizuální hodnoty
@@ -645,8 +658,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="targetDpi">Cílové DPI</param>
         /// <returns></returns>
         internal static Padding ZoomToGuiInt(Padding value, int targetDpi) { decimal zoomDpi = Instance._ZoomDpi; return new Padding(_ZoomDpiToGuiInt(value.Left, zoomDpi, targetDpi), _ZoomDpiToGuiInt(value.Top, zoomDpi, targetDpi), _ZoomDpiToGuiInt(value.Right, zoomDpi, targetDpi), _ZoomDpiToGuiInt(value.Bottom, zoomDpi, targetDpi)); }
-
-
 
         /// <summary>
         /// Vrátí danou designovou hodnotu přepočtenou dle daného Zoomu do vizuální hodnoty
@@ -5140,7 +5151,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             return rectangleF;
         }
         #endregion
-        #region Rectangle, RectangleF: GetArea(), SummaryRectangle(), ShiftBy()
+        #region Rectangle, RectangleF: GetArea(), SummaryRectangle()
         /// <summary>
         /// Vrací true, pokud this Rectangle má obě velikosti (Width i Height) kladné, a tedy obsahuje nějaký reálný pixel ke kreslení.
         /// </summary>
@@ -5243,59 +5254,50 @@ namespace Noris.Clients.Win.Components.AsolDX
             return d;
         }
         /// <summary>
-        /// Vrátí Rectangle, který vznikne posunutím this o souřadnice (X,Y) daného bodu
+        /// Vrátí nový Rectangle, který má stejnou pozici středu (Center), ale je otočený o 90°: z výšky na šířku.
         /// </summary>
         /// <param name="r"></param>
-        /// <param name="point"></param>
         /// <returns></returns>
-        public static Rectangle ShiftBy(this Rectangle r, Point point)
+        public static Rectangle Swap(this Rectangle r)
         {
-            return new Rectangle(r.Location.Add(point), r.Size);
+            Point center = Center(r);
+            Size size = Swap(r.Size);
+            return center.CreateRectangleFromCenter(size);
         }
         /// <summary>
-        /// Vrátí Rectangle, který vznikne posunutím this o souřadnice (X,Y) daného bodu
+        /// Vrátí danou velikost otočenou o 90°: z výšky na šířku.
+        /// </summary>
+        /// <param name="size"></param>
+        /// <returns></returns>
+        public static Size Swap(this Size size)
+        {
+            return new Size(size.Height, size.Width);
+        }
+        /// <summary>
+        /// Vrátí nový Rectangle, který má stejnou pozici středu (Center), ale je otočený o 90°: z výšky na šířku.
         /// </summary>
         /// <param name="r"></param>
-        /// <param name="x"></param>
-        /// <param name="y"></param>
         /// <returns></returns>
-        public static Rectangle ShiftBy(this Rectangle r, int x, int y)
+        public static RectangleF Swap(this RectangleF r)
         {
-            return new Rectangle(r.X + x, r.Y + y, r.Width, r.Height);
+            PointF center = Center(r);
+            SizeF size = Swap(r.Size);
+            return center.CreateRectangleFromCenter(size);
         }
         /// <summary>
-        /// Vrátí Rectangle, který vznikne posunutím this o souřadnice (X,Y) daného bodu
+        /// Vrátí danou velikost otočenou o 90°: z výšky na šířku.
         /// </summary>
-        /// <param name="r"></param>
-        /// <param name="point"></param>
+        /// <param name="size"></param>
         /// <returns></returns>
-        public static RectangleF ShiftBy(this RectangleF r, PointF point)
+        public static SizeF Swap(this SizeF size)
         {
-            return new RectangleF(r.Location.Add(point), r.Size);
+            return new SizeF(size.Height, size.Width);
         }
+        #endregion
+        #region Rectangle a RectangleF: Add a Sub
         /// <summary>
-        /// Vrátí RectangleF, který vznikne posunutím this o souřadnice (X,Y) daného bodu
-        /// </summary>
-        /// <param name="r"></param>
-        /// <param name="x"></param>
-        /// <param name="y"></param>
-        /// <returns></returns>
-        public static RectangleF ShiftBy(this RectangleF r, float x, float y)
-        {
-            return new RectangleF(r.X + x, r.Y + y, r.Width, r.Height);
-        }
-        /// <summary>
-        /// Returns a Rectangle, which is this rectangle plus point (=new Rectangle(this.X + point.X, this.Y + point.Y, this.Width, this.Height))
-        /// </summary>
-        /// <param name="r"></param>
-        /// <param name="point"></param>
-        /// <returns></returns>
-        public static Rectangle Add(this Rectangle r, Point point)
-        {
-            return new Rectangle(r.Location.Add(point), r.Size);
-        }
-        /// <summary>
-        /// Returns a Rectangle, which is this rectangle plus point (=new Rectangle(this.X + point.X, this.Y + point.Y, this.Width, this.Height))
+        /// Vrací nový <see cref="Rectangle"/>, který je dán výchozím bodem plus daný přídavek, a výchozí velikostí.
+        /// Jinými slovy původní <see cref="Rectangle"/> posune o X,Y.
         /// </summary>
         /// <param name="r"></param>
         /// <param name="x"></param>
@@ -5304,6 +5306,17 @@ namespace Noris.Clients.Win.Components.AsolDX
         public static Rectangle Add(this Rectangle r, int x, int y)
         {
             return new Rectangle(r.X + x, r.Y + y, r.Width, r.Height);
+        }
+        /// <summary>
+        /// Vrací nový <see cref="Rectangle"/>, který je dán výchozím bodem plus daný přídavek, a výchozí velikostí.
+        /// Jinými slovy původní <see cref="Rectangle"/> posune o X,Y.
+        /// </summary>
+        /// <param name="r"></param>
+        /// <param name="point"></param>
+        /// <returns></returns>
+        public static Rectangle Add(this Rectangle r, Point point)
+        {
+            return new Rectangle(r.X + point.X, r.Y + point.Y, r.Width, r.Height);
         }
         /// <summary>
         /// Vrací nový <see cref="Rectangle"/>, který je dán aktuálním prostorem, zvětšeným o dané vnitřní okraje.
@@ -5316,35 +5329,15 @@ namespace Noris.Clients.Win.Components.AsolDX
             return new Rectangle(r.X - padding.Left, r.Y - padding.Top, r.Width + padding.Horizontal, r.Height + padding.Vertical);
         }
         /// <summary>
-        /// Returns a Rectangle, which is this rectangle minus point (=new Rectangle(this.X - point.X, this.Y - point.Y, this.Width, this.Height))
-        /// </summary>
-        /// <param name="r"></param>
-        /// <param name="point"></param>
-        /// <returns></returns>
-        public static Rectangle Sub(this Rectangle r, Point point)
-        {
-            return new Rectangle(r.Location.Sub(point), r.Size);
-        }
-        /// <summary>
-        /// Returns a Rectangle, which is this rectangle minus point (=new Rectangle(this.X - point.X, this.Y - point.Y, this.Width, this.Height))
+        /// Returns a Rectangle?, which is this rectangle plus point (=new Rectangle?(this.X + point.X, this.Y + point.Y, this.Width, this.Height))
         /// </summary>
         /// <param name="r"></param>
         /// <param name="x"></param>
         /// <param name="y"></param>
         /// <returns></returns>
-        public static Rectangle Sub(this Rectangle r, int x, int y)
+        public static Rectangle? Add(this Rectangle? r, int x, int y)
         {
-            return new Rectangle(r.X - x, r.Y - y, r.Width, r.Height);
-        }
-        /// <summary>
-        /// Vrací nový <see cref="Rectangle"/>, který je dán aktuálním prostorem, zmenšeným o dané vnitřní okraje.
-        /// </summary>
-        /// <param name="r"></param>
-        /// <param name="padding"></param>
-        /// <returns></returns>
-        public static Rectangle Sub(this Rectangle r, Padding padding)
-        {
-            return new Rectangle(r.X + padding.Left, r.Y + padding.Top, r.Width - padding.Horizontal, r.Height - padding.Vertical);
+            return (r.HasValue ? (Rectangle?)(new Rectangle(r.Value.X + x, r.Value.Y + y, r.Value.Width, r.Value.Height)) : (Rectangle?)null);
         }
         /// <summary>
         /// Returns a Rectangle, which is this rectangle plus point (=new Rectangle(this.X + point.X, this.Y + point.Y, this.Width, this.Height))
@@ -5384,25 +5377,59 @@ namespace Noris.Clients.Win.Components.AsolDX
             return Add(r.Value, padding.Value);
         }
         /// <summary>
-        /// Returns a Rectangle?, which is this rectangle plus point (=new Rectangle?(this.X + point.X, this.Y + point.Y, this.Width, this.Height))
+        /// Vrací nový <see cref="Rectangle"/>, který je dán výchozím bodem plus daný přídavek, a výchozí velikostí.
+        /// Jinými slovy původní <see cref="Rectangle"/> posune o X,Y.
         /// </summary>
         /// <param name="r"></param>
         /// <param name="x"></param>
         /// <param name="y"></param>
         /// <returns></returns>
-        public static Rectangle? Add(this Rectangle? r, int x, int y)
+        public static RectangleF Add(this RectangleF r, float x, float y)
         {
-            return (r.HasValue ? (Rectangle?)(new Rectangle(r.Value.X + x, r.Value.Y + y, r.Value.Width, r.Value.Height)) : (Rectangle?)null);
+            return new RectangleF(r.X + x, r.Y + y, r.Width, r.Height);
         }
         /// <summary>
-        /// Returns a Rectangle?, which is this rectangle minus point (=new Rectangle?(this.X - point.X, this.Y - point.Y, this.Width, this.Height))
+        /// Vrací nový <see cref="Rectangle"/>, který je dán výchozím bodem plus daný přídavek, a výchozí velikostí.
+        /// Jinými slovy původní <see cref="Rectangle"/> posune o X,Y.
         /// </summary>
         /// <param name="r"></param>
         /// <param name="point"></param>
         /// <returns></returns>
-        public static Rectangle? Sub(this Rectangle? r, Point? point)
+        public static RectangleF Add(this RectangleF r, PointF point)
         {
-            return (r.HasValue && point.HasValue ? (Rectangle?)(new Rectangle(r.Value.Location.Sub(point.Value), r.Value.Size)) : (Rectangle?)null);
+            return new RectangleF(r.X + point.X, r.Y + point.Y, r.Width, r.Height);
+        }
+
+        /// <summary>
+        /// Returns a Rectangle, which is this rectangle minus point (=new Rectangle(this.X - point.X, this.Y - point.Y, this.Width, this.Height))
+        /// </summary>
+        /// <param name="r"></param>
+        /// <param name="x"></param>
+        /// <param name="y"></param>
+        /// <returns></returns>
+        public static Rectangle Sub(this Rectangle r, int x, int y)
+        {
+            return new Rectangle(r.X - x, r.Y - y, r.Width, r.Height);
+        }
+        /// <summary>
+        /// Returns a Rectangle, which is this rectangle minus point (=new Rectangle(this.X - point.X, this.Y - point.Y, this.Width, this.Height))
+        /// </summary>
+        /// <param name="r"></param>
+        /// <param name="point"></param>
+        /// <returns></returns>
+        public static Rectangle Sub(this Rectangle r, Point point)
+        {
+            return new Rectangle(r.Location.Sub(point), r.Size);
+        }
+        /// <summary>
+        /// Vrací nový <see cref="Rectangle"/>, který je dán aktuálním prostorem, zmenšeným o dané vnitřní okraje.
+        /// </summary>
+        /// <param name="r"></param>
+        /// <param name="padding"></param>
+        /// <returns></returns>
+        public static Rectangle Sub(this Rectangle r, Padding padding)
+        {
+            return new Rectangle(r.X + padding.Left, r.Y + padding.Top, r.Width - padding.Horizontal, r.Height - padding.Vertical);
         }
         /// <summary>
         /// Returns a Rectangle?, which is this rectangle minus point (=new Rectangle?(this.X - point.X, this.Y - point.Y, this.Width, this.Height))
@@ -5416,6 +5443,16 @@ namespace Noris.Clients.Win.Components.AsolDX
             return (r.HasValue ? (Rectangle?)(new Rectangle(r.Value.X - x, r.Value.Y - y, r.Value.Width, r.Value.Height)) : (Rectangle?)null);
         }
         /// <summary>
+        /// Returns a Rectangle?, which is this rectangle minus point (=new Rectangle?(this.X - point.X, this.Y - point.Y, this.Width, this.Height))
+        /// </summary>
+        /// <param name="r"></param>
+        /// <param name="point"></param>
+        /// <returns></returns>
+        public static Rectangle? Sub(this Rectangle? r, Point? point)
+        {
+            return (r.HasValue && point.HasValue ? (Rectangle?)(new Rectangle(r.Value.Location.Sub(point.Value), r.Value.Size)) : (Rectangle?)null);
+        }
+        /// <summary>
         /// Vrací nový <see cref="Rectangle"/>, který je dán aktuálním prostorem, zmenšeným o dané vnitřní okraje.
         /// </summary>
         /// <param name="r"></param>
@@ -5425,37 +5462,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             if (!r.HasValue || !padding.HasValue) return null;
             return Sub(r.Value, padding.Value);
-        }
-        /// <summary>
-        /// Returns a RectangleF, which is this rectangle plus point (=new RectangleF(this.X + point.X, this.Y + point.Y, this.Width, this.Height))
-        /// </summary>
-        /// <param name="r"></param>
-        /// <param name="point"></param>
-        /// <returns></returns>
-        public static RectangleF Add(this RectangleF r, PointF point)
-        {
-            return new RectangleF(r.Location.Add(point), r.Size);
-        }
-        /// <summary>
-        /// Returns a Rectangle, which is this rectangle plus point (=new Rectangle(this.X + point.X, this.Y + point.Y, this.Width, this.Height))
-        /// </summary>
-        /// <param name="r"></param>
-        /// <param name="x"></param>
-        /// <param name="y"></param>
-        /// <returns></returns>
-        public static RectangleF Add(this RectangleF r, float x, float y)
-        {
-            return new RectangleF(r.X + x, r.Y + y, r.Width, r.Height);
-        }
-        /// <summary>
-        /// Returns a RectangleF, which is this rectangle minus point (=new RectangleF(this.X - point.X, this.Y - point.Y, this.Width, this.Height))
-        /// </summary>
-        /// <param name="r"></param>
-        /// <param name="point"></param>
-        /// <returns></returns>
-        public static RectangleF Sub(this RectangleF r, PointF point)
-        {
-            return new RectangleF(r.Location.Sub(point), r.Size);
         }
         /// <summary>
         /// Returns a Rectangle, which is this rectangle minus point (=new Rectangle(this.X - point.X, this.Y - point.Y, this.Width, this.Height))
@@ -5469,46 +5475,17 @@ namespace Noris.Clients.Win.Components.AsolDX
             return new RectangleF(r.X - x, r.Y - y, r.Width, r.Height);
         }
         /// <summary>
-        /// Vrátí nový Rectangle, který má stejnou pozici středu (Center), ale je otočený o 90°: z výšky na šířku.
+        /// Returns a RectangleF, which is this rectangle minus point (=new RectangleF(this.X - point.X, this.Y - point.Y, this.Width, this.Height))
         /// </summary>
         /// <param name="r"></param>
+        /// <param name="point"></param>
         /// <returns></returns>
-        public static Rectangle Swap(this Rectangle r)
+        public static RectangleF Sub(this RectangleF r, PointF point)
         {
-            Point center = Center(r);
-            Size size = Swap(r.Size);
-            return center.CreateRectangleFromCenter(size);
-        }
-        /// <summary>
-        /// Vrátí danou velikost otočenou o 90°: z výšky na šířku.
-        /// </summary>
-        /// <param name="size"></param>
-        /// <returns></returns>
-        public static Size Swap(this Size size)
-        {
-            return new Size(size.Height, size.Width);
+            return new RectangleF(r.Location.Sub(point), r.Size);
         }
 
-        /// <summary>
-        /// Vrátí nový Rectangle, který má stejnou pozici středu (Center), ale je otočený o 90°: z výšky na šířku.
-        /// </summary>
-        /// <param name="r"></param>
-        /// <returns></returns>
-        public static RectangleF Swap(this RectangleF r)
-        {
-            PointF center = Center(r);
-            SizeF size = Swap(r.Size);
-            return center.CreateRectangleFromCenter(size);
-        }
-        /// <summary>
-        /// Vrátí danou velikost otočenou o 90°: z výšky na šířku.
-        /// </summary>
-        /// <param name="size"></param>
-        /// <returns></returns>
-        public static SizeF Swap(this SizeF size)
-        {
-            return new SizeF(size.Height, size.Width);
-        }
+
         #endregion
         #region Rectangle: SummaryBounds
         /// <summary>

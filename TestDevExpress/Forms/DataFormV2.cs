@@ -341,10 +341,10 @@ namespace TestDevExpress.Forms
             switch (sampleId)
             {
                 case 1:
-                    dataForm.CreateSampleItems(texts, tooltips, 1, 60);
+                    dataForm.Pages = DxDataFormSamples.CreateSampleData(texts, tooltips, 1, 60);
                     break;
                 case 2:
-                    dataForm.CreateSampleItems(texts, tooltips, 2, 2000);
+                    dataForm.Pages = DxDataFormSamples.CreateSampleData(texts, tooltips, 2, 2000);
                     break;
             }
             _DxTestPanel.Controls.Add(dataForm);
@@ -379,7 +379,7 @@ namespace TestDevExpress.Forms
             DxDataForm dataForm = new DxDataForm();
             string[] texts = Random.GetSentencesArray(1, 3, 120, 240, false);
             string[] tooltips = Random.GetSentencesArray(7, 16, 120, 240, true);
-            dataForm.CreateSampleItems(texts, tooltips, 2, 2000);
+            dataForm.Pages = DxDataFormSamples.CreateSampleData(texts, tooltips, 2, 2000);
             dataForm.GotFocus += DxDataForm_GotFocus;
 
             _DxDataFormV2 = dataForm;

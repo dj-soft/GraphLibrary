@@ -127,6 +127,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public DataFormGroup()
         {
+            IsVisible = true;
+            CollapseMode = DataFormGroupCollapseMode.None;
+            AllowColumnBreak = false;
             Items = new List<IDataFormItem>();
         }
         /// <summary>
@@ -142,9 +145,23 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public virtual string GroupText { get; set; }
         /// <summary>
-        /// Vnitřní okraje mezi souřadnicí grupy a souřadnicí prvku uvnitř
+        /// Vnější velikost grupy. Jednotlivé grupy za sebe navazují těsně pixel za pixelem.
+        /// Souřadnice jednotlivých prvků grupy (<see cref="Items"/>) mají svůj počátek v počátku grupy.
+        /// Design grupy tedy může zajistit Padding prvků tak, že jejich souřadnice posune o potřebné hodnoty v rámci grupy.
+        /// <para/>
+        /// Pokud grupa má implementovat titulek, pak titulek bude jednou z položek grupy, typu <see cref="DataFormItemType.Label"/>, včetně zadané velikosti a vzhledu.
+        /// Pokud součástí grupy má být podtitulek a/nebo linka, musí být i to uvedeno v Items.
         /// </summary>
-        public virtual SWF.Padding DesignPadding { get; set; }
+        public virtual Size GroupSize { get; set; }
+        /// <summary>
+        /// Pomůcka pro líné: pokud zde bude zadána instance <see cref="SWF.Padding"/> (nikoli null), 
+        /// pak systém vypočítá velikost grupy <see cref="GroupSize"/> tak, aby okolo prvků <see cref="Items"/> byl daný okraj.
+        /// </summary>
+        public virtual SWF.Padding? AutoGroupSizePadding { get; set; }
+        /// <summary>
+        /// Řídí viditelnost grupy
+        /// </summary>
+        public virtual bool IsVisible { get; set; }
         /// <summary>
         /// Pravidla pro sbalení/rozbalení grupy
         /// </summary>
@@ -157,11 +174,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Obsahuje true, pokud tato grupa smí být zalomena = smí začínat na dalším sloupci layoutu v rámci jedné stránky.
         /// Algoritmus zalomí stránky tak, aby optimálně využil dostupnou šířku prostoru, a do něj vložil všechny grupy tak, aby byly rozloženy rovnoměrně.
         /// </summary>
-        public virtual bool AllowPageBreak { get; set; }
+        public virtual bool AllowColumnBreak { get; set; }
         /// <summary>
         /// Vzhled prvku - kalíšek, barvy, modifikace fontu
         /// </summary>
-        public virtual DataFormAppearance Appearance { get; set; }
+        public virtual IDataFormAppearance Appearance { get; set; }
         /// <summary>
         /// Jednotlivé prvky grupy
         /// </summary>
@@ -200,10 +217,23 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         string GroupText { get; }
         /// <summary>
-        /// Vnitřní okraje mezi souřadnicí grupy a souřadnicí prvku uvnitř.
-        /// Designová hodnota.
+        /// Vnější velikost grupy. Jednotlivé grupy za sebe navazují těsně pixel za pixelem.
+        /// Souřadnice jednotlivých prvků grupy (<see cref="Items"/>) mají svůj počátek v počátku grupy.
+        /// Design grupy tedy může zajistit Padding prvků tak, že jejich souřadnice posune o potřebné hodnoty v rámci grupy.
+        /// <para/>
+        /// Pokud grupa má implementovat titulek, pak titulek bude jednou z položek grupy, typu <see cref="DataFormItemType.Label"/>, včetně zadané velikosti a vzhledu.
+        /// Pokud součástí grupy má být podtitulek a/nebo linka, musí být i to uvedeno v Items.
         /// </summary>
-        SWF.Padding DesignPadding { get; }
+        Size GroupSize { get; }
+        /// <summary>
+        /// Pomůcka pro líné: pokud zde bude zadána instance <see cref="SWF.Padding"/> (nikoli null), 
+        /// pak systém vypočítá velikost grupy <see cref="GroupSize"/> tak, aby okolo prvků <see cref="Items"/> byl daný okraj.
+        /// </summary>
+        SWF.Padding? AutoGroupSizePadding { get; }
+        /// <summary>
+        /// Řídí viditelnost grupy
+        /// </summary>
+        bool IsVisible { get; }
         /// <summary>
         /// Pravidla pro sbalení/rozbalení grupy
         /// </summary>
@@ -216,11 +246,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Obsahuje true, pokud tato grupa smí být zalomena = smí začínat na dalším sloupci layoutu v rámci jedné stránky.
         /// Algoritmus zalomí stránky tak, aby optimálně využil dostupnou šířku prostoru, a do něj vložil všechny grupy tak, aby byly rozloženy rovnoměrně.
         /// </summary>
-        bool AllowPageBreak { get; }
+        bool AllowColumnBreak { get; }
         /// <summary>
         /// Vzhled prvku - kalíšek, barvy, modifikace fontu
         /// </summary>
-        DataFormAppearance Appearance { get; }
+        IDataFormAppearance Appearance { get; }
         /// <summary>
         /// Jednotlivé prvky grupy
         /// </summary>
@@ -316,6 +346,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         #endregion
         #region Základní prvky
         /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public DataFormItem()
+        {
+            IsVisible = true;
+        }
+        /// <summary>
         /// ID prvku, jednoznačné v celém DataFormu
         /// </summary>
         public virtual string ItemId { get; set; }
@@ -329,9 +366,17 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public virtual Rectangle DesignBounds { get; set; }
         /// <summary>
+        /// Prvek je viditelný?
+        /// </summary>
+        public virtual bool IsVisible { get; set; }
+        /// <summary>
+        /// Prvek bude podsvícen při pohybu myší nad ním
+        /// </summary>
+        public virtual bool HotTrackingEnabled { get; set; }
+        /// <summary>
         /// Vzhled prvku - kalíšek, barvy, modifikace fontu
         /// </summary>
-        public virtual DataFormAppearance Appearance { get; set; }
+        public virtual IDataFormAppearance Appearance { get; set; }
 
         /// <summary>
         /// Text ToolTipu
@@ -366,43 +411,85 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         Rectangle DesignBounds { get; }
         /// <summary>
+        /// Prvek je viditelný?
+        /// </summary>
+        bool IsVisible { get; }
+        /// <summary>
+        /// Prvek bude podsvícen při pohybu myší nad ním
+        /// </summary>
+        bool HotTrackingEnabled { get; }
+        /// <summary>
         /// Vzhled prvku - kalíšek, barvy, modifikace fontu
         /// </summary>
-        DataFormAppearance Appearance { get; }
+        IDataFormAppearance Appearance { get; }
     }
     /// <summary>
     /// Modifikace vzhledu prvku
     /// </summary>
-    public class DataFormAppearance
+    public class DataFormAppearance : IDataFormAppearance
     {
         /// <summary>
         /// Změna velikosti písma
         /// </summary>
-        public int? FontSizeDelta { get; set; }
+        public virtual int? FontSizeDelta { get; set; }
         /// <summary>
         /// Změna stylu písma - Bold
         /// </summary>
-        public bool? FontStyleBold { get; set; }
+        public virtual bool? FontStyleBold { get; set; }
         /// <summary>
         /// Změna stylu písma - Italic
         /// </summary>
-        public bool? FontStyleItalic { get; set; }
+        public virtual bool? FontStyleItalic { get; set; }
         /// <summary>
         /// Změna stylu písma - Underline
         /// </summary>
-        public bool? FontStyleUnderline { get; set; }
+        public virtual bool? FontStyleUnderline { get; set; }
         /// <summary>
         /// Změna stylu písma - StrikeOut
         /// </summary>
-        public bool? FontStyleStrikeOut { get; set; }
+        public virtual bool? FontStyleStrikeOut { get; set; }
         /// <summary>
         /// Změna barvy pozadí
         /// </summary>
-        public Color? BackColor { get; set; }
+        public virtual Color? BackColor { get; set; }
         /// <summary>
         /// Změna barvy popředí = písma
         /// </summary>
-        public Color? ForeColor { get; set; }
+        public virtual Color? ForeColor { get; set; }
+    }
+    /// <summary>
+    /// Modifikace vzhledu prvku
+    /// </summary>
+    public interface IDataFormAppearance
+    {
+        /// <summary>
+        /// Změna velikosti písma
+        /// </summary>
+        int? FontSizeDelta { get; }
+        /// <summary>
+        /// Změna stylu písma - Bold
+        /// </summary>
+        bool? FontStyleBold { get; }
+        /// <summary>
+        /// Změna stylu písma - Italic
+        /// </summary>
+        bool? FontStyleItalic { get; }
+        /// <summary>
+        /// Změna stylu písma - Underline
+        /// </summary>
+        bool? FontStyleUnderline { get; }
+        /// <summary>
+        /// Změna stylu písma - StrikeOut
+        /// </summary>
+        bool? FontStyleStrikeOut { get; }
+        /// <summary>
+        /// Změna barvy pozadí
+        /// </summary>
+        Color? BackColor { get; }
+        /// <summary>
+        /// Změna barvy popředí = písma
+        /// </summary>
+        Color? ForeColor { get; }
     }
     #endregion
     #region Enumy
