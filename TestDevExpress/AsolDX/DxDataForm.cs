@@ -1751,6 +1751,20 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         }
         #endregion
         #region Souřadnice designové, aktuální, viditelné
+        /*   JAK JE TO SE SOUŘADNÝM SYSTÉMEM:
+          1. Grupa deklaruje svoji vnější designovou šířku jako Int, 
+              to proto aby všechny grupy pod sebou mohly mít stejnou šířku i když nebudou využívat celou šířku pro controly.
+          2. Výška grupy není explicitně definovaná, ta se určí podle souřadnic obsahu
+          3. Dojde k určení vnitřního prostoru, obsazeného definovanými controly = ContentDesignSize
+          4. K vnitřnímu prostoru se přičítá vnitřní okraj Padding (ten se vykresluje jako prázdný) 
+              plus šířka borderu grupy Border (ten se vykresluje jako něčím vyplněný),
+              přičemž oba (Padding i Border) jsou definovány na stránce - aby grupy byly všechny vizuálně stejně,
+              ale mohou být přepsány stejnojmennými nullable hodnotami v grupě.
+              Obě hodnoty jsou designové, a přepočítávají se Zoomem a DPI na Current hodnoty.
+
+
+        */
+
         /// <summary>
         /// Na této souřadnici (designové) v rámci grupy začíná souřadnice 0/0 prvků.
         /// </summary>
