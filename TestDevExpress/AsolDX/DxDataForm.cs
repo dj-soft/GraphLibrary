@@ -166,6 +166,10 @@ namespace Noris.Clients.Win.Components.AsolDX
 
         }
 
+        private bool TryGetFormTab(string tabName, out DxDataFormTab formTab)
+        {
+            return _DataFormTabs.TryGetFirst(t => String.Equals(t.TabName, tabName), out formTab);
+        }
         /// <summary>
         /// Data jednotlivých stránek
         /// </summary>
@@ -206,7 +210,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             _AddControlToParent(_DataFormTabPane, this);             // Zajistíme, že TabPane bude přítomný jako náš přímý Child control
 
 
-            _DataFormTabPane.Visible = true;
+            _DataFormTabPane.Visible = false;
         }
 
         /// <summary>
@@ -251,8 +255,17 @@ namespace Noris.Clients.Win.Components.AsolDX
             var tabPage = e.Page as DevExpress.XtraBars.Navigation.TabNavigationPage;
             var tabName = tabPage.Name;
 
-            _AddControlToParent(_DataFormPanel, tabPage);               // Zajistíme, že DataFormPanel bude přítomný jako náš přímý Child control
-            _DataFormPanel.Groups = null;
+
+            if (TryGetFormTab(tabName, out DxDataFormTab formTab))
+            {
+                _DataFormPanel.Groups = formTab.Groups;
+            }
+            else
+            {
+                _DataFormPanel.Groups = null;
+            }
+
+            _AddControlToParent(_DataFormPanel, tabPage);               // Zajistíme, že DataFormPanel bude přítomný jako Child control v nové stránce
             _DataFormPanel.Visible = true;
         }
 
@@ -756,6 +769,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             _CurrentOnMouseControlSet = null;
             _CurrentOnMouseControl = null;
         }
+        /// <summary>
+        /// Prvek, nacházející se nyní pod myší
+        /// </summary>
+        private ControlOneInfo _CurrentItemOnMouseItem;
         /// <summary>
         /// Datový prvek, nacházející se nyní pod myší
         /// </summary>
@@ -1770,6 +1787,28 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             private Control _ControlMouse;
             private Control _ControlFocus;
             #endregion
+        }
+        /// <summary>
+        /// Kompletní informace o jednom prvku: index řádku, dekarace, control set a fyzický control
+        /// </summary>
+        private class ControlOneInfo
+        {
+            /// <summary>
+            /// Řádek
+            /// </summary>
+            public int RowIndex;
+            /// <summary>
+            /// Datový prvek, nacházející se nyní pod myší
+            /// </summary>
+            public DxDataFormItem Item;
+            /// <summary>
+            /// Datový set popisující control, nacházející se nyní pod myší
+            /// </summary>
+            public ControlSetInfo ControlSet;
+            /// <summary>
+            /// Vizuální control, nacházející se nyní pod myší
+            /// </summary>
+            public Control Control;
         }
         private enum ControlUseMode { None, Draw, Mouse, Focus }
         /// <summary>
