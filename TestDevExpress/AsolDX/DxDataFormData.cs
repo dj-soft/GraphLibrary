@@ -73,7 +73,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Ikona ToolTipu
         /// </summary>
         public virtual string ToolTipIcon { get; set; }
-
+        string IToolTipItem.ToolTipTitle { get { return ToolTipTitle ?? PageText; } }
         IEnumerable<IDataFormGroup> IDataFormPage.Groups { get { return Groups; } }
     }
     /// <summary>
@@ -292,6 +292,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Text
         /// </summary>
         public virtual string Text { get; set; }
+        string IToolTipItem.ToolTipTitle { get { return ToolTipTitle ?? Text; } }
+
     }
     /// <summary>
     /// Předpis požadovaných vlastností pro jeden prvek v rámci DataFormu, který má Text a Ikonu
@@ -351,6 +353,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         public DataFormItem()
         {
             IsVisible = true;
+            HotTrackingEnabled = true;
         }
         /// <summary>
         /// ID prvku, jednoznačné v celém DataFormu
