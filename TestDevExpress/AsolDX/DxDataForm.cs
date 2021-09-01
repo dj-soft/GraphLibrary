@@ -36,7 +36,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="disposing"></param>
         protected override void Dispose(bool disposing)
         {
-            DisposeVisualControls();
+            _DisposeVisualControls();
             base.Dispose(disposing);
         }
         /// <summary>
@@ -93,7 +93,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             if (_DataFormPages == null) return;
             _PreparePagesLayout();
-            _PrepareVisualControl();
+            _ActivateVisualControl();
         }
         /// <summary>
         /// Určí souřadnice skupin na jednotlivých stránkách.
@@ -185,15 +185,15 @@ namespace Noris.Clients.Win.Components.AsolDX
 
         #endregion
         #region Práce s controly DxDataFormPanel (jednoduchá DataForm) a / nebo TabPane (záložky)
-        private void _PrepareVisualControl()
+        private void _ActivateVisualControl()
         {
             if (_DataFormTabs.Count <= 1)
-                _PrepareSinglePanel();
+                _ActivateSinglePanel();
             else
-                PrepareTabPages();
+                _ActivateTabPane();
 
         }
-        private void _PrepareSinglePanel()
+        private void _ActivateSinglePanel()
         {
             _PrepareDataFormPanel();
             _RemoveControlFromParent(_DataFormTabPane, this);        // Pokud máme jako náš Child control přítomný TabPane, odebereme jej
@@ -202,15 +202,14 @@ namespace Noris.Clients.Win.Components.AsolDX
             _DataFormPanel.Groups = _DataFormTabs.FirstOrDefault()?.Groups;
             _DataFormPanel.Visible = true;
         }
-        private void PrepareTabPages()
+        private void _ActivateTabPane()
         {
             _PrepareDataFormTabPane();
             _RemoveControlFromParent(_DataFormPanel, this);          // Pokud máme jako náš Child control přítomný DataFormPanel, odebereme jej
             _PrepareDataFormTabPages();
             _AddControlToParent(_DataFormTabPane, this);             // Zajistíme, že TabPane bude přítomný jako náš přímý Child control
 
-
-            _DataFormTabPane.Visible = false;
+            _DataFormTabPane.Visible = true;
         }
 
         /// <summary>
@@ -259,6 +258,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (TryGetFormTab(tabName, out DxDataFormTab formTab))
             {
                 _DataFormPanel.Groups = formTab.Groups;
+                Plus údržba pozice, fokusu atd !!!
+                _DataFormPanel.Refresh();
             }
             else
             {
@@ -317,17 +318,17 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="control"></param>
         /// <param name="parent"></param>
-        private void _RemoveControlFromParent(Control control, Control parent)
+        private void _RemoveControlFromParent(Control control, Control parent = null)
         {
-            if (control == null || parent == null) return;
+            if (control == null) return;
             control.Visible = false;
-            if (control.Parent != null && Object.ReferenceEquals(control.Parent, parent))
+            if (control.Parent != null && (parent == null || Object.ReferenceEquals(control.Parent, parent)))
                 control.Parent.Controls.Remove(control);
         }
         /// <summary>
         /// Dispose vizuálních controlů
         /// </summary>
-        private void DisposeVisualControls()
+        private void _DisposeVisualControls()
         {
             _DisposeDataFormPanel();
             _DisposeDataFormTabPane();
