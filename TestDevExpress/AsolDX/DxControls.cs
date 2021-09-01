@@ -2704,7 +2704,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public override bool LogActive { get { return base.LogActive; } set { base.LogActive = value; if (_ContentControl != null && _ContentControl is DxPanelControl dxPanel) dxPanel.LogActive = value; } }
         #endregion
-        #region Public vlastnosti - ContentPanel, Size, ContentVirtualBounds...
+        #region Public vlastnosti - ContentControl, Size, ContentVirtualBounds...
         /// <summary>
         /// Aktuálně zobrazený obsah.
         /// Jeho fyzický rozměr bude vždy odpovídat aktuálně viditelnému prostoru.
@@ -3131,8 +3131,21 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="e"></param>
         private void ContentControl_MouseWheel(object sender, SWF.MouseEventArgs e)
         {
-            DevExpress.XtraEditors.ScrollBarBase scrollBar = (_VScrollBarVisible ? (DevExpress.XtraEditors.ScrollBarBase)_VScrollBar : (_HScrollBarVisible ? (DevExpress.XtraEditors.ScrollBarBase)_HScrollBar : null));
+            DevExpress.XtraEditors.ScrollBarBase scrollBar = GetScrollBarForWheel();
             ContentControl_MouseWheel(scrollBar, e.Delta);
+        }
+        private DevExpress.XtraEditors.ScrollBarBase GetScrollBarForWheel()
+        {
+            bool hasVScrollBar = _VScrollBarVisible;
+            bool hasHScrollBar = _HScrollBarVisible;
+            if (hasVScrollBar && hasHScrollBar)
+            {
+                if (ModifierKeys.HasFlag(Keys.Control)) return _HScrollBar;
+                return _VScrollBar;
+            }
+            if (hasVScrollBar) return _VScrollBar;
+            if (hasHScrollBar) return _HScrollBar;
+            return null;
         }
         /// <summary>
         /// Na controlu <see cref="_VScrollBar"/> bylo otočeno myškou
@@ -3160,10 +3173,16 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void ContentControl_MouseWheel(DevExpress.XtraEditors.ScrollBarBase scrollBar, int delta)
         {
             if (scrollBar == null) return;
-            int diff = (delta < 0 ? 3 : (delta > 0 ? -3 : 0));
+
+            int distance = (delta < 0 ? 1 : (delta > 0 ? -1 : 0));
+            if (ModifierKeys.HasFlag(Keys.Shift))
+                distance = distance * 9 * scrollBar.LargeChange / 10;
+            else
+                distance = distance * 2 * scrollBar.LargeChange / 10;
+
             int value = scrollBar.Value;
             int maxValue = scrollBar.Maximum - scrollBar.LargeChange + 1;
-            int newValue = value + diff * scrollBar.SmallChange;
+            int newValue = value + distance;
             newValue = (newValue < 0 ? 0 : (newValue > maxValue ? maxValue : newValue));
             if (newValue != value)
                 scrollBar.Value = newValue;

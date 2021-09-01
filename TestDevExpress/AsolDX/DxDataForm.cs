@@ -895,7 +895,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 if (!_ContentPanel.IsPaintLayersInProgress)
                 {   // V době, kdy probíhá proces Paint, NEBUDU provádět Scroll:
                     //  Ono k tomu v reálu nedochází - Scroll standardně proběhne při KeyEnter (anebo ruční ScrollBar). To jen při testu provádím MouseMove => ScrollToBounds!
-                    bool isScrolled = this.ScrollToBounds(item.CurrentBounds, null, true);
+                    bool isScrolled = false;     // this.ScrollToBounds(item.CurrentBounds, null, true);
                     if (isScrolled) Refresh(RefreshParts.AfterScroll);
                 }
             }
