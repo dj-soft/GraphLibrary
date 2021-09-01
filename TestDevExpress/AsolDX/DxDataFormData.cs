@@ -145,23 +145,36 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public virtual string GroupText { get; set; }
         /// <summary>
-        /// Vnější velikost grupy. Jednotlivé grupy za sebe navazují těsně pixel za pixelem.
-        /// Souřadnice jednotlivých prvků grupy (<see cref="Items"/>) mají svůj počátek v počátku grupy.
-        /// Design grupy tedy může zajistit Padding prvků tak, že jejich souřadnice posune o potřebné hodnoty v rámci grupy.
+        /// Explicitně definovaná šířka grupy (designová hodnota: Zoom 100% a 96DPI).
+        /// Může být null, pak se určí podle souhrnu rozměrů <see cref="Items"/> plus <see cref="DesignPadding"/>.
+        /// <para/>
+        /// Designer tedy může určit explicitně jen šířku grupy (nastaví hodnotu do <see cref="DesignWidth"/>), 
+        /// a ponechá výšku grupy <see cref="DesignHeight"/> = null, 
+        /// pak systém určí designovou výšku jako součet rozměru obsahu plus svislé okraje <see cref="DesignPadding"/>.
         /// <para/>
         /// Pokud grupa má implementovat titulek, pak titulek bude jednou z položek grupy, typu <see cref="DataFormItemType.Label"/>, včetně zadané velikosti a vzhledu.
         /// Pokud součástí grupy má být podtitulek a/nebo linka, musí být i to uvedeno v Items.
         /// </summary>
-        public virtual Size GroupSize { get; set; }
+        public virtual int? DesignWidth { get; set; }
         /// <summary>
-        /// Pomůcka pro líné: pokud zde bude zadána instance <see cref="SWF.Padding"/> (nikoli null), 
-        /// pak systém vypočítá velikost grupy <see cref="GroupSize"/> tak, aby okolo prvků <see cref="Items"/> byl daný okraj.
+        /// Explicitně definovaná výška grupy (designová hodnota: Zoom 100% a 96DPI).
+        /// Může být null, pak se určí podle souhrnu rozměrů <see cref="Items"/> plus <see cref="DesignPadding"/>.
         /// <para/>
-        /// Pokud bude tato hodnota rovna <see cref="SWF.Padding.Empty"/>, pak se velikost spočítá ze souřadnic prvků, a nepřidá se okraj.
-        /// Pokud bude Padding mít kladné Left a/nebo Top, použijí se tyto souřadnice i jako "posun" obsahu = pak může mít první prvek souřadnici Loaction = { 0, 0 } 
-        /// a bude v rámci grupy (stejně jako každý další prvek) zobrazen posunutý o tento Padding doprava/dolů.
+        /// Designer tedy může určit explicitně jen šířku grupy (nastaví hodnotu do <see cref="DesignWidth"/>), 
+        /// a ponechá výšku grupy <see cref="DesignHeight"/> = null, 
+        /// pak systém určí designovou výšku jako součet rozměru obsahu plus svislé okraje <see cref="DesignPadding"/>.
+        /// <para/>
+        /// Pokud grupa má implementovat titulek, pak titulek bude jednou z položek grupy, typu <see cref="DataFormItemType.Label"/>, včetně zadané velikosti a vzhledu.
+        /// Pokud součástí grupy má být podtitulek a/nebo linka, musí být i to uvedeno v Items.
         /// </summary>
-        public virtual SWF.Padding? AutoGroupSizePadding { get; set; }
+        public virtual int? DesignHeight { get; set; }
+        /// <summary>
+        /// Okraje uvnitř grupy.
+        /// Hodnota <see cref="SWF.Padding.Left"/> a <see cref="SWF.Padding.Top"/> určují posun souřadného systému prvků <see cref="Items"/> oproti počátku grupy.
+        /// Hodnoty <see cref="SWF.Padding.Right"/> a <see cref="SWF.Padding.Bottom"/> se použijí tehdy, když velikost grupy není dána explicitně 
+        /// a bude se dopočítávat podle souhrnu rozměrů <see cref="Items"/>, pak se k nejkrajnější souřadnici prvku přičte pravý a dolní Padding.
+        /// </summary>
+        public virtual SWF.Padding DesignPadding { get; set; }
         /// <summary>
         /// Řídí viditelnost grupy
         /// </summary>
@@ -223,23 +236,36 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         string GroupText { get; }
         /// <summary>
-        /// Vnější velikost grupy. Jednotlivé grupy za sebe navazují těsně pixel za pixelem.
-        /// Souřadnice jednotlivých prvků grupy (<see cref="Items"/>) mají svůj počátek v počátku grupy.
-        /// Design grupy tedy může zajistit Padding prvků tak, že jejich souřadnice posune o potřebné hodnoty v rámci grupy.
+        /// Explicitně definovaná šířka grupy (designová hodnota: Zoom 100% a 96DPI).
+        /// Může být null, pak se určí podle souhrnu rozměrů <see cref="Items"/> plus <see cref="DesignPadding"/>.
+        /// <para/>
+        /// Designer tedy může určit explicitně jen šířku grupy (nastaví hodnotu do <see cref="DesignWidth"/>), 
+        /// a ponechá výšku grupy <see cref="DesignHeight"/> = null, 
+        /// pak systém určí designovou výšku jako součet rozměru obsahu plus svislé okraje <see cref="DesignPadding"/>.
         /// <para/>
         /// Pokud grupa má implementovat titulek, pak titulek bude jednou z položek grupy, typu <see cref="DataFormItemType.Label"/>, včetně zadané velikosti a vzhledu.
         /// Pokud součástí grupy má být podtitulek a/nebo linka, musí být i to uvedeno v Items.
         /// </summary>
-        Size GroupSize { get; }
+        int? DesignWidth { get; }
         /// <summary>
-        /// Pomůcka pro líné: pokud zde bude zadána instance <see cref="SWF.Padding"/> (nikoli null), 
-        /// pak systém vypočítá velikost grupy <see cref="GroupSize"/> tak, aby okolo prvků <see cref="Items"/> byl daný okraj.
+        /// Explicitně definovaná výška grupy (designová hodnota: Zoom 100% a 96DPI).
+        /// Může být null, pak se určí podle souhrnu rozměrů <see cref="Items"/> plus <see cref="DesignPadding"/>.
         /// <para/>
-        /// Pokud bude tato hodnota rovna <see cref="SWF.Padding.Empty"/>, pak se velikost spočítá ze souřadnic prvků, a nepřidá se okraj.
-        /// Pokud bude Padding mít kladné Left a/nebo Top, použijí se tyto souřadnice i jako "posun" obsahu = pak může mít první prvek souřadnici Loaction = { 0, 0 } 
-        /// a bude v rámci grupy (stejně jako každý další prvek) zobrazen posunutý o tento Padding doprava/dolů.
+        /// Designer tedy může určit explicitně jen šířku grupy (nastaví hodnotu do <see cref="DesignWidth"/>), 
+        /// a ponechá výšku grupy <see cref="DesignHeight"/> = null, 
+        /// pak systém určí designovou výšku jako součet rozměru obsahu plus svislé okraje <see cref="DesignPadding"/>.
+        /// <para/>
+        /// Pokud grupa má implementovat titulek, pak titulek bude jednou z položek grupy, typu <see cref="DataFormItemType.Label"/>, včetně zadané velikosti a vzhledu.
+        /// Pokud součástí grupy má být podtitulek a/nebo linka, musí být i to uvedeno v Items.
         /// </summary>
-        SWF.Padding? AutoGroupSizePadding { get; }
+        int? DesignHeight { get; }
+        /// <summary>
+        /// Okraje uvnitř grupy.
+        /// Hodnota <see cref="SWF.Padding.Left"/> a <see cref="SWF.Padding.Top"/> určují posun souřadného systému prvků <see cref="Items"/> oproti počátku grupy.
+        /// Hodnoty <see cref="SWF.Padding.Right"/> a <see cref="SWF.Padding.Bottom"/> se použijí tehdy, když velikost grupy není dána explicitně 
+        /// a bude se dopočítávat podle souhrnu rozměrů <see cref="Items"/>, pak se k nejkrajnější souřadnici prvku přičte pravý a dolní Padding.
+        /// </summary>
+        SWF.Padding DesignPadding { get; }
         /// <summary>
         /// Řídí viditelnost grupy
         /// </summary>

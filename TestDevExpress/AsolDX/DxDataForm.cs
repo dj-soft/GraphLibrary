@@ -164,12 +164,36 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
 
         }
-
+        /// <summary>
+        /// Metoda zkusí najít navigační stránku (typově přesnou) a její data záložky <see cref="DxDataFormTab"/>
+        /// pro vstupní obecnou stránku.
+        /// </summary>
+        /// <param name="page"></param>
+        /// <param name="tabPage"></param>
+        /// <param name="formTab"></param>
+        /// <returns></returns>
+        private bool TryGetFormTab(DevExpress.XtraBars.Navigation.INavigationPageBase page, out DevExpress.XtraBars.Navigation.TabNavigationPage tabPage, out DxDataFormTab formTab)
+        {
+            tabPage = null;
+            formTab = null;
+            if (!(page is DevExpress.XtraBars.Navigation.TabNavigationPage tp)) return false;
+            tabPage = tp;
+            var tabName = tabPage.Name;
+            return TryGetFormTab(tabName, out formTab);
+        }
+        /// <summary>
+        /// Metoda zkusí najít data záložky <see cref="DxDataFormTab"/>
+        /// pro daný název záložky.
+        /// </summary>
+        /// <param name="tabName"></param>
+        /// <param name="formTab"></param>
+        /// <returns></returns>
         private bool TryGetFormTab(string tabName, out DxDataFormTab formTab)
         {
+            formTab = null;
+            if (String.IsNullOrEmpty(tabName)) return false;
             return _DataFormTabs.TryGetFirst(t => String.Equals(t.TabName, tabName), out formTab);
         }
-
         /// <summary>
         /// Data jednotlivých stránek
         /// </summary>
@@ -209,6 +233,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             _DataFormPanel.AddControlToParent(this, true);                 // Zajistíme, že DataFormPanel bude přítomný jako náš přímý Child control
 
             _DataFormPanel.Groups = _DataFormTabs.FirstOrDefault()?.Groups;
+            _DataFormPanel.State = null;
             _DataFormPanel.Visible = true;
         }
         /// <summary>
@@ -222,8 +247,28 @@ namespace Noris.Clients.Win.Components.AsolDX
             _DataFormTabPane.AddControlToParent(this, true);               // Zajistíme, že TabPane bude přítomný jako náš přímý Child control
 
             _DataFormTabPane.Visible = true;
-            // Umístění panelu _DataFormPanel do patřičné záložky, jeho naplnění daty a jeo zobrazení se provádí až v eventhandleru po změně záložky.
+            // Umístění panelu _DataFormPanel do patřičné záložky, jeho naplnění daty a jeho zobrazení se provádí až v eventhandleru po změně záložky.
         }
+        /// <summary>
+        /// Dispose vizuálních controlů
+        /// </summary>
+        private void _DisposeVisualControls()
+        {
+            _DisposeDataFormPanel();
+            _DisposeDataFormTabPane();
+        }
+        /// <summary>
+        /// Aktuální počet podkladů pro záložky = počet prvků v poli <see cref="_DataFormTabsCount"/>
+        /// </summary>
+        private int _DataFormTabsCount { get { return (_DataFormTabs?.Count ?? 0); } }
+        /// <summary>
+        /// Data jednotlivých záložek.
+        /// Jedna záložka může obsahovat jednu nebo více stránek <see cref="DxDataFormPage"/>.
+        /// Pokud záložka obsahuje více stránek, pak další stránky už mají vypočtené souřadnice skupin <see cref="DxDataFormGroup.CurrentGroupBounds"/> správně (a tedy i jejich prvky mají správné souřadnice).
+        /// <para/>
+        /// Toto pole je vytvořeno v metodě <see cref="_CreateDataTabs"/>.
+        /// </summary>
+        private List<DxDataFormTab> _DataFormTabs;
         #region DxDataFormPanel
         /// <summary>
         /// Vytvoří vlastní panel DataForm
@@ -270,22 +315,25 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             _PrepareDataFormPanel();
 
-            if (!(e.Page is DevExpress.XtraBars.Navigation.TabNavigationPage tabPage)) return;
-            var tabName = tabPage.Name;
-
-            if (TryGetFormTab(tabName, out DxDataFormTab formTab))
+            if (TryGetFormTab(e.OldPage, out var oldTabPage, out var oldFormTab))
             {
-                _DataFormPanel.Groups = formTab.Groups;
-                // Plus údržba pozice, fokusu atd !!!
+                oldFormTab.State = _DataFormPanel.State.Clone();
+            }
+            if (TryGetFormTab(e.Page, out var newTabPage, out var newFormTab))
+            {
+                _DataFormPanel.Groups = newFormTab.Groups;
+                _DataFormPanel.State = newFormTab.State;
+
+                _DataFormPanel.AddControlToParent(newTabPage);       // Zajistíme, že DataFormPanel bude přítomný jako Child control v nové stránce
+                _DataFormPanel.Visible = true;
+
                 _DataFormPanel.Refresh();
             }
             else
             {
                 _DataFormPanel.Groups = null;
+                _DataFormPanel.State = null;
             }
-
-            _DataFormPanel.AddControlToParent(tabPage);              // Zajistíme, že DataFormPanel bude přítomný jako Child control v nové stránce
-            _DataFormPanel.Visible = true;
         }
         /// <summary>
         /// Do vlastního záložkovníku TabPane vygeneruje fyzické stránky podle obsahu v <see cref="_DataFormTabs"/>.
@@ -314,30 +362,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private DxTabPane _DataFormTabPane;
         #endregion
-
-
-
-
-        /// <summary>
-        /// Dispose vizuálních controlů
-        /// </summary>
-        private void _DisposeVisualControls()
-        {
-            _DisposeDataFormPanel();
-            _DisposeDataFormTabPane();
-        }
-        /// <summary>
-        /// Aktuální počet podkladů pro záložky = počet prvků v poli <see cref="_DataFormTabsCount"/>
-        /// </summary>
-        private int _DataFormTabsCount { get { return (_DataFormTabs?.Count ?? 0); } }
-        /// <summary>
-        /// Data jednotlivých záložek.
-        /// Jedna záložka může obsahovat jednu nebo více stránek <see cref="DxDataFormPage"/>.
-        /// Pokud záložka obsahuje více stránek, pak další stránky už mají vypočtené souřadnice skupin <see cref="DxDataFormGroup.CurrentGroupBounds"/> správně (a tedy i jejich prvky mají správné souřadnice).
-        /// <para/>
-        /// Toto pole je vytvořeno v metodě <see cref="_CreateDataTabs"/>.
-        /// </summary>
-        private List<DxDataFormTab> _DataFormTabs;
         #endregion
         #region Služby pro controly se vztahem do DxDataFormPanel
         /// <summary>
@@ -383,6 +407,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         internal int VisibleItemsCount { get { return _DataFormPanel?.VisibleItemsCount ?? 0; } }
         #endregion
     }
+    #region Zdroj testovacích dat
     /// <summary>
     /// Třída, která generuje testovací předpisy a data pro testy <see cref="DxDataForm"/>
     /// </summary>
@@ -400,33 +425,46 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Vytvoří a vrátí data pro definici DataFormu
         /// </summary>
+        /// <param name="sampleId"></param>
         /// <param name="texts"></param>
         /// <param name="tooltips"></param>
-        /// <param name="sampleId"></param>
         /// <param name="rowCount"></param>
         /// <returns></returns>
-        public static List<IDataFormPage> CreateSampleData(string[] texts, string[] tooltips, int sampleId, int rowCount)
+        public static List<IDataFormPage> CreateSampleData(int sampleId, string[] texts, string[] tooltips, int rowCount)
         {
             List<IDataFormPage> pages = new List<IDataFormPage>();
-            DataFormPage page;
 
-            pages.Add(CreateSamplePage(texts, tooltips, sampleId, rowCount, "Základní stránka", "Obsahuje běžné informace"));
+            pages.Add(CreateSamplePage(sampleId, texts, tooltips, rowCount, "Základní stránka", "Obsahuje běžné informace"));
 
             if (sampleId == 2)
-                pages.Add(CreateSamplePage(texts, tooltips, 3, 125, "Doplňková stránka", "Obsahuje další málo používané informace"));
+                pages.Add(CreateSamplePage(3, texts, tooltips, 125, "Doplňková stránka", "Obsahuje další málo používané informace"));
 
             if (sampleId == 3)
             {
-                pages.Add(CreateSamplePage(texts, tooltips, 4, 70, "Sklady", null));
-                pages.Add(CreateSamplePage(texts, tooltips, 5, 15, "Faktury", null));
-                pages.Add(CreateSamplePage(texts, tooltips, 6, 25, "Zaúčtování", null));
-                pages.Add(CreateSamplePage(texts, tooltips, 7, 480, "Výrobní čísla", null));
+                pages.Add(CreateSamplePage(4, texts, tooltips, 70, "Sklady", null));
+                pages.Add(CreateSamplePage(5, texts, tooltips, 15, "Faktury", null));
+                pages.Add(CreateSamplePage(6, texts, tooltips, 25, "Zaúčtování", null));
+                pages.Add(CreateSamplePage(7, texts, tooltips, 480, "Výrobní čísla fixní zalomení", null));
+                pages.Add(CreateSamplePage(8, texts, tooltips, 480, "Výrobní čísla automatické zalomení", null));
             }
 
             return pages;
         }
-        private static DataFormPage CreateSamplePage(string[] texts, string[] tooltips, int sampleId, int rowCount, string pageText, string pageToolTip)
+        /// <summary>
+        /// Vytvoří, naplní a vrátí stránku daného druhu
+        /// </summary>
+        /// <param name="sampleId"></param>
+        /// <param name="texts"></param>
+        /// <param name="tooltips"></param>
+        /// <param name="rowCount"></param>
+        /// <param name="pageText"></param>
+        /// <param name="pageToolTip"></param>
+        /// <returns></returns>
+        private static DataFormPage CreateSamplePage(int sampleId, string[] texts, string[] tooltips, int rowCount, string pageText, string pageToolTip)
         {
+            if (_Random == null) _Random = new Random();
+            Random random = _Random;
+
             DataFormPage page = new DataFormPage();
             page.PageText = pageText;
             page.ToolTipTitle = pageText;
@@ -434,47 +472,52 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             DataFormGroup group = null;
 
-            Random random = new Random();
             int textsCount = texts.Length;
             int tooltipsCount = tooltips.Length;
 
             string text, tooltip;
             int[] widths = null;
-            int addY = 0;
+            int rowHeight = 0;
+            int spaceWidth = 5;
             switch (sampleId)
             {
                 case 1:
                     widths = new int[] { 140, 260, 40, 300, 120 };
-                    addY = 28;
+                    rowHeight = 28;
                     break;
                 case 2:
                     widths = new int[] { 80, 150, 80, 60, 100, 120, 160, 40, 120, 180, 80, 40, 60, 250 };
-                    addY = 21;
+                    rowHeight = 21;
+                    spaceWidth = 1;
                     break;
                 case 3:
                     widths = new int[] { 250, 250, 60, 250, 250, 60, 250 };
-                    addY = 30;
+                    rowHeight = 30;
                     break;
 
                 case 4:                // Sklady, možnost sloučit s Faktury
                     page.AllowMerge = true;
                     widths = new int[] { 100, 75, 120, 100 };
-                    addY = 30;
+                    rowHeight = 30;
                     break;
                 case 5:                // Faktury, možnost sloučit s Sklady
                     page.AllowMerge = true;
                     widths = new int[] { 70, 70, 70, 70 };
-                    addY = 21;
+                    rowHeight = 21;
+                    spaceWidth = 1;
                     break;
                 case 6:                // Zaúčtování
                     widths = new int[] { 400, 125, 75, 100 };
-                    addY = 30;
+                    rowHeight = 30;
                     break;
-                case 7:                // Výrobní čísla - úzká pro autolayout break
+                case 7:                // Výrobní čísla - úzká pro force layout break
                     widths = new int[] { 100, 100, 70 };
-                    addY = 25;
+                    rowHeight = 25;
                     break;
-
+                case 8:                // Výrobní čísla - úzká pro auto layout break
+                    widths = new int[] { 100, 100, 70 };
+                    rowHeight = 25;
+                    break;
             }
             int count = rowCount;
             int y = 0;
@@ -488,25 +531,31 @@ namespace Noris.Clients.Win.Components.AsolDX
                 if (group == null)
                 {
                     group = new DataFormGroup();
-                    group.AutoGroupSizePadding = new Padding(12, 12, 12, 12);
+                    group.DesignPadding = new Padding(12, 12, 12, 12);
                     if (sampleId == 7)
-                    {
+                    {   // Výrobní čísla - úzká pro force layout break
                         if ((page.Groups.Count % 20) == 0)
                             group.LayoutMode = DatFormGroupLayoutMode.ForceBreakToNewColumn;
                         else
+                            group.LayoutMode = DatFormGroupLayoutMode.AllowBreakToNewColumn;
+                    }
+                    if (sampleId == 8)
+                    {   // Výrobní čísla - úzká pro auto layout break
+                        if ((page.Groups.Count % 3) == 0)
                             group.LayoutMode = DatFormGroupLayoutMode.AllowBreakToNewColumn;
                     }
                     page.Groups.Add(group);
                     y = 0;
                 }
 
-                // Řádky s prvky s danou šířkou:
+                // První prvek v řádku je Label:
                 int x = 20;
                 text = $"Řádek {(r + 1)}";
                 DataFormItemImageText lbl = new DataFormItemImageText() { ItemType = DataFormItemType.Label, Text = text, DesignBounds = new Rectangle(x, y + 2, 70, 18) };
                 group.Items.Add(lbl);
-
                 x += 80;
+
+                // Prvky s danou šířkou:
                 foreach (int width in widths)
                 {
                     bool blank = (random.Next(100) == 68);
@@ -518,39 +567,66 @@ namespace Noris.Clients.Win.Components.AsolDX
                                                 (q < 10 ? DataFormItemType.CheckBox :
                                                 (q < 15 ? DataFormItemType.Button :
                                                 (q < 20 ? DataFormItemType.Label :
-                                                DataFormItemType.TextBox))));
+                                                (q < 30 ? DataFormItemType.TextBox : // ComboBoxList :
+                                                (q < 40 ? DataFormItemType.TextBox : // TokenEdit :
+                                                DataFormItemType.TextBox))))));
+
+                    DataFormItem item = null;
+                    int shiftY = 0;
                     switch (itemType)
                     {
                         case DataFormItemType.Label:
-                            DataFormItemImageText label = new DataFormItemImageText() { ItemType = itemType, Text = text, ToolTipText = tooltip, DesignBounds = new Rectangle(x, y, width, 20) };
-                            group.Items.Add(label);
+                            DataFormItemImageText label = new DataFormItemImageText() { Text = text };
+                            shiftY = 2;
+                            item = label;
                             break;
                         case DataFormItemType.TextBox:
-                            DataFormItemImageText textBox = new DataFormItemImageText() { ItemType = itemType, Text = text, ToolTipText = tooltip, DesignBounds = new Rectangle(x, y, width, 20) };
-                            group.Items.Add(textBox);
+                            DataFormItemImageText textBox = new DataFormItemImageText() { Text = text };
+                            item = textBox;
                             break;
                         case DataFormItemType.TextBoxButton:
-                            DataFormItemImageText textBoxButton = new DataFormItemImageText() { ItemType = itemType, Text = text, ToolTipText = tooltip, DesignBounds = new Rectangle(x, y, width, 20) };
-                            group.Items.Add(textBoxButton);
+                            DataFormItemImageText textBoxButton = new DataFormItemImageText() { Text = text };
+                            item = textBoxButton;
                             break;
                         case DataFormItemType.CheckBox:
-                            DataFormItemCheckItem checkBox = new DataFormItemCheckItem() { ItemType = itemType, Text = text, ToolTipText = tooltip, DesignBounds = new Rectangle(x, y, width, 20) };
-                            group.Items.Add(checkBox);
+                            DataFormItemCheckItem checkBox = new DataFormItemCheckItem() { Text = text };
+                            shiftY = 1;
+                            item = checkBox;
+                            break;
+                        case DataFormItemType.ComboBoxList:
+                            // musíme dodělat
+                            DataFormItemImageText comboBoxList = new DataFormItemImageText() { Text = text };
+                            item = comboBoxList;
+                            break;
+                        case DataFormItemType.TokenEdit:
+                            // musíme dodělat
+                            DataFormItemImageText tokenEdit = new DataFormItemImageText() { Text = text };
+                            item = tokenEdit;
                             break;
                         case DataFormItemType.Button:
-                            DataFormItemImageText button = new DataFormItemImageText() { ItemType = itemType, Text = text, ToolTipText = tooltip, DesignBounds = new Rectangle(x, y, width, 20) };
-                            group.Items.Add(button);
+                            DataFormItemImageText button = new DataFormItemImageText() { Text = text };
+                            item = button;
                             break;
                     }
-                    x += width + 3;
+                    if (item != null)
+                    {
+                        item.ItemType = itemType;
+                        item.ToolTipText = tooltip;
+                        item.DesignBounds = new Rectangle(x, (y + shiftY), width, (20 - shiftY));
+                        group.Items.Add(item);
+                    }
+
+                    x += (width + spaceWidth);
                 }
                 maxX = x;
-                y += addY;
+                y += rowHeight;
             }
 
             return page;
         }
+        private static Random _Random;
     }
+    #endregion
 }
 
 namespace Noris.Clients.Win.Components.AsolDX.DataForm
@@ -853,7 +929,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Datový set popisující control, nacházející se nyní pod myší
         /// </summary>
-        private ControlSetInfo _CurrentOnMouseControlSet;
+        private DxDataFormControlSet _CurrentOnMouseControlSet;
         /// <summary>
         /// Vizuální control, nacházející se nyní pod myší
         /// </summary>
@@ -1076,6 +1152,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         protected override void OnContentVirtualBoundsChanged()
         {
             base.OnContentVirtualBoundsChanged();
+            State.ContentVirtualLocation = this.ContentVirtualLocation;
             Refresh(RefreshParts.AfterScroll);
         }
         /// <summary>
@@ -1278,7 +1355,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         {
             if (ImageCache == null) ImageCache = new Dictionary<string, ImageCacheItem>();
 
-            ControlSetInfo controlSet = GetControlSet(item);
+            DxDataFormControlSet controlSet = GetControlSet(item);
             string key = controlSet.GetKeyToCache(item);
             if (key == null) return null;
 
@@ -1307,8 +1384,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 }
                 return image;
             }
-
-            
         }
         /// <summary>
         /// Před přidáním nového prvku do cache provede úklid zastaralých prvků v cache, podle potřeby.
@@ -1441,10 +1516,17 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             /// <param name="paintLoop"></param>
             public ImageCacheItem(Image image, long paintLoop)
             {
-                using (System.IO.MemoryStream ms = new System.IO.MemoryStream())
+                if (image != null)
                 {
-                    image.Save(ms, System.Drawing.Imaging.ImageFormat.Png);    // PNG: čas v testu 20-24ms, spotřeba paměti 0.5MB.    BMP: čas 18-20ms, pamět 5MB.    TIFF: čas 50ms, paměť 1.5MB
-                    _ImageContent = ms.ToArray();
+                    using (System.IO.MemoryStream ms = new System.IO.MemoryStream())
+                    {
+                        image.Save(ms, System.Drawing.Imaging.ImageFormat.Png);    // PNG: čas v testu 20-24ms, spotřeba paměti 0.5MB.    BMP: čas 18-20ms, pamět 5MB.    TIFF: čas 50ms, paměť 1.5MB
+                        _ImageContent = ms.ToArray();
+                    }
+                }
+                else
+                {
+                    _ImageContent = null;
                 }
                 this.HitCount = 1L;
                 this.LastPaintLoop = paintLoop;
@@ -1456,13 +1538,15 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             /// <returns></returns>
             public Image CreateImage()
             {
+                if (_ImageContent == null) return null;
+
                 using (System.IO.MemoryStream ms = new System.IO.MemoryStream(_ImageContent))
                     return Image.FromStream(ms);
             }
             /// <summary>
             /// Počet byte uložených jako Image v této položce cache
             /// </summary>
-            public long Length { get { return _ImageContent.Length; } } 
+            public long Length { get { return _ImageContent?.Length ?? 0; } } 
             /// <summary>
             /// Počet použití této položky cache
             /// </summary>
@@ -1489,7 +1573,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         private void InitializeControls()
         {
-            _ControlsSets = new Dictionary<DataFormItemType, ControlSetInfo>();
+            _ControlsSets = new Dictionary<DataFormItemType, DxDataFormControlSet>();
             _DxSuperToolTip = new DxSuperToolTip() { AcceptTitleOnlyAsValid = false };
         }
         /// <summary>
@@ -1498,19 +1582,19 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         private void DisposeControls()
         {
             if (_ControlsSets == null) return;
-            foreach (ControlSetInfo controlSet in _ControlsSets.Values)
+            foreach (DxDataFormControlSet controlSet in _ControlsSets.Values)
                 controlSet.Dispose();
             _ControlsSets.Clear();
         }
-        private ControlSetInfo GetControlSet(DxDataFormItem item)
+        private DxDataFormControlSet GetControlSet(DxDataFormItem item)
         {
             var dataFormControls = _ControlsSets;
 
-            ControlSetInfo controlSet;
+            DxDataFormControlSet controlSet;
             DataFormItemType itemType = item.ItemType;
             if (!dataFormControls.TryGetValue(itemType, out controlSet))
             {
-                controlSet = new ControlSetInfo(this._DataForm, itemType);
+                controlSet = new DxDataFormControlSet(this._DataForm, itemType);
                 dataFormControls.Add(itemType, controlSet);
             }
             return controlSet;
@@ -1553,30 +1637,32 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
 
            */
 
-            ControlSetInfo controlSet = GetControlSet(item);
+            DxDataFormControlSet controlSet = GetControlSet(item);
             Control drawControl = controlSet.GetControlForDraw(item);
 
             int w = drawControl.Width;
             int h = drawControl.Height;
+            if (w <= 0 || h <= 0) return null;
+
             Bitmap image = new Bitmap(w, h);
             drawControl.DrawToBitmap(image, new Rectangle(0, 0, w, h));
 
             return image;
         }
 
-        private Dictionary<DataFormItemType, ControlSetInfo> _ControlsSets;
+        private Dictionary<DataFormItemType, DxDataFormControlSet> _ControlsSets;
         /// <summary>
         /// Instance třídy, která obhospodařuje jeden typ (<see cref="DataFormItemType"/>) vizuálního controlu, a má až tři instance (Draw, Mouse, Focus)
         /// </summary>
-        private class ControlSetInfo : IDisposable
+        internal class DxDataFormControlSet : IDisposable
         {
             #region Konstruktor
             /// <summary>
-            /// Vytvoří <see cref="ControlSetInfo"/> pro daný typ controlu
+            /// Vytvoří <see cref="DxDataFormControlSet"/> pro daný typ controlu
             /// </summary>
             /// <param name="dataForm"></param>
             /// <param name="itemType"></param>
-            public ControlSetInfo(DxDataForm dataForm, DataFormItemType itemType)
+            public DxDataFormControlSet(DxDataForm dataForm, DataFormItemType itemType)
             {
                 _DataForm = dataForm;
                 _ItemType = itemType;
@@ -1605,6 +1691,24 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                         _GetKeyFunction = _CheckBoxGetKey;
                         _FillControlAction = _CheckBoxFill;
                         _ReadControlAction = _CheckBoxRead;
+                        break;
+                    case DataFormItemType.ComboBoxList:
+                        _CreateControlFunction = _ComboBoxListCreate;
+                        _GetKeyFunction = _ComboBoxListGetKey;
+                        _FillControlAction = _ComboBoxListFill;
+                        _ReadControlAction = _ComboBoxListRead;
+                        break;
+                    case DataFormItemType.ComboBoxEdit:
+                        _CreateControlFunction = _ComboBoxEditCreate;
+                        _GetKeyFunction = _ComboBoxEditGetKey;
+                        _FillControlAction = _ComboBoxEditFill;
+                        _ReadControlAction = _ComboBoxEditRead;
+                        break;
+                    case DataFormItemType.TokenEdit:
+                        _CreateControlFunction = _TokenEditCreate;
+                        _GetKeyFunction = _TokenEditGetKey;
+                        _FillControlAction = _TokenEditFill;
+                        _ReadControlAction = _TokenEditRead;
                         break;
                     case DataFormItemType.Button:
                         _CreateControlFunction = _ButtonCreate;
@@ -1715,8 +1819,55 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             { }
             #endregion
             // BreadCrumb
-            // ComboBoxList
-            // ComboBoxEdit
+            #region ComboBoxList
+            private Control _ComboBoxListCreate() { return new DxTextEdit(); }
+            private string _ComboBoxListGetKey(DxDataFormItem item)
+            {
+                string key = GetStandardKeyForItem(item);
+                return key;
+            }
+            private void _ComboBoxListFill(DxDataFormItem item, Control control, ControlUseMode mode)
+            {
+                if (!(control is DxTextEdit textEdit)) throw new InvalidOperationException($"Nelze naplnit data do objektu typu {control.GetType().Name}, je očekáván objekt typu {typeof(DxTextEdit).Name}.");
+                //  CommonFill(item, textEdit, mode);
+                //  textEdit.DeselectAll();
+                textEdit.SelectionStart = 0;
+            }
+            private void _ComboBoxListRead(DxDataFormItem item, Control control)
+            { }
+            #endregion
+            #region ComboBoxEdit
+            private Control _ComboBoxEditCreate() { return new DxTextEdit(); }
+            private string _ComboBoxEditGetKey(DxDataFormItem item)
+            {
+                string key = GetStandardKeyForItem(item);
+                return key;
+            }
+            private void _ComboBoxEditFill(DxDataFormItem item, Control control, ControlUseMode mode)
+            {
+                if (!(control is DxTextEdit textEdit)) throw new InvalidOperationException($"Nelze naplnit data do objektu typu {control.GetType().Name}, je očekáván objekt typu {typeof(DxTextEdit).Name}.");
+                //  CommonFill(item, textEdit, mode);
+                //  textEdit.DeselectAll();
+                textEdit.SelectionStart = 0;
+            }
+            private void _ComboBoxEditRead(DxDataFormItem item, Control control)
+            { }
+            #endregion
+            #region TokenEdit
+            private Control _TokenEditCreate() { return new DxCheckEdit(); }
+            private string _TokenEditGetKey(DxDataFormItem item)
+            {
+                string key = GetStandardKeyForItem(item);
+                return key;
+            }
+            private void _TokenEditFill(DxDataFormItem item, Control control, ControlUseMode mode)
+            {
+                if (!(control is DxCheckEdit checkEdit)) throw new InvalidOperationException($"Nelze naplnit data do objektu typu {control.GetType().Name}, je očekáván objekt typu {typeof(DxCheckEdit).Name}.");
+                CommonFill(item, checkEdit, mode);
+            }
+            private void _TokenEditRead(DxDataFormItem item, Control control)
+            { }
+            #endregion
             // ListView
             // TreeView
             // RadioButtonBox
@@ -1762,7 +1913,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 control.Enabled = true; // item.Enabled;
                 control.SetBounds(bounds);
                 control.Visible = true;
-                control.SuperTip = GetSuperTip(item, mode);
+                if (mode != ControlUseMode.Draw)
+                    control.SuperTip = GetSuperTip(item, mode);
             }
             /// <summary>
             /// Vrátí instanci <see cref="DxSuperToolTip"/> připravenou pro daný prvek a daný režim. Může vrátit null.
@@ -1900,7 +2052,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             /// <summary>
             /// Datový set popisující control, nacházející se nyní pod myší
             /// </summary>
-            public ControlSetInfo ControlSet;
+            public DxDataFormControlSet ControlSet;
             /// <summary>
             /// Vizuální control, nacházející se nyní pod myší
             /// </summary>
@@ -1945,24 +2097,36 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         internal DxSuperToolTip DxSuperToolTip { get { return this._DxSuperToolTip; } }
         private DxSuperToolTip _DxSuperToolTip;
         #endregion
-        #region Testovací prvky - zrušit!
+        #region Stav panelu, umožní uložit stav a následně jej restorovat
 
-        private void InitializeSampleControls()
+        internal DxDataFormState State
         {
-            _Label = new DxLabelControl() { Bounds = new Rectangle(20, 52, 70, 18), Text = "Popis", TabIndex = 1 };
-            _ContentPanel.Controls.Add(_Label);
-            _TextBox = new DxTextEdit() { Bounds = new Rectangle(100, 50, 80, 20), Text = "Pokus", TabIndex = 2, TabStop = false };
-            _ContentPanel.Controls.Add(_TextBox);
-            _CheckBox = new DxCheckEdit() { Bounds = new Rectangle(210, 50, 100, 20), Text = "Předvolba", TabIndex = 3, TabStop = false };
-            _ContentPanel.Controls.Add(_CheckBox);
+            get
+            {
+                if (_State == null)
+                {
+                    _State = new DxDataFormState();
+                    _FillState();
+                }
+                return _State;
+            }
+            set
+            {
+                _State = value;
+                _ApplyState();
+            }
         }
-        public DxTextEdit TextBox { get { return _TextBox; } }
-        private DxLabelControl _Label;
-        private DxTextEdit _TextBox;
-        private DxCheckEdit _CheckBox;
-
+        private DxDataFormState _State;
+        private void _FillState()
+        {
+            if (_State == null) return;
+            _State.ContentVirtualLocation = this.ContentVirtualLocation;
+        }
+        private void _ApplyState()
+        {
+            this.ContentVirtualLocation = _State?.ContentVirtualLocation ?? Point.Empty;
+        }
         #endregion
-
     }
     /// <summary>
     /// Data jedné záložky
@@ -2015,8 +2179,33 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         public List<DxDataFormGroup> Groups { get { return Pages.SelectMany(p => p.Groups).ToList(); } }
         #endregion
+        #region Stav panelu, umožní uložit stav a následně jej restorovat
 
+        internal DxDataFormState State
+        {
+            get
+            {
+                if (_State == null)
+                    _State = new DxDataFormState();
+                return _State;
+            }
+            set
+            {
+                _State = value;
+            }
+        }
+        private DxDataFormState _State;
+        #endregion
     }
+    internal class DxDataFormState
+    {
+        public Point ContentVirtualLocation { get; set; }
+        public DxDataFormState Clone()
+        {
+            return (DxDataFormState)this.MemberwiseClone();
+        }
+    }
+
     /// <summary>
     /// Třída reprezentující jednu designem definovanou stránku v dataformu.
     /// V dynamickém layoutu může jedna fyzická vizuální záložka obsahovat více designových stránek vedle sebe.
@@ -2136,16 +2325,22 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             int y = 0;
             int right = 0;
             int bottom = 0;
-            bool canDoDynamicLayout = false;
+            bool containForceBreak = false;
+            bool containAllowBreak  = false;
             foreach (var dataGroup in Groups)
             {
-                if (dataGroup.LayoutForceBreakToNewColumn && y > 0 && right > 0)
-                {
-                    x = right;
-                    y = 0;
+                if (dataGroup.LayoutForceBreakToNewColumn)
+                {   // Požadavek na Force Break:
+                    containForceBreak = true;
+                    if (y > 0 && right > 0)
+                    {   // Můžeme vyhovět:
+                        x = right;
+                        y = 0;
+                    }
                 }
-                else if (dataGroup.LayoutAllowBreakToNewColumn && !canDoDynamicLayout)
-                    canDoDynamicLayout = true;
+                else if (dataGroup.LayoutAllowBreakToNewColumn && !containAllowBreak)
+                    // Zapamatujeme si, že je možno provést AllowBreak:
+                    containAllowBreak  = true;
 
                 dataGroup.CurrentGroupOrigin = new Point(x, y);                // Tady se invaliduje CurrentGroupBounds
                 var groupBounds = dataGroup.CurrentGroupBounds;                // Tady dojde k vyhodnocení souřadnice CurrentGroupOrigin a k přepočtu DesignSize na CurrentSize.
@@ -2154,8 +2349,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 if (groupBounds.Bottom > bottom) bottom = groupBounds.Bottom;  // Střádám největší Bottom pro případná zalomení
             }
 
-            if (canDoDynamicLayout)
-            {   // Dynamické zalomení je možné (máme alespoň jednu grupu, která to povoluje)...
+            if (containAllowBreak && !containForceBreak)
+            {   // Dynamické zalomení je možné (máme alespoň jednu grupu, která to povoluje) a nemáme povinné zalomení:
 
             }
 
@@ -2240,21 +2435,27 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         public IList<DxDataFormItem> Items { get { return _Items; } }
         /// <summary>
         /// Zajistí provedení výpočtu automatické velikosti grupy.
-        /// Reaguje na <see cref="IDataFormGroup.AutoGroupSizePadding"/>, čte prvky <see cref="Items"/> 
+        /// Reaguje na <see cref="IDataFormGroup.DesignPadding"/>, čte prvky <see cref="Items"/> 
         /// a určuje hodnoty do <see cref="DesignItemsOrigin"/> a <see cref="DesignGroupAutoSize"/>
         /// </summary>
         private void _CalculateAutoSize()
         {
             DesignItemsOrigin = Point.Empty;
-            if (!IGroup.AutoGroupSizePadding.HasValue) return;
+            
+            var designWidth = IGroup.DesignWidth;
+            var designHeight = IGroup.DesignHeight;
+            var designPadding = IGroup.DesignPadding;
+            if (!(designWidth.HasValue && designHeight.HasValue))
+            {   // Některá z hodnot (DesignWidth nebo DesignHeight) není zadaná, musíme ji dopočítat:
+                var itemSummaryBounds = this.Items.Select(i => i.DesignBounds).SummaryVisibleRectangle() ?? Rectangle.Empty;
+                if (!designWidth.HasValue)
+                    designWidth = itemSummaryBounds.Right + designPadding.Horizontal;
+                if (!designHeight.HasValue)
+                    designHeight = itemSummaryBounds.Bottom + designPadding.Vertical;
+            }
 
-            var padding = IGroup.AutoGroupSizePadding.Value;
-            DesignItemsOrigin = new Point(padding.Left, padding.Top);
-
-            var itemSummaryBounds = this.Items.Select(i => i.DesignBounds).SummaryVisibleRectangle() ?? Rectangle.Empty;
-            int w = itemSummaryBounds.Right + padding.Horizontal;
-            int h = itemSummaryBounds.Bottom + padding.Vertical;
-            DesignGroupAutoSize = new Size(w, h);
+            DesignItemsOrigin = new Point(designPadding.Left, designPadding.Top);
+            DesignGroupSize = new Size(designWidth.Value, designHeight.Value);
         }
         #endregion
         #region Data o grupě
@@ -2290,20 +2491,15 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         */
 
         /// <summary>
-        /// Souřadnice počátku, ke kterému jsou zadány designové souřadnice jednotlivých Items = <see cref="DxDataFormItem.DesignBounds"/>.
-        /// Běžná hodnota je { 0,0 }, ale při autodetekci prostoru (je zadáno <see cref="IDataFormGroup.AutoGroupSizePadding"/>) je zde explicitní počátek určený z tohoto Paddingu.
+        /// Souřadnice počátku, ke kterému jsou vztaženy designové souřadnice jednotlivých Items = <see cref="DxDataFormItem.DesignBounds"/>.
+        /// Běžná hodnota je { 0, 0 }, ale designer mohl určit určitý posun, aby byl prostor pro okraje grupy.
         /// </summary>
         internal Point DesignItemsOrigin { get; private set; }
         /// <summary>
-        /// Velikost grupy zjištěná autodetekcí z jednotlivých prvků plus Padding (protože autodetekce je vyžádána);
-        /// tato hodnota má přednost před hodnotou <see cref="IDataFormGroup.GroupSize"/>.
-        /// </summary>
-        internal Size? DesignGroupAutoSize { get; private set; }
-        /// <summary>
         /// Velikost grupy daná designem = pro Zoom 100% a DPI = 96.
-        /// Pokud v grupě je povolen AutoSize (<see cref="IDataFormGroup.AutoGroupSizePadding"/> není null), pak je zde velikost daná obsahem + daný Padding.
+        /// Buď je dána explicitně, nebo je vypočtena ze sumárních souřadnic prvků a okraje <see cref="IDataFormGroup.DesignPadding"/>.
         /// </summary>
-        public Size DesignGroupSize { get { return DesignGroupAutoSize ?? IGroup.GroupSize; } }
+        public Size DesignGroupSize { get; private set; }
         /// <summary>
         /// Viditelnost grupy
         /// </summary>
