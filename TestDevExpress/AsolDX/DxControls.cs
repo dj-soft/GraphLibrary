@@ -288,7 +288,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.Padding = new SWF.Padding(0);
             this.LogActive = false;
             this._CurrentDpi = DxComponent.DesignDpi;
-            this._LastDpi = 0;
+            this._LastDpi = DxComponent.DesignDpi;           // ??? anebo   0 ?
             DxComponent.RegisterListener(this);
         }
         /// <summary>

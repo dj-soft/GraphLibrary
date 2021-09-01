@@ -116,7 +116,7 @@ namespace TestDevExpress.Forms
             page.Groups.Add(group);
             group.Items.Add(new DataRibbonItem() { ItemId = "CreateSample1", Text = "Ukázka 1", Image = imageTest, Tag = "Sample1", Enabled = true });
             group.Items.Add(new DataRibbonItem() { ItemId = "CreateSample2", Text = "Ukázka 2", Image = imageTest, Tag = "Sample2", Enabled = true });
-            // group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Sample.Sample3", Text = "Ukázka 3", Image = imageTest, Tag = "Sample3", Enabled = true });
+            group.Items.Add(new DataRibbonItem() { ItemId = "CreateSample3", Text = "Ukázka 3", Image = imageTest, Tag = "Sample3", Enabled = true });
             // group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Sample.Sample4", Text = "Ukázka 4", Image = imageTest, Tag = "Sample4", Enabled = true });
 
 
@@ -190,6 +190,9 @@ namespace TestDevExpress.Forms
                     break;
                 case "CreateSample2":
                     _AddDataFormSample(2);
+                    break;
+                case "CreateSample3":
+                    _AddDataFormSample(3);
                     break;
                 default:
                     DxComponent.LogClear();
@@ -318,17 +321,18 @@ namespace TestDevExpress.Forms
         }
         private void _AddDataFormSample(int sampleId)
         {
-            if (!(sampleId == 1 || sampleId == 2)) return;
+            if (!DxDataFormSamples.AllowedSampled(sampleId)) return;
 
-            string[] texts = Random.GetSentencesArray(1, 3, 120, 240, false);
-            string[] tooltips = Random.GetSentencesArray(7, 16, 120, 240, true);
 
-            long sampleStartTime = DxComponent.LogTimeCurrent;
+            string[] texts = Random.GetSentencesArray(1, 3, 160, 320, false);
+            string[] tooltips = Random.GetSentencesArray(7, 16, 300, 500, true);
+
+            long startTime = DxComponent.LogTimeCurrent;
             _DxShowTimeStart = DateTime.Now;               // Určení času End a času Elapsed proběhne v DxDataForm_GotFocus
             DxDataForm dataForm = _DxDataFormV2;
             if (dataForm == null)
             {
-                sampleStartTime = DxComponent.LogTimeCurrent;
+                startTime = DxComponent.LogTimeCurrent;
                 _DxShowTimeSpan = null;
                 dataForm = new DxDataForm();
                 dataForm.TabIndex = 1;
@@ -337,10 +341,10 @@ namespace TestDevExpress.Forms
 
                 _DxDataFormV2 = dataForm;
                 _DoLayoutAnyDataForm();
-                DxComponent.LogAddLineTime($"Create DxDataFormV2: Time: {DxComponent.LogTokenTimeMilisec}", sampleStartTime);
+                DxComponent.LogAddLineTime($"Create DxDataFormV2: Time: {DxComponent.LogTokenTimeMilisec}", startTime);
             }
 
-            sampleStartTime = DxComponent.LogTimeCurrent;
+            startTime = DxComponent.LogTimeCurrent;
             switch (sampleId)
             {
                 case 1:
@@ -348,6 +352,9 @@ namespace TestDevExpress.Forms
                     break;
                 case 2:
                     dataForm.Pages = DxDataFormSamples.CreateSampleData(texts, tooltips, 2, 2000);
+                    break;
+                case 3:
+                    dataForm.Pages = DxDataFormSamples.CreateSampleData(texts, tooltips, 3, 500);
                     break;
             }
             _DxTestPanel.Controls.Add(dataForm);
@@ -358,7 +365,7 @@ namespace TestDevExpress.Forms
             RefreshStatusCurrent();
 
             int count = dataForm.ItemsCount;
-            DxComponent.LogAddLineTime($"AddItems: Items.Count: {count}; Time: {DxComponent.LogTokenTimeMilisec}", sampleStartTime);
+            DxComponent.LogAddLineTime($"AddItems: Items.Count: {count}; Time: {DxComponent.LogTokenTimeMilisec}", startTime);
 
             _FocusInButton.Focus();
         }

@@ -389,6 +389,15 @@ namespace Noris.Clients.Win.Components.AsolDX
     public class DxDataFormSamples
     {
         /// <summary>
+        /// Vrací true pro povolený SampleId
+        /// </summary>
+        /// <param name="sampleId"></param>
+        /// <returns></returns>
+        public static bool AllowedSampled(int sampleId)
+        {
+            return (sampleId == 1 || sampleId == 2 || sampleId == 3);
+        }
+        /// <summary>
         /// Vytvoří a vrátí data pro definici DataFormu
         /// </summary>
         /// <param name="texts"></param>
@@ -401,13 +410,17 @@ namespace Noris.Clients.Win.Components.AsolDX
             List<IDataFormPage> pages = new List<IDataFormPage>();
             DataFormPage page;
 
-            page = CreateSamplePage(texts, tooltips, sampleId, rowCount, "Základní stránka", "Obsahuje běžné informace");
-            pages.Add(page);
+            pages.Add(CreateSamplePage(texts, tooltips, sampleId, rowCount, "Základní stránka", "Obsahuje běžné informace"));
 
             if (sampleId == 2)
+                pages.Add(CreateSamplePage(texts, tooltips, 3, 125, "Doplňková stránka", "Obsahuje další málo používané informace"));
+
+            if (sampleId == 3)
             {
-                page = CreateSamplePage(texts, tooltips, 3, 125, "Doplňková stránka", "Obsahuje další málo používané informace");
-                pages.Add(page);
+                pages.Add(CreateSamplePage(texts, tooltips, 4, 70, "Sklady", null));
+                pages.Add(CreateSamplePage(texts, tooltips, 5, 15, "Faktury", null));
+                pages.Add(CreateSamplePage(texts, tooltips, 6, 25, "Zaúčtování", null));
+                pages.Add(CreateSamplePage(texts, tooltips, 7, 480, "Výrobní čísla", null));
             }
 
             return pages;
@@ -419,9 +432,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             page.ToolTipTitle = pageText;
             page.ToolTipText = pageToolTip;
 
-            DataFormGroup group = new DataFormGroup();
-            group.AutoGroupSizePadding = new Padding(12, 12, 12, 12);
-            page.Groups.Add(group);
+            DataFormGroup group = null;
 
             Random random = new Random();
             int textsCount = texts.Length;
@@ -444,13 +455,52 @@ namespace Noris.Clients.Win.Components.AsolDX
                     widths = new int[] { 250, 250, 60, 250, 250, 60, 250 };
                     addY = 30;
                     break;
+
+                case 4:                // Sklady, možnost sloučit s Faktury
+                    page.AllowMerge = true;
+                    widths = new int[] { 100, 75, 120, 100 };
+                    addY = 30;
+                    break;
+                case 5:                // Faktury, možnost sloučit s Sklady
+                    page.AllowMerge = true;
+                    widths = new int[] { 70, 70, 70, 70 };
+                    addY = 21;
+                    break;
+                case 6:                // Zaúčtování
+                    widths = new int[] { 400, 125, 75, 100 };
+                    addY = 30;
+                    break;
+                case 7:                // Výrobní čísla - úzká pro autolayout break
+                    widths = new int[] { 100, 100, 70 };
+                    addY = 25;
+                    break;
+
             }
             int count = rowCount;
-            int y = 80;
+            int y = 0;
             int maxX = 0;
             int q;
             for (int r = 0; r < count; r++)
             {
+                if ((r % 10) == 0)
+                    group = null;
+
+                if (group == null)
+                {
+                    group = new DataFormGroup();
+                    group.AutoGroupSizePadding = new Padding(12, 12, 12, 12);
+                    if (sampleId == 7)
+                    {
+                        if ((page.Groups.Count % 20) == 0)
+                            group.LayoutMode = DatFormGroupLayoutMode.ForceBreakToNewColumn;
+                        else
+                            group.LayoutMode = DatFormGroupLayoutMode.AllowBreakToNewColumn;
+                    }
+                    page.Groups.Add(group);
+                    y = 0;
+                }
+
+                // Řádky s prvky s danou šířkou:
                 int x = 20;
                 text = $"Řádek {(r + 1)}";
                 DataFormItemImageText label = new DataFormItemImageText() { ItemType = DataFormItemType.Label, Text = text, DesignBounds = new Rectangle(x, y + 2, 70, 18) };
@@ -2045,7 +2095,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         }
         /// <summary>
         /// Metoda určí souřadnice všech skupin na této stránce, podle definovaných pravidel na grupě.
-        /// Výchozí layout 
+        /// Výchozí layout je sekvenční pod sebou, podle pravidel v grupě může docházet k zalomení na nový sloupec stránky na povinné grupě anebo tam kde je to vhodné.
         /// </summary>
         internal void PrepareGroupLayout()
         {
@@ -2057,10 +2107,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             bool canDoDynamicLayout = false;
             foreach (var dataGroup in Groups)
             {
-                if (dataGroup.LayoutForceBreakToNewColumn && x > 0 && right > 0)
+                if (dataGroup.LayoutForceBreakToNewColumn && y > 0 && right > 0)
                 {
-                    x = 0;
-                    y = right;
+                    x = right;
+                    y = 0;
                 }
                 else if (dataGroup.LayoutAllowBreakToNewColumn && !canDoDynamicLayout)
                     canDoDynamicLayout = true;
