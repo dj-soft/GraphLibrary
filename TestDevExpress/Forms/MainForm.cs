@@ -22,6 +22,7 @@ using Noris.Clients.Win.Components.AsolDX;
 using DevExpress.XtraRichEdit.Import.OpenXml;
 using DevExpress.XtraRichEdit.Layout;
 using Noris.Clients.Win.Components;
+//using DevExpress.Utils.CommonDialogs.Internal;
 
 namespace TestDevExpress.Forms
 {
@@ -2037,6 +2038,16 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
                 text += $"; Text: [{dialogArgs.InputTextValue}]";
             _MsgBoxResultLabel.Text = text;
         }
+        private void ShowMessageInfo(string text)
+        {
+            NWC.DialogArgs dialogArgs = new NWC.DialogArgs()
+            {
+                Title = "Info",
+                MessageText = text
+            };
+            dialogArgs.PrepareButtons(System.Windows.Forms.DialogResult.OK);
+            NWC.DialogForm.ShowDialog(dialogArgs);
+        }
         private void DialogFormNonModal(NWC.DialogArgs dialogArgs)
         {
             dialogArgs.Owner = OwnerWindow;
@@ -2125,7 +2136,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
             return button;
         }
         #endregion
-        #region Editors
+        #region Editory
         private void InitEditors()
         {
             AddNewPage("Editory", PrepareEditors);
@@ -2136,7 +2147,42 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
             _PanelEditors = panel;
 
             PrepareEditorToken();
+
+
+            _EditorText1 = new DxTextEdit() { Bounds = new Rectangle(20, 150, 360, 20), BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.Simple };
+            _EditorTextButton1 = new DxTextButtonEdit() { Bounds = new Rectangle(400, 150, 360, 20), BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.Simple, ButtonToolTipText = "Otevřít mapu" };
+            _EditorTextButton1.ButtonClick += _EditorButtonClick;
+            _EditorText2 = new DxTextEdit() { Bounds = new Rectangle(20, 180, 360, 20), BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.Style3D };
+            _EditorTextButton2 = new DxTextButtonEdit() { Bounds = new Rectangle(400, 180, 360, 20), BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.Style3D, ButtonToolTipText = "Správná hodnota" };
+            _EditorTextButton2.ButtonClick += _EditorButtonClick;
+            _EditorText3 = new DxTextEdit() { Bounds = new Rectangle(20, 210, 360, 20), BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.Office2003 };
+            _EditorTextButton3 = new DxTextButtonEdit() { Bounds = new Rectangle(400, 210, 360, 20), BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.Office2003, ButtonToolTipText = "Chybné zadání" };
+            _EditorTextButton3.ButtonClick += _EditorButtonClick;
+            _PanelEditors.Controls.Add(_EditorText1);
+            _PanelEditors.Controls.Add(_EditorTextButton1);
+            _PanelEditors.Controls.Add(_EditorText2);
+            _PanelEditors.Controls.Add(_EditorTextButton2);
+            _PanelEditors.Controls.Add(_EditorText3);
+            _PanelEditors.Controls.Add(_EditorTextButton3);
+
+            string resource1 = "devav/other/map.svg";
+            string resource2 = "images/actions/apply_16x16.png";
+            string resource3 = "images/actions/cancel_16x16.png";
+
+            _EditorTextButton1.ButtonImageName = resource1;
+            _EditorTextButton2.ButtonImageName = resource2;
+            _EditorTextButton3.ButtonImageName = resource3;
         }
+        private void _EditorButtonClick(object sender, EventArgs args)
+        {
+            ShowMessageInfo("Někdo kliknul na moje tlačítko?");
+        }
+        private DxTextEdit _EditorText1;
+        private DxTextButtonEdit _EditorTextButton1;
+        private DxTextEdit _EditorText2;
+        private DxTextButtonEdit _EditorTextButton2;
+        private DxTextEdit _EditorText3;
+        private DxTextButtonEdit _EditorTextButton3;
         #region Editor - Token
         private void PrepareEditorToken()
         { 
@@ -2184,7 +2230,6 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
 
             // if (_DxImagePicker != null) _DxImagePicker.Bounds = new Rectangle(20, 100, 640, size.Height - 106);
         }
-
         private void _TokenAddButtonGreen_Click(object sender, EventArgs e)
         {
             _TokenInfoLabel.Text = "probíhá příprava dat...";
@@ -2228,7 +2273,6 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
             }
             return tokens;
         }
-
         private void _TokenAddButtonDaj_Click(object sender, EventArgs e)
         {
             _TokenInfoLabel.Text = "probíhá příprava dat...";
@@ -2269,8 +2313,6 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
             }
             return tokens;
         }
-
-
         private DevExpress.XtraEditors.LabelControl _TokenLabel;
         private DevExpress.XtraEditors.SpinEdit _TokenCountSpin;
         private DevExpress.XtraEditors.SimpleButton _TokenAddButtonGreen;

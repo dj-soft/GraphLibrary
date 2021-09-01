@@ -152,8 +152,8 @@ namespace Noris.Clients.Win.Components.AsolDX
                 _ApplicationDoRestart = false;
 
                 _SplashShow("Testovací aplikace Helios Nephrite", "DJ soft & ASOL", "Copyright © 1995 - 2021 DJ soft" + Environment.NewLine + "All Rights reserved.", "Začínáme...",
-                null, splashImage, null,
-                DevExpress.XtraSplashScreen.FluentLoadingIndicatorType.Dots, null, null, true, true);
+                    null, splashImage, null,
+                    DevExpress.XtraSplashScreen.FluentLoadingIndicatorType.Dots, null, null, true, true);
 
                 Form mainForm = System.Activator.CreateInstance(mainFormType) as Form;
 
@@ -162,8 +162,14 @@ namespace Noris.Clients.Win.Components.AsolDX
 
                 _SplashUpdate(subTitle: "Už to bude...");
 
+                Application.VisualStyleState = System.Windows.Forms.VisualStyles.VisualStyleState.ClientAndNonClientAreasEnabled;
+                Application.EnableVisualStyles();
+
                 Application.Run(context);
                 if (!_ApplicationDoRestart) break;
+
+                Application.Restart();
+                break;
             }
         }
         private void _ApplicationRestart()
@@ -1306,7 +1312,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             Image image = null, string resourceName = null,
             Image hotImage = null, string hotResourceName = null,
             string toolTipTitle = null, string toolTipText = null,
-            bool? visible = null, bool? enabled = null, bool? tabStop = null,
+            bool? visible = null, bool? enabled = null, bool? tabStop = null, bool? allowFocus = null,
             object tag = null)
         {
             var inst = Instance;
@@ -1319,6 +1325,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (visible.HasValue) miniButton.Visible = visible.Value;
             if (enabled.HasValue) miniButton.Enabled = enabled.Value;
             miniButton.TabStop = tabStop ?? false;
+            if (allowFocus.HasValue) miniButton.AllowFocus = allowFocus.Value;
             miniButton.PaintStyle = DevExpress.XtraEditors.Controls.PaintStyles.Light;
 
             DxComponent.ApplyImage(miniButton.ImageOptions, resourceName, image, new Size(w - 4, h - 4), true);
@@ -2757,7 +2764,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// ID aplikace = odlišuje typicky dvě různé aplikace otevřené v jeden okamžik
         /// </summary>
         public static string ClipboardApplicationId { get { return Instance._ClipboardApplicationId; } set { Instance._ClipboardApplicationId = value; } }
-        public static void ClipboardInsert(object applicationData, object windowsData = null, string windowsFormat = null) { Instance._ClipboardInsert(applicationData, windowsData, windowsFormat); }
+        public static void ClipboardInsert(string text) { Instance._ClipboardInsert(null, text, DataFormats.Text); }
+        public static void ClipboardInsert(object applicationData, object windowsData, string windowsFormat = null) { Instance._ClipboardInsert(applicationData, windowsData, windowsFormat); }
         public static bool ClipboardTryGetApplicationData(out object applicationData) { return Instance._ClipboardTryGetApplicationData(out applicationData, out string applicationId); }
         public static bool ClipboardTryGetApplicationData(out object applicationData, out string applicationId) { return Instance._ClipboardTryGetApplicationData(out applicationData, out applicationId); }
 
@@ -2765,17 +2773,26 @@ namespace Noris.Clients.Win.Components.AsolDX
 
         private void _ClipboardInsert(object applicationData, object windowsData, string windowsFormat)
         {
-            ClipboardContainer container = new ClipboardContainer() { ApplicationId = _ClipboardApplicationId, Data = applicationData };
-            string containerXml = Persist.Serialize(container, PersistArgs.Default);
             DataObject dataObject = new DataObject();
-            dataObject.SetData(ClipboardAppDataId, containerXml);
+            int count = 0;
+            if (applicationData != null)
+            {
+                ClipboardContainer container = new ClipboardContainer() { ApplicationId = _ClipboardApplicationId, Data = applicationData };
+                string containerXml = Persist.Serialize(container, PersistArgs.Default);
+                dataObject.SetData(ClipboardAppDataId, containerXml);
+                count++;
+            }
             if (windowsData != null)
             {
                 if (windowsFormat == null) windowsFormat = DataFormats.Text;
                 dataObject.SetData(windowsFormat, windowsData);
+                count++;
             }
-            try { System.Windows.Forms.Clipboard.SetDataObject(dataObject, true); }
-            catch { }
+            if (count > 0)
+            {
+                try { System.Windows.Forms.Clipboard.SetDataObject(dataObject, true); }
+                catch (Exception exc) { string msg = exc.Message; }
+            }
         }
         private bool _ClipboardTryGetApplicationData(out object applicationData, out string applicationId)
         {
@@ -3241,6 +3258,50 @@ namespace Noris.Clients.Win.Components.AsolDX
                 s.UserData = null;
             }
             );
+        }
+        /// <summary>
+        /// Zajistí vložení daného controlu (this) do daného parenta, pokud tam není.
+        /// Pokud by control před tím byl v nějakém jiném parentu (než je požadován), odebere jej tamodtud.
+        /// <para/>
+        /// Před změnou provede volitelně zhasnutí controlu.
+        /// <para/>
+        /// Informace: jde o extension metodu, a nijak jí nevadí, když je provedena "na objektu" který je null.
+        /// </summary>
+        /// <param name="control"></param>
+        /// <param name="parent"></param>
+        /// <param name="hideControl">Před jakoukoli změnou nastavit <see cref="Control.Visible"/> = false. Pokud by ale ke změně nedošlo, nechá se Visible beze změny.</param>
+        public static void AddControlToParent(this Control control, Control parent, bool hideControl = false)
+        {
+            if (control == null || parent == null) return;
+            if (control.Parent != null && !Object.ReferenceEquals(control.Parent, parent))
+            {   // Pokud mám parenta, a ten je jiný než má být:
+                if (hideControl) control.Visible = false;
+                control.Parent.Controls.Remove(control);
+            }
+            if (control.Parent == null)
+            {   // Pokud nemám parenta:
+                if (hideControl) control.Visible = false;
+                parent.Controls.Add(control);
+            }
+        }
+        /// <summary>
+        /// Zajistí odebrání daného controlu z daného parenta, pokud tam je.
+        /// Pokud je parent v parametru zadán, pak z něj control odebere pouze tehdy, pokud control je právě v tomto parentu.
+        /// Pokud parent v parametru zadán není, pak daný control odebere z jakéhokoli parenta, poku v nějakém je.
+        /// <para/>
+        /// Před změnou provede volitelně zhasnutí controlu.
+        /// <para/>
+        /// Informace: jde o extension metodu, a nijak jí nevadí, když je provedena "na objektu" který je null.
+        /// </summary>
+        /// <param name="control"></param>
+        /// <param name="parent"></param>
+        /// <param name="hideControl">Před jakoukoli změnou nastavit <see cref="Control.Visible"/> = false. Pokud by ale ke změně nedošlo, nechá se Visible beze změny.</param>
+        public static void RemoveControlFromParent(this Control control, Control parent = null, bool hideControl = false)
+        {
+            if (control == null) return;
+            if (hideControl) control.Visible = false;
+            if (control.Parent != null && (parent == null || Object.ReferenceEquals(control.Parent, parent)))
+                control.Parent.Controls.Remove(control);
         }
         /// <summary>
         /// Vrací defaultní ToString() = Type.Name + Control.Name
@@ -5485,6 +5546,38 @@ namespace Noris.Clients.Win.Components.AsolDX
             return new RectangleF(r.Location.Sub(point), r.Size);
         }
 
+        /// <summary>
+        /// Vrátí Size, která je o (w, h) větší než aktuální Size. Umožní i zmenšit, pokud hodnoty jsou záporné. Umožní zmenšit do nuly, ale ne do záporné hodnoty.
+        /// Záporné w nebo h zmenší Size.
+        /// </summary>
+        /// <param name="s"></param>
+        /// <param name="w"></param>
+        /// <param name="h"></param>
+        /// <returns></returns>
+        public static Size Add(this Size s, int w, int h)
+        {
+            int nw = s.Width + w;
+            if (nw < 0) nw = 0;
+            int nh = s.Height + h;
+            if (nh < 0) nh = 0;
+            return new Size(nw, nh);
+        }
+        /// <summary>
+        /// Vrátí Size, která je o (w, h) menší než aktuální Size. Umožní zmenšit do nuly, ale ne do záporné hodnoty.
+        /// Záporné x nebo y zvětší Size.
+        /// </summary>
+        /// <param name="s"></param>
+        /// <param name="w"></param>
+        /// <param name="h"></param>
+        /// <returns></returns>
+        public static Size Sub(this Size s, int w, int h)
+        {
+            int nw = s.Width - w;
+            if (nw < 0) nw = 0;
+            int nh = s.Height - h;
+            if (nh < 0) nh = 0;
+            return new Size(nw, nh);
+        }
 
         #endregion
         #region Rectangle: SummaryBounds

@@ -306,9 +306,75 @@ namespace Noris.Clients.Win.Components.AsolDX
         public Color? BackColorUser { get { return _BackColorUser; } set { _BackColorUser = value; Invalidate(); } }
         private Color? _BackColorUser;
         /// <summary>
+        /// Počet pixelů aktuálního rámečku (na každé straně)
+        /// </summary>
+        public int BorderWidth
+        {
+            get
+            {
+                switch (this.BorderStyle)
+                {
+                    case DevExpress.XtraEditors.Controls.BorderStyles.NoBorder: return 0;
+                    case DevExpress.XtraEditors.Controls.BorderStyles.Simple: return 1;
+                    case DevExpress.XtraEditors.Controls.BorderStyles.Flat: return 2;
+                    case DevExpress.XtraEditors.Controls.BorderStyles.HotFlat: return 1;
+                    case DevExpress.XtraEditors.Controls.BorderStyles.UltraFlat: return 1;
+                    case DevExpress.XtraEditors.Controls.BorderStyles.Style3D: return 2;
+                    case DevExpress.XtraEditors.Controls.BorderStyles.Office2003: return 1;
+                    case DevExpress.XtraEditors.Controls.BorderStyles.Default: return 1;
+                }
+                return 0;
+            }
+        }
+        /// <summary>
         /// Jsou aktivní zápisy do logu? Default = false
         /// </summary>
         public virtual bool LogActive { get; set; }
+        #endregion
+        #region HasMouse
+        /// <summary>
+        /// Panel má na sobě myš?
+        /// </summary>
+        public bool HasMouse 
+        {
+            get { return _HasMouse; }
+            private set
+            {
+                if (value != _HasMouse)
+                {
+                    _HasMouse = value;
+                    OnHasMouseChanged();
+                    HasMouseChanged?.Invoke(this, EventArgs.Empty);
+                }
+            }
+        }
+        private bool _HasMouse;
+        /// <summary>
+        /// Událost, když přišla nebo odešla myš
+        /// </summary>
+        protected virtual void OnHasMouseChanged() { }
+        /// <summary>
+        /// Událost, když přišla nebo odešla myš
+        /// </summary>
+        public event EventHandler HasMouseChanged;
+        /// <summary>
+        /// Panel.OnMouseEnter
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void OnMouseEnter(EventArgs e)
+        {
+            base.OnMouseEnter(e);
+            this.HasMouse = true;
+        }
+        /// <summary>
+        /// Panel.OnMouseLeave
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void OnMouseLeave(EventArgs e)
+        {
+            base.OnMouseLeave(e);
+            this.HasMouse = false;
+        }
         #endregion
         #region Paint
         /// <summary>
@@ -908,6 +974,96 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         public override string ToString() { return this.GetTypeName(); }
         #endregion
+        #region HasMouse
+        /// <summary>
+        /// Panel má na sobě myš?
+        /// </summary>
+        public bool HasMouse
+        {
+            get { return _HasMouse; }
+            private set
+            {
+                if (value != _HasMouse)
+                {
+                    _HasMouse = value;
+                    OnHasMouseChanged();
+                    HasMouseChanged?.Invoke(this, EventArgs.Empty);
+                }
+            }
+        }
+        private bool _HasMouse;
+        /// <summary>
+        /// Událost, když přišla nebo odešla myš
+        /// </summary>
+        protected virtual void OnHasMouseChanged() { }
+        /// <summary>
+        /// Událost, když přišla nebo odešla myš
+        /// </summary>
+        public event EventHandler HasMouseChanged;
+        /// <summary>
+        /// Panel.OnMouseEnter
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void OnMouseEnter(EventArgs e)
+        {
+            base.OnMouseEnter(e);
+            this.HasMouse = true;
+        }
+        /// <summary>
+        /// Panel.OnMouseLeave
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void OnMouseLeave(EventArgs e)
+        {
+            base.OnMouseLeave(e);
+            this.HasMouse = false;
+        }
+        #endregion
+        #region HasFocus
+        /// <summary>
+        /// TextBox má v sobě focus = kurzor?
+        /// </summary>
+        public bool HasFocus
+        {
+            get { return _HasFocus; }
+            private set
+            {
+                if (value != _HasFocus)
+                {
+                    _HasFocus = value;
+                    OnHasFocusChanged();
+                    HasFocusChanged?.Invoke(this, EventArgs.Empty);
+                }
+            }
+        }
+        private bool _HasFocus;
+        /// <summary>
+        /// Událost, když přišel nebo odešel focus = kurzor
+        /// </summary>
+        protected virtual void OnHasFocusChanged() { }
+        /// <summary>
+        /// Událost, když přišla nebo odešla myš
+        /// </summary>
+        public event EventHandler HasFocusChanged;
+        /// <summary>
+        /// OnEnter
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void OnEnter(EventArgs e)
+        {
+            base.OnEnter(e);
+            this.HasFocus = true;
+        }
+        /// <summary>
+        /// OnLeave
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void OnLeave(EventArgs e)
+        {
+            base.OnLeave(e);
+            this.HasFocus = false;
+        }
+        #endregion
         #region ToolTip
         /// <summary>
         /// Nastaví daný text a titulek pro tooltip
@@ -922,6 +1078,208 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="defaultTitle">Náhradní titulek, použije se když je zadán text ale není zadán titulek</param>
         public void SetToolTip(string title, string text, string defaultTitle = null) { this.SuperTip = DxComponent.CreateDxSuperTip(title, text, defaultTitle); }
         #endregion
+    }
+    #endregion
+    #region DxTextButtonEdit
+    /// <summary>
+    /// Textový editor s buttonem vpravo
+    /// </summary>
+    public class DxTextButtonEdit : DxPanelControl
+    {
+        #region Konstrukce, layout
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public DxTextButtonEdit()
+        {
+            _TextEdit = DxComponent.CreateDxTextEdit(0, 0, 100, this);
+            _TextEdit.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder;
+            _TextEdit.Margin = Padding.Empty;
+            _TextEdit.SizeChanged += _TextEdit_SizeChanged;
+            _TextEdit.HasFocusChanged += _ChildActivityChanged;
+            _TextEdit.HasMouseChanged += _ChildActivityChanged;
+
+            _Button = DxComponent.CreateDxMiniButton(0, 0, 20, 20, this, tabStop: false, allowFocus: false);
+            ButtonIsVisible = true;
+            ButtonVisibility = DxChildControlVisibility.OnActiveControl;
+            _Button.HasFocusChanged += _ChildActivityChanged;
+            _Button.HasMouseChanged += _ChildActivityChanged;
+
+            this.HasMouseChanged += _ChildActivityChanged;
+            BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.Simple;
+            DoLayoutInProcess = false;
+        }
+        private DxTextEdit _TextEdit;
+        private DxSimpleButton _Button;
+
+        private void _TextEdit_SizeChanged(object sender, EventArgs e)
+        {
+            DoLayout();
+        }
+        /// <summary>
+        /// Po jakékoli změně focusu nebo myši v rámci this anebo child controlů
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _ChildActivityChanged(object sender, EventArgs e)
+        {
+            _ButtonVisibilityRefresh();
+        }
+        /// <summary>
+        /// Panel.OnClientSizeChanged
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void OnClientSizeChanged(EventArgs e)
+        {
+            base.OnClientSizeChanged(e);
+            this.DoLayout();
+        }
+        /// <summary>
+        /// Po změně Zoomu a nebo DPI je třeba přegenerovat Image v buttonu (image je 'na míru')
+        /// </summary>
+        protected override void OnContentSizeChanged()
+        {
+            base.OnContentSizeChanged();
+            DoLayout(true);
+            _ButtonImageRefresh();
+        }
+        private void DoLayout(bool forceButton = false)
+        {
+            if (DoLayoutInProcess) return;
+            try
+            {
+                DoLayoutInProcess = true;
+                var bounds = ClientRectangle;
+                int height = _TextEdit.Height;
+                int bWidth = this.BorderWidth;
+                bool buttonIsVisible = ButtonIsVisible;
+                bool buttonHeightChanged = (_Button.Height != height);
+                if (buttonIsVisible)
+                    _TextEdit.Bounds = new Rectangle(bWidth, bWidth, bounds.Width - height - 2 * bWidth, height);
+                else
+                    _TextEdit.Bounds = new Rectangle(bWidth, bWidth, bounds.Width - 2 * bWidth, height);
+
+                if (buttonIsVisible || (buttonHeightChanged && forceButton))
+                {
+                    _Button.Bounds = new Rectangle(bounds.Right - height - bWidth, bWidth, height, height);
+                    _ButtonImageRefresh();
+                }
+                
+                int totalHeight = 2 * bWidth + height;
+                if (this.Height != totalHeight)
+                    this.Height = totalHeight;
+            }
+            finally
+            {
+                DoLayoutInProcess = false;
+            }
+        }
+        private bool DoLayoutInProcess;
+        #endregion
+        #region Button - vlastnosti
+        /// <summary>
+        /// Jméno ikony na tlačítku
+        /// </summary>
+        public string ButtonImageName { get { return _ButtonImageName; } set { _ButtonImageName = value; _ButtonImageRefresh(); }}
+        private string _ButtonImageName;
+        /// <summary>
+        /// Událost, kdy uživatel klikl na button
+        /// </summary>
+        public event EventHandler ButtonClick { add { _Button.Click += value; } remove { _Button.Click -= value; } }
+        /// <summary>
+        /// Požadavek na viditelnost (zobrazování) tlačítka
+        /// </summary>
+        public DxChildControlVisibility ButtonVisibility
+        {
+            get { return _ButtonVisibility; }
+            set { _ButtonVisibility = value; _ButtonVisibilityRefresh(); }
+        }
+        private DxChildControlVisibility _ButtonVisibility;
+        /// <summary>
+        /// Titulek tooltipu na buttonu
+        /// </summary>
+        public string ButtonToolTipTitle { get { return _ButtonToolTipTitle; } set { _ButtonToolTipTitle = value; _ButtonToolTipRefresh(); } }
+        private string _ButtonToolTipTitle;
+        /// <summary>
+        /// Text tooltipu na buttonu
+        /// </summary>
+        public string ButtonToolTipText { get { return _ButtonToolTipText; } set { _ButtonToolTipText = value; _ButtonToolTipRefresh(); } }
+        private string _ButtonToolTipText;
+        /// <summary>
+        /// Nastaví aktuální viditelnost buttonu podle definice a podle aktuálního stavu
+        /// </summary>
+        private void _ButtonVisibilityRefresh()
+        {
+            var visibility = ButtonVisibility;
+            bool isVisible = (visibility.HasFlag(DxChildControlVisibility.Allways) ||
+                              (visibility.HasFlag(DxChildControlVisibility.OnMouse) && (this.HasMouse || _TextEdit.HasMouse)) ||
+                              (visibility.HasFlag(DxChildControlVisibility.OnFocus) && _TextEdit.HasFocus));
+            if (isVisible != ButtonIsVisible)
+            {
+                ButtonIsVisible = isVisible;
+                _Button.Visible = isVisible;
+                DoLayout();
+            }
+        }
+        /// <summary>
+        /// Button je aktuálně viditelný? 
+        /// Závisí na nastavení <see cref="ButtonVisibility"/> a na stavu interaktivity objektu.
+        /// </summary>
+        public bool ButtonIsVisible { get; private set; }
+        /// <summary>
+        /// Aktualizuje obrázek v buttonu
+        /// </summary>
+        private void _ButtonImageRefresh()
+        {
+            DxComponent.ApplyImage(_Button.ImageOptions, _ButtonImageName, null, _Button.Size.Sub(4, 4));
+        }
+        /// <summary>
+        /// Aktualizuje tooltip v buttonu
+        /// </summary>
+        private void _ButtonToolTipRefresh()
+        {
+            _Button.SetToolTip(_ButtonToolTipTitle, _ButtonToolTipText);
+        }
+        #endregion
+        #region TextBox - vlastnosti
+        /// <summary>
+        /// Text v textboxu
+        /// </summary>
+        public override string Text { get { return _TextEdit?.Text; } set { _TextEdit.Text = value; } }
+        public string SelectedText { get { return _TextEdit?.SelectedText; } set { _TextEdit.SelectedText = value; } }
+        public int SelectionStart { get { return _TextEdit?.SelectionStart ?? 0; } set { _TextEdit.SelectionStart = value; } }
+        public int SelectionLength { get { return _TextEdit?.SelectionLength ?? 0; } set { _TextEdit.SelectionLength = value; } }
+        public DevExpress.XtraEditors.Repository.RepositoryItemTextEdit Properties { get { return _TextEdit?.Properties; } }
+        public TextBoxMaskBox MaskBox { get { return _TextEdit?.MaskBox; } }
+        #endregion
+    }
+    /// <summary>
+    /// Viditelnost některého prvku v rámci parenta s ohledem na interaktivitu
+    /// </summary>
+    [Flags]
+    public enum DxChildControlVisibility
+    {
+        /// <summary>
+        /// Prvek není vidět nikdy
+        /// </summary>
+        None = 0,
+        /// <summary>
+        /// Prvek je vidět tehdy, když parent má na sobě myš
+        /// </summary>
+        OnMouse = 0x0001,
+        /// <summary>
+        /// Prvek je vidět tehdy, když parent má v sobě klávesový focus (kurzor)
+        /// </summary>
+        OnFocus = 0x0002,
+        /// <summary>
+        /// Prvek je vidět vždy
+        /// </summary>
+        Allways = 0x0004,
+
+        /// <summary>
+        /// Prvek je vidět pod myší anebo s focusem
+        /// </summary>
+        OnActiveControl = OnMouse | OnFocus
     }
     #endregion
     #region DxMemoEdit
@@ -1884,6 +2242,96 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         public override string ToString() { return this.GetTypeName(); }
         #endregion
+        #region HasMouse
+        /// <summary>
+        /// Panel má na sobě myš?
+        /// </summary>
+        public bool HasMouse
+        {
+            get { return _HasMouse; }
+            private set
+            {
+                if (value != _HasMouse)
+                {
+                    _HasMouse = value;
+                    OnHasMouseChanged();
+                    HasMouseChanged?.Invoke(this, EventArgs.Empty);
+                }
+            }
+        }
+        private bool _HasMouse;
+        /// <summary>
+        /// Událost, když přišla nebo odešla myš
+        /// </summary>
+        protected virtual void OnHasMouseChanged() { }
+        /// <summary>
+        /// Událost, když přišla nebo odešla myš
+        /// </summary>
+        public event EventHandler HasMouseChanged;
+        /// <summary>
+        /// Panel.OnMouseEnter
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void OnMouseEnter(EventArgs e)
+        {
+            base.OnMouseEnter(e);
+            this.HasMouse = true;
+        }
+        /// <summary>
+        /// Panel.OnMouseLeave
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void OnMouseLeave(EventArgs e)
+        {
+            base.OnMouseLeave(e);
+            this.HasMouse = false;
+        }
+        #endregion
+        #region HasFocus
+        /// <summary>
+        /// TextBox má v sobě focus = kurzor?
+        /// </summary>
+        public bool HasFocus
+        {
+            get { return _HasFocus; }
+            private set
+            {
+                if (value != _HasFocus)
+                {
+                    _HasFocus = value;
+                    OnHasFocusChanged();
+                    HasFocusChanged?.Invoke(this, EventArgs.Empty);
+                }
+            }
+        }
+        private bool _HasFocus;
+        /// <summary>
+        /// Událost, když přišel nebo odešel focus = kurzor
+        /// </summary>
+        protected virtual void OnHasFocusChanged() { }
+        /// <summary>
+        /// Událost, když přišla nebo odešla myš
+        /// </summary>
+        public event EventHandler HasFocusChanged;
+        /// <summary>
+        /// OnEnter
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void OnEnter(EventArgs e)
+        {
+            base.OnEnter(e);
+            this.HasFocus = true;
+        }
+        /// <summary>
+        /// OnLeave
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void OnLeave(EventArgs e)
+        {
+            base.OnLeave(e);
+            this.HasFocus = false;
+        }
+        #endregion
         #region ToolTip
         /// <summary>
         /// Nastaví daný text a titulek pro tooltip
@@ -2823,7 +3271,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 toolTipTitle: "Seznam Resources", toolTipText: "Označte jeden nebo více řádků, klávesou Ctrl+C zkopírujete názvy Resources jako kód C#.");
             _ListBox.MouseEnter += _AnyControlEnter;
             _ListBox.Enter += _AnyControlEnter;
-            _ListBox.KeyUp += _ListBox_KeyUp;
+            _ListBox.KeyDown += _ListBox_KeyDown;
             _ListBox.PaintList += _ListBox_PaintList;
             _ListBox.SelectedIndexChanged += _ListBox_SelectedIndexChanged;
 
@@ -2918,7 +3366,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void _ListBox_KeyUp(object sender, SWF.KeyEventArgs e)
+        private void _ListBox_KeyDown(object sender, KeyEventArgs e)
         {
             if (e.KeyData == (SWF.Keys.Control | SWF.Keys.C)) _DoCopyClipboard();
         }

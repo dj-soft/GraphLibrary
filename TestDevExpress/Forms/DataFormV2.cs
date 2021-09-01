@@ -323,21 +323,24 @@ namespace TestDevExpress.Forms
             string[] texts = Random.GetSentencesArray(1, 3, 120, 240, false);
             string[] tooltips = Random.GetSentencesArray(7, 16, 120, 240, true);
 
-            _RemoveDataForms();
-
-            var sampleStartTime = DxComponent.LogTimeCurrent;
+            long sampleStartTime = DxComponent.LogTimeCurrent;
             _DxShowTimeStart = DateTime.Now;               // Určení času End a času Elapsed proběhne v DxDataForm_GotFocus
-            _DxShowTimeSpan = null;
-            DxDataForm dataForm = new DxDataForm();
-            dataForm.TabIndex = 1;
-            dataForm.LogActive = true;
-            dataForm.GotFocus += DxDataForm_GotFocus;
+            DxDataForm dataForm = _DxDataFormV2;
+            if (dataForm == null)
+            {
+                sampleStartTime = DxComponent.LogTimeCurrent;
+                _DxShowTimeSpan = null;
+                dataForm = new DxDataForm();
+                dataForm.TabIndex = 1;
+                dataForm.LogActive = true;
+                dataForm.GotFocus += DxDataForm_GotFocus;
 
-            _DxDataFormV2 = dataForm;
-            _DoLayoutAnyDataForm();
-            DxComponent.LogAddLineTime($"Create DxDataFormV2: Time: {DxComponent.LogTokenTimeMilisec}", sampleStartTime);
+                _DxDataFormV2 = dataForm;
+                _DoLayoutAnyDataForm();
+                DxComponent.LogAddLineTime($"Create DxDataFormV2: Time: {DxComponent.LogTokenTimeMilisec}", sampleStartTime);
+            }
 
-            var addStartTime = DxComponent.LogTimeCurrent;
+            sampleStartTime = DxComponent.LogTimeCurrent;
             switch (sampleId)
             {
                 case 1:

@@ -129,7 +129,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             IsVisible = true;
             CollapseMode = DataFormGroupCollapseMode.None;
-            AllowColumnBreak = false;
+            LayoutMode = DatFormGroupLayoutMode.None;
             Items = new List<IDataFormItem>();
         }
         /// <summary>
@@ -156,6 +156,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Pomůcka pro líné: pokud zde bude zadána instance <see cref="SWF.Padding"/> (nikoli null), 
         /// pak systém vypočítá velikost grupy <see cref="GroupSize"/> tak, aby okolo prvků <see cref="Items"/> byl daný okraj.
+        /// <para/>
+        /// Pokud bude tato hodnota rovna <see cref="SWF.Padding.Empty"/>, pak se velikost spočítá ze souřadnic prvků, a nepřidá se okraj.
+        /// Pokud bude Padding mít kladné Left a/nebo Top, použijí se tyto souřadnice i jako "posun" obsahu = pak může mít první prvek souřadnici Loaction = { 0, 0 } 
+        /// a bude v rámci grupy (stejně jako každý další prvek) zobrazen posunutý o tento Padding doprava/dolů.
         /// </summary>
         public virtual SWF.Padding? AutoGroupSizePadding { get; set; }
         /// <summary>
@@ -171,10 +175,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public virtual bool Collapsed { get; set; }
         /// <summary>
-        /// Obsahuje true, pokud tato grupa smí být zalomena = smí začínat na dalším sloupci layoutu v rámci jedné stránky.
-        /// Algoritmus zalomí stránky tak, aby optimálně využil dostupnou šířku prostoru, a do něj vložil všechny grupy tak, aby byly rozloženy rovnoměrně.
+        /// Obsahuje příznaky pro skládání dynamického layoutu stránky pro tuto grupu.
+        /// Grupa může definovat standardní chování = povinný layout v jednom sloupci, nebo může deklarovat povinné nebo volitelné zalomení před nebo za touto grupou.
+        /// Algoritmus pak zalomí obsah stránky (=grupy) tak, aby optimálně využil dostupnou šířku prostoru, a do něj vložil všechny grupy tak, aby byly rozloženy rovnoměrně.
         /// </summary>
-        public virtual bool AllowColumnBreak { get; set; }
+        public virtual DatFormGroupLayoutMode LayoutMode { get; set; }
         /// <summary>
         /// Vzhled prvku - kalíšek, barvy, modifikace fontu
         /// </summary>
@@ -197,12 +202,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public virtual string ToolTipIcon { get; set; }
 
+        string IToolTipItem.ToolTipTitle { get { return ToolTipTitle ?? GroupText; } }
         IEnumerable<IDataFormItem> IDataFormGroup.Items { get { return Items; } }
     }
     /// <summary>
     /// Předpis požadovaných vlastností pro jednu grupu v rámci DataFormu
     /// </summary>
-    public interface IDataFormGroup
+    public interface IDataFormGroup : IToolTipItem
     {
         /// <summary>
         /// ID grupy, jednoznačné v celém DataFormu
@@ -228,6 +234,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Pomůcka pro líné: pokud zde bude zadána instance <see cref="SWF.Padding"/> (nikoli null), 
         /// pak systém vypočítá velikost grupy <see cref="GroupSize"/> tak, aby okolo prvků <see cref="Items"/> byl daný okraj.
+        /// <para/>
+        /// Pokud bude tato hodnota rovna <see cref="SWF.Padding.Empty"/>, pak se velikost spočítá ze souřadnic prvků, a nepřidá se okraj.
+        /// Pokud bude Padding mít kladné Left a/nebo Top, použijí se tyto souřadnice i jako "posun" obsahu = pak může mít první prvek souřadnici Loaction = { 0, 0 } 
+        /// a bude v rámci grupy (stejně jako každý další prvek) zobrazen posunutý o tento Padding doprava/dolů.
         /// </summary>
         SWF.Padding? AutoGroupSizePadding { get; }
         /// <summary>
@@ -243,10 +253,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         bool Collapsed { get; set; }
         /// <summary>
-        /// Obsahuje true, pokud tato grupa smí být zalomena = smí začínat na dalším sloupci layoutu v rámci jedné stránky.
-        /// Algoritmus zalomí stránky tak, aby optimálně využil dostupnou šířku prostoru, a do něj vložil všechny grupy tak, aby byly rozloženy rovnoměrně.
+        /// Obsahuje příznaky pro skládání dynamického layoutu stránky pro tuto grupu.
+        /// Grupa může definovat standardní chování = povinný layout v jednom sloupci, nebo může deklarovat povinné nebo volitelné zalomení před nebo za touto grupou.
+        /// Algoritmus pak zalomí obsah stránky (=grupy) tak, aby optimálně využil dostupnou šířku prostoru, a do něj vložil všechny grupy tak, aby byly rozloženy rovnoměrně.
         /// </summary>
-        bool AllowColumnBreak { get; }
+        DatFormGroupLayoutMode LayoutMode { get; }
         /// <summary>
         /// Vzhled prvku - kalíšek, barvy, modifikace fontu
         /// </summary>
@@ -510,6 +521,25 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Grupa umožňuje sbalení bez dalších podmínek
         /// </summary>
         AllowCollapseAllways = 0x0010
+    }
+    /// <summary>
+    /// Jak se má grupa chovat při tvorbě layoutu stránky
+    /// </summary>
+    [Flags]
+    public enum DatFormGroupLayoutMode
+    {
+        /// <summary>
+        /// Tato grupa musí být umístěna pod grupu předchozí.
+        /// </summary>
+        None = 0,
+        /// <summary>
+        /// Tato grupa smí být umístěna doprava do nového sloupce, pokud to bude layoutu vyhovovat
+        /// </summary>
+        AllowBreakToNewColumn = 0x0001,
+        /// <summary>
+        /// Tato grupa musí být umístěna doprava do nového sloupce, i když by se nevešla do prostoru (zobrazí se pak vodorovný scrollbar)
+        /// </summary>
+        ForceBreakToNewColumn = 0x0002
     }
     /// <summary>
     /// Druh prvku v DataFormu
