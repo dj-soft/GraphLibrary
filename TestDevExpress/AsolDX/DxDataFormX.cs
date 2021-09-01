@@ -322,6 +322,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             switch (itemType)
             {
                 case DataFormItemType.TextBox:
+                case DataFormItemType.TextBoxButton:
                 case DataFormItemType.EditBox:
                 case DataFormItemType.SpinnerBox:
                 case DataFormItemType.CheckBox:

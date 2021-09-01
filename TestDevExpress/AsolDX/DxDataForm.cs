@@ -503,8 +503,8 @@ namespace Noris.Clients.Win.Components.AsolDX
                 // Řádky s prvky s danou šířkou:
                 int x = 20;
                 text = $"Řádek {(r + 1)}";
-                DataFormItemImageText label = new DataFormItemImageText() { ItemType = DataFormItemType.Label, Text = text, DesignBounds = new Rectangle(x, y + 2, 70, 18) };
-                group.Items.Add(label);
+                DataFormItemImageText lbl = new DataFormItemImageText() { ItemType = DataFormItemType.Label, Text = text, DesignBounds = new Rectangle(x, y + 2, 70, 18) };
+                group.Items.Add(lbl);
 
                 x += 80;
                 foreach (int width in widths)
@@ -517,12 +517,21 @@ namespace Noris.Clients.Win.Components.AsolDX
                     DataFormItemType itemType = (q < 5 ? DataFormItemType.None :
                                                 (q < 10 ? DataFormItemType.CheckBox :
                                                 (q < 15 ? DataFormItemType.Button :
-                                                DataFormItemType.TextBox)));
+                                                (q < 20 ? DataFormItemType.Label :
+                                                DataFormItemType.TextBox))));
                     switch (itemType)
                     {
+                        case DataFormItemType.Label:
+                            DataFormItemImageText label = new DataFormItemImageText() { ItemType = itemType, Text = text, ToolTipText = tooltip, DesignBounds = new Rectangle(x, y, width, 20) };
+                            group.Items.Add(label);
+                            break;
                         case DataFormItemType.TextBox:
                             DataFormItemImageText textBox = new DataFormItemImageText() { ItemType = itemType, Text = text, ToolTipText = tooltip, DesignBounds = new Rectangle(x, y, width, 20) };
                             group.Items.Add(textBox);
+                            break;
+                        case DataFormItemType.TextBoxButton:
+                            DataFormItemImageText textBoxButton = new DataFormItemImageText() { ItemType = itemType, Text = text, ToolTipText = tooltip, DesignBounds = new Rectangle(x, y, width, 20) };
+                            group.Items.Add(textBoxButton);
                             break;
                         case DataFormItemType.CheckBox:
                             DataFormItemCheckItem checkBox = new DataFormItemCheckItem() { ItemType = itemType, Text = text, ToolTipText = tooltip, DesignBounds = new Rectangle(x, y, width, 20) };
@@ -1585,6 +1594,12 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                         _FillControlAction = _TextBoxFill;
                         _ReadControlAction = _TextBoxRead;
                         break;
+                    case DataFormItemType.TextBoxButton:
+                        _CreateControlFunction = _TextBoxButtonCreate;
+                        _GetKeyFunction = _TextBoxButtonGetKey;
+                        _FillControlAction = _TextBoxButtonFill;
+                        _ReadControlAction = _TextBoxButtonRead;
+                        break;
                     case DataFormItemType.CheckBox:
                         _CreateControlFunction = _CheckBoxCreate;
                         _GetKeyFunction = _CheckBoxGetKey;
@@ -1663,6 +1678,23 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 textEdit.SelectionStart = 0;
             }
             private void _TextBoxRead(DxDataFormItem item, Control control)
+            { }
+            #endregion
+            #region TextBoxButton
+            private Control _TextBoxButtonCreate() { return new DxTextButtonEdit(); }
+            private string _TextBoxButtonGetKey(DxDataFormItem item)
+            {
+                string key = GetStandardKeyForItem(item);
+                return key;
+            }
+            private void _TextBoxButtonFill(DxDataFormItem item, Control control, ControlUseMode mode)
+            {
+                if (!(control is DxTextButtonEdit textEdit)) throw new InvalidOperationException($"Nelze naplnit data do objektu typu {control.GetType().Name}, je očekáván objekt typu {typeof(DxTextButtonEdit).Name}.");
+              //  CommonFill(item, textEdit, mode);
+              //  textEdit.DeselectAll();
+                textEdit.SelectionStart = 0;
+            }
+            private void _TextBoxButtonRead(DxDataFormItem item, Control control)
             { }
             #endregion
             // EditBox

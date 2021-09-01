@@ -338,6 +338,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 case DataFormItemType.None: return null;
                 case DataFormItemType.Label: return new DataFormItemImageText() { ItemType = itemType };
                 case DataFormItemType.TextBox: return null;
+                case DataFormItemType.TextBoxButton: return null;
                 case DataFormItemType.EditBox: return null;
                 case DataFormItemType.SpinnerBox: return null;
                 case DataFormItemType.CheckBox: return new DataFormItemCheckItem() { ItemType = itemType };
@@ -558,6 +559,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// TextBox = jednořádkový text s různým formátováním vstupu
         /// </summary>
         TextBox,
+        /// <summary>
+        /// TextBox s buttonem vpravo = jednořádkový text s různým formátováním vstupu a s tlačítkem
+        /// </summary>
+        TextBoxButton,
         /// <summary>
         /// EditBox = víceřádkový text s volitelným formátováním (WordPad, Html, Syntax color)
         /// </summary>

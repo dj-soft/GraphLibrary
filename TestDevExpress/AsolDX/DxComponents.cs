@@ -1823,6 +1823,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 case DataFormItemType.Label: return _CreateDataFormLabel(dataFormItem);
                 case DataFormItemType.TextBox: return _CreateDataFormTextBox(dataFormItem);
+                case DataFormItemType.TextBoxButton: return _CreateDataFormTextBoxButton(dataFormItem);
                 case DataFormItemType.EditBox: return _CreateDataFormEditBox(dataFormItem);
                 case DataFormItemType.SpinnerBox: return _CreateDataFormSpinnerBox(dataFormItem);
                 case DataFormItemType.CheckBox: return _CreateDataFormCheckBox(dataFormItem);
@@ -1858,6 +1859,14 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="dataFormItem"></param>
         /// <returns></returns>
         private Control _CreateDataFormTextBox(IDataFormItemX dataFormItem)
+        {
+            var bounds = dataFormItem.Bounds;
+            var textEdit = CreateDxTextEdit(bounds.X, bounds.Y, bounds.Width, null, null,
+                dataFormItem.TextMaskType, dataFormItem.TextEditMask, dataFormItem.TextUseMaskAsDisplayFormat,
+                dataFormItem.ToolTipTitle, dataFormItem.ToolTipText, dataFormItem.Visible, dataFormItem.ReadOnly, dataFormItem.TabStop);
+            return textEdit;
+        }
+        private Control _CreateDataFormTextBoxButton(IDataFormItemX dataFormItem)
         {
             var bounds = dataFormItem.Bounds;
             var textEdit = CreateDxTextEdit(bounds.X, bounds.Y, bounds.Width, null, null,
