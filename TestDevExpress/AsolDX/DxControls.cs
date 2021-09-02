@@ -3134,6 +3134,11 @@ namespace Noris.Clients.Win.Components.AsolDX
             DevExpress.XtraEditors.ScrollBarBase scrollBar = GetScrollBarForWheel();
             ContentControl_MouseWheel(scrollBar, e.Delta);
         }
+        /// <summary>
+        /// Vrátí vhodný scrollbar pro případ, kdy uživatel skroluje na clastním ContentPanelu (typická situace).
+        /// Primárně vrací svislý, při klávese Control vrací vodorovný (pokud jsou přítomny oba).
+        /// </summary>
+        /// <returns></returns>
         private DevExpress.XtraEditors.ScrollBarBase GetScrollBarForWheel()
         {
             bool hasVScrollBar = _VScrollBarVisible;
@@ -3166,7 +3171,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             ContentControl_MouseWheel(_HScrollBar, e.Delta);
         }
         /// <summary>
-        /// Na daném scrollbaru bylo otočeno myškou
+        /// Na daném ScrollBaru bylo otočeno myškou v daném směru. 
+        /// Zajistí posunutí obsahu pomocí vložení nové hodnoty do daného ScrollBaru.
         /// </summary>
         /// <param name="scrollBar"></param>
         /// <param name="delta"></param>
@@ -3174,12 +3180,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             if (scrollBar == null) return;
 
-            int distance = (delta < 0 ? 1 : (delta > 0 ? -1 : 0));
-            if (ModifierKeys.HasFlag(Keys.Shift))
-                distance = distance * 9 * scrollBar.LargeChange / 10;
-            else
-                distance = distance * 2 * scrollBar.LargeChange / 10;
-
+            int direction = (delta < 0 ? 1 : (delta > 0 ? -1 : 0));               // Směr posunutí
+            // Shift posouvá o 90% LargeChange, bez Shiftu 2 * SmallChange:
+            int coefficient = ((ModifierKeys.HasFlag(Keys.Shift)) ? (9 * scrollBar.LargeChange / 10) : (2 * scrollBar.SmallChange));
+            int distance = direction * coefficient;
             int value = scrollBar.Value;
             int maxValue = scrollBar.Maximum - scrollBar.LargeChange + 1;
             int newValue = value + distance;
