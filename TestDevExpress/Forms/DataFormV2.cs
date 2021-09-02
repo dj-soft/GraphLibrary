@@ -119,17 +119,18 @@ namespace TestDevExpress.Forms
             group.Items.Add(new DataRibbonItem() { ItemId = "CreateSample3", Text = "Ukázka 3", Image = imageTest, Tag = "Sample3", Enabled = true });
             // group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Sample.Sample4", Text = "Ukázka 4", Image = imageTest, Tag = "Sample4", Enabled = true });
 
-
+            /*
             string imageTestRefresh = "svgimages/spreadsheet/refreshpivottable.svg";
             string imageTestRepaint = "svgimages/dashboards/striped.svg";
             group = new DataRibbonGroup() { GroupText = "TESTY VÝKONU" };
             page.Groups.Add(group);
             group.Items.Add(new DataRibbonItem() { ItemId = "Refresh1", Text = "Refresh 1", ToolTipText = "Provede kompletní refresh standardní", Image = imageTestRefresh });
             group.Items.Add(new DataRibbonItem() { ItemId = "Refresh10", Text = "Refresh 10", ToolTipText = "Provede kompletní refresh pro 10x obsah", Image = imageTestRefresh });
-            // group.Items.Add(new DataRibbonItem() { ItemId = "Refresh2000", Text = "Refresh  2000", ToolTipText = "Provede kompletní refresh pro 2000x obsah", Image = imageTestRefresh });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Refresh2000", Text = "Refresh  2000", ToolTipText = "Provede kompletní refresh pro 2000x obsah", Image = imageTestRefresh });
             group.Items.Add(new DataRibbonItem() { ItemId = "Repaint1", Text = "Repaint 1", ToolTipText = "Provede pouze repaint standardní", Image = imageTestRepaint });
             group.Items.Add(new DataRibbonItem() { ItemId = "Repaint10", Text = "Repaint 10", ToolTipText = "Provede pouze repaint pro 10x obsah", Image = imageTestRepaint });
-            // group.Items.Add(new DataRibbonItem() { ItemId = "Repaint2000", Text = "Repaint 2000", ToolTipText = "Provede pouze repaint pro 2000x obsah", Image = imageTestRepaint });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Repaint2000", Text = "Repaint 2000", ToolTipText = "Provede pouze repaint pro 2000x obsah", Image = imageTestRepaint });
+            */
 
             this.DxRibbon.Clear();
             this.DxRibbon.AddPages(pages);
@@ -161,30 +162,30 @@ namespace TestDevExpress.Forms
                     _DxMainSplit.Collapsed = !_DxShowLog;
                     _RefreshLog();
                     break;
-                case "Refresh1":
-                    _TestPerformance(1, true);
-                    break;
-                case "Refresh10":
-                    _TestPerformance(10, true);
-                    break;
-                case "Refresh100":
-                    _TestPerformance(100, true);
-                    break;
-                case "Refresh2000":
-                    _TestPerformance(2000, true);
-                    break;
-                case "Repaint1":
-                    _TestPerformance(1, false);
-                    break;
-                case "Repaint10":
-                    _TestPerformance(10, false);
-                    break;
-                case "Repaint100":
-                    _TestPerformance(100, false);
-                    break;
-                case "Repaint2000":
-                    _TestPerformance(2000, false);
-                    break;
+                //case "Refresh1":
+                //    _TestPerformance(1, true);
+                //    break;
+                //case "Refresh10":
+                //    _TestPerformance(10, true);
+                //    break;
+                //case "Refresh100":
+                //    _TestPerformance(100, true);
+                //    break;
+                //case "Refresh2000":
+                //    _TestPerformance(2000, true);
+                //    break;
+                //case "Repaint1":
+                //    _TestPerformance(1, false);
+                //    break;
+                //case "Repaint10":
+                //    _TestPerformance(10, false);
+                //    break;
+                //case "Repaint100":
+                //    _TestPerformance(100, false);
+                //    break;
+                //case "Repaint2000":
+                //    _TestPerformance(2000, false);
+                //    break;
                 case "CreateSample1":
                     _AddDataFormSample(1);
                     break;
@@ -307,17 +308,6 @@ namespace TestDevExpress.Forms
             _DxShowTimeStart = DateTime.Now;               // Určení času End a času Elapsed proběhne v DxDataForm_GotFocus
 
             RefreshStatusCurrent();
-        }
-        private void _TestPerformance(int count, bool forceRefresh)
-        {
-            if (_DxDataFormV2 == null)
-                _AddDataFormSampleName("Sample1");
-
-            int itemsCount = this._DxDataFormV2.VisibleItemsCount;
-            int totalCount = count * itemsCount;
-            var sampleStartTime = DxComponent.LogTimeCurrent;
-            _DxDataFormV2.TestPerformance(count, forceRefresh);
-            DxComponent.LogAddLineTime($"TestPerformance: Count: {totalCount}; Time: {DxComponent.LogTokenTimeMilisec}", sampleStartTime);
         }
         private void _AddDataFormSample(int sampleId)
         {

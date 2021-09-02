@@ -6588,7 +6588,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         #endregion
     }
-
     #endregion
     #region class UsingScope : Jednoduchý scope, který provede při vytvoření akci OnBegin, a při Dispose akci OnEnd
     /// <summary>

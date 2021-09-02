@@ -389,15 +389,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         internal Size VisibleContentSize { get { return (this._DataFormPanel?.ContentVirtualBounds.Size ?? Size.Empty); } }
         /// <summary>
-        /// Test výkonu
-        /// </summary>
-        /// <param name="count"></param>
-        /// <param name="forceRefresh"></param>
-        public void TestPerformance(int count, bool forceRefresh)
-        {
-            _DataFormPanel?.TestPerformance(count, forceRefresh);
-        }
-        /// <summary>
         /// Počet celkem deklarovaných prvků
         /// </summary>
         internal int ItemsCount { get { return _DataFormPages.Select(p => p.ItemsCount).Sum(); } }
@@ -631,9 +622,9 @@ namespace Noris.Clients.Win.Components.AsolDX
 
 namespace Noris.Clients.Win.Components.AsolDX.DataForm
 {
+    #region class DxDataFormPanel : Jeden panel dataformu: reprezentuje základní panel, hostuje v sobě dva ScrollBary a ContentPanel
     /// <summary>
-    /// Jeden panel dataformu: reprezentuje základní panel, hostuje v sobě dva ScrollBary 
-    /// a ContentPanel, v němž se zobrazují grupy a v nich itemy.
+    /// Jeden panel dataformu: reprezentuje základní panel, hostuje v sobě dva ScrollBary a ContentPanel, v němž se zobrazují grupy a v nich itemy.
     /// <para/>
     /// Panel <see cref="DxDataFormPanel"/> je zobrazován v <see cref="DxDataForm"/> buď v celé jeho ploše (to když DataForm obsahuje jen jednu stránku),
     /// anebo je v <see cref="DxDataForm"/> zobrazen záložkovník <see cref="DxTabPane"/>, a v každé záložce je zobrazován zdejší panel <see cref="DxDataFormPanel"/>,
@@ -810,7 +801,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         {
             this._CurrentFocusedItem = null;
 
-            Control parent = this._ContentPanel;        // finálně bude parentem this, pak buttony nebudou vidět
+            Control parent = this;
+            // parent = this._ContentPanel;        // Pokud chci buttony vidět abych viděl přechody focusu...
             _FocusInButton = DxComponent.CreateDxSimpleButton(142, 5, 140, 25, parent, " Focus in...", tabStop: true);
             _FocusInButton.TabIndex = 0;
             _FocusOutButton = DxComponent.CreateDxSimpleButton(352, 5, 140, 25, parent, "... focus out.", tabStop: true);
@@ -1177,18 +1169,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             _NextCleanPaintLoop = _CACHECLEAN_OLD_LOOPS + 1;         // První pokus o úklid proběhne po tomto počtu PaintLoop, protože i kdyby bylo potřeba uklidit staré položky, tak stejně nemůže zahodit starší položky - žádné by nevyhovovaly...
         }
         /// <summary>
-        /// Test výkonu
-        /// </summary>
-        /// <param name="count"></param>
-        /// <param name="forceRefresh"></param>
-        internal void TestPerformance(int count, bool forceRefresh)
-        {
-            _PaintingPerformaceTestCount = count;
-            _PaintingPerformaceForceRefresh = forceRefresh;
-            Refresh(RefreshParts.InvalidateControl);
-            Application.DoEvents();
-        }
-        /// <summary>
         /// ContentPanel chce vykreslit některou vrstvu
         /// </summary>
         /// <param name="sender"></param>
@@ -1214,7 +1194,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             bool isPainted = false;
             var mouseControl = _CurrentOnMouseControl;
             if (mouseControl != null)
-                PaintBorder(e, mouseControl.Bounds, Color.DarkViolet, ref isPainted);
+                PaintItemBorderBackground(e, mouseControl.Bounds, Color.DarkViolet, ref isPainted);
 
             //  Specifikum bufferované grafiky:
             // - pokud do konkrétní vrstvy jednou něco vepíšu, zůstane to tam (až do nějakého většího refreshe).
@@ -1226,22 +1206,30 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 e.UseBlankGraphics();
             e.LayerUserData = isPainted;
         }
-        private void PaintBorder(DxBufferedGraphicPaintArgs e, Rectangle bounds, Color color, ref bool isPainted)
+        /// <summary>
+        /// Zajistí vykreslení slabého orámování (prozáření okrajů) pro daný prostor (prvek) danou barvou.
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="bounds"></param>
+        /// <param name="color"></param>
+        /// <param name="isPainted"></param>
+        private void PaintItemBorderBackground(DxBufferedGraphicPaintArgs e, Rectangle bounds, Color color, ref bool isPainted)
         {
             e.Graphics.FillRectangle(DxComponent.PaintGetSolidBrush(color, 32), bounds.Enlarge(3));
             e.Graphics.FillRectangle(DxComponent.PaintGetSolidBrush(color, 96), bounds.Enlarge(1));
             isPainted = true;
         }
+        /// <summary>
+        /// Zajistí hlavní vykreslení obsahu - grupy a prvky
+        /// </summary>
+        /// <param name="e"></param>
         private void PaintContentMainLayer(DxBufferedGraphicPaintArgs e)
         { 
             bool afterPaintSearchActiveItem = _AfterPaintSearchActiveItem;
             _AfterPaintSearchActiveItem = false;
             _PaintLoop++;
             int cacheCount = ImageCacheCount;
-            if (!_PaintingPerformaceForceRefresh && _PaintingPerformaceTestCount <= 1)
-                OnPaintContentStandard(e);
-            else
-                OnPaintContentPerformaceTest(e);
+            OnPaintContentStandard(e);
 
             if (ImageCacheCount > cacheCount || _NextCleanLiable)
                 CleanImageCache();
@@ -1249,13 +1237,19 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             if (afterPaintSearchActiveItem)
                 PrepareItemForCurrentPoint();
         }
+        /// <summary>
+        /// Metoda provede standardní vykreslení grup a prvků
+        /// </summary>
+        /// <param name="e"></param>
         private void OnPaintContentStandard(DxBufferedGraphicPaintArgs e)
         {
             var startTime = DxComponent.LogTimeCurrent;
             try
             {
                 _PaintingItems = true;
-                _VisibleItems.ForEachExec(i => PaintItem(i, e));
+                Point visibleOrigin = this.ContentVirtualLocation;
+                _VisibleGroups.ForEachExec(g => PaintGroup(g, visibleOrigin, e));
+                _VisibleItems.ForEachExec(i => PaintItem(i, visibleOrigin, e));
             }
             finally
             {
@@ -1263,65 +1257,40 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             }
             DxComponent.LogAddLineTime($"DxDataFormV2 Paint Standard() Items: {_VisibleItems?.Count}; Time: {DxComponent.LogTokenTimeMilisec}", startTime);
         }
-        private void OnPaintContentPerformaceTest(DxBufferedGraphicPaintArgs e)
+        /// <summary>
+        /// Provede vykreslení jedné dané grupy
+        /// </summary>
+        /// <param name="group"></param>
+        /// <param name="visibleOrigin"></param>
+        /// <param name="e"></param>
+        private void PaintGroup(DxDataFormGroup group, Point visibleOrigin, DxBufferedGraphicPaintArgs e)
         {
-            bool forceRefresh = _PaintingPerformaceForceRefresh;
-            int count = (_PaintingPerformaceTestCount > 1 ? _PaintingPerformaceTestCount : 1);
-            var size = this.ContentVisualSize;
-            var startTime = DxComponent.LogTimeCurrent;
-            try
-            {
-                _PaintingItems = true;
-                int x = 0;
-                int y = 0;
-                Rectangle? sumBounds = new Rectangle(Point.Empty, this.ContentTotalSize);
-                int maxX = size.Width - (sumBounds?.Right ?? 0) - 12;
-                int maxY = size.Height - (sumBounds?.Bottom ?? 0) - 12;
-                while (count > 0)
-                {
-                    if (forceRefresh) ImageCache = null;
+            var bounds = group.CurrentGroupBounds;
+            Point location = bounds.Location.Sub(visibleOrigin);
+            group.VisibleBounds = new Rectangle(location, bounds.Size);
 
-                    Point? offset = null;                  // První smyčka má offset == null, bude tedy generovat VisibleBounds
-                    _VisibleItems.ForEachExec(i => PaintItem(i, e, offset));
-                    y += 7;
-                    if (y >= maxY)
-                    {
-                        y = 0;
-                        x += 36;
-                        if (x >= maxX)
-                            x = 0;
-                    }
-                    count--;
-                    offset = new Point(x, y);              // Další smyčky budou kreslit posunuté obrázky, ale nebudou ukládat VisibleBounds do prvků
-                }
-            }
-            finally
+            Rectangle[] borders = group.GetBordersBounds();
+            if (borders != null)
             {
-                _PaintingItems = false;
-                _PaintingPerformaceTestCount = 1;
-                _PaintingPerformaceForceRefresh = false;
+                var brush = DxComponent.PaintGetSolidBrush(Color.FromArgb(80, 96, 96, 120));
+                borders.ForEachExec(b => e.Graphics.FillRectangle(brush, b));
             }
-            DxComponent.LogAddLineTime($"DxDataFormV2 Paint PerformanceTest() Items: {_VisibleItems.Count}; Loops: {count}; Time: {DxComponent.LogTokenTimeMilisec}", startTime);
         }
         /// <summary>
         /// Provede vykreslení jednoho daného prvku
         /// </summary>
         /// <param name="item"></param>
+        /// <param name="visibleOrigin"></param>
         /// <param name="e"></param>
-        /// <param name="offset"></param>
-        private void PaintItem(DxDataFormItem item, DxBufferedGraphicPaintArgs e, Point? offset = null)
+        private void PaintItem(DxDataFormItem item, Point visibleOrigin, DxBufferedGraphicPaintArgs e)
         {
-            var bounds = item.CurrentBounds;
             using (var image = CreateImage(item))
             {
                 if (image != null)
                 {
-                    var visibleOrigin = this.ContentVirtualLocation;
+                    var bounds = item.CurrentBounds;
                     Point location = bounds.Location.Sub(visibleOrigin);
-                    if (offset.HasValue)
-                        location = location.Add(offset.Value);                      // když má offset hodnotu, pak kreslím "posunutý" obraz (jen pro testy), ale nejde o VisibleBounds
-                    else
-                        item.VisibleBounds = new Rectangle(location, bounds.Size);  // Hodnota offset = null: kreslím "platný obraz", takže si uložím vizuální souřadnici
+                    item.VisibleBounds = new Rectangle(location, bounds.Size);
                     e.Graphics.DrawImage(image, location);
                 }
             }
@@ -1338,8 +1307,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         private bool _AfterPaintSearchActiveItem;
         private long _PaintLoop;
         private bool _PaintingItems = false;
-        private int _PaintingPerformaceTestCount;
-        private bool _PaintingPerformaceForceRefresh;
 
         #endregion
         #region Bitmap cache
@@ -2128,8 +2095,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         }
         #endregion
     }
+    #endregion
+    #region class DxDataFormTab : Data jedné viditelné záložky. Záložka může obsahovat více stránek, pokud to layout potřebuje.
     /// <summary>
-    /// Data jedné záložky
+    /// Data jedné viditelné záložky. Záložka může obsahovat více stránek, pokud to layout potřebuje.
     /// </summary>
     internal class DxDataFormTab
     {
@@ -2197,15 +2166,31 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         private DxDataFormState _State;
         #endregion
     }
+    #endregion
+    #region class DxDataFormState : Stav DataFormu, slouží pro persistenci stavu při přepínání záložek.
+    /// <summary>
+    /// Stav DataFormu, slouží pro persistenci stavu při přepínání záložek.
+    /// Obsahuje pozice ScrollBarů (reálně obsahuje <see cref="ContentVirtualLocation"/>) a objekt s focusem.
+    /// <para/>
+    /// Má význam víceméně u záložkových DataFormů, aby při přepínání záložek byla konkrétní záložka zobrazena v tom stavu, v jakém byla opuštěna.
+    /// </summary>
     internal class DxDataFormState
     {
+        /// <summary>
+        /// Posun obsahu daný pozicí ScrollBarů
+        /// </summary>
         public Point ContentVirtualLocation { get; set; }
+        /// <summary>
+        /// Vrací klon objektu
+        /// </summary>
+        /// <returns></returns>
         public DxDataFormState Clone()
         {
             return (DxDataFormState)this.MemberwiseClone();
         }
     }
-
+    #endregion
+    #region class DxDataFormPage : Třída reprezentující jednu designem definovanou stránku v dataformu.
     /// <summary>
     /// Třída reprezentující jednu designem definovanou stránku v dataformu.
     /// V dynamickém layoutu může jedna fyzická vizuální záložka obsahovat více designových stránek vedle sebe.
@@ -2372,6 +2357,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         #endregion
 
     }
+    #endregion
+    #region class DxDataFormGroup : Třída reprezentující jednu grupu na stránce.
     /// <summary>
     /// Třída reprezentující jednu grupu na stránce.
     /// Grupa obsahuje prvky.
@@ -2436,7 +2423,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Zajistí provedení výpočtu automatické velikosti grupy.
         /// Reaguje na <see cref="IDataFormGroup.DesignPadding"/>, čte prvky <see cref="Items"/> 
-        /// a určuje hodnoty do <see cref="DesignItemsOrigin"/> a <see cref="DesignGroupAutoSize"/>
+        /// a určuje hodnoty do <see cref="DesignItemsOrigin"/> a <see cref="DesignGroupSize"/>
         /// </summary>
         private void _CalculateAutoSize()
         {
@@ -2473,6 +2460,18 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Řízení layoutu: na této grupě je povinné zalomení sloupce = tato grupa má být umístěna jako první do dalšího sloupce
         /// </summary>
         internal bool LayoutForceBreakToNewColumn { get { return (IGroup.LayoutMode.HasFlag(DatFormGroupLayoutMode.ForceBreakToNewColumn)); } }
+        /// <summary>
+        /// Rozsah orámování grupy.
+        /// <para/>
+        /// Titulkový prostor grupy se nachází uvnitř Borderu.
+        /// <para/>
+        /// Pokud <see cref="BorderDesignRange"/> je null, bere se jako { 0, 0 }.
+        /// </summary>
+        internal Int32Range BorderDesignRange { get { return IGroup.BorderDesignRange; } }
+        /// <summary>
+        /// Barva orámování okraje
+        /// </summary>
+        internal Color? BorderColor { get { return IGroup.BorderColor; } }
         /// <summary>
         /// Počet celkem deklarovaných prvků
         /// </summary>
@@ -2526,7 +2525,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Aktuální reálná absolutní souřadnice této grupy. 
         /// Souřadnice je daná počátkem <see cref="CurrentGroupOrigin"/>, který musí setovat koordinátor stránky, 
-        /// a velikostí grupy <see cref="CurrentGroupSize"/>, která vychází z deklarace grupy <see cref="IDataFormGroup.GroupSize"/> a je přepočtena Zoomem a DPI.
+        /// a velikostí grupy <see cref="CurrentGroupSize"/>, která vychází z deklarace grupy <see cref="IDataFormGroup.DesignWidth"/> a <see cref="IDataFormGroup.DesignHeight"/>, a je přepočtena Zoomem a DPI.
         /// <para/>
         /// Tato souřadnice ale není posunuta ScrollBarem (je absolutní).
         /// Posunutá vizuální souřadnice je v <see cref="VisibleBounds"/>.
@@ -2576,7 +2575,23 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             return (IsVisible && virtualBounds.Contains(CurrentGroupBounds, true));
         }
         #endregion
+        #region Podpora pro kreslení grupy
+        internal Rectangle[] GetBordersBounds()
+        {
+            if (!this.VisibleBounds.HasValue) return null;
+            Rectangle bounds = this.VisibleBounds.Value;
+            Rectangle[] borders = new Rectangle[4];
+
+            borders[0] = new Rectangle(bounds.X, bounds.Y, bounds.Width, 2);
+            borders[1] = new Rectangle(bounds.X, bounds.Bottom - 2, bounds.Width, 2);
+            borders[2] = new Rectangle(bounds.X, bounds.Y + 2, 2, bounds.Height - 4);
+            borders[3] = new Rectangle(bounds.Right - 2, bounds.Y + 2, 2, bounds.Height - 4);
+            return borders;
+        }
+        #endregion
     }
+    #endregion
+    #region class DxDataFormItem : Třída reprezentující jeden každý vizuální prvek v DxDataFormu.
     /// <summary>
     /// Třída reprezentující jeden každý vizuální prvek v <see cref="DxDataForm"/>.
     /// </summary>
@@ -2736,7 +2751,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         }
         #endregion
     }
-    #region Enum RefreshParts
+    #endregion
+    #region Enumy : RefreshParts
     /// <summary>
     /// Položky pro refresh
     /// </summary>

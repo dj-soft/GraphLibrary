@@ -139,7 +139,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Název obrázku grupy
         /// </summary>
-        public virtual string PageImageName { get; set; }
+        public virtual string GroupImageName { get; set; }
         /// <summary>
         /// Titulek grupy
         /// </summary>
@@ -175,6 +175,26 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// a bude se dopočítávat podle souhrnu rozměrů <see cref="Items"/>, pak se k nejkrajnější souřadnici prvku přičte pravý a dolní Padding.
         /// </summary>
         public virtual SWF.Padding DesignPadding { get; set; }
+        /// <summary>
+        /// Rozsah orámování grupy.
+        /// Grupa má své vnější souřadnice, dané <see cref="DesignWidth"/> a <see cref="DesignHeight"/>.
+        /// Vnitřní prvky mohou být odsazené o <see cref="DesignPadding"/>. V rámci tohoto Paddingu může být vykreslen Border grupy.
+        /// Border pak začíná např. zleva (tj. svislá linie) na souřadnici X = <see cref="BorderDesignRange"/>.Begin a končí na souřadnici X = <see cref="BorderDesignRange"/>.End.
+        /// Jinými slovy, Border se nachází uvnitř grupy, od vnějšího okraje grupy je odsazen vždy o <see cref="BorderDesignRange"/>.Begin, a síla linky je <see cref="BorderDesignRange"/>.Size.
+        /// Při použití tohoto Border dbejme o to, aby <see cref="DesignPadding"/> byl větší než Border, jinak by prvky <see cref="Items"/> mohly překrývat Border.
+        /// <para/>
+        /// Border je vykreslen jednoduchou barvou <see cref="BorderColor"/>. Ta může pracovat s Alpha kanálem (průhlednost). Pokud <see cref="BorderColor"/> je null, nebude se kreslit.
+        /// Border pak může sloužit pro určení odsazení titulkového prostoru.
+        /// <para/>
+        /// Titulkový prostor grupy se nachází uvnitř Borderu.
+        /// <para/>
+        /// Pokud <see cref="BorderDesignRange"/> je null, bere se jako { 0, 0 }.
+        /// </summary>
+        public virtual Int32Range BorderDesignRange { get; set; }
+        /// <summary>
+        /// Barva orámování okraje
+        /// </summary>
+        public virtual Color? BorderColor { get; set; }
         /// <summary>
         /// Řídí viditelnost grupy
         /// </summary>
@@ -230,7 +250,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Název obrázku grupy
         /// </summary>
-        string PageImageName { get; }
+        string GroupImageName { get; }
         /// <summary>
         /// Titulek grupy
         /// </summary>
@@ -266,6 +286,26 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// a bude se dopočítávat podle souhrnu rozměrů <see cref="Items"/>, pak se k nejkrajnější souřadnici prvku přičte pravý a dolní Padding.
         /// </summary>
         SWF.Padding DesignPadding { get; }
+        /// <summary>
+        /// Rozsah orámování grupy.
+        /// Grupa má své vnější souřadnice, dané <see cref="DesignWidth"/> a <see cref="DesignHeight"/>.
+        /// Vnitřní prvky mohou být odsazené o <see cref="DesignPadding"/>. V rámci tohoto Paddingu může být vykreslen Border grupy.
+        /// Border pak začíná např. zleva (tj. svislá linie) na souřadnici X = <see cref="BorderDesignRange"/>.Begin a končí na souřadnici X = <see cref="BorderDesignRange"/>.End.
+        /// Jinými slovy, Border se nachází uvnitř grupy, od vnějšího okraje grupy je odsazen vždy o <see cref="BorderDesignRange"/>.Begin, a síla linky je <see cref="BorderDesignRange"/>.Size.
+        /// Při použití tohoto Border dbejme o to, aby <see cref="DesignPadding"/> byl větší než Border, jinak by prvky <see cref="Items"/> mohly překrývat Border.
+        /// <para/>
+        /// Border je vykreslen jednoduchou barvou <see cref="BorderColor"/>. Ta může pracovat s Alpha kanálem (průhlednost). Pokud <see cref="BorderColor"/> je null, nebude se kreslit.
+        /// Border pak může sloužit pro určení odsazení titulkového prostoru.
+        /// <para/>
+        /// Titulkový prostor grupy se nachází uvnitř Borderu.
+        /// <para/>
+        /// Pokud <see cref="BorderDesignRange"/> je null, bere se jako { 0, 0 }.
+        /// </summary>
+        Int32Range BorderDesignRange { get; }
+        /// <summary>
+        /// Barva orámování okraje
+        /// </summary>
+        Color? BorderColor { get; }
         /// <summary>
         /// Řídí viditelnost grupy
         /// </summary>
