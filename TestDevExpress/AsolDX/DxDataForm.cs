@@ -514,11 +514,11 @@ namespace Noris.Clients.Win.Components.AsolDX
             };
             DataFormBackgroundAppearance headerAppearance = new DataFormBackgroundAppearance()
             {
-                GradientStyle = GradientStyleType.Downward,
+                GradientStyle = GradientStyleType.ToRight,
                 BackColor = Color.FromArgb(64, 64, 64, 64),
-                BackColorEnd = Color.FromArgb(32, 160, 160, 160),
-                OnMouseBackColor = Color.FromArgb(160, 64, 64, 64),
-                OnMouseBackColorEnd = Color.FromArgb(96, 160, 160, 160)
+                BackColorEnd = Color.FromArgb(16, 160, 160, 160),
+                OnMouseBackColor = Color.FromArgb(160, 128, 128, 64),
+                OnMouseBackColorEnd = Color.FromArgb(16, 192, 192, 128)
             };
 
             int textsCount = texts.Length;
@@ -530,20 +530,24 @@ namespace Noris.Clients.Win.Components.AsolDX
             int spaceWidth = 5;
             int beginY = 0;
             int headerHeight = 0;
+            int borderWidth = 2;
             switch (sampleId)
             {
                 case 1:
                     widths = new int[] { 140, 260, 40, 300, 120 };
                     rowHeight = 28;
+                    borderWidth = 3;
                     break;
                 case 2:
                     widths = new int[] { 80, 150, 80, 60, 100, 120, 160, 40, 120, 180, 80, 40, 60, 250 };
                     rowHeight = 21;
                     spaceWidth = 1;
+                    borderWidth = 3;
                     break;
                 case 3:
                     widths = new int[] { 250, 250, 60, 250, 250, 60, 250 };
                     rowHeight = 30;
+                    borderWidth = 3;
                     break;
 
                 case 4:                // Sklady, možnost sloučit s Faktury
@@ -552,6 +556,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                     rowHeight = 30;
                     beginY = 26;
                     headerHeight = 24;
+                    borderWidth = 1;
                     break;
                 case 5:                // Faktury, možnost sloučit s Sklady
                     page.AllowMerge = true;
@@ -560,6 +565,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                     spaceWidth = 1;
                     beginY = 26;
                     headerHeight = 24;
+                    borderWidth = 1;
                     break;
                 case 6:                // Zaúčtování
                     widths = new int[] { 400, 125, 75, 100 };
@@ -604,7 +610,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                         if ((page.Groups.Count % 3) == 0)
                             group.LayoutMode = DatFormGroupLayoutMode.AllowBreakToNewColumn;
                     }
-                    group.DesignBorderRange = new Int32Range(1, 4);
+                    group.DesignBorderRange = new Int32Range(1, 1+ borderWidth);
                     group.BorderAppearance = borderAppearance;
 
                     page.Groups.Add(group);
