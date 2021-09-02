@@ -659,10 +659,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="disposing"></param>
         protected override void Dispose(bool disposing)
         {
-            DisposeControls();
-            InvalidateImageCache();
             _Groups?.Clear();
             DisposeGroups();
+            InvalidateImageCache();
+            DisposeControls();
             DisposeContentPanel();
 
             base.Dispose(disposing);
@@ -818,8 +818,20 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             this._CurrentOnMouseItem = null;
             this._CurrentOnMouseControlSet = null;
             this._CurrentOnMouseControl = null;
+            this._ContentPanel.MouseLeave += _ContentPanel_MouseLeave;
             this._ContentPanel.MouseMove += _ContentPanel_MouseMove;
             this._ContentPanel.MouseDown += _ContentPanel_MouseDown;
+        }
+        /// <summary>
+        /// Myš nás opustila
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _ContentPanel_MouseLeave(object sender, EventArgs e)
+        {
+            Point location = this.PointToClient(MousePosition);
+            if (!this.ClientRectangle.Contains(location))
+                DetectMouseChangeForPoint(null);
         }
         /// <summary>
         /// Myš se pohybuje po Content panelu
@@ -829,7 +841,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         private void _ContentPanel_MouseMove(object sender, MouseEventArgs e)
         {
             if (e.Button == MouseButtons.None)
-                PrepareItemForPoint(e.Location);
+                DetectMouseChangeForPoint(e.Location);
         }
         /// <summary>
         /// Myš klikla v Content panelu = nejspíš bychom měli zařídit přípravu prvku a předání focusu ondoň
@@ -842,42 +854,101 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             // Sem se dostanu jen tehdy, když myš klikne na panelu _ContentPanel v místě, kde není žádný prvek.
         }
         /// <summary>
-        /// Vyhledá prvek nacházející se pod aktuální souřadnicí myši a zajistí pro prvky <see cref="MouseItemLeave()"/> a <see cref="MouseItemEnter(DxDataFormItem)"/>.
+        /// Vyhledá prvek nacházející se pod aktuální souřadnicí myši a zajistí pro prvky <see cref="MouseLeaveItem()"/> a <see cref="MouseEnterItem(DxDataFormItem)"/>.
         /// </summary>
-        private void PrepareItemForCurrentPoint()
+        private void DetectMouseChangeForCurrentPoint()
         {
             Point absoluteLocation = Control.MousePosition;
             Point relativeLocation = _ContentPanel.PointToClient(absoluteLocation);
-            PrepareItemForPoint(relativeLocation);
+            DetectMouseChangeForPoint(relativeLocation);
         }
         /// <summary>
-        /// Vyhledá prvek nacházející se pod danou souřadnicí myši a zajistí pro prvky <see cref="MouseItemLeave()"/> a <see cref="MouseItemEnter(DxDataFormItem)"/>.
+        /// Vyhledá prvek nacházející se pod danou souřadnicí myši a zajistí pro prvky <see cref="MouseLeaveItem()"/> a <see cref="MouseEnterItem(DxDataFormItem)"/>.
         /// </summary>
         /// <param name="location">Souřadnice myši relativně k controlu <see cref="_ContentPanel"/> = reálný parent prvků</param>
-        private void PrepareItemForPoint(Point location)
+        private void DetectMouseChangeForPoint(Point? location)
+        {
+            DxBufferedLayer invalidateLayers = DxBufferedLayer.None;
+            DetectMouseChangeGroupForPoint(location, ref invalidateLayers);
+            DetectMouseChangeItemForPoint(location, ref invalidateLayers);
+            if (invalidateLayers != DxBufferedLayer.None)
+                this._ContentPanel.InvalidateLayers(invalidateLayers);
+        }
+        /// <summary>
+        /// Detekuje aktuální grupu pod danou souřadnicí, detekuje změny (Leave a Enter) a udržuje v proměnné <see cref="_CurrentOnMouseGroup"/> aktuální grupu na dané souřadnici
+        /// </summary>
+        /// <param name="location"></param>
+        /// <param name="invalidateLayers"></param>
+        private void DetectMouseChangeGroupForPoint(Point? location, ref DxBufferedLayer invalidateLayers)
+        {
+            if (_VisibleGroups == null) return;
+
+            DxDataFormGroup oldGroup = _CurrentOnMouseGroup;
+            DxDataFormGroup newGroup = null;
+            bool oldExists = (oldGroup != null);
+            bool newExists = location.HasValue && _VisibleGroups.TryGetLast(i => i.IsVisibleOnPoint(location.Value), out newGroup);
+
+            bool isMouseLeave = (oldExists && (!newExists || (newExists && !Object.ReferenceEquals(oldGroup, newGroup))));
+            if (isMouseLeave)
+                MouseLeaveGroup();
+
+            bool isMouseEnter = (newExists && (!oldExists || (oldExists && !Object.ReferenceEquals(oldGroup, newGroup))));
+            if (isMouseEnter)
+                MouseEnterGroup(newGroup);
+
+            if (isMouseLeave || isMouseEnter)
+                invalidateLayers |= DxBufferedLayer.MainLayer;
+        }
+        /// <summary>
+        /// Je voláno při příchodu myši na danou grupu.
+        /// </summary>
+        /// <param name="group"></param>
+        private void MouseEnterGroup(DxDataFormGroup group)
+        {
+            _CurrentOnMouseGroup = group;
+        }
+        /// <summary>
+        /// Je voláno při opuštění myši z aktuální grupy.
+        /// </summary>
+        private void MouseLeaveGroup()
+        {
+            _CurrentOnMouseGroup = null;
+        }
+        /// <summary>
+        /// Grupa aktuálně se nacházející pod myší
+        /// </summary>
+        private DxDataFormGroup _CurrentOnMouseGroup;
+
+        /// <summary>
+        /// Detekuje aktuální prvek pod danou souřadnicí, detekuje změny (Leave a Enter) a udržuje v proměnné <see cref="_CurrentOnMouseItem"/> aktuální prvek na dané souřadnici
+        /// </summary>
+        /// <param name="location"></param>
+        /// <param name="invalidateLayers"></param>
+        private void DetectMouseChangeItemForPoint(Point? location, ref DxBufferedLayer invalidateLayers)
         {
             if (_VisibleItems == null) return;
 
             DxDataFormItem oldItem = _CurrentOnMouseItem;
+            DxDataFormItem newItem = null;
             bool oldExists = (oldItem != null);
-            bool newExists = _VisibleItems.TryGetLast(i => i.IsVisibleOnPoint(location), out var newItem);
+            bool newExists = location.HasValue && _VisibleItems.TryGetLast(i => i.IsVisibleOnPoint(location.Value), out newItem);
 
             bool isMouseLeave = (oldExists && (!newExists || (newExists && !Object.ReferenceEquals(oldItem, newItem))));
             if (isMouseLeave)
-                MouseItemLeave();
+                MouseLeaveItem();
 
             bool isMouseEnter = (newExists && (!oldExists || (oldExists && !Object.ReferenceEquals(oldItem, newItem))));
             if (isMouseEnter)
-                MouseItemEnter(newItem);
+                MouseEnterItem(newItem);
 
             if (isMouseLeave || isMouseEnter)
-                this._ContentPanel.InvalidateLayers(DxBufferedLayer.AppBackground);
+                invalidateLayers |= DxBufferedLayer.AppBackground;
         }
         /// <summary>
         /// Je voláno při příchodu myši na daný prvek.
         /// </summary>
         /// <param name="item"></param>
-        private void MouseItemEnter(DxDataFormItem item)
+        private void MouseEnterItem(DxDataFormItem item)
         {
             if (item.VisibleBounds.HasValue)
             {
@@ -895,7 +966,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Je voláno při opuštění myši z aktuálního prvku.
         /// </summary>
-        private void MouseItemLeave()
+        private void MouseLeaveItem()
         {
             var oldControl = _CurrentOnMouseControl;
             if (oldControl != null)
@@ -1082,7 +1153,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             _RefreshPartVisibleItems = false;
 
             // Po změně viditelných prvků je třeba provést MouseLeave = prvek pod myší už není ten, co býval:
-            this.MouseItemLeave();
+            this.MouseLeaveItem();
 
             // Připravím soupis aktuálně viditelných prvků:
             _PrepareVisibleGroupsItems();
@@ -1192,6 +1263,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         private void PaintContentAppBackground(DxBufferedGraphicPaintArgs e)
         {
             bool isPainted = false;
+
+            // _VisibleGroups.ForEachExec(g => PaintGroupStandard(g, visibleOrigin, e));
+
             var mouseControl = _CurrentOnMouseControl;
             if (mouseControl != null)
                 PaintItemBorderBackground(e, mouseControl.Bounds, Color.DarkViolet, ref isPainted);
@@ -1235,7 +1309,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 CleanImageCache();
 
             if (afterPaintSearchActiveItem)
-                PrepareItemForCurrentPoint();
+                DetectMouseChangeForCurrentPoint();
         }
         /// <summary>
         /// Metoda provede standardní vykreslení grup a prvků
@@ -1248,8 +1322,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             {
                 _PaintingItems = true;
                 Point visibleOrigin = this.ContentVirtualLocation;
-                _VisibleGroups.ForEachExec(g => PaintGroup(g, visibleOrigin, e));
-                _VisibleItems.ForEachExec(i => PaintItem(i, visibleOrigin, e));
+                _VisibleGroups.ForEachExec(g => PaintGroupStandard(g, visibleOrigin, e));
+                _VisibleItems.ForEachExec(i => PaintItemStandard(i, visibleOrigin, e));
             }
             finally
             {
@@ -1263,7 +1337,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="group"></param>
         /// <param name="visibleOrigin"></param>
         /// <param name="e"></param>
-        private void PaintGroup(DxDataFormGroup group, Point visibleOrigin, DxBufferedGraphicPaintArgs e)
+        private void PaintGroupStandard(DxDataFormGroup group, Point visibleOrigin, DxBufferedGraphicPaintArgs e)
         {
             var bounds = group.CurrentGroupBounds;
             Point location = bounds.Location.Sub(visibleOrigin);
@@ -1272,7 +1346,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             Rectangle[] borders = group.GetBordersBounds();
             if (borders != null)
             {
-                var brush = DxComponent.PaintGetSolidBrush(Color.FromArgb(80, 96, 96, 120));
+                bool isActive = Object.ReferenceEquals(group, _CurrentOnMouseGroup);
+                Color color = isActive ? Color.FromArgb(108, 182, 255, 0) : Color.FromArgb(32, 96, 80, 96);
+                var brush = DxComponent.PaintGetSolidBrush(color );
                 borders.ForEachExec(b => e.Graphics.FillRectangle(brush, b));
             }
         }
@@ -1282,7 +1358,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="item"></param>
         /// <param name="visibleOrigin"></param>
         /// <param name="e"></param>
-        private void PaintItem(DxDataFormItem item, Point visibleOrigin, DxBufferedGraphicPaintArgs e)
+        private void PaintItemStandard(DxDataFormItem item, Point visibleOrigin, DxBufferedGraphicPaintArgs e)
         {
             using (var image = CreateImage(item))
             {
@@ -2574,18 +2650,33 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         {
             return (IsVisible && virtualBounds.Contains(CurrentGroupBounds, true));
         }
+        /// <summary>
+        /// Vrátí true, pokud this grupa má nastaveny viditelné souřadnice v <see cref="VisibleBounds"/> 
+        /// a pokud daný bod (souřadný systém shodný s <see cref="VisibleBounds"/>) se nachází v prostoru this grupy
+        /// </summary>
+        /// <param name="point"></param>
+        /// <returns></returns>
+        public bool IsVisibleOnPoint(Point point)
+        {
+            return (IsVisible && VisibleBounds.HasValue && VisibleBounds.Value.Contains(point));
+        }
         #endregion
         #region Podpora pro kreslení grupy
         internal Rectangle[] GetBordersBounds()
         {
             if (!this.VisibleBounds.HasValue) return null;
-            Rectangle bounds = this.VisibleBounds.Value;
+            var borderRange = this.BorderDesignRange;
+            if (borderRange == null) borderRange = new Int32Range(1, 4);
+            int b = borderRange.Begin;
+            Rectangle bounds = this.VisibleBounds.Value.Sub(new Padding(b));
             Rectangle[] borders = new Rectangle[4];
 
-            borders[0] = new Rectangle(bounds.X, bounds.Y, bounds.Width, 2);
-            borders[1] = new Rectangle(bounds.X, bounds.Bottom - 2, bounds.Width, 2);
-            borders[2] = new Rectangle(bounds.X, bounds.Y + 2, 2, bounds.Height - 4);
-            borders[3] = new Rectangle(bounds.Right - 2, bounds.Y + 2, 2, bounds.Height - 4);
+            int s = borderRange.Size;
+            int s2 = 2 * s;
+            borders[0] = new Rectangle(bounds.X, bounds.Y, bounds.Width, s);
+            borders[1] = new Rectangle(bounds.X, bounds.Bottom - s, bounds.Width, s);
+            borders[2] = new Rectangle(bounds.X, bounds.Y + s, s, bounds.Height - s2);
+            borders[3] = new Rectangle(bounds.Right - s, bounds.Y + s, s, bounds.Height - s2);
             return borders;
         }
         #endregion
