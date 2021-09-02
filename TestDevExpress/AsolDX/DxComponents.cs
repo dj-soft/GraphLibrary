@@ -572,6 +572,20 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="value"></param>
         /// <returns></returns>
         internal static int ZoomToGuiInt(int value) { decimal zoom = Instance._Zoom; return _ZoomToGuiInt(value, zoom); }
+        /// <summary>
+        /// Vrátí danou designovou hodnotu přepočtenou dle aktuálního Zoomu do vizuální hodnoty
+        /// </summary>
+        /// <param name="value">Designová hodnota (96DPI, 100%)</param>
+        /// <param name="targetDpi">Cílové DPI</param>
+        /// <returns></returns>
+        internal static int ZoomToGuiInt(int value, int targetDpi) { decimal zoomDpi = Instance._ZoomDpi; return _ZoomDpiToGuiInt(value, zoomDpi, targetDpi); }
+        /// <summary>
+        /// Vrátí danou designovou hodnotu přepočtenou dle aktuálního Zoomu do vizuální hodnoty
+        /// </summary>
+        /// <param name="value">Designová hodnota (96DPI, 100%)</param>
+        /// <param name="targetDpi">Cílové DPI</param>
+        /// <returns></returns>
+        internal static Int32Range ZoomToGuiInt(Int32Range value, int targetDpi) { if (value == null) return null; decimal zoomDpi = Instance._ZoomDpi; return new Int32Range(_ZoomDpiToGuiInt(value.Begin, zoomDpi, targetDpi), _ZoomDpiToGuiInt(value.End, zoomDpi, targetDpi)); }
 
         /// <summary>
         /// Vrátí danou designovou hodnotu přepočtenou dle aktuálního Zoomu do vizuální hodnoty
@@ -2295,34 +2309,74 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
         }
         /// <summary>
-        /// Vrátí new instanci <see cref="LinearGradientBrush"/> pro dané zadání. Interně řeší problém WinForms, kdy pro určité orientace / úhly gradientu dochází k posunu prostoru.
+        /// Vrátí new instanci <see cref="LinearGradientBrush"/> pro dané zadání. 
+        /// Interně řeší problém WinForms, kdy pro určité orientace / úhly gradientu dochází k posunu prostoru.
         /// </summary>
         /// <param name="bounds"></param>
         /// <param name="color1"></param>
         /// <param name="color2"></param>
         /// <param name="targetSide"></param>
+        /// <para/>
+        /// Může vrátit null, pokud <paramref name="color1"/> nemá hodnotu.
+        /// Může vrátit SolidBrush, pokud <paramref name="color2"/> nemá hodnotu.
         /// <returns></returns>
-        public static LinearGradientBrush PaintCreateBrushForGradient(Rectangle bounds, Color color1, Color color2, RectangleSide targetSide)
+        public static Brush PaintCreateBrushForGradient(Rectangle bounds, Color? color1, Color? color2, RectangleSide targetSide)
+        {
+            GradientStyleType gradientStyle = ConvertRectangleSideToGradientStyle(targetSide);
+            return PaintCreateBrushForGradient(bounds, color1, color2, gradientStyle);
+        }
+        /// <summary>
+        /// Vrátí new instanci <see cref="LinearGradientBrush"/> pro dané zadání. 
+        /// Interně řeší problém WinForms, kdy pro určité orientace / úhly gradientu dochází k posunu prostoru.
+        /// <para/>
+        /// Může vrátit null, pokud <paramref name="color1"/> nemá hodnotu.
+        /// Může vrátit SolidBrush, pokud <paramref name="color2"/> nemá hodnotu nebo <paramref name="gradientStyle"/> je None.
+        /// </summary>
+        /// <param name="bounds"></param>
+        /// <param name="color1"></param>
+        /// <param name="color2"></param>
+        /// <param name="gradientStyle"></param>
+        /// <returns></returns>
+        public static Brush PaintCreateBrushForGradient(Rectangle bounds, Color? color1, Color? color2, GradientStyleType? gradientStyle)
+        {
+            if (!color1.HasValue) return null;
+            if (!color2.HasValue || color2.Value == color1.Value || !gradientStyle.HasValue || gradientStyle.Value == GradientStyleType.None) return new SolidBrush(color1.Value);
+
+            switch (gradientStyle)
+            {
+                case GradientStyleType.Downward:
+                    bounds = bounds.Enlarge(0, 1, 0, 1);             // Problém .NET a WinForm...
+                    return new LinearGradientBrush(bounds, color1.Value, color2.Value, LinearGradientMode.Vertical);
+                case GradientStyleType.ToLeft:
+                    bounds = bounds.Enlarge(1, 0, 1, 0);             // Problém .NET a WinForm...
+                    return new LinearGradientBrush(bounds, color2.Value, color1.Value, LinearGradientMode.Horizontal);
+                case GradientStyleType.Upward:
+                    bounds = bounds.Enlarge(0, 1, 0, 1);             // Problém .NET a WinForm...
+                    return new LinearGradientBrush(bounds, color2.Value, color1.Value, LinearGradientMode.Vertical);
+                case GradientStyleType.ToRight:
+                    bounds = bounds.Enlarge(1, 0, 1, 0);             // Problém .NET a WinForm...
+                    return new LinearGradientBrush(bounds, color1.Value, color2.Value, LinearGradientMode.Horizontal);
+            }
+            return new SolidBrush(color1.Value);
+        }
+        /// <summary>
+        /// Konvertuje <see cref="RectangleSide"/> na <see cref="GradientStyleType"/>
+        /// </summary>
+        /// <param name="targetSide"></param>
+        /// <returns></returns>
+        private static GradientStyleType ConvertRectangleSideToGradientStyle(RectangleSide targetSide)
         {
             switch (targetSide)
             {
                 case RectangleSide.Bottom:
-                case RectangleSide.BottomCenter:
-                    bounds = bounds.Enlarge(0, 1, 0, 1);             // Problém .NET a WinForm...
-                    return new LinearGradientBrush(bounds, color1, color2, LinearGradientMode.Vertical);
+                case RectangleSide.BottomCenter: return GradientStyleType.Downward;
                 case RectangleSide.Left:
-                case RectangleSide.MiddleLeft:
-                    bounds = bounds.Enlarge(1, 0, 1, 0);             // Problém .NET a WinForm...
-                    return new LinearGradientBrush(bounds, color2, color1, LinearGradientMode.Horizontal);
+                case RectangleSide.MiddleLeft: return GradientStyleType.ToLeft;
                 case RectangleSide.Top:
-                case RectangleSide.TopCenter:
-                    bounds = bounds.Enlarge(0, 1, 0, 1);             // Problém .NET a WinForm...
-                    return new LinearGradientBrush(bounds, color2, color1, LinearGradientMode.Vertical);
+                case RectangleSide.TopCenter: return GradientStyleType.Upward;
                 case RectangleSide.Right:
-                case RectangleSide.MiddleRight:
-                default:
-                    bounds = bounds.Enlarge(1, 0, 1, 0);             // Problém .NET a WinForm...
-                    return new LinearGradientBrush(bounds, color1, color2, LinearGradientMode.Horizontal);
+                case RectangleSide.MiddleRight: return GradientStyleType.ToRight;
+                default: return GradientStyleType.None;
             }
         }
         /// <summary>
@@ -6588,6 +6642,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         #endregion
     }
+
     #endregion
     #region class UsingScope : Jednoduchý scope, který provede při vytvoření akci OnBegin, a při Dispose akci OnEnd
     /// <summary>
@@ -6942,6 +6997,32 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Interaktivní akce uživatele
         /// </summary>
         User
+    }
+    /// <summary>
+    /// Směr gradientu
+    /// </summary>
+    public enum GradientStyleType
+    {
+        /// <summary>
+        /// Není gradient
+        /// </summary>
+        None = 0,
+        /// <summary>
+        /// Dolů
+        /// </summary>
+        Downward,
+        /// <summary>
+        /// Nahoru
+        /// </summary>
+        Upward,
+        /// <summary>
+        /// Doprava
+        /// </summary>
+        ToRight,
+        /// <summary>
+        /// Doleva
+        /// </summary>
+        ToLeft
     }
     #endregion
 }

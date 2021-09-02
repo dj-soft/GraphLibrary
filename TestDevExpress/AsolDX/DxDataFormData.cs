@@ -179,22 +179,30 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Rozsah orámování grupy.
         /// Grupa má své vnější souřadnice, dané <see cref="DesignWidth"/> a <see cref="DesignHeight"/>.
         /// Vnitřní prvky mohou být odsazené o <see cref="DesignPadding"/>. V rámci tohoto Paddingu může být vykreslen Border grupy.
-        /// Border pak začíná např. zleva (tj. svislá linie) na souřadnici X = <see cref="BorderDesignRange"/>.Begin a končí na souřadnici X = <see cref="BorderDesignRange"/>.End.
-        /// Jinými slovy, Border se nachází uvnitř grupy, od vnějšího okraje grupy je odsazen vždy o <see cref="BorderDesignRange"/>.Begin, a síla linky je <see cref="BorderDesignRange"/>.Size.
+        /// Border pak začíná např. zleva (tj. svislá linie) na souřadnici X = <see cref="DesignBorderRange"/>.Begin a končí na souřadnici X = <see cref="DesignBorderRange"/>.End.
+        /// Jinými slovy, Border se nachází uvnitř grupy, od vnějšího okraje grupy je odsazen vždy o <see cref="DesignBorderRange"/>.Begin, a síla linky je <see cref="DesignBorderRange"/>.Size.
         /// Při použití tohoto Border dbejme o to, aby <see cref="DesignPadding"/> byl větší než Border, jinak by prvky <see cref="Items"/> mohly překrývat Border.
         /// <para/>
-        /// Border je vykreslen jednoduchou barvou <see cref="BorderColor"/>. Ta může pracovat s Alpha kanálem (průhlednost). Pokud <see cref="BorderColor"/> je null, nebude se kreslit.
+        /// Border je vykreslen jednoduchou barvou <see cref="BorderAppearance"/>. Ta může pracovat s Alpha kanálem (průhlednost). Pokud <see cref="BorderAppearance"/> je null, nebude se kreslit.
         /// Border pak může sloužit pro určení odsazení titulkového prostoru.
         /// <para/>
         /// Titulkový prostor grupy se nachází uvnitř Borderu.
         /// <para/>
-        /// Pokud <see cref="BorderDesignRange"/> je null, bere se jako { 0, 0 }.
+        /// Pokud <see cref="DesignBorderRange"/> je null, bere se jako { 0, 0 }.
         /// </summary>
-        public virtual Int32Range BorderDesignRange { get; set; }
+        public virtual Int32Range DesignBorderRange { get; set; }
         /// <summary>
-        /// Barva orámování okraje
+        /// Způsob barev a stylu orámování okraje
         /// </summary>
-        public virtual Color? BorderColor { get; set; }
+        public virtual IDataFormBackgroundAppearance BorderAppearance { get; set; }
+        /// <summary>
+        /// Výška záhlaví (v designových pixelech)
+        /// </summary>
+        public virtual int? DesignHeaderHeight { get; set; }
+        /// <summary>
+        /// Způsob barev a stylu záhlaví (prostor nahoře uvnitř borderu, s výškou <see cref="DesignHeaderHeight"/>
+        /// </summary>
+        public virtual IDataFormBackgroundAppearance HeaderAppearance { get; set; }
         /// <summary>
         /// Řídí viditelnost grupy
         /// </summary>
@@ -290,22 +298,30 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Rozsah orámování grupy.
         /// Grupa má své vnější souřadnice, dané <see cref="DesignWidth"/> a <see cref="DesignHeight"/>.
         /// Vnitřní prvky mohou být odsazené o <see cref="DesignPadding"/>. V rámci tohoto Paddingu může být vykreslen Border grupy.
-        /// Border pak začíná např. zleva (tj. svislá linie) na souřadnici X = <see cref="BorderDesignRange"/>.Begin a končí na souřadnici X = <see cref="BorderDesignRange"/>.End.
-        /// Jinými slovy, Border se nachází uvnitř grupy, od vnějšího okraje grupy je odsazen vždy o <see cref="BorderDesignRange"/>.Begin, a síla linky je <see cref="BorderDesignRange"/>.Size.
+        /// Border pak začíná např. zleva (tj. svislá linie) na souřadnici X = <see cref="DesignBorderRange"/>.Begin a končí na souřadnici X = <see cref="DesignBorderRange"/>.End.
+        /// Jinými slovy, Border se nachází uvnitř grupy, od vnějšího okraje grupy je odsazen vždy o <see cref="DesignBorderRange"/>.Begin, a síla linky je <see cref="DesignBorderRange"/>.Size.
         /// Při použití tohoto Border dbejme o to, aby <see cref="DesignPadding"/> byl větší než Border, jinak by prvky <see cref="Items"/> mohly překrývat Border.
         /// <para/>
-        /// Border je vykreslen jednoduchou barvou <see cref="BorderColor"/>. Ta může pracovat s Alpha kanálem (průhlednost). Pokud <see cref="BorderColor"/> je null, nebude se kreslit.
+        /// Border je vykreslen jednoduchou barvou <see cref="BorderAppearance"/>. Ta může pracovat s Alpha kanálem (průhlednost). Pokud <see cref="BorderAppearance"/> je null, nebude se kreslit.
         /// Border pak může sloužit pro určení odsazení titulkového prostoru.
         /// <para/>
         /// Titulkový prostor grupy se nachází uvnitř Borderu.
         /// <para/>
-        /// Pokud <see cref="BorderDesignRange"/> je null, bere se jako { 0, 0 }.
+        /// Pokud <see cref="DesignBorderRange"/> je null, bere se jako { 0, 0 }.
         /// </summary>
-        Int32Range BorderDesignRange { get; }
+        Int32Range DesignBorderRange { get; }
         /// <summary>
-        /// Barva orámování okraje
+        /// Způsob barev a stylu orámování okraje
         /// </summary>
-        Color? BorderColor { get; }
+        IDataFormBackgroundAppearance BorderAppearance { get; }
+        /// <summary>
+        /// Výška záhlaví (v designových pixelech)
+        /// </summary>
+        int? DesignHeaderHeight { get; }
+        /// <summary>
+        /// Způsob barev a stylu záhlaví (prostor nahoře uvnitř borderu, s výškou <see cref="DesignHeaderHeight"/>
+        /// </summary>
+        IDataFormBackgroundAppearance HeaderAppearance { get; }
         /// <summary>
         /// Řídí viditelnost grupy
         /// </summary>
@@ -335,7 +351,6 @@ namespace Noris.Clients.Win.Components.AsolDX
     }
     #endregion
     #region DataFormItem + interface
-
     /// <summary>
     /// Data definující jeden prvek v DataFormu, který má Text a Ikonu a zaškrtávací hodnotu (CheckBox, CheckButton)
     /// </summary>
@@ -504,6 +519,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         IDataFormAppearance Appearance { get; }
     }
+    #endregion
+    #region Podpůrné třídy a interface : DataFormAppearance, DataFormBackgroundAppearance
     /// <summary>
     /// Modifikace vzhledu prvku
     /// </summary>
@@ -571,6 +588,98 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Změna barvy popředí = písma
         /// </summary>
         Color? ForeColor { get; }
+    }
+    /// <summary>
+    /// Definice vzhledu pozadí
+    /// </summary>
+    public class DataFormBackgroundAppearance : IDataFormBackgroundAppearance
+    {
+        /// <summary>
+        /// Směr gradientu
+        /// </summary>
+        public virtual GradientStyleType? GradientStyle { get; set; }
+        /// <summary>
+        /// Barva pozadí plná, nebo (pokud je definovaná párová barva End) barva počáteční v Gradientu.
+        /// <para/>
+        /// Barva v neaktivním stavu.
+        /// </summary>
+        public virtual Color? BackColor { get; set; }
+        /// <summary>
+        /// Barva koncová v Gradientu. Pokud není zadaná barva počáteční (bez suffixu End) pak se barva End ignoruje.
+        /// <para/>
+        /// Barva v neaktivním stavu.
+        /// </summary>
+        public virtual Color? BackColorEnd { get; set; }
+        /// <summary>
+        /// Barva pozadí plná, nebo (pokud je definovaná párová barva End) barva počáteční v Gradientu.
+        /// <para/>
+        /// Barva v situaci, kdy na prvku je myš.
+        /// </summary>
+        public virtual Color? OnMouseBackColor { get; set; }
+        /// <summary>
+        /// Barva koncová v Gradientu. Pokud není zadaná barva počáteční (bez suffixu End) pak se barva End ignoruje.
+        /// <para/>
+        /// Barva v situaci, kdy na prvku je myš.
+        /// </summary>
+        public virtual Color? OnMouseBackColorEnd { get; set; }
+        /// <summary>
+        /// Barva pozadí plná, nebo (pokud je definovaná párová barva End) barva počáteční v Gradientu.
+        /// <para/>
+        /// Barva v situaci, kdy v prvku je focus.
+        /// </summary>
+        public virtual Color? FocusedBackColor { get; set; }
+        /// <summary>
+        /// Barva koncová v Gradientu. Pokud není zadaná barva počáteční (bez suffixu End) pak se barva End ignoruje.
+        /// <para/>
+        /// Barva v situaci, kdy v prvku je focus.
+        /// </summary>
+        public virtual Color? FocusedBackColorEnd { get; set; }
+    }
+    /// <summary>
+    /// Definice vzhledu pozadí
+    /// </summary>
+    public interface IDataFormBackgroundAppearance
+    {
+        /// <summary>
+        /// Směr gradientu
+        /// </summary>
+        GradientStyleType? GradientStyle { get; }
+        /// <summary>
+        /// Barva pozadí plná, nebo (pokud je definovaná párová barva End) barva počáteční v Gradientu.
+        /// <para/>
+        /// Barva v neaktivním stavu.
+        /// </summary>
+        Color? BackColor { get; }
+        /// <summary>
+        /// Barva koncová v Gradientu. Pokud není zadaná barva počáteční (bez suffixu End) pak se barva End ignoruje.
+        /// <para/>
+        /// Barva v neaktivním stavu.
+        /// </summary>
+        Color? BackColorEnd { get; }
+        /// <summary>
+        /// Barva pozadí plná, nebo (pokud je definovaná párová barva End) barva počáteční v Gradientu.
+        /// <para/>
+        /// Barva v situaci, kdy na prvku je myš.
+        /// </summary>
+        Color? OnMouseBackColor { get; }
+        /// <summary>
+        /// Barva koncová v Gradientu. Pokud není zadaná barva počáteční (bez suffixu End) pak se barva End ignoruje.
+        /// <para/>
+        /// Barva v situaci, kdy na prvku je myš.
+        /// </summary>
+        Color? OnMouseBackColorEnd { get; }
+        /// <summary>
+        /// Barva pozadí plná, nebo (pokud je definovaná párová barva End) barva počáteční v Gradientu.
+        /// <para/>
+        /// Barva v situaci, kdy v prvku je focus.
+        /// </summary>
+        Color? FocusedBackColor { get; }
+        /// <summary>
+        /// Barva koncová v Gradientu. Pokud není zadaná barva počáteční (bez suffixu End) pak se barva End ignoruje.
+        /// <para/>
+        /// Barva v situaci, kdy v prvku je focus.
+        /// </summary>
+        Color? FocusedBackColorEnd { get; }
     }
     #endregion
     #region Enumy

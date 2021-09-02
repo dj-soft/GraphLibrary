@@ -396,6 +396,47 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Počet aktuálně viditelných prvků
         /// </summary>
         internal int VisibleItemsCount { get { return _DataFormPanel?.VisibleItemsCount ?? 0; } }
+        /// <summary>
+        /// Metoda vrátí Brush odpovídající požadavku. Může vrátit null.
+        /// </summary>
+        /// <param name="bounds"></param>
+        /// <param name="appearance"></param>
+        /// <param name="onMouse"></param>
+        /// <param name="hasFocus"></param>
+        /// <returns></returns>
+        internal static Brush CreateBrushForAppearance(Rectangle bounds, IDataFormBackgroundAppearance appearance, bool onMouse, bool hasFocus)
+        {
+            if (appearance == null || !bounds.HasPixels()) return null;
+
+            Color? color1 = appearance.BackColor;
+            Color? color2 = appearance.BackColorEnd;
+            if (onMouse && appearance.OnMouseBackColor.HasValue)
+            {
+                color1 = appearance.OnMouseBackColor;
+                color2 = appearance.OnMouseBackColorEnd;
+            }
+            if (hasFocus && appearance.FocusedBackColor.HasValue)
+            {
+                color1 = appearance.FocusedBackColor;
+                color2 = appearance.FocusedBackColorEnd;
+            }
+            return DxComponent.PaintCreateBrushForGradient(bounds, color1, color2, appearance.GradientStyle);
+        }
+
+        internal static System.Drawing.Drawing2D.GraphicsPath CreateGraphicsPath(Rectangle bounds, Int32Range borderRange)
+        {
+            System.Drawing.Drawing2D.GraphicsPath path = new System.Drawing.Drawing2D.GraphicsPath(System.Drawing.Drawing2D.FillMode.Alternate);
+
+            int begin = borderRange.Begin;
+            Rectangle outer = bounds.Enlarge(-begin);
+            path.AddRectangle(outer);
+
+            int size = borderRange.Size;
+            Rectangle inner = outer.Enlarge(-size);
+            path.AddRectangle(inner);
+
+            return path;
+        }
         #endregion
     }
     #region Zdroj testovacích dat
@@ -463,6 +504,23 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             DataFormGroup group = null;
 
+            DataFormBackgroundAppearance borderAppearance = new DataFormBackgroundAppearance()
+            {
+                GradientStyle = GradientStyleType.Downward,
+                BackColor = Color.FromArgb(64, 64, 64, 64),
+                BackColorEnd = Color.FromArgb(32, 160, 160, 160),
+                OnMouseBackColor = Color.FromArgb(160, 64, 64, 64),
+                OnMouseBackColorEnd = Color.FromArgb(96, 160, 160, 160)
+            };
+            DataFormBackgroundAppearance headerAppearance = new DataFormBackgroundAppearance()
+            {
+                GradientStyle = GradientStyleType.Downward,
+                BackColor = Color.FromArgb(64, 64, 64, 64),
+                BackColorEnd = Color.FromArgb(32, 160, 160, 160),
+                OnMouseBackColor = Color.FromArgb(160, 64, 64, 64),
+                OnMouseBackColorEnd = Color.FromArgb(96, 160, 160, 160)
+            };
+
             int textsCount = texts.Length;
             int tooltipsCount = tooltips.Length;
 
@@ -470,6 +528,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             int[] widths = null;
             int rowHeight = 0;
             int spaceWidth = 5;
+            int beginY = 0;
+            int headerHeight = 0;
             switch (sampleId)
             {
                 case 1:
@@ -490,16 +550,22 @@ namespace Noris.Clients.Win.Components.AsolDX
                     page.AllowMerge = true;
                     widths = new int[] { 100, 75, 120, 100 };
                     rowHeight = 30;
+                    beginY = 26;
+                    headerHeight = 24;
                     break;
                 case 5:                // Faktury, možnost sloučit s Sklady
                     page.AllowMerge = true;
                     widths = new int[] { 70, 70, 70, 70 };
                     rowHeight = 21;
                     spaceWidth = 1;
+                    beginY = 26;
+                    headerHeight = 24;
                     break;
                 case 6:                // Zaúčtování
                     widths = new int[] { 400, 125, 75, 100 };
                     rowHeight = 30;
+                    beginY = 26;
+                    headerHeight = 24;
                     break;
                 case 7:                // Výrobní čísla - úzká pro force layout break
                     widths = new int[] { 100, 100, 70 };
@@ -523,6 +589,9 @@ namespace Noris.Clients.Win.Components.AsolDX
                 {
                     group = new DataFormGroup();
                     group.DesignPadding = new Padding(12, 12, 12, 12);
+                    group.DesignHeaderHeight = headerHeight;
+                    if (headerHeight > 0)
+                        group.HeaderAppearance = headerAppearance;
                     if (sampleId == 7)
                     {   // Výrobní čísla - úzká pro force layout break
                         if ((page.Groups.Count % 20) == 0)
@@ -535,8 +604,11 @@ namespace Noris.Clients.Win.Components.AsolDX
                         if ((page.Groups.Count % 3) == 0)
                             group.LayoutMode = DatFormGroupLayoutMode.AllowBreakToNewColumn;
                     }
+                    group.DesignBorderRange = new Int32Range(1, 4);
+                    group.BorderAppearance = borderAppearance;
+
                     page.Groups.Add(group);
-                    y = 0;
+                    y = beginY;
                 }
 
                 // První prvek v řádku je Label:
@@ -1343,14 +1415,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             Point location = bounds.Location.Sub(visibleOrigin);
             group.VisibleBounds = new Rectangle(location, bounds.Size);
 
-            Rectangle[] borders = group.GetBordersBounds();
-            if (borders != null)
-            {
-                bool isActive = Object.ReferenceEquals(group, _CurrentOnMouseGroup);
-                Color color = isActive ? Color.FromArgb(108, 182, 255, 0) : Color.FromArgb(32, 96, 80, 96);
-                var brush = DxComponent.PaintGetSolidBrush(color );
-                borders.ForEachExec(b => e.Graphics.FillRectangle(brush, b));
-            }
+            bool onMouse = Object.ReferenceEquals(group, _CurrentOnMouseGroup);
+            group.PaintGroup(e, onMouse, false);
+
         }
         /// <summary>
         /// Provede vykreslení jednoho daného prvku
@@ -2537,17 +2604,25 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         internal bool LayoutForceBreakToNewColumn { get { return (IGroup.LayoutMode.HasFlag(DatFormGroupLayoutMode.ForceBreakToNewColumn)); } }
         /// <summary>
-        /// Rozsah orámování grupy.
+        /// Rozsah orámování grupy. Designová hodnota.
         /// <para/>
         /// Titulkový prostor grupy se nachází uvnitř Borderu.
         /// <para/>
-        /// Pokud <see cref="BorderDesignRange"/> je null, bere se jako { 0, 0 }.
+        /// Pokud <see cref="DesignBorderRange"/> je null, bere se jako { 0, 0 }.
         /// </summary>
-        internal Int32Range BorderDesignRange { get { return IGroup.BorderDesignRange; } }
+        internal Int32Range DesignBorderRange { get { return IGroup.DesignBorderRange; } }
         /// <summary>
-        /// Barva orámování okraje
+        /// Způsob barev a stylu orámování okraje
         /// </summary>
-        internal Color? BorderColor { get { return IGroup.BorderColor; } }
+        internal IDataFormBackgroundAppearance BorderAppearance { get { return IGroup.BorderAppearance; } }
+        /// <summary>
+        /// Výška záhlaví (v designových pixelech)
+        /// </summary>
+        internal int? DesignHeaderHeight { get { return IGroup.DesignHeaderHeight; } }
+        /// <summary>
+        /// Způsob barev a stylu záhlaví (prostor nahoře uvnitř borderu, s výškou <see cref="DesignHeaderHeight"/>
+        /// </summary>
+        internal IDataFormBackgroundAppearance HeaderAppearance { get { return IGroup.HeaderAppearance; } }
         /// <summary>
         /// Počet celkem deklarovaných prvků
         /// </summary>
@@ -2609,6 +2684,26 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         public Rectangle CurrentGroupBounds { get { this.CheckCurrentBounds(); return _CurrentGroupBounds.Value; } }
         private Rectangle? _CurrentGroupBounds;
         /// <summary>
+        /// Rozsah orámování grupy. Aktuální hodnota. Může být null.
+        /// <para/>
+        /// Titulkový prostor grupy se nachází uvnitř Borderu.
+        /// <para/>
+        /// Pokud <see cref="CurrentBorderRange"/> je null, bere se jako { 0, 0 }.
+        /// </summary>
+        public Int32Range CurrentBorderRange { get { this.CheckCurrentBounds(); return _CurrentBorderRange; } }
+        private Int32Range _CurrentBorderRange;
+
+        /// <summary>
+        /// Rozsah orámování grupy. Aktuální hodnota. Může být null.
+        /// <para/>
+        /// Titulkový prostor grupy se nachází uvnitř Borderu.
+        /// <para/>
+        /// Pokud <see cref="CurrentBorderRange"/> je null, bere se jako { 0, 0 }.
+        /// </summary>
+        public int? CurrentHeaderHeight { get { this.CheckCurrentBounds(); return _CurrentHeaderHeight; } }
+        private int? _CurrentHeaderHeight;
+
+        /// <summary>
         /// Invaliduje souřadnice <see cref="CurrentGroupSize"/>, <see cref="CurrentGroupBounds"/> a <see cref="VisibleBounds"/>.
         /// Invaliduje i svoje Items.
         /// Invalidují se souřadnice typu Current a Visible. 
@@ -2618,6 +2713,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         {
             _CurrentGroupSize = null;
             _CurrentGroupBounds = null;
+            _CurrentBorderRange = null;
+            _CurrentHeaderHeight = null;
             _VisibleBounds = null;
             _Items.ForEachExec(i => i.InvalidateBounds());
         }
@@ -2626,10 +2723,15 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         private void CheckCurrentBounds()
         {
-            if (!_CurrentGroupSize.HasValue)
+            if (!_CurrentGroupSize.HasValue || !_CurrentGroupBounds.HasValue)
+            {
                 _CurrentGroupSize = DxComponent.ZoomToGuiInt(DesignGroupSize, DataForm.CurrentDpi);
-            if (!_CurrentGroupBounds.HasValue)
                 _CurrentGroupBounds = new Rectangle(_CurrentGroupOrigin, _CurrentGroupSize.Value);
+                if (DesignBorderRange != null)
+                    _CurrentBorderRange = DxComponent.ZoomToGuiInt(DesignBorderRange, DataForm.CurrentDpi);
+                if (DesignHeaderHeight.HasValue)
+                    _CurrentHeaderHeight = DxComponent.ZoomToGuiInt(DesignHeaderHeight.Value, DataForm.CurrentDpi);
+            }
         }
         /// <summary>
         /// Fyzické pixelové souřadnice této grupy na vizuálním controlu, kde se nyní tento prvek nachází.
@@ -2662,22 +2764,70 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         }
         #endregion
         #region Podpora pro kreslení grupy
-        internal Rectangle[] GetBordersBounds()
+        /// <summary>
+        /// Metoda vykreslí grupu
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="onMouse"></param>
+        /// <param name="hasFocus"></param>
+        internal void PaintGroup(DxBufferedGraphicPaintArgs e, bool onMouse, bool hasFocus)
         {
-            if (!this.VisibleBounds.HasValue) return null;
-            var borderRange = this.BorderDesignRange;
-            if (borderRange == null) borderRange = new Int32Range(1, 4);
-            int b = borderRange.Begin;
-            Rectangle bounds = this.VisibleBounds.Value.Sub(new Padding(b));
-            Rectangle[] borders = new Rectangle[4];
+            if (!this.VisibleBounds.HasValue) return;
+            PaintBorder(e, onMouse, hasFocus);
+            PaintHeader(e, onMouse, hasFocus);
+        }
+        /// <summary>
+        /// Vykreslí border
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="onMouse"></param>
+        /// <param name="hasFocus"></param>
+        private void PaintBorder(DxBufferedGraphicPaintArgs e, bool onMouse, bool hasFocus)
+        {
+            if (this.BorderAppearance == null) return;
 
-            int s = borderRange.Size;
-            int s2 = 2 * s;
-            borders[0] = new Rectangle(bounds.X, bounds.Y, bounds.Width, s);
-            borders[1] = new Rectangle(bounds.X, bounds.Bottom - s, bounds.Width, s);
-            borders[2] = new Rectangle(bounds.X, bounds.Y + s, s, bounds.Height - s2);
-            borders[3] = new Rectangle(bounds.Right - s, bounds.Y + s, s, bounds.Height - s2);
-            return borders;
+            var borderRange = this.CurrentBorderRange;
+            if (borderRange == null || borderRange.Size <= 0) return;
+
+            Rectangle borderBounds = this.VisibleBounds.Value;
+            using (var brush = DxDataForm.CreateBrushForAppearance(borderBounds, this.BorderAppearance, onMouse, hasFocus))
+            {
+                if (brush != null)
+                {
+                    using (var path = DxDataForm.CreateGraphicsPath(borderBounds, borderRange))
+                    {
+                        e.Graphics.FillPath(brush, path);
+                    }
+                }
+            }
+        }
+        /// <summary>
+        /// Vykreslí Header
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="onMouse"></param>
+        /// <param name="hasFocus"></param>
+        private void PaintHeader(DxBufferedGraphicPaintArgs e, bool onMouse, bool hasFocus)
+        {
+            if (this.HeaderAppearance == null) return;
+
+            int? headerHeight = this.CurrentHeaderHeight;
+            if (!headerHeight.HasValue || headerHeight.Value <= 0) return;
+
+            var borderRange = this.CurrentBorderRange;
+            int d = (borderRange != null) ? borderRange.End : 0;
+
+            Rectangle headerBounds = this.VisibleBounds.Value.Enlarge(-d);
+            headerBounds.Height = headerHeight.Value;
+            if (!headerBounds.HasPixels()) return;
+
+            using (var brush = DxDataForm.CreateBrushForAppearance(headerBounds, this.HeaderAppearance, onMouse, hasFocus))
+            {
+                if (brush != null)
+                {
+                    e.Graphics.FillRectangle(brush, headerBounds);
+                }
+            }
         }
         #endregion
     }
