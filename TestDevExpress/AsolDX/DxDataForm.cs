@@ -506,7 +506,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         public static bool AllowedSampled(int sampleId)
         {
-            return (sampleId == 1 || sampleId == 2 || sampleId == 3);
+            return (sampleId == 10 || sampleId == 20 || sampleId == 30 || sampleId == 40);
         }
         /// <summary>
         /// Vytvoří a vrátí data pro definici DataFormu
@@ -516,22 +516,36 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="tooltips"></param>
         /// <param name="rowCount"></param>
         /// <returns></returns>
-        public static List<IDataFormPage> CreateSampleData(int sampleId, string[] texts, string[] tooltips, int rowCount)
+        public static List<IDataFormPage> CreateSampleData(int sampleId, string[] texts, string[] tooltips)
         {
             List<IDataFormPage> pages = new List<IDataFormPage>();
 
-            pages.Add(CreateSamplePage(sampleId, texts, tooltips, rowCount, "Základní stránka", "Obsahuje běžné informace"));
-
-            if (sampleId == 2)
-                pages.Add(CreateSamplePage(3, texts, tooltips, 125, "Doplňková stránka", "Obsahuje další málo používané informace"));
-
-            if (sampleId == 3)
+            switch (sampleId)
             {
-                pages.Add(CreateSamplePage(4, texts, tooltips, 70, "Sklady", null));
-                pages.Add(CreateSamplePage(5, texts, tooltips, 15, "Faktury", null));
-                pages.Add(CreateSamplePage(6, texts, tooltips, 25, "Zaúčtování", null));
-                pages.Add(CreateSamplePage(7, texts, tooltips, 480, "Výrobní čísla fixní zalomení", null));
-                pages.Add(CreateSamplePage(8, texts, tooltips, 480, "Výrobní čísla automatické zalomení", null));
+                case 10:
+                    pages.Add(CreateSamplePage(10, texts, tooltips, 60, "Základní stránka", "Obsahuje běžné informace",
+                        0, 2, true, 28, 5, 6, new int[] { 140, 260, 40, 300, 120 }));
+                    break;
+                case 20:
+                    pages.Add(CreateSamplePage(20, texts, tooltips, 2000, "Základní stránka", "Obsahuje běžné informace",
+                        0, 2, true, 28, 2, 2, new int[] { 80, 150, 80, 60, 100, 120, 160, 40, 120, 180, 80, 40, 60, 250 }));
+                    pages.Add(CreateSamplePage(21, texts, tooltips, 120, "Doplňková stránka", "Obsahuje další málo používané informace",
+                        0, 2, true, 28, 2, 2, new int[] { 250, 250, 60, 250, 250, 60, 250 }));
+                    break;
+                case 30:
+                    pages.Add(CreateSamplePage(30, texts, tooltips, 500, "Základní stránka", "Obsahuje běžné informace",
+                        0, 24, true, 28, 6, 10, new int[] { 250, 250, 60, 250, 250, 60, 250 }));
+                    pages.Add(CreateSamplePage(31, texts, tooltips, 70, "Sklady", null,
+                        1, 24, false, 26, 4, 4, new int[] { 100, 75, 120, 100 }));
+                    pages.Add(CreateSamplePage(32, texts, tooltips, 15, "Faktury", null,
+                        1, 24, false, 26, 1, 1, new int[] { 70, 70, 70, 70 }));
+                    pages.Add(CreateSamplePage(33, texts, tooltips, 25, "Zaúčtování", null,
+                        1, 24, false, 26, 6, 10, new int[] { 400, 125, 75, 100 }));
+                    pages.Add(CreateSamplePage(34, texts, tooltips, 480, "Výrobní čísla fixní zalomení", null,
+                        3, 24, true, 26, 5, 5, new int[] { 100, 100, 70 }));
+                    pages.Add(CreateSamplePage(35, texts, tooltips, 480, "Výrobní čísla automatické zalomení", null,
+                        3, 24, true, 26, 5, 5, new int[] { 100, 100, 70 }));
+                    break;
             }
 
             return pages;
@@ -546,7 +560,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="pageText"></param>
         /// <param name="pageToolTip"></param>
         /// <returns></returns>
-        private static DataFormPage CreateSamplePage(int sampleId, string[] texts, string[] tooltips, int rowCount, string pageText, string pageToolTip)
+        private static DataFormPage CreateSamplePage(int sampleId, string[] texts, string[] tooltips, int rowCount, string pageText, string pageToolTip,
+            int borderSize, int headerHeight, bool addGroupTitle, int beginY, int spaceX, int spaceY, int[] widths)
         {
             if (_Random == null) _Random = new Random();
             Random random = _Random;
@@ -582,7 +597,6 @@ namespace Noris.Clients.Win.Components.AsolDX
                 OnMouseBackColor = Color.FromArgb(255, 64, 64, 224),
                 OnMouseBackColorEnd = Color.FromArgb(8, 96, 96, 255),
             };
-
             DataFormItemAppearance titleAppearance = new DataFormItemAppearance()
             {
                 FontSizeDelta = 2,
@@ -597,72 +611,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             int tooltipsCount = tooltips.Length;
 
             string text, tooltip;
-            bool addGroupTitle = false;
-            int[] widths = null;
-            int rowHeight = 0;
-            int spaceWidth = 5;
-            int beginY = 0;
-            int headerHeight = 0;
-            int borderWidth = 2;
-            switch (sampleId)
-            {
-                case 1:
-                    widths = new int[] { 140, 260, 40, 300, 120 };
-                    rowHeight = 28;
-                    borderWidth = 0;
-                    headerHeight = 2;
-                    addGroupTitle = true;
-                    break;
-                case 2:
-                    widths = new int[] { 80, 150, 80, 60, 100, 120, 160, 40, 120, 180, 80, 40, 60, 250 };
-                    rowHeight = 21;
-                    spaceWidth = 1;
-                    borderWidth = 0;
-                    headerHeight = 2;
-                    addGroupTitle = true;
-                    break;
-                case 3:
-                    widths = new int[] { 250, 250, 60, 250, 250, 60, 250 };
-                    rowHeight = 30;
-                    borderWidth = 0;
-                    headerHeight = 2;
-                    addGroupTitle = true;
-                    break;
-
-                case 4:                // Sklady, možnost sloučit s Faktury
-                    page.AllowMerge = true;
-                    widths = new int[] { 100, 75, 120, 100 };
-                    rowHeight = 30;
-                    headerHeight = 24;
-                    borderWidth = 1;
-                    beginY = 26;
-                    break;
-                case 5:                // Faktury, možnost sloučit s Sklady
-                    page.AllowMerge = true;
-                    widths = new int[] { 70, 70, 70, 70 };
-                    rowHeight = 21;
-                    spaceWidth = 1;
-                    headerHeight = 24;
-                    borderWidth = 1;
-                    beginY = 26;
-                    break;
-                case 6:                // Zaúčtování
-                    widths = new int[] { 400, 125, 75, 100 };
-                    rowHeight = 30;
-                    headerHeight = 24;
-                    beginY = 26;
-                    break;
-                case 7:                // Výrobní čísla - úzká pro force layout break
-                    widths = new int[] { 100, 100, 70 };
-                    rowHeight = 25;
-                    addGroupTitle = true;
-                    break;
-                case 8:                // Výrobní čísla - úzká pro auto layout break
-                    widths = new int[] { 100, 100, 70 };
-                    rowHeight = 25;
-                    addGroupTitle = true;
-                    break;
-            }
             int count = rowCount;
             int y = 0;
             int maxX = 0;
@@ -679,23 +627,23 @@ namespace Noris.Clients.Win.Components.AsolDX
                     group.DesignHeaderHeight = headerHeight;
                     if (headerHeight > 0)
                         group.HeaderAppearance = (headerHeight == 2 ? headerAppearance2 : headerAppearance1);
-                    if (sampleId == 7)
+                    if (sampleId == 34)
                     {   // Výrobní čísla - úzká pro force layout break
                         if ((page.Groups.Count % 20) == 0)
                             group.LayoutMode = DatFormGroupLayoutMode.ForceBreakToNewColumn;
                         else
                             group.LayoutMode = DatFormGroupLayoutMode.AllowBreakToNewColumn;
                     }
-                    if (sampleId == 8)
+                    if (sampleId == 35)
                     {   // Výrobní čísla - úzká pro auto layout break
                         if ((page.Groups.Count % 3) == 0)
                             group.LayoutMode = DatFormGroupLayoutMode.AllowBreakToNewColumn;
                     }
-                    group.DesignBorderRange = new Int32Range(1, 1 + borderWidth);
+                    group.DesignBorderRange = new Int32Range(1, 1 + borderSize);
                     group.BorderAppearance = borderAppearance;
 
                     page.Groups.Add(group);
-                    y = beginY;
+                    y = borderSize + beginY;
 
                     if (addGroupTitle)
                     {
@@ -800,10 +748,10 @@ namespace Noris.Clients.Win.Components.AsolDX
                         group.Items.Add(item);
                     }
 
-                    x += (width + spaceWidth);
+                    x += (width + spaceX);
                 }
                 maxX = x;
-                y += rowHeight;
+                y += 20 + spaceY;
             }
 
             return page;
@@ -1534,7 +1482,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
 
             bool onMouse = Object.ReferenceEquals(group, _CurrentOnMouseGroup);
             group.PaintGroup(e, onMouse, false);
-
         }
         /// <summary>
         /// Provede vykreslení jednoho daného prvku

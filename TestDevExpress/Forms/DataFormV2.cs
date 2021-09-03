@@ -117,7 +117,7 @@ namespace TestDevExpress.Forms
             group.Items.Add(new DataRibbonItem() { ItemId = "CreateSample1", Text = "Ukázka 1", Image = imageTest, Tag = "Sample1", Enabled = true });
             group.Items.Add(new DataRibbonItem() { ItemId = "CreateSample2", Text = "Ukázka 2", Image = imageTest, Tag = "Sample2", Enabled = true });
             group.Items.Add(new DataRibbonItem() { ItemId = "CreateSample3", Text = "Ukázka 3", Image = imageTest, Tag = "Sample3", Enabled = true });
-            // group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Sample.Sample4", Text = "Ukázka 4", Image = imageTest, Tag = "Sample4", Enabled = true });
+            group.Items.Add(new DataRibbonItem() { ItemId = "CreateSample4", Text = "Ukázka 4", Image = imageTest, Tag = "Sample4", Enabled = true });
 
             /*
             string imageTestRefresh = "svgimages/spreadsheet/refreshpivottable.svg";
@@ -187,13 +187,16 @@ namespace TestDevExpress.Forms
                 //    _TestPerformance(2000, false);
                 //    break;
                 case "CreateSample1":
-                    _AddDataFormSample(1);
+                    _AddDataFormSample(10);
                     break;
                 case "CreateSample2":
-                    _AddDataFormSample(2);
+                    _AddDataFormSample(20);
                     break;
                 case "CreateSample3":
-                    _AddDataFormSample(3);
+                    _AddDataFormSample(30);
+                    break;
+                case "CreateSample4":
+                    _AddDataFormSample(40);
                     break;
                 default:
                     DxComponent.LogClear();
@@ -335,18 +338,7 @@ namespace TestDevExpress.Forms
             }
 
             startTime = DxComponent.LogTimeCurrent;
-            switch (sampleId)
-            {
-                case 1:
-                    dataForm.Pages = DxDataFormSamples.CreateSampleData(1, texts, tooltips, 60);
-                    break;
-                case 2:
-                    dataForm.Pages = DxDataFormSamples.CreateSampleData(2, texts, tooltips, 2000);
-                    break;
-                case 3:
-                    dataForm.Pages = DxDataFormSamples.CreateSampleData(3, texts, tooltips, 500);
-                    break;
-            }
+            dataForm.Pages = DxDataFormSamples.CreateSampleData(sampleId, texts, tooltips);
             _DxTestPanel.Controls.Add(dataForm);
 
             _DoLayoutAnyDataForm();
@@ -379,7 +371,7 @@ namespace TestDevExpress.Forms
             DxDataForm dataForm = new DxDataForm();
             string[] texts = Random.GetSentencesArray(1, 3, 120, 240, false);
             string[] tooltips = Random.GetSentencesArray(7, 16, 120, 240, true);
-            dataForm.Pages = DxDataFormSamples.CreateSampleData(2, texts, tooltips, 2000);
+            dataForm.Pages = DxDataFormSamples.CreateSampleData(10, texts, tooltips);
             dataForm.GotFocus += DxDataForm_GotFocus;
 
             _DxDataFormV2 = dataForm;
