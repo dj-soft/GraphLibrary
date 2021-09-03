@@ -371,6 +371,38 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         bool Checked { get; }
     }
+
+    public class DataFormItemTextBoxButton : DataFormItemImageText, IDataFormItemTextBoxButton
+    {
+        /// <summary>
+        /// Pokud je true, pak buttony jsou vidět stále. Pokud je false, pak jsou vidět jen pod myší anebo s focusem (default).
+        /// </summary>
+        public virtual bool ButtonsVisibleAllways { get; set; }
+        /// <summary>
+        /// Vzhled buttonu je (true) = 3D / (false) = plochý (default)
+        /// </summary>
+        public virtual bool ButtonAs3D { get; set; }
+        /// <summary>
+        /// Druh buttonu
+        /// </summary>
+        public virtual DataFormButtonKind ButtonKind { get; set; }
+    }
+    public interface IDataFormItemTextBoxButton : IDataFormItemImageText
+    {
+        /// <summary>
+        /// Pokud je true, pak buttony jsou vidět stále. Pokud je false, pak jsou vidět jen pod myší anebo s focusem (default).
+        /// </summary>
+        bool ButtonsVisibleAllways { get; }
+        /// <summary>
+        /// Vzhled buttonu je (true) = 3D / (false) = plochý (default)
+        /// </summary>
+        bool ButtonAs3D { get; }
+        /// <summary>
+        /// Druh buttonu
+        /// </summary>
+        DataFormButtonKind ButtonKind { get; }
+    }
+
     /// <summary>
     /// Data definující jeden prvek v DataFormu, který má Text a Ikonu
     /// </summary>
@@ -419,7 +451,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 case DataFormItemType.None: return null;
                 case DataFormItemType.Label: return new DataFormItemImageText() { ItemType = itemType };
                 case DataFormItemType.TextBox: return null;
-                case DataFormItemType.TextBoxButton: return null;
+                case DataFormItemType.TextBoxButton: return new DataFormItemTextBoxButton() { ItemType = itemType };
                 case DataFormItemType.EditBox: return null;
                 case DataFormItemType.SpinnerBox: return null;
                 case DataFormItemType.CheckBox: return new DataFormItemCheckItem() { ItemType = itemType };
@@ -446,7 +478,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         public DataFormItem()
         {
             IsVisible = true;
-            HotTrackingEnabled = true;
+            Indicators = DataFormItemIndicatorType.None;
         }
         /// <summary>
         /// ID prvku, jednoznačné v celém DataFormu
@@ -466,9 +498,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public virtual bool IsVisible { get; set; }
         /// <summary>
-        /// Prvek bude podsvícen při pohybu myší nad ním
+        /// Řízení barevných indikátorů u prvku
         /// </summary>
-        public virtual bool HotTrackingEnabled { get; set; }
+        public virtual DataFormItemIndicatorType Indicators { get; set; }
         /// <summary>
         /// Vzhled prvku - kalíšek, barvy, modifikace fontu
         /// </summary>
@@ -511,9 +543,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         bool IsVisible { get; }
         /// <summary>
-        /// Prvek bude podsvícen při pohybu myší nad ním
+        /// Řízení barevných indikátorů u prvku
         /// </summary>
-        bool HotTrackingEnabled { get; }
+        DataFormItemIndicatorType Indicators { get; }
         /// <summary>
         /// Vzhled prvku - kalíšek, barvy, modifikace fontu
         /// </summary>
@@ -546,6 +578,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Změna stylu písma - StrikeOut
         /// </summary>
         public virtual bool? FontStyleStrikeOut { get; set; }
+        /// <summary>
+        /// Zarovnání obsahu
+        /// </summary>
+        public virtual ContentAlignment? ContentAlignment { get; set; }
         /// <summary>
         /// Změna barvy pozadí
         /// </summary>
@@ -580,6 +616,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Změna stylu písma - StrikeOut
         /// </summary>
         bool? FontStyleStrikeOut { get; }
+        /// <summary>
+        /// Zarovnání obsahu
+        /// </summary>
+        ContentAlignment? ContentAlignment { get; }
         /// <summary>
         /// Změna barvy pozadí
         /// </summary>
@@ -718,6 +758,63 @@ namespace Noris.Clients.Win.Components.AsolDX
         ForceBreakToNewColumn = 0x0002
     }
     /// <summary>
+    /// Řízení barevných indikátorů u prvku
+    /// </summary>
+    [Flags]
+    public enum DataFormItemIndicatorType
+    {
+        /// <summary>
+        /// Prvek nemá orámování nikdy
+        /// </summary>
+        None = 0,
+        /// <summary>
+        /// Prvek bude orámován barvou <see cref="DxDataFormAppearance.OnMouseIndicatorColor"/>, v tenkém provedení
+        /// </summary>
+        MouseOverThin = 0x0001,
+        /// <summary>
+        /// Prvek bude orámován barvou <see cref="DxDataFormAppearance.OnMouseIndicatorColor"/>, v silném provedení
+        /// </summary>
+        MouseOverBold = 0x0002,
+        /// <summary>
+        /// Prvek bude orámován barvou <see cref="DxDataFormAppearance.WithFocusIndicatorColor"/>, v tenkém provedení
+        /// </summary>
+        WithFocusThin = 0x0004,
+        /// <summary>
+        /// Prvek bude orámován barvou <see cref="DxDataFormAppearance.WithFocusIndicatorColor"/>, v silném provedení
+        /// </summary>
+        WithFocusBold = 0x0008,
+        /// <summary>
+        /// Prvek bude orámován barvou <see cref="DxDataFormAppearance.CorrectIndicatorColor"/>, 
+        /// pouze pokud bude hodnota <see cref="DxDataForm.ItemIndicatorsVisible"/> = true
+        /// </summary>
+        CorrectOnDemand = 0x0010,
+        /// <summary>
+        /// Prvek bude orámován barvou <see cref="DxDataFormAppearance.CorrectIndicatorColor"/>, 
+        /// bez ohledu na hodnotu <see cref="DxDataForm.ItemIndicatorsVisible"/>
+        /// </summary>
+        CorrectAllways = 0x0020,
+        /// <summary>
+        /// Prvek bude orámován barvou <see cref="DxDataFormAppearance.WarningIndicatorColor"/>, 
+        /// pouze pokud bude hodnota <see cref="DxDataForm.ItemIndicatorsVisible"/> = true
+        /// </summary>
+        WarningOnDemand = 0x0100,
+        /// <summary>
+        /// Prvek bude orámován barvou <see cref="DxDataFormAppearance.WarningIndicatorColor"/>, 
+        /// bez ohledu na hodnotu <see cref="DxDataForm.ItemIndicatorsVisible"/>
+        /// </summary>
+        WarningAllways = 0x0200,
+        /// <summary>
+        /// Prvek bude orámován barvou <see cref="DxDataFormAppearance.ErrorIndicatorColor"/>, 
+        /// pouze pokud bude hodnota <see cref="DxDataForm.ItemIndicatorsVisible"/> = true
+        /// </summary>
+        ErrorOnDemand = 0x1000,
+        /// <summary>
+        /// Prvek bude orámován barvou <see cref="DxDataFormAppearance.ErrorIndicatorColor"/>, 
+        /// bez ohledu na hodnotu <see cref="DxDataForm.ItemIndicatorsVisible"/>
+        /// </summary>
+        ErrorAllways = 0x2000
+    }
+    /// <summary>
     /// Druh prvku v DataFormu
     /// </summary>
     public enum DataFormItemType
@@ -798,6 +895,105 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Image
         /// </summary>
         Image
+    }
+    /// <summary>
+    /// Druh předdefinovaného buttonu
+    /// </summary>
+    public enum DataFormButtonKind : int
+    {
+        /// <summary>
+        /// Žádný button
+        /// </summary>
+        None = 0,
+        /// <summary>
+        /// A Close symbol is displayed on the button's surface.
+        /// </summary>
+        Close = -10,
+        /// <summary>
+        /// A right-arrow for a spin editor is displayed on the button's surface.
+        /// </summary>
+        SpinRight = -9,
+        /// <summary>
+        /// A left-arrow for a spin editor is displayed on the button's surface.
+        /// </summary>
+        SpinLeft = -8,
+        /// <summary>
+        /// A down-arrow for a spin editor is displayed on the button's surface.
+        /// </summary>
+        SpinDown = -7,
+        /// <summary>
+        /// An up-arrow for a spin editor is displayed on the button's surface.
+        /// </summary>
+        SpinUp = -6,
+        /// <summary>
+        /// A Down-arrow for a combo box is drawn on the button's surface.
+        /// </summary>
+        Combo = -5,
+        /// <summary>
+        /// A Right-arrow is drawn the button's surface.
+        /// </summary>
+        Right = -4,
+        /// <summary>
+        /// A Left-arrow symbol is drawn on the button's surface.
+        /// </summary>
+        Left = -3,
+        /// <summary>
+        /// An Up-arrow is drawn on the button's surface.
+        /// </summary>
+        Up = -2,
+        /// <summary>
+        /// A Down-arrow is drawn on the button's surface.
+        /// </summary>
+        Down = -1,
+        /// <summary>
+        /// An Ellipsis symbol is drawn on the button's surface.
+        /// </summary>
+        Ellipsis = 1,
+        /// <summary>
+        /// A Delete symbol is drawn on the button's surface.
+        /// </summary>
+        Delete = 2,
+        /// <summary>
+        /// An OK sign is drawn on the button's surface.
+        /// </summary>
+        OK = 3,
+        /// <summary>
+        /// A Plus sign is drawn on the button's surface.
+        /// </summary>
+        Plus = 4,
+        /// <summary>
+        /// A Minus sign is drawn on the button's surface.
+        /// </summary>
+        Minus = 5,
+        /// <summary>
+        /// A Redo symbol is drawn on the button's surface.
+        /// </summary>
+        Redo = 6,
+        /// <summary>
+        /// An Undo symbol is drawn on the button's surface.
+        /// </summary>
+        Undo = 7,
+        /// <summary>
+        /// A Down-arrow is drawn on the button's surface. Unlike, the Down button, this kind of button allows text to be displayed next to the down-arrow.
+        /// </summary>
+        DropDown = 8,
+        /// <summary>
+        /// A Search symbol is drawn on the button's surface.
+        /// </summary>
+        Search = 9,
+        /// <summary>
+        /// A Clear symbol is drawn on the button's surface.
+        /// </summary>
+        Clear = 10,
+        /// <summary>
+        /// A Separator.
+        /// </summary>
+        Separator = 11,
+        /// <summary>
+        /// A custom bitmap is drawn on the button's surface.
+        /// </summary>
+        Glyph = 99
+
     }
     #endregion
 }

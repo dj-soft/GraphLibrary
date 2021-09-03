@@ -2150,13 +2150,13 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
 
 
             _EditorText1 = new DxTextEdit() { Bounds = new Rectangle(20, 150, 360, 20), BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.Simple };
-            _EditorTextButton1 = new DxTextButtonEdit() { Bounds = new Rectangle(400, 150, 360, 20), BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.Simple, ButtonToolTipText = "Otevřít mapu" };
+            _EditorTextButton1 = new DxButtonEdit() { Bounds = new Rectangle(400, 150, 360, 20), BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.Simple };
             _EditorTextButton1.ButtonClick += _EditorButtonClick;
             _EditorText2 = new DxTextEdit() { Bounds = new Rectangle(20, 180, 360, 20), BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.Style3D };
-            _EditorTextButton2 = new DxTextButtonEdit() { Bounds = new Rectangle(400, 180, 360, 20), BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.Style3D, ButtonToolTipText = "Správná hodnota" };
+            _EditorTextButton2 = new DxButtonEdit() { Bounds = new Rectangle(400, 180, 360, 20), BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.Style3D };
             _EditorTextButton2.ButtonClick += _EditorButtonClick;
             _EditorText3 = new DxTextEdit() { Bounds = new Rectangle(20, 210, 360, 20), BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.Office2003 };
-            _EditorTextButton3 = new DxTextButtonEdit() { Bounds = new Rectangle(400, 210, 360, 20), BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.Office2003, ButtonToolTipText = "Chybné zadání" };
+            _EditorTextButton3 = new DxButtonEdit() { Bounds = new Rectangle(400, 210, 360, 20), BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.Office2003 };
             _EditorTextButton3.ButtonClick += _EditorButtonClick;
             _PanelEditors.Controls.Add(_EditorText1);
             _PanelEditors.Controls.Add(_EditorTextButton1);
@@ -2169,20 +2169,48 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
             string resource2 = "images/actions/apply_16x16.png";
             string resource3 = "images/actions/cancel_16x16.png";
 
-            _EditorTextButton1.ButtonImageName = resource1;
-            _EditorTextButton2.ButtonImageName = resource2;
-            _EditorTextButton3.ButtonImageName = resource3;
+
+
+            _EditorTextButton1.Properties.ButtonsStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder;
+            _EditorTextButton1.Properties.Buttons[0].Kind = DevExpress.XtraEditors.Controls.ButtonPredefines.Glyph;
+            _EditorTextButton1.ButtonsVisibility = DxChildControlVisibility.Allways;
+            DxComponent.ApplyImage(_EditorTextButton1.Properties.Buttons[0].ImageOptions, resource1, imageSize: new Size(14, 14));
+
+            _EditorTextButton2.Properties.ButtonsStyle = DevExpress.XtraEditors.Controls.BorderStyles.UltraFlat;
+            _EditorTextButton2.ButtonsVisibility = DxChildControlVisibility.OnActiveControl;
+            _EditorTextButton2.Properties.Buttons[0].Kind = DevExpress.XtraEditors.Controls.ButtonPredefines.OK;
+
+            _EditorTextButton3.Properties.ButtonsStyle = DevExpress.XtraEditors.Controls.BorderStyles.HotFlat;
+            _EditorTextButton3.ButtonsVisibility = DxChildControlVisibility.OnFocus;
+            _EditorTextButton3.Properties.Buttons[0].Kind = DevExpress.XtraEditors.Controls.ButtonPredefines.Ellipsis;
         }
         private void _EditorButtonClick(object sender, EventArgs args)
         {
-            ShowMessageInfo("Někdo kliknul na moje tlačítko?");
+            if (sender is DxButtonEdit dxButtonEdit)
+            {
+                var kind = dxButtonEdit.Properties.Buttons[0].Kind;
+                if (kind == DevExpress.XtraEditors.Controls.ButtonPredefines.Glyph)
+                    ShowMessageInfo("Tuhle ikonu nezměníme");
+                else
+                {
+                    int value = (int)kind;
+                    value = (value == 11 ? -10 : value + 1);
+
+                    DevExpress.XtraEditors.Controls.ButtonPredefines newKind = (DevExpress.XtraEditors.Controls.ButtonPredefines)value;
+                    if (newKind == DevExpress.XtraEditors.Controls.ButtonPredefines.Glyph) newKind = (DevExpress.XtraEditors.Controls.ButtonPredefines)(value + 1);
+                    dxButtonEdit.Properties.Buttons[0].Kind = newKind;
+                    dxButtonEdit.Text = newKind.ToString();
+                }
+            }
+            else
+                ShowMessageInfo("Někdo kliknul na moje tlačítko?");
         }
         private DxTextEdit _EditorText1;
-        private DxTextButtonEdit _EditorTextButton1;
+        private DxButtonEdit _EditorTextButton1;
         private DxTextEdit _EditorText2;
-        private DxTextButtonEdit _EditorTextButton2;
+        private DxButtonEdit _EditorTextButton2;
         private DxTextEdit _EditorText3;
-        private DxTextButtonEdit _EditorTextButton3;
+        private DxButtonEdit _EditorTextButton3;
         #region Editor - Token
         private void PrepareEditorToken()
         { 

@@ -498,7 +498,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         public static ToolTipController CreateNewToolTipController() { return new ToolTipController(); }
         /// <summary>
-        /// Převede string obsahující písmena B,I,U na odpovídající <see cref="FontStyle"/>.
+        /// Převede string obsahující písmena B,I,U,S na odpovídající <see cref="FontStyle"/>.
         /// Pokud je na vstupu null nebo prázdný string, vrací null.
         /// </summary>
         /// <param name="style"></param>
@@ -511,18 +511,20 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (style.Contains("B")) fontStyle |= FontStyle.Bold;
             if (style.Contains("I")) fontStyle |= FontStyle.Italic;
             if (style.Contains("U")) fontStyle |= FontStyle.Underline;
+            if (style.Contains("S")) fontStyle |= FontStyle.Strikeout;
             return fontStyle;
         }
         /// <summary>
         /// Převede boolean hodnoty na odpovídající <see cref="FontStyle"/>.
         /// </summary>
         /// <returns></returns>
-        public static FontStyle? ConvertFontStyle(bool bold, bool italic, bool underline)
+        public static FontStyle? ConvertFontStyle(bool bold, bool italic, bool underline, bool strikeOut)
         {
             FontStyle fontStyle = FontStyle.Regular;
             if (bold) fontStyle |= FontStyle.Bold;
             if (italic) fontStyle |= FontStyle.Italic;
             if (underline) fontStyle |= FontStyle.Underline;
+            if (strikeOut) fontStyle |= FontStyle.Strikeout;
             return fontStyle;
         }
         private DevExpress.XtraEditors.StyleController _MainTitleStyle;

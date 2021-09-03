@@ -438,7 +438,61 @@ namespace Noris.Clients.Win.Components.AsolDX
             return path;
         }
         #endregion
+        #region Appearance
+        /// <summary>
+        /// Vzhled. Autoinicializační property. Nikdy není null. Setování null nastaví defaultní vzhled.
+        /// </summary>
+        public DxDataFormAppearance DataFormAppearance 
+        { 
+            get { if (_DataFormAppearance == null) _DataFormAppearance = new DxDataFormAppearance(); return _DataFormAppearance; }
+            set { _DataFormAppearance = value; }
+        }
+        private DxDataFormAppearance _DataFormAppearance;
+        /// <summary>
+        /// Aktivace barevných indikátoru "OnDemand"
+        /// </summary>
+        public bool ItemIndicatorsVisible { get; set; }
+        #endregion
     }
+    #region class DxDataFormAppearance
+    /// <summary>
+    /// Definice vzhledu DataFormu
+    /// </summary>
+    public class DxDataFormAppearance
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public DxDataFormAppearance()
+        {
+            OnMouseIndicatorColor = Color.LightBlue;
+            WithFocusIndicatorColor = Color.GreenYellow;
+            CorrectIndicatorColor = Color.LightGreen;
+            WarningIndicatorColor = Color.Orange;
+            ErrorIndicatorColor = Color.DarkRed;
+        }
+        /// <summary>
+        /// Barva indikátoru OnMouse
+        /// </summary>
+        public Color OnMouseIndicatorColor { get; set; }
+        /// <summary>
+        /// Barva indikátoru WithFocus
+        /// </summary>
+        public Color WithFocusIndicatorColor { get; set; }
+        /// <summary>
+        /// Barva indikátoru Correct
+        /// </summary>
+        public Color CorrectIndicatorColor { get; set; }
+        /// <summary>
+        /// Barva indikátoru Warning
+        /// </summary>
+        public Color WarningIndicatorColor { get; set; }
+        /// <summary>
+        /// Barva indikátoru Error
+        /// </summary>
+        public Color ErrorIndicatorColor { get; set; }
+    }
+    #endregion
     #region Zdroj testovacích dat
     /// <summary>
     /// Třída, která generuje testovací předpisy a data pro testy <see cref="DxDataForm"/>
@@ -533,6 +587,10 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 FontSizeDelta = 2,
                 FontStyleBold = true
+            };
+            DataFormItemAppearance labelAppearance = new DataFormItemAppearance()
+            {
+                ContentAlignment = ContentAlignment.MiddleRight
             };
 
             int textsCount = texts.Length;
@@ -650,9 +708,10 @@ namespace Noris.Clients.Win.Components.AsolDX
                 }
 
                 // První prvek v řádku je Label:
-                int x = 20;
-                text = $"Řádek {(r + 1)}";
-                DataFormItemImageText lbl = new DataFormItemImageText() { ItemType = DataFormItemType.Label, Text = text, DesignBounds = new Rectangle(x, y + 2, 70, 18) };
+                int x = 10;
+                text = $"Řádek {(r + 1)}:";
+                DataFormItemImageText lbl = new DataFormItemImageText() { ItemType = DataFormItemType.Label, Text = text, DesignBounds = new Rectangle(x, y, 75, 18) };
+                lbl.Appearance = labelAppearance;
                 group.Items.Add(lbl);
                 x += 80;
 
@@ -667,18 +726,21 @@ namespace Noris.Clients.Win.Components.AsolDX
                     DataFormItemType itemType = (q < 5 ? DataFormItemType.None :
                                                 (q < 10 ? DataFormItemType.CheckBox :
                                                 (q < 15 ? DataFormItemType.Button :
-                                                (q < 20 ? DataFormItemType.Label :
-                                                (q < 30 ? DataFormItemType.TextBox : // ComboBoxList :
-                                                (q < 40 ? DataFormItemType.TextBox : // TokenEdit :
-                                                DataFormItemType.TextBox))))));
+                                                (q < 22 ? DataFormItemType.Label :
+                                                (q < 30 ? DataFormItemType.TextBoxButton : 
+                                                (q < 40 ? DataFormItemType.TextBox : // ComboBoxList :
+                                                (q < 50 ? DataFormItemType.TextBox : // TokenEdit :
+                                                DataFormItemType.TextBox)))))));
 
                     DataFormItem item = null;
                     int shiftY = 0;
+                    DataFormItemIndicatorType indicators = DataFormItemIndicatorType.MouseOverThin | DataFormItemIndicatorType.WithFocusBold;
                     switch (itemType)
                     {
                         case DataFormItemType.Label:
                             DataFormItemImageText label = new DataFormItemImageText() { Text = text };
-                            shiftY = 2;
+                            shiftY = 0;
+                            indicators = DataFormItemIndicatorType.None;
                             item = label;
                             break;
                         case DataFormItemType.TextBox:
@@ -686,12 +748,21 @@ namespace Noris.Clients.Win.Components.AsolDX
                             item = textBox;
                             break;
                         case DataFormItemType.TextBoxButton:
-                            DataFormItemImageText textBoxButton = new DataFormItemImageText() { Text = text };
+                            DataFormItemTextBoxButton textBoxButton = new DataFormItemTextBoxButton() { Text = text };
+                            q = random.Next(100);
+                            textBoxButton.ButtonsVisibleAllways = (q < 30);
+                            q = random.Next(100);
+                            textBoxButton.ButtonAs3D = (q < 20);
+                            q = random.Next(100);
+                            textBoxButton.ButtonKind = (q < 30 ? DataFormButtonKind.Ellipsis :
+                                                       (q < 60 ? DataFormButtonKind.Search :
+                                                       (q < 80 ? DataFormButtonKind.Right :
+                                                                 DataFormButtonKind.OK))); 
                             item = textBoxButton;
                             break;
                         case DataFormItemType.CheckBox:
                             DataFormItemCheckItem checkBox = new DataFormItemCheckItem() { Text = text };
-                            shiftY = 1;
+                            shiftY = 0;
                             item = checkBox;
                             break;
                         case DataFormItemType.ComboBoxList:
@@ -706,14 +777,26 @@ namespace Noris.Clients.Win.Components.AsolDX
                             break;
                         case DataFormItemType.Button:
                             DataFormItemImageText button = new DataFormItemImageText() { Text = text };
+                            indicators = DataFormItemIndicatorType.MouseOverBold | DataFormItemIndicatorType.WithFocusBold;
                             item = button;
                             break;
                     }
                     if (item != null)
                     {
+                        if (indicators != DataFormItemIndicatorType.None)
+                        {
+                            q = random.Next(100);
+                            if (q < 10)
+                                indicators |= DataFormItemIndicatorType.CorrectAllways;
+                            else if (q < 15)
+                                indicators |= DataFormItemIndicatorType.WarningAllways;
+                            else if (q < 17)
+                                indicators |= DataFormItemIndicatorType.ErrorAllways;
+                        }
                         item.ItemType = itemType;
                         item.ToolTipText = tooltip;
                         item.DesignBounds = new Rectangle(x, (y + shiftY), width, (20 - shiftY));
+                        item.Indicators = indicators;
                         group.Items.Add(item);
                     }
 
@@ -1028,7 +1111,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Grupa aktuálně se nacházející pod myší
         /// </summary>
         private DxDataFormGroup _CurrentOnMouseGroup;
-
         /// <summary>
         /// Detekuje aktuální prvek pod danou souřadnicí, detekuje změny (Leave a Enter) a udržuje v proměnné <see cref="_CurrentOnMouseItem"/> aktuální prvek na dané souřadnici
         /// </summary>
@@ -1377,8 +1459,18 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             // _VisibleGroups.ForEachExec(g => PaintGroupStandard(g, visibleOrigin, e));
 
             var mouseControl = _CurrentOnMouseControl;
-            if (mouseControl != null)
-                PaintItemBorderBackground(e, mouseControl.Bounds, Color.DarkViolet, ref isPainted);
+            var mouseItem = _CurrentOnMouseItem;
+            if (mouseControl != null && mouseItem != null)
+            {
+                var indicators = mouseItem.IItem.Indicators;
+                bool isThin = indicators.HasFlag(DataFormItemIndicatorType.MouseOverThin);
+                bool isBold = indicators.HasFlag(DataFormItemIndicatorType.MouseOverBold);
+                if (isThin || isBold)
+                {
+                    Color color = _DataForm.DataFormAppearance.OnMouseIndicatorColor;
+                    PaintItemIndicator(e, mouseControl.Bounds, color, isBold, ref isPainted);
+                }
+            }
 
             //  Specifikum bufferované grafiky:
             // - pokud do konkrétní vrstvy jednou něco vepíšu, zůstane to tam (až do nějakého většího refreshe).
@@ -1389,19 +1481,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             if (oldPainted && !isPainted)
                 e.UseBlankGraphics();
             e.LayerUserData = isPainted;
-        }
-        /// <summary>
-        /// Zajistí vykreslení slabého orámování (prozáření okrajů) pro daný prostor (prvek) danou barvou.
-        /// </summary>
-        /// <param name="e"></param>
-        /// <param name="bounds"></param>
-        /// <param name="color"></param>
-        /// <param name="isPainted"></param>
-        private void PaintItemBorderBackground(DxBufferedGraphicPaintArgs e, Rectangle bounds, Color color, ref bool isPainted)
-        {
-            e.Graphics.FillRectangle(DxComponent.PaintGetSolidBrush(color, 32), bounds.Enlarge(3));
-            e.Graphics.FillRectangle(DxComponent.PaintGetSolidBrush(color, 96), bounds.Enlarge(1));
-            isPainted = true;
         }
         /// <summary>
         /// Zajistí hlavní vykreslení obsahu - grupy a prvky
@@ -1465,16 +1544,92 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="e"></param>
         private void PaintItemStandard(DxDataFormItem item, Point visibleOrigin, DxBufferedGraphicPaintArgs e)
         {
+            var bounds = item.CurrentBounds;
+            Point location = bounds.Location.Sub(visibleOrigin);
+            Rectangle visibleBounds = new Rectangle(location, bounds.Size);
+            item.VisibleBounds = visibleBounds;
+
+            Color? indicatorColor = GetIndicatorColor(item, out bool isBold);
+            if (indicatorColor.HasValue)
+                PaintItemIndicator(e, visibleBounds, indicatorColor.Value, isBold);
+
             using (var image = CreateImage(item))
             {
                 if (image != null)
                 {
-                    var bounds = item.CurrentBounds;
-                    Point location = bounds.Location.Sub(visibleOrigin);
-                    item.VisibleBounds = new Rectangle(location, bounds.Size);
                     e.Graphics.DrawImage(image, location);
                 }
             }
+        }
+        /// <summary>
+        /// Metoda vrátí barvu, kterou se má vykreslit indikátor pro daný prvek
+        /// </summary>
+        /// <param name="item"></param>
+        /// <param name="isBold"></param>
+        /// <returns></returns>
+        private Color? GetIndicatorColor(DxDataFormItem item, out bool isBold)
+        {
+            isBold = false;
+            if (item == null) return null;
+
+            var indicators = item.IItem.Indicators;
+            bool itemIndicatorsVisible = _DataForm.ItemIndicatorsVisible;
+            var appearance = _DataForm.DataFormAppearance;
+
+            Color? focusColor = null;             // Pokud prvek má focus, pak zde bude barva orámování focusu
+
+            Color? statusColor = null;
+            if (indicators.HasFlag(DataFormItemIndicatorType.ErrorAllways) || (indicators.HasFlag(DataFormItemIndicatorType.ErrorOnDemand) && itemIndicatorsVisible))
+                statusColor = appearance.ErrorIndicatorColor;
+            else if (indicators.HasFlag(DataFormItemIndicatorType.WarningAllways) || (indicators.HasFlag(DataFormItemIndicatorType.WarningOnDemand) && itemIndicatorsVisible))
+                statusColor = appearance.WarningIndicatorColor;
+            else if (indicators.HasFlag(DataFormItemIndicatorType.CorrectAllways) || (indicators.HasFlag(DataFormItemIndicatorType.CorrectOnDemand) && itemIndicatorsVisible))
+                statusColor = appearance.CorrectIndicatorColor;
+
+            bool hasFocus = focusColor.HasValue;
+            bool hasStatus = statusColor.HasValue;
+            // Pokud bych měl souběh obou barev (focus i status), pak výsledná barva bude Morph (70% status + 30% focus)
+            Color? resultColor = ((hasFocus && hasStatus) ? (Color ? )statusColor.Value.Morph(focusColor.Value, 0.70f) :
+                                 (hasFocus ? focusColor :
+                                 (hasStatus ? statusColor : (Color ? )null)));
+
+            if (hasStatus) isBold = true;
+            return resultColor;
+        }
+
+        /// <summary>
+        /// Zajistí vykreslení slabého orámování (prozáření okrajů) pro daný prostor (prvek) danou barvou.
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="bounds"></param>
+        /// <param name="color"></param>
+        /// <param name="isBold"></param>
+        private void PaintItemIndicator(DxBufferedGraphicPaintArgs e, Rectangle bounds, Color color, bool isBold)
+        {
+            bool isPainted = false;
+            PaintItemIndicator(e, bounds, color, isBold, ref isPainted);
+        }
+        /// <summary>
+        /// Zajistí vykreslení slabého orámování (prozáření okrajů) pro daný prostor (prvek) danou barvou.
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="bounds"></param>
+        /// <param name="color"></param>
+        /// <param name="isBold"></param>
+        /// <param name="isPainted"></param>
+        private void PaintItemIndicator(DxBufferedGraphicPaintArgs e, Rectangle bounds, Color color, bool isBold, ref bool isPainted)
+        {
+            if (!isBold)
+            {
+                e.Graphics.FillRectangle(DxComponent.PaintGetSolidBrush(color, 48), bounds.Enlarge(2));
+                e.Graphics.FillRectangle(DxComponent.PaintGetSolidBrush(color, 80), bounds.Enlarge(1));
+            }
+            else
+            {
+                e.Graphics.FillRectangle(DxComponent.PaintGetSolidBrush(color, 48), bounds.Enlarge(3));
+                e.Graphics.FillRectangle(DxComponent.PaintGetSolidBrush(color, 108), bounds.Enlarge(1));
+            }
+            isPainted = true;
         }
         /// <summary>
         /// Pole jednotlivých vrstev bufferované grafiky
@@ -2035,21 +2190,54 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         { }
         #endregion
         #region TextBoxButton
-        private Control _TextBoxButtonCreate() { return new DxTextButtonEdit(); }
+        private Control _TextBoxButtonCreate() { return new DxButtonEdit(); }
         private string _TextBoxButtonGetKey(DxDataFormItem item)
         {
-            string key = GetStandardKeyForItem(item);
+            string key = GetStandardKeyForItem(item, _TextBoxButtonGetKeySpec);
+            return key;
+        }
+        private string _TextBoxButtonGetKeySpec(DxDataFormItem item)
+        {
+            if (!item.TryGetIItem<IDataFormItemTextBoxButton>(out var iItem)) return "";
+            string key =
+                (iItem.ButtonsVisibleAllways ? "A" : "a") +
+                (iItem.ButtonAs3D ? "D" : "F") +
+                (((int)iItem.ButtonKind) + 20).ToString();
             return key;
         }
         private void _TextBoxButtonFill(DxDataFormItem item, Control control, DxDataFormControlUseMode mode)
         {
-            if (!(control is DxTextButtonEdit textEdit)) throw new InvalidOperationException($"Nelze naplnit data do objektu typu {control.GetType().Name}, je očekáván objekt typu {typeof(DxTextButtonEdit).Name}.");
-            //  CommonFill(item, textEdit, mode);
+            if (!(control is DxButtonEdit buttonEdit)) throw new InvalidOperationException($"Nelze naplnit data do objektu typu {control.GetType().Name}, je očekáván objekt typu {typeof(DxButtonEdit).Name}.");
+            CommonFill(item, buttonEdit, mode, _TextBoxButtonFillSpec);
             //  textEdit.DeselectAll();
-            textEdit.SelectionStart = 0;
+            buttonEdit.SelectionStart = 0;
+        }
+        private void _TextBoxButtonFillSpec(DxDataFormItem item, DxButtonEdit buttonEdit, DxDataFormControlUseMode mode)
+        {
+            if (item.TryGetIItem<IDataFormItemTextBoxButton>(out var iItem))
+            {
+                bool isNone = (iItem.ButtonKind == DataFormButtonKind.None);
+                buttonEdit.ButtonsVisibility = (isNone ? DxChildControlVisibility.None :
+                            (iItem.ButtonsVisibleAllways ? DxChildControlVisibility.Allways : 
+                            (mode == DxDataFormControlUseMode.Draw ? DxChildControlVisibility.None : DxChildControlVisibility.OnActiveControl)));
+                buttonEdit.ButtonKind = ConvertButtonKind(iItem.ButtonKind);
+                buttonEdit.ButtonsStyle = (iItem.ButtonAs3D ? DevExpress.XtraEditors.Controls.BorderStyles.Style3D : DevExpress.XtraEditors.Controls.BorderStyles.HotFlat); // HotFlat je nejlepší; ujde i Style3D; i UltraFlat;     testováno Default; Flat; NoBorder; Office2003; Simple; 
+            }
         }
         private void _TextBoxButtonRead(DxDataFormItem item, Control control)
         { }
+        /// <summary>
+        /// Vrací DevExpress hodnotu typu <see cref="DevExpress.XtraEditors.Controls.ButtonPredefines"/>
+        /// z DataForm hodnoty typu <see cref="DataFormButtonKind"/>.
+        /// </summary>
+        /// <param name="kind"></param>
+        /// <returns></returns>
+        private static DevExpress.XtraEditors.Controls.ButtonPredefines ConvertButtonKind(DataFormButtonKind kind)
+        {
+            if (kind == DataFormButtonKind.None) return DevExpress.XtraEditors.Controls.ButtonPredefines.Separator;
+            if (kind == DataFormButtonKind.Glyph) return DevExpress.XtraEditors.Controls.ButtonPredefines.Glyph;
+            return (DevExpress.XtraEditors.Controls.ButtonPredefines)((int)kind);        // Ostatní hodnoty jsou numericky shodné na obou stranách...
+        }
         #endregion
         // EditBox
         // SpinnerBox
@@ -2139,7 +2327,56 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         // CheckButton
         // DropDownButton
         // Image
-        #region Společné metody pro všechny typy prvků
+
+        #region Společné metody pro získání klíče
+        /// <summary>
+        /// Vrátí standardní klíč daného prvku do ImageCache
+        /// </summary>
+        /// <param name="item"></param>
+        /// <param name="specKeygenerator"></param>
+        /// <returns></returns>
+        private static string GetStandardKeyForItem(DxDataFormItem item, Func<DxDataFormItem, string> specKeygenerator = null)
+        {
+            var size = item.CurrentBounds.Size;
+            string text = "";
+            if (item.IItem is IDataFormItemImageText iit)
+                text = iit.Text;
+            string type = ((int)item.ItemType).ToString();
+            string appearance = GetAppearanceKey(item.IItem.Appearance);
+            string specKey = (specKeygenerator != null ? specKeygenerator(item) ?? "" : "");
+            string key = $"{size.Width}.{size.Height};{type}:{appearance}:{specKey}:{text}";
+            return key;
+        }
+        /// <summary>
+        /// Vrátí klíč pro danou Appearance
+        /// </summary>
+        /// <param name="appearance"></param>
+        /// <returns></returns>
+        private static string GetAppearanceKey(IDataFormItemAppearance appearance)
+        {
+            if (appearance == null) return "";
+            string text = "";
+            if (appearance.FontSizeDelta.HasValue) text += appearance.FontSizeDelta.ToString();
+            if (appearance.FontStyleBold.HasValue) text += appearance.FontStyleBold.Value ? "B" : "b";
+            if (appearance.FontStyleItalic.HasValue) text += appearance.FontStyleItalic.Value ? "I" : "i";
+            if (appearance.FontStyleUnderline.HasValue) text += appearance.FontStyleUnderline.Value ? "U" : "u";
+            if (appearance.FontStyleStrikeOut.HasValue) text += appearance.FontStyleStrikeOut.Value ? "S" : "s";
+            if (appearance.BackColor.HasValue) text += "G" + GetColorKey(appearance.BackColor.Value);
+            if (appearance.ForeColor.HasValue) text += "F" + GetColorKey(appearance.ForeColor.Value);
+            if (appearance.ContentAlignment.HasValue) text += "A" + ((int)appearance.ContentAlignment.Value).ToString("X4");
+            return text;
+        }
+        /// <summary>
+        /// Vrátí klíč pro danou barvu
+        /// </summary>
+        /// <param name="color"></param>
+        /// <returns></returns>
+        private static string GetColorKey(Color color)
+        {
+            return color.A.ToString("X2") + color.R.ToString("X2") + color.G.ToString("X2") + color.B.ToString("X2");
+        }
+        #endregion
+        #region Společné metody pro naplnění prvku daty a Appearancí
         /// <summary>
         /// Naplní obecně platné hodnoty do daného controlu.
         /// Nastavuje: Souřadnice, Text, Enabled, Appearance, ToolTip, Visible.
@@ -2170,27 +2407,31 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             control.Visible = true;
         }
         /// <summary>
-        /// Aplikuje vzhled definovaný v apperance do daného controlu
+        /// Aplikuje vzhled definovaný v <paramref name="iAppearance"/> do daného controlu
         /// </summary>
         /// <param name="control"></param>
-        /// <param name="appearance"></param>
-        private void ApplyAppearance(BaseControl control, IDataFormItemAppearance appearance)
+        /// <param name="iAppearance"></param>
+        private void ApplyAppearance(BaseControl control, IDataFormItemAppearance iAppearance)
         {
             if (control is BaseStyleControl baseStyleControl)
             {
-                if (baseStyleControl.Appearance.Name == "Modified")
+                var cAppearance = baseStyleControl.Appearance;
+                if (cAppearance.Name == "Modified")
                 {   // Resetovat jen pokud je nutno - a to bez ohledu na stav zadání appearance:
-                    baseStyleControl.Appearance.Reset();
-                    baseStyleControl.Appearance.Name = "Default";
+                    cAppearance.Reset();
+                    cAppearance.TextOptions.Reset();
+                    cAppearance.Name = "Default";
                 }
-                if (appearance != null)
+                if (iAppearance != null)
                 {
-                    if (appearance.FontSizeDelta.HasValue)
-                        baseStyleControl.Appearance.FontSizeDelta = appearance.FontSizeDelta.Value;
-                    if (appearance.FontStyleBold.HasValue || appearance.FontStyleItalic.HasValue || appearance.FontStyleUnderline.HasValue || appearance.FontStyleStrikeOut.HasValue)
-                        baseStyleControl.Appearance.FontStyleDelta = GetFontStyle(appearance);
+                    if (iAppearance.FontSizeDelta.HasValue)
+                        cAppearance.FontSizeDelta = iAppearance.FontSizeDelta.Value;
+                    if (iAppearance.FontStyleBold.HasValue || iAppearance.FontStyleItalic.HasValue || iAppearance.FontStyleUnderline.HasValue || iAppearance.FontStyleStrikeOut.HasValue)
+                        cAppearance.FontStyleDelta = ConvertFontStyle(iAppearance);
+                    if (iAppearance.ContentAlignment.HasValue)
+                        ApplyAlignment(cAppearance, iAppearance);
 
-                    baseStyleControl.Appearance.Name = "Modified";
+                    cAppearance.Name = "Modified";
                 }
             }
         }
@@ -2199,7 +2440,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         /// <param name="appearance"></param>
         /// <returns></returns>
-        private FontStyle GetFontStyle(IDataFormItemAppearance appearance)
+        private FontStyle ConvertFontStyle(IDataFormItemAppearance appearance)
         {
             FontStyle fontStyle = FontStyle.Regular;
             if (appearance.FontStyleBold.HasValue && appearance.FontStyleBold.Value) fontStyle |= FontStyle.Bold;
@@ -2207,6 +2448,54 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             if (appearance.FontStyleUnderline.HasValue && appearance.FontStyleUnderline.Value) fontStyle |= FontStyle.Underline;
             if (appearance.FontStyleStrikeOut.HasValue && appearance.FontStyleStrikeOut.Value) fontStyle |= FontStyle.Strikeout;
             return fontStyle;
+        }
+        /// <summary>
+        /// Do daného 
+        /// </summary>
+        /// <param name="cAppearance"></param>
+        /// <param name="iAppearance"></param>
+        private void ApplyAlignment(DevExpress.Utils.AppearanceObject cAppearance, IDataFormItemAppearance iAppearance)
+        {
+            if (!iAppearance.ContentAlignment.HasValue) return;
+            switch (iAppearance.ContentAlignment.Value)
+            {
+                case ContentAlignment.TopLeft:
+                    cAppearance.TextOptions.VAlignment = DevExpress.Utils.VertAlignment.Top;
+                    cAppearance.TextOptions.HAlignment = DevExpress.Utils.HorzAlignment.Near;
+                    break;
+                case ContentAlignment.TopCenter:
+                    cAppearance.TextOptions.VAlignment = DevExpress.Utils.VertAlignment.Top;
+                    cAppearance.TextOptions.HAlignment = DevExpress.Utils.HorzAlignment.Center;
+                    break;
+                case ContentAlignment.TopRight:
+                    cAppearance.TextOptions.VAlignment = DevExpress.Utils.VertAlignment.Top;
+                    cAppearance.TextOptions.HAlignment = DevExpress.Utils.HorzAlignment.Far;
+                    break;
+                case ContentAlignment.MiddleLeft:
+                    cAppearance.TextOptions.VAlignment = DevExpress.Utils.VertAlignment.Center;
+                    cAppearance.TextOptions.HAlignment = DevExpress.Utils.HorzAlignment.Near;
+                    break;
+                case ContentAlignment.MiddleCenter:
+                    cAppearance.TextOptions.VAlignment = DevExpress.Utils.VertAlignment.Center;
+                    cAppearance.TextOptions.HAlignment = DevExpress.Utils.HorzAlignment.Center;
+                    break;
+                case ContentAlignment.MiddleRight:
+                    cAppearance.TextOptions.VAlignment = DevExpress.Utils.VertAlignment.Center;
+                    cAppearance.TextOptions.HAlignment = DevExpress.Utils.HorzAlignment.Far;
+                    break;
+                case ContentAlignment.BottomLeft:
+                    cAppearance.TextOptions.VAlignment = DevExpress.Utils.VertAlignment.Bottom;
+                    cAppearance.TextOptions.HAlignment = DevExpress.Utils.HorzAlignment.Near;
+                    break;
+                case ContentAlignment.BottomCenter:
+                    cAppearance.TextOptions.VAlignment = DevExpress.Utils.VertAlignment.Bottom;
+                    cAppearance.TextOptions.HAlignment = DevExpress.Utils.HorzAlignment.Center;
+                    break;
+                case ContentAlignment.BottomRight:
+                    cAppearance.TextOptions.VAlignment = DevExpress.Utils.VertAlignment.Bottom;
+                    cAppearance.TextOptions.HAlignment = DevExpress.Utils.HorzAlignment.Far;
+                    break;
+            }
         }
         /// <summary>
         /// Vrátí instanci <see cref="DxSuperToolTip"/> připravenou pro daný prvek a daný režim. Může vrátit null.
@@ -2221,49 +2510,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             superTip.LoadValues(item.IItem);
             if (!superTip.IsValid) return null;
             return superTip;
-        }
-        /// <summary>
-        /// Vrátí standardní klíč daného prvku do ImageCache
-        /// </summary>
-        /// <param name="item"></param>
-        /// <returns></returns>
-        private static string GetStandardKeyForItem(DxDataFormItem item)
-        {
-            var size = item.CurrentBounds.Size;
-            string text = "";
-            if (item.IItem is IDataFormItemImageText iit)
-                text = iit.Text;
-            string type = ((int)item.ItemType).ToString();
-            string appearance = GetAppearanceKey(item.IItem.Appearance);
-            string key = $"{size.Width}.{size.Height};{type}:{appearance}:{text}";
-            return key;
-        }
-        /// <summary>
-        /// Vrátí klíč pro danou Appearance
-        /// </summary>
-        /// <param name="appearance"></param>
-        /// <returns></returns>
-        private static string GetAppearanceKey(IDataFormItemAppearance appearance)
-        {
-            if (appearance == null) return "";
-            string text = "";
-            if (appearance.FontSizeDelta.HasValue) text += appearance.FontSizeDelta.ToString();
-            if (appearance.FontStyleBold.HasValue) text += appearance.FontStyleBold.Value ? "B" : "b";
-            if (appearance.FontStyleItalic.HasValue) text += appearance.FontStyleItalic.Value ? "I" : "i";
-            if (appearance.FontStyleUnderline.HasValue) text += appearance.FontStyleUnderline.Value ? "U" : "u";
-            if (appearance.FontStyleStrikeOut.HasValue) text += appearance.FontStyleStrikeOut.Value ? "S" : "s";
-            if (appearance.BackColor.HasValue) text += "G" + GetColorKey(appearance.BackColor.Value);
-            if (appearance.ForeColor.HasValue) text += "F" + GetColorKey(appearance.ForeColor.Value);
-            return text;
-        }
-        /// <summary>
-        /// Vrátí klíč pro danou barvu
-        /// </summary>
-        /// <param name="color"></param>
-        /// <returns></returns>
-        private static string GetColorKey(Color color)
-        {
-            return color.A.ToString("X2") + color.R.ToString("X2") + color.G.ToString("X2") + color.B.ToString("X2");
         }
         #endregion
         #region Získání a naplnění controlu z datového Itemu, a reverzní zpětné načtení hodnot z controlu do datového Itemu
@@ -3023,9 +3269,26 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         public bool IsVisible { get { return IItem.IsVisible; } }
         /// <summary>
-        /// Prvek bude podsvícen při pohybu myší nad ním
+        /// Řízení barevných indikátorů u prvku
         /// </summary>
-        public bool HotTrackingEnabled { get; set; }
+        public DataFormItemIndicatorType Indicators { get { return IItem.Indicators; } }
+        /// <summary>
+        /// Metoda zkusí vrátit deklaraci dat (prvek <see cref="IItem"/>) typovaný na daný interface.
+        /// To je nutné pro zpracování konkrétního typu dat, když si nevystačíme s obecným rozhraním <see cref="IDataFormItem"/>.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="iItem"></param>
+        /// <returns></returns>
+        public bool TryGetIItem<T>(out T iItem)
+        {
+            if (_IItem is T item)
+            {
+                iItem = item;
+                return true;
+            }
+            iItem = default;
+            return false;
+        }
         #endregion
         #region Souřadnice designové, aktuální, viditelné
         /// <summary>
