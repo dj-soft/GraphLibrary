@@ -512,7 +512,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 OnMouseBackColor = Color.FromArgb(160, 64, 64, 64),
                 OnMouseBackColorEnd = Color.FromArgb(96, 160, 160, 160)
             };
-            DataFormBackgroundAppearance headerAppearance = new DataFormBackgroundAppearance()
+            DataFormBackgroundAppearance headerAppearance1 = new DataFormBackgroundAppearance()
             {
                 GradientStyle = GradientStyleType.ToRight,
                 BackColor = Color.FromArgb(64, 64, 64, 64),
@@ -520,11 +520,26 @@ namespace Noris.Clients.Win.Components.AsolDX
                 OnMouseBackColor = Color.FromArgb(160, 128, 128, 64),
                 OnMouseBackColorEnd = Color.FromArgb(16, 192, 192, 128)
             };
+            DataFormBackgroundAppearance headerAppearance2 = new DataFormBackgroundAppearance()
+            {
+                GradientStyle = GradientStyleType.ToRight,
+                BackColor = Color.FromArgb(128, 64, 64, 224),
+                BackColorEnd = Color.FromArgb(8, 96, 96, 255),
+                OnMouseBackColor = Color.FromArgb(255, 64, 64, 224),
+                OnMouseBackColorEnd = Color.FromArgb(8, 96, 96, 255),
+            };
+
+            DataFormItemAppearance titleAppearance = new DataFormItemAppearance()
+            {
+                FontSizeDelta = 2,
+                FontStyleBold = true
+            };
 
             int textsCount = texts.Length;
             int tooltipsCount = tooltips.Length;
 
             string text, tooltip;
+            bool addGroupTitle = false;
             int[] widths = null;
             int rowHeight = 0;
             int spaceWidth = 5;
@@ -536,50 +551,58 @@ namespace Noris.Clients.Win.Components.AsolDX
                 case 1:
                     widths = new int[] { 140, 260, 40, 300, 120 };
                     rowHeight = 28;
-                    borderWidth = 3;
+                    borderWidth = 0;
+                    headerHeight = 2;
+                    addGroupTitle = true;
                     break;
                 case 2:
                     widths = new int[] { 80, 150, 80, 60, 100, 120, 160, 40, 120, 180, 80, 40, 60, 250 };
                     rowHeight = 21;
                     spaceWidth = 1;
-                    borderWidth = 3;
+                    borderWidth = 0;
+                    headerHeight = 2;
+                    addGroupTitle = true;
                     break;
                 case 3:
                     widths = new int[] { 250, 250, 60, 250, 250, 60, 250 };
                     rowHeight = 30;
-                    borderWidth = 3;
+                    borderWidth = 0;
+                    headerHeight = 2;
+                    addGroupTitle = true;
                     break;
 
                 case 4:                // Sklady, možnost sloučit s Faktury
                     page.AllowMerge = true;
                     widths = new int[] { 100, 75, 120, 100 };
                     rowHeight = 30;
-                    beginY = 26;
                     headerHeight = 24;
                     borderWidth = 1;
+                    beginY = 26;
                     break;
                 case 5:                // Faktury, možnost sloučit s Sklady
                     page.AllowMerge = true;
                     widths = new int[] { 70, 70, 70, 70 };
                     rowHeight = 21;
                     spaceWidth = 1;
-                    beginY = 26;
                     headerHeight = 24;
                     borderWidth = 1;
+                    beginY = 26;
                     break;
                 case 6:                // Zaúčtování
                     widths = new int[] { 400, 125, 75, 100 };
                     rowHeight = 30;
-                    beginY = 26;
                     headerHeight = 24;
+                    beginY = 26;
                     break;
                 case 7:                // Výrobní čísla - úzká pro force layout break
                     widths = new int[] { 100, 100, 70 };
                     rowHeight = 25;
+                    addGroupTitle = true;
                     break;
                 case 8:                // Výrobní čísla - úzká pro auto layout break
                     widths = new int[] { 100, 100, 70 };
                     rowHeight = 25;
+                    addGroupTitle = true;
                     break;
             }
             int count = rowCount;
@@ -597,7 +620,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                     group.DesignPadding = new Padding(12, 12, 12, 12);
                     group.DesignHeaderHeight = headerHeight;
                     if (headerHeight > 0)
-                        group.HeaderAppearance = headerAppearance;
+                        group.HeaderAppearance = (headerHeight == 2 ? headerAppearance2 : headerAppearance1);
                     if (sampleId == 7)
                     {   // Výrobní čísla - úzká pro force layout break
                         if ((page.Groups.Count % 20) == 0)
@@ -610,11 +633,20 @@ namespace Noris.Clients.Win.Components.AsolDX
                         if ((page.Groups.Count % 3) == 0)
                             group.LayoutMode = DatFormGroupLayoutMode.AllowBreakToNewColumn;
                     }
-                    group.DesignBorderRange = new Int32Range(1, 1+ borderWidth);
+                    group.DesignBorderRange = new Int32Range(1, 1 + borderWidth);
                     group.BorderAppearance = borderAppearance;
 
                     page.Groups.Add(group);
                     y = beginY;
+
+                    if (addGroupTitle)
+                    {
+                        DataFormItemImageText title = new DataFormItemImageText() { ItemType = DataFormItemType.Label, DesignBounds = new Rectangle(60, y, 150, 18) };
+                        title.Text = "Skupina " + page.Groups.Count.ToString();
+                        title.Appearance = titleAppearance;
+                        group.Items.Add(title);
+                        y += 26;
+                    }
                 }
 
                 // První prvek v řádku je Label:
@@ -1765,393 +1797,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
 
             return image;
         }
-
-        private Dictionary<DataFormItemType, DxDataFormControlSet> _ControlsSets;
         /// <summary>
-        /// Instance třídy, která obhospodařuje jeden typ (<see cref="DataFormItemType"/>) vizuálního controlu, a má až tři instance (Draw, Mouse, Focus)
+        /// Paměť dosud používaných typů controlů
         /// </summary>
-        internal class DxDataFormControlSet : IDisposable
-        {
-            #region Konstruktor
-            /// <summary>
-            /// Vytvoří <see cref="DxDataFormControlSet"/> pro daný typ controlu
-            /// </summary>
-            /// <param name="dataForm"></param>
-            /// <param name="itemType"></param>
-            public DxDataFormControlSet(DxDataForm dataForm, DataFormItemType itemType)
-            {
-                _DataForm = dataForm;
-                _ItemType = itemType;
-                switch (itemType)
-                {
-                    case DataFormItemType.Label:
-                        _CreateControlFunction = _LabelCreate;
-                        _GetKeyFunction = _LabelGetKey;
-                        _FillControlAction = _LabelFill;
-                        _ReadControlAction = _LabelRead;
-                        break;
-                    case DataFormItemType.TextBox:
-                        _CreateControlFunction = _TextBoxCreate;
-                        _GetKeyFunction = _TextBoxGetKey;
-                        _FillControlAction = _TextBoxFill;
-                        _ReadControlAction = _TextBoxRead;
-                        break;
-                    case DataFormItemType.TextBoxButton:
-                        _CreateControlFunction = _TextBoxButtonCreate;
-                        _GetKeyFunction = _TextBoxButtonGetKey;
-                        _FillControlAction = _TextBoxButtonFill;
-                        _ReadControlAction = _TextBoxButtonRead;
-                        break;
-                    case DataFormItemType.CheckBox:
-                        _CreateControlFunction = _CheckBoxCreate;
-                        _GetKeyFunction = _CheckBoxGetKey;
-                        _FillControlAction = _CheckBoxFill;
-                        _ReadControlAction = _CheckBoxRead;
-                        break;
-                    case DataFormItemType.ComboBoxList:
-                        _CreateControlFunction = _ComboBoxListCreate;
-                        _GetKeyFunction = _ComboBoxListGetKey;
-                        _FillControlAction = _ComboBoxListFill;
-                        _ReadControlAction = _ComboBoxListRead;
-                        break;
-                    case DataFormItemType.ComboBoxEdit:
-                        _CreateControlFunction = _ComboBoxEditCreate;
-                        _GetKeyFunction = _ComboBoxEditGetKey;
-                        _FillControlAction = _ComboBoxEditFill;
-                        _ReadControlAction = _ComboBoxEditRead;
-                        break;
-                    case DataFormItemType.TokenEdit:
-                        _CreateControlFunction = _TokenEditCreate;
-                        _GetKeyFunction = _TokenEditGetKey;
-                        _FillControlAction = _TokenEditFill;
-                        _ReadControlAction = _TokenEditRead;
-                        break;
-                    case DataFormItemType.Button:
-                        _CreateControlFunction = _ButtonCreate;
-                        _GetKeyFunction = _ButtonGetKey;
-                        _FillControlAction = _ButtonFill;
-                        _ReadControlAction = _ButtonRead;
-                        break;
-                    default:
-                        throw new ArgumentException($"Není možno vytvořit 'ControlSetInfo' pro typ prvku '{itemType}'.");
-                }
-                _Disposed = false;
-            }
-            /// <summary>
-            /// Dispose prvků
-            /// </summary>
-            public void Dispose()
-            {
-                DisposeControl(ref _ControlDraw, ControlUseMode.Draw);
-                DisposeControl(ref _ControlMouse, ControlUseMode.Mouse);
-                DisposeControl(ref _ControlFocus, ControlUseMode.Focus);
-
-                _CreateControlFunction = null;
-                _FillControlAction = null;
-                _ReadControlAction = null;
-
-                _Disposed = true;
-            }
-            /// <summary>
-            /// Pokud je objekt disposován, vyhodí chybu.
-            /// </summary>
-            private void CheckNonDisposed()
-            {
-                if (_Disposed) throw new InvalidOperationException($"Nelze pracovat s objektem 'ControlSetInfo', protože je zrušen.");
-            }
-            /// <summary>Vlastník - <see cref="DxDataForm"/></summary>
-            private DxDataForm _DataForm;
-            private DataFormItemType _ItemType;
-            private Func<Control> _CreateControlFunction;
-            private Func<DxDataFormItem, string> _GetKeyFunction;
-            private Action<DxDataFormItem, Control, ControlUseMode> _FillControlAction;
-            private Action<DxDataFormItem, Control> _ReadControlAction;
-            private bool _Disposed;
-            #endregion
-            #region Label
-            private Control _LabelCreate() { return new DxLabelControl(); }
-            private string _LabelGetKey(DxDataFormItem item) 
-            {
-                string key = GetStandardKeyForItem(item);
-                return key;
-            }
-            private void _LabelFill(DxDataFormItem item, Control control, ControlUseMode mode)
-            {
-                if (!(control is DxLabelControl label)) throw new InvalidOperationException($"Nelze naplnit data do objektu typu {control.GetType().Name}, je očekáván objekt typu {typeof(DxLabelControl).Name}.");
-                CommonFill(item, label, mode);
-            }
-            private void _LabelRead(DxDataFormItem item, Control control)
-            { }
-            #endregion
-            #region TextBox
-            private Control _TextBoxCreate() { return new DxTextEdit(); }
-            private string _TextBoxGetKey(DxDataFormItem item)
-            {
-                string key = GetStandardKeyForItem(item);
-                return key;
-            }
-            private void _TextBoxFill(DxDataFormItem item, Control control, ControlUseMode mode)
-            {
-                if (!(control is DxTextEdit textEdit)) throw new InvalidOperationException($"Nelze naplnit data do objektu typu {control.GetType().Name}, je očekáván objekt typu {typeof(DxTextEdit).Name}.");
-                CommonFill(item, textEdit, mode);
-                textEdit.DeselectAll();
-                textEdit.SelectionStart = 0;
-            }
-            private void _TextBoxRead(DxDataFormItem item, Control control)
-            { }
-            #endregion
-            #region TextBoxButton
-            private Control _TextBoxButtonCreate() { return new DxTextButtonEdit(); }
-            private string _TextBoxButtonGetKey(DxDataFormItem item)
-            {
-                string key = GetStandardKeyForItem(item);
-                return key;
-            }
-            private void _TextBoxButtonFill(DxDataFormItem item, Control control, ControlUseMode mode)
-            {
-                if (!(control is DxTextButtonEdit textEdit)) throw new InvalidOperationException($"Nelze naplnit data do objektu typu {control.GetType().Name}, je očekáván objekt typu {typeof(DxTextButtonEdit).Name}.");
-              //  CommonFill(item, textEdit, mode);
-              //  textEdit.DeselectAll();
-                textEdit.SelectionStart = 0;
-            }
-            private void _TextBoxButtonRead(DxDataFormItem item, Control control)
-            { }
-            #endregion
-            // EditBox
-            // SpinnerBox
-            #region CheckBox
-            private Control _CheckBoxCreate() { return new DxCheckEdit(); }
-            private string _CheckBoxGetKey(DxDataFormItem item)
-            {
-                string key = GetStandardKeyForItem(item);
-                return key;
-            }
-            private void _CheckBoxFill(DxDataFormItem item, Control control, ControlUseMode mode)
-            {
-                if (!(control is DxCheckEdit checkEdit)) throw new InvalidOperationException($"Nelze naplnit data do objektu typu {control.GetType().Name}, je očekáván objekt typu {typeof(DxCheckEdit).Name}.");
-                CommonFill(item, checkEdit, mode);
-            }
-            private void _CheckBoxRead(DxDataFormItem item, Control control)
-            { }
-            #endregion
-            // BreadCrumb
-            #region ComboBoxList
-            private Control _ComboBoxListCreate() { return new DxTextEdit(); }
-            private string _ComboBoxListGetKey(DxDataFormItem item)
-            {
-                string key = GetStandardKeyForItem(item);
-                return key;
-            }
-            private void _ComboBoxListFill(DxDataFormItem item, Control control, ControlUseMode mode)
-            {
-                if (!(control is DxTextEdit textEdit)) throw new InvalidOperationException($"Nelze naplnit data do objektu typu {control.GetType().Name}, je očekáván objekt typu {typeof(DxTextEdit).Name}.");
-                //  CommonFill(item, textEdit, mode);
-                //  textEdit.DeselectAll();
-                textEdit.SelectionStart = 0;
-            }
-            private void _ComboBoxListRead(DxDataFormItem item, Control control)
-            { }
-            #endregion
-            #region ComboBoxEdit
-            private Control _ComboBoxEditCreate() { return new DxTextEdit(); }
-            private string _ComboBoxEditGetKey(DxDataFormItem item)
-            {
-                string key = GetStandardKeyForItem(item);
-                return key;
-            }
-            private void _ComboBoxEditFill(DxDataFormItem item, Control control, ControlUseMode mode)
-            {
-                if (!(control is DxTextEdit textEdit)) throw new InvalidOperationException($"Nelze naplnit data do objektu typu {control.GetType().Name}, je očekáván objekt typu {typeof(DxTextEdit).Name}.");
-                //  CommonFill(item, textEdit, mode);
-                //  textEdit.DeselectAll();
-                textEdit.SelectionStart = 0;
-            }
-            private void _ComboBoxEditRead(DxDataFormItem item, Control control)
-            { }
-            #endregion
-            #region TokenEdit
-            private Control _TokenEditCreate() { return new DxCheckEdit(); }
-            private string _TokenEditGetKey(DxDataFormItem item)
-            {
-                string key = GetStandardKeyForItem(item);
-                return key;
-            }
-            private void _TokenEditFill(DxDataFormItem item, Control control, ControlUseMode mode)
-            {
-                if (!(control is DxCheckEdit checkEdit)) throw new InvalidOperationException($"Nelze naplnit data do objektu typu {control.GetType().Name}, je očekáván objekt typu {typeof(DxCheckEdit).Name}.");
-                CommonFill(item, checkEdit, mode);
-            }
-            private void _TokenEditRead(DxDataFormItem item, Control control)
-            { }
-            #endregion
-            // ListView
-            // TreeView
-            // RadioButtonBox
-            #region Button
-            private Control _ButtonCreate() { return new DxSimpleButton(); }
-            private string _ButtonGetKey(DxDataFormItem item)
-            {
-                string key = GetStandardKeyForItem(item);
-                return key;
-            }
-            private void _ButtonFill(DxDataFormItem item, Control control, ControlUseMode mode)
-            {
-                if (!(control is DxSimpleButton button)) throw new InvalidOperationException($"Nelze naplnit data do objektu typu {control.GetType().Name}, je očekáván objekt typu {typeof(DxSimpleButton).Name}.");
-                CommonFill(item, button, mode);
-            }
-            private void _ButtonRead(DxDataFormItem item, Control control)
-            { }
-            #endregion
-            // CheckButton
-            // DropDownButton
-            // Image
-            #region Společné metody pro všechny typy prvků
-            /// <summary>
-            /// Naplní obecně platné hodnoty do daného controlu
-            /// </summary>
-            /// <param name="item"></param>
-            /// <param name="control"></param>
-            /// <param name="mode"></param>
-            private void CommonFill(DxDataFormItem item, BaseControl control, ControlUseMode mode)
-            {
-                Rectangle bounds = item.CurrentBounds;
-                if (mode == ControlUseMode.Draw)
-                {
-                    bounds.Location = new Point(4, 4);
-                }
-                else if (item.VisibleBounds.HasValue)
-                {
-                    bounds.Location = item.VisibleBounds.Value.Location;
-                }
-
-                if (item.IItem is IDataFormItemImageText iit)
-                    control.Text = iit.Text;
-                control.Enabled = true; // item.Enabled;
-                control.SetBounds(bounds);
-                control.Visible = true;
-                if (mode != ControlUseMode.Draw)
-                    control.SuperTip = GetSuperTip(item, mode);
-            }
-            /// <summary>
-            /// Vrátí instanci <see cref="DxSuperToolTip"/> připravenou pro daný prvek a daný režim. Může vrátit null.
-            /// </summary>
-            /// <param name="item"></param>
-            /// <param name="mode"></param>
-            /// <returns></returns>
-            private DxSuperToolTip GetSuperTip(DxDataFormItem item, ControlUseMode mode)
-            {
-                if (mode != ControlUseMode.Mouse) return null;
-                var superTip = _DataForm.DxSuperToolTip;
-                superTip.LoadValues(item.IItem);
-                if (!superTip.IsValid) return null;
-                return superTip;
-            }
-            /// <summary>
-            /// Vrátí standardní klíč daného prvku do ImageCache
-            /// </summary>
-            /// <param name="item"></param>
-            /// <returns></returns>
-            private string GetStandardKeyForItem(DxDataFormItem item)
-            {
-                var size = item.CurrentBounds.Size;
-                string text = "";
-                if (item.IItem is IDataFormItemImageText iit)
-                    text = iit.Text;
-                string type = ((int)item.ItemType).ToString();
-                string key = $"{size.Width}.{size.Height};{type}::{text}";
-                return key;
-            }
-            #endregion
-            #region Získání a naplnění controlu z datového Itemu, a reverzní zpětné načtení hodnot z controlu do datového Itemu
-            internal Control GetControlForDraw(DxDataFormItem item)
-            {
-                CheckNonDisposed();
-                if (_ControlDraw == null)
-                    _ControlDraw = _CreateControl(ControlUseMode.Draw);
-                _FillControl(item, _ControlDraw, ControlUseMode.Draw);
-                return _ControlDraw;
-            }
-            internal Control GetControlForMouse(DxDataFormItem item)
-            {
-                CheckNonDisposed();
-                if (_ControlMouse == null)
-                    _ControlMouse = _CreateControl(ControlUseMode.Mouse);
-                _FillControl(item, _ControlMouse, ControlUseMode.Mouse);
-                return _ControlMouse;
-            }
-            internal Control GetControlForFocus(DxDataFormItem item)
-            {
-                CheckNonDisposed();
-                if (_ControlFocus == null)
-                    _ControlFocus = _CreateControl(ControlUseMode.Focus);
-                _FillControl(item, _ControlFocus, ControlUseMode.Focus);
-                return _ControlFocus;
-            }
-            /// <summary>
-            /// Metoda vrátí stringový klíč do ImageCache pro konkrétní prvek.
-            /// Vrácený klíč zohledňuje všechny potřebné a specifické hodnoty z konkrétního prvku.
-            /// Je tedy jisté, že dva různé objekty, které vrátí stejný klíč, budou mít stejný vzhled.
-            /// </summary>
-            /// <param name="item"></param>
-            /// <returns></returns>
-            internal string GetKeyToCache(DxDataFormItem item)
-            {
-                CheckNonDisposed();
-                string key = _GetKeyFunction?.Invoke(item);
-                return key;
-            }
-            /// <summary>
-            /// Vytvoří new instanci zdejšího controlu, umístí ji do neviditelné souřadnice, přidá do Ownera a vrátí.
-            /// </summary>
-            /// <returns></returns>
-            private Control _CreateControl(ControlUseMode mode)
-            {
-                var control = _CreateControlFunction();
-                Size size = control.Size;
-                Point location = new Point(10, -10 - size.Height);
-                Rectangle bounds = new Rectangle(location, size);
-                control.Visible = false;
-                control.SetBounds(bounds);
-                bool addToBackground = (mode == ControlUseMode.Draw);
-                _DataForm.AddControl(control, addToBackground);
-                return control;
-            }
-            private void _FillControl(DxDataFormItem item, Control control, ControlUseMode mode)
-            {
-                _FillControlAction(item, control, mode);
-                control.TabIndex = 10;
-
-                //// source.SetBounds(bounds);                  // Nastavím správné umístění, to kvůli obrázkům na pozadí panelu (různé skiny!), aby obrázky odpovídaly aktuální pozici...
-                //Rectangle sourceBounds = new Rectangle(4, 4, bounds.Width, bounds.Height);
-                //source.SetBounds(sourceBounds);
-                //source.Text = item.Text;
-
-                //var size = source.Size;
-                //if (size != bounds.Size)
-                //{
-                //    item.CurrentSize = size;
-                //    bounds = item.CurrentBounds;
-                //}
-
-            }
-            /// <summary>
-            /// Odebere daný control z Ownera, disposuje jej a nulluje ref proměnnou.
-            /// </summary>
-            /// <param name="control"></param>
-            /// <param name="mode"></param>
-            private void DisposeControl(ref Control control, ControlUseMode mode)
-            {
-                if (control == null) return;
-                bool removeFromBackground = (mode == ControlUseMode.Draw);
-                _DataForm.RemoveControl(control, removeFromBackground);
-                control.Dispose();
-                control = null;
-            }
-            private Control _ControlDraw;
-            private Control _ControlMouse;
-            private Control _ControlFocus;
-            #endregion
-        }
+        private Dictionary<DataFormItemType, DxDataFormControlSet> _ControlsSets;
         /// <summary>
         /// Kompletní informace o jednom prvku: index řádku, dekarace, control set a fyzický control
         /// </summary>
@@ -2174,7 +1823,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             /// </summary>
             public Control Control;
         }
-        private enum ControlUseMode { None, Draw, Mouse, Focus }
         /// <summary>
         /// Daný control přidá do panelu na pozadí (control jen pro kreslení) anebo na popředí (control pro interakci).
         /// </summary>
@@ -2244,6 +1892,457 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         }
         #endregion
     }
+    #endregion
+    #region class DxDataFormControlSet : správce několika vizuálních controlů jednoho druhu, jejich tvorba, a příprava k použití
+    /// <summary>
+    /// Instance třídy, která obhospodařuje jeden typ (<see cref="DataFormItemType"/>) vizuálního controlu, a má až tři instance (Draw, Mouse, Focus)
+    /// </summary>
+    internal class DxDataFormControlSet : IDisposable
+    {
+        #region Konstruktor
+        /// <summary>
+        /// Vytvoří <see cref="DxDataFormControlSet"/> pro daný typ controlu
+        /// </summary>
+        /// <param name="dataForm"></param>
+        /// <param name="itemType"></param>
+        public DxDataFormControlSet(DxDataForm dataForm, DataFormItemType itemType)
+        {
+            _DataForm = dataForm;
+            _ItemType = itemType;
+            switch (itemType)
+            {
+                case DataFormItemType.Label:
+                    _CreateControlFunction = _LabelCreate;
+                    _GetKeyFunction = _LabelGetKey;
+                    _FillControlAction = _LabelFill;
+                    _ReadControlAction = _LabelRead;
+                    break;
+                case DataFormItemType.TextBox:
+                    _CreateControlFunction = _TextBoxCreate;
+                    _GetKeyFunction = _TextBoxGetKey;
+                    _FillControlAction = _TextBoxFill;
+                    _ReadControlAction = _TextBoxRead;
+                    break;
+                case DataFormItemType.TextBoxButton:
+                    _CreateControlFunction = _TextBoxButtonCreate;
+                    _GetKeyFunction = _TextBoxButtonGetKey;
+                    _FillControlAction = _TextBoxButtonFill;
+                    _ReadControlAction = _TextBoxButtonRead;
+                    break;
+                case DataFormItemType.CheckBox:
+                    _CreateControlFunction = _CheckBoxCreate;
+                    _GetKeyFunction = _CheckBoxGetKey;
+                    _FillControlAction = _CheckBoxFill;
+                    _ReadControlAction = _CheckBoxRead;
+                    break;
+                case DataFormItemType.ComboBoxList:
+                    _CreateControlFunction = _ComboBoxListCreate;
+                    _GetKeyFunction = _ComboBoxListGetKey;
+                    _FillControlAction = _ComboBoxListFill;
+                    _ReadControlAction = _ComboBoxListRead;
+                    break;
+                case DataFormItemType.ComboBoxEdit:
+                    _CreateControlFunction = _ComboBoxEditCreate;
+                    _GetKeyFunction = _ComboBoxEditGetKey;
+                    _FillControlAction = _ComboBoxEditFill;
+                    _ReadControlAction = _ComboBoxEditRead;
+                    break;
+                case DataFormItemType.TokenEdit:
+                    _CreateControlFunction = _TokenEditCreate;
+                    _GetKeyFunction = _TokenEditGetKey;
+                    _FillControlAction = _TokenEditFill;
+                    _ReadControlAction = _TokenEditRead;
+                    break;
+                case DataFormItemType.Button:
+                    _CreateControlFunction = _ButtonCreate;
+                    _GetKeyFunction = _ButtonGetKey;
+                    _FillControlAction = _ButtonFill;
+                    _ReadControlAction = _ButtonRead;
+                    break;
+                default:
+                    throw new ArgumentException($"Není možno vytvořit 'ControlSetInfo' pro typ prvku '{itemType}'.");
+            }
+            _Disposed = false;
+        }
+        /// <summary>
+        /// Dispose prvků
+        /// </summary>
+        public void Dispose()
+        {
+            DisposeControl(ref _ControlDraw, DxDataFormControlUseMode.Draw);
+            DisposeControl(ref _ControlMouse, DxDataFormControlUseMode.Mouse);
+            DisposeControl(ref _ControlFocus, DxDataFormControlUseMode.Focus);
+
+            _CreateControlFunction = null;
+            _FillControlAction = null;
+            _ReadControlAction = null;
+
+            _Disposed = true;
+        }
+        /// <summary>
+        /// Pokud je objekt disposován, vyhodí chybu.
+        /// </summary>
+        private void CheckNonDisposed()
+        {
+            if (_Disposed) throw new InvalidOperationException($"Nelze pracovat s objektem 'ControlSetInfo', protože je zrušen.");
+        }
+        /// <summary>Vlastník - <see cref="DxDataForm"/></summary>
+        private DxDataForm _DataForm;
+        private DataFormItemType _ItemType;
+        private Func<Control> _CreateControlFunction;
+        private Func<DxDataFormItem, string> _GetKeyFunction;
+        private Action<DxDataFormItem, Control, DxDataFormControlUseMode> _FillControlAction;
+        private Action<DxDataFormItem, Control> _ReadControlAction;
+        private bool _Disposed;
+        #endregion
+        #region Label
+        private Control _LabelCreate() { return new DxLabelControl(); }
+        private string _LabelGetKey(DxDataFormItem item)
+        {
+            string key = GetStandardKeyForItem(item);
+            return key;
+        }
+        private void _LabelFill(DxDataFormItem item, Control control, DxDataFormControlUseMode mode)
+        {
+            if (!(control is DxLabelControl label)) throw new InvalidOperationException($"Nelze naplnit data do objektu typu {control.GetType().Name}, je očekáván objekt typu {typeof(DxLabelControl).Name}.");
+            CommonFill(item, label, mode);
+        }
+        private void _LabelRead(DxDataFormItem item, Control control)
+        { }
+        #endregion
+        #region TextBox
+        private Control _TextBoxCreate() { return new DxTextEdit(); }
+        private string _TextBoxGetKey(DxDataFormItem item)
+        {
+            string key = GetStandardKeyForItem(item);
+            return key;
+        }
+        private void _TextBoxFill(DxDataFormItem item, Control control, DxDataFormControlUseMode mode)
+        {
+            if (!(control is DxTextEdit textEdit)) throw new InvalidOperationException($"Nelze naplnit data do objektu typu {control.GetType().Name}, je očekáván objekt typu {typeof(DxTextEdit).Name}.");
+            CommonFill(item, textEdit, mode);
+            textEdit.DeselectAll();
+            textEdit.SelectionStart = 0;
+        }
+        private void _TextBoxRead(DxDataFormItem item, Control control)
+        { }
+        #endregion
+        #region TextBoxButton
+        private Control _TextBoxButtonCreate() { return new DxTextButtonEdit(); }
+        private string _TextBoxButtonGetKey(DxDataFormItem item)
+        {
+            string key = GetStandardKeyForItem(item);
+            return key;
+        }
+        private void _TextBoxButtonFill(DxDataFormItem item, Control control, DxDataFormControlUseMode mode)
+        {
+            if (!(control is DxTextButtonEdit textEdit)) throw new InvalidOperationException($"Nelze naplnit data do objektu typu {control.GetType().Name}, je očekáván objekt typu {typeof(DxTextButtonEdit).Name}.");
+            //  CommonFill(item, textEdit, mode);
+            //  textEdit.DeselectAll();
+            textEdit.SelectionStart = 0;
+        }
+        private void _TextBoxButtonRead(DxDataFormItem item, Control control)
+        { }
+        #endregion
+        // EditBox
+        // SpinnerBox
+        #region CheckBox
+        private Control _CheckBoxCreate() { return new DxCheckEdit(); }
+        private string _CheckBoxGetKey(DxDataFormItem item)
+        {
+            string key = GetStandardKeyForItem(item);
+            return key;
+        }
+        private void _CheckBoxFill(DxDataFormItem item, Control control, DxDataFormControlUseMode mode)
+        {
+            if (!(control is DxCheckEdit checkEdit)) throw new InvalidOperationException($"Nelze naplnit data do objektu typu {control.GetType().Name}, je očekáván objekt typu {typeof(DxCheckEdit).Name}.");
+            CommonFill(item, checkEdit, mode);
+        }
+        private void _CheckBoxRead(DxDataFormItem item, Control control)
+        { }
+        #endregion
+        // BreadCrumb
+        #region ComboBoxList
+        private Control _ComboBoxListCreate() { return new DxTextEdit(); }
+        private string _ComboBoxListGetKey(DxDataFormItem item)
+        {
+            string key = GetStandardKeyForItem(item);
+            return key;
+        }
+        private void _ComboBoxListFill(DxDataFormItem item, Control control, DxDataFormControlUseMode mode)
+        {
+            if (!(control is DxTextEdit textEdit)) throw new InvalidOperationException($"Nelze naplnit data do objektu typu {control.GetType().Name}, je očekáván objekt typu {typeof(DxTextEdit).Name}.");
+            //  CommonFill(item, textEdit, mode);
+            //  textEdit.DeselectAll();
+            textEdit.SelectionStart = 0;
+        }
+        private void _ComboBoxListRead(DxDataFormItem item, Control control)
+        { }
+        #endregion
+        #region ComboBoxEdit
+        private Control _ComboBoxEditCreate() { return new DxTextEdit(); }
+        private string _ComboBoxEditGetKey(DxDataFormItem item)
+        {
+            string key = GetStandardKeyForItem(item);
+            return key;
+        }
+        private void _ComboBoxEditFill(DxDataFormItem item, Control control, DxDataFormControlUseMode mode)
+        {
+            if (!(control is DxTextEdit textEdit)) throw new InvalidOperationException($"Nelze naplnit data do objektu typu {control.GetType().Name}, je očekáván objekt typu {typeof(DxTextEdit).Name}.");
+            //  CommonFill(item, textEdit, mode);
+            //  textEdit.DeselectAll();
+            textEdit.SelectionStart = 0;
+        }
+        private void _ComboBoxEditRead(DxDataFormItem item, Control control)
+        { }
+        #endregion
+        #region TokenEdit
+        private Control _TokenEditCreate() { return new DxCheckEdit(); }
+        private string _TokenEditGetKey(DxDataFormItem item)
+        {
+            string key = GetStandardKeyForItem(item);
+            return key;
+        }
+        private void _TokenEditFill(DxDataFormItem item, Control control, DxDataFormControlUseMode mode)
+        {
+            if (!(control is DxCheckEdit checkEdit)) throw new InvalidOperationException($"Nelze naplnit data do objektu typu {control.GetType().Name}, je očekáván objekt typu {typeof(DxCheckEdit).Name}.");
+            CommonFill(item, checkEdit, mode);
+        }
+        private void _TokenEditRead(DxDataFormItem item, Control control)
+        { }
+        #endregion
+        // ListView
+        // TreeView
+        // RadioButtonBox
+        #region Button
+        private Control _ButtonCreate() { return new DxSimpleButton(); }
+        private string _ButtonGetKey(DxDataFormItem item)
+        {
+            string key = GetStandardKeyForItem(item);
+            return key;
+        }
+        private void _ButtonFill(DxDataFormItem item, Control control, DxDataFormControlUseMode mode)
+        {
+            if (!(control is DxSimpleButton button)) throw new InvalidOperationException($"Nelze naplnit data do objektu typu {control.GetType().Name}, je očekáván objekt typu {typeof(DxSimpleButton).Name}.");
+            CommonFill(item, button, mode);
+        }
+        private void _ButtonRead(DxDataFormItem item, Control control)
+        { }
+        #endregion
+        // CheckButton
+        // DropDownButton
+        // Image
+        #region Společné metody pro všechny typy prvků
+        /// <summary>
+        /// Naplní obecně platné hodnoty do daného controlu
+        /// </summary>
+        /// <param name="item"></param>
+        /// <param name="control"></param>
+        /// <param name="mode"></param>
+        private void CommonFill(DxDataFormItem item, BaseControl control, DxDataFormControlUseMode mode)
+        {
+            // Určím fyzické umístění controlu: pro Draw je dávám na konstantní souřadnici 4/4 (Draw controly se nacházejí na spodním panelu a nejsou vidět):
+            bool isDraw = (mode == DxDataFormControlUseMode.Draw || !item.VisibleBounds.HasValue);
+            Rectangle bounds = new Rectangle((isDraw ? new Point(4, 4) : item.VisibleBounds.Value.Location), item.CurrentBounds.Size);
+
+            if (item.IItem is IDataFormItemImageText iit)
+                control.Text = iit.Text;
+            control.Enabled = true; // item.Enabled;
+            control.SetBounds(bounds);
+            ApplyAppearance(control, item.IItem.Appearance);
+            control.Visible = true;
+
+            if (mode != DxDataFormControlUseMode.Draw)
+                control.SuperTip = GetSuperTip(item, mode);
+        }
+        /// <summary>
+        /// Aplikuje vzhled definovaný v apperance do daného controlu
+        /// </summary>
+        /// <param name="control"></param>
+        /// <param name="appearance"></param>
+        private void ApplyAppearance(BaseControl control, IDataFormItemAppearance appearance)
+        {
+            if (appearance == null)
+            {
+                if (control is BaseStyleControl bsc)
+                    bsc.Appearance.Reset();
+                return;
+            }
+
+            if (control is BaseStyleControl baseStyleControl)
+            {
+                if (appearance.FontSizeDelta.HasValue) 
+                    baseStyleControl.Appearance.FontSizeDelta = appearance.FontSizeDelta.Value;
+                if (appearance.FontStyleBold.HasValue || appearance.FontStyleItalic.HasValue || appearance.FontStyleUnderline.HasValue || appearance.FontStyleStrikeOut.HasValue)
+                    baseStyleControl.Appearance.FontStyleDelta = GetFontStyle(appearance);
+            }
+        }
+        /// <summary>
+        /// Vrátí styl <see cref="FontStyle"/> vytvořený z dané appearance <see cref="IDataFormItemAppearance"/>
+        /// </summary>
+        /// <param name="appearance"></param>
+        /// <returns></returns>
+        private FontStyle GetFontStyle(IDataFormItemAppearance appearance)
+        {
+            FontStyle fontStyle = FontStyle.Regular;
+            if (appearance.FontStyleBold.HasValue && appearance.FontStyleBold.Value) fontStyle |= FontStyle.Bold;
+            if (appearance.FontStyleItalic.HasValue && appearance.FontStyleItalic.Value) fontStyle |= FontStyle.Italic;
+            if (appearance.FontStyleUnderline.HasValue && appearance.FontStyleUnderline.Value) fontStyle |= FontStyle.Underline;
+            if (appearance.FontStyleStrikeOut.HasValue && appearance.FontStyleStrikeOut.Value) fontStyle |= FontStyle.Strikeout;
+            return fontStyle;
+        }
+        /// <summary>
+        /// Vrátí instanci <see cref="DxSuperToolTip"/> připravenou pro daný prvek a daný režim. Může vrátit null.
+        /// </summary>
+        /// <param name="item"></param>
+        /// <param name="mode"></param>
+        /// <returns></returns>
+        private DxSuperToolTip GetSuperTip(DxDataFormItem item, DxDataFormControlUseMode mode)
+        {
+            if (mode != DxDataFormControlUseMode.Mouse) return null;
+            var superTip = _DataForm.DxSuperToolTip;
+            superTip.LoadValues(item.IItem);
+            if (!superTip.IsValid) return null;
+            return superTip;
+        }
+        /// <summary>
+        /// Vrátí standardní klíč daného prvku do ImageCache
+        /// </summary>
+        /// <param name="item"></param>
+        /// <returns></returns>
+        private static string GetStandardKeyForItem(DxDataFormItem item)
+        {
+            var size = item.CurrentBounds.Size;
+            string text = "";
+            if (item.IItem is IDataFormItemImageText iit)
+                text = iit.Text;
+            string type = ((int)item.ItemType).ToString();
+            string appearance = GetAppearanceKey(item.IItem.Appearance);
+            string key = $"{size.Width}.{size.Height};{type}:{appearance}:{text}";
+            return key;
+        }
+        /// <summary>
+        /// Vrátí klíč pro danou Appearance
+        /// </summary>
+        /// <param name="appearance"></param>
+        /// <returns></returns>
+        private static string GetAppearanceKey(IDataFormItemAppearance appearance)
+        {
+            if (appearance == null) return "";
+            string text = "";
+            if (appearance.FontSizeDelta.HasValue) text += appearance.FontSizeDelta.ToString();
+            if (appearance.FontStyleBold.HasValue) text += appearance.FontStyleBold.Value ? "B" : "b";
+            if (appearance.FontStyleItalic.HasValue) text += appearance.FontStyleItalic.Value ? "I" : "i";
+            if (appearance.FontStyleUnderline.HasValue) text += appearance.FontStyleUnderline.Value ? "U" : "u";
+            if (appearance.FontStyleStrikeOut.HasValue) text += appearance.FontStyleStrikeOut.Value ? "S" : "s";
+            if (appearance.BackColor.HasValue) text += "G" + GetColorKey(appearance.BackColor.Value);
+            if (appearance.ForeColor.HasValue) text += "F" + GetColorKey(appearance.ForeColor.Value);
+            return text;
+        }
+        /// <summary>
+        /// Vrátí klíč pro danou barvu
+        /// </summary>
+        /// <param name="color"></param>
+        /// <returns></returns>
+        private static string GetColorKey(Color color)
+        {
+            return color.A.ToString("X2") + color.R.ToString("X2") + color.G.ToString("X2") + color.B.ToString("X2");
+        }
+        #endregion
+        #region Získání a naplnění controlu z datového Itemu, a reverzní zpětné načtení hodnot z controlu do datového Itemu
+        internal Control GetControlForDraw(DxDataFormItem item)
+        {
+            CheckNonDisposed();
+            if (_ControlDraw == null)
+                _ControlDraw = _CreateControl(DxDataFormControlUseMode.Draw);
+            _FillControl(item, _ControlDraw, DxDataFormControlUseMode.Draw);
+            return _ControlDraw;
+        }
+        internal Control GetControlForMouse(DxDataFormItem item)
+        {
+            CheckNonDisposed();
+            if (_ControlMouse == null)
+                _ControlMouse = _CreateControl(DxDataFormControlUseMode.Mouse);
+            _FillControl(item, _ControlMouse, DxDataFormControlUseMode.Mouse);
+            return _ControlMouse;
+        }
+        internal Control GetControlForFocus(DxDataFormItem item)
+        {
+            CheckNonDisposed();
+            if (_ControlFocus == null)
+                _ControlFocus = _CreateControl(DxDataFormControlUseMode.Focus);
+            _FillControl(item, _ControlFocus, DxDataFormControlUseMode.Focus);
+            return _ControlFocus;
+        }
+        /// <summary>
+        /// Metoda vrátí stringový klíč do ImageCache pro konkrétní prvek.
+        /// Vrácený klíč zohledňuje všechny potřebné a specifické hodnoty z konkrétního prvku.
+        /// Je tedy jisté, že dva různé objekty, které vrátí stejný klíč, budou mít stejný vzhled.
+        /// </summary>
+        /// <param name="item"></param>
+        /// <returns></returns>
+        internal string GetKeyToCache(DxDataFormItem item)
+        {
+            CheckNonDisposed();
+            string key = _GetKeyFunction?.Invoke(item);
+            return key;
+        }
+        /// <summary>
+        /// Vytvoří new instanci zdejšího controlu, umístí ji do neviditelné souřadnice, přidá do Ownera a vrátí.
+        /// </summary>
+        /// <returns></returns>
+        private Control _CreateControl(DxDataFormControlUseMode mode)
+        {
+            var control = _CreateControlFunction();
+            Size size = control.Size;
+            Point location = new Point(10, -10 - size.Height);
+            Rectangle bounds = new Rectangle(location, size);
+            control.Visible = false;
+            control.SetBounds(bounds);
+            bool addToBackground = (mode == DxDataFormControlUseMode.Draw);
+            _DataForm.AddControl(control, addToBackground);
+            return control;
+        }
+        private void _FillControl(DxDataFormItem item, Control control, DxDataFormControlUseMode mode)
+        {
+            _FillControlAction(item, control, mode);
+            control.TabIndex = 10;
+
+            //// source.SetBounds(bounds);                  // Nastavím správné umístění, to kvůli obrázkům na pozadí panelu (různé skiny!), aby obrázky odpovídaly aktuální pozici...
+            //Rectangle sourceBounds = new Rectangle(4, 4, bounds.Width, bounds.Height);
+            //source.SetBounds(sourceBounds);
+            //source.Text = item.Text;
+
+            //var size = source.Size;
+            //if (size != bounds.Size)
+            //{
+            //    item.CurrentSize = size;
+            //    bounds = item.CurrentBounds;
+            //}
+
+        }
+        /// <summary>
+        /// Odebere daný control z Ownera, disposuje jej a nulluje ref proměnnou.
+        /// </summary>
+        /// <param name="control"></param>
+        /// <param name="mode"></param>
+        private void DisposeControl(ref Control control, DxDataFormControlUseMode mode)
+        {
+            if (control == null) return;
+            bool removeFromBackground = (mode == DxDataFormControlUseMode.Draw);
+            _DataForm.RemoveControl(control, removeFromBackground);
+            control.Dispose();
+            control = null;
+        }
+        private Control _ControlDraw;
+        private Control _ControlMouse;
+        private Control _ControlFocus;
+        #endregion
+    }
+    /// <summary>
+    /// Způsob využití controlu (kreslení, pohyb myši, plný focus)
+    /// </summary>
+    internal enum DxDataFormControlUseMode { None, Draw, Mouse, Focus }
     #endregion
     #region class DxDataFormTab : Data jedné viditelné záložky. Záložka může obsahovat více stránek, pokud to layout potřebuje.
     /// <summary>
@@ -2663,7 +2762,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Vzhled grupy
         /// </summary>
-        public IDataFormAppearance Appearance { get { return IGroup.Appearance; } }
+        public IDataFormItemAppearance Appearance { get { return IGroup.Appearance; } }
         /// <summary>
         /// Aktuální velikost grupy, je daná designovou velikostí <see cref="DesignGroupSize"/> a je přepočtená Zoomem a DPI
         /// </summary>

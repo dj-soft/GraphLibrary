@@ -224,7 +224,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Vzhled prvku - kalíšek, barvy, modifikace fontu
         /// </summary>
-        public virtual IDataFormAppearance Appearance { get; set; }
+        public virtual IDataFormItemAppearance Appearance { get; set; }
         /// <summary>
         /// Jednotlivé prvky grupy
         /// </summary>
@@ -343,7 +343,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Vzhled prvku - kalíšek, barvy, modifikace fontu
         /// </summary>
-        IDataFormAppearance Appearance { get; }
+        IDataFormItemAppearance Appearance { get; }
         /// <summary>
         /// Jednotlivé prvky grupy
         /// </summary>
@@ -472,7 +472,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Vzhled prvku - kalíšek, barvy, modifikace fontu
         /// </summary>
-        public virtual IDataFormAppearance Appearance { get; set; }
+        public virtual IDataFormItemAppearance Appearance { get; set; }
 
         /// <summary>
         /// Text ToolTipu
@@ -517,14 +517,14 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Vzhled prvku - kalíšek, barvy, modifikace fontu
         /// </summary>
-        IDataFormAppearance Appearance { get; }
+        IDataFormItemAppearance Appearance { get; }
     }
     #endregion
     #region Podpůrné třídy a interface : DataFormAppearance, DataFormBackgroundAppearance
     /// <summary>
     /// Modifikace vzhledu prvku
     /// </summary>
-    public class DataFormAppearance : IDataFormAppearance
+    public class DataFormItemAppearance : IDataFormItemAppearance
     {
         /// <summary>
         /// Změna velikosti písma
@@ -558,7 +558,7 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// <summary>
     /// Modifikace vzhledu prvku
     /// </summary>
-    public interface IDataFormAppearance
+    public interface IDataFormItemAppearance
     {
         /// <summary>
         /// Změna velikosti písma
