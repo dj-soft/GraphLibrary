@@ -1996,7 +1996,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         private bool _Disposed;
         #endregion
         #region Label
-        private Control _LabelCreate() { return new DxLabelControl(); }
+        private Control _LabelCreate() { return new DxLabelControl() { AutoSizeMode = LabelAutoSizeMode.None }; }
         private string _LabelGetKey(DxDataFormItem item)
         {
             string key = GetStandardKeyForItem(item);
@@ -2005,7 +2005,14 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         private void _LabelFill(DxDataFormItem item, Control control, DxDataFormControlUseMode mode)
         {
             if (!(control is DxLabelControl label)) throw new InvalidOperationException($"Nelze naplnit data do objektu typu {control.GetType().Name}, je očekáván objekt typu {typeof(DxLabelControl).Name}.");
-            CommonFill(item, label, mode);
+            CommonFill(item, label, mode, _LabelFillNext);
+        }
+        private void _LabelFillNext(DxDataFormItem item, DxLabelControl label, DxDataFormControlUseMode mode)
+        {
+            //label.LineStyle = System.Drawing.Drawing2D.DashStyle.Solid;
+            //label.LineOrientation = LabelLineOrientation.Horizontal;
+            //label.LineColor = Color.Violet;
+            //label.LineVisible = true;
         }
         private void _LabelRead(DxDataFormItem item, Control control)
         { }
@@ -2134,12 +2141,14 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         // Image
         #region Společné metody pro všechny typy prvků
         /// <summary>
-        /// Naplní obecně platné hodnoty do daného controlu
+        /// Naplní obecně platné hodnoty do daného controlu.
+        /// Nastavuje: Souřadnice, Text, Enabled, Appearance, ToolTip, Visible.
         /// </summary>
         /// <param name="item"></param>
         /// <param name="control"></param>
         /// <param name="mode"></param>
-        private void CommonFill(DxDataFormItem item, BaseControl control, DxDataFormControlUseMode mode)
+        /// <param name="specificFillMethod"></param>
+        private void CommonFill<T>(DxDataFormItem item, T control, DxDataFormControlUseMode mode, Action<DxDataFormItem, T, DxDataFormControlUseMode> specificFillMethod = null) where T : BaseControl
         {
             // Určím fyzické umístění controlu: pro Draw je dávám na konstantní souřadnici 4/4 (Draw controly se nacházejí na spodním panelu a nejsou vidět):
             bool isDraw = (mode == DxDataFormControlUseMode.Draw || !item.VisibleBounds.HasValue);
@@ -2149,11 +2158,16 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 control.Text = iit.Text;
             control.Enabled = true; // item.Enabled;
             control.SetBounds(bounds);
+            // control.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.Default;
+
             ApplyAppearance(control, item.IItem.Appearance);
-            control.Visible = true;
 
             if (mode != DxDataFormControlUseMode.Draw)
                 control.SuperTip = GetSuperTip(item, mode);
+
+            if (specificFillMethod != null) specificFillMethod(item, control, mode);
+
+            control.Visible = true;
         }
         /// <summary>
         /// Aplikuje vzhled definovaný v apperance do daného controlu
@@ -2162,19 +2176,22 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="appearance"></param>
         private void ApplyAppearance(BaseControl control, IDataFormItemAppearance appearance)
         {
-            if (appearance == null)
-            {
-                if (control is BaseStyleControl bsc)
-                    bsc.Appearance.Reset();
-                return;
-            }
-
             if (control is BaseStyleControl baseStyleControl)
             {
-                if (appearance.FontSizeDelta.HasValue) 
-                    baseStyleControl.Appearance.FontSizeDelta = appearance.FontSizeDelta.Value;
-                if (appearance.FontStyleBold.HasValue || appearance.FontStyleItalic.HasValue || appearance.FontStyleUnderline.HasValue || appearance.FontStyleStrikeOut.HasValue)
-                    baseStyleControl.Appearance.FontStyleDelta = GetFontStyle(appearance);
+                if (baseStyleControl.Appearance.Name == "Modified")
+                {   // Resetovat jen pokud je nutno - a to bez ohledu na stav zadání appearance:
+                    baseStyleControl.Appearance.Reset();
+                    baseStyleControl.Appearance.Name = "Default";
+                }
+                if (appearance != null)
+                {
+                    if (appearance.FontSizeDelta.HasValue)
+                        baseStyleControl.Appearance.FontSizeDelta = appearance.FontSizeDelta.Value;
+                    if (appearance.FontStyleBold.HasValue || appearance.FontStyleItalic.HasValue || appearance.FontStyleUnderline.HasValue || appearance.FontStyleStrikeOut.HasValue)
+                        baseStyleControl.Appearance.FontStyleDelta = GetFontStyle(appearance);
+
+                    baseStyleControl.Appearance.Name = "Modified";
+                }
             }
         }
         /// <summary>
