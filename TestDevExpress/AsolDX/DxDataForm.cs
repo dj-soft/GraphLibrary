@@ -677,7 +677,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                                                 (q < 22 ? DataFormItemType.Label :
                                                 (q < 30 ? DataFormItemType.TextBoxButton : 
                                                 (q < 40 ? DataFormItemType.TextBox : // ComboBoxList :
-                                                (q < 50 ? DataFormItemType.TextBox : // TokenEdit :
+                                                (q < 50 ? DataFormItemType.TokenEdit :
                                                 DataFormItemType.TextBox)))))));
 
                     DataFormItem item = null;
@@ -696,7 +696,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                             item = textBox;
                             break;
                         case DataFormItemType.TextBoxButton:
-                            DataFormItemTextBoxButton textBoxButton = new DataFormItemTextBoxButton() { Text = text };
+                            DataFormItemTextBoxButton textBoxButton = new DataFormItemTextBoxButton() { Text = "TEXTBOX BUTTON" };
                             q = random.Next(100);
                             textBoxButton.ButtonsVisibleAllways = (q < 30);
                             q = random.Next(100);
@@ -709,7 +709,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                             item = textBoxButton;
                             break;
                         case DataFormItemType.CheckBox:
-                            DataFormItemCheckItem checkBox = new DataFormItemCheckItem() { Text = text };
+                            DataFormItemCheckBox checkBox = new DataFormItemCheckBox() { Text = text };
                             shiftY = 0;
                             item = checkBox;
                             break;
@@ -719,8 +719,8 @@ namespace Noris.Clients.Win.Components.AsolDX
                             item = comboBoxList;
                             break;
                         case DataFormItemType.TokenEdit:
-                            // musíme dodělat
-                            DataFormItemImageText tokenEdit = new DataFormItemImageText() { Text = text };
+                            DataFormItemMenuText tokenEdit = new DataFormItemMenuText() { Text = "TOKEN EDIT" };
+                            tokenEdit.MenuItems = CreateSampleMenuItems(texts, tooltips, 100, 300, random);
                             item = tokenEdit;
                             break;
                         case DataFormItemType.Button:
@@ -756,6 +756,30 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             return page;
         }
+        /// <summary>
+        /// Vrátí pole prvků <see cref="IMenuItem"/>, v daném počtu prvků.
+        /// </summary>
+        /// <param name="texts"></param>
+        /// <param name="tooltips"></param>
+        /// <param name="countMin"></param>
+        /// <param name="countMax"></param>
+        /// <param name="random"></param>
+        /// <returns></returns>
+        private static List<IMenuItem> CreateSampleMenuItems(string[] texts, string[] tooltips, int countMin, int countMax, Random random)
+        {
+            List<IMenuItem> menuItems = new List<IMenuItem>();
+            int count = random.Next(countMin, countMax);
+            for (int i = 0; i < count; i++)
+            {
+                DataMenuItem item = new DataMenuItem();
+                item.ItemId = "MenuItem_" + i.ToString();
+                item.Text = texts[random.Next(texts.Length)];
+                item.ToolTipText = tooltips[random.Next(tooltips.Length)];
+                menuItems.Add(item);
+            }
+            return menuItems;
+        }
+
         private static Random _Random;
     }
     #endregion
@@ -2239,7 +2263,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         { }
         #endregion
         #region TokenEdit
-        private Control _TokenEditCreate() { return new DxCheckEdit(); }
+        private Control _TokenEditCreate() { return new DxTokenEdit(); }
         private string _TokenEditGetKey(DxDataFormItem item)
         {
             string key = GetStandardKeyForItem(item);
@@ -2247,8 +2271,19 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         }
         private void _TokenEditFill(DxDataFormItem item, Control control, DxDataFormControlUseMode mode)
         {
-            if (!(control is DxCheckEdit checkEdit)) throw new InvalidOperationException($"Nelze naplnit data do objektu typu {control.GetType().Name}, je očekáván objekt typu {typeof(DxCheckEdit).Name}.");
-            CommonFill(item, checkEdit, mode);
+            if (!(control is DxTokenEdit tokenEdit)) throw new InvalidOperationException($"Nelze naplnit data do objektu typu {control.GetType().Name}, je očekáván objekt typu {typeof(DxTokenEdit).Name}.");
+            CommonFill(item, tokenEdit, mode, _TokenEditFillSpec);
+        }
+        private void _TokenEditFillSpec(DxDataFormItem item, DxTokenEdit tokenEdit, DxDataFormControlUseMode mode)
+        {
+            bool fullFill = (mode == DxDataFormControlUseMode.Mouse || mode == DxDataFormControlUseMode.Focus);
+            if (fullFill && item.TryGetIItem(out IDataFormItemMenuText iItemMenuText))
+            {
+                tokenEdit.Tokens = iItemMenuText?.MenuItems;
+            }
+            if (tokenEdit.SelectedItems.Count == 0 && tokenEdit.Properties.Tokens.Count > 0)
+                // tokenEdit.EditValue = tokenEdit.Properties.Tokens[0].Value;
+                tokenEdit.EditValue = tokenEdit.Properties.Tokens[0].Value.ToString() + ", " + tokenEdit.Properties.Tokens[1].Value.ToString();
         }
         private void _TokenEditRead(DxDataFormItem item, Control control)
         { }

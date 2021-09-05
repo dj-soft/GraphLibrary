@@ -354,7 +354,27 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// <summary>
     /// Data definující jeden prvek v DataFormu, který má Text a Ikonu a zaškrtávací hodnotu (CheckBox, CheckButton)
     /// </summary>
-    public class DataFormItemCheckItem : DataFormItemImageText, IDataFormItemCheckItem
+    public class DataFormItemMenuText : DataFormItemImageText, IDataFormItemMenuText
+    {
+        /// <summary>
+        /// Soupis položek v nabídce
+        /// </summary>
+        public virtual IEnumerable<IMenuItem> MenuItems { get; set; }
+    }
+    /// <summary>
+    /// Předpis požadovaných vlastností pro jeden prvek v rámci DataFormu, který má Text a Ikonu a zaškrtávací hodnotu (CheckBox, CheckButton)
+    /// </summary>
+    public interface IDataFormItemMenuText : IDataFormItemImageText
+    {
+        /// <summary>
+        /// Soupis položek v nabídce
+        /// </summary>
+        IEnumerable<IMenuItem> MenuItems { get; }
+    }
+    /// <summary>
+    /// Data definující jeden prvek v DataFormu, který má Text a Ikonu a zaškrtávací hodnotu (CheckBox, CheckButton)
+    /// </summary>
+    public class DataFormItemCheckBox : DataFormItemImageText, IDataFormItemCheckBox
     {
         /// <summary>
         /// Je zaškrtnuto
@@ -364,7 +384,7 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// <summary>
     /// Předpis požadovaných vlastností pro jeden prvek v rámci DataFormu, který má Text a Ikonu a zaškrtávací hodnotu (CheckBox, CheckButton)
     /// </summary>
-    public interface IDataFormItemCheckItem : IDataFormItemImageText
+    public interface IDataFormItemCheckBox : IDataFormItemImageText
     {
         /// <summary>
         /// Je zaškrtnuto
@@ -386,6 +406,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Druh buttonu
         /// </summary>
         public virtual DataFormButtonKind ButtonKind { get; set; }
+        /// <summary>
+        /// Ikona do obrázku typu <see cref="DataFormButtonKind.Glyph"/>
+        /// </summary>
+        public virtual string ButtonGlyphImageName { get; set; }
     }
     public interface IDataFormItemTextBoxButton : IDataFormItemImageText
     {
@@ -401,6 +425,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Druh buttonu
         /// </summary>
         DataFormButtonKind ButtonKind { get; }
+        /// <summary>
+        /// Ikona do obrázku typu <see cref="DataFormButtonKind.Glyph"/>
+        /// </summary>
+        string ButtonGlyphImageName { get; }
     }
 
     /// <summary>
@@ -454,7 +482,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 case DataFormItemType.TextBoxButton: return new DataFormItemTextBoxButton() { ItemType = itemType };
                 case DataFormItemType.EditBox: return null;
                 case DataFormItemType.SpinnerBox: return null;
-                case DataFormItemType.CheckBox: return new DataFormItemCheckItem() { ItemType = itemType };
+                case DataFormItemType.CheckBox: return new DataFormItemCheckBox() { ItemType = itemType };
                 case DataFormItemType.BreadCrumb: return null;
                 case DataFormItemType.ComboBoxList: return null;
                 case DataFormItemType.ComboBoxEdit: return null;
@@ -463,7 +491,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 case DataFormItemType.TreeView: return null;
                 case DataFormItemType.RadioButtonBox: return null;
                 case DataFormItemType.Button: return new DataFormItemImageText() { ItemType = itemType };
-                case DataFormItemType.CheckButton: return new DataFormItemCheckItem() { ItemType = itemType };
+                case DataFormItemType.CheckButton: return new DataFormItemCheckBox() { ItemType = itemType };
                 case DataFormItemType.DropDownButton: return null;
                 case DataFormItemType.BarCode: return null;
                 case DataFormItemType.Image: return null;
@@ -990,6 +1018,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         Separator = 11,
         /// <summary>
+        /// Uživatelem dodaná bitmapa, v 
         /// A custom bitmap is drawn on the button's surface.
         /// </summary>
         Glyph = 99

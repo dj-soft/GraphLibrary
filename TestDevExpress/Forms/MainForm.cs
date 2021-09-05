@@ -2147,77 +2147,15 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
             _PanelEditors = panel;
 
             PrepareEditorToken();
-
-
-            _EditorText1 = new DxTextEdit() { Bounds = new Rectangle(20, 150, 360, 20), BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.Simple };
-            _EditorTextButton1 = new DxButtonEdit() { Bounds = new Rectangle(400, 150, 360, 20), BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.Simple };
-            _EditorTextButton1.ButtonClick += _EditorButtonClick;
-            _EditorText2 = new DxTextEdit() { Bounds = new Rectangle(20, 180, 360, 20), BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.Style3D };
-            _EditorTextButton2 = new DxButtonEdit() { Bounds = new Rectangle(400, 180, 360, 20), BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.Style3D };
-            _EditorTextButton2.ButtonClick += _EditorButtonClick;
-            _EditorText3 = new DxTextEdit() { Bounds = new Rectangle(20, 210, 360, 20), BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.Office2003 };
-            _EditorTextButton3 = new DxButtonEdit() { Bounds = new Rectangle(400, 210, 360, 20), BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.Office2003 };
-            _EditorTextButton3.ButtonClick += _EditorButtonClick;
-            _PanelEditors.Controls.Add(_EditorText1);
-            _PanelEditors.Controls.Add(_EditorTextButton1);
-            _PanelEditors.Controls.Add(_EditorText2);
-            _PanelEditors.Controls.Add(_EditorTextButton2);
-            _PanelEditors.Controls.Add(_EditorText3);
-            _PanelEditors.Controls.Add(_EditorTextButton3);
-
-            string resource1 = "devav/other/map.svg";
-            string resource2 = "images/actions/apply_16x16.png";
-            string resource3 = "images/actions/cancel_16x16.png";
-
-
-
-            _EditorTextButton1.Properties.ButtonsStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder;
-            _EditorTextButton1.Properties.Buttons[0].Kind = DevExpress.XtraEditors.Controls.ButtonPredefines.Glyph;
-            _EditorTextButton1.ButtonsVisibility = DxChildControlVisibility.Allways;
-            DxComponent.ApplyImage(_EditorTextButton1.Properties.Buttons[0].ImageOptions, resource1, imageSize: new Size(14, 14));
-
-            _EditorTextButton2.Properties.ButtonsStyle = DevExpress.XtraEditors.Controls.BorderStyles.UltraFlat;
-            _EditorTextButton2.ButtonsVisibility = DxChildControlVisibility.OnActiveControl;
-            _EditorTextButton2.Properties.Buttons[0].Kind = DevExpress.XtraEditors.Controls.ButtonPredefines.OK;
-
-            _EditorTextButton3.Properties.ButtonsStyle = DevExpress.XtraEditors.Controls.BorderStyles.HotFlat;
-            _EditorTextButton3.ButtonsVisibility = DxChildControlVisibility.OnFocus;
-            _EditorTextButton3.Properties.Buttons[0].Kind = DevExpress.XtraEditors.Controls.ButtonPredefines.Ellipsis;
+            PrepareEditorButtonEdit();
         }
-        private void _EditorButtonClick(object sender, EventArgs args)
-        {
-            if (sender is DxButtonEdit dxButtonEdit)
-            {
-                var kind = dxButtonEdit.Properties.Buttons[0].Kind;
-                if (kind == DevExpress.XtraEditors.Controls.ButtonPredefines.Glyph)
-                    ShowMessageInfo("Tuhle ikonu nezměníme");
-                else
-                {
-                    int value = (int)kind;
-                    value = (value == 11 ? -10 : value + 1);
-
-                    DevExpress.XtraEditors.Controls.ButtonPredefines newKind = (DevExpress.XtraEditors.Controls.ButtonPredefines)value;
-                    if (newKind == DevExpress.XtraEditors.Controls.ButtonPredefines.Glyph) newKind = (DevExpress.XtraEditors.Controls.ButtonPredefines)(value + 1);
-                    dxButtonEdit.Properties.Buttons[0].Kind = newKind;
-                    dxButtonEdit.Text = newKind.ToString();
-                }
-            }
-            else
-                ShowMessageInfo("Někdo kliknul na moje tlačítko?");
-        }
-        private DxTextEdit _EditorText1;
-        private DxButtonEdit _EditorTextButton1;
-        private DxTextEdit _EditorText2;
-        private DxButtonEdit _EditorTextButton2;
-        private DxTextEdit _EditorText3;
-        private DxButtonEdit _EditorTextButton3;
         #region Editor - Token
         private void PrepareEditorToken()
         { 
-            _TokenLabel = new DevExpress.XtraEditors.LabelControl() { Bounds = new Rectangle(25, 12, 250, 20), Text = "Zvolte počet prvků k přidání a stiskněte 'Generuj'" };
+            _TokenLabel = new DxLabelControl() { Bounds = new Rectangle(25, 12, 250, 20), Text = "Zvolte počet prvků k přidání a stiskněte 'Generuj'" };
             _PanelEditors.Controls.Add(_TokenLabel);
 
-            _TokenCountSpin = new DevExpress.XtraEditors.SpinEdit() { Bounds = new Rectangle(20, 40, 90, 20), Value = 5000m };
+            _TokenCountSpin = new DxSpinEdit() { Bounds = new Rectangle(20, 40, 90, 20), Value = 5000m };
             _TokenCountSpin.Properties.MinValue = 500m;
             _TokenCountSpin.Properties.MaxValue = 1000000m;
             _TokenCountSpin.Properties.EditMask = "### ### ##0";
@@ -2226,18 +2164,18 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
 
             _PanelEditors.Controls.Add(_TokenCountSpin);
 
-            _TokenAddButtonGreen = new DevExpress.XtraEditors.SimpleButton() { Bounds = new Rectangle(130, 37, 120, 28), Text = "Generuj GREEN" };
+            _TokenAddButtonGreen = new DxSimpleButton() { Bounds = new Rectangle(130, 37, 120, 28), Text = "Generuj GREEN" };
             _TokenAddButtonGreen.Click += _TokenAddButtonGreen_Click;
             _PanelEditors.Controls.Add(_TokenAddButtonGreen);
 
-            _TokenAddButtonDaj = new DevExpress.XtraEditors.SimpleButton() { Bounds = new Rectangle(260, 37, 120, 28), Text = "Generuj DAJ" };
+            _TokenAddButtonDaj = new DxSimpleButton() { Bounds = new Rectangle(260, 37, 120, 28), Text = "Generuj DAJ" };
             _TokenAddButtonDaj.Click += _TokenAddButtonDaj_Click;
             _PanelEditors.Controls.Add(_TokenAddButtonDaj);
            
-            _TokenEdit = new DevExpress.XtraEditors.TokenEdit() { Bounds = new Rectangle(20, 68, 360, 25) };
+            _TokenEdit = new DxTokenEdit() { Bounds = new Rectangle(20, 68, 360, 25) };
             _PanelEditors.Controls.Add(_TokenEdit);
 
-            _TokenInfoLabel = new DevExpress.XtraEditors.LabelControl { Bounds = new Rectangle(25, 100, 350, 20), Text = "" };
+            _TokenInfoLabel = new DxLabelControl { Bounds = new Rectangle(25, 100, 350, 20), Text = "" };
             _PanelEditors.Controls.Add(_TokenInfoLabel);
 
             _PanelEditors.SizeChanged += _EditorsPanel_SizeChanged;
@@ -2341,12 +2279,76 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
             }
             return tokens;
         }
-        private DevExpress.XtraEditors.LabelControl _TokenLabel;
-        private DevExpress.XtraEditors.SpinEdit _TokenCountSpin;
-        private DevExpress.XtraEditors.SimpleButton _TokenAddButtonGreen;
-        private DevExpress.XtraEditors.SimpleButton _TokenAddButtonDaj;
-        private DevExpress.XtraEditors.TokenEdit _TokenEdit;
-        private DevExpress.XtraEditors.LabelControl _TokenInfoLabel;
+        private DxLabelControl _TokenLabel;
+        private DxSpinEdit _TokenCountSpin;
+        private DxSimpleButton _TokenAddButtonGreen;
+        private DxSimpleButton _TokenAddButtonDaj;
+        private DxTokenEdit _TokenEdit;
+        private DxLabelControl _TokenInfoLabel;
+        #endregion
+        #region Editor - ButtonEdit
+        private void PrepareEditorButtonEdit()
+        {
+            _EditorText1 = new DxTextEdit() { Bounds = new Rectangle(20, 150, 360, 20), BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.Simple };
+            _EditorTextButton1 = new DxButtonEdit() { Bounds = new Rectangle(400, 150, 360, 20), BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.Simple };
+            _EditorTextButton1.ButtonClick += _EditorButtonClick;
+            _EditorText2 = new DxTextEdit() { Bounds = new Rectangle(20, 180, 360, 20), BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.Style3D };
+            _EditorTextButton2 = new DxButtonEdit() { Bounds = new Rectangle(400, 180, 360, 20), BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.Style3D };
+            _EditorTextButton2.ButtonClick += _EditorButtonClick;
+            _EditorText3 = new DxTextEdit() { Bounds = new Rectangle(20, 210, 360, 20), BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.Office2003 };
+            _EditorTextButton3 = new DxButtonEdit() { Bounds = new Rectangle(400, 210, 360, 20), BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.Office2003 };
+            _EditorTextButton3.ButtonClick += _EditorButtonClick;
+            _PanelEditors.Controls.Add(_EditorText1);
+            _PanelEditors.Controls.Add(_EditorTextButton1);
+            _PanelEditors.Controls.Add(_EditorText2);
+            _PanelEditors.Controls.Add(_EditorTextButton2);
+            _PanelEditors.Controls.Add(_EditorText3);
+            _PanelEditors.Controls.Add(_EditorTextButton3);
+
+            string resource1 = "devav/other/map.svg";
+            string resource2 = "images/actions/apply_16x16.png";
+            string resource3 = "images/actions/cancel_16x16.png";
+
+            _EditorTextButton1.Properties.ButtonsStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder;
+            _EditorTextButton1.Properties.Buttons[0].Kind = DevExpress.XtraEditors.Controls.ButtonPredefines.Glyph;
+            _EditorTextButton1.ButtonsVisibility = DxChildControlVisibility.Allways;
+            DxComponent.ApplyImage(_EditorTextButton1.Properties.Buttons[0].ImageOptions, resource1, imageSize: new Size(14, 14));
+
+            _EditorTextButton2.Properties.ButtonsStyle = DevExpress.XtraEditors.Controls.BorderStyles.UltraFlat;
+            _EditorTextButton2.ButtonsVisibility = DxChildControlVisibility.OnActiveControl;
+            _EditorTextButton2.Properties.Buttons[0].Kind = DevExpress.XtraEditors.Controls.ButtonPredefines.OK;
+
+            _EditorTextButton3.Properties.ButtonsStyle = DevExpress.XtraEditors.Controls.BorderStyles.HotFlat;
+            _EditorTextButton3.ButtonsVisibility = DxChildControlVisibility.OnFocus;
+            _EditorTextButton3.Properties.Buttons[0].Kind = DevExpress.XtraEditors.Controls.ButtonPredefines.Ellipsis;
+        }
+        private void _EditorButtonClick(object sender, EventArgs args)
+        {
+            if (sender is DxButtonEdit dxButtonEdit)
+            {
+                var kind = dxButtonEdit.Properties.Buttons[0].Kind;
+                if (kind == DevExpress.XtraEditors.Controls.ButtonPredefines.Glyph)
+                    ShowMessageInfo("Tuhle ikonu nezměníme");
+                else
+                {
+                    int value = (int)kind;
+                    value = (value == 11 ? -10 : value + 1);
+
+                    DevExpress.XtraEditors.Controls.ButtonPredefines newKind = (DevExpress.XtraEditors.Controls.ButtonPredefines)value;
+                    if (newKind == DevExpress.XtraEditors.Controls.ButtonPredefines.Glyph) newKind = (DevExpress.XtraEditors.Controls.ButtonPredefines)(value + 1);
+                    dxButtonEdit.Properties.Buttons[0].Kind = newKind;
+                    dxButtonEdit.Text = newKind.ToString();
+                }
+            }
+            else
+                ShowMessageInfo("Někdo kliknul na moje tlačítko?");
+        }
+        private DxTextEdit _EditorText1;
+        private DxButtonEdit _EditorTextButton1;
+        private DxTextEdit _EditorText2;
+        private DxButtonEdit _EditorTextButton2;
+        private DxTextEdit _EditorText3;
+        private DxButtonEdit _EditorTextButton3;
         #endregion
         #endregion
         #region TreeView

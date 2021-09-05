@@ -230,7 +230,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Panel má na sobě myš?
         /// </summary>
-        public bool HasMouse 
+        public bool HasMouse
         {
             get { return _HasMouse; }
             private set
@@ -1738,7 +1738,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Předdefinovaný druh prvního buttonu
         /// </summary>
-        public DevExpress.XtraEditors.Controls.ButtonPredefines ButtonKind 
+        public DevExpress.XtraEditors.Controls.ButtonPredefines ButtonKind
         {
             get { return this.Properties.Buttons[0].Kind; }
             set { this.Properties.Buttons[0].Kind = value; }
@@ -1900,6 +1900,215 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="defaultTitle">Náhradní titulek, použije se když je zadán text ale není zadán titulek</param>
         public void SetToolTip(string title, string text, string defaultTitle = null) { this.SuperTip = DxComponent.CreateDxSuperTip(title, text, defaultTitle); }
         #endregion
+    }
+    #endregion
+    #region DxTokenEdit
+    /// <summary>
+    /// <see cref="DxTokenEdit"/>
+    /// </summary>
+    public class DxTokenEdit : DevExpress.XtraEditors.TokenEdit
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public DxTokenEdit()
+        {
+            _Tokens = new List<IMenuItem>();
+            ShowDropDown = true;
+        }
+        #region Tokeny = položky v nabídce
+        /// <summary>
+        /// Soupis nabídek v tomto prvku. Lze setovat.
+        /// </summary>
+        public IEnumerable<IMenuItem> Tokens
+        {
+            get { return _Tokens; }
+            set { _AddTokens(value, true); }
+        }
+        /// <summary>
+        /// Zobrazovat DropDown?
+        /// </summary>
+        public bool ShowDropDown { get { return this.Properties.ShowDropDown; } set { this.Properties.ShowDropDown = value; } }
+        /// <summary>
+        /// Počet nabídek v tomto prvku.
+        /// </summary>
+        public int TokensCount { get { return _Tokens.Count; } }
+        /// <summary>
+        /// Smaže stávající tokeny
+        /// </summary>
+        public void TokensClear()
+        {
+            this.Properties.Tokens.Clear();
+            _Tokens.Clear();
+        }
+        /// <summary>
+        /// Přidá další prvky do nabídek v tomto prvku.
+        /// </summary>
+        /// <param name="tokens"></param>
+        public void TokensAddRange(IEnumerable<IMenuItem> tokens)
+        {
+            _AddTokens(tokens, false);
+        }
+        /// <summary>
+        /// Do this prvku přidá dané tokeny. Volitelně před tím dosavadní prvky odstraní.
+        /// </summary>
+        /// <param name="tokens"></param>
+        /// <param name="clear"></param>
+        private void _AddTokens(IEnumerable<IMenuItem> tokens, bool clear)
+        { 
+            var dxTokens = _CreateDxTokens(tokens);
+
+            this.Properties.BeginUpdate();
+            if (clear)
+            {
+                this.Properties.Tokens.Clear();
+                _Tokens.Clear();
+            }
+            if (dxTokens.Count > 0)
+            {
+                this.Properties.Tokens.AddRange(dxTokens);
+                _Tokens.AddRange(tokens);
+            }
+            this.Properties.EndUpdate();
+        }
+        /// <summary>
+        /// Z dodaných dat typu <see cref="IMenuItem"/> vrátí pole prvků natvního typu pro TokenEdit : <see cref="DevExpress.XtraEditors.TokenEditToken"/>.
+        /// </summary>
+        /// <param name="tokens"></param>
+        /// <returns></returns>
+        private List<DevExpress.XtraEditors.TokenEditToken> _CreateDxTokens(IEnumerable<IMenuItem> tokens)
+        {
+            List<DevExpress.XtraEditors.TokenEditToken> dxTokens = new List<DevExpress.XtraEditors.TokenEditToken>();
+            if (tokens != null)
+            {
+                foreach (var token in tokens)
+                    dxTokens.Add(new DevExpress.XtraEditors.TokenEditToken(token.Text, token.ItemId));
+            }
+            return dxTokens;
+        }
+        private List<IMenuItem> _Tokens;
+        #endregion
+        #region Rozšířené property
+        /// <summary>
+        /// Obsahuje true u controlu, který sám by byl Visible, i když aktuálně je na Invisible parentu.
+        /// <para/>
+        /// Vrátí true, pokud control sám na sobě má nastavenou hodnotu <see cref="SWF.Control.Visible"/> = true.
+        /// Hodnota <see cref="SWF.Control.Visible"/> běžně obsahuje součin všech hodnot <see cref="SWF.Control.Visible"/> od controlu přes všechny jeho parenty,
+        /// kdežto tato vlastnost <see cref="VisibleInternal"/> vrací hodnotu pouze z tohoto controlu.
+        /// Například každý control před tím, než je zobrazen jeho formulář, má <see cref="SWF.Control.Visible"/> = false, ale tato metoda vrací hodnotu reálně vloženou do <see cref="SWF.Control.Visible"/>.
+        /// </summary>
+        public bool VisibleInternal { get { return this.IsSetVisible(); } set { this.Visible = value; } }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString() { return this.GetTypeName(); }
+        #endregion
+        #region HasMouse
+        /// <summary>
+        /// Panel má na sobě myš?
+        /// </summary>
+        public bool HasMouse
+        {
+            get { return _HasMouse; }
+            private set
+            {
+                if (value != _HasMouse)
+                {
+                    _HasMouse = value;
+                    OnHasMouseChanged();
+                    HasMouseChanged?.Invoke(this, EventArgs.Empty);
+                }
+            }
+        }
+        private bool _HasMouse;
+        /// <summary>
+        /// Událost, když přišla nebo odešla myš
+        /// </summary>
+        protected virtual void OnHasMouseChanged() { }
+        /// <summary>
+        /// Událost, když přišla nebo odešla myš
+        /// </summary>
+        public event EventHandler HasMouseChanged;
+        /// <summary>
+        /// Panel.OnMouseEnter
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void OnMouseEnter(EventArgs e)
+        {
+            base.OnMouseEnter(e);
+            this.HasMouse = true;
+        }
+        /// <summary>
+        /// Panel.OnMouseLeave
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void OnMouseLeave(EventArgs e)
+        {
+            base.OnMouseLeave(e);
+            this.HasMouse = false;
+        }
+        #endregion
+        #region HasFocus
+        /// <summary>
+        /// TextBox má v sobě focus = kurzor?
+        /// </summary>
+        public bool HasFocus
+        {
+            get { return _HasFocus; }
+            private set
+            {
+                if (value != _HasFocus)
+                {
+                    _HasFocus = value;
+                    OnHasFocusChanged();
+                    HasFocusChanged?.Invoke(this, EventArgs.Empty);
+                }
+            }
+        }
+        private bool _HasFocus;
+        /// <summary>
+        /// Událost, když přišel nebo odešel focus = kurzor
+        /// </summary>
+        protected virtual void OnHasFocusChanged() { }
+        /// <summary>
+        /// Událost, když přišla nebo odešla myš
+        /// </summary>
+        public event EventHandler HasFocusChanged;
+        /// <summary>
+        /// OnEnter
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void OnEnter(EventArgs e)
+        {
+            base.OnEnter(e);
+            this.HasFocus = true;
+        }
+        /// <summary>
+        /// OnLeave
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void OnLeave(EventArgs e)
+        {
+            base.OnLeave(e);
+            this.HasFocus = false;
+        }
+        #endregion
+        #region ToolTip
+        /// <summary>
+        /// Nastaví daný text a titulek pro tooltip
+        /// </summary>
+        /// <param name="text"></param>
+        public void SetToolTip(string text) { this.SuperTip = DxComponent.CreateDxSuperTip(null, text); }
+        /// <summary>
+        /// Nastaví daný text a titulek pro tooltip
+        /// </summary>
+        /// <param name="title">Titulek</param>
+        /// <param name="text">Text</param>
+        /// <param name="defaultTitle">Náhradní titulek, použije se když je zadán text ale není zadán titulek</param>
+        public void SetToolTip(string title, string text, string defaultTitle = null) { this.SuperTip = DxComponent.CreateDxSuperTip(title, text, defaultTitle); }
+        #endregion
+
     }
     #endregion
     #region DxImageComboBoxEdit
