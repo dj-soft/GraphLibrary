@@ -586,21 +586,22 @@ namespace Noris.Clients.Win.Components.AsolDX
                 GradientStyle = GradientStyleType.ToRight,
                 BackColor = Color.FromArgb(64, 64, 64, 64),
                 BackColorEnd = Color.FromArgb(16, 160, 160, 160),
-                OnMouseBackColor = Color.FromArgb(160, 128, 128, 64),
+                OnMouseBackColor = Color.FromArgb(108, 192, 192, 64),
                 OnMouseBackColorEnd = Color.FromArgb(16, 192, 192, 128)
             };
             DataFormBackgroundAppearance headerAppearance2 = new DataFormBackgroundAppearance()
             {
                 GradientStyle = GradientStyleType.ToRight,
                 BackColor = Color.FromArgb(128, 64, 64, 224),
-                BackColorEnd = Color.FromArgb(8, 96, 96, 255),
+                BackColorEnd = Color.FromArgb(4, 96, 96, 255),
                 OnMouseBackColor = Color.FromArgb(255, 64, 64, 224),
-                OnMouseBackColorEnd = Color.FromArgb(8, 96, 96, 255),
+                OnMouseBackColorEnd = Color.FromArgb(4, 96, 96, 255),
             };
             DataFormItemAppearance titleAppearance = new DataFormItemAppearance()
             {
                 FontSizeDelta = 2,
-                FontStyleBold = true
+                FontStyleBold = true,
+                ContentAlignment = ContentAlignment.MiddleLeft
             };
             DataFormItemAppearance labelAppearance = new DataFormItemAppearance()
             {
@@ -615,6 +616,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             int y = 0;
             int maxX = 0;
             int q;
+            int px = 12;
+            int py = 12;
             for (int r = 0; r < count; r++)
             {
                 if ((r % 10) == 0)
@@ -622,8 +625,10 @@ namespace Noris.Clients.Win.Components.AsolDX
 
                 if (group == null)
                 {
+                    y = 1 + borderSize;
+
                     group = new DataFormGroup();
-                    group.DesignPadding = new Padding(12, 12, 12, 12);
+                    group.DesignPadding = new Padding(px, py, px, py);
                     group.DesignHeaderHeight = headerHeight;
                     if (headerHeight > 0)
                         group.HeaderAppearance = (headerHeight == 2 ? headerAppearance2 : headerAppearance1);
@@ -643,21 +648,29 @@ namespace Noris.Clients.Win.Components.AsolDX
                     group.BorderAppearance = borderAppearance;
 
                     page.Groups.Add(group);
-                    y = borderSize + beginY;
 
+                    int contentY = y + headerHeight;
                     if (addGroupTitle)
                     {
-                        DataFormItemImageText title = new DataFormItemImageText() { ItemType = DataFormItemType.Label, DesignBounds = new Rectangle(60, y, 150, 18) };
+                        bool isThinLine = (headerHeight < 10);
+                        int titleY = (isThinLine ? y + headerHeight + 3 : y + 1);
+                        DataFormItemImageText title = new DataFormItemImageText() { ItemType = DataFormItemType.Label, DesignBounds = new Rectangle(60, titleY - py, 150, 20) };        // -py ... prvek bude odsunut o Padding, ale titulek nechci.
                         title.Text = "Skupina " + page.Groups.Count.ToString();
                         title.Appearance = titleAppearance;
                         group.Items.Add(title);
-                        y += 26;
+                        y += (isThinLine ? titleY + 20 : y + headerHeight + 2);
+                        if (y < contentY)
+                            y = contentY;
+                    }
+                    else
+                    {
+                        y = contentY;
                     }
                 }
 
                 // První prvek v řádku je Label:
                 int x = 10;
-                text = $"Řádek {(r + 1)}:";
+                text = $"Atributy {(r + 1)}:";
                 DataFormItemImageText lbl = new DataFormItemImageText() { ItemType = DataFormItemType.Label, Text = text, DesignBounds = new Rectangle(x, y, 75, 18) };
                 lbl.Appearance = labelAppearance;
                 group.Items.Add(lbl);
@@ -1517,20 +1530,39 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         {
             var bounds = item.CurrentBounds;
             Point location = bounds.Location.Sub(visibleOrigin);
-            Rectangle visibleBounds = new Rectangle(location, bounds.Size);
-            item.VisibleBounds = visibleBounds;
-
             Color? indicatorColor = GetIndicatorColor(item, out bool isBold);
-            if (indicatorColor.HasValue)
-                PaintItemIndicator(e, visibleBounds, indicatorColor.Value, isBold);
 
+            // Pořadí akcí je mírně zmatené, protože:
+            // 1. Indikátor chci kreslit 'pod' obrázek controlu (Image)
+            // 2. Control ale nemusí vygenerovat obrázek (metoda CreateImage() vrátí null), pak chci vykreslit indikátor i bez existence obrázku
+            // 3. Reálná velikost obrázku (Image) nemusí odpovídat velikosti prostoru (item.CurrentBounds), protože control může mít reálně jinou výšku než jsme mu nadiktovali my dle designu
+            // 4. Pokud tedy CreateImage vrátí obrázek, pak použijeme jeho rozměry pro vykreslení indikátoru; a pokud obrázek nevrátí, pak indikátor vykreslíme do designem určené velikosti.
+
+            Rectangle? visibleBounds = null;
             using (var image = CreateImage(item))
             {
                 if (image != null)
                 {
+                    Size size = image.Size;
+                    visibleBounds = new Rectangle(location, size);
+
+                    if (indicatorColor.HasValue)
+                        PaintItemIndicator(e, visibleBounds.Value, indicatorColor.Value, isBold);
+
                     e.Graphics.DrawImage(image, location);
                 }
             }
+
+            if (!visibleBounds.HasValue)
+            {   // Když nebyl získán Image pro control, pak velikost prostoru převezmeme dle designu.
+                // Značí to ale, že dosud nebyl vykreslen Indicator, ten se kreslil "pod obrázek" ale "podle jeho velikosti".
+                visibleBounds = new Rectangle(location, bounds.Size);
+                if (indicatorColor.HasValue)
+                    PaintItemIndicator(e, visibleBounds.Value, indicatorColor.Value, isBold);
+            }
+
+            item.VisibleBounds = visibleBounds;
+
         }
         /// <summary>
         /// Metoda vrátí barvu, kterou se má vykreslit indikátor pro daný prvek
