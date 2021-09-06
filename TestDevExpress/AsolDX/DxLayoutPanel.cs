@@ -3257,7 +3257,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
             else
             {
-                int fontHeight = DxComponent.ZoomToGuiInt(12);
+                int fontHeight = DxComponent.ZoomToGui(12);
                 height = fontHeight + HeightAdd;
             }
 
@@ -3333,17 +3333,17 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Souřadnice X kde začíná TitleIcon nebo TitleText
         /// Tato hodnota je upravená aktuálním Zoomem.
         /// </summary>
-        protected virtual int BeginX { get { return DxComponent.ZoomToGuiInt(6); } }
+        protected virtual int BeginX { get { return DxComponent.ZoomToGui(6); } }
         /// <summary>
         /// Přídavek Y k výšce Labelu, do výšky celého panelu.
         /// Tato hodnota je upravená aktuálním Zoomem.
         /// </summary>
-        protected virtual int HeightAdd { get { return DxComponent.ZoomToGuiInt(12); } }
+        protected virtual int HeightAdd { get { return DxComponent.ZoomToGui(12); } }
         /// <summary>
         /// Velikost buttonu Close a Dock, vnější. Button je čtvercový.
         /// Tato hodnota je upravená aktuálním Zoomem.
         /// </summary>
-        protected virtual int ButtonSize { get { return DxComponent.ZoomToGuiInt(24); } }
+        protected virtual int ButtonSize { get { return DxComponent.ZoomToGui(24); } }
         /// <summary>
         /// Mezera mezi sousedními buttony. Mezera mezi skupinami je dvojnásobná.
         /// </summary>
@@ -3597,7 +3597,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             Color? bc = this.TitleBackColor;
             if (bc.HasValue)
             {
-                margins = DxComponent.ZoomToGuiInt(this.TitleBackMargins ?? 0);
+                margins = DxComponent.ZoomToGui(this.TitleBackMargins ?? 0);
                 backColor = bc.Value;
                 backColorEnd = this.TitleBackColorEnd;
                 return true;
@@ -3635,7 +3635,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             Color? lc = this.LineColor;
             if (lw.HasValue && lw.Value != 0 && lc.HasValue)
             {
-                lineWidth = DxComponent.ZoomToGuiInt(lw.Value);
+                lineWidth = DxComponent.ZoomToGui(lw.Value);
                 lineColor = lc.Value;
                 lineColorEnd = this.LineColorEnd;
                 return true;

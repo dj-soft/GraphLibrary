@@ -65,6 +65,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             this._InitLog();
             this._InitStyles();
             this._InitZoom();
+            this._InitFontCache();
             this._InitDrawing();
             this._InitListeners();
             this._ImageNameInit();
@@ -107,6 +108,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         public static void Done() { Instance._Done(); }
         private void _Done()
         {
+            this._DisposeFontCache();
+
             System.Windows.Forms.Application.Idle -= Application_Idle;
             System.Windows.Forms.Application.ApplicationExit -= Application_ApplicationExit;
         }
@@ -435,55 +438,55 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Odsazení labelu od levého okraje X
         /// </summary>
-        public static int DetailXLabel { get { return ZoomToGuiInt(Instance._DetailXLabel); } }
+        public static int DetailXLabel { get { return ZoomToGui(Instance._DetailXLabel); } }
         /// <summary>
         /// Odsazení textu od levého okraje X
         /// </summary>
-        public static int DetailXText { get { return ZoomToGuiInt(Instance._DetailXText); } }
+        public static int DetailXText { get { return ZoomToGui(Instance._DetailXText); } }
         /// <summary>
         /// Odsazení prvního prvku od horního okraje Y
         /// </summary>
-        public static int DetailYFirst { get { return ZoomToGuiInt(Instance._DetailYFirst); } }
+        public static int DetailYFirst { get { return ZoomToGui(Instance._DetailYFirst); } }
         /// <summary>
         /// Výchozí hodnota výšky labelu
         /// </summary>
-        public static int DetailYHeightLabel { get { return ZoomToGuiInt(Instance._DetailYHeightLabel); } }
+        public static int DetailYHeightLabel { get { return ZoomToGui(Instance._DetailYHeightLabel); } }
         /// <summary>
         /// Výchozí hodnota výšky textu
         /// </summary>
-        public static int DetailYHeightText { get { return ZoomToGuiInt(Instance._DetailYHeightText); } }
+        public static int DetailYHeightText { get { return ZoomToGui(Instance._DetailYHeightText); } }
         /// <summary>
         /// Posun labelu vůči textu v ose Y pro zarovnané úpatí textu
         /// </summary>
-        public static int DetailYOffsetLabelText { get { return ZoomToGuiInt(Instance._DetailYOffsetLabelText); } }
+        public static int DetailYOffsetLabelText { get { return ZoomToGui(Instance._DetailYOffsetLabelText); } }
         /// <summary>
         /// Odsazení labelu dalšího řádku od předešlého textu
         /// </summary>
-        public static int DetailYSpaceLabel { get { return ZoomToGuiInt(Instance._DetailYSpaceLabel); } }
+        public static int DetailYSpaceLabel { get { return ZoomToGui(Instance._DetailYSpaceLabel); } }
         /// <summary>
         /// Odsazení textu řádku od předešlého labelu
         /// </summary>
-        public static int DetailYSpaceText { get { return ZoomToGuiInt(Instance._DetailYSpaceText); } }
+        public static int DetailYSpaceText { get { return ZoomToGui(Instance._DetailYSpaceText); } }
         /// <summary>
         /// Okraj v ose X
         /// </summary>
-        public static int DetailXMargin { get { return ZoomToGuiInt(Instance._DetailXMargin); } }
+        public static int DetailXMargin { get { return ZoomToGui(Instance._DetailXMargin); } }
         /// <summary>
         /// Okraj v ose Y
         /// </summary>
-        public static int DetailYMargin { get { return ZoomToGuiInt(Instance._DetailYMargin); } }
+        public static int DetailYMargin { get { return ZoomToGui(Instance._DetailYMargin); } }
         /// <summary>
         /// Defaultní výška panelu s buttony
         /// </summary>
-        public static int DefaultButtonPanelHeight { get { return ZoomToGuiInt(Instance._DefaultButtonPanelHeight); } }
+        public static int DefaultButtonPanelHeight { get { return ZoomToGui(Instance._DefaultButtonPanelHeight); } }
         /// <summary>
         /// Defaultní šířka buttonu
         /// </summary>
-        public static int DefaultButtonWidth { get { return ZoomToGuiInt(Instance._DefaultButtonWidth); } }
+        public static int DefaultButtonWidth { get { return ZoomToGui(Instance._DefaultButtonWidth); } }
         /// <summary>
         /// Defaultní výška buttonu
         /// </summary>
-        public static int DefaultButtonHeight { get { return ZoomToGuiInt(Instance._DefaultButtonHeight); } }
+        public static int DefaultButtonHeight { get { return ZoomToGui(Instance._DefaultButtonHeight); } }
         /// <summary>
         /// Defaultní BarManager pro obecné použití
         /// </summary>
@@ -573,61 +576,67 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="value"></param>
         /// <returns></returns>
-        internal static int ZoomToGuiInt(int value) { decimal zoom = Instance._Zoom; return _ZoomToGuiInt(value, zoom); }
+        internal static int ZoomToGui(int value) { decimal zoom = Instance._Zoom; return _ZoomToGui(value, zoom); }
         /// <summary>
         /// Vrátí danou designovou hodnotu přepočtenou dle aktuálního Zoomu do vizuální hodnoty
         /// </summary>
         /// <param name="value">Designová hodnota (96DPI, 100%)</param>
         /// <param name="targetDpi">Cílové DPI</param>
         /// <returns></returns>
-        internal static int ZoomToGuiInt(int value, int targetDpi) { decimal zoomDpi = Instance._ZoomDpi; return _ZoomDpiToGuiInt(value, zoomDpi, targetDpi); }
+        internal static int ZoomToGui(int value, int targetDpi) { decimal zoomDpi = Instance._ZoomDpi; return _ZoomDpiToGui(value, zoomDpi, targetDpi); }
+        /// <summary>
+        /// Vrátí danou designovou hodnotu přepočtenou dle aktuálního Zoomu do vizuální hodnoty
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        internal static float ZoomToGui(float value, int targetDpi) { decimal zoomDpi = Instance._ZoomDpi; return _ZoomDpiToGui(value, zoomDpi, targetDpi); }
         /// <summary>
         /// Vrátí danou designovou hodnotu přepočtenou dle aktuálního Zoomu do vizuální hodnoty
         /// </summary>
         /// <param name="value">Designová hodnota (96DPI, 100%)</param>
         /// <param name="targetDpi">Cílové DPI</param>
         /// <returns></returns>
-        internal static Int32Range ZoomToGuiInt(Int32Range value, int targetDpi) { if (value == null) return null; decimal zoomDpi = Instance._ZoomDpi; return new Int32Range(_ZoomDpiToGuiInt(value.Begin, zoomDpi, targetDpi), _ZoomDpiToGuiInt(value.End, zoomDpi, targetDpi)); }
+        internal static Int32Range ZoomToGui(Int32Range value, int targetDpi) { if (value == null) return null; decimal zoomDpi = Instance._ZoomDpi; return new Int32Range(_ZoomDpiToGui(value.Begin, zoomDpi, targetDpi), _ZoomDpiToGui(value.End, zoomDpi, targetDpi)); }
 
         /// <summary>
         /// Vrátí danou designovou hodnotu přepočtenou dle aktuálního Zoomu do vizuální hodnoty
         /// </summary>
         /// <param name="value"></param>
         /// <returns></returns>
-        internal static Point ZoomToGuiInt(Point value) { decimal zoom = Instance._Zoom; return new Point(_ZoomToGuiInt(value.X, zoom), _ZoomToGuiInt(value.Y, zoom)); }
+        internal static Point ZoomToGui(Point value) { decimal zoom = Instance._Zoom; return new Point(_ZoomToGui(value.X, zoom), _ZoomToGui(value.Y, zoom)); }
         /// <summary>
         /// Vrátí danou designovou hodnotu přepočtenou dle aktuálního Zoomu do vizuální hodnoty
         /// </summary>
         /// <param name="value"></param>
         /// <returns></returns>
-        internal static Point? ZoomToGuiInt(Point? value) { if (!value.HasValue) return null; decimal zoom = Instance._Zoom; var v = value.Value; return new Point(_ZoomToGuiInt(v.X, zoom), _ZoomToGuiInt(v.Y, zoom)); }
+        internal static Point? ZoomToGui(Point? value) { if (!value.HasValue) return null; decimal zoom = Instance._Zoom; var v = value.Value; return new Point(_ZoomToGui(v.X, zoom), _ZoomToGui(v.Y, zoom)); }
         /// <summary>
         /// Vrátí danou designovou hodnotu přepočtenou dle aktuálního Zoomu do vizuální hodnoty
         /// </summary>
         /// <param name="value">Designová hodnota (96DPI, 100%)</param>
         /// <param name="targetDpi">Cílové DPI</param>
         /// <returns></returns>
-        internal static Point ZoomToGuiInt(Point value, int targetDpi) { decimal zoomDpi = Instance._ZoomDpi; return new Point(_ZoomDpiToGuiInt(value.X, zoomDpi, targetDpi), _ZoomDpiToGuiInt(value.Y, zoomDpi, targetDpi)); }
+        internal static Point ZoomToGui(Point value, int targetDpi) { decimal zoomDpi = Instance._ZoomDpi; return new Point(_ZoomDpiToGui(value.X, zoomDpi, targetDpi), _ZoomDpiToGui(value.Y, zoomDpi, targetDpi)); }
 
         /// <summary>
         /// Vrátí danou designovou hodnotu přepočtenou dle aktuálního Zoomu do vizuální hodnoty
         /// </summary>
         /// <param name="value"></param>
         /// <returns></returns>
-        internal static Size ZoomToGuiInt(Size value) { decimal zoom = Instance._Zoom; return new Size(_ZoomToGuiInt(value.Width, zoom), _ZoomToGuiInt(value.Height, zoom)); }
+        internal static Size ZoomToGui(Size value) { decimal zoom = Instance._Zoom; return new Size(_ZoomToGui(value.Width, zoom), _ZoomToGui(value.Height, zoom)); }
         /// <summary>
         /// Vrátí danou designovou hodnotu přepočtenou dle aktuálního Zoomu do vizuální hodnoty
         /// </summary>
         /// <param name="value"></param>
         /// <returns></returns>
-        internal static Size? ZoomToGuiInt(Size? value) { if (!value.HasValue) return null; decimal zoom = Instance._Zoom; var v = value.Value; return new Size(_ZoomToGuiInt(v.Width, zoom), _ZoomToGuiInt(v.Height, zoom)); }
+        internal static Size? ZoomToGui(Size? value) { if (!value.HasValue) return null; decimal zoom = Instance._Zoom; var v = value.Value; return new Size(_ZoomToGui(v.Width, zoom), _ZoomToGui(v.Height, zoom)); }
         /// <summary>
         /// Vrátí danou designovou hodnotu přepočtenou dle aktuálního Zoomu do vizuální hodnoty
         /// </summary>
         /// <param name="value">Designová hodnota (96DPI, 100%)</param>
         /// <param name="targetDpi">Cílové DPI</param>
         /// <returns></returns>
-        internal static Size ZoomToGuiInt(Size value, int targetDpi) { decimal zoomDpi = Instance._ZoomDpi; return new Size(_ZoomDpiToGuiInt(value.Width, zoomDpi, targetDpi), _ZoomDpiToGuiInt(value.Height, zoomDpi, targetDpi)); }
+        internal static Size ZoomToGui(Size value, int targetDpi) { decimal zoomDpi = Instance._ZoomDpi; return new Size(_ZoomDpiToGui(value.Width, zoomDpi, targetDpi), _ZoomDpiToGui(value.Height, zoomDpi, targetDpi)); }
 
         /// <summary>
         /// Vrátí danou designovou hodnotu přepočtenou dle aktuálního Zoomu do vizuální hodnoty.
@@ -638,7 +647,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="value"></param>
         /// <returns></returns>
-        internal static Rectangle ZoomToGuiInt(Rectangle value) { decimal zoom = Instance._Zoom; return Rectangle.FromLTRB(_ZoomToGuiInt(value.Left, zoom), _ZoomToGuiInt(value.Top, zoom), _ZoomToGuiInt(value.Right, zoom), _ZoomToGuiInt(value.Bottom, zoom)); }
+        internal static Rectangle ZoomToGui(Rectangle value) { decimal zoom = Instance._Zoom; return Rectangle.FromLTRB(_ZoomToGui(value.Left, zoom), _ZoomToGui(value.Top, zoom), _ZoomToGui(value.Right, zoom), _ZoomToGui(value.Bottom, zoom)); }
         /// <summary>
         /// Vrátí danou designovou hodnotu přepočtenou dle aktuálního Zoomu do vizuální hodnoty.
         /// <para/>
@@ -648,7 +657,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="value"></param>
         /// <returns></returns>
-        internal static Rectangle? ZoomToGuiInt(Rectangle? value) { if (!value.HasValue) return null; decimal zoom = Instance._Zoom; var v = value.Value; return Rectangle.FromLTRB(_ZoomToGuiInt(v.Left, zoom), _ZoomToGuiInt(v.Top, zoom), _ZoomToGuiInt(v.Right, zoom), _ZoomToGuiInt(v.Bottom, zoom)); }
+        internal static Rectangle? ZoomToGui(Rectangle? value) { if (!value.HasValue) return null; decimal zoom = Instance._Zoom; var v = value.Value; return Rectangle.FromLTRB(_ZoomToGui(v.Left, zoom), _ZoomToGui(v.Top, zoom), _ZoomToGui(v.Right, zoom), _ZoomToGui(v.Bottom, zoom)); }
         /// <summary>
         /// Vrátí danou designovou hodnotu přepočtenou dle aktuálního Zoomu do vizuální hodnoty.
         /// <para/>
@@ -659,35 +668,48 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="value">Designová hodnota (96DPI, 100%)</param>
         /// <param name="targetDpi">Cílové DPI</param>
         /// <returns></returns>
-        internal static Rectangle ZoomToGuiInt(Rectangle value, int targetDpi) { decimal zoomDpi = Instance._ZoomDpi; return Rectangle.FromLTRB(_ZoomDpiToGuiInt(value.Left, zoomDpi, targetDpi), _ZoomDpiToGuiInt(value.Top, zoomDpi, targetDpi), _ZoomDpiToGuiInt(value.Right, zoomDpi, targetDpi), _ZoomDpiToGuiInt(value.Bottom, zoomDpi, targetDpi)); }
+        internal static Rectangle ZoomToGui(Rectangle value, int targetDpi) { decimal zoomDpi = Instance._ZoomDpi; return Rectangle.FromLTRB(_ZoomDpiToGui(value.Left, zoomDpi, targetDpi), _ZoomDpiToGui(value.Top, zoomDpi, targetDpi), _ZoomDpiToGui(value.Right, zoomDpi, targetDpi), _ZoomDpiToGui(value.Bottom, zoomDpi, targetDpi)); }
 
         /// <summary>
         /// Vrátí danou designovou hodnotu přepočtenou dle aktuálního Zoomu do vizuální hodnoty
         /// </summary>
         /// <param name="value"></param>
         /// <returns></returns>
-        internal static Padding ZoomToGuiInt(Padding value) { decimal zoom = Instance._Zoom; return new Padding(_ZoomToGuiInt(value.Left, zoom), _ZoomToGuiInt(value.Top, zoom), _ZoomToGuiInt(value.Right, zoom), _ZoomToGuiInt(value.Bottom, zoom)); }
+        internal static Padding ZoomToGui(Padding value) { decimal zoom = Instance._Zoom; return new Padding(_ZoomToGui(value.Left, zoom), _ZoomToGui(value.Top, zoom), _ZoomToGui(value.Right, zoom), _ZoomToGui(value.Bottom, zoom)); }
         /// <summary>
         /// Vrátí danou designovou hodnotu přepočtenou dle aktuálního Zoomu do vizuální hodnoty
         /// </summary>
         /// <param name="value"></param>
         /// <returns></returns>
-        internal static Padding? ZoomToGuiInt(Padding? value) { if (!value.HasValue) return null; decimal zoom = Instance._Zoom; var v = value.Value; return new Padding(_ZoomToGuiInt(v.Left, zoom), _ZoomToGuiInt(v.Top, zoom), _ZoomToGuiInt(v.Right, zoom), _ZoomToGuiInt(v.Bottom, zoom)); }
+        internal static Padding? ZoomToGui(Padding? value) { if (!value.HasValue) return null; decimal zoom = Instance._Zoom; var v = value.Value; return new Padding(_ZoomToGui(v.Left, zoom), _ZoomToGui(v.Top, zoom), _ZoomToGui(v.Right, zoom), _ZoomToGui(v.Bottom, zoom)); }
         /// <summary>
         /// Vrátí danou designovou hodnotu přepočtenou dle aktuálního Zoomu do vizuální hodnoty
         /// </summary>
         /// <param name="value">Designová hodnota (96DPI, 100%)</param>
         /// <param name="targetDpi">Cílové DPI</param>
         /// <returns></returns>
-        internal static Padding ZoomToGuiInt(Padding value, int targetDpi) { decimal zoomDpi = Instance._ZoomDpi; return new Padding(_ZoomDpiToGuiInt(value.Left, zoomDpi, targetDpi), _ZoomDpiToGuiInt(value.Top, zoomDpi, targetDpi), _ZoomDpiToGuiInt(value.Right, zoomDpi, targetDpi), _ZoomDpiToGuiInt(value.Bottom, zoomDpi, targetDpi)); }
+        internal static Padding ZoomToGui(Padding value, int targetDpi) { decimal zoomDpi = Instance._ZoomDpi; return new Padding(_ZoomDpiToGui(value.Left, zoomDpi, targetDpi), _ZoomDpiToGui(value.Top, zoomDpi, targetDpi), _ZoomDpiToGui(value.Right, zoomDpi, targetDpi), _ZoomDpiToGui(value.Bottom, zoomDpi, targetDpi)); }
 
+        /// <summary>
+        /// Vrátí daný font přepočtený dle aktuálního Zoomu do vizuální hodnoty
+        /// </summary>
+        /// <param name="value">Designová hodnota (96DPI, 100%)</param>
+        /// <param name="targetDpi">Cílové DPI</param>
+        /// <returns></returns>
+        internal static Font ZoomToGui(Font value, int targetDpi)
+        {
+            var instance = Instance;
+            decimal zoomDpi = instance._ZoomDpi;
+            float emSize = _ZoomDpiToGui(value.Size, Instance._ZoomDpi, targetDpi);
+            return instance._GetFont(null, value.FontFamily, null, emSize, value.Style);
+        }
         /// <summary>
         /// Vrátí danou designovou hodnotu přepočtenou dle daného Zoomu do vizuální hodnoty
         /// </summary>
         /// <param name="value"></param>
         /// <param name="zoom"></param>
         /// <returns></returns>
-        private static int _ZoomToGuiInt(int value, decimal zoom) { return (int)Math.Round((decimal)value * zoom, 0); }
+        private static int _ZoomToGui(int value, decimal zoom) { return (int)Math.Round((decimal)value * zoom, 0); }
         /// <summary>
         /// Vrátí danou designovou hodnotu přepočtenou dle daného (Zoom / DesignDpi) a dané TargetDpi do vizuální hodnoty
         /// </summary>
@@ -695,7 +717,23 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="zoomDpi"></param>
         /// <param name="targetDpi"></param>
         /// <returns></returns>
-        private static int _ZoomDpiToGuiInt(int value, decimal zoomDpi, decimal targetDpi) { return (int)Math.Round((decimal)value * zoomDpi * targetDpi, 0); }
+        private static int _ZoomDpiToGui(int value, decimal zoomDpi, decimal targetDpi) { return (int)Math.Round((decimal)value * zoomDpi * targetDpi, 0); }
+        /// <summary>
+        /// Vrátí danou designovou hodnotu přepočtenou dle daného (Zoom / DesignDpi) a dané TargetDpi do vizuální hodnoty
+        /// </summary>
+        /// <param name="value">Designová hodnota</param>
+        /// <param name="zoomDpi"></param>
+        /// <param name="targetDpi"></param>
+        /// <returns></returns>
+        private static float _ZoomDpiToGui(float value, decimal zoomDpi, decimal targetDpi) { return (float)((decimal)value * zoomDpi * targetDpi); }
+        /// <summary>
+        /// Vrátí danou designovou hodnotu přepočtenou dle daného (Zoom / DesignDpi) a dané TargetDpi do vizuální hodnoty
+        /// </summary>
+        /// <param name="value">Designová hodnota</param>
+        /// <param name="zoomDpi"></param>
+        /// <param name="targetDpi"></param>
+        /// <returns></returns>
+        private static decimal _ZoomDpiToGui(decimal value, decimal zoomDpi, decimal targetDpi) { return (value * zoomDpi * targetDpi); }
         /// <summary>
         /// Aktuální hodnota Zoomu
         /// </summary>
@@ -743,6 +781,90 @@ namespace Noris.Clients.Win.Components.AsolDX
         private decimal _Zoom;
         private int _DesignDpi;
         private decimal _ZoomDpi;
+        #endregion
+        #region FontCache
+        /// <summary>
+        /// Vrátí požadovaný font z cache. 
+        /// Nedávejme na něm Dispose(), tedy nepoužívejme jej v using() patternu!!!
+        /// </summary>
+        /// <param name="prototype"></param>
+        /// <param name="style"></param>
+        /// <returns></returns>
+        public static Font GetFont(Font prototype, FontStyle? style = null) { return Instance._GetFont(prototype, null, null, prototype.Size, style); }
+        /// <summary>
+        /// Vrátí požadovaný font z cache. 
+        /// Nedávejme na něm Dispose(), tedy nepoužívejme jej v using() patternu!!!
+        /// </summary>
+        /// <param name="family"></param>
+        /// <param name="emSize"></param>
+        /// <param name="style"></param>
+        /// <returns></returns>
+        public static Font GetFont(FontFamily family, float emSize, FontStyle? style = null) { return Instance._GetFont(null, family, null, emSize, style); }
+        /// <summary>
+        /// Vrátí požadovaný font z cache. 
+        /// Nedávejme na něm Dispose(), tedy nepoužívejme jej v using() patternu!!!
+        /// </summary>
+        /// <param name="familyName"></param>
+        /// <param name="emSize"></param>
+        /// <param name="style"></param>
+        /// <returns></returns>
+        public static Font GetFont(string familyName, float emSize, FontStyle? style = null) { return Instance._GetFont(null, null, familyName, emSize, style); }
+        /// <summary>
+        /// Vrátí požadovaný font z cache. 
+        /// Nedávejme na něm Dispose(), tedy nepoužívejme jej v using() patternu!!!
+        /// </summary>
+        /// <param name="prototype"></param>
+        /// <param name="family"></param>
+        /// <param name="familyName"></param>
+        /// <param name="emSize"></param>
+        /// <param name="fontStyle"></param>
+        /// <returns></returns>
+        private Font _GetFont(Font prototype, FontFamily family, string familyName, float emSize, FontStyle? fontStyle = null)
+        {
+            string name = (prototype != null ? prototype.Name : (family != null ? family.Name : familyName));
+            float size = (float)Math.Round((decimal)emSize, 2);
+            FontStyle style = fontStyle ?? FontStyle.Regular;
+            string styleKey = (style.HasFlag(FontStyle.Bold) ? "B" : "") + (style.HasFlag(FontStyle.Italic) ? "I" : "") + (style.HasFlag(FontStyle.Underline) ? "U" : "") + (style.HasFlag(FontStyle.Strikeout) ? "S" : "");
+            string key = $"'{name}':{size:###0.00}:{styleKey }";
+            Font font;
+            if (!_FontCache.TryGetValue(key, out font))
+            {
+                if (prototype != null)
+                    font = new Font(prototype, style);
+                else if (family != null)
+                    font = new Font(family, size, style);
+                else if (!String.IsNullOrEmpty(familyName))
+                    font = new Font(familyName, size, style);
+                else
+                    throw new ArgumentException($"Nelze vytvořit Font bez zadání jeho druhu.");
+                lock (_FontCache)
+                {
+                    if (!_FontCache.ContainsKey(key))
+                        _FontCache.Add(key, font);
+                }
+            }
+            return font;
+        }
+        /// <summary>
+        /// Inicializace cache pro fonty
+        /// </summary>
+        private void _InitFontCache()
+        {
+            _FontCache = new Dictionary<string, Font>();
+        }
+        /// <summary>
+        /// Dispose cache pro fonty
+        /// </summary>
+        private void _DisposeFontCache()
+        {
+            if (_FontCache != null)
+                _FontCache.Values.ForEachExec(f => { if (f != null) f.Dispose(); });
+            _FontCache.Clear();
+        }
+        /// <summary>
+        /// Cache fontů. Klíče si instance tvoří sama.
+        /// </summary>
+        private Dictionary<string, Font> _FontCache;
         #endregion
         #region Listenery
         /// <summary>

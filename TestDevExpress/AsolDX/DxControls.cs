@@ -919,7 +919,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Aktuální hodnota <see cref="ScrollToBoundsBasicPadding"/> (pro aktuální Zoom a DPI)
         /// </summary>
-        protected Padding ScrollToBoundsBasicPaddingCurrent { get { return DxComponent.ZoomToGuiInt(ScrollToBoundsBasicPadding, CurrentDpi); } }
+        protected Padding ScrollToBoundsBasicPaddingCurrent { get { return DxComponent.ZoomToGui(ScrollToBoundsBasicPadding, CurrentDpi); } }
         /// <summary>
         /// Okraje, přidávané ke scrollu prováděnému v metodě <see cref="ScrollToBounds(Rectangle, Rectangle?)"/> v situaci, kdy je potřeba reálně posunout obsah.
         /// Tedy: pokud požadovaný obsah (s přidáním <see cref="ScrollToBoundsBasicPadding"/>) je celý viditelný, pak se scrollovat nebude ani když nebude dodržen zde uvedený okraj.
@@ -932,7 +932,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Aktuální hodnota <see cref="ScrollToBoundsScrollPadding"/> (pro aktuální Zoom a DPI)
         /// </summary>
-        protected Padding ScrollToBoundsScrollPaddingCurrent { get { return DxComponent.ZoomToGuiInt(ScrollToBoundsScrollPadding, CurrentDpi); } }
+        protected Padding ScrollToBoundsScrollPaddingCurrent { get { return DxComponent.ZoomToGui(ScrollToBoundsScrollPadding, CurrentDpi); } }
         #endregion
         #region Výpočty virtuální souřadnice a reakce na interaktivní posuny
         /// <summary>

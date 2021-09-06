@@ -654,7 +654,8 @@ namespace Noris.Clients.Win.Components.AsolDX
                     {
                         bool isThinLine = (headerHeight < 10);
                         int titleY = (isThinLine ? y + headerHeight + 3 : y + 1);
-                        DataFormItemImageText title = new DataFormItemImageText() { ItemType = DataFormItemType.Label, DesignBounds = new Rectangle(60, titleY - py, 150, 20) };        // -py ... prvek bude odsunut o Padding, ale titulek nechci.
+                        // titleY - py ... ?  Každý běžný prvek bude odsunut o Padding, ale titulek posouvat o Padding nechci, takže jej 'předsunu':
+                        DataFormItemImageText title = new DataFormItemImageText() { ItemType = DataFormItemType.Label, DesignBounds = new Rectangle(60, titleY - py, 150, 20) };
                         title.Text = "Skupina " + page.Groups.Count.ToString();
                         title.Appearance = titleAppearance;
                         group.Items.Add(title);
@@ -711,14 +712,15 @@ namespace Noris.Clients.Win.Components.AsolDX
                         case DataFormItemType.TextBoxButton:
                             DataFormItemTextBoxButton textBoxButton = new DataFormItemTextBoxButton() { Text = "TEXTBOX BUTTON" };
                             q = random.Next(100);
-                            textBoxButton.ButtonsVisibleAllways = (q < 30);
+                            textBoxButton.ButtonsVisibleAllways = (q < 50);
                             q = random.Next(100);
-                            textBoxButton.ButtonAs3D = (q < 20);
+                            textBoxButton.ButtonAs3D = (q < 25);
                             q = random.Next(100);
                             textBoxButton.ButtonKind = (q < 30 ? DataFormButtonKind.Ellipsis :
-                                                       (q < 60 ? DataFormButtonKind.Search :
-                                                       (q < 80 ? DataFormButtonKind.Right :
-                                                                 DataFormButtonKind.OK))); 
+                                                       (q < 50 ? DataFormButtonKind.Search :
+                                                       (q < 65 ? DataFormButtonKind.Right :
+                                                       (q < 80 ? DataFormButtonKind.Plus :
+                                                                 DataFormButtonKind.OK)))); 
                             item = textBoxButton;
                             break;
                         case DataFormItemType.CheckBox:
@@ -1539,17 +1541,35 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             // 4. Pokud tedy CreateImage vrátí obrázek, pak použijeme jeho rozměry pro vykreslení indikátoru; a pokud obrázek nevrátí, pak indikátor vykreslíme do designem určené velikosti.
 
             Rectangle? visibleBounds = null;
-            using (var image = CreateImage(item))
+            if (item.CanPaintByPainter)
             {
-                if (image != null)
+                if (item.IItem is IDataFormItemImageText label)
                 {
-                    Size size = image.Size;
-                    visibleBounds = new Rectangle(location, size);
+                    Control control = GetControl(item, DxDataFormControlUseMode.Draw);
+                    if (control is BaseControl baseControl)
+                    {
+                        var appearance = baseControl.GetViewInfo().PaintAppearance;
+                        appearance.Font = DxComponent.ZoomToGui(appearance.Font, this.CurrentDpi);
+                        Size size = item.CurrentBounds.Size;
+                        visibleBounds = new Rectangle(location, size);
+                        appearance.DrawString(e.GraphicsCache, label.Text, visibleBounds.Value);
+                    }
+                }
+            }
+            if (!visibleBounds.HasValue && item.CanPaintByImage)
+            {
+                using (var image = CreateImage(item, e.Graphics))
+                {
+                    if (image != null)
+                    {
+                        Size size = image.Size;
+                        visibleBounds = new Rectangle(location, size);
 
-                    if (indicatorColor.HasValue)
-                        PaintItemIndicator(e, visibleBounds.Value, indicatorColor.Value, isBold);
+                        if (indicatorColor.HasValue)
+                            PaintItemIndicator(e, visibleBounds.Value, indicatorColor.Value, isBold);
 
-                    e.Graphics.DrawImage(image, location);
+                        e.Graphics.DrawImage(image, location);
+                    }
                 }
             }
 
@@ -1599,7 +1619,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             if (hasStatus) isBold = true;
             return resultColor;
         }
-
         /// <summary>
         /// Zajistí vykreslení slabého orámování (prozáření okrajů) pro daný prostor (prvek) danou barvou.
         /// </summary>
@@ -1657,7 +1676,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         /// <param name="item"></param>
         /// <returns></returns>
-        private Image CreateImage(DxDataFormItem item)
+        private Image CreateImage(DxDataFormItem item, Graphics graphics)
         {
             if (ImageCache == null) ImageCache = new Dictionary<string, ImageCacheItem>();
 
@@ -1674,7 +1693,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             else
             {   // Image v cache nemáme, takže nyní vytvoříme skutečný Image s pomocí controlu, obsah Image uložíme jako byte[] do cache, a uživateli vrátíme ten živý obraz:
                 // Tímto postupem šetřím čas, protože Image použiju jak pro uložení do Cache, tak pro vykreslení do grafiky v controlu:
-                Image image = CreateBitmapForItem(item);
+                Image image = CreateBitmapForItem(item, graphics);
                 lock (ImageCache)
                 {
                     if (ImageCache.TryGetValue(key, out imageInfo))
@@ -1904,34 +1923,21 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 dataFormControls.Add(itemType, controlSet);
             }
             return controlSet;
-
-            //Control control;
-            //if (!controlSet.TryGetValue(mode, out control))
-            //{
-            //    control = (itemType == DataFormItemType.Label ? (Control)new DxLabelControl() :
-            //              (itemType == DataFormItemType.TextBox ? (Control)new DxTextEdit() :
-            //              (itemType == DataFormItemType.CheckBox ? (Control)new DxCheckEdit() :
-            //              (itemType == DataFormItemType.Button ? (Control)new DxSimpleButton() : (Control)null))));
-
-            //    if (control != null)
-            //    {
-
-            //        Control parent = (mode == DxDataFormControlMode.Focused ? (Control)_ContentPanel :
-            //                         (mode == DxDataFormControlMode.HotMouse ? (Control)_ContentPanel :
-            //                         (mode == DxDataFormControlMode.Inactive ? (Control)this : (Control)null)));
-
-            //        if (parent != null)
-            //        {
-            //            control.Location = new Point(5, 5);
-            //            control.Visible = false;
-            //            parent.Controls.Add(control);
-            //        }
-            //    }
-            //    controlSet.Add(mode, control);
-            //}
-            //return control;
         }
-        private Image CreateBitmapForItem(DxDataFormItem item)
+        /// <summary>
+        /// Vrátí control pro daný prvek a režim použití
+        /// </summary>
+        /// <param name="item"></param>
+        /// <param name="mode"></param>
+        /// <returns></returns>
+        private Control GetControl(DxDataFormItem item, DxDataFormControlUseMode mode)
+        {
+            DxDataFormControlSet controlSet = GetControlSet(item);
+            Control drawControl = controlSet.GetControlForMode(item, mode);
+            return drawControl;
+        }
+
+        private Image CreateBitmapForItem(DxDataFormItem item, Graphics graphics)
         {
             /*   Časomíra:
 
@@ -1950,7 +1956,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             int h = drawControl.Height;
             if (w <= 0 || h <= 0) return null;
 
-            Bitmap image = new Bitmap(w, h);
+            Bitmap image = new Bitmap(w, h, graphics);
             drawControl.DrawToBitmap(image, new Rectangle(0, 0, w, h));
 
             return image;
@@ -2217,6 +2223,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         }
         private void _TextBoxButtonFillSpec(DxDataFormItem item, DxButtonEdit buttonEdit, DxDataFormControlUseMode mode)
         {
+            buttonEdit.SelectionStart = 0;
+            buttonEdit.SelectionLength = 0;
             if (item.TryGetIItem<IDataFormItemTextBoxButton>(out var iItem))
             {
                 bool isNone = (iItem.ButtonKind == DataFormButtonKind.None);
@@ -2527,6 +2535,22 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         }
         #endregion
         #region Získání a naplnění controlu z datového Itemu, a reverzní zpětné načtení hodnot z controlu do datového Itemu
+        /// <summary>
+        /// Vrátí control pro daný prvek a režim
+        /// </summary>
+        /// <param name="item"></param>
+        /// <param name="mode"></param>
+        /// <returns></returns>
+        internal Control GetControlForMode(DxDataFormItem item, DxDataFormControlUseMode mode)
+        {
+            switch (mode)
+            {
+                case DxDataFormControlUseMode.Draw: return GetControlForDraw(item);
+                case DxDataFormControlUseMode.Mouse: return GetControlForMouse(item);
+                case DxDataFormControlUseMode.Focus: return GetControlForFocus(item);
+            }
+            return null;
+        }
         internal Control GetControlForDraw(DxDataFormItem item)
         {
             CheckNonDisposed();
@@ -3107,12 +3131,12 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         {
             if (!_CurrentGroupSize.HasValue || !_CurrentGroupBounds.HasValue)
             {
-                _CurrentGroupSize = DxComponent.ZoomToGuiInt(DesignGroupSize, DataForm.CurrentDpi);
+                _CurrentGroupSize = DxComponent.ZoomToGui(DesignGroupSize, DataForm.CurrentDpi);
                 _CurrentGroupBounds = new Rectangle(_CurrentGroupOrigin, _CurrentGroupSize.Value);
                 if (DesignBorderRange != null)
-                    _CurrentBorderRange = DxComponent.ZoomToGuiInt(DesignBorderRange, DataForm.CurrentDpi);
+                    _CurrentBorderRange = DxComponent.ZoomToGui(DesignBorderRange, DataForm.CurrentDpi);
                 if (DesignHeaderHeight.HasValue)
-                    _CurrentHeaderHeight = DxComponent.ZoomToGuiInt(DesignHeaderHeight.Value, DataForm.CurrentDpi);
+                    _CurrentHeaderHeight = DxComponent.ZoomToGui(DesignHeaderHeight.Value, DataForm.CurrentDpi);
             }
         }
         /// <summary>
@@ -3355,7 +3379,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             if (!_CurrentBounds.HasValue)
             {
                 var designBounds = this.DesignBounds.Add(this.DataGroup.DesignItemsOrigin);                   // Posunutí souřadnic o Padding (vlevo a nahoře)
-                var currentRelativeBounds = DxComponent.ZoomToGuiInt(designBounds, DataForm.CurrentDpi);     // Přepočet pomocí Zoomu a DPI
+                var currentRelativeBounds = DxComponent.ZoomToGui(designBounds, DataForm.CurrentDpi);     // Přepočet pomocí Zoomu a DPI
                 _CurrentBounds = currentRelativeBounds.Add(this.DataGroup.CurrentGroupOrigin);               // Posunutí o reálný počátek parent grupy
             }
         }
@@ -3390,6 +3414,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             return (IsVisible && VisibleBounds.HasValue && VisibleBounds.Value.Contains(point));
         }
         #endregion
+        public bool CanPaintByPainter { get { return (this.ItemType == DataFormItemType.Label); } }
+        public bool CanPaintByImage { get { return true; } }
+        public bool CanPaintByControl { get { return false; } }
     }
     #endregion
     #region Enumy : RefreshParts

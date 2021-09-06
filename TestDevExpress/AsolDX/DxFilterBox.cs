@@ -123,7 +123,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 // Výška textu, výška vnitřní, vnější (reagujeme i na Zoom a Skin):
                 int margins = Margins;
                 int margins2 = 2 * margins;
-                int minButtonHeight = DxComponent.ZoomToGuiInt(24);
+                int minButtonHeight = DxComponent.ZoomToGui(24);
                 int minHeight = minButtonHeight + margins2;
                 var clientSize = this.ClientSize;
                 int currentHeight = this.Size.Height;

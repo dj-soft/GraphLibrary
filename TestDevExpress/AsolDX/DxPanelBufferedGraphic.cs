@@ -10,6 +10,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Drawing;
+using DevExpress.Utils.Drawing;
 
 namespace Noris.Clients.Win.Components.AsolDX
 {
@@ -431,7 +432,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                     var startTime = DxComponent.LogTimeCurrent;
                     var size = this._GraphicsSize;
                     if (!clipRectangle.HasValue) clipRectangle = new Rectangle(Point.Empty, size);
-                    DxBufferedGraphicPaintArgs args = new DxBufferedGraphicPaintArgs(this.Graphics, this.LayerId, sourceLayer._GraphicsData, size, clipRectangle.Value, this.InvalidateUserData, this.LayerUserData, logActive);
+                    DxBufferedGraphicPaintArgs args = new DxBufferedGraphicPaintArgs(this.Graphics, this.GraphicsCache, this.LayerId, sourceLayer._GraphicsData, size, clipRectangle.Value, this.InvalidateUserData, this.LayerUserData, logActive);
                     // Info: třída DxBufferedGraphicPaintArgs v sobě obsahuje referenci na zdejší grafiku (this.Graphics) a na zdrojovou grafiku (sourceLayer._GraphicsData).
                     // Při prvním použití zdejší grafiky (DxBufferedGraphicPaintArgs.Graphics) si do ní zkopíruje obsah zdrojové grafiky (sourceLayer._GraphicsData)
                     //  a nahodí příznak GraphicsIsUsed = true.
@@ -502,34 +503,50 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// </summary>
             public Graphics Graphics { get { return GraphicsData.Graphics; } }
             /// <summary>
+            /// Cache grafiky pro DevExpress
+            /// </summary>
+            public DevExpress.Utils.Drawing.GraphicsCache GraphicsCache { get { this._GraphicsDataCheckValidity(); return _GraphicsCache; } }
+            /// <summary>
             /// Bufferovaná grafika, vždy platný objekt (v případě potřeby vygeneruje nový platný objekt).
             /// </summary>
             protected BufferedGraphics GraphicsData
             {
                 get
                 {
-                    if (!IsGraphicsValid)
-                    {
-                        var graphicsContext = OwnerGraphicsContext;
-                        Size graphicsSize = OwnerGraphicsSize;
-                        int w = (graphicsSize.Width <= 0 ? 1 : graphicsSize.Width);
-                        int h = (graphicsSize.Height <= 0 ? 1 : graphicsSize.Height);
-
-                        graphicsContext.MaximumBuffer = new Size(w + 1, h + 1);
-
-                        DisposeGraphicsData();
-
-                        _GraphicsData = graphicsContext.Allocate(this._Owner.CreateGraphics(), new Rectangle(0, 0, w, h));
-                        _GraphicsSize = graphicsSize;
-                    }
+                    this._GraphicsDataCheckValidity();
                     return _GraphicsData;
                 }
+            }
+            /// <summary>
+            /// Ověří platnost dat Graphics, případně [staré Disposuje a] vytvoří nové platné objekty
+            /// </summary>
+            protected void _GraphicsDataCheckValidity()
+            {
+                if (IsGraphicsValid) return;
+
+                var graphicsContext = OwnerGraphicsContext;
+                Size graphicsSize = OwnerGraphicsSize;
+                int w = (graphicsSize.Width <= 0 ? 1 : graphicsSize.Width);
+                int h = (graphicsSize.Height <= 0 ? 1 : graphicsSize.Height);
+
+                graphicsContext.MaximumBuffer = new Size(w + 1, h + 1);
+
+                DisposeGraphicsData();
+
+                _GraphicsData = graphicsContext.Allocate(this._Owner.CreateGraphics(), new Rectangle(0, 0, w, h));
+                _GraphicsSize = graphicsSize;
+                _GraphicsCache = new DevExpress.Utils.Drawing.GraphicsCache(_GraphicsData.Graphics);
             }
             /// <summary>
             /// V případě potřeby provede Dispose bufferované grafiky <see cref="_GraphicsData"/>
             /// </summary>
             protected void DisposeGraphicsData()
             {
+                if (_GraphicsCache != null)
+                {
+                    DxComponent.TryRun(() => _GraphicsCache.Dispose(), true);
+                    _GraphicsCache = null;
+                }
                 if (_GraphicsData != null)
                 {
                     DxComponent.TryRun(() => _GraphicsData.Dispose(), true);
@@ -567,6 +584,10 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// Content of graphic buffer
             /// </summary>
             private BufferedGraphics _GraphicsData;
+            /// <summary>
+            /// Cache grafiky pro DevExpress
+            /// </summary>
+            private DevExpress.Utils.Drawing.GraphicsCache _GraphicsCache;
             /// <summary>
             /// Velikost, na kterou je dimenzovaná zdejší bufferovaná grafika <see cref="_GraphicsData"/>.
             /// </summary>
@@ -629,6 +650,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Konstruktor
         /// </summary>
         /// <param name="graphics"></param>
+        /// <param name="graphicsCache"></param>
         /// <param name="layerId"></param>
         /// <param name="sourceGraphicsData"></param>
         /// <param name="size"></param>
@@ -636,10 +658,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="invalidateUserData"></param>
         /// <param name="layerUserData"></param>
         /// <param name="logActive"></param>
-        public DxBufferedGraphicPaintArgs(Graphics graphics, DxBufferedLayer layerId, BufferedGraphics sourceGraphicsData, Size size, Rectangle clientRectangle, object invalidateUserData, object layerUserData, bool logActive = false)
+        public DxBufferedGraphicPaintArgs(Graphics graphics, DevExpress.Utils.Drawing.GraphicsCache graphicsCache, DxBufferedLayer layerId, BufferedGraphics sourceGraphicsData, Size size, Rectangle clientRectangle, object invalidateUserData, object layerUserData, bool logActive = false)
         {
             _LayerId = layerId;
             _Graphics = graphics;
+            _GraphicsCache = graphicsCache;
             _SourceGraphicsData = sourceGraphicsData;
             _GraphicsIsUsed = false;
             _Size = size;
@@ -649,6 +672,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         private DxBufferedLayer _LayerId;
         private Graphics _Graphics;
+        private DevExpress.Utils.Drawing.GraphicsCache _GraphicsCache;
         private BufferedGraphics _SourceGraphicsData;
         private bool _GraphicsIsUsed;
         private Size _Size;
@@ -668,6 +692,17 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 _CheckGraphics();
                 return _Graphics; 
+            }
+        }
+        /// <summary>
+        /// Cache grafiky pro DevExpress
+        /// </summary>
+        public DevExpress.Utils.Drawing.GraphicsCache GraphicsCache
+        {
+            get
+            {
+                _CheckGraphics();
+                return _GraphicsCache;
             }
         }
         private void _CheckGraphics()
