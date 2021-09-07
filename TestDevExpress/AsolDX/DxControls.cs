@@ -222,6 +222,50 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
         }
         /// <summary>
+        /// Gets or sets the panel's border style.
+        /// </summary>
+        public new DevExpress.XtraEditors.Controls.BorderStyles BorderStyle 
+        { 
+            get { return base.BorderStyle; }
+            set
+            {
+                if (value != base.BorderStyle)
+                {
+                    base.BorderStyle = value;
+                    OnBorderStyleChanged();
+                    BorderStyleChanged?.Invoke(this, EventArgs.Empty);
+                }
+            }
+        }
+        /// <summary>
+        /// Při změně <see cref="BorderStyle"/>
+        /// </summary>
+        protected virtual void OnBorderStyleChanged() { }
+        /// <summary>
+        /// Při změně <see cref="BorderStyle"/>
+        /// </summary>
+        public event EventHandler BorderStyleChanged;
+        /// <summary>
+        /// Souřadnice vnitřního prostoru panelu.
+        /// Pokud Panel má nějaký Border, který je vykreslován uvnitř <see cref="Control.ClientRectangle"/>, 
+        /// pak <see cref="InnerRectangle"/> je o tento Border zmenšený.
+        /// </summary>
+        public Rectangle InnerRectangle
+        {
+            get
+            {
+                var size = Size;
+                var clientSize = ClientSize;
+                var borderWidth = BorderWidth;
+                if (clientSize.Width == size.Width && borderWidth > 0)
+                {   // DevExpress s oblibou tvrdí, že ClientSize == Size, a přitom mají Border nenulové velikosti. Pak by se nám obsah kreslil přes Border.
+                    int b2 = 2 * borderWidth;
+                    return new Rectangle(borderWidth, borderWidth, size.Width - b2, size.Height - b2);
+                }
+                return new Rectangle(Point.Empty, clientSize);
+            }
+        }
+        /// <summary>
         /// Jsou aktivní zápisy do logu? Default = false
         /// </summary>
         public virtual bool LogActive { get; set; }
@@ -544,6 +588,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             _SuppressEvent = false;
             _ContentTotalSize = Size.Empty;
             _ContentVirtualBounds = Rectangle.Empty;
+            _ContentVisualOrigin = Point.Empty;
             _ContentVisualSize = this.ClientSize;
             _VScrollBarVisible = false;
             _HScrollBarVisible = false;
@@ -568,6 +613,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         private bool _HScrollBarVisible;
         private Size _ContentTotalSize;
         private Rectangle _ContentVirtualBounds;
+        private Point _ContentVisualOrigin;
         private Size _ContentVisualSize;
         /// <summary>
         /// Jsou aktivní zápisy do logu? Default = false
@@ -614,6 +660,18 @@ namespace Noris.Clients.Win.Components.AsolDX
                 }
             }
         }
+        /// <summary>
+        /// Vizuální počátek prostoru pro scrollovaný Content.
+        /// Výchozí hodnota = {0,0}, Content (obsah) začíná přesně na reálné souřadnici 0/0v this panelu.
+        /// <para/>
+        /// Změna hodnoty na kladné souřadnice odsune panel <see cref="ContentControl"/> doprava / dolů, a uvolní tak místo nahoře / vlevo 
+        /// pro případné režijní controly, např. záhlaví, pravítka atd.
+        /// Společně s panelem <see cref="ContentControl"/> budou odsunuty a upraveny i ScrollBary.
+        /// <para/>
+        /// Záporné hodnoty v této souřadnici nejsou akceptovány.
+        /// Příliš velké hodnoty nejsou doporučovány, mohou vést ke zmizení obsahu.
+        /// </summary>
+        public Point ContentVisualOrigin { get { return _ContentVisualOrigin; } set { SetContentVisualOrigin(value); } }
         /// <summary>
         /// Aktuální viditelná velikost obsahu
         /// </summary>
@@ -676,61 +734,79 @@ namespace Noris.Clients.Win.Components.AsolDX
         #endregion
         #region Layout a řízení ScrollBarů
         /// <summary>
+        /// Uloží a akceptuje souřadnici <see cref="ContentVisualOrigin"/>
+        /// </summary>
+        /// <param name="contentVisualOrigin"></param>
+        protected void SetContentVisualOrigin(Point contentVisualOrigin)
+        {
+            int x = contentVisualOrigin.X;
+            int y = contentVisualOrigin.Y;
+            x = (x < 0 ? 0 : (x > 800 ? 800 : x));
+            y = (y < 0 ? 0 : (y > 600 ? 600 : y));
+            if (_ContentVisualOrigin.X == x && _ContentVisualOrigin.Y == y) return;
+
+            _ContentVisualOrigin = new Point(x, y);
+            DoLayoutContent();
+        }
+        /// <summary>
         /// Na základě aktuálních fyzických rozměrů a podle <see cref="ContentTotalSize"/> určí potřebnou viditelnost ScrollBarů,
         /// určí souřadnice prvků (Content i ScrollBary), určí vlastnosti pro ScrollBary a velikost prosotru pro vlastní obsah (<see cref="_ContentVisualSize"/>).
         /// Pokud dojde k jakékoli změně, vyvolá jedenkrát událost <see cref="ContentVirtualBoundsChanged"/>.
         /// </summary>
         protected void DoLayoutContent()
         {
-            Size clientSize = this.ClientSize;
+            // Vizuální prostor:
+            Rectangle innerBounds = InnerRectangle;
+            Point visualOrigin = _ContentVisualOrigin;
+            Rectangle contentBounds = Rectangle.FromLTRB(innerBounds.X + visualOrigin.X, innerBounds.Y + visualOrigin.Y, innerBounds.Right, innerBounds.Bottom);
             if (this.Parent == null)
             {
-                _ContentVisualSize = clientSize;
+                _ContentVisualSize = contentBounds.Size;
+                _ContentControl?.SetBounds(contentBounds);
                 return;
             }
 
+            // Velikost virtuálního obsahu:
             Size contentTotalSize = this.ContentTotalSize;
-            int clientWidth = clientSize.Width;
-            int clientHeight = clientSize.Height;
 
             // Vertikální (svislý) ScrollBar: bude viditelný, když výška obsahu je větší než výška klienta, a zmenší šířku klienta:
-            bool vVisible = (contentTotalSize.Height > clientHeight);
+            bool vVisible = (contentTotalSize.Height > contentBounds.Height);
             int vScrollSize = (vVisible ? _VScrollBar.GetDefaultVerticalScrollBarWidth() : 0);
-            if (vVisible) clientWidth -= vScrollSize;
+            if (vVisible) contentBounds.Width -= vScrollSize;
 
             // Horizontální (vodorovný) ScrollBar: bude viditelný, když šířka obsahu je větší než šířka klienta, a zmenší výšku klienta:
-            bool hVisible = (contentTotalSize.Width > clientWidth);
+            bool hVisible = (contentTotalSize.Width > contentBounds.Width);
             int hScrollSize = (hVisible ? _VScrollBar.GetDefaultHorizontalScrollBarHeight() : 0);
-            if (hVisible) clientHeight -= hScrollSize;
+            if (hVisible) contentBounds.Height -= hScrollSize;
 
             // Pokud dosud nebyl viditelný Vertikální (svislý) ScrollBar, ale je viditelný Horizontální (vodorovný) ScrollBar:
             //  pak Horizontální ScrollBar zmenšil výšku obsahu (clientHeight), a může se stát, že bude třeba zobrazit i Vertikální ScrollBar:
-            if (!vVisible && hVisible && (contentTotalSize.Height > clientHeight))
+            if (!vVisible && hVisible && (contentTotalSize.Height > contentBounds.Height))
             {
                 vVisible = true;
                 vScrollSize = _VScrollBar.GetDefaultVerticalScrollBarWidth();
-                clientWidth -= vScrollSize;
+                contentBounds.Width -= vScrollSize;
             }
 
             // Pokud je přílš malá šířka a je viditelný Vertikální (svislý) ScrollBar: vrátit plnou šířku a zrušit scrollBar:
-            if (clientWidth < 10 && vVisible)
+            if (contentBounds.Width < 10 && vVisible)
             {
-                clientWidth = clientSize.Width;
+                contentBounds.Width += vScrollSize;
                 vVisible = false;
                 vScrollSize = 0;
             }
             // Pokud je přílš malá výška a je viditelný Horizontální (vodorovný) ScrollBar: vrátit plnou výšku a zrušit scrollBar:
-            if (clientHeight < 10 && hVisible)
+            if (contentBounds.Height < 10 && hVisible)
             {
-                clientHeight = clientSize.Height;
+                contentBounds.Height += hScrollSize;
                 hVisible = false;
                 hScrollSize = 0;
             }
 
             // bool reCalcVirtualBounds = (clientWidth != contentVirtualBounds.Width || clientHeight != contentVirtualBounds.Height);
 
-            _ContentControl?.SetBounds(new Rectangle(0, 0, clientWidth, clientHeight));
-            _ContentVisualSize = new Size(clientWidth, clientHeight);
+            _ContentControl?.SetBounds(contentBounds);
+            _ContentVisualSize = new Size(contentBounds.Width, contentBounds.Height);
             _VScrollBarVisible = vVisible;
             _HScrollBarVisible = hVisible;
 
@@ -741,15 +817,15 @@ namespace Noris.Clients.Win.Components.AsolDX
 
                 if (vVisible)
                 {
-                    _VScrollBar.SetBounds(new Rectangle(clientWidth, 0, vScrollSize, clientHeight));
+                    _VScrollBar.SetBounds(new Rectangle(contentBounds.Right, contentBounds.Y, vScrollSize, contentBounds.Height));
                     _VScrollBar.Maximum = contentTotalSize.Height;
-                    _VScrollBar.LargeChange = clientHeight;
+                    _VScrollBar.LargeChange = contentBounds.Height;
                 }
                 if (hVisible)
                 {
-                    _HScrollBar.SetBounds(new Rectangle(0, clientHeight, clientWidth, hScrollSize));
+                    _HScrollBar.SetBounds(new Rectangle(contentBounds.X, contentBounds.Bottom, contentBounds.Width, hScrollSize));
                     _HScrollBar.Maximum = contentTotalSize.Width;
-                    _HScrollBar.LargeChange = clientWidth;
+                    _HScrollBar.LargeChange = contentBounds.Width;
                 }
 
                 if (_VScrollBar.VisibleInternal != vVisible) _VScrollBar.Visible = vVisible;
@@ -780,7 +856,15 @@ namespace Noris.Clients.Win.Components.AsolDX
         protected override void OnClientSizeChanged(EventArgs e)
         {
             base.OnClientSizeChanged(e);
-            this.DoLayoutContent();
+            DoLayoutContent();
+        }
+        /// <summary>
+        /// OnBorderStyleChanged
+        /// </summary>
+        protected override void OnBorderStyleChanged()
+        {
+            base.OnBorderStyleChanged();
+            DoLayoutContent();
         }
         /// <summary>
         /// OnZoomChanged

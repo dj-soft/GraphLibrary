@@ -30,6 +30,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public DxDataForm()
         {
+            InitializeUserControls();
+            InitializeImageCache();
         }
         /// <summary>
         /// Dispose panelu
@@ -37,7 +39,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="disposing"></param>
         protected override void Dispose(bool disposing)
         {
-            _DisposeVisualControls();
+            DisposeImageCache();
+            DisposeUserControls();
+            DisposeVisualPanels();
             base.Dispose(disposing);
         }
         /// <summary>
@@ -64,17 +68,17 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="pages"></param>
         private void _SetPages(IEnumerable<IDataFormPage> pages)
         {
-            _CreateDataPages(pages);
-            _CreateDataTabs();
-            _ActivateVisualControl();
-            _ActivatePage();
+            CreateDataPages(pages);
+            CreateDataTabs();
+            ActivateVisualPanels();
+            ActivatePage();
         }
         /// <summary>
         /// Z dodaných stránek <see cref="IDataFormPage"/> vytvoří zdejší datové struktury: 
         /// naplní pole <see cref="_DataFormPages"/> a <see cref="_Pages"/>, nic dalšího nedělá.
         /// </summary>
         /// <param name="pages"></param>
-        private void _CreateDataPages(IEnumerable<IDataFormPage> pages)
+        private void CreateDataPages(IEnumerable<IDataFormPage> pages)
         {
             _DataFormPages = DxDataFormPage.CreateList(this, pages);
             _Pages = _DataFormPages.Select(p => p.IPage).ToList();
@@ -84,7 +88,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Mohl by dělat i dynamický layout, v budoucnu...
         /// Výstupem je struktura záložek v <see cref="_DataFormTabs"/>. Jedna záložka obsahuje 1 nebo více stránek. 
         /// </summary>
-        private void _CreateDataTabs()
+        private void CreateDataTabs()
         {
             if (_DataFormPages == null) return;
 
@@ -114,9 +118,9 @@ namespace Noris.Clients.Win.Components.AsolDX
 
         /// <summary>
         /// Metoda invaliduje všechny souřadnice na stránkách, které jsou závislé na Zoomu a na DPI.
-        /// Metoda sama neprovádí další přepočty layoutu ani tvorbu záložek, to je úkolem metody <see cref="_CreateDataTabs"/>.
+        /// Metoda sama neprovádí další přepočty layoutu ani tvorbu záložek, to je úkolem metody <see cref="CreateDataTabs"/>.
         /// </summary>
-        private void _InvalidateCurrentBounds()
+        private void InvalidateCurrentBounds()
         {
             _DataFormPages?.ForEachExec(p => p.InvalidateBounds());
         }
@@ -125,15 +129,15 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// a budou z nich vytvořeny data pro záložky do <see cref="_DataFormTabs"/>.
         /// Následně budou připraveny vizuální controly a do nich naplněny patřičné grupy pro zobrazení.
         /// </summary>
-        private void _PrepareDataTabs()
+        private void PrepareDataTabs()
         {
             if (_DataFormTabs == null) return;
-            _ActivateVisualControl();
+            ActivateVisualPanels();
         }
-        private void _ActivatePage(string pageId = null)
+        private void ActivatePage(string pageId = null)
         {
         }
-        private void _ActivateTab(string tabName = null)
+        private void ActivateTab(string tabName = null)
         {
         }
         /// <summary>
@@ -143,7 +147,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         protected override void OnSizeChanged(EventArgs e)
         {
             base.OnSizeChanged(e);
-            _CreateDataTabs();
+            CreateDataTabs();
         }
         /// <summary>
         /// Tento háček je vyvolán po jakékoli akci, která může vést k přepočtu vnitřních velikostí controlů.
@@ -156,13 +160,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         protected override void OnContentSizeChanged()
         {
             base.OnContentSizeChanged();
-            _InvalidateCurrentBounds();
-            _CreateDataTabs();
+            InvalidateCurrentBounds();
+            CreateDataTabs();
         }
 
         private void Refresh(RefreshParts refreshParts)
         {
-
+            this._DataFormPanel.Refresh(refreshParts);
         }
         /// <summary>
         /// Metoda zkusí najít navigační stránku (typově přesnou) a její data záložky <see cref="DxDataFormTab"/>
@@ -204,11 +208,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Aktivuje patřičný control pro zobrazení DataFormu.
         /// </summary>
-        private void _ActivateVisualControl()
+        private void ActivateVisualPanels()
         {
             int count = _DataFormTabsCount;
             if (count == 0)
-                _DeactivateVisualControls();
+                _DeactivateVisualPanels();
             if (count == 1)
                 _ActivateSinglePanel();
             else if(count > 1)
@@ -218,7 +222,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Zajistí odebrání vizuálních controlů z this panelu.
         /// Použije se např. pokud přijde pole stránek obsahující 0 prvků.
         /// </summary>
-        private void _DeactivateVisualControls()
+        private void _DeactivateVisualPanels()
         {
             _DataFormPanel.RemoveControlFromParent(this, true);            // Pokud máme jako náš přímý Child control přítomný DataFormPanel, odebereme jej
             _DataFormTabPane.RemoveControlFromParent(this, true);          // Pokud máme jako náš Child control přítomný TabPane, odebereme jej
@@ -252,7 +256,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Dispose vizuálních controlů
         /// </summary>
-        private void _DisposeVisualControls()
+        private void DisposeVisualPanels()
         {
             _DisposeDataFormPanel();
             _DisposeDataFormTabPane();
@@ -266,7 +270,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Jedna záložka může obsahovat jednu nebo více stránek <see cref="DxDataFormPage"/>.
         /// Pokud záložka obsahuje více stránek, pak další stránky už mají vypočtené souřadnice skupin <see cref="DxDataFormGroup.CurrentGroupBounds"/> správně (a tedy i jejich prvky mají správné souřadnice).
         /// <para/>
-        /// Toto pole je vytvořeno v metodě <see cref="_CreateDataTabs"/>.
+        /// Toto pole je vytvořeno v metodě <see cref="CreateDataTabs"/>.
         /// </summary>
         private List<DxDataFormTab> _DataFormTabs;
         #region DxDataFormPanel
@@ -279,6 +283,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             _DataFormPanel = new DxDataFormPanel(this);
             _DataFormPanel.Dock = DockStyle.Fill;
             _DataFormPanel.LogActive = this.LogActive;
+            _DataFormPanel.ContentVisualOrigin = new Point(0, 0);
+            _DataFormPanel.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.HotFlat;
         }
         /// <summary>
         /// Disposuje vlastní panel DataForm
@@ -365,10 +371,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         #endregion
         #region Služby pro controly se vztahem do DxDataFormPanel
         /// <summary>
-        /// Sdílený objekt ToolTipu do všech controlů
-        /// </summary>
-        internal DxSuperToolTip DxSuperToolTip { get { return _DataFormPanel?.DxSuperToolTip; } }
-        /// <summary>
         /// Daný control přidá do panelu na pozadí (control jen pro kreslení) anebo na popředí (control pro interakci).
         /// </summary>
         /// <param name="control"></param>
@@ -437,6 +439,376 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             return path;
         }
+        #endregion
+        #region Podpora pro vykreslování - controly a ImageCache
+        #region Controly - zde jsou uloženy jednotlivé nativní controly, které se používají k editaci a k zobrazení
+        /// <summary>
+        /// Inicializuje data fyzických controlů (<see cref="_ControlsSets"/>, <see cref="_DxSuperToolTip"/>)
+        /// </summary>
+        private void InitializeUserControls()
+        {
+            _ControlsSets = new Dictionary<DataFormItemType, DxDataFormControlSet>();
+            _DxSuperToolTip = new DxSuperToolTip() { AcceptTitleOnlyAsValid = false };
+        }
+        /// <summary>
+        /// Uvolní z paměti veškerá data fyzických controlů
+        /// </summary>
+        private void DisposeUserControls()
+        {
+            if (_ControlsSets == null) return;
+            foreach (DxDataFormControlSet controlSet in _ControlsSets.Values)
+                controlSet.Dispose();
+            _ControlsSets.Clear();
+        }
+        /// <summary>
+        /// Vrátí instanci reprezentující jeden typ controlu : <see cref="DataFormItemType"/>.
+        /// Vždy vrátí objekt, nikdy null.
+        /// Využívá cache.
+        /// </summary>
+        /// <param name="item"></param>
+        /// <returns></returns>
+        internal DxDataFormControlSet GetControlSet(DxDataFormColumn item)
+        {
+            var dataFormControls = _ControlsSets;
+
+            DxDataFormControlSet controlSet;
+            DataFormItemType itemType = item.ItemType;
+            if (!dataFormControls.TryGetValue(itemType, out controlSet))
+            {
+                controlSet = new DxDataFormControlSet(this, itemType);
+                dataFormControls.Add(itemType, controlSet);
+            }
+            return controlSet;
+        }
+        /// <summary>
+        /// Vrátí control pro daný prvek a režim použití
+        /// </summary>
+        /// <param name="item"></param>
+        /// <param name="mode"></param>
+        /// <returns></returns>
+        internal Control GetControl(DxDataFormColumn item, DxDataFormControlUseMode mode)
+        {
+            DxDataFormControlSet controlSet = GetControlSet(item);
+            Control drawControl = controlSet.GetControlForMode(item, mode);
+            return drawControl;
+        }
+        /// <summary>
+        /// Sdílený objekt ToolTipu do všech controlů
+        /// </summary>
+        internal DxSuperToolTip DxSuperToolTip { get { return this._DxSuperToolTip; } }
+        /// <summary>Sdílený objekt ToolTipu do všech controlů</summary>
+        private DxSuperToolTip _DxSuperToolTip;
+        /// <summary>Paměť dosud používaných typů controlů</summary>
+        private Dictionary<DataFormItemType, DxDataFormControlSet> _ControlsSets;
+        #endregion
+        #region Bitmap cache
+        /// <summary>
+        /// Inicializace subsystému ImageCache
+        /// </summary>
+        private void InitializeImageCache()
+        {
+            ImageCachePaintId = 0L;
+            ImageCacheNextCleanId = _CACHECLEAN_OLD_LOOPS + 1;         // První pokus o úklid proběhne po tomto počtu PaintLoop, protože i kdyby bylo potřeba uklidit staré položky dříve, tak stejně nemůže zahodit starší položky - žádné by nevyhovovaly...
+        }
+        /// <summary>
+        /// Dispose subsystému ImageCache
+        /// </summary>
+        private void DisposeImageCache()
+        {
+            ImageCacheInvalidate();
+        }
+        /// <summary>
+        /// Zruší veškerý obsah z cache uložených Image <see cref="ImageCache"/>, kde jsou uloženy obrázky pro jednotlivé ne-aktivní controly...
+        /// Je nutno volat po změně skinu nebo Zoomu.
+        /// </summary>
+        internal void ImageCacheInvalidate()
+        {
+            if (ImageCache == null) return;
+            ImageCache.Values.ForEachExec(i => i.Dispose());
+            ImageCache.Clear();
+            ImageCache = null;
+        }
+        /// <summary>
+        /// Má být voláno před zahájením vykreslení jednoho snímku.
+        /// </summary>
+        internal void ImagePaintStart()
+        {
+            ImageCachePaintId++;
+            ImageCacheCountOld = ImageCacheCount;
+        }
+        /// <summary>
+        /// Má být voláno po dokončení vykreslení jednoho snímku.
+        /// Zajistí úklid nepotřebných dat v cache.
+        /// </summary>
+        internal void ImagePaintDone()
+        {
+            if (ImageCacheCount > ImageCacheCountOld || _NextCleanLiable)
+                CleanImageCache();
+        }
+        /// <summary>
+        /// Najde a vrátí <see cref="Image"/> pro obsah daného prvku.
+        /// Obrázek hledá nejprve v cache, a pokud tam není pak jej vygeneruje a do cache uloží.
+        /// <para/>
+        /// POZOR: výstupem této metody je vždy new instance Image, a volající ji musí použít v using { } patternu, jinak zlikviduje paměť.
+        /// </summary>
+        /// <param name="item"></param>
+        /// <param name="graphics"></param>
+        /// <returns></returns>
+        internal Image CreateImage(DxDataFormColumn item, Graphics graphics)
+        {
+            if (ImageCache == null) ImageCache = new Dictionary<string, ImageCacheItem>();
+
+            DxDataFormControlSet controlSet = GetControlSet(item);
+            string key = controlSet.GetKeyToCache(item);
+            if (key == null) return null;
+
+            ImageCacheItem imageInfo = null;
+            if (ImageCache.TryGetValue(key, out imageInfo))
+            {   // Pokud mám Image již uloženu v Cache, je tam uložena jako byte[], a tady z ní vygenerujeme new Image a vrátíme, uživatel ji Disposuje sám:
+                imageInfo.AddHit(ImageCachePaintId);
+                return imageInfo.CreateImage();
+            }
+            else
+            {   // Image v cache nemáme, takže nyní vytvoříme skutečný Image s pomocí controlu, obsah Image uložíme jako byte[] do cache, a uživateli vrátíme ten živý obraz:
+                // Tímto postupem šetřím čas, protože Image použiju jak pro uložení do Cache, tak pro vykreslení do grafiky v controlu:
+                Image image = CreateBitmapForItem(item, graphics);
+                lock (ImageCache)
+                {
+                    if (ImageCache.TryGetValue(key, out imageInfo))
+                    {
+                        imageInfo.AddHit(ImageCachePaintId);
+                    }
+                    else
+                    {   // Do cache přidám i image == null, tím ušetřím opakované vytváření / testování obrázku.
+                        // Pro přidávání aplikuji lock(), i když tedy tahle činnost má probíhat jen v jednom threadu = GUI:
+                        imageInfo = new ImageCacheItem(image, ImageCachePaintId);
+                        ImageCache.Add(key, imageInfo);
+                    }
+                }
+                return image;
+            }
+        }
+        /// <summary>
+        /// Fyzicky vytvoří a vrátí Image pro daný control
+        /// </summary>
+        /// <param name="item"></param>
+        /// <param name="graphics"></param>
+        /// <returns></returns>
+        private Image CreateBitmapForItem(DxDataFormColumn item, Graphics graphics)
+        {
+            /*   Časomíra:
+
+               1. Vykreslení bitmapy z paměti do Graphics                    10 mikrosekund
+               2. Nastavení souřadnic (Bounds) do controlu                  300 mikrosekund
+               3. Vložení textu (Text) do controlu                          150 mikrosekund
+               4. Zrušení Selection v TextBoxu                                5 mikrosekund
+               5. Vykreslení controlu do bitmapy                            480 mikrosekund
+
+           */
+
+            DxDataFormControlSet controlSet = GetControlSet(item);
+            Control drawControl = controlSet.GetControlForDraw(item);
+
+            int w = drawControl.Width;
+            int h = drawControl.Height;
+            if (w <= 0 || h <= 0) return null;
+
+            Bitmap image = new Bitmap(w, h, graphics);
+            drawControl.DrawToBitmap(image, new Rectangle(0, 0, w, h));
+
+            return image;
+        }
+        /// <summary>
+        /// Před přidáním nového prvku do cache provede úklid zastaralých prvků v cache, podle potřeby.
+        /// <para/>
+        /// Časová náročnost: kontroly se provednou v řádu 0.2 milisekundy, reálný úklid (kontroly + odstranění starých a nepoužívaných položek cache) trvá cca 0.8 milisekundy.
+        /// Obecně se pracuje s počtem prvků řádově pod 10000, což není problém.
+        /// </summary>
+        private void CleanImageCache()
+        {
+            if (ImageCacheCount == 0) return;
+
+            var startTime = DxComponent.LogTimeCurrent;
+
+            long paintLoop = ImageCachePaintId;
+            if (!_NextCleanLiable && paintLoop < ImageCacheNextCleanId)   // Pokud není úklid povinný, a velikost jsme kontrolovali nedávno, nebudu to ještě řešit.
+                return;
+
+            long currentCacheSize = ImageCacheSize;
+            if (currentCacheSize < _CACHESIZE_MIN)                   // Pokud mám v cache málo dat (pod 4MB), nebudeme uklízet.
+            {
+                _NextCleanLiable = false;
+                ImageCacheNextCleanId = paintLoop + _CACHECLEAN_AFTER_LOOPS;
+                if (LogActive) DxComponent.LogAddLineTime($"DxDataForm.CleanCache(): CacheSize={currentCacheSize}B; úklid není nutný. Čas akce: {DxComponent.LogTokenTimeMilisec}", startTime);
+                return;
+            }
+
+            // Budu pracovat jen s těmi prvky, které nebyly dlouho použity:
+            long lastLoop = paintLoop - _CACHECLEAN_OLD_LOOPS;
+            var items = ImageCache.Where(kvp => kvp.Value.LastPaintLoop <= lastLoop).ToList();
+            if (items.Count == 0)                                    // Pokud všechny prvky pravidelně používám, nebudu je zahazovat.
+            {
+                _NextCleanLiable = false;
+                ImageCacheNextCleanId = paintLoop + _CACHECLEAN_AFTER_LOOPS_SMALL;
+                if (LogActive) DxComponent.LogAddLineTime($"DxDataForm.CleanCache(): CacheSize={currentCacheSize}B; úklid není možný, všechny položky se používají. Čas akce: {DxComponent.LogTokenTimeMilisec}", startTime);
+                return;
+            }
+
+            // Z nich zahodím ty, které byly použity méně než je průměr:
+            string[] keys1 = null;
+            decimal? averageUse = items.Average(kvp => (decimal)kvp.Value.HitCount);
+            if (averageUse.HasValue)
+                keys1 = items.Where(kvp => (decimal)kvp.Value.HitCount < averageUse.Value).Select(kvp => kvp.Key).ToArray();
+
+            CleanImageCache(keys1);
+
+            long cleanedCacheSize = ImageCacheSize;
+            if (LogActive) DxComponent.LogAddLineTime($"DxDataForm.CleanCache(): CacheSize={currentCacheSize}B; Odstraněno {keys1?.Length ?? 0} položek; Po provedení úklidu: {cleanedCacheSize}B. Čas akce: {DxComponent.LogTokenTimeMilisec}", startTime);
+
+            // Co a jak příště:
+            if (cleanedCacheSize < _CACHESIZE_MIN)                   // Pokud byl tento úklid úspěšný z hlediska minimální paměti, pak příští úklid bude až za daný počet cyklů
+            {
+                _NextCleanLiable = false;
+                ImageCacheNextCleanId = paintLoop + _CACHECLEAN_AFTER_LOOPS;
+            }
+            else                                                     // Tento úklid byl potřebný (z hlediska času nebo velikosti paměti), ale nedostali jsme se pod _CACHESIZE_MIN:
+            {
+                _NextCleanLiable = true;                             // Příště budeme volat úklid povinně!
+                if (cleanedCacheSize < currentCacheSize)             // Sice jsme neuklidili pod minimum, ale něco jsme uklidili: příští kontrolu zaplánujeme o něco dříve:
+                    ImageCacheNextCleanId = paintLoop + _CACHECLEAN_AFTER_LOOPS_SMALL;
+            }
+        }
+        /// <summary>
+        /// Z cache vyhodí záznamy pro dané klíče. 
+        /// Tato metoda si v případě potřeby (tj. když jsou zadané nějaké klíče) zamkne cache na dobu úklidu.
+        /// </summary>
+        /// <param name="keys"></param>
+        private void CleanImageCache(string[] keys)
+        {
+            if (keys == null || keys.Length == 0) return;
+            lock (ImageCache)
+            {
+                foreach (string key in keys)
+                {
+                    if (ImageCache.ContainsKey(key))
+                        ImageCache.Remove(key);
+                }
+            }
+        }
+        /// <summary>
+        /// Po kterém vykreslení <see cref="ImageCachePaintId"/> budeme dělat další úklid
+        /// </summary>
+        private long ImageCacheNextCleanId;
+        /// <summary>
+        /// Po příštím vykreslení zavolat úklid cache i když nedojde k navýšení počtu prvků v cache, protože poslední úklid byl potřebný ale ne zcela úspěšný
+        /// </summary>
+        private bool _NextCleanLiable;
+        /// <summary>
+        /// Jaká velikost cache nám nepřekáží? Pokud bude cache menší, nebude probíhat její čištění.
+        /// </summary>
+        private const long _CACHESIZE_MIN = 1572864L;            // Pro provoz nechme 6MB:  6291456L;      Pro testování úklidu je vhodné mít 1.5MB = 1572864L
+        /// <summary>
+        /// Po kolika vykresleních controlu budeme ochotni provést další úklid cache?
+        /// </summary>
+        private const long _CACHECLEAN_AFTER_LOOPS = 6L;
+        /// <summary>
+        /// Po tolika vykresleních provedeme kontrolu velikosti cache když poslední kontrola neuklidila pod _CACHESIZE_MIN
+        /// </summary>
+        private const long _CACHECLEAN_AFTER_LOOPS_SMALL = 4L;
+        /// <summary>
+        /// Jak staré prvky z cache můžeme vyhodit? Počet vykreslovacích cyklů, kdy byl prvek použit.
+        /// Pokud prvek nebyl posledních (NNN) cyklů potřeba, můžeme uvažovat o jeho zahození.
+        /// </summary>
+        private const long _CACHECLEAN_OLD_LOOPS = 12;
+        /// <summary>
+        /// Počet prvků v cache
+        /// </summary>
+        private int ImageCacheCount { get { return ImageCache?.Count ?? 0; } }
+        /// <summary>
+        /// Počet prvků v cache na začátku jednoho kreslení = v době volání metody <see cref="ImagePaintStart"/>
+        /// </summary>
+        private int ImageCacheCountOld;
+        /// <summary>
+        /// Sumární velikost dat v cache
+        /// </summary>
+        private long ImageCacheSize { get { return (ImageCache != null ? ImageCache.Values.Select(i => i.Length).Sum() : 0L); } }
+        /// <summary>
+        /// Pořadí kreslení, slouží pro řízení obsahu cache a jejího úklidu
+        /// </summary>
+        private long ImageCachePaintId;
+        /// <summary>
+        /// Cache obrázků controlů
+        /// </summary>
+        private Dictionary<string, ImageCacheItem> ImageCache;
+        /// <summary>
+        /// Jeden záznam v cache
+        /// </summary>
+        private class ImageCacheItem : IDisposable
+        {
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="image"></param>
+            /// <param name="paintLoop"></param>
+            public ImageCacheItem(Image image, long paintLoop)
+            {
+                if (image != null)
+                {
+                    using (System.IO.MemoryStream ms = new System.IO.MemoryStream())
+                    {
+                        image.Save(ms, System.Drawing.Imaging.ImageFormat.Png);    // PNG: čas v testu 20-24ms, spotřeba paměti 0.5MB.    BMP: čas 18-20ms, pamět 5MB.    TIFF: čas 50ms, paměť 1.5MB
+                        _ImageContent = ms.ToArray();
+                    }
+                }
+                else
+                {
+                    _ImageContent = null;
+                }
+                this.HitCount = 1L;
+                this.LastPaintLoop = paintLoop;
+            }
+            private byte[] _ImageContent;
+            /// <summary>
+            /// Metoda vrací new Image vytvořený z this položky cache
+            /// </summary>
+            /// <returns></returns>
+            public Image CreateImage()
+            {
+                if (_ImageContent == null) return null;
+
+                using (System.IO.MemoryStream ms = new System.IO.MemoryStream(_ImageContent))
+                    return Image.FromStream(ms);
+            }
+            /// <summary>
+            /// Počet byte uložených jako Image v této položce cache
+            /// </summary>
+            public long Length { get { return _ImageContent?.Length ?? 0; } }
+            /// <summary>
+            /// Počet použití této položky cache
+            /// </summary>
+            public long HitCount { get; private set; }
+            /// <summary>
+            /// Poslední číslo smyčky, kdy byl prvek použit
+            /// </summary>
+            public long LastPaintLoop { get; private set; }
+            /// <summary>
+            /// Přidá jednu trefu v použití prvku (nápočet statistiky prvku)
+            /// </summary>
+            public void AddHit(long paintLoop)
+            {
+                HitCount++;
+                if (LastPaintLoop < paintLoop)
+                    LastPaintLoop = paintLoop;
+            }
+            /// <summary>
+            /// Dispose
+            /// </summary>
+            public void Dispose()
+            {
+                _ImageContent = null;
+            }
+        }
+        #endregion
         #endregion
         #region Appearance
         /// <summary>
@@ -827,7 +1199,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
 
             InitializeContentPanel();
             InitializeGroups();
-            InitializeControls();
             InitializePaint();
             InitializeInteractivity();
         }
@@ -841,8 +1212,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         {
             _Groups?.Clear();
             DisposeGroups();
-            InvalidateImageCache();
-            DisposeControls();
             DisposeContentPanel();
 
             base.Dispose(disposing);
@@ -893,7 +1262,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         private void InitializeGroups()
         {
-            _VisibleItems = new List<DxDataFormItem>();
+            _VisibleItems = new List<DxDataFormColumn>();
         }
         /// <summary>
         /// Vloží do sebe dané grupy a zajistí minimální potřebné refreshe
@@ -967,7 +1336,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
 
         private List<DxDataFormGroup> _Groups;
         private List<DxDataFormGroup> _VisibleGroups;
-        private List<DxDataFormItem> _VisibleItems;
+        private List<DxDataFormColumn> _VisibleItems;
         #endregion
         #region Interaktivita
         private void InitializeInteractivity()
@@ -990,7 +1359,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         }
         private DxSimpleButton _FocusInButton;
         private DxSimpleButton _FocusOutButton;
-        private DxDataFormItem _CurrentFocusedItem;
+        private DxDataFormColumn _CurrentFocusedItem;
         #endregion
         #region Myš - Move, Down
         private void InitializeInteractivityMouse()
@@ -1034,7 +1403,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             // Sem se dostanu jen tehdy, když myš klikne na panelu _ContentPanel v místě, kde není žádný prvek.
         }
         /// <summary>
-        /// Vyhledá prvek nacházející se pod aktuální souřadnicí myši a zajistí pro prvky <see cref="MouseLeaveItem()"/> a <see cref="MouseEnterItem(DxDataFormItem)"/>.
+        /// Vyhledá prvek nacházející se pod aktuální souřadnicí myši a zajistí pro prvky <see cref="MouseLeaveItem()"/> a <see cref="MouseEnterItem(DxDataFormColumn)"/>.
         /// </summary>
         private void DetectMouseChangeForCurrentPoint()
         {
@@ -1043,7 +1412,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             DetectMouseChangeForPoint(relativeLocation);
         }
         /// <summary>
-        /// Vyhledá prvek nacházející se pod danou souřadnicí myši a zajistí pro prvky <see cref="MouseLeaveItem()"/> a <see cref="MouseEnterItem(DxDataFormItem)"/>.
+        /// Vyhledá prvek nacházející se pod danou souřadnicí myši a zajistí pro prvky <see cref="MouseLeaveItem()"/> a <see cref="MouseEnterItem(DxDataFormColumn)"/>.
         /// </summary>
         /// <param name="location">Souřadnice myši relativně k controlu <see cref="_ContentPanel"/> = reálný parent prvků</param>
         private void DetectMouseChangeForPoint(Point? location)
@@ -1107,8 +1476,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         {
             if (_VisibleItems == null) return;
 
-            DxDataFormItem oldItem = _CurrentOnMouseItem;
-            DxDataFormItem newItem = null;
+            DxDataFormColumn oldItem = _CurrentOnMouseItem;
+            DxDataFormColumn newItem = null;
             bool oldExists = (oldItem != null);
             bool newExists = location.HasValue && _VisibleItems.TryGetLast(i => i.IsVisibleOnPoint(location.Value), out newItem);
 
@@ -1127,12 +1496,12 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Je voláno při příchodu myši na daný prvek.
         /// </summary>
         /// <param name="item"></param>
-        private void MouseEnterItem(DxDataFormItem item)
+        private void MouseEnterItem(DxDataFormColumn item)
         {
             if (item.VisibleBounds.HasValue)
             {
                 _CurrentOnMouseItem = item;
-                _CurrentOnMouseControlSet = GetControlSet(item);
+                _CurrentOnMouseControlSet = _DataForm.GetControlSet(item);
                 _CurrentOnMouseControl = _CurrentOnMouseControlSet.GetControlForMouse(item);
                 if (!_ContentPanel.IsPaintLayersInProgress)
                 {   // V době, kdy probíhá proces Paint, NEBUDU provádět Scroll:
@@ -1167,7 +1536,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Datový prvek, nacházející se nyní pod myší
         /// </summary>
-        private DxDataFormItem _CurrentOnMouseItem;
+        private DxDataFormColumn _CurrentOnMouseItem;
         /// <summary>
         /// Datový set popisující control, nacházející se nyní pod myší
         /// </summary>
@@ -1348,7 +1717,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         {
             _RefreshPartCache = false;
 
-            this.InvalidateImageCache();
+            _DataForm.ImageCacheInvalidate();
         }
         /// <summary>
         /// Provede akci Refresh, <see cref="RefreshParts.InvalidateControl"/>
@@ -1415,8 +1784,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         {
             _AfterPaintSearchActiveItem = false;
             _PaintingItems = false;
-            _PaintLoop = 0L;
-            _NextCleanPaintLoop = _CACHECLEAN_OLD_LOOPS + 1;         // První pokus o úklid proběhne po tomto počtu PaintLoop, protože i kdyby bylo potřeba uklidit staré položky, tak stejně nemůže zahodit starší položky - žádné by nevyhovovaly...
         }
         /// <summary>
         /// ContentPanel chce vykreslit některou vrstvu
@@ -1477,13 +1844,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         { 
             bool afterPaintSearchActiveItem = _AfterPaintSearchActiveItem;
             _AfterPaintSearchActiveItem = false;
-            _PaintLoop++;
-            int cacheCount = ImageCacheCount;
+            _DataForm.ImagePaintStart();
             OnPaintContentStandard(e);
-
-            if (ImageCacheCount > cacheCount || _NextCleanLiable)
-                CleanImageCache();
-
+            _DataForm.ImagePaintDone();
             if (afterPaintSearchActiveItem)
                 DetectMouseChangeForCurrentPoint();
         }
@@ -1528,8 +1891,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="item"></param>
         /// <param name="visibleOrigin"></param>
         /// <param name="e"></param>
-        private void PaintItemStandard(DxDataFormItem item, Point visibleOrigin, DxBufferedGraphicPaintArgs e)
+        private void PaintItemStandard(DxDataFormColumn item, Point visibleOrigin, DxBufferedGraphicPaintArgs e)
         {
+            var controlSet = _DataForm.GetControlSet(item);
             var bounds = item.CurrentBounds;
             Point location = bounds.Location.Sub(visibleOrigin);
             Color? indicatorColor = GetIndicatorColor(item, out bool isBold);
@@ -1537,15 +1901,15 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             // Pořadí akcí je mírně zmatené, protože:
             // 1. Indikátor chci kreslit 'pod' obrázek controlu (Image)
             // 2. Control ale nemusí vygenerovat obrázek (metoda CreateImage() vrátí null), pak chci vykreslit indikátor i bez existence obrázku
-            // 3. Reálná velikost obrázku (Image) nemusí odpovídat velikosti prostoru (item.CurrentBounds), protože control může mít reálně jinou výšku než jsme mu nadiktovali my dle designu
+            // 3. Reálná velikost obrázku (Image) nemusí odpovídat velikosti prostoru (item.CurrentBounds), protože control může mít reálně jinou výšku, než jsme mu nadiktovali my dle designu
             // 4. Pokud tedy CreateImage vrátí obrázek, pak použijeme jeho rozměry pro vykreslení indikátoru; a pokud obrázek nevrátí, pak indikátor vykreslíme do designem určené velikosti.
 
             Rectangle? visibleBounds = null;
-            if (item.CanPaintByPainter)
+            if (controlSet.CanPaintByPainter)
             {
                 if (item.IItem is IDataFormItemImageText label)
                 {
-                    Control control = GetControl(item, DxDataFormControlUseMode.Draw);
+                    Control control = _DataForm.GetControl(item, DxDataFormControlUseMode.Draw);
                     if (control is BaseControl baseControl)
                     {
                         var appearance = baseControl.GetViewInfo().PaintAppearance;
@@ -1556,9 +1920,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                     }
                 }
             }
-            if (!visibleBounds.HasValue && item.CanPaintByImage)
+            if (!visibleBounds.HasValue && controlSet.CanPaintByImage)
             {
-                using (var image = CreateImage(item, e.Graphics))
+                using (var image = _DataForm.CreateImage(item, e.Graphics))
                 {
                     if (image != null)
                     {
@@ -1590,7 +1954,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="item"></param>
         /// <param name="isBold"></param>
         /// <returns></returns>
-        private Color? GetIndicatorColor(DxDataFormItem item, out bool isBold)
+        private Color? GetIndicatorColor(DxDataFormColumn item, out bool isBold)
         {
             isBold = false;
             if (item == null) return null;
@@ -1663,308 +2027,14 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         private static DxBufferedLayer UsedLayers { get { return DxBufferedLayer.AppBackground | DxBufferedLayer.MainLayer; } }
 
         private bool _AfterPaintSearchActiveItem;
-        private long _PaintLoop;
         private bool _PaintingItems = false;
 
         #endregion
-        #region Bitmap cache
-        /// <summary>
-        /// Najde a vrátí <see cref="Image"/> pro obsah daného prvku.
-        /// Obrázek hledá nejprve v cache, a pokud tam není pak jej vygeneruje a do cache uloží.
-        /// <para/>
-        /// POZOR: výstupem této metody je vždy new instance Image, a volající ji musí použít v using { } patternu, jinak zlikviduje paměť.
-        /// </summary>
-        /// <param name="item"></param>
-        /// <returns></returns>
-        private Image CreateImage(DxDataFormItem item, Graphics graphics)
-        {
-            if (ImageCache == null) ImageCache = new Dictionary<string, ImageCacheItem>();
-
-            DxDataFormControlSet controlSet = GetControlSet(item);
-            string key = controlSet.GetKeyToCache(item);
-            if (key == null) return null;
-
-            ImageCacheItem imageInfo = null;
-            if (ImageCache.TryGetValue(key, out imageInfo))
-            {   // Pokud mám Image již uloženu v Cache, je tam uložena jako byte[], a tady z ní vygenerujeme new Image a vrátíme, uživatel ji Disposuje sám:
-                imageInfo.AddHit(_PaintLoop);
-                return imageInfo.CreateImage();
-            }
-            else
-            {   // Image v cache nemáme, takže nyní vytvoříme skutečný Image s pomocí controlu, obsah Image uložíme jako byte[] do cache, a uživateli vrátíme ten živý obraz:
-                // Tímto postupem šetřím čas, protože Image použiju jak pro uložení do Cache, tak pro vykreslení do grafiky v controlu:
-                Image image = CreateBitmapForItem(item, graphics);
-                lock (ImageCache)
-                {
-                    if (ImageCache.TryGetValue(key, out imageInfo))
-                    {
-                        imageInfo.AddHit(_PaintLoop);
-                    }
-                    else
-                    {   // Do cache přidám i image == null, tím ušetřím opakované vytváření / testování obrázku.
-                        // Pro přidávání aplikuji lock(), i když tedy tahle činnost má probíhat jen v jednom threadu = GUI:
-                        imageInfo = new ImageCacheItem(image, _PaintLoop);
-                        ImageCache.Add(key, imageInfo);
-                    }
-                }
-                return image;
-            }
-        }
-        /// <summary>
-        /// Před přidáním nového prvku do cache provede úklid zastaralých prvků v cache, podle potřeby.
-        /// <para/>
-        /// Časová náročnost: kontroly se provednou v řádu 0.2 milisekundy, reálný úklid (kontroly + odstranění starých a nepoužívaných položek cache) trvá cca 0.8 milisekundy.
-        /// Obecně se pracuje s počtem prvků řádově pod 10000, což není problém.
-        /// </summary>
-        private void CleanImageCache()
-        {
-            if (ImageCacheCount == 0) return;
-
-            var startTime = DxComponent.LogTimeCurrent;
-
-            long paintLoop = _PaintLoop;
-            if (!_NextCleanLiable && paintLoop < _NextCleanPaintLoop)   // Pokud není úklid povinný, a velikost jsme kontrolovali nedávno, nebudu to ještě řešit.
-                return;
-
-            long currentCacheSize = ImageCacheSize;
-            if (currentCacheSize < _CACHESIZE_MIN)                   // Pokud mám v cache málo dat (pod 4MB), nebudeme uklízet.
-            {
-                _NextCleanLiable = false;
-                _NextCleanPaintLoop = paintLoop + _CACHECLEAN_AFTER_LOOPS;
-                if (LogActive) DxComponent.LogAddLineTime($"DxDataForm.CleanCache(): CacheSize={currentCacheSize}B; úklid není nutný. Čas akce: {DxComponent.LogTokenTimeMilisec}", startTime);
-                return;
-            }
-
-            // Budu pracovat jen s těmi prvky, které nebyly dlouho použity:
-            long lastLoop = paintLoop - _CACHECLEAN_OLD_LOOPS;
-            var items = ImageCache.Where(kvp => kvp.Value.LastPaintLoop <= lastLoop).ToList();
-            if (items.Count == 0)                                    // Pokud všechny prvky pravidelně používám, nebudu je zahazovat.
-            {
-                _NextCleanLiable = false;
-                _NextCleanPaintLoop = paintLoop + _CACHECLEAN_AFTER_LOOPS_SMALL;
-                if (LogActive) DxComponent.LogAddLineTime($"DxDataForm.CleanCache(): CacheSize={currentCacheSize}B; úklid není možný, všechny položky se používají. Čas akce: {DxComponent.LogTokenTimeMilisec}", startTime);
-                return;
-            }
-
-            // Z nich zahodím ty, které byly použity méně než je průměr:
-            string[] keys1 = null;
-            decimal? averageUse = items.Average(kvp => (decimal)kvp.Value.HitCount);
-            if (averageUse.HasValue)
-                keys1 = items.Where(kvp => (decimal)kvp.Value.HitCount < averageUse.Value).Select(kvp => kvp.Key).ToArray();
-
-            CleanImageCache(keys1);
-
-            long cleanedCacheSize = ImageCacheSize;
-            if (LogActive) DxComponent.LogAddLineTime($"DxDataForm.CleanCache(): CacheSize={currentCacheSize}B; Odstraněno {keys1?.Length ?? 0} položek; Po provedení úklidu: {cleanedCacheSize}B. Čas akce: {DxComponent.LogTokenTimeMilisec}", startTime);
-
-            // Co a jak příště:
-            if (cleanedCacheSize < _CACHESIZE_MIN)                   // Pokud byl tento úklid úspěšný z hlediska minimální paměti, pak příští úklid bude až za daný počet cyklů
-            {
-                _NextCleanLiable = false;
-                _NextCleanPaintLoop = paintLoop + _CACHECLEAN_AFTER_LOOPS;
-            }
-            else                                                     // Tento úklid byl potřebný (z hlediska času nebo velikosti paměti), ale nedostali jsme se pod _CACHESIZE_MIN:
-            {
-                _NextCleanLiable = true;                             // Příště budeme volat úklid povinně!
-                if (cleanedCacheSize < currentCacheSize)             // Sice jsme neuklidili pod minimum, ale něco jsme uklidili: příští kontrolu zaplánujeme o něco dříve:
-                    _NextCleanPaintLoop = paintLoop + _CACHECLEAN_AFTER_LOOPS_SMALL;
-            }
-        }
-        /// <summary>
-        /// Z cache vyhodí záznamy pro dané klíče. 
-        /// Tato metoda si v případě potřeby (tj. když jsou zadané nějaké klíče) zamkne cache na dobu úklidu.
-        /// </summary>
-        /// <param name="keys"></param>
-        private void CleanImageCache(string[] keys)
-        {
-            if (keys == null || keys.Length == 0) return;
-            lock (ImageCache)
-            {
-                foreach (string key in keys)
-                {
-                    if (ImageCache.ContainsKey(key))
-                        ImageCache.Remove(key);
-                }
-            }
-        }
-        /// <summary>
-        /// Po kterém vykreslení <see cref="_PaintLoop"/> budeme dělat další úklid
-        /// </summary>
-        private long _NextCleanPaintLoop;
-        /// <summary>
-        /// Po příštím vykreslení zavolat úklid cache i když nedojde k navýšení počtu prvků v cache, protože poslední úklid byl potřebný ale ne zcela úspěšný
-        /// </summary>
-        private bool _NextCleanLiable;
-        /// <summary>
-        /// Jaká velikost cache nám nepřekáží? Pokud bude cache menší, nebude probíhat její čištění.
-        /// </summary>
-        private const long _CACHESIZE_MIN = 1572864L;            // Pro provoz nechme 6MB:  6291456L;      Pro testování úklidu je vhodné mít 1.5MB = 1572864L
-        /// <summary>
-        /// Po kolika vykresleních controlu budeme ochotni provést další úklid cache?
-        /// </summary>
-        private const long _CACHECLEAN_AFTER_LOOPS = 6L;
-        /// <summary>
-        /// Po tolika vykresleních provedeme kontrolu velikosti cache když poslední kontrola neuklidila pod _CACHESIZE_MIN
-        /// </summary>
-        private const long _CACHECLEAN_AFTER_LOOPS_SMALL = 4L;
-        /// <summary>
-        /// Jak staré prvky z cache můžeme vyhodit? Počet vykreslovacích cyklů, kdy byl prvek použit.
-        /// Pokud prvek nebyl posledních (NNN) cyklů potřeba, můžeme uvažovat o jeho zahození.
-        /// </summary>
-        private const long _CACHECLEAN_OLD_LOOPS = 12;
-        /// <summary>
-        /// Zruší veškerý obsah z cache uložených Image <see cref="ImageCache"/>, kde jsou uloženy obrázky pro jednotlivé ne-aktivní controly...
-        /// Je nutno volat po změně skinu nebo Zoomu.
-        /// </summary>
-        private void InvalidateImageCache()
-        {
-            ImageCache = null;
-        }
-        /// <summary>
-        /// Počet prvků v cache
-        /// </summary>
-        private int ImageCacheCount { get { return ImageCache?.Count ?? 0; } }
-        /// <summary>
-        /// Sumární velikost dat v cache
-        /// </summary>
-        private long ImageCacheSize { get { return (ImageCache != null ? ImageCache.Values.Select(i => i.Length).Sum() : 0L); } }
-        /// <summary>
-        /// Cache obrázků controlů
-        /// </summary>
-        private Dictionary<string, ImageCacheItem> ImageCache;
-        private class ImageCacheItem
-        {
-            /// <summary>
-            /// Konstruktor
-            /// </summary>
-            /// <param name="image"></param>
-            /// <param name="paintLoop"></param>
-            public ImageCacheItem(Image image, long paintLoop)
-            {
-                if (image != null)
-                {
-                    using (System.IO.MemoryStream ms = new System.IO.MemoryStream())
-                    {
-                        image.Save(ms, System.Drawing.Imaging.ImageFormat.Png);    // PNG: čas v testu 20-24ms, spotřeba paměti 0.5MB.    BMP: čas 18-20ms, pamět 5MB.    TIFF: čas 50ms, paměť 1.5MB
-                        _ImageContent = ms.ToArray();
-                    }
-                }
-                else
-                {
-                    _ImageContent = null;
-                }
-                this.HitCount = 1L;
-                this.LastPaintLoop = paintLoop;
-            }
-            private byte[] _ImageContent;
-            /// <summary>
-            /// Metoda vrací new Image vytvořený z this položky cache
-            /// </summary>
-            /// <returns></returns>
-            public Image CreateImage()
-            {
-                if (_ImageContent == null) return null;
-
-                using (System.IO.MemoryStream ms = new System.IO.MemoryStream(_ImageContent))
-                    return Image.FromStream(ms);
-            }
-            /// <summary>
-            /// Počet byte uložených jako Image v této položce cache
-            /// </summary>
-            public long Length { get { return _ImageContent?.Length ?? 0; } } 
-            /// <summary>
-            /// Počet použití této položky cache
-            /// </summary>
-            public long HitCount { get; private set; }
-            /// <summary>
-            /// Poslední číslo smyčky, kdy byl prvek použit
-            /// </summary>
-            public long LastPaintLoop { get; private set; }
-            /// <summary>
-            /// Přidá jednu trefu v použití prvku (nápočet statistiky prvku)
-            /// </summary>
-            public void AddHit(long paintLoop)
-            { 
-                HitCount++;
-                if (LastPaintLoop < paintLoop)
-                    LastPaintLoop = paintLoop;
-            }
-        }
-        #endregion
+        
         #endregion
         #region Fyzické controly - tvorba, správa, vykreslení bitmapy skrze control
-        /// <summary>
-        /// Inicializuje data fyzických controlů (<see cref="_ControlsSets"/>, <see cref="_DxSuperToolTip"/>)
-        /// </summary>
-        private void InitializeControls()
-        {
-            _ControlsSets = new Dictionary<DataFormItemType, DxDataFormControlSet>();
-            _DxSuperToolTip = new DxSuperToolTip() { AcceptTitleOnlyAsValid = false };
-        }
-        /// <summary>
-        /// Uvolní z paměti veškerá data fyzických controlů
-        /// </summary>
-        private void DisposeControls()
-        {
-            if (_ControlsSets == null) return;
-            foreach (DxDataFormControlSet controlSet in _ControlsSets.Values)
-                controlSet.Dispose();
-            _ControlsSets.Clear();
-        }
-        private DxDataFormControlSet GetControlSet(DxDataFormItem item)
-        {
-            var dataFormControls = _ControlsSets;
-
-            DxDataFormControlSet controlSet;
-            DataFormItemType itemType = item.ItemType;
-            if (!dataFormControls.TryGetValue(itemType, out controlSet))
-            {
-                controlSet = new DxDataFormControlSet(this._DataForm, itemType);
-                dataFormControls.Add(itemType, controlSet);
-            }
-            return controlSet;
-        }
-        /// <summary>
-        /// Vrátí control pro daný prvek a režim použití
-        /// </summary>
-        /// <param name="item"></param>
-        /// <param name="mode"></param>
-        /// <returns></returns>
-        private Control GetControl(DxDataFormItem item, DxDataFormControlUseMode mode)
-        {
-            DxDataFormControlSet controlSet = GetControlSet(item);
-            Control drawControl = controlSet.GetControlForMode(item, mode);
-            return drawControl;
-        }
-
-        private Image CreateBitmapForItem(DxDataFormItem item, Graphics graphics)
-        {
-            /*   Časomíra:
-
-               1. Vykreslení bitmapy z paměti do Graphics                    10 mikrosekund
-               2. Nastavení souřadnic (Bounds) do controlu                  300 mikrosekund
-               3. Vložení textu (Text) do controlu                          150 mikrosekund
-               4. Zrušení Selection v TextBoxu                                5 mikrosekund
-               5. Vykreslení controlu do bitmapy                            480 mikrosekund
-
-           */
-
-            DxDataFormControlSet controlSet = GetControlSet(item);
-            Control drawControl = controlSet.GetControlForDraw(item);
-
-            int w = drawControl.Width;
-            int h = drawControl.Height;
-            if (w <= 0 || h <= 0) return null;
-
-            Bitmap image = new Bitmap(w, h, graphics);
-            drawControl.DrawToBitmap(image, new Rectangle(0, 0, w, h));
-
-            return image;
-        }
-        /// <summary>
-        /// Paměť dosud používaných typů controlů
-        /// </summary>
-        private Dictionary<DataFormItemType, DxDataFormControlSet> _ControlsSets;
+       
+     
         /// <summary>
         /// Kompletní informace o jednom prvku: index řádku, dekarace, control set a fyzický control
         /// </summary>
@@ -1977,7 +2047,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             /// <summary>
             /// Datový prvek, nacházející se nyní pod myší
             /// </summary>
-            public DxDataFormItem Item;
+            public DxDataFormColumn Item;
             /// <summary>
             /// Datový set popisující control, nacházející se nyní pod myší
             /// </summary>
@@ -2019,11 +2089,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                     this._ContentPanel.Controls.Remove(control);
             }
         }
-        /// <summary>
-        /// Sdílený objekt ToolTipu do všech controlů
-        /// </summary>
-        internal DxSuperToolTip DxSuperToolTip { get { return this._DxSuperToolTip; } }
-        private DxSuperToolTip _DxSuperToolTip;
         #endregion
         #region Stav panelu, umožní uložit stav a následně jej restorovat
 
@@ -2059,7 +2124,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
     #endregion
     #region class DxDataFormControlSet : správce několika vizuálních controlů jednoho druhu, jejich tvorba, a příprava k použití
     /// <summary>
-    /// Instance třídy, která obhospodařuje jeden typ (<see cref="DataFormItemType"/>) vizuálního controlu, a má až tři instance (Draw, Mouse, Focus)
+    /// Instance třídy, která obhospodařuje jeden typ <see cref="DataFormItemType"/> vizuálního controlu, 
+    /// a má ve své evidenci až tři instance (Draw, Mouse, Focus)
     /// </summary>
     internal class DxDataFormControlSet : IDisposable
     {
@@ -2073,6 +2139,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         {
             _DataForm = dataForm;
             _ItemType = itemType;
+            _CanPaintByPainter = false;
+            _CanPaintByImage = true;
+            _CanPaintByControl = false;
+            _CanCreateControl = true;
             switch (itemType)
             {
                 case DataFormItemType.Label:
@@ -2080,6 +2150,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                     _GetKeyFunction = _LabelGetKey;
                     _FillControlAction = _LabelFill;
                     _ReadControlAction = _LabelRead;
+                    _CanPaintByPainter = true;
+                    _CanCreateControl = false;
                     break;
                 case DataFormItemType.TextBox:
                     _CreateControlFunction = _TextBoxCreate;
@@ -2154,58 +2226,58 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         private DxDataForm _DataForm;
         private DataFormItemType _ItemType;
         private Func<Control> _CreateControlFunction;
-        private Func<DxDataFormItem, string> _GetKeyFunction;
-        private Action<DxDataFormItem, Control, DxDataFormControlUseMode> _FillControlAction;
-        private Action<DxDataFormItem, Control> _ReadControlAction;
+        private Func<DxDataFormColumn, string> _GetKeyFunction;
+        private Action<DxDataFormColumn, Control, DxDataFormControlUseMode> _FillControlAction;
+        private Action<DxDataFormColumn, Control> _ReadControlAction;
         private bool _Disposed;
         #endregion
         #region Label
         private Control _LabelCreate() { return new DxLabelControl() { AutoSizeMode = LabelAutoSizeMode.None }; }
-        private string _LabelGetKey(DxDataFormItem item)
+        private string _LabelGetKey(DxDataFormColumn item)
         {
             string key = GetStandardKeyForItem(item);
             return key;
         }
-        private void _LabelFill(DxDataFormItem item, Control control, DxDataFormControlUseMode mode)
+        private void _LabelFill(DxDataFormColumn item, Control control, DxDataFormControlUseMode mode)
         {
             if (!(control is DxLabelControl label)) throw new InvalidOperationException($"Nelze naplnit data do objektu typu {control.GetType().Name}, je očekáván objekt typu {typeof(DxLabelControl).Name}.");
             CommonFill(item, label, mode, _LabelFillNext);
         }
-        private void _LabelFillNext(DxDataFormItem item, DxLabelControl label, DxDataFormControlUseMode mode)
+        private void _LabelFillNext(DxDataFormColumn item, DxLabelControl label, DxDataFormControlUseMode mode)
         {
             //label.LineStyle = System.Drawing.Drawing2D.DashStyle.Solid;
             //label.LineOrientation = LabelLineOrientation.Horizontal;
             //label.LineColor = Color.Violet;
             //label.LineVisible = true;
         }
-        private void _LabelRead(DxDataFormItem item, Control control)
+        private void _LabelRead(DxDataFormColumn item, Control control)
         { }
         #endregion
         #region TextBox
         private Control _TextBoxCreate() { return new DxTextEdit(); }
-        private string _TextBoxGetKey(DxDataFormItem item)
+        private string _TextBoxGetKey(DxDataFormColumn item)
         {
             string key = GetStandardKeyForItem(item);
             return key;
         }
-        private void _TextBoxFill(DxDataFormItem item, Control control, DxDataFormControlUseMode mode)
+        private void _TextBoxFill(DxDataFormColumn item, Control control, DxDataFormControlUseMode mode)
         {
             if (!(control is DxTextEdit textEdit)) throw new InvalidOperationException($"Nelze naplnit data do objektu typu {control.GetType().Name}, je očekáván objekt typu {typeof(DxTextEdit).Name}.");
             CommonFill(item, textEdit, mode);
             textEdit.DeselectAll();
             textEdit.SelectionStart = 0;
         }
-        private void _TextBoxRead(DxDataFormItem item, Control control)
+        private void _TextBoxRead(DxDataFormColumn item, Control control)
         { }
         #endregion
         #region TextBoxButton
         private Control _TextBoxButtonCreate() { return new DxButtonEdit(); }
-        private string _TextBoxButtonGetKey(DxDataFormItem item)
+        private string _TextBoxButtonGetKey(DxDataFormColumn item)
         {
             string key = GetStandardKeyForItem(item, _TextBoxButtonGetKeySpec);
             return key;
         }
-        private string _TextBoxButtonGetKeySpec(DxDataFormItem item)
+        private string _TextBoxButtonGetKeySpec(DxDataFormColumn item)
         {
             if (!item.TryGetIItem<IDataFormItemTextBoxButton>(out var iItem)) return "";
             string key =
@@ -2214,14 +2286,14 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 (((int)iItem.ButtonKind) + 20).ToString();
             return key;
         }
-        private void _TextBoxButtonFill(DxDataFormItem item, Control control, DxDataFormControlUseMode mode)
+        private void _TextBoxButtonFill(DxDataFormColumn item, Control control, DxDataFormControlUseMode mode)
         {
             if (!(control is DxButtonEdit buttonEdit)) throw new InvalidOperationException($"Nelze naplnit data do objektu typu {control.GetType().Name}, je očekáván objekt typu {typeof(DxButtonEdit).Name}.");
             CommonFill(item, buttonEdit, mode, _TextBoxButtonFillSpec);
             //  textEdit.DeselectAll();
             buttonEdit.SelectionStart = 0;
         }
-        private void _TextBoxButtonFillSpec(DxDataFormItem item, DxButtonEdit buttonEdit, DxDataFormControlUseMode mode)
+        private void _TextBoxButtonFillSpec(DxDataFormColumn item, DxButtonEdit buttonEdit, DxDataFormControlUseMode mode)
         {
             buttonEdit.SelectionStart = 0;
             buttonEdit.SelectionLength = 0;
@@ -2235,7 +2307,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 buttonEdit.ButtonsStyle = (iItem.ButtonAs3D ? DevExpress.XtraEditors.Controls.BorderStyles.Style3D : DevExpress.XtraEditors.Controls.BorderStyles.HotFlat); // HotFlat je nejlepší; ujde i Style3D; i UltraFlat;     testováno Default; Flat; NoBorder; Office2003; Simple; 
             }
         }
-        private void _TextBoxButtonRead(DxDataFormItem item, Control control)
+        private void _TextBoxButtonRead(DxDataFormColumn item, Control control)
         { }
         /// <summary>
         /// Vrací DevExpress hodnotu typu <see cref="DevExpress.XtraEditors.Controls.ButtonPredefines"/>
@@ -2254,67 +2326,67 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         // SpinnerBox
         #region CheckBox
         private Control _CheckBoxCreate() { return new DxCheckEdit(); }
-        private string _CheckBoxGetKey(DxDataFormItem item)
+        private string _CheckBoxGetKey(DxDataFormColumn item)
         {
             string key = GetStandardKeyForItem(item);
             return key;
         }
-        private void _CheckBoxFill(DxDataFormItem item, Control control, DxDataFormControlUseMode mode)
+        private void _CheckBoxFill(DxDataFormColumn item, Control control, DxDataFormControlUseMode mode)
         {
             if (!(control is DxCheckEdit checkEdit)) throw new InvalidOperationException($"Nelze naplnit data do objektu typu {control.GetType().Name}, je očekáván objekt typu {typeof(DxCheckEdit).Name}.");
             CommonFill(item, checkEdit, mode);
         }
-        private void _CheckBoxRead(DxDataFormItem item, Control control)
+        private void _CheckBoxRead(DxDataFormColumn item, Control control)
         { }
         #endregion
         // BreadCrumb
         #region ComboBoxList
         private Control _ComboBoxListCreate() { return new DxTextEdit(); }
-        private string _ComboBoxListGetKey(DxDataFormItem item)
+        private string _ComboBoxListGetKey(DxDataFormColumn item)
         {
             string key = GetStandardKeyForItem(item);
             return key;
         }
-        private void _ComboBoxListFill(DxDataFormItem item, Control control, DxDataFormControlUseMode mode)
+        private void _ComboBoxListFill(DxDataFormColumn item, Control control, DxDataFormControlUseMode mode)
         {
             if (!(control is DxTextEdit textEdit)) throw new InvalidOperationException($"Nelze naplnit data do objektu typu {control.GetType().Name}, je očekáván objekt typu {typeof(DxTextEdit).Name}.");
             //  CommonFill(item, textEdit, mode);
             //  textEdit.DeselectAll();
             textEdit.SelectionStart = 0;
         }
-        private void _ComboBoxListRead(DxDataFormItem item, Control control)
+        private void _ComboBoxListRead(DxDataFormColumn item, Control control)
         { }
         #endregion
         #region ComboBoxEdit
         private Control _ComboBoxEditCreate() { return new DxTextEdit(); }
-        private string _ComboBoxEditGetKey(DxDataFormItem item)
+        private string _ComboBoxEditGetKey(DxDataFormColumn item)
         {
             string key = GetStandardKeyForItem(item);
             return key;
         }
-        private void _ComboBoxEditFill(DxDataFormItem item, Control control, DxDataFormControlUseMode mode)
+        private void _ComboBoxEditFill(DxDataFormColumn item, Control control, DxDataFormControlUseMode mode)
         {
             if (!(control is DxTextEdit textEdit)) throw new InvalidOperationException($"Nelze naplnit data do objektu typu {control.GetType().Name}, je očekáván objekt typu {typeof(DxTextEdit).Name}.");
             //  CommonFill(item, textEdit, mode);
             //  textEdit.DeselectAll();
             textEdit.SelectionStart = 0;
         }
-        private void _ComboBoxEditRead(DxDataFormItem item, Control control)
+        private void _ComboBoxEditRead(DxDataFormColumn item, Control control)
         { }
         #endregion
         #region TokenEdit
         private Control _TokenEditCreate() { return new DxTokenEdit(); }
-        private string _TokenEditGetKey(DxDataFormItem item)
+        private string _TokenEditGetKey(DxDataFormColumn item)
         {
             string key = GetStandardKeyForItem(item);
             return key;
         }
-        private void _TokenEditFill(DxDataFormItem item, Control control, DxDataFormControlUseMode mode)
+        private void _TokenEditFill(DxDataFormColumn item, Control control, DxDataFormControlUseMode mode)
         {
             if (!(control is DxTokenEdit tokenEdit)) throw new InvalidOperationException($"Nelze naplnit data do objektu typu {control.GetType().Name}, je očekáván objekt typu {typeof(DxTokenEdit).Name}.");
             CommonFill(item, tokenEdit, mode, _TokenEditFillSpec);
         }
-        private void _TokenEditFillSpec(DxDataFormItem item, DxTokenEdit tokenEdit, DxDataFormControlUseMode mode)
+        private void _TokenEditFillSpec(DxDataFormColumn item, DxTokenEdit tokenEdit, DxDataFormControlUseMode mode)
         {
             bool fullFill = (mode == DxDataFormControlUseMode.Mouse || mode == DxDataFormControlUseMode.Focus);
             if (fullFill && item.TryGetIItem(out IDataFormItemMenuText iItemMenuText))
@@ -2325,7 +2397,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 // tokenEdit.EditValue = tokenEdit.Properties.Tokens[0].Value;
                 tokenEdit.EditValue = tokenEdit.Properties.Tokens[0].Value.ToString() + ", " + tokenEdit.Properties.Tokens[1].Value.ToString();
         }
-        private void _TokenEditRead(DxDataFormItem item, Control control)
+        private void _TokenEditRead(DxDataFormColumn item, Control control)
         { }
         #endregion
         // ListView
@@ -2333,23 +2405,22 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         // RadioButtonBox
         #region Button
         private Control _ButtonCreate() { return new DxSimpleButton(); }
-        private string _ButtonGetKey(DxDataFormItem item)
+        private string _ButtonGetKey(DxDataFormColumn item)
         {
             string key = GetStandardKeyForItem(item);
             return key;
         }
-        private void _ButtonFill(DxDataFormItem item, Control control, DxDataFormControlUseMode mode)
+        private void _ButtonFill(DxDataFormColumn item, Control control, DxDataFormControlUseMode mode)
         {
             if (!(control is DxSimpleButton button)) throw new InvalidOperationException($"Nelze naplnit data do objektu typu {control.GetType().Name}, je očekáván objekt typu {typeof(DxSimpleButton).Name}.");
             CommonFill(item, button, mode);
         }
-        private void _ButtonRead(DxDataFormItem item, Control control)
+        private void _ButtonRead(DxDataFormColumn item, Control control)
         { }
         #endregion
         // CheckButton
         // DropDownButton
         // Image
-
         #region Společné metody pro získání klíče
         /// <summary>
         /// Vrátí standardní klíč daného prvku do ImageCache
@@ -2357,7 +2428,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="item"></param>
         /// <param name="specKeygenerator"></param>
         /// <returns></returns>
-        private static string GetStandardKeyForItem(DxDataFormItem item, Func<DxDataFormItem, string> specKeygenerator = null)
+        private static string GetStandardKeyForItem(DxDataFormColumn item, Func<DxDataFormColumn, string> specKeygenerator = null)
         {
             var size = item.CurrentBounds.Size;
             string text = "";
@@ -2407,7 +2478,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="control"></param>
         /// <param name="mode"></param>
         /// <param name="specificFillMethod"></param>
-        private void CommonFill<T>(DxDataFormItem item, T control, DxDataFormControlUseMode mode, Action<DxDataFormItem, T, DxDataFormControlUseMode> specificFillMethod = null) where T : BaseControl
+        private void CommonFill<T>(DxDataFormColumn item, T control, DxDataFormControlUseMode mode, Action<DxDataFormColumn, T, DxDataFormControlUseMode> specificFillMethod = null) where T : BaseControl
         {
             // Určím fyzické umístění controlu: pro Draw je dávám na konstantní souřadnici 4/4 (Draw controly se nacházejí na spodním panelu a nejsou vidět):
             bool isDraw = (mode == DxDataFormControlUseMode.Draw || !item.VisibleBounds.HasValue);
@@ -2525,7 +2596,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="item"></param>
         /// <param name="mode"></param>
         /// <returns></returns>
-        private DxSuperToolTip GetSuperTip(DxDataFormItem item, DxDataFormControlUseMode mode)
+        private DxSuperToolTip GetSuperTip(DxDataFormColumn item, DxDataFormControlUseMode mode)
         {
             if (mode != DxDataFormControlUseMode.Mouse) return null;
             var superTip = _DataForm.DxSuperToolTip;
@@ -2536,12 +2607,30 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         #endregion
         #region Získání a naplnění controlu z datového Itemu, a reverzní zpětné načtení hodnot z controlu do datového Itemu
         /// <summary>
+        /// Typ prvku, který je popsán touto sadou
+        /// </summary>
+        internal DataFormItemType ItemType { get { return _ItemType; } }
+        /// <summary>
+        /// Může být pro tento typ controlu použit pro režim Draw (vykreslení prvku bez myši) použit Painter namísto vlastního Controlu?
+        /// </summary>
+        internal bool CanPaintByPainter { get { return _CanPaintByPainter; } } private bool _CanPaintByPainter;
+        /// <summary>
+        /// Může být pro tento typ controlu použit pro režim Draw (vykreslení prvku bez myši) Control pro vytvoření statického Image?
+        /// </summary>
+        internal bool CanPaintByImage { get { return _CanPaintByImage; } } private bool _CanPaintByImage;
+        internal bool CanPaintByControl { get { return _CanPaintByControl; } } private bool _CanPaintByControl;
+        /// <summary>
+        /// Může být pro tento typ controlu vytvářena instance pro režim Mouse a Focus ?
+        /// </summary>
+        internal bool CanCreateControl { get { return _CanCreateControl; } } private bool _CanCreateControl;
+
+        /// <summary>
         /// Vrátí control pro daný prvek a režim
         /// </summary>
         /// <param name="item"></param>
         /// <param name="mode"></param>
         /// <returns></returns>
-        internal Control GetControlForMode(DxDataFormItem item, DxDataFormControlUseMode mode)
+        internal Control GetControlForMode(DxDataFormColumn item, DxDataFormControlUseMode mode)
         {
             switch (mode)
             {
@@ -2551,7 +2640,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             }
             return null;
         }
-        internal Control GetControlForDraw(DxDataFormItem item)
+        internal Control GetControlForDraw(DxDataFormColumn item)
         {
             CheckNonDisposed();
             if (_ControlDraw == null)
@@ -2559,7 +2648,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             _FillControl(item, _ControlDraw, DxDataFormControlUseMode.Draw);
             return _ControlDraw;
         }
-        internal Control GetControlForMouse(DxDataFormItem item)
+        internal Control GetControlForMouse(DxDataFormColumn item)
         {
             CheckNonDisposed();
             if (_ControlMouse == null)
@@ -2567,7 +2656,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             _FillControl(item, _ControlMouse, DxDataFormControlUseMode.Mouse);
             return _ControlMouse;
         }
-        internal Control GetControlForFocus(DxDataFormItem item)
+        internal Control GetControlForFocus(DxDataFormColumn item)
         {
             CheckNonDisposed();
             if (_ControlFocus == null)
@@ -2582,7 +2671,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         /// <param name="item"></param>
         /// <returns></returns>
-        internal string GetKeyToCache(DxDataFormItem item)
+        internal string GetKeyToCache(DxDataFormColumn item)
         {
             CheckNonDisposed();
             string key = _GetKeyFunction?.Invoke(item);
@@ -2604,7 +2693,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             _DataForm.AddControl(control, addToBackground);
             return control;
         }
-        private void _FillControl(DxDataFormItem item, Control control, DxDataFormControlUseMode mode)
+        private void _FillControl(DxDataFormColumn item, Control control, DxDataFormControlUseMode mode)
         {
             _FillControlAction(item, control, mode);
             control.TabIndex = 10;
@@ -2714,29 +2803,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         }
         private DxDataFormState _State;
         #endregion
-    }
-    #endregion
-    #region class DxDataFormState : Stav DataFormu, slouží pro persistenci stavu při přepínání záložek.
-    /// <summary>
-    /// Stav DataFormu, slouží pro persistenci stavu při přepínání záložek.
-    /// Obsahuje pozice ScrollBarů (reálně obsahuje <see cref="ContentVirtualLocation"/>) a objekt s focusem.
-    /// <para/>
-    /// Má význam víceméně u záložkových DataFormů, aby při přepínání záložek byla konkrétní záložka zobrazena v tom stavu, v jakém byla opuštěna.
-    /// </summary>
-    internal class DxDataFormState
-    {
-        /// <summary>
-        /// Posun obsahu daný pozicí ScrollBarů
-        /// </summary>
-        public Point ContentVirtualLocation { get; set; }
-        /// <summary>
-        /// Vrací klon objektu
-        /// </summary>
-        /// <returns></returns>
-        public DxDataFormState Clone()
-        {
-            return (DxDataFormState)this.MemberwiseClone();
-        }
     }
     #endregion
     #region class DxDataFormPage : Třída reprezentující jednu designem definovanou stránku v dataformu.
@@ -2944,7 +3010,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         {
             _DataPage = dataPage;
             _IGroup = iGroup;
-            _Items = DxDataFormItem.CreateList(this, iGroup?.Items);
+            _Items = DxDataFormColumn.CreateList(this, iGroup?.Items);
             _CalculateAutoSize();
         }
         /// <summary>Vlastník - <see cref="DxDataFormPage"/></summary>
@@ -2952,7 +3018,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>Deklarace grupy</summary>
         private IDataFormGroup _IGroup;
         /// <summary>Prvky</summary>
-        private List<DxDataFormItem> _Items;
+        private List<DxDataFormColumn> _Items;
         /// <summary>
         /// Vlastník - <see cref="DxDataForm"/>
         /// </summary>
@@ -2968,7 +3034,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Jednotlivé prvky grupy
         /// </summary>
-        public IList<DxDataFormItem> Items { get { return _Items; } }
+        public IList<DxDataFormColumn> Items { get { return _Items; } }
         /// <summary>
         /// Zajistí provedení výpočtu automatické velikosti grupy.
         /// Reaguje na <see cref="IDataFormGroup.DesignPadding"/>, čte prvky <see cref="Items"/> 
@@ -3047,7 +3113,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         */
 
         /// <summary>
-        /// Souřadnice počátku, ke kterému jsou vztaženy designové souřadnice jednotlivých Items = <see cref="DxDataFormItem.DesignBounds"/>.
+        /// Souřadnice počátku, ke kterému jsou vztaženy designové souřadnice jednotlivých Items = <see cref="DxDataFormColumn.DesignBounds"/>.
         /// Běžná hodnota je { 0, 0 }, ale designer mohl určit určitý posun, aby byl prostor pro okraje grupy.
         /// </summary>
         internal Point DesignItemsOrigin { get; private set; }
@@ -3238,28 +3304,122 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         #endregion
     }
     #endregion
-    #region class DxDataFormItem : Třída reprezentující jeden každý vizuální prvek v DxDataFormu.
+    #region class DxDataFormRowBand : Jedna oddělená skupina řádků v rámci DataFormu
     /// <summary>
-    /// Třída reprezentující jeden každý vizuální prvek v <see cref="DxDataForm"/>.
+    /// <see cref="DxDataFormRowBand"/> : Jedna oddělená skupina řádků v rámci DataFormu.
+    /// Prostor DataFormu v ose Y obsahuje jednu (defaultně) nebo více skupin řádků. Rozdělení prostoru do více skupin než jedné musí být povoleno ve vlastnostech.
+    /// Rozdělení provádí uživatel pomocí tlačítka vpravo nahoře a následného zobrazení splitteru.
+    /// <para/>
+    /// Každá skupina řádků se nazývá RowBand = <see cref="DxDataFormRowBand"/>, a skládá se z částí: Header, RowFilter, Rows, SummaryRows a Footer.
+    /// Části jsou volitelné pro první skupinu, pro vnitřní skupiny a pro skupinu poslední.
+    /// Části Header, RowFilter jsou fixní k hornímu okraji a nescrollují;
+    /// Části Rows, SummaryRows scrollují uprostřed;
+    /// Část Footer je fixní k dolnímu okraji a nescrolluje.
     /// </summary>
-    internal class DxDataFormItem
+    internal class DxDataFormRowBand
     {
         #region Konstruktor, vlastník, prvky
         /// <summary>
-        /// Vytvoří a vrátí List obsahující <see cref="DxDataFormItem"/>, vytvořený z dodaných instancí <see cref="IDataFormItem"/>.
+        /// Konstruktor
+        /// </summary>
+        /// <param name="dataForm"></param>
+        public DxDataFormRowBand(DxDataForm dataForm)
+        {
+            _DataForm = dataForm;
+        }
+        /// <summary>Vlastník - <see cref="DxDataForm"/></summary>
+        private DxDataForm _DataForm;
+        /// <summary>
+        /// Vlastník - <see cref="DxDataForm"/>
+        /// </summary>
+        public DxDataForm DataForm { get { return this._DataForm; } }
+
+        #endregion
+    }
+    #endregion
+    #region class DxDataFormRow : Jeden vizuální řádek v rámci DxDataFormRowBand
+    /// <summary>
+    /// DxDataFormRow : Jeden vizuální řádek v rámci DxDataFormRowBand
+    /// </summary>
+    internal class DxDataFormRow
+    {
+        #region Konstruktor, vlastník, prvky
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="rowBand"></param>
+        /// <param name="rowType"></param>
+        /// <param name="rowId"></param>
+        public DxDataFormRow(DxDataFormRowBand rowBand, DxDataFormRowType rowType, int rowId)
+        {
+            _RowBand = rowBand;
+            _RowType = rowType;
+            _RowId = rowId;
+        }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return $"RowType: {_RowType}; RowId: {_RowId}";
+        }
+        /// <summary>Vlastník - <see cref="DxDataFormRowBand"/></summary>
+        private DxDataFormRowBand _RowBand;
+        /// <summary>Typ řádku</summary>
+        private DxDataFormRowType _RowType;
+        /// <summary>ID řádku, odkazuje se do <see cref="DxDataForm"/> pro data</summary>
+        private int _RowId;
+        /// <summary>
+        /// Vlastník - <see cref="DxDataForm"/>
+        /// </summary>
+        public DxDataForm DataForm { get { return this._RowBand.DataForm; } }
+        /// <summary>
+        /// Vlastník - <see cref="DxDataFormRowBand"/>
+        /// </summary>
+        public DxDataFormRowBand RowBand { get { return this._RowBand; } }
+
+        #endregion
+        /// <summary>
+        /// Umístění na ose Y; reálné pixely v rámci celého Bandu; nastavuje se pouze pro řádky 
+        /// typu <see cref="DxDataFormRowType.RowData"/> a <see cref="DxDataFormRowType.RowSummary"/> = ty jsou pohyblivé podle ScrollBaru.
+        /// </summary>
+        public Int32Range CurrentPositions { get { return _CurrentPositions; } set { _CurrentPositions = value; } }
+        private Int32Range _CurrentPositions;
+        /// <summary>
+        /// Umístění na ose Y; vizuální pixely v rámci celého Bandu - u typu řádku <see cref="DxDataFormRowType.RowHeader"/>,
+        /// <see cref="DxDataFormRowType.RowFilter"/> a <see cref="DxDataFormRowType.RowFooter"/> jsou permanentní (tyto řádky jsou nepohyblivé),
+        /// u řádků typu řádku <see cref="DxDataFormRowType.RowData"/> a <see cref="DxDataFormRowType.RowSummary"/> jsou pohyblivé podle ScrollBaru.
+        /// </summary>
+        public Int32Range VisualPositions { get { return _VisualPositions; } set { _VisualPositions = value; } }
+        private Int32Range _VisualPositions;
+    }
+    #endregion
+    #region class DxDataFormColumn : Třída reprezentující definici jednoho prvku odpovídající sloupci v DxDataFormu.
+    /// <summary>
+    /// Třída reprezentující informace o sloupci v <see cref="DxDataForm"/>.
+    /// Sloupec je myšleno ve smyslu vztahu k datové tabulce.
+    /// S ohledem na rozmístění prvků v rámci <see cref="DxDataForm"/> nejde o "sloupec prvků pod sebou" 
+    /// ale o definici jednoho viditelného prvku, který se může opakovat pro jednotlivé řádky.
+    /// </summary>
+    internal class DxDataFormColumn
+    {
+        #region Konstruktor, vlastník, prvky
+        /// <summary>
+        /// Vytvoří a vrátí List obsahující <see cref="DxDataFormColumn"/>, vytvořený z dodaných instancí <see cref="IDataFormItem"/>.
         /// </summary>
         /// <param name="dataGroup"></param>
         /// <param name="iItems"></param>
         /// <returns></returns>
-        public static List<DxDataFormItem> CreateList(DxDataFormGroup dataGroup, IEnumerable<IDataFormItem> iItems)
+        public static List<DxDataFormColumn> CreateList(DxDataFormGroup dataGroup, IEnumerable<IDataFormItem> iItems)
         {
-            List<DxDataFormItem> dataItems = new List<DxDataFormItem>();
+            List<DxDataFormColumn> dataItems = new List<DxDataFormColumn>();
             if (iItems != null)
             {
                 foreach (IDataFormItem iItem in iItems)
                 {
                     if (iItem == null) continue;
-                    DxDataFormItem dataItem = new DxDataFormItem(dataGroup, iItem);
+                    DxDataFormColumn dataItem = new DxDataFormColumn(dataGroup, iItem);
                     dataItems.Add(dataItem);
                 }
             }
@@ -3270,7 +3430,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         /// <param name="dataGroup"></param>
         /// <param name="iItem"></param>
-        public DxDataFormItem(DxDataFormGroup dataGroup, IDataFormItem iItem)
+        public DxDataFormColumn(DxDataFormGroup dataGroup, IDataFormItem iItem)
             : base()
         {
             _DataGroup = dataGroup;
@@ -3414,12 +3574,65 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             return (IsVisible && VisibleBounds.HasValue && VisibleBounds.Value.Contains(point));
         }
         #endregion
-        public bool CanPaintByPainter { get { return (this.ItemType == DataFormItemType.Label); } }
-        public bool CanPaintByImage { get { return true; } }
-        public bool CanPaintByControl { get { return false; } }
     }
     #endregion
-    #region Enumy : RefreshParts
+    #region class DxDataFormCell : Jedna vizuální buňka v rámci DataFormu, průnik řádku a sloupce
+    internal class DxDataFormCell
+    {
+
+    }
+    #endregion
+    #region class DxDataFormState : Stav DataFormu, slouží pro persistenci stavu při přepínání záložek.
+    /// <summary>
+    /// Stav DataFormu, slouží pro persistenci stavu při přepínání záložek.
+    /// Obsahuje pozice ScrollBarů (reálně obsahuje <see cref="ContentVirtualLocation"/>) a objekt s focusem.
+    /// <para/>
+    /// Má význam víceméně u záložkových DataFormů, aby při přepínání záložek byla konkrétní záložka zobrazena v tom stavu, v jakém byla opuštěna.
+    /// </summary>
+    internal class DxDataFormState
+    {
+        /// <summary>
+        /// Posun obsahu daný pozicí ScrollBarů
+        /// </summary>
+        public Point ContentVirtualLocation { get; set; }
+        /// <summary>
+        /// Vrací klon objektu
+        /// </summary>
+        /// <returns></returns>
+        public DxDataFormState Clone()
+        {
+            return (DxDataFormState)this.MemberwiseClone();
+        }
+    }
+    #endregion
+    #region Enumy : DxDataFormRowType, RefreshParts
+    /// <summary>
+    /// Typ řádku v rámci <see cref="DxDataForm"/>
+    /// </summary>
+    internal enum DxDataFormRowType
+    {
+        None = 0,
+        /// <summary>
+        /// Záhlaví
+        /// </summary>
+        RowHeader,
+        /// <summary>
+        /// Řádkový filtr
+        /// </summary>
+        RowFilter,
+        /// <summary>
+        /// Řádek s daty
+        /// </summary>
+        RowData,
+        /// <summary>
+        /// Řádek se sumářem
+        /// </summary>
+        RowSummary,
+        /// <summary>
+        /// Zápatí
+        /// </summary>
+        RowFooter
+    }
     /// <summary>
     /// Položky pro refresh
     /// </summary>
