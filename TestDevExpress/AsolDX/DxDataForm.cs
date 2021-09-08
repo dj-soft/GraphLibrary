@@ -283,7 +283,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             _DataFormPanel = new DxDataFormPanel(this);
             _DataFormPanel.Dock = DockStyle.Fill;
             _DataFormPanel.LogActive = this.LogActive;
-            _DataFormPanel.ContentVisualOrigin = new Point(0, 0);
+            _DataFormPanel.ContentVisualPadding = new Padding(50, 28, 0, 16); // Padding.Empty;
+            // _DataFormPanel.VSplitterEnabled = true;
             _DataFormPanel.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.HotFlat;
         }
         /// <summary>
@@ -1378,9 +1379,12 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="e"></param>
         private void _ContentPanel_MouseLeave(object sender, EventArgs e)
         {
-            Point location = this.PointToClient(MousePosition);
-            if (!this.ClientRectangle.Contains(location))
+            Point absoluteLocation = MousePosition;
+            Point location = this.PointToClient(absoluteLocation);
+            if (!this._ContentPanel.Bounds.Contains(location))
                 DetectMouseChangeForPoint(null);
+            else
+                DetectMouseChangeForPoint(this._ContentPanel.PointToClient(absoluteLocation));
         }
         /// <summary>
         /// Myš se pohybuje po Content panelu
@@ -1514,7 +1518,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Je voláno při opuštění myši z aktuálního prvku.
         /// </summary>
-        private void MouseLeaveItem()
+        private void MouseLeaveItem(bool refresh = false)
         {
             var oldControl = _CurrentOnMouseControl;
             if (oldControl != null)
@@ -1524,6 +1528,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 oldControl.Enabled = false;
                 if (oldControl is BaseControl baseControl)
                     baseControl.SuperTip = null;
+                if (refresh)
+                    oldControl.Refresh();
             }
             _CurrentOnMouseItem = null;
             _CurrentOnMouseControlSet = null;
@@ -1586,6 +1592,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             _RefreshPartCurrentBounds |= refreshParts.HasFlag(RefreshParts.InvalidateCurrentBounds);
             _RefreshPartContentTotalSize |= refreshParts.HasFlag(RefreshParts.RecalculateContentTotalSize);
             _RefreshPartVisibleItems |= refreshParts.HasFlag(RefreshParts.ReloadVisibleItems);
+            _RefreshPartNativeControlsLocation |= refreshParts.HasFlag(RefreshParts.NativeControlsLocation);
             _RefreshPartCache |= refreshParts.HasFlag(RefreshParts.InvalidateCache);
             _RefreshPartInvalidateControl |= refreshParts.HasFlag(RefreshParts.InvalidateControl);
             _RefreshPartRefreshControl |= refreshParts.HasFlag(RefreshParts.RefreshControl);
@@ -1604,7 +1611,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                     _RefreshPartsAutoDetect();
 
                     // Pokud nebude co dělat, skončíme:
-                    bool doAny = _RefreshPartCurrentBounds || _RefreshPartContentTotalSize || _RefreshPartVisibleItems ||
+                    bool doAny = _RefreshPartCurrentBounds || _RefreshPartContentTotalSize || _RefreshPartVisibleItems || _RefreshPartNativeControlsLocation ||
                                  _RefreshPartCache || _RefreshPartInvalidateControl || _RefreshPartRefreshControl;
                     if (!doAny) return;
 
@@ -1612,6 +1619,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                     if (_RefreshPartCurrentBounds) _DoRefreshPartCurrentBounds();
                     if (_RefreshPartContentTotalSize) _DoRefreshPartContentTotalSize();
                     if (_RefreshPartVisibleItems) _DoRefreshPartVisibleItems();
+                    if (_RefreshPartNativeControlsLocation) _DoRefreshPartNativeControlsLocation();
                     if (_RefreshPartCache) _DoRefreshPartCache();
                     if (_RefreshPartInvalidateControl) _DoRefreshPartInvalidateControl();
                     if (_RefreshPartRefreshControl) _DoRefreshPartRefreshControl();
@@ -1646,6 +1654,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Určit aktuálně viditelné prvky
         /// </summary>
         private bool _RefreshPartVisibleItems;
+        /// <summary>
+        /// Vyřešit souřadnice nativních controlů, nacházejících se v Content panelu
+        /// </summary>
+        private bool _RefreshPartNativeControlsLocation;
         /// <summary>
         /// Resetovat cache předvykreslených controlů
         /// </summary>
@@ -1700,15 +1712,22 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         {
             _RefreshPartVisibleItems = false;
 
-            // Po změně viditelných prvků je třeba provést MouseLeave = prvek pod myší už není ten, co býval:
-            this.MouseLeaveItem();
-
             // Připravím soupis aktuálně viditelných prvků:
             _PrepareVisibleGroupsItems();
+        }
+        /// <summary>
+        /// Provede akci Refresh, <see cref="RefreshParts.NativeControlsLocation"/>
+        /// </summary>
+        private void _DoRefreshPartNativeControlsLocation()
+        {
+            _RefreshPartNativeControlsLocation = false;
+
+            // Po změně viditelných prvků je třeba provést MouseLeave = prvek pod myší už není ten, co býval:
+            this.MouseLeaveItem(true);
 
             // A zajistit, že po vykreslení prvků bude aktivován prvek, který se nachází pod myší:
             // Až po vykreslení proto, že proces vykreslení určí aktuální viditelné souřadnice prvků!
-            this._AfterPaintSearchActiveItem = true;
+            this._AfterPaintSearchOnMouseItem = true;
         }
         /// <summary>
         /// Provede akci Refresh, <see cref="RefreshParts.InvalidateCache"/>
@@ -1764,6 +1783,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         {
             base.OnContentVirtualBoundsChanged();
             State.ContentVirtualLocation = this.ContentVirtualLocation;
+
             Refresh(RefreshParts.AfterScroll);
         }
         /// <summary>
@@ -1782,7 +1802,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         private void InitializePaint()
         {
-            _AfterPaintSearchActiveItem = false;
+            _AfterPaintSearchOnMouseItem = false;
             _PaintingItems = false;
         }
         /// <summary>
@@ -1842,8 +1862,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="e"></param>
         private void PaintContentMainLayer(DxBufferedGraphicPaintArgs e)
         { 
-            bool afterPaintSearchActiveItem = _AfterPaintSearchActiveItem;
-            _AfterPaintSearchActiveItem = false;
+            bool afterPaintSearchActiveItem = _AfterPaintSearchOnMouseItem;
+            _AfterPaintSearchOnMouseItem = false;
             _DataForm.ImagePaintStart();
             OnPaintContentStandard(e);
             _DataForm.ImagePaintDone();
@@ -2025,8 +2045,11 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Souhrn vrstev použitých v this controlu, používá se při invalidaci všech vrstev
         /// </summary>
         private static DxBufferedLayer UsedLayers { get { return DxBufferedLayer.AppBackground | DxBufferedLayer.MainLayer; } }
-
-        private bool _AfterPaintSearchActiveItem;
+        /// <summary>
+        /// Příznak, že po dokončení vykreslení standardní vrstvy máme najít aktivní prvek na aktuální souřadnici myši a případně jej aktivovat.
+        /// Příznak je nastaven po scrollu, protože původní prvek pod myší nám "ujel jinam" a nyní pod myší může být narolovaný jiný aktivní prvek.
+        /// </summary>
+        private bool _AfterPaintSearchOnMouseItem;
         private bool _PaintingItems = false;
 
         #endregion
@@ -3660,6 +3683,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         InvalidateCache = 0x0010,
         /// <summary>
+        /// Vyřešit souřadnice nativních controlů, nacházejících se v Content panelu
+        /// </summary>
+        NativeControlsLocation = 0x0040,
+        /// <summary>
         /// Znovuvykreslit grafiku
         /// </summary>
         InvalidateControl = 0x0100,
@@ -3672,18 +3699,18 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Po změně prvků (přidání, odebrání, změna hodnot) (<see cref="RecalculateContentTotalSize"/> + <see cref="ReloadVisibleItems"/>).
         /// Tato hodnota je Silent = neobsahuje <see cref="InvalidateControl"/>.
         /// </summary>
-        AfterItemsChangedSilent = RecalculateContentTotalSize | ReloadVisibleItems,
+        AfterItemsChangedSilent = RecalculateContentTotalSize | ReloadVisibleItems | NativeControlsLocation,
         /// <summary>
         /// Po změně prvků (přidání, odebrání, změna hodnot) (<see cref="RecalculateContentTotalSize"/> + <see cref="ReloadVisibleItems"/> + <see cref="InvalidateControl"/>).
         /// Tato hodnota není Silent = obsahuje i invalidaci <see cref="InvalidateControl"/> = překreslení controlu.
         /// <para/>
         /// Toto je standardní refresh.
         /// </summary>
-        AfterItemsChanged = RecalculateContentTotalSize | ReloadVisibleItems | InvalidateControl,
+        AfterItemsChanged = RecalculateContentTotalSize | ReloadVisibleItems | NativeControlsLocation | InvalidateControl,
         /// <summary>
         /// Po scrollování (<see cref="ReloadVisibleItems"/> + <see cref="InvalidateControl"/>)
         /// </summary>
-        AfterScroll = ReloadVisibleItems | InvalidateControl,
+        AfterScroll = ReloadVisibleItems | NativeControlsLocation | InvalidateControl,
         /// <summary>
         /// Po změně prvků (přidání, odebrání, změna hodnot) (<see cref="RecalculateContentTotalSize"/> + <see cref="ReloadVisibleItems"/> + <see cref="InvalidateControl"/>).
         /// <para/>
@@ -3693,7 +3720,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Všechny akce, včetně invalidace cache (brutální refresh)
         /// </summary>
-        All = RecalculateContentTotalSize | ReloadVisibleItems | InvalidateCache | InvalidateControl
+        All = RecalculateContentTotalSize | ReloadVisibleItems | NativeControlsLocation | InvalidateCache | InvalidateControl
     }
     #endregion
 }

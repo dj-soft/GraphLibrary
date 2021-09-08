@@ -6480,7 +6480,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             return result;
         }
         #endregion
-        #region Int
+        #region Int a bity
         /// <summary>
         /// Vrátí true pokud dané číslo má pouze jeden bit s hodnotou 1.
         /// Vrací tedy true pro čísla: 1, 2, 4, 8, 16, 32, 64, 128...
@@ -6502,6 +6502,26 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
 
             return count == 1;
+        }
+        #endregion
+        #region Align
+        /// <summary>
+        /// Vrátí danou hodnotu zarovnanou do mezí min, max
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="value"></param>
+        /// <param name="min"></param>
+        /// <param name="max"></param>
+        /// <returns></returns>
+        public static T Align<T>(this T value, T min, T max) where T : IComparable<T>
+        {
+            int minmax = min.CompareTo(max);     // Pokud min je větší nebo rovno max, vracím rovnou min:
+            if (minmax >= 0) return min;
+            int minval = min.CompareTo(value);   // Pokud value je menší než min, vracím min:
+            if (minval >= 0) return min;
+            int maxval = max.CompareTo(value);   // pokud value je větší než max, vracím max:
+            if (maxval <= 0) return max;
+            return value;
         }
         #endregion
     }

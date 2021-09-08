@@ -588,37 +588,77 @@ namespace Noris.Clients.Win.Components.AsolDX
             _SuppressEvent = false;
             _ContentTotalSize = Size.Empty;
             _ContentVirtualBounds = Rectangle.Empty;
-            _ContentVisualOrigin = Point.Empty;
+            _ContentVisualPadding = Padding.Empty;
             _ContentVisualSize = this.ClientSize;
-            _VScrollBarVisible = false;
+            _HScrollBarAllowed = true;
             _HScrollBarVisible = false;
-
-            _VScrollBar = new DxVScrollBar() { Visible = false, Minimum = 0, SmallChange = 40 };
-            _VScrollBar.ValueChanged += ScrollBars_ValueChanged;
-            _VScrollBar.MouseWheel += _VScrollBar_MouseWheel;
-            Controls.Add(_VScrollBar);
+            _VScrollBarAllowed = true;
+            _VScrollBarVisible = false;
 
             _HScrollBar = new DxHScrollBar() { Visible = false, Minimum = 0, SmallChange = 80 };
-            _HScrollBar.ValueChanged += ScrollBars_ValueChanged;
+            _HScrollBar.ValueChanged += _HScrollBar_ValueChanged;
             _HScrollBar.MouseWheel += _HScrollBar_MouseWheel;
             Controls.Add(_HScrollBar);
+
+            _VScrollBar = new DxVScrollBar() { Visible = false, Minimum = 0, SmallChange = 40 };
+            _VScrollBar.ValueChanged += _VScrollBar_ValueChanged;
+            _VScrollBar.MouseWheel += _VScrollBar_MouseWheel;
+            Controls.Add(_VScrollBar);
 
             ScrollToBoundsBasicPadding = new Padding(3);
             ScrollToBoundsScrollPadding = new Padding(24);
         }
+        /// <summary>Control, který zobrazuje obsah</summary>
         private SWF.Control _ContentControl;
-        private DxVScrollBar _VScrollBar;
-        private bool _VScrollBarVisible;
+        /// <summary>Horizontal scrollbar</summary>
         private DxHScrollBar _HScrollBar;
+        /// <summary>Horizontal scrollbar: je povolený? = v případě potřeby bude zobrazen</summary>
+        private bool _HScrollBarAllowed;
+        /// <summary>Horizontal scrollbar: je potřebný? = obsah je větší než současný prostor na ose X</summary>
+        private bool _HScrollBarRequired;
+        /// <summary>Horizontal scrollbar: je reálně viditelný? = je potřebný a je povolený</summary>
         private bool _HScrollBarVisible;
+        /// <summary>Vertical scrollbar</summary>
+        private DxVScrollBar _VScrollBar;
+        /// <summary>Vertical scrollbar: je povolený? = v případě potřeby bude zobrazen</summary>
+        private bool _VScrollBarAllowed;
+        /// <summary>Vertical scrollbar: je potřebný? = obsah je větší než současný prostor na ose Y</summary>
+        private bool _VScrollBarRequired;
+        /// <summary>Vertical scrollbar: je reálně viditelný? = je potřebný a je povolený</summary>
+        private bool _VScrollBarVisible;
+        /// <summary>Velikost obsahu, který je scrollován = pokud bue větší než viditelný prostor, bude možno scrollovat</summary>
         private Size _ContentTotalSize;
+        /// <summary>Aktuálně viditelný výřez obsahu</summary>
         private Rectangle _ContentVirtualBounds;
-        private Point _ContentVisualOrigin;
+        /// <summary>Okraje kolem contentu = mezi vnitřním okrajem this panelu a vnějším okrajem panelu <see cref="ContentControl"/></summary>
+        private Padding _ContentVisualPadding;
+        /// <summary>Viditelná velikost obsahu</summary>
         private Size _ContentVisualSize;
         /// <summary>
         /// Jsou aktivní zápisy do logu? Default = false
         /// </summary>
         public override bool LogActive { get { return base.LogActive; } set { base.LogActive = value; if (_ContentControl != null && _ContentControl is DxPanelControl dxPanel) dxPanel.LogActive = value; } }
+        #endregion
+        #region Splittery
+        public bool VSplitterEnabled { get { return _VSplitterEnabled; } set { _SetVSplitterEnabled(value); } }
+        private bool _VSplitterEnabled;
+        private DevExpress.XtraEditors.SplitterControl _VSplitter;
+        private void _SetVSplitterEnabled(bool enabled)
+        {
+            if (enabled && _VSplitter == null)
+            {
+                _VSplitter = new DevExpress.XtraEditors.SplitterControl();
+                _VSplitter.Bounds = new Rectangle(10, 5, 5, 500);
+                _VSplitter.SplitPosition = 15;
+                _VSplitter.ShowSplitGlyph = DefaultBoolean.True;
+                // _VSplitter.Dock = DockStyle.None;               nemůže být!!!
+                _VSplitter.Enabled = true;
+                this.Controls.Add(_VSplitter);
+            }
+            _VSplitterEnabled = enabled;
+            if (_VSplitter != null)
+                _VSplitter.Visible = enabled;
+        }
         #endregion
         #region Public vlastnosti - ContentControl, Size, ContentVirtualBounds...
         /// <summary>
@@ -661,17 +701,20 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
         }
         /// <summary>
-        /// Vizuální počátek prostoru pro scrollovaný Content.
-        /// Výchozí hodnota = {0,0}, Content (obsah) začíná přesně na reálné souřadnici 0/0v this panelu.
+        /// Okraje kolem contentu = mezi vnitřním okrajem this panelu a vnějším okrajem panelu <see cref="ContentControl"/>.
+        /// Výchozí hodnota = {0,0,0,0}. Pak Content (obsah) obsazuje celý vnitřní prostor this panelu, vyjma potřebné scrollbary.
         /// <para/>
-        /// Změna hodnoty na kladné souřadnice odsune panel <see cref="ContentControl"/> doprava / dolů, a uvolní tak místo nahoře / vlevo 
-        /// pro případné režijní controly, např. záhlaví, pravítka atd.
+        /// Zadáním kladných hodnot dojde k vytvoření prostoru ("okraje") v daných oblastech okolo <see cref="ContentControl"/> 
+        /// (<see cref="ContentControl"/> bude menší než dostupný vnitřní prostor). 
+        /// Tyto okraje pak aplikace může využít k umístění fixních = nescrollovaných prvků (záhlaví sloupců, řádků; pravítka nahoře, dole; dolní součtový řádek, atd).
+        /// <para/>
         /// Společně s panelem <see cref="ContentControl"/> budou odsunuty a upraveny i ScrollBary.
+        /// Ty budou vždy na úplném okaji this panelu, ale budou jen ve velikosti odpovídající <see cref="ContentControl"/>.
         /// <para/>
         /// Záporné hodnoty v této souřadnici nejsou akceptovány.
         /// Příliš velké hodnoty nejsou doporučovány, mohou vést ke zmizení obsahu.
         /// </summary>
-        public Point ContentVisualOrigin { get { return _ContentVisualOrigin; } set { SetContentVisualOrigin(value); } }
+        public Padding ContentVisualPadding { get { return _ContentVisualPadding; } set { SetContentVisualPadding(value); } }
         /// <summary>
         /// Aktuální viditelná velikost obsahu
         /// </summary>
@@ -714,38 +757,99 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public EventHandler ContentVirtualBoundsChanged;
         /// <summary>
+        /// Obsahuje true, pokud je povolenou zobrazit a používat Horizontální (=vodorovný) ScrollBar.
+        /// Výchozí je true. ScrollBar bude zobrazen, když bude potřeba.
+        /// Pokud je false, ScrollBar nebude zobrazován, ale myší kolečko na prvku bude fungovat jako by byl vidět.
+        /// <para/>
+        /// Používá se tedy, když je vedle sebe více panelů se spřaženými souřadnicemi (typicky Bands v tabulkách), 
+        /// kde máme vedle sebe dvě skupiny dat, v pravé je svislý ScollBar zobrazen, ale nechceme jej mít i ve skupině vlevo.
+        /// </summary>
+        public bool HScrollBarAllowed { get { return _HScrollBarAllowed; } set { _HScrollBarAllowed = value; DoLayoutContent(); } }
+        /// <summary>
+        /// Obsahuje true, pokud je Horizontální (=vodorovný) ScrollBar potřebný = obsah je větší než viditelná oblast.
+        /// Pokud ale není povole (<see cref="HScrollBarAllowed"/> je false), pak ScrollBar nebude fyzicky zobrazen (<see cref="HScrollBarVisible"/> bude false).
+        /// </summary>
+        public bool HScrollBarRequired { get { return _HScrollBarRequired; } }
+        /// <summary>
         /// Obsahuje true, pokud je viditelný Horizontální (=vodorovný) ScrollBar
         /// </summary>
         public bool HScrollBarVisible { get { return _HScrollBarVisible; } }
         /// <summary>
-        /// Hodnota na horizontálním ScrollBaru, bez korekcí, jen pokud je ScrollBar viditelný.
-        /// Pokud ScrollBar není viditelný, je zde 0.
+        /// Hodnota na horizontálním ScrollBaru, bez korekcí, podle povolení pro horizontální ScrollBar:
+        /// <para/>
+        /// Pokud je viditelný (<see cref="_HScrollBarVisible"/> = true), 
+        /// pak je zde reálná hodnota ze ScrollBaru <see cref="_HScrollBar"/>.
+        /// <para/>
+        /// Pokud není potřebný (<see cref="_HScrollBarRequired"/> = false), 
+        /// pak je zde 0 (protože obsah je zobrazen celý = obsah není větší než disponibilní prostor).
+        /// <para/>
+        /// Pokud je potřebný (<see cref="_HScrollBarRequired"/> = true), ale z nějakého důvodu není viditelný
+        /// (není povolen: <see cref="_HScrollBarAllowed"/> = false) anebo není možno jej zobrazit: <see cref="_HScrollBarVisible"/> = false), 
+        /// pak je zde odpovídající hodnota z <see cref="_ContentVirtualBounds"/>.X.
         /// </summary>
-        private int _HScrollBarCurrentValue { get { return (_HScrollBarVisible ? _HScrollBar.Value : 0); } }
+        private int _HScrollBarCurrentValue
+        {
+            get
+            {
+                if (_HScrollBarVisible) return _HScrollBar.Value;              // Je fyzicky viditelný = převezmu hodnotu
+                if (_HScrollBarRequired) return _ContentVirtualBounds.X;       // Není viditelný, ale je potřebný = převezmu souřadnici
+                return 0;
+            }
+        }
+        /// <summary>
+        /// Obsahuje true, pokud je povolenou zobrazit a používat Vertikální (=svislý) ScrollBar.
+        /// Výchozí je true. ScrollBar bude zobrazen, když bude potřeba.
+        /// Pokud je false, ScrollBar nebude zobrazován, ale myší kolečko na prvku bude fungovat jako by byl vidět.
+        /// <para/>
+        /// Používá se tedy, když je nad sebou více panelů se spřaženými souřadnicemi (typicky Bands v tabulkách), 
+        /// kde máme nad sebou dvě skupiny dat, v dolní je vodorovný ScollBar zobrazen, ale nechceme jej mít i ve skupině nahoře.
+        /// </summary>
+        public bool VScrollBarAllowed { get { return _VScrollBarAllowed; } set { _VScrollBarAllowed = value; DoLayoutContent(); } }
+        /// <summary>
+        /// Obsahuje true, pokud je Vertikální (=svislý) ScrollBar potřebný = obsah je větší než viditelná oblast.
+        /// Pokud ale není povole (<see cref="VScrollBarAllowed"/> je false), pak ScrollBar nebude fyzicky zobrazen (<see cref="VScrollBarVisible"/> bude false).
+        /// </summary>
+        public bool VScrollBarRequired { get { return _VScrollBarRequired; } }
         /// <summary>
         /// Obsahuje true, pokud je viditelný Vertikální (=svislý) ScrollBar
         /// </summary>
         public bool VScrollBarVisible { get { return _VScrollBarVisible; } }
         /// <summary>
-        /// Hodnota na vertikálním ScrollBaru, bez korekcí, jen pokud je ScrollBar viditelný.
-        /// Pokud ScrollBar není viditelný, je zde 0.
+        /// Hodnota na vertikálním ScrollBaru, bez korekcí, podle povolení pro vertikální ScrollBar:
+        /// <para/>
+        /// Pokud je viditelný (<see cref="_VScrollBarVisible"/> = true), 
+        /// pak je zde reálná hodnota ze ScrollBaru <see cref="_VScrollBar"/>.
+        /// <para/>
+        /// Pokud není potřebný (<see cref="_VScrollBarRequired"/> = false), 
+        /// pak je zde 0 (protože obsah je zobrazen celý = obsah není větší než disponibilní prostor).
+        /// <para/>
+        /// Pokud je potřebný (<see cref="_VScrollBarRequired"/> = true), ale z nějakého důvodu není viditelný
+        /// (není povolen: <see cref="_VScrollBarAllowed"/> = false) anebo není možno jej zobrazit: <see cref="_VScrollBarVisible"/> = false), 
+        /// pak je zde odpovídající hodnota z <see cref="_ContentVirtualBounds"/>.Y.
         /// </summary>
-        private int _VScrollBarCurrentValue { get { return (_VScrollBarVisible ? _VScrollBar.Value : 0); } }
+        private int _VScrollBarCurrentValue 
+        { 
+            get 
+            {
+                if (_VScrollBarVisible) return _VScrollBar.Value;              // Je fyzicky viditelný = převezmu hodnotu
+                if (_VScrollBarRequired) return _ContentVirtualBounds.Y;       // Není viditelný, ale je potřebný = převezmu souřadnici
+                return 0;
+            }
+        }
         #endregion
         #region Layout a řízení ScrollBarů
         /// <summary>
-        /// Uloží a akceptuje souřadnici <see cref="ContentVisualOrigin"/>
+        /// Uloží a akceptuje souřadnici <see cref="ContentVisualPadding"/>
         /// </summary>
-        /// <param name="contentVisualOrigin"></param>
-        protected void SetContentVisualOrigin(Point contentVisualOrigin)
+        /// <param name="contentVisualPadding"></param>
+        protected void SetContentVisualPadding(Padding contentVisualPadding)
         {
-            int x = contentVisualOrigin.X;
-            int y = contentVisualOrigin.Y;
-            x = (x < 0 ? 0 : (x > 800 ? 800 : x));
-            y = (y < 0 ? 0 : (y > 600 ? 600 : y));
-            if (_ContentVisualOrigin.X == x && _ContentVisualOrigin.Y == y) return;
+            int l = contentVisualPadding.Left.Align(0, 800);
+            int t = contentVisualPadding.Top.Align(0, 600);
+            int r = contentVisualPadding.Right.Align(0, 800);
+            int b = contentVisualPadding.Bottom.Align(0, 600);
 
-            _ContentVisualOrigin = new Point(x, y);
+            _ContentVisualPadding = new Padding(l, t, r, b);
             DoLayoutContent();
         }
         /// <summary>
@@ -757,10 +861,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             // Vizuální prostor:
             Rectangle innerBounds = InnerRectangle;
-            Point visualOrigin = _ContentVisualOrigin;
-            Rectangle contentBounds = Rectangle.FromLTRB(innerBounds.X + visualOrigin.X, innerBounds.Y + visualOrigin.Y, innerBounds.Right, innerBounds.Bottom);
+            Padding visualPadding = _ContentVisualPadding;
+            Rectangle contentBounds = Rectangle.FromLTRB(innerBounds.Left + visualPadding.Left, innerBounds.Top + visualPadding.Top, innerBounds.Right - visualPadding.Right, innerBounds.Bottom - visualPadding.Bottom);
+            if (contentBounds.Width < 0) contentBounds.Width = 0;
+            if (contentBounds.Height < 0) contentBounds.Height = 0;
             if (this.Parent == null)
-            {
+            {   // Bez parenta toho moc neděláme, je to předčasné (typicky: nemáme správnou velikost, ani neznáme CurrentDPI).
+                // Po změně parenta tahle metoda proběhne taky, a vyřešíme vše potřebné.
                 _ContentVisualSize = contentBounds.Size;
                 _ContentControl?.SetBounds(contentBounds);
                 return;
@@ -769,15 +876,17 @@ namespace Noris.Clients.Win.Components.AsolDX
             // Velikost virtuálního obsahu:
             Size contentTotalSize = this.ContentTotalSize;
 
-            // Vertikální (svislý) ScrollBar: bude viditelný, když výška obsahu je větší než výška klienta, a zmenší šířku klienta:
-            bool vVisible = (contentTotalSize.Height > contentBounds.Height);
-            int vScrollSize = (vVisible ? _VScrollBar.GetDefaultVerticalScrollBarWidth() : 0);
-            if (vVisible) contentBounds.Width -= vScrollSize;
-
-            // Horizontální (vodorovný) ScrollBar: bude viditelný, když šířka obsahu je větší než šířka klienta, a zmenší výšku klienta:
-            bool hVisible = (contentTotalSize.Width > contentBounds.Width);
+            // Horizontální (vodorovný) ScrollBar: bude potřebný (a viditelný), když šířka obsahu je větší než šířka klienta, a zmenší tak výšku klienta:
+            bool hRequired = (contentBounds.Width > 0 && contentTotalSize.Width > contentBounds.Width);
+            bool hVisible = (_HScrollBarAllowed && hRequired);
             int hScrollSize = (hVisible ? _VScrollBar.GetDefaultHorizontalScrollBarHeight() : 0);
             if (hVisible) contentBounds.Height -= hScrollSize;
+
+            // Vertikální (svislý) ScrollBar: bude potřebný (a viditelný), když výška obsahu je větší než výška klienta, a zmenší tak šířku klienta:
+            bool vRequired = (contentBounds.Height > 0 && contentTotalSize.Height > contentBounds.Height);
+            bool vVisible = (_VScrollBarAllowed && vRequired);
+            int vScrollSize = (vVisible ? _VScrollBar.GetDefaultVerticalScrollBarWidth() : 0);
+            if (vVisible) contentBounds.Width -= vScrollSize;
 
             // Pokud dosud nebyl viditelný Vertikální (svislý) ScrollBar, ale je viditelný Horizontální (vodorovný) ScrollBar:
             //  pak Horizontální ScrollBar zmenšil výšku obsahu (clientHeight), a může se stát, že bude třeba zobrazit i Vertikální ScrollBar:
@@ -807,8 +916,10 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             _ContentControl?.SetBounds(contentBounds);
             _ContentVisualSize = new Size(contentBounds.Width, contentBounds.Height);
-            _VScrollBarVisible = vVisible;
+            _HScrollBarRequired = hRequired;
             _HScrollBarVisible = hVisible;
+            _VScrollBarRequired = vRequired;
+            _VScrollBarVisible = vVisible;
 
             bool suppressEvent = _SuppressEvent;
             try
@@ -817,13 +928,13 @@ namespace Noris.Clients.Win.Components.AsolDX
 
                 if (vVisible)
                 {
-                    _VScrollBar.SetBounds(new Rectangle(contentBounds.Right, contentBounds.Y, vScrollSize, contentBounds.Height));
+                    _VScrollBar.SetBounds(new Rectangle(innerBounds.Right - vScrollSize, contentBounds.Y, vScrollSize, contentBounds.Height));
                     _VScrollBar.Maximum = contentTotalSize.Height;
                     _VScrollBar.LargeChange = contentBounds.Height;
                 }
                 if (hVisible)
                 {
-                    _HScrollBar.SetBounds(new Rectangle(contentBounds.X, contentBounds.Bottom, contentBounds.Width, hScrollSize));
+                    _HScrollBar.SetBounds(new Rectangle(contentBounds.X, innerBounds.Bottom - hScrollSize, contentBounds.Width, hScrollSize));
                     _HScrollBar.Maximum = contentTotalSize.Width;
                     _HScrollBar.LargeChange = contentBounds.Width;
                 }
@@ -1041,29 +1152,32 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (x < 0) x = 0;
             if (y < 0) y = 0;
 
-            // Scrollbary a jejich hodnota:
+            // Scrollbary a případná změna jejich hodnoty - jen pokud jsou reálně viditelné:
             // (změna souřadnice Location nemění šířku - a to ani vizuální, ani celkovou, proto nemění Visible ScrollBarů ani jejich maximum a LargeChange).
             bool hv = _HScrollBarVisible;
             bool vv = _VScrollBarVisible;
-            int sx = _HScrollBarCurrentValue;
-            int sy = _VScrollBarCurrentValue;
-            bool changeX = (hv && x != sx);
-            bool changeY = (vv && y != sy);
-            if (changeX || changeY)
-            {   // Došlo k tomu, že musíme změnit hodnotu na některém ScrollBaru, protože setovaná hodnota je jiná, než ukazují ScrollBary.
-                bool suppressEvent = _SuppressEvent;
-                try
-                {
-                    // Tedy vyvoláme setování upravené souřadnice do ScrollBarů, to vyvolá zápis nové hodnoty do ContentVirtualBounds, a to klidně dvakrát (X i Y).
-                    // Ale nechci volat dva eventy, jeden pro každý směr (s ohledem na náročnost navazujících přepočtů),
-                    // takže potlačím volání eventu ContentVirtualBoundsChanged :
-                    _SuppressEvent = true;
-                    if (changeX) _HScrollBar.Value = x;
-                    if (changeY) _VScrollBar.Value = y;
-                }
-                finally
-                {
-                    _SuppressEvent = suppressEvent;
+            if (hv || vv)
+            {
+                int sx = _HScrollBarCurrentValue;
+                int sy = _VScrollBarCurrentValue;
+                bool changeX = (hv && x != sx);
+                bool changeY = (vv && y != sy);
+                if (changeX || changeY)
+                {   // Došlo k tomu, že musíme změnit hodnotu na některém ScrollBaru, protože setovaná hodnota je jiná, než ukazují ScrollBary.
+                    bool suppressEvent = _SuppressEvent;
+                    try
+                    {
+                        // Tedy vyvoláme setování upravené souřadnice do ScrollBarů, to vyvolá zápis nové hodnoty do ContentVirtualBounds, a to klidně dvakrát (X i Y).
+                        // Ale nechci volat dva eventy, jeden pro každý směr (s ohledem na náročnost navazujících přepočtů),
+                        // takže potlačím volání eventu ContentVirtualBoundsChanged :
+                        _SuppressEvent = true;
+                        if (changeX) _HScrollBar.Value = x;
+                        if (changeY) _VScrollBar.Value = y;
+                    }
+                    finally
+                    {
+                        _SuppressEvent = suppressEvent;
+                    }
                 }
             }
 
@@ -1094,9 +1208,20 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void ScrollBars_ValueChanged(object sender, EventArgs e)
+        private void _HScrollBar_ValueChanged(object sender, EventArgs e)
         {
-            ApplyScrollBarsToVirtualLocation();
+            if (_HScrollBarAllowed && _HScrollBarVisible)
+                ApplyScrollBarsToVirtualLocation();
+        }
+        /// <summary>
+        /// Po změně hodnoty na ScrollBarech - přemístí <see cref="ContentVirtualLocation"/> (a vyvolá události, pokud nejsou potlačené)
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _VScrollBar_ValueChanged(object sender, EventArgs e)
+        {
+            if (_VScrollBarAllowed && _VScrollBarVisible)
+                ApplyScrollBarsToVirtualLocation();
         }
         /// <summary>
         /// Na controlu <see cref="ContentControl"/> bylo otočeno myškou
