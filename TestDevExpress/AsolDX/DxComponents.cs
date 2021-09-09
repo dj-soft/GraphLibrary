@@ -110,6 +110,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void _Done()
         {
             this._DisposeFontCache();
+            this._ResetControlColors();
 
             System.Windows.Forms.Application.Idle -= Application_Idle;
             System.Windows.Forms.Application.ApplicationExit -= Application_ApplicationExit;
@@ -756,7 +757,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Reload hodnoty Zoomu uvnitř instance
         /// </summary>
-        private void _ReloadZoom() 
+        private void _ReloadZoom()
         {
             _Zoom = ((decimal)Common.SupportScaling.GetScaledValue(100000)) / 100000m;
             _RecalcZoomDpi();
@@ -934,11 +935,24 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <typeparam name="T"></typeparam>
         private void _CallListeners<T>() where T : IListener
         {
+            _CallFixedListeners(typeof(T));
+
             var listeners = _GetListeners<T>();
             if (listeners.Length == 0) return;
             var method = _GetListenerMethod(typeof(T), 0);
             foreach (var listener in listeners)
                 method.Invoke(listener, null);
+        }
+        /// <summary>
+        /// Zavolá fixní listenery, kteří nemusí být registrovaní
+        /// </summary>
+        /// <param name="listenerType"></param>
+        private void _CallFixedListeners(Type listenerType)
+        {
+            if (listenerType == typeof(IListenerStyleChanged))
+            {
+                Instance._ResetControlColors();
+            }
         }
         /// <summary>
         /// Odešle systémovou událost všem zvědavým a živým posluchačům
@@ -2926,6 +2940,125 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         private DevExpress.Utils.SvgImageCollection __SvgImageCollection;
         #endregion
+        #region SkinSupport
+        /// <summary>
+        /// Vrátí aktuálně platnou barvu dle skinu.
+        /// Vstupní jména by měly pocházet z prvků třídy <see cref="SkinElementColor"/>.
+        /// Například barva textu v labelu je pod jménem <see cref="SkinElementColor.CommonSkins_WindowText"/>
+        /// </summary>
+        /// <param name="name">Typ prvku</param>
+        /// <returns></returns>
+        public static Color? GetSkinColor(string name) { return Instance._GetSkinColor(name); }
+        private Color? _GetSkinColor(string name)
+        {
+            if (String.IsNullOrEmpty(name) || !name.Contains(".")) return null;
+            var parts = name.Split('.');
+            if (parts.Length != 2) return null;
+            if (parts[0] == "Control")
+                return _GetControlColor(parts[1]);
+
+            var skin = _GetSkinByName(parts[0]);
+            if (skin == null) return null;
+            if (!skin.Colors.Contains(parts[1])) return null;
+            return skin.Colors[parts[1]];
+        }
+        /// <summary>
+        /// Vrátí požadovanou část definice aktuálního skinu (oblast, family).
+        /// Pro zadaný text "CommonSkins" vrací DevExpress.Skins.CommonSkins.GetSkin(DevExpress.LookAndFeel.UserLookAndFeel.Default.ActiveLookAndFeel), atd.
+        /// </summary>
+        /// <param name="skinPartName"></param>
+        /// <returns></returns>
+        private DevExpress.Skins.Skin _GetSkinByName(string skinPartName)
+        {
+            var alaf = DevExpress.LookAndFeel.UserLookAndFeel.Default.ActiveLookAndFeel;
+            switch (skinPartName)
+            {
+                case "CommonSkins": return DevExpress.Skins.CommonSkins.GetSkin(alaf);
+                case "EditorsSkins": return DevExpress.Skins.EditorsSkins.GetSkin(alaf);
+                case "BarSkins": return DevExpress.Skins.BarSkins.GetSkin(alaf);
+                case "ChartSkins": return DevExpress.Skins.ChartSkins.GetSkin(alaf);
+                case "DashboardSkins": return DevExpress.Skins.DashboardSkins.GetSkin(alaf);
+                case "DockingSkins": return DevExpress.Skins.DockingSkins.GetSkin(alaf);
+                case "FormSkins": return DevExpress.Skins.FormSkins.GetSkin(alaf);
+                case "GridSkins": return DevExpress.Skins.GridSkins.GetSkin(alaf);
+                case "NavBarSkins": return DevExpress.Skins.NavBarSkins.GetSkin(alaf);
+                case "NavPaneSkins": return DevExpress.Skins.NavPaneSkins.GetSkin(alaf);
+                case "RibbonSkins": return DevExpress.Skins.RibbonSkins.GetSkin(alaf);
+                case "SpreadsheetSkins": return DevExpress.Skins.SpreadsheetSkins.GetSkin(alaf);
+                case "TabSkins": return DevExpress.Skins.TabSkins.GetSkin(alaf);
+            }
+            return null;
+        }
+        /// <summary>
+        /// Vrátí barvu z reálného controlu
+        /// </summary>
+        /// <param name="controlPartName"></param>
+        /// <returns></returns>
+        private Color? _GetControlColor(string controlPartName)
+        {
+            DxLabelControl dxLabelControl;
+            DxTextEdit dxTextEdit;
+            DxPanelControl dxPanelControl;
+            switch (controlPartName)
+            {
+                case "LabelForeColor":
+                    dxLabelControl = _GetControlFromCache("Label") as DxLabelControl;
+                    return dxLabelControl?.ForeColor;
+                case "TextBoxForeColor":
+                    dxTextEdit = _GetControlFromCache("TextBox") as DxTextEdit;
+                    return dxTextEdit?.ForeColor;
+                case "TextBoxBackColor":
+                    dxTextEdit = _GetControlFromCache("TextBox") as DxTextEdit;
+                    return dxTextEdit?.BackColor;
+                case "PanelBackColor":
+                    dxPanelControl = _GetControlFromCache("Panel") as DxPanelControl;
+                    return dxPanelControl?.BackColor;
+            }
+            return null;
+        }
+        /// <summary>
+        /// Vrátí daný control z cache / ytvoří nový a umístí tam a vrátí
+        /// </summary>
+        /// <param name="controlName"></param>
+        /// <returns></returns>
+        private Control _GetControlFromCache(string controlName)
+        {
+            Control control;
+            if (_ControlColors == null) _ControlColors = new Dictionary<string, Control>();
+            if (_ControlColors.TryGetValue(controlName, out control)) return control;
+
+            switch (controlName)
+            {
+                case "Label":
+                    control = new DxLabelControl();
+                    break;
+                case "TextBox":
+                    control = new DxTextEdit();
+                    break;
+                case "Panel":
+                    control = new DxPanelControl();
+                    break;
+                case "Button":
+                    control = new DxSimpleButton();
+                    break;
+            }
+            _ControlColors.Add(controlName, control);
+            return control;
+        }
+        /// <summary>
+        /// Resetuje objekty v cache controlů pro získávání nativních barev
+        /// </summary>
+        private void _ResetControlColors()
+        {
+            if (_ControlColors == null) return;
+            _ControlColors.Values.ForEachExec(c => c.Dispose());
+            _ControlColors.Clear();
+        }
+        /// <summary>
+        /// cache controlů pro získávání nativních barev
+        /// </summary>
+        private Dictionary<string, Control> _ControlColors;
+        #endregion
         #region Static helpers
         /// <summary>
         /// Vrátí <see cref="DefaultBoolean"/> z hodnoty nullable <see cref="Boolean"/>.
@@ -3344,6 +3477,108 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         #endregion
     }
+    #region Enumy
+    public class SkinElementColor
+    {
+        public static string Control_LabelForeColor { get { return "Control.LabelForeColor"; } }
+        public static string Control_TextBoxForeColor { get { return "Control.TextBoxForeColor"; } }
+        public static string Control_TextBoxBackColor { get { return "Control.TextBoxBackColor"; } }
+        public static string Control_PanelBackColor { get { return "Control.PanelBackColor"; } }
+
+        public static string CommonSkins_WindowText { get { return "CommonSkins.WindowText"; } }
+        public static string CommonSkins_ReadOnly { get { return "CommonSkins.ReadOnly"; } }
+        public static string CommonSkins_Info { get { return "CommonSkins.Info"; } }
+        public static string CommonSkins_Success { get { return "CommonSkins.Success"; } }
+        public static string CommonSkins_HotTrackedForeColor { get { return "CommonSkins.HotTrackedForeColor"; } }
+        public static string CommonSkins_Danger { get { return "CommonSkins.Danger"; } }
+        public static string CommonSkins_Control { get { return "CommonSkins.Control"; } }
+        public static string CommonSkins_DisabledText { get { return "CommonSkins.DisabledText"; } }
+        public static string CommonSkins_Highlight { get { return "CommonSkins.Highlight"; } }
+        public static string CommonSkins_Question { get { return "CommonSkins.Question"; } }
+        public static string CommonSkins_Primary { get { return "CommonSkins.Primary"; } }
+        public static string CommonSkins_HighlightAlternate { get { return "CommonSkins.HighlightAlternate"; } }
+        public static string CommonSkins_WarningFill { get { return "CommonSkins.WarningFill"; } }
+        public static string CommonSkins_InfoText { get { return "CommonSkins.InfoText"; } }
+        public static string CommonSkins_HotTrackedColor { get { return "CommonSkins.HotTrackedColor"; } }
+        public static string CommonSkins_DisabledControl { get { return "CommonSkins.DisabledControl"; } }
+        public static string CommonSkins_Information { get { return "CommonSkins.Information"; } }
+        public static string CommonSkins_HighlightText { get { return "CommonSkins.HighlightText"; } }
+        public static string CommonSkins_ControlText { get { return "CommonSkins.ControlText"; } }
+        public static string CommonSkins_QuestionFill { get { return "CommonSkins.QuestionFill"; } }
+        public static string CommonSkins_Warning { get { return "CommonSkins.Warning"; } }
+        public static string CommonSkins_InactiveCaptionText { get { return "CommonSkins.InactiveCaptionText"; } }
+        public static string CommonSkins_Window { get { return "CommonSkins.Window"; } }
+        public static string CommonSkins_HideSelection { get { return "CommonSkins.HideSelection"; } }
+        public static string CommonSkins_Menu { get { return "CommonSkins.Menu"; } }
+        public static string CommonSkins_MenuText { get { return "CommonSkins.MenuText"; } }
+        public static string CommonSkins_Critical { get { return "CommonSkins.Critical"; } }
+        
+        public static string EditorsSkins_ProgressBarEmptyTextColor { get { return "EditorsSkins.ProgressBarEmptyTextColor"; } }
+        public static string EditorsSkins_FluentCalendarWeekDayForeColor { get { return "EditorsSkins.FluentCalendarWeekDayForeColor"; } }
+        public static string EditorsSkins_CalendarSelectedCellColor { get { return "EditorsSkins.CalendarSelectedCellColor"; } }
+        public static string EditorsSkins_FilterControlValueTextColor { get { return "EditorsSkins.FilterControlValueTextColor"; } }
+        public static string EditorsSkins_FilterControlGroupOperatorTextColor { get { return "EditorsSkins.FilterControlGroupOperatorTextColor"; } }
+        public static string EditorsSkins_BeakFormBorderColor { get { return "EditorsSkins.BeakFormBorderColor"; } }
+        public static string EditorsSkins_HyperLinkTextColor { get { return "EditorsSkins.HyperLinkTextColor"; } }
+        public static string EditorsSkins_FilterControlEmptyValueTextColor { get { return "EditorsSkins.FilterControlEmptyValueTextColor"; } }
+        public static string EditorsSkins_FluentCalendarSeparatorColor { get { return "EditorsSkins.FluentCalendarSeparatorColor"; } }
+        public static string EditorsSkins_ProgressBarFilledTextColor { get { return "EditorsSkins.ProgressBarFilledTextColor"; } }
+        public static string EditorsSkins_FluentCalendarBackColor { get { return "EditorsSkins.FluentCalendarBackColor"; } }
+        public static string EditorsSkins_FluentCalendarWeekNumberForeColor { get { return "EditorsSkins.FluentCalendarWeekNumberForeColor"; } }
+        public static string EditorsSkins_FilterControlFieldNameTextColor { get { return "EditorsSkins.FilterControlFieldNameTextColor"; } }
+        public static string EditorsSkins_CalcEditOperationTextColor { get { return "EditorsSkins.CalcEditOperationTextColor"; } }
+        public static string EditorsSkins_FilterControlOperatorTextColor { get { return "EditorsSkins.FilterControlOperatorTextColor"; } }
+        public static string EditorsSkins_FluentCalendarHolidayCellColor { get { return "EditorsSkins.FluentCalendarHolidayCellColor"; } }
+        public static string EditorsSkins_CalcEditDigitTextColor { get { return "EditorsSkins.CalcEditDigitTextColor"; } }
+        public static string EditorsSkins_CalendarTodayCellColor { get { return "EditorsSkins.CalendarTodayCellColor"; } }
+        public static string EditorsSkins_CalendarInactiveCellColor { get { return "EditorsSkins.CalendarInactiveCellColor"; } }
+        public static string EditorsSkins_CalendarNormalCellColor { get { return "EditorsSkins.CalendarNormalCellColor"; } }
+        public static string EditorsSkins_CalendarHolidayCellColor { get { return "EditorsSkins.CalendarHolidayCellColor"; } }
+        
+        public static string BarSkins_ColorLinkDisabledForeColor { get { return "BarSkins.ColorLinkDisabledForeColor"; } }
+        
+        public static string ChartSkins_ColorLine3DMarker { get { return "ChartSkins.ColorLine3DMarker"; } }
+        public static string ChartSkins_ColorConstantLineTitle { get { return "ChartSkins.ColorConstantLineTitle"; } }
+        public static string ChartSkins_ColorArea3DMarker { get { return "ChartSkins.ColorArea3DMarker"; } }
+        public static string ChartSkins_ColorConstantLine { get { return "ChartSkins.ColorConstantLine"; } }
+        public static string ChartSkins_ColorChartTitle { get { return "ChartSkins.ColorChartTitle"; } }
+        
+        public static string DashboardSkins_ChartPaneRemoveButton { get { return "DashboardSkins.ChartPaneRemoveButton"; } }
+        public static string DashboardSkins_BarAxisColor { get { return "DashboardSkins.BarAxisColor"; } }
+        
+        public static string DockingSkins_DocumentGroupHeaderTextColor { get { return "DockingSkins.DocumentGroupHeaderTextColor"; } }
+        public static string DockingSkins_DocumentGroupHeaderTextColorDisabled { get { return "DockingSkins.DocumentGroupHeaderTextColorDisabled"; } }
+        public static string DockingSkins_DocumentGroupHeaderTextColorHot { get { return "DockingSkins.DocumentGroupHeaderTextColorHot"; } }
+        public static string DockingSkins_TabHeaderTextColorActive { get { return "DockingSkins.TabHeaderTextColorActive"; } }
+        public static string DockingSkins_TabHeaderTextColorDisabled { get { return "DockingSkins.TabHeaderTextColorDisabled"; } }
+        public static string DockingSkins_TabHeaderTextColorHot { get { return "DockingSkins.TabHeaderTextColorHot"; } }
+        public static string DockingSkins_DocumentGroupHeaderTextColorActive { get { return "DockingSkins.DocumentGroupHeaderTextColorActive"; } }
+        public static string DockingSkins_TabHeaderTextColor { get { return "DockingSkins.TabHeaderTextColor"; } }
+        public static string DockingSkins_DocumentGroupHeaderTextColorGroupInactive { get { return "DockingSkins.DocumentGroupHeaderTextColorGroupInactive"; } }
+        
+        public static string FormSkins_TextShadowColor { get { return "FormSkins.TextShadowColor"; } }
+        public static string FormSkins_InactiveColor { get { return "FormSkins.InactiveColor"; } }
+        
+        public static string RibbonSkins_ForeColorDisabledInCaptionQuickAccessToolbar { get { return "RibbonSkins.ForeColorDisabledInCaptionQuickAccessToolbar"; } }
+        public static string RibbonSkins_ForeColorDisabledInBottomQuickAccessToolbar { get { return "RibbonSkins.ForeColorDisabledInBottomQuickAccessToolbar"; } }
+        public static string RibbonSkins_ForeColorDisabledInCaptionQuickAccessToolbarInActive2010 { get { return "RibbonSkins.ForeColorDisabledInCaptionQuickAccessToolbarInActive2010"; } }
+        public static string RibbonSkins_ButtonDisabled { get { return "RibbonSkins.ButtonDisabled"; } }
+        public static string RibbonSkins_ForeColorInBackstageViewTitle { get { return "RibbonSkins.ForeColorInBackstageViewTitle"; } }
+        public static string RibbonSkins_ForeColorDisabledInTopQuickAccessToolbar { get { return "RibbonSkins.ForeColorDisabledInTopQuickAccessToolbar"; } }
+        public static string RibbonSkins_ForeColorDisabledInCaptionQuickAccessToolbar2010 { get { return "RibbonSkins.ForeColorDisabledInCaptionQuickAccessToolbar2010"; } }
+        public static string RibbonSkins_EditorBackground { get { return "RibbonSkins.EditorBackground"; } }
+        public static string RibbonSkins_RadialMenuColor { get { return "RibbonSkins.RadialMenuColor"; } }
+        public static string RibbonSkins_ForeColorDisabledInPageHeader { get { return "RibbonSkins.ForeColorDisabledInPageHeader"; } }
+        public static string RibbonSkins_ForeColorInCaptionQuickAccessToolbar2010 { get { return "RibbonSkins.ForeColorInCaptionQuickAccessToolbar2010"; } }
+        
+        public static string TabSkins_TabHeaderTextColorActive { get { return "TabSkins.TabHeaderTextColorActive"; } }
+        public static string TabSkins_TabHeaderButtonTextColorHot { get { return "TabSkins.TabHeaderButtonTextColorHot"; } }
+        public static string TabSkins_TabHeaderButtonTextColor { get { return "TabSkins.TabHeaderButtonTextColor"; } }
+        public static string TabSkins_TabHeaderTextColorDisabled { get { return "TabSkins.TabHeaderTextColorDisabled"; } }
+        public static string TabSkins_TabHeaderTextColor { get { return "TabSkins.TabHeaderTextColor"; } }
+        public static string TabSkins_TabHeaderTextColorHot { get { return "TabSkins.TabHeaderTextColorHot"; } }
+    }
+    #endregion
     #endregion
     #region class ConvertFormat : konverze textu / RTF / HTML
     /// <summary>

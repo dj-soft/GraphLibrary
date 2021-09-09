@@ -65,6 +65,8 @@ namespace TestDevExpress.Forms
             this.Disposed += MainForm_Disposed;
             DxComponent.LogTextChanged += DxComponent_LogTextChanged;
 
+            this.ApplyStyle();
+
             // ActivatePage(7, true);
             ActivatePage(10, true);
         }
@@ -94,6 +96,18 @@ namespace TestDevExpress.Forms
         {
             base.OnShown(e);
             HideSplash();
+        }
+        protected override void OnStyleChanged()
+        {
+            base.OnStyleChanged();
+            this.ApplyStyle();
+        }
+        private void ApplyStyle()
+        {
+
+            var color1 = DxComponent.GetSkinColor(SkinElementColor.CommonSkins_WindowText);
+            var color2 = DxComponent.GetSkinColor(SkinElementColor.CommonSkins_Control);
+
         }
         private void InitData()
         {

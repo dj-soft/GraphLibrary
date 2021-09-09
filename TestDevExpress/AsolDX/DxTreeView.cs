@@ -523,6 +523,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.RootNodeVisible = true;
             InitTreeList();
             DxDragDropInit(DxDragDropActionType.None);
+            DxComponent.RegisterListener(this);
         }
         /// <summary>
         /// Dispose
@@ -530,6 +531,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="disposing"></param>
         protected override void Dispose(bool disposing)
         {
+            DxComponent.UnregisterListener(this);
             CurrentViewDispose();
             base.Dispose(disposing);
             DxDragDropDispose();
@@ -733,22 +735,30 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private void _ApplyTransparentBackground()
         {
-            if (_TransparentBackground)
+            // Color? foreColor = (_TransparentBackground ? DxComponent.GetSkinColor(SkinElementColor.CommonSkins_InfoText) : null);
+            Color? foreColor = (_TransparentBackground ? DxComponent.GetSkinColor(SkinElementColor.Control_LabelForeColor) : null);
+
+            if (foreColor.HasValue)
             {
                 Color backColor = Color.Transparent;
-                // this.BackColor = backColor;
                 this.Appearance.Empty.BackColor = backColor;
                 this.Appearance.Empty.Options.UseBackColor = true;
                 this.Appearance.Row.BackColor = backColor;
                 this.Appearance.Row.Options.UseBackColor = true;
+
+                this.Appearance.Empty.ForeColor = foreColor.Value;
+                this.Appearance.Empty.Options.UseForeColor = true;
+                this.Appearance.Row.ForeColor = foreColor.Value;
+                this.Appearance.Row.Options.UseForeColor = true;
             }
             else
             {
-                // this.BackColor = ;
                 this.Appearance.Empty.Options.UseBackColor = false;
                 this.Appearance.Row.Options.UseBackColor = false;
+
+                this.Appearance.Empty.Options.UseForeColor = false;
+                this.Appearance.Row.Options.UseForeColor = false;
             }
-            LoadCurrentStyleToTreeList();
         }
         /// <summary>
         /// Nastaví danou barvu jako všechny barvy pozadí
@@ -769,30 +779,11 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.Appearance.SelectedRow.Options.UseBackColor = true;
         }
         /// <summary>
-        /// Načte explicitní vlastnosti ze skinu
-        /// </summary>
-        protected void LoadCurrentStyleToTreeList()
-        {
-            if (_TransparentBackground)
-            {
-                Color foreColor = Color.Black;
-                this.Appearance.Empty.ForeColor = foreColor;
-                this.Appearance.Empty.Options.UseForeColor = true;
-                this.Appearance.Row.BackColor = foreColor;
-                this.Appearance.Row.Options.UseForeColor = true;
-            }
-            else
-            {
-                this.Appearance.Empty.Options.UseForeColor = false;
-                this.Appearance.Row.Options.UseForeColor = false;
-            }
-        }
-        /// <summary>
         /// Je voláno vždy po změně skinu
         /// </summary>
         void IListenerStyleChanged.StyleChanged()
         {
-            LoadCurrentStyleToTreeList();
+            _ApplyTransparentBackground();
         }
         #endregion
         #region ToolTipy pro nodes
