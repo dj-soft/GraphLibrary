@@ -278,6 +278,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public bool UseDotNetFwSerializer { get; set; }
         /// <summary>
+        /// Přidávat do výstupního XML signaturu do hlavičky?
+        /// Signatura je v Root elementu, a obsahuje atributy "Created" a "Creator".
+        /// Pro deserializaci není nutná.
+        /// Přítomnost signatury znemožňuje porovnávat dvě instance pomocí jejich serializovaných XML stringů, protože i když by instance byly shodné, pak každý XML string bude obsahovat jinou signaturu (čas vytvoření).
+        /// </summary>
+        public bool AddSignatures { get; set; }
+        /// <summary>
         /// Je povoleno ukládat vhodná data do Heap?
         /// Výchozí hodnota = false. Pokud aplikace chce používat, musí explicitně povolit.
         /// Má vliv pouze na serializaci. Při deserializaci je dáno přítomností dat Heap v serializovaných datech.
@@ -2976,9 +2983,11 @@ namespace Noris.Clients.Win.Components.AsolDX.InternalPersistor
                 XmlElement xRootElement = xDoc.CreateElement(_DocumentNamePersist);
                 xDoc.AppendChild(xRootElement);
                 CreateAttribute("Version", Version, xRootElement);
-                CreateAttribute("Created", Convertor.DateTimeToString(DateTime.Now), xRootElement);
-                CreateAttribute("Creator", System.Windows.Forms.SystemInformation.UserName, xRootElement);
-
+                if (parameters.AddSignatures)
+                {
+                    CreateAttribute("Created", Convertor.DateTimeToString(DateTime.Now), xRootElement);
+                    CreateAttribute("Creator", System.Windows.Forms.SystemInformation.UserName, xRootElement);
+                }
                 XmlElement xDataElement = CreateElement(_DocumentNameData, xRootElement);
                 XmlPersistSaveArgs saveArgs = CreateSaveArgs(data, _DocumentNameValue, null, null, xDataElement);
                 this.SaveObject(saveArgs);
@@ -3663,9 +3672,11 @@ namespace Noris.Clients.Win.Components.AsolDX.InternalPersistor
                 XmlElement xmlElementRoot = xmlDocument.CreateElement(_DocumentNamePersist);
                 xmlDocument.AppendChild(xmlElementRoot);
                 CreateAttribute("Version", Version, xmlElementRoot);
-                CreateAttribute("Created", Convertor.DateTimeToString(DateTime.Now), xmlElementRoot);
-                CreateAttribute("Creator", System.Windows.Forms.SystemInformation.UserName, xmlElementRoot);
-
+                if (parameters.AddSignatures)
+                {
+                    CreateAttribute("Created", Convertor.DateTimeToString(DateTime.Now), xmlElementRoot);
+                    CreateAttribute("Creator", System.Windows.Forms.SystemInformation.UserName, xmlElementRoot);
+                }
                 XmlElement xmlElementHeap = (parameters.DataHeapEnabled ? CreateElement(_DocumentNameHeap, xmlElementRoot) : null);
 
                 XmlElement xmlElementData = CreateElement(_DocumentNameData, xmlElementRoot);
