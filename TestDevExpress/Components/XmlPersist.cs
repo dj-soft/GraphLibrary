@@ -5869,26 +5869,88 @@ anebo neprázdný objekt:
             /// </summary>
             private void _DetectCompoundProperties()
             {
-                this._PropertyList = new List<PropInfo>();
                 this._PropertyDict = new Dictionary<string, PropInfo>();
+
                 MemberInfo[] members = this.DataType.GetMembers(PropInfo.BindFlags);
-                Dictionary<string, MethodInfo> accessorsDict = members.Where(m => m.MemberType == MemberTypes.Method).Cast<MethodInfo>().Where(m => m.IsSpecialName).ToDictionary(m => m.Name);
+                var specialMembers = members.Where(m => m.MemberType == MemberTypes.Method).Cast<MethodInfo>().Where(m => m.IsSpecialName).ToArray();
+                var specialMemberNames = specialMembers.Select(m => m.Name).ToArray();
+                var accessorsDict = new Dictionary<string, MethodInfo>();
+                foreach (var methodInfo in specialMembers)
+                {   // V rámci jednoho typu můžeme najít více metod se shodným jménem.
+                    // Je to tehdy, když třída A implementuje interface X a má explicitní implementaci metody Y tohoto interface X;
+                    //  a následně třída B je potomkem třídy A, a rovněž implemenetuje metodu Y interface Y, ale jiným postupem.
+                    // Pak do naší evidence máme vzít tu metodu, která je blíže k našemu typu (this.DataType), protože tu metodu pak reálně používá .NET:
+                    string key = methodInfo.Name;
+                    if (!accessorsDict.TryGetValue(key, out var otherMethod))
+                        accessorsDict.Add(key, methodInfo);
+                    else
+                    {   // Duplicitní jméno: pokud aktuální metoda (methodInfo) je bližší našemu typu DataType než metoda dosud uložená (otherMethod),
+                        //  pak si do evidence vezmeme tu bližší:
+                        if (_IsNearestMember(methodInfo, otherMethod))
+                            accessorsDict[key] = methodInfo;
+                    }
+                }
+
                 PropertyInfo[] properties = members.Where(m => m.MemberType == MemberTypes.Property).Cast<PropertyInfo>().ToArray();
-                foreach (PropertyInfo prop in properties)
+                foreach (PropertyInfo propertyInfo in properties)
                 {
-                    PropInfo propData = PropInfo.Create(this, prop, accessorsDict);
+                    PropInfo propData = PropInfo.Create(this, propertyInfo, accessorsDict);
                     if (propData == null) continue;                  // Nevytvořeno = nebude se persistovat
                     if (!propData.PersistEnabled) continue;          // Tato property se nemá persistovat...
 
-                    if (this._PropertyDict.ContainsKey(propData.XmlName))
-                        throw new ArgumentException("Chyba při persistenci typu " + this.DataType.Namespace + "." + this.DataType.Name + ": duplicitní název property: " + propData.XmlName + " (zkontrolujte atributy [PropertyName(string)])");
-
-                    this._PropertyList.Add(propData);
-                    this._PropertyDict.Add(propData.XmlName, propData);
+                    // I u Properties může nastat situace popsaná výše u metod = duplicitní název v případě explicitní implementace interface ve dvou potomcích:
+                    string key = propData.XmlName;
+                    if (!this._PropertyDict.TryGetValue(key, out var otherProperty))
+                        this._PropertyDict.Add(key, propData);
+                    else
+                    {   // Duplicitní jméno: do evidence vezmeme tu nám bližší property:
+                        if (_IsNearestMember(propertyInfo, otherProperty.Property))
+                            this._PropertyDict[key] = propData;
+                    }
                 }
-                // Seznam setřídit:
+
+                // Seznam property - vytvořit a setřídit:
+                this._PropertyList = this._PropertyDict.Values.ToList();
                 if (this._PropertyList.Count > 1)
                     this._PropertyList.Sort(PropInfo.CompareByName);
+            }
+            /// <summary>
+            /// Vrátí true, pokud typ <paramref name="currentMember"/> je bližší zdejšímu typu <see cref="DataType"/> než typ <paramref name="otherMember"/>.
+            /// Pokud vrátí true, je vhodnější evidovat typ <paramref name="currentMember"/> než typ <paramref name="otherMember"/>.
+            /// </summary>
+            /// <param name="currentMember"></param>
+            /// <param name="otherMember"></param>
+            /// <returns></returns>
+            private bool _IsNearestMember(MemberInfo currentMember, MemberInfo otherMember)
+            {
+                if (currentMember == null) return false;
+                if (otherMember == null) return true;
+
+                int currentGeneration = _GetTypeGeneration(this.DataType, currentMember.DeclaringType);  // Počet generací mezi this.DataType a daným typem current
+                int otherGeneration = _GetTypeGeneration(this.DataType, otherMember.DeclaringType);      //  dtto pro typ other
+                return (currentGeneration >= 0 && (otherGeneration < 0 || currentGeneration < otherGeneration));        // Když current je nám bližší než other, vrátím true.
+            }
+            /// <summary>
+            /// Vrátí číslo určující kolikátá generace potomka je <paramref name="currentType"/> počínaje od rodiče <paramref name="predecessorType"/>.
+            /// Vrátí 0 pokud typy jsou shodné.
+            /// Vrátí -1 pokud typy nejsou v přímé linii. Vrátí -2 pokud jsou zadány typy null.
+            /// Vrátí hodnotu 1, pokud <paramref name="currentType"/> je přímý potomek <paramref name="predecessorType"/>, 2 pro vnuka, 3 pro pravnuka, atd.
+            /// </summary>
+            /// <param name="currentType"></param>
+            /// <param name="predecessorType"></param>
+            /// <returns></returns>
+            private static int _GetTypeGeneration(Type currentType, Type predecessorType)
+            {
+                if (currentType == null || predecessorType == null) return -2;
+                int generation = 0;
+                while (currentType != null)
+                {
+                    if (currentType == predecessorType) return generation;
+                    generation++;
+                    if (generation > 70) break;
+                    currentType = currentType.BaseType;
+                }
+                return -1;
             }
             #endregion
             #region Generika

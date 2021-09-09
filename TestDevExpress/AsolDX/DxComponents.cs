@@ -69,6 +69,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             this._InitDrawing();
             this._InitListeners();
             this._ImageNameInit();
+            this._InitClipboard();
         }
         private static bool __IsInitialized = false;
         private static DxComponent _Instance;
@@ -2948,26 +2949,70 @@ namespace Noris.Clients.Win.Components.AsolDX
         #endregion
         #region DxClipboard : obálka nad systémovým clipboardem
         /// <summary>
+        /// Inicializac clipboardu
+        /// </summary>
+        private void _InitClipboard()
+        {
+            _ClipboardApplicationId = Guid.NewGuid().ToString();
+        }
+        /// <summary>
         /// ID aplikace = odlišuje typicky dvě různé aplikace otevřené v jeden okamžik
         /// </summary>
         public static string ClipboardApplicationId { get { return Instance._ClipboardApplicationId; } set { Instance._ClipboardApplicationId = value; } }
+        /// <summary>
+        /// Vloží do Clipboardu daný text
+        /// </summary>
+        /// <param name="text"></param>
         public static void ClipboardInsert(string text) { Instance._ClipboardInsert(null, text, DataFormats.Text); }
+        /// <summary>
+        /// Vloží do Clipboardu daná aplikační data a další údaj, typicky text
+        /// </summary>
+        /// <param name="applicationData"></param>
+        /// <param name="windowsData"></param>
+        /// <param name="windowsFormat"></param>
         public static void ClipboardInsert(object applicationData, object windowsData, string windowsFormat = null) { Instance._ClipboardInsert(applicationData, windowsData, windowsFormat); }
+        /// <summary>
+        /// Zkusí z Clipboardu vytáhnout nějaká aplikační data
+        /// </summary>
+        /// <param name="applicationData"></param>
+        /// <returns></returns>
         public static bool ClipboardTryGetApplicationData(out object applicationData) { return Instance._ClipboardTryGetApplicationData(out applicationData, out string applicationId); }
+        /// <summary>
+        /// Zkusí z Clipboardu vytáhnout nějaká aplikační data a ID aplikace Nephrite, která je tam vložila
+        /// </summary>
+        /// <param name="applicationData"></param>
+        /// <param name="applicationId"></param>
+        /// <returns></returns>
         public static bool ClipboardTryGetApplicationData(out object applicationData, out string applicationId) { return Instance._ClipboardTryGetApplicationData(out applicationData, out applicationId); }
-
+        /// <summary>
+        /// ID aktuální aplikace, přidává se do Clipboardu.
+        /// Výchozí hodnota je unikátní Guid.
+        /// </summary>
         private string _ClipboardApplicationId = null;
-
+        /// <summary>
+        /// Vloží data do Clipboardu
+        /// </summary>
+        /// <param name="applicationData"></param>
+        /// <param name="windowsData"></param>
+        /// <param name="windowsFormat"></param>
         private void _ClipboardInsert(object applicationData, object windowsData, string windowsFormat)
         {
             DataObject dataObject = new DataObject();
             int count = 0;
+            string errorMsg = "";
             if (applicationData != null)
             {
                 ClipboardContainer container = new ClipboardContainer() { ApplicationId = _ClipboardApplicationId, Data = applicationData };
-                string containerXml = Persist.Serialize(container, PersistArgs.Default);
-                dataObject.SetData(ClipboardAppDataId, containerXml);
-                count++;
+                try
+                {
+                    string containerXml = Persist.Serialize(container, PersistArgs.Default);
+                    dataObject.SetData(ClipboardAppDataId, containerXml);
+                    count++;
+                }
+                catch (Exception exc)
+                {
+                    errorMsg += exc.Message + Environment.NewLine;
+                }
             }
             if (windowsData != null)
             {
@@ -2978,9 +3023,20 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (count > 0)
             {
                 try { System.Windows.Forms.Clipboard.SetDataObject(dataObject, true); }
-                catch (Exception exc) { string msg = exc.Message; }
+                catch (Exception exc)
+                {
+                    errorMsg += exc.Message + Environment.NewLine;
+                }
             }
+            if (errorMsg.Length > 0)
+            { }
         }
+        /// <summary>
+        /// Zkusí z Clipboardu vytáhnout nějaká aplikační data a ID aplikace Nephrite, která je tam vložila
+        /// </summary>
+        /// <param name="applicationData"></param>
+        /// <param name="applicationId"></param>
+        /// <returns></returns>
         private bool _ClipboardTryGetApplicationData(out object applicationData, out string applicationId)
         {
             applicationData = null;
@@ -2998,6 +3054,9 @@ namespace Noris.Clients.Win.Components.AsolDX
             applicationData = container.Data;
             return true;
         }
+        /// <summary>
+        /// Typ dat ukládaných v Clipboardu pro aplikační data
+        /// </summary>
         private const string ClipboardAppDataId = "DxAppData";
 
         /// <summary>
