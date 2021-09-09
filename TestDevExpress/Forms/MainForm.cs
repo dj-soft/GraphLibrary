@@ -400,10 +400,13 @@ namespace TestDevExpress.Forms
         private void PreparePopupPage(DxPanelControl panel)
         {
             _PanelPopupPage = panel;
-            DxComponent.CreateDxSimpleButton(3, 3, 200, 45, panel, "XB.PopupMenu", PopupPageXBPopupClick);
-            DxComponent.CreateDxSimpleButton(3, 54, 200, 45, panel, "XB.RadialMenu", PopupPageXBRadialClick);
-            DxComponent.CreateDxSimpleButton(3, 105, 200, 45, panel, "DM.Menu", PopupPageDMMenuClick);
-            DxComponent.CreateDxSimpleButton(3, 156, 200, 45, panel, "Win.ToolStripMenu", PopupPageWinMenuClick);
+            System.Windows.Forms.Panel panel1 = new Panel() { Dock = DockStyle.None, Bounds = new Rectangle(20, 20, 250, 220), BorderStyle = BorderStyle.Fixed3D };
+            panel1.BackColor = Color.FromArgb(0, 0, 0, 0);
+            panel.Controls.Add(panel1);
+            DxComponent.CreateDxSimpleButton(3, 3, 200, 45, panel1, "XB.PopupMenu", PopupPageXBPopupClick);
+            DxComponent.CreateDxSimpleButton(3, 54, 200, 45, panel1, "XB.RadialMenu", PopupPageXBRadialClick);
+            DxComponent.CreateDxSimpleButton(3, 105, 200, 45, panel1, "DM.Menu", PopupPageDMMenuClick);
+            DxComponent.CreateDxSimpleButton(3, 156, 200, 45, panel1, "Win.ToolStripMenu", PopupPageWinMenuClick);
         }
         #region XB.PopupMenu
         private void PopupPageXBPopupClick(object sender, EventArgs e)
