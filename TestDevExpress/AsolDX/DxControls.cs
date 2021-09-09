@@ -3962,6 +3962,1325 @@ namespace Noris.Clients.Win.Components.AsolDX
         #endregion
     }
     #endregion
+    #region DxSimpleSplitter
+    /// <summary>
+    /// Jednoduchý splitter
+    /// </summary>
+    public class DxSimpleSplitter : Control
+    {
+        #region Konstruktor, privátní eventhandlery
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public DxSimpleSplitter()
+        {
+            SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer | ControlStyles.ResizeRedraw | ControlStyles.SupportsTransparentBackColor | ControlStyles.UserPaint, true);
+            SetStyle(ControlStyles.Selectable, false);
+            TabStop = false;
+            _CursorOrientation = null;
+            _Orientation = Orientation.Horizontal;
+            _VisualLogoMode = LogoMode.Allways;                      // Viditelnost grafiky = vždy
+            _VisualLogoDotsCount = 4;
+            SetCursor();
+            base.BackColor = Color.Transparent;
+            SplitterColor = SystemColors.ControlDark;
+            _SplitterActiveColor = Color.Yellow;
+            _SplitterColorByParent = true;
+            _SplitThick = 6;                                         // Opsáno z MS Outlook
+            _SplitterEnabled = true;
+            _AcceptBoundsToSplitter = false;
+            _CurrentMouseState = MouseState.None;                    // Výchozí stav
+            DevExpressSkinEnabled = true;                            // Tady se z aktuálního skinu přečtou barvy a uloží do barev _SkinBackColor a _SkinActiveColor
+            Enabled = true;
+            Initialized = true;
+        }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return $"Splitter: {Name}; Orientation: {Orientation}, SplitPosition: {SplitPosition}";
+        }
+        /// <summary>
+        /// Hodnota true povoluje práci v instanci.
+        /// Obsahuje true po dokončení konstruktoru.
+        /// Na začátku Dispose se shodí na false.
+        /// </summary>
+        public bool Initialized { get; protected set; } = false;
+        /// <summary>
+        /// Dispose
+        /// </summary>
+        /// <param name="disposing"></param>
+        protected override void Dispose(bool disposing)
+        {
+            Initialized = false;
+            DevExpressSkinEnabled = false;
+            base.Dispose(disposing);
+        }
+        #endregion
+        #region Vzhled, kreslení, aktuální barvy, kreslící Brush, kurzor
+        /// <summary>
+        /// Refresh. 
+        /// Je vhodné zavolat po změně souřadnic navázaných controlů, pak si Splitter podle nich určí svoji velikost.
+        /// </summary>
+        public override void Refresh()
+        {
+            RecalculateBounds();
+            base.Refresh();
+        }
+        /// <summary>
+        /// Po změně Enabled
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void OnEnabledChanged(EventArgs e)
+        {
+            base.OnEnabledChanged(e);
+            Invalidate();
+        }
+        /// <summary>
+        /// Po změně barvy pozadí parenta
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void OnParentBackColorChanged(EventArgs e)
+        {
+            base.OnParentBackColorChanged(e);
+            if (this.SplitterColorByParent) this.Invalidate();
+        }
+        /// <summary>
+        /// Zajistí znovuvykreslení prvku
+        /// </summary>
+        protected virtual void PaintSplitter()
+        {
+            if (!Initialized) return;
+            PaintEventArgs e = new PaintEventArgs(this.CreateGraphics(), this.ClientRectangle);
+            PaintSplitter(e);
+        }
+        /// <summary>
+        /// Provede kreslení
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            if (!Initialized) return;
+            PaintSplitter(e);
+        }
+        /// <summary>
+        /// Vykreslí Splitter
+        /// </summary>
+        /// <param name="e"></param>
+        protected void PaintSplitter(PaintEventArgs e)
+        {
+            if (!Initialized) return;
+            switch (_Orientation)
+            {
+                case Orientation.Horizontal:
+                    PaintHorizontal(e);
+                    break;
+                case Orientation.Vertical:
+                    PaintVertical(e);
+                    break;
+            }
+        }
+        /// <summary>
+        /// Vykreslí Splitter v orientaci Horizontal
+        /// </summary>
+        /// <param name="e"></param>
+        private void PaintHorizontal(PaintEventArgs e)
+        {
+            Rectangle bounds = new Rectangle(Point.Empty, this.Size);
+            if (bounds.Width <= 0 || bounds.Height <= 0) return;
+            int size = bounds.Height;
+            if (size <= 2)
+            {   // Tenký splitter do 2px:
+                e.Graphics.FillRectangle(CurrentBrush, bounds);
+                return;
+            }
+            Rectangle brushBounds = new Rectangle(bounds.X, bounds.Y, bounds.Width, bounds.Height + 1);
+            Color color = CurrentColor;
+            using (System.Drawing.Drawing2D.LinearGradientBrush lgb = new System.Drawing.Drawing2D.LinearGradientBrush(brushBounds, GetCurrentColor3DBegin(color), GetCurrentColor3DEnd(color), 90f))
+            {
+                e.Graphics.FillRectangle(lgb, bounds);
+            }
+
+            if (size > 4 && CurrentShowDots && VisualLogoDotsCount > 0)
+            {
+                int numbers = VisualLogoDotsCount;
+                int space = (int)Math.Round(((double)SplitThick * 0.4d), 0);
+                if (space < 4) space = 4;
+                Point center = bounds.Center();
+                int t = center.Y - 1;
+                int d = center.X - ((space * numbers / 2) - 1);
+                var dotBrush = CurrentDotBrush;
+                for (int q = 0; q < numbers; q++)
+                    e.Graphics.FillRectangle(dotBrush, new Rectangle(d + space * q, t, 2, 2));
+            }
+        }
+        /// <summary>
+        /// Vykreslí Splitter v orientaci Vertical
+        /// </summary>
+        /// <param name="e"></param>
+        private void PaintVertical(PaintEventArgs e)
+        {
+            Rectangle bounds = new Rectangle(Point.Empty, this.Size);
+            if (bounds.Width <= 0 || bounds.Height <= 0) return;
+            int size = bounds.Width;
+            if (size <= 2)
+            {   // Tenký splitter do 2px:
+                e.Graphics.FillRectangle(CurrentBrush, bounds);
+                return;
+            }
+            Rectangle brushBounds = new Rectangle(bounds.X, bounds.Y, bounds.Width + 1, bounds.Height);
+            Color color = CurrentColor;
+            using (System.Drawing.Drawing2D.LinearGradientBrush lgb = new System.Drawing.Drawing2D.LinearGradientBrush(brushBounds, GetCurrentColor3DBegin(color), GetCurrentColor3DEnd(color), 0f))
+            {
+                e.Graphics.FillRectangle(lgb, bounds);
+            }
+            if (size > 4 && CurrentShowDots && VisualLogoDotsCount > 0)
+            {
+                int numbers = VisualLogoDotsCount;
+                int space = (int)Math.Round(((double)SplitThick * 0.4d), 0);
+                if (space < 4) space = 4;
+                Point center = bounds.Center();
+                int t = center.X - 1;
+                int d = center.Y - ((space * numbers / 2) - 1);
+                var dotBrush = CurrentDotBrush;
+                for (int q = 0; q < numbers; q++)
+                    e.Graphics.FillRectangle(dotBrush, new Rectangle(t, d + space * q, 2, 2));
+            }
+        }
+        /// <summary>
+        /// Aktuální barva, reaguje na hodnotu <see cref="SplitterColorByParent"/> a na Parenta,
+        /// na stav splitteru <see cref="CurrentSplitterState"/> a na zvolené barvy LineColor*
+        /// </summary>
+        protected Color CurrentColor { get { return GetCurrentColorFrom(this.CurrentColorBase); } }
+        /// <summary>
+        /// Aktuální základní barva: reaguje na <see cref="SplitterColorByParent"/>, <see cref="DevExpressSkinEnabled"/> 
+        /// a případně vrací <see cref="_SplitterColor"/>
+        /// </summary>
+        protected Color CurrentColorBase
+        {
+            get
+            {
+                if (DevExpressSkinEnabled && _DevExpressSkinBackColor.HasValue)
+                    // Dle skinu:
+                    return GetCurrentColorFrom(_DevExpressSkinBackColor.Value);
+
+                if (this.SplitterColorByParent && this.Parent != null)
+                    // Dle parenta:
+                    return GetCurrentColorFrom(this.Parent.BackColor);
+
+                return _SplitterColor;
+            }
+        }
+        /// <summary>
+        /// Aktuální barva pro aktivní splitter: reaguje na <see cref="DevExpressSkinEnabled"/> 
+        /// a případně vrací <see cref="_SplitterActiveColor"/>
+        /// </summary>
+        protected Color CurrentColorActive
+        {
+            get
+            {
+                if (DevExpressSkinEnabled && _DevExpressSkinActiveColor.HasValue)
+                    // Dle skinu:
+                    return _DevExpressSkinActiveColor.Value;
+
+                return _SplitterActiveColor;
+            }
+        }
+        /// <summary>
+        /// Vrací danou barvu modifikovanou dle aktuálního stavu
+        /// </summary>
+        /// <param name="color"></param>
+        /// <returns></returns>
+        protected Color GetCurrentColorFrom(Color color)
+        {
+            color = Color.FromArgb(255, color);
+            switch (CurrentSplitterState)
+            {
+                case SplitterState.Disabled: return GetColorDisable(color);
+                case SplitterState.Enabled: return GetColorEnabled(color);
+                case SplitterState.Hot: return GetColorActive(color);
+                case SplitterState.Down: return GetColorDrag(color);
+                case SplitterState.Drag: return GetColorDrag(color);
+            }
+            return color;
+        }
+        /// <summary>
+        /// Aktuální barva použitá pro 3D zobrazení na straně počátku (Top/Left)
+        /// </summary>
+        protected Color GetCurrentColor3DBegin(Color color)
+        {
+            switch (CurrentSplitterState)
+            {
+                case SplitterState.Disabled: return color.Morph(Color.LightGray, 0.25f);
+                case SplitterState.Enabled: return color.Morph(Color.White, 0.15f);
+                case SplitterState.Hot: return color.Morph(Color.White, 0.25f);
+                case SplitterState.Down: return color.Morph(Color.Black, 0.15f);
+                case SplitterState.Drag: return color.Morph(Color.Black, 0.15f);
+            }
+            return color;
+        }
+        /// <summary>
+        /// Aktuální barva použitá pro 3D zobrazení na straně konce (Bottom/Right)
+        /// </summary>
+        protected Color GetCurrentColor3DEnd(Color color)
+        {
+            switch (CurrentSplitterState)
+            {
+                case SplitterState.Disabled: return color.Morph(Color.LightGray, 0.25f);
+                case SplitterState.Enabled: return color.Morph(Color.Black, 0.15f);
+                case SplitterState.Hot: return color.Morph(Color.Black, 0.25f);
+                case SplitterState.Down: return color.Morph(Color.White, 0.15f);
+                case SplitterState.Drag: return color.Morph(Color.White, 0.15f);
+            }
+            return color;
+        }
+        /// <summary>
+        /// Aktuální barva použitá pro zobrazení grafiky (čtyřtečka)
+        /// </summary>
+        protected Color CurrentDotColor { get { return CurrentColor.Contrast(64); } }
+        /// <summary>
+        /// Vrátí barvu Disabled k barvě dané
+        /// </summary>
+        /// <param name="color"></param>
+        /// <returns></returns>
+        protected Color GetColorDisable(Color color) { return color.GrayScale(0.75f); }
+        /// <summary>
+        /// Vrátí barvu Enabled k barvě dané.
+        /// Záleží na <see cref="SplitThick"/>: pokud je 2 (a menší), pak vrací danou barvu lehce kontrastní, aby byl splitter vidět.
+        /// Pokud je 3 a více, pak vrací danou barvu beze změn, protože se bude vykreslovat 3D efektem.
+        /// </summary>
+        /// <param name="color"></param>
+        /// <returns></returns>
+        protected Color GetColorEnabled(Color color) { return (this.SplitThick <= 2 ? color.Contrast(12) : color); }
+        /// <summary>
+        /// Vrátí barvu Disabled k barvě dané
+        /// </summary>
+        /// <param name="color"></param>
+        /// <returns></returns>
+        protected Color GetColorActive(Color color) { return color.Morph(CurrentColorActive, 0.40f); }
+        /// <summary>
+        /// Vrátí barvu Disabled k barvě dané
+        /// </summary>
+        /// <param name="color"></param>
+        /// <returns></returns>
+        protected Color GetColorDrag(Color color) { return color.Morph(CurrentColorActive, 0.60f); }
+        /// <summary>
+        /// Brush s aktuální barvou <see cref="CurrentColor"/>
+        /// </summary>
+        protected SolidBrush CurrentBrush { get { return DxComponent.PaintGetSolidBrush(CurrentColor); } }
+        /// <summary>
+        /// Brush s aktuální barvou <see cref="CurrentDotColor"/>
+        /// </summary>
+        protected SolidBrush CurrentDotBrush { get { return DxComponent.PaintGetSolidBrush(CurrentDotColor); } }
+        /// <summary>
+        /// Má se aktuálně zobrazovat grafika (čtyřtečka) uvnitř Splitteru?
+        /// </summary>
+        protected bool CurrentShowDots
+        {
+            get
+            {
+                var mode = VisualLogoMode;
+                switch (CurrentSplitterState)
+                {
+                    case SplitterState.Disabled: return (mode == LogoMode.Allways);
+                    case SplitterState.Enabled: return (mode == LogoMode.Allways);
+                    case SplitterState.Hot: return (mode == LogoMode.Allways || mode == LogoMode.OnMouse);
+                    case SplitterState.Down: return (mode == LogoMode.Allways || mode == LogoMode.OnMouse);
+                    case SplitterState.Drag: return (mode == LogoMode.Allways || mode == LogoMode.OnMouse);
+                }
+                return false;
+            }
+        }
+        /// <summary>
+        /// Nastaví typ kurzoru pro this prvek podle aktuální orientace.
+        /// </summary>
+        /// <param name="force"></param>
+        protected void SetCursor(bool force = false)
+        {
+            System.Windows.Forms.Orientation orientation = _Orientation;
+            if (force || !_CursorOrientation.HasValue || _CursorOrientation.Value != orientation)
+                this.Cursor = (orientation == System.Windows.Forms.Orientation.Horizontal ? Cursors.HSplit : Cursors.VSplit);
+            _CursorOrientation = orientation;
+        }
+        private System.Windows.Forms.Orientation? _CursorOrientation;
+        #endregion
+        #region Interaktivita splitteru - reakce Splitteru na akce a pohyby myši
+        /// <summary>
+        /// Při vstupu myši nad control
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void OnMouseEnter(EventArgs e)
+        {
+            base.OnMouseEnter(e);
+            this._SplitterMouseEnter();
+            CurrentSplitterEnabled = SplitterEnabled;
+            if (!CurrentSplitterEnabled) return;
+            BringSplitterToFront(true);
+            MouseDownAbsolutePoint = null;
+            MouseDownWorkingBounds = null;
+            CurrentMouseState = MouseState.Over;
+            ChangeCursor(true);
+            PaintSplitter();
+        }
+        /// <summary>
+        /// Při odchodu myši z controlu
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void OnMouseLeave(EventArgs e)
+        {
+            base.OnMouseLeave(e);
+            MouseDownAbsolutePoint = null;
+            MouseDownWorkingBounds = null;
+            CurrentMouseState = MouseState.None;
+            ChangeCursor(false);
+            PaintSplitter();
+        }
+        /// <summary>
+        /// Při stisknutí myši - příprava na možný Drag and Drop
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void OnMouseDown(MouseEventArgs e)
+        {
+            base.OnMouseDown(e);
+            if (!CurrentSplitterEnabled) return;
+            if (e.Button != MouseButtons.Left) return;
+            Point point = Control.MousePosition;
+            MouseDownAbsolutePoint = point;
+            MouseDownWorkingBounds = CurrentWorkingBounds;
+            MouseDragAbsoluteSilentZone = new Rectangle(point.X - 2, point.Y - 2, 5, 5);
+            MouseDragOriginalSplitPosition = SplitPosition;
+            MouseDragLastSplitPosition = null;
+            CurrentMouseState = MouseState.Down;
+            PaintSplitter();
+        }
+        /// <summary>
+        /// Při pohybu myši - mžná provedeme Drag and Drop
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void OnMouseMove(MouseEventArgs e)
+        {
+            base.OnMouseMove(e);
+            if (!CurrentSplitterEnabled) return;
+            Point point = Control.MousePosition;
+            if (CurrentSplitterState == SplitterState.Down) DetectSilentZone(point);          // Pokud je zmáčknutá myš, je stav Down; pokud se pohne o malý kousek, přejde stav do Drag
+            if (CurrentSplitterState == SplitterState.Drag) DetectSplitterDragMove(point);    // Ve stavu Drag řídíme přesun splitteru
+        }
+        /// <summary>
+        /// Při zvednutí myši - pokud byl Drag and Drop, pak jej dokončíme
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void OnMouseUp(MouseEventArgs e)
+        {
+            base.OnMouseUp(e);
+            if (!CurrentSplitterEnabled) return;
+            if (CurrentSplitterState == SplitterState.Drag) DetectSplitterDragDone();         // Pokud jsme ve stavu Drag, ukončíme přesun splitteru
+            MouseDownAbsolutePoint = null;
+            MouseDownWorkingBounds = null;
+            MouseDragAbsoluteSilentZone = null;
+            MouseDragOriginalSplitPosition = null;
+            MouseDragLastSplitPosition = null;
+            CurrentMouseState = MouseState.Over;
+            PaintSplitter();
+        }
+        /// <summary>
+        /// Detekuje pohyb mimo <see cref="MouseDragAbsoluteSilentZone"/>.
+        /// Pokud se myš pohybuje uvnitř (anebo pokud SilentZone už není), nic neprovádí.
+        /// Pokud je ale SilentZone definovaná a myš se nachází mimo ni, pak SilentZone nuluje a nastaví <see cref="CurrentMouseState"/> = <see cref="MouseState.Drag"/>
+        /// </summary>
+        /// <param name="absolutePoint"></param>
+        protected void DetectSilentZone(Point absolutePoint)
+        {
+            if (!MouseDragAbsoluteSilentZone.HasValue) return;
+            if (MouseDragAbsoluteSilentZone.Value.Contains(absolutePoint)) return;
+            MouseDragAbsoluteSilentZone = null;
+            _SplitPositionDragBegin();
+            CurrentMouseState = MouseState.Drag;
+        }
+        /// <summary>
+        /// Detekuje pohyb myši ve stavu  <see cref="MouseState.Drag"/>, určuje novou hodnotu pozice a volá event 
+        /// </summary>
+        /// <param name="absolutePoint"></param>
+        protected void DetectSplitterDragMove(Point absolutePoint)
+        {
+            if (!MouseDownAbsolutePoint.HasValue) return;
+            Point originPoint = MouseDownAbsolutePoint.Value;
+            Rectangle workingBounds = MouseDownWorkingBounds.Value;
+            int distance = (Orientation == Orientation.Horizontal ? (absolutePoint.Y - originPoint.Y) : (absolutePoint.X - originPoint.X));
+            int oldValue = MouseDragOriginalSplitPosition.Value;
+            int newValue = oldValue + distance;                                          // Hodnota splitteru požadovaná posunem myši
+            SetValidSplitPosition(newValue, useWorkingBounds: workingBounds, actions: SetActions.None);           // Korigovat danou myšovitou hodnotu, ale neměnit ani Bounds, ani Controls ani nevolat event PositionChanged
+            int validValue = SplitPosition;                                              // Hodnota po korekci (se zohledněním Min distance Before a After)
+            if (!MouseDragLastSplitPosition.HasValue || MouseDragLastSplitPosition.Value != validValue)
+            {
+                TEventValueChangeArgs<double> args = new TEventValueChangeArgs<double>(EventSource.User, oldValue, validValue);
+                _SplitPositionDragMove(args);                                            // Tady voláme event SplitPositionDragMove
+                RunSplitPositionChanging(args);                                            // Tady voláme event PositionChanging (po reálné změně hodnoty, a event Changing - nikoli Changed)
+                DetectSplitterEventsModify(args, ref validValue);
+                MouseDragLastSplitPosition = SplitPosition;
+                RecalculateBounds(workingBounds);
+                PaintSplitter();
+            }
+        }
+        /// <summary>
+        /// Po dokončení procesu Drag vyvolá event <see cref="SplitPositionChanged"/>.
+        /// </summary>
+        protected void DetectSplitterDragDone()
+        {
+            if (!MouseDragOriginalSplitPosition.HasValue || MouseDragOriginalSplitPosition.Value != SplitPosition)
+            {
+                int oldValue = MouseDragOriginalSplitPosition ?? 0;
+                int newValue = SplitPosition;
+                TEventValueChangeArgs<double> args = new TEventValueChangeArgs<double>(EventSource.User, oldValue, newValue);
+                _SplitPositionDragDone(args);
+                RunSplitPositionChanged(args);
+                bool isChanged = DetectSplitterEventsModify(args, ref newValue);
+                MouseDragOriginalSplitPosition = SplitPosition;
+                if (isChanged)
+                    RecalculateBounds(MouseDownWorkingBounds);
+                PaintSplitter();
+            }
+        }
+        /// <summary>
+        /// Metoda zpracuje odpovědi v argumentu <paramref name="args"/>.
+        /// Reaguje na Cancel, pak vrátí do <paramref name="validValue"/> původní hodnotu z argumentu = <see cref="TEventValueChangeArgs{T}.OldValue"/>;
+        /// reaguje na Changed, pak do <paramref name="validValue"/> vloží nově zadanou hodnotu z argumentu = <see cref="TEventValueChangeArgs{T}.NewValue"/>;
+        /// Pokud takto zaregistruje změnu, tak novou hodnotu vloží do SplitPosition a do Bounds a vrátí true.
+        /// </summary>
+        /// <param name="args"></param>
+        /// <param name="validValue"></param>
+        /// <returns></returns>
+        protected bool DetectSplitterEventsModify(TEventValueChangeArgs<double> args, ref int validValue)
+        {
+            bool changed = false;
+            if (args.Cancel)
+            {
+                validValue = (int)args.OldValue;
+                changed = true;
+            }
+            else if (args.Changed)
+            {
+                validValue = (int)args.NewValue;
+                changed = true;
+            }
+            if (changed)
+            {
+                SetValidSplitPosition(validValue, useWorkingBounds: MouseDownWorkingBounds, actions: SetActions.None);     // Korigovat hodnotu dodanou aplikačním eventhandlerem, ale neměnit ani Bounds, ani Controls ani nevolat event PositionChanged
+                validValue = SplitPosition;                                              // Hodnota po korekci (se zohledněním Min distance Before a After)
+            }
+            return changed;
+        }
+        /// <summary>
+        /// Hodnota <see cref="SplitterEnabled"/> zachycená při MouseEnter, po skončení eventu <see cref="SplitterMouseEnter"/>, platná pro aktuální akce myši.
+        /// Tzn. pokud při MouseEnter bude v eventu <see cref="SplitterMouseEnter"/> určena hodnota <see cref="SplitterEnabled"/> = false, 
+        /// pak až do odchodu myši ze splitteru a do nového příchodu platí tato hodnota.
+        /// </summary>
+        protected bool CurrentSplitterEnabled { get; set; }
+        /// <summary>
+        /// Souřadnice bodu, kde byla stisknuta myš - v absolutních koordinátech
+        /// </summary>
+        protected Point? MouseDownAbsolutePoint { get; set; }
+        /// <summary>
+        /// Aktuální pracovní souřadnice splitteru <see cref="CurrentWorkingBounds"/>, platné v okamžiku MouseDown. Jindy je null.
+        /// </summary>
+        protected Rectangle? MouseDownWorkingBounds { get; set; }
+        /// <summary>
+        /// Souřadnice prostoru, kde budeme ignorovat pohyb myši po jejím MouseDown (v absolutních koordinátech).
+        /// Tím potlačíme malé pohyby před zahájením Drag.
+        /// Pokud je zde null, a v <see cref="MouseDownAbsolutePoint"/> pak už myš opustila výchozí SilentZone a reagujeme na její pohyby.
+        /// </summary>
+        protected Rectangle? MouseDragAbsoluteSilentZone { get; set; }
+        /// <summary>
+        /// Počáteční hodnota <see cref="SplitPosition"/> před zahájením Drag
+        /// </summary>
+        protected int? MouseDragOriginalSplitPosition { get; set; }
+        /// <summary>
+        /// Předchozí hodnota <see cref="SplitPosition"/> při posledním volání eventu 
+        /// </summary>
+        protected int? MouseDragLastSplitPosition { get; set; }
+        /// <summary>
+        /// Aktuální stav myši. Změna hodnoty vyvolá invalidaci = překreslení.
+        /// </summary>
+        protected MouseState CurrentMouseState { get { return _CurrentMouseState; } set { _CurrentMouseState = value; Invalidate(); } }
+        private MouseState _CurrentMouseState;
+        /// <summary>
+        /// Metoda zajistí změnu kurzoru podle dané aktivity a aktuální orientace splitteru.
+        /// </summary>
+        /// <param name="active"></param>
+        protected void ChangeCursor(bool active)
+        {
+            if (active)
+                this.Cursor = (this.Orientation == Orientation.Horizontal ? Cursors.HSplit : (this.Orientation == Orientation.Vertical ? Cursors.VSplit : Cursors.Default));
+            else
+                this.Cursor = Cursors.Default;
+        }
+        /// <summary>
+        /// Aktuální stav Splitteru odpovídající stavu Enabled a stavu myši <see cref="CurrentMouseState"/>.
+        /// </summary>
+        protected SplitterState CurrentSplitterState
+        {
+            get
+            {
+                if (!this.Enabled) return SplitterState.Disabled;
+                switch (this.CurrentMouseState)
+                {
+                    case MouseState.None: return SplitterState.Enabled;
+                    case MouseState.Over: return SplitterState.Hot;
+                    case MouseState.Down: return SplitterState.Down;
+                    case MouseState.Drag: return SplitterState.Drag;
+                }
+                return SplitterState.Enabled;
+            }
+        }
+        /// <summary>
+        /// Stavy myši
+        /// </summary>
+        protected enum MouseState { None, Over, Down, Drag }
+        /// <summary>
+        /// Stavy prvku
+        /// </summary>
+        protected enum SplitterState { Enabled, Disabled, Hot, Down, Drag }
+        #endregion
+        #region Public properties - funkcionalita Splitteru (hodnota, orientace, šířka)
+        /// <summary>
+        /// Aktuální pozice splitteru = hodnota středového pixelu na ose X nebo Y, podle orientace.
+        /// Setování této hodnoty VYVOLÁ event <see cref="SplitPositionChanged"/> a zajistí úpravu souřadnic navázaných objektů podle režimu <see cref="ActivityMode"/>.
+        /// </summary>
+        public int SplitPosition { get { return (int)Math.Round(_SplitPosition, 0); } set { SetValidSplitPosition(value, actions: SetActions.Default); } }
+        /// <summary>
+        /// Pozice splitteru uložená jako Double, slouží pro přesné výpočty pozic při <see cref="AnchorType"/> == <see cref="SplitterAnchorType.Relative"/>,
+        /// kdy potřebujeme mít pozici i na desetinná místa.
+        /// <para/>
+        /// Interaktivní přesouvání vkládá vždy integer číslo, public hodnota <see cref="SplitPosition"/> je čtena jako Math.Round(<see cref="SplitPosition"/>, 0).
+        /// Setovat double hodnotu je možno pomocí metody <see cref="SetValidSplitPosition(double?, int?, Rectangle?, SetActions)"/>.
+        /// </summary>
+        private double _SplitPosition;
+        /// <summary>
+        /// Viditelná šířka splitteru. Nastavuje se automaticky na nejbližší vyšší sudé číslo.
+        /// Tento počet pixelů bude vykreslován.
+        /// Rozsah hodnot = 0 až 30 px.
+        /// Hodnota 0 je přípustná, splitter pak nebude viditelný.
+        /// </summary>
+        public int SplitThick { get { return this._SplitThick; } set { SetValidSplitPosition(null, value, actions: SetActions.Silent); } }
+        private int _SplitThick;
+        /// <summary>
+        /// Orientace splitteru = vodorovná nebo svislá
+        /// </summary>
+        public Orientation Orientation { get { return this._Orientation; } set { _Orientation = value; SetCursor(); SetValidSplitPosition(null, actions: SetActions.Silent); } }
+        private Orientation _Orientation;
+        /// <summary>
+        /// Příznak, zda má Splitter reagovat na vložení souřadnic do <see cref="Control.Bounds"/>.
+        /// Pokud je true, pak po vložení souřadnic se ze souřadnic odvodí <see cref="SplitPosition"/> a <see cref="SplitThick"/>, a vepíše se do Splitteru.
+        /// Default = false: souřadnice splitteru nelze změnit vložením hodnoty do <see cref="Control.Bounds"/>, takový pokus bude ignorován.
+        /// </summary>
+        public bool AcceptBoundsToSplitter { get { return this._AcceptBoundsToSplitter; } set { _AcceptBoundsToSplitter = value; } }
+        private bool _AcceptBoundsToSplitter;
+        /// <summary>
+        /// Povolení aktivity splitteru.
+        /// Vyhodnocuje se při vstupu myši nad Splitter, po proběhnutí eventu <see cref="SplitterMouseEnter"/>.
+        /// Pokud je true, je povolen MouseDrag, jinak není.
+        /// </summary>
+        public bool SplitterEnabled { get { return this._SplitterEnabled; } set { _SplitterEnabled = value; } }
+        private bool _SplitterEnabled;
+        #endregion
+        #region Public properties - vzhled
+        /// <summary>
+        /// Barva pozadí je vždy Transparent, nemá význam ji setovat
+        /// </summary>
+        public override Color BackColor { get { return Color.Transparent; } set { Invalidate(); } }
+        /// <summary>
+        /// Barvu splitteru vždy přebírej z barvy pozadí Parenta.
+        /// Default hodnota = true, má přednost před barvou Skinu.
+        /// Při souběhu <see cref="DevExpressSkinEnabled"/> = true; a <see cref="SplitterColorByParent"/> = true; bude barva převzata z Parent controlu.
+        /// Pokud bude <see cref="SplitterColorByParent"/> = false; a <see cref="DevExpressSkinEnabled"/> = true; pak se barva splitteru bude přebírat ze Skinu.
+        /// Pokud budou obě false, pak barva Splitteru bude dána barvou <see cref="SplitterColor"/>.
+        /// </summary>
+        public bool SplitterColorByParent { get { return _SplitterColorByParent; } set { _SplitterColorByParent = value; Invalidate(); } }
+        private bool _SplitterColorByParent;
+        /// <summary>
+        /// Základní barva splitteru.
+        /// Pokud je ale nastaveno <see cref="SplitterColorByParent"/> = true, pak je hodnota <see cref="SplitterColor"/> čtena z Parent.BackColor.
+        /// Setování hodnoty je sice interně uložena, ale setovaná hodnota nemá vliv na zobrazení (až do změny nastaveni <see cref="SplitterColorByParent"/> na false).
+        /// </summary>
+        public Color SplitterColor { get { return CurrentColorBase; } set { _SplitterColor = value; Invalidate(); } }
+        private Color _SplitterColor;
+        /// <summary>
+        /// Barva aktivního splitteru.
+        /// Toto je pouze vzdálená cílová barva; reálně má splitter v aktivním stavu barvu základní <see cref="SplitterColor"/>,
+        /// jen mírně modifikovanou směrem k této aktivní barvě <see cref="SplitterActiveColor"/>.
+        /// </summary>
+        public Color SplitterActiveColor { get { return CurrentColorActive; } set { _SplitterActiveColor = value; Invalidate(); } }
+        private Color _SplitterActiveColor;
+        /// <summary>
+        /// Režim zobrazování grafiky (čtyřtečka) uprostřed Splitteru.
+        /// Výchozí hodnota je <see cref="LogoMode.OnMouse"/>
+        /// </summary>
+        public LogoMode VisualLogoMode { get { return _VisualLogoMode; } set { _VisualLogoMode = value; Invalidate(); } }
+        private LogoMode _VisualLogoMode;
+        /// <summary>
+        /// Počet teček zobrazovaných jako grafika ("čtyřtečka").
+        /// Default = 4. Platné rozmezí = 0 až 30
+        /// </summary>
+        public int VisualLogoDotsCount { get { return _VisualLogoDotsCount; } set { _VisualLogoDotsCount = (value < 0 ? 0 : (value > 30 ? 30 : value)); Invalidate(); } }
+        private int _VisualLogoDotsCount;
+        #endregion
+        #region DevExpress - reakce na změnu skinu, akceptování skinu pro vzhled Splitteru
+        /// <summary>
+        /// Obsahuje true, pokud this splitter je napojen na DevExpress skin.
+        /// Výchozí hodnota je true.
+        /// </summary>
+        public bool DevExpressSkinEnabled
+        {
+            get { return _DevExpressSkinEnabled; }
+            set
+            {
+                if (_DevExpressSkinEnabled)
+                    DevExpress.LookAndFeel.UserLookAndFeel.Default.StyleChanged -= DevExpressSkinChanged;
+                _DevExpressSkinEnabled = value;
+                if (_DevExpressSkinEnabled)
+                {
+                    DevExpressSkinLoad();
+                    DevExpress.LookAndFeel.UserLookAndFeel.Default.StyleChanged += DevExpressSkinChanged;
+                }
+            }
+        }
+        private bool _DevExpressSkinEnabled;
+        /// <summary>
+        /// Provede se po změně DevExpress Skinu (event je volán z <see cref="DevExpress.LookAndFeel.UserLookAndFeel.Default"/> : <see cref="DevExpress.LookAndFeel.UserLookAndFeel.StyleChanged"/>)
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void DevExpressSkinChanged(object sender, EventArgs e)
+        {
+            DevExpressSkinLoad();
+        }
+        /// <summary>
+        /// Načte aktuální hodnoty DevExpress Skinu do this controlu
+        /// </summary>
+        private void DevExpressSkinLoad()
+        {
+            if (this.DevExpressSkinEnabled)
+            {
+                var skinName = DevExpress.LookAndFeel.UserLookAndFeel.Default.ActiveSkinName;
+                var skin = DevExpress.Skins.SkinManager.Default.GetSkin(DevExpress.Skins.SkinProductId.Common, skinName);
+                _DevExpressSkinBackColor = skin.GetSystemColor(SystemColors.ControlLight);
+                _DevExpressSkinActiveColor = skin.GetSystemColor(SystemColors.HotTrack);
+            }
+        }
+        /// <summary>
+        /// Barva pozadí načtená z aktuálního Skinu.
+        /// Bude akceptována, pokud je zadána a pokud <see cref="DevExpressSkinEnabled"/> je true.
+        /// </summary>
+        private Color? _DevExpressSkinBackColor;
+        /// <summary>
+        /// Barva aktivní načtená z aktuálního Skinu.
+        /// Bude akceptována, pokud je zadána a pokud <see cref="DevExpressSkinEnabled"/> je true.
+        /// </summary>
+        private Color? _DevExpressSkinActiveColor;
+        #endregion
+        #region Abstraktní věci jsou, když tady nic není. Virtuální jsou ty, které sice jsou, ale stejně nic nedělají. GetWorkingBounds(), ApplySplitterToControls()
+        /// <summary>
+        /// V této metodě potomek určí prostor, ve kterém se může pohybovat Splitter.
+        /// <para/>
+        /// Vrácený prostor má dva významy:
+        /// <para/>
+        /// a) V první řadě určuje rozsah pohybu Splitteru od-do: např. pro svislý splitter je klíčem hodnota Left a Right vráceného prostoru = odkud a kam může splitter jezdit
+        /// (k tomu poznámka: jde o souřadnice vnějšího okraje splitteru, tedy včetně jeho tloušťky: 
+        /// pokud tedy X = 0, pak splitter bude mít svůj levý okraj nejméně na pozici 0, a jeho <see cref="SplitterControl.SplitPosition"/> tedy bude o půl <see cref="SplitterControl.SplitThick"/> větší).
+        /// Pro vodorovný Splitter je v tomto ohledu klíčová souřadnice Top a Bottom.
+        /// <para/>
+        /// b) V druhé řadě určuje vrácený prostor velikost Splitteru v "neaktivním" směru: např. pro svislý splitter bude kreslen nahoře od pozice Top dolů, jeho výška bude = Height.
+        /// Vodorovný Splitter si pak převezme Left a Width.
+        /// <para/>
+        /// Metoda je volaná při změně hodnoty nebo orientace nebo tloušťky, a na začátku interaktivního přemísťování pomocí myši.
+        /// <para/>
+        /// Tato metoda dostává jako parametr maximální možnou velikost = prostor v parentu. Metoda ji může vrátit beze změny, pak Splitter bude "jezdit" v celém parentu bez omezení.
+        /// Bázová metoda to tak dělá - vrací beze změny dodaný parametr.
+        /// </summary>
+        /// <param name="currentArea">Souřadnice ClientArea, ve kterých se může pohybovat Splitter v rámci svého parenta</param>
+        /// <returns></returns>
+        protected virtual Rectangle GetCurrentWorkingBounds(Rectangle currentArea) { return currentArea; }
+        #endregion
+        #region Jádro splitteru - vložení hodnoty do splitteru, kontroly, výpočty souřadnic
+        /// <summary>
+        /// Provede změnu pozice splitteru na zadanou hodnotu <paramref name="splitPosition"/> a/nebo <see cref="SplitThick"/>.
+        /// Lze tedy zadat všechny hodnoty najednou a navázané výpočty proběhnou jen jedenkrát.
+        /// Všechny tyto hodnoty mají nějaký vliv na pozici a souřadnice splitteru, proto je vhodnější je setovat jedním voláním, které je tedy optimálnější.
+        /// Zadanou hodnotu zkontroluje s ohledem na vlastnosti splitteru, uloží hodnotu do <see cref="_SplitPosition"/>.
+        /// <para/>
+        /// Tato metoda se používá interně při interaktivních pohybech, při zadání limitujících hodnot i jako reakce na vložení hodnoty do property <see cref="SplitPosition"/>.
+        /// Touto metodou lze vložit hodnotu <see cref="SplitPosition"/> typu <see cref="Double"/>, což se využívá při změně velikosti parenta a typu kotvy <see cref="SplitterAnchorType.Relative"/>.
+        /// Tam by se s hodnotou typu <see cref="Int32"/> nedalo pracovat.
+        /// <para/>
+        /// Tato metoda se aktivně brání rekurzivnímu vyvolání (k čemuž může dojít při použití techniky "TransferToParent").
+        /// </summary>
+        /// <param name="splitPosition">Nová hodnota <see cref="SplitPosition"/>. Pokud bude NULL, vezme se stávající pozice.</param>
+        /// <param name="splitThick">Nová hodnota <see cref="SplitThick"/>, hodnota null = beze změny</param>
+        /// <param name="useWorkingBounds">Použít dané souřadnice jako WorkingBounds (=nvyhodnocovat <see cref="CurrentWorkingBounds"/>, ani neukládat do <see cref="LastWorkingBounds"/>)</param>
+        /// <param name="actions"></param>
+        protected void SetValidSplitPosition(double? splitPosition, int? splitThick = null, Rectangle? useWorkingBounds = null, SetActions actions = SetActions.Default)
+        {
+            if (SetValidSplitPositionInProgress) return;
+
+            try
+            {
+                SetValidSplitPositionInProgress = true;
+
+                // Nejprve zpracuji explicitně zadanou hodnotu SplitThick, protože ta může mít vliv na algoritmus GetValidSplitPosition():
+                bool changedThick = false;
+                if (splitThick.HasValue)
+                {
+                    int oldThick = _SplitThick;
+                    int newThick = GetValidSplitThick(splitThick.Value);
+                    changedThick = (oldThick != newThick);
+                    if (changedThick)
+                        _SplitThick = newThick;
+                }
+
+                // Změna WorkingBounds:
+                bool changedBounds = false;
+                Rectangle workingBounds;
+                if (useWorkingBounds.HasValue)
+                {
+                    workingBounds = useWorkingBounds.Value;
+                }
+                else
+                {
+                    Rectangle oldWorkingBounds = LastWorkingBounds;
+                    Rectangle newWorkingBounds = CurrentWorkingBounds;
+                    changedBounds = (newWorkingBounds != oldWorkingBounds);
+                    if (changedBounds)
+                        LastWorkingBounds = newWorkingBounds;
+                    workingBounds = newWorkingBounds;
+                }
+
+                // A poté zpracuji Position - tu zpracuji i když by na vstupu byla hodnota null (pak jako požadovanou novou hodnotu budu brát hodnotu současnou),
+                //  protože v metodě GetValidSplitPosition() se aplikují veškeré limity pro hodnotu, a ty se mohly změnit => proto může být volána this metoda:
+                double oldPosition = _SplitPosition;
+                double newPosition = GetValidSplitPosition(splitPosition ?? oldPosition, workingBounds);
+                bool changedPosition = (Math.Round(newPosition, 2) != Math.Round(oldPosition, 2));
+                if (changedPosition)
+                    _SplitPosition = newPosition;
+
+                // Pokud není žádná změna, a není ani požadavek na ForceActions, pak skončíme:
+                bool force = (actions.HasFlag(SetActions.ForceActions));
+                if (!(changedThick || changedBounds || changedPosition || force)) return;
+
+                // Nastavit souřadnice podle aktuální hodnoty:
+                if (actions.HasFlag(SetActions.RecalculateBounds)) RecalculateBounds(workingBounds, true);
+
+                // Události:
+                if (actions.HasFlag(SetActions.CallEventChanging)) RunSplitPositionChanging(new TEventValueChangeArgs<double>(EventSource.Code, oldPosition, newPosition));
+                if (actions.HasFlag(SetActions.CallEventChanged)) RunSplitPositionChanged(new TEventValueChangeArgs<double>(EventSource.Code, oldPosition, newPosition));
+            }
+            finally
+            {
+                SetValidSplitPositionInProgress = false;
+            }
+        }
+        /// <summary>
+        /// Metoda ze zadaných souřadnic odvodí hodnoty splitPosition a splitThick a vloží je do this Splitteru.
+        /// Pozor: potomek smí metodu přepsat, a z neaktivních souřadnic si může odvodit WorkingBounds, musí ale zavolat base.SetSplitterByBounds() ! Jinak nebude proveden základní výpočet.
+        /// Základní výpočet ve třídě <see cref="SplitterControl"/> zajistí určení platné hodnoty <see cref="SplitThick"/> a <see cref="SplitPosition"/>, a jejich vložení do splitteru, 
+        /// včetně validace hodnot a případné korekce souřadnic splitetru !
+        /// <para/>
+        /// Tato metoda je volána pouze tehdy, když jsou změněny souřadnice splitteru, a tento má nastaveno <see cref="SplitterControl.AcceptBoundsToSplitter"/> = true.
+        /// </summary>
+        /// <param name="bounds"></param>
+        /// <param name="actions">Akce prováděné Splitterem, pokud nebude zadáno použije se <see cref="SetActions.Default"/>.</param>
+        protected virtual void SetSplitterByBounds(Rectangle bounds, SetActions? actions = null)
+        {
+            bool isHorizontal = (this.Orientation == Orientation.Horizontal);
+            int splitThick = GetValidSplitThick((isHorizontal ? bounds.Height : bounds.Width));
+            int th = splitThick / 2;
+            double splitPosition = (isHorizontal ? bounds.Y : bounds.X) + th;
+            SetValidSplitPosition(splitPosition, splitThick, null, (actions ?? SetActions.Default));
+        }
+        /// <summary>
+        /// Obsahuje true, pokud aktuálně probíhá výkon metody <see cref="SetValidSplitPosition(double?, int?, Rectangle?, SetActions)"/>, v té době nebude spouštěna další iterace této metody
+        /// </summary>
+        protected bool SetValidSplitPositionInProgress { get; private set; } = false;
+        /// <summary>
+        /// Posledně platné pracovní souřadnice Splitteru. K těmto pracovním souřadnicím byly určeny souřadnice Splitteru.
+        /// </summary>
+        protected Rectangle LastWorkingBounds { get; private set; } = Rectangle.Empty;
+        /// <summary>
+        /// Metoda vrátí platnou hodnotu pro <see cref="SplitThick"/> pro libovolnou vstupní hodnotu.
+        /// </summary>
+        /// <param name="splitThick"></param>
+        /// <returns></returns>
+        protected static int GetValidSplitThick(int splitThick)
+        {
+            int t = splitThick.Align(0, 30);
+            if ((t % 2) == 1) t++;               // Hodnota nesmí být lichá, to kvůli správnému počítání grafiky. Takže nejbližší vyšší sudá...
+            return t;
+        }
+        /// <summary>
+        /// Metoda ověří zadanou požadovanou pozici splitteru a vrátí hodnotu platnou.
+        /// Potomek může metodu přepsat a hodnotu kontrolovat jinak.
+        /// Na vstupu je požadovaná hodnota <see cref="SplitterControl.SplitPosition"/>
+        /// a souřadnice pracovního prostoru, které vygenerovala metoda <see cref="SplitterControl.GetCurrentWorkingBounds(Rectangle)"/>
+        /// </summary>
+        /// <param name="splitPosition">Zvenku daná pozice Splitteru, požadavek</param>
+        /// <param name="currentWorkingBounds">Pracovní souřadnice Splitteru = vnější, jsou získané metodou <see cref="SplitterControl.GetCurrentWorkingBounds(Rectangle)"/></param>
+        /// <returns></returns>
+        protected virtual double GetValidSplitPosition(double splitPosition, Rectangle currentWorkingBounds)
+        {
+            Rectangle logicalWorkingBounds = GetLogicalRectangle(currentWorkingBounds);
+            double th = (double)SplitThick / 2d;
+            double min = 0d;
+            double max = (double)MaxSize;
+            switch (Orientation)
+            {
+                case Orientation.Horizontal:
+                    min = (double)logicalWorkingBounds.Top + th;
+                    max = (double)logicalWorkingBounds.Bottom - th;
+                    break;
+                case Orientation.Vertical:
+                    min = (double)logicalWorkingBounds.Left + th;
+                    max = (double)logicalWorkingBounds.Right - th;
+                    break;
+            }
+            return splitPosition.Align(min, max);
+        }
+        /// <summary>
+        /// Aktuální pozice splitteru posunutá o Scroll pozici aktuálního containeru.
+        /// Pokud Parent container je AutoScroll, pak se Splitter má vykreslovat na jiných souřadnicích, než odpovídá hodnotě <see cref="SplitPosition"/> = právě o posun AutoScrollu.
+        /// </summary>
+        protected int CurrentSplitPosition
+        {
+            get
+            {
+                int splitPosition = SplitPosition;
+                Point offset = CurrentOrigin;
+                if (!offset.IsEmpty)
+                {
+                    switch (_Orientation)
+                    {
+                        case Orientation.Horizontal: return splitPosition + offset.Y;
+                        case Orientation.Vertical: return splitPosition + offset.X;
+                    }
+                }
+                return splitPosition;
+            }
+        }
+        /// <summary>
+        /// Maximální velikost - použitá v případě, kdy není znám Parent
+        /// </summary>
+        protected const int MaxSize = 10240;
+        #endregion
+        #region Eventy, háčky a jejich spouštěče
+        /// <summary>
+        /// Vyvolá metodu <see cref="OnSplitterMouseEnter()"/> a event <see cref="SplitterMouseEnter"/>
+        /// </summary>
+        private void _SplitterMouseEnter()
+        {
+            OnSplitterMouseEnter();
+            SplitterMouseEnter?.Invoke(this, new EventArgs());
+        }
+        /// <summary>
+        /// Volá se při vstupu myši na splitter. 
+        /// Důsledkem události může být změna stavu splitteru v property <see cref="SplitterEnabled"/>.
+        /// <see cref="SplitterControl"/> si po proběhnutí této události uschová hodnotu <see cref="SplitterEnabled"/> do soukromé proměnné, 
+        /// která následně řídí funkcionalitu splitteru i jeho vykreslování jako reakci na pohyb myši.
+        /// <para/>
+        /// Následovat budou události <see cref="OnSplitPositionDragBegin()"/> (při zahájení pohybu),
+        /// <see cref="OnSplitPositionDragMove"/> (po každém pixelu) a <see cref="OnSplitPositionDragDone"/> (po zvednutí myši).
+        /// </summary>
+        protected virtual void OnSplitterMouseEnter() { }
+        /// <summary>
+        /// Událost volaná jedenkrát při každém vstupu myši na splitter.
+        /// Důsledkem události může být změna stavu splitteru v property <see cref="SplitterEnabled"/>.
+        /// <see cref="SplitterControl"/> si po proběhnutí této události uschová hodnotu <see cref="SplitterEnabled"/> do soukromé proměnné, 
+        /// která následně řídí funkcionalitu splitteru i jeho vykreslování jako reakci na pohyb myši.
+        /// <para/>
+        /// Následovat budou eventy <see cref="SplitPositionDragBegin"/> (při zahájení pohybu),
+        /// <see cref="SplitPositionDragMove"/> (po každém pixelu) a <see cref="SplitPositionDragDone"/> (po zvednutí myši).
+        /// </summary>
+        public event EventHandler SplitterMouseEnter;
+        /// <summary>
+        /// Vyvolá metodu <see cref="OnSplitPositionDragBegin()"/> a event <see cref="SplitPositionDragBegin"/>
+        /// </summary>
+        private void _SplitPositionDragBegin()
+        {
+            OnSplitPositionDragBegin();
+            SplitPositionDragBegin?.Invoke(this, new EventArgs());
+        }
+        /// <summary>
+        /// Volá se při zahájení interaktivního přesunu splitteru pomocí myši (po stisknutí myši a prvním pohybu).
+        /// </summary>
+        protected virtual void OnSplitPositionDragBegin() { }
+        /// <summary>
+        /// Událost volaná jedenkrát při každém zahájení interaktivního přesunu splitteru pomocí myši (po stisknutí myši a prvním pohybu).
+        /// Následovat budou eventy <see cref="SplitPositionChanging"/> (po každém pixelu) a <see cref="SplitPositionChanged"/> (po zvednutí myši).
+        /// </summary>
+        public event EventHandler SplitPositionDragBegin;
+        /// <summary>
+        /// Vyvolá metodu <see cref="OnSplitPositionDragMove(TEventValueChangeArgs{double})"/> a event <see cref="SplitPositionDragMove"/>
+        /// </summary>
+        /// <param name="args">Argument pro handler</param>
+        private void _SplitPositionDragMove(TEventValueChangeArgs<double> args)
+        {
+            OnSplitPositionDragMove(args);
+            SplitPositionDragMove?.Invoke(this, args);
+        }
+        /// <summary>
+        /// Volá se v průběhu pohybu splitteru
+        /// </summary>
+        protected virtual void OnSplitPositionDragMove(TEventValueChangeArgs<double> args) { }
+        /// <summary>
+        /// Událost volaná po každé změně hodnoty <see cref="SplitPosition"/> při interaktivním přemísťování splitteru myší
+        /// </summary>
+        public event EventHandler<TEventValueChangeArgs<double>> SplitPositionDragMove;
+        /// <summary>
+        /// Vyvolá metodu <see cref="OnSplitPositionDragDone(TEventValueChangeArgs{double})"/> a event <see cref="SplitPositionDragDone"/>
+        /// </summary>
+        /// <param name="args">Argument pro handler</param>
+        private void _SplitPositionDragDone(TEventValueChangeArgs<double> args)
+        {
+            OnSplitPositionDragDone(args);
+            SplitPositionDragDone?.Invoke(this, args);
+        }
+        /// <summary>
+        /// Volá se v průběhu pohybu splitteru
+        /// </summary>
+        protected virtual void OnSplitPositionDragDone(TEventValueChangeArgs<double> args) { }
+        /// <summary>
+        /// Událost volaná po každé změně hodnoty <see cref="SplitPosition"/> při dokončení interaktivního přemísťování splitteru myší
+        /// </summary>
+        public event EventHandler<TEventValueChangeArgs<double>> SplitPositionDragDone;
+        /// <summary>
+        /// Vyvolá metodu <see cref="OnSplitPositionChanging(TEventValueChangeArgs{double})"/> a event <see cref="SplitPositionChanging"/>
+        /// </summary>
+        /// <param name="args">Argument pro handler</param>
+        private void RunSplitPositionChanging(TEventValueChangeArgs<double> args)
+        {
+            OnSplitPositionChanging(args);
+            SplitPositionChanging?.Invoke(this, args);
+        }
+        /// <summary>
+        /// Volá se v průběhu pohybu splitteru
+        /// </summary>
+        protected virtual void OnSplitPositionChanging(TEventValueChangeArgs<double> args) { }
+        /// <summary>
+        /// Událost volaná po každé změně hodnoty <see cref="SplitPosition"/> v procesu interaktivního přemísťování
+        /// </summary>
+        public event EventHandler<TEventValueChangeArgs<double>> SplitPositionChanging;
+        /// <summary>
+        /// Vyvolá metodu <see cref="OnSplitPositionChanged(TEventValueChangeArgs{double})"/> a event <see cref="SplitPositionChanged"/>
+        /// </summary>
+        /// <param name="args">Argument pro handler</param>
+        private void RunSplitPositionChanged(TEventValueChangeArgs<double> args)
+        {
+            OnSplitPositionChanged(args);
+            SplitPositionChanged?.Invoke(this, args);
+        }
+        /// <summary>
+        /// Volá se po dokončení pohybu splitteru = po pohybu a po zvednutí myši.
+        /// </summary>
+        protected virtual void OnSplitPositionChanged(TEventValueChangeArgs<double> args) { }
+        /// <summary>
+        /// Událost volaná po každé změně hodnoty <see cref="SplitPosition"/> z kódu, a po dokončení procesu interaktivního přemísťování
+        /// </summary>
+        public event EventHandler<TEventValueChangeArgs<double>> SplitPositionChanged;
+        #endregion
+        #region Souřadnice jsou věc specifická...   Vkládání souřadnic, konverze souřadnic při AutoScrollu (logické / aktuální)
+        /// <summary>
+        /// Tudy chodí externí setování souřadnic...
+        /// </summary>
+        /// <param name="x"></param>
+        /// <param name="y"></param>
+        /// <param name="width"></param>
+        /// <param name="height"></param>
+        /// <param name="specified"></param>
+        protected override void SetBoundsCore(int x, int y, int width, int height, BoundsSpecified specified)
+        {
+            // Po změnách datových hodnot Splitteru vkládáme jeho nové souřadnice v metodě RecalculateBounds() přímo do base metody SetBoundsCore().
+            //    (takže vložení souřadnic do splitteru po vložení hodnoty Splitteru NEJDE touto metodou!)
+            // Do této metody nám tedy vstupuje řízení pouze po EXTERNÍ změně souřadnic.
+
+            if (this.AcceptBoundsToSplitter)
+            {   // Pokud je aktivní příznak AcceptBoundsToSplitter, pak dodané souřadnice zpracujeme do souřadnic i do dat Splitteru:
+                base.SetBoundsCore(x, y, width, height, specified);            // Nejprve vložíme souřadnice...
+                this.SetSplitterByBounds(new Rectangle(x, y, width, height));  // A pak podle souřadnic nastavíme Splitter
+            }
+        }
+        /// <summary>
+        /// Vypočítá správné vnější souřadnice Splitteru a uloží je do base.Bounds; volitelně vyvolá invalidaci = překreslení.
+        /// <para/>
+        /// Tato metoda se aktivně brání rekurzivnímu vyvolání (k čemuž může dojít při použití techniky "TransferToParent").
+        /// </summary>
+        /// <param name="workingBounds">Pracovní souřadnice Splitteru = vnější, jsou získané metodou <see cref="SplitterControl.GetCurrentWorkingBounds(Rectangle)"/></param>
+        /// <param name="withInvalidate"></param>
+        protected void RecalculateBounds(Rectangle? workingBounds = null, bool withInvalidate = false)
+        {
+            if (RecalculateBoundsInProgress) return;
+            try
+            {
+                RecalculateBoundsInProgress = true;
+
+                Rectangle bounds = GetCurrentBounds(workingBounds);
+                // Splitter umisťuje jen sám sebe:
+                if (bounds != this.Bounds)
+                    base.SetBoundsCore(bounds.X, bounds.Y, bounds.Width, bounds.Height, BoundsSpecified.All);   // Tato metoda REÁLNĚ nastaví Bounds this controlu.
+                if (withInvalidate && Initialized) Invalidate();
+            }
+            finally
+            {
+                RecalculateBoundsInProgress = false;
+            }
+        }
+        /// <summary>
+        /// Obsahuje true, pokud aktuálně probíhá výkon metody <see cref="SplitterControl.RecalculateBounds(Rectangle?, bool)"/>, v té době nebude spouštěna další iterace této metody
+        /// </summary>
+        protected bool RecalculateBoundsInProgress { get; private set; } = false;
+        /// <summary>
+        /// Vrátí aktuální souřadnice prvku (Bounds) pro jeho umístění = nikoli pro jeho vykreslení.
+        /// Souřadnice určí na základě pozice splitteru <see cref="SplitterControl.SplitPosition"/> a jeho orientace <see cref="SplitterControl.Orientation"/>, 
+        /// jeho šíři <see cref="SplitterControl.SplitThick"/>
+        /// a na základě pracovních souřadnic dle parametru <paramref name="workingBounds"/>, viz i metoda <see cref="SplitterControl.GetCurrentWorkingBounds(Rectangle)"/>.
+        /// <para/>
+        /// Výsledné souřadnice posune o AutoScroll position <see cref="CurrentOrigin"/>.
+        /// </summary>
+        /// <param name="workingBounds">Pracovní souřadnice Splitteru = vnější, jsou získané metodou <see cref="SplitterControl.GetCurrentWorkingBounds(Rectangle)"/></param>
+        /// <returns></returns>
+        protected virtual Rectangle GetCurrentBounds(Rectangle? workingBounds = null)
+        {
+            int sp = CurrentSplitPosition;
+            int th = (SplitThick / 2);
+            Rectangle cwb = workingBounds ?? CurrentWorkingBounds;
+            switch (_Orientation)
+            {
+                case Orientation.Horizontal:
+                    return new Rectangle(cwb.X, sp - th, cwb.Width, SplitThick);
+                case Orientation.Vertical:
+                    return new Rectangle(sp - th, cwb.Y, SplitThick, cwb.Height);
+            }
+            return Rectangle.Empty;
+        }
+        /// <summary>
+        /// Metoda vrátí souřadnice vizuální (akceptující AutoScroll) pro dané souřadnice logické
+        /// </summary>
+        /// <param name="logicalBounds"></param>
+        /// <returns></returns>
+        protected Rectangle GetCurrentRectangle(Rectangle logicalBounds)
+        {
+            Point currentOrigin = CurrentOrigin;
+            if (currentOrigin.IsEmpty) return logicalBounds;
+            return new Rectangle(logicalBounds.X + currentOrigin.X, logicalBounds.Y + currentOrigin.Y, logicalBounds.Width, logicalBounds.Height);
+        }
+        /// <summary>
+        /// Metoda vrátí souřadnice logické (akceptující původní bod 0/0) pro dané souřadnice vizuálně, akceptujíc AutoScroll
+        /// </summary>
+        /// <param name="currentBounds"></param>
+        /// <returns></returns>
+        protected Rectangle GetLogicalRectangle(Rectangle currentBounds)
+        {
+            Point currentOrigin = CurrentOrigin;
+            if (currentOrigin.IsEmpty) return currentBounds;
+            return new Rectangle(currentBounds.X - currentOrigin.X, currentBounds.Y - currentOrigin.Y, currentBounds.Width, currentBounds.Height);
+        }
+        /// <summary>
+        /// Souřadnice bodu 0/0.
+        /// On totiž počáteční bod ve WinForm controlech může být posunutý, pokud Parent control je typu <see cref="ScrollableControl"/> s aktivním scrollingem.
+        /// </summary>
+        protected Point CurrentOrigin
+        {
+            get
+            {
+                if (!(this.Parent is ScrollableControl parent) || !parent.AutoScroll) return Point.Empty;
+                return parent.AutoScrollPosition;
+            }
+        }
+        /// <summary>
+        /// Obsahuje velikost plochy Parenta, ve které se může pohybovat splitter
+        /// </summary>
+        protected Size CurrentParentSize
+        {
+            get
+            {
+                var parent = this.Parent;
+                if (parent is null) return new Size(MaxSize, MaxSize);
+                if (parent is ScrollableControl scrollParent)
+                    return scrollParent.ClientSize;
+                return parent.ClientSize;
+            }
+        }
+        /// <summary>
+        /// Aktuální pracovní souřadnice Splitteru. Určuje je potomek ve virtual metodě <see cref="GetCurrentWorkingBounds(Rectangle)"/>.
+        /// Výsledné souřadnice posune o AutoScroll position <see cref="CurrentOrigin"/>.
+        /// </summary>
+        protected Rectangle CurrentWorkingBounds
+        {
+            get
+            {
+                Rectangle currentArea = new Rectangle(CurrentOrigin, CurrentParentSize);
+                Rectangle currentWorkingBounds = GetCurrentWorkingBounds(currentArea);
+                return currentWorkingBounds;
+            }
+        }
+        #endregion
+        #region Splitter si hlídá svého parenta, aby zareagoval na jeho barvy
+        /// <summary>
+        /// Po změně Parenta
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void OnParentChanged(EventArgs e)
+        {
+            base.OnParentChanged(e);
+            DetectCurrentParent();
+            if (this.SplitterColorByParent) this.Invalidate();
+        }
+        /// <summary>
+        /// Reaguje na změnu parenta
+        /// </summary>
+        protected void DetectCurrentParent()
+        {
+            Control parentNew = this.Parent;
+            Control parentOld = _ParentOld;
+            if (Object.ReferenceEquals(parentNew, parentOld)) return;        // Pokud oba jsou null, nebo oba jsou totéž, nemusím nic dělat
+
+            if (parentOld != null)
+            {
+                parentOld.ControlAdded -= _CurrentParent_ControlAdded;
+                _ParentOld = null;
+            }
+            if (parentNew != null)
+            {
+                parentNew.ControlAdded += _CurrentParent_ControlAdded;
+                _ParentOld = parentNew;
+            }
+        }
+        /// <summary>
+        /// Když si můj parent přidá jakýkoli nový control
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _CurrentParent_ControlAdded(object sender, ControlEventArgs e)
+        {
+            BringSplitterToFront(false);
+        }
+        private Control _ParentOld;
+        #endregion
+        #region Splitter je rád, když je úplně nahoře v Z-Order
+        /// <summary>
+        /// Přemístí this splitter nahoru v poli controlů našeho parenta.
+        /// <para/>
+        /// Parametr <paramref name="isMouseEnter"/> říká:
+        /// true = metoda je volána z události MouseEnter, je požadováno aby this splitter byl naprosto navrchu;
+        /// false = metoda je volána z události Parent.ControlAdded, je požadováno aby nad this splitterem byly už pouze jiné splittery.
+        /// </summary>
+        /// <param name="isMouseEnter">Informace: true = voláno z MouseEnter, false = volánoz Parent.ControlAdded</param>
+        protected void BringSplitterToFront(bool isMouseEnter)
+        {
+            var allControls = AllControls;
+            if (allControls.Count <= 1) return;            // Pokud nejsou žádné prvky (=blbost, jsem tu já), anebo je jen jeden prvek (to jsem já), pak není co řešit...
+            int index = allControls.FindIndex(c => object.ReferenceEquals(c, this));
+            if (index <= 0) return;                        // Pokud já jsem na indexu [0] (tj. úplně nahoře), anebo tam nejsem vůbec (blbost), pak není co řešit
+
+            // Já nejsem na pozici [0] = někdo je ještě nade mnou:
+            bool bringToFront = false;
+            if (isMouseEnter)
+                // Máme být úplně navrchu:
+                bringToFront = true;
+            else
+            {   // Nad námi smí být pouze jiné splittery:
+                for (int i = 0; i < index && !bringToFront; i++)
+                {
+                    if (!(allControls[i] is DxSimpleSplitter))
+                        bringToFront = true;
+                }
+            }
+
+            // Dáme sebe (=Splitter) nahoru:
+            if (bringToFront)
+                this.BringToFront();
+        }
+        /// <summary>
+        /// Pole Child controlů mého Parenta = "moji sourozenci včetně mě".
+        /// Pokud ještě nemám parenta, pak toto pole obsahuje jen jeden prvek a to jsem já.
+        /// Pokud má vrácené pole více prvků, pak někde v něm budu i já = <see cref="CurrentParent"/> :-).
+        /// <para/>
+        /// Index na pozici [0] je úplně nahoře nade všemi, postupně jsou prvky směrem dolů...
+        /// Pozici aktuální prvku 
+        /// </summary>
+        protected List<Control> AllControls
+        {
+            get
+            {
+                var parent = this.Parent;
+                if (parent == null) return new List<Control> { this };
+                return parent.Controls.OfType<Control>().ToList();
+            }
+        }
+        #endregion
+        #region Enumy těsně svázané se Splitterem
+        /// <summary>
+        /// Režim zobrazování vizuálního loga (například čtyřtečka) uprostřed splitbaru (při velikosti <see cref="SplitThick"/> nad 4px)
+        /// </summary>
+        public enum LogoMode
+        {
+            /// <summary>
+            /// Nikdy
+            /// </summary>
+            None = 0,
+            /// <summary>
+            /// Jen pod myší
+            /// </summary>
+            OnMouse,
+            /// <summary>
+            /// Vždy
+            /// </summary>
+            Allways
+        }
+        /// <summary>
+        /// Akce prováděné po vložení hodnot do splitteru
+        /// </summary>
+        [Flags]
+        protected enum SetActions
+        {
+            /// <summary>
+            /// Žádná akce
+            /// </summary>
+            None = 0,
+            /// <summary>
+            /// Povinně provést akce, i když nebude detekována žádná změna hodnoty
+            /// </summary>
+            ForceActions = 0x0001,
+            /// <summary>
+            /// Přepočítat souřadnice splitteru
+            /// </summary>
+            RecalculateBounds = 0x0010,
+            /// <summary>
+            /// Přemístit navázané controly podle režimu aktivity
+            /// </summary>
+            MoveControlsByActivityMode = 0x0100,
+            /// <summary>
+            /// Přemístit navázané controly vždy = bez ohledu na režim aktivity
+            /// </summary>
+            MoveControlsAlways = 0x0200,
+            /// <summary>
+            /// Vyvolat událost Changing (stále probíhá změna)
+            /// </summary>
+            CallEventChanging = 0x1000,
+            /// <summary>
+            /// Vyvolat událost Changed (změna proběhla a je dokončena)
+            /// </summary>
+            CallEventChanged = 0x2000,
+
+            /// <summary>
+            /// Defaultní sada akcí: <see cref="RecalculateBounds"/> + <see cref="MoveControlsByActivityMode"/> + <see cref="CallEventChanged"/>, ale žádné násilí
+            /// </summary>
+            Default = RecalculateBounds | MoveControlsByActivityMode | CallEventChanged,
+            /// <summary>
+            /// Tichá sada akcí: <see cref="RecalculateBounds"/> + <see cref="MoveControlsByActivityMode"/>, ale žádné eventy a žádné násilí
+            /// </summary>
+            Silent = RecalculateBounds | MoveControlsByActivityMode
+        }
+        #endregion
+    }
+    #endregion
     #region DxChartControl
     /// <summary>
     /// Přímý potomek <see cref="DevExpress.XtraCharts.ChartControl"/> pro použití v ASOL.Nephrite

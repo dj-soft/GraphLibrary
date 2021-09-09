@@ -2824,6 +2824,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
             _DragDropATree.Name = "ATree";
             _DragDropATree.MultiSelectEnabled = true;
             _DragDropATree.SelectNodeBeforeShowContextMenu = false;
+            _DragDropATree.TransparentBackground = true;
 
             var nodes = _CreateSampleList();
             nodes.ForEachExec(n => { if (Random.IsTrue(5)) n.Selected = true; });
@@ -2839,7 +2840,6 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
             _PanelDragDrop.Dock = DockStyle.Fill;
             DragDropDoLayout();
         }
-
         private void _DragDropATree_ShowContextMenu(object sender, DxTreeListNodeContextMenuArgs args)
         {
             DxTreeList dxTreeList = sender as DxTreeList;
@@ -2852,7 +2852,6 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
             Point localPoint = dxTreeList.PointToClient(args.MousePosition);
             menu.ShowPopup(dxTreeList, localPoint);
         }
-
         private ContextMenuStrip CreateContextMenu()
         {
             ContextMenuStrip contextMenu = new ContextMenuStrip();
