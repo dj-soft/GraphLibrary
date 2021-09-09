@@ -509,7 +509,7 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// <see cref="DxTreeListNative"/> : potomek <see cref="DevExpress.XtraTreeList.TreeList"/> s podporou pro použití v Greenu.
     /// Nemá se používat přímo, má se používat <see cref="DxTreeList"/>.
     /// </summary>
-    public class DxTreeListNative : DevExpress.XtraTreeList.TreeList, IDxDragDropControl
+    public class DxTreeListNative : DevExpress.XtraTreeList.TreeList, IListenerStyleChanged, IDxDragDropControl
     {
         #region Konstruktor a inicializace, privátní proměnné
         /// <summary>
@@ -748,7 +748,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 this.Appearance.Empty.Options.UseBackColor = false;
                 this.Appearance.Row.Options.UseBackColor = false;
             }
-
+            LoadCurrentStyleToTreeList();
         }
         /// <summary>
         /// Nastaví danou barvu jako všechny barvy pozadí
@@ -767,6 +767,32 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.Appearance.Row.Options.UseBackColor = true;
             this.Appearance.SelectedRow.BackColor = backColor;
             this.Appearance.SelectedRow.Options.UseBackColor = true;
+        }
+        /// <summary>
+        /// Načte explicitní vlastnosti ze skinu
+        /// </summary>
+        protected void LoadCurrentStyleToTreeList()
+        {
+            if (_TransparentBackground)
+            {
+                Color foreColor = Color.Black;
+                this.Appearance.Empty.ForeColor = foreColor;
+                this.Appearance.Empty.Options.UseForeColor = true;
+                this.Appearance.Row.BackColor = foreColor;
+                this.Appearance.Row.Options.UseForeColor = true;
+            }
+            else
+            {
+                this.Appearance.Empty.Options.UseForeColor = false;
+                this.Appearance.Row.Options.UseForeColor = false;
+            }
+        }
+        /// <summary>
+        /// Je voláno vždy po změně skinu
+        /// </summary>
+        void IListenerStyleChanged.StyleChanged()
+        {
+            LoadCurrentStyleToTreeList();
         }
         #endregion
         #region ToolTipy pro nodes
