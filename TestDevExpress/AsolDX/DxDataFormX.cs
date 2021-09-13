@@ -1610,7 +1610,300 @@ namespace Noris.Clients.Win.Components.AsolDX
     }
     #endregion
 
-
+    #region Rozšíření class DxComponent
+    partial class DxComponent
+    {
+        #region Factory metody pro tvorbu komponent DataFormu
+        #region Public static rozhraní
+        /// <summary>
+        /// Vygeneruje a vrátí vizuální Control pro danou definici prvku DataForm
+        /// </summary>
+        /// <param name="dataFormItem"></param>
+        /// <returns></returns>
+        public static WF.Control CreateDataFormControl(IDataFormItemX dataFormItem) { return Instance._CreateDataFormControl(dataFormItem); }
+        /// <summary>
+        /// Vygeneruje a vrátí vizuální Control typu Label pro danou definici prvku DataForm
+        /// </summary>
+        /// <param name="dataFormItem"></param>
+        /// <returns></returns>
+        public static WF.Control CreateDataFormLabel(IDataFormItemX dataFormItem) { return Instance._CreateDataFormLabel(dataFormItem); }
+        /// <summary>
+        /// Vygeneruje a vrátí vizuální Control typu TextBox pro danou definici prvku DataForm
+        /// </summary>
+        /// <param name="dataFormItem"></param>
+        /// <returns></returns>
+        public static WF.Control CreateDataFormTextBox(IDataFormItemX dataFormItem) { return Instance._CreateDataFormTextBox(dataFormItem); }
+        /// <summary>
+        /// Vygeneruje a vrátí vizuální Control typu EditBox pro danou definici prvku DataForm
+        /// </summary>
+        /// <param name="dataFormItem"></param>
+        /// <returns></returns>
+        public static WF.Control CreateDataFormEditBox(IDataFormItemX dataFormItem) { return Instance._CreateDataFormEditBox(dataFormItem); }
+        /// <summary>
+        /// Vygeneruje a vrátí vizuální Control typu SpinnerBox pro danou definici prvku DataForm
+        /// </summary>
+        /// <param name="dataFormItem"></param>
+        /// <returns></returns>
+        public static WF.Control CreateDataFormSpinnerBox(IDataFormItemX dataFormItem) { return Instance._CreateDataFormSpinnerBox(dataFormItem); }
+        /// <summary>
+        /// Vygeneruje a vrátí vizuální Control typu CheckBox pro danou definici prvku DataForm
+        /// </summary>
+        /// <param name="dataFormItem"></param>
+        /// <returns></returns>
+        public static WF.Control CreateDataFormCheckBox(IDataFormItemX dataFormItem) { return Instance._CreateDataFormCheckBox(dataFormItem); }
+        /// <summary>
+        /// Vygeneruje a vrátí vizuální Control typu BreadCrumb pro danou definici prvku DataForm
+        /// </summary>
+        /// <param name="dataFormItem"></param>
+        /// <returns></returns>
+        public static WF.Control CreateDataFormBreadCrumb(IDataFormItemX dataFormItem) { return Instance._CreateDataFormBreadCrumb(dataFormItem); }
+        /// <summary>
+        /// Vygeneruje a vrátí vizuální Control typu ComboBoxList pro danou definici prvku DataForm
+        /// </summary>
+        /// <param name="dataFormItem"></param>
+        /// <returns></returns>
+        public static WF.Control CreateDataFormComboBoxList(IDataFormItemX dataFormItem) { return Instance._CreateDataFormComboBoxList(dataFormItem); }
+        /// <summary>
+        /// Vygeneruje a vrátí vizuální Control typu ComboBoxEdit pro danou definici prvku DataForm
+        /// </summary>
+        /// <param name="dataFormItem"></param>
+        /// <returns></returns>
+        public static WF.Control CreateDataFormComboBoxEdit(IDataFormItemX dataFormItem) { return Instance._CreateDataFormComboBoxEdit(dataFormItem); }
+        /// <summary>
+        /// Vygeneruje a vrátí vizuální Control typu ListView pro danou definici prvku DataForm
+        /// </summary>
+        /// <param name="dataFormItem"></param>
+        /// <returns></returns>
+        public static WF.Control CreateDataFormListView(IDataFormItemX dataFormItem) { return Instance._CreateDataFormListView(dataFormItem); }
+        /// <summary>
+        /// Vygeneruje a vrátí vizuální Control typu TreeView pro danou definici prvku DataForm
+        /// </summary>
+        /// <param name="dataFormItem"></param>
+        /// <returns></returns>
+        public static WF.Control CreateDataFormTreeView(IDataFormItemX dataFormItem) { return Instance._CreateDataFormTreeView(dataFormItem); }
+        /// <summary>
+        /// Vygeneruje a vrátí vizuální Control typu RadioButtonBox pro danou definici prvku DataForm
+        /// </summary>
+        /// <param name="dataFormItem"></param>
+        /// <returns></returns>
+        public static WF.Control CreateDataFormRadioButtonBox(IDataFormItemX dataFormItem) { return Instance._CreateDataFormRadioButtonBox(dataFormItem); }
+        /// <summary>
+        /// Vygeneruje a vrátí vizuální Control typu Button pro danou definici prvku DataForm
+        /// </summary>
+        /// <param name="dataFormItem"></param>
+        /// <returns></returns>
+        public static WF.Control CreateDataFormButton(IDataFormItemX dataFormItem) { return Instance._CreateDataFormButton(dataFormItem); }
+        /// <summary>
+        /// Vygeneruje a vrátí vizuální Control typu CheckButton pro danou definici prvku DataForm
+        /// </summary>
+        /// <param name="dataFormItem"></param>
+        /// <returns></returns>
+        public static WF.Control CreateDataFormCheckButton(IDataFormItemX dataFormItem) { return Instance._CreateDataFormCheckButton(dataFormItem); }
+        /// <summary>
+        /// Vygeneruje a vrátí vizuální Control typu DropDownButton pro danou definici prvku DataForm
+        /// </summary>
+        /// <param name="dataFormItem"></param>
+        /// <returns></returns>
+        public static WF.Control CreateDataFormDropDownButton(IDataFormItemX dataFormItem) { return Instance._CreateDataFormDropDownButton(dataFormItem); }
+        /// <summary>
+        /// Vygeneruje a vrátí vizuální Control typu Image pro danou definici prvku DataForm
+        /// </summary>
+        /// <param name="dataFormItem"></param>
+        /// <returns></returns>
+        public static WF.Control CreateDataFormImage(IDataFormItemX dataFormItem) { return Instance._CreateDataFormImage(dataFormItem); }
+        #endregion
+        #region private rozcestník a výkonné metody
+        /// <summary>
+        /// Vygeneruje a vrátí vizuální Control pro danou definici prvku DataForm
+        /// </summary>
+        /// <param name="dataFormItem"></param>
+        /// <returns></returns>
+        private WF.Control _CreateDataFormControl(IDataFormItemX dataFormItem)
+        {
+            switch (dataFormItem.ItemType)
+            {
+                case DataFormItemType.Label: return _CreateDataFormLabel(dataFormItem);
+                case DataFormItemType.TextBox: return _CreateDataFormTextBox(dataFormItem);
+                case DataFormItemType.TextBoxButton: return _CreateDataFormTextBoxButton(dataFormItem);
+                case DataFormItemType.EditBox: return _CreateDataFormEditBox(dataFormItem);
+                case DataFormItemType.SpinnerBox: return _CreateDataFormSpinnerBox(dataFormItem);
+                case DataFormItemType.CheckBox: return _CreateDataFormCheckBox(dataFormItem);
+                case DataFormItemType.BreadCrumb: return _CreateDataFormBreadCrumb(dataFormItem);
+                case DataFormItemType.ComboBoxList: return _CreateDataFormComboBoxList(dataFormItem);
+                case DataFormItemType.ComboBoxEdit: return _CreateDataFormComboBoxEdit(dataFormItem);
+                case DataFormItemType.ListView: return _CreateDataFormListView(dataFormItem);
+                case DataFormItemType.TreeView: return _CreateDataFormTreeView(dataFormItem);
+                case DataFormItemType.RadioButtonBox: return _CreateDataFormRadioButtonBox(dataFormItem);
+                case DataFormItemType.Button: return _CreateDataFormButton(dataFormItem);
+                case DataFormItemType.CheckButton: return _CreateDataFormCheckButton(dataFormItem);
+                case DataFormItemType.DropDownButton: return _CreateDataFormDropDownButton(dataFormItem);
+                case DataFormItemType.Image: return _CreateDataFormImage(dataFormItem);
+            }
+            throw new ArgumentException($"Used unsupported IDataFormItem.ItemType: {dataFormItem.ItemType}.");
+        }
+        /// <summary>
+        /// Vygeneruje a vrátí vizuální Control typu Label pro danou definici prvku DataForm
+        /// </summary>
+        /// <param name="dataFormItem"></param>
+        /// <returns></returns>
+        private WF.Control _CreateDataFormLabel(IDataFormItemX dataFormItem)
+        {
+            var bounds = dataFormItem.Bounds;
+            var label = CreateDxLabel(bounds.X, bounds.Y, bounds.Width, null, dataFormItem.Text,
+                dataFormItem.LabelStyle, dataFormItem.LabelWordWrap, dataFormItem.LabelAutoSize, dataFormItem.LabelHAlignment,
+                dataFormItem.Visible);
+            return label;
+        }
+        /// <summary>
+        /// Vygeneruje a vrátí vizuální Control typu TextBox pro danou definici prvku DataForm
+        /// </summary>
+        /// <param name="dataFormItem"></param>
+        /// <returns></returns>
+        private WF.Control _CreateDataFormTextBox(IDataFormItemX dataFormItem)
+        {
+            var bounds = dataFormItem.Bounds;
+            var textEdit = CreateDxTextEdit(bounds.X, bounds.Y, bounds.Width, null, null,
+                dataFormItem.TextMaskType, dataFormItem.TextEditMask, dataFormItem.TextUseMaskAsDisplayFormat,
+                dataFormItem.ToolTipTitle, dataFormItem.ToolTipText, dataFormItem.Visible, dataFormItem.ReadOnly, dataFormItem.TabStop);
+            return textEdit;
+        }
+        private WF.Control _CreateDataFormTextBoxButton(IDataFormItemX dataFormItem)
+        {
+            var bounds = dataFormItem.Bounds;
+            var textEdit = CreateDxTextEdit(bounds.X, bounds.Y, bounds.Width, null, null,
+                dataFormItem.TextMaskType, dataFormItem.TextEditMask, dataFormItem.TextUseMaskAsDisplayFormat,
+                dataFormItem.ToolTipTitle, dataFormItem.ToolTipText, dataFormItem.Visible, dataFormItem.ReadOnly, dataFormItem.TabStop);
+            return textEdit;
+        }
+        /// <summary>
+        /// Vygeneruje a vrátí vizuální Control typu EditBox pro danou definici prvku DataForm
+        /// </summary>
+        /// <param name="dataFormItem"></param>
+        /// <returns></returns>
+        private WF.Control _CreateDataFormEditBox(IDataFormItemX dataFormItem)
+        {
+            var bounds = dataFormItem.Bounds;
+            var memoEdit = CreateDxMemoEdit(bounds.X, bounds.Y, bounds.Width, bounds.Height, null, null,
+                dataFormItem.ToolTipTitle, dataFormItem.ToolTipText, dataFormItem.Visible, dataFormItem.ReadOnly, dataFormItem.TabStop);
+            return memoEdit;
+        }
+        /// <summary>
+        /// Vygeneruje a vrátí vizuální Control typu SpinnerBox pro danou definici prvku DataForm
+        /// </summary>
+        /// <param name="dataFormItem"></param>
+        /// <returns></returns>
+        private WF.Control _CreateDataFormSpinnerBox(IDataFormItemX dataFormItem)
+        {
+            var bounds = dataFormItem.Bounds;
+            var checkBox = CreateDxSpinEdit(bounds.X, bounds.Y, bounds.Width, null, null,
+                dataFormItem.SpinMinValue, dataFormItem.SpinMaxValue, dataFormItem.SpinIncrement, dataFormItem.TextEditMask, dataFormItem.SpinStyle,
+                dataFormItem.ToolTipTitle, dataFormItem.ToolTipText, dataFormItem.Visible, dataFormItem.ReadOnly, dataFormItem.TabStop);
+            return checkBox;
+        }
+        /// <summary>
+        /// Vygeneruje a vrátí vizuální Control typu CheckBox pro danou definici prvku DataForm
+        /// </summary>
+        /// <param name="dataFormItem"></param>
+        /// <returns></returns>
+        private WF.Control _CreateDataFormCheckBox(IDataFormItemX dataFormItem)
+        {
+            var bounds = dataFormItem.Bounds;
+            var checkBox = CreateDxCheckEdit(bounds.X, bounds.Y, bounds.Width, null, dataFormItem.Text, null,
+                dataFormItem.CheckBoxStyle, dataFormItem.BorderStyle, dataFormItem.LabelHAlignment,
+                dataFormItem.ToolTipTitle, dataFormItem.ToolTipText, dataFormItem.Visible, dataFormItem.ReadOnly, dataFormItem.TabStop);
+            return checkBox;
+        }
+        /// <summary>
+        /// Vygeneruje a vrátí vizuální Control typu BreadCrumb pro danou definici prvku DataForm
+        /// </summary>
+        /// <param name="dataFormItem"></param>
+        /// <returns></returns>
+        private WF.Control _CreateDataFormBreadCrumb(IDataFormItemX dataFormItem) { return null; }
+        /// <summary>
+        /// Vygeneruje a vrátí vizuální Control typu ComboBoxList pro danou definici prvku DataForm
+        /// </summary>
+        /// <param name="dataFormItem"></param>
+        /// <returns></returns>
+        private WF.Control _CreateDataFormComboBoxList(IDataFormItemX dataFormItem) { return null; }
+        /// <summary>
+        /// Vygeneruje a vrátí vizuální Control typu ComboBoxEdit pro danou definici prvku DataForm
+        /// </summary>
+        /// <param name="dataFormItem"></param>
+        /// <returns></returns>
+        private WF.Control _CreateDataFormComboBoxEdit(IDataFormItemX dataFormItem) { return null; }
+        /// <summary>
+        /// Vygeneruje a vrátí vizuální Control typu ListView pro danou definici prvku DataForm
+        /// </summary>
+        /// <param name="dataFormItem"></param>
+        /// <returns></returns>
+        private WF.Control _CreateDataFormListView(IDataFormItemX dataFormItem) { return null; }
+        /// <summary>
+        /// Vygeneruje a vrátí vizuální Control typu TreeView pro danou definici prvku DataForm
+        /// </summary>
+        /// <param name="dataFormItem"></param>
+        /// <returns></returns>
+        private WF.Control _CreateDataFormTreeView(IDataFormItemX dataFormItem) { return null; }
+        /// <summary>
+        /// Vygeneruje a vrátí vizuální Control typu RadioButtonBox pro danou definici prvku DataForm
+        /// </summary>
+        /// <param name="dataFormItem"></param>
+        /// <returns></returns>
+        private WF.Control _CreateDataFormRadioButtonBox(IDataFormItemX dataFormItem) { return null; }
+        /// <summary>
+        /// Vygeneruje a vrátí vizuální Control typu Button pro danou definici prvku DataForm
+        /// </summary>
+        /// <param name="dataFormItem"></param>
+        /// <returns></returns>
+        private WF.Control _CreateDataFormButton(IDataFormItemX dataFormItem)
+        {
+            var bounds = dataFormItem.Bounds;
+            var checkBox = CreateDxSimpleButton(bounds.X, bounds.Y, bounds.Width, bounds.Height, null, dataFormItem.Text, null,
+                DevExpress.XtraEditors.Controls.PaintStyles.Default,
+                null, dataFormItem.ButtonImageName,
+                dataFormItem.ToolTipTitle, dataFormItem.ToolTipText, dataFormItem.Visible, dataFormItem.Enabled, dataFormItem.TabStop);
+            return checkBox;
+        }
+        /// <summary>
+        /// Vygeneruje a vrátí vizuální Control typu CheckButton pro danou definici prvku DataForm
+        /// </summary>
+        /// <param name="dataFormItem"></param>
+        /// <returns></returns>
+        private WF.Control _CreateDataFormCheckButton(IDataFormItemX dataFormItem)
+        {
+            var bounds = dataFormItem.Bounds;
+            var checkBox = CreateDxCheckButton(bounds.X, bounds.Y, bounds.Width, bounds.Height, null, dataFormItem.Text, null,
+                DevExpress.XtraEditors.Controls.PaintStyles.Default,
+                false,
+                null, dataFormItem.ButtonImageName,
+                dataFormItem.ToolTipTitle, dataFormItem.ToolTipText, dataFormItem.Visible, dataFormItem.Enabled, dataFormItem.TabStop);
+            return checkBox;
+        }
+        /// <summary>
+        /// Vygeneruje a vrátí vizuální Control typu DropDownButton pro danou definici prvku DataForm
+        /// </summary>
+        /// <param name="dataFormItem"></param>
+        /// <returns></returns>
+        private WF.Control _CreateDataFormDropDownButton(IDataFormItemX dataFormItem)
+        {
+            var bounds = dataFormItem.Bounds;
+            var checkBox = CreateDxDropDownButton(bounds.X, bounds.Y, bounds.Width, bounds.Height, null, dataFormItem.Text,
+                null, null,
+                null, null, null,
+                DevExpress.XtraEditors.Controls.PaintStyles.Default,
+                null, dataFormItem.ButtonImageName,
+                dataFormItem.ToolTipTitle, dataFormItem.ToolTipText, dataFormItem.Visible, dataFormItem.Enabled, dataFormItem.TabStop);
+            return checkBox;
+        }
+        /// <summary>
+        /// Vygeneruje a vrátí vizuální Control typu Image pro danou definici prvku DataForm
+        /// </summary>
+        /// <param name="dataFormItem"></param>
+        /// <returns></returns>
+        private WF.Control _CreateDataFormImage(IDataFormItemX dataFormItem) { return null; }
+        #endregion
+        #endregion
+    }
+    #endregion
 
     #region Pouze pro testování, později smazat
     partial class DxDataFormTest

@@ -29,6 +29,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             this.SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint | ControlStyles.SupportsTransparentBackColor | ControlStyles.OptimizedDoubleBuffer, true);
             this.ResizeRedraw = true;
+            this.DrawingMode = DxBufferedGraphicsDrawingMode.RepaintOver;
             InitLayers();
         }
         /// <summary>
@@ -40,6 +41,10 @@ namespace Noris.Clients.Win.Components.AsolDX
             base.Dispose(disposing);
             DisposeLayers();
         }
+        /// <summary>
+        /// Režim kreslení
+        /// </summary>
+        protected DxBufferedGraphicsDrawingMode DrawingMode;
         #endregion
         #region Nativní události kreslení a nativní invalidace, a jejich napojení na vrstvy
         /// <summary>
@@ -212,17 +217,74 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="contentIsChanged"></param>
         private void OnPaintLayers(Graphics graphics, Rectangle clipRectangle, bool contentIsChanged)
         {
+            var startTime = DxComponent.LogTimeCurrent;
+            switch (DrawingMode)
+            {
+                case DxBufferedGraphicsDrawingMode.Primitive:
+                    OnPaintLayersPrimitive(graphics, clipRectangle, contentIsChanged);
+                    break;
+                case DxBufferedGraphicsDrawingMode.RepaintOver:
+                    OnPaintLayersRepaintOver(graphics, clipRectangle, contentIsChanged);
+                    break;
+                case DxBufferedGraphicsDrawingMode.OnlyChanged:
+                    // Zatím nepoužitelné, důvody jsou popsané v metodě GraphicsLayer.PaintLayerOnlyChanged()  :
+                    //     ...     OnPaintLayersOnlyChanged(graphics, clipRectangle, contentIsChanged);
+                    OnPaintLayersRepaintOver(graphics, clipRectangle, contentIsChanged);
+                    break;
+            }
+            InvalidateUserData = null;
+            if (LogActive) DxComponent.LogAddLineTime($"DxPanelBufferedGraphic.OnPaintLayers() mode: {DrawingMode}; Time: {DxComponent.LogTokenTimeMilisec}", startTime);
+        }
+        /// <summary>
+        /// Metoda je volaná v procesu vykreslení controlu (po případném vykreslení pozadí controlu do vrstvy <see cref="_NativeBackgroundLayer"/>).
+        /// Úkolem této metody je zpracovat potřebné vrstvy: zajistit jejich platnou grafiku, zajistit vykreslení objektů do grafiky, a postupně složit výsledný obraz do dané grafiky.
+        /// </summary>
+        /// <param name="graphics"></param>
+        /// <param name="clipRectangle"></param>
+        /// <param name="contentIsChanged"></param>
+        private void OnPaintLayersPrimitive(Graphics graphics, Rectangle clipRectangle, bool contentIsChanged)
+        {
+            int count = _Layers.Count;
+            for (int l = 0; l < count; l++)
+            {   // Jednoduše: všechny přítomné vrstvy požádám, aby vykreslily to co je jejich obsahem do společného objektu Graphics:
+                var layer = _Layers[l];
+                layer.PaintLayerPrimitive(graphics, LogActive, clipRectangle);
+            }
+        }
+        /// <summary>
+        /// Metoda je volaná v procesu vykreslení controlu (po případném vykreslení pozadí controlu do vrstvy <see cref="_NativeBackgroundLayer"/>).
+        /// Úkolem této metody je zpracovat potřebné vrstvy: zajistit jejich platnou grafiku, zajistit vykreslení objektů do grafiky, a postupně složit výsledný obraz do dané grafiky.
+        /// </summary>
+        /// <param name="graphics"></param>
+        /// <param name="clipRectangle"></param>
+        /// <param name="contentIsChanged"></param>
+        private void OnPaintLayersRepaintOver(Graphics graphics, Rectangle clipRectangle, bool contentIsChanged)
+        {
             int count = _Layers.Count;
             GraphicLayer sourceLayer = null;                         // Nižší vrstva, která obsahuje data. Slouží jako výchozí obsah pro grafiku navazující vyšší vrstvy.
             for (int l = 0; l < count; l++)
             {
                 var layer = _Layers[l];
-                layer.PaintLayer(ref sourceLayer, ref contentIsChanged, LogActive, clipRectangle);
+                layer.PaintLayerRepaintOver(ref sourceLayer, ref contentIsChanged, LogActive, clipRectangle);
             }
             if (sourceLayer != null)
                 sourceLayer.RenderTo(graphics, LogActive);
-
-            InvalidateUserData = null;
+        }
+        /// <summary>
+        /// Metoda je volaná v procesu vykreslení controlu (po případném vykreslení pozadí controlu do vrstvy <see cref="_NativeBackgroundLayer"/>).
+        /// Úkolem této metody je zpracovat potřebné vrstvy: zajistit jejich platnou grafiku, zajistit vykreslení objektů do grafiky, a postupně složit výsledný obraz do dané grafiky.
+        /// </summary>
+        /// <param name="graphics"></param>
+        /// <param name="clipRectangle"></param>
+        /// <param name="contentIsChanged"></param>
+        private void OnPaintLayersOnlyChanged(Graphics graphics, Rectangle clipRectangle, bool contentIsChanged)
+        {
+            int count = _Layers.Count;
+            for (int l = 0; l < count; l++)
+            {   // Jednoduše: všechny přítomné vrstvy požádám, aby vykreslily to co je jejich obsahem do společného objektu Graphics:
+                var layer = _Layers[l];
+                layer.PaintLayerOnlyChanged(graphics, LogActive, clipRectangle);
+            }
         }
         /// <summary>
         /// Invaliduje všechny vrstvy a zajistí nové vykreslení celého controlu.
@@ -334,23 +396,88 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         /// <summary>
         /// Zkopíruje obsah bufferované grafiky z <paramref name="sourceGraphicsData"/> do cílové grafiky <paramref name="targetGraphics"/>.
+        /// <para/>
+        /// Defaultně provádí jednoduchou kopii pomocí <see cref="BufferedGraphics.Render(Graphics)"/> v režimu CompositingMode = SourceOver.
+        /// Při zadání parametru <paramref name="dwBitBltRop"/> ale provádí Win32 proces BitBlt s daným parametrem.
+        /// Hodnoty parametru vybírejme z hodnot v <see cref="DxWin32.BitBlt"/>.
+        /// <para/>
+        /// Volba metody nemá vliv na čas přenosu, obě varianty jsou stejně rychlé. Rychlost závisí především na velikosti obrazu.
+        /// Pouze varianta s parametrem <paramref name="dwBitBltRop"/> dovoluje více možností řízení při přenášení obsahu grafiky.
         /// </summary>
         /// <param name="sourceGraphicsData"></param>
         /// <param name="targetGraphics"></param>
         /// <param name="logActive"></param>
         /// <param name="logInfo"></param>
-        internal static void CopyGraphicsData(BufferedGraphics sourceGraphicsData, Graphics targetGraphics, bool logActive = false, string logInfo = null)
+        /// <param name="dwBitBltRop"></param>
+        internal static void CopyGraphicsData(BufferedGraphics sourceGraphicsData, Graphics targetGraphics, bool logActive = false, string logInfo = null, int? dwBitBltRop = null)
         {
             if (sourceGraphicsData == null || targetGraphics == null) return;
 
             var startTime = DxComponent.LogTimeCurrent;
 
-            targetGraphics.CompositingMode = System.Drawing.Drawing2D.CompositingMode.SourceOver;
-            sourceGraphicsData.Graphics.CompositingMode = System.Drawing.Drawing2D.CompositingMode.SourceOver;
-            sourceGraphicsData.Render(targetGraphics);
+            if (!dwBitBltRop.HasValue)
+                CopyGraphicsDataRender(sourceGraphicsData, targetGraphics);
+            else
+                CopyGraphicsDataBlt(sourceGraphicsData, targetGraphics, dwBitBltRop.Value);
 
             if (logActive) DxComponent.LogAddLineTime($"DxBufferedGraphic.CopyGraphicsData({(logInfo ?? "")}); Time: {DxComponent.LogTokenTimeMilisec}", startTime);
         }
+        /// <summary>
+        /// Zkopíruje obsah bufferované grafiky z <paramref name="sourceGraphicsData"/> do cílové grafiky <paramref name="targetGraphics"/>.
+        /// Provádí jednoduchou kopii pomocí <see cref="BufferedGraphics.Render(Graphics)"/> v režimu CompositingMode = SourceOver.
+        /// </summary>
+        /// <param name="sourceGraphicsData"></param>
+        /// <param name="targetGraphics"></param>
+        private static void CopyGraphicsDataRender(BufferedGraphics sourceGraphicsData, Graphics targetGraphics)
+        {
+            targetGraphics.CompositingMode = System.Drawing.Drawing2D.CompositingMode.SourceOver;                  // O  C  C  O
+            sourceGraphicsData.Graphics.CompositingMode = System.Drawing.Drawing2D.CompositingMode.SourceOver;     // O  O  C  C
+            sourceGraphicsData.Render(targetGraphics);
+        }
+        /// <summary>
+        /// Zkopíruje obsah bufferované grafiky z <paramref name="sourceGraphicsData"/> do cílové grafiky <paramref name="targetGraphics"/>.
+        /// Použije Win32 proceduru BitBlt().
+        /// </summary>
+        /// <param name="sourceGraphicsData"></param>
+        /// <param name="targetGraphics"></param>
+        /// <param name="dwRop"></param>
+        private static void CopyGraphicsDataBlt(BufferedGraphics sourceGraphicsData, Graphics targetGraphics, int dwRop)
+        {
+            IntPtr hdcSrc = IntPtr.Zero;
+            IntPtr hdcDest = IntPtr.Zero;
+            try
+            {
+                Size size = sourceGraphicsData.Graphics.VisibleClipBounds.Size.ToSize();
+
+                hdcSrc = sourceGraphicsData.Graphics.GetHdc();
+                hdcDest = targetGraphics.GetHdc();
+
+                BitBlt(hdcDest, 0, 0, size.Width, size.Height, hdcSrc, 0, 0, dwRop);
+            }
+            finally
+            {   // This must be do:
+                try { targetGraphics.ReleaseHdc(hdcDest); } catch { }
+                try { sourceGraphicsData.Graphics.ReleaseHdc(hdcSrc); } catch { }
+            }
+        }
+        /// <summary>
+        /// Win32 metoda
+        /// </summary>
+        /// <param name="hdcDest"></param>
+        /// <param name="nXdest"></param>
+        /// <param name="nYdest"></param>
+        /// <param name="nWidth"></param>
+        /// <param name="nHeight"></param>
+        /// <param name="hdcSrc"></param>
+        /// <param name="nXsrc"></param>
+        /// <param name="nYSrc"></param>
+        /// <param name="dwRop"></param>
+        /// <returns></returns>
+        [System.Runtime.InteropServices.DllImport("Gdi32.dll")]
+        private static extern bool BitBlt(IntPtr hdcDest, int nXdest, int nYdest, int nWidth, int nHeight,
+                                 IntPtr hdcSrc, int nXsrc, int nYSrc,
+                                 System.Int32 dwRop);
+
         /// <summary>
         /// Vizuální grafický kontext pro aktuální aplikační doménu.
         /// Používá se jako zdroj grafiky pro vrstvy.
@@ -372,7 +499,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private Dictionary<DxBufferedLayer, GraphicLayer> _LayersDict;
         #endregion
-        #region class GraphicLayer
+        #region private class GraphicLayer
         private class GraphicLayer : IDisposable
         {
             #region Konstruktor a Dispose
@@ -418,12 +545,42 @@ namespace Noris.Clients.Win.Components.AsolDX
             #region Kreslení
             /// <summary>
             /// Zajistí vykreslení this vrstvy.
+            /// Režim: <see cref="DxBufferedGraphicsDrawingMode.Primitive"/>.
+            /// </summary>
+            /// <param name="graphics"></param>
+            /// <param name="logActive"></param>
+            /// <param name="clipRectangle"></param>
+            public void PaintLayerPrimitive(Graphics graphics, bool logActive, Rectangle? clipRectangle)
+            {
+                // Primitivní kreslení = všechno nakreslíme do dané grafiky, včetně NativeBackground; a všechno ručně:
+                var startTime = DxComponent.LogTimeCurrent;
+                if (this.LayerId == DxBufferedLayer.NativeBackground)
+                {   // Vrstvu NativeBackground máme uloženou v našem bufferu => zkopírujeme ji do dodané grafiky jako podklad:
+                    CopyGraphicsData(this.GraphicsData, graphics, logActive, "Primitive:NativeBackground");
+                }
+                else
+                {   // Ostatní vrstvy vždy vyžádáme vykreslit po aplikačním kódu:
+                    // Předáme režim Primitive, a jako 'sourceGraphicsData' předáme null:
+                    var size = this._GraphicsSize;
+                    if (!clipRectangle.HasValue) clipRectangle = new Rectangle(Point.Empty, size);
+                    DxBufferedGraphicPaintArgs args = new DxBufferedGraphicPaintArgs(this.LayerId, DxBufferedGraphicsDrawingMode.Primitive, 
+                        graphics, this.GraphicsCache, null, 
+                        size, clipRectangle.Value, this.InvalidateUserData, this.LayerUserData, logActive, null);
+                    _Owner.RunOnPaintLayer(args);
+                    this.LayerUserData = args.LayerUserData;
+                    this._IsInvalidated = false;
+                }
+                if (logActive) DxComponent.LogAddLineTime($"DxBufferedGraphic.PaintLayer({LayerId}); Mode: Primitive; Time: {DxComponent.LogTokenTimeMilisec}", startTime);
+            }
+            /// <summary>
+            /// Zajistí vykreslení this vrstvy.
+            /// Režim: <see cref="DxBufferedGraphicsDrawingMode.RepaintOver"/>.
             /// </summary>
             /// <param name="sourceLayer"></param>
             /// <param name="contentIsChanged"></param>
             /// <param name="logActive"></param>
             /// <param name="clipRectangle"></param>
-            public void PaintLayer(ref GraphicLayer sourceLayer, ref bool contentIsChanged, bool logActive = false, Rectangle? clipRectangle = null)
+            public void PaintLayerRepaintOver(ref GraphicLayer sourceLayer, ref bool contentIsChanged, bool logActive, Rectangle? clipRectangle)
             {
                 if (this.LayerId != DxBufferedLayer.NativeBackground && (contentIsChanged || !this.IsGraphicsValid || this.IsInvalidated))
                 {   // Vrstva NativeBackground se nekreslí touto metodou, ale je do ní kresleno v nativních metodách Ownera.
@@ -432,23 +589,98 @@ namespace Noris.Clients.Win.Components.AsolDX
                     var startTime = DxComponent.LogTimeCurrent;
                     var size = this._GraphicsSize;
                     if (!clipRectangle.HasValue) clipRectangle = new Rectangle(Point.Empty, size);
-                    DxBufferedGraphicPaintArgs args = new DxBufferedGraphicPaintArgs(this.Graphics, this.GraphicsCache, this.LayerId, sourceLayer._GraphicsData, size, clipRectangle.Value, this.InvalidateUserData, this.LayerUserData, logActive);
+                    DxBufferedGraphicPaintArgs args = new DxBufferedGraphicPaintArgs(this.LayerId, DxBufferedGraphicsDrawingMode.RepaintOver, 
+                        this.Graphics, this.GraphicsCache, sourceLayer._GraphicsData, 
+                        size, clipRectangle.Value, this.InvalidateUserData, this.LayerUserData, logActive, null);
                     // Info: třída DxBufferedGraphicPaintArgs v sobě obsahuje referenci na zdejší grafiku (this.Graphics) a na zdrojovou grafiku (sourceLayer._GraphicsData).
                     // Při prvním použití zdejší grafiky (DxBufferedGraphicPaintArgs.Graphics) si do ní zkopíruje obsah zdrojové grafiky (sourceLayer._GraphicsData)
                     //  a nahodí příznak GraphicsIsUsed = true.
                     // Pokud ale v události RunOnPaintLayer() nikdo nepoužije grafiku DxBufferedGraphicPaintArgs.Graphics, pak tato vrstva nebude mít svůj obsah, a jako sourceLayer zůstane ta předchozí...
                     _Owner.RunOnPaintLayer(args);
                     this.LayerUserData = args.LayerUserData;
-                    if (logActive) DxComponent.LogAddLineTime($"DxBufferedGraphic.PaintLayer({LayerId}); Time: {DxComponent.LogTokenTimeMilisec}", startTime);
+                    if (logActive) DxComponent.LogAddLineTime($"DxBufferedGraphic.PaintLayer({LayerId}); Mode: RepaintOver; Time: {DxComponent.LogTokenTimeMilisec}", startTime);
 
                     this._IsInvalidated = false;
-                    bool hasContent = args.GraphicsIsUsed;
-                    this._HasContent = hasContent;
-                    if (hasContent)
+                    this._HasContent = args.GraphicsIsUsed;
+                    if (!contentIsChanged && this._HasContent)
                         contentIsChanged = true;
                 }
                 if (this.HasContent)
                     sourceLayer = this;
+            }
+            /// <summary>
+            /// Zajistí vykreslení this vrstvy.
+            /// Režim: <see cref="DxBufferedGraphicsDrawingMode.OnlyChanged"/>.
+            /// </summary>
+            /// <param name="graphics"></param>
+            /// <param name="logActive"></param>
+            /// <param name="clipRectangle"></param>
+            public void PaintLayerOnlyChanged(Graphics graphics, bool logActive, Rectangle? clipRectangle)
+            {
+                // DAJ - VÝSLEDEK TESTOVÁNÍ:
+                // Aby správně fungoval tento proces = tedy že do cílové grafiky (parametr graphics)
+                //    se má vykreslit obsah zdejší grafiky (this.GraphicsData),
+                //    a to tak, že se vykreslí jen platné oblasti (třeba jeden button nebo jeden stín),
+                //    pak by přenášení grafiky muselo akceptovat Alpha kanál zdroje, aby ponechalo "nepokreslené oblasti" průhledné
+                //    = aby tam byl vidět podklad z předchozích vrstev (např. obrázek pozadí),
+                //    a to včetně různé hodnoty Alpha kanálu v this.GraphicsData = aby byly hladké okraje motivů zde vykreslených.
+                // Jenže žádný proces kopírování grafiky toto nedokázal zajistit. Zkoušel jsem:
+                //   a) BufferedGraphcis.Render() ve všech kombinacích CompositingMode
+                //   b) BitBlt přenos ve všech kombinacích barvy pozadí (Transparent, Black, White) a hodnot argumentu dwBitBltRop
+                //      Vždy bylo výsledkem to, že obsah předešlých vrstev byl zcela překreslen barvou pozadí danou pro tuto vrstvu.
+                // 
+                // DAJ ZÁVĚR: tento režim zatím není možno používat.
+                // Mírně se k cíli blíží kombinace: BackColor = White, a dwRop = DxWin32.BitBlt.SRCERASE, ale není to použitelné.
+                //    Bliká tam občas inverze barev. Zjevně jde o to, zda se kreslí dvě nebo tři vrstvy (probíhá tam dvojí nebo trojí XOR).
+
+                Color backColor;
+                backColor = Color.Empty;
+                // backColor = Color.Black;
+                // backColor = Color.Transparent;
+                // backColor = Color.White;
+                int dwRop = DxWin32.BitBlt.SRCERASE;
+
+
+                var startTime = DxComponent.LogTimeCurrent;
+                string logInfo = "";
+                if (this.LayerId == DxBufferedLayer.NativeBackground)
+                {   // Vrstvu NativeBackground máme uloženou v našem bufferu => zkopírujeme ji do dodané grafiky jako podklad:
+                    this._HasContent = true;
+                    // CopyGraphicsData(this.GraphicsData, graphics, logActive, "OnlyChanged:NativeBackground");
+                    logInfo = " Paint NativeBackground";
+                }
+                else
+                {   // Ostatní vrstvy: pokud jsou invalidovány, pak požádáme aplikaci o jejich vykreslení. Všechny vrstvy pak přidáme do výstupní grafiky.
+                    if (!this.IsGraphicsValid || this.IsInvalidated)
+                    {
+                        var size = this._GraphicsSize;
+                        if (!clipRectangle.HasValue) clipRectangle = new Rectangle(Point.Empty, size);
+                        DxBufferedGraphicPaintArgs args = new DxBufferedGraphicPaintArgs(this.LayerId, DxBufferedGraphicsDrawingMode.OnlyChanged, 
+                            this.Graphics, this.GraphicsCache, null, 
+                            size, clipRectangle.Value, this.InvalidateUserData, this.LayerUserData, logActive, backColor);
+                        // Info: třída DxBufferedGraphicPaintArgs v sobě obsahuje referenci na zdejší grafiku (this.Graphics), ale ne na zdrojovou grafiku (sourceLayer._GraphicsData).
+                        // Při prvním použití zdejší grafiky (DxBufferedGraphicPaintArgs.Graphics) bude tato grafika vyprázdněna
+                        //  (zajišťuje DxBufferedGraphicPaintArgs v závislosti na režimu kreslení);
+                        //  a nahodí se příznak GraphicsIsUsed = true.
+                        // Pokud ale v události RunOnPaintLayer() nikdo nepoužije grafiku DxBufferedGraphicPaintArgs.Graphics,
+                        //  pak tato vrstva nebude mít svůj obsah (HasContent bude false), a nebude se tedy kreslit do výstupní grafiky.
+                        _Owner.RunOnPaintLayer(args);
+                        this.LayerUserData = args.LayerUserData;
+
+                        this._IsInvalidated = false;
+                        this._HasContent = args.GraphicsIsUsed;
+
+                        logInfo = " Paint NativeBackground";
+                    }
+                }
+
+                if (this.HasContent)
+                {
+                    CopyGraphicsData(this.GraphicsData, graphics, logActive, "OnlyChanged:" + this.LayerId, dwRop);
+                    logInfo += " CopyContent";
+                }
+
+                if (logActive) DxComponent.LogAddLineTime($"DxBufferedGraphic.PaintLayer({LayerId}); Mode: OnlyChanged; Info:{logInfo}; Time: {DxComponent.LogTokenTimeMilisec}", startTime);
             }
             /// <summary>
             /// Svůj obsah přenese do dané cílové grafiky
@@ -483,6 +715,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                         throw new InvalidOperationException($"Nelze nastavit hodnotu 'HasContent' pro vrstvu typu '{LayerId}'.");
                 }
             }
+            /// <summary>Máme nějaký obsah?</summary>
             private bool _HasContent;
             /// <summary>
             /// Obsahuje true u vrstvy, která není validní a v nejbližším Paintu bude znovu vykreslována.
@@ -596,7 +829,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         #endregion
     }
-    #region enum DxBufferedLayer
+    #region enum DxBufferedLayer, DxBufferedGraphicsDrawingMode
     /// <summary>
     /// Grafické vrstvy
     /// </summary>
@@ -633,6 +866,36 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         All = NativeBackground | AppBackground | MainLayer | Overlay
     }
+    /// <summary>
+    /// Režimy kreslení grafiky
+    /// </summary>
+    public enum DxBufferedGraphicsDrawingMode
+    {
+        /// <summary>
+        /// Primitivní = každé kreslení vždy volá vykreslení všech vrstev prostřednictvím aplikace.
+        /// Vše se kreslí do nativní grafiky, nepoužívá se buffer.
+        /// Nedochází k optimalizaci.
+        /// </summary>
+        Primitive,
+        /// <summary>
+        /// Vykreslí se změněné (invalidované) vrstvy, plus všechny vrstvy nad nimi:
+        /// Vezme se nejspodnější vrstva, její obsah se zkopíruje do vyšší vrstvy, na ni se vykreslí její obsah, a takto se předává a překesluje až nahoru.
+        /// Výsledkem je platný obsah nejvyšší vrstvy, který se zkopíruje z nejvyšší platné vrstvy do fyzické grafiky.
+        /// <para/>
+        /// Pokud dojde např. ke změně vrstvy 2, pak se vrstva 2 vykreslí, obsah vrstvy 2 se předá (zkopíruje) do grafiky vrstvy 3 (nad ní ležící),
+        /// a do grafiky vrstvy 3 pak aplikační kód vykreslí svůj obsah - i když v něm nedošlo ke změně, ale došlo ke změně v podkladové vrstvě.
+        /// <para/>
+        /// Zachovávají se tedy nezměněné spodní vrstvy, ale počínaje první vrstvou se změnou se provádí vykreslení té změněné vrstvy i všech vrstev nad ní.
+        /// </summary>
+        RepaintOver,
+        /// <summary>
+        /// Každá vrstva si pamatuje pouze svůj obsah, překreslení se provádí pouze pro změněné vrstvy.
+        /// Po invalidaci vrstev se vykreslí pouze reálně změněné (invalidované) vrstvy, ale nemusí se kreslit nad nimi ležící vrstvy pokud nejsou změněny.
+        /// <para/>
+        /// Jednotlivé vrstvy se v procesu OnPaint tedy aktualizují (po invalidaci) a jejich obsah se přenáší do cílové grafiky, jedna bufferovaná vrstva za druhou.
+        /// </summary>
+        OnlyChanged
+    }
     #endregion
     #region delegate DxBufferedGraphicPaintHandler, class DxBufferedGraphicPaintArgs
     /// <summary>
@@ -649,21 +912,29 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Konstruktor
         /// </summary>
+        /// <param name="layerId"></param>
+        /// <param name="drawingMode"></param>
         /// <param name="graphics"></param>
         /// <param name="graphicsCache"></param>
-        /// <param name="layerId"></param>
         /// <param name="sourceGraphicsData"></param>
         /// <param name="size"></param>
         /// <param name="clientRectangle"></param>
         /// <param name="invalidateUserData"></param>
         /// <param name="layerUserData"></param>
         /// <param name="logActive"></param>
-        public DxBufferedGraphicPaintArgs(Graphics graphics, DevExpress.Utils.Drawing.GraphicsCache graphicsCache, DxBufferedLayer layerId, BufferedGraphics sourceGraphicsData, Size size, Rectangle clientRectangle, object invalidateUserData, object layerUserData, bool logActive = false)
+        /// <param name="clearColor"></param>
+        public DxBufferedGraphicPaintArgs(DxBufferedLayer layerId, DxBufferedGraphicsDrawingMode drawingMode, 
+            Graphics graphics, DevExpress.Utils.Drawing.GraphicsCache graphicsCache, BufferedGraphics sourceGraphicsData, 
+            Size size, Rectangle clientRectangle, 
+            object invalidateUserData, object layerUserData, bool logActive = false,
+            Color? clearColor = null)
         {
             _LayerId = layerId;
+            _DrawingMode = drawingMode;
             _Graphics = graphics;
             _GraphicsCache = graphicsCache;
             _SourceGraphicsData = sourceGraphicsData;
+            _ClearColor = clearColor;
             _GraphicsIsUsed = false;
             _Size = size;
             _InvalidateUserData = invalidateUserData;
@@ -671,9 +942,11 @@ namespace Noris.Clients.Win.Components.AsolDX
             _LogActive = logActive;
         }
         private DxBufferedLayer _LayerId;
+        private DxBufferedGraphicsDrawingMode _DrawingMode;
         private Graphics _Graphics;
         private DevExpress.Utils.Drawing.GraphicsCache _GraphicsCache;
         private BufferedGraphics _SourceGraphicsData;
+        private Color? _ClearColor;
         private bool _GraphicsIsUsed;
         private Size _Size;
         private object _InvalidateUserData;
@@ -683,6 +956,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// ID vrstvy
         /// </summary>
         public DxBufferedLayer LayerId { get { return _LayerId; } }
+        /// <summary>
+        /// Režim bufferované grafiky
+        /// </summary>
+        public DxBufferedGraphicsDrawingMode DrawingMode { get { return _DrawingMode; } }
         /// <summary>
         /// Grafika. Jakmile bude použita (bude čten obsah této property), nastaví se <see cref="GraphicsIsUsed"/> na true, a vrstva bude označena jako "Obsahující data".
         /// </summary>
@@ -708,7 +985,17 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void _CheckGraphics()
         {
             if (_GraphicsIsUsed) return;
-            if (_SourceGraphicsData != null) DxPanelBufferedGraphic.CopyGraphicsData(_SourceGraphicsData, _Graphics, _LogActive, _LayerId.ToString());
+            switch (this.DrawingMode)
+            {
+                case DxBufferedGraphicsDrawingMode.RepaintOver:
+                    if (_SourceGraphicsData != null) 
+                        DxPanelBufferedGraphic.CopyGraphicsData(_SourceGraphicsData, _Graphics, _LogActive, _LayerId.ToString());
+                    break;
+                case DxBufferedGraphicsDrawingMode.OnlyChanged:
+                    if (_ClearColor.HasValue)
+                        _Graphics.Clear(_ClearColor.Value);
+                    break;
+            }
             _GraphicsIsUsed = true;
         }
         /// <summary>

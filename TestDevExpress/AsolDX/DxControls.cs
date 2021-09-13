@@ -246,6 +246,15 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public event EventHandler BorderStyleChanged;
         /// <summary>
+        /// Povolit průhlednost panelu?
+        /// </summary>
+        public bool AllowTransparency { get; set; }
+        /// <summary>
+        /// Povolit průhlednost panelu?
+        /// Hodnotu čte DevExpress při zpracování panelu. V DxPanelControl ji umožníme nastavit.
+        /// </summary>
+        protected override bool AllowTotalTransparency { get { return AllowTransparency; /* namísto base.AllowTotalTransparency */ } }
+        /// <summary>
         /// Souřadnice vnitřního prostoru panelu.
         /// Pokud Panel má nějaký Border, který je vykreslován uvnitř <see cref="Control.ClientRectangle"/>, 
         /// pak <see cref="InnerRectangle"/> je o tento Border zmenšený.
