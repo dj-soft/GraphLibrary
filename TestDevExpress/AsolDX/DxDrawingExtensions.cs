@@ -2025,22 +2025,48 @@ namespace Noris.Clients.Win.Components.AsolDX
             return (r.Width > 0 && r.Height > 0);
         }
         /// <summary>
-        /// Vrací plochu daného Rectangle
+        /// Vrací plochu daného Rectangle.
+        /// Pokud některý rozměr je nula nebo záporný, vrací 0 (neboť záporná plocha neexistuje, 
+        /// a pokud by na vstupu byly dvě záporné hodnoty, dostal bych kladnou plochu ze záporného rozměru).
         /// </summary>
         /// <param name="r"></param>
         /// <returns></returns>
         public static int GetArea(this Rectangle r)
         {
-            return r.Width * r.Height;
+            return ((r.Width <= 0 || r.Height <= 0) ? 0 : r.Width * r.Height);
         }
         /// <summary>
-        /// Vrací plochu daného Rectangle
+        /// Vrací plochu daného Rectangle.
+        /// Pokud některý rozměr je nula nebo záporný, vrací 0 (neboť záporná plocha neexistuje, 
+        /// a pokud by na vstupu byly dvě záporné hodnoty, dostal bych kladnou plochu ze záporného rozměru).
         /// </summary>
         /// <param name="r"></param>
         /// <returns></returns>
         public static float GetArea(this RectangleF r)
         {
-            return r.Width * r.Height;
+            return ((r.Width <= 0f || r.Height <= 0f) ? 0 : r.Width * r.Height);
+        }
+        /// <summary>
+        /// Vrací plochu daného Size.
+        /// Pokud některý rozměr je nula nebo záporný, vrací 0 (neboť záporná plocha neexistuje, 
+        /// a pokud by na vstupu byly dvě záporné hodnoty, dostal bych kladnou plochu ze záporného rozměru).
+        /// </summary>
+        /// <param name="r"></param>
+        /// <returns></returns>
+        public static int GetArea(this Size r)
+        {
+            return ((r.Width <= 0 || r.Height <= 0) ? 0 : r.Width * r.Height);
+        }
+        /// <summary>
+        /// Vrací plochu daného SizeF.
+        /// Pokud některý rozměr je nula nebo záporný, vrací 0 (neboť záporná plocha neexistuje, 
+        /// a pokud by na vstupu byly dvě záporné hodnoty, dostal bych kladnou plochu ze záporného rozměru).
+        /// </summary>
+        /// <param name="r"></param>
+        /// <returns></returns>
+        public static float GetArea(this SizeF r)
+        {
+            return ((r.Width <= 0f || r.Height <= 0f) ? 0 : r.Width * r.Height);
         }
         /// <summary>
         /// Vrátí orientaci tohoto prostoru podle poměru šířky a výšky. Pokud šířka == výšce, pak vrací Horizontal.
@@ -2062,6 +2088,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         /// <summary>
         /// Metoda vrátí vzdálenost daného bodu od nejbližšího bodu daného rectangle.
+        /// Pokud bod leží uvnitř daného rectangle, vrací se 0 (nikoli záporné číslo, tato metoda neměří vnitřní vzdálenost).
+        /// Metoda měří vnější vzdálenost mezi daným bodem a nejbližší hranou nebo vrcholem daného obdélníku.
         /// </summary>
         /// <param name="bounds"></param>
         /// <param name="point"></param>
@@ -2070,43 +2098,45 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             int x = point.X;
             int y = point.Y;
-            int l = bounds.X;
-            int t = bounds.Y;
+            int l = bounds.Left;
+            int t = bounds.Top;
             int r = bounds.Right;
             int b = bounds.Bottom;
 
-            string q = ((x < l) ? "0" : ((x < r) ? "1" : "2")) + ((y < t) ? "0" : ((y < b) ? "1" : "2"));        // Kvadrant "00" = vlevo nad, "11" = uvnitř, "02" = vlevo pod, atd...
+            // Kde se nachází bod point vzhledem k prostoru bounds?
+            //  11=vlevo nahoře, 12=vlevo uprostřed, 13=vlevo dole, 21=uprostřed nahoře, 22=uprostřed, 23=uprostřed dole; 31=vpravo nahoře, 32=vpravo uprostřed, 33=vpravo dole
+            int relation = 10 * GetPosition(x, l, r) + GetPosition(y, t, b);
             int dx = 0;
             int dy = 0;
-            switch (q)
+            switch (relation)
             {
-                case "00":        // Vlevo, Nad
+                case 11:        // Vlevo, Nad
                     dx = l - x;
                     dy = t - y;
                     break;
-                case "01":        // Vlevo, Uvnitř
+                case 12:        // Vlevo, Uvnitř
                     dx = l - x;
                     break;
-                case "02":        // Vlevo, Pod
+                case 13:        // Vlevo, Pod
                     dx = l - x;
                     dy = y - b;
                     break;
-                case "10":        // Uvnitř, Nad
+                case 21:        // Uvnitř, Nad
                     dy = t - y;
                     break;
-                case "11":        // Uvnitř, Uvnitř
+                case 22:        // Uvnitř, Uvnitř
                     break;
-                case "12":        // Uvnitř, Pod
+                case 23:        // Uvnitř, Pod
                     dy = y - b;
                     break;
-                case "20":        // Vpravo, Nad
+                case 31:        // Vpravo, Nad
                     dx = x - r;
                     dy = t - y;
                     break;
-                case "21":        // Vpravo, Uvnitř
+                case 32:        // Vpravo, Uvnitř
                     dx = x - r;
                     break;
-                case "22":        // Vpravo, Pod
+                case 33:        // Vpravo, Pod
                     dx = x - r;
                     dy = y - b;
                     break;
@@ -2115,6 +2145,115 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (dx == 0) return dy;
             int d = (int)Math.Ceiling(Math.Sqrt((double)(dx * dx + dy * dy)));
             return d;
+        }
+        /// <summary>
+        /// Metoda vrátí nejkratší vzdálenost mezi dvěma rectangles
+        /// </summary>
+        /// <param name="test"></param>
+        /// <param name="area"></param>
+        /// <returns></returns>
+        public static int GetOuterDistance(this Rectangle test, Rectangle area)
+        {
+            if (test.IntersectsWith(area)) return 0;                // Pokud se plochy částečně nebo plně překrývají, vracím 0 = měřím vnější vzdálenost, nikoli vnitřní
+
+            // Je zjevné, že obdélníky nemají nic společného - jdeme hledat jejich vzájemnou pozici a z ní určíme vzdálenost.
+            // Protože nemají nic společného, pak pozice ve směru jedné osy (X nebo Y) může být pouze: Před - přes (a pak hledám pozici v druhé ose) - Za.
+            int testL = test.Left;
+            int testT = test.Top;
+            int testR = test.Right;
+            int testB = test.Bottom;
+            int areaL = area.Left;
+            int areaT = area.Top;
+            int areaR = area.Right;
+            int areaB = area.Bottom;
+
+            // Kde se nachází obdélník bounds vzhledem k prostoru otherBounds?
+            //  11=vlevo nahoře, 13=vlevo uprostřed, 15=vlevo dole, 31=uprostřed nahoře, 33=uprostřed, 35=uprostřed dole; 51=vpravo nahoře, 53=vpravo uprostřed, 55=vpravo dole
+            int relation = 10 * GetPosition(testL, testR, areaL, areaR) + GetPosition(testT, testB, areaT, areaB);
+            int dx = 0;
+            int dy = 0;
+            switch (relation)
+            {
+                case 11:        // Test je: Vlevo, Nad
+                    dx = areaL - testR;
+                    dy = areaT - testB;
+                    break;
+                case 12:        // Test je: Vlevo, Uvnitř
+                case 13:
+                case 14:
+                    dx = areaL - testR;
+                    break;
+                case 15:        // Test je: Vlevo, Pod
+                    dx = areaL - testR;
+                    dy = testT - areaB;
+                    break;
+                case 21:        // Test je: Uvnitř, Nad
+                case 31:
+                case 41:
+                    dy = areaT - testB;
+                    break;
+                case 22:        // Test je: Uvnitř, Uvnitř
+                case 32:
+                case 42:
+                case 23:
+                case 33:
+                case 43:
+                case 24:
+                case 34:
+                case 44:
+                    break;
+                case 25:        // Test je: Uvnitř, Pod
+                case 35:
+                case 45:
+                    dy = testT - areaB;
+                    break;
+                case 51:        // Test je: Vpravo, Nad
+                    dx = testL - areaR;
+                    dy = areaT - testB;
+                    break;
+                case 52:        // Test je: Vpravo, Uvnitř
+                case 53:
+                case 54:
+                    dx = testL - areaR;
+                    break;
+                case 55:        // Test je: Vpravo, Pod
+                    dx = testL - areaR;
+                    dy = testT - areaB;
+                    break;
+            }
+            if (dy == 0) return dx;
+            if (dx == 0) return dy;
+            int d = (int)Math.Ceiling(Math.Sqrt((double)(dx * dx + dy * dy)));
+            return d;
+        }
+        /// <summary>
+        /// Vrátí pozici dané hodnoty vzhledem k rozmezí begin - end, jako hodnotu 1 = před, 2 = uvnitř, 3 = za
+        /// </summary>
+        /// <param name="value"></param>
+        /// <param name="begin"></param>
+        /// <param name="end"></param>
+        /// <returns></returns>
+        private static int GetPosition(int value, int begin, int end)
+        {
+            if (value < begin) return 1;
+            if (value < end) return 2;
+            return 3;
+        }
+        /// <summary>
+        /// Vrátí pozici dané hodnoty (test) vzhledem k prostoru (area), jako hodnotu 1 = test je před area, 3 = je uvnitř, 5 = test je za area
+        /// </summary>
+        /// <param name="testBegin"></param>
+        /// <param name="testEnd"></param>
+        /// <param name="areaBegin"></param>
+        /// <param name="areaEnd"></param>
+        /// <returns></returns>
+        private static int GetPosition(int testBegin, int testEnd, int areaBegin, int areaEnd)
+        {
+            if (testEnd <= areaBegin) return 1;
+            if (testBegin < areaBegin && testEnd < areaEnd) return 2;
+            if (testBegin >= areaBegin && testEnd <= areaEnd) return 3;
+            if (testBegin < areaEnd) return 4;
+            return 5;
         }
         /// <summary>
         /// Vrátí nový Rectangle, který má stejnou pozici středu (Center), ale je otočený o 90°: z výšky na šířku.
@@ -2741,6 +2880,77 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (y < dy) y = dy;
 
             return new PointF(x, y);
+        }
+        /// <summary>
+        /// Metoda je určena typicky k tommu, aby souřadnice nově otevíraného okna byly zarovnány do viditelných souřadnic aktuálních monitorů.
+        /// Na vstupu jsou souřadnice formuláře (okna) uložené typicky v předchozím běhu aplikace. 
+        /// Nyní může být aplikace spuštěna na jiných monitorech (změna: Desktop - Notebook - Vzdálená plocha, atp).
+        /// Je nutno zajistit, aby souřadnice byly správně umístěny do monitorů, kam uživatel vidí, aby mohl aplikaci přemístit, maximalizovat, zavřít atd.
+        /// </summary>
+        /// <param name="bounds">Souřadnice zadané (původní umístění okna)</param>
+        /// <param name="toWorkingArea">Zarovnat do pracovní oblasti monitoru? Hodnota true (default) = do pracovní oblasti (=nikoli do TaskBaru atd)</param>
+        /// <param name="toMultiMonitors">Může být výsledná souřadnice natažená přes více monitorů? Není to hezké, ale je to možné. Default = false.</param>
+        /// <param name="shrinkToFit">Pokud jsou uloženy souřadnice větší než nynější monitory, dojde k zmenšení - hodnota true je default. 
+        /// Hodnota false jen zarovná levý horní roh do viditelné pblasti, ale pravý dolní roh dovolí přesahovat mimo.</param>
+        /// <returns></returns>
+        public static Rectangle FitIntoMonitors(this Rectangle bounds, bool toWorkingArea = true, bool toMultiMonitors = false, bool shrinkToFit = true)
+        {
+            var monitorBounds = Screen.AllScreens.Select(s => (toWorkingArea ? s.WorkingArea : s.Bounds)).ToArray();   // Souřadnice monitorů pracovní / úplné
+            if (monitorBounds.Length == 0) return bounds;                           // Není žádný monitor => není žádná legrace :-)
+            if (monitorBounds.Any(s => s.Contains(bounds))) return bounds;          // Pokud se zadaná souřadnice už teď nachází zcela v některém monitoru, není co upravovat...
+            if (monitorBounds.Length > 1 && toMultiMonitors)
+            {   // Máme-li více monitorů, a je povoleno umístit souřadnice přes více monitorů:
+                var summaryBounds = monitorBounds.SummaryVisibleRectangle().Value;  // Sumární souřadnice z více monitorů = nikdy nevrátí null
+                return FitInto(bounds, summaryBounds, shrinkToFit);                 // Prostě sořadnici zarovnáme do sumárního prostoru.
+            }
+            // Souřadnice máme zarovnat do jednoho konkrétního monitoru. Ale - do kterého?
+            var nearestMonitor = bounds.GetNearestBounds(monitorBounds).Value;      // Počet monitorů je nejméně 1, proto metoda GetNearestBounds() nevrátí null...
+            return FitInto(bounds, nearestMonitor, shrinkToFit);                    // Prostě danou souřadnici zarovnáme do prostoru nejbližšího monitoru.
+        }
+        /// <summary>
+        /// Metoda vrátí jednu ze souřadnic z pole <paramref name="otherBounds"/>, která je nejbližší k this souřadnici.
+        /// Pokud pole <paramref name="otherBounds"/> je null nebo nic neobsahuje, vrací null.
+        /// </summary>
+        /// <param name="bounds"></param>
+        /// <param name="otherBounds"></param>
+        /// <param name="searchOnlyIntersectBounds">false = hledá jen ty otherBounds, které mají kladný průsečík; true = když nenajdeme společný průsečík, budeme hledat i nejbližší vnější otherBounds</param>
+        /// <returns></returns>
+        public static Rectangle? GetNearestBounds(this Rectangle bounds, IEnumerable<Rectangle> otherBounds, bool searchOnlyIntersectBounds = false)
+        {
+            // Nejprve kontroly a zkratky:
+            if (otherBounds == null) return null;
+            var othBounds = otherBounds.ToArray();
+            if (othBounds.Length == 0) return null;
+            if (othBounds.Length == 1) return othBounds[0];          // Pokud je na vstupu jen jeden prvek, tak je to vždy ten správný :-)
+
+            // Nejprve vyhledáme nějakou souřadnici, se kterou má náš Bounds něco málo společného = určíme průsečík (Intersect) a najdeme největší:
+            Rectangle? nearestBounds = null;
+            int maxPixels = 0;
+            foreach (var othBound in othBounds)
+            {
+                int pixels = Rectangle.Intersect(bounds, othBound).GetArea();
+                if (pixels > maxPixels)
+                {
+                    nearestBounds = othBound;
+                    maxPixels = pixels;
+                }
+            }
+            // Pokud máme výsledek, vrátíme jej. Pokud nemáme, a nemáme hledat externí otherBounds, vrátíme výsledek = null:
+            if (nearestBounds.HasValue || !searchOnlyIntersectBounds) return nearestBounds;
+
+            // Dané bounds nemá s žádným otherBounds nic společného, vyhledáme tedy nejbližší vnější:
+            int minDistance = -1;
+            foreach (var othBound in othBounds)
+            {
+                int distance = GetOuterDistance(bounds, othBound);
+                if (distance < 0) distance = 0;
+                if (minDistance < 0 || distance < minDistance)
+                {
+                    nearestBounds = othBound;
+                    minDistance = distance;
+                }
+            }
+            return nearestBounds;
         }
         /// <summary>
         /// Vrátí true, pokud dané souřadnice <paramref name="testBounds"/> jsou zcela nebo zčásti viditelné v this prostoru.

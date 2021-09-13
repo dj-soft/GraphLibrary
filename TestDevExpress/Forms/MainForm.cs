@@ -108,6 +108,8 @@ namespace TestDevExpress.Forms
             var color1 = DxComponent.GetSkinColor(SkinElementColor.CommonSkins_WindowText);
             var color2 = DxComponent.GetSkinColor(SkinElementColor.CommonSkins_Control);
 
+            Rectangle bounds = new Rectangle(850, 500, 1900, 600);
+            Rectangle bounds2 = bounds.FitIntoMonitors();
         }
         private void InitData()
         {
