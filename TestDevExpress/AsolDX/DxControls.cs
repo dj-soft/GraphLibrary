@@ -184,6 +184,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.LogActive = false;
             this._CurrentDpi = DxComponent.DesignDpi;
             this._LastDpi = DxComponent.DesignDpi;           // ??? anebo   0 ?
+            this.AllowTransparency = true;
             DxComponent.RegisterListener(this);
         }
         /// <summary>
