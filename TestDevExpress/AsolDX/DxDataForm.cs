@@ -838,7 +838,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public DxDataFormAppearance()
         {
-            OnMouseIndicatorColor = Color.LightBlue;
+            OnMouseIndicatorColor = Color.LightCoral;
             WithFocusIndicatorColor = Color.GreenYellow;
             CorrectIndicatorColor = Color.LightGreen;
             WarningIndicatorColor = Color.Orange;
@@ -1494,7 +1494,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 MouseEnterItem(newItem);
 
             if (isMouseLeave || isMouseEnter)
-                invalidateLayers |= DxBufferedLayer.AppBackground;
+                invalidateLayers |= DxBufferedLayer.Overlay;
         }
         /// <summary>
         /// Je voláno při příchodu myši na daný prvek.
@@ -1820,6 +1820,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 case DxBufferedLayer.MainLayer:
                     PaintContentMainLayer(args);
                     break;
+                case DxBufferedLayer.Overlay:
+                    PaintContentOverlay(args);
+                    break;
             }
         }
         /// <summary>
@@ -1828,6 +1831,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="e"></param>
         private void PaintContentAppBackground(DxBufferedGraphicPaintArgs e)
         {
+            return;
+
             bool isPainted = false;
 
             // _VisibleGroups.ForEachExec(g => PaintGroupStandard(g, visibleOrigin, e));
@@ -1888,7 +1893,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             {
                 _PaintingItems = false;
             }
-            DxComponent.LogAddLineTime($"DxDataFormV2 Paint Standard() Items: {_VisibleItems?.Count}; Time: {DxComponent.LogTokenTimeMilisec}", startTime);
+            DxComponent.LogAddLineTime($"DxDataForm Paint Standard() Items: {_VisibleItems?.Count}; Time: {DxComponent.LogTokenTimeMilisec}", startTime);
         }
         /// <summary>
         /// Provede vykreslení jedné dané grupy
@@ -1966,7 +1971,34 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             }
 
             item.VisibleBounds = visibleBounds;
+        }
+        private void PaintContentOverlay(DxBufferedGraphicPaintArgs e)
+        {
+            bool isPainted = false;
 
+            var mouseControl = _CurrentOnMouseControl;
+            var mouseItem = _CurrentOnMouseItem;
+            if (mouseControl != null && mouseItem != null)
+            {
+                var indicators = mouseItem.IItem.Indicators;
+                bool isThin = indicators.HasFlag(DataFormItemIndicatorType.MouseOverThin);
+                bool isBold = indicators.HasFlag(DataFormItemIndicatorType.MouseOverBold);
+                if (isThin || isBold)
+                {
+                    Color color = _DataForm.DataFormAppearance.OnMouseIndicatorColor;
+                    PaintItemIndicator(e, mouseControl.Bounds, color, isBold, ref isPainted);
+                }
+            }
+
+            //  Specifikum bufferované grafiky:
+            // - pokud do konkrétní vrstvy jednou něco vepíšu, zůstane to tam (až do nějakého většího refreshe).
+            // - pokud v procesu PaintLayer do předaného argumentu do e.Graphics nic nevepíšu, znamená to "beze změny".
+            // - pokud tedy nyní nemám žádný control k vykreslení, ale posledně jsem něco vykreslil, měl bych grafiku smazat:
+            // - k tomu používám e.LayerUserData
+            bool oldPainted = (e.LayerUserData is bool && (bool)e.LayerUserData);
+            if (oldPainted && !isPainted)
+                e.UseBlankGraphics();
+            e.LayerUserData = isPainted;
         }
         /// <summary>
         /// Metoda vrátí barvu, kterou se má vykreslit indikátor pro daný prvek
@@ -2025,26 +2057,37 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="isPainted"></param>
         private void PaintItemIndicator(DxBufferedGraphicPaintArgs e, Rectangle bounds, Color color, bool isBold, ref bool isPainted)
         {
-            if (!isBold)
+            // Tohle je vlastnost Drawing světa: pokud control má šířku 100, tak na pixelu 100 už není kreslen on ale to za ním...:
+            bounds.Width--;
+            bounds.Height--;
+            
+            // Kontrola získání barvy pozadí:
+            //  var bgc = DxComponent.GetSkinColor(SkinElementColor.Control_PanelBackColor);
+            //  var bgc1 = DxComponent.GetSkinColor(SkinElementColor.CommonSkins_Control);
+            //  if (bgc != bgc1)
+            //  { }
+
+            if (isBold)
             {
-                e.Graphics.FillRectangle(DxComponent.PaintGetSolidBrush(color, 48), bounds.Enlarge(2));
-                e.Graphics.FillRectangle(DxComponent.PaintGetSolidBrush(color, 80), bounds.Enlarge(1));
+                e.Graphics.DrawRectangle(DxComponent.PaintGetPen(color, 48), bounds.Enlarge(3));
+                e.Graphics.DrawRectangle(DxComponent.PaintGetPen(color, 106), bounds.Enlarge(2));
+                e.Graphics.DrawRectangle(DxComponent.PaintGetPen(color, 160), bounds.Enlarge(1));
             }
             else
             {
-                e.Graphics.FillRectangle(DxComponent.PaintGetSolidBrush(color, 48), bounds.Enlarge(3));
-                e.Graphics.FillRectangle(DxComponent.PaintGetSolidBrush(color, 108), bounds.Enlarge(1));
+                e.Graphics.DrawRectangle(DxComponent.PaintGetPen(color, 48), bounds.Enlarge(2));
+                e.Graphics.DrawRectangle(DxComponent.PaintGetPen(color, 80), bounds.Enlarge(1));
             }
             isPainted = true;
         }
         /// <summary>
         /// Pole jednotlivých vrstev bufferované grafiky
         /// </summary>
-        private static DxBufferedLayer[] BufferedLayers { get { return new DxBufferedLayer[] { DxBufferedLayer.AppBackground, DxBufferedLayer.MainLayer }; } }
+        private static DxBufferedLayer[] BufferedLayers { get { return new DxBufferedLayer[] { DxBufferedLayer.AppBackground, DxBufferedLayer.MainLayer, DxBufferedLayer.Overlay }; } }
         /// <summary>
         /// Souhrn vrstev použitých v this controlu, používá se při invalidaci všech vrstev
         /// </summary>
-        private static DxBufferedLayer UsedLayers { get { return DxBufferedLayer.AppBackground | DxBufferedLayer.MainLayer; } }
+        private static DxBufferedLayer UsedLayers { get { return DxBufferedLayer.AppBackground | DxBufferedLayer.MainLayer | DxBufferedLayer.Overlay; } }
         /// <summary>
         /// Příznak, že po dokončení vykreslení standardní vrstvy máme najít aktivní prvek na aktuální souřadnici myši a případně jej aktivovat.
         /// Příznak je nastaven po scrollu, protože původní prvek pod myší nám "ujel jinam" a nyní pod myší může být narolovaný jiný aktivní prvek.
