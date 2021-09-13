@@ -1122,12 +1122,23 @@ namespace Noris.Clients.Win.Components.AsolDX
                         if (indicators != DataFormItemIndicatorType.None)
                         {
                             q = random.Next(100);
-                            if (q < 10)
-                                indicators |= DataFormItemIndicatorType.CorrectAllways;
-                            else if (q < 15)
-                                indicators |= DataFormItemIndicatorType.WarningAllways;
-                            else if (q < 17)
-                                indicators |= DataFormItemIndicatorType.ErrorAllways;
+                            if (q < 4)
+                                indicators |= DataFormItemIndicatorType.CorrectAllwaysThin;
+                            else if (q < 8)
+                                indicators |= DataFormItemIndicatorType.CorrectAllwaysBold;
+                            else if (q < 12)
+                                indicators |= DataFormItemIndicatorType.WarningAllwaysThin;
+                            else if (q < 16)
+                                indicators |= DataFormItemIndicatorType.WarningAllwaysBold;
+                            else if (q < 20)
+                                indicators |= DataFormItemIndicatorType.ErrorAllwaysThin;
+                            else if (q < 24)
+                                indicators |= DataFormItemIndicatorType.ErrorAllwaysBold;
+                            else if (q < 50)
+                            {
+                                indicators |= DataFormItemIndicatorType.IndicatorColorAllwaysThin;
+                                item.IndicatorColor = Color.FromArgb(0, random.Next(128, 200), random.Next(128, 200), random.Next(128, 200));
+                            }
                         }
                         item.ItemType = itemType;
                         item.ToolTipText = tooltip;
@@ -2018,23 +2029,55 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             Color? focusColor = null;             // Pokud prvek má focus, pak zde bude barva orámování focusu
 
             Color? statusColor = null;
-            if (indicators.HasFlag(DataFormItemIndicatorType.ErrorAllways) || (indicators.HasFlag(DataFormItemIndicatorType.ErrorOnDemand) && itemIndicatorsVisible))
-                statusColor = appearance.ErrorIndicatorColor;
-            else if (indicators.HasFlag(DataFormItemIndicatorType.WarningAllways) || (indicators.HasFlag(DataFormItemIndicatorType.WarningOnDemand) && itemIndicatorsVisible))
-                statusColor = appearance.WarningIndicatorColor;
-            else if (indicators.HasFlag(DataFormItemIndicatorType.CorrectAllways) || (indicators.HasFlag(DataFormItemIndicatorType.CorrectOnDemand) && itemIndicatorsVisible))
-                statusColor = appearance.CorrectIndicatorColor;
+            if (item.IItem.IndicatorColor.HasValue)
+            {
+                if (IsIndicatorActive(indicators, itemIndicatorsVisible, DataFormItemIndicatorType.IndicatorColorAllwaysBold, DataFormItemIndicatorType.IndicatorColorOnDemandBold, DataFormItemIndicatorType.IndicatorColorAllwaysThin, DataFormItemIndicatorType.IndicatorColorOnDemandThin, ref isBold))
+                    statusColor = item.IItem.IndicatorColor.Value;
+            }
+            else
+            {
+                if (IsIndicatorActive(indicators, itemIndicatorsVisible, DataFormItemIndicatorType.ErrorAllwaysBold, DataFormItemIndicatorType.ErrorOnDemandBold, DataFormItemIndicatorType.ErrorAllwaysThin, DataFormItemIndicatorType.ErrorOnDemandThin, ref isBold))
+                    statusColor = appearance.ErrorIndicatorColor;
+                else if (IsIndicatorActive(indicators, itemIndicatorsVisible, DataFormItemIndicatorType.WarningAllwaysBold, DataFormItemIndicatorType.WarningOnDemandBold, DataFormItemIndicatorType.WarningAllwaysThin, DataFormItemIndicatorType.WarningOnDemandThin, ref isBold))
+                    statusColor = appearance.WarningIndicatorColor;
+                else if (IsIndicatorActive(indicators, itemIndicatorsVisible, DataFormItemIndicatorType.CorrectAllwaysBold, DataFormItemIndicatorType.CorrectOnDemandBold, DataFormItemIndicatorType.CorrectAllwaysThin, DataFormItemIndicatorType.CorrectOnDemandThin, ref isBold))
+                    statusColor = appearance.CorrectIndicatorColor;
+            }
 
             bool hasFocus = focusColor.HasValue;
             bool hasStatus = statusColor.HasValue;
             // Pokud bych měl souběh obou barev (focus i status), pak výsledná barva bude Morph (70% status + 30% focus)
-            Color? resultColor = ((hasFocus && hasStatus) ? (Color ? )statusColor.Value.Morph(focusColor.Value, 0.70f) :
+            Color? resultColor = ((hasFocus && hasStatus) ? (Color?)statusColor.Value.Morph(focusColor.Value, 0.70f) :
                                  (hasFocus ? focusColor :
-                                 (hasStatus ? statusColor : (Color ? )null)));
+                                 (hasStatus ? statusColor : (Color?)null)));
 
-            if (hasStatus) isBold = true;
             return resultColor;
         }
+        /// <summary>
+        /// Metoda určí, zda indikátor prvku (<paramref name="indicators"/>) vyhovuje některým zadaným hodnotám a vrátí true pokud ano.
+        /// </summary>
+        /// <param name="indicators"></param>
+        /// <param name="itemIndicatorsVisible"></param>
+        /// <param name="allwaysBold"></param>
+        /// <param name="onDemandBold"></param>
+        /// <param name="alwaysThin"></param>
+        /// <param name="onDemandThin"></param>
+        /// <param name="isBold"></param>
+        /// <returns></returns>
+        private bool IsIndicatorActive(DataFormItemIndicatorType indicators, bool itemIndicatorsVisible, 
+            DataFormItemIndicatorType allwaysBold, DataFormItemIndicatorType onDemandBold, DataFormItemIndicatorType alwaysThin, DataFormItemIndicatorType onDemandThin, 
+            ref bool isBold)
+        {
+            if (indicators.HasFlag(allwaysBold) || (itemIndicatorsVisible && indicators.HasFlag(onDemandBold)))
+            {
+                isBold = true;
+                return true;
+            }
+            if (indicators.HasFlag(alwaysThin) || (itemIndicatorsVisible && indicators.HasFlag(onDemandThin)))
+                return true;
+            return false;
+        }
+
         /// <summary>
         /// Zajistí vykreslení slabého orámování (prozáření okrajů) pro daný prostor (prvek) danou barvou.
         /// </summary>
