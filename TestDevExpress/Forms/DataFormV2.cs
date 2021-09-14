@@ -444,14 +444,14 @@ namespace TestDevExpress.Forms
         {
             System.Data.DataTable dataTable = new System.Data.DataTable();
 
-            var items = pages.SelectMany(p => p.Groups).SelectMany(g => g.Items).OfType<DataFormItem>().ToArray();
+            var items = pages.SelectMany(p => p.Groups).SelectMany(g => g.Items).OfType<DataFormColumn>().ToArray();
             int c = 0;
             foreach (var item in items)
             {
                 c++;
                 string columnName = "column_" + c.ToString();
                 dataTable.Columns.Add(columnName, typeof(string));
-                item.ItemId = columnName;
+                item.ColumnId = columnName;
             }
 
             int columnCount = items.Length;

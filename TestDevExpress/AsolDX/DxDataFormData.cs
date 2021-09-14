@@ -130,7 +130,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             IsVisible = true;
             CollapseMode = DataFormGroupCollapseMode.None;
             LayoutMode = DatFormGroupLayoutMode.None;
-            Items = new List<IDataFormItem>();
+            Items = new List<IDataFormColumn>();
         }
         /// <summary>
         /// ID grupy, jednoznačné v celém DataFormu
@@ -152,7 +152,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// a ponechá výšku grupy <see cref="DesignHeight"/> = null, 
         /// pak systém určí designovou výšku jako součet rozměru obsahu plus svislé okraje <see cref="DesignPadding"/>.
         /// <para/>
-        /// Pokud grupa má implementovat titulek, pak titulek bude jednou z položek grupy, typu <see cref="DataFormItemType.Label"/>, včetně zadané velikosti a vzhledu.
+        /// Pokud grupa má implementovat titulek, pak titulek bude jednou z položek grupy, typu <see cref="DataFormColumnType.Label"/>, včetně zadané velikosti a vzhledu.
         /// Pokud součástí grupy má být podtitulek a/nebo linka, musí být i to uvedeno v Items.
         /// </summary>
         public virtual int? DesignWidth { get; set; }
@@ -164,7 +164,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// a ponechá výšku grupy <see cref="DesignHeight"/> = null, 
         /// pak systém určí designovou výšku jako součet rozměru obsahu plus svislé okraje <see cref="DesignPadding"/>.
         /// <para/>
-        /// Pokud grupa má implementovat titulek, pak titulek bude jednou z položek grupy, typu <see cref="DataFormItemType.Label"/>, včetně zadané velikosti a vzhledu.
+        /// Pokud grupa má implementovat titulek, pak titulek bude jednou z položek grupy, typu <see cref="DataFormColumnType.Label"/>, včetně zadané velikosti a vzhledu.
         /// Pokud součástí grupy má být podtitulek a/nebo linka, musí být i to uvedeno v Items.
         /// </summary>
         public virtual int? DesignHeight { get; set; }
@@ -224,11 +224,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Vzhled prvku - kalíšek, barvy, modifikace fontu
         /// </summary>
-        public virtual IDataFormItemAppearance Appearance { get; set; }
+        public virtual IDataFormColumnAppearance Appearance { get; set; }
         /// <summary>
         /// Jednotlivé prvky grupy
         /// </summary>
-        public virtual List<IDataFormItem> Items { get; set; }
+        public virtual List<IDataFormColumn> Items { get; set; }
 
         /// <summary>
         /// Text ToolTipu
@@ -244,7 +244,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         public virtual string ToolTipIcon { get; set; }
 
         string IToolTipItem.ToolTipTitle { get { return ToolTipTitle ?? GroupText; } }
-        IEnumerable<IDataFormItem> IDataFormGroup.Items { get { return Items; } }
+        IEnumerable<IDataFormColumn> IDataFormGroup.Items { get { return Items; } }
     }
     /// <summary>
     /// Předpis požadovaných vlastností pro jednu grupu v rámci DataFormu
@@ -271,7 +271,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// a ponechá výšku grupy <see cref="DesignHeight"/> = null, 
         /// pak systém určí designovou výšku jako součet rozměru obsahu plus svislé okraje <see cref="DesignPadding"/>.
         /// <para/>
-        /// Pokud grupa má implementovat titulek, pak titulek bude jednou z položek grupy, typu <see cref="DataFormItemType.Label"/>, včetně zadané velikosti a vzhledu.
+        /// Pokud grupa má implementovat titulek, pak titulek bude jednou z položek grupy, typu <see cref="DataFormColumnType.Label"/>, včetně zadané velikosti a vzhledu.
         /// Pokud součástí grupy má být podtitulek a/nebo linka, musí být i to uvedeno v Items.
         /// </summary>
         int? DesignWidth { get; }
@@ -283,7 +283,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// a ponechá výšku grupy <see cref="DesignHeight"/> = null, 
         /// pak systém určí designovou výšku jako součet rozměru obsahu plus svislé okraje <see cref="DesignPadding"/>.
         /// <para/>
-        /// Pokud grupa má implementovat titulek, pak titulek bude jednou z položek grupy, typu <see cref="DataFormItemType.Label"/>, včetně zadané velikosti a vzhledu.
+        /// Pokud grupa má implementovat titulek, pak titulek bude jednou z položek grupy, typu <see cref="DataFormColumnType.Label"/>, včetně zadané velikosti a vzhledu.
         /// Pokud součástí grupy má být podtitulek a/nebo linka, musí být i to uvedeno v Items.
         /// </summary>
         int? DesignHeight { get; }
@@ -343,18 +343,18 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Vzhled prvku - kalíšek, barvy, modifikace fontu
         /// </summary>
-        IDataFormItemAppearance Appearance { get; }
+        IDataFormColumnAppearance Appearance { get; }
         /// <summary>
         /// Jednotlivé prvky grupy
         /// </summary>
-        IEnumerable<IDataFormItem> Items { get; }
+        IEnumerable<IDataFormColumn> Items { get; }
     }
     #endregion
-    #region DataFormItem + interface
+    #region DataFormColumn + interface
     /// <summary>
     /// Data definující jeden prvek v DataFormu, který má Text a Ikonu a zaškrtávací hodnotu (CheckBox, CheckButton)
     /// </summary>
-    public class DataFormItemMenuText : DataFormItemImageText, IDataFormItemMenuText
+    public class DataFormColumnMenuText : DataFormColumnImageText, IDataFormColumnMenuText
     {
         /// <summary>
         /// Soupis položek v nabídce
@@ -364,7 +364,7 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// <summary>
     /// Předpis požadovaných vlastností pro jeden prvek v rámci DataFormu, který má Text a Ikonu a zaškrtávací hodnotu (CheckBox, CheckButton)
     /// </summary>
-    public interface IDataFormItemMenuText : IDataFormItemImageText
+    public interface IDataFormColumnMenuText : IDataFormColumnImageText
     {
         /// <summary>
         /// Soupis položek v nabídce
@@ -374,7 +374,7 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// <summary>
     /// Data definující jeden prvek v DataFormu, který má Text a Ikonu a zaškrtávací hodnotu (CheckBox, CheckButton)
     /// </summary>
-    public class DataFormItemCheckBox : DataFormItemImageText, IDataFormItemCheckBox
+    public class DataFormColumnCheckBox : DataFormColumnImageText, IDataFormColumnCheckBox
     {
         /// <summary>
         /// Je zaškrtnuto
@@ -384,7 +384,7 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// <summary>
     /// Předpis požadovaných vlastností pro jeden prvek v rámci DataFormu, který má Text a Ikonu a zaškrtávací hodnotu (CheckBox, CheckButton)
     /// </summary>
-    public interface IDataFormItemCheckBox : IDataFormItemImageText
+    public interface IDataFormColumnCheckBox : IDataFormColumnImageText
     {
         /// <summary>
         /// Je zaškrtnuto
@@ -392,7 +392,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         bool Checked { get; }
     }
 
-    public class DataFormItemTextBoxButton : DataFormItemImageText, IDataFormItemTextBoxButton
+    public class DataFormColumnTextBoxButton : DataFormColumnImageText, IDataFormColumnTextBoxButton
     {
         /// <summary>
         /// Pokud je true, pak buttony jsou vidět stále. Pokud je false, pak jsou vidět jen pod myší anebo s focusem (default).
@@ -411,7 +411,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public virtual string ButtonGlyphImageName { get; set; }
     }
-    public interface IDataFormItemTextBoxButton : IDataFormItemImageText
+    public interface IDataFormColumnTextBoxButton : IDataFormColumnImageText
     {
         /// <summary>
         /// Pokud je true, pak buttony jsou vidět stále. Pokud je false, pak jsou vidět jen pod myší anebo s focusem (default).
@@ -430,11 +430,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         string ButtonGlyphImageName { get; }
     }
-
     /// <summary>
     /// Data definující jeden prvek v DataFormu, který má Text a Ikonu
     /// </summary>
-    public class DataFormItemImageText : DataFormItem, IDataFormItemImageText
+    public class DataFormColumnImageText : DataFormColumn, IDataFormColumnImageText
     {
         /// <summary>
         /// Jméno ikony
@@ -450,7 +449,7 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// <summary>
     /// Předpis požadovaných vlastností pro jeden prvek v rámci DataFormu, který má Text a Ikonu
     /// </summary>
-    public interface IDataFormItemImageText : IDataFormItem
+    public interface IDataFormColumnImageText : IDataFormColumn
     {
         /// <summary>
         /// Jméno ikony
@@ -464,37 +463,37 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// <summary>
     /// Data definující jeden prvek v DataFormu
     /// </summary>
-    public class DataFormItem : IDataFormItem
+    public class DataFormColumn : IDataFormColumn
     {
         #region Static factory
         /// <summary>
-        /// Vrací konkrétního potomka <see cref="DataFormItem"/> pro požadovaný typ prvku
+        /// Vrací konkrétního potomka <see cref="DataFormColumn"/> pro požadovaný typ prvku
         /// </summary>
         /// <param name="itemType"></param>
         /// <returns></returns>
-        public static DataFormItem CreateItem(DataFormItemType itemType)
+        public static DataFormColumn CreateItem(DataFormColumnType itemType)
         {
             switch (itemType)
             {
-                case DataFormItemType.None: return null;
-                case DataFormItemType.Label: return new DataFormItemImageText() { ItemType = itemType };
-                case DataFormItemType.TextBox: return null;
-                case DataFormItemType.TextBoxButton: return new DataFormItemTextBoxButton() { ItemType = itemType };
-                case DataFormItemType.EditBox: return null;
-                case DataFormItemType.SpinnerBox: return null;
-                case DataFormItemType.CheckBox: return new DataFormItemCheckBox() { ItemType = itemType };
-                case DataFormItemType.BreadCrumb: return null;
-                case DataFormItemType.ComboBoxList: return null;
-                case DataFormItemType.ComboBoxEdit: return null;
-                case DataFormItemType.TokenEdit: return null;
-                case DataFormItemType.ListView: return null;
-                case DataFormItemType.TreeView: return null;
-                case DataFormItemType.RadioButtonBox: return null;
-                case DataFormItemType.Button: return new DataFormItemImageText() { ItemType = itemType };
-                case DataFormItemType.CheckButton: return new DataFormItemCheckBox() { ItemType = itemType };
-                case DataFormItemType.DropDownButton: return null;
-                case DataFormItemType.BarCode: return null;
-                case DataFormItemType.Image: return null;
+                case DataFormColumnType.None: return null;
+                case DataFormColumnType.Label: return new DataFormColumnImageText() { ColumnType = itemType };
+                case DataFormColumnType.TextBox: return null;
+                case DataFormColumnType.TextBoxButton: return new DataFormColumnTextBoxButton() { ColumnType = itemType };
+                case DataFormColumnType.EditBox: return null;
+                case DataFormColumnType.SpinnerBox: return null;
+                case DataFormColumnType.CheckBox: return new DataFormColumnCheckBox() { ColumnType = itemType };
+                case DataFormColumnType.BreadCrumb: return null;
+                case DataFormColumnType.ComboBoxList: return null;
+                case DataFormColumnType.ComboBoxEdit: return null;
+                case DataFormColumnType.TokenEdit: return null;
+                case DataFormColumnType.ListView: return null;
+                case DataFormColumnType.TreeView: return null;
+                case DataFormColumnType.RadioButtonBox: return null;
+                case DataFormColumnType.Button: return new DataFormColumnImageText() { ColumnType = itemType };
+                case DataFormColumnType.CheckButton: return new DataFormColumnCheckBox() { ColumnType = itemType };
+                case DataFormColumnType.DropDownButton: return null;
+                case DataFormColumnType.BarCode: return null;
+                case DataFormColumnType.Image: return null;
             }
             return null;
         }
@@ -503,19 +502,19 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Konstruktor
         /// </summary>
-        public DataFormItem()
+        public DataFormColumn()
         {
             IsVisible = true;
-            Indicators = DataFormItemIndicatorType.None;
+            Indicators = DataFormColumnIndicatorType.None;
         }
         /// <summary>
         /// ID prvku, jednoznačné v celém DataFormu
         /// </summary>
-        public virtual string ItemId { get; set; }
+        public virtual string ColumnId { get; set; }
         /// <summary>
         /// Typ prvku
         /// </summary>
-        public virtual DataFormItemType ItemType { get; set; }
+        public virtual DataFormColumnType ColumnType { get; set; }
         /// <summary>
         /// Umístění prvku v rámci grupy = relativně v grupě, ne na stránce!
         /// V designových pixelech 96DPI, kde výška standardního textboxu je 20 px a výška labelu je 18 px
@@ -528,7 +527,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Řízení barevných indikátorů u prvku
         /// </summary>
-        public virtual DataFormItemIndicatorType Indicators { get; set; }
+        public virtual DataFormColumnIndicatorType Indicators { get; set; }
         /// <summary>
         /// Explicitní barva indikátoru (podsvícení prvku)
         /// </summary>
@@ -536,7 +535,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Vzhled prvku - kalíšek, barvy, modifikace fontu
         /// </summary>
-        public virtual IDataFormItemAppearance Appearance { get; set; }
+        public virtual IDataFormColumnAppearance Appearance { get; set; }
 
         /// <summary>
         /// Text ToolTipu
@@ -555,16 +554,16 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// <summary>
     /// Předpis požadovaných vlastností pro jeden prvek v rámci DataFormu
     /// </summary>
-    public interface IDataFormItem : IToolTipItem
+    public interface IDataFormColumn : IToolTipItem
     {
         /// <summary>
         /// ID prvku, jednoznačné v celém DataFormu
         /// </summary>
-        string ItemId { get; }
+        string ColumnId { get; }
         /// <summary>
         /// Typ prvku
         /// </summary>
-        DataFormItemType ItemType { get; }
+        DataFormColumnType ColumnType { get; }
         /// <summary>
         /// Umístění prvku v rámci grupy = relativně v grupě, ne na stránce!
         /// V designových pixelech 96DPI, kde výška standardního textboxu je 20 px a výška labelu je 18 px
@@ -577,10 +576,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Řízení barevných indikátorů u prvku
         /// </summary>
-        DataFormItemIndicatorType Indicators { get; }
+        DataFormColumnIndicatorType Indicators { get; }
         /// <summary>
         /// Explicitní barva indikátoru (podsvícení prvku).
-        /// Její podrobnější řízení je dáno v <see cref="Indicators"/>, hodnoty např. <see cref="DataFormItemIndicatorType.IndicatorColorAllwaysBold"/> a další.
+        /// Její podrobnější řízení je dáno v <see cref="Indicators"/>, hodnoty např. <see cref="DataFormColumnIndicatorType.IndicatorColorAllwaysBold"/> a další.
         /// <para/>
         /// Pokud bude zadána barva <see cref="IndicatorColor"/>, ale nebude zadána patřičná předvolba v <see cref="Indicators"/>, pak se zadaná barva neuplatní,
         /// ale neuplatní se ani ostatní předvolby v <see cref="Indicators"/>!
@@ -589,14 +588,14 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Vzhled prvku - kalíšek, barvy, modifikace fontu
         /// </summary>
-        IDataFormItemAppearance Appearance { get; }
+        IDataFormColumnAppearance Appearance { get; }
     }
     #endregion
-    #region Podpůrné třídy a interface : DataFormAppearance, DataFormBackgroundAppearance
+    #region Podpůrné třídy a interface : DataFormColumnAppearance, DataFormBackgroundAppearance
     /// <summary>
     /// Modifikace vzhledu prvku
     /// </summary>
-    public class DataFormItemAppearance : IDataFormItemAppearance
+    public class DataFormColumnAppearance : IDataFormColumnAppearance
     {
         /// <summary>
         /// Změna velikosti písma
@@ -634,7 +633,7 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// <summary>
     /// Modifikace vzhledu prvku
     /// </summary>
-    public interface IDataFormItemAppearance
+    public interface IDataFormColumnAppearance
     {
         /// <summary>
         /// Změna velikosti písma
@@ -801,7 +800,7 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// Řízení barevných indikátorů u prvku
     /// </summary>
     [Flags]
-    public enum DataFormItemIndicatorType
+    public enum DataFormColumnIndicatorType
     {
         /// <summary>
         /// Prvek nemá orámování nikdy
@@ -885,22 +884,22 @@ namespace Noris.Clients.Win.Components.AsolDX
         ErrorAllwaysBold = 0x8000,
 
         /// <summary>
-        /// Prvek bude orámován barvou <see cref="IDataFormItem.IndicatorColor"/>, orámování tenké, 
+        /// Prvek bude orámován barvou <see cref="IDataFormColumn.IndicatorColor"/>, orámování tenké, 
         /// pouze pokud bude hodnota <see cref="DxDataForm.ItemIndicatorsVisible"/> = true
         /// </summary>
         IndicatorColorOnDemandThin = 0x10000,
         /// <summary>
-        /// Prvek bude orámován barvou <see cref="IDataFormItem.IndicatorColor"/>, orámování silné, 
+        /// Prvek bude orámován barvou <see cref="IDataFormColumn.IndicatorColor"/>, orámování silné, 
         /// pouze pokud bude hodnota <see cref="DxDataForm.ItemIndicatorsVisible"/> = true
         /// </summary>
         IndicatorColorOnDemandBold = 0x20000,
         /// <summary>
-        /// Prvek bude orámován barvou <see cref="IDataFormItem.IndicatorColor"/>, orámování tenké, 
+        /// Prvek bude orámován barvou <see cref="IDataFormColumn.IndicatorColor"/>, orámování tenké, 
         /// bez ohledu na hodnotu <see cref="DxDataForm.ItemIndicatorsVisible"/>
         /// </summary>
         IndicatorColorAllwaysThin = 0x40000,
         /// <summary>
-        /// Prvek bude orámován barvou <see cref="IDataFormItem.IndicatorColor"/>, orámování silné, 
+        /// Prvek bude orámován barvou <see cref="IDataFormColumn.IndicatorColor"/>, orámování silné, 
         /// bez ohledu na hodnotu <see cref="DxDataForm.ItemIndicatorsVisible"/>
         /// </summary>
         IndicatorColorAllwaysBold = 0x80000
@@ -908,7 +907,7 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// <summary>
     /// Druh prvku v DataFormu
     /// </summary>
-    public enum DataFormItemType
+    public enum DataFormColumnType
     {
         /// <summary>
         /// Žádný prvek
@@ -1085,7 +1084,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// A custom bitmap is drawn on the button's surface.
         /// </summary>
         Glyph = 99
-
     }
     #endregion
 }

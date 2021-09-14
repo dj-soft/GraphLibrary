@@ -317,23 +317,23 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="itemType"></param>
         /// <returns></returns>
-        public static bool IsFocusableControl(DataFormItemType itemType)
+        public static bool IsFocusableControl(DataFormColumnType itemType)
         {
             switch (itemType)
             {
-                case DataFormItemType.TextBox:
-                case DataFormItemType.TextBoxButton:
-                case DataFormItemType.EditBox:
-                case DataFormItemType.SpinnerBox:
-                case DataFormItemType.CheckBox:
-                case DataFormItemType.BreadCrumb:
-                case DataFormItemType.ComboBoxList:
-                case DataFormItemType.ComboBoxEdit:
-                case DataFormItemType.ListView:
-                case DataFormItemType.TreeView:
-                case DataFormItemType.RadioButtonBox:
-                case DataFormItemType.Button:
-                case DataFormItemType.DropDownButton:
+                case DataFormColumnType.TextBox:
+                case DataFormColumnType.TextBoxButton:
+                case DataFormColumnType.EditBox:
+                case DataFormColumnType.SpinnerBox:
+                case DataFormColumnType.CheckBox:
+                case DataFormColumnType.BreadCrumb:
+                case DataFormColumnType.ComboBoxList:
+                case DataFormColumnType.ComboBoxEdit:
+                case DataFormColumnType.ListView:
+                case DataFormColumnType.TreeView:
+                case DataFormColumnType.RadioButtonBox:
+                case DataFormColumnType.Button:
+                case DataFormColumnType.DropDownButton:
                     return true;
             }
             return false;
@@ -1512,7 +1512,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         public string PageText { get; set; }
         public string PageToolTipText { get; set; }
         public string PageIconName { get; set; }
-        public DataFormItemType ItemType { get; set; }
+        public DataFormColumnType ItemType { get; set; }
         public Rectangle Bounds { get; set; }
         public string Text { get; set; }
         public bool? Visible { get; set; }
@@ -1548,7 +1548,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         string PageText { get; }
         string PageToolTipText { get; }
         string PageIconName { get; }
-        DataFormItemType ItemType { get; }
+        DataFormColumnType ItemType { get; }
         Rectangle Bounds { get; }
         string Text { get; }
         bool? Visible { get; }
@@ -1722,22 +1722,22 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             switch (dataFormItem.ItemType)
             {
-                case DataFormItemType.Label: return _CreateDataFormLabel(dataFormItem);
-                case DataFormItemType.TextBox: return _CreateDataFormTextBox(dataFormItem);
-                case DataFormItemType.TextBoxButton: return _CreateDataFormTextBoxButton(dataFormItem);
-                case DataFormItemType.EditBox: return _CreateDataFormEditBox(dataFormItem);
-                case DataFormItemType.SpinnerBox: return _CreateDataFormSpinnerBox(dataFormItem);
-                case DataFormItemType.CheckBox: return _CreateDataFormCheckBox(dataFormItem);
-                case DataFormItemType.BreadCrumb: return _CreateDataFormBreadCrumb(dataFormItem);
-                case DataFormItemType.ComboBoxList: return _CreateDataFormComboBoxList(dataFormItem);
-                case DataFormItemType.ComboBoxEdit: return _CreateDataFormComboBoxEdit(dataFormItem);
-                case DataFormItemType.ListView: return _CreateDataFormListView(dataFormItem);
-                case DataFormItemType.TreeView: return _CreateDataFormTreeView(dataFormItem);
-                case DataFormItemType.RadioButtonBox: return _CreateDataFormRadioButtonBox(dataFormItem);
-                case DataFormItemType.Button: return _CreateDataFormButton(dataFormItem);
-                case DataFormItemType.CheckButton: return _CreateDataFormCheckButton(dataFormItem);
-                case DataFormItemType.DropDownButton: return _CreateDataFormDropDownButton(dataFormItem);
-                case DataFormItemType.Image: return _CreateDataFormImage(dataFormItem);
+                case DataFormColumnType.Label: return _CreateDataFormLabel(dataFormItem);
+                case DataFormColumnType.TextBox: return _CreateDataFormTextBox(dataFormItem);
+                case DataFormColumnType.TextBoxButton: return _CreateDataFormTextBoxButton(dataFormItem);
+                case DataFormColumnType.EditBox: return _CreateDataFormEditBox(dataFormItem);
+                case DataFormColumnType.SpinnerBox: return _CreateDataFormSpinnerBox(dataFormItem);
+                case DataFormColumnType.CheckBox: return _CreateDataFormCheckBox(dataFormItem);
+                case DataFormColumnType.BreadCrumb: return _CreateDataFormBreadCrumb(dataFormItem);
+                case DataFormColumnType.ComboBoxList: return _CreateDataFormComboBoxList(dataFormItem);
+                case DataFormColumnType.ComboBoxEdit: return _CreateDataFormComboBoxEdit(dataFormItem);
+                case DataFormColumnType.ListView: return _CreateDataFormListView(dataFormItem);
+                case DataFormColumnType.TreeView: return _CreateDataFormTreeView(dataFormItem);
+                case DataFormColumnType.RadioButtonBox: return _CreateDataFormRadioButtonBox(dataFormItem);
+                case DataFormColumnType.Button: return _CreateDataFormButton(dataFormItem);
+                case DataFormColumnType.CheckButton: return _CreateDataFormCheckButton(dataFormItem);
+                case DataFormColumnType.DropDownButton: return _CreateDataFormDropDownButton(dataFormItem);
+                case DataFormColumnType.Image: return _CreateDataFormImage(dataFormItem);
             }
             throw new ArgumentException($"Used unsupported IDataFormItem.ItemType: {dataFormItem.ItemType}.");
         }
@@ -2400,7 +2400,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             items.Add(new DataFormItemX()
             {
                 ItemName = _SampleItemName(items),
-                ItemType = DataFormItemType.Label,
+                ItemType = DataFormColumnType.Label,
                 Bounds = new Rectangle(x, y, (w ?? 180), 20),
                 Text = label,
                 LabelHAlignment = (labelHalignment ?? DevExpress.Utils.HorzAlignment.Far),
@@ -2414,7 +2414,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             items.Add(new DataFormItemX()
             {
                 ItemName = _SampleItemName(items),
-                ItemType = DataFormItemType.TextBox,
+                ItemType = DataFormColumnType.TextBox,
                 Bounds = new Rectangle(x, y, w ?? 100, 20),
                 TextMaskType = maskType,
                 TextEditMask = mask,
@@ -2427,7 +2427,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             items.Add(new DataFormItemX()
             {
                 ItemName = _SampleItemName(items),
-                ItemType = DataFormItemType.EditBox,
+                ItemType = DataFormColumnType.EditBox,
                 Bounds = new Rectangle(x, y, w, h),
                 ToolTipTitle = "POZNÁMKA",
                 ToolTipText = "Zde můžete zadat libovolný text"
@@ -2438,7 +2438,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             items.Add(new DataFormItemX()
             {
                 ItemName = _SampleItemName(items),
-                ItemType = DataFormItemType.CheckBox,
+                ItemType = DataFormColumnType.CheckBox,
                 Bounds = new Rectangle(x + addx, y, w, 20),
                 Text = label,
                 CheckBoxStyle = (style ?? _SampleCheckBoxStyle()),
@@ -2450,7 +2450,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             items.Add(new DataFormItemX()
             {
                 ItemName = _SampleItemName(items),
-                ItemType = DataFormItemType.Button,
+                ItemType = DataFormColumnType.Button,
                 Bounds = new Rectangle(x, y, w, h),
                 Text = label
             });
@@ -2494,14 +2494,14 @@ namespace Noris.Clients.Win.Components.AsolDX
             items.Add(new DataFormItemX()
             {
                 ItemName = _SampleItemName(items),
-                ItemType = DataFormItemType.TextBox,
+                ItemType = DataFormColumnType.TextBox,
                 Bounds = new Rectangle(x + wl + 2, y, wr, 20)
             });
 
             items.Add(new DataFormItemX()
             {
                 ItemName = _SampleItemName(items),
-                ItemType = DataFormItemType.TextBox,
+                ItemType = DataFormColumnType.TextBox,
                 Bounds = new Rectangle(x + wl + 2 + wr + 2, y, wn, 20)
             });
         }
@@ -2520,7 +2520,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             items.Add(new DataFormItemX()
             {
                 ItemName = _SampleItemName(items),
-                ItemType = DataFormItemType.TextBox,
+                ItemType = DataFormColumnType.TextBox,
                 Bounds = new Rectangle(x + 183, y, 125, 20),
                 TextMaskType = DevExpress.XtraEditors.Mask.MaskType.Numeric,
                 TextEditMask = "### ### ##0.00"
@@ -2529,7 +2529,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             items.Add(new DataFormItemX()
             {
                 ItemName = _SampleItemName(items),
-                ItemType = DataFormItemType.TextBox,
+                ItemType = DataFormColumnType.TextBox,
                 Bounds = new Rectangle(x + 311, y, 125, 20),
                 TextMaskType = DevExpress.XtraEditors.Mask.MaskType.Numeric,
                 TextEditMask = "### ### ##0.00"
@@ -2538,7 +2538,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             items.Add(new DataFormItemX()
             {
                 ItemName = _SampleItemName(items),
-                ItemType = DataFormItemType.TextBox,
+                ItemType = DataFormColumnType.TextBox,
                 Bounds = new Rectangle(x + 439, y, 125, 20),
                 TextMaskType = DevExpress.XtraEditors.Mask.MaskType.Numeric,
                 TextEditMask = "### ### ##0.00"
@@ -2551,7 +2551,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             items.Add(new DataFormItemX()
             {
                 ItemName = _SampleItemName(items),
-                ItemType = DataFormItemType.TextBox,
+                ItemType = DataFormColumnType.TextBox,
                 Bounds = new Rectangle(x + 183, y, 125, 20),
                 TextMaskType = DevExpress.XtraEditors.Mask.MaskType.DateTime,
                 TextEditMask = "d",
@@ -2564,7 +2564,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             items.Add(new DataFormItemX()
             {
                 ItemName = _SampleItemName(items),
-                ItemType = DataFormItemType.TextBox,
+                ItemType = DataFormColumnType.TextBox,
                 Bounds = new Rectangle(x + 344, y, 125, 20),
                 TextMaskType = DevExpress.XtraEditors.Mask.MaskType.DateTime,
                 TextEditMask = "d",
@@ -2579,7 +2579,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             items.Add(new DataFormItemX()
             {
                 ItemName = _SampleItemName(items),
-                ItemType = DataFormItemType.CheckBox,
+                ItemType = DataFormColumnType.CheckBox,
                 Bounds = new Rectangle(x + 183, y, 250, 20),
                 Text = label1,
                 CheckBoxStyle = style
@@ -2588,7 +2588,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             items.Add(new DataFormItemX()
             {
                 ItemName = _SampleItemName(items),
-                ItemType = DataFormItemType.CheckBox,
+                ItemType = DataFormColumnType.CheckBox,
                 Bounds = new Rectangle(x + 436, y, 250, 20),
                 Text = label2,
                 CheckBoxStyle = style
@@ -2597,7 +2597,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             items.Add(new DataFormItemX()
             {
                 ItemName = _SampleItemName(items),
-                ItemType = DataFormItemType.CheckBox,
+                ItemType = DataFormColumnType.CheckBox,
                 Bounds = new Rectangle(x + 689, y, 250, 20),
                 Text = label3,
                 CheckBoxStyle = style
@@ -2655,12 +2655,12 @@ namespace Noris.Clients.Win.Components.AsolDX
                 string line = "... Typ prvku: " + itemType.ToString() + ";  Počet prvků: " + countItem.ToString();
                 switch (itemType)
                 {
-                    case DataFormItemType.Label:
-                    case DataFormItemType.CheckBox:
+                    case DataFormColumnType.Label:
+                    case DataFormColumnType.CheckBox:
                         countUSER += countItem;
                         break;
-                    case DataFormItemType.TextBox:
-                    case DataFormItemType.EditBox:
+                    case DataFormColumnType.TextBox:
+                    case DataFormColumnType.EditBox:
                         countGDI += 2 * countItem;
                         countUSER += 2 * countItem;
                         break;
@@ -2694,38 +2694,38 @@ namespace Noris.Clients.Win.Components.AsolDX
                 if (sample.LabelCount >= 1)
                 {
                     w = rand.Next(100, 200);
-                    items.Add(new DataFormItemX() { ItemName = _SampleItemName(items), ItemType = DataFormItemType.Label, LabelHAlignment = DevExpress.Utils.HorzAlignment.Far, LabelAutoSize = LabelAutoSizeMode.None, Bounds = new Rectangle(x, y, w, 20), Text = "Řádek " + (i + 1).ToString() + ":" });
+                    items.Add(new DataFormItemX() { ItemName = _SampleItemName(items), ItemType = DataFormColumnType.Label, LabelHAlignment = DevExpress.Utils.HorzAlignment.Far, LabelAutoSize = LabelAutoSizeMode.None, Bounds = new Rectangle(x, y, w, 20), Text = "Řádek " + (i + 1).ToString() + ":" });
                     x += w + 6;
                 }
                 if (sample.TextCount >= 1)
                 {
                     w = rand.Next(180, 350);
-                    items.Add(new DataFormItemX() { ItemName = _SampleItemName(items), ItemType = DataFormItemType.TextBox, Bounds = new Rectangle(x, y, w, 20) });
+                    items.Add(new DataFormItemX() { ItemName = _SampleItemName(items), ItemType = DataFormColumnType.TextBox, Bounds = new Rectangle(x, y, w, 20) });
                     x += w + 6;
                 }
                 if (sample.CheckCount >= 1)
                 {
                     w = rand.Next(200, 250);
                     var style = _SampleCheckBoxStyle();
-                    items.Add(new DataFormItemX() { ItemName = _SampleItemName(items), ItemType = DataFormItemType.CheckBox, CheckBoxStyle = style, Bounds = new Rectangle(x, y, w, 20), Text = "Volba " + (i + 1).ToString() + "a. (" + style.ToString() + ")" });
+                    items.Add(new DataFormItemX() { ItemName = _SampleItemName(items), ItemType = DataFormColumnType.CheckBox, CheckBoxStyle = style, Bounds = new Rectangle(x, y, w, 20), Text = "Volba " + (i + 1).ToString() + "a. (" + style.ToString() + ")" });
                     x += w + 6;
                 }
                 if (sample.LabelCount >= 2)
                 {
                     w = rand.Next(100, 200);
-                    items.Add(new DataFormItemX() { ItemName = _SampleItemName(items), ItemType = DataFormItemType.Label, LabelHAlignment = DevExpress.Utils.HorzAlignment.Far, LabelAutoSize = LabelAutoSizeMode.None, Bounds = new Rectangle(x, y, w, 20), Text = "Řádek " + (i + 1).ToString() + ":" });
+                    items.Add(new DataFormItemX() { ItemName = _SampleItemName(items), ItemType = DataFormColumnType.Label, LabelHAlignment = DevExpress.Utils.HorzAlignment.Far, LabelAutoSize = LabelAutoSizeMode.None, Bounds = new Rectangle(x, y, w, 20), Text = "Řádek " + (i + 1).ToString() + ":" });
                     x += w + 6;
                 }
                 if (sample.TextCount >= 2)
                 {
                     w = rand.Next(250, 450);
-                    items.Add(new DataFormItemX() { ItemName = _SampleItemName(items), ItemType = DataFormItemType.TextBox, Bounds = new Rectangle(x, y, w, 20) });
+                    items.Add(new DataFormItemX() { ItemName = _SampleItemName(items), ItemType = DataFormColumnType.TextBox, Bounds = new Rectangle(x, y, w, 20) });
                     x += w + 6;
                 }
                 if (sample.CheckCount >= 2)
                 {
                     w = rand.Next(100, 200);
-                    items.Add(new DataFormItemX() { ItemName = _SampleItemName(items), ItemType = DataFormItemType.CheckBox, Bounds = new Rectangle(x, y, w, 20), Text = "Volba " + (i + 1).ToString() + "a." });
+                    items.Add(new DataFormItemX() { ItemName = _SampleItemName(items), ItemType = DataFormColumnType.CheckBox, Bounds = new Rectangle(x, y, w, 20), Text = "Volba " + (i + 1).ToString() + "a." });
                     x += w + 6;
                 }
                 y += 30;

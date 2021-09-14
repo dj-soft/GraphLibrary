@@ -465,7 +465,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private void InitializeUserControls()
         {
-            _ControlsSets = new Dictionary<DataFormItemType, DxDataFormControlSet>();
+            _ControlsSets = new Dictionary<DataFormColumnType, DxDataFormControlSet>();
             _DxSuperToolTip = new DxSuperToolTip() { AcceptTitleOnlyAsValid = false };
         }
         /// <summary>
@@ -479,7 +479,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             _ControlsSets.Clear();
         }
         /// <summary>
-        /// Vrátí instanci reprezentující jeden typ controlu : <see cref="DataFormItemType"/>.
+        /// Vrátí instanci reprezentující jeden typ controlu : <see cref="DataFormColumnType"/>.
         /// Vždy vrátí objekt, nikdy null.
         /// Využívá cache.
         /// </summary>
@@ -490,7 +490,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             var dataFormControls = _ControlsSets;
 
             DxDataFormControlSet controlSet;
-            DataFormItemType itemType = item.ItemType;
+            DataFormColumnType itemType = item.ItemType;
             if (!dataFormControls.TryGetValue(itemType, out controlSet))
             {
                 controlSet = new DxDataFormControlSet(this, itemType);
@@ -517,7 +517,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>Sdílený objekt ToolTipu do všech controlů</summary>
         private DxSuperToolTip _DxSuperToolTip;
         /// <summary>Paměť dosud používaných typů controlů</summary>
-        private Dictionary<DataFormItemType, DxDataFormControlSet> _ControlsSets;
+        private Dictionary<DataFormColumnType, DxDataFormControlSet> _ControlsSets;
         #endregion
         #region Bitmap cache
         /// <summary>
@@ -991,13 +991,13 @@ namespace Noris.Clients.Win.Components.AsolDX
                 OnMouseBackColor = Color.FromArgb(255, 64, 64, 224),
                 OnMouseBackColorEnd = Color.FromArgb(4, 96, 96, 255),
             };
-            DataFormItemAppearance titleAppearance = new DataFormItemAppearance()
+            DataFormColumnAppearance titleAppearance = new DataFormColumnAppearance()
             {
                 FontSizeDelta = 2,
                 FontStyleBold = true,
                 ContentAlignment = ContentAlignment.MiddleLeft
             };
-            DataFormItemAppearance labelAppearance = new DataFormItemAppearance()
+            DataFormColumnAppearance labelAppearance = new DataFormColumnAppearance()
             {
                 ContentAlignment = ContentAlignment.MiddleRight
             };
@@ -1011,7 +1011,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             int maxX = 0;
             int q;
             int px = 12;
-            int py = 12;
+            int py = ((sampleId == 40) ? 0 : 12);
             for (int r = 0; r < count; r++)
             {
                 if ((r % 10) == 0)
@@ -1038,6 +1038,10 @@ namespace Noris.Clients.Win.Components.AsolDX
                         if ((page.Groups.Count % 3) == 0)
                             group.LayoutMode = DatFormGroupLayoutMode.AllowBreakToNewColumn;
                     }
+                    if (sampleId == 40)
+                    {
+                        y = 0;
+                    }
                     group.DesignBorderRange = new Int32Range(1, 1 + borderSize);
                     group.BorderAppearance = borderAppearance;
 
@@ -1049,7 +1053,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                         bool isThinLine = (headerHeight < 10);
                         int titleY = (isThinLine ? y + headerHeight + 3 : y + 1);
                         // titleY - py ... ?  Každý běžný prvek bude odsunut o Padding, ale titulek posouvat o Padding nechci, takže jej 'předsunu':
-                        DataFormItemImageText title = new DataFormItemImageText() { ItemType = DataFormItemType.Label, DesignBounds = new Rectangle(60, titleY - py, 150, 20) };
+                        DataFormColumnImageText title = new DataFormColumnImageText() { ColumnType = DataFormColumnType.Label, DesignBounds = new Rectangle(60, titleY - py, 150, 20) };
                         title.Text = "Skupina " + page.Groups.Count.ToString();
                         title.Appearance = titleAppearance;
                         group.Items.Add(title);
@@ -1066,7 +1070,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 // První prvek v řádku je Label:
                 int x = 10;
                 text = $"Atributy {(r + 1)}:";
-                DataFormItemImageText lbl = new DataFormItemImageText() { ItemType = DataFormItemType.Label, Text = text, DesignBounds = new Rectangle(x, y, 75, 18) };
+                DataFormColumnImageText lbl = new DataFormColumnImageText() { ColumnType = DataFormColumnType.Label, Text = text, DesignBounds = new Rectangle(x, y, 75, 18) };
                 lbl.Appearance = labelAppearance;
                 group.Items.Add(lbl);
                 x += 80;
@@ -1079,32 +1083,32 @@ namespace Noris.Clients.Win.Components.AsolDX
                     tooltip = (!blank ? tooltips[random.Next(tooltipsCount)] : "");
 
                     q = random.Next(100);
-                    DataFormItemType itemType = (q < 5 ? DataFormItemType.None :
-                                                (q < 10 ? DataFormItemType.CheckBox :
-                                                (q < 15 ? DataFormItemType.Button :
-                                                (q < 22 ? DataFormItemType.Label :
-                                                (q < 30 ? DataFormItemType.TextBoxButton : 
-                                                (q < 40 ? DataFormItemType.TextBox : // ComboBoxList :
-                                                (q < 50 ? DataFormItemType.TokenEdit :
-                                                DataFormItemType.TextBox)))))));
+                    DataFormColumnType itemType = (q < 5 ? DataFormColumnType.None :
+                                                (q < 10 ? DataFormColumnType.CheckBox :
+                                                (q < 15 ? DataFormColumnType.Button :
+                                                (q < 22 ? DataFormColumnType.Label :
+                                                (q < 30 ? DataFormColumnType.TextBoxButton : 
+                                                (q < 40 ? DataFormColumnType.TextBox : // ComboBoxList :
+                                                (q < 50 ? DataFormColumnType.TokenEdit :
+                                                DataFormColumnType.TextBox)))))));
 
-                    DataFormItem item = null;
+                    DataFormColumn item = null;
                     int shiftY = 0;
-                    DataFormItemIndicatorType indicators = DataFormItemIndicatorType.MouseOverThin | DataFormItemIndicatorType.WithFocusBold;
+                    DataFormColumnIndicatorType indicators = DataFormColumnIndicatorType.MouseOverThin | DataFormColumnIndicatorType.WithFocusBold;
                     switch (itemType)
                     {
-                        case DataFormItemType.Label:
-                            DataFormItemImageText label = new DataFormItemImageText() { Text = text };
+                        case DataFormColumnType.Label:
+                            DataFormColumnImageText label = new DataFormColumnImageText() { Text = text };
                             shiftY = 0;
-                            indicators = DataFormItemIndicatorType.None;
+                            indicators = DataFormColumnIndicatorType.None;
                             item = label;
                             break;
-                        case DataFormItemType.TextBox:
-                            DataFormItemImageText textBox = new DataFormItemImageText() { Text = text };
+                        case DataFormColumnType.TextBox:
+                            DataFormColumnImageText textBox = new DataFormColumnImageText() { Text = text };
                             item = textBox;
                             break;
-                        case DataFormItemType.TextBoxButton:
-                            DataFormItemTextBoxButton textBoxButton = new DataFormItemTextBoxButton() { Text = "TEXTBOX BUTTON" };
+                        case DataFormColumnType.TextBoxButton:
+                            DataFormColumnTextBoxButton textBoxButton = new DataFormColumnTextBoxButton() { Text = "TEXTBOX BUTTON" };
                             q = random.Next(100);
                             textBoxButton.ButtonsVisibleAllways = (q < 50);
                             q = random.Next(100);
@@ -1117,51 +1121,51 @@ namespace Noris.Clients.Win.Components.AsolDX
                                                                  DataFormButtonKind.OK)))); 
                             item = textBoxButton;
                             break;
-                        case DataFormItemType.CheckBox:
-                            DataFormItemCheckBox checkBox = new DataFormItemCheckBox() { Text = text };
+                        case DataFormColumnType.CheckBox:
+                            DataFormColumnCheckBox checkBox = new DataFormColumnCheckBox() { Text = text };
                             shiftY = 0;
                             item = checkBox;
                             break;
-                        case DataFormItemType.ComboBoxList:
+                        case DataFormColumnType.ComboBoxList:
                             // musíme dodělat
-                            DataFormItemImageText comboBoxList = new DataFormItemImageText() { Text = text };
+                            DataFormColumnImageText comboBoxList = new DataFormColumnImageText() { Text = text };
                             item = comboBoxList;
                             break;
-                        case DataFormItemType.TokenEdit:
-                            DataFormItemMenuText tokenEdit = new DataFormItemMenuText() { Text = "TOKEN EDIT" };
+                        case DataFormColumnType.TokenEdit:
+                            DataFormColumnMenuText tokenEdit = new DataFormColumnMenuText() { Text = "TOKEN EDIT" };
                             tokenEdit.MenuItems = CreateSampleMenuItems(texts, tooltips, 100, 300, random);
                             item = tokenEdit;
                             break;
-                        case DataFormItemType.Button:
-                            DataFormItemImageText button = new DataFormItemImageText() { Text = text };
-                            indicators = DataFormItemIndicatorType.MouseOverBold | DataFormItemIndicatorType.WithFocusBold;
+                        case DataFormColumnType.Button:
+                            DataFormColumnImageText button = new DataFormColumnImageText() { Text = text };
+                            indicators = DataFormColumnIndicatorType.MouseOverBold | DataFormColumnIndicatorType.WithFocusBold;
                             item = button;
                             break;
                     }
                     if (item != null)
                     {
-                        if (indicators != DataFormItemIndicatorType.None)
+                        if (indicators != DataFormColumnIndicatorType.None)
                         {
                             q = random.Next(100);
                             if (q < 4)
-                                indicators |= DataFormItemIndicatorType.CorrectAllwaysThin;
+                                indicators |= DataFormColumnIndicatorType.CorrectAllwaysThin;
                             else if (q < 8)
-                                indicators |= DataFormItemIndicatorType.CorrectAllwaysBold;
+                                indicators |= DataFormColumnIndicatorType.CorrectAllwaysBold;
                             else if (q < 12)
-                                indicators |= DataFormItemIndicatorType.WarningAllwaysThin;
+                                indicators |= DataFormColumnIndicatorType.WarningAllwaysThin;
                             else if (q < 16)
-                                indicators |= DataFormItemIndicatorType.WarningAllwaysBold;
+                                indicators |= DataFormColumnIndicatorType.WarningAllwaysBold;
                             else if (q < 20)
-                                indicators |= DataFormItemIndicatorType.ErrorAllwaysThin;
+                                indicators |= DataFormColumnIndicatorType.ErrorAllwaysThin;
                             else if (q < 24)
-                                indicators |= DataFormItemIndicatorType.ErrorAllwaysBold;
+                                indicators |= DataFormColumnIndicatorType.ErrorAllwaysBold;
                             else if (q < 50)
                             {
-                                indicators |= DataFormItemIndicatorType.IndicatorColorAllwaysThin;
+                                indicators |= DataFormColumnIndicatorType.IndicatorColorAllwaysThin;
                                 item.IndicatorColor = Color.FromArgb(0, random.Next(128, 200), random.Next(128, 200), random.Next(128, 200));
                             }
                         }
-                        item.ItemType = itemType;
+                        item.ColumnType = itemType;
                         item.ToolTipText = tooltip;
                         item.DesignBounds = new Rectangle(x, (y + shiftY), width, (20 - shiftY));
                         item.Indicators = indicators;
@@ -1294,7 +1298,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="rowIndex"></param>
         /// <param name="column"></param>
         /// <returns></returns>
-        public string GetText(int rowIndex, IDataFormItem column)
+        public string GetText(int rowIndex, IDataFormColumn column)
         {
             switch (_CurrentSourceType)
             {
@@ -1331,7 +1335,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="rowIndex"></param>
         /// <param name="column"></param>
         /// <returns></returns>
-        private string _GetTextDataTable(int rowIndex, IDataFormItem column)
+        private string _GetTextDataTable(int rowIndex, IDataFormColumn column)
         {
             return null;
         }
@@ -1363,7 +1367,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="rowIndex"></param>
         /// <param name="column"></param>
         /// <returns></returns>
-        private string _GetTextArray(int rowIndex, IDataFormItem column)
+        private string _GetTextArray(int rowIndex, IDataFormColumn column)
         {
             return null;
         }
@@ -1395,7 +1399,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="rowIndex"></param>
         /// <param name="column"></param>
         /// <returns></returns>
-        private string _GetTextList(int rowIndex, IDataFormItem column)
+        private string _GetTextList(int rowIndex, IDataFormColumn column)
         {
             return null;
         }
@@ -1416,7 +1420,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="rowIndex"></param>
         /// <param name="column"></param>
         /// <returns></returns>
-        private string _GetTextRecord(int rowIndex, IDataFormItem column)
+        private string _GetTextRecord(int rowIndex, IDataFormColumn column)
         {
             return null;
         }
@@ -1503,12 +1507,51 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         private DxPanelBufferedGraphic _ContentPanel;
         #endregion
         #region Public vlastnosti
-        
 
+
+        #endregion
+        #region Řádky DxDataFormRow
+        /// <summary>
+        /// Metoda vypočítá velikost prostoru, do kterého se vejde souhrn všech řádků, 
+        /// když pro každý jeden řádek bude třeba prostor <see cref="_GroupsTotalSize"/>.
+        /// Jde tedy o velikost potřebnou pro celou tabulku dat.
+        /// Velikost je uložena do <see cref="_GroupsTotalSize"/>.
+        /// </summary>
+        /// <returns></returns>
+        private void _CalculateRowsTotalCurrentSize()
+        {
+            _RowsTotalSize = new Size(_GroupsTotalSize.Width, _RowCount * _RowHeight);
+        }
+
+        /// <summary>
+        /// Připraví souhrn viditelných řádků
+        /// </summary>
+        private void _PrepareVisibleRows()
+        {
+            Rectangle virtualBounds = this.ContentVirtualBounds;               // Rozměr se vztahuje k celé ploše datové tabulky = všechny řádky od počátku prvního do konce posledního
+            int rowCount = _RowCount;
+            int rowHeight = _RowHeight;
+
+            int rowIndexB = virtualBounds.Y / rowHeight;
+            int rowIndexE = 0;
+
+        }
+        /// <summary>
+        /// Počet řádků, v rozmezí 0 až 2G
+        /// </summary>
+        private int _RowCount { get { int rowCount = _DataForm.Data.RowCount; return (rowCount < 0 ? 0 : rowCount); } }
+        /// <summary>
+        /// Výška jednoho řádku = výška všech grup <see cref="_GroupsTotalSize"/>.Height s přidáním mezery <see cref="_RowHeightSpace"/>
+        /// </summary>
+        private int _RowHeight { get { return _GroupsTotalSize.Height + _RowHeightSpace; } }
+        private int _RowHeightSpace { get { return 1; } }
+        private Size _RowsTotalSize;
         #endregion
         #region Grupy a jejich Items, viditelné grupy a viditelné itemy
         /// <summary>
-        /// Zobrazované grupy a jejich prvky
+        /// Zobrazované grupy a jejich prvky.
+        /// Po vložení této definice neproběhne automaticky refresh controlu, je tedy vhodné následně volat <see cref="Refresh(RefreshParts)"/> 
+        /// a předat v parametru požadavek <see cref="RefreshParts.InvalidateControl"/>.
         /// </summary>
         public List<DxDataFormGroup> Groups { get { return _Groups; } set { _SetGroups(value); } }
         /// <summary>
@@ -1531,19 +1574,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             Refresh(RefreshParts.AfterItemsChangedSilent);
         }
         /// <summary>
-        /// Invaliduje aktuální rozměry všech grup v this objektu
-        /// </summary>
-        /// <returns></returns>
-        private void _InvalidatGroupsCurrentBounds()
-        {
-            _Groups?.ForEachExec(g => g.InvalidateBounds());
-
-            _LastCalcZoom = DxComponent.Zoom;
-            _LastCalcDeviceDpi = this.CurrentDpi;
-        }
-        /// <summary>
-        /// Metoda projde aktuální grupy a vrátí velikost prostoru, do kterého se vejde souhrn jejich aktuálních souřadnic.
-        /// Tato velikost se pak používá pro řízení scrollování.
+        /// Metoda projde aktuální grupy a vypočítá velikost prostoru, do kterého se vejde souhrn jejich aktuálních souřadnic.
+        /// Jde tedy o velikost potřebnou pro jeden řádek dat.
+        /// Velikost je uložena do <see cref="_GroupsTotalSize"/>.
         /// </summary>
         /// <returns></returns>
         private void _CalculateGroupsTotalCurrentSize()
@@ -1552,6 +1585,18 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             if (_Groups == null) return;
             Rectangle bounds = _Groups.Select(g => g.CurrentGroupBounds).SummaryVisibleRectangle() ?? Rectangle.Empty;
             _GroupsTotalSize = new Size(bounds.Right, bounds.Bottom);
+        }
+        /// <summary>
+        /// Invaliduje aktuální rozměry všech grup v this objektu.
+        /// Volá se typicky po změně zoomu nebo DPI.
+        /// </summary>
+        /// <returns></returns>
+        private void _InvalidatGroupsCurrentBounds()
+        {
+            _Groups?.ForEachExec(g => g.InvalidateBounds());
+
+            _LastCalcZoom = DxComponent.Zoom;
+            _LastCalcDeviceDpi = this.CurrentDpi;
         }
         /// <summary>
         /// Připraví souhrn viditelných grup a prvků
@@ -1593,10 +1638,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         private List<DxDataFormGroup> _VisibleGroups;
         private List<DxDataFormColumn> _VisibleItems;
         private Size _GroupsTotalSize;
-        #endregion
-        #region Řádky DxDataFormRow
-
-        private Size _RowsTotalSize;
         #endregion
         #region Buňky DxDataFormCell
 
@@ -1966,9 +2007,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             _RefreshPartContentTotalSize = false;
 
             _CalculateGroupsTotalCurrentSize();
-            int rowCount = _DataForm.Data.RowCount;
-            if (rowCount < 0) rowCount = 0;
-            _RowsTotalSize = new Size(_GroupsTotalSize.Width, rowCount * _GroupsTotalSize.Height);
+            _CalculateRowsTotalCurrentSize();
 
             ContentTotalSize = _RowsTotalSize;
         }
@@ -1980,6 +2019,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             _RefreshPartVisibleItems = false;
 
             // Připravím soupis aktuálně viditelných prvků:
+            _PrepareVisibleRows();
             _PrepareVisibleGroupsItems();
         }
         /// <summary>
@@ -2109,8 +2149,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             if (mouseControl != null && mouseItem != null)
             {
                 var indicators = mouseItem.IItem.Indicators;
-                bool isThin = indicators.HasFlag(DataFormItemIndicatorType.MouseOverThin);
-                bool isBold = indicators.HasFlag(DataFormItemIndicatorType.MouseOverBold);
+                bool isThin = indicators.HasFlag(DataFormColumnIndicatorType.MouseOverThin);
+                bool isBold = indicators.HasFlag(DataFormColumnIndicatorType.MouseOverBold);
                 if (isThin || isBold)
                 {
                     Color color = _DataForm.DataFormAppearance.OnMouseIndicatorColor;
@@ -2199,7 +2239,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             Rectangle? visibleBounds = null;
             if (controlSet.CanPaintByPainter)
             {
-                if (item.IItem is IDataFormItemImageText label)
+                if (item.IItem is IDataFormColumnImageText label)
                 {
                     Control control = _DataForm.GetControl(item, DxDataFormControlUseMode.Draw);
                     if (control is BaseControl baseControl)
@@ -2248,8 +2288,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             if (mouseControl != null && mouseItem != null)
             {
                 var indicators = mouseItem.IItem.Indicators;
-                bool isThin = indicators.HasFlag(DataFormItemIndicatorType.MouseOverThin);
-                bool isBold = indicators.HasFlag(DataFormItemIndicatorType.MouseOverBold);
+                bool isThin = indicators.HasFlag(DataFormColumnIndicatorType.MouseOverThin);
+                bool isBold = indicators.HasFlag(DataFormColumnIndicatorType.MouseOverBold);
                 if (isThin || isBold)
                 {
                     Color color = _DataForm.DataFormAppearance.OnMouseIndicatorColor;
@@ -2287,16 +2327,16 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             Color? statusColor = null;
             if (item.IItem.IndicatorColor.HasValue)
             {
-                if (IsIndicatorActive(indicators, itemIndicatorsVisible, DataFormItemIndicatorType.IndicatorColorAllwaysBold, DataFormItemIndicatorType.IndicatorColorOnDemandBold, DataFormItemIndicatorType.IndicatorColorAllwaysThin, DataFormItemIndicatorType.IndicatorColorOnDemandThin, ref isBold))
+                if (IsIndicatorActive(indicators, itemIndicatorsVisible, DataFormColumnIndicatorType.IndicatorColorAllwaysBold, DataFormColumnIndicatorType.IndicatorColorOnDemandBold, DataFormColumnIndicatorType.IndicatorColorAllwaysThin, DataFormColumnIndicatorType.IndicatorColorOnDemandThin, ref isBold))
                     statusColor = item.IItem.IndicatorColor.Value;
             }
             else
             {
-                if (IsIndicatorActive(indicators, itemIndicatorsVisible, DataFormItemIndicatorType.ErrorAllwaysBold, DataFormItemIndicatorType.ErrorOnDemandBold, DataFormItemIndicatorType.ErrorAllwaysThin, DataFormItemIndicatorType.ErrorOnDemandThin, ref isBold))
+                if (IsIndicatorActive(indicators, itemIndicatorsVisible, DataFormColumnIndicatorType.ErrorAllwaysBold, DataFormColumnIndicatorType.ErrorOnDemandBold, DataFormColumnIndicatorType.ErrorAllwaysThin, DataFormColumnIndicatorType.ErrorOnDemandThin, ref isBold))
                     statusColor = appearance.ErrorIndicatorColor;
-                else if (IsIndicatorActive(indicators, itemIndicatorsVisible, DataFormItemIndicatorType.WarningAllwaysBold, DataFormItemIndicatorType.WarningOnDemandBold, DataFormItemIndicatorType.WarningAllwaysThin, DataFormItemIndicatorType.WarningOnDemandThin, ref isBold))
+                else if (IsIndicatorActive(indicators, itemIndicatorsVisible, DataFormColumnIndicatorType.WarningAllwaysBold, DataFormColumnIndicatorType.WarningOnDemandBold, DataFormColumnIndicatorType.WarningAllwaysThin, DataFormColumnIndicatorType.WarningOnDemandThin, ref isBold))
                     statusColor = appearance.WarningIndicatorColor;
-                else if (IsIndicatorActive(indicators, itemIndicatorsVisible, DataFormItemIndicatorType.CorrectAllwaysBold, DataFormItemIndicatorType.CorrectOnDemandBold, DataFormItemIndicatorType.CorrectAllwaysThin, DataFormItemIndicatorType.CorrectOnDemandThin, ref isBold))
+                else if (IsIndicatorActive(indicators, itemIndicatorsVisible, DataFormColumnIndicatorType.CorrectAllwaysBold, DataFormColumnIndicatorType.CorrectOnDemandBold, DataFormColumnIndicatorType.CorrectAllwaysThin, DataFormColumnIndicatorType.CorrectOnDemandThin, ref isBold))
                     statusColor = appearance.CorrectIndicatorColor;
             }
 
@@ -2320,8 +2360,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="onDemandThin"></param>
         /// <param name="isBold"></param>
         /// <returns></returns>
-        private bool IsIndicatorActive(DataFormItemIndicatorType indicators, bool itemIndicatorsVisible, 
-            DataFormItemIndicatorType allwaysBold, DataFormItemIndicatorType onDemandBold, DataFormItemIndicatorType alwaysThin, DataFormItemIndicatorType onDemandThin, 
+        private bool IsIndicatorActive(DataFormColumnIndicatorType indicators, bool itemIndicatorsVisible, 
+            DataFormColumnIndicatorType allwaysBold, DataFormColumnIndicatorType onDemandBold, DataFormColumnIndicatorType alwaysThin, DataFormColumnIndicatorType onDemandThin, 
             ref bool isBold)
         {
             if (indicators.HasFlag(allwaysBold) || (itemIndicatorsVisible && indicators.HasFlag(onDemandBold)))
@@ -2455,32 +2495,42 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             }
         }
         #endregion
-        #region Stav panelu, umožní uložit stav a následně jej restorovat
-
+        #region Stav panelu - umožní uložit aktuální stav do objektu, a v budoucnu tento stav jej restorovat
+        /// <summary>
+        /// Stav panelu - pozice scrollbarů atd. 
+        /// Podporuje přepínání záložek - vizuálně jiný obsah, ale promítaný prostřednictvím jedné instance <see cref="DxDataFormPanel"/>.
+        /// Při čtení bude vrácen objekt obsahující aktuální stav.
+        /// Při zápisu budou hodnoty z vkládaného objektu aplikovány do panelu
+        /// </summary>
         internal DxDataFormState State
         {
             get
             {
                 if (_State == null)
-                {
                     _State = new DxDataFormState();
-                    _FillState();
-                }
+                _FillStateFromPanel();
                 return _State;
             }
             set
             {
                 _State = value;
-                _ApplyState();
+                _ApplyStateToPanel();
             }
         }
+        /// <summary>Stav panelu - pozice scrollbarů atd. </summary>
         private DxDataFormState _State;
-        private void _FillState()
+        /// <summary>
+        /// Klíčové hodnoty z this panelu uloží do objektu <see cref="_State"/>.
+        /// </summary>
+        private void _FillStateFromPanel()
         {
             if (_State == null) return;
             _State.ContentVirtualLocation = this.ContentVirtualLocation;
         }
-        private void _ApplyState()
+        /// <summary>
+        /// Z objektu <see cref="_State"/> opíše klíčové hodnoty do this panelu
+        /// </summary>
+        private void _ApplyStateToPanel()
         {
             this.ContentVirtualLocation = _State?.ContentVirtualLocation ?? Point.Empty;
         }
@@ -2489,7 +2539,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
     #endregion
     #region class DxDataFormControlSet : správce několika vizuálních controlů jednoho druhu, jejich tvorba, a příprava k použití
     /// <summary>
-    /// Instance třídy, která obhospodařuje jeden typ <see cref="DataFormItemType"/> vizuálního controlu, 
+    /// Instance třídy, která obhospodařuje jeden typ <see cref="DataFormColumnType"/> vizuálního controlu, 
     /// a má ve své evidenci až tři instance (Draw, Mouse, Focus)
     /// </summary>
     internal class DxDataFormControlSet : IDisposable
@@ -2500,7 +2550,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         /// <param name="dataForm"></param>
         /// <param name="itemType"></param>
-        public DxDataFormControlSet(DxDataForm dataForm, DataFormItemType itemType)
+        public DxDataFormControlSet(DxDataForm dataForm, DataFormColumnType itemType)
         {
             _DataForm = dataForm;
             _ItemType = itemType;
@@ -2510,7 +2560,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             _CanCreateControl = true;
             switch (itemType)
             {
-                case DataFormItemType.Label:
+                case DataFormColumnType.Label:
                     _CreateControlFunction = _LabelCreate;
                     _GetKeyFunction = _LabelGetKey;
                     _FillControlAction = _LabelFill;
@@ -2518,43 +2568,43 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                     _CanPaintByPainter = true;
                     _CanCreateControl = false;
                     break;
-                case DataFormItemType.TextBox:
+                case DataFormColumnType.TextBox:
                     _CreateControlFunction = _TextBoxCreate;
                     _GetKeyFunction = _TextBoxGetKey;
                     _FillControlAction = _TextBoxFill;
                     _ReadControlAction = _TextBoxRead;
                     break;
-                case DataFormItemType.TextBoxButton:
+                case DataFormColumnType.TextBoxButton:
                     _CreateControlFunction = _TextBoxButtonCreate;
                     _GetKeyFunction = _TextBoxButtonGetKey;
                     _FillControlAction = _TextBoxButtonFill;
                     _ReadControlAction = _TextBoxButtonRead;
                     break;
-                case DataFormItemType.CheckBox:
+                case DataFormColumnType.CheckBox:
                     _CreateControlFunction = _CheckBoxCreate;
                     _GetKeyFunction = _CheckBoxGetKey;
                     _FillControlAction = _CheckBoxFill;
                     _ReadControlAction = _CheckBoxRead;
                     break;
-                case DataFormItemType.ComboBoxList:
+                case DataFormColumnType.ComboBoxList:
                     _CreateControlFunction = _ComboBoxListCreate;
                     _GetKeyFunction = _ComboBoxListGetKey;
                     _FillControlAction = _ComboBoxListFill;
                     _ReadControlAction = _ComboBoxListRead;
                     break;
-                case DataFormItemType.ComboBoxEdit:
+                case DataFormColumnType.ComboBoxEdit:
                     _CreateControlFunction = _ComboBoxEditCreate;
                     _GetKeyFunction = _ComboBoxEditGetKey;
                     _FillControlAction = _ComboBoxEditFill;
                     _ReadControlAction = _ComboBoxEditRead;
                     break;
-                case DataFormItemType.TokenEdit:
+                case DataFormColumnType.TokenEdit:
                     _CreateControlFunction = _TokenEditCreate;
                     _GetKeyFunction = _TokenEditGetKey;
                     _FillControlAction = _TokenEditFill;
                     _ReadControlAction = _TokenEditRead;
                     break;
-                case DataFormItemType.Button:
+                case DataFormColumnType.Button:
                     _CreateControlFunction = _ButtonCreate;
                     _GetKeyFunction = _ButtonGetKey;
                     _FillControlAction = _ButtonFill;
@@ -2589,7 +2639,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         }
         /// <summary>Vlastník - <see cref="DxDataForm"/></summary>
         private DxDataForm _DataForm;
-        private DataFormItemType _ItemType;
+        private DataFormColumnType _ItemType;
         private Func<Control> _CreateControlFunction;
         private Func<DxDataFormColumn, string> _GetKeyFunction;
         private Action<DxDataFormColumn, Control, DxDataFormControlUseMode> _FillControlAction;
@@ -2644,7 +2694,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         }
         private string _TextBoxButtonGetKeySpec(DxDataFormColumn item)
         {
-            if (!item.TryGetIItem<IDataFormItemTextBoxButton>(out var iItem)) return "";
+            if (!item.TryGetIItem<IDataFormColumnTextBoxButton>(out var iItem)) return "";
             string key =
                 (iItem.ButtonsVisibleAllways ? "A" : "a") +
                 (iItem.ButtonAs3D ? "D" : "F") +
@@ -2662,7 +2712,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         {
             buttonEdit.SelectionStart = 0;
             buttonEdit.SelectionLength = 0;
-            if (item.TryGetIItem<IDataFormItemTextBoxButton>(out var iItem))
+            if (item.TryGetIItem<IDataFormColumnTextBoxButton>(out var iItem))
             {
                 bool isNone = (iItem.ButtonKind == DataFormButtonKind.None);
                 buttonEdit.ButtonsVisibility = (isNone ? DxChildControlVisibility.None :
@@ -2754,7 +2804,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         private void _TokenEditFillSpec(DxDataFormColumn item, DxTokenEdit tokenEdit, DxDataFormControlUseMode mode)
         {
             bool fullFill = (mode == DxDataFormControlUseMode.Mouse || mode == DxDataFormControlUseMode.Focus);
-            if (fullFill && item.TryGetIItem(out IDataFormItemMenuText iItemMenuText))
+            if (fullFill && item.TryGetIItem(out IDataFormColumnMenuText iItemMenuText))
             {
                 tokenEdit.Tokens = iItemMenuText?.MenuItems;
             }
@@ -2797,7 +2847,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         {
             var size = item.CurrentBounds.Size;
             string text = "";
-            if (item.IItem is IDataFormItemImageText iit)
+            if (item.IItem is IDataFormColumnImageText iit)
                 text = iit.Text;
             string type = ((int)item.ItemType).ToString();
             string appearance = GetAppearanceKey(item.IItem.Appearance);
@@ -2810,7 +2860,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         /// <param name="appearance"></param>
         /// <returns></returns>
-        private static string GetAppearanceKey(IDataFormItemAppearance appearance)
+        private static string GetAppearanceKey(IDataFormColumnAppearance appearance)
         {
             if (appearance == null) return "";
             string text = "";
@@ -2849,7 +2899,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             bool isDraw = (mode == DxDataFormControlUseMode.Draw || !item.VisibleBounds.HasValue);
             Rectangle bounds = new Rectangle((isDraw ? new Point(4, 4) : item.VisibleBounds.Value.Location), item.CurrentBounds.Size);
 
-            if (item.IItem is IDataFormItemImageText iit)
+            if (item.IItem is IDataFormColumnImageText iit)
                 control.Text = iit.Text;
             control.Enabled = true; // item.Enabled;
             control.SetBounds(bounds);
@@ -2869,7 +2919,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         /// <param name="control"></param>
         /// <param name="iAppearance"></param>
-        private void ApplyAppearance(BaseControl control, IDataFormItemAppearance iAppearance)
+        private void ApplyAppearance(BaseControl control, IDataFormColumnAppearance iAppearance)
         {
             if (control is BaseStyleControl baseStyleControl)
             {
@@ -2894,11 +2944,11 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             }
         }
         /// <summary>
-        /// Vrátí styl <see cref="FontStyle"/> vytvořený z dané appearance <see cref="IDataFormItemAppearance"/>
+        /// Vrátí styl <see cref="FontStyle"/> vytvořený z dané appearance <see cref="IDataFormColumnAppearance"/>
         /// </summary>
         /// <param name="appearance"></param>
         /// <returns></returns>
-        private FontStyle ConvertFontStyle(IDataFormItemAppearance appearance)
+        private FontStyle ConvertFontStyle(IDataFormColumnAppearance appearance)
         {
             FontStyle fontStyle = FontStyle.Regular;
             if (appearance.FontStyleBold.HasValue && appearance.FontStyleBold.Value) fontStyle |= FontStyle.Bold;
@@ -2912,7 +2962,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         /// <param name="cAppearance"></param>
         /// <param name="iAppearance"></param>
-        private void ApplyAlignment(DevExpress.Utils.AppearanceObject cAppearance, IDataFormItemAppearance iAppearance)
+        private void ApplyAlignment(DevExpress.Utils.AppearanceObject cAppearance, IDataFormColumnAppearance iAppearance)
         {
             if (!iAppearance.ContentAlignment.HasValue) return;
             switch (iAppearance.ContentAlignment.Value)
@@ -2974,7 +3024,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Typ prvku, který je popsán touto sadou
         /// </summary>
-        internal DataFormItemType ItemType { get { return _ItemType; } }
+        internal DataFormColumnType ItemType { get { return _ItemType; } }
         /// <summary>
         /// Může být pro tento typ controlu použit pro režim Draw (vykreslení prvku bez myši) použit Painter namísto vlastního Controlu?
         /// </summary>
@@ -3099,9 +3149,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
     /// </summary>
     internal enum DxDataFormControlUseMode { None, Draw, Mouse, Focus }
     #endregion
-    #region class DxDataFormTab : Data jedné viditelné záložky. Záložka může obsahovat více stránek, pokud to layout potřebuje.
+    #region class DxDataFormTab : Data jedné viditelné záložky. Záložka může shrnovat grupy z více stránek, pokud to layout umožní a potřebuje
     /// <summary>
-    /// Data jedné viditelné záložky. Záložka může obsahovat více stránek, pokud to layout potřebuje.
+    /// Data jedné viditelné záložky. Záložka může shrnovat grupy z více stránek, pokud to layout umožní a potřebuje.
     /// </summary>
     internal class DxDataFormTab
     {
@@ -3151,8 +3201,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         public List<DxDataFormGroup> Groups { get { return Pages.SelectMany(p => p.Groups).ToList(); } }
         #endregion
-        #region Stav panelu, umožní uložit stav a následně jej restorovat
-
+        #region Stav záložky, umožní panelu shrnout svůj stav a uložit jej do záložky, a následně ze záložky jej promítnout do živého stavu
+        /// <summary>
+        /// Stav záložky, umožní panelu shrnout svůj stav a uložit jej do záložky, a následně ze záložky jej promítnout do živého stavu
+        /// </summary>
         internal DxDataFormState State
         {
             get
@@ -3168,6 +3220,29 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         }
         private DxDataFormState _State;
         #endregion
+    }
+    #endregion
+    #region class DxDataFormState : Stav DataFormu, slouží pro persistenci stavu při přepínání záložek
+    /// <summary>
+    /// Stav DataFormu, slouží pro persistenci stavu při přepínání záložek.
+    /// Obsahuje pozice ScrollBarů (reálně obsahuje <see cref="ContentVirtualLocation"/>) a objekt s focusem.
+    /// <para/>
+    /// Má význam víceméně u záložkových DataFormů, aby při přepínání záložek byla konkrétní záložka zobrazena v tom stavu, v jakém byla opuštěna.
+    /// </summary>
+    internal class DxDataFormState
+    {
+        /// <summary>
+        /// Posun obsahu daný pozicí ScrollBarů
+        /// </summary>
+        public Point ContentVirtualLocation { get; set; }
+        /// <summary>
+        /// Vrací klon objektu
+        /// </summary>
+        /// <returns></returns>
+        public DxDataFormState Clone()
+        {
+            return (DxDataFormState)this.MemberwiseClone();
+        }
     }
     #endregion
     #region class DxDataFormPage : Třída reprezentující jednu designem definovanou stránku v dataformu.
@@ -3338,7 +3413,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
 
     }
     #endregion
-    #region class DxDataFormGroup : Třída reprezentující jednu grupu na stránce.
+    #region class DxDataFormGroup : Třída reprezentující jednu grupu na stránce
     /// <summary>
     /// Třída reprezentující jednu grupu na stránce.
     /// Grupa obsahuje prvky.
@@ -3494,7 +3569,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Vzhled grupy
         /// </summary>
-        public IDataFormItemAppearance Appearance { get { return IGroup.Appearance; } }
+        public IDataFormColumnAppearance Appearance { get { return IGroup.Appearance; } }
         /// <summary>
         /// Aktuální velikost grupy, je daná designovou velikostí <see cref="DesignGroupSize"/> a je přepočtená Zoomem a DPI
         /// </summary>
@@ -3760,7 +3835,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         private Int32Range _VisualPositions;
     }
     #endregion
-    #region class DxDataFormColumn : Třída reprezentující definici jednoho prvku odpovídající sloupci v DxDataFormu.
+    #region class DxDataFormColumn : Třída reprezentující definici jednoho prvku odpovídající sloupci v DxDataFormu
     /// <summary>
     /// Třída reprezentující informace o sloupci v <see cref="DxDataForm"/>.
     /// Sloupec je myšleno ve smyslu vztahu k datové tabulce.
@@ -3771,17 +3846,17 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
     {
         #region Konstruktor, vlastník, prvky
         /// <summary>
-        /// Vytvoří a vrátí List obsahující <see cref="DxDataFormColumn"/>, vytvořený z dodaných instancí <see cref="IDataFormItem"/>.
+        /// Vytvoří a vrátí List obsahující <see cref="DxDataFormColumn"/>, vytvořený z dodaných instancí <see cref="IDataFormColumn"/>.
         /// </summary>
         /// <param name="dataGroup"></param>
         /// <param name="iItems"></param>
         /// <returns></returns>
-        public static List<DxDataFormColumn> CreateList(DxDataFormGroup dataGroup, IEnumerable<IDataFormItem> iItems)
+        public static List<DxDataFormColumn> CreateList(DxDataFormGroup dataGroup, IEnumerable<IDataFormColumn> iItems)
         {
             List<DxDataFormColumn> dataItems = new List<DxDataFormColumn>();
             if (iItems != null)
             {
-                foreach (IDataFormItem iItem in iItems)
+                foreach (IDataFormColumn iItem in iItems)
                 {
                     if (iItem == null) continue;
                     DxDataFormColumn dataItem = new DxDataFormColumn(dataGroup, iItem);
@@ -3795,7 +3870,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         /// <param name="dataGroup"></param>
         /// <param name="iItem"></param>
-        public DxDataFormColumn(DxDataFormGroup dataGroup, IDataFormItem iItem)
+        public DxDataFormColumn(DxDataFormGroup dataGroup, IDataFormColumn iItem)
             : base()
         {
             _DataGroup = dataGroup;
@@ -3804,7 +3879,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>Vlastník - <see cref="DxDataFormGroup"/></summary>
         private DxDataFormGroup _DataGroup;
         /// <summary>Deklarace prvku</summary>
-        private IDataFormItem _IItem;
+        private IDataFormColumn _IItem;
         /// <summary>
         /// Vlastník - <see cref="DxDataForm"/>
         /// </summary>
@@ -3820,13 +3895,13 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Deklarace prvku
         /// </summary>
-        public IDataFormItem IItem { get { return _IItem; } }
+        public IDataFormColumn IItem { get { return _IItem; } }
         #endregion
         #region Data z prvku
         /// <summary>
         /// Typ prvku
         /// </summary>
-        public DataFormItemType ItemType { get { return _IItem.ItemType; } }
+        public DataFormColumnType ItemType { get { return _IItem.ColumnType; } }
         /// <summary>
         /// Prvek je viditelný
         /// </summary>
@@ -3834,10 +3909,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Řízení barevných indikátorů u prvku
         /// </summary>
-        public DataFormItemIndicatorType Indicators { get { return IItem.Indicators; } }
+        public DataFormColumnIndicatorType Indicators { get { return IItem.Indicators; } }
         /// <summary>
         /// Metoda zkusí vrátit deklaraci dat (prvek <see cref="IItem"/>) typovaný na daný interface.
-        /// To je nutné pro zpracování konkrétního typu dat, když si nevystačíme s obecným rozhraním <see cref="IDataFormItem"/>.
+        /// To je nutné pro zpracování konkrétního typu dat, když si nevystačíme s obecným rozhraním <see cref="IDataFormColumn"/>.
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="iItem"></param>
@@ -3945,29 +4020,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
     internal class DxDataFormCell
     {
 
-    }
-    #endregion
-    #region class DxDataFormState : Stav DataFormu, slouží pro persistenci stavu při přepínání záložek.
-    /// <summary>
-    /// Stav DataFormu, slouží pro persistenci stavu při přepínání záložek.
-    /// Obsahuje pozice ScrollBarů (reálně obsahuje <see cref="ContentVirtualLocation"/>) a objekt s focusem.
-    /// <para/>
-    /// Má význam víceméně u záložkových DataFormů, aby při přepínání záložek byla konkrétní záložka zobrazena v tom stavu, v jakém byla opuštěna.
-    /// </summary>
-    internal class DxDataFormState
-    {
-        /// <summary>
-        /// Posun obsahu daný pozicí ScrollBarů
-        /// </summary>
-        public Point ContentVirtualLocation { get; set; }
-        /// <summary>
-        /// Vrací klon objektu
-        /// </summary>
-        /// <returns></returns>
-        public DxDataFormState Clone()
-        {
-            return (DxDataFormState)this.MemberwiseClone();
-        }
     }
     #endregion
     #region Enumy : DxDataFormRowType, RefreshParts
