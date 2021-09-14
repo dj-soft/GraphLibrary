@@ -338,7 +338,9 @@ namespace TestDevExpress.Forms
             }
 
             startTime = DxComponent.LogTimeCurrent;
-            dataForm.Pages = DxDataFormSamples.CreateSampleData(sampleId, texts, tooltips);
+            dataForm.Pages = DxDataFormSamples.CreateSampleDefinition(sampleId, texts, tooltips);
+            int rowCount = (sampleId == 40 ? 200 : 1);
+            dataForm.Data.Source = this.CreateDataSource(rowCount, dataForm.Pages);
             _DxTestPanel.Controls.Add(dataForm);
 
             _DoLayoutAnyDataForm();
@@ -371,7 +373,7 @@ namespace TestDevExpress.Forms
             DxDataForm dataForm = new DxDataForm();
             string[] texts = Random.GetSentencesArray(1, 3, 120, 240, false);
             string[] tooltips = Random.GetSentencesArray(7, 16, 120, 240, true);
-            dataForm.Pages = DxDataFormSamples.CreateSampleData(10, texts, tooltips);
+            dataForm.Pages = DxDataFormSamples.CreateSampleDefinition(10, texts, tooltips);
             dataForm.GotFocus += DxDataForm_GotFocus;
 
             _DxDataFormV2 = dataForm;
@@ -430,6 +432,39 @@ namespace TestDevExpress.Forms
         private DxDataForm _DxDataFormV2;
         private DateTime? _DxShowTimeStart;
         private TimeSpan? _DxShowTimeSpan;
+        #endregion
+        #region DataSource
+        /// <summary>
+        /// Metoda vytvoří datovou tabulku s daty pro daný layout
+        /// </summary>
+        /// <param name="rowCount"></param>
+        /// <param name="pages"></param>
+        /// <returns></returns>
+        private object CreateDataSource(int rowCount, IEnumerable<IDataFormPage> pages)
+        {
+            System.Data.DataTable dataTable = new System.Data.DataTable();
+
+            var items = pages.SelectMany(p => p.Groups).SelectMany(g => g.Items).OfType<DataFormItem>().ToArray();
+            int c = 0;
+            foreach (var item in items)
+            {
+                c++;
+                string columnName = "column_" + c.ToString();
+                dataTable.Columns.Add(columnName, typeof(string));
+                item.ItemId = columnName;
+            }
+
+            int columnCount = items.Length;
+            for (int rowIndex = 0; rowIndex < rowCount; rowIndex++)
+            {
+                object[] cells = new object[columnCount];
+                for (int columnIndex = 0; columnIndex < columnCount; columnIndex++)
+                    cells[columnIndex] = Random.GetSentence(1, 4);
+                dataTable.Rows.Add(cells);
+            }
+
+            return dataTable;
+        }
         #endregion
         #region Log
         private void DxComponent_LogTextChanged(object sender, EventArgs e)

@@ -32,6 +32,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             InitializeUserControls();
             InitializeImageCache();
+            InitializeData();
         }
         /// <summary>
         /// Dispose panelu
@@ -48,6 +49,21 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Jsou aktivní zápisy do logu? Default = false
         /// </summary>
         public override bool LogActive { get { return base.LogActive; } set { base.LogActive = value; if (_DataFormPanel != null) _DataFormPanel.LogActive = value; } }
+        #endregion
+        #region Data
+        /// <summary>
+        /// Inicializace dat
+        /// </summary>
+        private void InitializeData()
+        {
+            _Data = new DxDataFormData(this);
+        }
+        /// <summary>
+        /// Vlastní data zobrazená v dataformu
+        /// </summary>
+        public DxDataFormData Data { get { return _Data; } }
+        private DxDataFormData _Data;
+
         #endregion
         #region Zobrazované prvky = definice stránek, odvození záložek, a vlastní data
         /// <summary>
@@ -164,10 +180,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             CreateDataTabs();
         }
 
-        private void Refresh(RefreshParts refreshParts)
-        {
-            this._DataFormPanel.Refresh(refreshParts);
-        }
         /// <summary>
         /// Metoda zkusí najít navigační stránku (typově přesnou) a její data záložky <see cref="DxDataFormTab"/>
         /// pro vstupní obecnou stránku.
@@ -383,6 +395,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="control"></param>
         /// <param name="removeFromBackground"></param>
         internal void RemoveControl(Control control, bool removeFromBackground) { _DataFormPanel?.RemoveControl(control, removeFromBackground); }
+        /// <summary>
+        /// Provede refresh panelu
+        /// </summary>
+        /// <param name="refreshParts"></param>
+        internal void Refresh(RefreshParts refreshParts) { _DataFormPanel?.Refresh(refreshParts); }
         /// <summary>
         /// Aktuální velikost viditelného prostoru pro DataForm, když by v něm nebyly ScrollBary
         /// </summary>
@@ -889,7 +906,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="tooltips"></param>
         /// <param name="rowCount"></param>
         /// <returns></returns>
-        public static List<IDataFormPage> CreateSampleData(int sampleId, string[] texts, string[] tooltips)
+        public static List<IDataFormPage> CreateSampleDefinition(int sampleId, string[] texts, string[] tooltips)
         {
             List<IDataFormPage> pages = new List<IDataFormPage>();
 
@@ -918,6 +935,10 @@ namespace Noris.Clients.Win.Components.AsolDX
                         3, 24, true, 26, 5, 5, new int[] { 100, 100, 70 }));
                     pages.Add(CreateSamplePage(35, texts, tooltips, 480, "Výrobní čísla automatické zalomení", null,
                         3, 24, true, 26, 5, 5, new int[] { 100, 100, 70 }));
+                    break;
+                case 40:
+                    pages.Add(CreateSamplePage(40, texts, tooltips, 1, "Základní stránka", "Obsahuje běžné informace",
+                        0, 0, false, 0, 5, 1, new int[] { 140, 260, 40, 300, 120, 80, 120, 80, 80, 80, 80, 250, 40, 250, 40, 250, 40, 250, 40, 250, 40 }));
                     break;
             }
 
@@ -1186,6 +1207,227 @@ namespace Noris.Clients.Win.Components.AsolDX
 
 namespace Noris.Clients.Win.Components.AsolDX.DataForm
 {
+    #region class DxDataFormData : obálka nad daty DataFormu
+    /// <summary>
+    /// Data v dataformu - tabulka, List, atd
+    /// </summary>
+    public class DxDataFormData
+    {
+        #region Konstruktor a privátní rovina obecného zdroje dat
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="dataForm"></param>
+        public DxDataFormData(DxDataForm dataForm)
+        {
+            _DataForm = dataForm;
+            _Source = null;
+            _CurrentSourceType = SourceType.None;
+        }
+        /// <summary>Vlastník - <see cref="DxDataForm"/></summary>
+        private DxDataForm _DataForm;
+        /// <summary>
+        /// Datový zdroj.
+        /// Může to být <see cref="System.Data.DataTable"/>, nebo 
+        /// </summary>
+        public object Source { get { return _Source; } set { _SetSource(value); } }
+        /// <summary>
+        /// Vloží zdroj, detekuje jeho druh, provede typovou inicializaci
+        /// </summary>
+        /// <param name="source"></param>
+        private void _SetSource(object source)
+        {
+            if (source == null) _SetSourceNull();
+            else if (source is System.Data.DataTable dataTable) _SetSourceDataTable(dataTable);
+            else if (source is Array array) _SetSourceArray(array);
+            else if (source is IList<object> list) _SetSourceList(list);
+
+            _DataForm.Refresh(RefreshParts.RecalculateContentTotalSize | RefreshParts.InvalidateControl);
+        }
+        /// <summary>
+        /// Nullování zdroje (odpojení)
+        /// </summary>
+        private void _SetSourceNull()
+        {
+            _Source = null;
+            _SourceDataTable = null;
+            _SourceArray = null;
+            _SourceList = null;
+            _SourceRecord = null;
+            _CurrentSourceType = SourceType.None;
+        }
+        /// <summary>
+        /// Obecný zdroj dat, netypová reference
+        /// </summary>
+        private object _Source;
+        /// <summary>
+        /// Aktuální typ dat
+        /// </summary>
+        private SourceType _CurrentSourceType;
+        /// <summary>
+        /// Typ datového zdroje
+        /// </summary>
+        private enum SourceType { None, DataTable, Array, List, Record }
+        #endregion
+        #region Public přístup - nezávislý na typu dat
+        /// <summary>
+        /// Počet řádků s daty. Pokud nejsou vložena data, vrací 0.
+        /// </summary>
+        public int RowCount
+        {
+            get
+            {
+                switch (_CurrentSourceType)
+                {
+                    case SourceType.None: return 0;
+                    case SourceType.DataTable: return _GetRowCountDataTable();
+                    case SourceType.Array: return _GetRowCountArray();
+                    case SourceType.List: return _GetRowCountList();
+                    case SourceType.Record: return _GetRowCountRecord();
+                }
+                return 0;
+            }
+        }
+        /// <summary>
+        /// Vrátí text pro sloupec daného řádku
+        /// </summary>
+        /// <param name="rowIndex"></param>
+        /// <param name="column"></param>
+        /// <returns></returns>
+        public string GetText(int rowIndex, IDataFormItem column)
+        {
+            switch (_CurrentSourceType)
+            {
+                case SourceType.None: return null;
+                case SourceType.DataTable: return _GetTextDataTable(rowIndex, column);
+                case SourceType.Array: return _GetTextArray(rowIndex, column);
+                case SourceType.List: return _GetTextList(rowIndex, column);
+                case SourceType.Record: return _GetTextRecord(rowIndex, column);
+            }
+            return null;
+        }
+
+        #endregion
+        #region Práce s konkrétním typem - DataTable
+        /// <summary>
+        /// Vloží datový zdroj typu DataTable
+        /// </summary>
+        /// <param name="dataTable"></param>
+        private void _SetSourceDataTable(System.Data.DataTable dataTable)
+        {
+            _SetSourceNull();
+            _Source = dataTable;
+            _SourceDataTable = dataTable;
+            _CurrentSourceType = SourceType.DataTable;
+        }
+        /// <summary>
+        /// Vrátí počet řádků DataTable
+        /// </summary>
+        /// <returns></returns>
+        private int _GetRowCountDataTable() { return (_SourceDataTable?.Rows.Count ?? 0); }
+        /// <summary>
+        /// Vrátí text prvku ze zdroje typu DataTable
+        /// </summary>
+        /// <param name="rowIndex"></param>
+        /// <param name="column"></param>
+        /// <returns></returns>
+        private string _GetTextDataTable(int rowIndex, IDataFormItem column)
+        {
+            return null;
+        }
+        /// <summary>
+        /// Datový zdroj typu DataTable
+        /// </summary>
+        private System.Data.DataTable _SourceDataTable;
+        #endregion
+        #region Práce s konkrétním typem - Array
+        /// <summary>
+        /// Vloží datový zdroj typu Array
+        /// </summary>
+        /// <param name="array"></param>
+        private void _SetSourceArray(Array array)
+        {
+            _SetSourceNull();
+            _Source = array;
+            _SourceArray = array;
+            _CurrentSourceType = SourceType.Array;
+        }
+        /// <summary>
+        /// Vrátí počet řádků Array
+        /// </summary>
+        /// <returns></returns>
+        private int _GetRowCountArray() { return (_SourceArray?.Length ?? 0); }
+        /// <summary>
+        /// Vrátí text prvku ze zdroje typu Array
+        /// </summary>
+        /// <param name="rowIndex"></param>
+        /// <param name="column"></param>
+        /// <returns></returns>
+        private string _GetTextArray(int rowIndex, IDataFormItem column)
+        {
+            return null;
+        }
+        /// <summary>
+        /// Datový zdroj typu Array
+        /// </summary>
+        private Array _SourceArray;
+        #endregion
+        #region Práce s konkrétním typem - List
+        /// <summary>
+        /// Vloží datový zdroj typu List
+        /// </summary>
+        /// <param name="list"></param>
+        private void _SetSourceList(IList<object> list)
+        {
+            _SetSourceNull();
+            _Source = list;
+            _SourceList = list;
+            _CurrentSourceType = SourceType.List;
+        }
+        /// <summary>
+        /// Vrátí počet řádků List
+        /// </summary>
+        /// <returns></returns>
+        private int _GetRowCountList() { return (_SourceList?.Count ?? 0); }
+        /// <summary>
+        /// Vrátí text prvku ze zdroje typu List
+        /// </summary>
+        /// <param name="rowIndex"></param>
+        /// <param name="column"></param>
+        /// <returns></returns>
+        private string _GetTextList(int rowIndex, IDataFormItem column)
+        {
+            return null;
+        }
+        /// <summary>
+        /// Datový zdroj typu List
+        /// </summary>
+        private IList<object> _SourceList;
+        #endregion
+        #region Práce s konkrétním typem - Record
+        /// <summary>
+        /// Vrátí počet řádků Record
+        /// </summary>
+        /// <returns></returns>
+        private int _GetRowCountRecord() { return (_SourceArray?.Length ?? 0); }
+        /// <summary>
+        /// Vrátí text prvku ze zdroje typu Record
+        /// </summary>
+        /// <param name="rowIndex"></param>
+        /// <param name="column"></param>
+        /// <returns></returns>
+        private string _GetTextRecord(int rowIndex, IDataFormItem column)
+        {
+            return null;
+        }
+        /// <summary>
+        /// Datový zdroj typu Record
+        /// </summary>
+        private object _SourceRecord;
+        #endregion
+
+    }
+    #endregion
     #region class DxDataFormPanel : Jeden panel dataformu: reprezentuje základní panel, hostuje v sobě dva ScrollBary a ContentPanel
     /// <summary>
     /// Jeden panel dataformu: reprezentuje základní panel, hostuje v sobě dva ScrollBary a ContentPanel, v němž se zobrazují grupy a v nich itemy.
@@ -1304,11 +1546,12 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Tato velikost se pak používá pro řízení scrollování.
         /// </summary>
         /// <returns></returns>
-        private Size _GetGroupsTotalCurrentSize()
+        private void _CalculateGroupsTotalCurrentSize()
         {
-            if (_Groups == null) return Size.Empty;
+            _GroupsTotalSize = Size.Empty;
+            if (_Groups == null) return;
             Rectangle bounds = _Groups.Select(g => g.CurrentGroupBounds).SummaryVisibleRectangle() ?? Rectangle.Empty;
-            return new Size(bounds.Right, bounds.Bottom);
+            _GroupsTotalSize = new Size(bounds.Right, bounds.Bottom);
         }
         /// <summary>
         /// Připraví souhrn viditelných grup a prvků
@@ -1349,6 +1592,14 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         private List<DxDataFormGroup> _Groups;
         private List<DxDataFormGroup> _VisibleGroups;
         private List<DxDataFormColumn> _VisibleItems;
+        private Size _GroupsTotalSize;
+        #endregion
+        #region Řádky DxDataFormRow
+
+        private Size _RowsTotalSize;
+        #endregion
+        #region Buňky DxDataFormCell
+
         #endregion
         #region Interaktivita
         private void InitializeInteractivity()
@@ -1599,7 +1850,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             // Protože jsme v GUI threadu, nemusím řešit zamykání hodnot - nikdy nebudou dvě vlákna přistupovat k jednomu objektu současně!
             // Spíše musíme vyřešit to, že některá část procesu Refresh způsobí požadavek na Refresh jiné části, což ale může být nějaká část před i za aktuální částí.
             
-            // Zapamatuji si úkoly ke zpracování:
+            // Zaeviduji si úkoly ke zpracování:
             _RefreshPartCurrentBounds |= refreshParts.HasFlag(RefreshParts.InvalidateCurrentBounds);
             _RefreshPartContentTotalSize |= refreshParts.HasFlag(RefreshParts.RecalculateContentTotalSize);
             _RefreshPartVisibleItems |= refreshParts.HasFlag(RefreshParts.ReloadVisibleItems);
@@ -1714,7 +1965,12 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         {
             _RefreshPartContentTotalSize = false;
 
-            ContentTotalSize = _GetGroupsTotalCurrentSize();
+            _CalculateGroupsTotalCurrentSize();
+            int rowCount = _DataForm.Data.RowCount;
+            if (rowCount < 0) rowCount = 0;
+            _RowsTotalSize = new Size(_GroupsTotalSize.Width, rowCount * _GroupsTotalSize.Height);
+
+            ContentTotalSize = _RowsTotalSize;
         }
         /// <summary>
         /// Provede akci Refresh, <see cref="RefreshParts.ReloadVisibleItems"/>
