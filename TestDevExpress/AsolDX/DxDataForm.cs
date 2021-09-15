@@ -1310,7 +1310,33 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             }
             return null;
         }
+        /// <summary>
+        /// Metoda má vrátit pole, obsahující ID řádků k zobrazení, pro řádky na viditelných pozicích First až Last (včetně).
+        /// Správce dat by měl znát svoje data (řádky) včetně jejich řazení, kdy každý řádek má svoji jednoznačnou a kontinuální vizuální pozici v poli viditelných řádků, počínaje od 0.
+        /// V rámci tohoto pole by měl dokázat najít řádky na daných pozicích, a zde vrátí pole jejich RowId ve správném pořadí, jak budou zobrazeny.
+        /// </summary>
+        /// <param name="rowIndexFirst"></param>
+        /// <param name="rowCount"></param>
+        /// <returns></returns>
+        internal int[] GetVisibleRowsId(int rowIndexFirst, int rowCount)
+        {
+            // Kontroly, zarovnání, zkratka pro chybné zadání nebo pro nula záznamů:
+            if (rowIndexFirst < 0) rowIndexFirst = 0;
+            if (rowIndexFirst >= this.RowCount || rowCount <= 0) return new int[0];
 
+            // Pokud by neexistovalo setřídění řádků, a pokud by RowId byly kontinuálně od 0 nahoru, pak by věc byla jednoduchá
+            //  = vrátilo by se pole obsahující posloupnost čísel { rowIndexFirst, rowIndexFirst+1, ..., rowIndexLast }.
+            // Ale svět není jednoduchý, RowId mohou obsahovat čísla záznamů / položek (objekty), takže musíme dovnitř:
+            switch (_CurrentSourceType)
+            {
+                case SourceType.None: return null;
+                case SourceType.DataTable: return _GetVisibleRowsIdDataTable(rowIndexFirst, rowCount);
+                case SourceType.Array: return _GetVisibleRowsIdArray(rowIndexFirst, rowCount);
+                case SourceType.List: return _GetVisibleRowsIdList(rowIndexFirst, rowCount);
+                case SourceType.Record: return _GetVisibleRowsIdRecord(rowIndexFirst, rowCount);
+            }
+            return null;
+        }
         #endregion
         #region Práce s konkrétním typem - DataTable
         /// <summary>
@@ -1338,6 +1364,20 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         private string _GetTextDataTable(int rowIndex, IDataFormColumn column)
         {
             return null;
+        }
+        /// <summary>
+        /// Vrátí pole obsahující RowId pro řádky, které mají být zobrazeny na daných vizuálních pozicích, pro DataTable
+        /// </summary>
+        /// <param name="rowIndexFirst"></param>
+        /// <param name="rowCount"></param>
+        /// <returns></returns>
+        private int[] _GetVisibleRowsIdDataTable(int rowIndexFirst, int rowCount)
+        {
+            List<int> result = new List<int>();
+            int rowIndex = rowIndexFirst;
+            while (result.Count < rowCount)
+                result.Add(rowIndex++);
+            return result.ToArray();
         }
         /// <summary>
         /// Datový zdroj typu DataTable
@@ -1368,6 +1408,16 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="column"></param>
         /// <returns></returns>
         private string _GetTextArray(int rowIndex, IDataFormColumn column)
+        {
+            return null;
+        }
+        /// <summary>
+        /// Vrátí pole obsahující RowId pro řádky, které mají být zobrazeny na daných vizuálních pozicích, pro Array
+        /// </summary>
+        /// <param name="rowIndexFirst"></param>
+        /// <param name="rowCount"></param>
+        /// <returns></returns>
+        private int[] _GetVisibleRowsIdArray(int rowIndexFirst, int rowCount)
         {
             return null;
         }
@@ -1404,6 +1454,16 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             return null;
         }
         /// <summary>
+        /// Vrátí pole obsahující RowId pro řádky, které mají být zobrazeny na daných vizuálních pozicích, pro List
+        /// </summary>
+        /// <param name="rowIndexFirst"></param>
+        /// <param name="rowCount"></param>
+        /// <returns></returns>
+        private int[] _GetVisibleRowsIdList(int rowIndexFirst, int rowCount)
+        {
+            return null;
+        }
+        /// <summary>
         /// Datový zdroj typu List
         /// </summary>
         private IList<object> _SourceList;
@@ -1421,6 +1481,16 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="column"></param>
         /// <returns></returns>
         private string _GetTextRecord(int rowIndex, IDataFormColumn column)
+        {
+            return null;
+        }
+        /// <summary>
+        /// Vrátí pole obsahující RowId pro řádky, které mají být zobrazeny na daných vizuálních pozicích, pro Record
+        /// </summary>
+        /// <param name="rowIndexFirst"></param>
+        /// <param name="rowCount"></param>
+        /// <returns></returns>
+        private int[] _GetVisibleRowsIdRecord(int rowIndexFirst, int rowCount)
         {
             return null;
         }
@@ -1533,11 +1603,76 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             int rowHeight = _RowHeight;
 
             int rowLast = rowCount - 1;
-            int rowIndexB = (virtualBounds.Y / rowHeight).Align(0, rowLast);
-            int rowIndexE = (virtualBounds.Bottom / rowHeight) + 1;
+            int rowVisibleFirst = (virtualBounds.Y / rowHeight).Align(0, rowLast);
+            int rowVisibleLast = (virtualBounds.Bottom / rowHeight).Align(0, rowLast);
 
+            _PrepareVisibleRows(rowVisibleFirst, (rowVisibleLast - rowVisibleFirst + 1));
 
+            int visualBegin = (rowVisibleFirst * rowHeight) - virtualBounds.Y;
+            _VisibleRows.ForEachExec(r => r.ApplyVisualPosition(ref visualBegin, rowHeight));
         }
+        /// <summary>
+        /// Zajistí, že pole <see cref="_VisibleRows"/> bude obsahovat ty řádky, které mají být viditelné, počínaje danou pozici, v daném počtu.
+        /// Pole po ukončení této metody nebude null, může být prázdné.
+        /// </summary>
+        /// <param name="rowVisibleFirst"></param>
+        /// <param name="rowVisibleCount"></param>
+        private void _PrepareVisibleRows(int rowVisibleFirst, int rowVisibleCount)
+        {
+            // Zkratka: pokud máme platné pole, a máme v něm přinejmenším požadovaný počet prvků, a na první pozici pole je požadovaný řádek, pak nic není třeba řešit:
+            List<DxDataFormRow> oldVisibleRows = _VisibleRows;
+            if (oldVisibleRows != null && oldVisibleRows.Count == rowVisibleCount && (rowVisibleCount == 0 || (oldVisibleRows.Count > 0 && oldVisibleRows[0].RowIndex == rowVisibleFirst))) return;
+
+            // Získám pole, obsahující RowId těch řádků, které mají být vidět na dané pozici (rowFirst) ++další, v daném počtu (rowCount):
+            int[] visibleRowsId = _DataForm.Data.GetVisibleRowsId(rowVisibleFirst, rowVisibleCount);
+
+            // Nejprve dosavadní řádky (pokud nejsou null): označím si v nich (hodnotou VisibleRow) ty řádky, které mají RowId odpovídající těm řádkům, které budou viditelné i nadále:
+            //  - totiž, při posunu pole o několik málo picelů nám sice proběhne tato metoda, ale většina dosud viditelných řádků bude viditelná poté,
+            //  a není třeba při každém miniposunu zahazovat kupu dat a generovat je znovu!
+            Dictionary<int, DxDataFormRow> oldVisibleRowsDict = null;
+            if (oldVisibleRows != null)
+            {
+                var rowsIdDict = visibleRowsId.CreateDictionary(i => i, true);
+                oldVisibleRows.ForEachExec(r => r.VisibleRow = rowsIdDict.ContainsKey(r.RowId));  // Stávající objekty: Visible bude (true když mají být vidět i nyní, false pro ty instance, které se mohou zahodit)
+                oldVisibleRowsDict = oldVisibleRows.CreateDictionary(r => r.RowId);
+            }
+
+            // Vytvořím nové pole, v tom pořadí, jaké bylo vráceno z Data.GetVisibleRowsId(), a postupně do něj vložím instance pro odpovídající řádek:
+            List<DxDataFormRow> newVisibleRows = new List<DxDataFormRow>();
+            int rowIndex = rowVisibleFirst;
+            foreach (var visibleRowId in visibleRowsId)
+            {
+                DxDataFormRow visibleRow = null;
+                if (oldVisibleRowsDict != null && oldVisibleRowsDict.TryGetValue(visibleRowId, out visibleRow))
+                {   // Najdeme náš starý řádek pro shodné RowId?
+                }
+                else if (oldVisibleRows != null && oldVisibleRows.TryGetFirst(r => !r.VisibleRow, out visibleRow))
+                {   // Najdeme nějaký cizí starý řádek, který nebude zapotřebí - tedy pro cizí nepotřebné RowId?
+                    visibleRow.AssignRowId(visibleRowId);
+                }
+                else
+                {   // Nemáme žadný starý řádek - ani náš, ani cizí : musíme si vygenerovat new instanci:
+                    visibleRow = new DxDataFormRow(RowBand, DxDataFormRowType.RowData, visibleRowId);
+                }
+                visibleRow.VisibleRow = true;
+                visibleRow.RowIndex = rowIndex++;
+                newVisibleRows.Add(visibleRow);
+            }
+
+            // Pokud máme nějaké staré řádky, které nebyly použité, zahodíme je:
+            if (oldVisibleRows != null)
+                oldVisibleRows.Where(r => !r.VisibleRow).ForEachExec(r => r.Dispose());
+
+            _VisibleRows = newVisibleRows;
+        }
+        public DxDataFormRowBand RowBand { get { if (_RowBand == null) _RowBand = new DxDataFormRowBand(this._DataForm); return _RowBand; } }
+        private DxDataFormRowBand _RowBand;
+        /// <summary>
+        /// Pole řádků, které jsou aktuálně ve viditelné oblasti. 
+        /// Toto pole je udržováno v metodě <see cref="_PrepareVisibleRows(int, int)"/>.
+        /// Obsahuje viditelné řádky, jejich RowId a vizuální pozici...
+        /// </summary>
+        private List<DxDataFormRow> _VisibleRows;
         /// <summary>
         /// Počet celkem zobrazovaných řádků, v rozmezí 0 až 2G
         /// </summary>
@@ -1546,7 +1681,13 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Výška jednoho řádku = výška všech grup <see cref="_GroupsTotalSize"/>.Height s přidáním mezery <see cref="_RowHeightSpace"/>
         /// </summary>
         private int _RowHeight { get { return _GroupsTotalSize.Height + _RowHeightSpace; } }
+        /// <summary>
+        /// Přídavek k výšce jednoho řádku
+        /// </summary>
         private int _RowHeightSpace { get { return 1; } }
+        /// <summary>
+        /// Velikost prostoru pro všechny řádky
+        /// </summary>
         private Size _RowsTotalSize;
         #endregion
         #region Grupy a jejich Items, viditelné grupy a viditelné itemy
@@ -3783,7 +3924,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
     /// <summary>
     /// DxDataFormRow : Jeden vizuální řádek v rámci DxDataFormRowBand
     /// </summary>
-    internal class DxDataFormRow
+    internal class DxDataFormRow : IDisposable
     {
         #region Konstruktor, vlastník, prvky
         /// <summary>
@@ -3798,13 +3939,18 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             _RowType = rowType;
             _RowId = rowId;
         }
+        public void Dispose()
+        {
+            _RowBand = null;
+            DisposeCells();
+        }
         /// <summary>
         /// Vizualizace
         /// </summary>
         /// <returns></returns>
         public override string ToString()
         {
-            return $"RowType: {_RowType}; RowId: {_RowId}";
+            return $"RowType: {_RowType}; RowIndex: {RowIndex}; RowId: {_RowId}; VisualPositions: {VisualPositions}";
         }
         /// <summary>Vlastník - <see cref="DxDataFormRowBand"/></summary>
         private DxDataFormRowBand _RowBand;
@@ -3820,11 +3966,62 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Vlastník - <see cref="DxDataFormRowBand"/>
         /// </summary>
         public DxDataFormRowBand RowBand { get { return this._RowBand; } }
+        /// <summary>
+        /// Typ řádku
+        /// </summary>
+        public DxDataFormRowType RowType { get { return this._RowType; } }
+        /// <summary>
+        /// ID řádku, odkazuje se do <see cref="DxDataForm"/> pro data
+        /// </summary>
+        public int RowId { get { return this._RowId; } }
+        /// <summary>
+        /// Index viditelného řádku.
+        /// V tomto pořadí jsou řádky zobrazeny.
+        /// V poli řádků musí být tato hodnota kontinuální a vzestupná, počínaje 0.
+        /// Řádky s hodnotou -1 (a jinou zápornou) nebudou zobrazeny.
+        /// </summary>
+        public int RowIndex { get; set; }
 
         #endregion
+
+        /// <summary>
+        /// Metoda je volána tehdy, když this řádek byl dosud použit pro určitý datový řádek (stávající <see cref="RowId"/>),
+        /// ale pro něj již řádek není potřeba, ale je potřeba pro nový jiný řádek <paramref name="rowId"/>.
+        /// Tento princip šetří režii při uvolnění instance z jednoho řádku a vytváření new instance pro zobrazení jiného řádku tím,
+        /// že starou instanci použije pro jiný řádek.
+        /// </summary>
+        /// <param name="rowId"></param>
+        internal void AssignRowId(int rowId)
+        {
+            _RowId = rowId;
+            // cokoliv dalšího:
+        }
+        /// <summary>
+        /// Zahodí a uvolní buňky
+        /// </summary>
+        private void DisposeCells()
+        { }
+        /// <summary>
+        /// Do this instance vyplní hodnoty do <see cref="VisualPositions"/>, přičemž parametr <paramref name="visualBegin"/> na závěr navýší o <paramref name="visualSize"/>.
+        /// </summary>
+        /// <param name="visualBegin"></param>
+        /// <param name="visualSize"></param>
+        public void ApplyVisualPosition(ref int visualBegin, int visualSize)
+        {
+            int visualEnd = visualBegin + visualSize;
+            _VisualPositions = new Int32Range(visualBegin, visualEnd);
+            visualBegin = visualEnd;
+        }
+        /// <summary>
+        /// Řádek je viditelný?
+        /// </summary>
+        public bool VisibleRow { get { return _VisibleRow; } set { _VisibleRow = value; } }
+        private bool _VisibleRow;
+        
         /// <summary>
         /// Umístění na ose Y; reálné pixely v rámci celého Bandu; nastavuje se pouze pro řádky 
         /// typu <see cref="DxDataFormRowType.RowData"/> a <see cref="DxDataFormRowType.RowSummary"/> = ty jsou pohyblivé podle ScrollBaru.
+        /// 
         /// </summary>
         public Int32Range CurrentPositions { get { return _CurrentPositions; } set { _CurrentPositions = value; } }
         private Int32Range _CurrentPositions;
