@@ -1532,12 +1532,14 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             int rowCount = _RowCount;
             int rowHeight = _RowHeight;
 
-            int rowIndexB = virtualBounds.Y / rowHeight;
-            int rowIndexE = 0;
+            int rowLast = rowCount - 1;
+            int rowIndexB = (virtualBounds.Y / rowHeight).Align(0, rowLast);
+            int rowIndexE = (virtualBounds.Bottom / rowHeight) + 1;
+
 
         }
         /// <summary>
-        /// Počet řádků, v rozmezí 0 až 2G
+        /// Počet celkem zobrazovaných řádků, v rozmezí 0 až 2G
         /// </summary>
         private int _RowCount { get { int rowCount = _DataForm.Data.RowCount; return (rowCount < 0 ? 0 : rowCount); } }
         /// <summary>
