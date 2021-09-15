@@ -1504,7 +1504,12 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
     #endregion
     #region class DxDataFormPanel : Jeden panel dataformu: reprezentuje základní panel, hostuje v sobě dva ScrollBary a ContentPanel
     /// <summary>
-    /// Jeden panel dataformu: reprezentuje základní panel, hostuje v sobě dva ScrollBary a ContentPanel, v němž se zobrazují grupy a v nich itemy.
+    /// Jeden panel dataformu: reprezentuje základní panel zobrazující jednu plochu s daty.
+    /// Je umístěn buď přímo v <see cref="DxDataForm"/>, pak jde o DataForm bez záložek;
+    /// anebo je umístěn na stránce záložkovníku <see cref="DxTabPane"/>, pak jde o vícezáložkový DataForm.
+    /// <para/>
+    /// Tuto volbu řídí <see cref="DxDataForm"/>. 
+    /// , hostuje v sobě dva ScrollBary a ContentPanel, v němž se zobrazují grupy a v nich itemy.
     /// <para/>
     /// Panel <see cref="DxDataFormPanel"/> je zobrazován v <see cref="DxDataForm"/> buď v celé jeho ploše (to když DataForm obsahuje jen jednu stránku),
     /// anebo je v <see cref="DxDataForm"/> zobrazen záložkovník <see cref="DxTabPane"/>, a v každé záložce je zobrazován zdejší panel <see cref="DxDataFormPanel"/>,
@@ -1571,6 +1576,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             }
         }
         /// <summary>
+        /// Vlastník - <see cref="DxDataForm"/>
+        /// </summary>
+        public DxDataForm DataForm { get { return this._DataForm; } }
+        /// <summary>
         /// Panel, ve kterém se vykresluje i hostuje obsah DataFormu. Panel je <see cref="DxPanelBufferedGraphic"/>, 
         /// ale z hlediska <see cref="DxDataForm"/> nemá žádnou funkcionalitu, ta je soustředěna do <see cref="DxDataFormPanel"/>.
         /// </summary>
@@ -1590,7 +1599,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <returns></returns>
         private void _CalculateRowsTotalCurrentSize()
         {
-            _RowsTotalSize = new Size(_GroupsTotalSize.Width, _RowCount * _RowHeight);
+            var innerSize = new Size(_GroupsTotalSize.Width, _RowCount * _RowHeight);
+            var totalSize = innerSize.Add(0, 0);
+            _RowsTotalSize = totalSize;
         }
 
         /// <summary>
@@ -1665,8 +1676,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
 
             _VisibleRows = newVisibleRows;
         }
-        public DxDataFormRowBand RowBand { get { if (_RowBand == null) _RowBand = new DxDataFormRowBand(this._DataForm); return _RowBand; } }
-        private DxDataFormRowBand _RowBand;
+        public DxDataFormPart RowBand { get { if (_RowBand == null) _RowBand = new DxDataFormPart(this); return _RowBand; } }
+        private DxDataFormPart _RowBand;
         /// <summary>
         /// Pole řádků, které jsou aktuálně ve viditelné oblasti. 
         /// Toto pole je udržováno v metodě <see cref="_PrepareVisibleRows(int, int)"/>.
@@ -2581,8 +2592,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         
         #endregion
         #region Fyzické controly - tvorba, správa, vykreslení bitmapy skrze control
-       
-     
         /// <summary>
         /// Kompletní informace o jednom prvku: index řádku, dekarace, control set a fyzický control
         /// </summary>
@@ -2677,6 +2686,56 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         {
             this.ContentVirtualLocation = _State?.ContentVirtualLocation ?? Point.Empty;
         }
+        #endregion
+    }
+    #endregion
+    #region class DxDataFormPart : Jedna oddělená skupina řádků a sloupců v rámci DataFormu
+    /// <summary>
+    /// <see cref="DxDataFormPart"/> : Jedna oddělená skupina řádků/sloupců v rámci panelu DataFormu <see cref="DxDataFormPanel"/>.
+    /// Prostor DataFormu (přesněji <see cref="DxDataFormPanel"/>) může být rozdělen na více sousedících částí = <see cref="DxDataFormPart"/>,
+    /// které zobrazují tatáž data, ale jsou nascrollovaná na jiná místa, nebo mohou mít odlišné filtry a zobrazovat jiné podmnožiny řádků.
+    /// <para/>
+    /// Toto rozčlenění povoluje a řídí <see cref="DxDataFormPanel"/> jako fyzický Parent těchto částí, pokdyny k rozdělení dostává od hlavního <see cref="DxDataForm"/>.
+    /// K interaktivní změně nechává uživateli k dispozici vhodné Splittery.
+    /// Rozdělení provádí uživatel pomocí tlačítka vpravo nahoře a následného zobrazení splitteru.
+    /// Dostupnost Scrollbarů v jednotlivých částech v rámci <see cref="DxDataFormPanel"/> řídí <see cref="DxDataFormPanel"/>; 
+    /// scrollbary jsou dostupné vždy v té krajní části v daném směru = vpravo svislý a dole vodorovný.
+    /// Synchronizaci sousedních částí, které nemají odpovídající scrollbar, zajišťuje <see cref="DxDataFormPanel"/>.
+    /// Podkladový ScrollPanel <see cref="DxScrollableContent"/> dovoluje nastavit okraje kolem scrollovaného obsahu, 
+    /// tyto okraje jsou využívány pro zobrazení "fixních" částí (vše okolo Rows).
+    /// <para/>
+    /// Typicky Master Dataform (nazývaný v Greenu "FreeForm") má pouze jednu část, která nezobrazuje ani ColumnHeaders ani RowHeaders, a ani nenabízí rozdělovací Splittery.
+    /// DataForm používaný pro položky (nazývaný v Greenu "EditBrowse") toto rozčlenění umožňuje.
+    /// Výhledový BrowseGrid rovněž.
+    /// <para/>
+    /// Každá jedna skupina se nazývá Part = <see cref="DxDataFormPart"/>, a skládá se z částí: RowHeader, ColumnHeader, RowFilter, Rows, SummaryRows a Footer.
+    /// Části jsou jednotlivě volitelné pro první skupinu, pro vnitřní skupiny a pro skupinu poslední.
+    /// Části Header, RowFilter jsou fixní k hornímu okraji a nescrollují;
+    /// Části Rows, SummaryRows scrollují uprostřed;
+    /// Část Footer je fixní k dolnímu okraji a nescrolluje.
+    /// </summary>
+    internal class DxDataFormPart : DxScrollableContent
+    {
+        #region Konstruktor, vlastník, prvky
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="dataPanel"></param>
+        public DxDataFormPart(DxDataFormPanel dataPanel)
+        {
+            _DataPanel = dataPanel;
+        }
+        /// <summary>Vlastník - <see cref="DxDataFormPanel"/></summary>
+        private DxDataFormPanel _DataPanel;
+        /// <summary>
+        /// Vlastník - <see cref="DxDataFormPanel"/>
+        /// </summary>
+        public DxDataFormPanel DataPanel { get { return this._DataPanel; } }
+        /// <summary>
+        /// Vlastník - <see cref="DxDataForm"/>
+        /// </summary>
+        public DxDataForm DataForm { get { return this._DataPanel.DataForm; } }
+
         #endregion
     }
     #endregion
@@ -3887,39 +3946,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         #endregion
     }
     #endregion
-    #region class DxDataFormRowBand : Jedna oddělená skupina řádků v rámci DataFormu
-    /// <summary>
-    /// <see cref="DxDataFormRowBand"/> : Jedna oddělená skupina řádků v rámci DataFormu.
-    /// Prostor DataFormu v ose Y obsahuje jednu (defaultně) nebo více skupin řádků. Rozdělení prostoru do více skupin než jedné musí být povoleno ve vlastnostech.
-    /// Rozdělení provádí uživatel pomocí tlačítka vpravo nahoře a následného zobrazení splitteru.
-    /// <para/>
-    /// Každá skupina řádků se nazývá RowBand = <see cref="DxDataFormRowBand"/>, a skládá se z částí: Header, RowFilter, Rows, SummaryRows a Footer.
-    /// Části jsou volitelné pro první skupinu, pro vnitřní skupiny a pro skupinu poslední.
-    /// Části Header, RowFilter jsou fixní k hornímu okraji a nescrollují;
-    /// Části Rows, SummaryRows scrollují uprostřed;
-    /// Část Footer je fixní k dolnímu okraji a nescrolluje.
-    /// </summary>
-    internal class DxDataFormRowBand
-    {
-        #region Konstruktor, vlastník, prvky
-        /// <summary>
-        /// Konstruktor
-        /// </summary>
-        /// <param name="dataForm"></param>
-        public DxDataFormRowBand(DxDataForm dataForm)
-        {
-            _DataForm = dataForm;
-        }
-        /// <summary>Vlastník - <see cref="DxDataForm"/></summary>
-        private DxDataForm _DataForm;
-        /// <summary>
-        /// Vlastník - <see cref="DxDataForm"/>
-        /// </summary>
-        public DxDataForm DataForm { get { return this._DataForm; } }
-
-        #endregion
-    }
-    #endregion
     #region class DxDataFormRow : Jeden vizuální řádek v rámci DxDataFormRowBand
     /// <summary>
     /// DxDataFormRow : Jeden vizuální řádek v rámci DxDataFormRowBand
@@ -3933,7 +3959,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="rowBand"></param>
         /// <param name="rowType"></param>
         /// <param name="rowId"></param>
-        public DxDataFormRow(DxDataFormRowBand rowBand, DxDataFormRowType rowType, int rowId)
+        public DxDataFormRow(DxDataFormPart rowBand, DxDataFormRowType rowType, int rowId)
         {
             _RowBand = rowBand;
             _RowType = rowType;
@@ -3952,8 +3978,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         {
             return $"RowType: {_RowType}; RowIndex: {RowIndex}; RowId: {_RowId}; VisualPositions: {VisualPositions}";
         }
-        /// <summary>Vlastník - <see cref="DxDataFormRowBand"/></summary>
-        private DxDataFormRowBand _RowBand;
+        /// <summary>Vlastník - <see cref="DxDataFormPart"/></summary>
+        private DxDataFormPart _RowBand;
         /// <summary>Typ řádku</summary>
         private DxDataFormRowType _RowType;
         /// <summary>ID řádku, odkazuje se do <see cref="DxDataForm"/> pro data</summary>
@@ -3963,9 +3989,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         public DxDataForm DataForm { get { return this._RowBand.DataForm; } }
         /// <summary>
-        /// Vlastník - <see cref="DxDataFormRowBand"/>
+        /// Vlastník - <see cref="DxDataFormPart"/>
         /// </summary>
-        public DxDataFormRowBand RowBand { get { return this._RowBand; } }
+        public DxDataFormPart RowBand { get { return this._RowBand; } }
         /// <summary>
         /// Typ řádku
         /// </summary>

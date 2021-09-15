@@ -24,6 +24,7 @@ using System.Diagnostics;
 using DevExpress.XtraEditors.Filtering.Templates;
 using System.Windows.Forms;
 using DevExpress.Utils.Extensions;
+using DevExpress.XtraEditors.ViewInfo;
 
 namespace Noris.Clients.Win.Components.AsolDX
 {
@@ -1356,6 +1357,10 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// </summary>
     public class DxVScrollBar : DevExpress.XtraEditors.VScrollBar
     {
+        public DxVScrollBar()
+        {
+            this.CustomDraw += DxVScrollBar_CustomDraw;
+        }
         #region Rozšířené property
         /// <summary>
         /// Obsahuje true u controlu, který sám by byl Visible, i když aktuálně je na Invisible parentu.
@@ -1372,6 +1377,19 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         public override string ToString() { return this.GetTypeName(); }
         #endregion
+        protected override void OnPaint(ScrollBarInfoArgs args)
+        {
+            base.OnPaint(args);
+
+            // args.Graphics.FillRectangle(DxComponent.PaintGetSolidBrush(Color.Violet), new RectangleF(4, 30, 9, 4));
+        }
+
+        private void DxVScrollBar_CustomDraw(object sender, ScrollBarCustomDrawEventArgs e)
+        {
+            e.HighlightRegion(250, 50, Color.Violet, Alignment.Center);
+            e.HighlightRegion(450, 50, Color.Red, Alignment.Near);
+            e.HighlightRegion(850, 250, Color.Blue, Alignment.Far);
+        }
     }
     #endregion
     #region DxSplitContainerControl

@@ -2504,6 +2504,22 @@ namespace Noris.Clients.Win.Components.AsolDX
             return new Size(nw, nh);
         }
         /// <summary>
+        /// Vrátí Size, která je o daný <paramref name="padding"/> větší než aktuální Size. 
+        /// Umožní i zmenšit, pokud hodnoty jsou záporné. Umožní zmenšit do nuly, ale ne do záporné hodnoty.
+        /// Záporné hodnoty v <paramref name="padding"/> zmenší Size.
+        /// </summary>
+        /// <param name="s"></param>
+        /// <param name="padding"></param>
+        /// <returns></returns>
+        public static Size Add(this Size s, Padding padding)
+        {
+            int nw = s.Width + padding.Horizontal;
+            if (nw < 0) nw = 0;
+            int nh = s.Height + padding.Vertical;
+            if (nh < 0) nh = 0;
+            return new Size(nw, nh);
+        }
+        /// <summary>
         /// Vrátí Size, která je o (w, h) menší než aktuální Size. Umožní zmenšit do nuly, ale ne do záporné hodnoty.
         /// Záporné x nebo y zvětší Size.
         /// </summary>
@@ -2519,7 +2535,22 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (nh < 0) nh = 0;
             return new Size(nw, nh);
         }
-
+        /// <summary>
+        /// Vrátí Size, která je o daný <paramref name="padding"/> menší než aktuální Size. 
+        /// Umožní i zvětšit, pokud hodnoty jsou záporné. Umožní zmenšit do nuly, ale ne do záporné hodnoty.
+        /// Záporné hodnoty v <paramref name="padding"/> zvětší Size.
+        /// </summary>
+        /// <param name="s"></param>
+        /// <param name="padding"></param>
+        /// <returns></returns>
+        public static Size Sub(this Size s, Padding padding)
+        {
+            int nw = s.Width - padding.Horizontal;
+            if (nw < 0) nw = 0;
+            int nh = s.Height - padding.Vertical;
+            if (nh < 0) nh = 0;
+            return new Size(nw, nh);
+        }
         #endregion
         #region Rectangle: SummaryBounds
         /// <summary>
