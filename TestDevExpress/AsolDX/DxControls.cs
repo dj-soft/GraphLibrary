@@ -786,6 +786,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public bool HScrollBarVisible { get { return _HScrollBarVisible; } }
         /// <summary>
+        /// Indikátory přítomné na horizontálním scrollbaru
+        /// </summary>
+        public ScrollBarIndicators HScrollBarIndicators { get { return _HScrollBar.Indicators; } }
+        /// <summary>
         /// Hodnota na horizontálním ScrollBaru, bez korekcí, podle povolení pro horizontální ScrollBar:
         /// <para/>
         /// Pokud je viditelný (<see cref="_HScrollBarVisible"/> = true), 
@@ -825,6 +829,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Obsahuje true, pokud je viditelný Vertikální (=svislý) ScrollBar
         /// </summary>
         public bool VScrollBarVisible { get { return _VScrollBarVisible; } }
+        /// <summary>
+        /// Indikátory přítomné na vertikálním scrollbaru
+        /// </summary>
+        public ScrollBarIndicators VScrollBarIndicators { get { return _VScrollBar.Indicators; } }
         /// <summary>
         /// Hodnota na vertikálním ScrollBaru, bez korekcí, podle povolení pro vertikální ScrollBar:
         /// <para/>
@@ -1351,16 +1359,32 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         public override string ToString() { return this.GetTypeName(); }
         #endregion
+        #region Indikátory
+        /// <summary>
+        /// Indikátory, označující část plochy scrollbaru
+        /// </summary>
+        public ScrollBarIndicators Indicators { get { if (_Indicators == null) _Indicators = new ScrollBarIndicators(Orientation.Horizontal); return _Indicators; } }
+        private ScrollBarIndicators _Indicators;
+        /// <summary>
+        /// Obsahuje true, pokud máme reálně nějaké indikátory
+        /// </summary>
+        protected bool HasIndicators { get { return (_Indicators != null && _Indicators.HasIndicators); } }
+        /// <summary>
+        /// Kreslení ScrollBaru vyvolá i kreslení indikátorů
+        /// </summary>
+        /// <param name="args"></param>
+        protected override void OnPaint(ScrollBarInfoArgs args)
+        {
+            base.OnPaint(args);
+            _Indicators?.PaintIndicators(args);
+        }
+        #endregion
     }
     /// <summary>
     /// Vertikální ScrollBar (svislý = zeshora dolů)
     /// </summary>
     public class DxVScrollBar : DevExpress.XtraEditors.VScrollBar
     {
-        public DxVScrollBar()
-        {
-            this.CustomDraw += DxVScrollBar_CustomDraw;
-        }
         #region Rozšířené property
         /// <summary>
         /// Obsahuje true u controlu, který sám by byl Visible, i když aktuálně je na Invisible parentu.
@@ -1377,19 +1401,387 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         public override string ToString() { return this.GetTypeName(); }
         #endregion
+        #region Indikátory
+        /// <summary>
+        /// Indikátory, označující část plochy scrollbaru
+        /// </summary>
+        public ScrollBarIndicators Indicators { get { if (_Indicators == null) _Indicators = new ScrollBarIndicators(Orientation.Vertical); return _Indicators; } }
+        private ScrollBarIndicators _Indicators;
+        /// <summary>
+        /// Obsahuje true, pokud máme reálně nějaké indikátory
+        /// </summary>
+        protected bool HasIndicators { get { return (_Indicators != null && _Indicators.HasIndicators); } }
+        /// <summary>
+        /// Kreslení ScrollBaru vyvolá i kreslení indikátorů
+        /// </summary>
+        /// <param name="args"></param>
         protected override void OnPaint(ScrollBarInfoArgs args)
         {
             base.OnPaint(args);
-
-            // args.Graphics.FillRectangle(DxComponent.PaintGetSolidBrush(Color.Violet), new RectangleF(4, 30, 9, 4));
+            _Indicators?.PaintIndicators(args);
         }
-
-        private void DxVScrollBar_CustomDraw(object sender, ScrollBarCustomDrawEventArgs e)
+        #endregion
+    }
+    /// <summary>
+    /// Třída definující sadu indikátorů
+    /// </summary>
+    public class ScrollBarIndicators
+    {
+        #region Konstrukce a základní public property
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="orientation"></param>
+        public ScrollBarIndicators(Orientation orientation)
         {
-            e.HighlightRegion(250, 50, Color.Violet, Alignment.Center);
-            e.HighlightRegion(450, 50, Color.Red, Alignment.Near);
-            e.HighlightRegion(850, 250, Color.Blue, Alignment.Far);
+            _Orientation = orientation;
+            _Indicators = new List<Indicator>();
+            _ColorAlphaArea = 200;
+            _ColorAlphaThumb = 90;
         }
+        private Orientation _Orientation;
+        private List<Indicator> _Indicators;
+        /// <summary>
+        /// Obsahuje true, pokud v této sadě indikátorů je alespoň jeden platný indikátor, který se má vykreslit
+        /// </summary>
+        public bool HasIndicators { get { return _Indicators.Any(i => i.IsValid); } }
+        /// <summary>
+        /// Obsahuje počet všech indikátorů
+        /// </summary>
+        public int Count { get { return _Indicators.Count; } }
+        /// <summary>
+        /// Pole indikátorů
+        /// </summary>
+        public Indicator[] Indicators { get { return _Indicators.ToArray(); } }
+        /// <summary>
+        /// Přidat další indikátor
+        /// </summary>
+        /// <param name="values"></param>
+        /// <param name="alignment"></param>
+        /// <param name="color"></param>
+        public void AddIndicator(Int32Range values, ScrollBarIndicatorType alignment, Color color)
+        {
+            if ((values?.Size ?? 0) > 0)
+                _Indicators.Add(new Indicator(values, alignment, color));
+        }
+        /// <summary>
+        /// Smaže pole indikátorů
+        /// </summary>
+        public void Clear()
+        {
+            _Indicators.Clear();
+        }
+        /// <summary>
+        /// Odstraní indikátory vyhovující danému filtru
+        /// </summary>
+        public void Remove(Predicate<Indicator> filter)
+        {
+            _Indicators.Remove(filter);
+        }
+        /// <summary>
+        /// Průhlednost zadané barvy indikátoru při vykreslení mimo thumb (=přímo viditelná).
+        /// Výchozí hodnota = 200, maximum = 255 (plná barva přes thumb, nehezké), minimum = 20, rozumné minimum = 140;
+        /// </summary>
+        public int ColorAlphaArea { get { return _ColorAlphaArea; } set { _ColorAlphaArea = value.Align(20, 255); } }
+        private int _ColorAlphaArea;
+        /// <summary>
+        /// Průhlednost zadané barvy indikátoru při vykreslení do prostoru thumbu (=lehce překrytá thumbem).
+        /// Výchozí hodnota = 90, maximum = 255 (plná barva přes thumb, nehezké), minimum = 20, rozumné minimum = 50;
+        /// </summary>
+        public int ColorAlphaThumb { get { return _ColorAlphaThumb; } set { _ColorAlphaThumb = value.Align(20, 255); } }
+        private int _ColorAlphaThumb;
+        #endregion
+        #region Kreslení
+        /// <summary>
+        /// Vykreslí svoje indikátory
+        /// </summary>
+        /// <param name="args"></param>
+        internal void PaintIndicators(ScrollBarInfoArgs args)
+        {
+            switch (_Orientation)
+            {
+                case Orientation.Horizontal:
+                    _PaintIndicatorsHorizontal(args);
+                    break;
+                case Orientation.Vertical:
+                    _PaintIndicatorsVertical(args);
+                    break;
+            }
+        }
+        /// <summary>
+        /// Vykreslí svoje indikátory - Horizontal
+        /// </summary>
+        /// <param name="args"></param>
+        private void _PaintIndicatorsHorizontal(ScrollBarInfoArgs args)
+        {
+            // Rozsah viditelných pixelů i překrytí prvkem Thumb - v souřadnici Y:
+            var areaBegin = args.DecButtonBounds.Right;
+            var thumbBegin = args.ThumbButtonBounds.X;
+            var thumbEnd = args.ThumbButtonBounds.Right;
+            var areaEnd = args.IncButtonBounds.X;
+            var areaBefore = new Int32Range(areaBegin, thumbBegin);
+            var areaThumb = new Int32Range(thumbBegin, thumbEnd);
+            var areaAfter = new Int32Range(thumbEnd, areaEnd);
+
+            // Cache pro souřadnice a efekty, pro typy reálně použité v indikátorech:
+            var sizeCache = new Dictionary<ScrollBarIndicatorType, Tuple<Int32Range, ScrollBar3DEffect>>();
+
+            // Přepočtová funkce z value (X) na visual (Y) hodnoty:
+            var function = Algebra.GetLinearEquation(args.ViewInfo.Minimum, areaBegin, args.ViewInfo.Maximum, areaEnd);
+            foreach (var indicator in _Indicators)
+            {
+                // Pixely na výšku:
+                Int32Range sizeV = _GetVSize(indicator.Alignment, args.IncButtonBounds.Y, args.IncButtonBounds.Bottom, sizeCache, out var effect);
+                int vBegin = sizeV.Begin;
+                int vEnd = sizeV.End;
+
+                Int32Range sizeL = _GetVisualRangeIndicator(indicator.Values, function, areaBegin, areaEnd); // Celý viditelný rozsah aktuálního intervalu na šířku
+
+                // Před thumbem:
+                Int32Range partBefore = Int32Range.Intersect(areaBefore, sizeL);
+                if (partBefore != null && partBefore.Size > 0)
+                    _PaintIndicatorOne(args, indicator, _ColorAlphaArea, Rectangle.FromLTRB(partBefore.Begin, vBegin, partBefore.End, vEnd), effect);
+
+                // Over thumb:
+                Int32Range partThumb = Int32Range.Intersect(areaThumb, sizeL);
+                if (partThumb != null && partThumb.Size > 0)
+                    _PaintIndicatorOne(args, indicator, _ColorAlphaThumb, Rectangle.FromLTRB(partThumb.Begin, vBegin, partThumb.End, vEnd), effect);
+
+                // Pod thumbem:
+                Int32Range partAfter = Int32Range.Intersect(areaAfter, sizeL);
+                if (partAfter != null && partAfter.Size > 0)
+                    _PaintIndicatorOne(args, indicator, _ColorAlphaArea, Rectangle.FromLTRB(partAfter.Begin, vBegin, partAfter.End, vEnd), effect);
+            }
+        }
+        /// <summary>
+        /// Vykreslí svoje indikátory - Vertical
+        /// </summary>
+        /// <param name="args"></param>
+        private void _PaintIndicatorsVertical(ScrollBarInfoArgs args)
+        {
+            // Rozsah viditelných pixelů i překrytí prvkem Thumb - v souřadnici Y:
+            var areaBegin = args.DecButtonBounds.Bottom;
+            var thumbBegin = args.ThumbButtonBounds.Y;
+            var thumbEnd = args.ThumbButtonBounds.Bottom;
+            var areaEnd = args.IncButtonBounds.Y;
+            var areaBefore = new Int32Range(areaBegin, thumbBegin);
+            var areaThumb = new Int32Range(thumbBegin, thumbEnd);
+            var areaAfter = new Int32Range(thumbEnd, areaEnd);
+
+            // Cache pro souřadnice a efekty, pro typy reálně použité v indikátorech:
+            var sizeCache = new Dictionary<ScrollBarIndicatorType, Tuple<Int32Range, ScrollBar3DEffect>>();
+
+            // Přepočtová funkce z value (X) na visual (Y) hodnoty:
+            var function = Algebra.GetLinearEquation(args.ViewInfo.Minimum, areaBegin, args.ViewInfo.Maximum, areaEnd);
+            foreach (var indicator in _Indicators)
+            {
+                // Pixely na šířku:
+                Int32Range sizeV = _GetVSize(indicator.Alignment, args.IncButtonBounds.X, args.IncButtonBounds.Right, sizeCache, out var effect);
+                int vBegin = sizeV.Begin;
+                int vEnd = sizeV.End;
+
+                Int32Range sizeL = _GetVisualRangeIndicator(indicator.Values, function, areaBegin, areaEnd); // Celý viditelný rozsah aktuálního intervalu na výšku
+
+                // Před thumbem:
+                Int32Range partBefore = Int32Range.Intersect(areaBefore, sizeL);
+                if (partBefore != null && partBefore.Size > 0)
+                    _PaintIndicatorOne(args, indicator, _ColorAlphaArea, Rectangle.FromLTRB(vBegin, partBefore.Begin, vEnd, partBefore.End), effect);
+
+                // Over thumb:
+                Int32Range partThumb = Int32Range.Intersect(areaThumb, sizeL);
+                if (partThumb != null && partThumb.Size > 0)
+                    _PaintIndicatorOne(args, indicator, _ColorAlphaThumb, Rectangle.FromLTRB(vBegin, partThumb.Begin, vEnd, partThumb.End), effect);
+
+                // Pod thumbem:
+                Int32Range partAfter = Int32Range.Intersect(areaAfter, sizeL);
+                if (partAfter != null && partAfter.Size > 0)
+                    _PaintIndicatorOne(args, indicator, _ColorAlphaArea, Rectangle.FromLTRB(vBegin, partAfter.Begin, vEnd, partAfter.End), effect);
+            }
+        }
+        /// <summary>
+        /// Metoda vrátí vizuální rozsah (odkud kam v pixelech zobrazen) je pro daný datový rozsah (od jaké do jaké hodnoty se nachází),
+        /// s pomocí dané lineární rovnice.
+        /// </summary>
+        /// <param name="values"></param>
+        /// <param name="function"></param>
+        /// <param name="areaBegin"></param>
+        /// <param name="areaEnd"></param>
+        /// <returns></returns>
+        private Int32Range _GetVisualRangeIndicator(Int32Range values, Algebra.LinearEquation function, int areaBegin, int areaEnd)
+        {
+            int visualBegin = (int)Math.Round(function.GetY(values.Begin), 0);
+            int visualEnd = (int)Math.Round(function.GetY(values.End), 0);
+
+            // Korekce - chceme indikátor vidět i tehdy, když jeho exaktní velikost je 0 (nebo 1) pixel, tedy chceme nejméně 2 pixely azarovnané do viditelného rozmezí:
+            int visualSize = visualEnd - visualBegin;
+            if (visualSize <= 0)
+            {
+                visualBegin = (visualBegin - 1).Align(areaBegin, areaEnd - 2);
+                visualEnd = visualBegin + 2;
+            }
+            else if (visualSize == 1)
+            {
+                visualBegin = visualBegin.Align(areaBegin, areaEnd - 2);
+                visualEnd = visualBegin + 2;
+            }
+            return new Int32Range(visualBegin, visualEnd);
+        }
+        /// <summary>
+        /// Vrátí rozsah pozice indikátoru dle jeho šířky
+        /// </summary>
+        /// <param name="type"></param>
+        /// <param name="begin"></param>
+        /// <param name="end"></param>
+        /// <param name="effect"></param>
+        /// <param name="sizeCache"></param>
+        /// <returns></returns>
+        private Int32Range _GetVSize(ScrollBarIndicatorType type, int begin, int end,
+            Dictionary<ScrollBarIndicatorType, Tuple<Int32Range, ScrollBar3DEffect>> sizeCache, 
+            out ScrollBar3DEffect effect)
+        {
+            Tuple<Int32Range, ScrollBar3DEffect> info;
+            if (!sizeCache.TryGetValue(type, out info))
+            {
+                int vb = begin + 2;
+                int ve = end - 2;
+                int vs = ve - vb;
+
+                int start = vb;
+                int size = vs;
+                if (!type.HasFlag(ScrollBarIndicatorType.FullSize))
+                {
+                    if (type.HasFlag(ScrollBarIndicatorType.BigSize))
+                        size = 20 * vs / 30;
+                    else if (type.HasFlag(ScrollBarIndicatorType.HalfSize))
+                        size = 15 * vs / 30;
+                    else if (type.HasFlag(ScrollBarIndicatorType.ThirdSize))
+                        size = 10 * vs / 30;
+
+                    if (type.HasFlag(ScrollBarIndicatorType.Center))
+                        start = vb + (vs - size) / 2;
+                    else if (type.HasFlag(ScrollBarIndicatorType.Far))
+                        start = ve - size;
+                }
+                ScrollBar3DEffect ef = (type.HasFlag(ScrollBarIndicatorType.InnerGradientEffect) ? ScrollBar3DEffect.Inner :
+                                       (type.HasFlag(ScrollBarIndicatorType.OutsideGradientEffect) ? ScrollBar3DEffect.Outer : ScrollBar3DEffect.None));
+
+                info = new Tuple<Int32Range, ScrollBar3DEffect>(new Int32Range(start, start + size), ef);
+                sizeCache.Add(type, info);
+            }
+            effect = info.Item2;
+            return info.Item1;
+        }
+        /// <summary>
+        /// Vykreslí jeden daný indikátor
+        /// </summary>
+        /// <param name="args"></param>
+        /// <param name="indicator"></param>
+        /// <param name="alpha"></param>
+        /// <param name="bounds"></param>
+        /// <param name="effect"></param>
+        private void _PaintIndicatorOne(ScrollBarInfoArgs args, Indicator indicator, int alpha, Rectangle bounds, ScrollBar3DEffect effect)
+        {
+            switch (effect)
+            {
+                case ScrollBar3DEffect.Inner:
+                case ScrollBar3DEffect.Outer:
+                default:
+                    args.Graphics.FillRectangle(DxComponent.PaintGetSolidBrush(indicator.Color, alpha), bounds);
+                    break;
+            }
+        }
+        /// <summary>
+        /// 3D efekt
+        /// </summary>
+        private enum ScrollBar3DEffect { None, Inner, Outer }
+        #endregion
+        #region class Indicator = Třída jednoho konkrétního indikátoru = značky
+        /// <summary>
+        /// Třída jednoho konkrétního indikátoru = značky
+        /// </summary>
+        public class Indicator
+        {
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="values"></param>
+            /// <param name="alignment"></param>
+            /// <param name="color"></param>
+            public Indicator(Int32Range values, ScrollBarIndicatorType alignment, Color color)
+            {
+                Values = values;
+                Alignment = alignment;
+                Color = color;
+            }
+            /// <summary>
+            /// Rozmezí indikátoru v datech
+            /// </summary>
+            public Int32Range Values { get; private set; }
+            /// <summary>
+            /// Umístění indikátoru na ScrollBaru
+            /// </summary>
+            public ScrollBarIndicatorType Alignment { get; private set; }
+            /// <summary>
+            /// Barva indikátoru, smí obsahovat Alpha kanál (průhlednost)
+            /// </summary>
+            public Color Color { get; private set; }
+            /// <summary>
+            /// Tento indikátor je platný? Tzn. jeho <see cref="Values"/> má kladnou délku
+            /// </summary>
+            public bool IsValid { get { return ((Values?.Size ?? 0) > 0); } }
+        }
+        #endregion
+    }
+    /// <summary>
+    /// Typy indikátorů na ScrollBaru, používají se v <see cref="ScrollBarIndicators"/>
+    /// </summary>
+    [Flags]
+    public enum ScrollBarIndicatorType
+    {
+        /// <summary>Žádný</summary>
+        None = 0,
+
+        /// <summary>U vnitřního okraje (vlevo / nahoře)</summary>
+        Near = 0x0001,
+        /// <summary>Uprostřed</summary>
+        Center = 0x0002,
+        /// <summary>U vzdálenějšího okraje (vpravo / dole)</summary>
+        Far = 0x0004,
+        /// <summary>Přes plnou velikost (pak není třeba určovat <see cref="Near"/> / <see cref="Center"/> / <see cref="Far"/>)</summary>
+        FullSize = 0x0010,
+        /// <summary>Poloviční velikost ScrollBaru</summary>
+        HalfSize = 0x0020,
+        /// <summary>Třetina ScrollBaru</summary>
+        ThirdSize = 0x0040,
+        /// <summary>Dvě třetiny ScrollBaru</summary>
+        BigSize = 0x0080,
+        /// <summary>Gradient "dovnitř" = "dolů"</summary>
+        InnerGradientEffect = 0x0100,
+        /// <summary>Gradient "vně" = "nahoru"</summary>
+        OutsideGradientEffect = 0x0200,
+
+        /// <summary>Poloviční velikost, vnitřní okraj</summary>
+        HalfNear = HalfSize | Near,
+        /// <summary>Poloviční velikost, uprostřed</summary>
+        HalfCenter = HalfSize | Center,
+        /// <summary>Poloviční velikost, vnější okraj</summary>
+        HalfFar = HalfSize | Far,
+        /// <summary>Třetinová velikost, vnitřní okraj</summary>
+        ThirdNear = ThirdSize | Near,
+        /// <summary>Třetinová velikost, uprostřed</summary>
+        ThirdCenter = ThirdSize | Center,
+        /// <summary>Třetinová velikost, vnější okraj</summary>
+        ThirdFar = ThirdSize | Far,
+        /// <summary>Dvoutřetinová velikost, vnitřní okraj</summary>
+        BigNear = BigSize | Near,
+        /// <summary>Dvoutřetinová velikost, uprostřed</summary>
+        BigCenter = BigSize | Center,
+        /// <summary>Dvoutřetinová velikost, vnější okraj</summary>
+        BigFar = BigSize | Far,
+
+        /// <summary>Defaultní = Dvoutřetinová velikost, uprostřed</summary>
+        Default = BigCenter
+
     }
     #endregion
     #region DxSplitContainerControl

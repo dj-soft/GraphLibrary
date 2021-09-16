@@ -1561,6 +1561,17 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             this._ContentPanel.Layers = BufferedLayers;                        // Tady můžu přidat další vrstvy, když budu chtít kreslit 'pod' anebo 'nad' hlavní prvky
             this._ContentPanel.PaintLayer += _ContentPanel_PaintLayer;         // A tady bych pak musel reagovat na kreslení přidaných vrstev...
             this.ContentControl = this._ContentPanel;
+
+            // TEST ONLY
+            this.VScrollBarIndicators.AddIndicator(new Int32Range(50, 100), ScrollBarIndicatorType.BigCenter, Color.DarkRed);
+            this.VScrollBarIndicators.AddIndicator(new Int32Range(500, 720), ScrollBarIndicatorType.FullSize, Color.DarkRed);
+            this.VScrollBarIndicators.AddIndicator(new Int32Range(850, 1200), ScrollBarIndicatorType.ThirdNear, Color.DarkBlue);
+            this.VScrollBarIndicators.AddIndicator(new Int32Range(1100, 1500), ScrollBarIndicatorType.HalfFar, Color.DarkGreen);
+
+            for (int i = 50; i < 2000; i +=100)
+                this.HScrollBarIndicators.AddIndicator(new Int32Range(i, i + 20), ScrollBarIndicatorType.BigNear, Color.Red);
+            this.HScrollBarIndicators.ColorAlphaArea = 160;
+            this.HScrollBarIndicators.ColorAlphaThumb = 40;
         }
         /// <summary>
         /// Disposuje panel <see cref="_ContentPanel"/>

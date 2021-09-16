@@ -3328,6 +3328,154 @@ namespace Noris.Clients.Win.Components.AsolDX
         void ApplicationIdle();
     }
     #endregion
+    #region class Algebra
+    public class Algebra
+    {
+        /// <summary>
+        /// Vrátí instanci lineární rovnice, která vypočítá výsledek Y = fn(X) podle vzorce Y = a + b*X.
+        /// Na vstupu jsou zadané dva standardní parametry a, b které budou použity v rovnici.
+        /// Tuto definici rovnice nelze z principu použít na rovnici popisující svislou funkci (kde X je konstanta). Tam je třeba použít definici se dvěma body.
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
+        public static LinearEquation GetLinearEquation(double a, double b) { return LinearEquation.CreateEquation(a, b); }
+        /// <summary>
+        /// Vrátí instanci lineární rovnice, která vypočítá výsledek Y = fn(X) podle vzorce Y = a + b*X.
+        /// Na vstupu jsou zadané dva body, kterými prochází přímka lineární rovnice. Zadané body nesmí být identické, pak dojde k chybě.
+        /// </summary>
+        /// <param name="x1"></param>
+        /// <param name="y1"></param>
+        /// <param name="x2"></param>
+        /// <param name="y2"></param>
+        /// <returns></returns>
+        public static LinearEquation GetLinearEquation(double x1, double y1, double x2, double y2) { return LinearEquation.CreateEquation(x1, y1, x2, y2); }
+        #region LinearEquation
+        /// <summary>
+        /// Lineární rovnice = pro dané X najdi Y.
+        /// Zadání rovnice: parametrické nebo dvojbodové.
+        /// </summary>
+        public class LinearEquation
+        {
+            /// <summary>
+            /// Vrátí instanci lineární rovnice, která vypočítá výsledek Y = fn(X) podle vzorce Y = a + b*X.
+            /// Na vstupu jsou zadané dva standardní parametry a, b které budou použity v rovnici.
+            /// Tuto definici rovnice nelze z principu použít na rovnici popisující svislou funkci (kde X je konstanta). Tam je třeba použít definici se dvěma body.
+            /// </summary>
+            /// <param name="a"></param>
+            /// <param name="b"></param>
+            /// <returns></returns>
+            public static LinearEquation CreateEquation(double a, double b)
+            {
+                double? x = null;
+                double? y = (b == 0d ? (double?)a : (double?)null);
+                return new LinearEquation(a, b, x, y);
+            }
+            /// <summary>
+            /// Vrátí instanci lineární rovnice, která vypočítá výsledek Y = fn(X) podle vzorce Y = a + b*X.
+            /// Na vstupu jsou zadané dva body, kterými prochází přímka lineární rovnice. Zadané body nesmí být identické, pak dojde k chybě.
+            /// </summary>
+            /// <param name="x1"></param>
+            /// <param name="y1"></param>
+            /// <param name="x2"></param>
+            /// <param name="y2"></param>
+            /// <returns></returns>
+            public static LinearEquation CreateEquation(double x1, double y1, double x2, double y2)
+            {
+
+                double dx = x2 - x1;
+                double dy = y2 - y1;
+                bool zx = (dx == 0d);
+                bool zy = (dy == 0d);
+                if (zx && zy)
+                    throw new ArgumentException("A linear equation cannot be defined by two identical points.");
+                if (zx)
+                {   // dx = 0: body 1 a 2 jsou nad sebou, X je konstantní:
+                    return new LinearEquation(0d, 0d, x1, null);     // Rovnice s konstantním X
+                }
+                else if (zy)
+                {   // dy = 0: body 1 a 2 jsou vedle sebe, Y je konstantní:
+                    return new LinearEquation(0d, 0d, null, y1);     // Rovnice s konstantním Y
+                }
+                // Funkce má standardní průběh (ani svislý, ani vodorovný : dx i dy jsou nenulové):
+                double b = dy / dx;                                  // Poměr přírůstku Y ku poměru přírůstku X = směrník přímky
+                double a = y1 - (b * x1);                            // Hodnota Y v souřadnici X = 0
+                return new LinearEquation(a, b, null, null);         // Rovnice dle vzorce Y = A + B * X
+            }
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="a"></param>
+            /// <param name="b"></param>
+            /// <param name="x"></param>
+            /// <param name="y"></param>
+            private LinearEquation(double a, double b, double? x, double? y)
+            {
+                _A = a;
+                _B = b;
+                _X = x;
+                _Y = y;
+            }
+            private double _A;
+            private double _B;
+            /// <summary>
+            /// Konstantní hodnota X pro všechna Y = svislý průběh funkce, nezávislý na hodnotě Y.
+            /// Pokud je null, pak X není konstantní = pak lze použít funkci <see cref="GetY(double)"/> pro získání hodnoty X pro určitou hodnotu Y.
+            /// </summary>
+            private double? _X;
+            /// <summary>
+            /// Konstantní hodnota Y pro všechna X = vodorovný průběh funkce, nezávislý na hodnotě X.
+            /// Pokud je null, pak Y není konstantní = pak lze použít funkci <see cref="GetX(double)"/> pro získání hodnoty Y pro určitou hodnotu X.
+            /// </summary>
+            private double? _Y;
+            /// <summary>
+            /// Konstantní hodnota X, má hodnotu když funkce je svislá = hodnota X se nemění při změně hodnoty Y.
+            /// </summary>
+            public double? ConstantX { get { return _X; } }
+            /// <summary>
+            /// Obsahuje true, když hodnota X je konstantní (svislý průběh funkce). Pak nelze použít funkci <see cref="GetY(double)"/>.
+            /// </summary>
+            public bool IsConstantX { get { return _X.HasValue; } }
+            /// <summary>
+            /// Konstantní hodnota Y, má hodnotu když funkce je vodorovná = hodnota Y se nemění při změně hodnoty X.
+            /// </summary>
+            public double? ConstantY { get { return _Y; } }
+            /// <summary>
+            /// Obsahuje true, když hodnota Y je konstantní (vodorovný průběh funkce). Pak nelze použít funkci <see cref="GetX(double)"/>.
+            /// </summary>
+            public bool IsConstantY { get { return _Y.HasValue; } }
+            /// <summary>
+            /// Vrátí X pro tuto lineární rovnici pro zadané Y.
+            /// Pokud je použito na rovnici, která je vodorovná (má <see cref="IsConstantY"/> == true), pak dojde k chybě.
+            /// </summary>
+            /// <param name="y"></param>
+            /// <returns></returns>
+            public double GetX(double y)
+            {
+                if (IsConstantY)
+                    throw new InvalidOperationException("The linear equation cannot determine X for the given Y, the function has a constant Y.");
+                if (IsConstantX)
+                    return ConstantX.Value;
+                return (y - _A) / _B;
+            }
+            /// <summary>
+            /// Vrátí Y pro tuto lineární rovnici pro zadané X.
+            /// Pokud je použito na rovnici, která je svislá (má <see cref="IsConstantX"/> == true), pak dojde k chybě.
+            /// </summary>
+            /// <param name="x"></param>
+            /// <returns></returns>
+            public double GetY(double x)
+            {
+                if (IsConstantX)
+                    throw new InvalidOperationException("The linear equation cannot determine Y for the given X, the function has a constant X.");
+                if (IsConstantY)
+                    return ConstantY.Value;
+                return _A + _B * x;
+            }
+        }
+        #endregion
+    }
+    #endregion
     #region class ConvertFormat : konverze textu / RTF / HTML
     /// <summary>
     /// Třída pro konverze mezi formáty TXT - HTML - RTF

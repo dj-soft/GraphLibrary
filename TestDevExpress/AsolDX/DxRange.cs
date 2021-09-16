@@ -25,6 +25,54 @@ using System.Diagnostics;
 
 namespace Noris.Clients.Win.Components.AsolDX
 {
+    #region class DecimalRange : Rozsah hodnot { Begin - Size - End } : Int32, Int32
+    /// <summary>
+    /// Rozsah Od-Do v rámci Decimal
+    /// </summary>
+    [DebuggerDisplay("{DebugText}")]
+    public class DecimalRange : AnyRange<Decimal, Decimal>
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="begin"></param>
+        /// <param name="end"></param>
+        public DecimalRange(Decimal begin, Decimal end) : base(begin, end) { }
+        /// <summary>
+        /// Vrátí new instanci vytvořenou klonováním this instance
+        /// </summary>
+        /// <returns></returns>
+        public DecimalRange Clone() { return new DecimalRange(Begin, End); }
+        /// <summary>
+        /// Porovná dvě hodnoty a vrátí jejich pozici na ose.
+        /// Vrací -1 pokud <paramref name="a"/> je menší než <paramref name="b"/>;
+        /// Vrací 0 pokud <paramref name="a"/> je rovno <paramref name="b"/>;
+        /// Vrací +1 pokud <paramref name="a"/> je větší než <paramref name="b"/>;
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
+        protected override int Compare(Decimal a, Decimal b) { return a.CompareTo(b); }
+        /// <summary>
+        /// Vrátí klon this instance
+        /// </summary>
+        /// <returns></returns>
+        protected override AnyRange<Decimal, Decimal> CreateClone() { return new DecimalRange(Begin, End); }
+        /// <summary>
+        /// Vrátí new instanci shodné třídy
+        /// </summary>
+        /// <returns></returns>
+        protected override AnyRange<Decimal, Decimal> CreateNew(Decimal begin, Decimal end) { return new DecimalRange(begin, end); }
+        /// <summary>
+        /// Vrátí délku prostoru od <paramref name="begin"/> do <paramref name="end"/>, 
+        /// vrací tedy výsledek operace (<paramref name="end"/> - <paramref name="begin"/>)
+        /// </summary>
+        /// <param name="begin">Hodnota počátku</param>
+        /// <param name="end">Hodnota konce</param>
+        /// <returns></returns>
+        protected override Decimal Distance(Decimal begin, Decimal end) { return end - begin; }
+    }
+    #endregion
     #region class Int32Range : Rozsah hodnot { Begin - Size - End } : Int32, Int32
     /// <summary>
     /// Rozsah Od-Do v rámci Int32
@@ -71,6 +119,31 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="end">Hodnota konce</param>
         /// <returns></returns>
         protected override int Distance(int begin, int end) { return end - begin; }
+        /// <summary>
+        /// Vratí souhrn dvou intervalů = od toho nižšího Begin do toho vyššího End.
+        /// </summary>
+        /// <param name="value1"></param>
+        /// <param name="value2"></param>
+        /// <returns></returns>
+        public static Int32Range Union(Int32Range value1, Int32Range value2)
+        {
+            int b = (value1.Begin < value2.Begin ? value1.Begin : value2.Begin);
+            int e = (value1.End > value2.End ? value1.End : value2.End);
+            return new Int32Range(b, e);
+        }
+        /// <summary>
+        /// Vrátí průsečík dvou intervalů. Pokud jej nelze najít, vrátí null. Pokud je průsečík nulový (Begin = End), vrátí takový objekt.
+        /// </summary>
+        /// <param name="value1"></param>
+        /// <param name="value2"></param>
+        /// <returns></returns>
+        public static Int32Range Intersect(Int32Range value1, Int32Range value2)
+        {
+            int b = (value1.Begin > value2.Begin ? value1.Begin : value2.Begin);
+            int e = (value1.End < value2.End ? value1.End : value2.End);
+            if (b > e) return null;
+            return new Int32Range(b, e);
+        }
     }
     #endregion
     #region class TimeRange : Rozsah hodnot { Begin - Size - End } : DateTime, TimeSpan
