@@ -576,7 +576,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         #endregion
     }
     #endregion
-    #region DxScrollableContent a DxScrollBars
+    #region DxScrollableContent a DxScrollBars a ScrollBarIndicators
     /// <summary>
     /// Panel, který v sobě hostuje virtuální control <see cref="ContentControl"/>
     /// a dovoluje uživateli pomocí scrollbarů posouvat jeho virtuální obsah.
@@ -1423,7 +1423,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         #endregion
     }
     /// <summary>
-    /// Třída definující sadu indikátorů
+    /// Třída definující a vykreslující sadu indikátorů v prostoru ScrollBaru
     /// </summary>
     public class ScrollBarIndicators
     {
@@ -1732,6 +1732,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         #endregion
     }
+    #region enum ScrollBarIndicatorType
     /// <summary>
     /// Typy indikátorů na ScrollBaru, používají se v <see cref="ScrollBarIndicators"/>
     /// </summary>
@@ -1781,8 +1782,8 @@ namespace Noris.Clients.Win.Components.AsolDX
 
         /// <summary>Defaultní = Dvoutřetinová velikost, uprostřed</summary>
         Default = BigCenter
-
     }
+    #endregion
     #endregion
     #region DxSplitContainerControl
     /// <summary>
