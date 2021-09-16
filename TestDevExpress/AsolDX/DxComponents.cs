@@ -2158,6 +2158,82 @@ namespace Noris.Clients.Win.Components.AsolDX
                 }
             }
         }
+
+        /// <summary>
+        /// Vrátí new instanci <see cref="LinearGradientBrush"/> pro dané zadání. 
+        /// Interně řeší problém WinForms, kdy pro určité orientace / úhly gradientu dochází k posunu prostoru.
+        /// <para/>
+        /// Může vrátit SolidBrush, pokud <paramref name="effectType"/> je <see cref="Gradient3DEffectType.None"/>, i pak ale vrátí new instanci, kterou je nutno Disposovat.
+        /// </summary>
+        /// <param name="bounds"></param>
+        /// <param name="color"></param>
+        /// <param name="orientation"></param>
+        /// <param name="effectType"></param>
+        /// <returns></returns>
+        public static Brush PaintCreateBrushForGradient(Rectangle bounds, Color color, Orientation orientation, Gradient3DEffectType effectType)
+        {
+            float effectRatio = (effectType == Gradient3DEffectType.Inset ? -0.25f :
+                                (effectType == Gradient3DEffectType.Outward ? +0.25f : 0f));
+            return PaintCreateBrushForGradient(bounds, color, orientation, effectRatio);
+        }
+        /// <summary>
+        /// Vrátí new instanci <see cref="LinearGradientBrush"/> pro dané zadání. 
+        /// Interně řeší problém WinForms, kdy pro určité orientace / úhly gradientu dochází k posunu prostoru.
+        /// <para/>
+        /// Může vrátit SolidBrush, pokud <paramref name="effectRatio"/> je 0f, i pak ale vrátí new instanci, kterou je nutno Disposovat.
+        /// </summary>
+        /// <param name="bounds">Souřadnice "položené trubky", na kterou chystáme nátěr</param>
+        /// <param name="color">Základní barva uprostřed "položené trubky"</param>
+        /// <param name="orientation">Směr "položené trubky" na které předvádíme 3D efekt</param>
+        /// <param name="effectRatio">Hodnota 3D efektu: 
+        /// kladná vytváří "nahoru zvednutý povrch" (tj. color1 = nahoře/vlevo je světlejší, color2 = dole/vpravo je tmavší),
+        /// kdežto záporná hodnota vytváří "dolů promáčknutý povrch".
+        /// Hodnota 1.00 vytvoří bílou a černou barvu, hodnota 0.10f vytvoří lehký 3D efekt, 0.50f poměrně silný efekt.
+        /// </param>
+        /// <returns></returns>
+        public static Brush PaintCreateBrushForGradient(Rectangle bounds, Color color, Orientation orientation, float effectRatio)
+        {
+            if (effectRatio == 0f) return new SolidBrush(color);
+            CreateColor3DEffect(color, effectRatio, out Color colorBegin, out Color colorEnd);
+            GradientStyleType? gradientStyle = (orientation == Orientation.Horizontal ? GradientStyleType.Downward : GradientStyleType.ToRight);
+            return PaintCreateBrushForGradient(bounds, colorBegin, colorEnd, gradientStyle);
+        }
+        /// <summary>
+        /// Metoda vygeneruje pár barev out color1 a color2 pro danou barvu výchozí a daný 3D efekt.
+        /// Metoda vrací true = barvy pro 3D efekt jsou vytvořeny / false = daná hodnota efektu není 3D, prostor se má vybarvit plnou barvou.
+        /// Barvy světla a stínu se přebírají z hodnot Skin.Control.Effect3DLight a Skin.Control.Effect3DDark.
+        /// </summary>
+        /// <param name="color"></param>
+        /// <param name="effectRatio">Hodnota 3D efektu: 
+        /// kladná vytváří "nahoru zvednutý povrch" (tj. color1 = nahoře/vlevo je světlejší, color2 = dole/vpravo je tmavší),
+        /// kdežto záporná hodnota vytváří "dolů promáčknutý povrch".
+        /// Hodnota 1.00 vytvoří bílou a černou barvu, hodnota 0.10f vytvoří lehký 3D efekt, 0.50f poměrně silný efekt.
+        /// </param>
+        /// <param name="colorBegin">Barva nahoře/vlevo</param>
+        /// <param name="colorEnd">Barva dole/vpravo</param>
+        /// <returns></returns>
+        public static bool CreateColor3DEffect(Color color, float? effectRatio, out Color colorBegin, out Color colorEnd)
+        {
+            colorBegin = color;
+            colorEnd = color;
+            if (!effectRatio.HasValue || effectRatio.Value == 0f) return false;
+
+            float ratio = effectRatio.Value;
+            int l = 250;
+            int d = 16;
+            if (ratio > 0f)
+            {   // Nahoru = barva 1 je světlejší, barva 2 je tmavší:
+                colorBegin = color.Morph(Color.FromArgb(l, l, l), ratio);
+                colorEnd = color.Morph(Color.FromArgb(d, d, d), ratio);
+            }
+            else
+            {   // Dolů = barva 1 je tmavší, barva 2 je světlejší:
+                ratio = -ratio;
+                colorBegin = color.Morph(Color.FromArgb(d, d, d), ratio);
+                colorEnd = color.Morph(Color.FromArgb(l, l, l), ratio);
+            }
+            return true;
+        }
         /// <summary>
         /// Vrátí new instanci <see cref="LinearGradientBrush"/> pro dané zadání. 
         /// Interně řeší problém WinForms, kdy pro určité orientace / úhly gradientu dochází k posunu prostoru.
@@ -2230,22 +2306,24 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
         }
         /// <summary>
-        /// Okamžitě vrací SolidBrush pro kreslení danou barvou. Nesmí být Disposován!
+        /// Okamžitě vrací SolidBrush pro kreslení danou barvou. 
+        /// Vrácený objekt Nesmí být Disposován!
         /// </summary>
         /// <param name="color"></param>
         /// <returns></returns>
         public static SolidBrush PaintGetSolidBrush(Color color) { return Instance._GetSolidBrush(color); }
         /// <summary>
         /// Okamžitě vrací SolidBrush pro kreslení danou barvou.
-        /// Explicitně je dána hodnota alpha kanálu: 0 = zcela průhledná barva ... 255 = zcela plná barva
-        /// Nesmí být Disposován!
+        /// Explicitně je dána hodnota alpha kanálu: 0 = zcela průhledná barva ... 255 = zcela plná barva.
+        /// Vrácený objekt Nesmí být Disposován!
         /// </summary>
         /// <param name="color"></param>
         /// <param name="alpha"></param>
         /// <returns></returns>
         public static SolidBrush PaintGetSolidBrush(Color color, int alpha) { return Instance._GetSolidBrush(Color.FromArgb(alpha, color)); }
         /// <summary>
-        /// Okamžitě vrací Pen pro kreslení danou barvou. Nesmí být Disposován!
+        /// Okamžitě vrací Pen pro kreslení danou barvou. 
+        /// Vrácený objekt Nesmí být Disposován!
         /// </summary>
         /// <param name="color"></param>
         /// <returns></returns>
@@ -2253,14 +2331,15 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Okamžitě vrací Pen pro kreslení danou barvou. 
         /// Explicitně je dána hodnota alpha kanálu: 0 = zcela průhledná barva ... 255 = zcela plná barva
-        /// Nesmí být Disposován!
+        /// Vrácený objekt Nesmí být Disposován!
         /// </summary>
         /// <param name="color"></param>
         /// <param name="alpha"></param>
         /// <returns></returns>
         public static Pen PaintGetPen(Color color, int alpha) { return Instance._GetPen(Color.FromArgb(alpha, color)); }
         /// <summary>
-        /// Okamžitě vrací SolidBrush dané barvy
+        /// Okamžitě vrací SolidBrush dané barvy.
+        /// Vrácený objekt Nesmí být Disposován!
         /// </summary>
         /// <param name="color"></param>
         /// <returns></returns>
@@ -2270,7 +2349,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             return _SolidBrush;
         }
         /// <summary>
-        /// Okamžitě vrací Pendané barvy
+        /// Okamžitě vrací Pen dané barvy.
+        /// Vrácený objekt Nesmí být Disposován!
         /// </summary>
         /// <param name="color"></param>
         /// <returns></returns>
@@ -2279,6 +2359,9 @@ namespace Noris.Clients.Win.Components.AsolDX
             _Pen.Color = color;
             return _Pen;
         }
+        /// <summary>
+        /// Inicializace objektů pro kreslení
+        /// </summary>
         private void _InitDrawing()
         {
             _SolidBrush = new SolidBrush(Color.White);
@@ -3941,6 +4024,24 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Doleva
         /// </summary>
         ToLeft
+    }
+    /// <summary>
+    /// 3D efekt gradientu
+    /// </summary>
+    public enum Gradient3DEffectType
+    {
+        /// <summary>
+        /// Plochý
+        /// </summary>
+        None,
+        /// <summary>
+        /// Dovnitř (tmavá je vlevo/nahoře, světlá je vpravo/dole)
+        /// </summary>
+        Inset,
+        /// <summary>
+        /// Vně (světlá je vlevo/nahoře, tmavá je vpravo/dole)
+        /// </summary>
+        Outward
     }
     #endregion
 }

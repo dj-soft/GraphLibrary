@@ -1363,7 +1363,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Indikátory, označující část plochy scrollbaru
         /// </summary>
-        public ScrollBarIndicators Indicators { get { if (_Indicators == null) _Indicators = new ScrollBarIndicators(Orientation.Horizontal); return _Indicators; } }
+        public ScrollBarIndicators Indicators { get { if (_Indicators == null) _Indicators = new ScrollBarIndicators(this, Orientation.Horizontal); return _Indicators; } }
         private ScrollBarIndicators _Indicators;
         /// <summary>
         /// Obsahuje true, pokud máme reálně nějaké indikátory
@@ -1405,7 +1405,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Indikátory, označující část plochy scrollbaru
         /// </summary>
-        public ScrollBarIndicators Indicators { get { if (_Indicators == null) _Indicators = new ScrollBarIndicators(Orientation.Vertical); return _Indicators; } }
+        public ScrollBarIndicators Indicators { get { if (_Indicators == null) _Indicators = new ScrollBarIndicators(this, Orientation.Vertical); return _Indicators; } }
         private ScrollBarIndicators _Indicators;
         /// <summary>
         /// Obsahuje true, pokud máme reálně nějaké indikátory
@@ -1431,14 +1431,17 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Konstruktor
         /// </summary>
+        /// <param name="owner"></param>
         /// <param name="orientation"></param>
-        public ScrollBarIndicators(Orientation orientation)
+        public ScrollBarIndicators(DevExpress.XtraEditors.ScrollTouchBase owner, Orientation orientation)
         {
+            _Owner = owner;
             _Orientation = orientation;
             _Indicators = new List<Indicator>();
             _ColorAlphaArea = 200;
             _ColorAlphaThumb = 90;
         }
+        private DevExpress.XtraEditors.ScrollTouchBase _Owner;
         private Orientation _Orientation;
         private List<Indicator> _Indicators;
         /// <summary>
@@ -1454,7 +1457,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public Indicator[] Indicators { get { return _Indicators.ToArray(); } }
         /// <summary>
-        /// Přidat další indikátor
+        /// Přidat další indikátor.
+        /// Po změnách indikátorů je nutno vyvolat <see cref="Refresh()"/>, jinak budou vykresleny "až tam uživatel najede myší".
         /// </summary>
         /// <param name="values"></param>
         /// <param name="alignment"></param>
@@ -1465,18 +1469,28 @@ namespace Noris.Clients.Win.Components.AsolDX
                 _Indicators.Add(new Indicator(values, alignment, color));
         }
         /// <summary>
-        /// Smaže pole indikátorů
+        /// Smaže pole indikátorů.
+        /// Po změnách indikátorů je nutno vyvolat <see cref="Refresh()"/>, jinak budou vykresleny "až tam uživatel najede myší".
         /// </summary>
         public void Clear()
         {
             _Indicators.Clear();
         }
         /// <summary>
-        /// Odstraní indikátory vyhovující danému filtru
+        /// Odstraní indikátory vyhovující danému filtru.
+        /// Po změnách indikátorů je nutno vyvolat <see cref="Refresh()"/>, jinak budou vykresleny "až tam uživatel najede myší".
         /// </summary>
         public void Remove(Predicate<Indicator> filter)
         {
             _Indicators.Remove(filter);
+        }
+        /// <summary>
+        /// Metoda zajistí překreslení zadaných indikátorů.
+        /// Je nutno volat po změně indikátorů (metody: <see cref="Clear()"/>, <see cref="AddIndicator(Int32Range, ScrollBarIndicatorType, Color)"/>, <see cref="Remove(Predicate{Indicator})"/>...
+        /// </summary>
+        public void Refresh()
+        {
+            _Owner.Refresh();
         }
         /// <summary>
         /// Průhlednost zadané barvy indikátoru při vykreslení mimo thumb (=přímo viditelná).
@@ -1524,7 +1538,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             var areaAfter = new Int32Range(thumbEnd, areaEnd);
 
             // Cache pro souřadnice a efekty, pro typy reálně použité v indikátorech:
-            var sizeCache = new Dictionary<ScrollBarIndicatorType, Tuple<Int32Range, ScrollBar3DEffect>>();
+            var sizeCache = new Dictionary<ScrollBarIndicatorType, Tuple<Int32Range, Gradient3DEffectType>>();
 
             // Přepočtová funkce z value (X) na visual (Y) hodnoty:
             var function = Algebra.GetLinearEquation(args.ViewInfo.Minimum, areaBegin, args.ViewInfo.Maximum, areaEnd);
@@ -1569,7 +1583,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             var areaAfter = new Int32Range(thumbEnd, areaEnd);
 
             // Cache pro souřadnice a efekty, pro typy reálně použité v indikátorech:
-            var sizeCache = new Dictionary<ScrollBarIndicatorType, Tuple<Int32Range, ScrollBar3DEffect>>();
+            var sizeCache = new Dictionary<ScrollBarIndicatorType, Tuple<Int32Range, Gradient3DEffectType>>();
 
             // Přepočtová funkce z value (X) na visual (Y) hodnoty:
             var function = Algebra.GetLinearEquation(args.ViewInfo.Minimum, areaBegin, args.ViewInfo.Maximum, areaEnd);
@@ -1636,10 +1650,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="sizeCache"></param>
         /// <returns></returns>
         private Int32Range _GetVSize(ScrollBarIndicatorType type, int begin, int end,
-            Dictionary<ScrollBarIndicatorType, Tuple<Int32Range, ScrollBar3DEffect>> sizeCache, 
-            out ScrollBar3DEffect effect)
+            Dictionary<ScrollBarIndicatorType, Tuple<Int32Range, Gradient3DEffectType>> sizeCache, 
+            out Gradient3DEffectType effect)
         {
-            Tuple<Int32Range, ScrollBar3DEffect> info;
+            Tuple<Int32Range, Gradient3DEffectType> info;
             if (!sizeCache.TryGetValue(type, out info))
             {
                 int vb = begin + 2;
@@ -1662,10 +1676,10 @@ namespace Noris.Clients.Win.Components.AsolDX
                     else if (type.HasFlag(ScrollBarIndicatorType.Far))
                         start = ve - size;
                 }
-                ScrollBar3DEffect ef = (type.HasFlag(ScrollBarIndicatorType.InnerGradientEffect) ? ScrollBar3DEffect.Inner :
-                                       (type.HasFlag(ScrollBarIndicatorType.OutsideGradientEffect) ? ScrollBar3DEffect.Outer : ScrollBar3DEffect.None));
+                Gradient3DEffectType ef = (type.HasFlag(ScrollBarIndicatorType.InnerGradientEffect) ? Gradient3DEffectType.Inset :
+                                       (type.HasFlag(ScrollBarIndicatorType.OutsideGradientEffect) ? Gradient3DEffectType.Outward : Gradient3DEffectType.None));
 
-                info = new Tuple<Int32Range, ScrollBar3DEffect>(new Int32Range(start, start + size), ef);
+                info = new Tuple<Int32Range, Gradient3DEffectType>(new Int32Range(start, start + size), ef);
                 sizeCache.Add(type, info);
             }
             effect = info.Item2;
@@ -1679,21 +1693,22 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="alpha"></param>
         /// <param name="bounds"></param>
         /// <param name="effect"></param>
-        private void _PaintIndicatorOne(ScrollBarInfoArgs args, Indicator indicator, int alpha, Rectangle bounds, ScrollBar3DEffect effect)
+        private void _PaintIndicatorOne(ScrollBarInfoArgs args, Indicator indicator, int alpha, Rectangle bounds, Gradient3DEffectType effect)
         {
+            if (indicator.Color.A < 255) alpha = alpha * indicator.Color.A / 255;        // Sloučení Alpha kanálu z dodané barvy + explicitní Alpha definovaná indikátorem
+            Color color = Color.FromArgb(alpha, indicator.Color);
             switch (effect)
             {
-                case ScrollBar3DEffect.Inner:
-                case ScrollBar3DEffect.Outer:
+                case Gradient3DEffectType.Inset:
+                case Gradient3DEffectType.Outward:
+                    using (var brush = DxComponent.PaintCreateBrushForGradient(bounds, color, _Orientation, effect))
+                        args.Graphics.FillRectangle(brush, bounds);
+                    break;
                 default:
-                    args.Graphics.FillRectangle(DxComponent.PaintGetSolidBrush(indicator.Color, alpha), bounds);
+                    args.Graphics.FillRectangle(DxComponent.PaintGetSolidBrush(color), bounds);
                     break;
             }
         }
-        /// <summary>
-        /// 3D efekt
-        /// </summary>
-        private enum ScrollBar3DEffect { None, Inner, Outer }
         #endregion
         #region class Indicator = Třída jednoho konkrétního indikátoru = značky
         /// <summary>
