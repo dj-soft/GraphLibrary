@@ -2700,27 +2700,27 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         #endregion
     }
     #endregion
-    #region class DxDataFormPart : Jedna oddělená skupina řádků a sloupců v rámci DataFormu
+    #region class DxDataFormPart : Jedna oddělená a samostatná skupina řádků a sloupců v rámci DataFormu
     /// <summary>
-    /// <see cref="DxDataFormPart"/> : Jedna oddělená skupina řádků/sloupců v rámci panelu DataFormu <see cref="DxDataFormPanel"/>.
+    /// <see cref="DxDataFormPart"/> : Jedna oddělená a samostatná skupina řádků/sloupců v rámci panelu DataFormu <see cref="DxDataFormPanel"/>.
     /// Prostor DataFormu (přesněji <see cref="DxDataFormPanel"/>) může být rozdělen na více sousedících částí = <see cref="DxDataFormPart"/>,
-    /// které zobrazují tatáž data, ale jsou nascrollovaná na jiná místa, nebo mohou mít odlišné filtry a zobrazovat jiné podmnožiny řádků.
+    /// které zobrazují tatáž data, ale jsou nascrollovaná na jiná místa, nebo mohou mít odlišné filtry a zobrazovat tedy jiné podmnožiny řádků.
     /// <para/>
-    /// Toto rozčlenění povoluje a řídí <see cref="DxDataFormPanel"/> jako fyzický Parent těchto částí, pokdyny k rozdělení dostává od hlavního <see cref="DxDataForm"/>.
-    /// K interaktivní změně nechává uživateli k dispozici vhodné Splittery.
-    /// Rozdělení provádí uživatel pomocí tlačítka vpravo nahoře a následného zobrazení splitteru.
+    /// Toto rozčlenění povoluje a řídí <see cref="DxDataFormPanel"/> jako fyzický Parent těchto částí, pokyny k rozdělení dostává od hlavního <see cref="DxDataForm"/>.
+    /// K interaktivní změně dává uživateli k dispozici vhodné Splittery.
+    /// Rozdělení provádí uživatel pomocí "tahacího" tlačítka vpravo nahoře a následného zobrazení splitteru.
     /// Dostupnost Scrollbarů v jednotlivých částech v rámci <see cref="DxDataFormPanel"/> řídí <see cref="DxDataFormPanel"/>; 
     /// scrollbary jsou dostupné vždy v té krajní části v daném směru = vpravo svislý a dole vodorovný.
-    /// Synchronizaci sousedních částí, které nemají odpovídající scrollbar, zajišťuje <see cref="DxDataFormPanel"/>.
+    /// Synchronizaci sousedních částí, které nemají svůj vlastní odpovídající scrollbar, zajišťuje <see cref="DxDataFormPanel"/>.
     /// Podkladový ScrollPanel <see cref="DxScrollableContent"/> dovoluje nastavit okraje kolem scrollovaného obsahu, 
-    /// tyto okraje jsou využívány pro zobrazení "fixních" částí (vše okolo Rows).
+    /// tyto okraje jsou využívány pro zobrazení "fixních" částí (vše okolo Rows) = ColumnHeader, RowFilter, SummaryRow, RowHeader.
     /// <para/>
     /// Typicky Master Dataform (nazývaný v Greenu "FreeForm") má pouze jednu část, která nezobrazuje ani ColumnHeaders ani RowHeaders, a ani nenabízí rozdělovací Splittery.
     /// DataForm používaný pro položky (nazývaný v Greenu "EditBrowse") toto rozčlenění umožňuje.
     /// Výhledový BrowseGrid rovněž.
     /// <para/>
     /// Každá jedna skupina se nazývá Part = <see cref="DxDataFormPart"/>, a skládá se z částí: RowHeader, ColumnHeader, RowFilter, Rows, SummaryRows a Footer.
-    /// Části jsou jednotlivě volitelné pro první skupinu, pro vnitřní skupiny a pro skupinu poslední.
+    /// Tyto části jsou jednotlivě volitelné - odlišně pro první skupinu, pro vnitřní skupiny a pro skupinu poslední.
     /// Části Header, RowFilter jsou fixní k hornímu okraji a nescrollují;
     /// Části Rows, SummaryRows scrollují uprostřed;
     /// Část Footer je fixní k dolnímu okraji a nescrolluje.
