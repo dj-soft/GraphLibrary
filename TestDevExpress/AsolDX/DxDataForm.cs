@@ -19,6 +19,73 @@ namespace Noris.Clients.Win.Components.AsolDX
 {
     using Noris.Clients.Win.Components.AsolDX.DataForm;
 
+    /*    Architektura DataFormu
+       a. Vrcholový prvek je instance třídy DxDataForm, ten si vytváří vnější aplikace a s ním komunikuje
+       b. Vstupem jsou jednak definice stránek, skupin a sloupců, setují se do DxDataForm.Pages
+       c. Druhým vstupem jsou vlastní data (řádky, sloupce, dynamické definice buněk), vkládají se do DxDataForm.Data
+
+          Zobrazení dat v DataFormu
+       1. Nejjednodušší varianta je zobrazení jedné stránky (=bez záložek) s jednou částí (DxDataFormPart), bez záhlaví, filtrů a sumárních řádků
+           Tato varianta je typická pro zobrazení jednoduchých instancí a oken
+           I tato varianta může zobrazovat více než jeden řádek s daty
+       2. Druhou variantou je zobrazení s více záložkami, pak záložky nikdy nemají více částí (DxDataFormPart) ani záhlaví, filtry atd
+           Tato varianta je typická pro zobrazení instancí a složitých DynamicPage
+       3. Třetí variantou je zobrazení jedné stránky (=bez záložek) s jednou nebo více částmi (DxDataFormPart), s možností zobrazovat záhlaví, filtry atd
+           Tato varianta je typická pro zobrazení a editaci položek / řádků v přehledové šabloně
+    
+          Konstrukce instancí v DataFormu
+       1. Základem je třída DxDataForm
+          a) Vždy v sobě hostuje data = DxDataFormData
+          b) Vždy v sobě drží jedinou instanci třídy DxDataFormPanel = zobrazovač dat, viz dále
+          c) Pokud DxDataForm zobrazuje jen jednu stránku, pak nemá záložkovník, ale přímo v sobě hostuje a zobrazuje panel DxDataFormPanel
+          d) Pokud DxDataForm zobrazuje více záložek, pak má záložkovník (standardní DxTabPane), ale má stále jen jednu instanci panelu DxDataFormPanel,
+               a tuto instanci DxDataFormPanel vždy umísťuje do aktuálně zobrazené záložky; 
+               v procesu přepínání záložek do tohoto panelu vkládá definici skupin a sloupců pro tuto záložku, 
+               a vkládá do něj i odpovídající status jeho záložky (stav, v jakém byl naposledy tento panel, když zobrazoval tuto záložku) = pozice scrollbarů atd.
+
+       2. Vysvětlení rozdílu mezi Stránkou: DxDataFormPage a Záložkou: DxDataFormTab
+          a) Stránka DxDataFormPage je daná deklarací layoutu DataFormu, odpovídá prvku TAB který má daný LABEL
+          b) Záložka DxDataFormTab většinou odpovídá 1:1 stránce, s výjimkou, kdy došlo k povolenému mergování dvou malých stránek do jedné záložky
+               K tomu dojde typicky na velkém monitoru; pak je obsah dvou (i více) stránek umístěn vedle sebe na jedné vizuální záložce
+
+       3. Zobrazení dat konkrétní stránky (celého DataFormu nebo jedné záložky) tedy zajišťuje panel DxDataFormPanel
+          a) Ten má v sobě deklaraci layoutu (definice: Grupy DxDataFormGroup a v nich sloupce DxDataFormColumn)
+               Pokud celý DataForm má vícero záložek, pak panel DxDataFormPanel obsahuje ve své deklaraci layoutu jen podmnožinu týkající se aktuální záložky
+          b) DxDataFormPanel za určitých podmínek dovoluje vytvářet Splitted Parts = například zobrazí v levé části několik sloupců, 
+               vpravo od nich svislý Splitter, a za Splitterem pak tytéž řádky, ale odscrollované sloupce doprava...
+               Obdobně lze Splitnout řádky vodorovně: v horní části mít několik řádků, a v dolní části scrollovat celým přehledem...
+          c) Tedy: panel DxDataFormPanel sám nezobrazuje řádky a sloupce a data, ale dává prostor jednotlivým částem typu DxDataFormPart, 
+               aby v určité části panelu DxDataFormPanel zobrazily svoje data (řádky, sloupce, záhlaví, filtr, atd).
+          d) Panel DxDataFormPanel tedy řídí tvorbu, přemístění a zánik částí, pomocí scrollbarů.
+          e) Dále tento panel řídí synchronizaci souřadnic mezi sousedními částmi DxDataFormPart = tak, aby levá i pravá část vedle sebe zobrazovaly shodné řádky.
+        
+       4. Vlastní zobrazení dat tedy provádí každá jedna část DxDataFormPart.
+          a) DxDataFormPart je tedy hlavní zobrazovač vlastních dat DataFormu = na něm se zobrazují labely, textboxy atd
+          b) DxDataFormPart je potomkem DxScrollableContent, a jako Content používá Bufferovanou grafiku DxPanelBufferedGraphic.
+          c) Pro každou jednotlivou část (DxDataFormPart) lze nastavit, zda má/nemá zobrazovat svoje oblasti: 
+               RowHeader, ColumnHeader, RowFilter, HSplitterInitiator, VSplitterInitiator, SummaryRow, VScrollBar, HScrollBar.
+          d) Panel na základě použití iniciátorů splitterů HSplitterInitiator, VSplitterInitiator umožní dělit svůj prostor mezi více částí, anebo je zase slučovat
+          e) Veškerá data zobrazuje pomocí třídy Řádek = DxDataFormRow (a to i řádky ColumnHeaders, RowFilter, Summary).
+               Zobrazení prvku RowHeader (vlevo) provádí instance řádku DxDataFormRow na základě požadavku z DxDataFormPart.
+          f) Každá část zná svoje ID (vertikální i horizontální) a při komunikaci s datovým základem jej předává, 
+               dokážeme tedy mít dvě části pod sebou, kdy každá část má jiné třídění řádků a jiný řádkový filtr = jiný počet řádků;
+               obdobně lze pro různé svislé části zvolit jiné viditelné sloupce
+
+
+       5. 
+          a)
+
+       4. 
+          a)
+
+       4. 
+          a)
+
+    
+    
+    */
+
+
     /// <summary>
     /// DataForm
     /// </summary>
@@ -1082,15 +1149,19 @@ namespace Noris.Clients.Win.Components.AsolDX
                     text = (!blank ? texts[random.Next(textsCount)] : "");
                     tooltip = (!blank ? tooltips[random.Next(tooltipsCount)] : "");
 
-                    q = random.Next(100);
-                    DataFormColumnType itemType = (q < 5 ? DataFormColumnType.None :
-                                                (q < 10 ? DataFormColumnType.CheckBox :
-                                                (q < 15 ? DataFormColumnType.Button :
-                                                (q < 22 ? DataFormColumnType.Label :
-                                                (q < 30 ? DataFormColumnType.TextBoxButton : 
-                                                (q < 40 ? DataFormColumnType.TextBox : // ComboBoxList :
-                                                (q < 50 ? DataFormColumnType.TokenEdit :
-                                                DataFormColumnType.TextBox)))))));
+                    DataFormColumnType itemType = DataFormColumnType.TextBox;
+                    if (sampleId != 40)
+                    {
+                        q = random.Next(100);
+                        itemType = (q < 5 ? DataFormColumnType.None :
+                                   (q < 10 ? DataFormColumnType.CheckBox :
+                                   (q < 15 ? DataFormColumnType.Button :
+                                   (q < 22 ? DataFormColumnType.Label :
+                                   (q < 30 ? DataFormColumnType.TextBoxButton :
+                                   (q < 40 ? DataFormColumnType.TextBox : // ComboBoxList :
+                                   (q < 50 ? DataFormColumnType.TokenEdit :
+                                             DataFormColumnType.TextBox)))))));
+                    }
 
                     DataFormColumn item = null;
                     int shiftY = 0;
@@ -1568,10 +1639,11 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             this.VScrollBarIndicators.AddIndicator(new Int32Range(850, 1200), ScrollBarIndicatorType.ThirdNear, Color.DarkBlue);
             this.VScrollBarIndicators.AddIndicator(new Int32Range(1100, 1500), ScrollBarIndicatorType.HalfFar, Color.DarkGreen);
 
-            for (int i = 50; i < 2000; i +=100)
-                this.HScrollBarIndicators.AddIndicator(new Int32Range(i, i + 20), ScrollBarIndicatorType.FullSize | ScrollBarIndicatorType.InnerGradientEffect, Color.Red);
+            for (int i = 20; i < 2000; i +=100)
+                this.HScrollBarIndicators.AddIndicator(new Int32Range(i, i + 70), ScrollBarIndicatorType.FullSize | ScrollBarIndicatorType.InnerGradientEffect, Color.Red);
             this.HScrollBarIndicators.ColorAlphaArea = 160;
             this.HScrollBarIndicators.ColorAlphaThumb = 80;
+            this.HScrollBarIndicators.Effect3DRatio = 0.75f;
         }
         /// <summary>
         /// Disposuje panel <see cref="_ContentPanel"/>
@@ -2267,8 +2339,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         private int _LastCalcDeviceDpi;
         #endregion
-        #region Vykreslování a Bitmap cache
-        #region Vykreslení celého Contentu
+        #region Vykreslení obsahu panelu
         /// <summary>
         /// Inicializace kreslení
         /// </summary>
@@ -2600,8 +2671,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         private bool _PaintingItems = false;
 
         #endregion
-        
-        #endregion
         #region Fyzické controly - tvorba, správa, vykreslení bitmapy skrze control
         /// <summary>
         /// Kompletní informace o jednom prvku: index řádku, dekarace, control set a fyzický control
@@ -2748,6 +2817,123 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         public DxDataForm DataForm { get { return this._DataPanel.DataForm; } }
 
         #endregion
+        #region Řízení zobrazení jednotlivých částí
+
+        #endregion
+    }
+    #endregion
+    #region class DxDataFormRow : Jeden vizuální řádek v rámci DxDataFormRowBand
+    /// <summary>
+    /// DxDataFormRow : Jeden vizuální řádek v rámci DxDataFormRowBand
+    /// </summary>
+    internal class DxDataFormRow : IDisposable
+    {
+        #region Konstruktor, vlastník, prvky
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="rowBand"></param>
+        /// <param name="rowType"></param>
+        /// <param name="rowId"></param>
+        public DxDataFormRow(DxDataFormPart rowBand, DxDataFormRowType rowType, int rowId)
+        {
+            _RowBand = rowBand;
+            _RowType = rowType;
+            _RowId = rowId;
+        }
+        public void Dispose()
+        {
+            _RowBand = null;
+            DisposeCells();
+        }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return $"RowType: {_RowType}; RowIndex: {RowIndex}; RowId: {_RowId}; VisualPositions: {VisualPositions}";
+        }
+        /// <summary>Vlastník - <see cref="DxDataFormPart"/></summary>
+        private DxDataFormPart _RowBand;
+        /// <summary>Typ řádku</summary>
+        private DxDataFormRowType _RowType;
+        /// <summary>ID řádku, odkazuje se do <see cref="DxDataForm"/> pro data</summary>
+        private int _RowId;
+        /// <summary>
+        /// Vlastník - <see cref="DxDataForm"/>
+        /// </summary>
+        public DxDataForm DataForm { get { return this._RowBand.DataForm; } }
+        /// <summary>
+        /// Vlastník - <see cref="DxDataFormPart"/>
+        /// </summary>
+        public DxDataFormPart RowBand { get { return this._RowBand; } }
+        /// <summary>
+        /// Typ řádku
+        /// </summary>
+        public DxDataFormRowType RowType { get { return this._RowType; } }
+        /// <summary>
+        /// ID řádku, odkazuje se do <see cref="DxDataForm"/> pro data
+        /// </summary>
+        public int RowId { get { return this._RowId; } }
+        /// <summary>
+        /// Index viditelného řádku.
+        /// V tomto pořadí jsou řádky zobrazeny.
+        /// V poli řádků musí být tato hodnota kontinuální a vzestupná, počínaje 0.
+        /// Řádky s hodnotou -1 (a jinou zápornou) nebudou zobrazeny.
+        /// </summary>
+        public int RowIndex { get; set; }
+
+        #endregion
+
+        /// <summary>
+        /// Metoda je volána tehdy, když this řádek byl dosud použit pro určitý datový řádek (stávající <see cref="RowId"/>),
+        /// ale pro něj již řádek není potřeba, ale je potřeba pro nový jiný řádek <paramref name="rowId"/>.
+        /// Tento princip šetří režii při uvolnění instance z jednoho řádku a vytváření new instance pro zobrazení jiného řádku tím,
+        /// že starou instanci použije pro jiný řádek.
+        /// </summary>
+        /// <param name="rowId"></param>
+        internal void AssignRowId(int rowId)
+        {
+            _RowId = rowId;
+            // cokoliv dalšího:
+        }
+        /// <summary>
+        /// Zahodí a uvolní buňky
+        /// </summary>
+        private void DisposeCells()
+        { }
+        /// <summary>
+        /// Do this instance vyplní hodnoty do <see cref="VisualPositions"/>, přičemž parametr <paramref name="visualBegin"/> na závěr navýší o <paramref name="visualSize"/>.
+        /// </summary>
+        /// <param name="visualBegin"></param>
+        /// <param name="visualSize"></param>
+        public void ApplyVisualPosition(ref int visualBegin, int visualSize)
+        {
+            int visualEnd = visualBegin + visualSize;
+            _VisualPositions = new Int32Range(visualBegin, visualEnd);
+            visualBegin = visualEnd;
+        }
+        /// <summary>
+        /// Řádek je viditelný?
+        /// </summary>
+        public bool VisibleRow { get { return _VisibleRow; } set { _VisibleRow = value; } }
+        private bool _VisibleRow;
+
+        /// <summary>
+        /// Umístění na ose Y; reálné pixely v rámci celého Bandu; nastavuje se pouze pro řádky 
+        /// typu <see cref="DxDataFormRowType.RowData"/> a <see cref="DxDataFormRowType.RowSummary"/> = ty jsou pohyblivé podle ScrollBaru.
+        /// 
+        /// </summary>
+        public Int32Range CurrentPositions { get { return _CurrentPositions; } set { _CurrentPositions = value; } }
+        private Int32Range _CurrentPositions;
+        /// <summary>
+        /// Umístění na ose Y; vizuální pixely v rámci celého Bandu - u typu řádku <see cref="DxDataFormRowType.RowHeader"/>,
+        /// <see cref="DxDataFormRowType.RowFilter"/> a <see cref="DxDataFormRowType.RowFooter"/> jsou permanentní (tyto řádky jsou nepohyblivé),
+        /// u řádků typu řádku <see cref="DxDataFormRowType.RowData"/> a <see cref="DxDataFormRowType.RowSummary"/> jsou pohyblivé podle ScrollBaru.
+        /// </summary>
+        public Int32Range VisualPositions { get { return _VisualPositions; } set { _VisualPositions = value; } }
+        private Int32Range _VisualPositions;
     }
     #endregion
     #region class DxDataFormControlSet : správce několika vizuálních controlů jednoho druhu, jejich tvorba, a příprava k použití
@@ -3623,7 +3809,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 _CurrentPageBounds = Groups.Select(g => g.CurrentGroupBounds).SummaryVisibleRectangle() ?? Rectangle.Empty;
         }
         #endregion
-
     }
     #endregion
     #region class DxDataFormGroup : Třída reprezentující jednu grupu na stránce
@@ -3955,120 +4140,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             }
         }
         #endregion
-    }
-    #endregion
-    #region class DxDataFormRow : Jeden vizuální řádek v rámci DxDataFormRowBand
-    /// <summary>
-    /// DxDataFormRow : Jeden vizuální řádek v rámci DxDataFormRowBand
-    /// </summary>
-    internal class DxDataFormRow : IDisposable
-    {
-        #region Konstruktor, vlastník, prvky
-        /// <summary>
-        /// Konstruktor
-        /// </summary>
-        /// <param name="rowBand"></param>
-        /// <param name="rowType"></param>
-        /// <param name="rowId"></param>
-        public DxDataFormRow(DxDataFormPart rowBand, DxDataFormRowType rowType, int rowId)
-        {
-            _RowBand = rowBand;
-            _RowType = rowType;
-            _RowId = rowId;
-        }
-        public void Dispose()
-        {
-            _RowBand = null;
-            DisposeCells();
-        }
-        /// <summary>
-        /// Vizualizace
-        /// </summary>
-        /// <returns></returns>
-        public override string ToString()
-        {
-            return $"RowType: {_RowType}; RowIndex: {RowIndex}; RowId: {_RowId}; VisualPositions: {VisualPositions}";
-        }
-        /// <summary>Vlastník - <see cref="DxDataFormPart"/></summary>
-        private DxDataFormPart _RowBand;
-        /// <summary>Typ řádku</summary>
-        private DxDataFormRowType _RowType;
-        /// <summary>ID řádku, odkazuje se do <see cref="DxDataForm"/> pro data</summary>
-        private int _RowId;
-        /// <summary>
-        /// Vlastník - <see cref="DxDataForm"/>
-        /// </summary>
-        public DxDataForm DataForm { get { return this._RowBand.DataForm; } }
-        /// <summary>
-        /// Vlastník - <see cref="DxDataFormPart"/>
-        /// </summary>
-        public DxDataFormPart RowBand { get { return this._RowBand; } }
-        /// <summary>
-        /// Typ řádku
-        /// </summary>
-        public DxDataFormRowType RowType { get { return this._RowType; } }
-        /// <summary>
-        /// ID řádku, odkazuje se do <see cref="DxDataForm"/> pro data
-        /// </summary>
-        public int RowId { get { return this._RowId; } }
-        /// <summary>
-        /// Index viditelného řádku.
-        /// V tomto pořadí jsou řádky zobrazeny.
-        /// V poli řádků musí být tato hodnota kontinuální a vzestupná, počínaje 0.
-        /// Řádky s hodnotou -1 (a jinou zápornou) nebudou zobrazeny.
-        /// </summary>
-        public int RowIndex { get; set; }
-
-        #endregion
-
-        /// <summary>
-        /// Metoda je volána tehdy, když this řádek byl dosud použit pro určitý datový řádek (stávající <see cref="RowId"/>),
-        /// ale pro něj již řádek není potřeba, ale je potřeba pro nový jiný řádek <paramref name="rowId"/>.
-        /// Tento princip šetří režii při uvolnění instance z jednoho řádku a vytváření new instance pro zobrazení jiného řádku tím,
-        /// že starou instanci použije pro jiný řádek.
-        /// </summary>
-        /// <param name="rowId"></param>
-        internal void AssignRowId(int rowId)
-        {
-            _RowId = rowId;
-            // cokoliv dalšího:
-        }
-        /// <summary>
-        /// Zahodí a uvolní buňky
-        /// </summary>
-        private void DisposeCells()
-        { }
-        /// <summary>
-        /// Do this instance vyplní hodnoty do <see cref="VisualPositions"/>, přičemž parametr <paramref name="visualBegin"/> na závěr navýší o <paramref name="visualSize"/>.
-        /// </summary>
-        /// <param name="visualBegin"></param>
-        /// <param name="visualSize"></param>
-        public void ApplyVisualPosition(ref int visualBegin, int visualSize)
-        {
-            int visualEnd = visualBegin + visualSize;
-            _VisualPositions = new Int32Range(visualBegin, visualEnd);
-            visualBegin = visualEnd;
-        }
-        /// <summary>
-        /// Řádek je viditelný?
-        /// </summary>
-        public bool VisibleRow { get { return _VisibleRow; } set { _VisibleRow = value; } }
-        private bool _VisibleRow;
-        
-        /// <summary>
-        /// Umístění na ose Y; reálné pixely v rámci celého Bandu; nastavuje se pouze pro řádky 
-        /// typu <see cref="DxDataFormRowType.RowData"/> a <see cref="DxDataFormRowType.RowSummary"/> = ty jsou pohyblivé podle ScrollBaru.
-        /// 
-        /// </summary>
-        public Int32Range CurrentPositions { get { return _CurrentPositions; } set { _CurrentPositions = value; } }
-        private Int32Range _CurrentPositions;
-        /// <summary>
-        /// Umístění na ose Y; vizuální pixely v rámci celého Bandu - u typu řádku <see cref="DxDataFormRowType.RowHeader"/>,
-        /// <see cref="DxDataFormRowType.RowFilter"/> a <see cref="DxDataFormRowType.RowFooter"/> jsou permanentní (tyto řádky jsou nepohyblivé),
-        /// u řádků typu řádku <see cref="DxDataFormRowType.RowData"/> a <see cref="DxDataFormRowType.RowSummary"/> jsou pohyblivé podle ScrollBaru.
-        /// </summary>
-        public Int32Range VisualPositions { get { return _VisualPositions; } set { _VisualPositions = value; } }
-        private Int32Range _VisualPositions;
     }
     #endregion
     #region class DxDataFormColumn : Třída reprezentující definici jednoho prvku odpovídající sloupci v DxDataFormu

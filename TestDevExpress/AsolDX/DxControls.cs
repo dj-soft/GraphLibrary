@@ -1440,6 +1440,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             _Indicators = new List<Indicator>();
             _ColorAlphaArea = 200;
             _ColorAlphaThumb = 90;
+            _Effect3DRatio = 0.25f;
         }
         private DevExpress.XtraEditors.ScrollTouchBase _Owner;
         private Orientation _Orientation;
@@ -1504,6 +1505,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public int ColorAlphaThumb { get { return _ColorAlphaThumb; } set { _ColorAlphaThumb = value.Align(20, 255); } }
         private int _ColorAlphaThumb;
+        /// <summary>
+        /// Síla efektu 3D pro prvky, které mají vlastnost <see cref="ScrollBarIndicatorType.InnerGradientEffect"/> nebo <see cref="ScrollBarIndicatorType.OutsideGradientEffect"/>.
+        /// Hodnota 0 = plochý prvek (to se ale nemusí nastavovat Gardient), hodnota 1 je maximum (příšerně kulatý prvek), defaultní = 0.25f.
+        /// </summary>
+        public float Effect3DRatio { get { return _Effect3DRatio; } set { _Effect3DRatio = value.Align(0f, 1f); } }
+        private float _Effect3DRatio;
         #endregion
         #region Kreslení
         /// <summary>
@@ -1701,7 +1708,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 case Gradient3DEffectType.Inset:
                 case Gradient3DEffectType.Outward:
-                    using (var brush = DxComponent.PaintCreateBrushForGradient(bounds, color, _Orientation, effect))
+                    float effectRatio = (effect == Gradient3DEffectType.Inset ? -_Effect3DRatio : _Effect3DRatio);
+                    using (var brush = DxComponent.PaintCreateBrushForGradient(bounds, color, _Orientation, effectRatio))
                         args.Graphics.FillRectangle(brush, bounds);
                     break;
                 default:
