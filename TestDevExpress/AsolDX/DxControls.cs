@@ -859,6 +859,14 @@ namespace Noris.Clients.Win.Components.AsolDX
         #endregion
         #region Layout a řízení ScrollBarů
         /// <summary>
+        /// Výška vodorovného ScrollBaru
+        /// </summary>
+        public int DefaultHorizontalScrollBarHeight { get { return _HScrollBar.GetDefaultHorizontalScrollBarHeight(); } }
+        /// <summary>
+        /// Šířka svislého ScrollBaru
+        /// </summary>
+        public int DefaultVerticalScrollBarWidth { get { return _VScrollBar.GetDefaultVerticalScrollBarWidth(); } }
+        /// <summary>
         /// Uloží a akceptuje souřadnici <see cref="ContentVisualPadding"/>
         /// </summary>
         /// <param name="contentVisualPadding"></param>
