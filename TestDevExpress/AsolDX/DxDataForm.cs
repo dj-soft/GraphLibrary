@@ -1672,19 +1672,39 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         #endregion
         #region Public vlastnosti
         /// <summary>
-        /// Aktuální velikost viditelného prostoru pro DataForm, po odečtení aktuálně zobrazených ScrollBarů (pokud jsou zobrazeny)
+        /// Aktuální velikost viditelného prostoru pro DataForm, po odečtení prostoru pro ScrollBary (bez ohledu na jejich aktuální viditelnost)
         /// </summary>
         internal Size VisibleContentSize 
         {
             get 
             {
                 Size size = this.ClientSize;
-                int vScrollSize = _RootPart.ScrollToBounds
-                return (this._DataFormPanel?.VisibleContentSize ?? Size.Empty); 
+                int hScrollSize = _RootPart.DefaultHorizontalScrollBarHeight;
+                int vScrollSize = _RootPart.DefaultVerticalScrollBarWidth;
+                return new Size(size.Width - vScrollSize, size.Height - hScrollSize);
             }
         }
-
-
+        /// <summary>
+        /// Stav panelu - pozice scrollbarů atd. 
+        /// Podporuje přepínání záložek - vizuálně jiný obsah, ale promítaný prostřednictvím jedné instance <see cref="DxDataFormPanel"/>.
+        /// Při čtení bude vrácen objekt obsahující aktuální stav.
+        /// Při zápisu budou hodnoty z vkládaného objektu aplikovány do panelu
+        /// </summary>
+        internal DxDataFormState State
+        {
+            get
+            {
+#warning TODO musí být navázáno na pole _Parts!
+                if (_State == null)
+                    _State = new DxDataFormState();
+                return _State;
+            }
+            set
+            {
+                _State = value;
+            }
+        }
+        private DxDataFormState _State;
         #endregion
         #region Parts - jednotlivé části DataFormu (splitterem oddělené bloky řádků nebo sloupců), výchozí je jedna část přes celý prostor panelu
         /// <summary>
@@ -1704,7 +1724,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         {
             _RootPart = new DxDataFormPart(this) { PartXId = partXId, PartYId = partYId };
             _Parts.Add(_RootPart);
-            _RootPart.Dock = ((_Parts.Count == 0) ? DockStyle.Fill : DockStyle.None);
+            _RootPart.Dock = ((_Parts.Count == 1) ? DockStyle.Fill : DockStyle.None);
             this.Controls.Add(_RootPart);
         }
         /// <summary>
@@ -1803,7 +1823,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             _DataPanel = dataPanel;
 
             this.DoubleBuffered = true;
-            this.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.Style3D;
+            this.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder;
             this.PartXId = 0;
             this.PartYId = 0;
 
