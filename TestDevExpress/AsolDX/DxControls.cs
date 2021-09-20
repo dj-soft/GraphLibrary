@@ -714,6 +714,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Okraje kolem contentu = mezi vnitřním okrajem this panelu a vnějším okrajem panelu <see cref="ContentControl"/>.
         /// Výchozí hodnota = {0,0,0,0}. Pak Content (obsah) obsazuje celý vnitřní prostor this panelu, vyjma potřebné scrollbary.
+        /// Jde o designovou hodnotu, na vizuální pixely je přepočtena podle aktuálního Zoomu a DPI.
         /// <para/>
         /// Zadáním kladných hodnot dojde k vytvoření prostoru ("okraje") v daných oblastech okolo <see cref="ContentControl"/> 
         /// (<see cref="ContentControl"/> bude menší než dostupný vnitřní prostor). 
@@ -880,7 +881,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             // Vizuální prostor:
             Rectangle innerBounds = InnerRectangle;
-            Padding visualPadding = _ContentVisualPadding;
+            Padding visualPadding = DxComponent.ZoomToGui(_ContentVisualPadding, this.CurrentDpi);           // přepočet Design => Current
             Rectangle contentBounds = Rectangle.FromLTRB(innerBounds.Left + visualPadding.Left, innerBounds.Top + visualPadding.Top, innerBounds.Right - visualPadding.Right, innerBounds.Bottom - visualPadding.Bottom);
             if (contentBounds.Width < 0) contentBounds.Width = 0;
             if (contentBounds.Height < 0) contentBounds.Height = 0;
