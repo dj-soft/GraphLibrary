@@ -1838,7 +1838,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="disposing"></param>
         protected override void Dispose(bool disposing)
         {
-            _Groups?.Clear();
             DisposeGroups();
             DisposeContentPanel();
 
@@ -1926,13 +1925,22 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Po vložení této definice neproběhne automaticky refresh controlu, je tedy vhodné následně volat <see cref="Refresh(RefreshParts)"/> 
         /// a předat v parametru požadavek <see cref="RefreshParts.InvalidateControl"/>.
         /// </summary>
-        public List<DxDataFormGroup> Groups { get { return _Groups; } set { _SetGroups(value); } }
+        public List<DxDataFormGroup> Groups { get { return _GetGroups(); } set { _SetGroups(value); } }
         /// <summary>
         /// Inicializuje pole prvků
         /// </summary>
         private void InitializeGroups()
         {
             _VisibleItems = new List<DxDataFormColumn>();
+        }
+        /// <summary>
+        /// Metoda vrátí grupy, které se aktuálně mají zobrazovat.
+        /// Jsou to bud grupy zdejší, tedy explicitně zadané, anebo grupy společné pro celý panel <see cref="DxDataFormPanel.Groups"/>.
+        /// </summary>
+        /// <returns></returns>
+        private List<DxDataFormGroup> _GetGroups()
+        {
+            return _Groups ?? _DataPanel.Groups;
         }
         /// <summary>
         /// Vloží do sebe dané grupy a zajistí minimální potřebné refreshe
@@ -1943,7 +1951,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             DisposeGroups();
             if (groups != null)
                 _Groups = groups.ToList();
-
             Refresh(RefreshParts.AfterItemsChangedSilent);
         }
         /// <summary>
@@ -1955,8 +1962,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         private void _CalculateGroupsTotalCurrentSize()
         {
             _GroupsTotalSize = Size.Empty;
-            if (_Groups == null) return;
-            Rectangle bounds = _Groups.Select(g => g.CurrentGroupBounds).SummaryVisibleRectangle() ?? Rectangle.Empty;
+            var groups = Groups;
+            if (groups == null) return;
+            Rectangle bounds = groups.Select(g => g.CurrentGroupBounds).SummaryVisibleRectangle() ?? Rectangle.Empty;
             _GroupsTotalSize = new Size(bounds.Right, bounds.Bottom);
         }
         /// <summary>
@@ -1966,7 +1974,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <returns></returns>
         private void _InvalidatGroupsCurrentBounds()
         {
-            _Groups?.ForEachExec(g => g.InvalidateBounds());
+            var groups = Groups;
+            groups?.ForEachExec(g => g.InvalidateBounds());
 
             _LastCalcZoom = DxComponent.Zoom;
             _LastCalcDeviceDpi = this.CurrentDpi;
@@ -1976,8 +1985,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         private void _PrepareVisibleGroupsItems()
         {
+            var groups = Groups;
             Rectangle virtualBounds = this.ContentVirtualBounds;
-            this._VisibleGroups = this._Groups?.Where(g => g.IsVisibleInVirtualBounds(virtualBounds)).ToList();
+            this._VisibleGroups = groups?.Where(g => g.IsVisibleInVirtualBounds(virtualBounds)).ToList();
             this._VisibleItems = this._VisibleGroups?.SelectMany(g => g.Items).Where(i => i.IsVisibleInVirtualBounds(virtualBounds)).ToList();
         }
         /// <summary>
@@ -2001,7 +2011,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 _VisibleItems = null;
             }
         }
-
         /// <summary>
         /// Počet aktuálně viditelných prvků
         /// </summary>
