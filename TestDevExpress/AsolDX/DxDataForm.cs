@@ -1379,20 +1379,19 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Počet řádků s daty. Pokud nejsou vložena data, vrací 0.
         /// </summary>
-        public int RowCount
+        /// <param name="partXId">Identifikace datové oblasti ve směru X</param>
+        /// <param name="partYId">Identifikace datové oblasti ve směru Y</param>
+        public int RowCount(int partXId, int partYId)
         {
-            get
+            switch (_CurrentSourceType)
             {
-                switch (_CurrentSourceType)
-                {
-                    case SourceType.None: return 0;
-                    case SourceType.DataTable: return _GetRowCountDataTable();
-                    case SourceType.Array: return _GetRowCountArray();
-                    case SourceType.List: return _GetRowCountList();
-                    case SourceType.Record: return _GetRowCountRecord();
-                }
-                return 0;
+                case SourceType.None: return 0;
+                case SourceType.DataTable: return _GetRowCountDataTable();
+                case SourceType.Array: return _GetRowCountArray();
+                case SourceType.List: return _GetRowCountList();
+                case SourceType.Record: return _GetRowCountRecord();
             }
+            return 0;
         }
         /// <summary>
         /// Vrátí text pro sloupec daného řádku
@@ -1417,14 +1416,16 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Správce dat by měl znát svoje data (řádky) včetně jejich řazení, kdy každý řádek má svoji jednoznačnou a kontinuální vizuální pozici v poli viditelných řádků, počínaje od 0.
         /// V rámci tohoto pole by měl dokázat najít řádky na daných pozicích, a zde vrátí pole jejich RowId ve správném pořadí, jak budou zobrazeny.
         /// </summary>
+        /// <param name="partXId">Identifikace datové oblasti ve směru X</param>
+        /// <param name="partYId">Identifikace datové oblasti ve směru Y</param>
         /// <param name="rowIndexFirst"></param>
         /// <param name="rowCount"></param>
         /// <returns></returns>
-        internal int[] GetVisibleRowsId(int rowIndexFirst, int rowCount)
+        internal int[] GetVisibleRowsId(int partXId, int partYId, int rowIndexFirst, int rowCount)
         {
             // Kontroly, zarovnání, zkratka pro chybné zadání nebo pro nula záznamů:
             if (rowIndexFirst < 0) rowIndexFirst = 0;
-            if (rowIndexFirst >= this.RowCount || rowCount <= 0) return new int[0];
+            if (rowCount <= 0 || rowIndexFirst >= this.RowCount(partXId, partYId) || ) return new int[0];
 
             // Pokud by neexistovalo setřídění řádků, a pokud by RowId byly kontinuálně od 0 nahoru, pak by věc byla jednoduchá
             //  = vrátilo by se pole obsahující posloupnost čísel { rowIndexFirst, rowIndexFirst+1, ..., rowIndexLast }.
