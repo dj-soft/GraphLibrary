@@ -2044,7 +2044,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         public static float GetArea(this RectangleF r)
         {
-            return ((r.Width <= 0f || r.Height <= 0f) ? 0 : r.Width * r.Height);
+            return ((r.Width <= 0f || r.Height <= 0f) ? 0f : r.Width * r.Height);
         }
         /// <summary>
         /// Vrací plochu daného Size.
@@ -2066,7 +2066,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         public static float GetArea(this SizeF r)
         {
-            return ((r.Width <= 0f || r.Height <= 0f) ? 0 : r.Width * r.Height);
+            return ((r.Width <= 0f || r.Height <= 0f) ? 0f : r.Width * r.Height);
         }
         /// <summary>
         /// Vrátí orientaci tohoto prostoru podle poměru šířky a výšky. Pokud šířka == výšce, pak vrací Horizontal.
@@ -2932,7 +2932,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (monitorBounds.Length > 1 && toMultiMonitors)
             {   // Máme-li více monitorů, a je povoleno umístit souřadnice přes více monitorů:
                 var summaryBounds = monitorBounds.SummaryVisibleRectangle().Value;  // Sumární souřadnice z více monitorů = nikdy nevrátí null
-                return FitInto(bounds, summaryBounds, shrinkToFit);                 // Prostě sořadnici zarovnáme do sumárního prostoru.
+                return FitInto(bounds, summaryBounds, shrinkToFit);                 // Prostě souřadnici zarovnáme do sumárního prostoru.
             }
             // Souřadnice máme zarovnat do jednoho konkrétního monitoru. Ale - do kterého?
             var nearestMonitor = bounds.GetNearestBounds(monitorBounds).Value;      // Počet monitorů je nejméně 1, proto metoda GetNearestBounds() nevrátí null...

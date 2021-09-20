@@ -19,33 +19,37 @@ namespace Noris.Clients.Win.Components.AsolDX
 {
     using Noris.Clients.Win.Components.AsolDX.DataForm;
 
-    /*    Architektura DataFormu
-       a. Vrcholový prvek je instance třídy DxDataForm, ten si vytváří vnější aplikace a s ním komunikuje
+    /*  [A]  Architektura DataFormu
+        ===========================
+       a. Vrcholový prvek je instance třídy DxDataForm, ten je vytvářen vnější aplikací, a ta pak komunikuje výhradně s DxDataForm
        b. Vstupem jsou jednak definice stránek, skupin a sloupců, setují se do DxDataForm.Pages
        c. Druhým vstupem jsou vlastní data (řádky, sloupce, dynamické definice buněk), vkládají se do DxDataForm.Data
 
-          Zobrazení dat v DataFormu
-       1. Nejjednodušší varianta je zobrazení jedné stránky (=bez záložek) s jednou částí (DxDataFormPart), bez záhlaví, filtrů a sumárních řádků
+        [B]  Zobrazení dat v DataFormu
+        ==============================
+       I. Nejjednodušší varianta je zobrazení jedné stránky (=bez záložek) s jednou částí (DxDataFormPart), bez záhlaví, filtrů a sumárních řádků
            Tato varianta je typická pro zobrazení jednoduchých instancí a oken
            I tato varianta může zobrazovat více než jeden řádek s daty
-       2. Druhou variantou je zobrazení s více záložkami, pak záložky nikdy nemají více částí (DxDataFormPart) ani záhlaví, filtry atd
+      II. Druhou variantou je zobrazení s více záložkami, pak záložky nikdy nemají více částí (DxDataFormPart) ani záhlaví, filtry atd
            Tato varianta je typická pro zobrazení instancí a složitých DynamicPage
-       3. Třetí variantou je zobrazení jedné stránky (=bez záložek) s jednou nebo více částmi (DxDataFormPart), s možností zobrazovat záhlaví, filtry atd
+     III. Třetí variantou je zobrazení jedné stránky (=bez záložek) s jednou nebo více částmi (DxDataFormPart), s možností zobrazovat záhlaví, filtry atd
            Tato varianta je typická pro zobrazení a editaci položek / řádků v přehledové šabloně
     
-          Konstrukce instancí v DataFormu
+        [C]  Konstrukce instancí v DataFormu
+        ====================================
        1. Základem je třída DxDataForm
           a) Vždy v sobě hostuje data = DxDataFormData
-          b) Vždy v sobě drží jedinou instanci třídy DxDataFormPanel = zobrazovač dat, viz dále
-          c) Pokud DxDataForm zobrazuje jen jednu stránku, pak nemá záložkovník, ale přímo v sobě hostuje a zobrazuje panel DxDataFormPanel
-          d) Pokud DxDataForm zobrazuje více záložek, pak má záložkovník (standardní DxTabPane), ale má stále jen jednu instanci panelu DxDataFormPanel,
+          b) Vždy v sobě drží jednu jedinou instanci třídy DxDataFormPanel = zobrazovač dat, viz dále
+          c) Pokud DxDataForm zobrazuje jen jednu stránku, pak nemá záložkovník, ale přímo v sobě hostuje a zobrazuje (jako svůj Control) panel DxDataFormPanel
+          d) Pokud DxDataForm zobrazuje více záložek, pak má (jako svůj Control) záložkovník (=standardní DxTabPane), ale má stále jen jednu instanci panelu DxDataFormPanel,
                a tuto instanci DxDataFormPanel vždy umísťuje do aktuálně zobrazené záložky; 
                v procesu přepínání záložek do tohoto panelu vkládá definici skupin a sloupců pro tuto záložku, 
                a vkládá do něj i odpovídající status jeho záložky (stav, v jakém byl naposledy tento panel, když zobrazoval tuto záložku) = pozice scrollbarů atd.
 
        2. Vysvětlení rozdílu mezi Stránkou: DxDataFormPage a Záložkou: DxDataFormTab
           a) Stránka DxDataFormPage je daná deklarací layoutu DataFormu, odpovídá prvku TAB který má daný LABEL
-          b) Záložka DxDataFormTab většinou odpovídá 1:1 stránce, s výjimkou, kdy došlo k povolenému mergování dvou malých stránek do jedné záložky
+          b) Záložka DxDataFormTab je vizuální objekt, většinou odpovídá 1:1 stránce DxDataFormPage, 
+               s výjimkou, kdy došlo k >povolenému mergování< dvou malých stránek (DxDataFormPage) do jedné záložky (DxDataFormTab)
                K tomu dojde typicky na velkém monitoru; pak je obsah dvou (i více) stránek umístěn vedle sebe na jedné vizuální záložce
 
        3. Zobrazení dat konkrétní stránky (celého DataFormu nebo jedné záložky) tedy zajišťuje panel DxDataFormPanel
@@ -70,10 +74,17 @@ namespace Noris.Clients.Win.Components.AsolDX
           f) Každá část zná svoje ID (vertikální i horizontální) a při komunikaci s datovým základem jej předává, 
                dokážeme tedy mít dvě části pod sebou, kdy každá část má jiné třídění řádků a jiný řádkový filtr = jiný počet řádků;
                obdobně lze pro různé svislé části zvolit jiné viditelné sloupce
+          g) Část DxDataFormPart v defaultním nastavení zobrazuje všechny sloupce (DxDataFormGroup + DxDataFormColumn), 
+               přebírá je z DxDataFormPanel (panel DxDataFormPanel obsahuje jednu vizuální záložku, a tedy podmnožinu ze všech sloupců DataFormu)
+               DxDataFormPart ale může dostat explicitní seznam sloupců = pak zobrazuje jen tyto sloupce.
 
-
-       5. 
-          a)
+       5. Fyzické zobrazování tedy provádí DxDataFormPart, který pro řízení zobrazení dat z jednotlivých řádků a sloupců datové tabulky 
+               používá třídu DxDataFormRow (řádek), ta uvnitř sebe používá DxDataFormCell (buňka).
+          a) DataForm musí umět zobrazit data z více než jednoho řádku, a to ve všech třech režimech = včetně dat typu >Master<
+          b) DxDataFormPart zobrazuje data z řádků různých typů: ColumnHeader, RowFilter, DataRow, SummaryRow; zobrazuje je do různých částí svého panelu
+          c) Tím, že DxDataFormPart je potomkem DxScrollableContent, může nastavovat okraje pro scrollovaný content = DxScrollableContent.ContentVisualPadding
+               Tímto způsobem vytvoří prostor nahoře pro ColumnHeader + RowFilter, dole pro SummaryRow a vlevo pro RowHeader;
+               tyto prvky tedy vykresluje přímo do plochy DxDataFormPart, kdežto scrollovaný obsah řádků vykresluje do DxScrollableContent.ContentControl
 
        4. 
           a)
@@ -84,7 +95,6 @@ namespace Noris.Clients.Win.Components.AsolDX
     
     
     */
-
 
     /// <summary>
     /// DataForm
@@ -2936,6 +2946,12 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         private Int32Range _VisualPositions;
     }
     #endregion
+    #region class DxDataFormCell : Jedna vizuální buňka v rámci DataFormu, průnik řádku a sloupce
+    internal class DxDataFormCell
+    {
+
+    }
+    #endregion
     #region class DxDataFormControlSet : správce několika vizuálních controlů jednoho druhu, jejich tvorba, a příprava k použití
     /// <summary>
     /// Instance třídy, která obhospodařuje jeden typ <see cref="DataFormColumnType"/> vizuálního controlu, 
@@ -4321,12 +4337,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             return (IsVisible && VisibleBounds.HasValue && VisibleBounds.Value.Contains(point));
         }
         #endregion
-    }
-    #endregion
-    #region class DxDataFormCell : Jedna vizuální buňka v rámci DataFormu, průnik řádku a sloupce
-    internal class DxDataFormCell
-    {
-
     }
     #endregion
     #region Enumy : DxDataFormRowType, RefreshParts
