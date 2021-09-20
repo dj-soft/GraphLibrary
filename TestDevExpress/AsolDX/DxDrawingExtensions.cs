@@ -1004,7 +1004,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Vytvoří a vrátí nový Rectangle, jehož velikost je do všech stran zvětšená o daný počet pixelů.
         /// Záporné číslo velikost zmenší.
-        /// Například this Rectangle {50, 10, 30, 20} .Enlarge(1) vrátí hodnotu: {49, 9, 32, 22}.
+        /// <para/>
+        /// Například this Rectangle {50, 10, 30, 20} .Enlarge(+1) vrátí hodnotu: {49, 9, 32, 22}.
+        /// <para/>
         /// Například this Rectangle {50, 10, 30, 20} .Enlarge(-1) vrátí hodnotu: {51, 11, 28, 18}.
         /// </summary>
         /// <param name="r"></param>

@@ -14,6 +14,7 @@ using System.Windows.Forms;
 
 using DevExpress.XtraEditors;
 using DevExpress.Utils.Extensions;
+using DevExpress.XtraRichEdit.Model.History;
 
 namespace Noris.Clients.Win.Components.AsolDX
 {
@@ -372,8 +373,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             _DataFormPanel = new DxDataFormPanel(this);
             _DataFormPanel.Dock = DockStyle.Fill;
             _DataFormPanel.LogActive = this.LogActive;
-            _DataFormPanel.ContentVisualPadding = new Padding(50, 28, 0, 16); // Padding.Empty;
-            // _DataFormPanel.VSplitterEnabled = true;
             _DataFormPanel.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.HotFlat;
         }
         /// <summary>
@@ -464,14 +463,15 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Daný control přidá do panelu na pozadí (control jen pro kreslení) anebo na popředí (control pro interakci).
         /// </summary>
         /// <param name="control"></param>
-        /// <param name="addToBackground"></param>
-        internal void AddControl(Control control, bool addToBackground) { _DataFormPanel?.AddControl(control, addToBackground); }
-        /// <summary>
-        /// Daný control odebere z panelu na pozadí (control jen pro kreslení) anebo na popředí (control pro interakci).
-        /// </summary>
-        /// <param name="control"></param>
-        /// <param name="removeFromBackground"></param>
-        internal void RemoveControl(Control control, bool removeFromBackground) { _DataFormPanel?.RemoveControl(control, removeFromBackground); }
+        /// <param name="parent"></param>
+        internal void AddControl(Control control, Control parent)
+        {
+            if (control == null) return;
+            if (parent == null)
+                control.AddControlToParent(this);
+            else
+                control.AddControlToParent(parent);
+        }
         /// <summary>
         /// Provede refresh panelu
         /// </summary>
@@ -484,7 +484,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Aktuální velikost viditelného prostoru pro DataForm, po odečtení aktuálně zobrazených ScrollBarů (pokud jsou zobrazeny)
         /// </summary>
-        internal Size VisibleContentSize { get { return (this._DataFormPanel?.ContentVirtualBounds.Size ?? Size.Empty); } }
+        internal Size VisibleContentSize { get { return (this._DataFormPanel?.VisibleContentSize ?? Size.Empty); } }
         /// <summary>
         /// Počet celkem deklarovaných prvků
         /// </summary>
@@ -492,7 +492,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Počet aktuálně viditelných prvků
         /// </summary>
-        internal int VisibleItemsCount { get { return _DataFormPanel?.VisibleItemsCount ?? 0; } }
+        internal int VisibleCellsCount { get { return _DataFormPanel?.VisibleCellsCount ?? 0; } }
         /// <summary>
         /// Metoda vrátí Brush odpovídající požadavku. Může vrátit null.
         /// </summary>
@@ -519,17 +519,37 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
             return DxComponent.PaintCreateBrushForGradient(bounds, color1, color2, appearance.GradientStyle);
         }
-
-        internal static System.Drawing.Drawing2D.GraphicsPath CreateGraphicsPath(Rectangle bounds, Int32Range borderRange)
+        /// <summary>
+        /// Vytvoří <see cref="System.Drawing.Drawing2D.GraphicsPath"/>, která reprezentuje "Rám od obrazu" = "obdélník s otvorem uvnitř".
+        /// Vnější hrany obdélníku jsou o (borderRange.Begin) menší než dané souřadnice <paramref name="outerBounds"/>, vnitřní hrany jsou menší o (borderRange.End).
+        /// Šířka 
+        /// </summary>
+        /// <param name="outerBounds">Vnější prostor pro rám</param>
+        /// <param name="borderRange">Určuje odstup rámu od prostoru: Begin = odstup vnějšího okraje rámu od <paramref name="outerBounds"/>, Size = šířka rámu</param>
+        /// <returns></returns>
+        internal static System.Drawing.Drawing2D.GraphicsPath CreateGraphicsFrame(Rectangle outerBounds, Int32Range borderRange)
+        {
+            return CreateGraphicsFrame(outerBounds, new Padding(borderRange.Size), borderRange.Begin);
+        }
+        /// <summary>
+        /// Vytvoří <see cref="System.Drawing.Drawing2D.GraphicsPath"/>, která reprezentuje "Rám od obrazu" = "obdélník s otvorem uvnitř".
+        /// Vnější rozměr rámu je dán v <paramref name="bounds"/> (volitelně může být zmenšen o <paramref name="outerMargin"/>.
+        /// Šířky rámu ve čtyřech hranách definuje <paramref name="sizes"/>.
+        /// <para/>
+        /// Vždy jde o Current pixely, nikoli Design. Konverzi musí zajistit volající.
+        /// </summary>
+        /// <param name="bounds">Vnější souřadnice rámu</param>
+        /// <param name="sizes">Šířka rámu ve čtyřech hranách, může se tedy každá hrana lišit</param>
+        /// <param name="outerMargin">Volitelně zmenšení mezi vnějšími souřadnicemi a vnějším okrajem rámu. Bude-li zadáno +5px, pak uvnitř daných <paramref name="bounds"/> bude 5px prázdných, a teprve uvnitř nich začne Frame.</param>
+        /// <returns></returns>
+        internal static System.Drawing.Drawing2D.GraphicsPath CreateGraphicsFrame(Rectangle bounds, Padding sizes, int? outerMargin = null)
         {
             System.Drawing.Drawing2D.GraphicsPath path = new System.Drawing.Drawing2D.GraphicsPath(System.Drawing.Drawing2D.FillMode.Alternate);
 
-            int begin = borderRange.Begin;
-            Rectangle outer = bounds.Enlarge(-begin);
-            path.AddRectangle(outer);
+            if (outerMargin.HasValue) bounds = bounds.Enlarge(-outerMargin.Value);
+            path.AddRectangle(bounds);
 
-            int size = borderRange.Size;
-            Rectangle inner = outer.Enlarge(-size);
+            Rectangle inner = bounds.Sub(sizes);
             path.AddRectangle(inner);
 
             return path;
@@ -580,11 +600,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="item"></param>
         /// <param name="mode"></param>
+        /// <param name="parent">Parent, do něhož má být control umístěn. Pokud režim <paramref name="mode"/> je <see cref="DxDataFormControlUseMode.Draw"/>, pak parent smí být null.</param>
         /// <returns></returns>
-        internal Control GetControl(DxDataFormColumn item, DxDataFormControlUseMode mode)
+        internal Control GetControl(DxDataFormColumn item, DxDataFormControlUseMode mode, Control parent)
         {
             DxDataFormControlSet controlSet = GetControlSet(item);
-            Control drawControl = controlSet.GetControlForMode(item, mode);
+            Control drawControl = controlSet.GetControlForMode(item, mode, parent);
             return drawControl;
         }
         /// <summary>
@@ -1597,7 +1618,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
     /// obsahuje pak jen grupy jedné konkrétní stránky.
     /// Toto řídí třída <see cref="DxDataForm"/> podle dodaných stránek a podle dynamického layoutu.
     /// </summary>
-    internal class DxDataFormPanel : DxScrollableContent
+    internal class DxDataFormPanel : DxPanelControl
     {
         #region Konstruktor a vztah na DxDataForm
         /// <summary>
@@ -1611,15 +1632,188 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             this.DoubleBuffered = true;
             this.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.Style3D;
 
+            InitializeParts();
+            InitializeGroups();
+        }
+        /// <summary>
+        /// Dispose panelu
+        /// </summary>
+        /// <param name="disposing"></param>
+        protected override void Dispose(bool disposing)
+        {
+            DisposeGroups();
+            DisposeParts();
+
+            base.Dispose(disposing);
+
+            _DataForm = null;
+        }
+        /// <summary>Vlastník - <see cref="DxDataForm"/>, ale nemusí to být Parent!</summary>
+        private DxDataForm _DataForm;
+        /// <summary>
+        /// Vlastník - <see cref="DxDataForm"/>
+        /// </summary>
+        public DxDataForm DataForm { get { return this._DataForm; } }
+        /// <summary>
+        /// Refresh celého panelu v daném režimu
+        /// </summary>
+        public void Refresh(RefreshParts refreshParts)
+        {
+            base.Refresh();
+            this._Parts.ForEachExec(p => p.Refresh(refreshParts));
+        }
+        /// <summary>
+        /// Refresh celého panelu
+        /// </summary>
+        public override void Refresh()
+        {
+            this.Refresh(RefreshParts.InvalidateControl);
+        }
+        #endregion
+        #region Public vlastnosti
+        /// <summary>
+        /// Aktuální velikost viditelného prostoru pro DataForm, po odečtení aktuálně zobrazených ScrollBarů (pokud jsou zobrazeny)
+        /// </summary>
+        internal Size VisibleContentSize 
+        {
+            get 
+            {
+                Size size = this.ClientSize;
+                int vScrollSize = _RootPart.ScrollToBounds
+                return (this._DataFormPanel?.VisibleContentSize ?? Size.Empty); 
+            }
+        }
+
+
+        #endregion
+        #region Parts - jednotlivé části DataFormu (splitterem oddělené bloky řádků nebo sloupců), výchozí je jedna část přes celý prostor panelu
+        /// <summary>
+        /// Inicializace jednotlivých částí DataFormu 
+        /// </summary>
+        private void InitializeParts()
+        {
+            _Parts = new List<DxDataFormPart>();
+            AddPart(0, 0);
+        }
+        /// <summary>
+        /// Dispose jednotlivých částí DataFormu 
+        /// </summary>
+        private void DisposeParts()
+        { }
+        private void AddPart(int partXId, int partYId)
+        {
+            _RootPart = new DxDataFormPart(this) { PartXId = partXId, PartYId = partYId };
+            _Parts.Add(_RootPart);
+            _RootPart.Dock = ((_Parts.Count == 0) ? DockStyle.Fill : DockStyle.None);
+            this.Controls.Add(_RootPart);
+        }
+        /// <summary>
+        /// Pole jednotlivých částí
+        /// </summary>
+        private DxDataFormPart[] Parts { get { return _Parts.ToArray(); } }
+        /// <summary>
+        /// Kořenový Part, existuje vždy
+        /// </summary>
+        private DxDataFormPart _RootPart;
+        /// <summary>Pole jednotlivých částí</summary>
+        private List<DxDataFormPart> _Parts;
+        #endregion
+        #region Grupy a jejich Columns, jejich vkládání do prvků DxDataFormPart
+        /// <summary>
+        /// Zobrazované grupy a jejich prvky.
+        /// Po vložení této definice neproběhne automaticky refresh controlu, je tedy vhodné následně volat <see cref="Refresh()"/>.
+        /// </summary>
+        public List<DxDataFormGroup> Groups { get { return _Groups; } set { _SetGroups(value); } }
+        /// <summary>
+        /// Inicializuje pole prvků
+        /// </summary>
+        private void InitializeGroups()
+        {
+            _Groups = new List<DxDataFormGroup>();
+        }
+        /// <summary>
+        /// Vloží do sebe dané grupy a zajistí minimální potřebné refreshe
+        /// </summary>
+        /// <param name="groups"></param>
+        private void _SetGroups(List<DxDataFormGroup> groups)
+        {
+            DisposeGroups();
+            if (groups != null)
+                _Groups = groups.ToList();
+
+            Refresh(RefreshParts.AfterItemsChangedSilent);
+        }
+        
+        /// <summary>
+        /// Zahodí všechny položky o grupách a prvcích z this instance
+        /// </summary>
+        private void DisposeGroups()
+        {
+            if (_Groups != null)
+            {
+                _Groups.Clear();
+                _Groups = null;
+            }
+        }
+        /// <summary>
+        /// Počet aktuálně viditelných prvků ve všech částech dohromady
+        /// </summary>
+        internal int? VisibleCellsCount { get { return _Parts.Select(p => p.VisibleCellsCount).Sum(); } }
+        /// <summary>
+        /// Pole skupin, které v tomto panelu zobrazujeme v jeho jednotlivých částech <see cref=""/>
+        /// </summary>
+        private List<DxDataFormGroup> _Groups;
+        #endregion
+    }
+    #endregion
+    #region class DxDataFormPart : Jedna oddělená a samostatná skupina řádků a sloupců v rámci DataFormu
+    /// <summary>
+    /// <see cref="DxDataFormPart"/> : Jedna oddělená a samostatná skupina řádků/sloupců v rámci panelu DataFormu <see cref="DxDataFormPanel"/>.
+    /// Prostor DataFormu (přesněji <see cref="DxDataFormPanel"/>) může být rozdělen na více sousedících částí = <see cref="DxDataFormPart"/>,
+    /// které zobrazují tatáž data, ale jsou nascrollovaná na jiná místa, nebo mohou mít odlišné filtry a zobrazovat tedy jiné podmnožiny řádků.
+    /// <para/>
+    /// Toto rozčlenění povoluje a řídí <see cref="DxDataFormPanel"/> jako fyzický Parent těchto částí, pokyny k rozdělení dostává od hlavního <see cref="DxDataForm"/>.
+    /// K interaktivní změně dává uživateli k dispozici vhodné Splittery.
+    /// Rozdělení provádí uživatel pomocí "tahacího" tlačítka vpravo nahoře a následného zobrazení splitteru.
+    /// Dostupnost Scrollbarů v jednotlivých částech v rámci <see cref="DxDataFormPanel"/> řídí <see cref="DxDataFormPanel"/>; 
+    /// scrollbary jsou dostupné vždy v té krajní části v daném směru = vpravo svislý a dole vodorovný.
+    /// Synchronizaci sousedních částí, které nemají svůj vlastní odpovídající scrollbar, zajišťuje <see cref="DxDataFormPanel"/>.
+    /// Podkladový ScrollPanel <see cref="DxScrollableContent"/> dovoluje nastavit okraje kolem scrollovaného obsahu, 
+    /// tyto okraje jsou využívány pro zobrazení "fixních" částí (vše okolo Rows) = ColumnHeader, RowFilter, SummaryRow, RowHeader.
+    /// <para/>
+    /// Typicky Master Dataform (nazývaný v Greenu "FreeForm") má pouze jednu část, která nezobrazuje ani ColumnHeaders ani RowHeaders, a ani nenabízí rozdělovací Splittery.
+    /// DataForm používaný pro položky (nazývaný v Greenu "EditBrowse") toto rozčlenění umožňuje.
+    /// Výhledový BrowseGrid rovněž.
+    /// <para/>
+    /// Každá jedna skupina se nazývá Part = <see cref="DxDataFormPart"/>, a skládá se z částí: RowHeader, ColumnHeader, RowFilter, Rows, SummaryRows a Footer.
+    /// Tyto části jsou jednotlivě volitelné - odlišně pro první skupinu, pro vnitřní skupiny a pro skupinu poslední.
+    /// Části Header, RowFilter jsou fixní k hornímu okraji a nescrollují;
+    /// Části Rows, SummaryRows scrollují uprostřed;
+    /// Část Footer je fixní k dolnímu okraji a nescrolluje.
+    /// </summary>
+    internal class DxDataFormPart : DxScrollableContent
+    {
+        #region Konstruktor, vlastník, prvky, identifikátory
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="dataPanel"></param>
+        public DxDataFormPart(DxDataFormPanel dataPanel)
+        {
+            _DataPanel = dataPanel;
+
+            this.DoubleBuffered = true;
+            this.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.Style3D;
+            this.PartXId = 0;
+            this.PartYId = 0;
+
             InitializeContentPanel();
             InitializeGroups();
             InitializePaint();
             InitializeInteractivity();
         }
-        /// <summary>Vlastník - <see cref="DxDataForm"/>, ale nemusí to být Parent!</summary>
-        private DxDataForm _DataForm;
         /// <summary>
-        /// Dispose panelu
+        /// Dispose Part
         /// </summary>
         /// <param name="disposing"></param>
         protected override void Dispose(bool disposing)
@@ -1630,8 +1824,40 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
 
             base.Dispose(disposing);
 
-            _DataForm = null;
+            _DataPanel = null;
         }
+        /// <summary>Vlastník - <see cref="DxDataFormPanel"/></summary>
+        private DxDataFormPanel _DataPanel;
+        /// <summary>
+        /// Vlastník - <see cref="DxDataFormPanel"/>
+        /// </summary>
+        public DxDataFormPanel DataPanel { get { return this._DataPanel; } }
+        /// <summary>
+        /// Vlastník - <see cref="DxDataForm"/>
+        /// </summary>
+        public DxDataForm DataForm { get { return this._DataPanel.DataForm; } }
+        /// <summary>
+        /// Vzhled. Autoinicializační property. Nikdy není null. Setování null nastaví defaultní vzhled.
+        /// </summary>
+        public DxDataFormAppearance DataFormAppearance { get { return DataForm.DataFormAppearance; } }
+        /// <summary>
+        /// Vlastní data zobrazená v dataformu
+        /// </summary>
+        public DxDataFormData Data { get { return DataForm.Data; } }
+        /// <summary>
+        /// Identifikátor this části ve směru X = vodorovném = sloupce.
+        /// Výchozí část má ID = 0; pokud se svislým splitterem rozdělí na dvě, pak část vpravo bude mít <see cref="PartXId"/> = 1, atd.
+        /// S tímto ID se pak dotazuje parentů (dataformu a jeho dat) na řádky, sloupce atd.
+        /// </summary>
+        public int PartXId { get; set; }
+        /// <summary>
+        /// Identifikátor this části ve směru Y = vodorovném = řádky.
+        /// Výchozí část má ID = 0; pokud se vodorovným splitterem rozdělí na dvě, pak část dole bude mít <see cref="PartYId"/> = 1, atd.
+        /// S tímto ID se pak dotazuje parentů (dataformu a jeho dat) na řádky, sloupce atd.
+        /// </summary>
+        public int PartYId { get; set; }
+        #endregion
+        #region ContentPanel
         /// <summary>
         /// Inicializuje panel <see cref="_ContentPanel"/>
         /// </summary>
@@ -1649,7 +1875,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             this.VScrollBarIndicators.AddIndicator(new Int32Range(850, 1200), ScrollBarIndicatorType.ThirdNear, Color.DarkBlue);
             this.VScrollBarIndicators.AddIndicator(new Int32Range(1100, 1500), ScrollBarIndicatorType.HalfFar, Color.DarkGreen);
 
-            for (int i = 20; i < 2000; i +=100)
+            for (int i = 20; i < 2000; i += 100)
                 this.HScrollBarIndicators.AddIndicator(new Int32Range(i, i + 70), ScrollBarIndicatorType.FullSize | ScrollBarIndicatorType.InnerGradientEffect, Color.Red);
             this.HScrollBarIndicators.ColorAlphaArea = 160;
             this.HScrollBarIndicators.ColorAlphaThumb = 80;
@@ -1669,130 +1895,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             }
         }
         /// <summary>
-        /// Vlastník - <see cref="DxDataForm"/>
-        /// </summary>
-        public DxDataForm DataForm { get { return this._DataForm; } }
-        /// <summary>
         /// Panel, ve kterém se vykresluje i hostuje obsah DataFormu. Panel je <see cref="DxPanelBufferedGraphic"/>, 
         /// ale z hlediska <see cref="DxDataForm"/> nemá žádnou funkcionalitu, ta je soustředěna do <see cref="DxDataFormPanel"/>.
         /// </summary>
         private DxPanelBufferedGraphic _ContentPanel;
-        #endregion
-        #region Public vlastnosti
-
-
-        #endregion
-        #region Řádky DxDataFormRow
-        /// <summary>
-        /// Metoda vypočítá velikost prostoru, do kterého se vejde souhrn všech řádků, 
-        /// když pro každý jeden řádek bude třeba prostor <see cref="_GroupsTotalSize"/>.
-        /// Jde tedy o velikost potřebnou pro celou tabulku dat.
-        /// Velikost je uložena do <see cref="_GroupsTotalSize"/>.
-        /// </summary>
-        /// <returns></returns>
-        private void _CalculateRowsTotalCurrentSize()
-        {
-            var innerSize = new Size(_GroupsTotalSize.Width, _RowCount * _RowHeight);
-            var totalSize = innerSize.Add(0, 0);
-            _RowsTotalSize = totalSize;
-        }
-
-        /// <summary>
-        /// Připraví souhrn viditelných řádků
-        /// </summary>
-        private void _PrepareVisibleRows()
-        {
-            Rectangle virtualBounds = this.ContentVirtualBounds;               // Rozměr se vztahuje k celé ploše datové tabulky = všechny řádky od počátku prvního do konce posledního
-            int rowCount = _RowCount;
-            int rowHeight = _RowHeight;
-
-            int rowLast = rowCount - 1;
-            int rowVisibleFirst = (virtualBounds.Y / rowHeight).Align(0, rowLast);
-            int rowVisibleLast = (virtualBounds.Bottom / rowHeight).Align(0, rowLast);
-
-            _PrepareVisibleRows(rowVisibleFirst, (rowVisibleLast - rowVisibleFirst + 1));
-
-            int visualBegin = (rowVisibleFirst * rowHeight) - virtualBounds.Y;
-            _VisibleRows.ForEachExec(r => r.ApplyVisualPosition(ref visualBegin, rowHeight));
-        }
-        /// <summary>
-        /// Zajistí, že pole <see cref="_VisibleRows"/> bude obsahovat ty řádky, které mají být viditelné, počínaje danou pozici, v daném počtu.
-        /// Pole po ukončení této metody nebude null, může být prázdné.
-        /// </summary>
-        /// <param name="rowVisibleFirst"></param>
-        /// <param name="rowVisibleCount"></param>
-        private void _PrepareVisibleRows(int rowVisibleFirst, int rowVisibleCount)
-        {
-            // Zkratka: pokud máme platné pole, a máme v něm přinejmenším požadovaný počet prvků, a na první pozici pole je požadovaný řádek, pak nic není třeba řešit:
-            List<DxDataFormRow> oldVisibleRows = _VisibleRows;
-            if (oldVisibleRows != null && oldVisibleRows.Count == rowVisibleCount && (rowVisibleCount == 0 || (oldVisibleRows.Count > 0 && oldVisibleRows[0].RowIndex == rowVisibleFirst))) return;
-
-            // Získám pole, obsahující RowId těch řádků, které mají být vidět na dané pozici (rowFirst) ++další, v daném počtu (rowCount):
-            int[] visibleRowsId = _DataForm.Data.GetVisibleRowsId(rowVisibleFirst, rowVisibleCount);
-
-            // Nejprve dosavadní řádky (pokud nejsou null): označím si v nich (hodnotou VisibleRow) ty řádky, které mají RowId odpovídající těm řádkům, které budou viditelné i nadále:
-            //  - totiž, při posunu pole o několik málo picelů nám sice proběhne tato metoda, ale většina dosud viditelných řádků bude viditelná poté,
-            //  a není třeba při každém miniposunu zahazovat kupu dat a generovat je znovu!
-            Dictionary<int, DxDataFormRow> oldVisibleRowsDict = null;
-            if (oldVisibleRows != null)
-            {
-                var rowsIdDict = visibleRowsId.CreateDictionary(i => i, true);
-                oldVisibleRows.ForEachExec(r => r.VisibleRow = rowsIdDict.ContainsKey(r.RowId));  // Stávající objekty: Visible bude (true když mají být vidět i nyní, false pro ty instance, které se mohou zahodit)
-                oldVisibleRowsDict = oldVisibleRows.CreateDictionary(r => r.RowId);
-            }
-
-            // Vytvořím nové pole, v tom pořadí, jaké bylo vráceno z Data.GetVisibleRowsId(), a postupně do něj vložím instance pro odpovídající řádek:
-            List<DxDataFormRow> newVisibleRows = new List<DxDataFormRow>();
-            int rowIndex = rowVisibleFirst;
-            foreach (var visibleRowId in visibleRowsId)
-            {
-                DxDataFormRow visibleRow = null;
-                if (oldVisibleRowsDict != null && oldVisibleRowsDict.TryGetValue(visibleRowId, out visibleRow))
-                {   // Najdeme náš starý řádek pro shodné RowId?
-                }
-                else if (oldVisibleRows != null && oldVisibleRows.TryGetFirst(r => !r.VisibleRow, out visibleRow))
-                {   // Najdeme nějaký cizí starý řádek, který nebude zapotřebí - tedy pro cizí nepotřebné RowId?
-                    visibleRow.AssignRowId(visibleRowId);
-                }
-                else
-                {   // Nemáme žadný starý řádek - ani náš, ani cizí : musíme si vygenerovat new instanci:
-                    visibleRow = new DxDataFormRow(RowBand, DxDataFormRowType.RowData, visibleRowId);
-                }
-                visibleRow.VisibleRow = true;
-                visibleRow.RowIndex = rowIndex++;
-                newVisibleRows.Add(visibleRow);
-            }
-
-            // Pokud máme nějaké staré řádky, které nebyly použité, zahodíme je:
-            if (oldVisibleRows != null)
-                oldVisibleRows.Where(r => !r.VisibleRow).ForEachExec(r => r.Dispose());
-
-            _VisibleRows = newVisibleRows;
-        }
-        public DxDataFormPart RowBand { get { if (_RowBand == null) _RowBand = new DxDataFormPart(this); return _RowBand; } }
-        private DxDataFormPart _RowBand;
-        /// <summary>
-        /// Pole řádků, které jsou aktuálně ve viditelné oblasti. 
-        /// Toto pole je udržováno v metodě <see cref="_PrepareVisibleRows(int, int)"/>.
-        /// Obsahuje viditelné řádky, jejich RowId a vizuální pozici...
-        /// </summary>
-        private List<DxDataFormRow> _VisibleRows;
-        /// <summary>
-        /// Počet celkem zobrazovaných řádků, v rozmezí 0 až 2G
-        /// </summary>
-        private int _RowCount { get { int rowCount = _DataForm.Data.RowCount; return (rowCount < 0 ? 0 : rowCount); } }
-        /// <summary>
-        /// Výška jednoho řádku = výška všech grup <see cref="_GroupsTotalSize"/>.Height s přidáním mezery <see cref="_RowHeightSpace"/>
-        /// </summary>
-        private int _RowHeight { get { return _GroupsTotalSize.Height + _RowHeightSpace; } }
-        /// <summary>
-        /// Přídavek k výšce jednoho řádku
-        /// </summary>
-        private int _RowHeightSpace { get { return 1; } }
-        /// <summary>
-        /// Velikost prostoru pro všechny řádky
-        /// </summary>
-        private Size _RowsTotalSize;
         #endregion
         #region Grupy a jejich Items, viditelné grupy a viditelné itemy
         /// <summary>
@@ -1879,14 +1985,127 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Počet aktuálně viditelných prvků
         /// </summary>
-        internal int? VisibleItemsCount { get { return _VisibleItems?.Count; } }
+        internal int? VisibleCellsCount { get { return _VisibleItems?.Count; } }
 
         private List<DxDataFormGroup> _Groups;
         private List<DxDataFormGroup> _VisibleGroups;
         private List<DxDataFormColumn> _VisibleItems;
         private Size _GroupsTotalSize;
         #endregion
+        #region Řádky DxDataFormRow
+        /// <summary>
+        /// Metoda vypočítá velikost prostoru, do kterého se vejde souhrn všech řádků, 
+        /// když pro každý jeden řádek bude třeba prostor <see cref="_GroupsTotalSize"/>.
+        /// Jde tedy o velikost potřebnou pro celou tabulku dat.
+        /// Velikost je uložena do <see cref="_GroupsTotalSize"/>.
+        /// </summary>
+        /// <returns></returns>
+        private void _CalculateRowsTotalCurrentSize()
+        {
+            var innerSize = new Size(_GroupsTotalSize.Width, _RowCount * _RowHeight);
+            var totalSize = innerSize.Add(0, 0);
+            _RowsTotalSize = totalSize;
+        }
+
+        /// <summary>
+        /// Připraví souhrn viditelných řádků
+        /// </summary>
+        private void _PrepareVisibleRows()
+        {
+            Rectangle virtualBounds = this.ContentVirtualBounds;               // Rozměr se vztahuje k celé ploše datové tabulky = všechny řádky od počátku prvního do konce posledního
+            int rowCount = _RowCount;
+            int rowHeight = _RowHeight;
+
+            int rowLast = rowCount - 1;
+            int rowVisibleFirst = (virtualBounds.Y / rowHeight).Align(0, rowLast);
+            int rowVisibleLast = (virtualBounds.Bottom / rowHeight).Align(0, rowLast);
+
+            _PrepareVisibleRows(rowVisibleFirst, (rowVisibleLast - rowVisibleFirst + 1));
+
+            int visualBegin = (rowVisibleFirst * rowHeight) - virtualBounds.Y;
+            _VisibleRows.ForEachExec(r => r.ApplyVisualPosition(ref visualBegin, rowHeight));
+        }
+        /// <summary>
+        /// Zajistí, že pole <see cref="_VisibleRows"/> bude obsahovat ty řádky, které mají být viditelné, počínaje danou pozici, v daném počtu.
+        /// Pole po ukončení této metody nebude null, může být prázdné.
+        /// </summary>
+        /// <param name="rowVisibleFirst"></param>
+        /// <param name="rowVisibleCount"></param>
+        private void _PrepareVisibleRows(int rowVisibleFirst, int rowVisibleCount)
+        {
+            // Zkratka: pokud máme platné pole, a máme v něm přinejmenším požadovaný počet prvků, a na první pozici pole je požadovaný řádek, pak nic není třeba řešit:
+            List<DxDataFormRow> oldVisibleRows = _VisibleRows;
+            if (oldVisibleRows != null && oldVisibleRows.Count == rowVisibleCount && (rowVisibleCount == 0 || (oldVisibleRows.Count > 0 && oldVisibleRows[0].RowIndex == rowVisibleFirst))) return;
+
+            // Získám pole, obsahující RowId těch řádků, které mají být vidět na dané pozici (rowFirst) ++další, v daném počtu (rowCount):
+            int[] visibleRowsId = Data.GetVisibleRowsId(rowVisibleFirst, rowVisibleCount);
+
+            // Nejprve dosavadní řádky (pokud nejsou null): označím si v nich (hodnotou VisibleRow) ty řádky, které mají RowId odpovídající těm řádkům, které budou viditelné i nadále:
+            //  - totiž, při posunu pole o několik málo picelů nám sice proběhne tato metoda, ale většina dosud viditelných řádků bude viditelná poté,
+            //  a není třeba při každém miniposunu zahazovat kupu dat a generovat je znovu!
+            Dictionary<int, DxDataFormRow> oldVisibleRowsDict = null;
+            if (oldVisibleRows != null)
+            {
+                var rowsIdDict = visibleRowsId.CreateDictionary(i => i, true);
+                oldVisibleRows.ForEachExec(r => r.VisibleRow = rowsIdDict.ContainsKey(r.RowId));  // Stávající objekty: Visible bude (true když mají být vidět i nyní, false pro ty instance, které se mohou zahodit)
+                oldVisibleRowsDict = oldVisibleRows.CreateDictionary(r => r.RowId);
+            }
+
+            // Vytvořím nové pole, v tom pořadí, jaké bylo vráceno z Data.GetVisibleRowsId(), a postupně do něj vložím instance pro odpovídající řádek:
+            List<DxDataFormRow> newVisibleRows = new List<DxDataFormRow>();
+            int rowIndex = rowVisibleFirst;
+            foreach (var visibleRowId in visibleRowsId)
+            {
+                DxDataFormRow visibleRow = null;
+                if (oldVisibleRowsDict != null && oldVisibleRowsDict.TryGetValue(visibleRowId, out visibleRow))
+                {   // Najdeme náš starý řádek pro shodné RowId?
+                }
+                else if (oldVisibleRows != null && oldVisibleRows.TryGetFirst(r => !r.VisibleRow, out visibleRow))
+                {   // Najdeme nějaký cizí starý řádek, který nebude zapotřebí - tedy pro cizí nepotřebné RowId?
+                    visibleRow.AssignRowId(visibleRowId);
+                }
+                else
+                {   // Nemáme žadný starý řádek - ani náš, ani cizí : musíme si vygenerovat new instanci:
+                    visibleRow = new DxDataFormRow(this, DxDataFormRowType.RowData, visibleRowId);
+                }
+                visibleRow.VisibleRow = true;
+                visibleRow.RowIndex = rowIndex++;
+                newVisibleRows.Add(visibleRow);
+            }
+
+            // Pokud máme nějaké staré řádky, které nebyly použité, zahodíme je:
+            if (oldVisibleRows != null)
+                oldVisibleRows.Where(r => !r.VisibleRow).ForEachExec(r => r.Dispose());
+
+            _VisibleRows = newVisibleRows;
+        }
+        /// <summary>
+        /// Pole řádků, které jsou aktuálně ve viditelné oblasti. 
+        /// Toto pole je udržováno v metodě <see cref="_PrepareVisibleRows(int, int)"/>.
+        /// Obsahuje viditelné řádky, jejich RowId a vizuální pozici...
+        /// </summary>
+        private List<DxDataFormRow> _VisibleRows;
+        /// <summary>
+        /// Počet celkem zobrazovaných řádků, v rozmezí 0 až 2G
+        /// </summary>
+        private int _RowCount { get { int rowCount = Data.RowCount; return (rowCount < 0 ? 0 : rowCount); } }
+        /// <summary>
+        /// Výška jednoho řádku = výška všech grup <see cref="_GroupsTotalSize"/>.Height s přidáním mezery <see cref="_RowHeightSpace"/>
+        /// </summary>
+        private int _RowHeight { get { return _GroupsTotalSize.Height + _RowHeightSpace; } }
+        /// <summary>
+        /// Přídavek k výšce jednoho řádku
+        /// </summary>
+        private int _RowHeightSpace { get { return 1; } }
+        /// <summary>
+        /// Velikost prostoru pro všechny řádky
+        /// </summary>
+        private Size _RowsTotalSize;
+        #endregion
         #region Buňky DxDataFormCell
+
+        #endregion
+        #region Řízení zobrazení jednotlivých částí
 
         #endregion
         #region Interaktivita
@@ -1957,7 +2176,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             // Sem se dostanu jen tehdy, když myš klikne na panelu _ContentPanel v místě, kde není žádný prvek.
         }
         /// <summary>
-        /// Vyhledá prvek nacházející se pod aktuální souřadnicí myši a zajistí pro prvky <see cref="MouseLeaveItem()"/> a <see cref="MouseEnterItem(DxDataFormColumn)"/>.
+        /// Vyhledá prvek nacházející se pod aktuální souřadnicí myši a zajistí pro prvky <see cref="MouseLeaveItem(bool)"/> a <see cref="MouseEnterItem(DxDataFormColumn)"/>.
         /// </summary>
         private void DetectMouseChangeForCurrentPoint()
         {
@@ -1966,7 +2185,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             DetectMouseChangeForPoint(relativeLocation);
         }
         /// <summary>
-        /// Vyhledá prvek nacházející se pod danou souřadnicí myši a zajistí pro prvky <see cref="MouseLeaveItem()"/> a <see cref="MouseEnterItem(DxDataFormColumn)"/>.
+        /// Vyhledá prvek nacházející se pod danou souřadnicí myši a zajistí pro prvky <see cref="MouseLeaveItem(bool)"/> a <see cref="MouseEnterItem(DxDataFormColumn)"/>.
         /// </summary>
         /// <param name="location">Souřadnice myši relativně k controlu <see cref="_ContentPanel"/> = reálný parent prvků</param>
         private void DetectMouseChangeForPoint(Point? location)
@@ -2055,10 +2274,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             if (item.VisibleBounds.HasValue)
             {
                 _CurrentOnMouseItem = item;
-                _CurrentOnMouseControlSet = _DataForm.GetControlSet(item);
-                _CurrentOnMouseControl = _CurrentOnMouseControlSet.GetControlForMouse(item);
+                _CurrentOnMouseControlSet = DataForm.GetControlSet(item);
+                _CurrentOnMouseControl = _CurrentOnMouseControlSet.GetControlForMouse(item, this._ContentPanel);
                 if (!_ContentPanel.IsPaintLayersInProgress)
-                {   // V době, kdy probíhá proces Paint, NEBUDU provádět Scroll:
+                {   // V době, kdy probíhá proces Paint, NEBUDU provádět ScrollToBounds:
                     //  Ono k tomu v reálu nedochází - Scroll standardně proběhne při KeyEnter (anebo ruční ScrollBar). To jen při testu provádím MouseMove => ScrollToBounds!
                     bool isScrolled = false;     // this.ScrollToBounds(item.CurrentBounds, null, true);
                     if (isScrolled) Refresh(RefreshParts.AfterScroll);
@@ -2137,7 +2356,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         {
             // Protože jsme v GUI threadu, nemusím řešit zamykání hodnot - nikdy nebudou dvě vlákna přistupovat k jednomu objektu současně!
             // Spíše musíme vyřešit to, že některá část procesu Refresh způsobí požadavek na Refresh jiné části, což ale může být nějaká část před i za aktuální částí.
-            
+
             // Zaeviduji si úkoly ke zpracování:
             _RefreshPartCurrentBounds |= refreshParts.HasFlag(RefreshParts.InvalidateCurrentBounds);
             _RefreshPartContentTotalSize |= refreshParts.HasFlag(RefreshParts.RecalculateContentTotalSize);
@@ -2290,7 +2509,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         {
             _RefreshPartCache = false;
 
-            _DataForm.ImageCacheInvalidate();
+            DataForm.ImageCacheInvalidate();
         }
         /// <summary>
         /// Provede akci Refresh, <see cref="RefreshParts.InvalidateControl"/>
@@ -2399,7 +2618,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 bool isBold = indicators.HasFlag(DataFormColumnIndicatorType.MouseOverBold);
                 if (isThin || isBold)
                 {
-                    Color color = _DataForm.DataFormAppearance.OnMouseIndicatorColor;
+                    Color color = DataFormAppearance.OnMouseIndicatorColor;
                     PaintItemIndicator(e, mouseControl.Bounds, color, isBold, ref isPainted);
                 }
             }
@@ -2419,12 +2638,12 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         /// <param name="e"></param>
         private void PaintContentMainLayer(DxBufferedGraphicPaintArgs e)
-        { 
+        {
             bool afterPaintSearchActiveItem = _AfterPaintSearchOnMouseItem;
             _AfterPaintSearchOnMouseItem = false;
-            _DataForm.ImagePaintStart();
+            DataForm.ImagePaintStart();
             OnPaintContentStandard(e);
-            _DataForm.ImagePaintDone();
+            DataForm.ImagePaintDone();
             if (afterPaintSearchActiveItem)
                 DetectMouseChangeForCurrentPoint();
         }
@@ -2471,7 +2690,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="e"></param>
         private void PaintItemStandard(DxDataFormColumn item, Point visibleOrigin, DxBufferedGraphicPaintArgs e)
         {
-            var controlSet = _DataForm.GetControlSet(item);
+            var controlSet = DataForm.GetControlSet(item);
             var bounds = item.CurrentBounds;
             Point location = bounds.Location.Sub(visibleOrigin);
             Color? indicatorColor = GetIndicatorColor(item, out bool isBold);
@@ -2487,7 +2706,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             {
                 if (item.IItem is IDataFormColumnImageText label)
                 {
-                    Control control = _DataForm.GetControl(item, DxDataFormControlUseMode.Draw);
+                    Control control = DataForm.GetControl(item, DxDataFormControlUseMode.Draw, null);
                     if (control is BaseControl baseControl)
                     {
                         var appearance = baseControl.GetViewInfo().PaintAppearance;
@@ -2500,7 +2719,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             }
             if (!visibleBounds.HasValue && controlSet.CanPaintByImage)
             {
-                using (var image = _DataForm.CreateImage(item, e.Graphics))
+                using (var image = DataForm.CreateImage(item, e.Graphics))
                 {
                     if (image != null)
                     {
@@ -2538,7 +2757,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 bool isBold = indicators.HasFlag(DataFormColumnIndicatorType.MouseOverBold);
                 if (isThin || isBold)
                 {
-                    Color color = _DataForm.DataFormAppearance.OnMouseIndicatorColor;
+                    Color color = DataFormAppearance.OnMouseIndicatorColor;
                     PaintItemIndicator(e, mouseControl.Bounds, color, isBold, ref isPainted);
                 }
             }
@@ -2565,8 +2784,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             if (item == null) return null;
 
             var indicators = item.IItem.Indicators;
-            bool itemIndicatorsVisible = _DataForm.ItemIndicatorsVisible;
-            var appearance = _DataForm.DataFormAppearance;
+            bool itemIndicatorsVisible = DataForm.ItemIndicatorsVisible;
+            var appearance = DataFormAppearance;
 
             Color? focusColor = null;             // Pokud prvek má focus, pak zde bude barva orámování focusu
 
@@ -2606,8 +2825,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="onDemandThin"></param>
         /// <param name="isBold"></param>
         /// <returns></returns>
-        private bool IsIndicatorActive(DataFormColumnIndicatorType indicators, bool itemIndicatorsVisible, 
-            DataFormColumnIndicatorType allwaysBold, DataFormColumnIndicatorType onDemandBold, DataFormColumnIndicatorType alwaysThin, DataFormColumnIndicatorType onDemandThin, 
+        private bool IsIndicatorActive(DataFormColumnIndicatorType indicators, bool itemIndicatorsVisible,
+            DataFormColumnIndicatorType allwaysBold, DataFormColumnIndicatorType onDemandBold, DataFormColumnIndicatorType alwaysThin, DataFormColumnIndicatorType onDemandThin,
             ref bool isBold)
         {
             if (indicators.HasFlag(allwaysBold) || (itemIndicatorsVisible && indicators.HasFlag(onDemandBold)))
@@ -2645,7 +2864,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             // Tohle je vlastnost Drawing světa: pokud control má šířku 100, tak na pixelu 100 už není kreslen on ale to za ním...:
             bounds.Width--;
             bounds.Height--;
-            
+
             // Kontrola získání barvy pozadí:
             //  var bgc = DxComponent.GetSkinColor(SkinElementColor.Control_PanelBackColor);
             //  var bgc1 = DxComponent.GetSkinColor(SkinElementColor.CommonSkins_Control);
@@ -2704,38 +2923,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             /// </summary>
             public Control Control;
         }
-        /// <summary>
-        /// Daný control přidá do panelu na pozadí (control jen pro kreslení) anebo na popředí (control pro interakci).
-        /// </summary>
-        /// <param name="control"></param>
-        /// <param name="addToBackground"></param>
-        internal void AddControl(Control control, bool addToBackground)
-        {
-            if (control == null) return;
-            if (addToBackground)
-                this.Controls.Add(control);
-            else
-                this._ContentPanel.Controls.Add(control);
-        }
-        /// <summary>
-        /// Daný control odebere z panelu na pozadí (control jen pro kreslení) anebo na popředí (control pro interakci).
-        /// </summary>
-        /// <param name="control"></param>
-        /// <param name="removeFromBackground"></param>
-        internal void RemoveControl(Control control, bool removeFromBackground)
-        {
-            if (control == null) return;
-            if (removeFromBackground)
-            {
-                if (this.Controls.Contains(control))
-                    this.Controls.Remove(control);
-            }
-            else
-            {
-                if (this._ContentPanel.Controls.Contains(control))
-                    this._ContentPanel.Controls.Remove(control);
-            }
-        }
         #endregion
         #region Stav panelu - umožní uložit aktuální stav do objektu, a v budoucnu tento stav jej restorovat
         /// <summary>
@@ -2776,59 +2963,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         {
             this.ContentVirtualLocation = _State?.ContentVirtualLocation ?? Point.Empty;
         }
-        #endregion
-    }
-    #endregion
-    #region class DxDataFormPart : Jedna oddělená a samostatná skupina řádků a sloupců v rámci DataFormu
-    /// <summary>
-    /// <see cref="DxDataFormPart"/> : Jedna oddělená a samostatná skupina řádků/sloupců v rámci panelu DataFormu <see cref="DxDataFormPanel"/>.
-    /// Prostor DataFormu (přesněji <see cref="DxDataFormPanel"/>) může být rozdělen na více sousedících částí = <see cref="DxDataFormPart"/>,
-    /// které zobrazují tatáž data, ale jsou nascrollovaná na jiná místa, nebo mohou mít odlišné filtry a zobrazovat tedy jiné podmnožiny řádků.
-    /// <para/>
-    /// Toto rozčlenění povoluje a řídí <see cref="DxDataFormPanel"/> jako fyzický Parent těchto částí, pokyny k rozdělení dostává od hlavního <see cref="DxDataForm"/>.
-    /// K interaktivní změně dává uživateli k dispozici vhodné Splittery.
-    /// Rozdělení provádí uživatel pomocí "tahacího" tlačítka vpravo nahoře a následného zobrazení splitteru.
-    /// Dostupnost Scrollbarů v jednotlivých částech v rámci <see cref="DxDataFormPanel"/> řídí <see cref="DxDataFormPanel"/>; 
-    /// scrollbary jsou dostupné vždy v té krajní části v daném směru = vpravo svislý a dole vodorovný.
-    /// Synchronizaci sousedních částí, které nemají svůj vlastní odpovídající scrollbar, zajišťuje <see cref="DxDataFormPanel"/>.
-    /// Podkladový ScrollPanel <see cref="DxScrollableContent"/> dovoluje nastavit okraje kolem scrollovaného obsahu, 
-    /// tyto okraje jsou využívány pro zobrazení "fixních" částí (vše okolo Rows) = ColumnHeader, RowFilter, SummaryRow, RowHeader.
-    /// <para/>
-    /// Typicky Master Dataform (nazývaný v Greenu "FreeForm") má pouze jednu část, která nezobrazuje ani ColumnHeaders ani RowHeaders, a ani nenabízí rozdělovací Splittery.
-    /// DataForm používaný pro položky (nazývaný v Greenu "EditBrowse") toto rozčlenění umožňuje.
-    /// Výhledový BrowseGrid rovněž.
-    /// <para/>
-    /// Každá jedna skupina se nazývá Part = <see cref="DxDataFormPart"/>, a skládá se z částí: RowHeader, ColumnHeader, RowFilter, Rows, SummaryRows a Footer.
-    /// Tyto části jsou jednotlivě volitelné - odlišně pro první skupinu, pro vnitřní skupiny a pro skupinu poslední.
-    /// Části Header, RowFilter jsou fixní k hornímu okraji a nescrollují;
-    /// Části Rows, SummaryRows scrollují uprostřed;
-    /// Část Footer je fixní k dolnímu okraji a nescrolluje.
-    /// </summary>
-    internal class DxDataFormPart : DxScrollableContent
-    {
-        #region Konstruktor, vlastník, prvky
-        /// <summary>
-        /// Konstruktor
-        /// </summary>
-        /// <param name="dataPanel"></param>
-        public DxDataFormPart(DxDataFormPanel dataPanel)
-        {
-            _DataPanel = dataPanel;
-        }
-        /// <summary>Vlastník - <see cref="DxDataFormPanel"/></summary>
-        private DxDataFormPanel _DataPanel;
-        /// <summary>
-        /// Vlastník - <see cref="DxDataFormPanel"/>
-        /// </summary>
-        public DxDataFormPanel DataPanel { get { return this._DataPanel; } }
-        /// <summary>
-        /// Vlastník - <see cref="DxDataForm"/>
-        /// </summary>
-        public DxDataForm DataForm { get { return this._DataPanel.DataForm; } }
-
-        #endregion
-        #region Řízení zobrazení jednotlivých částí
-
         #endregion
     }
     #endregion
@@ -3459,39 +3593,57 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         /// <param name="item"></param>
         /// <param name="mode"></param>
+        /// <param name="parent">Parent, do něhož má být control umístěn. Pokud režim <paramref name="mode"/> je <see cref="DxDataFormControlUseMode.Draw"/>, pak parent smí být null.</param>
         /// <returns></returns>
-        internal Control GetControlForMode(DxDataFormColumn item, DxDataFormControlUseMode mode)
+        internal Control GetControlForMode(DxDataFormColumn item, DxDataFormControlUseMode mode, Control parent)
         {
             switch (mode)
             {
                 case DxDataFormControlUseMode.Draw: return GetControlForDraw(item);
-                case DxDataFormControlUseMode.Mouse: return GetControlForMouse(item);
-                case DxDataFormControlUseMode.Focus: return GetControlForFocus(item);
+                case DxDataFormControlUseMode.Mouse: return GetControlForMouse(item, parent);
+                case DxDataFormControlUseMode.Focus: return GetControlForFocus(item, parent);
             }
             return null;
         }
+        /// <summary>
+        /// Vrátí control pro daný prvek a režim Draw
+        /// </summary>
+        /// <param name="item"></param>
+        /// <returns></returns>
         internal Control GetControlForDraw(DxDataFormColumn item)
         {
             CheckNonDisposed();
             if (_ControlDraw == null)
                 _ControlDraw = _CreateControl(DxDataFormControlUseMode.Draw);
-            _FillControl(item, _ControlDraw, DxDataFormControlUseMode.Draw);
+            _FillControl(item, _ControlDraw, DxDataFormControlUseMode.Draw, null);
             return _ControlDraw;
         }
-        internal Control GetControlForMouse(DxDataFormColumn item)
+        /// <summary>
+        /// Vrátí control pro daný prvek a režim Mouse
+        /// </summary>
+        /// <param name="item"></param>
+        /// <param name="parent">Parent, do něhož má být control umístěn</param>
+        /// <returns></returns>
+        internal Control GetControlForMouse(DxDataFormColumn item, Control parent)
         {
             CheckNonDisposed();
             if (_ControlMouse == null)
                 _ControlMouse = _CreateControl(DxDataFormControlUseMode.Mouse);
-            _FillControl(item, _ControlMouse, DxDataFormControlUseMode.Mouse);
+            _FillControl(item, _ControlMouse, DxDataFormControlUseMode.Mouse, parent);
             return _ControlMouse;
         }
-        internal Control GetControlForFocus(DxDataFormColumn item)
+        /// <summary>
+        /// Vrátí control pro daný prvek a režim Focus
+        /// </summary>
+        /// <param name="item"></param>
+        /// <param name="parent">Parent, do něhož má být control umístěn</param>
+        /// <returns></returns>
+        internal Control GetControlForFocus(DxDataFormColumn item, Control parent)
         {
             CheckNonDisposed();
             if (_ControlFocus == null)
                 _ControlFocus = _CreateControl(DxDataFormControlUseMode.Focus);
-            _FillControl(item, _ControlFocus, DxDataFormControlUseMode.Focus);
+            _FillControl(item, _ControlFocus, DxDataFormControlUseMode.Focus, parent);
             return _ControlFocus;
         }
         /// <summary>
@@ -3516,16 +3668,22 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             var control = _CreateControlFunction();
             Size size = control.Size;
             Point location = new Point(10, -10 - size.Height);
-            Rectangle bounds = new Rectangle(location, size);
             control.Visible = false;
-            control.SetBounds(bounds);
+            control.SetBounds(new Rectangle(location, size));
             bool addToBackground = (mode == DxDataFormControlUseMode.Draw);
-            _DataForm.AddControl(control, addToBackground);
             return control;
         }
-        private void _FillControl(DxDataFormColumn item, Control control, DxDataFormControlUseMode mode)
+        /// <summary>
+        /// Naplní daný control daty pro požadovaný režim práce, a umístí jej do parent controlu. Pokud je předán parent = null nebo režim mode = Draw, pak jej umístí do výchozího panelu.
+        /// </summary>
+        /// <param name="item"></param>
+        /// <param name="control"></param>
+        /// <param name="mode"></param>
+        /// <param name="parent">Parent, do něhož má být control umístěn. Pokud režim <paramref name="mode"/> je <see cref="DxDataFormControlUseMode.Draw"/>, pak parent smí být null.</param>
+        private void _FillControl(DxDataFormColumn item, Control control, DxDataFormControlUseMode mode, Control parent)
         {
             _FillControlAction(item, control, mode);
+            _DataForm.AddControl(control, (mode == DxDataFormControlUseMode.Draw ? null : parent));
             control.TabIndex = 10;
 
             //// source.SetBounds(bounds);                  // Nastavím správné umístění, to kvůli obrázkům na pozadí panelu (různé skiny!), aby obrázky odpovídaly aktuální pozici...
@@ -3549,8 +3707,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         private void DisposeControl(ref Control control, DxDataFormControlUseMode mode)
         {
             if (control == null) return;
-            bool removeFromBackground = (mode == DxDataFormControlUseMode.Draw);
-            _DataForm.RemoveControl(control, removeFromBackground);
+            control?.RemoveControlFromParent(hideControl: true);
             control.Dispose();
             control = null;
         }
@@ -4120,7 +4277,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             {
                 if (brush != null)
                 {
-                    using (var path = DxDataForm.CreateGraphicsPath(borderBounds, borderRange))
+                    using (var path = DxDataForm.CreateGraphicsFrame(borderBounds, borderRange))
                     {
                         e.Graphics.FillPath(brush, path);
                     }
