@@ -1864,6 +1864,15 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             return DxSuperToolTip.CreateDxSuperTip(textItem);
         }
+        /// <summary>
+        /// Vytvoří a vrátí SuperTooltip
+        /// </summary>
+        /// <param name="toolTipItem"></param>
+        /// <returns></returns>
+        public static SuperToolTip CreateDxSuperTip(IToolTipItem toolTipItem)
+        {
+            return DxSuperToolTip.CreateDxSuperTip(toolTipItem);
+        }
         #endregion
         #region TryRun
         /// <summary>

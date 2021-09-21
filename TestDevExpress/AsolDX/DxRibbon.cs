@@ -582,9 +582,12 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             var startTime = DxComponent.LogTimeCurrent;
             var list = DataRibbonPage.SortPages(iRibbonPages);
+            List<QatItem> qatList = new List<QatItem>();
             int count = 0;
             foreach (var iRibbonPage in list)
-                _AddPage(iRibbonPage, isLazyContentFill, isOnDemandFill, ref count);
+                _AddPage(iRibbonPage, isLazyContentFill, isOnDemandFill, qatList, ref count);
+
+            AddQatListToRibbon(qatList);
 
             if (LogActive) DxComponent.LogAddLineTime($" === Ribbon {DebugName}: {logText} {list.Count} item[s]; Create: {count} BarItem[s]; {DxComponent.LogTokenTimeMilisec} === ", startTime);
         }
@@ -594,14 +597,15 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="iRibbonPage"></param>
         /// <param name="isLazyContentFill">Obsahuje true, když se prvky typu Group a BarItem nemají fyzicky generovat, ale mají se jen registrovat do LazyGroup / false pokud se mají reálně generovat (spotřebuje výrazný čas)</param>
         /// <param name="isOnDemandFill">Obsahuje true, pokud tyto položky jsou donačtené OnDemand / false pokud pocházejí z první statické deklarace obsahu</param>
+        /// <param name="qatList">Průběžně střádaný seznam prvků, které budou umístěny do QAT</param>
         /// <param name="logText"></param>
-        private void _AddPageLazy(IRibbonPage iRibbonPage, bool isLazyContentFill, bool isOnDemandFill, string logText)
+        private void _AddPageLazy(IRibbonPage iRibbonPage, bool isLazyContentFill, bool isOnDemandFill, List<QatItem> qatList, string logText)
         {
             if (iRibbonPage is null) return;
 
             var startTime = DxComponent.LogTimeCurrent;
             int count = 0;
-            _AddPage(iRibbonPage, isLazyContentFill, isOnDemandFill, ref count);
+            _AddPage(iRibbonPage, isLazyContentFill, isOnDemandFill, qatList, ref count);
 
             if (LogActive) DxComponent.LogAddLineTime($" === Ribbon {DebugName}: {logText}; Create: {count} BarItem[s]; {DxComponent.LogTokenTimeMilisec} === ", startTime);
         }
@@ -611,8 +615,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="iRibbonPage">Deklarace stránky</param>
         /// <param name="isLazyContentFill">Obsahuje true, když se prvky typu Group a BarItem nemají fyzicky generovat, ale mají se jen registrovat do LazyGroup / false pokud se mají reálně generovat (spotřebuje výrazný čas)</param>
         /// <param name="isOnDemandFill">Obsahuje true, pokud tyto položky jsou donačtené OnDemand / false pokud pocházejí z první statické deklarace obsahu</param>
+        /// <param name="qatList">Průběžně střádaný seznam prvků, které budou umístěny do QAT</param>
         /// <param name="count"></param>
-        private void _AddPage(IRibbonPage iRibbonPage, bool isLazyContentFill, bool isOnDemandFill, ref int count)
+        private void _AddPage(IRibbonPage iRibbonPage, bool isLazyContentFill, bool isOnDemandFill, List<QatItem> qatList, ref int count)
         {
             if (iRibbonPage is null) return;
 
@@ -622,13 +627,17 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             if (this.SelectedPageId == page.Name) isLazyContentFill = false;   // Pokud v Ribbonu je aktuálně vybraná ta stránka, která se nyní generuje, pak se NEBUDE plnit v režimu Lazy
             bool createContent = page.PreparePageForContent(iRibbonPage, isLazyContentFill, isOnDemandFill);
-            if (!createContent) return;                                        // víc už dělat nemusíme. Máme stránku a v ní LazyInfo.
+
+            // Problematika QAT je v detailu popsána v této metodě:
+            bool isNeedQAT = !createContent && ContainsQAT(iRibbonPage);       // isNeedQAT je true tehdy, když bychom stránku nemuseli plnit (je LazyLoad), ale musíme do ní vložit pouze prvky typu QAT - a stránku přitom máme ponechat v režimu LazyLoad
+
+            if (!createContent && !isNeedQAT) return;                          // víc už dělat nemusíme. Máme stránku a v ní LazyInfo, a prvky QAT nepotřebujeme (v dané stránce nejsou).
 
             var list = DataRibbonGroup.SortGroups(iRibbonPage.Groups);
             foreach (var iRibbonGroup in list)
             {
                 iRibbonGroup.ParentPage = iRibbonPage;
-                _AddGroup(iRibbonGroup, page, ref count);
+                _AddGroup(iRibbonGroup, page, isNeedQAT, qatList, ref count);
             }
         }
         /// <summary>
@@ -636,10 +645,14 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="iRibbonGroup"></param>
         /// <param name="page"></param>
+        /// <param name="isNeedQAT">Přidávat pouze prvky označené QAT (stránka jako celek je v režimu LazyContent, ale prvky QAT potřebujeme i v této stránce)</param>
+        /// <param name="qatList">Průběžně střádaný seznam prvků, které budou umístěny do QAT</param>
         /// <param name="count"></param>
-        private void _AddGroup(IRibbonGroup iRibbonGroup, DxRibbonPage page, ref int count)
+        private void _AddGroup(IRibbonGroup iRibbonGroup, DxRibbonPage page, bool isNeedQAT, List<QatItem> qatList, ref int count)
         {
             if (iRibbonGroup == null || page == null) return;
+            if (isNeedQAT && !ContainsQAT(iRibbonGroup)) return;               // V režimu isNeedQAT přidáváme jen prvky QAT, a ten v dané grupě není žádný
+
             var group = GetGroup(iRibbonGroup, page);
             if (group is null) return;
           
@@ -647,7 +660,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             foreach (var iRibbonItem in iRibbonItems)
             {
                 iRibbonItem.ParentGroup = iRibbonGroup;
-                _AddBarItem(iRibbonItem, group, ref count);
+                _AddBarItem(iRibbonItem, group, isNeedQAT, qatList, ref count);
             }
         }
         /// <summary>
@@ -655,11 +668,15 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="iRibbonItem"></param>
         /// <param name="group"></param>
+        /// <param name="isNeedQAT">Přidávat pouze prvky označené QAT (stránka jako celek je v režimu LazyContent, ale prvky QAT potřebujeme i v této stránce)</param>
+        /// <param name="qatList">Průběžně střádaný seznam prvků, které budou umístěny do QAT</param>
         /// <param name="count"></param>
-        private void _AddBarItem(IRibbonItem iRibbonItem, DxRibbonGroup group, ref int count)
+        private void _AddBarItem(IRibbonItem iRibbonItem, DxRibbonGroup group, bool isNeedQAT, List<QatItem> qatList, ref int count)
         {
             if (iRibbonItem == null || group == null) return;
-            var barItem = GetItem(iRibbonItem, group, ref count);
+            if (isNeedQAT && !ContainsQAT(iRibbonItem)) return;               // V režimu isNeedQAT přidáváme jen prvky QAT, a ten v dané grupě není žádný
+
+            var barItem = GetItem(iRibbonItem, group, qatList, ref count);
             if (barItem is null) return;
             // více není třeba.
         }
@@ -1015,10 +1032,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="iRibbonItem"></param>
         /// <param name="group"></param>
+        /// <param name="qatList">Průběžně střádaný seznam prvků, které budou umístěny do QAT</param>
         /// <param name="count"></param>
         /// <param name="reallyCreateSubItems"></param>
         /// <returns></returns>
-        protected DevExpress.XtraBars.BarItem GetItem(IRibbonItem iRibbonItem, DevExpress.XtraBars.Ribbon.RibbonPageGroup group, ref int count, bool reallyCreateSubItems = false)
+        protected DevExpress.XtraBars.BarItem GetItem(IRibbonItem iRibbonItem, DevExpress.XtraBars.Ribbon.RibbonPageGroup group, List<QatItem> qatList, ref int count, bool reallyCreateSubItems = false)
         {
             if (iRibbonItem is null || group is null) return null;
 
@@ -1048,8 +1066,9 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             }
 
+            // Prvek patří do QAT?
             if (iRibbonItem.ItemToolbarOrder.HasValue)
-                this.Toolbar.ItemLinks.Add(barItem);
+                qatList.Add(new QatItem(iRibbonItem, barItem));
 
             return barItem;
         }
@@ -1194,7 +1213,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 barItem.RibbonStyle = Convert(iRibbonItem.RibbonStyle);
 
             if (iRibbonItem.ToolTipText != null)
-                barItem.SuperTip = GetSuperTip(iRibbonItem.ToolTipText, iRibbonItem.ToolTipTitle, iRibbonItem.Text, iRibbonItem.ToolTipIcon);
+                barItem.SuperTip = DxComponent.CreateDxSuperTip(iRibbonItem);
 
             if (barItem.Tag == null)
                 // Některé druhy prvků (například Menu) už mají Tag naplněn "něčím lepším", tak to nebudeme ničit:
@@ -1418,7 +1437,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             galleryBarItem.Gallery.HoverImages = ComponentConnector.GraphicsCache.GetImageList();
             galleryBarItem.Gallery.AllowHoverImages = true;
             galleryBarItem.Gallery.ColumnCount = 4;
-            galleryBarItem.SuperTip = GetSuperTip(iRibbonItem);
+            galleryBarItem.SuperTip = DxComponent.CreateDxSuperTip(iRibbonItem);
             galleryBarItem.AllowGlyphSkinning = DefaultBoolean.True;
             galleryBarItem.Caption = iRibbonItem.Text;
             galleryBarItem.Enabled = iRibbonItem.Enabled;
@@ -1458,7 +1477,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             galleryItem.Checked = iRibbonItem.Checked ?? false;
             galleryItem.Description = iRibbonItem.ToolTipText;
             galleryItem.Enabled = iRibbonItem.Enabled;
-            galleryItem.SuperTip = this.GetSuperTip(iRibbonItem);
+            galleryItem.SuperTip = DxComponent.CreateDxSuperTip(iRibbonItem);
             galleryItem.Tag = iRibbonItem;
             iRibbonItem.ParentItem = parentItem;
             iRibbonItem.ParentGroup = parentItem.ParentGroup;
@@ -1499,42 +1518,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void RibbonControl_SubItemClick(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
         {
             RibbonControl_ItemClick(sender, e);
-        }
-        /// <summary>
-        /// Vygeneruje a vrátí SuperTip pro daný prvek Ribbonu
-        /// </summary>
-        /// <param name="iRibbonItem"></param>
-        /// <returns></returns>
-        protected DevExpress.Utils.SuperToolTip GetSuperTip(IRibbonItem iRibbonItem)
-        {
-            return GetSuperTip(iRibbonItem.ToolTipText, iRibbonItem.ToolTipTitle, iRibbonItem.Text, iRibbonItem.ToolTipIcon);
-        }
-        /// <summary>
-        /// Vygeneruje a vrátí SuperTip pro dané texty
-        /// </summary>
-        /// <param name="text"></param>
-        /// <param name="title"></param>
-        /// <param name="itemText"></param>
-        /// <param name="image"></param>
-        /// <returns></returns>
-        protected DevExpress.Utils.SuperToolTip GetSuperTip(string text, string title, string itemText, string image)
-        {
-            if (text is null) return null;
-            if (title == null) title = itemText;
-            var superTip = new DevExpress.Utils.SuperToolTip();
-            if (title != null)
-            {
-                var dxTitle = superTip.Items.AddTitle(title);
-                if (image != null)
-                {
-                    dxTitle.ImageOptions.Images = ComponentConnector.GraphicsCache.GetImageList(WinFormServices.Drawing.UserGraphicsSize.Large);
-                    dxTitle.ImageOptions.ImageIndex = ComponentConnector.GraphicsCache.GetResourceIndex(image, WinFormServices.Drawing.UserGraphicsSize.Large);
-                    dxTitle.ImageOptions.ImageToTextDistance = 12;
-                }
-                superTip.Items.AddSeparator();
-            }
-            superTip.Items.Add(text);
-            return superTip;
         }
         /// <summary>
         /// Vrací true pokud se má objekt vytvořit
@@ -1599,6 +1582,75 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Standardized large image size.
         /// </summary>
         internal static readonly WinFormServices.Drawing.UserGraphicsSize LargeImagesSize = WinFormServices.Drawing.UserGraphicsSize.Large;
+        #endregion
+        #region Podpora pro QAT - Quick Access Toolbar
+        /// <summary>
+        /// Obsahuje daná stránka něco, co bude přidáno do QAT (Quick Access Toolbar)?
+        /// Pokud ano, bude třeba do dané stránky připravit alespoň ty grupy a prvky, které k danému QAT prvku vedou, aby bylo co přidat do QAT.
+        /// <para/>
+        /// Do toolbaru QAT se mohou přidat pouze prvky, které existují někde v rámci Ribbonu. Nemohu do QAT přidat new prvek 
+        /// </summary>
+        /// <param name="iRibbonPage"></param>
+        /// <returns></returns>
+        protected static bool ContainsQAT(IRibbonPage iRibbonPage)
+        {
+            return (iRibbonPage != null && iRibbonPage.Groups != null && iRibbonPage.Groups.Any(g => ContainsQAT(g)));
+        }
+        /// <summary>
+        /// Vrátí true, pokud daná grupa jako celek má být přítomna v QAT (Quick Access Toolbar), anebo v sobě obsahuje nějaký prvek, který tam má být umístěn
+        /// </summary>
+        /// <param name="iRibbonGroup"></param>
+        /// <returns></returns>
+        protected static bool ContainsQAT(IRibbonGroup iRibbonGroup)
+        { }
+        protected static bool ContainsQAT(IRibbonItem iRibbonItem)
+        { }
+        /// <summary>
+        /// Dodané prvky přidá do QAT (Quick Access Toolbar)
+        /// </summary>
+        /// <param name="qatList"></param>
+        protected void AddQatListToRibbon(List<QatItem> qatList)
+        {
+            if (qatList == null || qatList.Count == 0) return;
+            qatList.Sort(QatItem.CompareByOrder);
+            this.Toolbar.ItemLinks.AddRange(qatList.Select(q => q.BarItem));
+        }
+        /// <summary>
+        /// Třída pro průběžné shrnování informací o pvcích, které mají být umístěny do QAT (Quick Access Toolbar)
+        /// </summary>
+        protected class QatItem
+        {
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="iRibbonItem"></param>
+            /// <param name="barItem"></param>
+            public QatItem(IRibbonItem iRibbonItem, DevExpress.XtraBars.BarItem barItem)
+            {
+                this.RibbonItem = iRibbonItem;
+                this.BarItem = barItem;
+            }
+            /// <summary>
+            /// Definice prvku Ribbonu
+            /// </summary>
+            public IRibbonItem RibbonItem { get; private set; }
+            /// <summary>
+            /// Objekt Ribbonu
+            /// </summary>
+            public DevExpress.XtraBars.BarItem BarItem { get; private set; }
+            /// <summary>
+            /// Provede porovnání podle hodnoty <see cref="IRibbonItem.ItemToolbarOrder"/> ASC
+            /// </summary>
+            /// <param name="a"></param>
+            /// <param name="b"></param>
+            /// <returns></returns>
+            public static int CompareByOrder(QatItem a, QatItem b)
+            {
+                int orderA = a?.RibbonItem?.ItemToolbarOrder ?? 999999;
+                int orderB = b?.RibbonItem?.ItemToolbarOrder ?? 999999;
+                return orderA.CompareTo(orderB);
+            }
+        }
         #endregion
         #region Kliknutí na prvek Ribbonu
         private void InitEvents()
@@ -2545,7 +2597,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         internal bool IsLazyLoadEveryTime { get { return (this.LazyLoadInfo != null && this.LazyLoadInfo.PageContentMode == RibbonContentMode.OnDemandLoadEveryTime); } }
         /// <summary>
         /// Zajistí přípravu prvku LazyInfo pro režim definovaný v daném prvku. Prvek si uschová.
-        /// Založí grupu pokud dosud neexistuje a je potřebná.
+        /// Založí grupu pro LazyLoad - pokud dosud neexistuje a je potřebná (LazyLoad je realizován pomocí grupy, která obsahuje prvek s příznakem LazyLoad).
         /// Vrátí true, pokud se v dané situaci má generovat reálný obsah do this stránky Ribbonu, false pokud ne.
         /// </summary>
         /// <param name="pageData">Deklarace stránky</param>
@@ -2554,8 +2606,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         internal bool PreparePageForContent(IRibbonPage pageData, bool isLazyContentFill, bool isOnDemandFill)
         {
             // Určíme, zda budeme potřebovat LazyInfo objekt (a tedy LazyGroup grupu v GUI Ribbonu):
-            // a) podle režimu práce s obsahem
-            // b) podle aktuálních příznaků
+            // a) podle režimu práce s obsahem (pageData.PageContentMode je některý OnDemandLoad)
+            // b) podle aktuálních příznaků (isLazyContentFill, isOnDemandFill)
             var contentMode = pageData.PageContentMode;
             bool createLazyInfo = (isLazyContentFill ||
                                    contentMode == RibbonContentMode.OnDemandLoadEveryTime ||
