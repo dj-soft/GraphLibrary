@@ -841,7 +841,7 @@ namespace TestDevExpress.Forms
 
             item.ToolTipTitle = item.ToolTipTitle + "  {" + item.ItemType.ToString() + "}";
             item.ItemIsFirstInGroup = isFirst;
-            item.ItemToolbarOrder = toolbarOrder;
+            item.QuickToolbarOrder = toolbarOrder;
 
             return item;
         }

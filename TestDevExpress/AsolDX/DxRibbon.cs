@@ -676,7 +676,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (iRibbonItem == null || group == null) return;
             if (isNeedQAT && !ContainsQAT(iRibbonItem)) return;               // V režimu isNeedQAT přidáváme jen prvky QAT, a ten v dané grupě není žádný
 
-            var barItem = GetItem(iRibbonItem, group, qatList, ref count);
+            var barItem = GetItem(iRibbonItem, group, isNeedQAT, qatList, ref count);
             if (barItem is null) return;
             // více není třeba.
         }
@@ -1032,11 +1032,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="iRibbonItem"></param>
         /// <param name="group"></param>
+        /// <param name="isNeedQAT">Přidávat pouze prvky označené QAT (stránka jako celek je v režimu LazyContent, ale prvky QAT potřebujeme i v této stránce)</param>
         /// <param name="qatList">Průběžně střádaný seznam prvků, které budou umístěny do QAT</param>
         /// <param name="count"></param>
         /// <param name="reallyCreateSubItems"></param>
         /// <returns></returns>
-        protected DevExpress.XtraBars.BarItem GetItem(IRibbonItem iRibbonItem, DevExpress.XtraBars.Ribbon.RibbonPageGroup group, List<QatItem> qatList, ref int count, bool reallyCreateSubItems = false)
+        protected DevExpress.XtraBars.BarItem GetItem(IRibbonItem iRibbonItem, DevExpress.XtraBars.Ribbon.RibbonPageGroup group, bool isNeedQAT, List<QatItem> qatList, ref int count, bool reallyCreateSubItems = false)
         {
             if (iRibbonItem is null || group is null) return null;
 
@@ -1067,7 +1068,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
 
             // Prvek patří do QAT?
-            if (iRibbonItem.ItemToolbarOrder.HasValue)
+            if (iRibbonItem.QuickToolbarOrder.HasValue)
                 qatList.Add(new QatItem(iRibbonItem, barItem));
 
             return barItem;
@@ -1602,9 +1603,18 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="iRibbonGroup"></param>
         /// <returns></returns>
         protected static bool ContainsQAT(IRibbonGroup iRibbonGroup)
-        { }
+        {
+            return (iRibbonGroup != null && (iRibbonGroup.QuickToolbarOrder.HasValue || (iRibbonGroup.Items != null && iRibbonGroup.Items.Any(i => ContainsQAT(i)))));
+        }
+        /// <summary>
+        /// Vrátí true, pokud daný prvek jako celek má být přítomen v QAT (Quick Access Toolbar), anebo v sobě obsahuje nějaký Sub-prvek, který tam má být umístěn
+        /// </summary>
+        /// <param name="iRibbonItem"></param>
+        /// <returns></returns>
         protected static bool ContainsQAT(IRibbonItem iRibbonItem)
-        { }
+        {
+            return (iRibbonItem != null && (iRibbonItem.QuickToolbarOrder.HasValue || (iRibbonItem.SubRibbonItems != null && iRibbonItem.SubRibbonItems.Any(s => ContainsQAT(s)))));
+        }
         /// <summary>
         /// Dodané prvky přidá do QAT (Quick Access Toolbar)
         /// </summary>
@@ -1639,15 +1649,15 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// </summary>
             public DevExpress.XtraBars.BarItem BarItem { get; private set; }
             /// <summary>
-            /// Provede porovnání podle hodnoty <see cref="IRibbonItem.ItemToolbarOrder"/> ASC
+            /// Provede porovnání podle hodnoty <see cref="IRibbonItem.QuickToolbarOrder"/> ASC
             /// </summary>
             /// <param name="a"></param>
             /// <param name="b"></param>
             /// <returns></returns>
             public static int CompareByOrder(QatItem a, QatItem b)
             {
-                int orderA = a?.RibbonItem?.ItemToolbarOrder ?? 999999;
-                int orderB = b?.RibbonItem?.ItemToolbarOrder ?? 999999;
+                int orderA = a?.RibbonItem?.QuickToolbarOrder ?? 999999;
+                int orderB = b?.RibbonItem?.QuickToolbarOrder ?? 999999;
                 return orderA.CompareTo(orderB);
             }
         }
@@ -3373,7 +3383,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             return list;
         }
         /// <summary>
-        /// Metoda vrátí všechny prvky z dané stránky, které nesou příznak <see cref="IRibbonItem.ItemToolbarOrder"/> s ne null hodnotou.
+        /// Metoda vrátí všechny prvky z dané stránky, které nesou příznak <see cref="IRibbonItem.QuickToolbarOrder"/> s ne null hodnotou.
         /// Prochází pole prvků v grupách i pole SubItems z prvků (ale jen první úroveň).
         /// </summary>
         /// <param name="pageData"></param>
@@ -3389,24 +3399,24 @@ namespace Noris.Clients.Win.Components.AsolDX
                 .SelectMany(g => g.Items)
                 .Where(i => i != null)
                 .ToArray();
-            toolItems.AddRange(items.Where(i => i.ItemToolbarOrder.HasValue));
+            toolItems.AddRange(items.Where(i => i.QuickToolbarOrder.HasValue));
 
             // Plus SubItems:
             toolItems.AddRange(items
                 .Where(i => i.SubRibbonItems != null)
                 .SelectMany(i => i.SubRibbonItems)
-                .Where(i => i.ItemToolbarOrder.HasValue));
+                .Where(i => i.QuickToolbarOrder.HasValue));
 
             return toolItems.ToArray();
         }
         /// <summary>
         /// Kategorie, do které patří tato stránka. Může být null pro běžné stránky Ribbonu.
         /// </summary>
-        public IRibbonCategory Category { get; set; }
+        public virtual IRibbonCategory Category { get; set; }
         /// <summary>
         /// ID grupy, musí být jednoznačné v rámci Ribbonu
         /// </summary>
-        public string PageId
+        public virtual string PageId
         {
             get
             {
@@ -3422,28 +3432,28 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Režim pro vytvoření / refill / remove této stránky
         /// </summary>
-        public ContentChangeMode ChangeMode { get; set; }
+        public virtual ContentChangeMode ChangeMode { get; set; }
         /// <summary>
         /// Pořadí stránky, použije se pro setřídění v rámci nadřazeného prvku
         /// </summary>
-        public int PageOrder { get; set; }
+        public virtual int PageOrder { get; set; }
         /// <summary>
         /// Jméno stránky
         /// </summary>
-        public string PageText { get; set; }
+        public virtual string PageText { get; set; }
         /// <summary>
         /// Typ stránky
         /// </summary>
-        public RibbonPageType PageType { get; set; }
+        public virtual RibbonPageType PageType { get; set; }
         /// <summary>
         /// Režim práce se stránkou (opožděné načítání, refresh před každým načítáním)
         /// </summary>
-        public RibbonContentMode PageContentMode { get; set; }
+        public virtual RibbonContentMode PageContentMode { get; set; }
         /// <summary>
         /// Pole skupin v této stránce
         /// Výchozí hodnota je prázdný List.
         /// </summary>
-        public List<IRibbonGroup> Groups { get; set; }
+        public virtual List<IRibbonGroup> Groups { get; set; }
         /// <summary>
         /// V deklaraci interface je IEnumerable...
         /// </summary>
@@ -3451,7 +3461,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Libovolná data aplikace
         /// </summary>
-        public object Tag { get; set; }
+        public virtual object Tag { get; set; }
     }
     /// <summary>
     /// Definice kategorie, do které patří stránka v Ribbonu
@@ -3488,7 +3498,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// ID kategorie, jednoznačné per Ribbon
         /// </summary>
-        public string CategoryId
+        public virtual string CategoryId
         {
             get
             {
@@ -3504,19 +3514,19 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Titulek kategorie zobrazovaný uživateli
         /// </summary>
-        public string CategoryText { get; set; }
+        public virtual string CategoryText { get; set; }
         /// <summary>
         /// Barva kategorie
         /// </summary>
-        public Color CategoryColor { get; set; }
+        public virtual Color CategoryColor { get; set; }
         /// <summary>
         /// Kategorie je viditelná?
         /// </summary>
-        public bool CategoryVisible { get; set; }
+        public virtual bool CategoryVisible { get; set; }
         /// <summary>
         /// Libovolná data aplikace
         /// </summary>
-        public object Tag { get; set; }
+        public virtual object Tag { get; set; }
     }
     /// <summary>
     /// Definice skupiny ve stránce Ribbonu
@@ -3596,28 +3606,32 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Režim pro vytvoření / refill / remove této grupy
         /// </summary>
-        public ContentChangeMode ChangeMode { get; set; }
+        public virtual ContentChangeMode ChangeMode { get; set; }
         /// <summary>
         /// Pořadí grupy, použije se pro setřídění v rámci nadřazeného prvku
         /// </summary>
-        public int GroupOrder { get; set; }
+        public virtual int GroupOrder { get; set; }
+        /// <summary>
+        /// Pořadí prvku v ToolBaru = QuickAccesToolbar
+        /// </summary>
+        public virtual int? QuickToolbarOrder { get; set; }
         /// <summary>
         /// Titulek grupy
         /// </summary>
-        public string GroupText { get; set; }
+        public virtual string GroupText { get; set; }
         /// <summary>
         /// Obrázek grupy
         /// </summary>
-        public string GroupImage { get; set; }
+        public virtual string GroupImage { get; set; }
         /// <summary>
         /// Zobrazit speciální tlačítko grupy vpravo dole v titulku grupy (lze tak otevřít nějaké okno vlastností pro celou grupu)
         /// </summary>
-        public bool GroupButtonVisible { get; set; }
+        public virtual bool GroupButtonVisible { get; set; }
         /// <summary>
         /// Soupis prvků grupy (tlačítka, menu, checkboxy, galerie)
         /// Výchozí hodnota je prázdný List.
         /// </summary>
-        public List<IRibbonItem> Items { get; set; }
+        public virtual List<IRibbonItem> Items { get; set; }
         /// <summary>
         /// V deklaraci interface je IEnumerable...
         /// </summary>
@@ -3625,7 +3639,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Libovolná data aplikace
         /// </summary>
-        public object Tag { get; set; }
+        public virtual object Tag { get; set; }
     }
     /// <summary>
     /// Definice prvku umístěného v Ribbonu nebo podpoložka prvku Ribbonu (položka menu / split ribbonu atd) nebo jako prvek ListBoxu nebo ComboBoxu
@@ -3688,32 +3702,32 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Parent prvku = <see cref="IRibbonGroup"/>
         /// </summary>
-        public IRibbonGroup ParentGroup { get; set; }
+        public virtual IRibbonGroup ParentGroup { get; set; }
         /// <summary>
         /// Parent prvku = jiný prvek <see cref="IRibbonItem"/>
         /// </summary>
-        public IRibbonItem ParentRibbonItem { get; set; }
+        public virtual IRibbonItem ParentRibbonItem { get; set; }
         /// <summary>
         /// Typ prvku
         /// </summary>
-        public RibbonItemType RibbonItemType { get; set; }
+        public virtual RibbonItemType RibbonItemType { get; set; }
         /// <summary>
         /// Styl zobrazení prvku
         /// </summary>
-        public RibbonItemStyles RibbonStyle { get; set; }
+        public virtual RibbonItemStyles RibbonStyle { get; set; }
         /// <summary>
         /// Pořadí prvku v ToolBaru = QuickAccesToolbar
         /// </summary>
-        public int? ItemToolbarOrder { get; set; }
+        public virtual int? QuickToolbarOrder { get; set; }
         /// <summary>
         /// Režim práce se subpoložkami
         /// </summary>
-        public RibbonContentMode SubItemsContentMode { get; set; }
+        public virtual RibbonContentMode SubItemsContentMode { get; set; }
         /// <summary>
         /// Subpoložky (definují prvky Menu, DropDown, SplitButton). Mohou být rekurzivně naplněné = vnořená menu.
         /// Výchozí hodnota je null.
         /// </summary>
-        public List<IRibbonItem> SubRibbonItems { get; set; }
+        public virtual List<IRibbonItem> SubRibbonItems { get; set; }
         /// <summary>
         /// V deklaraci interface je IEnumerable...
         /// </summary>
@@ -3811,6 +3825,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         int GroupOrder { get; set; }
         /// <summary>
+        /// Pořadí prvku v ToolBaru = QuickAccesToolbar
+        /// </summary>
+        int? QuickToolbarOrder { get; }
+        /// <summary>
         /// Titulek grupy
         /// </summary>
         string GroupText { get; }
@@ -3855,7 +3873,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Pořadí prvku v ToolBaru = QuickAccesToolbar
         /// </summary>
-        int? ItemToolbarOrder { get; }
+        int? QuickToolbarOrder { get; }
         /// <summary>
         /// Režim práce se subpoložkami
         /// </summary>
