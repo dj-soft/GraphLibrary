@@ -139,9 +139,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Vlastní data zobrazená v dataformu
         /// </summary>
-        public DxDataFormData Data { get { return _Data; } }
+        internal DxDataFormData Data { get { return _Data; } }
         private DxDataFormData _Data;
-
         #endregion
         #region Zobrazované prvky = definice stránek, odvození záložek, a vlastní data
         /// <summary>
@@ -155,7 +154,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public System.Data.DataTable DataTable { get { return _DataTable; } set { _DataTable = value; this.Refresh(RefreshParts.InvalidateControl); } }
         private System.Data.DataTable _DataTable;
-
         /// <summary>
         /// Vloží dané stránky do this instance
         /// </summary>
@@ -205,11 +203,6 @@ namespace Noris.Clients.Win.Components.AsolDX
                 _DataFormTabs.Add(dataTab);
             }
         }
-
-
-
-
-
         /// <summary>
         /// Metoda invaliduje všechny souřadnice na stránkách, které jsou závislé na Zoomu a na DPI.
         /// Metoda sama neprovádí další přepočty layoutu ani tvorbu záložek, to je úkolem metody <see cref="CreateDataTabs"/>.
@@ -257,7 +250,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             InvalidateCurrentBounds();
             CreateDataTabs();
         }
-
         /// <summary>
         /// Metoda zkusí najít navigační stránku (typově přesnou) a její data záložky <see cref="DxDataFormTab"/>
         /// pro vstupní obecnou stránku.
@@ -1317,7 +1309,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
     /// <summary>
     /// Data v dataformu - tabulka, List, atd
     /// </summary>
-    public class DxDataFormData
+    internal class DxDataFormData
     {
         #region Konstruktor a privátní rovina obecného zdroje dat
         /// <summary>
@@ -1379,17 +1371,16 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Počet řádků s daty. Pokud nejsou vložena data, vrací 0.
         /// </summary>
-        /// <param name="partXId">Identifikace datové oblasti ve směru X</param>
-        /// <param name="partYId">Identifikace datové oblasti ve směru Y</param>
-        public int RowCount(int partXId, int partYId)
+        /// <param name="partId">Identifikátor části. Různé části mohou mít různé řádkové filtry, a pak mají různé počty řádků.</param>
+        internal int GetRowCount(DxDataFormPartId partId)
         {
             switch (_CurrentSourceType)
             {
                 case SourceType.None: return 0;
-                case SourceType.DataTable: return _GetRowCountDataTable();
-                case SourceType.Array: return _GetRowCountArray();
-                case SourceType.List: return _GetRowCountList();
-                case SourceType.Record: return _GetRowCountRecord();
+                case SourceType.DataTable: return _GetRowCountDataTable(partId);
+                case SourceType.Array: return _GetRowCountArray(partId);
+                case SourceType.List: return _GetRowCountList(partId);
+                case SourceType.Record: return _GetRowCountRecord(partId);
             }
             return 0;
         }
@@ -1416,16 +1407,15 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Správce dat by měl znát svoje data (řádky) včetně jejich řazení, kdy každý řádek má svoji jednoznačnou a kontinuální vizuální pozici v poli viditelných řádků, počínaje od 0.
         /// V rámci tohoto pole by měl dokázat najít řádky na daných pozicích, a zde vrátí pole jejich RowId ve správném pořadí, jak budou zobrazeny.
         /// </summary>
-        /// <param name="partXId">Identifikace datové oblasti ve směru X</param>
-        /// <param name="partYId">Identifikace datové oblasti ve směru Y</param>
+        /// <param name="partId">Identifikátor části. Různé části mohou mít různé řádkové filtry, a pak mají různé počty řádků.</param>
         /// <param name="rowIndexFirst"></param>
         /// <param name="rowCount"></param>
         /// <returns></returns>
-        internal int[] GetVisibleRowsId(int partXId, int partYId, int rowIndexFirst, int rowCount)
+        internal int[] GetVisibleRowsId(DxDataFormPartId partId, int rowIndexFirst, int rowCount)
         {
             // Kontroly, zarovnání, zkratka pro chybné zadání nebo pro nula záznamů:
             if (rowIndexFirst < 0) rowIndexFirst = 0;
-            if (rowCount <= 0 || rowIndexFirst >= this.RowCount(partXId, partYId) || ) return new int[0];
+            if (rowCount <= 0 || rowIndexFirst >= this.GetRowCount(partId)) return new int[0];
 
             // Pokud by neexistovalo setřídění řádků, a pokud by RowId byly kontinuálně od 0 nahoru, pak by věc byla jednoduchá
             //  = vrátilo by se pole obsahující posloupnost čísel { rowIndexFirst, rowIndexFirst+1, ..., rowIndexLast }.
@@ -1457,7 +1447,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Vrátí počet řádků DataTable
         /// </summary>
         /// <returns></returns>
-        private int _GetRowCountDataTable() { return (_SourceDataTable?.Rows.Count ?? 0); }
+        private int _GetRowCountDataTable(DxDataFormPartId partId) { return (_SourceDataTable?.Rows.Count ?? 0); }
         /// <summary>
         /// Vrátí text prvku ze zdroje typu DataTable
         /// </summary>
@@ -1503,7 +1493,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Vrátí počet řádků Array
         /// </summary>
         /// <returns></returns>
-        private int _GetRowCountArray() { return (_SourceArray?.Length ?? 0); }
+        private int _GetRowCountArray(DxDataFormPartId partId) { return (_SourceArray?.Length ?? 0); }
         /// <summary>
         /// Vrátí text prvku ze zdroje typu Array
         /// </summary>
@@ -1545,7 +1535,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Vrátí počet řádků List
         /// </summary>
         /// <returns></returns>
-        private int _GetRowCountList() { return (_SourceList?.Count ?? 0); }
+        private int _GetRowCountList(DxDataFormPartId partId) { return (_SourceList?.Count ?? 0); }
         /// <summary>
         /// Vrátí text prvku ze zdroje typu List
         /// </summary>
@@ -1576,7 +1566,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Vrátí počet řádků Record
         /// </summary>
         /// <returns></returns>
-        private int _GetRowCountRecord() { return (_SourceArray?.Length ?? 0); }
+        private int _GetRowCountRecord(DxDataFormPartId partId) { return (_SourceArray?.Length ?? 0); }
         /// <summary>
         /// Vrátí text prvku ze zdroje typu Record
         /// </summary>
@@ -1602,7 +1592,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         private object _SourceRecord;
         #endregion
-
     }
     #endregion
     #region class DxDataFormPanel : Jeden panel dataformu: reprezentuje základní panel, hostuje v sobě dva ScrollBary a ContentPanel
@@ -1723,7 +1712,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         { }
         private void AddPart(int partXId, int partYId)
         {
-            _RootPart = new DxDataFormPart(this) { PartXId = partXId, PartYId = partYId };
+            _RootPart = new DxDataFormPart(this);
             _Parts.Add(_RootPart);
             _RootPart.Dock = ((_Parts.Count == 1) ? DockStyle.Fill : DockStyle.None);
             this.Controls.Add(_RootPart);
@@ -1822,11 +1811,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         public DxDataFormPart(DxDataFormPanel dataPanel)
         {
             _DataPanel = dataPanel;
+            _PartId = new DxDataFormPartId();
 
             this.DoubleBuffered = true;
             this.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder;
-            this.PartXId = 0;
-            this.PartYId = 0;
 
             InitializeContentPanel();
             InitializeGroups();
@@ -1848,6 +1836,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         }
         /// <summary>Vlastník - <see cref="DxDataFormPanel"/></summary>
         private DxDataFormPanel _DataPanel;
+        /// <summary>ID this části</summary>
+        private DxDataFormPartId _PartId;
         /// <summary>
         /// Vlastník - <see cref="DxDataFormPanel"/>
         /// </summary>
@@ -1865,17 +1855,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         public DxDataFormData Data { get { return DataForm.Data; } }
         /// <summary>
-        /// Identifikátor this části ve směru X = vodorovném = sloupce.
-        /// Výchozí část má ID = 0; pokud se svislým splitterem rozdělí na dvě, pak část vpravo bude mít <see cref="PartXId"/> = 1, atd.
+        /// Identifikátor this části.
         /// S tímto ID se pak dotazuje parentů (dataformu a jeho dat) na řádky, sloupce atd.
         /// </summary>
-        public int PartXId { get; set; }
-        /// <summary>
-        /// Identifikátor this části ve směru Y = vodorovném = řádky.
-        /// Výchozí část má ID = 0; pokud se vodorovným splitterem rozdělí na dvě, pak část dole bude mít <see cref="PartYId"/> = 1, atd.
-        /// S tímto ID se pak dotazuje parentů (dataformu a jeho dat) na řádky, sloupce atd.
-        /// </summary>
-        public int PartYId { get; set; }
+        public DxDataFormPartId PartId { get { return _PartId; } }
         #endregion
         #region ContentPanel
         /// <summary>
@@ -2068,7 +2051,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             if (oldVisibleRows != null && oldVisibleRows.Count == rowVisibleCount && (rowVisibleCount == 0 || (oldVisibleRows.Count > 0 && oldVisibleRows[0].RowIndex == rowVisibleFirst))) return;
 
             // Získám pole, obsahující RowId těch řádků, které mají být vidět na dané pozici (rowFirst) ++další, v daném počtu (rowCount):
-            int[] visibleRowsId = Data.GetVisibleRowsId(rowVisibleFirst, rowVisibleCount);
+            int[] visibleRowsId = Data.GetVisibleRowsId(this.PartId, rowVisibleFirst, rowVisibleCount);
 
             // Nejprve dosavadní řádky (pokud nejsou null): označím si v nich (hodnotou VisibleRow) ty řádky, které mají RowId odpovídající těm řádkům, které budou viditelné i nadále:
             //  - totiž, při posunu pole o několik málo picelů nám sice proběhne tato metoda, ale většina dosud viditelných řádků bude viditelná poté,
@@ -2118,7 +2101,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Počet celkem zobrazovaných řádků, v rozmezí 0 až 2G
         /// </summary>
-        private int _RowCount { get { int rowCount = Data.RowCount; return (rowCount < 0 ? 0 : rowCount); } }
+        private int _RowCount { get { int rowCount = Data.GetRowCount(this.PartId); return (rowCount < 0 ? 0 : rowCount); } }
         /// <summary>
         /// Výška jednoho řádku = výška všech grup <see cref="_GroupsTotalSize"/>.Height s přidáním mezery <see cref="_RowHeightSpace"/>
         /// </summary>
@@ -2994,6 +2977,24 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             this.ContentVirtualLocation = _State?.ContentVirtualLocation ?? Point.Empty;
         }
         #endregion
+    }
+    /// <summary>
+    /// Identifikátor jedné konkrétní části <see cref="DxDataFormPart"/>
+    /// </summary>
+    internal class DxDataFormPartId
+    {
+        /// <summary>
+        /// Identifikátor this části ve směru X = vodorovném = sloupce.
+        /// Výchozí část má ID = 0; pokud se svislým splitterem rozdělí na dvě, pak část vpravo bude mít <see cref="PartXId"/> = 1, atd.
+        /// S tímto ID se pak dotazuje parentů (dataformu a jeho dat) na řádky, sloupce atd.
+        /// </summary>
+        public int PartXId { get; set; }
+        /// <summary>
+        /// Identifikátor this části ve směru Y = vodorovném = řádky.
+        /// Výchozí část má ID = 0; pokud se vodorovným splitterem rozdělí na dvě, pak část dole bude mít <see cref="PartYId"/> = 1, atd.
+        /// S tímto ID se pak dotazuje parentů (dataformu a jeho dat) na řádky, sloupce atd.
+        /// </summary>
+        public int PartYId { get; set; }
     }
     #endregion
     #region class DxDataFormRow : Jeden vizuální řádek v rámci DxDataFormRowBand
