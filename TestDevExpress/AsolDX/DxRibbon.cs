@@ -14,6 +14,7 @@ using System.Drawing;
 
 using DevExpress.Utils;
 using System.Diagnostics;
+using DevExpress.Utils.Extensions;
 
 namespace Noris.Clients.Win.Components.AsolDX
 {
@@ -103,6 +104,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             return DebugName ?? this.GetType().Name;
         }
+        /// <summary>
+        /// Jsou aktivní zápisy do logu? Default = false
+        /// </summary>
+        public virtual bool LogActive { get; set; }
         /// <summary>
         /// Jméno Ribbonu pro debugování
         /// </summary>
@@ -292,7 +297,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 _ClearingNow = false;
             }
 
-            DxComponent.LogAddLineTime($" === ClearRibbon {this.DebugName}; Removed {removeItemsCount} items; {DxComponent.LogTokenTimeMilisec} === ", startTime);
+            if (LogActive) DxComponent.LogAddLineTime($" === ClearRibbon {this.DebugName}; Removed {removeItemsCount} items; {DxComponent.LogTokenTimeMilisec} === ", startTime);
         }
         /// <summary>
         /// Korektně smaže BarItemy z this.Items.
@@ -360,7 +365,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             int removeItemsCount = 0;
             this._ClearItems(ref removeItemsCount);
 
-            DxComponent.LogAddLineTime($" === ClearPageContents {this.DebugName}; Removed {removeItemsCount} items; {DxComponent.LogTokenTimeMilisec} === ", startTime);
+            if (LogActive) DxComponent.LogAddLineTime($" === ClearPageContents {this.DebugName}; Removed {removeItemsCount} items; {DxComponent.LogTokenTimeMilisec} === ", startTime);
         }
         /// <summary>
         /// Smaže prázdné prázdné stránky a nevyužité kategorie v rámci this Ribbonu.
@@ -431,6 +436,22 @@ namespace Noris.Clients.Win.Components.AsolDX
         public void AddPages(IEnumerable<IRibbonPage> iRibbonPages, bool clearCurrentContent = false)
         {
             if (iRibbonPages == null) return;
+
+            //  Hodnota isReFill je důležitá v následujícím scénáři:
+            // 1. Provádíme první naplnění Ribbonu;
+            // 2. Definice Ribbonu obsahuje na první pozici stránku typu OdDemandLoad: taková stránka se aktivuje v procesu přidávání stránek;
+            // 3. Následně se metoda CheckLazyContentCurrentPage() má postarat o to, aby aktivní stránka (SelectedPage) měla správně načtená data (OnDemand)
+            // 4. Musíme tady ale rozlišit dvě situace, a to:
+            //   a) vstupující OnDemand stránka neobsahuje data => pokud bude aktivována, pak by MĚLA provést OnDemand donačtení,
+            //       protože zdroj dat jen nadeklaroval OnDemnd stránku bez obsahu, ale uživatel chce vidět její obsah;
+            //     anebo
+            //   b) OnDemand stránka již OBSHAUJE data => pak ale metoda CheckLazyContentCurrentPage() nemá vyvolat OnDemand donačítání (protože bychom se zacyklili),
+            //       to je situace, když zdroj dat právě už naplnil stárnku daty a posílá ji do Ribbonu.
+            //  Řešení:
+            //   - příznak isReFill říká, že nyní přicházejí naplněná data (a nebude se tedy žádat o jejich další donačtení)
+            //   - příznak isReFill určíme podle toho, že ve vstupních datech je alespoň jedna stránka typu OnDemand, která už v sobě obsahuje data
+            
+            bool isReFill = iRibbonPages.Any(p => ((p.PageContentMode == RibbonContentMode.OnDemandLoadOnce || p.PageContentMode == RibbonContentMode.OnDemandLoadEveryTime) && p.Groups.Any()));
             this.RunInGui(() =>
             {
                 this.ModifyCurrentDxContent(() =>
@@ -438,7 +459,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                     if (clearCurrentContent) _ClearPageContents();
                     _AddPages(iRibbonPages, this.UseLazyContentCreate, false, "Fill");
                     if (clearCurrentContent) _RemoveVoidContainers();
-                    CheckLazyContentCurrentPage(true);
+                    CheckLazyContentCurrentPage(isReFill);
                 });
             });
         }
@@ -565,7 +586,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             foreach (var iRibbonPage in list)
                 _AddPage(iRibbonPage, isLazyContentFill, isOnDemandFill, ref count);
 
-            DxComponent.LogAddLineTime($" === Ribbon {DebugName}: {logText} {list.Count} item[s]; Create: {count} BarItem[s]; {DxComponent.LogTokenTimeMilisec} === ", startTime);
+            if (LogActive) DxComponent.LogAddLineTime($" === Ribbon {DebugName}: {logText} {list.Count} item[s]; Create: {count} BarItem[s]; {DxComponent.LogTokenTimeMilisec} === ", startTime);
         }
         /// <summary>
         /// Přidá prvky do this Ribbonu z dodané kolekce, v daném režimu LazyLoad
@@ -582,7 +603,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             int count = 0;
             _AddPage(iRibbonPage, isLazyContentFill, isOnDemandFill, ref count);
 
-            DxComponent.LogAddLineTime($" === Ribbon {DebugName}: {logText}; Create: {count} BarItem[s]; {DxComponent.LogTokenTimeMilisec} === ", startTime);
+            if (LogActive) DxComponent.LogAddLineTime($" === Ribbon {DebugName}: {logText}; Create: {count} BarItem[s]; {DxComponent.LogTokenTimeMilisec} === ", startTime);
         }
         /// <summary>
         /// Metoda přidá do this Ribbonu data další stránky.
@@ -1269,7 +1290,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             var startTime = DxComponent.LogTimeCurrent;
             int count = 0;
             _XPopupMenu_FillItems(dxPopup, lazySubItems.ParentItem, lazySubItems.SubItems, ref count);
-            DxComponent.LogAddLineTime($"LazyLoad SplitButton menu create: {count} items, {DxComponent.LogTokenTimeMilisec}", startTime);
+            if (LogActive) DxComponent.LogAddLineTime($"LazyLoad SplitButton menu create: {count} items, {DxComponent.LogTokenTimeMilisec}", startTime);
         }
         /// <summary>
         /// Do daného menu <see cref="DevExpress.XtraBars.PopupMenu"/> vygeneruje všechny jeho položky.
@@ -1336,7 +1357,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             int count = 0;
             xBarMenu.ItemLinks.Clear();                    // V téhle kolekci byl jeden prvek "...", který mi zajistil aktivaci menu = zdejší metoda Popup.
             _XBarMenu_FillItems(xBarMenu, lazySubItems.ParentItem, lazySubItems.SubItems, ref count);
-            DxComponent.LogAddLineTime($"LazyLoad Menu create: {count} items, {DxComponent.LogTokenTimeMilisec}", startTime);
+            if (LogActive) DxComponent.LogAddLineTime($"LazyLoad Menu create: {count} items, {DxComponent.LogTokenTimeMilisec}", startTime);
         }
         /// <summary>
         /// Do daného menu <see cref="DevExpress.XtraBars.BarSubItem"/> vygeneruje všechny jeho položky.
@@ -2053,7 +2074,7 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             if (selectPage && slaveSelectedPage != null) this.SelectedPageId = slaveSelectedPage;
 
-            DxComponent.LogAddLineTime($"MergeRibbon: to Parent: {this.DebugName}; from Child: {(childRibbon?.ToString())}; Time: {DxComponent.LogTokenTimeMilisec}", startTime);
+            if (LogActive) DxComponent.LogAddLineTime($"MergeRibbon: to Parent: {this.DebugName}; from Child: {(childRibbon?.ToString())}; Time: {DxComponent.LogTokenTimeMilisec}", startTime);
         }
         /// <summary>
         /// Dočasné úložiště požadavku (parametr forceSelectChildPage různých metod) na provedení SelectPage z Child Ribbonu po dokončení mergování do Parent Ribbonu.
@@ -2103,7 +2124,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (count == 1)
             {   // Provedu požadovanou akci rovnou (není třeba dělat UnMerge a Merge), a skončíme:
                 _RunLogAction(action);
-                DxComponent.LogAddLineTime($"ModifyRibbon {this.DebugName}: Current; Time: {DxComponent.LogTokenTimeMilisec}", startTime);
+                if (LogActive) DxComponent.LogAddLineTime($"ModifyRibbon {this.DebugName}: Current; Time: {DxComponent.LogTokenTimeMilisec}", startTime);
                 return;
             }
 
@@ -2151,7 +2172,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (topRibbonSelectedPage2 != topRibbonSelectedPage1)
                 topRibbon.CheckLazyContent(topRibbon.SelectedPage, false);
 
-            DxComponent.LogAddLineTime($"ModifyRibbon {this.DebugName}: UnMerge + Action + Merge; Total Count: {count}; Time: {DxComponent.LogTokenTimeMilisec}", startTime);
+            if (LogActive) DxComponent.LogAddLineTime($"ModifyRibbon {this.DebugName}: UnMerge + Action + Merge; Total Count: {count}; Time: {DxComponent.LogTokenTimeMilisec}", startTime);
         }
         /// <summary>
         /// Provede danou akci, do logu vepíše její čas
@@ -2167,7 +2188,7 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             var startTime = DxComponent.LogTimeCurrent;
             action();
-            DxComponent.LogAddLineTime($"ModifyRibbon {this.DebugName}: RunAction; Time: {DxComponent.LogTokenTimeMilisec}", startTime);
+            if (LogActive) DxComponent.LogAddLineTime($"ModifyRibbon {this.DebugName}: RunAction; Time: {DxComponent.LogTokenTimeMilisec}", startTime);
 
             // Do this Ribbonu vrátíme jeho Child Ribbon:
             if (childRibbon != null) this.MergeChildRibbon(childRibbon, false);
@@ -2200,7 +2221,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (lastSelectedOwnPageId != null)
                 this.SelectedPageId = lastSelectedOwnPageId;
 
-            DxComponent.LogAddLineTime($"UnMergeRibbon from Parent: {this.DebugName}; Time: {DxComponent.LogTokenTimeMilisec}", startTime);
+            if (LogActive) DxComponent.LogAddLineTime($"UnMergeRibbon from Parent: {this.DebugName}; Time: {DxComponent.LogTokenTimeMilisec}", startTime);
         }
         #endregion
         #region Souřadnice oblasti Ribbonu, kde jsou aktuálně buttony
@@ -2225,6 +2246,14 @@ namespace Noris.Clients.Win.Components.AsolDX
             int t = 0;
             int r = 0;
             int b = 0;
+            // Původně jsem procházel všechny stránky :
+            //       foreach (DevExpress.XtraBars.Ribbon.RibbonPage page in this.Pages)
+            //   Ale mělo to chybu: pokud byl Ribbon nejprve ve velikosti Standard, pak jeho buttony měly plnou výšku, na stránce "A" i "B". To je OK.
+            //   Pak jsem přepnul na stránku "A" a zmenšil Ribbon, na stránce "A" se upravily souřadnice buttonů na malý Ribbon.
+            //   Jenže buttony, které jsou na stránce "B", si prozatím nechaly velikost původní = plnou. Z hlediska komponenty OK, šetří čas - nepočítá zbytečně layout pro stránky, které nejsou zobrazeny.
+            //   To ale tady narušuje výpočet.
+            // Proto pro tento výpočet beru jen aktuálně zobrazenou stránku, pokud stránka obsahuje nějaká data; teprve pokud by byla prázdná, pak beru všechny:
+            var pages = GetPagesForBounds();
             foreach (DevExpress.XtraBars.Ribbon.RibbonPage page in this.Pages)
             {
                 foreach (DevExpress.XtraBars.Ribbon.RibbonPageGroup group in page.Groups)
@@ -2258,16 +2287,30 @@ namespace Noris.Clients.Win.Components.AsolDX
                     }
                     if (c > itemCount) break;
                 }
-                if (c > itemCount) break;
+                // if (c > itemCount) break;
             }
-
             Rectangle clientBounds = this.ClientRectangle;
+            if (c == 0) return clientBounds;
+
             int cr = clientBounds.Right - 6;
             if (r < cr) r = cr;
             return Rectangle.FromLTRB(l, t, r, b);
         }
+        /// <summary>
+        /// Vrátí stránky, pro které se má vypočítat InnerBounds
+        /// </summary>
+        /// <returns></returns>
+        private List<DevExpress.XtraBars.Ribbon.RibbonPage> GetPagesForBounds()
+        {
+            List<DevExpress.XtraBars.Ribbon.RibbonPage> pages = new List<DevExpress.XtraBars.Ribbon.RibbonPage>();
+            if (this.SelectedPage != null && this.SelectedPage.Groups.Count > 0)
+                pages.Add(this.SelectedPage);
+            else
+                pages.AddRange(GetPages(PagePosition.All));
+            return pages;
+        }
         #endregion
-        #region Ikonka vpravo
+        #region Obrázek vpravo
         /// <summary>
         /// Ikona vpravo pro velký Ribbon
         /// </summary>
@@ -2292,12 +2335,14 @@ namespace Noris.Clients.Win.Components.AsolDX
             Size imageNativeSize = image.Size;
             if (imageNativeSize.Width <= 0 || imageNativeSize.Height <= 0) return;
 
-            Rectangle buttonsBounds = ButtonsBounds;
-            int imageHeight = (isSmallRibbon ? 24 : 48);
-            float ratio = (float)imageNativeSize.Width / (float)imageNativeSize.Height;
-            int imageWidth = (int)(ratio * (float)imageHeight);
+            Rectangle buttonsBounds = ButtonsBounds.Enlarge(-4);
+            Rectangle imageBounds = imageNativeSize.AlignTo(buttonsBounds, ContentAlignment.BottomRight, true, true);
 
-            Rectangle imageBounds = new Rectangle(buttonsBounds.Right - 6 - imageWidth, buttonsBounds.Y + 4, imageWidth, imageHeight);
+            //int imageHeight = (isSmallRibbon ? 24 : 48);
+            //float ratio = (float)imageNativeSize.Width / (float)imageNativeSize.Height;
+            //int imageWidth = (int)(ratio * (float)imageHeight);
+            //Rectangle imageBounds = new Rectangle(buttonsBounds.Right - 6 - imageWidth, buttonsBounds.Y + 4, imageWidth, imageHeight);
+
             e.Graphics.DrawImage(image, imageBounds);
 
             OnPaintImageRightAfter(e);

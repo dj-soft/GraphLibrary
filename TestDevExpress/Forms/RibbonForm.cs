@@ -21,8 +21,8 @@ namespace TestDevExpress.Forms
                 this, Properties.Resources.Moon10, opacityColor: System.Drawing.Color.FromArgb(80, 80, 180), opacity: 120,
                 useFadeOut: false);
 
-            this.UseLazyLoad = true;
             this.InitializeForm();
+            _SetUseLazyLoad(_UseLazyLoad);
 
             DxComponent.SplashUpdate(rightFooter: "Už to jede...");
         }
@@ -62,6 +62,8 @@ namespace TestDevExpress.Forms
             _TestPanel1 = new RibbonTestPanel();
             _TestPanel1.UseLazyLoad = this.UseLazyLoad;
             _TestPanel1.Ribbon.DebugName = "Slave 1";
+            _TestPanel1.Ribbon.ImageRightFull = TestDevExpress.Properties.Resources.Homer_01b;
+            _TestPanel1.Ribbon.ImageRightMini = TestDevExpress.Properties.Resources.Homer_01c;
             _TestPanel1.ParentRibbon = DxRibbon;
             _TestPanel1.CategoryName = "SKUPINA 1";
             _TestPanel1.CategoryColor = System.Drawing.Color.LightBlue;
@@ -71,6 +73,8 @@ namespace TestDevExpress.Forms
             _TestPanel2a = new RibbonTestPanel();
             _TestPanel2a.UseLazyLoad = this.UseLazyLoad;
             _TestPanel2a.Ribbon.DebugName = "Slave 2A";
+            _TestPanel2a.Ribbon.ImageRightFull = TestDevExpress.Properties.Resources.Lisa_01b;
+            _TestPanel2a.Ribbon.ImageRightMini = TestDevExpress.Properties.Resources.Lisa_01c;
             _TestPanel2a.ParentRibbon = _TestPanel1.Ribbon;
             _TestPanel2a.CategoryName = "SKUPINA 2A";
             _TestPanel2a.CategoryColor = System.Drawing.Color.LightYellow;
@@ -80,6 +84,8 @@ namespace TestDevExpress.Forms
             _TestPanel2b = new RibbonTestPanel();
             _TestPanel2b.UseLazyLoad = this.UseLazyLoad;
             _TestPanel2b.Ribbon.DebugName = "Slave 2B";
+            _TestPanel2b.Ribbon.ImageRightFull = TestDevExpress.Properties.Resources.Marge_01b;
+            _TestPanel2b.Ribbon.ImageRightMini = TestDevExpress.Properties.Resources.Marge_01c;
             _TestPanel2b.ParentRibbon = _TestPanel1.Ribbon;
             _TestPanel2b.CategoryName = "SKUPINA 2B";
             _TestPanel2b.CategoryColor = System.Drawing.Color.LightGreen;
@@ -114,9 +120,15 @@ namespace TestDevExpress.Forms
         #region Ribbon a StatusBar - obsah a rozcestník
         protected override void DxRibbonPrepare()
         {
+            this.UseLazyLoad = true;
+
             this.DxRibbon.DebugName = "MainRibbon";
             this.DxRibbon.ShowApplicationButton = DevExpress.Utils.DefaultBoolean.True;
             this.DxRibbon.ApplicationButtonText = " SYSTEM ";
+            this.DxRibbon.LogActive = true;
+
+            this.DxRibbon.ImageRightFull = TestDevExpress.Properties.Resources.Bart_01b;
+            this.DxRibbon.ImageRightMini = TestDevExpress.Properties.Resources.Bart_01c;
 
             string imgLogClear = "svgimages/snap/cleartablestyle.svg";
             string imgInfo = "svgimages/xaf/action_aboutinfo.svg";
@@ -143,7 +155,6 @@ namespace TestDevExpress.Forms
             group.Items.Add(new DataRibbonItem() { ItemId = "Help.Help.Show", Text = "Nápovědda", ToolTipText = "Zobrazí okno s nápovědou", Image = imgInfo });
 
             this.DxRibbon.Clear();
-            this.DxRibbon.UseLazyContentCreate = this.UseLazyLoad;
             this.DxRibbon.AddPages(pages);
 
             this.DxRibbon.RibbonItemClick += _DxRibbonControl_RibbonItemClick;
@@ -153,9 +164,7 @@ namespace TestDevExpress.Forms
             switch (e.Item.ItemId)
             {
                 case "Dx.Test.UseLazyInit":
-                    UseLazyLoad = e.Item.Checked ?? false;
-                    _TestPanel1.UseLazyLoad = UseLazyLoad;
-                    _TestPanel2a.UseLazyLoad = UseLazyLoad;
+                    UseLazyLoad = e.Item.Checked ?? false;           // Do ribbonů hodnotu vepíše set metoda.
                     break;
                 case "Dx.Test.ImgPick":
                     ImagePickerForm.ShowForm(this);
@@ -167,9 +176,23 @@ namespace TestDevExpress.Forms
             }
         }
         /// <summary>
-        /// Bude se používat LazyLoad
+        /// Bude se používat LazyLoad?
         /// </summary>
-        public bool UseLazyLoad { get; set; }
+        public bool UseLazyLoad { get { return _UseLazyLoad; } set { _SetUseLazyLoad(value); } }
+        private bool _UseLazyLoad;
+        /// <summary>
+        /// Nastaví hodnotu <see cref="UseLazyLoad"/> a vepíše ji do ribbonů. Neřeší ale hodnotu v CheckBoxu v Ribbonu.
+        /// </summary>
+        /// <param name="useLazyLoad"></param>
+        private void _SetUseLazyLoad(bool useLazyLoad)
+        {
+            _UseLazyLoad = useLazyLoad;
+
+            if (this.DxRibbon != null) this.DxRibbon.UseLazyContentCreate = this.UseLazyLoad;
+            if (this._TestPanel1 != null) this._TestPanel1.UseLazyLoad = UseLazyLoad;
+            if (this._TestPanel2a != null) this._TestPanel2a.UseLazyLoad = UseLazyLoad;
+            if (this._TestPanel2b != null) this._TestPanel2b.UseLazyLoad = UseLazyLoad;
+        }
         protected override void DxStatusPrepare()
         {
             this._StatusItemTitle = CreateStatusBarItem();
@@ -222,7 +245,7 @@ namespace TestDevExpress.Forms
         protected void InitializeContent()
         {
             this.Dock = System.Windows.Forms.DockStyle.Fill;
-            _Ribbon = new DxRibbonControl() { Dock = System.Windows.Forms.DockStyle.Top, ShowApplicationButton = DevExpress.Utils.DefaultBoolean.False };
+            _Ribbon = new DxRibbonControl() { Dock = System.Windows.Forms.DockStyle.Top, ShowApplicationButton = DevExpress.Utils.DefaultBoolean.False, LogActive = true };
             _Ribbon.PageOnDemandLoad += _Ribbon_PageOnDemandLoad;
             _Ribbon.RibbonApplicationButtonClick += _Ribbon_RibbonApplicationButtonClick;
             _Ribbon.RibbonPageCategoryClick += _Ribbon_RibbonPageCategoryClick;
@@ -244,7 +267,11 @@ namespace TestDevExpress.Forms
 
             this.IsMerged = false;
         }
-
+        protected override void OnContentSizeChanged()
+        {
+            base.OnContentSizeChanged();
+            DoLayoutButtons();
+        }
         protected override void OnClientSizeChanged(EventArgs e)
         {
             base.OnClientSizeChanged(e);
@@ -253,51 +280,66 @@ namespace TestDevExpress.Forms
         private void DoLayoutButtons()
         {
             int width = this.ClientSize.Width;
-            int ribbonHeight = this.Ribbon.Height;
+
+            int dpi = this.CurrentDpi;
+
             int count1 = 3;
             int count2 = 2;
-            bool isSmall = (width < 825);
-            int y0 = ribbonHeight + 24;
-            int w = (isSmall ? 112 : 150);
-            int h1 = (isSmall ? 38 : 54);
-            int h2 = (isSmall ? 44 : 54);
-            int s = (isSmall ? 5 : 10);
-            int xs = w + s;
-            int ds = (isSmall ? 0 : 35);
 
-            int wc = (count1 * w + (count1 - 1) * s) + (isSmall ? 0 : (ds + (count2 * w + (count2 - 1) * s)));
-            int x0 = (width - wc) / 2;
+            // Určím, jestli buttony budu dávat do jedné řady = když se vejdou, anebo do dvou:
+            int widthButton1 = DxComponent.ZoomToGui(150, dpi);
+            int widthButton2 = widthButton1;
+            int spaceButtons = DxComponent.ZoomToGui(12, dpi);
+            int spaceGroup = DxComponent.ZoomToGui(24, dpi);
+            int widthFull = (count1 * widthButton1) + ((count1 - 1) * spaceButtons) + spaceGroup + (count2 * widthButton2) + ((count2 - 1) * spaceButtons);
+            int widthTotal = spaceGroup + widthFull + spaceGroup;
+            bool isOneRow = widthTotal <= width;
+
+            if (!isOneRow)
+            {   // Pokud nebudu dávat buttony do jedné řady => budou ve dvou řadách: určíme jiné velikosti:
+                widthButton1 = DxComponent.ZoomToGui(120, dpi);
+                spaceButtons = DxComponent.ZoomToGui(9, dpi);
+                widthFull = (count1 * widthButton1) + ((count1 - 1) * spaceButtons);
+                widthButton2 = (widthFull - ((count2 - 1) * spaceButtons)) / count2;
+                widthTotal = spaceGroup + widthFull + spaceGroup;
+            }
+
+            int spaceY1 = DxComponent.ZoomToGui(32, dpi);
+            int spaceY2 = DxComponent.ZoomToGui(9, dpi);
+            int heightButton1 = DxComponent.ZoomToGui((isOneRow ? 54 : 38), dpi);
+            int heightButton2 = DxComponent.ZoomToGui((isOneRow ? 54 : 44), dpi);
+            int distanceX = widthButton1 + spaceButtons;
+            int distanceY = heightButton1 + spaceButtons;
+
+            int x0 = ((width - widthTotal) / 2) + spaceGroup;
 
             int x = x0;
-            int y = y0;
-            _ButtonClear.Bounds = new System.Drawing.Rectangle(x, y, w, h1); x += xs;
-            _ButtonFill.Bounds = new System.Drawing.Rectangle(x, y, w, h1); x += xs;
-            _ButtonMenu.Bounds = new System.Drawing.Rectangle(x, y, w, h1); x += xs;
-
-            if (isSmall)
+            int y = this.Ribbon.Bounds.Bottom + spaceY1;
+            _ButtonClear.Bounds = new System.Drawing.Rectangle(x, y, widthButton1, heightButton1); x += distanceX;
+            _ButtonFill.Bounds = new System.Drawing.Rectangle(x, y, widthButton1, heightButton1); x += distanceX;
+            _ButtonMenu.Bounds = new System.Drawing.Rectangle(x, y, widthButton1, heightButton1); x += distanceX;
+            if (isOneRow)
             {
-                w = 3 * w / 2;
-                xs = w + s;
-                wc = (count2 * w + (count2 - 1) * s);
-                x0 = (width - wc) / 2;
-                x = x0;
-                y = y0 + h1 + 6;
+                x += (spaceGroup - spaceButtons);
             }
             else
             {
-                x += ds;
+                x = x0;
+                y += distanceY;
+                distanceX = widthButton2 + spaceButtons;
             }
+            _ButtonMerge.Bounds = new System.Drawing.Rectangle(x, y, widthButton2, heightButton2); x += distanceX;
+            _ButtonUnMerge.Bounds = new System.Drawing.Rectangle(x, y, widthButton2, heightButton2); x += distanceX;
 
-            _ButtonMerge.Bounds = new System.Drawing.Rectangle(x, y, w, h2); x += xs;
-            _ButtonUnMerge.Bounds = new System.Drawing.Rectangle(x, y, w, h2); x += xs;
-
-            int svgS = (isSmall ? h1 - 8 : h1 - 12);
-            System.Drawing.Size imageSize = new System.Drawing.Size(svgS, svgS);
-            DxComponent.ApplyImage(_ButtonClear.ImageOptions, resourceName: "svgimages/dashboards/delete.svg", imageSize: imageSize);
-            DxComponent.ApplyImage(_ButtonMenu.ImageOptions, resourceName: "svgimages/icon%20builder/actions_add.svg", imageSize: imageSize);
-            DxComponent.ApplyImage(_ButtonFill.ImageOptions, resourceName: "svgimages/icon%20builder/actions_addcircled.svg", imageSize: imageSize);
-            DxComponent.ApplyImage(_ButtonMerge.ImageOptions, resourceName: "svgimages/spreadsheet/fillup.svg", imageSize: imageSize);
-            DxComponent.ApplyImage(_ButtonUnMerge.ImageOptions, resourceName: "svgimages/spreadsheet/filldown.svg", imageSize: imageSize);
+            int svgHeight1 = 8 * heightButton1 / 10;
+            int svgHeight2 = 8 * heightButton2 / 10;
+            System.Drawing.Size svgSize1 = new System.Drawing.Size(svgHeight1, svgHeight1);
+            System.Drawing.Size svgSize2 = new System.Drawing.Size(svgHeight2, svgHeight2);
+            DxComponent.ApplyImage(_ButtonClear.ImageOptions, resourceName: "svgimages/dashboards/delete.svg", imageSize: svgSize1);
+            DxComponent.ApplyImage(_ButtonMenu.ImageOptions, resourceName: "svgimages/icon%20builder/actions_add.svg", imageSize: svgSize1);
+            DxComponent.ApplyImage(_ButtonFill.ImageOptions, resourceName: "svgimages/icon%20builder/actions_addcircled.svg", imageSize: svgSize1);
+            DxComponent.ApplyImage(_ButtonMerge.ImageOptions, resourceName: "svgimages/spreadsheet/fillup.svg", imageSize: svgSize2);
+            DxComponent.ApplyImage(_ButtonUnMerge.ImageOptions, resourceName: "svgimages/spreadsheet/filldown.svg", imageSize: svgSize2);
         }
         /// <summary>
         /// Zdejší Ribbon

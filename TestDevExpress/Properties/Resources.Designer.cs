@@ -873,6 +873,26 @@ namespace TestDevExpress.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap Bart_01b {
+            get {
+                object obj = ResourceManager.GetObject("Bart_01b", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap Bart_01c {
+            get {
+                object obj = ResourceManager.GetObject("Bart_01c", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap bookmark_2_24_ {
             get {
                 object obj = ResourceManager.GetObject("bookmark_2_24_", resourceCulture);
@@ -6691,6 +6711,26 @@ namespace TestDevExpress.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap Homer_01b {
+            get {
+                object obj = ResourceManager.GetObject("Homer_01b", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap Homer_01c {
+            get {
+                object obj = ResourceManager.GetObject("Homer_01c", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized resource of type System.Byte[].
         /// </summary>
         internal static byte[] homer_simpson {
@@ -6723,6 +6763,26 @@ namespace TestDevExpress.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap Lisa_01b {
+            get {
+                object obj = ResourceManager.GetObject("Lisa_01b", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap Lisa_01c {
+            get {
+                object obj = ResourceManager.GetObject("Lisa_01c", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap list_add_3_16 {
             get {
                 object obj = ResourceManager.GetObject("list_add_3_16", resourceCulture);
@@ -6736,6 +6796,26 @@ namespace TestDevExpress.Properties {
         internal static System.Drawing.Bitmap lock_5_16 {
             get {
                 object obj = ResourceManager.GetObject("lock_5_16", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap Marge_01b {
+            get {
+                object obj = ResourceManager.GetObject("Marge_01b", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap Marge_01c {
+            get {
+                object obj = ResourceManager.GetObject("Marge_01c", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }

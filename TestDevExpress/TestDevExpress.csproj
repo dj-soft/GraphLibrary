@@ -2333,5 +2333,29 @@
   <ItemGroup>
     <None Include="Images\Moon10.png" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\ImagesBig\Bart 01b.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\ImagesBig\Bart 01c.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\ImagesBig\Homer 01b.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\ImagesBig\Homer 01c.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\ImagesBig\Lisa 01b.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\ImagesBig\Lisa 01c.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\ImagesBig\Marge 01b.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\ImagesBig\Marge 01c.png" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
