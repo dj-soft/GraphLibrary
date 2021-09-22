@@ -583,12 +583,11 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             var startTime = DxComponent.LogTimeCurrent;
             var list = DataRibbonPage.SortPages(iRibbonPages);
-            List<QatItem> qatList = new List<QatItem>();
             int count = 0;
             foreach (var iRibbonPage in list)
-                _AddPage(iRibbonPage, isLazyContentFill, isOnDemandFill, qatList, ref count);
+                _AddPage(iRibbonPage, isLazyContentFill, isOnDemandFill, ref count);
 
-            AddQatListToRibbon(qatList);
+            AddQatListToRibbon();
 
             if (LogActive) DxComponent.LogAddLineTime($" === Ribbon {DebugName}: {logText} {list.Count} item[s]; Create: {count} BarItem[s]; {DxComponent.LogTokenTimeMilisec} === ", startTime);
         }
@@ -598,15 +597,14 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="iRibbonPage"></param>
         /// <param name="isLazyContentFill">Obsahuje true, když se prvky typu Group a BarItem nemají fyzicky generovat, ale mají se jen registrovat do LazyGroup / false pokud se mají reálně generovat (spotřebuje výrazný čas)</param>
         /// <param name="isOnDemandFill">Obsahuje true, pokud tyto položky jsou donačtené OnDemand / false pokud pocházejí z první statické deklarace obsahu</param>
-        /// <param name="qatList">Průběžně střádaný seznam prvků, které budou umístěny do QAT</param>
         /// <param name="logText"></param>
-        private void _AddPageLazy(IRibbonPage iRibbonPage, bool isLazyContentFill, bool isOnDemandFill, List<QatItem> qatList, string logText)
+        private void _AddPageLazy(IRibbonPage iRibbonPage, bool isLazyContentFill, bool isOnDemandFill, string logText)
         {
             if (iRibbonPage is null) return;
 
             var startTime = DxComponent.LogTimeCurrent;
             int count = 0;
-            _AddPage(iRibbonPage, isLazyContentFill, isOnDemandFill, qatList, ref count);
+            _AddPage(iRibbonPage, isLazyContentFill, isOnDemandFill, ref count);
 
             if (LogActive) DxComponent.LogAddLineTime($" === Ribbon {DebugName}: {logText}; Create: {count} BarItem[s]; {DxComponent.LogTokenTimeMilisec} === ", startTime);
         }
@@ -616,9 +614,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="iRibbonPage">Deklarace stránky</param>
         /// <param name="isLazyContentFill">Obsahuje true, když se prvky typu Group a BarItem nemají fyzicky generovat, ale mají se jen registrovat do LazyGroup / false pokud se mají reálně generovat (spotřebuje výrazný čas)</param>
         /// <param name="isOnDemandFill">Obsahuje true, pokud tyto položky jsou donačtené OnDemand / false pokud pocházejí z první statické deklarace obsahu</param>
-        /// <param name="qatList">Průběžně střádaný seznam prvků, které budou umístěny do QAT</param>
         /// <param name="count"></param>
-        private void _AddPage(IRibbonPage iRibbonPage, bool isLazyContentFill, bool isOnDemandFill, List<QatItem> qatList, ref int count)
+        private void _AddPage(IRibbonPage iRibbonPage, bool isLazyContentFill, bool isOnDemandFill, ref int count)
         {
             if (iRibbonPage is null) return;
 
@@ -638,7 +635,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             foreach (var iRibbonGroup in list)
             {
                 iRibbonGroup.ParentPage = iRibbonPage;
-                _AddGroup(iRibbonGroup, page, isNeedQAT, qatList, ref count);
+                _AddGroup(iRibbonGroup, page, isNeedQAT, ref count);
             }
         }
         /// <summary>
@@ -647,9 +644,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="iRibbonGroup"></param>
         /// <param name="page"></param>
         /// <param name="isNeedQAT">Přidávat pouze prvky označené QAT (stránka jako celek je v režimu LazyContent, ale prvky QAT potřebujeme i v této stránce)</param>
-        /// <param name="qatList">Průběžně střádaný seznam prvků, které budou umístěny do QAT</param>
         /// <param name="count"></param>
-        private void _AddGroup(IRibbonGroup iRibbonGroup, DxRibbonPage page, bool isNeedQAT, List<QatItem> qatList, ref int count)
+        private void _AddGroup(IRibbonGroup iRibbonGroup, DxRibbonPage page, bool isNeedQAT, ref int count)
         {
             if (iRibbonGroup == null || page == null) return;
             if (isNeedQAT && !ContainsQAT(iRibbonGroup)) return;               // V režimu isNeedQAT přidáváme jen prvky QAT, a ten v dané grupě není žádný
@@ -661,7 +657,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             foreach (var iRibbonItem in iRibbonItems)
             {
                 iRibbonItem.ParentGroup = iRibbonGroup;
-                _AddBarItem(iRibbonItem, group, isNeedQAT, qatList, ref count);
+                _AddBarItem(iRibbonItem, group, isNeedQAT, ref count);
             }
         }
         /// <summary>
@@ -670,14 +666,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="iRibbonItem"></param>
         /// <param name="group"></param>
         /// <param name="isNeedQAT">Přidávat pouze prvky označené QAT (stránka jako celek je v režimu LazyContent, ale prvky QAT potřebujeme i v této stránce)</param>
-        /// <param name="qatList">Průběžně střádaný seznam prvků, které budou umístěny do QAT</param>
         /// <param name="count"></param>
-        private void _AddBarItem(IRibbonItem iRibbonItem, DxRibbonGroup group, bool isNeedQAT, List<QatItem> qatList, ref int count)
+        private void _AddBarItem(IRibbonItem iRibbonItem, DxRibbonGroup group, bool isNeedQAT, ref int count)
         {
             if (iRibbonItem == null || group == null) return;
             if (isNeedQAT && !ContainsQAT(iRibbonItem)) return;               // V režimu isNeedQAT přidáváme jen prvky QAT, a ten v dané grupě není žádný
 
-            var barItem = GetItem(iRibbonItem, group, isNeedQAT, qatList, ref count);
+            var barItem = GetItem(iRibbonItem, group, isNeedQAT, ref count);
             if (barItem is null) return;
             // více není třeba.
         }
@@ -1034,11 +1029,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="iRibbonItem"></param>
         /// <param name="group"></param>
         /// <param name="isNeedQAT">Přidávat pouze prvky označené QAT (stránka jako celek je v režimu LazyContent, ale prvky QAT potřebujeme i v této stránce)</param>
-        /// <param name="qatList">Průběžně střádaný seznam prvků, které budou umístěny do QAT</param>
         /// <param name="count"></param>
         /// <param name="reallyCreateSubItems"></param>
         /// <returns></returns>
-        protected DevExpress.XtraBars.BarItem GetItem(IRibbonItem iRibbonItem, DevExpress.XtraBars.Ribbon.RibbonPageGroup group, bool isNeedQAT, List<QatItem> qatList, ref int count, bool reallyCreateSubItems = false)
+        protected DevExpress.XtraBars.BarItem GetItem(IRibbonItem iRibbonItem, DevExpress.XtraBars.Ribbon.RibbonPageGroup group, bool isNeedQAT, ref int count, bool reallyCreateSubItems = false)
         {
             if (iRibbonItem is null || group is null) return null;
 
@@ -1069,8 +1063,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
 
             // Prvek patří do QAT?
-            if (ContainsQAT(iRibbonItem))
-                this.AddBarItemToQAT(barItem, iRibbonItem);
+            if (DefinedInQAT(iRibbonItem.ItemId))
+                this.AddBarItemToQatList(barItem, iRibbonItem);
 
             return barItem;
         }
@@ -1613,13 +1607,13 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.SourceToolbar.LinksChanged += SourceToolbar_LinksChanged;
         }
         /// <summary>
-        /// Resetuje pole <see cref="_QatItems"/>, volitelně odebere prvky z reálného toolbaru
+        /// Resetuje pole <see cref="_QatItems"/>, odebere prvek Link z reálného toolbaru QAT (pokud tam je)
         /// </summary>
-        private void ResetQuickAccessToolbar(bool removeFromToolbar)
+        private void ResetQuickAccessToolbar()
         {
             if (_QatItems != null)
             {
-                _QatItems.ForEachExec(q => q.Reset(removeFromToolbar));
+                _QatItems.ForEachExec(q => q.Reset());
                 _QatItems = null;
             }
             _QatItemDict = null;
@@ -1636,15 +1630,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             base.OnRemoveFromToolbar(link);
         }
 
-        private void AddBarItemToQAT(DevExpress.XtraBars.BarItem barItem, IRibbonItem ribbonItem)
-        {
-            var barItemLink = this.Toolbar.ItemLinks.Add(barItem);
-
-            //this.AddQatListToRibbon();
-            //this.
-            //    qatList.Add(new QatItem(this, iRibbonItem, barItem));
-
-        }
         /// <summary>
         /// Vrací sumární string z klíčů všech prvků v QAT
         /// </summary>
@@ -1654,20 +1639,28 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (_QatItems == null) return null;
             return _QatItems.Select(q => q.Key).ToOneString(QATItemKeyDelimiter);
         }
+        /// <summary>
+        /// Ze zadaného stringu vytvoří struktury pro evidenci prvků pro toolbar QAT (pole <see cref="_QatItems"/> a <see cref="_QatItemDict"/>).
+        /// Před tím zruší obsah fyzického QAT.
+        /// </summary>
+        /// <param name="qatItemKeys"></param>
         private void _SetQATItemKeys(string qatItemKeys)
         {
-            ResetQuickAccessToolbar(true);
+            ResetQuickAccessToolbar();
+
             _QatItems = new List<QatItem>();
             _QatItemDict = new Dictionary<string, QatItem>();
             foreach (string itemId in qatItemKeys.Split(QATItemKeyDelimiter[0]))
             {
                 string key = GetValidQATKey(itemId);
+                if (key == "") continue;
                 if (_QatItemDict.ContainsKey(key)) continue;
                 QatItem qatItem = new QatItem(this, key);
                 _QatItems.Add(qatItem);
                 _QatItemDict.Add(key, qatItem);
             }
         }
+        protected bool ExistsAnyQat { get { return ((_QatItems?.Count ?? 0) > 0); } }
         private List<QatItem> _QatItems;
         private Dictionary<string, QatItem> _QatItemDict;
 
@@ -1682,7 +1675,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         protected bool ContainsQAT(IRibbonPage iRibbonPage)
         {
-            return (iRibbonPage != null && iRibbonPage.Groups != null && iRibbonPage.Groups.Any(g => ContainsQAT(g)));
+            return (ExistsAnyQat && iRibbonPage != null && iRibbonPage.Groups != null && iRibbonPage.Groups.Any(g => ContainsQAT(g)));
         }
         /// <summary>
         /// Vrátí true, pokud daná grupa jako celek má být přítomna v QAT (Quick Access Toolbar), anebo v sobě obsahuje nějaký prvek, který tam má být umístěn
@@ -1691,7 +1684,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         protected bool ContainsQAT(IRibbonGroup iRibbonGroup)
         {
-            return (iRibbonGroup != null && (ContainsInQAT(iRibbonGroup.GroupId) || (iRibbonGroup.Items != null && iRibbonGroup.Items.Any(i => ContainsQAT(i)))));
+            return (ExistsAnyQat && iRibbonGroup != null && (DefinedInQAT(iRibbonGroup.GroupId) || (iRibbonGroup.Items != null && iRibbonGroup.Items.Any(i => ContainsQAT(i)))));
         }
         /// <summary>
         /// Vrátí true, pokud daný prvek jako celek má být přítomen v QAT (Quick Access Toolbar), anebo v sobě obsahuje nějaký Sub-prvek, který tam má být umístěn
@@ -1700,27 +1693,52 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         protected bool ContainsQAT(IRibbonItem iRibbonItem)
         {
-            return (iRibbonItem != null && (ContainsInQAT(iRibbonItem.ItemId) || (iRibbonItem.SubRibbonItems != null && iRibbonItem.SubRibbonItems.Any(s => ContainsQAT(s)))));
+            return (ExistsAnyQat && iRibbonItem != null && (DefinedInQAT(iRibbonItem.ItemId) || (iRibbonItem.SubRibbonItems != null && iRibbonItem.SubRibbonItems.Any(s => ContainsQAT(s)))));
         }
         /// <summary>
         /// Vrátí true pokud daný klíč je obsažen v požadavku na prvky do QAT
         /// </summary>
         /// <param name="itemId"></param>
         /// <returns></returns>
-        protected bool ContainsInQAT(string itemId)
+        protected bool DefinedInQAT(string itemId)
         {
+            if (!ExistsAnyQat) return false;
             string key = GetValidQATKey(itemId);
             return _QatItemDict?.ContainsKey(key) ?? false;
         }
         /// <summary>
-        /// Dodané prvky přidá do QAT (Quick Access Toolbar)
+        /// Metoda je volána v procesu tvorby nových prvků Ribbonu, když je vytvořen prvek BarItem, který má být obsažen v QAT.
+        /// Tato metoda si zaeviduje odkaz na tento BarItem v interním poli, z něhož následně (v metodě <see cref="AddQatListToRibbon()"/>) 
+        /// všechny patřičné prvky uloží do fyzického ToolBaru QAT.
+        /// Tato metoda tedy dodaný prvek nevloží okamžitě do ToolBaru.
+        /// Tato metoda, pokud je volána pro prvek který v QAT nemá být, nepřidá tento prvek 
+        /// nad rámec požadovaného seznamu prvků v QAT = <see cref="QATItemKeys"/> (nepřidává nové prvky do pole <see cref="_QatItems"/> a <see cref="_QatItemDict"/>).
+        /// <para/>
+        /// Duplicita: Pokud na vstupu bude prvek, pro jehož klíč už evidujeme prvek dřívější, pak nový prvek vložíme namísto prvku původního.
         /// </summary>
-        /// <param name="qatList"></param>
-        protected void AddQatListToRibbon(List<QatItem> qatList)
+        /// <param name="barItem"></param>
+        /// <param name="ribbonItem"></param>
+        private void AddBarItemToQatList(DevExpress.XtraBars.BarItem barItem, IRibbonItem ribbonItem)
         {
-            if (qatList == null || qatList.Count == 0) return;
-            qatList.Sort(QatItem.CompareByOrder);
-            this.Toolbar.ItemLinks.AddRange(qatList.Select(q => q.BarItem));
+            if (barItem == null || ribbonItem == null) return;
+            string key = GetValidQATKey(ribbonItem.ItemId);
+            if (!_QatItemDict.TryGetValue(key, out var qatItem)) return;       // Pro daný prvek Ribbonu nemáme záznam, že bychom měli přidat prvek do QAT.
+            qatItem.BarItem = barItem;
+        }
+        /// <summary>
+        /// Volá se na závěr přidávání dat do stránek, do fyzického ToolBaru QAT (Quick Access Toolbar) 
+        /// vepíše všechny aktuálně přítomné prvky z <see cref="_QatItems"/>.
+        /// </summary>
+        protected void AddQatListToRibbon()
+        {
+            var qatItems = _QatItems;
+            if (qatItems == null) return;
+
+            foreach (var qatItem in qatItems)
+                qatItem.RemoveBarItemLink();
+
+            foreach (var qatItem in qatItems.Where(q => q.NeedAddToQat))
+                qatItem.AddLinkToQat();
         }
         /// <summary>
         /// Třída pro průběžné shrnování informací o pvcích, které mají být umístěny do QAT (Quick Access Toolbar)
@@ -1742,38 +1760,96 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// <summary>Klíč</summary>
             private string _Key;
             /// <summary>
+            /// Obsahuje klíč prvku nebo grupy. Není null, neobsahuje TAB ani mezery na okrajích
+            /// </summary>
+            public string Key { get { return _Key; } }
+            /// <summary>
             /// Definice prvku Ribbonu
             /// </summary>
             public IRibbonItem RibbonItem { get; private set; }
+            /// <summary>
+            /// Fyzický objekt Ribbonu.
+            /// Setováním objektu do této property dojde k odstranění případně existujícího linku <see cref="BarItemLink"/> 
+            /// (z fyzického ToolBaru, z paměti, z tohoto objektu).
+            /// </summary>
+            public DevExpress.XtraBars.BarItem BarItem 
+            {
+                get { return _BarItem; }
+                set
+                {
+                    RemoveBarItemLink();
+                    _BarItem = value;
+                }
+            }
+            private DevExpress.XtraBars.BarItem _BarItem;
             /// <summary>
             /// Definice grupy Ribbonu
             /// </summary>
             public IRibbonGroup RibbonGroup { get; private set; }
             /// <summary>
-            /// Obsahuje klíč prvku nebo grupy. Není null, neobsahuje TAB ani mezery na okrajích
+            /// Fyzický objekt Ribbonu typu Grupa.
+            /// Setováním objektu do této property dojde k odstranění případně existujícího linku <see cref="BarItemLink"/> 
+            /// (z fyzického ToolBaru, z paměti, z tohoto objektu).
             /// </summary>
-            public string Key { get { return GetValidQATKey(RibbonItem?.ItemId ?? RibbonGroup?.GroupId ?? ""); } }
-            /// <summary>
-            /// Objekt Ribbonu
-            /// </summary>
-            public DevExpress.XtraBars.BarItem BarItem { get; private set; }
+            public DevExpress.XtraBars.Ribbon.RibbonPageGroup BarGroup
+            {
+                get { return _BarGroup; }
+                set
+                {
+                    RemoveBarItemLink();
+                    _BarGroup = value;
+                }
+            }
+            private DevExpress.XtraBars.Ribbon.RibbonPageGroup _BarGroup;
             /// <summary>
             /// Link na Objekt Ribbonu
             /// </summary>
             public DevExpress.XtraBars.BarItemLink BarItemLink { get; private set; }
             /// <summary>
-            /// Zruší obsah this instance, volitelně odebere link z ToolBaru
+            /// Obsahuje true, když tento prvek máme fyzicky přidat do QAT. Tj. máme odpovídající BarItem, ale nemáme BarItemLink.
             /// </summary>
-            public void Reset(bool removeFromToolbar)
+            public bool NeedAddToQat 
             {
-                if (removeFromToolbar && _Owner != null && this.BarItemLink != null)
-                    _Owner.Toolbar.ItemLinks.Remove(this.BarItemLink);
+                get
+                {
+                    return ((BarItem != null || BarGroup != null) && BarItemLink == null);
+                }
+            }
+            /// <summary>
+            /// Metoda fyzicky přidá Link do QAT
+            /// </summary>
+            public void AddLinkToQat()
+            {
+                this.RemoveBarItemLink();
+                if (this.BarItem != null)
+                    this.BarItemLink = _Owner.Toolbar.ItemLinks.Add(this.BarItem);
+            }
+            /// <summary>
+            /// Metoda zajistí, že pokud tento prvek je zobrazen ve fyzickém QAT, pak z něj bude odebrán, Disposován a z tohoto objektu vynulován.
+            /// </summary>
+            public void RemoveBarItemLink()
+            {
+                var barLink = this.BarItemLink;
+                if (barLink != null)
+                {
+                    if (_Owner != null)
+                        _Owner.Toolbar.ItemLinks.Remove(barLink);
+                    barLink.Dispose();
+                    this.BarItemLink = null;
+                }
+            }
+            /// <summary>
+            /// Zruší obsah this instance, 
+            /// odebere prvek Link z reálného toolbaru QAT (pokud tam je) a Disposuje jej
+            /// </summary>
+            public void Reset()
+            {
+                RemoveBarItemLink();
 
                 this._Owner = null;
                 this.RibbonItem = null;
                 this.RibbonGroup = null;
                 this.BarItem = null;
-                this.BarItemLink = null;
             }
         }
         #endregion
@@ -3496,33 +3572,6 @@ namespace Noris.Clients.Win.Components.AsolDX
                 list.Sort((a, b) => a.PageOrder.CompareTo(b.PageOrder));
             }
             return list;
-        }
-        /// <summary>
-        /// Metoda vrátí všechny prvky z dané stránky, které nesou příznak <see cref="IRibbonItem.QuickToolbarOrder"/> s ne null hodnotou.
-        /// Prochází pole prvků v grupách i pole SubItems z prvků (ale jen první úroveň).
-        /// </summary>
-        /// <param name="pageData"></param>
-        internal static IRibbonItem[] GetAllToolbarItems(IRibbonPage pageData)
-        {
-            if (pageData?.Groups == null) return null;
-
-            List<IRibbonItem> toolItems = new List<IRibbonItem>();
-
-            // Prvky v grupách - všechny, lineárně:
-            var items = pageData.Groups
-                .Where(g => g.Items != null)
-                .SelectMany(g => g.Items)
-                .Where(i => i != null)
-                .ToArray();
-            toolItems.AddRange(items.Where(i => i.QuickToolbarOrder.HasValue));
-
-            // Plus SubItems:
-            toolItems.AddRange(items
-                .Where(i => i.SubRibbonItems != null)
-                .SelectMany(i => i.SubRibbonItems)
-                .Where(i => i.QuickToolbarOrder.HasValue));
-
-            return toolItems.ToArray();
         }
         /// <summary>
         /// Kategorie, do které patří tato stránka. Může být null pro běžné stránky Ribbonu.

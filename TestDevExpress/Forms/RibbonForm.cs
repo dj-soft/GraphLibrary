@@ -405,9 +405,11 @@ namespace TestDevExpress.Forms
         public void FillRibbon(int pageCountMin, int pageCountMax, int groupCountMin, int groupCountMax, bool clearCurrentContent = false, string pageText = null)
         {
             int? pageIndex = (pageText != null ? (int?)DxRibbonSample.FindPageIndex(pageText) : (int?)null);
-            var items = DxRibbonSample.CreatePages(pageCountMin, pageCountMax, groupCountMin, groupCountMax, 
+            string qatItems;
+            var items = DxRibbonSample.CreatePages(pageCountMin, pageCountMax, groupCountMin, groupCountMax, out qatItems,
                 CategoryName, CategoryName, CategoryColor, 
                 pageIndex);
+            _Ribbon.QATItemKeys = qatItems;
             _Ribbon.AddPages(items, clearCurrentContent);
         }
         private DxRibbonControl _Ribbon;
@@ -517,7 +519,8 @@ namespace TestDevExpress.Forms
 
             IRibbonPage ribbonPage = args[0] as IRibbonPage;
             int pageIndex = DxRibbonSample.FindPageIndex(ribbonPage.PageText);
-            var pages = DxRibbonSample.CreatePages(1, 1, 4, 8, CategoryName, CategoryName, CategoryColor, pageIndex);
+            string qatItems;
+            var pages = DxRibbonSample.CreatePages(1, 1, 4, 8, out qatItems, CategoryName, CategoryName, CategoryColor, pageIndex);
             this._Ribbon.ReFillPages(pages);
         }
         private void _Ribbon_RibbonApplicationButtonClick(object sender, EventArgs e)
@@ -590,17 +593,19 @@ namespace TestDevExpress.Forms
         /// <param name="pageCountMax"></param>
         /// <param name="groupCountMin"></param>
         /// <param name="groupCountMax"></param>
+        /// <param name="qatItems"
         /// <param name="categoryId"></param>
         /// <param name="categoryText"></param>
         /// <param name="categoryColor"></param>
         /// <param name="pageIndex"></param>
         /// <returns></returns>
-        public static List<IRibbonPage> CreatePages(int pageCountMin, int pageCountMax, int groupCountMin, int groupCountMax, 
+        public static List<IRibbonPage> CreatePages(int pageCountMin, int pageCountMax, int groupCountMin, int groupCountMax, out string qatItems,
             string categoryId = null, string categoryText = null, System.Drawing.Color? categoryColor = null, 
             int? pageIndex = null)
         {
             List<IRibbonPage> pages = new List<IRibbonPage>();
-            _AddPages(pages, pageCountMin, pageCountMax, groupCountMin, groupCountMax, pageIndex, categoryId, categoryText, categoryColor);
+            qatItems = "";
+            _AddPages(pages, pageCountMin, pageCountMax, groupCountMin, groupCountMax, pageIndex, ref qatItems, categoryId, categoryText, categoryColor);
             return pages;
         }
         /// <summary>
@@ -611,13 +616,15 @@ namespace TestDevExpress.Forms
         /// <param name="pageCountMax"></param>
         /// <param name="groupCountMin"></param>
         /// <param name="groupCountMax"></param>
+        /// <param name="qatItems"></param>
         /// <param name="categoryId"></param>
         /// <param name="categoryText"></param>
         /// <param name="categoryColor"></param>
         /// <param name="pageIndex"></param>
-        public static void CreatePagesTo(List<IRibbonPage> pages, int pageCountMin, int pageCountMax, int groupCountMin, int groupCountMax, string categoryId = null, string categoryText = null, System.Drawing.Color? categoryColor = null, int? pageIndex = null)
+        public static void CreatePagesTo(List<IRibbonPage> pages, int pageCountMin, int pageCountMax, int groupCountMin, int groupCountMax, ref string qatItems, string categoryId = null, string categoryText = null, System.Drawing.Color? categoryColor = null, int? pageIndex = null)
         {
-            _AddPages(pages, pageCountMin, pageCountMax, groupCountMin, groupCountMax, pageIndex, categoryId, categoryText, categoryColor);
+            _AddPages(pages, pageCountMin, pageCountMax, groupCountMin, groupCountMax, pageIndex, ref qatItems, 
+                categoryId, categoryText, categoryColor);
         }
         /// <summary>
         /// Do pole přidá stránky
@@ -628,10 +635,12 @@ namespace TestDevExpress.Forms
         /// <param name="groupCountMin"></param>
         /// <param name="groupCountMax"></param>
         /// <param name="pageIndex"></param>
+        /// <param name="qatItems"></param>
         /// <param name="categoryId"></param>
         /// <param name="categoryText"></param>
         /// <param name="categoryColor"></param>
-        private static void _AddPages(List<IRibbonPage> pages, int pageCountMin, int pageCountMax, int groupCountMin, int groupCountMax, int? pageIndex, string categoryId = null, string categoryText = null, System.Drawing.Color? categoryColor = null)
+        private static void _AddPages(List<IRibbonPage> pages, int pageCountMin, int pageCountMax, int groupCountMin, int groupCountMax, int? pageIndex, ref string qatItems, 
+            string categoryId = null, string categoryText = null, System.Drawing.Color? categoryColor = null)
         {
             var startTime = DxComponent.LogTimeCurrent;
             if (!categoryColor.HasValue) categoryColor = System.Drawing.Color.DarkViolet;
@@ -651,7 +660,7 @@ namespace TestDevExpress.Forms
                 bool isFirstOnDemand = (!pageIndex.HasValue && (page.PageContentMode == RibbonContentMode.OnDemandLoadOnce || page.PageContentMode == RibbonContentMode.OnDemandLoadEveryTime));
                 if (isFirstOnDemand) continue;
 
-                _AddGroups(page, groupCountMin, groupCountMax);
+                _AddGroups(page, groupCountMin, groupCountMax, ref qatItems);
             }
 
             DxComponent.LogAddLineTime($"Vygenerováno {_RibbonItemCount} prvků v čase {DxComponent.LogTokenTimeMilisec}", startTime);
@@ -662,7 +671,8 @@ namespace TestDevExpress.Forms
         /// <param name="page"></param>
         /// <param name="groupCountMin"></param>
         /// <param name="groupCountMax"></param>
-        private static void _AddGroups(DataRibbonPage page, int groupCountMin, int groupCountMax)
+        /// <param name="qatItems"></param>
+        private static void _AddGroups(DataRibbonPage page, int groupCountMin, int groupCountMax, ref string qatItems)
         {
             int gc = Rand.Next(groupCountMin, groupCountMax + 1);
             for (int g = 0; g < gc; g++)
@@ -670,7 +680,7 @@ namespace TestDevExpress.Forms
                 DataRibbonGroup group = _GetGroup(page.PageId);
                 page.Groups.Add(group);
 
-                _AddItems(group, 1, 6);
+                _AddItems(group, 1, 6, ref qatItems);
             }
         }
         /// <summary>
@@ -679,7 +689,8 @@ namespace TestDevExpress.Forms
         /// <param name="group"></param>
         /// <param name="itemCountMin"></param>
         /// <param name="itemCountMax"></param>
-        private static void _AddItems(DataRibbonGroup group, int itemCountMin, int itemCountMax)
+        /// <param name="qatItems"></param>
+        private static void _AddItems(DataRibbonGroup group, int itemCountMin, int itemCountMax, ref string qatItems)
         {
             bool containsRadioGroup = false;
             int remainingRadioCount = 0;
@@ -687,7 +698,7 @@ namespace TestDevExpress.Forms
             int ic = Rand.Next(itemCountMin, itemCountMax + 1);
             for (int i = 0; i < ic; i++)
             {
-                DataRibbonItem item = _GetItem(group.GroupId, ref containsRadioGroup, ref remainingRadioCount, ref forceFirstInGroup);
+                DataRibbonItem item = _GetItem(group.GroupId, ref containsRadioGroup, ref remainingRadioCount, ref forceFirstInGroup, ref qatItems);
                 group.Items.Add(item);
                 if (remainingRadioCount > 0 && i == (ic - 1))   // Dokud zrovna generuji RadioGrupu (mám remainingRadioCount kladné) a blížím se ke konci počtu našich prvků,
                     ic++;                                       //   pak přidám ještě další prvek, abych RadioGrupu dotáhl do konce.
@@ -775,8 +786,9 @@ namespace TestDevExpress.Forms
         /// <param name="containsRadioGroup"></param>
         /// <param name="remainingRadioCount"></param>
         /// <param name="forceFirstInGroup"></param>
+        /// <param name="qatItems"></param>
         /// <returns></returns>
-        private static DataRibbonItem _GetItem(string groupId, ref bool containsRadioGroup, ref int remainingRadioCount, ref bool forceFirstInGroup)
+        private static DataRibbonItem _GetItem(string groupId, ref bool containsRadioGroup, ref int remainingRadioCount, ref bool forceFirstInGroup, ref string qatItems)
         {
             _RibbonItemCount++;
             string itemId = "Item" + (++_RibbonItemId);
@@ -841,7 +853,8 @@ namespace TestDevExpress.Forms
 
             item.ToolTipTitle = item.ToolTipTitle + "  {" + item.ItemType.ToString() + "}";
             item.ItemIsFirstInGroup = isFirst;
-            item.QuickToolbarOrder = toolbarOrder;
+            if (toolbarOrder.HasValue)
+                qatItems += item.ItemId + DxRibbonControl.QATItemKeyDelimiter;
 
             return item;
         }

@@ -33,7 +33,8 @@ namespace TestDevExpress.Forms
         {
             List<IRibbonPage> iRibbonPages = new List<IRibbonPage>();
             AddBasicItemsToRibbon(iRibbonPages);
-            DxRibbonSample.CreatePagesTo(iRibbonPages, 2, 4, 2, 5);
+            string qatItems = "";
+            DxRibbonSample.CreatePagesTo(iRibbonPages, 2, 4, 2, 5, ref qatItems);
             AsolRibbon.AddPages(iRibbonPages);
         }
         protected void AddBasicItemsToRibbon(List<IRibbonPage> iRibbonPages)
