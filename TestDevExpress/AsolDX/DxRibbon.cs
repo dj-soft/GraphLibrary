@@ -24,7 +24,7 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// </summary>
     public class DxRibbonControl : DevExpress.XtraBars.Ribbon.RibbonControl, IDxRibbonInternal
     {
-        #region Konstruktor a vykreslení ikony
+        #region Konstruktor
         /// <summary>
         /// Konstruktor
         /// </summary>
@@ -34,6 +34,9 @@ namespace Noris.Clients.Win.Components.AsolDX
             InitEvents();
             InitQuickAccessToolbar();
         }
+        /// <summary>
+        /// Výchozí nastavení
+        /// </summary>
         private void InitProperties()
         {
             var iconList = ComponentConnector.GraphicsCache;
@@ -66,25 +69,16 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             ShowApplicationButton = DevExpress.Utils.DefaultBoolean.False;
             ApplicationButtonText = " HELIOS ";
-
-            ToolTipController = new DevExpress.Utils.ToolTipController
-            {
-                Rounded = true,
-                ShowShadow = true,
-                ToolTipAnchor = DevExpress.Utils.ToolTipAnchor.Cursor,
-                ToolTipLocation = DevExpress.Utils.ToolTipLocation.RightBottom,
-                ToolTipStyle = DevExpress.Utils.ToolTipStyle.Windows7,
-                ToolTipType = DevExpress.Utils.ToolTipType.SuperTip,       // Standard   Flyout   SuperTip;
-                IconSize = DevExpress.Utils.ToolTipIconSize.Large,
-                CloseOnClick = DevExpress.Utils.DefaultBoolean.True
-            };
+            ToolTipController = DxComponent.DefaultToolTipController;
 
             Visible = true;
 
-            this.AllowCustomization = true;
-            this.AllowGlyphSkinning = false;       // nikdy ne true!
+            this.AllowMinimizeRibbon = false;    // Povolit minimalizaci Ribbonu? Pak ale nejde vrátit :-(
+            this.AllowCustomization = false;     // Hodnota true povoluje (na pravé myši) otevřít okno Customizace Ribbonu, a to v Greenu nepodporujeme
+            this.ShowQatLocationSelector = true; // Hodnota true povoluje změnu umístění Ribbonu
+
+            this.AllowGlyphSkinning = false;     // Nikdy ne true!
             this.ShowItemCaptionsInQAT = true;
-            this.ShowQatLocationSelector = true;
 
             this.SelectChildActivePageOnMerge = true;
             this.CheckLazyContentEnabled = true;
@@ -97,6 +91,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             base.OnPaint(e);
             this.PaintAfter(e);
+            // this.CustomizeQatMenu();
         }
         /// <summary>
         /// Vizualizace
@@ -114,6 +109,63 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Jméno Ribbonu pro debugování
         /// </summary>
         public string DebugName { get; set; }
+        #endregion
+        #region Obrázek vpravo
+        /// <summary>
+        /// Ikona vpravo pro velký Ribbon
+        /// </summary>
+        public Image ImageRightFull { get { return _ImageRightFull; } set { _ImageRightFull = value; this.Refresh(); } }
+        private Image _ImageRightFull;
+        /// <summary>
+        /// Ikona vpravo pro malý Ribbon
+        /// </summary>
+        public Image ImageRightMini { get { return _ImageRightMini; } set { _ImageRightMini = value; this.Refresh(); } }
+        private Image _ImageRightMini;
+        /// <summary>
+        /// Vykreslí ikonu vpravo
+        /// </summary>
+        /// <param name="e"></param>
+        private void PaintAfter(PaintEventArgs e)
+        {
+            OnPaintImageRightBefore(e);
+
+            bool isSmallRibbon = (this.CommandLayout == DevExpress.XtraBars.Ribbon.CommandLayout.Simplified);
+            Image image = (isSmallRibbon ? (_ImageRightMini ?? _ImageRightFull) : (_ImageRightFull ?? _ImageRightMini));
+            if (image == null) return;
+            Size imageNativeSize = image.Size;
+            if (imageNativeSize.Width <= 0 || imageNativeSize.Height <= 0) return;
+
+            // Rectangle buttonsBounds = (isSmallRibbon ? ClientRectangle.Enlarge(0, -4, -28, -4) : ButtonsBounds.Enlarge(-4));
+            Rectangle buttonsBounds = (isSmallRibbon ? ButtonsBounds.Enlarge(0, -4, -28, +16) : ButtonsBounds.Enlarge(-4));
+            ContentAlignment alignment = (isSmallRibbon ? ContentAlignment.TopRight : ContentAlignment.BottomRight);
+            Rectangle imageBounds = imageNativeSize.AlignTo(buttonsBounds, alignment, true, true);
+
+            e.Graphics.DrawImage(image, imageBounds);
+
+            OnPaintImageRightAfter(e);
+        }
+        /// <summary>
+        /// Provede se před vykreslením obrázku vpravo v ribbonu
+        /// </summary>
+        protected virtual void OnPaintImageRightBefore(PaintEventArgs e)
+        {
+            PaintImageRightBefore?.Invoke(this, e);
+        }
+        /// <summary>
+        /// Volá se před vykreslením obrázku vpravo v ribbonu
+        /// </summary>
+        public event EventHandler<PaintEventArgs> PaintImageRightBefore;
+        /// <summary>
+        /// Provede se po vykreslení obrázku vpravo v ribbonu
+        /// </summary>
+        protected virtual void OnPaintImageRightAfter(PaintEventArgs e)
+        {
+            PaintImageRightAfter?.Invoke(this, e);
+        }
+        /// <summary>
+        /// Volá se po vykreslení obrázku vpravo v ribbonu
+        /// </summary>
+        public event EventHandler<PaintEventArgs> PaintImageRightAfter;
         #endregion
         #region Pole obsahující stránky Ribbonu
         /// <summary>
@@ -780,7 +832,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         /// <summary>
         /// Pokud je true (běžný aktivní stav), pak se po aktivaci stránky provádí kontroly LazyLoad obsahu.
-        /// Nastavením na false se tyto kotnroly deaktivují. Používá se při hromadnám Unmerge a zpět Merge, kdy dochází ke změnám SelectedPage v každém kroku, a zcela zbytečně.
+        /// Nastavením na false se tyto kontroly deaktivují. 
+        /// Používá se při hromadnám Unmerge a zpět Merge, kdy dochází ke změnám SelectedPage v každém kroku, a zcela zbytečně.
         /// </summary>
         protected bool CheckLazyContentEnabled { get; set; }
         /// <summary>
@@ -1843,6 +1896,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void InitQuickAccessToolbar()
         {
             this.SourceToolbar.LinksChanged += SourceToolbar_LinksChanged;
+            this.QATItemKeys = "";               // Tím vytvořím struktury pro QAT
         }
         /// <summary>
         /// Událost, kdy dojde k přidání či odebrání prvku QAT, a to jak uživatelem tak z programu
@@ -1862,14 +1916,17 @@ namespace Noris.Clients.Win.Components.AsolDX
             base.OnAddToToolbar(link);
             this.UserAddItemToQat(link);
         }
+        /// <summary>
+        /// Uživatel něco přidal do QAT
+        /// </summary>
+        /// <param name="link"></param>
         private void UserAddItemToQat(DevExpress.XtraBars.BarItemLink link)
         {
-            if (link.Item?.Tag is IRibbonItem item)
-            {
-                string key = GetValidQATKey(item.ItemId);
+            if (TryGetIRibbonData(link, out var key, out var iRibbonItem, out var iRibbonGroup))
+            {   // Našli jsme data o dodaném prvku?
                 if (!_QatItemDict.ContainsKey(key))
-                {
-                    QatItem qatItem = new QatItem(this, key, link.Item, link);
+                {   // Neznáme => přidat:
+                    QatItem qatItem = new QatItem(this, key, iRibbonItem, iRibbonGroup, link.Item, link);
                     _QatItemDict.Add(key, qatItem);
                     _QatItems.Add(qatItem);
                     _RunQATItemKeysChanged();
@@ -1882,17 +1939,85 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="link"></param>
         protected override void OnRemoveFromToolbar(DevExpress.XtraBars.BarItemLink link)
         {
-            base.OnRemoveFromToolbar(link);
             this.UserRemoveItemFromQat(link);
+            base.OnRemoveFromToolbar(link);
         }
+        /// <summary>
+        /// Uživatel něco odebral z QAT
+        /// </summary>
+        /// <param name="link"></param>
         private void UserRemoveItemFromQat(DevExpress.XtraBars.BarItemLink link)
-        { }
+        {
+            if (TryGetIRibbonData(link, out var key, out var iRibbonItem, out var iRibbonGroup))
+            {   // Našli jsme data o dodaném prvku?
+                if (_QatItemDict.TryGetValue(key, out var qatItem))
+                {   // Známe => odebrat:
+                    qatItem.Reset();
+                    _QatItemDict.Remove(key);
+                    _QatItems.RemoveAll(q => q.Key == key);
+                    _RunQATItemKeysChanged();
+                }
+            }
+        }
+        /// <summary>
+        /// Metoda v dodaném linku najde jeho Item, jeho Tag, detekuje jeho typ a určí jeho Key, uloží typové výsledky a vrátí true.
+        /// Pokud se nezdaří, vrátí false.
+        /// </summary>
+        /// <param name="link"></param>
+        /// <param name="key"></param>
+        /// <param name="iRibbonItem"></param>
+        /// <param name="iRibbonGroup"></param>
+        /// <returns></returns>
+        private bool TryGetIRibbonData(DevExpress.XtraBars.BarItemLink link, out string key, out IRibbonItem iRibbonItem, out IRibbonGroup iRibbonGroup)
+        {
+            if (link != null && link.Item != null)
+            {
+                object tag = link.Item.Tag;
+                if (tag is IRibbonItem iItem)
+                {
+                    key = GetValidQATKey(iItem.ItemId);
+                    iRibbonItem = iItem;
+                    iRibbonGroup = null;
+                    return true;
+                }
+                if (tag is IRibbonGroup iGroup)
+                {
+                    key = GetValidQATKey(iGroup.GroupId);
+                    iRibbonItem = null;
+                    iRibbonGroup = iGroup;
+                    return true;
+                }
+                if ((tag is DxRibbonGroup ribbonGroup) && (ribbonGroup.Tag is IRibbonGroup iiGroup))
+                {
+                    key = GetValidQATKey(iiGroup.GroupId);
+                    iRibbonItem = null;
+                    iRibbonGroup = iiGroup;
+                    return true;
+                }
+            }
+            key = null;
+            iRibbonItem = null;
+            iRibbonGroup = null;
+            return false;
+        }
+        /// <summary>
+        /// Došlo ke změně v obsahu <see cref="QATItemKeys"/>, zavolej události
+        /// </summary>
         private void _RunQATItemKeysChanged()
         {
+            if (this.CustomizationPopupMenu.Visible)
+                this.CustomizationPopupMenu.HidePopup();
+
             OnQATItemKeysChanged();
             QATItemKeysChanged?.Invoke(this, EventArgs.Empty);
         }
+        /// <summary>
+        /// Je provedeno po změně hodnoty v <see cref="QATItemKeys"/>
+        /// </summary>
         protected virtual void OnQATItemKeysChanged() { }
+        /// <summary>
+        /// Je voláno po změně hodnoty v <see cref="QATItemKeys"/>
+        /// </summary>
         public event EventHandler QATItemKeysChanged;
         #endregion
         #region class QatItem : evidence pro jedno tlačítko QAT
@@ -1912,15 +2037,34 @@ namespace Noris.Clients.Win.Components.AsolDX
                 this._Key = key;
             }
             /// <summary>
-            /// Konstruktor
+            /// Konstruktor pro existující <see cref="IRibbonItem"/>
             /// </summary>
             /// <param name="owner"></param>
             /// <param name="key"></param>
+            /// <param name="iRibbonItem"></param>
+            /// <param name="iRibbonGroup"></param>
             /// <param name="barItem"></param>
             /// <param name="barItemLink"></param>
-            public QatItem(DxRibbonControl owner, string key, DevExpress.XtraBars.BarItem barItem, DevExpress.XtraBars.BarItemLink barItemLink)
+            public QatItem(DxRibbonControl owner, string key, IRibbonItem iRibbonItem, IRibbonGroup iRibbonGroup, DevExpress.XtraBars.BarItem barItem, DevExpress.XtraBars.BarItemLink barItemLink)
                 : this(owner, key)
             {
+                RibbonItem = iRibbonItem;
+                RibbonGroup = iRibbonGroup;
+                _BarItem = barItem;
+                BarItemLink = barItemLink;
+            }
+            /// <summary>
+            /// Konstruktor pro existující <see cref="IRibbonGroup"/>
+            /// </summary>
+            /// <param name="owner"></param>
+            /// <param name="key"></param>
+            /// <param name="ribbonGroup"></param>
+            /// <param name="barItem"></param>
+            /// <param name="barItemLink"></param>
+            public QatItem(DxRibbonControl owner, string key, IRibbonGroup ribbonGroup, DevExpress.XtraBars.BarItem barItem, DevExpress.XtraBars.BarItemLink barItemLink)
+                : this(owner, key)
+            {
+                RibbonGroup = ribbonGroup;
                 _BarItem = barItem;
                 BarItemLink = barItemLink;
             }
@@ -2760,79 +2904,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             return pages;
         }
         #endregion
-        #region Obrázek vpravo
-        /// <summary>
-        /// Ikona vpravo pro velký Ribbon
-        /// </summary>
-        public Image ImageRightFull { get { return _ImageRightFull; } set { _ImageRightFull = value; this.Refresh(); } }
-        private Image _ImageRightFull;
-        /// <summary>
-        /// Ikona vpravo pro malý Ribbon
-        /// </summary>
-        public Image ImageRightMini { get { return _ImageRightMini; } set { _ImageRightMini = value; this.Refresh(); } }
-        private Image _ImageRightMini;
-        /// <summary>
-        /// Vykreslí ikonu vpravo
-        /// </summary>
-        /// <param name="e"></param>
-        private void PaintAfter(PaintEventArgs e)
-        {
-            OnPaintImageRightBefore(e);
-
-            bool isSmallRibbon = (this.CommandLayout == DevExpress.XtraBars.Ribbon.CommandLayout.Simplified);
-            Image image = GetImageRight(isSmallRibbon);
-            if (image == null) return;
-            Size imageNativeSize = image.Size;
-            if (imageNativeSize.Width <= 0 || imageNativeSize.Height <= 0) return;
-
-            Rectangle buttonsBounds = ButtonsBounds.Enlarge(-4);
-            Rectangle imageBounds = imageNativeSize.AlignTo(buttonsBounds, ContentAlignment.BottomRight, true, true);
-
-            //int imageHeight = (isSmallRibbon ? 24 : 48);
-            //float ratio = (float)imageNativeSize.Width / (float)imageNativeSize.Height;
-            //int imageWidth = (int)(ratio * (float)imageHeight);
-            //Rectangle imageBounds = new Rectangle(buttonsBounds.Right - 6 - imageWidth, buttonsBounds.Y + 4, imageWidth, imageHeight);
-
-            e.Graphics.DrawImage(image, imageBounds);
-
-            OnPaintImageRightAfter(e);
-        }
-        /// <summary>
-        /// Metoda vrátí vhodný obrázek pro obrázek vpravo pro aktuální velikost. 
-        /// Může vrátit null.
-        /// </summary>
-        /// <param name="isSmallRibbon"></param>
-        /// <returns></returns>
-        private Image GetImageRight(bool isSmallRibbon)
-        {
-            if (!isSmallRibbon && _ImageRightFull != null) return _ImageRightFull;
-            if (isSmallRibbon && _ImageRightMini != null) return _ImageRightMini;
-            if (_ImageRightFull != null) return _ImageRightFull;
-            return _ImageRightMini;
-        }
-        /// <summary>
-        /// Provede se před vykreslením obrázku vpravo v ribbonu
-        /// </summary>
-        protected virtual void OnPaintImageRightBefore(PaintEventArgs e)
-        {
-            PaintImageRightBefore?.Invoke(this, e);
-        }
-        /// <summary>
-        /// Volá se před vykreslením obrázku vpravo v ribbonu
-        /// </summary>
-        public event EventHandler<PaintEventArgs> PaintImageRightBefore;
-        /// <summary>
-        /// Provede se po vykreslení obrázku vpravo v ribbonu
-        /// </summary>
-        protected virtual void OnPaintImageRightAfter(PaintEventArgs e)
-        {
-            PaintImageRightAfter?.Invoke(this, e);
-        }
-        /// <summary>
-        /// Volá se po vykreslení obrázku vpravo v ribbonu
-        /// </summary>
-        public event EventHandler<PaintEventArgs> PaintImageRightAfter;
-        #endregion
         #region Static helpers
         /// <summary>
         /// Vytvoří a vrátí logickou Grupu do Ribbonu s obsahem tlačítek pro skiny (tedy definici pro tuto grupu)
@@ -2935,6 +3006,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         */
         #endregion
     }
+    #region IDxRibbonInternal : Interface pro interní přístup do ribbonu
     /// <summary>
     /// Interface pro interní přístup do ribbonu
     /// </summary>
@@ -2961,6 +3033,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="itemsToDelete"></param>
         void RemoveItemsFromQat(List<DevExpress.XtraBars.BarItem> itemsToDelete);
     }
+    #endregion
     #region DxRibbonPage : stránka Ribbonu s podporou LazyContentItems, class DxRibbonPageLazyGroupInfo
     /// <summary>
     /// Kategorie
@@ -3143,7 +3216,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 var groupsToDelete = this.Groups.OfType<DevExpress.XtraBars.Ribbon.RibbonPageGroup>().Where(g => g.Name != groupId).ToList();
                 var itemsToDelete = groupsToDelete.SelectMany(g => g.ItemLinks).Select(l => l.Item).ToList();
 
-                // Před fyzickým odebráním grup a prvků z RibbonPage je předám do QAT systému v Ribbonu, aby 
+                // Před fyzickým odebráním grup a prvků z RibbonPage je předám do QAT systému v Ribbonu, aby si je odebral ze své evidence: 
                 var iOwnerRibbon = this.OwnerDxRibbon as IDxRibbonInternal;
                 iOwnerRibbon.RemoveGroupsFromQat(groupsToDelete);
                 iOwnerRibbon.RemoveItemsFromQat(itemsToDelete);
@@ -3188,6 +3261,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         public void ClearContent()
         {
             var itemsToDelete = this.ItemLinks.Select(l => l.Item).ToList();
+
+            // Před fyzickým odebráním prvků z RibbonGroup je předám do QAT systému v Ribbonu, aby si je odebral ze své evidence:
+            var iOwnerRibbon = this.OwnerDxRibbon as IDxRibbonInternal;
+            iOwnerRibbon.RemoveItemsFromQat(itemsToDelete);
+
             var ownerRibbonItems = this.OwnerDxRibbon.Items;
             itemsToDelete.ForEach(i => ownerRibbonItems.Remove(i));
         }

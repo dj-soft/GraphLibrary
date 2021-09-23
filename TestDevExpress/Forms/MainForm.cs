@@ -165,24 +165,9 @@ namespace TestDevExpress.Forms
             this._BarManager = new XB.BarManager();
             this._BarManager.Form = this;
 
-            this._BarManager.ToolTipController = new DevExpress.Utils.ToolTipController();
+            this._BarManager.ToolTipController = DxComponent.CreateNewToolTipController();
             this._BarManager.ToolTipController.AddClientControl(this);
 
-            this._BarManager.ToolTipController.ShowShadow = true;
-            this._BarManager.ToolTipController.Active = true;
-            this._BarManager.ToolTipController.Appearance.GradientMode = System.Drawing.Drawing2D.LinearGradientMode.Horizontal;
-            this._BarManager.ToolTipController.AutoPopDelay = 500;
-            this._BarManager.ToolTipController.InitialDelay = 800;
-            this._BarManager.ToolTipController.KeepWhileHovered = true;
-            this._BarManager.ToolTipController.ReshowDelay = 2000;
-            this._BarManager.ToolTipController.Rounded = true;
-            this._BarManager.ToolTipController.RoundRadius = 25;
-            this._BarManager.ToolTipController.ShowShadow = true;
-            this._BarManager.ToolTipController.ToolTipStyle = DevExpress.Utils.ToolTipStyle.Windows7;
-            this._BarManager.ToolTipController.ToolTipType = DevExpress.Utils.ToolTipType.Standard;
-
-
-            var ttc = this._BarManager.GetToolTipController();
             //this._BarManager = new XB.BarManager(this.Container);
             //this._BarManager.ForceInitialize();
 

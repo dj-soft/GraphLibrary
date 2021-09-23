@@ -1238,7 +1238,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             DevExpress.XtraBars.BarManager barManager = new DevExpress.XtraBars.BarManager
             {
                 Form = this,
-                ToolTipController = new DevExpress.Utils.ToolTipController()
+                ToolTipController = DxComponent.CreateNewToolTipController()
             };
             barManager.ToolTipController.AddClientControl(this);
 

@@ -251,6 +251,7 @@ namespace TestDevExpress.Forms
             _Ribbon.RibbonPageCategoryClick += _Ribbon_RibbonPageCategoryClick;
             _Ribbon.RibbonGroupButtonClick += _Ribbon_RibbonGroupButtonClick;
             _Ribbon.RibbonItemClick += _Ribbon_RibbonItemClick;
+            _Ribbon.QATItemKeysChanged += _Ribbon_QATItemKeysChanged;
 
             this.Controls.Add(_Ribbon);
 
@@ -571,6 +572,21 @@ namespace TestDevExpress.Forms
             dialogArgs.Owner = this.FindForm();
             Noris.Clients.Win.Components.DialogForm.ShowDialog(dialogArgs);
         }
+        private void _Ribbon_QATItemKeysChanged(object sender, EventArgs e)
+        {
+            string qatItemKeys = _Ribbon.QATItemKeys;
+
+            Noris.Clients.Win.Components.DialogArgs dialogArgs = new Noris.Clients.Win.Components.DialogArgs();
+            dialogArgs.Title = "Ribbon Quick Access Toolbar change";
+            dialogArgs.MessageTextContainsHtml = true;
+
+            string messageText = $"Uživatel změnil obsah lišty <b>Ribbon Quick Access</b>:\r\nRibbon: <b>{this.Ribbon.DebugName}</b>;\r\nKeys: <b>{qatItemKeys}</b>";
+            dialogArgs.MessageText = messageText.Trim();
+
+            dialogArgs.PrepareButtons(System.Windows.Forms.MessageBoxButtons.OK);
+            dialogArgs.Owner = this.FindForm();
+            Noris.Clients.Win.Components.DialogForm.ShowDialog(dialogArgs);
+        }
     }
     #endregion
     #region RibbonSample : testovací zdroj dat pro Ribbon
@@ -596,7 +612,7 @@ namespace TestDevExpress.Forms
         /// <param name="pageCountMax"></param>
         /// <param name="groupCountMin"></param>
         /// <param name="groupCountMax"></param>
-        /// <param name="qatItems"
+        /// <param name="qatItems"></param>
         /// <param name="categoryId"></param>
         /// <param name="categoryText"></param>
         /// <param name="categoryColor"></param>

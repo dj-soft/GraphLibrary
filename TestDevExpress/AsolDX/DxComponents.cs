@@ -393,7 +393,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             _RecalcZoomDpi();
 
             _DefaultBarManager = new DevExpress.XtraBars.BarManager();
-            _DefaultToolTipController = new ToolTipController();
+            _DefaultToolTipController = CreateNewToolTipController();
         }
         /// <summary>
         /// Vrátí styl labelu podle požadovaného typu
@@ -498,10 +498,34 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public static ToolTipController DefaultToolTipController { get { return Instance._DefaultToolTipController; } }
         /// <summary>
-        /// Vytvoří a vrátí new instanci ToolTipController
+        /// Vytvoří a vrátí new instanci ToolTipController, standardně deklarovanou
         /// </summary>
         /// <returns></returns>
-        public static ToolTipController CreateNewToolTipController() { return new ToolTipController(); }
+        public static ToolTipController CreateNewToolTipController() 
+        {
+            var ttc = new ToolTipController()
+            {
+                Active = true,
+                InitialDelay = 400,
+                AutoPopDelay = 10000,
+                ReshowDelay = 1000,
+                KeepWhileHovered = true,
+                Rounded = true,
+                RoundRadius = 20,
+                ShowShadow = true,
+                ToolTipAnchor = DevExpress.Utils.ToolTipAnchor.Object,
+                ToolTipLocation = DevExpress.Utils.ToolTipLocation.RightBottom,
+                ToolTipStyle = DevExpress.Utils.ToolTipStyle.Windows7,
+                ToolTipType = DevExpress.Utils.ToolTipType.SuperTip,       // Standard   Flyout   SuperTip;
+                IconSize = DevExpress.Utils.ToolTipIconSize.Large,
+                CloseOnClick = DevExpress.Utils.DefaultBoolean.True,
+                ShowBeak = true
+            };
+
+            ttc.Appearance.GradientMode = System.Drawing.Drawing2D.LinearGradientMode.Horizontal;
+
+            return ttc;
+        }
         /// <summary>
         /// Převede string obsahující písmena B,I,U,S na odpovídající <see cref="FontStyle"/>.
         /// Pokud je na vstupu null nebo prázdný string, vrací null.
