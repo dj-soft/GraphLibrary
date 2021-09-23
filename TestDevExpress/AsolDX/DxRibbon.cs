@@ -15,13 +15,14 @@ using System.Drawing;
 using DevExpress.Utils;
 using System.Diagnostics;
 using DevExpress.Utils.Extensions;
+using System.Security.Policy;
 
 namespace Noris.Clients.Win.Components.AsolDX
 {
     /// <summary>
     /// Potomek Ribbonu
     /// </summary>
-    public class DxRibbonControl : DevExpress.XtraBars.Ribbon.RibbonControl
+    public class DxRibbonControl : DevExpress.XtraBars.Ribbon.RibbonControl, IDxRibbonInternal
     {
         #region Konstruktor a vykreslení ikony
         /// <summary>
@@ -438,7 +439,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             if (iRibbonPages == null) return;
 
-            //  Hodnota isReFill je důležitá v následujícím scénáři:
+            //  Hodnota 'isCalledFromReFill' je důležitá v následujícím scénáři:
             // 1. Provádíme první naplnění Ribbonu;
             // 2. Definice Ribbonu obsahuje na první pozici stránku typu OdDemandLoad: taková stránka se aktivuje v procesu přidávání stránek;
             // 3. Následně se metoda CheckLazyContentCurrentPage() má postarat o to, aby aktivní stránka (SelectedPage) měla správně načtená data (OnDemand)
@@ -451,8 +452,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             //  Řešení:
             //   - příznak isReFill říká, že nyní přicházejí naplněná data (a nebude se tedy žádat o jejich další donačtení)
             //   - příznak isReFill určíme podle toho, že ve vstupních datech je alespoň jedna stránka typu OnDemand, která už v sobě obsahuje data
-            
-            bool isReFill = iRibbonPages.Any(p => ((p.PageContentMode == RibbonContentMode.OnDemandLoadOnce || p.PageContentMode == RibbonContentMode.OnDemandLoadEveryTime) && p.Groups.Any()));
+
+            bool isCalledFromReFill = iRibbonPages.Any(p => ((p.PageContentMode == RibbonContentMode.OnDemandLoadOnce || p.PageContentMode == RibbonContentMode.OnDemandLoadEveryTime) && p.Groups.Any()));
             this.RunInGui(() =>
             {
                 this.ModifyCurrentDxContent(() =>
@@ -460,7 +461,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                     if (clearCurrentContent) _ClearPageContents();
                     _AddPages(iRibbonPages, this.UseLazyContentCreate, false, "Fill");
                     if (clearCurrentContent) _RemoveVoidContainers();
-                    CheckLazyContentCurrentPage(isReFill);
+                    CheckLazyContentCurrentPage(isCalledFromReFill);
                 });
             });
         }
@@ -517,55 +518,62 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Přidá prvky do this Ribbonu z dodané LazyGroup do this Ribbonu. Zde se prvky přidávají vždy jako reálné, už ne Lazy.
         /// </summary>
         /// <param name="lazyGroup"></param>
-        /// <param name="isReFill">false při uživatelské aktivaci stránky, true při jejím naplnění daty z aplikačního kódu</param>
-        internal void PrepareRealLazyItems(DxRibbonLazyLoadInfo lazyGroup, bool isReFill)
+        /// <param name="isCalledFromReFill">Odkud je akce volaná: false při uživatelské aktivaci stránky, true při jejím naplnění daty z aplikačního kódu</param>
+        private void PrepareRealLazyItems(DxRibbonLazyLoadInfo lazyGroup, bool isCalledFromReFill)
         {
             // Nemám data nebo jsou neaktivní (=už jsme v procesu PrepareRealLazyItems):
             if (lazyGroup == null || !lazyGroup.IsActive) return;
 
             // Pokud právě nyní plníme Ribbon daty dodanými OnDemand (=data jsou v ribbonu už vložena) a režime je EveryTime, pak skončíme;
             // protože: a) obsah mazat nechceme,  b) prvky opakovaně vkládat nechceme (už tam jsou),  c) LazyGroup si chceme ponechat,  d) další event spouštět nebudeme:
-            if (isReFill && lazyGroup.PageContentMode == RibbonContentMode.OnDemandLoadEveryTime) return;
+            if (isCalledFromReFill && lazyGroup.PageContentMode == RibbonContentMode.OnDemandLoadEveryTime) return;
 
             lazyGroup.IsActive = false;
             bool addItems = lazyGroup.HasItems && lazyGroup.PageContentMode == RibbonContentMode.Static;
+            var pageData = lazyGroup.PageData;
             var iRibbonPage = lazyGroup.PageData;
 
             // V této jediné situaci si necháme LazyInfo: když proběhlo naplnění prvků OnDemand => ReFill, a režim OnDemand je "Po každé aktivaci stránky":
             //  Pak máme na aktuální stránce uložené reálné prvky, a současně tam je OnDemand "Group", která zajistí nový OnDemand při následující aktivaci stránky!
-            bool leaveLazyInfo = (isReFill && lazyGroup.PageContentMode == RibbonContentMode.OnDemandLoadEveryTime);
+            // removeLazyInfo je v opačné situaci:
+            bool removeLazyInfo = !((isCalledFromReFill && lazyGroup.PageContentMode == RibbonContentMode.OnDemandLoadEveryTime));
 
             // Za určité situace provedeme Clear prvků stránky: pokud NENÍ ReFill a pokud je režim EveryTime = 
             //  právě zobrazujeme stránku, která při každém zobrazení načítá nová data, takže předešlá data máme zahodit...
-            bool clearContent = (!isReFill && lazyGroup.PageContentMode == RibbonContentMode.OnDemandLoadEveryTime);
-            
-            if (addItems || clearContent || !leaveLazyInfo)
+            var ownerPage = lazyGroup.OwnerPage;
+            bool clearContent = (!isCalledFromReFill && lazyGroup.PageContentMode == RibbonContentMode.OnDemandLoadEveryTime) || ownerPage.HasOnlyQatContent;
+            string lazyInfo = "LazyFill; Page: " + lazyGroup.PageData.PageText;
+
+            if (addItems || clearContent || removeLazyInfo)
             {   // Když je důvod něco provádět (máme nové prvky, nebo budeme odstraňovat LazyInfo z Ribbonu):
                 this.ModifyCurrentDxContent(() =>
                 {
                     if (clearContent)
                     {
-                        lazyGroup.OwnerPage?.ClearContent(true, !leaveLazyInfo);
+                        lazyGroup.OwnerPage?.ClearContent(true, removeLazyInfo);
                     }
                     if (addItems)
                     {   // Když máme co zobrazit, tak nyní vygenerujeme reálné Grupy a BarItems:
-                        string info = "LazyFill; Page: " + lazyGroup.PageData.PageText;
-                        _AddPageLazy(lazyGroup.PageData, false, false, info);        // Fyzicky vygenerujeme prvky stránky Ribbonu
+                        _AddPageLazy(pageData, false, false, lazyInfo);
                     }
-                    if (!leaveLazyInfo)
+                    if (removeLazyInfo)
                     {
                         // LazyGroup odstraníme vždy, i pro oba režimy OnDemand (pro ně za chvilku vyvoláme event OnDemandLoad):
                         // Pokud by byl režim OnDemandLoadEveryTime, pak si novou LazyGroup vygenerujeme společně s dodanými položkami
                         //  v metodě _AddItems s parametrem isReFill = true, podle režimu OnDemandLoadEveryTime!
                         lazyGroup.OwnerPage?.RemoveLazyLoadInfo();
                     }
+                    if (clearContent || addItems)
+                    {
+                        AddQatListToRibbon();
+                    }
                 });
             }
 
-            if (leaveLazyInfo && lazyGroup != null)
+            if (!removeLazyInfo && lazyGroup != null)
                 lazyGroup.IsActive = true;
 
-            if (lazyGroup.IsOnDemand && !isReFill)
+            if (lazyGroup.IsOnDemand && !isCalledFromReFill)
             {   // Oba režimy OnDemandLoad vyvolají patřičný event, pokud tato metoda NENÍ volána právě z akce naplnění ribbonu daty OnDemand:
                 RunStartOnDemandLoad(iRibbonPage);
             }
@@ -630,6 +638,12 @@ namespace Noris.Clients.Win.Components.AsolDX
             bool isNeedQAT = !createContent && ContainsQAT(iRibbonPage);       // isNeedQAT je true tehdy, když bychom stránku nemuseli plnit (je LazyLoad), ale musíme do ní vložit pouze prvky typu QAT - a stránku přitom máme ponechat v režimu LazyLoad
 
             if (!createContent && !isNeedQAT) return;                          // víc už dělat nemusíme. Máme stránku a v ní LazyInfo, a prvky QAT nepotřebujeme (v dané stránce nejsou).
+
+            if (!isNeedQAT && page.HasOnlyQatContent)
+            {
+                //  page.ClearContent(true, false);
+            }
+            page.HasOnlyQatContent = isNeedQAT;                                // Do stránky si poznamenáme, zda stránka obsahuje jen QAT prvky!
 
             var list = DataRibbonGroup.SortGroups(iRibbonPage.Groups);
             foreach (var iRibbonGroup in list)
@@ -699,17 +713,17 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Prověří, zda aktuální stránka <see cref="DevExpress.XtraBars.Ribbon.RibbonControl.SelectedPage"/> 
         /// má na sobě nějaké HasLazyContentItems, a pokud ano, tak je fyzicky vytvoří
         /// </summary>
-        /// <param name="isReFill">false při uživatelské aktivaci stránky, true při jejím naplnění daty z aplikačního kódu</param>
-        protected virtual void CheckLazyContentCurrentPage(bool isReFill)
+        /// <param name="isCalledFromReFill">Odkud je akce volaná: false při uživatelské aktivaci stránky, true při jejím naplnění daty z aplikačního kódu</param>
+        protected virtual void CheckLazyContentCurrentPage(bool isCalledFromReFill)
         {
-            this.CheckLazyContent(this.SelectedPage, isReFill);
+            this.CheckLazyContent(this.SelectedPage, isCalledFromReFill);
         }
         /// <summary>
         /// Prověří, zda daná stránka má nějaké HasLazyContentItems, a pokud ano tak je fyzicky vytvoří
         /// </summary>
         /// <param name="page"></param>
-        /// <param name="isReFill">false při uživatelské aktivaci stránky, true při jejím naplnění daty z aplikačního kódu</param>
-        protected virtual void CheckLazyContent(DevExpress.XtraBars.Ribbon.RibbonPage page, bool isReFill)
+        /// <param name="isCalledFromReFill">Odkud je akce volaná: false při uživatelské aktivaci stránky, true při jejím naplnění daty z aplikačního kódu</param>
+        protected virtual void CheckLazyContent(DevExpress.XtraBars.Ribbon.RibbonPage page, bool isCalledFromReFill)
         {
             if (page == null) return;
             if (!this.CheckLazyContentEnabled) return;
@@ -725,7 +739,7 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             // Něco k DevExpress a k Ribbonům si přečti v XML komentáři k metodě DxRibbonPageLazyGroupInfo.TryGetLazyDxPages!
 
-            if (!DxRibbonLazyLoadInfo.TryGetLazyDxPages(page, isReFill, out var lazyDxPages)) return;
+            if (!DxRibbonLazyLoadInfo.TryGetLazyDxPages(page, isCalledFromReFill, out var lazyDxPages)) return;
 
             // Pro danou stránku jsme našli jednu nebo i více definic LazyGroups.
             // Na základní stránce (stránka definovaná přímo v Ribbonu) je vždy jen jedna LazyGroup.
@@ -735,7 +749,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             //  už dva BarItem Buttony, každý nese v Tagu svou instanci DxRibbonLazyLoadInfo. A tak lze mergovat DxRibbonLazyLoadInfo víceúrovňově.
             // Pak tedy pro jednu stránku můžeme získat sadu instancí DxRibbonLazyLoadInfo, které definují LazyLoad nebo OnDemand načítání obsahu.
             foreach (var lazyDxPage in lazyDxPages)
-                lazyDxPage.PrepareRealLazyItems(isReFill);
+                lazyDxPage.PrepareRealLazyItems(isCalledFromReFill);           // Tato metoda převolá zdejší metodu : IDxRibbonInternal.PrepareRealLazyItems()
         }
         /// <summary>
         /// Uloží ID aktuální stránky do <see cref="LastSelectedPageId"/>.
@@ -1580,11 +1594,43 @@ namespace Noris.Clients.Win.Components.AsolDX
         internal static readonly WinFormServices.Drawing.UserGraphicsSize LargeImagesSize = WinFormServices.Drawing.UserGraphicsSize.Large;
         #endregion
         #region Podpora pro QAT - Quick Access Toolbar
+        /*     Jak to tady funguje?
+
+         A. Vstup z aplikačního kódu
+          1. Aplikační kód nejprve vloží hodnotu do QATItemKeys (kde ji vzal, uvidíme na konci)
+              - zdejší kód si dodaný text rozebere, analyzuje, a vytvoří si prvky typu QatItem do seznamu _QatItems a do Dictionary _QatItemDict
+              - prvky v tuto chvíli mají pouze stringový klíč, a očekávají dodání fyzického objektu pro zobrazení
+          2. Teprve poté Aplikační kód vloží definici stránek Ribbonu (metoda AddPages())
+              - v procesu přidávání dat se zjistí, zda právě přidaný prvek má být obsažen v QAT (metodou DefinedInQAT(string)), 
+                a pokud ano, pak se fyzický prvek (BarItem) připojí do odpovídající instance QatItem (metoda AddBarItemToQatList()), ale to stále ještě není fyzicky v ToolBaru
+          3. Až skončí přidávání stránek (v metodě AddPages()), vyvolá se metoda AddQatListToRibbon(), která zajistí, že patřičné prvky se fyzicky objeví v ToolBaru
+              - patřičné = pouze ty, pro které je vygenerován fyzický control BarItem
+              - ve správném pořadí = podle pořadí v Listu _QatItems (ten vzniknul v pořadí podle dodané definice do QATItemKeys)
+              - Obsah ToolBaru je vyprázdněn před tímto naplněním, a stávající Linky (objekt BarItemLink spojující fyzický BarItem s ToolBarem) jsou odstraněny a Disposovány
+              - Může se stát, že v evidenci (list _QatItems) budeme mít nějaké prvky, k nimž dosud nebyl vytvořen fyzický BarItem: takové prvky do ToolBaru nevložíme.
+                 - ale pokud později dorazí další stránka, obsahující prvek tohoto jména, proběhne tedy bod 2 + 3, 
+                    fyzický prvek BarItem se vytvoří, zařadí se do (podle jména odpovídající) instance QatItem, a následně se zobrazí v ToolBaru, právě na tom pořadí, kde byl definován.
+
+         B. Interaktivní práce s uživatelem
+          1. Uživatel přidá nějaký prvek do ToolBaru, nebo nějaký odebere, nebo přemístí:
+              - Vyvolá se odpovídající událost
+              - Daný prvek se přidá nebo odebere do/z seznamu _QatItems a Dictionary _QatItemDict
+              - Přidání do seznamu zařadí prvek na odpovídající pozici (před/za okolní existující prvky)
+              - Vyvolá se událost QATItemKeysChanged
+          2. Aplikační kód reaguje na událost QATItemKeysChanged
+              - Převezme si hodnotu QATItemKeys
+                 tato hodnota obsahuje souhrn klíčů přidaných v bodě 1, plus prvek / prvky interaktivně přidané nebo mínus prvky odebrané, 
+                 obsahuje tedy i klíče prvků, které dosud nejsou v ToolBaru fyzicky zobrazeny (protože dosud nebyl vygenerován jejich BarItem) - neviditelný prvek nelze odebrat, dokud nebude fyzicky zobrazen
+              - Tuto hodnotu si někam uloží do konfigurace
+              - Při příštím otevření menu tuto hodnotu vloží do Ribbonu - viz bod 1
+
+        */
+        #region Základní evidence prvků QAT : string QATItemKeys, List a Dictionary, konverze
         /// <summary>
         /// Obsahuje klíče prvků, které mají být / jsou zobrazeny v QAT (Quick Access Toolbar).
-        /// Jednotlivé klíče jsou odděleny znakem <see cref="QATItemKeyDelimiter"/> (=tabulátorem)
+        /// Jednotlivé klíče jsou odděleny znakem <see cref="QATItemKeyDelimiter"/> (=tabulátorem).
         /// </summary>
-        public string QATItemKeys  { get { return _GetQATItemKeys(); }  set { this._SetQATItemKeys(value); }  }
+        public string QATItemKeys { get { return _GetQATItemKeys(); }  set { this._SetQATItemKeys(value); }  }
         /// <summary>
         /// Oddělovač jednotlivých klíčů v <see cref="QATItemKeys"/> (=tabulátor)
         /// </summary>
@@ -1600,14 +1646,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             return itemId.Trim().Replace(QATItemKeyDelimiter, " ");
         }
         /// <summary>
-        /// Inicializace dat a eventhandlerů pro QAT
-        /// </summary>
-        private void InitQuickAccessToolbar()
-        {
-            this.SourceToolbar.LinksChanged += SourceToolbar_LinksChanged;
-        }
-        /// <summary>
-        /// Resetuje pole <see cref="_QatItems"/>, odebere prvek Link z reálného toolbaru QAT (pokud tam je)
+        /// Resetuje pole <see cref="_QatItems"/>, odebere kadžý prvek Link z reálného toolbaru QAT (pokud tam je) = vyprázdní se pole i toolbar.
+        /// Používá se při setování nového seznamu do <see cref="QATItemKeys"/>.
         /// </summary>
         private void ResetQuickAccessToolbar()
         {
@@ -1618,18 +1658,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
             _QatItemDict = null;
         }
-        private void SourceToolbar_LinksChanged(System.ComponentModel.CollectionChangeEventArgs e)
-        {
-        }
-        protected override void OnAddToToolbar(DevExpress.XtraBars.BarItemLink link)
-        {
-            base.OnAddToToolbar(link);
-        }
-        protected override void OnRemoveFromToolbar(DevExpress.XtraBars.BarItemLink link)
-        {
-            base.OnRemoveFromToolbar(link);
-        }
-
         /// <summary>
         /// Vrací sumární string z klíčů všech prvků v QAT
         /// </summary>
@@ -1660,11 +1688,10 @@ namespace Noris.Clients.Win.Components.AsolDX
                 _QatItemDict.Add(key, qatItem);
             }
         }
-        protected bool ExistsAnyQat { get { return ((_QatItems?.Count ?? 0) > 0); } }
         private List<QatItem> _QatItems;
         private Dictionary<string, QatItem> _QatItemDict;
-
-
+        #endregion
+        #region Tvorba QAT na základě zadání z aplikace, podpora pro tvorbu QAT spojená s tvorbou prvků Ribbonu
         /// <summary>
         /// Vrátí true, pokud daná stránka obsahuje něco, co bude přidáno do QAT (Quick Access Toolbar)?
         /// Pokud ano, bude třeba do dané stránky připravit alespoň ty grupy a prvky, které k danému QAT prvku vedou, aby bylo co přidat do QAT.
@@ -1707,6 +1734,10 @@ namespace Noris.Clients.Win.Components.AsolDX
             return _QatItemDict?.ContainsKey(key) ?? false;
         }
         /// <summary>
+        /// Obsahuje true, pokud aktuálně existuje alespoň jeden záznam QAT v poli <see cref="_QatItems"/>
+        /// </summary>
+        protected bool ExistsAnyQat { get { return ((_QatItems?.Count ?? 0) > 0); } }
+        /// <summary>
         /// Metoda je volána v procesu tvorby nových prvků Ribbonu, když je vytvořen prvek BarItem, který má být obsažen v QAT.
         /// Tato metoda si zaeviduje odkaz na tento BarItem v interním poli, z něhož následně (v metodě <see cref="AddQatListToRibbon()"/>) 
         /// všechny patřičné prvky uloží do fyzického ToolBaru QAT.
@@ -1734,12 +1765,137 @@ namespace Noris.Clients.Win.Components.AsolDX
             var qatItems = _QatItems;
             if (qatItems == null) return;
 
-            foreach (var qatItem in qatItems)
+            // Pokud v seznamu není žádný prvek, který potřebuje provést změnu, tak nebudu toolbarem mrkat:
+            if (!qatItems.Any(q => q.NeedChangeInQat)) return;
+
+            foreach (var qatItem in qatItems.Where(q => q.NeedRemoveFromQat))
                 qatItem.RemoveBarItemLink();
 
             foreach (var qatItem in qatItems.Where(q => q.NeedAddToQat))
                 qatItem.AddLinkToQat();
         }
+        #endregion
+        #region Remove při smazání obsahu stránky DxRibbonPage.ClearContent()
+        /// <summary>
+        /// Volá se v procesu <see cref="DxRibbonPage.ClearContent(bool, bool)"/>, před tím než jsou odebrány grupy.
+        /// QAT by si měl odpovídající prvky deaktivovat.
+        /// </summary>
+        /// <param name="groupsToDelete"></param>
+        private void RemoveGroupsFromQat(IEnumerable<DevExpress.XtraBars.Ribbon.RibbonPageGroup> groupsToDelete)
+        {
+            if (groupsToDelete != null)
+                RemoveLinksFromQat(groupsToDelete.Select(g => g.Name));
+        }
+        /// <summary>
+        /// Volá se v procesu <see cref="DxRibbonPage.ClearContent(bool, bool)"/>, před tím než jsou odebrány prvky.
+        /// QAT by si měl odpovídající prvky deaktivovat.
+        /// </summary>
+        /// <param name="itemsToDelete"></param>
+        private void RemoveItemsFromQat(IEnumerable<DevExpress.XtraBars.BarItem> itemsToDelete)
+        {
+            if (itemsToDelete != null)
+            {
+                var ribbonItems = itemsToDelete.Select(i => i.Tag).OfType<IRibbonItem>().ToArray();
+                ribbonItems.ForEachExec(i => RemoveItemFromQat(i));
+            }
+        }
+        /// <summary>
+        /// Volá se v procesu <see cref="DxRibbonPage.ClearContent(bool, bool)"/>, před tím než jsou odebrány prvky.
+        /// QAT by si měl odpovídající prvky deaktivovat.
+        /// </summary>
+        /// <param name="iRibbonItem"></param>
+        private void RemoveItemFromQat(IRibbonItem iRibbonItem)
+        {
+            if (iRibbonItem == null) return;
+            RemoveLinkFromQat(iRibbonItem.ItemId);
+
+            // Rekurzivně jeho subpoložky (to může být i opakovaně):
+            var items = iRibbonItem.SubRibbonItems;
+            if (items != null)
+                items.ForEachExec(i => RemoveItemFromQat(i));
+        }
+        /// <summary>
+        /// Volá se v procesu <see cref="DxRibbonPage.ClearContent(bool, bool)"/>, před tím než jsou odebrány prvky s danými jmény.
+        /// QAT by si měl odpovídající prvky deaktivovat, pokud je eviduje.
+        /// </summary>
+        /// <param name="keysToDelete"></param>
+        private void RemoveLinksFromQat(IEnumerable<string> keysToDelete)
+        {
+            if (keysToDelete != null)
+                keysToDelete.ForEachExec(key => RemoveLinkFromQat(key));
+        }
+        /// <summary>
+        /// Volá se v procesu <see cref="DxRibbonPage.ClearContent(bool, bool)"/>, před tím než jsou odebrány prvky s danými jmény.
+        /// QAT by si měl odpovídající prvky deaktivovat, pokud je eviduje.
+        /// </summary>
+        /// <param name="itemId"></param>
+        private void RemoveLinkFromQat(string itemId)
+        {
+            string key = GetValidQATKey(itemId);
+            if (key != null && this._QatItemDict.TryGetValue(key, out var qatItem))
+                qatItem.RemoveBarItemLink();
+        }
+        #endregion
+        #region Uživatelská interaktivita
+        /// <summary>
+        /// Inicializace dat a eventhandlerů pro QAT
+        /// </summary>
+        private void InitQuickAccessToolbar()
+        {
+            this.SourceToolbar.LinksChanged += SourceToolbar_LinksChanged;
+        }
+        /// <summary>
+        /// Událost, kdy dojde k přidání či odebrání prvku QAT, a to jak uživatelem tak z programu
+        /// </summary>
+        /// <param name="e"></param>
+        private void SourceToolbar_LinksChanged(System.ComponentModel.CollectionChangeEventArgs e)
+        {
+            // Sem to chodí při změnách jak od uživatele, tak z kódu.
+            // Tady bych musel řešit odlišení Code/User, ale v metodách OnAddToToolbar() a OnRemoveFromToolbar() to chodí jen od User !!!
+        }
+        /// <summary>
+        /// Uživatel rukama přidal něco do QAT. Sem to nechodí při změnách z kódu!
+        /// </summary>
+        /// <param name="link"></param>
+        protected override void OnAddToToolbar(DevExpress.XtraBars.BarItemLink link)
+        {
+            base.OnAddToToolbar(link);
+            this.UserAddItemToQat(link);
+        }
+        private void UserAddItemToQat(DevExpress.XtraBars.BarItemLink link)
+        {
+            if (link.Item?.Tag is IRibbonItem item)
+            {
+                string key = GetValidQATKey(item.ItemId);
+                if (!_QatItemDict.ContainsKey(key))
+                {
+                    QatItem qatItem = new QatItem(this, key, link.Item, link);
+                    _QatItemDict.Add(key, qatItem);
+                    _QatItems.Add(qatItem);
+                    _RunQATItemKeysChanged();
+                }
+            }
+        }
+        /// <summary>
+        /// Uživatel rukama odebral něco z QAT. Sem to nechodí při změnách z kódu!
+        /// </summary>
+        /// <param name="link"></param>
+        protected override void OnRemoveFromToolbar(DevExpress.XtraBars.BarItemLink link)
+        {
+            base.OnRemoveFromToolbar(link);
+            this.UserRemoveItemFromQat(link);
+        }
+        private void UserRemoveItemFromQat(DevExpress.XtraBars.BarItemLink link)
+        { }
+        private void _RunQATItemKeysChanged()
+        {
+            OnQATItemKeysChanged();
+            QATItemKeysChanged?.Invoke(this, EventArgs.Empty);
+        }
+        protected virtual void OnQATItemKeysChanged() { }
+        public event EventHandler QATItemKeysChanged;
+        #endregion
+        #region class QatItem : evidence pro jedno tlačítko QAT
         /// <summary>
         /// Třída pro průběžné shrnování informací o pvcích, které mají být umístěny do QAT (Quick Access Toolbar)
         /// </summary>
@@ -1754,6 +1910,19 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 this._Owner = owner;
                 this._Key = key;
+            }
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="owner"></param>
+            /// <param name="key"></param>
+            /// <param name="barItem"></param>
+            /// <param name="barItemLink"></param>
+            public QatItem(DxRibbonControl owner, string key, DevExpress.XtraBars.BarItem barItem, DevExpress.XtraBars.BarItemLink barItemLink)
+                : this(owner, key)
+            {
+                _BarItem = barItem;
+                BarItemLink = barItemLink;
             }
             /// <summary>Vlastník = Ribbon</summary>
             private DxRibbonControl _Owner;
@@ -1806,13 +1975,40 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// </summary>
             public DevExpress.XtraBars.BarItemLink BarItemLink { get; private set; }
             /// <summary>
+            /// Obsahuje true, pokud this prvek potřebuje provést změnu v QAT ToolBaru.
+            /// To je tehdy, když má fyzický <see cref="BarItem"/> nebo <see cref="BarGroup"/>, ale nemá link <see cref="BarItemLink"/> (pak je třeba Link přidat).
+            /// Anebo opačně (je třeba Link odebrat).
+            /// </summary>
+            public bool NeedChangeInQat
+            {
+                get
+                {
+                    bool hasItem = (this.BarItem != null || this.BarGroup != null);
+                    bool hasLink = (this.BarItemLink != null);
+                    return (hasItem != hasLink);
+                }
+            }
+            /// <summary>
             /// Obsahuje true, když tento prvek máme fyzicky přidat do QAT. Tj. máme odpovídající BarItem, ale nemáme BarItemLink.
             /// </summary>
             public bool NeedAddToQat 
             {
                 get
                 {
-                    return ((BarItem != null || BarGroup != null) && BarItemLink == null);
+                    bool hasItem = (this.BarItem != null || this.BarGroup != null);
+                    bool hasLink = (this.BarItemLink != null);
+                    return (hasItem && !hasLink);
+                }
+            }
+            /// <summary>
+            /// Obsahuje true, když tento prvek máme odebrat z QAT. Tj. máme odpovídající BarItemLink. Bez ohledu na BarItem nebo BarGroup.
+            /// </summary>
+            public bool NeedRemoveFromQat
+            {
+                get
+                {
+                    bool hasLink = (this.BarItemLink != null);
+                    return (hasLink);
                 }
             }
             /// <summary>
@@ -1834,7 +2030,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 {
                     if (_Owner != null)
                         _Owner.Toolbar.ItemLinks.Remove(barLink);
-                    barLink.Dispose();
+                    // není vždy OK: barLink.Dispose();
                     this.BarItemLink = null;
                 }
             }
@@ -1852,6 +2048,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 this.BarItem = null;
             }
         }
+        #endregion
         #endregion
         #region Kliknutí na prvek Ribbonu
         private void InitEvents()
@@ -2670,6 +2867,11 @@ namespace Noris.Clients.Win.Components.AsolDX
             DxComponent.ApplicationRestart();
         }
         #endregion
+        #region IDxRibbonInternal implementace
+        void IDxRibbonInternal.PrepareRealLazyItems(DxRibbonLazyLoadInfo lazyGroup, bool isCalledFromReFill) { PrepareRealLazyItems(lazyGroup, isCalledFromReFill); }
+        void IDxRibbonInternal.RemoveGroupsFromQat(List<DevExpress.XtraBars.Ribbon.RibbonPageGroup> groupsToDelete) { RemoveGroupsFromQat(groupsToDelete); }
+        void IDxRibbonInternal.RemoveItemsFromQat(List<DevExpress.XtraBars.BarItem> itemsToDelete) { RemoveItemsFromQat(itemsToDelete); }
+        #endregion
         #region INFORMACE A POSTŘEHY, FUNGOVÁNÍ: CREATE, MERGE, UNMERGE, časy
         /*
            1. LAZY CREATE CONTENT :
@@ -2733,6 +2935,32 @@ namespace Noris.Clients.Win.Components.AsolDX
         */
         #endregion
     }
+    /// <summary>
+    /// Interface pro interní přístup do ribbonu
+    /// </summary>
+    public interface IDxRibbonInternal
+    {
+        /// <summary>
+        /// Metoda je volána při aktivaci stránky this Ribbonu v situaci, kdy tato stránka má aktivní nějaký Lazy režim pro načtení svého obsahu.
+        /// Může to být prostě opožděné vytváření fyzických controlů z dat v paměti, nebo reálné OnDemand donačítání obsahu z aplikačního serveru.
+        /// Přidá prvky do this Ribbonu z dodané LazyGroup do this Ribbonu. Zde se prvky přidávají vždy jako reálné, už ne Lazy.
+        /// </summary>
+        /// <param name="lazyGroup"></param>
+        /// <param name="isCalledFromReFill">Odkud je akce volaná: false při uživatelské aktivaci stránky, true při jejím naplnění daty z aplikačního kódu</param>
+        void PrepareRealLazyItems(DxRibbonLazyLoadInfo lazyGroup, bool isCalledFromReFill);
+        /// <summary>
+        /// Volá se v procesu <see cref="DxRibbonPage.ClearContent(bool, bool)"/>, před tím než jsou odebrány grupy.
+        /// QAT by si měl odpovídající prvky deaktivovat.
+        /// </summary>
+        /// <param name="groupsToDelete"></param>
+        void RemoveGroupsFromQat(List<DevExpress.XtraBars.Ribbon.RibbonPageGroup> groupsToDelete);
+        /// <summary>
+        /// Volá se v procesu <see cref="DxRibbonPage.ClearContent(bool, bool)"/>, před tím než jsou odebrány prvky.
+        /// QAT by si měl odpovídající prvky deaktivovat.
+        /// </summary>
+        /// <param name="itemsToDelete"></param>
+        void RemoveItemsFromQat(List<DevExpress.XtraBars.BarItem> itemsToDelete);
+    }
     #region DxRibbonPage : stránka Ribbonu s podporou LazyContentItems, class DxRibbonPageLazyGroupInfo
     /// <summary>
     /// Kategorie
@@ -2776,6 +3004,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         protected DxRibbonControl OwnerDxRibbon { get; private set; }
         /// <summary>
+        /// Vlastník Ribbon přetypovaný na <see cref="IDxRibbonInternal"/>
+        /// </summary>
+        protected IDxRibbonInternal IOwnerDxRibbon { get { return OwnerDxRibbon; } }
+        /// <summary>
         /// Inicializace
         /// </summary>
         /// <param name="ribbon"></param>
@@ -2796,6 +3028,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// true pokud this stránka má aktivní LazyLoad obsah v režimu <see cref="RibbonContentMode.OnDemandLoadEveryTime"/>
         /// </summary>
         internal bool IsLazyLoadEveryTime { get { return (this.LazyLoadInfo != null && this.LazyLoadInfo.PageContentMode == RibbonContentMode.OnDemandLoadEveryTime); } }
+        /// <summary>
+        /// Obsahuje true v případě, kdy stránka obsahuje pouze QAT (Quick Access Toolbar) prvky. Při reálném naplnění daty se musí taková stránka smazat, budou se do ní plnit všechny prvky ve správném pořadí.
+        /// </summary>
+        internal bool HasOnlyQatContent { get; set; }
         /// <summary>
         /// Zajistí přípravu prvku LazyInfo pro režim definovaný v daném prvku. Prvek si uschová.
         /// Založí grupu pro LazyLoad - pokud dosud neexistuje a je potřebná (LazyLoad je realizován pomocí grupy, která obsahuje prvek s příznakem LazyLoad).
@@ -2861,11 +3097,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Může to být prostě opožděné vytváření fyzických controlů z dat v paměti, nebo reálné OnDemand donačítání obsahu z aplikačního serveru.
         /// Přidá prvky do this Ribbonu z dodané LazyGroup do this Ribbonu. Zde se prvky přidávají vždy jako reálné, už ne Lazy.
         /// </summary>
-        /// <param name="isReFill">false při uživatelské aktivaci stránky, true při jejím naplnění daty z aplikačního kódu</param>
-        public void PrepareRealLazyItems(bool isReFill)
+        /// <param name="isCalledFromReFill">Odkud je akce volaná: false při uživatelské aktivaci stránky, true při jejím naplnění daty z aplikačního kódu</param>
+        public void PrepareRealLazyItems(bool isCalledFromReFill)
         {
             if (this.HasActiveLazyContent)
-                this.OwnerDxRibbon.PrepareRealLazyItems(this.LazyLoadInfo, isReFill);
+                this.IOwnerDxRibbon.PrepareRealLazyItems(this.LazyLoadInfo, isCalledFromReFill);
         }
         /// <summary>
         /// Definice dat pro LazyLoad content pro tuto Page. Obsahuje deklarace prvků i referenci na grupu, která LazyLoad zajistí.
@@ -2903,12 +3139,20 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (clearUserItems)
             {   // Standardní grupy a itemy:
                 string groupId = DxRibbonLazyLoadInfo.LazyLoadGroupId;
+                var ownerRibbonItems = this.OwnerDxRibbon.Items;
                 var groupsToDelete = this.Groups.OfType<DevExpress.XtraBars.Ribbon.RibbonPageGroup>().Where(g => g.Name != groupId).ToList();
                 var itemsToDelete = groupsToDelete.SelectMany(g => g.ItemLinks).Select(l => l.Item).ToList();
+
+                // Před fyzickým odebráním grup a prvků z RibbonPage je předám do QAT systému v Ribbonu, aby 
+                var iOwnerRibbon = this.OwnerDxRibbon as IDxRibbonInternal;
+                iOwnerRibbon.RemoveGroupsFromQat(groupsToDelete);
+                iOwnerRibbon.RemoveItemsFromQat(itemsToDelete);
+
                 var groups = this.Groups;
                 groupsToDelete.ForEach(g => groups.Remove(g));
-                var ownerRibbonItems = this.OwnerDxRibbon.Items;
                 itemsToDelete.ForEach(i => ownerRibbonItems.Remove(i));
+
+                HasOnlyQatContent = false;
             }
             if (clearLazyGroup)
             {   // Lazy group a její itemy:
@@ -3097,16 +3341,16 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="page"></param>
         /// <param name="lazyDxPages"></param>
-        /// <param name="isReFill">false při uživatelské aktivaci stránky, true při jejím naplnění daty z aplikačního kódu</param>
+        /// <param name="isCalledFromReFill">Odkud je akce volaná: false při uživatelské aktivaci stránky, true při jejím naplnění daty z aplikačního kódu</param>
         /// <returns></returns>
-        internal static bool TryGetLazyDxPages(DevExpress.XtraBars.Ribbon.RibbonPage page, bool isReFill, out List<DxRibbonPage> lazyDxPages)
+        internal static bool TryGetLazyDxPages(DevExpress.XtraBars.Ribbon.RibbonPage page, bool isCalledFromReFill, out List<DxRibbonPage> lazyDxPages)
         {
             lazyDxPages = null;
             if (page == null) return false;
 
             lazyDxPages = new List<DxRibbonPage>();
-            AddLazyDxPages(page.Groups, isReFill, lazyDxPages);
-            AddLazyDxPages(page.MergedGroups, isReFill, lazyDxPages);
+            AddLazyDxPages(page.Groups, isCalledFromReFill, lazyDxPages);
+            AddLazyDxPages(page.MergedGroups, isCalledFromReFill, lazyDxPages);
 
             return (lazyDxPages.Count > 0);
         }
@@ -3117,9 +3361,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Metoda průběžně odebírá zmíněné Linky na Buttony, a odebírá i prázdné grupy.
         /// </summary>
         /// <param name="pageGroups"></param>
-        /// <param name="isReFill"></param>
+        /// <param name="isCalledFromReFill">Odkud je akce volaná: false při uživatelské aktivaci stránky, true při jejím naplnění daty z aplikačního kódu</param>
         /// <param name="lazyDxPages"></param>
-        private static void AddLazyDxPages(DevExpress.XtraBars.Ribbon.RibbonPageGroupCollection pageGroups, bool isReFill, List<DxRibbonPage> lazyDxPages)
+        private static void AddLazyDxPages(DevExpress.XtraBars.Ribbon.RibbonPageGroupCollection pageGroups, bool isCalledFromReFill, List<DxRibbonPage> lazyDxPages)
         {
             string groupId = LazyLoadGroupId;
             var lazyGroups = pageGroups.Where(g => g.Name == groupId).ToArray();
@@ -3137,7 +3381,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                         {
                             lazyDxPages.Add(dxRibbonPage);
                             // Pokud nyní probíhá naplnění prvků OnDemand a tato stránka je v režimu LoadEveryTime, pak nebudeme odstraňovat link a grupu, která k tomu vede:
-                            if (isReFill && dxRibbonPage.IsLazyLoadEveryTime)
+                            if (isCalledFromReFill && dxRibbonPage.IsLazyLoadEveryTime)
                                 removeLink = false;
                         }
                     }

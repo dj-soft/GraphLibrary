@@ -409,6 +409,7 @@ namespace TestDevExpress.Forms
             var items = DxRibbonSample.CreatePages(pageCountMin, pageCountMax, groupCountMin, groupCountMax, out qatItems,
                 CategoryName, CategoryName, CategoryColor, 
                 pageIndex);
+            DxComponent.LogAddLine("Ribon: " + this._Ribbon.DebugName +"; QAT: " + qatItems);
             _Ribbon.QATItemKeys = qatItems;
             _Ribbon.AddPages(items, clearCurrentContent);
         }
@@ -559,11 +560,13 @@ namespace TestDevExpress.Forms
             Noris.Clients.Win.Components.DialogArgs dialogArgs = new Noris.Clients.Win.Components.DialogArgs();
             dialogArgs.Title = "Ribbon Item Click";
             dialogArgs.MessageTextContainsHtml = true;
-            dialogArgs.MessageText = $"Uživatel kliknul na prvek <b>{iRibbonItem.ItemType}</b>, s textem <b>{iRibbonItem.Text}</b>, z Ribbonu <b>{this.Ribbon.DebugName}</b>";
-            if (iRibbonItem.ParentGroup != null) dialogArgs.MessageText += $",\r\nskupina <b>{iRibbonItem.ParentGroup.GroupText}</b>";
-            if (iRibbonItem.ParentGroup?.ParentPage != null) dialogArgs.MessageText += $", stránka <b>{iRibbonItem.ParentGroup.ParentPage.PageText}</b>";
-            if (iRibbonItem.ParentGroup?.ParentPage?.Category != null) dialogArgs.MessageText += $", kategorie <b>{iRibbonItem.ParentGroup.ParentPage.Category.CategoryText}</b>";
-            dialogArgs.MessageText += ".";
+            
+            string messageText = $"Uživatel kliknul na prvek <b>{iRibbonItem.ItemType}</b>, s textem <b>{iRibbonItem.Text}</b>, z Ribbonu <b>{this.Ribbon.DebugName}</b>\r\n";
+            if (iRibbonItem.ParentGroup?.ParentPage?.Category != null) messageText += $"Kategorie: <b>{iRibbonItem.ParentGroup.ParentPage.Category.CategoryText}</b>;  ";
+            if (iRibbonItem.ParentGroup?.ParentPage != null) messageText += $"Stránka: <b>{iRibbonItem.ParentGroup.ParentPage.PageText}</b>;  ";
+            if (iRibbonItem.ParentGroup != null) messageText += $"Skupina <b>{iRibbonItem.ParentGroup.GroupText}</b>;  ";
+            dialogArgs.MessageText = messageText.Trim();
+
             dialogArgs.PrepareButtons(System.Windows.Forms.MessageBoxButtons.OK);
             dialogArgs.Owner = this.FindForm();
             Noris.Clients.Win.Components.DialogForm.ShowDialog(dialogArgs);
@@ -680,17 +683,18 @@ namespace TestDevExpress.Forms
                 DataRibbonGroup group = _GetGroup(page.PageId);
                 page.Groups.Add(group);
 
-                _AddItems(group, 1, 6, ref qatItems);
+                _AddItems(page, group, 1, 6, ref qatItems);
             }
         }
         /// <summary>
         /// Do grupy přidá prvky
         /// </summary>
+        /// <param name="page"></param>
         /// <param name="group"></param>
         /// <param name="itemCountMin"></param>
         /// <param name="itemCountMax"></param>
         /// <param name="qatItems"></param>
-        private static void _AddItems(DataRibbonGroup group, int itemCountMin, int itemCountMax, ref string qatItems)
+        private static void _AddItems(DataRibbonPage page, DataRibbonGroup group, int itemCountMin, int itemCountMax, ref string qatItems)
         {
             bool containsRadioGroup = false;
             int remainingRadioCount = 0;
@@ -699,6 +703,7 @@ namespace TestDevExpress.Forms
             for (int i = 0; i < ic; i++)
             {
                 DataRibbonItem item = _GetItem(group.GroupId, ref containsRadioGroup, ref remainingRadioCount, ref forceFirstInGroup, ref qatItems);
+                item.ToolTipTitle = $"{item.Text} [{page.PageText} : {group.GroupText}]";
                 group.Items.Add(item);
                 if (remainingRadioCount > 0 && i == (ic - 1))   // Dokud zrovna generuji RadioGrupu (mám remainingRadioCount kladné) a blížím se ke konci počtu našich prvků,
                     ic++;                                       //   pak přidám ještě další prvek, abych RadioGrupu dotáhl do konce.
@@ -797,7 +802,7 @@ namespace TestDevExpress.Forms
             string toolTip = Random.GetSentence(Rand.Next(5, 16));
             string toolTipTitle = Random.GetSentence(Rand.Next(1, 3));
             bool isFirst = (remainingRadioCount == 0 ? (forceFirstInGroup || (Rand.Next(10) < 3)) : false);          // Pokud nyní připravuji Radio, pak nedávám IsFirst !
-            int? toolbarOrder = ((Rand.Next(100) < 3) ? (int?)Rand.Next(1, 101) : null);
+            bool addToQat = (Rand.Next(100) < 12);
 
             DataRibbonItem item = new DataRibbonItem()
             {
@@ -815,7 +820,7 @@ namespace TestDevExpress.Forms
                 item.RibbonItemType = RibbonItemType.RadioItem;
                 item.RibbonStyle = RibbonItemStyles.SmallWithText;
                 isFirst = false;
-                toolbarOrder = null;                                      // RadioButtony nedávám do Toolbaru
+                addToQat = false;                                         // RadioButtony nedávám do Toolbaru
                 remainingRadioCount--;
                 if (remainingRadioCount == 0) forceFirstInGroup = true;   // Dokončili jsme počet RadioButtonů: příští prvek bude ForceFirst!
             }
@@ -830,7 +835,7 @@ namespace TestDevExpress.Forms
                 if (itemType == RibbonItemType.RadioItem)                 // Zde začíná RadioButton grupa
                 {
                     isFirst = true;                                       // První RadioItem si zahajuje svoji sub-grupu
-                    toolbarOrder = null;                                  // RadioButtony nedávám do Toolbaru
+                    addToQat = false;                                     // RadioButtony nedávám do Toolbaru
                     item.RibbonStyle = RibbonItemStyles.SmallWithText;    // RadioItem je vždy Small
                     remainingRadioCount = Rand.Next(3, 6);                // RadioItemů do jedné grupy dám 3 - 5 za sebou
                     containsRadioGroup = true;                            // RibbonGroup již obsahuje RadioGrupu, víc RadioSkupin tam dávat už nebudu
@@ -853,7 +858,7 @@ namespace TestDevExpress.Forms
 
             item.ToolTipTitle = item.ToolTipTitle + "  {" + item.ItemType.ToString() + "}";
             item.ItemIsFirstInGroup = isFirst;
-            if (toolbarOrder.HasValue)
+            if (addToQat)
                 qatItems += item.ItemId + DxRibbonControl.QATItemKeyDelimiter;
 
             return item;
