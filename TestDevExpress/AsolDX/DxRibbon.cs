@@ -1677,6 +1677,16 @@ namespace Noris.Clients.Win.Components.AsolDX
               - Tuto hodnotu si někam uloží do konfigurace
               - Při příštím otevření menu tuto hodnotu vloží do Ribbonu - viz bod 1
 
+         C. Interaktivita a Mergované Ribbony + QAT Toolbary (pro Slave + Master Ribbony)
+          1. Ribbon, který má vygenerované nějaké QAT prvky, může být Mergován nahoru = jeho QAT se promítnou do Toolbaru nadřazeného Ribbonu, a po UnMerge se zase vrátí do lokálního Toolbaru;
+          2. Prvky ze Slave Ribbonu lze do QAT přidat i odebrat ručně (uživatelem) i tehdy, když je Slave Ribbon mergován do nadřazeného Ribbonu:
+              - Metoda OnAddToToolbar() => UserAddItemToQat() proběhne v instanci nadřazeného (Master) Ribbonu;
+              - Stejně tak OnRemoveFromToolbar() => UserRemoveItemFromQat() proběhne v instanci nadřazeného (Master) Ribbonu;
+              - Přidaný prvek ze Slave Ribbonu se samozřejmě objeví v Toolbaru nadřazeného Ribbonu;
+              - Ke cti DevExpress je nutno uznat, že po UnMerge toho Ribbonu se nově přidaný Slave prvek z toolbaru Master Ribbonu odebere a objeví se v toolbaru Slave Ribbonu = očekávaný a správný výsledek;
+              - Zdejší metody pracují s evidencí QAT prvků na úrovni DxRibbonControl, a QAT prvky by tedy nejprve najít instanci toho Ribbonu, ve kterém jsou nativně definovány, a nikoli toho Ribbonu, kde se akce děje
+              - Tento přechod (z this instance do instance, která reálně definuje svoje vlastní QAT prvky) zajišťuje metoda TryGetIRibbonData()
+         
         */
         #region Základní evidence prvků QAT : string QATItemKeys, List a Dictionary, konverze
         /// <summary>
@@ -1889,7 +1899,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 qatItem.RemoveBarItemLink();
         }
         #endregion
-        #region Uživatelská interaktivita
+        #region Uživatelská interaktivita - pozor, je nutno řešit odlišnosti pro mergované prvky
         /// <summary>
         /// Inicializace dat a eventhandlerů pro QAT
         /// </summary>
@@ -1922,15 +1932,29 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="link"></param>
         private void UserAddItemToQat(DevExpress.XtraBars.BarItemLink link)
         {
-            if (TryGetIRibbonData(link, out var key, out var iRibbonItem, out var iRibbonGroup))
-            {   // Našli jsme data o dodaném prvku?
-                if (!_QatItemDict.ContainsKey(key))
-                {   // Neznáme => přidat:
-                    QatItem qatItem = new QatItem(this, key, iRibbonItem, iRibbonGroup, link.Item, link);
-                    _QatItemDict.Add(key, qatItem);
-                    _QatItems.Add(qatItem);
-                    _RunQATItemKeysChanged();
-                }
+            if (TryGetIRibbonData(link, out var key, out var iRibbonItem, out var iRibbonGroup, out var ownerRibbon))
+            {   // Našli jsme data o dodaném prvku? Předáme to k vyřešení do instance Owner Ribbonu!
+                //  - Totiž this může být nějaký Master Ribbon, do něhož je Mergován nějaký Slave Ribbon, a aktuální BarItem pochází z toho Slave Ribbonu.
+                //  - Pak i evidenci QAT a volání události QATItemKeysChanged musí proběhnout v té instanci Ribbonu, které se věc týká, a nikoli this, kde je věc jen hostována ve formě Merge.
+                ownerRibbon.UserAddItemToQat(link, key, iRibbonItem, iRibbonGroup);
+            }
+        }
+        /// <summary>
+        /// Uživatel něco přidal do QAT. 
+        /// Už víme, co to bylo, a je zajištěno, že zdejší instance (this) je majitelem daného prvku a je tedy odpovědná za evidenci QAT a vyvolání správného eventhandleru.
+        /// </summary>
+        /// <param name="link"></param>
+        /// <param name="key"></param>
+        /// <param name="iRibbonItem"></param>
+        /// <param name="iRibbonGroup"></param>
+        private void UserAddItemToQat(DevExpress.XtraBars.BarItemLink link, string key, IRibbonItem iRibbonItem, IRibbonGroup iRibbonGroup)
+        {
+            if (!_QatItemDict.ContainsKey(key))
+            {   // Neznáme => přidat:
+                QatItem qatItem = new QatItem(this, key, iRibbonItem, iRibbonGroup, link.Item, link);
+                _QatItemDict.Add(key, qatItem);
+                _QatItems.Add(qatItem);
+                _RunQATItemKeysChanged();
             }
         }
         /// <summary>
@@ -1948,7 +1972,23 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="link"></param>
         private void UserRemoveItemFromQat(DevExpress.XtraBars.BarItemLink link)
         {
-            if (TryGetIRibbonData(link, out var key, out var iRibbonItem, out var iRibbonGroup))
+            if (TryGetIRibbonData(link, out var key, out var iRibbonItem, out var iRibbonGroup, out var ownerRibbon))
+            {   // Našli jsme data o dodaném prvku? Předáme to k vyřešení do instance Owner Ribbonu!
+                //  - Totiž this může být nějaký Master Ribbon, do něhož je Mergován nějaký Slave Ribbon, a aktuální BarItem pochází z toho Slave Ribbonu.
+                //  - Pak i evidenci QAT a volání události QATItemKeysChanged musí proběhnout v té instanci Ribbonu, které se věc týká, a nikoli this, kde je věc jen hostována ve formě Merge.
+                ownerRibbon.UserRemoveItemFromQat(link, key, iRibbonItem, iRibbonGroup);
+            }
+        }
+        /// <summary>
+        /// Uživatel něco odebral z QAT. 
+        /// Už víme, co to bylo, a je zajištěno, že zdejší instance (this) je majitelem daného prvku a je tedy odpovědná za evidenci QAT a vyvolání správného eventhandleru.
+        /// </summary>
+        /// <param name="link"></param>
+        /// <param name="key"></param>
+        /// <param name="iRibbonItem"></param>
+        /// <param name="iRibbonGroup"></param>
+        private void UserRemoveItemFromQat(DevExpress.XtraBars.BarItemLink link, string key, IRibbonItem iRibbonItem, IRibbonGroup iRibbonGroup)
+        {
             {   // Našli jsme data o dodaném prvku?
                 if (_QatItemDict.TryGetValue(key, out var qatItem))
                 {   // Známe => odebrat:
@@ -1960,44 +2000,47 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
         }
         /// <summary>
-        /// Metoda v dodaném linku najde jeho Item, jeho Tag, detekuje jeho typ a určí jeho Key, uloží typové výsledky a vrátí true.
+        /// Metoda v dodaném linku najde jeho Item, jeho Tag, detekuje jeho typ a určí jeho Key, najde Ribbon, který prvek deklaroval, uloží typové výsledky a vrátí true.
         /// Pokud se nezdaří, vrátí false.
         /// </summary>
         /// <param name="link"></param>
         /// <param name="key"></param>
         /// <param name="iRibbonItem"></param>
         /// <param name="iRibbonGroup"></param>
+        /// <param name="ownerRibbon"></param>
         /// <returns></returns>
-        private bool TryGetIRibbonData(DevExpress.XtraBars.BarItemLink link, out string key, out IRibbonItem iRibbonItem, out IRibbonGroup iRibbonGroup)
+        private bool TryGetIRibbonData(DevExpress.XtraBars.BarItemLink link, out string key, out IRibbonItem iRibbonItem, out IRibbonGroup iRibbonGroup, out DxRibbonControl ownerRibbon)
         {
-            if (link != null && link.Item != null)
+            DevExpress.XtraBars.BarItem barItem = link?.Item;
+            if (barItem != null)
             {
-                object tag = link.Item.Tag;
+                object tag = barItem.Tag;
                 if (tag is IRibbonItem iItem)
                 {
                     key = GetValidQATKey(iItem.ItemId);
                     iRibbonItem = iItem;
                     iRibbonGroup = null;
-                    return true;
+                    return (_TryGetDxRibbon(barItem, out ownerRibbon));
                 }
                 if (tag is IRibbonGroup iGroup)
                 {
                     key = GetValidQATKey(iGroup.GroupId);
                     iRibbonItem = null;
                     iRibbonGroup = iGroup;
-                    return true;
+                    return (_TryGetDxRibbon(barItem, out ownerRibbon));
                 }
                 if ((tag is DxRibbonGroup ribbonGroup) && (ribbonGroup.Tag is IRibbonGroup iiGroup))
                 {
                     key = GetValidQATKey(iiGroup.GroupId);
                     iRibbonItem = null;
                     iRibbonGroup = iiGroup;
-                    return true;
+                    return (_TryGetDxRibbon(barItem, out ownerRibbon));
                 }
             }
             key = null;
             iRibbonItem = null;
             iRibbonGroup = null;
+            ownerRibbon = null;
             return false;
         }
         /// <summary>
@@ -2514,6 +2557,21 @@ namespace Noris.Clients.Win.Components.AsolDX
             // Najdu první DxRibbonControl, který grupu deklaroval (ono jich ale může být víc, pokud grupa je mergovaná):
             definingRibbon = _SearchRibbonInItems(items);
             return (definingRibbon != null);
+        }
+        /// <summary>
+        /// Metoda zkusí najít <see cref="DxRibbonControl"/>, který deklaroval daný prvek
+        /// </summary>
+        /// <param name="barItem"></param>
+        /// <param name="definingRibbon"></param>
+        private bool _TryGetDxRibbon(DevExpress.XtraBars.BarItem barItem, out DxRibbonControl definingRibbon)
+        {
+            if (barItem != null && (barItem.Manager is DevExpress.XtraBars.Ribbon.RibbonBarManager manager) && (manager.Ribbon is DxRibbonControl dxRibbonControl))
+            {
+                definingRibbon = dxRibbonControl;
+                return true;
+            }
+            definingRibbon = null;
+            return false;
         }
         /// <summary>
         /// V daných stránkách vyhledá prvky a jejich nativní Ribbon = ten, který je eviduje na svých vlastních stránkách.

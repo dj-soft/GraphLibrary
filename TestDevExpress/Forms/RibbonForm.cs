@@ -874,8 +874,14 @@ namespace TestDevExpress.Forms
 
             item.ToolTipTitle = item.ToolTipTitle + "  {" + item.ItemType.ToString() + "}";
             item.ItemIsFirstInGroup = isFirst;
+
+            // QAT (Quick Access ToolBar):
             if (addToQat)
+                // Občas (a jen pro některé prvky) zařadíme prvek do QAT:
                 qatItems += item.ItemId + DxRibbonControl.QATItemKeyDelimiter;
+            else if (Rand.Next(100) < 8)
+                // Občas do klíče QAT zařadíme nesmysl = ID prvku, který není součástí GUI. Tento prvek v evidenci Ribbonu musí vydržet přes všechny změny:
+                qatItems += Random.GetWord(true) + DxRibbonControl.QATItemKeyDelimiter;
 
             return item;
         }
