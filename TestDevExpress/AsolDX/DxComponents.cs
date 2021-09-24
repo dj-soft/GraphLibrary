@@ -80,6 +80,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Inicializace subsystému: pojmenuje CurrentThread, registruje a povoluje DevEpxress skiny, nastavuje animace a výchozí skin
         /// </summary>
         public static void Init() { if (!__IsInitialized) Instance._Init(); }
+        /// <summary>
+        /// Inicializace subsystému
+        /// </summary>
         private void _Init()
         {
             if (__IsInitialized) return;                   // mezivláknový konflikt při startu nehrozí, aplikace je spouštěna z jednoho vlákna. Tohle je ochrana proti opakované inicializaci.
@@ -98,7 +101,11 @@ namespace Noris.Clients.Win.Components.AsolDX
             System.Windows.Forms.Application.ApplicationExit += Application_ApplicationExit;
             System.Windows.Forms.Application.Idle += Application_Idle;
         }
-
+        /// <summary>
+        /// Je voláno při ukončení aplikace
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void Application_ApplicationExit(object sender, EventArgs e)
         {
             _Done();
@@ -107,6 +114,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Volá se při ukončení celé aplikace
         /// </summary>
         public static void Done() { Instance._Done(); }
+        /// <summary>
+        /// Při ukončení celé aplikace
+        /// </summary>
         private void _Done()
         {
             this._DisposeFontCache();
@@ -115,12 +125,25 @@ namespace Noris.Clients.Win.Components.AsolDX
             System.Windows.Forms.Application.Idle -= Application_Idle;
             System.Windows.Forms.Application.ApplicationExit -= Application_ApplicationExit;
         }
+        /// <summary>
+        /// Když GUI nemá do čeho píchnout
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void Application_Idle(object sender, EventArgs e)
         {
             if (!_ApplicationReadyTime.HasValue)
                 _ApplicationReadyTime = DateTime.Now;
 
             CallListeners<IListenerApplicationIdle>();
+        }
+        /// <summary>
+        /// Touto cestou si může nějaká komponenta vyžádat vyvolání určité své metody v GUI threadu v situaci, kdy GUI thread má volný čas.
+        /// Nejvhodnější je použití pro Lazy inicializaci té části komponenty, která nemusí být inicializována hned při tvorbě, ale až když bude volný čas.
+        /// </summary>
+        public static void RunOnceOnGuiIdle()
+        {
+
         }
         /// <summary>
         /// Doba trvání startu aplikace od spuštění procesu do prvního okamžiku, kdy je aplikace ready

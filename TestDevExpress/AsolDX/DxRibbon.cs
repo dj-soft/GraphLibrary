@@ -500,7 +500,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             //       protože zdroj dat jen nadeklaroval OnDemnd stránku bez obsahu, ale uživatel chce vidět její obsah;
             //     anebo
             //   b) OnDemand stránka již OBSHAUJE data => pak ale metoda CheckLazyContentCurrentPage() nemá vyvolat OnDemand donačítání (protože bychom se zacyklili),
-            //       to je situace, když zdroj dat právě už naplnil stárnku daty a posílá ji do Ribbonu.
+            //       to je situace, když zdroj dat právě už naplnil stránku daty a posílá ji do Ribbonu.
             //  Řešení:
             //   - příznak isReFill říká, že nyní přicházejí naplněná data (a nebude se tedy žádat o jejich další donačtení)
             //   - příznak isReFill určíme podle toho, že ve vstupních datech je alespoň jedna stránka typu OnDemand, která už v sobě obsahuje data
@@ -641,6 +641,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             if (iRibbonPages is null) return;
 
+            _ActivateLazyLoadOnIdle = false;
+
             var startTime = DxComponent.LogTimeCurrent;
             var list = DataRibbonPage.SortPages(iRibbonPages);
             int count = 0;
@@ -648,6 +650,8 @@ namespace Noris.Clients.Win.Components.AsolDX
                 _AddPage(iRibbonPage, isLazyContentFill, isOnDemandFill, ref count);
 
             AddQatListToRibbon();
+
+            _StartLazyLoadOnIdle();
 
             if (LogActive) DxComponent.LogAddLineTime($" === Ribbon {DebugName}: {logText} {list.Count} item[s]; Create: {count} BarItem[s]; {DxComponent.LogTokenTimeMilisec} === ", startTime);
         }
@@ -684,7 +688,9 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (page is null) return;
 
             if (this.SelectedPageId == page.Name) isLazyContentFill = false;   // Pokud v Ribbonu je aktuálně vybraná ta stránka, která se nyní generuje, pak se NEBUDE plnit v režimu Lazy
-            bool createContent = page.PreparePageForContent(iRibbonPage, isLazyContentFill, isOnDemandFill);
+            bool createContent = page.PreparePageForContent(iRibbonPage, isLazyContentFill, isOnDemandFill, out bool isStaticLazyContent);
+            if (isStaticLazyContent)
+                _ActivateLazyLoadOnIdle = true;                                // Pokud tuhle stránku nebudu plnit (=nyní jen generujeme prázdnou stránku, anebo jen obsahující QAT prvky), tak si poznamenám, že ji budu plnit ve stavu OnIdle
 
             // Problematika QAT je v detailu popsána v této metodě:
             bool isNeedQAT = !createContent && ContainsQAT(iRibbonPage);       // isNeedQAT je true tehdy, když bychom stránku nemuseli plnit (je LazyLoad), ale musíme do ní vložit pouze prvky typu QAT - a stránku přitom máme ponechat v režimu LazyLoad
@@ -858,6 +864,23 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// tato metoda zajistí zobrazení nově dodaných dat v odpovídajících stránkách Ribbonu.
         /// </summary>
         public event EventHandler<TEventArgs<IRibbonPage>> PageOnDemandLoad;
+        #endregion
+        #region LazyLoadOnIdle : dovolujeme provést opožděné plnění stránek (LazyLoad) v režimu Application.OnIdle
+        private void _StartLazyLoadOnIdle()
+        {
+            if (_ActivateLazyLoadOnIdle)
+            {
+                DxComponent.RunOnceOnGuiIdle(_RunLazyLoadOnIdle);
+                _ActivateLazyLoadOnIdle = false;
+            }
+        }
+
+        private void _RunLazyLoadOnIdle()
+        { }
+        /// <summary>
+        /// Máme nějakou stránku, která má svůj obsah nadefinován, ale nevygenerován?
+        /// </summary>
+        private bool _ActivateLazyLoadOnIdle;
         #endregion
         #region Fyzická tvorba prvků Ribbonu (Kategorie, Stránka, Grupa, Prvek, konkrétní prvky, ...) : Get/Create/Clear/Add/Remove
         /// <summary>
@@ -3171,7 +3194,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="pageData">Deklarace stránky</param>
         /// <param name="isLazyContentFill">Obsahuje true, když se prvky typu Group a BarItem NEMAJÍ fyzicky generovat (mají se jen registrovat do LazyGroup) / false pokud se mají reálně generovat (spotřebuje výrazný čas)</param>
         /// <param name="isOnDemandFill">Obsahuje true, pokud tyto položky jsou právě nyní donačtené OnDemand / false pokud pocházejí z první statické deklarace obsahu</param>
-        internal bool PreparePageForContent(IRibbonPage pageData, bool isLazyContentFill, bool isOnDemandFill)
+        /// <param name="isStaticLazyContent"></param>
+        internal bool PreparePageForContent(IRibbonPage pageData, bool isLazyContentFill, bool isOnDemandFill, out bool isStaticLazyContent)
         {
             // Určíme, zda budeme potřebovat LazyInfo objekt (a tedy LazyGroup grupu v GUI Ribbonu):
             // a) podle režimu práce s obsahem (pageData.PageContentMode je některý OnDemandLoad)
@@ -3180,6 +3204,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             bool createLazyInfo = (isLazyContentFill ||
                                    contentMode == RibbonContentMode.OnDemandLoadEveryTime ||
                                    (contentMode == RibbonContentMode.OnDemandLoadOnce && !isOnDemandFill));
+            isStaticLazyContent = (isLazyContentFill && contentMode == RibbonContentMode.Static);
 
             if (!createLazyInfo)
             {   // Pokud nebudeme používat LazyInfo, pak případný existující objekt LazyInfo zrušíme (včetně GUI grupy), a vrátím true = bude se generovat plné GUI:
