@@ -22,7 +22,7 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// <summary>
     /// Potomek Ribbonu
     /// </summary>
-    public class DxRibbonControl : DevExpress.XtraBars.Ribbon.RibbonControl, IDxRibbonInternal
+    public class DxRibbonControl : DevExpress.XtraBars.Ribbon.RibbonControl, IDxRibbonInternal, IListenerApplicationIdle
     {
         #region Konstruktor
         /// <summary>
@@ -33,6 +33,16 @@ namespace Noris.Clients.Win.Components.AsolDX
             InitProperties();
             InitEvents();
             InitQuickAccessToolbar();
+            DxComponent.RegisterListener(this);
+        }
+        /// <summary>
+        /// Dispose
+        /// </summary>
+        /// <param name="disposing"></param>
+        protected override void Dispose(bool disposing)
+        {
+            DxComponent.UnregisterListener(this);
+            base.Dispose(disposing);
         }
         /// <summary>
         /// Výchozí nastavení
@@ -698,9 +708,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (!createContent && !isNeedQAT) return;                          // víc už dělat nemusíme. Máme stránku a v ní LazyInfo, a prvky QAT nepotřebujeme (v dané stránce nejsou).
 
             if (!isNeedQAT && page.HasOnlyQatContent)
-            {
-                //  page.ClearContent(true, false);
-            }
+                page.ClearContent(true, false);
+            
             page.HasOnlyQatContent = isNeedQAT;                                // Do stránky si poznamenáme, zda stránka obsahuje jen QAT prvky!
 
             var list = DataRibbonGroup.SortGroups(iRibbonPage.Groups);
@@ -839,7 +848,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Pokud je true (běžný aktivní stav), pak se po aktivaci stránky provádí kontroly LazyLoad obsahu.
         /// Nastavením na false se tyto kontroly deaktivují. 
-        /// Používá se při hromadnám Unmerge a zpět Merge, kdy dochází ke změnám SelectedPage v každém kroku, a zcela zbytečně.
+        /// Používá se při hromadnám Unmerge a zpět Merge, kdy dochází ke změnám SelectedPage v každém kroku, 
+        /// ale kontrola LazyContent by v této situaci byla zcela zbytečná (protože proces Unmerge - Modify - Merge pravděpodobně přinese nová data,
+        /// a navíc proces Merge zase aktivuje původní stránku Ribbonu, takže není nutné materializovat stránku jinou).
         /// </summary>
         protected bool CheckLazyContentEnabled { get; set; }
         /// <summary>
@@ -866,21 +877,70 @@ namespace Noris.Clients.Win.Components.AsolDX
         public event EventHandler<TEventArgs<IRibbonPage>> PageOnDemandLoad;
         #endregion
         #region LazyLoadOnIdle : dovolujeme provést opožděné plnění stránek (LazyLoad) v režimu Application.OnIdle
+        /// <summary>
+        /// Volá se na konci přidávání stránek. Pokud je <see cref="_ActivateLazyLoadOnIdle"/> == true, pak nastaví <see cref="_ActiveLazyLoadOnIdle"/> = true.
+        /// Zajistí se tak, že při nejbližší situaci ApplicationIdle (volá se <see cref="IListenerApplicationIdle.ApplicationIdle()"/>)
+        /// si this Ribbon vygeneruje fyzický obsah oněch LazyLoad stránek.
+        /// </summary>
         private void _StartLazyLoadOnIdle()
         {
             if (_ActivateLazyLoadOnIdle)
-            {
-                DxComponent.RunOnceOnGuiIdle(_RunLazyLoadOnIdle);
-                _ActivateLazyLoadOnIdle = false;
-            }
+                _ActiveLazyLoadOnIdle = true; ;
         }
-
-        private void _RunLazyLoadOnIdle()
-        { }
         /// <summary>
-        /// Máme nějakou stránku, která má svůj obsah nadefinován, ale nevygenerován?
+        /// Aplikace má volný čas, Ribbon by si mohl vygenerovat LazyLoad Static pages, pokud takové má.
+        /// </summary>
+        private void _ApplicationIdle()
+        {
+            if (_ActiveLazyLoadOnIdle)
+                _PrepareLazyLoadStaticPages();
+            _ActivateLazyLoadOnIdle = false;
+            _ActiveLazyLoadOnIdle = false;
+        }
+        /// <summary>
+        /// Tato metoda je volána v situaci, kdy GUI thread má nějaký volný čas (ApplicationIdle) 
+        /// a this Ribbon má nastavený příznak <see cref="_ActiveLazyLoadOnIdle"/> == true;
+        /// tedy očekáváme, že existuje nějaká vlastní stránka Ribbonu, která má Static data v režimu LazyLoad, 
+        /// a bylo by vhodné z nich vytvořit fyzické controly.
+        /// To je úkolem této metody.
+        /// </summary>
+        private void _PrepareLazyLoadStaticPages()
+        {
+            var lazyPages = this.GetPages(PagePosition.AllOwn).OfType<DxRibbonPage>().Where(p => p.HasActiveStaticLazyContent).ToList();
+            if (lazyPages.Count == 0) return;
+
+            var startTime = DxComponent.LogTimeCurrent;
+         
+            int pageCount = lazyPages.Count;
+            int itemCount = 0;
+            this.ModifyCurrentDxContent(() =>
+            {   // Provede Unmerge this Ribbonu, pak provede následující akci, a poté zase zpětně Merge do původního stavu, se zachováním SelectedPage:
+                int icnt = 0;
+                foreach (var lazyPage in lazyPages)
+                    _PrepareLazyLoadStaticPage(lazyPage, ref icnt);
+                itemCount = icnt;
+            });
+
+            if (LogActive) DxComponent.LogAddLineTime($" === Ribbon {DebugName}: CreateLazyStaticPages; Create: {pageCount} Pages; {itemCount} BarItem[s]; {DxComponent.LogTokenTimeMilisec} === ", startTime);
+        }
+        private void _PrepareLazyLoadStaticPage(DxRibbonPage lazyPage, ref int itemCount)
+        {
+            IRibbonPage iRibbonPage = lazyPage.PageData;
+            _AddPage(iRibbonPage, false, false, ref itemCount);
+        }
+        /// <summary>
+        /// Nastavuje se na true v procesu tvorby takových LazyLoad stránek, které mají svůj obsah staticky deklarován, ale dosud nejsou fyzicky vytvořeny controly v Ribbonu.
+        /// Na konci tvorby Ribbonu v metodě <see cref="_StartLazyLoadOnIdle"/> se v případě <see cref="_ActivateLazyLoadOnIdle"/> 
+        /// nastaví jiná proměnná <see cref="_ActiveLazyLoadOnIdle"/>, a ta hodnotou true zajistí, že v nejbližším volání 
+        /// <see cref="IListenerApplicationIdle.ApplicationIdle()"/> provedene reálné generování controlů.
         /// </summary>
         private bool _ActivateLazyLoadOnIdle;
+        /// <summary>
+        /// Hodnota true říká, že this Ribon má nějaké Pages ve stavu LazyLoad se statickým obsahem.
+        /// Pak v době, kdy systém má volný čas (když je volána metoda <see cref="IListenerApplicationIdle.ApplicationIdle()"/>) 
+        /// si Ribbon fyzicky vygeneruje reálný obsah daných Pages.
+        /// </summary>
+        private bool _ActiveLazyLoadOnIdle;
         #endregion
         #region Fyzická tvorba prvků Ribbonu (Kategorie, Stránka, Grupa, Prvek, konkrétní prvky, ...) : Get/Create/Clear/Add/Remove
         /// <summary>
@@ -3019,10 +3079,11 @@ namespace Noris.Clients.Win.Components.AsolDX
             DxComponent.ApplicationRestart();
         }
         #endregion
-        #region IDxRibbonInternal implementace
+        #region IDxRibbonInternal + IListenerApplicationIdle implementace
         void IDxRibbonInternal.PrepareRealLazyItems(DxRibbonLazyLoadInfo lazyGroup, bool isCalledFromReFill) { PrepareRealLazyItems(lazyGroup, isCalledFromReFill); }
         void IDxRibbonInternal.RemoveGroupsFromQat(List<DevExpress.XtraBars.Ribbon.RibbonPageGroup> groupsToDelete) { RemoveGroupsFromQat(groupsToDelete); }
         void IDxRibbonInternal.RemoveItemsFromQat(List<DevExpress.XtraBars.BarItem> itemsToDelete) { RemoveItemsFromQat(itemsToDelete); }
+        void IListenerApplicationIdle.ApplicationIdle() { _ApplicationIdle(); }
         #endregion
         #region INFORMACE A POSTŘEHY, FUNGOVÁNÍ: CREATE, MERGE, UNMERGE, časy
         /*
@@ -3178,6 +3239,14 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// true pokud this stránka má nějaký aktivní LazyLoad obsah
         /// </summary>
         internal bool HasActiveLazyContent { get { return (this.LazyLoadInfo != null && this.LazyLoadInfo.HasActiveLazyContent); } }
+        /// <summary>
+        /// true pokud this stránka má LazyLoad obsah typu Static
+        /// </summary>
+        internal bool HasActiveStaticLazyContent { get { return (this.LazyLoadInfo != null && this.LazyLoadInfo.HasActiveStaticLazyContent); } }
+        /// <summary>
+        /// Definiční data této stránky Ribbonu z LazyLoad
+        /// </summary>
+        internal IRibbonPage LazyStaticPageData { get { return this.LazyLoadInfo.PageData; } }
         /// <summary>
         /// true pokud this stránka má aktivní LazyLoad obsah v režimu <see cref="RibbonContentMode.OnDemandLoadEveryTime"/>
         /// </summary>
@@ -3569,6 +3638,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// true pokud this prvek má nějaký aktivní LazyLoad obsah
         /// </summary>
         public bool HasActiveLazyContent { get { return (this.IsActive && this.HasData); } }
+        /// <summary>
+        /// true pokud this stránka má LazyLoad obsah typu Static = má připravená data, a stačí je jen materializovat do fyzických controlů
+        /// </summary>
+        internal bool HasActiveStaticLazyContent { get { return (this.IsActive && this.HasData && this.PageContentMode == RibbonContentMode.Static && this.HasItems); } }
         /// <summary>
         /// Obsahuje true, pokud this instance obsahuje nějaká data je zpracování (má referenci na <see cref="OwnerRibbon"/> a <see cref="OwnerPage"/>)
         /// a buď je <see cref="IsOnDemand"/> anebo má data pro stránku podle <see cref="HasItems"/>.
