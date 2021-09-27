@@ -41,6 +41,15 @@ namespace Noris.Clients.Win.Components.AsolDX
             this._UseSvgIcons = true;
         }
         /// <summary>
+        /// Dispose
+        /// </summary>
+        /// <param name="disposing"></param>
+        protected override void Dispose(bool disposing)
+        {
+            DisconnectParentFormEvents();
+            base.Dispose(disposing);
+        }
+        /// <summary>
         /// Metoda najde a vrátí instanci <see cref="DxLayoutPanel"/>, do které patří daný control
         /// </summary>
         /// <param name="control"></param>
@@ -177,6 +186,138 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Změna pozice splitteru
         /// </summary>
         public event EventHandler XmlLayoutChanged;
+        #endregion
+        #region ParentForm - jeho layout, sledování, vyvolání události po změně, ukládání a restorování z/do XML / FormLayout
+        /// <summary>
+        /// Po změně parenta
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void OnParentChanged(EventArgs e)
+        {
+            base.OnParentChanged(e);
+            PrepareParentFormEvents();
+        }
+        /// <summary>
+        /// Odpojí se od dosavadního ParentFormu, najde aktuální a napojí se na něj
+        /// </summary>
+        protected void PrepareParentFormEvents()
+        {
+            DisconnectParentFormEvents();
+
+            if (this.TryFindForParent(p => p is Form, out var control))
+            {
+                _ParentForm = control as Form;
+                ConnectParentFormEvents();
+            }
+        }
+        /// <summary>
+        /// Napojí zdejší eventhandlery na události o změně pozice a rozměru do <see cref="_ParentForm"/>
+        /// </summary>
+        protected void ConnectParentFormEvents()
+        {
+            var parentForm = _ParentForm;
+            if (parentForm != null)
+            {
+                parentForm.LocationChanged += _ParentForm_BoundsChanged;
+                parentForm.SizeChanged += _ParentForm_BoundsChanged;
+            }
+            _ParentForm_ReadValues();
+        }
+        /// <summary>
+        /// Odpojí zdejší eventhandlery od události o změně pozice a rozměru do <see cref="_ParentForm"/>
+        /// </summary>
+        protected void DisconnectParentFormEvents()
+        {
+            var parentForm = _ParentForm;
+            if (parentForm != null)
+            {
+                parentForm.LocationChanged -= _ParentForm_BoundsChanged;
+                parentForm.SizeChanged -= _ParentForm_BoundsChanged;
+            }
+            _ParentForm = null;
+            _ParentForm_ResetValues();
+        }
+        /// <summary>
+        /// Po změně pozice a rozměru do <see cref="_ParentForm"/>
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _ParentForm_BoundsChanged(object sender, EventArgs e)
+        {
+            _ParentForm_ReadValues();
+            if (!_AllEventsDisable)
+                OnXmlLayoutChanged();
+        }
+        /// <summary>
+        /// Metoda vygeneruje new instanci <see cref="FormLayout"/> a naplní ji daty o aktuálním formuláři, pokud je znám
+        /// </summary>
+        /// <returns></returns>
+        private FormLayout CreateFormLayout()
+        {
+            FormLayout formLayout = new FormLayout()
+            {
+                FormState = _ParentFormState,
+                FormNormalBounds = _ParentFormNormalBounds,
+                IsTabbed = _ParentFormIsTabbed,
+                Zoom = DxComponent.Zoom
+            };
+            return formLayout;
+        }
+        /// <summary>
+        /// Z dodané instance <see cref="FormLayout"/> aplikuje patřičné prvky do aktuálního formuláře
+        /// </summary>
+        /// <param name="formLayout"></param>
+        private void ApplyLayoutForm(FormLayout formLayout)
+        {
+            
+        }
+        /// <summary>
+        /// Aktuálně evidovaný Parent Form
+        /// </summary>
+        private Form _ParentForm;
+        /// <summary>
+        /// Načte hodnoty z <see cref="_ParentForm"/> do zdejších proměnných.
+        /// Pokud nemáme parent form, pak resetuje hodnoty na null.
+        /// </summary>
+        private void _ParentForm_ReadValues()
+        {
+            var parentForm = _ParentForm;
+            if (parentForm != null)
+            {
+                var windowState = parentForm.WindowState;
+                var isTabbed = parentForm.IsMdiChild;
+                if (!isTabbed && windowState == FormWindowState.Normal || windowState == FormWindowState.Maximized)
+                    _ParentFormState = windowState;
+                if (!isTabbed && windowState == FormWindowState.Normal)
+                    _ParentFormNormalBounds = parentForm.Bounds;
+                _ParentFormIsTabbed = parentForm.IsMdiChild;
+            }
+            else
+            {
+                _ParentForm_ResetValues();
+            }
+        }
+        private void _ParentForm_ResetValues()
+        {
+            _ParentFormState = null;
+            _ParentFormNormalBounds = null;
+            _ParentFormIsTabbed= null;
+        }
+        /// <summary>
+        /// Stav okna hostitelského formuláře
+        /// </summary>
+        public FormWindowState? ParentFormState { get { return _ParentFormState; } }
+        /// <summary>
+        /// Souřadnice hostitelského formuláře, když byl ve stavu Normal (ne Maximized a ne Tabbed)
+        /// </summary>
+        public Rectangle? ParentFormNormalBounds { get { return _ParentFormNormalBounds; } }
+        /// <summary>
+        /// Hostitelský formulář je Tabován?
+        /// </summary>
+        public bool? ParentFormIsTabbed { get { return _ParentFormIsTabbed; } }
+        private FormWindowState? _ParentFormState;
+        private Rectangle? _ParentFormNormalBounds;
+        private bool? _ParentFormIsTabbed;
         #endregion
         #region Přidání UserControlů, refresh titulku, odebrání a evidence UserControlů
         /// <summary>
@@ -1283,8 +1424,14 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (String.IsNullOrEmpty(xmlLayout)) return false;
             try
             {
-                Area area = Persist.Deserialize(xmlLayout) as Area;
-                if (area != null) return true;
+                // Vstupní string může mít historicky dvě varianty:
+                object xmlData = Persist.Deserialize(xmlLayout);
+
+                //  1. Pouze třída Area = bez popisu formuláře (platno pro layout uložený od 01/2021 do 09/2021);
+                if (xmlData is Area area && area != null) return true;
+
+                //  2. Třída FormLayout = včetně formuláře     (platno pro layout uložený od 09/2021);
+                if (xmlData is FormLayout formLayout && formLayout != null) return true;
             }
             catch { }
             return false;
@@ -1315,7 +1462,14 @@ namespace Noris.Clients.Win.Components.AsolDX
             var items = new List<DxLayoutItemInfo>();
             var hosts = new Dictionary<string, HostAreaInfo>();
             GetXmlLayoutFillArea(area, this, "C", items, hosts);
-            string xmlLayout = Persist.Serialize(area);
+            
+            // Původně pouze vnitřek: string xmlLayout = Persist.Serialize(area);
+            
+            // Nyní včetně formuláře:
+            FormLayout formLayout = CreateFormLayout();
+            formLayout.RootArea = area;
+            string xmlLayout = Persist.Serialize(formLayout);
+
             var array = items.ToArray();
             return (xmlLayout, array, hosts, area);
         }
@@ -1520,10 +1674,34 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (String.IsNullOrEmpty(xmlLayout))
                 throw new ArgumentNullException($"Set to {_XmlLayoutName} error: value is empty.");
 
-            Area area = Persist.Deserialize(xmlLayout) as Area;
-            if (area == null)
-                throw new ArgumentNullException($"Set to {_XmlLayoutName} error: XML string is not valid.");
+            // Vstupní string může mít historicky dvě varianty:
+            object xmlData = Persist.Deserialize(xmlLayout);
 
+            if (xmlData is Area area)
+            {   //  1. Pouze třída Area = bez popisu formuláře (platno pro layout uložený od 01/2021 do 09/2021);
+                _SetXmlLayoutArea(area, areaIdMapping, lostControlMode, force);
+            }
+            else if (xmlData is FormLayout formLayout)
+            {   //  2. Třída FormLayout = včetně formuláře     (platno pro layout uložený od 09/2021);
+                ApplyLayoutForm(formLayout);
+                _SetXmlLayoutArea(formLayout.RootArea, areaIdMapping, lostControlMode, force);
+            }
+            else
+            {
+                throw new ArgumentNullException($"Set to {_XmlLayoutName} error: XML string is not valid.");
+            }
+        }
+        /// <summary>
+        /// Do this instance aplikuje nový layout, definovaný třídou Area (rekurzivně)
+        /// </summary>
+        /// <param name="area"></param>
+        /// <param name="areaIdMapping"></param>
+        /// <param name="lostControlMode"></param>
+        /// <param name="force"></param>
+        private void _SetXmlLayoutArea(Area area, IEnumerable<KeyValuePair<string, string>> areaIdMapping, OrphanedControlMode lostControlMode , bool force )
+        {
+            if (area == null)
+                throw new ArgumentNullException($"Set to {_XmlLayoutName} error: Area is null.");
 
             var layoutOld = GetLayoutData();           // Stávající layout, z něj využijeme strukturu (Item3) a následně pole UserControlů a jejich adres (Item2)
             if (!force)
@@ -1848,7 +2026,33 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private string _XmlLayoutName { get { return nameof(DxLayoutPanel) + "." + nameof(XmlLayout); } }
         #endregion
-        #region třídy layoutu: Area, enum AreaContentType
+        #region třídy layoutu: FormLayout, Area; enum AreaContentType
+        /// <summary>
+        /// Deklarace layoutu: obsahuje popis okna a popis rozvržení vnitřních prostor
+        /// </summary>
+        private class FormLayout
+        {
+            /// <summary>
+            /// Okno je tabované (true) nebo plovoucí (false)
+            /// </summary>
+            public bool? IsTabbed { get; set; }
+            /// <summary>
+            /// Stav okna (Maximized / Normal); stav Minimized se sem neukládá, za stavu <see cref="IsTabbed"/> se hodnota ponechá na předešlé hodnotě
+            /// </summary>
+            public FormWindowState? FormState { get; set; }
+            /// <summary>
+            /// Souřadnice okna platné při <see cref="FormState"/> == <see cref="FormWindowState.Normal"/> a ne <see cref="IsTabbed"/>
+            /// </summary>
+            public Rectangle? FormNormalBounds { get; set; }
+            /// <summary>
+            /// Zoom aktuální
+            /// </summary>
+            public decimal Zoom { get; set; }
+            /// <summary>
+            /// Laoyut struktury prvků - základní úroveň, obsahuje rekurzivně další instance <see cref="Area"/>
+            /// </summary>
+            public Area RootArea { get; set; }
+        }
         /// <summary>
         /// Rozložení pracovní plochy, jedna plocha a její využití, rekurzivní třída.
         /// Obsah této třídy se persistuje do XML.
