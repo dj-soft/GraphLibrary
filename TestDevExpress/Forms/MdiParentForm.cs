@@ -47,8 +47,8 @@ namespace TestDevExpress.Forms
 
             group = new DataRibbonGroup() { GroupId = "design", GroupText = "DESIGN" };
             page.Groups.Add(group);
-            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Design.Skin", RibbonItemType = RibbonItemType.SkinSetDropDown });
-            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Design.Palette", RibbonItemType = RibbonItemType.SkinPaletteGallery });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Design.Skin", ItemType = RibbonItemType.SkinSetDropDown });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Design.Palette", ItemType = RibbonItemType.SkinPaletteGallery });
 
             group = new DataRibbonGroup() { GroupId = "forms", GroupText = "FORMULÁŘE" };
             page.Groups.Add(group);

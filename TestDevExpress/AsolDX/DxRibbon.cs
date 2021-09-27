@@ -532,7 +532,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Nejprve zahodí obsah stránek, které jsou uvedeny v dodaných datech.
         /// Pak do Ribbonu vygeneruje nový obsah do specifikovaných stránek.
         /// Pokud pro některou stránku nebudou dodána žádná platná data, stránku zruší
-        /// (k tomu se použije typ prvku <see cref="IRibbonItem.RibbonItemType"/> == <see cref="RibbonItemType.None"/>, kde daný záznam pouze definuje Page ke zrušení).
+        /// (k tomu se použije typ prvku <see cref="IRibbonItem.ItemType"/> == <see cref="RibbonItemType.None"/>, kde daný záznam pouze definuje Page ke zrušení).
         /// <para/>
         /// Tato metoda si sama dokáže zajistit invokaci GUI threadu.
         /// Pokud v době volání je aktuální Ribbon mergovaný v parent ribbonech, pak si korektně zajistí re-merge (=promítnutí nového obsahu do parent ribbonu).
@@ -651,8 +651,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             if (iRibbonPages is null) return;
 
-            _ActivateLazyLoadOnIdle = false;
-
             var startTime = DxComponent.LogTimeCurrent;
             var list = DataRibbonPage.SortPages(iRibbonPages);
             int count = 0;
@@ -660,8 +658,6 @@ namespace Noris.Clients.Win.Components.AsolDX
                 _AddPage(iRibbonPage, isLazyContentFill, isOnDemandFill, ref count);
 
             AddQatListToRibbon();
-
-            _StartLazyLoadOnIdle();
 
             if (LogActive) DxComponent.LogAddLineTime($" === Ribbon {DebugName}: {logText} {list.Count} item[s]; Create: {count} BarItem[s]; {DxComponent.LogTokenTimeMilisec} === ", startTime);
         }
@@ -700,7 +696,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (this.SelectedPageId == page.Name) isLazyContentFill = false;   // Pokud v Ribbonu je aktuálně vybraná ta stránka, která se nyní generuje, pak se NEBUDE plnit v režimu Lazy
             bool createContent = page.PreparePageForContent(iRibbonPage, isLazyContentFill, isOnDemandFill, out bool isStaticLazyContent);
             if (isStaticLazyContent)
-                _ActivateLazyLoadOnIdle = true;                                // Pokud tuhle stránku nebudu plnit (=nyní jen generujeme prázdnou stránku, anebo jen obsahující QAT prvky), tak si poznamenám, že ji budu plnit ve stavu OnIdle
+                _ActiveLazyLoadOnIdle = true;                                  // Pokud tuhle stránku nebudu plnit (=nyní jen generujeme prázdnou stránku, anebo jen obsahující QAT prvky), tak si poznamenám, že budu chtít stránky naplnit ve stavu OnIdle
 
             // Problematika QAT je v detailu popsána v této metodě:
             bool isNeedQAT = !createContent && ContainsQAT(iRibbonPage);       // isNeedQAT je true tehdy, když bychom stránku nemuseli plnit (je LazyLoad), ale musíme do ní vložit pouze prvky typu QAT - a stránku přitom máme ponechat v režimu LazyLoad
@@ -876,17 +872,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public event EventHandler<TEventArgs<IRibbonPage>> PageOnDemandLoad;
         #endregion
-        #region LazyLoadOnIdle : dovolujeme provést opožděné plnění stránek (LazyLoad) v režimu Application.OnIdle
-        /// <summary>
-        /// Volá se na konci přidávání stránek. Pokud je <see cref="_ActivateLazyLoadOnIdle"/> == true, pak nastaví <see cref="_ActiveLazyLoadOnIdle"/> = true.
-        /// Zajistí se tak, že při nejbližší situaci ApplicationIdle (volá se <see cref="IListenerApplicationIdle.ApplicationIdle()"/>)
-        /// si this Ribbon vygeneruje fyzický obsah oněch LazyLoad stránek.
-        /// </summary>
-        private void _StartLazyLoadOnIdle()
-        {
-            if (_ActivateLazyLoadOnIdle)
-                _ActiveLazyLoadOnIdle = true; ;
-        }
+        #region LazyLoadOnIdle : dovolujeme provést opožděné plnění stránek (typu LazyLoad: Static) v režimu Application.OnIdle = "když je vhodná chvíle"
         /// <summary>
         /// Aplikace má volný čas, Ribbon by si mohl vygenerovat LazyLoad Static pages, pokud takové má.
         /// </summary>
@@ -894,8 +880,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             if (_ActiveLazyLoadOnIdle)
                 _PrepareLazyLoadStaticPages();
-            _ActivateLazyLoadOnIdle = false;
-            _ActiveLazyLoadOnIdle = false;
         }
         /// <summary>
         /// Tato metoda je volána v situaci, kdy GUI thread má nějaký volný čas (ApplicationIdle) 
@@ -907,34 +891,29 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void _PrepareLazyLoadStaticPages()
         {
             var lazyPages = this.GetPages(PagePosition.AllOwn).OfType<DxRibbonPage>().Where(p => p.HasActiveStaticLazyContent).ToList();
-            if (lazyPages.Count == 0) return;
+            if (lazyPages.Count > 0)
+            {
+                var startTime = DxComponent.LogTimeCurrent;
 
-            var startTime = DxComponent.LogTimeCurrent;
-         
-            int pageCount = lazyPages.Count;
-            int itemCount = 0;
-            this.ModifyCurrentDxContent(() =>
-            {   // Provede Unmerge this Ribbonu, pak provede následující akci, a poté zase zpětně Merge do původního stavu, se zachováním SelectedPage:
+                int pageCount = lazyPages.Count;
+                int itemCount = 0;
+                this.ModifyCurrentDxContent(() =>
+                {   // Provede Unmerge this Ribbonu, pak provede následující akci, a poté zase zpětně Merge do původního stavu, se zachováním SelectedPage:
                 int icnt = 0;
-                foreach (var lazyPage in lazyPages)
-                    _PrepareLazyLoadStaticPage(lazyPage, ref icnt);
-                itemCount = icnt;
-            });
+                    foreach (var lazyPage in lazyPages)
+                        _PrepareLazyLoadStaticPage(lazyPage, ref icnt);
+                    itemCount = icnt;
+                });
 
-            if (LogActive) DxComponent.LogAddLineTime($" === Ribbon {DebugName}: CreateLazyStaticPages; Create: {pageCount} Pages; {itemCount} BarItem[s]; {DxComponent.LogTokenTimeMilisec} === ", startTime);
+                if (LogActive) DxComponent.LogAddLineTime($" === Ribbon {DebugName}: CreateLazyStaticPages; Create: {pageCount} Pages; {itemCount} BarItem[s]; {DxComponent.LogTokenTimeMilisec} === ", startTime);
+            }
+            _ActiveLazyLoadOnIdle = false;
         }
         private void _PrepareLazyLoadStaticPage(DxRibbonPage lazyPage, ref int itemCount)
         {
             IRibbonPage iRibbonPage = lazyPage.PageData;
             _AddPage(iRibbonPage, false, false, ref itemCount);
         }
-        /// <summary>
-        /// Nastavuje se na true v procesu tvorby takových LazyLoad stránek, které mají svůj obsah staticky deklarován, ale dosud nejsou fyzicky vytvořeny controly v Ribbonu.
-        /// Na konci tvorby Ribbonu v metodě <see cref="_StartLazyLoadOnIdle"/> se v případě <see cref="_ActivateLazyLoadOnIdle"/> 
-        /// nastaví jiná proměnná <see cref="_ActiveLazyLoadOnIdle"/>, a ta hodnotou true zajistí, že v nejbližším volání 
-        /// <see cref="IListenerApplicationIdle.ApplicationIdle()"/> provedene reálné generování controlů.
-        /// </summary>
-        private bool _ActivateLazyLoadOnIdle;
         /// <summary>
         /// Hodnota true říká, že this Ribon má nějaké Pages ve stavu LazyLoad se statickým obsahem.
         /// Pak v době, kdy systém má volný čas (když je volána metoda <see cref="IListenerApplicationIdle.ApplicationIdle()"/>) 
@@ -1228,11 +1207,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         protected DevExpress.XtraBars.BarItem CreateItem(IRibbonItem iRibbonItem, bool reallyCreateSubItems, ref int count)
         {
             DevExpress.XtraBars.BarItem barItem = null;
-            switch (iRibbonItem.RibbonItemType)
+            switch (iRibbonItem.ItemType)
             {
                 case RibbonItemType.ButtonGroup:
                     count++;
-                    DevExpress.XtraBars.BarButtonGroup buttonGroup = Items.CreateButtonGroup(GetBarBaseButtons(iRibbonItem, iRibbonItem.SubRibbonItems, reallyCreateSubItems, ref count));
+                    DevExpress.XtraBars.BarButtonGroup buttonGroup = Items.CreateButtonGroup(GetBarBaseButtons(iRibbonItem, iRibbonItem.SubItems, reallyCreateSubItems, ref count));
                     buttonGroup.ButtonGroupsLayout = DevExpress.XtraBars.ButtonGroupsLayout.ThreeRows;
                     buttonGroup.MultiColumn = DevExpress.Utils.DefaultBoolean.True;
                     buttonGroup.OptionsMultiColumn.ShowItemText = DevExpress.Utils.DefaultBoolean.True;
@@ -1240,7 +1219,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                     break;
                 case RibbonItemType.SplitButton:
                     count++;
-                    var dxPopup = CreateXPopupMenu(iRibbonItem, iRibbonItem.SubRibbonItems, reallyCreateSubItems, ref count);
+                    var dxPopup = CreateXPopupMenu(iRibbonItem, iRibbonItem.SubItems, reallyCreateSubItems, ref count);
                     DevExpress.XtraBars.BarButtonItem splitButton = Items.CreateSplitButton(iRibbonItem.Text, dxPopup);
                     barItem = splitButton;
                     break;
@@ -1268,7 +1247,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 case RibbonItemType.Menu:
                     count++;
                     DevExpress.XtraBars.BarSubItem menu = Items.CreateMenu(iRibbonItem.Text);
-                    PrepareXBarMenu(iRibbonItem, iRibbonItem.SubRibbonItems, menu, reallyCreateSubItems, ref count);
+                    PrepareXBarMenu(iRibbonItem, iRibbonItem.SubItems, menu, reallyCreateSubItems, ref count);
                     barItem = menu;
                     break;
                 case RibbonItemType.InRibbonGallery:
@@ -1340,8 +1319,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             {   // Do CheckBoxu vepisujeme víc vlastností:
                 checkItem.CheckBoxVisibility = DevExpress.XtraBars.CheckBoxVisibility.BeforeText;
                 checkItem.CheckStyle =
-                    (iRibbonItem.RibbonItemType == RibbonItemType.RadioItem ? DevExpress.XtraBars.BarCheckStyles.Radio :
-                    (iRibbonItem.RibbonItemType == RibbonItemType.CheckBoxToggle ? DevExpress.XtraBars.BarCheckStyles.Standard :
+                    (iRibbonItem.ItemType == RibbonItemType.RadioItem ? DevExpress.XtraBars.BarCheckStyles.Radio :
+                    (iRibbonItem.ItemType == RibbonItemType.CheckBoxToggle ? DevExpress.XtraBars.BarCheckStyles.Standard :
                      DevExpress.XtraBars.BarCheckStyles.Standard));
                 checkItem.Checked = iRibbonItem.Checked ?? false;
             }
@@ -1366,6 +1345,14 @@ namespace Noris.Clients.Win.Components.AsolDX
                 barItem.Tag = iRibbonItem;
         }
 
+        /// <summary>
+        /// Vrátí Buttony pro dané SubItemy
+        /// </summary>
+        /// <param name="parentItem"></param>
+        /// <param name="subItems"></param>
+        /// <param name="reallyCreate"></param>
+        /// <param name="count"></param>
+        /// <returns></returns>
         protected DevExpress.XtraBars.BarBaseButtonItem[] GetBarBaseButtons(IRibbonItem parentItem, IEnumerable<IRibbonItem> subItems, bool reallyCreate, ref int count)
         {
             List<DevExpress.XtraBars.BarBaseButtonItem> baseButtons = new List<DevExpress.XtraBars.BarBaseButtonItem>();
@@ -1393,7 +1380,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         protected DevExpress.XtraBars.BarBaseButtonItem CreateBaseButton(IRibbonItem iRibbonItem)
         {
             DevExpress.XtraBars.BarBaseButtonItem baseButton = null;
-            switch (iRibbonItem.RibbonItemType)
+            switch (iRibbonItem.ItemType)
             {
                 case RibbonItemType.Button:
                 case RibbonItemType.ButtonGroup:
@@ -1492,7 +1479,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="count"></param>
         private void PrepareXBarMenu(IRibbonItem parentItem, IEnumerable<IRibbonItem> subItems, DevExpress.XtraBars.BarSubItem xBarMenu, bool reallyCreate, ref int count)
         {
-            if (parentItem.SubItems != null)
+            if (subItems != null)
             {
                 if (reallyCreate)
                 {
@@ -1596,7 +1583,7 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             // Teprve do grupy přidám prvky:
             List<DevExpress.XtraBars.Ribbon.GalleryItem> items = new List<DevExpress.XtraBars.Ribbon.GalleryItem>();
-            foreach (var subRibbonItem in iRibbonItem.SubRibbonItems)
+            foreach (var subRibbonItem in iRibbonItem.SubItems)
                 items.Add(CreateGallerySubItem(iRibbonItem, subRibbonItem));
 
             galleryGroup.Items.AddRange(items.ToArray());
@@ -1866,7 +1853,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         protected bool ContainsQAT(IRibbonItem iRibbonItem)
         {
-            return (ExistsAnyQat && iRibbonItem != null && (DefinedInQAT(iRibbonItem.ItemId) || (iRibbonItem.SubRibbonItems != null && iRibbonItem.SubRibbonItems.Any(s => ContainsQAT(s)))));
+            return (ExistsAnyQat && iRibbonItem != null && (DefinedInQAT(iRibbonItem.ItemId) || (iRibbonItem.SubItems != null && iRibbonItem.SubItems.Any(s => ContainsQAT(s)))));
         }
         /// <summary>
         /// Vrátí true pokud daný klíč je obsažen v požadavku na prvky do QAT
@@ -1956,7 +1943,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             RemoveLinkFromQat(iRibbonItem.ItemId);
 
             // Rekurzivně jeho subpoložky (to může být i opakovaně):
-            var items = iRibbonItem.SubRibbonItems;
+            var items = iRibbonItem.SubItems;
             if (items != null)
                 items.ForEachExec(i => RemoveItemFromQat(i));
         }
@@ -2457,7 +2444,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="iRibbonItem"></param>
         private void _RibbonItemClick(IRibbonItem iRibbonItem)
         {
-            iRibbonItem?.MenuAction?.Invoke(iRibbonItem);
+            iRibbonItem?.ClickAction?.Invoke(iRibbonItem);
             var args = new TEventArgs<IRibbonItem>(iRibbonItem);
             OnRibbonItemClick(args);
             RibbonItemClick?.Invoke(this, args);
@@ -3060,15 +3047,15 @@ namespace Noris.Clients.Win.Components.AsolDX
             string text = (!String.IsNullOrEmpty(groupText) ? groupText : "Výběr vzhledu");
             DataRibbonGroup iGroup = new DataRibbonGroup() { GroupText = text };
 
-            if (addSkinButton) iGroup.Items.Add(new DataRibbonItem() { ItemId = "_SYS__DevExpress_SkinSetDropDown", RibbonItemType = RibbonItemType.SkinSetDropDown });
-            if (addPaletteButton) iGroup.Items.Add(new DataRibbonItem() { ItemId = "_SYS__DevExpress_SkinPaletteDropDown", RibbonItemType = RibbonItemType.SkinPaletteDropDown });
-            if (addPaletteGallery) iGroup.Items.Add(new DataRibbonItem() { ItemId = "_SYS__DevExpress_SkinPaletteGallery", RibbonItemType = RibbonItemType.SkinPaletteGallery });
+            if (addSkinButton) iGroup.Items.Add(new DataRibbonItem() { ItemId = "_SYS__DevExpress_SkinSetDropDown", ItemType = RibbonItemType.SkinSetDropDown });
+            if (addPaletteButton) iGroup.Items.Add(new DataRibbonItem() { ItemId = "_SYS__DevExpress_SkinPaletteDropDown", ItemType = RibbonItemType.SkinPaletteDropDown });
+            if (addPaletteGallery) iGroup.Items.Add(new DataRibbonItem() { ItemId = "_SYS__DevExpress_SkinPaletteGallery", ItemType = RibbonItemType.SkinPaletteGallery });
             if (addUhdSupport) iGroup.Items.Add(new DataRibbonItem() 
             { 
                 ItemId = "_SYS__DevExpress_UhdSupportCheckBox", Text = "UHD Paint", ToolTipText = "Zapíná podporu pro Full vykreslování na UHD monitoru",
-                RibbonItemType = RibbonItemType.CheckBoxToggle, 
+                ItemType = RibbonItemType.CheckBoxToggle, 
                 // ImageUnChecked = "svgimages/zoom/zoomout.svg", ImageChecked = "svgimages/zoom/zoomin.svg",
-                Checked = DxComponent.UhdPaintEnabled, MenuAction = SetUhdPaint 
+                Checked = DxComponent.UhdPaintEnabled, ClickAction = SetUhdPaint 
             });
 
             return iGroup;
@@ -3834,7 +3821,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         private string _ImageNameChecked;
     }
     #endregion
-    #region TrackBar
+    #region TrackBar - TODO
+    
+    #warning TrackBar - TODO
+
     [DevExpress.XtraEditors.Registrator.UserRepositoryItem("RegisterMyTrackBar")]
     public class RepositoryItemMyTrackBar : DevExpress.XtraEditors.Repository.RepositoryItemTrackBar
     {
@@ -4306,9 +4296,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             get
             {
-                string debugText = $"Id: {_ItemId}; Text: {Text}; Type: {RibbonItemType}";
-                if (this.SubRibbonItems != null)
-                    debugText += $"; SubItems: {this.SubRibbonItems.Count}";
+                string debugText = $"Id: {_ItemId}; Text: {Text}; Type: {ItemType}";
+                if (this.SubItems != null)
+                    debugText += $"; SubItems: {this.SubItems.Count}";
                 return debugText;
             }
         }
@@ -4348,7 +4338,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Typ prvku
         /// </summary>
-        public virtual RibbonItemType RibbonItemType { get; set; }
+        public new RibbonItemType ItemType { get; set; }
         /// <summary>
         /// Styl zobrazení prvku
         /// </summary>
@@ -4361,11 +4351,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Subpoložky (definují prvky Menu, DropDown, SplitButton). Mohou být rekurzivně naplněné = vnořená menu.
         /// Výchozí hodnota je null.
         /// </summary>
-        public virtual List<IRibbonItem> SubRibbonItems { get; set; }
+        public new List<IRibbonItem> SubItems { get; set; }
         /// <summary>
         /// V deklaraci interface je IEnumerable...
         /// </summary>
-        IEnumerable<IRibbonItem> IRibbonItem.SubRibbonItems { get { return this.SubRibbonItems; } }
+        IEnumerable<IRibbonItem> IRibbonItem.SubItems { get { return this.SubItems; } }
     }
     #endregion
     #region Interface IRibbonPage, IRibbonCategory, IRibbonGroup, IRibbonItem;  Enumy RibbonPageType, RibbonContentMode, RibbonItemStyles, BarItemPaintStyle, RibbonItemType.
@@ -4493,9 +4483,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         IRibbonItem ParentRibbonItem { get; set; }
         /// <summary>
-        /// Typ prvku
+        /// Typ prvku Ribbonu
         /// </summary>
-        RibbonItemType RibbonItemType { get; }
+        new RibbonItemType ItemType { get; }
         /// <summary>
         /// Styl zobrazení prvku
         /// </summary>
@@ -4505,9 +4495,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         RibbonContentMode SubItemsContentMode { get; }
         /// <summary>
-        /// Subpoložky (definují prvky Menu, DropDown, SplitButton). Mohou být rekurzivně naplněné = vnořená menu
+        /// Subpoložky Ribbonu (definují prvky Menu, DropDown, SplitButton). Mohou být rekurzivně naplněné = vnořená menu
         /// </summary>
-        IEnumerable<IRibbonItem> SubRibbonItems { get; }
+        new IEnumerable<IRibbonItem> SubItems { get; }
     }
     /// <summary>
     /// Typ stránky
@@ -4625,7 +4615,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         CheckBoxStandard,
         /// <summary>
         /// Button se stavem Checked, který může být NULL (výchozí hodnota). 
-        /// Pokud má být výchozí stav false, je třeba jej do <see cref="IMenuItem.Checked"/> vložit!
+        /// Pokud má být výchozí stav false, je třeba jej do <see cref="ITextItem.Checked"/> vložit!
         /// Lze specifikovat ikony pro všechny tři stavy (NULL - false - true)
         /// </summary>
         CheckBoxToggle,

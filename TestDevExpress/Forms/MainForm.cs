@@ -236,9 +236,9 @@ namespace TestDevExpress.Forms
                 Text = text,
                 Image = image,
                 ToolTipText = toolTipText,
-                RibbonItemType = RibbonItemType.Button,
+                ItemType = RibbonItemType.Button,
                 RibbonStyle = RibbonItemStyles.Large,
-                MenuAction = clickHandler
+                ClickAction = clickHandler
             };
             return iRibbonItem;
         }

@@ -102,7 +102,7 @@ namespace TestDevExpress.Forms
             group.Items.Add(new DataRibbonItem() { ItemId = "StatusRefresh", Text = "Refresh Status", ToolTipText = "Znovu načíst údaje o spotřebě systémových zdrojů do statusbaru", Image = imageStatusRefresh });
             group.Items.Add(new DataRibbonItem() { ItemId = "DataFormRemove", Text = "Remove DataForm", ToolTipText = "Zahodit DataForm a uvolnit jeho zdroje", Image = imageDataFormRemove });
             group.Items.Add(new DataRibbonItem() { ItemId = "LogClear", Text = "Clear Log", ToolTipText = "Smaže obsah logu vpravo", Image = imageLogClear, RibbonStyle = RibbonItemStyles.Large });
-            group.Items.Add(new DataRibbonItem() { ItemId = "LogVisible", Text = "Show Log", ToolTipText = "Zobrazit log v pravé části hlavního okna.\r\nPOZOR: pokud je log stále zobrazený, pak veškeré logované změny jsou zatíženy časem refreshe textu Logu. \r\n Je vhodnější log zavřít, provést testy, a pak log otevřít a přečíst.", RibbonItemType = RibbonItemType.CheckBoxToggle, Checked = _DxShowLog, RibbonStyle = RibbonItemStyles.Large });
+            group.Items.Add(new DataRibbonItem() { ItemId = "LogVisible", Text = "Show Log", ToolTipText = "Zobrazit log v pravé části hlavního okna.\r\nPOZOR: pokud je log stále zobrazený, pak veškeré logované změny jsou zatíženy časem refreshe textu Logu. \r\n Je vhodnější log zavřít, provést testy, a pak log otevřít a přečíst.", ItemType = RibbonItemType.CheckBoxToggle, Checked = _DxShowLog, RibbonStyle = RibbonItemStyles.Large });
 
             group = new DataRibbonGroup() { GroupText = "VZORKY" };
             page.Groups.Add(group);

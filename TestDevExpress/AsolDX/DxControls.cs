@@ -6132,7 +6132,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             ChangeMode = source.ChangeMode;
             HotKey = source.HotKey;
             SubItems = (source.SubItems != null ? new List<IMenuItem>(source.SubItems) : null);
-            MenuAction = source.MenuAction;
+            ClickAction = source.ClickAction;
         }
         /// <summary>
         /// Text zobrazovaný v debuggeru namísto <see cref="DataTextItem.ToString()"/>
@@ -6192,7 +6192,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Explicitně daná akce po aktivaci této položky menu
         /// </summary>
-        public Action<IMenuItem> MenuAction { get; set; }
+        public Action<IMenuItem> ClickAction { get; set; }
 
         /// <summary>
         /// V deklaraci interface je IEnumerable...
@@ -6231,7 +6231,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Explicitně daná akce po aktivaci této položky menu
         /// </summary>
-        Action<IMenuItem> MenuAction { get; }
+        Action<IMenuItem> ClickAction { get; }
     }
     /// <summary>
     /// Definice prvku umístěného v Ribbonu nebo podpoložka prvku Ribbonu (položka menu / split ribbonu atd) nebo jako prvek ListBoxu nebo ComboBoxu

@@ -45,7 +45,7 @@ namespace TestDevExpress.Forms
         private void _Ribbon_RibbonItemClick(object sender, TEventArgs<IRibbonItem> e)
         {
             if (e.Item is null) return;
-            if (e.Item.RibbonItemType == RibbonItemType.Menu) return;           // Pouze došlo k aktivaci Menu, nikoli k výběru konkrétní položky...
+            if (e.Item.ItemType == RibbonItemType.Menu) return;           // Pouze došlo k aktivaci Menu, nikoli k výběru konkrétní položky...
             this.OnRibbonItemClick(e.Item);
         }
         protected virtual void OnRibbonItemClick(IMenuItem ribbonData) { }
