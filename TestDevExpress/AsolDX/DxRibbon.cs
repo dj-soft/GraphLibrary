@@ -899,7 +899,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 int itemCount = 0;
                 this.ModifyCurrentDxContent(() =>
                 {   // Provede Unmerge this Ribbonu, pak provede následující akci, a poté zase zpětně Merge do původního stavu, se zachováním SelectedPage:
-                int icnt = 0;
+                    int icnt = 0;
                     foreach (var lazyPage in lazyPages)
                         _PrepareLazyLoadStaticPage(lazyPage, ref icnt);
                     itemCount = icnt;
@@ -912,7 +912,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void _PrepareLazyLoadStaticPage(DxRibbonPage lazyPage, ref int itemCount)
         {
             IRibbonPage iRibbonPage = lazyPage.PageData;
-            _AddPage(iRibbonPage, false, false, ref itemCount);
+            _AddPage(iRibbonPage, false, false, ref itemCount);   // Existující Page se ponechá, obsah se nahradí, naplní se reálné prvky
+            // Ještě jedna věc je LazyLoad, a to jsou submenu a splitbuttons atd.
+            // To ale tady zatím neřeším.
+            // Důsledek: Rychlé hledání v Ribbonu nenajde subpoložky menu.
         }
         /// <summary>
         /// Hodnota true říká, že this Ribon má nějaké Pages ve stavu LazyLoad se statickým obsahem.
