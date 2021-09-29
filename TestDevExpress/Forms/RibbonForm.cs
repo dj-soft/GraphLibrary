@@ -149,6 +149,7 @@ namespace TestDevExpress.Forms
             group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Test.LogClear", Text = "Clear log", ToolTipText = "Smaže obsah logu vpravo", Image = imgLogClear, RibbonStyle = RibbonItemStyles.Large });
 
             page = new DataRibbonPage() { PageId = "HELP", PageText = "Nápověda" };
+            page.MergeOrder = 9999;
             pages.Add(page);
             group = new DataRibbonGroup() { GroupId = "help", GroupText = "NÁPOVĚDA" };
             page.Groups.Add(group);
@@ -774,7 +775,7 @@ namespace TestDevExpress.Forms
                 Category = category,
                 PageId = "Page" + pi,
                 PageText = pageText,
-                PageOrder = pi + 1,
+                MergeOrder = pi + 1,
                 PageContentMode = contentMode,
                 PageType = RibbonPageType.Default
             };

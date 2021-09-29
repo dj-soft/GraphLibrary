@@ -903,6 +903,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                     foreach (var lazyPage in lazyPages)
                         _PrepareLazyLoadStaticPage(lazyPage, ref icnt);
                     itemCount = icnt;
+                    AddQatListToRibbon();
                 });
 
                 if (LogActive) DxComponent.LogAddLineTime($" === Ribbon {DebugName}: CreateLazyStaticPages; Create: {pageCount} Pages; {itemCount} BarItem[s]; {DxComponent.LogTokenTimeMilisec} === ", startTime);
@@ -1002,8 +1003,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                     page = CreatePage(iRibbonPage, pageCollection);
                 if (HasReFill(changeMode))
                     ClearPage(page);
-                page.Tag = iRibbonPage;
-                page.PageData = iRibbonPage;
+                FillPage(page, iRibbonPage);
             }
             else if (HasRemove(changeMode))
             {
@@ -1036,7 +1036,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         protected void FillPage(DxRibbonPage page, IRibbonPage iRibbonPage)
         {
             page.Text = iRibbonPage.PageText;
+            page.MergeOrder = iRibbonPage.MergeOrder;
             page.Tag = iRibbonPage;
+            page.PageData = iRibbonPage;
         }
         /// <summary>
         /// Vyprázdní obsah dané stránky: odstraní grupy i itemy, i Lazy group.
@@ -4059,9 +4061,9 @@ namespace Noris.Clients.Win.Components.AsolDX
                 int pageOrder = 0;
                 foreach (var item in list)
                 {
-                    if (item.PageOrder == 0) item.PageOrder = ++pageOrder; else if (item.PageOrder > pageOrder) pageOrder = item.PageOrder;
+                    if (item.MergeOrder == 0) item.MergeOrder = ++pageOrder; else if (item.MergeOrder > pageOrder) pageOrder = item.MergeOrder;
                 }
-                list.Sort((a, b) => a.PageOrder.CompareTo(b.PageOrder));
+                list.Sort((a, b) => a.MergeOrder.CompareTo(b.MergeOrder));
             }
             return list;
         }
@@ -4092,7 +4094,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Pořadí stránky, použije se pro setřídění v rámci nadřazeného prvku
         /// </summary>
-        public virtual int PageOrder { get; set; }
+        public virtual int MergeOrder { get; set; }
         /// <summary>
         /// Jméno stránky
         /// </summary>
@@ -4407,7 +4409,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Pořadí stránky, použije se pro setřídění v rámci nadřazeného prvku
         /// </summary>
-        int PageOrder { get; set; }
+        int MergeOrder { get; set; }
         /// <summary>
         /// Jméno stránky
         /// </summary>
