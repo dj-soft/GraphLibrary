@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows.Forms;
 using DevExpress.Utils.Localization;
 
 namespace Noris.Clients.Win.Components.AsolDX
@@ -15,8 +16,21 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// <summary>
     /// Controller pro lokalizace
     /// </summary>
+    /// <remarks>
+    /// Na základě informací v článku:
+    /// https://docs.devexpress.com/WindowsForms/1866/build-an-application/localization/localizing-winforms-controls-via-localizer-objects
+    /// <para/>
+    /// Jsou tu dvě verze: přes typové Active localizery, i přes XtraLocalizer.QueryLocalizedString !!!
+    /// Volba? property CurrentMode
+    /// </remarks>
     public class DxLocalizer : IDxLocalizerInternal
     {
+        /// <summary>
+        /// Varianta lokalizace
+        /// </summary>
+        private static LocalizeMode CurrentMode { get { return LocalizeMode.ActiveInstance; } }
+        private enum LocalizeMode { None, EventHandler, ActiveInstance }
+
         #region Singleton, instanční proměnné
         /// <summary>
         /// Instance singletonu
@@ -74,8 +88,26 @@ namespace Noris.Clients.Win.Components.AsolDX
                 if (!newValue && oldValue) _LocalizationDisable();
             }
         }
+        /// <summary>
+        /// Eventhandler pro <see cref="XtraLocalizer.QueryLocalizedString"/>
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void XtraLocalizer_QueryLocalizedString(object sender, XtraLocalizer.QueryLocalizedStringEventArgs e)
+        {
+            e.Value = $">{e.Value}  [{e.StringID} | {e.StringIDType.FullName}";
+        }
+        /// <summary>
+        /// Aktivuje lokalizaci
+        /// </summary>
         private void _LocalizationEnable()
         {
+            if (CurrentMode == LocalizeMode.EventHandler)
+            {
+                XtraLocalizer.QueryLocalizedString += XtraLocalizer_QueryLocalizedString;
+                return;
+            }
+
             IDxLocalizerInternal owner = this;
 
             try
@@ -135,8 +167,17 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
             catch { }
         }
+        /// <summary>
+        /// Deaktivuje lokalizaci
+        /// </summary>
         private void _LocalizationDisable()
         {
+            if (CurrentMode == LocalizeMode.EventHandler)
+            {
+                XtraLocalizer.QueryLocalizedString -= XtraLocalizer_QueryLocalizedString;
+                return;
+            }
+
             try
             {
                 // From assembly: DevExpress.Data.v20.1.dll
@@ -194,6 +235,13 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
             catch { }
         }
+        /// <summary>
+        /// Vrátí lokalizer daného typu
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="current"></param>
+        /// <param name="creator"></param>
+        /// <returns></returns>
         private XtraLocalizer<T> GetLocalizer<T>(XtraLocalizer<T> current, Func<XtraLocalizer<T>, XtraLocalizer<T>> creator) where T : struct
         {
             if (current == null) return creator(null);
@@ -217,7 +265,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (localized == null)
             {
                 if (__HighlightNonTranslated)
-                    localized = $"{defString} [{idCode} | {localizerType}]";
+                    localized = $">{defString} [{idCode} | {localizerType}]";
                 else
                     localized = defString;
             }

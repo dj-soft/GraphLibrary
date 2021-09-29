@@ -36,14 +36,13 @@ namespace TestDevExpress.Forms
         /// </summary>
         public MainForm()
         {
-            ShowSplash(this);
+            DxComponent.SplashUpdate(rightFooter: "Příprava...");
 
             InitializeComponent();
             InitData();
-
-            SplashUpdate("Načítám DevExpress...");
-
-            SplashUpdate("Připravuji okno...");
+            
+            DxLocalizer.Enabled = true;
+            DxLocalizer.HighlightNonTranslated = true;
 
             InitBarManager();
 
@@ -60,7 +59,7 @@ namespace TestDevExpress.Forms
             InitTreeView();            // 9
             InitDragDrop();            // 10
 
-            SplashUpdate("Otevírám okno...", title: "Hotovo");
+            DxComponent.SplashUpdate(subTitle: "A je to!");
 
             this.Disposed += MainForm_Disposed;
             DxComponent.LogTextChanged += DxComponent_LogTextChanged;
@@ -73,29 +72,6 @@ namespace TestDevExpress.Forms
         private void MainForm_Disposed(object sender, EventArgs e)
         {
             DxComponent.LogTextChanged -= DxComponent_LogTextChanged;
-        }
-
-        private static void ShowSplash(Form owner)
-        {
-            DxComponent.SplashShow("Testovací aplikace Helios Nephrite", "DJ soft & ASOL", "Copyright © 1995 - 2021 DJ soft" + Environment.NewLine + "All Rights reserved.", "Začínáme...",
-                owner, Properties.Resources.Moon10);
-        }
-        private static void SplashUpdate(string rightFooter = null, string leftFooter = null, string title = null)
-        {
-            DxComponent.SplashUpdate(title: title, leftFooter: leftFooter, rightFooter: rightFooter);
-        }
-        private static void HideSplash()
-        {
-            DxComponent.SplashHide();
-        }
-        /// <summary>
-        /// OnShown
-        /// </summary>
-        /// <param name="e"></param>
-        protected override void OnShown(EventArgs e)
-        {
-            base.OnShown(e);
-            HideSplash();
         }
         protected override void OnStyleChanged()
         {

@@ -1029,6 +1029,16 @@ namespace Noris.Clients.Win.Components.AsolDX
             return page;
         }
         /// <summary>
+        /// Naplní vlastnosti stránky z definice
+        /// </summary>
+        /// <param name="page"></param>
+        /// <param name="iRibbonPage"></param>
+        protected void FillPage(DxRibbonPage page, IRibbonPage iRibbonPage)
+        {
+            page.Text = iRibbonPage.PageText;
+            page.Tag = iRibbonPage;
+        }
+        /// <summary>
         /// Vyprázdní obsah dané stránky: odstraní grupy i itemy, i Lazy group.
         /// </summary>
         /// <param name="page"></param>
@@ -1081,7 +1091,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                     group = CreateGroup(iRibbonGroup, page);
                 if (HasReFill(changeMode))
                     ClearGroup(group);
-                group.Tag = iRibbonGroup;
+                FillGroup(group, iRibbonGroup);
             }
             else if (HasRemove(changeMode))
             {
@@ -1101,13 +1111,24 @@ namespace Noris.Clients.Win.Components.AsolDX
             var group = new DxRibbonGroup(iRibbonGroup.GroupText)
             {
                 Name = iRibbonGroup.GroupId,
-                CaptionButtonVisible = (iRibbonGroup.GroupButtonVisible ? DefaultBoolean.True : DefaultBoolean.False),
-                State = DevExpress.XtraBars.Ribbon.RibbonPageGroupState.Auto,
-                Tag = iRibbonGroup
             };
-            group.ImageOptions.ImageIndex = ComponentConnector.GraphicsCache.GetResourceIndex(iRibbonGroup.GroupImage, ImagesSize, iRibbonGroup.GroupText);
             if (page != null) page.Groups.Add(group);
             return group;
+        }
+        /// <summary>
+        /// Naplní vlastnosti grupy z definice
+        /// </summary>
+        /// <param name="group"></param>
+        /// <param name="iRibbonGroup"></param>
+        protected void FillGroup(DxRibbonGroup group, IRibbonGroup iRibbonGroup)
+        {
+            group.Text = iRibbonGroup.GroupText;
+            group.CaptionButtonVisible = (iRibbonGroup.GroupButtonVisible ? DefaultBoolean.True : DefaultBoolean.False);
+            group.State = (iRibbonGroup.GroupState == RibbonGroupState.Expanded ? DevExpress.XtraBars.Ribbon.RibbonPageGroupState.Expanded :
+                          (iRibbonGroup.GroupState == RibbonGroupState.Collapsed ? DevExpress.XtraBars.Ribbon.RibbonPageGroupState.Collapsed :
+                           DevExpress.XtraBars.Ribbon.RibbonPageGroupState.Auto));
+            group.ImageOptions.ImageIndex = ComponentConnector.GraphicsCache.GetResourceIndex(iRibbonGroup.GroupImage, ImagesSize, iRibbonGroup.GroupText);
+            group.Tag = iRibbonGroup;
         }
         /// <summary>
         /// Smaže obsah grupy
@@ -4259,6 +4280,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public virtual bool GroupButtonVisible { get; set; }
         /// <summary>
+        /// Stav grupy
+        /// </summary>
+        public virtual RibbonGroupState GroupState { get; set; }
+        /// <summary>
         /// Soupis prvků grupy (tlačítka, menu, checkboxy, galerie)
         /// Výchozí hodnota je prázdný List.
         /// </summary>
@@ -4464,6 +4489,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         bool GroupButtonVisible { get; }
         /// <summary>
+        /// Stav grupy
+        /// </summary>
+        RibbonGroupState GroupState { get; }
+        /// <summary>
         /// Soupis prvků grupy (tlačítka, menu, checkboxy, galerie)
         /// </summary>
         IEnumerable<IRibbonItem> Items { get; }
@@ -4515,6 +4544,24 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Kontextová stránka
         /// </summary>
         Contextual
+    }
+    /// <summary>
+    /// Stav grupy
+    /// </summary>
+    public enum RibbonGroupState
+    {
+        /// <summary>
+        /// Auto
+        /// </summary>
+        Auto = 0,
+        /// <summary>
+        /// Expanded
+        /// </summary>
+        Expanded = 1,
+        /// <summary>
+        /// Collapsed
+        /// </summary>
+        Collapsed = 2
     }
     /// <summary>
     /// Způsob práce s prvky stránky / prvku při jeho aktivaci (Static / OnDemand)

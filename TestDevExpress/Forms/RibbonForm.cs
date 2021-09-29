@@ -791,12 +791,14 @@ namespace TestDevExpress.Forms
             string groupId = pageId + "." + "Group" + gi;    // GroupId je shodné pro grupy konkrétního názvu na shodné stránce = pro Mergování!
             string groupText = GroupNames[gi];
             bool groupButtonVisible = (groupText == "Rozšířené" || groupText == "Údržba" || groupText == "Oblíbené" || groupText == "Systém" || groupText == "Systém");
+            bool groupCollapsed = (Random.IsTrue(20));
 
             return new DataRibbonGroup()
             {
                 GroupId = groupId,
                 GroupText = groupText,
-                GroupButtonVisible = groupButtonVisible
+                GroupButtonVisible = groupButtonVisible,
+                GroupState = (groupCollapsed ? RibbonGroupState.Collapsed : RibbonGroupState.Auto)
             };
         }
         /// <summary>
