@@ -105,19 +105,19 @@ namespace TestDevExpress.Forms
             string imageLogClear = "svgimages/spreadsheet/removetablerows.svg";
             group = new DataRibbonGroup() { GroupText = "ZÁKLADNÍ" };
             page.Groups.Add(group);
-            group.Items.Add(new DataRibbonItem() { ItemId = "StatusRefresh", Text = "Refresh Status", ToolTipText = "Znovu načíst údaje o spotřebě systémových zdrojů do statusbaru", Image = imageStatusRefresh });
-            group.Items.Add(new DataRibbonItem() { ItemId = "DataFormRemove", Text = "Remove DataForm", ToolTipText = "Zahodit DataForm a uvolnit jeho zdroje", Image = imageDataFormRemove });
-            group.Items.Add(new DataRibbonItem() { ItemId = "LogClear", Text = "Clear Log", ToolTipText = "Smaže obsah logu vpravo", Image = imageLogClear, RibbonStyle = RibbonItemStyles.Large });
+            group.Items.Add(new DataRibbonItem() { ItemId = "StatusRefresh", Text = "Refresh Status", ToolTipText = "Znovu načíst údaje o spotřebě systémových zdrojů do statusbaru", ImageName = imageStatusRefresh });
+            group.Items.Add(new DataRibbonItem() { ItemId = "DataFormRemove", Text = "Remove DataForm", ToolTipText = "Zahodit DataForm a uvolnit jeho zdroje", ImageName = imageDataFormRemove });
+            group.Items.Add(new DataRibbonItem() { ItemId = "LogClear", Text = "Clear Log", ToolTipText = "Smaže obsah logu vpravo", ImageName = imageLogClear, RibbonStyle = RibbonItemStyles.Large });
             group.Items.Add(new DataRibbonItem() { ItemId = "LogVisible", Text = "Show Log", ToolTipText = "Zobrazit log v pravé části hlavního okna.\r\nPOZOR: pokud je log stále zobrazený, pak veškeré logované změny jsou zatíženy časem refreshe textu Logu. \r\n Je vhodnější log zavřít, provést testy, a pak log otevřít a přečíst.", ItemType = RibbonItemType.CheckBoxToggle, Checked = _DxShowLog, RibbonStyle = RibbonItemStyles.Large });
 
 
             string imageTest = "svgimages/xaf/actiongroup_easytestrecorder.svg";
             group = new DataRibbonGroup() { GroupText = "VZORKY" };
             page.Groups.Add(group);
-            group.Items.Add(new DataRibbonItem() { ItemId = "CreateSample1", Text = "Ukázka 1", Image = imageTest, Tag = "Sample1", Enabled = true });
-            group.Items.Add(new DataRibbonItem() { ItemId = "CreateSample2", Text = "Ukázka 2", Image = imageTest, Tag = "Sample2", Enabled = true });
-            group.Items.Add(new DataRibbonItem() { ItemId = "CreateSample3", Text = "Ukázka 3", Image = imageTest, Tag = "Sample3", Enabled = true });
-            group.Items.Add(new DataRibbonItem() { ItemId = "CreateSample4", Text = "Ukázka 4", Image = imageTest, Tag = "Sample4", Enabled = true });
+            group.Items.Add(new DataRibbonItem() { ItemId = "CreateSample1", Text = "Ukázka 1", ImageName = imageTest, Tag = "Sample1", Enabled = true });
+            group.Items.Add(new DataRibbonItem() { ItemId = "CreateSample2", Text = "Ukázka 2", ImageName = imageTest, Tag = "Sample2", Enabled = true });
+            group.Items.Add(new DataRibbonItem() { ItemId = "CreateSample3", Text = "Ukázka 3", ImageName = imageTest, Tag = "Sample3", Enabled = true });
+            group.Items.Add(new DataRibbonItem() { ItemId = "CreateSample4", Text = "Ukázka 4", ImageName = imageTest, Tag = "Sample4", Enabled = true });
 
             /*
             string imageTestRefresh = "svgimages/spreadsheet/refreshpivottable.svg";

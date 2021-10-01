@@ -59,7 +59,7 @@ namespace TestDevExpress.Forms
             {
                 ItemId = "_SYS__DevExpress_ShowImagePickerForm", Text = "DevExpress Images", ToolTipText = "Otevře okno s nabídkou systémových ikon",
                 ItemType = RibbonItemType.Button, RibbonStyle = RibbonItemStyles.Large,
-                Image = "svgimages/icon%20builder/actions_image.svg", ClickAction = ShowImagePicker
+                ImageName = "svgimages/icon%20builder/actions_image.svg", ClickAction = ShowImagePicker
             };
         }
         /// <summary>

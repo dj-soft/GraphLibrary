@@ -99,17 +99,17 @@ namespace TestDevExpress.Forms
 
             group = new DataRibbonGroup() { GroupText = "ZÁKLADNÍ" };
             page.Groups.Add(group);
-            group.Items.Add(new DataRibbonItem() { ItemId = "StatusRefresh", Text = "Refresh Status", ToolTipText = "Znovu načíst údaje o spotřebě systémových zdrojů do statusbaru", Image = imageStatusRefresh });
-            group.Items.Add(new DataRibbonItem() { ItemId = "DataFormRemove", Text = "Remove DataForm", ToolTipText = "Zahodit DataForm a uvolnit jeho zdroje", Image = imageDataFormRemove });
-            group.Items.Add(new DataRibbonItem() { ItemId = "LogClear", Text = "Clear Log", ToolTipText = "Smaže obsah logu vpravo", Image = imageLogClear, RibbonStyle = RibbonItemStyles.Large });
+            group.Items.Add(new DataRibbonItem() { ItemId = "StatusRefresh", Text = "Refresh Status", ToolTipText = "Znovu načíst údaje o spotřebě systémových zdrojů do statusbaru", ImageName = imageStatusRefresh });
+            group.Items.Add(new DataRibbonItem() { ItemId = "DataFormRemove", Text = "Remove DataForm", ToolTipText = "Zahodit DataForm a uvolnit jeho zdroje", ImageName = imageDataFormRemove });
+            group.Items.Add(new DataRibbonItem() { ItemId = "LogClear", Text = "Clear Log", ToolTipText = "Smaže obsah logu vpravo", ImageName = imageLogClear, RibbonStyle = RibbonItemStyles.Large });
             group.Items.Add(new DataRibbonItem() { ItemId = "LogVisible", Text = "Show Log", ToolTipText = "Zobrazit log v pravé části hlavního okna.\r\nPOZOR: pokud je log stále zobrazený, pak veškeré logované změny jsou zatíženy časem refreshe textu Logu. \r\n Je vhodnější log zavřít, provést testy, a pak log otevřít a přečíst.", ItemType = RibbonItemType.CheckBoxToggle, Checked = _DxShowLog, RibbonStyle = RibbonItemStyles.Large });
 
             group = new DataRibbonGroup() { GroupText = "VZORKY" };
             page.Groups.Add(group);
-            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Sample.Sample1", Text = "Ukázka 1", Image = imageTest, Tag = "Sample1", Enabled = true });
-            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Sample.Sample2", Text = "Ukázka 2", Image = imageTest, Tag = "Sample2", Enabled = true });
-            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Sample.Sample3", Text = "Ukázka 3", Image = imageTest, Tag = "Sample3", Enabled = true });
-            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Sample.Sample4", Text = "Ukázka 4", Image = imageTest, Tag = "Sample4", Enabled = true });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Sample.Sample1", Text = "Ukázka 1", ImageName = imageTest, Tag = "Sample1", Enabled = true });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Sample.Sample2", Text = "Ukázka 2", ImageName = imageTest, Tag = "Sample2", Enabled = true });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Sample.Sample3", Text = "Ukázka 3", ImageName = imageTest, Tag = "Sample3", Enabled = true });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Sample.Sample4", Text = "Ukázka 4", ImageName = imageTest, Tag = "Sample4", Enabled = true });
             // group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Sample.Sample5", Text = "Ukázka 5", Image = imageTest, Tag = "Sample5", Enabled = false });
             // group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Sample.Sample6", Text = "Ukázka 6", Image = imageTest, Tag = "Sample6", Enabled = false });
 
@@ -121,45 +121,45 @@ namespace TestDevExpress.Forms
 
             group = new DataRibbonGroup() { GroupId = "g100", GroupText = "LABEL" };
             page.Groups.Add(group);
-            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.L1T0.Add10", Text = "Přidat 10", Image = imageAdd, Tag = new DxDataFormTestDefinition(1, 0, 0, 10, 1) });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.L1T0.Add10", Text = "Přidat 10", ImageName = imageAdd, Tag = new DxDataFormTestDefinition(1, 0, 0, 10, 1) });
             // group.Items.Add(new DataRibbonItem() { ItemId = "Dx.L1T0.Add30", Text = "Přidat 30", Image = imageAdd, Tag = new DxDataFormTestDefinition(1, 0, 0, 30, 1) });
-            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.L1T0.Add100", Text = "Přidat 100", Image = imageAdd, Tag = new DxDataFormTestDefinition(1, 0, 0, 100, 1) });
-            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.LT10.Add300", Text = "Přidat 300", Image = imageAdd, Tag = new DxDataFormTestDefinition(1, 0, 0, 300, 1) });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.L1T0.Add100", Text = "Přidat 100", ImageName = imageAdd, Tag = new DxDataFormTestDefinition(1, 0, 0, 100, 1) });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.LT10.Add300", Text = "Přidat 300", ImageName = imageAdd, Tag = new DxDataFormTestDefinition(1, 0, 0, 300, 1) });
 
             group = new DataRibbonGroup() { GroupId = "g010", GroupText = "TEXTBOX" };
             page.Groups.Add(group);
-            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.L0T1.Add10", Text = "Přidat 10", Image = imageAdd, Tag = new DxDataFormTestDefinition(0, 1, 0, 10, 1) });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.L0T1.Add10", Text = "Přidat 10", ImageName = imageAdd, Tag = new DxDataFormTestDefinition(0, 1, 0, 10, 1) });
             // group.Items.Add(new DataRibbonItem() { ItemId = "Dx.L0T1.Add30", Text = "Přidat 30", Image = imageAdd, Tag = new DxDataFormTestDefinition(0, 1, 0, 30, 1) });
-            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.L0T1.Add100", Text = "Přidat 100", Image = imageAdd, Tag = new DxDataFormTestDefinition(0, 1, 0, 100, 1) });
-            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.L0T1.Add300", Text = "Přidat 300", Image = imageAdd, Tag = new DxDataFormTestDefinition(0, 1, 0, 300, 1) });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.L0T1.Add100", Text = "Přidat 100", ImageName = imageAdd, Tag = new DxDataFormTestDefinition(0, 1, 0, 100, 1) });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.L0T1.Add300", Text = "Přidat 300", ImageName = imageAdd, Tag = new DxDataFormTestDefinition(0, 1, 0, 300, 1) });
 
             group = new DataRibbonGroup() { GroupId = "g001", GroupText = "CHECKBOX" };
             page.Groups.Add(group);
-            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.L0T0C1.Add10", Text = "Přidat 10", Image = imageAdd, Tag = new DxDataFormTestDefinition(0, 0, 1, 10, 1) });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.L0T0C1.Add10", Text = "Přidat 10", ImageName = imageAdd, Tag = new DxDataFormTestDefinition(0, 0, 1, 10, 1) });
             // group.Items.Add(new DataRibbonItem() { ItemId = "Dx.L0T0C1.Add30", Text = "Přidat 30", Image = imageAdd, Tag = new DxDataFormTestDefinition(0, 0, 1, 30, 1) });
-            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.L0T0C1.Add100", Text = "Přidat 100", Image = imageAdd, Tag = new DxDataFormTestDefinition(0, 0, 1, 100, 1) });
-            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.L0T0C1.Add300", Text = "Přidat 300", Image = imageAdd, Tag = new DxDataFormTestDefinition(0, 0, 1, 300, 1) });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.L0T0C1.Add100", Text = "Přidat 100", ImageName = imageAdd, Tag = new DxDataFormTestDefinition(0, 0, 1, 100, 1) });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.L0T0C1.Add300", Text = "Přidat 300", ImageName = imageAdd, Tag = new DxDataFormTestDefinition(0, 0, 1, 300, 1) });
 
             group = new DataRibbonGroup() { GroupId = "g110", GroupText = "LABEL + TEXTBOX" };
             page.Groups.Add(group);
-            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.L1T1.Add10", Text = "Přidat 10", Image = imageAdd, Tag = new DxDataFormTestDefinition(1, 1, 0, 10, 1) });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.L1T1.Add10", Text = "Přidat 10", ImageName = imageAdd, Tag = new DxDataFormTestDefinition(1, 1, 0, 10, 1) });
             // group.Items.Add(new DataRibbonItem() { ItemId = "Dx.L1T1.Add30", Text = "Přidat 30", Image = imageAdd, Tag = new DxDataFormTestDefinition(1, 1, 0, 30, 1) });
-            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.L1T1.Add100", Text = "Přidat 100", Image = imageAdd, Tag = new DxDataFormTestDefinition(1, 1, 0, 100, 1) });
-            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.L1T1.Add300", Text = "Přidat 300", Image = imageAdd, Tag = new DxDataFormTestDefinition(1, 1, 0, 300, 1) });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.L1T1.Add100", Text = "Přidat 100", ImageName = imageAdd, Tag = new DxDataFormTestDefinition(1, 1, 0, 100, 1) });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.L1T1.Add300", Text = "Přidat 300", ImageName = imageAdd, Tag = new DxDataFormTestDefinition(1, 1, 0, 300, 1) });
 
             group = new DataRibbonGroup() { GroupId = "g120", GroupText = "LABEL + 2x TEXTBOX" };
             page.Groups.Add(group);
-            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.L1T2.Add10", Text = "Přidat 10", Image = imageAdd, Tag = new DxDataFormTestDefinition(1, 2, 0, 10, 1) });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.L1T2.Add10", Text = "Přidat 10", ImageName = imageAdd, Tag = new DxDataFormTestDefinition(1, 2, 0, 10, 1) });
             // group.Items.Add(new DataRibbonItem() { ItemId = "Dx.L1T2.Add30", Text = "Přidat 30", Image = imageAdd, Tag = new DxDataFormTestDefinition(1, 2, 0, 30, 1) });
-            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.L1T2.Add100", Text = "Přidat 100", Image = imageAdd, Tag = new DxDataFormTestDefinition(1, 2, 0, 100, 1) });
-            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.L1T2.Add300", Text = "Přidat 300", Image = imageAdd, Tag = new DxDataFormTestDefinition(1, 2, 0, 300, 1) });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.L1T2.Add100", Text = "Přidat 100", ImageName = imageAdd, Tag = new DxDataFormTestDefinition(1, 2, 0, 100, 1) });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.L1T2.Add300", Text = "Přidat 300", ImageName = imageAdd, Tag = new DxDataFormTestDefinition(1, 2, 0, 300, 1) });
 
             group = new DataRibbonGroup() { GroupId = "g111", GroupText = "LABEL + TEXTBOX + CHECKBOX" };
             page.Groups.Add(group);
-            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.L1T1C1.Add10", Text = "Přidat 10", Image = imageAdd, Tag = new DxDataFormTestDefinition(1, 1, 1, 10, 1) });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.L1T1C1.Add10", Text = "Přidat 10", ImageName = imageAdd, Tag = new DxDataFormTestDefinition(1, 1, 1, 10, 1) });
             // group.Items.Add(new DataRibbonItem() { ItemId = "Dx.L1T1C1.Add30", Text = "Přidat 30", Image = imageAdd, Tag = new DxDataFormTestDefinition(1, 1, 1, 30, 1) });
-            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.L1T1C1.Add100", Text = "Přidat 100", Image = imageAdd, Tag = new DxDataFormTestDefinition(1, 1, 1, 100, 1) });
-            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.L1T1C1.Add300", Text = "Přidat 300", Image = imageAdd, Tag = new DxDataFormTestDefinition(1, 1, 1, 300, 1) });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.L1T1C1.Add100", Text = "Přidat 100", ImageName = imageAdd, Tag = new DxDataFormTestDefinition(1, 1, 1, 100, 1) });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.L1T1C1.Add300", Text = "Přidat 300", ImageName = imageAdd, Tag = new DxDataFormTestDefinition(1, 1, 1, 300, 1) });
 
             this.DxRibbon.Clear();
             this.DxRibbon.AddPages(pages);

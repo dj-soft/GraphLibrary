@@ -550,7 +550,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Pokud v době volání je aktuální Ribbon mergovaný v parent ribbonech, pak si korektně zajistí re-merge (=promítnutí nového obsahu do parent ribbonu).
         /// </summary>
         /// <param name="iRibbonPages"></param>
-        public void ReFillPages(IEnumerable<IRibbonPage> iRibbonPages)
+        public void RefreshPages(IEnumerable<IRibbonPage> iRibbonPages)
         {
             if (iRibbonPages == null) return;
             this.RunInGui(() =>
@@ -561,6 +561,47 @@ namespace Noris.Clients.Win.Components.AsolDX
                     _AddPages(iRibbonPages, this.UseLazyContentCreate, true, "OnDemand");
                     _RemoveVoidContainers(reFillPages);
                     CheckLazyContentCurrentPage(true);
+                });
+            });
+        }
+        /// <summary>
+        /// Metoda zajistí, že bude nalezen každý daný prvek (pokud neexistuje, tak ale nebude vytvořen!);
+        /// a do daného prvku se znovunaplní jeho vlastnosti (=Refresh) + jeho subpoložky.
+        /// Touto cestou nelze změnit typ prvku!
+        /// Lze refreshovat text, tooltip, image, checked, subitems.
+        /// Lze vyžádat otevření submenu, pokud to submenu je.
+        /// </summary>
+        /// <param name="iRibbonItems"></param>
+        /// <param name="openMenu"></param>
+        public void RefreshItems(IEnumerable<IRibbonItem> iRibbonItems, bool openMenu = false)
+        {
+            if (iRibbonItems == null) return;
+            this.RunInGui(() =>
+            {
+                this.ModifyCurrentDxContent(() =>
+                {
+                    foreach (var iRibbonItem in iRibbonItems)
+                        RefreshCurrentItem(iRibbonItem, openMenu);
+                });
+            });
+        }
+        /// <summary>
+        /// Metoda zajistí, že bude nalezen daný prvek (pokud neexistuje, tak ale nebude vytvořen!);
+        /// a do daného prvku se znovunaplní jeho vlastnosti (=Refresh) + jeho subpoložky.
+        /// Touto cestou nelze změnit typ prvku!
+        /// Lze refreshovat text, tooltip, image, checked, subitems.
+        /// Lze vyžádat otevření submenu, pokud to submenu je.
+        /// </summary>
+        /// <param name="iRibbonItem"></param>
+        /// <param name="openMenu"></param>
+        public void RefreshItem(IRibbonItem iRibbonItem, bool openMenu = false)
+        {
+            if (iRibbonItem == null) return;
+            this.RunInGui(() =>
+            {
+                this.ModifyCurrentDxContent(() =>
+                {
+                    RefreshCurrentItem(iRibbonItem, openMenu);
                 });
             });
         }
@@ -649,7 +690,7 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             if (lazyGroup.IsOnDemand && !isCalledFromReFill)
             {   // Oba režimy OnDemandLoad vyvolají patřičný event, pokud tato metoda NENÍ volána právě z akce naplnění ribbonu daty OnDemand:
-                RunStartOnDemandLoad(iRibbonPage);
+                RunPageOnDemandLoad(iRibbonPage);
             }
         }
         /// <summary>
@@ -865,9 +906,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Nastartuje požadavek na OnDemand Load obsahu stránky this Ribbonu
         /// </summary>
         /// <param name="iRibbonPage"></param>
-        protected void RunStartOnDemandLoad(IRibbonPage iRibbonPage)
+        protected void RunPageOnDemandLoad(IRibbonPage iRibbonPage)
         {
-            TEventArgs<IRibbonPage> args = new TEventArgs<IRibbonPage>(iRibbonPage);
+            var args = new TEventArgs<IRibbonPage>(iRibbonPage);
             this.OnPageOnDemandLoad(args);
             PageOnDemandLoad?.Invoke(this, args);
         }
@@ -879,10 +920,32 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Vyvolá se při OnDemand načítání obsahu stránky.
         /// Načítání typicky probíhá v threadu na pozadí.
-        /// Po nějakém čase - když aplikace získá data, pak zavolá zdejší metodu <see cref="DxRibbonControl.ReFillPages(IEnumerable{IRibbonPage})"/>;
+        /// Po nějakém čase - když aplikace získá data, pak zavolá zdejší metodu <see cref="DxRibbonControl.RefreshPages(IEnumerable{IRibbonPage})"/>;
         /// tato metoda zajistí zobrazení nově dodaných dat v odpovídajících stránkách Ribbonu.
         /// </summary>
         public event EventHandler<TEventArgs<IRibbonPage>> PageOnDemandLoad;
+        /// <summary>
+        /// Nastartuje požadavek na OnDemand Load obsahu prvku this Ribbonu
+        /// </summary>
+        /// <param name="iRibbonItem"></param>
+        protected void RunItemOnDemandLoad(IRibbonItem iRibbonItem)
+        {
+            var args = new TEventArgs<IRibbonItem>(iRibbonItem);
+            this.OnItemOnDemandLoad(args);
+            ItemOnDemandLoad?.Invoke(this, args);
+        }
+        /// <summary>
+        /// Provede se při OnDemand načítání obsahu stránky
+        /// </summary>
+        /// <param name="args"></param>
+        protected virtual void OnItemOnDemandLoad(TEventArgs<IRibbonItem> args) { }
+        /// <summary>
+        /// Vyvolá se při OnDemand načítání obsahu submenu v prvku.
+        /// Načítání typicky probíhá v threadu na pozadí.
+        /// Po nějakém čase - když aplikace získá data, pak zavolá zdejší metodu <see cref="DxRibbonControl.RefreshItems(IRibbonItem, bool)"/>;
+        /// tato metoda zajistí zobrazení nově dodaných dat v daném prvku.
+        /// </summary>
+        public event EventHandler<TEventArgs<IRibbonItem>> ItemOnDemandLoad;
         #endregion
         #region LazyLoadOnIdle : dovolujeme provést opožděné plnění stránek (typu LazyLoad: Static) v režimu Application.OnIdle = "když je vhodná chvíle"
         /// <summary>
@@ -1190,6 +1253,60 @@ namespace Noris.Clients.Win.Components.AsolDX
             return barItem;
         }
         /// <summary>
+        /// Metoda najde prvek podle jeho jména a aktualizuje jeho hodnoty.
+        /// Pokud prvek neexistuje, tak ale nebude vytvořen!
+        /// Do daného prvku se znovunaplní jeho vlastnosti (=Refresh) + jeho subpoložky.
+        /// Touto cestou nelze změnit typ prvku!
+        /// Lze refreshovat text, tooltip, image, checked, subitems.
+        /// Lze vyžádat otevření submenu, pokud to submenu je.
+        /// </summary>
+        /// <param name="iRibbonItem"></param>
+        /// <param name="openMenu"></param>
+        protected void RefreshCurrentItem(IRibbonItem iRibbonItem, bool openMenu = false)
+        {
+            if (iRibbonItem == null) return;
+            string itemId = iRibbonItem.ItemId;
+            var item = this.Items[itemId];
+            if (item == null) return;
+
+            FillBarItem(item, iRibbonItem);
+
+            TryGetIRibbonItem(item.Tag, out IRibbonItem iCurrentItem);
+            var itemType = iCurrentItem?.ItemType ?? iRibbonItem.ItemType;
+
+            switch (itemType)
+            {
+                case RibbonItemType.SplitButton:
+                    if (item is DevExpress.XtraBars.BarButtonItem splitButton)
+                    { }
+                    break;
+                case RibbonItemType.Menu:
+                    if (item is DevExpress.XtraBars.BarSubItem menu)
+                    { }
+                    break;
+            }
+            //if (openMenu)
+            //{ }
+        }
+        private bool TryGetIRibbonItem(object tag, out IRibbonItem iRibbonItem)
+        {
+            if (tag != null)
+            {
+                if (tag is IRibbonItem iri)
+                {
+                    iRibbonItem = iri;
+                    return true;
+                }
+                if (tag is LazySubItemsInfo lsii)
+                {
+                    iRibbonItem = lsii.ParentItem;
+                    return true;
+                }
+            }
+            iRibbonItem = null;
+            return false;
+        }
+        /// <summary>
         /// Rozpozná, najde, vytvoří a vrátí BarItem pro daná data.
         /// BarItem přidá do dané grupy.
         /// </summary>
@@ -1451,17 +1568,17 @@ namespace Noris.Clients.Win.Components.AsolDX
         protected DevExpress.XtraBars.PopupMenu CreateXPopupMenu(IRibbonItem parentItem, IEnumerable<IRibbonItem> subItems, bool reallyCreate, ref int count)
         {
             DevExpress.XtraBars.PopupMenu xPopupMenu = new DevExpress.XtraBars.PopupMenu(BarManager);
-            if (subItems != null)
-            {
-                if (reallyCreate)
-                {   // Vytvořit menu hned:
-                    _XPopupMenu_FillItems(xPopupMenu, parentItem, subItems, ref count);
-                }
-                else
-                {   // Vytvořit až bude třeba (BeforePopup):
-                    xPopupMenu.Tag = new LazySubItemsInfo(parentItem, subItems);
-                    xPopupMenu.BeforePopup += _XPopupMenu_BeforePopup;
-                }
+
+            bool hasSubItems = (subItems != null);
+            bool isLazyLoad = (parentItem.SubItemsContentMode == RibbonContentMode.OnDemandLoadEveryTime || parentItem.SubItemsContentMode == RibbonContentMode.OnDemandLoadOnce);
+            if (hasSubItems && reallyCreate)
+            {   // Vytvořit menu hned:
+                _XPopupMenu_FillItems(xPopupMenu, parentItem, subItems, ref count);
+            }
+            else if (hasSubItems || isLazyLoad)
+            {   // Vytvořit až bude třeba (BeforePopup):
+                xPopupMenu.Tag = new LazySubItemsInfo(parentItem, parentItem.SubItemsContentMode, subItems);
+                xPopupMenu.BeforePopup += _XPopupMenu_BeforePopup;
             }
             return xPopupMenu;
         }
@@ -1473,14 +1590,39 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void _XPopupMenu_BeforePopup(object sender, System.ComponentModel.CancelEventArgs e)
         {
             if (!(sender is DevExpress.XtraBars.PopupMenu dxPopup)) return;
-            dxPopup.BeforePopup -= _XPopupMenu_BeforePopup;
-            if (!(dxPopup.Tag is LazySubItemsInfo lazySubItems)) return;
-            dxPopup.Tag = null;                            // dxPopup není prvek Ribbonu, ale PopupMenu navázané na SplitButtonu. Jeho Tag nechť je null, protože definující prvek IRibbonItem je v Tagu toho SplitButtonu.
 
-            var startTime = DxComponent.LogTimeCurrent;
-            int count = 0;
-            _XPopupMenu_FillItems(dxPopup, lazySubItems.ParentItem, lazySubItems.SubItems, ref count);
-            if (LogActive) DxComponent.LogAddLineTime($"LazyLoad SplitButton menu create: {count} items, {DxComponent.LogTokenTimeMilisec}", startTime);
+            bool deactivatePopupEvent = true;
+            object tag = dxPopup.Tag;
+            if (tag is LazySubItemsInfo lazySubItems)
+            {   // Pokud máme LazyInfo:
+                // Mohou nastat dvě situace:
+                if (lazySubItems.SubItems != null)
+                {   // 1. SubItems jsou deklarované přímo zde (Static), pak z nich vytvoříme nabídku a necháme ji uživateli zobrazit:
+                    tag = lazySubItems.ParentItem;                   // Pro příští akce dáme do prvku Ribbonu Tag = IRibbonItem, který prvek deklaroval (ten je uchován v lazySubItems.ParentItem)
+                    var startTime = DxComponent.LogTimeCurrent;
+                    int count = 0;
+                    _XPopupMenu_FillItems(dxPopup, lazySubItems.ParentItem, lazySubItems.SubItems, ref count);
+                    if (LogActive) DxComponent.LogAddLineTime($"LazyLoad SplitButton menu create: {count} items, {DxComponent.LogTokenTimeMilisec}", startTime);
+                }
+                else if (lazySubItems.SubItemsContentMode == RibbonContentMode.OnDemandLoadOnce || lazySubItems.SubItemsContentMode == RibbonContentMode.OnDemandLoadEveryTime)
+                {   // 2. SubItems mi dodá aplikace na základě obsluhy eventu:
+                    this.RunItemOnDemandLoad(lazySubItems.ParentItem);
+                    e.Cancel = true;
+                    deactivatePopupEvent = false;                    // Dokud nedoběhnou ze serveru data (OnDemandLoad => RefreshItem() ), tak necháme aktivní událost Popup = pro jistotu...
+                }
+                else
+                {   // 3. Nemáme Static prvky SubItems, ale ani je nemáme načítat OnDemand...
+                    //    necháme odpojit event Popup, a do Tagu vložíme IRibbonItem:
+                    tag = lazySubItems.ParentItem;                   // Pro příští akce dáme do prvku Ribbonu Tag = IRibbonItem, který prvek deklaroval (ten je uchován v lazySubItems.ParentItem)
+                }
+            }
+
+            // Deaktivovat zdejší handler?
+            if (deactivatePopupEvent)
+            {
+                dxPopup.BeforePopup -= _XPopupMenu_BeforePopup;
+                dxPopup.Tag = tag;
+            }
         }
         /// <summary>
         /// Do daného menu <see cref="DevExpress.XtraBars.PopupMenu"/> vygeneruje všechny jeho položky.
@@ -1517,18 +1659,17 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="count"></param>
         private void PrepareXBarMenu(IRibbonItem parentItem, IEnumerable<IRibbonItem> subItems, DevExpress.XtraBars.BarSubItem xBarMenu, bool reallyCreate, ref int count)
         {
-            if (subItems != null)
+            bool hasSubItems = (subItems != null);
+            bool isLazyLoad = (parentItem.SubItemsContentMode == RibbonContentMode.OnDemandLoadEveryTime || parentItem.SubItemsContentMode == RibbonContentMode.OnDemandLoadOnce);
+            if (hasSubItems && reallyCreate)
             {
-                if (reallyCreate)
-                {
-                    _XBarMenu_FillItems(xBarMenu, parentItem, subItems, ref count);
-                }
-                else
-                {
-                    xBarMenu.AddItem(new DevExpress.XtraBars.BarButtonItem(this.BarManager, "..."));     // Musí tu být alespoň jeden prvek, jinak při kliknutí na Menu se nebude nic dít (neproběhne event xBarMenu.Popup)
-                    xBarMenu.Tag = new LazySubItemsInfo(parentItem, subItems);
-                    xBarMenu.Popup += _XBarMenu_BeforePopup;
-                }
+                _XBarMenu_FillItems(xBarMenu, parentItem, subItems, ref count);
+            }
+            else if (hasSubItems || isLazyLoad)
+            {
+                xBarMenu.AddItem(new DevExpress.XtraBars.BarButtonItem(this.BarManager, "..."));     // Musí tu být alespoň jeden prvek, jinak při kliknutí na Menu se nebude nic dít (neproběhne event xBarMenu.Popup)
+                xBarMenu.Tag = new LazySubItemsInfo(parentItem, parentItem.SubItemsContentMode, subItems);
+                xBarMenu.Popup += _XBarMenu_BeforePopup;
             }
         }
         /// <summary>
@@ -1539,15 +1680,39 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void _XBarMenu_BeforePopup(object sender, EventArgs e)
         {
             if (!(sender is DevExpress.XtraBars.BarSubItem xBarMenu)) return;
-            xBarMenu.Popup -= _XBarMenu_BeforePopup;
-            if (!(xBarMenu.Tag is LazySubItemsInfo lazySubItems)) return;
-            xBarMenu.Tag = lazySubItems.ParentItem;        // Tady je xBarMenu = přímo prvek Ribbonu, a tam chci mít v Tagu referenci na IRibbonItem, který prvek založil...
 
-            var startTime = DxComponent.LogTimeCurrent;
-            int count = 0;
-            xBarMenu.ItemLinks.Clear();                    // V téhle kolekci byl jeden prvek "...", který mi zajistil aktivaci menu = zdejší metoda Popup.
-            _XBarMenu_FillItems(xBarMenu, lazySubItems.ParentItem, lazySubItems.SubItems, ref count);
-            if (LogActive) DxComponent.LogAddLineTime($"LazyLoad Menu create: {count} items, {DxComponent.LogTokenTimeMilisec}", startTime);
+            bool deactivatePopupEvent = true;
+            object tag = xBarMenu.Tag;
+            if (tag is LazySubItemsInfo lazySubItems)
+            {   // Pokud máme LazyInfo:
+                // Mohou nastat dvě situace:
+                if (lazySubItems.SubItems != null)
+                {   // 1. SubItems jsou deklarované přímo zde (Static), pak z nich vytvoříme nabídku a necháme ji uživateli zobrazit:
+                    tag = lazySubItems.ParentItem;                   // Pro příští akce dáme do prvku Ribbonu Tag = IRibbonItem, který prvek deklaroval (ten je uchován v lazySubItems.ParentItem)
+                    var startTime = DxComponent.LogTimeCurrent;
+                    int count = 0;
+                    xBarMenu.ItemLinks.Clear();                      // V téhle kolekci byl jeden prvek "...", který mi zajistil aktivaci menu = zdejší metoda Popup.
+                    _XBarMenu_FillItems(xBarMenu, lazySubItems.ParentItem, lazySubItems.SubItems, ref count);
+                    if (LogActive) DxComponent.LogAddLineTime($"LazyLoad Menu create: {count} items, {DxComponent.LogTokenTimeMilisec}", startTime);
+                }
+                else if (lazySubItems.SubItemsContentMode == RibbonContentMode.OnDemandLoadOnce || lazySubItems.SubItemsContentMode == RibbonContentMode.OnDemandLoadEveryTime)
+                {   // 2. SubItems mi dodá aplikace na základě obsluhy eventu:
+                    this.RunItemOnDemandLoad(lazySubItems.ParentItem);
+                    deactivatePopupEvent = false;                    // Dokud nedoběhnou ze serveru data (OnDemandLoad => RefreshItem() ), tak necháme aktivní událost Popup = pro jistotu...
+                }
+                else
+                {   // 3. Nemáme Static prvky SubItems, ale ani je nemáme načítat OnDemand...
+                    //    necháme odpojit event Popup, a do Tagu vložíme IRibbonItem:
+                    tag = lazySubItems.ParentItem;                   // Pro příští akce dáme do prvku Ribbonu Tag = IRibbonItem, který prvek deklaroval (ten je uchován v lazySubItems.ParentItem)
+                }
+            }
+
+            // Deaktivovat zdejší handler?
+            if (deactivatePopupEvent)
+            {
+                xBarMenu.Popup -= _XBarMenu_BeforePopup;
+                xBarMenu.Tag = tag;
+            }
         }
         /// <summary>
         /// Do daného menu <see cref="DevExpress.XtraBars.BarSubItem"/> vygeneruje všechny jeho položky.
@@ -1662,10 +1827,12 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// Konstruktor
             /// </summary>
             /// <param name="parentItem"></param>
+            /// <param name="subItemsContentMode">Režim subpoložek</param>
             /// <param name="subItems"></param>
-            public LazySubItemsInfo(IRibbonItem parentItem, IEnumerable<IRibbonItem> subItems)
+            public LazySubItemsInfo(IRibbonItem parentItem, RibbonContentMode subItemsContentMode, IEnumerable<IRibbonItem> subItems)
             {
                 this.ParentItem = parentItem;
+                this.SubItemsContentMode = subItemsContentMode;
                 this.SubItems = subItems;
             }
             /// <summary>
@@ -1677,9 +1844,13 @@ namespace Noris.Clients.Win.Components.AsolDX
                 return $"LazySubItems Parent: {ParentItem}; SubItems: {(SubItems?.Count().ToString() ?? "NULL")}";
             }
             /// <summary>
-            /// Prvek definující Button = Parent celého menu
+            /// Prvek definující Button / SplitButton / Menu = Parent aktuálního menu
             /// </summary>
             public IRibbonItem ParentItem { get; private set; }
+            /// <summary>
+            /// Režim subpoložek
+            /// </summary>
+            public RibbonContentMode SubItemsContentMode { get; private set; }
             /// <summary>
             /// SubPrvky
             /// </summary>
@@ -4305,6 +4476,7 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// <summary>
     /// Definice prvku umístěného v Ribbonu nebo podpoložka prvku Ribbonu (položka menu / split ribbonu atd) nebo jako prvek ListBoxu nebo ComboBoxu
     /// </summary>
+    [DebuggerDisplay("{DebugText}")]
     public class DataRibbonItem : DataMenuItem, IRibbonItem
     {
         /// <summary>
@@ -4313,6 +4485,35 @@ namespace Noris.Clients.Win.Components.AsolDX
         public DataRibbonItem() : base()
         {
             this.ChangeMode = ContentChangeMode.Add;
+        }
+        /// <summary>
+        /// Metoda vytvoří new instanci třídy <see cref="DataRibbonItem"/>, které bude obsahovat data z dodané <see cref="IRibbonItem"/>.
+        /// </summary>
+        /// <param name="source"></param>
+        /// <param name="modifier"></param>
+        /// <returns></returns>
+        public static DataRibbonItem CreateClone(IRibbonItem source, Action<DataRibbonItem> modifier = null)
+        {
+            if (source == null) return null;
+            DataRibbonItem clone = new DataRibbonItem();
+            clone.FillFrom(source);
+            if (modifier != null) modifier(clone);
+            return clone;
+        }
+        /// <summary>
+        /// Do this instance přenese patřičné hodnoty ze source instance
+        /// </summary>
+        /// <param name="source"></param>
+        protected void FillFrom(IRibbonItem source)
+        {
+            base.FillFrom((IMenuItem)source);
+
+            ParentGroup = source.ParentGroup;
+            ParentRibbonItem = source.ParentRibbonItem;
+            ItemType = source.ItemType;
+            RibbonStyle = source.RibbonStyle;
+            SubItemsContentMode = source.SubItemsContentMode;
+            SubItems = source.SubItems?.ToList();
         }
         /// <summary>
         /// Vizualizace = pro přímé použití v GUI objektech (např. jako prvek ListBoxu)

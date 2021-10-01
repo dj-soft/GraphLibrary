@@ -52,8 +52,8 @@ namespace TestDevExpress.Forms
 
             group = new DataRibbonGroup() { GroupId = "forms", GroupText = "FORMULÁŘE" };
             page.Groups.Add(group);
-            group.Items.Add(new DataRibbonItem() { ItemId = "forms.newTab", Text = "Nový TAB", ToolTipText = "Otevře nové okno jako TAB document", Image = "", Tag = FormCommands.NewTab });
-            group.Items.Add(new DataRibbonItem() { ItemId = "forms.newFloat", Text = "Nový FLOAT", ToolTipText = "Otevře nové okno jako plovoucí okno", Image = "", Tag = FormCommands.NewFree });
+            group.Items.Add(new DataRibbonItem() { ItemId = "forms.newTab", Text = "Nový TAB", ToolTipText = "Otevře nové okno jako TAB document", ImageName = "", Tag = FormCommands.NewTab });
+            group.Items.Add(new DataRibbonItem() { ItemId = "forms.newFloat", Text = "Nový FLOAT", ToolTipText = "Otevře nové okno jako plovoucí okno", ImageName = "", Tag = FormCommands.NewFree });
         }
         protected override void OnRibbonItemClick(IMenuItem ribbonData)
         {

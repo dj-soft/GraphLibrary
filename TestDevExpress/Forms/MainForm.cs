@@ -210,7 +210,7 @@ namespace TestDevExpress.Forms
             DataRibbonItem iRibbonItem = new DataRibbonItem()
             {
                 Text = text,
-                Image = image,
+                ImageName = image,
                 ToolTipText = toolTipText,
                 ItemType = RibbonItemType.Button,
                 RibbonStyle = RibbonItemStyles.Large,
@@ -2750,7 +2750,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
         {
             if (GetRandomTrue(25))
                 node.ImageDynamicDefault = "object_locked_2_16";
-            node.Image = this.GetRandomBallImageName();
+            node.ImageName = this.GetRandomBallImageName();
             node.ToolTipTitle = null; // RandomText.GetRandomSentence(2, 5);
             node.ToolTipText = Random.GetSentence(10, 50);
         }
@@ -2876,7 +2876,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
                 string text = Random.GetSentence(3, 6, false);
                 string toolTip = Random.GetSentences(2, 8, 1, 5);
                 string image = this.GetRandomSysSvgName(fileTypes, chartTypes);
-                DataMenuItem item = new DataMenuItem() { Text = $"[{i}]. {text}", ToolTipTitle = text, ToolTipText = toolTip, Image = image };
+                DataMenuItem item = new DataMenuItem() { Text = $"[{i}]. {text}", ToolTipTitle = text, ToolTipText = toolTip, ImageName = image };
                 items.Add(item);
             }
             return items.ToArray();
