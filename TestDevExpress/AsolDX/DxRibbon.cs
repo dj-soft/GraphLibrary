@@ -50,8 +50,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void InitProperties()
         {
             var iconList = ComponentConnector.GraphicsCache;
-            Images = iconList.GetImageList(ImagesSize);
-            LargeImages = iconList.GetImageList(LargeImagesSize);
+            Images = iconList.GetImageList(RibbonImageSize);
+            LargeImages = iconList.GetImageList(RibbonLargeImageSize);
 
             AllowKeyTips = true;
             ButtonGroupsLayout = DevExpress.XtraBars.ButtonGroupsLayout.ThreeRows;
@@ -119,6 +119,18 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Jméno Ribbonu pro debugování
         /// </summary>
         public string DebugName { get; set; }
+        /// <summary>
+        /// Velikost malých ikon v Ribbonu
+        /// </summary>
+        internal static WinFormServices.Drawing.UserGraphicsSize RibbonImageSize { get { return WinFormServices.Drawing.UserGraphicsSize.Small; } }
+        /// <summary>
+        /// Velikost velkých ikon v Ribbonu
+        /// </summary>
+        internal static WinFormServices.Drawing.UserGraphicsSize RibbonLargeImageSize { get { return WinFormServices.Drawing.UserGraphicsSize.Large; } }
+        /// <summary>
+        /// Velikost ikon v galerii
+        /// </summary>
+        internal static WinFormServices.Drawing.UserGraphicsSize RibbonGalleryImageSize { get { return WinFormServices.Drawing.UserGraphicsSize.Medium; } }
         #endregion
         #region Obrázek vpravo
         /// <summary>
@@ -1129,7 +1141,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             group.State = (iRibbonGroup.GroupState == RibbonGroupState.Expanded ? DevExpress.XtraBars.Ribbon.RibbonPageGroupState.Expanded :
                           (iRibbonGroup.GroupState == RibbonGroupState.Collapsed ? DevExpress.XtraBars.Ribbon.RibbonPageGroupState.Collapsed :
                            DevExpress.XtraBars.Ribbon.RibbonPageGroupState.Auto));
-            group.ImageOptions.ImageIndex = ComponentConnector.GraphicsCache.GetResourceIndex(iRibbonGroup.GroupImage, ImagesSize, iRibbonGroup.GroupText);
+            group.ImageOptions.ImageIndex = ComponentConnector.GraphicsCache.GetResourceIndex(iRibbonGroup.GroupImageName, RibbonImageSize, iRibbonGroup.GroupText);
             group.Tag = iRibbonGroup;
         }
         /// <summary>
@@ -1319,7 +1331,7 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             barItem.Enabled = iRibbonItem.Enabled;
 
-            string imageName = iRibbonItem.Image;
+            string imageName = iRibbonItem.ImageName;
             if (imageName != null && !(barItem is DxBarCheckBoxToggle))           // DxCheckBoxToggle si řídí Image sám
             {
                 if (DxComponent.TryGetResourceExtension(imageName, out var _))
@@ -1328,8 +1340,8 @@ namespace Noris.Clients.Win.Components.AsolDX
                 }
                 else
                 {
-                    barItem.ImageIndex = ComponentConnector.GraphicsCache.GetResourceIndex(imageName, ImagesSize, iRibbonItem.Text);
-                    barItem.LargeImageIndex = ComponentConnector.GraphicsCache.GetResourceIndex(imageName, LargeImagesSize, iRibbonItem.Text);
+                    barItem.ImageIndex = ComponentConnector.GraphicsCache.GetResourceIndex(imageName, RibbonImageSize, iRibbonItem.Text);
+                    barItem.LargeImageIndex = ComponentConnector.GraphicsCache.GetResourceIndex(imageName, RibbonLargeImageSize, iRibbonItem.Text);
                 }
             }
 
@@ -1354,9 +1366,9 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (barItem is DxBarCheckBoxToggle dxCheckBoxToggle)
             {
                 dxCheckBoxToggle.Checked = iRibbonItem.Checked;
-                if (iRibbonItem.Image != null) dxCheckBoxToggle.ImageNameNull = iRibbonItem.Image;
-                if (iRibbonItem.ImageUnChecked != null) dxCheckBoxToggle.ImageNameUnChecked = iRibbonItem.ImageUnChecked;
-                if (iRibbonItem.ImageChecked != null) dxCheckBoxToggle.ImageNameChecked = iRibbonItem.ImageChecked;
+                if (iRibbonItem.ImageName != null) dxCheckBoxToggle.ImageNameNull = iRibbonItem.ImageName;
+                if (iRibbonItem.ImageNameUnChecked != null) dxCheckBoxToggle.ImageNameUnChecked = iRibbonItem.ImageNameUnChecked;
+                if (iRibbonItem.ImageNameChecked != null) dxCheckBoxToggle.ImageNameChecked = iRibbonItem.ImageNameChecked;
             }
 
             barItem.PaintStyle = Convert(iRibbonItem.ItemPaintStyle);
@@ -1592,8 +1604,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         private DevExpress.XtraBars.RibbonGalleryBarItem CreateGalleryItem(IRibbonItem iRibbonItem)
         {
             var galleryBarItem = new DevExpress.XtraBars.RibbonGalleryBarItem(this.BarManager);
-            galleryBarItem.Gallery.Images = ComponentConnector.GraphicsCache.GetImageList();
-            galleryBarItem.Gallery.HoverImages = ComponentConnector.GraphicsCache.GetImageList();
+            galleryBarItem.Gallery.Images = ComponentConnector.GraphicsCache.GetImageList(RibbonGalleryImageSize);
+            galleryBarItem.Gallery.HoverImages = ComponentConnector.GraphicsCache.GetImageList(RibbonGalleryImageSize);
             galleryBarItem.Gallery.AllowHoverImages = true;
             galleryBarItem.Gallery.ColumnCount = 4;
             galleryBarItem.SuperTip = DxComponent.CreateDxSuperTip(iRibbonItem);
@@ -1601,7 +1613,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             galleryBarItem.Caption = iRibbonItem.Text;
             galleryBarItem.Enabled = iRibbonItem.Enabled;
             galleryBarItem.GalleryItemClick += GalleryBarItem_GalleryItemClick;
-
 
             // Galerie musí obsahovat grupy, ne prvky:
             var galleryGroup = new DevExpress.XtraBars.Ribbon.GalleryItemGroup();
@@ -1631,7 +1642,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         private DevExpress.XtraBars.Ribbon.GalleryItem CreateGallerySubItem(IRibbonItem parentItem, IRibbonItem iRibbonItem)
         {
             var galleryItem = new DevExpress.XtraBars.Ribbon.GalleryItem();
-            galleryItem.ImageIndex = galleryItem.HoverImageIndex = ComponentConnector.GraphicsCache.GetResourceIndex(iRibbonItem.Image);
+            galleryItem.ImageIndex = galleryItem.HoverImageIndex = ComponentConnector.GraphicsCache.GetResourceIndex(iRibbonItem.ImageName);
             galleryItem.Caption = iRibbonItem.Text;
             galleryItem.Checked = iRibbonItem.Checked ?? false;
             galleryItem.Description = iRibbonItem.ToolTipText;
@@ -1733,14 +1744,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
         }
         private DevExpress.XtraBars.Ribbon.RibbonBarManager _BarManager;
-        /// <summary>
-        /// Standardized small image size.
-        /// </summary>
-        internal static readonly WinFormServices.Drawing.UserGraphicsSize ImagesSize = WinFormServices.Drawing.UserGraphicsSize.Small;
-        /// <summary>
-        /// Standardized large image size.
-        /// </summary>
-        internal static readonly WinFormServices.Drawing.UserGraphicsSize LargeImagesSize = WinFormServices.Drawing.UserGraphicsSize.Large;
         #endregion
         #region Podpora pro QAT - Quick Access Toolbar
         /*     Jak to tady funguje?
@@ -4276,7 +4279,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Obrázek grupy
         /// </summary>
-        public virtual string GroupImage { get; set; }
+        public virtual string GroupImageName { get; set; }
         /// <summary>
         /// Zobrazit speciální tlačítko grupy vpravo dole v titulku grupy (lze tak otevřít nějaké okno vlastností pro celou grupu)
         /// </summary>
@@ -4485,7 +4488,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Obrázek grupy
         /// </summary>
-        string GroupImage { get; }
+        string GroupImageName { get; }
         /// <summary>
         /// Zobrazit speciální tlačítko grupy vpravo dole v titulku grupy (lze tak otevřít nějaké okno vlastností pro celou grupu)
         /// </summary>

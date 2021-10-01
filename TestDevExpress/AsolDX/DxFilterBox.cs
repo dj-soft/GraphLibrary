@@ -216,17 +216,17 @@ namespace Noris.Clients.Win.Components.AsolDX
             List<IMenuItem> menuItems = new List<IMenuItem>();
 
             if (items.HasFlag(FilterBoxOperatorItems.Contains))
-                menuItems.Add(new DataMenuItem() { ItemId = "Contains", HotKey = "%", Image = resourceContains, Text = "Obsahuje", Checked = false, ToolTipTitle = "Obsahuje:", ToolTipText = "Vybere ty položky, které obsahují zadaný text", Tag = FilterBoxOperatorItems.Contains });
+                menuItems.Add(new DataMenuItem() { ItemId = "Contains", HotKey = "%", ImageName = resourceContains, Text = "Obsahuje", Checked = false, ToolTipTitle = "Obsahuje:", ToolTipText = "Vybere ty položky, které obsahují zadaný text", Tag = FilterBoxOperatorItems.Contains });
             if (items.HasFlag(FilterBoxOperatorItems.DoesNotContain))
-                menuItems.Add(new DataMenuItem() { ItemId = "DoesNotContain", HotKey = "!%", Image = resourceDoesNotContain, Text = "Neobsahuje", Checked = false, ToolTipTitle = "Neobsahuje:", ToolTipText = "Vybere ty položky, které neobsahují zadaný text", Tag = FilterBoxOperatorItems.DoesNotContain });
+                menuItems.Add(new DataMenuItem() { ItemId = "DoesNotContain", HotKey = "!%", ImageName = resourceDoesNotContain, Text = "Neobsahuje", Checked = false, ToolTipTitle = "Neobsahuje:", ToolTipText = "Vybere ty položky, které neobsahují zadaný text", Tag = FilterBoxOperatorItems.DoesNotContain });
             if (items.HasFlag(FilterBoxOperatorItems.StartsWith))
-                menuItems.Add(new DataMenuItem() { ItemId = "StartsWith", HotKey = "=", Image = resourceStartsWith, Text = "Začíná", Checked = false, ToolTipTitle = "Začíná:", ToolTipText = "Vybere ty položky, jejichž text začíná zadaným textem", Tag = FilterBoxOperatorItems.StartsWith });
+                menuItems.Add(new DataMenuItem() { ItemId = "StartsWith", HotKey = "=", ImageName = resourceStartsWith, Text = "Začíná", Checked = false, ToolTipTitle = "Začíná:", ToolTipText = "Vybere ty položky, jejichž text začíná zadaným textem", Tag = FilterBoxOperatorItems.StartsWith });
             if (items.HasFlag(FilterBoxOperatorItems.DoesNotStartWith))
-                menuItems.Add(new DataMenuItem() { ItemId = "DoesNotStartWith", HotKey = "!", Image = resourceDoesNotStartWith, Text = "Nezačíná", Checked = false, ToolTipTitle = "Nezačíná:", ToolTipText = "Vybere ty položky, jejichž text začíná jinak, než je zadáno", Tag = FilterBoxOperatorItems.DoesNotStartWith });
+                menuItems.Add(new DataMenuItem() { ItemId = "DoesNotStartWith", HotKey = "!", ImageName = resourceDoesNotStartWith, Text = "Nezačíná", Checked = false, ToolTipTitle = "Nezačíná:", ToolTipText = "Vybere ty položky, jejichž text začíná jinak, než je zadáno", Tag = FilterBoxOperatorItems.DoesNotStartWith });
             if (items.HasFlag(FilterBoxOperatorItems.EndsWith))
-                menuItems.Add(new DataMenuItem() { ItemId = "EndsWith", HotKey = "/", Image = resourceEndsWith, Text = "Končí", Checked = false, ToolTipTitle = "Končí:", ToolTipText = "Vybere ty položky, jejichž text končí zadaným textem", Tag = FilterBoxOperatorItems.EndsWith });
+                menuItems.Add(new DataMenuItem() { ItemId = "EndsWith", HotKey = "/", ImageName = resourceEndsWith, Text = "Končí", Checked = false, ToolTipTitle = "Končí:", ToolTipText = "Vybere ty položky, jejichž text končí zadaným textem", Tag = FilterBoxOperatorItems.EndsWith });
             if (items.HasFlag(FilterBoxOperatorItems.DoesNotEndWith))
-                menuItems.Add(new DataMenuItem() { ItemId = "DoesNotEndWith", HotKey = "!/", Image = resourceDoesNotEndWith, Text = "Nekončí", Checked = false, ToolTipTitle = "Nekončí:", ToolTipText = "Vybere ty položky, jejichž text končí jinak, než je zadáno", Tag = FilterBoxOperatorItems.DoesNotEndWith });
+                menuItems.Add(new DataMenuItem() { ItemId = "DoesNotEndWith", HotKey = "!/", ImageName = resourceDoesNotEndWith, Text = "Nekončí", Checked = false, ToolTipTitle = "Nekončí:", ToolTipText = "Vybere ty položky, jejichž text končí jinak, než je zadáno", Tag = FilterBoxOperatorItems.DoesNotEndWith });
 
             return menuItems;
         }
@@ -384,7 +384,7 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             if (applyToButton)
             {   // Z aktuálního filtru přečteme jeho data a promítneme je do tlačítka:
-                _OperatorButtonImage = currentOperator?.Image;
+                _OperatorButtonImage = currentOperator?.ImageName;
                 _OperatorButtonToolTipTitle = currentOperator?.ToolTipTitle;
                 _OperatorButtonToolTipText = currentOperator?.ToolTipText;
                 OperatorButtonRefresh();

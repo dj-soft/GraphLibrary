@@ -3090,8 +3090,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         public override Image GetItemImage(int index)
         {
             var menuItem = this.ListItems[index];
-            if (menuItem != null && menuItem.Image != null)
-                return DxComponent.GetImageFromResource(menuItem.Image);
+            if (menuItem != null && menuItem.ImageName != null)
+                return DxComponent.GetImageFromResource(menuItem.ImageName);
 
             return base.GetItemImage(index);
         }
@@ -6273,9 +6273,9 @@ namespace Noris.Clients.Win.Components.AsolDX
             ItemIsFirstInGroup = source.ItemIsFirstInGroup;
             Enabled = source.Enabled;
             Checked = source.Checked;
-            Image = source.Image;
-            ImageUnChecked = source.ImageUnChecked;
-            ImageChecked = source.ImageChecked;
+            ImageName = source.ImageName;
+            ImageNameUnChecked = source.ImageNameUnChecked;
+            ImageNameChecked = source.ImageNameChecked;
             ItemPaintStyle = source.ItemPaintStyle;
             ToolTipText = source.ToolTipText;
             ToolTipTitle = source.ToolTipTitle;
@@ -6337,22 +6337,22 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Určuje, zda CheckBox je zaškrtnutý.
         /// Po změně zaškrtnutí v Menu / Ribbonu (uživatelem) je do této property setována aktuální hodnota z Menu / Ribbonu,
         /// a poté je vyvolána odpovídající událost ItemClick.
-        /// Zadaná hodnota může být null (pak ikona je <see cref="Image"/>), pak první kliknutí nastaví false, druhé true, třetí zase false (na NULL se interaktivně nedá doklikat)
+        /// Zadaná hodnota může být null (pak ikona je <see cref="ImageName"/>), pak první kliknutí nastaví false, druhé true, třetí zase false (na NULL se interaktivně nedá doklikat)
         /// </summary>
         public virtual bool? Checked { get; set; }
         /// <summary>
         /// Jméno běžné ikony.
         /// Pro prvek typu CheckBox tato ikona reprezentuje stav, kdy <see cref="Checked"/> = NULL.
         /// </summary>
-        public virtual string Image { get; set; }
+        public virtual string ImageName { get; set; }
         /// <summary>
         /// Jméno ikony pro stav UnChecked u typu <see cref="RibbonItemType.CheckBoxToggle"/>
         /// </summary>
-        public virtual string ImageUnChecked { get; set; }
+        public virtual string ImageNameUnChecked { get; set; }
         /// <summary>
         /// Jméno ikony pro stav Checked u typu <see cref="RibbonItemType.CheckBoxToggle"/>
         /// </summary>
-        public virtual string ImageChecked { get; set; }
+        public virtual string ImageNameChecked { get; set; }
         /// <summary>
         /// Styl zobrazení
         /// </summary>
@@ -6417,15 +6417,15 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Jméno ikony.
         /// Pro prvek typu CheckBox tato ikona reprezentuje stav, kdy <see cref="Checked"/> = NULL.
         /// </summary>
-        string Image { get; }
+        string ImageName { get; }
         /// <summary>
         /// Jméno ikony pro stav UnChecked u typu <see cref="RibbonItemType.CheckBoxToggle"/>
         /// </summary>
-        string ImageUnChecked { get; }
+        string ImageNameUnChecked { get; }
         /// <summary>
         /// Jméno ikony pro stav Checked u typu <see cref="RibbonItemType.CheckBoxToggle"/>
         /// </summary>
-        string ImageChecked { get; }
+        string ImageNameChecked { get; }
         /// <summary>
         /// Styl zobrazení
         /// </summary>

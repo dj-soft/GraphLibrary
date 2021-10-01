@@ -72,11 +72,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         public TreeListCheckBoxMode CheckBoxMode { get { return _TreeListNative.CheckBoxMode; } set { _TreeListNative.CheckBoxMode = value; } }
         /// <summary>
         /// Režim kreslení ikon u nodů.
-        /// Výchozí je <see cref="TreeListImageMode.ImageStatic"/> = zobrazuje se standardní ikona <see cref="ITextItem.Image"/> 
+        /// Výchozí je <see cref="TreeListImageMode.ImageStatic"/> = zobrazuje se standardní ikona <see cref="ITextItem.ImageName"/> 
         /// (ale nezobrazují se ikony <see cref="ITreeListNode.ImageDynamicDefault"/> a <see cref="ITreeListNode.ImageDynamicSelected"/>).
         /// Aplikační kód musí dodat objekt do <see cref="ImageList"/>, jinak se ikony zobrazovat nebudou, 
         /// dále musí dodat metodu <see cref="ImageIndexSearcher"/> (která převede jméno ikony z nodu do indexu v <see cref="ImageList"/>)
-        /// a musí plnit jména ikon do <see cref="ITextItem.Image"/>, <see cref="ITreeListNode.ImageDynamicDefault"/> a <see cref="ITreeListNode.ImageDynamicSelected"/>.
+        /// a musí plnit jména ikon do <see cref="ITextItem.ImageName"/>, <see cref="ITreeListNode.ImageDynamicDefault"/> a <see cref="ITreeListNode.ImageDynamicSelected"/>.
         /// </summary>
         public TreeListImageMode ImageMode { get { return _TreeListNative.ImageMode; } set { _TreeListNative.ImageMode = value; } }
         /// <summary>
@@ -2043,7 +2043,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             int imageIndex = _GetImageIndex(nodeInfo.ImageDynamicDefault, -1);
             treeNode.ImageIndex = imageIndex;                                                      // ImageIndex je vlevo, a může se změnit podle stavu Seleted
             treeNode.SelectImageIndex = _GetImageIndex(nodeInfo.ImageDynamicSelected, imageIndex); // SelectImageIndex je ikona ve stavu Nodes.Selected, zobrazená vlevo místo ikony ImageIndex
-            treeNode.StateImageIndex = _GetImageIndex(nodeInfo.Image, -1);                         // StateImageIndex je vpravo, a nereaguje na stav Selected
+            treeNode.StateImageIndex = _GetImageIndex(nodeInfo.ImageName, -1);                         // StateImageIndex je vpravo, a nereaguje na stav Selected
 
             if (canExpand) treeNode.Expanded = nodeInfo.Expanded;                                  // Expanded se nastavuje pouze z Refreshe (tam má smysl), ale ne při tvorbě (tam ještě nemáme ChildNody)
         }
@@ -2647,11 +2647,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         private TreeListCheckBoxMode _CheckBoxMode;
         /// <summary>
         /// Režim kreslení ikon u nodů.
-        /// Výchozí je <see cref="TreeListImageMode.ImageStatic"/> = zobrazuje se standardní ikona <see cref="ITextItem.Image"/> 
+        /// Výchozí je <see cref="TreeListImageMode.ImageStatic"/> = zobrazuje se standardní ikona <see cref="ITextItem.ImageName"/> 
         /// (ale nezobrazují se ikony <see cref="ITreeListNode.ImageDynamicDefault"/> a <see cref="ITreeListNode.ImageDynamicSelected"/>).
         /// Aplikační kód musí dodat objekt do <see cref="ImageList"/>, jinak se ikony zobrazovat nebudou, 
         /// dále musí dodat metodu <see cref="ImageIndexSearcher"/> (která převede jméno ikony z nodu do indexu v <see cref="ImageList"/>)
-        /// a musí plnit jména ikon do <see cref="ITextItem.Image"/>, <see cref="ITreeListNode.ImageDynamicDefault"/> a <see cref="ITreeListNode.ImageDynamicSelected"/>.
+        /// a musí plnit jména ikon do <see cref="ITextItem.ImageName"/>, <see cref="ITreeListNode.ImageDynamicDefault"/> a <see cref="ITreeListNode.ImageDynamicSelected"/>.
         /// </summary>
         public TreeListImageMode ImageMode
         {
@@ -3208,7 +3208,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         ImageDynamic,
         /// <summary>
-        /// Pouze ikona vpravo, statická, přebírá se z <see cref="ITextItem.Image"/>
+        /// Pouze ikona vpravo, statická, přebírá se z <see cref="ITextItem.ImageName"/>
         /// </summary>
         ImageStatic,
         /// <summary>
@@ -3466,7 +3466,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.LazyExpandable = lazyExpandable;
             this.ImageDynamicDefault = imageName;
             this.ImageDynamicSelected = imageNameSelected;
-            this.Image = imageNameStatic;
+            this.ImageName = imageNameStatic;
             this.ToolTipTitle = toolTipTitle;
             this.ToolTipText = toolTipText;
             this.FontSizeDelta = fontSizeDelta;

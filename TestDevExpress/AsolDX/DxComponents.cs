@@ -179,27 +179,16 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 _ApplicationDoRestart = false;
 
-                var czCi = System.Globalization.CultureInfo.GetCultureInfo("cs-CZ");
-                System.Globalization.CultureInfo.CurrentCulture = czCi;
-                System.Globalization.CultureInfo.CurrentUICulture = czCi;
-                Application.CurrentInputLanguage = InputLanguage.FromCulture(czCi);
-                System.Threading.Thread.CurrentThread.CurrentCulture = czCi;
-                System.Threading.Thread.CurrentThread.CurrentUICulture = czCi;
-
-                System.Globalization.CultureInfo.DefaultThreadCurrentCulture = czCi;
-                System.Globalization.CultureInfo.DefaultThreadCurrentUICulture = czCi;
-
-
                 _SplashShow("Testovací aplikace Helios Nephrite", "DJ soft & ASOL", "Copyright © 1995 - 2021 DJ soft" + Environment.NewLine + "All Rights reserved.", "Začínáme...",
                     null, splashImage, null,
                     DevExpress.XtraSplashScreen.FluentLoadingIndicatorType.Dots, null, null, true, true);
 
                 Form mainForm = System.Activator.CreateInstance(mainFormType) as Form;
-                mainForm.Shown += _Application_MainFormShown;
+
                 ApplicationContext context = new ApplicationContext();
                 context.MainForm = mainForm;
 
-                _SplashUpdate(rightFooter: "Už to bude...");
+                _SplashUpdate(subTitle: "Už to bude...");
 
                 Application.VisualStyleState = System.Windows.Forms.VisualStyles.VisualStyleState.ClientAndNonClientAreasEnabled;
                 Application.EnableVisualStyles();
@@ -211,12 +200,6 @@ namespace Noris.Clients.Win.Components.AsolDX
                 break;
             }
         }
-
-        private void _Application_MainFormShown(object sender, EventArgs e)
-        {
-            DxComponent.SplashHide();
-        }
-
         private void _ApplicationRestart()
         {
             List<Form> forms = new List<Form>();
@@ -1722,7 +1705,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (menuItem == null) return null;
 
             DevExpress.Utils.Menu.DXMenuItem dxItem;
-            string itemImage = menuItem.Image;
+            string itemImage = menuItem.ImageName;
             var itemType = menuItem.ItemType;
             if (itemType == MenuItemType.CheckBox)
             {   // Prvek menu s možností CheckBox:
@@ -1733,13 +1716,13 @@ namespace Noris.Clients.Win.Components.AsolDX
                 {   // Je zaškrtnutý:
                     if (showCheckedAsBold)
                         dxCheckItem.Appearance.FontStyleDelta = FontStyle.Bold;
-                    if (menuItem.ImageChecked != null)
-                        itemImage = menuItem.ImageChecked;
+                    if (menuItem.ImageNameChecked != null)
+                        itemImage = menuItem.ImageNameChecked;
                 }
                 else
                 {   // Není zaškrtnutý:
-                    if (menuItem.ImageUnChecked != null)
-                        itemImage = menuItem.ImageUnChecked;
+                    if (menuItem.ImageNameUnChecked != null)
+                        itemImage = menuItem.ImageNameUnChecked;
                 }
                 dxItem = dxCheckItem;
             }
@@ -1833,7 +1816,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                     string data = (count > 3 ? items[3].Trim().ToUpper() : "");
                     if (!String.IsNullOrEmpty(text))
                     {
-                        DataMenuItem menuItem = new DataMenuItem() { ItemId = itemId, Text = text, ToolTipText = toolTip, ToolTipTitle = text, Image = image };
+                        DataMenuItem menuItem = new DataMenuItem() { ItemId = itemId, Text = text, ToolTipText = toolTip, ToolTipTitle = text, ImageName = image };
                         menuItem.ItemType = (data.Contains(codChBox) ? MenuItemType.CheckBox : MenuItemType.MenuItem);
                         if (menuItem.ItemType == MenuItemType.CheckBox) menuItem.Checked = data.Contains(codChecked);
                         if (data.Contains(codGroup)) menuItem.ItemIsFirstInGroup = true;
