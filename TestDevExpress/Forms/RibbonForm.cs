@@ -918,9 +918,9 @@ namespace TestDevExpress.Forms
         /// <returns></returns>
         public static List<IRibbonItem> CreateSubItems(DataRibbonItem item, RibbonItemType itemType, int subItemsCountMin, int subItemsCountMax, int level = 0)
         {
-            if (itemType == RibbonItemType.Menu && Rand.Next(100) < 35 && level == 0)
-            {
-                item.Text = "...";
+            if ((itemType == RibbonItemType.SplitButton || itemType == RibbonItemType.Menu) && Rand.Next(100) < 35 && level == 0)
+            {   // SplitButton nebo Menu někdy dáme OnDemandLoadOnce:
+                item.Text = "...---...";
                 item.ToolTipText = "Prvky budou donačteny on-demand!";
                 item.SubItemsContentMode = RibbonContentMode.OnDemandLoadOnce;
                 return null;

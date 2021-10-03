@@ -1278,7 +1278,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 case RibbonItemType.SplitButton:
                     if (item is DevExpress.XtraBars.BarButtonItem splitButton)
-                    { }
+                        // SplitButton má v sobě vytvořené PopupMenu, které nyní obsahuje jen jeden prvek; zajistíme vložení reálného menu:
+                        _XPopupMenu_FillItems(splitButton, iCurrentItem, iRibbonItem.SubItems, openMenu);
                     break;
                 case RibbonItemType.Menu:
                     if (item is DevExpress.XtraBars.BarSubItem menu)
@@ -1573,10 +1574,10 @@ namespace Noris.Clients.Win.Components.AsolDX
             bool isLazyLoad = (parentItem.SubItemsContentMode == RibbonContentMode.OnDemandLoadEveryTime || parentItem.SubItemsContentMode == RibbonContentMode.OnDemandLoadOnce);
             if (hasSubItems && reallyCreate)
             {   // Vytvořit menu hned:
-                _XPopupMenu_FillItems(xPopupMenu, parentItem, subItems, ref count);
+                _XPopupMenu_FillItems(xPopupMenu, parentItem, subItems, false, ref count);
             }
             else if (hasSubItems || isLazyLoad)
-            {   // Vytvořit až bude třeba (BeforePopup):
+            {   // Vytvořit obsah až bude třeba (BeforePopup) = tj. když máme prvky, ale není požadavek reallyCreate, anebo je definováno LazyLoad:
                 xPopupMenu.Tag = new LazySubItemsInfo(parentItem, parentItem.SubItemsContentMode, subItems);
                 xPopupMenu.BeforePopup += _XPopupMenu_BeforePopup;
             }
@@ -1601,12 +1602,13 @@ namespace Noris.Clients.Win.Components.AsolDX
                     tag = lazySubItems.ParentItem;                   // Pro příští akce dáme do prvku Ribbonu Tag = IRibbonItem, který prvek deklaroval (ten je uchován v lazySubItems.ParentItem)
                     var startTime = DxComponent.LogTimeCurrent;
                     int count = 0;
-                    _XPopupMenu_FillItems(dxPopup, lazySubItems.ParentItem, lazySubItems.SubItems, ref count);
+                    _XPopupMenu_FillItems(dxPopup, lazySubItems.ParentItem, lazySubItems.SubItems, true, ref count);
                     if (LogActive) DxComponent.LogAddLineTime($"LazyLoad SplitButton menu create: {count} items, {DxComponent.LogTokenTimeMilisec}", startTime);
                 }
                 else if (lazySubItems.SubItemsContentMode == RibbonContentMode.OnDemandLoadOnce || lazySubItems.SubItemsContentMode == RibbonContentMode.OnDemandLoadEveryTime)
                 {   // 2. SubItems mi dodá aplikace na základě obsluhy eventu:
                     this.RunItemOnDemandLoad(lazySubItems.ParentItem);
+                    lazySubItems.Activator = dxPopup.Activator;
                     e.Cancel = true;
                     deactivatePopupEvent = false;                    // Dokud nedoběhnou ze serveru data (OnDemandLoad => RefreshItem() ), tak necháme aktivní událost Popup = pro jistotu...
                 }
@@ -1631,9 +1633,19 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="dxPopup"></param>
         /// <param name="parentItem"></param>
         /// <param name="subItems"></param>
+        /// <param name="clear">Smazat dosavadní obsah</param>
         /// <param name="count"></param>
-        private void _XPopupMenu_FillItems(DevExpress.XtraBars.PopupMenu dxPopup, IRibbonItem parentItem, IEnumerable<IRibbonItem> subItems, ref int count)
+        private void _XPopupMenu_FillItems(DevExpress.XtraBars.PopupMenu dxPopup, IRibbonItem parentItem, IEnumerable<IRibbonItem> subItems, bool clear, ref int count)
         {
+            if (clear && dxPopup.ItemLinks.Count > 0)
+            {
+                this.RemoveItemsFromQat(dxPopup.ItemLinks.Select(l => l.Item));
+                dxPopup.ItemLinks.Clear();
+            }
+
+            dxPopup.BeforePopup -= _XPopupMenu_BeforePopup;
+            dxPopup.Tag = parentItem;
+
             foreach (IRibbonItem subItem in subItems)
             {
                 subItem.ParentItem = parentItem;
@@ -1647,7 +1659,46 @@ namespace Noris.Clients.Win.Components.AsolDX
                 }
             }
         }
+        /// <summary>
+        /// Metoda najde menu v daném prvku <paramref name="splitButton"/>, a vygeneruje do tohoto menu správné prvky dodané explicitně.
+        /// Pokud je požadováno, otevře toto menu.
+        /// </summary>
+        /// <param name="splitButton"></param>
+        /// <param name="parentItem"></param>
+        /// <param name="subItems"></param>
+        /// <param name="openMenu"></param>
+        private void _XPopupMenu_FillItems(DevExpress.XtraBars.BarButtonItem splitButton, IRibbonItem parentItem, IEnumerable<IRibbonItem> subItems, bool openMenu)
+        {
+            if (splitButton.DropDownControl is DevExpress.XtraBars.PopupMenu dxPopup)
+            {
+                LazySubItemsInfo lazySubItems = dxPopup.Tag as LazySubItemsInfo;
 
+                var startTime = DxComponent.LogTimeCurrent;
+                int count = 0;
+                _XPopupMenu_FillItems(dxPopup, parentItem, subItems, true, ref count);
+                if (LogActive) DxComponent.LogAddLineTime($"LazyLoad SplitButton menu create: {count} items, {DxComponent.LogTokenTimeMilisec}", startTime);
+
+                if (openMenu && !dxPopup.Opened)
+                {
+                    Point popupLocation = GetPopupLocation(lazySubItems);
+                    dxPopup.ShowPopup(popupLocation);
+                }
+            }
+        }
+        /// <summary>
+        /// Vrátí souřadnici pro zobrazení Popup menu
+        /// </summary>
+        /// <param name="lazySubItems"></param>
+        /// <returns></returns>
+        private Point GetPopupLocation(LazySubItemsInfo lazySubItems)
+        {
+            if (lazySubItems != null && lazySubItems.Activator != null && lazySubItems.Activator is DevExpress.XtraBars.BarItemLink barItemLink)
+            {
+                Rectangle bounds = barItemLink.ScreenBounds;
+                return new Point(bounds.X, bounds.Bottom);
+            }
+            return Control.MousePosition;
+        }
         // BarSubItem pro Menu
         /// <summary>
         /// Naplní položky do daného menu <see cref="DevExpress.XtraBars.BarSubItem"/>, používá se pro prvek typu <see cref="RibbonItemType.Menu"/>
@@ -1855,6 +1906,14 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// SubPrvky
             /// </summary>
             public IEnumerable<IRibbonItem> SubItems { get; private set; }
+            /// <summary>
+            /// Aktivátor menu
+            /// </summary>
+            public object Activator { get; set; }
+            /// <summary>
+            /// Souřadnice pro zobrazení Popup
+            /// </summary>
+            public Point? PopupLocation { get; set; }
         }
         private void RibbonControl_SubItemClick(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
         {
