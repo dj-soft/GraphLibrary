@@ -184,7 +184,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                     DevExpress.XtraSplashScreen.FluentLoadingIndicatorType.Dots, null, null, true, true);
 
                 Form mainForm = System.Activator.CreateInstance(mainFormType) as Form;
-
+                mainForm.Shown += MainForm_Shown;
                 ApplicationContext context = new ApplicationContext();
                 context.MainForm = mainForm;
 
@@ -199,6 +199,17 @@ namespace Noris.Clients.Win.Components.AsolDX
                 Application.Restart();
                 break;
             }
+        }
+        /// <summary>
+        /// Při zobrazení MainFormu
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void MainForm_Shown(object sender, EventArgs e)
+        {
+            if (sender is Form mainForm)
+                mainForm.Shown -= MainForm_Shown;
+            _SplashHide();
         }
         private void _ApplicationRestart()
         {

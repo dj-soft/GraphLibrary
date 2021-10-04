@@ -16,6 +16,7 @@ using DevExpress.Utils;
 using System.Diagnostics;
 using DevExpress.Utils.Extensions;
 using System.Security.Policy;
+using DevExpress.XtraBars;
 
 namespace Noris.Clients.Win.Components.AsolDX
 {
@@ -153,18 +154,48 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             bool isSmallRibbon = (this.CommandLayout == DevExpress.XtraBars.Ribbon.CommandLayout.Simplified);
             Image image = (isSmallRibbon ? (_ImageRightMini ?? _ImageRightFull) : (_ImageRightFull ?? _ImageRightMini));
-            if (image == null) return;
+            if (image != null && image.Width > 0 && image.Height > 0)
+                PaintLogoImage(e, image, isSmallRibbon);
+
+            OnPaintImageRightAfter(e);
+        }
+        /// <summary>
+        /// Vykreslí zadané Logo
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="image"></param>
+        /// <param name="isSmallRibbon"></param>
+        private void PaintLogoImage(PaintEventArgs e, Image image, bool isSmallRibbon)
+        {
             Size imageNativeSize = image.Size;
             if (imageNativeSize.Width <= 0 || imageNativeSize.Height <= 0) return;
 
             // Rectangle buttonsBounds = (isSmallRibbon ? ClientRectangle.Enlarge(0, -4, -28, -4) : ButtonsBounds.Enlarge(-4));
-            Rectangle buttonsBounds = (isSmallRibbon ? ButtonsBounds.Enlarge(0, -4, -28, +16) : ButtonsBounds.Enlarge(-4));
+            Rectangle contentBounds = ContentBounds;
+            // contentBounds = (isSmallRibbon ? contentBounds.Enlarge(0, -4, -28, +16) : contentBounds.Enlarge(-4));
+            contentBounds = contentBounds.Enlarge(-2);
             ContentAlignment alignment = (isSmallRibbon ? ContentAlignment.TopRight : ContentAlignment.BottomRight);
-            Rectangle imageBounds = imageNativeSize.AlignTo(buttonsBounds, alignment, true, true);
+            Rectangle imageBounds = imageNativeSize.AlignTo(contentBounds, alignment, true, true);
 
             e.Graphics.DrawImage(image, imageBounds);
-
-            OnPaintImageRightAfter(e);
+        }
+        /// <summary>
+        /// Souřadnice oblasti Ribbonu, kde jsou aktuálně buttony
+        /// </summary>
+        public Rectangle ContentBounds
+        {
+            get
+            {
+                var contentBounds = this.ClientRectangle;
+                var page = this.SelectedPage;
+                if (page != null)
+                {
+                    var panelInfo = page.PageInfo?.ViewInfo?.Panel;
+                    if (panelInfo != null)
+                        contentBounds = panelInfo.ContentBounds;
+                }
+                return contentBounds;
+            }
         }
         /// <summary>
         /// Provede se před vykreslením obrázku vpravo v ribbonu
@@ -191,9 +222,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         #endregion
         #region Pole obsahující stránky Ribbonu
         /// <summary>
-        /// ID aktuálně vybrané stránky = <see cref="DevExpress.XtraBars.Ribbon.RibbonPage.Name"/>.
+        /// ID aktuálně vybrané stránky = <see cref="DevExpress.XtraBars.Ribbon.RibbonPage.Name"/> = <see cref="IRibbonPage.PageId"/>.
+        /// <para/>
         /// Lze setovat, dojde k aktivaci dané stránky (pokud je nalezena).
-        /// Funguje správně i pro stránky kategorií i pro mergované stránky.
+        /// Funguje správně i pro stránky kategorií i pro mergované stránky, pokud jejich holé jméno stránky je jednoznačné.
+        /// <para/>
+        /// Pozor, pokud v definici stránek je použito shodné jméno pro stránku bez kategorie a pro jinou stránku s kategorií, pak <see cref="SelectedPageId"/> není jednoznačené. Pak je vhodnější používat <see cref="SelectedPageFullId"/>
         /// </summary>
         public string SelectedPageId
         {
@@ -209,6 +243,36 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
         }
         /// <summary>
+        /// Obsahuje FullID stránky. 
+        /// FullID v sobě obsahuje i ID kategorie, pokud na stránce je zadaná. Oddělovač je zpětné lomítko \. Pokud kategorie není uvedena, pak <see cref="SelectedPageFullId"/> neobsahuje zpětné lomítko \ .
+        /// <para/>
+        /// Lze setovat, dojde k aktivaci dané stránky (pokud je nalezena).
+        /// Funguje správně i pro stránky kategorií i pro mergované stránky.
+        /// </summary>
+        public string SelectedPageFullId 
+        { 
+            get { return GetPageFullId(this.SelectedPage); }
+            set
+            {
+                if (!String.IsNullOrEmpty(value))
+                {
+                    var page = AllPages.FirstOrDefault(p => GetPageFullId(p) == value);
+                    if (page != null)
+                        this.SelectedPage = page;
+                }
+            }
+        }
+        /// <summary>
+        /// Vrátí FullId stránky. Obsahuje : [ID kategorie\]ID stránky
+        /// </summary>
+        /// <param name="page"></param>
+        /// <returns></returns>
+        protected static string GetPageFullId(DevExpress.XtraBars.Ribbon.RibbonPage page)
+        {
+            if (page == null) return null;
+            return ((page.Category != null) ? ((page.Category.Name ?? "") + "\\") : "") + page.Name;
+        }
+        /// <summary>
         /// ID posledně reálné vybrané stránky. V procesu změny aktivní stránky obsahuje předchozí.
         /// Pokud se provádí Clear, tato hodnota se neaktualizuje = obsahuje předchozí aktivní stránku.
         /// Pokud po Clear nezbude žádná stránka, pak zde bude zachycena poslední platná.
@@ -217,10 +281,23 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public string LastSelectedPageId { get; private set; }
         /// <summary>
+        /// FullID posledně reálné vybrané stránky (viz <see cref="SelectedPageFullId"/>). V procesu změny aktivní stránky obsahuje předchozí.
+        /// Pokud se provádí Clear, tato hodnota se neaktualizuje = obsahuje předchozí aktivní stránku.
+        /// Pokud po Clear nezbude žádná stránka, pak zde bude zachycena poslední platná.
+        /// Pokud po Clear bude aktivována jiná existující stránka, pak zde bude tato nová.
+        /// Před aktivací první stránky je zde null, ale poté už nikdy ne.
+        /// </summary>
+        public string LastSelectedPageFullId { get; private set; }
+        /// <summary>
         /// ID posledně vybrané stránky, která je naše nativní (bude k dispozici i po provedení Unmerge Child ribbonu).
         /// Na tuto stránku seRibbon vrátí po Unmerge.
         /// </summary>
         public string LastSelectedOwnPageId { get; private set; }
+        /// <summary>
+        /// FullID posledně vybrané stránky (viz <see cref="SelectedPageFullId"/>), která je naše nativní (bude k dispozici i po provedení Unmerge Child ribbonu).
+        /// Na tuto stránku seRibbon vrátí po Unmerge.
+        /// </summary>
+        public string LastSelectedOwnPageFullId { get; private set; }
         /// <summary>
         /// Vrátí soupis stránek z this ribbonu z daných pozic
         /// </summary>
@@ -338,7 +415,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         #endregion
         #endregion
-        #region Tvorba obsahu Ribbonu: Clear(), ClearPageContents(), RemoveVoidContainers(), AddPages(), ReFillPages()
+        #region Tvorba obsahu Ribbonu: Clear(), ClearPageContents(), RemoveVoidContainers(), AddPages(), RefreshPages(), RefreshItems(), RefreshItem()
         /// <summary>
         /// Smaže celý obsah Ribbonu. Ribbon se zmenší na řádek pro záhlaví a celé okno pod ním se přeuspořádá.
         /// Důvodem je smazání všech stránek.
@@ -356,6 +433,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             var startTime = DxComponent.LogTimeCurrent;
 
             string lastSelectedPageId = this.SelectedPageId;
+            string lastSelectedPageFullId = this.SelectedPageFullId;
             int removeItemsCount = 0;
             try
             {
@@ -370,6 +448,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             finally
             {
                 this.LastSelectedPageId = lastSelectedPageId;
+                this.LastSelectedPageFullId = lastSelectedPageFullId;
                 _ClearingNow = false;
             }
 
@@ -573,16 +652,18 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="iRibbonItems"></param>
         /// <param name="openMenu"></param>
-        public void RefreshItems(IEnumerable<IRibbonItem> iRibbonItems, bool openMenu = false)
+        public void RefreshItems(IEnumerable<IRibbonItem> iRibbonItems)
         {
             if (iRibbonItems == null) return;
             this.RunInGui(() =>
             {
+                List<Action> afterMergeActions = new List<Action>();
                 this.ModifyCurrentDxContent(() =>
                 {
                     foreach (var iRibbonItem in iRibbonItems)
-                        RefreshCurrentItem(iRibbonItem, openMenu);
+                        RefreshCurrentItem(iRibbonItem, afterMergeActions, false);
                 });
+                afterMergeActions.ForEachExec(a => a());             // Pokud se nám nastřádaly nějaké akce, provedeme je nyní, když už je Ribbon zpátky Mergován...
             });
         }
         /// <summary>
@@ -599,10 +680,12 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (iRibbonItem == null) return;
             this.RunInGui(() =>
             {
+                List<Action> afterMergeActions = new List<Action>();
                 this.ModifyCurrentDxContent(() =>
                 {
-                    RefreshCurrentItem(iRibbonItem, openMenu);
+                    RefreshCurrentItem(iRibbonItem, afterMergeActions, openMenu);
                 });
+                afterMergeActions.ForEachExec(a => a());             // Pokud se nám nastřádaly nějaké akce, provedeme je nyní, když už je Ribbon zpátky Mergován...
             });
         }
         /// <summary>
@@ -746,7 +829,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             var page = GetPage(iRibbonPage, pageCategory);                     // Najde / Vytvoří stránku do this.Pages nebo do category.Pages
             if (page is null) return;
 
-            if (this.SelectedPageId == page.Name) isLazyContentFill = false;   // Pokud v Ribbonu je aktuálně vybraná ta stránka, která se nyní generuje, pak se NEBUDE plnit v režimu Lazy
+            string fullId = GetPageFullId(page);
+            if (this.SelectedPageFullId == fullId) isLazyContentFill = false;  // Pokud v Ribbonu je aktuálně vybraná ta stránka, která se nyní generuje, pak se NEBUDE plnit v režimu Lazy
             bool createContent = page.PreparePageForContent(iRibbonPage, isLazyContentFill, isOnDemandFill, out bool isStaticLazyContent);
             if (isStaticLazyContent)
                 _ActiveLazyLoadOnIdle = true;                                  // Pokud tuhle stránku nebudu plnit (=nyní jen generujeme prázdnou stránku, anebo jen obsahující QAT prvky), tak si poznamenám, že budu chtít stránky naplnit ve stavu OnIdle
@@ -875,12 +959,18 @@ namespace Noris.Clients.Win.Components.AsolDX
         protected void StoreLastSelectedPage()
         {
             if (_ClearingNow || this.SelectedPage == null) return;
+
             var pageId = this.SelectedPageId;
+            var fullId = this.SelectedPageFullId;
             if (!String.IsNullOrEmpty(pageId))
             {
                 this.LastSelectedPageId = pageId;
+                this.LastSelectedPageFullId = fullId;
                 if (IsOwnPageId(pageId))
+                {
                     this.LastSelectedOwnPageId = pageId;
+                    this.LastSelectedOwnPageFullId = fullId;
+                }
             }
         }
         /// <summary>
@@ -1000,7 +1090,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private bool _ActiveLazyLoadOnIdle;
         #endregion
-        #region Fyzická tvorba prvků Ribbonu (Kategorie, Stránka, Grupa, Prvek, konkrétní prvky, ...) : Get/Create/Clear/Add/Remove
+        #region Fyzická tvorba prvků Ribbonu (Kategorie, Stránka, Grupa, Prvek, konkrétní prvky, ...) : Get/Create/Clear/Add/Remove; plus Refresh + LazyLoad SubItems
         /// <summary>
         /// Rozpozná, najde, vytvoří a vrátí kategorii pro daná data
         /// </summary>
@@ -1261,8 +1351,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Lze vyžádat otevření submenu, pokud to submenu je.
         /// </summary>
         /// <param name="iRibbonItem"></param>
+        /// <param name="afterMergeActions"></param>
         /// <param name="openMenu"></param>
-        protected void RefreshCurrentItem(IRibbonItem iRibbonItem, bool openMenu = false)
+        protected void RefreshCurrentItem(IRibbonItem iRibbonItem, List<Action> afterMergeActions, bool openMenu = false)
         {
             if (iRibbonItem == null) return;
             string itemId = iRibbonItem.ItemId;
@@ -1274,20 +1365,23 @@ namespace Noris.Clients.Win.Components.AsolDX
             TryGetIRibbonItem(item.Tag, out IRibbonItem iCurrentItem);
             var itemType = iCurrentItem?.ItemType ?? iRibbonItem.ItemType;
 
-            switch (itemType)
+            if (iRibbonItem.SubItems != null)
             {
-                case RibbonItemType.SplitButton:
-                    if (item is DevExpress.XtraBars.BarButtonItem splitButton)
-                        // SplitButton má v sobě vytvořené PopupMenu, které nyní obsahuje jen jeden prvek; zajistíme vložení reálného menu:
-                        _XPopupMenu_FillItems(splitButton, iCurrentItem, iRibbonItem.SubItems, openMenu);
-                    break;
-                case RibbonItemType.Menu:
-                    if (item is DevExpress.XtraBars.BarSubItem menu)
-                    { }
-                    break;
+                switch (itemType)
+                {
+                    case RibbonItemType.SplitButton:
+                        if (item is DevExpress.XtraBars.BarButtonItem splitButton)
+                            // SplitButton má v sobě vytvořené PopupMenu, které nyní obsahuje jen jeden prvek; zajistíme vložení reálného menu:
+                            _PopupMenu_RefreshItems(splitButton, iCurrentItem, iRibbonItem, openMenu, afterMergeActions);
+                        break;
+                    case RibbonItemType.Menu:
+                        if (item is DevExpress.XtraBars.BarSubItem menu)
+                            _BarMenu_RefreshItems(menu, iCurrentItem, iRibbonItem, openMenu, afterMergeActions);
+                        break;
+                }
             }
-            //if (openMenu)
-            //{ }
+
+            item.Tag = iRibbonItem;
         }
         private bool TryGetIRibbonItem(object tag, out IRibbonItem iRibbonItem)
         {
@@ -1375,7 +1469,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                     break;
                 case RibbonItemType.SplitButton:
                     count++;
-                    var dxPopup = CreateXPopupMenu(iRibbonItem, iRibbonItem.SubItems, reallyCreateSubItems, ref count);
+                    var dxPopup = CreatePopupMenu(iRibbonItem, iRibbonItem.SubItems, reallyCreateSubItems, ref count);
                     DevExpress.XtraBars.BarButtonItem splitButton = Items.CreateSplitButton(iRibbonItem.Text, dxPopup);
                     barItem = splitButton;
                     break;
@@ -1403,7 +1497,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 case RibbonItemType.Menu:
                     count++;
                     DevExpress.XtraBars.BarSubItem menu = Items.CreateMenu(iRibbonItem.Text);
-                    PrepareXBarMenu(iRibbonItem, iRibbonItem.SubItems, menu, reallyCreateSubItems, ref count);
+                    PrepareBarMenu(iRibbonItem, iRibbonItem.SubItems, menu, reallyCreateSubItems, ref count);
                     barItem = menu;
                     break;
                 case RibbonItemType.InRibbonGallery:
@@ -1442,10 +1536,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="barItem"></param>
         /// <param name="iRibbonItem"></param>
-        protected void FillBarItem(DevExpress.XtraBars.BarItem barItem, IRibbonItem iRibbonItem)
+        /// <param name="withReset"></param>
+        protected void FillBarItem(DevExpress.XtraBars.BarItem barItem, IRibbonItem iRibbonItem, bool withReset = false)
         {
-            if (iRibbonItem.Text != null)
-                barItem.Caption = iRibbonItem.Text;
+            if (iRibbonItem.Text != null || withReset)
+                barItem.Caption = iRibbonItem.Text ?? "";
 
             barItem.Enabled = iRibbonItem.Enabled;
 
@@ -1493,7 +1588,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (iRibbonItem.RibbonStyle != RibbonItemStyles.Default)
                 barItem.RibbonStyle = Convert(iRibbonItem.RibbonStyle);
 
-            if (iRibbonItem.ToolTipText != null)
+            if (iRibbonItem.ToolTipText != null || withReset)
                 barItem.SuperTip = DxComponent.CreateDxSuperTip(iRibbonItem);
 
             if (barItem.Tag == null)
@@ -1566,7 +1661,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="reallyCreate"></param>
         /// <param name="count"></param>
         /// <returns></returns>
-        protected DevExpress.XtraBars.PopupMenu CreateXPopupMenu(IRibbonItem parentItem, IEnumerable<IRibbonItem> subItems, bool reallyCreate, ref int count)
+        protected DevExpress.XtraBars.PopupMenu CreatePopupMenu(IRibbonItem parentItem, IEnumerable<IRibbonItem> subItems, bool reallyCreate, ref int count)
         {
             DevExpress.XtraBars.PopupMenu xPopupMenu = new DevExpress.XtraBars.PopupMenu(BarManager);
 
@@ -1574,12 +1669,12 @@ namespace Noris.Clients.Win.Components.AsolDX
             bool isLazyLoad = (parentItem.SubItemsContentMode == RibbonContentMode.OnDemandLoadEveryTime || parentItem.SubItemsContentMode == RibbonContentMode.OnDemandLoadOnce);
             if (hasSubItems && reallyCreate)
             {   // Vytvořit menu hned:
-                _XPopupMenu_FillItems(xPopupMenu, parentItem, subItems, false, ref count);
+                _PopupMenu_FillItems(xPopupMenu, parentItem, subItems, false, ref count);
             }
             else if (hasSubItems || isLazyLoad)
             {   // Vytvořit obsah až bude třeba (BeforePopup) = tj. když máme prvky, ale není požadavek reallyCreate, anebo je definováno LazyLoad:
                 xPopupMenu.Tag = new LazySubItemsInfo(parentItem, parentItem.SubItemsContentMode, subItems);
-                xPopupMenu.BeforePopup += _XPopupMenu_BeforePopup;
+                xPopupMenu.BeforePopup += _PopupMenu_BeforePopup;
             }
             return xPopupMenu;
         }
@@ -1588,7 +1683,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void _XPopupMenu_BeforePopup(object sender, System.ComponentModel.CancelEventArgs e)
+        private void _PopupMenu_BeforePopup(object sender, System.ComponentModel.CancelEventArgs e)
         {
             if (!(sender is DevExpress.XtraBars.PopupMenu dxPopup)) return;
 
@@ -1602,13 +1697,15 @@ namespace Noris.Clients.Win.Components.AsolDX
                     tag = lazySubItems.ParentItem;                   // Pro příští akce dáme do prvku Ribbonu Tag = IRibbonItem, který prvek deklaroval (ten je uchován v lazySubItems.ParentItem)
                     var startTime = DxComponent.LogTimeCurrent;
                     int count = 0;
-                    _XPopupMenu_FillItems(dxPopup, lazySubItems.ParentItem, lazySubItems.SubItems, true, ref count);
+                    _PopupMenu_FillItems(dxPopup, lazySubItems.ParentItem, lazySubItems.SubItems, true, ref count);
                     if (LogActive) DxComponent.LogAddLineTime($"LazyLoad SplitButton menu create: {count} items, {DxComponent.LogTokenTimeMilisec}", startTime);
                 }
                 else if (lazySubItems.SubItemsContentMode == RibbonContentMode.OnDemandLoadOnce || lazySubItems.SubItemsContentMode == RibbonContentMode.OnDemandLoadEveryTime)
                 {   // 2. SubItems mi dodá aplikace na základě obsluhy eventu:
+                    lazySubItems.Activator = dxPopup.Activator as DevExpress.XtraBars.BarItemLink;
+                    lazySubItems.PopupLocation = GetPopupLocation(lazySubItems.Activator);
+                    lazySubItems.CurrentMergeLevel = this.MergeLevel;
                     this.RunItemOnDemandLoad(lazySubItems.ParentItem);
-                    lazySubItems.Activator = dxPopup.Activator;
                     e.Cancel = true;
                     deactivatePopupEvent = false;                    // Dokud nedoběhnou ze serveru data (OnDemandLoad => RefreshItem() ), tak necháme aktivní událost Popup = pro jistotu...
                 }
@@ -1622,7 +1719,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             // Deaktivovat zdejší handler?
             if (deactivatePopupEvent)
             {
-                dxPopup.BeforePopup -= _XPopupMenu_BeforePopup;
+                dxPopup.BeforePopup -= _PopupMenu_BeforePopup;
                 dxPopup.Tag = tag;
             }
         }
@@ -1635,7 +1732,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="subItems"></param>
         /// <param name="clear">Smazat dosavadní obsah</param>
         /// <param name="count"></param>
-        private void _XPopupMenu_FillItems(DevExpress.XtraBars.PopupMenu dxPopup, IRibbonItem parentItem, IEnumerable<IRibbonItem> subItems, bool clear, ref int count)
+        private void _PopupMenu_FillItems(DevExpress.XtraBars.PopupMenu dxPopup, IRibbonItem parentItem, IEnumerable<IRibbonItem> subItems, bool clear, ref int count)
         {
             if (clear && dxPopup.ItemLinks.Count > 0)
             {
@@ -1643,7 +1740,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 dxPopup.ItemLinks.Clear();
             }
 
-            dxPopup.BeforePopup -= _XPopupMenu_BeforePopup;
+            dxPopup.BeforePopup -= _PopupMenu_BeforePopup;
             dxPopup.Tag = parentItem;
 
             foreach (IRibbonItem subItem in subItems)
@@ -1662,28 +1759,50 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Metoda najde menu v daném prvku <paramref name="splitButton"/>, a vygeneruje do tohoto menu správné prvky dodané explicitně.
         /// Pokud je požadováno, otevře toto menu.
+        /// Pozor, tato metoda by byla ráda, když by na vstupu měla nezměněný Tag v prvku <paramref name="splitButton"/>, protože v něm je uložena pozice pro DropDown menu.
         /// </summary>
         /// <param name="splitButton"></param>
-        /// <param name="parentItem"></param>
-        /// <param name="subItems"></param>
-        /// <param name="openMenu"></param>
-        private void _XPopupMenu_FillItems(DevExpress.XtraBars.BarButtonItem splitButton, IRibbonItem parentItem, IEnumerable<IRibbonItem> subItems, bool openMenu)
+        /// <param name="oldRibbonItem">Původní definiční objekt</param>
+        /// <param name="newRibbonItem">Nový definiční objekt</param>
+        /// <param name="openMenu">Požadavek na otevření menu</param>
+        /// <param name="afterMergeActions">Sbírka akcí, prováděných po Mergování ribbonu</param>
+        private void _PopupMenu_RefreshItems(DevExpress.XtraBars.BarButtonItem splitButton, IRibbonItem oldRibbonItem, IRibbonItem newRibbonItem, bool openMenu, List<Action> afterMergeActions)
         {
             if (splitButton.DropDownControl is DevExpress.XtraBars.PopupMenu dxPopup)
             {
                 LazySubItemsInfo lazySubItems = dxPopup.Tag as LazySubItemsInfo;
 
+                dxPopup.BeforePopup -= _PopupMenu_BeforePopup;
+                dxPopup.Tag = newRibbonItem;
+
                 var startTime = DxComponent.LogTimeCurrent;
                 int count = 0;
-                _XPopupMenu_FillItems(dxPopup, parentItem, subItems, true, ref count);
+                _PopupMenu_FillItems(dxPopup, newRibbonItem, newRibbonItem.SubItems, true, ref count);
                 if (LogActive) DxComponent.LogAddLineTime($"LazyLoad SplitButton menu create: {count} items, {DxComponent.LogTokenTimeMilisec}", startTime);
 
+                // Poznámky k rozdílu PopupMenu (dxPopup) [zdejší metoda] a BarSubItem (menu) [metoda o něco níže] ve vztahu k vyžádanému otevírání menu a k Mergovanému Ribbonu:
+                //  Když Ribbon není Mergován, pak s otevřením menu není problém nikde.
+                //  Když Ribbon je Mergován, pak změna obsahu (tedy zdejší metoda RefreshItems) se provádí ve stavu, kdy aktuální Ribbon je UnMerge, změní svůj obsah, a následně bude Mergován nazpátek.
+                //  Tento proces (zpětné Mergování) NEprovede zhasnutí otevřeného menu typu PopupMenu = od SplitButtonu = zdejší případ,
+                //  ale provede zhasnutí menu typu BarSubItem (metoda o něco níže), tam se věc řeší složitěji.
+                // Zdejší metoda pro SplitButton tedy požádá o otevření DropDownControlu, a má vyřešeno:
                 if (openMenu && !dxPopup.Opened)
                 {
                     Point popupLocation = GetPopupLocation(lazySubItems);
-                    dxPopup.ShowPopup(popupLocation);
+                    splitButton.DropDownControl.ShowPopup(this.BarManager, popupLocation);
                 }
             }
+        }
+        /// <summary>
+        /// Vrátí souřadnici pro zobrazení Popup menu
+        /// </summary>
+        /// <param name="barItemLink"></param>
+        /// <returns></returns>
+        private Point? GetPopupLocation(DevExpress.XtraBars.BarItemLink barItemLink)
+        {
+            if (barItemLink == null) return Control.MousePosition;
+            Rectangle bounds = barItemLink.ScreenBounds;
+            return new Point(bounds.X, bounds.Bottom);
         }
         /// <summary>
         /// Vrátí souřadnici pro zobrazení Popup menu
@@ -1692,35 +1811,40 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         private Point GetPopupLocation(LazySubItemsInfo lazySubItems)
         {
-            if (lazySubItems != null && lazySubItems.Activator != null && lazySubItems.Activator is DevExpress.XtraBars.BarItemLink barItemLink)
+            if (lazySubItems != null)
             {
-                Rectangle bounds = barItemLink.ScreenBounds;
-                return new Point(bounds.X, bounds.Bottom);
+                if (lazySubItems.PopupLocation.HasValue) return lazySubItems.PopupLocation.Value;
+                if (lazySubItems.Activator != null && lazySubItems.Activator is DevExpress.XtraBars.BarItemLink barItemLink)
+                {
+                    Rectangle bounds = barItemLink.ScreenBounds;
+                    return new Point(bounds.X, bounds.Bottom);
+                }
             }
             return Control.MousePosition;
         }
+
         // BarSubItem pro Menu
         /// <summary>
         /// Naplní položky do daného menu <see cref="DevExpress.XtraBars.BarSubItem"/>, používá se pro prvek typu <see cref="RibbonItemType.Menu"/>
         /// </summary>
         /// <param name="parentItem"></param>
         /// <param name="subItems"></param>
-        /// <param name="xBarMenu"></param>
+        /// <param name="menu"></param>
         /// <param name="reallyCreate"></param>
         /// <param name="count"></param>
-        private void PrepareXBarMenu(IRibbonItem parentItem, IEnumerable<IRibbonItem> subItems, DevExpress.XtraBars.BarSubItem xBarMenu, bool reallyCreate, ref int count)
+        private void PrepareBarMenu(IRibbonItem parentItem, IEnumerable<IRibbonItem> subItems, DevExpress.XtraBars.BarSubItem menu, bool reallyCreate, ref int count)
         {
             bool hasSubItems = (subItems != null);
             bool isLazyLoad = (parentItem.SubItemsContentMode == RibbonContentMode.OnDemandLoadEveryTime || parentItem.SubItemsContentMode == RibbonContentMode.OnDemandLoadOnce);
             if (hasSubItems && reallyCreate)
             {
-                _XBarMenu_FillItems(xBarMenu, parentItem, subItems, ref count);
+                _BarMenu_FillItems(menu, parentItem, subItems, false, ref count);
             }
             else if (hasSubItems || isLazyLoad)
             {
-                xBarMenu.AddItem(new DevExpress.XtraBars.BarButtonItem(this.BarManager, "..."));     // Musí tu být alespoň jeden prvek, jinak při kliknutí na Menu se nebude nic dít (neproběhne event xBarMenu.Popup)
-                xBarMenu.Tag = new LazySubItemsInfo(parentItem, parentItem.SubItemsContentMode, subItems);
-                xBarMenu.Popup += _XBarMenu_BeforePopup;
+                menu.AddItem(new DevExpress.XtraBars.BarButtonItem(this.BarManager, "..."));     // Musí tu být alespoň jeden prvek, jinak při kliknutí na Menu se nebude nic dít (neproběhne event xBarMenu.Popup)
+                menu.Tag = new LazySubItemsInfo(parentItem, parentItem.SubItemsContentMode, subItems);
+                menu.Popup += _BarMenu_BeforePopup;
             }
         }
         /// <summary>
@@ -1728,12 +1852,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void _XBarMenu_BeforePopup(object sender, EventArgs e)
+        private void _BarMenu_BeforePopup(object sender, EventArgs e)
         {
-            if (!(sender is DevExpress.XtraBars.BarSubItem xBarMenu)) return;
+            if (!(sender is DevExpress.XtraBars.BarSubItem menu)) return;
 
             bool deactivatePopupEvent = true;
-            object tag = xBarMenu.Tag;
+            object tag = menu.Tag;
             if (tag is LazySubItemsInfo lazySubItems)
             {   // Pokud máme LazyInfo:
                 // Mohou nastat dvě situace:
@@ -1742,12 +1866,13 @@ namespace Noris.Clients.Win.Components.AsolDX
                     tag = lazySubItems.ParentItem;                   // Pro příští akce dáme do prvku Ribbonu Tag = IRibbonItem, který prvek deklaroval (ten je uchován v lazySubItems.ParentItem)
                     var startTime = DxComponent.LogTimeCurrent;
                     int count = 0;
-                    xBarMenu.ItemLinks.Clear();                      // V téhle kolekci byl jeden prvek "...", který mi zajistil aktivaci menu = zdejší metoda Popup.
-                    _XBarMenu_FillItems(xBarMenu, lazySubItems.ParentItem, lazySubItems.SubItems, ref count);
+                    _BarMenu_FillItems(menu, lazySubItems.ParentItem, lazySubItems.SubItems, true, ref count);
                     if (LogActive) DxComponent.LogAddLineTime($"LazyLoad Menu create: {count} items, {DxComponent.LogTokenTimeMilisec}", startTime);
                 }
                 else if (lazySubItems.SubItemsContentMode == RibbonContentMode.OnDemandLoadOnce || lazySubItems.SubItemsContentMode == RibbonContentMode.OnDemandLoadEveryTime)
                 {   // 2. SubItems mi dodá aplikace na základě obsluhy eventu:
+                    lazySubItems.PopupLocation = Control.MousePosition;
+                    lazySubItems.CurrentMergeLevel = this.MergeLevel;
                     this.RunItemOnDemandLoad(lazySubItems.ParentItem);
                     deactivatePopupEvent = false;                    // Dokud nedoběhnou ze serveru data (OnDemandLoad => RefreshItem() ), tak necháme aktivní událost Popup = pro jistotu...
                 }
@@ -1761,24 +1886,27 @@ namespace Noris.Clients.Win.Components.AsolDX
             // Deaktivovat zdejší handler?
             if (deactivatePopupEvent)
             {
-                xBarMenu.Popup -= _XBarMenu_BeforePopup;
-                xBarMenu.Tag = tag;
+                menu.Popup -= _BarMenu_BeforePopup;
+                menu.Tag = tag;
             }
         }
         /// <summary>
         /// Do daného menu <see cref="DevExpress.XtraBars.BarSubItem"/> vygeneruje všechny jeho položky.
         /// Volá se v procesu tvorby menu (při inicializaci nebo při BeforePopup v LazyInit modu)
         /// </summary>
-        /// <param name="xBarMenu"></param>
+        /// <param name="menu"></param>
         /// <param name="parentItem"></param>
         /// <param name="subItems"></param>
+        /// <param name="clear"></param>
         /// <param name="count"></param>
-        private void _XBarMenu_FillItems(DevExpress.XtraBars.BarSubItem xBarMenu, IRibbonItem parentItem, IEnumerable<IRibbonItem> subItems, ref int count)
+        private void _BarMenu_FillItems(DevExpress.XtraBars.BarSubItem menu, IRibbonItem parentItem, IEnumerable<IRibbonItem> subItems, bool clear, ref int count)
         {
             var menuItems = GetBarSubItems(parentItem, subItems, true, ref count);
+            if (clear)
+                menu.ItemLinks.Clear();
             foreach (var menuItem in menuItems)
             {
-                var menuLink = xBarMenu.AddItem(menuItem);
+                var menuLink = menu.AddItem(menuItem);
                 if ((menuItem.Tag is IRibbonItem ribbonData) && ribbonData.ItemIsFirstInGroup)
                     menuLink.BeginGroup = true;
             }
@@ -1809,6 +1937,93 @@ namespace Noris.Clients.Win.Components.AsolDX
                 }
             }
             return barItems.ToArray();
+        }
+        /// <summary>
+        /// Do daného menu <see cref="DevExpress.XtraBars.BarSubItem"/> vygeneruje všechny jeho položky.
+        /// Volá se v procesu refreshe položky po ondemand donačtení obsahu.
+        /// </summary>
+        /// <param name="menu"></param>
+        /// <param name="oldRibbonItem">Původní definiční objekt</param>
+        /// <param name="newRibbonItem">Nový definiční objekt</param>
+        /// <param name="openMenu">Požadavek na otevření menu</param>
+        /// <param name="afterMergeActions">Sbírka akcí, prováděných po Mergování ribbonu</param>
+        private void _BarMenu_RefreshItems(DevExpress.XtraBars.BarSubItem menu, IRibbonItem oldRibbonItem, IRibbonItem newRibbonItem, bool openMenu, List<Action> afterMergeActions)
+        {
+            var lazySubItems = menu.Tag as LazySubItemsInfo;
+
+            // Toto menu bylo až dosud v režimu LazyLoad; odpojíme eventhandler BeforePopup - aby se nám už opakovaně nevolal...
+            menu.Popup -= _BarMenu_BeforePopup;
+            menu.Tag = newRibbonItem;
+
+            int count = 0;
+            _BarMenu_FillItems(menu, newRibbonItem, newRibbonItem.SubItems, true, ref count);
+
+            // Poznámky k rozdílu PopupMenu (dxPopup) [metoda o něco výše] a BarSubItem (menu) [zdejší metoda] ve vztahu k vyžádanému otevírání menu a k Mergovanému Ribbonu:
+            //  Když Ribbon není Mergován, pak s otevřením menu není problém nikde.
+            //  Když Ribbon je Mergován, pak změna obsahu (tedy zdejší metoda RefreshItems) se provádí ve stavu, kdy aktuální Ribbon je UnMerge, změní svůj obsah, a následně bude Mergován nazpátek.
+            //  Tento proces (zpětné Mergování) NEprovede zhasnutí otevřeného menu typu PopupMenu = od SplitButtonu = to ale není zdejší případ,
+            //  ale pro menu typu BarSubItem se provede zhasnutí = takže řešení je složitější!
+            if (openMenu && lazySubItems.CurrentMergeLevel > 0)
+            {   // Menu je otevřené (protože Menu nemá CancelEventHandler, který by otevření potlačil).
+                // Ale pokud došlo k UnMerge Ribbonu (tj. když lazySubItems.CurrentMergeLevel je kladné), pak v procesu { UnMerge - Modify - Merge } menu zhaslo.
+                // Tady jsme uprostřed procesu Modify, a tak nemá význam nyní provádět OpenMenu nyní.
+                // Musí se provést po dokončení procesu Merge, až bude prvek Menu v cílovém Ribbonu.
+
+                // Kvůli tomu tady máme parametr afterMergeActions:
+                Point? screenPoint = lazySubItems.PopupLocation;
+                afterMergeActions.Add(() => { _BarMenu_OpenMenu(menu, screenPoint); });
+                /*
+                var link = (lazySubItems.Activator ?? menu.Links.FirstOrDefault()) as DevExpress.XtraBars.BarSubItemLink;
+                if (link != null)
+                    afterMergeActions.Add(() => { link.OpenMenu(); });
+                */
+            }
+        }
+        /// <summary>
+        /// Metoda rozsvítí menu k danému prvku, optimálně k jeho linku na dané souřadnici
+        /// </summary>
+        /// <param name="menu"></param>
+        /// <param name="screenPoint"></param>
+        private void _BarMenu_OpenMenu(DevExpress.XtraBars.BarSubItem menu, Point? screenPoint)
+        {
+            DevExpress.XtraBars.BarSubItemLink link = null;
+
+            // Dostupné linky pro daný prvek menu:
+            var links = menu?.Links
+                .Where(l => l.Bounds.Width > 0)
+                .OfType<DevExpress.XtraBars.BarSubItemLink>()
+                .ToArray();
+
+            if (links.Length > 0)
+            {
+                this.TopRibbonControl.Refresh();
+
+                if (links.Length > 1 && screenPoint.HasValue)
+                {   // Pokud máme více linků, a máme uloženu souřadnici, kde by měl být aktivní prvek, zkusíme jej najít:
+                    var preferredLink = GetLinkAtPoint(screenPoint);
+                    if (preferredLink != null)
+                        link = links.FirstOrDefault(l => Object.ReferenceEquals(l, preferredLink));
+                }
+
+                if (link == null)
+                    link = links[0];
+
+                link.OpenMenu();
+            }
+        }
+        /// <summary>
+        /// Metoda vrátí Link, který se nachází na zadané souřadnici (default = aktuální pozice myši).
+        /// Tato metoda má na vstupu absolutní souřadnice (Screen) nebo null = převezme aktuální pozici myši.
+        /// Metoda pracuje s ribbonem <see cref="TopRibbonControl"/>.
+        /// </summary>
+        /// <param name="screenPoint"></param>
+        /// <returns></returns>
+        private DevExpress.XtraBars.BarItemLink GetLinkAtPoint(Point? screenPoint = null)
+        {
+            var topRibbon = TopRibbonControl;
+            Point controlPoint = topRibbon.PointToClient(screenPoint ?? Control.MousePosition);
+            var hit = topRibbon.CalcHitInfo(controlPoint);
+            return hit?.Item;
         }
 
         // Gallery
@@ -1909,11 +2124,15 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// <summary>
             /// Aktivátor menu
             /// </summary>
-            public object Activator { get; set; }
+            public DevExpress.XtraBars.BarItemLink Activator { get; set; }
             /// <summary>
             /// Souřadnice pro zobrazení Popup
             /// </summary>
             public Point? PopupLocation { get; set; }
+            /// <summary>
+            /// Úroveň mergování v době zobrazení Popup. Pokud je větší než 0 (jsme někam Mergování), chová se zobrazení Popup jinak.
+            /// </summary>
+            public int? CurrentMergeLevel { get; set; }
         }
         private void RibbonControl_SubItemClick(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
         {
@@ -2949,6 +3168,24 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public DxRibbonControl MergedChildDxRibbon { get { return (MergedChildRibbon as DxRibbonControl); } }
         /// <summary>
+        /// Aktuálně nejvyšší Ribbon = ten, ve kterém se zobrazují data z this Ribbonu.
+        /// Tedy: pokud this není Merged, pak zde je this.
+        /// Pokud this je Merged, pak zde je nejvyšší <see cref="MergedIntoParentDxRibbon"/>.
+        /// </summary>
+        public DxRibbonControl TopRibbonControl { get { return ((this.MergedIntoParentDxRibbon != null) ? (this.MergedIntoParentDxRibbon.TopRibbonControl) : this); } }
+        /// <summary>
+        /// Aktuálně používaný BarManager = z TopRibbonu.
+        /// Tedy: pokud this není Merged, pak zde je zdejší <see cref="BarManager"/>.
+        /// Pokud this je Merged, pak zde je <see cref="BarManager"/> z <see cref="TopRibbonControl"/>.
+        /// </summary>
+        public BarManager CurrentBarManager { get { return TopRibbonControl.BarManager; } }
+        /// <summary>
+        /// Úroveň mergování this Ribbonu nahoru.
+        /// Pokud this Ribbon není nikam mergován, je zde 0.
+        /// Pokud this Ribbon je mergován do Parenta, a ten už nikam, pak je zde 1. A tak dále.
+        /// </summary>
+        public int MergeLevel { get { return ((this.MergedIntoParentDxRibbon != null) ? (this.MergedIntoParentDxRibbon.MergeLevel + 1) : 0); } }
+        /// <summary>
         /// Obsahuje všechny aktuální Ribbony mergované od this až do nejvyššího Parenta, včetně this.
         /// this ribbon je na pozici [0], jeho Parent je na pozici [1], a tak dál nahoru. Pole tedy má vždy alespoň jeden prvek.
         /// Každý další prvek je Parent prvku předchozího.
@@ -3008,14 +3245,14 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (parentRibbon != null)
             {
                 parentRibbon.UnMergeDxRibbon();
-                forceSelectChildPage = true;                         // Protože se budu mergovat zpátky, chci mít opět vybranou svoji SelectedPage!
+                forceSelectChildPage = true;                                   // Protože se budu mergovat zpátky, chci mít opět vybranou svoji SelectedPage! Povinně!
             }
 
             // Nyní do sebe mergujeme nově dodaný obsah:
             if (childDxRibbon != null)
                 this.MergeChildRibbon(childDxRibbon, forceSelectChildPage);    // Tady se do Child DxRibbonu vepíše, že jeho MergedIntoParentDxRibbon je this
 
-            // A pokud jí jsem byl mergován nahoru, tak se nahoru zase vrátím:
+            // A pokud já jsem byl původně mergován nahoru, tak se nahoru zase vrátím:
             if (parentRibbon != null)
                 parentRibbon.MergeChildDxRibbon(this, forceSelectChildPage);   // Tady se může rozběhnout rekurze ve zdejší metodě až do instance Top Parenta...
         }
@@ -3046,14 +3283,14 @@ namespace Noris.Clients.Win.Components.AsolDX
             var startTime = DxComponent.LogTimeCurrent;
 
             bool selectPage = _CurrentSelectChildActivePageOnMerge ?? SelectChildActivePageOnMerge;  // Rád bych si předal _CurrentSelectChildActivePageOnMerge jako parametr, ale tady to nejde, jsme override bázové metody = bez toho parametru.
-            string slaveSelectedPage = (selectPage && childRibbon is DxRibbonControl dxRibbon) ? dxRibbon.SelectedPageId : null;
+            string slaveSelectedPage = (selectPage && childRibbon is DxRibbonControl dxRibbon) ? dxRibbon.SelectedPageFullId : null;
 
             base.MergeRibbon(childRibbon);
             this.MergedChildRibbon = childRibbon;
             if (childRibbon is DxRibbonControl childDxRibbon)
                 childDxRibbon.MergedIntoParentDxRibbon = this;
 
-            if (selectPage && slaveSelectedPage != null) this.SelectedPageId = slaveSelectedPage;
+            if (selectPage && slaveSelectedPage != null) this.SelectedPageFullId = slaveSelectedPage;
 
             if (LogActive) DxComponent.LogAddLineTime($"MergeRibbon: to Parent: {this.DebugName}; from Child: {(childRibbon?.ToString())}; Time: {DxComponent.LogTokenTimeMilisec}", startTime);
         }
@@ -3112,7 +3349,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             // Odmergovat - Provést akci (pokud je) - Mergovat zpátky (vše nebo jen UpRibbony):
             int last = count - 1;
             var topRibbon = ribbonsUp[last];
-            var topRibbonSelectedPage1 = topRibbon.SelectedPageId;
+            var topRibbonSelectedPage1 = topRibbon.SelectedPageFullId;
 
             try
             {
@@ -3149,7 +3386,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
 
             // A protože po celou dobu byl potlačen CheckLazyContentEnabled, tak pro Top Ribbon to nyní provedu explicitně:
-            var topRibbonSelectedPage2 = topRibbon.SelectedPageId;
+            var topRibbonSelectedPage2 = topRibbon.SelectedPageFullId;
             if (topRibbonSelectedPage2 != topRibbonSelectedPage1)
                 topRibbon.CheckLazyContent(topRibbon.SelectedPage, false);
 
@@ -3188,7 +3425,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             var startTime = DxComponent.LogTimeCurrent;
 
-            var lastSelectedOwnPageId = this.LastSelectedOwnPageId;
+            var lastSelectedOwnPageId = this.LastSelectedOwnPageFullId;
 
             base.UnMergeRibbon();
 
@@ -3200,95 +3437,9 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             // Po UnMerge zkusíme selectovat tu naši vlastní stránku, která byla naposledy aktivní:
             if (lastSelectedOwnPageId != null)
-                this.SelectedPageId = lastSelectedOwnPageId;
+                this.SelectedPageFullId = lastSelectedOwnPageId;
 
             if (LogActive) DxComponent.LogAddLineTime($"UnMergeRibbon from Parent: {this.DebugName}; Time: {DxComponent.LogTokenTimeMilisec}", startTime);
-        }
-        #endregion
-        #region Souřadnice oblasti Ribbonu, kde jsou aktuálně buttony
-        /// <summary>
-        /// Souřadnice oblasti Ribbonu, kde jsou aktuálně buttony
-        /// </summary>
-        public Rectangle ButtonsBounds
-        {
-            get { return GetInnerBounds(50); }
-        }
-        /// <summary>
-        /// Určí a vrátí prostor, v němž se reálně nacházejí buttony a další prvky uvnitř Ribbonu.
-        /// Řeší tedy aktuální skin, vzhled, umístění Ribbonu (on někdy zastává funkci Titlebar okna) atd.
-        /// </summary>
-        /// <param name="itemCount"></param>
-        /// <returns></returns>
-        private Rectangle GetInnerBounds(int itemCount = 50)
-        {
-            if (itemCount < 5) itemCount = 5;
-            int c = 0;
-            int l = 0;
-            int t = 0;
-            int r = 0;
-            int b = 0;
-            // Původně jsem procházel všechny stránky :
-            //       foreach (DevExpress.XtraBars.Ribbon.RibbonPage page in this.Pages)
-            //   Ale mělo to chybu: pokud byl Ribbon nejprve ve velikosti Standard, pak jeho buttony měly plnou výšku, na stránce "A" i "B". To je OK.
-            //   Pak jsem přepnul na stránku "A" a zmenšil Ribbon, na stránce "A" se upravily souřadnice buttonů na malý Ribbon.
-            //   Jenže buttony, které jsou na stránce "B", si prozatím nechaly velikost původní = plnou. Z hlediska komponenty OK, šetří čas - nepočítá zbytečně layout pro stránky, které nejsou zobrazeny.
-            //   To ale tady narušuje výpočet.
-            // Proto pro tento výpočet beru jen aktuálně zobrazenou stránku, pokud stránka obsahuje nějaká data; teprve pokud by byla prázdná, pak beru všechny:
-            var pages = GetPagesForBounds();
-            foreach (DevExpress.XtraBars.Ribbon.RibbonPage page in this.Pages)
-            {
-                foreach (DevExpress.XtraBars.Ribbon.RibbonPageGroup group in page.Groups)
-                {
-                    foreach (var itemLink in group.ItemLinks)
-                    {
-                        if (itemLink is DevExpress.XtraBars.BarButtonItemLink link)
-                        {
-                            var bounds = link.Bounds;             // Bounds = relativně v Ribbonu, ScreenBounds = absolutně v monitoru
-                            if (bounds.Left > 0 && bounds.Top > 0 && bounds.Width > 0 && bounds.Height > 0)
-                            {
-                                if (c == 0)
-                                {
-                                    l = bounds.Left;
-                                    t = bounds.Top;
-                                    r = bounds.Right;
-                                    b = bounds.Bottom;
-                                }
-                                else
-                                {
-                                    if (bounds.Left < l) l = bounds.Left;
-                                    if (bounds.Top < t) t = bounds.Top;
-                                    if (bounds.Right > r) r = bounds.Right;
-                                    if (bounds.Bottom > b) b = bounds.Bottom;
-                                }
-                                c++;
-
-                                if (c > itemCount) break;
-                            }
-                        }
-                    }
-                    if (c > itemCount) break;
-                }
-                // if (c > itemCount) break;
-            }
-            Rectangle clientBounds = this.ClientRectangle;
-            if (c == 0) return clientBounds;
-
-            int cr = clientBounds.Right - 6;
-            if (r < cr) r = cr;
-            return Rectangle.FromLTRB(l, t, r, b);
-        }
-        /// <summary>
-        /// Vrátí stránky, pro které se má vypočítat InnerBounds
-        /// </summary>
-        /// <returns></returns>
-        private List<DevExpress.XtraBars.Ribbon.RibbonPage> GetPagesForBounds()
-        {
-            List<DevExpress.XtraBars.Ribbon.RibbonPage> pages = new List<DevExpress.XtraBars.Ribbon.RibbonPage>();
-            if (this.SelectedPage != null && this.SelectedPage.Groups.Count > 0)
-                pages.Add(this.SelectedPage);
-            else
-                pages.AddRange(GetPages(PagePosition.All));
-            return pages;
         }
         #endregion
         #region Static helpers
@@ -3481,6 +3632,15 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Data definující stránku a její obsah
         /// </summary>
         public IRibbonPage PageData { get; set; }
+        /// <summary>
+        /// ID poslední aktivace této stránky. Při aktivaci stránky se volá metoda <see cref="OnActivate()"/>.
+        /// Slouží k určení stránky, která má být aktivní.
+        /// </summary>
+        public int ActivateTimeStamp { get; private set; }
+        /// <summary>
+        /// Vyvolá se po každé aktivaci stránky, inkrementuje <see cref="ActivateTimeStamp"/>
+        /// </summary>
+        public void OnActivate() { ActivateTimeStamp++; }
         /// <summary>
         /// true pokud this stránka má nějaký aktivní LazyLoad obsah
         /// </summary>
@@ -4301,6 +4461,10 @@ namespace Noris.Clients.Win.Components.AsolDX
             return list;
         }
         /// <summary>
+        /// Jméno Ribbonu
+        /// </summary>
+        public virtual string ParentRibbonName { get; set; }
+        /// <summary>
         /// Kategorie, do které patří tato stránka. Může být null pro běžné stránky Ribbonu.
         /// </summary>
         public virtual IRibbonCategory Category { get; set; }
@@ -4386,6 +4550,10 @@ namespace Noris.Clients.Win.Components.AsolDX
                 return debugText;
             }
         }
+        /// <summary>
+        /// Jméno Ribbonu
+        /// </summary>
+        public virtual string ParentRibbonName { get; set; }
         /// <summary>
         /// ID kategorie, jednoznačné per Ribbon
         /// </summary>
@@ -4658,6 +4826,10 @@ namespace Noris.Clients.Win.Components.AsolDX
     public interface IRibbonPage
     {
         /// <summary>
+        /// Jméno Ribbonu
+        /// </summary>
+        string ParentRibbonName { get; set; }
+        /// <summary>
         /// Kategorie, do které patří tato stránka. Může být null pro běžné stránky Ribbonu.
         /// </summary>
         IRibbonCategory Category { get; }
@@ -4699,6 +4871,10 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// </summary>
     public interface IRibbonCategory
     {
+        /// <summary>
+        /// Jméno Ribbonu
+        /// </summary>
+        string ParentRibbonName { get; set; }
         /// <summary>
         /// ID kategorie, jednoznačné per Ribbon
         /// </summary>
