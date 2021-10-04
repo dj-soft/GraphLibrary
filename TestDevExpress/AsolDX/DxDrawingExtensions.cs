@@ -2969,7 +2969,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 }
             }
             // Pokud máme výsledek, vrátíme jej. Pokud nemáme, a nemáme hledat externí otherBounds, vrátíme výsledek = null:
-            if (nearestBounds.HasValue || !searchOnlyIntersectBounds) return nearestBounds;
+            if (nearestBounds.HasValue || searchOnlyIntersectBounds) return nearestBounds;
 
             // Dané bounds nemá s žádným otherBounds nic společného, vyhledáme tedy nejbližší vnější:
             int minDistance = -1;

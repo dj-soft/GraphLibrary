@@ -159,7 +159,7 @@
     </Compile>
     <Compile Include="AsolDX\DxDragDrop.cs" />
     <Compile Include="AsolDX\DxDrawingExtensions.cs" />
-    <Compile Include="AsolDX\DxDataExtensions_Test.cs" />
+    <Compile Include="AsolDX\Tests\DxDataExtensions_Test.cs" />
     <Compile Include="AsolDX\DxFilterBox.cs">
       <SubType>Component</SubType>
     </Compile>
@@ -169,6 +169,7 @@
     </Compile>
     <Compile Include="AsolDX\DxRange.cs" />
     <Compile Include="AsolDX\DxWin32.cs" />
+    <Compile Include="AsolDX\Tests\DxDrawingExtensions_Test.cs" />
     <Compile Include="AsolDX\WatchTimer.cs" />
     <Compile Include="Components\ChartControl.cs">
       <SubType>Component</SubType>
