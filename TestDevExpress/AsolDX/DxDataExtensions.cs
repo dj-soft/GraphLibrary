@@ -192,6 +192,38 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
             return result;
         }
+        /// <summary>
+        /// Metoda vrátí ten prvek z dané kolekce, který má největší hodnotu klíče. Klíč z daného prvku vybírá dodaný <paramref name="keySelector"/>. 
+        /// Vrácený klíč musí být <see cref="IComparable"/>, jinak nelze určovat porovnání větší / menší.
+        /// <para/>
+        /// Typicky dostane kolekci prvků, z nich jako klíč vybírá např. datum zpracování. Metoda jedenkrát projde celou kolekci, pro každý prvek určí klíč, a střádá prvek s největší hodnotou klíče.
+        /// Při shodě (kdy více prvků má stejný klíč) vybere první z nich.
+        /// </summary>
+        /// <typeparam name="TItem"></typeparam>
+        /// <typeparam name="TKey"></typeparam>
+        /// <param name="items"></param>
+        /// <param name="keySelector"></param>
+        /// <returns></returns>
+        public static TItem TopMost<TItem, TKey>(this IEnumerable<TItem> items, Func<TItem, TKey> keySelector) where TKey : IComparable
+        {
+            TItem topItem = default;
+            if (items != null)
+            {
+                bool isEmpty = true;
+                TKey topKey = default;                     // Pro první položku se nepoužívá porování s touto hodnotou, takže výchozí hodnota klíče (default) neovlivní výběr TopMost
+                foreach (var item in items)
+                {
+                    TKey key = keySelector(item);
+                    if (isEmpty || (keySelector(item).CompareTo(topKey) > 0))               // Tady se řídí podmínka First:TopMost : ( > 0). Kdybych chtěl Last:TopMost, tak je podmínka " >= 0)". Kdybych chtěl LowMost, je podmínka " < 0" ...
+                    {   // První prvek beru vždy, další prvky jen když jejich klíč je větší než dosavadní Top klíč:
+                        topKey = key;
+                        topItem = item;
+                    }
+                    isEmpty = false;
+                }
+            }
+            return topItem;
+        }
         #endregion
         #region Int a bity
         /// <summary>

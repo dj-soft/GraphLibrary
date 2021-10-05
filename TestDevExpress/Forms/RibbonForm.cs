@@ -316,8 +316,10 @@ namespace TestDevExpress.Forms
 
             int x0 = ((width - widthTotal) / 2) + spaceGroup;
 
+            if (!this.IsMerged && this.Ribbon.Bounds.Height > 32) _LastRibbonBottom = this.Ribbon.Bounds.Bottom;           // Udržuji souřadnici Y za stavu, kdy Ribbon je v panelu zobrazen
             int x = x0;
-            int y = this.Ribbon.Bounds.Bottom + spaceY1;
+            int y = _LastRibbonBottom + spaceY1;
+
             _ButtonClear.Bounds = new System.Drawing.Rectangle(x, y, widthButton1, heightButton1); x += distanceX;
             _ButtonFill.Bounds = new System.Drawing.Rectangle(x, y, widthButton1, heightButton1); x += distanceX;
             _ButtonMenu.Bounds = new System.Drawing.Rectangle(x, y, widthButton1, heightButton1); x += distanceX;
@@ -344,6 +346,10 @@ namespace TestDevExpress.Forms
             DxComponent.ApplyImage(_ButtonMerge.ImageOptions, resourceName: "svgimages/spreadsheet/fillup.svg", imageSize: svgSize2);
             DxComponent.ApplyImage(_ButtonUnMerge.ImageOptions, resourceName: "svgimages/spreadsheet/filldown.svg", imageSize: svgSize2);
         }
+        /// <summary>
+        /// Poslední známá souřadnice Bottom u Ribbonu, který NENÍ mergovaný
+        /// </summary>
+        private int _LastRibbonBottom;
         /// <summary>
         /// Zdejší Ribbon
         /// </summary>
@@ -384,6 +390,7 @@ namespace TestDevExpress.Forms
             }
             _ButtonMerge.Checked = _IsMerged;
             _ButtonUnMerge.Checked = !_IsMerged;
+            this.DoLayoutButtons();
         }
         /// <summary>
         /// Bude se používat LazyLoad
