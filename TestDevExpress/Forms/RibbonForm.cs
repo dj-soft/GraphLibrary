@@ -423,6 +423,13 @@ namespace TestDevExpress.Forms
             _Ribbon.QATItemKeys = qatItems;
             _Ribbon.AddPages(items, clearCurrentContent);
         }
+        /// <summary>
+        /// Přidá několik málo prvků do QAT
+        /// </summary>
+        public void FillRibbonQAT()
+        {
+            _Ribbon.QATDirectItems = DxRibbonSample.CreateItems(3, 8);
+        }
         private DxRibbonControl _Ribbon;
         private DxSimpleButton _ButtonClear;
         private DxDropDownButton _ButtonMenu;
@@ -442,6 +449,7 @@ namespace TestDevExpress.Forms
             subItems.Add(new DataRibbonItem() { ItemId = "AddRandom", Text = "Add RANDOM page", ImageName = "", ToolTipText = "" });
             subItems.Add(new DataRibbonItem() { ItemId = "AddWiki", Text = "Add WIKI page", ImageName = "", ToolTipText = "" });
             subItems.Add(new DataRibbonItem() { ItemId = "Add7Pages", Text = "Add 7 pages", ImageName = "", ToolTipText = "" });
+            subItems.Add(new DataRibbonItem() { ItemId = "AddQAT", Text = "Add Direct QAT Items", ImageName = "", ToolTipText = "", ItemIsFirstInGroup = true });
             subItems.Add(new DataRibbonItem() { ItemId = "RemoveEmpty", Text = "Remove Empty pages", ImageName = "", ToolTipText = "", ItemIsFirstInGroup = true });
             return subItems;
 
@@ -492,6 +500,9 @@ namespace TestDevExpress.Forms
                     break;
                 case "Add7Pages":
                     this.FillRibbon(5, 8, 4, 8);
+                    break;
+                case "AddQAT":
+                    this.FillRibbonQAT();
                     break;
                 case "RemoveEmpty":
                     this._Ribbon.RemoveVoidContainers();
@@ -647,7 +658,7 @@ namespace TestDevExpress.Forms
         /// <param name="pageIndex"></param>
         /// <returns></returns>
         public static List<IRibbonPage> CreatePages(string parentRibbonName, int pageCountMin, int pageCountMax, int groupCountMin, int groupCountMax, out string qatItems,
-            string categoryId = null, string categoryText = null, System.Drawing.Color? categoryColor = null, 
+            string categoryId = null, string categoryText = null, System.Drawing.Color? categoryColor = null,
             int? pageIndex = null)
         {
             List<IRibbonPage> pages = new List<IRibbonPage>();
@@ -659,6 +670,7 @@ namespace TestDevExpress.Forms
         /// Metoda vytvoří soupis stránek s obsahem pro ribbon
         /// </summary>
         /// <param name="pages"></param>
+        /// <param name="parentRibbonName"></param>
         /// <param name="pageCountMin"></param>
         /// <param name="pageCountMax"></param>
         /// <param name="groupCountMin"></param>
@@ -670,8 +682,25 @@ namespace TestDevExpress.Forms
         /// <param name="pageIndex"></param>
         public static void CreatePagesTo(List<IRibbonPage> pages, string parentRibbonName, int pageCountMin, int pageCountMax, int groupCountMin, int groupCountMax, ref string qatItems, string categoryId = null, string categoryText = null, System.Drawing.Color? categoryColor = null, int? pageIndex = null)
         {
-            _AddPages(pages, parentRibbonName, pageCountMin, pageCountMax, groupCountMin, groupCountMax, pageIndex, ref qatItems, 
+            _AddPages(pages, parentRibbonName, pageCountMin, pageCountMax, groupCountMin, groupCountMax, pageIndex, ref qatItems,
                 categoryId, categoryText, categoryColor);
+        }
+        /// <summary>
+        /// Vytvoří a vrátí několik prvků Items
+        /// </summary>
+        /// <param name="itemCountMin"></param>
+        /// <param name="itemCountMax"></param>
+        /// <returns></returns>
+        public static IRibbonItem[] CreateItems(int itemCountMin, int itemCountMax)
+        {
+            List<IRibbonItem> items = new List<IRibbonItem>();
+            int count = Rand.Next(itemCountMin, itemCountMax + 1);
+            for (int i = 0; i < count; i++)
+            {
+                DataRibbonItem item = _GetItem();
+                items.Add(item);
+            }
+            return items.ToArray();
         }
         /// <summary>
         /// Do pole přidá stránky
@@ -835,6 +864,20 @@ namespace TestDevExpress.Forms
                 GroupButtonVisible = groupButtonVisible,
                 GroupState = (groupCollapsed ? RibbonGroupState.Collapsed : RibbonGroupState.Auto)
             };
+        }
+        /// <summary>
+        /// Vytvoří a vrátí prvek Ribbonu. Prvek podle potřeby obsahuje i SubItems.
+        /// </summary>
+        /// <returns></returns>
+        private static DataRibbonItem _GetItem()
+        {
+            bool containsRadioGroup = false;
+            int remainingRadioCount = 0;
+            bool forceFirstInGroup = false;
+            string qatItems = null;
+            DataRibbonItem item = _GetItem(null, ref containsRadioGroup, ref remainingRadioCount, ref forceFirstInGroup, ref qatItems);
+            ApplyToolTip(item);
+            return item;
         }
         /// <summary>
         /// Vytvoří a vrátí prvek Ribbonu. Prvek podle potřeby obsahuje i SubItems.

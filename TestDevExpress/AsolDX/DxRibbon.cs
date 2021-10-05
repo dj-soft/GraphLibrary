@@ -422,7 +422,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             ModifyCurrentDxContent(_Clear);
         }
         /// <summary>
-        /// Smaže svůj obsah
+        /// Smaže svůj obsah - stránky, kategorie, QAT toolbar, evidence položek.
         /// </summary>
         private void _Clear()
         { 
@@ -438,7 +438,8 @@ namespace Noris.Clients.Win.Components.AsolDX
                 this.Categories.Clear();
                 this.PageCategories.Clear();
                 this.Toolbar.ItemLinks.Clear();
-                this._ClearItems(ref removeItemsCount);
+                this._QATDirectItems = null;
+                this._ClearItems(true, ref removeItemsCount);
             }
             finally
             {
@@ -450,23 +451,27 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         /// <summary>
         /// Korektně smaže BarItemy z this.Items.
-        /// Ponechává tam sysstémové prvky!
+        /// Ponechává tam systémové prvky a volitelně DirectQAT prvky!
         /// </summary>
+        /// <param name="removeDirectQatItems"></param>
         /// <param name="removeItemsCount"></param>
-        private void _ClearItems(ref int removeItemsCount)
+        private void _ClearItems(bool removeDirectQatItems, ref int removeItemsCount)
         {
-            // var itns = this.Items.Select(i => i.GetType().FullName).ToArray();
-
             // Pokud bych dal this.Items.Clear(), tak přijdu o všechny prvky celého Ribbonu,
             //   a to i o "servisní" = RibbonSearchEditItem, RibbonExpandCollapseItem, AutoHiddenPagesMenuItem.
             // Ale když nevyčistím Itemy, budou tady pořád strašit...
             // Ponecháme prvky těchto typů: "DevExpress.XtraBars.RibbonSearchEditItem", "DevExpress.XtraBars.InternalItems.RibbonExpandCollapseItem", "DevExpress.XtraBars.InternalItems.AutoHiddenPagesMenuItem"
             // Následující algoritmus NENÍ POMALÝ: smazání 700 Itemů trvá 11 milisekund.
             // Pokud by Clear náhodou smazal i nějaké další sytémové prvky, je nutno je určit = určit jejich FullType a přidat jej do metody _IsSystemItem() !
+            var qatDirectKeys = _QATDirectItemKeys;
+            bool hasQatDirectKeys = (qatDirectKeys != null && qatDirectKeys.Count > 0);
             int count = this.Items.Count;
             for (int i = count - 1; i >= 0; i--)
             {
-                if (!_IsSystemItem(this.Items[i]))
+                var item = this.Items[i];
+                var key = GetValidQATKey(item.Name);
+                bool isDelete = (!_IsSystemItem(item) && (removeDirectQatItems || (hasQatDirectKeys && qatDirectKeys.ContainsKey(key))));
+                if (isDelete)
                 {
                     this.Items.RemoveAt(i);
                     removeItemsCount++;
@@ -478,7 +483,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="item"></param>
         /// <returns></returns>
-        private bool _IsSystemItem(object item)
+        private bool _IsSystemItem(BarItem item)
         {
             string fullType = item.GetType().FullName;
             switch (fullType)
@@ -491,10 +496,21 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
             return false;
         }
+        /// <summary>
+        /// Vrátí true, pokud daný objekt (pochází z kolekce RibbonControl.Items) je uložen v poli <see cref="_QATDirectItems"/> = jde o přímý QAT prvek
+        /// </summary>
+        /// <param name="item"></param>
+        /// <returns></returns>
+        private bool _IsQatItem(BarItem item)
+        {
+            if (_QATDirectItems == null) return false;
+            return _QATDirectItems.Any(i => Object.ReferenceEquals(i, item));
+        }
         private bool _ClearingNow;
         /// <summary>
         /// Smaže výhradně jednotlivé prvky z Ribbonu (Items a LazyLoadContent) a grupy prvků (Page.Groups).
         /// Ponechává naživu Pages, Categories a PageCategories.
+        /// Nesmaže přímý obsah QAT toolbaru.
         /// Tím zabraňuje blikání.
         /// </summary>
         public void ClearPageContents()
@@ -512,7 +528,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 DxRibbonPage.ClearContentPage(page);
 
             int removeItemsCount = 0;
-            this._ClearItems(ref removeItemsCount);
+            this._ClearItems(false, ref removeItemsCount);
 
             if (LogActive) DxComponent.LogAddLineTime($" === ClearPageContents {this.DebugName}; Removed {removeItemsCount} items; {DxComponent.LogTokenTimeMilisec} === ", startTime);
         }
@@ -1463,6 +1479,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         /// <summary>
         /// Vytvoří prvek BarItem pro daná data a vrátí jej.
+        /// Tato metoda NEVKLÁDÁ vytovřený prvek do dodané grupy; grupa smí být null.
         /// </summary>
         /// <param name="iRibbonItem"></param>
         /// <param name="dxGroup"></param>
@@ -2178,7 +2195,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             else
             {
                 LazySubItemsInfo lazyInfo = barItem.Tag as LazySubItemsInfo;   // V Tagu může být připravená LazyInfo, zachovám ji - ale bude umístěna do ItemInfo.
-                barItem.Tag = new BarItemTagInfo(iRibbonItem, dxGroup, lazyInfo);
+                barItem.Tag = new BarItemTagInfo(iRibbonItem, this, dxGroup, lazyInfo);
             }
         }
         /// <summary>
@@ -2192,7 +2209,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         protected void PrepareBarItemTag(BarItem barItem, IRibbonItem iRibbonItem, DxRibbonGroup dxGroup, LazySubItemsInfo lazyInfo)
         {
             if (barItem != null)
-                barItem.Tag = new BarItemTagInfo(iRibbonItem, dxGroup, lazyInfo);
+                barItem.Tag = new BarItemTagInfo(iRibbonItem, this, dxGroup, lazyInfo);
         }
         /// <summary>
         /// Zajistí vytvoření instance <see cref="BarItemTagInfo"/> do daného prvku do jeho Tagu.
@@ -2205,7 +2222,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         protected void PrepareBarItemTag(GalleryItem galleryItem, IRibbonItem iRibbonItem, DxRibbonGroup dxGroup, LazySubItemsInfo lazyInfo)
         {
             if (galleryItem != null)
-                galleryItem.Tag = new BarItemTagInfo(iRibbonItem, dxGroup, lazyInfo);
+                galleryItem.Tag = new BarItemTagInfo(iRibbonItem, this, dxGroup, lazyInfo);
         }
         /// <summary>
         /// Zajistí vytvoření instance <see cref="BarItemTagInfo"/> do daného prvku do jeho Tagu.
@@ -2217,7 +2234,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         protected void PrepareBarItemTag(DevExpress.XtraBars.PopupMenu popupMenu, IRibbonItem iRibbonItem, DxRibbonGroup dxGroup, LazySubItemsInfo lazyInfo)
         {
             if (popupMenu != null)
-                popupMenu.Tag = new BarItemTagInfo(iRibbonItem, dxGroup, lazyInfo);
+                popupMenu.Tag = new BarItemTagInfo(iRibbonItem, this, dxGroup, lazyInfo);
         }
         /// <summary>
         /// Do Tagu daného prvku vloží nová definiční data
@@ -2252,28 +2269,18 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// Konstruktor
             /// </summary>
             /// <param name="data"></param>
+            /// <param name="dxRibbon"></param>
             /// <param name="dxGroup"></param>
             /// <param name="lazyInfo"></param>
-            public BarItemTagInfo(IRibbonItem data, DxRibbonGroup dxGroup, LazySubItemsInfo lazyInfo = null)
+            public BarItemTagInfo(IRibbonItem data, DxRibbonControl dxRibbon, DxRibbonGroup dxGroup, LazySubItemsInfo lazyInfo = null)
             {
                 this.Data = data;
+                this._DxRibbon = dxRibbon;
                 this._DxGroup = dxGroup;
                 this.LazyInfo = lazyInfo;
             }
-            /// <summary>
-            /// Konstruktor
-            /// </summary>
-            /// <param name="data"></param>
-            /// <param name="dxGroup"></param>
-            /// <param name="barItem"></param>
-            /// <param name="lazyInfo"></param>
-            public BarItemTagInfo(IRibbonItem data, DxRibbonGroup dxGroup, BarItem barItem, LazySubItemsInfo lazyInfo = null)
-            {
-                this.Data = data;
-                this._DxGroup = dxGroup;
-                this._BarItem = barItem;
-                this.LazyInfo = lazyInfo;
-            }
+          
+            private WeakTarget<DxRibbonControl> _DxRibbon;
             private WeakTarget<DxRibbonGroup> _DxGroup;
             private WeakTarget<BarItem> _BarItem;
             /// <summary>
@@ -2297,9 +2304,9 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// </summary>
             internal DxRibbonPage DxPage { get { return DxGroup?.OwnerDxPage; } }
             /// <summary>
-            /// Ribbon, do něhož patří Page, do které patří Grupa, do které byl prvek vytvořen
+            /// Ribbon, do něhož patří zdejší prvek. I pokud <see cref="DxGroup"/> a <see cref="DxPage"/> je null, pak zdejší odkaz může být platý = pro přímé QAT prvky.
             /// </summary>
-            internal DxRibbonControl DxRibbon { get { return DxGroup?.OwnerDxRibbon; } }
+            internal DxRibbonControl DxRibbon { get { return _DxRibbon?.Target; } }
             /// <summary>
             /// Grupa, do které byl prvek vytvořen
             /// </summary>
@@ -2359,7 +2366,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// </summary>
             public int? CurrentMergeLevel { get; set; }
         }
-
         #endregion
         #region Podpora pro QAT - Quick Access Toolbar
         /*     Jak to tady funguje?
@@ -2401,6 +2407,10 @@ namespace Noris.Clients.Win.Components.AsolDX
               - Ke cti DevExpress je nutno uznat, že po UnMerge toho Ribbonu se nově přidaný Slave prvek z toolbaru Master Ribbonu odebere a objeví se v toolbaru Slave Ribbonu = očekávaný a správný výsledek;
               - Zdejší metody pracují s evidencí QAT prvků na úrovni DxRibbonControl, a QAT prvky by tedy nejprve najít instanci toho Ribbonu, ve kterém jsou nativně definovány, a nikoli toho Ribbonu, kde se akce děje
               - Tento přechod (z this instance do instance, která reálně definuje svoje vlastní QAT prvky) zajišťuje metoda TryGetIRibbonData()
+
+         D. Explicitní obsah QAT = prvky mimo Ribbon
+          1. Lze je deklarovat shodně jako jiné Items = jako prvky typu IRibbonItem
+          2. Vkládají se do property QATDirectItems
          
         */
         #region Základní evidence prvků QAT : string QATItemKeys, List a Dictionary, konverze
@@ -2789,9 +2799,41 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public event EventHandler QATItemKeysChanged;
         #endregion
+        #region Explicitní obsah QAT = prvky mimo Ribbon
+        /// <summary>
+        /// Prvky obsažené v QAT - explicitně definované mimo stránky Ribbonu
+        /// </summary>
+        public IRibbonItem[] QATDirectItems { get { return _QATDirectItems?.Select(q => q.RibbonItem).ToArray(); } set { _SetQATDirectItems(value); } }
+        private QatItem[] _QATDirectItems;
+        /// <summary>
+        /// Vrací Dictionary podle klíče QAT Direct prvku
+        /// </summary>
+        private Dictionary<string, QatItem> _QATDirectItemKeys
+        {
+            get
+            {
+                if (_QATDirectItems is null) return null;
+                return _QATDirectItems.CreateDictionary(q => q.Key, true);
+            }
+        }
+        private void _SetQATDirectItems(IRibbonItem[] items)
+        {
+            List<QatItem> qatItems = new List<QatItem>();
+            foreach (var item in items)
+            {
+                var barItem = CreateItem(item, null, null);
+                if (barItem != null)
+                {
+                    var barLink = this.Toolbar.ItemLinks.Add(barItem, item.ItemIsFirstInGroup);
+                    qatItems.Add(new QatItem(this, item, barItem, barLink));
+                }
+            }
+            _QATDirectItems = qatItems.ToArray();
+        }
+        #endregion
         #region class QatItem : evidence pro jedno tlačítko QAT
         /// <summary>
-        /// Třída pro průběžné shrnování informací o pvcích, které mají být umístěny do QAT (Quick Access Toolbar)
+        /// Třída pro průběžné shrnování informací o prvcích, které mají být umístěny do QAT (Quick Access Toolbar)
         /// </summary>
         protected class QatItem
         {
@@ -2804,6 +2846,20 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 this._Owner = owner;
                 this._Key = key;
+            }
+            /// <summary>
+            /// Konstruktor pro existující <see cref="IRibbonItem"/>
+            /// </summary>
+            /// <param name="owner"></param>
+            /// <param name="iRibbonItem"></param>
+            /// <param name="barItem"></param>
+            /// <param name="barItemLink"></param>
+            public QatItem(DxRibbonControl owner, IRibbonItem iRibbonItem, DevExpress.XtraBars.BarItem barItem, DevExpress.XtraBars.BarItemLink barItemLink)
+                : this(owner, iRibbonItem.ItemId)
+            {
+                RibbonItem = iRibbonItem;
+                _BarItem = barItem;
+                BarItemLink = barItemLink;
             }
             /// <summary>
             /// Konstruktor pro existující <see cref="IRibbonItem"/>
