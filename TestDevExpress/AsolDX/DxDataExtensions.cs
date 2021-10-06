@@ -224,6 +224,40 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
             return topItem;
         }
+        /// <summary>
+        /// Metoda vrátí pole, obsahující linearizovaný vstupní strom = tedy situace, 
+        /// kde na vstupu je kolekce nodů, a každý node má v některé své property obsaženou kolekci svých Child nodů stejného typu.
+        /// Výstupem metody je pole obsahující Item1 = level, kde 0 = Root (vstupní prvky) a hodnoty +1 jsou jeho vlastní Childs.
+        /// Prvek Item2 obsahuje konkrétní Node.
+        /// </summary>
+        /// <typeparam name="TItem"></typeparam>
+        /// <param name="items"></param>
+        /// <param name="childsSelector"></param>
+        /// <returns></returns>
+        public static Tuple<int, TItem>[] Flatten<TItem>(this IEnumerable<TItem> items, Func<TItem, IEnumerable<TItem>> childsSelector) where TItem : class
+        {
+            List<Tuple<int, TItem>> result = new List<Tuple<int, TItem>>();
+            AddLevel(items, 0, childsSelector, result);
+            return result.ToArray();
+
+            // Lokální funkce, která každý vstupní prvek z 'levelItems' vloží s danou hladinou 'level' do sumarizovaného lineárního výstupu 'levelResults',
+            // a ihned po vložení prvku otestuje, zda prvek má Childs (získá je pomocí 'levelChildsSelector'), a pokud Child prvky existují, zajistí jejich zařazení do výstupu pomocí čisté rekurze sebe sama.
+            // Zacyklení je hlídáno pomocí kontroly hladiny 'level', která nemá překročit 120 vnoření.
+            void AddLevel(IEnumerable<TItem> levelItems, int level, Func<TItem, IEnumerable<TItem>> levelChildsSelector, List<Tuple<int, TItem>> levelResults)
+            {
+                if (levelItems == null) return;
+                foreach (var levelItem in levelItems)
+                {
+                    levelResults.Add(new Tuple<int, TItem>(level, levelItem));
+                    if (levelItem != null && level < 120)
+                    {
+                        var levelChilds = levelChildsSelector(levelItem);
+                        if (levelChilds != null)
+                            AddLevel(levelChilds, level + 1, levelChildsSelector, levelResults);
+                    }
+                }
+            }
+        }
         #endregion
         #region Int a bity
         /// <summary>

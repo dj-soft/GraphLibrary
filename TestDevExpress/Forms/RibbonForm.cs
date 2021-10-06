@@ -420,7 +420,7 @@ namespace TestDevExpress.Forms
                 CategoryName, CategoryName, CategoryColor, 
                 pageIndex);
             DxComponent.LogAddLine("Ribon: " + this._Ribbon.DebugName +"; QAT: " + qatItems);
-            _Ribbon.QATItemKeys = qatItems;
+            _Ribbon.QATUserItemKeys = qatItems;
             _Ribbon.AddPages(items, clearCurrentContent);
         }
         /// <summary>
@@ -612,7 +612,7 @@ namespace TestDevExpress.Forms
         }
         private void _Ribbon_QATItemKeysChanged(object sender, EventArgs e)
         {
-            string qatItemKeys = _Ribbon.QATItemKeys;
+            string qatItemKeys = _Ribbon.QATUserItemKeys;
 
             Noris.Clients.Win.Components.DialogArgs dialogArgs = new Noris.Clients.Win.Components.DialogArgs();
             dialogArgs.Title = "Ribbon Quick Access Toolbar change";
