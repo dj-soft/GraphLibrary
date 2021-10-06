@@ -1753,4 +1753,19 @@ namespace WinFormServices.Drawing
     }
 }
 
+namespace ASOL.Framework.Shared.Localization
+{
+    public class Message
+    {
+        public static string GetMessage(string messageCode, params object[] parameters)
+        {
+            return null;
+        }
+        public static string GetMessageForLanguage(string language, string messageCode, params object[] parameters)
+        {
+            return null;
+        }
+    }
+}
+
 #endregion

@@ -2437,6 +2437,19 @@ namespace Noris.Clients.Win.Components.AsolDX
         private SolidBrush _SolidBrush;
         private Pen _Pen;
         #endregion
+        #region Lokalizace - můstek do systému
+        public static string Localize(string messageCode, params object[] parameters)
+        {
+            return ASOL.Framework.Shared.Localization.Message.GetMessage(messageCode, parameters);
+        }
+        public static string LocalizeDef(string messageCode, string messageText, params object[] parameters)
+        {
+            string message = ASOL.Framework.Shared.Localization.Message.GetMessage(messageCode);
+            if (message == null) message = messageText;
+            if (parameters != null && parameters.Length > 0) message = String.Format(message, parameters);
+            return message;
+        }
+        #endregion
         #region Standardní jména obrázků
         /// <summary>
         /// Jméno ikony formuláře
@@ -3438,6 +3451,17 @@ namespace Noris.Clients.Win.Components.AsolDX
         public static string TabSkins_TabHeaderTextColorDisabled { get { return "TabSkins.TabHeaderTextColorDisabled"; } }
         public static string TabSkins_TabHeaderTextColor { get { return "TabSkins.TabHeaderTextColor"; } }
         public static string TabSkins_TabHeaderTextColorHot { get { return "TabSkins.TabHeaderTextColorHot"; } }
+    }
+    #endregion
+    #region MsgCode
+    public static class MsgCode
+    {
+        public const string RibbonAppHomeText = "RibbonAppHomeText";
+        public const string RibbonAddToQat = "RibbonAddToQat";
+        public const string RibbonRemoveFromQat = "RibbonRemoveFromQat";
+        public const string RibbonShowQatTop = "RibbonShowQatTop";
+        public const string RibbonShowQatDown = "RibbonShowQatDown";
+        public const string RibbonMinimizeQat = "RibbonMinimizeQat";
     }
     #endregion
     #endregion

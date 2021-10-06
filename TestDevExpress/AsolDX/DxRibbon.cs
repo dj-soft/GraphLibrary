@@ -80,7 +80,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             ToolbarLocation = DevExpress.XtraBars.Ribbon.RibbonQuickAccessToolbarLocation.Below;
 
             ShowApplicationButton = DevExpress.Utils.DefaultBoolean.False;
-            ApplicationButtonText = " HELIOS ";
+            ApplicationButtonText = DxComponent.LocalizeDef(MsgCode.RibbonAppHomeText, " DOMŮ ");
             ToolTipController = DxComponent.DefaultToolTipController;
 
             Visible = true;
@@ -2665,11 +2665,11 @@ namespace Noris.Clients.Win.Components.AsolDX
             DevExpress.XtraBars.BarItemLink link = GetLinkAtPoint();
 
             bool isQatItem = _IsQATDirectItem(link);
-            CustomizationPopupMenu_Modify("Add to Quick Access Toolbar", "Přidat na panel nástrojů Rychlý přístup");
-            CustomizationPopupMenu_Modify("Remove from Quick Access Toolbar", "Odebrat z panelu nástrojů Rychlý přístup", !isQatItem);
-            CustomizationPopupMenu_Modify("Show Quick Access Toolbar Above the Ribbon", "Zobrazit panel nástrojů Rychlý přístup nad pásem karet");
-            CustomizationPopupMenu_Modify("Show Quick Access Toolbar Below the Ribbon", "Zobrazit panel nástrojů Rychlý přístup pod pásem karet");
-            CustomizationPopupMenu_Modify("Minimize the Ribbon", "Minimalizovat Ribbon", false);
+            CustomizationPopupMenu_Modify("Add to Quick Access Toolbar", DxComponent.LocalizeDef(MsgCode.RibbonAddToQat, "Přidat na panel nástrojů Rychlý přístup"));
+            CustomizationPopupMenu_Modify("Remove from Quick Access Toolbar", DxComponent.LocalizeDef(MsgCode.RibbonRemoveFromQat, "Odebrat z panelu nástrojů Rychlý přístup"), !isQatItem);
+            CustomizationPopupMenu_Modify("Show Quick Access Toolbar Above the Ribbon", DxComponent.LocalizeDef(MsgCode.RibbonShowQatTop, "Zobrazit panel nástrojů Rychlý přístup nad pásem karet"));
+            CustomizationPopupMenu_Modify("Show Quick Access Toolbar Below the Ribbon", DxComponent.LocalizeDef(MsgCode.RibbonShowQatDown, "Zobrazit panel nástrojů Rychlý přístup pod pásem karet"));
+            CustomizationPopupMenu_Modify("Minimize the Ribbon", DxComponent.LocalizeDef(MsgCode.RibbonMinimizeQat, "Minimalizovat Ribbon"), false);
 
             var itms = this.CustomizationPopupMenu.ItemLinks.Select(l => new Tuple<string, string>(l.Item.Caption.ToString(), l.Caption)).ToArray();
             //var c0 = this.CustomizationPopupMenu.ItemLinks[0].Caption;
