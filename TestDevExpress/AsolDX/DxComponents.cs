@@ -2438,16 +2438,88 @@ namespace Noris.Clients.Win.Components.AsolDX
         private Pen _Pen;
         #endregion
         #region Lokalizace - můstek do systému
+        /// <summary>
+        /// Vrátí string lokalizovaný pomocí <see cref="ASOL.Framework.Shared.Localization.Message.GetMessage(string, object[])"/>.
+        /// </summary>
+        /// <param name="messageCode"></param>
+        /// <param name="parameters"></param>
+        /// <returns></returns>
         public static string Localize(string messageCode, params object[] parameters)
         {
             return ASOL.Framework.Shared.Localization.Message.GetMessage(messageCode, parameters);
         }
+        /// <summary>
+        /// Vrátí string lokalizovaný pomocí <see cref="ASOL.Framework.Shared.Localization.Message.GetMessage(string, object[])"/>.
+        /// Pokud tato metoda nevrátí string, pak bude vrácen daný default.
+        /// </summary>
+        /// <param name="messageCode"></param>
+        /// <param name="messageText"></param>
+        /// <param name="parameters"></param>
+        /// <returns></returns>
         public static string LocalizeDef(string messageCode, string messageText, params object[] parameters)
         {
             string message = ASOL.Framework.Shared.Localization.Message.GetMessage(messageCode);
             if (message == null) message = messageText;
             if (parameters != null && parameters.Length > 0) message = String.Format(message, parameters);
             return message;
+        }
+        #endregion
+        #region MessageBox
+        /// <summary>
+        /// Zobrazí informaci
+        /// </summary>
+        /// <param name="text"></param>
+        /// <param name="title"></param>
+        public static void ShowMessageInfo(string text, string title = null) { _ShowMessage(title, text, MessageBoxButtons.OK, DialogSystemIcon.Information); }
+        /// <summary>
+        /// Zobrazí varování
+        /// </summary>
+        /// <param name="text"></param>
+        /// <param name="title"></param>
+        public static void ShowMessageWarnig(string text, string title = null) { _ShowMessage(title, text, MessageBoxButtons.OK, DialogSystemIcon.Exclamation); }
+        /// <summary>
+        /// Zobrazí chybu
+        /// </summary>
+        /// <param name="text"></param>
+        /// <param name="title"></param>
+        public static void ShowMessageError(string text, string title = null) { _ShowMessage(title, text, MessageBoxButtons.OK, DialogSystemIcon.Error); }
+        /// <summary>
+        /// Zobrazí exception
+        /// </summary>
+        /// <param name="exc"></param>
+        /// <param name="preText"></param>
+        /// <param name="title"></param>
+        public static void ShowMessageException(Exception exc, string preText = null, string title = null) { _ShowMessage(title, preText, MessageBoxButtons.OK, DialogSystemIcon.Error, exc); }
+        /// <summary>
+        /// Zobrazí text / chybu
+        /// </summary>
+        /// <param name="title"></param>
+        /// <param name="text"></param>
+        /// <param name="buttons"></param>
+        /// <param name="icon"></param>
+        /// <param name="exc"></param>
+        /// <param name="defaultButton"></param>
+        private static void _ShowMessage(string title, string text, MessageBoxButtons buttons, DialogSystemIcon? icon = null, Exception exc = null, MessageBoxDefaultButton? defaultButton = null)
+        {
+            DialogArgs args;
+            if (exc != null)
+            {
+                args = DialogArgs.CreateForException(exc);
+                if (icon != null) args.SystemIcon = icon;
+                if (title != null) args.Title = title;
+                if (text != null) args.MessageText = text + args.MessageText;
+            }
+            else
+            {
+                args = new DialogArgs();
+                args.Title = title;
+                args.MessageText = text;
+                args.ButtonPanelDock = DockStyle.Bottom;
+                args.ButtonsAlignment = AlignContentToSide.Center;
+                args.SystemIcon = icon ?? DialogSystemIcon.Information;
+                args.PrepareButtons(buttons, defaultButton);
+            }
+            DialogForm.ShowDialog(args);
         }
         #endregion
         #region Standardní jména obrázků

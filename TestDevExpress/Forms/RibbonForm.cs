@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using DevExpress.Utils.Extensions;
 using DevExpress.Utils.Menu;
 using Noris.Clients.Win.Components.AsolDX;
 
@@ -424,6 +425,81 @@ namespace TestDevExpress.Forms
             _Ribbon.AddPages(items, clearCurrentContent);
         }
         /// <summary>
+        /// Do dané stránky a dané grupy pošle nový obsah.
+        /// </summary>
+        /// <param name="pageText"></param>
+        /// <param name="groupText"></param>
+        public void ReloadGroup(string pageText, string groupText)
+        {
+            string pageId = DxRibbonSample.GetPageId(pageText);
+            if (pageId == null) return;
+            string groupId = DxRibbonSample.GetGroupId(pageId, groupText);
+            if (groupId == null) return;
+
+            var iRibbonPage = new DataRibbonPage() { PageId = pageId };
+            var iRibbonGroup = new DataRibbonGroup()
+            {
+                ParentPage = iRibbonPage,
+                GroupId = groupId,
+                GroupText = groupText,
+                GroupButtonVisible = true,
+                GroupState = RibbonGroupState.Expanded,
+                ChangeMode = ContentChangeMode.ReFill
+            };
+
+            string qatItems = "";
+            DxRibbonSample.AddItemsToGroup(iRibbonGroup, 6, 20, ref qatItems);
+
+            _Ribbon.RefreshGroup(iRibbonGroup);
+        }
+        /// <summary>
+        /// Do dané stránky a dané grupy pošle nový obsah.
+        /// </summary>
+        /// <param name="pageText"></param>
+        /// <param name="groupText"></param>
+        public void ClearGroup(string pageText, string groupText)
+        {
+            string pageId = DxRibbonSample.GetPageId(pageText);
+            if (pageId == null) return;
+            string groupId = DxRibbonSample.GetGroupId(pageId, groupText);
+            if (groupId == null) return;
+
+            var iRibbonPage = new DataRibbonPage() { PageId = pageId };
+            var iRibbonGroup = new DataRibbonGroup()
+            {
+                ParentPage = iRibbonPage,
+                GroupId = groupId,
+                GroupText = groupText,
+                GroupButtonVisible = true,
+                GroupState = RibbonGroupState.Expanded,
+                ChangeMode = ContentChangeMode.ReFill
+            };
+
+            // Bez položek v režimu ReFill = Clear
+
+            _Ribbon.RefreshGroup(iRibbonGroup);
+        }
+        /// <summary>
+        /// Do dané stránky a dané grupy pošle nový obsah.
+        /// </summary>
+        /// <param name="pageText"></param>
+        /// <param name="groupText"></param>
+        public void RemoveGroup(string pageText, string groupText)
+        {
+            string pageId = DxRibbonSample.GetPageId(pageText);
+            if (pageId == null) return;
+            string groupId = DxRibbonSample.GetGroupId(pageId, groupText);
+            if (groupId == null) return;
+
+            var iRibbonGroup = new DataRibbonGroup()
+            {
+                GroupId = groupId,
+                ChangeMode = ContentChangeMode.Remove
+            };
+
+            _Ribbon.RefreshGroup(iRibbonGroup);
+        }
+        /// <summary>
         /// Přidá několik málo prvků do QAT
         /// </summary>
         public void FillRibbonQAT()
@@ -449,6 +525,9 @@ namespace TestDevExpress.Forms
             subItems.Add(new DataRibbonItem() { ItemId = "AddRandom", Text = "Add RANDOM page", ImageName = "", ToolTipText = "" });
             subItems.Add(new DataRibbonItem() { ItemId = "AddWiki", Text = "Add WIKI page", ImageName = "", ToolTipText = "" });
             subItems.Add(new DataRibbonItem() { ItemId = "Add7Pages", Text = "Add 7 pages", ImageName = "", ToolTipText = "" });
+            subItems.Add(new DataRibbonItem() { ItemId = "ReloadGroupWikiSystem", Text = "Reload Group: Wiki-Systém", ImageName = "", ToolTipText = "", ItemIsFirstInGroup = true });
+            subItems.Add(new DataRibbonItem() { ItemId = "ClearGroupWikiSystem", Text = "Clear Group: Wiki-Systém", ImageName = "", ToolTipText = "" });
+            subItems.Add(new DataRibbonItem() { ItemId = "RemoveGroupWikiSystem", Text = "Remove Group: Wiki-Systém", ImageName = "", ToolTipText = "" });
             subItems.Add(new DataRibbonItem() { ItemId = "AddQAT", Text = "Add Direct QAT Items", ImageName = "", ToolTipText = "", ItemIsFirstInGroup = true });
             subItems.Add(new DataRibbonItem() { ItemId = "RemoveEmpty", Text = "Remove Empty pages", ImageName = "", ToolTipText = "", ItemIsFirstInGroup = true });
             return subItems;
@@ -481,32 +560,48 @@ namespace TestDevExpress.Forms
         }
         private void DropDownItemClick(object sender, TEventArgs<IMenuItem> e)
         {
-            switch (e.Item.ItemId)
+            try
             {
-                case "ClearRibbon":
-                    this._Ribbon.Clear();
-                    break;
-                case "ClearContent":
-                    this._Ribbon.ClearPageContents();
-                    break;
-                case "AddOnDemand":
-                    this.FillRibbon(1, 1, 2, 3, false, "ON.DEMAND");
-                    break;
-                case "AddRandom":
-                    this.FillRibbon(1, 1, 2, 3, false, "RANDOM");
-                    break;
-                case "AddWiki":
-                    this.FillRibbon(1, 2, 2, 3, false, "WIKI");
-                    break;
-                case "Add7Pages":
-                    this.FillRibbon(5, 8, 4, 8);
-                    break;
-                case "AddQAT":
-                    this.FillRibbonQAT();
-                    break;
-                case "RemoveEmpty":
-                    this._Ribbon.RemoveVoidContainers();
-                    break;
+                switch (e.Item.ItemId)
+                {
+                    case "ClearRibbon":
+                        this._Ribbon.Clear();
+                        break;
+                    case "ClearContent":
+                        this._Ribbon.ClearPagesContents();
+                        break;
+                    case "AddOnDemand":
+                        this.FillRibbon(1, 1, 2, 3, false, "ON.DEMAND");
+                        break;
+                    case "AddRandom":
+                        this.FillRibbon(1, 1, 2, 3, false, "RANDOM");
+                        break;
+                    case "AddWiki":
+                        this.FillRibbon(1, 2, 2, 3, false, "WIKI");
+                        break;
+                    case "Add7Pages":
+                        this.FillRibbon(5, 8, 4, 8);
+                        break;
+                    case "ReloadGroupWikiSystem":
+                        this.ReloadGroup("WIKI", "Systém");
+                        break;
+                    case "ClearGroupWikiSystem":
+                        this.ClearGroup("WIKI", "Systém");
+                        break;
+                    case "RemoveGroupWikiSystem":
+                        this.RemoveGroup("WIKI", "Systém");
+                        break;
+                    case "AddQAT":
+                        this.FillRibbonQAT();
+                        break;
+                    case "RemoveEmpty":
+                        this._Ribbon.RemoveVoidContainers();
+                        break;
+                }
+            }
+            catch (Exception exc)
+            {
+                DxComponent.ShowMessageWarnig(exc.Message, "Chyba");
             }
         }
         private void _RunFill(object sender, EventArgs args)
@@ -758,18 +853,17 @@ namespace TestDevExpress.Forms
                 page.Groups.Add(group);
                 group.ParentPage = page;
 
-                _AddItems(page, group, 1, 6, ref qatItems);
+                AddItemsToGroup(group, 1, 6, ref qatItems);
             }
         }
         /// <summary>
         /// Do grupy přidá prvky
         /// </summary>
-        /// <param name="page"></param>
         /// <param name="group"></param>
         /// <param name="itemCountMin"></param>
         /// <param name="itemCountMax"></param>
         /// <param name="qatItems"></param>
-        private static void _AddItems(DataRibbonPage page, DataRibbonGroup group, int itemCountMin, int itemCountMax, ref string qatItems)
+        internal static void AddItemsToGroup(DataRibbonGroup group, int itemCountMin, int itemCountMax, ref string qatItems)
         {
             bool containsRadioGroup = false;
             int remainingRadioCount = 0;
@@ -844,6 +938,29 @@ namespace TestDevExpress.Forms
             };
         }
         /// <summary>
+        /// Vrátí PageId pro daný text stránky, např. pro text "WIKI" vrací "Page5"
+        /// </summary>
+        /// <param name="pageText"></param>
+        /// <returns></returns>
+        public static string GetPageId(string pageText)
+        {
+            int index = PageNames.IndexOf(n => n == pageText);
+            if (index < 0) return null;
+            return $"Page{index}";
+        }
+        /// <summary>
+        /// Vrátí GroupId pro dané ID stránky a daný text skupiny, např. pro text "Systém" vrací "Page4.Group5"
+        /// </summary>
+        /// <param name="pageId"></param>
+        /// <param name="groupText"></param>
+        /// <returns></returns>
+        public static string GetGroupId(string pageId, string groupText)
+        {
+            int index = GroupNames.IndexOf(n => n == groupText);
+            if (index < 0) return null;
+            return $"{pageId}.Group{index}";
+        }
+        /// <summary>
         /// Vytvoří a vrátí grupu Ribbonu (bez Items)
         /// </summary>
         /// <param name="pageId"></param>
@@ -855,7 +972,7 @@ namespace TestDevExpress.Forms
             string groupId = pageId + "." + "Group" + gi;    // GroupId je shodné pro grupy konkrétního názvu na shodné stránce = pro Mergování!
             string groupText = GroupNames[gi];
             bool groupButtonVisible = (groupText == "Rozšířené" || groupText == "Údržba" || groupText == "Oblíbené" || groupText == "Systém" || groupText == "Systém");
-            bool groupCollapsed = (Random.IsTrue(20));
+            bool groupCollapsed = (Random.IsTrue(10));
 
             return new DataRibbonGroup()
             {

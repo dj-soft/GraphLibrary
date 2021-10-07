@@ -18,6 +18,7 @@ using DevExpress.Utils.Extensions;
 using System.Security.Policy;
 using DevExpress.XtraBars;
 using DevExpress.XtraBars.Ribbon;
+using DevExpress.XtraLayout.Utils;
 
 namespace Noris.Clients.Win.Components.AsolDX
 {
@@ -33,6 +34,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         public DxRibbonControl()
         {
             InitProperties();
+            InitData();
             InitEvents();
             InitQuickAccessToolbar();
             DxComponent.RegisterListener(this);
@@ -94,6 +96,10 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             this.SelectChildActivePageOnMerge = true;
             this.CheckLazyContentEnabled = true;
+        }
+        private void InitData()
+        {
+            _Groups = new List<DxRibbonGroup>();
         }
         /// <summary>
         /// Vykreslení controlu
@@ -223,7 +229,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public event EventHandler<PaintEventArgs> PaintImageRightAfter;
         #endregion
-        #region Pole obsahující stránky Ribbonu
+        #region Přístup ke stránkám Ribbonu (vlastní, od kategorií, mergované)
         /// <summary>
         /// ID aktuálně vybrané stránky = <see cref="DevExpress.XtraBars.Ribbon.RibbonPage.Name"/> = <see cref="IRibbonPage.PageId"/>.
         /// <para/>
@@ -411,6 +417,117 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         #endregion
         #endregion
+        #region Přístup ke grupám Ribbonu
+        /// <summary>
+        /// Pole všech skupin, které jsou vygenerované přímo v this Ribbonu
+        /// </summary>
+        public DxRibbonGroup[] Groups
+        {
+            get
+            {
+                return _Groups.ToArray();
+            }
+        }
+        /// <summary>
+        /// Pole všech skupin, které jsou vygenerované jak přímo v this Ribbonu, tak přidané grupy ze všech Ribbonů, které jsou mergovány do this.
+        /// Pořadí: nejprve zdejší, potom nejbližší nižší, atd.
+        /// </summary>
+        public DxRibbonGroup[] AllGroups
+        {
+            get
+            {
+                List<DxRibbonGroup> allGroups = new List<DxRibbonGroup>();
+                var ribbon = this;
+                while (ribbon != null)
+                {
+                    allGroups.AddRange(ribbon._Groups);
+                    ribbon = ribbon.MergedChildDxRibbon;
+                }
+                return allGroups.ToArray();
+            }
+        }
+        private List<DxRibbonGroup> _Groups;
+        /// <summary>
+        /// Metoda zkusí najít existující grupu, pouze vlastní v this ribbonu, ne v mergovaných
+        /// </summary>
+        /// <param name="groupId"></param>
+        /// <param name="dxGroup"></param>
+        /// <returns></returns>
+        internal bool TryGetGroup(string groupId, out DxRibbonGroup dxGroup)
+        {
+            if (groupId == null)
+            {
+                dxGroup = null;
+                return false;
+            }
+            return this._Groups.TryGetFirst(g => g.Name == groupId, out dxGroup);
+        }
+        /// <summary>
+        /// Metoda zkusí najít existující stránku, pouze vlastní v this ribbonu, ne v mergovaných
+        /// </summary>
+        /// <param name="pageId"></param>
+        /// <param name="dxPage"></param>
+        /// <returns></returns>
+        internal bool TryGetPage(string pageId, out DxRibbonPage dxPage)
+        {
+            if (pageId == null)
+            {
+                dxPage = null;
+                return false;
+            }
+            return this.AllOwnDxPages.TryGetFirst(p => p.Name == pageId, out dxPage);
+        }
+        /// <summary>
+        /// Zajistí provedení refreshe dodané grupy (podle <see cref="IRibbonGroup.GroupId"/> v this Ribbonu.
+        /// Pokud tato grupa v Ribbonu není přítomna: pak pokud v dodané grupě je přítomna stránka <see cref="IRibbonGroup.ParentPage"/> pak se pokusí vyhledat odpovídající stránku v this Ribbonu a grupu do ní přidat.
+        /// </summary>
+        /// <param name="iRibbonGroup"></param>
+        public void RefreshGroup(IRibbonGroup iRibbonGroup)
+        {
+            if (iRibbonGroup == null)
+                throw new ArgumentException($"DxRibbonControl.RefreshGroup() error: group for refresh is null.");
+            DxRibbonGroup dxGroup = null;
+            DxRibbonPage dxPage = null;
+            bool hasGroup = TryGetGroup(iRibbonGroup.GroupId, out dxGroup);
+            if (!hasGroup)
+            {
+                if (iRibbonGroup.ChangeMode == ContentChangeMode.Remove) return;                // Odebrat stránku, která neexistuje: to není problém :-)
+                if (iRibbonGroup.ParentPage == null)
+                    throw new ArgumentException($"DxRibbonControl.RefreshGroup() error: group '{iRibbonGroup.GroupId}' is not found, and ParentPage is not specified.");
+                bool hasPage = TryGetPage(iRibbonGroup.ParentPage.PageId, out dxPage);
+                if (!hasPage)
+                    throw new ArgumentException($"DxRibbonControl.RefreshGroup() error: group '{iRibbonGroup.GroupId}' is not found, and ParentPage '{iRibbonGroup.ParentPage.PageId}' does not exists.");
+            }
+
+            // Podklady jsou OK, můžeme se pustit do větší akce (Unmerge - Akce - Merge):
+            _UnmergeModifyMergeCurrentRibbon(() => _RefreshGroup(iRibbonGroup, dxGroup, dxPage), true);
+        }
+        /// <summary>
+        /// Zajistí provedení refreshe dodané grupy (podle <see cref="IRibbonGroup.GroupId"/> v this Ribbonu, data fyzické grupy jsou dodána, ribbon je unmergován.
+        /// </summary>
+        /// <param name="iRibbonGroup"></param>
+        /// <param name="dxGroup"></param>
+        /// <param name="dxPage">Stránka. Je dodána jen tehdy, když grupa <paramref name="dxGroup"/> dosud v Ribbonu neexistuje, v tom případě je ověřeno, že tato stránka existuje.</param>
+        private void _RefreshGroup(IRibbonGroup iRibbonGroup, DxRibbonGroup dxGroup, DxRibbonPage dxPage)
+        {
+            var startTime = DxComponent.LogTimeCurrent;
+
+            int count = 0;
+            ReloadGroup(iRibbonGroup, dxGroup, dxPage, ref count);
+            AddQATUserListToRibbon();
+
+            if (LogActive) DxComponent.LogAddLineTime($" === Ribbon {DebugName}: Refresh group '{iRibbonGroup.GroupId}', Items count: {count}; {DxComponent.LogTokenTimeMilisec} === ", startTime);
+        }
+        /// <summary>
+        /// Odebere z evidence dodané grupy
+        /// </summary>
+        /// <param name="groupsToDelete"></param>
+        private void RemoveGroups(IEnumerable<DxRibbonGroup> groupsToDelete)
+        {
+            if (groupsToDelete != null)
+                groupsToDelete.ForEachExec(g => this._Groups.Remove(g));
+        }
+        #endregion
         #region Tvorba obsahu Ribbonu: Clear(), ClearPageContents(), RemoveVoidContainers(), AddPages(), RefreshPages(), RefreshItems(), RefreshItem()
         /// <summary>
         /// Smaže celý obsah Ribbonu. Ribbon se zmenší na řádek pro záhlaví a celé okno pod ním se přeuspořádá.
@@ -434,6 +551,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 _ClearingNow = true;
 
+                this._Groups.Clear();
                 this.Pages.Clear();
                 this.Categories.Clear();
                 this.PageCategories.Clear();
@@ -513,14 +631,14 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Nesmaže přímý obsah QAT toolbaru.
         /// Tím zabraňuje blikání.
         /// </summary>
-        public void ClearPageContents()
+        public void ClearPagesContents()
         {
-            ModifyCurrentDxContent(_ClearPageContents);
+            ModifyCurrentDxContent(_ClearPagesContents);
         }
         /// <summary>
         /// Smaže obsah (itemy a grupy) ale ponechá Pages, Categories a PageCategories.
         /// </summary>
-        private void _ClearPageContents()
+        private void _ClearPagesContents()
         {
             var startTime = DxComponent.LogTimeCurrent;
 
@@ -535,7 +653,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Smaže prázdné prázdné stránky a nevyužité kategorie v rámci this Ribbonu.
         /// Dovoluje provádět výměnu obsahu Ribbonu bez blikání, procesem: 
-        /// <see cref="ClearPageContents()"/>; 
+        /// <see cref="ClearPagesContents()"/>; 
         /// <see cref="AddPages(IEnumerable{IRibbonPage}, bool)"/>;
         /// <see cref="RemoveVoidContainers()"/>;
         /// <para/>
@@ -621,7 +739,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 this.ModifyCurrentDxContent(() =>
                 {
-                    if (clearCurrentContent) _ClearPageContents();
+                    if (clearCurrentContent) _ClearPagesContents();
                     _AddPages(iRibbonPages, this.UseLazyContentCreate, false, "Fill");
                     if (clearCurrentContent) _RemoveVoidContainers();
                     CheckLazyContentCurrentPage(isCalledFromReFill);
@@ -661,7 +779,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Lze vyžádat otevření submenu, pokud to submenu je.
         /// </summary>
         /// <param name="iRibbonItems"></param>
-        /// <param name="openMenu"></param>
         public void RefreshItems(IEnumerable<IRibbonItem> iRibbonItems)
         {
             if (iRibbonItems == null) return;
@@ -846,20 +963,20 @@ namespace Noris.Clients.Win.Components.AsolDX
                 _ActiveLazyLoadOnIdle = true;                                  // Pokud tuhle stránku nebudu plnit (=nyní jen generujeme prázdnou stránku, anebo jen obsahující QAT prvky), tak si poznamenám, že budu chtít stránky naplnit ve stavu OnIdle
 
             // Problematika QAT je v detailu popsána v této metodě:
-            bool isNeedQAT = !createContent && ContainsQAT(iRibbonPage);       // isNeedQAT je true tehdy, když bychom stránku nemuseli plnit (je LazyLoad), ale musíme do ní vložit pouze prvky typu QAT - a stránku přitom máme ponechat v režimu LazyLoad
+            bool createOnlyQATItems = !createContent && ContainsQAT(iRibbonPage);       // isNeedQAT je true tehdy, když bychom stránku nemuseli plnit (je LazyLoad), ale musíme do ní vložit pouze prvky typu QAT - a stránku přitom máme ponechat v režimu LazyLoad
 
-            if (!createContent && !isNeedQAT) return;                          // víc už dělat nemusíme. Máme stránku a v ní LazyInfo, a prvky QAT nepotřebujeme (v dané stránce nejsou).
+            if (!createContent && !createOnlyQATItems) return;                 // víc už dělat nemusíme. Máme stránku a v ní LazyInfo, a prvky QAT nepotřebujeme (v dané stránce nejsou).
 
-            if (!isNeedQAT && page.HasOnlyQatContent)
+            if (!createOnlyQATItems && page.HasOnlyQatContent)
                 page.ClearContent(true, false);
             
-            page.HasOnlyQatContent = isNeedQAT;                                // Do stránky si poznamenáme, zda stránka obsahuje jen QAT prvky!
+            page.HasOnlyQatContent = createOnlyQATItems;                       // Do stránky si poznamenáme, zda stránka obsahuje jen QAT prvky!
 
             var list = DataRibbonGroup.SortGroups(iRibbonPage.Groups);
             foreach (var iRibbonGroup in list)
             {
                 iRibbonGroup.ParentPage = iRibbonPage;
-                _AddGroup(iRibbonGroup, page, isNeedQAT, ref count);
+                _AddGroup(iRibbonGroup, page, createOnlyQATItems, ref count);
             }
         }
         /// <summary>
@@ -867,36 +984,48 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="iRibbonGroup"></param>
         /// <param name="dxPage"></param>
-        /// <param name="isNeedQAT">Přidávat pouze prvky označené QAT (stránka jako celek je v režimu LazyContent, ale prvky QAT potřebujeme i v této stránce)</param>
+        /// <param name="createOnlyQATItems">Přidávat pouze prvky označené QAT (stránka jako celek je v režimu LazyContent, ale prvky QAT potřebujeme i v této stránce)</param>
         /// <param name="count"></param>
-        private void _AddGroup(IRibbonGroup iRibbonGroup, DxRibbonPage dxPage, bool isNeedQAT, ref int count)
+        private void _AddGroup(IRibbonGroup iRibbonGroup, DxRibbonPage dxPage, bool createOnlyQATItems, ref int count)
         {
             if (iRibbonGroup == null || dxPage == null) return;
-            if (isNeedQAT && !ContainsQAT(iRibbonGroup)) return;               // V režimu isNeedQAT přidáváme jen prvky QAT, a ten v dané grupě není žádný
+            if (createOnlyQATItems && !ContainsQAT(iRibbonGroup)) return;      // V režimu isNeedQAT přidáváme jen prvky QAT, a ten v dané grupě není žádný
 
-            var group = GetGroup(iRibbonGroup, dxPage);
-            if (group is null) return;
-          
+            var dxGroup = GetGroup(iRibbonGroup, dxPage);
+            if (dxGroup is null) return;
+
+            AddItemsToGroup(iRibbonGroup, dxGroup, createOnlyQATItems, ref count);
+        }
+        /// <summary>
+        /// Přidá prvky do grupy
+        /// </summary>
+        /// <param name="iRibbonGroup"></param>
+        /// <param name="dxGroup"></param>
+        /// <param name="createOnlyQATItems"></param>
+        /// <param name="count"></param>
+        private void AddItemsToGroup(IRibbonGroup iRibbonGroup, DxRibbonGroup dxGroup, bool createOnlyQATItems, ref int count)
+        {
             var iRibbonItems = DataRibbonItem.SortRibbonItems(iRibbonGroup.Items);
             foreach (var iRibbonItem in iRibbonItems)
             {
                 iRibbonItem.ParentGroup = iRibbonGroup;
-                _AddBarItem(iRibbonItem, group, isNeedQAT, ref count);
+                _AddBarItem(iRibbonItem, dxGroup, createOnlyQATItems, ref count);
             }
         }
+
         /// <summary>
         /// Metoda přidá daný prvek do dané grupy
         /// </summary>
         /// <param name="iRibbonItem"></param>
         /// <param name="dxGroup"></param>
-        /// <param name="isNeedQAT">Přidávat pouze prvky označené QAT (stránka jako celek je v režimu LazyContent, ale prvky QAT potřebujeme i v této stránce)</param>
+        /// <param name="createOnlyQATItems">Přidávat pouze prvky označené QAT (stránka jako celek je v režimu LazyContent, ale prvky QAT potřebujeme i v této stránce)</param>
         /// <param name="count"></param>
-        private void _AddBarItem(IRibbonItem iRibbonItem, DxRibbonGroup dxGroup, bool isNeedQAT, ref int count)
+        private void _AddBarItem(IRibbonItem iRibbonItem, DxRibbonGroup dxGroup, bool createOnlyQATItems, ref int count)
         {
             if (iRibbonItem == null || dxGroup == null) return;
-            if (isNeedQAT && !ContainsQAT(iRibbonItem)) return;               // V režimu isNeedQAT přidáváme jen prvky QAT, a ten v dané grupě není žádný
+            if (createOnlyQATItems && !ContainsQAT(iRibbonItem)) return;       // V režimu createOnlyQATItems přidáváme jen prvky QAT, a ten v daném prvku není žádný
 
-            GetItem(iRibbonItem, dxGroup, isNeedQAT, ref count);              // Najde / Vytvoří / Naplní prvek
+            GetItem(iRibbonItem, dxGroup, createOnlyQATItems, ref count);      // Najde / Vytvoří / Naplní prvek
         }
         #endregion
         #region LazyLoad page content : OnSelectedPageChanged => CheckLazyContent; OnDemand loading
@@ -1085,7 +1214,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Vyvolá se při OnDemand načítání obsahu submenu v prvku.
         /// Načítání typicky probíhá v threadu na pozadí.
-        /// Po nějakém čase - když aplikace získá data, pak zavolá zdejší metodu <see cref="DxRibbonControl.RefreshItems(IRibbonItem, bool)"/>;
+        /// Po nějakém čase - když aplikace získá data, pak zavolá zdejší metodu <see cref="DxRibbonControl.RefreshItem(IRibbonItem, bool)"/>;
         /// tato metoda zajistí zobrazení nově dodaných dat v daném prvku.
         /// </summary>
         public event EventHandler<TEventArgs<IRibbonItem>> ItemOnDemandLoad;
@@ -1293,62 +1422,100 @@ namespace Noris.Clients.Win.Components.AsolDX
             return group;
         }
         /// <summary>
+        /// Rozpozná, najde, vytvoří a naplní grupu pro daná data.
+        /// Grupu přidá do dané stránky, pokud tam dosud není.
+        /// </summary>
+        /// <param name="iRibbonGroup"></param>
+        /// <param name="dxGroup"></param>
+        /// <param name="dxPage"></param>
+        /// <param name="count"></param>
+        /// <returns></returns>
+        protected void ReloadGroup(IRibbonGroup iRibbonGroup, DxRibbonGroup dxGroup, DxRibbonPage dxPage, ref int count)
+        {
+            var changeMode = iRibbonGroup.ChangeMode;
+            bool isRemove = (changeMode == ContentChangeMode.Remove);
+            if (dxGroup == null)
+            {
+                if (isRemove) return;
+                if (dxPage == null) return;
+                dxGroup = CreateGroup(iRibbonGroup, dxPage);
+            }
+            else if (isRemove)
+            {
+                RemoveGroup(dxGroup, dxPage);
+                return;
+            }
+
+            FillGroup(dxGroup, iRibbonGroup);
+            if (changeMode == ContentChangeMode.ReFill)
+                dxGroup.ClearContent();
+
+            AddItemsToGroup(iRibbonGroup, dxGroup, false, ref count);
+        }
+        /// <summary>
         /// Rozpozná, najde, vytvoří a vrátí grupu pro daná data.
         /// Grupu přidá do dané stránky.
         /// </summary>
         /// <param name="iRibbonGroup"></param>
-        /// <param name="page"></param>
+        /// <param name="dxPage"></param>
         /// <returns></returns>
-        protected DxRibbonGroup GetGroup(IRibbonGroup iRibbonGroup, DxRibbonPage page)
+        protected DxRibbonGroup GetGroup(IRibbonGroup iRibbonGroup, DxRibbonPage dxPage)
         {
-            if (iRibbonGroup is null || page is null) return null;
+            if (iRibbonGroup is null || dxPage is null) return null;
 
             var changeMode = iRibbonGroup.ChangeMode;
-            DxRibbonGroup group = page.Groups.GetGroupByName(iRibbonGroup.GroupId) as DxRibbonGroup;
+            DxRibbonGroup dxGroup = dxPage.Groups.GetGroupByName(iRibbonGroup.GroupId) as DxRibbonGroup;
             if (HasCreate(changeMode))
             {
-                if (group is null)
-                    group = CreateGroup(iRibbonGroup, page);
+                if (dxGroup is null)
+                    dxGroup = CreateGroup(iRibbonGroup, dxPage);
                 if (HasReFill(changeMode))
-                    ClearGroup(group);
-                FillGroup(group, iRibbonGroup);
+                    ClearGroup(dxGroup);
+                FillGroup(dxGroup, iRibbonGroup);
             }
             else if (HasRemove(changeMode))
             {
-                RemoveGroup(group, page);
+                RemoveGroup(dxGroup, dxPage);
+                dxGroup = null;
             }
 
-            return group;
+            return dxGroup;
         }
         /// <summary>
         /// Vytvoří a vrátí grupu
         /// </summary>
         /// <param name="iRibbonGroup"></param>
-        /// <param name="page"></param>
+        /// <param name="dxPage"></param>
         /// <returns></returns>
-        protected DxRibbonGroup CreateGroup(IRibbonGroup iRibbonGroup, DxRibbonPage page)
+        protected DxRibbonGroup CreateGroup(IRibbonGroup iRibbonGroup, DxRibbonPage dxPage)
         {
-            var group = new DxRibbonGroup(iRibbonGroup.GroupText)
+            var dxGroup = new DxRibbonGroup(iRibbonGroup.GroupText)
             {
                 Name = iRibbonGroup.GroupId,
             };
-            if (page != null) page.Groups.Add(group);
-            return group;
+            if (dxPage != null) dxPage.Groups.Add(dxGroup);
+            this._Groups.Add(dxGroup);
+            return dxGroup;
         }
         /// <summary>
-        /// Naplní vlastnosti grupy z definice
+        /// Naplní vlastnosti grupy z definice - ale nevkládá do grupy jednotlivé prvky.
         /// </summary>
-        /// <param name="group"></param>
+        /// <param name="dxGroup"></param>
         /// <param name="iRibbonGroup"></param>
-        protected void FillGroup(DxRibbonGroup group, IRibbonGroup iRibbonGroup)
+        protected void FillGroup(DxRibbonGroup dxGroup, IRibbonGroup iRibbonGroup)
         {
-            group.Text = iRibbonGroup.GroupText;
-            group.CaptionButtonVisible = (iRibbonGroup.GroupButtonVisible ? DefaultBoolean.True : DefaultBoolean.False);
-            group.State = (iRibbonGroup.GroupState == RibbonGroupState.Expanded ? DevExpress.XtraBars.Ribbon.RibbonPageGroupState.Expanded :
-                          (iRibbonGroup.GroupState == RibbonGroupState.Collapsed ? DevExpress.XtraBars.Ribbon.RibbonPageGroupState.Collapsed :
-                           DevExpress.XtraBars.Ribbon.RibbonPageGroupState.Auto));
-            group.ImageOptions.ImageIndex = ComponentConnector.GraphicsCache.GetResourceIndex(iRibbonGroup.GroupImageName, RibbonImageSize, iRibbonGroup.GroupText);
-            group.Tag = iRibbonGroup;
+            dxGroup.Text = iRibbonGroup.GroupText;
+            dxGroup.CaptionButtonVisible = (iRibbonGroup.GroupButtonVisible ? DefaultBoolean.True : DefaultBoolean.False);
+            dxGroup.State = (iRibbonGroup.GroupState == RibbonGroupState.Expanded ? DevExpress.XtraBars.Ribbon.RibbonPageGroupState.Expanded :
+                            (iRibbonGroup.GroupState == RibbonGroupState.Collapsed ? DevExpress.XtraBars.Ribbon.RibbonPageGroupState.Collapsed :
+                             DevExpress.XtraBars.Ribbon.RibbonPageGroupState.Auto));
+            dxGroup.ItemsLayout = (iRibbonGroup.LayoutType == RibbonGroupItemsLayout.Default ? RibbonPageGroupItemsLayout.Default :
+                                  (iRibbonGroup.LayoutType == RibbonGroupItemsLayout.OneRow ? RibbonPageGroupItemsLayout.OneRow :
+                                  (iRibbonGroup.LayoutType == RibbonGroupItemsLayout.TwoRows ? RibbonPageGroupItemsLayout.TwoRows :
+                                  (iRibbonGroup.LayoutType == RibbonGroupItemsLayout.ThreeRows ? RibbonPageGroupItemsLayout.ThreeRows :
+                                   RibbonPageGroupItemsLayout.Default))));
+            dxGroup.ImageOptions.ImageIndex = ComponentConnector.GraphicsCache.GetResourceIndex(iRibbonGroup.GroupImageName, RibbonImageSize, iRibbonGroup.GroupText);
+            dxGroup.Tag = iRibbonGroup;
         }
         /// <summary>
         /// Smaže obsah grupy
@@ -1360,15 +1527,21 @@ namespace Noris.Clients.Win.Components.AsolDX
             group?.ClearContent();
         }
         /// <summary>
-        /// Odstraní grupu ze stránky
+        /// Odstraní obsah grupy a pak odstraní grupu ze stránky
         /// </summary>
-        /// <param name="group"></param>
-        /// <param name="page"></param>
+        /// <param name="dxGroup"></param>
+        /// <param name="dxPage"></param>
         /// <returns></returns>
-        protected void RemoveGroup(DxRibbonGroup group, DxRibbonPage page)
+        protected void RemoveGroup(DxRibbonGroup dxGroup, DxRibbonPage dxPage)
         {
-            if (group != null && page != null && page.Groups.Contains(group))
-                page.Groups.Remove(group);
+            if (dxPage == null && dxGroup != null) dxPage = dxGroup.OwnerDxPage;
+
+            if (dxGroup != null && dxPage != null && dxPage.Groups.Contains(dxGroup))
+            {
+                dxGroup.ClearContent();
+                dxPage.Groups.Remove(dxGroup);
+                this._Groups.Remove(dxGroup);
+            }
         }
 
         /// <summary>
@@ -1439,11 +1612,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="iRibbonItem"></param>
         /// <param name="dxGroup"></param>
-        /// <param name="isNeedQAT">Přidávat pouze prvky označené QAT (stránka jako celek je v režimu LazyContent, ale prvky QAT potřebujeme i v této stránce)</param>
+        /// <param name="createOnlyQATItems">Přidávat pouze prvky označené QAT (stránka jako celek je v režimu LazyContent, ale prvky QAT potřebujeme i v této stránce)</param>
         /// <param name="count"></param>
         /// <param name="reallyCreateSubItems"></param>
         /// <returns></returns>
-        protected DevExpress.XtraBars.BarItem GetItem(IRibbonItem iRibbonItem, DxRibbonGroup dxGroup, bool isNeedQAT, ref int count, bool reallyCreateSubItems = false)
+        protected DevExpress.XtraBars.BarItem GetItem(IRibbonItem iRibbonItem, DxRibbonGroup dxGroup, bool createOnlyQATItems, ref int count, bool reallyCreateSubItems = false)
         {
             if (iRibbonItem is null || dxGroup is null) return null;
 
@@ -1627,7 +1800,6 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             RefreshBarItemTag(barItem, iRibbonItem);
         }
-
         /// <summary>
         /// Vrátí Buttony pro dané SubItemy
         /// </summary>
@@ -1637,7 +1809,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="reallyCreate"></param>
         /// <param name="count"></param>
         /// <returns></returns>
-        protected DevExpress.XtraBars.BarBaseButtonItem[] GetBarBaseButtons(IRibbonItem parentItem, DxRibbonGroup dxGroup, IEnumerable<IRibbonItem> subItems, bool reallyCreate, ref int count)
+        protected BarBaseButtonItem[] GetBarBaseButtons(IRibbonItem parentItem, DxRibbonGroup dxGroup, IEnumerable<IRibbonItem> subItems, bool reallyCreate, ref int count)
         {
             List<DevExpress.XtraBars.BarBaseButtonItem> baseButtons = new List<DevExpress.XtraBars.BarBaseButtonItem>();
             if (subItems != null && reallyCreate)
@@ -1659,7 +1831,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="iRibbonItem"></param>
         /// <param name="dxGroup"></param>
         /// <returns></returns>
-        protected DevExpress.XtraBars.BarBaseButtonItem CreateBaseButton(IRibbonItem iRibbonItem, DxRibbonGroup dxGroup)
+        protected BarBaseButtonItem CreateBaseButton(IRibbonItem iRibbonItem, DxRibbonGroup dxGroup)
         {
             DevExpress.XtraBars.BarBaseButtonItem baseButton = null;
             switch (iRibbonItem.ItemType)
@@ -1682,6 +1854,24 @@ namespace Noris.Clients.Win.Components.AsolDX
                 FillBarItem(baseButton, iRibbonItem);
             }
             return baseButton;
+        }
+        /// <summary>
+        /// V daném prvku najde a vrátí kolekci jeho SubItems - jen první úrovně.
+        /// Detekuje tedy známé konkrétní podtypy a vyhledá jejich konkrétní prvky.
+        /// </summary>
+        /// <param name="barItem"></param>
+        /// <returns></returns>
+        internal static IEnumerable<BarItem> GetSubItems(BarItem barItem)
+        {
+            if (barItem is DevExpress.XtraBars.BarButtonGroup buttonGroup) return buttonGroup.ItemLinks?.Select(l => l.Item);
+            if (barItem is DevExpress.XtraBars.BarButtonItem splitButton)
+            {
+                if (splitButton.DropDownControl is PopupMenu popupMenu) return popupMenu.ItemLinks.Select(l => l.Item);
+                return null;
+            }
+            if (barItem is BarSubItem menu) return menu.ItemLinks.Select(l => l.Item);
+            // Galery: obsahuje v sobě GalleryGroup a ty obsahují GalleryItem, ale nic z toho není BarItem !!!   if (barItem is RibbonGalleryBarItem galleryItem) return galleryItem.Gallery.Groups.SelectMany(g => g.Items.SelectMany(i => i..Add(galleryGroup); .ItemLinks.Select(l => l.Item);
+            return null;
         }
 
         // PopupMenu - pro SplitButton:
@@ -2261,7 +2451,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Instance této třídy je uložena v každém vygenerovaném BarItemu.
         /// Obsahuje: data <see cref="IRibbonItem"/>, podle kterých byl prvek vytvořen, obsahuje případné <see cref="LazySubItemsInfo"/>, 
-        /// obsahuje Weak referenci na grupu <see cref="DxRibbonGroup"/> do které nativně prvek patří, anebo Weak referenci na parent prvek <see cref="BarItem"/>.
+        /// obsahuje Weak referenci na grupu <see cref="DxRibbonGroup"/> do které nativně prvek patří
         /// </summary>
         protected class BarItemTagInfo
         {
@@ -2282,19 +2472,10 @@ namespace Noris.Clients.Win.Components.AsolDX
           
             private WeakTarget<DxRibbonControl> _DxRibbon;
             private WeakTarget<DxRibbonGroup> _DxGroup;
-            private WeakTarget<BarItem> _BarItem;
             /// <summary>
             /// Data která prvek definují
             /// </summary>
             internal IRibbonItem Data { get; set; }
-            /// <summary>
-            /// true pokud jde o prvek v grupě, pak je naplněn <see cref="DxGroup"/>
-            /// </summary>
-            internal bool IsItem { get { return (_DxGroup != null && _DxGroup.IsAlive); } }
-            /// <summary>
-            /// true pokud jde o subprvek v prvku, pak je naplněn <see cref="BarItem"/>
-            /// </summary>
-            internal bool IsSubItem { get { return (_BarItem != null && _BarItem.IsAlive); } }
             /// <summary>
             /// Grupa, do které byl prvek vytvořen
             /// </summary>
@@ -2308,14 +2489,10 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// </summary>
             internal DxRibbonControl DxRibbon { get { return _DxRibbon?.Target; } }
             /// <summary>
-            /// Grupa, do které byl prvek vytvořen
-            /// </summary>
-            internal BarItem BarItem { get { return _BarItem?.Target; } }
-            /// <summary>
             /// Informace pro LazyLoad
             /// </summary>
             internal LazySubItemsInfo LazyInfo { get; set; }
-    }
+        }
         /// <summary>
         /// Třída pro uchování informací pro LazyLoad SubItems
         /// </summary>
@@ -3759,18 +3936,20 @@ namespace Noris.Clients.Win.Components.AsolDX
             _UnmergeModifyMergeCurrentRibbon(null, false);
         }
         /// <summary>
-        /// Zajistí korektní stav this Ribbonu (=že bude UnMerged) pro danou akci, která chce modifikovat this Ribbon;
+        /// Provede zadanou akci, která modifikuje obsah Ribbonu.
+        /// Zajistí korektní stav this Ribbonu (tedy, že bude UnMerged!) pro danou akci, která chce modifikovat this Ribbon;
         /// Následně spustí danou akci; 
         /// A po dané akci zase vrátí this Ribbon pomocí mergování do původní struktury parentů.
-        /// <para/>
-        /// Pokud this Ribbon aktuálně není nikam Mergován, pak se provede zadaná akce bez zbytečných dalších režií.
         /// <para/>
         /// Tedy proběhne UnMerge celé hierarchie Ribbonů od TopParenta až k našemu Parentu;
         /// Pak se provede zadaná akce;
         /// A na konec se this Ribbon zase Merguje do celé původní hierarchie (pokud v ní na začátku byl).
+        /// Nedojde ke změně aktuální stránky (pokud ji daná akce nechce odebrat).
         /// <para/>
         /// Toto je jediná cesta jak korektně modifikovat obsah Ribbonu v situaci, když je Mergován nahoru.
         /// Režie s tím spojená je relativně snesitelná, lze počítat 8 milisekund na jednu úroveň (součet za UnMerge a na konci zase Merge).
+        /// <para/>
+        /// Pokud this Ribbon aktuálně není nikam Mergován, pak se provede zadaná akce bez zbytečných dalších režií.
         /// </summary>
         public void ModifyCurrentDxContent(Action action)
         {
@@ -3844,7 +4023,10 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (LogActive) DxComponent.LogAddLineTime($"ModifyRibbon {this.DebugName}: UnMerge + Action + Merge; Total Count: {count}; Time: {DxComponent.LogTokenTimeMilisec}", startTime);
         }
         /// <summary>
-        /// Provede danou akci, do logu vepíše její čas
+        /// Z aktuálního Ribbonu odmerguje jeho současný ChildRibbon (pokud je);
+        /// Pak provede danou akci;
+        /// Pak zase vrátí původní Child Ribbon;
+        /// a do logu vepíše čas celé této akce.
         /// </summary>
         /// <param name="action"></param>
         private void _RunUnMergedAction(Action action)
@@ -3994,6 +4176,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         void IDxRibbonInternal.RemoveGroupsFromQat(List<DevExpress.XtraBars.Ribbon.RibbonPageGroup> groupsToDelete) { RemoveGroupsFromQat(groupsToDelete); }
         void IDxRibbonInternal.RemoveItemsFromQat(List<DevExpress.XtraBars.BarItem> itemsToDelete) { RemoveItemsFromQat(itemsToDelete); }
         int IDxRibbonInternal.GetNextTimeStamp() { return ++LastTimeStamp; }
+        void IDxRibbonInternal.RemoveGroups(IEnumerable<DxRibbonGroup> groupsToDelete) { RemoveGroups(groupsToDelete); }
         void IListenerApplicationIdle.ApplicationIdle() { _ApplicationIdle(); }
         #endregion
         #region INFORMACE A POSTŘEHY, FUNGOVÁNÍ: CREATE, MERGE, UNMERGE, časy
@@ -4090,6 +4273,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <returns></returns>
         int GetNextTimeStamp();
+        /// <summary>
+        /// Odebere dané grupy z interní evidence Ribbonu
+        /// </summary>
+        /// <param name="groupsToDelete"></param>
+        void RemoveGroups(IEnumerable<DxRibbonGroup> groupsToDelete);
     }
     #endregion
     #region DxRibbonPage : stránka Ribbonu s podporou LazyContentItems, class DxRibbonPageLazyGroupInfo
@@ -4288,13 +4476,15 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             if (clearUserItems)
             {   // Standardní grupy a itemy:
+                var iOwnerRibbon = this.OwnerDxRibbon as IDxRibbonInternal;
+
                 string groupId = DxRibbonLazyLoadInfo.LazyLoadGroupId;
                 var ownerRibbonItems = this.OwnerDxRibbon.Items;
                 var groupsToDelete = this.Groups.OfType<DevExpress.XtraBars.Ribbon.RibbonPageGroup>().Where(g => g.Name != groupId).ToList();
                 var itemsToDelete = groupsToDelete.SelectMany(g => g.ItemLinks).Select(l => l.Item).ToList();
+                iOwnerRibbon.RemoveGroups(groupsToDelete.OfType<DxRibbonGroup>());
 
                 // Před fyzickým odebráním grup a prvků z RibbonPage je předám do QAT systému v Ribbonu, aby si je odebral ze své evidence: 
-                var iOwnerRibbon = this.OwnerDxRibbon as IDxRibbonInternal;
                 iOwnerRibbon.RemoveGroupsFromQat(groupsToDelete);
                 iOwnerRibbon.RemoveItemsFromQat(itemsToDelete);
 
@@ -4337,11 +4527,15 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public void ClearContent()
         {
-            var itemsToDelete = this.ItemLinks.Select(l => l.Item).ToList();
+            var oneItemsToDelete = this.ItemLinks.Select(l => l.Item);                                // Grupa v sobě obsahuje BarItemLinky, z nich získám BarItemy
+            var allItemsToDelete = oneItemsToDelete.Flatten(i => DxRibbonControl.GetSubItems(i));     // Z BarItemů v grupě získám i všechny jejich SubItems, rekurzivně - pokud prvek nějaké vnořené má (SubItem, PopupItem)
+            var itemsToDelete = allItemsToDelete.Select(t => t.Item2).ToList();                       // allItemsToDelete obsahuje Tuple, kde Item1 = Level a Item2 = prvek
 
             // Před fyzickým odebráním prvků z RibbonGroup je předám do QAT systému v Ribbonu, aby si je odebral ze své evidence:
             var iOwnerRibbon = this.OwnerDxRibbon as IDxRibbonInternal;
             iOwnerRibbon.RemoveItemsFromQat(itemsToDelete);
+
+            this.ItemLinks.Clear();
 
             var ownerRibbonItems = this.OwnerDxRibbon.Items;
             itemsToDelete.ForEach(i => ownerRibbonItems.Remove(i));
@@ -5214,6 +5408,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public virtual RibbonGroupState GroupState { get; set; }
         /// <summary>
+        /// Rozložení prvků v grupě
+        /// </summary>
+        public virtual RibbonGroupItemsLayout LayoutType { get; set; }
+        /// <summary>
         /// Soupis prvků grupy (tlačítka, menu, checkboxy, galerie)
         /// Výchozí hodnota je prázdný List.
         /// </summary>
@@ -5461,6 +5659,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         RibbonGroupState GroupState { get; }
         /// <summary>
+        /// Rozložení prvků v grupě
+        /// </summary>
+        RibbonGroupItemsLayout LayoutType { get; }
+        /// <summary>
         /// Soupis prvků grupy (tlačítka, menu, checkboxy, galerie)
         /// </summary>
         IEnumerable<IRibbonItem> Items { get; }
@@ -5532,6 +5734,28 @@ namespace Noris.Clients.Win.Components.AsolDX
         Collapsed = 2
     }
     /// <summary>
+    /// Specifies how small items are arranged within a DevExpress.XtraBars.Ribbon.RibbonPageGroup in the Office2007, Office2010 and Office2013 Ribbon styles.
+    /// </summary>
+    public enum RibbonGroupItemsLayout
+    {
+        /// <summary>
+        /// The same as the DevExpress.XtraBars.Ribbon.RibbonPageGroupItemsLayout.ThreeRows option.
+        /// </summary>
+        Default = 0,
+        /// <summary>
+        /// Small items are arranged in one row.
+        /// </summary>
+        OneRow = 1,
+        /// <summary>
+        /// Small items are arranged in two rows.
+        /// </summary>
+        TwoRows = 2,
+        /// <summary>
+        /// Small items are arranged in three rows.
+        /// </summary>
+        ThreeRows = 3
+    }
+    /// <summary>
     /// Způsob práce s prvky stránky / prvku při jeho aktivaci (Static / OnDemand)
     /// </summary>
     public enum RibbonContentMode
@@ -5546,7 +5770,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Po jejich načtení bude seznam konstantní (jde o odložené načtení fixního seznamu).
         /// <para/>
         /// V této položce <see cref="IRibbonPage"/> (v té, která deklaruje stránku s tímto režimem) se pak typicky naplní 
-        /// <see cref="IRibbonItem.RibbonItemType"/> = <see cref="RibbonItemType.None"/>, a nevznikne žádný vizuální prvek ani grupa.
+        /// <see cref="IRibbonItem.ItemType"/> = <see cref="RibbonItemType.None"/>, a nevznikne žádný vizuální prvek ani grupa.
         /// <para/>
         /// Po aktivaci takové stránky se provede dotaz na Aplikační server pro RefreshMenu a získané prvky se do této stránky doplní, 
         /// a následně se režim stránky přepne na <see cref="Static"/>.
@@ -5558,7 +5782,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Jde o dynamický soupis prvků.
         /// <para/>
         /// V této položce <see cref="IRibbonPage"/> (v té, která deklaruje stránku s tímto režimem) se pak typicky naplní 
-        /// <see cref="IRibbonItem.RibbonItemType"/> = <see cref="RibbonItemType.None"/>, a nevznikne žádný vizuální prvek ani grupa.
+        /// <see cref="IRibbonItem.ItemType"/> = <see cref="RibbonItemType.None"/>, a nevznikne žádný vizuální prvek ani grupa.
         /// <para/>
         /// Po aktivaci takové stránky se provede dotaz na Aplikační server pro RefreshMenu a získané prvky se do této stránky doplní, 
         /// ale režim stránky nadále zůstává <see cref="OnDemandLoadEveryTime"/> = tím se zajistí stále opakované načítání obsahu při každé aktivaci.
@@ -5627,9 +5851,25 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Neurčeno
         /// </summary>
         None,
+        /// <summary>
+        /// Používá se ve StatusBaru
+        /// </summary>
+        Label,
+        /// <summary>
+        /// Tlačítko
+        /// </summary>
         Button,
+        /// <summary>
+        /// Skupina tlačítek ???
+        /// </summary>
         ButtonGroup,
+        /// <summary>
+        /// Tlačítko plus menu
+        /// </summary>
         SplitButton,
+        /// <summary>
+        /// Standardní CheckBox
+        /// </summary>
         CheckBoxStandard,
         /// <summary>
         /// Button se stavem Checked, který může být NULL (výchozí hodnota). 
@@ -5637,14 +5877,34 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Lze specifikovat ikony pro všechny tři stavy (NULL - false - true)
         /// </summary>
         CheckBoxToggle,
+        /// <summary>
+        /// Prvek RadioGrupy
+        /// </summary>
         RadioItem,
+        /// <summary>
+        /// Trackbar, nepoužívat než bude dokončeno
+        /// </summary>
         TrackBar,
+        /// <summary>
+        /// Menu = tlačítko, které se vždy rozbalí
+        /// </summary>
         Menu,
+        /// <summary>
+        /// Galerie v Ribbonu
+        /// </summary>
         InRibbonGallery,
+        /// <summary>
+        /// DevExpress volba skinů
+        /// </summary>
         SkinSetDropDown,
+        /// <summary>
+        /// DevExpress volba palety rozbalovací
+        /// </summary>
         SkinPaletteDropDown,
+        /// <summary>
+        /// DevExpress volba palety v formě InRibbon galerie
+        /// </summary>
         SkinPaletteGallery
-
     }
     /// <summary>
     /// Druh změny obsahu aktuálního prvku
