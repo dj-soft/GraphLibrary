@@ -18,7 +18,6 @@ using DevExpress.Utils.Extensions;
 using System.Security.Policy;
 using DevExpress.XtraBars;
 using DevExpress.XtraBars.Ribbon;
-using DevExpress.XtraLayout.Utils;
 
 namespace Noris.Clients.Win.Components.AsolDX
 {
