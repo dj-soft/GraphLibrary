@@ -421,8 +421,23 @@ namespace TestDevExpress.Forms
                 CategoryName, CategoryName, CategoryColor, 
                 pageIndex);
             DxComponent.LogAddLine("Ribon: " + this._Ribbon.DebugName +"; QAT: " + qatItems);
-            _Ribbon.QATUserItemKeys = qatItems;
+            DxQuickAccessToolbar.QATItemKeys = MergeKeys(DxQuickAccessToolbar.QATItemKeys, qatItems);
             _Ribbon.AddPages(items, clearCurrentContent);
+        }
+        /// <summary>
+        /// Sloučí klíče ze dvou stringů, vyloučí duplicity. Oddělovač klíčů na vstupu i na výstupu je <see cref="DxQuickAccessToolbar.QATItemKeysDelimiter"/>.
+        /// </summary>
+        /// <param name="keys1"></param>
+        /// <param name="keys2"></param>
+        /// <returns></returns>
+        private string MergeKeys(string keys1, string keys2)
+        {
+            List<string> keys = new List<string>();
+            char delimiter = DxQuickAccessToolbar.QATItemKeysDelimiterChar;
+            keys.AddRange(keys1.Split(delimiter).Where(k => k.Length > 0));
+            keys.AddRange(keys2.Split(delimiter).Where(k => k.Length > 0));
+            var dict = keys.CreateDictionary(s => s, true);
+            return dict.Keys.ToOneString(DxQuickAccessToolbar.QATItemKeysDelimiter);
         }
         /// <summary>
         /// Do dané stránky a dané grupy pošle nový obsah.
@@ -1070,10 +1085,10 @@ namespace TestDevExpress.Forms
             // QAT (Quick Access ToolBar):
             if (addToQat)
                 // Občas (a jen pro některé prvky) zařadíme prvek do QAT:
-                qatItems += item.ItemId + DxRibbonControl.QATItemKeyDelimiter;
+                qatItems += item.ItemId + DxQuickAccessToolbar.QATItemKeysDelimiter;
             else if (Rand.Next(100) < 8)
                 // Občas do klíče QAT zařadíme nesmysl = ID prvku, který není součástí GUI. Tento prvek v evidenci Ribbonu musí vydržet přes všechny změny:
-                qatItems += Random.GetWord(true) + DxRibbonControl.QATItemKeyDelimiter;
+                qatItems += Random.GetWord(true) + DxQuickAccessToolbar.QATItemKeysDelimiter;
 
             return item;
         }
