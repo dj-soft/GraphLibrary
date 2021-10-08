@@ -128,7 +128,7 @@ namespace TestDevExpress.Forms
             this.DxRibbon.ApplicationButtonText = " SYSTEM ";
             this.DxRibbon.LogActive = true;
 
-            this.DxRibbon.ImageRightFull = TestDevExpress.Properties.Resources.Bart_01b;
+            this.DxRibbon.ImageRightFull = TestDevExpress.Properties.Resources.Bart_01bt;
             this.DxRibbon.ImageRightMini = TestDevExpress.Properties.Resources.Bart_01c;
 
             string imgLogClear = "svgimages/snap/cleartablestyle.svg";

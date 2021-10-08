@@ -97,6 +97,8 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             this.SelectChildActivePageOnMerge = true;
             this.CheckLazyContentEnabled = true;
+
+            this._ImageHideOnMouse = true;       // Logo nekreslit, když v tom místě je myš
         }
         private void InitData()
         {
@@ -155,6 +157,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         public Image ImageRightMini { get { return _ImageRightMini; } set { _ImageRightMini = value; this.Refresh(); } }
         private Image _ImageRightMini;
         /// <summary>
+        /// Skrýt obrázek, když do daného prostoru najede myš?
+        /// </summary>
+        public bool ImageHideOnMouse { get { return _ImageHideOnMouse; } set { _ImageHideOnMouse = value; this.Refresh(); } }
+        private bool _ImageHideOnMouse;
+        /// <summary>
         /// Vykreslí ikonu vpravo
         /// </summary>
         /// <param name="e"></param>
@@ -166,6 +173,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             Image image = (isSmallRibbon ? (_ImageRightMini ?? _ImageRightFull) : (_ImageRightFull ?? _ImageRightMini));
             if (image != null && image.Width > 0 && image.Height > 0)
                 PaintLogoImage(e, image, isSmallRibbon);
+            else
+                _ImageBounds = Rectangle.Empty;
 
             OnPaintImageRightAfter(e);
         }
@@ -177,6 +186,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="isSmallRibbon"></param>
         private void PaintLogoImage(PaintEventArgs e, Image image, bool isSmallRibbon)
         {
+            Point mousePoint = this.PointToClient(Control.MousePosition);
+
             Size imageNativeSize = image.Size;
             if (imageNativeSize.Width <= 0 || imageNativeSize.Height <= 0) return;
 
@@ -185,9 +196,24 @@ namespace Noris.Clients.Win.Components.AsolDX
             // contentBounds = (isSmallRibbon ? contentBounds.Enlarge(0, -4, -28, +16) : contentBounds.Enlarge(-4));
             contentBounds = contentBounds.Enlarge(-2);
             ContentAlignment alignment = (isSmallRibbon ? ContentAlignment.TopRight : ContentAlignment.BottomRight);
-            Rectangle imageBounds = imageNativeSize.AlignTo(contentBounds, alignment, true, true);
+            _ImageBounds = imageNativeSize.AlignTo(contentBounds, alignment, true, true);
 
-            e.Graphics.DrawImage(image, imageBounds);
+            bool hideImage = (_ImageHideOnMouse && _ImageBounds.Contains(mousePoint));
+            bool paintImage = !hideImage;
+            if (paintImage)
+                e.Graphics.DrawImage(image, _ImageBounds);
+            _ImagePainted = paintImage;
+        }
+        protected override void OnMouseMove(MouseEventArgs e)
+        {
+            base.OnMouseMove(e);
+            if (_ImageBounds.HasPixels())
+            {
+                bool hideImage = (_ImageHideOnMouse && _ImageBounds.Contains(e.Location));
+                bool paintImage = !hideImage;
+                if (paintImage != _ImagePainted)
+                    this.Refresh();
+            }
         }
         /// <summary>
         /// Souřadnice oblasti Ribbonu, kde jsou aktuálně buttony
@@ -207,6 +233,14 @@ namespace Noris.Clients.Win.Components.AsolDX
                 return contentBounds;
             }
         }
+        /// <summary>
+        /// Souřadnice obrázku
+        /// </summary>
+        private Rectangle _ImageBounds;
+        /// <summary>
+        /// Obrázek je aktuálně vykreslen?
+        /// </summary>
+        private bool _ImagePainted;
         /// <summary>
         /// Provede se před vykreslením obrázku vpravo v ribbonu
         /// </summary>

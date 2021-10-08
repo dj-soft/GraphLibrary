@@ -2360,5 +2360,8 @@
   <ItemGroup>
     <None Include="Images\ImagesBig\Marge 01c.png" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\ImagesBig\Bart 01bt.png" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
