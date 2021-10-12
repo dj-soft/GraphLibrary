@@ -3016,7 +3016,8 @@ namespace Noris.Clients.Win.Components.AsolDX
                 QatItem qatItem = new QatItem(this, key, iRibbonItem, iRibbonGroup, link.Item, link);
                 _QATUserItemDict.Add(key, qatItem);
                 _QATUserItems.Add(qatItem);
-                _RunQATItemKeysChanged();
+                _QATUserItemKeys = _GetQATUserItemKeys();
+                _RunQATItemKeysChanged(_QATUserItemKeys);
             }
         }
         /// <summary>
@@ -3058,7 +3059,8 @@ namespace Noris.Clients.Win.Components.AsolDX
                     qatItem.Reset();
                     _QATUserItemDict.Remove(key);
                     _QATUserItems.RemoveAll(q => q.Key == key);
-                    _RunQATItemKeysChanged();
+                    _QATUserItemKeys = _GetQATUserItemKeys();
+                    _RunQATItemKeysChanged(_QATUserItemKeys);
                 }
             }
         }
@@ -3116,10 +3118,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Došlo ke změně v obsahu <see cref="QATUserItemKeys"/>, zavolej události
         /// </summary>
-        private void _RunQATItemKeysChanged()
+        /// <param name="currentKeys"></param>
+        private void _RunQATItemKeysChanged(string currentKeys)
         {
             if (this.CustomizationPopupMenu.Visible) this.CustomizationPopupMenu.HidePopup();
-            DxQuickAccessToolbar.QATItemKeys = this._GetQATUserItemKeys();
+            DxQuickAccessToolbar.QATItemKeys = currentKeys;          // =  this._GetQATUserItemKeys();
             OnQATItemKeysChanged();
             QATItemKeysChanged?.Invoke(this, EventArgs.Empty);
         }
@@ -3329,6 +3332,24 @@ namespace Noris.Clients.Win.Components.AsolDX
                 _BarItemLink = null;
                 RibbonItem = null;
                 RibbonGroup = null;
+            }
+            /// <summary>
+            /// Vizualizace
+            /// </summary>
+            /// <returns></returns>
+            public override string ToString()
+            {
+                string text = RibbonItem?.ItemId ?? _Key;
+                if (RibbonItem != null) text += $" = \"{RibbonItem.Text}\"";
+
+                if (_BarItem != null) text += "; BarItem exists";
+                if (_BarItemLink != null) text += "; BarLink exists";
+
+                if (NeedChangeInQat) text += "; NeedChangeInQat";
+                if (NeedAddToQat) text += "; NeedAddToQat";
+                if (NeedRemoveFromQat) text += "; NeedRemoveFromQat";
+
+                return text;
             }
             /// <summary>Vlastník = Ribbon</summary>
             private DxRibbonControl _Owner;
