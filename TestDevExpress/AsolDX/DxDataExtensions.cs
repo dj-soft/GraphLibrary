@@ -32,6 +32,17 @@ namespace Noris.Clients.Win.Components.AsolDX
     {
         #region IEnumerable
         /// <summary>
+        /// Do daného Listu přidá dané hodnoty.
+        /// </summary>
+        /// <typeparam name="TValue"></typeparam>
+        /// <param name="list"></param>
+        /// <param name="values"></param>
+        public static void AddItems<TValue>(this List<TValue> list, params TValue[] values)
+        {
+            if (list != null && values != null && values.Length > 0)
+                list.AddRange(values);
+        }
+        /// <summary>
         /// Z dodané kolekce vytvoří Dictionary. Umožní ignorovat duplicity klíčů.
         /// </summary>
         /// <typeparam name="TKey"></typeparam>

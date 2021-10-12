@@ -1327,7 +1327,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                     pageCategory = CreatePageCategory(iRibbonCategory);
                 pageCategory.Tag = iRibbonCategory;
             }
-
+            iRibbonCategory.RibbonCategory = pageCategory;
             return pageCategory;
         }
         /// <summary>
@@ -1408,6 +1408,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 Tag = iRibbonPage
             };
             pageCollection.Add(page);
+            iRibbonPage.RibbonPage = page;
             return page;
         }
         /// <summary>
@@ -1421,6 +1422,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             page.MergeOrder = iRibbonPage.MergeOrder;
             page.Tag = iRibbonPage;
             page.PageData = iRibbonPage;
+            iRibbonPage.RibbonPage = page;
         }
         /// <summary>
         /// Vyprázdní obsah dané stránky: odstraní grupy i itemy, i Lazy group.
@@ -1439,6 +1441,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             if (page != null && pageCollection != null && pageCollection.Contains(page))
                 pageCollection.Remove(page);
+
+            IRibbonPage iRibbonPage = page?.PageData;
+            if (page != null) page.PageData = null;
+            if (iRibbonPage != null) iRibbonPage.RibbonPage = null;
         }
 
         /// <summary>
@@ -1449,12 +1455,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         public DxRibbonGroup CreateGroup(string text, DxRibbonPage page)
         {
-            var group = new DxRibbonGroup(text)
+            var dxGroup = new DxRibbonGroup(text)
             {
                 State = DevExpress.XtraBars.Ribbon.RibbonPageGroupState.Auto
             };
-            if (page != null) page.Groups.Add(group);
-            return group;
+            if (page != null) page.Groups.Add(dxGroup);
+            return dxGroup;
         }
         /// <summary>
         /// Rozpozná, najde, vytvoří a naplní grupu pro daná data.
@@ -1541,6 +1547,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             dxGroup.Text = iRibbonGroup.GroupText;
             dxGroup.CaptionButtonVisible = (iRibbonGroup.GroupButtonVisible ? DefaultBoolean.True : DefaultBoolean.False);
+            dxGroup.AllowTextClipping = iRibbonGroup.AllowTextClipping;
             dxGroup.State = (iRibbonGroup.GroupState == RibbonGroupState.Expanded ? DevExpress.XtraBars.Ribbon.RibbonPageGroupState.Expanded :
                             (iRibbonGroup.GroupState == RibbonGroupState.Collapsed ? DevExpress.XtraBars.Ribbon.RibbonPageGroupState.Collapsed :
                              DevExpress.XtraBars.Ribbon.RibbonPageGroupState.Auto));
@@ -1550,6 +1557,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                                   (iRibbonGroup.LayoutType == RibbonGroupItemsLayout.ThreeRows ? RibbonPageGroupItemsLayout.ThreeRows :
                                    RibbonPageGroupItemsLayout.Default))));
             dxGroup.ImageOptions.ImageIndex = ComponentConnector.GraphicsCache.GetResourceIndex(iRibbonGroup.GroupImageName, RibbonImageSize, iRibbonGroup.GroupText);
+            dxGroup.DataGroup = iRibbonGroup;
             dxGroup.Tag = iRibbonGroup;
         }
         /// <summary>
@@ -1577,6 +1585,10 @@ namespace Noris.Clients.Win.Components.AsolDX
                 dxPage.Groups.Remove(dxGroup);
                 this._Groups.Remove(dxGroup);
             }
+
+            IRibbonGroup iRibbonGroup = dxGroup.DataGroup;
+            if (dxGroup != null) dxGroup.DataGroup = null;
+            if (iRibbonGroup != null) iRibbonGroup.RibbonGroup = null;
         }
 
         /// <summary>
@@ -1785,9 +1797,17 @@ namespace Noris.Clients.Win.Components.AsolDX
                 barItem.Caption = iRibbonItem.Text ?? "";
 
             barItem.Enabled = iRibbonItem.Enabled;
+            barItem.Visibility = iRibbonItem.Visible ? BarItemVisibility.Always : BarItemVisibility.Never;
+            barItem.VisibleInSearchMenu = iRibbonItem.VisibleInSearchMenu;
 
+            var image = iRibbonItem.Image;
             string imageName = iRibbonItem.ImageName;
-            if (imageName != null && !(barItem is DxBarCheckBoxToggle))           // DxCheckBoxToggle si řídí Image sám
+            if (image != null)
+            {
+                barItem.ImageOptions.Image = image;
+                barItem.ImageOptions.LargeImage = image;
+            }
+            else if (imageName != null && !(barItem is DxBarCheckBoxToggle))           // DxCheckBoxToggle si řídí Image sám
             {
                 if (DxComponent.TryGetResourceExtension(imageName, out var _))
                 {
@@ -1800,12 +1820,14 @@ namespace Noris.Clients.Win.Components.AsolDX
                 }
             }
 
-            if (!string.IsNullOrEmpty(iRibbonItem.HotKey))
+            if (iRibbonItem.HotKeys.HasValue)
+            {
+                barItem.ItemShortcut = new DevExpress.XtraBars.BarShortcut(iRibbonItem.HotKeys.Value);
+            }
+            else if (!string.IsNullOrEmpty(iRibbonItem.HotKey))
             {
                 if (!(barItem is DevExpress.XtraBars.BarSubItem))
                     barItem.ItemShortcut = new DevExpress.XtraBars.BarShortcut(WinFormServices.KeyboardHelper.GetShortcutFromServerHotKey(iRibbonItem.HotKey));
-                // else
-                //    ComponentConnector.ShowWarningToDeveloper($"Setup keyboard shortcut {item.HotKey} to non button barItem {barItem.Name}. This is {barItem.GetType().Name}");
             }
 
             if (barItem is DevExpress.XtraBars.BarCheckItem checkItem)
@@ -2330,6 +2352,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             iRibbonItem.ParentGroup = parentItem.ParentGroup;
 
             var galleryItem = new DevExpress.XtraBars.Ribbon.GalleryItem();
+            galleryItem.ImageOptions.Image = iRibbonItem.Image;
             galleryItem.ImageIndex = galleryItem.HoverImageIndex = ComponentConnector.GraphicsCache.GetResourceIndex(iRibbonItem.ImageName);
             galleryItem.Caption = iRibbonItem.Text;
             galleryItem.Checked = iRibbonItem.Checked ?? false;
@@ -2468,6 +2491,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="iRibbonItem"></param>
         protected void RefreshBarItemTag(BarItem barItem, IRibbonItem iRibbonItem)
         {
+            iRibbonItem.RibbonItem = barItem;
             if (barItem == null) return;
             if (barItem.Tag is BarItemTagInfo itemInfo)
                 itemInfo.Data = iRibbonItem;
@@ -4367,6 +4391,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="color"></param>
         /// <param name="visible"></param>
         public DxRibbonPageCategory(string text, Color color, bool visible) : base(text, color, visible) { }
+        /// <summary>
+        /// Data definující kategorii
+        /// </summary>
+        public IRibbonCategory CategoryData { get; set; }
     }
     /// <summary>
     /// Stránka Ribbonu s vlastností LazyContentItems
@@ -4586,6 +4614,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Vlastník Ribbon typu <see cref="DxRibbonControl"/>
         /// </summary>
         internal DxRibbonPage OwnerDxPage { get { return this.Page as DxRibbonPage; } }
+        /// <summary>
+        /// Data definující grupu a její obsah
+        /// </summary>
+        internal IRibbonGroup DataGroup { get; set; }
         /// <summary>
         /// Smaže obsah this grupy
         /// </summary>
@@ -5346,7 +5378,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Reálně uložené ID stránky
         /// </summary>
-        protected string _PageId;
+        private string _PageId;
         /// <summary>
         /// Režim pro vytvoření / refill / remove této stránky
         /// </summary>
@@ -5376,6 +5408,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// V deklaraci interface je IEnumerable...
         /// </summary>
         IEnumerable<IRibbonGroup> IRibbonPage.Groups { get { return this.Groups; } }
+        /// <summary>
+        /// Sem bude umístěna fyzická <see cref="DxRibbonPage"/> po jejím vytvoření.
+        /// </summary>
+        public virtual WeakTarget<DxRibbonPage> RibbonPage { get; set; }
         /// <summary>
         /// Libovolná data aplikace
         /// </summary>
@@ -5446,6 +5482,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public virtual bool CategoryVisible { get; set; }
         /// <summary>
+        /// Sem bude umístěna fyzická <see cref="DxRibbonPageCategory"/> po jejím vytvoření.
+        /// </summary>
+        public virtual WeakTarget<DxRibbonPageCategory> RibbonCategory { get; set; }
+        /// <summary>
         /// Libovolná data aplikace
         /// </summary>
         public virtual object Tag { get; set; }
@@ -5463,6 +5503,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             this._GroupId = null;
             this.ChangeMode = ContentChangeMode.Add;
+            this.GroupState = RibbonGroupState.Expanded;
             this.Items = new List<IRibbonItem>();
         }
         /// <summary>
@@ -5524,7 +5565,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Reálně uložené ID grupy
         /// </summary>
-        protected string _GroupId;
+        private string _GroupId;
         /// <summary>
         /// Režim pro vytvoření / refill / remove této grupy
         /// </summary>
@@ -5546,6 +5587,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public virtual bool GroupButtonVisible { get; set; }
         /// <summary>
+        /// Povolit zkrácení textu
+        /// </summary>
+        public virtual bool AllowTextClipping { get; set; }
+        /// <summary>
         /// Stav grupy
         /// </summary>
         public virtual RibbonGroupState GroupState { get; set; }
@@ -5563,6 +5608,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         IEnumerable<IRibbonItem> IRibbonGroup.Items { get { return this.Items; } }
         /// <summary>
+        /// Sem bude umístěna fyzická <see cref="DxRibbonGroup"/> po jejím vytvoření.
+        /// </summary>
+        public virtual WeakTarget<DxRibbonGroup> RibbonGroup { get; set; }
+        /// <summary>
         /// Libovolná data aplikace
         /// </summary>
         public virtual object Tag { get; set; }
@@ -5579,6 +5628,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         public DataRibbonItem() : base()
         {
             this.ChangeMode = ContentChangeMode.Add;
+            this.ItemType = RibbonItemType.Button;
+            this.RibbonStyle = RibbonItemStyles.All;
+            this.VisibleInSearchMenu = true;
         }
         /// <summary>
         /// Metoda vytvoří new instanci třídy <see cref="DataRibbonItem"/>, které bude obsahovat data z dodané <see cref="IRibbonItem"/>.
@@ -5606,6 +5658,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             ParentRibbonItem = source.ParentRibbonItem;
             ItemType = source.ItemType;
             RibbonStyle = source.RibbonStyle;
+            VisibleInSearchMenu = source.VisibleInSearchMenu;
             SubItemsContentMode = source.SubItemsContentMode;
             SubItems = source.SubItems?.ToList();
         }
@@ -5672,6 +5725,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public virtual RibbonItemStyles RibbonStyle { get; set; }
         /// <summary>
+        /// Zobrazit v Search menu?
+        /// </summary>
+        public virtual bool VisibleInSearchMenu { get; set; }
+        /// <summary>
         /// Režim práce se subpoložkami
         /// </summary>
         public virtual RibbonContentMode SubItemsContentMode { get; set; }
@@ -5684,6 +5741,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// V deklaraci interface je IEnumerable...
         /// </summary>
         IEnumerable<IRibbonItem> IRibbonItem.SubItems { get { return this.SubItems; } }
+        /// <summary>
+        /// Sem bude umístěn fyzický BarItem po jeho vytvoření.
+        /// </summary>
+        public virtual WeakTarget<BarItem> RibbonItem { get; set; }
     }
     #endregion
     #region Interface IRibbonPage, IRibbonCategory, IRibbonGroup, IRibbonItem;  Enumy RibbonPageType, RibbonContentMode, RibbonItemStyles, BarItemPaintStyle, RibbonItemType.
@@ -5729,6 +5790,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         IEnumerable<IRibbonGroup> Groups { get; }
         /// <summary>
+        /// Sem bude umístěna fyzická <see cref="DxRibbonPage"/> po jejím vytvoření.
+        /// </summary>
+        WeakTarget<DxRibbonPage> RibbonPage { get; set; }
+        /// <summary>
         /// Libovolná data aplikace
         /// </summary>
         object Tag { get; }
@@ -5758,6 +5823,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Kategorie je viditelná?
         /// </summary>
         bool CategoryVisible { get; }
+        /// <summary>
+        /// Sem bude umístěna fyzická <see cref="DxRibbonPageCategory"/> po jejím vytvoření.
+        /// </summary>
+        WeakTarget<DxRibbonPageCategory> RibbonCategory { get; set; }
         /// <summary>
         /// Libovolná data aplikace
         /// </summary>
@@ -5797,6 +5866,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         bool GroupButtonVisible { get; }
         /// <summary>
+        /// Povolit zkrácení textu
+        /// </summary>
+        bool AllowTextClipping { get; }
+        /// <summary>
         /// Stav grupy
         /// </summary>
         RibbonGroupState GroupState { get; }
@@ -5808,6 +5881,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Soupis prvků grupy (tlačítka, menu, checkboxy, galerie)
         /// </summary>
         IEnumerable<IRibbonItem> Items { get; }
+        /// <summary>
+        /// Sem bude umístěna fyzická <see cref="DxRibbonGroup"/> po jejím vytvoření.
+        /// </summary>
+        WeakTarget<DxRibbonGroup> RibbonGroup { get; set; }
         /// <summary>
         /// Libovolná data aplikace
         /// </summary>
@@ -5835,6 +5912,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         RibbonItemStyles RibbonStyle { get; }
         /// <summary>
+        /// Zobrazit v Search menu?
+        /// </summary>
+        bool VisibleInSearchMenu { get; }
+        /// <summary>
         /// Režim práce se subpoložkami
         /// </summary>
         RibbonContentMode SubItemsContentMode { get; }
@@ -5842,6 +5923,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Subpoložky Ribbonu (definují prvky Menu, DropDown, SplitButton). Mohou být rekurzivně naplněné = vnořená menu
         /// </summary>
         new IEnumerable<IRibbonItem> SubItems { get; }
+        /// <summary>
+        /// Sem bude umístěn fyzický BarItem po jeho vytvoření.
+        /// </summary>
+        WeakTarget<BarItem> RibbonItem { get; set; }
     }
     /// <summary>
     /// Typ stránky

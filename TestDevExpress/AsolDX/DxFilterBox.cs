@@ -37,7 +37,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             _Margins = 1;
             _OperatorButtonImageDefault = "svgimages/dashboards/horizontallines.svg";
-            _OperatorButtonImage = null;
+            _OperatorButtonImageName = null;
             _ClearButtonImageDefault = "svgimages/dashboards/clearfilter.svg";
             _ClearButtonImage = null;
             _ClearButtonToolTipTitle = "Smazat";
@@ -61,7 +61,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             LastFilterValue = null;
         }
         private string _OperatorButtonImageDefault;
-        private string _OperatorButtonImage;
+        private Image _OperatorButtonImage;
+        private string _OperatorButtonImageName;
         private string _OperatorButtonToolTipTitle;
         private string _OperatorButtonToolTipText;
         private string _ClearButtonImageDefault;
@@ -156,7 +157,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Refreshuje button Operator (Image a ToolTip)
         /// </summary>
-        protected void OperatorButtonRefresh() { ButtonRefresh(_OperatorButton, _OperatorButtonImage, _OperatorButtonToolTipTitle, _OperatorButtonToolTipText, _OperatorButtonImageDefault); }
+        protected void OperatorButtonRefresh() { ButtonRefresh(_OperatorButton, _OperatorButtonImageName, _OperatorButtonToolTipTitle, _OperatorButtonToolTipText, _OperatorButtonImageDefault); }
         /// <summary>
         /// Refreshuje button Clear (Image a ToolTip)
         /// </summary>
@@ -384,7 +385,8 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             if (applyToButton)
             {   // Z aktuálního filtru přečteme jeho data a promítneme je do tlačítka:
-                _OperatorButtonImage = currentOperator?.ImageName;
+                _OperatorButtonImage = currentOperator?.Image;
+                _OperatorButtonImageName = currentOperator?.ImageName;
                 _OperatorButtonToolTipTitle = currentOperator?.ToolTipTitle;
                 _OperatorButtonToolTipText = currentOperator?.ToolTipText;
                 OperatorButtonRefresh();

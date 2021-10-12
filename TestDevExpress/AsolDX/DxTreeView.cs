@@ -2043,7 +2043,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             int imageIndex = _GetImageIndex(nodeInfo.ImageDynamicDefault, -1);
             treeNode.ImageIndex = imageIndex;                                                      // ImageIndex je vlevo, a může se změnit podle stavu Seleted
             treeNode.SelectImageIndex = _GetImageIndex(nodeInfo.ImageDynamicSelected, imageIndex); // SelectImageIndex je ikona ve stavu Nodes.Selected, zobrazená vlevo místo ikony ImageIndex
-            treeNode.StateImageIndex = _GetImageIndex(nodeInfo.ImageName, -1);                         // StateImageIndex je vpravo, a nereaguje na stav Selected
+            treeNode.StateImageIndex = _GetImageIndex(nodeInfo.ImageName, -1);                     // StateImageIndex je vpravo, a nereaguje na stav Selected
 
             if (canExpand) treeNode.Expanded = nodeInfo.Expanded;                                  // Expanded se nastavuje pouze z Refreshe (tam má smysl), ale ne při tvorbě (tam ještě nemáme ChildNody)
         }

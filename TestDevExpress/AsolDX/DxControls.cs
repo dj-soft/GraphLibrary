@@ -3090,9 +3090,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         public override Image GetItemImage(int index)
         {
             var menuItem = this.ListItems[index];
-            if (menuItem != null && menuItem.ImageName != null)
-                return DxComponent.GetImageFromResource(menuItem.ImageName);
-
+            if (menuItem != null)
+            {
+                if (menuItem.Image != null) return menuItem.Image;
+                if (menuItem.ImageName != null) return DxComponent.GetImageFromResource(menuItem.ImageName);
+            }
             return base.GetItemImage(index);
         }
         /// <summary>
@@ -6101,10 +6103,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Konstruktor
         /// </summary>
-        public DataMenuItem()
-        {
-            this.Enabled = true;
-        }
+        public DataMenuItem() : base() { }
         /// <summary>
         /// Metoda vytvoří new instanci třídy <see cref="DataMenuItem"/>, které bude obsahovat data z dodané <see cref="IMenuItem"/>.
         /// </summary>
@@ -6130,6 +6129,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             ParentItem = source.ParentItem;
             ItemType = source.ItemType;
             ChangeMode = source.ChangeMode;
+            HotKeys = source.HotKeys;
             HotKey = source.HotKey;
             SubItems = (source.SubItems != null ? new List<IMenuItem>(source.SubItems) : null);
             ClickAction = source.ClickAction;
@@ -6181,6 +6181,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public virtual ContentChangeMode ChangeMode { get; set; }
         /// <summary>
+        /// Přímo definovaná HotKey, má přednost před <see cref="HotKey"/>
+        /// </summary>
+        public virtual Keys? HotKeys { get; set; }
+        /// <summary>
         /// Klávesa
         /// </summary>
         public virtual string HotKey { get; set; }
@@ -6221,6 +6225,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         ContentChangeMode ChangeMode { get; }
         /// <summary>
+        /// Přímo definovaná HotKey, má přednost před <see cref="HotKey"/>
+        /// </summary>
+        Keys? HotKeys { get; }
+        /// <summary>
         /// Klávesa
         /// </summary>
         string HotKey { get; }
@@ -6245,6 +6253,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         public DataTextItem()
         {
             this._ItemId = null;
+            this.Visible = true;
             this.Enabled = true;
         }
         /// <summary>
@@ -6271,8 +6280,10 @@ namespace Noris.Clients.Win.Components.AsolDX
             Text = source.Text;
             ItemOrder = source.ItemOrder;
             ItemIsFirstInGroup = source.ItemIsFirstInGroup;
+            Visible = source.Visible;
             Enabled = source.Enabled;
             Checked = source.Checked;
+            Image = source.Image;
             ImageName = source.ImageName;
             ImageNameUnChecked = source.ImageNameUnChecked;
             ImageNameChecked = source.ImageNameChecked;
@@ -6330,6 +6341,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public virtual bool ItemIsFirstInGroup { get; set; }
         /// <summary>
+        /// Prvek je Visible?
+        /// </summary>
+        public virtual bool Visible { get; set; }
+        /// <summary>
         /// Prvek je Enabled?
         /// </summary>
         public virtual bool Enabled { get; set; }
@@ -6340,6 +6355,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Zadaná hodnota může být null (pak ikona je <see cref="ImageName"/>), pak první kliknutí nastaví false, druhé true, třetí zase false (na NULL se interaktivně nedá doklikat)
         /// </summary>
         public virtual bool? Checked { get; set; }
+        /// <summary>
+        /// Fyzický obrázek ikony.
+        /// </summary>
+        public virtual Image Image { get; set; }
         /// <summary>
         /// Jméno běžné ikony.
         /// Pro prvek typu CheckBox tato ikona reprezentuje stav, kdy <see cref="Checked"/> = NULL.
@@ -6401,6 +6420,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         bool ItemIsFirstInGroup { get; }
         /// <summary>
+        /// Prvek je Visible?
+        /// </summary>
+        bool Visible { get; }
+        /// <summary>
         /// Prvek je Enabled?
         /// </summary>
         bool Enabled { get; }
@@ -6413,6 +6436,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Pokud konkrétní prvek nepodporuje null, akceptuje null jako false.
         /// </summary>
         bool? Checked { get; set; }
+        /// <summary>
+        /// Fyzický obrázek ikony.
+        /// </summary>
+        Image Image { get; }
         /// <summary>
         /// Jméno ikony.
         /// Pro prvek typu CheckBox tato ikona reprezentuje stav, kdy <see cref="Checked"/> = NULL.

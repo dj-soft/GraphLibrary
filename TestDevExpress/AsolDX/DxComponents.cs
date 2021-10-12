@@ -1745,7 +1745,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             dxItem.Enabled = menuItem.Enabled;
             dxItem.Caption = menuItem.Text;
             dxItem.SuperTip = CreateDxSuperTip(menuItem);
-            ApplyImage(dxItem.ImageOptions, resourceName: itemImage);
+            ApplyImage(dxItem.ImageOptions, resourceName: itemImage, image: menuItem.Image);
             dxItem.Tag = menuItem;
 
             // SubMenu:
@@ -1798,7 +1798,11 @@ namespace Noris.Clients.Win.Components.AsolDX
             return barItems.ToArray();
         }
         /// <summary>
-        /// Z daného stringu sestaví a vrátí pole <see cref="IMenuItem"/>, z něhož lze např. sestavit SubItems v Ribbonu, nebo DropDownButton
+        /// Z daného stringu sestaví a vrátí pole <see cref="IMenuItem"/>, z něhož lze např. sestavit SubItems v Ribbonu, nebo DropDownButton.
+        /// String má formát: řádky oddělené znakem Alt+Num4; Prvky oddělené znakem Alt+Num7;
+        /// Řádky = jednotlivé položky menu
+        /// Prvky v pořadí: Text; Tooltip; ImageName; Options
+        /// Options může obsahovat znaky: C CheckBox; A Checked; - Začátek grupy; / Disabled
         /// </summary>
         /// <param name="itemsText"></param>
         /// <returns></returns>
@@ -1823,15 +1827,15 @@ namespace Noris.Clients.Win.Components.AsolDX
                     string itemId = "Item" + (id++).ToString();
                     string text = (count > 0 ? items[0].Trim() : "");
                     string toolTip = (count > 1 ? items[1].Trim() : "");
-                    string image = (count > 2 ? items[2].Trim() : "");
-                    string data = (count > 3 ? items[3].Trim().ToUpper() : "");
+                    string imageName = (count > 2 ? items[2].Trim() : "");
+                    string options = (count > 3 ? items[3].Trim().ToUpper() : "");
                     if (!String.IsNullOrEmpty(text))
                     {
-                        DataMenuItem menuItem = new DataMenuItem() { ItemId = itemId, Text = text, ToolTipText = toolTip, ToolTipTitle = text, ImageName = image };
-                        menuItem.ItemType = (data.Contains(codChBox) ? MenuItemType.CheckBox : MenuItemType.MenuItem);
-                        if (menuItem.ItemType == MenuItemType.CheckBox) menuItem.Checked = data.Contains(codChecked);
-                        if (data.Contains(codGroup)) menuItem.ItemIsFirstInGroup = true;
-                        if (data.Contains(codDisable)) menuItem.Enabled = false;
+                        DataMenuItem menuItem = new DataMenuItem() { ItemId = itemId, Text = text, ToolTipText = toolTip, ToolTipTitle = text, ImageName = imageName };
+                        menuItem.ItemType = (options.Contains(codChBox) ? MenuItemType.CheckBox : MenuItemType.MenuItem);
+                        if (menuItem.ItemType == MenuItemType.CheckBox) menuItem.Checked = options.Contains(codChecked);
+                        if (options.Contains(codGroup)) menuItem.ItemIsFirstInGroup = true;
+                        if (options.Contains(codDisable)) menuItem.Enabled = false;
                         menuItems.Add(menuItem);
                     }
                 }
@@ -1892,7 +1896,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public static char MenuItemsCodeBeginGroup { get { return '_'; } }
         /// <summary>
-        /// Značka pro Disable na položce menu
+        /// Značka pro Disable na položce menu = '/'
         /// <para/>
         /// Používá se v metodách 
         /// <see cref="CreateIMenuItems(string)"/>, 
@@ -4024,7 +4028,7 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// Typová obálka nad <see cref="WeakReference"/>
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    internal class WeakTarget<T> where T : class
+    public class WeakTarget<T> where T : class
     {
         /// <summary>
         /// Konstruktor. Lze použít i implicitní konverzi:
