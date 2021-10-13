@@ -43,6 +43,17 @@ namespace Noris.Clients.Win.Components.AsolDX
                 list.AddRange(values);
         }
         /// <summary>
+        /// Do daného fronty Queue postupně přidá dané hodnoty.
+        /// </summary>
+        /// <typeparam name="TValue"></typeparam>
+        /// <param name="queue"></param>
+        /// <param name="items"></param>
+        public static void Enqueue<TValue>(this Queue<TValue> queue, IEnumerable<TValue> items)
+        {
+            if (queue != null && items != null)
+                items.ForEachExec(i => queue.Enqueue(i));
+        }
+        /// <summary>
         /// Z dodané kolekce vytvoří Dictionary. Umožní ignorovat duplicity klíčů.
         /// </summary>
         /// <typeparam name="TKey"></typeparam>

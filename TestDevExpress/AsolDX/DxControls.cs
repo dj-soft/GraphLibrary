@@ -6130,6 +6130,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             ItemType = source.ItemType;
             ChangeMode = source.ChangeMode;
             HotKeys = source.HotKeys;
+            Shortcut = source.Shortcut;
             HotKey = source.HotKey;
             SubItems = (source.SubItems != null ? new List<IMenuItem>(source.SubItems) : null);
             ClickAction = source.ClickAction;
@@ -6181,9 +6182,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public virtual ContentChangeMode ChangeMode { get; set; }
         /// <summary>
-        /// Přímo definovaná HotKey, má přednost před <see cref="HotKey"/>
+        /// Přímo definovaná HotKey, má přednost před <see cref="Shortcut"/> i před <see cref="HotKey"/>
         /// </summary>
         public virtual Keys? HotKeys { get; set; }
+        /// <summary>
+        /// Klávesová zkratka, má přednost před <see cref="HotKey"/>
+        /// </summary>
+        public virtual Shortcut? Shortcut { get; set; }
         /// <summary>
         /// Klávesa
         /// </summary>
@@ -6225,9 +6230,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         ContentChangeMode ChangeMode { get; }
         /// <summary>
-        /// Přímo definovaná HotKey, má přednost před <see cref="HotKey"/>
+        /// Přímo definovaná HotKey, má přednost před <see cref="Shortcut"/> i před <see cref="HotKey"/>
         /// </summary>
         Keys? HotKeys { get; }
+        /// <summary>
+        /// Klávesová zkratka, má přednost před <see cref="HotKey"/>
+        /// </summary>
+        Shortcut? Shortcut { get; }
         /// <summary>
         /// Klávesa
         /// </summary>

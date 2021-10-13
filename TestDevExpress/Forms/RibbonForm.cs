@@ -22,6 +22,8 @@ namespace TestDevExpress.Forms
                 this, Properties.Resources.Moon10, opacityColor: System.Drawing.Color.FromArgb(80, 80, 180), opacity: 120,
                 useFadeOut: false);
 
+            DxQuickAccessToolbar.QATItemKeysChanged += DxQuickAccessToolbar_QATItemKeysChanged;
+
             this.InitializeForm();
             _SetUseLazyLoad(_UseLazyLoad);
 
@@ -98,6 +100,17 @@ namespace TestDevExpress.Forms
             DxComponent.LogTextChanged += DxComponent_LogTextChanged;
             _LogContainChanges = true;
         }
+        /// <summary>
+        /// Po jakékoli změně obsahu QAT
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void DxQuickAccessToolbar_QATItemKeysChanged(object sender, EventArgs e)
+        {
+            string line = "Nový obsah QAT: " + DxQuickAccessToolbar.QATItemKeys;
+            DxComponent.LogAddLine(line);
+        }
+
         private DxSplitContainerControl _DxMainSplit;
         private DxSplitContainerControl _DxLeftSplit;
         private DxSplitContainerControl _DxBottomSplit;
@@ -394,7 +407,7 @@ namespace TestDevExpress.Forms
             this.DoLayoutButtons();
         }
         /// <summary>
-        /// Bude se používat LazyLoad
+        /// Bude se používat LazyLoad na Ribbonu tohoto panelu
         /// </summary>
         public bool UseLazyLoad { get { return this._Ribbon.UseLazyContentCreate; } set { this._Ribbon.UseLazyContentCreate = value; } }
         /// <summary>
@@ -416,8 +429,7 @@ namespace TestDevExpress.Forms
         public void FillRibbon(int pageCountMin, int pageCountMax, int groupCountMin, int groupCountMax, bool clearCurrentContent = false, string pageText = null)
         {
             int? pageIndex = (pageText != null ? (int?)DxRibbonSample.FindPageIndex(pageText) : (int?)null);
-            string qatItems;
-            var items = DxRibbonSample.CreatePages(this.Ribbon.DebugName, pageCountMin, pageCountMax, groupCountMin, groupCountMax, out qatItems,
+            var items = DxRibbonSample.CreatePages(this.Ribbon.DebugName, pageCountMin, pageCountMax, groupCountMin, groupCountMax, out var qatItems,
                 CategoryName, CategoryName, CategoryColor, 
                 pageIndex);
             DxComponent.LogAddLine("Ribon: " + this._Ribbon.DebugName +"; QAT: " + qatItems);
@@ -830,9 +842,10 @@ namespace TestDevExpress.Forms
             string categoryId = null, string categoryText = null, System.Drawing.Color? categoryColor = null)
         {
             var startTime = DxComponent.LogTimeCurrent;
-            if (!categoryColor.HasValue) categoryColor = System.Drawing.Color.DarkViolet;
-            _RibbonItemCount = 0;
+            int prevId = _RibbonItemId;
 
+            if (!categoryColor.HasValue) categoryColor = System.Drawing.Color.DarkViolet;
+            
             int pc = Rand.Next(pageCountMin, pageCountMax + 1);
             for (int p = 0; p < pc; p++)
             {
@@ -849,8 +862,8 @@ namespace TestDevExpress.Forms
 
                 _AddGroups(page, groupCountMin, groupCountMax, ref qatItems);
             }
-
-            DxComponent.LogAddLineTime($"Vygenerováno {_RibbonItemCount} prvků v čase {DxComponent.LogTokenTimeMilisec}", startTime);
+            int count = _RibbonItemId - prevId;
+            DxComponent.LogAddLineTime($"Vygenerováno {count} prvků v čase {DxComponent.LogTokenTimeMilisec}", startTime);
         }
         /// <summary>
         /// Do stránky přidá grupy
@@ -1023,7 +1036,6 @@ namespace TestDevExpress.Forms
         /// <returns></returns>
         private static DataRibbonItem _GetItem(string groupId, ref bool containsRadioGroup, ref int remainingRadioCount, ref bool forceFirstInGroup, ref string qatItems)
         {
-            _RibbonItemCount++;
             string itemId = "Item" + (++_RibbonItemId);
             string itemText = Random.GetWord(true);
             string itemImageName = GetRandomImageName();
@@ -1117,7 +1129,6 @@ namespace TestDevExpress.Forms
             int sc = Rand.Next(subItemsCountMin, subItemsCountMax + 1);
             for (int i = 0; i < sc; i++)
             {
-                _RibbonItemCount++;
                 string itemId = "Item" + (++_RibbonItemId);
                 string itemText = Random.GetWord(true);
                 string itemImage = GetRandomImageName(33);
@@ -1271,7 +1282,6 @@ namespace TestDevExpress.Forms
             return names.ToArray();
         }
         private static int _RibbonItemId = 0;
-        private static int _RibbonItemCount = 0;
         /// <summary>
         /// Random
         /// </summary>
