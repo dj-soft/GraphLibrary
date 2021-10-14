@@ -32,7 +32,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public DxRibbonControl()
         {
-            InitProperties();
+            InitSystemProperties();
             InitData();
             InitEvents();
             InitQuickAccessToolbar();
@@ -50,9 +50,9 @@ namespace Noris.Clients.Win.Components.AsolDX
             base.Dispose(disposing);
         }
         /// <summary>
-        /// Výchozí nastavení
+        /// Nastaví základní systémové vlastnosti Ribbonu.
         /// </summary>
-        private void InitProperties()
+        private void InitSystemProperties()
         {
             var iconList = ComponentConnector.GraphicsCache;
             Images = iconList.GetImageList(RibbonImageSize);
@@ -60,7 +60,7 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             AllowKeyTips = true;
             ButtonGroupsLayout = DevExpress.XtraBars.ButtonGroupsLayout.ThreeRows;
-            ColorScheme = DevExpress.XtraBars.Ribbon.RibbonControlColorScheme.DarkBlue;
+            // ColorScheme = DevExpress.XtraBars.Ribbon.RibbonControlColorScheme.DarkBlue;
             RibbonStyle = DevExpress.XtraBars.Ribbon.RibbonControlStyle.Office2019;
             CommandLayout = DevExpress.XtraBars.Ribbon.CommandLayout.Classic;
             DrawGroupCaptions = DevExpress.Utils.DefaultBoolean.True;
@@ -68,7 +68,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             GalleryAnimationLength = 300;
             GroupAnimationLength = 300;
             ItemAnimationLength = 300;
-            ItemsVertAlign = DevExpress.Utils.VertAlignment.Top;
+            ItemsVertAlign = DevExpress.Utils.VertAlignment.Center;                      // Svislé zarovnání prvků, když mám 1 až 2 malé buttony v třířádkovém Ribbonu
             MdiMergeStyle = DevExpress.XtraBars.Ribbon.RibbonMdiMergeStyle.Always;
             OptionsAnimation.PageCategoryShowAnimation = DevExpress.Utils.DefaultBoolean.True;
             RibbonCaptionAlignment = DevExpress.XtraBars.Ribbon.RibbonCaptionAlignment.Center;
@@ -78,16 +78,12 @@ namespace Noris.Clients.Win.Components.AsolDX
             ShowMoreCommandsButton = DevExpress.Utils.DefaultBoolean.True;
             ShowPageHeadersMode = DevExpress.XtraBars.Ribbon.ShowPageHeadersMode.Show;
             ShowSearchItem = true;
-            ShowToolbarCustomizeItem = true;
-            ToolbarLocation = DevExpress.XtraBars.Ribbon.RibbonQuickAccessToolbarLocation.Below;
 
             ShowApplicationButton = DevExpress.Utils.DefaultBoolean.False;
-            ApplicationButtonText = DxComponent.LocalizeDef(MsgCode.RibbonAppHomeText, " DOMŮ ");
+            ApplicationButtonText = DxComponent.LocalizeDef(MsgCode.RibbonAppHomeText, "DOMŮ");
             ToolTipController = DxComponent.DefaultToolTipController;
 
             this.Margin = new System.Windows.Forms.Padding(2);
-            this.Toolbar.ShowCustomizeItem = false;
-            this.ToolbarLocation = DevExpress.XtraBars.Ribbon.RibbonQuickAccessToolbarLocation.Above;
             this.MdiMergeStyle = DevExpress.XtraBars.Ribbon.RibbonMdiMergeStyle.Always;
 
             this.AllowMinimizeRibbon = false;    // Povolit minimalizaci Ribbonu? Pak ale nejde vrátit :-(
@@ -106,6 +102,39 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.Visible = true;
         }
         /// <summary>
+        /// Nastaví základní uživatelské vlastnosti Ribbonu.
+        /// </summary>
+        /// <param name="forDesktop"></param>
+        internal void InitUserProperties(bool forDesktop = false)
+        {
+            CommandLayout = CommandLayout.Classic;                                         // RMC 0065065 17.04.2020 Změna výchozího skinu a Ribbonu - změněno na Classic
+            AllowContentChangeAnimation = DevExpress.Utils.DefaultBoolean.False;           // JD 0069074 13.07.2021 - zamezí duplicitnímu refresh záložek ribbonu ve skinech Nephrite
+            ApplicationButtonAnimationLength = 0;                                          // JD 0069074 13.07.2021 - vypnutí animací
+            GalleryAnimationLength = 0;
+            PageAnimationLength = 0;
+            GroupAnimationLength = 0;
+            ItemAnimationLength = 0;                                                       // zamezí obrazení černého orámování kolem ikon po najetí myši u nevektorových skinů
+
+            ToolbarLocation = RibbonQuickAccessToolbarLocation.Above;
+            ShowItemCaptionsInQAT = true;
+            ShowQatLocationSelector = true;
+            ShowToolbarCustomizeItem = true;
+            Toolbar.ShowCustomizeItem = false;
+
+            if (forDesktop)
+            {   // pro Desktop
+                MdiMergeStyle = RibbonMdiMergeStyle.Always;
+                ShowSearchItem = true;
+                ShowApplicationButton = DevExpress.Utils.DefaultBoolean.True;
+            }
+            else
+            {   // pro ChildWindow
+                MdiMergeStyle = RibbonMdiMergeStyle.Always;
+                ShowSearchItem = true;
+                ShowApplicationButton = DevExpress.Utils.DefaultBoolean.False;
+            }
+        }
+        /// <summary>
         /// Inicializuje interní data
         /// </summary>
         private void InitData()
@@ -120,7 +149,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             base.OnPaint(e);
             this.PaintAfter(e);
-            // this.CustomizeQatMenu();
         }
         /// <summary>
         /// Vizualizace
@@ -272,7 +300,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public event EventHandler<PaintEventArgs> PaintImageRightAfter;
         #endregion
-        #region Přístup ke stránkám Ribbonu (vlastní, od kategorií, mergované)
+        #region Aktivní stránka Ribbonu, její aktivace, změna
         /// <summary>
         /// ID aktuálně vybrané stránky = <see cref="DevExpress.XtraBars.Ribbon.RibbonPage.Name"/> = <see cref="IRibbonPage.PageId"/>.
         /// <para/>
@@ -301,8 +329,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Lze setovat, dojde k aktivaci dané stránky (pokud je nalezena).
         /// Funguje správně i pro stránky kategorií i pro mergované stránky.
         /// </summary>
-        public string SelectedPageFullId 
-        { 
+        public string SelectedPageFullId
+        {
             get { return GetPageFullId(this.SelectedPage); }
             set
             {
@@ -322,7 +350,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         protected static string GetPageFullId(DevExpress.XtraBars.Ribbon.RibbonPage page)
         {
             if (page == null) return null;
-            return ((page.Category != null) ? ((page.Category.Name ?? "") + "\\") : "") + page.Name;
+            if (page.Category == null) return page.Name;
+            return $"{page.Category.Name}\\{page.Name}";
         }
         /// <summary>
         /// FullID posledně reálné vybrané stránky (viz <see cref="SelectedPageFullId"/>). V procesu změny aktivní stránky obsahuje předchozí.
@@ -337,6 +366,92 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Na tuto stránku seRibbon vrátí po Unmerge.
         /// </summary>
         public string LastSelectedOwnPageFullId { get; private set; }
+        /// <summary>
+        /// Při aktivaci stránky (těsně před tím) zajistí vygenerování prvků LazyLoad
+        /// </summary>
+        /// <param name="prev"></param>
+        protected override void OnSelectedPageChanged(DevExpress.XtraBars.Ribbon.RibbonPage prev)
+        {
+            this.StoreLastSelectedPage();
+            this.CheckLazyContent(this.SelectedPage, false);
+            base.OnSelectedPageChanged(prev);
+        }
+        /// <summary>
+        /// Označí si nativní stránky Ribonu jako "aktuálně selectované".
+        /// Na základě tohoto označení následně lze určit pro každý (i mergovaný) Ribbon, která jeho stránka byla naposledy aktivní, 
+        /// a v procesu UnMerge může Ribbon tuto stránku aktivovat = metoda <see cref="ActivateLastActivePage()"/>.
+        /// </summary>
+        protected void StoreLastSelectedPage()
+        {
+            if (_ClearingNow || this.SelectedPage == null) return;
+
+            if (_CurrentMergeState == MergeState.None)
+            {   // Označím si stránky (nativní = těch může být více = z více mergovaných ribbonů), které jsou nyní aktivní:
+                DxRibbonPage[] nativePages = _GetNativePages(this.SelectedPage);
+                nativePages.ForEachExec(p => p.OnActivate());
+            }
+        }
+        /// <summary>
+        /// Metoda v this Ribbonu aktivuje (selectuje) tu stránku, která byla naposledy aktivní = včetně stránek Mergovaných (pokud jsou).
+        /// </summary>
+        protected void ActivateLastActivePage()
+        {
+            var lastActivePage = this.LastActiveAllPage;
+            if (lastActivePage != null)
+                this.SelectPage(lastActivePage);
+        }
+        /// <summary>
+        /// Metoda najde a vrátí ty nativní stránky, jejichž obsah je mergován do dodané stránky.
+        /// Nativní stránka = ta, která byla fyzicky vytvořena a naplněna v určitém Ribbonu.
+        /// Následně byla Mergována (i spolu s dalšími) do určité výsledné stránky nějakého vyššího Ribbonu.
+        /// Tato výsledná mergovaná stránka je vstupem této metody, metoda najde výchozí podklady a tyto stránky vrátí.
+        /// Pokud je na vstupu null, je null i na výstupu. 
+        /// Pokud je na vstupu zcela prázdná stránka, která je typu <see cref="DxRibbonPage"/>, bude vrácena ona.
+        /// Pokud na vstupu je prázdná stránka jiného typu, je vráceno prázdné pole.
+        /// </summary>
+        /// <param name="page"></param>
+        /// <returns></returns>
+        private static DxRibbonPage[] _GetNativePages(DevExpress.XtraBars.Ribbon.RibbonPage page)
+        {
+            if (page == null) return null;
+
+            List<DxRibbonPage> pages = new List<DxRibbonPage>();
+
+            // Ze skupin + mergovaných skupin získám soupis prvků:
+            var items = new List<BarItem>();
+            items.AddRange(page.Groups.SelectMany(g => g.ItemLinks).Select(l => l.Item));
+            items.AddRange(page.MergedGroups.SelectMany(g => g.ItemLinks).Select(l => l.Item));
+
+            // Získám distinct seznam DxPages:
+            foreach (var item in items)
+            {
+                if (item.Tag is BarItemTagInfo itemInfo)
+                {   // V běžných BarItemech je Tag typu BarItemTagInfo:
+                    var nativePage = itemInfo.DxPage;
+                    if (page != null && !pages.Any(p => Object.ReferenceEquals(p, nativePage)))
+                        pages.Add(nativePage);
+                }
+                else if (item.Tag is DxRibbonPage dxRibbonPage)
+                {   // Pokud stránka je definovaná jako LazyLoad, pak má speciální grupu obsahující jeden BarItem, v jehož tagu je jeho nativní stránka DxRibbonPage:
+                    if (page != null && !pages.Any(p => Object.ReferenceEquals(p, dxRibbonPage)))
+                        pages.Add(dxRibbonPage);
+                }
+            }
+
+            return pages.ToArray();
+        }
+        /// <summary>
+        /// Obsahuje posledně aktivní stránku z this Ribbonu (nepočítaje v to stránky mergovaných Ribbonů).
+        /// Posledně aktivní stránka je dána jejím TimeStampem <see cref="DxRibbonPage.ActivateTimeStamp"/>.
+        /// </summary>
+        protected DxRibbonPage LastActiveOwnPage { get { return this.AllOwnDxPages.TopMost(p => p.ActivateTimeStamp); } }
+        /// <summary>
+        /// Obsahuje posledně aktivní stránku pro tento Ribbon, přednost mají stránky z Mergovaných Ribbonů (rekurzivně).
+        /// Posledně aktivní stránka je dána jejím TimeStampem <see cref="DxRibbonPage.ActivateTimeStamp"/>.
+        /// </summary>
+        protected DxRibbonPage LastActiveAllPage { get { return this.MergedChildDxRibbon?.LastActiveAllPage ?? this.LastActiveOwnPage; } }
+        #endregion
+        #region Přístup ke stránkám Ribbonu (vlastní, od kategorií, mergované)
         /// <summary>
         /// Vrátí soupis stránek z this ribbonu z daných pozic
         /// </summary>
@@ -1071,7 +1186,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             GetItem(iRibbonItem, dxGroup, createOnlyQATItems, ref count);      // Najde / Vytvoří / Naplní prvek
         }
         #endregion
-        #region LazyLoad page content : OnSelectedPageChanged => CheckLazyContent; OnDemand loading
+        #region LazyLoad page content : OnSelectedPageChanged => CheckLazyContent; OnDemand loading Page
         /// <summary>
         /// Požadavek na používání opožděné tvorby obsahu stránek Ribbonu.
         /// Pokud bude true, pak jednotlivé prvky na stránce Ribbonu budou fyzicky vygenerovány až tehdy, až bude stránka vybrána k zobrazení.
@@ -1079,16 +1194,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Pokud tedy byla hodnota false (=výchozí stav), pak se přidá 600 prvků, a teprve pak se nastaví <see cref="UseLazyContentCreate"/> = true, je to fakt pozdě.
         /// </summary>
         public bool UseLazyContentCreate { get; set; }
-        /// <summary>
-        /// Při aktivaci stránky (těsně před tím) zajistí vygenerování prvků LazyLoad
-        /// </summary>
-        /// <param name="prev"></param>
-        protected override void OnSelectedPageChanged(DevExpress.XtraBars.Ribbon.RibbonPage prev)
-        {
-            this.StoreLastSelectedPage();
-            this.CheckLazyContent(this.SelectedPage, false);
-            base.OnSelectedPageChanged(prev);
-        }
         /// <summary>
         /// Prověří, zda aktuální stránka <see cref="DevExpress.XtraBars.Ribbon.RibbonControl.SelectedPage"/> 
         /// má na sobě nějaké HasLazyContentItems, a pokud ano, tak je fyzicky vytvoří
@@ -1130,80 +1235,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             foreach (var lazyDxPage in lazyDxPages)
                 lazyDxPage.PrepareRealLazyItems(isCalledFromReFill);           // Tato metoda převolá zdejší metodu : IDxRibbonInternal.PrepareRealLazyItems()
         }
-        /// <summary>
-        /// Označí si nativní stránky Ribonu jako "aktuálně selectované".
-        /// Na základě tohoto označení následně lze určit pro každý (i mergovaný) Ribbon, která jeho stránka byla naposledy aktivní, 
-        /// a v procesu UnMerge může Ribbon tuto stránku aktivovat = metoda <see cref="ActivateLastActivePage()"/>.
-        /// </summary>
-        protected void StoreLastSelectedPage()
-        {
-            if (_ClearingNow || this.SelectedPage == null) return;
-
-            if (_CurrentMergeState == MergeState.None)
-            {   // Označím si stránky (nativní = těch může být více = z více mergovaných ribbonů), které jsou nyní aktivní:
-                DxRibbonPage[] nativePages = _GetNativePages(this.SelectedPage);
-                nativePages.ForEachExec(p => p.OnActivate());
-            }
-        }
-        /// <summary>
-        /// Metoda v this Ribbonu aktivuje (selectuje) tu stránku, která byla naposledy aktivní = včetně stránek Mergovaných (pokud jsou).
-        /// </summary>
-        protected void ActivateLastActivePage()
-        {
-            var lastActivePage = this.LastActiveAllPage;
-            if (lastActivePage != null)
-                this.SelectPage(lastActivePage);
-        }
-        /// <summary>
-        /// Metoda najde a vrátí ty nativní stránky, jejichž obsah je mergován do dodané stránky.
-        /// Nativní stránka = ta, která byla fyzicky vytvořena a naplněna v určitém Ribbonu.
-        /// Následně byla Mergována (i spolu s dalšími) do určité výsledné stránky nějakého vyššího Ribbonu.
-        /// Tato výsledná mergovaná stránka je vstupem této metody, metoda najde výchozí podklady a tyto stránky vrátí.
-        /// Pokud je na vstupu null, je null i na výstupu. 
-        /// Pokud je na vstupu zcela prázdná stránka, která je typu <see cref="DxRibbonPage"/>, bude vrácena ona.
-        /// Pokud na vstupu je prázdná stránka jiného typu, je vráceno prázdné pole.
-        /// </summary>
-        /// <param name="page"></param>
-        /// <returns></returns>
-        private static DxRibbonPage[] _GetNativePages(DevExpress.XtraBars.Ribbon.RibbonPage page)
-        {
-            if (page == null) return null;
-
-            List<DxRibbonPage> pages = new List<DxRibbonPage>();
-
-            // Ze skupin + mergovaných skupin získám soupis prvků:
-            var items = new List<BarItem>();
-            items.AddRange(page.Groups.SelectMany(g => g.ItemLinks).Select(l => l.Item));
-            items.AddRange(page.MergedGroups.SelectMany(g => g.ItemLinks).Select(l => l.Item));
-
-            // Získám distinct seznam DxPages:
-            foreach (var item in items)
-            {
-                if (item.Tag is BarItemTagInfo itemInfo)
-                {   // V běžných BarItemech je Tag typu BarItemTagInfo:
-                    var nativePage = itemInfo.DxPage;
-                    if (page != null && !pages.Any(p => Object.ReferenceEquals(p, nativePage)))
-                        pages.Add(nativePage);
-                }
-                else if (item.Tag is DxRibbonPage dxRibbonPage)
-                {   // Pokud stránka je definovaná jako LazyLoad, pak má speciální grupu obsahující jeden BarItem, v jehož tagu je jeho nativní stránka DxRibbonPage:
-                    if (page != null && !pages.Any(p => Object.ReferenceEquals(p, dxRibbonPage)))
-                        pages.Add(dxRibbonPage);
-                }
-            }
-
-            return pages.ToArray();
-        }
-        /// <summary>
-        /// Obsahuje posledně aktivní stránku z this Ribbonu (nepočítaje v to stránky mergovaných Ribbonů).
-        /// Posledně aktivní stránka je dána jejím TimeStampem <see cref="DxRibbonPage.ActivateTimeStamp"/>.
-        /// </summary>
-        protected DxRibbonPage LastActiveOwnPage { get { return this.AllOwnDxPages.TopMost(p => p.ActivateTimeStamp); } }
-        /// <summary>
-        /// Obsahuje posledně aktivní stránku pro tento Ribbon, přednost mají stránky z Mergovaných Ribbonů (rekurzivně).
-        /// Posledně aktivní stránka je dána jejím TimeStampem <see cref="DxRibbonPage.ActivateTimeStamp"/>.
-        /// </summary>
-        protected DxRibbonPage LastActiveAllPage { get { return this.MergedChildDxRibbon?.LastActiveAllPage ?? this.LastActiveOwnPage; } }
         /// <summary>
         /// Vrátí true, pokud stránka s daným <paramref name="pageId"/> je naší vlastní stránkou (je v <see cref="AllOwnPages"/>).
         /// Vrátí false pokud neexistuje nebo je mergovaná.
@@ -3048,8 +3079,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="e"></param>
         private void CustomizationPopupMenu_Popup(object sender, EventArgs e)
         {
-            DevExpress.XtraBars.BarItemLink link = GetLinkAtPoint();
+            var tlmi = AllowChangeToolbarLocationMenuItem;
 
+            DevExpress.XtraBars.BarItemLink link = GetLinkAtPoint();
             bool isQatItem = _IsQATDirectItem(link);
             CustomizationPopupMenu_Modify("Add to Quick Access Toolbar", DxComponent.LocalizeDef(MsgCode.RibbonAddToQat, "Přidat na panel nástrojů Rychlý přístup"));
             CustomizationPopupMenu_Modify("Remove from Quick Access Toolbar", DxComponent.LocalizeDef(MsgCode.RibbonRemoveFromQat, "Odebrat z panelu nástrojů Rychlý přístup"), !isQatItem);
@@ -3057,9 +3089,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             CustomizationPopupMenu_Modify("Show Quick Access Toolbar Below the Ribbon", DxComponent.LocalizeDef(MsgCode.RibbonShowQatDown, "Zobrazit panel nástrojů Rychlý přístup pod pásem karet"));
             CustomizationPopupMenu_Modify("Minimize the Ribbon", DxComponent.LocalizeDef(MsgCode.RibbonMinimizeQat, "Minimalizovat Ribbon"), false);
 
-            var itms = this.CustomizationPopupMenu.ItemLinks.Select(l => new Tuple<string, string>(l.Item.Caption.ToString(), l.Caption)).ToArray();
-            //var c0 = this.CustomizationPopupMenu.ItemLinks[0].Caption;
-            //this.CustomizationPopupMenu.ItemLinks[0].Visible = false;
+            var itms = this.CustomizationPopupMenu.ItemLinks.Select(l => new Tuple<string, string, string>(l.Item.Caption, l.Caption, l.Visible.ToString())).ToArray();
         }
         /// <summary>
         /// Najde položku menu "CustomizationPopupMenu" podle textu BarItem.Caption a nastaví do ní Caption a volitelně Visible
@@ -4147,7 +4177,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
 
             _CurrentMergeState = MergeState.MergeWithChild;
-            base.MergeRibbon(childRibbon);
+            DxComponent.TryRun(() => base.MergeRibbon(childRibbon));
             this.MergedChildRibbon = childRibbon;
             _CurrentMergeState = MergeState.None;
             CustomizationPopupMenuRefreshHandlers();
@@ -4318,7 +4348,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 childDxRibbon._CurrentMergeState = MergeState.UnMergeFromParent;
 
             _CurrentMergeState = MergeState.UnMergeChild;
-            base.UnMergeRibbon();
+            DxComponent.TryRun(() => base.UnMergeRibbon());
             _CurrentMergeState = MergeState.None;
             CustomizationPopupMenuRefreshHandlers();
 
@@ -5412,7 +5442,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         #endregion
         #region Public static, private instance
         /// <summary>
-        /// Souhrn všech klíčů prvků, které mají být zobrazeny v každém Ribbonu v QuickAccessToolbar
+        /// Souhrn všech klíčů prvků, které mají být zobrazeny v každém Ribbonu v QuickAccessToolbar.
+        /// Při tvorbě nového Ribbonu se odsud získá hodnota, kerá určuje prvky, které budou v QAT zobrazeny.
+        /// Pro existující Ribbon se hodnota odsud do Ribbonu načítá prostřednictvím události o změně <see cref="QATItemKeysChanged"/>.
         /// </summary>
         public static string QATItemKeys { get { return Current._QATItemKeys; } set { Current._QATItemKeys = value; } }
         /// <summary>

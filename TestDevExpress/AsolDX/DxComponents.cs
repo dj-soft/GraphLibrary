@@ -70,6 +70,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             this._InitListeners();
             this._ImageNameInit();
             this._InitClipboard();
+            this._InitAppEvents();
         }
         private static bool __IsInitialized = false;
         private static DxComponent _Instance;
@@ -97,9 +98,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             DevExpress.XtraEditors.WindowsFormsSettings.AnimationMode = DevExpress.XtraEditors.AnimationMode.EnableAll;
             DevExpress.XtraEditors.WindowsFormsSettings.AllowHoverAnimation = DevExpress.Utils.DefaultBoolean.True;
             DevExpress.LookAndFeel.UserLookAndFeel.Default.SkinName = "iMaginary";
-
-            System.Windows.Forms.Application.ApplicationExit += Application_ApplicationExit;
-            System.Windows.Forms.Application.Idle += Application_Idle;
         }
         /// <summary>
         /// Je voláno při ukončení aplikace
@@ -119,9 +117,23 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private void _Done()
         {
+            this._DoneAppEvents();
             this._DisposeFontCache();
             this._ResetControlColors();
-
+        }
+        /// <summary>
+        /// Zapojí aplikační eventy
+        /// </summary>
+        private void _InitAppEvents()
+        {
+            System.Windows.Forms.Application.ApplicationExit += Application_ApplicationExit;
+            System.Windows.Forms.Application.Idle += Application_Idle;
+        }
+        /// <summary>
+        /// Odpojí aplikační eventy
+        /// </summary>
+        private void _DoneAppEvents()
+        {
             System.Windows.Forms.Application.Idle -= Application_Idle;
             System.Windows.Forms.Application.ApplicationExit -= Application_ApplicationExit;
         }
