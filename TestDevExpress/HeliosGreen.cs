@@ -1587,6 +1587,11 @@ namespace Noris.Clients.Win.Components
         public GraphicsCache()
         {
             _ImageList = new ImageList();
+            string path = @"c:\CSharp\TestDevExpress\TestDevExpress\Images";
+            _ImageDict = ImageItem.LoadDictionary(path);
+
+            string resourceFile = @"c:\ProgramData\Asseco Solutions\NorisWin32Clients\Vyvoj46-Nephrite\ServerResources.bin";
+            _ImageDict = ImageItem.LoadServerResources(resourceFile);
         }
         /// <summary>
         /// Zoom
@@ -1602,6 +1607,7 @@ namespace Noris.Clients.Win.Components
             return _ImageList;
         }
         private ImageList _ImageList;
+        private Dictionary<string, ImageItem> _ImageDict;
         /// <summary>
         /// Simulace Green
         /// </summary>
@@ -1632,6 +1638,69 @@ namespace Noris.Clients.Win.Components
             Image image = GetResourceContent(imageName, size, caption);
             if (image is null) return -1;
             return _ImageList.Images.IndexOfKey(imageName);
+        }
+
+        protected class ImageItem
+        {
+            internal static Dictionary<string, ImageItem> LoadDictionary(string path)
+            {
+                Dictionary<string, ImageItem> dictionary = new Dictionary<string, ImageItem>();
+                return dictionary;
+
+
+                path = path.Trim();
+                if (!path.EndsWith("\\")) path += "\\";                                       // "c:\CSharp\TestDevExpress\TestDevExpress\Images\"
+                var files = System.IO.Directory.GetFiles(path, "*.*", System.IO.SearchOption.AllDirectories);
+                int length = path.Length;                                                     // = 47
+                foreach (var file in files)                                                   // "c:\CSharp\TestDevExpress\TestDevExpress\Images\Actions24\address-book-new-2(24).png"
+                {
+                    string subPath = System.IO.Path.GetDirectoryName(file);                   // "c:\CSharp\TestDevExpress\TestDevExpress\Images\Actions24"
+                    subPath = (subPath.Length > length ? subPath.Substring(length) : "");     // "Actions24"
+                    string fileName = file.Substring(length);                                 // "Actions24\address-book-new-2(24).png" 
+                    string name = System.IO.Path.GetFileNameWithoutExtension(file);           // "address-book-new-2(24)" 
+                    string ext = System.IO.Path.GetExtension(file);                           // ".png"
+
+                    break;
+                }
+                return dictionary;
+            }
+
+            internal static Dictionary<string, ImageItem> LoadServerResources(string resourceFile)
+            {
+                var content = System.IO.File.ReadAllBytes(resourceFile);
+                var length = content.Length;
+                int indexEnd = length - 8;
+                var indexBegin = _ReadInt(content, indexEnd);
+                StringBuilder sb = new StringBuilder();
+                while (indexBegin < indexEnd)
+                {
+                    int fileBegin = _ReadInt(content, ref indexBegin);
+                    int fileInfo = _ReadInt(content, ref indexBegin);
+                    int fileLength = _ReadInt(content, ref indexBegin);
+                    int fileNameLength = _ReadInt(content, ref indexBegin);
+                    string fileName = _ReadString(content, ref indexBegin, fileNameLength, sb);
+
+                }
+
+
+
+                return null;
+            }
+            private static int _ReadInt(byte[] content, int position)
+            {
+                return content[position] | (content[position + 1] << 8) | (content[position + 2] << 16) | (content[position + 3] << 24);
+            }
+            private static int _ReadInt(byte[] content, ref int position)
+            {
+                return content[position++] | (content[position++] << 8) | (content[position++] << 16) | (content[position++] << 24);
+            }
+            private static string _ReadString(byte[] content, ref int position, int length, StringBuilder sb)
+            {
+                sb.Clear();
+                for (int i = 0; i < length; i++)
+                    sb.Append((char)(content[position++]));
+                return sb.ToString();
+            }
         }
     }
     /// <summary>
@@ -1752,7 +1821,6 @@ namespace WinFormServices.Drawing
         Large
     }
 }
-
 namespace ASOL.Framework.Shared.Localization
 {
     public class Message
