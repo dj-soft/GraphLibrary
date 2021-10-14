@@ -163,14 +163,14 @@
     <Compile Include="AsolDX\DxFilterBox.cs">
       <SubType>Component</SubType>
     </Compile>
-    <Compile Include="AsolDX\DxLocalizer.cs" />
+    <Compile Include="AsolDX\News\DxLocalizer.cs" />
     <Compile Include="AsolDX\DxPanelBufferedGraphic.cs">
       <SubType>Component</SubType>
     </Compile>
     <Compile Include="AsolDX\DxRange.cs" />
     <Compile Include="AsolDX\DxWin32.cs" />
     <Compile Include="AsolDX\Tests\DxDrawingExtensions_Test.cs" />
-    <Compile Include="AsolDX\WatchTimer.cs" />
+    <Compile Include="AsolDX\News\WatchTimer.cs" />
     <Compile Include="Components\ChartControl.cs">
       <SubType>Component</SubType>
     </Compile>
@@ -184,7 +184,7 @@
     </Compile>
     <Compile Include="Components\DialogForm.cs" />
     <Compile Include="AsolDX\DxComponents.cs" />
-    <Compile Include="AsolDX\DxDataFormX.cs">
+    <Compile Include="AsolDX\News\DxDataFormX.cs">
       <SubType>Component</SubType>
     </Compile>
     <Compile Include="AsolDX\DxLayoutPanel.cs">
@@ -194,7 +194,7 @@
     <Compile Include="AsolDX\DxRibbon.cs">
       <SubType>Component</SubType>
     </Compile>
-    <Compile Include="AsolDX\DxThreadManager.cs" />
+    <Compile Include="AsolDX\News\DxThreadManager.cs" />
     <Compile Include="AsolDX\DxTreeView.cs">
       <SubType>Component</SubType>
     </Compile>
@@ -203,7 +203,7 @@
     </Compile>
     <Compile Include="Components\Random.cs" />
     <Compile Include="Components\ThreadManager.cs" />
-    <Compile Include="Components\XmlPersist.cs" />
+    <Compile Include="AsolDX\XmlPersist.cs" />
     <Compile Include="Forms\DataFormV1.cs">
       <SubType>Form</SubType>
     </Compile>

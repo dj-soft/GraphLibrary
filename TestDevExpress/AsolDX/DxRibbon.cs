@@ -76,7 +76,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             ShowDisplayOptionsMenuButton = DevExpress.Utils.DefaultBoolean.False;        //  True;
             ShowExpandCollapseButton = DevExpress.Utils.DefaultBoolean.True;
             ShowMoreCommandsButton = DevExpress.Utils.DefaultBoolean.True;
-            ShowToolbarCustomizeItem = true;
             ShowPageHeadersMode = DevExpress.XtraBars.Ribbon.ShowPageHeadersMode.Show;
             ShowSearchItem = true;
             ShowToolbarCustomizeItem = true;
@@ -86,7 +85,10 @@ namespace Noris.Clients.Win.Components.AsolDX
             ApplicationButtonText = DxComponent.LocalizeDef(MsgCode.RibbonAppHomeText, " DOMŮ ");
             ToolTipController = DxComponent.DefaultToolTipController;
 
-            this.Visible = true;
+            this.Margin = new System.Windows.Forms.Padding(2);
+            this.Toolbar.ShowCustomizeItem = false;
+            this.ToolbarLocation = DevExpress.XtraBars.Ribbon.RibbonQuickAccessToolbarLocation.Above;
+            this.MdiMergeStyle = DevExpress.XtraBars.Ribbon.RibbonMdiMergeStyle.Always;
 
             this.AllowMinimizeRibbon = false;    // Povolit minimalizaci Ribbonu? Pak ale nejde vrátit :-(
             this.AllowCustomization = false;     // Hodnota true povoluje (na pravé myši) otevřít okno Customizace Ribbonu, a to v Greenu nepodporujeme
@@ -100,6 +102,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.CheckLazyContentEnabled = true;
 
             this._ImageHideOnMouse = true;       // Logo nekreslit, když v tom místě je myš
+
+            this.Visible = true;
         }
         /// <summary>
         /// Inicializuje interní data
@@ -1165,20 +1169,26 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             if (page == null) return null;
 
+            List<DxRibbonPage> pages = new List<DxRibbonPage>();
+
             // Ze skupin + mergovaných skupin získám soupis prvků:
             var items = new List<BarItem>();
             items.AddRange(page.Groups.SelectMany(g => g.ItemLinks).Select(l => l.Item));
             items.AddRange(page.MergedGroups.SelectMany(g => g.ItemLinks).Select(l => l.Item));
 
             // Získám distinct seznam DxPages:
-            List<DxRibbonPage> pages = new List<DxRibbonPage>();
             foreach (var item in items)
             {
                 if (item.Tag is BarItemTagInfo itemInfo)
-                {
+                {   // V běžných BarItemech je Tag typu BarItemTagInfo:
                     var nativePage = itemInfo.DxPage;
                     if (page != null && !pages.Any(p => Object.ReferenceEquals(p, nativePage)))
                         pages.Add(nativePage);
+                }
+                else if (item.Tag is DxRibbonPage dxRibbonPage)
+                {   // Pokud stránka je definovaná jako LazyLoad, pak má speciální grupu obsahující jeden BarItem, v jehož tagu je jeho nativní stránka DxRibbonPage:
+                    if (page != null && !pages.Any(p => Object.ReferenceEquals(p, dxRibbonPage)))
+                        pages.Add(dxRibbonPage);
                 }
             }
 
