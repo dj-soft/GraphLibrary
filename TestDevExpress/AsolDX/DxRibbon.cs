@@ -639,6 +639,33 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Zajistí provedení refreshe dodané grupy (podle <see cref="IRibbonGroup.GroupId"/> v this Ribbonu.
         /// Pokud tato grupa v Ribbonu není přítomna: pak pokud v dodané grupě je přítomna stránka <see cref="IRibbonGroup.ParentPage"/> pak se pokusí vyhledat odpovídající stránku v this Ribbonu a grupu do ní přidat.
         /// </summary>
+        /// <param name="iRibbonGroups"></param>
+        public void RefreshGroups(IEnumerable<IRibbonGroup> iRibbonGroups)
+        {
+            if (iRibbonGroups == null)
+                throw new ArgumentException($"DxRibbonControl.RefreshGroups() error: groups for refresh is null.");
+            if (!iRibbonGroups.Any()) return;
+
+            _UnmergeModifyMergeCurrentRibbon(() => _RefreshGroups(iRibbonGroups), true);
+        }
+        /// <summary>
+        /// Refresh sady skupin
+        /// </summary>
+        /// <param name="iRibbonGroups"></param>
+        private void _RefreshGroups(IEnumerable<IRibbonGroup> iRibbonGroups)
+        {
+            foreach (var iRibbonGroup in iRibbonGroups)
+            {
+                if (iRibbonGroup is null) continue;
+
+
+
+            }
+        }
+        /// <summary>
+        /// Zajistí provedení refreshe dodané grupy (podle <see cref="IRibbonGroup.GroupId"/> v this Ribbonu.
+        /// Pokud tato grupa v Ribbonu není přítomna: pak pokud v dodané grupě je přítomna stránka <see cref="IRibbonGroup.ParentPage"/> pak se pokusí vyhledat odpovídající stránku v this Ribbonu a grupu do ní přidat.
+        /// </summary>
         /// <param name="iRibbonGroup"></param>
         public void RefreshGroup(IRibbonGroup iRibbonGroup)
         {
