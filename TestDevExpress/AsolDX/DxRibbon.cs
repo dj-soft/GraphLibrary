@@ -652,7 +652,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 throw new ArgumentException($"DxRibbonControl.RefreshGroups() error: groups for refresh is null.");
             if (!iRibbonGroups.Any()) return;
 
-            _UnmergeModifyMergeCurrentRibbon(() => _RefreshGroups(iRibbonGroups), true);
+            _UnMergeModifyMergeCurrentRibbon(() => _RefreshGroups(iRibbonGroups), true);
         }
         /// <summary>
         /// Zajistí provedení refreshe dodané grupy (podle <see cref="IRibbonGroup.GroupId"/> v this Ribbonu.
@@ -668,7 +668,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (!_TryGetDataForRefreshGroup(iRibbonGroup, out var dxGroup, out var dxPage)) return;
 
             // Podklady jsou OK, můžeme se pustit do větší akce (Unmerge - Akce - Merge):
-            _UnmergeModifyMergeCurrentRibbon(() => _RefreshGroup(iRibbonGroup, dxGroup, dxPage), true);
+            _UnMergeModifyMergeCurrentRibbon(() => _RefreshGroup(iRibbonGroup, dxGroup, dxPage), true);
         }
         /// <summary>
         /// Refresh sady skupin, data fyzické grupy jsou dodána, ribbon je unmergován.
@@ -1526,6 +1526,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             page.MergeOrder = iRibbonPage.MergeOrder;
             page.Tag = iRibbonPage;
             page.PageData = iRibbonPage;
+            page.Visible = iRibbonPage.Visible;
             iRibbonPage.RibbonPage = page;
         }
         /// <summary>
@@ -1650,6 +1651,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         protected void FillGroup(DxRibbonGroup dxGroup, IRibbonGroup iRibbonGroup)
         {
             dxGroup.Text = iRibbonGroup.GroupText;
+            dxGroup.Visible = iRibbonGroup.Visible;
             dxGroup.CaptionButtonVisible = (iRibbonGroup.GroupButtonVisible ? DefaultBoolean.True : DefaultBoolean.False);
             dxGroup.AllowTextClipping = iRibbonGroup.AllowTextClipping;
             dxGroup.State = (iRibbonGroup.GroupState == RibbonGroupState.Expanded ? DevExpress.XtraBars.Ribbon.RibbonPageGroupState.Expanded :
@@ -1884,7 +1886,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 barItem.Name = iRibbonItem.ItemId;
                 PrepareBarItemTag(barItem, iRibbonItem, dxGroup);
-                FillBarItem(barItem, iRibbonItem);
+                // FillBarItem(barItem, iRibbonItem);
             }
             return barItem;
         }
@@ -2871,7 +2873,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             // Pak nemá význam změnu provádět!
             if (_ContainsRealChangeQatUserKeys(qatItemKeys))
                 // Pokud tedy dojde ke změně, pak se musíme unmergovat, změnit a zpět mergovat:
-                this._UnmergeModifyMergeCurrentRibbon(() => _SetQATUserItemKeysReal(qatItemKeys, refreshToolbar), true);
+                this._UnMergeModifyMergeCurrentRibbon(() => _SetQATUserItemKeysReal(qatItemKeys, refreshToolbar), true);
             else
                 // Nejde o vizuální změnu, v tom případě pouze aktualizujeme obsah v datových strukturách (_QATUserItems a _QATUserItemDict):
                 _SetQATUserItemKeysData(qatItemKeys);
@@ -3375,7 +3377,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (!hasOldItems && !hasNewItems) return;
 
             // Změna QAT musí probíhat v UnMerged stavu, jinak se neprojeví v TopParent ribbonu!
-            _UnmergeModifyMergeCurrentRibbon(() => _SetQATDirectItemsInner(items), true);
+            _UnMergeModifyMergeCurrentRibbon(() => _SetQATDirectItemsInner(items), true);
         }
         /// <summary>
         /// Vloží dané prvky do QAT Direct, ve stavu ribbonu UnMerged
@@ -4264,7 +4266,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public void UnMergeCurrentDxFromParent()
         {
-            _UnmergeModifyMergeCurrentRibbon(null, false);
+            _UnMergeModifyMergeCurrentRibbon(null, false);
         }
         /// <summary>
         /// Provede zadanou akci, která modifikuje obsah Ribbonu.
@@ -4284,7 +4286,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public void ModifyCurrentDxContent(Action action)
         {
-            _UnmergeModifyMergeCurrentRibbon(action, true);
+            _UnMergeModifyMergeCurrentRibbon(action, true);
         }
         /// <summary>
         /// Provede odmergování this Ribbonu z Parentů (hierarchicky); poté až bude this Ribbon odmergován pak provede danou akci; a na závěr vrátí this Ribbon tam kde byl Mergován (pokud je požadováno: <paramref name="mergeBack"/>).
@@ -4292,7 +4294,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Není to triviální věc, protože pokud this (1) je mergován v Parentu (2) , a Parent (2) v ještě vyšším Parentu (3),
         /// pak se nejprve musí odebrat (2) z (3), pak (1) z (2) a pak zase vrátit (2) do (3).
         /// </summary>
-        private void _UnmergeModifyMergeCurrentRibbon(Action action, bool mergeBack)
+        private void _UnMergeModifyMergeCurrentRibbon(Action action, bool mergeBack)
         {
             var startTime = DxComponent.LogTimeCurrent;
 
@@ -4315,16 +4317,16 @@ namespace Noris.Clients.Win.Components.AsolDX
             try
             {
                 // Top Ribbon pozastaví svoji práci:
-                topRibbon.BarManager.BeginUpdate();
+                topRibbon.SuspendLayout();
+                //   topRibbon.BarManager.BeginUpdate();
+                topRibbon._PrepareEmptyPageForUMM();
 
-                // Všem Ribonům v řadě potlačíme CheckLazyContentEnabled:
+                // Všem Ribonům v řadě potlačíme CheckLazyContentEnabled, protože bude docházet ke změně SelectedPage, ale to nemá vyvolat požadavek na její LazyLoad donačítání:
                 ribbonsUp.ForEach(r => r.CheckLazyContentEnabled = false);
 
                 // UnMerge proběhne od posledního (=TopMost: count - 1) Ribbonu dolů až k našemu Parentu (u >= 1):
                 for (int u = last; u >= 1; u--)
-                {
                     ribbonsUp[u].UnMergeDxRibbon();
-                }
 
                 // Konečně máme this Ribbon osamocený (není Merge nahoru, ani neobsahuje MergedChild), provedeme tedy akci:
                 _RunUnMergedAction(action);
@@ -4335,15 +4337,19 @@ namespace Noris.Clients.Win.Components.AsolDX
                 // ...a pak se přimerguje náš parent / nebo i zdejší Ribbon zpátky nahoru do TopMost:
                 for (int m = mergeFrom; m < last; m++)
                     ribbonsUp[m].MergeCurrentDxToParent(ribbonsUp[m + 1], true);
-
             }
             finally
             {
                 // Všem Ribonům v řadě nastavím CheckLazyContentEnabled = true:
                 ribbonsUp.ForEach(r => r.CheckLazyContentEnabled = true);
 
+                topRibbon._RemoveEmptyPageForUMM();
+
                 // Top Ribbon obnoví svoji práci:
-                topRibbon.BarManager.EndUpdate();
+                //   topRibbon.BarManager.EndUpdate();
+                topRibbon.ResumeLayout(false);
+                topRibbon.PerformLayout();
+                //   topRibbon.Refresh();
             }
 
             // A protože po celou dobu byl potlačen CheckLazyContentEnabled, tak pro Top Ribbon to nyní provedu explicitně:
@@ -4386,6 +4392,45 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
             if (LogActive) DxComponent.LogAddLineTime($"ModifyRibbon {this.DebugName}: RunAction; Time: {DxComponent.LogTokenTimeMilisec}", startTime);
         }
+        /// <summary>
+        /// Připraví this Ribbon (který je TopRibbonem = reálně viditelný Ribbon) na proces UMM = UnMerge + Modify + Merge.
+        /// Konkrétně: pokud this Ribbon nemá žádnou vlastní stránku, pak do sebe dočasně přidá prázdnou stránku.
+        /// Na závěr procesu UMM je nutno volat <see cref="_RemoveEmptyPageForUMM()"/>, kde tato stránka bude odebrána.
+        /// <para/>
+        /// Důvod? Zabránění blikání okna v případě, kdy pod Ribbonem je zadokován další panel, a v proces UMM by tento panel nehezky blikal.
+        /// </summary>
+        private void _PrepareEmptyPageForUMM()
+        {
+            if (this.GetPages(PagePosition.Default).Count > 0) return;
+
+            if (_EmptyPageUMM == null)
+                _EmptyPageUMM = new DxRibbonPage(this, "    ") { Name = _EmptyPageUMMPageId };
+            if (_EmptyPageUMM != null)
+            {
+                this.Pages.Add(_EmptyPageUMM);
+                this._EmptyPageUMMActive = true;
+            }
+        }
+        /// <summary>
+        /// Uklidí prázdnou stránku na konci procesu UMM. Více v <see cref="_PrepareEmptyPageForUMM()"/>.
+        /// </summary>
+        private void _RemoveEmptyPageForUMM()
+        {
+            if (_EmptyPageUMMActive && _EmptyPageUMM != null)
+                this.Pages.Remove(_EmptyPageUMM);
+        }
+        /// <summary>
+        /// Instance prázdné stránky pro proces UMM
+        /// </summary>
+        private DxRibbonPage _EmptyPageUMM;
+        /// <summary>
+        /// Prázdná stránka pro proces UMM je aktivní (tj. je obsažena v this Ribbonu)?
+        /// </summary>
+        private bool _EmptyPageUMMActive;
+        /// <summary>
+        /// PageId pro prázdnou stránku pro proces UMM
+        /// </summary>
+        private const string _EmptyPageUMMPageId = "#empty-page#";
         /// <summary>
         /// Odmerguje z this Ribbonu jeho případně mergovaný obsah, nic dalšího nedělá
         /// </summary>
@@ -5557,6 +5602,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         public DataRibbonPage()
         {
             this._PageId = null;
+            this.Visible = true;
             this.ChangeMode = ContentChangeMode.Add;
             this.Groups = new List<IRibbonGroup>();
         }
@@ -5636,6 +5682,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Jméno stránky
         /// </summary>
         public virtual string PageText { get; set; }
+        /// <summary>
+        /// Viditelnost stránky
+        /// </summary>
+        public virtual bool Visible { get; set; }
         /// <summary>
         /// Typ stránky
         /// </summary>
@@ -5749,6 +5799,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             this._GroupId = null;
             this.ChangeMode = ContentChangeMode.Add;
             this.GroupState = RibbonGroupState.Expanded;
+            this.Visible = true;
             this.Items = new List<IRibbonItem>();
         }
         /// <summary>
@@ -5823,6 +5874,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Titulek grupy
         /// </summary>
         public virtual string GroupText { get; set; }
+        /// <summary>
+        /// Viditelnost grupy
+        /// </summary>
+        public virtual bool Visible { get; set; }
         /// <summary>
         /// Obrázek grupy
         /// </summary>
@@ -6024,6 +6079,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         string PageText { get; }
         /// <summary>
+        /// Viditelnost stránky
+        /// </summary>
+        bool Visible { get; }
+        /// <summary>
         /// Typ stránky
         /// </summary>
         RibbonPageType PageType { get; }
@@ -6103,6 +6162,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Titulek grupy
         /// </summary>
         string GroupText { get; }
+        /// <summary>
+        /// Viditelnost grupy
+        /// </summary>
+        bool Visible { get; }
         /// <summary>
         /// Obrázek grupy
         /// </summary>

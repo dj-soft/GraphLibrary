@@ -259,6 +259,8 @@ namespace TestDevExpress.Forms
         /// </summary>
         protected void InitializeContent()
         {
+            _MainPanel = DxComponent.CreateDxPanel(this, System.Windows.Forms.DockStyle.Fill, borderStyles: DevExpress.XtraEditors.Controls.BorderStyles.NoBorder);
+
             this.Dock = System.Windows.Forms.DockStyle.Fill;
             _Ribbon = new DxRibbonControl() { Dock = System.Windows.Forms.DockStyle.Top, ShowApplicationButton = DevExpress.Utils.DefaultBoolean.False, LogActive = true };
             _Ribbon.PageOnDemandLoad += _Ribbon_PageOnDemandLoad;
@@ -271,14 +273,15 @@ namespace TestDevExpress.Forms
 
             this.Controls.Add(_Ribbon);
 
+
             int x = 20;
-            _ButtonClear = DxComponent.CreateDxSimpleButton(x, 160, 150, 52, this, "Clear", _RunClear, toolTipText: "Smaže obsah Ribbonu a nechá jej prázdný"); x += 160;
-            _ButtonFill = DxComponent.CreateDxSimpleButton(x, 160, 150, 52, this, "Fill", _RunFill, toolTipText: "Smaže obsah Ribbonu a vepíše do něj větší množství stránek"); x += 160;
-            _ButtonMenu = DxComponent.CreateDxDropDownButton(x, 160, 150, 52, this, "Add 4", click: DropDownButtonClick, itemClick: DropDownItemClick, subItems: _GetDropDownItems(), toolTipText: "Přidá menší počet prvků. Další volby jsou v menu.");
+            _ButtonClear = DxComponent.CreateDxSimpleButton(x, 160, 150, 52, _MainPanel, "Clear", _RunClear, toolTipText: "Smaže obsah Ribbonu a nechá jej prázdný"); x += 160;
+            _ButtonFill = DxComponent.CreateDxSimpleButton(x, 160, 150, 52, _MainPanel, "Fill", _RunFill, toolTipText: "Smaže obsah Ribbonu a vepíše do něj větší množství stránek"); x += 160;
+            _ButtonMenu = DxComponent.CreateDxDropDownButton(x, 160, 150, 52, _MainPanel, "Add 4", click: DropDownButtonClick, itemClick: DropDownItemClick, subItems: _GetDropDownItems(), toolTipText: "Přidá menší počet prvků. Další volby jsou v menu.");
 
             x += 60;
-            _ButtonMerge = DxComponent.CreateDxCheckButton(x, 160, 150, 52, this, "Merge nahoru", _RunMerge, toolTipText: "Obsah tohoto Ribbonu připojí k buttonu o úroveň výše"); x += 160;
-            _ButtonUnMerge = DxComponent.CreateDxCheckButton(x, 160, 150, 52, this, "Unmerge", _RunUnMerge, isChecked: true, toolTipText: "Vrátí obsah tohoto Ribbonu z vyššího Ribbonu zpátky"); x += 160;
+            _ButtonMerge = DxComponent.CreateDxCheckButton(x, 160, 150, 52, _MainPanel, "Merge nahoru", _RunMerge, toolTipText: "Obsah tohoto Ribbonu připojí k buttonu o úroveň výše"); x += 160;
+            _ButtonUnMerge = DxComponent.CreateDxCheckButton(x, 160, 150, 52, _MainPanel, "Unmerge", _RunUnMerge, isChecked: true, toolTipText: "Vrátí obsah tohoto Ribbonu z vyššího Ribbonu zpátky"); x += 160;
 
             DoLayoutButtons();
 
@@ -296,7 +299,7 @@ namespace TestDevExpress.Forms
         }
         private void DoLayoutButtons()
         {
-            int width = this.ClientSize.Width;
+            int width = _MainPanel.ClientSize.Width;
 
             int dpi = this.CurrentDpi;
 
@@ -332,7 +335,7 @@ namespace TestDevExpress.Forms
 
             if (!this.IsMerged && this.Ribbon.Bounds.Height > 32) _LastRibbonBottom = this.Ribbon.Bounds.Bottom;           // Udržuji souřadnici Y za stavu, kdy Ribbon je v panelu zobrazen
             int x = x0;
-            int y = _LastRibbonBottom + spaceY1;
+            int y = 0 /* _LastRibbonBottom */ + spaceY1;
 
             _ButtonClear.Bounds = new System.Drawing.Rectangle(x, y, widthButton1, heightButton1); x += distanceX;
             _ButtonFill.Bounds = new System.Drawing.Rectangle(x, y, widthButton1, heightButton1); x += distanceX;
@@ -429,12 +432,23 @@ namespace TestDevExpress.Forms
         public void FillRibbon(int pageCountMin, int pageCountMax, int groupCountMin, int groupCountMax, bool clearCurrentContent = false, string pageText = null)
         {
             int? pageIndex = (pageText != null ? (int?)DxRibbonSample.FindPageIndex(pageText) : (int?)null);
-            var items = DxRibbonSample.CreatePages(this.Ribbon.DebugName, pageCountMin, pageCountMax, groupCountMin, groupCountMax, out var qatItems,
+            var pages = DxRibbonSample.CreatePages(this.Ribbon.DebugName, pageCountMin, pageCountMax, groupCountMin, groupCountMax, out var qatItems,
                 CategoryName, CategoryName, CategoryColor, 
                 pageIndex);
             DxComponent.LogAddLine("Ribon: " + this._Ribbon.DebugName +"; QAT: " + qatItems);
             DxQuickAccessToolbar.QATItemKeys = MergeKeys(DxQuickAccessToolbar.QATItemKeys, qatItems);
-            _Ribbon.AddPages(items, clearCurrentContent);
+            _Ribbon.AddPages(pages, clearCurrentContent);
+        }
+        /// <summary>
+        /// Do Ribbonu přidá novou neviditelnou stránku
+        /// </summary>
+        public void AddInvisiblePageRibbon()
+        {
+            DataRibbonPage page = new DataRibbonPage() { PageId = "invisible", PageText = "   ", Visible = true };
+            page.Groups.Add(new DataRibbonGroup() { GroupId = "invisible", GroupText = "Invisible", Visible = false });
+            List<IRibbonPage> pages = new List<IRibbonPage>();
+            pages.Add(page);
+            _Ribbon.AddPages(pages, false);
         }
         /// <summary>
         /// Sloučí klíče ze dvou stringů, vyloučí duplicity. Oddělovač klíčů na vstupu i na výstupu je <see cref="DxQuickAccessToolbar.QATItemKeysDelimiter"/>.
@@ -534,6 +548,7 @@ namespace TestDevExpress.Forms
             _Ribbon.QATDirectItems = DxRibbonSample.CreateItems(3, 8);
         }
         private DxRibbonControl _Ribbon;
+        private DxPanelControl _MainPanel;
         private DxSimpleButton _ButtonClear;
         private DxDropDownButton _ButtonMenu;
         private DxSimpleButton _ButtonFill;
@@ -552,6 +567,7 @@ namespace TestDevExpress.Forms
             subItems.Add(new DataRibbonItem() { ItemId = "AddRandom", Text = "Add RANDOM page", ImageName = "", ToolTipText = "" });
             subItems.Add(new DataRibbonItem() { ItemId = "AddWiki", Text = "Add WIKI page", ImageName = "", ToolTipText = "" });
             subItems.Add(new DataRibbonItem() { ItemId = "Add7Pages", Text = "Add 7 pages", ImageName = "", ToolTipText = "" });
+            subItems.Add(new DataRibbonItem() { ItemId = "AddInvisiblePage", Text = "Add Invisible Page", ImageName = "", ToolTipText = "" });
             subItems.Add(new DataRibbonItem() { ItemId = "ReloadGroupWikiSystem", Text = "Reload Group: Wiki-Systém", ImageName = "", ToolTipText = "", ItemIsFirstInGroup = true });
             subItems.Add(new DataRibbonItem() { ItemId = "ClearGroupWikiSystem", Text = "Clear Group: Wiki-Systém", ImageName = "", ToolTipText = "" });
             subItems.Add(new DataRibbonItem() { ItemId = "RemoveGroupWikiSystem", Text = "Remove Group: Wiki-Systém", ImageName = "", ToolTipText = "" });
@@ -608,6 +624,9 @@ namespace TestDevExpress.Forms
                         break;
                     case "Add7Pages":
                         this.FillRibbon(5, 8, 4, 8);
+                        break;
+                    case "AddInvisiblePage":
+                        this.AddInvisiblePageRibbon();
                         break;
                     case "ReloadGroupWikiSystem":
                         this.ReloadGroup("WIKI", "Systém");
