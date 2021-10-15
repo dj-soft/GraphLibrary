@@ -1587,11 +1587,14 @@ namespace Noris.Clients.Win.Components
         public GraphicsCache()
         {
             _ImageList = new ImageList();
+
+            /*
             string path = @"c:\CSharp\TestDevExpress\TestDevExpress\Images";
             _ImageDict = ImageItem.LoadDictionary(path);
 
             string resourceFile = @"c:\ProgramData\Asseco Solutions\NorisWin32Clients\Vyvoj46-Nephrite\ServerResources.bin";
             _ImageDict = ImageItem.LoadServerResources(resourceFile);
+            */
         }
         /// <summary>
         /// Zoom
@@ -1640,6 +1643,59 @@ namespace Noris.Clients.Win.Components
             return _ImageList.Images.IndexOfKey(imageName);
         }
 
+
+
+        protected void LoadResources(string resourceFile)
+        {
+            LoadResourceFile(resourceFile, 100);
+            
+            
+        }
+        /// <summary>
+        /// Prověří daný soubor, zda existuje, zda není moc veliký, zda jde načíst a zda má správnou hlavičku.
+        /// Může vyhodit chybu.
+        /// Pokud chybu nevyhodí, pak vrátí obsah souboru v paměti a out verzi souboru.
+        /// </summary>
+        /// <param name="resourceFile"></param>
+        /// <param name="maxLengthMB"></param>
+        private void LoadResourceFile(string resourceFile, int maxLengthMB)
+        {
+            if (String.IsNullOrEmpty(resourceFile)) throw new ArgumentException($"GraphicsCache.LoadResources() error: resource file is not specified.");
+            System.IO.FileInfo fileInfo = new System.IO.FileInfo(resourceFile.Trim());
+            if (!fileInfo.Exists) throw new ArgumentException($"GraphicsCache.LoadResources() error: resource file '{resourceFile}' does not exists.");
+            int fileLengthMB = (int)(fileInfo.Length / 1000000L);
+            if (maxLengthMB > 0 && fileLengthMB > maxLengthMB) throw new ArgumentException($"GraphicsCache.LoadResources() error: resource file '{resourceFile}' is too big to load (length is {fileLengthMB} MB, limit is {maxLengthMB} MB).");
+            ResourceContent = System.IO.File.ReadAllBytes(fileInfo.FullName);                 // I tady může dojít k chybě
+            string signature = ReadContentString(0, 12);
+        }
+        protected string ResourceVersion;
+        protected byte[] ResourceContent;
+
+        protected int ReadContentInt(int position)
+        {
+            return ReadContentInt(ref position);
+        }
+        protected int ReadContentInt(ref int position)
+        {
+            return ResourceContent[position++] | (ResourceContent[position++] << 8) | (ResourceContent[position++] << 16) | (ResourceContent[position++] << 24);
+        }
+        protected string ReadContentString(int position, int length)
+        {
+            return ReadContentString(ref position, length, new StringBuilder());
+        }
+        protected string ReadContentString(ref int position, int length, StringBuilder sb)
+        {
+            sb.Clear();
+            for (int i = 0; i < length; i++)
+                sb.Append((char)(ResourceContent[position++]));
+            return sb.ToString();
+        }
+
+        protected void LoadDirectory(string directory)
+        {
+
+        }
+        protected Dictionary<string, ImageItem> Resources;
         protected class ImageItem
         {
             internal static Dictionary<string, ImageItem> LoadDictionary(string path)
@@ -1664,9 +1720,9 @@ namespace Noris.Clients.Win.Components
                 }
                 return dictionary;
             }
-
             internal static Dictionary<string, ImageItem> LoadServerResources(string resourceFile)
             {
+                /*
                 var content = System.IO.File.ReadAllBytes(resourceFile);
                 var length = content.Length;
                 int indexEnd = length - 8;
@@ -1681,28 +1737,19 @@ namespace Noris.Clients.Win.Components
                     string fileName = _ReadString(content, ref indexBegin, fileNameLength, sb);
 
                 }
-
+                */
 
 
                 return null;
             }
-            private static int _ReadInt(byte[] content, int position)
-            {
-                return content[position] | (content[position + 1] << 8) | (content[position + 2] << 16) | (content[position + 3] << 24);
-            }
-            private static int _ReadInt(byte[] content, ref int position)
-            {
-                return content[position++] | (content[position++] << 8) | (content[position++] << 16) | (content[position++] << 24);
-            }
-            private static string _ReadString(byte[] content, ref int position, int length, StringBuilder sb)
-            {
-                sb.Clear();
-                for (int i = 0; i < length; i++)
-                    sb.Append((char)(content[position++]));
-                return sb.ToString();
-            }
+         
+            public ImageItem(GraphicsCache owner, string key  )
+            { }
         }
     }
+
+
+
     /// <summary>
     /// Simulace Green
     /// </summary>
