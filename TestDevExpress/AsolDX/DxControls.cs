@@ -6510,6 +6510,30 @@ namespace Noris.Clients.Win.Components.AsolDX
         CheckBox
     }
     /// <summary>
+    /// Druh změny obsahu aktuálního prvku
+    /// </summary>
+    public enum ContentChangeMode
+    {
+        /// <summary>
+        /// Nezadáno explicitně, použije se defaultní hodnota (typicky <see cref="Add"/>)
+        /// </summary>
+        None = 0,
+        /// <summary>
+        /// Přidat nový obsah ke stávajícímu obsahu, prvky se shodným ID aktualizovat, nic neodebírat
+        /// </summary>
+        Add,
+        /// <summary>
+        /// Znovu naplnit prvek: pokud prvek existuje, nejprve bude jeho obsah odstraněn, a poté bude vložen nově definovaný obsah.
+        /// Pokud prvek neexistuje, bude vytvořen nový a prázdný.
+        /// </summary>
+        ReFill,
+        /// <summary>
+        /// Odstranit prvek: pokud existuje, bude zahozen jeho obsah i prvek samotný. Pokud neexistuje, nebude vytvářen.
+        /// Pokud definice prvku má režim <see cref="Remove"/>, pak případný definovaný obsah prvku nebude použit.
+        /// </summary>
+        Remove
+    }
+    /// <summary>
     /// Styl použitý pro Label
     /// </summary>
     public enum LabelStyleType

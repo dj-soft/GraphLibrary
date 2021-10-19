@@ -689,9 +689,9 @@ namespace TestDevExpress.Forms
 
         private void _Ribbon_ItemOnDemandLoad(object sender, TEventArgs<IRibbonItem> e)
         {
-            ThreadManager.AddAction(_LoadItemsFromServer, e.Item);
+            ThreadManager.AddAction(_LoadItemFromServer, e.Item);
         }
-        private void _LoadItemsFromServer(object[] args)
+        private void _LoadItemFromServer(object[] args)
         {
             System.Threading.Thread.Sleep(850);
 
@@ -702,7 +702,7 @@ namespace TestDevExpress.Forms
             ribbonItem.SubItemsContentMode = RibbonContentMode.Static;
             DxRibbonSample.ApplyToolTip(ribbonItem);
 
-            this._Ribbon.RefreshItem(ribbonItem, true);
+            this._Ribbon.RefreshItem(ribbonItem);
         }
         private void _Ribbon_RibbonApplicationButtonClick(object sender, EventArgs e)
         {
