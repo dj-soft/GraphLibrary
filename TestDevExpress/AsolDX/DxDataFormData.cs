@@ -391,7 +391,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         bool Checked { get; }
     }
-
+    /// <summary>
+    /// Definice jednoho buttonu
+    /// </summary>
     public class DataFormColumnTextBoxButton : DataFormColumnImageText, IDataFormColumnTextBoxButton
     {
         /// <summary>
@@ -411,6 +413,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public virtual string ButtonGlyphImageName { get; set; }
     }
+    /// <summary>
+    /// Definice jednoho buttonu
+    /// </summary>
     public interface IDataFormColumnTextBoxButton : IDataFormColumnImageText
     {
         /// <summary>

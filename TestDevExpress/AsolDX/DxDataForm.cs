@@ -1599,9 +1599,12 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
     /// Jeden panel dataformu: reprezentuje základní panel zobrazující jednu plochu s daty.
     /// Je umístěn buď přímo v <see cref="DxDataForm"/>, pak jde o DataForm bez záložek;
     /// anebo je umístěn na stránce záložkovníku <see cref="DxTabPane"/>, pak jde o vícezáložkový DataForm.
-    /// <para/>
     /// Tuto volbu řídí <see cref="DxDataForm"/>. 
-    /// , hostuje v sobě dva ScrollBary a ContentPanel, v němž se zobrazují grupy a v nich itemy.
+    /// <para/>
+    /// Jeden panel <see cref="DxDataFormPanel"/> v sobě hostuje přinejmenším jeden nebo více částí <see cref="DxDataFormPart"/>.
+    /// Každá jedna část <see cref="DxDataFormPart"/> v sobě zobrazuje fyzická data, může mít / nemusí mít ScrollBary a Headery.
+    /// Tyto části mohou být vzájemně spřažené (jeden svislý Scrollbar zobrazený úplně vpravo může ovládat více částí umístěných vedle sebe = vlevo).
+    /// Přidávání a odebírání částí řídí <see cref="DxDataFormPanel"/>, stejně tak mezi ně vkládá ScrollBary a řídí jejich velikost.
     /// <para/>
     /// Panel <see cref="DxDataFormPanel"/> je zobrazován v <see cref="DxDataForm"/> buď v celé jeho ploše (to když DataForm obsahuje jen jednu stránku),
     /// anebo je v <see cref="DxDataForm"/> zobrazen záložkovník <see cref="DxTabPane"/>, a v každé záložce je zobrazován zdejší panel <see cref="DxDataFormPanel"/>,
@@ -1712,6 +1715,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         { }
         private void AddPart(int partXId, int partYId)
         {
+            Point key = new Point(partXId, partYId);
             _RootPart = new DxDataFormPart(this);
             _Parts.Add(_RootPart);
             _RootPart.Dock = ((_Parts.Count == 1) ? DockStyle.Fill : DockStyle.None);
