@@ -518,7 +518,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="force"></param>
         private void _OpenMenuReset(bool force = false)
         {
-            if (force || _CurrentMergeState == MergeState.None)
+            if (force || (!_CurrentModifiedState && _CurrentMergeState == MergeState.None))
             {   // Pokud by se aktuálně prováděl Merge nebo UnMerge, pak zhasnutí menu nemá provádět reset menu - protože poté (po UnMerge - Modify - Merge) budeme potřebovat dosavadní menu opět rozsvítit!!!
                 _OpenMenuPopupMenu = null;
                 _OpenMenuBarMenu = null;
@@ -754,7 +754,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public void Clear()
         {
-            ModifyCurrentDxContent(_Clear);
+            _UnMergeModifyMergeCurrentRibbon(_Clear, true);
         }
         /// <summary>
         /// Smaže svůj obsah - stránky, kategorie, QAT toolbar, evidence položek.
@@ -851,7 +851,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public void ClearPagesContents()
         {
-            ModifyCurrentDxContent(_ClearPagesContents);
+            _UnMergeModifyMergeCurrentRibbon(_ClearPagesContents, true);
         }
         /// <summary>
         /// Smaže obsah (itemy a grupy) ale ponechá Pages, Categories a PageCategories.
@@ -879,7 +879,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public void RemoveVoidContainers()
         {
-            ModifyCurrentDxContent(_RemoveVoidContainers);
+            _UnMergeModifyMergeCurrentRibbon(_RemoveVoidContainers, true);
         }
         /// <summary>
         /// Smaže prázdné prázdné stránky a nevyužité kategorie v rámci this Ribbonu.
@@ -955,13 +955,14 @@ namespace Noris.Clients.Win.Components.AsolDX
             bool isCalledFromReFill = iRibbonPages.Any(p => ((p.PageContentMode == RibbonContentMode.OnDemandLoadOnce || p.PageContentMode == RibbonContentMode.OnDemandLoadEveryTime) && p.Groups.Any()));
             this.RunInGui(() =>
             {
-                this.ModifyCurrentDxContent(() =>
+                _UnMergeModifyMergeCurrentRibbon(() =>
                 {
                     if (clearCurrentContent) _ClearPagesContents();
                     _AddPages(iRibbonPages, this.UseLazyContentCreate, false, "Fill");
                     if (clearCurrentContent) _RemoveVoidContainers();
                     CheckLazyContentCurrentPage(isCalledFromReFill);
-                });
+                }
+                ,true);
             });
         }
         /// <summary>
@@ -1020,7 +1021,7 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             if (addItems || clearContent || removeLazyInfo)
             {   // Když je důvod něco provádět (máme nové prvky, nebo budeme odstraňovat LazyInfo z Ribbonu):
-                this.ModifyCurrentDxContent(() =>
+                _UnMergeModifyMergeCurrentRibbon(() =>
                 {
                     if (clearContent)
                     {
@@ -1041,7 +1042,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                     {
                         AddQATUserListToRibbon();
                     }
-                });
+                }, true);
             }
 
             if (!removeLazyInfo && lazyGroup != null)
@@ -1194,10 +1195,10 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (iRibbonPages == null) return;
             this.RunInGui(() =>
             {
-                this.ModifyCurrentDxContent(() =>
+                _UnMergeModifyMergeCurrentRibbon(() =>
                 {
                     _RefreshPages(iRibbonPages);
-                });
+                }, true);
             });
         }
         /// <summary>
@@ -1257,10 +1258,10 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             this.RunInGui(() =>
             {
-                this.ModifyCurrentDxContent(() =>
+                _UnMergeModifyMergeCurrentRibbon(() =>
                 {
                     _RefreshItems(iRibbonItems, openMenuItemId);
-                });
+                }, true);
                 DoOpenMenu();
             });
         }
@@ -1280,10 +1281,10 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             this.RunInGui(() =>
             {
-                this.ModifyCurrentDxContent(() =>
+                _UnMergeModifyMergeCurrentRibbon(() =>
                 {
                     RefreshCurrentItem(iRibbonItem, openMenu);
-                });
+                }, true);
                 DoOpenMenu();
             });
         }
@@ -1329,10 +1330,10 @@ namespace Noris.Clients.Win.Components.AsolDX
             // Máme data, půjdeme dělat něco viditelného:
             this.RunInGui(() =>
             {
-                this.ModifyCurrentDxContent(() =>
+                _UnMergeModifyMergeCurrentRibbon(() =>
                 {
                     _RefreshObjects(iRibbonPages, iRibbonGroups, iRibbonItems, openMenuItemId);
-                });
+                }, true);
                 DoOpenMenu();
             });
         }
@@ -1598,14 +1599,14 @@ namespace Noris.Clients.Win.Components.AsolDX
 
                 int pageCount = lazyPages.Count;
                 int itemCount = 0;
-                this.ModifyCurrentDxContent(() =>
+                _UnMergeModifyMergeCurrentRibbon(() =>
                 {   // Provede Unmerge this Ribbonu, pak provede následující akci, a poté zase zpětně Merge do původního stavu, se zachováním SelectedPage:
                     int icnt = 0;
                     foreach (var lazyPage in lazyPages)
                         _PrepareLazyLoadStaticPage(lazyPage, ref icnt);
                     itemCount = icnt;
                     AddQATUserListToRibbon();
-                });
+                }, true);
 
                 if (LogActive) DxComponent.LogAddLineTime($" === Ribbon {DebugName}: CreateLazyStaticPages; Create: {pageCount} Pages; {itemCount} BarItem[s]; {DxComponent.LogTokenTimeMilisec} === ", startTime);
             }
@@ -2520,38 +2521,29 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
             else if (hasSubItems || isLazyLoad)
             {
-                menu.AddItem(new DevExpress.XtraBars.BarButtonItem(this.BarManager, "..."));     // Musí tu být alespoň jeden prvek, jinak při kliknutí na Menu se nebude nic dít (neproběhne event xBarMenu.Popup)
+                // menu.AddItem(new DevExpress.XtraBars.BarButtonItem(this.BarManager, "..."));     // Musí tu být alespoň jeden prvek, jinak při kliknutí na Menu se nebude nic dít (neproběhne event xBarMenu.Popup)
                 PrepareBarItemTag(menu, parentItem, level, dxGroup, new LazySubItemsInfo(parentItem, parentItem.SubItemsContentMode, subItems));
             }
             if (level == 0)
             {   // Události řeším je pro menu základní úrovně (=na tlačítku), ne pro submenu:
                 menu.GetItemData += Menu_GetItemData;
-                menu.Popup += _BarMenu_BeforePopup;
                 menu.CloseUp += _BarMenu_CloseUp;
             }
         }
         /// <summary>
-        /// Vyvolá se pro menu před pokusem o jeho otevření.
+        /// Vyvolá se pro menu (BarSubItem) před pokusem o jeho otevření. Tato metoda se volá i tehdy, když menu nemá žádnou položku (neotevřou se tedy tři tečky).
+        /// Zde je možno menu naplnit, a otevře se; anebo spustit OnDemand donačtení a přípravu pro jeho otevření (inicializaci <see cref="_OpenMenuBarMenu"/>), menu se otevře ihned jak přijdou data.
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
         private void Menu_GetItemData(object sender, EventArgs e)
         {
-            
-        }
-        /// <summary>
-        /// Událost před otevřením <see cref="DevExpress.XtraBars.BarSubItem "/> (je použito pro Menu Button)
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void _BarMenu_BeforePopup(object sender, EventArgs e)
-        {
             if (!(sender is BarSubItem menu)) return;
-            
+
             _OpenMenuReset(true);
 
-            bool deactivatePopupEvent = true;
-            var itemInfo = menu.Tag as BarItemTagInfo;                    // Do Menu jsme instanci BarItemTagInfo vytvořili při jeho tvorbě v metodě PrepareBarMenu()
+            bool deactivateEvent = true;
+            var itemInfo = menu.Tag as BarItemTagInfo;               // Do Menu jsme instanci BarItemTagInfo vytvořili při jeho tvorbě v metodě PrepareBarMenu()
             if (itemInfo != null && itemInfo.LazyInfo != null)
             {   // Pokud máme LazyInfo:
                 var lazySubItems = itemInfo.LazyInfo;
@@ -2565,9 +2557,9 @@ namespace Noris.Clients.Win.Components.AsolDX
                     if (LogActive) DxComponent.LogAddLineTime($"LazyLoad Menu create: {count} items, {DxComponent.LogTokenTimeMilisec}", startTime);
 
                     if (lazySubItems.SubItemsContentMode == RibbonContentMode.OnDemandLoadEveryTime || lazySubItems.SubItemsContentMode == RibbonContentMode.OnDemandLoadOnce)
-                        deactivatePopupEvent = false;                     // Pokud máme o SubItems žádat server, necháme si aktivní událost Popup
+                        deactivateEvent = false;                     // Pokud máme o SubItems žádat server, necháme si aktivní událost Popup
                     else
-                        itemInfo.LazyInfo = null;                         // Data máme Více již LazyInfo nebudeme potřebovat, a událost Popup deaktivujeme.
+                        itemInfo.LazyInfo = null;                    // Data máme Více již LazyInfo nebudeme potřebovat, a událost Popup deaktivujeme.
                 }
                 else if (lazySubItems.SubItemsContentMode == RibbonContentMode.OnDemandLoadOnce || lazySubItems.SubItemsContentMode == RibbonContentMode.OnDemandLoadEveryTime)
                 {   // 2. SubItems mi dodá aplikace - na základě obsluhy eventu ItemOnDemandLoad:
@@ -2577,18 +2569,18 @@ namespace Noris.Clients.Win.Components.AsolDX
                     lazySubItems.PopupLocation = Control.MousePosition;
                     lazySubItems.CurrentMergeLevel = this.MergeLevel;
                     this.RunItemOnDemandLoad(lazySubItems.ParentItem);
-                    deactivatePopupEvent = false;                         // Dokud nedoběhnou ze serveru data (OnDemandLoad => RefreshItem() ), tak necháme aktivní událost Popup = pro jistotu...
+                    deactivateEvent = false;                         // Dokud nedoběhnou ze serveru data (OnDemandLoad => RefreshItem() ), tak necháme aktivní událost Popup = pro jistotu...
                 }
                 else
                 {   // 3. Nemáme Static prvky SubItems, ale ani je nemáme načítat OnDemand...
                     //    necháme odpojit event Popup, a do Tagu vložíme IRibbonItem:
-                    itemInfo.LazyInfo = null;                             // Více již LazyInfo nebudeme potřebovat...
+                    itemInfo.LazyInfo = null;                        // Více již LazyInfo nebudeme potřebovat...
                 }
             }
 
             // Deaktivovat zdejší handler?
-            if (deactivatePopupEvent)
-                menu.Popup -= _BarMenu_BeforePopup;
+            if (deactivateEvent)
+                menu.GetItemData -= Menu_GetItemData;
         }
         /// <summary>
         /// Při zavírání Bar menu
@@ -2598,7 +2590,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void _BarMenu_CloseUp(object sender, EventArgs e)
         {
             if (sender is BarSubItem menu && menu.Tag is BarItemTagInfo itemInfo && itemInfo.Level == 0)
+            {
                 _OpenMenuReset();
+                // Pokud je menu v režimu OnDemandLoadEveryTime, tak po jeho zavření zajistíme znovu vyvolání handleru pro OnDemand dončtení při dalším otevírání menu:
+                if (itemInfo.Data.SubItemsContentMode == RibbonContentMode.OnDemandLoadEveryTime)
+                    menu.GetItemData += Menu_GetItemData;
+            }
         }
         /// <summary>
         /// Do daného menu <see cref="DevExpress.XtraBars.BarSubItem"/> vygeneruje všechny jeho položky.
@@ -2610,8 +2607,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="openMenu">Požadavek na otevření menu</param>
         private void _BarMenu_RefreshItems(DevExpress.XtraBars.BarSubItem menu, IRibbonItem oldRibbonItem, IRibbonItem newRibbonItem, bool openMenu)
         {
-            // Toto menu bylo až dosud v režimu LazyLoad; odpojíme eventhandler BeforePopup - aby se nám už opakovaně nevolal...
-            menu.Popup -= _BarMenu_BeforePopup;
+            // Toto menu bylo až dosud v režimu LazyLoad; odpojíme eventhandler GetItemData - aby se nám už opakovaně nevolal...
+            menu.GetItemData -= Menu_GetItemData;
             if (menu.Tag is BarItemTagInfo itemInfo)
             {
                 // Do Menu vložíme dodané prvky (newRibbonItem.SubItems):
@@ -4667,7 +4664,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 topRibbon._PrepareEmptyPageForUMM();
 
                 // Všem Ribonům v řadě potlačíme CheckLazyContentEnabled, protože bude docházet ke změně SelectedPage, ale to nemá vyvolat požadavek na její LazyLoad donačítání:
-                ribbonsUp.ForEach(r => r.CheckLazyContentEnabled = false);
+                ribbonsUp.ForEach(r => { r.CheckLazyContentEnabled = false; r._CurrentModifiedState = true; });
 
                 // UnMerge proběhne od posledního (=TopMost: count - 1) Ribbonu dolů až k našemu Parentu (u >= 1):
                 for (int u = last; u >= 1; u--)
@@ -4686,7 +4683,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             finally
             {
                 // Všem Ribonům v řadě nastavím CheckLazyContentEnabled = true:
-                ribbonsUp.ForEach(r => r.CheckLazyContentEnabled = true);
+                ribbonsUp.ForEach(r => { r.CheckLazyContentEnabled = true; r._CurrentModifiedState = false; });
 
                 topRibbon._RemoveEmptyPageForUMM();
 
@@ -4821,6 +4818,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Aktuální stav mergování this Ribbonu
         /// </summary>
         private MergeState _CurrentMergeState = MergeState.None;
+        /// <summary>
+        /// Ribbon je aktuálně v procesu modifikace ( UnMerge - Modify - Merge )
+        /// </summary>
+        private bool _CurrentModifiedState = false;
         /// <summary>
         /// Stavy mergování Ribbonu
         /// </summary>
