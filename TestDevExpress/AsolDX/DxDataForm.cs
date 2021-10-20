@@ -1715,8 +1715,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         { }
         private void AddPart(int partXId, int partYId)
         {
-            Point key = new Point(partXId, partYId);
-            _RootPart = new DxDataFormPart(this);
+            DxDataFormPartId partId = new DxDataFormPartId(partXId, partYId);
+            _RootPart = new DxDataFormPart(this, partId);
             _Parts.Add(_RootPart);
             _RootPart.Dock = ((_Parts.Count == 1) ? DockStyle.Fill : DockStyle.None);
             this.Controls.Add(_RootPart);
@@ -1812,10 +1812,11 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Konstruktor
         /// </summary>
         /// <param name="dataPanel"></param>
-        public DxDataFormPart(DxDataFormPanel dataPanel)
+        /// <param name="partId"></param>
+        public DxDataFormPart(DxDataFormPanel dataPanel, DxDataFormPartId partId)
         {
             _DataPanel = dataPanel;
-            _PartId = new DxDataFormPartId();
+            _PartId = partId ?? new DxDataFormPartId();
 
             this.DoubleBuffered = true;
             this.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder;
@@ -2983,10 +2984,34 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         #endregion
     }
     /// <summary>
-    /// Identifikátor jedné konkrétní části <see cref="DxDataFormPart"/>
+    /// Identifikátor jedné konkrétní části <see cref="DxDataFormPart"/>.
+    /// Hodnoty <see cref="PartXId"/> i <see cref="PartYId"/> lze za běhu měnit, protože instance lze za dobu života přesouvat (přidávat / odebírat) 
+    /// a tím se mění pozice části <see cref="DxDataFormPart"/>.
     /// </summary>
     internal class DxDataFormPartId
     {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public DxDataFormPartId() { }
+        /// <summary>
+        /// Konstruktor s danými hodnotami
+        /// </summary>
+        /// <param name="partXId"></param>
+        /// <param name="partYId"></param>
+        public DxDataFormPartId(int partXId, int partYId)
+        {
+            PartXId = partXId;
+            PartYId = partYId;
+        }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return $"PartId: X={PartXId}; Y={PartYId}";
+        }
         /// <summary>
         /// Identifikátor this části ve směru X = vodorovném = sloupce.
         /// Výchozí část má ID = 0; pokud se svislým splitterem rozdělí na dvě, pak část vpravo bude mít <see cref="PartXId"/> = 1, atd.
