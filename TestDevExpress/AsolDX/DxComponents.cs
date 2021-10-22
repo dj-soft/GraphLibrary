@@ -62,6 +62,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         private DxComponent()
         {
+            this._InitCore();
             this._InitLog();
             this._InitStyles();
             this._InitZoom();
@@ -76,7 +77,18 @@ namespace Noris.Clients.Win.Components.AsolDX
         private static DxComponent _Instance;
         private static object _InstanceLock = new object();
         #endregion
-        #region Init a Done
+        #region InitCore, Init a Done
+        /// <summary>
+        /// Inicializace základní
+        /// </summary>
+        private void _InitCore()
+        {
+            _Rand = new Random();
+        }
+        /// <summary>
+        /// Náhoda
+        /// </summary>
+        private Random _Rand;
         /// <summary>
         /// Inicializace subsystému: pojmenuje CurrentThread, registruje a povoluje DevEpxress skiny, nastavuje animace a výchozí skin
         /// </summary>
@@ -985,6 +997,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="e"></param>
         private void DevExpress_StyleChanged(object sender, EventArgs e)
         {
+            _ResetControlColors();
             _CallListeners<IListenerStyleChanged>();
         }
         /// <summary>
@@ -1019,10 +1032,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="listenerType"></param>
         private void _CallFixedListeners(Type listenerType)
         {
-            if (listenerType == typeof(IListenerStyleChanged))
-            {
-                Instance._ResetControlColors();
-            }
         }
         /// <summary>
         /// Odešle systémovou událost všem zvědavým a živým posluchačům
@@ -1954,11 +1963,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="action"></param>
         /// <param name="hideException"></param>
-        public static void TryRun(Action action, bool hideException = false) { Instance._TryRun(action, hideException); }
-        private void _TryRun(Action action, bool hideException)
+        public static void TryRun(Action action, bool hideException = false) 
         {
-            try
-            { action(); }
+            try { action(); }
             catch (Exception exc)
             {
                 if (!hideException)
@@ -2902,7 +2909,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         private DevExpress.Utils.SvgImageCollection __SvgImageCollection;
         #endregion
-        #region SkinSupport
+        #region SkinSupport a Colors
         /// <summary>
         /// Vrátí aktuálně platnou barvu dle skinu.
         /// Vstupní jména by měly pocházet z prvků třídy <see cref="SkinElementColor"/>.
@@ -2911,6 +2918,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="name">Typ prvku</param>
         /// <returns></returns>
         public static Color? GetSkinColor(string name) { return Instance._GetSkinColor(name); }
+        private void _OnSkinChanged()
+        { }
         private Color? _GetSkinColor(string name)
         {
             if (String.IsNullOrEmpty(name) || !name.Contains(".")) return null;
@@ -3012,14 +3021,128 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private void _ResetControlColors()
         {
-            if (_ControlColors == null) return;
-            _ControlColors.Values.ForEachExec(c => c.Dispose());
-            _ControlColors.Clear();
+            if (_ControlColors != null)
+            {
+                _ControlColors.Values.ForEachExec(c => c.Dispose());
+                _ControlColors.Clear();
+            }
+            __IsDarkTheme = null;
         }
         /// <summary>
         /// cache controlů pro získávání nativních barev
         /// </summary>
         private Dictionary<string, Control> _ControlColors;
+        /// <summary>
+        /// Vrátí náhodnou barvu určitého typu.
+        /// </summary>
+        /// <param name="colorFamily">Typ barvy (Pastelové, Plné, Tmavé)</param>
+        /// <returns></returns>
+        public static Color GetRandomColor(ColorFamilyType colorFamily = ColorFamilyType.Full)
+        {
+            var colorIndex = Instance._Rand.Next();
+            return GetColor(colorIndex, colorFamily);
+        }
+        /// <summary>
+        /// Vrátí barvu odpovídající danému indexu, daného typu.
+        /// Index barvy může mít libovolnou hodnotou (bez omezení Min - Max).
+        /// Pokud bude na vstupu zadán shodný index, na výstupu bude shodná barva, nejde o náhodné číslo.
+        /// </summary>
+        /// <param name="colorIndex">Index barvy, libovolný rozsah hodnot v rámci Int32. Reálná barva bude vybrána z množiny pevných barev, na základě daného indexu modulo počet barev.</param>
+        /// <param name="colorFamily">Typ barvy (Pastelové, Plné, Tmavé)</param>
+        /// <returns></returns>
+        public static Color GetColor(int colorIndex, ColorFamilyType colorFamily = ColorFamilyType.Full)
+        {
+            int modulo = 14;
+            int index = colorIndex % modulo;
+            if (index < 0) index += modulo;
+            Color color;
+            switch (colorFamily)
+            {
+                case ColorFamilyType.Pastel:
+                    switch (index)
+                    {
+                        case 0: color = Color.FromArgb(255, 127, 127); break;
+                        case 1: color = Color.FromArgb(255, 178, 127); break;
+                        case 2: color = Color.FromArgb(255, 233, 127); break;
+                        case 3: color = Color.FromArgb(218, 255, 127); break;
+                        case 4: color = Color.FromArgb(165, 255, 127); break;
+                        case 5: color = Color.FromArgb(127, 255, 142); break;
+                        case 6: color = Color.FromArgb(127, 255, 197); break;
+                        case 7: color = Color.FromArgb(127, 255, 255); break;
+                        case 8: color = Color.FromArgb(127, 201, 255); break;
+                        case 9: color = Color.FromArgb(127, 146, 255); break;
+                        case 10: color = Color.FromArgb(161, 127, 255); break;
+                        case 11: color = Color.FromArgb(214, 127, 255); break;
+                        case 12: color = Color.FromArgb(255, 127, 237); break;
+                        case 13: color = Color.FromArgb(255, 127, 182); break;
+                        default: color = Color.FromArgb(160, 160, 160); break;
+                    }
+                    break;
+                case ColorFamilyType.Dark:
+                    switch (index)
+                    {
+                        case 0: color = Color.FromArgb(127,0,0); break;
+                        case 1: color = Color.FromArgb(127,51,0); break;
+                        case 2: color = Color.FromArgb(127,106,0); break;
+                        case 3: color = Color.FromArgb(91,127,0); break;
+                        case 4: color = Color.FromArgb(38,127,0); break;
+                        case 5: color = Color.FromArgb(0,127,14); break;
+                        case 6: color = Color.FromArgb(0,127,70); break;
+                        case 7: color = Color.FromArgb(0,127,127); break;
+                        case 8: color = Color.FromArgb(0,74,127); break;
+                        case 9: color = Color.FromArgb(0,19,127); break;
+                        case 10: color = Color.FromArgb(33,0,127); break;
+                        case 11: color = Color.FromArgb(87,0,127); break;
+                        case 12: color = Color.FromArgb(127,0,110); break;
+                        case 13: color = Color.FromArgb(127,0,55); break;
+                        default: color = Color.FromArgb(64,64,64); break;
+                    }
+                    break;
+                case ColorFamilyType.Full:
+                default:
+                    switch (index)
+                    {
+                        case 0: color = Color.FromArgb(255,0,0); break;
+                        case 1: color = Color.FromArgb(255,106,0); break;
+                        case 2: color = Color.FromArgb(255,216,0); break;
+                        case 3: color = Color.FromArgb(182,255,0); break;
+                        case 4: color = Color.FromArgb(76,255,0); break;
+                        case 5: color = Color.FromArgb(0,255,33); break;
+                        case 6: color = Color.FromArgb(0,255,144); break;
+                        case 7: color = Color.FromArgb(0,255,255); break;
+                        case 8: color = Color.FromArgb(0,148,255); break;
+                        case 9: color = Color.FromArgb(0,38,255); break;
+                        case 10: color = Color.FromArgb(72,0,255); break;
+                        case 11: color = Color.FromArgb(178,0,255); break;
+                        case 12: color = Color.FromArgb(255,0,220); break;
+                        case 13: color = Color.FromArgb(255,0,110); break;
+                        default: color = Color.FromArgb(128,128,128); break;
+                    }
+                    break;
+            }
+            return color;
+        }
+        /// <summary>
+        /// Obsahuje true, pokud je aktuálně použitý tmavý skin.
+        /// </summary>
+        public static bool IsDarkTheme { get { return Instance._IsDarkTheme(); } }
+        /// <summary>
+        /// Vrátí (nebo nejprve zjistí) zda aktuálně je použit tmavý skin
+        /// </summary>
+        /// <returns></returns>
+        private bool _IsDarkTheme()
+        {
+            if (!__IsDarkTheme.HasValue)
+            {
+                bool isDarkTheme = false;
+                Color? backColor = _GetSkinColor(SkinElementColor.Control_PanelBackColor);
+                if (backColor.HasValue)
+                    isDarkTheme = (backColor.Value.GetBrightness() < 0.40f);
+                __IsDarkTheme = isDarkTheme;
+            }
+            return __IsDarkTheme.Value;
+        }
+        private bool? __IsDarkTheme;
         #endregion
         #region Static helpers
         /// <summary>
@@ -3440,6 +3563,24 @@ namespace Noris.Clients.Win.Components.AsolDX
         #endregion
     }
     #region Enumy
+    /// <summary>
+    /// Typ barvy
+    /// </summary>
+    public enum ColorFamilyType
+    {
+        /// <summary>
+        /// Plné barvy
+        /// </summary>
+        Full = 0,
+        /// <summary>
+        /// Pastelové barvy
+        /// </summary>
+        Pastel,
+        /// <summary>
+        /// Temné barvy
+        /// </summary>
+        Dark
+    }
     public class SkinElementColor
     {
         public static string Control_LabelForeColor { get { return "Control.LabelForeColor"; } }

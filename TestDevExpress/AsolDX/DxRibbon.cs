@@ -157,7 +157,14 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         public override string ToString()
         {
-            return DebugName ?? this.GetType().Name;
+            string text = DebugName ?? this.GetType().Name;
+            var selectedPage = this.SelectedPage;
+            var lastActiveOwnPage = this.LastActiveOwnPage;
+            text += $"; SelectedPage: {selectedPage?.Text ?? "NULL"}";
+            text += $"; LastActiveOwnPage: {lastActiveOwnPage?.Text ?? "NULL"}";
+            text += $"; OwnPages: {this.GetPages(PagePosition.AllOwn).Count}";
+            text += $"; MergedPages: {this.GetPages(PagePosition.AllMerged).Count}";
+            return text;
         }
         /// <summary>
         /// Jsou aktivní zápisy do logu? Default = false
@@ -179,6 +186,21 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Velikost ikon v galerii
         /// </summary>
         internal static WinFormServices.Drawing.UserGraphicsSize RibbonGalleryImageSize { get { return WinFormServices.Drawing.UserGraphicsSize.Medium; } }
+        /// <summary>
+        /// Vlastník = okno nebo panel. 
+        /// Slouží k invokaci GUI threadu.
+        /// </summary>
+        public Control OwnerControl
+        {
+            get { return _OwnerControl; }
+            set { _OwnerControl = value; }
+        }
+        /// <summary>Vlastník</summary>
+        private Control _OwnerControl;
+        /// <summary>
+        /// Parent Control / Vlastník, slouží jako Control k invokaci GUI
+        /// </summary>
+        protected Control ParentOwner { get { return (this.Parent ?? this.OwnerControl ?? this); } }
         /// <summary>TimeStamp pro aktivní stránky</summary>
         private int LastTimeStamp;
         #endregion
@@ -381,8 +403,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         protected override void OnSelectedPageChanged(DevExpress.XtraBars.Ribbon.RibbonPage prev)
         {
             this.StoreLastSelectedPage();
-            this.CheckLazyContent(this.SelectedPage, false);
             base.OnSelectedPageChanged(prev);
+            if (!this.CurrentModifiedState) this.CheckLazyContent(this.SelectedPage, false);
         }
         /// <summary>
         /// Označí si nativní stránky Ribonu jako "aktuálně selectované".
@@ -394,12 +416,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <para/>
         /// Současně s tím do těchto (nativních) Ribbonů pošle event o aktivaci stránky 
         /// </summary>
-        protected void StoreLastSelectedPage()
+        protected void StoreLastSelectedPage(bool force = false)
         {
-            if (_ClearingNow || this.SelectedPage == null) return;
+            if (this.SelectedPage == null) return;
 
-            if (_CurrentMergeState == MergeState.None)
-            {   // Označím si stránky (nativní = těch může být více = z více mergovaných ribbonů), které jsou nyní aktivní:
+            if (force || (!_ClearingNow && _CurrentMergeState == MergeState.None && !this.CurrentModifiedState))
+            {   // Pokud akce je povinná (force) anebo pokud je přípustná za aktuálního stavu:
+                // Označím si stránky (nativní = těch může být více = z více mergovaných ribbonů), které jsou nyní aktivní:
                 DxRibbonPage[] nativePages = _GetNativePages(this.SelectedPage);
                 nativePages.ForEachExec(p => p.OnActivate());
             }
@@ -518,7 +541,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="force"></param>
         private void _OpenMenuReset(bool force = false)
         {
-            if (force || (!_CurrentModifiedState && _CurrentMergeState == MergeState.None))
+            if (force || (!CurrentModifiedState && _CurrentMergeState == MergeState.None))
             {   // Pokud by se aktuálně prováděl Merge nebo UnMerge, pak zhasnutí menu nemá provádět reset menu - protože poté (po UnMerge - Modify - Merge) budeme potřebovat dosavadní menu opět rozsvítit!!!
                 _OpenMenuPopupMenu = null;
                 _OpenMenuBarMenu = null;
@@ -953,17 +976,18 @@ namespace Noris.Clients.Win.Components.AsolDX
             //   - příznak isReFill určíme podle toho, že ve vstupních datech je alespoň jedna stránka typu OnDemand, která už v sobě obsahuje data
 
             bool isCalledFromReFill = iRibbonPages.Any(p => ((p.PageContentMode == RibbonContentMode.OnDemandLoadOnce || p.PageContentMode == RibbonContentMode.OnDemandLoadEveryTime) && p.Groups.Any()));
-            this.RunInGui(() =>
+            this.ParentOwner.RunInGui(() =>
             {
                 _UnMergeModifyMergeCurrentRibbon(() =>
                 {
                     if (clearCurrentContent) _ClearPagesContents();
                     _AddPages(iRibbonPages, this.UseLazyContentCreate, false, "Fill");
                     if (clearCurrentContent) _RemoveVoidContainers();
-                    CheckLazyContentCurrentPage(isCalledFromReFill);
+                    // CheckLazyContentCurrentPage(isCalledFromReFill);
                 }
                 ,true);
             });
+            CheckLazyContentCurrentPage(isCalledFromReFill);
         }
         /// <summary>
         /// Metoda vrátí seznam těch zdejších stránek, jejichž Name se vyskytují v dodaném seznamu nových prvků.
@@ -1193,7 +1217,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         public void RefreshPages(IEnumerable<IRibbonPage> iRibbonPages)
         {
             if (iRibbonPages == null) return;
-            this.RunInGui(() =>
+            this.ParentOwner.RunInGui(() =>
             {
                 _UnMergeModifyMergeCurrentRibbon(() =>
                 {
@@ -1256,7 +1280,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (iRibbonItems == null) return;
             if (!NeedRefreshItems(iRibbonItems)) return;             // Zkratka
 
-            this.RunInGui(() =>
+            this.ParentOwner.RunInGui(() =>
             {
                 _UnMergeModifyMergeCurrentRibbon(() =>
                 {
@@ -1279,7 +1303,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (iRibbonItem == null) return;
             if (!NeedRefreshItem(iRibbonItem)) return;               // Zkratka
 
-            this.RunInGui(() =>
+            this.ParentOwner.RunInGui(() =>
             {
                 _UnMergeModifyMergeCurrentRibbon(() =>
                 {
@@ -1328,7 +1352,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (iRibbonPages.Count == 0 && iRibbonGroups.Count == 0 && !NeedRefreshItems(iRibbonItems)) return;             // Zkratka
 
             // Máme data, půjdeme dělat něco viditelného:
-            this.RunInGui(() =>
+            this.ParentOwner.RunInGui(() =>
             {
                 _UnMergeModifyMergeCurrentRibbon(() =>
                 {
@@ -1645,7 +1669,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 if (pageCategory is null)
                     pageCategory = CreatePageCategory(iRibbonCategory);
-                pageCategory.Tag = iRibbonCategory;
+                FillPageCategory(iRibbonCategory, pageCategory);
             }
             iRibbonCategory.RibbonCategory = pageCategory;
             return pageCategory;
@@ -1662,6 +1686,18 @@ namespace Noris.Clients.Win.Components.AsolDX
             pageCategory.Tag = iRibbonCategory;
             PageCategories.Add(pageCategory);
             return pageCategory;
+        }
+        /// <summary>
+        /// Naplní data do dodané kategorie
+        /// </summary>
+        /// <param name="iRibbonCategory"></param>
+        /// <param name="pageCategory"></param>
+        protected void FillPageCategory(IRibbonCategory iRibbonCategory, DxRibbonPageCategory pageCategory)
+        {
+            pageCategory.Text = iRibbonCategory.CategoryText;
+            pageCategory.Appearance.BackColor = iRibbonCategory.CategoryColor;
+            pageCategory.Visible = iRibbonCategory.CategoryVisible;
+            pageCategory.Tag = iRibbonCategory;
         }
         /// <summary>
         /// Vytvoří a vrátí novou stránku, vloží ji do kolekce this.Pages
@@ -4475,22 +4511,22 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Obsahuje všechny aktuální Ribbony mergované od this až do nejvyššího Parenta, včetně this.
         /// this ribbon je na pozici [0], jeho Parent je na pozici [1], a tak dál nahoru. Pole tedy má vždy alespoň jeden prvek.
-        /// Každý další prvek je Parent prvku předchozího.
+        /// Každý další prvek (na vyšším indexu) je Parent prvku předchozího.
+        /// <para/>
+        /// Prvek Tuple.Item1 = Ribbon; prvek Tuple.Item2 je stav <see cref="CurrentModifiedState"/> daného Ribbonu.
         /// <para/>
         /// Používá se při skupinový akcích typu "Odmerguje mě ze všech parentů, Oprav mě a pak mě zase Mererguj nazpátek".
         /// </summary>
-        public List<DxRibbonControl> MergedRibbonsUp
+        public List<Tuple<DxRibbonControl, bool>> MergedRibbonsUp
         {
             get
             {
-                var parent = this.MergedIntoParentDxRibbon;
-                if (parent == null) return new List<DxRibbonControl>() { this };         // Zkratka
-                List<DxRibbonControl> result = new List<DxRibbonControl>();
-                result.Add(this);
-                while (parent != null)
+                var result = new List<Tuple<DxRibbonControl, bool>>();
+                var ribbon = this;
+                while (ribbon != null)
                 {
-                    result.Add(parent);
-                    parent = parent.MergedIntoParentDxRibbon;
+                    result.Add(new Tuple<DxRibbonControl, bool>(ribbon, ribbon.CurrentModifiedState));
+                    ribbon = ribbon.MergedIntoParentDxRibbon;
                 }
                 return result;
             }
@@ -4501,13 +4537,27 @@ namespace Noris.Clients.Win.Components.AsolDX
         protected DevExpress.XtraBars.Ribbon.RibbonControl MergedChildRibbon { get; set; }
         /// <summary>
         /// Merguje this Ribbon do daného parenta. Pokud je dodán null, neprovede nic.
+        /// <para/>
+        /// Tato metoda smí být volaná z libovolného threadu, invokaci GUI si zajistí sama.
         /// </summary>
         /// <param name="parentDxRibbon"></param>
         /// <param name="forceSelectChildPage">Povinně selectovat Child SelectedPage v parentu, bez ohledu na hodnotu <see cref="SelectChildActivePageOnMerge"/></param>
         public void MergeCurrentDxToParent(DxRibbonControl parentDxRibbon, bool? forceSelectChildPage = null)
         {
             if (parentDxRibbon != null)
-                parentDxRibbon.MergeChildDxRibbon(this, forceSelectChildPage);
+                this.ParentOwner.RunInGui(() => _MergeCurrentDxToParent(parentDxRibbon, forceSelectChildPage));
+        }
+        /// <summary>
+        /// Merguje this Ribbon do daného parenta. Pokud je dodán null, neprovede nic.
+        /// <para/>
+        /// Tato metoda MUSÍ být volaná výhradně z GUI threadu
+        /// </summary>
+        /// <param name="parentDxRibbon"></param>
+        /// <param name="forceSelectChildPage">Povinně selectovat Child SelectedPage v parentu, bez ohledu na hodnotu <see cref="SelectChildActivePageOnMerge"/></param>
+        private void _MergeCurrentDxToParent(DxRibbonControl parentDxRibbon, bool? forceSelectChildPage)
+        {
+            if (parentDxRibbon != null)
+                parentDxRibbon._MergeChildDxRibbon(this, forceSelectChildPage);
         }
         /// <summary>
         /// Merguje do this Ribbonu dodaný Child Ribbon.
@@ -4518,30 +4568,43 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Tím dotáhneme nový Child Ribbon až do viditelného Top Parenta (to DevExpress taky nedělá). 
         /// Bez toho by aktuální Child Ribbon nebyl vidět ani v sobě (on je Mergován), ani v nás (náš obsah je od dřívějška v Parentu, ale s obsahem bez nového Childu).
         /// Opakovaným Mergování se zajistí, že do našeho Parenta se dostane i nový Child.
+        /// <para/>
+        /// Tato metoda smí být volaná z libovolného threadu, invokaci GUI si zajistí sama.
         /// </summary>
         /// <param name="childDxRibbon"></param>
         /// <param name="forceSelectChildPage">Povinně selectovat Child SelectedPage v parentu, bez ohledu na hodnotu <see cref="SelectChildActivePageOnMerge"/></param>
         public void MergeChildDxRibbon(DxRibbonControl childDxRibbon, bool? forceSelectChildPage = null)
         {
+            this.ParentOwner.RunInGui(() => _MergeChildDxRibbon(childDxRibbon, forceSelectChildPage));
+        }
+        /// <summary>
+        /// Merguje do this Ribbonu dodaný Child Ribbon.
+        /// <para/>
+        /// Tato metoda MUSÍ být volaná výhradně z GUI threadu
+        /// </summary>
+        /// <param name="childDxRibbon"></param>
+        /// <param name="forceSelectChildPage"></param>
+        private void _MergeChildDxRibbon(DxRibbonControl childDxRibbon, bool? forceSelectChildPage)
+        {
             // Pokud nyní mám v sobě mergován nějaký Child Ribbon, pak jej UnMergujeme teď = jinak v tom bude guláš:
             if (this.MergedChildRibbon != null)
-                this.UnMergeDxRibbon();
+                this._UnMergeDxRibbon();
 
             // Pokud já jsem nyní Mergován v nějakém Parentu, pak sebe z něj musím nejprve odmergovat, a pak - s novým obsahem - zase zpátky mergovat do něj:
             var parentRibbon = MergedIntoParentDxRibbon;
             if (parentRibbon != null)
             {
-                parentRibbon.UnMergeDxRibbon();
+                parentRibbon._UnMergeDxRibbon();
                 forceSelectChildPage = true;                                   // Protože se budu mergovat zpátky, chci mít opět vybranou svoji SelectedPage! Povinně!
             }
 
             // Nyní do sebe mergujeme nově dodaný obsah:
             if (childDxRibbon != null)
-                this.MergeChildRibbon(childDxRibbon, forceSelectChildPage);    // Tady se do Child DxRibbonu vepíše, že jeho MergedIntoParentDxRibbon je this
+                this._MergeChildRibbon(childDxRibbon, forceSelectChildPage);    // Tady se do Child DxRibbonu vepíše, že jeho MergedIntoParentDxRibbon je this
 
             // A pokud já jsem byl původně mergován nahoru, tak se nahoru zase vrátím:
             if (parentRibbon != null)
-                parentRibbon.MergeChildDxRibbon(this, forceSelectChildPage);   // Tady se může rozběhnout rekurze ve zdejší metodě až do instance Top Parenta...
+                parentRibbon._MergeChildDxRibbon(this, forceSelectChildPage);   // Tady se může rozběhnout rekurze ve zdejší metodě až do instance Top Parenta...
         }
         /// <summary>
         /// Provede Mergování daného Child Ribbonu do this (Parent) Ribbonu.
@@ -4549,10 +4612,23 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// pokud bude v parametru <paramref name="forceSelectChildPage"/> zadána hodnota, pak bude akceptována namísto <see cref="SelectChildActivePageOnMerge"/>.
         /// <para/>
         /// Vedle toho existuje komplexnější metoda <see cref="MergeChildDxRibbon(DxRibbonControl, bool?)"/>, která dokáže mergovat Child Ribbon až do aktuálního top parenta.
+        /// <para/>
+        /// Tato metoda smí být volaná z libovolného threadu, invokaci GUI si zajistí sama.
         /// </summary>
         /// <param name="childRibbon">Mergovaný Child Ribbon</param>
         /// <param name="forceSelectChildPage">Povinně selectovat Child SelectedPage v parentu, bez ohledu na hodnotu <see cref="SelectChildActivePageOnMerge"/></param>
         public void MergeChildRibbon(DevExpress.XtraBars.Ribbon.RibbonControl childRibbon, bool? forceSelectChildPage = null)
+        {
+            this.ParentOwner.RunInGui(() => _MergeChildRibbon(childRibbon, forceSelectChildPage));
+        }
+        /// <summary>
+        /// Provede Mergování daného Child Ribbonu do this (Parent) Ribbonu.
+        /// <para/>
+        /// Tato metoda MUSÍ být volaná výhradně z GUI threadu
+        /// </summary>
+        /// <param name="childRibbon"></param>
+        /// <param name="forceSelectChildPage"></param>
+        private void _MergeChildRibbon(DevExpress.XtraBars.Ribbon.RibbonControl childRibbon, bool? forceSelectChildPage)
         {
             _CurrentSelectChildActivePageOnMerge = forceSelectChildPage;       // Do metody MergeRibbon(Ribbon) to nemůžu poslat jako parametr, protože je overridovaná, 
             this.MergeRibbon(childRibbon);                                     //  a protože chci aby byla plně funkční (včetně správného chování 'selectPage') i v základní variantě.
@@ -4563,6 +4639,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Pokud je <see cref="SelectChildActivePageOnMerge"/> = true, pak po mergování bude v mergovaném ribbonu selectována ta stránka, 
         /// která byla selectována v mergovaném Child ribbonu.
         /// Lze využít metodu <see cref="MergeChildRibbon(DevExpress.XtraBars.Ribbon.RibbonControl, bool?)"/> a explicitně zadat styl selectování.
+        /// <para/>
+        /// Tato metoda MUSÍ být volaná výhradně z GUI threadu
         /// </summary>
         /// <param name="childRibbon"></param>
         public override void MergeRibbon(DevExpress.XtraBars.Ribbon.RibbonControl childRibbon)
@@ -4572,23 +4650,37 @@ namespace Noris.Clients.Win.Components.AsolDX
             bool selectPage = _CurrentSelectChildActivePageOnMerge ?? SelectChildActivePageOnMerge;  // Rád bych si předal _CurrentSelectChildActivePageOnMerge jako parametr, ale tady to nejde, jsme override bázové metody = bez toho parametru.
             string slaveSelectedPage = (selectPage && childRibbon is DxRibbonControl dxRibbon) ? dxRibbon.SelectedPageFullId : null;
 
+            bool currentDxRibbonState = this.CurrentModifiedState;
+
             var childDxRibbon = childRibbon as DxRibbonControl;
-            if (childDxRibbon != null)
+            bool childDxRibbonState = false;
+            try
             {
-                childDxRibbon.MergedIntoParentDxRibbon = this;
-                childDxRibbon._CurrentMergeState = MergeState.MergeToParent;
+                if (childDxRibbon != null)
+                {
+                    childDxRibbonState = childDxRibbon.CurrentModifiedState;
+                    childDxRibbon.MergedIntoParentDxRibbon = this;
+                    childDxRibbon._CurrentMergeState = MergeState.MergeToParent;
+                    childDxRibbon.SetModifiedState(true, true);
+                }
+
+                _CurrentMergeState = MergeState.MergeWithChild;
+                SetModifiedState(true, true);
+                CurrentModifiedState = true;
+                DxComponent.TryRun(() => base.MergeRibbon(childRibbon));
+                this.MergedChildRibbon = childRibbon;
+                _CurrentMergeState = MergeState.None;
+                CustomizationPopupMenuRefreshHandlers();
             }
-
-            _CurrentMergeState = MergeState.MergeWithChild;
-            DxComponent.TryRun(() => base.MergeRibbon(childRibbon));
-            this.MergedChildRibbon = childRibbon;
-            _CurrentMergeState = MergeState.None;
-            CustomizationPopupMenuRefreshHandlers();
-
-            if (childDxRibbon != null)
+            finally
             {
-                childDxRibbon._CurrentMergeState = MergeState.None;
-                childDxRibbon.CustomizationPopupMenuRefreshHandlers();
+                if (childDxRibbon != null)
+                {
+                    childDxRibbon._CurrentMergeState = MergeState.None;
+                    childDxRibbon.CustomizationPopupMenuRefreshHandlers();
+                    childDxRibbon.SetModifiedState(childDxRibbonState, true);
+                }
+                SetModifiedState(currentDxRibbonState, true);
             }
 
             if (selectPage && slaveSelectedPage != null) this.SelectedPageFullId = slaveSelectedPage;
@@ -4605,10 +4697,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Provede odmergování this Ribbonu z Parenta, ale pokud Parent je mergován ve vyšším parentu, zajistí jeho ponechání tam.
         /// Není to triviální věc, protože pokud this (1) je mergován v Parentu (2) , a Parent (2) v ještě vyšším Parentu (3),
         /// pak se nejprve musí odebrat (2) z (3), pak (1) z (2) a pak zase vrátit (2) do (3).
+        /// <para/>
+        /// Tato metoda smí být volaná z libovolného threadu, invokaci GUI si zajistí sama.
         /// </summary>
         public void UnMergeCurrentDxFromParent()
         {
-            _UnMergeModifyMergeCurrentRibbon(null, false);
+            this.ParentOwner.RunInGui(() => _UnMergeModifyMergeCurrentRibbon(null, false));
         }
         /// <summary>
         /// Provede zadanou akci, která modifikuje obsah Ribbonu.
@@ -4625,16 +4719,20 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Režie s tím spojená je relativně snesitelná, lze počítat 8 milisekund na jednu úroveň (součet za UnMerge a na konci zase Merge).
         /// <para/>
         /// Pokud this Ribbon aktuálně není nikam Mergován, pak se provede zadaná akce bez zbytečných dalších režií.
+        /// <para/>
+        /// Tato metoda smí být volaná z libovolného threadu, invokaci si zajistí sama.
         /// </summary>
         public void ModifyCurrentDxContent(Action action)
         {
-            _UnMergeModifyMergeCurrentRibbon(action, true);
+            this.ParentOwner.RunInGui(() => _UnMergeModifyMergeCurrentRibbon(action, true));
         }
         /// <summary>
         /// Provede odmergování this Ribbonu z Parentů (hierarchicky); poté až bude this Ribbon odmergován pak provede danou akci; a na závěr vrátí this Ribbon tam kde byl Mergován (pokud je požadováno: <paramref name="mergeBack"/>).
         /// Pokud není požadováno, pak this Ribbon nechá UnMerge, ale vyšší Ribbony vrátí do původního stavu.
         /// Není to triviální věc, protože pokud this (1) je mergován v Parentu (2) , a Parent (2) v ještě vyšším Parentu (3),
         /// pak se nejprve musí odebrat (2) z (3), pak (1) z (2) a pak zase vrátit (2) do (3).
+        /// <para/>
+        /// Tato metoda MUSÍ být volaná výhradně z GUI threadu
         /// </summary>
         private void _UnMergeModifyMergeCurrentRibbon(Action action, bool mergeBack)
         {
@@ -4646,57 +4744,55 @@ namespace Noris.Clients.Win.Components.AsolDX
             // Pokud this Ribbon není nikam mergován (když počet nahoru mergovaných je 1):
             if (count == 1)
             {   // Provedu požadovanou akci rovnou (není třeba dělat UnMerge a Merge), a skončíme:
+                SetModifiedState(true, true);
                 _RunUnMergedAction(action);
+                SetModifiedState(ribbonsUp[0].Item2, true);          // Vrátím stav CurrentModifiedState původní, nikoliv false - ono tam mohlo být true!
                 if (LogActive) DxComponent.LogAddLineTime($"ModifyRibbon {this.DebugName}: Current; Time: {DxComponent.LogTokenTimeMilisec}", startTime);
                 return;
             }
 
             // Odmergovat - Provést akci (pokud je) - Mergovat zpátky (vše nebo jen UpRibbony):
             int last = count - 1;
-            var topRibbon = ribbonsUp[last];
+            var topRibbon = ribbonsUp[last].Item1;
             var topRibbonSelectedPage1 = topRibbon.SelectedPageFullId;
 
             try
             {
                 // Top Ribbon pozastaví svoji práci:
                 topRibbon.SuspendLayout();
-                //   topRibbon.BarManager.BeginUpdate();
                 topRibbon._PrepareEmptyPageForUMM();
 
-                // Všem Ribonům v řadě potlačíme CheckLazyContentEnabled, protože bude docházet ke změně SelectedPage, ale to nemá vyvolat požadavek na její LazyLoad donačítání:
-                ribbonsUp.ForEach(r => { r.CheckLazyContentEnabled = false; r._CurrentModifiedState = true; });
+                // Všem Ribonům v řadě potlačíme CurrentModifiedState a CheckLazyContentEnabled, protože bude docházet ke změně SelectedPage, ale to nemá vyvolat požadavek na její LazyLoad donačítání:
+                ribbonsUp.ForEach(r => { r.Item1.SetModifiedState(true, true); });
 
                 // UnMerge proběhne od posledního (=TopMost: count - 1) Ribbonu dolů až k našemu Parentu (u >= 1):
                 for (int u = last; u >= 1; u--)
-                    ribbonsUp[u].UnMergeDxRibbon();
+                    ribbonsUp[u].Item1.UnMergeDxRibbon();
 
                 // Konečně máme this Ribbon osamocený (není Merge nahoru, ani neobsahuje MergedChild), provedeme tedy akci:
                 _RunUnMergedAction(action);
 
+                // ...a pak se přimerguje náš parent / nebo i zdejší Ribbon zpátky nahoru do TopMost:
                 // Nazpátek se bude mergovat (mergeBack) i this Ribbon do svého Parenta? Anebo jen náš Parent do jeho Parenta a náš Ribbon zůstane UnMergovaný?
                 int mergeFrom = (mergeBack ? 0 : 1);
-
-                // ...a pak se přimerguje náš parent / nebo i zdejší Ribbon zpátky nahoru do TopMost:
                 for (int m = mergeFrom; m < last; m++)
-                    ribbonsUp[m].MergeCurrentDxToParent(ribbonsUp[m + 1], true);
+                    ribbonsUp[m].Item1._MergeCurrentDxToParent(ribbonsUp[m + 1].Item1, true);
             }
             finally
             {
-                // Všem Ribonům v řadě nastavím CheckLazyContentEnabled = true:
-                ribbonsUp.ForEach(r => { r.CheckLazyContentEnabled = true; r._CurrentModifiedState = false; });
+                // Všem Ribonům v řadě nastavím CurrentModifiedState a CheckLazyContentEnabled na původní hodnotu:
+                ribbonsUp.ForEach(r => { r.Item1.SetModifiedState(r.Item2, true); });
 
                 topRibbon._RemoveEmptyPageForUMM();
 
                 // Top Ribbon obnoví svoji práci:
-                //   topRibbon.BarManager.EndUpdate();
                 topRibbon.ResumeLayout(false);
                 topRibbon.PerformLayout();
-                //   topRibbon.Refresh();
             }
 
-            // A protože po celou dobu byl potlačen CheckLazyContentEnabled, tak pro Top Ribbon to nyní provedu explicitně:
+            // A protože po celou dobu byl potlačen CheckLazyContentEnabled, tak pro Top Ribbon to nyní provedu explicitně (pokud už je to povoleno : topRibbon.CheckLazyContentEnabled == true):
             var topRibbonSelectedPage2 = topRibbon.SelectedPageFullId;
-            if (topRibbonSelectedPage2 != topRibbonSelectedPage1)
+            if (topRibbonSelectedPage2 != topRibbonSelectedPage1 && topRibbon.CheckLazyContentEnabled)
                 topRibbon.CheckLazyContent(topRibbon.SelectedPage, false);
 
             if (LogActive) DxComponent.LogAddLineTime($"ModifyRibbon {this.DebugName}: UnMerge + Action + Merge; Total Count: {count}; Time: {DxComponent.LogTokenTimeMilisec}", startTime);
@@ -4706,6 +4802,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Pak provede danou akci;
         /// Pak zase vrátí původní Child Ribbon;
         /// a do logu vepíše čas celé této akce.
+        /// <para/>
+        /// Tato metoda MUSÍ být volaná výhradně z GUI threadu
         /// </summary>
         /// <param name="action"></param>
         private void _RunUnMergedAction(Action action)
@@ -4720,19 +4818,31 @@ namespace Noris.Clients.Win.Components.AsolDX
                 this.BarManager.BeginUpdate();
 
                 // Nyní máme náš Ribbon UnMergovaný z Parentů, ale i on v sobě může mít mergovaného Childa:
-                if (childRibbon != null) this.UnMergeDxRibbon();
+                if (childRibbon != null) this._UnMergeDxRibbon();
 
                 action();
             }
             finally
             {
                 // Do this Ribbonu vrátíme jeho Child Ribbon:
-                if (childRibbon != null) this.MergeChildRibbon(childRibbon, false);
+                if (childRibbon != null) this._MergeChildRibbon(childRibbon, false);
 
                 // This Ribbon obnoví svoji práci:
                 this.BarManager.EndUpdate();
             }
             if (LogActive) DxComponent.LogAddLineTime($"ModifyRibbon {this.DebugName}: RunAction; Time: {DxComponent.LogTokenTimeMilisec}", startTime);
+        }
+        /// <summary>
+        /// Nastaví <see cref="CurrentModifiedState"/> = <paramref name="modifiedState"/>; a volitelně i <see cref="CheckLazyContentEnabled"/> = !<paramref name="modifiedState"/>; 
+        /// Zadejme tedy true = budou probíhat modifikace, false = jdeme do plného provozu (budou aktivní handlery atd)
+        /// </summary>
+        /// <param name="modifiedState"></param>
+        /// <param name="setCheckLazy">Nastavit i </param>
+        private void SetModifiedState(bool modifiedState, bool setCheckLazy)
+        {
+            this.CurrentModifiedState = modifiedState;
+            if (setCheckLazy)
+                this.CheckLazyContentEnabled = !modifiedState;
         }
         /// <summary>
         /// Připraví this Ribbon (který je TopRibbonem = reálně viditelný Ribbon) na proces UMM = UnMerge + Modify + Merge.
@@ -4774,9 +4884,21 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private const string _EmptyPageUMMPageId = "#empty-page#";
         /// <summary>
-        /// Odmerguje z this Ribbonu jeho případně mergovaný obsah, nic dalšího nedělá
+        /// Odmerguje z this Ribbonu jeho případně mergovaný obsah, nic dalšího nedělá.
+        /// <para/>
+        /// Tato metoda smí být volaná z libovolného threadu, invokaci si zajistí sama.
         /// </summary>
         public void UnMergeDxRibbon()
+        {
+            this.ParentOwner.RunInGui(() => _UnMergeDxRibbon());
+        }
+        /// <summary>
+        /// Odmerguje z this Ribbonu jeho případně mergovaný obsah, nic dalšího nedělá.
+        /// <para/>
+        /// Tato metoda MUSÍ být volaná výhradně z GUI threadu.
+        /// Namísto zdejší metody lze rovnou volat metodu this.UnMergeRibbon().
+        /// </summary>
+        private void _UnMergeDxRibbon()
         {
             this.UnMergeRibbon();
         }
@@ -4821,7 +4943,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Ribbon je aktuálně v procesu modifikace ( UnMerge - Modify - Merge )
         /// </summary>
-        private bool _CurrentModifiedState = false;
+        private bool CurrentModifiedState = false;
         /// <summary>
         /// Stavy mergování Ribbonu
         /// </summary>
@@ -5872,7 +5994,128 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// Potomek StatusBaru
     /// </summary>
     public class DxRibbonStatusBar : DevExpress.XtraBars.Ribbon.RibbonStatusBar
-    { }
+    {
+        #region Konstruktor
+        /// <summary>
+        /// Vlastník = okno nebo panel. 
+        /// Slouží k invokaci GUI threadu.
+        /// </summary>
+        public Control OwnerControl
+        {
+            get { return _OwnerControl; }
+            set { _OwnerControl = value; }
+        }
+        /// <summary>Vlastník</summary>
+        private Control _OwnerControl;
+        /// <summary>
+        /// Parent Control / Vlastník, slouží jako Control k invokaci GUI
+        /// </summary>
+        protected Control ParentOwner { get { return (this.Parent ?? this.OwnerControl ?? this); } }
+        #endregion
+        #region Merge a UnMerge s invokací GUI
+        /// <summary>
+        /// Merguje do sebe dodaný child StatusBar.
+        /// Před voláním této metody není nutno provádět <see cref="UnMergeDxStatusBar"/>, to si zajistí sám.
+        /// <para/>
+        /// Tato metoda smí být volaná z libovolného threadu, invokaci GUI si zajistí sama.
+        /// </summary>
+        /// <param name="childDxStatusBar"></param>
+        public void MergeDxStatusBar(DxRibbonStatusBar childDxStatusBar)
+        {
+            if (!HasMergedChildStatusBar && childDxStatusBar is null) return;
+            this.ParentOwner.RunInGui(() => _MergeDxStatusBar(childDxStatusBar));
+        }
+        /// <summary>
+        /// Merguje do sebe dodaný child StatusBar.
+        /// <para/>
+        /// Tato metoda MUSÍ být volaná výhradně z GUI threadu
+        /// </summary>
+        /// <param name="childDxStatusBar"></param>
+        private void _MergeDxStatusBar(DxRibbonStatusBar childDxStatusBar)
+        {
+            _UnMergeDxStatusBar();
+            this.MergeStatusBar(childDxStatusBar);
+        }
+        /// <summary>
+        /// Merge dodaného StatusBaru.
+        /// Tato metoda by se obecně neměla používat, používat se má <see cref="MergeDxStatusBar(DxRibbonStatusBar)"/>.
+        /// <para/>
+        /// Tato metoda MUSÍ být volaná výhradně z GUI threadu
+        /// </summary>
+        /// <param name="childStatusBar"></param>
+        public override void MergeStatusBar(RibbonStatusBar childStatusBar)
+        {
+            if (ChildDxStatusBar != null) ChildDxStatusBar.ParentDxStatusBar = null;
+            ChildDxStatusBar = null;
+
+            base.MergeStatusBar(childStatusBar);
+
+            ChildDxStatusBar = childStatusBar as DxRibbonStatusBar;
+            if (ChildDxStatusBar != null) ChildDxStatusBar.ParentDxStatusBar = this;
+        }
+        /// <summary>
+        /// Odmerguje ze sebe svůj Child StatusBar, pokud takový je.
+        /// <para/>
+        /// Tato metoda smí být volaná z libovolného threadu, invokaci GUI si zajistí sama.
+        /// </summary>
+        public void UnMergeDxStatusBar()
+        {
+            if (!HasMergedChildStatusBar) return;
+            this.ParentOwner.RunInGui(() => _UnMergeDxStatusBar());
+        }
+        /// <summary>
+        /// Odmerguje sebe ze svého Parenta, pokud jsem do něj mergován
+        /// <para/>
+        /// Tato metoda smí být volaná z libovolného threadu, invokaci GUI si zajistí sama.
+        /// </summary>
+        public void UnMergeCurrentDxFromParent()
+        {
+            var parentDxStatusBar = ParentDxStatusBar;
+            if (parentDxStatusBar is null) return;
+            this.ParentOwner.RunInGui(() => parentDxStatusBar.UnMergeStatusBar());
+        }
+        /// <summary>
+        /// Odmerguje ze sebe svůj Child StatusBar.
+        /// <para/>
+        /// Tato metoda MUSÍ být volaná výhradně z GUI threadu
+        /// </summary>
+        private void _UnMergeDxStatusBar()
+        {
+            if (HasMergedChildStatusBar)
+                this.UnMergeStatusBar();
+        }
+        /// <summary>
+        /// UnMerge stávajícího StatusBaru.
+        /// Tato metoda by se obecně neměla používat, používat se má <see cref="UnMergeDxStatusBar()"/>.
+        /// <para/>
+        /// Tato metoda MUSÍ být volaná výhradně z GUI threadu
+        /// </summary>
+        public override void UnMergeStatusBar()
+        {
+            base.UnMergeStatusBar();
+            if (ChildDxStatusBar != null) ChildDxStatusBar.ParentDxStatusBar = null;
+            ChildDxStatusBar = null;
+        }
+        /// <summary>
+        /// Obsahuje true, když v this StatusBaru je mergován nějaký Child (<see cref="ChildDxStatusBar"/> nebo alespoň <see cref="MergedStatusBar"/>)
+        /// </summary>
+        protected bool HasMergedChildStatusBar { get { return (this.MergedStatusBar != null); } }
+        /// <summary>
+        /// Aktuálně mergovaný Child <see cref="DxRibbonStatusBar"/>.
+        /// Pozor, pokud někdo mergoval nativně nativní <see cref="RibbonStatusBar"/>, pak zde bude null!
+        /// </summary>
+        protected DxRibbonStatusBar ChildDxStatusBar { get; private set; }
+        /// <summary>
+        /// Obsahuje true, když this StatusBar je aktuálně mergovaný do nějakého Parenta (<see cref="ParentDxStatusBar"/>)
+        /// </summary>
+        protected bool IsMergedIntoParentStatusBar { get { return (this.ParentDxStatusBar != null); } }
+        /// <summary>
+        /// Parent <see cref="DxRibbonStatusBar"/>, do kterého je this <see cref="DxRibbonStatusBar"/> mergován jako Child.
+        /// Pozor, pokud někdo mergoval nativně nativní <see cref="RibbonStatusBar"/>, pak zde bude null!
+        /// </summary>
+        protected DxRibbonStatusBar ParentDxStatusBar { get; private set; }
+        #endregion
+    }
     #endregion
     #region DxQuickAccessToolbar
     /// <summary>
