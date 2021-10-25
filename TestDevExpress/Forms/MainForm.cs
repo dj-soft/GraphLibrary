@@ -59,7 +59,7 @@ namespace TestDevExpress.Forms
             InitTreeView();            // 9
             InitDragDrop();            // 10
 
-            int cnt = ResourceLibrary.Count;
+            TestResources();
 
             DxComponent.SplashUpdate(subTitle: "A je to!");
 
@@ -94,6 +94,32 @@ namespace TestDevExpress.Forms
             DxComponent.ClipboardApplicationId = "TestDevExpress";
             this.Text = $"TestDevExpress :: {DxComponent.FrameworkName}";
         }
+
+        private void TestResources()
+        {
+            int cnt = ResourceLibrary.Count;
+
+            ResourceLibrary.ResourceItem item;
+
+            if (ResourceLibrary.TryGetResource(@"Images\Actions24\align-horizontal-right-out(24).png", out item))
+            {
+                var size = item.BitmapSize;
+                var sizeType = item.BitmapSizeType;
+            }
+
+            if (ResourceLibrary.TryGetResource(@"Images\Svg\amazon-chime-svgrepo-com.svg", out item))
+            {
+                var size = item.BitmapSize;
+                var sizeType = item.BitmapSizeType;
+            }
+
+            var funcRibbonForm = _RibbonPages[0].Groups[1].Items.FirstOrDefault(i => i.ItemId == "RibbonForm");
+            if (funcRibbonForm?.RibbonItem != null && funcRibbonForm.RibbonItem.IsAlive && funcRibbonForm.RibbonItem.Target != null)
+            {
+                funcRibbonForm.RibbonItem.Target.ImageOptions.SvgImage = item.CreateSvgImage();
+            }
+        }
+
         #region Log
 
         private void DxComponent_LogTextChanged(object sender, EventArgs e)
@@ -178,7 +204,10 @@ namespace TestDevExpress.Forms
 
             this.DxRibbon.Clear();
             this.DxRibbon.AddPages(pages);
+
+            _RibbonPages = pages;
         }
+        private List<DataRibbonPage> _RibbonPages;
         protected override void DxStatusPrepare()
         {
             this._StatusStartLabel = DxComponent.CreateDxStatusLabel(this.DxStatusBar, "Start time: ...", XB.BarStaticItemSize.Content);
@@ -200,17 +229,18 @@ namespace TestDevExpress.Forms
         private DataRibbonGroup CreateFunctionGroup()
         {
             var group = new DataRibbonGroup() { GroupText = "FUNKCE" };
-            group.Items.Add(CreateRibbonFunction("Graph Form", "svgimages/chart/chart.svg", "Ukázky grafů DevExpress", _OpenGraphFormButton_Click));
-            group.Items.Add(CreateRibbonFunction("Layout Form", "devav/layout/pages.svg", "Otevře okno pro testování layoutu (pod-okna)", _OpenLayoutFormButton_Click));
-            group.Items.Add(CreateRibbonFunction("DataForm1", "svgimages/spreadsheet/showtabularformpivottable.svg", "Otevře okno pro testování DataFormu", _TestDataForm1ModalButton_Click));
-            group.Items.Add(CreateRibbonFunction("DataForm2", "svgimages/spreadsheet/showtabularformpivottable.svg", "Otevře okno pro testování DataFormu 2", _TestDataForm2ModalButton_Click));
-            group.Items.Add(CreateRibbonFunction("Ribon Form", "svgimages/reports/distributerowsevenly.svg", "Otevře okno pro testování Ribbonu", _TestDxRibbonFormModalButton_Click));
+            group.Items.Add(CreateRibbonFunction("GraphForm", "Graph Form", "svgimages/chart/chart.svg", "Ukázky grafů DevExpress", _OpenGraphFormButton_Click));
+            group.Items.Add(CreateRibbonFunction("LayoutForm", "Layout Form", "devav/layout/pages.svg", "Otevře okno pro testování layoutu (pod-okna)", _OpenLayoutFormButton_Click));
+            group.Items.Add(CreateRibbonFunction("DataForm1", "Data Form1", "svgimages/spreadsheet/showtabularformpivottable.svg", "Otevře okno pro testování DataFormu", _TestDataForm1ModalButton_Click));
+            group.Items.Add(CreateRibbonFunction("DataForm2", "Data Form2", "svgimages/spreadsheet/showtabularformpivottable.svg", "Otevře okno pro testování DataFormu 2", _TestDataForm2ModalButton_Click));
+            group.Items.Add(CreateRibbonFunction("RibbonForm", "Ribbon Form", "svgimages/reports/distributerowsevenly.svg", "Otevře okno pro testování Ribbonu", _TestDxRibbonFormModalButton_Click));
             return group;
         }
-        protected DataRibbonItem CreateRibbonFunction(string text, string image, string toolTipText, Action<IMenuItem> clickHandler = null)
+        protected DataRibbonItem CreateRibbonFunction(string itemId, string text, string image, string toolTipText, Action<IMenuItem> clickHandler = null)
         {
             DataRibbonItem iRibbonItem = new DataRibbonItem()
             {
+                ItemId = itemId,
                 Text = text,
                 ImageName = image,
                 ToolTipText = toolTipText,

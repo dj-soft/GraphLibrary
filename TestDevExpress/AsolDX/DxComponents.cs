@@ -3160,6 +3160,21 @@ namespace Noris.Clients.Win.Components.AsolDX
             return __IsDarkTheme.Value;
         }
         private bool? __IsDarkTheme;
+        /// <summary>
+        /// Vrátí náhodný prvek dodaného seznamu
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="collection"></param>
+        /// <returns></returns>
+        public static T GetRandomItem<T>(IList<T> collection)
+        {
+            if (collection != null && collection.Count > 0)
+            {
+                int index = Instance._Rand.Next(collection.Count);
+                return collection[index];
+            }
+            return default;
+        }
         #endregion
         #region Static helpers
         /// <summary>

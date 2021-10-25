@@ -205,7 +205,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         public static System.Windows.Forms.Keys GetShortcutKeys(string shortCut) { return Current.GetShortcutKeys(shortCut); }
         #endregion
     }
-    internal enum ResourceImageSizeType
+    /// <summary>
+    /// Velikost obrázku typu Bitmapa
+    /// </summary>
+    public enum ResourceImageSizeType
     {
         /// <summary>None</summary>
         None = 0,
