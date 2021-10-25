@@ -59,6 +59,8 @@ namespace TestDevExpress.Forms
             InitTreeView();            // 9
             InitDragDrop();            // 10
 
+            int cnt = ResourceLibrary.Count;
+
             DxComponent.SplashUpdate(subTitle: "A je to!");
 
             this.Disposed += MainForm_Disposed;

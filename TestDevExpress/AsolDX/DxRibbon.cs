@@ -140,6 +140,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void InitData()
         {
             _Groups = new List<DxRibbonGroup>();
+            _RibbonId = ++TotalRibbonId;
         }
         /// <summary>
         /// Vykreslení controlu
@@ -156,7 +157,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         public override string ToString()
         {
-            string text = DebugName ?? this.GetType().Name;
+            string text = $"Ribbon: {_RibbonId}; {DebugName ?? this.GetType().Name}";
             var selectedPage = this.SelectedPage;
             var lastActiveOwnPage = this.LastActiveOwnPage;
             text += $"; SelectedPage: {selectedPage?.Text ?? "NULL"}";
@@ -173,6 +174,14 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Jméno Ribbonu pro debugování
         /// </summary>
         public string DebugName { get; set; }
+        /// <summary>
+        /// Unikátní ID tohoto Ribbonu
+        /// </summary>
+        private int _RibbonId;
+        /// <summary>
+        /// Celkem vytvořeno Ribbonů
+        /// </summary>
+        private static int TotalRibbonId;
         /// <summary>
         /// Velikost malých ikon v Ribbonu
         /// </summary>
@@ -515,18 +524,22 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Ribbon smí mít v jeden okamžik otevřené jen jedno menu = k jednomu tlačítku.
         /// Otevřít jej může uživatel kliknutím na dané tlačítko, systém může oteření pozdržet (pokud to jde OnDemand load) a následně po dodání dat bude tlačítko reálně otevřeno = proběhne otevření tohoto controlu.
         /// </summary>
-        private PopupControl _OpenMenuPopupMenu;
+        private PopupControl _OpenItemPopupMenu;
         /// <summary>
         /// Control, který bude otevřen jako BarSubItem v případě potřeby.
         /// <para/>
         /// Ribbon smí mít v jeden okamžik otevřené jen jedno menu = k jednomu tlačítku.
         /// Otevřít jej může uživatel kliknutím na dané tlačítko, systém může oteření pozdržet (pokud to jde OnDemand load) a následně po dodání dat bude tlačítko reálně otevřeno = proběhne otevření tohoto controlu.
         /// </summary>
-        private BarSubItem _OpenMenuBarMenu;
+        private BarSubItem _OpenItemBarMenu;
         /// <summary>
-        /// Link, který aktivuje menu. Nedaleko od něj by mělo být otevřeno menu.
+        /// ItemId prvku _OpenMenuBarMenu. Identifikuje prvek _OpenMenuBarMenu v situaci, kdy tento se při refreshi (Group nebo Page) zahazuje a generuje nové menu, tedy instance _OpenMenuBarMenu se ztrácí.
         /// </summary>
-        private DevExpress.XtraBars.BarItemLink _OpenMenuBarLink;
+        private string _OpenItemBarMenuItemId;
+        /// <summary>
+        /// ItemId prvku _OpenMenuBarLink. Identifikuje prvek _OpenMenuBarLink v situaci, kdy tento se při refreshi (Group nebo Page) zahazuje a generuje nové menu, tedy instance _OpenMenuBarLink se ztrácí.
+        /// </summary>
+        private string _OpenItemPopupMenuItemId;
         /// <summary>
         /// Souřadnice pro otevření menu.
         /// <para/>
@@ -542,9 +555,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             if (force || (!CurrentModifiedState && _CurrentMergeState == MergeState.None))
             {   // Pokud by se aktuálně prováděl Merge nebo UnMerge, pak zhasnutí menu nemá provádět reset menu - protože poté (po UnMerge - Modify - Merge) budeme potřebovat dosavadní menu opět rozsvítit!!!
-                _OpenMenuPopupMenu = null;
-                _OpenMenuBarMenu = null;
-                _OpenMenuBarLink = null;
+                _OpenItemPopupMenu = null;
+                _OpenItemBarMenu = null;
+                _OpenItemBarMenuItemId = null;
+                _OpenItemPopupMenuItemId = null;
                 _OpenMenuLocation = null;
             }
         }
@@ -563,18 +577,17 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Obsahuje true, pokud this instance <see cref="DxRibbonControl"/> má mít otevřené nějaké menu. Po dokončení procesu { UnMerge - Modify - Merge } by mělo být otevřeno!
         /// Tato property se nedívá do Child Ribbonů.
         /// </summary>
-        protected bool NeedOpenMenuCurrent { get { return (_OpenMenuPopupMenu != null || _OpenMenuBarMenu != null); } }
+        protected bool NeedOpenMenuCurrent { get { return (_OpenItemPopupMenu != null || _OpenItemBarMenu != null); } }
         /// <summary>
         /// Metoda zajistí otevření menu v this instanci Ribbonu.
         /// </summary>
         private void DoOpenMenuCurrent()
         {
             Point popupLocation = _OpenMenuLocation ?? Control.MousePosition;
-            if (_OpenMenuPopupMenu != null)
-                _PopupMenu_OpenMenu(_OpenMenuPopupMenu, popupLocation);
-            else if (_OpenMenuBarMenu != null)
-                _BarMenu_OpenMenu(_OpenMenuBarMenu, popupLocation);
-
+            if (_OpenItemPopupMenu != null)
+                _PopupMenu_OpenMenu(_OpenItemPopupMenu, popupLocation);
+            else if (_OpenItemBarMenu != null)
+                _BarMenu_OpenMenu(_OpenItemBarMenu, popupLocation);
         }
         #endregion
         #region Přístup ke stránkám Ribbonu (vlastní, od kategorií, mergované)
@@ -1273,8 +1286,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Lze vyžádat otevření submenu, pokud to submenu je.
         /// </summary>
         /// <param name="iRibbonItems"></param>
-        /// <param name="openMenuItemId"></param>
-        public void RefreshItems(IEnumerable<IRibbonItem> iRibbonItems, string openMenuItemId = null)
+        public void RefreshItems(IEnumerable<IRibbonItem> iRibbonItems)
         {
             if (iRibbonItems == null) return;
             if (!NeedRefreshItems(iRibbonItems)) return;             // Zkratka
@@ -1283,7 +1295,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 _UnMergeModifyMergeCurrentRibbon(() =>
                 {
-                    _RefreshItems(iRibbonItems, openMenuItemId);
+                    _RefreshItems(iRibbonItems);
                 }, true);
                 DoOpenMenu();
             });
@@ -1296,8 +1308,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Lze vyžádat otevření submenu, pokud to submenu je.
         /// </summary>
         /// <param name="iRibbonItem"></param>
-        /// <param name="openMenu"></param>
-        public void RefreshItem(IRibbonItem iRibbonItem, bool openMenu = false)
+        public void RefreshItem(IRibbonItem iRibbonItem)
         {
             if (iRibbonItem == null) return;
             if (!NeedRefreshItem(iRibbonItem)) return;               // Zkratka
@@ -1306,7 +1317,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 _UnMergeModifyMergeCurrentRibbon(() =>
                 {
-                    RefreshCurrentItem(iRibbonItem, openMenu);
+                    RefreshCurrentItem(iRibbonItem);
                 }, true);
                 DoOpenMenu();
             });
@@ -1316,13 +1327,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Ribbon je unmergován.
         /// </summary>
         /// <param name="iRibbonItems"></param>
-        /// <param name="openMenuItemId"></param>
-        private void _RefreshItems(IEnumerable<IRibbonItem> iRibbonItems, string openMenuItemId)
+        private void _RefreshItems(IEnumerable<IRibbonItem> iRibbonItems)
         {
             foreach (var iRibbonItem in iRibbonItems)
             {
-                bool openMenu = (iRibbonItem != null && openMenuItemId != null && iRibbonItem.ItemId == openMenuItemId);
-                RefreshCurrentItem(iRibbonItem, openMenu);
+                RefreshCurrentItem(iRibbonItem);
             }
         }
         /// <summary>
@@ -1355,7 +1364,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 _UnMergeModifyMergeCurrentRibbon(() =>
                 {
-                    _RefreshObjects(iRibbonPages, iRibbonGroups, iRibbonItems, openMenuItemId);
+                    _RefreshObjects(iRibbonPages, iRibbonGroups, iRibbonItems);
                 }, true);
                 DoOpenMenu();
             });
@@ -1367,12 +1376,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="iRibbonPages"></param>
         /// <param name="iRibbonGroups"></param>
         /// <param name="iRibbonItems"></param>
-        /// <param name="openMenuItemId"></param>
-        private void _RefreshObjects(List<IRibbonPage> iRibbonPages, List<IRibbonGroup> iRibbonGroups, List<IRibbonItem> iRibbonItems, string openMenuItemId)
+        private void _RefreshObjects(List<IRibbonPage> iRibbonPages, List<IRibbonGroup> iRibbonGroups, List<IRibbonItem> iRibbonItems)
         {
             if (iRibbonPages.Count > 0) _RefreshPages(iRibbonPages);
             if (iRibbonGroups.Count > 0) _RefreshGroups(iRibbonGroups);
-            if (iRibbonItems.Count > 0) _RefreshItems(iRibbonItems, openMenuItemId);
+            if (iRibbonItems.Count > 0) _RefreshItems(iRibbonItems);
         }
         /// <summary>
         /// Refresh sady skupin, data fyzické grupy jsou dodána, ribbon je unmergován.
@@ -1983,8 +1991,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Lze vyžádat otevření submenu, pokud to submenu je.
         /// </summary>
         /// <param name="iRibbonItem"></param>
-        /// <param name="openMenu"></param>
-        protected void RefreshCurrentItem(IRibbonItem iRibbonItem, bool openMenu = false)
+        protected void RefreshCurrentItem(IRibbonItem iRibbonItem)
         {
             if (iRibbonItem == null) return;
             string itemId = iRibbonItem.ItemId;
@@ -2002,11 +2009,11 @@ namespace Noris.Clients.Win.Components.AsolDX
                     case RibbonItemType.SplitButton:
                         if (item is DevExpress.XtraBars.BarButtonItem splitButton)
                             // SplitButton má v sobě vytvořené PopupMenu, které nyní obsahuje jen jeden prvek; zajistíme vložení reálného menu:
-                            _PopupMenu_RefreshItems(splitButton, itemInfo.Data, iRibbonItem, openMenu);
+                            _PopupMenu_RefreshItems(splitButton, itemInfo.Data, iRibbonItem);
                         break;
                     case RibbonItemType.Menu:
                         if (item is DevExpress.XtraBars.BarSubItem menu)
-                            _BarMenu_RefreshItems(menu, itemInfo.Data, iRibbonItem, openMenu);
+                            _BarMenu_RefreshItems(menu, itemInfo.Data, iRibbonItem);
                         break;
                 }
             }
@@ -2328,25 +2335,31 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         protected DevExpress.XtraBars.PopupMenu CreatePopupMenu(IRibbonItem parentItem, int level, DxRibbonGroup dxGroup, IEnumerable<IRibbonItem> subItems, bool reallyCreate, ref int count)
         {
-            DevExpress.XtraBars.PopupMenu xPopupMenu = new DevExpress.XtraBars.PopupMenu(BarManager);
+            DevExpress.XtraBars.PopupMenu dxPopupMenu = new DevExpress.XtraBars.PopupMenu(BarManager);
 
             bool hasSubItems = (subItems != null);
             bool isLazyLoad = (parentItem.SubItemsContentMode == RibbonContentMode.OnDemandLoadEveryTime || parentItem.SubItemsContentMode == RibbonContentMode.OnDemandLoadOnce);
             if (hasSubItems && reallyCreate)
             {   // Vytvořit menu hned:
-                _PopupMenu_FillItems(xPopupMenu, level + 1, dxGroup, parentItem, subItems, false, ref count);
-                PrepareBarItemTag(xPopupMenu, parentItem, level, dxGroup, null);
+                _PopupMenu_FillItems(dxPopupMenu, level + 1, dxGroup, parentItem, subItems, false, ref count);
+                PrepareBarItemTag(dxPopupMenu, parentItem, level, dxGroup, null);
             }
             else if (hasSubItems || isLazyLoad)
             {   // Vytvořit obsah až bude třeba (BeforePopup) = tj. když máme prvky, ale není požadavek reallyCreate, anebo je definováno LazyLoad:
-                PrepareBarItemTag(xPopupMenu, parentItem, level, dxGroup, new LazySubItemsInfo(parentItem, parentItem.SubItemsContentMode, subItems));
+                PrepareBarItemTag(dxPopupMenu, parentItem, level, dxGroup, new LazySubItemsInfo(parentItem, parentItem.SubItemsContentMode, subItems));
             }
             if (level == 0)
             {   // Události řeším je pro menu základní úrovně (=na tlačítku), ne pro submenu:
-                xPopupMenu.BeforePopup += _PopupMenu_BeforePopup;
-                xPopupMenu.CloseUp += _PopupMenu_CloseUp;
+                dxPopupMenu.BeforePopup += _PopupMenu_BeforePopup;
+                dxPopupMenu.CloseUp += _PopupMenu_CloseUp;
+
+                // Pokud právě nyní generujeme PopupMenu, jehož ItemId se shoduje s prvkem menu, který je připraven ke znovuotevření v proměnné _OpenItemPopupMenu (identifikátor _OpenItemPopupMenuItemId je shodný s aktuálním menu),
+                //   pak se právě nyní provádí velký refresh (stránky / grupy), který zahodil dosavadní staré PopupMenu a nyní se vygeneroval nový PopupMenu.
+                // Znamená to, že si do proměnné _OpenItemPopupMenu musíme uložit novou instanci (menu), protože ji zanedlouho budeme otevírat! Stará instance, uložená v _OpenItemPopupMenu, je k nepoužití, protože je odebraná z Ribbonu...
+                if (_OpenItemPopupMenuItemId != null && _OpenItemPopupMenu != null && _OpenItemPopupMenuItemId == parentItem.ItemId)
+                    _OpenItemPopupMenu = dxPopupMenu;
             }
-            return xPopupMenu;
+            return dxPopupMenu;
         }
         /// <summary>
         /// Událost před otevřením <see cref="DevExpress.XtraBars.PopupMenu"/> (je použito ve Split Buttonu)
@@ -2366,6 +2379,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 int level = itemInfo.Level;
                 var lazySubItems = itemInfo.LazyInfo;
                 // Mohou nastat dvě situace:
+                bool cancel = true;                                       // Zobrazení menu možná potlačíme, pokud nebudeme mít k dispozici stávající definované prvky
                 if (lazySubItems.SubItems != null)
                 {   // 1. SubItems jsou deklarované přímo zde (Static), pak z nich vytvoříme nabídku a necháme ji uživateli zobrazit:
                     var startTime = DxComponent.LogTimeCurrent;
@@ -2377,17 +2391,17 @@ namespace Noris.Clients.Win.Components.AsolDX
                         deactivatePopupEvent = false;                     // Pokud máme o SubItems žádat server, necháme si aktivní událost Popup
                     else
                         itemInfo.LazyInfo = null;                         // Data máme Více již LazyInfo nebudeme potřebovat, a událost Popup deaktivujeme.
+                    cancel = false;                                       // Otevírání Popup menu nebudeme blokovat, protože v něm jsou nějaká data
                 }
-                else if (lazySubItems.SubItemsContentMode == RibbonContentMode.OnDemandLoadOnce || lazySubItems.SubItemsContentMode == RibbonContentMode.OnDemandLoadEveryTime)
+                if (lazySubItems.SubItemsContentMode == RibbonContentMode.OnDemandLoadOnce || lazySubItems.SubItemsContentMode == RibbonContentMode.OnDemandLoadEveryTime)
                 {   // 2. SubItems mi dodá aplikace - na základě obsluhy eventu ItemOnDemandLoad; pak dojde k vyvolání zdejší metody _PopupMenu_RefreshItems():
-                    _OpenMenuBarLink = dxPopup.Activator as DevExpress.XtraBars.BarItemLink;
-                    _OpenMenuLocation = GetPopupLocation(_OpenMenuBarLink);
-                    _OpenMenuPopupMenu = dxPopup;
-                    lazySubItems.Activator = _OpenMenuBarLink;
+                    _OpenItemPopupMenu = dxPopup;
+                    _OpenItemPopupMenuItemId = itemInfo.Data.ItemId;
+                    _OpenMenuLocation = GetPopupLocation(dxPopup.Activator as DevExpress.XtraBars.BarItemLink);
+                    lazySubItems.Activator = null;
                     lazySubItems.PopupLocation = _OpenMenuLocation;
                     lazySubItems.CurrentMergeLevel = this.MergeLevel;
                     this.RunItemOnDemandLoad(lazySubItems.ParentItem);    // Vyvoláme event pro načtení dat, ten zavolá RefreshItem, ten provede UnMerge - Modify - Merge, a v Modify vyvolá zdejší metodu _PopupMenu_RefreshItems()...
-                    e.Cancel = true;                                      // Zatím zobrazení menu potlačíme, menu zobrazíme až budou data. Tento postup nevyvolá eventhandler _PopupMenu_CloseUp.
                     deactivatePopupEvent = false;                         // Dokud nedoběhnou ze serveru data (OnDemandLoad => RefreshItem() ), tak necháme aktivní událost Popup = pro jistotu...
                 }
                 else
@@ -2395,6 +2409,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                     //    necháme odpojit event Popup, a zahodíme LazyInfo.
                     itemInfo.LazyInfo = null;                             // Více již LazyInfo nebudeme potřebovat...
                 }
+                e.Cancel = cancel;
             }
 
             // Deaktivovat zdejší handler?
@@ -2409,7 +2424,17 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void _PopupMenu_CloseUp(object sender, EventArgs e)
         {
             if (sender is PopupMenu dxPopup && dxPopup.Tag is BarItemTagInfo itemInfo && itemInfo.Level == 0)
-                _OpenMenuReset();
+            {   // Menu se může zavírat obecně ze dvou důvodů:
+                // 1. Uživatel něco vybral a akce se provádí, anebo uživatel nic nevybral a kliknul mimo a menu se zavírá => toto menu má tedy být úmyslně zavřené!
+                //   anebo
+                // 2. Menu je otevřené, ale přišel nám do Ribbonu Refresh nějakých dat, provádí se UnMerge - Modify - Merge, a při tom procesu se menu zavře automaticky => toto menu budeme chtít poté otevřít, a nesmíme jej tedy resetovat!
+                if (!this.CurrentModifiedState)
+                    _OpenMenuReset();
+
+                // Pokud je menu v režimu OnDemandLoadEveryTime, tak po jeho zavření zajistíme znovu vyvolání handleru pro OnDemand donačtení při dalším otevírání menu:
+                if (itemInfo.Data != null && itemInfo.Data.SubItemsContentMode == RibbonContentMode.OnDemandLoadEveryTime)
+                    dxPopup.BeforePopup += _PopupMenu_BeforePopup;
+            }
         }
         /// <summary>
         /// Metoda najde menu v daném prvku <paramref name="splitButton"/>, a vygeneruje do tohoto menu správné prvky dodané explicitně.
@@ -2419,8 +2444,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="splitButton"></param>
         /// <param name="oldRibbonItem">Původní definiční objekt</param>
         /// <param name="newRibbonItem">Nový definiční objekt</param>
-        /// <param name="openMenu">Požadavek na otevření menu</param>
-        private void _PopupMenu_RefreshItems(DevExpress.XtraBars.BarButtonItem splitButton, IRibbonItem oldRibbonItem, IRibbonItem newRibbonItem, bool openMenu)
+        private void _PopupMenu_RefreshItems(DevExpress.XtraBars.BarButtonItem splitButton, IRibbonItem oldRibbonItem, IRibbonItem newRibbonItem)
         {
             if (splitButton.DropDownControl is DevExpress.XtraBars.PopupMenu dxPopup && dxPopup.Tag is BarItemTagInfo itemInfo)
             {
@@ -2438,18 +2462,6 @@ namespace Noris.Clients.Win.Components.AsolDX
                 {
                     itemInfo.LazyInfo = new LazySubItemsInfo(newRibbonItem, newRibbonItem.SubItemsContentMode, newRibbonItem.SubItems);
                     deactivatePopupEvent = false;                     // Pokud máme o SubItems vždycky žádat server, necháme si aktivní událost Popup
-                }
-
-                // Poznámky k rozdílu PopupMenu (dxPopup) [zdejší metoda] a BarSubItem (menu) [metoda o něco níže] ve vztahu k vyžádanému otevírání menu a k Mergovanému Ribbonu:
-                //  Když Ribbon není Mergován, pak s otevřením menu není problém nikde.
-                //  Když Ribbon je Mergován, pak změna obsahu (tedy zdejší metoda RefreshItems) se provádí ve stavu, kdy aktuální Ribbon je UnMerge, změní svůj obsah, a následně bude Mergován nazpátek.
-                //  Tento proces (zpětné Mergování) NEprovede zhasnutí otevřeného menu typu PopupMenu = od SplitButtonu = zdejší případ,
-                //  ale provede zhasnutí menu typu BarSubItem (metoda o něco níže), tam se věc řeší složitěji.
-                // Zdejší metoda pro SplitButton tedy požádá o otevření DropDownControlu, a má vyřešeno:
-                if (openMenu)
-                {
-                    _OpenMenuLocation = GetPopupLocation(itemInfo.LazyInfo);
-                    _OpenMenuPopupMenu = splitButton.DropDownControl;
                 }
 
                 // Aktualizujeme info uložené v splitButton.DropDownControl.Tag  (tj. PopupMenu.Tag):
@@ -2563,11 +2575,17 @@ namespace Noris.Clients.Win.Components.AsolDX
             {   // Události řeším je pro menu základní úrovně (=na tlačítku), ne pro submenu:
                 menu.GetItemData += Menu_GetItemData;
                 menu.CloseUp += _BarMenu_CloseUp;
+
+                // Pokud právě nyní generujeme BarItem Menu, jehož ItemId se shoduje s prvkem menu, který je připraven ke znovuotevření v proměnné _OpenItemBarMenu (identifikátor _OpenItemBarMenuItemId je shodný s aktuálním menu),
+                //   pak se právě nyní provádí velký refresh (stránky / grupy), který zahodil dosavadní starý BarSubItem pro Menu a nyní se vygeneroval nový BarSubItem.
+                // Znamená to, že si do proměnné _OpenItemBarMenu musíme uložit novou instanci (menu), protože ji zanedlouho budeme otevírat! Stará instance, uložená v _OpenItemBarMenu, je k nepoužití, protože je odebraná z Ribbonu...
+                if (_OpenItemBarMenuItemId != null && _OpenItemBarMenu != null && _OpenItemBarMenuItemId == parentItem.ItemId)
+                    _OpenItemBarMenu = menu;
             }
         }
         /// <summary>
         /// Vyvolá se pro menu (BarSubItem) před pokusem o jeho otevření. Tato metoda se volá i tehdy, když menu nemá žádnou položku (neotevřou se tedy tři tečky).
-        /// Zde je možno menu naplnit, a otevře se; anebo spustit OnDemand donačtení a přípravu pro jeho otevření (inicializaci <see cref="_OpenMenuBarMenu"/>), menu se otevře ihned jak přijdou data.
+        /// Zde je možno menu naplnit, a otevře se; anebo spustit OnDemand donačtení a přípravu pro jeho otevření (inicializaci <see cref="_OpenItemBarMenu"/>), menu se otevře ihned jak přijdou data.
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
@@ -2575,6 +2593,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             if (!(sender is BarSubItem menu)) return;
 
+            var mousePoint = Control.MousePosition;
             _OpenMenuReset(true);
 
             bool deactivateEvent = true;
@@ -2583,7 +2602,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             {   // Pokud máme LazyInfo:
                 var lazySubItems = itemInfo.LazyInfo;
                 int level = itemInfo.Level;
-                // Mohou nastat dvě situace:
+                bool isOnDemand = (lazySubItems.SubItemsContentMode == RibbonContentMode.OnDemandLoadEveryTime || lazySubItems.SubItemsContentMode == RibbonContentMode.OnDemandLoadOnce);
+                // Mohou nastat dvě situace, které mohou být souběžné (tedy 1 a poté i 2):
                 if (lazySubItems.SubItems != null)
                 {   // 1. SubItems jsou deklarované přímo zde (Static), pak z nich vytvoříme nabídku a necháme ji uživateli zobrazit:
                     var startTime = DxComponent.LogTimeCurrent;
@@ -2591,17 +2611,18 @@ namespace Noris.Clients.Win.Components.AsolDX
                     _BarMenu_FillItems(menu, level + 1, itemInfo.DxGroup, lazySubItems.ParentItem, lazySubItems.SubItems, true, ref count);
                     if (LogActive) DxComponent.LogAddLineTime($"LazyLoad Menu create: {count} items, {DxComponent.LogTokenTimeMilisec}", startTime);
 
-                    if (lazySubItems.SubItemsContentMode == RibbonContentMode.OnDemandLoadEveryTime || lazySubItems.SubItemsContentMode == RibbonContentMode.OnDemandLoadOnce)
+                    if (isOnDemand)
                         deactivateEvent = false;                     // Pokud máme o SubItems žádat server, necháme si aktivní událost Popup
                     else
                         itemInfo.LazyInfo = null;                    // Data máme Více již LazyInfo nebudeme potřebovat, a událost Popup deaktivujeme.
                 }
-                else if (lazySubItems.SubItemsContentMode == RibbonContentMode.OnDemandLoadOnce || lazySubItems.SubItemsContentMode == RibbonContentMode.OnDemandLoadEveryTime)
-                {   // 2. SubItems mi dodá aplikace - na základě obsluhy eventu ItemOnDemandLoad:
-                    _OpenMenuLocation = Control.MousePosition;
-                    _OpenMenuBarMenu = menu;
+                if (isOnDemand)
+                {   // 2. O prvky SubItems máme požádat server - na základě obsluhy eventu ItemOnDemandLoad => RefreshItems => _BarMenu_OpenMenu() :
+                    _OpenMenuLocation = mousePoint;
+                    _OpenItemBarMenu = menu;
+                    _OpenItemBarMenuItemId = itemInfo.Data.ItemId;
 
-                    lazySubItems.PopupLocation = Control.MousePosition;
+                    lazySubItems.PopupLocation = mousePoint;
                     lazySubItems.CurrentMergeLevel = this.MergeLevel;
                     this.RunItemOnDemandLoad(lazySubItems.ParentItem);
                     deactivateEvent = false;                         // Dokud nedoběhnou ze serveru data (OnDemandLoad => RefreshItem() ), tak necháme aktivní událost Popup = pro jistotu...
@@ -2625,10 +2646,15 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void _BarMenu_CloseUp(object sender, EventArgs e)
         {
             if (sender is BarSubItem menu && menu.Tag is BarItemTagInfo itemInfo && itemInfo.Level == 0)
-            {
-                _OpenMenuReset();
-                // Pokud je menu v režimu OnDemandLoadEveryTime, tak po jeho zavření zajistíme znovu vyvolání handleru pro OnDemand dončtení při dalším otevírání menu:
-                if (itemInfo.Data.SubItemsContentMode == RibbonContentMode.OnDemandLoadEveryTime)
+            {   // Menu se může zavírat obecně ze dvou důvodů:
+                // 1. Uživatel něco vybral a akce se provádí, anebo uživatel nic nevybral a kliknul mimo a menu se zavírá => toto menu má tedy být úmyslně zavřené!
+                //   anebo
+                // 2. Menu je otevřené, ale přišel nám do Ribbonu Refresh nějakých dat, provádí se UnMerge - Modify - Merge, a při tom procesu se menu zavře automaticky => toto menu budeme chtít poté otevřít, a nesmíme jej tedy resetovat!
+                if (!this.CurrentModifiedState)
+                    _OpenMenuReset();
+
+                // Pokud je menu v režimu OnDemandLoadEveryTime, tak po jeho zavření zajistíme znovu vyvolání handleru pro OnDemand donačtení při dalším otevírání menu:
+                if (itemInfo.Data != null && itemInfo.Data.SubItemsContentMode == RibbonContentMode.OnDemandLoadEveryTime)
                     menu.GetItemData += Menu_GetItemData;
             }
         }
@@ -2639,8 +2665,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="menu"></param>
         /// <param name="oldRibbonItem">Původní definiční objekt</param>
         /// <param name="newRibbonItem">Nový definiční objekt</param>
-        /// <param name="openMenu">Požadavek na otevření menu</param>
-        private void _BarMenu_RefreshItems(DevExpress.XtraBars.BarSubItem menu, IRibbonItem oldRibbonItem, IRibbonItem newRibbonItem, bool openMenu)
+        private void _BarMenu_RefreshItems(DevExpress.XtraBars.BarSubItem menu, IRibbonItem oldRibbonItem, IRibbonItem newRibbonItem)
         {
             // Toto menu bylo až dosud v režimu LazyLoad; odpojíme eventhandler GetItemData - aby se nám už opakovaně nevolal...
             menu.GetItemData -= Menu_GetItemData;
@@ -2650,23 +2675,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 int level = itemInfo.Level;
                 int count = 0;
                 _BarMenu_FillItems(menu, level + 1, itemInfo.DxGroup, newRibbonItem, newRibbonItem.SubItems, true, ref count);
-
-                // Poznámky k rozdílu PopupMenu (dxPopup) [metoda o něco výše] a BarSubItem (menu) [zdejší metoda] ve vztahu k vyžádanému otevírání menu a k Mergovanému Ribbonu:
-                //  Když Ribbon není Mergován, pak s otevřením menu není problém nikde.
-                //  Když Ribbon je Mergován, pak změna obsahu (tedy zdejší metoda RefreshItems) se provádí ve stavu, kdy aktuální Ribbon je UnMerge, změní svůj obsah, a následně bude Mergován nazpátek.
-                //  Tento proces (zpětné Mergování) NEprovede zhasnutí otevřeného menu typu PopupMenu = od SplitButtonu = to ale není zdejší případ,
-                //  ale pro menu typu BarSubItem se provede zhasnutí = takže řešení je složitější!
-                if (openMenu && itemInfo.LazyInfo != null && itemInfo.LazyInfo.CurrentMergeLevel > 0)
-                {   // Menu je otevřené (protože Menu nemá CancelEventHandler, který by otevření potlačil).
-                    // Ale pokud došlo k UnMerge Ribbonu (tj. když lazySubItems.CurrentMergeLevel je kladné), pak v procesu { UnMerge - Modify - Merge } menu zhaslo.
-                    // Tady jsme uprostřed procesu Modify, a tak nemá význam nyní provádět OpenMenu nyní.
-                    // Musí se provést po dokončení procesu Merge, až bude prvek Menu v cílovém Ribbonu.
-
-                    // Kvůli tomu tady máme parametr afterMergeActions:
-                    Point? screenPoint = itemInfo.LazyInfo.PopupLocation;
-                    //
-                }
-
+               
                 // Aktualizujeme info uložené v splitButton.DropDownControl.Tag  (tj. PopupMenu.Tag):
                 itemInfo.Data = newRibbonItem;
                 itemInfo.LazyInfo = null;
@@ -3484,6 +3493,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="e"></param>
         private void CustomizationPopupMenu_Popup(object sender, EventArgs e)
         {
+            return;
+
             var tlmi = AllowChangeToolbarLocationMenuItem;
 
             DevExpress.XtraBars.BarItemLink link = GetLinkAtPoint();
@@ -4869,6 +4880,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             if (_EmptyPageUMMActive && _EmptyPageUMM != null)
                 this.Pages.Remove(_EmptyPageUMM);
+            _EmptyPageUMMActive = false;
         }
         /// <summary>
         /// Instance prázdné stránky pro proces UMM

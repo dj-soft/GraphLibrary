@@ -84,11 +84,16 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void _InitCore()
         {
             _Rand = new Random();
+            _AppFile = Application.ExecutablePath;
         }
         /// <summary>
         /// Náhoda
         /// </summary>
         private Random _Rand;
+        /// <summary>
+        /// Main soubor aplikace (adresář/jméno.exe)
+        /// </summary>
+        private string _AppFile;
         /// <summary>
         /// Inicializace subsystému: pojmenuje CurrentThread, registruje a povoluje DevEpxress skiny, nastavuje animace a výchozí skin
         /// </summary>
@@ -195,6 +200,14 @@ namespace Noris.Clients.Win.Components.AsolDX
         private DateTime? _ApplicationReadyTime;
         #endregion
         #region Application
+        /// <summary>
+        /// Main soubor aplikace (adresář/jméno.exe)
+        /// </summary>
+        public static string ApplicationFile { get { return Instance._AppFile; } }
+        /// <summary>
+        /// Main adresář aplikace (adresář kde je umístěn Main spuštěný soubor)
+        /// </summary>
+        public static string ApplicationPath { get { return System.IO.Path.GetDirectoryName(Instance._AppFile); } }
         public static void ApplicationStart(Type mainFormType, Image splashImage) { Instance._ApplicationStart(mainFormType, splashImage); }
         public static void ApplicationRestart() { Instance._ApplicationRestart(); }
         private void _ApplicationStart(Type mainFormType, Image splashImage)

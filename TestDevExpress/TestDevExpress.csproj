@@ -159,6 +159,7 @@
     </Compile>
     <Compile Include="AsolDX\DxDragDrop.cs" />
     <Compile Include="AsolDX\DxDrawingExtensions.cs" />
+    <Compile Include="AsolDX\News\ResourceLibrary.cs" />
     <Compile Include="AsolDX\Tests\DxDataExtensions_Test.cs" />
     <Compile Include="AsolDX\DxFilterBox.cs">
       <SubType>Component</SubType>
