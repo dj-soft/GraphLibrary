@@ -20,7 +20,7 @@ namespace Noris.Clients.Win.Components
     /// <summary>
     /// Univerzální dialogové okno
     /// </summary>
-    public class DialogForm : DevExpress.XtraEditors.XtraForm, IEscapeHandler
+    public class DialogForm : DevExpress.XtraEditors.XtraForm, IEscapeKeyHandler
     {
         #region Public aktivace, konstruktor, interní události
         /// <summary>
@@ -1961,14 +1961,14 @@ namespace Noris.Clients.Win.Components
         /// </summary>
         private const int STY = 12;
         #endregion
-        #region Implementace IEscapeHandler
+        #region Implementace IEscapeKeyHandler
         /// <summary>
-		/// Pokud je instance třídy aktivním controlem v době stisku klávesy Escape, pak dostane řízení do této metody <see cref="IEscapeHandler.HandleEscapeKey()"/>.
+		/// Pokud je instance třídy aktivním controlem v době stisku klávesy Escape, pak dostane řízení do této metody <see cref="IEscapeKeyHandler.HandleEscapeKey()"/>.
 		/// Třída může / nemusí interně zareagovat (například se zavřít).
 		/// Výstupní hodnota říká: true = já jsem Escape obsloužil, nehledej další control který by to měl zkoušet (false = mě se Escape netýká, najdi si někoho jiného).
 		/// </summary>
 		/// <returns>true = klávesu Escape jsem vyřešil / false = najdi si někoho jiného</returns>
-        bool IEscapeHandler.HandleEscapeKey()
+        public bool HandleEscapeKey()
         {
             // Zkusíme najít tlačítko odpovídající Escape a vyřešit jej:
             ProcessKeyForButtons(Keys.Escape);

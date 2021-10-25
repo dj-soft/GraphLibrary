@@ -204,9 +204,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             DisconnectParentFormEvents();
 
-            if (this.TryFindForParent(p => p is Form, out var control))
+            if (this.TrySearchUpForControl(p => p is Form, f => f as Form, true, out var parentForm))   // Najdeme nejbližšího Parenta, který je Form; jeho akceptujme (f => f), počínaje naším parentem.
             {
-                _ParentForm = control as Form;
+                _ParentForm = parentForm;
                 ConnectParentFormEvents();
             }
         }

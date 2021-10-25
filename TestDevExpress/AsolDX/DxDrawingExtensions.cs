@@ -39,7 +39,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         public static IDisposable ScopeSuspendParentLayout(this Control control)
         {
-            return new UsingScope(
+            return new ActionScope(
             (s) =>
             {   // OnBegin (Constructor):
                 Control parent = control?.Parent;
@@ -138,17 +138,18 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Každý prvek hierarchie otestuje daným filtrem, a pokud prvek vyhovuje, pak vrátí jeho selectovaný objekt.
         /// </summary>
         /// <typeparam name="T"></typeparam>
-        /// <param name="control"></param>
-        /// <param name="filter"></param>
-        /// <param name="selector"></param>
-        /// <param name="result"></param>
+        /// <param name="control">this control, kde hledání začíná</param>
+        /// <param name="filter">Podmínka: pokud této podmínce control vyhovuje, pak bude akceptován</param>
+        /// <param name="selector">Selector: z nalezeného controlu vybere a vrátí hodnotu</param>
+        /// <param name="skipThis">Přeskočit this control (true) / aplikovat filtr a případně akceptovat i this control (false)</param>
+        /// <param name="result">Out nalezený výstup selectoru (to když výstupem metody je true)</param>
         /// <returns></returns>
-        public static bool TrySearchUpForControl<T>(this Control control, Func<Control, bool> filter, Func<Control, T> selector, out T result)
+        public static bool TrySearchUpForControl<T>(this Control control, Func<Control, bool> filter, Func<Control, T> selector, bool skipThis, out T result)
         {
             if (filter == null) throw new ArgumentNullException($"TrySearchUpForControl() error: filter is null.");
             if (selector == null) throw new ArgumentNullException($"TrySearchUpForControl() error: selector is null.");
 
-            Control item = control;
+            Control item = skipThis ? control?.Parent : control;     // Hledání začne na našem Parentu (true) / na this instanci (false)
             while (item != null)
             {
                 if (filter(item))

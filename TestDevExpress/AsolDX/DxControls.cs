@@ -1144,7 +1144,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         protected Padding ScrollToBoundsBasicPaddingCurrent { get { return DxComponent.ZoomToGui(ScrollToBoundsBasicPadding, CurrentDpi); } }
         /// <summary>
-        /// Okraje, přidávané ke scrollu prováděnému v metodě <see cref="ScrollToBounds(Rectangle, Rectangle?)"/> v situaci, kdy je potřeba reálně posunout obsah.
+        /// Okraje, přidávané ke scrollu prováděnému v metodě <see cref="ScrollToBounds(Rectangle, Rectangle?, bool)"/> v situaci, kdy je potřeba reálně posunout obsah.
         /// Tedy: pokud požadovaný obsah (s přidáním <see cref="ScrollToBoundsBasicPadding"/>) je celý viditelný, pak se scrollovat nebude ani když nebude dodržen zde uvedený okraj.
         /// Jakmile ale bude část (zvětšeného) obsahu neviditelná, pak se provede Scroll tak, aby okolo obsahu byl právě tento okraj.
         /// <para/>
@@ -1842,16 +1842,16 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Přidá novou stránku (záložku) do this containeru
         /// </summary>
-        /// <param name="pageName"></param>
+        /// <param name="pageId"></param>
         /// <param name="pageText"></param>
         /// <param name="pageToolTip"></param>
         /// <param name="pageImageName"></param>
         /// <returns></returns>
-        public DevExpress.XtraBars.Navigation.TabNavigationPage AddNewPage(string pageName, string pageText, string pageToolTip = null, string pageImageName = null)
+        public DevExpress.XtraBars.Navigation.TabNavigationPage AddNewPage(string pageId, string pageText, string pageToolTip = null, string pageImageName = null)
         {
             string text = pageText;
             var page = this.CreateNewPage() as DevExpress.XtraBars.Navigation.TabNavigationPage;
-            page.Name = pageName;
+            page.Name = pageId;
             page.Caption = text;
             page.PageText = text;
             page.ToolTip = pageToolTip;
@@ -1873,10 +1873,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Odebere stránku daného jména
         /// </summary>
-        /// <param name="pageName"></param>
-        public void RemovePage(string pageName)
+        /// <param name="pageId"></param>
+        public void RemovePage(string pageId)
         {
-            this.Pages.Remove(p => p.Name == pageName);
+            this.Pages.Remove(p => p.Name == pageId);
         }
         /// <summary>
         /// Zahodí všechny stránky
@@ -3898,7 +3898,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             : base()
         {
             _TitleItem = this.Items.AddTitle("");
-            _TitleItem.ImageOptions.Images = ComponentConnector.GraphicsCache.GetImageList(WinFormServices.Drawing.UserGraphicsSize.Large);
+            _TitleItem.ImageOptions.Images = SystemAdapter.GetResourceImageList(ResourceImageSizeType.Large);
             _TitleItem.ImageOptions.ImageToTextDistance = 12;
 
             _SeparatorItem = this.Items.AddSeparator();
@@ -3937,7 +3937,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void _SetIconName(string iconName)
         {
             _IconName = iconName;
-            _TitleItem.ImageOptions.ImageIndex = ((!String.IsNullOrEmpty(iconName)) ? ComponentConnector.GraphicsCache.GetResourceIndex(iconName, WinFormServices.Drawing.UserGraphicsSize.Large) : -1);
+            _TitleItem.ImageOptions.ImageIndex = SystemAdapter.GetResourceIndex(iconName, ResourceImageSizeType.Large);
         }
         private string _IconName;
         /// <summary>
@@ -6050,7 +6050,7 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// <summary>
     /// Přímý potomek <see cref="DevExpress.XtraCharts.Designer.ChartDesigner"/> pro editaci definice grafu
     /// </summary>
-    internal class DxChartDesigner : DevExpress.XtraCharts.Designer.ChartDesigner, Noris.Clients.Win.Components.IEscapeHandler
+    internal class DxChartDesigner : DevExpress.XtraCharts.Designer.ChartDesigner, IEscapeKeyHandler
     {
         /// <summary>
         /// Konstruktor
@@ -6087,7 +6087,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// My vrátíme true = OK, aby desktop dál ten Escape neřešil, a my se v klidu zavřeme nativním zpracováním klávesy Escape ve WinFormu.
         /// </summary>
         /// <returns></returns>
-        bool Noris.Clients.Win.Components.IEscapeHandler.HandleEscapeKey()
+        public bool HandleEscapeKey()
         {
             return true;
         }

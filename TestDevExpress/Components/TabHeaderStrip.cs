@@ -1416,7 +1416,7 @@ namespace TestDevExpress
         /// <returns></returns>
         private IDisposable _SilentScope(bool activeEvents)
         {
-            return new UsingScope(
+            return new ActionScope(
             d =>
             {   // Na počátku scope:
                 d.UserData = this._EventsActive;
@@ -1887,7 +1887,7 @@ namespace TestDevExpress
         /// <returns></returns>
         private IDisposable _SilentScope(bool activeEvents)
         {
-            return new UsingScope(
+            return new ActionScope(
             d =>
             {   // Na počátku scope:
                 d.UserData = this._EventsActive;
@@ -2209,35 +2209,6 @@ namespace TestDevExpress
         /// Vlastník prvku
         /// </summary>
         T Owner { get; set; }
-    }
-    #endregion
-    #region class UsingScope : Jednoduchý scope, který provede při vytvoření akci OnBegin, a při Dispose akci OnEnd.
-    /// <summary>
-    /// Jednoduchý scope, který provede při vytvoření akci OnBegin, a při Dispose akci OnEnd.
-    /// </summary>
-    internal class UsingScope : IDisposable
-    {
-        /// <summary>
-        /// Jednoduchý scope, který provede při vytvoření akci OnBegin, a při Dispose akci OnEnd.
-        /// </summary>
-        /// <param name="onBegin">Jako parametr je předán this scope, lze v něm použít property <see cref="UserData"/> pro uložení dat, budou k dispozici v akci <paramref name="onEnd"/></param>
-        /// <param name="onEnd">Jako parametr je předán this scope, lze v něm použít property <see cref="UserData"/> pro čtení dat uložených v akci <paramref name="onBegin"/></param>
-        public UsingScope(Action<UsingScope> onBegin, Action<UsingScope> onEnd)
-        {
-            _OnEnd = onEnd;
-            onBegin?.Invoke(this);
-        }
-        private Action<UsingScope> _OnEnd;
-        void IDisposable.Dispose()
-        {
-            _OnEnd?.Invoke(this);
-            _OnEnd = null;
-        }
-        /// <summary>
-        /// Libovolná data.
-        /// Typicky jsou vloženy v akci OnBegin, a v akci OnEnd jsou načteny. Výchozí hodnota je null.
-        /// </summary>
-        public object UserData { get; set; }
     }
     #endregion
 }
