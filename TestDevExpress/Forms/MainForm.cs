@@ -112,11 +112,21 @@ namespace TestDevExpress.Forms
                 var size = item.BitmapSize;
                 var sizeType = item.BitmapSizeType;
             }
-
-            var funcRibbonForm = _RibbonPages[0].Groups[1].Items.FirstOrDefault(i => i.ItemId == "RibbonForm");
-            if (funcRibbonForm?.RibbonItem != null && funcRibbonForm.RibbonItem.IsAlive && funcRibbonForm.RibbonItem.Target != null)
+            //  else if (ResourceLibrary.TryGetResource(@"Images\SvgAsol\building-factory-4-filled-large.svg", out item))
+            else if (ResourceLibrary.TryGetResource(@"Images\SvgAsol\vyhledavani-large.svg", out item))
             {
-                funcRibbonForm.RibbonItem.Target.ImageOptions.SvgImage = item.CreateSvgImage();
+                var size = item.BitmapSize;
+                var sizeType = item.BitmapSizeType;
+            }
+
+            if (item != null)
+            {
+                var funcRibbonForm = _RibbonPages[0].Groups[1].Items.FirstOrDefault(i => i.ItemId == "RibbonForm");
+                if (funcRibbonForm?.RibbonItem != null && funcRibbonForm.RibbonItem.IsAlive && funcRibbonForm.RibbonItem.Target != null)
+                {
+                    funcRibbonForm.RibbonItem.Target.ImageOptions.SvgImage = item.CreateSvgImage();
+                    funcRibbonForm.RibbonItem.Target.Caption = "Vybrat pořadač";
+                }
             }
         }
 

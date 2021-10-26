@@ -31,13 +31,13 @@ namespace TestDevExpress.Forms
         }
         protected void AsolFillRibbonData()
         {
-            List<IRibbonPage> iRibbonPages = new List<IRibbonPage>();
+            var iRibbonPages = new List<DataRibbonPage>();
             AddBasicItemsToRibbon(iRibbonPages);
             string qatItems = "";
             DxRibbonSample.CreatePagesTo(iRibbonPages, "MainRibbon", 2, 4, 2, 5, ref qatItems);
             AsolRibbon.AddPages(iRibbonPages);
         }
-        protected void AddBasicItemsToRibbon(List<IRibbonPage> iRibbonPages)
+        protected void AddBasicItemsToRibbon(List<DataRibbonPage> iRibbonPages)
         {
             DataRibbonPage page;
             DataRibbonGroup group;

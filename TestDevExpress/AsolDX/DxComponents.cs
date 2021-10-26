@@ -1715,7 +1715,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="caption"></param>
         /// <param name="menuType"></param>
         /// <param name="showCheckedAsBold"></param>
-        /// <param name="itemClick"></param>
+        /// <param name="itemClick">Akce volaná po kliknutí na kterýkoli prvek menu. Smí být null. Je možno definovat akci přímo v položce, v <see cref="IMenuItem.ClickAction"/>.</param>
         /// <returns></returns>
         public static DevExpress.Utils.Menu.DXPopupMenu CreateDXPopupMenu(IEnumerable<IMenuItem> menuItems,
             string caption = null, DevExpress.Utils.Menu.MenuViewType? menuType = null, bool showCheckedAsBold = false,
@@ -1728,16 +1728,26 @@ namespace Noris.Clients.Win.Components.AsolDX
             dxMenu.Caption = caption;
             dxMenu.ShowCaption = !String.IsNullOrEmpty(caption);
             dxMenu.ShowItemToolTips = true;
+            dxMenu.ItemClick += DxPopupMenu_ItemClick;
 
             if (menuItems != null)
                 menuItems.ForEachExec(i => dxMenu.Items.Add(CreateDXPopupMenuItem(i, showCheckedAsBold)));
 
             if (itemClick != null)
-            {
                 dxMenu.Tag = itemClick;
-                dxMenu.ItemClick += DxPopupMenu_ItemClick;
-            }
+
             return dxMenu;
+        }
+        /// <summary>
+        /// Vytvoří a vrátí položky menu z definice menu, rekurzivně včetně subItems
+        /// </summary>
+        /// <param name="menuItems"></param>
+        /// <param name="showCheckedAsBold"></param>
+        /// <returns></returns>
+        public static List<DevExpress.Utils.Menu.DXMenuItem> CreateDXPopupMenuItems(IEnumerable<IMenuItem> menuItems, bool showCheckedAsBold)
+        {
+            if (menuItems is null) return null;
+            return menuItems.Select(i => CreateDXPopupMenuItem(i, showCheckedAsBold)).ToList();
         }
         /// <summary>
         /// Vytvoří a vrátí položku menu z definice menu, rekurzivně včetně subItems
@@ -1788,19 +1798,28 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             return dxItem;
         }
+        /// <summary>
+        /// Po kliknutí na prvek menu můžeme provést definovanou akci
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private static void DxPopupMenu_ItemClick(object sender, DevExpress.Utils.Menu.DXMenuItemEventArgs e)
         {
+            // Item by v Tagu mělo obsahovat definici IMenuItem:
+            if (!(e.Item?.Tag is IMenuItem iMenuItem)) return;
+
+            // IMenuItem může obsahovat vlastní klikací akci:
+            if (iMenuItem.ClickAction != null)
+                iMenuItem.ClickAction(iMenuItem);
+
             // sender by měl být DevExpress.Utils.Menu.DXPopupMenu,
-            // jeho Tag by měl obsahovat eventhandler typu : EventHandler<TEventArgs<IMenuItem>>
+            //  jehož Tag může obsahovat eventhandler typu : EventHandler<TEventArgs<IMenuItem>>
             EventHandler<TEventArgs<IMenuItem>> itemClick = (sender as DevExpress.Utils.Menu.DXMenuItem)?.Tag as EventHandler<TEventArgs<IMenuItem>>;
-            if (itemClick == null) return;
-
-            // e.Item by měl být prvek menu, v jehož Tagu je zdrojová položka IMenuItem,
-            // podle které byla položka Popup vytvořena:
-            if (!(e.Item.Tag is IMenuItem iMenuItem)) return;
-
-            // Předáme řízení handleru akce ItemClick:
-            itemClick(sender, new TEventArgs<IMenuItem>(iMenuItem));
+            if (itemClick != null)
+            {
+                // Předáme řízení handleru akce ItemClick:
+                itemClick(sender, new TEventArgs<IMenuItem>(iMenuItem));
+            }
         }
         public static DevExpress.XtraBars.PopupMenu CreateXBPopupMenu(IEnumerable<IMenuItem> menuItems)
         {
@@ -3760,6 +3779,7 @@ namespace Noris.Clients.Win.Components.AsolDX
     public static class MsgCode
     {
         public const string RibbonAppHomeText = "RibbonAppHomeText";
+        public const string RibbonDirectQatItem = "RibbonDirectQatItem";
         public const string RibbonAddToQat = "RibbonAddToQat";
         public const string RibbonRemoveFromQat = "RibbonRemoveFromQat";
         public const string RibbonShowQatTop = "RibbonShowQatTop";

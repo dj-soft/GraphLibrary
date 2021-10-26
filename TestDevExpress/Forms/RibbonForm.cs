@@ -68,8 +68,9 @@ namespace TestDevExpress.Forms
             _TestPanel1.Ribbon.ImageRightFull = TestDevExpress.Properties.Resources.Homer_01b;
             _TestPanel1.Ribbon.ImageRightMini = TestDevExpress.Properties.Resources.Homer_01c;
             _TestPanel1.ParentRibbon = DxRibbon;
+            _TestPanel1.PageMergeOrder = 100;
             _TestPanel1.CategoryName = "SKUPINA 1";
-            _TestPanel1.CategoryColor = System.Drawing.Color.LightBlue;
+            _TestPanel1.CategoryColor = System.Drawing.Color.FromArgb(100, System.Drawing.Color.LightBlue);
             _TestPanel1.FillRibbon();
             _DxLeftSplit.Panel1.Controls.Add(_TestPanel1);
 
@@ -79,8 +80,9 @@ namespace TestDevExpress.Forms
             _TestPanel2a.Ribbon.ImageRightFull = TestDevExpress.Properties.Resources.Lisa_01b;
             _TestPanel2a.Ribbon.ImageRightMini = TestDevExpress.Properties.Resources.Lisa_01c;
             _TestPanel2a.ParentRibbon = _TestPanel1.Ribbon;
+            _TestPanel2a.PageMergeOrder = 200;
             _TestPanel2a.CategoryName = "SKUPINA 2A";
-            _TestPanel2a.CategoryColor = System.Drawing.Color.LightYellow;
+            _TestPanel2a.CategoryColor = null;   // System.Drawing.Color.FromArgb(64, System.Drawing.Color.LightYellow);
             _TestPanel2a.FillRibbon();
             _DxBottomSplit.Panel1.Controls.Add(_TestPanel2a);
 
@@ -90,8 +92,9 @@ namespace TestDevExpress.Forms
             _TestPanel2b.Ribbon.ImageRightFull = TestDevExpress.Properties.Resources.Marge_01b;
             _TestPanel2b.Ribbon.ImageRightMini = TestDevExpress.Properties.Resources.Marge_01c;
             _TestPanel2b.ParentRibbon = _TestPanel1.Ribbon;
+            _TestPanel2b.PageMergeOrder = 300;
             _TestPanel2b.CategoryName = "SKUPINA 2B";
-            _TestPanel2b.CategoryColor = System.Drawing.Color.LightGreen;
+            _TestPanel2b.CategoryColor = System.Drawing.Color.FromArgb(200, System.Drawing.Color.LightGreen);
             _TestPanel2b.FillRibbon();
             _DxBottomSplit.Panel2.Controls.Add(_TestPanel2b);
             
@@ -147,11 +150,11 @@ namespace TestDevExpress.Forms
             string imgLogClear = "svgimages/snap/cleartablestyle.svg";
             string imgInfo = "svgimages/xaf/action_aboutinfo.svg";
 
-            List<IRibbonPage> pages = new List<IRibbonPage>();
+            List<DataRibbonPage> pages = new List<DataRibbonPage>();
             DataRibbonPage page;
             DataRibbonGroup group;
 
-            page = new DataRibbonPage() { PageId = "DX", PageText = "ZÁKLADNÍ" };
+            page = new DataRibbonPage() { PageId = "DX", PageText = "ZÁKLADNÍ", MergeOrder = 0 };
             pages.Add(page);
             group = DxRibbonControl.CreateSkinIGroup("DESIGN", addUhdSupport: true) as DataRibbonGroup;
             group.Items.Add(ImagePickerForm.CreateRibbonButton());
@@ -162,8 +165,7 @@ namespace TestDevExpress.Forms
             group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Test.UseLazyInit", Text = "Use Lazy Init", ToolTipText = "Zaškrtnuto: používat opožděné plnění stránek Ribbonu (=až bude potřeba)\r\nNezaškrtnuto: fyzicky naplní celý Ribbon okamžitě, delší čas přípravy okna", ItemType = RibbonItemType.CheckBoxToggle, Checked = UseLazyLoad, RibbonStyle = RibbonItemStyles.Large });
             group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Test.LogClear", Text = "Clear log", ToolTipText = "Smaže obsah logu vpravo", ImageName = imgLogClear, RibbonStyle = RibbonItemStyles.Large });
 
-            page = new DataRibbonPage() { PageId = "HELP", PageText = "Nápověda" };
-            page.MergeOrder = 9999;
+            page = new DataRibbonPage() { PageId = "HELP", PageText = "Nápověda", MergeOrder = 9999 };
             pages.Add(page);
             group = new DataRibbonGroup() { GroupId = "help", GroupText = "NÁPOVĚDA" };
             page.Groups.Add(group);
@@ -376,13 +378,17 @@ namespace TestDevExpress.Forms
         /// </summary>
         public DxRibbonControl ParentRibbon { get; set; }
         /// <summary>
+        /// MergeOrder pro stránky tohoto Ribbonu
+        /// </summary>
+        public int PageMergeOrder { get; set; }
+        /// <summary>
         /// Suffix kategorie, dovolí odlišit kategorie parenta od kategorie child ribbonu
         /// </summary>
         public string CategoryName { get; set; }
         /// <summary>
         /// Barva kategorií
         /// </summary>
-        public System.Drawing.Color CategoryColor { get; set; }
+        public System.Drawing.Color? CategoryColor { get; set; }
         /// <summary>
         /// Obsahuje true pro mergovaný Ribbon do <see cref="ParentRibbon"/>, false pro unmergovaný.
         /// Lze setovat, reaguje mergováním dle hodnoty.
@@ -437,6 +443,7 @@ namespace TestDevExpress.Forms
                 pageIndex);
             DxComponent.LogAddLine("Ribon: " + this._Ribbon.DebugName +"; QAT: " + qatItems);
             DxQuickAccessToolbar.QATItemKeys = MergeKeys(DxQuickAccessToolbar.QATItemKeys, qatItems);
+            DxRibbonSample.SetPageMergeOrder(pages, this.PageMergeOrder);
             _Ribbon.AddPages(pages, clearCurrentContent);
         }
         /// <summary>
@@ -446,24 +453,27 @@ namespace TestDevExpress.Forms
         {
             DataRibbonPage page = new DataRibbonPage() { PageId = "invisible", PageText = "   ", Visible = true };
             page.Groups.Add(new DataRibbonGroup() { GroupId = "invisible", GroupText = "Invisible", Visible = false });
-            List<IRibbonPage> pages = new List<IRibbonPage>();
+            List<DataRibbonPage> pages = new List<DataRibbonPage>();
             pages.Add(page);
+            DxRibbonSample.SetPageMergeOrder(pages, this.PageMergeOrder);
             _Ribbon.AddPages(pages, false);
         }
         /// <summary>
-        /// Sloučí klíče ze dvou stringů, vyloučí duplicity. Oddělovač klíčů na vstupu i na výstupu je <see cref="DxQuickAccessToolbar.QATItemKeysDelimiter"/>.
+        /// Sloučí klíče ze dvou stringů, vyloučí duplicity. Oddělovač klíčů na vstupu i na výstupu je TAB.
         /// </summary>
         /// <param name="keys1"></param>
         /// <param name="keys2"></param>
         /// <returns></returns>
         private string MergeKeys(string keys1, string keys2)
         {
+            var data1 = DxQuickAccessToolbar.ConvertFromString(keys1);
+            var data2 = DxQuickAccessToolbar.ConvertFromString(keys2);
+
             List<string> keys = new List<string>();
-            char delimiter = DxQuickAccessToolbar.QATItemKeysDelimiterChar;
-            keys.AddRange(keys1.Split(delimiter).Where(k => k.Length > 0));
-            keys.AddRange(keys2.Split(delimiter).Where(k => k.Length > 0));
-            var dict = keys.CreateDictionary(s => s, true);
-            return dict.Keys.ToOneString(DxQuickAccessToolbar.QATItemKeysDelimiter);
+            if (data1?.ItemsId != null) keys.AddRange(data1.ItemsId);
+            if (data2?.ItemsId != null) keys.AddRange(data2.ItemsId);
+
+            return DxQuickAccessToolbar.ConvertToString(DevExpress.XtraBars.Ribbon.RibbonQuickAccessToolbarLocation.Below, keys);
         }
         /// <summary>
         /// Do dané stránky a dané grupy pošle nový obsah.
@@ -798,11 +808,11 @@ namespace TestDevExpress.Forms
         /// <param name="categoryColor"></param>
         /// <param name="pageIndex"></param>
         /// <returns></returns>
-        public static List<IRibbonPage> CreatePages(string parentRibbonName, int pageCountMin, int pageCountMax, int groupCountMin, int groupCountMax, out string qatItems,
+        public static List<DataRibbonPage> CreatePages(string parentRibbonName, int pageCountMin, int pageCountMax, int groupCountMin, int groupCountMax, out string qatItems,
             string categoryId = null, string categoryText = null, System.Drawing.Color? categoryColor = null,
             int? pageIndex = null)
         {
-            List<IRibbonPage> pages = new List<IRibbonPage>();
+            List<DataRibbonPage> pages = new List<DataRibbonPage>();
             qatItems = "";
             _AddPages(pages, parentRibbonName, pageCountMin, pageCountMax, groupCountMin, groupCountMax, pageIndex, ref qatItems, categoryId, categoryText, categoryColor);
             return pages;
@@ -821,7 +831,7 @@ namespace TestDevExpress.Forms
         /// <param name="categoryText"></param>
         /// <param name="categoryColor"></param>
         /// <param name="pageIndex"></param>
-        public static void CreatePagesTo(List<IRibbonPage> pages, string parentRibbonName, int pageCountMin, int pageCountMax, int groupCountMin, int groupCountMax, ref string qatItems, string categoryId = null, string categoryText = null, System.Drawing.Color? categoryColor = null, int? pageIndex = null)
+        public static void CreatePagesTo(List<DataRibbonPage> pages, string parentRibbonName, int pageCountMin, int pageCountMax, int groupCountMin, int groupCountMax, ref string qatItems, string categoryId = null, string categoryText = null, System.Drawing.Color? categoryColor = null, int? pageIndex = null)
         {
             _AddPages(pages, parentRibbonName, pageCountMin, pageCountMax, groupCountMin, groupCountMax, pageIndex, ref qatItems,
                 categoryId, categoryText, categoryColor);
@@ -857,13 +867,13 @@ namespace TestDevExpress.Forms
         /// <param name="categoryId"></param>
         /// <param name="categoryText"></param>
         /// <param name="categoryColor"></param>
-        private static void _AddPages(List<IRibbonPage> pages, string parentRibbonName, int pageCountMin, int pageCountMax, int groupCountMin, int groupCountMax, int? pageIndex, ref string qatItems, 
+        private static void _AddPages(List<DataRibbonPage> pages, string parentRibbonName, int pageCountMin, int pageCountMax, int groupCountMin, int groupCountMax, int? pageIndex, ref string qatItems, 
             string categoryId = null, string categoryText = null, System.Drawing.Color? categoryColor = null)
         {
             var startTime = DxComponent.LogTimeCurrent;
             int prevId = _RibbonItemId;
 
-            if (!categoryColor.HasValue) categoryColor = System.Drawing.Color.DarkViolet;
+            // if (!categoryColor.HasValue) categoryColor = System.Drawing.Color.DarkViolet;
             
             int pc = Rand.Next(pageCountMin, pageCountMax + 1);
             for (int p = 0; p < pc; p++)
@@ -948,7 +958,7 @@ namespace TestDevExpress.Forms
                 ParentRibbonName = parentRibbonName,
                 CategoryId = categoryId,
                 CategoryText = categoryText,
-                CategoryColor = categoryColor ?? System.Drawing.Color.PaleVioletRed,
+                CategoryColor = categoryColor,
                 CategoryVisible = true
             };
         }
@@ -1116,10 +1126,10 @@ namespace TestDevExpress.Forms
             // QAT (Quick Access ToolBar):
             if (addToQat)
                 // Občas (a jen pro některé prvky) zařadíme prvek do QAT:
-                qatItems += item.ItemId + DxQuickAccessToolbar.QATItemKeysDelimiter;
+                qatItems += item.ItemId + "\t";
             else if (Rand.Next(100) < 8)
                 // Občas do klíče QAT zařadíme nesmysl = ID prvku, který není součástí GUI. Tento prvek v evidenci Ribbonu musí vydržet přes všechny změny:
-                qatItems += Random.GetWord(true) + DxQuickAccessToolbar.QATItemKeysDelimiter;
+                qatItems += Random.GetWord(true) + "\t";
 
             return item;
         }
@@ -1300,6 +1310,16 @@ namespace TestDevExpress.Forms
             }
             return names.ToArray();
         }
+        /// <summary>
+        /// Do daných stránek vepíše postupně MergeOrder 
+        /// </summary>
+        /// <param name="pages"></param>
+        /// <param name="order"></param>
+        internal static void SetPageMergeOrder(IEnumerable<DataRibbonPage> pages, int order)
+        {
+            pages.ForEachExec(p => p.MergeOrder = ++order);
+        }
+
         private static int _RibbonItemId = 0;
         /// <summary>
         /// Random

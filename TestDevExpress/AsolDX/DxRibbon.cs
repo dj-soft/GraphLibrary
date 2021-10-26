@@ -1702,7 +1702,15 @@ namespace Noris.Clients.Win.Components.AsolDX
         protected void FillPageCategory(IRibbonCategory iRibbonCategory, DxRibbonPageCategory pageCategory)
         {
             pageCategory.Text = iRibbonCategory.CategoryText;
-            pageCategory.Appearance.BackColor = iRibbonCategory.CategoryColor;
+            if (iRibbonCategory.CategoryColor.HasValue)
+            {
+                pageCategory.Appearance.BackColor = iRibbonCategory.CategoryColor.Value;
+                pageCategory.Appearance.Options.UseBackColor = true;
+            }
+            else
+            {
+                pageCategory.Appearance.Options.UseBackColor = false;
+            }
             pageCategory.Visible = iRibbonCategory.CategoryVisible;
             pageCategory.Tag = iRibbonCategory;
         }
@@ -2765,7 +2773,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Metoda vrátí Link, který se nachází na zadané souřadnici (default = aktuální pozice myši).
         /// Tato metoda má na vstupu absolutní souřadnice (Screen) nebo null = převezme aktuální pozici myši.
-        /// Metoda pracuje s ribbonem <see cref="TopRibbonControl"/>.
+        /// Metoda pracuje s ribbonem <see cref="TopRibbonControl"/>, protože ten je fyzicky zobrazen a na něm se (asi) kliklo na určitý prvek.
         /// </summary>
         /// <param name="screenPoint"></param>
         /// <returns></returns>
@@ -3157,7 +3165,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Mohl to být jiný Ribbon, anebo i náš Ribbon - všechny změny se posílají do <see cref="DxQuickAccessToolbar.QATItemKeys"/> 
         /// a tamodtud se posílá událost o změně všem Ribbonům.
         /// <para/>
-        /// Pokud to byl náš Ribbonu, pak ten si před zveřejněním nového stavu (soupis QAT prvků) do <see cref="DxQuickAccessToolbar.QATItemKeys"/> tutéž hodnotu uložil interně do <see cref="_QATUserItemKeys"/>,
+        /// Pokud to byl náš Ribbon, pak ten si před zveřejněním nového stavu (soupis QAT prvků) do <see cref="DxQuickAccessToolbar.QATItemKeys"/> tutéž hodnotu uložil interně do <see cref="_QATUserItemKeys"/>,
         /// tedy na změnu zvenku nebude reagovat protože pro něj nedošlo ke změně.
         /// </summary>
         /// <param name="sender"></param>
@@ -3170,12 +3178,12 @@ namespace Noris.Clients.Win.Components.AsolDX
             this._SetQATUserItemKeys(newKeys, true);                 // Změnu způsobil jiný Ribbon anebo server = poslal nová data
         }
         /// <summary>
-        /// Souhrn zdejších klíčů QAT Items
+        /// Souhrn zdejších klíčů QAT Items, zapamatovaný při poslední změně.
         /// </summary>
         private string _QATUserItemKeys;
         /// <summary>
         /// Obsahuje klíče prvků, které mají být / jsou zobrazeny v QAT (Quick Access Toolbar).
-        /// Jednotlivé klíče jsou odděleny znakem <see cref="DxQuickAccessToolbar.QATItemKeysDelimiter"/> (=tabulátorem).
+        /// Jednotlivé klíče jsou odděleny znakem tabulátorem.
         /// Vkládání hodnoty se typicky neřeší setováním do této property, ale do globálního registru <see cref="DxQuickAccessToolbar.QATItemKeys"/>, 
         /// která prostřednictvím eventu <see cref="DxQuickAccessToolbar.QATItemKeysChanged"/> odešle požadavek na aktualizaci do všech živých Ribbonů, 
         /// které si hodnotu z <see cref="DxQuickAccessToolbar.QATItemKeys"/> načtou a interně aplikují.
@@ -3189,8 +3197,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         protected static string GetValidQATKey(string itemId)
         {
-            if (itemId == null) return "";
-            return itemId.Trim().Replace(DxQuickAccessToolbar.QATItemKeysDelimiter, " ");
+            return DxQuickAccessToolbar.GetValidQATKey(itemId);
         }
         /// <summary>
         /// Resetuje pole <see cref="_QATUserItems"/> a <see cref="_QATUserItemDict"/> (tj. provede Reset jejich prvků <see cref="QatItem.Reset()"/> a následně Clear Listu a Dictionary);
@@ -3210,8 +3217,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         private string _GetQATUserItemKeys()
         {
-            if (_QATUserItems == null) return null;
-            return _QATUserItems.Select(q => q.Key).ToOneString(DxQuickAccessToolbar.QATItemKeysDelimiter);
+            return DxQuickAccessToolbar.ConvertToString(this.ToolbarLocation, _QATUserItems.Select(q => q.Key));
         }
         /// <summary>
         /// Ze zadaného stringu vytvoří struktury pro evidenci prvků pro toolbar QAT (pole <see cref="_QATUserItems"/> a <see cref="_QATUserItemDict"/>).
@@ -3221,15 +3227,22 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="refreshToolbar"></param>
         private void _SetQATUserItemKeys(string qatItemKeys, bool refreshToolbar = false)
         {
+            var qatData = DxQuickAccessToolbar.ConvertFromString(qatItemKeys);
+            if (qatData == null) return;
+
             // Zjistíme, zda nový řetězec reálně povede ke změně obsahu v this Ribbonu (tzn. zda reálně budeme odstraňovat / přidávat naše reálné prvky).
             // Totiž, náš Ribbon nemusí fyzicky obsahovat ty prvky, které jsou přidané nebo odebrané.
             // Pak nemá význam změnu provádět!
-            if (_ContainsRealChangeQatUserKeys(qatItemKeys))
+            if (_ContainsRealChangeQatUserKeys(qatData))
                 // Pokud tedy dojde ke změně, pak se musíme unmergovat, změnit a zpět mergovat:
-                this._UnMergeModifyMergeCurrentRibbon(() => _SetQATUserItemKeysReal(qatItemKeys, refreshToolbar), true);
+                this._UnMergeModifyMergeCurrentRibbon(() => _SetQATUserItemKeysReal(qatData, qatItemKeys, refreshToolbar), true);
             else
                 // Nejde o vizuální změnu, v tom případě pouze aktualizujeme obsah v datových strukturách (_QATUserItems a _QATUserItemDict):
-                _SetQATUserItemKeysData(qatItemKeys);
+                _SetQATUserItemKeysData(qatData, qatItemKeys);
+
+            // Upravíme umístění QAT:
+            if (qatData.Location != this.ToolbarLocation)
+                this.ToolbarLocation = qatData.Location;
         }
         /// <summary>
         /// Metoda zjistí, zda dodaný string (obsahující klíče QAT User prvků) reálně povede k nějaké změně v aktuálním Ribbonu.
@@ -3239,9 +3252,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <para/>
         /// Vrací true = jsou tu změny / false = beze změn.
         /// </summary>
-        /// <param name="qatItemKeys"></param>
+        /// <param name="qatData"></param>
         /// <returns></returns>
-        private bool _ContainsRealChangeQatUserKeys(string qatItemKeys)
+        private bool _ContainsRealChangeQatUserKeys(DxQuickAccessToolbar.Data qatData)
         {
             Queue<QatItem> qatQueue = new Queue<QatItem>();          // Fronta prvků QAT User, které my reálně máme v QAT, v jejich aktuálním pořadí
             if (_QATUserItems != null)
@@ -3250,7 +3263,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             // Tento algoritmus provede kontrolu, zda požadované prvky (qatItemKeys), jejich podmnožina reálně existující v this Ribbonu,
             // je/není obsažena v reálném QAT v odpovídajícím pořadí.
             // Vrátíme true = je reálná změna / false = bez reálné změny
-            foreach (string itemId in qatItemKeys.Split(DxQuickAccessToolbar.QATItemKeysDelimiterChar))
+            foreach (string itemId in qatData.ItemsId)
             {
                 string key = GetValidQATKey(itemId);
                 if (key == "") continue;
@@ -3269,13 +3282,14 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Ze zadaného stringu vytvoří struktury pro evidenci prvků pro toolbar QAT (pole <see cref="_QATUserItems"/> a <see cref="_QATUserItemDict"/>).
         /// Před tím zruší obsah fyzického QAT. Volitelně na konci znovu naplní fyzický QAT.
         /// </summary>
+        /// <param name="qatData"></param>
         /// <param name="qatItemKeys"></param>
         /// <param name="refreshToolbar"></param>
-        private void _SetQATUserItemKeysReal(string qatItemKeys, bool refreshToolbar = false)
+        private void _SetQATUserItemKeysReal(DxQuickAccessToolbar.Data qatData, string qatItemKeys, bool refreshToolbar = false)
         {
             ResetQATUserItems();
 
-            foreach (string itemId in qatItemKeys.Split(DxQuickAccessToolbar.QATItemKeysDelimiterChar))
+            foreach (string itemId in qatData.ItemsId)
             {
                 string key = GetValidQATKey(itemId);
                 if (key == "") continue;
@@ -3296,19 +3310,20 @@ namespace Noris.Clients.Win.Components.AsolDX
             string localKeys = _GetQATUserItemKeys();
             string publicKeys = DxQuickAccessToolbar.QATItemKeys;
             if (!String.Equals(localKeys, publicKeys))
-                DxQuickAccessToolbar.QATItemKeys = localKeys;
+                DxQuickAccessToolbar.QATItemKeys = localKeys;        // Tady dojde k eventu DxQuickAccessToolbar.QATItemKeysChanged, a vyvolá se zdejší handler _DxQATItemKeysChanged. Ale protože ten porovnává DxQuickAccessToolbar.QATItemKeys se zdejší hodnotou _QATUserItemKeys, k další změně už zde nedojde.
         }
         /// <summary>
         /// Naplní <see cref="_QATUserItems"/> a <see cref="_QATUserItemDict"/> ze stávajích instancí, v pořadí dle dodaného stringu
         /// </summary>
+        /// <param name="qatData"></param>
         /// <param name="qatItemKeys"></param>
-        private void _SetQATUserItemKeysData(string qatItemKeys)
+        private void _SetQATUserItemKeysData(DxQuickAccessToolbar.Data qatData, string qatItemKeys)
         {
             var oldDict = _QATUserItemDict;
             var newList = new List<QatItem>();
             var newDict = new Dictionary<string, QatItem>();
 
-            foreach (string itemId in qatItemKeys.Split(DxQuickAccessToolbar.QATItemKeysDelimiterChar))
+            foreach (string itemId in qatData.ItemsId)
             {
                 string key = GetValidQATKey(itemId);
                 if (key == "") continue;
@@ -3321,6 +3336,9 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             _QATUserItems = newList;
             _QATUserItemDict = newDict;
+
+            // Lokální cache:
+            _QATUserItemKeys = qatItemKeys;
         }
         private List<QatItem> _QATUserItems;
         private Dictionary<string, QatItem> _QATUserItemDict;
@@ -3493,35 +3511,72 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="e"></param>
         private void CustomizationPopupMenu_Popup(object sender, EventArgs e)
         {
-            return;
+            Point point = Control.MousePosition;
+            Point localPoint = this.PointToClient(point);
 
-            var tlmi = AllowChangeToolbarLocationMenuItem;
+            // Zrušit systémové menu:
+            this.CustomizationPopupMenu.HidePopup();
+            this.CustomizationPopupMenu = new DevExpress.XtraBars.Ribbon.Internal.RibbonCustomizationPopupMenu(this);
+            this.CustomizationPopupMenu.ClearLinks();
+            this.CustomizationPopupMenuRefreshHandlers();                      // Právě jsem vygeneroval nové Popup menu, a chci i příště vyvolat tuhle metodu...
 
-            DevExpress.XtraBars.BarItemLink link = GetLinkAtPoint();
-            bool isQatItem = _IsQATDirectItem(link);
-            CustomizationPopupMenu_Modify("Add to Quick Access Toolbar", DxComponent.LocalizeDef(MsgCode.RibbonAddToQat, "Přidat na panel nástrojů Rychlý přístup"));
-            CustomizationPopupMenu_Modify("Remove from Quick Access Toolbar", DxComponent.LocalizeDef(MsgCode.RibbonRemoveFromQat, "Odebrat z panelu nástrojů Rychlý přístup"), !isQatItem);
-            CustomizationPopupMenu_Modify("Show Quick Access Toolbar Above the Ribbon", DxComponent.LocalizeDef(MsgCode.RibbonShowQatTop, "Zobrazit panel nástrojů Rychlý přístup nad pásem karet"));
-            CustomizationPopupMenu_Modify("Show Quick Access Toolbar Below the Ribbon", DxComponent.LocalizeDef(MsgCode.RibbonShowQatDown, "Zobrazit panel nástrojů Rychlý přístup pod pásem karet"));
-            CustomizationPopupMenu_Modify("Minimize the Ribbon", DxComponent.LocalizeDef(MsgCode.RibbonMinimizeQat, "Minimalizovat Ribbon"), false);
+            // Připravit a aktivovat vlastní menu:
+            DevExpress.XtraBars.BarItemLink link = GetLinkAtPoint(point);
+            bool isQatDirectItem = _IsQATDirectItem(link);
+            bool isQatAnyItem = _IsQATAnyItem(link);
 
-            var itms = this.CustomizationPopupMenu.ItemLinks.Select(l => new Tuple<string, string, string>(l.Item.Caption, l.Caption, l.Visible.ToString())).ToArray();
+            List<IMenuItem> items = new List<IMenuItem>();
+            if (isQatDirectItem)
+                items.Add(new DataMenuItem() { ItemId = $"CPM_{MsgCode.RibbonDirectQatItem}", Text = DxComponent.LocalizeDef(MsgCode.RibbonDirectQatItem, "Systémový prvek, nelze jej odebrat"), ImageName = "", Enabled = false });
+            else if (!isQatAnyItem)
+                items.Add(new DataMenuItem() { ItemId = $"CPM_{MsgCode.RibbonAddToQat}", Text = DxComponent.LocalizeDef(MsgCode.RibbonAddToQat, "Přidat na panel nástrojů Rychlý přístup"), ImageName = "svgimages/icon%20builder/actions_add.svg", Tag = link, ClickAction = CustomizationPopupMenu_ExecAdd });
+            else
+                items.Add(new DataMenuItem() { ItemId = $"CPM_{MsgCode.RibbonRemoveFromQat}", Text = DxComponent.LocalizeDef(MsgCode.RibbonRemoveFromQat, "Odebrat z panelu nástrojů Rychlý přístup"), ImageName = "svgimages/icon%20builder/actions_remove.svg", Tag = link, ClickAction = CustomizationPopupMenu_ExecRemove });
+
+            bool isAbove = (this.ToolbarLocation == RibbonQuickAccessToolbarLocation.Above || this.ToolbarLocation == RibbonQuickAccessToolbarLocation.Default);
+            if (!isAbove)
+                items.Add(new DataMenuItem() { ItemId = $"CPM_{MsgCode.RibbonShowQatTop}", Text = DxComponent.LocalizeDef(MsgCode.RibbonShowQatTop, "Zobrazit panel nástrojů Rychlý přístup nad pásem karet"), ImageName = "svgimages/icon%20builder/actions_arrow2up.svg", ItemIsFirstInGroup = true, ClickAction = CustomizationPopupMenu_ExecMoveUp });
+            else
+                items.Add(new DataMenuItem() { ItemId = $"CPM_{MsgCode.RibbonShowQatDown}", Text = DxComponent.LocalizeDef(MsgCode.RibbonShowQatDown, "Zobrazit panel nástrojů Rychlý přístup pod pásem karet"), ImageName = "svgimages/icon%20builder/actions_arrow2down.svg", ItemIsFirstInGroup = true, ClickAction = CustomizationPopupMenu_ExecMoveDown });
+
+            var popup = DxComponent.CreateDXPopupMenu(items);
+            popup.ShowPopup(this, localPoint);
         }
         /// <summary>
-        /// Najde položku menu "CustomizationPopupMenu" podle textu BarItem.Caption a nastaví do ní Caption a volitelně Visible
+        /// Kontextové menu QAT: Přidej prvek
         /// </summary>
-        /// <param name="barCaption"></param>
-        /// <param name="caption"></param>
-        /// <param name="visible"></param>
-        private void CustomizationPopupMenu_Modify(string barCaption, string caption, bool? visible = null)
+        /// <param name="menuItem"></param>
+        private void CustomizationPopupMenu_ExecAdd(IMenuItem menuItem)
         {
-            var menuItem = this.CustomizationPopupMenu.ItemLinks.FirstOrDefault(m => m.Item.Caption.Replace("&", "").IndexOf(barCaption, StringComparison.OrdinalIgnoreCase) >= 0);      // Nevím jak jinak najít řádek Popup menu, který slouží k odebrání kliknutého prvku
-            if (menuItem != null)
-            {
-                menuItem.Caption = caption;
-                if (visible.HasValue)
-                    menuItem.Visible = visible.Value;
-            }
+            if (menuItem?.Tag is DevExpress.XtraBars.BarItemLink link)
+                OnAddToToolbar(link);
+        }
+        /// <summary>
+        /// Kontextové menu QAT: Odeber prvek
+        /// </summary>
+        /// <param name="menuItem"></param>
+        private void CustomizationPopupMenu_ExecRemove(IMenuItem menuItem)
+        {
+            if (menuItem?.Tag is DevExpress.XtraBars.BarItemLink link)
+                OnRemoveFromToolbar(link);
+        }
+        /// <summary>
+        /// Kontextové menu QAT: Dej QAT dolů
+        /// </summary>
+        /// <param name="menuItem"></param>
+        private void CustomizationPopupMenu_ExecMoveDown(IMenuItem menuItem)
+        {
+            this.ToolbarLocation = RibbonQuickAccessToolbarLocation.Below;
+            this._RunQATItemKeysChanged();
+        }
+        /// <summary>
+        /// Kontextové menu QAT: Dej QAT nahoru
+        /// </summary>
+        /// <param name="menuItem"></param>
+        private void CustomizationPopupMenu_ExecMoveUp(IMenuItem menuItem)
+        {
+            this.ToolbarLocation = RibbonQuickAccessToolbarLocation.Above;
+            this._RunQATItemKeysChanged();
         }
         /// <summary>
         /// Uživatel zmáčkl malou šipku dolů v Toolbaru, kde jsou zobrazeny jednotlivé prvky QAT a on je může dát Visible/Invisible.
@@ -3543,6 +3598,17 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             // Sem to chodí při změnách jak od uživatele, tak z kódu.
             // Tady bych musel řešit odlišení Code/User, ale v metodách OnAddToToolbar() a OnRemoveFromToolbar() to chodí jen od User !!!
+        }
+        /// <summary>
+        /// Vrátí true, pokud daný prvek odpovídá některému prvku v QAT Toolbaru.
+        /// Detekuje přímo příslušnost prvku k Toolbaru.
+        /// </summary>
+        /// <param name="link"></param>
+        /// <returns></returns>
+        private bool _IsQATAnyItem(BarItemLink link)
+        {
+            if (link is null) return false;
+            return (this.Toolbar != null && this.Toolbar.ItemLinks.Contains(link));
         }
         /// <summary>
         /// Uživatel rukama přidal něco do QAT. Sem to nechodí při změnách z kódu!
@@ -3582,8 +3648,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 QatItem qatItem = new QatItem(this, key, iRibbonItem, iRibbonGroup, link.Item, link);
                 _QATUserItemDict.Add(key, qatItem);
                 _QATUserItems.Add(qatItem);
-                _QATUserItemKeys = _GetQATUserItemKeys();
-                _RunQATItemKeysChanged(_QATUserItemKeys);
+                _RunQATItemKeysChanged();
             }
         }
         /// <summary>
@@ -3625,8 +3690,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                     qatItem.Reset();
                     _QATUserItemDict.Remove(key);
                     _QATUserItems.RemoveAll(q => q.Key == key);
-                    _QATUserItemKeys = _GetQATUserItemKeys();
-                    _RunQATItemKeysChanged(_QATUserItemKeys);
+                    _RunQATItemKeysChanged();
                 }
             }
         }
@@ -3717,20 +3781,23 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Došlo ke změně v obsahu <see cref="QATUserItemKeys"/>, zavolej události
         /// </summary>
-        /// <param name="currentKeys"></param>
-        private void _RunQATItemKeysChanged(string currentKeys)
+        private void _RunQATItemKeysChanged()
         {
             if (this.CustomizationPopupMenu.Visible) this.CustomizationPopupMenu.HidePopup();
-            DxQuickAccessToolbar.QATItemKeys = currentKeys;          // =  this._GetQATUserItemKeys();
+
+            string currentKeys = _GetQATUserItemKeys();
+            _QATUserItemKeys = currentKeys;
             OnQATItemKeysChanged();
             QATItemKeysChanged?.Invoke(this, EventArgs.Empty);
+
+            DxQuickAccessToolbar.QATItemKeys = currentKeys;          // Tady dojde k eventu DxQuickAccessToolbar.QATItemKeysChanged, a vyvolá se zdejší handler _DxQATItemKeysChanged
         }
         /// <summary>
         /// Je provedeno po změně hodnoty v <see cref="QATUserItemKeys"/>
         /// </summary>
         protected virtual void OnQATItemKeysChanged() { }
         /// <summary>
-        /// Je voláno po změně hodnoty v <see cref="QATUserItemKeys"/>
+        /// Je voláno po změně hodnoty v <see cref="QATUserItemKeys"/> přímo v this Ribbonu
         /// </summary>
         public event EventHandler QATItemKeysChanged;
         #endregion
@@ -5161,14 +5228,14 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="text"></param>
         /// <param name="color"></param>
-        public DxRibbonPageCategory(string text, Color color) : base(text, color) { }
+        public DxRibbonPageCategory(string text, Color? color) : base(text, (color ?? Color.Empty)) { }
         /// <summary>
         /// Konstruktor
         /// </summary>
         /// <param name="text"></param>
         /// <param name="color"></param>
         /// <param name="visible"></param>
-        public DxRibbonPageCategory(string text, Color color, bool visible) : base(text, color, visible) { }
+        public DxRibbonPageCategory(string text, Color? color, bool visible) : base(text, (color ?? Color.Empty), visible) { }
         /// <summary>
         /// Data definující kategorii
         /// </summary>
@@ -6177,14 +6244,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public static event EventHandler QATItemKeysChanged { add { Current.__QATItemKeysChanged += value; } remove { Current.__QATItemKeysChanged -= value; } }
         /// <summary>
-        /// Oddělovač jednotlivých klíčů v <see cref="QATItemKeys"/> (=tabulátor), string délky 1 znak
-        /// </summary>
-        public static string QATItemKeysDelimiter { get { return QATItemKeysDelimiterChar.ToString(); } }
-        /// <summary>
-        /// Oddělovač jednotlivých klíčů v <see cref="QATItemKeys"/> (=tabulátor), char
-        /// </summary>
-        public static char QATItemKeysDelimiterChar { get { return '\t'; } }
-        /// <summary>
         /// Aktuální soupis prvků
         /// </summary>
         private string _QATItemKeys 
@@ -6205,6 +6264,95 @@ namespace Noris.Clients.Win.Components.AsolDX
         private string __QATItemKeys;
         /// <summary>Úložiště pro eventhandlery</summary>
         private event EventHandler __QATItemKeysChanged;
+        /// <summary>
+        /// Metoda vrátí platný QAT klíč, pro použití v Dictionary.
+        /// Vrácený klíč není NULL, je Trim. Jsou odstraněny nepatřičné výskyty delimiteru. Není změněna velikost písmen.
+        /// </summary>
+        /// <param name="itemId"></param>
+        /// <returns></returns>
+        public static string GetValidQATKey(string itemId)
+        {
+            return (itemId != null ? itemId.Trim().Replace(DxQuickAccessToolbar.QATItemKeysDelimiter, " ") : "");
+        }
+        #endregion
+        #region Serializace / deserializace
+        /// <summary>
+        /// Vrátí jeden string obsahující serializované zadané údaje
+        /// </summary>
+        /// <param name="location"></param>
+        /// <param name="itemsId"></param>
+        /// <returns></returns>
+        public static string ConvertToString(RibbonQuickAccessToolbarLocation location, IEnumerable<string> itemsId)
+        {
+            StringBuilder sb = new StringBuilder();
+            string del = QATItemKeysDelimiterChar.ToString();
+            string loc = LocationPrefix + location.ToString();
+            sb.Append(loc + del);
+            if (itemsId != null)
+                itemsId.ForEachExec(itemId => sb.Append(GetValidQATKey(itemId) + del));
+            return sb.ToString();
+        }
+        /// <summary>
+        /// Z daného stringu vrátí uložené údaje. Může vrátit NULL.
+        /// </summary>
+        /// <param name="qatItemKeys"></param>
+        /// <returns></returns>
+        public static Data ConvertFromString(string qatItemKeys)
+        {
+            if (String.IsNullOrEmpty(qatItemKeys)) return null;
+            RibbonQuickAccessToolbarLocation location = RibbonQuickAccessToolbarLocation.Default;
+            List<string> itemsId = new List<string>();
+
+            var items = qatItemKeys.Split(QATItemKeysDelimiterChar);
+            int count = items.Length;
+            string locationPrefix = LocationPrefix;
+            for (int i = 0; i < count; i++)
+            {
+                string item = items[i];
+                if (String.IsNullOrEmpty(item)) continue;
+                if (i == 0 && item.StartsWith(locationPrefix) && Enum.TryParse<RibbonQuickAccessToolbarLocation>(item.Substring(locationPrefix.Length), out RibbonQuickAccessToolbarLocation loc))
+                    location = loc;
+                else
+                    itemsId.Add(item);
+            }
+            return new Data(location, itemsId.ToArray());
+        }
+        /// <summary>
+        /// Analyzovaná data
+        /// </summary>
+        public class Data
+        {
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="location"></param>
+            /// <param name="itemsId"></param>
+            public Data(RibbonQuickAccessToolbarLocation location, string[] itemsId)
+            {
+                this.Location = location;
+                this.ItemsId = itemsId;
+            }
+            /// <summary>
+            /// Umístění Toolbaru
+            /// </summary>
+            public RibbonQuickAccessToolbarLocation Location { get; private set; }
+            /// <summary>
+            /// Klíče prvků
+            /// </summary>
+            public string[] ItemsId { get; private set; }
+        }
+        /// <summary>
+        /// Prefix umístění QAT, nachází se na pozici [0]
+        /// </summary>
+        private const string LocationPrefix = "Location:";
+        /// <summary>
+        /// Oddělovač jednotlivých klíčů v <see cref="QATItemKeys"/> (=tabulátor), string délky 1 znak
+        /// </summary>
+        private const string QATItemKeysDelimiter = "\t";
+        /// <summary>
+        /// Oddělovač jednotlivých klíčů v <see cref="QATItemKeys"/> (=tabulátor), char
+        /// </summary>
+        private const char QATItemKeysDelimiterChar = '\t';
         #endregion
     }
     #endregion
@@ -6398,7 +6546,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Barva kategorie
         /// </summary>
-        public virtual Color CategoryColor { get; set; }
+        public virtual Color? CategoryColor { get; set; }
         /// <summary>
         /// Kategorie je viditelná?
         /// </summary>
@@ -6810,7 +6958,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Barva kategorie
         /// </summary>
-        Color CategoryColor { get; }
+        Color? CategoryColor { get; }
         /// <summary>
         /// Kategorie je viditelná?
         /// </summary>
