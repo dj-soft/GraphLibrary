@@ -60,7 +60,6 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             AllowKeyTips = true;
             ButtonGroupsLayout = DevExpress.XtraBars.ButtonGroupsLayout.ThreeRows;
-            // ColorScheme = DevExpress.XtraBars.Ribbon.RibbonControlColorScheme.DarkBlue;
             RibbonStyle = DevExpress.XtraBars.Ribbon.RibbonControlStyle.Office2019;
             CommandLayout = DevExpress.XtraBars.Ribbon.CommandLayout.Classic;
             DrawGroupCaptions = DevExpress.Utils.DefaultBoolean.True;
@@ -69,7 +68,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             GroupAnimationLength = 300;
             ItemAnimationLength = 300;
             ItemsVertAlign = DevExpress.Utils.VertAlignment.Center;                      // Svislé zarovnání prvků, když mám 1 až 2 malé buttony v třířádkovém Ribbonu
-            MdiMergeStyle = DevExpress.XtraBars.Ribbon.RibbonMdiMergeStyle.Always;
             OptionsAnimation.PageCategoryShowAnimation = DevExpress.Utils.DefaultBoolean.True;
             RibbonCaptionAlignment = DevExpress.XtraBars.Ribbon.RibbonCaptionAlignment.Center;
             SearchItemShortcut = new DevExpress.XtraBars.BarShortcut(Keys.Control | Keys.F);
@@ -83,23 +81,23 @@ namespace Noris.Clients.Win.Components.AsolDX
             ApplicationButtonText = DxComponent.LocalizeDef(MsgCode.RibbonAppHomeText, "DOMŮ");
             ToolTipController = DxComponent.DefaultToolTipController;
 
-            this.Margin = new System.Windows.Forms.Padding(2);
-            this.MdiMergeStyle = DevExpress.XtraBars.Ribbon.RibbonMdiMergeStyle.Always;
+            Margin = new System.Windows.Forms.Padding(2);
+            MdiMergeStyle = DevExpress.XtraBars.Ribbon.RibbonMdiMergeStyle.Always;
 
-            this.AllowMinimizeRibbon = false;    // Povolit minimalizaci Ribbonu? Pak ale nejde vrátit :-(
-            this.AllowCustomization = false;     // Hodnota true povoluje (na pravé myši) otevřít okno Customizace Ribbonu, a to v Greenu nepodporujeme
-            this.ShowQatLocationSelector = true; // Hodnota true povoluje změnu umístění Ribbonu
+            AllowMinimizeRibbon = false;    // Povolit minimalizaci Ribbonu? Pak ale nejde vrátit :-(
+            AllowCustomization = false;     // Hodnota true povoluje (na pravé myši) otevřít okno Customizace Ribbonu, a to v Greenu nepodporujeme
+            ShowQatLocationSelector = true; // Hodnota true povoluje změnu umístění Ribbonu
 
-            this.AllowGlyphSkinning = false;     // Nikdy ne true!
-            this.ShowItemCaptionsInQAT = true;
+            AllowGlyphSkinning = false;     // Nikdy ne true!
+            ShowItemCaptionsInQAT = true;
 
-            this.SelectChildActivePageOnMerge = true;
-            this.UseLazyContentCreate = true;
-            this.CheckLazyContentEnabled = true;
+            SelectChildActivePageOnMerge = true;
+            UseLazyContentCreate = true;
+            CheckLazyContentEnabled = true;
 
-            this._ImageHideOnMouse = true;       // Logo nekreslit, když v tom místě je myš
+            _ImageHideOnMouse = true;       // Logo nekreslit, když v tom místě je myš
 
-            this.Visible = true;
+            Visible = true;
         }
         /// <summary>
         /// Nastaví základní uživatelské vlastnosti Ribbonu.
@@ -6578,6 +6576,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             this._GroupId = null;
             this.ChangeMode = ContentChangeMode.Add;
             this.GroupState = RibbonGroupState.Expanded;
+            this.AllowTextClipping = true;
             this.Visible = true;
             this.Items = new List<IRibbonItem>();
         }
@@ -6670,7 +6669,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public virtual bool GroupButtonVisible { get; set; }
         /// <summary>
-        /// Povolit zkrácení textu
+        /// Povolit zkrácení textu? Default = true
         /// </summary>
         public virtual bool AllowTextClipping { get; set; }
         /// <summary>
