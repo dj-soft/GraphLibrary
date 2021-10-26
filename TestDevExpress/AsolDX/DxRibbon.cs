@@ -6442,11 +6442,15 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public virtual ContentChangeMode ChangeMode { get; set; }
         /// <summary>
-        /// Pořadí stránky v rámci jednoho pole, použije se pro setřídění v rámci nadřazeného prvku
+        /// Pořadí stránky v rámci jednoho pole, použije se pro setřídění v rámci nadřazeného prvku.
+        /// <para/>
+        /// POZOR: 0 a záporná čísla jsou ignorována, taková stránka bude na konci!!!
         /// </summary>
         public virtual int PageOrder { get; set; }
         /// <summary>
-        /// Pořadí stránky v rámci mergování, vkládá se do RibbonPage
+        /// Pořadí stránky v rámci mergování, vkládá se do RibbonPage.
+        /// <para/>
+        /// POZOR: 0 a záporná čísla jsou ignorována, taková stránka bude na konci!!!
         /// </summary>
         public virtual int MergeOrder { get; set; }
         /// <summary>

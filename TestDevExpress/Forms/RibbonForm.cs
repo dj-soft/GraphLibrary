@@ -154,7 +154,7 @@ namespace TestDevExpress.Forms
             DataRibbonPage page;
             DataRibbonGroup group;
 
-            page = new DataRibbonPage() { PageId = "DX", PageText = "ZÁKLADNÍ", MergeOrder = 0 };
+            page = new DataRibbonPage() { PageId = "DX", PageText = "ZÁKLADNÍ", MergeOrder = 1, PageOrder = 1 };
             pages.Add(page);
             group = DxRibbonControl.CreateSkinIGroup("DESIGN", addUhdSupport: true) as DataRibbonGroup;
             group.Items.Add(ImagePickerForm.CreateRibbonButton());
@@ -165,7 +165,7 @@ namespace TestDevExpress.Forms
             group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Test.UseLazyInit", Text = "Use Lazy Init", ToolTipText = "Zaškrtnuto: používat opožděné plnění stránek Ribbonu (=až bude potřeba)\r\nNezaškrtnuto: fyzicky naplní celý Ribbon okamžitě, delší čas přípravy okna", ItemType = RibbonItemType.CheckBoxToggle, Checked = UseLazyLoad, RibbonStyle = RibbonItemStyles.Large });
             group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Test.LogClear", Text = "Clear log", ToolTipText = "Smaže obsah logu vpravo", ImageName = imgLogClear, RibbonStyle = RibbonItemStyles.Large });
 
-            page = new DataRibbonPage() { PageId = "HELP", PageText = "Nápověda", MergeOrder = 9999 };
+            page = new DataRibbonPage() { PageId = "HELP", PageText = "Nápověda", MergeOrder = 9999, PageOrder = 9999 };
             pages.Add(page);
             group = new DataRibbonGroup() { GroupId = "help", GroupText = "NÁPOVĚDA" };
             page.Groups.Add(group);
@@ -1317,7 +1317,7 @@ namespace TestDevExpress.Forms
         /// <param name="order"></param>
         internal static void SetPageMergeOrder(IEnumerable<DataRibbonPage> pages, int order)
         {
-            pages.ForEachExec(p => p.MergeOrder = ++order);
+            pages.ForEachExec(p => { p.MergeOrder = ++order; p.PageOrder = order; });
         }
 
         private static int _RibbonItemId = 0;
