@@ -1136,8 +1136,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             if (iRibbonPage is null) return;
 
-            var pageCategory = GetPageCategory(iRibbonPage.Category, iRibbonPage.ChangeMode);     // Pokud je to třeba, vygeneruje Kategorii
-            var page = GetPage(iRibbonPage, pageCategory);                     // Najde / Vytvoří stránku do this.Pages nebo do category.Pages
+            var pageCategory = GetPageCategory(iRibbonPage.Category, iRibbonPage.ChangeMode);      // Pokud je to třeba, vygeneruje Kategorii
+            RibbonPageCollection pages = (pageCategory != null ? pageCategory.Pages : this.Pages); // Kolekce stránek: kategorie / ribbon
+            var page = GetPage(iRibbonPage, pages);                            // Najde / Vytvoří stránku do this.Pages nebo do category.Pages
             if (page is null) return;
 
             string fullId = GetPageFullId(page);
@@ -1663,7 +1664,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="iRibbonCategory"></param>
         /// <param name="pageChangeMode"></param>
         /// <returns></returns>
-        protected DxRibbonPageCategory GetPageCategory(IRibbonCategory iRibbonCategory, ContentChangeMode pageChangeMode)
+        internal DxRibbonPageCategory GetPageCategory(IRibbonCategory iRibbonCategory, ContentChangeMode pageChangeMode = ContentChangeMode.ReFill)
         {
             if (iRibbonCategory is null || String.IsNullOrEmpty(iRibbonCategory.CategoryId)) return null;
 
@@ -1673,45 +1674,13 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (HasCreate(changeMode))
             {
                 if (pageCategory is null)
-                    pageCategory = CreatePageCategory(iRibbonCategory);
-                FillPageCategory(iRibbonCategory, pageCategory);
+                    pageCategory = new DxRibbonPageCategory(iRibbonCategory, PageCategories);
+                else
+                    pageCategory.Fill(iRibbonCategory);
             }
-            iRibbonCategory.RibbonCategory = pageCategory;
             return pageCategory;
         }
-        /// <summary>
-        /// Vytvoří new kategorii, naplní a vrátí ji
-        /// </summary>
-        /// <param name="iRibbonCategory"></param>
-        /// <returns></returns>
-        protected DxRibbonPageCategory CreatePageCategory(IRibbonCategory iRibbonCategory)
-        {
-            DxRibbonPageCategory pageCategory = new DxRibbonPageCategory(iRibbonCategory.CategoryText, iRibbonCategory.CategoryColor, iRibbonCategory.CategoryVisible);
-            pageCategory.Name = iRibbonCategory.CategoryId;
-            pageCategory.Tag = iRibbonCategory;
-            PageCategories.Add(pageCategory);
-            return pageCategory;
-        }
-        /// <summary>
-        /// Naplní data do dodané kategorie
-        /// </summary>
-        /// <param name="iRibbonCategory"></param>
-        /// <param name="pageCategory"></param>
-        protected void FillPageCategory(IRibbonCategory iRibbonCategory, DxRibbonPageCategory pageCategory)
-        {
-            pageCategory.Text = iRibbonCategory.CategoryText;
-            if (iRibbonCategory.CategoryColor.HasValue)
-            {
-                pageCategory.Appearance.BackColor = iRibbonCategory.CategoryColor.Value;
-                pageCategory.Appearance.Options.UseBackColor = true;
-            }
-            else
-            {
-                pageCategory.Appearance.Options.UseBackColor = false;
-            }
-            pageCategory.Visible = iRibbonCategory.CategoryVisible;
-            pageCategory.Tag = iRibbonCategory;
-        }
+
         /// <summary>
         /// Vytvoří a vrátí novou stránku, vloží ji do kolekce this.Pages
         /// </summary>
@@ -1731,68 +1700,38 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         public DxRibbonPage CreatePage(IRibbonPage iRibbonPage)
         {
-            return CreatePage(iRibbonPage, this.Pages);
+            return new DxRibbonPage(this, iRibbonPage, this.Pages);
         }
         /// <summary>
         /// Rozpozná, najde, vytvoří a vrátí stránku pro daná data.
         /// Stránku přidá do this Ribbonu nebo do dané kategorie.
         /// </summary>
         /// <param name="iRibbonPage"></param>
-        /// <param name="pageCategory"></param>
+        /// <param name="pages"></param>
         /// <returns></returns>
-        protected DxRibbonPage GetPage(IRibbonPage iRibbonPage, DxRibbonPageCategory pageCategory = null)
+        protected DxRibbonPage GetPage(IRibbonPage iRibbonPage, RibbonPageCollection pages = null)
         {
             if (iRibbonPage is null) return null;
-            bool isCategory = !(pageCategory is null);
-            var pageCollection = (isCategory ? pageCategory.Pages : this.Pages);
 
             var changeMode = iRibbonPage.ChangeMode;
-            DxRibbonPage page = pageCollection.FirstOrDefault(r => (r.Name == iRibbonPage.PageId)) as DxRibbonPage;
+            DxRibbonPage page = pages?.FirstOrDefault(r => (r.Name == iRibbonPage.PageId)) as DxRibbonPage;
             if (HasCreate(changeMode))
             {
                 if (page is null)
-                    page = CreatePage(iRibbonPage, pageCollection);
-                if (HasReFill(changeMode))
-                    ClearPage(page);
-                FillPage(page, iRibbonPage);
+                    page = new DxRibbonPage(this, iRibbonPage, pages);
+                else
+                {
+                    page.Fill(iRibbonPage);
+                    if (HasReFill(changeMode))
+                        ClearPage(page);
+                }
             }
             else if (HasRemove(changeMode))
             {
-                RemovePage(page, pageCollection);
+                RemovePage(page, pages);
             }
 
             return page;
-        }
-        /// <summary>
-        /// Vygeneruje new Page a zařadí do patřičného parenta (kategorie / Ribbon.Pages)
-        /// </summary>
-        /// <param name="iRibbonPage"></param>
-        /// <param name="pageCollection"></param>
-        /// <returns></returns>
-        protected DxRibbonPage CreatePage(IRibbonPage iRibbonPage, DevExpress.XtraBars.Ribbon.RibbonPageCollection pageCollection)
-        {
-            DxRibbonPage page = new DxRibbonPage(this, iRibbonPage.PageText)
-            {
-                Name = iRibbonPage.PageId,
-                Tag = iRibbonPage
-            };
-            pageCollection.Add(page);
-            iRibbonPage.RibbonPage = page;
-            return page;
-        }
-        /// <summary>
-        /// Naplní vlastnosti stránky z definice
-        /// </summary>
-        /// <param name="page"></param>
-        /// <param name="iRibbonPage"></param>
-        protected void FillPage(DxRibbonPage page, IRibbonPage iRibbonPage)
-        {
-            page.Text = iRibbonPage.PageText;
-            if (iRibbonPage.MergeOrder > 0) page.MergeOrder = iRibbonPage.MergeOrder;          // Záporné číslo iRibbonPage.MergeOrder říká: neměnit hodnotu, pokud stránka existuje. Důvod: při Refreshi existující stránky nechceme měnit její pozici.
-            page.Tag = iRibbonPage;
-            page.PageData = iRibbonPage;
-            page.Visible = iRibbonPage.Visible;
-            iRibbonPage.RibbonPage = page;
         }
         /// <summary>
         /// Vyprázdní obsah dané stránky: odstraní grupy i itemy, i Lazy group.
@@ -1806,11 +1745,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Odebere danou stránku z kolekce stránek, pokud je zadáno a stránka tam existuje
         /// </summary>
         /// <param name="page"></param>
-        /// <param name="pageCollection"></param>
-        protected void RemovePage(DxRibbonPage page, DevExpress.XtraBars.Ribbon.RibbonPageCollection pageCollection)
+        /// <param name="pages"></param>
+        protected void RemovePage(DxRibbonPage page, RibbonPageCollection pages)
         {
-            if (page != null && pageCollection != null && pageCollection.Contains(page))
-                pageCollection.Remove(page);
+            if (page != null && pages != null && pages.Contains(page))
+                pages.Remove(page);
 
             IRibbonPage iRibbonPage = page?.PageData;
             if (page != null) page.PageData = null;
@@ -5226,14 +5165,68 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="text"></param>
         /// <param name="color"></param>
-        public DxRibbonPageCategory(string text, Color? color) : base(text, (color ?? Color.Empty)) { }
+        public DxRibbonPageCategory(string text, Color? color) : base() 
+        {
+            this.Text = text;
+            this.CategoryColor = color;
+            this.Visible = true;
+        }
         /// <summary>
         /// Konstruktor
         /// </summary>
         /// <param name="text"></param>
         /// <param name="color"></param>
         /// <param name="visible"></param>
-        public DxRibbonPageCategory(string text, Color? color, bool visible) : base(text, (color ?? Color.Empty), visible) { }
+        public DxRibbonPageCategory(string text, Color? color, bool visible) : base()
+        {
+            this.Text = text;
+            this.CategoryColor = color;
+            this.Visible = visible;
+        }
+        /// <summary>
+        /// Konstruktor pro danou definici
+        /// </summary>
+        /// <param name="iRibbonCategory"></param>
+        /// <param name="categories"></param>
+        public DxRibbonPageCategory(IRibbonCategory iRibbonCategory, RibbonPageCategoryCollection categories = null) : base()
+        {
+            this.Fill(iRibbonCategory, true);
+            if (categories != null) categories.Add(this);
+        }
+        /// <summary>
+        /// Aktualizuje svoje vlastnosti z dodané definice
+        /// </summary>
+        /// <param name="iRibbonCategory"></param>
+        /// <param name="withId">Aktualizuj i ID</param>
+        public void Fill(IRibbonCategory iRibbonCategory, bool withId = false)
+        {
+            if (withId) this.Name = iRibbonCategory.CategoryId;
+            this.Text = iRibbonCategory.CategoryText;
+            this.CategoryColor = iRibbonCategory.CategoryColor;
+            this.Visible = iRibbonCategory.CategoryVisible;
+            this.Tag = iRibbonCategory;
+            iRibbonCategory.RibbonCategory = this;
+        }
+        /// <summary>
+        /// Barva kategorie, může být null
+        /// </summary>
+        public Color? CategoryColor
+        {
+            get { return (this.Appearance.Options.UseBackColor ? (Color?)this.Appearance.BackColor : (Color?)null); }
+            set
+            {
+                if (value.HasValue)
+                {
+                    this.Appearance.BackColor = value.Value;
+                    this.Appearance.Options.UseBackColor = true;
+                }
+                else
+                {
+                    this.Appearance.BackColor = Color.Empty;
+                    this.Appearance.Options.UseBackColor = false;
+                }
+            }
+        }
         /// <summary>
         /// Data definující kategorii
         /// </summary>
@@ -5247,11 +5240,46 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Konstruktor
         /// </summary>
+        /// <param name="text"></param>
+        public DxRibbonPage(string text) : base(text)
+        {
+            this.Init(null);
+        }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
         /// <param name="ribbon"></param>
         /// <param name="text"></param>
         public DxRibbonPage(DxRibbonControl ribbon, string text) : base(text)
         {
             this.Init(ribbon);
+        }
+        /// <summary>
+        /// Konstruktor pro danou definici
+        /// </summary>
+        /// <param name="ribbon"></param>
+        /// <param name="iRibbonPage"></param>
+        /// <param name="pages"></param>
+        public DxRibbonPage(DxRibbonControl ribbon, IRibbonPage iRibbonPage, RibbonPageCollection pages = null) : base()
+        {
+            this.Init(ribbon);
+            this.Fill(iRibbonPage, true);
+            if (pages != null) pages.Add(this);
+        }
+        /// <summary>
+        /// Aktualizuje svoje vlastnosti z dodané definice
+        /// </summary>
+        /// <param name="iRibbonPage"></param>
+        /// <param name="withId">Aktualizuj i ID</param>
+        public void Fill(IRibbonPage iRibbonPage, bool withId = false)
+        {
+            if (withId) this.Name = iRibbonPage.PageId;
+            this.Text = iRibbonPage.PageText;
+            if (iRibbonPage.MergeOrder > 0) this.MergeOrder = iRibbonPage.MergeOrder;          // Záporné číslo iRibbonPage.MergeOrder říká: neměnit hodnotu, pokud stránka existuje. Důvod: při Refreshi existující stránky nechceme měnit její pozici.
+            this.Visible = iRibbonPage.Visible;
+            this.PageData = iRibbonPage;
+            this.Tag = iRibbonPage;
+            iRibbonPage.RibbonPage = this;
         }
         /// <summary>
         /// Vlastník Ribbon typu <see cref="DxRibbonControl"/>
