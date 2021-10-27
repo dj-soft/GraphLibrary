@@ -33,6 +33,7 @@ namespace TestDevExpress.Forms
         }
         private void CreateRibbons()
         {
+            _ItemCount = 0;
             switch (_CreateMode)
             {
                 case CreateMode.Native:
@@ -44,7 +45,7 @@ namespace TestDevExpress.Forms
                 case CreateMode.UseClasses:
                 case CreateMode.UseMethods:
                 case CreateMode.UseData:
-                    this._DxRibbon = new DxRibbonControl();
+                    this._DxRibbon = new DxRibbonControl() { LogActive = true };
                     this._DxRibbon.InitUserProperties(true);
                     if (_UseVoidSlave)
                     {
@@ -68,9 +69,8 @@ namespace TestDevExpress.Forms
             {
                 case CreateMode.Native:
                 case CreateMode.UseClasses:
-                case CreateMode.UseMethods:
                     var pageR = CreatePage("MAIN PAGE", 9999);
-                    pageR.Groups.AddRange(this.CreateGroups(12, 6));
+                    pageR.Groups.AddRange(this.CreateGroups(9, 8));
                     this.Ribbon.Pages.Add(pageR);
 
                     var page0 = CreatePage("SLAVE PAGE", 0);
@@ -78,16 +78,21 @@ namespace TestDevExpress.Forms
                     this.SlaveRibbon.Pages.Add(page0);
 
                     var page1 = CreatePage("SLAVE PAGE", 1);
-                    page1.Groups.AddRange(this.CreateGroups(6, 4));
+                    page1.Groups.AddRange(this.CreateGroups(8, 9));
                     this.SlaveRibbon.Pages.Add(page1);
                     break;
 
-                case CreateMode.UseData:
-                    var iPagesM = CreateIDefiniton("MAIN PAGE", 1);
-                    this._DxRibbon.AddPages(iPagesM);
+                case CreateMode.UseMethods:
+                    //StorePageMethod(this._DxRibbon, "MAIN PAGE", 9999, 9, 8);
+                    //StorePageMethod(this._SlaveDxRibbon, "SLAVE PAGE", 0, 12, 6);
+                    //StorePageMethod(this._SlaveDxRibbon, "SLAVE PAGE", 1, 8, 9);
+                    StoreContentDataDirect(this._DxRibbon, "MAIN PAGE", 1);
+                    StoreContentDataDirect(this._SlaveDxRibbon, "SLAVE PAGE", 2);
+                    break;
 
-                    var iPagesS = CreateIDefiniton("SLAVE PAGE", 2);
-                    this._SlaveDxRibbon.AddPages(iPagesS);
+                case CreateMode.UseData:
+                    StoreContentData(this._DxRibbon, "MAIN PAGE", 1);
+                    StoreContentData(this._SlaveDxRibbon, "SLAVE PAGE", 2);
                     break;
             }
         }
@@ -192,32 +197,146 @@ namespace TestDevExpress.Forms
             }
             return null;
         }
-        private IEnumerable<IRibbonPage> CreateIDefiniton(string prefix, int pageCount)
+
+        private DxRibbonPage AddPageDirects(DxRibbonControl dxRibbon, string prefix, int pageIndex, int groupCount, int itemCount)
+        {
+            string text;
+
+            text = $"{prefix} METHOD {pageIndex}";
+            var dxPage = dxRibbon.CreatePage(text);
+
+            for (int g = 0; g < groupCount; g++)
+            {
+                text = "Grupa METHOD " + (g + 1).ToString();
+                var dxGroup = dxRibbon.CreateGroup(text, dxPage);
+
+                for (int i = 0; i < itemCount; i++)
+                {
+                    text = "Button " + (++_ItemCount).ToString();
+                    string svgImage = Random.GetItem(SvgImages);
+                    BarItem item = this.Ribbon.Items.CreateButton(text);
+                    item.RibbonStyle = DevExpress.XtraBars.Ribbon.RibbonItemStyles.Large;
+                    item.ImageOptions.SvgImage = DxComponent.GetSvgImage(svgImage);
+                    dxGroup.ItemLinks.Add(item);
+                }
+            }
+            return dxPage;
+        }
+
+        private void StorePageMethod(DxRibbonControl dxRibbon, string prefix, int pageIndex, int groupCount, int itemCount)
+        {
+            string text;
+
+            text = $"{prefix} METHOD {pageIndex}";
+            DataRibbonPage iPage = CreateIPage(text, 0, 0);
+            var dxPage = dxRibbon.CreatePage(iPage);
+
+            for (int g = 0; g < groupCount; g++)
+            {
+                text = "Grupa METHOD " + (g + 1).ToString();
+                var iGroup = CreateIGroup(text, 0);
+                var dxGroup = dxRibbon.CreateGroup(iGroup, dxPage);
+
+                for (int i = 0; i < itemCount; i++)
+                {
+                    var iItem = CreateIItem();
+                    dxRibbon.CreateItem(iItem, dxGroup);
+                }
+            }
+        }
+
+        private void StoreContentDataDirect(DxRibbonControl dxRibbon, string prefix, int pageCount)
+        {
+            List<IRibbonPage> iPages = new List<IRibbonPage>();
+            for (int p = 0; p < pageCount; p++)
+                iPages.Add(CreateIPage($"{prefix} TEST {p}", (pageCount == 1 ? 9 : (p == 0 ? 12 : 8)), (pageCount == 1 ? 8 : (p == 0 ? 6 : 9))));
+            dxRibbon.AddPages(iPages);
+            // dxRibbon.AddPagesTestGui(iPages);       ok
+            // dxRibbon.AddPagesDirect(iPages);
+        }
+        private void StoreContentData(DxRibbonControl dxRibbon, string prefix, int pageCount)
         {
             List<IRibbonPage> iPages = new List<IRibbonPage>();
 
-            int icnt = 0;
+            //for (int p = 0; p < pageCount; p++)
+            //    iPages.Add(CreateIPage($"{prefix} STANDARD {p}", (pageCount == 1 ? 9 : (p == 0 ? 12 : 8)), (pageCount == 1 ? 8 : (p == 0 ? 6 : 9))));
+            //dxRibbon.AddPages(iPages, true);
+
             for (int p = 0; p < pageCount; p++)
             {
-                DataRibbonPage iPage = new DataRibbonPage() { PageText = $"{prefix} {p}" };
-
-                int groupCount = (p == 0 ? 12 : 6);
-                int itemCount = (p == 0 ? 6 : 4);
-                for (int g = 0; g < groupCount; g++)
-                {
-                    DataRibbonGroup iGroup = new DataRibbonGroup() { GroupText = $"Grupa DATA {g}", GroupState = RibbonGroupState.Auto, ChangeMode = ContentChangeMode.ReFill, GroupButtonVisible = false };
-                    for (int i = 0; i < itemCount; i++)
-                    {
-                        string svgImage = Random.GetItem(SvgImages);
-                        DataRibbonItem iItem = new DataRibbonItem() { Text = "Button " + (++icnt).ToString(), ImageName = svgImage, RibbonStyle = Noris.Clients.Win.Components.AsolDX.RibbonItemStyles.Large };
-                        iGroup.Items.Add(iItem);
-                    }
-                    iPage.Groups.Add(iGroup);
-                }
-                iPages.Add(iPage);
+                int groupCount = (pageCount == 1 ? 8 : (p == 0 ? 6 : 9));
+                var pages = DxRibbonSample.CreatePages(prefix, 1, 1, groupCount, groupCount, out var qatItems);
+                iPages.AddRange(pages);
             }
 
-            return iPages;
+            // Upravit všechny grupy na velký Auto state:
+            var iGroups = iPages.Where(p => p.Groups != null).SelectMany(p => p.Groups).ToArray();
+            iGroups.ForEachExec(g => _ModifyGroup(g));
+
+            // Upravit všechny prvky na velký button:
+            var iItems = iGroups.Where(g => g.Items != null).SelectMany(g => g.Items).ToArray();
+            iItems.ForEachExec(i => _ModifyItem(i));
+
+            dxRibbon.AddPages(iPages, true);
+        }
+        private void _ModifyGroup(Noris.Clients.Win.Components.AsolDX.IRibbonGroup iGroup)
+        {
+            if (!(iGroup is Noris.Clients.Win.Components.AsolDX.DataRibbonGroup dGroup)) return;
+            dGroup.GroupState = RibbonGroupState.Auto;
+        }
+        private void _ModifyItem(Noris.Clients.Win.Components.AsolDX.IRibbonItem iItem)
+        {
+            if (!(iItem is Noris.Clients.Win.Components.AsolDX.DataRibbonItem dItem)) return;
+            if (dItem.ItemType == RibbonItemType.Button) return;
+
+            switch (dItem.ItemType)
+            {
+                case RibbonItemType.Menu:
+                case RibbonItemType.SplitButton:
+                    bool isDynamic = (dItem.SubItems is null || dItem.SubItemsContentMode != RibbonContentMode.Static);
+
+                    if (isDynamic)
+                    {
+                        dItem.ItemType = RibbonItemType.Button;
+                        dItem.SubItems = null;
+                    }
+                    else
+                    {
+
+                    }
+                    break;
+
+                case RibbonItemType.CheckBoxStandard:
+                    dItem.ItemType = RibbonItemType.Button;
+                    dItem.SubItems = null;
+                    break;
+
+                default:
+                    dItem.ItemType = RibbonItemType.Button;
+                    dItem.SubItems = null;
+                    //dItem.RibbonStyle = Noris.Clients.Win.Components.AsolDX.RibbonItemStyles.Large;
+                    break;
+            }
+        }
+        private DataRibbonPage CreateIPage(string pageText, int groupCount, int itemCount)
+        {
+            DataRibbonPage iPage = new DataRibbonPage() { PageText = pageText };
+            for (int g = 0; g < groupCount; g++)
+                iPage.Groups.Add(CreateIGroup($"Grupa DATA {g}", itemCount));
+            return iPage;
+        }
+        private DataRibbonGroup CreateIGroup(string groupText, int itemCount)
+        {
+            DataRibbonGroup iGroup = new DataRibbonGroup() { GroupText = groupText, GroupState = RibbonGroupState.Auto, ChangeMode = ContentChangeMode.ReFill, GroupButtonVisible = false };
+            for (int i = 0; i < itemCount; i++)
+                iGroup.Items.Add(CreateIItem());
+            return iGroup;
+        }
+        private Noris.Clients.Win.Components.AsolDX.IRibbonItem CreateIItem()
+        {
+            string svgImage = Random.GetItem(SvgImages);
+            DataRibbonItem iItem = new DataRibbonItem() { Text = "Button " + (++_ItemCount).ToString(), ImageName = svgImage, RibbonStyle = Noris.Clients.Win.Components.AsolDX.RibbonItemStyles.Large };
+            return iItem;
         }
 
         protected override void OnClientSizeChanged(EventArgs e)
@@ -284,6 +403,7 @@ namespace TestDevExpress.Forms
             }
             DoLayout();
         }
+        private int _ItemCount;
         private string[] SvgImages;
         private DevExpress.XtraBars.Ribbon.RibbonControl SlaveRibbon;
         private DevExpress.XtraBars.Ribbon.RibbonControl _Ribbon;

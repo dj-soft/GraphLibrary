@@ -993,7 +993,6 @@ namespace Noris.Clients.Win.Components.AsolDX
                     if (clearCurrentContent) _ClearPagesContents();
                     _AddPages(iRibbonPages, this.UseLazyContentCreate, false, "Fill");
                     if (clearCurrentContent) _RemoveVoidContainers();
-                    // CheckLazyContentCurrentPage(isCalledFromReFill);
                 }
                 ,true);
             });
@@ -1164,6 +1163,89 @@ namespace Noris.Clients.Win.Components.AsolDX
                 _AddGroup(iRibbonGroup, page, createOnlyQATItems, ref count);
             }
         }
+
+        #region TESTY => SMAZAT
+
+        internal void AddPagesTest(IEnumerable<IRibbonPage> iRibbonPages)
+        {
+            if (iRibbonPages == null) return;
+
+            _UnMergeModifyMergeCurrentRibbon(() =>
+                {
+                    // if (clearCurrentContent) _ClearPagesContents();
+                    AddPagesTestGui(iRibbonPages);
+                    // if (clearCurrentContent) _RemoveVoidContainers();
+                }
+                , true);
+
+            /*
+            this.ParentOwner.RunInGui(() =>
+            {
+                _UnMergeModifyMergeCurrentRibbon(() => 
+                {
+                    // if (clearCurrentContent) _ClearPagesContents();
+                    AddPagesTestGui(iRibbonPages);
+                    // if (clearCurrentContent) _RemoveVoidContainers();
+                }
+                , true);
+            });
+            //CheckLazyContentCurrentPage(isCalledFromReFill);
+
+            */
+        }
+        internal void AddPagesTestGui(IEnumerable<IRibbonPage> iRibbonPages)
+        {
+            foreach (var iRibbonPage in iRibbonPages)
+                AddPageTest(iRibbonPage);
+        }
+        internal void AddPageTest(IRibbonPage iRibbonPage)
+        {
+            if (iRibbonPage is null) return;
+
+            var pageCategory = GetPageCategory(iRibbonPage.Category, iRibbonPage.ChangeMode);      // Pokud je to třeba, vygeneruje Kategorii
+            RibbonPageCollection pages = (pageCategory != null ? pageCategory.Pages : this.Pages); // Kolekce stránek: kategorie / ribbon
+            var page = GetPage(iRibbonPage, pages);                            // Najde / Vytvoří stránku do this.Pages nebo do category.Pages
+            if (page is null) return;
+
+            int count = 0;
+            var list = DataRibbonGroup.SortGroups(iRibbonPage.Groups);
+            foreach (var iRibbonGroup in list)
+            {
+                iRibbonGroup.ParentPage = iRibbonPage;
+                _AddGroup(iRibbonGroup, page, false, ref count);
+            }
+        }
+
+
+        internal void AddPagesDirect(IEnumerable<IRibbonPage> iRibbonPages)
+        {
+            if (iRibbonPages == null) return;
+            foreach (var iRibbonPage in iRibbonPages)
+                AddPageDirect(iRibbonPage);
+        }
+        internal void AddPageDirect(IRibbonPage iRibbonPage)
+        {
+            if (iRibbonPage is null) return;
+
+            var pageCategory = GetPageCategory(iRibbonPage.Category, iRibbonPage.ChangeMode);      // Pokud je to třeba, vygeneruje Kategorii
+            RibbonPageCollection pages = (pageCategory != null ? pageCategory.Pages : this.Pages); // Kolekce stránek: kategorie / ribbon
+            var page = GetPage(iRibbonPage, pages);                            // Najde / Vytvoří stránku do this.Pages nebo do category.Pages
+            if (page is null) return;
+
+            int count = 0;
+            var list = DataRibbonGroup.SortGroups(iRibbonPage.Groups);
+            foreach (var iRibbonGroup in list)
+            {
+                iRibbonGroup.ParentPage = iRibbonPage;
+                _AddGroup(iRibbonGroup, page, false, ref count);
+            }
+        }
+
+        #endregion
+
+
+
+
         /// <summary>
         /// Metoda přidá danou grupu do dané stránky
         /// </summary>
@@ -1197,7 +1279,6 @@ namespace Noris.Clients.Win.Components.AsolDX
                 _AddBarItem(iRibbonItem, dxGroup, createOnlyQATItems, ref count);
             }
         }
-
         /// <summary>
         /// Metoda přidá daný prvek do dané grupy
         /// </summary>
@@ -1210,7 +1291,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (iRibbonItem == null || dxGroup == null) return;
             if (createOnlyQATItems && !ContainsQAT(iRibbonItem)) return;       // V režimu createOnlyQATItems přidáváme jen prvky QAT, a ten v daném prvku není žádný
 
-            GetItem(iRibbonItem, 0, dxGroup, createOnlyQATItems, ref count);      // Najde / Vytvoří / Naplní prvek
+            GetItem(iRibbonItem, dxGroup, 0, createOnlyQATItems, ref count);      // Najde / Vytvoří / Naplní prvek
         }
         #endregion
         #region Refresh obsahu Ribbonu
@@ -1872,24 +1953,21 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Vytvoří a vrátí prvek dle definice.
         /// </summary>
         /// <param name="iRibbonItem"></param>
-        /// <param name="level"></param>
         /// <param name="dxGroup"></param>
+        /// <param name="level"></param>
         /// <param name="clickHandler"></param>
         /// <returns></returns>
-        public DevExpress.XtraBars.BarItem CreateItem(IRibbonItem iRibbonItem, int level, DxRibbonGroup dxGroup, DevExpress.XtraBars.ItemClickEventHandler clickHandler = null)
+        public DevExpress.XtraBars.BarItem CreateItem(IRibbonItem iRibbonItem, DxRibbonGroup dxGroup, int level = 0, DevExpress.XtraBars.ItemClickEventHandler clickHandler = null)
         {
             int count = 0;
-            var barItem = CreateItem(iRibbonItem, level, dxGroup, true, ref count);
-
+            var barItem = CreateItem(iRibbonItem, dxGroup, level, true, ref count);
             if (barItem is null) return null;
-            if (dxGroup != null)
-            {
-                var barLink = dxGroup.ItemLinks.Add(barItem);
-                barLink.BeginGroup = iRibbonItem.ItemIsFirstInGroup;
-            }
-            FillBarItem(barItem, iRibbonItem);
 
+            FillBarItem(barItem, iRibbonItem);
             if (clickHandler != null) barItem.ItemClick += clickHandler;
+
+            if (dxGroup != null)
+                dxGroup.ItemLinks.Add(barItem, iRibbonItem.ItemIsFirstInGroup);
 
             return barItem;
         }
@@ -1934,13 +2012,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// BarItem přidá do dané grupy.
         /// </summary>
         /// <param name="iRibbonItem"></param>
-        /// <param name="level"></param>
         /// <param name="dxGroup"></param>
+        /// <param name="level"></param>
         /// <param name="createOnlyQATItems">Přidávat pouze prvky označené QAT (stránka jako celek je v režimu LazyContent, ale prvky QAT potřebujeme i v této stránce)</param>
         /// <param name="count"></param>
         /// <param name="reallyCreateSubItems"></param>
         /// <returns></returns>
-        protected DevExpress.XtraBars.BarItem GetItem(IRibbonItem iRibbonItem, int level, DxRibbonGroup dxGroup, bool createOnlyQATItems, ref int count, bool reallyCreateSubItems = false)
+        protected DevExpress.XtraBars.BarItem GetItem(IRibbonItem iRibbonItem, DxRibbonGroup dxGroup, int level, bool createOnlyQATItems, ref int count, bool reallyCreateSubItems = false)
         {
             if (iRibbonItem is null || dxGroup is null) return null;
 
@@ -1951,7 +2029,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 if (HasReFill(changeMode) && barItem != null)
                 { }
                 if (barItem is null)
-                    barItem = CreateItem(iRibbonItem, level, dxGroup, reallyCreateSubItems, ref count);
+                    barItem = CreateItem(iRibbonItem, dxGroup, level, reallyCreateSubItems, ref count);
                 if (HasReFill(changeMode))
                 {
                     //  ClearItem(barItem);
@@ -1984,7 +2062,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="reallyCreateSubItems">Skutečně se mají vytvářet SubMenu?</param>
         /// <param name="count"></param>
         /// <returns></returns>
-        protected DevExpress.XtraBars.BarItem CreateItem(IRibbonItem iRibbonItem, int level, DxRibbonGroup dxGroup, bool reallyCreateSubItems, ref int count)
+        protected DevExpress.XtraBars.BarItem CreateItem(IRibbonItem iRibbonItem, DxRibbonGroup dxGroup, int level, bool reallyCreateSubItems, ref int count)
         {
             DevExpress.XtraBars.BarItem barItem = null;
             switch (iRibbonItem.ItemType)
@@ -2409,7 +2487,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 subItem.ParentItem = parentItem;
                 subItem.ParentGroup = parentItem.ParentGroup;
-                DevExpress.XtraBars.BarItem barItem = CreateItem(subItem, level, dxGroup, true, ref count);
+                DevExpress.XtraBars.BarItem barItem = CreateItem(subItem, dxGroup, level, true, ref count);
                 if (barItem != null)
                 {
                     PrepareBarItemTag(barItem, subItem, level, dxGroup);
@@ -2634,7 +2712,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 {
                     subItem.ParentItem = parentItem;
                     subItem.ParentGroup = parentItem.ParentGroup;
-                    DevExpress.XtraBars.BarItem barItem = CreateItem(subItem, level, dxGroup, true, ref count);
+                    DevExpress.XtraBars.BarItem barItem = CreateItem(subItem, dxGroup, level, true, ref count);
                     if (barItem != null)
                         barItems.Add(barItem);
                 }
@@ -2807,6 +2885,15 @@ namespace Noris.Clients.Win.Components.AsolDX
                 {
                     DevExpress.XtraBars.Ribbon.RibbonBarManager rbm = new DevExpress.XtraBars.Ribbon.RibbonBarManager(this);
                     rbm.AllowMoveBarOnToolbar = true;
+                    rbm.AllowQuickCustomization = true;
+                    rbm.AllowShowToolbarsPopup = true;
+                    rbm.PopupMenuAlignment = PopupMenuAlignment.Left;
+                    rbm.PopupShowMode = PopupShowMode.Classic;
+                    rbm.ShowScreenTipsInMenus = true;
+                    rbm.ShowScreenTipsInToolbars = true;
+                    rbm.ShowShortcutInScreenTips = true;
+                    rbm.ToolTipAnchor = DevExpress.XtraBars.ToolTipAnchor.BarItemLink;
+                    rbm.UseAltKeyForMenu = true;
                     _BarManager = rbm;
                 }
                 return _BarManager;
@@ -3754,7 +3841,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 foreach (var item in items)
                 {
                     if (item is null) continue;
-                    var barItem = CreateItem(item, 0, null, null);
+                    var barItem = CreateItem(item, null);
                     if (barItem != null)
                     {
                         barItem.MergeOrder = mergeOrder++;
@@ -4794,8 +4881,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             var childRibbon = this.MergedChildRibbon;
             try
             {
-                // This Ribbon pozastaví svoji práci:
-                this.BarManager.BeginUpdate();
+                // This Ribbon pozastaví svoji práci:    tohle nedělej !!!!   Tohle způsobilo, že CollapsedGroup nešla otevřít, jenom blikla po dobu MouseDown:       this.BarManager.BeginUpdate();
 
                 // Nyní máme náš Ribbon UnMergovaný z Parentů, ale i on v sobě může mít mergovaného Childa:
                 if (childRibbon != null) this._UnMergeDxRibbon();
@@ -4807,8 +4893,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 // Do this Ribbonu vrátíme jeho Child Ribbon:
                 if (childRibbon != null) this._MergeChildRibbon(childRibbon, false);
 
-                // This Ribbon obnoví svoji práci:
-                this.BarManager.EndUpdate();
+                // This Ribbon obnoví svoji práci:    tohle nedělej !!!!   Tohle způsobilo, že CollapsedGroup nešla otevřít, jenom blikla po dobu MouseDown:           this.BarManager.EndUpdate();
             }
             if (LogActive) DxComponent.LogAddLineTime($"ModifyRibbon {this.DebugName}: RunAction; Time: {DxComponent.LogTokenTimeMilisec}", startTime);
         }
