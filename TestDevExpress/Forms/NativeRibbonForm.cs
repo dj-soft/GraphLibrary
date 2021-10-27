@@ -142,10 +142,10 @@ namespace TestDevExpress.Forms
         private RibbonPageGroup[] CreateGroups(int groupCount, int itemCount)
         {
             List<RibbonPageGroup> groups = new List<RibbonPageGroup>();
-            for (int g = 0; g < groupCount; g++)
+            for (int groupIndex = 0; groupIndex < groupCount; groupIndex++)
             {
-                RibbonPageGroup group = CreateGroup(g);
-                group.ItemLinks.AddRange(this.CreateItems(itemCount));
+                RibbonPageGroup group = CreateGroup(groupIndex);
+                group.ItemLinks.AddRange(this.CreateItems(groupIndex, itemCount));
                 groups.Add(group);
             }
             return groups.ToArray();
@@ -169,29 +169,34 @@ namespace TestDevExpress.Forms
             }
             return null;
         }
-        private BarItem[] CreateItems(int itemCount)
+        private BarItem[] CreateItems(int groupIndex, int itemCount)
         {
             List<BarItem> items = new List<BarItem>();
-            for (int i = 0; i < itemCount; i++)
+            for (int itemIndex = 0; itemIndex < itemCount; itemIndex++)
             {
-                BarItem item = CreateItem(i);
+                BarItem item = CreateItem(groupIndex, itemIndex);
                 items.Add(item);
             }
 
             return items.ToArray();
         }
-        private BarItem CreateItem(int itemIndex)
+        private BarItem CreateItem(int groupIndex, int itemIndex)
         {
             string suffix = (this.Ribbon.Items.Count + 1).ToString();
             string svgImage = Random.GetItem(SvgImages);
             string text = "Button " + suffix;
+            int it = (groupIndex % 5);
+            var style = (it == 0 || it == 2 ? DevExpress.XtraBars.Ribbon.RibbonItemStyles.Large : DevExpress.XtraBars.Ribbon.RibbonItemStyles.SmallWithText);
             switch (_CreateMode)
             {
                 case CreateMode.Native:
                 case CreateMode.UseClasses:
-                case CreateMode.UseMethods:
-                    BarItem item = this.Ribbon.Items.CreateButton(text);
-                    item.RibbonStyle = DevExpress.XtraBars.Ribbon.RibbonItemStyles.Large;
+                    // case CreateMode.UseMethods:
+                    BarItem item;
+                    item = ((it == 0 || it == 1) ? (BarItem)this.Ribbon.Items.CreateButton(text) :
+                           ((it == 2 || it == 3) ? (BarItem)this.Ribbon.Items.CreateCheckItem(text, false) :
+                                 (BarItem)this.Ribbon.Items.CreateButton(text)));
+                    item.RibbonStyle = style;
                     item.ImageOptions.SvgImage = DxComponent.GetSvgImage(svgImage);
                     return item;
             }
@@ -231,15 +236,15 @@ namespace TestDevExpress.Forms
             DataRibbonPage iPage = CreateIPage(text, 0, 0);
             var dxPage = dxRibbon.CreatePage(iPage);
 
-            for (int g = 0; g < groupCount; g++)
+            for (int groupIndex = 0; groupIndex < groupCount; groupIndex++)
             {
-                text = "Grupa METHOD " + (g + 1).ToString();
-                var iGroup = CreateIGroup(text, 0);
+                text = "Grupa METHOD " + (groupIndex + 1).ToString();
+                var iGroup = CreateIGroup(text, groupIndex, 0);
                 var dxGroup = dxRibbon.CreateGroup(iGroup, dxPage);
 
-                for (int i = 0; i < itemCount; i++)
+                for (int itemIndex = 0; itemIndex < itemCount; itemIndex++)
                 {
-                    var iItem = CreateIItem();
+                    var iItem = CreateIItem(groupIndex);
                     dxRibbon.CreateItem(iItem, dxGroup);
                 }
             }
@@ -321,22 +326,76 @@ namespace TestDevExpress.Forms
         private DataRibbonPage CreateIPage(string pageText, int groupCount, int itemCount)
         {
             DataRibbonPage iPage = new DataRibbonPage() { PageText = pageText };
-            for (int g = 0; g < groupCount; g++)
-                iPage.Groups.Add(CreateIGroup($"Grupa DATA {g}", itemCount));
+            for (int groupIndex = 0; groupIndex < groupCount; groupIndex++)
+                iPage.Groups.Add(CreateIGroup($"Grupa DATA {groupIndex}", groupIndex, itemCount));
             return iPage;
         }
-        private DataRibbonGroup CreateIGroup(string groupText, int itemCount)
+        private DataRibbonGroup CreateIGroup(string groupText, int groupIndex, int itemCount)
         {
             DataRibbonGroup iGroup = new DataRibbonGroup() { GroupText = groupText, GroupState = RibbonGroupState.Auto, ChangeMode = ContentChangeMode.ReFill, GroupButtonVisible = false };
             for (int i = 0; i < itemCount; i++)
-                iGroup.Items.Add(CreateIItem());
+                iGroup.Items.Add(CreateIItem(groupIndex));
             return iGroup;
         }
-        private Noris.Clients.Win.Components.AsolDX.IRibbonItem CreateIItem()
+        private Noris.Clients.Win.Components.AsolDX.IRibbonItem CreateIItem(int groupIndex)
         {
+            string text = "Button " + (++_ItemCount).ToString();
             string svgImage = Random.GetItem(SvgImages);
-            DataRibbonItem iItem = new DataRibbonItem() { Text = "Button " + (++_ItemCount).ToString(), ImageName = svgImage, RibbonStyle = Noris.Clients.Win.Components.AsolDX.RibbonItemStyles.Large };
-            return iItem;
+            int it = groupIndex % 5;
+            switch (it)
+            {
+                case 0:
+                    return new DataRibbonItem() 
+                    { 
+                        ItemType = RibbonItemType.Button,
+                        Text = text, 
+                        ImageName = svgImage, 
+                        RibbonStyle = Noris.Clients.Win.Components.AsolDX.RibbonItemStyles.Large
+                    };
+                case 1:
+                    return new DataRibbonItem()
+                    {
+                        ItemType = RibbonItemType.Button,
+                        Text = text,
+                        ImageName = svgImage,
+                        RibbonStyle = Noris.Clients.Win.Components.AsolDX.RibbonItemStyles.SmallWithText
+                    };
+                case 2:
+                    return new DataRibbonItem()
+                    {
+                        ItemType = RibbonItemType.CheckBoxStandard,
+                        Text = text,
+                        ImageName = svgImage,
+                        RibbonStyle = Noris.Clients.Win.Components.AsolDX.RibbonItemStyles.SmallWithText
+                    };
+                case 3:
+                    return new DataRibbonItem()
+                    {
+                        ItemType = RibbonItemType.Menu,
+                        Text = text,
+                        ImageName = svgImage,
+                        SubItems = DxRibbonSample.CreateItems(3,6).ToList(),
+                        RibbonStyle = Noris.Clients.Win.Components.AsolDX.RibbonItemStyles.Large
+                    };
+                case 4:
+                    return new DataRibbonItem()
+                    {
+                        ItemType = RibbonItemType.Menu,
+                        Text = text,
+                        ImageName = svgImage,
+                        SubItems = DxRibbonSample.CreateItems(3, 6).ToList(),
+                        RibbonStyle = Noris.Clients.Win.Components.AsolDX.RibbonItemStyles.SmallWithText
+                    };
+                default:
+                    return new DataRibbonItem()
+                    {
+                        ItemType = RibbonItemType.Button,
+                        Text = text,
+                        ImageName = svgImage,
+                        RibbonStyle = Noris.Clients.Win.Components.AsolDX.RibbonItemStyles.Large
+                    };
+                    break;
+            }
         }
 
         protected override void OnClientSizeChanged(EventArgs e)

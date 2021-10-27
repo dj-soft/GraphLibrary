@@ -1774,7 +1774,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         internal int? VisibleCellsCount { get { return _Parts.Select(p => p.VisibleCellsCount).Sum(); } }
         /// <summary>
-        /// Pole skupin, které v tomto panelu zobrazujeme v jeho jednotlivých částech <see cref=""/>
+        /// Pole skupin, které v tomto panelu zobrazujeme v jeho jednotlivých částech <see cref="DxDataFormGroup"/>
         /// </summary>
         private List<DxDataFormGroup> _Groups;
         #endregion
