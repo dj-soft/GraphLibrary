@@ -1697,10 +1697,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Tato metoda nevkládá grupy z dodané stránky.
         /// </summary>
         /// <param name="iRibbonPage"></param>
+        /// <param name="category">Kategorie, může být null</param>
         /// <returns></returns>
-        public DxRibbonPage CreatePage(IRibbonPage iRibbonPage)
+        public DxRibbonPage CreatePage(IRibbonPage iRibbonPage, DxRibbonPageCategory category = null)
         {
-            return new DxRibbonPage(this, iRibbonPage, this.Pages);
+            var pages = category?.Pages ?? this.Pages;
+            return new DxRibbonPage(this, iRibbonPage, pages);
         }
         /// <summary>
         /// Rozpozná, najde, vytvoří a vrátí stránku pro daná data.
@@ -5204,6 +5206,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.Text = iRibbonCategory.CategoryText;
             this.CategoryColor = iRibbonCategory.CategoryColor;
             this.Visible = iRibbonCategory.CategoryVisible;
+            this.CategoryData = iRibbonCategory;
             this.Tag = iRibbonCategory;
             iRibbonCategory.RibbonCategory = this;
         }
@@ -5230,7 +5233,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Data definující kategorii
         /// </summary>
-        public IRibbonCategory CategoryData { get; set; }
+        public IRibbonCategory CategoryData { get; private set; }
     }
     /// <summary>
     /// Stránka Ribbonu s vlastností LazyContentItems
@@ -5301,7 +5304,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Data definující stránku a její obsah
         /// </summary>
-        public IRibbonPage PageData { get; set; }
+        public IRibbonPage PageData { get; private set; }
         /// <summary>
         /// ID poslední aktivace této stránky. Při aktivaci stránky se volá metoda <see cref="OnActivate()"/>.
         /// Slouží k určení stránky, která má být aktivní.
