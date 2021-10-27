@@ -275,7 +275,6 @@ namespace TestDevExpress.Forms
 
             this.Controls.Add(_Ribbon);
 
-
             int x = 20;
             _ButtonClear = DxComponent.CreateDxSimpleButton(x, 160, 150, 52, _MainPanel, "Clear", _RunClear, toolTipText: "Smaže obsah Ribbonu a nechá jej prázdný"); x += 160;
             _ButtonFill = DxComponent.CreateDxSimpleButton(x, 160, 150, 52, _MainPanel, "Fill", _RunFill, toolTipText: "Smaže obsah Ribbonu a vepíše do něj větší množství stránek"); x += 160;
@@ -424,7 +423,7 @@ namespace TestDevExpress.Forms
         /// </summary>
         public void FillRibbon()
         {
-            FillRibbon(3, 6, 2, 3);
+            FillRibbon(3, 6, 4, 7);
         }
         /// <summary>
         /// Naplní Ribbon daným počtem stránek a grup
@@ -662,7 +661,7 @@ namespace TestDevExpress.Forms
         }
         private void _RunFill(object sender, EventArgs args)
         {
-            FillRibbon(3, 6, 2, 5, true);
+            FillRibbon(3, 6, 4, 9, true);
         }
         private void _RunMerge(object sender, EventArgs args)
         {
@@ -696,7 +695,6 @@ namespace TestDevExpress.Forms
             var pages = DxRibbonSample.CreatePages(this.Ribbon.DebugName, 1, 1, 4, 8, out qatItems, CategoryName, CategoryName, CategoryColor, pageIndex);
             this._Ribbon.RefreshPages(pages);
         }
-
         private void _Ribbon_ItemOnDemandLoad(object sender, TEventArgs<IRibbonItem> e)
         {
             ThreadManager.AddAction(_LoadItemFromServer, e.Item);

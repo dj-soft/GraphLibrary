@@ -246,12 +246,14 @@ namespace TestDevExpress.Forms
             group.Items.Add(CreateRibbonFunction("DataForm1", "Data Form1", "svgimages/spreadsheet/showtabularformpivottable.svg", "Otevře okno pro testování DataFormu", _TestDataForm1ModalButton_Click));
             group.Items.Add(CreateRibbonFunction("DataForm2", "Data Form2", "svgimages/spreadsheet/showtabularformpivottable.svg", "Otevře okno pro testování DataFormu 2", _TestDataForm2ModalButton_Click));
             group.Items.Add(CreateRibbonFunction("RibbonForm", "Ribbon Form", "svgimages/reports/distributerowsevenly.svg", "Otevře okno pro testování Ribbonu", _TestDxRibbonFormModalButton_Click));
-            group.Items.Add(CreateRibbonFunction("RibbonFormNative", "Native Ribbon", "svgimages/reports/gaugestylelinearhorizontal.svg", "Otevře okno s nativním Ribbonem", _TestDxRibbonFormNativeModalButton_Click));
+            group.Items.Add(CreateRibbonFunction("RibbonFormNative", "Native Ribbon", "svgimages/reports/gaugestylelinearhorizontal.svg", "Otevře okno s nativním Ribbonem", _TestDxRibbonFormNativeModalButton_Click, true));
             group.Items.Add(CreateRibbonFunction("RibbonFormClasses", "Classes Ribbon", "svgimages/reports/gaugestylelinearhorizontal.svg", "Otevře okno s ASOL Ribbonem, vytvořeným jen s použitím tříd DxRibbon", _TestDxRibbonFormClassesModalButton_Click));
             group.Items.Add(CreateRibbonFunction("RibbonFormMethods", "Methods Ribbon", "svgimages/reports/gaugestylelinearhorizontal.svg", "Otevře okno s ASOL Ribbonem, vytvořeným s využitím všech metod DxRibbon a rozhraní IRibbon", _TestDxRibbonFormMethodsModalButton_Click));
+            group.Items.Add(CreateRibbonFunction("RibbonFormData", "IData Ribbon", "svgimages/reports/gaugestylelinearhorizontal.svg", "Otevře okno s ASOL Ribbonem, vytvořeným s použitím definičních dat IRibbon", _TestDxRibbonFormDataModalButton_Click));
+            
             return group;
         }
-        protected DataRibbonItem CreateRibbonFunction(string itemId, string text, string image, string toolTipText, Action<IMenuItem> clickHandler = null)
+        protected DataRibbonItem CreateRibbonFunction(string itemId, string text, string image, string toolTipText, Action<IMenuItem> clickHandler = null, bool firstInGroup = false)
         {
             DataRibbonItem iRibbonItem = new DataRibbonItem()
             {
@@ -261,6 +263,7 @@ namespace TestDevExpress.Forms
                 ToolTipText = toolTipText,
                 ItemType = RibbonItemType.Button,
                 RibbonStyle = RibbonItemStyles.Large,
+                ItemIsFirstInGroup = firstInGroup,
                 ClickAction = clickHandler
             };
             return iRibbonItem;
@@ -327,10 +330,13 @@ namespace TestDevExpress.Forms
         {
             _TestDxRibbonFormnNative(NativeRibbonForm.CreateMode.UseClasses);
         }
-        
         private void _TestDxRibbonFormMethodsModalButton_Click(IMenuItem menuItem)
         {
             _TestDxRibbonFormnNative(NativeRibbonForm.CreateMode.UseMethods);
+        }
+        private void _TestDxRibbonFormDataModalButton_Click(IMenuItem menuItem)
+        {
+            _TestDxRibbonFormnNative(NativeRibbonForm.CreateMode.UseData);
         }
         private void _TestDxRibbonFormnNative(NativeRibbonForm.CreateMode createMode)
         {

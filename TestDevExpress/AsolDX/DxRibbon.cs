@@ -1752,10 +1752,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             if (page != null && pages != null && pages.Contains(page))
                 pages.Remove(page);
-
-            IRibbonPage iRibbonPage = page?.PageData;
-            if (page != null) page.PageData = null;
-            if (iRibbonPage != null) iRibbonPage.RibbonPage = null;
+            page?.Reset();
         }
 
         /// <summary>
@@ -1766,16 +1763,27 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         public DxRibbonGroup CreateGroup(string text, DxRibbonPage page)
         {
-            var dxGroup = new DxRibbonGroup(text)
-            {
-                State = DevExpress.XtraBars.Ribbon.RibbonPageGroupState.Auto
-            };
+            var dxGroup = new DxRibbonGroup(text);
             if (page != null) page.Groups.Add(dxGroup);
+            return dxGroup;
+        }
+        /// <summary>
+        /// Vytvoří, naplní a vrátí grupu, tu vloží do dané stránky Ribbonu
+        /// </summary>
+        /// <param name="iRibbonGroup"></param>
+        /// <param name="dxPage"></param>
+        /// <returns></returns>
+        internal DxRibbonGroup CreateGroup(IRibbonGroup iRibbonGroup, DxRibbonPage dxPage)
+        {
+            var dxGroup = new DxRibbonGroup(iRibbonGroup, dxPage?.Groups);
+            this._Groups.Add(dxGroup);
             return dxGroup;
         }
         /// <summary>
         /// Rozpozná, najde, vytvoří a naplní grupu pro daná data.
         /// Grupu přidá do dané stránky, pokud tam dosud není.
+        /// <para/>
+        /// Pozor, tato metoda do grupy vloží její položky z dodané definice.
         /// </summary>
         /// <param name="iRibbonGroup"></param>
         /// <param name="dxGroup"></param>
@@ -1785,28 +1793,30 @@ namespace Noris.Clients.Win.Components.AsolDX
         protected void ReloadGroup(IRibbonGroup iRibbonGroup, DxRibbonGroup dxGroup, DxRibbonPage dxPage, ref int count)
         {
             var changeMode = iRibbonGroup.ChangeMode;
-            bool isRemove = (changeMode == ContentChangeMode.Remove);
             if (dxGroup == null)
             {
-                if (isRemove) return;
+                if (HasRemove(changeMode)) return;
                 if (dxPage == null) return;
                 dxGroup = CreateGroup(iRibbonGroup, dxPage);
             }
-            else if (isRemove)
+            else if (HasRemove(changeMode))
             {
                 RemoveGroup(dxGroup, dxPage);
                 return;
             }
-
-            FillGroup(dxGroup, iRibbonGroup);
-            if (changeMode == ContentChangeMode.ReFill)
-                dxGroup.ClearContent();
-
+            else
+            {
+                dxGroup.Fill(iRibbonGroup);
+                if (HasReFill(changeMode))
+                    dxGroup.ClearContent();
+            }
             AddItemsToGroup(iRibbonGroup, dxGroup, false, ref count);
         }
         /// <summary>
         /// Rozpozná, najde, vytvoří a vrátí grupu pro daná data.
         /// Grupu přidá do dané stránky.
+        /// <para/>
+        /// Do grupy neplní položky.
         /// </summary>
         /// <param name="iRibbonGroup"></param>
         /// <param name="dxPage"></param>
@@ -1821,9 +1831,12 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 if (dxGroup is null)
                     dxGroup = CreateGroup(iRibbonGroup, dxPage);
-                if (HasReFill(changeMode))
-                    ClearGroup(dxGroup);
-                FillGroup(dxGroup, iRibbonGroup);
+                else
+                {
+                    dxGroup.Fill(iRibbonGroup);
+                    if (HasReFill(changeMode))
+                        dxGroup.ClearContent();
+                }
             }
             else if (HasRemove(changeMode))
             {
@@ -1834,55 +1847,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             return dxGroup;
         }
         /// <summary>
-        /// Vytvoří a vrátí grupu
-        /// </summary>
-        /// <param name="iRibbonGroup"></param>
-        /// <param name="dxPage"></param>
-        /// <returns></returns>
-        protected DxRibbonGroup CreateGroup(IRibbonGroup iRibbonGroup, DxRibbonPage dxPage)
-        {
-            var dxGroup = new DxRibbonGroup(iRibbonGroup.GroupText)
-            {
-                Name = iRibbonGroup.GroupId,
-            };
-            if (dxPage != null) dxPage.Groups.Add(dxGroup);
-            this._Groups.Add(dxGroup);
-            return dxGroup;
-        }
-        /// <summary>
-        /// Naplní vlastnosti grupy z definice - ale nevkládá do grupy jednotlivé prvky.
-        /// </summary>
-        /// <param name="dxGroup"></param>
-        /// <param name="iRibbonGroup"></param>
-        protected void FillGroup(DxRibbonGroup dxGroup, IRibbonGroup iRibbonGroup)
-        {
-            dxGroup.Text = iRibbonGroup.GroupText;
-            dxGroup.Visible = iRibbonGroup.Visible;
-            if (iRibbonGroup.MergeOrder > 0) dxGroup.MergeOrder = iRibbonGroup.MergeOrder;             // Záporné číslo IRibbonGroup.MergeOrder říká: neměnit hodnotu, pokud grupa existuje. Důvod: při Refreshi existující grupy nechceme měnit její pozici.
-            dxGroup.CaptionButtonVisible = (iRibbonGroup.GroupButtonVisible ? DefaultBoolean.True : DefaultBoolean.False);
-            dxGroup.AllowTextClipping = iRibbonGroup.AllowTextClipping;
-            dxGroup.State = (iRibbonGroup.GroupState == RibbonGroupState.Expanded ? DevExpress.XtraBars.Ribbon.RibbonPageGroupState.Expanded :
-                            (iRibbonGroup.GroupState == RibbonGroupState.Collapsed ? DevExpress.XtraBars.Ribbon.RibbonPageGroupState.Collapsed :
-                             DevExpress.XtraBars.Ribbon.RibbonPageGroupState.Auto));
-            dxGroup.ItemsLayout = (iRibbonGroup.LayoutType == RibbonGroupItemsLayout.Default ? RibbonPageGroupItemsLayout.Default :
-                                  (iRibbonGroup.LayoutType == RibbonGroupItemsLayout.OneRow ? RibbonPageGroupItemsLayout.OneRow :
-                                  (iRibbonGroup.LayoutType == RibbonGroupItemsLayout.TwoRows ? RibbonPageGroupItemsLayout.TwoRows :
-                                  (iRibbonGroup.LayoutType == RibbonGroupItemsLayout.ThreeRows ? RibbonPageGroupItemsLayout.ThreeRows :
-                                   RibbonPageGroupItemsLayout.Default))));
-            dxGroup.ImageOptions.ImageIndex = SystemAdapter.GetResourceIndex(iRibbonGroup.GroupImageName, RibbonImageSize, iRibbonGroup.GroupText);
-            dxGroup.DataGroup = iRibbonGroup;
-            dxGroup.Tag = iRibbonGroup;
-        }
-        /// <summary>
-        /// Smaže obsah grupy
-        /// </summary>
-        /// <param name="group"></param>
-        /// <returns></returns>
-        protected void ClearGroup(DxRibbonGroup group)
-        {
-            group?.ClearContent();
-        }
-        /// <summary>
         /// Odstraní obsah grupy a pak odstraní grupu ze stránky
         /// </summary>
         /// <param name="dxGroup"></param>
@@ -1890,18 +1854,18 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         protected void RemoveGroup(DxRibbonGroup dxGroup, DxRibbonPage dxPage)
         {
-            if (dxPage == null && dxGroup != null) dxPage = dxGroup.OwnerDxPage;
+            if (dxGroup is null) return;
+
+            dxGroup.ClearContent();
+
+            if (dxPage == null && dxGroup != null) 
+                dxPage = dxGroup.OwnerDxPage;
 
             if (dxGroup != null && dxPage != null && dxPage.Groups.Contains(dxGroup))
-            {
-                dxGroup.ClearContent();
                 dxPage.Groups.Remove(dxGroup);
-                this._Groups.Remove(dxGroup);
-            }
 
-            IRibbonGroup iRibbonGroup = dxGroup.DataGroup;
-            if (dxGroup != null) dxGroup.DataGroup = null;
-            if (iRibbonGroup != null) iRibbonGroup.RibbonGroup = null;
+            dxGroup.Reset();
+            this._Groups.Remove(dxGroup);
         }
 
         /// <summary>
@@ -5270,6 +5234,15 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (pages != null) pages.Add(this);
         }
         /// <summary>
+        /// Inicializace
+        /// </summary>
+        /// <param name="ribbon"></param>
+        protected void Init(DxRibbonControl ribbon)
+        {
+            this.OwnerDxRibbon = ribbon;
+            this.LazyLoadInfo = null;
+        }
+        /// <summary>
         /// Aktualizuje svoje vlastnosti z dodané definice
         /// </summary>
         /// <param name="iRibbonPage"></param>
@@ -5285,6 +5258,18 @@ namespace Noris.Clients.Win.Components.AsolDX
             iRibbonPage.RibbonPage = this;
         }
         /// <summary>
+        /// Uvolní svoje interní reference
+        /// </summary>
+        public void Reset()
+        {
+            IRibbonPage iRibbonPage = this.PageData;
+            this.OwnerDxRibbon = null;
+            this.LazyLoadInfo = null;
+            this.PageData = null;
+            this.Tag = null;
+            if (iRibbonPage != null) iRibbonPage.RibbonPage = null;
+        }
+        /// <summary>
         /// Vlastník Ribbon typu <see cref="DxRibbonControl"/>
         /// </summary>
         protected DxRibbonControl OwnerDxRibbon { get; private set; }
@@ -5292,15 +5277,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Vlastník Ribbon přetypovaný na <see cref="IDxRibbonInternal"/>
         /// </summary>
         protected IDxRibbonInternal IOwnerDxRibbon { get { return OwnerDxRibbon; } }
-        /// <summary>
-        /// Inicializace
-        /// </summary>
-        /// <param name="ribbon"></param>
-        protected void Init(DxRibbonControl ribbon)
-        {
-            this.OwnerDxRibbon = ribbon;
-            LazyLoadInfo = null;
-        }
         /// <summary>
         /// Data definující stránku a její obsah
         /// </summary>
@@ -5482,12 +5458,67 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Konstruktor
         /// </summary>
-        public DxRibbonGroup() : base() { }
+        public DxRibbonGroup() : base() { Init(); }
         /// <summary>
         /// Konstruktor
         /// </summary>
         /// <param name="text"></param>
-        public DxRibbonGroup(string text) : base(text) { }
+        public DxRibbonGroup(string text) : base(text) { Init(); }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="iRibbonGroup"></param>
+        /// <param name="groups"></param>
+        public DxRibbonGroup(IRibbonGroup iRibbonGroup, RibbonPageGroupCollection groups) : base() 
+        {
+            Init();
+            Fill(iRibbonGroup, true);
+            if (groups != null) groups.Add(this);
+        }
+        /// <summary>
+        /// Inicializace
+        /// </summary>
+        protected void Init()
+        {
+            State = DevExpress.XtraBars.Ribbon.RibbonPageGroupState.Auto;
+        }
+        /// <summary>
+        /// Aktualizuje svoje vlastnosti z dodané definice.
+        /// Do grupy nevkládá prvky.
+        /// </summary>
+        /// <param name="iRibbonGroup"></param>
+        /// <param name="withId">Aktualizuj i ID</param>
+        public void Fill(IRibbonGroup iRibbonGroup, bool withId = false)
+        {
+            if (withId) this.Name = iRibbonGroup.GroupId;
+            this.Text = iRibbonGroup.GroupText;
+            this.Visible = iRibbonGroup.Visible;
+            if (iRibbonGroup.MergeOrder > 0) this.MergeOrder = iRibbonGroup.MergeOrder;             // Záporné číslo IRibbonGroup.MergeOrder říká: neměnit hodnotu, pokud grupa existuje. Důvod: při Refreshi existující grupy nechceme měnit její pozici.
+            this.CaptionButtonVisible = (iRibbonGroup.GroupButtonVisible ? DefaultBoolean.True : DefaultBoolean.False);
+            this.AllowTextClipping = iRibbonGroup.AllowTextClipping;
+            this.State = (iRibbonGroup.GroupState == RibbonGroupState.Expanded ? DevExpress.XtraBars.Ribbon.RibbonPageGroupState.Expanded :
+                         (iRibbonGroup.GroupState == RibbonGroupState.Collapsed ? DevExpress.XtraBars.Ribbon.RibbonPageGroupState.Collapsed :
+                          DevExpress.XtraBars.Ribbon.RibbonPageGroupState.Auto));
+            this.ItemsLayout = (iRibbonGroup.LayoutType == RibbonGroupItemsLayout.Default ? RibbonPageGroupItemsLayout.Default :
+                               (iRibbonGroup.LayoutType == RibbonGroupItemsLayout.OneRow ? RibbonPageGroupItemsLayout.OneRow :
+                               (iRibbonGroup.LayoutType == RibbonGroupItemsLayout.TwoRows ? RibbonPageGroupItemsLayout.TwoRows :
+                               (iRibbonGroup.LayoutType == RibbonGroupItemsLayout.ThreeRows ? RibbonPageGroupItemsLayout.ThreeRows :
+                                RibbonPageGroupItemsLayout.Default))));
+            this.ImageOptions.ImageIndex = SystemAdapter.GetResourceIndex(iRibbonGroup.GroupImageName, DxRibbonControl.RibbonImageSize, iRibbonGroup.GroupText);
+            this.GroupData = iRibbonGroup;
+            this.Tag = iRibbonGroup;
+            iRibbonGroup.RibbonGroup = this;
+        }
+        /// <summary>
+        /// Uvolní svoje interní reference
+        /// </summary>
+        public void Reset()
+        {
+            IRibbonGroup iRibbonGroup = this.GroupData;
+            this.GroupData = null;
+            this.Tag = null;
+            if (iRibbonGroup != null) iRibbonGroup.RibbonGroup = null;
+        }
         /// <summary>
         /// Vlastník Ribbon typu <see cref="DxRibbonControl"/>
         /// </summary>
@@ -5499,9 +5530,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Data definující grupu a její obsah
         /// </summary>
-        internal IRibbonGroup DataGroup { get; set; }
+        internal IRibbonGroup GroupData { get; private set; }
         /// <summary>
-        /// Smaže obsah this grupy
+        /// Smaže obsah this grupy.
+        /// Neprovádí <see cref="Reset()"/>.
         /// </summary>
         public void ClearContent()
         {
