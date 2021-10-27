@@ -250,7 +250,8 @@ namespace TestDevExpress.Forms
             group.Items.Add(CreateRibbonFunction("RibbonFormClasses", "Classes Ribbon", "svgimages/reports/gaugestylelinearhorizontal.svg", "Otevře okno s ASOL Ribbonem, vytvořeným jen s použitím tříd DxRibbon", _TestDxRibbonFormClassesModalButton_Click));
             group.Items.Add(CreateRibbonFunction("RibbonFormMethods", "Methods Ribbon", "svgimages/reports/gaugestylelinearhorizontal.svg", "Otevře okno s ASOL Ribbonem, vytvořeným s využitím všech metod DxRibbon a rozhraní IRibbon", _TestDxRibbonFormMethodsModalButton_Click));
             group.Items.Add(CreateRibbonFunction("RibbonFormData", "IData Ribbon", "svgimages/reports/gaugestylelinearhorizontal.svg", "Otevře okno s ASOL Ribbonem, vytvořeným s použitím definičních dat IRibbon", _TestDxRibbonFormDataModalButton_Click));
-            
+            group.Items.Add(CreateRibbonFunction("RibbonFormData3", "IData3 Ribbon", "svgimages/reports/gaugestylelinearhorizontal.svg", "Otevře okno s ASOL Ribbonem, vytvořeným s použitím definičních dat IRibbon a s třístupňovým mergováním (Slave => Void => Desktop)", _TestDxRibbonFormData3ModalButton_Click));
+
             return group;
         }
         protected DataRibbonItem CreateRibbonFunction(string itemId, string text, string image, string toolTipText, Action<IMenuItem> clickHandler = null, bool firstInGroup = false)
@@ -324,23 +325,28 @@ namespace TestDevExpress.Forms
         }
         private void _TestDxRibbonFormNativeModalButton_Click(IMenuItem menuItem)
         {
-            _TestDxRibbonFormnNative(NativeRibbonForm.CreateMode.Native);
+            _TestDxRibbonFormnNative(NativeRibbonForm.CreateMode.Native, false);
         }
         private void _TestDxRibbonFormClassesModalButton_Click(IMenuItem menuItem)
         {
-            _TestDxRibbonFormnNative(NativeRibbonForm.CreateMode.UseClasses);
+            _TestDxRibbonFormnNative(NativeRibbonForm.CreateMode.UseClasses, false);
         }
         private void _TestDxRibbonFormMethodsModalButton_Click(IMenuItem menuItem)
         {
-            _TestDxRibbonFormnNative(NativeRibbonForm.CreateMode.UseMethods);
+            _TestDxRibbonFormnNative(NativeRibbonForm.CreateMode.UseMethods, false);
         }
         private void _TestDxRibbonFormDataModalButton_Click(IMenuItem menuItem)
         {
-            _TestDxRibbonFormnNative(NativeRibbonForm.CreateMode.UseData);
+            _TestDxRibbonFormnNative(NativeRibbonForm.CreateMode.UseData, false);
         }
-        private void _TestDxRibbonFormnNative(NativeRibbonForm.CreateMode createMode)
+        private void _TestDxRibbonFormData3ModalButton_Click(IMenuItem menuItem)
         {
-            using (var ribbonForm = new NativeRibbonForm(createMode))
+            _TestDxRibbonFormnNative(NativeRibbonForm.CreateMode.UseData, true);
+        }
+        
+        private void _TestDxRibbonFormnNative(NativeRibbonForm.CreateMode createMode, bool useVoidSlave)
+        {
+            using (var ribbonForm = new NativeRibbonForm(createMode, useVoidSlave))
             {
                 ribbonForm.WindowState = FormWindowState.Maximized;
                 ribbonForm.ShowDialog();

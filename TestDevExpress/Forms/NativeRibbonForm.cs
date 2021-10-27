@@ -15,10 +15,10 @@ namespace TestDevExpress.Forms
 {
     public class NativeRibbonForm : DevExpress.XtraBars.Ribbon.RibbonForm
     {
-        public NativeRibbonForm() : this(CreateMode.Native) { }
-        public NativeRibbonForm(CreateMode createMode)
+        public NativeRibbonForm() : this(CreateMode.Native, false) { }
+        public NativeRibbonForm(CreateMode createMode, bool useVoidSlave)
         {
-            _UseVoidSlave = false;
+            _UseVoidSlave = useVoidSlave;
             _CreateMode = createMode;
             this.SvgImages = DxComponent.GetResourceKeys(false, true);
             InitRibbon();
@@ -59,7 +59,7 @@ namespace TestDevExpress.Forms
             }
             this.Ribbon.ApplicationButtonText = "MAIN RIBBON";
             this.Ribbon.ShowApplicationButton = DevExpress.Utils.DefaultBoolean.True;
-            this.SlaveRibbon.ApplicationButtonText = "SLAVE RIBBON";
+            this.SlaveRibbon.ApplicationButtonText = (_UseVoidSlave ? "SLAVE - SLAVE RIBBON" : "SLAVE RIBBON");
             this.SlaveRibbon.ShowApplicationButton = DevExpress.Utils.DefaultBoolean.True;
         }
         private void FillRibbons()
@@ -69,18 +69,25 @@ namespace TestDevExpress.Forms
                 case CreateMode.Native:
                 case CreateMode.UseClasses:
                 case CreateMode.UseMethods:
-                    var page0 = CreatePage(0);
+                    var pageR = CreatePage("MAIN PAGE", 9999);
+                    pageR.Groups.AddRange(this.CreateGroups(12, 6));
+                    this.Ribbon.Pages.Add(pageR);
+
+                    var page0 = CreatePage("SLAVE PAGE", 0);
                     page0.Groups.AddRange(this.CreateGroups(12, 6));
                     this.SlaveRibbon.Pages.Add(page0);
 
-                    var page1 = CreatePage(1);
+                    var page1 = CreatePage("SLAVE PAGE", 1);
                     page1.Groups.AddRange(this.CreateGroups(6, 4));
                     this.SlaveRibbon.Pages.Add(page1);
                     break;
 
                 case CreateMode.UseData:
-                    var iPages = CreateIDefiniton();
-                    this._SlaveDxRibbon.AddPages(iPages);
+                    var iPagesM = CreateIDefiniton("MAIN PAGE", 1);
+                    this._DxRibbon.AddPages(iPagesM);
+
+                    var iPagesS = CreateIDefiniton("SLAVE PAGE", 2);
+                    this._SlaveDxRibbon.AddPages(iPagesS);
                     break;
             }
         }
@@ -103,7 +110,6 @@ namespace TestDevExpress.Forms
                         this._VoidSlaveDxRibbon.Visible = false;
                     break;
                 case CreateMode.UseData:
-                    this._SlaveDxRibbon.Visible = true;
                     if (_UseVoidSlave)
                         // Ten VoidSlave nebudu dávat do Controls!
                         this._VoidSlaveDxRibbon.Visible = false;
@@ -114,17 +120,17 @@ namespace TestDevExpress.Forms
             DoLayout();
             // SlaveMerge();
         }
-        private RibbonPage CreatePage(int pageIndex)
+        private RibbonPage CreatePage(string prefix, int pageIndex)
         {
             string suffix = (pageIndex + 1).ToString();
             switch (_CreateMode)
             {
                 case CreateMode.Native:
-                    return new RibbonPage("NATIVE " + suffix);
+                    return new RibbonPage($"{prefix} NATIVE " + suffix);
                 case CreateMode.UseClasses:
-                    return new DxRibbonPage(this._DxRibbon, "CLASS " + suffix);
+                    return new DxRibbonPage(this._DxRibbon, $"{prefix} CLASS " + suffix);
                 case CreateMode.UseMethods:
-                    return _SlaveDxRibbon.CreatePage("METHOD " + suffix);
+                    return _SlaveDxRibbon.CreatePage($"{prefix} METHOD " + suffix);
             }
             return null;
         }
@@ -186,14 +192,14 @@ namespace TestDevExpress.Forms
             }
             return null;
         }
-        private IEnumerable<IRibbonPage> CreateIDefiniton()
+        private IEnumerable<IRibbonPage> CreateIDefiniton(string prefix, int pageCount)
         {
             List<IRibbonPage> iPages = new List<IRibbonPage>();
 
             int icnt = 0;
-            for (int p = 0; p < 2; p++)
+            for (int p = 0; p < pageCount; p++)
             {
-                DataRibbonPage iPage = new DataRibbonPage() { PageText = $"DATA {p}" };
+                DataRibbonPage iPage = new DataRibbonPage() { PageText = $"{prefix} {p}" };
 
                 int groupCount = (p == 0 ? 12 : 6);
                 int itemCount = (p == 0 ? 6 : 4);
