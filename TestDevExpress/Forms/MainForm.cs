@@ -246,11 +246,11 @@ namespace TestDevExpress.Forms
             group.Items.Add(CreateRibbonFunction("DataForm1", "Data Form1", "svgimages/spreadsheet/showtabularformpivottable.svg", "Otevře okno pro testování DataFormu", _TestDataForm1ModalButton_Click));
             group.Items.Add(CreateRibbonFunction("DataForm2", "Data Form2", "svgimages/spreadsheet/showtabularformpivottable.svg", "Otevře okno pro testování DataFormu 2", _TestDataForm2ModalButton_Click));
             group.Items.Add(CreateRibbonFunction("RibbonForm", "Ribbon Form", "svgimages/reports/distributerowsevenly.svg", "Otevře okno pro testování Ribbonu", _TestDxRibbonFormModalButton_Click));
-            group.Items.Add(CreateRibbonFunction("RibbonFormNative", "Native Ribbon", "svgimages/reports/gaugestylelinearhorizontal.svg", "Otevře okno s nativním Ribbonem", _TestDxRibbonFormNativeModalButton_Click, true));
-            group.Items.Add(CreateRibbonFunction("RibbonFormClasses", "Classes Ribbon", "svgimages/reports/gaugestylelinearhorizontal.svg", "Otevře okno s ASOL Ribbonem, vytvořeným jen s použitím tříd DxRibbon", _TestDxRibbonFormClassesModalButton_Click));
-            group.Items.Add(CreateRibbonFunction("RibbonFormMethods", "Methods Ribbon", "svgimages/reports/gaugestylelinearhorizontal.svg", "Otevře okno s ASOL Ribbonem, vytvořeným s využitím všech metod DxRibbon a rozhraní IRibbon", _TestDxRibbonFormMethodsModalButton_Click));
-            group.Items.Add(CreateRibbonFunction("RibbonFormData", "IData Ribbon", "svgimages/reports/gaugestylelinearhorizontal.svg", "Otevře okno s ASOL Ribbonem, vytvořeným s použitím definičních dat IRibbon", _TestDxRibbonFormDataModalButton_Click));
-            group.Items.Add(CreateRibbonFunction("RibbonFormData3", "IData3 Ribbon", "svgimages/reports/gaugestylelinearhorizontal.svg", "Otevře okno s ASOL Ribbonem, vytvořeným s použitím definičních dat IRibbon a s třístupňovým mergováním (Slave => Void => Desktop)", _TestDxRibbonFormData3ModalButton_Click));
+            group.Items.Add(CreateRibbonFunction("DevExpressRibbon", "DevExpress Ribbon", "svgimages/reports/gaugestylelinearhorizontal.svg", "Otevře okno s nativním Ribbonem", _TestDxDevExpressRibbon_Click, true));
+            // group.Items.Add(CreateRibbonFunction("RibbonFormClasses", "Classes Ribbon", "svgimages/reports/gaugestylelinearhorizontal.svg", "Otevře okno s ASOL Ribbonem, vytvořeným jen s použitím tříd DxRibbon", _TestDxRibbonFormClassesModalButton_Click));
+            group.Items.Add(CreateRibbonFunction("TestRibbon", "Test Ribbon", "svgimages/reports/gaugestylelinearhorizontal.svg", "Otevře okno s ASOL Ribbonem, vytvořeným s využitím všech metod DxRibbon a rozhraní IRibbon", _TestDxTestRibbon_Click));
+            group.Items.Add(CreateRibbonFunction("AsolRibbon", "ASOL Ribbon", "svgimages/reports/gaugestylelinearhorizontal.svg", "Otevře okno s ASOL Ribbonem, vytvořeným s použitím definičních dat IRibbon", _TestDxAsolRibbon_Click));
+            // group.Items.Add(CreateRibbonFunction("RibbonFormData3", "IData3 Ribbon", "svgimages/reports/gaugestylelinearhorizontal.svg", "Otevře okno s ASOL Ribbonem, vytvořeným s použitím definičních dat IRibbon a s třístupňovým mergováním (Slave => Void => Desktop)", _TestDxRibbonFormData3ModalButton_Click));
 
             return group;
         }
@@ -323,27 +323,26 @@ namespace TestDevExpress.Forms
                 ribbonForm.ShowDialog();
             }
         }
-        private void _TestDxRibbonFormNativeModalButton_Click(IMenuItem menuItem)
+        private void _TestDxDevExpressRibbon_Click(IMenuItem menuItem)
         {
-            _TestDxRibbonFormnNative(NativeRibbonForm.CreateMode.Native, false);
+            _TestDxRibbonFormnNative(NativeRibbonForm.CreateMode.DevExpress, false);
         }
-        private void _TestDxRibbonFormClassesModalButton_Click(IMenuItem menuItem)
+        //private void _TestDxRibbonFormClassesModalButton_Click(IMenuItem menuItem)
+        //{
+        //    _TestDxRibbonFormnNative(NativeRibbonForm.CreateMode.UseClasses, false);
+        //}
+        private void _TestDxTestRibbon_Click(IMenuItem menuItem)
         {
-            _TestDxRibbonFormnNative(NativeRibbonForm.CreateMode.UseClasses, false);
+            _TestDxRibbonFormnNative(NativeRibbonForm.CreateMode.Tests, false);
         }
-        private void _TestDxRibbonFormMethodsModalButton_Click(IMenuItem menuItem)
+        private void _TestDxAsolRibbon_Click(IMenuItem menuItem)
         {
-            _TestDxRibbonFormnNative(NativeRibbonForm.CreateMode.UseMethods, false);
+            _TestDxRibbonFormnNative(NativeRibbonForm.CreateMode.Asol, false);
         }
-        private void _TestDxRibbonFormDataModalButton_Click(IMenuItem menuItem)
-        {
-            _TestDxRibbonFormnNative(NativeRibbonForm.CreateMode.UseData, false);
-        }
-        private void _TestDxRibbonFormData3ModalButton_Click(IMenuItem menuItem)
-        {
-            _TestDxRibbonFormnNative(NativeRibbonForm.CreateMode.UseData, true);
-        }
-        
+        //private void _TestDxRibbonFormData3ModalButton_Click(IMenuItem menuItem)
+        //{
+        //    _TestDxRibbonFormnNative(NativeRibbonForm.CreateMode.Asol, true);
+        //}
         private void _TestDxRibbonFormnNative(NativeRibbonForm.CreateMode createMode, bool useVoidSlave)
         {
             using (var ribbonForm = new NativeRibbonForm(createMode, useVoidSlave))

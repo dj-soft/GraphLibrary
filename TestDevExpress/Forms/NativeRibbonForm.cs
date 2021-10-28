@@ -15,7 +15,7 @@ namespace TestDevExpress.Forms
 {
     public class NativeRibbonForm : DevExpress.XtraBars.Ribbon.RibbonForm
     {
-        public NativeRibbonForm() : this(CreateMode.Native, false) { }
+        public NativeRibbonForm() : this(CreateMode.DevExpress, false) { }
         public NativeRibbonForm(CreateMode createMode, bool useVoidSlave)
         {
             _UseVoidSlave = useVoidSlave;
@@ -27,117 +27,60 @@ namespace TestDevExpress.Forms
         private bool _UseVoidSlave;
         private void InitRibbon()
         {
-            CreateRibbons();
-            JoinRibbons();
-            FillRibbons();
-        }
-        private void CreateRibbons()
-        {
             _ItemCount = 0;
             switch (_CreateMode)
             {
-                case CreateMode.Native:
-                    this._Ribbon = new DevExpress.XtraBars.Ribbon.RibbonControl();
-                    this._SlaveRibbon = new DevExpress.XtraBars.Ribbon.RibbonControl();
-                    this.Ribbon = this._Ribbon;
-                    this.SlaveRibbon = this._SlaveRibbon;
+                case CreateMode.DevExpress:
+                    DevExpressInit();
                     break;
-                case CreateMode.UseClasses:
-                case CreateMode.UseMethods:
-                case CreateMode.UseData:
-                    this._DxRibbon = new DxRibbonControl() { LogActive = true };
-                    this._DxRibbon.InitUserProperties(true);
-                    if (_UseVoidSlave)
-                    {
-                        this._VoidSlaveDxRibbon = new DxRibbonControl();
-                        this._VoidSlaveDxRibbon.InitUserProperties(false);
-                    }
-                    this._SlaveDxRibbon = new DxRibbonControl();
-                    this._SlaveDxRibbon.InitUserProperties(false);
-                    this.Ribbon = this._DxRibbon;
-                    this.SlaveRibbon = this._SlaveDxRibbon;
+                case CreateMode.Tests:
+                    RibbonTestsInit();
+                    break;
+                case CreateMode.Asol:
+                    RibbonAsolInit();
                     break;
             }
+        }
+        #region DevExpress Ribbon
+        private void DevExpressInit()
+        {
+            DevExpressCreateRibbon();
+            AddRibbonToForm();
+            DevExpressFillRibbon();
+        }
+        /// <summary>
+        /// Vytvoří instance ribbonů NATIVE
+        /// </summary>
+        private void DevExpressCreateRibbon()
+        {
+            this._Ribbon = new DevExpress.XtraBars.Ribbon.RibbonControl();
+            this._SlaveRibbon = new DevExpress.XtraBars.Ribbon.RibbonControl();
+            this.Ribbon = this._Ribbon;
+            this.SlaveRibbon = this._SlaveRibbon;
+
             this.Ribbon.ApplicationButtonText = "MAIN RIBBON";
             this.Ribbon.ShowApplicationButton = DevExpress.Utils.DefaultBoolean.True;
             this.SlaveRibbon.ApplicationButtonText = (_UseVoidSlave ? "SLAVE - SLAVE RIBBON" : "SLAVE RIBBON");
             this.SlaveRibbon.ShowApplicationButton = DevExpress.Utils.DefaultBoolean.True;
         }
-        private void FillRibbons()
+        private void DevExpressFillRibbon()
         {
-            switch (_CreateMode)
-            {
-                case CreateMode.Native:
-                case CreateMode.UseClasses:
-                    var pageR = CreatePage("MAIN PAGE", 9999);
-                    pageR.Groups.AddRange(this.CreateGroups(9, 8));
-                    this.Ribbon.Pages.Add(pageR);
+            var pageR = CreatePage("MAIN PAGE", 9999);
+            pageR.Groups.AddRange(this.CreateGroups(9, 8));
+            this.Ribbon.Pages.Add(pageR);
 
-                    var page0 = CreatePage("SLAVE PAGE", 0);
-                    page0.Groups.AddRange(this.CreateGroups(12, 6));
-                    this.SlaveRibbon.Pages.Add(page0);
+            var page0 = CreatePage("SLAVE PAGE", 0);
+            page0.Groups.AddRange(this.CreateGroups(12, 6));
+            this.SlaveRibbon.Pages.Add(page0);
 
-                    var page1 = CreatePage("SLAVE PAGE", 1);
-                    page1.Groups.AddRange(this.CreateGroups(8, 9));
-                    this.SlaveRibbon.Pages.Add(page1);
-                    break;
-
-                case CreateMode.UseMethods:
-                    //StorePageMethod(this._DxRibbon, "MAIN PAGE", 9999, 9, 8);
-                    //StorePageMethod(this._SlaveDxRibbon, "SLAVE PAGE", 0, 12, 6);
-                    //StorePageMethod(this._SlaveDxRibbon, "SLAVE PAGE", 1, 8, 9);
-                    StoreContentDataDirect(this._DxRibbon, "MAIN PAGE", 1);
-                    StoreContentDataDirect(this._SlaveDxRibbon, "SLAVE PAGE", 2);
-                    break;
-
-                case CreateMode.UseData:
-                    StoreContentData(this._DxRibbon, "MAIN PAGE", 1);
-                    StoreContentData(this._SlaveDxRibbon, "SLAVE PAGE", 2);
-                    break;
-            }
-        }
-        private void JoinRibbons()
-        {
-            this.Ribbon.Dock = System.Windows.Forms.DockStyle.Top;
-            this.Ribbon.Visible = true;
-            this.SlaveRibbon.Dock = System.Windows.Forms.DockStyle.None;
-            this.SlaveRibbon.Visible = true;
-            this.Controls.Add(this.Ribbon);
-            this.Controls.Add(this.SlaveRibbon);
-
-            switch (_CreateMode)
-            {
-                case CreateMode.Native:
-                    break;
-                case CreateMode.UseClasses:
-                case CreateMode.UseMethods:
-                    if (_UseVoidSlave)
-                        this._VoidSlaveDxRibbon.Visible = false;
-                    break;
-                case CreateMode.UseData:
-                    if (_UseVoidSlave)
-                        // Ten VoidSlave nebudu dávat do Controls!
-                        this._VoidSlaveDxRibbon.Visible = false;
-                    break;
-            }
-            DxComponent.CreateDxSimpleButton(26, 430, 180, 35, this, "MERGE", _UseDataMergeClick);
-            DxComponent.CreateDxSimpleButton(220, 430, 180, 35, this, "UNMERGE", _UseDataUnMergeClick);
-            DoLayout();
-            // SlaveMerge();
+            var page1 = CreatePage("SLAVE PAGE", 1);
+            page1.Groups.AddRange(this.CreateGroups(8, 9));
+            this.SlaveRibbon.Pages.Add(page1);
         }
         private RibbonPage CreatePage(string prefix, int pageIndex)
         {
             string suffix = (pageIndex + 1).ToString();
-            switch (_CreateMode)
-            {
-                case CreateMode.Native:
-                    return new RibbonPage($"{prefix} NATIVE " + suffix);
-                case CreateMode.UseClasses:
-                    return new DxRibbonPage(this._DxRibbon, $"{prefix} CLASS " + suffix);
-                case CreateMode.UseMethods:
-                    return _SlaveDxRibbon.CreatePage($"{prefix} METHOD " + suffix);
-            }
-            return null;
+            return new RibbonPage($"{prefix} NATIVE " + suffix);
         }
         private RibbonPageGroup[] CreateGroups(int groupCount, int itemCount)
         {
@@ -153,21 +96,9 @@ namespace TestDevExpress.Forms
         private RibbonPageGroup CreateGroup(int groupIndex)
         {
             string suffix = (groupIndex + 1).ToString();
-            switch (_CreateMode)
-            {
-                case CreateMode.Native:
-                    RibbonPageGroup group = new RibbonPageGroup("Grupa NATIVE " + suffix);
-                    group.State = RibbonPageGroupState.Auto;
-                    return group;
-                case CreateMode.UseClasses:
-                    DxRibbonGroup dxGroup = new DxRibbonGroup("Grupa CLASS " + suffix);
-                    dxGroup.State = RibbonPageGroupState.Auto;
-                    return dxGroup;
-                case CreateMode.UseMethods:
-                    DxRibbonGroup mxGroup = _SlaveDxRibbon.CreateGroup("Grupa METHOD " + suffix, null);
-                    return mxGroup;
-            }
-            return null;
+            RibbonPageGroup group = new RibbonPageGroup("Grupa NATIVE " + suffix);
+            group.State = RibbonPageGroupState.Auto;
+            return group;
         }
         private BarItem[] CreateItems(int groupIndex, int itemCount)
         {
@@ -177,7 +108,6 @@ namespace TestDevExpress.Forms
                 BarItem item = CreateItem(groupIndex, itemIndex);
                 items.Add(item);
             }
-
             return items.ToArray();
         }
         private BarItem CreateItem(int groupIndex, int itemIndex)
@@ -187,21 +117,82 @@ namespace TestDevExpress.Forms
             string text = "Button " + suffix;
             int it = (groupIndex % 5);
             var style = (it == 0 || it == 2 ? DevExpress.XtraBars.Ribbon.RibbonItemStyles.Large : DevExpress.XtraBars.Ribbon.RibbonItemStyles.SmallWithText);
-            switch (_CreateMode)
-            {
-                case CreateMode.Native:
-                case CreateMode.UseClasses:
-                    // case CreateMode.UseMethods:
-                    BarItem item;
-                    item = ((it == 0 || it == 1) ? (BarItem)this.Ribbon.Items.CreateButton(text) :
-                           ((it == 2 || it == 3) ? (BarItem)this.Ribbon.Items.CreateCheckItem(text, false) :
-                                 (BarItem)this.Ribbon.Items.CreateButton(text)));
-                    item.RibbonStyle = style;
-                    item.ImageOptions.SvgImage = DxComponent.GetSvgImage(svgImage);
-                    return item;
-            }
-            return null;
+            BarItem item;
+            item = ((it == 0 || it == 1) ? (BarItem)this.Ribbon.Items.CreateButton(text) :
+                   ((it == 2 || it == 3) ? (BarItem)this.Ribbon.Items.CreateCheckItem(text, false) :
+                         (BarItem)this.Ribbon.Items.CreateButton(text)));
+            item.RibbonStyle = style;
+            item.ImageOptions.SvgImage = DxComponent.GetSvgImage(svgImage);
+            return item;
         }
+        #endregion
+        #region Test Ribbon
+        private void RibbonTestsInit()
+        {
+            DxCreateRibbon();
+            AddRibbonToForm();
+            TestFillRibbon();
+        }
+        private void TestFillRibbon()
+        {
+            //StorePageMethod(this._DxRibbon, "MAIN PAGE", 9999, 9, 8);
+            //StorePageMethod(this._SlaveDxRibbon, "SLAVE PAGE", 0, 12, 6);
+            //StorePageMethod(this._SlaveDxRibbon, "SLAVE PAGE", 1, 8, 9);
+            StoreContentDataDirect(this._DxRibbon, "MAIN PAGE", 1);
+            StoreContentDataDirect(this._SlaveDxRibbon, "SLAVE PAGE", 2);
+        }
+        #endregion
+        #region Asol Ribbon
+        private void RibbonAsolInit()
+        {
+            DxCreateRibbon();
+            AddRibbonToForm();
+            AsolFillRibbon();
+        }
+        private void AsolFillRibbon()
+        {
+            StoreContentData(this._DxRibbon, "MAIN PAGE", 1);
+            StoreContentData(this._SlaveDxRibbon, "SLAVE PAGE", 2);
+        }
+        /// <summary>
+        /// Vytvoří instance ribbonů ASOL
+        /// </summary>
+        private void DxCreateRibbon()
+        {
+            this._DxRibbon = new DxRibbonControl() { LogActive = true };
+            this._DxRibbon.InitUserProperties(true);
+            if (_UseVoidSlave)
+            {
+                this._VoidSlaveDxRibbon = new DxRibbonControl();
+                this._VoidSlaveDxRibbon.InitUserProperties(false);
+                this._VoidSlaveDxRibbon.Visible = false;
+            }
+            this._SlaveDxRibbon = new DxRibbonControl();
+            this._SlaveDxRibbon.InitUserProperties(false);
+            this.Ribbon = this._DxRibbon;
+            this.SlaveRibbon = this._SlaveDxRibbon;
+
+            this.Ribbon.ApplicationButtonText = "MAIN RIBBON";
+            this.Ribbon.ShowApplicationButton = DevExpress.Utils.DefaultBoolean.True;
+            this.SlaveRibbon.ApplicationButtonText = (_UseVoidSlave ? "SLAVE - SLAVE RIBBON" : "SLAVE RIBBON");
+            this.SlaveRibbon.ShowApplicationButton = DevExpress.Utils.DefaultBoolean.True;
+        }
+        private void AddRibbonToForm()
+        {
+            this.Ribbon.Dock = System.Windows.Forms.DockStyle.Top;
+            this.Ribbon.Visible = true;
+            this.SlaveRibbon.Dock = System.Windows.Forms.DockStyle.None;
+            this.SlaveRibbon.Visible = true;
+            this.Controls.Add(this.Ribbon);
+            this.Controls.Add(this.SlaveRibbon);
+
+            DxComponent.CreateDxSimpleButton(26, 430, 180, 35, this, "MERGE", _UseDataMergeClick);
+            DxComponent.CreateDxSimpleButton(220, 430, 180, 35, this, "UNMERGE", _UseDataUnMergeClick);
+            DoLayout();
+        }
+        #endregion
+
+
 
         private DxRibbonPage AddPageDirects(DxRibbonControl dxRibbon, string prefix, int pageIndex, int groupCount, int itemCount)
         {
@@ -394,7 +385,6 @@ namespace TestDevExpress.Forms
                         ImageName = svgImage,
                         RibbonStyle = Noris.Clients.Win.Components.AsolDX.RibbonItemStyles.Large
                     };
-                    break;
             }
         }
 
@@ -420,12 +410,11 @@ namespace TestDevExpress.Forms
         {
             switch (_CreateMode)
             {
-                case CreateMode.Native:
+                case CreateMode.DevExpress:
                     this.Ribbon.MergeRibbon(this.SlaveRibbon);
                     break;
-                case CreateMode.UseClasses:
-                case CreateMode.UseMethods:
-                case CreateMode.UseData:
+                case CreateMode.Tests:
+                case CreateMode.Asol:
                     if (_UseVoidSlave)
                     {
                         this._VoidSlaveDxRibbon.MergeChildDxRibbon(this._SlaveDxRibbon);
@@ -443,12 +432,11 @@ namespace TestDevExpress.Forms
         {
             switch (_CreateMode)
             {
-                case CreateMode.Native:
+                case CreateMode.DevExpress:
                     this.Ribbon.UnMergeRibbon();
                     break;
-                case CreateMode.UseClasses:
-                case CreateMode.UseMethods:
-                case CreateMode.UseData:
+                case CreateMode.Tests:
+                case CreateMode.Asol:
                     if (_UseVoidSlave)
                     {
                         this._DxRibbon.UnMergeDxRibbon();
@@ -473,6 +461,6 @@ namespace TestDevExpress.Forms
         /// <summary>
         /// Režim vytváření pvků Ribbonu
         /// </summary>
-        public enum CreateMode { Native, UseClasses, UseMethods, UseData }
+        public enum CreateMode { DevExpress, Tests, Asol }
     }
 }
