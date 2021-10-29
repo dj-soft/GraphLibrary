@@ -677,7 +677,7 @@ namespace Noris.Clients.Win.Components
 
             Image image = null;
             if (args.Icon != null) image = args.Icon;
-            else if (args.IconFile != null && args.IconGenerator != null) image = args.IconGenerator(args.IconFile);
+            else if (args.IconFile != null) image = DxComponent.GetImage(args.IconFile);
             if (image == null)
             {
                 if (args.StandardIcon.HasValue) image = GetStandardIcon(args.StandardIcon.Value)?.ToBitmap();
@@ -1848,46 +1848,6 @@ namespace Noris.Clients.Win.Components
         #endregion
         #region Výchozí hodnoty
         /// <summary>
-        /// Kód hlášky pro získání defaultního titulku okna "Chyba"
-        /// </summary>
-        public const string MsgCode_FormTitleError = "FormTitleError";
-        /// <summary>
-        /// Kód hlášky pro získání defaultního prefixu hlášky "Došlo k chybě"
-        /// </summary>
-        public const string MsgCode_FormTitlePrefix = "FormTitlePrefix";
-        /// <summary>
-        /// Kód hlášky pro získání defaultního textu tlačítka "Ctrl+C"
-        /// </summary>
-        public const string MsgCode_CtrlCText = "CtrlCText";
-        /// <summary>
-        /// Kód hlášky pro získání defaultního tooltipu tlačítka "Ctrl+C"
-        /// </summary>
-        public const string MsgCode_CtrlCTooltip = "CtrlCToolTip";
-        /// <summary>
-        /// Kód hlášky pro získání defaultní informace po zkopírování textu
-        /// </summary>
-        public const string MsgCode_CtrlCInfo = "CtrlCInfo";
-        /// <summary>
-        /// Kód hlášky pro získání defaultního textu tlačítka "Více informací"
-        /// </summary>
-        public const string MsgCode_AltMsgButtonText = "AltMsgButtonText";
-        /// <summary>
-        /// Kód hlášky pro získání defaultního tooltipu tlačítka "Více informací"
-        /// </summary>
-        public const string MsgCode_AltMsgButtonTooltip = "AltMsgButtonToolTip";
-        /// <summary>
-        /// Kód hlášky pro získání defaultního textu tlačítka "Méně informací"
-        /// </summary>
-        public const string MsgCode_StdMsgButtonText = "StdMsgButtonText";
-        /// <summary>
-        /// Kód hlášky pro získání defaultního tooltipu tlačítka "Méně informací"
-        /// </summary>
-        public const string MsgCode_StdMsgButtonTooltip = "StdMsgButtonToolTip";
-        /// <summary>
-        /// Prefix kódu hlášky pro získání textu tlačítka pro DialogResult, za prefixem následují texty: Ok, Yes, No, Abort, Retry, Ignore, Cancel.
-        /// </summary>
-        public const string MsgCode_DialogResultPrefix = "DialogResult_";
-        /// <summary>
         /// Defaultní hodnota pro základní zoom dialogu
         /// </summary>
         internal const float DefaultDialogZoomRatio = 1.00f;
@@ -2512,6 +2472,12 @@ namespace Noris.Clients.Win.Components
         }
         #endregion
         #region Lokalizace
+
+
+
+
+
+        /*
         /// <summary>
         /// Funkce, která provádí překlady textů do aktuálního jazyka.
         /// Vstupem je kód hlášky, výstupem její text.
@@ -2573,6 +2539,7 @@ namespace Noris.Clients.Win.Components
 
             return code;
         }
+        */
         #endregion
     }
     #endregion

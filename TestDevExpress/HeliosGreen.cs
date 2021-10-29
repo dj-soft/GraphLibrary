@@ -844,7 +844,7 @@ namespace WinFormServices
         /// </summary>
         /// <param name="hotKey"></param>
         /// <returns></returns>
-        public static Keys GetShortcutFromServerHotKey(string hotKey) { return Keys.None; }
+        public static Shortcut GetShortcutFromServerHotKey(string hotKey) { return Shortcut.None; }
 
     }
 }
