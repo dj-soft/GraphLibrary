@@ -17,9 +17,9 @@ using System.Collections;
 using System.IO;
 
 // Tento soubor obsahuje třídy, které provádějí serializaci a deserializaci libovolného objektu do XML formátu.
-namespace Noris.Clients.Win.Components.AsolDX
+namespace Noris.WS.Parser.XmlSerializer
 {
-    using Noris.Clients.Win.Components.AsolDX.InternalPersistor;
+    using Noris.WS.Parser.XmlSerializer.InternalPersistor;
     using System.Globalization;
 
     // public rozhraní:
@@ -2050,7 +2050,7 @@ namespace Noris.Clients.Win.Components.AsolDX
 }
 
 // internal oblast: XmlPersist, TypeLibrary, XmDocument : výkonné soukromé kódy
-namespace Noris.Clients.Win.Components.AsolDX.InternalPersistor
+namespace Noris.WS.Parser.XmlSerializer.InternalPersistor
 {
     /// <summary>
     /// Internal výkonná třída pro XML persistenci. 
@@ -2986,7 +2986,7 @@ namespace Noris.Clients.Win.Components.AsolDX.InternalPersistor
                 if (parameters.AddSignatures)
                 {
                     CreateAttribute("Created", Convertor.DateTimeToString(DateTime.Now), xRootElement);
-                    CreateAttribute("Creator", System.Windows.Forms.SystemInformation.UserName, xRootElement);
+                    //**//Dořešit, Windows.Forms zde nejsou k dispoziciCreateAttribute("Creator", System.Windows.Forms.SystemInformation.UserName, xRootElement);
                 }
                 XmlElement xDataElement = CreateElement(_DocumentNameData, xRootElement);
                 XmlPersistSaveArgs saveArgs = CreateSaveArgs(data, _DocumentNameValue, null, null, xDataElement);
@@ -3675,7 +3675,7 @@ namespace Noris.Clients.Win.Components.AsolDX.InternalPersistor
                 if (parameters.AddSignatures)
                 {
                     CreateAttribute("Created", Convertor.DateTimeToString(DateTime.Now), xmlElementRoot);
-                    CreateAttribute("Creator", System.Windows.Forms.SystemInformation.UserName, xmlElementRoot);
+                    //**//Dořešit, Windows.Forms zde nejsou k dispozici: CreateAttribute("Creator", System.Windows.Forms.SystemInformation.UserName, xmlElementRoot);
                 }
                 XmlElement xmlElementHeap = (parameters.DataHeapEnabled ? CreateElement(_DocumentNameHeap, xmlElementRoot) : null);
 

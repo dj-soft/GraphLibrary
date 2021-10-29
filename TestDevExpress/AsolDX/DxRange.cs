@@ -20,7 +20,6 @@ using DevExpress.Pdf.Native;
 using DevExpress.XtraPdfViewer;
 using DevExpress.XtraEditors;
 using DevExpress.XtraRichEdit.Layout;
-using Noris.Clients.Win.Components.AsolDX.InternalPersistor;
 using System.Diagnostics;
 
 namespace Noris.Clients.Win.Components.AsolDX

@@ -14,6 +14,9 @@ using System.Drawing;
 
 using DevExpress.Utils;
 
+using WSXmlSerializer = Noris.WS.Parser.XmlSerializer;
+using WSForms = Noris.WS.DataContracts.Desktop.Forms;
+
 namespace Noris.Clients.Win.Components.AsolDX
 {
     /// <summary>
@@ -337,10 +340,10 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (hostInfo.Parent.Controls.Count == 0) return true;              // Prostor tam je a je prázdný
             switch (hostInfo.ChildType)
             {
-                case AreaContentType.Empty: return true;                       // Prázdno
-                case AreaContentType.DxSplitContainer:
-                case AreaContentType.WfSplitContainer: return false;           // Nějaký vnořený SplitContainer: to nejde použít pro UserControl.
-                case AreaContentType.DxLayoutItemPanel: return removeOld;      // Pokud je tam control: vracím true (=Mohu přidat nový UserControl) tehdy, když je povoleno stávající UserControl odebrat.
+                case WSForms.AreaContentType.Empty: return true;                       // Prázdno
+                case WSForms.AreaContentType.DxSplitContainer:
+                case WSForms.AreaContentType.WfSplitContainer: return false;           // Nějaký vnořený SplitContainer: to nejde použít pro UserControl.
+                case WSForms.AreaContentType.DxLayoutItemPanel: return removeOld;      // Pokud je tam control: vracím true (=Mohu přidat nový UserControl) tehdy, když je povoleno stávající UserControl odebrat.
             }
             return false;
         }
@@ -408,11 +411,11 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             if (hostInfo.Parent.Controls.Count > 0)
             {   // Hele, ono tam (v požadovaném AreaId) už něco je!!!  Co s tím?
-                if (hostInfo.ChildType == AreaContentType.DxSplitContainer || hostInfo.ChildType == AreaContentType.WfSplitContainer)
+                if (hostInfo.ChildType == WSForms.AreaContentType.DxSplitContainer || hostInfo.ChildType == WSForms.AreaContentType.WfSplitContainer)
                     throw new ArgumentNullException($"DxLayoutPanel.AddControlToArea() error: 'areaId' = '{areaId}' contains any container ({hostInfo.ChildType}), can not insert any UserControl.");
-                if (hostInfo.ChildType == AreaContentType.DxLayoutItemPanel && !removeOld)
+                if (hostInfo.ChildType == WSForms.AreaContentType.DxLayoutItemPanel && !removeOld)
                     throw new ArgumentNullException($"DxLayoutPanel.AddControlToArea() error: 'areaId' = '{areaId}' contains any UserControl, and is not specified removeOld=true, can not insert any UserControl.");
-                if (hostInfo.ChildType == AreaContentType.DxLayoutItemPanel || hostInfo.ChildType == AreaContentType.EmptyLayoutPanel)
+                if (hostInfo.ChildType == WSForms.AreaContentType.DxLayoutItemPanel || hostInfo.ChildType == WSForms.AreaContentType.EmptyLayoutPanel)
                     _RemoveUserControlOnly(hostInfo.ChildItemPanel);
                 hostInfo.Parent.Controls.Clear();
             }
@@ -450,7 +453,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             var hosts = GetLayoutData().Item3;                                 // Stávající struktura layoutu, obsahuje klíče AreaId a odpovídající panely
             if (!hosts.TryGetValue(areaId, out var hostInfo)) return false;    // Když ve struktuře vůbec není daný prostor...
 
-            if (hostInfo.ChildType != AreaContentType.DxLayoutItemPanel) return false;
+            if (hostInfo.ChildType != WSForms.AreaContentType.DxLayoutItemPanel) return false;
 
             userControl = hostInfo.ChildItemPanel?.UserControl;
             return (userControl != null);
@@ -869,7 +872,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="area"></param>
         private void _FillContainerInfo(DevExpress.XtraEditors.SplitContainerControl container, Area area)
         {
-            area.ContentType = AreaContentType.DxSplitContainer;
+            area.ContentType = WSForms.AreaContentType.DxSplitContainer;
             area.SplitterOrientation = (container.Horizontal ? Orientation.Vertical : Orientation.Horizontal);    // SplitterOrientation vyjadřuje pozici Splitteru, kdežto Horizontal vyjadřuje pozici panelů...
             if (container.IsSplitterFixed) area.IsSplitterFixed = true;
             area.FixedPanel = (container.FixedPanel == DevExpress.XtraEditors.SplitFixedPanel.Panel1 ? FixedPanel.Panel1 :
@@ -1425,13 +1428,13 @@ namespace Noris.Clients.Win.Components.AsolDX
             try
             {
                 // Vstupní string může mít historicky dvě varianty:
-                object xmlData = Persist.Deserialize(xmlLayout);
+                object xmlData = WSXmlSerializer.Persist.Deserialize(xmlLayout);
 
                 //  1. Pouze třída Area = bez popisu formuláře (platno pro layout uložený od 01/2021 do 09/2021);
-                if (xmlData is Area area && area != null) return true;
+                if (xmlData is WSForms.Area area && area != null) return true;
 
                 //  2. Třída FormLayout = včetně formuláře     (platno pro layout uložený od 09/2021);
-                if (xmlData is FormLayout formLayout && formLayout != null) return true;
+                if (xmlData is WSForms.FormLayout formLayout && formLayout != null) return true;
             }
             catch { }
             return false;
@@ -1463,12 +1466,12 @@ namespace Noris.Clients.Win.Components.AsolDX
             var hosts = new Dictionary<string, HostAreaInfo>();
             GetXmlLayoutFillArea(area, this, "C", items, hosts);
             
-            // Původně pouze vnitřek: string xmlLayout = Persist.Serialize(area);
+            // Původně pouze vnitřek: string xmlLayout = Persist.Serialize(area.WSArea);
             
             // Nyní včetně formuláře:
             FormLayout formLayout = CreateFormLayout();
             formLayout.RootArea = area;
-            string xmlLayout = Persist.Serialize(formLayout);
+            string xmlLayout = WSXmlSerializer.Persist.Serialize(formLayout.WSFormLayout);
 
             var array = items.ToArray();
             return (xmlLayout, array, hosts, area);
@@ -1494,7 +1497,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             hosts.Add(areaId, hostInfo);
             if (host.Controls.Count == 0)
             {
-                area.ContentType = AreaContentType.None;
+                area.ContentType = WSForms.AreaContentType.None;
                 return;
             }
 
@@ -1513,7 +1516,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             else if (control is System.Windows.Forms.SplitContainer wfSplit)
             {   // V našem hostiteli je SplitContainerControl od WinFormu:
                 hostInfo.ChildContainer = wfSplit;
-                area.ContentType = AreaContentType.WfSplitContainer;
+                area.ContentType = WSForms.AreaContentType.WfSplitContainer;
                 area.SplitterOrientation = wfSplit.Orientation;
                 area.FixedPanel = wfSplit.FixedPanel;
                 area.SplitterPosition = wfSplit.SplitterDistance;
@@ -1527,7 +1530,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             else if (control is DxLayoutItemPanel itemPanel)
             {   // V našem hostiteli je Panel s UserControlem:
                 hostInfo.ChildItemPanel = itemPanel;
-                area.ContentType = (!itemPanel.IsEmpty ? AreaContentType.DxLayoutItemPanel : AreaContentType.EmptyLayoutPanel);
+                area.ContentType = (!itemPanel.IsEmpty ? WSForms.AreaContentType.DxLayoutItemPanel : WSForms.AreaContentType.EmptyLayoutPanel);
                 Size areaSize = host.ClientSize;
                 Control userControl = itemPanel.UserControl;
                 bool isPrimaryPanel = itemPanel.IsPrimaryPanel;
@@ -1549,7 +1552,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
             else
             {
-                area.ContentType = AreaContentType.Empty;
+                area.ContentType = WSForms.AreaContentType.Empty;
             }
         }
         /// <summary>
@@ -1593,15 +1596,15 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// <summary>
             /// Druh obsahu
             /// </summary>
-            public AreaContentType ChildType 
+            public WSForms.AreaContentType ChildType 
             { 
                 get 
                 {
                     if (ChildContainer != null)
-                        return AreaContentType.DxSplitContainer;
+                        return WSForms.AreaContentType.DxSplitContainer;
                     if (ChildItemPanel != null)
-                        return (!ChildItemPanel.IsEmpty ? AreaContentType.DxLayoutItemPanel : AreaContentType.EmptyLayoutPanel);
-                    return AreaContentType.Empty; 
+                        return (!ChildItemPanel.IsEmpty ? WSForms.AreaContentType.DxLayoutItemPanel : WSForms.AreaContentType.EmptyLayoutPanel);
+                    return WSForms.AreaContentType.Empty; 
                 }
             }
             /// <summary>
@@ -1633,7 +1636,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                     var parent = this.Parent;
                     if (parent == null) return false;
                     var childType = this.ChildType;
-                    return (childType == AreaContentType.Empty || childType == AreaContentType.EmptyLayoutPanel);
+                    return (childType == WSForms.AreaContentType.Empty || childType == WSForms.AreaContentType.EmptyLayoutPanel);
                 }
             }
             /// <summary>
@@ -1675,14 +1678,15 @@ namespace Noris.Clients.Win.Components.AsolDX
                 throw new ArgumentNullException($"Set to {_XmlLayoutName} error: value is empty.");
 
             // Vstupní string může mít historicky dvě varianty:
-            object xmlData = Persist.Deserialize(xmlLayout);
+            object xmlData = WSXmlSerializer.Persist.Deserialize(xmlLayout);
 
-            if (xmlData is Area area)
+            if (xmlData is WSForms.Area wsArea)
             {   //  1. Pouze třída Area = bez popisu formuláře (platno pro layout uložený od 01/2021 do 09/2021);
-                _SetXmlLayoutArea(area, areaIdMapping, lostControlMode, force);
+                _SetXmlLayoutArea(new Area(wsArea), areaIdMapping, lostControlMode, force);
             }
-            else if (xmlData is FormLayout formLayout)
+            else if (xmlData is WSForms.FormLayout wsFormLayout)
             {   //  2. Třída FormLayout = včetně formuláře     (platno pro layout uložený od 09/2021);
+                var formLayout = new FormLayout(wsFormLayout);
                 ApplyLayoutForm(formLayout);
                 _SetXmlLayoutArea(formLayout.RootArea, areaIdMapping, lostControlMode, force);
             }
@@ -1828,15 +1832,15 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             switch (area.ContentType)
             {
-                case AreaContentType.DxSplitContainer:
+                case WSForms.AreaContentType.DxSplitContainer:
                     var container = this._CreateNewContainer(area, host);
                     SetXmlLayoutCreateContainer(container.Panel1, area.Content1, createEmptyControls);
                     SetXmlLayoutCreateContainer(container.Panel2, area.Content2, createEmptyControls);
                     break;
-                case AreaContentType.WfSplitContainer:
+                case WSForms.AreaContentType.WfSplitContainer:
                     // Tento typ obecně nepoužíváme!
                     break;
-                case AreaContentType.DxLayoutItemPanel:
+                case WSForms.AreaContentType.DxLayoutItemPanel:
                     if (createEmptyControls)
                         this._CreateEmptyPanel(host);
                     break;
@@ -1907,7 +1911,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                     if (newAreaId != null && newHosts.TryGetValue(newAreaId, out var newHostInfo) && newHostInfo.IsDisponible)
                     {   // Pokud máme explicitně určenou cílovou oblast pomocí mapy, a oblast existuje a je prázdná,
                         // pak do ní dáme control bez ohledu na lostControlMode:
-                        if (newHostInfo.ChildType == AreaContentType.EmptyLayoutPanel)
+                        if (newHostInfo.ChildType == WSForms.AreaContentType.EmptyLayoutPanel)
                             newHostInfo.ClearChilds();
                         AddControlToParent(oldControl.UserControl, newHostInfo.Parent, oldControl.IsPrimaryPanel, oldControl.TitleText, oldControl.TitleSubstitute);
                     }
@@ -1941,7 +1945,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                                 if (newHosts.TryGetValue(oldAreaId, out var newHostInfo) && newHostInfo.IsDisponible)
                                 {   // Pokud najdeme původní oblast dle AreaId, a oblast existuje a je prázdná,
                                     // pak do ní tento control umístíme:
-                                    if (newHostInfo.ChildType == AreaContentType.EmptyLayoutPanel)
+                                    if (newHostInfo.ChildType == WSForms.AreaContentType.EmptyLayoutPanel)
                                         newHostInfo.ClearChilds();
                                     AddControlToParent(oldControl.UserControl, newHostInfo.Parent, oldControl.IsPrimaryPanel, oldControl.TitleText, oldControl.TitleSubstitute);
                                     isAssigned = true;
@@ -1951,7 +1955,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                                     var anyHostInfo = newHosts.Values.FirstOrDefault(h => h.IsDisponible);
                                     if (anyHostInfo != null)
                                     {
-                                        if (anyHostInfo.ChildType == AreaContentType.EmptyLayoutPanel)
+                                        if (anyHostInfo.ChildType == WSForms.AreaContentType.EmptyLayoutPanel)
                                             anyHostInfo.ClearChilds();
                                         AddControlToParent(oldControl.UserControl, anyHostInfo.Parent, oldControl.IsPrimaryPanel, oldControl.TitleText, oldControl.TitleSubstitute);
                                         isAssigned = true;
@@ -2030,28 +2034,39 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Deklarace layoutu: obsahuje popis okna a popis rozvržení vnitřních prostor
         /// </summary>
-        private class FormLayout
+        private class FormLayout //STR0069763 - 2021.10.27 - Desktopové pohledy - zobecnění třídy pro použití na klientu i serveru: Jen obálka (fasáda) pro třídu WSForms.FormLayout
         {
+            internal FormLayout()
+            {
+                _wsFormLayout = new WSForms.FormLayout();
+            }
+            internal FormLayout(WSForms.FormLayout wsFormLayout)
+            {
+                _wsFormLayout = wsFormLayout;
+            }
+            internal WSForms.FormLayout WSFormLayout { get { return _wsFormLayout; } }
+            private readonly WSForms.FormLayout _wsFormLayout;
+
             /// <summary>
             /// Okno je tabované (true) nebo plovoucí (false)
             /// </summary>
-            public bool? IsTabbed { get; set; }
+            public bool? IsTabbed { get {return _wsFormLayout.IsTabbed; } set { _wsFormLayout.IsTabbed = value; } }
             /// <summary>
             /// Stav okna (Maximized / Normal); stav Minimized se sem neukládá, za stavu <see cref="IsTabbed"/> se hodnota ponechá na předešlé hodnotě
             /// </summary>
-            public FormWindowState? FormState { get; set; }
+            public FormWindowState? FormState { get { return (FormWindowState)(int)_wsFormLayout.FormState; } set { _wsFormLayout.FormState = (WSForms.FormWindowState)(int)value; } }
             /// <summary>
             /// Souřadnice okna platné při <see cref="FormState"/> == <see cref="FormWindowState.Normal"/> a ne <see cref="IsTabbed"/>
             /// </summary>
-            public Rectangle? FormNormalBounds { get; set; }
+            public Rectangle? FormNormalBounds { get { return _wsFormLayout.FormNormalBounds; } set { _wsFormLayout.FormNormalBounds = value; } }
             /// <summary>
             /// Zoom aktuální
             /// </summary>
-            public decimal Zoom { get; set; }
+            public decimal Zoom { get { return _wsFormLayout.Zoom; } set { _wsFormLayout.Zoom = value; } }
             /// <summary>
             /// Laoyut struktury prvků - základní úroveň, obsahuje rekurzivně další instance <see cref="Area"/>
             /// </summary>
-            public Area RootArea { get; set; }
+            public Area RootArea { get { return new Area(_wsFormLayout.RootArea); } set { _wsFormLayout.RootArea = value.WSArea; } }
         }
         /// <summary>
         /// Rozložení pracovní plochy, jedna plocha a její využití, rekurzivní třída.
@@ -2062,59 +2077,59 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <para/>
         /// Obecně k XML persistoru: není nutno používat atribut [PropertyName("xxx")], ale pak musíme zajistit neměnnost názvů properties ve třídě.
         /// </summary>
-        private class Area
+        private class Area //STR0069763 - 2021.10.27 - Desktopové pohledy - zobecnění třídy pro použití na klientu i serveru: Jen obálka (fasáda) pro třídu WSForms.Area
         {
+            internal Area()
+            {
+                WSArea = new WSForms.Area();
+            }
+            internal Area(WSForms.Area wsArea)
+            {
+                WSArea = wsArea;
+            }
+            internal readonly WSForms.Area WSArea;
+
             #region Data
             /// <summary>
             /// ID prostoru
             /// </summary>
-            [PropertyName("AreaID")]
-            public string AreaId { get; set; }
+            public string AreaId { get { return WSArea.AreaId; } set { WSArea.AreaId = value; } }
             /// <summary>
             /// Typ obsahu = co v prostoru je
             /// </summary>
-            [PropertyName("Content")]
-            public AreaContentType ContentType { get; set; }
+            public WSForms.AreaContentType ContentType { get { return WSArea.ContentType; } set { WSArea.ContentType = value; } }
             /// <summary>
             /// Uživatelský identifikátor
             /// </summary>
-            [PropertyName("ControlID")]
-            public string ControlId { get; set; }
+            public string ControlId { get { return WSArea.ControlId; } set { WSArea.ControlId = value; } }
             /// <summary>
             /// Text controlu, typicky jeho titulek
             /// </summary>
-            [PersistingEnabled(false)]
-            public string ContentText { get; set; }
+            public string ContentText { get { return WSArea.ContentText; } set { WSArea.ContentText = value; } }
             /// <summary>
             /// Orientace splitteru
             /// </summary>
-            [PropertyName("SplitterOrientation")]
-            public Orientation? SplitterOrientation { get; set; }
+            public Orientation? SplitterOrientation { get { return (Orientation)(int)WSArea.SplitterOrientation; } set { WSArea.SplitterOrientation = (WSForms.Orientation)(int)value; } }
             /// <summary>
             /// Fixovaný splitter?
             /// </summary>
-            [PropertyName("IsSplitterFixed")]
-            public bool? IsSplitterFixed { get; set; }
+            public bool? IsSplitterFixed { get { return WSArea.IsSplitterFixed; } set { WSArea.IsSplitterFixed = value; } }
             /// <summary>
             /// Fixovaný panel
             /// </summary>
-            [PropertyName("FixedPanel")]
-            public FixedPanel? FixedPanel { get; set; }
+            public FixedPanel? FixedPanel { get { return (FixedPanel)(int)WSArea.FixedPanel; } set { WSArea.FixedPanel = (WSForms.FixedPanel)(int)value; } }
             /// <summary>
             /// Minimální velikost pro Panel1
             /// </summary>
-            [PropertyName("MinSize1")]
-            public int? MinSize1 { get; set; }
+            public int? MinSize1 { get { return WSArea.MinSize1; } set { WSArea.MinSize1 = value; } }
             /// <summary>
             /// Minimální velikost pro Panel2
             /// </summary>
-            [PropertyName("MinSize2")]
-            public int? MinSize2 { get; set; }
+            public int? MinSize2 { get { return WSArea.MinSize2; } set { WSArea.MinSize2 = value; } }
             /// <summary>
             /// Pozice splitteru absolutní, zleva nebo shora
             /// </summary>
-            [PropertyName("SplitterPosition")]
-            public int? SplitterPosition { get; set; }
+            public int? SplitterPosition { get { return WSArea.SplitterPosition; } set { WSArea.SplitterPosition = value; } }
             /// <summary>
             /// Rozsah pohybu splitteru (šířka nebo výška prostoru).
             /// Podle této hodnoty a podle <see cref="FixedPanel"/> je následně restorována pozice při vkládání layoutu do nového objektu.
@@ -2128,18 +2143,15 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// Obdobné přepočty budou provedeny pro jinou situaci, kdy FixedPanel je None = splitter ke "gumový" = proporcionální.
             /// Pak se při restoru přepočte nová pozice splitteru pomocí poměru původní pozice ku Range.
             /// </summary>
-            [PropertyName("SplitterRange")]
-            public int? SplitterRange { get; set; }
+            public int? SplitterRange { get { return WSArea.SplitterRange; } set { WSArea.SplitterRange = value; } }
             /// <summary>
             /// Obsah panelu 1 (rekurzivní instance téže třídy)
             /// </summary>
-            [PropertyName("Content1")]
-            public Area Content1 { get; set; }
+            public Area Content1 { get { return new Area(WSArea.Content1); } set { WSArea.Content1 = value.WSArea; } }
             /// <summary>
             /// Obsah panelu 2 (rekurzivní instance téže třídy)
             /// </summary>
-            [PropertyName("Content2")]
-            public Area Content2 { get; set; }
+            public Area Content2 { get { return new Area(WSArea.Content2); } set { WSArea.Content2 = value.WSArea; } }
             #endregion
             #region IsEqual
             public static bool IsEqual(Area area1, Area area2)
@@ -2149,7 +2161,7 @@ namespace Noris.Clients.Win.Components.AsolDX
 
                 if (area1.ContentType != area2.ContentType) return false;    // Jiný druh obsahu
                 // Obě area mají shodný typ obsahu:
-                bool contentIsSplitted = (area1.ContentType == AreaContentType.DxSplitContainer || area1.ContentType == AreaContentType.WfSplitContainer);
+                bool contentIsSplitted = (area1.ContentType == WSForms.AreaContentType.DxSplitContainer || area1.ContentType == WSForms.AreaContentType.WfSplitContainer);
                 if (!contentIsSplitted) return true;               // Obsah NENÍ split container = z hlediska porovnání layoutu na koncovém obsahu nezáleží, jsou si rovny.
 
                 // Porovnáme deklaraci vzhledu SplitterContaineru:
@@ -2203,36 +2215,6 @@ namespace Noris.Clients.Win.Components.AsolDX
                 }
             }
             #endregion
-        }
-        /// <summary>
-        /// Typ obsahu prostoru
-        /// </summary>
-        private enum AreaContentType 
-        {
-            /// <summary>
-            /// Neurčeno
-            /// </summary>
-            None, 
-            /// <summary>
-            /// Žádný control
-            /// </summary>
-            Empty,
-            /// <summary>
-            /// Prázdný DxLayoutItemPanel
-            /// </summary>
-            EmptyLayoutPanel,
-            /// <summary>
-            /// Standardní naplněný DxLayoutItemPanel
-            /// </summary>
-            DxLayoutItemPanel, 
-            /// <summary>
-            /// SplitContainer typu DevExpress
-            /// </summary>
-            DxSplitContainer,
-            /// <summary>
-            /// SplitContainer typu WinForm
-            /// </summary>
-            WfSplitContainer
         }
         #endregion
         #endregion

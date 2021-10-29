@@ -160,6 +160,8 @@
     <Compile Include="AsolDX\DxDragDrop.cs" />
     <Compile Include="AsolDX\DxDrawingExtensions.cs" />
     <Compile Include="AsolDX\News\ResourceLibrary.cs" />
+    <Compile Include="AsolDX\System\Shared.cs" />
+    <Compile Include="AsolDX\System\XmlPersist.cs" />
     <Compile Include="AsolDX\Tests\DxDataExtensions_Test.cs" />
     <Compile Include="AsolDX\DxFilterBox.cs">
       <SubType>Component</SubType>
@@ -205,7 +207,6 @@
     </Compile>
     <Compile Include="Components\Random.cs" />
     <Compile Include="Components\ThreadManager.cs" />
-    <Compile Include="AsolDX\XmlPersist.cs" />
     <Compile Include="Forms\DataFormV1.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -2366,5 +2367,6 @@
   <ItemGroup>
     <None Include="Images\ImagesBig\Bart 01bt.png" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
