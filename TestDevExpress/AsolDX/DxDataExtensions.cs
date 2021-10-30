@@ -280,6 +280,59 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
         }
         #endregion
+        #region Dictionary
+        /// <summary>
+        /// Do this Dictionary přidá nebo aktualizuje záznam pro daný klíč.
+        /// </summary>
+        /// <typeparam name="TKey"></typeparam>
+        /// <typeparam name="TValue"></typeparam>
+        /// <param name="dictionary"></param>
+        /// <param name="key"></param>
+        /// <param name="value"></param>
+        public static void Store<TKey, TValue>(this Dictionary<TKey, TValue> dictionary, TKey key, TValue value)
+        {
+            if (dictionary == null || key == null) return;
+            if (dictionary.ContainsKey(key))
+                dictionary[key] = value;
+            else
+                dictionary.Add(key, value);
+        }
+        /// <summary>
+        /// V this Dictionary najde hodnotu pro daný klíč a vrátí ji.
+        /// Pokud ji nenajde, pak ji dodaným <paramref name="valueGenerator"/> vytvoří, uloží do Dictionary a vrátí.
+        /// Volitelně aplikuje mezivláknový zámek.
+        /// </summary>
+        /// <typeparam name="TKey"></typeparam>
+        /// <typeparam name="TValue"></typeparam>
+        /// <param name="dictionary"></param>
+        /// <param name="key"></param>
+        /// <param name="valueGenerator"></param>
+        /// <param name="applyLock"></param>
+        /// <returns></returns>
+        public static TValue Get<TKey, TValue>(this Dictionary<TKey, TValue> dictionary, TKey key, Func<TValue> valueGenerator, bool applyLock = false)
+        {
+            TValue value;
+            if (dictionary == null || key == null) return default;
+            if (dictionary.TryGetValue(key, out value)) return value;
+
+            if (!applyLock)
+            {
+                value = valueGenerator();
+                dictionary.Add(key, value);
+                return value;
+            }
+
+            lock (dictionary)
+            {
+                if (!dictionary.TryGetValue(key, out value))
+                {
+                    value = valueGenerator();
+                    dictionary.Add(key, value);
+                }
+            }
+            return value;
+        }
+        #endregion
         #region Int a bity
         /// <summary>
         /// Vrátí true pokud dané číslo má pouze jeden bit s hodnotou 1.

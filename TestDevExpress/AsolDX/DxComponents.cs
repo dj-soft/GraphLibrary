@@ -2009,7 +2009,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
         }
         #endregion
-        #region LogText_ logování
+        #region LogText - logování
         /// <summary>
         /// Obsahuje true, pokud log je aktivní.
         /// Není dobré to testovat před voláním běžných metod, ty to testují uvnitř.
@@ -2595,7 +2595,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         #endregion
         #region ImageResource, obecně aplikace obrázků do Controlů
 
-        #region Získání fyzického obrázku
+        #region GetImage - Získání fyzického obrázku
 
         public static Image GetImage(string imageName, 
             ResourceImageSizeType? sizeType = null, Size? optimalSvgSize = null,
@@ -4198,6 +4198,21 @@ namespace Noris.Clients.Win.Components.AsolDX
         Medium = 2,
         /// <summary>Large</summary>
         Large = 3
+    }
+    /// <summary>
+    /// Druh obsahu resource
+    /// </summary>
+    public enum ResourceContentType
+    {
+        None = 0,
+        Bitmap,
+        Vector,
+        Video,
+        Audio,
+        Icon,
+        Cursor,
+        Xml
+
     }
     #endregion
     #endregion

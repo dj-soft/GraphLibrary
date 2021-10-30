@@ -46,13 +46,20 @@ namespace Noris.Clients.Win.Components.AsolDX
         private ResourceLibrary()
         {
             __ItemDict = new Dictionary<string, ResourceItem>();
+            __PackDict = new Dictionary<string, ResourcePack>();
             __ImageListDict = new Dictionary<ResourceImageSizeType, System.Windows.Forms.ImageList>();
             LoadResources();
         }
         /// <summary>
-        /// Dictionary zdrojů, kde klíčem je explicitní jméno zdroje
+        /// Dictionary explicitních zdrojů, kde klíčem je explicitní jméno zdroje = včetně suffixu (velikost) a přípony,
+        /// a obsahem je jeden zdroj (obrázek)
         /// </summary>
         private Dictionary<string, ResourceItem> __ItemDict;
+        /// <summary>
+        /// Dictionary balíčkových zdrojů, kde klíčem je jméno balíčku = bez suffixu a bez přípony,
+        /// a obsahem je balíček několika příbuzných zdrojů (stejný obrázek v různých velikostech)
+        /// </summary>
+        private Dictionary<string, ResourcePack> __PackDict;
         /// <summary>
         /// Dictionary ImageListů
         /// </summary>
@@ -68,6 +75,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             LoadResources(resourcePath, 0, "Resources");
             LoadResources(resourcePath, 1, "Images");
             LoadResources(resourcePath, 1, "pic");
+            LoadResources(resourcePath, 1, "pic-0");
         }
         /// <summary>
         /// Zkusí najít zdroje v jednom adresáři
@@ -91,10 +99,9 @@ namespace Noris.Clients.Win.Components.AsolDX
                 if (!ResourceItem.IsResource(fileInfo)) continue;
                 ResourceItem item = ResourceItem.CreateFromFile(fileInfo, pathLength);
                 if (item == null) continue;
-                if (__ItemDict.ContainsKey(item.Key))
-                    __ItemDict[item.Key] = item;
-                else
-                    __ItemDict.Add(item.Key, item);
+                __ItemDict.Store(item.Key, item);
+                var pack = __PackDict.Get(item.PackKey, () => new ResourcePack(item.PackKey));
+                pack.Add(item);
             }
         }
         #endregion
@@ -148,6 +155,17 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="size"></param>
         /// <returns></returns>
         public static System.Windows.Forms.ImageList GetImageList(ResourceImageSizeType size) { return Current._GetImageList(size); }
+        /// <summary>
+        /// Vrátí typ obsahu podle přípony souboru
+        /// </summary>
+        /// <param name="fileName"></param>
+        /// <returns></returns>
+        public static ResourceContentType DetectContentType(string fileName)
+        {
+            if (String.IsNullOrEmpty(fileName)) return ResourceContentType.None;
+            string extension = System.IO.Path.GetExtension(fileName).ToLower().Trim();
+            return ResourcePack.DetectContentTypeByExtension(extension);
+        }
         #endregion
         #region Private instanční sféra
         /// <summary>
@@ -180,13 +198,159 @@ namespace Noris.Clients.Win.Components.AsolDX
         protected class ResourcePack
         {
             /// <summary>
+            /// Konstruktor pro daný klíč = jméno souboru s relativním adresářem, bez značky velikosti a bez přípony
+            /// </summary>
+            /// <param name="packKey"></param>
+            public ResourcePack(string packKey)
+            {
+                PackKey = packKey;
+                ResourceItems = new List<ResourceItem>();
+            }
+            /// <summary>
             /// Klíč: obsahuje jméno adresáře a souboru, ale bez označení velikosti a bez přípony
             /// </summary>
-            public string Key { get; private set; }
+            public string PackKey { get; private set; }
             /// <summary>
             /// Jednotlivé prvky, různých velikostí a typů
             /// </summary>
             public List<ResourceItem> ResourceItems { get; private set; }
+            /// <summary>
+            /// Přidá dodaný prvek
+            /// </summary>
+            /// <param name="item"></param>
+            public void Add(ResourceItem item)
+            {
+                if (item != null)
+                    ResourceItems.Add(item);
+            }
+            /// <summary>
+            /// Určí patřičné vlastnosti zdroje na základě jeho jména souboru
+            /// </summary>
+            /// <param name="fullName"></param>
+            /// <param name="packKey"></param>
+            /// <param name="contentType"></param>
+            /// <param name="sizeType"></param>
+            internal static void DetectInfo(string fullName, out string packKey, out ResourceContentType contentType, out ResourceImageSizeType? sizeType)
+            {
+                string extension = System.IO.Path.GetExtension(fullName).ToLower().Trim();
+                contentType = DetectContentTypeByExtension(extension);
+                string name = System.IO.Path.GetFileNameWithoutExtension(fullName).ToLower().Trim();
+                sizeType = DetectSizeTypeByName(ref name, contentType);
+                packKey = name;
+            }
+            /// <summary>
+            /// Vrátí typ obsahu podle přípony
+            /// </summary>
+            /// <param name="extension"></param>
+            /// <returns></returns>
+            internal static ResourceContentType DetectContentTypeByExtension(string extension)
+            {
+                switch (extension)
+                {
+                    case ".bmp":
+                    case ".jpg":
+                    case ".jpeg":
+                    case ".png":
+                    case ".gif":
+                    case ".pcx":
+                    case ".tif":
+                    case ".tiff":
+                        return ResourceContentType.Bitmap;
+                    case ".svg":
+                        return ResourceContentType.Vector;
+                    case ".mp4":
+                    case ".mpg":
+                    case ".mpeg":
+                    case ".avi":
+                        return ResourceContentType.Video;
+                    case ".wav":
+                    case ".flac":
+                    case ".mp3":
+                    case ".mpc":
+                        return ResourceContentType.Audio;
+                    case ".ico":
+                        return ResourceContentType.Icon;
+                    case ".cur":
+                        return ResourceContentType.Cursor;
+                    case ".xml":
+                        return ResourceContentType.Xml;
+                }
+                return ResourceContentType.None;
+            }
+            /// <summary>
+            /// Vrátí typ velikosti obrázku podle jména a konvence: -16x16;  -24x24;  -32x32;  -small;  -large
+            /// </summary>
+            /// <param name="name"></param>
+            /// <param name="contentType"></param>
+            /// <returns></returns>
+            internal static ResourceImageSizeType? DetectSizeTypeByName(ref string name, ResourceContentType contentType)
+            {
+                if (String.IsNullOrEmpty(name)) return null;
+
+                name = name.Trim().ToLower();
+                int length = name.Length;
+                switch (contentType)
+                {
+                    case ResourceContentType.Bitmap:
+                        if (length > 6)
+                        {
+                            if (name.EndsWith("-16x16"))
+                            {
+                                name = name.Substring(0, length - 6);
+                                return ResourceImageSizeType.Small;
+                            }
+                            if (name.EndsWith("-24x24"))
+                            {
+                                name = name.Substring(0, length - 6);
+                                return ResourceImageSizeType.Medium;
+                            }
+                            if (name.EndsWith("-32x32"))
+                            {
+                                name = name.Substring(0, length - 6);
+                                return ResourceImageSizeType.Large;
+                            }
+                        }
+                        return ResourceImageSizeType.Medium;
+                    case ResourceContentType.Vector:
+                        if (length > 6)
+                        {
+                            if (name.EndsWith("-small"))
+                            {
+                                name = name.Substring(0, length - 6);
+                                return ResourceImageSizeType.Small;
+                            }
+                            if (name.EndsWith("-large"))
+                            {
+                                name = name.Substring(0, length - 6);
+                                return ResourceImageSizeType.Large;
+                            }
+                        }
+                        return ResourceImageSizeType.Medium;
+                }
+                return null;
+
+                /*
+
+                c:\inetpub\wwwroot\Noris99\Noris\pic\address-book-large.svg
+                c:\inetpub\wwwroot\Noris99\Noris\pic\address-book-locations-large.svg
+                c:\inetpub\wwwroot\Noris99\Noris\pic\address-book-locations-small.svg
+                c:\inetpub\wwwroot\Noris99\Noris\pic\address-book-small.svg
+                c:\inetpub\wwwroot\Noris99\Noris\pic\address-book-undo-2-large.svg
+                c:\inetpub\wwwroot\Noris99\Noris\pic\address-book-undo-2-small.svg
+                c:\inetpub\wwwroot\Noris99\Noris\pic\address-book-update-bottom-left-large.svg
+                c:\inetpub\wwwroot\Noris99\Noris\pic\address-book-update-bottom-left-small.svg
+                c:\inetpub\wwwroot\Noris99\Noris\pic\AddressDelete-16x16.png
+                c:\inetpub\wwwroot\Noris99\Noris\pic\AddressDelete-24x24.png
+                c:\inetpub\wwwroot\Noris99\Noris\pic\AddressDelete-32x32.png
+                c:\inetpub\wwwroot\Noris99\Noris\pic\AddressEdit-16x16.png
+                c:\inetpub\wwwroot\Noris99\Noris\pic\AddressEdit-24x24.png
+                c:\inetpub\wwwroot\Noris99\Noris\pic\AddressEdit-32x32.png
+                c:\inetpub\wwwroot\Noris99\Noris\pic\AddressCheckedRuian-16x16.png
+                c:\inetpub\wwwroot\Noris99\Noris\pic\AddressCheckedRuian-24x24.png
+                c:\inetpub\wwwroot\Noris99\Noris\pic\AddressCheckedRuian-32x32.png
+
+                */
+            }
         }
         #endregion
         #region class ResourceItem
@@ -223,9 +387,12 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// <returns></returns>
             internal static ResourceItem CreateFromFile(System.IO.FileInfo fileInfo, int commonPathLength = 0)
             {
-                if (fileInfo == null || !fileInfo.Exists || fileInfo.FullName.Length <= commonPathLength) return null;
-                string key = GetKey(commonPathLength <= 0 ? fileInfo.FullName : fileInfo.FullName.Substring(commonPathLength));
-                return new ResourceItem(key, fileInfo.FullName);
+                if (fileInfo == null || !fileInfo.Exists) return null;
+                string fullName = fileInfo.FullName;
+                if (fullName.Length <= commonPathLength) return null;
+                string key = GetKey((commonPathLength <= 0 || commonPathLength >= fullName.Length) ? fullName : fullName.Substring(commonPathLength));
+                ResourcePack.DetectInfo(key, out string packKey, out ResourceContentType contentType, out ResourceImageSizeType? sizeType);
+                return new ResourceItem(fullName, packKey, fullName, contentType, sizeType);
             }
             /// <summary>
             /// Vrátí klíč z daného jména souboru.
@@ -243,10 +410,16 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// Konstruktor
             /// </summary>
             /// <param name="key"></param>
+            /// <param name="packKey"></param>
             /// <param name="fileName"></param>
-            private ResourceItem(string key, string fileName)
+            /// <param name="contentType"></param>
+            /// <param name="sizeType"></param>
+            private ResourceItem(string key, string packKey, string fileName, ResourceContentType contentType, ResourceImageSizeType? sizeType)
             {
                 this.Key = key;
+                this.PackKey = packKey;
+                this.ContentType = contentType;
+                this.SizeType = sizeType;
                 this.FileName = fileName;
                 this.FileType = System.IO.Path.GetExtension(fileName).ToLower().Trim();
                 this._Content = null;
@@ -263,9 +436,21 @@ namespace Noris.Clients.Win.Components.AsolDX
             #endregion
             #region Public data
             /// <summary>
-            /// Klíč: obsahuje jméno adresáře a souboru, kompletní včetně označení velikosti a včetně přípony
+            /// Klíč: obsahuje relativní jméno adresáře a souboru, kompletní včetně označení velikosti a včetně přípony
             /// </summary>
             public string Key { get; private set; }
+            /// <summary>
+            /// Klíč skupinový: obsahuje relativní jméno adresáře a souboru, bez označení velikosti a bez přípony
+            /// </summary>
+            public string PackKey { get; private set; }
+            /// <summary>
+            /// Typ obsahu určený podle přípony
+            /// </summary>
+            public ResourceContentType ContentType { get; private set; }
+            /// <summary>
+            /// Velikost obrázku určená podle konvence názvu souboru
+            /// </summary>
+            public ResourceImageSizeType? SizeType { get; private set; }
             /// <summary>
             /// Plné jméno souboru
             /// </summary>
@@ -277,26 +462,26 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// <summary>
             /// Fyzická velikost bitmapy, určená podle obsahu, pro zdroje typu Bitmapa (<see cref="IsBitmap"/> = true).
             /// </summary>
-            public System.Drawing.Size? BitmapSize { get { return _GetBitmapSize(); } }
+            public System.Drawing.Size? RealBitmapSize { get { return _GetRealBitmapSize(); } }
             /// <summary>
             /// Typ velikosti bitmapy, určená podle obsahu, pro zdroje typu Bitmapa (<see cref="IsBitmap"/> = true).
             /// Bitmapy s menší stranou pod 24px jsou <see cref="ResourceImageSizeType.Small"/>;
             /// Bitmapy pod 32px jsou <see cref="ResourceImageSizeType.Medium"/>;
             /// Bitmapy 32px a více jsou <see cref="ResourceImageSizeType.Large"/>;
             /// </summary>
-            public ResourceImageSizeType? BitmapSizeType { get { return _GetBitmapSizeType(); } }
+            public ResourceImageSizeType? RealBitmapSizeType { get { return _GetRealBitmapSizeType(); } }
             /// <summary>
             /// Obsahuje true, pokud this zdroj je typu SVG (má příponu ".png", ".jpg", ".jpeg", ".bmp", ".gif", ".tif", ".tiff")
             /// </summary>
-            public bool IsBitmap { get { return _IsExtension(this.FileType, ".png", ".jpg", ".jpeg", ".bmp", ".gif", ".tif", ".tiff"); } }
+            public bool IsBitmap { get { return (ContentType == ResourceContentType.Bitmap); } }
             /// <summary>
             /// Obsahuje true, pokud this zdroj je typu SVG (má příponu ".svg")
             /// </summary>
-            public bool IsSvg { get { return _IsExtension(this.FileType, ".svg"); } }
+            public bool IsSvg { get { return (ContentType == ResourceContentType.Vector); } }
             /// <summary>
             /// Obsahuje true, pokud this zdroj je typu XML (má příponu ".xml")
             /// </summary>
-            public bool IsXml { get { return _IsExtension(this.FileType, ".xml"); } }
+            public bool IsXml { get { return (ContentType == ResourceContentType.Xml); } }
             /// <summary>
             /// Obsahuje true, pokud this zdroj má platná data v <see cref="Content"/>.
             /// Obsahuje false v případě, kdy soubor nebylo možno načíst (práva, soubor zmizel, atd).
@@ -330,11 +515,11 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// Vrátí druh velikosti aktuálního obrázku, z cache <see cref="_BitmapSizeType"/> anebo ji nyní zjistí a uloží
             /// </summary>
             /// <returns></returns>
-            private ResourceImageSizeType? _GetBitmapSizeType()
+            private ResourceImageSizeType? _GetRealBitmapSizeType()
             {
                 if (IsBitmap && !_BitmapSizeType.HasValue)
                 {
-                    var size = _GetBitmapSize();
+                    var size = _GetRealBitmapSize();
                     _BitmapSizeType = (size.HasValue ? _GetBitmapSizeType(size.Value) : ResourceImageSizeType.None);
                 }
                 return _BitmapSizeType;
@@ -343,7 +528,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// Vrátí velikost bitmapy v pixelech, z cache <see cref="_BitmapSize"/> anebo ji nyní zjistí a uloží
             /// </summary>
             /// <returns></returns>
-            private System.Drawing.Size? _GetBitmapSize()
+            private System.Drawing.Size? _GetRealBitmapSize()
             {
                 if (IsBitmap && !_BitmapSize.HasValue)
                 {
@@ -413,24 +598,3 @@ namespace Noris.Clients.Win.Components.AsolDX
     }
 }
 
-/*
-
-c:\inetpub\wwwroot\Noris99\Noris\pic\address-book-large.svg
-c:\inetpub\wwwroot\Noris99\Noris\pic\address-book-locations-large.svg
-c:\inetpub\wwwroot\Noris99\Noris\pic\address-book-locations-small.svg
-c:\inetpub\wwwroot\Noris99\Noris\pic\address-book-small.svg
-c:\inetpub\wwwroot\Noris99\Noris\pic\address-book-undo-2-large.svg
-c:\inetpub\wwwroot\Noris99\Noris\pic\address-book-undo-2-small.svg
-c:\inetpub\wwwroot\Noris99\Noris\pic\address-book-update-bottom-left-large.svg
-c:\inetpub\wwwroot\Noris99\Noris\pic\address-book-update-bottom-left-small.svg
-c:\inetpub\wwwroot\Noris99\Noris\pic\AddressDelete-16x16.png
-c:\inetpub\wwwroot\Noris99\Noris\pic\AddressDelete-24x24.png
-c:\inetpub\wwwroot\Noris99\Noris\pic\AddressDelete-32x32.png
-c:\inetpub\wwwroot\Noris99\Noris\pic\AddressEdit-16x16.png
-c:\inetpub\wwwroot\Noris99\Noris\pic\AddressEdit-24x24.png
-c:\inetpub\wwwroot\Noris99\Noris\pic\AddressEdit-32x32.png
-c:\inetpub\wwwroot\Noris99\Noris\pic\AddressCheckedRuian-16x16.png
-c:\inetpub\wwwroot\Noris99\Noris\pic\AddressCheckedRuian-24x24.png
-c:\inetpub\wwwroot\Noris99\Noris\pic\AddressCheckedRuian-32x32.png
-
-*/

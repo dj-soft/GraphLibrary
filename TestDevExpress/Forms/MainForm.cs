@@ -103,21 +103,21 @@ namespace TestDevExpress.Forms
 
             if (ResourceLibrary.TryGetResource(@"Images\Actions24\align-horizontal-right-out(24).png", out item))
             {
-                var size = item.BitmapSize;
-                var sizeType = item.BitmapSizeType;
+                var size = item.RealBitmapSize;
+                var sizeType = item.RealBitmapSizeType;
             }
 
             string caption = null;
             if (ResourceLibrary.TryGetResource(@"Images\Svg\amazon-chime-svgrepo-com.svg", out item))
             {
-                var size = item.BitmapSize;
-                var sizeType = item.BitmapSizeType;
+                var size = item.RealBitmapSize;
+                var sizeType = item.RealBitmapSizeType;
             }
             //  else if (ResourceLibrary.TryGetResource(@"Images\SvgAsol\building-factory-4-filled-large.svg", out item))
             else if (ResourceLibrary.TryGetResource(@"Images\SvgAsol\vyhledavani-large.svg", out item))
             {
-                var size = item.BitmapSize;
-                var sizeType = item.BitmapSizeType;
+                var size = item.RealBitmapSize;
+                var sizeType = item.RealBitmapSizeType;
                 caption = "Vybrat pořadač";
             }
 
