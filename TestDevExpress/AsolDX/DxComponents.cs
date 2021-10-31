@@ -2602,6 +2602,27 @@ namespace Noris.Clients.Win.Components.AsolDX
             DevExpress.Utils.Design.ISvgPaletteProvider svgPalette = null, DevExpress.Utils.Drawing.ObjectState? svgState = null)
         { return Instance._GetImage(imageName, sizeType, optimalSvgSize, svgPalette, svgState); }
 
+        /// <summary>
+        /// Vrátí true, pokud pro dané jméno existuje systémový zdroj (ikona png nebo svg)
+        /// </summary>
+        /// <param name="resourceName"></param>
+        /// <returns></returns>
+        private bool _ExistsImageResource(string resourceName)
+        {
+            if (String.IsNullOrEmpty(resourceName)) return false;
+            var key = _GetImageResourceKey(resourceName);
+            var dictionary = _ImageResourceDictionary;
+            return dictionary.TryGetValue(key, out var _);
+        }
+        /// <summary>
+        /// Vrátí true, pokud dané jméno zdroje končí příponou ".svg"
+        /// </summary>
+        /// <param name="resourceName"></param>
+        /// <returns></returns>
+        private static bool _IsImageNameSvg(string resourceName)
+        {
+            return (!String.IsNullOrEmpty(resourceName) && resourceName.TrimEnd().EndsWith(".svg", StringComparison.OrdinalIgnoreCase));
+        }
 
         private Image _GetImage(string imageName,
             ResourceImageSizeType? sizeType = null, Size? optimalSvgSize = null,
@@ -2610,6 +2631,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (String.IsNullOrEmpty(imageName)) return null;
             bool isSvg = _IsImageNameSvg(imageName);
             bool isSys = _ExistsImageResource(imageName);
+            bool isRes = !isSys && ResourceLibrary.ContainsResource(imageName);
             if (isSys)
                 return (isSvg ?
                         _GetImageResourceSvg(imageName, sizeType, optimalSvgSize, svgPalette, svgState) :
@@ -2644,7 +2666,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             s = ZoomToGui(s);
             return new Size(s, s);
         }
-        #endregion
 
         private Image _GetImageResourceBmp(string imageName, 
             ResourceImageSizeType? sizeType = null, Size? optimalSvgSize = null,
@@ -2670,10 +2691,25 @@ namespace Noris.Clients.Win.Components.AsolDX
                 image = _ImageResourceCache.GetSvgImage(resourceName, svgPalette, size);
             return image;
         }
+        private Image _GetImageAdapterBmp(string imageName,
+            ResourceImageSizeType? sizeType = null, Size? optimalSvgSize = null,
+            DevExpress.Utils.Design.ISvgPaletteProvider svgPalette = null, DevExpress.Utils.Drawing.ObjectState? svgState = null)
+        {
+            if (ResourceLibrary)
+            ResourceLibrary.CreateBitmap()
+            string resourceName = _GetImageResourceKey(imageName);
+            return _ImageResourceCache.GetImage(resourceName);
+        }
+        private Image _GetImageAdapterSvg(string imageName,
+            ResourceImageSizeType? sizeType = null, Size? optimalSvgSize = null,
+            DevExpress.Utils.Design.ISvgPaletteProvider svgPalette = null, DevExpress.Utils.Drawing.ObjectState? svgState = null)
+        {
+            string resourceName = _GetImageResourceKey(imageName);
+            return _ImageResourceCache.GetImage(resourceName);
+        }
 
 
-
-
+        #endregion
 
 
 
@@ -2939,18 +2975,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private static string ImageUriPrefix { get { return "image://"; } }
         /// <summary>
-        /// Vrátí true, pokud pro dané jméno existuje systémový zdroj (ikona png nebo svg)
-        /// </summary>
-        /// <param name="resourceName"></param>
-        /// <returns></returns>
-        private bool _ExistsImageResource(string resourceName)
-        {
-            if (String.IsNullOrEmpty(resourceName)) return false;
-            var key = _GetImageResourceKey(resourceName);
-            var dictionary = _ImageResourceDictionary;
-            return dictionary.TryGetValue(key, out var _);
-        }
-        /// <summary>
         /// Zkusí najít daný zdroj v <see cref="_ImageResourceDictionary"/> (seznam systémových zdrojů = ikon) a určit jeho příponu. Vrací true = nalezeno.
         /// Přípona je trim(), lower() a bez tečky na začátku, například: "png", "svg" atd.
         /// </summary>
@@ -2984,15 +3008,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             var position = stream.Position;
             if (stream.Position > 0L && stream.CanSeek)
                 stream.Seek(0L, System.IO.SeekOrigin.Begin);
-        }
-        /// <summary>
-        /// Vrátí true, pokud dané jméno zdroje končí příponou ".svg"
-        /// </summary>
-        /// <param name="resourceName"></param>
-        /// <returns></returns>
-        private static bool _IsImageNameSvg(string resourceName)
-        {
-            return (!String.IsNullOrEmpty(resourceName) && resourceName.TrimEnd().EndsWith(".svg", StringComparison.OrdinalIgnoreCase));
         }
         /// <summary>
         /// Cache systémových image resources
@@ -4192,11 +4207,11 @@ namespace Noris.Clients.Win.Components.AsolDX
     {
         /// <summary>None</summary>
         None = 0,
-        /// <summary>Small</summary>
+        /// <summary>Small (typicky 16 x 16)</summary>
         Small = 1,
-        /// <summary>Medium</summary>
+        /// <summary>Medium (typicky 24 x 24)</summary>
         Medium = 2,
-        /// <summary>Large</summary>
+        /// <summary>Large (typicky 32 x 32)</summary>
         Large = 3
     }
     /// <summary>
@@ -4204,15 +4219,38 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// </summary>
     public enum ResourceContentType
     {
+        /// <summary>
+        /// Nejde o platný Resource (neznámá přípona)
+        /// </summary>
         None = 0,
+        /// <summary>
+        /// Bitmapa (BMP, JPG, PNG, PCX, GIF, TIF)
+        /// </summary>
         Bitmap,
+        /// <summary>
+        /// Vektor (SVG)
+        /// </summary>
         Vector,
+        /// <summary>
+        /// Video (MP4, AVI, MPEG)
+        /// </summary>
         Video,
+        /// <summary>
+        /// Audio (MP3, WAV, FLAC)
+        /// </summary>
         Audio,
+        /// <summary>
+        /// Ikona (ICO)
+        /// </summary>
         Icon,
+        /// <summary>
+        /// Kurzor (CUR)
+        /// </summary>
         Cursor,
+        /// <summary>
+        /// Xml (XML, HTML)
+        /// </summary>
         Xml
-
     }
     #endregion
     #endregion
