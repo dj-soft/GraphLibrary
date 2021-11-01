@@ -4006,6 +4006,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         event EventHandler ISystemAdapter.InteractiveZoomChanged { add { ComponentConnector.Host.InteractiveZoomChanged += value; } remove { ComponentConnector.Host.InteractiveZoomChanged -= value; } }
         decimal ISystemAdapter.ZoomRatio { get { return ((decimal)Common.SupportScaling.GetScaledValue(100000)) / 100000m; } }
         string ISystemAdapter.GetMessage(string messageCode, params object[] parameters) { return ASOL.Framework.Shared.Localization.Message.GetMessage(messageCode, parameters); }
+        IEnumerable<IResourceItem> ISystemAdapter.GetResources() { }
+        byte[] ISystemAdapter.GetResourceContent(string resourceKey) { }
         System.Drawing.Image ISystemAdapter.GetResourceImage(string resourceName, ResourceImageSizeType sizeType, string caption) { return ComponentConnector.GraphicsCache.GetResourceContent(resourceName, ConvertTo(sizeType), caption); }
         System.Windows.Forms.ImageList ISystemAdapter.GetResourceImageList(ResourceImageSizeType sizeType) { return ComponentConnector.GraphicsCache.GetImageList(ConvertTo(sizeType)); }
         int ISystemAdapter.GetResourceIndex(string iconName, ResourceImageSizeType sizeType, string caption) { return ComponentConnector.GraphicsCache.GetResourceIndex(iconName, ConvertTo(sizeType), caption); }

@@ -7,6 +7,7 @@ using System.Drawing;
 using System.Windows.Forms;
 using WinForm = System.Windows.Forms;
 using WinFormServices.Drawing;
+using AsolDX = Noris.Clients.Win.Components.AsolDX;
 
 
 #region Noris classes and support
@@ -601,6 +602,12 @@ namespace Noris.Clients.Win.Components
         /// Zoom
         /// </summary>
         public decimal CurrentZoom { get { return 1m; } }
+
+        public IEnumerable<IResourceItem> GetResources()
+        {
+
+        }
+
         /// <summary>
         /// Simulace Green
         /// </summary>
@@ -746,7 +753,18 @@ namespace Noris.Clients.Win.Components
             { }
         }
     }
+    internal class GreenResourceItem : AsolDX.IResourceItem
+    {
+        public string ApplicationItemKey { get; set; }
 
+        public string ApplicationPackKey { get; set; }
+
+        public string ResourceKey { get; set; }
+
+        public AsolDX.ResourceContentType ContentType { get; set; }
+
+        public AsolDX.ResourceImageSizeType SizeType { get; set; }
+    }
     /// <summary>
     /// Simulace Green
     /// </summary>

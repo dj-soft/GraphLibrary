@@ -525,6 +525,16 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             #region Tvorba prvku
             /// <summary>
+            /// Vytvoří pracovní prvek <see cref="ResourceItem"/> z dodaných dat
+            /// </summary>
+            /// <param name="resource"></param>
+            /// <returns></returns>
+            internal static ResourceItem CreateFrom(IResourceItem resource)
+            {
+                throw new NotImplementedException();
+            }
+
+            /// <summary>
             /// Vrátí true, pokud daný soubor může býti Resource
             /// </summary>
             /// <param name="fileInfo"></param>
