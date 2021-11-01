@@ -150,6 +150,8 @@ namespace Noris.Clients.Win.Components.AsolDX
                 keys = dict.Keys.Where(k => k.EndsWith(ext)).ToArray();
             return DxComponent.GetRandomItem(keys);
         }
+        #endregion
+        #region Rozpoznání typu obsahu podle přípony; a typu velikosti podle suffixu 
         /// <summary>
         /// Vrátí typ obsahu podle přípony souboru
         /// </summary>
@@ -158,8 +160,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         public static ResourceContentType DetectContentType(string fileName)
         {
             if (String.IsNullOrEmpty(fileName)) return ResourceContentType.None;
-            string extension = System.IO.Path.GetExtension(fileName).ToLower().Trim();
-            return DetectContentTypeByExtension(extension);
+            string name = fileName;
+            RemoveContentTypeByExtension(ref name, out ResourceContentType contentType);
+            return contentType;
         }
         /// <summary>
         /// Vrátí typ obsahu podle přípony
@@ -168,6 +171,28 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         internal static ResourceContentType DetectContentTypeByExtension(string extension)
         {
+            string name = extension;
+            RemoveContentTypeByExtension(ref name, out ResourceContentType contentType);
+            return contentType;
+        }
+        /// <summary>
+        /// Z dodaného jména souboru určí příponu, podle ní detekuje typ obsahu (dá do out parametru) a detekovanou příponu odřízne (včetně tečky).
+        /// Vrátí true, pokud nějakou příponu detekoval a odřízl (tedy <paramref name="contentType"/> je jiný než None). 
+        /// Vrátí false, když je vstup prázdný, nebo bez přípony nebo s neznámou příponou, pak příponu neodřízne.
+        /// <para/>
+        /// Například pro vstup: "C:/Images/Button-24x24.png" detekuje <paramref name="contentType"/> = <see cref="ResourceContentType.Bitmap"/>, 
+        /// a v ref parametru <paramref name="name"/> ponechá: "C:/Images/Button-24x24".
+        /// <para/>
+        /// Tato metoda se typicky volá před metodou <see cref="RemoveSizeTypeBySuffix(ref string, out ResourceImageSizeType?)"/>, protože tady se řeší a odřízne přípona, a následně se tam řeší suffix jména souboru.
+        /// </summary>
+        /// <param name="name"></param>
+        /// <param name="contentType"></param>
+        internal static bool RemoveContentTypeByExtension(ref string name, out ResourceContentType contentType)
+        {
+            contentType = ResourceContentType.None;
+            if (String.IsNullOrEmpty(name)) return false;
+            name = name.TrimEnd();
+            string extension = System.IO.Path.GetExtension(name).ToLower();
             switch (extension)
             {
                 case ".bmp":
@@ -178,81 +203,75 @@ namespace Noris.Clients.Win.Components.AsolDX
                 case ".pcx":
                 case ".tif":
                 case ".tiff":
-                    return ResourceContentType.Bitmap;
+                    contentType = ResourceContentType.Bitmap;
+                    break;
                 case ".svg":
-                    return ResourceContentType.Vector;
+                    contentType = ResourceContentType.Vector;
+                    break;
                 case ".mp4":
                 case ".mpg":
                 case ".mpeg":
                 case ".avi":
-                    return ResourceContentType.Video;
+                    contentType = ResourceContentType.Video;
+                    break;
                 case ".wav":
                 case ".flac":
                 case ".mp3":
                 case ".mpc":
-                    return ResourceContentType.Audio;
+                    contentType = ResourceContentType.Audio;
+                    break;
                 case ".ico":
-                    return ResourceContentType.Icon;
+                    contentType = ResourceContentType.Icon;
+                    break;
                 case ".cur":
-                    return ResourceContentType.Cursor;
+                    contentType = ResourceContentType.Cursor;
+                    break;
                 case ".htm":
                 case ".html":
                 case ".xml":
-                    return ResourceContentType.Xml;
+                    contentType = ResourceContentType.Xml;
+                    break;
             }
-            return ResourceContentType.None;
+            if (contentType != ResourceContentType.None)
+                name = name.Substring(0, name.Length - extension.Length);
+            return (contentType != ResourceContentType.None);
         }
         /// <summary>
-        /// Vrátí typ velikosti obrázku podle jména a konvence: -16x16;  -24x24;  -32x32;  -small;  -large
+        /// Z dodaného jména souboru určí suffix, a podle něj detekuje velikost obrázku (dá do out parametru) a detekovaný suffix odřízne (celý).
+        /// Vrátí true, pokud nějakou velikost detekoval a odřízl (tedy <paramref name="sizeType"/> je jiný než None). 
+        /// Vrátí false, když je vstup prázdný, nebo bez suffixu nebo s neznámým suffixem, pak suffix neodřízne.
+        /// <para/>
+        /// Například pro vstup: "C:/Images/Button-24x24" detekuje <paramref name="sizeType"/> = <see cref="ResourceImageSizeType.Medium"/>, 
+        /// a v ref parametru <paramref name="name"/> ponechá: "C:/Images/Button".
+        /// <para/>
+        /// Tato metoda se typicky volá až po metodě <see cref="RemoveContentTypeByExtension(ref string, out ResourceContentType)"/>, protože tam se řeší a odřízne přípona, a následně se zde řeší suffix jména souboru.
         /// </summary>
         /// <param name="name"></param>
-        /// <param name="contentType"></param>
+        /// <param name="sizeType"></param>
         /// <returns></returns>
-        internal static ResourceImageSizeType? DetectSizeTypeByName(ref string name, ResourceContentType contentType)
+        internal static bool RemoveSizeTypeBySuffix(ref string name, out ResourceImageSizeType? sizeType)
         {
-            if (String.IsNullOrEmpty(name)) return null;
-
-            name = name.Trim().ToLower();
-            int length = name.Length;
-            switch (contentType)
+            sizeType = null;
+            if (String.IsNullOrEmpty(name)) return false;
+            name = name.TrimEnd();
+            int index = name.LastIndexOf("-");
+            if (index <= 0) return false;
+            string suffix = name.Substring(index).ToLower();
+            switch (suffix)
             {
-                case ResourceContentType.Bitmap:
-                    if (length > 6)
-                    {
-                        if (name.EndsWith("-16x16"))
-                        {
-                            name = name.Substring(0, length - 6);
-                            return ResourceImageSizeType.Small;
-                        }
-                        if (name.EndsWith("-24x24"))
-                        {
-                            name = name.Substring(0, length - 6);
-                            return ResourceImageSizeType.Medium;
-                        }
-                        if (name.EndsWith("-32x32"))
-                        {
-                            name = name.Substring(0, length - 6);
-                            return ResourceImageSizeType.Large;
-                        }
-                    }
-                    return ResourceImageSizeType.Medium;
-                case ResourceContentType.Vector:
-                    if (length > 6)
-                    {
-                        if (name.EndsWith("-small"))
-                        {
-                            name = name.Substring(0, length - 6);
-                            return ResourceImageSizeType.Small;
-                        }
-                        if (name.EndsWith("-large"))
-                        {
-                            name = name.Substring(0, length - 6);
-                            return ResourceImageSizeType.Large;
-                        }
-                    }
-                    return ResourceImageSizeType.Medium;
+                case "-16x16":
+                case "-small":
+                    sizeType = ResourceImageSizeType.Small;
+                    break;
+                case "-24x24":
+                    sizeType = ResourceImageSizeType.Medium;
+                    break;
+                case "-32x32":
+                case "-large":
+                    sizeType = ResourceImageSizeType.Large;
+                    break;
             }
-            return null;
+            return (sizeType.HasValue);
 
             /*
 
@@ -278,8 +297,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         #endregion
         #region Získání Bitmapy
-        public static Image CreateBitmap()
-        { }
+        public static Image CreateBitmap(string imageName, ResourceImageSizeType? sizeType = null) { return Current._CreateBitmap(imageName, sizeType); }
         /// <summary>
         /// Vrátí instanci knihovny obrázků dané velikosti
         /// </summary>
@@ -303,6 +321,14 @@ namespace Noris.Clients.Win.Components.AsolDX
             string key = ResourceItem.GetKey(resourceName);
             return (__ItemDict.ContainsKey(key) || __PackDict.ContainsKey(key));
         }
+
+        private Image _CreateBitmap(string imageName, ResourceImageSizeType? sizeType = null)
+        {
+            ResourceItem item;
+            if (!_TryGetDirectItem(imageName, out item))
+                if (!_TryGetPackItem(imageName, ResourceContentType.Bitmap, sizeType, out item))
+                    return null;
+        }
         /// <summary>
         /// Najde / vytvoří a uloží / a vrátí ImageList pro danou velikost
         /// </summary>
@@ -324,7 +350,33 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
             return imageList;
         }
+        /// <summary>
+        /// Zkusí najít <see cref="ResourceItem"/> podle explicitního jména (tj. včetně suffixu a přípony).
+        /// </summary>
+        /// <param name="imageName"></param>
+        /// <param name="item"></param>
+        /// <returns></returns>
+        private bool _TryGetDirectItem(string imageName, out ResourceItem item)
+        {
+            string itemKey = ResourceItem.GetKey(imageName);
+            return __ItemDict.TryGetValue(itemKey, out item);
+        }
+        /// <summary>
+        /// Zkusí najít <see cref="ResourceItem"/> podle daného jména (typicky bez suffixu a přípony) v sadě zdrojů, a upřesní výsledek podle požadované velikosti a typu.
+        /// </summary>
+        /// <param name="imageName"></param>
+        /// <param name="contentType"></param>
+        /// <param name="sizeType"></param>
+        /// <param name="item"></param>
+        /// <returns></returns>
+        private bool _TryGetPackItem(string imageName, ResourceContentType contentType, ResourceImageSizeType? sizeType, out ResourceItem item)
+        {
+            item = null;
+            string packKey = ResourcePack.GetKey(imageName);
+            if (!__PackDict.TryGetValue(packKey, out ResourcePack pack)) return false;
+            if (pack.TryGetItem(contentType, sizeType, out );
 
+        }
         #endregion
         #region class ResourcePack
         /// <summary>
@@ -367,11 +419,26 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// <param name="sizeType"></param>
             internal static void DetectInfo(string fullName, out string packKey, out ResourceContentType contentType, out ResourceImageSizeType? sizeType)
             {
-                string extension = System.IO.Path.GetExtension(fullName).ToLower().Trim();
-                contentType = DetectContentTypeByExtension(extension);
-                string name = System.IO.Path.GetFileNameWithoutExtension(fullName).ToLower().Trim();
-                sizeType = DetectSizeTypeByName(ref name, contentType);
+                string name = ResourceItem.GetKey(fullName);
+                sizeType = null;
+                if (RemoveContentTypeByExtension(ref name, out contentType))
+                    RemoveSizeTypeBySuffix(ref name, out sizeType);
                 packKey = name;
+            }
+            /// <summary>
+            /// Vrátí klíč z daného jména souboru.
+            /// Provede Trim() a ToLower() a záměnu zpětného lomítka za běžné lomítko.
+            /// Odebere suffix označující velikost a odebere i příponu.
+            /// Namísto NULL vrátí prázdný string, takový klíč lze použít do Dictionary (namísto NULL).
+            /// </summary>
+            /// <param name="fullName"></param>
+            /// <returns></returns>
+            internal static string GetKey(string fullName)
+            {
+                string key = ResourceItem.GetKey(fullName);
+                if (RemoveContentTypeByExtension(ref key, out ResourceContentType contentType))
+                    RemoveSizeTypeBySuffix(ref key, out ResourceImageSizeType? sizeType);
+                return key;
             }
         }
         #endregion
@@ -391,8 +458,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 if (fileInfo is null) return false;
                 if (fileInfo.Length >= 0x200000) return false;                 // 0x200000 = 2MB na jeden soubor Resource, to je vcelku dost, ne?
-                var contetType = DetectContentTypeByExtension(fileInfo.Extension.ToLower());
-                return (contetType != ResourceContentType.None);
+                var contentType = DetectContentTypeByExtension(fileInfo.Extension.ToLower());
+                return (contentType != ResourceContentType.None);
             }
             /// <summary>
             /// Vytvoří a vrátí prvek pro daný soubor. Může vrátit NULL.
@@ -411,7 +478,9 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
             /// <summary>
             /// Vrátí klíč z daného jména souboru.
-            /// Provede Trim()  ToLower() a záměnu zpětného lomítka za běžné lomítko.
+            /// Provede Trim() a ToLower() a záměnu zpětného lomítka za běžné lomítko.
+            /// Ponechává suffix označující velikost a ponechá i příponu.
+            /// Namísto NULL vrátí prázdný string, takový klíč lze použít do Dictionary (namísto NULL).
             /// </summary>
             /// <param name="text"></param>
             /// <returns></returns>

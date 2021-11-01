@@ -2636,10 +2636,13 @@ namespace Noris.Clients.Win.Components.AsolDX
                 return (isSvg ?
                         _GetImageResourceSvg(imageName, sizeType, optimalSvgSize, svgPalette, svgState) :
                         _GetImageResourceBmp(imageName, sizeType, optimalSvgSize, svgPalette, svgState));
-            else
+            else if (isRes)
                 return (isSvg ?
                         _GetImageAdapterSvg(imageName, sizeType, optimalSvgSize, svgPalette, svgState) :
                         _GetImageAdapterBmp(imageName, sizeType, optimalSvgSize, svgPalette, svgState));
+            else
+                // Požadovaný zdroj není k dispozici:
+                return null;
         }
         /// <summary>
         /// Vrátí pixelovou velikost odpovídající dané typové velikost, započítá aktuální Zoom
@@ -2695,8 +2698,10 @@ namespace Noris.Clients.Win.Components.AsolDX
             ResourceImageSizeType? sizeType = null, Size? optimalSvgSize = null,
             DevExpress.Utils.Design.ISvgPaletteProvider svgPalette = null, DevExpress.Utils.Drawing.ObjectState? svgState = null)
         {
-            if (ResourceLibrary)
-            ResourceLibrary.CreateBitmap()
+            ResourceLibrary.CreateBitmap(imageName, sizeType);
+
+
+
             string resourceName = _GetImageResourceKey(imageName);
             return _ImageResourceCache.GetImage(resourceName);
         }
@@ -2704,6 +2709,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             ResourceImageSizeType? sizeType = null, Size? optimalSvgSize = null,
             DevExpress.Utils.Design.ISvgPaletteProvider svgPalette = null, DevExpress.Utils.Drawing.ObjectState? svgState = null)
         {
+            ResourceLibrary.GetContent()
             string resourceName = _GetImageResourceKey(imageName);
             return _ImageResourceCache.GetImage(resourceName);
         }
