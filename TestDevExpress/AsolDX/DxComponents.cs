@@ -2637,12 +2637,8 @@ namespace Noris.Clients.Win.Components.AsolDX
                         _GetImageResourceSvg(imageName, sizeType, optimalSvgSize, svgPalette, svgState) :
                         _GetImageResourceBmp(imageName, sizeType, optimalSvgSize, svgPalette, svgState));
             else if (isRes)
-                return (isSvg ?
-                        _GetImageAdapterSvg(imageName, sizeType, optimalSvgSize, svgPalette, svgState) :
-                        _GetImageAdapterBmp(imageName, sizeType, optimalSvgSize, svgPalette, svgState));
-            else
-                // Požadovaný zdroj není k dispozici:
-                return null;
+                return _GetImageAdapter(imageName, sizeType, optimalSvgSize, svgPalette, svgState);
+            return null;
         }
         /// <summary>
         /// Vrátí pixelovou velikost odpovídající dané typové velikost, započítá aktuální Zoom
@@ -2694,26 +2690,26 @@ namespace Noris.Clients.Win.Components.AsolDX
                 image = _ImageResourceCache.GetSvgImage(resourceName, svgPalette, size);
             return image;
         }
-        private Image _GetImageAdapterBmp(string imageName,
+        /// <summary>
+        /// Vrátí Image z knihovny zdrojů.
+        /// Na vstupu (<paramref name="imageName"/>) nemusí být uvedena přípona, může být uvedeno obecné jméno, např. "pic\address-book-undo-2";
+        /// a až knihovna zdrojů sama najde reálné obrázky: "pic\address-book-undo-2-large.svg" anebo "pic\address-book-undo-2-small.svg".
+        /// </summary>
+        /// <param name="imageName"></param>
+        /// <param name="sizeType"></param>
+        /// <param name="optimalSvgSize"></param>
+        /// <param name="svgPalette"></param>
+        /// <param name="svgState"></param>
+        /// <returns></returns>
+        private Image _GetImageAdapter(string imageName,
             ResourceImageSizeType? sizeType = null, Size? optimalSvgSize = null,
             DevExpress.Utils.Design.ISvgPaletteProvider svgPalette = null, DevExpress.Utils.Drawing.ObjectState? svgState = null)
         {
-            ResourceLibrary.CreateBitmap(imageName, sizeType);
+            bool existsBitmap = ResourceLibrary.TryGetResource(imageName, out var resourceItem, ResourceContentType.Bitmap, sizeType);
 
-
-
-            string resourceName = _GetImageResourceKey(imageName);
-            return _ImageResourceCache.GetImage(resourceName);
+            return ResourceLibrary.CreateBitmap(imageName, sizeType);
         }
-        private Image _GetImageAdapterSvg(string imageName,
-            ResourceImageSizeType? sizeType = null, Size? optimalSvgSize = null,
-            DevExpress.Utils.Design.ISvgPaletteProvider svgPalette = null, DevExpress.Utils.Drawing.ObjectState? svgState = null)
-        {
-            ResourceLibrary.GetContent()
-            string resourceName = _GetImageResourceKey(imageName);
-            return _ImageResourceCache.GetImage(resourceName);
-        }
-
+     
 
         #endregion
 
@@ -4097,6 +4093,17 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         public static string GetMessage(string messageCode, params object[] parameters) { return Current.GetMessage(messageCode, parameters); }
         /// <summary>
+        /// Volá se jedenkrát, vrátí kompletní seznam všech zdrojů (Resource).
+        /// </summary>
+        /// <returns></returns>
+        public static IEnumerable<IResourceItem> GetResources() { return Current.GetResources(); }
+        /// <summary>
+        /// Volá se v případě potřeby pro získání obsahu daného Resource.
+        /// </summary>
+        /// <param name="resourceKey"></param>
+        /// <returns></returns>
+        public static byte[] GetResourceContent(string resourceKey) { return Current.GetResourceContent(resourceKey); }
+        /// <summary>
         /// Vrátí ImageList pro danou velikost
         /// </summary>
         /// <param name="sizeType"></param>
@@ -4162,6 +4169,17 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         string GetMessage(string messageCode, params object[] parameters);
         /// <summary>
+        /// Volá se jedenkrát, vrátí kompletní seznam všech zdrojů (Resource).
+        /// </summary>
+        /// <returns></returns>
+        IEnumerable<IResourceItem> GetResources();
+        /// <summary>
+        /// Volá se v případě potřeby pro získání obsahu daného Resource.
+        /// </summary>
+        /// <param name="resourceKey"></param>
+        /// <returns></returns>
+        byte[] GetResourceContent(string resourceKey);
+        /// <summary>
         /// Vrátí ImageList pro danou velikost
         /// </summary>
         /// <param name="sizeType"></param>
@@ -4203,6 +4221,32 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="shortCut"></param>
         /// <returns></returns>
         System.Windows.Forms.Shortcut GetShortcutKeys(string shortCut);
+    }
+    /// <summary>
+    /// Popis jednoho prvku resource (odpovídá typicky jednomu souboru, který obsahuje jednu verzi obrázku)
+    /// </summary>
+    public interface IResourceItem
+    {
+        /// <summary>
+        /// Klíč používaný v aplikaci, unikátní pro jeden soubor
+        /// </summary>
+        string ApplicationItemKey { get; }
+        /// <summary>
+        /// Klíč používaný v aplikaci, společný pro několik souborů stejného významu ale různé velikosti
+        /// </summary>
+        string ApplicationPackKey { get; }
+        /// <summary>
+        /// Plný klíč konkrétního prvku zdroje, odpovídá plné cestě k souboru, tento klíč se předává do adapteru pro získání fyzického obsahu prvku
+        /// </summary>
+        string ResourceKey { get; }
+        /// <summary>
+        /// Typ obsahu, běžně je odvozen od přípony souboru
+        /// </summary>
+        ResourceContentType ContentType { get; }
+        /// <summary>
+        /// Velikost obsahu, typicky bitmapy
+        /// </summary>
+        ResourceImageSizeType SizeType { get; }
     }
     #endregion
     #region Enumy

@@ -159,6 +159,7 @@
     </Compile>
     <Compile Include="AsolDX\DxDragDrop.cs" />
     <Compile Include="AsolDX\DxDrawingExtensions.cs" />
+    <Compile Include="AsolDX\DxResources.cs" />
     <Compile Include="AsolDX\News\ResourceLibrary.cs" />
     <Compile Include="AsolDX\System\Shared.cs" />
     <Compile Include="AsolDX\System\XmlPersist.cs" />
