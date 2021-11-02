@@ -2631,7 +2631,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (String.IsNullOrEmpty(imageName)) return null;
             bool isSvg = _IsImageNameSvg(imageName);
             bool isSys = _ExistsImageResource(imageName);
-            bool isRes = !isSys && ResourceLibrary.ContainsResource(imageName);
+            bool isRes = !isSys && DxResourceLibrary.ContainsResource(imageName);
             if (isSys)
                 return (isSvg ?
                         _GetImageResourceSvg(imageName, sizeType, optimalSvgSize, svgPalette, svgState) :
@@ -2705,9 +2705,9 @@ namespace Noris.Clients.Win.Components.AsolDX
             ResourceImageSizeType? sizeType = null, Size? optimalSvgSize = null,
             DevExpress.Utils.Design.ISvgPaletteProvider svgPalette = null, DevExpress.Utils.Drawing.ObjectState? svgState = null)
         {
-            bool existsBitmap = ResourceLibrary.TryGetResource(imageName, out var resourceItem, ResourceContentType.Bitmap, sizeType);
+            bool existsBitmap = DxResourceLibrary.TryGetResource(imageName, out var resourceItem, ResourceContentType.Bitmap, sizeType);
 
-            return ResourceLibrary.CreateBitmap(imageName, sizeType);
+            return DxResourceLibrary.CreateBitmap(imageName, sizeType);
         }
      
 
@@ -2885,7 +2885,8 @@ namespace Noris.Clients.Win.Components.AsolDX
                     }
                     else
                     {   // Externí zdroje:
-                        imageOptions.Image = SystemAdapter.GetResourceImage(resourceName, ResourceImageSizeType.Medium);
+                        imageOptions.
+                        imageOptions.Image = DxResourceLibrary.CreateBitmap(resourceName, ResourceImageSizeType.Medium);
 
 #warning POKRAČUJ !!!
                         // qqq;
@@ -3999,15 +4000,17 @@ namespace Noris.Clients.Win.Components.AsolDX
 #else
 
     /// <summary>
-    /// Adapter na systém TestDevExpress
+    /// Adapter na systém Nephrite
     /// </summary>
     internal class CurrentSystemAdapter : ISystemAdapter
     {
         event EventHandler ISystemAdapter.InteractiveZoomChanged { add { ComponentConnector.Host.InteractiveZoomChanged += value; } remove { ComponentConnector.Host.InteractiveZoomChanged -= value; } }
         decimal ISystemAdapter.ZoomRatio { get { return ((decimal)Common.SupportScaling.GetScaledValue(100000)) / 100000m; } }
         string ISystemAdapter.GetMessage(string messageCode, params object[] parameters) { return ASOL.Framework.Shared.Localization.Message.GetMessage(messageCode, parameters); }
-        IEnumerable<IResourceItem> ISystemAdapter.GetResources() { }
-        byte[] ISystemAdapter.GetResourceContent(string resourceKey) { }
+        IEnumerable<IResourceItem> ISystemAdapter.GetResources() { return ComponentConnector.GraphicsCache.GetResources(); }
+        string ISystemAdapter.GetPackKey(string itemKey, out ResourceImageSizeType sizeType, out ResourceContentType contentType) { return ComponentConnector.GraphicsCache.GetPackKey(itemKey, out sizeType, out contentType); }
+
+        byte[] ISystemAdapter.GetResourceContent(IResourceItem resourceItem) { return ComponentConnector.GraphicsCache.GetResourceContent(resourceItem); }
         System.Drawing.Image ISystemAdapter.GetResourceImage(string resourceName, ResourceImageSizeType sizeType, string caption) { return ComponentConnector.GraphicsCache.GetResourceContent(resourceName, ConvertTo(sizeType), caption); }
         System.Windows.Forms.ImageList ISystemAdapter.GetResourceImageList(ResourceImageSizeType sizeType) { return ComponentConnector.GraphicsCache.GetImageList(ConvertTo(sizeType)); }
         int ISystemAdapter.GetResourceIndex(string iconName, ResourceImageSizeType sizeType, string caption) { return ComponentConnector.GraphicsCache.GetResourceIndex(iconName, ConvertTo(sizeType), caption); }
@@ -4074,7 +4077,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Tato metoda vygeneruje a vrátí konkrétní adapter
         /// </summary>
         /// <returns></returns>
-        private static ISystemAdapter __CreateAdapter() { return new CurrentSystemAdapter(); }
+        private static ISystemAdapter __CreateAdapter() { return new TestDevExpress.Adapter.AdapterTest(); }
         private static ISystemAdapter __Current;
         private static object __Lock = new object();
         #endregion
@@ -4100,11 +4103,28 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         public static IEnumerable<IResourceItem> GetResources() { return Current.GetResources(); }
         /// <summary>
+        /// Vrátí obecné jméno zdroje z dodaného plného jména zdroje (oddělí velikost a typ souboru podle suffixu a přípony)
+        /// </summary>
+        /// <param name="itemKey"></param>
+        /// <param name="sizeType"></param>
+        /// <param name="contentType"></param>
+        /// <returns></returns>
+        public static string GetPackKey(string itemKey, out ResourceImageSizeType sizeType, out ResourceContentType contentType) { return Current.GetPackKey(itemKey, out sizeType, out contentType); }
+        /// <summary>
         /// Volá se v případě potřeby pro získání obsahu daného Resource.
         /// </summary>
-        /// <param name="resourceKey"></param>
+        /// <param name="resourceItem"></param>
         /// <returns></returns>
-        public static byte[] GetResourceContent(string resourceKey) { return Current.GetResourceContent(resourceKey); }
+        public static byte[] GetResourceContent(IResourceItem resourceItem) { return Current.GetResourceContent(resourceItem); }
+        /// <summary>
+        /// Vrací klávesovou zkratku pro daný string, typicky na vstupu je "Ctrl+C", na výstupu je <see cref="System.Windows.Forms.Keys.Control"/> | <see cref="System.Windows.Forms.Keys.C"/>
+        /// </summary>
+        /// <param name="shortCut"></param>
+        /// <returns></returns>
+        public static System.Windows.Forms.Shortcut GetShortcutKeys(string shortCut) { return Current.GetShortcutKeys(shortCut); }
+
+
+        /*
         /// <summary>
         /// Vrátí ImageList pro danou velikost
         /// </summary>
@@ -4129,12 +4149,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="caption"></param>
         /// <returns></returns>
         public static int GetResourceIndex(string iconName, ResourceImageSizeType sizeType, string caption = null) { return Current.GetResourceIndex(iconName, sizeType, caption); }
-        /// <summary>
-        /// Vrací klávesovou zkratku pro daný string, typicky na vstupu je "Ctrl+C", na výstupu je <see cref="System.Windows.Forms.Keys.Control"/> | <see cref="System.Windows.Forms.Keys.C"/>
-        /// </summary>
-        /// <param name="shortCut"></param>
-        /// <returns></returns>
-        public static System.Windows.Forms.Shortcut GetShortcutKeys(string shortCut) { return Current.GetShortcutKeys(shortCut); }
+        */
+
+
         /// <summary>
         /// Umí aktuální adapter renderovat SVG image do bitmapy?
         /// </summary>
@@ -4176,11 +4193,22 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         IEnumerable<IResourceItem> GetResources();
         /// <summary>
+        /// Vrátí obecné jméno zdroje z dodaného plného jména zdroje (oddělí velikost a typ souboru podle suffixu a přípony)
+        /// </summary>
+        /// <param name="itemKey"></param>
+        /// <param name="sizeType"></param>
+        /// <param name="contentType"></param>
+        /// <returns></returns>
+        string GetPackKey(string itemKey, out ResourceImageSizeType sizeType, out ResourceContentType contentType);
+        /// <summary>
         /// Volá se v případě potřeby pro získání obsahu daného Resource.
         /// </summary>
-        /// <param name="resourceKey"></param>
+        /// <param name="resourceItem"></param>
         /// <returns></returns>
-        byte[] GetResourceContent(string resourceKey);
+        byte[] GetResourceContent(IResourceItem resourceItem);
+
+        /*
+
         /// <summary>
         /// Vrátí ImageList pro danou velikost
         /// </summary>
@@ -4205,6 +4233,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="caption"></param>
         /// <returns></returns>
         int GetResourceIndex(string iconName, ResourceImageSizeType sizeType, string caption);
+        
+        */
+
         /// <summary>
         /// Umí aktuální adapter renderovat SVG image do bitmapy?
         /// </summary>
@@ -4225,22 +4256,20 @@ namespace Noris.Clients.Win.Components.AsolDX
         System.Windows.Forms.Shortcut GetShortcutKeys(string shortCut);
     }
     /// <summary>
-    /// Popis jednoho prvku resource (odpovídá typicky jednomu souboru, který obsahuje jednu verzi obrázku)
+    /// Popis jednoho prvku resource (odpovídá typicky jednomu souboru, který obsahuje jednu verzi obrázku).
+    /// Podle klíčů je ukládán a vyhledán a sdružen do balíček příbuzných souborů.
+    /// Obsah resource <see cref="byte"/>[] vrátí metoda <see cref="ISystemAdapter.GetResourceContent(IResourceItem)"/> v aktuálním adapteru.
     /// </summary>
     public interface IResourceItem
     {
         /// <summary>
-        /// Klíč používaný v aplikaci, unikátní pro jeden soubor
+        /// Klíč používaný v aplikaci, exaktní, unikátní pro jeden soubor (obsahuje označení velikosti i příponu), typicky lowercase
         /// </summary>
-        string ApplicationItemKey { get; }
+        string ItemKey { get; }
         /// <summary>
-        /// Klíč používaný v aplikaci, společný pro několik souborů stejného významu ale různé velikosti
+        /// Klíč používaný v aplikaci, společný pro několik příbuzných souborů stejného významu ale různé velikosti (bez velikosti a bez přípony), typicky lowercase
         /// </summary>
-        string ApplicationPackKey { get; }
-        /// <summary>
-        /// Plný klíč konkrétního prvku zdroje, odpovídá plné cestě k souboru, tento klíč se předává do adapteru pro získání fyzického obsahu prvku
-        /// </summary>
-        string ResourceKey { get; }
+        string PackKey { get; }
         /// <summary>
         /// Typ obsahu, běžně je odvozen od přípony souboru
         /// </summary>

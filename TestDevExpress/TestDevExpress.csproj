@@ -20,7 +20,7 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>bin\</OutputPath>
-    <DefineConstants>TRACE;DEBUG;CompileTestDevExpress</DefineConstants>
+    <DefineConstants>TRACE;DEBUG;Compile_TestDevExpress</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <DocumentationFile>bin\TestDevExpress.xml</DocumentationFile>
@@ -146,6 +146,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AdapterTest.cs" />
     <Compile Include="AsolDX\DxControls.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -247,7 +248,7 @@
     <Compile Include="Forms\RibbonForm.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="HeliosGreen.cs" />
+    <Compile Include="AdapterNephrite.cs" />
     <Compile Include="Forms\MainForm.cs">
       <SubType>Form</SubType>
     </Compile>

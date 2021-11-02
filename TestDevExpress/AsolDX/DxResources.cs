@@ -12,13 +12,13 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// <summary>
     /// Knihovna zdrojů
     /// </summary>
-    public class ResourceLibrary
+    public class DxResourceLibrary
     {
         #region Instance
         /// <summary>
         /// Instance obsahující zdroje
         /// </summary>
-        protected static ResourceLibrary Current
+        protected static DxResourceLibrary Current
         {
             get
             {
@@ -27,7 +27,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                     lock (__Lock)
                     {
                         if (__Current is null)
-                            __Current = new ResourceLibrary();
+                            __Current = new DxResourceLibrary();
                     }
                 }
                 return __Current;
@@ -36,7 +36,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Úložiště singletonu
         /// </summary>
-        private static ResourceLibrary __Current;
+        private static DxResourceLibrary __Current;
         /// <summary>
         /// Zámek singletonu
         /// </summary>
@@ -44,7 +44,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Konstruktor, načte adresáře se zdroji
         /// </summary>
-        private ResourceLibrary()
+        private DxResourceLibrary()
         {
             __ItemDict = new Dictionary<string, ResourceItem>();
             __PackDict = new Dictionary<string, ResourcePack>();
@@ -81,41 +81,6 @@ namespace Noris.Clients.Win.Components.AsolDX
                 var pack = __PackDict.Get(item.PackKey, () => new ResourcePack(item.PackKey));
                 pack.AddItem(item);
             }
-
-
-
-            string resourcePath = DxComponent.ApplicationPath;
-            LoadResources(resourcePath, 0, "Resources");
-            LoadResources(resourcePath, 1, "Images");
-            LoadResources(resourcePath, 1, "pic");
-            LoadResources(resourcePath, 1, "pic-0");
-        }
-        /// <summary>
-        /// Zkusí najít zdroje v jednom adresáři
-        /// </summary>
-        /// <param name="resourcePath"></param>
-        /// <param name="upDirs"></param>
-        /// <param name="subDir"></param>
-        private void LoadResources(string resourcePath, int upDirs, string subDir)
-        {
-            string path = resourcePath;
-            for (int i = 0; i < upDirs && !String.IsNullOrEmpty(path); i++)
-                path = System.IO.Path.GetDirectoryName(path);
-            if (String.IsNullOrEmpty(path)) return;
-            int pathLength = path.Length;
-            if (!String.IsNullOrEmpty(subDir)) path = System.IO.Path.Combine(path, subDir);
-            System.IO.DirectoryInfo dirInfo = new System.IO.DirectoryInfo(path);
-            if (!dirInfo.Exists) return;
-
-            foreach (var fileInfo in dirInfo.EnumerateFiles("*.*", System.IO.SearchOption.AllDirectories))
-            {
-                if (!ResourceItem.IsResource(fileInfo)) continue;
-                ResourceItem item = ResourceItem.CreateFromFile(fileInfo, pathLength);
-                if (item == null) continue;
-                __ItemDict.Store(item.Key, item);
-                var pack = __PackDict.Get(item.PackKey, () => new ResourcePack(item.PackKey));
-                pack.AddItem(item);
-            }
         }
         #endregion
         #region Public static rozhraní
@@ -133,7 +98,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="resourceName"></param>
         /// <returns></returns>
-        public static bool ContainsResource(string resourceName) { return Current._ContainsResource(resourceName); }
+        public static bool ContainsResource(string resourceName) 
+        { return Current._ContainsResource(resourceName); }
         /// <summary>
         /// Vyhledá daný zdroj, vrací true = nalezen, zdroj je umístěn do out <paramref name="resourceItem"/>.
         /// <para/>
@@ -166,159 +132,16 @@ namespace Noris.Clients.Win.Components.AsolDX
             return DxComponent.GetRandomItem(keys);
         }
         #endregion
-        #region Rozpoznání typu obsahu podle přípony; a typu velikosti podle suffixu 
-        /// <summary>
-        /// Vrátí typ obsahu podle přípony souboru
-        /// </summary>
-        /// <param name="fileName"></param>
-        /// <returns></returns>
-        public static ResourceContentType DetectContentType(string fileName)
-        {
-            if (String.IsNullOrEmpty(fileName)) return ResourceContentType.None;
-            string name = fileName;
-            RemoveContentTypeByExtension(ref name, out ResourceContentType contentType);
-            return contentType;
-        }
-        /// <summary>
-        /// Vrátí typ obsahu podle přípony
-        /// </summary>
-        /// <param name="extension"></param>
-        /// <returns></returns>
-        internal static ResourceContentType DetectContentTypeByExtension(string extension)
-        {
-            string name = extension;
-            RemoveContentTypeByExtension(ref name, out ResourceContentType contentType);
-            return contentType;
-        }
-        /// <summary>
-        /// Z dodaného jména souboru určí příponu, podle ní detekuje typ obsahu (dá do out parametru) a detekovanou příponu odřízne (včetně tečky).
-        /// Vrátí true, pokud nějakou příponu detekoval a odřízl (tedy <paramref name="contentType"/> je jiný než None). 
-        /// Vrátí false, když je vstup prázdný, nebo bez přípony nebo s neznámou příponou, pak příponu neodřízne.
-        /// <para/>
-        /// Například pro vstup: "C:/Images/Button-24x24.png" detekuje <paramref name="contentType"/> = <see cref="ResourceContentType.Bitmap"/>, 
-        /// a v ref parametru <paramref name="name"/> ponechá: "C:/Images/Button-24x24".
-        /// <para/>
-        /// Tato metoda se typicky volá před metodou <see cref="RemoveSizeTypeBySuffix(ref string, out ResourceImageSizeType?)"/>, protože tady se řeší a odřízne přípona, a následně se tam řeší suffix jména souboru.
-        /// </summary>
-        /// <param name="name"></param>
-        /// <param name="contentType"></param>
-        internal static bool RemoveContentTypeByExtension(ref string name, out ResourceContentType contentType)
-        {
-            contentType = ResourceContentType.None;
-            if (String.IsNullOrEmpty(name)) return false;
-            name = name.TrimEnd();
-            string extension = System.IO.Path.GetExtension(name).ToLower();
-            switch (extension)
-            {
-                case ".bmp":
-                case ".jpg":
-                case ".jpeg":
-                case ".png":
-                case ".gif":
-                case ".pcx":
-                case ".tif":
-                case ".tiff":
-                    contentType = ResourceContentType.Bitmap;
-                    break;
-                case ".svg":
-                    contentType = ResourceContentType.Vector;
-                    break;
-                case ".mp4":
-                case ".mpg":
-                case ".mpeg":
-                case ".avi":
-                    contentType = ResourceContentType.Video;
-                    break;
-                case ".wav":
-                case ".flac":
-                case ".mp3":
-                case ".mpc":
-                    contentType = ResourceContentType.Audio;
-                    break;
-                case ".ico":
-                    contentType = ResourceContentType.Icon;
-                    break;
-                case ".cur":
-                    contentType = ResourceContentType.Cursor;
-                    break;
-                case ".htm":
-                case ".html":
-                case ".xml":
-                    contentType = ResourceContentType.Xml;
-                    break;
-            }
-            if (contentType != ResourceContentType.None)
-                name = name.Substring(0, name.Length - extension.Length);
-            return (contentType != ResourceContentType.None);
-        }
-        /// <summary>
-        /// Z dodaného jména souboru určí suffix, a podle něj detekuje velikost obrázku (dá do out parametru) a detekovaný suffix odřízne (celý).
-        /// Vrátí true, pokud nějakou velikost detekoval a odřízl (tedy <paramref name="sizeType"/> je jiný než None). 
-        /// Vrátí false, když je vstup prázdný, nebo bez suffixu nebo s neznámým suffixem, pak suffix neodřízne.
-        /// <para/>
-        /// Například pro vstup: "C:/Images/Button-24x24" detekuje <paramref name="sizeType"/> = <see cref="ResourceImageSizeType.Medium"/>, 
-        /// a v ref parametru <paramref name="name"/> ponechá: "C:/Images/Button".
-        /// <para/>
-        /// Tato metoda se typicky volá až po metodě <see cref="RemoveContentTypeByExtension(ref string, out ResourceContentType)"/>, protože tam se řeší a odřízne přípona, a následně se zde řeší suffix jména souboru.
-        /// </summary>
-        /// <param name="name"></param>
-        /// <param name="sizeType"></param>
-        /// <returns></returns>
-        internal static bool RemoveSizeTypeBySuffix(ref string name, out ResourceImageSizeType? sizeType)
-        {
-            sizeType = null;
-            if (String.IsNullOrEmpty(name)) return false;
-            name = name.TrimEnd();
-            int index = name.LastIndexOf("-");
-            if (index <= 0) return false;
-            string suffix = name.Substring(index).ToLower();
-            switch (suffix)
-            {
-                case "-16x16":
-                case "-small":
-                    sizeType = ResourceImageSizeType.Small;
-                    break;
-                case "-24x24":
-                    sizeType = ResourceImageSizeType.Medium;
-                    break;
-                case "-32x32":
-                case "-large":
-                    sizeType = ResourceImageSizeType.Large;
-                    break;
-            }
-            return (sizeType.HasValue);
-
-            /*
-
-            c:\inetpub\wwwroot\Noris99\Noris\pic\address-book-large.svg
-            c:\inetpub\wwwroot\Noris99\Noris\pic\address-book-locations-large.svg
-            c:\inetpub\wwwroot\Noris99\Noris\pic\address-book-locations-small.svg
-            c:\inetpub\wwwroot\Noris99\Noris\pic\address-book-small.svg
-            c:\inetpub\wwwroot\Noris99\Noris\pic\address-book-undo-2-large.svg
-            c:\inetpub\wwwroot\Noris99\Noris\pic\address-book-undo-2-small.svg
-            c:\inetpub\wwwroot\Noris99\Noris\pic\address-book-update-bottom-left-large.svg
-            c:\inetpub\wwwroot\Noris99\Noris\pic\address-book-update-bottom-left-small.svg
-            c:\inetpub\wwwroot\Noris99\Noris\pic\AddressDelete-16x16.png
-            c:\inetpub\wwwroot\Noris99\Noris\pic\AddressDelete-24x24.png
-            c:\inetpub\wwwroot\Noris99\Noris\pic\AddressDelete-32x32.png
-            c:\inetpub\wwwroot\Noris99\Noris\pic\AddressEdit-16x16.png
-            c:\inetpub\wwwroot\Noris99\Noris\pic\AddressEdit-24x24.png
-            c:\inetpub\wwwroot\Noris99\Noris\pic\AddressEdit-32x32.png
-            c:\inetpub\wwwroot\Noris99\Noris\pic\AddressCheckedRuian-16x16.png
-            c:\inetpub\wwwroot\Noris99\Noris\pic\AddressCheckedRuian-24x24.png
-            c:\inetpub\wwwroot\Noris99\Noris\pic\AddressCheckedRuian-32x32.png
-
-            */
-        }
-        #endregion
         #region Získání Bitmapy
-        public static Image CreateBitmap(string imageName, ResourceImageSizeType? sizeType = null) { return Current._CreateBitmap(imageName, sizeType); }
+        public static Image CreateBitmap(string imageName, ResourceImageSizeType? sizeType = null) 
+        { return Current._CreateBitmap(imageName, sizeType); }
         /// <summary>
         /// Vrátí instanci knihovny obrázků dané velikosti
         /// </summary>
         /// <param name="size"></param>
         /// <returns></returns>
-        public static System.Windows.Forms.ImageList GetImageList(ResourceImageSizeType size) { return Current._GetImageList(size); }
+        public static System.Windows.Forms.ImageList GetImageList(ResourceImageSizeType size) 
+        { return Current._GetImageList(size); }
         #endregion
         #region Private instanční sféra
         /// <summary>
@@ -535,33 +358,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
 
             /// <summary>
-            /// Vrátí true, pokud daný soubor může býti Resource
-            /// </summary>
-            /// <param name="fileInfo"></param>
-            /// <returns></returns>
-            internal static bool IsResource(System.IO.FileInfo fileInfo)
-            {
-                if (fileInfo is null) return false;
-                if (fileInfo.Length >= 0x200000) return false;                 // 0x200000 = 2MB na jeden soubor Resource, to je vcelku dost, ne?
-                var contentType = DetectContentTypeByExtension(fileInfo.Extension.ToLower());
-                return (contentType != ResourceContentType.None);
-            }
-            /// <summary>
-            /// Vytvoří a vrátí prvek pro daný soubor. Může vrátit NULL.
-            /// </summary>
-            /// <param name="fileInfo"></param>
-            /// <param name="commonPathLength"></param>
-            /// <returns></returns>
-            internal static ResourceItem CreateFromFile(System.IO.FileInfo fileInfo, int commonPathLength = 0)
-            {
-                if (fileInfo == null || !fileInfo.Exists) return null;
-                string fullName = fileInfo.FullName;
-                if (fullName.Length <= commonPathLength) return null;
-                string key = GetKey((commonPathLength <= 0 || commonPathLength >= fullName.Length) ? fullName : fullName.Substring(commonPathLength));
-                ResourcePack.DetectInfo(key, out string packKey, out ResourceContentType contentType, out ResourceImageSizeType? sizeType);
-                return new ResourceItem(fullName, packKey, fullName, contentType, sizeType);
-            }
-            /// <summary>
             /// Vrátí klíč z daného jména souboru.
             /// Provede Trim() a ToLower() a záměnu zpětného lomítka za běžné lomítko.
             /// Ponechává suffix označující velikost a ponechá i příponu.
@@ -594,6 +390,10 @@ namespace Noris.Clients.Win.Components.AsolDX
                 this._Content = null;
                 this._ContentLoaded = false;
             }
+            /// <summary>
+            /// Podkladová data
+            /// </summary>
+            private IResourceItem _ResourceItem;
             /// <summary>
             /// Vizualizace
             /// </summary>

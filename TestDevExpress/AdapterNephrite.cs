@@ -603,10 +603,10 @@ namespace Noris.Clients.Win.Components
         /// </summary>
         public decimal CurrentZoom { get { return 1m; } }
 
-        public IEnumerable<IResourceItem> GetResources()
-        {
 
-        }
+
+
+
 
         /// <summary>
         /// Simulace Green
@@ -653,6 +653,7 @@ namespace Noris.Clients.Win.Components
 
 
 
+        #region Načtení souboru Resources.bin
         protected void LoadResources(string resourceFile)
         {
             LoadResourceFile(resourceFile, 100);
@@ -752,19 +753,12 @@ namespace Noris.Clients.Win.Components
             public ImageItem(GraphicsCache owner, string key  )
             { }
         }
+        #endregion
     }
-    internal class GreenResourceItem : AsolDX.IResourceItem
-    {
-        public string ApplicationItemKey { get; set; }
+    
 
-        public string ApplicationPackKey { get; set; }
 
-        public string ResourceKey { get; set; }
 
-        public AsolDX.ResourceContentType ContentType { get; set; }
-
-        public AsolDX.ResourceImageSizeType SizeType { get; set; }
-    }
     /// <summary>
     /// Simulace Green
     /// </summary>
@@ -850,22 +844,6 @@ namespace Noris.Clients.Win.Components
         public const string InvokeExceptionDataKey = "InnerInvokeStack";
     }
 }
-namespace WinFormServices
-{
-    /// <summary>
-    /// Simulace Green
-    /// </summary>
-    public class KeyboardHelper
-    {
-        /// <summary>
-        /// Simulace Green
-        /// </summary>
-        /// <param name="hotKey"></param>
-        /// <returns></returns>
-        public static Shortcut GetShortcutFromServerHotKey(string hotKey) { return Shortcut.None; }
-
-    }
-}
 namespace WinFormServices.Drawing
 {
     /// <summary>
@@ -883,19 +861,6 @@ namespace WinFormServices.Drawing
         Large
     }
 }
-namespace ASOL.Framework.Shared.Localization
-{
-    public class Message
-    {
-        public static string GetMessage(string messageCode, params object[] parameters)
-        {
-            return null;
-        }
-        public static string GetMessageForLanguage(string language, string messageCode, params object[] parameters)
-        {
-            return null;
-        }
-    }
 }
 
 #endregion
