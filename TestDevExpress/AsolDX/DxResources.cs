@@ -350,10 +350,11 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// <summary>
             /// Vytvoří pracovní prvek <see cref="ResourceItem"/> z dodaných dat
             /// </summary>
-            /// <param name="resource"></param>
+            /// <param name="iResourceItem"></param>
             /// <returns></returns>
-            internal static ResourceItem CreateFrom(IResourceItem resource)
+            internal static ResourceItem CreateFrom(IResourceItem iResourceItem)
             {
+                this._ire
                 throw new NotImplementedException();
             }
 
