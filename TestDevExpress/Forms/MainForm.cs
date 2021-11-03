@@ -103,20 +103,17 @@ namespace TestDevExpress.Forms
 
             if (DxResourceLibrary.TryGetResource(@"Images\Actions24\align-horizontal-right-out(24).png", out item))
             {
-                var size = item.RealBitmapSize;
                 var sizeType = item.RealBitmapSizeType;
             }
 
             string caption = null;
             if (DxResourceLibrary.TryGetResource(@"Images\Svg\amazon-chime-svgrepo-com.svg", out item))
             {
-                var size = item.RealBitmapSize;
                 var sizeType = item.RealBitmapSizeType;
             }
             //  else if (ResourceLibrary.TryGetResource(@"Images\SvgAsol\building-factory-4-filled-large.svg", out item))
             else if (DxResourceLibrary.TryGetResource(@"Images\SvgAsol\vyhledavani-large.svg", out item))
             {
-                var size = item.RealBitmapSize;
                 var sizeType = item.RealBitmapSizeType;
                 caption = "Vybrat pořadač";
             }
@@ -1769,7 +1766,7 @@ namespace TestDevExpress.Forms
         }
         private void _MsgShowDialogOKClick(object sender, EventArgs args)
         {
-            NWC.DialogArgs dialogArgs = new NWC.DialogArgs(LocalizerSK);
+            NWC.DialogArgs dialogArgs = new NWC.DialogArgs();
             dialogArgs.Title = "Dialog [OK]";
             dialogArgs.SystemIcon = NWC.DialogSystemIcon.Information;
             dialogArgs.PrepareButtons(DialogResult.OK);
@@ -1812,7 +1809,7 @@ namespace TestDevExpress.Forms
             try { _DoExceptionGui(); }
             catch (Exception exc)
             {
-                NWC.DialogArgs dialogArgs = NWC.DialogArgs.CreateForException(exc, LocalizerCZ);
+                NWC.DialogArgs dialogArgs = NWC.DialogArgs.CreateForException(exc);
                 DialogForm(dialogArgs);
             }
         }
@@ -1832,7 +1829,7 @@ namespace TestDevExpress.Forms
         }
         private void _MsgShowDialogYesNoClick(object sender, EventArgs args)
         {
-            NWC.DialogArgs dialogArgs = new NWC.DialogArgs(LocalizerEN, IconGenerator);
+            NWC.DialogArgs dialogArgs = new NWC.DialogArgs();
             dialogArgs.Title = "Dialog Yes/No";
             dialogArgs.StatusBarVisible = true;
             dialogArgs.SystemIcon = NWC.DialogSystemIcon.Question;
@@ -1847,7 +1844,7 @@ namespace TestDevExpress.Forms
         }
         private void _MsgShowDialogYesNoRightClick(object sender, EventArgs args)
         {
-            NWC.DialogArgs dialogArgs = new NWC.DialogArgs(LocalizerEN);
+            NWC.DialogArgs dialogArgs = new NWC.DialogArgs();
             dialogArgs.Title = "Dialog Yes/No / Right";
             dialogArgs.StatusBarVisible = true;
             dialogArgs.SystemIcon = NWC.DialogSystemIcon.Question;
@@ -1863,7 +1860,7 @@ namespace TestDevExpress.Forms
         }
         private void _MsgShowDialogAbortRetryIgnoreClick(object sender, EventArgs args)
         {
-            NWC.DialogArgs dialogArgs = new NWC.DialogArgs(LocalizerSK);
+            NWC.DialogArgs dialogArgs = new NWC.DialogArgs();
             dialogArgs.Title = "Dialog Abort/Retry/Ignore";
             dialogArgs.StatusBarVisible = true;
             dialogArgs.SystemIcon = NWC.DialogSystemIcon.Error;
@@ -1876,7 +1873,7 @@ namespace TestDevExpress.Forms
         }
         private void _MsgShowDialogAbortRetryIgnoreRightRightClick(object sender, EventArgs args)
         {
-            NWC.DialogArgs dialogArgs = new NWC.DialogArgs(LocalizerSK);
+            NWC.DialogArgs dialogArgs = new NWC.DialogArgs();
             dialogArgs.Title = "Dialog Abort/Retry/Ignore / RightRight";
             dialogArgs.StatusBarVisible = true;
             dialogArgs.SystemIcon = NWC.DialogSystemIcon.Exclamation;
@@ -1892,7 +1889,7 @@ namespace TestDevExpress.Forms
         }
         private void _MsgShowDialogAbortRetryIgnoreTopRightClick(object sender, EventArgs args)
         {
-            NWC.DialogArgs dialogArgs = new NWC.DialogArgs(LocalizerSK);
+            NWC.DialogArgs dialogArgs = new NWC.DialogArgs();
             dialogArgs.Title = "Dialog Abort/Retry/Ignore / TopRight";
             dialogArgs.StatusBarVisible = true;
             dialogArgs.SystemIcon = NWC.DialogSystemIcon.Hand;

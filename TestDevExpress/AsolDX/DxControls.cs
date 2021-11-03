@@ -3898,7 +3898,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             : base()
         {
             _TitleItem = this.Items.AddTitle("");
-            _TitleItem.ImageOptions.Images = SystemAdapter.GetResourceImageList(ResourceImageSizeType.Large);
+            _TitleItem.ImageOptions.Images = DxResourceLibrary.GetImageList(ResourceImageSizeType.Large);
             _TitleItem.ImageOptions.ImageToTextDistance = 12;
 
             _SeparatorItem = this.Items.AddSeparator();
@@ -3937,7 +3937,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void _SetIconName(string iconName)
         {
             _IconName = iconName;
-            _TitleItem.ImageOptions.ImageIndex = SystemAdapter.GetResourceIndex(iconName, ResourceImageSizeType.Large);
+            _TitleItem.ImageOptions.ImageIndex = DxResourceLibrary.GetImageListIndex(iconName, ResourceImageSizeType.Large);
         }
         private string _IconName;
         /// <summary>

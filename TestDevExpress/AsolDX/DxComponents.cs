@@ -2885,11 +2885,10 @@ namespace Noris.Clients.Win.Components.AsolDX
                     }
                     else
                     {   // Externí zdroje:
-                        imageOptions.
-                        imageOptions.Image = DxResourceLibrary.CreateBitmap(resourceName, ResourceImageSizeType.Medium);
+                        imageOptions.Image = DxResourceLibrary.GetImage(resourceName, ResourceImageSizeType.Medium);
 
 #warning POKRAČUJ !!!
-                        // qqq;
+                        qqq;
 
 
                     }
@@ -3912,48 +3911,48 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Kód hlášky pro získání defaultního titulku okna "Chyba"
         /// </summary>
-        public const string DialogFormTitleError = "FormTitleError";
+        public const string DialogFormTitleError = "DialogFormTitleError";
         /// <summary>
         /// Kód hlášky pro získání defaultního prefixu hlášky "Došlo k chybě"
         /// </summary>
-        public const string DialogFormTitlePrefix = "FormTitlePrefix";
+        public const string DialogFormTitlePrefix = "DialogFormTitlePrefix";
         /// <summary>
         /// Kód hlášky pro získání defaultního textu tlačítka "Ctrl+C"
         /// </summary>
-        public const string DialogFormCtrlCText = "CtrlCText";
+        public const string DialogFormCtrlCText = "DialogFormCtrlCText";
         /// <summary>
         /// Kód hlášky pro získání defaultního tooltipu tlačítka "Ctrl+C"
         /// </summary>
-        public const string DialogFormCtrlCTooltip = "CtrlCToolTip";
+        public const string DialogFormCtrlCTooltip = "DialogFormCtrlCToolTip";
         /// <summary>
         /// Kód hlášky pro získání defaultní informace po zkopírování textu
         /// </summary>
-        public const string DialogFormCtrlCInfo = "CtrlCInfo";
+        public const string DialogFormCtrlCInfo = "DialogFormCtrlCInfo";
         /// <summary>
         /// Kód hlášky pro získání defaultního textu tlačítka "Více informací"
         /// </summary>
-        public const string DialogFormAltMsgButtonText = "AltMsgButtonText";
+        public const string DialogFormAltMsgButtonText = "DialogFormAltMsgButtonText";
         /// <summary>
         /// Kód hlášky pro získání defaultního tooltipu tlačítka "Více informací"
         /// </summary>
-        public const string DialogFormAltMsgButtonTooltip = "AltMsgButtonToolTip";
+        public const string DialogFormAltMsgButtonTooltip = "DialogFormAltMsgButtonToolTip";
         /// <summary>
         /// Kód hlášky pro získání defaultního textu tlačítka "Méně informací"
         /// </summary>
-        public const string DialogFormStdMsgButtonText = "StdMsgButtonText";
+        public const string DialogFormStdMsgButtonText = "DialogFormStdMsgButtonText";
         /// <summary>
         /// Kód hlášky pro získání defaultního tooltipu tlačítka "Méně informací"
         /// </summary>
-        public const string DialogFormStdMsgButtonTooltip = "StdMsgButtonToolTip";
+        public const string DialogFormStdMsgButtonTooltip = "DialogFormStdMsgButtonToolTip";
 
-        public const string DialogResultPrefix = "DialogResult";
-        public const string DialogResultOk = "DialogResultOk";
-        public const string DialogResultYes = "DialogResultYes";
-        public const string DialogResultNo = "DialogResultNo";
-        public const string DialogResultAbort = "DialogResultAbort";
-        public const string DialogResultRetry = "DialogResultRetry";
-        public const string DialogResultIgnore = "DialogResultIgnore";
-        public const string DialogResultCancel = "DialogResultCancel";
+        public const string DialogResultPrefix = "DialogFormResult";
+        public const string DialogResultOk = "DialogFormResultOk";
+        public const string DialogResultYes = "DialogFormResultYes";
+        public const string DialogResultNo = "DialogFormResultNo";
+        public const string DialogResultAbort = "DialogFormResultAbort";
+        public const string DialogResultRetry = "DialogFormResultRetry";
+        public const string DialogResultIgnore = "DialogFormResultIgnore";
+        public const string DialogResultCancel = "DialogFormResultCancel";
     }
     #endregion
     #endregion
@@ -3995,7 +3994,7 @@ namespace Noris.Clients.Win.Components.AsolDX
     }
     #endregion
 
-    #region SystemAdapter - přemístit do samostatného souboru po PP 2021-02
+    #region CurrentSystemAdapter - přemístit do samostatného souboru po PP 2021-02
 #if Compile_TestDevExpress
 #else
 
@@ -4043,7 +4042,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         new bool HandleEscapeKey();
     }
 #endif
+    #endregion
 
+    #region SystemAdapter - přístupový bod k adapteru na lokální systém
     /// <summary>
     /// Tato třída reprezentuje adapter na systémové metody.
     /// Prvky této třídy jsou volány z různých míst komponent AsolDX a jejich úkolem je převolat odpovídající metody konkrétního systému.
@@ -4052,13 +4053,13 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// Komponenty volají statické metody <see cref="SystemAdapter"/>, ty uvnitř převolají odpovídající svoje instanční abstraktní metody, 
     /// které jsou implementované v konkrétním potomku adapteru.
     /// </summary>
-    internal abstract class SystemAdapter
+    internal static class SystemAdapter
     {
         #region Zásuvný modul pro konkrétní systém
         /// <summary>
         /// Aktuální adapter
         /// </summary>
-        protected static ISystemAdapter Current
+        private static ISystemAdapter Current
         {
             get
             {
@@ -4077,7 +4078,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Tato metoda vygeneruje a vrátí konkrétní adapter
         /// </summary>
         /// <returns></returns>
-        private static ISystemAdapter __CreateAdapter() { return new TestDevExpress.Adapter.AdapterTest(); }
+        private static ISystemAdapter __CreateAdapter() { return new CurrentSystemAdapter(); }
         private static ISystemAdapter __Current;
         private static object __Lock = new object();
         #endregion
@@ -4105,11 +4106,17 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Vrátí obecné jméno zdroje z dodaného plného jména zdroje (oddělí velikost a typ souboru podle suffixu a přípony)
         /// </summary>
-        /// <param name="itemKey"></param>
+        /// <param name="name"></param>
+        /// <returns></returns>
+        public static string GetResourceItemKey(string name) { return Current.GetResourceItemKey(name); }
+        /// <summary>
+        /// Vrátí obecné jméno zdroje z dodaného plného jména zdroje (oddělí velikost a typ souboru podle suffixu a přípony)
+        /// </summary>
+        /// <param name="name"></param>
         /// <param name="sizeType"></param>
         /// <param name="contentType"></param>
         /// <returns></returns>
-        public static string GetPackKey(string itemKey, out ResourceImageSizeType sizeType, out ResourceContentType contentType) { return Current.GetPackKey(itemKey, out sizeType, out contentType); }
+        public static string GetResourcePackKey(string name, out ResourceImageSizeType sizeType, out ResourceContentType contentType) { return Current.GetResourcePackKey(name, out sizeType, out contentType); }
         /// <summary>
         /// Volá se v případě potřeby pro získání obsahu daného Resource.
         /// </summary>
@@ -4193,13 +4200,19 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         IEnumerable<IResourceItem> GetResources();
         /// <summary>
+        /// Vrátí konkrétní jméno zdroje z dodaného plného jména zdroje (ponechá velikost i typ souboru, ale upraví Trim a Case)
+        /// </summary>
+        /// <param name="name"></param>
+        /// <returns></returns>
+        string GetResourceItemKey(string name);
+        /// <summary>
         /// Vrátí obecné jméno zdroje z dodaného plného jména zdroje (oddělí velikost a typ souboru podle suffixu a přípony)
         /// </summary>
-        /// <param name="itemKey"></param>
+        /// <param name="name"></param>
         /// <param name="sizeType"></param>
         /// <param name="contentType"></param>
         /// <returns></returns>
-        string GetPackKey(string itemKey, out ResourceImageSizeType sizeType, out ResourceContentType contentType);
+        string GetResourcePackKey(string name, out ResourceImageSizeType sizeType, out ResourceContentType contentType);
         /// <summary>
         /// Volá se v případě potřeby pro získání obsahu daného Resource.
         /// </summary>

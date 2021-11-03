@@ -861,7 +861,7 @@ namespace WinFormServices.Drawing
         Large
     }
 }
-}
+
 
 #endregion
 

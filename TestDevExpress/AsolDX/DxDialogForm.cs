@@ -827,7 +827,7 @@ namespace Noris.Clients.Win.Components
                 // Obrázek u tlačítka:
                 Image image = null;
                 if (buttonInfo.Image != null) image = buttonInfo.Image;
-                else if (buttonInfo.ImageFile != null && args.IconGenerator != null) image = args.IconGenerator(buttonInfo.ImageFile);
+                else if (buttonInfo.ImageFile != null) image = DxResourceLibrary.GetImage(buttonInfo.ImageFile, ResourceImageSizeType.Large);
                 if (image != null)
                 {
                     button.ImageOptions.Image = image;
@@ -855,7 +855,7 @@ namespace Noris.Clients.Win.Components
             this.ButtonsVisible = true;
         }
         /// <summary>
-        /// Vytvoří obsah pro StatusBar. Samotný StatusBar je osučástí tvorby Frames v metodě <see cref="CreateFrames(DialogArgs, Graphics)"/>.
+        /// Vytvoří obsah pro StatusBar. Samotný StatusBar je součástí tvorby Frames v metodě <see cref="CreateFrames(DialogArgs, Graphics)"/>.
         /// </summary>
         /// <param name="args"></param>
         /// <param name="graphics"></param>
@@ -866,27 +866,53 @@ namespace Noris.Clients.Win.Components
             int fontSizeDelta = GetZoomDelta();
 
             if (this.ExistsBothText)
-                StatusAltTextCheckButton = AddStatusCheckButton(args, args.StatusBarAltMsgButtonText, DialogForm.MsgCode_AltMsgButtonText, args.StatusBarAltMsgButtonTooltip, DialogForm.MsgCode_AltMsgButtonTooltip, 78, 18, fontSizeDelta, StatusAltTextButton_ItemClick);
+                StatusAltTextCheckButton = AddStatusCheckButton(args, args.StatusBarAltMsgButtonText, MsgCode.DialogFormAltMsgButtonText, args.StatusBarAltMsgButtonTooltip, MsgCode.DialogFormAltMsgButtonTooltip, 78, 18, fontSizeDelta, StatusAltTextButton_ItemClick);
 
             StatusLabel1 = DxComponent.CreateDxStatusLabel(status, "", DevExpress.XtraBars.BarStaticItemSize.Spring, true, fontSizeDelta);
             StatusLabel2 = DxComponent.CreateDxStatusLabel(status, "", DevExpress.XtraBars.BarStaticItemSize.Content, false, fontSizeDelta);
 
             if (args.StatusBarCtrlCVisible || !String.IsNullOrEmpty(args.StatusBarCtrlCText))
-                StatusCopyButton = AddStatusButton(args, args.StatusBarCtrlCText, DialogForm.MsgCode_CtrlCText, args.StatusBarCtrlCTooltip, DialogForm.MsgCode_CtrlCTooltip, 78, 18, fontSizeDelta, StatusCopyButton_ItemClick);
+                StatusCopyButton = AddStatusButton(args, args.StatusBarCtrlCText, MsgCode.DialogFormCtrlCText, args.StatusBarCtrlCTooltip, MsgCode.DialogFormCtrlCTooltip, 78, 18, fontSizeDelta, StatusCopyButton_ItemClick);
 
             RefreshAltMsgButtonText();
         }
+        /// <summary>
+        /// Přidá CheckButton do StatusBaru
+        /// </summary>
+        /// <param name="args"></param>
+        /// <param name="text"></param>
+        /// <param name="textCode"></param>
+        /// <param name="toolTipText"></param>
+        /// <param name="toolTipCode"></param>
+        /// <param name="width"></param>
+        /// <param name="height"></param>
+        /// <param name="fontSizeDelta"></param>
+        /// <param name="clickHandler"></param>
+        /// <returns></returns>
         private DxBarCheckItem AddStatusCheckButton(DialogArgs args, string text, string textCode, string toolTipText, string toolTipCode, int width, int height, int fontSizeDelta, DevExpress.XtraBars.ItemClickEventHandler clickHandler)
         {
-            if (String.IsNullOrEmpty(text)) text = args.GetLocalizedText(textCode);
-            if (String.IsNullOrEmpty(toolTipText)) toolTipText = args.GetLocalizedText(toolTipCode);
+            if (String.IsNullOrEmpty(text)) text = DxComponent.Localize(textCode);
+            if (String.IsNullOrEmpty(toolTipText)) toolTipText = DxComponent.Localize(toolTipCode);
 
             return DxComponent.CreateDxStatusCheckButton(_StatusBar, text, width, height, null, toolTipText, true, fontSizeDelta, clickHandler);
         }
+        /// <summary>
+        /// Přidá Button do StatusBaru
+        /// </summary>
+        /// <param name="args"></param>
+        /// <param name="text"></param>
+        /// <param name="textCode"></param>
+        /// <param name="toolTipText"></param>
+        /// <param name="toolTipCode"></param>
+        /// <param name="width"></param>
+        /// <param name="height"></param>
+        /// <param name="fontSizeDelta"></param>
+        /// <param name="clickHandler"></param>
+        /// <returns></returns>
         private DxBarButtonItem AddStatusButton(DialogArgs args, string text, string textCode, string toolTipText, string toolTipCode, int width, int height, int fontSizeDelta, DevExpress.XtraBars.ItemClickEventHandler clickHandler)
         {
-            if (String.IsNullOrEmpty(text)) text = args.GetLocalizedText(textCode);
-            if (String.IsNullOrEmpty(toolTipText)) toolTipText = args.GetLocalizedText(toolTipCode);
+            if (String.IsNullOrEmpty(text)) text = DxComponent.Localize(textCode);
+            if (String.IsNullOrEmpty(toolTipText)) toolTipText = DxComponent.Localize(toolTipCode);
 
             return DxComponent.CreateDxStatusButton(_StatusBar, text, width, height, null, toolTipText, true, fontSizeDelta, clickHandler);
         }
@@ -1949,12 +1975,8 @@ namespace Noris.Clients.Win.Components
         /// <summary>
         /// Konstruktor
         /// </summary>
-        /// <param name="textLocalizer">Překladač stringů</param>
-        /// <param name="iconGenerator">Generátor ikon</param>
-        public DialogArgs(Func<string, string> textLocalizer = null, Func<string, Image> iconGenerator = null)
+        public DialogArgs()
         {
-            TextLocalizer = textLocalizer;
-            IconGenerator = iconGenerator;
             Init();
         }
         /// <summary>
@@ -1981,13 +2003,13 @@ namespace Noris.Clients.Win.Components
             DialogZoomRatio = DialogForm.DefaultDialogZoomRatio;
             StatusBarVisible = false;
             StatusBarCtrlCVisible = false;
-            StatusBarCtrlCText = GetLocalizedText(DialogForm.MsgCode_CtrlCText);
-            StatusBarCtrlCTooltip = GetLocalizedText(DialogForm.MsgCode_CtrlCTooltip);
-            StatusBarCtrlCInfo = GetLocalizedText(DialogForm.MsgCode_CtrlCInfo);
-            StatusBarAltMsgButtonText = GetLocalizedText(DialogForm.MsgCode_AltMsgButtonText);
-            StatusBarAltMsgButtonTooltip = GetLocalizedText(DialogForm.MsgCode_AltMsgButtonTooltip);
-            StatusBarStdMsgButtonText = GetLocalizedText(DialogForm.MsgCode_StdMsgButtonText);
-            StatusBarStdMsgButtonTooltip = GetLocalizedText(DialogForm.MsgCode_StdMsgButtonTooltip);
+            StatusBarCtrlCText = DxComponent.Localize(MsgCode.DialogFormCtrlCText);
+            StatusBarCtrlCTooltip = DxComponent.Localize(MsgCode.DialogFormCtrlCTooltip);
+            StatusBarCtrlCInfo = DxComponent.Localize(MsgCode.DialogFormCtrlCInfo);
+            StatusBarStdMsgButtonText = DxComponent.Localize(MsgCode.DialogFormStdMsgButtonText);
+            StatusBarStdMsgButtonTooltip = DxComponent.Localize(MsgCode.DialogFormStdMsgButtonTooltip);
+            StatusBarAltMsgButtonText = DxComponent.Localize(MsgCode.DialogFormAltMsgButtonText);
+            StatusBarAltMsgButtonTooltip = DxComponent.Localize(MsgCode.DialogFormAltMsgButtonTooltip);
             ButtonPanelDock = DialogForm.DefaultButtonDockSide;
             ButtonHeight = DialogForm.DefaultButtonHeight;
             ButtonsAlignment = DialogForm.DefaultButtonAlignment;
@@ -2229,17 +2251,15 @@ namespace Noris.Clients.Win.Components
         /// Vytvoří a vrátí argument pro zobrazení dodané chyby.
         /// </summary>
         /// <param name="exc"></param>
-        /// <param name="textLocalizer">Překladač stringů</param>
-        /// <param name="iconGenerator">Generátor ikon</param>
         /// <returns></returns>
-        public static DialogArgs CreateForException(Exception exc, Func<string, string> textLocalizer = null, Func<string, Image> iconGenerator = null)
+        public static DialogArgs CreateForException(Exception exc)
         {
-            DialogArgs dialogArgs = new DialogArgs(textLocalizer, iconGenerator);
+            DialogArgs dialogArgs = new DialogArgs();
 
-            string textLabel = dialogArgs.GetLocalizedText(DialogForm.MsgCode_FormTitlePrefix);
+            string textLabel = DxComponent.Localize(MsgCode.DialogFormTitlePrefix);
             var info = CreateTextsForException(exc, textLabel, true);
 
-            dialogArgs.Title = dialogArgs.GetLocalizedText(DialogForm.MsgCode_FormTitleError);
+            dialogArgs.Title = DxComponent.Localize(MsgCode.DialogFormTitleError);
             dialogArgs.SystemIcon = DialogSystemIcon.Warning;
             dialogArgs.PrepareButtons(DialogResult.OK);
             dialogArgs.Buttons[0].IsInitialButton = true;
@@ -2384,12 +2404,31 @@ namespace Noris.Clients.Win.Components
         public void AddButton(DialogResult result)
         {
             ButtonInfo buttonInfo = new ButtonInfo();
-            buttonInfo.Text = GetButtonTextFor(result);
+            buttonInfo.Text = LocalizeButtonText(result);
             buttonInfo.ResultValue = result;
             buttonInfo.ActiveKey = GetActiveKeyFrom(buttonInfo.Text, result);
             buttonInfo.IsImplicitButton = (result == DialogResult.OK || result == DialogResult.Yes);
             buttonInfo.IsEscapeButton = (result == DialogResult.Cancel || result == DialogResult.Abort || result == DialogResult.No);
             _Buttons.Add(buttonInfo);
+        }
+        /// <summary>
+        /// Vrátí text do buttonu daného typu
+        /// </summary>
+        /// <param name="result"></param>
+        /// <returns></returns>
+        private string LocalizeButtonText(DialogResult result)
+        {
+            switch (result)
+            {
+                case DialogResult.OK: return DxComponent.Localize(MsgCode.DialogResultOk);
+                case DialogResult.Cancel: return DxComponent.Localize(MsgCode.DialogResultCancel);
+                case DialogResult.Abort: return DxComponent.Localize(MsgCode.DialogResultAbort);
+                case DialogResult.Retry: return DxComponent.Localize(MsgCode.DialogResultRetry);
+                case DialogResult.Ignore: return DxComponent.Localize(MsgCode.DialogResultIgnore);
+                case DialogResult.Yes: return DxComponent.Localize(MsgCode.DialogResultYes);
+                case DialogResult.No: return DxComponent.Localize(MsgCode.DialogResultNo);
+            }
+            return DxComponent.Localize(MsgCode.DialogResultOk);
         }
         /// <summary>
         /// Vrátí aktivační klávesu, což může být 0-9 anebo A-Z, které následuje v dodaném textu za Ampersandem

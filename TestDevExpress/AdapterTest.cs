@@ -9,22 +9,21 @@ using WinFormServices.Drawing;
 using DevExpress.Utils.Svg;
 using DevExpress.Utils.Design;
 
-using Noris.Clients.Win.Components.AsolDX;
-
-namespace TestDevExpress.Adapter
+namespace Noris.Clients.Win.Components.AsolDX
 {
 #if Compile_TestDevExpress
 
     /// <summary>
     /// Adapter na systém TestDevExpress
     /// </summary>
-    internal class AdapterTest : ISystemAdapter
+    internal class CurrentSystemAdapter : ISystemAdapter
     {
         event EventHandler ISystemAdapter.InteractiveZoomChanged { add { } remove { } }
         decimal ISystemAdapter.ZoomRatio { get { return 1.0m; } }
         string ISystemAdapter.GetMessage(string messageCode, params object[] parameters) { return null; }
         IEnumerable<IResourceItem> ISystemAdapter.GetResources() { return DataResources.GetResources(); }
-        string ISystemAdapter.GetPackKey(string itemKey, out ResourceImageSizeType sizeType, out ResourceContentType contentType) { return DataResources.GetPackKey(itemKey, out sizeType, out contentType); }
+        string ISystemAdapter.GetResourceItemKey(string name) { return DataResources.GetItemKey(name); }
+        string ISystemAdapter.GetResourcePackKey(string name, out ResourceImageSizeType sizeType, out ResourceContentType contentType) { return DataResources.GetPackKey(name, out sizeType, out contentType); }
         byte[] ISystemAdapter.GetResourceContent(IResourceItem resourceItem) { return DataResources.GetResourceContent(resourceItem); }
         System.Windows.Forms.Shortcut ISystemAdapter.GetShortcutKeys(string shortCut) { return WinForm.Shortcut.None; }
         bool ISystemAdapter.CanRenderSvgImages { get { return false; } }
@@ -43,8 +42,10 @@ namespace TestDevExpress.Adapter
     }
 #endif
 
-    #region Resources
-
+    #region DataResources
+    /// <summary>
+    /// <see cref="DataResources"/> : systém lokálních zdrojů (typicky obrázky), načtené ze souborů z adresářů
+    /// </summary>
     internal static class DataResources
     {
         #region Načtení zdrojů z disku
@@ -111,13 +112,13 @@ namespace TestDevExpress.Adapter
         /// a nastaví <paramref name="sizeType"/> = <see cref="ResourceImageSizeType.Large"/>;
         /// a <paramref name="contentType"/> = <see cref="ResourceContentType.Bitmap"/>.
         /// </summary>
-        /// <param name="itemKey"></param>
+        /// <param name="name"></param>
         /// <param name="sizeType"></param>
         /// <param name="contentType"></param>
         /// <returns></returns>
-        public static string GetPackKey(string itemKey, out ResourceImageSizeType sizeType, out ResourceContentType contentType)
+        public static string GetPackKey(string name, out ResourceImageSizeType sizeType, out ResourceContentType contentType)
         {
-            string packKey = itemKey;
+            string packKey = GetItemKey(name);
             sizeType = ResourceImageSizeType.None;
             contentType = ResourceContentType.None;
             if (!String.IsNullOrEmpty(packKey))
@@ -290,6 +291,9 @@ namespace TestDevExpress.Adapter
         private bool _ContentLoaded;
     }
     #endregion
+
+
+
 
 
 }
