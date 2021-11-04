@@ -1275,7 +1275,7 @@ namespace TestDevExpress.Forms
         public static string GetRandomImageName(int randomEmpty = 0)
         {
             if ((randomEmpty > 0) && (Rand.Next(100) < randomEmpty)) return null;
-            return ResourceImages[Rand.Next(ResourceImages.Length)];
+            return Random.GetItem(ResourceImages);
         }
         /// <summary>
         /// Konstantní pole se jmény stránek

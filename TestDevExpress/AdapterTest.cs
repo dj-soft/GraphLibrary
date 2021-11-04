@@ -20,14 +20,21 @@ namespace Noris.Clients.Win.Components.AsolDX
     {
         event EventHandler ISystemAdapter.InteractiveZoomChanged { add { } remove { } }
         decimal ISystemAdapter.ZoomRatio { get { return 1.0m; } }
-        string ISystemAdapter.GetMessage(string messageCode, params object[] parameters) { return null; }
+        string ISystemAdapter.GetMessage(string messageCode, params object[] parameters) { return AdapterSupport.GetMessage(messageCode, parameters); }
         IEnumerable<IResourceItem> ISystemAdapter.GetResources() { return DataResources.GetResources(); }
         string ISystemAdapter.GetResourceItemKey(string name) { return DataResources.GetItemKey(name); }
         string ISystemAdapter.GetResourcePackKey(string name, out ResourceImageSizeType sizeType, out ResourceContentType contentType) { return DataResources.GetPackKey(name, out sizeType, out contentType); }
         byte[] ISystemAdapter.GetResourceContent(IResourceItem resourceItem) { return DataResources.GetResourceContent(resourceItem); }
         System.Windows.Forms.Shortcut ISystemAdapter.GetShortcutKeys(string shortCut) { return WinForm.Shortcut.None; }
         bool ISystemAdapter.CanRenderSvgImages { get { return false; } }
-        Image ISystemAdapter.RenderSvgImage(SvgImage svgImage, ISvgPaletteProvider svgPalette, Size size) { return null; }
+        Image ISystemAdapter.RenderSvgImage(SvgImage svgImage, Size size, ISvgPaletteProvider svgPalette) { return null; }
+        /// <summary>
+        /// Vyrenderuje Image která vypadá jako ikona pro zadaný text
+        /// </summary>
+        /// <param name="caption"></param>
+        /// <param name="sizeType"></param>
+        /// <returns></returns>
+        Image ISystemAdapter.CreateCaptionImage(string caption, ResourceImageSizeType sizeType) { return AdapterSupport.CreateCaptionImage(caption, sizeType); }
     }
     /// <summary>
     /// Rozhraní předepisuje metodu <see cref="HandleEscapeKey()"/>, která umožní řešit klávesu Escape v rámci systému
@@ -42,7 +49,73 @@ namespace Noris.Clients.Win.Components.AsolDX
     }
 #endif
 
-    #region DataResources
+    #region class AdapterSupport
+    /// <summary>
+    /// Obecný support pro adapter
+    /// </summary>
+    internal static class AdapterSupport
+    {
+        /// <summary>
+        /// Vyrenderuje dodaný text jako náhradní ikonu
+        /// </summary>
+        /// <param name="caption"></param>
+        /// <param name="sizeType"></param>
+        /// <returns></returns>
+        public static Image CreateCaptionImage(string caption, ResourceImageSizeType sizeType)
+        {
+            var imageSize = DxComponent.GetImageSize(sizeType, true);
+            Bitmap bitmap = new Bitmap(imageSize.Width, imageSize.Height);
+            using (var graphics = Graphics.FromImage(bitmap))
+            {
+                RectangleF bounds = new RectangleF(0, 0, imageSize.Width, imageSize.Height);
+                graphics.FillRectangle(Brushes.White, bounds);
+                if (caption != null)
+                {
+                    string text = caption.Trim()
+                        .Replace(" ", "")
+                        .Replace("-", "")
+                        .Replace("_", "")
+                        .Replace("+", "")
+                        .Replace("/", "")
+                        .Replace("*", "")
+                        .Replace("#", "");
+                    if (text.Length > 2) text = text.Substring(0, 2);
+                    if (text.Length > 0)
+                    {
+                        var font = SystemFonts.MenuFont;
+                        var textSize = graphics.MeasureString(text, font);
+                        var textBounds = textSize.AlignTo(bounds, ContentAlignment.MiddleCenter);
+                        graphics.DrawString(text, font, Brushes.Black, textBounds.Location);
+                    }
+                }
+            }
+            return bitmap;
+        }
+        public static string GetMessage(string messageCode, IEnumerable<object> parameters)
+        {
+            if (messageCode == null) return null;
+            string text = GetMessageText(messageCode);
+            if (text == null) return null;
+            return String.Format(text, parameters);
+        }
+        /// <summary>
+        /// Najde defaultní text daného kódu hlášky.
+        /// Najde hlášku ve třídě <see cref="MsgCode"/>, vyhledá tam konstantu zadaného názvu, načte atribut dekorující danou konstantu, 
+        /// atribut typu <see cref="DefaultMessageTextAttribute"/>, načte jeho hodnotu <see cref="DefaultMessageTextAttribute.DefaultText"/>, a vrátí ji.
+        /// </summary>
+        /// <param name="messageCode"></param>
+        /// <returns></returns>
+        public static string GetMessageText(string messageCode)
+        {
+            var msgField = typeof(MsgCode).GetFields(System.Reflection.BindingFlags.Public).Where(f => f.Name == messageCode).FirstOrDefault();
+            if (msgField == null) return null;
+            var defTextAttr = msgField.GetCustomAttributes(typeof(DefaultMessageTextAttribute), true).Cast<DefaultMessageTextAttribute>().FirstOrDefault();
+            if (defTextAttr is null || String.IsNullOrEmpty(defTextAttr.DefaultText)) return null;
+            return defTextAttr.DefaultText;
+        }
+    }
+    #endregion
+    #region class DataResources
     /// <summary>
     /// <see cref="DataResources"/> : systém lokálních zdrojů (typicky obrázky), načtené ze souborů z adresářů
     /// </summary>
@@ -273,11 +346,21 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         #endregion
     }
+    #endregion
+    #region class DataResourceItem
     /// <summary>
     /// Třída obsahující reálně jeden prvek resource - klíče, jméno souboru, OnDemand načtený obsah
     /// </summary>
     internal class DataResourceItem : IResourceItem
     {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="fileName"></param>
+        /// <param name="itemKey"></param>
+        /// <param name="packKey"></param>
+        /// <param name="sizeType"></param>
+        /// <param name="contentType"></param>
         internal DataResourceItem(string fileName, string itemKey, string packKey, ResourceImageSizeType sizeType, ResourceContentType contentType)
         {
             FileName = fileName;
@@ -288,12 +371,34 @@ namespace Noris.Clients.Win.Components.AsolDX
             _Content = null;
             _ContentLoaded = false;
         }
+        /// <summary>
+        /// Plné jméno souboru
+        /// </summary>
         public string FileName { get; private set; }
+        /// <summary>
+        /// Klíč prvku (bez root adresáře, včetně velikosti a včetně přípony)
+        /// </summary>
         public string ItemKey { get; private set; }
+        /// <summary>
+        /// Klíč skupiny (bez root adresáře, bez velikosti a bez přípony)
+        /// </summary>
         public string PackKey { get; private set; }
+        /// <summary>
+        /// Typ obsahu
+        /// </summary>
         public ResourceContentType ContentType { get; private set; }
+        /// <summary>
+        /// Typ velikosti
+        /// </summary>
         public ResourceImageSizeType SizeType { get; private set; }
+        /// <summary>
+        /// Obsah zdroje = načtený z odpovídajícího souboru
+        /// </summary>
         public byte[] Content { get { return _GetContent(); } }
+        /// <summary>
+        /// Vrátí obsah zdroje, buď dříve již načtený, nebo jej načte nyní. 
+        /// </summary>
+        /// <returns></returns>
         private byte[] _GetContent()
         {
             if (!_ContentLoaded)
@@ -308,9 +413,5 @@ namespace Noris.Clients.Win.Components.AsolDX
         private bool _ContentLoaded;
     }
     #endregion
-
-
-
-
 
 }

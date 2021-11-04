@@ -55,8 +55,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private void InitSystemProperties()
         {
-            Images = DxApplicationResourceLibrary.GetImageList(RibbonImageSize);
-            LargeImages = DxApplicationResourceLibrary.GetImageList(RibbonLargeImageSize);
+            Images = DxComponent.GetImageList(RibbonImageSize);
+            LargeImages = DxComponent.GetImageList(RibbonLargeImageSize);
 
             AllowKeyTips = true;
             ButtonGroupsLayout = DevExpress.XtraBars.ButtonGroupsLayout.ThreeRows;
@@ -2270,8 +2270,8 @@ namespace Noris.Clients.Win.Components.AsolDX
                 }
                 else
                 {
-                    barItem.ImageIndex = DxApplicationResourceLibrary.GetImageListIndex(imageName, RibbonImageSize, iRibbonItem.Text);
-                    barItem.LargeImageIndex = DxApplicationResourceLibrary.GetImageListIndex(imageName, RibbonLargeImageSize, iRibbonItem.Text);
+                    barItem.ImageIndex = DxComponent.GetImageListIndex(imageName, RibbonImageSize, caption: iRibbonItem.Text);
+                    barItem.LargeImageIndex = DxComponent.GetImageListIndex(imageName, RibbonLargeImageSize, caption: iRibbonItem.Text);
                 }
             }
         }
@@ -2896,8 +2896,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         private DevExpress.XtraBars.RibbonGalleryBarItem CreateGalleryItem(IRibbonItem iRibbonItem, int level, DxRibbonGroup dxGroup)
         {
             var galleryBarItem = new DevExpress.XtraBars.RibbonGalleryBarItem(this.BarManager);
-            galleryBarItem.Gallery.Images = DxApplicationResourceLibrary.GetImageList(RibbonGalleryImageSize);
-            galleryBarItem.Gallery.HoverImages = DxApplicationResourceLibrary.GetImageList(RibbonGalleryImageSize);
+            galleryBarItem.Gallery.Images = DxComponent.GetImageList(RibbonGalleryImageSize);
+            galleryBarItem.Gallery.HoverImages = DxComponent.GetImageList(RibbonLargeImageSize);
             galleryBarItem.Gallery.AllowHoverImages = true;
             galleryBarItem.Gallery.ColumnCount = 4;
             galleryBarItem.SuperTip = DxComponent.CreateDxSuperTip(iRibbonItem);
@@ -2936,7 +2936,8 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             var galleryItem = new DevExpress.XtraBars.Ribbon.GalleryItem();
             galleryItem.ImageOptions.Image = iRibbonItem.Image;
-            galleryItem.ImageIndex = galleryItem.HoverImageIndex = DxApplicationResourceLibrary.GetImageListIndex(iRibbonItem.ImageName, DxRibbonControl.RibbonGalleryImageSize);
+            galleryItem.ImageIndex = DxComponent.GetImageListIndex(iRibbonItem.ImageName, DxRibbonControl.RibbonGalleryImageSize);
+            galleryItem.HoverImageIndex = DxComponent.GetImageListIndex(iRibbonItem.ImageName, DxRibbonControl.RibbonLargeImageSize);
             galleryItem.Caption = iRibbonItem.Text;
             galleryItem.Checked = iRibbonItem.Checked ?? false;
             galleryItem.Description = iRibbonItem.ToolTipText;
@@ -5708,7 +5709,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                                (iRibbonGroup.LayoutType == RibbonGroupItemsLayout.TwoRows ? RibbonPageGroupItemsLayout.TwoRows :
                                (iRibbonGroup.LayoutType == RibbonGroupItemsLayout.ThreeRows ? RibbonPageGroupItemsLayout.ThreeRows :
                                 RibbonPageGroupItemsLayout.Default))));
-            this.ImageOptions.ImageIndex = DxApplicationResourceLibrary.GetImageListIndex(iRibbonGroup.GroupImageName, DxRibbonControl.RibbonImageSize, iRibbonGroup.GroupText);
+            this.ImageOptions.ImageIndex = DxComponent.GetImageListIndex(iRibbonGroup.GroupImageName, DxRibbonControl.RibbonImageSize, caption: iRibbonGroup.GroupText);
             this.GroupData = iRibbonGroup;
             this.Tag = iRibbonGroup;
             iRibbonGroup.RibbonGroup = this;

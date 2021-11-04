@@ -103,18 +103,18 @@ namespace TestDevExpress.Forms
 
             if (DxApplicationResourceLibrary.TryGetResource(@"Images\Actions24\align-horizontal-right-out(24).png", out item))
             {
-                var sizeType = item.RealBitmapSizeType;
+                var sizeType = item.SizeType;
             }
 
             string caption = null;
             if (DxApplicationResourceLibrary.TryGetResource(@"Images\Svg\amazon-chime-svgrepo-com.svg", out item))
             {
-                var sizeType = item.RealBitmapSizeType;
+                var sizeType = item.SizeType;
             }
             //  else if (ResourceLibrary.TryGetResource(@"Images\SvgAsol\building-factory-4-filled-large.svg", out item))
             else if (DxApplicationResourceLibrary.TryGetResource(@"Images\SvgAsol\vyhledavani-large.svg", out item))
             {
-                var sizeType = item.RealBitmapSizeType;
+                var sizeType = item.SizeType;
                 caption = "Vybrat pořadač";
             }
 

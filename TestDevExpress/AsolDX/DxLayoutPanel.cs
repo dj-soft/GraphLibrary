@@ -1198,74 +1198,38 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void _SplitContainerShowContextMenu(DevExpress.XtraEditors.SplitContainerControl splitContainer, Point mousePoint)
         {
             UserControlPair pair = UserControlPair.CreateForContainer(splitContainer);
-
-            DevExpress.XtraBars.PopupMenu menu = _CreateContextMenu(pair);
-            BarManager.SetPopupContextMenu(this, menu);
-
-            Point absolutePoint = splitContainer.PointToScreen(mousePoint);
-            absolutePoint.X = (absolutePoint.X < 20 ? 0 : absolutePoint.X - 20);
-            absolutePoint.Y = (absolutePoint.Y < 10 ? 0 : absolutePoint.Y - 10);
-            menu.ShowPopup(BarManager, absolutePoint);
+            var menu = _CreateContextMenu(pair);
+            menu.ShowPopup(splitContainer, mousePoint);
         }
         /// <summary>
         /// Vytvoří a vrátí kontextovém menu pro splitter: Horizontální / Vertikální
         /// </summary>
         /// <param name="pair"></param>
         /// <returns></returns>
-        private DevExpress.XtraBars.PopupMenu _CreateContextMenu(UserControlPair pair)
+        private DevExpress.Utils.Menu.DXPopupMenu _CreateContextMenu(UserControlPair pair)
         {
-            DevExpress.XtraBars.PopupMenu menu = new DevExpress.XtraBars.PopupMenu
-            {
-                DrawMenuSideStrip = DevExpress.Utils.DefaultBoolean.True,
-                DrawMenuRightIndent = DevExpress.Utils.DefaultBoolean.True,
-                MenuDrawMode = DevExpress.XtraBars.MenuDrawMode.SmallImagesText,
-                Name = "menu"
-            };
-
-            menu.AddItem(new DevExpress.XtraBars.BarHeaderItem() { Caption = _ContextMenuTitleText });
-
             bool isHorizontal = (pair.SplitContainer.Horizontal);
-
-            DevExpress.XtraBars.BarCheckItem itemH = new DevExpress.XtraBars.BarCheckItem(_BarManager) { Name = _ContextMenuHorizontalName, Caption = _ContextMenuHorizontalText, Hint = _ContextMenuHorizontalToolTip, Glyph = _ContextMenuHorizontalGlyph, Tag = pair, Checked = isHorizontal };
-            itemH.ItemAppearance.Normal.FontStyleDelta = (isHorizontal ? FontStyle.Bold : FontStyle.Regular);
-            itemH.ItemClick += _ContextMenuItemClick;
-            menu.AddItem(itemH);
-
-            DevExpress.XtraBars.BarCheckItem itemV = new DevExpress.XtraBars.BarCheckItem(_BarManager) { Name = _ContextMenuVerticalName, Caption = _ContextMenuVerticalText, Hint = _ContextMenuVerticalToolTip, Glyph = _ContextMenuVerticalGlyph, Tag = pair, Checked = !isHorizontal };
-            itemV.ItemAppearance.Normal.FontStyleDelta = (!isHorizontal ? FontStyle.Bold : FontStyle.Regular);
-            itemV.ItemClick += _ContextMenuItemClick;
-            menu.AddItem(itemV);
-
-            var closeBtn = new DevExpress.XtraBars.BarButtonItem(_BarManager, _ContextMenuCloseText) { Name = _ContextMenuCloseName, Hint = _ContextMenuCloseToolTip, Glyph = _ContextMenuCloseGlyph };
-            closeBtn.ItemClick += _ContextMenuItemClick;
-            menu.AddItem(closeBtn);
-            closeBtn.Links[0].BeginGroup = true;
-
-            return menu;
+            IMenuItem[] menuItems = new IMenuItem[]
+            {
+                new DataMenuItem() { ItemId = _ContextMenuHorizontalName, Text = DxComponent.Localize(MsgCode.LayoutPanelHorizontalText), ToolTipText = DxComponent.Localize(MsgCode.LayoutPanelHorizontalToolTip), ImageName = "grayscaleimages/alignment/alignverticalcenter_16x16.png", Checked = isHorizontal, Tag = pair },
+                new DataMenuItem() { ItemId = _ContextMenuVerticalName, Text = DxComponent.Localize(MsgCode.LayoutPanelVerticalText), ToolTipText = DxComponent.Localize(MsgCode.LayoutPanelVerticalToolTip), ImageName = "grayscaleimages/alignment/alignhorizontalcenter_16x16.png", Checked = !isHorizontal, Tag = pair },
+                new DataMenuItem() { ItemId = _ContextMenuCloseName, Text = DxComponent.Localize(MsgCode.MenuCloseText), ToolTipText = DxComponent.Localize(MsgCode.MenuCloseToolTip), ImageName = "grayscaleimages/edit/delete_16x16.png", ItemIsFirstInGroup = true }
+            };
+            return DxComponent.CreateDXPopupMenu(menuItems, caption: DxComponent.Localize(MsgCode.LayoutPanelContextMenuTitle), showCheckedAsBold: true, itemClick: _ContextMenuClick);
         }
-        private string _ContextMenuTitleText { get { return "Orientace"; } }
         private const string _ContextMenuHorizontalName = "Horizontal";
-        private string _ContextMenuHorizontalText { get { return "Vedle sebe"; } }
-        private string _ContextMenuHorizontalToolTip { get { return "Panely vlevo a vpravo, oddělovač je svislý"; } }
-        private Image _ContextMenuHorizontalGlyph { get { return DxComponent.GetImageFromResource("grayscaleimages/alignment/alignverticalcenter_16x16.png"); } }
         private const string _ContextMenuVerticalName = "Vertical";
-        private string _ContextMenuVerticalText { get { return "Pod sebou"; } }
-        private string _ContextMenuVerticalToolTip { get { return "Panely nahoře a dole, oddělovač je vodorovný"; } }
-        private Image _ContextMenuVerticalGlyph { get { return DxComponent.GetImageFromResource("grayscaleimages/alignment/alignhorizontalcenter_16x16.png"); } }
         private const string _ContextMenuCloseName = "Vertical";
-        private string _ContextMenuCloseText { get { return "Zavřít"; } }
-        private string _ContextMenuCloseToolTip { get { return "Zavře nabídku bez změny vzhledu"; } }
-        private Image _ContextMenuCloseGlyph { get { return DxComponent.GetImageFromResource("grayscaleimages/edit/delete_16x16.png"); } }
         /// <summary>
         /// Po kliknutí na položku kontextového menu pro splitter: Horizontální / Vertikální
         /// </summary>
         /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void _ContextMenuItemClick(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
+        /// <param name="args"></param>
+        private void _ContextMenuClick(object sender, TEventArgs<IMenuItem> args)
         {
-            UserControlPair pair = e.Item.Tag as UserControlPair;
+            UserControlPair pair = args.Item.Tag as UserControlPair;
             bool hasPair = (pair != null);
-            switch (e.Item.Name)
+            switch (args.Item.ItemId)
             {
                 case _ContextMenuHorizontalName:
                     if (hasPair)

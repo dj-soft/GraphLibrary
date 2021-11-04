@@ -57,7 +57,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             __ItemDict = new Dictionary<string, ResourceItem>();
             __PackDict = new Dictionary<string, ResourcePack>();
-            __ImageListDict = new Dictionary<ResourceImageSizeType, System.Windows.Forms.ImageList>();
             LoadResources();
         }
         /// <summary>
@@ -70,10 +69,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// a obsahem je balíček několika příbuzných zdrojů (stejný obrázek v různých velikostech)
         /// </summary>
         private Dictionary<string, ResourcePack> __PackDict;
-        /// <summary>
-        /// Dictionary ImageListů
-        /// </summary>
-        private Dictionary<ResourceImageSizeType, System.Windows.Forms.ImageList> __ImageListDict;
         #endregion
         #region Kolekce zdrojů, inicializace - její načtení pomocí dat z SystemAdapter
         /// <summary>
@@ -146,19 +141,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             string[] keys = (ext == null) ? dict.Keys.ToArray() : dict.Keys.Where(k => k.EndsWith(ext)).ToArray();
             return DxComponent.GetRandomItem(keys);
         }
-        #endregion
-        #region Získání Bitmapy, ImageListu a indexu do ImageListu
-        public static Image GetImage(string imageName, ResourceImageSizeType sizeType = ResourceImageSizeType.Large)
-        { return Current._CreateBitmap(imageName, sizeType); }
-        /// <summary>
-        /// Vrátí instanci knihovny obrázků dané velikosti
-        /// </summary>
-        /// <param name="size"></param>
-        /// <returns></returns>
-        public static System.Windows.Forms.ImageList GetImageList(ResourceImageSizeType size)
-        { return Current._GetImageList(size); }
-        public static int GetImageListIndex(string imageName, ResourceImageSizeType sizeType, string caption = null)
-        { return Current._GetImageListIndex(imageName, sizeType, caption); }
         #endregion
         #region Private instanční sféra
         /// <summary>
@@ -255,88 +237,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (!pack.TryGetItem(contentType, sizeType, out resourceItem)) return false;
             return true;
         }
-
-
-        private Image _CreateBitmap(string imageName, ResourceImageSizeType sizeType)
-        {
-            ResourceItem resourceItem;
-            if (_TryGetResource(imageName, out resourceItem, ResourceContentType.Bitmap, sizeType))
-                return resourceItem.CreateBmpImage();
-
-            if (_TryGetResource(imageName, out resourceItem, ResourceContentType.Vector, sizeType))
-                return _RenderSvgAsImage(resourceItem.CreateSvgImage(), sizeType);
-
-            return null;
-        }
-        /// <summary>
-        /// Vyrenderuje SVG obrázek do bitmapy
-        /// </summary>
-        /// <param name="svgImage"></param>
-        /// <param name="sizeType"></param>
-        /// <returns></returns>
-        private Image _RenderSvgAsImage(DevExpress.Utils.Svg.SvgImage svgImage, ResourceImageSizeType? sizeType)
-        {
-            Size imageSize = _GetImageSize(sizeType, true);
-            var paletteProvider = DxComponent.GetSvgPalette();
-            if (SystemAdapter.CanRenderSvgImages)
-                return SystemAdapter.RenderSvgImage(svgImage, paletteProvider, imageSize);
-            return svgImage.Render(imageSize, paletteProvider);
-        }
-        /// <summary>
-        /// Vrací Size pro ikonu v dané velikosti
-        /// </summary>
-        /// <param name="sizeType"></param>
-        /// <param name="applyCurrentZoom"></param>
-        /// <returns></returns>
-        private Size _GetImageSize(ResourceImageSizeType? sizeType, bool applyCurrentZoom)
-        {
-            int s = 0;
-            switch (sizeType ?? ResourceImageSizeType.Large)
-            {
-                case ResourceImageSizeType.Small: 
-                    s = 16; 
-                    break;
-                case ResourceImageSizeType.Medium: 
-                    s = 24; 
-                    break;
-                case ResourceImageSizeType.Large:
-                default:
-                    s = 32;
-                    break;
-            }
-            if (applyCurrentZoom)
-                s = DxComponent.ZoomToGui(s);
-            return new Size(s, s);
-        }
-        /// <summary>
-        /// Najde / vytvoří a uloží / a vrátí ImageList pro danou velikost
-        /// </summary>
-        /// <param name="size"></param>
-        /// <returns></returns>
-        private System.Windows.Forms.ImageList _GetImageList(ResourceImageSizeType size)
-        {
-            System.Windows.Forms.ImageList imageList;
-            var imageListDict = __ImageListDict;
-            if (!imageListDict.TryGetValue(size, out imageList))
-            {
-                lock (imageListDict)
-                {
-                    if (!imageListDict.TryGetValue(size, out imageList))
-                    {
-                        imageList = new System.Windows.Forms.ImageList();
-                        imageListDict.Add(size, imageList);
-                    }
-                }
-            }
-            return imageList;
-        }
-
-
-        private int _GetImageListIndex(string imageName, ResourceImageSizeType sizeType, string caption)
-        {
-            
-        }
-
         #endregion
         #region class ResourcePack
         /// <summary>
@@ -391,44 +291,59 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// </summary>
             /// <param name="contentType">Typ obsahu. Pokud je zadán, budou prohledány jen prvky daného typu. Pokud nebude zadán, prohledají se jakékoli prvky.</param>
             /// <param name="sizeType">Hledaný typ velikosti. Pro zadání Large může najít i Middle, pro zadání Small může najít Middle, pro zadání Middle i vrátí Small nebo Large.</param>
-            /// <param name="item"></param>
+            /// <param name="resourceItem"></param>
             /// <returns></returns>
-            public bool TryGetItem(ResourceContentType? contentType, ResourceImageSizeType? sizeType, out ResourceItem item)
+            public bool TryGetItem(ResourceContentType? contentType, ResourceImageSizeType? sizeType, out ResourceItem resourceItem)
             {
-                item = null;
+                resourceItem = null;
                 if (this.Count == 0) return false;
 
-                // Pracovní soupis odpovídající požadovanému typu obsahu, řešení pokud je počet vyhovujících prvků 0 nebo 1:
+                // Pracovní soupis odpovídající požadovanému typu obsahu / nebo všechny prvky:
                 var items = (contentType.HasValue ? this._ResourceItems.Where(i => i.ContentType == contentType.Value).ToArray() : this._ResourceItems.ToArray());
-                if (items.Length == 0) return false;
-                if (items.Length == 1) { item = items[0]; return true; }
 
-                // Požadovanému typu obsahu vyhovuje více než 1 prvek - zkusíme najít optimální velikost, podle zadání (bez zadání = největší):
+                return TryGetOptimalSize(items, sizeType, out resourceItem);
+            }
+            /// <summary>
+            /// Metoda zkusí najít nejvhodnější jeden zdroj pro zadanou velikost.
+            /// </summary>
+            /// <param name="resourceItems"></param>
+            /// <param name="sizeType"></param>
+            /// <param name="resourceItem"></param>
+            /// <returns></returns>
+            internal static bool TryGetOptimalSize(ResourceItem[] resourceItems, ResourceImageSizeType? sizeType, out ResourceItem resourceItem)
+            {
+                resourceItem = null;
+                
+                // Pokud na vstupu nejsou žádné zdroje, skončíme:
+                int count = resourceItems?.Length ?? 0;
+                if (count == 0) return false;
+
+                // Pokud na vstupu je právě jediný zdroj, pak je to ten pravý:
+                if (count == 1) { resourceItem = resourceItems[0]; return true; }
+
+                // Máme na výběr z více zdrojů - zkusíme najít optimální velikost, podle zadání (bez zadání = Large):
                 ResourceImageSizeType size = sizeType ?? ResourceImageSizeType.Large;
-                if (items.TryGetFirst(i => i.SizeType == size, out item)) return true;
-
-                // Nemáme přesně odpovídající prvek podle požadované velikosti, najdeme tedy nějaký prvek v nejvhodnější velikosti:
                 switch (size)
-                {
+                {   // Vyhledáme zdroj nejprve v požadované velikosti, a pak ve velikostech náhradních:
                     case ResourceImageSizeType.Small:
-                        return _TryGetItemBySize(items, out item, ResourceImageSizeType.Medium, ResourceImageSizeType.Large);
+                        return _TryGetItemBySize(resourceItems, out resourceItem, size, ResourceImageSizeType.Medium, ResourceImageSizeType.Large, ResourceImageSizeType.None);
                     case ResourceImageSizeType.Medium:
-                        return _TryGetItemBySize(items, out item, ResourceImageSizeType.Large, ResourceImageSizeType.Small);
+                        return _TryGetItemBySize(resourceItems, out resourceItem, size, ResourceImageSizeType.Large, ResourceImageSizeType.Small, ResourceImageSizeType.None);
                     case ResourceImageSizeType.Large:
                     default:
-                        return _TryGetItemBySize(items, out item, ResourceImageSizeType.Medium, ResourceImageSizeType.Small);
+                        return _TryGetItemBySize(resourceItems, out resourceItem, size, ResourceImageSizeType.Medium, ResourceImageSizeType.Small, ResourceImageSizeType.None);
                 }
             }
             /// <summary>
             /// Najde první prvek ve velikosti dle pole <paramref name="sizes"/>, hledá jednotlivé velikosti v zadaném pořadí.
-            /// Pokud nikdy nic nenajde, tak vrátí první prvek v poli.
+            /// Pokud vůbec nic nenajde, i když nějaký prvek má, tak vrátí první prvek v poli.
             /// Vrací true.
             /// </summary>
             /// <param name="items"></param>
             /// <param name="item"></param>
             /// <param name="sizes"></param>
             /// <returns></returns>
-            private bool _TryGetItemBySize(ResourceItem[] items, out ResourceItem item, params ResourceImageSizeType[] sizes)
+            private static bool _TryGetItemBySize(ResourceItem[] items, out ResourceItem item, params ResourceImageSizeType[] sizes)
             {
                 item = null;
                 if (items == null || items.Length == 0) return false;
@@ -526,68 +441,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             public bool IsValid { get { return (this.Content != null); } }
             #endregion
             #region Tvorba Image nebo SVG objektu
-
-
-            /// <summary>
-            /// Fyzická velikost bitmapy, určená podle obsahu, pro zdroje typu Bitmapa (<see cref="IsBitmap"/> = true).
-            /// </summary>
-            public System.Drawing.Size? RealBitmapSize { get { return _GetRealBitmapSize(); } }
-            /// <summary>
-            /// Typ velikosti bitmapy, určená podle obsahu, pro zdroje typu Bitmapa (<see cref="IsBitmap"/> = true).
-            /// Bitmapy s menší stranou pod 24px jsou <see cref="ResourceImageSizeType.Small"/>;
-            /// Bitmapy pod 32px jsou <see cref="ResourceImageSizeType.Medium"/>;
-            /// Bitmapy 32px a více jsou <see cref="ResourceImageSizeType.Large"/>;
-            /// </summary>
-            public ResourceImageSizeType? RealBitmapSizeType { get { return _GetRealBitmapSizeType(); } }
-           
-            /// <summary>
-            /// Vrátí druh velikosti aktuálního obrázku, z cache <see cref="_BitmapSizeType"/> anebo ji nyní zjistí a uloží
-            /// </summary>
-            /// <returns></returns>
-            private ResourceImageSizeType? _GetRealBitmapSizeType()
-            {
-                if (IsBitmap && !_BitmapSizeType.HasValue)
-                {
-                    var size = _GetRealBitmapSize();
-                    _BitmapSizeType = (size.HasValue ? _GetBitmapSizeType(size.Value) : ResourceImageSizeType.None);
-                }
-                return _BitmapSizeType;
-            }
-            /// <summary>
-            /// Vrátí velikost bitmapy v pixelech, z cache <see cref="_BitmapSize"/> anebo ji nyní zjistí a uloží
-            /// </summary>
-            /// <returns></returns>
-            private System.Drawing.Size? _GetRealBitmapSize()
-            {
-                if (IsBitmap && !_BitmapSize.HasValue)
-                {
-                    try
-                    {
-                        using (var bitmap = CreateBmpImage())
-                        {
-                            _BitmapSize = bitmap.Size;
-                        }
-                    }
-                    catch { _BitmapSize = System.Drawing.Size.Empty; }
-                }
-                return _BitmapSize;
-            }
-            /// <summary>
-            /// Vrátí druh velikosti pro danou pixelovou velikost
-            /// </summary>
-            /// <param name="size"></param>
-            /// <returns></returns>
-            private ResourceImageSizeType _GetBitmapSizeType(System.Drawing.Size size)
-            {
-                int s = (size.Width < size.Height ? size.Width : size.Height);
-                if (s < 22) return ResourceImageSizeType.Small;
-                if (s < 32) return ResourceImageSizeType.Medium;
-                return ResourceImageSizeType.Large;
-            }
-            /// <summary>Fyzická velikost aktuální bitmapy</summary>
-            private System.Drawing.Size? _BitmapSize;
-            /// <summary>Druh velikosti aktuální bitmapy</summary>
-            private ResourceImageSizeType? _BitmapSizeType;
             /// <summary>
             /// Metoda vrátí new instanci <see cref="System.Drawing.Image"/> vytvořenou z <see cref="Content"/>.
             /// Pokud ale this instance není Bitmap (<see cref="IsBitmap"/> je false) anebo není platná, vyhodí chybu!
@@ -626,4 +479,3 @@ namespace Noris.Clients.Win.Components.AsolDX
         #endregion
     }
 }
-

@@ -1953,9 +1953,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             // Zakonzervuji CurrentRootNodeVisible:
             if (NativeNodesCount == 0) _CurrentRootNodeVisible = RootNodeVisible;
 
-            if (nodeInfo.ItemId == "#ROOT#M$28501#B$28501_1")
-            { }
-
             // Vyřeším situaci, kdy přidávám node (jiný než fiktivní NodeItemType.OnExpandLoading) a přitom náš Parent existuje, má příznak LazyExpandable, a mezi jeho Child nody je přítomný fiktivní NodeItemType.OnExpandLoading.
             // To je v Nephrite běžný stav, kdy někdo nastaví u nodu "Parent" příznak LazyExpandable = true, my na základě toho příznaku vygenerujeme fiktivní NodeItemType.OnExpandLoading,
             //  a mezi následujícími přidanými nody budou reálné Child nody toho Parent nodu:
