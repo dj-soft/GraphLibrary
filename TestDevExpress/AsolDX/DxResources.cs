@@ -11,15 +11,23 @@ using DevExpress.Utils.Svg;
 namespace Noris.Clients.Win.Components.AsolDX
 {
     /// <summary>
-    /// Knihovna zdrojů
+    /// Knihovna zdrojů výhradně aplikace (Resources.bin, adresář Images), nikoli zdroje DevEpxress.
+    /// Tyto zdroje jsou získány pomocí metod <see cref="SystemAdapter.GetResources()"/> atd.
+    /// <para/>
+    /// Toto je pouze knihovna = zdroj dat (a jejich vyhledávání), ale nikoli výkonný blok, tady se negenerují obrázky ani nic dalšího.
+    /// <para/>
+    /// Zastřešující algoritmy pro oba druhy zdrojů (aplikační i DevExpress) jsou v <see cref="DxComponent"/>, 
+    /// metody typicky <see cref="DxComponent.ApplyImage(DevExpress.Utils.ImageOptions, string, Image, Size?, bool)"/>.
+    /// Aplikační kódy by tedy neměly komunikovat napřímo s touto třídou <see cref="DxApplicationResourceLibrary"/>, ale s <see cref="DxComponent"/>,
+    /// aby měly k dispozici zdroje obou druhů.
     /// </summary>
-    public class DxResourceLibrary
+    public class DxApplicationResourceLibrary
     {
         #region Instance
         /// <summary>
         /// Instance obsahující zdroje
         /// </summary>
-        protected static DxResourceLibrary Current
+        protected static DxApplicationResourceLibrary Current
         {
             get
             {
@@ -28,7 +36,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                     lock (__Lock)
                     {
                         if (__Current is null)
-                            __Current = new DxResourceLibrary();
+                            __Current = new DxApplicationResourceLibrary();
                     }
                 }
                 return __Current;
@@ -37,7 +45,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Úložiště singletonu
         /// </summary>
-        private static DxResourceLibrary __Current;
+        private static DxApplicationResourceLibrary __Current;
         /// <summary>
         /// Zámek singletonu
         /// </summary>
@@ -45,7 +53,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Konstruktor, načte adresáře se zdroji
         /// </summary>
-        private DxResourceLibrary()
+        private DxApplicationResourceLibrary()
         {
             __ItemDict = new Dictionary<string, ResourceItem>();
             __PackDict = new Dictionary<string, ResourcePack>();
@@ -67,7 +75,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private Dictionary<ResourceImageSizeType, System.Windows.Forms.ImageList> __ImageListDict;
         #endregion
-        #region Kolekce zdrojů, její načtení
+        #region Kolekce zdrojů, inicializace - její načtení pomocí dat z SystemAdapter
         /// <summary>
         /// Zkusí najít adresáře se zdroji a načíst jejich soubory
         /// </summary>
@@ -84,9 +92,9 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
         }
         #endregion
-        #region Public static rozhraní
+        #region Public static rozhraní základní (Count, ContainsResource, TryGetResource, GetRandomName)
         /// <summary>
-        /// Počet položek v evidenci = jednotlivé soubory
+        /// Počet jednotlivých položek v evidenci = jednotlivé soubory
         /// </summary>
         public static int Count { get { return Current.__ItemDict.Count; } }
         /// <summary>
@@ -99,6 +107,20 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         public static bool ContainsResource(string resourceName)
         { return Current._ContainsResource(resourceName); }
+        /// <summary>
+        /// Vyhledá daný zdroj, vrací true = nalezen, zdroj je umístěn do out <paramref name="resourceItem"/> anebo <paramref name="resourcePack"/>.
+        /// <para/>
+        /// Daný název zdroje <paramref name="resourceName"/> může/nemusí začínat lomítkem, libovolno jakým. 
+        /// Nemusí být kompletní, tj. může/nemusí obsahovat suffix s velikostí obrázku a příponu.
+        /// <para/>
+        /// Tato varianta najde buď konkrétní zdroj (pokud dané jméno odkazuje na konkrétní prvek) anebo najde balíček zdrojů (obsahují stejný zdroj v různých velikostech a typech obsahu).
+        /// </summary>
+        /// <param name="resourceName"></param>
+        /// <param name="resourceItem"></param>
+        /// <param name="resourcePack"></param>
+        /// <returns></returns>
+        public static bool TryGetResource(string resourceName, out ResourceItem resourceItem, out ResourcePack resourcePack)
+        { return Current._TryGetResource(resourceName, out resourceItem, out resourcePack); }
         /// <summary>
         /// Vyhledá daný zdroj, vrací true = nalezen, zdroj je umístěn do out <paramref name="resourceItem"/>.
         /// <para/>
@@ -113,19 +135,15 @@ namespace Noris.Clients.Win.Components.AsolDX
         public static bool TryGetResource(string resourceName, out ResourceItem resourceItem, ResourceContentType? contentType = null, ResourceImageSizeType? sizeType = null)
         { return Current._TryGetResource(resourceName, out resourceItem, contentType, sizeType); }
         /// <summary>
-        /// Metoda vrátí náhodný zdroj (dané přípony).
+        /// Metoda vrátí náhodný zdroj (dané přípony, pokud není prázdná).
         /// </summary>
-        /// <param name="extension"></param>
+        /// <param name="extension">Přípona, vybírat jen záznamy s touto příponou. Měla by začínat tečkou: ".svg"</param>
         /// <returns></returns>
         public static string GetRandomName(string extension = null)
         {
             var dict = Current.__ItemDict;
-            string[] keys;
             var ext = (String.IsNullOrEmpty(extension) ? null : extension.Trim().ToLower());
-            if (ext == null)
-                keys = dict.Keys.ToArray();
-            else
-                keys = dict.Keys.Where(k => k.EndsWith(ext)).ToArray();
+            string[] keys = (ext == null) ? dict.Keys.ToArray() : dict.Keys.Where(k => k.EndsWith(ext)).ToArray();
             return DxComponent.GetRandomItem(keys);
         }
         #endregion
@@ -153,19 +171,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         private bool _ContainsResource(string resourceName)
         {
-            string itemKey = SystemAdapter.GetResourceItemKey(resourceName);
-            if (__ItemDict.ContainsKey(itemKey)) return true;
-            string packKey = SystemAdapter.GetResourcePackKey(resourceName, out var _, out var _);
-            if (__PackDict.ContainsKey(packKey)) return true;
-            return false;
+            return _TryGetResource(resourceName, out var _, null, null);
         }
         /// <summary>
         /// Vyhledá daný zdroj, vrací true = nalezen, zdroj je umístěn do out <paramref name="resourceItem"/>.
         /// <para/>
         /// Daný název zdroje <paramref name="resourceName"/> může/nemusí začínat lomítkem, libovolno jakým. 
-        /// Ale musí být kompletní, tj. včetně velikosti obrázku a přípony.
-        /// Nelze tedy očekávat, že po zadání jména "pic/ribbon/refresh" bude dohledán a identifikován zdroj se jménem "pic/ribbon/refresh-24x24.png".
-        /// Je třeba zadat plné jméno s příponou. Hledání je case-insensitive, krajní mezery jsou odstraněny, úvodní nadbytečné lomítko je odstraněno.
+        /// Nemusí být kompletní, tj. může/nemusí obsahovat suffix s velikostí obrázku a příponu.
         /// </summary>
         /// <param name="resourceName"></param>
         /// <param name="resourceItem"></param>
@@ -180,18 +192,48 @@ namespace Noris.Clients.Win.Components.AsolDX
             return false;
         }
         /// <summary>
+        /// Vyhledá daný zdroj, vrací true = nalezen, zdroj je umístěn do out <paramref name="resourceItem"/> anebo <paramref name="resourcePack"/>.
+        /// <para/>
+        /// Daný název zdroje <paramref name="resourceName"/> může/nemusí začínat lomítkem, libovolno jakým. 
+        /// Nemusí být kompletní, tj. může/nemusí obsahovat suffix s velikostí obrázku a příponu.
+        /// <para/>
+        /// Tato varianta najde buď konkrétní zdroj (pokud dané jméno odkazuje na konkrétní prvek) anebo najde balíček zdrojů (obsahují stejný zdroj v různých velikostech a typech obsahu).
+        /// </summary>
+        /// <param name="resourceName"></param>
+        /// <param name="resourceItem"></param>
+        /// <param name="resourcePack"></param>
+        private bool _TryGetResource(string resourceName, out ResourceItem resourceItem, out ResourcePack resourcePack)
+        {
+            resourcePack = null;
+            if (_TryGetItem(resourceName, out resourceItem)) return true;
+            if (_TryGetPack(resourceName, out resourcePack)) return true;
+            return false;
+        }
+        /// <summary>
         /// Zkusí najít <see cref="ResourceItem"/> podle explicitního jména (tj. včetně suffixu a přípony).
         /// </summary>
         /// <param name="resourceName"></param>
-        /// <param name="item"></param>
+        /// <param name="resourceItem"></param>
         /// <returns></returns>
-        private bool _TryGetItem(string resourceName, out ResourceItem item)
+        private bool _TryGetItem(string resourceName, out ResourceItem resourceItem)
         {
             string itemKey = SystemAdapter.GetResourceItemKey(resourceName);
-            return __ItemDict.TryGetValue(itemKey, out item);
+            return __ItemDict.TryGetValue(itemKey, out resourceItem);
         }
         /// <summary>
-        /// Zkusí najít <see cref="ResourceItem"/> podle daného jména (typicky bez suffixu a přípony) v sadě zdrojů, a upřesní výsledek podle požadované velikosti a typu.
+        /// Zkusí najít <see cref="ResourcePack"/> podle dodaného jména.
+        /// </summary>
+        /// <param name="resourceName"></param>
+        /// <param name="resourcePack"></param>
+        /// <returns></returns>
+        private bool _TryGetPack(string resourceName, out ResourcePack resourcePack)
+        {
+            string packKey = SystemAdapter.GetResourcePackKey(resourceName, out var _, out var _);
+            return __PackDict.TryGetValue(packKey, out resourcePack);
+        }
+        /// <summary>
+        /// Zkusí najít <see cref="ResourceItem"/> podle daného jména (typicky bez suffixu a přípony) v sadě zdrojů, 
+        /// a upřesní výsledek podle požadované velikosti a typu.
         /// </summary>
         /// <param name="resourceName"></param>
         /// <param name="resourceItem"></param>
@@ -201,8 +243,15 @@ namespace Noris.Clients.Win.Components.AsolDX
         private bool _TryGetPackItem(string resourceName, out ResourceItem resourceItem, ResourceContentType? contentType, ResourceImageSizeType? sizeType)
         {
             resourceItem = null;
-            string packKey = SystemAdapter.GetResourcePackKey(resourceName, out var _, out var _);
+            string packKey = SystemAdapter.GetResourcePackKey(resourceName, out var nameSizeType, out var nameContentType);
             if (!__PackDict.TryGetValue(packKey, out ResourcePack pack)) return false;
+
+            // Pokud v parametrech není daný typ velikosti a/nebo obsahu, a bylo jej možno odvodit ze jména, pak akceptujeme typ určený dle jména.
+            // Jinými slovy: parametr je "Image/Button-24x24.jpg", tedy nameSizeType ("-24x24") = Medium, a nameContentType (".jpg") = Bitmap:
+            if (!sizeType.HasValue && nameSizeType != ResourceImageSizeType.None) sizeType = nameSizeType;
+            if (!contentType.HasValue && nameContentType != ResourceContentType.None) contentType = nameContentType;
+
+            // Vyhledáme odpovídající zdroj:
             if (!pack.TryGetItem(contentType, sizeType, out resourceItem)) return false;
             return true;
         }
@@ -267,14 +316,15 @@ namespace Noris.Clients.Win.Components.AsolDX
         private System.Windows.Forms.ImageList _GetImageList(ResourceImageSizeType size)
         {
             System.Windows.Forms.ImageList imageList;
-            if (!__ImageListDict.TryGetValue(size, out imageList))
+            var imageListDict = __ImageListDict;
+            if (!imageListDict.TryGetValue(size, out imageList))
             {
-                lock (__ImageListDict)
+                lock (imageListDict)
                 {
-                    if (!__ImageListDict.TryGetValue(size, out imageList))
+                    if (!imageListDict.TryGetValue(size, out imageList))
                     {
                         imageList = new System.Windows.Forms.ImageList();
-                        __ImageListDict.Add(size, imageList);
+                        imageListDict.Add(size, imageList);
                     }
                 }
             }
@@ -292,7 +342,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Balíček několika variantních zdrojů jednoho typu (odlišují se velikostí, typem a vhodností pro Dark/Light skin)
         /// </summary>
-        protected class ResourcePack
+        public class ResourcePack
         {
             /// <summary>
             /// Konstruktor pro daný klíč = jméno souboru s relativním adresářem, bez značky velikosti a bez přípony
@@ -300,17 +350,33 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// <param name="packKey"></param>
             public ResourcePack(string packKey)
             {
-                PackKey = packKey;
-                ResourceItems = new List<ResourceItem>();
+                _PackKey = packKey;
+                _ResourceItems = new List<ResourceItem>();
             }
+            /// <summary>
+            /// Vizualizace
+            /// </summary>
+            /// <returns></returns>
+            public override string ToString()
+            {
+                return $"PackKey: {PackKey}; Items: {Count}";
+            }
+            /// <summary>Klíč balíčku</summary>
+            private string _PackKey;
+            /// <summary>Jednotlivé prvky</summary>
+            private List<ResourceItem> _ResourceItems;
             /// <summary>
             /// Klíč: obsahuje jméno adresáře a souboru, ale bez označení velikosti a bez přípony
             /// </summary>
-            public string PackKey { get; private set; }
+            public string PackKey { get { return _PackKey; } }
+            /// <summary>
+            /// Počet jednotlivých položek v evidenci = jednotlivé soubory
+            /// </summary>
+            public int Count { get { return this._ResourceItems.Count; } }
             /// <summary>
             /// Jednotlivé prvky, různých velikostí a typů
             /// </summary>
-            public List<ResourceItem> ResourceItems { get; private set; }
+            public IEnumerable<ResourceItem> ResourceItems { get { return this._ResourceItems; } }
             /// <summary>
             /// Přidá dodaný prvek do zdejší kolekce zdrojů <see cref="ResourceItems"/>
             /// </summary>
@@ -318,7 +384,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             public void AddItem(ResourceItem item)
             {
                 if (item != null)
-                    ResourceItems.Add(item);
+                    _ResourceItems.Add(item);
             }
             /// <summary>
             /// Vyhledá konkrétní zdroj odpovídající zadání
@@ -327,13 +393,13 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// <param name="sizeType">Hledaný typ velikosti. Pro zadání Large může najít i Middle, pro zadání Small může najít Middle, pro zadání Middle i vrátí Small nebo Large.</param>
             /// <param name="item"></param>
             /// <returns></returns>
-            internal bool TryGetItem(ResourceContentType? contentType, ResourceImageSizeType? sizeType, out ResourceItem item)
+            public bool TryGetItem(ResourceContentType? contentType, ResourceImageSizeType? sizeType, out ResourceItem item)
             {
                 item = null;
-                if (this.ResourceItems.Count == 0) return false;
+                if (this.Count == 0) return false;
 
                 // Pracovní soupis odpovídající požadovanému typu obsahu, řešení pokud je počet vyhovujících prvků 0 nebo 1:
-                var items = (contentType.HasValue ? this.ResourceItems.Where(i => i.ContentType == contentType.Value).ToArray() : this.ResourceItems.ToArray());
+                var items = (contentType.HasValue ? this._ResourceItems.Where(i => i.ContentType == contentType.Value).ToArray() : this._ResourceItems.ToArray());
                 if (items.Length == 0) return false;
                 if (items.Length == 1) { item = items[0]; return true; }
 
@@ -404,9 +470,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 this._IResourceItem = iResourceItem;
             }
-            /// <summary>
-            /// Podkladová data
-            /// </summary>
+            /// <summary>Podkladová data</summary>
             private IResourceItem _IResourceItem;
             /// <summary>
             /// Vizualizace
@@ -414,7 +478,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// <returns></returns>
             public override string ToString()
             {
-                return this.ItemKey;
+                return $"ItemKey: {ItemKey}; SizeType: {SizeType}; ContentType: {ContentType}";
             }
             #endregion
             #region Public data o Resource, základní

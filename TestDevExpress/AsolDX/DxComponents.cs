@@ -2593,7 +2593,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         private string _ImageNameFormIcon;
         #endregion
-        #region ImageResource, obecně aplikace obrázků do Controlů
+
+
+
+        #region ImageResource, obecně aplikování obrázků do Controlů - obrázky Aplikační i DevExpress
 
         #region GetImage - Získání fyzického obrázku
 
@@ -2602,42 +2605,22 @@ namespace Noris.Clients.Win.Components.AsolDX
             DevExpress.Utils.Design.ISvgPaletteProvider svgPalette = null, DevExpress.Utils.Drawing.ObjectState? svgState = null)
         { return Instance._GetImage(imageName, sizeType, optimalSvgSize, svgPalette, svgState); }
 
-        /// <summary>
-        /// Vrátí true, pokud pro dané jméno existuje systémový zdroj (ikona png nebo svg)
-        /// </summary>
-        /// <param name="resourceName"></param>
-        /// <returns></returns>
-        private bool _ExistsImageResource(string resourceName)
-        {
-            if (String.IsNullOrEmpty(resourceName)) return false;
-            var key = _GetImageResourceKey(resourceName);
-            var dictionary = _ImageResourceDictionary;
-            return dictionary.TryGetValue(key, out var _);
-        }
-        /// <summary>
-        /// Vrátí true, pokud dané jméno zdroje končí příponou ".svg"
-        /// </summary>
-        /// <param name="resourceName"></param>
-        /// <returns></returns>
-        private static bool _IsImageNameSvg(string resourceName)
-        {
-            return (!String.IsNullOrEmpty(resourceName) && resourceName.TrimEnd().EndsWith(".svg", StringComparison.OrdinalIgnoreCase));
-        }
+
+
+
+
+       
 
         private Image _GetImage(string imageName,
             ResourceImageSizeType? sizeType = null, Size? optimalSvgSize = null,
             DevExpress.Utils.Design.ISvgPaletteProvider svgPalette = null, DevExpress.Utils.Drawing.ObjectState? svgState = null)
         {
             if (String.IsNullOrEmpty(imageName)) return null;
-            bool isSvg = _IsImageNameSvg(imageName);
-            bool isSys = _ExistsImageResource(imageName);
-            bool isRes = !isSys && DxResourceLibrary.ContainsResource(imageName);
-            if (isSys)
-                return (isSvg ?
-                        _GetImageResourceSvg(imageName, sizeType, optimalSvgSize, svgPalette, svgState) :
-                        _GetImageResourceBmp(imageName, sizeType, optimalSvgSize, svgPalette, svgState));
-            else if (isRes)
-                return _GetImageAdapter(imageName, sizeType, optimalSvgSize, svgPalette, svgState);
+
+            if (_ExistsDevExpressResource(imageName))
+                return _GetImageDevExpress(imageName, sizeType, optimalSvgSize, svgPalette, svgState);
+            else if (_ExistsApplicationResource(imageName))
+                return _GetImageApplication(imageName, sizeType, optimalSvgSize, svgPalette, svgState);
             return null;
         }
         /// <summary>
@@ -2666,30 +2649,209 @@ namespace Noris.Clients.Win.Components.AsolDX
             return new Size(s, s);
         }
 
-        private Image _GetImageResourceBmp(string imageName, 
-            ResourceImageSizeType? sizeType = null, Size? optimalSvgSize = null,
-            DevExpress.Utils.Design.ISvgPaletteProvider svgPalette = null, DevExpress.Utils.Drawing.ObjectState? svgState = null)
+
+        #region Přístup na DevExpress zdroje
+        /// <summary>
+        /// Vrátí SVG paletu [volitelně pro daný skin a pro daný stav objektu], defaultně pro aktuální skin
+        /// </summary>
+        /// <param name="skinProvider">Cílový skin, implicitně bude použit <see cref="DevExpress.LookAndFeel.UserLookAndFeel.Default"/></param>
+        /// <param name="svgState">Stav objektu, implicitní je <see cref="DevExpress.Utils.Drawing.ObjectState.Normal"/></param>
+        /// <returns></returns>
+        public static DevExpress.Utils.Design.ISvgPaletteProvider GetSvgPalette(DevExpress.Skins.ISkinProvider skinProvider = null, DevExpress.Utils.Drawing.ObjectState? svgState = null)
         {
-            string resourceName = _GetImageResourceKey(imageName);
-            return _ImageResourceCache.GetImage(resourceName);
+            if (skinProvider == null) skinProvider = DevExpress.LookAndFeel.UserLookAndFeel.Default;
+            if (!svgState.HasValue) svgState = DevExpress.Utils.Drawing.ObjectState.Normal;
+            return DevExpress.Utils.Svg.SvgPaletteHelper.GetSvgPalette(skinProvider, svgState.Value);
         }
-        private Image _GetImageResourceSvg(string imageName,
+        /// <summary>
+        /// Vrátí true, pokud pro dané jméno existuje DevExpress zdroj (ikona png nebo svg)
+        /// </summary>
+        /// <param name="resourceName"></param>
+        /// <returns></returns>
+        private bool _ExistsDevExpressResource(string resourceName)
+        {
+            if (String.IsNullOrEmpty(resourceName)) return false;
+            var key = _GetDevExpressResourceKey(resourceName);
+            var dictionary = _DevExpressResourceDictionary;
+            return dictionary.TryGetValue(key, out var _);
+        }
+
+        /// <summary>
+        /// Vrátí bitmapu z DevExpress zdrojů, ať už tam je jako Png nebo Svg (Svg vyrenderuje)
+        /// </summary>
+        /// <param name="imageName"></param>
+        /// <param name="sizeType"></param>
+        /// <param name="optimalSvgSize"></param>
+        /// <param name="svgPalette"></param>
+        /// <param name="svgState"></param>
+        /// <returns></returns>
+        private Image _GetImageDevExpress(string imageName,
             ResourceImageSizeType? sizeType = null, Size? optimalSvgSize = null,
             DevExpress.Utils.Design.ISvgPaletteProvider svgPalette = null, DevExpress.Utils.Drawing.ObjectState? svgState = null)
         {
-            string resourceName = _GetImageResourceKey(imageName);
+            if (_IsImageNameSvg(imageName))
+                return _GetImageDevExpressSvg(imageName, sizeType, optimalSvgSize, svgPalette, svgState);
+            else
+                return _GetImageDevExpressPng(imageName, sizeType, optimalSvgSize, svgPalette, svgState);
+        }
+        /// <summary>
+        /// Vrátí bitmapu uloženou v DevExpress zdrojích
+        /// </summary>
+        /// <param name="imageName"></param>
+        /// <param name="sizeType"></param>
+        /// <param name="optimalSvgSize"></param>
+        /// <param name="svgPalette"></param>
+        /// <param name="svgState"></param>
+        /// <returns></returns>
+        private Image _GetImageDevExpressPng(string imageName,
+            ResourceImageSizeType? sizeType = null, Size? optimalSvgSize = null,
+            DevExpress.Utils.Design.ISvgPaletteProvider svgPalette = null, DevExpress.Utils.Drawing.ObjectState? svgState = null)
+        {
+            string resourceName = _GetDevExpressResourceKey(imageName);
+            return _DevExpressResourceCache.GetImage(resourceName);
+        }
+        /// <summary>
+        /// Vrátí bitmapu z obrázku typu SVG uloženou v DevExpress zdrojích
+        /// </summary>
+        /// <param name="imageName"></param>
+        /// <param name="sizeType"></param>
+        /// <param name="optimalSvgSize"></param>
+        /// <param name="svgPalette"></param>
+        /// <param name="svgState"></param>
+        /// <returns></returns>
+        private Image _GetImageDevExpressSvg(string imageName,
+            ResourceImageSizeType? sizeType = null, Size? optimalSvgSize = null,
+            DevExpress.Utils.Design.ISvgPaletteProvider svgPalette = null, DevExpress.Utils.Drawing.ObjectState? svgState = null)
+        {
+            string resourceName = _GetDevExpressResourceKey(imageName);
             Size size = _GetImageSize(sizeType);
 
             if (svgPalette == null)
                 svgPalette = GetSvgPalette(DevExpress.LookAndFeel.UserLookAndFeel.Default, svgState);
-            _ImageResourceRewindStream(resourceName);
+            _RewindDevExpressResourceStream(resourceName);
             Image image;
             if (SystemAdapter.CanRenderSvgImages)
-                image = SystemAdapter.RenderSvgImage(_ImageResourceCache.GetSvgImage(resourceName), svgPalette, size);
+                image = SystemAdapter.RenderSvgImage(_DevExpressResourceCache.GetSvgImage(resourceName), svgPalette, size);
             else
-                image = _ImageResourceCache.GetSvgImage(resourceName, svgPalette, size);
+                image = _DevExpressResourceCache.GetSvgImage(resourceName, svgPalette, size);
             return image;
         }
+
+
+        /// <summary>
+        /// Vrátí klíč pro daný DevExpress zdroj
+        /// </summary>
+        /// <param name="imageName"></param>
+        /// <returns></returns>
+        private static string _GetDevExpressResourceKey(string imageName) { return (imageName == null ? "" : imageName.Trim().ToLower()); }
+        /// <summary>
+        /// Vrátí true, pokud dané jméno zdroje končí příponou ".svg"
+        /// </summary>
+        /// <param name="resourceName"></param>
+        /// <returns></returns>
+        private static bool _IsImageNameSvg(string resourceName)
+        {
+            return (!String.IsNullOrEmpty(resourceName) && resourceName.TrimEnd().EndsWith(".svg", StringComparison.OrdinalIgnoreCase));
+        }
+        /// <summary>
+        /// Prefix pro ImageUri: "image://"
+        /// </summary>
+        private static string ImageUriPrefix { get { return "image://"; } }
+        /// <summary>
+        /// Zkusí najít daný zdroj v <see cref="_DevExpressResourceDictionary"/> (seznam DevExpress zdrojů = ikon) a určit jeho příponu. Vrací true = nalezeno.
+        /// Přípona je trim(), lower() a bez tečky na začátku, například: "png", "svg" atd.
+        /// </summary>
+        /// <param name="resourceName"></param>
+        /// <param name="extension"></param>
+        /// <returns></returns>
+        private bool _TryGetDevExpressResourceExtension(string resourceName, out string extension)
+        {
+            extension = null;
+            if (String.IsNullOrEmpty(resourceName)) return false;
+            var key = _GetDevExpressResourceKey(resourceName);
+            var dictionary = _DevExpressResourceDictionary;
+            return dictionary.TryGetValue(key, out extension);
+        }
+        /// <summary>
+        /// Napravuje chybu DevExpress, kdy v <see cref="DevExpress.Images.ImageResourceCache"/> pro SVG zdroje po jejich použití je jejich zdrojový stream na konci, a další použití je tak znemožněno.
+        /// </summary>
+        /// <param name="resourceName"></param>
+        private void _RewindDevExpressResourceStream(string resourceName)
+        {
+            if (String.IsNullOrEmpty(resourceName)) return;
+
+            var imageResourceCache = _DevExpressResourceCache;
+            var dictonaryField = imageResourceCache.GetType().GetField("resources", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+            if (dictonaryField == null) return;
+            object dictonaryValue = dictonaryField.GetValue(imageResourceCache);
+
+            if (!(dictonaryValue is Dictionary<string, System.IO.Stream> dictionary)) return;
+            if (!dictionary.TryGetValue(resourceName, out System.IO.Stream stream)) return;
+
+            var position = stream.Position;
+            if (stream.Position > 0L && stream.CanSeek)
+                stream.Seek(0L, System.IO.SeekOrigin.Begin);
+        }
+        /// <summary>
+        /// Dictionary obsahující všechny DevExpress zdroje (jako Key) 
+        /// a jejich normalizovanou příponu (jako Value) ve formě "png", "svg" atd (bez tečky, lower, trim)
+        /// </summary>
+        private Dictionary<string, string> _DevExpressResourceDictionary
+        {
+            get
+            {
+                if (__DevExpressResourceDictionary == null)
+                {
+                    Dictionary<string, string> dict = new Dictionary<string, string>();
+                    var names = _DevExpressResourceCache.GetAllResourceKeys();
+                    foreach (var name in names)
+                    {
+                        if (!String.IsNullOrEmpty(name))
+                        {
+                            string key = name.Trim().ToLower();
+                            if (!dict.ContainsKey(key))
+                            {
+                                string ext = System.IO.Path.GetExtension(key).Trim();
+                                if (ext.Length > 0 && ext[0] == '.') ext = ext.Substring(1);
+                                dict.Add(key, ext);
+                            }
+                        }
+                    }
+                    __DevExpressResourceDictionary = dict;
+                }
+                return __DevExpressResourceDictionary;
+            }
+        }
+        private Dictionary<string, string> __DevExpressResourceDictionary;
+        /// <summary>
+        /// Cache DevExpress image resources
+        /// </summary>
+        private DevExpress.Images.ImageResourceCache _DevExpressResourceCache
+        {
+            get
+            {
+                if (__DevExpressResourceCache == null)
+                    __DevExpressResourceCache = DevExpress.Images.ImageResourceCache.Default;
+                return __DevExpressResourceCache;
+            }
+        }
+        private DevExpress.Images.ImageResourceCache __DevExpressResourceCache;
+        #endregion
+        #region Přístup na Aplikační zdroje (přes AsolDX.DxResourceLibrary, s pomocí SystemAdapter)
+        private bool _ExistsApplicationResource(string resourceName)
+        {
+            DxApplicationResourceLibrary.TryGetResource(resourceName);
+
+
+            if (String.IsNullOrEmpty(resourceName)) return false;
+            var key = _GetDevExpressResourceKey(resourceName);
+            var dictionary = _DevExpressResourceDictionary;
+            return dictionary.TryGetValue(key, out var _);
+        })
+        #endregion
+
+
+
         /// <summary>
         /// Vrátí Image z knihovny zdrojů.
         /// Na vstupu (<paramref name="imageName"/>) nemusí být uvedena přípona, může být uvedeno obecné jméno, např. "pic\address-book-undo-2";
@@ -2701,13 +2863,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="svgPalette"></param>
         /// <param name="svgState"></param>
         /// <returns></returns>
-        private Image _GetImageAdapter(string imageName,
+        private Image _GetImageApplication(string imageName,
             ResourceImageSizeType? sizeType = null, Size? optimalSvgSize = null,
             DevExpress.Utils.Design.ISvgPaletteProvider svgPalette = null, DevExpress.Utils.Drawing.ObjectState? svgState = null)
         {
-            bool existsBitmap = DxResourceLibrary.TryGetResource(imageName, out var resourceItem, ResourceContentType.Bitmap, sizeType);
+            bool existsBitmap = DxApplicationResourceLibrary.TryGetResource(imageName, out var resourceItem, ResourceContentType.Bitmap, sizeType);
 
-            return DxResourceLibrary.CreateBitmap(imageName, sizeType);
+            return DxApplicationResourceLibrary.CreateBitmap(imageName, sizeType);
         }
      
 
@@ -2728,13 +2890,13 @@ namespace Noris.Clients.Win.Components.AsolDX
             return Instance._GetResourceKeys(addPng, addSvg);
         }
         /// <summary>
-        /// Zkusí najít daný zdroj v <see cref="_ImageResourceDictionary"/> (seznam systémových zdrojů = ikon) a určit jeho příponu. Vrací true = nalezeno.
+        /// Zkusí najít daný zdroj v <see cref="_DevExpressResourceDictionary"/> (seznam systémových zdrojů = ikon) a určit jeho příponu. Vrací true = nalezeno.
         /// Přípona je trim(), lower() a bez tečky na začátku, například: "png", "svg" atd.
         /// </summary>
         /// <param name="resourceName"></param>
         /// <param name="extension"></param>
         /// <returns></returns>
-        public static bool TryGetResourceExtension(string resourceName, out string extension) { return Instance._TryGetResourceExtension(resourceName, out extension); }
+        public static bool TryGetResourceExtension(string resourceName, out string extension) { return Instance._TryGetDevExpressResourceExtension(resourceName, out extension); }
         /// <summary>
         /// Vrací setříděný seznam DevExpress resources
         /// </summary>
@@ -2745,7 +2907,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             if (!addPng && !addSvg) return new string[0];
 
-            var keyList = _ImageResourceCache.GetAllResourceKeys()
+            var keyList = _DevExpressResourceCache.GetAllResourceKeys()
                 .Where(k => (addPng && k.EndsWith(".png", StringComparison.OrdinalIgnoreCase)) || (addSvg && k.EndsWith(".svg", StringComparison.OrdinalIgnoreCase)))
                 .ToList();
             keyList.Sort();
@@ -2828,12 +2990,12 @@ namespace Noris.Clients.Win.Components.AsolDX
                         size = optimalSvgSize.Value;
                     else if (maxSize.HasValue)
                         size = maxSize.Value;
-                    _ImageResourceRewindStream(resourceName);
-                    image = _ImageResourceCache.GetSvgImage(resourceName, svgPalette, size);
+                    _RewindDevExpressResourceStream(resourceName);
+                    image = _DevExpressResourceCache.GetSvgImage(resourceName, svgPalette, size);
                 }
                 else
                 {
-                    image = _ImageResourceCache.GetImage(resourceName);
+                    image = _DevExpressResourceCache.GetImage(resourceName);
                     size = image?.Size ?? Size.Empty;
                     if (maxSize.HasValue)
                     {
@@ -2848,18 +3010,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
 
             return image;
-        }
-        /// <summary>
-        /// Vrátí SVG paletu [volitelně pro daný skin a pro daný stav objektu], defaultně pro aktuální skin
-        /// </summary>
-        /// <param name="skinProvider">Cílový skin, implicitně bude použit <see cref="DevExpress.LookAndFeel.UserLookAndFeel.Default"/></param>
-        /// <param name="svgState">Stav objektu, implicitní je <see cref="DevExpress.Utils.Drawing.ObjectState.Normal"/></param>
-        /// <returns></returns>
-        public static DevExpress.Utils.Design.ISvgPaletteProvider GetSvgPalette(DevExpress.Skins.ISkinProvider skinProvider = null, DevExpress.Utils.Drawing.ObjectState? svgState = null)
-        {
-            if (skinProvider == null) skinProvider = DevExpress.LookAndFeel.UserLookAndFeel.Default;
-            if (!svgState.HasValue) svgState = DevExpress.Utils.Drawing.ObjectState.Normal;
-            return DevExpress.Utils.Svg.SvgPaletteHelper.GetSvgPalette(skinProvider, svgState.Value);
         }
         public static DevExpress.Utils.SvgImageCollection SvgImageCollection { get { return Instance._SvgImageCollection; } }
         public static DevExpress.Utils.Svg.SvgImage GetSvgImage(string key) { return Instance._GetSvgImage(key); }
@@ -2876,7 +3026,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 try
                 {
-                    if (_TryGetResourceExtension(resourceName, out string extension))
+                    if (_TryGetDevExpressResourceExtension(resourceName, out string extension))
                     {   // Interní DevExpress Resources:
                         if (extension == "svg")
                             _ApplyResourceImageSvg(imageOptions, resourceName, imageSize);
@@ -2885,7 +3035,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                     }
                     else
                     {   // Externí zdroje:
-                        imageOptions.Image = DxResourceLibrary.GetImage(resourceName, ResourceImageSizeType.Medium);
+                        imageOptions.Image = DxApplicationResourceLibrary.GetImage(resourceName, ResourceImageSizeType.Medium);
 
 #warning POKRAČUJ !!!
                         qqq;
@@ -2909,14 +3059,14 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void _ApplyResourceImageSvg(ImageOptions imageOptions, string resourceName, Size? imageSize)
         {
             imageOptions.Image = null;
-            _ImageResourceRewindStream(resourceName);
-            imageOptions.SvgImage = _ImageResourceCache.GetSvgImage(resourceName);
+            _RewindDevExpressResourceStream(resourceName);
+            imageOptions.SvgImage = _DevExpressResourceCache.GetSvgImage(resourceName);
             if (imageSize.HasValue) imageOptions.SvgImageSize = imageSize.Value;
         }
         private void _ApplyResourceImageBmp(ImageOptions imageOptions, string resourceName, Size? imageSize)
         {
             imageOptions.SvgImage = null;
-            imageOptions.Image = _ImageResourceCache.GetImage(resourceName);
+            imageOptions.Image = _DevExpressResourceCache.GetImage(resourceName);
         }
 
 
@@ -2935,13 +3085,13 @@ namespace Noris.Clients.Win.Components.AsolDX
                 {
                     if (_IsImageNameSvg(resourceName))
                     {
-                        _ImageResourceRewindStream(resourceName);
-                        imageOptions.SvgImage = _ImageResourceCache.GetSvgImage(resourceName);
+                        _RewindDevExpressResourceStream(resourceName);
+                        imageOptions.SvgImage = _DevExpressResourceCache.GetSvgImage(resourceName);
                         if (imageSize.HasValue) imageOptions.SvgImageSize = imageSize.Value;
                     }
                     else
                     {
-                        imageOptions.Image = _ImageResourceCache.GetImage(resourceName);
+                        imageOptions.Image = _DevExpressResourceCache.GetImage(resourceName);
                     }
                 }
                 catch { }
@@ -2966,96 +3116,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
 
         #region Low level práce s knihovnou systémových ikon DevExpress.Images.ImageResourceCache
-        /// <summary>
-        /// Vrátí klíč pro daný systmový zdroj
-        /// </summary>
-        /// <param name="imageName"></param>
-        /// <returns></returns>
-        private static string _GetImageResourceKey(string imageName) { return (imageName == null ? "" : imageName.Trim().ToLower()); }
-        /// <summary>
-        /// Prefix pro ImageUri: "image://"
-        /// </summary>
-        private static string ImageUriPrefix { get { return "image://"; } }
-        /// <summary>
-        /// Zkusí najít daný zdroj v <see cref="_ImageResourceDictionary"/> (seznam systémových zdrojů = ikon) a určit jeho příponu. Vrací true = nalezeno.
-        /// Přípona je trim(), lower() a bez tečky na začátku, například: "png", "svg" atd.
-        /// </summary>
-        /// <param name="resourceName"></param>
-        /// <param name="extension"></param>
-        /// <returns></returns>
-        private bool _TryGetResourceExtension(string resourceName, out string extension)
-        {
-            extension = null;
-            if (String.IsNullOrEmpty(resourceName)) return false;
-            var key = _GetImageResourceKey(resourceName);
-            var dictionary = _ImageResourceDictionary;
-            return dictionary.TryGetValue(key, out extension);
-        }
-        /// <summary>
-        /// Napravuje chybu DevExpress, kdy v <see cref="DevExpress.Images.ImageResourceCache"/> pro SVG zdroje po jejich použití je jejich zdrojový stream na konci, a další použití je tak znemožněno.
-        /// </summary>
-        /// <param name="resourceName"></param>
-        private void _ImageResourceRewindStream(string resourceName)
-        {
-            if (String.IsNullOrEmpty(resourceName)) return;
-
-            var imageResourceCache = _ImageResourceCache;
-            var dictonaryField = imageResourceCache.GetType().GetField("resources", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
-            if (dictonaryField == null) return;
-            object dictonaryValue = dictonaryField.GetValue(imageResourceCache);
-
-            if (!(dictonaryValue is Dictionary<string, System.IO.Stream> dictionary)) return;
-            if (!dictionary.TryGetValue(resourceName, out System.IO.Stream stream)) return;
-
-            var position = stream.Position;
-            if (stream.Position > 0L && stream.CanSeek)
-                stream.Seek(0L, System.IO.SeekOrigin.Begin);
-        }
-        /// <summary>
-        /// Cache systémových image resources
-        /// </summary>
-        private DevExpress.Images.ImageResourceCache _ImageResourceCache
-        {
-            get
-            {
-                if (__ImageResourceCache == null)
-                    __ImageResourceCache = DevExpress.Images.ImageResourceCache.Default;
-                return __ImageResourceCache;
-            }
-        }
-        private DevExpress.Images.ImageResourceCache __ImageResourceCache;
-        /// <summary>
-        /// Dictionary obsahující všechny systémové zdroje (jako Key) 
-        /// a jejich normalizovanou příponu (jako Value) ve formě "png", "svg" atd (bez tečky, lower, trim)
-        /// </summary>
-        private Dictionary<string, string> _ImageResourceDictionary
-        {
-            get
-            {
-                if (__ImageResourceDictionary == null)
-                {
-                    Dictionary<string, string> dict = new Dictionary<string, string>();
-                    var names = _ImageResourceCache.GetAllResourceKeys();
-                    foreach (var name in names)
-                    {
-                        if (!String.IsNullOrEmpty(name))
-                        {
-                            string key = name.Trim().ToLower();
-                            if (!dict.ContainsKey(key))
-                            {
-                                string ext = System.IO.Path.GetExtension(key).Trim();
-                                if (ext.Length > 0 && ext[0] == '.') ext = ext.Substring(1);
-                                dict.Add(key, ext);
-                            }
-                        }
-                    }
-                    __ImageResourceDictionary = dict;
-                }
-                return __ImageResourceDictionary;
-            }
-        }
-        private Dictionary<string, string> __ImageResourceDictionary;
-        private DevExpress.Utils.SvgImageCollection _SvgImageCollection
+       private DevExpress.Utils.SvgImageCollection _SvgImageCollection
         {
             get
             {

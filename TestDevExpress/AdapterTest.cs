@@ -122,9 +122,26 @@ namespace Noris.Clients.Win.Components.AsolDX
             sizeType = ResourceImageSizeType.None;
             contentType = ResourceContentType.None;
             if (!String.IsNullOrEmpty(packKey))
-                if (RemoveContentTypeByExtension(ref packKey, out contentType))
+                if (RemoveContentTypeByExtension(ref packKey, out contentType) && ContentTypeSupportSize(contentType))
                     RemoveSizeTypeBySuffix(ref packKey, out sizeType);
             return packKey;
+        }
+        /// <summary>
+        /// Vrací true, pokud dodaný typ obsahu podporuje uvádění velikosti v názvu zdroje (souboru). Typicky jde o obrázky.
+        /// </summary>
+        /// <param name="contentType"></param>
+        /// <returns></returns>
+        private static bool ContentTypeSupportSize(ResourceContentType contentType)
+        {
+            switch (contentType)
+            {
+                case ResourceContentType.Bitmap:
+                case ResourceContentType.Vector:
+                case ResourceContentType.Icon:
+                case ResourceContentType.Cursor:
+                    return true;
+            }
+            return false;
         }
         /// <summary>
         /// Z dodaného jména souboru určí suffix, a podle něj detekuje velikost obrázku (dá do out parametru) a detekovaný suffix odřízne (celý).

@@ -97,22 +97,22 @@ namespace TestDevExpress.Forms
 
         private void TestResources()
         {
-            int cnt = DxResourceLibrary.Count;
+            int cnt = DxApplicationResourceLibrary.Count;
 
-            DxResourceLibrary.ResourceItem item;
+            DxApplicationResourceLibrary.ResourceItem item;
 
-            if (DxResourceLibrary.TryGetResource(@"Images\Actions24\align-horizontal-right-out(24).png", out item))
+            if (DxApplicationResourceLibrary.TryGetResource(@"Images\Actions24\align-horizontal-right-out(24).png", out item))
             {
                 var sizeType = item.RealBitmapSizeType;
             }
 
             string caption = null;
-            if (DxResourceLibrary.TryGetResource(@"Images\Svg\amazon-chime-svgrepo-com.svg", out item))
+            if (DxApplicationResourceLibrary.TryGetResource(@"Images\Svg\amazon-chime-svgrepo-com.svg", out item))
             {
                 var sizeType = item.RealBitmapSizeType;
             }
             //  else if (ResourceLibrary.TryGetResource(@"Images\SvgAsol\building-factory-4-filled-large.svg", out item))
-            else if (DxResourceLibrary.TryGetResource(@"Images\SvgAsol\vyhledavani-large.svg", out item))
+            else if (DxApplicationResourceLibrary.TryGetResource(@"Images\SvgAsol\vyhledavani-large.svg", out item))
             {
                 var sizeType = item.RealBitmapSizeType;
                 caption = "Vybrat pořadač";

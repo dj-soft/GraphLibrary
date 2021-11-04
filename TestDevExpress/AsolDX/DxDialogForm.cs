@@ -827,7 +827,7 @@ namespace Noris.Clients.Win.Components
                 // Obrázek u tlačítka:
                 Image image = null;
                 if (buttonInfo.Image != null) image = buttonInfo.Image;
-                else if (buttonInfo.ImageFile != null) image = DxResourceLibrary.GetImage(buttonInfo.ImageFile, ResourceImageSizeType.Large);
+                else if (buttonInfo.ImageFile != null) image = DxApplicationResourceLibrary.GetImage(buttonInfo.ImageFile, ResourceImageSizeType.Large);
                 if (image != null)
                 {
                     button.ImageOptions.Image = image;
