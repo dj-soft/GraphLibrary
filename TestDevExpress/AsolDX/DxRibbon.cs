@@ -5709,7 +5709,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                                (iRibbonGroup.LayoutType == RibbonGroupItemsLayout.TwoRows ? RibbonPageGroupItemsLayout.TwoRows :
                                (iRibbonGroup.LayoutType == RibbonGroupItemsLayout.ThreeRows ? RibbonPageGroupItemsLayout.ThreeRows :
                                 RibbonPageGroupItemsLayout.Default))));
-            this.ImageOptions.ImageIndex = DxComponent.GetImageListIndex(iRibbonGroup.GroupImageName, DxRibbonControl.RibbonImageSize, caption: iRibbonGroup.GroupText);
+            this.ImageOptions.ImageIndex = DxComponent.GetImageListIndex(iRibbonGroup.GroupImageName, DxRibbonControl.RibbonImageSize);
             this.GroupData = iRibbonGroup;
             this.Tag = iRibbonGroup;
             iRibbonGroup.RibbonGroup = this;

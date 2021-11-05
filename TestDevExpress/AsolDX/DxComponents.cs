@@ -201,7 +201,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         public DateTime? ApplicationReadyTime { get { return _ApplicationReadyTime; } }
         private DateTime? _ApplicationReadyTime;
         #endregion
-        #region Application
+        #region Application - start, restart, MainForm
         /// <summary>
         /// Main soubor aplikace (adresář/jméno.exe)
         /// </summary>
@@ -210,6 +210,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Main adresář aplikace (adresář kde je umístěn Main spuštěný soubor)
         /// </summary>
         public static string ApplicationPath { get { return System.IO.Path.GetDirectoryName(Instance._AppFile); } }
+        /// <summary>
+        /// Hlavní okno aplikace, pokud byla aplikace spuštěna pomocí <see cref="ApplicationStart(Type, Image)"/>
+        /// </summary>
+        public static Form MainForm { get { return Instance._MainForm; } }
         public static void ApplicationStart(Type mainFormType, Image splashImage) { Instance._ApplicationStart(mainFormType, splashImage); }
         public static void ApplicationRestart() { Instance._ApplicationRestart(); }
         private void _ApplicationStart(Type mainFormType, Image splashImage)
@@ -222,10 +226,10 @@ namespace Noris.Clients.Win.Components.AsolDX
                     null, splashImage, null,
                     DevExpress.XtraSplashScreen.FluentLoadingIndicatorType.Dots, null, null, true, true);
 
-                Form mainForm = System.Activator.CreateInstance(mainFormType) as Form;
-                mainForm.Shown += MainForm_Shown;
+                _MainForm = System.Activator.CreateInstance(mainFormType) as Form;
+                _MainForm.Shown += MainForm_Shown;
                 ApplicationContext context = new ApplicationContext();
-                context.MainForm = mainForm;
+                context.MainForm = _MainForm;
 
                 _SplashUpdate(subTitle: "Už to bude...");
 
@@ -233,6 +237,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 Application.EnableVisualStyles();
 
                 Application.Run(context);
+                _MainForm = null;
                 if (!_ApplicationDoRestart) break;
 
                 Application.Restart();
@@ -259,8 +264,11 @@ namespace Noris.Clients.Win.Components.AsolDX
             _ApplicationDoRestart = true;
             foreach (Form form in forms)
                 form.Close();
+            _MainForm = null;
         }
         private bool _ApplicationDoRestart;
+        /// <summary>Hlavní okno aplikace, pokud byla aplikace spuštěna pomocí <see cref="ApplicationStart(Type, Image)"/></summary>
+        private Form _MainForm;
         #endregion
         #region Splash Screen
         /// <summary>
@@ -687,6 +695,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Vrátí danou designovou hodnotu přepočtenou dle aktuálního Zoomu do vizuální hodnoty
         /// </summary>
         /// <param name="value"></param>
+        /// <param name="targetDpi">Cílové DPI</param>
         /// <returns></returns>
         internal static float ZoomToGui(float value, int targetDpi) { decimal zoomDpi = Instance._ZoomDpi; return _ZoomDpiToGui(value, zoomDpi, targetDpi); }
         /// <summary>
@@ -3674,6 +3683,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         public static byte[] GetResourceContent(IResourceItem resourceItem) { return Current.GetResourceContent(resourceItem); }
         /// <summary>
+        /// Nějaký control, který slouží pouze pro přístup do GUI threadu. Typicky je to main okno aplikace.
+        /// </summary>
+        public static Control Host { get { return Current.Host; } }
+        /// <summary>
         /// Vrací klávesovou zkratku pro daný string, typicky na vstupu je "Ctrl+C", na výstupu je <see cref="System.Windows.Forms.Keys.Control"/> | <see cref="System.Windows.Forms.Keys.C"/>
         /// </summary>
         /// <param name="shortCut"></param>
@@ -3770,36 +3783,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="resourceItem"></param>
         /// <returns></returns>
         byte[] GetResourceContent(IResourceItem resourceItem);
-
-        /*
-
-        /// <summary>
-        /// Vrátí ImageList pro danou velikost
-        /// </summary>
-        /// <param name="sizeType"></param>
-        /// <returns></returns>
-        System.Windows.Forms.ImageList GetResourceImageList(ResourceImageSizeType sizeType);
-        /// <summary>
-        /// Vrátí Image pro daný název a velikost. Výstupem má být bitmapa.
-        /// Pokud daná ikona neexistuje, a je dán parametr <paramref name="caption"/>, pak ikonu vygeneruje (z počátečních dvou písmen).
-        /// </summary>
-        /// <param name="resourceName"></param>
-        /// <param name="sizeType"></param>
-        /// <param name="caption"></param>
-        /// <returns></returns>
-        System.Drawing.Image GetResourceImage(string resourceName, ResourceImageSizeType sizeType, string caption);
-        /// <summary>
-        /// Vrátí index ikony v dané velikosti.
-        /// Pokud daná ikona neexistuje, a je dán parametr <paramref name="caption"/>, pak ikonu vygeneruje (z počátečních dvou písmen).
-        /// </summary>
-        /// <param name="iconName"></param>
-        /// <param name="sizeType"></param>
-        /// <param name="caption"></param>
-        /// <returns></returns>
-        int GetResourceIndex(string iconName, ResourceImageSizeType sizeType, string caption);
-        
-        */
-
         /// <summary>
         /// Umí aktuální adapter renderovat SVG image do bitmapy?
         /// </summary>
@@ -3819,6 +3802,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="sizeType"></param>
         /// <returns></returns>
         Image CreateCaptionImage(string caption, ResourceImageSizeType sizeType);
+        /// <summary>
+        /// Nějaký control, který slouží pouze pro přístup do GUI threadu. Typicky je to main okno aplikace.
+        /// </summary>
+        Control Host { get; }
         /// <summary>
         /// Vrací klávesovou zkratku pro daný string, typicky na vstupu je "Ctrl+C", na výstupu je <see cref="System.Windows.Forms.Keys.Control"/> | <see cref="System.Windows.Forms.Keys.C"/>
         /// </summary>

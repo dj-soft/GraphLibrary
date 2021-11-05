@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Noris.Clients.Win.Components.AsolDX;
 
 namespace Noris.Clients.Win.Components
 {
@@ -474,7 +475,7 @@ namespace Noris.Clients.Win.Components
             /// </summary>
             private object _Param;
             /// <summary>
-            /// Volat v synchronizovaném threadu, pomocí <see cref="UiSynchronizationHelper.Invoke{TSender, TArgument}(TSender, TArgument, Action{TSender, TArgument}, Action)"/>
+            /// Volat v synchronizovaném threadu, pomocí invokace do GUI threadu
             /// </summary>
             private bool _SynchronizeUI;
             /// <summary>
@@ -662,8 +663,8 @@ namespace Noris.Clients.Win.Components
             /// </summary>
             private void _RunAction()
             {
-                if (this._SynchronizeUI && ComponentConnector.Host.InvokeRequired)
-                    ComponentConnector.Host.Invoke(new Action(this._RunActionThread));
+                if (this._SynchronizeUI)
+                    DxComponent.MainForm.RunInGui(_RunActionThread);
                 else
                     this._RunActionThread();
             }

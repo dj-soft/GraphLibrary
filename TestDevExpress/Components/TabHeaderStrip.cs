@@ -332,17 +332,8 @@ namespace TestDevExpress
         /// </summary>
         private string _SelectedTabKey
         {
-            get
-            {
-                string key = null;
-                UiSynchronizationHelper.Invoke(this._Component, "", (s, e) => key = _Component.SelectedTabKey);
-                return key;
-            }
-            set
-            {
-                string key = value;
-                UiSynchronizationHelper.Invoke(this._Component, "", (s, e) => _Component.SelectedTabKey = key);
-            }
+            get { return this.Control.GetGuiValue(() => _Component.SelectedTabKey); }
+            set { this.Control.SetGuiValue(key => _Component.SelectedTabKey = key, value); }
         }
         /// <summary>
         /// Počet položek
@@ -1344,7 +1335,7 @@ namespace TestDevExpress
             {
                 string imageName = headerItem.ImageName;
                 if (!String.IsNullOrEmpty(imageName))
-                    image = ComponentConnector.GraphicsCache.GetResourceContent(imageName, WinFormServices.Drawing.UserGraphicsSize.Medium);
+                    image = DxComponent.GetImage(imageName, ResourceImageSizeType.Medium);
             }
             navPage.ImageOptions.Image = image;
         }
@@ -1817,7 +1808,7 @@ namespace TestDevExpress
             {
                 string imageName = headerItem.ImageName;
                 if (!String.IsNullOrEmpty(imageName))
-                    image = ComponentConnector.GraphicsCache.GetResourceContent(imageName, WinFormServices.Drawing.UserGraphicsSize.Medium);
+                    image = DxComponent.GetImage(imageName, ResourceImageSizeType.Medium);
             }
             navPage.ImageOptions.Image = image;
         }

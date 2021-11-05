@@ -72,13 +72,14 @@ namespace Noris.Clients.Win.Components.AsolDX
             DevExpress.Utils.Design.ISvgPaletteProvider svgPalette = null, DevExpress.Utils.Drawing.ObjectState? svgState = null,
             string caption = null)
         {
-            if (String.IsNullOrEmpty(imageName)) return null;
+            bool hasName = !String.IsNullOrEmpty(imageName);
+            bool hasCaption = !String.IsNullOrEmpty(caption);
 
-            if (_ExistsDevExpressResource(imageName))
+            if (hasName && _ExistsDevExpressResource(imageName))
                 return _CreateImageDevExpress(imageName, sizeType, optimalSvgSize, svgPalette, svgState);
-            else if (_TrySearchApplicationResource(imageName, out var validItems, ResourceContentType.Bitmap, ResourceContentType.Vector))
+            else if (hasName && _TrySearchApplicationResource(imageName, out var validItems, ResourceContentType.Bitmap, ResourceContentType.Vector))
                 return _CreateImageApplication(validItems, sizeType, optimalSvgSize, svgPalette, svgState);
-            else if (!String.IsNullOrEmpty(caption))
+            else if (hasCaption)
                 return SystemAdapter.CreateCaptionImage(caption, sizeType ?? ResourceImageSizeType.Large);
             return null;
         }
@@ -153,6 +154,28 @@ namespace Noris.Clients.Win.Components.AsolDX
             DevExpress.Utils.Design.ISvgPaletteProvider svgPalette = null, DevExpress.Utils.Drawing.ObjectState? svgState = null,
             string caption = null)
         { return Instance._GetImage(imageName, sizeType ?? ResourceImageSizeType.Large, optimalSvgSize, svgPalette, svgState, caption); }
+        /// <summary>
+        /// Vrátí text pro danou caption pro renderování ikony.
+        /// Z textu odstraní mezery a znaky - _ + / * #
+        /// Pokud výsledek bude delší než 2 znaky, zkrátí jej na dva znaky.
+        /// Pokud na vstupu je null, na výstupu je prázdný string (Length = 0). Stejně tak, pokud na vstupu bude string obsahující jen odstraněný balast.
+        /// </summary>
+        /// <param name="caption"></param>
+        /// <returns></returns>
+        public static string GetCaptionForIcon(string caption)
+        {
+            if (String.IsNullOrEmpty(caption)) return "";
+            string text = caption.Trim()
+                .Replace(" ", "")
+                .Replace("-", "")
+                .Replace("_", "")
+                .Replace("+", "")
+                .Replace("/", "")
+                .Replace("*", "")
+                .Replace("#", "");
+            if (text.Length > 2) text = text.Substring(0, 2);
+            return text;
+        }
         /// <summary>
         /// Vrací objekt <see cref="ImageList"/> obsahující obrázky dané velikosti
         /// </summary>
@@ -230,9 +253,9 @@ namespace Noris.Clients.Win.Components.AsolDX
             string caption)
         {
             bool hasName = !String.IsNullOrEmpty(imageName);
-            bool hasCaption = !String.IsNullOrEmpty(caption);
-            správně zforátovat key pro caption:
-            string key = (hasName ? imageName : hasCaption ? caption : "").Trim().ToLower();
+            string captionKey = DxComponent.GetCaptionForIcon(caption);
+            bool hasCaption = (captionKey.Length > 0);
+            string key = (hasName ? imageName : hasCaption ? $"«:{captionKey}:»" : "").Trim().ToLower();
             if (key.Length == 0) return null;
 
             ImageList imageList = _GetImageList(sizeType);

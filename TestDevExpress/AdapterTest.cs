@@ -25,16 +25,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         string ISystemAdapter.GetResourceItemKey(string name) { return DataResources.GetItemKey(name); }
         string ISystemAdapter.GetResourcePackKey(string name, out ResourceImageSizeType sizeType, out ResourceContentType contentType) { return DataResources.GetPackKey(name, out sizeType, out contentType); }
         byte[] ISystemAdapter.GetResourceContent(IResourceItem resourceItem) { return DataResources.GetResourceContent(resourceItem); }
-        System.Windows.Forms.Shortcut ISystemAdapter.GetShortcutKeys(string shortCut) { return WinForm.Shortcut.None; }
         bool ISystemAdapter.CanRenderSvgImages { get { return false; } }
         Image ISystemAdapter.RenderSvgImage(SvgImage svgImage, Size size, ISvgPaletteProvider svgPalette) { return null; }
-        /// <summary>
-        /// Vyrenderuje Image která vypadá jako ikona pro zadaný text
-        /// </summary>
-        /// <param name="caption"></param>
-        /// <param name="sizeType"></param>
-        /// <returns></returns>
         Image ISystemAdapter.CreateCaptionImage(string caption, ResourceImageSizeType sizeType) { return AdapterSupport.CreateCaptionImage(caption, sizeType); }
+        WinForm.Control ISystemAdapter.Host { get { return DxComponent.MainForm ?? WinForm.Form.ActiveForm; } }
+        System.Windows.Forms.Shortcut ISystemAdapter.GetShortcutKeys(string shortCut) { return WinForm.Shortcut.None; }
+
     }
     /// <summary>
     /// Rozhraní předepisuje metodu <see cref="HandleEscapeKey()"/>, která umožní řešit klávesu Escape v rámci systému
@@ -68,25 +64,16 @@ namespace Noris.Clients.Win.Components.AsolDX
             using (var graphics = Graphics.FromImage(bitmap))
             {
                 RectangleF bounds = new RectangleF(0, 0, imageSize.Width, imageSize.Height);
+                if (sizeType == ResourceImageSizeType.Large)
+                { }
                 graphics.FillRectangle(Brushes.White, bounds);
-                if (caption != null)
+                string text = DxComponent.GetCaptionForIcon(caption);
+                if (text.Length > 0)
                 {
-                    string text = caption.Trim()
-                        .Replace(" ", "")
-                        .Replace("-", "")
-                        .Replace("_", "")
-                        .Replace("+", "")
-                        .Replace("/", "")
-                        .Replace("*", "")
-                        .Replace("#", "");
-                    if (text.Length > 2) text = text.Substring(0, 2);
-                    if (text.Length > 0)
-                    {
-                        var font = SystemFonts.MenuFont;
-                        var textSize = graphics.MeasureString(text, font);
-                        var textBounds = textSize.AlignTo(bounds, ContentAlignment.MiddleCenter);
-                        graphics.DrawString(text, font, Brushes.Black, textBounds.Location);
-                    }
+                    var font = SystemFonts.MenuFont;
+                    var textSize = graphics.MeasureString(text, font);
+                    var textBounds = textSize.AlignTo(bounds, ContentAlignment.MiddleCenter);
+                    graphics.DrawString(text, font, Brushes.Black, textBounds.Location);
                 }
             }
             return bitmap;
@@ -121,20 +108,185 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// </summary>
     internal static class DataResources
     {
-        #region Načtení zdrojů z disku
+        #region Načtení zdrojů
         /// <summary>
         /// Volá se jedenkrát, vrátí kompletní seznam všech zdrojů (Resource).
         /// </summary>
         /// <returns></returns>
         public static IEnumerable<IResourceItem> GetResources()
         {
-            string resourcePath = DxComponent.ApplicationPath;
             List<IResourceItem> resourceList = new List<IResourceItem>();
-            LoadResources(resourcePath, 0, "Resources", resourceList);
-            LoadResources(resourcePath, 1, "Images", resourceList);
-            LoadResources(resourcePath, 1, "pic", resourceList);
-            LoadResources(resourcePath, 1, "pic-0", resourceList);
+            AddResourcesFromResourcesBin(resourceList);
+            if (resourceList.Count == 0)
+                AddResourcesFromSingleFiles(resourceList);
             return resourceList;
+        }
+        #endregion
+        #region Načtení Resource.bin
+        /// <summary>
+        /// Do daného seznamu načte jednotlivé zdroje ze souboru ServerResources.bin
+        /// </summary>
+        /// <returns></returns>
+        private static void AddResourcesFromResourcesBin(List<IResourceItem> resourceList)
+        {
+            string resourcePath = DxComponent.ApplicationPath;
+            LoadFromResourcesBinInDirectory(resourcePath, 0, "", resourceList);               // Tady je umístěn soubor "ServerResources.bin" v uživatelském běhu
+            if (resourceList.Count == 0)
+                LoadFromResourcesBinInDirectory(resourcePath, 3, "Download", resourceList);   // Tady je umístěn v běhu na vývojovém serveru = adresář aplikačního serveru
+        }
+        /// <summary>
+        /// Načte obsah souboru "ServerResources.bin" z určeného adresáře (počet úrovní nahoru nahoru od aktuálního, a daný subdir)
+        /// </summary>
+        /// <param name="resourcePath"></param>
+        /// <param name="upDirs"></param>
+        /// <param name="subDir"></param>
+        /// <param name="resourceList"></param>
+        private static void LoadFromResourcesBinInDirectory(string resourcePath, int upDirs, string subDir, List<IResourceItem> resourceList)
+        {
+            string path = resourcePath;
+            for (int i = 0; i < upDirs && !String.IsNullOrEmpty(path); i++)
+                path = System.IO.Path.GetDirectoryName(path);
+            if (String.IsNullOrEmpty(path)) return;
+            if (!String.IsNullOrEmpty(subDir)) path = System.IO.Path.Combine(path, subDir);
+            string fileName = System.IO.Path.Combine(path, "ServerResources.bin");
+            System.IO.FileInfo fileInfo = new System.IO.FileInfo(fileName);
+            if (!fileInfo.Exists) return;
+            int fileLengthMB = (int)(fileInfo.Length / 1000000L);
+            if (fileLengthMB > 150) return;
+
+            try
+            {
+                byte[] content = System.IO.File.ReadAllBytes(fileInfo.FullName);
+                LoadFromResourcesBinInArray(content, resourceList);
+            }
+            catch (Exception exc)
+            {
+                DxComponent.ShowMessageError($"Error on loading resources from file {fileInfo.FullName}: {exc.Message}", "Error");
+            }
+        }
+        /// <summary>
+        /// Načte zdroje z dodaného binárního pole ve formátu "ServerResources.bin".
+        /// Je zajištěno, že velikost souboru je rozumná (do 150MB)
+        /// </summary>
+        /// <param name="content"></param>
+        /// <param name="resourceList"></param>
+        private static void LoadFromResourcesBinInArray(byte[] content, List<IResourceItem> resourceList)
+        {
+            StringBuilder sb = new StringBuilder();
+
+            string validSignature2 = "ASOL$ApplicationServerResources$2.0";
+            int signature2Length = validSignature2.Length;
+            int signatureLength = signature2Length;
+            string signature = ReadContentString(content, 0, signatureLength, sb);
+            bool isValidSignature = (signature.Substring(0, signature2Length) == validSignature2);
+            if (!isValidSignature)
+                throw new FormatException($"Bad signature of file: '{signature}'");
+
+            var length = content.Length;
+            int headerEnd = length - 8;
+            var headerBegin = ReadContentInt(content, headerEnd);
+            var position = headerBegin;
+            while (position < headerEnd)
+            {
+                // Načteme data z headeru:
+                long fileBegin = ReadContentLong(content, ref position);
+                int fileLength = ReadContentInt(content, ref position);
+                int fileNameLength = ReadContentInt(content, ref position);
+                string fileName = ReadContentString(content, ref position, fileNameLength, sb);
+                if (fileLength >= 0 && fileBegin >= signatureLength && (fileBegin + fileLength) <= headerBegin)
+                {
+                    string itemKey = GetItemKey(fileName);
+                    string packKey = GetPackKey(fileName, out var sizeType, out var contentType);
+                    resourceList.Add(new DataResourceItem(content, fileBegin, fileLength, itemKey, packKey, sizeType, contentType));
+                }
+                else
+                {
+                    throw new FormatException($"Bad format of file: fileBegin ({fileBegin}) or fileLength ({fileLength}) is outside data area ({signatureLength}-{headerBegin}).");
+                }
+            }
+        }
+        /// <summary>
+        /// Načte Int32 z dané pozice bufferu
+        /// </summary>
+        /// <param name="content"></param>
+        /// <param name="position"></param>
+        /// <returns></returns>
+        private static int ReadContentInt(byte[] content, int position)
+        {
+            return ReadContentInt(content, ref position);
+        }
+        /// <summary>
+        /// Načte Int32 z dané pozice bufferu, pozici posune
+        /// </summary>
+        /// <param name="content"></param>
+        /// <param name="position"></param>
+        /// <returns></returns>
+        private static int ReadContentInt(byte[] content, ref int position)
+        {
+            return content[position++] | (content[position++] << 8) | (content[position++] << 16) | (content[position++] << 24);
+        }
+        /// <summary>
+        /// Načte Int64 z dané pozice bufferu
+        /// </summary>
+        /// <param name="content"></param>
+        /// <param name="position"></param>
+        /// <returns></returns>
+        private static long ReadContentLong(byte[] content, int position)
+        {
+            return ReadContentLong(content, ref position);
+        }
+        /// <summary>
+        /// Načte Int64 z dané pozice bufferu, pozici posune
+        /// </summary>
+        /// <param name="content"></param>
+        /// <param name="position"></param>
+        /// <returns></returns>
+        private static long ReadContentLong(byte[] content, ref int position)
+        {
+            long l = ReadContentInt(content, ref position);
+            long h = ReadContentInt(content, ref position);
+            return l | (h << 32);
+        }
+        /// <summary>
+        /// Načte String z dané pozice bufferu, načítá pouze ASCII znaky (0-255)
+        /// </summary>
+        /// <param name="content"></param>
+        /// <param name="position"></param>
+        /// <param name="length"></param>
+        /// <param name="sb"></param>
+        /// <returns></returns>
+        private static string ReadContentString(byte[] content, int position, int length, StringBuilder sb = null)
+        {
+            return ReadContentString(content, ref position, length, sb ?? new StringBuilder());
+        }
+        /// <summary>
+        /// Načte String z dané pozice bufferu, načítá pouze ASCII znaky (0-255), pozici posune
+        /// </summary>
+        /// <param name="content"></param>
+        /// <param name="position"></param>
+        /// <param name="length"></param>
+        /// <param name="sb"></param>
+        /// <returns></returns>
+        private static string ReadContentString(byte[] content, ref int position, int length, StringBuilder sb)
+        {
+            sb.Clear();
+            for (int i = 0; i < length; i++)
+                sb.Append((char)(content[position++]));
+            return sb.ToString();
+        }
+        #endregion
+        #region Načtení zdrojů z jednotlivých souborů disku
+        /// <summary>
+        /// Do daného seznamu načte jednotlivé zdroje z podadresářů aplikace.
+        /// </summary>
+        /// <returns></returns>
+        private static void AddResourcesFromSingleFiles(List<IResourceItem> resourceList)
+        {
+            string resourcePath = DxComponent.ApplicationPath;
+            LoadFromFilesInDirectory(resourcePath, 0, "Resources", resourceList);
+            LoadFromFilesInDirectory(resourcePath, 1, "Images", resourceList);
+            LoadFromFilesInDirectory(resourcePath, 1, "pic", resourceList);
+            LoadFromFilesInDirectory(resourcePath, 1, "pic-0", resourceList);
         }
         /// <summary>
         /// Zkusí najít zdroje v jednom adresáři
@@ -143,17 +295,17 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="upDirs"></param>
         /// <param name="subDir"></param>
         /// <param name="resourceList"></param>
-        private static void LoadResources(string resourcePath, int upDirs, string subDir, List<IResourceItem> resourceList)
+        private static void LoadFromFilesInDirectory(string resourcePath, int upDirs, string subDir, List<IResourceItem> resourceList)
         {
             string path = resourcePath;
             for (int i = 0; i < upDirs && !String.IsNullOrEmpty(path); i++)
                 path = System.IO.Path.GetDirectoryName(path);
             if (String.IsNullOrEmpty(path)) return;
+            int commonPathLength = path.Length;
             if (!String.IsNullOrEmpty(subDir)) path = System.IO.Path.Combine(path, subDir);
             System.IO.DirectoryInfo dirInfo = new System.IO.DirectoryInfo(path);
             if (!dirInfo.Exists) return;
 
-            int commonPathLength = path.Length;
             foreach (var fileInfo in dirInfo.EnumerateFiles("*.*", System.IO.SearchOption.AllDirectories))
             {
                 if (fileInfo == null || !fileInfo.Exists) continue;
@@ -164,8 +316,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 string packKey = GetPackKey(itemKey, out ResourceImageSizeType sizeType, out ResourceContentType contentType);
                 if (contentType == ResourceContentType.None) continue;
 
-                DataResourceItem resourceItem = new DataResourceItem(fullName, itemKey, packKey, sizeType, contentType);
-                resourceList.Add(resourceItem);
+                resourceList.Add(new DataResourceItem(fullName, itemKey, packKey, sizeType, contentType));
             }
         }
         /// <summary>
@@ -372,6 +523,36 @@ namespace Noris.Clients.Win.Components.AsolDX
             _ContentLoaded = false;
         }
         /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="content"></param>
+        /// <param name="fileBegin"></param>
+        /// <param name="fileLength"></param>
+        /// <param name="itemKey"></param>
+        /// <param name="packKey"></param>
+        /// <param name="sizeType"></param>
+        /// <param name="contentType"></param>
+        public DataResourceItem(byte[] content, long fileBegin, int fileLength, string itemKey, string packKey, ResourceImageSizeType sizeType, ResourceContentType contentType)
+        {
+            FileName = null;
+            ItemKey = itemKey;
+            PackKey = packKey;
+            SizeType = sizeType;
+            ContentType = contentType;
+            _Content = new byte[fileLength];
+            if (fileLength > 0)
+                Array.Copy(content, fileBegin, _Content, 0, fileLength);
+            _ContentLoaded = true;
+        }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return $"ItemKey: {ItemKey}; Size: {SizeType}; Content: {ContentType}";
+        }
+        /// <summary>
         /// Plné jméno souboru
         /// </summary>
         public string FileName { get; private set; }
@@ -404,8 +585,11 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (!_ContentLoaded)
             {
                 _ContentLoaded = true;
-                try { _Content = System.IO.File.ReadAllBytes(this.FileName); }
-                catch { }
+                if (!String.IsNullOrEmpty(this.FileName) && System.IO.File.Exists(this.FileName))
+                {
+                    try { _Content = System.IO.File.ReadAllBytes(this.FileName); }
+                    catch { }
+                }
             }
             return _Content;
         }
