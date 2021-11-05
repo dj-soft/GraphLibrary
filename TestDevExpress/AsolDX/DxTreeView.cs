@@ -2815,7 +2815,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             switch (_NodeImageType)
             {
                 case ResourceContentType.Bitmap: return DxComponent.GetImageList(_NodeImageSize);
-                case ResourceContentType.Vector: return DxComponent.GetSvgList();
+#warning TODO:
+                    // case ResourceContentType.Vector: return DxComponent.GetSvgList();
             }
             return null;
         }
@@ -2828,7 +2829,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         private int _GetImageIndex(string imageName, int defaultValue)
         {
             int index = -1;
-            if (!String.IsNullOrEmpty(imageName))
+            if (!String.IsNullOrEmpty(imageName) && _PrepareImageListFor(imageName))
             {
                 switch (_NodeImageType)
                 {
@@ -2836,7 +2837,8 @@ namespace Noris.Clients.Win.Components.AsolDX
                         index = DxComponent.GetImageListIndex(imageName, _NodeImageSize);
                         break;
                     case ResourceContentType.Vector:
-                        index = DxComponent.GetSvgListIndex(imageName);
+#warning TODO:
+                        // index = DxComponent.GetSvgListIndex(imageName);
                         break;
                 }
             }
@@ -2860,6 +2862,37 @@ namespace Noris.Clients.Win.Components.AsolDX
             svgBitmap.Render(null);
         }
         /// <summary>
+        /// Pro dodaný obrázek určí jeho typ, prověří dosavadní používaný typ obrázku (Bitmap / Vector) a zajistí:
+        /// a) pro první obrázek: aktivaci potřebného typu
+        /// b) pro další obrázky: kontrolu shodnosti typu (nemíchat Bitmap x Vector), hlášku chyby
+        /// <para/>
+        /// Vrací true pokud se obrázek smí použít
+        /// </summary>
+        /// <param name="imageName"></param>
+        /// <returns></returns>
+        private bool _PrepareImageListFor(string imageName)
+        {
+            if (String.IsNullOrEmpty(imageName)) return false;
+            bool preferVector = (_NodeImageType == ResourceContentType.Vector);
+            if (!DxComponent.TryGetResourceContentType(imageName, _NodeImageSize, preferVector, out ResourceContentType contentType)) return false;
+
+            if (this.AllNodesCount == 0 || _NodeImageType == ResourceContentType.None)
+            {   // Dosud není určen typ obrázků, a nyní už typ obrázku víme:
+                _NodeImageType = contentType;
+                _NodeImageTypeMismatchShowed = false;
+                _ImageListApply();
+                return true;
+            }
+            if (contentType == _NodeImageType) return true;
+
+            if (!_NodeImageTypeMismatchShowed)
+            {
+                DxComponent.ShowMessageWarnig($"DxTreeList NodeImage typ mismatch: Current image type={_NodeImageType}, new image type={contentType}, imageName='{imageName}'.");
+                _NodeImageTypeMismatchShowed = true;
+            }
+            return false;
+        }
+        /// <summary>
         /// Zobrazované ikony
         /// </summary>
         private TreeListImageMode _ImageMode;
@@ -2871,6 +2904,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Velikost ikonek
         /// </summary>
         private ResourceImageSizeType _NodeImageSize;
+        /// <summary>
+        /// Obsahuje true poté, kdy došlo k pvnímu nesouladu typu ikonek, a nesoulad byl hlášen.
+        /// </summary>
+        private bool _NodeImageTypeMismatchShowed;
         #endregion
         #region Public eventy a jejich volání
         /// <summary>

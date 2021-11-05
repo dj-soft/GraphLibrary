@@ -286,11 +286,15 @@ namespace TestDevExpress.Forms
             group = CreateFunctionGroup();
             if (group != null) page.Groups.Add(group);
 
+            page = CreateRibbonSvgImagesPage();
+            if (page != null) pages.Add(page);
+
             this.DxRibbon.Clear();
             this.DxRibbon.AddPages(pages);
 
             _RibbonPages = pages;
         }
+
         private List<DataRibbonPage> _RibbonPages;
         protected override void DxStatusPrepare()
         {
@@ -421,6 +425,55 @@ namespace TestDevExpress.Forms
             {
                 ribbonForm.ShowDialog();
             }
+        }
+        #endregion
+        #region Ribbon a SvgImage Mergování
+
+        private DataRibbonPage CreateRibbonSvgImagesPage()
+        {
+            DataRibbonPage page = new DataRibbonPage() { PageText = "SVG IKONY" };
+            DataRibbonGroup group = new DataRibbonGroup() { GroupText = "Kombinace více ikon do jedné" };
+            page.Groups.Add(group);
+
+            group.Items.Add(new DataRibbonItem() { Text = "Základ", ItemType = RibbonItemType.Menu, SubItems = CreateRibbonSvgMenu1(), RibbonStyle = RibbonItemStyles.Large });
+            group.Items.Add(new DataRibbonItem() { Text = "Kombinace", ItemType = RibbonItemType.Menu, SubItems = CreateRibbonSvgMenu2(), RibbonStyle = RibbonItemStyles.Large });
+            group.Items.Add(new DataRibbonItem() { Text = "Přídavek", ItemType = RibbonItemType.Menu, SubItems = CreateRibbonSvgMenu3(), RibbonStyle = RibbonItemStyles.Large });
+            group.Items.Add(new DataRibbonItem() { Text = "Výsledek", ItemType = RibbonItemType.Button, RibbonStyle = RibbonItemStyles.Large, ItemIsFirstInGroup = true });
+
+            return page;
+        }
+        private List<IRibbonItem> CreateRibbonSvgMenu1()
+        {
+            List<IRibbonItem> subItems = new List<IRibbonItem>();
+
+
+            return subItems;
+        }
+        private List<IRibbonItem> CreateRibbonSvgMenu2()
+        {
+            List<IRibbonItem> subItems = new List<IRibbonItem>();
+
+            subItems.Add(new DataRibbonItem() { ImageName = "svgimages/dashboards/alignmenttopleft.svg", Text = "Vlevo nahoře" });
+            string[] resources = new string[]
+            {
+                "svgimages/dashboards/alignmentbottomcenter.svg",
+                "svgimages/dashboards/alignmentbottomleft.svg",
+                "svgimages/dashboards/alignmentbottomright.svg",
+                "svgimages/dashboards/alignmentcentercenter.svg",
+                "svgimages/dashboards/alignmentcenterleft.svg",
+                "svgimages/dashboards/alignmentcenterright.svg",
+                "svgimages/dashboards/alignmenttopcenter.svg",
+                "svgimages/dashboards/alignmenttopright.svg"
+            };
+
+            return subItems;
+        }
+        private List<IRibbonItem> CreateRibbonSvgMenu3()
+        {
+            List<IRibbonItem> subItems = new List<IRibbonItem>();
+
+
+            return subItems;
         }
         #endregion
         #region Hlavní záložkovník + přepínání testovacích stránek

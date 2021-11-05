@@ -299,6 +299,72 @@ namespace Noris.Clients.Win.Components.AsolDX
             names.Sort();
             return names.ToArray();
         }
+        /// <summary>
+        /// Metoda najde daný zdroj a zkusí určit jeho typ obsahu (Bitmap nebo Vector). Může preferovat Vector.
+        /// </summary>
+        /// <param name="imageName"></param>
+        /// <param name="sizeType"></param>
+        /// <param name="preferVector"></param>
+        /// <param name="contentType"></param>
+        /// <returns></returns>
+        public static bool TryGetResourceContentType(string imageName, ResourceImageSizeType sizeType, bool preferVector, out ResourceContentType contentType)
+        { return Instance._TryGetResourceContentType(imageName, sizeType, preferVector, out contentType); }
+        private bool _TryGetResourceContentType(string imageName, ResourceImageSizeType sizeType, bool preferVector, out ResourceContentType contentType)
+        {
+            contentType = ResourceContentType.None;
+            if (String.IsNullOrEmpty(imageName)) return false;
+
+            if (_ExistsDevExpressResource(imageName))
+                return _TryGetContentTypeDevExpress(imageName, out contentType);
+            else if (_TrySearchApplicationResource(imageName, out var validItems))
+                return _TryGetContentTypeApplication(validItems, sizeType, preferVector, out contentType);
+
+            return false;
+        }
+        /// <summary>
+        /// Vrátí typ obsahu podle přípony
+        /// </summary>
+        /// <param name="extension"></param>
+        /// <returns></returns>
+        public static ResourceContentType GetContentTypeFromExtension(string extension)
+        {
+            if (String.IsNullOrEmpty(extension)) return ResourceContentType.None;
+            extension = extension.Trim().ToLower();
+            if (!extension.StartsWith(".")) extension = "." + extension;
+            switch (extension)
+            {
+                case ".bmp":
+                case ".jpg":
+                case ".jpeg":
+                case ".png":
+                case ".gif":
+                case ".pcx":
+                case ".tif":
+                case ".tiff":
+                    return ResourceContentType.Bitmap;
+                case ".svg":
+                    return ResourceContentType.Vector;
+                case ".mp4":
+                case ".mpg":
+                case ".mpeg":
+                case ".avi":
+                    return ResourceContentType.Video;
+                case ".wav":
+                case ".flac":
+                case ".mp3":
+                case ".mpc":
+                    return ResourceContentType.Audio;
+                case ".ico":
+                    return ResourceContentType.Icon;
+                case ".cur":
+                    return ResourceContentType.Cursor;
+                case ".htm":
+                case ".html":
+                case ".xml":
+                    return ResourceContentType.Xml;
+            }
+            return ResourceContentType.None;
+        }
         #endregion
         #region SvgImage
         /// <summary>
@@ -382,6 +448,23 @@ namespace Noris.Clients.Win.Components.AsolDX
             var key = _GetDevExpressResourceKey(resourceName);
             var dictionary = _DevExpressResourceDictionary;
             return dictionary.TryGetValue(key, out var _);
+        }
+        /// <summary>
+        /// Určí typ obsahu daného DevExpress zdroje
+        /// </summary>
+        /// <param name="resourceName"></param>
+        /// <param name="contentType"></param>
+        /// <returns></returns>
+        private bool _TryGetContentTypeDevExpress(string resourceName, out ResourceContentType contentType)
+        {
+            contentType = ResourceContentType.None;
+            if (String.IsNullOrEmpty(resourceName)) return false;
+            var key = _GetDevExpressResourceKey(resourceName);
+            var dictionary = _DevExpressResourceDictionary;
+            bool exists = dictionary.TryGetValue(key, out var extension);
+            if (exists)
+                contentType = GetContentTypeFromExtension(extension);
+            return (contentType != ResourceContentType.None);
         }
         /// <summary>
         /// Vrátí bitmapu z DevExpress zdrojů, ať už tam je jako Png nebo Svg (Svg vyrenderuje)
@@ -551,6 +634,26 @@ namespace Noris.Clients.Win.Components.AsolDX
         private bool _ExistsApplicationResource(string resourceName)
         {
             return DxApplicationResourceLibrary.TryGetResource(resourceName, out var resourceItem, out var resourcePack);
+        }
+        /// <summary>
+        /// Určí typ obsahu daného Aplikačního zdroje
+        /// </summary>
+        /// <param name="validItems"></param>
+        /// <param name="sizeType"></param>
+        /// <param name="preferVector"></param>
+        /// <param name="contentType"></param>
+        /// <returns></returns>
+        private bool _TryGetContentTypeApplication(DxApplicationResourceLibrary.ResourceItem[] validItems, ResourceImageSizeType sizeType, bool preferVector, out ResourceContentType contentType)
+        {
+            contentType = ResourceContentType.None;
+            if (validItems == null || validItems.Length == 0) return false;
+            if (preferVector && validItems.Any(i => i.ContentType == ResourceContentType.Vector))
+                contentType = ResourceContentType.Vector;
+            else if (validItems.Any(i => i.ContentType == ResourceContentType.Bitmap))
+                contentType = ResourceContentType.Bitmap;
+            else if (!preferVector && validItems.Any(i => i.ContentType == ResourceContentType.Vector))
+                contentType = ResourceContentType.Vector;
+            return (contentType != ResourceContentType.None);
         }
         /// <summary>
         /// Vrací seznam Aplikačních resources - jména zdrojů

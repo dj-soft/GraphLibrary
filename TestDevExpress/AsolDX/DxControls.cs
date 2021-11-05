@@ -4338,9 +4338,27 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             var selectedItems = _ListBox.SelectedItemsInfo;
             int rowCount = selectedItems.Length;
-            if (rowCount > 0)
-            {
-                StringBuilder sb = new StringBuilder();
+            int rowLast = rowCount - 1;
+            StringBuilder sb = new StringBuilder();
+            if (rowCount > 5)
+            {   // Do pole:
+                sb.AppendLine("  string[] resources = new string[] ");
+                sb.AppendLine("  {");
+                for (int i = 0; i < rowCount; i++)
+                {
+                    var selectedItem = selectedItems[i];
+                    string resourceName = selectedItem.Item2?.Text;
+                    string suffix = (i < rowLast ? "," : "");
+                    sb.AppendLine($"    \"{resourceName}\"{suffix }");
+                }
+                sb.AppendLine("  };");
+                if (sb.Length > 0)
+                    DxComponent.ClipboardInsert(sb.ToString());
+
+                StatusText = "Položky zkopírovány do schránky: " + rowCount.ToString();
+            }
+            else if (rowCount > 0)
+            {   // Do proměnných:
                 foreach (var selectedItem in selectedItems)
                 {
                     _ClipboardCopyIndex++;
@@ -4349,9 +4367,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                         sb.AppendLine($"  string resource{_ClipboardCopyIndex} = \"{resourceName}\";");
                 }
                 if (sb.Length > 0)
-                {
                     DxComponent.ClipboardInsert(sb.ToString());
-                }
 
                 StatusText = "Položky zkopírovány do schránky: " + rowCount.ToString();
             }

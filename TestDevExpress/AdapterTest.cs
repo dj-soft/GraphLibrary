@@ -444,45 +444,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (String.IsNullOrEmpty(name)) return false;
             name = name.TrimEnd();
             string extension = System.IO.Path.GetExtension(name).ToLower();
-            switch (extension)
-            {
-                case ".bmp":
-                case ".jpg":
-                case ".jpeg":
-                case ".png":
-                case ".gif":
-                case ".pcx":
-                case ".tif":
-                case ".tiff":
-                    contentType = ResourceContentType.Bitmap;
-                    break;
-                case ".svg":
-                    contentType = ResourceContentType.Vector;
-                    break;
-                case ".mp4":
-                case ".mpg":
-                case ".mpeg":
-                case ".avi":
-                    contentType = ResourceContentType.Video;
-                    break;
-                case ".wav":
-                case ".flac":
-                case ".mp3":
-                case ".mpc":
-                    contentType = ResourceContentType.Audio;
-                    break;
-                case ".ico":
-                    contentType = ResourceContentType.Icon;
-                    break;
-                case ".cur":
-                    contentType = ResourceContentType.Cursor;
-                    break;
-                case ".htm":
-                case ".html":
-                case ".xml":
-                    contentType = ResourceContentType.Xml;
-                    break;
-            }
+            contentType = DxComponent.GetContentTypeFromExtension(extension);
             if (contentType != ResourceContentType.None)
                 name = name.Substring(0, name.Length - extension.Length);
             return (contentType != ResourceContentType.None);
