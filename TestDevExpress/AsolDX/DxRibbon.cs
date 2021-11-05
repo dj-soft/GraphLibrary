@@ -2256,13 +2256,15 @@ namespace Noris.Clients.Win.Components.AsolDX
         protected void FillBarItemImage(DevExpress.XtraBars.BarItem barItem, IRibbonItem iRibbonItem, bool withReset = false)
         {
             var image = iRibbonItem.Image;
-            string imageName = iRibbonItem.ImageName;
             if (image != null)
             {
                 barItem.ImageOptions.Image = image;
                 barItem.ImageOptions.LargeImage = image;
+                return;
             }
-            else if (imageName != null && !(barItem is DxBarCheckBoxToggle))           // DxCheckBoxToggle si řídí Image sám
+
+            string imageName = iRibbonItem.ImageName;
+            if (imageName != null && !(barItem is DxBarCheckBoxToggle))           // DxCheckBoxToggle si řídí Image sám
             {
                 if (DxComponent.TryGetResourceExtension(imageName, out var _))
                 {

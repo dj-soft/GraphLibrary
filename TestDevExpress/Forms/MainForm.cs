@@ -93,7 +93,82 @@ namespace TestDevExpress.Forms
         {
             DxComponent.ClipboardApplicationId = "TestDevExpress";
             this.Text = $"TestDevExpress :: {DxComponent.FrameworkName}";
+
+            this._SysSvgImages = new string[]
+            {
+                "svgimages/chart/chart.svg",
+                "svgimages/chart/charttype_area.svg",
+                "svgimages/chart/charttype_area3d.svg",
+                "svgimages/chart/charttype_area3dstacked.svg",
+                "svgimages/chart/charttype_area3dstacked100.svg",
+                "svgimages/chart/charttype_areastacked.svg",
+                "svgimages/chart/charttype_areastacked100.svg",
+                "svgimages/chart/charttype_areastepstacked.svg",
+                "svgimages/chart/charttype_areastepstacked100.svg",
+                "svgimages/chart/charttype_bar.svg",
+                "svgimages/chart/charttype_bar3d.svg",
+                "svgimages/chart/charttype_bar3dstacked.svg",
+                "svgimages/chart/charttype_bar3dstacked100.svg",
+                "svgimages/chart/charttype_barstacked.svg",
+                "svgimages/chart/charttype_barstacked100.svg",
+                "svgimages/chart/charttype_bubble.svg",
+                "svgimages/chart/charttype_bubble3d.svg",
+                "svgimages/chart/charttype_candlestick.svg",
+                "svgimages/chart/charttype_doughnut.svg",
+                "svgimages/chart/charttype_doughnut3d.svg",
+                "svgimages/chart/charttype_funnel.svg",
+                "svgimages/chart/charttype_funnel3d.svg",
+                "svgimages/chart/charttype_gantt.svg",
+                "svgimages/chart/charttype_line.svg",
+                "svgimages/chart/charttype_line3d.svg",
+                "svgimages/chart/charttype_line3dstacked.svg",
+                "svgimages/chart/charttype_line3dstacked100.svg",
+                "svgimages/chart/charttype_linestacked.svg",
+                "svgimages/chart/charttype_linestacked100.svg",
+                "svgimages/chart/charttype_manhattanbar.svg",
+                "svgimages/chart/charttype_nesteddoughnut.svg",
+                "svgimages/chart/charttype_pie.svg",
+                "svgimages/chart/charttype_pie3d.svg",
+                "svgimages/chart/charttype_point.svg",
+                "svgimages/chart/charttype_point3d.svg",
+                "svgimages/chart/charttype_polararea.svg",
+                "svgimages/chart/charttype_polarline.svg",
+                "svgimages/chart/charttype_polarpoint.svg",
+                "svgimages/chart/charttype_polarrangearea.svg",
+                "svgimages/chart/charttype_radararea.svg",
+                "svgimages/chart/charttype_radarline.svg",
+                "svgimages/chart/charttype_radarpoint.svg",
+                "svgimages/chart/charttype_radarrangearea.svg",
+                "svgimages/chart/charttype_rangearea.svg",
+                "svgimages/chart/charttype_rangearea3d.svg",
+                "svgimages/chart/charttype_rangebar.svg",
+                "svgimages/chart/charttype_scatterline.svg",
+                "svgimages/chart/charttype_scatterpolarline.svg",
+                "svgimages/chart/charttype_scatterradarline.svg",
+                "svgimages/chart/charttype_sidebysidebar3dstacked.svg",
+                "svgimages/chart/charttype_sidebysidebar3dstacked100.svg",
+                "svgimages/chart/charttype_sidebysidebarstacked.svg",
+                "svgimages/chart/charttype_sidebysidebarstacked100.svg",
+                "svgimages/chart/charttype_sidebysidegantt.svg",
+                "svgimages/chart/charttype_sidebysiderangebar.svg",
+                "svgimages/chart/charttype_spline.svg",
+                "svgimages/chart/charttype_spline3d.svg",
+                "svgimages/chart/charttype_splinearea.svg",
+                "svgimages/chart/charttype_splinearea3d.svg",
+                "svgimages/chart/charttype_splinearea3dstacked.svg",
+                "svgimages/chart/charttype_splinearea3dstacked100.svg",
+                "svgimages/chart/charttype_splineareastacked.svg",
+                "svgimages/chart/charttype_splineareastacked100.svg",
+                "svgimages/chart/charttype_steparea.svg",
+                "svgimages/chart/charttype_steparea3d.svg",
+                "svgimages/chart/charttype_stepline.svg",
+                "svgimages/chart/charttype_stepline3d.svg",
+                "svgimages/chart/charttype_stock.svg",
+                "svgimages/chart/charttype_swiftplot.svg"
+            };
         }
+
+        private string[] _SysSvgImages;
 
         private void TestResources()
         {
@@ -2417,6 +2492,8 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
         }
         private void CreateTreeViewComponents()
         {
+            bool useSvg = (Random.IsTrue(40));
+            _TreeListImageType = (useSvg ? ResourceContentType.Vector : ResourceContentType.Bitmap);
             _NewNodePosition = NewNodePositionType.First;
             CreateImageList();
             CreateTreeView();
@@ -2823,7 +2900,13 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
         {
             if (GetRandomTrue(25))
                 node.ImageDynamicDefault = "object_locked_2_16";
-            node.ImageName = this.GetRandomBallImageName();
+
+            // Ikony vektorové / bitmapové:
+            if (_TreeListImageType == ResourceContentType.Vector)
+                node.ImageName = this.GetRandomSysSvgName(false, true);
+            else
+                node.ImageName = this.GetRandomBallImageName();
+
             node.ToolTipTitle = null; // RandomText.GetRandomSentence(2, 5);
             node.ToolTipText = Random.GetSentence(10, 50);
         }
@@ -2846,6 +2929,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
         int _LogId;
         NewNodePositionType _NewNodePosition;
         private enum NewNodePositionType { None, First, Last }
+        private ResourceContentType _TreeListImageType;
         #endregion
         #region DragDrop
         private void InitDragDrop()
@@ -3008,7 +3092,15 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
         private string GetRandomBallImageName()
         {
             string imageNumb = GetRandomInt(1, 24).ToString("00");
-            return $"Ball{imageNumb }_16";
+            return $"Ball{imageNumb}_16";
+        }
+        /// <summary>
+        /// Vrátí náhodné jméno SVG obrázku 
+        /// </summary>
+        /// <returns></returns>
+        private string GetRandomSvgImageName()
+        {
+            return Random.GetItem(_SysSvgImages);
         }
         private string GetRandomSysSvgName(bool fileTypes = true, bool chartTypes = true)
         {

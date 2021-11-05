@@ -1276,7 +1276,10 @@ namespace TestDevExpress.Forms
         public static string GetRandomImageName(int randomEmpty = 0)
         {
             if ((randomEmpty > 0) && (Rand.Next(100) < randomEmpty)) return null;
-            return Random.GetItem(ResourceImages);
+            int rnd = Rand.Next(100);
+            if (rnd < 34) return Random.GetItem(DxSvgResourceImages);
+            if (rnd < 67) return Random.GetItem(DxPngApplicationImages);
+            return Random.GetItem(DxSvgApplicationImages);
         }
         /// <summary>
         /// Konstantní pole se jmény stránek
@@ -1289,18 +1292,45 @@ namespace TestDevExpress.Forms
         public static string[] GroupNames { get { if (_GroupNames is null) _GroupNames = "Základní;Rozšířené;Údržba;Oblíbené;Systém;Grafy;Archivace;Expertní funkce;Tisky;Další vlastnosti".Split(';'); return _GroupNames; } }
         private static string[] _GroupNames;
         /// <summary>
-        /// Konstantní pole se jmény obrázků
+        /// Konstantní pole se jmény obrázků DevExpress SVG
         /// </summary>
-        public static string[] ResourceImages { get { if (_ResourceImages is null) _ResourceImages = _GetResourceImages(); return _ResourceImages; } }
-        private static string[] _ResourceImages;
+        public static string[] DxSvgResourceImages { get { if (_DxSvgResourceImages is null) _DxSvgResourceImages = _GetDxSvgResourceImages(); return _DxSvgResourceImages; } }
+        private static string[] _DxSvgResourceImages;
         /// <summary>
-        /// Vrací seznam Images v Properties.Resources
+        /// Vrací seznam Images se jmény obrázků DevExpress SVG
         /// </summary>
         /// <returns></returns>
-        private static string[] _GetResourceImages()
+        private static string[] _GetDxSvgResourceImages()
         {
             return DxComponent.GetResourceNames(".svg", false, true);
         }
+        /// <summary>
+        /// Konstantní pole se jmény obrázků Application PNG
+        /// </summary>
+        public static string[] DxPngApplicationImages { get { if (_DxPngApplicationImages is null) _DxPngApplicationImages = _GetDxPngApplicationImages(); return _DxPngApplicationImages; } }
+        private static string[] _DxPngApplicationImages;
+        /// <summary>
+        /// Vrací seznam Images se jmény obrázků DevExpress SVG
+        /// </summary>
+        /// <returns></returns>
+        private static string[] _GetDxPngApplicationImages()
+        {
+            return DxComponent.GetResourceNames(".png", true, false);
+        }
+        /// <summary>
+        /// Konstantní pole se jmény obrázků Application PNG
+        /// </summary>
+        public static string[] DxSvgApplicationImages { get { if (_DxSvgApplicationImages is null) _DxSvgApplicationImages = _GetDxSvgApplicationImages(); return _DxSvgApplicationImages; } }
+        private static string[] _DxSvgApplicationImages;
+        /// <summary>
+        /// Vrací seznam Images se jmény obrázků DevExpress PNG
+        /// </summary>
+        /// <returns></returns>
+        private static string[] _GetDxSvgApplicationImages()
+        {
+            return DxComponent.GetResourceNames(".svg", true, false);
+        }
+
         /// <summary>
         /// Do daných stránek vepíše postupně MergeOrder 
         /// </summary>
