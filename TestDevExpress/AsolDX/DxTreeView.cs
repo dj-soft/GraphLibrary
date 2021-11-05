@@ -71,8 +71,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Režim kreslení ikon u nodů.
         /// Výchozí je <see cref="TreeListImageMode.ImageStatic"/> = zobrazuje se standardní ikona <see cref="ITextItem.ImageName"/> 
         /// (ale nezobrazují se ikony <see cref="ITreeListNode.ImageDynamicDefault"/> a <see cref="ITreeListNode.ImageDynamicSelected"/>).
-        /// Aplikační kód musí dodat objekt do <see cref="ImageList"/>, jinak se ikony zobrazovat nebudou, 
-        /// dále musí dodat metodu <see cref="ImageIndexSearcher"/> (která převede jméno ikony z nodu do indexu v <see cref="ImageList"/>)
+        /// Aplikační kód musí dodat metodu <see cref="ImageIndexSearcher"/> (která převede jméno ikony z nodu do indexu v <see cref="ImageList"/>)
         /// a musí plnit jména ikon do <see cref="ITextItem.ImageName"/>, <see cref="ITreeListNode.ImageDynamicDefault"/> a <see cref="ITreeListNode.ImageDynamicSelected"/>.
         /// </summary>
         public TreeListImageMode ImageMode { get { return _TreeListNative.ImageMode; } set { _TreeListNative.ImageMode = value; } }
@@ -134,6 +133,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Jakmile v evidenci je už nějaký node, pak se tato hodnota nemění.
         /// </summary>
         public bool CurrentRootNodeVisible { get { return _TreeListNative.CurrentRootNodeVisible; } }
+        /// <summary>
+        /// Počet aktuálních fyzických nodů
+        /// </summary>
+        public int NodesCount { get { return _TreeListNative.NodesCount; } }
         /// <summary>
         /// Seznam HotKeys = klávesy, pro které se volá událost <see cref="NodeKeyDown"/>.
         /// </summary>
@@ -611,8 +614,9 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.LazyLoadNodeText = "...";
             this.LazyLoadNodeImageName = null;
             this.CheckBoxMode = TreeListCheckBoxMode.None;
-            this.ImageMode = TreeListImageMode.ImageStatic;
             this._NodeImageType = ResourceContentType.None;
+            this._NodeImageSize = ResourceImageSizeType.Small;
+            this._ImageMode = TreeListImageMode.ImageStatic;
         }
         /// <summary>
         /// Jediný column
@@ -2038,8 +2042,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             treeNode.SetValue(0, nodeInfo.Text);
             treeNode.Checked = nodeInfo.CanCheck && nodeInfo.NodeChecked;
 
-            qqq;
-
             int imageIndex = _GetImageIndex(nodeInfo.ImageDynamicDefault, -1);
             treeNode.ImageIndex = imageIndex;                                                      // ImageIndex je vlevo, a může se změnit podle stavu Seleted
             treeNode.SelectImageIndex = _GetImageIndex(nodeInfo.ImageDynamicSelected, imageIndex); // SelectImageIndex je ikona ve stavu Nodes.Selected, zobrazená vlevo místo ikony ImageIndex
@@ -2325,6 +2327,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Počet aktuálních nodů. Jsou v tom započítané i nody typu LazyLoad, AddNew, RunLoad.
         /// </summary>
         protected int NativeNodesCount { get { return _NodesId.Count; } }
+        /// <summary>
+        /// Počet aktuálních fyzických nodů
+        /// </summary>
+        public int NodesCount { get { return _NodesId.Count(n => n.Value.HasTreeNode); } }
         #endregion
         #region Drag and Drop
         /// <summary>
@@ -2551,10 +2557,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         #endregion
         #region Public vlastnosti, kolekce nodů, vyhledání nodu podle klíče, vyhledání child nodů
         /// <summary>
-        /// Funkce, která pro název ikony vrátí její index v ImageListu
-        /// </summary>
-        public Func<string, int> ImageIndexSearcher { get; set; }
-        /// <summary>
         /// Text (lokalizovaný) pro text uzlu, který reprezentuje "LazyLoadChild", např. něco jako "Načítám data..."
         /// </summary>
         public string LazyLoadNodeText { get; set; }
@@ -2633,30 +2635,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
         }
         private TreeListCheckBoxMode _CheckBoxMode;
-        /// <summary>
-        /// Režim kreslení ikon u nodů.
-        /// Výchozí je <see cref="TreeListImageMode.ImageStatic"/> = zobrazuje se standardní ikona <see cref="ITextItem.ImageName"/> 
-        /// (ale nezobrazují se ikony <see cref="ITreeListNode.ImageDynamicDefault"/> a <see cref="ITreeListNode.ImageDynamicSelected"/>).
-        /// Aplikační kód musí plnit jména ikon do <see cref="ITextItem.ImageName"/>, <see cref="ITreeListNode.ImageDynamicDefault"/> a <see cref="ITreeListNode.ImageDynamicSelected"/>.
-        /// </summary>
-        public TreeListImageMode ImageMode
-        {
-            get { return _ImageMode; }
-            set { _SetImageSetting(value); }
-        }
-        private TreeListImageMode _ImageMode;
-        /// <summary>
-        /// Zajistí nastavení režimu pro ikony
-        /// </summary>
-        /// <param name="imageList"></param>
-        /// <param name="imageMode"></param>
-        private void _SetImageSetting(TreeListImageMode imageMode)
-        {
-            if (this.InvokeRequired) { this.Invoke(new Action<TreeListImageMode>(_SetImageSetting), imageMode); return; }
-
-            _ImageMode = imageMode;
-            _ImageListApply();
-        }
         /// <summary>
         /// Aktuálně vybraný Node
         /// </summary>
@@ -2737,7 +2715,18 @@ namespace Noris.Clients.Win.Components.AsolDX
             return _HotKeys != null && _HotKeys.ContainsKey(key);
         }
         #endregion
-        #region Obrázky - ImageListy, režim, Png / Svg
+        #region Obrázky - ImageListy, režim ImageMode, NodeImageType (Png / Svg), NodeImageSize (Small?)
+        /// <summary>
+        /// Režim kreslení ikon u nodů.
+        /// Výchozí je <see cref="TreeListImageMode.ImageStatic"/> = zobrazuje se standardní ikona <see cref="ITextItem.ImageName"/> 
+        /// (ale nezobrazují se ikony <see cref="ITreeListNode.ImageDynamicDefault"/> a <see cref="ITreeListNode.ImageDynamicSelected"/>).
+        /// Aplikační kód musí plnit jména ikon do <see cref="ITextItem.ImageName"/>, <see cref="ITreeListNode.ImageDynamicDefault"/> a <see cref="ITreeListNode.ImageDynamicSelected"/>.
+        /// </summary>
+        public TreeListImageMode ImageMode
+        {
+            get { return _ImageMode; }
+            set { _ImageMode = value; _ImageListApply(); }
+        }
         /// <summary>
         /// Typ ikon: výchozí je <see cref="ResourceContentType.None"/>, lze nastavit jen na <see cref="ResourceContentType.Bitmap"/> nebo <see cref="ResourceContentType.Vector"/> a to jen když nejsou položky.
         /// Není povinné nastavovat, nastaví se podle typu prvního obrázku. Pak ale musí být všechny obrázky stejného typu.
@@ -2755,7 +2744,8 @@ namespace Noris.Clients.Win.Components.AsolDX
                     {
                         if (this.AllNodesCount == 0)
                         {
-                            this._NodeImageType = imageType;
+                            _NodeImageType = imageType;
+                            _ImageListApply();
                         }
                         else
                             throw new InvalidOperationException($"Value stored into TreeList.NodeImageType can be set only when TreeList is empty, current TreeList has {this.AllNodesCount} nodes.");
@@ -2767,9 +2757,34 @@ namespace Noris.Clients.Win.Components.AsolDX
                 }
             }
         }
-
+        /// <summary>
+        /// Velikost obrázků u nodů. Lze setovat jen když TreeList nemá žádné nody = pokud <see cref="NodesCount"/> == 0
+        /// </summary>
+        public ResourceImageSizeType NodeImageSize
+        {
+            get { return _NodeImageSize; }
+            set
+            {
+                var sizeType = value;
+                if (sizeType != _NodeImageSize)
+                {
+                    if (this.AllNodesCount == 0)
+                    {
+                        _NodeImageSize = sizeType;
+                        _ImageListApply();
+                    }
+                    else
+                        throw new InvalidOperationException($"Value stored into TreeList.NodeImageSize can be set only when TreeList is empty, current TreeList has {this.AllNodesCount} nodes.");
+                }
+            }
+        }
+        /// <summary>
+        /// Aplikuje režim obrázků do TreeListu
+        /// </summary>
         private void _ImageListApply()
         {
+            if (this.InvokeRequired) { this.Invoke(new Action(_ImageListApply)); return; }
+
             var imageList = _GetImageList();
             switch (_ImageMode)
             {
@@ -2791,40 +2806,71 @@ namespace Noris.Clients.Win.Components.AsolDX
                     break;
             }
         }
+        /// <summary>
+        /// Vrátí patřičný objekt ImageListu nebo SvgListu pro aktuální typ a velikost.
+        /// </summary>
+        /// <returns></returns>
         private object _GetImageList()
         {
             switch (_NodeImageType)
             {
-                case ResourceContentType.Bitmap: return _ImageListBitmap;
-                case ResourceContentType.Vector: return _ImageListVector;
+                case ResourceContentType.Bitmap: return DxComponent.GetImageList(_NodeImageSize);
+                case ResourceContentType.Vector: return DxComponent.GetSvgList();
             }
             return null;
         }
         /// <summary>
-        /// Vrací index image pro dané jméno obrázku. Používá funkci <see cref="ImageIndexSearcher"/>
+        /// Vrací index image pro dané jméno obrázku pro aktuální typ a velikost.
         /// </summary>
         /// <param name="imageName"></param>
         /// <param name="defaultValue"></param>
         /// <returns></returns>
         private int _GetImageIndex(string imageName, int defaultValue)
         {
-            int value = -1;
-            if (!String.IsNullOrEmpty(imageName) && ImageIndexSearcher != null) value = ImageIndexSearcher(imageName);
-            if (value < 0 && defaultValue >= 0) value = defaultValue;
-            return value;
+            int index = -1;
+            if (!String.IsNullOrEmpty(imageName))
+            {
+                switch (_NodeImageType)
+                {
+                    case ResourceContentType.Bitmap:
+                        index = DxComponent.GetImageListIndex(imageName, _NodeImageSize);
+                        break;
+                    case ResourceContentType.Vector:
+                        index = DxComponent.GetSvgListIndex(imageName);
+                        break;
+                }
+            }
+            if (index < 0 && defaultValue >= 0) index = defaultValue;
+            return index;
+
+
+            SvgImage svgImage1 = DxComponent.GetSvgImage("");
+            SvgImage svgImage2 = DxComponent.GetSvgImage("");
+
+            SvgGroup svgGroup = new SvgGroup();
+            svgGroup.Transformations.Add(new SvgTranslate(new double[] { 16d, 16d }));
+            svgGroup.Transformations.Add(new SvgScale(new double[] { 0.5, 0.5 }));
+            foreach (var svgItem in svgImage1.Root.Elements)
+                svgGroup.Elements.Add(svgItem.DeepCopy());
+
+            SvgImage svgImage3 = svgImage2.Clone();
+            svgImage3.Root.Elements.Add(svgGroup);
+
+            SvgBitmap svgBitmap = new SvgBitmap(svgImage3);
+            svgBitmap.Render(null);
         }
-
-        private int _GetImageIndexQ(string imageName)
-        {
-
-        }
-
+        /// <summary>
+        /// Zobrazované ikony
+        /// </summary>
+        private TreeListImageMode _ImageMode;
         /// <summary>
         /// Typ ikon: výchozí je <see cref="ResourceContentType.None"/>, lze nastavit jen na <see cref="ResourceContentType.Bitmap"/> nebo <see cref="ResourceContentType.Vector"/> a to jen když nejsou položky.
         /// </summary>
         private ResourceContentType _NodeImageType;
-        private ImageList _ImageListBitmap;
-        private SvgImageCollection _ImageListVector;
+        /// <summary>
+        /// Velikost ikonek
+        /// </summary>
+        private ResourceImageSizeType _NodeImageSize;
         #endregion
         #region Public eventy a jejich volání
         /// <summary>

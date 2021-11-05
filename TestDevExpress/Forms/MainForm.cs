@@ -2552,8 +2552,6 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
             _TreeList = new DxTreeList() { Dock = DockStyle.Fill };
             _TreeList.CheckBoxMode = TreeListCheckBoxMode.SpecifyByNode;
             _TreeList.ImageMode = TreeListImageMode.ImageStatic;
-            _TreeList.ImageList = _Images16;
-            _TreeList.ImageIndexSearcher = GetImageIndex;
             _TreeList.LazyLoadNodeText = "Copak to tu asi bude?";
             _TreeList.LazyLoadNodeImageName = "hourglass_16";
             _TreeList.LazyLoadFocusNode = TreeListLazyLoadFocusNodeType.ParentNode;
