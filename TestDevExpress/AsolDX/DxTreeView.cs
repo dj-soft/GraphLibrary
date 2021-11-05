@@ -718,39 +718,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Například každý control před tím, než je zobrazen jeho formulář, má <see cref="Control.Visible"/> = false, ale tato metoda vrací hodnotu reálně vloženou do <see cref="Control.Visible"/>.
         /// </summary>
         public bool VisibleInternal { get { return this.IsSetVisible(); } set { this.Visible = value; } }
-        /// <summary>
-        /// Typ ikon: výchozí je <see cref="ResourceContentType.None"/>, lze nastavit jen na <see cref="ResourceContentType.Bitmap"/> nebo <see cref="ResourceContentType.Vector"/> a to jen když nejsou položky.
-        /// Není povinné nastavovat, nastaví se podle typu prvního obrázku. Pak ale musí být všechny obrázky stejného typu.
-        /// Pokud bude nastaveno, pak i první obrázek musí odpovídat.
-        /// </summary>
-        public ResourceContentType NodeImageType
-        {
-            get { return _NodeImageType; }
-            set
-            {
-                var imageType = value;
-                if (imageType != _NodeImageType)
-                {
-                    if (imageType == ResourceContentType.None || imageType == ResourceContentType.Vector || imageType == ResourceContentType.Bitmap)
-                    {
-                        if (this.AllNodesCount == 0)
-                        {
-                            this._NodeImageType = imageType;
-                        }
-                        else
-                            throw new InvalidOperationException($"Value stored into TreeList.NodeImageType can be set only when TreeList is empty, current TreeList has {this.AllNodesCount} nodes.");
-                    }
-                    else
-                    {
-                        throw new InvalidOperationException($"Value stored into TreeList.NodeImageType must be only: None or Vector or Bitmap, current value is {imageType}.");
-                    }
-                }
-            }
-        }
-        /// <summary>
-        /// Typ ikon: výchozí je <see cref="ResourceContentType.None"/>, lze nastavit jen na <see cref="ResourceContentType.Bitmap"/> nebo <see cref="ResourceContentType.Vector"/> a to jen když nejsou položky.
-        /// </summary>
-        private ResourceContentType _NodeImageType;
         #endregion
         #region Vzhled
         /// <summary>
@@ -2771,10 +2738,40 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         #endregion
         #region Obrázky - ImageListy, režim, Png / Svg
+        /// <summary>
+        /// Typ ikon: výchozí je <see cref="ResourceContentType.None"/>, lze nastavit jen na <see cref="ResourceContentType.Bitmap"/> nebo <see cref="ResourceContentType.Vector"/> a to jen když nejsou položky.
+        /// Není povinné nastavovat, nastaví se podle typu prvního obrázku. Pak ale musí být všechny obrázky stejného typu.
+        /// Pokud bude nastaveno, pak i první obrázek musí odpovídat.
+        /// </summary>
+        public ResourceContentType NodeImageType
+        {
+            get { return _NodeImageType; }
+            set
+            {
+                var imageType = value;
+                if (imageType != _NodeImageType)
+                {
+                    if (imageType == ResourceContentType.None || imageType == ResourceContentType.Vector || imageType == ResourceContentType.Bitmap)
+                    {
+                        if (this.AllNodesCount == 0)
+                        {
+                            this._NodeImageType = imageType;
+                        }
+                        else
+                            throw new InvalidOperationException($"Value stored into TreeList.NodeImageType can be set only when TreeList is empty, current TreeList has {this.AllNodesCount} nodes.");
+                    }
+                    else
+                    {
+                        throw new InvalidOperationException($"Value stored into TreeList.NodeImageType must be only: None or Vector or Bitmap, current value is {imageType}.");
+                    }
+                }
+            }
+        }
 
         private void _ImageListApply()
         {
-            switch (imageMode)
+            var imageList = _GetImageList();
+            switch (_ImageMode)
             {
                 case TreeListImageMode.None:
                     this.SelectImageList = null;
@@ -2793,6 +2790,15 @@ namespace Noris.Clients.Win.Components.AsolDX
                     this.StateImageList = imageList;
                     break;
             }
+        }
+        private object _GetImageList()
+        {
+            switch (_NodeImageType)
+            {
+                case ResourceContentType.Bitmap: return _ImageListBitmap;
+                case ResourceContentType.Vector: return _ImageListVector;
+            }
+            return null;
         }
         /// <summary>
         /// Vrací index image pro dané jméno obrázku. Používá funkci <see cref="ImageIndexSearcher"/>
@@ -2813,6 +2819,10 @@ namespace Noris.Clients.Win.Components.AsolDX
 
         }
 
+        /// <summary>
+        /// Typ ikon: výchozí je <see cref="ResourceContentType.None"/>, lze nastavit jen na <see cref="ResourceContentType.Bitmap"/> nebo <see cref="ResourceContentType.Vector"/> a to jen když nejsou položky.
+        /// </summary>
+        private ResourceContentType _NodeImageType;
         private ImageList _ImageListBitmap;
         private SvgImageCollection _ImageListVector;
         #endregion
