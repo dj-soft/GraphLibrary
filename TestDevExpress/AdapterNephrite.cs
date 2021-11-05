@@ -35,13 +35,6 @@ namespace Noris.Clients.Controllers
     }
 }
 
-namespace Noris.Clients.Common
-{
-    public class SupportScaling
-    {
-        public static int GetScaledValue(int designValue) { return designValue; }
-    }
-}
 
 namespace Noris.Clients.Win.Components
 {
@@ -505,17 +498,7 @@ namespace Noris.Clients.Win.Components
         /// </summary>
         void DisposeControls();
     }
-    /// <summary>
-    /// Rozhraní předepisuje metodu <see cref="HandleEscapeKey()"/>, která umožní řešit klávesu Escape v rámci systému
-    /// </summary>
-    public interface IEscapeHandler
-    {
-        /// <summary>
-        /// Systém zaregistroval klávesu Escape; a ptá se otevřených oken, které ji chce vyřešit...
-        /// </summary>
-        /// <returns></returns>
-        bool HandleEscapeKey();
-    }
+   
     /// <summary>
     /// Simulace Green
     /// </summary>
@@ -534,15 +517,7 @@ namespace Noris.Clients.Win.Components
         /// </summary>
         public static GraphicsCache GraphicsCache { get { if (_GraphicsCache is null) _GraphicsCache = new GraphicsCache(); return _GraphicsCache; } }
         private static GraphicsCache _GraphicsCache;
-        /// <summary>
-        /// Zobrazí varování
-        /// </summary>
-        /// <param name="message"></param>
-        public static void ShowWarningToDeveloper(string message)
-        {
-            if (!System.Diagnostics.Debugger.IsAttached) return;
-            MessageBox.Show(Host.Owner, message, "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button1);
-        }
+       
         /// <summary>
         /// Simulace Green
         /// </summary>
@@ -574,7 +549,6 @@ namespace Noris.Clients.Win.Components
                     method.DynamicInvoke(args);
             }
         }
-        public Control Owner { get { return AnyControl; } }
         protected Control AnyControl { get { return Form.ActiveForm; } }
         public event EventHandler InteractiveZoomChanged;
     }
@@ -598,25 +572,11 @@ namespace Noris.Clients.Win.Components
             _ImageDict = ImageItem.LoadServerResources(resourceFile);
             
         }
-        /// <summary>
-        /// Zoom
-        /// </summary>
-        public decimal CurrentZoom { get { return 1m; } }
+     
 
 
 
 
-
-
-        /// <summary>
-        /// Simulace Green
-        /// </summary>
-        /// <param name="sizeOrDefault"></param>
-        /// <returns></returns>
-        public ImageList GetImageList(UserGraphicsSize? sizeOrDefault = null)
-        {
-            return _ImageList;
-        }
         private ImageList _ImageList;
         private Dictionary<string, ImageItem> _ImageDict;
         /// <summary>
