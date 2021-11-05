@@ -52,7 +52,31 @@ namespace TestDevExpress.Components
             _SetLayout4Button = DxComponent.CreateDxSimpleButton(820, 6, 150, 37, _FunctionPanel, "Set Layout 4", _SetLayout4ButtonClick, toolTipText: "Vloží fixní layout 4");
             _SetLayout5Button = DxComponent.CreateDxSimpleButton(980, 6, 150, 37, _FunctionPanel, "Set Void Layout", _SetLayout5ButtonClick, toolTipText: "Vloží fixní layout obsahující i prázdné panely");
 
-            _Icons = new Image[] { Properties.Resources.Ball01_16, Properties.Resources.Ball02_16, Properties.Resources.Ball03_16, Properties.Resources.Ball04_16, Properties.Resources.Ball05_16, Properties.Resources.Ball06_16, Properties.Resources.Ball07_16, Properties.Resources.Ball08_16, Properties.Resources.Ball09_16, Properties.Resources.Ball10_16, Properties.Resources.Ball11_16, Properties.Resources.Ball12_16, Properties.Resources.Ball13_16, Properties.Resources.Ball14_16, Properties.Resources.Ball15_16, Properties.Resources.Ball16_16, Properties.Resources.Ball17_16, Properties.Resources.Ball18_16, Properties.Resources.Ball19_16, Properties.Resources.Ball20_16, Properties.Resources.Ball21_16, Properties.Resources.Ball22_16, Properties.Resources.Ball23_16 };
+            _Icons = new Image[] {
+                DxComponent.CreateImage("Images/Icons16/Ball01_16.png"),
+                DxComponent.CreateImage("Images/Icons16/Ball02_16.png"),
+                DxComponent.CreateImage("Images/Icons16/Ball03_16.png"),
+                DxComponent.CreateImage("Images/Icons16/Ball04_16.png"),
+                DxComponent.CreateImage("Images/Icons16/Ball05_16.png"),
+                DxComponent.CreateImage("Images/Icons16/Ball06_16.png"),
+                DxComponent.CreateImage("Images/Icons16/Ball07_16.png"),
+                DxComponent.CreateImage("Images/Icons16/Ball08_16.png"),
+                DxComponent.CreateImage("Images/Icons16/Ball09_16.png"),
+                DxComponent.CreateImage("Images/Icons16/Ball10_16.png"),
+                DxComponent.CreateImage("Images/Icons16/Ball11_16.png"),
+                DxComponent.CreateImage("Images/Icons16/Ball12_16.png"),
+                DxComponent.CreateImage("Images/Icons16/Ball13_16.png"),
+                DxComponent.CreateImage("Images/Icons16/Ball14_16.png"),
+                DxComponent.CreateImage("Images/Icons16/Ball15_16.png"),
+                DxComponent.CreateImage("Images/Icons16/Ball16_16.png"),
+                DxComponent.CreateImage("Images/Icons16/Ball17_16.png"),
+                DxComponent.CreateImage("Images/Icons16/Ball18_16.png"),
+                DxComponent.CreateImage("Images/Icons16/Ball19_16.png"),
+                DxComponent.CreateImage("Images/Icons16/Ball20_16.png"),
+                DxComponent.CreateImage("Images/Icons16/Ball21_16.png"),
+                DxComponent.CreateImage("Images/Icons16/Ball22_16.png"),
+                DxComponent.CreateImage("Images/Icons16/Ball23_16.png")
+            };
 
             Rectangle monitorBounds = System.Windows.Forms.Screen.PrimaryScreen.WorkingArea;
             Rectangle formBounds = new Rectangle(monitorBounds.X + monitorBounds.Width * 1 / 10, monitorBounds.Y + monitorBounds.Height * 1 / 10, monitorBounds.Width * 8 / 10, monitorBounds.Height * 8 / 10);

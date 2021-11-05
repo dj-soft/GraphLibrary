@@ -59,7 +59,7 @@ namespace TestDevExpress.Forms
             InitTreeView();            // 9
             InitDragDrop();            // 10
 
-            TestResources();
+            // TestResources();
 
             DxComponent.SplashUpdate(subTitle: "A je to!");
 
@@ -478,11 +478,11 @@ namespace TestDevExpress.Forms
 
             XB.BarHeaderItem bh1 = new XB.BarHeaderItem() { Caption = "Základní" };
             pm.AddItem(bh1);
-            pm.AddItem(new XB.BarButtonItem(_BarManager, "První") {  Hint = "Hint k položce", Glyph = TestDevExpress.Properties.Resources.db_add_24_ });
-            pm.AddItem(new XB.BarButtonItem(_BarManager, "Druhý") { ButtonStyle = XB.BarButtonStyle.Check, Glyph = TestDevExpress.Properties.Resources.dialog_close_24_, PaintStyle = XB.BarItemPaintStyle.Caption });
+            pm.AddItem(new XB.BarButtonItem(_BarManager, "První") {  Hint = "Hint k položce", Glyph = DxComponent.CreateImage("Images/Actions24/db_add(24).png") });
+            pm.AddItem(new XB.BarButtonItem(_BarManager, "Druhý") { ButtonStyle = XB.BarButtonStyle.Check, Glyph = DxComponent.CreateImage("Images/Actions24/dialog-close(24).png"), PaintStyle = XB.BarItemPaintStyle.Caption });
 
             XB.BarButtonItem bi3 = new XB.BarButtonItem(_BarManager, "Třetí&nbsp;<b>zvýrazněný</b> a <i>kurzivový</i> <u>text</u>");
-            bi3.Glyph = TestDevExpress.Properties.Resources.arrow_right_double_2_24_;
+            bi3.Glyph = DxComponent.CreateImage("Images/Actions24/arrow-right-double-2(24).png");
             bi3.ShortcutKeyDisplayString = "Ctrl+F3";
             bi3.AllowHtmlText = DevExpress.Utils.DefaultBoolean.True;
             pm.AddItem(bi3);
@@ -499,7 +499,7 @@ namespace TestDevExpress.Forms
             bei.SuperTip.Items.AddTitle("NÁPOVĚDA");
             bei.SuperTip.Items.AddSeparator();
             var superItem = bei.SuperTip.Items.Add("BarButtonItem SuperTip");
-            superItem.ImageOptions.Image = TestDevExpress.Properties.Resources.call_start_24_;
+            superItem.ImageOptions.Image = DxComponent.CreateImage("Images/Actions24/call-start(24).png");
 
             bei.ItemAppearance.Normal.BackColor = Color.PaleVioletRed;
             pm.AddItem(bei);
@@ -511,10 +511,10 @@ namespace TestDevExpress.Forms
                 Border = DevExpress.XtraEditors.Controls.BorderStyles.Style3D,
                 MenuCaption = "Caption BarButtonGroup"
             };
-            bbg.AddItem(new XB.BarButtonItem(_BarManager, "1/4 in container") { Glyph = TestDevExpress.Properties.Resources.distribute_horizontal_x_24_ });
-            bbg.AddItem(new XB.BarButtonItem(_BarManager, "2/4 in container") { Glyph = TestDevExpress.Properties.Resources.distribute_horizontal_left_24_ });
-            bbg.AddItem(new XB.BarButtonItem(_BarManager, "3/4 in container") { Glyph = TestDevExpress.Properties.Resources.distribute_horizontal_right_24_ });
-            bbg.AddItem(new XB.BarButtonItem(_BarManager, "4/4 in container") { Glyph = TestDevExpress.Properties.Resources.distribute_horozontal_page_24_ });
+            bbg.AddItem(new XB.BarButtonItem(_BarManager, "1/4 in container") { Glyph = DxComponent.CreateImage("Images/Actions24/distribute-horizontal-x(24).png") });
+            bbg.AddItem(new XB.BarButtonItem(_BarManager, "2/4 in container") { Glyph = DxComponent.CreateImage("Images/Actions24/distribute-horizontal-left(24).png") });
+            bbg.AddItem(new XB.BarButtonItem(_BarManager, "3/4 in container") { Glyph = DxComponent.CreateImage("Images/Actions24/distribute-horizontal-right(24).png") });
+            bbg.AddItem(new XB.BarButtonItem(_BarManager, "4/4 in container") { Glyph = DxComponent.CreateImage("Images/Actions24/distribute-horozontal-page(24).png") });
             pm.AddItem(bbg);
 
 
@@ -616,7 +616,7 @@ namespace TestDevExpress.Forms
             rm.MenuRadius = 140;                    // Celkem menu
             rm.MenuColor = Color.DarkCyan;          // Barva aktivních segmentů
             rm.BackColor = Color.LightBlue;         // Barva pozadí
-            rm.Glyph = TestDevExpress.Properties.Resources.dialog_close_24_;      // Ikona uprostřed menu
+            rm.Glyph = DxComponent.CreateImage("Images/Actions24/dialog-close(24).png");      // Ikona uprostřed menu
             rm.PaintStyle = XR.PaintStyle.Skin;
             
 
@@ -722,8 +722,8 @@ namespace TestDevExpress.Forms
             ddm.Items.Add(new ToolStripSeparator());
 
             // Položky
-            ddm.Items.Add(new ToolStripMenuItem("První") { ToolTipText = "Tooltip k položce", Image = TestDevExpress.Properties.Resources.arrow_right_double_2_24_ });
-            ddm.Items.Add(new ToolStripMenuItem("Druhý") { CheckOnClick = true, CheckState = CheckState.Checked, Image = TestDevExpress.Properties.Resources.arrow_left_double_2_24_ });
+            ddm.Items.Add(new ToolStripMenuItem("První") { ToolTipText = "Tooltip k položce", Image = DxComponent.CreateImage("Images/Actions24/arrow-right-double-2(24).png") });
+            ddm.Items.Add(new ToolStripMenuItem("Druhý") { CheckOnClick = true, CheckState = CheckState.Checked, Image = DxComponent.CreateImage("Images/Actions24/arrow-left-double-2(24)") });
             ddm.Items.Add(new ToolStripMenuItem("Třetí"));
 
             // SubPoložka
@@ -1104,10 +1104,10 @@ namespace TestDevExpress.Forms
 
             using (_TabHeaderStrip2.SilentScope())
             {
-                _TabHeaderStrip2.AddItem(TabHeaderItem.CreateItem("key1", "Záhlaví první 1", "Titulek stránky 1, poměrně velký prostor na šířku", "Nápověda 1", null, Properties.Resources.arrow_right_24_));
-                _TabHeaderStrip2.AddItem(TabHeaderItem.CreateItem("key2", "Záhlaví druhé 2", "Titulek stránky 2, obsahuje doplňkové informace", "Nápověda 2", null, Properties.Resources.arrow_right_2_24_));
-                _TabHeaderStrip2.AddItem(TabHeaderItem.CreateItem("key3", "Záhlaví třetí 3", "Titulek stránky 3, například: Uživatelem definované atributy", "Nápověda 3", null, Properties.Resources.arrow_right_3_24_));
-                _TabHeaderStrip2.AddItem(TabHeaderItem.CreateItem("key4", "Záhlaví čtvrté 4", "Titulek stránky 4", "Nápověda 4", null, Properties.Resources.arrow_right_3_24_));
+                _TabHeaderStrip2.AddItem(TabHeaderItem.CreateItem("key1", "Záhlaví první 1", "Titulek stránky 1, poměrně velký prostor na šířku", "Nápověda 1", null, DxComponent.CreateImage("Images/Actions24/arrow-right(24).png")));
+                _TabHeaderStrip2.AddItem(TabHeaderItem.CreateItem("key2", "Záhlaví druhé 2", "Titulek stránky 2, obsahuje doplňkové informace", "Nápověda 2", null, DxComponent.CreateImage("Images/Actions24/arrow-right-2(24).png")));
+                _TabHeaderStrip2.AddItem(TabHeaderItem.CreateItem("key3", "Záhlaví třetí 3", "Titulek stránky 3, například: Uživatelem definované atributy", "Nápověda 3", null, DxComponent.CreateImage("Images/Actions24/arrow-right-3(24).png")));
+                _TabHeaderStrip2.AddItem(TabHeaderItem.CreateItem("key4", "Záhlaví čtvrté 4", "Titulek stránky 4", "Nápověda 4", null, DxComponent.CreateImage("Images/Actions24/arrow-right-3(24).png")));
             }
 
             _SplitTabHeader.Panel2.Controls.Add(_TabHeaderControl2);
@@ -1217,10 +1217,10 @@ namespace TestDevExpress.Forms
         }
         private void AddTabPages(XB.Navigation.TabPane tabPane)
         {
-            AddTabPage(tabPane, "page1", "Titulek 1", image: Properties.Resources.arrow_right_24_);
-            AddTabPage(tabPane, "page2", "Titulek 2", image: Properties.Resources.arrow_right_24_);
-            AddTabPage(tabPane, "page3", "Titulek 3", image: Properties.Resources.arrow_right_24_);
-            AddTabPage(tabPane, "page4", "Titulek 4", image: Properties.Resources.arrow_right_24_);
+            AddTabPage(tabPane, "page1", "Titulek 1", image: DxComponent.CreateImage("Images/Actions24/arrow-right(24).png"));
+            AddTabPage(tabPane, "page2", "Titulek 2", image: DxComponent.CreateImage("Images/Actions24/arrow-right(24).png"));
+            AddTabPage(tabPane, "page3", "Titulek 3", image: DxComponent.CreateImage("Images/Actions24/arrow-right(24).png"));
+            AddTabPage(tabPane, "page4", "Titulek 4", image: DxComponent.CreateImage("Images/Actions24/arrow-right(24).png"));
         }
         private void AddTabPage(XB.Navigation.TabPane tabPane, string key, string caption, string pageText = null, Image image = null, Action<XB.Navigation.TabNavigationPage> fillAction = null)
         {
@@ -1294,17 +1294,15 @@ namespace TestDevExpress.Forms
             p0.CustomHeaderButtons.Add(new XB.Docking2010.WindowsUIButton("Tlačítko", XB.Docking2010.ButtonStyle.PushButton) { UseImage = true } );
             p0.PageVisible = true;
             p0.ToolTip = "Hlavička záznamu";
-            p0.ImageOptions.Image = Properties.Resources.align_horizontal_left_24_;
-
-
+            p0.ImageOptions.Image = DxComponent.CreateImage("Images/Actions24/align-horizontal-left(24).png");
 
             var p1 = navPane.Pages[1] as XB.Navigation.NavigationPage;
-            p1.ImageOptions.Image = Properties.Resources.align_horizontal_right_2_24_;
+            p1.ImageOptions.Image = DxComponent.CreateImage("Images/Actions24/align-horizontal-right-2(24).png");
             p1.PageText = "UDA";
             p1.Caption = "Uživatelem definované atributy";
 
             var p2 = navPane.Pages[2] as XB.Navigation.NavigationPage;
-            p2.ImageOptions.Image = Properties.Resources.align_vertical_bottom_2_24_;
+            p2.ImageOptions.Image = DxComponent.CreateImage("Images/Actions24/align-vertical-bottom-2(24)");
             p2.Caption = "Titulkový text = Seznam položek";
             p2.PageText = "Položky";
 
@@ -1919,9 +1917,9 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
             dialogArgs.SystemIcon = NWC.DialogSystemIcon.Shield;
             dialogArgs.MessageText = html;
             dialogArgs.MessageTextContainsHtml = true;
-            dialogArgs.AddButton(new NWC.DialogArgs.ButtonInfo() { Text = "Uložit", ResultValue = "SAVE", StatusBarText = "Aktuální stav uloží do databáze", Image = Properties.Resources.document_save_24_});
-            dialogArgs.AddButton(new NWC.DialogArgs.ButtonInfo() { Text = "Neukládat", ResultValue = "DISCARD", StatusBarText = "Aktuální změny se zahodí", Image = Properties.Resources.document_revert_24_ });
-            dialogArgs.AddButton(new NWC.DialogArgs.ButtonInfo() { Text = "Storno", ResultValue = "CANCEL", StatusBarText = "Nezavírat okno, neukládat změny", Image = Properties.Resources.edit_delete_9_24_ });
+            dialogArgs.AddButton(new NWC.DialogArgs.ButtonInfo() { Text = "Uložit", ResultValue = "SAVE", StatusBarText = "Aktuální stav uloží do databáze", Image = DxComponent.CreateImage("Images/Actions24/document-save(24).png") });
+            dialogArgs.AddButton(new NWC.DialogArgs.ButtonInfo() { Text = "Neukládat", ResultValue = "DISCARD", StatusBarText = "Aktuální změny se zahodí", Image = DxComponent.CreateImage("Images/Actions24/document-revert(24).png") });
+            dialogArgs.AddButton(new NWC.DialogArgs.ButtonInfo() { Text = "Storno", ResultValue = "CANCEL", StatusBarText = "Nezavírat okno, neukládat změny", Image = DxComponent.CreateImage("Images/Actions24/edit-delete-9(24).png") });
             dialogArgs.StatusBarCtrlCVisible = true;
 
             DialogForm(dialogArgs);
@@ -1943,14 +1941,14 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
         {
             NWC.DialogArgs dialogArgs = new NWC.DialogArgs();
             dialogArgs.Title = "Dialog [OK] ExtraLong";
-            dialogArgs.Icon = Properties.Resources.help_hint_48_;
+            dialogArgs.Icon = DxComponent.CreateImage("Images/Actions48/help-hint(48).png");
             dialogArgs.MessageText = "Více tlačítek";
             dialogArgs.StatusBarCtrlCText = "Ctrl+C = COPY";
             dialogArgs.ButtonsAlignment = NWC.AlignContentToSide.End;
-            dialogArgs.AddButton(new NWC.DialogArgs.ButtonInfo() { Text = "Zkopíruj do schránky", ResultValue = "COPY", StatusBarText = "Zobrazený text zkopíruje do schránky Windows, pak můžete Ctrl+V text vložit jinam.", Image = Properties.Resources.edit_copy_3_24_ });
-            dialogArgs.AddButton(new NWC.DialogArgs.ButtonInfo() { Text = "Odešli mailem", ResultValue = "MAIL", StatusBarText = "Otevře novou mailovou zprávu, a do ní vloží tuto hlášku.", Image = Properties.Resources.document_import_24_ });
-            dialogArgs.AddButton(new NWC.DialogArgs.ButtonInfo() { Text = "Otevři v prohlížeči", ResultValue = "VIEW", StatusBarText = "Otevře hlášku v internetovém prohlížeči. Netuším, jak.", Image = Properties.Resources.go_home_9_24_ });
-            dialogArgs.AddButton(new NWC.DialogArgs.ButtonInfo() { Text = "Zavřít", IsEscapeButton = true, ResultValue = "EXIT", StatusBarText = "Zavře okno, zavře i okenice a zhasne v kamnech.", Image = Properties.Resources.edit_delete_6_24_ });
+            dialogArgs.AddButton(new NWC.DialogArgs.ButtonInfo() { Text = "Zkopíruj do schránky", ResultValue = "COPY", StatusBarText = "Zobrazený text zkopíruje do schránky Windows, pak můžete Ctrl+V text vložit jinam.", Image = DxComponent.CreateImage("Images/Actions24/edit-copy-3(24).png") });
+            dialogArgs.AddButton(new NWC.DialogArgs.ButtonInfo() { Text = "Odešli mailem", ResultValue = "MAIL", StatusBarText = "Otevře novou mailovou zprávu, a do ní vloží tuto hlášku.", Image = DxComponent.CreateImage("Images/Actions24/document-import(24).png") });
+            dialogArgs.AddButton(new NWC.DialogArgs.ButtonInfo() { Text = "Otevři v prohlížeči", ResultValue = "VIEW", StatusBarText = "Otevře hlášku v internetovém prohlížeči. Netuším, jak.", Image = DxComponent.CreateImage("Images/Actions24/go-home-9(24)") });
+            dialogArgs.AddButton(new NWC.DialogArgs.ButtonInfo() { Text = "Zavřít", IsEscapeButton = true, ResultValue = "EXIT", StatusBarText = "Zavře okno, zavře i okenice a zhasne v kamnech.", Image = DxComponent.CreateImage("Images/Actions24/edit-delete-6(24).png") });
             // dialogArgs.StatusBarVisible = true;     nastaví se autodetekcí automaticky
             dialogArgs.ButtonHeight = 32;
             dialogArgs.UserZoomRatio = 1.15f;
@@ -2005,9 +2003,9 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
             string key = iconName.ToLower();
             switch (key)
             {
-                case "quest": return Properties.Resources.help_3_24_;
-                case "yes": return Properties.Resources.dialog_ok_apply_2_24_;
-                case "no": return Properties.Resources.dialog_no_2_24_;
+                case "quest": return DxComponent.CreateImage("Images/Actions24/help-3(24).png");
+                case "yes": return DxComponent.CreateImage("Images/Actions24/dialog-ok-apply-2(24).png");
+                case "no": return DxComponent.CreateImage("Images/Actions24/dialog-no-2(24).png");
             }
             return null;
         }
@@ -2426,38 +2424,38 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
         private void CreateImageList()
         {
             _Images16 = new ImageList();
-            _Images16.Images.Add("Ball01_16", Properties.Resources.Ball01_16);
-            _Images16.Images.Add("Ball02_16", Properties.Resources.Ball02_16);
-            _Images16.Images.Add("Ball03_16", Properties.Resources.Ball03_16);
-            _Images16.Images.Add("Ball04_16", Properties.Resources.Ball04_16);
-            _Images16.Images.Add("Ball05_16", Properties.Resources.Ball05_16);
-            _Images16.Images.Add("Ball06_16", Properties.Resources.Ball06_16);
-            _Images16.Images.Add("Ball07_16", Properties.Resources.Ball07_16);
-            _Images16.Images.Add("Ball08_16", Properties.Resources.Ball08_16);
-            _Images16.Images.Add("Ball09_16", Properties.Resources.Ball09_16);
-            _Images16.Images.Add("Ball10_16", Properties.Resources.Ball10_16);
-            _Images16.Images.Add("Ball11_16", Properties.Resources.Ball11_16);
-            _Images16.Images.Add("Ball12_16", Properties.Resources.Ball12_16);
-            _Images16.Images.Add("Ball13_16", Properties.Resources.Ball13_16);
-            _Images16.Images.Add("Ball14_16", Properties.Resources.Ball14_16);
-            _Images16.Images.Add("Ball15_16", Properties.Resources.Ball15_16);
-            _Images16.Images.Add("Ball16_16", Properties.Resources.Ball16_16);
-            _Images16.Images.Add("Ball17_16", Properties.Resources.Ball17_16);
-            _Images16.Images.Add("Ball18_16", Properties.Resources.Ball18_16);
-            _Images16.Images.Add("Ball19_16", Properties.Resources.Ball19_16);
-            _Images16.Images.Add("Ball20_16", Properties.Resources.Ball20_16);
-            _Images16.Images.Add("Ball21_16", Properties.Resources.Ball21_16);
-            _Images16.Images.Add("Ball22_16", Properties.Resources.Ball22_16);
-            _Images16.Images.Add("Ball23_16", Properties.Resources.Ball23_16);
+            _Images16.Images.Add("Ball01_16", DxComponent.CreateImage("Images/Icons16/Ball01_16.png"));
+            _Images16.Images.Add("Ball02_16", DxComponent.CreateImage("Images/Icons16/Ball02_16.png"));
+            _Images16.Images.Add("Ball03_16", DxComponent.CreateImage("Images/Icons16/Ball03_16.png"));
+            _Images16.Images.Add("Ball04_16", DxComponent.CreateImage("Images/Icons16/Ball04_16.png"));
+            _Images16.Images.Add("Ball05_16", DxComponent.CreateImage("Images/Icons16/Ball05_16.png"));
+            _Images16.Images.Add("Ball06_16", DxComponent.CreateImage("Images/Icons16/Ball06_16.png"));
+            _Images16.Images.Add("Ball07_16", DxComponent.CreateImage("Images/Icons16/Ball07_16.png"));
+            _Images16.Images.Add("Ball08_16", DxComponent.CreateImage("Images/Icons16/Ball08_16.png"));
+            _Images16.Images.Add("Ball09_16", DxComponent.CreateImage("Images/Icons16/Ball09_16.png"));
+            _Images16.Images.Add("Ball10_16", DxComponent.CreateImage("Images/Icons16/Ball10_16.png"));
+            _Images16.Images.Add("Ball11_16", DxComponent.CreateImage("Images/Icons16/Ball11_16.png"));
+            _Images16.Images.Add("Ball12_16", DxComponent.CreateImage("Images/Icons16/Ball12_16.png"));
+            _Images16.Images.Add("Ball13_16", DxComponent.CreateImage("Images/Icons16/Ball13_16.png"));
+            _Images16.Images.Add("Ball14_16", DxComponent.CreateImage("Images/Icons16/Ball14_16.png"));
+            _Images16.Images.Add("Ball15_16", DxComponent.CreateImage("Images/Icons16/Ball15_16.png"));
+            _Images16.Images.Add("Ball16_16", DxComponent.CreateImage("Images/Icons16/Ball16_16.png"));
+            _Images16.Images.Add("Ball17_16", DxComponent.CreateImage("Images/Icons16/Ball17_16.png"));
+            _Images16.Images.Add("Ball18_16", DxComponent.CreateImage("Images/Icons16/Ball18_16.png"));
+            _Images16.Images.Add("Ball19_16", DxComponent.CreateImage("Images/Icons16/Ball19_16.png"));
+            _Images16.Images.Add("Ball20_16", DxComponent.CreateImage("Images/Icons16/Ball20_16.png"));
+            _Images16.Images.Add("Ball21_16", DxComponent.CreateImage("Images/Icons16/Ball21_16.png"));
+            _Images16.Images.Add("Ball22_16", DxComponent.CreateImage("Images/Icons16/Ball22_16.png"));
+            _Images16.Images.Add("Ball23_16", DxComponent.CreateImage("Images/Icons16/Ball23_16.png"));
 
-            _Images16.Images.Add("edit_add_4_16", Properties.Resources.edit_add_4_16);
-            _Images16.Images.Add("list_add_3_16", Properties.Resources.list_add_3_16);
-            _Images16.Images.Add("lock_5_16", Properties.Resources.lock_5_16);
-            _Images16.Images.Add("object_locked_2_16", Properties.Resources.object_locked_2_16);
-            _Images16.Images.Add("object_unlocked_2_16", Properties.Resources.object_unlocked_2_16);
-            _Images16.Images.Add("msn_blocked_16", Properties.Resources.msn_blocked_16);
-            _Images16.Images.Add("hourglass_16", Properties.Resources.hourglass_16);
-            _Images16.Images.Add("move_task_down_16", Properties.Resources.move_task_down_16);
+            _Images16.Images.Add("edit_add_4_16", DxComponent.CreateImage("Images/Icons16/edit-add-4_16.png"));
+            _Images16.Images.Add("list_add_3_16", DxComponent.CreateImage("Images/Icons16/list-add-3_16.png"));
+            _Images16.Images.Add("lock_5_16", DxComponent.CreateImage("Images/Icons16/lock-5_16.png"));
+            _Images16.Images.Add("object_locked_2_16", DxComponent.CreateImage("Images/Icons16/object-locked-2_16.png"));
+            _Images16.Images.Add("object_unlocked_2_16", DxComponent.CreateImage("Images/Icons16/object-unlocked-2_16.png"));
+            _Images16.Images.Add("msn_blocked_16", DxComponent.CreateImage("Images/Icons16/msn-blocked_16.png"));
+            _Images16.Images.Add("hourglass_16", DxComponent.CreateImage("Images/Icons16/hourglass_16.png"));
+            _Images16.Images.Add("move_task_down_16", DxComponent.CreateImage("Images/Icons16/move_task_down_16.png"));
         }
         private int GetImageIndex(string imageName)
         {

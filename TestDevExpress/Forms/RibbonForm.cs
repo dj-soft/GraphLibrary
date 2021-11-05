@@ -17,9 +17,10 @@ namespace TestDevExpress.Forms
         #region Konstruktor a proměnné
         public RibbonForm()
         {
+            var moon10 = DxComponent.CreateImage("Images/Moon10.png");
             DxComponent.SplashShow("Testovací okno Ribbonů Nephrite", "DJ soft & ASOL",
                 "Copyright © 1995 - 2021 DJ soft" + Environment.NewLine + "All Rights reserved.", "Začínáme...",
-                this, Properties.Resources.Moon10, opacityColor: System.Drawing.Color.FromArgb(80, 80, 180), opacity: 120,
+                this, moon10, opacityColor: System.Drawing.Color.FromArgb(80, 80, 180), opacity: 120,
                 useFadeOut: false);
 
             DxQuickAccessToolbar.QATItemKeysChanged += DxQuickAccessToolbar_QATItemKeysChanged;
@@ -65,8 +66,8 @@ namespace TestDevExpress.Forms
             _TestPanel1 = new RibbonTestPanel();
             _TestPanel1.UseLazyLoad = this.UseLazyLoad;
             _TestPanel1.Ribbon.DebugName = "Slave 1";
-            _TestPanel1.Ribbon.ImageRightFull = TestDevExpress.Properties.Resources.Homer_01b;
-            _TestPanel1.Ribbon.ImageRightMini = TestDevExpress.Properties.Resources.Homer_01c;
+            _TestPanel1.Ribbon.ImageRightFull = DxComponent.CreateImage("Images/ImagesBig/Homer 01b.png");
+            _TestPanel1.Ribbon.ImageRightMini = DxComponent.CreateImage("Images/ImagesBig/Homer 01c.png");
             _TestPanel1.ParentRibbon = DxRibbon;
             _TestPanel1.PageMergeOrder = 100;
             _TestPanel1.CategoryName = "SKUPINA 1";
@@ -77,8 +78,8 @@ namespace TestDevExpress.Forms
             _TestPanel2a = new RibbonTestPanel();
             _TestPanel2a.UseLazyLoad = this.UseLazyLoad;
             _TestPanel2a.Ribbon.DebugName = "Slave 2A";
-            _TestPanel2a.Ribbon.ImageRightFull = TestDevExpress.Properties.Resources.Lisa_01b;
-            _TestPanel2a.Ribbon.ImageRightMini = TestDevExpress.Properties.Resources.Lisa_01c;
+            _TestPanel2a.Ribbon.ImageRightFull = DxComponent.CreateImage("Images/ImagesBig/Lisa 01b.png");
+            _TestPanel2a.Ribbon.ImageRightMini = DxComponent.CreateImage("Images/ImagesBig/Lisa 01c.png");
             _TestPanel2a.ParentRibbon = _TestPanel1.Ribbon;
             _TestPanel2a.PageMergeOrder = 200;
             _TestPanel2a.CategoryName = "SKUPINA 2A";
@@ -89,8 +90,8 @@ namespace TestDevExpress.Forms
             _TestPanel2b = new RibbonTestPanel();
             _TestPanel2b.UseLazyLoad = this.UseLazyLoad;
             _TestPanel2b.Ribbon.DebugName = "Slave 2B";
-            _TestPanel2b.Ribbon.ImageRightFull = TestDevExpress.Properties.Resources.Marge_01b;
-            _TestPanel2b.Ribbon.ImageRightMini = TestDevExpress.Properties.Resources.Marge_01c;
+            _TestPanel2b.Ribbon.ImageRightFull = DxComponent.CreateImage("Images/ImagesBig/Marge 01b.png");
+            _TestPanel2b.Ribbon.ImageRightMini = DxComponent.CreateImage("Images/ImagesBig/Marge 01c.png");
             _TestPanel2b.ParentRibbon = _TestPanel1.Ribbon;
             _TestPanel2b.PageMergeOrder = 300;
             _TestPanel2b.CategoryName = "SKUPINA 2B";
@@ -144,8 +145,8 @@ namespace TestDevExpress.Forms
             this.DxRibbon.ApplicationButtonText = " SYSTEM ";
             this.DxRibbon.LogActive = true;
 
-            this.DxRibbon.ImageRightFull = TestDevExpress.Properties.Resources.Bart_01bt;
-            this.DxRibbon.ImageRightMini = TestDevExpress.Properties.Resources.Bart_01c;
+            this.DxRibbon.ImageRightFull = DxComponent.CreateImage("Images/ImagesBig/Bart 01bt.png");
+            this.DxRibbon.ImageRightMini = DxComponent.CreateImage("Images/ImagesBig/Bart 01c.png");
 
             string imgLogClear = "svgimages/snap/cleartablestyle.svg";
             string imgInfo = "svgimages/xaf/action_aboutinfo.svg";
@@ -1298,15 +1299,7 @@ namespace TestDevExpress.Forms
         /// <returns></returns>
         private static string[] _GetResourceImages()
         {
-            List<string> names = new List<string>();
-            var properties = typeof(TestDevExpress.Properties.Resources).GetProperties(System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic);
-            foreach (var property in properties)
-            {
-                object value = property.GetValue(null);
-                if (value is System.Drawing.Image image && image.Size.Width <= 48)
-                    names.Add(property.Name);
-            }
-            return names.ToArray();
+            return DxComponent.GetResourceNames(".svg", false, true);
         }
         /// <summary>
         /// Do daných stránek vepíše postupně MergeOrder 

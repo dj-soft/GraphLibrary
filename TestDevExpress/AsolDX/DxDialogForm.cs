@@ -866,13 +866,13 @@ namespace Noris.Clients.Win.Components
             int fontSizeDelta = GetZoomDelta();
 
             if (this.ExistsBothText)
-                StatusAltTextCheckButton = AddStatusCheckButton(args, args.StatusBarAltMsgButtonText, MsgCode.DialogFormAltMsgButtonText, args.StatusBarAltMsgButtonTooltip, MsgCode.DialogFormAltMsgButtonTooltip, 78, 18, fontSizeDelta, StatusAltTextButton_ItemClick);
+                StatusAltTextCheckButton = AddStatusCheckButton(args, args.StatusBarAltMsgButtonText, MsgCode.DialogFormAltMsgButtonText, args.StatusBarAltMsgButtonTooltip, MsgCode.DialogFormAltMsgButtonToolTip, 78, 18, fontSizeDelta, StatusAltTextButton_ItemClick);
 
             StatusLabel1 = DxComponent.CreateDxStatusLabel(status, "", DevExpress.XtraBars.BarStaticItemSize.Spring, true, fontSizeDelta);
             StatusLabel2 = DxComponent.CreateDxStatusLabel(status, "", DevExpress.XtraBars.BarStaticItemSize.Content, false, fontSizeDelta);
 
             if (args.StatusBarCtrlCVisible || !String.IsNullOrEmpty(args.StatusBarCtrlCText))
-                StatusCopyButton = AddStatusButton(args, args.StatusBarCtrlCText, MsgCode.DialogFormCtrlCText, args.StatusBarCtrlCTooltip, MsgCode.DialogFormCtrlCTooltip, 78, 18, fontSizeDelta, StatusCopyButton_ItemClick);
+                StatusCopyButton = AddStatusButton(args, args.StatusBarCtrlCText, MsgCode.DialogFormCtrlCText, args.StatusBarCtrlCTooltip, MsgCode.DialogFormCtrlCToolTip, 78, 18, fontSizeDelta, StatusCopyButton_ItemClick);
 
             RefreshAltMsgButtonText();
         }
@@ -2004,12 +2004,12 @@ namespace Noris.Clients.Win.Components
             StatusBarVisible = false;
             StatusBarCtrlCVisible = false;
             StatusBarCtrlCText = DxComponent.Localize(MsgCode.DialogFormCtrlCText);
-            StatusBarCtrlCTooltip = DxComponent.Localize(MsgCode.DialogFormCtrlCTooltip);
+            StatusBarCtrlCTooltip = DxComponent.Localize(MsgCode.DialogFormCtrlCToolTip);
             StatusBarCtrlCInfo = DxComponent.Localize(MsgCode.DialogFormCtrlCInfo);
             StatusBarStdMsgButtonText = DxComponent.Localize(MsgCode.DialogFormStdMsgButtonText);
-            StatusBarStdMsgButtonTooltip = DxComponent.Localize(MsgCode.DialogFormStdMsgButtonTooltip);
+            StatusBarStdMsgButtonTooltip = DxComponent.Localize(MsgCode.DialogFormStdMsgButtonToolTip);
             StatusBarAltMsgButtonText = DxComponent.Localize(MsgCode.DialogFormAltMsgButtonText);
-            StatusBarAltMsgButtonTooltip = DxComponent.Localize(MsgCode.DialogFormAltMsgButtonTooltip);
+            StatusBarAltMsgButtonTooltip = DxComponent.Localize(MsgCode.DialogFormAltMsgButtonToolTip);
             ButtonPanelDock = DialogForm.DefaultButtonDockSide;
             ButtonHeight = DialogForm.DefaultButtonHeight;
             ButtonsAlignment = DialogForm.DefaultButtonAlignment;
@@ -2420,15 +2420,15 @@ namespace Noris.Clients.Win.Components
         {
             switch (result)
             {
-                case DialogResult.OK: return DxComponent.Localize(MsgCode.DialogResultOk);
-                case DialogResult.Cancel: return DxComponent.Localize(MsgCode.DialogResultCancel);
-                case DialogResult.Abort: return DxComponent.Localize(MsgCode.DialogResultAbort);
-                case DialogResult.Retry: return DxComponent.Localize(MsgCode.DialogResultRetry);
-                case DialogResult.Ignore: return DxComponent.Localize(MsgCode.DialogResultIgnore);
-                case DialogResult.Yes: return DxComponent.Localize(MsgCode.DialogResultYes);
-                case DialogResult.No: return DxComponent.Localize(MsgCode.DialogResultNo);
+                case DialogResult.OK: return DxComponent.Localize(MsgCode.DialogFormResultOk);
+                case DialogResult.Cancel: return DxComponent.Localize(MsgCode.DialogFormResultCancel);
+                case DialogResult.Abort: return DxComponent.Localize(MsgCode.DialogFormResultAbort);
+                case DialogResult.Retry: return DxComponent.Localize(MsgCode.DialogFormResultRetry);
+                case DialogResult.Ignore: return DxComponent.Localize(MsgCode.DialogFormResultIgnore);
+                case DialogResult.Yes: return DxComponent.Localize(MsgCode.DialogFormResultYes);
+                case DialogResult.No: return DxComponent.Localize(MsgCode.DialogFormResultNo);
             }
-            return DxComponent.Localize(MsgCode.DialogResultOk);
+            return DxComponent.Localize(MsgCode.DialogFormResultOk);
         }
         /// <summary>
         /// Vrátí aktivační klávesu, což může být 0-9 anebo A-Z, které následuje v dodaném textu za Ampersandem

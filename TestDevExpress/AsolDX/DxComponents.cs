@@ -3436,6 +3436,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         public const string RibbonShowQatTop = "RibbonShowQatTop";
         [DefaultMessageText("Zobrazit panel nástrojů Rychlý přístup pod pásem karet")]
         public const string RibbonShowQatDown = "RibbonShowQatDown";
+        [DefaultMessageText("Upravit obsah panelu nástrojů Rychlý přístup")]
+        public const string RibbonShowManager = "RibbonShowManager";
         [DefaultMessageText("Zmenšit")]
         public const string RibbonMinimizeQat = "RibbonMinimizeQat";
 
@@ -3446,34 +3448,34 @@ namespace Noris.Clients.Win.Components.AsolDX
         [DefaultMessageText("Ctrl+C: zkopírovat")]
         public const string DialogFormCtrlCText = "DialogFormCtrlCText";
         [DefaultMessageText("Ctrl+C: zkopíruje všechny informace z okna do schránky Windows")]
-        public const string DialogFormCtrlCTooltip = "DialogFormCtrlCToolTip";
+        public const string DialogFormCtrlCToolTip = "DialogFormCtrlCToolTip";
         [DefaultMessageText("Text zkopírován")]
         public const string DialogFormCtrlCInfo = "DialogFormCtrlCInfo";
         [DefaultMessageText("Více informací")]
         public const string DialogFormAltMsgButtonText = "DialogFormAltMsgButtonText";
         [DefaultMessageText("Zobrazí větší okno s více informacemi")]
-        public const string DialogFormAltMsgButtonTooltip = "DialogFormAltMsgButtonToolTip";
+        public const string DialogFormAltMsgButtonToolTip = "DialogFormAltMsgButtonToolTip";
         [DefaultMessageText("Méně informací")]
         public const string DialogFormStdMsgButtonText = "DialogFormStdMsgButtonText";
         [DefaultMessageText("Zobrazí základní okno s méně informacemi")]
-        public const string DialogFormStdMsgButtonTooltip = "DialogFormStdMsgButtonToolTip";
+        public const string DialogFormStdMsgButtonToolTip = "DialogFormStdMsgButtonToolTip";
 
         [DefaultMessageText("prefix")]
-        public const string DialogResultPrefix = "DialogFormResult";
+        public const string DialogFormResultPrefix = "DialogFormResultPrefix";
         [DefaultMessageText("OK")]
-        public const string DialogResultOk = "DialogFormResultOk";
+        public const string DialogFormResultOk = "DialogFormResultOk";
         [DefaultMessageText("Ano")]
-        public const string DialogResultYes = "DialogFormResultYes";
+        public const string DialogFormResultYes = "DialogFormResultYes";
         [DefaultMessageText("Ne")]
-        public const string DialogResultNo = "DialogFormResultNo";
+        public const string DialogFormResultNo = "DialogFormResultNo";
         [DefaultMessageText("Zrušit")]
-        public const string DialogResultAbort = "DialogFormResultAbort";
+        public const string DialogFormResultAbort = "DialogFormResultAbort";
         [DefaultMessageText("Znovu")]
-        public const string DialogResultRetry = "DialogFormResultRetry";
+        public const string DialogFormResultRetry = "DialogFormResultRetry";
         [DefaultMessageText("Ignoruj")]
-        public const string DialogResultIgnore = "DialogFormResultIgnore";
+        public const string DialogFormResultIgnore = "DialogFormResultIgnore";
         [DefaultMessageText("Storno")]
-        public const string DialogResultCancel = "DialogFormResultCancel";
+        public const string DialogFormResultCancel = "DialogFormResultCancel";
 
 
 

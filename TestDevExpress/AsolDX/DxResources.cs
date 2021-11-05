@@ -11,6 +11,7 @@ using DevExpress.Data.Async;
 using DevExpress.XtraEditors;
 using DevExpress.Utils.Svg;
 using DevExpress.Utils;
+using System.Runtime.Remoting.Messaging;
 
 namespace Noris.Clients.Win.Components.AsolDX
 {
@@ -280,6 +281,25 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private Dictionary<ResourceImageSizeType, System.Windows.Forms.ImageList> __ImageListDict;
         #endregion
+        #region Soupisy zdrojů
+        /// <summary>
+        /// Metoda vrátí pole obsahující jména všech zdrojů [volitelně s danou příponou].
+        /// Pouze zdroje aplikační, nikoliv DevExpress.
+        /// </summary>
+        /// <param name="extension">Přípona, vybírat jen záznamy s touto příponou. Měla by začínat tečkou: ".svg"</param>
+        /// <param name="withApplication">Zařadit zdroje aplikace</param>
+        /// <param name="withDevExpress">Zařadit zdroje DevExpress</param>
+        /// <returns></returns>
+        public static string[] GetResourceNames(string extension = null, bool withApplication = true, bool withDevExpress = true) { return Instance._GetResourceNames(extension, withApplication, withDevExpress); }
+        private string[] _GetResourceNames(string extension, bool withApplication, bool withDevExpress)
+        {
+            List<string> names = new List<string>();
+            if (withApplication) names.AddRange(_GetApplicationResourceNames(extension));
+            if (withDevExpress) names.AddRange(_GetDevExpressResourceNames(extension));
+            names.Sort();
+            return names.ToArray();
+        }
+        #endregion
         #region SvgImage
         /// <summary>
         /// Najde a vrátí <see cref="SvgImage"/> pro dané jméno, hledá v DevExpress i Aplikačních zdrojích
@@ -328,32 +348,16 @@ namespace Noris.Clients.Win.Components.AsolDX
         #endregion
         #region Přístup na DevExpress zdroje
         /// <summary>
-        /// Vrací setříděný seznam DevExpress resources
+        /// Vrací seznam DevExpress resources - jména zdrojů
         /// </summary>
-        /// <param name="addPng">Akceptovat bitmapy (PNG)</param>
-        /// <param name="addSvg">Akceptovat vektory (SVG)</param>
+        /// <param name="extension">Přípona, vybírat jen záznamy s touto příponou. Měla by začínat tečkou: ".svg"</param>
         /// <returns></returns>
-        public static string[] GetResourceKeys(bool addPng = true, bool addSvg = true)
+        private string[] _GetDevExpressResourceNames(string extension)
         {
-            return Instance._GetResourceKeys(addPng, addSvg);
-        }
-        /// <summary>
-        /// Vrací setříděný seznam DevExpress resources
-        /// </summary>
-        /// <param name="addPng">Akceptovat bitmapy (PNG)</param>
-        /// <param name="addSvg">Akceptovat vektory (SVG)</param>
-        /// <returns></returns>
-        private string[] _GetResourceKeys(bool addPng, bool addSvg)
-        {
-            if (!addPng && !addSvg) return new string[0];
-
-            var keyList = _DevExpressResourceCache.GetAllResourceKeys()
-                .Where(k => (addPng && k.EndsWith(".png", StringComparison.OrdinalIgnoreCase)) ||
-                            (addSvg && k.EndsWith(".svg", StringComparison.OrdinalIgnoreCase)))
-                .ToList();
-            keyList.Sort();
-
-            return keyList.ToArray();
+            var ext = (String.IsNullOrEmpty(extension) ? null : extension.Trim().ToLower());
+            var items = _DevExpressResourceCache.GetAllResourceKeys();
+            if (ext != null) items = items.Where(k => k.EndsWith(ext)).ToArray();
+            return items;
         }
         /// <summary>
         /// Vrátí SVG paletu [volitelně pro daný skin a pro daný stav objektu], defaultně pro aktuální skin
@@ -549,6 +553,15 @@ namespace Noris.Clients.Win.Components.AsolDX
             return DxApplicationResourceLibrary.TryGetResource(resourceName, out var resourceItem, out var resourcePack);
         }
         /// <summary>
+        /// Vrací seznam Aplikačních resources - jména zdrojů
+        /// </summary>
+        /// <param name="extension">Přípona, vybírat jen záznamy s touto příponou. Měla by začínat tečkou: ".svg"</param>
+        /// <returns></returns>
+        private string[] _GetApplicationResourceNames(string extension)
+        {
+            return DxApplicationResourceLibrary.GetResourceNames(extension);
+        }
+        /// <summary>
         /// Zkusí najít daný zdroj v aplikačních zdrojích, zafiltruje na daný typ obsahu - typ obsahu je povinný. Velikost se řeší následně.
         /// <para/>
         /// Na vstupu je params pole vhodných typů obrázku, prochází se prioritně v daném pořadí a vrací se první existující sada zdrojů daného typu.
@@ -681,7 +694,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// 2. předat i paletu <paramref name="svgPalette"/>, tím bude SVG obrázek přizpůsoben danému skinu a stavu.
         /// 3. Pokud nebude předána paleta, lze zadat alespoň stav objektu <paramref name="svgState"/> (default = Normal), pak bude použit aktuální skin a daný stav objektu.
         /// </summary>
-        /// <param name="resourceName">Název zdroje, zdroje jsou k dispozici v <see cref="GetResourceKeys(bool, bool)"/></param>
+        /// <param name="resourceName">Název zdroje</param>
         /// <param name="maxSize"></param>
         /// <param name="optimalSvgSize">Cílová velikost, použije se pouze pro vykreslení SVG Image</param>
         /// <param name="svgPalette">Paleta pro vykreslení SVG Image</param>
@@ -702,7 +715,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// 2. předat i paletu <paramref name="svgPalette"/>, tím bude SVG obrázek přizpůsoben danému skinu a stavu.
         /// 3. Pokud nebude předána paleta, lze zadat alespoň stav objektu <paramref name="svgState"/> (default = Normal), pak bude použit aktuální skin a daný stav objektu.
         /// </summary>
-        /// <param name="resourceName">Název zdroje, zdroje jsou k dispozici v <see cref="GetResourceKeys(bool, bool)"/></param>
+        /// <param name="resourceName">Název zdroje</param>
         /// <param name="size">Výstup konkrétní velikosti, odráží velikost bitmapy, nebo <paramref name="optimalSvgSize"/> pro SVG, je oříznuto na <paramref name="maxSize"/></param>
         /// <param name="maxSize"></param>
         /// <param name="optimalSvgSize">Cílová velikost, použije se pouze pro vykreslení SVG Image</param>
@@ -724,7 +737,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// 2. předat i paletu <paramref name="svgPalette"/>, tím bude SVG obrázek přizpůsoben danému skinu a stavu.
         /// 3. Pokud nebude předána paleta, lze zadat alespoň stav objektu <paramref name="svgState"/> (default = Normal), pak bude použit aktuální skin a daný stav objektu.
         /// </summary>
-        /// <param name="resourceName">Název zdroje, zdroje jsou k dispozici v <see cref="GetResourceKeys(bool, bool)"/></param>
+        /// <param name="resourceName">Název zdroje</param>
         /// <param name="size">Výstup konkrétní velikosti, odráží velikost bitmapy, nebo <paramref name="optimalSvgSize"/> pro SVG, je oříznuto na <paramref name="maxSize"/></param>
         /// <param name="maxSize"></param>
         /// <param name="optimalSvgSize">Cílová velikost, použije se pouze pro vykreslení SVG Image</param>
@@ -1005,16 +1018,16 @@ namespace Noris.Clients.Win.Components.AsolDX
         public static bool TryGetResource(string resourceName, out ResourceItem resourceItem, ResourceContentType? contentType = null, ResourceImageSizeType? sizeType = null)
         { return Current._TryGetResource(resourceName, out resourceItem, contentType, sizeType); }
         /// <summary>
-        /// Metoda vrátí náhodný zdroj (dané přípony, pokud není prázdná).
+        /// Metoda vrátí pole obsahující jména všech zdrojů [volitelně s danou příponou].
+        /// Pouze zdroje aplikační, nikoliv DevExpress.
         /// </summary>
         /// <param name="extension">Přípona, vybírat jen záznamy s touto příponou. Měla by začínat tečkou: ".svg"</param>
         /// <returns></returns>
-        public static string GetRandomName(string extension = null)
+        public static string[] GetResourceNames(string extension = null)
         {
-            var dict = Current.__ItemDict;
             var ext = (String.IsNullOrEmpty(extension) ? null : extension.Trim().ToLower());
-            string[] keys = (ext == null) ? dict.Keys.ToArray() : dict.Keys.Where(k => k.EndsWith(ext)).ToArray();
-            return DxComponent.GetRandomItem(keys);
+            var items = Current.__ItemDict.Keys;
+            return (ext == null) ? items.ToArray() : items.Where(k => k.EndsWith(ext)).ToArray();
         }
         #endregion
         #region Private instanční sféra

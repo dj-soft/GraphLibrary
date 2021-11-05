@@ -94,7 +94,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         public static string GetMessageText(string messageCode)
         {
-            var msgField = typeof(MsgCode).GetFields(System.Reflection.BindingFlags.Public).Where(f => f.Name == messageCode).FirstOrDefault();
+            var msgField = typeof(MsgCode).GetFields(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static).Where(f => f.Name == messageCode).FirstOrDefault();
             if (msgField == null) return null;
             var defTextAttr = msgField.GetCustomAttributes(typeof(DefaultMessageTextAttribute), true).Cast<DefaultMessageTextAttribute>().FirstOrDefault();
             if (defTextAttr is null || String.IsNullOrEmpty(defTextAttr.DefaultText)) return null;

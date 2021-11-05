@@ -21,7 +21,7 @@ namespace TestDevExpress.Forms
         {
             _UseVoidSlave = useVoidSlave;
             _CreateMode = createMode;
-            this.SvgImages = DxComponent.GetResourceKeys(false, true);
+            this.SvgImages = DxComponent.GetResourceNames(".svg", false, true);           // Pouze DevExpress SVG ikony
             InitRibbon();
             this.Size = new System.Drawing.Size(1000, 800);
             this.WindowState = System.Windows.Forms.FormWindowState.Normal;

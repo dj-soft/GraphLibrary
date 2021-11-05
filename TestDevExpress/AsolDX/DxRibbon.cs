@@ -3635,19 +3635,26 @@ namespace Noris.Clients.Win.Components.AsolDX
             bool isQatDirectItem = _IsQATDirectItem(link);
             bool isQatAnyItem = _IsQATAnyItem(link);
 
+            bool isAnyQatContent = (this.UserQatItemsCount > 0);
+
             List<IMenuItem> items = new List<IMenuItem>();
             if (isQatDirectItem)
-                items.Add(new DataMenuItem() { ItemId = $"CPM_{MsgCode.RibbonDirectQatItem}", Text = DxComponent.LocalizeDef(MsgCode.RibbonDirectQatItem, "Systémový prvek, nelze jej odebrat"), ImageName = "", Enabled = false });
+                items.Add(new DataMenuItem() { ItemId = $"CPM_{MsgCode.RibbonDirectQatItem}", Text = DxComponent.Localize(MsgCode.RibbonDirectQatItem), ImageName = "", Enabled = false });
             else if (!isQatAnyItem)
-                items.Add(new DataMenuItem() { ItemId = $"CPM_{MsgCode.RibbonAddToQat}", Text = DxComponent.LocalizeDef(MsgCode.RibbonAddToQat, "Přidat na panel nástrojů Rychlý přístup"), ImageName = "svgimages/icon%20builder/actions_add.svg", Tag = link, ClickAction = CustomizationPopupMenu_ExecAdd });
+                items.Add(new DataMenuItem() { ItemId = $"CPM_{MsgCode.RibbonAddToQat}", Text = DxComponent.Localize(MsgCode.RibbonAddToQat), ImageName = "svgimages/icon%20builder/actions_add.svg", Tag = link, ClickAction = CustomizationPopupMenu_ExecAdd });
             else
-                items.Add(new DataMenuItem() { ItemId = $"CPM_{MsgCode.RibbonRemoveFromQat}", Text = DxComponent.LocalizeDef(MsgCode.RibbonRemoveFromQat, "Odebrat z panelu nástrojů Rychlý přístup"), ImageName = "svgimages/icon%20builder/actions_remove.svg", Tag = link, ClickAction = CustomizationPopupMenu_ExecRemove });
+                items.Add(new DataMenuItem() { ItemId = $"CPM_{MsgCode.RibbonRemoveFromQat}", Text = DxComponent.Localize(MsgCode.RibbonRemoveFromQat), ImageName = "svgimages/icon%20builder/actions_remove.svg", Tag = link, ClickAction = CustomizationPopupMenu_ExecRemove });
 
             bool isAbove = (this.ToolbarLocation == RibbonQuickAccessToolbarLocation.Above || this.ToolbarLocation == RibbonQuickAccessToolbarLocation.Default);
             if (!isAbove)
-                items.Add(new DataMenuItem() { ItemId = $"CPM_{MsgCode.RibbonShowQatTop}", Text = DxComponent.LocalizeDef(MsgCode.RibbonShowQatTop, "Zobrazit panel nástrojů Rychlý přístup nad pásem karet"), ImageName = "svgimages/icon%20builder/actions_arrow2up.svg", ItemIsFirstInGroup = true, ClickAction = CustomizationPopupMenu_ExecMoveUp });
+                items.Add(new DataMenuItem() { ItemId = $"CPM_{MsgCode.RibbonShowQatTop}", Text = DxComponent.Localize(MsgCode.RibbonShowQatTop), ImageName = "svgimages/icon%20builder/actions_arrow2up.svg", ClickAction = CustomizationPopupMenu_ExecMoveUp });
             else
-                items.Add(new DataMenuItem() { ItemId = $"CPM_{MsgCode.RibbonShowQatDown}", Text = DxComponent.LocalizeDef(MsgCode.RibbonShowQatDown, "Zobrazit panel nástrojů Rychlý přístup pod pásem karet"), ImageName = "svgimages/icon%20builder/actions_arrow2down.svg", ItemIsFirstInGroup = true, ClickAction = CustomizationPopupMenu_ExecMoveDown });
+                items.Add(new DataMenuItem() { ItemId = $"CPM_{MsgCode.RibbonShowQatDown}", Text = DxComponent.Localize(MsgCode.RibbonShowQatDown), ImageName = "svgimages/icon%20builder/actions_arrow2down.svg", ClickAction = CustomizationPopupMenu_ExecMoveDown });
+
+            var mgrFormType = Type.GetType("Noris.Clients.Win.Components.AsolDX.DxRibbonManagerForm", false, false);
+            if (mgrFormType != null)
+                items.Add(new DataMenuItem() { ItemId = $"CPM_{MsgCode.RibbonShowManager}", Text = DxComponent.Localize(MsgCode.RibbonShowManager), ImageName = "svgimages/scheduling/viewsettings.svg", Enabled = isAnyQatContent, ClickAction = CustomizationPopupMenu_ExecShowManager});
+
 
             var popup = DxComponent.CreateDXPopupMenu(items);
             popup.ShowPopup(this, localPoint);
@@ -3688,6 +3695,12 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.ToolbarLocation = RibbonQuickAccessToolbarLocation.Above;
             this._RunQATItemKeysChanged();
         }
+        /// <summary>
+        /// Kontextové menu QAT: Ukaž managera
+        /// </summary>
+        /// <param name="menuItem"></param>
+        private void CustomizationPopupMenu_ExecShowManager(IMenuItem menuItem)
+        { }
         /// <summary>
         /// Uživatel zmáčkl malou šipku dolů v Toolbaru, kde jsou zobrazeny jednotlivé prvky QAT a on je může dát Visible/Invisible.
         /// Taky můžeme přeložit Caption v prvku "Show Quick Access Toolbar Above the Ribbon"...
@@ -3802,6 +3815,21 @@ namespace Noris.Clients.Win.Components.AsolDX
                     _QATUserItems.RemoveAll(q => q.Key == key);
                     _RunQATItemKeysChanged();
                 }
+            }
+        }
+        /// <summary>
+        /// Počet reálně zobrazených QAT prvků
+        /// </summary>
+        private int UserQatItemsCount
+        {
+            get
+            {
+                int count = 0;
+                if (_QATUserItems != null)
+                    count += _QATUserItems.Count(q => q.IsInQAT);
+                if (this.MergedChildDxRibbon != null)
+                    count += this.MergedChildDxRibbon.UserQatItemsCount;
+                return count;
             }
         }
         /// <summary>

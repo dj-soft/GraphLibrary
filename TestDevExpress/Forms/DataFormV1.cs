@@ -19,9 +19,10 @@ namespace TestDevExpress.Forms
         /// </summary>
         public DataFormV1()
         {
+            var moon10 = Noris.Clients.Win.Components.AsolDX.DxComponent.CreateImage("Images/Moon10.png");
             DxComponent.SplashShow("Testovací aplikace Helios Nephrite", "DJ soft & ASOL", 
                 "Copyright © 1995 - 2021 DJ soft" + Environment.NewLine + "All Rights reserved.", "Začínáme...",
-                this, Properties.Resources.Moon10,
+                this, moon10,
                 useFadeOut: false);
 
             this.InitializeForm();

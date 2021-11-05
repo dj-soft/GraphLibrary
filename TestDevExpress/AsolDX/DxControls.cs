@@ -4152,7 +4152,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             _ListBox.PaintList += _ListBox_PaintList;
             _ListBox.SelectedIndexChanged += _ListBox_SelectedIndexChanged;
 
-            _ResourceNames = DxComponent.GetResourceKeys();
+            _ResourceNames = DxComponent.GetResourceNames(withApplication: false, withDevExpress: true);
             _ResourceFilter = "";
             _StatusText = "";
 
