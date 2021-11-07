@@ -2047,6 +2047,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         public static long LogTimeCurrent { get { return Instance._LogTimeCurrent; } }
         /// <summary>
+        /// Vrátí dobu času, která uplynula do teď od času <paramref name="startTime"/>, v jednotkách dle <paramref name="logTokenTime"/>, default v mikrosekundách.
+        /// </summary>
+        /// <param name="startTime"></param>
+        /// <param name="logTokenTime"></param>
+        /// <returns></returns>
+        public static decimal LogGetTimeElapsed(long startTime, string logTokenTime = null) { return Instance._LogGetTimeElapsed(startTime, logTokenTime); }
+        /// <summary>
         /// Přidá titulek (mezera + daný text ohraničený znaky ===)
         /// </summary>
         /// <param name="title"></param>
@@ -2074,15 +2081,18 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Token, který se očekává v textu v metodě <see cref="LogAddLineTime(string, long?)"/>, za který se dosaví uplynulý čas v sekundách
         /// </summary>
-        public static string LogTokenTimeSec { get { return "{SEC}"; } }
+        public static string LogTokenTimeSec { get { return _LogTokenTimeSec; } }
+        private const string _LogTokenTimeSec = "{SEC}";
         /// <summary>
         /// Token, který se očekává v textu v metodě <see cref="LogAddLineTime(string, long?)"/>, za který se dosaví uplynulý čas v milisekundách
         /// </summary>
-        public static string LogTokenTimeMilisec { get { return "{MILISEC}"; } }
+        public static string LogTokenTimeMilisec { get { return _LogTokenTimeMilisec; } }
+        private const string _LogTokenTimeMilisec = "{MILISEC}";
         /// <summary>
         /// Token, který se očekává v textu v metodě <see cref="LogAddLineTime(string, long?)"/>, za který se dosaví uplynulý čas v mikrosekundách
         /// </summary>
-        public static string LogTokenTimeMicrosec { get { return "{MICROSEC}"; } }
+        public static string LogTokenTimeMicrosec { get { return _LogTokenTimeMicrosec; } }
+        private const string _LogTokenTimeMicrosec = "{MICROSEC}";
         /// <summary>
         /// Zaloguje výjimku
         /// </summary>
@@ -2176,6 +2186,27 @@ namespace Noris.Clients.Win.Components.AsolDX
             string margins = "".PadRight(15, (liner ?? '='));
             string line = $"{margins}  {title}  {margins}";
             _LogAddLine(line, true);
+        }
+        /// <summary>
+        /// Vrátí dobu času, která uplynula do teď od času <paramref name="startTime"/>, v jednotkách dle <paramref name="logTokenTime"/>, default v mikrosekundách.
+        /// </summary>
+        /// <param name="startTime"></param>
+        /// <param name="logTokenTime"></param>
+        /// <returns></returns>
+        private decimal _LogGetTimeElapsed(long startTime, string logTokenTime)
+        {
+            long nowTime = _LogWatch.ElapsedTicks;
+            decimal seconds = ((decimal)(nowTime - startTime)) / _LogFrequency;     // Počet sekund
+            string token = logTokenTime ?? LogTokenTimeMicrosec;
+            switch (token)
+            {
+                case _LogTokenTimeSec:
+                    return Math.Round(seconds, 3);
+                case _LogTokenTimeMilisec:
+                    return Math.Round((seconds * 1000m), 3);
+                default:
+                    return Math.Round((seconds * 1000000m), 3);
+            }
         }
         /// <summary>
         /// Přidá dodaný řádek do logu. Umožní do textu vložit uplynulý čas:

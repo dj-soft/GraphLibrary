@@ -1442,10 +1442,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Lze vyžádat otevření submenu, pokud to submenu je.
         /// </summary>
         /// <param name="iRibbonItem"></param>
-        public void RefreshItem(IRibbonItem iRibbonItem)
+        /// <param name="force"></param>
+        public void RefreshItem(IRibbonItem iRibbonItem, bool force = false)
         {
             if (iRibbonItem == null) return;
-            if (!NeedRefreshItem(iRibbonItem)) return;               // Zkratka
+            if (!force && !NeedRefreshItem(iRibbonItem)) return;               // Zkratka
 
             this.ParentOwner.RunInGui(() =>
             {

@@ -431,49 +431,126 @@ namespace TestDevExpress.Forms
 
         private DataRibbonPage CreateRibbonSvgImagesPage()
         {
-            DataRibbonPage page = new DataRibbonPage() { PageText = "SVG IKONY" };
-            DataRibbonGroup group = new DataRibbonGroup() { GroupText = "Kombinace více ikon do jedné" };
-            page.Groups.Add(group);
+            _SvgCombineData = new object[3];
 
-            group.Items.Add(new DataRibbonItem() { Text = "Základ", ItemType = RibbonItemType.Menu, SubItems = CreateRibbonSvgMenu1(), RibbonStyle = RibbonItemStyles.Large });
-            group.Items.Add(new DataRibbonItem() { Text = "Kombinace", ItemType = RibbonItemType.Menu, SubItems = CreateRibbonSvgMenu2(), RibbonStyle = RibbonItemStyles.Large });
-            group.Items.Add(new DataRibbonItem() { Text = "Přídavek", ItemType = RibbonItemType.Menu, SubItems = CreateRibbonSvgMenu3(), RibbonStyle = RibbonItemStyles.Large });
-            group.Items.Add(new DataRibbonItem() { Text = "Výsledek", ItemType = RibbonItemType.Button, RibbonStyle = RibbonItemStyles.Large, ItemIsFirstInGroup = true });
+            DataRibbonPage page = new DataRibbonPage() { PageText = "SVG IKONY" };
+            _SvgCombineRibbonGroup = new DataRibbonGroup() { GroupText = "Kombinace více ikon do jedné" };
+            page.Groups.Add(_SvgCombineRibbonGroup);
+
+            _SvgCombineRibbonGroup.Items.Add(new DataRibbonItem() { Text = "Základ", ItemType = RibbonItemType.Menu, SubItems = CreateRibbonSvgMenu1(), RibbonStyle = RibbonItemStyles.Large });
+            _SvgCombineRibbonGroup.Items.Add(new DataRibbonItem() { Text = "Kombinace", ItemType = RibbonItemType.Menu, SubItems = CreateRibbonSvgMenu2(), RibbonStyle = RibbonItemStyles.Large });
+            _SvgCombineRibbonGroup.Items.Add(new DataRibbonItem() { Text = "Přídavek", ItemType = RibbonItemType.Menu, SubItems = CreateRibbonSvgMenu3(), RibbonStyle = RibbonItemStyles.Large });
+            _SvgCombineRibbonGroup.Items.Add(new DataRibbonItem() { Text = "Výsledek", ItemType = RibbonItemType.Button, RibbonStyle = RibbonItemStyles.Large, ItemIsFirstInGroup = true });
+
+            ClickRibbonSvgMenuAny(0, 0);
+            ClickRibbonSvgMenuAny(1, 8);
+            ClickRibbonSvgMenuAny(2, 0);
 
             return page;
         }
+        private void ClickRibbonSvgMenu0(IMenuItem item) { ClickRibbonSvgMenuAny(0, item as DataRibbonItem); }
+        private void ClickRibbonSvgMenu1(IMenuItem item) { ClickRibbonSvgMenuAny(1, item as DataRibbonItem); }
+        private void ClickRibbonSvgMenu2(IMenuItem item) { ClickRibbonSvgMenuAny(2, item as DataRibbonItem); }
+        private void ClickRibbonSvgMenuAny(int mainItemIndex, int subItemIndex)
+        {
+            DataRibbonItem mainItem = _SvgCombineRibbonGroup.Items[mainItemIndex] as DataRibbonItem;
+            if (mainItem == null || mainItem.SubItems == null || subItemIndex < 0 || subItemIndex >= mainItem.SubItems.Count) return;
+            DataRibbonItem subItem = mainItem.SubItems[subItemIndex] as DataRibbonItem;
+            ClickRibbonSvgMenuAny(mainItemIndex, subItem);
+        }
+        private void ClickRibbonSvgMenuAny(int mainItemIndex, DataRibbonItem subItem)
+        {
+            DataRibbonItem mainItem = _SvgCombineRibbonGroup.Items[mainItemIndex] as DataRibbonItem;
+            mainItem.ImageName = subItem.ImageName;
+            mainItem.ToolTipText = subItem.Text;
+            if (mainItem.RibbonItem != null)
+                this.DxRibbon.RefreshItem(mainItem, true);
+            _SvgCombineData[mainItemIndex] = subItem.Tag ?? subItem.ImageName;
+            _SvgCombineRunAction();
+        }
+        private DataRibbonGroup _SvgCombineRibbonGroup;
+        private object[] _SvgCombineData;
         private List<IRibbonItem> CreateRibbonSvgMenu1()
         {
             List<IRibbonItem> subItems = new List<IRibbonItem>();
-
-
+            subItems.Add(new DataRibbonItem() { ImageName = "devav/actions/printexcludeevaluations.svg", Text = "printexcludeevaluations", ClickAction = ClickRibbonSvgMenu0 });
+            subItems.Add(new DataRibbonItem() { ImageName = "devav/actions/printincludeevaluations.svg", Text = "printincludeevaluations", ClickAction = ClickRibbonSvgMenu0 });
+            subItems.Add(new DataRibbonItem() { ImageName = "devav/actions/save.svg", Text = "save", ClickAction = ClickRibbonSvgMenu0 });
+            subItems.Add(new DataRibbonItem() { ImageName = "devav/actions/select%20all.svg", Text = "select all", ClickAction = ClickRibbonSvgMenu0 });
+            subItems.Add(new DataRibbonItem() { ImageName = "devav/actions/select%20all2.svg", Text = "select all2", ClickAction = ClickRibbonSvgMenu0 });
+            subItems.Add(new DataRibbonItem() { ImageName = "devav/contacts/mail.svg", Text = "mail", ClickAction = ClickRibbonSvgMenu0 });
+            subItems.Add(new DataRibbonItem() { ImageName = "devav/print/tasklist.svg", Text = "tasklist", ClickAction = ClickRibbonSvgMenu0 });
+            subItems.Add(new DataRibbonItem() { ImageName = "devav/ui/window/window.svg", Text = "window", ClickAction = ClickRibbonSvgMenu0 });
+            subItems.Add(new DataRibbonItem() { ImageName = "svgimages/diagramicons/orientation/album.svg", Text = "album", ClickAction = ClickRibbonSvgMenu0 });
+            subItems.Add(new DataRibbonItem() { ImageName = "svgimages/diagramicons/orientation/portrait.svg", Text = "portrait", ClickAction = ClickRibbonSvgMenu0 });
+            subItems.Add(new DataRibbonItem() { ImageName = "svgimages/richedit/columns.svg", Text = "columns", ClickAction = ClickRibbonSvgMenu0 });
+            subItems.Add(new DataRibbonItem() { ImageName = "svgimages/richedit/columnsone.svg", Text = "columnsone", ClickAction = ClickRibbonSvgMenu0 });
+            subItems.Add(new DataRibbonItem() { ImageName = "svgimages/richedit/columnstwo.svg", Text = "columnstwo", ClickAction = ClickRibbonSvgMenu0 });
+            subItems.Add(new DataRibbonItem() { ImageName = "svgimages/richedit/columnsthree.svg", Text = "columnsthree", ClickAction = ClickRibbonSvgMenu0 });
             return subItems;
         }
         private List<IRibbonItem> CreateRibbonSvgMenu2()
         {
             List<IRibbonItem> subItems = new List<IRibbonItem>();
-
-            subItems.Add(new DataRibbonItem() { ImageName = "svgimages/dashboards/alignmenttopleft.svg", Text = "Vlevo nahoře" });
-            string[] resources = new string[]
-            {
-                "svgimages/dashboards/alignmentbottomcenter.svg",
-                "svgimages/dashboards/alignmentbottomleft.svg",
-                "svgimages/dashboards/alignmentbottomright.svg",
-                "svgimages/dashboards/alignmentcentercenter.svg",
-                "svgimages/dashboards/alignmentcenterleft.svg",
-                "svgimages/dashboards/alignmentcenterright.svg",
-                "svgimages/dashboards/alignmenttopcenter.svg",
-                "svgimages/dashboards/alignmenttopright.svg"
-            };
-
+            subItems.Add(new DataRibbonItem() { ImageName = "svgimages/dashboards/alignmenttopleft.svg", Text = "Nahoře vlevo", Tag = ContentAlignment.TopLeft, ClickAction = ClickRibbonSvgMenu1 });
+            subItems.Add(new DataRibbonItem() { ImageName = "svgimages/dashboards/alignmenttopcenter.svg", Text = "Nahoře uprostřed", Tag = ContentAlignment.TopCenter, ClickAction = ClickRibbonSvgMenu1 });
+            subItems.Add(new DataRibbonItem() { ImageName = "svgimages/dashboards/alignmenttopright.svg", Text = "Nahoře vpravo", Tag = ContentAlignment.TopRight, ClickAction = ClickRibbonSvgMenu1 });
+            subItems.Add(new DataRibbonItem() { ImageName = "svgimages/dashboards/alignmentcenterleft.svg", Text = "Uprostřed vlevo", Tag = ContentAlignment.MiddleLeft, ClickAction = ClickRibbonSvgMenu1 });
+            subItems.Add(new DataRibbonItem() { ImageName = "svgimages/dashboards/alignmentcentercenter.svg", Text = "Uprostřed", Tag = ContentAlignment.MiddleCenter, ClickAction = ClickRibbonSvgMenu1 });
+            subItems.Add(new DataRibbonItem() { ImageName = "svgimages/dashboards/alignmentcenterright.svg", Text = "Uprostřed vpravo", Tag = ContentAlignment.MiddleRight, ClickAction = ClickRibbonSvgMenu1 });
+            subItems.Add(new DataRibbonItem() { ImageName = "svgimages/dashboards/alignmentbottomleft.svg", Text = "Dole vlevo", Tag = ContentAlignment.BottomLeft, ClickAction = ClickRibbonSvgMenu1 });
+            subItems.Add(new DataRibbonItem() { ImageName = "svgimages/dashboards/alignmentbottomcenter.svg", Text = "Dole uprostřed", Tag = ContentAlignment.BottomCenter, ClickAction = ClickRibbonSvgMenu1 });
+            subItems.Add(new DataRibbonItem() { ImageName = "svgimages/dashboards/alignmentbottomright.svg", Text = "Dole vpravo", Tag = ContentAlignment.BottomRight, ClickAction = ClickRibbonSvgMenu1 });
             return subItems;
         }
         private List<IRibbonItem> CreateRibbonSvgMenu3()
         {
             List<IRibbonItem> subItems = new List<IRibbonItem>();
-
-
+            subItems.Add(new DataRibbonItem() { ImageName = "devav/actions/about.svg", Text = "about", ClickAction = ClickRibbonSvgMenu2 });
+            subItems.Add(new DataRibbonItem() { ImageName = "devav/actions/add.svg", Text = "add", ClickAction = ClickRibbonSvgMenu2 });
+            subItems.Add(new DataRibbonItem() { ImageName = "devav/actions/apply.svg", Text = "apply", ClickAction = ClickRibbonSvgMenu2 });
+            subItems.Add(new DataRibbonItem() { ImageName = "devav/actions/close.svg", Text = "close", ClickAction = ClickRibbonSvgMenu2 });
+            subItems.Add(new DataRibbonItem() { ImageName = "devav/actions/refresh.svg", Text = "refresh", ClickAction = ClickRibbonSvgMenu2 });
+            subItems.Add(new DataRibbonItem() { ImageName = "devav/actions/remove.svg", Text = "remove", ClickAction = ClickRibbonSvgMenu2 });
+            subItems.Add(new DataRibbonItem() { ImageName = "devav/actions/reset2.svg", Text = "reset2", ClickAction = ClickRibbonSvgMenu2 });
+            subItems.Add(new DataRibbonItem() { ImageName = "devav/actions/search.svg", Text = "search", ClickAction = ClickRibbonSvgMenu2 });
+            subItems.Add(new DataRibbonItem() { ImageName = "devav/other/a.svg", Text = "a", ClickAction = ClickRibbonSvgMenu2 });
+            subItems.Add(new DataRibbonItem() { ImageName = "devav/other/b.svg", Text = "b", ClickAction = ClickRibbonSvgMenu2 });
+            subItems.Add(new DataRibbonItem() { ImageName = "devav/other/brand.svg", Text = "brand", ClickAction = ClickRibbonSvgMenu2 });
             return subItems;
+        }
+        private void _SvgCombineRunAction()
+        {
+            string svgImageName0 = _SvgCombineData[0] as string;
+            ContentAlignment contentAlignment = (_SvgCombineData[1] is ContentAlignment ? (ContentAlignment)_SvgCombineData[1] : ContentAlignment.MiddleCenter);
+            string svgImageName1 = _SvgCombineData[2] as string;
+            if (String.IsNullOrEmpty(svgImageName0) || String.IsNullOrEmpty(svgImageName1)) return;
+
+            var startTime = DxComponent.LogTimeCurrent;
+
+            // Vstupy:
+            DevExpress.Utils.Svg.SvgImage svgImage0 = DxComponent.GetSvgImage(svgImageName0);
+            DevExpress.Utils.Svg.SvgImage svgImage1 = DxComponent.GetSvgImage(svgImageName1);
+            if (svgImage0 == null || svgImage1 == null) return;
+
+            // Kombinace:
+            DevExpress.Utils.Svg.SvgGroup svgGroup = new DevExpress.Utils.Svg.SvgGroup();
+            svgGroup.Transformations.Add(new DevExpress.Utils.Svg.SvgTranslate(new double[] { 16d, 16d }));
+            svgGroup.Transformations.Add(new DevExpress.Utils.Svg.SvgScale(new double[] { 0.5, 0.5 }));
+            foreach (var svgItem in svgImage1.Root.Elements)
+                svgGroup.Elements.Add(svgItem.DeepCopy());
+
+            DevExpress.Utils.Svg.SvgImage svgImage3 = svgImage0.Clone();
+            svgImage3.Root.Elements.Add(svgGroup);
+
+            decimal microsecs = DxComponent.LogGetTimeElapsed(startTime);
+
+            // Výstup:
+            DataRibbonItem resultItem = _SvgCombineRibbonGroup.Items[3] as DataRibbonItem;
+            resultItem.ImageName = svgImageName1;
+            var barItem = resultItem.RibbonItem?.Target;
+            if (barItem != null)
+                barItem.ImageOptions.SvgImage = svgImage3;
         }
         #endregion
         #region Hlavní záložkovník + přepínání testovacích stránek
