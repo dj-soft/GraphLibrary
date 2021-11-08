@@ -2846,8 +2846,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             return index;
 
 
-            SvgImage svgImage1 = DxComponent.GetSvgImage("");
-            SvgImage svgImage2 = DxComponent.GetSvgImage("");
+            SvgImage svgImage1 = DxComponent.CreateVectorImage("");
+            SvgImage svgImage2 = DxComponent.CreateVectorImage("");
 
             SvgGroup svgGroup = new SvgGroup();
             svgGroup.Transformations.Add(new SvgTranslate(new double[] { 16d, 16d }));

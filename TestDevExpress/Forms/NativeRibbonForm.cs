@@ -164,17 +164,17 @@ namespace TestDevExpress.Forms
                 case 0:
                     var item0 = this.Ribbon.Items.CreateButton(text);
                     item0.RibbonStyle = DevExpress.XtraBars.Ribbon.RibbonItemStyles.Large;
-                    item0.ImageOptions.SvgImage = DxComponent.GetSvgImage(svgImage);
+                    item0.ImageOptions.SvgImage = DxComponent.CreateVectorImage(svgImage);
                     return item0;
                 case 1:
                     var item1 = this.Ribbon.Items.CreateButton(text);
                     item1.RibbonStyle = DevExpress.XtraBars.Ribbon.RibbonItemStyles.SmallWithText;
-                    item1.ImageOptions.SvgImage = DxComponent.GetSvgImage(svgImage);
+                    item1.ImageOptions.SvgImage = DxComponent.CreateVectorImage(svgImage);
                     return item1;
                 case 2:
                     var item2 = this.Ribbon.Items.CreateCheckItem(text, false);
                     item2.RibbonStyle = DevExpress.XtraBars.Ribbon.RibbonItemStyles.SmallWithText;
-                    item2.ImageOptions.SvgImage = DxComponent.GetSvgImage(svgImage);
+                    item2.ImageOptions.SvgImage = DxComponent.CreateVectorImage(svgImage);
                     return item2;
                 case 3:
                     var subItem30 = this.Ribbon.Items.CreateButton("Položka 1");
@@ -182,7 +182,7 @@ namespace TestDevExpress.Forms
                     var subItem32 = this.Ribbon.Items.CreateButton("Položka 3");
                     var item3 = this.Ribbon.Items.CreateMenu(text, subItem30, subItem31, subItem32);
                     item3.RibbonStyle = DevExpress.XtraBars.Ribbon.RibbonItemStyles.Large;
-                    item3.ImageOptions.SvgImage = DxComponent.GetSvgImage(svgImage);
+                    item3.ImageOptions.SvgImage = DxComponent.CreateVectorImage(svgImage);
                     return item3;
                 case 4:
                     var subItem40 = this.Ribbon.Items.CreateButton("položka 1");
@@ -190,13 +190,13 @@ namespace TestDevExpress.Forms
                     var subItem42 = this.Ribbon.Items.CreateButton("položka 3");
                     var item4 = this.Ribbon.Items.CreateMenu(text, subItem40, subItem41, subItem42);
                     item4.RibbonStyle = DevExpress.XtraBars.Ribbon.RibbonItemStyles.SmallWithText;
-                    item4.ImageOptions.SvgImage = DxComponent.GetSvgImage(svgImage);
+                    item4.ImageOptions.SvgImage = DxComponent.CreateVectorImage(svgImage);
                     return item4;
             }
 
             var itemX = this.Ribbon.Items.CreateButton(text);
             itemX.RibbonStyle = DevExpress.XtraBars.Ribbon.RibbonItemStyles.Large;
-            itemX.ImageOptions.SvgImage = DxComponent.GetSvgImage(svgImage);
+            itemX.ImageOptions.SvgImage = DxComponent.CreateVectorImage(svgImage);
             return itemX;
         }
         #endregion
@@ -263,7 +263,7 @@ namespace TestDevExpress.Forms
                     string svgImage = Random.GetItem(SvgImages);
                     BarItem item = this.Ribbon.Items.CreateButton(text);
                     item.RibbonStyle = DevExpress.XtraBars.Ribbon.RibbonItemStyles.Large;
-                    item.ImageOptions.SvgImage = DxComponent.GetSvgImage(svgImage);
+                    item.ImageOptions.SvgImage = DxComponent.CreateVectorImage(svgImage);
                     dxGroup.ItemLinks.Add(item);
                 }
             }

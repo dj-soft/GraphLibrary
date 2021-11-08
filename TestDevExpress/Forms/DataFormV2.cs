@@ -20,7 +20,7 @@ namespace TestDevExpress.Forms
         /// </summary>
         public DataFormV2()
         {
-            var moon10 = DxComponent.CreateImage("Images/Moon10.png");
+            var moon10 = DxComponent.CreateBitmapImage("Images/Moon10.png");
             DxComponent.SplashShow("Testovací aplikace Helios Nephrite", "DJ soft & ASOL",
                 "Copyright © 1995 - 2021 DJ soft" + Environment.NewLine + "All Rights reserved.", "Začínáme...",
                 this, moon10,

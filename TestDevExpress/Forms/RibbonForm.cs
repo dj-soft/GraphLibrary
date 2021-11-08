@@ -17,13 +17,13 @@ namespace TestDevExpress.Forms
         #region Konstruktor a proměnné
         public RibbonForm()
         {
-            var moon10 = DxComponent.CreateImage("Images/Moon10.png");
+            var moon10 = DxComponent.CreateBitmapImage("Images/Moon10.png");
             DxComponent.SplashShow("Testovací okno Ribbonů Nephrite", "DJ soft & ASOL",
                 "Copyright © 1995 - 2021 DJ soft" + Environment.NewLine + "All Rights reserved.", "Začínáme...",
                 this, moon10, opacityColor: System.Drawing.Color.FromArgb(80, 80, 180), opacity: 120,
                 useFadeOut: false);
 
-            DxQuickAccessToolbar.QATItemKeysChanged += DxQuickAccessToolbar_QATItemKeysChanged;
+            DxQuickAccessToolbar.ConfigValueChanged += DxQuickAccessToolbar_QATItemKeysChanged;
 
             this.InitializeForm();
             _SetUseLazyLoad(_UseLazyLoad);
@@ -66,8 +66,8 @@ namespace TestDevExpress.Forms
             _TestPanel1 = new RibbonTestPanel();
             _TestPanel1.UseLazyLoad = this.UseLazyLoad;
             _TestPanel1.Ribbon.DebugName = "Slave 1";
-            _TestPanel1.Ribbon.ImageRightFull = DxComponent.CreateImage("Images/ImagesBig/Homer 01b.png");
-            _TestPanel1.Ribbon.ImageRightMini = DxComponent.CreateImage("Images/ImagesBig/Homer 01c.png");
+            _TestPanel1.Ribbon.ImageRightFull = DxComponent.CreateBitmapImage("Images/ImagesBig/Homer 01b.png");
+            _TestPanel1.Ribbon.ImageRightMini = DxComponent.CreateBitmapImage("Images/ImagesBig/Homer 01c.png");
             _TestPanel1.ParentRibbon = DxRibbon;
             _TestPanel1.PageMergeOrder = 100;
             _TestPanel1.CategoryName = "SKUPINA 1";
@@ -78,8 +78,8 @@ namespace TestDevExpress.Forms
             _TestPanel2a = new RibbonTestPanel();
             _TestPanel2a.UseLazyLoad = this.UseLazyLoad;
             _TestPanel2a.Ribbon.DebugName = "Slave 2A";
-            _TestPanel2a.Ribbon.ImageRightFull = DxComponent.CreateImage("Images/ImagesBig/Lisa 01b.png");
-            _TestPanel2a.Ribbon.ImageRightMini = DxComponent.CreateImage("Images/ImagesBig/Lisa 01c.png");
+            _TestPanel2a.Ribbon.ImageRightFull = DxComponent.CreateBitmapImage("Images/ImagesBig/Lisa 01b.png");
+            _TestPanel2a.Ribbon.ImageRightMini = DxComponent.CreateBitmapImage("Images/ImagesBig/Lisa 01c.png");
             _TestPanel2a.ParentRibbon = _TestPanel1.Ribbon;
             _TestPanel2a.PageMergeOrder = 200;
             _TestPanel2a.CategoryName = "SKUPINA 2A";
@@ -90,8 +90,8 @@ namespace TestDevExpress.Forms
             _TestPanel2b = new RibbonTestPanel();
             _TestPanel2b.UseLazyLoad = this.UseLazyLoad;
             _TestPanel2b.Ribbon.DebugName = "Slave 2B";
-            _TestPanel2b.Ribbon.ImageRightFull = DxComponent.CreateImage("Images/ImagesBig/Marge 01b.png");
-            _TestPanel2b.Ribbon.ImageRightMini = DxComponent.CreateImage("Images/ImagesBig/Marge 01c.png");
+            _TestPanel2b.Ribbon.ImageRightFull = DxComponent.CreateBitmapImage("Images/ImagesBig/Marge 01b.png");
+            _TestPanel2b.Ribbon.ImageRightMini = DxComponent.CreateBitmapImage("Images/ImagesBig/Marge 01c.png");
             _TestPanel2b.ParentRibbon = _TestPanel1.Ribbon;
             _TestPanel2b.PageMergeOrder = 300;
             _TestPanel2b.CategoryName = "SKUPINA 2B";
@@ -111,7 +111,7 @@ namespace TestDevExpress.Forms
         /// <param name="e"></param>
         private void DxQuickAccessToolbar_QATItemKeysChanged(object sender, EventArgs e)
         {
-            string line = "Nový obsah QAT: " + DxQuickAccessToolbar.QATItemKeys;
+            string line = "Nový obsah QAT: " + DxQuickAccessToolbar.ConfigValue;
             DxComponent.LogAddLine(line);
         }
 
@@ -145,8 +145,8 @@ namespace TestDevExpress.Forms
             this.DxRibbon.ApplicationButtonText = " SYSTEM ";
             this.DxRibbon.LogActive = true;
 
-            this.DxRibbon.ImageRightFull = DxComponent.CreateImage("Images/ImagesBig/Bart 01bt.png");
-            this.DxRibbon.ImageRightMini = DxComponent.CreateImage("Images/ImagesBig/Bart 01c.png");
+            this.DxRibbon.ImageRightFull = DxComponent.CreateBitmapImage("Images/ImagesBig/Bart 01bt.png");
+            this.DxRibbon.ImageRightMini = DxComponent.CreateBitmapImage("Images/ImagesBig/Bart 01c.png");
 
             string imgLogClear = "svgimages/snap/cleartablestyle.svg";
             string imgInfo = "svgimages/xaf/action_aboutinfo.svg";
@@ -442,7 +442,7 @@ namespace TestDevExpress.Forms
                 CategoryName, CategoryName, CategoryColor, 
                 pageIndex);
             DxComponent.LogAddLine("Ribon: " + this._Ribbon.DebugName +"; QAT: " + qatItems);
-            DxQuickAccessToolbar.QATItemKeys = MergeKeys(DxQuickAccessToolbar.QATItemKeys, qatItems);
+            AddNewQatItems(qatItems);
             DxRibbonSample.SetPageMergeOrder(pages, this.PageMergeOrder);
             _Ribbon.AddPages(pages, clearCurrentContent);
         }
@@ -459,21 +459,20 @@ namespace TestDevExpress.Forms
             _Ribbon.AddPages(pages, false);
         }
         /// <summary>
-        /// Sloučí klíče ze dvou stringů, vyloučí duplicity. Oddělovač klíčů na vstupu i na výstupu je TAB.
+        /// Metoda najde v dodaném stringu klíče těch prvků, které dosud nejsou v <see cref="DxQuickAccessToolbar.QATItems"/>, a jednou dávkou je do něj přidá.
         /// </summary>
-        /// <param name="keys1"></param>
-        /// <param name="keys2"></param>
+        /// <param name="newQatItems"></param>
         /// <returns></returns>
-        private string MergeKeys(string keys1, string keys2)
+        private void AddNewQatItems(string newQatItems)
         {
-            var data1 = DxQuickAccessToolbar.ConvertFromString(keys1);
-            var data2 = DxQuickAccessToolbar.ConvertFromString(keys2);
+            var location = DxQuickAccessToolbar.QATLocation;
+            List<string> currItems = DxQuickAccessToolbar.QATItems.ToList();
+            int currCount = currItems.Count;
 
-            List<string> keys = new List<string>();
-            if (data1?.ItemsId != null) keys.AddRange(data1.ItemsId);
-            if (data2?.ItemsId != null) keys.AddRange(data2.ItemsId);
-
-            return DxQuickAccessToolbar.ConvertToString(DevExpress.XtraBars.Ribbon.RibbonQuickAccessToolbarLocation.Below, keys);
+            var newItems = newQatItems.Split('\t');
+            currItems.AddRange(newItems.Where(i => !DxQuickAccessToolbar.ContainsQATItem(i)));     // Jen ty, které tam dosud nejsou
+            if (currCount != currItems.Count)
+                DxQuickAccessToolbar.QATItems = currItems.ToArray();
         }
         /// <summary>
         /// Do dané stránky a dané grupy pošle nový obsah.
@@ -762,13 +761,13 @@ namespace TestDevExpress.Forms
         }
         private void _Ribbon_QATItemKeysChanged(object sender, EventArgs e)
         {
-            string qatItemKeys = _Ribbon.QATUserItemKeys;
+            string qatConfigValue = DxQuickAccessToolbar.ConfigValue;
 
             Noris.Clients.Win.Components.DialogArgs dialogArgs = new Noris.Clients.Win.Components.DialogArgs();
             dialogArgs.Title = "Ribbon Quick Access Toolbar change";
             dialogArgs.MessageTextContainsHtml = true;
 
-            string messageText = $"Uživatel změnil obsah lišty <b>Ribbon Quick Access</b>:\r\nRibbon: <b>{this.Ribbon.DebugName}</b>;\r\nKeys: <b>{qatItemKeys}</b>";
+            string messageText = $"Uživatel změnil obsah lišty <b>Ribbon Quick Access</b>:\r\nRibbon: <b>{this.Ribbon.DebugName}</b>;\r\nKeys: <b>{qatConfigValue}</b>";
             dialogArgs.MessageText = messageText.Trim();
 
             dialogArgs.PrepareButtons(System.Windows.Forms.MessageBoxButtons.OK);

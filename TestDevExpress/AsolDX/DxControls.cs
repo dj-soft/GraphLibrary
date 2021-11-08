@@ -40,7 +40,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public DxStdForm()
         {
-            this.IconOptions.SvgImage = DxComponent.GetSvgImage(DxComponent.ImageNameFormIcon);
+            this.IconOptions.SvgImage = DxComponent.CreateVectorImage(DxComponent.ImageNameFormIcon);
             DxComponent.RegisterListener(this);
         }
         /// <summary>
@@ -112,7 +112,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public DxRibbonForm()
         {
-            this.IconOptions.SvgImage = DxComponent.GetSvgImage(DxComponent.ImageNameFormIcon);
+            this.IconOptions.SvgImage = DxComponent.CreateVectorImage(DxComponent.ImageNameFormIcon);
             this.InitDxRibbonForm();
             DxComponent.RegisterListener(this);
         }

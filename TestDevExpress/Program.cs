@@ -22,7 +22,7 @@ namespace TestDevExpress
                 Noris.Clients.Win.Components.AsolDX.DxComponent.LogActive = true;         // I při spuštění v režimu Run, to kvůli TimeLogům
                 Noris.Clients.Win.Components.AsolDX.DxComponent.UhdPaintEnabled = true;
  
-                var moon10 = Noris.Clients.Win.Components.AsolDX.DxComponent.CreateImage("Images/Moon10.png");
+                var moon10 = Noris.Clients.Win.Components.AsolDX.DxComponent.CreateBitmapImage("Images/Moon10.png");
                 Noris.Clients.Win.Components.AsolDX.DxComponent.ApplicationStart(typeof(TestDevExpress.Forms.MainForm), moon10);
 
                 // Application.Run(new TestDevExpress.Forms.GraphForm());

@@ -1335,7 +1335,7 @@ namespace TestDevExpress
             {
                 string imageName = headerItem.ImageName;
                 if (!String.IsNullOrEmpty(imageName))
-                    image = DxComponent.GetImage(imageName, ResourceImageSizeType.Medium);
+                    image = DxComponent.GetBitmapImage(imageName, ResourceImageSizeType.Medium);
             }
             navPage.ImageOptions.Image = image;
         }
@@ -1808,7 +1808,7 @@ namespace TestDevExpress
             {
                 string imageName = headerItem.ImageName;
                 if (!String.IsNullOrEmpty(imageName))
-                    image = DxComponent.GetImage(imageName, ResourceImageSizeType.Medium);
+                    image = DxComponent.GetBitmapImage(imageName, ResourceImageSizeType.Medium);
             }
             navPage.ImageOptions.Image = image;
         }

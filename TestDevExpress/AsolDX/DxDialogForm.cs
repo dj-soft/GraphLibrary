@@ -677,7 +677,7 @@ namespace Noris.Clients.Win.Components
 
             Image image = null;
             if (args.Icon != null) image = args.Icon;
-            else if (args.IconFile != null) image = DxComponent.CreateImage(args.IconFile);
+            else if (args.IconFile != null) image = DxComponent.CreateBitmapImage(args.IconFile);
             if (image == null)
             {
                 if (args.StandardIcon.HasValue) image = GetStandardIcon(args.StandardIcon.Value)?.ToBitmap();
@@ -827,7 +827,7 @@ namespace Noris.Clients.Win.Components
                 // Obrázek u tlačítka:
                 Image image = null;
                 if (buttonInfo.Image != null) image = buttonInfo.Image;
-                else if (buttonInfo.ImageFile != null) image = DxComponent.CreateImage(buttonInfo.ImageFile, ResourceImageSizeType.Medium);
+                else if (buttonInfo.ImageFile != null) image = DxComponent.CreateBitmapImage(buttonInfo.ImageFile, ResourceImageSizeType.Medium);
                 if (image != null)
                 {
                     button.ImageOptions.Image = image;
