@@ -78,7 +78,7 @@ namespace TestDevExpress.Forms
         protected override void OnBeforeFirstShown()
         {
             base.OnBeforeFirstShown();
-            ApplyRibbonSvgImagesResult();
+            ApplyRibbonSvgImagesResult(false);
         }
         protected override void OnStyleChanged()
         {
@@ -447,31 +447,31 @@ namespace TestDevExpress.Forms
             _SvgCombineRibbonGroup.Items.Add(new DataRibbonItem() { Text = "Přídavek", ItemType = RibbonItemType.Menu, SubItems = CreateRibbonSvgMenu3(), RibbonStyle = RibbonItemStyles.Large });
             _SvgCombineRibbonGroup.Items.Add(new DataRibbonItem() { Text = "Výsledek", ItemType = RibbonItemType.Button, RibbonStyle = RibbonItemStyles.Large, ItemIsFirstInGroup = true });
 
-            ClickRibbonSvgMenuAny(0, 0);
-            ClickRibbonSvgMenuAny(1, 8);
-            ClickRibbonSvgMenuAny(2, 3);
-            ClickRibbonSvgMenuAny(3, 0);
+            ClickRibbonSvgMenuAny(0, 0, false);
+            ClickRibbonSvgMenuAny(1, 8, false);
+            ClickRibbonSvgMenuAny(2, 3, false);
+            ClickRibbonSvgMenuAny(3, 0, false);
 
             this.DxRibbon.UseLazyContentCreate = false;           // Potřebuji, aby v době FirstShown existovaly všechny prvky Ribbonu (i na druhé Page), protože do Result buttonu chci vyrenderovat kombinovanou ikonu v metodě ApplyRibbonSvgImagesResult()
 
             return page;
         }
-        private void ApplyRibbonSvgImagesResult()
+        private void ApplyRibbonSvgImagesResult(bool showStatus)
         {
-            _SvgCombineRunAction();
+            _SvgCombineRunAction(showStatus);
         }
-        private void ClickRibbonSvgMenu0(IMenuItem item) { ClickRibbonSvgMenuAny(0, item as DataRibbonItem); }
-        private void ClickRibbonSvgMenu1(IMenuItem item) { ClickRibbonSvgMenuAny(1, item as DataRibbonItem); }
-        private void ClickRibbonSvgMenu2(IMenuItem item) { ClickRibbonSvgMenuAny(2, item as DataRibbonItem); }
-        private void ClickRibbonSvgMenu3(IMenuItem item) { ClickRibbonSvgMenuAny(3, item as DataRibbonItem); }
-        private void ClickRibbonSvgMenuAny(int mainItemIndex, int subItemIndex)
+        private void ClickRibbonSvgMenu0(IMenuItem item) { ClickRibbonSvgMenuAny(0, item as DataRibbonItem, true); }
+        private void ClickRibbonSvgMenu1(IMenuItem item) { ClickRibbonSvgMenuAny(1, item as DataRibbonItem, true); }
+        private void ClickRibbonSvgMenu2(IMenuItem item) { ClickRibbonSvgMenuAny(2, item as DataRibbonItem, true); }
+        private void ClickRibbonSvgMenu3(IMenuItem item) { ClickRibbonSvgMenuAny(3, item as DataRibbonItem, true); }
+        private void ClickRibbonSvgMenuAny(int mainItemIndex, int subItemIndex, bool showStatus)
         {
             DataRibbonItem mainItem = _SvgCombineRibbonGroup.Items[mainItemIndex] as DataRibbonItem;
             if (mainItem == null || mainItem.SubItems == null || subItemIndex < 0 || subItemIndex >= mainItem.SubItems.Count) return;
             DataRibbonItem subItem = mainItem.SubItems[subItemIndex] as DataRibbonItem;
-            ClickRibbonSvgMenuAny(mainItemIndex, subItem);
+            ClickRibbonSvgMenuAny(mainItemIndex, subItem, showStatus);
         }
-        private void ClickRibbonSvgMenuAny(int mainItemIndex, DataRibbonItem subItem)
+        private void ClickRibbonSvgMenuAny(int mainItemIndex, DataRibbonItem subItem, bool showStatus)
         {
             _SvgCombineData[mainItemIndex] = subItem.Tag ?? subItem.ImageName;
 
@@ -484,7 +484,7 @@ namespace TestDevExpress.Forms
             if (mainItem.RibbonItem != null)
                 this.DxRibbon.RefreshItem(mainItem, true);
 
-            _SvgCombineRunAction();
+            _SvgCombineRunAction(showStatus);
         }
         private DataRibbonGroup _SvgCombineRibbonGroup;
         /// <summary>
@@ -572,9 +572,28 @@ namespace TestDevExpress.Forms
             subItems.Add(new DataRibbonItem() { ImageName = "devav/other/a.svg", Text = "a", ClickAction = ClickRibbonSvgMenu3 });
             subItems.Add(new DataRibbonItem() { ImageName = "devav/other/b.svg", Text = "b", ClickAction = ClickRibbonSvgMenu3 });
             subItems.Add(new DataRibbonItem() { ImageName = "devav/other/brand.svg", Text = "brand", ClickAction = ClickRibbonSvgMenu3 });
+            subItems.Add(new DataRibbonItem() { ImageName = "devav/actions/cut.svg", Text = "cut", ClickAction = ClickRibbonSvgMenu3 });
+            subItems.Add(new DataRibbonItem() { ImageName = "devav/actions/delete.svg", Text = "delete", ClickAction = ClickRibbonSvgMenu3 });
+
+
+            subItems.Add(new DataRibbonItem() { ImageName = "svgimages/icon%20builder/actions_add.svg", Text = "actions_add", ClickAction = ClickRibbonSvgMenu3 });
+
+            string resource1 = "images/xaf/templatesv2images/action_delete.svg";
+            string resource2 = "images/xaf/templatesv2images/action_delete_disabled.svg";
+            string resource3 = "images/xaf/templatesv2images/action_validation_validate.svg";
+            string resource4 = "images/xaf/templatesv2images/action_validation_validate_disabled.svg";
+            string resource5 = "images/xaf/templatesv2images/state_priority_high.svg";
+            string resource6 = "images/xaf/templatesv2images/state_priority_low.svg";
+            string resource7 = "images/xaf/templatesv2images/state_priority_normal.svg";
+            string resource8 = "images/xaf/templatesv2images/state_validation_invalid.svg";
+            string resource9 = "images/xaf/templatesv2images/state_validation_valid.svg";
+            string resource10 = "svgimages/dashboards/delete.svg";
+            string resource11 = "svgimages/icon%20builder/actions_add.svg";
+            string resource12 = "svgimages/icon%20builder/actions_addcircled.svg";
+
             return subItems;
         }
-        private void _SvgCombineRunAction()
+        private void _SvgCombineRunAction(bool showStatus)
         {
             string svgImageName0 = _SvgCombineData[0] as string;
             int svgCombine = (_SvgCombineData[1] is int ? (int)_SvgCombineData[1] : -1);
@@ -587,144 +606,50 @@ namespace TestDevExpress.Forms
             if (barItem is null) return;
 
             if (svgCombine == 1 || svgCombine == 2 || svgCombine == 4 || svgCombine == 16 || svgCombine == 32 || svgCombine == 64 || svgCombine == 256 || svgCombine == 512 || svgCombine == 1024)
-                _SvgCombineRunActionCombine(svgImageName0, (ContentAlignment)svgCombine, svgSize, svgImageName1, barItem);
+                _SvgCombineRunActionCombine(svgImageName0, (ContentAlignment)svgCombine, svgSize, svgImageName1, barItem, showStatus);
             else if (svgCombine == 2048)
                 _SvgCombineRunActionSet(svgImageName0, barItem);
             else if (svgCombine == 4096)
                 _SvgCombineRunActionSet(svgImageName1, barItem);
         }
-        private void _SvgCombineRunActionCombine(string svgImageName0, ContentAlignment contentAlignment, int percent, string svgImageName1, XB.BarItem barItem)
+        private void _SvgCombineRunActionCombine(string svgImageName0, ContentAlignment contentAlignment, int percent, string svgImageName1, XB.BarItem barItem, bool showStatus)
         {
-            var startTime = DxComponent.LogTimeCurrent;
-
             // Vstupní obrázky:
-            SvgImageArrayInfo ici = new SvgImageArrayInfo();
-            ici.Add(svgImageName0);
-            int svgSize = SvgImageArrayInfo.BaseSize * percent / 100;
-            ici.Add(svgImageName1, SvgImageArrayInfo.GetRectangle(contentAlignment, svgSize));
+            SvgImageArrayInfo svgImageArray = new SvgImageArrayInfo(svgImageName0);
+            svgImageArray.Add(svgImageName1, contentAlignment, percent);
 
-            // Výsledný SvgImage:
-            DevExpress.Utils.Svg.SvgImage svgImageOut;
-            using (var memoryStream = new System.IO.MemoryStream(_BlankSvgBaseBuffer))
-                svgImageOut = DevExpress.Utils.Svg.SvgImage.FromStream(memoryStream);
+            string imageName = svgImageArray.Key;
+            bool ok = SvgImageArrayInfo.TryDeserialize(imageName, out var imgCopy);
+            string copyName = imgCopy?.Key;
 
-            // Kombinace:
-            foreach (var image in ici.Items)
-            {
-                DevExpress.Utils.Svg.SvgImage svgImageInp = DxComponent.CreateVectorImage(image.ImageName);
-                if (svgImageInp is null) continue;
+            string info = "";
 
-                DevExpress.Utils.Svg.SvgGroup svgGroupSum = new DevExpress.Utils.Svg.SvgGroup();
-                if (_SvgCombineSetTransform(svgImageInp, image, svgGroupSum))
-                {
-                    foreach (var svgItem in svgImageInp.Root.Elements)
-                        svgGroupSum.Elements.Add(svgItem.DeepCopy());
-                }
-                svgImageOut.Root.Elements.Add(svgGroupSum);
+            var startTime = DxComponent.LogTimeCurrent;
+            bool isDirect = true;
+            if (isDirect)
+            {   // Přímo voláme SvgImageArraySupport.CreateSvgImage() :
+                // Zpracování:
+                var svgImageOut = SvgImageArraySupport.CreateSvgImage(svgImageArray);
+
+                // Výstup:
+                barItem.ImageOptions.SvgImage = svgImageOut;
+
+                info = "DirectCall; ";
             }
-
+            else
+            {   // Standardní cesta:
+                barItem.ImageOptions.SvgImage = DxComponent.CreateVectorImage(imageName);
+                info = "Standard; ";
+            }
             decimal microsecs = DxComponent.LogGetTimeElapsed(startTime);
-
-            // Výstup:
-            barItem.ImageOptions.SvgImage = svgImageOut;
+            if (showStatus)
+                this._StatusStartLabel.Caption = $"Key: {svgImageArray.Key}; {info}Time: {microsecs} microsecs";
         }
-
         private void _SvgCombineRunActionSet(string svgImageName, XB.BarItem barItem)
         {
             DevExpress.Utils.Svg.SvgImage svgImage = DxComponent.CreateVectorImage(svgImageName);
             barItem.ImageOptions.SvgImage = svgImage;
         }
-
-        /// <summary>
-        /// Metoda nastaví do <paramref name="svgGroupSum"/> sadu transformací tak, 
-        /// aby vstupující SvgImage <paramref name="svgImageInp"/> 
-        /// byl správně umístěn do relativního prostoru podle daného předpisu <paramref name="image"/>.
-        /// </summary>
-        /// <param name="svgImageInp"></param>
-        /// <param name="image"></param>
-        /// <param name="svgGroupSum"></param>
-        /// <returns></returns>
-        private static bool _SvgCombineSetTransform(DevExpress.Utils.Svg.SvgImage svgImageInp, SvgImageArrayItem image, DevExpress.Utils.Svg.SvgGroup svgGroupSum)
-        {
-            // Kontroly:
-            if (svgImageInp is null || image is null || svgGroupSum is null) return false;
-
-            // Nejprve zpracuji velikost (Width, Height) = přepočet z koordinátů vstupní ikony do koordinátů cílového prostoru:
-            // Vstupní ikona a její umístění a velikost:
-            double iw = svgImageInp.Width;
-            double ih = svgImageInp.Height;
-            if (iw <= 0d || ih <= 0d) return false;
-
-            // Target požadovaný prostor = jde o souřadnice v celkovém prostoru { 0, 0, 120, 120 }:
-            double tw = image.ImageRelativeBounds.Width;
-            double th = image.ImageRelativeBounds.Height;
-            if (tw <= 0d || th <= 0d) return false;
-
-            // Koeficient změny velikosti vstupní ikony do target prostoru (je zajištěno, že Width i Height jsou kladné):
-            // Určím "rs" = poměr, jakým vynásobím vstupní velikosti (iw, ih) tak, abych zachoval poměr stran (obdélníky) a výsledek se vešel do daného prostoru (tw, th):
-            double rw = tw / iw;
-            double rh = th / ih;
-            double rs = (rw < rh ? rw : rh);
-
-            // Velikost vstupní ikony ve výstupním prostoru:
-            double ow = iw * rs;
-            double oh = ih * rs;
-
-            // Umístění ikony ve výstupním prostoru podle požadavku:
-            double tx = image.ImageRelativeBounds.X;
-            double ty = image.ImageRelativeBounds.Y;
-            double ox = _SvgCombineSetTransformDim(tx, tw, ow);
-            double oy = _SvgCombineSetTransformDim(ty, th, oh);
-
-            // První transformace = vstupní ikonu posunu tak, aby její obsah byl v souřadnici 0/0 (pokud to již není):
-            double ix = svgImageInp.OffsetX;
-            double iy = svgImageInp.OffsetY;
-            if (ix != 0d || iy != 0d)
-                svgGroupSum.Transformations.Add(new DevExpress.Utils.Svg.SvgTranslate(new double[] { -ix, -iy }));
-
-            // Třetí transformace = posunutí zmenšené ikony do cílového prostoru:
-            if (ox != 0d || oy != 0d)
-                svgGroupSum.Transformations.Add(new DevExpress.Utils.Svg.SvgTranslate(new double[] { ox, oy }));
-
-            // Druhá transformace = změna měřítka vstupní ikony:
-            if (rs != 1d)
-                svgGroupSum.Transformations.Add(new DevExpress.Utils.Svg.SvgScale(new double[] { rs, rs }));
-
-            string log = $"Input: {{ X={ix}, Y={iy}, W={iw}, H={ih}, R={ix + iw}, B={iy + ih} }}; Target: {{ X={tx}, Y={ty}, W={tw}, H={th}, R={tx + tw}, B={ty + th} }}; RatioSize: {rs}; Output: {{ X={ox}, Y={oy}, W={ow}, H={oh}, R={ox + ow}, B={oy + oh} }}";
-
-            return true;
-            /*
-            svgGroupSum.Transformations.Add(new DevExpress.Utils.Svg.SvgTranslate(new double[] { 12d, 12d }));
-            svgGroupSum.Transformations.Add(new DevExpress.Utils.Svg.SvgScale(new double[] { (24d / 32d * 0.5d), (24d / 32d * 0.5d) }));
-            */
-        }
-        /// <summary>
-        /// Metoda vrátí souřadnici reálného výstupu tak, aby tento výstup byl v prostoru <see cref="SvgImageArrayInfo.BaseSize"/> umístěn stejně, jako je umístěn prostor target.
-        /// Příklad: <paramref name="targetPoint"/> = 30, <paramref name="targetSize"/> = 60 (zabírá tedy prostor 30 + 60 + 30 = z celkem 120),
-        /// a velikost reálné ikony <paramref name="realSize"/> je 30, pak výstupem bude 45 = tak, aby ikona byla reálně svým koncem uprostřed prostoru (prostor 45 + 30 + 45 = 120).
-        /// <para/>
-        /// Velikosti <paramref name="targetSize"/> i <paramref name="realSize"/> jsou kladné, tato metoda to už nekontroluje.
-        /// </summary>
-        /// <param name="targetPoint"></param>
-        /// <param name="targetSize"></param>
-        /// <param name="realSize"></param>
-        private static double _SvgCombineSetTransformDim(double targetPoint, double targetSize, double realSize)
-        {
-            // Poměr prostoru před targetPoint vzhledem k volnému prostoru (=120 - targetSize)
-            //  => pokud targetPoint = 30 a targetSize = 60, pak target je přesně v polovině prostoru délky 120  (30 + 60 + 30 = 120) ... relative = 0.5d
-            double relative = (targetPoint > 0d && targetSize < _SvgTargetSize ? (targetPoint / (_SvgTargetSize - targetSize)) : 0d);
-
-            // Ve stejném poměru umístíme reálný prostor realSize (mělo by být zajištěno, že realSize <= targetSize, přepočtem velikosti pomocí koeficientu)
-            //  => pokud realSize = 30, a relative = 0.5d, pak realPoint musí být 45 = tak, aby realSize bylo uprostřed targetSize (45 + 30 + 45 = 120):
-            double realPoint = relative * (_SvgTargetSize - realSize);
-            return realPoint;
-        }
-        /// <summary>
-        /// Základní velikost cílového prostoru
-        /// </summary>
-        private static double _SvgTargetSize { get { return SvgImageArrayInfo.BaseSize; } }
-        private static byte[] _BlankSvgBaseBuffer { get { return Encoding.UTF8.GetBytes(_BlankSvgBaseXml); } }
-        private static string _BlankSvgBaseXml { get { string size = _SvgTargetSize.ToString(); return $"<svg viewBox='0 0 {size} {size}' xmlns='http://www.w3.org/2000/svg'></svg>"; } }
         #endregion
         #region Hlavní záložkovník + přepínání testovacích stránek
         private void InitTabPages()
