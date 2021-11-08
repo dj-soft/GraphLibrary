@@ -487,6 +487,7 @@ namespace TestDevExpress.Forms
             subItems.Add(new DataRibbonItem() { ImageName = "svgimages/richedit/columnsone.svg", Text = "columnsone", ClickAction = ClickRibbonSvgMenu0 });
             subItems.Add(new DataRibbonItem() { ImageName = "svgimages/richedit/columnstwo.svg", Text = "columnstwo", ClickAction = ClickRibbonSvgMenu0 });
             subItems.Add(new DataRibbonItem() { ImageName = "svgimages/richedit/columnsthree.svg", Text = "columnsthree", ClickAction = ClickRibbonSvgMenu0 });
+            subItems.Add(new DataRibbonItem() { ImageName = "Images/Svg/arrow-right-2-svgrepo-com.svg", Text = "columnsthree", ClickAction = ClickRibbonSvgMenu0, ItemIsFirstInGroup = true });
             return subItems;
         }
         private List<IRibbonItem> CreateRibbonSvgMenu2()
@@ -535,11 +536,13 @@ namespace TestDevExpress.Forms
 
             // Kombinace:
             DevExpress.Utils.Svg.SvgGroup svgGroup = new DevExpress.Utils.Svg.SvgGroup();
-            svgGroup.Transformations.Add(new DevExpress.Utils.Svg.SvgTranslate(new double[] { 16d, 16d }));
-            svgGroup.Transformations.Add(new DevExpress.Utils.Svg.SvgScale(new double[] { 0.5, 0.5 }));
+            svgGroup.Transformations.Clear();
+            svgGroup.Transformations.Add(new DevExpress.Utils.Svg.SvgTranslate(new double[] { 12d, 12d }));
+            svgGroup.Transformations.Add(new DevExpress.Utils.Svg.SvgScale(new double[] { (24d / 32d * 0.5d), (24d / 32d * 0.5d) }));
             foreach (var svgItem in svgImage1.Root.Elements)
                 svgGroup.Elements.Add(svgItem.DeepCopy());
 
+            DevExpress.Utils.Svg.SvgImage svgImage0 = DevExpress.Utils.Svg.SvgImage.;
             DevExpress.Utils.Svg.SvgImage svgImage3 = svgImage0.Clone();
             svgImage3.Root.Elements.Add(svgGroup);
 
@@ -3332,5 +3335,19 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
         }
 
         #endregion
+    }
+    /// <summary>
+    /// Informace definující jeden obrázek a jeho umístění v rámci cílového prostoru { 0, 0, 100, 100 }
+    /// </summary>
+    internal class ImageCombiningInfo
+    {
+        /// <summary>
+        /// Jméno SVG obrázku
+        /// </summary>
+        public string ImageName { get; set; }
+        /// <summary>
+        /// Souřadnice umístění obrázku v cílovém prostoru { 0, 0, 100, 100 }
+        /// </summary>
+        public Rectangle ImageRelativeBounds { get; set; }
     }
 }
