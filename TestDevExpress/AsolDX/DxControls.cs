@@ -44,6 +44,32 @@ namespace Noris.Clients.Win.Components.AsolDX
             DxComponent.RegisterListener(this);
         }
         /// <summary>
+        /// Při zobrazení okna
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void OnShown(EventArgs e)
+        {
+            if (!_WasShown)
+            {
+                _WasShown = true;
+                this.OnBeforeFirstShown();
+                this.BeforeFirstShown?.Invoke(this, EventArgs.Empty);
+            }
+            base.OnShown(e);
+        }
+        /// <summary>
+        /// Je vyvoláno jedenkrát v životě okna, těsně před prvním zobrazením okna
+        /// </summary>
+        protected virtual void OnBeforeFirstShown() { }
+        /// <summary>
+        /// Je vyvoláno jedenkrát v životě okna, těsně před prvním zobrazením okna
+        /// </summary>
+        public event EventHandler BeforeFirstShown;
+        /// <summary>
+        /// Okno již bylo zobrazeno?
+        /// </summary>
+        private bool _WasShown = false;
+        /// <summary>
         /// Dispose panelu
         /// </summary>
         /// <param name="disposing"></param>
@@ -90,6 +116,32 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.InitDxRibbonForm();
             DxComponent.RegisterListener(this);
         }
+        /// <summary>
+        /// Při zobrazení okna
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void OnShown(EventArgs e)
+        {
+            if (!_WasShown)
+            {
+                _WasShown = true;
+                this.OnBeforeFirstShown();
+                this.BeforeFirstShown?.Invoke(this, EventArgs.Empty);
+            }
+            base.OnShown(e);
+        }
+        /// <summary>
+        /// Je vyvoláno jedenkrát v životě okna, těsně před prvním zobrazením okna
+        /// </summary>
+        protected virtual void OnBeforeFirstShown() { }
+        /// <summary>
+        /// Je vyvoláno jedenkrát v životě okna, těsně před prvním zobrazením okna
+        /// </summary>
+        public event EventHandler BeforeFirstShown;
+        /// <summary>
+        /// Okno již bylo zobrazeno?
+        /// </summary>
+        private bool _WasShown = false;
         /// <summary>
         /// Dispose panelu
         /// </summary>

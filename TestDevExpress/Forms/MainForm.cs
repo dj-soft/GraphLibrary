@@ -75,6 +75,11 @@ namespace TestDevExpress.Forms
         {
             DxComponent.LogTextChanged -= DxComponent_LogTextChanged;
         }
+        protected override void OnBeforeFirstShown()
+        {
+            base.OnBeforeFirstShown();
+            ApplyRibbonSvgImagesResult();
+        }
         protected override void OnStyleChanged()
         {
             base.OnStyleChanged();
@@ -446,8 +451,15 @@ namespace TestDevExpress.Forms
             ClickRibbonSvgMenuAny(1, 8);
             ClickRibbonSvgMenuAny(2, 0);
 
+            this.DxRibbon.UseLazyContentCreate = false;           // Potřebuji, aby v době FirstShown existovaly všechny prvky Ribbonu (i na druhé Page), protože do Result buttonu chci vyrenderovat kombinovanou ikonu v metodě ApplyRibbonSvgImagesResult()
+
             return page;
         }
+        private void ApplyRibbonSvgImagesResult()
+        {
+            _SvgCombineRunAction();
+        }
+
         private void ClickRibbonSvgMenu0(IMenuItem item) { ClickRibbonSvgMenuAny(0, item as DataRibbonItem); }
         private void ClickRibbonSvgMenu1(IMenuItem item) { ClickRibbonSvgMenuAny(1, item as DataRibbonItem); }
         private void ClickRibbonSvgMenu2(IMenuItem item) { ClickRibbonSvgMenuAny(2, item as DataRibbonItem); }
@@ -487,21 +499,42 @@ namespace TestDevExpress.Forms
             subItems.Add(new DataRibbonItem() { ImageName = "svgimages/richedit/columnsone.svg", Text = "columnsone", ClickAction = ClickRibbonSvgMenu0 });
             subItems.Add(new DataRibbonItem() { ImageName = "svgimages/richedit/columnstwo.svg", Text = "columnstwo", ClickAction = ClickRibbonSvgMenu0 });
             subItems.Add(new DataRibbonItem() { ImageName = "svgimages/richedit/columnsthree.svg", Text = "columnsthree", ClickAction = ClickRibbonSvgMenu0 });
-            subItems.Add(new DataRibbonItem() { ImageName = "Images/Svg/arrow-right-2-svgrepo-com.svg", Text = "columnsthree", ClickAction = ClickRibbonSvgMenu0, ItemIsFirstInGroup = true });
+
+
+            // subItems.Add(new DataRibbonItem() { ImageName = "Images/SvgTest/arrow-right-2-svgrepo-com.svg", Text = "columnsthree", ClickAction = ClickRibbonSvgMenu0, ItemIsFirstInGroup = true });
+
+            subItems.Add(new DataRibbonItem() { ImageName = "Images/SvgAsol/address-book-large.svg", Text = "address-book-large", ClickAction = ClickRibbonSvgMenu0, ItemIsFirstInGroup = true });
+            subItems.Add(new DataRibbonItem() { ImageName = "Images/SvgAsol/alert-filled-large.svg", Text = "alert-filled-large", ClickAction = ClickRibbonSvgMenu0 });
+            subItems.Add(new DataRibbonItem() { ImageName = "Images/SvgAsol/anchor-large.svg", Text = "anchor-large", ClickAction = ClickRibbonSvgMenu0 });
+            subItems.Add(new DataRibbonItem() { ImageName = "Images/SvgAsol/archive-box-large.svg", Text = "archive-box-large", ClickAction = ClickRibbonSvgMenu0 });
+            subItems.Add(new DataRibbonItem() { ImageName = "Images/SvgAsol/vyhledavani-large.svg", Text = "vyhledavani-large", ClickAction = ClickRibbonSvgMenu0 });
+            subItems.Add(new DataRibbonItem() { ImageName = "Images/SvgAsol/waste-bin-large.svg", Text = "waste-bin-large", ClickAction = ClickRibbonSvgMenu0 });
+            subItems.Add(new DataRibbonItem() { ImageName = "Images/SvgAsol/window-large.svg", Text = "window-large", ClickAction = ClickRibbonSvgMenu0 });
+            subItems.Add(new DataRibbonItem() { ImageName = "Images/SvgAsol/window-small.svg", Text = "window-small", ClickAction = ClickRibbonSvgMenu0 });
+            subItems.Add(new DataRibbonItem() { ImageName = "Images/SvgAsol/turbine-2-large.svg", Text = "turbine-2-large", ClickAction = ClickRibbonSvgMenu0 });
+
+            //subItems.Add(new DataRibbonItem() { ImageName = "Images/SvgAsol/xxxxxxx.svg", Text = "columnsthree", ClickAction = ClickRibbonSvgMenu0 });
+            //subItems.Add(new DataRibbonItem() { ImageName = "Images/SvgAsol/xxxxxxx.svg", Text = "columnsthree", ClickAction = ClickRibbonSvgMenu0 });
+            //subItems.Add(new DataRibbonItem() { ImageName = "Images/SvgAsol/xxxxxxx.svg", Text = "columnsthree", ClickAction = ClickRibbonSvgMenu0 });
+            //subItems.Add(new DataRibbonItem() { ImageName = "Images/SvgAsol/xxxxxxx.svg", Text = "columnsthree", ClickAction = ClickRibbonSvgMenu0 });
+            //subItems.Add(new DataRibbonItem() { ImageName = "Images/SvgAsol/xxxxxxx.svg", Text = "columnsthree", ClickAction = ClickRibbonSvgMenu0 });
+
             return subItems;
         }
         private List<IRibbonItem> CreateRibbonSvgMenu2()
         {
             List<IRibbonItem> subItems = new List<IRibbonItem>();
-            subItems.Add(new DataRibbonItem() { ImageName = "svgimages/dashboards/alignmenttopleft.svg", Text = "Nahoře vlevo", Tag = ContentAlignment.TopLeft, ClickAction = ClickRibbonSvgMenu1 });
-            subItems.Add(new DataRibbonItem() { ImageName = "svgimages/dashboards/alignmenttopcenter.svg", Text = "Nahoře uprostřed", Tag = ContentAlignment.TopCenter, ClickAction = ClickRibbonSvgMenu1 });
-            subItems.Add(new DataRibbonItem() { ImageName = "svgimages/dashboards/alignmenttopright.svg", Text = "Nahoře vpravo", Tag = ContentAlignment.TopRight, ClickAction = ClickRibbonSvgMenu1 });
-            subItems.Add(new DataRibbonItem() { ImageName = "svgimages/dashboards/alignmentcenterleft.svg", Text = "Uprostřed vlevo", Tag = ContentAlignment.MiddleLeft, ClickAction = ClickRibbonSvgMenu1 });
-            subItems.Add(new DataRibbonItem() { ImageName = "svgimages/dashboards/alignmentcentercenter.svg", Text = "Uprostřed", Tag = ContentAlignment.MiddleCenter, ClickAction = ClickRibbonSvgMenu1 });
-            subItems.Add(new DataRibbonItem() { ImageName = "svgimages/dashboards/alignmentcenterright.svg", Text = "Uprostřed vpravo", Tag = ContentAlignment.MiddleRight, ClickAction = ClickRibbonSvgMenu1 });
-            subItems.Add(new DataRibbonItem() { ImageName = "svgimages/dashboards/alignmentbottomleft.svg", Text = "Dole vlevo", Tag = ContentAlignment.BottomLeft, ClickAction = ClickRibbonSvgMenu1 });
-            subItems.Add(new DataRibbonItem() { ImageName = "svgimages/dashboards/alignmentbottomcenter.svg", Text = "Dole uprostřed", Tag = ContentAlignment.BottomCenter, ClickAction = ClickRibbonSvgMenu1 });
-            subItems.Add(new DataRibbonItem() { ImageName = "svgimages/dashboards/alignmentbottomright.svg", Text = "Dole vpravo", Tag = ContentAlignment.BottomRight, ClickAction = ClickRibbonSvgMenu1 });
+            subItems.Add(new DataRibbonItem() { ImageName = "svgimages/dashboards/alignmenttopleft.svg", Text = "Nahoře vlevo", Tag = (int)ContentAlignment.TopLeft, ClickAction = ClickRibbonSvgMenu1 });
+            subItems.Add(new DataRibbonItem() { ImageName = "svgimages/dashboards/alignmenttopcenter.svg", Text = "Nahoře uprostřed", Tag = (int)ContentAlignment.TopCenter, ClickAction = ClickRibbonSvgMenu1 });
+            subItems.Add(new DataRibbonItem() { ImageName = "svgimages/dashboards/alignmenttopright.svg", Text = "Nahoře vpravo", Tag = (int)ContentAlignment.TopRight, ClickAction = ClickRibbonSvgMenu1 });
+            subItems.Add(new DataRibbonItem() { ImageName = "svgimages/dashboards/alignmentcenterleft.svg", Text = "Uprostřed vlevo", Tag = (int)ContentAlignment.MiddleLeft, ClickAction = ClickRibbonSvgMenu1 });
+            subItems.Add(new DataRibbonItem() { ImageName = "svgimages/dashboards/alignmentcentercenter.svg", Text = "Uprostřed", Tag = (int)ContentAlignment.MiddleCenter, ClickAction = ClickRibbonSvgMenu1 });
+            subItems.Add(new DataRibbonItem() { ImageName = "svgimages/dashboards/alignmentcenterright.svg", Text = "Uprostřed vpravo", Tag = (int)ContentAlignment.MiddleRight, ClickAction = ClickRibbonSvgMenu1 });
+            subItems.Add(new DataRibbonItem() { ImageName = "svgimages/dashboards/alignmentbottomleft.svg", Text = "Dole vlevo", Tag = (int)ContentAlignment.BottomLeft, ClickAction = ClickRibbonSvgMenu1 });
+            subItems.Add(new DataRibbonItem() { ImageName = "svgimages/dashboards/alignmentbottomcenter.svg", Text = "Dole uprostřed", Tag = (int)ContentAlignment.BottomCenter, ClickAction = ClickRibbonSvgMenu1 });
+            subItems.Add(new DataRibbonItem() { ImageName = "svgimages/dashboards/alignmentbottomright.svg", Text = "Dole vpravo", Tag = (int)ContentAlignment.BottomRight, ClickAction = ClickRibbonSvgMenu1 });
+            subItems.Add(new DataRibbonItem() { ImageName = "svgimages/icon%20builder/actions_arrow2left.svg", Text = "Pouze ZÁKLAD", Tag = (int)2048, ClickAction = ClickRibbonSvgMenu1, ItemIsFirstInGroup = true });
+            subItems.Add(new DataRibbonItem() { ImageName = "svgimages/icon%20builder/actions_arrow2right.svg", Text = "Pouze PŘÍDAVEK", Tag = (int)4096, ClickAction = ClickRibbonSvgMenu1 });
             return subItems;
         }
         private List<IRibbonItem> CreateRibbonSvgMenu3()
@@ -523,38 +556,154 @@ namespace TestDevExpress.Forms
         private void _SvgCombineRunAction()
         {
             string svgImageName0 = _SvgCombineData[0] as string;
-            ContentAlignment contentAlignment = (_SvgCombineData[1] is ContentAlignment ? (ContentAlignment)_SvgCombineData[1] : ContentAlignment.MiddleCenter);
+            int svgCombine = (_SvgCombineData[1] is int ? (int)_SvgCombineData[1] : -1);
             string svgImageName1 = _SvgCombineData[2] as string;
             if (String.IsNullOrEmpty(svgImageName0) || String.IsNullOrEmpty(svgImageName1)) return;
 
+            DataRibbonItem resultItem = _SvgCombineRibbonGroup.Items[3] as DataRibbonItem;
+            var barItem = resultItem.RibbonItem?.Target;
+            if (barItem is null) return;
+
+            if (svgCombine == 1 || svgCombine == 2 || svgCombine == 4 || svgCombine == 16 || svgCombine == 32 || svgCombine == 64 || svgCombine == 256 || svgCombine == 512 || svgCombine == 1024)
+                _SvgCombineRunActionCombine(svgImageName0, (ContentAlignment)svgCombine, svgImageName1, barItem);
+            else if (svgCombine == 2048)
+                _SvgCombineRunActionSet(svgImageName0, barItem);
+            else if (svgCombine == 4096)
+                _SvgCombineRunActionSet(svgImageName1, barItem);
+        }
+        private void _SvgCombineRunActionCombine(string svgImageName0, ContentAlignment contentAlignment, string svgImageName1, XB.BarItem barItem)
+        {
             var startTime = DxComponent.LogTimeCurrent;
 
-            // Vstupy:
-            DevExpress.Utils.Svg.SvgImage svgImage0 = DxComponent.GetSvgImage(svgImageName0);
-            DevExpress.Utils.Svg.SvgImage svgImage1 = DxComponent.GetSvgImage(svgImageName1);
-            if (svgImage0 == null || svgImage1 == null) return;
+            // Vstupní obrázky:
+            ImageCombiningInfo ici = new ImageCombiningInfo();
+            ici.Add(svgImageName0);
+            ici.Add(svgImageName1, ImageCombiningInfo.GetRectangle(contentAlignment, 70));
+
+            // Výsledný SvgImage:
+            DevExpress.Utils.Svg.SvgImage svgImageOut;
+            using (var memoryStream = new System.IO.MemoryStream(_BlankSvgBaseBuffer))
+                svgImageOut = DevExpress.Utils.Svg.SvgImage.FromStream(memoryStream);
 
             // Kombinace:
-            DevExpress.Utils.Svg.SvgGroup svgGroup = new DevExpress.Utils.Svg.SvgGroup();
-            svgGroup.Transformations.Clear();
-            svgGroup.Transformations.Add(new DevExpress.Utils.Svg.SvgTranslate(new double[] { 12d, 12d }));
-            svgGroup.Transformations.Add(new DevExpress.Utils.Svg.SvgScale(new double[] { (24d / 32d * 0.5d), (24d / 32d * 0.5d) }));
-            foreach (var svgItem in svgImage1.Root.Elements)
-                svgGroup.Elements.Add(svgItem.DeepCopy());
+            foreach (var image in ici.Images)
+            {
+                DevExpress.Utils.Svg.SvgImage svgImageInp = DxComponent.GetSvgImage(image.ImageName);
+                if (svgImageInp is null) continue;
 
-            DevExpress.Utils.Svg.SvgImage svgImage0 = DevExpress.Utils.Svg.SvgImage.;
-            DevExpress.Utils.Svg.SvgImage svgImage3 = svgImage0.Clone();
-            svgImage3.Root.Elements.Add(svgGroup);
+                DevExpress.Utils.Svg.SvgGroup svgGroupSum = new DevExpress.Utils.Svg.SvgGroup();
+                if (_SvgCombineSetTransform(svgImageInp, image, svgGroupSum))
+                {
+                    foreach (var svgItem in svgImageInp.Root.Elements)
+                        svgGroupSum.Elements.Add(svgItem.DeepCopy());
+                }
+                svgImageOut.Root.Elements.Add(svgGroupSum);
+            }
 
             decimal microsecs = DxComponent.LogGetTimeElapsed(startTime);
 
             // Výstup:
-            DataRibbonItem resultItem = _SvgCombineRibbonGroup.Items[3] as DataRibbonItem;
-            resultItem.ImageName = svgImageName1;
-            var barItem = resultItem.RibbonItem?.Target;
-            if (barItem != null)
-                barItem.ImageOptions.SvgImage = svgImage3;
+            barItem.ImageOptions.SvgImage = svgImageOut;
         }
+
+        private void _SvgCombineRunActionSet(string svgImageName, XB.BarItem barItem)
+        {
+            DevExpress.Utils.Svg.SvgImage svgImage = DxComponent.GetSvgImage(svgImageName);
+            barItem.ImageOptions.SvgImage = svgImage;
+        }
+
+        /// <summary>
+        /// Metoda nastaví do <paramref name="svgGroupSum"/> sadu transformací tak, 
+        /// aby vstupující SvgImage <paramref name="svgImageInp"/> 
+        /// byl správně umístěn do relativního prostoru podle daného předpisu <paramref name="image"/>.
+        /// </summary>
+        /// <param name="svgImageInp"></param>
+        /// <param name="image"></param>
+        /// <param name="svgGroupSum"></param>
+        /// <returns></returns>
+        private static bool _SvgCombineSetTransform(DevExpress.Utils.Svg.SvgImage svgImageInp, ImageCombiningInfo.Item image, DevExpress.Utils.Svg.SvgGroup svgGroupSum)
+        {
+            svgGroupSum.Transformations.Clear();
+
+            // Kontroly:
+            if (svgImageInp is null || image is null || svgGroupSum is null) return false;
+
+            // Nejprve zpracuji velikost (Width, Height) = přepočet z koordinátů vstupní ikony do koordinátů cílového prostoru:
+            // Vstupní ikona a její umístění a velikost:
+            double iw = svgImageInp.Width;
+            double ih = svgImageInp.Height;
+            if (iw <= 0d || ih <= 0d) return false;
+
+            // Target požadovaný prostor = jde o souřadnice v celkovém prostoru { 0, 0, 120, 120 }:
+            double tw = image.ImageRelativeBounds.Width;
+            double th = image.ImageRelativeBounds.Height;
+            if (tw <= 0d || th <= 0d) return false;
+
+            // Koeficient změny velikosti vstupní ikony do target prostoru (je zajištěno, že Width i Height jsou kladné):
+            // Určím "rs" = poměr, jakým vynásobím vstupní velikosti (iw, ih) tak, abych zachoval poměr stran (obdélníky) a výsledek se vešel do daného prostoru (tw, th):
+            double rw = tw / iw;
+            double rh = th / ih;
+            double rs = (rw < rh ? rw : rh);
+
+            // Velikost vstupní ikony ve výstupním prostoru:
+            double ow = iw * rs;
+            double oh = ih * rs;
+
+            // Umístění ikony ve výstupním prostoru podle požadavku:
+            double tx = image.ImageRelativeBounds.X;
+            double ty = image.ImageRelativeBounds.Y;
+            double ox = _SvgCombineSetTransformDim(tx, tw, ow);
+            double oy = _SvgCombineSetTransformDim(ty, th, oh);
+
+            // První transformace = vstupní ikonu posunu tak, aby její obsah byl v souřadnici 0/0 (pokud to již není):
+            double ix = svgImageInp.OffsetX;
+            double iy = svgImageInp.OffsetY;
+            if (ix != 0d || iy != 0d)
+                svgGroupSum.Transformations.Add(new DevExpress.Utils.Svg.SvgTranslate(new double[] { -ix, -iy }));
+
+            // Třetí transformace = posunutí zmenšené ikony do cílového prostoru:
+            if (ox != 0d || oy != 0d)
+                svgGroupSum.Transformations.Add(new DevExpress.Utils.Svg.SvgTranslate(new double[] { ox, oy }));
+
+            // Druhá transformace = změna měřítka vstupní ikony:
+            if (rs != 1d)
+                svgGroupSum.Transformations.Add(new DevExpress.Utils.Svg.SvgScale(new double[] { rs, rs }));
+
+            string log = $"Input: {{ X={ix}, Y={iy}, W={iw}, H={ih}, R={ix + iw}, B={iy + ih} }}; Target: {{ X={tx}, Y={ty}, W={tw}, H={th}, R={tx + tw}, B={ty + th} }}; RatioSize: {rs}; Output: {{ X={ox}, Y={oy}, W={ow}, H={oh}, R={ox + ow}, B={oy + oh} }}";
+
+            return true;
+            /*
+            svgGroupSum.Transformations.Add(new DevExpress.Utils.Svg.SvgTranslate(new double[] { 12d, 12d }));
+            svgGroupSum.Transformations.Add(new DevExpress.Utils.Svg.SvgScale(new double[] { (24d / 32d * 0.5d), (24d / 32d * 0.5d) }));
+            */
+        }
+        /// <summary>
+        /// Metoda vrátí souřadnici reálného výstupu tak, aby tento výstup byl v prostoru <see cref="ImageCombiningInfo.BaseSize"/> umístěn stejně, jako je umístěn prostor target.
+        /// Příklad: <paramref name="targetPoint"/> = 30, <paramref name="targetSize"/> = 60 (zabírá tedy prostor 30 + 60 + 30 = z celkem 120),
+        /// a velikost reálné ikony <paramref name="realSize"/> je 30, pak výstupem bude 45 = tak, aby ikona byla reálně svým koncem uprostřed prostoru (prostor 45 + 30 + 45 = 120).
+        /// <para/>
+        /// Velikosti <paramref name="targetSize"/> i <paramref name="realSize"/> jsou kladné, tato metoda to už nekontroluje.
+        /// </summary>
+        /// <param name="targetPoint"></param>
+        /// <param name="targetSize"></param>
+        /// <param name="realSize"></param>
+        private static double _SvgCombineSetTransformDim(double targetPoint, double targetSize, double realSize)
+        {
+            // Poměr prostoru před targetPoint vzhledem k volnému prostoru (=120 - targetSize)
+            //  => pokud targetPoint = 30 a targetSize = 60, pak target je přesně v polovině prostoru délky 120  (30 + 60 + 30 = 120) ... relative = 0.5d
+            double relative = (targetPoint > 0d && targetSize < _SvgTargetSize ? (targetPoint / (_SvgTargetSize - targetSize)) : 0d);
+
+            // Ve stejném poměru umístíme reálný prostor realSize (mělo by být zajištěno, že realSize <= targetSize, přepočtem velikosti pomocí koeficientu)
+            //  => pokud realSize = 30, a relative = 0.5d, pak realPoint musí být 45 = tak, aby realSize bylo uprostřed targetSize (45 + 30 + 45 = 120):
+            double realPoint = relative * (_SvgTargetSize - realSize);
+            return realPoint;
+        }
+        /// <summary>
+        /// Základní velikost cílového prostoru
+        /// </summary>
+        private static double _SvgTargetSize { get { return ImageCombiningInfo.BaseSize; } }
+        private static byte[] _BlankSvgBaseBuffer { get { return Encoding.UTF8.GetBytes(_BlankSvgBaseXml); } }
+        private static string _BlankSvgBaseXml { get { string size = _SvgTargetSize.ToString(); return $"<svg viewBox='0 0 {size} {size}' xmlns='http://www.w3.org/2000/svg'></svg>"; } }
         #endregion
         #region Hlavní záložkovník + přepínání testovacích stránek
         private void InitTabPages()
@@ -3337,17 +3486,98 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
         #endregion
     }
     /// <summary>
-    /// Informace definující jeden obrázek a jeho umístění v rámci cílového prostoru { 0, 0, 100, 100 }
+    /// Informace definující jeden obrázek a jeho umístění v rámci cílového prostoru { 0, 0, <see cref="BaseSize"/>, <see cref="BaseSize"/> }
     /// </summary>
     internal class ImageCombiningInfo
     {
+        public ImageCombiningInfo()
+        {
+            Images = new List<Item>();
+        }
         /// <summary>
-        /// Jméno SVG obrázku
+        /// Vizualizace
         /// </summary>
-        public string ImageName { get; set; }
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return $"Count: {Images.Count}";
+        }
+        public void Clear() { Images.Clear(); }
+        public void Add(string name)
+        {
+            Images.Add(new Item(name));
+        }
+        public void Add(string name, Rectangle bounds)
+        {
+            Images.Add(new Item(name, bounds));
+        }
+        public List<Item> Images { get; private set; }
         /// <summary>
-        /// Souřadnice umístění obrázku v cílovém prostoru { 0, 0, 100, 100 }
+        /// Vrátí souřadnici prostoru v dané relativní pozici k základnímu prostoru { 0, 0, <see cref="BaseSize"/>, <see cref="BaseSize"/> }.
+        /// Lze specifikovat velikost cílového prostoru, ta musí být v rozmezí 16 až <see cref="BaseSize"/> (včetně).
+        /// Jde o prostor, do kterého se promítne ikona, v rámci finální velikosti <see cref="BaseSize"/> x <see cref="BaseSize"/>.
         /// </summary>
-        public Rectangle ImageRelativeBounds { get; set; }
+        /// <param name="contentAlignment"></param>
+        /// <param name="size"></param>
+        /// <returns></returns>
+        public static Rectangle GetRectangle(ContentAlignment contentAlignment, int size = 60)
+        {
+            size = size.Align(16, BaseSize);     // Platné rozmezí velikosti je 16 až 128
+            int de = BaseSize - size;            // Velikost celého volného prostoru
+            int dc = de / 2;                     // Velikost pro Center
+            switch (contentAlignment)
+            {
+                case ContentAlignment.TopLeft: return new Rectangle(0, 0, size, size);
+                case ContentAlignment.TopCenter: return new Rectangle(dc, 0, size, size);
+                case ContentAlignment.TopRight: return new Rectangle(de, 0, size, size);
+                case ContentAlignment.MiddleLeft: return new Rectangle(0, dc, size, size);
+                case ContentAlignment.MiddleCenter: return new Rectangle(dc, dc, size, size);
+                case ContentAlignment.MiddleRight: return new Rectangle(de, dc, size, size);
+                case ContentAlignment.BottomLeft: return new Rectangle(0, de, size, size);
+                case ContentAlignment.BottomCenter: return new Rectangle(dc, de, size, size);
+                case ContentAlignment.BottomRight: return new Rectangle(de, de, size, size);
+            }
+            return new Rectangle(dc, dc, size, size);
+        }
+        /// <summary>
+        /// Jeden obrázek
+        /// </summary>
+        public class Item
+        {
+            public Item() 
+            {
+                ImageRelativeBounds = new Rectangle(0, 0, BaseSize, BaseSize);
+            }
+            public Item(string name)
+            {
+                ImageName = name;
+                ImageRelativeBounds = new Rectangle(0, 0, BaseSize, BaseSize);
+            }
+            public Item(string name, Rectangle bounds)
+            {
+                ImageName = name;
+                ImageRelativeBounds = bounds;
+            }
+            /// <summary>
+            /// Vizualizace
+            /// </summary>
+            /// <returns></returns>
+            public override string ToString()
+            {
+                return $"Name: {ImageName}; Bounds: {ImageRelativeBounds}";
+            }
+            /// <summary>
+            /// Jméno SVG obrázku
+            /// </summary>
+            public string ImageName { get; set; }
+            /// <summary>
+            /// Souřadnice umístění obrázku v cílovém prostoru { 0, 0, <see cref="BaseSize"/>, <see cref="BaseSize"/> }
+            /// </summary>
+            public Rectangle ImageRelativeBounds { get; set; }
+        }
+        /// <summary>
+        /// Základní velikost
+        /// </summary>
+        public const int BaseSize = 120;
     }
 }

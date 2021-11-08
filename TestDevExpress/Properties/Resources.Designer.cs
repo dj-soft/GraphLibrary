@@ -59,25 +59,5 @@ namespace TestDevExpress.Properties {
                 resourceCulture = value;
             }
         }
-        
-        /// <summary>
-        ///   Looks up a localized resource of type System.Byte[].
-        /// </summary>
-        internal static byte[] AssecoPatka {
-            get {
-                object obj = ResourceManager.GetObject("AssecoPatka", resourceCulture);
-                return ((byte[])(obj));
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized resource of type System.Byte[].
-        /// </summary>
-        internal static byte[] homer_simpson {
-            get {
-                object obj = ResourceManager.GetObject("homer_simpson", resourceCulture);
-                return ((byte[])(obj));
-            }
-        }
     }
 }
