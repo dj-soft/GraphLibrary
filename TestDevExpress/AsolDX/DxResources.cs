@@ -1849,9 +1849,25 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Obsahuje (vygeneruje) serializovaný string z this instance
         /// </summary>
         public string Serial { get { return Noris.WS.Parser.XmlSerializer.Persist.Serialize(this, Noris.WS.Parser.XmlSerializer.PersistArgs.MinimalXml); } }
-        public static bool TryDeserialize(string serial, out SvgImageArrayInfo array)
+        /// <summary>
+        /// Zkusí provést deserializaci
+        /// </summary>
+        /// <param name="serial"></param>
+        /// <param name="result"></param>
+        /// <returns></returns>
+        public static bool TryDeserialize(string serial, out SvgImageArrayInfo result)
         {
-            if ()
+            if (!String.IsNullOrEmpty(serial) && serial.StartsWith("<xml "))
+            {
+                object data = Noris.WS.Parser.XmlSerializer.Persist.Deserialize(serial);
+                if (data != null && data is SvgImageArrayInfo aray)
+                {
+                    result = aray;
+                    return true;
+                }
+            }
+            result = null;
+            return false;
         }
         #endregion
     }
