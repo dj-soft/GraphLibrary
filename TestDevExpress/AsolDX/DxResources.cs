@@ -170,17 +170,18 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 try
                 {
-                    if (_TryGetDevExpressResourceExtension(resourceName, out string extension))
-                        _ApplyImageDevExpress(imageOptions, resourceName, imageSize, extension);
-                    else
-                    {   // Aplikační zdroje:
-                        imageOptions.Image = DxComponent.GetBitmapImage(resourceName, ResourceImageSizeType.Medium);
+                    // Resource může být Combined (=více SVG obrázků v jedném textu!):
+                    if (SvgImageArraySupport.TryGetSvgImageArray(resourceName, out var svgImageArray))
+                        imageOptions.SvgImage = SvgImageArraySupport.CreateSvgImage(svgImageArray);
+                    else if (_ExistsDevExpressResource(resourceName))
+                        _ApplyImageDevExpress(imageOptions, resourceName, imageSize);
+                    else if (_ExistsApplicationResource(resourceName))
+                        _ApplyImageApplication(imageOptions, resourceName, imageSize);
+                    // imageOptions.Image = DxComponent.GetBitmapImage(resourceName, ResourceImageSizeType.Medium);
 
 #warning POKRAČUJ !!!
                         // qqq;
-
-
-                    }
+                  
                 }
                 catch { }
             }

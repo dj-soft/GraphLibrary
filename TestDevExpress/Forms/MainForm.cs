@@ -625,8 +625,13 @@ namespace TestDevExpress.Forms
             string info = "";
 
             var startTime = DxComponent.LogTimeCurrent;
-            bool isDirect = true;
-            if (isDirect)
+            bool isStandard = true;
+            if (isStandard)
+            {   // Standardní cesta:
+                DxComponent.ApplyImage(barItem.ImageOptions, imageName);
+                info = "Standard; ";
+            }
+            else
             {   // Přímo voláme SvgImageArraySupport.CreateSvgImage() :
                 // Zpracování:
                 var svgImageOut = SvgImageArraySupport.CreateSvgImage(svgImageArray);
@@ -635,11 +640,6 @@ namespace TestDevExpress.Forms
                 barItem.ImageOptions.SvgImage = svgImageOut;
 
                 info = "DirectCall; ";
-            }
-            else
-            {   // Standardní cesta:
-                barItem.ImageOptions.SvgImage = DxComponent.CreateVectorImage(imageName);
-                info = "Standard; ";
             }
             decimal microsecs = DxComponent.LogGetTimeElapsed(startTime);
             if (showStatus)
