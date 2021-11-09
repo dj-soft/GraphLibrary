@@ -5,13 +5,13 @@ using System.Drawing;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using System.Drawing;
+using System.Runtime.Remoting.Messaging;
+using System.Xml;
 
 using DevExpress.Data.Async;
 using DevExpress.XtraEditors;
 using DevExpress.Utils.Svg;
 using DevExpress.Utils;
-using System.Runtime.Remoting.Messaging;
 
 namespace Noris.Clients.Win.Components.AsolDX
 {
@@ -20,21 +20,6 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// </summary>
     partial class DxComponent
     {
-        #region Standardní jména obrázků
-        /// <summary>
-        /// Jméno ikony formuláře
-        /// </summary>
-        public static string ImageNameFormIcon { get { return Instance._ImageNameFormIcon; } set { Instance._ImageNameFormIcon = value; } }
-        /// <summary>
-        /// Inicializace výchozích názvů obrázků
-        /// </summary>
-        private void _ImageInit()
-        {
-            _ImageNameFormIcon = "svgimages/business%20objects/bo_appearance.svg";
-        }
-        private string _ImageNameFormIcon;
-        #endregion
-        #region ImageResource, obecně aplikování obrázků do Controlů - obrázky Aplikační i DevExpress
         #region CreateBitmapImage - Získání new instance bitmapového obrázku;
         /// <summary>
         /// Vygeneruje a vrátí nový obrázek daného jména.
@@ -132,13 +117,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         private DevExpress.Utils.Svg.SvgImage _CreateVectorImage(string imageName)
         {
-            if (String.IsNullOrEmpty(imageName)) return null;
-
-            if (_ExistsDevExpressResource(imageName) && _IsImageNameSvg(imageName))
-                return _CreateVectorImageDevExpress(imageName);
-            else if (_TrySearchApplicationResource(imageName, out var validItems, ResourceContentType.Vector))
-                return _CreateVectorImageApplication(validItems);
-            return null;
+            return _GetVectorImage(imageName);
         }
         /// <summary>
         /// Najde a rychle vrátí <see cref="SvgImage"/> pro dané jméno, hledá v DevExpress i Aplikačních zdrojích
@@ -149,6 +128,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             if (String.IsNullOrEmpty(imageName)) return null;
 
+            if (SvgImageArraySupport.TryGetSvgImageArray(imageName, out var svgImageArray))
+                return _GetVectorImageArray(svgImageArray);
             if (_ExistsDevExpressResource(imageName) && _IsImageNameSvg(imageName))
                 return _GetVectorImageDevExpress(imageName);
             else if (_TrySearchApplicationResource(imageName, out var validItems, ResourceContentType.Vector))
@@ -157,31 +138,42 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         #endregion
         #region ApplyImage - do cílového objektu vepíše obrázek podle toho, jak je zadán a kam má být vepsán
-        public static void ApplyImage(ImageOptions imageOptions, string resourceName = null, Image image = null, Size? imageSize = null, bool smallButton = false)
-        { Instance._ApplyImage(imageOptions, resourceName, image, imageSize, smallButton); }
-        private void _ApplyImage(ImageOptions imageOptions, string resourceName, Image image, Size? imageSize, bool smallButton)
+        /// <summary>
+        /// ApplyImage - do cílového objektu vepíše obrázek podle toho, jak je zadán a kam má být vepsán
+        /// </summary>
+        /// <param name="imageOptions"></param>
+        /// <param name="imageName"></param>
+        /// <param name="image"></param>
+        /// <param name="imageSize"></param>
+        /// <param name="smallButton"></param>
+        public static void ApplyImage(ImageOptions imageOptions, string imageName = null, Image image = null, Size? imageSize = null, bool smallButton = false)
+        { Instance._ApplyImage(imageOptions, imageName, image, imageSize, smallButton); }
+        /// <summary>
+        /// ApplyImage - do cílového objektu vepíše obrázek podle toho, jak je zadán a kam má být vepsán
+        /// </summary>
+        /// <param name="imageOptions"></param>
+        /// <param name="imageName"></param>
+        /// <param name="image"></param>
+        /// <param name="imageSize"></param>
+        /// <param name="smallButton"></param>
+        private void _ApplyImage(ImageOptions imageOptions, string imageName, Image image, Size? imageSize, bool smallButton)
         {
             if (image != null)
             {
                 imageOptions.Image = image;
             }
 
-            else if (!String.IsNullOrEmpty(resourceName))
+            else if (!String.IsNullOrEmpty(imageName))
             {
                 try
                 {
                     // Resource může být Combined (=více SVG obrázků v jedném textu!):
-                    if (SvgImageArraySupport.TryGetSvgImageArray(resourceName, out var svgImageArray))
-                        imageOptions.SvgImage = SvgImageArraySupport.CreateSvgImage(svgImageArray);
-                    else if (_ExistsDevExpressResource(resourceName))
-                        _ApplyImageDevExpress(imageOptions, resourceName, imageSize);
-                    else if (_ExistsApplicationResource(resourceName))
-                        _ApplyImageApplication(imageOptions, resourceName, imageSize);
-                    // imageOptions.Image = DxComponent.GetBitmapImage(resourceName, ResourceImageSizeType.Medium);
-
-#warning POKRAČUJ !!!
-                        // qqq;
-                  
+                    if (SvgImageArraySupport.TryGetSvgImageArray(imageName, out var svgImageArray))
+                        _ApplyImageArray(imageOptions, svgImageArray, imageSize);
+                    else if (_ExistsDevExpressResource(imageName))
+                        _ApplyImageDevExpress(imageOptions, imageName, imageSize);
+                    else if (_ExistsApplicationResource(imageName))
+                        _ApplyImageApplication(imageOptions, imageName, imageSize);
                 }
                 catch { }
             }
@@ -197,47 +189,105 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
         }
         /// <summary>
+        /// Aplikuje Image typu Array (ve jménu obrázku je více zdrojů) do daného cíle v <paramref name="imageOptions"/>.
+        /// </summary>
+        /// <param name="imageOptions"></param>
+        /// <param name="svgImageArray"></param>
+        /// <param name="imageSize"></param>
+        private void _ApplyImageArray(ImageOptions imageOptions, SvgImageArrayInfo svgImageArray, Size? imageSize)
+        {
+            if (svgImageArray != null)
+                imageOptions.SvgImage = _GetVectorImageArray(svgImageArray);
+        }
+        /// <summary>
+        /// Vrátí SVG Image typu Array
+        /// </summary>
+        /// <param name="svgImageArray"></param>
+        /// <returns></returns>
+        private DevExpress.Utils.Svg.SvgImage _GetVectorImageArray(SvgImageArrayInfo svgImageArray)
+        {
+            return SvgImageArraySupport.CreateSvgImage(svgImageArray);
+        }
+        /// <summary>
         /// Aplikuje Image typu Vector nebo Bitmap (podle přípony) ze zdroje DevExpress do daného cíle <paramref name="imageOptions"/>.
         /// </summary>
         /// <param name="imageOptions"></param>
-        /// <param name="resourceName"></param>
+        /// <param name="imageName"></param>
         /// <param name="imageSize"></param>
         /// <param name="extension"></param>
-        private void _ApplyImageDevExpress(ImageOptions imageOptions, string resourceName, Size? imageSize, string extension = null)
+        private void _ApplyImageDevExpress(ImageOptions imageOptions, string imageName, Size? imageSize, string extension = null)
         {
-            if (extension == null) extension = _GetDevExpressResourceExtension(resourceName);
+            if (extension == null) extension = _GetDevExpressResourceExtension(imageName);
             if (extension != null)
             {
                 if (extension == "svg")
-                    _ApplyImageDevExpressSvg(imageOptions, resourceName, imageSize);
+                    _ApplyImageDevExpressSvg(imageOptions, imageName, imageSize);
                 else
-                    _ApplyImageDevExpressBmp(imageOptions, resourceName, imageSize);
+                    _ApplyImageDevExpressBmp(imageOptions, imageName, imageSize);
             }
         }
         /// <summary>
         /// Aplikuje Image typu Vector ze zdroje DevExpress do daného cíle <paramref name="imageOptions"/>.
         /// </summary>
         /// <param name="imageOptions"></param>
-        /// <param name="resourceName"></param>
+        /// <param name="imageName"></param>
         /// <param name="imageSize"></param>
-        private void _ApplyImageDevExpressSvg(ImageOptions imageOptions, string resourceName, Size? imageSize)
+        private void _ApplyImageDevExpressSvg(ImageOptions imageOptions, string imageName, Size? imageSize)
         {
             imageOptions.Image = null;
-            imageOptions.SvgImage = _GetVectorImageDevExpress(resourceName);             // Na vstupu je jméno Vektoru, dáme jej tedy do SvgImage
+            imageOptions.SvgImage = _GetVectorImageDevExpress(imageName);             // Na vstupu je jméno Vektoru, dáme jej tedy do SvgImage
             if (imageSize.HasValue) imageOptions.SvgImageSize = imageSize.Value;
         }
         /// <summary>
         /// Aplikuje Image typu Bitmap ze zdroje DevExpress do daného cíle <paramref name="imageOptions"/>.
         /// </summary>
         /// <param name="imageOptions"></param>
-        /// <param name="resourceName"></param>
+        /// <param name="imageName"></param>
         /// <param name="imageSize"></param>
-        private void _ApplyImageDevExpressBmp(ImageOptions imageOptions, string resourceName, Size? imageSize)
+        private void _ApplyImageDevExpressBmp(ImageOptions imageOptions, string imageName, Size? imageSize)
         {
             imageOptions.SvgImage = null;
-            imageOptions.Image = _CreateBitmapImageDevExpressPng(resourceName);          // Na vstupu je jméno bitmapy, tedy ji najdeme a dáme do Image. Tady nepřichází do úvahy renderování, velikost, paleta atd...
+            imageOptions.Image = _CreateBitmapImageDevExpressPng(imageName);          // Na vstupu je jméno bitmapy, tedy ji najdeme a dáme do Image. Tady nepřichází do úvahy renderování, velikost, paleta atd...
         }
+        /// <summary>
+        /// Aplikuje Image typu Vector nebo Bitmap (podle přípony) ze zdroje Aplikační do daného cíle <paramref name="imageOptions"/>.
+        /// </summary>
+        /// <param name="imageOptions"></param>
+        /// <param name="imageName"></param>
+        /// <param name="imageSize"></param>
+        private void _ApplyImageApplication(ImageOptions imageOptions, string imageName, Size? imageSize)
+        {
+            if (!_TrySearchApplicationResource(imageName, out var validItems, ResourceContentType.Vector, ResourceContentType.Bitmap)) return;
 
+            var contentType = validItems[0].ContentType;
+            if (contentType == ResourceContentType.Vector)
+                _ApplyImageApplicationSvg(imageOptions, validItems, imageSize);
+            else if (contentType == ResourceContentType.Bitmap)
+                _ApplyImageApplicationBmp(imageOptions, validItems, imageSize);
+        }
+        /// <summary>
+        /// Aplikuje Image typu Vector ze zdroje Aplikační do daného cíle <paramref name="imageOptions"/>.
+        /// </summary>
+        /// <param name="imageOptions"></param>
+        /// <param name="resourceItems"></param>
+        /// <param name="imageSize"></param>
+        private void _ApplyImageApplicationSvg(ImageOptions imageOptions, DxApplicationResourceLibrary.ResourceItem[] resourceItems, Size? imageSize)
+        {
+            imageOptions.Image = null;
+            imageOptions.SvgImage = _GetVectorImageApplication(resourceItems);
+            if (imageSize.HasValue) imageOptions.SvgImageSize = imageSize.Value;
+        }
+        /// <summary>
+        /// Aplikuje Image typu Bitmap ze zdroje Aplikační do daného cíle <paramref name="imageOptions"/>.
+        /// </summary>
+        /// <param name="imageOptions"></param>
+        /// <param name="resourceItems"></param>
+        /// <param name="imageSize"></param>
+        private void _ApplyImageApplicationBmp(ImageOptions imageOptions, DxApplicationResourceLibrary.ResourceItem[] resourceItems, Size? imageSize)
+        {
+            imageOptions.SvgImage = null;
+            imageOptions.Image = _CreateImageApplication(resourceItems);
+        }
         #endregion
         #region ImageList - Seznam obrázků typu Bitmapa, pro použití v controlech; GetImageList, GetImageListIndex, GetImage
         /// <summary>
@@ -770,6 +820,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Zkusí najít daný zdroj v aplikačních zdrojích, zafiltruje na daný typ obsahu - typ obsahu je povinný. Velikost se řeší následně.
         /// <para/>
         /// Na vstupu je params pole vhodných typů obrázku, prochází se prioritně v daném pořadí a vrací se první existující sada zdrojů daného typu.
+        /// Pokud najde zdroj prvního typu, vrací jen ten. Pokud nenajde, hledá zdroje dalšího typu. Pokud nenajde, vrací false.
+        /// Pokud není zadán žádný typ zdroje, akceptuje jakýkoli nalezený typ.
+        /// <para/>
+        /// Pokud vrátí true, pak v poli <paramref name="validItems"/> je nejméně jeden prvek.
         /// </summary>
         /// <param name="resourceName"></param>
         /// <param name="validItems"></param>
@@ -799,7 +853,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                     // Není požadavek na konkrétní typ obsahu:
                     validItems = resourcePack.ResourceItems.ToArray();
                 else
-                {   // Chceme najít typicky typ obsahu Bitmapa, anebo když není tak Vector:
+                {   // Chceme například najít ideálně typ obsahu Vektor, anebo když není tak náhradní Bitmapa:
                     foreach (var validContentType in validContentTypes)
                     {
                         validItems = resourcePack.ResourceItems.Where(i => i.ContentType == validContentType).ToArray();
@@ -888,7 +942,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             return resourceItem.CreateSvgImage();
         }
         /// <summary>
-        /// Najde a rychle vrátí <see cref="SvgImage"/> pro dané jméno, hledá v Aplikačních zdrojích
+        /// Najde a rychle vrátí <see cref="SvgImage"/> pro dané jméno, hledá v dodaných Aplikačních zdrojích
         /// </summary>
         /// <param name="resourceItems"></param>
         /// <returns></returns>
@@ -1099,51 +1153,8 @@ namespace Noris.Clients.Win.Components.AsolDX
 
 
 
+        
 
-        public static void xxxApplyImage(DevExpress.XtraEditors.SimpleButtonImageOptions imageOptions, Image image = null, string resourceName = null, Size? imageSize = null, bool smallButton = false)
-        { Instance._ApplyImage(imageOptions, image, resourceName, imageSize, smallButton); }
-        private void _ApplyImage(DevExpress.XtraEditors.SimpleButtonImageOptions imageOptions, Image image = null, string resourceName = null, Size? imageSize = null, bool smallButton = false)
-        {
-            if (image != null)
-            {
-                imageOptions.Image = image;
-            }
-            else if (!String.IsNullOrEmpty(resourceName))
-            {
-                try
-                {
-                    if (_IsImageNameSvg(resourceName))
-                    {
-                        _RewindDevExpressResourceStream(resourceName);
-                        imageOptions.SvgImage = _DevExpressResourceCache.GetSvgImage(resourceName);
-                        if (imageSize.HasValue) imageOptions.SvgImageSize = imageSize.Value;
-                    }
-                    else
-                    {
-                        imageOptions.Image = _DevExpressResourceCache.GetImage(resourceName);
-                    }
-                }
-                catch { }
-            }
-            if (smallButton)
-            {
-                imageOptions.Location = DevExpress.XtraEditors.ImageLocation.MiddleCenter;
-                //                imageOptions.ImageToTextIndent = 0;
-                //              imageOptions.ImageToTextAlignment = DevExpress.XtraEditors.ImageAlignToText.BottomCenter;
-            }
-        }
-
-        #region SvgCollection
-        private SvgImage _GetSvgFromCollection(string imageName)
-        {
-            if (!imageName.StartsWith(ImageUriPrefix, StringComparison.OrdinalIgnoreCase)) imageName = ImageUriPrefix + imageName;
-            var svgImageCollection = _SvgImageCollection;
-            if (!svgImageCollection.ContainsKey(imageName))
-                svgImageCollection.Add(imageName, imageName);
-            return svgImageCollection[imageName];
-        }
-        #endregion
-        #endregion
     }
     /// <summary>
     /// Knihovna zdrojů výhradně aplikace (Resources.bin, adresář Images), nikoli zdroje DevEpxress.
@@ -1613,6 +1624,38 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         #endregion
     }
+    #region class ImageName : Knihovna názvů standardních ikon klienta
+    /// <summary>
+    /// Knihovna názvů standardních ikon klienta.
+    /// Pomocí této třídy je možno nasměrovat jakoukoli fixně definovanou ikonu na potřebný zdroj.
+    /// </summary>
+    public static class ImageName
+    {
+        public const string DxFormIcon = "svgimages/business%20objects/bo_appearance.svg";
+
+        public const string DxLayoutCloseSvg = "svgimages/hybriddemoicons/bottompanel/hybriddemo_close.svg";
+        public const string DxLayoutDockLeftSvg = "svgimages/align/alignverticalleft.svg";
+        public const string DxLayoutDockTopSvg = "svgimages/align/alignhorizontaltop.svg";
+        public const string DxLayoutDockBottomSvg = "svgimages/align/alignhorizontalbottom.svg";
+        public const string DxLayoutDockRightSvg = "svgimages/align/alignverticalright.svg";
+        public const string DxLayoutClosePng = "devav/actions/delete_16x16.png";
+        public const string DxLayoutDockLeftPng = "images/alignment/alignverticalleft_16x16.png";
+        public const string DxLayoutDockTopPng = "images/alignment/alignhorizontaltop_16x16.png";
+        public const string DxLayoutDockBottomPng = "images/alignment/alignhorizontalbottom_16x16.png";
+        public const string DxLayoutDockRightPng = "images/alignment/alignverticalright_16x16.png";
+
+        public const string DxRibbonQatMenuAdd = "svgimages/icon%20builder/actions_add.svg";
+        public const string DxRibbonQatMenuRemove = "svgimages/icon%20builder/actions_remove.svg";
+        public const string DxRibbonQatMenuMoveUp = "svgimages/icon%20builder/actions_arrow2up.svg";
+        public const string DxRibbonQatMenuMoveDown = "svgimages/icon%20builder/actions_arrow2down.svg";
+        public const string DxRibbonQatMenuShowManager = "svgimages/scheduling/viewsettings.svg";
+
+        public const string DxBarCheckToggleNull = "images/xaf/templatesv2images/bo_unknown_disabled.svg";
+        public const string DxBarCheckToggleFalse = "svgimages/icon%20builder/actions_deletecircled.svg";    //  "svgimages/xaf/state_validation_invalid.svg";
+        public const string DxBarCheckToggleTrue = "svgimages/icon%20builder/actions_checkcircled.svg";      //  "svgimages/xaf/state_validation_valid.svg";
+
+    }
+    #endregion
     #region Kolekce SvgImages rozšířená o numerický index
     /// <summary>
     /// Kolekce SvgImages rozšířená o numerický index
@@ -1764,7 +1807,298 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
     }
     #endregion
+    #region SvgImageModify : Třída pro úpravu obsahu SVG podle aktivního Skinu
+    /// <summary>
+    /// SvgImageModify : Třída pro úpravu obsahu SVG podle aktivního Skinu
+    /// </summary>
+    internal class SvgImageCustomize
+    {
+        #region Colours constans
+        private const string DarkColorCode00 = "#000000";
+        private const string DarkColorCode38 = "#383838";
+        private const string LightColorCodeD4 = "#D4D4D4";
+        private const string LightColorCodeFF = "#FFFFFF";
 
+        private const byte DarkColorPartValue00 = 0x00;
+        private const byte DarkColorPartValue38 = 0x38;
+        private const byte LightColorPartValueD4 = 0xD4;
+        private const byte LightColorPartValueFF = 0xFF;
+
+        private static readonly Color DarkColor00 = Color.FromArgb(255, DarkColorPartValue00, DarkColorPartValue00, DarkColorPartValue00);
+        private static readonly Color DarkColor38 = Color.FromArgb(255, DarkColorPartValue38, DarkColorPartValue38, DarkColorPartValue38);
+        private static readonly Color LightColorD4 = Color.FromArgb(255, LightColorPartValueD4, LightColorPartValueD4, LightColorPartValueD4);
+        private static readonly Color LightColorFF = Color.FromArgb(255, LightColorPartValueFF, LightColorPartValueFF, LightColorPartValueFF);
+
+        private const string LightColorCodeC8C6C4 = "#C8C6C4";  //světle šedá
+        private const string DarkColorCode78 = "#787878";       //tmavě šedá
+
+        private const string LightColorCodeF3B8B8 = "#F3B8B8";  //světle červená
+        private const string DarkColorCodeE42D2C = "#E42D2C";   //tmavě červená
+
+        private const string LightColorCodeF7CDA7 = "#F7CDA7";  //světle oranžová
+        private const string DarkColorCodeE57428 = "#E57428";   //tmavě oranžová
+
+        private const string LightColorCodeF7DA8E = "#F7DA8E";  //světle žlutá
+        private const string DarkColorCodeF7D52C = "#F7D52C";   //tmavě žlutá
+
+        private const string LightColorCodeBEE2E5 = "#BEE2E5";  //světle tyrkysová
+        private const string DarkColorCode21B4C9 = "#21B4C9";   //tmavě tyrkysová
+
+        private const string LightColorCode92CBEE = "#92CBEE";  //světle modrá
+        private const string LightColorCode228BCB = "#228BCB";  //světle modrá        
+        private const string DarkColorCode0964B0 = "#0964B0";   //tmavě modrá
+
+        private const string LightColorCodeDFBCD9 = "#DFBCD9";  //světle fialová
+        private const string DarkColorCodeA0519F = "#A0519F";   //tmavě fialová
+
+        private const string LightColorCodeDDAE85 = "#DDAE85";  //světle hnědá
+        private const string DarkColorCode9B5435 = "#9B5435";   //tmavě hnědá
+
+        private const string LightColorCodeACD8B1 = "#ACD8B1";  //světle zelená
+        private const string DarkColorCode0BA04A = "#0BA04A";   //tmavě zelená
+        private const string LightColorCode17AB4F = "#17AB4F";  //zelená
+        #endregion
+
+        private readonly Dictionary<string, string> LightDarkColors; //JD 0065749 26.06.2020
+
+        private bool IsDarkTheme { get; set; }
+
+        public ImageLoaderWithSVGSupport()
+        {
+            PostProcessedLightAutomatedImages = new System.Collections.Concurrent.ConcurrentDictionary<ResourceName, Image>();
+            PostProcessedDarkAutomatedImages = new System.Collections.Concurrent.ConcurrentDictionary<ResourceName, Image>();
+            var activeChanged = Win.Components.DevExpressToInfragisticsAppearanceConverter.StyleChanged.Subscribe(ActiveSkinChanged);
+            LightDarkColors = new Dictionary<string, string>(StringComparer.InvariantCultureIgnoreCase) //JD 0065749 26.06.2020
+            {
+                { LightColorCodeC8C6C4, DarkColorCode78 },     //class-colour-10 Šedá - #383838 změníme na #787878
+                { LightColorCodeF3B8B8, DarkColorCodeE42D2C }, //class-colour-20 Červená
+                { LightColorCodeF7CDA7, DarkColorCodeE57428 }, //class-colour-30 Oranžová
+                { LightColorCodeF7DA8E, DarkColorCodeF7D52C }, //class-colour-40 Žlutá - dark je stejná jako u oranžové #E57428, změníme ji na #F7D52C
+                { LightColorCodeACD8B1, DarkColorCode0BA04A }, //class-colour-50 Zelená
+                { LightColorCodeBEE2E5, DarkColorCode21B4C9 }, //class-colour-60 Tyrkysová
+                { LightColorCode92CBEE, DarkColorCode0964B0 }, //class-colour-70 Modrá
+                { LightColorCodeDFBCD9, DarkColorCodeA0519F }, //class-colour-80 Fialová
+                { LightColorCodeDDAE85, DarkColorCode9B5435 }  //class-colour-90 Hnědá
+            };
+        }
+
+        private System.Collections.Concurrent.ConcurrentDictionary<ResourceName, Image> PostProcessedLightAutomatedImages { get; }
+        private System.Collections.Concurrent.ConcurrentDictionary<ResourceName, Image> PostProcessedDarkAutomatedImages { get; }
+
+
+
+        public static SvgImage GetModifiedSvgImage(string resourceName, byte[] content)
+        { }
+        private Image LoadAndRenderSvg(ResourceName resourceName, System.IO.Stream content, Size targetSize)
+        {
+            string contentXml;
+            using (var sr = new System.IO.StreamReader(content, Encoding.UTF8))
+            {
+                contentXml = sr.ReadToEnd();
+            }
+
+            if (IsDarkTheme) //JD 0064459 03.02.2020 - modifications of icon colours for dark theme
+            {
+                //swap light and dark colour of path created by polygon or filled path
+                if (contentXml.Contains("fill") && (contentXml.Contains("path") || contentXml.Contains("polygon"))) //JD 0064459 07.02.2020 //JD 0065749 26.06.2020
+                {
+                    var contentXmlDoc = new XmlDocument();
+                    contentXmlDoc.LoadXml(contentXml);
+                    foreach (XmlNode childNode in contentXmlDoc.ChildNodes) ProcessSvgNode(childNode);
+                    using (var sw = new System.IO.StringWriter())
+                    using (var xw = new XmlTextWriter(sw))
+                    {
+                        contentXmlDoc.WriteTo(xw);
+                        contentXml = sw.ToString();
+                    }
+                }
+
+                //swap light and dark colours of class-colour, form-colour, tag and button-grey
+                if (resourceName.ServerResourceName.Contains("class-colour-10")         //JD 0065426 26.05.2020
+                    || resourceName.ServerResourceName.Contains("form-colour-10")       //JD 0066902 20.11.2020
+                    || resourceName.ServerResourceName.Contains("tag-filled-grey")      //JD 0065749 26.06.2020
+                    || resourceName.ServerResourceName.Contains("button-grey-filled"))
+                {
+                    contentXml = contentXml.Replace($"fill=\"{LightColorCodeC8C6C4}\" stroke=\"{DarkColorCode38}\"", $"fill=\"{DarkColorCode78}\" stroke=\"none\""); //circle/rect
+                    contentXml = contentXml.Replace($"fill=\"{LightColorCodeFF}\" stroke=\"{DarkColorCode38}\"", $"fill=\"{LightColorCodeFF}\" stroke=\"{LightColorCodeC8C6C4}\""); //path
+                }
+                else if (resourceName.ServerResourceName.Contains("Rel1ExtDoc") || resourceName.ServerResourceName.Contains("RelNExtDoc")) //JD 0067697 19.02.2021 Ve formuláři nejsou označ.blokované DV
+                {
+                    contentXml = contentXml.Replace($"fill=\"{LightColorCodeF7DA8E}\" stroke=\"{DarkColorCode38}\"", $"fill=\"{DarkColorCode38}\" stroke=\"{LightColorCodeF7DA8E}\""); //rect
+                    contentXml = contentXml.Replace($"fill=\"none\" stroke=\"{DarkColorCode38}\"", $"fill=\"none\" stroke=\"{LightColorCodeF7DA8E}\""); //path
+                    contentXml = contentXml.Replace($"fill=\"none\" stroke=\"{DarkColorCodeE57428}\"", $"fill=\"none\" stroke=\"{LightColorCodeF7DA8E}\""); //path
+                }
+                else
+                {
+                    foreach (var lightDarkColor in LightDarkColors) //JD 0065749 26.06.2020
+                    {
+                        if (resourceName.ServerResourceName.Contains("class-colour")    //JD 0065426 26.05.2020
+                            || resourceName.ServerResourceName.Contains("form-colour")  //JD 0066902 20.11.2020
+                            || resourceName.ServerResourceName.Contains("tag-filled")
+                            || (resourceName.ServerResourceName.Contains("button") && resourceName.ServerResourceName.Contains("filled"))
+                            || resourceName.ServerResourceName.Contains("DynRel"))      //JD 0067697 19.02.2021 Ve formuláři nejsou označ.blokované DV
+                        {
+                            contentXml = contentXml.Replace($"fill=\"{lightDarkColor.Key}\" stroke=\"{lightDarkColor.Value}\"", $"fill=\"{lightDarkColor.Key}\" stroke=\"none\""); //circle/rect
+                            contentXml = contentXml.Replace($"fill=\"{LightColorCodeF7DA8E/*lightDarkColor.Key*/}\" stroke=\"{DarkColorCodeE57428}\"", $"fill=\"{LightColorCodeF7DA8E/*lightDarkColor.Key*/}\" stroke=\"none\""); //path - žlutá je specifická
+                        }
+                        else
+                        {
+                            contentXml = contentXml.Replace($"fill=\"{lightDarkColor.Key}\"", $"fill=\"{lightDarkColor.Value}\"");
+                            contentXml = contentXml.Replace($"stroke=\"{lightDarkColor.Value}\"", $"stroke=\"{lightDarkColor.Key}\"");
+                        }
+                    }
+
+                    //světle modrá -> světlejší modrá
+                    contentXml = contentXml.Replace($"fill=\"none\" stroke=\"{LightColorCode228BCB}\"", $"fill=\"none\" stroke=\"{LightColorCode92CBEE}\""); //JD 0065749 22.07.2020
+                    contentXml = contentXml.Replace($"fill=\"{LightColorCodeFF}\" stroke=\"{LightColorCode228BCB}\"", $"fill=\"none\" stroke=\"{LightColorCode92CBEE}\""); //JD 0065749 22.07.2020
+                    contentXml = contentXml.Replace($"fill=\"{LightColorCode228BCB}\"", $"fill=\"{LightColorCode92CBEE}\""); //JD 0065749 22.07.2020
+                    contentXml = contentXml.Replace($"stroke=\"{LightColorCode228BCB}\"", $"stroke=\"{LightColorCode92CBEE}\""); //JD 0065749 03.08.2020
+
+                    //tmavě zelená -> zelená
+                    contentXml = contentXml.Replace($"fill=\"{DarkColorCode0BA04A}\"", $"fill=\"{LightColorCode17AB4F}\""); //JD 0065749 22.07.2020
+                    contentXml = contentXml.Replace($"stroke=\"{DarkColorCode0BA04A}\"", $"stroke=\"{LightColorCode17AB4F}\""); //JD 0065749 03.08.2020
+
+                    //bílá -> tmavě šedá                    
+                    contentXml = contentXml.Replace($"fill=\"{LightColorCodeFF}\"", $"fill=\"{DarkColorCode38}\"");
+
+                    //černá a tmavě šedá -> světle šedá
+                    contentXml = contentXml.Replace($"stroke=\"{DarkColorCode00}\"", $"stroke=\"{LightColorCodeD4}\"");
+                    contentXml = contentXml.Replace($"stroke=\"{DarkColorCode38}\"", $"stroke=\"{LightColorCodeD4}\"");
+                }
+            }
+
+            if (targetSize.Width == 24 && targetSize.Height == 24)
+            {
+                if (resourceName.ServerResourceName.Contains("form-colour") //JD 0066902 17.12.2020 Rozlišit záložky přehledů a formulářů
+                    || resourceName.ServerResourceName.Contains("Rel1"))    //JD 0067697 12.02.2021 Ve formuláři nejsou označ.blokované DV - ikona se liší pouze barvami
+                {
+                    contentXml = contentXml.Replace($"opacity=\"1\"", $"opacity=\"0.8\"");
+                    contentXml = contentXml.Replace($"d=\"M10,9.5h12M10,12.5h12M10,15.5h12M10,18.5h12M10,21.5h8\"", $"d=\"M10,10.25h12M10,12.75h12M10,15.5h12M10,18.25h12M10,21h8\"");
+                }
+                else if (resourceName.ServerResourceName.Contains("RelN")) //JD 0067697 12.02.2021 Ve formuláři nejsou označ.blokované DV
+                {
+                    contentXml = contentXml.Replace($"opacity=\"1\"", $"opacity=\"0.8\"");
+                    contentXml = contentXml.Replace($"d=\"M10.5,6.5h13v17M13.5,3.5h13v17\"", $"d=\"M10.5,7.25h12.75v16M13.5,4.5h12.5v16\"");
+                    contentXml = contentXml.Replace($"d=\"M10,13.5h8M10,16.5h8M10,19.5h8M10,22.5h6\"", $"d=\"M10,14.25h8M10,17h8M10,19.5h8M10,22.25h6\"");
+                }
+                else if (resourceName.ServerResourceName.Contains("RelArch")) //JD 0067697 17.02.2021 Ve formuláři nejsou označ.blokované DV
+                {
+                    contentXml = contentXml.Replace($"opacity=\"1\"", $"opacity=\"0.8\"");
+                    contentXml = contentXml.Replace($"d=\"M7.5,15.5H24\"", $"d=\"M7.5,15.25H24\"");
+                    contentXml = contentXml.Replace($"d=\"M12.5,8v3.5h7v-3.5M12.5,19v3.5h7v-3.5\"", $"d=\"M12.5,8v3.5h7v-3.5M12.5,18.75v3.5h7v-3.5\"");
+                }
+            }
+
+            var nContent = new System.IO.MemoryStream();
+            using (var sw = new System.IO.StreamWriter(nContent, Encoding.UTF8, 65535, true))
+            {
+                sw.Write(contentXml);
+                sw.Flush();
+            }
+            nContent.Seek(0, System.IO.SeekOrigin.Begin);
+            var svg = DevExpress.Utils.Svg.SvgBitmap.FromStream(nContent);
+            var palette = DevExpress.Utils.Svg.SvgPaletteHelper.GetSvgPalette(Win.Components.DevExpressToInfragisticsAppearanceConverter.CurrentSkinProvider, DevExpress.Utils.Drawing.ObjectState.Normal);
+            if (targetSize.IsEmpty)
+            {
+                return svg.Render(palette, 1);
+            }
+            else if (targetSize.Width == 24 && targetSize.Height == 24)
+            {
+                return svg.Render(targetSize, palette, DevExpress.Utils.DefaultBoolean.True); //JD 0065028 - it's better by design https://supportcenter.devexpress.com/Ticket/Details/T733524/the-svgbitmap-render-method-produces-an-image-with-non-high-quality
+            }
+            else
+            {
+                return svg.Render(targetSize, palette);
+            }
+        }
+
+        private void ProcessSvgNode(XmlNode node)
+        {
+            if (node.Name == "svg")
+            {
+                foreach (XmlNode childNodeOfSvg in node.ChildNodes)
+                {
+                    ProcessGNode(childNodeOfSvg);
+                }
+            }
+        }
+
+        private void ProcessGNode(XmlNode node)
+        {
+            if (node.Name == "g")
+            {
+                foreach (XmlNode childNodeOfG in node.ChildNodes)
+                {
+                    if (childNodeOfG.Name == "polygon") //path created by polygon
+                    {
+                        ProcessPolygonNode(childNodeOfG);
+                    }
+                    else if (childNodeOfG.Name == "path") //filled path
+                    {
+                        ProcessPathNode(childNodeOfG);
+                    }
+                    else if (childNodeOfG.Name == "g")
+                    {
+                        ProcessGNode(childNodeOfG); //recursion
+                    }
+                }
+            }
+        }
+
+        private void ProcessPolygonNode(XmlNode childNodeOfG)
+        {
+            if (childNodeOfG.Name == "polygon")
+            {
+                foreach (XmlAttribute attr in childNodeOfG.Attributes)
+                {
+                    if (attr.Name == "fill")
+                    {
+                        switch (attr.Value)
+                        {
+                            case DarkColorCode00:
+                            case DarkColorCode38:
+                                attr.Value = LightColorCodeD4;
+                                break;
+                            default:
+                                foreach (var lightDarkColor in LightDarkColors) //JD 0065749 26.06.2020
+                                {
+                                    if (attr.Value == lightDarkColor.Key) attr.Value = lightDarkColor.Value;
+                                }
+                                break;
+                        }
+                    }
+                }
+            }
+        }
+
+        private void ProcessPathNode(XmlNode childNodeOfPath)
+        {
+            if (childNodeOfPath.Name == "path")
+            {
+                foreach (XmlAttribute attr in childNodeOfPath.Attributes)
+                {
+                    if (attr.Name == "fill")
+                    {
+                        switch (attr.Value)
+                        {
+                            case DarkColorCode00:
+                            case DarkColorCode38:
+                                attr.Value = LightColorCodeD4;
+                                break;
+                            default:
+                                foreach (var lightDarkColor in LightDarkColors) //JD 0065749 26.06.2020
+                                {
+                                    if (attr.Value == lightDarkColor.Key) attr.Value = lightDarkColor.Value;
+                                }
+                                break;
+                        }
+                    }
+                }
+            }
+        }
+
+    }
+    #endregion
     #region SvgImageArraySupport : podpora pro kombinace SVG images na straně klienta
     /// <summary>
     /// SvgImageArraySupport : podpora pro kombinace SVG images na straně klienta

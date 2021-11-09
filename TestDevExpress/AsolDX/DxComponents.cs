@@ -71,7 +71,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             this._InitFontCache();
             this._InitDrawing();
             this._InitListeners();
-            this._ImageInit();
             this._InitClipboard();
             this._InitAppEvents();
         }
@@ -1800,7 +1799,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             dxItem.Enabled = menuItem.Enabled;
             dxItem.Caption = menuItem.Text;
             dxItem.SuperTip = CreateDxSuperTip(menuItem);
-            ApplyImage(dxItem.ImageOptions, resourceName: itemImage, image: menuItem.Image);
+            ApplyImage(dxItem.ImageOptions, imageName: itemImage, image: menuItem.Image);
             dxItem.Tag = menuItem;
 
             // SubMenu:
@@ -3449,6 +3448,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         public static string TabSkins_TabHeaderTextColorHot { get { return "TabSkins.TabHeaderTextColorHot"; } }
     }
     #endregion
+    #endregion
     #region MsgCode
     /// <summary>
     /// Knihovna standardních hlášek k lokalizaci
@@ -3546,7 +3546,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public string DefaultText { get; set; }
     }
-    #endregion
     #endregion
     #region interface IListener... : předpis pro odběratele systémových události
     /// <summary>

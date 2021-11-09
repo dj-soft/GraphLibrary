@@ -3265,23 +3265,9 @@ namespace Noris.Clients.Win.Components.AsolDX
                 // Na pozici [0] je Close, pak jsou: Left, Top, Bottom, Right:
                 bool useSvgIcons = UseSvgIcons;
                 if (useSvgIcons)
-                    return new string[]
-                    {
-                        baseIcons[0],
-                        "svgimages/align/alignverticalleft.svg",
-                        "svgimages/align/alignhorizontaltop.svg",
-                        "svgimages/align/alignhorizontalbottom.svg",
-                        "svgimages/align/alignverticalright.svg"
-                    };
+                    return new string[] { baseIcons[0], ImageName.DxLayoutDockLeftSvg, ImageName.DxLayoutDockTopSvg, ImageName.DxLayoutDockBottomSvg, ImageName.DxLayoutDockRightSvg };
                 else
-                    return new string[]
-                    {
-                        baseIcons[0],
-                        "images/alignment/alignverticalleft_16x16.png",
-                        "images/alignment/alignhorizontaltop_16x16.png",
-                        "images/alignment/alignhorizontalbottom_16x16.png",
-                        "images/alignment/alignverticalright_16x16.png"
-                    };
+                    return new string[] { baseIcons[0], ImageName.DxLayoutDockLeftPng, ImageName.DxLayoutDockTopPng, ImageName.DxLayoutDockBottomPng, ImageName.DxLayoutDockRightPng };
             }
         }
         #endregion
@@ -3706,9 +3692,9 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 bool useSvgIcons = UseSvgIcons;
                 if (useSvgIcons)
-                    return new string[] { "svgimages/hybriddemoicons/bottompanel/hybriddemo_close.svg" };
+                    return new string[] { ImageName.DxLayoutCloseSvg };
                 else
-                    return new string[] { "devav/actions/delete_16x16.png" };
+                    return new string[] { ImageName.DxLayoutClosePng };
             }
         }
         /// <summary>

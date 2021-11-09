@@ -359,11 +359,11 @@ namespace TestDevExpress.Forms
             int svgHeight2 = 8 * heightButton2 / 10;
             System.Drawing.Size svgSize1 = new System.Drawing.Size(svgHeight1, svgHeight1);
             System.Drawing.Size svgSize2 = new System.Drawing.Size(svgHeight2, svgHeight2);
-            DxComponent.ApplyImage(_ButtonClear.ImageOptions, resourceName: "svgimages/dashboards/delete.svg", imageSize: svgSize1);
-            DxComponent.ApplyImage(_ButtonMenu.ImageOptions, resourceName: "svgimages/icon%20builder/actions_add.svg", imageSize: svgSize1);
-            DxComponent.ApplyImage(_ButtonFill.ImageOptions, resourceName: "svgimages/icon%20builder/actions_addcircled.svg", imageSize: svgSize1);
-            DxComponent.ApplyImage(_ButtonMerge.ImageOptions, resourceName: "svgimages/spreadsheet/fillup.svg", imageSize: svgSize2);
-            DxComponent.ApplyImage(_ButtonUnMerge.ImageOptions, resourceName: "svgimages/spreadsheet/filldown.svg", imageSize: svgSize2);
+            DxComponent.ApplyImage(_ButtonClear.ImageOptions, imageName: "svgimages/dashboards/delete.svg", imageSize: svgSize1);
+            DxComponent.ApplyImage(_ButtonMenu.ImageOptions, imageName: "svgimages/icon%20builder/actions_add.svg", imageSize: svgSize1);
+            DxComponent.ApplyImage(_ButtonFill.ImageOptions, imageName: "svgimages/icon%20builder/actions_addcircled.svg", imageSize: svgSize1);
+            DxComponent.ApplyImage(_ButtonMerge.ImageOptions, imageName: "svgimages/spreadsheet/fillup.svg", imageSize: svgSize2);
+            DxComponent.ApplyImage(_ButtonUnMerge.ImageOptions, imageName: "svgimages/spreadsheet/filldown.svg", imageSize: svgSize2);
         }
         /// <summary>
         /// Poslední známá souřadnice Bottom u Ribbonu, který NENÍ mergovaný
