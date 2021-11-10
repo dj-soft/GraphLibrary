@@ -278,6 +278,9 @@ namespace TestDevExpress.Forms
         XB.BarManager _BarManager;
         protected override void DxRibbonPrepare()
         {
+            DxQuickAccessToolbar.ConfigValue = "Location:Below	_SYS__DevExpress_SkinSetDropDown	_SYS__DevExpress_SkinPaletteDropDown	";
+            DxQuickAccessToolbar.ConfigValueChanged += DxQuickAccessToolbar_ConfigValueChanged;
+
             List<DataRibbonPage> pages = new List<DataRibbonPage>();
             DataRibbonPage page;
             DataRibbonGroup group;
@@ -298,6 +301,11 @@ namespace TestDevExpress.Forms
             this.DxRibbon.AddPages(pages);
 
             _RibbonPages = pages;
+        }
+
+        private void DxQuickAccessToolbar_ConfigValueChanged(object sender, EventArgs e)
+        {
+            
         }
 
         private List<DataRibbonPage> _RibbonPages;
@@ -628,7 +636,12 @@ namespace TestDevExpress.Forms
             bool isStandard = true;
             if (isStandard)
             {   // Standardní cesta:
-                DxComponent.ApplyImage(barItem.ImageOptions, imageName);
+                DataRibbonItem resultItem = _SvgCombineRibbonGroup.Items[4] as DataRibbonItem;
+                resultItem.ImageName = imageName;
+                this.DxRibbon.RefreshItem(resultItem, true);
+
+                // DxComponent.ApplyImage(barItem.ImageOptions, imageName);
+
                 info = "Standard; ";
             }
             else
@@ -1117,8 +1130,7 @@ namespace TestDevExpress.Forms
         private void _TabStrip1AddItem()
         {
             int i = ++_TabStrip1BtnItem;
-            Image tabImage = _GetImage(i);
-            TabHeaderItem tabHeaderItem = TabHeaderItem.CreateItem("Key" + i, "Záhlaví " + i, "Titulek stránky " + i, "Nápověda k záložce číslo " + i, null, tabImage);
+            TabHeaderItem tabHeaderItem = TabHeaderItem.CreateItem("Key" + i, "Záhlaví " + i, "Titulek stránky " + i, "Nápověda k záložce číslo " + i, null);
             _TabStrip1AddItem(tabHeaderItem);
         }
         private void _TabStrip1AddItem(TabHeaderItem tabHeaderItem)
@@ -1295,11 +1307,6 @@ namespace TestDevExpress.Forms
         private void _TabStrip1Refresh()
         {
             TabHeaderStripDXTop control = _TabHeaderStrip1.Control as TabHeaderStripDXTop;
-        }
-        private Image _GetImage(int i)
-        {
-            string imageName = DxRibbonSample.GetRandomImageName();
-            return DxComponent.GetImageFromResource(imageName);
         }
         private int _TabStrip1BtnItem = 0;
         /// <summary>

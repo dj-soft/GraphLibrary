@@ -26,7 +26,7 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// <summary>
     /// Potomek Ribbonu
     /// </summary>
-    public class DxRibbonControl : DevExpress.XtraBars.Ribbon.RibbonControl, IDxRibbonInternal, IListenerApplicationIdle
+    public class DxRibbonControl : DevExpress.XtraBars.Ribbon.RibbonControl, IDxRibbonInternal, IListenerApplicationIdle, IListenerLightDarkChanged
     {
         #region Konstruktor
         /// <summary>
@@ -2366,28 +2366,31 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="withReset"></param>
         protected void FillBarItemImage(DevExpress.XtraBars.BarItem barItem, IRibbonItem iRibbonItem, bool withReset = false)
         {
-            var image = iRibbonItem.Image;
-            string imageName = iRibbonItem.ImageName;
-            if (image != null)
-            {
-                barItem.ImageOptions.Image = image;
-                barItem.ImageOptions.LargeImage = image;
-            }
-            else if (imageName != null && !(barItem is DxBarCheckBoxToggle))           // DxCheckBoxToggle si řídí Image sám
-            {
+            if (!(barItem is DxBarCheckBoxToggle))         // DxCheckBoxToggle si řídí Image sám
                 DxComponent.ApplyImage(barItem.ImageOptions, iRibbonItem.ImageName, iRibbonItem.Image);
 
+            //var image = iRibbonItem.Image;
+            //string imageName = iRibbonItem.ImageName;
+            //if (image != null)
+            //{
+            //    barItem.ImageOptions.Image = image;
+            //    barItem.ImageOptions.LargeImage = image;
+            //}
+            //else if (imageName != null && !(barItem is DxBarCheckBoxToggle))           // DxCheckBoxToggle si řídí Image sám
+            //{
+            //    DxComponent.ApplyImage(barItem.ImageOptions, iRibbonItem.ImageName, iRibbonItem.Image);
 
-                if (DxComponent.TryGetResourceExtension(imageName, out var _))
-                {
-                    DxComponent.ApplyImage(barItem.ImageOptions, imageName: imageName);
-                }
-                else
-                {
-                    barItem.ImageIndex = DxComponent.GetImageListIndex(imageName, RibbonImageSize, caption: iRibbonItem.Text);
-                    barItem.LargeImageIndex = DxComponent.GetImageListIndex(imageName, RibbonLargeImageSize, caption: iRibbonItem.Text);
-                }
-            }
+
+            //    if (DxComponent.TryGetResourceExtension(imageName, out var _))
+            //    {
+            //        DxComponent.ApplyImage(barItem.ImageOptions, imageName: imageName);
+            //    }
+            //    else
+            //    {
+            //        barItem.ImageIndex = DxComponent.GetImageListIndex(imageName, RibbonImageSize, caption: iRibbonItem.Text);
+            //        barItem.LargeImageIndex = DxComponent.GetImageListIndex(imageName, RibbonLargeImageSize, caption: iRibbonItem.Text);
+            //    }
+            //}
         }
         /// <summary>
         /// Do daného prvku Ribbonu vepíše vše pro jeho HotKey
@@ -5452,6 +5455,29 @@ namespace Noris.Clients.Win.Components.AsolDX
         int IDxRibbonInternal.GetNextTimeStamp() { return ++LastTimeStamp; }
         void IDxRibbonInternal.RemoveGroups(IEnumerable<DxRibbonGroup> groupsToDelete) { RemoveGroups(groupsToDelete); }
         void IListenerApplicationIdle.ApplicationIdle() { _ApplicationIdle(); }
+        #endregion
+        #region IListenerLightDarkChanged : reakce na změnu skinu světlý / tmavý = modifikace ikon
+        /// <summary>
+        /// Po změně skinu světlý / tmavý
+        /// </summary>
+        void IListenerLightDarkChanged.LightDarkChanged()
+        {
+            try
+            {
+                this.BeginUpdate();
+                foreach (BarItem barItem in this.Items)
+                {
+                    if (barItem.Tag is BarItemTagInfo tagInfo)
+                    {
+                        FillBarItemImage(barItem, tagInfo.Data);
+                    }
+                }
+            }
+            finally
+            {
+                this.EndUpdate();
+            }
+        }
         #endregion
         #region INFORMACE A POSTŘEHY, FUNGOVÁNÍ: CREATE, MERGE, UNMERGE, časy
         /*

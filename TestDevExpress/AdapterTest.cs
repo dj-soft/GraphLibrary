@@ -559,5 +559,4 @@ namespace Noris.Clients.Win.Components.AsolDX
         private bool _ContentLoaded;
     }
     #endregion
-
 }

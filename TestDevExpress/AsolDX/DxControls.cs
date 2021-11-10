@@ -3145,7 +3145,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (menuItem != null)
             {
                 if (menuItem.Image != null) return menuItem.Image;
-                if (menuItem.ImageName != null) return DxComponent.GetImageFromResource(menuItem.ImageName);
+                if (menuItem.ImageName != null) return DxComponent.GetBitmapImage(menuItem.ImageName);
             }
             return base.GetItemImage(index);
         }
@@ -4322,12 +4322,15 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 string resourceName = visibleItem.Item2?.Text;
                 Rectangle itemBounds = visibleItem.Item3;
-                var image = DxComponent.GetImageFromResource(resourceName, out Size size, maxSize: new Size(32, 32), optimalSvgSize: new Size(32, 32), svgPalette: svgPalette);
-                if (image != null)
+                using (var image = DxComponent.CreateBitmapImage(resourceName, optimalSvgSize: new Size(32, 32), svgPalette: svgPalette))
                 {
-                    Point imagePoint = new Point((itemBounds.Right - 24 - size.Width / 2), itemBounds.Top + ((itemBounds.Height - size.Height) / 2));
-                    Rectangle imageBounds = new Rectangle(imagePoint, size);
-                    e.Graphics.DrawImage(image, imageBounds);
+                    if (image != null)
+                    {
+                        Size size = image.Size;
+                        Point imagePoint = new Point((itemBounds.Right - 24 - size.Width / 2), itemBounds.Top + ((itemBounds.Height - size.Height) / 2));
+                        Rectangle imageBounds = new Rectangle(imagePoint, size);
+                        e.Graphics.DrawImage(image, imageBounds);
+                    }
                 }
             }
         }

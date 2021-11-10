@@ -71,6 +71,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             this._InitFontCache();
             this._InitDrawing();
             this._InitListeners();
+            this._InitSvgConvertor();
             this._InitClipboard();
             this._InitAppEvents();
         }
@@ -1020,9 +1021,18 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="e"></param>
         private void DevExpress_StyleChanged(object sender, EventArgs e)
         {
-            _ResetControlColors();
+            _ResetControlColors();                         // Tady se nuluje příznak __IsDarkTheme
+            bool nowIsDark = _IsDarkTheme();               // Tady se napočte příznak __IsDarkTheme
             _CallListeners<IListenerStyleChanged>();
+            bool isChange = (!__WasDarkTheme.HasValue || (__WasDarkTheme.HasValue && __WasDarkTheme.Value != nowIsDark));
+            __WasDarkTheme = nowIsDark;
+            if (isChange)
+                _CallListeners<IListenerLightDarkChanged>();
         }
+        /// <summary>
+        /// Paměť předchozího tmavého skinu, pro vyhodnocení změny Světlý/Tmavý
+        /// </summary>
+        private bool? __WasDarkTheme = null;
         /// <summary>
         /// Zaregistruje dodanou instanci, která chce být posluchačem systémových událostí
         /// </summary>
@@ -2833,6 +2843,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         /// <summary>
         /// Obsahuje true, pokud je aktuálně použitý tmavý skin.
+        /// Kdo chce dostávat informace o změně typu skinu (světlý / tmavý), nechť si implementuje interface <see cref="IListenerLightDarkChanged"/>
+        /// a zaregistruje se jako listener do <see cref="DxComponent.RegisterListener(IListener)"/>, 
+        /// a bude dostávat událost <see cref="IListenerLightDarkChanged.LightDarkChanged"/>
         /// </summary>
         public static bool IsDarkTheme { get { return Instance._IsDarkTheme(); } }
         /// <summary>
@@ -2845,6 +2858,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 bool isDarkTheme = false;
                 Color? backColor = _GetSkinColor(SkinElementColor.Control_PanelBackColor);
+                Color? backColor2 = _GetSkinColor(SkinElementColor.RibbonSkins_ButtonDisabled);
                 if (backColor.HasValue)
                     isDarkTheme = (backColor.Value.GetBrightness() < 0.40f);
                 __IsDarkTheme = isDarkTheme;
@@ -3565,13 +3579,28 @@ namespace Noris.Clients.Win.Components.AsolDX
     }
     /// <summary>
     /// Interface pro listener události Změna Skinu/Stylu
+    /// Tato událost se volá před událostí <see cref="IListenerLightDarkChanged.LightDarkChanged"/>.
     /// </summary>
     public interface IListenerStyleChanged : IListener
     {
         /// <summary>
         /// Metoda je volaná po změně stylu do všech instancí, které se zaregistrovaly pomocí <see cref="DxComponent.RegisterListener"/>
+        /// Tato událost se volá před událostí <see cref="IListenerLightDarkChanged.LightDarkChanged"/>.
         /// </summary>
         void StyleChanged();
+    }
+    /// <summary>
+    /// Interface pro listener události Změna světlého/tmavého Skinu/Stylu.
+    /// Nebude dostávat událost vždycky po změně skinu, ale jen když se změní tmavý za světý skin.
+    /// Tato událost se volá až po proběhnutí události <see cref="IListenerStyleChanged.StyleChanged"/>.
+    /// </summary>
+    public interface IListenerLightDarkChanged : IListener
+    {
+        /// <summary>
+        /// Metoda je volaná po změně světlého/tmavého stylu do všech instancí, které se zaregistrovaly pomocí <see cref="DxComponent.RegisterListener"/>
+        /// Tato událost se volá až po proběhnutí události <see cref="IListenerStyleChanged.StyleChanged"/>.
+        /// </summary>
+        void LightDarkChanged();
     }
     /// <summary>
     /// Interface pro listener události <see cref="Application.Idle"/>
