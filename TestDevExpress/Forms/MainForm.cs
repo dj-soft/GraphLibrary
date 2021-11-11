@@ -2729,6 +2729,9 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
         {
             bool useSvg = (Random.IsTrue(40));
             _TreeListImageType = (useSvg ? ResourceContentType.Vector : ResourceContentType.Bitmap);
+
+            _TreeListImageType = ResourceContentType.Vector;
+
             _NewNodePosition = NewNodePositionType.First;
             CreateImageList();
             CreateTreeView();

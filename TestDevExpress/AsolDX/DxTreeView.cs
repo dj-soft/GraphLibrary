@@ -2837,29 +2837,12 @@ namespace Noris.Clients.Win.Components.AsolDX
                         index = DxComponent.GetImageListIndex(imageName, _NodeImageSize);
                         break;
                     case ResourceContentType.Vector:
-#warning TODO:
-                        // index = DxComponent.GetSvgListIndex(imageName);
+                        index = DxComponent.GetSvgIndex(imageName); //, _NodeImageSize);
                         break;
                 }
             }
             if (index < 0 && defaultValue >= 0) index = defaultValue;
             return index;
-
-
-            SvgImage svgImage1 = DxComponent.CreateVectorImage("");
-            SvgImage svgImage2 = DxComponent.CreateVectorImage("");
-
-            SvgGroup svgGroup = new SvgGroup();
-            svgGroup.Transformations.Add(new SvgTranslate(new double[] { 16d, 16d }));
-            svgGroup.Transformations.Add(new SvgScale(new double[] { 0.5, 0.5 }));
-            foreach (var svgItem in svgImage1.Root.Elements)
-                svgGroup.Elements.Add(svgItem.DeepCopy());
-
-            SvgImage svgImage3 = svgImage2.Clone();
-            svgImage3.Root.Elements.Add(svgGroup);
-
-            SvgBitmap svgBitmap = new SvgBitmap(svgImage3);
-            svgBitmap.Render(null);
         }
         /// <summary>
         /// Pro dodaný obrázek určí jeho typ, prověří dosavadní používaný typ obrázku (Bitmap / Vector) a zajistí:
