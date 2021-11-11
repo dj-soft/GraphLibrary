@@ -315,10 +315,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         private ImageList _GetImageList(ResourceImageSizeType sizeType)
         {
-            System.Windows.Forms.ImageList imageList;
             if (__ImageListDict == null) __ImageListDict = new Dictionary<ResourceImageSizeType, ImageList>();   // OnDemand tvorba, grafika se používá výhradně z GUI threadu takže tady zámek neřeším
             var imageListDict = __ImageListDict;
-            if (!imageListDict.TryGetValue(sizeType, out imageList))
+            if (!imageListDict.TryGetValue(sizeType, out ImageList imageList))
             {
                 lock (imageListDict)
                 {
@@ -470,37 +469,69 @@ namespace Noris.Clients.Win.Components.AsolDX
         #endregion
         #region SvgImageCollection - Seznam obrázků typu Vector, pro použití v controlech; GetSvgIndex
         /// <summary>
-        /// Kolekce SvgImages pro použití v controlech, obsahuje DevExpress i Aplikační zdroje.
+        /// Vrátí kolekci SvgImages pro použití v controlech, obsahuje DevExpress i Aplikační zdroje. Pro danou cílovou velikost.
         /// </summary>
-        public static DevExpress.Utils.SvgImageCollection SvgImageCollection { get { return Instance._SvgImageCollection; } }
+        /// <param name="sizeType"></param>
+        public static DevExpress.Utils.SvgImageCollection GetSvgImageCollection(ResourceImageSizeType sizeType) { return Instance._GetSvgImageCollection(sizeType); }
         /// <summary>
-        /// Najde a vrátí index ID pro vektorový obrázek daného jména, obrázek je uložen v kolekci <see cref="SvgImageCollection"/>
+        /// Vrátí kolekci SvgImages pro použití v controlech, obsahuje DevExpress i Aplikační zdroje. Pro danou cílovou velikost.
         /// </summary>
-        /// <param name="imageName"></param>
-        /// <returns></returns>
-        public static int GetSvgIndex(string imageName) { return Instance._GetSvgIndex(imageName); }
-        /// <summary>
-        /// Najde a vrátí index ID pro vektorový obrázek daného jména, obrázek je uložen v kolekci <see cref="SvgImageCollection"/>
-        /// </summary>
-        /// <param name="imageName"></param>
-        /// <returns></returns>
-        private int _GetSvgIndex(string imageName)
+        /// <param name="sizeType"></param>
+        private DxSvgImageCollection _GetSvgImageCollection(ResourceImageSizeType sizeType)
         {
-            var svgCollection = _SvgImageCollection;
+            if (__SvgImageCollections == null) __SvgImageCollections = new Dictionary<ResourceImageSizeType, DxSvgImageCollection>();      // OnDemand tvorba, grafika se používá výhradně z GUI threadu takže tady zámek neřeším
+            var svgImageCollections = __SvgImageCollections;
+            if (!svgImageCollections.TryGetValue(sizeType, out DxSvgImageCollection svgCollection))
+            {
+                lock (svgImageCollections)
+                {
+                    if (!svgImageCollections.TryGetValue(sizeType, out svgCollection))
+                    {
+                        svgCollection = new DxSvgImageCollection(sizeType);
+                        svgCollection.ImageSize = GetImageSize(sizeType, true);          // Toto je třeba aktualizovat po změně Zoomu!!!  Viz metoda _RecalcSvgCollectionsSizeByZoom()
+                        svgImageCollections.Add(sizeType, svgCollection);
+                    }
+                }
+            }
+            return svgCollection;
+        }
+        /// <summary>
+        /// Volá se po změně Zoomu, projde existující kolekce SVG Images (instance <see cref="DxSvgImageCollection"/> v <see cref="__SvgImageCollections"/>),
+        /// a aktualizuje jejich cílové pixelové velikosti podle aktuálního Zoomu.
+        /// </summary>
+        private void _RecalcSvgCollectionsSizeByZoom()
+        {
+            // Není nutno nic dělat explicitně. 
+            // Kolekce v __SvgImageCollections jsou typu DxSvgImageCollection, tato třída sama implementuje IListenerZoomChange, a tím je volána z DxComponent po změně Zoomu a sama si přepočte velikost ikon...
+        }
+        /// <summary>
+        /// Volá se po změně typu skinu (Světlý - Tmavý), nyní se mají přegenerovat SVG ikony aplikační, kterým se ručně mění barevnost...
+        /// </summary>
+        private void _ReloadSvgCollectionOnLightDarkChanged()
+        {
+            // Není nutno nic dělat explicitně. 
+            // Kolekce v __SvgImageCollections jsou typu DxSvgImageCollection, tato třída sama implementuje IListenerLightDarkChanged, a tím je volána z DxComponent po změně LightDark a sama si regeneruje potřebné ikony...
+        }
+        /// <summary>
+        /// Najde a vrátí index ID pro vektorový obrázek daného jména, obrázek je uložen v kolekci <see cref="SvgImageCollection"/>
+        /// </summary>
+        /// <param name="imageName">Jméno obrázku</param>
+        /// <param name="sizeType">Cílový typ velikosti; každá velikost má svoji kolekci (viz <see cref="GetSvgImageCollection(ResourceImageSizeType)"/>)</param>
+        /// <returns></returns>
+        public static int GetSvgIndex(string imageName, ResourceImageSizeType sizeType) { return Instance._GetSvgIndex(imageName, sizeType); }
+        /// <summary>
+        /// Najde a vrátí index ID pro vektorový obrázek daného jména, obrázek je uložen v kolekci <see cref="SvgImageCollection"/>
+        /// </summary>
+        /// <param name="imageName">Jméno obrázku</param>
+        /// <param name="sizeType">Cílový typ velikosti; každá velikost má svoji kolekci (viz <see cref="GetSvgImageCollection(ResourceImageSizeType)"/>)</param>
+        /// <returns></returns>
+        private int _GetSvgIndex(string imageName, ResourceImageSizeType sizeType)
+        {
+            var svgCollection = _GetSvgImageCollection(sizeType);
             return svgCollection.GetImageId(imageName, n => _GetVectorImage(n));
         }
-        /// <summary>Kolekce SvgImages pro použití v controlech, obsahuje DevExpress i Aplikační zdroje, instanční property, autoinicializační.</summary>
-        private DxSvgImageCollection _SvgImageCollection
-        {
-            get
-            {
-                if (__SvgImageCollection == null)
-                    __SvgImageCollection = new DxSvgImageCollection();
-                return __SvgImageCollection;
-            }
-        }
         /// <summary>Kolekce SvgImages pro použití v controlech, obsahuje DevExpress i Aplikační zdroje, instanční proměnná.</summary>
-        private DxSvgImageCollection __SvgImageCollection;
+        private Dictionary<ResourceImageSizeType, DxSvgImageCollection> __SvgImageCollections;
         #endregion
         #region Přístup na DevExpress zdroje
         /// <summary>
@@ -1068,7 +1099,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="content"></param>
         /// <param name="targetSize"></param>
         /// <returns></returns>
-        public static SvgImage ConvertToDarkSkin(string resourceName, byte[] content, Size? targetSize = null)
+        public static DxSvgImage ConvertToDarkSkin(string resourceName, byte[] content, Size? targetSize = null)
         { return Instance.__SvgImageCustomize.ConvertToDarkSkin(resourceName, content, targetSize); }
         /// <summary>
         /// Dodaný <see cref="SvgImage"/> převede do dark skin barev
@@ -1077,7 +1108,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="svgImage"></param>
         /// <param name="targetSize"></param>
         /// <returns></returns>
-        public static SvgImage ConvertToDarkSkin(string resourceName, SvgImage svgImage, Size? targetSize = null)
+        public static DxSvgImage ConvertToDarkSkin(string resourceName, SvgImage svgImage, Size? targetSize = null)
         { return Instance.__SvgImageCustomize.ConvertToDarkSkin(resourceName, svgImage, targetSize); }
         #endregion
     }
@@ -1539,7 +1570,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// do tmavého skinu (pomocí metody <see cref="DxComponent.ConvertToDarkSkin(string, byte[], Size?)"/>
             /// </summary>
             /// <returns></returns>
-            public SvgImage CreateSvgImage()
+            public DxSvgImage CreateSvgImage()
             {
                 // V první řadě mohu použít cachovaný SvgImage pro aktuální skin (tmavý / světlý), pokud pro daný skin máme připraven SvgImage:
                 bool isDarkSkin = DxComponent.IsDarkTheme;
@@ -1555,20 +1586,19 @@ namespace Noris.Clients.Win.Components.AsolDX
                 // Uložíme si odpovídající SvgImage:
                 if (!isDarkSkin)
                 {
-                    // Třída DevExpress.Utils.Svg.SvgImage deklaruje implicitní operátor: public static implicit operator SvgImage(byte[] data);
-                    _SvgImageNative = (SvgImage)content;
                     _SvgImageDark = null;
+                    _SvgImageNative = new DxSvgImage(this.ItemKey, true, content);
                     return _SvgImageNative;
                 }
                 else
                 {
-                    _SvgImageDark = DxComponent.ConvertToDarkSkin(this.ItemKey, content);
                     _SvgImageNative = null;
+                    _SvgImageDark = DxComponent.ConvertToDarkSkin(this.ItemKey, content);
                     return _SvgImageDark;
                 }
             }
-            private SvgImage _SvgImageNative;
-            private SvgImage _SvgImageDark;
+            private DxSvgImage _SvgImageNative;
+            private DxSvgImage _SvgImageDark;
             #endregion
         }
         #endregion
@@ -1609,17 +1639,22 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// <summary>
     /// class <see cref="DxSvgImageCollection"/> : Kolekce SvgImages rozšířená o numerický index
     /// </summary>
-    public class DxSvgImageCollection : DevExpress.Utils.SvgImageCollection
+    public class DxSvgImageCollection : DevExpress.Utils.SvgImageCollection, IListenerZoomChange, IListenerLightDarkChanged, IDisposable
     {
+        #region Konstruktor, Dispose, Public property
         /// <summary>
         /// Konstruktor
         /// </summary>
-        public DxSvgImageCollection() : base() { this.Initialize(); }
+        public DxSvgImageCollection() : base() { this.Initialize(ResourceImageSizeType.Small); }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public DxSvgImageCollection(ResourceImageSizeType sizeType) : base() { this.Initialize(sizeType); }
         /// <summary>
         /// Konstruktor
         /// </summary>
         /// <param name="container"></param>
-        public DxSvgImageCollection(System.ComponentModel.IContainer container) : base(container) { this.Initialize(); }
+        public DxSvgImageCollection(System.ComponentModel.IContainer container) : base(container) { this.Initialize(ResourceImageSizeType.Small); }
         /// <summary>
         /// Vizualizace
         /// </summary>
@@ -1631,14 +1666,65 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Inicializace
         /// </summary>
-        private void Initialize()
+        private void Initialize(ResourceImageSizeType sizeType)
         {
             _NameIdDict = new Dictionary<string, int>();
+            SizeType = sizeType;
+            RefreshCurrentSize();
+            DxComponent.RegisterListener(this);
+        }
+        /// <summary>
+        /// Dispose
+        /// </summary>
+        void IDisposable.Dispose()
+        {
+            DxComponent.UnregisterListener(this);
         }
         /// <summary>
         /// Dictionary Key to Index
         /// </summary>
         private Dictionary<string, int> _NameIdDict;
+        /// <summary>
+        /// Druh velikosti ikon
+        /// </summary>
+        public ResourceImageSizeType SizeType { get; private set; }
+        #endregion
+        #region IListenerZoomChange, IListenerLightDarkChanged
+        /// <summary>
+        /// Po změně Zoomu
+        /// </summary>
+        void IListenerZoomChange.ZoomChanged() { RefreshCurrentSize(); }
+        /// <summary>
+        /// Aktualizuje velikost ikon po změně Zoomu
+        /// </summary>
+        private void RefreshCurrentSize()
+        {
+            this.ImageSize = DxComponent.GetImageSize(SizeType, true);
+        }
+        /// <summary>
+        /// Po změně skinu LightDark
+        /// </summary>
+        void IListenerLightDarkChanged.LightDarkChanged() { OnLightDarkChanged(); }
+        /// <summary>
+        /// Přegeneruje svoje ikony, pokud jsou <see cref="DxSvgImage"/> a požadují změnu obsahu po změně skinu
+        /// </summary>
+        private void OnLightDarkChanged()
+        {
+            int count = this.Count;
+            for (int i = 0; i < count; i++)
+            {   // Procházím to takhle dřevěně proto, že
+                //  a) potřebuji index [i] pro setování modifikovaného objektu,
+                //  b) a protože v foreach cyklu není dobré kolekci měnit
+                if (this[i] is DxSvgImage dxSvgImage && dxSvgImage.IsLightDarkCustomizable)
+                {   // Pokud na dané pozici je DxSvgImage, který je LightDarkCustomizable,
+                    //  pak si pro jeho jméno získám instanci zdroje (resourceItem) a tento zdroj mi vytvoří aktuálně platný SvgImage (Světlý nebo Tmavý, podle aktuálního = nového skinu):
+                    if (DxApplicationResourceLibrary.TryGetResource(dxSvgImage.ImageName, out var resourceItem, out var _) && resourceItem != null && resourceItem.ContentType == ResourceContentType.Vector)
+                        this[i] = resourceItem.CreateSvgImage();
+                }
+            }
+        }
+        #endregion
+        #region Správa kolekce
         /// <summary>
         /// Přidá nový SvgImage nebo přepíše stávající
         /// </summary>
@@ -1754,6 +1840,58 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             return (name == null ? "" : name.Trim().ToLower());
         }
+        #endregion
+    }
+    #endregion
+    #region class DxSvgImage : rozšíření třídy SvgImage o některé atributy (jméno a druh práce s barvou)
+    /// <summary>
+    /// DxSvgImage : rozšíření třídy SvgImage o některé atributy (jméno a druh práce s barvou)
+    /// </summary>
+    public class DxSvgImage : SvgImage
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public DxSvgImage() 
+            : base()
+        { }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="imageName"></param>
+        /// <param name="isLightDarkCustomizable"></param>
+        public DxSvgImage(string imageName, bool isLightDarkCustomizable) 
+            : base()
+        { }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="imageName"></param>
+        /// <param name="isLightDarkCustomizable"></param>
+        /// <param name="data"></param>
+        public DxSvgImage(string imageName, bool isLightDarkCustomizable, byte[] data)
+            : base(new System.IO.MemoryStream(data))
+        {
+            this.ImageName = imageName;
+            this.IsLightDarkCustomizable = isLightDarkCustomizable;
+        }
+        /// <summary>
+        /// Jméno zdroje
+        /// </summary>
+        public string ImageName { get; private set; }
+        /// <summary>
+        /// Po změně skinu (Světlý - Tmavý) je nutno obsah přegenerovat.
+        /// Bohužel obsah SvgImage změnit nelze, je třeba vygenerovat new instanci.
+        /// </summary>
+        public bool IsLightDarkCustomizable { get; private set; }
+        /// <summary>
+        /// Vrací new instanci z daného bufferu
+        /// </summary>
+        /// <param name="data"></param>
+        public static implicit operator DxSvgImage(byte[] data)
+        {
+            return new DxSvgImage(null, false, data);
+        }
     }
     #endregion
     #region SvgImageCustomize : Třída pro úpravu obsahu SVG podle aktivního Skinu (Světlý / Tmavý)
@@ -1840,7 +1978,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="content"></param>
         /// <param name="targetSize"></param>
         /// <returns></returns>
-        public SvgImage ConvertToDarkSkin(string resourceName, byte[] content, Size? targetSize = null)
+        public DxSvgImage ConvertToDarkSkin(string resourceName, byte[] content, Size? targetSize = null)
         {
             return _ConvertToDarkSkin(resourceName, content, targetSize);
         }
@@ -1851,7 +1989,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="svgImage"></param>
         /// <param name="targetSize"></param>
         /// <returns></returns>
-        public SvgImage ConvertToDarkSkin(string resourceName, SvgImage svgImage, Size? targetSize = null)
+        public DxSvgImage ConvertToDarkSkin(string resourceName, SvgImage svgImage, Size? targetSize = null)
         {
             byte[] content;
             using (System.IO.MemoryStream ms = new System.IO.MemoryStream())
@@ -1868,7 +2006,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="content"></param>
         /// <param name="targetSize"></param>
         /// <returns></returns>
-        private SvgImage _ConvertToDarkSkin(string resourceName, byte[] content, Size? targetSize = null)
+        private DxSvgImage _ConvertToDarkSkin(string resourceName, byte[] content, Size? targetSize = null)
         {
             string contentXml = Encoding.UTF8.GetString(content);
 
@@ -1964,7 +2102,7 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             // Upravený string contentXml převedu do byte[], a z něj pak implicitní konverzí do SvgImage:
             byte[] darkContent = Encoding.UTF8.GetBytes(contentXml);
-            return (SvgImage)darkContent;
+            return new DxSvgImage(resourceName, true, darkContent);
         }
         private void _ProcessSvgNode(XmlNode node)
         {
@@ -2280,27 +2418,17 @@ namespace Noris.Clients.Win.Components.AsolDX
         #endregion
         #region Podpora
         /// <summary>
-        /// Klíč: obsahuje klíče všech obrázků <see cref="SvgImageArrayItem.Key"/>.
-        /// Lze jej použít jako klíč do Dictionary, protože dvě instance <see cref="SvgImageArrayInfo"/> se stejným klíčem budou mít stejný vzhled výsledného obrázku.
-        /// </summary>
-        public string Key
-        {
-            get
-            {
-                StringBuilder sb = new StringBuilder();
-                foreach (var item in Items)
-                    sb.Append(item.Key);
-                string key = sb.ToString();
-                int delimiterLength = SvgImageArrayInfo.KeyDelimiter.Length;
-                if (key.Length > delimiterLength)
-                    key = key.Substring(delimiterLength);
-                return key;
-            }
-        }
-        /// <summary>
         /// Oddělovač dvou prvků <see cref="SvgImageArrayItem.Key"/> v rámci jednoho <see cref="SvgImageArrayInfo.Key"/>
         /// </summary>
-        internal static string KeyDelimiter { get { return "»+«"; } }
+        internal const string KeySplitDelimiter = KeyItemEnd + KeyItemBegin;
+        /// <summary>
+        /// Značka Begin jednoho prvku
+        /// </summary>
+        internal const string KeyItemBegin = "«";
+        /// <summary>
+        /// Značka End jednoho prvku
+        /// </summary>
+        internal const string KeyItemEnd = "»";
         /// <summary>
         /// Vrátí souřadnici prostoru v dané relativní pozici k základnímu prostoru { 0, 0, 100, 100 }.
         /// Lze specifikovat velikost cílového prostoru, ta musí být v rozmezí 16 až <see cref="BaseSize"/> (včetně).
@@ -2340,6 +2468,21 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public string Serial { get { return Noris.WS.Parser.XmlSerializer.Persist.Serialize(this, Noris.WS.Parser.XmlSerializer.PersistArgs.MinimalXml); } }
         /// <summary>
+        /// Klíč: obsahuje klíče všech obrázků <see cref="SvgImageArrayItem.Key"/>.
+        /// Lze jej použít jako klíč do Dictionary, protože dvě instance <see cref="SvgImageArrayInfo"/> se stejným klíčem budou mít stejný vzhled výsledného obrázku.
+        /// </summary>
+        public string Key
+        {
+            get
+            {
+                StringBuilder sb = new StringBuilder();
+                foreach (var item in Items)
+                    sb.Append(item.Key);
+                string key = sb.ToString();
+                return key;
+            }
+        }
+        /// <summary>
         /// Zkusí provést deserializaci
         /// </summary>
         /// <param name="serial"></param>
@@ -2358,10 +2501,10 @@ namespace Noris.Clients.Win.Components.AsolDX
                         return true;
                     }
                 }
-                else if (serial.Contains(SvgImageArrayInfo.KeyDelimiter))
-                {   // Z Key:
+                else if (serial.Contains(SvgImageArrayInfo.KeySplitDelimiter))
+                {   // Z Key = ten je ve tvaru:  «name1»«name2<X.Y.W.H>»    rozdělím v místě oddělovače »« ,  získám dva prvky   «name1    a    name2<X.Y.W.H>»   (v prvcích tedy může / nemusí být značka   «   anebo   »     (nemusí být u druhého prvku ze tří :-) )
                     SvgImageArrayInfo array = new SvgImageArrayInfo();
-                    string[] serialItems = serial.Split(new string[] { SvgImageArrayInfo.KeyDelimiter }, StringSplitOptions.RemoveEmptyEntries);
+                    string[] serialItems = serial.Split(new string[] { SvgImageArrayInfo.KeySplitDelimiter }, StringSplitOptions.RemoveEmptyEntries);
                     foreach (var serialItem in serialItems)
                     {
                         if (SvgImageArrayItem.TryDeserialize(serialItem, out SvgImageArrayItem item))
@@ -2436,7 +2579,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             item = null;
             if (String.IsNullOrEmpty(serialItem) || serialItem.IndexOfAny("*?:\t\r\n".ToCharArray()) >= 0) return false;
 
-            var parts = serialItem.Split('<', '>');           // "name",  "0.0.60.60",  ""
+            serialItem = serialItem.Replace(SvgImageArrayInfo.KeyItemBegin, "").Replace(SvgImageArrayInfo.KeyItemEnd, "");          // Odstraníme zbývající Begin a End značky   «   a   »  (pokud tam jsou)
+            var parts = serialItem.Split('<', '>');           // Z textu "imagename<0.0.60.30>" vytvořím tři prvky:    "imagename",    "0.0.60.30",    ""
             int count = parts.Length;
             if (parts.Length == 0) return false;
             string name = parts[0];
@@ -2445,7 +2589,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             Rectangle? bounds = null;
             if (parts.Length > 1)
             {
-                var coords = parts[1].Split('.');             // "0.0.60.60";
+                var coords = parts[1].Split('.');             // "0.0.60.30";
                 if (coords.Length == 4)
                 {
                     if (Int32.TryParse(coords[0], out int x) && (x >= 0 && x <= 120) &&
@@ -2471,18 +2615,20 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public Rectangle? ImageRelativeBounds { get; set; }
         /// <summary>
-        /// Klíč: obsahuje název obrázku a cílový prostor <see cref="ImageRelativeBounds"/>, pokud je zadán
+        /// Klíč: obsahuje název obrázku a cílový prostor <see cref="ImageRelativeBounds"/>, pokud je zadán, ve formě:
+        /// «image&lt;X.Y.W.H&gt;»
         /// </summary>
         public string Key
         {
             get
             {
-                string key = SvgImageArrayInfo.KeyDelimiter + this.ImageName.Trim().ToLower();
+                string key = SvgImageArrayInfo.KeyItemBegin + this.ImageName.Trim().ToLower();
                 if (ImageRelativeBounds.HasValue)
                 {
                     var bounds = ImageRelativeBounds.Value;
                     key += $"<{bounds.X}.{bounds.Y}.{bounds.Width}.{bounds.Height}>";
                 }
+                key += SvgImageArrayInfo.KeyItemEnd;
                 return key;
             }
         }

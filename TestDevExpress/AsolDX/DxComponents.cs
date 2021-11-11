@@ -407,7 +407,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private DevExpress.XtraSplashScreen.FluentSplashScreenOptions _SplashOptions;
         #endregion
-        #region Styly
+        #region Základní styly (Appearance) pro zobrazování komponent
         /// <summary>
         /// Provede inicializaci standardních stylů
         /// </summary>
@@ -867,6 +867,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             _Zoom = SystemAdapter.ZoomRatio;
             _RecalcZoomDpi();
+            _RecalcSvgCollectionsSizeByZoom();
         }
         /// <summary>
         /// Uloží hodnotu DesignDpi a přepočte další...
@@ -1027,7 +1028,10 @@ namespace Noris.Clients.Win.Components.AsolDX
             bool isChange = (!__WasDarkTheme.HasValue || (__WasDarkTheme.HasValue && __WasDarkTheme.Value != nowIsDark));
             __WasDarkTheme = nowIsDark;
             if (isChange)
+            {
+                _ReloadSvgCollectionOnLightDarkChanged();            // Kolekce SVG obrázků mohou obsahovat aplikační obrázky, které se po výrazné změně skinu mají přegenerovat (Light # Dark)
                 _CallListeners<IListenerLightDarkChanged>();
+            }
         }
         /// <summary>
         /// Paměť předchozího tmavého skinu, pro vyhodnocení změny Světlý/Tmavý

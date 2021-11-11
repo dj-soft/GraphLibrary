@@ -625,8 +625,10 @@ namespace TestDevExpress.Forms
             // Vstupní obrázky:
             SvgImageArrayInfo svgImageArray = new SvgImageArrayInfo(svgImageName0);
             svgImageArray.Add(svgImageName1, contentAlignment, percent);
-
+            // Výsledný string:
             string imageName = svgImageArray.Key;
+
+
             bool ok = SvgImageArrayInfo.TryDeserialize(imageName, out var imgCopy);
             string copyName = imgCopy?.Key;
 
@@ -2800,7 +2802,8 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
             _TreeList.FilterBoxChangedSources = DxFilterBoxChangeEventSource.Default;
             _TreeList.MultiSelectEnabled = true;
             _TreeList.MainClickMode = NodeMainClickMode.AcceptNodeSetting;
-
+            _TreeList.NodeImageSize = ResourceImageSizeType.Large;        // Zkus různé...
+            _TreeList.NodeAllowHtmlText = true;
             _TreeList.Parent = this;
             _SplitContainer.Panel1.Controls.Add(_TreeList);               // Musí být dřív než se začne pracovat s daty!!!
             _SplitContainer.Panel1.Controls.Add(_TreeMultiCheckBox);      // 
@@ -3139,7 +3142,8 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
 
             // Ikony vektorové / bitmapové:
             if (_TreeListImageType == ResourceContentType.Vector)
-                node.ImageName = this.GetRandomSysSvgName(false, true);
+                // node.ImageName = this.GetRandomSysSvgName(false, true);
+                node.ImageName = this.GetRandomApplicationSvgName();
             else
                 node.ImageName = this.GetRandomBallImageName();
 
@@ -3438,6 +3442,12 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
 
             return (names.Count > 0 ? Random.GetItem<string>(names) : null);
         }
+        private string GetRandomApplicationSvgName()
+        {
+            if (_ApplicationSvgNames == null) _ApplicationSvgNames = DxComponent.GetResourceNames(".svg", true, false);
+            return Random.GetItem(_ApplicationSvgNames);
+        }
+        string[] _ApplicationSvgNames = null;
 
         #endregion
     }

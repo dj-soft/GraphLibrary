@@ -76,6 +76,14 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public TreeListImageMode ImageMode { get { return _TreeListNative.ImageMode; } set { _TreeListNative.ImageMode = value; } }
         /// <summary>
+        /// Velikost obrázků u nodů. Lze setovat jen když TreeList nemá žádné nody = pokud <see cref="NodesCount"/> == 0
+        /// </summary>
+        public ResourceImageSizeType NodeImageSize { get { return _TreeListNative.NodeImageSize; } set { _TreeListNative.NodeImageSize = value; } }
+        /// <summary>
+        /// V nodu se povoluje HTML text fomrátování
+        /// </summary>
+        public bool NodeAllowHtmlText { get { return _TreeListNative.NodeAllowHtmlText; } set { _TreeListNative.NodeAllowHtmlText = value; } }
+        /// <summary>
         /// Typ ikon: výchozí je <see cref="ResourceContentType.None"/>, lze nastavit jen na <see cref="ResourceContentType.Bitmap"/> nebo <see cref="ResourceContentType.Vector"/> a to jen když nejsou položky.
         /// Není povinné nastavovat, nastaví se podle typu prvního obrázku. Pak ale musí být všechny obrázky stejného typu.
         /// Pokud bude nastaveno, pak i první obrázek musí odpovídat.
@@ -2779,6 +2787,10 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
         }
         /// <summary>
+        /// V nodu se povoluje HTML text fomrátování
+        /// </summary>
+        public bool NodeAllowHtmlText { get; set; }
+        /// <summary>
         /// Aplikuje režim obrázků do TreeListu
         /// </summary>
         private void _ImageListApply()
@@ -2814,9 +2826,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             switch (_NodeImageType)
             {
-                case ResourceContentType.Bitmap: return DxComponent.GetImageList(_NodeImageSize);
-#warning TODO:
-                    // case ResourceContentType.Vector: return DxComponent.GetSvgList();
+                case ResourceContentType.Bitmap:
+                    return DxComponent.GetImageList(_NodeImageSize);
+                case ResourceContentType.Vector: 
+                    return DxComponent.GetSvgImageCollection(_NodeImageSize);
             }
             return null;
         }
@@ -2837,7 +2850,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                         index = DxComponent.GetImageListIndex(imageName, _NodeImageSize);
                         break;
                     case ResourceContentType.Vector:
-                        index = DxComponent.GetSvgIndex(imageName); //, _NodeImageSize);
+                        index = DxComponent.GetSvgIndex(imageName, _NodeImageSize);
                         break;
                 }
             }
