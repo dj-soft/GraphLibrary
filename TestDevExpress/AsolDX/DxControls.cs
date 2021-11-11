@@ -2954,6 +2954,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             KeyActionsInit();
             DxDragDropInit(DxDragDropActionType.None);
             ToolTipInit();
+            ItemSizeType = ResourceImageSizeType.Small;
             // ReorderInit();
         }
         /// <summary>
@@ -3135,6 +3136,15 @@ namespace Noris.Clients.Win.Components.AsolDX
         #endregion
         #region Images
         /// <summary>
+        /// Při kreslení nejprve spočítám velikost ikon
+        /// </summary>
+        /// <param name="pevent"></param>
+        protected override void OnPaintBackground(PaintEventArgs pevent)
+        {
+            base.OnPaintBackground(pevent);
+            _ItemImageSize = DxComponent.GetImageSize(this.ItemSizeType, true, this.DeviceDpi);
+        }
+        /// <summary>
         /// Vrátí Image pro daný index
         /// </summary>
         /// <param name="index"></param>
@@ -3145,7 +3155,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (menuItem != null)
             {
                 if (menuItem.Image != null) return menuItem.Image;
-                if (menuItem.ImageName != null) return DxComponent.GetBitmapImage(menuItem.ImageName);
+                if (menuItem.ImageName != null) return DxComponent.GetBitmapImage(menuItem.ImageName, this.ItemSizeType);
             }
             return base.GetItemImage(index);
         }
@@ -3156,8 +3166,29 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         public override Size GetItemImageSize(int index)
         {
-            return new Size(16, 16);
+            return _ItemImageSize;
         }
+        /// <summary>
+        /// Velikost ikon
+        /// </summary>
+        public ResourceImageSizeType ItemSizeType 
+        {
+            get { return _ItemSizeType; }
+            set 
+            {
+                _ItemSizeType = (value == ResourceImageSizeType.Small || value == ResourceImageSizeType.Medium || value == ResourceImageSizeType.Large) ? value : ResourceImageSizeType.Small;
+                _ItemImageSize = DxComponent.GetImageSize(this.ItemSizeType, true, this.DeviceDpi);
+                if (this.Parent != null) this.Invalidate();
+            }
+        }
+        /// <summary>
+        /// Velikost ikon
+        /// </summary>
+        private ResourceImageSizeType _ItemSizeType = ResourceImageSizeType.Small;
+        /// <summary>
+        /// Velikost ikony, určuje se na začátku procesu 
+        /// </summary>
+        private Size _ItemImageSize;
         #endregion
         #region ToolTip
         /// <summary>
@@ -4179,7 +4210,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             _ClipboardCopyIndex = 0;
 
             _FilterClearButton = DxComponent.CreateDxMiniButton(0, 0, 20, 20, this, _FilterClearButtonClick,
-                resourceName: "svgimages/spreadsheet/clearfilter.svg",
+                resourceName: ImageName.DxImagePickerClearFilter,
                 toolTipTitle: "Zrušit filtr", toolTipText: "Zruší filtr, budou zobrazeny všechny dostupné zdroje.");
             _FilterClearButton.MouseEnter += _AnyControlEnter;
             _FilterClearButton.Enter += _AnyControlEnter;
@@ -4191,7 +4222,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             _FilterText.KeyUp += _FilterText_KeyUp;
 
             _ListCopyButton = DxComponent.CreateDxMiniButton(230, 0, 20, 20, this, _ListCopyButtonClick,
-                resourceName: "svgimages/xaf/action_copy.svg", hotResourceName: "svgimages/xaf/action_modeldifferences_copy.svg",
+                resourceName: ImageName.DxImagePickerClipboarCopy, 
+                hotResourceName: ImageName.DxImagePickerClipboarCopyHot,
                 toolTipTitle: "Zkopírovat", toolTipText: "Označené řádky v seznamu zdrojů vloží do schránky, jako Ctrl+C.");
             _ListCopyButton.MouseEnter += _AnyControlEnter;
             _ListCopyButton.Enter += _AnyControlEnter;
@@ -4315,6 +4347,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="sender"></param>
         /// <param name="e"></param>
         private void _ListBox_PaintList(object sender, SWF.PaintEventArgs e)
+        {
+            try { _ListBox_PaintListIcons(e); }
+            catch { }
+        }
+        private void _ListBox_PaintListIcons(SWF.PaintEventArgs e)
         {
             DevExpress.Utils.Design.ISvgPaletteProvider svgPalette = DxComponent.GetSvgPalette();
             var visibleItems = _ListBox.VisibleItems;

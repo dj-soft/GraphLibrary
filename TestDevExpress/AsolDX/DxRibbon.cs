@@ -2092,7 +2092,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             var barItem = PrepareItem(iRibbonItem, dxGroup, level, true, null, ref count);
             if (barItem is null) return null;
 
-            FillBarItem(barItem, iRibbonItem);
+            FillBarItem(barItem, iRibbonItem, level);
             if (clickHandler != null) barItem.ItemClick += clickHandler;
 
             if (dxGroup != null)
@@ -2113,24 +2113,24 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             if (iRibbonItem == null) return;
             string itemId = iRibbonItem.ItemId;
-            var item = this.Items[itemId];
-            if (item == null) return;
-            var itemInfo = item.Tag as BarItemTagInfo;
+            var barItem = this.Items[itemId];
+            if (barItem == null) return;
+            var itemInfo = barItem.Tag as BarItemTagInfo;
             if (itemInfo == null) return;
 
-            FillBarItem(item, iRibbonItem);
+            FillBarItem(barItem, iRibbonItem, itemInfo.Level);
 
             if (iRibbonItem.SubItems != null)
             {
                 switch (itemInfo.Data.ItemType)
                 {
                     case RibbonItemType.SplitButton:
-                        if (item is DevExpress.XtraBars.BarButtonItem splitButton)
+                        if (barItem is DevExpress.XtraBars.BarButtonItem splitButton)
                             // SplitButton má v sobě vytvořené PopupMenu, které nyní obsahuje jen jeden prvek; zajistíme vložení reálného menu:
                             _PopupMenu_RefreshItems(splitButton, itemInfo.Data, iRibbonItem);
                         break;
                     case RibbonItemType.Menu:
-                        if (item is DevExpress.XtraBars.BarSubItem menu)
+                        if (barItem is DevExpress.XtraBars.BarSubItem menu)
                             _BarMenu_RefreshItems(menu, itemInfo.Data, iRibbonItem);
                         break;
                 }
@@ -2173,7 +2173,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                     barLink = dxGroup.ItemLinks.Add(barItem);
                 barLink.BeginGroup = iRibbonItem.ItemIsFirstInGroup;
                 PrepareBarItemTag(barItem, iRibbonItem, level, dxGroup);
-                FillBarItem(barItem, iRibbonItem);
+                FillBarItem(barItem, iRibbonItem, level);
             }
             else if (HasRemove(changeMode))
             {
@@ -2283,7 +2283,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 barItem.Name = iRibbonItem.ItemId;
                 PrepareBarItemTag(barItem, iRibbonItem, level, dxGroup);
-                // FillBarItem(barItem, iRibbonItem);
 
                 // Prvek patří do QAT?
                 if (DefinedInQAT(iRibbonItem.ItemId))
@@ -2319,8 +2318,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="barItem"></param>
         /// <param name="iRibbonItem"></param>
+        /// <param name="level">0 pro Ribbonitem, 1 a vyšší pro prvky v menu</param>
         /// <param name="withReset"></param>
-        protected void FillBarItem(DevExpress.XtraBars.BarItem barItem, IRibbonItem iRibbonItem, bool withReset = false)
+        protected void FillBarItem(DevExpress.XtraBars.BarItem barItem, IRibbonItem iRibbonItem, int level, bool withReset = false)
         {
             if (iRibbonItem.Text != null || withReset)
                 barItem.Caption = iRibbonItem.Text ?? "";
@@ -2328,8 +2328,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             barItem.Enabled = iRibbonItem.Enabled;
             barItem.Visibility = iRibbonItem.Visible ? BarItemVisibility.Always : BarItemVisibility.Never;
             barItem.VisibleInSearchMenu = iRibbonItem.VisibleInSearchMenu;
-            FillBarItemImage(barItem, iRibbonItem, withReset);
-            FillBarItemHotKey(barItem, iRibbonItem, withReset);
+            FillBarItemImage(barItem, iRibbonItem, level, withReset);
+            FillBarItemHotKey(barItem, iRibbonItem, level, withReset);
 
             if (barItem is DevExpress.XtraBars.BarCheckItem checkItem)
             {   // Do CheckBoxu vepisujeme víc vlastností:
@@ -2363,42 +2363,28 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="barItem"></param>
         /// <param name="iRibbonItem"></param>
+        /// <param name="level">0 pro Ribbonitem, 1 a vyšší pro prvky v menu</param>
         /// <param name="withReset"></param>
-        protected void FillBarItemImage(DevExpress.XtraBars.BarItem barItem, IRibbonItem iRibbonItem, bool withReset = false)
+        protected void FillBarItemImage(DevExpress.XtraBars.BarItem barItem, IRibbonItem iRibbonItem, int level, bool withReset = false)
         {
-            if (!(barItem is DxBarCheckBoxToggle))         // DxCheckBoxToggle si řídí Image sám
-                DxComponent.ApplyImage(barItem.ImageOptions, iRibbonItem.ImageName, iRibbonItem.Image);
+            if (barItem is DxBarCheckBoxToggle) return;              // DxCheckBoxToggle si řídí Image sám
 
-            //var image = iRibbonItem.Image;
-            //string imageName = iRibbonItem.ImageName;
-            //if (image != null)
-            //{
-            //    barItem.ImageOptions.Image = image;
-            //    barItem.ImageOptions.LargeImage = image;
-            //}
-            //else if (imageName != null && !(barItem is DxBarCheckBoxToggle))           // DxCheckBoxToggle si řídí Image sám
-            //{
-            //    DxComponent.ApplyImage(barItem.ImageOptions, iRibbonItem.ImageName, iRibbonItem.Image);
+            if (iRibbonItem.ImageName != null && iRibbonItem.ImageName.IndexOf("poznamkovy", StringComparison.CurrentCultureIgnoreCase) >= 0)
+            { }
 
-
-            //    if (DxComponent.TryGetResourceExtension(imageName, out var _))
-            //    {
-            //        DxComponent.ApplyImage(barItem.ImageOptions, imageName: imageName);
-            //    }
-            //    else
-            //    {
-            //        barItem.ImageIndex = DxComponent.GetImageListIndex(imageName, RibbonImageSize, caption: iRibbonItem.Text);
-            //        barItem.LargeImageIndex = DxComponent.GetImageListIndex(imageName, RibbonLargeImageSize, caption: iRibbonItem.Text);
-            //    }
-            //}
+            // Velikost obrázku: pro Level = 0 (vlastní prvky v Ribbonu) ve stylu Large nebo default dáme obrázky Large, jinak dáme Small (pro malé prvky Ribbonu a pro položky menu, ty mají Level 1 a vyšší):
+            ResourceImageSizeType smallSizeType = ResourceImageSizeType.Small;
+            ResourceImageSizeType sizeType = ((level == 0 && (iRibbonItem.RibbonStyle == RibbonItemStyles.Large || iRibbonItem.RibbonStyle == RibbonItemStyles.Default)) ? ResourceImageSizeType.Large : smallSizeType);
+            DxComponent.ApplyImage(barItem.ImageOptions, iRibbonItem.ImageName, iRibbonItem.Image, sizeType);
         }
         /// <summary>
         /// Do daného prvku Ribbonu vepíše vše pro jeho HotKey
         /// </summary>
         /// <param name="barItem"></param>
         /// <param name="iRibbonItem"></param>
+        /// <param name="level">0 pro Ribbonitem, 1 a vyšší pro prvky v menu</param>
         /// <param name="withReset"></param>
-        protected void FillBarItemHotKey(DevExpress.XtraBars.BarItem barItem, IRibbonItem iRibbonItem, bool withReset = false)
+        protected void FillBarItemHotKey(DevExpress.XtraBars.BarItem barItem, IRibbonItem iRibbonItem, int level, bool withReset = false)
         {
             if (iRibbonItem.HotKeys.HasValue)
             {
@@ -2467,7 +2453,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 baseButton.Name = iRibbonItem.ItemId;
                 PrepareBarItemTag(baseButton, iRibbonItem, level, dxGroup);
-                FillBarItem(baseButton, iRibbonItem);
+                FillBarItem(baseButton, iRibbonItem, level);
             }
             return baseButton;
         }
@@ -2968,7 +2954,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                     DevExpress.XtraBars.BarItem barItem = PrepareItem(iSubItem, dxGroup, level, true, forceItemType, ref count);
                     if (barItem != null)
                     {
-                        FillBarItem(barItem, iSubItem);
+                        FillBarItem(barItem, iSubItem, level);
                         barItems.Add(barItem);
                     }
                 }
@@ -5422,7 +5408,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             { 
                 ItemId = "_SYS__DevExpress_UhdSupportCheckBox", Text = "UHD Paint", ToolTipText = "Zapíná podporu pro Full vykreslování na UHD monitoru",
                 ItemType = RibbonItemType.CheckBoxToggle, 
-                // ImageUnChecked = "svgimages/zoom/zoomout.svg", ImageChecked = "svgimages/zoom/zoomin.svg",
                 Checked = DxComponent.UhdPaintEnabled, ClickAction = SetUhdPaint 
             });
 
@@ -5469,7 +5454,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 {
                     if (barItem.Tag is BarItemTagInfo tagInfo)
                     {
-                        FillBarItemImage(barItem, tagInfo.Data);
+                        FillBarItemImage(barItem, tagInfo.Data, tagInfo.Level);
                     }
                 }
             }

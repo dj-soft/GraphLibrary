@@ -648,6 +648,48 @@ osobnosti. Západ ve svojí jediné pravdě… Hlas zpravodaje vytrhl profesora 
             return items[Rand.Next(count)];
         }
         /// <summary>
+        /// Vrátí daný počet náhodně vybraných prvků z pole
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="count"></param>
+        /// <param name="items"></param>
+        /// <returns></returns>
+        public static T[] GetItems<T>(int count, params T[] items)
+        {
+            return GetItems(count, (IList<T>)items);
+        }
+        /// <summary>
+        /// Vrátí náhodný prvek z pole
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="items"></param>
+        /// <returns></returns>
+        public static T[] GetItems<T>(int count, IList<T> items)
+        {
+            if (items == null) return null;
+            int itemsCount = items.Count;
+            List<T> result = new List<T>();
+            if (count > 0)
+            {   // Něco chtěli?
+                if (count < itemsCount)
+                {   // Chtěli méně prvků, než nám dali: vybereme si náhodně daný počet:
+                    List<T> values = items.ToList();
+                    for (int i = 0; i < count; i++)
+                    {
+                        if (values.Count == 0) break;                // Pojistka
+                        int index = Rand.Next(values.Count);         // Náhodná pozice prvku ve zmenšujícím se Listu hodnot
+                        result.Add(values[index]);                   // Do výsledku přidám prvek na náhodné pozici
+                        values.RemoveAt(index);                      // A tentýž prvek z Listu odeberu, abych ho do výsledku nedával duplicitně...
+                    }
+                }
+                else
+                {   // Chtěli by víc prvků, než nám dali: vrátíme jen to co máme:
+                    result.AddRange(items);
+                }
+            }
+            return result.ToArray();
+        }
+        /// <summary>
         /// Vrátí danou hodnotu zarovnanou do min - max, obě meze jsou včetně
         /// </summary>
         /// <param name="value"></param>

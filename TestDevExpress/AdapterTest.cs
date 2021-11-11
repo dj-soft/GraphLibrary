@@ -117,7 +117,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             List<IResourceItem> resourceList = new List<IResourceItem>();
             AddResourcesFromResourcesBin(resourceList);
-            if (resourceList.Count == 0)
+            if (resourceList.Count == 0)   // || String.Equals(DxComponent.ApplicationName, "TestDevExpress.exe", StringComparison.InvariantCultureIgnoreCase))
                 AddResourcesFromSingleFiles(resourceList);
             return resourceList;
         }
@@ -402,29 +402,9 @@ namespace Noris.Clients.Win.Components.AsolDX
                     sizeType = ResourceImageSizeType.Large;
                     break;
             }
+            if (sizeType != ResourceImageSizeType.None)
+                name = name.Substring(0, name.Length - suffix.Length);
             return (sizeType != ResourceImageSizeType.None);
-
-            /*
-
-            Noris/pic/address-book-large.svg
-            Noris/pic/address-book-locations-large.svg
-            Noris/pic/address-book-locations-small.svg
-            Noris/pic/address-book-small.svg
-            Noris/pic/address-book-undo-2-large.svg
-            Noris/pic/address-book-undo-2-small.svg
-            Noris/pic/address-book-update-bottom-left-large.svg
-            Noris/pic/address-book-update-bottom-left-small.svg
-            Noris/pic/AddressDelete-16x16.png
-            Noris/pic/AddressDelete-24x24.png
-            Noris/pic/AddressDelete-32x32.png
-            Noris/pic/AddressEdit-16x16.png
-            Noris/pic/AddressEdit-24x24.png
-            Noris/pic/AddressEdit-32x32.png
-            Noris/pic/AddressCheckedRuian-16x16.png
-            Noris/pic/AddressCheckedRuian-24x24.png
-            Noris/pic/AddressCheckedRuian-32x32.png
-
-            */
         }
         /// <summary>
         /// Z dodaného jména souboru určí příponu, podle ní detekuje typ obsahu (dá do out parametru) a detekovanou příponu odřízne (včetně tečky).

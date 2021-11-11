@@ -203,9 +203,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         #endregion
         #region Application - start, restart, MainForm
         /// <summary>
-        /// Main soubor aplikace (adresář/jméno.exe)
+        /// Main soubor aplikace (plné jméno souboru = adresář/jméno.exe)
         /// </summary>
         public static string ApplicationFile { get { return Instance._AppFile; } }
+        /// <summary>
+        /// Main soubor aplikace (holé jméno souboru = jméno.exe)
+        /// </summary>
+        public static string ApplicationName { get { return System.IO.Path.GetFileName(Instance._AppFile); } }
         /// <summary>
         /// Main adresář aplikace (adresář kde je umístěn Main spuštěný soubor)
         /// </summary>
@@ -1522,7 +1526,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (paintStyles.HasValue) checkButton.PaintStyle = paintStyles.Value;
 
             int s = (w < h ? w : h) - 10;
-            DxComponent.ApplyImage(checkButton.ImageOptions, resourceName, image, new Size(s, s), true);
+            DxComponent.ApplyImage(checkButton.ImageOptions, resourceName, image, null, new Size(s, s), true);
             checkButton.ImageOptions.ImageToTextAlignment = ImageAlignToText.LeftCenter;
             checkButton.ImageOptions.ImageToTextIndent = 3;
             checkButton.PaintStyle = DevExpress.XtraEditors.Controls.PaintStyles.Default;
@@ -1564,7 +1568,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (paintStyles.HasValue) simpleButton.PaintStyle = paintStyles.Value;
 
             int s = (w < h ? w : h) - 10;
-            DxComponent.ApplyImage(simpleButton.ImageOptions, resourceName, image, new Size(s, s), true);
+            DxComponent.ApplyImage(simpleButton.ImageOptions, resourceName, image, null, new Size(s, s), true);
             simpleButton.ImageOptions.ImageToTextAlignment = ImageAlignToText.LeftCenter;
             simpleButton.ImageOptions.ImageToTextIndent = 3;
             simpleButton.PaintStyle = DevExpress.XtraEditors.Controls.PaintStyles.Default;
@@ -1597,7 +1601,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (allowFocus.HasValue) miniButton.AllowFocus = allowFocus.Value;
             miniButton.PaintStyle = DevExpress.XtraEditors.Controls.PaintStyles.Light;
 
-            DxComponent.ApplyImage(miniButton.ImageOptions, resourceName, image, new Size(w - 4, h - 4), true);
+            DxComponent.ApplyImage(miniButton.ImageOptions, resourceName, image, null, new Size(w - 4, h - 4), true);
 
             miniButton.Padding = new Padding(0);
             miniButton.Margin = new Padding(0);
@@ -1701,7 +1705,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (paintStyles.HasValue) dropDownButton.PaintStyle = paintStyles.Value;
 
             int s = (w < h ? w : h) - 10;
-            DxComponent.ApplyImage(dropDownButton.ImageOptions, resourceName, image, new Size(s, s), true);
+            DxComponent.ApplyImage(dropDownButton.ImageOptions, resourceName, image, null, new Size(s, s), true);
             dropDownButton.ImageOptions.ImageToTextAlignment = ImageAlignToText.LeftCenter;
             dropDownButton.ImageOptions.ImageToTextIndent = 3;
             dropDownButton.PaintStyle = DevExpress.XtraEditors.Controls.PaintStyles.Default;
@@ -2859,15 +2863,26 @@ namespace Noris.Clients.Win.Components.AsolDX
         private bool _IsDarkTheme()
         {
             if (!__IsDarkTheme.HasValue)
-            {
-                bool isDarkTheme = false;
-                Color? backColor = _GetSkinColor(SkinElementColor.Control_PanelBackColor);
-                Color? backColor2 = _GetSkinColor(SkinElementColor.RibbonSkins_ButtonDisabled);
-                if (backColor.HasValue)
-                    isDarkTheme = (backColor.Value.GetBrightness() < 0.40f);
-                __IsDarkTheme = isDarkTheme;
-            }
+                __IsDarkTheme = _IsCurrentDarkSkin();
             return __IsDarkTheme.Value;
+        }
+        /// <summary>
+        /// Vrací true, pokud je aktuální skin Tmavý = odhaduje to podle barvy písma u tlačítek v Ribbonu
+        /// </summary>
+        /// <returns></returns>
+        private bool _IsCurrentDarkSkin()
+        {
+            // Získám aktivní skin Ribbonu, a přečtu jeho systémovou barvu pro text menu = odpovídá barvě písma pro tlačítka v Ribbonu:
+            var textColor = DevExpress.Skins.RibbonSkins.GetSkin(DevExpress.LookAndFeel.UserLookAndFeel.Default.ActiveLookAndFeel).GetSystemColor(SystemColors.MenuText);
+            // A pokud je barva písmen světlá, pak je skin tmavý:
+            return textColor.GetBrightness() >= 0.5f;
+
+            //bool isDarkTheme = false;
+            //Color? backColor = _GetSkinColor(SkinElementColor.Control_PanelBackColor);
+            //Color? backColor2 = _GetSkinColor(SkinElementColor.RibbonSkins_ButtonDisabled);
+            //if (backColor.HasValue)
+            //    isDarkTheme = (backColor.Value.GetBrightness() < 0.40f);
+            //return isDarkTheme;
         }
         private bool? __IsDarkTheme;
         /// <summary>
@@ -3526,8 +3541,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         [DefaultMessageText("Storno")]
         public const string DialogFormResultCancel = "DialogFormResultCancel";
 
-
-
         [DefaultMessageText("Orientace")]
         public const string LayoutPanelContextMenuTitle = "LayoutPanelContextMenuTitle";
         [DefaultMessageText("Vedle sebe")]
@@ -3542,6 +3555,78 @@ namespace Noris.Clients.Win.Components.AsolDX
         public const string MenuCloseText = "MenuCloseText";
         [DefaultMessageText("Zavře nabídku bez provedení akce")]
         public const string MenuCloseToolTip = "MenuCloseToolTip";
+
+        [DefaultMessageText("Smazat")]
+        public const string DxFilterBoxClearTipTitle = "DxFilterBoxClearTipTitle";
+        [DefaultMessageText("Zruší zadaný filtr")]
+        public const string DxFilterBoxClearTipText = "DxFilterBoxClearTipText";
+        [DefaultMessageText("Obsahuje")]
+        public const string DxFilterOperatorContainsText = "DxFilterOperatorContainsText";
+        [DefaultMessageText("Vybere ty položky, které obsahují zadaný text")]
+        public const string DxFilterOperatorContainsTip = "DxFilterOperatorContainsTip";
+        [DefaultMessageText("Neobsahuje")]
+        public const string DxFilterOperatorDoesNotContainText = "DxFilterOperatorDoesNotContainText";
+        [DefaultMessageText("Vybere ty položky, které neobsahují zadaný text")]
+        public const string DxFilterOperatorDoesNotContainTip = "DxFilterOperatorDoesNotContainTip";
+        [DefaultMessageText("Začíná")]
+        public const string DxFilterOperatorStartWithText = "DxFilterOperatorStartWithText";
+        [DefaultMessageText("Vybere ty položky, jejichž text začíná zadaným textem")]
+        public const string DxFilterOperatorStartWithTip = "DxFilterOperatorStartWithTip";
+        [DefaultMessageText("Nezačíná")]
+        public const string DxFilterOperatorDoesNotStartWithText = "DxFilterOperatorDoesNotStartWithText";
+        [DefaultMessageText("Vybere ty položky, jejichž text začíná jinak, než je zadáno")]
+        public const string DxFilterOperatorDoesNotStartWithTip = "DxFilterOperatorDoesNotStartWithTip";
+        [DefaultMessageText("Končí")]
+        public const string DxFilterOperatorEndWithText = "DxFilterOperatorEndWithText";
+        [DefaultMessageText("Vybere ty položky, jejichž text končí zadaným textem")]
+        public const string DxFilterOperatorEndWithTip = "DxFilterOperatorEndWithTip";
+        [DefaultMessageText("Nekončí")]
+        public const string DxFilterOperatorDoesNotEndWithText = "DxFilterOperatorDoesNotEndWithText";
+        [DefaultMessageText("Vybere ty položky, jejichž text končí jinak, než je zadáno")]
+        public const string DxFilterOperatorDoesNotEndWithTip = "DxFilterOperatorDoesNotEndWithTip";
+
+        [DefaultMessageText("Podobá se")]
+        public const string DxFilterOperatorLikeText = "DxFilterOperatorLikeText";
+        [DefaultMessageText("?")]
+        public const string DxFilterOperatorLikeTip = "DxFilterOperatorLikeTip";
+        [DefaultMessageText("Nepodobá se")]
+        public const string DxFilterOperatorNotLikeText = "DxFilterOperatorNotLikeText";
+        [DefaultMessageText("?")]
+        public const string DxFilterOperatorNotLikeTip = "DxFilterOperatorNotLikeTip";
+        [DefaultMessageText("Odpovídá")]
+        public const string DxFilterOperatorMatchText = "DxFilterOperatorMatchText";
+        [DefaultMessageText("?")]
+        public const string DxFilterOperatorMatchTip = "DxFilterOperatorMatchTip";
+        [DefaultMessageText("Neodpovídá")]
+        public const string DxFilterOperatorDoesNotMatchText = "DxFilterOperatorDoesNotMatchText";
+        [DefaultMessageText("?")]
+        public const string DxFilterOperatorDoesNotMatchTip = "DxFilterOperatorDoesNotMatchTip";
+
+        [DefaultMessageText("Menší než")]
+        public const string DxFilterOperatorLessThanText = "DxFilterOperatorLessThanText";
+        [DefaultMessageText("Hodnoty menší než zadaná hodnota")]
+        public const string DxFilterOperatorLessThanTip = "DxFilterOperatorLessThanTip";
+        [DefaultMessageText("Menší nebo rovno")]
+        public const string DxFilterOperatorLessThanOrEqualToText = "DxFilterOperatorLessThanOrEqualToText";
+        [DefaultMessageText("Hodnoty menší nebo rovny jako zadaná hodnota")]
+        public const string DxFilterOperatorLessThanOrEqualToTip = "DxFilterOperatorLessThanOrEqualToTip";
+        [DefaultMessageText("Rovno")]
+        public const string DxFilterOperatorEqualsText = "DxFilterOperatorEqualsText";
+        [DefaultMessageText("Hodnoty rovné dané hodnotě")]
+        public const string DxFilterOperatorEqualsTip = "DxFilterOperatorEqualsTip";
+        [DefaultMessageText("Nerovno")]
+        public const string DxFilterOperatorNotEqualsText = "DxFilterOperatorNotEqualsText";
+        [DefaultMessageText("Hodnoty jiné než je daná hodnota")]
+        public const string DxFilterOperatorNotEqualsTip = "DxFilterOperatorNotEqualsTip";
+        [DefaultMessageText("Větší nebo rovno")]
+        public const string DxFilterOperatorGreaterThanOrEqualToText = "DxFilterOperatorGreaterThanOrEqualToText";
+        [DefaultMessageText("Hodnoty větší nebo rovny jako zadaná hodnota")]
+        public const string DxFilterOperatorGreaterThanOrEqualToTip = "DxFilterOperatorGreaterThanOrEqualToTip";
+        [DefaultMessageText("Větší než")]
+        public const string DxFilterOperatorGreaterThanText = "DxFilterOperatorGreaterThanText";
+        [DefaultMessageText("Hodnoty větší než zadaná hodnota")]
+        public const string DxFilterOperatorGreaterThanTip = "DxFilterOperatorGreaterThanTip";
+       
 
         // Nové kódy přidej do Messages.xml v klientu!!!     Do AdapterTest.cs není nutno, tam se načítá hodnota atributu DefaultMessageText() !
     }

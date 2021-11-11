@@ -520,15 +520,23 @@ namespace TestDevExpress.Forms
 
             // subItems.Add(new DataRibbonItem() { ImageName = "Images/SvgTest/arrow-right-2-svgrepo-com.svg", Text = "columnsthree", ClickAction = ClickRibbonSvgMenu0, ItemIsFirstInGroup = true });
 
-            subItems.Add(new DataRibbonItem() { ImageName = "Images/SvgAsol/address-book-large.svg", Text = "address-book-large", ClickAction = ClickRibbonSvgMenu0, ItemIsFirstInGroup = true });
-            subItems.Add(new DataRibbonItem() { ImageName = "Images/SvgAsol/alert-filled-large.svg", Text = "alert-filled-large", ClickAction = ClickRibbonSvgMenu0 });
-            subItems.Add(new DataRibbonItem() { ImageName = "Images/SvgAsol/anchor-large.svg", Text = "anchor-large", ClickAction = ClickRibbonSvgMenu0 });
-            subItems.Add(new DataRibbonItem() { ImageName = "Images/SvgAsol/archive-box-large.svg", Text = "archive-box-large", ClickAction = ClickRibbonSvgMenu0 });
-            subItems.Add(new DataRibbonItem() { ImageName = "Images/SvgAsol/vyhledavani-large.svg", Text = "vyhledavani-large", ClickAction = ClickRibbonSvgMenu0 });
-            subItems.Add(new DataRibbonItem() { ImageName = "Images/SvgAsol/waste-bin-large.svg", Text = "waste-bin-large", ClickAction = ClickRibbonSvgMenu0 });
-            subItems.Add(new DataRibbonItem() { ImageName = "Images/SvgAsol/window-large.svg", Text = "window-large", ClickAction = ClickRibbonSvgMenu0 });
-            subItems.Add(new DataRibbonItem() { ImageName = "Images/SvgAsol/window-small.svg", Text = "window-small", ClickAction = ClickRibbonSvgMenu0 });
-            subItems.Add(new DataRibbonItem() { ImageName = "Images/SvgAsol/turbine-2-large.svg", Text = "turbine-2-large", ClickAction = ClickRibbonSvgMenu0 });
+            subItems.Add(new DataRibbonItem() { ImageName = "pic/address-book-large.svg", Text = "address-book-large", ClickAction = ClickRibbonSvgMenu0, ItemIsFirstInGroup = true });
+            subItems.Add(new DataRibbonItem() { ImageName = "pic/alert-filled-large.svg", Text = "alert-filled-large", ClickAction = ClickRibbonSvgMenu0 });
+            subItems.Add(new DataRibbonItem() { ImageName = "pic/anchor-large.svg", Text = "anchor-large", ClickAction = ClickRibbonSvgMenu0 });
+            subItems.Add(new DataRibbonItem() { ImageName = "pic/archive-box-large.svg", Text = "archive-box-large", ClickAction = ClickRibbonSvgMenu0 });
+            subItems.Add(new DataRibbonItem() { ImageName = "pic_0/Bar_s/vyhledavani-large.svg", Text = "vyhledavani-large", ClickAction = ClickRibbonSvgMenu0 });
+            subItems.Add(new DataRibbonItem() { ImageName = "pic/waste-bin", Text = "waste-bin", ClickAction = ClickRibbonSvgMenu0 });
+            subItems.Add(new DataRibbonItem() { ImageName = "pic/window", Text = "window", ClickAction = ClickRibbonSvgMenu0 });
+            subItems.Add(new DataRibbonItem() { ImageName = "pic/window-large.svg", Text = "window-large.svg", ClickAction = ClickRibbonSvgMenu0 });
+            subItems.Add(new DataRibbonItem() { ImageName = "pic/window-small.svg", Text = "window-small.svg", ClickAction = ClickRibbonSvgMenu0 });
+            subItems.Add(new DataRibbonItem() { ImageName = "pic_0/win/dashboard/poznamkovy_blok", Text = "poznamkovy_blok", ClickAction = ClickRibbonSvgMenu0 });
+            subItems.Add(new DataRibbonItem() { ImageName = "pic_0/win/dashboard/poznamkovy_blok-large", Text = "poznamkovy_blok-large", ClickAction = ClickRibbonSvgMenu0 });
+            subItems.Add(new DataRibbonItem() { ImageName = "pic_0/win/dashboard/poznamkovy_blok-small", Text = "poznamkovy_blok-small", ClickAction = ClickRibbonSvgMenu0 });
+            subItems.Add(new DataRibbonItem() { ImageName = "pic_0/win/dashboard/poznamkovy_blok-large.svg", Text = "poznamkovy_blok-large.svg", ClickAction = ClickRibbonSvgMenu0 });
+            subItems.Add(new DataRibbonItem() { ImageName = "pic_0/win/dashboard/poznamkovy_blok-small.svg", Text = "poznamkovy_blok-small.svg", ClickAction = ClickRibbonSvgMenu0 });
+            subItems.Add(new DataRibbonItem() { ImageName = "pic_0/win/dashboard/poznamkovy_blok-16x16.png", Text = "poznamkovy_blok-16x16.png", ClickAction = ClickRibbonSvgMenu0 });
+            subItems.Add(new DataRibbonItem() { ImageName = "pic_0/win/dashboard/poznamkovy_blok-32x32.png", Text = "poznamkovy_blok-32x32.png", ClickAction = ClickRibbonSvgMenu0 });
+            subItems.Add(new DataRibbonItem() { ImageName = "pic/turbine-2-large.svg", Text = "turbine-2-large", ClickAction = ClickRibbonSvgMenu0 });
 
             //subItems.Add(new DataRibbonItem() { ImageName = "Images/SvgAsol/xxxxxxx.svg", Text = "columnsthree", ClickAction = ClickRibbonSvgMenu0 });
             //subItems.Add(new DataRibbonItem() { ImageName = "Images/SvgAsol/xxxxxxx.svg", Text = "columnsthree", ClickAction = ClickRibbonSvgMenu0 });
@@ -2738,47 +2746,47 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
             CreateImageList();
             CreateTreeView();
         }
-        private void CreateImageList()
-        {
-            _Images16 = new ImageList();
-            _Images16.Images.Add("Ball01_16", DxComponent.CreateBitmapImage("Images/Icons16/Ball01_16.png"));
-            _Images16.Images.Add("Ball02_16", DxComponent.CreateBitmapImage("Images/Icons16/Ball02_16.png"));
-            _Images16.Images.Add("Ball03_16", DxComponent.CreateBitmapImage("Images/Icons16/Ball03_16.png"));
-            _Images16.Images.Add("Ball04_16", DxComponent.CreateBitmapImage("Images/Icons16/Ball04_16.png"));
-            _Images16.Images.Add("Ball05_16", DxComponent.CreateBitmapImage("Images/Icons16/Ball05_16.png"));
-            _Images16.Images.Add("Ball06_16", DxComponent.CreateBitmapImage("Images/Icons16/Ball06_16.png"));
-            _Images16.Images.Add("Ball07_16", DxComponent.CreateBitmapImage("Images/Icons16/Ball07_16.png"));
-            _Images16.Images.Add("Ball08_16", DxComponent.CreateBitmapImage("Images/Icons16/Ball08_16.png"));
-            _Images16.Images.Add("Ball09_16", DxComponent.CreateBitmapImage("Images/Icons16/Ball09_16.png"));
-            _Images16.Images.Add("Ball10_16", DxComponent.CreateBitmapImage("Images/Icons16/Ball10_16.png"));
-            _Images16.Images.Add("Ball11_16", DxComponent.CreateBitmapImage("Images/Icons16/Ball11_16.png"));
-            _Images16.Images.Add("Ball12_16", DxComponent.CreateBitmapImage("Images/Icons16/Ball12_16.png"));
-            _Images16.Images.Add("Ball13_16", DxComponent.CreateBitmapImage("Images/Icons16/Ball13_16.png"));
-            _Images16.Images.Add("Ball14_16", DxComponent.CreateBitmapImage("Images/Icons16/Ball14_16.png"));
-            _Images16.Images.Add("Ball15_16", DxComponent.CreateBitmapImage("Images/Icons16/Ball15_16.png"));
-            _Images16.Images.Add("Ball16_16", DxComponent.CreateBitmapImage("Images/Icons16/Ball16_16.png"));
-            _Images16.Images.Add("Ball17_16", DxComponent.CreateBitmapImage("Images/Icons16/Ball17_16.png"));
-            _Images16.Images.Add("Ball18_16", DxComponent.CreateBitmapImage("Images/Icons16/Ball18_16.png"));
-            _Images16.Images.Add("Ball19_16", DxComponent.CreateBitmapImage("Images/Icons16/Ball19_16.png"));
-            _Images16.Images.Add("Ball20_16", DxComponent.CreateBitmapImage("Images/Icons16/Ball20_16.png"));
-            _Images16.Images.Add("Ball21_16", DxComponent.CreateBitmapImage("Images/Icons16/Ball21_16.png"));
-            _Images16.Images.Add("Ball22_16", DxComponent.CreateBitmapImage("Images/Icons16/Ball22_16.png"));
-            _Images16.Images.Add("Ball23_16", DxComponent.CreateBitmapImage("Images/Icons16/Ball23_16.png"));
+        private void CreateImageList() { }
+        //{
+        //    _Images16 = new ImageList();
+        //    _Images16.Images.Add("Ball01_16", DxComponent.CreateBitmapImage("Images/Icons16/Ball01_16.png"));
+        //    _Images16.Images.Add("Ball02_16", DxComponent.CreateBitmapImage("Images/Icons16/Ball02_16.png"));
+        //    _Images16.Images.Add("Ball03_16", DxComponent.CreateBitmapImage("Images/Icons16/Ball03_16.png"));
+        //    _Images16.Images.Add("Ball04_16", DxComponent.CreateBitmapImage("Images/Icons16/Ball04_16.png"));
+        //    _Images16.Images.Add("Ball05_16", DxComponent.CreateBitmapImage("Images/Icons16/Ball05_16.png"));
+        //    _Images16.Images.Add("Ball06_16", DxComponent.CreateBitmapImage("Images/Icons16/Ball06_16.png"));
+        //    _Images16.Images.Add("Ball07_16", DxComponent.CreateBitmapImage("Images/Icons16/Ball07_16.png"));
+        //    _Images16.Images.Add("Ball08_16", DxComponent.CreateBitmapImage("Images/Icons16/Ball08_16.png"));
+        //    _Images16.Images.Add("Ball09_16", DxComponent.CreateBitmapImage("Images/Icons16/Ball09_16.png"));
+        //    _Images16.Images.Add("Ball10_16", DxComponent.CreateBitmapImage("Images/Icons16/Ball10_16.png"));
+        //    _Images16.Images.Add("Ball11_16", DxComponent.CreateBitmapImage("Images/Icons16/Ball11_16.png"));
+        //    _Images16.Images.Add("Ball12_16", DxComponent.CreateBitmapImage("Images/Icons16/Ball12_16.png"));
+        //    _Images16.Images.Add("Ball13_16", DxComponent.CreateBitmapImage("Images/Icons16/Ball13_16.png"));
+        //    _Images16.Images.Add("Ball14_16", DxComponent.CreateBitmapImage("Images/Icons16/Ball14_16.png"));
+        //    _Images16.Images.Add("Ball15_16", DxComponent.CreateBitmapImage("Images/Icons16/Ball15_16.png"));
+        //    _Images16.Images.Add("Ball16_16", DxComponent.CreateBitmapImage("Images/Icons16/Ball16_16.png"));
+        //    _Images16.Images.Add("Ball17_16", DxComponent.CreateBitmapImage("Images/Icons16/Ball17_16.png"));
+        //    _Images16.Images.Add("Ball18_16", DxComponent.CreateBitmapImage("Images/Icons16/Ball18_16.png"));
+        //    _Images16.Images.Add("Ball19_16", DxComponent.CreateBitmapImage("Images/Icons16/Ball19_16.png"));
+        //    _Images16.Images.Add("Ball20_16", DxComponent.CreateBitmapImage("Images/Icons16/Ball20_16.png"));
+        //    _Images16.Images.Add("Ball21_16", DxComponent.CreateBitmapImage("Images/Icons16/Ball21_16.png"));
+        //    _Images16.Images.Add("Ball22_16", DxComponent.CreateBitmapImage("Images/Icons16/Ball22_16.png"));
+        //    _Images16.Images.Add("Ball23_16", DxComponent.CreateBitmapImage("Images/Icons16/Ball23_16.png"));
 
-            _Images16.Images.Add("edit_add_4_16", DxComponent.CreateBitmapImage("Images/Icons16/edit-add-4_16.png"));
-            _Images16.Images.Add("list_add_3_16", DxComponent.CreateBitmapImage("Images/Icons16/list-add-3_16.png"));
-            _Images16.Images.Add("lock_5_16", DxComponent.CreateBitmapImage("Images/Icons16/lock-5_16.png"));
-            _Images16.Images.Add("object_locked_2_16", DxComponent.CreateBitmapImage("Images/Icons16/object-locked-2_16.png"));
-            _Images16.Images.Add("object_unlocked_2_16", DxComponent.CreateBitmapImage("Images/Icons16/object-unlocked-2_16.png"));
-            _Images16.Images.Add("msn_blocked_16", DxComponent.CreateBitmapImage("Images/Icons16/msn-blocked_16.png"));
-            _Images16.Images.Add("hourglass_16", DxComponent.CreateBitmapImage("Images/Icons16/hourglass_16.png"));
-            _Images16.Images.Add("move_task_down_16", DxComponent.CreateBitmapImage("Images/Icons16/move_task_down_16.png"));
-        }
-        private int GetImageIndex(string imageName)
-        {
-            return (_Images16.Images.ContainsKey(imageName) ? _Images16.Images.IndexOfKey(imageName) : -1);
-        }
-        ImageList _Images16;
+        //    _Images16.Images.Add("edit_add_4_16", DxComponent.CreateBitmapImage("Images/Icons16/edit-add-4_16.png"));
+        //    _Images16.Images.Add("list_add_3_16", DxComponent.CreateBitmapImage("Images/Icons16/list-add-3_16.png"));
+        //    _Images16.Images.Add("lock_5_16", DxComponent.CreateBitmapImage("Images/Icons16/lock-5_16.png"));
+        //    _Images16.Images.Add("object_locked_2_16", DxComponent.CreateBitmapImage("Images/Icons16/object-locked-2_16.png"));
+        //    _Images16.Images.Add("object_unlocked_2_16", DxComponent.CreateBitmapImage("Images/Icons16/object-unlocked-2_16.png"));
+        //    _Images16.Images.Add("msn_blocked_16", DxComponent.CreateBitmapImage("Images/Icons16/msn-blocked_16.png"));
+        //    _Images16.Images.Add("hourglass_16", DxComponent.CreateBitmapImage("Images/Icons16/hourglass_16.png"));
+        //    _Images16.Images.Add("move_task_down_16", DxComponent.CreateBitmapImage("Images/Icons16/move_task_down_16.png"));
+        //}
+        //private int GetImageIndex(string imageName)
+        //{
+        //    return (_Images16.Images.ContainsKey(imageName) ? _Images16.Images.IndexOfKey(imageName) : -1);
+        //}
+        //ImageList _Images16;
         private void CreateTreeView()
         {
             _SplitContainer = DxComponent.CreateDxSplitContainer(this._PanelTreeView, null, DockStyle.Fill, Orientation.Vertical, DevExpress.XtraEditors.SplitFixedPanel.Panel1, 280, showSplitGlyph: true);
@@ -2803,6 +2811,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
             _TreeList.MultiSelectEnabled = true;
             _TreeList.MainClickMode = NodeMainClickMode.AcceptNodeSetting;
             _TreeList.NodeImageSize = ResourceImageSizeType.Large;        // Zkus různé...
+            _TreeList.NodeImageSize = ResourceImageSizeType.Medium;
             _TreeList.NodeAllowHtmlText = true;
             _TreeList.Parent = this;
             _SplitContainer.Panel1.Controls.Add(_TreeList);               // Musí být dřív než se začne pracovat s daty!!!
@@ -3444,11 +3453,14 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
         }
         private string GetRandomApplicationSvgName()
         {
-            if (_ApplicationSvgNames == null) _ApplicationSvgNames = DxComponent.GetResourceNames(".svg", true, false);
+            if (_ApplicationSvgNames == null)
+            {
+                var names = DxComponent.GetResourceNames(".svg", true, false);
+                _ApplicationSvgNames = Random.GetItems(200, names);
+            }
             return Random.GetItem(_ApplicationSvgNames);
         }
         string[] _ApplicationSvgNames = null;
-
         #endregion
     }
 }

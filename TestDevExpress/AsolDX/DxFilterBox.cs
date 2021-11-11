@@ -36,12 +36,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         protected void Initialize()
         {
             _Margins = 1;
-            _OperatorButtonImageDefault = "svgimages/dashboards/horizontallines.svg";
+            _OperatorButtonImageDefault = ImageName.DxFilterBoxMenu;
             _OperatorButtonImageName = null;
-            _ClearButtonImageDefault = "svgimages/dashboards/clearfilter.svg";
+            _ClearButtonImageDefault = ImageName.DxFilterClearFilter;
             _ClearButtonImage = null;
-            _ClearButtonToolTipTitle = "Smazat";
-            _ClearButtonToolTipText = "Zruší zadaný filtr";
+            _ClearButtonToolTipTitle = DxComponent.Localize(MsgCode.DxFilterBoxClearTipTitle);
+            _ClearButtonToolTipText = DxComponent.Localize(MsgCode.DxFilterBoxClearTipText);
 
             _OperatorButton = DxComponent.CreateDxMiniButton(0, 0, 24, 24, this, OperatorButton_Click, tabStop: false);
             _FilterText = DxComponent.CreateDxTextEdit(24, 0, 200, this, tabStop: true);
@@ -176,7 +176,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (String.IsNullOrEmpty(imageName)) imageName = imageNameDefault;
             int buttonSize = button.Width;
             Size imageSize = new Size(buttonSize - 4, buttonSize - 4);
-            DxComponent.ApplyImage(button.ImageOptions, imageName, null, imageSize, true);
+            DxComponent.ApplyImage(button.ImageOptions, imageName, null, ResourceImageSizeType.Small, imageSize, true);
             button.SetToolTip(toolTipTitle, toolTipText);
         }
         /// <summary>
@@ -208,28 +208,43 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         public static List<IMenuItem> CreateDefaultOperatorItems(FilterBoxOperatorItems items)
         {
-            string resourceContains = "images/alignment/alignverticalcenter2_16x16.png";
-            string resourceDoesNotContain = "office2013/alignment/alignverticalcenter2_16x16.png";
-            string resourceStartsWith = "images/alignment/alignverticalleft2_16x16.png";
-            string resourceEndsWith = "images/alignment/alignverticalright2_16x16.png";
-            string resourceDoesNotStartWith = "office2013/alignment/alignverticalleft2_16x16.png";
-            string resourceDoesNotEndWith = "office2013/alignment/alignverticalright2_16x16.png";
             List<IMenuItem> menuItems = new List<IMenuItem>();
 
-            if (items.HasFlag(FilterBoxOperatorItems.Contains))
-                menuItems.Add(new DataMenuItem() { ItemId = "Contains", HotKey = "%", ImageName = resourceContains, Text = "Obsahuje", Checked = false, ToolTipTitle = "Obsahuje:", ToolTipText = "Vybere ty položky, které obsahují zadaný text", Tag = FilterBoxOperatorItems.Contains });
-            if (items.HasFlag(FilterBoxOperatorItems.DoesNotContain))
-                menuItems.Add(new DataMenuItem() { ItemId = "DoesNotContain", HotKey = "!%", ImageName = resourceDoesNotContain, Text = "Neobsahuje", Checked = false, ToolTipTitle = "Neobsahuje:", ToolTipText = "Vybere ty položky, které neobsahují zadaný text", Tag = FilterBoxOperatorItems.DoesNotContain });
-            if (items.HasFlag(FilterBoxOperatorItems.StartsWith))
-                menuItems.Add(new DataMenuItem() { ItemId = "StartsWith", HotKey = "=", ImageName = resourceStartsWith, Text = "Začíná", Checked = false, ToolTipTitle = "Začíná:", ToolTipText = "Vybere ty položky, jejichž text začíná zadaným textem", Tag = FilterBoxOperatorItems.StartsWith });
-            if (items.HasFlag(FilterBoxOperatorItems.DoesNotStartWith))
-                menuItems.Add(new DataMenuItem() { ItemId = "DoesNotStartWith", HotKey = "!", ImageName = resourceDoesNotStartWith, Text = "Nezačíná", Checked = false, ToolTipTitle = "Nezačíná:", ToolTipText = "Vybere ty položky, jejichž text začíná jinak, než je zadáno", Tag = FilterBoxOperatorItems.DoesNotStartWith });
-            if (items.HasFlag(FilterBoxOperatorItems.EndsWith))
-                menuItems.Add(new DataMenuItem() { ItemId = "EndsWith", HotKey = "/", ImageName = resourceEndsWith, Text = "Končí", Checked = false, ToolTipTitle = "Končí:", ToolTipText = "Vybere ty položky, jejichž text končí zadaným textem", Tag = FilterBoxOperatorItems.EndsWith });
-            if (items.HasFlag(FilterBoxOperatorItems.DoesNotEndWith))
-                menuItems.Add(new DataMenuItem() { ItemId = "DoesNotEndWith", HotKey = "!/", ImageName = resourceDoesNotEndWith, Text = "Nekončí", Checked = false, ToolTipTitle = "Nekončí:", ToolTipText = "Vybere ty položky, jejichž text končí jinak, než je zadáno", Tag = FilterBoxOperatorItems.DoesNotEndWith });
+            CreateDefaultOperatorItem(items, FilterBoxOperatorItems.Contains, "%", ImageName.DxFilterOperatorContains, MsgCode.DxFilterOperatorContainsText, MsgCode.DxFilterOperatorContainsTip, menuItems);
+            CreateDefaultOperatorItem(items, FilterBoxOperatorItems.DoesNotContain, "!%", ImageName.DxFilterOperatorDoesNotContain, MsgCode.DxFilterOperatorDoesNotContainText, MsgCode.DxFilterOperatorDoesNotContainTip, menuItems);
+            CreateDefaultOperatorItem(items, FilterBoxOperatorItems.StartsWith, "=", ImageName.DxFilterOperatorStartWith, MsgCode.DxFilterOperatorStartWithText, MsgCode.DxFilterOperatorStartWithTip, menuItems);
+            CreateDefaultOperatorItem(items, FilterBoxOperatorItems.DoesNotStartWith, "!", ImageName.DxFilterOperatorDoesNotStartWith, MsgCode.DxFilterOperatorDoesNotStartWithText, MsgCode.DxFilterOperatorDoesNotStartWithTip, menuItems);
+            CreateDefaultOperatorItem(items, FilterBoxOperatorItems.EndsWith, "/", ImageName.DxFilterOperatorEndWith, MsgCode.DxFilterOperatorEndWithText, MsgCode.DxFilterOperatorEndWithTip, menuItems);
+            CreateDefaultOperatorItem(items, FilterBoxOperatorItems.DoesNotEndWith, "!/", ImageName.DxFilterOperatorDoesNotEndWith, MsgCode.DxFilterOperatorDoesNotEndWithText, MsgCode.DxFilterOperatorDoesNotEndWithTip, menuItems);
+
+            CreateDefaultOperatorItem(items, FilterBoxOperatorItems.Like, "", ImageName.DxFilterOperatorLike, MsgCode.DxFilterOperatorLikeText, MsgCode.DxFilterOperatorLikeTip, menuItems);
+            CreateDefaultOperatorItem(items, FilterBoxOperatorItems.NotLike, "", ImageName.DxFilterOperatorNotLike, MsgCode.DxFilterOperatorNotLikeText, MsgCode.DxFilterOperatorNotLikeTip, menuItems);
+            CreateDefaultOperatorItem(items, FilterBoxOperatorItems.Match, "", ImageName.DxFilterOperatorMatch, MsgCode.DxFilterOperatorMatchText, MsgCode.DxFilterOperatorMatchTip, menuItems);
+            CreateDefaultOperatorItem(items, FilterBoxOperatorItems.DoesNotMatch, "", ImageName.DxFilterOperatorDoesNotMatch, MsgCode.DxFilterOperatorDoesNotMatchText, MsgCode.DxFilterOperatorDoesNotMatchTip, menuItems);
+
+            CreateDefaultOperatorItem(items, FilterBoxOperatorItems.LessThan, "<", ImageName.DxFilterOperatorLessThan, MsgCode.DxFilterOperatorLessThanText, MsgCode.DxFilterOperatorLessThanTip, menuItems);
+            CreateDefaultOperatorItem(items, FilterBoxOperatorItems.LessThanOrEqualTo, "<=", ImageName.DxFilterOperatorLessThanOrEqualTo, MsgCode.DxFilterOperatorLessThanOrEqualToText, MsgCode.DxFilterOperatorLessThanOrEqualToTip, menuItems);
+            CreateDefaultOperatorItem(items, FilterBoxOperatorItems.Equals, "=", ImageName.DxFilterOperatorEquals, MsgCode.DxFilterOperatorEqualsText, MsgCode.DxFilterOperatorEqualsTip, menuItems);
+            CreateDefaultOperatorItem(items, FilterBoxOperatorItems.NotEquals, "<>", ImageName.DxFilterOperatorNotEquals, MsgCode.DxFilterOperatorNotEqualsText, MsgCode.DxFilterOperatorNotEqualsTip, menuItems);
+            CreateDefaultOperatorItem(items, FilterBoxOperatorItems.GreaterThanOrEqualTo, ">=", ImageName.DxFilterOperatorGreaterThanOrEqualTo, MsgCode.DxFilterOperatorGreaterThanOrEqualToText, MsgCode.DxFilterOperatorGreaterThanOrEqualToTip, menuItems);
+            CreateDefaultOperatorItem(items, FilterBoxOperatorItems.GreaterThan, ">", ImageName.DxFilterOperatorGreaterThan, MsgCode.DxFilterOperatorGreaterThanText, MsgCode.DxFilterOperatorGreaterThanTip, menuItems);
 
             return menuItems;
+        }
+        private static void CreateDefaultOperatorItem(FilterBoxOperatorItems items, FilterBoxOperatorItems value, string hotKey, string imageName, string textCode, string toolTipCode, List<IMenuItem> menuItems)
+        {
+            if (!items.HasFlag(value)) return;
+
+            menuItems.Add(new DataMenuItem()
+            {
+                ItemId = value.ToString(),
+                HotKey = hotKey,
+                ImageName = imageName,
+                Text = DxComponent.Localize(textCode),
+                ToolTipText = DxComponent.Localize(toolTipCode),
+                Checked = false,
+                Tag = value
+            });
         }
         /// <summary>
         /// Metoda v daném poli <paramref name="menuItems"/> zkusí najít takovou položku, jejíž <see cref="IMenuItem.HotKey"/> == začátek zadaného textu <paramref name="text"/>.
@@ -257,7 +272,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Aktuální hodnota filtru. Lze setovat. Setování ale nevyvolá událost <see cref="FilterValueChanged"/>.
         /// <para/>
         /// Pozor - při setování hodnoty bude aktivován ten operátor ze zdejšího pole <see cref="FilterOperators"/>, 
-        /// který má shodnou hodnotu v <see cref="IMenuItem.ItemId"/>, jakou má dodaný operátor.
+        /// který má shodnou hodnotu v <see cref="ITextItem.ItemId"/>, jakou má dodaný operátor.
         /// </summary>
         public DxFilterBoxValue FilterValue
         {
@@ -646,39 +661,39 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// </summary>
     [Flags]
     public enum FilterBoxOperatorItems : uint
-    {
-        /// <summary>Obsahuje (kdo to vymyslel, že neprázdná hodnota v enumu Flags bude mít numerickou hodnotu 0 ???)</summary>
-        Contains = 0,
+    {   // DAJ 0068975 5.8.2021 posunul numerické hodnoty o 1bit doleva (Contains z 0 na 1, atd), shodně v Noris.WS.DataContracts.DataTypes.FilterBoxOperatorItems
+        /// <summary>Obsahuje</summary>
+        Contains = 0x0001,
         /// <summary>Neobsahuje ...</summary>
-        DoesNotContain = 1,
+        DoesNotContain = 0x0002,
         /// <summary>Nekončí na ...</summary>
-        DoesNotEndWith = 2,
+        DoesNotEndWith = 0x0004,
         /// <summary>Neodpovídá ...</summary>
-        DoesNotMatch = 4,
+        DoesNotMatch = 0x0008,
         /// <summary>Nezačíná ...</summary>
-        DoesNotStartWith = 8,
+        DoesNotStartWith = 0x0010,
         /// <summary>Končí na ...</summary>
-        EndsWith = 16,
+        EndsWith = 0x0020,
         /// <summary>Je rovno</summary>
-        Equals = 32,
+        Equals = 0x0040,
         /// <summary>Větší než</summary>
-        GreaterThan = 64,
+        GreaterThan = 0x0080,
         /// <summary>Větší nebo rovno</summary>
-        GreaterThanOrEqualTo = 128,
+        GreaterThanOrEqualTo = 0x0100,
         /// <summary>Menší než</summary>
-        LessThan = 256,
+        LessThan = 0x0200,
         /// <summary>Menší nebo rovno</summary>
-        LessThanOrEqualTo = 512,
+        LessThanOrEqualTo = 0x0400,
         /// <summary>Podobno</summary>
-        Like = 1024,
+        Like = 0x0800,
         /// <summary>Odpovídá</summary>
-        Match = 2048,
+        Match = 0x1000,
         /// <summary>Nerovno</summary>
-        NotEquals = 4096,
+        NotEquals = 0x2000,
         /// <summary>Nepodobno</summary>
-        NotLike = 8192,
+        NotLike = 0x4000,
         /// <summary>Začíná na ...</summary>
-        StartsWith = 16384,
+        StartsWith = 0x8000,
 
         /// <summary>Default pro texty, ale bez Like a Match</summary>
         DefaultText = Contains | DoesNotContain | StartsWith | DoesNotStartWith | EndsWith | DoesNotEndWith,
