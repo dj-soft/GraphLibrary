@@ -677,7 +677,7 @@ namespace Noris.Clients.Win.Components
 
             Image image = null;
             if (args.Icon != null) image = args.Icon;
-            else if (args.IconFile != null) image = DxComponent.CreateBitmapImage(args.IconFile);
+            else if (args.IconFile != null) image = DxComponent.CreateBitmapImage(args.IconFile, ResourceImageSizeType.Large);
             if (image == null)
             {
                 if (args.StandardIcon.HasValue) image = GetStandardIcon(args.StandardIcon.Value)?.ToBitmap();
@@ -2025,6 +2025,11 @@ namespace Noris.Clients.Win.Components
         /// </summary>
         public string Title { get; set; }
         /// <summary>
+        /// Jméno ikonky.
+        /// Vhodné ikony jsou v <see cref="ImageName"/>, typicky <see cref="ImageName.DxDialogIconInfo"/>, <see cref="ImageName.DxDialogIconWarning"/>, <see cref="ImageName.DxDialogIconError"/>.
+        /// </summary>
+        public string IconFile { get; set; }
+        /// <summary>
         /// Libovolná ikonka
         /// </summary>
         public Image Icon { get; set; }
@@ -2038,11 +2043,6 @@ namespace Noris.Clients.Win.Components
         /// Poznámka: tento enum pokrývá všechny standardní ikony, na rozdíl od hodnoty v <see cref="StandardIcon"/>.
         /// </summary>
         public DialogSystemIcon? SystemIcon { get; set; }
-        /// <summary>
-        /// Jméno ikonky.
-        /// Konkrétní Image pro toto jméno získává metoda 
-        /// </summary>
-        public string IconFile { get; set; }
         /// <summary>
         /// Největší povolená velikost ikony. Může být null, nebo 16 až 128 (vždy po 16px).
         /// Pokud není zadáno, nebude omezena.
@@ -2260,7 +2260,7 @@ namespace Noris.Clients.Win.Components
             var info = CreateTextsForException(exc, textLabel, true);
 
             dialogArgs.Title = DxComponent.Localize(MsgCode.DialogFormTitleError);
-            dialogArgs.SystemIcon = DialogSystemIcon.Warning;
+            dialogArgs.IconFile = ImageName.DxDialogIconError;
             dialogArgs.PrepareButtons(DialogResult.OK);
             dialogArgs.Buttons[0].IsInitialButton = true;
             dialogArgs.ButtonsAlignment = AlignContentToSide.Center;
@@ -2274,7 +2274,10 @@ namespace Noris.Clients.Win.Components
             return dialogArgs;
         }
         /// <summary>
-        /// Vygeneruje a vrátí informaci o chybách (včetně InnerExceptions) ve dvou formách:
+        /// Vygeneruje a vrátí informaci o chybách (včetně InnerExceptions) ve dvou formách, do výstupu dává dva Items:
+        /// Item1 = první jednodušší text
+        /// Item2 = alternativí text, obsahuje StackTrace a oddělené vnořené chyby.
+        /// <para/>
         /// Tuple.Item1 = "[1. ]Message (in: class.method())[EOL a tatáž informace z InnerExceptions];
         /// Tuple.Item2 = "Message EOL class.method() EOL StackTrace EOL delimiterline"
         /// </summary>

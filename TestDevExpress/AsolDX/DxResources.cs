@@ -1663,6 +1663,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         public const string DxFilterOperatorLike = "pic_0/UI/FilterBox/Like";
         public const string DxFilterOperatorNotEquals = "pic_0/UI/FilterBox/NotEquals";
         public const string DxFilterOperatorNotLike = "pic_0/UI/FilterBox/NotLike";
+
+        public const string DxDialogIconInfo = "pic_0/Win/MessageBox/info";
+        public const string DxDialogIconWarning = "pic_0/Win/MessageBox/warning";
+        public const string DxDialogIconError = "pic_0/Win/MessageBox/error";
     }
     #endregion
     #region class DxSvgImageCollection : Kolekce SvgImages rozšířená o numerický index
