@@ -20,7 +20,7 @@ namespace Noris.Clients.Win.Components.AsolDX
     {
         event EventHandler ISystemAdapter.InteractiveZoomChanged { add { } remove { } }
         decimal ISystemAdapter.ZoomRatio { get { return 1.0m; } }
-        string ISystemAdapter.GetMessage(string messageCode, params object[] parameters) { return AdapterSupport.GetMessage(messageCode, parameters); }
+        string ISystemAdapter.GetMessage(MsgCode messageCode, params object[] parameters) { return AdapterSupport.GetMessage(messageCode, parameters); }
         IEnumerable<IResourceItem> ISystemAdapter.GetResources() { return DataResources.GetResources(); }
         string ISystemAdapter.GetResourceItemKey(string name) { return DataResources.GetItemKey(name); }
         string ISystemAdapter.GetResourcePackKey(string name, out ResourceImageSizeType sizeType, out ResourceContentType contentType) { return DataResources.GetPackKey(name, out sizeType, out contentType); }
@@ -78,9 +78,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
             return bitmap;
         }
-        public static string GetMessage(string messageCode, IEnumerable<object> parameters)
+        public static string GetMessage(MsgCode messageCode, IEnumerable<object> parameters)
         {
-            if (messageCode == null) return null;
             string text = GetMessageText(messageCode);
             if (text == null) return null;
             return String.Format(text, parameters);
@@ -92,14 +91,30 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="messageCode"></param>
         /// <returns></returns>
-        public static string GetMessageText(string messageCode)
+        public static string GetMessageText(MsgCode messageCode)
         {
-            var msgField = typeof(MsgCode).GetFields(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static).Where(f => f.Name == messageCode).FirstOrDefault();
-            if (msgField == null) return null;
-            var defTextAttr = msgField.GetCustomAttributes(typeof(DefaultMessageTextAttribute), true).Cast<DefaultMessageTextAttribute>().FirstOrDefault();
-            if (defTextAttr is null || String.IsNullOrEmpty(defTextAttr.DefaultText)) return null;
-            return defTextAttr.DefaultText;
+            if (_Messages == null) _Messages = new Dictionary<MsgCode, string>();
+            string text = null;
+            if (!_Messages.TryGetValue(messageCode, out text))
+            {
+                var msgField = typeof(MsgCode).GetFields(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static).Where(f => f.Name == messageCode.ToString()).FirstOrDefault();
+                if (msgField != null)
+                {
+                    var defTextAttr = msgField.GetCustomAttributes(typeof(DefaultMessageTextAttribute), true).Cast<DefaultMessageTextAttribute>().FirstOrDefault();
+                    if (!(defTextAttr is null || String.IsNullOrEmpty(defTextAttr.DefaultText)))
+                        text = defTextAttr.DefaultText;
+                }
+
+                // Pro daný kód si text uložím vždy, i když nebyl nalezen (=null) = abych jej příště jak osel nehledal znovu:
+                lock (_Messages)
+                {
+                    if (!_Messages.ContainsKey(messageCode))
+                        _Messages.Add(messageCode, text);
+                }
+            }
+            return text;
         }
+        private static Dictionary<MsgCode, string> _Messages = null;
     }
     #endregion
     #region class DataResources

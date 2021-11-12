@@ -889,7 +889,7 @@ namespace Noris.Clients.Win.Components
         /// <param name="fontSizeDelta"></param>
         /// <param name="clickHandler"></param>
         /// <returns></returns>
-        private DxBarCheckItem AddStatusCheckButton(DialogArgs args, string text, string textCode, string toolTipText, string toolTipCode, int width, int height, int fontSizeDelta, DevExpress.XtraBars.ItemClickEventHandler clickHandler)
+        private DxBarCheckItem AddStatusCheckButton(DialogArgs args, string text, MsgCode textCode, string toolTipText, MsgCode toolTipCode, int width, int height, int fontSizeDelta, DevExpress.XtraBars.ItemClickEventHandler clickHandler)
         {
             if (String.IsNullOrEmpty(text)) text = DxComponent.Localize(textCode);
             if (String.IsNullOrEmpty(toolTipText)) toolTipText = DxComponent.Localize(toolTipCode);
@@ -909,7 +909,7 @@ namespace Noris.Clients.Win.Components
         /// <param name="fontSizeDelta"></param>
         /// <param name="clickHandler"></param>
         /// <returns></returns>
-        private DxBarButtonItem AddStatusButton(DialogArgs args, string text, string textCode, string toolTipText, string toolTipCode, int width, int height, int fontSizeDelta, DevExpress.XtraBars.ItemClickEventHandler clickHandler)
+        private DxBarButtonItem AddStatusButton(DialogArgs args, string text, MsgCode textCode, string toolTipText, MsgCode toolTipCode, int width, int height, int fontSizeDelta, DevExpress.XtraBars.ItemClickEventHandler clickHandler)
         {
             if (String.IsNullOrEmpty(text)) text = DxComponent.Localize(textCode);
             if (String.IsNullOrEmpty(toolTipText)) toolTipText = DxComponent.Localize(toolTipCode);

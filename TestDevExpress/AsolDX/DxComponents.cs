@@ -2558,7 +2558,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="messageCode"></param>
         /// <param name="parameters"></param>
         /// <returns></returns>
-        public static string Localize(string messageCode, params object[] parameters)
+        public static string Localize(MsgCode messageCode, params object[] parameters)
         {
             return SystemAdapter.GetMessage(messageCode, parameters);
         }
@@ -2570,7 +2570,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="messageText"></param>
         /// <param name="parameters"></param>
         /// <returns></returns>
-        public static string LocalizeDef(string messageCode, string messageText, params object[] parameters)
+        public static string LocalizeDef(MsgCode messageCode, string messageText, params object[] parameters)
         {
             string message = SystemAdapter.GetMessage(messageCode);
             if (message == null) message = messageText;
@@ -3609,146 +3609,147 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// <summary>
     /// Knihovna standardních hlášek k lokalizaci
     /// </summary>
-    public static class MsgCode
+    public enum MsgCode
     {
+        None = 0,
         [DefaultMessageText("SYSTÉM")]
-        public const string RibbonAppHomeText = "RibbonAppHomeText";
+        RibbonAppHomeText,
         [DefaultMessageText("Systémový prvek, nelze jej odebrat")]
-        public const string RibbonDirectQatItem = "RibbonDirectQatItem";
+        RibbonDirectQatItem,
         [DefaultMessageText("Přidat na panel nástrojů Rychlý přístup")]
-        public const string RibbonAddToQat = "RibbonAddToQat";
+        RibbonAddToQat,
         [DefaultMessageText("Odebrat z panelu nástrojů Rychlý přístup")]
-        public const string RibbonRemoveFromQat = "RibbonRemoveFromQat";
+        RibbonRemoveFromQat,
         [DefaultMessageText("Zobrazit panel nástrojů Rychlý přístup nad pásem karet")]
-        public const string RibbonShowQatTop = "RibbonShowQatTop";
+        RibbonShowQatTop,
         [DefaultMessageText("Zobrazit panel nástrojů Rychlý přístup pod pásem karet")]
-        public const string RibbonShowQatDown = "RibbonShowQatDown";
+        RibbonShowQatDown,
         [DefaultMessageText("Upravit obsah panelu nástrojů Rychlý přístup")]
-        public const string RibbonShowManager = "RibbonShowManager";
+        RibbonShowManager,
         [DefaultMessageText("Zmenšit")]
-        public const string RibbonMinimizeQat = "RibbonMinimizeQat";
+        RibbonMinimizeQat,
 
         [DefaultMessageText("Chyba")]
-        public const string DialogFormTitleError = "DialogFormTitleError";
+        DialogFormTitleError,
         [DefaultMessageText("Došlo k chybě")]
-        public const string DialogFormTitlePrefix = "DialogFormTitlePrefix";
+        DialogFormTitlePrefix,
         [DefaultMessageText("Ctrl+C: zkopírovat")]
-        public const string DialogFormCtrlCText = "DialogFormCtrlCText";
+        DialogFormCtrlCText,
         [DefaultMessageText("Ctrl+C: zkopíruje všechny informace z okna do schránky Windows")]
-        public const string DialogFormCtrlCToolTip = "DialogFormCtrlCToolTip";
+        DialogFormCtrlCToolTip,
         [DefaultMessageText("Text zkopírován")]
-        public const string DialogFormCtrlCInfo = "DialogFormCtrlCInfo";
+        DialogFormCtrlCInfo,
         [DefaultMessageText("Více informací")]
-        public const string DialogFormAltMsgButtonText = "DialogFormAltMsgButtonText";
+        DialogFormAltMsgButtonText,
         [DefaultMessageText("Zobrazí větší okno s více informacemi")]
-        public const string DialogFormAltMsgButtonToolTip = "DialogFormAltMsgButtonToolTip";
+        DialogFormAltMsgButtonToolTip,
         [DefaultMessageText("Méně informací")]
-        public const string DialogFormStdMsgButtonText = "DialogFormStdMsgButtonText";
+        DialogFormStdMsgButtonText,
         [DefaultMessageText("Zobrazí základní okno s méně informacemi")]
-        public const string DialogFormStdMsgButtonToolTip = "DialogFormStdMsgButtonToolTip";
+        DialogFormStdMsgButtonToolTip,
 
         [DefaultMessageText("prefix")]
-        public const string DialogFormResultPrefix = "DialogFormResultPrefix";
+        DialogFormResultPrefix,
         [DefaultMessageText("OK")]
-        public const string DialogFormResultOk = "DialogFormResultOk";
+        DialogFormResultOk,
         [DefaultMessageText("Ano")]
-        public const string DialogFormResultYes = "DialogFormResultYes";
+        DialogFormResultYes,
         [DefaultMessageText("Ne")]
-        public const string DialogFormResultNo = "DialogFormResultNo";
+        DialogFormResultNo,
         [DefaultMessageText("Zrušit")]
-        public const string DialogFormResultAbort = "DialogFormResultAbort";
+        DialogFormResultAbort,
         [DefaultMessageText("Znovu")]
-        public const string DialogFormResultRetry = "DialogFormResultRetry";
+        DialogFormResultRetry,
         [DefaultMessageText("Ignoruj")]
-        public const string DialogFormResultIgnore = "DialogFormResultIgnore";
+        DialogFormResultIgnore,
         [DefaultMessageText("Storno")]
-        public const string DialogFormResultCancel = "DialogFormResultCancel";
+        DialogFormResultCancel,
 
         [DefaultMessageText("Orientace")]
-        public const string LayoutPanelContextMenuTitle = "LayoutPanelContextMenuTitle";
+        LayoutPanelContextMenuTitle,
         [DefaultMessageText("Vedle sebe")]
-        public const string LayoutPanelHorizontalText = "LayoutPanelHorizontalText";
+        LayoutPanelHorizontalText,
         [DefaultMessageText("Panely vlevo a vpravo, oddělovač je svislý")]
-        public const string LayoutPanelHorizontalToolTip = "LayoutPanelHorizontalToolTip";
+        LayoutPanelHorizontalToolTip,
         [DefaultMessageText("Pod sebou")]
-        public const string LayoutPanelVerticalText = "LayoutPanelVerticalText";
+        LayoutPanelVerticalText,
         [DefaultMessageText("Panely nahoře a dole, oddělovač je vodorovný")]
-        public const string LayoutPanelVerticalToolTip = "LayoutPanelVerticalToolTip";
+        LayoutPanelVerticalToolTip,
         [DefaultMessageText("Zavřít")]
-        public const string MenuCloseText = "MenuCloseText";
+        MenuCloseText,
         [DefaultMessageText("Zavře nabídku bez provedení akce")]
-        public const string MenuCloseToolTip = "MenuCloseToolTip";
+        MenuCloseToolTip,
 
         [DefaultMessageText("Smazat")]
-        public const string DxFilterBoxClearTipTitle = "DxFilterBoxClearTipTitle";
+        DxFilterBoxClearTipTitle,
         [DefaultMessageText("Zruší zadaný filtr")]
-        public const string DxFilterBoxClearTipText = "DxFilterBoxClearTipText";
+        DxFilterBoxClearTipText,
         [DefaultMessageText("Obsahuje")]
-        public const string DxFilterOperatorContainsText = "DxFilterOperatorContainsText";
+        DxFilterOperatorContainsText,
         [DefaultMessageText("Vybere ty položky, které obsahují zadaný text")]
-        public const string DxFilterOperatorContainsTip = "DxFilterOperatorContainsTip";
+        DxFilterOperatorContainsTip,
         [DefaultMessageText("Neobsahuje")]
-        public const string DxFilterOperatorDoesNotContainText = "DxFilterOperatorDoesNotContainText";
+        DxFilterOperatorDoesNotContainText,
         [DefaultMessageText("Vybere ty položky, které neobsahují zadaný text")]
-        public const string DxFilterOperatorDoesNotContainTip = "DxFilterOperatorDoesNotContainTip";
+        DxFilterOperatorDoesNotContainTip,
         [DefaultMessageText("Začíná")]
-        public const string DxFilterOperatorStartWithText = "DxFilterOperatorStartWithText";
+        DxFilterOperatorStartWithText,
         [DefaultMessageText("Vybere ty položky, jejichž text začíná zadaným textem")]
-        public const string DxFilterOperatorStartWithTip = "DxFilterOperatorStartWithTip";
+        DxFilterOperatorStartWithTip,
         [DefaultMessageText("Nezačíná")]
-        public const string DxFilterOperatorDoesNotStartWithText = "DxFilterOperatorDoesNotStartWithText";
+        DxFilterOperatorDoesNotStartWithText,
         [DefaultMessageText("Vybere ty položky, jejichž text začíná jinak, než je zadáno")]
-        public const string DxFilterOperatorDoesNotStartWithTip = "DxFilterOperatorDoesNotStartWithTip";
+        DxFilterOperatorDoesNotStartWithTip,
         [DefaultMessageText("Končí")]
-        public const string DxFilterOperatorEndWithText = "DxFilterOperatorEndWithText";
+        DxFilterOperatorEndWithText,
         [DefaultMessageText("Vybere ty položky, jejichž text končí zadaným textem")]
-        public const string DxFilterOperatorEndWithTip = "DxFilterOperatorEndWithTip";
+        DxFilterOperatorEndWithTip,
         [DefaultMessageText("Nekončí")]
-        public const string DxFilterOperatorDoesNotEndWithText = "DxFilterOperatorDoesNotEndWithText";
+        DxFilterOperatorDoesNotEndWithText,
         [DefaultMessageText("Vybere ty položky, jejichž text končí jinak, než je zadáno")]
-        public const string DxFilterOperatorDoesNotEndWithTip = "DxFilterOperatorDoesNotEndWithTip";
+        DxFilterOperatorDoesNotEndWithTip,
 
         [DefaultMessageText("Podobá se")]
-        public const string DxFilterOperatorLikeText = "DxFilterOperatorLikeText";
+        DxFilterOperatorLikeText,
         [DefaultMessageText("?")]
-        public const string DxFilterOperatorLikeTip = "DxFilterOperatorLikeTip";
+        DxFilterOperatorLikeTip,
         [DefaultMessageText("Nepodobá se")]
-        public const string DxFilterOperatorNotLikeText = "DxFilterOperatorNotLikeText";
+        DxFilterOperatorNotLikeText,
         [DefaultMessageText("?")]
-        public const string DxFilterOperatorNotLikeTip = "DxFilterOperatorNotLikeTip";
+        DxFilterOperatorNotLikeTip,
         [DefaultMessageText("Odpovídá")]
-        public const string DxFilterOperatorMatchText = "DxFilterOperatorMatchText";
+        DxFilterOperatorMatchText,
         [DefaultMessageText("?")]
-        public const string DxFilterOperatorMatchTip = "DxFilterOperatorMatchTip";
+        DxFilterOperatorMatchTip,
         [DefaultMessageText("Neodpovídá")]
-        public const string DxFilterOperatorDoesNotMatchText = "DxFilterOperatorDoesNotMatchText";
+        DxFilterOperatorDoesNotMatchText,
         [DefaultMessageText("?")]
-        public const string DxFilterOperatorDoesNotMatchTip = "DxFilterOperatorDoesNotMatchTip";
+        DxFilterOperatorDoesNotMatchTip,
 
         [DefaultMessageText("Menší než")]
-        public const string DxFilterOperatorLessThanText = "DxFilterOperatorLessThanText";
+        DxFilterOperatorLessThanText,
         [DefaultMessageText("Hodnoty menší než zadaná hodnota")]
-        public const string DxFilterOperatorLessThanTip = "DxFilterOperatorLessThanTip";
+        DxFilterOperatorLessThanTip,
         [DefaultMessageText("Menší nebo rovno")]
-        public const string DxFilterOperatorLessThanOrEqualToText = "DxFilterOperatorLessThanOrEqualToText";
+        DxFilterOperatorLessThanOrEqualToText,
         [DefaultMessageText("Hodnoty menší nebo rovny jako zadaná hodnota")]
-        public const string DxFilterOperatorLessThanOrEqualToTip = "DxFilterOperatorLessThanOrEqualToTip";
+        DxFilterOperatorLessThanOrEqualToTip,
         [DefaultMessageText("Rovno")]
-        public const string DxFilterOperatorEqualsText = "DxFilterOperatorEqualsText";
+        DxFilterOperatorEqualsText,
         [DefaultMessageText("Hodnoty rovné dané hodnotě")]
-        public const string DxFilterOperatorEqualsTip = "DxFilterOperatorEqualsTip";
+        DxFilterOperatorEqualsTip,
         [DefaultMessageText("Nerovno")]
-        public const string DxFilterOperatorNotEqualsText = "DxFilterOperatorNotEqualsText";
+        DxFilterOperatorNotEqualsText,
         [DefaultMessageText("Hodnoty jiné než je daná hodnota")]
-        public const string DxFilterOperatorNotEqualsTip = "DxFilterOperatorNotEqualsTip";
+        DxFilterOperatorNotEqualsTip,
         [DefaultMessageText("Větší nebo rovno")]
-        public const string DxFilterOperatorGreaterThanOrEqualToText = "DxFilterOperatorGreaterThanOrEqualToText";
+        DxFilterOperatorGreaterThanOrEqualToText,
         [DefaultMessageText("Hodnoty větší nebo rovny jako zadaná hodnota")]
-        public const string DxFilterOperatorGreaterThanOrEqualToTip = "DxFilterOperatorGreaterThanOrEqualToTip";
+        DxFilterOperatorGreaterThanOrEqualToTip,
         [DefaultMessageText("Větší než")]
-        public const string DxFilterOperatorGreaterThanText = "DxFilterOperatorGreaterThanText";
+        DxFilterOperatorGreaterThanText,
         [DefaultMessageText("Hodnoty větší než zadaná hodnota")]
-        public const string DxFilterOperatorGreaterThanTip = "DxFilterOperatorGreaterThanTip";
+        DxFilterOperatorGreaterThanTip
        
 
         // Nové kódy přidej do Messages.xml v klientu!!!     Do AdapterTest.cs není nutno, tam se načítá hodnota atributu DefaultMessageText() !
@@ -3929,7 +3930,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="messageCode"></param>
         /// <param name="parameters"></param>
         /// <returns></returns>
-        public static string GetMessage(string messageCode, params object[] parameters) { return Current.GetMessage(messageCode, parameters); }
+        public static string GetMessage(MsgCode messageCode, params object[] parameters) { return Current.GetMessage(messageCode, parameters); }
         /// <summary>
         /// Volá se jedenkrát, vrátí kompletní seznam všech zdrojů (Resource).
         /// </summary>
@@ -4030,7 +4031,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="messageCode"></param>
         /// <param name="parameters"></param>
         /// <returns></returns>
-        string GetMessage(string messageCode, params object[] parameters);
+        string GetMessage(MsgCode messageCode, params object[] parameters);
         /// <summary>
         /// Volá se jedenkrát, vrátí kompletní seznam všech zdrojů (Resource).
         /// </summary>

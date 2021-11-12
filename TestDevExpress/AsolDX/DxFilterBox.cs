@@ -231,7 +231,7 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             return menuItems;
         }
-        private static void CreateDefaultOperatorItem(FilterBoxOperatorItems items, FilterBoxOperatorItems value, string hotKey, string imageName, string textCode, string toolTipCode, List<IMenuItem> menuItems)
+        private static void CreateDefaultOperatorItem(FilterBoxOperatorItems items, FilterBoxOperatorItems value, string hotKey, string imageName, MsgCode textCode, MsgCode toolTipCode, List<IMenuItem> menuItems)
         {
             if (!items.HasFlag(value)) return;
 
