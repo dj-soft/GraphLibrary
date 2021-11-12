@@ -171,8 +171,10 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             try
             {
+                var startTime = DxComponent.LogTimeCurrent;
                 byte[] content = System.IO.File.ReadAllBytes(fileInfo.FullName);
                 LoadFromResourcesBinInArray(content, resourceList);
+                var microsecs = DxComponent.LogGetTimeElapsed(startTime, DxComponent.LogTokenTimeMicrosec);
             }
             catch (Exception exc)
             {
@@ -195,7 +197,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             string signature = ReadContentString(content, 0, signatureLength, sb);
             bool isValidSignature = (signature.Substring(0, signature2Length) == validSignature2);
             if (!isValidSignature)
-                throw new FormatException($"Bad signature of file: '{signature}'");
+                throw new FormatException($"Bad signature of ServerResource.bin file: '{signature}'");
 
             var length = content.Length;
             int headerEnd = length - 8;
@@ -216,7 +218,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 }
                 else
                 {
-                    throw new FormatException($"Bad format of file: fileBegin ({fileBegin}) or fileLength ({fileLength}) is outside data area ({signatureLength}-{headerBegin}).");
+                    throw new FormatException($"Bad format of ServerResource.bin file: FileBegin ({fileBegin}) or FileLength ({fileLength}) is outside data area ({signatureLength}-{headerBegin}).");
                 }
             }
         }
