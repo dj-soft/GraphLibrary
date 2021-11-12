@@ -2369,8 +2369,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             if (barItem is DxBarCheckBoxToggle) return;              // DxCheckBoxToggle si řídí Image sám
 
+#if DebugBuild
             if (iRibbonItem.ImageName != null && iRibbonItem.ImageName.IndexOf("poznamkovy", StringComparison.CurrentCultureIgnoreCase) >= 0)
             { }
+#endif
 
             // Velikost obrázku: pro Level = 0 (vlastní prvky v Ribbonu) ve stylu Large nebo default dáme obrázky Large, jinak dáme Small (pro malé prvky Ribbonu a pro položky menu, ty mají Level 1 a vyšší):
             ResourceImageSizeType smallSizeType = ResourceImageSizeType.Small;

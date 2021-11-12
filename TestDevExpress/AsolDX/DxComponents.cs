@@ -2636,7 +2636,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             DialogForm.ShowDialog(args);
         }
         #endregion
-        #region SkinSupport a Colors
+        #region SkinSupport a Colors, GetSkinColor, IsDarkTheme
         /// <summary>
         /// Vrátí aktuálně platnou barvu dle skinu.
         /// Vstupní jména by měly pocházet z prvků třídy <see cref="SkinElementColor"/>.
@@ -2652,23 +2652,30 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (String.IsNullOrEmpty(name) || !name.Contains(".")) return null;
             var parts = name.Split('.');
             if (parts.Length != 2) return null;
-            if (parts[0] == "Control")
-                return _GetControlColor(parts[1]);
+            string colorSource = parts[0];
+            string colorEntity = parts[1];
+            if (colorSource == "Control")
+                return _GetControlColor(colorEntity);
 
-            var skin = _GetSkinByName(parts[0]);
+            var skin = _GetSkinByName(colorSource);
             if (skin == null) return null;
-            if (!skin.Colors.Contains(parts[1])) return null;
-            return skin.Colors[parts[1]];
+            if (skin.Colors.Contains(colorEntity)) return skin.Colors[colorEntity];
+
+            if (_TryGetSkinSystemColor(skin, colorEntity, out var systemColor)) return systemColor.Value;
+
+            return null;
         }
         /// <summary>
         /// Vrátí požadovanou část definice aktuálního skinu (oblast, family).
         /// Pro zadaný text "CommonSkins" vrací DevExpress.Skins.CommonSkins.GetSkin(DevExpress.LookAndFeel.UserLookAndFeel.Default.ActiveLookAndFeel), atd.
+        /// Lze zadat hodnotu např. <see cref="SkinElementColor.RibbonSkins"/>; ta má sice na konci tečku, ale zdejší metoda si s tím poradí...
         /// </summary>
         /// <param name="skinPartName"></param>
         /// <returns></returns>
         private DevExpress.Skins.Skin _GetSkinByName(string skinPartName)
         {
             var alaf = DevExpress.LookAndFeel.UserLookAndFeel.Default.ActiveLookAndFeel;
+            skinPartName = skinPartName.Replace(".", "");           // Aby bylo možno použít hodnotu např. SkinElementColor.RibbonSkins (=s tečkou na konci) jako parametr této metody
             switch (skinPartName)
             {
                 case "CommonSkins": return DevExpress.Skins.CommonSkins.GetSkin(alaf);
@@ -2742,6 +2749,63 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
             _ControlColors.Add(controlName, control);
             return control;
+        }
+        /// <summary>
+        /// Zkusí najít a vrátit systémovou barvu v daném skinu
+        /// </summary>
+        /// <param name="skin"></param>
+        /// <param name="colorEntity"></param>
+        /// <param name="systemColor"></param>
+        /// <returns></returns>
+        private bool _TryGetSkinSystemColor(DevExpress.Skins.Skin skin, string colorEntity, out Color? systemColor)
+        {
+            systemColor = _GetSkinSystemColor(skin, colorEntity);
+            return systemColor.HasValue;
+        }
+        /// <summary>
+        /// Zkusí najít a vrátit systémovou barvu v daném skinu
+        /// </summary>
+        /// <param name="skin"></param>
+        /// <param name="colorEntity"></param>
+        /// <returns></returns>
+        private Color? _GetSkinSystemColor(DevExpress.Skins.Skin skin, string colorEntity)
+        {
+            if (skin is null || String.IsNullOrEmpty(colorEntity)) return null;
+            // Původně jsem tu chtěl psát switch { case ... }, jenže hodnoty nejsou konstanty ale static get (a to do switche nejde), i proto, že jejich zdroje (např. SystemColors.ButtonFace.Name) jsou instanční get.
+            if (colorEntity == SkinElementColor.SystemColorActiveBorder) return skin.GetSystemColor(SystemColors.ActiveBorder);
+            if (colorEntity == SkinElementColor.SystemColorActiveCaption) return skin.GetSystemColor(SystemColors.ActiveCaption);
+            if (colorEntity == SkinElementColor.SystemColorActiveCaptionText) return skin.GetSystemColor(SystemColors.ActiveCaptionText);
+            if (colorEntity == SkinElementColor.SystemColorAppWorkspace) return skin.GetSystemColor(SystemColors.AppWorkspace);
+            if (colorEntity == SkinElementColor.SystemColorButtonFace) return skin.GetSystemColor(SystemColors.ButtonFace);
+            if (colorEntity == SkinElementColor.SystemColorButtonHighlight) return skin.GetSystemColor(SystemColors.ButtonHighlight);
+            if (colorEntity == SkinElementColor.SystemColorButtonShadow) return skin.GetSystemColor(SystemColors.ButtonShadow);
+            if (colorEntity == SkinElementColor.SystemColorControl) return skin.GetSystemColor(SystemColors.Control);
+            if (colorEntity == SkinElementColor.SystemColorControlDark) return skin.GetSystemColor(SystemColors.ControlDark);
+            if (colorEntity == SkinElementColor.SystemColorControlDarkDark) return skin.GetSystemColor(SystemColors.ControlDarkDark);
+            if (colorEntity == SkinElementColor.SystemColorControlLight) return skin.GetSystemColor(SystemColors.ControlLight);
+            if (colorEntity == SkinElementColor.SystemColorControlLightLight) return skin.GetSystemColor(SystemColors.ControlLightLight);
+            if (colorEntity == SkinElementColor.SystemColorControlText) return skin.GetSystemColor(SystemColors.ControlText);
+            if (colorEntity == SkinElementColor.SystemColorDesktop) return skin.GetSystemColor(SystemColors.Desktop);
+            if (colorEntity == SkinElementColor.SystemColorGradientActiveCaption) return skin.GetSystemColor(SystemColors.GradientActiveCaption);
+            if (colorEntity == SkinElementColor.SystemColorGradientInactiveCaption) return skin.GetSystemColor(SystemColors.GradientInactiveCaption);
+            if (colorEntity == SkinElementColor.SystemColorGrayText) return skin.GetSystemColor(SystemColors.GrayText);
+            if (colorEntity == SkinElementColor.SystemColorHighlight) return skin.GetSystemColor(SystemColors.Highlight);
+            if (colorEntity == SkinElementColor.SystemColorHighlightText) return skin.GetSystemColor(SystemColors.HighlightText);
+            if (colorEntity == SkinElementColor.SystemColorHotTrack) return skin.GetSystemColor(SystemColors.HotTrack);
+            if (colorEntity == SkinElementColor.SystemColorInactiveBorder) return skin.GetSystemColor(SystemColors.InactiveBorder);
+            if (colorEntity == SkinElementColor.SystemColorInactiveCaption) return skin.GetSystemColor(SystemColors.InactiveCaption);
+            if (colorEntity == SkinElementColor.SystemColorInactiveCaptionText) return skin.GetSystemColor(SystemColors.InactiveCaptionText);
+            if (colorEntity == SkinElementColor.SystemColorInfo) return skin.GetSystemColor(SystemColors.Info);
+            if (colorEntity == SkinElementColor.SystemColorInfoText) return skin.GetSystemColor(SystemColors.InfoText);
+            if (colorEntity == SkinElementColor.SystemColorMenu) return skin.GetSystemColor(SystemColors.Menu);
+            if (colorEntity == SkinElementColor.SystemColorMenuBar) return skin.GetSystemColor(SystemColors.MenuBar);
+            if (colorEntity == SkinElementColor.SystemColorMenuHighlight) return skin.GetSystemColor(SystemColors.MenuHighlight);
+            if (colorEntity == SkinElementColor.SystemColorMenuText) return skin.GetSystemColor(SystemColors.MenuText);
+            if (colorEntity == SkinElementColor.SystemColorScrollBar) return skin.GetSystemColor(SystemColors.ScrollBar);
+            if (colorEntity == SkinElementColor.SystemColorWindow) return skin.GetSystemColor(SystemColors.Window);
+            if (colorEntity == SkinElementColor.SystemColorWindowFrame) return skin.GetSystemColor(SystemColors.WindowFrame);
+            if (colorEntity == SkinElementColor.SystemColorWindowText) return skin.GetSystemColor(SystemColors.WindowText);
+            return null;
         }
         /// <summary>
         /// Resetuje objekty v cache controlů pro získávání nativních barev
@@ -2872,17 +2936,28 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         private bool _IsCurrentDarkSkin()
         {
-            // Získám aktivní skin Ribbonu, a přečtu jeho systémovou barvu pro text menu = odpovídá barvě písma pro tlačítka v Ribbonu:
-            var textColor = DevExpress.Skins.RibbonSkins.GetSkin(DevExpress.LookAndFeel.UserLookAndFeel.Default.ActiveLookAndFeel).GetSystemColor(SystemColors.MenuText);
-            // A pokud je barva písmen světlá, pak je skin tmavý:
-            return textColor.GetBrightness() >= 0.5f;
+            Color? textColor = null;
 
-            //bool isDarkTheme = false;
-            //Color? backColor = _GetSkinColor(SkinElementColor.Control_PanelBackColor);
-            //Color? backColor2 = _GetSkinColor(SkinElementColor.RibbonSkins_ButtonDisabled);
-            //if (backColor.HasValue)
-            //    isDarkTheme = (backColor.Value.GetBrightness() < 0.40f);
-            //return isDarkTheme;
+            // a) Najdu element "Button" skinu "RibbonSkins", najdu jeho barvu "ForeColor:
+            // POZOR, pro některé skiny sice hlásí barvu, ale špatnou!!!
+            //DevExpress.Skins.Skin skin = _GetSkinByName(SkinElementColor.RibbonSkins);
+            //if (skin != null)
+            //{
+            //    DevExpress.Skins.SkinElement[] elements = new DevExpress.Skins.SkinElement[skin.Elements.Values.Count];
+            //    skin.Elements.Values.CopyTo(elements, 0);
+            //    if (elements.TryGetFirst(e => e.ElementName == "Button", out var buttonElement) && !buttonElement.Color.ForeColor.IsEmpty)
+            //        textColor = buttonElement.Color.ForeColor;
+            //}
+
+
+            // b) Získám aktivní skin Ribbonu, a přečtu jeho systémovou barvu pro text menu = odpovídá barvě písma pro tlačítka v Ribbonu:
+            // POZOR, sice hlásí někdy nepřesnou barvu, ale víceméně podobnou, jakou reálně používá:
+            if (!textColor.HasValue)
+                textColor = _GetSkinColor(SkinElementColor.RibbonSkins + SkinElementColor.SystemColorMenuText);    // = DevExpress.Skins.RibbonSkins.GetSkin(DevExpress.LookAndFeel.UserLookAndFeel.Default.ActiveLookAndFeel).GetSystemColor(SystemColors.MenuText);
+
+
+            // A pokud je barva písmen světlá, pak je skin tmavý:
+            return (textColor.HasValue && textColor.Value.GetBrightness() >= 0.5f);
         }
         private bool? __IsDarkTheme;
         /// <summary>
@@ -3380,105 +3455,153 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         Dark
     }
+    /// <summary>
+    /// Názvy barev, skinů a elementů, pro které lze získat barvz pomocí metody <see cref="DxComponent.GetSkinColor(string)"/>
+    /// </summary>
     public class SkinElementColor
     {
-        public static string Control_LabelForeColor { get { return "Control.LabelForeColor"; } }
-        public static string Control_TextBoxForeColor { get { return "Control.TextBoxForeColor"; } }
-        public static string Control_TextBoxBackColor { get { return "Control.TextBoxBackColor"; } }
-        public static string Control_PanelBackColor { get { return "Control.PanelBackColor"; } }
+        public static string Control { get { return "Control."; } }
+        public static string Control_LabelForeColor { get { return Control + "LabelForeColor"; } }
+        public static string Control_TextBoxForeColor { get { return Control + "TextBoxForeColor"; } }
+        public static string Control_TextBoxBackColor { get { return Control + "TextBoxBackColor"; } }
+        public static string Control_PanelBackColor { get { return Control + "PanelBackColor"; } }
 
-        public static string CommonSkins_WindowText { get { return "CommonSkins.WindowText"; } }
-        public static string CommonSkins_ReadOnly { get { return "CommonSkins.ReadOnly"; } }
-        public static string CommonSkins_Info { get { return "CommonSkins.Info"; } }
-        public static string CommonSkins_Success { get { return "CommonSkins.Success"; } }
-        public static string CommonSkins_HotTrackedForeColor { get { return "CommonSkins.HotTrackedForeColor"; } }
-        public static string CommonSkins_Danger { get { return "CommonSkins.Danger"; } }
-        public static string CommonSkins_Control { get { return "CommonSkins.Control"; } }
-        public static string CommonSkins_DisabledText { get { return "CommonSkins.DisabledText"; } }
-        public static string CommonSkins_Highlight { get { return "CommonSkins.Highlight"; } }
-        public static string CommonSkins_Question { get { return "CommonSkins.Question"; } }
-        public static string CommonSkins_Primary { get { return "CommonSkins.Primary"; } }
-        public static string CommonSkins_HighlightAlternate { get { return "CommonSkins.HighlightAlternate"; } }
-        public static string CommonSkins_WarningFill { get { return "CommonSkins.WarningFill"; } }
-        public static string CommonSkins_InfoText { get { return "CommonSkins.InfoText"; } }
-        public static string CommonSkins_HotTrackedColor { get { return "CommonSkins.HotTrackedColor"; } }
-        public static string CommonSkins_DisabledControl { get { return "CommonSkins.DisabledControl"; } }
-        public static string CommonSkins_Information { get { return "CommonSkins.Information"; } }
-        public static string CommonSkins_HighlightText { get { return "CommonSkins.HighlightText"; } }
-        public static string CommonSkins_ControlText { get { return "CommonSkins.ControlText"; } }
-        public static string CommonSkins_QuestionFill { get { return "CommonSkins.QuestionFill"; } }
-        public static string CommonSkins_Warning { get { return "CommonSkins.Warning"; } }
-        public static string CommonSkins_InactiveCaptionText { get { return "CommonSkins.InactiveCaptionText"; } }
-        public static string CommonSkins_Window { get { return "CommonSkins.Window"; } }
-        public static string CommonSkins_HideSelection { get { return "CommonSkins.HideSelection"; } }
-        public static string CommonSkins_Menu { get { return "CommonSkins.Menu"; } }
-        public static string CommonSkins_MenuText { get { return "CommonSkins.MenuText"; } }
-        public static string CommonSkins_Critical { get { return "CommonSkins.Critical"; } }
-        
-        public static string EditorsSkins_ProgressBarEmptyTextColor { get { return "EditorsSkins.ProgressBarEmptyTextColor"; } }
-        public static string EditorsSkins_FluentCalendarWeekDayForeColor { get { return "EditorsSkins.FluentCalendarWeekDayForeColor"; } }
-        public static string EditorsSkins_CalendarSelectedCellColor { get { return "EditorsSkins.CalendarSelectedCellColor"; } }
-        public static string EditorsSkins_FilterControlValueTextColor { get { return "EditorsSkins.FilterControlValueTextColor"; } }
-        public static string EditorsSkins_FilterControlGroupOperatorTextColor { get { return "EditorsSkins.FilterControlGroupOperatorTextColor"; } }
-        public static string EditorsSkins_BeakFormBorderColor { get { return "EditorsSkins.BeakFormBorderColor"; } }
-        public static string EditorsSkins_HyperLinkTextColor { get { return "EditorsSkins.HyperLinkTextColor"; } }
-        public static string EditorsSkins_FilterControlEmptyValueTextColor { get { return "EditorsSkins.FilterControlEmptyValueTextColor"; } }
-        public static string EditorsSkins_FluentCalendarSeparatorColor { get { return "EditorsSkins.FluentCalendarSeparatorColor"; } }
-        public static string EditorsSkins_ProgressBarFilledTextColor { get { return "EditorsSkins.ProgressBarFilledTextColor"; } }
-        public static string EditorsSkins_FluentCalendarBackColor { get { return "EditorsSkins.FluentCalendarBackColor"; } }
-        public static string EditorsSkins_FluentCalendarWeekNumberForeColor { get { return "EditorsSkins.FluentCalendarWeekNumberForeColor"; } }
-        public static string EditorsSkins_FilterControlFieldNameTextColor { get { return "EditorsSkins.FilterControlFieldNameTextColor"; } }
-        public static string EditorsSkins_CalcEditOperationTextColor { get { return "EditorsSkins.CalcEditOperationTextColor"; } }
-        public static string EditorsSkins_FilterControlOperatorTextColor { get { return "EditorsSkins.FilterControlOperatorTextColor"; } }
-        public static string EditorsSkins_FluentCalendarHolidayCellColor { get { return "EditorsSkins.FluentCalendarHolidayCellColor"; } }
-        public static string EditorsSkins_CalcEditDigitTextColor { get { return "EditorsSkins.CalcEditDigitTextColor"; } }
-        public static string EditorsSkins_CalendarTodayCellColor { get { return "EditorsSkins.CalendarTodayCellColor"; } }
-        public static string EditorsSkins_CalendarInactiveCellColor { get { return "EditorsSkins.CalendarInactiveCellColor"; } }
-        public static string EditorsSkins_CalendarNormalCellColor { get { return "EditorsSkins.CalendarNormalCellColor"; } }
-        public static string EditorsSkins_CalendarHolidayCellColor { get { return "EditorsSkins.CalendarHolidayCellColor"; } }
-        
-        public static string BarSkins_ColorLinkDisabledForeColor { get { return "BarSkins.ColorLinkDisabledForeColor"; } }
-        
-        public static string ChartSkins_ColorLine3DMarker { get { return "ChartSkins.ColorLine3DMarker"; } }
-        public static string ChartSkins_ColorConstantLineTitle { get { return "ChartSkins.ColorConstantLineTitle"; } }
-        public static string ChartSkins_ColorArea3DMarker { get { return "ChartSkins.ColorArea3DMarker"; } }
-        public static string ChartSkins_ColorConstantLine { get { return "ChartSkins.ColorConstantLine"; } }
-        public static string ChartSkins_ColorChartTitle { get { return "ChartSkins.ColorChartTitle"; } }
-        
-        public static string DashboardSkins_ChartPaneRemoveButton { get { return "DashboardSkins.ChartPaneRemoveButton"; } }
-        public static string DashboardSkins_BarAxisColor { get { return "DashboardSkins.BarAxisColor"; } }
-        
-        public static string DockingSkins_DocumentGroupHeaderTextColor { get { return "DockingSkins.DocumentGroupHeaderTextColor"; } }
-        public static string DockingSkins_DocumentGroupHeaderTextColorDisabled { get { return "DockingSkins.DocumentGroupHeaderTextColorDisabled"; } }
-        public static string DockingSkins_DocumentGroupHeaderTextColorHot { get { return "DockingSkins.DocumentGroupHeaderTextColorHot"; } }
-        public static string DockingSkins_TabHeaderTextColorActive { get { return "DockingSkins.TabHeaderTextColorActive"; } }
-        public static string DockingSkins_TabHeaderTextColorDisabled { get { return "DockingSkins.TabHeaderTextColorDisabled"; } }
-        public static string DockingSkins_TabHeaderTextColorHot { get { return "DockingSkins.TabHeaderTextColorHot"; } }
-        public static string DockingSkins_DocumentGroupHeaderTextColorActive { get { return "DockingSkins.DocumentGroupHeaderTextColorActive"; } }
-        public static string DockingSkins_TabHeaderTextColor { get { return "DockingSkins.TabHeaderTextColor"; } }
-        public static string DockingSkins_DocumentGroupHeaderTextColorGroupInactive { get { return "DockingSkins.DocumentGroupHeaderTextColorGroupInactive"; } }
-        
-        public static string FormSkins_TextShadowColor { get { return "FormSkins.TextShadowColor"; } }
-        public static string FormSkins_InactiveColor { get { return "FormSkins.InactiveColor"; } }
-        
-        public static string RibbonSkins_ForeColorDisabledInCaptionQuickAccessToolbar { get { return "RibbonSkins.ForeColorDisabledInCaptionQuickAccessToolbar"; } }
-        public static string RibbonSkins_ForeColorDisabledInBottomQuickAccessToolbar { get { return "RibbonSkins.ForeColorDisabledInBottomQuickAccessToolbar"; } }
-        public static string RibbonSkins_ForeColorDisabledInCaptionQuickAccessToolbarInActive2010 { get { return "RibbonSkins.ForeColorDisabledInCaptionQuickAccessToolbarInActive2010"; } }
-        public static string RibbonSkins_ButtonDisabled { get { return "RibbonSkins.ButtonDisabled"; } }
-        public static string RibbonSkins_ForeColorInBackstageViewTitle { get { return "RibbonSkins.ForeColorInBackstageViewTitle"; } }
-        public static string RibbonSkins_ForeColorDisabledInTopQuickAccessToolbar { get { return "RibbonSkins.ForeColorDisabledInTopQuickAccessToolbar"; } }
-        public static string RibbonSkins_ForeColorDisabledInCaptionQuickAccessToolbar2010 { get { return "RibbonSkins.ForeColorDisabledInCaptionQuickAccessToolbar2010"; } }
-        public static string RibbonSkins_EditorBackground { get { return "RibbonSkins.EditorBackground"; } }
-        public static string RibbonSkins_RadialMenuColor { get { return "RibbonSkins.RadialMenuColor"; } }
-        public static string RibbonSkins_ForeColorDisabledInPageHeader { get { return "RibbonSkins.ForeColorDisabledInPageHeader"; } }
-        public static string RibbonSkins_ForeColorInCaptionQuickAccessToolbar2010 { get { return "RibbonSkins.ForeColorInCaptionQuickAccessToolbar2010"; } }
-        
-        public static string TabSkins_TabHeaderTextColorActive { get { return "TabSkins.TabHeaderTextColorActive"; } }
-        public static string TabSkins_TabHeaderButtonTextColorHot { get { return "TabSkins.TabHeaderButtonTextColorHot"; } }
-        public static string TabSkins_TabHeaderButtonTextColor { get { return "TabSkins.TabHeaderButtonTextColor"; } }
-        public static string TabSkins_TabHeaderTextColorDisabled { get { return "TabSkins.TabHeaderTextColorDisabled"; } }
-        public static string TabSkins_TabHeaderTextColor { get { return "TabSkins.TabHeaderTextColor"; } }
-        public static string TabSkins_TabHeaderTextColorHot { get { return "TabSkins.TabHeaderTextColorHot"; } }
+        public static string CommonSkins { get { return "CommonSkins."; } }
+        public static string CommonSkins_WindowText { get { return CommonSkins + "WindowText"; } }
+        public static string CommonSkins_ReadOnly { get { return CommonSkins + "ReadOnly"; } }
+        public static string CommonSkins_Info { get { return CommonSkins + "Info"; } }
+        public static string CommonSkins_Success { get { return CommonSkins + "Success"; } }
+        public static string CommonSkins_HotTrackedForeColor { get { return CommonSkins + "HotTrackedForeColor"; } }
+        public static string CommonSkins_Danger { get { return CommonSkins + "Danger"; } }
+        public static string CommonSkins_Control { get { return CommonSkins + "Control"; } }
+        public static string CommonSkins_DisabledText { get { return CommonSkins + "DisabledText"; } }
+        public static string CommonSkins_Highlight { get { return CommonSkins + "Highlight"; } }
+        public static string CommonSkins_Question { get { return CommonSkins + "Question"; } }
+        public static string CommonSkins_Primary { get { return CommonSkins + "Primary"; } }
+        public static string CommonSkins_HighlightAlternate { get { return CommonSkins + "HighlightAlternate"; } }
+        public static string CommonSkins_WarningFill { get { return CommonSkins + "WarningFill"; } }
+        public static string CommonSkins_InfoText { get { return CommonSkins + "InfoText"; } }
+        public static string CommonSkins_HotTrackedColor { get { return CommonSkins + "HotTrackedColor"; } }
+        public static string CommonSkins_DisabledControl { get { return CommonSkins + "DisabledControl"; } }
+        public static string CommonSkins_Information { get { return CommonSkins + "Information"; } }
+        public static string CommonSkins_HighlightText { get { return CommonSkins + "HighlightText"; } }
+        public static string CommonSkins_ControlText { get { return CommonSkins + "ControlText"; } }
+        public static string CommonSkins_QuestionFill { get { return CommonSkins + "QuestionFill"; } }
+        public static string CommonSkins_Warning { get { return CommonSkins + "Warning"; } }
+        public static string CommonSkins_InactiveCaptionText { get { return CommonSkins + "InactiveCaptionText"; } }
+        public static string CommonSkins_Window { get { return CommonSkins + "Window"; } }
+        public static string CommonSkins_HideSelection { get { return CommonSkins + "HideSelection"; } }
+        public static string CommonSkins_Menu { get { return CommonSkins + "Menu"; } }
+        public static string CommonSkins_MenuText { get { return CommonSkins + "MenuText"; } }
+        public static string CommonSkins_Critical { get { return CommonSkins + "Critical"; } }
+
+        public static string EditorsSkins { get { return "EditorsSkins."; } }
+        public static string EditorsSkins_ProgressBarEmptyTextColor { get { return EditorsSkins + "ProgressBarEmptyTextColor"; } }
+        public static string EditorsSkins_FluentCalendarWeekDayForeColor { get { return EditorsSkins + "FluentCalendarWeekDayForeColor"; } }
+        public static string EditorsSkins_CalendarSelectedCellColor { get { return EditorsSkins + "CalendarSelectedCellColor"; } }
+        public static string EditorsSkins_FilterControlValueTextColor { get { return EditorsSkins + "FilterControlValueTextColor"; } }
+        public static string EditorsSkins_FilterControlGroupOperatorTextColor { get { return EditorsSkins + "FilterControlGroupOperatorTextColor"; } }
+        public static string EditorsSkins_BeakFormBorderColor { get { return EditorsSkins + "BeakFormBorderColor"; } }
+        public static string EditorsSkins_HyperLinkTextColor { get { return EditorsSkins + "HyperLinkTextColor"; } }
+        public static string EditorsSkins_FilterControlEmptyValueTextColor { get { return EditorsSkins + "FilterControlEmptyValueTextColor"; } }
+        public static string EditorsSkins_FluentCalendarSeparatorColor { get { return EditorsSkins + "FluentCalendarSeparatorColor"; } }
+        public static string EditorsSkins_ProgressBarFilledTextColor { get { return EditorsSkins + "ProgressBarFilledTextColor"; } }
+        public static string EditorsSkins_FluentCalendarBackColor { get { return EditorsSkins + "FluentCalendarBackColor"; } }
+        public static string EditorsSkins_FluentCalendarWeekNumberForeColor { get { return EditorsSkins + "FluentCalendarWeekNumberForeColor"; } }
+        public static string EditorsSkins_FilterControlFieldNameTextColor { get { return EditorsSkins + "FilterControlFieldNameTextColor"; } }
+        public static string EditorsSkins_CalcEditOperationTextColor { get { return EditorsSkins + "CalcEditOperationTextColor"; } }
+        public static string EditorsSkins_FilterControlOperatorTextColor { get { return EditorsSkins + "FilterControlOperatorTextColor"; } }
+        public static string EditorsSkins_FluentCalendarHolidayCellColor { get { return EditorsSkins + "FluentCalendarHolidayCellColor"; } }
+        public static string EditorsSkins_CalcEditDigitTextColor { get { return EditorsSkins + "CalcEditDigitTextColor"; } }
+        public static string EditorsSkins_CalendarTodayCellColor { get { return EditorsSkins + "CalendarTodayCellColor"; } }
+        public static string EditorsSkins_CalendarInactiveCellColor { get { return EditorsSkins + "CalendarInactiveCellColor"; } }
+        public static string EditorsSkins_CalendarNormalCellColor { get { return EditorsSkins + "CalendarNormalCellColor"; } }
+        public static string EditorsSkins_CalendarHolidayCellColor { get { return EditorsSkins + "CalendarHolidayCellColor"; } }
+
+        public static string BarSkins { get { return "BarSkins."; } }
+        public static string BarSkins_ColorLinkDisabledForeColor { get { return BarSkins + "ColorLinkDisabledForeColor"; } }
+
+        public static string ChartSkins { get { return "ChartSkins."; } }
+        public static string ChartSkins_ColorLine3DMarker { get { return ChartSkins + "ColorLine3DMarker"; } }
+        public static string ChartSkins_ColorConstantLineTitle { get { return ChartSkins + "ColorConstantLineTitle"; } }
+        public static string ChartSkins_ColorArea3DMarker { get { return ChartSkins + "ColorArea3DMarker"; } }
+        public static string ChartSkins_ColorConstantLine { get { return ChartSkins + "ColorConstantLine"; } }
+        public static string ChartSkins_ColorChartTitle { get { return ChartSkins + "ColorChartTitle"; } }
+
+        public static string DashboardSkins { get { return "DashboardSkins."; } }
+        public static string DashboardSkins_ChartPaneRemoveButton { get { return DashboardSkins + "ChartPaneRemoveButton"; } }
+        public static string DashboardSkins_BarAxisColor { get { return DashboardSkins + "BarAxisColor"; } }
+
+        public static string DockingSkins { get { return "DockingSkins."; } }
+        public static string DockingSkins_DocumentGroupHeaderTextColor { get { return DockingSkins + "DocumentGroupHeaderTextColor"; } }
+        public static string DockingSkins_DocumentGroupHeaderTextColorDisabled { get { return DockingSkins + "DocumentGroupHeaderTextColorDisabled"; } }
+        public static string DockingSkins_DocumentGroupHeaderTextColorHot { get { return DockingSkins + "DocumentGroupHeaderTextColorHot"; } }
+        public static string DockingSkins_TabHeaderTextColorActive { get { return DockingSkins + "TabHeaderTextColorActive"; } }
+        public static string DockingSkins_TabHeaderTextColorDisabled { get { return DockingSkins + "TabHeaderTextColorDisabled"; } }
+        public static string DockingSkins_TabHeaderTextColorHot { get { return DockingSkins + "TabHeaderTextColorHot"; } }
+        public static string DockingSkins_DocumentGroupHeaderTextColorActive { get { return DockingSkins + "DocumentGroupHeaderTextColorActive"; } }
+        public static string DockingSkins_TabHeaderTextColor { get { return DockingSkins + "TabHeaderTextColor"; } }
+        public static string DockingSkins_DocumentGroupHeaderTextColorGroupInactive { get { return DockingSkins + "DocumentGroupHeaderTextColorGroupInactive"; } }
+
+        public static string FormSkins { get { return "FormSkins."; } }
+        public static string FormSkins_TextShadowColor { get { return FormSkins + "TextShadowColor"; } }
+        public static string FormSkins_InactiveColor { get { return FormSkins + "InactiveColor"; } }
+
+        public static string RibbonSkins { get { return "RibbonSkins."; } }
+        public static string RibbonSkins_ForeColorDisabledInCaptionQuickAccessToolbar { get { return RibbonSkins + "ForeColorDisabledInCaptionQuickAccessToolbar"; } }
+        public static string RibbonSkins_ForeColorDisabledInBottomQuickAccessToolbar { get { return RibbonSkins + "ForeColorDisabledInBottomQuickAccessToolbar"; } }
+        public static string RibbonSkins_ForeColorDisabledInCaptionQuickAccessToolbarInActive2010 { get { return RibbonSkins + "ForeColorDisabledInCaptionQuickAccessToolbarInActive2010"; } }
+        public static string RibbonSkins_ButtonDisabled { get { return RibbonSkins + "ButtonDisabled"; } }
+        public static string RibbonSkins_ForeColorInBackstageViewTitle { get { return RibbonSkins + "ForeColorInBackstageViewTitle"; } }
+        public static string RibbonSkins_ForeColorDisabledInTopQuickAccessToolbar { get { return RibbonSkins + "ForeColorDisabledInTopQuickAccessToolbar"; } }
+        public static string RibbonSkins_ForeColorDisabledInCaptionQuickAccessToolbar2010 { get { return RibbonSkins + "ForeColorDisabledInCaptionQuickAccessToolbar2010"; } }
+        public static string RibbonSkins_EditorBackground { get { return RibbonSkins + "EditorBackground"; } }
+        public static string RibbonSkins_RadialMenuColor { get { return RibbonSkins + "RadialMenuColor"; } }
+        public static string RibbonSkins_ForeColorDisabledInPageHeader { get { return RibbonSkins + "ForeColorDisabledInPageHeader"; } }
+        public static string RibbonSkins_ForeColorInCaptionQuickAccessToolbar2010 { get { return RibbonSkins + "ForeColorInCaptionQuickAccessToolbar2010"; } }
+
+        public static string TabSkins { get { return "TabHeaderTextColorActive"; } }
+        public static string TabSkins_TabHeaderTextColorActive { get { return TabSkins + "TabHeaderTextColorActive"; } }
+        public static string TabSkins_TabHeaderButtonTextColorHot { get { return TabSkins + "TabHeaderButtonTextColorHot"; } }
+        public static string TabSkins_TabHeaderButtonTextColor { get { return TabSkins + "TabHeaderButtonTextColor"; } }
+        public static string TabSkins_TabHeaderTextColorDisabled { get { return TabSkins + "TabHeaderTextColorDisabled"; } }
+        public static string TabSkins_TabHeaderTextColor { get { return TabSkins + "TabHeaderTextColor"; } }
+        public static string TabSkins_TabHeaderTextColorHot { get { return TabSkins + "TabHeaderTextColorHot"; } }
+
+        public static string SystemColorActiveBorder { get { return SystemColors.ActiveBorder.Name; } }
+        public static string SystemColorActiveCaption { get { return SystemColors.ActiveCaption.Name; } }
+        public static string SystemColorActiveCaptionText { get { return SystemColors.ActiveCaptionText.Name; } }
+        public static string SystemColorAppWorkspace { get { return SystemColors.AppWorkspace.Name; } }
+        public static string SystemColorButtonFace { get { return SystemColors.ButtonFace.Name; } }
+        public static string SystemColorButtonHighlight { get { return SystemColors.ButtonHighlight.Name; } }
+        public static string SystemColorButtonShadow { get { return SystemColors.ButtonShadow.Name; } }
+        public static string SystemColorControl { get { return SystemColors.Control.Name; } }
+        public static string SystemColorControlDark { get { return SystemColors.ControlDark.Name; } }
+        public static string SystemColorControlDarkDark { get { return SystemColors.ControlDarkDark.Name; } }
+        public static string SystemColorControlLight { get { return SystemColors.ControlLight.Name; } }
+        public static string SystemColorControlLightLight { get { return SystemColors.ControlLightLight.Name; } }
+        public static string SystemColorControlText { get { return SystemColors.ControlText.Name; } }
+        public static string SystemColorDesktop { get { return SystemColors.Desktop.Name; } }
+        public static string SystemColorGradientActiveCaption { get { return SystemColors.GradientActiveCaption.Name; } }
+        public static string SystemColorGradientInactiveCaption { get { return SystemColors.GradientInactiveCaption.Name; } }
+        public static string SystemColorGrayText { get { return SystemColors.GrayText.Name; } }
+        public static string SystemColorHighlight { get { return SystemColors.Highlight.Name; } }
+        public static string SystemColorHighlightText { get { return SystemColors.HighlightText.Name; } }
+        public static string SystemColorHotTrack { get { return SystemColors.HotTrack.Name; } }
+        public static string SystemColorInactiveBorder { get { return SystemColors.InactiveBorder.Name; } }
+        public static string SystemColorInactiveCaption { get { return SystemColors.InactiveCaption.Name; } }
+        public static string SystemColorInactiveCaptionText { get { return SystemColors.InactiveCaptionText.Name; } }
+        public static string SystemColorInfo { get { return SystemColors.Info.Name; } }
+        public static string SystemColorInfoText { get { return SystemColors.InfoText.Name; } }
+        public static string SystemColorMenu { get { return SystemColors.Menu.Name; } }
+        public static string SystemColorMenuBar { get { return SystemColors.MenuBar.Name; } }
+        public static string SystemColorMenuHighlight { get { return SystemColors.MenuHighlight.Name; } }
+        public static string SystemColorMenuText { get { return SystemColors.MenuText.Name; } }
+        public static string SystemColorScrollBar { get { return SystemColors.ScrollBar.Name; } }
+        public static string SystemColorWindow { get { return SystemColors.Window.Name; } }
+        public static string SystemColorWindowFrame { get { return SystemColors.WindowFrame.Name; } }
+        public static string SystemColorWindowText { get { return SystemColors.WindowText.Name; } }
+
     }
     #endregion
     #endregion
