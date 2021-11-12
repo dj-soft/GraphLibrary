@@ -6158,7 +6158,7 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// <summary>
     /// Přímý potomek <see cref="DevExpress.XtraCharts.Designer.ChartDesigner"/> pro editaci definice grafu
     /// </summary>
-    internal class DxChartDesigner : DevExpress.XtraCharts.Designer.ChartDesigner, IEscapeKeyHandler
+    internal class DxChartDesigner : DevExpress.XtraCharts.Designer.ChartDesigner, IEscapeHandler
     {
         /// <summary>
         /// Konstruktor

@@ -13,6 +13,8 @@ using DevExpress.XtraEditors;
 using DevExpress.Utils.Svg;
 using DevExpress.Utils;
 
+using Noris.WS.DataContracts.Desktop.Data;
+
 namespace Noris.Clients.Win.Components.AsolDX
 {
     /// <summary>
@@ -139,6 +141,27 @@ namespace Noris.Clients.Win.Components.AsolDX
             else if (_TrySearchApplicationResource(imageName, out var validItems, ResourceContentType.Vector))
                 return _GetVectorImageApplication(validItems, sizeType);
             return null;
+        }
+        #endregion
+        #region TryGetResource
+        /// <summary>
+        /// Metoda se pokusí najít zdroj v Aplikačních zdrojích, pro dané jméno.
+        /// Prohledává obrázky vektorové a bitmapové, může preferovat bitmapy pokud <paramref name="preferBitmap"/> je true.
+        /// </summary>
+        /// <param name="imageName">Jméno zdroje</param>
+        /// <param name="resourceItem">Výstup - nalezeného zdroje</param>
+        /// <param name="sizeType">Vyhledat danou velikost, default = Large</param>
+        /// <param name="preferBitmap">Preferovat bitmapy, pokdu je dáno true</param>
+        /// <returns></returns>
+        public static bool TryGetResource(string imageName, out DxApplicationResourceLibrary.ResourceItem resourceItem, ResourceImageSizeType? sizeType = null, bool preferBitmap = false)
+        { return Instance._TryGetResource(imageName, out resourceItem, sizeType, preferBitmap); }
+        private bool _TryGetResource(string imageName, out DxApplicationResourceLibrary.ResourceItem resourceItem, ResourceImageSizeType? sizeType = null, bool preferBitmap = false)
+        {
+            resourceItem = null;
+            ResourceContentType[] validContentTypes = (preferBitmap ? new ResourceContentType[] { ResourceContentType.Bitmap, ResourceContentType.Vector } : new ResourceContentType[] { ResourceContentType.Vector, ResourceContentType.Bitmap });
+            if (!_TrySearchApplicationResource(imageName, out var validItems, validContentTypes)) return false;
+            if (!DxApplicationResourceLibrary.ResourcePack.TryGetOptimalSize(validItems, sizeType, out resourceItem)) return false;
+            return true;
         }
         #endregion
         #region ApplyImage - do cílového objektu vepíše obrázek podle toho, jak je zadán a kam má být vepsán
@@ -1127,7 +1150,7 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// Toto je pouze knihovna = zdroj dat (a jejich vyhledávání), ale nikoli výkonný blok, tady se negenerují obrázky ani nic dalšího.
     /// <para/>
     /// Zastřešující algoritmy pro oba druhy zdrojů (aplikační i DevExpress) jsou v <see cref="DxComponent"/>, 
-    /// metody typicky <see cref="DxComponent.ApplyImage(DevExpress.Utils.ImageOptions, string, Image, Size?, bool)"/>.
+    /// metody typicky <see cref="DxComponent.ApplyImage(ImageOptions, string, Image, ResourceImageSizeType?, Size?, bool)"/>.
     /// Aplikační kódy by tedy neměly komunikovat napřímo s touto třídou <see cref="DxApplicationResourceLibrary"/>, ale s <see cref="DxComponent"/>,
     /// aby měly k dispozici zdroje obou druhů.
     /// </summary>
@@ -2364,310 +2387,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// String  obsahující definici prázdného SVG Image o velikosti <see cref="SvgImageArrayInfo.BaseSize"/>
         /// </summary>
         private static string _BlankSvgBaseXml { get { string size = _SvgTargetSize.ToString(); return $"<svg viewBox='0 0 {size} {size}' xmlns='http://www.w3.org/2000/svg'></svg>"; } }
-    }
-    #endregion
-    #region SvgImageArrayInfo a SvgImageArrayItem : Třída, která obsahuje data o sadě ikon SVG, pro jejich kombinaci do jedné výsledné ikony
-    /// <summary>
-    /// Třída, která obsahuje data o sadě ikon SVG, pro jejich kombinaci do jedné výsledné ikony (základní ikona plus jiná ikona jako její overlay).
-    /// </summary>
-    internal class SvgImageArrayInfo
-    {
-        #region Tvorba a public property
-        /// <summary>
-        /// Konstruktor
-        /// </summary>
-        public SvgImageArrayInfo()
-        {
-            Items = new List<SvgImageArrayItem>();
-        }
-        /// <summary>
-        /// Konstruktor, rovnou přidá první obrázek do plného umístění (100%)
-        /// </summary>
-        /// <param name="name"></param>
-        public SvgImageArrayInfo(string name)
-            : this()
-        {
-            Add(name);
-        }
-        /// <summary>
-        /// Vizualizace
-        /// </summary>
-        /// <returns></returns>
-        public override string ToString()
-        {
-            return $"Count: {Items.Count}";
-        }
-        /// <summary>
-        /// Pole jednotlivých obrázků a jejich umístění
-        /// </summary>
-        public List<SvgImageArrayItem> Items { get; private set; }
-        /// <summary>
-        /// Přidá další obrázek, v plném rozměru
-        /// </summary>
-        /// <param name="name"></param>
-        public void Add(string name)
-        {
-            if (!String.IsNullOrEmpty(name))
-                Items.Add(new SvgImageArrayItem(name));
-        }
-        /// <summary>
-        /// Přidá další obrázek, do daného prostoru.
-        /// Velikost musí být nejméně 10, jinak nebude provedeno.
-        /// </summary>
-        /// <param name="name"></param>
-        /// <param name="bounds"></param>
-        public void Add(string name, Rectangle bounds)
-        {
-            if (!String.IsNullOrEmpty(name) && bounds.Width >= 10 && bounds.Height >= 10)
-                Items.Add(new SvgImageArrayItem(name, bounds));
-        }
-        /// <summary>
-        /// Přidá další obrázek, do daného umístění.
-        /// Velikost musí být nejméně 10, jinak nebude provedeno.
-        /// </summary>
-        /// <param name="name"></param>
-        /// <param name="contentAlignment"></param>
-        /// <param name="percent"></param>
-        public void Add(string name, ContentAlignment contentAlignment, int percent = 50)
-        {
-            if (!String.IsNullOrEmpty(name) && percent >= 10)
-                Items.Add(new SvgImageArrayItem(name, GetRectangle(contentAlignment, percent)));
-        }
-        /// <summary>
-        /// Přidá další prvek.
-        /// </summary>
-        /// <param name="item"></param>
-        public void Add(SvgImageArrayItem item)
-        {
-            if (item != null)
-                Items.Add(item);
-        }
-        /// <summary>
-        /// Obsahuje true, pokud je objekt prázdný
-        /// </summary>
-        public bool IsEmpty { get { return (Items.Count == 0); } }
-        /// <summary>
-        /// Vymaže všechny obrázky
-        /// </summary>
-        public void Clear() { Items.Clear(); }
-        #endregion
-        #region Podpora
-        /// <summary>
-        /// Oddělovač dvou prvků <see cref="SvgImageArrayItem.Key"/> v rámci jednoho <see cref="SvgImageArrayInfo.Key"/>
-        /// </summary>
-        internal const string KeySplitDelimiter = KeyItemEnd + KeyItemBegin;
-        /// <summary>
-        /// Značka Begin jednoho prvku
-        /// </summary>
-        internal const string KeyItemBegin = "«";
-        /// <summary>
-        /// Značka End jednoho prvku
-        /// </summary>
-        internal const string KeyItemEnd = "»";
-        /// <summary>
-        /// Vrátí souřadnici prostoru v dané relativní pozici k základnímu prostoru { 0, 0, 100, 100 }.
-        /// Lze specifikovat velikost cílového prostoru, ta musí být v rozmezí 16 až <see cref="BaseSize"/> (včetně).
-        /// Jde o prostor, do kterého se promítne ikona, v rámci finální velikosti <see cref="BaseSize"/> x <see cref="BaseSize"/>.
-        /// </summary>
-        /// <param name="contentAlignment"></param>
-        /// <param name="percent"></param>
-        /// <returns></returns>
-        public static Rectangle GetRectangle(ContentAlignment contentAlignment, int percent = 50)
-        {
-            percent = percent.Align(10, 100);                        // Platné rozmezí procent je 10 až 100
-            int size = SvgImageArrayInfo.BaseSize * percent / 100;   // Procento => velikost v rozsahu 0-120
-            int de = BaseSize - size;                                // Velikost celého volného prostoru
-            int dc = de / 2;                                         // Velikost pro Center
-            switch (contentAlignment)
-            {
-                case ContentAlignment.TopLeft: return new Rectangle(0, 0, size, size);
-                case ContentAlignment.TopCenter: return new Rectangle(dc, 0, size, size);
-                case ContentAlignment.TopRight: return new Rectangle(de, 0, size, size);
-                case ContentAlignment.MiddleLeft: return new Rectangle(0, dc, size, size);
-                case ContentAlignment.MiddleCenter: return new Rectangle(dc, dc, size, size);
-                case ContentAlignment.MiddleRight: return new Rectangle(de, dc, size, size);
-                case ContentAlignment.BottomLeft: return new Rectangle(0, de, size, size);
-                case ContentAlignment.BottomCenter: return new Rectangle(dc, de, size, size);
-                case ContentAlignment.BottomRight: return new Rectangle(de, de, size, size);
-            }
-            return new Rectangle(dc, dc, size, size);
-        }
-        /// <summary>
-        /// Základní velikost
-        /// </summary>
-        public const int BaseSize = 120;
-        #endregion
-        #region Serializace
-        /// <summary>
-        /// Obsahuje (vygeneruje) serializovaný string z this instance
-        /// </summary>
-        public string Serial { get { return Noris.WS.Parser.XmlSerializer.Persist.Serialize(this, Noris.WS.Parser.XmlSerializer.PersistArgs.MinimalXml); } }
-        /// <summary>
-        /// Klíč: obsahuje klíče všech obrázků <see cref="SvgImageArrayItem.Key"/>.
-        /// Lze jej použít jako klíč do Dictionary, protože dvě instance <see cref="SvgImageArrayInfo"/> se stejným klíčem budou mít stejný vzhled výsledného obrázku.
-        /// </summary>
-        public string Key
-        {
-            get
-            {
-                StringBuilder sb = new StringBuilder();
-                foreach (var item in Items)
-                    sb.Append(item.Key);
-                string key = sb.ToString();
-                return key;
-            }
-        }
-        /// <summary>
-        /// Zkusí provést deserializaci
-        /// </summary>
-        /// <param name="serial"></param>
-        /// <param name="result"></param>
-        /// <returns></returns>
-        public static bool TryDeserialize(string serial, out SvgImageArrayInfo result)
-        {   // <?xml version="1.0" encoding="utf-16"?><id-persistent Version="2.00"><id-data><id-value id-value.Type="Noris.Clients.Win.Components.AsolDX.SvgImageArrayInfo"><Items><id-item><id-value ImageName="devav/actions/printexcludeevaluations.svg" /></id-item><id-item><id-value ImageName="devav/actions/about.svg" ImageRelativeBounds="60;60;60;60" /></id-item></Items></id-value></id-data></id-persistent>
-            if (!String.IsNullOrEmpty(serial))
-            {
-                if (serial.StartsWith("<?xml version=") && serial.EndsWith("</id-persistent>"))
-                {   // Ze Serial:
-                    object data = Noris.WS.Parser.XmlSerializer.Persist.Deserialize(serial);
-                    if (data != null && data is SvgImageArrayInfo array)
-                    {
-                        result = array;
-                        return true;
-                    }
-                }
-                else if (serial.Contains(SvgImageArrayInfo.KeySplitDelimiter))
-                {   // Z Key = ten je ve tvaru:  «name1»«name2<X.Y.W.H>»    rozdělím v místě oddělovače »« ,  získám dva prvky   «name1    a    name2<X.Y.W.H>»   (v prvcích tedy může / nemusí být značka   «   anebo   »     (nemusí být u druhého prvku ze tří :-) )
-                    SvgImageArrayInfo array = new SvgImageArrayInfo();
-                    string[] serialItems = serial.Split(new string[] { SvgImageArrayInfo.KeySplitDelimiter }, StringSplitOptions.RemoveEmptyEntries);
-                    foreach (var serialItem in serialItems)
-                    {
-                        if (SvgImageArrayItem.TryDeserialize(serialItem, out SvgImageArrayItem item))
-                            array.Add(item);
-                    }
-                    if (!array.IsEmpty)
-                    {
-                        result = array;
-                        return true;
-                    }
-                }
-            }
-            result = null;
-            return false;
-        }
-        #endregion
-    }
-    /// <summary>
-    /// Jedna ikona, obsažená v <see cref="SvgImageArrayInfo"/> = název ikony <see cref="ImageName"/>
-    /// a její relativní umístění v prostoru výsledné ikony <see cref="ImageRelativeBounds"/>.
-    /// </summary>
-    internal class SvgImageArrayItem
-    {
-        #region Konstruktor a public data
-        /// <summary>
-        /// Konstruktor
-        /// </summary>
-        public SvgImageArrayItem()
-        {   // Toto používá víceméně jen deserializace
-            ImageName = "";
-            ImageRelativeBounds = null;
-        }
-        /// <summary>
-        /// Konstruktor
-        /// </summary>
-        /// <param name="name"></param>
-        public SvgImageArrayItem(string name)
-        {
-            ImageName = name;
-            ImageRelativeBounds = null;
-        }
-        /// <summary>
-        /// Konstruktor
-        /// </summary>
-        /// <param name="name"></param>
-        /// <param name="bounds"></param>
-        public SvgImageArrayItem(string name, Rectangle bounds)
-        {
-            ImageName = name;
-            ImageRelativeBounds = bounds;
-        }
-        /// <summary>
-        /// Vizualizace
-        /// </summary>
-        /// <returns></returns>
-        public override string ToString()
-        {
-            string text = $"Name: {ImageName}";
-            if (ImageRelativeBounds.HasValue)
-                text += $"; Bounds: {ImageRelativeBounds}";
-            return text;
-        }
-        /// <summary>
-        /// Pokusí se z dodaného stringu vytvořit a vrátit new instanci.
-        /// String se očekává ve formě <see cref="Key"/>.
-        /// </summary>
-        /// <param name="serialItem"></param>
-        /// <param name="item"></param>
-        /// <returns></returns>
-        internal static bool TryDeserialize(string serialItem, out SvgImageArrayItem item)
-        {
-            item = null;
-            if (String.IsNullOrEmpty(serialItem) || serialItem.IndexOfAny("*?:\t\r\n".ToCharArray()) >= 0) return false;
-
-            serialItem = serialItem.Replace(SvgImageArrayInfo.KeyItemBegin, "").Replace(SvgImageArrayInfo.KeyItemEnd, "");          // Odstraníme zbývající Begin a End značky   «   a   »  (pokud tam jsou)
-            var parts = serialItem.Split('<', '>');           // Z textu "imagename<0.0.60.30>" vytvořím tři prvky:    "imagename",    "0.0.60.30",    ""
-            int count = parts.Length;
-            if (parts.Length == 0) return false;
-            string name = parts[0];
-            if (String.IsNullOrEmpty(name)) return false;
-            name = name.Trim().ToLower();
-            Rectangle? bounds = null;
-            if (parts.Length > 1)
-            {
-                var coords = parts[1].Split('.');             // "0.0.60.30";
-                if (coords.Length == 4)
-                {
-                    if (Int32.TryParse(coords[0], out int x) && (x >= 0 && x <= 120) &&
-                        Int32.TryParse(coords[1], out int y) && (y >= 0 && y <= 120) &&
-                        Int32.TryParse(coords[2], out int w) && (w >= 0 && w <= 120) &&
-                        Int32.TryParse(coords[3], out int h) && (h >= 0 && h <= 120))
-                        bounds = new Rectangle(x, y, w, h);
-                }
-            }
-            if (!bounds.HasValue)
-                item = new SvgImageArrayItem(name);
-            else
-                item = new SvgImageArrayItem(name, bounds.Value);
-            return true;
-        }
-        /// <summary>
-        /// Jméno SVG obrázku
-        /// </summary>
-        public string ImageName { get; set; }
-        /// <summary>
-        /// Souřadnice umístění obrázku v cílovém prostoru { 0, 0, <see cref="SvgImageArrayInfo.BaseSize"/>, <see cref="SvgImageArrayInfo.BaseSize"/> }.
-        /// Pokud je zde null, bude obrázek umístěn do celého prostoru.
-        /// </summary>
-        public Rectangle? ImageRelativeBounds { get; set; }
-        /// <summary>
-        /// Klíč: obsahuje název obrázku a cílový prostor <see cref="ImageRelativeBounds"/>, pokud je zadán, ve formě:
-        /// «image&lt;X.Y.W.H&gt;»
-        /// </summary>
-        public string Key
-        {
-            get
-            {
-                string key = SvgImageArrayInfo.KeyItemBegin + this.ImageName.Trim().ToLower();
-                if (ImageRelativeBounds.HasValue)
-                {
-                    var bounds = ImageRelativeBounds.Value;
-                    key += $"<{bounds.X}.{bounds.Y}.{bounds.Width}.{bounds.Height}>";
-                }
-                key += SvgImageArrayInfo.KeyItemEnd;
-                return key;
-            }
-        }
-        #endregion
     }
     #endregion
 }

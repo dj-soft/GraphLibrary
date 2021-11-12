@@ -71,8 +71,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Režim kreslení ikon u nodů.
         /// Výchozí je <see cref="TreeListImageMode.ImageStatic"/> = zobrazuje se standardní ikona <see cref="ITextItem.ImageName"/> 
         /// (ale nezobrazují se ikony <see cref="ITreeListNode.ImageDynamicDefault"/> a <see cref="ITreeListNode.ImageDynamicSelected"/>).
-        /// Aplikační kód musí dodat metodu <see cref="ImageIndexSearcher"/> (která převede jméno ikony z nodu do indexu v <see cref="ImageList"/>)
-        /// a musí plnit jména ikon do <see cref="ITextItem.ImageName"/>, <see cref="ITreeListNode.ImageDynamicDefault"/> a <see cref="ITreeListNode.ImageDynamicSelected"/>.
+        /// Aplikační kód musí plnit jména ikon do <see cref="ITextItem.ImageName"/>, <see cref="ITreeListNode.ImageDynamicDefault"/> a <see cref="ITreeListNode.ImageDynamicSelected"/>.
         /// </summary>
         public TreeListImageMode ImageMode { get { return _TreeListNative.ImageMode; } set { _TreeListNative.ImageMode = value; } }
         /// <summary>

@@ -3826,57 +3826,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         void ApplicationIdle();
     }
     #endregion
-
-    #region CurrentSystemAdapter - přemístit do samostatného souboru po PP 2021-02
-#if Compile_TestDevExpress
-#else
-
-    /// <summary>
-    /// Adapter na systém Nephrite
-    /// </summary>
-    internal class CurrentSystemAdapter : ISystemAdapter
-    {
-        event EventHandler ISystemAdapter.InteractiveZoomChanged { add { ComponentConnector.Host.InteractiveZoomChanged += value; } remove { ComponentConnector.Host.InteractiveZoomChanged -= value; } }
-        decimal ISystemAdapter.ZoomRatio { get { return ((decimal)Common.SupportScaling.GetScaledValue(100000)) / 100000m; } }
-        string ISystemAdapter.GetMessage(string messageCode, params object[] parameters) { return ASOL.Framework.Shared.Localization.Message.GetMessage(messageCode, parameters); }
-        IEnumerable<IResourceItem> ISystemAdapter.GetResources() { return ComponentConnector.GraphicsCache.GetResources(); }
-        string ISystemAdapter.GetPackKey(string itemKey, out ResourceImageSizeType sizeType, out ResourceContentType contentType) { return ComponentConnector.GraphicsCache.GetPackKey(itemKey, out sizeType, out contentType); }
-
-        byte[] ISystemAdapter.GetResourceContent(IResourceItem resourceItem) { return ComponentConnector.GraphicsCache.GetResourceContent(resourceItem); }
-        System.Drawing.Image ISystemAdapter.GetResourceImage(string resourceName, ResourceImageSizeType sizeType, string caption) { return ComponentConnector.GraphicsCache.GetResourceContent(resourceName, ConvertTo(sizeType), caption); }
-        System.Windows.Forms.ImageList ISystemAdapter.GetResourceImageList(ResourceImageSizeType sizeType) { return ComponentConnector.GraphicsCache.GetImageList(ConvertTo(sizeType)); }
-        int ISystemAdapter.GetResourceIndex(string iconName, ResourceImageSizeType sizeType, string caption) { return ComponentConnector.GraphicsCache.GetResourceIndex(iconName, ConvertTo(sizeType), caption); }
-        bool ISystemAdapter.CanRenderSvgImages { get { return false; } }
-        Image ISystemAdapter.RenderSvgImage(SvgImage svgImage, ISvgPaletteProvider svgPalette, Size size) { return null; }
-        System.Windows.Forms.Shortcut ISystemAdapter.GetShortcutKeys(string shortCut) { return WinFormServices.KeyboardHelper.GetShortcutFromServerHotKey(shortCut); }
-
-        /// <summary>
-        /// Vrátí hodnotu <see cref="WinFormServices.Drawing.UserGraphicsSize"/> z hodnoty <see cref="ResourceImageSizeType"/>.
-        /// </summary>
-        /// <param name="sizeType"></param>
-        /// <returns></returns>
-        public static WinFormServices.Drawing.UserGraphicsSize ConvertTo(ResourceImageSizeType sizeType)
-        {
-            return (sizeType == ResourceImageSizeType.None ? WinFormServices.Drawing.UserGraphicsSize.Medium :
-                   (sizeType == ResourceImageSizeType.Small ? WinFormServices.Drawing.UserGraphicsSize.Small :
-                   (sizeType == ResourceImageSizeType.Medium ? WinFormServices.Drawing.UserGraphicsSize.Medium :
-                   (sizeType == ResourceImageSizeType.Large ? WinFormServices.Drawing.UserGraphicsSize.Large : WinFormServices.Drawing.UserGraphicsSize.Medium))));
-        }
-    }
-    /// <summary>
-    /// Rozhraní předepisuje metodu <see cref="HandleEscapeKey()"/>, která umožní řešit klávesu Escape v rámci systému
-    /// </summary>
-    internal interface IEscapeKeyHandler : Noris.Clients.Win.Components.IEscapeHandler
-    {
-        /// <summary>
-        /// Systém zaregistroval klávesu Escape; a ptá se otevřených oken, které ji chce vyřešit...
-        /// </summary>
-        /// <returns></returns>
-        new bool HandleEscapeKey();
-    }
-#endif
-    #endregion
-
     #region SystemAdapter - přístupový bod k adapteru na lokální systém
     /// <summary>
     /// Tato třída reprezentuje adapter na systémové metody.
@@ -3959,7 +3908,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Nějaký control, který slouží pouze pro přístup do GUI threadu. Typicky je to main okno aplikace.
         /// </summary>
-        public static Control Host { get { return Current.Host; } }
+        public static System.ComponentModel.ISynchronizeInvoke Host { get { return Current.Host; } }
         /// <summary>
         /// Vrací klávesovou zkratku pro daný string, typicky na vstupu je "Ctrl+C", na výstupu je <see cref="System.Windows.Forms.Keys.Control"/> | <see cref="System.Windows.Forms.Keys.C"/>
         /// </summary>
@@ -4079,13 +4028,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Nějaký control, který slouží pouze pro přístup do GUI threadu. Typicky je to main okno aplikace.
         /// </summary>
-        Control Host { get; }
+        System.ComponentModel.ISynchronizeInvoke Host { get; }
         /// <summary>
         /// Vrací klávesovou zkratku pro daný string, typicky na vstupu je "Ctrl+C", na výstupu je <see cref="System.Windows.Forms.Keys.Control"/> | <see cref="System.Windows.Forms.Keys.C"/>
         /// </summary>
         /// <param name="shortCut"></param>
         /// <returns></returns>
-        System.Windows.Forms.Shortcut GetShortcutKeys(string shortCut);
+        Shortcut GetShortcutKeys(string shortCut);
     }
     /// <summary>
     /// Popis jednoho prvku resource (odpovídá typicky jednomu souboru, který obsahuje jednu verzi obrázku).
@@ -4167,7 +4116,6 @@ namespace Noris.Clients.Win.Components.AsolDX
     }
     #endregion
     #endregion
-
     #region class Algebra
     public class Algebra
     {

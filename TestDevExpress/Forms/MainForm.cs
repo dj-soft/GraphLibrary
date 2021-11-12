@@ -21,8 +21,9 @@ using TestDevExpress.Components;
 using Noris.Clients.Win.Components.AsolDX;
 using DevExpress.XtraRichEdit.Import.OpenXml;
 using DevExpress.XtraRichEdit.Layout;
+
 using Noris.Clients.Win.Components;
-//using DevExpress.Utils.CommonDialogs.Internal;
+using Noris.WS.DataContracts.Desktop.Data;
 
 namespace TestDevExpress.Forms
 {

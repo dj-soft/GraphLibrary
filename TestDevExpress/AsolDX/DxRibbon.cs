@@ -2376,7 +2376,7 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             // Velikost obrázku: pro Level = 0 (vlastní prvky v Ribbonu) ve stylu Large nebo default dáme obrázky Large, jinak dáme Small (pro malé prvky Ribbonu a pro položky menu, ty mají Level 1 a vyšší):
             ResourceImageSizeType smallSizeType = ResourceImageSizeType.Small;
-            ResourceImageSizeType sizeType = ((level == 0 && (iRibbonItem.RibbonStyle == RibbonItemStyles.Large || iRibbonItem.RibbonStyle == RibbonItemStyles.Default)) ? ResourceImageSizeType.Large : smallSizeType);
+            ResourceImageSizeType sizeType = ((level == 0 && iRibbonItem.RibbonStyle.HasFlag(RibbonItemStyles.Large)) ? ResourceImageSizeType.Large : smallSizeType);
             DxComponent.ApplyImage(barItem.ImageOptions, iRibbonItem.ImageName, iRibbonItem.Image, sizeType);
         }
         /// <summary>

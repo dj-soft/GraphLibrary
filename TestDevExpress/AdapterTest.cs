@@ -1,4 +1,9 @@
-﻿using System;
+﻿// Supervisor: David Janáček, od 01.02.2021
+// Part of Helios Nephrite, proprietary software, (c) Asseco Solutions, a. s.
+// Redistribution and use in source and binary forms, with or without modification, 
+// is not permitted without valid contract with Asseco Solutions, a. s.
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -11,8 +16,6 @@ using DevExpress.Utils.Design;
 
 namespace Noris.Clients.Win.Components.AsolDX
 {
-#if Compile_TestDevExpress
-
     /// <summary>
     /// Adapter na systém TestDevExpress
     /// </summary>
@@ -28,14 +31,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         bool ISystemAdapter.CanRenderSvgImages { get { return false; } }
         Image ISystemAdapter.RenderSvgImage(SvgImage svgImage, Size size, ISvgPaletteProvider svgPalette) { return null; }
         Image ISystemAdapter.CreateCaptionImage(string caption, ResourceImageSizeType sizeType) { return AdapterSupport.CreateCaptionImage(caption, sizeType); }
-        WinForm.Control ISystemAdapter.Host { get { return DxComponent.MainForm ?? WinForm.Form.ActiveForm; } }
-        System.Windows.Forms.Shortcut ISystemAdapter.GetShortcutKeys(string shortCut) { return WinForm.Shortcut.None; }
-
+        System.ComponentModel.ISynchronizeInvoke ISystemAdapter.Host { get { return DxComponent.MainForm ?? WinForm.Form.ActiveForm; } }
+        WinForm.Shortcut ISystemAdapter.GetShortcutKeys(string shortCut) { return WinForm.Shortcut.None; }
     }
     /// <summary>
     /// Rozhraní předepisuje metodu <see cref="HandleEscapeKey()"/>, která umožní řešit klávesu Escape v rámci systému
     /// </summary>
-    internal interface IEscapeKeyHandler
+    internal interface IEscapeHandler
     {
         /// <summary>
         /// Systém zaregistroval klávesu Escape; a ptá se otevřených oken, které ji chce vyřešit...
@@ -43,8 +45,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         bool HandleEscapeKey();
     }
-#endif
-
     #region class AdapterSupport
     /// <summary>
     /// Obecný support pro adapter
@@ -336,6 +336,8 @@ namespace Noris.Clients.Win.Components.AsolDX
                 resourceList.Add(new DataResourceItem(fullName, itemKey, packKey, sizeType, contentType));
             }
         }
+        #endregion
+        #region Konverze, detekce velikosti a typu
         /// <summary>
         /// Vrátí korektně formátovaný klíč resource (provede Trim, ToLower, a náhradu zpětných lomítek a odstranění úvodních lomítek
         /// </summary>
