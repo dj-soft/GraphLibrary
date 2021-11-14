@@ -16,6 +16,118 @@ using DevExpress.Utils;
 
 namespace Noris.Clients.Win.Components.AsolDX
 {
+    /// <summary>
+    /// Formulář, který nabízí prostor pro uživatelský control <see cref="ControlPanel"/>, a dole pak lištu s buttony a status bar (s volitelnou viditelností).
+    /// Uživatel má svůj control vložit do <see cref="ControlPanel"/>, a nadefinovat buttony ().
+    /// </summary>
+    public class DxControlForm : DxStdForm
+    {
+        #region Konstrukce - tvorba základních controlů
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public DxControlForm()
+        {
+            this.InitializeControls();
+                
+        }
+        /// <summary>
+        /// Vytvoření controlů
+        /// </summary>
+        private void InitializeControls()
+        {
+            _ControlPanel = DxComponent.CreateDxPanel(this, DockStyle.Fill, borderStyles: DevExpress.XtraEditors.Controls.BorderStyles.NoBorder);
+            _ButtonPanel = DxComponent.CreateDxPanel(this, DockStyle.Bottom, borderStyles: DevExpress.XtraEditors.Controls.BorderStyles.NoBorder, height: 30);
+            _StatusBar = DxComponent.CreateDxStatusBar(this);
+
+            _ButtonsVisible = null;
+            _ButtonsDesignHeight = 36;
+        }
+        private DxPanelControl _ControlPanel;
+        private DxPanelControl _ButtonPanel;
+        private DxRibbonStatusBar _StatusBar;
+        #endregion
+        #region Layout
+        /// <summary>
+        /// Po změně velikosti
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void OnClientSizeChanged(EventArgs e)
+        {
+            base.OnClientSizeChanged(e);
+            DoLayout();
+        }
+        private void DoLayout()
+        { }
+        #endregion
+        #region Buttony privátně
+        private void CreateButtons()
+        {
+            RemoveButtons();
+
+            var buttons = _Buttons;
+            if (buttons is null) return;
+            List<DxSimpleButton> buttonControls = new List<DxSimpleButton>();
+            foreach (var button in buttons)
+            {
+                var buttonControl = DxComponent.CreateDxSimpleButton(0, 0, 100, 20, _ButtonPanel, button);
+                buttonControls.Add(buttonControl);
+            }
+            _ButtonControls = buttonControls.ToArray();
+
+            DoLayout();
+        }
+        /// <summary>
+        /// Odebere všechny buttony, které jsou v tuto chvíli přítomné
+        /// </summary>
+        private void RemoveButtons()
+        {
+            if (_ButtonControls is null) return;
+            foreach (var button in _ButtonControls)
+            {
+                button.RemoveControlFromParent();
+                button.Dispose();
+            }
+            _ButtonControls = null;
+        }
+        private DxSimpleButton[] _ButtonControls;
+        #endregion
+        #region Public rozhraní na prvky
+        /// <summary>
+        /// Panel, do kterého se má vložit uživatelský obsah.
+        /// Pokud uživatelský obsah má nějakou minimální / maximální velikost, má být vepsána do <see cref="Control.MinimumSize"/> a do <see cref="Control.MaximumSize"/>.
+        /// </summary>
+        public DxPanelControl ControlPanel { get { return _ControlPanel; } }
+        /// <summary>
+        /// Buttony
+        /// </summary>
+        public IEnumerable<IMenuItem> Buttons { get { return _Buttons; } set { _Buttons = (value != null ? value.ToArray() : null); this.CreateButtons(); } }
+        private IMenuItem[] _Buttons;
+        /// <summary>
+        /// Viditelnost pole buttonů.
+        /// Výchozí hodnota je null = řídí se podle přítomnosti nějakého buttonu.
+        /// </summary>
+        public bool? ButtonsVisible { get { return _ButtonsVisible; } set { _ButtonsVisible = value; this.DoLayout(); } }
+        private bool? _ButtonsVisible;
+        /// <summary>
+        /// Výška prostoru pro buttony v design pixelech.
+        /// Výchozí je 36. Platný rozsah 16 - 120.
+        /// </summary>
+        public int ButtonsDesignHeight { get { return _ButtonsDesignHeight; } set { _ButtonsDesignHeight = value.Align(16, 120); this.DoLayout(); } }
+        private int _ButtonsDesignHeight;
+        /// <summary>
+        /// Umístění buttonů vlevo / střed / vpravo
+        /// </summary>
+        public AlignContentToSide ButtonAlignment { get { return _ButtonAlignment; } set { _ButtonAlignment = value; this.DoLayout(); } }
+        private AlignContentToSide _ButtonAlignment;
+        /// <summary>
+        /// Status bar
+        /// </summary>
+        public DxRibbonStatusBar StatusBar { get { return _StatusBar; } }
+        #endregion
+
+
+    }
     /*  NOVINKY
 
 

@@ -161,7 +161,9 @@
     <Compile Include="AsolDX\DxDragDrop.cs" />
     <Compile Include="AsolDX\DxDrawingExtensions.cs" />
     <Compile Include="AsolDX\DxResources.cs" />
-    <Compile Include="AsolDX\News\DxControlForm.cs" />
+    <Compile Include="AsolDX\DxControlForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="AsolDX\System\Shared.cs" />
     <Compile Include="AsolDX\System\XmlPersist.cs" />
     <Compile Include="AsolDX\Tests\DxDataExtensions_Test.cs" />

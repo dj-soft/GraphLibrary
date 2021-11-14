@@ -1539,6 +1539,17 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             return checkButton;
         }
+        public static DxSimpleButton CreateDxSimpleButton(int x, int y, int w, int h, Control parent, IMenuItem iButton)
+        {
+            if (iButton is null) return null;
+            var button = CreateDxSimpleButton(x, y, w, h, parent, iButton.Text, _DxMenuItemClickHandler,
+                DevExpress.XtraEditors.Controls.PaintStyles.Default, iButton.Image, iButton.ImageName,
+                iButton.ToolTipTitle, iButton.ToolTipText, iButton.Visible, iButton.Enabled, true);
+            button.Tag = iButton;
+            return button;
+        }
+        private static void _DxMenuItemClickHandler(object sender, EventArgs args)
+        { }
         public static DxSimpleButton CreateDxSimpleButton(int x, int y, int w, int h, Control parent, string text, EventHandler click = null,
             DevExpress.XtraEditors.Controls.PaintStyles? paintStyles = null,
             Image image = null, string resourceName = null,
@@ -1612,6 +1623,14 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (parent != null) parent.Controls.Add(miniButton);
 
             return miniButton;
+        }
+        public static DxRibbonStatusBar CreateDxStatusBar(Control parent, DockStyle? dock = null)
+        {
+            DxRibbonStatusBar statusBar = new DxRibbonStatusBar();
+            if (dock.HasValue) statusBar.Dock = dock.Value;
+            if (parent != null)
+                parent.Controls.Add(statusBar);
+            return statusBar;
         }
         public static DxBarStaticItem CreateDxStatusLabel(DevExpress.XtraBars.Ribbon.RibbonStatusBar statusBar = null, string text = null, DevExpress.XtraBars.BarStaticItemSize? autoSize = null,
             bool? visible = null, int? fontSizeDelta = null)
