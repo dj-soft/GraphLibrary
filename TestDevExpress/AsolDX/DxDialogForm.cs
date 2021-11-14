@@ -568,7 +568,7 @@ namespace Noris.Clients.Win.Components
         private void StoreArgs(DialogArgs args)
         {
             _DialogArgs = args;
-            this.Text = args.Title;
+            this.Text = args.TitleValid;
             this.ZoomRatio = args.ZoomRatio;
             this.DialogFormResult = args.DefaultResultValue;
             this.StatusBarVisible = (args.StatusBarVisible || !String.IsNullOrEmpty(args.StatusBarCtrlCText) || args.StatusBarCtrlCVisible || args.Buttons.Any(b => !String.IsNullOrEmpty(b.StatusBarText)));
@@ -1985,7 +1985,7 @@ namespace Noris.Clients.Win.Components
         /// <returns></returns>
         public override string ToString()
         {
-            string text = this.Title;
+            string text =  this.Title;
             string delimiter = ": ";
             foreach (var button in _Buttons)
             {
@@ -2024,6 +2024,26 @@ namespace Noris.Clients.Win.Components
         /// Titulek okna
         /// </summary>
         public string Title { get; set; }
+        /// <summary>
+        /// Titulek okna, platný = vhodný do Form.Text (zkrácený, jen první řádek)
+        /// </summary>
+        public string TitleValid
+        {
+            get
+            {
+                string text = this.Title ?? "";
+                if (text.Length > 0)
+                {
+                    text = text.Trim('\r', '\n', ' ', '\t');
+                    int index = text.IndexOfAny("\r\n".ToCharArray());
+                    if (index > 0)
+                        text = text.Substring(0, index);
+                    if (text.Length > 120)
+                        text = text.Substring(0, 117) + "...";
+                }
+                return text;
+            }
+        }
         /// <summary>
         /// Jméno ikonky.
         /// Vhodné ikony jsou v <see cref="ImageName"/>, typicky <see cref="ImageName.DxDialogIconInfo"/>, <see cref="ImageName.DxDialogIconWarning"/>, <see cref="ImageName.DxDialogIconError"/>.

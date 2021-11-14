@@ -49,6 +49,7 @@ namespace TestDevExpress.Forms
             this.Size = new System.Drawing.Size(800, 600);
 
             this.Text = $"Test Ribbons :: {DxComponent.FrameworkName}";
+            this.ImageName = "svgimages/dashboards/scatterchart.svg";
 
             this.AllowMdiBar = true;
 

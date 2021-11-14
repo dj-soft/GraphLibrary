@@ -632,15 +632,20 @@ namespace TestDevExpress.Forms
         }
         private void _SvgCombineRunActionCombine(string svgImageName0, ContentAlignment contentAlignment, int percent, string svgImageName1, XB.BarItem barItem, bool showStatus)
         {
+            // Uložíme obrázky do souboru:
+            _SaveSvgImage(svgImageName0);
+            _SaveSvgImage(svgImageName1);
+
             // Vstupní obrázky:
             SvgImageArrayInfo svgImageArray = new SvgImageArrayInfo(svgImageName0);
             svgImageArray.Add(svgImageName1, contentAlignment, percent);
             // Výsledný string:
             string imageName = svgImageArray.Key;
 
-
             bool ok = SvgImageArrayInfo.TryDeserialize(imageName, out var imgCopy);
             string copyName = imgCopy?.Key;
+
+            _SaveSvgImage(copyName);
 
             string info = "";
 
@@ -670,6 +675,26 @@ namespace TestDevExpress.Forms
             if (showStatus)
                 this._StatusStartLabel.Caption = $"Key: {svgImageArray.Key}; {info}Time: {microsecs} microsecs";
         }
+        private void _SaveSvgImage(string svgImageName)
+        {
+            DevExpress.Utils.Svg.SvgImage svgImage = DxComponent.CreateVectorImage(svgImageName);
+            if (svgImage == null) return;
+            string path = @"C:\CSharp\TestDevExpress\SvgImages";
+            if (!System.IO.Directory.Exists(path)) return;
+            string name = svgImageName
+                .Replace("/", "_")
+                .Replace("<", "_")
+                .Replace(">", "_")
+                .Replace("«", "_")
+                .Replace("»", "_")
+                .Replace("\\", "_");
+            string fullName = System.IO.Path.Combine(path, name);
+            if (!fullName.EndsWith(".svg", StringComparison.InvariantCultureIgnoreCase))
+                fullName += ".svg";
+            try { svgImage.Save(fullName); }
+            catch { }
+        }
+
         private void _SvgCombineRunActionSet(string svgImageName, XB.BarItem barItem)
         {
             DevExpress.Utils.Svg.SvgImage svgImage = DxComponent.CreateVectorImage(svgImageName);
@@ -2087,7 +2112,7 @@ namespace TestDevExpress.Forms
         private void _MsgShowDialogOKClick(object sender, EventArgs args)
         {
             NWC.DialogArgs dialogArgs = new NWC.DialogArgs();
-            dialogArgs.Title = "Dialog [OK]";
+            dialogArgs.Title = "Dialog [OK]; " + Random.GetSentences(3, 7, 4, 6);
             dialogArgs.SystemIcon = NWC.DialogSystemIcon.Information;
             dialogArgs.PrepareButtons(DialogResult.OK);
             dialogArgs.MessageText = Random.GetSentences(4, 8, 3, 12);
@@ -2145,7 +2170,7 @@ namespace TestDevExpress.Forms
         }
         private void _DoExceptionInner()
         {
-            throw new ArgumentException("Chyba ve výkonné vrstvě [C]");
+            throw new ArgumentException("Chyba ve výkonné vrstvě [C], mnohořádková, dlouhá, nemá konce.\r\nJeště jeden řádek chyby, velice dlouhý, naprosto zbytečně rovláčný - stejně toho tolik nikdo nebude číst, ale něky potřebuje programátor otestovat text, který se snaží vecpat do titulku - a bude tam jen překážet...");
         }
         private void _MsgShowDialogYesNoClick(object sender, EventArgs args)
         {

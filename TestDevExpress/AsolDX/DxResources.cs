@@ -321,7 +321,15 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void _ApplyImageApplicationSvg(ImageOptions imageOptions, DxApplicationResourceLibrary.ResourceItem[] resourceItems, ResourceImageSizeType? sizeType, Size? imageSize)
         {
             imageOptions.Image = null;
-            imageOptions.SvgImage = _GetVectorImageApplication(resourceItems, sizeType);
+            if (imageOptions is DevExpress.XtraBars.BarItemImageOptions barItemImageOptions)
+            {
+                barItemImageOptions.SvgImageColorizationMode = SvgImageColorizationMode.Full;
+                barItemImageOptions.SvgImage = _GetVectorImageApplication(resourceItems, sizeType);
+            }
+            else
+            {
+                imageOptions.SvgImage = _GetVectorImageApplication(resourceItems, sizeType);
+            }
             if (imageSize.HasValue) imageOptions.SvgImageSize = imageSize.Value;
             else if (sizeType.HasValue) imageOptions.SvgImageSize = DxComponent.GetImageSize(sizeType.Value, true);
         }
@@ -1641,7 +1649,8 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// </summary>
     public static class ImageName
     {
-        public const string DxFormIcon = "svgimages/business%20objects/bo_appearance.svg";
+        public const string DxFormIcon = "svgimages/spreadsheet/conditionalformatting.svg";
+
 
         public const string DxLayoutCloseSvg = "svgimages/hybriddemoicons/bottompanel/hybriddemo_close.svg";
         public const string DxLayoutDockLeftSvg = "svgimages/align/alignverticalleft.svg";

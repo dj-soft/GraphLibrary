@@ -40,7 +40,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public DxStdForm()
         {
-            this.IconOptions.SvgImage = DxComponent.CreateVectorImage(ImageName.DxFormIcon);
+            this.ImageName = AsolDX.ImageName.DxFormIcon;
             DxComponent.RegisterListener(this);
         }
         /// <summary>
@@ -79,6 +79,13 @@ namespace Noris.Clients.Win.Components.AsolDX
             DxComponent.UnregisterListener(this);
         }
         #endregion
+        #region Ikona okna
+        /// <summary>
+        /// Název obrázku, který reprezentuje ikonu tohoto okna
+        /// </summary>
+        public string ImageName { get { return _ImageName; } set { _ImageName = value; DxComponent.ApplyImage(this.IconOptions, value, sizeType: ResourceImageSizeType.Medium); } }
+        private string _ImageName;
+        #endregion
         #region Style & Zoom Changed
         void IListenerZoomChange.ZoomChanged() { OnZoomChanged(); }
         /// <summary>
@@ -112,7 +119,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public DxRibbonForm()
         {
-            this.IconOptions.SvgImage = DxComponent.CreateVectorImage(ImageName.DxFormIcon);
+            this.ImageName = AsolDX.ImageName.DxFormIcon;
             this.InitDxRibbonForm();
             DxComponent.RegisterListener(this);
         }
@@ -151,6 +158,13 @@ namespace Noris.Clients.Win.Components.AsolDX
             base.Dispose(disposing);
             DxComponent.UnregisterListener(this);
         }
+        #endregion
+        #region Ikona okna
+        /// <summary>
+        /// Název obrázku, který reprezentuje ikonu tohoto okna
+        /// </summary>
+        public string ImageName { get { return _ImageName; } set { _ImageName = value; DxComponent.ApplyImage(this.IconOptions, value, sizeType: ResourceImageSizeType.Medium); } }
+        private string _ImageName;
         #endregion
         #region Style & Zoom Changed
         void IListenerZoomChange.ZoomChanged() { OnZoomChanged(); }
