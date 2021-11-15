@@ -1542,14 +1542,22 @@ namespace Noris.Clients.Win.Components.AsolDX
         public static DxSimpleButton CreateDxSimpleButton(int x, int y, int w, int h, Control parent, IMenuItem iButton)
         {
             if (iButton is null) return null;
-            var button = CreateDxSimpleButton(x, y, w, h, parent, iButton.Text, _DxMenuItemClickHandler,
+            var button = CreateDxSimpleButton(x, y, w, h, parent, iButton.Text, null,
                 DevExpress.XtraEditors.Controls.PaintStyles.Default, iButton.Image, iButton.ImageName,
                 iButton.ToolTipTitle, iButton.ToolTipText, iButton.Visible, iButton.Enabled, true);
+            if (iButton.ClickAction != null)
+                button.Click += _DxMenuItemClickHandler;
             button.Tag = iButton;
             return button;
         }
         private static void _DxMenuItemClickHandler(object sender, EventArgs args)
-        { }
+        {
+            if (sender is Control control && control.Tag is IMenuItem iMenuItem)
+            {
+                if (iMenuItem != null)
+                    iMenuItem.ClickAction(iMenuItem);
+            }
+        }
         public static DxSimpleButton CreateDxSimpleButton(int x, int y, int w, int h, Control parent, string text, EventHandler click = null,
             DevExpress.XtraEditors.Controls.PaintStyles? paintStyles = null,
             Image image = null, string resourceName = null,

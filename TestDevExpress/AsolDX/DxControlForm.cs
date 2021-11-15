@@ -68,9 +68,11 @@ namespace Noris.Clients.Win.Components.AsolDX
             var buttons = _Buttons;
             if (buttons is null) return;
             List<DxSimpleButton> buttonControls = new List<DxSimpleButton>();
+            int x = 5;
             foreach (var button in buttons)
             {
-                var buttonControl = DxComponent.CreateDxSimpleButton(0, 0, 100, 20, _ButtonPanel, button);
+                var buttonControl = DxComponent.CreateDxSimpleButton(x, 0, 100, 20, _ButtonPanel, button);
+                x += 105;
                 buttonControls.Add(buttonControl);
             }
             _ButtonControls = buttonControls.ToArray();
