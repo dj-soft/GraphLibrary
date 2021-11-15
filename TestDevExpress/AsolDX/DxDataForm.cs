@@ -2553,9 +2553,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Po změně DPI je třeba provést kompletní refresh (souřadnice, cache, atd)
         /// </summary>
-        protected override void OnDpiChanged()
+        protected override void OnCurrentDpiChanged()
         {
-            base.OnDpiChanged();
+            base.OnCurrentDpiChanged();
             Refresh(RefreshParts.All);
         }
         /// <summary>

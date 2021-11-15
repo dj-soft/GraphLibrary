@@ -32,19 +32,29 @@ namespace Noris.Clients.Win.Components.AsolDX
                 
         }
         /// <summary>
+        /// Při prvním zobrazení okna
+        /// </summary>
+        protected override void OnBeforeFirstShown()
+        {
+            base.OnBeforeFirstShown();
+            DoLayout();
+        }
+        /// <summary>
         /// Vytvoření controlů
         /// </summary>
         private void InitializeControls()
         {
             _ControlPanel = DxComponent.CreateDxPanel(this, DockStyle.Fill, borderStyles: DevExpress.XtraEditors.Controls.BorderStyles.NoBorder);
-            _ButtonPanel = DxComponent.CreateDxPanel(this, DockStyle.Bottom, borderStyles: DevExpress.XtraEditors.Controls.BorderStyles.NoBorder, height: 30);
+            _ButtonsPanel = DxComponent.CreateDxPanel(this, DockStyle.Bottom, borderStyles: DevExpress.XtraEditors.Controls.BorderStyles.NoBorder, height: 30);
             _StatusBar = DxComponent.CreateDxStatusBar(this);
 
             _ButtonsVisible = null;
-            _ButtonsDesignHeight = 36;
+            _ButtonsDesignHeight = DxComponent.DefaultButtonPanelHeight;
+            _ButtonAlignment = AlignContentToSide.Begin;
+            _ButtonDesignMargins = DxComponent.DefaultInnerMargins;
         }
         private DxPanelControl _ControlPanel;
-        private DxPanelControl _ButtonPanel;
+        private DxPanelControl _ButtonsPanel;
         private DxRibbonStatusBar _StatusBar;
         #endregion
         #region Layout
@@ -57,10 +67,74 @@ namespace Noris.Clients.Win.Components.AsolDX
             base.OnClientSizeChanged(e);
             DoLayout();
         }
+        /// <summary>
+        /// Uspořádá prvky formuláře podle předepsané viditelnosti a rozměrů.
+        /// </summary>
         private void DoLayout()
-        { }
+        {
+            // Dost layoutu dělá Winform tím, že máme nastaveno dokování. Na zdejší metodu už zbývá jen reagovat na Visible a nastavit prostor pro buttony a rozmístit je.
+            if (this.WasShown)
+            {   // Nemá význam dělat layout dřív, než bude okno zobrazeno:
+                DoLayoutStatusBar();
+                DoLayoutButtons();
+            }
+        }
+        /// <summary>
+        /// Nastaví Layout pro Buttons - nastavuje Visible, Height, velikost a pozici buttonů
+        /// </summary>
+        private void DoLayoutButtons()
+        {
+            int buttonsCount = ButtonsCount;
+
+            // Visible:
+            bool buttonsVisible = (ButtonsVisible ?? (buttonsCount> 0));
+            var panel = _ButtonsPanel;
+            if (panel.VisibleInternal != buttonsVisible)
+                panel.VisibleInternal = buttonsVisible;
+
+            // Layout:
+            if (!buttonsVisible) return;
+            int height = DxComponent.ZoomToGui(this.ButtonsDesignHeight, this.CurrentDpi);
+            if (panel.Height != height)
+                panel.Height = height;           // Panel nemá Borders, proto Height (vnější) = ClientSize.Height (vnitřní)
+
+            // Buttony:
+            if (buttonsCount == 0 || _ButtonControls == null) return;
+            var panelSize = panel.ClientSize;
+            Padding buttonsPadding = DxComponent.ZoomToGui(this.ButtonDesignMargins, this.CurrentDpi);
+            int panelWidth = panelSize.Width;
+            var alignment = this.ButtonAlignment;
+
+            // Určíme velikost všech buttonů:
+            int widthMax = 0;
+            foreach (var button in _ButtonControls)
+            {
+                var preferresSize = button.GetPreferredSize(panelSize);
+                if (widthMax < preferresSize.Width)
+                    widthMax = preferresSize.Width;
+            }
+
+
+
+
+        }
+        /// <summary>
+        /// Nastaví Layout pro StatusBar - nastavuje Visible
+        /// </summary>
+        private void DoLayoutStatusBar()
+        {
+            // Visible:
+            bool statusVisible = (StatusBarVisible ?? (StatusBar.ItemLinks.Count > 0));
+            var statusBar = StatusBar;
+            if (statusBar.VisibleInternal != statusVisible)
+                statusBar.VisibleInternal = statusVisible;
+        }
         #endregion
         #region Buttony privátně
+        /// <summary>
+        /// Do formuláře vytvoří buttony podle obsahu pole <see cref="_Buttons"/>.
+        /// Buttony vytvoří, i když nemají být viditelné (<see cref="_ButtonsVisible"/>, to je úkolem metody <see cref="DoLayout"/>.
+        /// </summary>
         private void CreateButtons()
         {
             RemoveButtons();
@@ -71,7 +145,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             int x = 5;
             foreach (var button in buttons)
             {
-                var buttonControl = DxComponent.CreateDxSimpleButton(x, 0, 100, 20, _ButtonPanel, button);
+                var buttonControl = DxComponent.CreateDxSimpleButton(x, 0, 100, 20, _ButtonsPanel, button);
                 x += 105;
                 buttonControls.Add(buttonControl);
             }
@@ -101,6 +175,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public DxPanelControl ControlPanel { get { return _ControlPanel; } }
         /// <summary>
+        /// Počet definovaných buttonů
+        /// </summary>
+        public int ButtonsCount { get { return (_Buttons?.Length ?? 0); } }
+        /// <summary>
         /// Buttony
         /// </summary>
         public IEnumerable<IMenuItem> Buttons { get { return _Buttons; } set { _Buttons = (value != null ? value.ToArray() : null); this.CreateButtons(); } }
@@ -112,11 +190,16 @@ namespace Noris.Clients.Win.Components.AsolDX
         public bool? ButtonsVisible { get { return _ButtonsVisible; } set { _ButtonsVisible = value; this.DoLayout(); } }
         private bool? _ButtonsVisible;
         /// <summary>
-        /// Výška prostoru pro buttony v design pixelech.
+        /// Výška prostoru pro buttony, v design pixelech.
         /// Výchozí je 36. Platný rozsah 16 - 120.
         /// </summary>
         public int ButtonsDesignHeight { get { return _ButtonsDesignHeight; } set { _ButtonsDesignHeight = value.Align(16, 120); this.DoLayout(); } }
         private int _ButtonsDesignHeight;
+        /// <summary>
+        /// Vnitřní okraje panelu buttonů, v design pixelech.
+        /// </summary>
+        public Padding ButtonDesignMargins { get { return _ButtonDesignMargins; } set { _ButtonDesignMargins = value; this.DoLayout(); } }
+        private Padding _ButtonDesignMargins;
         /// <summary>
         /// Umístění buttonů vlevo / střed / vpravo
         /// </summary>
@@ -126,6 +209,20 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Status bar
         /// </summary>
         public DxRibbonStatusBar StatusBar { get { return _StatusBar; } }
+        /// <summary>
+        /// Viditelnost statusbaru.
+        /// Výchozí hodnota je null = řídí se podle přítomnosti nějakého prvku.
+        /// </summary>
+        public bool? StatusBarVisible { get { return _StatusBarVisible; } set { _StatusBarVisible = value; this.DoLayout(); } }
+        private bool? _StatusBarVisible;
+        /// <summary>
+        /// Refresh: uspořádá layout. Je vhodné volat po změně obsahu StatusBaru.
+        /// </summary>
+        public override void Refresh()
+        {
+            DoLayout();
+            base.Refresh();
+        }
         #endregion
 
 

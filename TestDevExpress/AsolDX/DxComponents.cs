@@ -525,55 +525,70 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Odsazení labelu od levého okraje X
         /// </summary>
-        public static int DetailXLabel { get { return ZoomToGui(Instance._DetailXLabel); } }
+        public static int GetDetailXLabel(int targetDpi) { return ZoomToGui(Instance._DetailXLabel, targetDpi); }
         /// <summary>
         /// Odsazení textu od levého okraje X
         /// </summary>
-        public static int DetailXText { get { return ZoomToGui(Instance._DetailXText); } }
+        public static int GetDetailXText(int targetDpi) { return ZoomToGui(Instance._DetailXText, targetDpi); }
         /// <summary>
         /// Odsazení prvního prvku od horního okraje Y
         /// </summary>
-        public static int DetailYFirst { get { return ZoomToGui(Instance._DetailYFirst); } }
+        public static int GetDetailYFirst(int targetDpi) { return ZoomToGui(Instance._DetailYFirst, targetDpi); }
+        /// <summary>
+        /// Vnitřní okraje, defaultní hodnota, vychází z <see cref="GetDetailXMargin(int)"/> a <see cref="GetDetailYMargin(int)"/>
+        /// </summary>
+        /// <returns></returns>
+        public static Padding DefaultInnerMargins { get { int x = Instance._DetailXMargin; int y = Instance._DetailYMargin; return new Padding(x, y, x, y); } }
+        /// <summary>
+        /// Vnitřní okraje, defaultní hodnota, vychází z <see cref="GetDetailXMargin(int)"/> a <see cref="GetDetailYMargin(int)"/>
+        /// </summary>
+        /// <param name="targetDpi"></param>
+        /// <returns></returns>
+        public static Padding GetDefaultInnerMargins(int targetDpi) { return ZoomToGui(DefaultInnerMargins, targetDpi); }
         /// <summary>
         /// Výchozí hodnota výšky labelu
         /// </summary>
-        public static int DetailYHeightLabel { get { return ZoomToGui(Instance._DetailYHeightLabel); } }
+        public static int GetDetailYHeightLabel(int targetDpi) { return ZoomToGui(Instance._DetailYHeightLabel, targetDpi); }
         /// <summary>
         /// Výchozí hodnota výšky textu
         /// </summary>
-        public static int DetailYHeightText { get { return ZoomToGui(Instance._DetailYHeightText); } }
+        public static int GetDetailYHeightText(int targetDpi) { return ZoomToGui(Instance._DetailYHeightText, targetDpi); }
         /// <summary>
         /// Posun labelu vůči textu v ose Y pro zarovnané úpatí textu
         /// </summary>
-        public static int DetailYOffsetLabelText { get { return ZoomToGui(Instance._DetailYOffsetLabelText); } }
+        public static int GetDetailYOffsetLabelText(int targetDpi) { return ZoomToGui(Instance._DetailYOffsetLabelText, targetDpi); }
         /// <summary>
         /// Odsazení labelu dalšího řádku od předešlého textu
         /// </summary>
-        public static int DetailYSpaceLabel { get { return ZoomToGui(Instance._DetailYSpaceLabel); } }
+        public static int GetDetailYSpaceLabel(int targetDpi) { return ZoomToGui(Instance._DetailYSpaceLabel, targetDpi); }
         /// <summary>
         /// Odsazení textu řádku od předešlého labelu
         /// </summary>
-        public static int DetailYSpaceText { get { return ZoomToGui(Instance._DetailYSpaceText); } }
+        public static int GetDetailYSpaceText(int targetDpi) { return ZoomToGui(Instance._DetailYSpaceText, targetDpi); }
         /// <summary>
         /// Okraj v ose X
         /// </summary>
-        public static int DetailXMargin { get { return ZoomToGui(Instance._DetailXMargin); } }
+        public static int GetDetailXMargin(int targetDpi) { return ZoomToGui(Instance._DetailXMargin, targetDpi); }
         /// <summary>
         /// Okraj v ose Y
         /// </summary>
-        public static int DetailYMargin { get { return ZoomToGui(Instance._DetailYMargin); } }
+        public static int GetDetailYMargin(int targetDpi) { return ZoomToGui(Instance._DetailYMargin, targetDpi); }
+        /// <summary>
+        /// Defaultní výška panelu s buttony, designová hodnota
+        /// </summary>
+        public static int DefaultButtonPanelHeight { get { return Instance._DefaultButtonPanelHeight; } }
         /// <summary>
         /// Defaultní výška panelu s buttony
         /// </summary>
-        public static int DefaultButtonPanelHeight { get { return ZoomToGui(Instance._DefaultButtonPanelHeight); } }
+        public static int GetDefaultButtonPanelHeight(int targetDpi) { return ZoomToGui(Instance._DefaultButtonPanelHeight, targetDpi); }
         /// <summary>
         /// Defaultní šířka buttonu
         /// </summary>
-        public static int DefaultButtonWidth { get { return ZoomToGui(Instance._DefaultButtonWidth); } }
+        public static int GetDefaultButtonWidth(int targetDpi) { return ZoomToGui(Instance._DefaultButtonWidth, targetDpi); }
         /// <summary>
         /// Defaultní výška buttonu
         /// </summary>
-        public static int DefaultButtonHeight { get { return ZoomToGui(Instance._DefaultButtonHeight); } }
+        public static int GetDefaultButtonHeight(int targetDpi) { return ZoomToGui(Instance._DefaultButtonHeight, targetDpi); }
         /// <summary>
         /// Defaultní BarManager pro obecné použití
         /// </summary>
@@ -692,21 +707,21 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Vrátí danou designovou hodnotu přepočtenou dle aktuálního Zoomu do vizuální hodnoty
         /// </summary>
         /// <param name="value">Designová hodnota (96DPI, 100%)</param>
-        /// <param name="targetDpi">Cílové DPI</param>
+        /// <param name="targetDpi">Cílové DPI. Typicky se má použít hodnota <see cref="DxPanelControl.CurrentDpi"/> (nebo <see cref="DxStdForm.CurrentDpi"/>)</param>
         /// <returns></returns>
         internal static int ZoomToGui(int value, int targetDpi) { decimal zoomDpi = Instance._ZoomDpi; return _ZoomDpiToGui(value, zoomDpi, targetDpi); }
         /// <summary>
         /// Vrátí danou designovou hodnotu přepočtenou dle aktuálního Zoomu do vizuální hodnoty
         /// </summary>
         /// <param name="value"></param>
-        /// <param name="targetDpi">Cílové DPI</param>
+        /// <param name="targetDpi">Cílové DPI. Typicky se má použít hodnota <see cref="DxPanelControl.CurrentDpi"/> (nebo <see cref="DxStdForm.CurrentDpi"/>)</param>
         /// <returns></returns>
         internal static float ZoomToGui(float value, int targetDpi) { decimal zoomDpi = Instance._ZoomDpi; return _ZoomDpiToGui(value, zoomDpi, targetDpi); }
         /// <summary>
         /// Vrátí danou designovou hodnotu přepočtenou dle aktuálního Zoomu do vizuální hodnoty
         /// </summary>
         /// <param name="value">Designová hodnota (96DPI, 100%)</param>
-        /// <param name="targetDpi">Cílové DPI</param>
+        /// <param name="targetDpi">Cílové DPI. Typicky se má použít hodnota <see cref="DxPanelControl.CurrentDpi"/> (nebo <see cref="DxStdForm.CurrentDpi"/>)</param>
         /// <returns></returns>
         internal static Int32Range ZoomToGui(Int32Range value, int targetDpi) { if (value == null) return null; decimal zoomDpi = Instance._ZoomDpi; return new Int32Range(_ZoomDpiToGui(value.Begin, zoomDpi, targetDpi), _ZoomDpiToGui(value.End, zoomDpi, targetDpi)); }
 
@@ -726,7 +741,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Vrátí danou designovou hodnotu přepočtenou dle aktuálního Zoomu do vizuální hodnoty
         /// </summary>
         /// <param name="value">Designová hodnota (96DPI, 100%)</param>
-        /// <param name="targetDpi">Cílové DPI</param>
+        /// <param name="targetDpi">Cílové DPI. Typicky se má použít hodnota <see cref="DxPanelControl.CurrentDpi"/> (nebo <see cref="DxStdForm.CurrentDpi"/>)</param>
         /// <returns></returns>
         internal static Point ZoomToGui(Point value, int targetDpi) { decimal zoomDpi = Instance._ZoomDpi; return new Point(_ZoomDpiToGui(value.X, zoomDpi, targetDpi), _ZoomDpiToGui(value.Y, zoomDpi, targetDpi)); }
 
@@ -746,7 +761,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Vrátí danou designovou hodnotu přepočtenou dle aktuálního Zoomu do vizuální hodnoty
         /// </summary>
         /// <param name="value">Designová hodnota (96DPI, 100%)</param>
-        /// <param name="targetDpi">Cílové DPI</param>
+        /// <param name="targetDpi">Cílové DPI. Typicky se má použít hodnota <see cref="DxPanelControl.CurrentDpi"/> (nebo <see cref="DxStdForm.CurrentDpi"/>)</param>
         /// <returns></returns>
         internal static Size ZoomToGui(Size value, int targetDpi) { decimal zoomDpi = Instance._ZoomDpi; return new Size(_ZoomDpiToGui(value.Width, zoomDpi, targetDpi), _ZoomDpiToGui(value.Height, zoomDpi, targetDpi)); }
 
@@ -778,7 +793,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// tedy že nebude "rozházený" vlivem zaokrouhlení, kdy se může stát, že (Round(X,0) + Round(Width,0)) != Round(Right,0) !!!
         /// </summary>
         /// <param name="value">Designová hodnota (96DPI, 100%)</param>
-        /// <param name="targetDpi">Cílové DPI</param>
+        /// <param name="targetDpi">Cílové DPI. Typicky se má použít hodnota <see cref="DxPanelControl.CurrentDpi"/> (nebo <see cref="DxStdForm.CurrentDpi"/>)</param>
         /// <returns></returns>
         internal static Rectangle ZoomToGui(Rectangle value, int targetDpi) { decimal zoomDpi = Instance._ZoomDpi; return Rectangle.FromLTRB(_ZoomDpiToGui(value.Left, zoomDpi, targetDpi), _ZoomDpiToGui(value.Top, zoomDpi, targetDpi), _ZoomDpiToGui(value.Right, zoomDpi, targetDpi), _ZoomDpiToGui(value.Bottom, zoomDpi, targetDpi)); }
 
@@ -798,7 +813,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Vrátí danou designovou hodnotu přepočtenou dle aktuálního Zoomu do vizuální hodnoty
         /// </summary>
         /// <param name="value">Designová hodnota (96DPI, 100%)</param>
-        /// <param name="targetDpi">Cílové DPI</param>
+        /// <param name="targetDpi">Cílové DPI. Typicky se má použít hodnota <see cref="DxPanelControl.CurrentDpi"/> (nebo <see cref="DxStdForm.CurrentDpi"/>)</param>
         /// <returns></returns>
         internal static Padding ZoomToGui(Padding value, int targetDpi) { decimal zoomDpi = Instance._ZoomDpi; return new Padding(_ZoomDpiToGui(value.Left, zoomDpi, targetDpi), _ZoomDpiToGui(value.Top, zoomDpi, targetDpi), _ZoomDpiToGui(value.Right, zoomDpi, targetDpi), _ZoomDpiToGui(value.Bottom, zoomDpi, targetDpi)); }
 
@@ -806,7 +821,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Vrátí daný font přepočtený dle aktuálního Zoomu do vizuální hodnoty
         /// </summary>
         /// <param name="value">Designová hodnota (96DPI, 100%)</param>
-        /// <param name="targetDpi">Cílové DPI</param>
+        /// <param name="targetDpi">Cílové DPI. Typicky se má použít hodnota <see cref="DxPanelControl.CurrentDpi"/> (nebo <see cref="DxStdForm.CurrentDpi"/>)</param>
         /// <returns></returns>
         internal static Font ZoomToGui(Font value, int targetDpi)
         {
@@ -1550,6 +1565,11 @@ namespace Noris.Clients.Win.Components.AsolDX
             button.Tag = iButton;
             return button;
         }
+        /// <summary>
+        /// Handler kliknutí na <see cref="DxSimpleButton"/>, vytvořený z <see cref="IMenuItem"/>, který má za úkol vyvolat akci <see cref="IMenuItem.ClickAction"/>.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="args"></param>
         private static void _DxMenuItemClickHandler(object sender, EventArgs args)
         {
             if (sender is Control control && control.Tag is IMenuItem iMenuItem)
@@ -2239,6 +2259,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         private decimal _LogGetTimeElapsed(long startTime, string logTokenTime)
         {
+            if (!_LogActive) return 0m;
+
             long nowTime = _LogWatch.ElapsedTicks;
             decimal seconds = ((decimal)(nowTime - startTime)) / _LogFrequency;     // Počet sekund
             string token = logTokenTime ?? LogTokenTimeMicrosec;
@@ -3908,6 +3930,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         public static string GetMessage(MsgCode messageCode, params object[] parameters) { return Current.GetMessage(messageCode, parameters); }
         /// <summary>
+        /// Obsahuje true, pokud jsou preferovány vektorové ikony
+        /// </summary>
+        public static bool IsPreferredVectorImage { get { return Current.IsPreferredVectorImage; } }
+        /// <summary>
         /// Volá se jedenkrát, vrátí kompletní seznam všech zdrojů (Resource).
         /// </summary>
         /// <returns></returns>
@@ -3942,36 +3968,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="shortCut"></param>
         /// <returns></returns>
         public static System.Windows.Forms.Shortcut GetShortcutKeys(string shortCut) { return Current.GetShortcutKeys(shortCut); }
-
-
-        /*
-        /// <summary>
-        /// Vrátí ImageList pro danou velikost
-        /// </summary>
-        /// <param name="sizeType"></param>
-        /// <returns></returns>
-        public static System.Windows.Forms.ImageList GetResourceImageList(ResourceImageSizeType sizeType) { return Current.GetResourceImageList(sizeType); }
-        /// <summary>
-        /// Vrátí Image pro daný název a velikost. Výstupem má být bitmapa.
-        /// Pokud daná ikona neexistuje, a je dán parametr <paramref name="caption"/>, pak ikonu vygeneruje (z počátečních dvou písmen).
-        /// </summary>
-        /// <param name="resourceName"></param>
-        /// <param name="sizeType"></param>
-        /// <param name="caption"></param>
-        /// <returns></returns>
-        public static System.Drawing.Image GetResourceImage(string resourceName, ResourceImageSizeType sizeType, string caption = null) { return Current.GetResourceImage(resourceName, sizeType, caption); }
-        /// <summary>
-        /// Vrátí index ikony v dané velikosti.
-        /// Pokud daná ikona neexistuje, a je dán parametr <paramref name="caption"/>, pak ikonu vygeneruje (z počátečních dvou písmen).
-        /// </summary>
-        /// <param name="iconName"></param>
-        /// <param name="sizeType"></param>
-        /// <param name="caption"></param>
-        /// <returns></returns>
-        public static int GetResourceIndex(string iconName, ResourceImageSizeType sizeType, string caption = null) { return Current.GetResourceIndex(iconName, sizeType, caption); }
-        */
-
-
         /// <summary>
         /// Umí aktuální adapter renderovat SVG image do bitmapy?
         /// </summary>
@@ -3984,7 +3980,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="svgPalette"></param>
         /// <returns></returns>
         internal static Image RenderSvgImage(SvgImage svgImage, Size size, ISvgPaletteProvider svgPalette) { return Current.RenderSvgImage(svgImage, size, svgPalette); }
-        internal static Image CreateCaptionImage(string caption, ResourceImageSizeType sizeType) { return Current.CreateCaptionImage(caption, sizeType); }
+        internal static Image CreateCaptionImage(string caption, ResourceImageSizeType? sizeType, Size? imageSize) { return Current.CreateCaptionImage(caption, sizeType, imageSize); }
         #endregion
     }
     #region interface ISystemAdapter : Požadavky na adapter na support systém
@@ -4008,6 +4004,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="parameters"></param>
         /// <returns></returns>
         string GetMessage(MsgCode messageCode, params object[] parameters);
+        /// <summary>
+        /// Obsahuje true, pokud na klientu máme preferovat Vektorové ikony.
+        /// </summary>
+        bool IsPreferredVectorImage { get; }
         /// <summary>
         /// Volá se jedenkrát, vrátí kompletní seznam všech zdrojů (Resource).
         /// </summary>
@@ -4050,8 +4050,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="caption"></param>
         /// <param name="sizeType"></param>
+        /// <param name="imageSize"></param>
         /// <returns></returns>
-        Image CreateCaptionImage(string caption, ResourceImageSizeType sizeType);
+        Image CreateCaptionImage(string caption, ResourceImageSizeType? sizeType, Size? imageSize);
         /// <summary>
         /// Nějaký control, který slouží pouze pro přístup do GUI threadu. Typicky je to main okno aplikace.
         /// </summary>

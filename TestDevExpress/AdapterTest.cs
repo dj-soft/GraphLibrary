@@ -24,13 +24,14 @@ namespace Noris.Clients.Win.Components.AsolDX
         event EventHandler ISystemAdapter.InteractiveZoomChanged { add { } remove { } }
         decimal ISystemAdapter.ZoomRatio { get { return 1.0m; } }
         string ISystemAdapter.GetMessage(MsgCode messageCode, params object[] parameters) { return AdapterSupport.GetMessage(messageCode, parameters); }
+        bool ISystemAdapter.IsPreferredVectorImage { get { return true; } }
         IEnumerable<IResourceItem> ISystemAdapter.GetResources() { return DataResources.GetResources(); }
         string ISystemAdapter.GetResourceItemKey(string name) { return DataResources.GetItemKey(name); }
         string ISystemAdapter.GetResourcePackKey(string name, out ResourceImageSizeType sizeType, out ResourceContentType contentType) { return DataResources.GetPackKey(name, out sizeType, out contentType); }
         byte[] ISystemAdapter.GetResourceContent(IResourceItem resourceItem) { return DataResources.GetResourceContent(resourceItem); }
         bool ISystemAdapter.CanRenderSvgImages { get { return false; } }
         Image ISystemAdapter.RenderSvgImage(SvgImage svgImage, Size size, ISvgPaletteProvider svgPalette) { return null; }
-        Image ISystemAdapter.CreateCaptionImage(string caption, ResourceImageSizeType sizeType) { return AdapterSupport.CreateCaptionImage(caption, sizeType); }
+        Image ISystemAdapter.CreateCaptionImage(string caption, ResourceImageSizeType? sizeType, Size? imageSize) { return AdapterSupport.CreateCaptionImage(caption, sizeType, imageSize); }
         System.ComponentModel.ISynchronizeInvoke ISystemAdapter.Host { get { return DxComponent.MainForm ?? WinForm.Form.ActiveForm; } }
         WinForm.Shortcut ISystemAdapter.GetShortcutKeys(string shortCut) { return WinForm.Shortcut.None; }
     }
@@ -56,24 +57,24 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="caption"></param>
         /// <param name="sizeType"></param>
+        /// <param name="imageSize"></param>
         /// <returns></returns>
-        public static Image CreateCaptionImage(string caption, ResourceImageSizeType sizeType)
+        public static Image CreateCaptionImage(string caption, ResourceImageSizeType? sizeType, Size? imageSize)
         {
-            var imageSize = DxComponent.GetImageSize(sizeType, true);
-            Bitmap bitmap = new Bitmap(imageSize.Width, imageSize.Height);
+            var realSize = imageSize ?? DxComponent.GetImageSize((sizeType ?? ResourceImageSizeType.Large), true);
+            bool isDark = DxComponent.IsDarkTheme;
+            Bitmap bitmap = new Bitmap(realSize.Width, realSize.Height);
             using (var graphics = Graphics.FromImage(bitmap))
             {
-                RectangleF bounds = new RectangleF(0, 0, imageSize.Width, imageSize.Height);
-                if (sizeType == ResourceImageSizeType.Large)
-                { }
-                graphics.FillRectangle(Brushes.White, bounds);
+                RectangleF bounds = new RectangleF(0, 0, realSize.Width, realSize.Height);
+                graphics.FillRectangle((isDark ? Brushes.MidnightBlue : Brushes.MintCream), bounds);
                 string text = DxComponent.GetCaptionForIcon(caption);
                 if (text.Length > 0)
                 {
                     var font = SystemFonts.MenuFont;
                     var textSize = graphics.MeasureString(text, font);
                     var textBounds = textSize.AlignTo(bounds, ContentAlignment.MiddleCenter);
-                    graphics.DrawString(text, font, Brushes.Black, textBounds.Location);
+                    graphics.DrawString(text, font, (isDark ? Brushes.White : Brushes.Black), textBounds.Location);
                 }
             }
             return bitmap;

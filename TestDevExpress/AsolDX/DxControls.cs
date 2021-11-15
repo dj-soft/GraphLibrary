@@ -44,6 +44,11 @@ namespace Noris.Clients.Win.Components.AsolDX
             DxComponent.RegisterListener(this);
         }
         /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString() { return this.GetTypeName() + "'" + (this.Text ?? "NULL") + "'"; }
+        /// <summary>
         /// Při zobrazení okna
         /// </summary>
         /// <param name="e"></param>
@@ -66,9 +71,18 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public event EventHandler BeforeFirstShown;
         /// <summary>
+        /// Obsahuje true poté, kdy formulář byl zobrazen. 
+        /// Obsahuje true již v metodě <see cref="OnBeforeFirstShown"/> a v eventu <see cref="BeforeFirstShown"/>.
+        /// </summary>
+        public bool WasShown { get { return _WasShown; } }
+        /// <summary>
         /// Okno již bylo zobrazeno?
         /// </summary>
         private bool _WasShown = false;
+        /// <summary>
+        /// Aktuálně platná hodnota DeviceDpi
+        /// </summary>
+        public int CurrentDpi { get { return this.DeviceDpi; } }
         /// <summary>
         /// Dispose panelu
         /// </summary>
@@ -124,6 +138,11 @@ namespace Noris.Clients.Win.Components.AsolDX
             DxComponent.RegisterListener(this);
         }
         /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString() { return this.GetTypeName() + "'" + (this.Text ?? "NULL") + "'"; }
+        /// <summary>
         /// Při zobrazení okna
         /// </summary>
         /// <param name="e"></param>
@@ -146,9 +165,18 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public event EventHandler BeforeFirstShown;
         /// <summary>
+        /// Obsahuje true poté, kdy formulář byl zobrazen. 
+        /// Obsahuje true již v metodě <see cref="OnBeforeFirstShown"/> a v eventu <see cref="BeforeFirstShown"/>.
+        /// </summary>
+        public bool WasShown { get { return _WasShown; } }
+        /// <summary>
         /// Okno již bylo zobrazeno?
         /// </summary>
         private bool _WasShown = false;
+        /// <summary>
+        /// Aktuálně platná hodnota DeviceDpi
+        /// </summary>
+        public int CurrentDpi { get { return this.DeviceDpi; } }
         /// <summary>
         /// Dispose panelu
         /// </summary>
@@ -493,7 +521,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private bool _DpiChanged { get { return (this._CurrentDpi != this._LastDpi); } }
         /// <summary>
-        /// Ověří, zda nedošlo ke změně DeviceDpi, a pokud ano pak zajistí vyvolání metod <see cref="OnDpiChanged()"/> a eventu <see cref="DpiChanged"/>.
+        /// Ověří, zda nedošlo ke změně DeviceDpi, a pokud ano pak zajistí vyvolání metod <see cref="OnCurrentDpiChanged()"/> a eventu <see cref="CurrentDpiChanged"/>.
         /// Pokud this panel není umístěn na formuláři, neprovede nic, protože DPI nemůže být platné.
         /// </summary>
         /// <param name="callContentSizeChanged">Pokud došlo ke změně DPI, má být volán háček <see cref="OnContentSizeChanged()"/>? Někdy to není nutné, protože se bude volat po této metodě vždy (i bez změny DPI).</param>
@@ -503,21 +531,21 @@ namespace Noris.Clients.Win.Components.AsolDX
             var currentDpi = _ReloadCurrentDpi();
             if (_DpiChanged)
             {
-                OnDpiChanged();
+                OnCurrentDpiChanged();
                 if (callContentSizeChanged)
                     OnContentSizeChanged();
-                DpiChanged?.Invoke(this, EventArgs.Empty);
+                CurrentDpiChanged?.Invoke(this, EventArgs.Empty);
                 _LastDpi = currentDpi;
             }
         }
         /// <summary>
         /// Po jakékoli změně DPI
         /// </summary>
-        protected virtual void OnDpiChanged() { }
+        protected virtual void OnCurrentDpiChanged() { }
         /// <summary>
         /// Po jakékoli změně DPI
         /// </summary>
-        public event EventHandler DpiChanged;
+        public event EventHandler CurrentDpiChanged;
         #endregion
         #region Rozšířené property
         /// <summary>
@@ -2303,7 +2331,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Vizualizace
         /// </summary>
         /// <returns></returns>
-        public override string ToString() { return this.GetType().Name + "'" + (this.Text ?? "NULL") + "'"; }
+        public override string ToString() { return this.GetTypeName() + "'" + (this.Text ?? "NULL") + "'"; }
         #endregion
     }
     #endregion
@@ -2334,7 +2362,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Vizualizace
         /// </summary>
         /// <returns></returns>
-        public override string ToString() { return this.GetTypeName(); }
+        public override string ToString() { return this.GetTypeName() + "'" + (this.Text ?? "NULL") + "'"; }
         #endregion
         #region HasMouse
         /// <summary>
@@ -2456,7 +2484,11 @@ namespace Noris.Clients.Win.Components.AsolDX
             _ButtonsVisibility = DxChildControlVisibility.Allways;
             _ButtonsIsVisible = null;
         }
-
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString() { return this.GetTypeName() + "'" + (this.Text ?? "NULL") + "'"; }
         #region Buttony mohou být viditelné jen na 'aktivním' prvku
         /// <summary>
         /// Viditelnost buttonů z hlediska aktivity
@@ -2897,7 +2929,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Vizualizace
         /// </summary>
         /// <returns></returns>
-        public override string ToString() { return this.GetTypeName(); }
+        public override string ToString() { return this.GetTypeName() + "'" + (this.Text ?? "NULL") + "'"; }
         #endregion
         #region ToolTip
         /// <summary>
@@ -2935,7 +2967,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Vizualizace
         /// </summary>
         /// <returns></returns>
-        public override string ToString() { return this.GetTypeName(); }
+        public override string ToString() { return this.GetTypeName() + "'" + (this.Text ?? "NULL") + "'"; }
         #endregion
         #region ToolTip
         /// <summary>
@@ -3792,7 +3824,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Vizualizace
         /// </summary>
         /// <returns></returns>
-        public override string ToString() { return this.GetTypeName(); }
+        public override string ToString() { return this.GetTypeName() + "'" + (this.Text ?? "NULL") + "'"; }
         #endregion
         #region HasMouse
         /// <summary>
@@ -3961,7 +3993,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Vizualizace
         /// </summary>
         /// <returns></returns>
-        public override string ToString() { return this.GetTypeName(); }
+        public override string ToString() { return this.GetTypeName() + "'" + (this.Text ?? "NULL") + "'"; }
         #endregion
         #region ToolTip
         /// <summary>
@@ -4156,7 +4188,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
     }
     #endregion
-    #region DxStatus
+    #region DxStatus - prvky
     /// <summary>
     /// StatusBar : Statický prvek = Label
     /// </summary>

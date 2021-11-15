@@ -2369,15 +2369,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             if (barItem is DxBarCheckBoxToggle) return;              // DxCheckBoxToggle si řídí Image sám
 
-#if DebugBuild
-            if (iRibbonItem.ImageName != null && iRibbonItem.ImageName.IndexOf("poznamkovy", StringComparison.CurrentCultureIgnoreCase) >= 0)
-            { }
-#endif
-
-            // Velikost obrázku: pro Level = 0 (vlastní prvky v Ribbonu) ve stylu Large nebo default dáme obrázky Large, jinak dáme Small (pro malé prvky Ribbonu a pro položky menu, ty mají Level 1 a vyšší):
-            ResourceImageSizeType smallSizeType = ResourceImageSizeType.Small;
-            ResourceImageSizeType sizeType = ((level == 0 && iRibbonItem.RibbonStyle.HasFlag(RibbonItemStyles.Large)) ? ResourceImageSizeType.Large : smallSizeType);
-            DxComponent.ApplyImage(barItem.ImageOptions, iRibbonItem.ImageName, iRibbonItem.Image, sizeType);
+            // Velikost obrázku: pro Level = 0 (vlastní prvky v Ribbonu) ve stylu Large nebo Default dáme obrázky Large, jinak dáme Small (pro malé prvky Ribbonu a pro položky menu, ty mají Level 1 a vyšší):
+            bool isLargeIcon = (level == 0 && (iRibbonItem.RibbonStyle.HasFlag(RibbonItemStyles.Large) || iRibbonItem.RibbonStyle == RibbonItemStyles.Default));
+            ResourceImageSizeType sizeType = (isLargeIcon ? ResourceImageSizeType.Large : ResourceImageSizeType.Small);
+            string caption = (level == 0 ? iRibbonItem.Text : null);                     // Náhradní ikonky (pro nezadané nebo neexistující ImageName) budeme generovat jen pro level = 0 = Ribbon, a ne pro Menu!
+            DxComponent.ApplyImage(barItem.ImageOptions, iRibbonItem.ImageName, iRibbonItem.Image, sizeType, caption: caption);
         }
         /// <summary>
         /// Do daného prvku Ribbonu vepíše vše pro jeho HotKey
@@ -3793,8 +3789,8 @@ namespace Noris.Clients.Win.Components.AsolDX
                 items.Add(new DataMenuItem() { ItemId = $"CPM_{MsgCode.RibbonShowQatDown}", Text = DxComponent.Localize(MsgCode.RibbonShowQatDown), ImageName = ImageName.DxRibbonQatMenuMoveDown, ItemIsFirstInGroup = true, ClickAction = CustomizationPopupMenu_ExecMoveDown });
 
             bool isAnyQatContent = (this.UserQatItemsCount > 0);
-            var mgrFormType = Type.GetType("Noris.Clients.Win.Components.AsolDX.DxRibbonManagerForm", false, false);          // Máme managera?
-            if (mgrFormType != null)
+            bool hasQatManager = System.Diagnostics.Debugger.IsAttached;
+            if (hasQatManager)
                 items.Add(new DataMenuItem() { ItemId = $"CPM_{MsgCode.RibbonShowManager}", Text = DxComponent.Localize(MsgCode.RibbonShowManager), ImageName = ImageName.DxRibbonQatMenuShowManager, Enabled = isAnyQatContent, ClickAction = CustomizationPopupMenu_ExecShowManager});
 
             var popup = DxComponent.CreateDXPopupMenu(items, caption: link?.Caption);
@@ -3841,7 +3837,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="menuItem"></param>
         private void CustomizationPopupMenu_ExecShowManager(IMenuItem menuItem)
-        { }
+        {
+            ShowQatManager();
+        }
         /// <summary>
         /// Uživatel zmáčkl malou šipku dolů v Toolbaru, kde jsou zobrazeny jednotlivé prvky QAT a on je může dát Visible/Invisible.
         /// Taky můžeme přeložit Caption v prvku "Show Quick Access Toolbar Above the Ribbon"...
@@ -4250,6 +4248,23 @@ namespace Noris.Clients.Win.Components.AsolDX
                 qatItem.Dispose();
             }
             _QATDirectItems = null;
+        }
+        #endregion
+        #region QatManager
+        /// <summary>
+        /// Zobrazí managera pro nastavení QAT prvků
+        /// </summary>
+        private void ShowQatManager()
+        {
+            using (DxControlForm form = new DxControlForm())
+            {
+                form.Buttons = new IMenuItem[]
+                {
+                    new DataMenuItem() { ItemId = "OK", Text = "OK" },
+                    new DataMenuItem() { ItemId = "Cancel", Text = "Cancel" }
+                };
+                form.ShowDialog(this.FindForm());
+            }
         }
         #endregion
         #region class QatItem : evidence pro jedno tlačítko QAT
@@ -6695,6 +6710,15 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Parent Control / Vlastník, slouží jako Control k invokaci GUI
         /// </summary>
         protected Control ParentOwner { get { return (this.Parent ?? this.OwnerControl ?? this); } }
+        /// <summary>
+        /// Obsahuje true u controlu, který sám by byl Visible, i když aktuálně je na Invisible parentu.
+        /// <para/>
+        /// Vrátí true, pokud control sám na sobě má nastavenou hodnotu <see cref="Control.Visible"/> = true.
+        /// Hodnota <see cref="Control.Visible"/> běžně obsahuje součin všech hodnot <see cref="Control.Visible"/> od controlu přes všechny jeho parenty,
+        /// kdežto tato vlastnost <see cref="VisibleInternal"/> vrací hodnotu pouze z tohoto controlu.
+        /// Například každý control před tím, než je zobrazen jeho formulář, má <see cref="Control.Visible"/> = false, ale tato metoda vrací hodnotu reálně vloženou do <see cref="Control.Visible"/>.
+        /// </summary>
+        public bool VisibleInternal { get { return this.IsSetVisible(); } set { this.Visible = value; } }
         #endregion
         #region Merge a UnMerge s invokací GUI
         /// <summary>
