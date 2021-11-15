@@ -2868,7 +2868,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         private bool _PrepareImageListFor(string imageName)
         {
             if (String.IsNullOrEmpty(imageName)) return false;
-            bool preferVector = (_NodeImageType == ResourceContentType.Vector);
+            bool preferVector = (_NodeImageType == ResourceContentType.Vector || DxComponent.IsPreferredVectorImage);
             if (!DxComponent.TryGetResourceContentType(imageName, _NodeImageSize, preferVector, out ResourceContentType contentType)) return false;
 
             if (this.AllNodesCount == 0 || _NodeImageType == ResourceContentType.None)
@@ -2882,7 +2882,7 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             if (!_NodeImageTypeMismatchShowed)
             {
-                DxComponent.ShowMessageWarnig($"DxTreeList NodeImage typ mismatch: Current image type={_NodeImageType}, new image type={contentType}, imageName='{imageName}'.");
+                DxComponent.ShowMessageWarning($"DxTreeList NodeImage typ mismatch: Current image type={_NodeImageType}, new image type={contentType}, imageName='{imageName}'.");
                 _NodeImageTypeMismatchShowed = true;
             }
             return false;
@@ -2900,7 +2900,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private ResourceImageSizeType _NodeImageSize;
         /// <summary>
-        /// Obsahuje true poté, kdy došlo k pvnímu nesouladu typu ikonek, a nesoulad byl hlášen.
+        /// Obsahuje true poté, kdy došlo k prvnímu nesouladu typu ikonek, a nesoulad byl hlášen.
         /// </summary>
         private bool _NodeImageTypeMismatchShowed;
         #endregion
