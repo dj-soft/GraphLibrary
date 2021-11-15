@@ -1737,6 +1737,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         public const string DxFilterOperatorNotEquals = "pic_0/UI/FilterBox/NotEquals";
         public const string DxFilterOperatorNotLike = "pic_0/UI/FilterBox/NotLike";
 
+        public const string DxDialogApply = "svgimages/outlook%20inspired/markcomplete.svg";
+        public const string DxDialogCancel = "svgimages/outlook%20inspired/delete.svg";
         public const string DxDialogIconInfo = "pic_0/Win/MessageBox/info";
         public const string DxDialogIconWarning = "pic_0/Win/MessageBox/warning";
         public const string DxDialogIconError = "pic_0/Win/MessageBox/error";

@@ -37,6 +37,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         protected override void OnBeforeFirstShown()
         {
             base.OnBeforeFirstShown();
+            MoveToVisibleScreen();
             DoLayout();
         }
         /// <summary>
@@ -52,12 +53,48 @@ namespace Noris.Clients.Win.Components.AsolDX
             _ButtonsDesignHeight = DxComponent.DefaultButtonPanelHeight;
             _ButtonAlignment = AlignContentToSide.Begin;
             _ButtonDesignMargins = DxComponent.DefaultInnerMargins;
+
+            CloseOnClickButton = true;
         }
         private DxPanelControl _ControlPanel;
         private DxPanelControl _ButtonsPanel;
         private DxRibbonStatusBar _StatusBar;
         #endregion
+        #region Klávesnice - vyhledání buttonů podle HotKey
+        protected override void OnPreviewKeyDown(PreviewKeyDownEventArgs e)
+        {
+            base.OnPreviewKeyDown(e);
+        }
+        protected override bool ProcessKeyPreview(ref Message m)
+        {
+            return base.ProcessKeyPreview(ref m);
+        }
+        protected override void OnKeyDown(KeyEventArgs e)
+        {
+            base.OnKeyDown(e);
+            this.SearchKeyDownButtons(e);
+        }
+        #endregion
         #region Layout
+        /// <summary>
+        /// Připraví pozici okna podle pozice myši nebo pro zobrazení na středu parent okna
+        /// </summary>
+        /// <param name="byMousePosition">Pokud je true, pak pozice okna bude začínat na aktuální pozici myši.</param>
+        /// <param name="onlyOnMouseDown">Pouze pokud je myš stisknutá. Pozor, například akce menu se volají až po uvolnění myši!</param>
+        public void PrepareStartPosition(bool byMousePosition = false, bool onlyOnMouseDown = false)
+        {
+            var mouseButtons = Control.MouseButtons;
+            var mousePosition = Control.MousePosition;
+            if (byMousePosition && (!onlyOnMouseDown || mouseButtons != MouseButtons.None))   // Podle pozice myši AND (bez ohledu na MouseDown anebo když zrovna je MouseDown):
+            {
+                this.Location = mousePosition.Add(-30, -20);
+                this.StartPosition = FormStartPosition.Manual;
+            }
+            else
+            {
+                this.StartPosition = FormStartPosition.CenterParent;
+            }
+        }
         /// <summary>
         /// Po změně velikosti
         /// </summary>
@@ -95,28 +132,46 @@ namespace Noris.Clients.Win.Components.AsolDX
             // Layout:
             if (!buttonsVisible) return;
             int height = DxComponent.ZoomToGui(this.ButtonsDesignHeight, this.CurrentDpi);
-            if (panel.Height != height)
-                panel.Height = height;           // Panel nemá Borders, proto Height (vnější) = ClientSize.Height (vnitřní)
+            if (buttonsCount == 0 || _ButtonControls == null)
+            {   // Pouze nastavím požadovanou výšku a končím:
+                if (panel.Height != height)
+                    panel.Height = height;           // Panel nemá Borders, proto Height (vnější) = ClientSize.Height (vnitřní)
+                return;
+            }
 
             // Buttony:
-            if (buttonsCount == 0 || _ButtonControls == null) return;
             var panelSize = panel.ClientSize;
             Padding buttonsPadding = DxComponent.ZoomToGui(this.ButtonDesignMargins, this.CurrentDpi);
-            int panelWidth = panelSize.Width;
             var alignment = this.ButtonAlignment;
+            int buttonHeight = height - buttonsPadding.Vertical;
+            if (buttonHeight < 22)
+            {
+                buttonHeight = 22;
+                height = buttonHeight + buttonsPadding.Vertical;
+            }
+            if (panel.Height != height)
+                panel.Height = height;
 
             // Určíme velikost všech buttonů:
-            int widthMax = 0;
+            int widthOneMax = 0;
             foreach (var button in _ButtonControls)
             {
                 var preferresSize = button.GetPreferredSize(panelSize);
-                if (widthMax < preferresSize.Width)
-                    widthMax = preferresSize.Width;
+                if (widthOneMax < preferresSize.Width)
+                    widthOneMax = preferresSize.Width;
             }
+            int buttonWidth = widthOneMax + (3 * buttonHeight / 2);
+            int spaceX = DxComponent.GetDefaultButtonXSpace(this.CurrentDpi);
+            int widthButtons = (buttonsCount * buttonWidth) + ((buttonsCount - 1) * spaceX);
+            int widthSpace = panelSize.Width - buttonsPadding.Horizontal;
+            int x = buttonsPadding.Left + DxComponent.CalculateAlignedBegin(widthSpace, widthButtons, this.ButtonAlignment);
+            int y = buttonsPadding.Top;
 
-
-
-
+            foreach (var button in _ButtonControls)
+            {
+                button.Bounds = new Rectangle(x, y, buttonWidth, buttonHeight);
+                x += (buttonWidth + spaceX);
+            }
         }
         /// <summary>
         /// Nastaví Layout pro StatusBar - nastavuje Visible
@@ -146,12 +201,19 @@ namespace Noris.Clients.Win.Components.AsolDX
             foreach (var button in buttons)
             {
                 var buttonControl = DxComponent.CreateDxSimpleButton(x, 0, 100, 20, _ButtonsPanel, button);
+                buttonControl.Click += ButtonControl_Click;
                 x += 105;
                 buttonControls.Add(buttonControl);
             }
             _ButtonControls = buttonControls.ToArray();
 
             DoLayout();
+        }
+
+        private void ButtonControl_Click(object sender, EventArgs e)
+        {
+            if (sender is Control control && control.Tag is IMenuItem buttonItem)
+                RunButtonClick(buttonItem);
         }
         /// <summary>
         /// Odebere všechny buttony, které jsou v tuto chvíli přítomné
@@ -166,6 +228,55 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
             _ButtonControls = null;
         }
+
+        private void SearchKeyDownButtons(KeyEventArgs e)
+        {
+            if (_ButtonControls == null || _ButtonControls.Length == 0) return;
+            foreach (var buttonControl in _ButtonControls)
+            {
+                if (SearchKeyDownButton(e, buttonControl))
+                {
+                    e.Handled = true;
+                    break;
+                }
+            }
+        }
+
+        private bool SearchKeyDownButton(KeyEventArgs e, DxSimpleButton buttonControl)
+        {
+            bool result = false;
+            if (buttonControl.Tag is IMenuItem buttonItem)
+            {
+                if (buttonItem.HotKeys.HasValue && buttonItem.HotKeys.Value == e.KeyData)
+                {
+                    this.RunButtonClick(buttonItem);
+                    result = true;
+                }
+            }
+            return result;
+        }
+        /// <summary>
+        /// Uživatel zmáčkl button nebo jeho HotKey
+        /// </summary>
+        /// <param name="buttonItem"></param>
+        private void RunButtonClick(IMenuItem buttonItem)
+        {
+            ClickedButton = buttonItem;
+            OnButtonClick(buttonItem);
+            ButtonClick?.Invoke(this, new TEventArgs<IMenuItem>(buttonItem));
+
+            if (CloseOnClickButton)
+                this.Close();
+        }
+        /// <summary>
+        /// Uživatel zmáčkl button nebo jeho HotKey
+        /// </summary>
+        /// <param name="buttonItem"></param>
+        protected virtual void OnButtonClick(IMenuItem buttonItem) { }
+        /// <summary>
+        /// Uživatel zmáčkl button nebo jeho HotKey
+        /// </summary>
+        public event EventHandler<TEventArgs<IMenuItem>> ButtonClick;
         private DxSimpleButton[] _ButtonControls;
         #endregion
         #region Public rozhraní na prvky
@@ -174,6 +285,26 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Pokud uživatelský obsah má nějakou minimální / maximální velikost, má být vepsána do <see cref="Control.MinimumSize"/> a do <see cref="Control.MaximumSize"/>.
         /// </summary>
         public DxPanelControl ControlPanel { get { return _ControlPanel; } }
+        /// <summary>
+        /// Minimální velikost požadovaná pro <see cref="ControlPanel"/>
+        /// </summary>
+        public Size? ControlPanelMinimumSize { get { return _ControlPanelMinimumSize; } set { _ControlPanelMinimumSize = value; this.DoLayout(); } }
+        private Size? _ControlPanelMinimumSize;
+        /// <summary>
+        /// Maximální velikost požadovaná pro <see cref="ControlPanel"/>
+        /// </summary>
+        public Size? ControlPanelMaximumSize { get { return _ControlPanelMaximumSize; } set { _ControlPanelMaximumSize = value; this.DoLayout(); } }
+        private Size? _ControlPanelMaximumSize;
+        /// <summary>
+        /// Button, který byl naposledy aktivován
+        /// </summary>
+        public IMenuItem ClickedButton { get; private set; }
+        /// <summary>
+        /// Zavřít okno po kliknutí na kterýkoli button? Default = true.
+        /// Kliknutý button bude uchován v <see cref="ClickedButton"/>.
+        /// Bude vyvolána událost <see cref="ButtonClick"/>.
+        /// </summary>
+        public bool CloseOnClickButton { get; private set; }
         /// <summary>
         /// Počet definovaných buttonů
         /// </summary>

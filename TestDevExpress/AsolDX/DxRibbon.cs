@@ -81,7 +81,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             ShowSearchItem = true;
 
             ShowApplicationButton = DevExpress.Utils.DefaultBoolean.False;
-            ApplicationButtonText = DxComponent.LocalizeDef(MsgCode.RibbonAppHomeText, "DOMŮ");
+            ApplicationButtonText = DxComponent.Localize(MsgCode.RibbonAppHomeText);
             ToolTipController = DxComponent.DefaultToolTipController;
 
             Margin = new System.Windows.Forms.Padding(2);
@@ -3788,10 +3788,12 @@ namespace Noris.Clients.Win.Components.AsolDX
             else
                 items.Add(new DataMenuItem() { ItemId = $"CPM_{MsgCode.RibbonShowQatDown}", Text = DxComponent.Localize(MsgCode.RibbonShowQatDown), ImageName = ImageName.DxRibbonQatMenuMoveDown, ItemIsFirstInGroup = true, ClickAction = CustomizationPopupMenu_ExecMoveDown });
 
-            bool isAnyQatContent = (this.UserQatItemsCount > 0);
             bool hasQatManager = System.Diagnostics.Debugger.IsAttached;
             if (hasQatManager)
-                items.Add(new DataMenuItem() { ItemId = $"CPM_{MsgCode.RibbonShowManager}", Text = DxComponent.Localize(MsgCode.RibbonShowManager), ImageName = ImageName.DxRibbonQatMenuShowManager, Enabled = isAnyQatContent, ClickAction = CustomizationPopupMenu_ExecShowManager});
+            {
+                bool isAnyQatContent = (QatManagerItems.Length > 0);
+                items.Add(new DataMenuItem() { ItemId = $"CPM_{MsgCode.RibbonShowManager}", Text = DxComponent.Localize(MsgCode.RibbonShowManager), ImageName = ImageName.DxRibbonQatMenuShowManager, Enabled = isAnyQatContent, ClickAction = CustomizationPopupMenu_ExecShowManager });
+            }
 
             var popup = DxComponent.CreateDXPopupMenu(items, caption: link?.Caption);
             popup.ShowPopup(this, localPoint);
@@ -4250,7 +4252,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             _QATDirectItems = null;
         }
         #endregion
-        #region QatManager
+        #region QatManager - úprava položek v QAT pomocí okna s Listem dostupných prvků
         /// <summary>
         /// Zobrazí managera pro nastavení QAT prvků
         /// </summary>
@@ -4258,12 +4260,31 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             using (DxControlForm form = new DxControlForm())
             {
+                form.PrepareStartPosition(true);
                 form.Buttons = new IMenuItem[]
                 {
-                    new DataMenuItem() { ItemId = "OK", Text = "OK" },
-                    new DataMenuItem() { ItemId = "Cancel", Text = "Cancel" }
+                    new DataMenuItem() { ItemId = "OK", Text = "OK", ImageName = ImageName.DxDialogApply, HotKeys = Keys.Control | Keys.Enter },
+                    new DataMenuItem() { ItemId = "Cancel", Text = "Cancel", ImageName = ImageName.DxDialogCancel, HotKeys = Keys.Escape }
                 };
+                form.Text = DxComponent.Localize(MsgCode.RibbonQatManagerTitle);
+                form.Size = new Size(750, 450);
+                var list = DxComponent.CreateDxListBox(dock: DockStyle.Fill, parent: form.ControlPanel);
+                var items = QatManagerItems;
+                list.Items.AddRange(items);
                 form.ShowDialog(this.FindForm());
+            }
+        }
+        /// <summary>
+        /// Prvky QAT, které se budou zobrazovat v QatManageru
+        /// </summary>
+        private IMenuItem[] QatManagerItems
+        {
+            get 
+            {
+                return this._QATUserItems
+                    .Where(q => q.CanRemoveFromQat && q.RibbonItem != null)
+                    .Select(q => q.RibbonItem)
+                    .ToArray();
             }
         }
         #endregion

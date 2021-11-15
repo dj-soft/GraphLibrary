@@ -47,7 +47,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Vizualizace
         /// </summary>
         /// <returns></returns>
-        public override string ToString() { return this.GetTypeName() + "'" + (this.Text ?? "NULL") + "'"; }
+        public override string ToString() { return this.GetTypeName() + ": '" + (this.Text ?? "NULL") + "'"; }
         /// <summary>
         /// Při zobrazení okna
         /// </summary>
@@ -84,13 +84,25 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public int CurrentDpi { get { return this.DeviceDpi; } }
         /// <summary>
+        /// Umístí toto okno do viditelných souřadnic monitorů.
+        /// Pokud je parametr <paramref name="force"/> = false (default), 
+        /// pak to provádí jen když pozice okna <see cref="Form.StartPosition"/> je <see cref="FormStartPosition.Manual"/>.
+        /// Pokud parametr <paramref name="force"/> = true, provede to vždy.
+        /// </summary>
+        /// <param name="force"></param>
+        public void MoveToVisibleScreen(bool force = false)
+        {
+            if (!force && this.StartPosition != FormStartPosition.Manual) return;
+            this.Bounds = this.Bounds.FitIntoMonitors(true, false, true);
+        }
+        /// <summary>
         /// Dispose panelu
         /// </summary>
         /// <param name="disposing"></param>
         protected override void Dispose(bool disposing)
         {
-            base.Dispose(disposing);
             DxComponent.UnregisterListener(this);
+            base.Dispose(disposing);
         }
         #endregion
         #region Ikona okna
@@ -141,7 +153,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Vizualizace
         /// </summary>
         /// <returns></returns>
-        public override string ToString() { return this.GetTypeName() + "'" + (this.Text ?? "NULL") + "'"; }
+        public override string ToString() { return this.GetTypeName() + ": '" + (this.Text ?? "NULL") + "'"; }
         /// <summary>
         /// Při zobrazení okna
         /// </summary>
@@ -178,13 +190,25 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public int CurrentDpi { get { return this.DeviceDpi; } }
         /// <summary>
+        /// Umístí toto okno do viditelných souřadnic monitorů.
+        /// Pokud je parametr <paramref name="force"/> = false (default), 
+        /// pak to provádí jen když pozice okna <see cref="Form.StartPosition"/> je <see cref="FormStartPosition.Manual"/>.
+        /// Pokud parametr <paramref name="force"/> = true, provede to vždy.
+        /// </summary>
+        /// <param name="force"></param>
+        public void MoveToVisibleScreen(bool force = false)
+        {
+            if (!force && this.StartPosition != FormStartPosition.Manual) return;
+            this.Bounds = this.Bounds.FitIntoMonitors(true, false, true);
+        }
+        /// <summary>
         /// Dispose panelu
         /// </summary>
         /// <param name="disposing"></param>
         protected override void Dispose(bool disposing)
         {
-            base.Dispose(disposing);
             DxComponent.UnregisterListener(this);
+            base.Dispose(disposing);
         }
         #endregion
         #region Ikona okna
@@ -2331,7 +2355,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Vizualizace
         /// </summary>
         /// <returns></returns>
-        public override string ToString() { return this.GetTypeName() + "'" + (this.Text ?? "NULL") + "'"; }
+        public override string ToString() { return this.GetTypeName() + ": '" + (this.Text ?? "NULL") + "'"; }
         #endregion
     }
     #endregion
@@ -2362,7 +2386,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Vizualizace
         /// </summary>
         /// <returns></returns>
-        public override string ToString() { return this.GetTypeName() + "'" + (this.Text ?? "NULL") + "'"; }
+        public override string ToString() { return this.GetTypeName() + ": '" + (this.Text ?? "NULL") + "'"; }
         #endregion
         #region HasMouse
         /// <summary>
@@ -2488,7 +2512,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Vizualizace
         /// </summary>
         /// <returns></returns>
-        public override string ToString() { return this.GetTypeName() + "'" + (this.Text ?? "NULL") + "'"; }
+        public override string ToString() { return this.GetTypeName() + ": '" + (this.Text ?? "NULL") + "'"; }
         #region Buttony mohou být viditelné jen na 'aktivním' prvku
         /// <summary>
         /// Viditelnost buttonů z hlediska aktivity
@@ -2929,7 +2953,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Vizualizace
         /// </summary>
         /// <returns></returns>
-        public override string ToString() { return this.GetTypeName() + "'" + (this.Text ?? "NULL") + "'"; }
+        public override string ToString() { return this.GetTypeName() + ": '" + (this.Text ?? "NULL") + "'"; }
         #endregion
         #region ToolTip
         /// <summary>
@@ -2967,7 +2991,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Vizualizace
         /// </summary>
         /// <returns></returns>
-        public override string ToString() { return this.GetTypeName() + "'" + (this.Text ?? "NULL") + "'"; }
+        public override string ToString() { return this.GetTypeName() + ": '" + (this.Text ?? "NULL") + "'"; }
         #endregion
         #region ToolTip
         /// <summary>
@@ -3824,7 +3848,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Vizualizace
         /// </summary>
         /// <returns></returns>
-        public override string ToString() { return this.GetTypeName() + "'" + (this.Text ?? "NULL") + "'"; }
+        public override string ToString() { return this.GetTypeName() + ": '" + (this.Text ?? "NULL") + "'"; }
         #endregion
         #region HasMouse
         /// <summary>
@@ -3931,7 +3955,33 @@ namespace Noris.Clients.Win.Components.AsolDX
         public void SetToolTip(string title, string text, string defaultTitle = null) { this.SuperTip = DxComponent.CreateDxSuperTip(title, text, defaultTitle); }
         #endregion
         #region Resize a SvgImage
-
+        /// <summary>
+        /// Automaticky upravovat velikost SvgImage podle výšky bttonu
+        /// </summary>
+        public bool AutoResizeSvgImage { get; set; } = true;
+        /// <summary>
+        /// Po změně velikosti vnitřního prostoru
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void OnClientSizeChanged(EventArgs e)
+        {
+            base.OnClientSizeChanged(e);
+            this.PrepareSizeSvgImage();
+        }
+        /// <summary>
+        /// Pokud button má SvgImage, pak si upraví jeho velikost
+        /// </summary>
+        /// <param name="force">Upravit velikost povinně, tj. i když <see cref="AutoResizeSvgImage"/> = false</param>
+        public void PrepareSizeSvgImage(bool force = true)
+        {
+            if ((force || this.AutoResizeSvgImage) && this.ImageOptions.SvgImage != null)
+            {   // Pokud je extra požadavek, nebo je AutoResize, a máme dán SvgImage, tak upravíme jeho velikost:
+                int d = this.Padding.Vertical + this.Margin.Vertical + 4;
+                int h = this.Height - d;
+                Size s = new Size(h, h);
+                this.ImageOptions.SvgImageSize = s;
+            }
+        }
         #endregion
     }
     #endregion
@@ -3993,7 +4043,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Vizualizace
         /// </summary>
         /// <returns></returns>
-        public override string ToString() { return this.GetTypeName() + "'" + (this.Text ?? "NULL") + "'"; }
+        public override string ToString() { return this.GetTypeName() + ": '" + (this.Text ?? "NULL") + "'"; }
         #endregion
         #region ToolTip
         /// <summary>

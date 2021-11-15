@@ -657,7 +657,7 @@ namespace TestDevExpress.Forms
             }
             catch (Exception exc)
             {
-                DxComponent.ShowMessageWarnig(exc.Message, "Chyba");
+                DxComponent.ShowMessageWarning(exc.Message, "Chyba");
             }
         }
         private void _RunFill(object sender, EventArgs args)

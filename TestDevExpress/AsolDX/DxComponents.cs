@@ -472,6 +472,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             _DefaultButtonPanelHeight = 40;
             _DefaultButtonWidth = 150;
             _DefaultButtonHeight = 32;
+            _DefaultButtonXSpace = 6;
 
             _Zoom = 1m;
             _DesignDpi = 96;
@@ -525,14 +526,17 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Odsazení labelu od levého okraje X
         /// </summary>
+        /// <param name="targetDpi">Cílové DPI. Typicky se má použít hodnota <see cref="DxPanelControl.CurrentDpi"/> (nebo <see cref="DxStdForm.CurrentDpi"/>)</param>
         public static int GetDetailXLabel(int targetDpi) { return ZoomToGui(Instance._DetailXLabel, targetDpi); }
         /// <summary>
         /// Odsazení textu od levého okraje X
         /// </summary>
+        /// <param name="targetDpi">Cílové DPI. Typicky se má použít hodnota <see cref="DxPanelControl.CurrentDpi"/> (nebo <see cref="DxStdForm.CurrentDpi"/>)</param>
         public static int GetDetailXText(int targetDpi) { return ZoomToGui(Instance._DetailXText, targetDpi); }
         /// <summary>
         /// Odsazení prvního prvku od horního okraje Y
         /// </summary>
+        /// <param name="targetDpi">Cílové DPI. Typicky se má použít hodnota <see cref="DxPanelControl.CurrentDpi"/> (nebo <see cref="DxStdForm.CurrentDpi"/>)</param>
         public static int GetDetailYFirst(int targetDpi) { return ZoomToGui(Instance._DetailYFirst, targetDpi); }
         /// <summary>
         /// Vnitřní okraje, defaultní hodnota, vychází z <see cref="GetDetailXMargin(int)"/> a <see cref="GetDetailYMargin(int)"/>
@@ -542,12 +546,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Vnitřní okraje, defaultní hodnota, vychází z <see cref="GetDetailXMargin(int)"/> a <see cref="GetDetailYMargin(int)"/>
         /// </summary>
-        /// <param name="targetDpi"></param>
+        /// <param name="targetDpi">Cílové DPI. Typicky se má použít hodnota <see cref="DxPanelControl.CurrentDpi"/> (nebo <see cref="DxStdForm.CurrentDpi"/>)</param>
         /// <returns></returns>
         public static Padding GetDefaultInnerMargins(int targetDpi) { return ZoomToGui(DefaultInnerMargins, targetDpi); }
         /// <summary>
         /// Výchozí hodnota výšky labelu
         /// </summary>
+        /// <param name="targetDpi">Cílové DPI. Typicky se má použít hodnota <see cref="DxPanelControl.CurrentDpi"/> (nebo <see cref="DxStdForm.CurrentDpi"/>)</param>
         public static int GetDetailYHeightLabel(int targetDpi) { return ZoomToGui(Instance._DetailYHeightLabel, targetDpi); }
         /// <summary>
         /// Výchozí hodnota výšky textu
@@ -556,22 +561,27 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Posun labelu vůči textu v ose Y pro zarovnané úpatí textu
         /// </summary>
+        /// <param name="targetDpi">Cílové DPI. Typicky se má použít hodnota <see cref="DxPanelControl.CurrentDpi"/> (nebo <see cref="DxStdForm.CurrentDpi"/>)</param>
         public static int GetDetailYOffsetLabelText(int targetDpi) { return ZoomToGui(Instance._DetailYOffsetLabelText, targetDpi); }
         /// <summary>
         /// Odsazení labelu dalšího řádku od předešlého textu
         /// </summary>
+        /// <param name="targetDpi">Cílové DPI. Typicky se má použít hodnota <see cref="DxPanelControl.CurrentDpi"/> (nebo <see cref="DxStdForm.CurrentDpi"/>)</param>
         public static int GetDetailYSpaceLabel(int targetDpi) { return ZoomToGui(Instance._DetailYSpaceLabel, targetDpi); }
         /// <summary>
         /// Odsazení textu řádku od předešlého labelu
         /// </summary>
+        /// <param name="targetDpi">Cílové DPI. Typicky se má použít hodnota <see cref="DxPanelControl.CurrentDpi"/> (nebo <see cref="DxStdForm.CurrentDpi"/>)</param>
         public static int GetDetailYSpaceText(int targetDpi) { return ZoomToGui(Instance._DetailYSpaceText, targetDpi); }
         /// <summary>
         /// Okraj v ose X
         /// </summary>
+        /// <param name="targetDpi">Cílové DPI. Typicky se má použít hodnota <see cref="DxPanelControl.CurrentDpi"/> (nebo <see cref="DxStdForm.CurrentDpi"/>)</param>
         public static int GetDetailXMargin(int targetDpi) { return ZoomToGui(Instance._DetailXMargin, targetDpi); }
         /// <summary>
         /// Okraj v ose Y
         /// </summary>
+        /// <param name="targetDpi">Cílové DPI. Typicky se má použít hodnota <see cref="DxPanelControl.CurrentDpi"/> (nebo <see cref="DxStdForm.CurrentDpi"/>)</param>
         public static int GetDetailYMargin(int targetDpi) { return ZoomToGui(Instance._DetailYMargin, targetDpi); }
         /// <summary>
         /// Defaultní výška panelu s buttony, designová hodnota
@@ -580,15 +590,51 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Defaultní výška panelu s buttony
         /// </summary>
+        /// <param name="targetDpi">Cílové DPI. Typicky se má použít hodnota <see cref="DxPanelControl.CurrentDpi"/> (nebo <see cref="DxStdForm.CurrentDpi"/>)</param>
         public static int GetDefaultButtonPanelHeight(int targetDpi) { return ZoomToGui(Instance._DefaultButtonPanelHeight, targetDpi); }
         /// <summary>
         /// Defaultní šířka buttonu
         /// </summary>
+        /// <param name="targetDpi">Cílové DPI. Typicky se má použít hodnota <see cref="DxPanelControl.CurrentDpi"/> (nebo <see cref="DxStdForm.CurrentDpi"/>)</param>
         public static int GetDefaultButtonWidth(int targetDpi) { return ZoomToGui(Instance._DefaultButtonWidth, targetDpi); }
+        /// <summary>
+        /// Defaultní výška buttonu, designová hodnota
+        /// </summary>
+        public static int DefaultButtonHeight { get { return Instance._DefaultButtonHeight; } }
         /// <summary>
         /// Defaultní výška buttonu
         /// </summary>
+        /// <param name="targetDpi">Cílové DPI. Typicky se má použít hodnota <see cref="DxPanelControl.CurrentDpi"/> (nebo <see cref="DxStdForm.CurrentDpi"/>)</param>
         public static int GetDefaultButtonHeight(int targetDpi) { return ZoomToGui(Instance._DefaultButtonHeight, targetDpi); }
+        /// <summary>
+        /// Defaultní mezera mezi buttony, designová hodnota
+        /// </summary>
+        public static int DefaultButtonXSpace { get { return Instance._DefaultButtonXSpace; } }
+        /// <summary>
+        /// Defaultní mezera mezi buttony
+        /// </summary>
+        /// <param name="targetDpi">Cílové DPI. Typicky se má použít hodnota <see cref="DxPanelControl.CurrentDpi"/> (nebo <see cref="DxStdForm.CurrentDpi"/>)</param>
+        public static int GetDefaultButtonXSpace(int targetDpi) { return ZoomToGui(Instance._DefaultButtonXSpace, targetDpi); }
+        /// <summary>
+        /// Vrásí souřadnici, na které má začínat obsah velký <paramref name="contentSize"/> uvnitř daného prostoru <paramref name="totalSize"/>,
+        /// tak aby obsah byl zarovnán na začátek / na střed / na konec podle <paramref name="alignment"/>.
+        /// Pokud daný prostor <paramref name="totalSize"/> je menší než potřebný prostor <paramref name="contentSize"/>, pak bude vrácena 0.
+        /// </summary>
+        /// <param name="totalSize"></param>
+        /// <param name="contentSize"></param>
+        /// <param name="alignment"></param>
+        /// <returns></returns>
+        public static int CalculateAlignedBegin(int totalSize, int contentSize, AlignContentToSide alignment)
+        {
+            int freeSize = totalSize - contentSize;
+            if (freeSize < 0) return 0;
+            switch (alignment)
+            {
+                case AlignContentToSide.Center: return freeSize / 2;
+                case AlignContentToSide.End: return freeSize;
+            }
+            return 0;
+        }
         /// <summary>
         /// Defaultní BarManager pro obecné použití
         /// </summary>
@@ -674,6 +720,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         private int _DefaultButtonPanelHeight;
         private int _DefaultButtonWidth;
         private int _DefaultButtonHeight;
+        private int _DefaultButtonXSpace;
         private DevExpress.XtraBars.BarManager _DefaultBarManager;
         private ToolTipController _DefaultToolTipController;
         #endregion
@@ -1606,11 +1653,11 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (tabStop.HasValue) simpleButton.TabStop = tabStop.Value;
             if (paintStyles.HasValue) simpleButton.PaintStyle = paintStyles.Value;
 
-            int s = (w < h ? w : h) - 10;
-            DxComponent.ApplyImage(simpleButton.ImageOptions, resourceName, image, null, new Size(s, s), true);
+            DxComponent.ApplyImage(simpleButton.ImageOptions, resourceName, image, null, null, true);
             simpleButton.ImageOptions.ImageToTextAlignment = ImageAlignToText.LeftCenter;
             simpleButton.ImageOptions.ImageToTextIndent = 3;
             simpleButton.PaintStyle = DevExpress.XtraEditors.Controls.PaintStyles.Default;
+            simpleButton.PrepareSizeSvgImage(true);
 
             simpleButton.SetToolTip(toolTipTitle, toolTipText, text);
 
@@ -1641,9 +1688,9 @@ namespace Noris.Clients.Win.Components.AsolDX
             miniButton.PaintStyle = DevExpress.XtraEditors.Controls.PaintStyles.Light;
 
             DxComponent.ApplyImage(miniButton.ImageOptions, resourceName, image, null, new Size(w - 4, h - 4), true);
-
             miniButton.Padding = new Padding(0);
             miniButton.Margin = new Padding(0);
+            miniButton.PrepareSizeSvgImage(true);
 
             miniButton.SetToolTip(toolTipTitle, toolTipText);
 
@@ -3677,6 +3724,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         RibbonShowManager,
         [DefaultMessageText("Zmenšit")]
         RibbonMinimizeQat,
+        [DefaultMessageText("Nastavení oblíbených položek")]
+        RibbonQatManagerTitle,
 
         [DefaultMessageText("Chyba")]
         DialogFormTitleError,
