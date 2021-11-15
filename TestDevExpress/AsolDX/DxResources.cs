@@ -1176,21 +1176,21 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Dodaný <see cref="SvgImage"/> ve formě byte[] převede do dark skin barev
         /// </summary>
-        /// <param name="resourceName"></param>
+        /// <param name="imageName"></param>
         /// <param name="content"></param>
         /// <param name="targetSize"></param>
         /// <returns></returns>
-        public static DxSvgImage ConvertToDarkSkin(string resourceName, byte[] content, Size? targetSize = null)
-        { return Instance.__SvgImageCustomize.ConvertToDarkSkin(resourceName, content, targetSize); }
+        public static DxSvgImage ConvertToDarkSkin(string imageName, byte[] content, Size? targetSize = null)
+        { return Instance.__SvgImageCustomize.ConvertToDarkSkin(imageName, content, targetSize); }
         /// <summary>
         /// Dodaný <see cref="SvgImage"/> převede do dark skin barev
         /// </summary>
-        /// <param name="resourceName"></param>
+        /// <param name="imageName"></param>
         /// <param name="svgImage"></param>
         /// <param name="targetSize"></param>
         /// <returns></returns>
-        public static DxSvgImage ConvertToDarkSkin(string resourceName, SvgImage svgImage, Size? targetSize = null)
-        { return Instance.__SvgImageCustomize.ConvertToDarkSkin(resourceName, svgImage, targetSize); }
+        public static DxSvgImage ConvertToDarkSkin(string imageName, SvgImage svgImage, Size? targetSize = null)
+        { return Instance.__SvgImageCustomize.ConvertToDarkSkin(imageName, svgImage, targetSize); }
         #endregion
     }
     /// <summary>

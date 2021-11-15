@@ -2639,7 +2639,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="text"></param>
         /// <param name="title"></param>
-        public static void ShowMessageWarnig(string text, string title = null) { _ShowMessage(title, text, MessageBoxButtons.OK, DialogSystemIcon.Exclamation); }
+        public static void ShowMessageWarning(string text, string title = null) { _ShowMessage(title, text, MessageBoxButtons.OK, DialogSystemIcon.Exclamation); }
         /// <summary>
         /// Zobrazí chybu
         /// </summary>
