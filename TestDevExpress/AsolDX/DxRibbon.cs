@@ -4268,11 +4268,24 @@ namespace Noris.Clients.Win.Components.AsolDX
                 };
                 form.Text = DxComponent.Localize(MsgCode.RibbonQatManagerTitle);
                 form.Size = new Size(750, 450);
-                var list = DxComponent.CreateDxListBox(dock: DockStyle.Fill, parent: form.ControlPanel);
+                var list = new QatManagerPanel() { Dock = DockStyle.Fill };
+                form.ControlPanel.Controls.Add(list);
                 var items = QatManagerItems;
-                list.Items.AddRange(items);
+                list.ListBox.Items.AddRange(items);
                 form.ShowDialog(this.FindForm());
             }
+        }
+        private class QatManagerPanel : DxPanelControl
+        {
+            public QatManagerPanel()
+            {
+                _ListBox = DxComponent.CreateDxListBox(dock: DockStyle.Fill, parent: this);
+                _ListBox.DragDropActions = DxDragDropActionType.ReorderItems;
+                _ListBox.EnabledKeyActions = KeyActionType.AltDown | KeyActionType.AltUp | KeyActionType.Delete;
+            }
+            private DxListBoxControl _ListBox;
+            
+            public DxListBoxControl ListBox { get { return _ListBox; } }
         }
         /// <summary>
         /// Prvky QAT, které se budou zobrazovat v QatManageru
