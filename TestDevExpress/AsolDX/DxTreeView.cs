@@ -2868,7 +2868,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         private bool _PrepareImageListFor(string imageName)
         {
             if (String.IsNullOrEmpty(imageName)) return false;
-            bool preferVector = (_NodeImageType == ResourceContentType.Vector || DxComponent.IsPreferredVectorImage);
+            bool preferVector = (_NodeImageType == ResourceContentType.Vector || (_NodeImageType == ResourceContentType.None && DxComponent.IsPreferredVectorImage));
             if (!DxComponent.TryGetResourceContentType(imageName, _NodeImageSize, preferVector, out ResourceContentType contentType)) return false;
 
             if (this.AllNodesCount == 0 || _NodeImageType == ResourceContentType.None)

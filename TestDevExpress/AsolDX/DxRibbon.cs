@@ -2328,7 +2328,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             barItem.Enabled = iRibbonItem.Enabled;
             barItem.Visibility = iRibbonItem.Visible ? BarItemVisibility.Always : BarItemVisibility.Never;
             barItem.VisibleInSearchMenu = iRibbonItem.VisibleInSearchMenu;
-            FillBarItemImage(barItem, iRibbonItem, level, withReset);
             FillBarItemHotKey(barItem, iRibbonItem, level, withReset);
 
             if (barItem is DevExpress.XtraBars.BarCheckItem checkItem)
@@ -2350,8 +2349,11 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
 
             barItem.PaintStyle = Convert(iRibbonItem.ItemPaintStyle);
-            if (iRibbonItem.RibbonStyle != RibbonItemStyles.Default)
-                barItem.RibbonStyle = Convert(iRibbonItem.RibbonStyle);
+            // if (iRibbonItem.RibbonStyle != RibbonItemStyles.Default)
+            //      barItem.RibbonStyle = Convert(iRibbonItem.RibbonStyle);
+            barItem.RibbonStyle = (iRibbonItem.RibbonStyle == RibbonItemStyles.Default ? DevExpress.XtraBars.Ribbon.RibbonItemStyles.All : Convert(iRibbonItem.RibbonStyle));
+
+            FillBarItemImage(barItem, iRibbonItem, level, withReset);          // Image můžu řešit až po vložení velikosti, protože Image se řídí i podle velikosti prvku 
 
             if (iRibbonItem.ToolTipText != null || withReset)
                 barItem.SuperTip = DxComponent.CreateDxSuperTip(iRibbonItem);

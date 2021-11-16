@@ -2741,6 +2741,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="name">Typ prvku</param>
         /// <returns></returns>
         public static Color? GetSkinColor(string name) { return Instance._GetSkinColor(name); }
+        /// <summary>
+        /// Vrátí prvek skinu dané komponenty. Název komponenty berme z hodnot v <see cref="SkinElementColor"/>, například <see cref="SkinElementColor.RibbonSkins"/> pro skin Ribbonu.
+        /// </summary>
+        /// <param name="skinPartName"></param>
+        /// <returns></returns>
+        public static DevExpress.Skins.Skin GetSkinInfo(string skinPartName) { return Instance._GetSkinByName(skinPartName); }
         private void _OnSkinChanged()
         { }
         private Color? _GetSkinColor(string name)
@@ -3988,7 +3994,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         public static IEnumerable<IResourceItem> GetResources() { return Current.GetResources(); }
         /// <summary>
-        /// Vrátí obecné jméno zdroje z dodaného plného jména zdroje (oddělí velikost a typ souboru podle suffixu a přípony)
+        /// Vrátí konkrétní jméno zdroje z dodaného plného jména zdroje (ponechá velikost i typ souboru, ale upraví Trim a Case)
         /// </summary>
         /// <param name="name"></param>
         /// <returns></returns>
