@@ -1105,9 +1105,11 @@ namespace TestDevExpress.Forms
                     containsRadioGroup = true;                            // RibbonGroup již obsahuje RadioGrupu, víc RadioSkupin tam dávat už nebudu
                 }
 
+                if (Rand.Next(100) < 20) 
+                    item.ImageName = null;
+
                 if (item.ItemType == RibbonItemType.CheckBoxStandard || item.ItemType == RibbonItemType.RadioItem)
                 {
-                    if (Rand.Next(100) < 15) item.ImageName = null;
                     if (Rand.Next(100) < 50) item.Checked = true;
                 }
 

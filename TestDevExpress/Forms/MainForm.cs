@@ -183,18 +183,18 @@ namespace TestDevExpress.Forms
 
             DxApplicationResourceLibrary.ResourceItem item;
 
-            if (DxApplicationResourceLibrary.TryGetResource(@"Images\Actions24\align-horizontal-right-out(24).png", out item))
+            if (DxApplicationResourceLibrary.TryGetResource(@"Images\Actions24\align-horizontal-right-out(24).png", false, out item))
             {
                 var sizeType = item.SizeType;
             }
 
             string caption = null;
-            if (DxApplicationResourceLibrary.TryGetResource(@"Images\Svg\amazon-chime-svgrepo-com.svg", out item))
+            if (DxApplicationResourceLibrary.TryGetResource(@"Images\Svg\amazon-chime-svgrepo-com.svg", false, out item))
             {
                 var sizeType = item.SizeType;
             }
             //  else if (ResourceLibrary.TryGetResource(@"Images\SvgAsol\building-factory-4-filled-large.svg", out item))
-            else if (DxApplicationResourceLibrary.TryGetResource(@"Images\SvgAsol\vyhledavani-large.svg", out item))
+            else if (DxApplicationResourceLibrary.TryGetResource(@"Images\SvgAsol\vyhledavani-large.svg", false, out item))
             {
                 var sizeType = item.SizeType;
                 caption = "Vybrat pořadač";

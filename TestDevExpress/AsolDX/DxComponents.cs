@@ -4035,6 +4035,22 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="svgPalette"></param>
         /// <returns></returns>
         internal static Image RenderSvgImage(SvgImage svgImage, Size size, ISvgPaletteProvider svgPalette) { return Current.RenderSvgImage(svgImage, size, svgPalette); }
+        /// <summary>
+        /// Vytvoří <see cref="SvgImage"/> pro daný text, namísto chybějící ikony.
+        /// Pokud vrátí null, zkusí se provést <see cref="CreateCaptionImage(string, ResourceImageSizeType?, Size?)"/>.
+        /// </summary>
+        /// <param name="caption"></param>
+        /// <param name="sizeType"></param>
+        /// <param name="imageSize"></param>
+        /// <returns></returns>
+        internal static SvgImage CreateCaptionVector(string caption, ResourceImageSizeType? sizeType, Size? imageSize) { return Current.CreateCaptionVector(caption, sizeType, imageSize); }
+        /// <summary>
+        /// Vyrenderuje Image která vypadá jako ikona pro zadaný text
+        /// </summary>
+        /// <param name="caption"></param>
+        /// <param name="sizeType"></param>
+        /// <param name="imageSize"></param>
+        /// <returns></returns>
         internal static Image CreateCaptionImage(string caption, ResourceImageSizeType? sizeType, Size? imageSize) { return Current.CreateCaptionImage(caption, sizeType, imageSize); }
         #endregion
     }
@@ -4100,6 +4116,15 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="svgPalette"></param>
         /// <returns></returns>
         Image RenderSvgImage(SvgImage svgImage, Size size, ISvgPaletteProvider svgPalette);
+        /// <summary>
+        /// Vytvoří <see cref="SvgImage"/> pro daný text, namísto chybějící ikony.
+        /// Pokud vrátí null, zkusí se provést <see cref="CreateCaptionImage(string, ResourceImageSizeType?, Size?)"/>.
+        /// </summary>
+        /// <param name="caption"></param>
+        /// <param name="sizeType"></param>
+        /// <param name="imageSize"></param>
+        /// <returns></returns>
+        SvgImage CreateCaptionVector(string caption, ResourceImageSizeType? sizeType, Size? imageSize);
         /// <summary>
         /// Vyrenderuje Image která vypadá jako ikona pro zadaný text
         /// </summary>

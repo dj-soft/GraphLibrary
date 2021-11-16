@@ -31,6 +31,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         byte[] ISystemAdapter.GetResourceContent(IResourceItem resourceItem) { return DataResources.GetResourceContent(resourceItem); }
         bool ISystemAdapter.CanRenderSvgImages { get { return false; } }
         Image ISystemAdapter.RenderSvgImage(SvgImage svgImage, Size size, ISvgPaletteProvider svgPalette) { return null; }
+        SvgImage ISystemAdapter.CreateCaptionVector(string caption, ResourceImageSizeType? sizeType, Size? imageSize) { return AdapterSupport.CreateCaptionVector(caption, sizeType, imageSize); }
         Image ISystemAdapter.CreateCaptionImage(string caption, ResourceImageSizeType? sizeType, Size? imageSize) { return AdapterSupport.CreateCaptionImage(caption, sizeType, imageSize); }
         System.ComponentModel.ISynchronizeInvoke ISystemAdapter.Host { get { return DxComponent.MainForm ?? WinForm.Form.ActiveForm; } }
         WinForm.Shortcut ISystemAdapter.GetShortcutKeys(string shortCut) { return WinForm.Shortcut.None; }
@@ -52,6 +53,69 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// </summary>
     internal static class AdapterSupport
     {
+        /// <summary>
+        /// Vytvoří <see cref="SvgImage"/> pro daný text, namísto chybějící ikony.
+        /// Pokud vrátí null, zkusí se provést <see cref="CreateCaptionImage(string, ResourceImageSizeType?, Size?)"/>.
+        /// </summary>
+        /// <param name="caption"></param>
+        /// <param name="sizeType"></param>
+        /// <param name="imageSize"></param>
+        /// <returns></returns>
+        public static SvgImage CreateCaptionVector(string caption, ResourceImageSizeType? sizeType, Size? imageSize)
+        {
+            string borderClass = "Black";
+            string textClass = "Blue";
+            string text = DxComponent.GetCaptionForIcon(caption).ToUpper();
+            if (text.Length > 2) text = text.Substring(0, 2);
+
+            string svgContent = @"﻿<?xml version='1.0' encoding='UTF-8'?>
+<svg x='0px' y='0px' viewBox='0 0 32 32' 
+        version='1.1' xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' xml:space='preserve' 
+        id='Layer_1' 
+        style='enable-background:new 0 0 32 32'>
+  <style type='text/css'>
+	.Red{fill:#D11C1C;}
+	.Green{fill:#039C23;}
+	.Blue{fill:#1177D7;}
+	.Yellow{fill:#FFB115;}
+	.Black{fill:#727272;}
+	.st0{opacity:0.75;}
+	.st1{opacity:0.5;}
+  </style>
+  <g id='iconAB' style='font-size: 16px; text-anchor: middle; font-family: serif; font-weight: bold'>
+    <path d='M31,0H1C0.5,0,0,0.5,0,1v30c0,0.5,0.5,1,1,1h30c0.5,0,1-0.5,1-1V1C32,0.5,31.5,0,31,0z M30,30H2V2h28V30z' class='" + borderClass + @"' />
+    <!--  path d='M0,0L31,0L31,31L0,31L0,0Z' class='" + borderClass + @"' / -->
+    <text x='16' y='20' class='" + textClass + @"'>" + text + @"</text>
+  </g>
+</svg>";
+            svgContent = svgContent.Replace("'", "\"");
+            return DxSvgImage.Create(caption, false, svgContent);
+
+            /*
+
+﻿<?xml version='1.0' encoding='UTF-8'?>
+<svg x="0px" y="0px" viewBox="0 0 32 32" 
+        version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xml:space="preserve" 
+        id="Layer_1" 
+        style="enable-background:new 0 0 32 32">
+  <style type="text/css">
+	.Red{fill:#D11C1C;}
+	.Green{fill:#039C23;}
+	.Blue{fill:#1177D7;}
+	.Yellow{fill:#FFB115;}
+	.Black{fill:#727272;}
+	.st0{opacity:0.75;}
+	.st1{opacity:0.5;}
+  </style>
+  <g id="iconAB" style="font-size: 16px; text-anchor: middle; font-family: serif; font-weight: bold">
+    <path d="M31,0H1C0.5,0,0,0.5,0,1v30c0,0.5,0.5,1,1,1h30c0.5,0,1-0.5,1-1V1C32,0.5,31.5,0,31,0z M30,30H2V2h28V30z" class="Black" />
+    <!--  path d="M0,0L31,0L31,31L0,31L0,0Z" class="Black" / -->
+    <text x="16" y="20" class="Blue">MM</text>
+  </g>
+</svg>
+
+            */
+        }
         /// <summary>
         /// Vyrenderuje dodaný text jako náhradní ikonu
         /// </summary>

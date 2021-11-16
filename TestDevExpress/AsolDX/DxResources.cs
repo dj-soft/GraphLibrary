@@ -107,28 +107,31 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="imageName"></param>
         /// <param name="exactName"></param>
         /// <param name="sizeType"></param>
+        /// <param name="caption"></param>
         /// <returns></returns>
-        public static SvgImage CreateVectorImage(string imageName, bool exactName = false, ResourceImageSizeType? sizeType = null)
-        { return Instance._CreateVectorImage(imageName, exactName, sizeType); }
+        public static SvgImage CreateVectorImage(string imageName, bool exactName = false, ResourceImageSizeType? sizeType = null, string caption = null)
+        { return Instance._CreateVectorImage(imageName, exactName, sizeType, caption); }
         /// <summary>
         /// Najde a rychle vrátí <see cref="SvgImage"/> pro dané jméno, hledá v DevExpress i Aplikačních zdrojích
         /// </summary>
         /// <param name="imageName"></param>
         /// <param name="exactName"></param>
         /// <param name="sizeType"></param>
+        /// <param name="caption"></param>
         /// <returns></returns>
-        public static SvgImage GetVectorImage(string imageName, bool exactName = false, ResourceImageSizeType? sizeType = null)
-        { return Instance._GetVectorImage(imageName, exactName, sizeType); }
+        public static SvgImage GetVectorImage(string imageName, bool exactName = false, ResourceImageSizeType? sizeType = null, string caption = null)
+        { return Instance._GetVectorImage(imageName, exactName, sizeType, caption); }
         /// <summary>
         /// Najde a vrátí <see cref="SvgImage"/> pro dané jméno, hledá v DevExpress i Aplikačních zdrojích
         /// </summary>
         /// <param name="imageName"></param>
         /// <param name="exactName"></param>
         /// <param name="sizeType"></param>
+        /// <param name="caption"></param>
         /// <returns></returns>
-        private SvgImage _CreateVectorImage(string imageName, bool exactName, ResourceImageSizeType? sizeType)
+        private SvgImage _CreateVectorImage(string imageName, bool exactName, ResourceImageSizeType? sizeType, string caption = null)
         {
-            return _GetVectorImage(imageName, exactName, sizeType);
+            return _GetVectorImage(imageName, exactName, sizeType, caption);
         }
         /// <summary>
         /// Najde a rychle vrátí <see cref="SvgImage"/> pro dané jméno, hledá v DevExpress i Aplikačních zdrojích
@@ -136,8 +139,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="imageName"></param>
         /// <param name="exactName"></param>
         /// <param name="sizeType"></param>
+        /// <param name="caption"></param>
         /// <returns></returns>
-        private SvgImage _GetVectorImage(string imageName, bool exactName, ResourceImageSizeType? sizeType)
+        private SvgImage _GetVectorImage(string imageName, bool exactName, ResourceImageSizeType? sizeType, string caption)
         {
             if (String.IsNullOrEmpty(imageName)) return null;
 
@@ -147,6 +151,8 @@ namespace Noris.Clients.Win.Components.AsolDX
                 return _GetVectorImageApplication(validItems, sizeType);
             if (_ExistsDevExpressResource(imageName) && _IsImageNameSvg(imageName))
                 return _GetVectorImageDevExpress(imageName);
+            if (!String.IsNullOrEmpty(caption))
+                return _CreateVectorImageForCaption(caption, sizeType, null);
             return null;
         }
         #endregion
@@ -580,19 +586,21 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="imageName">Jméno obrázku</param>
         /// <param name="sizeType">Cílový typ velikosti; každá velikost má svoji kolekci (viz <see cref="GetSvgImageCollection(ResourceImageSizeType)"/>)</param>
         /// <param name="exactName"></param>
+        /// <param name="caption"></param>
         /// <returns></returns>
-        public static int GetSvgIndex(string imageName, ResourceImageSizeType sizeType, bool exactName = false) { return Instance._GetSvgIndex(imageName, exactName, sizeType); }
+        public static int GetSvgIndex(string imageName, ResourceImageSizeType sizeType, bool exactName = false, string caption = null) { return Instance._GetSvgIndex(imageName, exactName, sizeType, caption); }
         /// <summary>
         /// Najde a vrátí index ID pro vektorový obrázek daného jména, obrázek je uložen v kolekci <see cref="SvgImageCollection"/>
         /// </summary>
         /// <param name="imageName">Jméno obrázku</param>
         /// <param name="exactName"></param>
         /// <param name="sizeType">Cílový typ velikosti; každá velikost má svoji kolekci (viz <see cref="GetSvgImageCollection(ResourceImageSizeType)"/>)</param>
+        /// <param name="caption"></param>
         /// <returns></returns>
-        private int _GetSvgIndex(string imageName, bool exactName, ResourceImageSizeType sizeType)
+        private int _GetSvgIndex(string imageName, bool exactName, ResourceImageSizeType sizeType, string caption)
         {
             var svgCollection = _GetSvgImageCollection(sizeType);
-            return svgCollection.GetImageId(imageName, n => _GetVectorImage(n, exactName, sizeType));
+            return svgCollection.GetImageId(imageName, n => _GetVectorImage(n, exactName, sizeType, caption));
         }
         /// <summary>Kolekce SvgImages pro použití v controlech, obsahuje DevExpress i Aplikační zdroje, instanční proměnná.</summary>
         private Dictionary<ResourceImageSizeType, DxSvgImageCollection> __SvgImageCollections;
@@ -1055,15 +1063,31 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         private DevExpress.Images.ImageResourceCache __DevExpressResourceCache;
         #endregion
-        #region Vytvoření bitmapy pro daný text (náhradní ikona)
+        #region Vytvoření bitmapy / vektoru pro daný text (náhradní ikona)
         private Image _CreateBitmapImageForCaption(string caption, ResourceImageSizeType? sizeType, Size? imageSize)
         {
             return SystemAdapter.CreateCaptionImage(caption, sizeType, imageSize);
         }
+        private SvgImage _CreateVectorImageForCaption(string caption, ResourceImageSizeType? sizeType, Size? imageSize)
+        {
+            return SystemAdapter.CreateCaptionVector(caption, sizeType, imageSize);
+        }
         private void _ApplyImageForCaption(ImageOptions imageOptions, string caption, ResourceImageSizeType? sizeType, Size? imageSize)
         {
+            imageOptions.Image = null;
             imageOptions.SvgImage = null;
-            imageOptions.Image = _CreateBitmapImageForCaption(caption, sizeType, imageSize);
+
+            var svgImage = SystemAdapter.CreateCaptionVector(caption, sizeType, imageSize);
+            if (svgImage != null)
+            {
+                imageOptions.SvgImage = svgImage;
+            }
+            else
+            {
+                var bmpImage = SystemAdapter.CreateCaptionImage(caption, sizeType, imageSize);
+                if (bmpImage != null)
+                    imageOptions.Image = bmpImage;
+            }
         }
         #endregion
         #region Soupisy zdrojů: GetResourceNames, TryGetResourceContentType, GetContentTypeFromExtension
@@ -1787,7 +1811,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 if (!isDarkSkin)
                 {
                     _SvgImageDark = null;
-                    _SvgImageNative = new DxSvgImage(this.ItemKey, true, content);
+                    _SvgImageNative = DxSvgImage.Create(this.ItemKey, true, content);
                     return _SvgImageNative;
                 }
                 else
@@ -1856,6 +1880,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         public const string DxFilterOperatorNotEquals = "pic_0/UI/FilterBox/NotEquals";
         public const string DxFilterOperatorNotLike = "pic_0/UI/FilterBox/NotLike";
 
+        public const string DxDialogApply = "svgimages/outlook%20inspired/markcomplete.svg";
+        public const string DxDialogCancel = "svgimages/outlook%20inspired/delete.svg";
         public const string DxDialogIconInfo = "pic_0/Win/MessageBox/info";
         public const string DxDialogIconWarning = "pic_0/Win/MessageBox/warning";
         public const string DxDialogIconError = "pic_0/Win/MessageBox/error";
@@ -2078,28 +2104,39 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Konstruktor
         /// </summary>
-        public DxSvgImage() 
-            : base()
-        { }
+        public DxSvgImage() : base() { }
         /// <summary>
         /// Konstruktor
         /// </summary>
-        /// <param name="imageName"></param>
-        /// <param name="isLightDarkCustomizable"></param>
-        public DxSvgImage(string imageName, bool isLightDarkCustomizable) 
-            : base()
-        { }
+        public DxSvgImage(System.IO.MemoryStream stream) : base(stream) { }
         /// <summary>
-        /// Konstruktor
+        /// Static konstruktor
         /// </summary>
         /// <param name="imageName"></param>
         /// <param name="isLightDarkCustomizable"></param>
         /// <param name="data"></param>
-        public DxSvgImage(string imageName, bool isLightDarkCustomizable, byte[] data)
-            : base(new System.IO.MemoryStream(data))
+        /// <returns></returns>
+        public static DxSvgImage Create(string imageName, bool isLightDarkCustomizable, byte[] data)
         {
-            this.ImageName = imageName;
-            this.IsLightDarkCustomizable = isLightDarkCustomizable;
+            if (data is null) return null;
+            DxSvgImage dxSvgImage = null;
+            using (var stream = new System.IO.MemoryStream(data))
+                dxSvgImage = new DxSvgImage(stream);
+            dxSvgImage.ImageName = imageName;
+            dxSvgImage.IsLightDarkCustomizable = isLightDarkCustomizable;
+            return dxSvgImage;
+        }
+        /// <summary>
+        /// Static konstruktor
+        /// </summary>
+        /// <param name="imageName"></param>
+        /// <param name="isLightDarkCustomizable"></param>
+        /// <param name="xmlContent"></param>
+        /// <returns></returns>
+        public static DxSvgImage Create(string imageName, bool isLightDarkCustomizable, string xmlContent)
+        {
+            if (String.IsNullOrEmpty(xmlContent)) return null;
+            return Create(imageName, isLightDarkCustomizable, Encoding.UTF8.GetBytes(xmlContent));
         }
         /// <summary>
         /// Jméno zdroje
@@ -2116,7 +2153,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="data"></param>
         public static implicit operator DxSvgImage(byte[] data)
         {
-            return new DxSvgImage(null, false, data);
+            return Create(null, false, data);
         }
     }
     #endregion
@@ -2328,7 +2365,7 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             // Upravený string contentXml převedu do byte[], a z něj pak implicitní konverzí do SvgImage:
             byte[] darkContent = Encoding.UTF8.GetBytes(contentXml);
-            return new DxSvgImage(imageName, true, darkContent);
+            return DxSvgImage.Create(imageName, true, darkContent);
         }
         private void _ProcessSvgNode(XmlNode node)
         {

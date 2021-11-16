@@ -21,6 +21,7 @@ using DevExpress.XtraPdfViewer;
 using DevExpress.XtraEditors;
 using DevExpress.XtraRichEdit.Layout;
 using System.Diagnostics;
+using DevExpress.Utils.Svg;
 
 namespace Noris.Clients.Win.Components.AsolDX
 {
@@ -3083,6 +3084,24 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
 
             return borders;
+        }
+        #endregion
+        #region SvgImage
+        /// <summary>
+        /// Vrací stringový obsah daného SVG Image
+        /// </summary>
+        /// <param name="svgImage"></param>
+        /// <returns></returns>
+        public static string ToXmlString(this SvgImage svgImage)
+        {
+            if (svgImage == null) return null;
+            byte[] content = null;
+            using (System.IO.MemoryStream ms = new System.IO.MemoryStream())
+            {
+                svgImage.Save(ms);
+                content = ms.ToArray();
+            }
+            return Encoding.UTF8.GetString(content);
         }
         #endregion
         #region ConvertToDpi

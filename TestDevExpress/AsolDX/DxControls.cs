@@ -4291,6 +4291,7 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// </summary>
     public class DxImagePickerListBox : DxPanelControl
     {
+        #region Konstrukce a vnitřní život
         /// <summary>
         /// Konstruktor
         /// </summary>
@@ -4471,6 +4472,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         DxTextEdit _FilterText;
         DxSimpleButton _ListCopyButton;
         DxListBoxControl _ListBox;
+        #endregion
         #region Seznam resources - získání, filtrování, tvorba Image, CopyToClipboard
         /// <summary>
         /// Do seznamu ListBox vloží zdroje odpovídající aktuálnímu filtru
@@ -4545,7 +4547,7 @@ namespace Noris.Clients.Win.Components.AsolDX
 
                 StatusText = "Položky zkopírovány do schránky: " + rowCount.ToString();
             }
-            else if (rowCount > 0)
+            else if (rowCount > 1)
             {   // Do proměnných:
                 foreach (var selectedItem in selectedItems)
                 {
@@ -4558,6 +4560,30 @@ namespace Noris.Clients.Win.Components.AsolDX
                     DxComponent.ClipboardInsert(sb.ToString());
 
                 StatusText = "Položky zkopírovány do schránky: " + rowCount.ToString();
+            }
+            else if (rowCount == 1)
+            {
+                _ClipboardCopyIndex++;
+                var selectedItem = selectedItems[0];
+                string resourceName = selectedItem.Item2?.Text;
+                if (!String.IsNullOrEmpty(resourceName))
+                    sb.AppendLine($"  string resource{_ClipboardCopyIndex} = \"{resourceName}\";");
+
+                bool exists = DxComponent.TryGetResourceContentType(resourceName, ResourceImageSizeType.Large, true, out var contentType);
+                if (exists && contentType == ResourceContentType.Vector)
+                {
+                    var svgImage = DxComponent.CreateVectorImage(resourceName, true);
+                    if (svgImage != null)
+                    {
+                        string xmlImage = svgImage.ToXmlString();
+                        sb.AppendLine($"  string content{_ClipboardCopyIndex} = @\"{xmlImage}\";");
+                    }
+                }
+
+                if (sb.Length > 0)
+                    DxComponent.ClipboardInsert(sb.ToString());
+
+                StatusText = "Položka zkopírována do schránky: " + rowCount.ToString();
             }
             else
             {
