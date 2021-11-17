@@ -67,7 +67,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (hasName && _ExistsDevExpressResource(imageName))
                 return _CreateBitmapImageDevExpress(imageName, sizeType, optimalSvgSize, svgPalette, svgState);
             if (hasCaption)
-                return _CreateBitmapImageForCaption(caption, sizeType, null);
+                return CreateCaptionImage(caption, sizeType, null);
 
             return null;
         }
@@ -145,14 +145,17 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             if (String.IsNullOrEmpty(imageName)) return null;
 
-            if (SvgImageArraySupport.TryGetSvgImageArray(imageName, out var svgImageArray))
+            bool hasName = !String.IsNullOrEmpty(imageName);
+            bool hasCaption = !String.IsNullOrEmpty(caption);
+
+            if (hasName && SvgImageArraySupport.TryGetSvgImageArray(imageName, out var svgImageArray))
                 return _GetVectorImageArray(svgImageArray, sizeType);
-            if (_TrySearchApplicationResource(imageName, exactName, out var validItems, ResourceContentType.Vector))
+            if (hasName && _TrySearchApplicationResource(imageName, exactName, out var validItems, ResourceContentType.Vector))
                 return _GetVectorImageApplication(validItems, sizeType);
-            if (_ExistsDevExpressResource(imageName) && _IsImageNameSvg(imageName))
+            if (hasName && _ExistsDevExpressResource(imageName) && _IsImageNameSvg(imageName))
                 return _GetVectorImageDevExpress(imageName);
-            if (!String.IsNullOrEmpty(caption))
-                return _CreateVectorImageForCaption(caption, sizeType, null);
+            if (hasCaption)
+                return CreateCaptionVector(caption, sizeType, null);
             return null;
         }
         #endregion
@@ -1064,27 +1067,122 @@ namespace Noris.Clients.Win.Components.AsolDX
         private DevExpress.Images.ImageResourceCache __DevExpressResourceCache;
         #endregion
         #region Vytvoření bitmapy / vektoru pro daný text (náhradní ikona)
-        private Image _CreateBitmapImageForCaption(string caption, ResourceImageSizeType? sizeType, Size? imageSize)
+        /// <summary>
+        /// Vytvoří <see cref="SvgImage"/> pro daný text, namísto chybějící ikony.
+        /// Pokud vrátí null, zkusí se provést <see cref="CreateCaptionImage(string, ResourceImageSizeType?, Size?)"/>.
+        /// </summary>
+        /// <param name="caption"></param>
+        /// <param name="sizeType"></param>
+        /// <param name="imageSize"></param>
+        /// <returns></returns>
+        public static SvgImage CreateCaptionVector(string caption, ResourceImageSizeType? sizeType, Size? imageSize)
         {
-            return SystemAdapter.CreateCaptionImage(caption, sizeType, imageSize);
+            string text = DxComponent.GetCaptionForIcon(caption).ToUpper();
+            if (text.Length > 2) text = text.Substring(0, 2);
+            bool isWidth = (text == "MM" || text == "OO" || text == "WW" || text == "QQ" || text == "AA");
+            string fillClass = "White";
+            string borderClass = "Blue";
+            string textClass = "Black";
+            string sizePx = (isWidth ? "16px" : "18px");
+            string textY = (isWidth ? "20" : "22");
+            string weight = (isWidth ? "600" : "800");      // bold
+            string svgContent = @"﻿<?xml version='1.0' encoding='UTF-8'?>
+<svg x='0px' y='0px' viewBox='0 0 32 32' 
+        version='1.1' xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' xml:space='preserve' 
+        id='Layer_1' 
+        style='enable-background:new 0 0 32 32'>
+  <style type='text/css'>
+	.White{fill:#FFFFFF;}
+	.Red{fill:#D11C1C;}
+	.Green{fill:#039C23;}
+	.Blue{fill:#1177D7;}
+	.Yellow{fill:#FFB115;}
+	.Black{fill:#727272;}
+	.st0{opacity:0.75;}
+	.st1{opacity:0.5;}
+  </style>
+  <g id='icon" + text + @"' style='font-size: " + sizePx + @"; text-anchor: middle; font-family: serif; font-weight: " + weight + @"'>
+    <path d='M31,0H1C0.5,0,0,0.5,0,1v30c0,0.5,0.5,1,1,1h30c0.5,0,1-0.5,1-1V1C32,0.5,31.5,0,31,0z M30,30H2V2h28V30z' class='" + borderClass + @"' />
+    <path d='M30,30H2V2h28V30z' class='" + fillClass + @"' />
+    <text x='16' y='" + textY + @"' class='" + textClass + @"'>" + text + @"</text>
+  </g>
+</svg>";
+            svgContent = svgContent.Replace("'", "\"");
+            return DxSvgImage.Create(caption, false, svgContent);
+
+            /*
+
+﻿<?xml version='1.0' encoding='UTF-8'?>
+<svg x="0px" y="0px" viewBox="0 0 32 32" 
+        version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xml:space="preserve" 
+        id="Layer_1" 
+        style="enable-background:new 0 0 32 32">
+  <style type="text/css">
+	.Red{fill:#D11C1C;}
+	.Green{fill:#039C23;}
+	.Blue{fill:#1177D7;}
+	.Yellow{fill:#FFB115;}
+	.Black{fill:#727272;}
+	.st0{opacity:0.75;}
+	.st1{opacity:0.5;}
+  </style>
+  <g id="iconAB" style="font-size: 16px; text-anchor: middle; font-family: serif; font-weight: bold">
+    <path d="M31,0H1C0.5,0,0,0.5,0,1v30c0,0.5,0.5,1,1,1h30c0.5,0,1-0.5,1-1V1C32,0.5,31.5,0,31,0z M30,30H2V2h28V30z" class="Black" />
+    <!--  path d="M0,0L31,0L31,31L0,31L0,0Z" class="Black" / -->
+    <text x="16" y="20" class="Blue">MM</text>
+  </g>
+</svg>
+
+            */
         }
-        private SvgImage _CreateVectorImageForCaption(string caption, ResourceImageSizeType? sizeType, Size? imageSize)
+        /// <summary>
+        /// Vyrenderuje dodaný text jako náhradní ikonu
+        /// </summary>
+        /// <param name="caption"></param>
+        /// <param name="sizeType"></param>
+        /// <param name="imageSize"></param>
+        /// <returns></returns>
+        public static Image CreateCaptionImage(string caption, ResourceImageSizeType? sizeType, Size? imageSize)
         {
-            return SystemAdapter.CreateCaptionVector(caption, sizeType, imageSize);
+#warning vložit kód z Nephrite, tam je lepší!!!
+            var realSize = imageSize ?? DxComponent.GetImageSize((sizeType ?? ResourceImageSizeType.Large), true);
+            bool isDark = DxComponent.IsDarkTheme;
+            Bitmap bitmap = new Bitmap(realSize.Width, realSize.Height);
+            using (var graphics = Graphics.FromImage(bitmap))
+            {
+                RectangleF bounds = new RectangleF(0, 0, realSize.Width, realSize.Height);
+                graphics.FillRectangle((isDark ? Brushes.MidnightBlue : Brushes.MintCream), bounds);
+                string text = DxComponent.GetCaptionForIcon(caption);
+                if (text.Length > 0)
+                {
+                    var font = SystemFonts.MenuFont;
+                    var textSize = graphics.MeasureString(text, font);
+                    var textBounds = textSize.AlignTo(bounds, ContentAlignment.MiddleCenter);
+                    graphics.DrawString(text, font, (isDark ? Brushes.White : Brushes.Black), textBounds.Location);
+                }
+            }
+            return bitmap;
         }
+        /// <summary>
+        /// Do daného objektu vloží náhradní ikonu pro daný text
+        /// </summary>
+        /// <param name="imageOptions"></param>
+        /// <param name="caption"></param>
+        /// <param name="sizeType"></param>
+        /// <param name="imageSize"></param>
         private void _ApplyImageForCaption(ImageOptions imageOptions, string caption, ResourceImageSizeType? sizeType, Size? imageSize)
         {
             imageOptions.Image = null;
             imageOptions.SvgImage = null;
 
-            var svgImage = SystemAdapter.CreateCaptionVector(caption, sizeType, imageSize);
+            var svgImage = CreateCaptionVector(caption, sizeType, imageSize);
             if (svgImage != null)
             {
                 imageOptions.SvgImage = svgImage;
             }
             else
             {
-                var bmpImage = SystemAdapter.CreateCaptionImage(caption, sizeType, imageSize);
+                var bmpImage = CreateCaptionImage(caption, sizeType, imageSize);
                 if (bmpImage != null)
                     imageOptions.Image = bmpImage;
             }

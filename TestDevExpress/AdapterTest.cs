@@ -29,10 +29,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         string ISystemAdapter.GetResourceItemKey(string name) { return DataResources.GetItemKey(name); }
         string ISystemAdapter.GetResourcePackKey(string name, out ResourceImageSizeType sizeType, out ResourceContentType contentType) { return DataResources.GetPackKey(name, out sizeType, out contentType); }
         byte[] ISystemAdapter.GetResourceContent(IResourceItem resourceItem) { return DataResources.GetResourceContent(resourceItem); }
+
         bool ISystemAdapter.CanRenderSvgImages { get { return false; } }
         Image ISystemAdapter.RenderSvgImage(SvgImage svgImage, Size size, ISvgPaletteProvider svgPalette) { return null; }
-        SvgImage ISystemAdapter.CreateCaptionVector(string caption, ResourceImageSizeType? sizeType, Size? imageSize) { return AdapterSupport.CreateCaptionVector(caption, sizeType, imageSize); }
-        Image ISystemAdapter.CreateCaptionImage(string caption, ResourceImageSizeType? sizeType, Size? imageSize) { return AdapterSupport.CreateCaptionImage(caption, sizeType, imageSize); }
+
         System.ComponentModel.ISynchronizeInvoke ISystemAdapter.Host { get { return DxComponent.MainForm ?? WinForm.Form.ActiveForm; } }
         WinForm.Shortcut ISystemAdapter.GetShortcutKeys(string shortCut) { return WinForm.Shortcut.None; }
     }
@@ -148,6 +148,12 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
             return bitmap;
         }
+        /// <summary>
+        /// Vrátí lokalizovanou hlášku
+        /// </summary>
+        /// <param name="messageCode"></param>
+        /// <param name="parameters"></param>
+        /// <returns></returns>
         public static string GetMessage(MsgCode messageCode, IEnumerable<object> parameters)
         {
             string text = GetMessageText(messageCode);
@@ -184,6 +190,9 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
             return text;
         }
+        /// <summary>
+        /// Cache pro již lokalizované hlášky
+        /// </summary>
         private static Dictionary<MsgCode, string> _Messages = null;
     }
     #endregion
