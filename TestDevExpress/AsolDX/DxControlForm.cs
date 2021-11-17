@@ -60,21 +60,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         private DxPanelControl _ButtonsPanel;
         private DxRibbonStatusBar _StatusBar;
         #endregion
-        #region Klávesnice - vyhledání buttonů podle HotKey
-        protected override void OnPreviewKeyDown(PreviewKeyDownEventArgs e)
-        {
-            base.OnPreviewKeyDown(e);
-        }
-        protected override bool ProcessKeyPreview(ref Message m)
-        {
-            return base.ProcessKeyPreview(ref m);
-        }
-        protected override void OnKeyDown(KeyEventArgs e)
-        {
-            base.OnKeyDown(e);
-            this.SearchKeyDownButtons(e);
-        }
-        #endregion
         #region Layout
         /// <summary>
         /// Připraví pozici okna podle pozice myši nebo pro zobrazení na středu parent okna
@@ -209,7 +194,11 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             DoLayout();
         }
-
+        /// <summary>
+        /// Uživatel klikl na button
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void ButtonControl_Click(object sender, EventArgs e)
         {
             if (sender is Control control && control.Tag is IMenuItem buttonItem)
@@ -227,33 +216,6 @@ namespace Noris.Clients.Win.Components.AsolDX
                 button.Dispose();
             }
             _ButtonControls = null;
-        }
-
-        private void SearchKeyDownButtons(KeyEventArgs e)
-        {
-            if (_ButtonControls == null || _ButtonControls.Length == 0) return;
-            foreach (var buttonControl in _ButtonControls)
-            {
-                if (SearchKeyDownButton(e, buttonControl))
-                {
-                    e.Handled = true;
-                    break;
-                }
-            }
-        }
-
-        private bool SearchKeyDownButton(KeyEventArgs e, DxSimpleButton buttonControl)
-        {
-            bool result = false;
-            if (buttonControl.Tag is IMenuItem buttonItem)
-            {
-                if (buttonItem.HotKeys.HasValue && buttonItem.HotKeys.Value == e.KeyData)
-                {
-                    this.RunButtonClick(buttonItem);
-                    result = true;
-                }
-            }
-            return result;
         }
         /// <summary>
         /// Uživatel zmáčkl button nebo jeho HotKey

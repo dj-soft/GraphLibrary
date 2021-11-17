@@ -1560,21 +1560,21 @@ namespace Noris.Clients.Win.Components.AsolDX
             bool isChecked = false,
             Image image = null, string resourceName = null,
             string toolTipTitle = null, string toolTipText = null,
-            bool? visible = null, bool? enabled = null, bool? tabStop = null)
+            bool? visible = null, bool? enabled = null, bool? tabStop = null, Keys? hotKey = null)
         {
             return CreateDxCheckButton(x, ref y, w, h, parent, text, click,
                 paintStyles,
                 isChecked,
                 image, resourceName,
                 toolTipTitle, toolTipText,
-                visible, enabled, tabStop, false);
+                visible, enabled, tabStop, hotKey, false);
         }
         public static DxCheckButton CreateDxCheckButton(int x, ref int y, int w, int h, Control parent, string text, EventHandler click = null,
             DevExpress.XtraEditors.Controls.PaintStyles? paintStyles = null,
             bool isChecked = false,
             Image image = null, string resourceName = null,
             string toolTipTitle = null, string toolTipText = null,
-            bool? visible = null, bool? enabled = null, bool? tabStop = null, bool shiftY = false)
+            bool? visible = null, bool? enabled = null, bool? tabStop = null, Keys? hotKey = null, bool shiftY = false)
         {
             var inst = Instance;
 
@@ -1585,6 +1585,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (visible.HasValue) checkButton.Visible = visible.Value;
             if (enabled.HasValue) checkButton.Enabled = enabled.Value;
             if (tabStop.HasValue) checkButton.TabStop = tabStop.Value;
+            if (hotKey.HasValue) checkButton.HotKey = hotKey.Value;
             if (paintStyles.HasValue) checkButton.PaintStyle = paintStyles.Value;
 
             int s = (w < h ? w : h) - 10;
@@ -1606,7 +1607,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (iButton is null) return null;
             var button = CreateDxSimpleButton(x, y, w, h, parent, iButton.Text, null,
                 DevExpress.XtraEditors.Controls.PaintStyles.Default, iButton.Image, iButton.ImageName,
-                iButton.ToolTipTitle, iButton.ToolTipText, iButton.Visible, iButton.Enabled, true);
+                iButton.ToolTipTitle, iButton.ToolTipText, iButton.Visible, iButton.Enabled, true, iButton.HotKeys);
             if (iButton.ClickAction != null)
                 button.Click += _DxMenuItemClickHandler;
             button.Tag = iButton;
@@ -1629,19 +1630,19 @@ namespace Noris.Clients.Win.Components.AsolDX
             DevExpress.XtraEditors.Controls.PaintStyles? paintStyles = null,
             Image image = null, string resourceName = null,
             string toolTipTitle = null, string toolTipText = null,
-            bool? visible = null, bool? enabled = null, bool? tabStop = null)
+            bool? visible = null, bool? enabled = null, bool? tabStop = null, Keys? hotKey = null)
         {
             return CreateDxSimpleButton(x, ref y, w, h, parent, text, click,
                 paintStyles,
                 image, resourceName,
                 toolTipTitle, toolTipText,
-                visible, enabled, tabStop, false);
+                visible, enabled, tabStop, hotKey, false);
         }
         public static DxSimpleButton CreateDxSimpleButton(int x, ref int y, int w, int h, Control parent, string text, EventHandler click = null,
             DevExpress.XtraEditors.Controls.PaintStyles? paintStyles = null,
             Image image = null, string resourceName = null,
             string toolTipTitle = null, string toolTipText = null,
-            bool? visible = null, bool? enabled = null, bool? tabStop = null, bool shiftY = false)
+            bool? visible = null, bool? enabled = null, bool? tabStop = null, Keys? hotKey = null, bool shiftY = false)
         {
             var inst = Instance;
 
@@ -1651,6 +1652,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (visible.HasValue) simpleButton.Visible = visible.Value;
             if (enabled.HasValue) simpleButton.Enabled = enabled.Value;
             if (tabStop.HasValue) simpleButton.TabStop = tabStop.Value;
+            if (hotKey.HasValue) simpleButton.HotKey = hotKey.Value;
             if (paintStyles.HasValue) simpleButton.PaintStyle = paintStyles.Value;
 
             DxComponent.ApplyImage(simpleButton.ImageOptions, resourceName, image, null, null, true);
@@ -1671,7 +1673,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             Image image = null, string resourceName = null,
             Image hotImage = null, string hotResourceName = null,
             string toolTipTitle = null, string toolTipText = null,
-            bool? visible = null, bool? enabled = null, bool? tabStop = null, bool? allowFocus = null,
+            bool? visible = null, bool? enabled = null, bool? tabStop = null, Keys? hotKey = null, bool? allowFocus = null,
             object tag = null)
         {
             var inst = Instance;
@@ -1684,6 +1686,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (visible.HasValue) miniButton.Visible = visible.Value;
             if (enabled.HasValue) miniButton.Enabled = enabled.Value;
             miniButton.TabStop = tabStop ?? false;
+            if (hotKey.HasValue) miniButton.HotKey = hotKey.Value;
             if (allowFocus.HasValue) miniButton.AllowFocus = allowFocus.Value;
             miniButton.PaintStyle = DevExpress.XtraEditors.Controls.PaintStyles.Light;
 

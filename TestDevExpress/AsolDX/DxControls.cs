@@ -96,6 +96,42 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.Bounds = this.Bounds.FitIntoMonitors(true, false, true);
         }
         /// <summary>
+        /// Najde ovládací prvek odpovídající aktuální klávese.
+        /// </summary>
+        /// <param name="msg"></param>
+        /// <param name="keyData"></param>
+        /// <returns></returns>
+        protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
+        {
+            if (DxStdForm.SearchKeyDownButtons(this, keyData))
+                return true;
+            return base.ProcessCmdKey(ref msg, keyData);
+        }
+        /// <summary>
+        /// Najde ovládací prvek odpovídající aktuální klávese. Hledá rekurzivně.
+        /// Hledá prvek implementující <see cref="IHotKeyControl"/> s klávesou <see cref="IHotKeyControl.HotKey"/> odpovídající aktuální klávese <paramref name="keyData"/>.
+        /// Pokud najde, provede jeho <see cref="IHotKeyControl.PerformClick"/> a vrátí true.
+        /// </summary>
+        /// <param name="control"></param>
+        /// <param name="keyData"></param>
+        /// <returns></returns>
+        internal static bool SearchKeyDownButtons(Control control, Keys keyData)
+        {
+            if (control == null || !control.Enabled || !control.Visible || control.Controls.Count == 0) return false;
+            foreach (Control child in control.Controls)
+            {
+                if (child == null || !child.Enabled || !child.Visible) continue;
+                if ((child is IHotKeyControl hotKeyControl) && hotKeyControl.HotKey == keyData)
+                {
+                    hotKeyControl.PerformClick();
+                    return true;
+                }
+                if (SearchKeyDownButtons(child, keyData))
+                    return true;
+            }
+            return false;
+        }
+        /// <summary>
         /// Dispose panelu
         /// </summary>
         /// <param name="disposing"></param>
@@ -200,6 +236,18 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             if (!force && this.StartPosition != FormStartPosition.Manual) return;
             this.Bounds = this.Bounds.FitIntoMonitors(true, false, true);
+        }
+        /// <summary>
+        /// Najde ovládací prvek odpovídající aktuální klávese.
+        /// </summary>
+        /// <param name="msg"></param>
+        /// <param name="keyData"></param>
+        /// <returns></returns>
+        protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
+        {
+            if (DxStdForm.SearchKeyDownButtons(this, keyData))
+                return true;
+            return base.ProcessCmdKey(ref msg, keyData);
         }
         /// <summary>
         /// Dispose panelu
@@ -2975,7 +3023,7 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// <summary>
     /// CheckEdit
     /// </summary>
-    public class DxCheckEdit : DevExpress.XtraEditors.CheckEdit
+    public class DxCheckEdit : DevExpress.XtraEditors.CheckEdit, IHotKeyControl
     {
         #region Rozšířené property
         /// <summary>
@@ -2992,6 +3040,17 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <returns></returns>
         public override string ToString() { return this.GetTypeName() + ": '" + (this.Text ?? "NULL") + "'"; }
+        /// <summary>
+        /// Klávesa, která aktivuje button
+        /// </summary>
+        public Keys HotKey { get; set; }
+        /// <summary>
+        /// Provede kliknutí na CheckBox
+        /// </summary>
+        public void PerformClick()
+        {
+            this.OnClick(EventArgs.Empty);
+        }
         #endregion
         #region ToolTip
         /// <summary>
@@ -3832,7 +3891,7 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// <summary>
     /// SimpleButton
     /// </summary>
-    public class DxSimpleButton : DevExpress.XtraEditors.SimpleButton
+    public class DxSimpleButton : DevExpress.XtraEditors.SimpleButton, IHotKeyControl
     {
         #region Rozšířené property
         /// <summary>
@@ -3849,6 +3908,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <returns></returns>
         public override string ToString() { return this.GetTypeName() + ": '" + (this.Text ?? "NULL") + "'"; }
+        /// <summary>
+        /// Klávesa, která aktivuje button
+        /// </summary>
+        public Keys HotKey { get; set; }
         #endregion
         #region HasMouse
         /// <summary>
@@ -4027,7 +4090,7 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// <summary>
     /// CheckButton
     /// </summary>
-    public class DxCheckButton : DevExpress.XtraEditors.CheckButton
+    public class DxCheckButton : DevExpress.XtraEditors.CheckButton, IHotKeyControl
     {
         #region Rozšířené property
         /// <summary>
@@ -4044,6 +4107,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <returns></returns>
         public override string ToString() { return this.GetTypeName() + ": '" + (this.Text ?? "NULL") + "'"; }
+        /// <summary>
+        /// Klávesa, která aktivuje button
+        /// </summary>
+        public Keys HotKey { get; set; }
         #endregion
         #region ToolTip
         /// <summary>
@@ -6718,6 +6785,14 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Ikona ToolTipu
         /// </summary>
         string ToolTipIcon { get; }
+    }
+    /// <summary>
+    /// Interface
+    /// </summary>
+    public interface IHotKeyControl
+    {
+        Keys HotKey { get; }
+        void PerformClick();
     }
     #endregion
     #region Enumy: LabelStyleType, RectangleSide, RectangleCorner

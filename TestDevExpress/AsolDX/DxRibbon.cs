@@ -4277,6 +4277,9 @@ namespace Noris.Clients.Win.Components.AsolDX
                 form.ShowDialog(this.FindForm());
             }
         }
+        /// <summary>
+        /// Třída reprezentující Qat Manager panel
+        /// </summary>
         private class QatManagerPanel : DxPanelControl
         {
             public QatManagerPanel()
