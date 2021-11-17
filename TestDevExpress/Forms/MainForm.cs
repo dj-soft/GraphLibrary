@@ -593,21 +593,12 @@ namespace TestDevExpress.Forms
             subItems.Add(new DataRibbonItem() { ImageName = "devav/actions/cut.svg", Text = "cut", ClickAction = ClickRibbonSvgMenu3 });
             subItems.Add(new DataRibbonItem() { ImageName = "devav/actions/delete.svg", Text = "delete", ClickAction = ClickRibbonSvgMenu3 });
 
+            subItems.Add(new DataRibbonItem() { ImageName = "devav/contacts/mail.svg", Text = "mail", ClickAction = ClickRibbonSvgMenu3 });
+            subItems.Add(new DataRibbonItem() { ImageName = "devav/contacts/mail1.svg", Text = "mail1", ClickAction = ClickRibbonSvgMenu3 });
+            subItems.Add(new DataRibbonItem() { ImageName = "devav/contacts/mail2.svg", Text = "mail2", ClickAction = ClickRibbonSvgMenu3 });
+            subItems.Add(new DataRibbonItem() { ImageName = "devav/contacts/mail3.svg", Text = "mail3", ClickAction = ClickRibbonSvgMenu3 });
 
             subItems.Add(new DataRibbonItem() { ImageName = "svgimages/icon%20builder/actions_add.svg", Text = "actions_add", ClickAction = ClickRibbonSvgMenu3 });
-
-            string resource1 = "images/xaf/templatesv2images/action_delete.svg";
-            string resource2 = "images/xaf/templatesv2images/action_delete_disabled.svg";
-            string resource3 = "images/xaf/templatesv2images/action_validation_validate.svg";
-            string resource4 = "images/xaf/templatesv2images/action_validation_validate_disabled.svg";
-            string resource5 = "images/xaf/templatesv2images/state_priority_high.svg";
-            string resource6 = "images/xaf/templatesv2images/state_priority_low.svg";
-            string resource7 = "images/xaf/templatesv2images/state_priority_normal.svg";
-            string resource8 = "images/xaf/templatesv2images/state_validation_invalid.svg";
-            string resource9 = "images/xaf/templatesv2images/state_validation_valid.svg";
-            string resource10 = "svgimages/dashboards/delete.svg";
-            string resource11 = "svgimages/icon%20builder/actions_add.svg";
-            string resource12 = "svgimages/icon%20builder/actions_addcircled.svg";
 
             return subItems;
         }

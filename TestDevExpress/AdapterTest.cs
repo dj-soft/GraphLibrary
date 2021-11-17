@@ -63,17 +63,22 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         public static SvgImage CreateCaptionVector(string caption, ResourceImageSizeType? sizeType, Size? imageSize)
         {
-            string borderClass = "Black";
-            string textClass = "Blue";
             string text = DxComponent.GetCaptionForIcon(caption).ToUpper();
             if (text.Length > 2) text = text.Substring(0, 2);
-
+            bool isWidth = (text == "MM" || text == "OO" || text == "WW" || text == "QQ" || text == "AA");
+            string fillClass = "White";
+            string borderClass = "Blue";
+            string textClass = "Black";
+            string sizePx = (isWidth ? "16px" : "18px");
+            string textY = (isWidth ? "20" : "22");
+            string weight = (isWidth ? "600" : "800");      // bold
             string svgContent = @"﻿<?xml version='1.0' encoding='UTF-8'?>
 <svg x='0px' y='0px' viewBox='0 0 32 32' 
         version='1.1' xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' xml:space='preserve' 
         id='Layer_1' 
         style='enable-background:new 0 0 32 32'>
   <style type='text/css'>
+	.White{fill:#FFFFFF;}
 	.Red{fill:#D11C1C;}
 	.Green{fill:#039C23;}
 	.Blue{fill:#1177D7;}
@@ -82,10 +87,10 @@ namespace Noris.Clients.Win.Components.AsolDX
 	.st0{opacity:0.75;}
 	.st1{opacity:0.5;}
   </style>
-  <g id='iconAB' style='font-size: 16px; text-anchor: middle; font-family: serif; font-weight: bold'>
+  <g id='icon" + text + @"' style='font-size: " + sizePx + @"; text-anchor: middle; font-family: serif; font-weight: " + weight + @"'>
     <path d='M31,0H1C0.5,0,0,0.5,0,1v30c0,0.5,0.5,1,1,1h30c0.5,0,1-0.5,1-1V1C32,0.5,31.5,0,31,0z M30,30H2V2h28V30z' class='" + borderClass + @"' />
-    <!--  path d='M0,0L31,0L31,31L0,31L0,0Z' class='" + borderClass + @"' / -->
-    <text x='16' y='20' class='" + textClass + @"'>" + text + @"</text>
+    <path d='M30,30H2V2h28V30z' class='" + fillClass + @"' />
+    <text x='16' y='" + textY + @"' class='" + textClass + @"'>" + text + @"</text>
   </g>
 </svg>";
             svgContent = svgContent.Replace("'", "\"");
