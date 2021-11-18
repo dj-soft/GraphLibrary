@@ -172,20 +172,20 @@ namespace Noris.Clients.Win.Components.AsolDX
         #endregion
         #region Buttony privátně
         /// <summary>
-        /// Do formuláře vytvoří buttony podle obsahu pole <see cref="_Buttons"/>.
+        /// Do formuláře vytvoří buttony podle obsahu pole <see cref="_IButtons"/>.
         /// Buttony vytvoří, i když nemají být viditelné (<see cref="_ButtonsVisible"/>, to je úkolem metody <see cref="DoLayout"/>.
         /// </summary>
         private void CreateButtons()
         {
             RemoveButtons();
 
-            var buttons = _Buttons;
-            if (buttons is null) return;
+            var iButtons = _IButtons;
+            if (iButtons is null) return;
             List<DxSimpleButton> buttonControls = new List<DxSimpleButton>();
             int x = 5;
-            foreach (var button in buttons)
+            foreach (var iButton in iButtons)
             {
-                var buttonControl = DxComponent.CreateDxSimpleButton(x, 0, 100, 20, _ButtonsPanel, button);
+                var buttonControl = DxComponent.CreateDxSimpleButton(x, 0, 100, 20, _ButtonsPanel, iButton);
                 buttonControl.Click += ButtonControl_Click;
                 x += 105;
                 buttonControls.Add(buttonControl);
@@ -270,12 +270,16 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Počet definovaných buttonů
         /// </summary>
-        public int ButtonsCount { get { return (_Buttons?.Length ?? 0); } }
+        public int ButtonsCount { get { return (_IButtons?.Length ?? 0); } }
         /// <summary>
-        /// Buttony
+        /// Definice pro Buttony.
+        /// Aplikace může buď nastavit zdejší <see cref="CloseOnClickButton"/> na true, po kliknutí na button se zavře okno,
+        /// a aplikace si pak vyhodnotí prvek uložený v <see cref="ClickedButton"/> = na něj uživatel klikl.
+        /// Anebo si aplikace ošetří akci <see cref="IMenuItem.ClickAction"/> v konkrétních buttonech a sama reaguje,
+        /// pak může sama zavřít okno bez závislosti na hodnotě <see cref="CloseOnClickButton"/>.
         /// </summary>
-        public IEnumerable<IMenuItem> Buttons { get { return _Buttons; } set { _Buttons = (value != null ? value.ToArray() : null); this.CreateButtons(); } }
-        private IMenuItem[] _Buttons;
+        public IEnumerable<IMenuItem> Buttons { get { return _IButtons; } set { _IButtons = (value != null ? value.ToArray() : null); this.CreateButtons(); } }
+        private IMenuItem[] _IButtons;
         /// <summary>
         /// Viditelnost pole buttonů.
         /// Výchozí hodnota je null = řídí se podle přítomnosti nějakého buttonu.
