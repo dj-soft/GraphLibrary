@@ -146,6 +146,11 @@ namespace TestDevExpress.Forms
         /// </summary>
         private void InitForm()
         {
+            string name;
+            name = "pic_0/win/dashboard/poznamkovy_blok";
+            name = "devav/actions/support_32x32.png";
+
+            DxComponent.ApplyIcon(this, name, ResourceImageSizeType.Large);
         }
         /// <summary>
         /// Inicializace vnitřního layoutu - splitpanel

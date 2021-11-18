@@ -428,25 +428,55 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="form"></param>
         /// <param name="iconName"></param>
-        public static void ApplyIcon(Form form, string iconName) { Instance._ApplyIcon(form, iconName); }
+        /// <param name="sizeType"></param>
+        public static void ApplyIcon(Form form, string iconName, ResourceImageSizeType? sizeType = null) { Instance._ApplyIcon(form, iconName, sizeType); }
         /// <summary>
         /// Do daného okna aplikuje danou ikonu.
         /// </summary>
         /// <param name="form"></param>
         /// <param name="iconName"></param>
-        private void _ApplyIcon(Form form, string iconName)
+        /// <param name="sizeType"></param>
+        private void _ApplyIcon(Form form, string iconName, ResourceImageSizeType? sizeType)
         {
             if (form is null || String.IsNullOrEmpty(iconName)) return;
-            if (form is DxStdForm dxStdForm)
-                dxStdForm.ImageName = iconName;
-            else if (form is DxRibbonForm dxRibbonForm)
-                dxRibbonForm.ImageName = iconName;
-            else if (form is DevExpress.XtraEditors.XtraForm xtraForm)
-                ApplyImage(xtraForm.IconOptions, iconName, sizeType: ResourceImageSizeType.Large);
-            else if (form is DevExpress.XtraBars.Ribbon.RibbonForm ribbonForm)
-                ApplyImage(ribbonForm.IconOptions, iconName, sizeType: ResourceImageSizeType.Large);
+            if (!sizeType.HasValue) sizeType = ResourceImageSizeType.Large;
+
+            if (form is DevExpress.XtraEditors.XtraForm xtraForm)
+                ApplyImage(xtraForm.IconOptions, iconName, sizeType: sizeType);
+
+            //if (form is DxStdForm dxStdForm)
+            //    dxStdForm.ImageName = iconName;
+            //else if (form is DxRibbonForm dxRibbonForm)
+            //    dxRibbonForm.ImageName = iconName;
+            //else if (form is DevExpress.XtraEditors.XtraForm xtraForm)
+            //    ApplyImage(xtraForm.IconOptions, iconName, sizeType: sizeType);
+            //else if (form is DevExpress.XtraBars.Ribbon.RibbonForm ribbonForm)
+            //    ApplyImage(ribbonForm.IconOptions, iconName, sizeType: sizeType);
+
+
             else if (iconName.IndexOfAny("«»<>".ToCharArray()) < 0)
-                form.Icon = ComponentConnector.GraphicsCache.GetIcon(iconName);
+                _ApplyIconNative(form, iconName, sizeType);    // form.Icon = ComponentConnector.GraphicsCache.GetIcon(iconName);
+        }
+        private void _ApplyIconNative(Form form, string iconName, ResourceImageSizeType? sizeType, 
+            string caption = null, bool exactName = false)
+        {
+            var image = CreateBitmapImage(iconName, sizeType, exactName: exactName);
+            if (image is null) return;
+
+            // Nedobré = je tam chyba form.Icon = ImageIconConverter.BitmapToIcon(new Bitmap(image));
+
+            Icon icon = null;
+            using (Bitmap bitmap = new Bitmap(image))
+            {   // Ikona není použitelná:
+                bitmap.MakeTransparent(Color.White);
+                form.Icon = Icon.FromHandle(bitmap.GetHicon());
+            }
+//            form.Icon = icon;
+            
+            if (form is DevExpress.XtraEditors.XtraForm xtraForm)
+            {
+                xtraForm.IconOptions.Reset();
+            }
         }
         #endregion
         #region PreferredImageList - Seznam obrázků typu Bitmapa/Vektor, pro použití v controlech; GetPreferredImageList, GetPreferredImageIndex
@@ -2790,27 +2820,121 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             if (svgImageArray == null || svgImageArray.IsEmpty) return null;
 
-            // Výsledný SvgImage:
-            DevExpress.Utils.Svg.SvgImage svgImageOut;
-            using (var memoryStream = new System.IO.MemoryStream(_BlankSvgBaseBuffer))
-                svgImageOut = DevExpress.Utils.Svg.SvgImage.FromStream(memoryStream);
+            // Na vstupu jsou jména SVG obrázků, tady si získám obrázky reálné:
+            List<SvgItemInfo> svgInfos = new List<SvgItemInfo>();
+            foreach (var svgItem in svgImageArray.Items)
+            {
+                SvgImage svgImage = DxComponent.GetVectorImage(svgItem.ImageName, false, sizeType);
+                SvgItemInfo svgInfo = new SvgItemInfo(svgItem, svgImage);
+                svgInfos.Add(svgInfo);
+                if (!svgInfo.HasTransform)
+                {
+
+                }
+            }
+
+            // Zjistím, zda dodané SvgArray bude potřebovat transformace, a jaká bude velikost:
+            // (vezmu vstupní ikony, které nemají zadanou transformaci, a sečtu jejich prostor):
+            RectangleF? bounds = svgInfos
+                .Where(s => !s.HasTransform)
+                .Select(s => s.SvgCurrentBounds)
+                .SummaryVisibleRectangle();
+
+            // Bude se provádět transformace nějakých dalších ikon?
+            bool hasTransform = svgInfos.Any(s => s.HasTransform);
+
+
+            // Vytvořím text SVG pro "podklad" = pro souřadnice
+            if (!bounds.HasValue) bounds = new RectangleF(0f, 0f, 120f, 120f);           // Výsledný prostor
+            string blankSvgXml = _CreateBaseSvgXml(bounds.Value);
+
+
+
+
+
+
+
+
+            bool needTransform = svgImageArray.Items.Any(i => _NeedTransform(i.ImageRelativeBounds));
+
+            // Výsledný SvgImage začne na prázdné louce:
+            DxSvgImage svgImageOut = DxSvgImage.Create(svgImageArray.Key, false, );
+
+            // DevExpress.Utils.Svg.SvgImage svgImageOut;
+            // using (var memoryStream = new System.IO.MemoryStream(_BlankSvgBaseBuffer))
+            //    svgImageOut = DevExpress.Utils.Svg.SvgImage.FromStream(memoryStream);
 
             // Kombinace:
-            foreach (var image in svgImageArray.Items)
+            foreach (var svgItem in svgImageArray.Items)
             {
-                DevExpress.Utils.Svg.SvgImage svgImageInp = DxComponent.GetVectorImage(image.ImageName, false, sizeType);
+                SvgImage svgImageInp = DxComponent.GetVectorImage(svgItem.ImageName, false, sizeType);
                 if (svgImageInp is null) continue;
 
-                DevExpress.Utils.Svg.SvgGroup svgGroupSum = new DevExpress.Utils.Svg.SvgGroup();
-                if (_SvgCombineSetTransform(svgImageInp, image, svgGroupSum))
+                SvgGroup svgGroupSum = new SvgGroup();
+                if (_SvgCombineSetTransform(svgImageInp, svgItem, svgGroupSum))
                 {
-                    foreach (var svgItem in svgImageInp.Root.Elements)
-                        svgGroupSum.Elements.Add(svgItem.DeepCopy());
+                    foreach (var svgElement in svgImageInp.Root.Elements)
+                        svgGroupSum.Elements.Add(svgElement.DeepCopy());
                 }
                 svgImageOut.Root.Elements.Add(svgGroupSum);
             }
 
             return svgImageOut;
+        }
+        /// <summary>
+        /// Data o jedné položce kombinovaného SVG: podklady plus reálný obrázek
+        /// </summary>
+        private class SvgItemInfo
+        {
+            public SvgItemInfo(SvgImageArrayItem svgItem, SvgImage svgImage)
+            {
+                this.SvgItem = svgItem;
+                this.SvgImage = svgImage;
+            }
+            public SvgImageArrayItem SvgItem { get; private set; }
+            public SvgImage SvgImage { get; private set; }
+            /// <summary>
+            /// Souřadnice cílové, ve 120px virtuálním prostoru
+            /// </summary>
+            public Rectangle? ImageRelativeBounds { get { return SvgItem.ImageRelativeBounds; } }
+            /// <summary>
+            /// Obsahuje true, pokud this prvek bude transformován do jiné než výchozí pozice
+            /// </summary>
+            public bool HasTransform
+            {
+                get
+                {
+                    var bounds = this.ImageRelativeBounds;
+                    return (bounds.HasValue && bounds.Value.X == 0 && bounds.Value.Y == 0 && bounds.Value.Width == 120 && bounds.Value.Height == 120);
+                }
+            }
+            /// <summary>
+            /// Souřadnice uvedené v SVG image
+            /// </summary>
+            public RectangleF? SvgCurrentBounds
+            {
+                get
+                {
+                    var svgImage = this.SvgImage;
+                    if (svgImage is null) return null;
+                    return new RectangleF((float)svgImage.OffsetX, (float)svgImage.OffsetY, (float)svgImage.Width, (float)svgImage.Height);
+                }
+            }
+
+        }
+
+
+        private static string _CreateBaseSvgXml(RectangleF boundsF)
+        {
+            Rectangle bounds = Rectangle.Ceiling(boundsF);
+            int x = 
+            string xml = $"<svg viewBox='{bounds.X} {bounds.Y} {bounds.Width} {bounds.Height}' xmlns='http://www.w3.org/2000/svg'></svg>";
+        }
+
+
+        private static bool _NeedTransform(Noris.WS.DataContracts.Desktop.Data.SvgImageArrayItem svgItem)
+        {
+
         }
         /// <summary>
         /// Metoda nastaví do <paramref name="svgGroupSum"/> sadu transformací tak, 

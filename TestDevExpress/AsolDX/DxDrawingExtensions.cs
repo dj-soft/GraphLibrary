@@ -2697,42 +2697,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
 
         /// <summary>
-        /// Vrací RectangleF, který je souhrnem všech zadaných Rectangle.
-        /// </summary>
-        /// <param name="items"></param>
-        /// <returns></returns>
-        public static RectangleF? SummaryRectangle(params RectangleF?[] items)
-        {
-            float l = 0f;
-            float t = 0f;
-            float r = 0f;
-            float b = 0f;
-            bool empty = true;
-            foreach (RectangleF? itemN in items)
-            {
-                if (itemN.HasValue)
-                {
-                    RectangleF item = itemN.Value;
-                    if (empty)
-                    {
-                        l = item.Left;
-                        t = item.Top;
-                        r = item.Right;
-                        b = item.Bottom;
-                        empty = false;
-                    }
-                    else
-                    {
-                        if (l > item.Left) l = item.Left;
-                        if (t > item.Top) t = item.Top;
-                        if (r < item.Right) r = item.Right;
-                        if (b < item.Bottom) b = item.Bottom;
-                    }
-                }
-            }
-            return (!empty ? (RectangleF?)RectangleF.FromLTRB(l, t, r, b) : (RectangleF?)null);
-        }
-        /// <summary>
         /// Vrací <see cref="RectangleF"/>, který je souhrnem všech zadaných <see cref="RectangleF"/>.
         /// </summary>
         /// <param name="items"></param>
@@ -2762,6 +2726,74 @@ namespace Noris.Clients.Win.Components.AsolDX
                     if (b < item.Bottom) b = item.Bottom;
                 }
             }
+            return RectangleF.FromLTRB(l, t, r, b);
+        }
+
+        /// <summary>
+        /// Vrací RectangleF, který je souhrnem všech zadaných Rectangle.
+        /// </summary>
+        /// <param name="items"></param>
+        /// <returns></returns>
+        public static RectangleF? SummaryRectangle(params RectangleF?[] items) { return _SummaryNRectangleF(items, false); }
+        /// <summary>
+        /// Vrací RectangleF, který je souhrnem všech zadaných Rectangle.
+        /// </summary>
+        /// <param name="items"></param>
+        /// <returns></returns>
+        public static RectangleF? SummaryRectangle(this IEnumerable<RectangleF?> items) { return _SummaryNRectangleF(items, false); }
+        /// <summary>
+        /// Vrací RectangleF, který je souhrnem všech zadaných Rectangle, které nejsou null a mají Width i Height kladné.
+        /// Vrací null tehdy, když na vstupu nebude žádný platný prvek.
+        /// </summary>
+        /// <param name="items"></param>
+        /// <returns></returns>
+        public static RectangleF? SummaryVisibleRectangle(params RectangleF?[] items) { return _SummaryNRectangleF(items, true); }
+        /// <summary>
+        /// Vrací RectangleF, který je souhrnem všech zadaných Rectangle, které nejsou null a mají Width i Height kladné.
+        /// Vrací null tehdy, když na vstupu nebude žádný platný prvek.
+        /// </summary>
+        /// <param name="items"></param>
+        /// <returns></returns>
+        public static RectangleF? SummaryVisibleRectangle(this IEnumerable<RectangleF?> items) { return _SummaryNRectangleF(items, true); }
+        /// <summary>
+        /// Vrací <see cref="Rectangle"/>?, který je souhrnem všech zadaných <see cref="Rectangle"/>?.
+        /// Vrací null tehdy, když na vstupu nebude žádný platný prvek.
+        /// </summary>
+        /// <param name="items"></param>
+        /// <param name="onlyVisible"></param>
+        /// <returns></returns>
+        private static RectangleF? _SummaryNRectangleF(IEnumerable<RectangleF?> items, bool onlyVisible)
+        {
+            float l = 0;
+            float t = 0;
+            float r = 0;
+            float b = 0;
+            bool empty = true;
+            foreach (RectangleF? itemN in items)
+            {
+                if (itemN.HasValue)
+                {
+                    RectangleF item = itemN.Value;
+                    if (onlyVisible && (item.Width <= 0 || item.Height <= 0)) continue;
+
+                    if (empty)
+                    {
+                        l = item.Left;
+                        t = item.Top;
+                        r = item.Right;
+                        b = item.Bottom;
+                        empty = false;
+                    }
+                    else
+                    {
+                        if (l > item.Left) l = item.Left;
+                        if (t > item.Top) t = item.Top;
+                        if (r < item.Right) r = item.Right;
+                        if (b < item.Bottom) b = item.Bottom;
+                    }
+                }
+            }
+            if (empty) return null;
             return RectangleF.FromLTRB(l, t, r, b);
         }
 
