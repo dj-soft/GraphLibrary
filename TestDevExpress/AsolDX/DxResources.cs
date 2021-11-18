@@ -56,8 +56,12 @@ namespace Noris.Clients.Win.Components.AsolDX
             bool hasName = !String.IsNullOrEmpty(imageName);
             bool hasCaption = !String.IsNullOrEmpty(caption);
 
+            // složené vektory
+            if (hasName && _TryGetContentTypeImageArray(imageName, out var _))
+#warning TODO konverze SvgArray to Bitmap !!!
+                return null;
             if (hasName && _TrySearchApplicationResource(imageName, exactName, out var validItems, ResourceContentType.Bitmap, ResourceContentType.Vector))
-                return _CreateImageApplication(validItems, sizeType, optimalSvgSize);
+                return _CreateBitmapImageApplication(validItems, sizeType, optimalSvgSize);
             if (hasName && _ExistsDevExpressResource(imageName))
                 return _CreateBitmapImageDevExpress(imageName, sizeType, optimalSvgSize);
             if (hasCaption)
@@ -156,20 +160,20 @@ namespace Noris.Clients.Win.Components.AsolDX
         #region TryGetResource - hledání aplikačního zdroje
         /// <summary>
         /// Metoda se pokusí najít zdroj v Aplikačních zdrojích, pro dané jméno.
-        /// Prohledává obrázky vektorové a bitmapové, může preferovat vektory - pokud <paramref name="preferVector"/> je true.
+        /// Prohledává obrázky vektorové a bitmapové, může preferovat vektory - pokud <paramref name="isPreferredVectorImage"/> je true.
         /// </summary>
         /// <param name="imageName">Jméno zdroje</param>
         /// <param name="resourceItem">Výstup - nalezeného zdroje</param>
         /// <param name="sizeType">Vyhledat danou velikost, default = Large</param>
-        /// <param name="preferVector">Preferovat vektory, pokdu je dáno true</param>
+        /// <param name="isPreferredVectorImage">Preferovat true = vektory / false = bitmapy / null = podle systému</param>
         /// <param name="exactName"></param>
         /// <returns></returns>
-        public static bool TryGetResource(string imageName, out DxApplicationResourceLibrary.ResourceItem resourceItem, bool exactName = false, ResourceImageSizeType? sizeType = null, bool preferVector = false)
-        { return Instance._TryGetResource(imageName, exactName, sizeType, preferVector, out resourceItem); }
-        private bool _TryGetResource(string imageName, bool exactName, ResourceImageSizeType? sizeType, bool preferVector, out DxApplicationResourceLibrary.ResourceItem resourceItem)
+        public static bool TryGetResource(string imageName, out DxApplicationResourceLibrary.ResourceItem resourceItem, bool exactName = false, ResourceImageSizeType? sizeType = null, bool? isPreferredVectorImage = null)
+        { return Instance._TryGetResource(imageName, exactName, sizeType, isPreferredVectorImage, out resourceItem); }
+        private bool _TryGetResource(string imageName, bool exactName, ResourceImageSizeType? sizeType, bool? isPreferredVectorImage, out DxApplicationResourceLibrary.ResourceItem resourceItem)
         {
             resourceItem = null;
-            ResourceContentType[] validContentTypes = _GetValidImageContentTypes(preferVector);
+            ResourceContentType[] validContentTypes = _GetValidImageContentTypes(isPreferredVectorImage);
             if (!_TrySearchApplicationResource(imageName, exactName, out var validItems, validContentTypes)) return false;
             if (!DxApplicationResourceLibrary.ResourcePack.TryGetOptimalSize(validItems, sizeType, out resourceItem)) return false;
             return true;
@@ -258,7 +262,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void _ApplyImageArray(ImageOptions imageOptions, SvgImageArrayInfo svgImageArray, ResourceImageSizeType? sizeType, Size? imageSize)
         {
             if (svgImageArray != null)
+            {
                 imageOptions.SvgImage = _GetVectorImageArray(svgImageArray, sizeType);
+                var size = _GetVectorSvgImageSize(sizeType, imageSize);
+                imageOptions.SvgImageSize = size;
+            }
         }
         /// <summary>
         /// Vrátí SVG Image typu Array
@@ -366,7 +374,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void _ApplyImageApplicationBmp(ImageOptions imageOptions, DxApplicationResourceLibrary.ResourceItem[] resourceItems, ResourceImageSizeType? sizeType, Size? imageSize)
         {
             imageOptions.SvgImage = null;
-            imageOptions.Image = _CreateImageApplication(resourceItems, sizeType, imageSize);
+            imageOptions.Image = _CreateBitmapImageApplication(resourceItems, sizeType, imageSize);
         }
         /// <summary>
         /// Aplikuje Image typu Vector nebo Bitmap (podle přípony) ze zdroje DevExpress do daného cíle <paramref name="imageOptions"/>.
@@ -412,6 +420,33 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             imageOptions.SvgImage = null;
             imageOptions.Image = _CreateBitmapImageDevExpressPng(imageName);          // Na vstupu je jméno bitmapy, tedy ji najdeme a dáme do Image. Tady nepřichází do úvahy renderování, velikost, paleta atd...
+        }
+        #endregion
+        #region ApplyIcon - Ikona do okna
+        /// <summary>
+        /// Do daného okna aplikuje danou ikonu.
+        /// </summary>
+        /// <param name="form"></param>
+        /// <param name="iconName"></param>
+        public static void ApplyIcon(Form form, string iconName) { Instance._ApplyIcon(form, iconName); }
+        /// <summary>
+        /// Do daného okna aplikuje danou ikonu.
+        /// </summary>
+        /// <param name="form"></param>
+        /// <param name="iconName"></param>
+        private void _ApplyIcon(Form form, string iconName)
+        {
+            if (form is null || String.IsNullOrEmpty(iconName)) return;
+            if (form is DxStdForm dxStdForm)
+                dxStdForm.ImageName = iconName;
+            else if (form is DxRibbonForm dxRibbonForm)
+                dxRibbonForm.ImageName = iconName;
+            else if (form is DevExpress.XtraEditors.XtraForm xtraForm)
+                ApplyImage(xtraForm.IconOptions, iconName, sizeType: ResourceImageSizeType.Large);
+            else if (form is DevExpress.XtraBars.Ribbon.RibbonForm ribbonForm)
+                ApplyImage(ribbonForm.IconOptions, iconName, sizeType: ResourceImageSizeType.Large);
+            else if (iconName.IndexOfAny("«»<>".ToCharArray()) < 0)
+                form.Icon = ComponentConnector.GraphicsCache.GetIcon(iconName);
         }
         #endregion
         #region PreferredImageList - Seznam obrázků typu Bitmapa/Vektor, pro použití v controlech; GetPreferredImageList, GetPreferredImageIndex
@@ -497,6 +532,8 @@ namespace Noris.Clients.Win.Components.AsolDX
                     if (!imageListDict.TryGetValue(sizeType, out imageList))
                     {
                         imageList = new System.Windows.Forms.ImageList();
+                        imageList.ImageSize = _GetVectorSvgImageSize(sizeType, null);
+                        imageList.ColorDepth = ColorDepth.Depth32Bit;
                         imageListDict.Add(sizeType, imageList);
                     }
                 }
@@ -827,7 +864,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             ResourceImageSizeType? sizeType, Size? optimalSvgSize)
         {
             if (!_TrySearchApplicationResource(imageName, exactName, out var validItems, ResourceContentType.Bitmap, ResourceContentType.Vector)) return null;
-            return _CreateImageApplication(validItems, sizeType, optimalSvgSize);
+            return _CreateBitmapImageApplication(validItems, sizeType, optimalSvgSize);
         }
         /// <summary>
         /// Vrátí Image z knihovny zdrojů.
@@ -837,7 +874,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="sizeType"></param>
         /// <param name="optimalSvgSize"></param>
         /// <returns></returns>
-        private Image _CreateImageApplication(DxApplicationResourceLibrary.ResourceItem[] resourceItems,
+        private Image _CreateBitmapImageApplication(DxApplicationResourceLibrary.ResourceItem[] resourceItems,
             ResourceImageSizeType? sizeType, Size? optimalSvgSize)
         {
             // Vezmu jediný zdroj anebo vyhledám optimální zdroj pro danou velikost:

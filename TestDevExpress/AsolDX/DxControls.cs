@@ -145,7 +145,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Název obrázku, který reprezentuje ikonu tohoto okna
         /// </summary>
-        public string ImageName { get { return _ImageName; } set { _ImageName = value; DxComponent.ApplyImage(this.IconOptions, value, sizeType: ResourceImageSizeType.Medium); } }
+        public string ImageName { get { return _ImageName; } set { _ImageName = value; DxComponent.ApplyImage(this.IconOptions, value, sizeType: ResourceImageSizeType.Large); } }
         private string _ImageName;
         #endregion
         #region Style & Zoom Changed
@@ -263,7 +263,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Název obrázku, který reprezentuje ikonu tohoto okna
         /// </summary>
-        public string ImageName { get { return _ImageName; } set { _ImageName = value; DxComponent.ApplyImage(this.IconOptions, value, sizeType: ResourceImageSizeType.Medium); } }
+        public string ImageName { get { return _ImageName; } set { _ImageName = value; DxComponent.ApplyImage(this.IconOptions, value, sizeType: ResourceImageSizeType.Large); } }
         private string _ImageName;
         #endregion
         #region Style & Zoom Changed

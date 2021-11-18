@@ -4260,7 +4260,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private void ShowQatManager()
         {
-            using (DxControlForm form = new DxControlForm())
+      /*    using (DxControlForm form = new DxControlForm())
             {
                 form.PrepareStartPosition(true);
                 form.Buttons = new IMenuItem[]
@@ -4275,7 +4275,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 var items = QatManagerItems;
                 list.ListBox.Items.AddRange(items);
                 form.ShowDialog(this.FindForm());
-            }
+            }   */
         }
         /// <summary>
         /// Třída reprezentující Qat Manager panel
