@@ -4144,7 +4144,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             : base()
         {
             _TitleItem = this.Items.AddTitle("");
-            _TitleItem.ImageOptions.Images = DxComponent.GetImageList(ResourceImageSizeType.Large);
+            _TitleItem.ImageOptions.Images = DxComponent.GetBitmapImageList(ResourceImageSizeType.Large);
             _TitleItem.ImageOptions.ImageToTextDistance = 12;
 
             _SeparatorItem = this.Items.AddSeparator();
@@ -4183,7 +4183,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void _SetIconName(string iconName)
         {
             _IconName = iconName;
-            _TitleItem.ImageOptions.ImageIndex =  DxComponent.GetImageListIndex(iconName, ResourceImageSizeType.Large);
+            _TitleItem.ImageOptions.ImageIndex =  DxComponent.GetBitmapImageIndex(iconName, ResourceImageSizeType.Large);
         }
         private string _IconName;
         /// <summary>
@@ -4517,13 +4517,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         private void _ListBox_PaintListIcons(SWF.PaintEventArgs e)
         {
-            DevExpress.Utils.Design.ISvgPaletteProvider svgPalette = DxComponent.GetSvgPalette();
             var visibleItems = _ListBox.VisibleItems;
             foreach (var visibleItem in visibleItems)
             {
                 string resourceName = visibleItem.Item2?.Text;
                 Rectangle itemBounds = visibleItem.Item3;
-                using (var image = DxComponent.CreateBitmapImage(resourceName, optimalSvgSize: new Size(32, 32), svgPalette: svgPalette))
+                using (var image = DxComponent.CreateBitmapImage(resourceName, optimalSvgSize: new Size(32, 32)))
                 {
                     if (image != null)
                     {
@@ -4636,7 +4635,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 if (!String.IsNullOrEmpty(resourceName))
                     sb.AppendLine($"  string resource{_ClipboardCopyIndex} = \"{resourceName}\";");
 
-                bool exists = DxComponent.TryGetResourceContentType(resourceName, ResourceImageSizeType.Large, true, out var contentType);
+                bool exists = DxComponent.TryGetResourceContentType(resourceName, ResourceImageSizeType.Large, out var contentType, true);
                 if (exists && contentType == ResourceContentType.Vector)
                 {
                     var svgImage = DxComponent.CreateVectorImage(resourceName, true);

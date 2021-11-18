@@ -519,10 +519,10 @@ namespace TestDevExpress.Forms
             subItems.Add(new DataRibbonItem() { ImageName = "svgimages/richedit/columnstwo.svg", Text = "columnstwo", ClickAction = ClickRibbonSvgMenu0 });
             subItems.Add(new DataRibbonItem() { ImageName = "svgimages/richedit/columnsthree.svg", Text = "columnsthree", ClickAction = ClickRibbonSvgMenu0 });
 
-
-            // subItems.Add(new DataRibbonItem() { ImageName = "Images/SvgTest/arrow-right-2-svgrepo-com.svg", Text = "columnsthree", ClickAction = ClickRibbonSvgMenu0, ItemIsFirstInGroup = true });
-
-            subItems.Add(new DataRibbonItem() { ImageName = "pic/address-book-large.svg", Text = "address-book-large", ClickAction = ClickRibbonSvgMenu0, ItemIsFirstInGroup = true });
+            subItems.Add(new DataRibbonItem() { ImageName = "pic_0/Menu/frmnew", Text = "frmnew", ClickAction = ClickRibbonSvgMenu0, ItemIsFirstInGroup = true });
+            subItems.Add(new DataRibbonItem() { ImageName = "pic_0/Menu/frmdel", Text = "frmdel", ClickAction = ClickRibbonSvgMenu0 });
+            subItems.Add(new DataRibbonItem() { ImageName = "pic_0/Menu/frmcopy", Text = "frmcopy", ClickAction = ClickRibbonSvgMenu0 });
+            subItems.Add(new DataRibbonItem() { ImageName = "pic/address-book-large.svg", Text = "address-book-large", ClickAction = ClickRibbonSvgMenu0 });
             subItems.Add(new DataRibbonItem() { ImageName = "pic/alert-filled-large.svg", Text = "alert-filled-large", ClickAction = ClickRibbonSvgMenu0 });
             subItems.Add(new DataRibbonItem() { ImageName = "pic/anchor-large.svg", Text = "anchor-large", ClickAction = ClickRibbonSvgMenu0 });
             subItems.Add(new DataRibbonItem() { ImageName = "pic/archive-box-large.svg", Text = "archive-box-large", ClickAction = ClickRibbonSvgMenu0 });
@@ -539,12 +539,6 @@ namespace TestDevExpress.Forms
             subItems.Add(new DataRibbonItem() { ImageName = "pic_0/win/dashboard/poznamkovy_blok-16x16.png", Text = "poznamkovy_blok-16x16.png", ClickAction = ClickRibbonSvgMenu0 });
             subItems.Add(new DataRibbonItem() { ImageName = "pic_0/win/dashboard/poznamkovy_blok-32x32.png", Text = "poznamkovy_blok-32x32.png", ClickAction = ClickRibbonSvgMenu0 });
             subItems.Add(new DataRibbonItem() { ImageName = "pic/turbine-2-large.svg", Text = "turbine-2-large", ClickAction = ClickRibbonSvgMenu0 });
-
-            //subItems.Add(new DataRibbonItem() { ImageName = "Images/SvgAsol/xxxxxxx.svg", Text = "columnsthree", ClickAction = ClickRibbonSvgMenu0 });
-            //subItems.Add(new DataRibbonItem() { ImageName = "Images/SvgAsol/xxxxxxx.svg", Text = "columnsthree", ClickAction = ClickRibbonSvgMenu0 });
-            //subItems.Add(new DataRibbonItem() { ImageName = "Images/SvgAsol/xxxxxxx.svg", Text = "columnsthree", ClickAction = ClickRibbonSvgMenu0 });
-            //subItems.Add(new DataRibbonItem() { ImageName = "Images/SvgAsol/xxxxxxx.svg", Text = "columnsthree", ClickAction = ClickRibbonSvgMenu0 });
-            //subItems.Add(new DataRibbonItem() { ImageName = "Images/SvgAsol/xxxxxxx.svg", Text = "columnsthree", ClickAction = ClickRibbonSvgMenu0 });
 
             return subItems;
         }
@@ -671,7 +665,10 @@ namespace TestDevExpress.Forms
             DevExpress.Utils.Svg.SvgImage svgImage = DxComponent.CreateVectorImage(svgImageName);
             if (svgImage == null) return;
             string path = @"C:\CSharp\TestDevExpress\SvgImages";
-            if (!System.IO.Directory.Exists(path)) return;
+            if (!System.IO.Directory.Exists(path))
+                path = @"C:\DavidPrac\VsProjects\SvgSamples";
+            if (!System.IO.Directory.Exists(path))
+                return;
             string name = svgImageName
                 .Replace("/", "_")
                 .Replace("<", "_")
@@ -685,7 +682,6 @@ namespace TestDevExpress.Forms
             try { svgImage.Save(fullName); }
             catch { }
         }
-
         private void _SvgCombineRunActionSet(string svgImageName, XB.BarItem barItem)
         {
             DevExpress.Utils.Svg.SvgImage svgImage = DxComponent.CreateVectorImage(svgImageName);

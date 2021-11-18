@@ -2826,9 +2826,9 @@ namespace Noris.Clients.Win.Components.AsolDX
             switch (_NodeImageType)
             {
                 case ResourceContentType.Bitmap:
-                    return DxComponent.GetImageList(_NodeImageSize);
+                    return DxComponent.GetBitmapImageList(_NodeImageSize);
                 case ResourceContentType.Vector: 
-                    return DxComponent.GetSvgImageCollection(_NodeImageSize);
+                    return DxComponent.GetVectorImageList(_NodeImageSize);
             }
             return null;
         }
@@ -2846,10 +2846,10 @@ namespace Noris.Clients.Win.Components.AsolDX
                 switch (_NodeImageType)
                 {
                     case ResourceContentType.Bitmap:
-                        index = DxComponent.GetImageListIndex(imageName, _NodeImageSize);
+                        index = DxComponent.GetBitmapImageIndex(imageName, _NodeImageSize);
                         break;
                     case ResourceContentType.Vector:
-                        index = DxComponent.GetSvgIndex(imageName, _NodeImageSize);
+                        index = DxComponent.GetVectorImageIndex(imageName, _NodeImageSize);
                         break;
                 }
             }
@@ -2869,7 +2869,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             if (String.IsNullOrEmpty(imageName)) return false;
             bool preferVector = (_NodeImageType == ResourceContentType.Vector || (_NodeImageType == ResourceContentType.None && DxComponent.IsPreferredVectorImage));
-            if (!DxComponent.TryGetResourceContentType(imageName, _NodeImageSize, preferVector, out ResourceContentType contentType)) return false;
+            if (!DxComponent.TryGetResourceContentType(imageName, _NodeImageSize, out ResourceContentType contentType, preferVector)) return false;
 
             if (this.AllNodesCount == 0 || _NodeImageType == ResourceContentType.None)
             {   // Dosud není určen typ obrázků, a nyní už typ obrázku víme:
@@ -2878,7 +2878,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 _ImageListApply();
                 return true;
             }
-            if (contentType == _NodeImageType) return true;
+            if (contentType == _NodeImageType) return true;          // Nová ikona (imageName) je stejného druhu, jaký už používáme (_NodeImageType) = to je v pořádku.
 
             if (!_NodeImageTypeMismatchShowed)
             {

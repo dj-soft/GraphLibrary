@@ -933,7 +933,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             _Zoom = SystemAdapter.ZoomRatio;
             _RecalcZoomDpi();
-            _RecalcSvgCollectionsSizeByZoom();
         }
         /// <summary>
         /// Uloží hodnotu DesignDpi a přepočte další...
@@ -1095,7 +1094,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             __WasDarkTheme = nowIsDark;
             if (isChange)
             {
-                _ReloadSvgCollectionOnLightDarkChanged();            // Kolekce SVG obrázků mohou obsahovat aplikační obrázky, které se po výrazné změně skinu mají přegenerovat (Light # Dark)
                 _CallListeners<IListenerLightDarkChanged>();
             }
         }
