@@ -3077,6 +3077,61 @@ namespace Noris.Clients.Win.Components.AsolDX
         #region Podpora pro konverzi SVG ikon na paletové barvy - TODO
 
         #endregion
+
+        private Icon CreateIconFromImages(ResourceName resourceName)
+        {
+            List<Tuple<Size, Image>> images = new List<Tuple<Size, Image>>();
+
+            if (resourceName.IsNormalizedSize)
+            {
+                var image = GetResourceContent(resourceName.ServerResourceName, resourceName.NormalizedSize.Value);
+                if (image != null)
+                    images.Add(new Tuple<Size, Image>(Options.GetImageSize(resourceName.NormalizedSize.Value), image));
+            }
+            else
+            {
+                var image = GetResourceContent(resourceName.ServerResourceName, UserGraphicsSize.Large);
+                if (image != null)
+                    images.Add(new Tuple<Size, Image>(Options.LargeSize, image));
+
+                image = GetResourceContent(resourceName.ServerResourceName, UserGraphicsSize.Medium);
+                if (image != null)
+                    images.Add(new Tuple<Size, Image>(Options.MediumSize, image));
+
+                image = GetResourceContent(resourceName.ServerResourceName, UserGraphicsSize.Small);
+                if (image != null)
+                    images.Add(new Tuple<Size, Image>(Options.SmallSize, image));
+            }
+
+            Icon ico;
+            var msIco = new System.IO.MemoryStream();
+            using (var bw = new System.IO.BinaryWriter(msIco))
+            {
+                bw.Write((short)0);           //0-1 reserved
+                bw.Write((short)1);           //2-3 image type, 1 = icon, 2 = cursor
+                bw.Write((short)images.Count);           //4-5 number of images
+                foreach (var imgData in images)
+                {
+                    using (var msImg = new System.IO.MemoryStream())
+                    {
+                        imgData.Item2.Save(msImg, System.Drawing.Imaging.ImageFormat.Png);
+                        bw.Write((byte)imgData.Item1.Width);         //6 image width
+                        bw.Write((byte)imgData.Item1.Height);         //7 image height
+                        bw.Write((byte)0);            //8 number of colors
+                        bw.Write((byte)0);            //9 reserved
+                        bw.Write((short)0);           //10-11 color planes
+                        bw.Write((short)32);          //12-13 bits per pixel
+                        bw.Write((int)msImg.Length);  //14-17 size of image data
+                        bw.Write(22);                 //18-21 offset of image data
+                        bw.Write(msImg.ToArray());    // write image data
+                    }
+                }
+                bw.Flush();
+                bw.Seek(0, System.IO.SeekOrigin.Begin);
+                ico = new Icon(msIco);
+            }
+            return ico;
+        }
     }
     #endregion
 }
