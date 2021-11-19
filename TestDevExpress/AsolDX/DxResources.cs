@@ -2927,8 +2927,103 @@ namespace Noris.Clients.Win.Components.AsolDX
         private static string _CreateBaseSvgXml(RectangleF boundsF)
         {
             Rectangle bounds = Rectangle.Ceiling(boundsF);
-            int x = 
             string xml = $"<svg viewBox='{bounds.X} {bounds.Y} {bounds.Width} {bounds.Height}' xmlns='http://www.w3.org/2000/svg'></svg>";
+            /*  inspirace:
+
+<svg id='svg1' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'>
+  <circle r="32" cx="35" cy="65" fill="#F00" opacity="0.5"/>
+  <circle r="32" cx="65" cy="65" fill="#0F0" opacity="0.5"/>
+  <circle r="32" cx="50" cy="35" fill="#00F" opacity="0.5"/>
+</svg> 
+
+
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 100 102">
+  <radialGradient id="jsongrad" cx="65" cy="90" r="100" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#EEF"/><stop offset="1"/></radialGradient>
+  <path d="M61,02 A 49,49 0,0,0 39,98 C 9,79 10,24 45,25 C 72,24 65,75 50,75 C 93,79 91,21 62,02" id="jsonswirl" fill="url(#jsongrad)"/>
+  <use xlink:href="#jsonswirl" transform="rotate(180 50,50)"/>
+</svg> 
+
+
+<?xml version='1.0' encoding='UTF-8'?>
+<svg x="0px" y="0px" viewBox="0 0 32 32" 
+        version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xml:space="preserve" 
+        id="Layer_1" 
+        style="enable-background:new 0 0 32 32">
+  <style type="text/css">
+	.Red{fill:#D11C1C;}
+	.Green{fill:#039C23;}
+	.Blue{fill:#1177D7;}
+	.Yellow{fill:#FFB115;}
+	.Black{fill:#727272;}
+	.st0{opacity:0.75;}
+	.st1{opacity:0.5;}
+  </style>
+  <g id="iconAB" style="font-size: 16px; text-anchor: middle; font-family: serif; font-weight: bold">
+    <path d="M31,0H1C0.5,0,0,0.5,0,1v30c0,0.5,0.5,1,1,1h30c0.5,0,1-0.5,1-1V1C32,0.5,31.5,0,31,0z M30,30H2V2h28V30z" class="Black" />
+    <!--  path d="M0,0L31,0L31,31L0,31L0,0Z" class="Black" / -->
+    <text x="16" y="20" class="Blue">MM</text>
+  </g>
+</svg>
+
+<?xml version='1.0' encoding='UTF-8'?>
+<svg x="0px" y="0px" width="32px" height="32px" viewBox="0 0 32 32" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" enable-background="new 0 0 32 32" xml:space="preserve" id="Layer_1">
+  <g id="icon">
+    <rect x="1.5" y="7.5" width="29" height="22" rx="0" ry="0" fill="#FFFFFF" stroke="#383838" stroke-width="1px" stroke-miterlimit="5" />
+    <rect x="1.5" y="2.5" width="29" height="5" rx="0" ry="0" fill="#92CBEE" stroke="#0964B0" stroke-width="1px" stroke-linecap="round" stroke-miterlimit="5" />
+  </g>
+</svg>
+
+
+
+
+<?xml version='1.0' encoding='UTF-8'?>
+<svg x="0px" y="0px" viewBox="0 0 32 32" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xml:space="preserve" id="Layer_1" style="enable-background:new 0 0 32 32">
+  <style type="text/css">
+	.Blue{fill:#1177D7;}
+	.White{fill:#FFFFFF;}
+</style>
+  <g id="Layer_2">
+    <path d="M16,2c7.7,0,14,6.3,14,14s-6.3,14-14,14S2,23.7,2,16S8.3,2,16,2z" class="Blue" />
+    <circle cx="16" cy="10" r="2" class="White" />
+    <path d="M16,24L16,24c-1.1,0-2-0.9-2-2v-6c0-1.1,0.9-2,2-2l0,0c1.1,0,2,0.9,2,2v6C18,23.1,17.1,24,16,24z" class="White" />
+  </g>
+</svg>
+
+
+
+Výsledek spojení
+
+<?xml version='1.0' encoding='UTF-8'?>
+<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+  <g transform="scale(3.75)">
+    <style type="text/css">
+	.Black{fill:#727272;}
+	.White{fill:#FFFFFF;}
+	.st0{opacity:0.6;}
+</style>
+    <path d="M4, 2L4, 30L28, 30L28, 8L28, 2L4, 2z" class="Black" />
+    <rect x="6" y="4" width="20" height="24" rx="0" ry="0" class="White" />
+    <g class="st0">
+      <rect x="8" y="6" width="16" height="2" rx="0" ry="0" class="Black" />
+      <rect x="8" y="18" width="12" height="2" rx="0" ry="0" class="Black" />
+      <rect x="8" y="10" width="16" height="2" rx="0" ry="0" class="Black" />
+      <rect x="8" y="14" width="16" height="2" rx="0" ry="0" class="Black" />
+    </g>
+  </g>
+  <g transform="translate(60, 60) scale(1.875)">
+    <style type="text/css">
+	.Blue{fill:#1177D7;}
+	.White{fill:#FFFFFF;}
+</style>
+    <g id="Layer_2">
+      <path d="M16, 2C23.7, 2 30, 8.3 30, 16C30, 23.7 23.7, 30 16, 30C8.3, 30 2, 23.7 2, 16C2, 8.3 8.3, 2 16, 2z" class="Blue" />
+      <circle cx="16" cy="10" r="2" class="White" />
+      <path d="M16, 24L16, 24C14.9, 24 14, 23.1 14, 22L14, 16C14, 14.9 14.9, 14 16, 14L16, 14C17.1, 14 18, 14.9 18, 16L18, 22C18, 23.1 17.1, 24 16, 24z" class="White" />
+    </g>
+  </g>
+</svg>
+
+            */
         }
 
 
