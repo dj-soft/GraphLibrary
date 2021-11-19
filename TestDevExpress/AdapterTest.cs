@@ -373,6 +373,25 @@ namespace Noris.Clients.Win.Components.AsolDX
         #endregion
         #region Načtení zdrojů z jednotlivých souborů disku
         /// <summary>
+        /// Načte a vrátí zdroje z daného adresáře
+        /// </summary>
+        /// <param name="directory"></param>
+        /// <returns></returns>
+        public static IEnumerable<IResourceItem> GetResourcesFromDirectory(string directory)
+        {
+            List<IResourceItem> resourceList = new List<IResourceItem>();
+            if (!String.IsNullOrEmpty(directory))
+            {
+                var dirInfo = new System.IO.DirectoryInfo(directory);
+                if (dirInfo.Exists)
+                {
+                    int commonPathLength = dirInfo.Parent.FullName.Length;
+                    LoadFromFilesInDirectory(dirInfo, commonPathLength, resourceList);
+                }
+            }
+            return resourceList;
+        }
+        /// <summary>
         /// Do daného seznamu načte jednotlivé zdroje z podadresářů aplikace.
         /// </summary>
         /// <returns></returns>
@@ -402,6 +421,16 @@ namespace Noris.Clients.Win.Components.AsolDX
             System.IO.DirectoryInfo dirInfo = new System.IO.DirectoryInfo(path);
             if (!dirInfo.Exists) return;
 
+            LoadFromFilesInDirectory(dirInfo, commonPathLength, resourceList);
+        }
+        /// <summary>
+        /// Načte zdroje z daného adresáře
+        /// </summary>
+        /// <param name="dirInfo"></param>
+        /// <param name="commonPathLength"></param>
+        /// <param name="resourceList"></param>
+        private static void LoadFromFilesInDirectory(System.IO.DirectoryInfo dirInfo, int commonPathLength, List<IResourceItem> resourceList)
+        { 
             foreach (var fileInfo in dirInfo.EnumerateFiles("*.*", System.IO.SearchOption.AllDirectories))
             {
                 if (fileInfo == null || !fileInfo.Exists) continue;

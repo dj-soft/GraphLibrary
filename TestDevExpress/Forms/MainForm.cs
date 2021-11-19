@@ -445,6 +445,8 @@ namespace TestDevExpress.Forms
         #region Ribbon a SvgImage kombinace
         private DataRibbonPage CreateRibbonSvgImagesPage()
         {
+            AddTestDxResources();
+
             _SvgCombineData = new object[4];
 
             DataRibbonPage page = new DataRibbonPage() { PageText = "SVG IKONY" };
@@ -465,6 +467,26 @@ namespace TestDevExpress.Forms
             this.DxRibbon.UseLazyContentCreate = false;           // Potřebuji, aby v době FirstShown existovaly všechny prvky Ribbonu (i na druhé Page), protože do Result buttonu chci vyrenderovat kombinovanou ikonu v metodě ApplyRibbonSvgImagesResult()
 
             return page;
+        }
+        private void AddTestDxResources()
+        {
+            string directory = SearchDirectory(1, "Images\\SvgTest");
+            if (directory == null)
+                directory = SearchDirectory(0, "Images\\SvgTest");
+            if (directory != null)
+                DxApplicationResourceLibrary.AddResources(DataResources.GetResourcesFromDirectory(directory));
+        }
+        private string SearchDirectory(int upDirs, string subDir)
+        {
+            string path = DxComponent.ApplicationPath;
+            for (int i = 0; i < upDirs && !String.IsNullOrEmpty(path); i++)
+                path = System.IO.Path.GetDirectoryName(path);
+            if (String.IsNullOrEmpty(path)) return null;
+            if (!String.IsNullOrEmpty(subDir)) 
+                path = System.IO.Path.Combine(path, subDir);
+            System.IO.DirectoryInfo dirInfo = new System.IO.DirectoryInfo(path);
+            if (!dirInfo.Exists) return null;
+            return path;
         }
         private void ApplyRibbonSvgImagesResult(bool showStatus)
         {
@@ -540,6 +562,13 @@ namespace TestDevExpress.Forms
             subItems.Add(new DataRibbonItem() { ImageName = "pic_0/win/dashboard/poznamkovy_blok-32x32.png", Text = "poznamkovy_blok-32x32.png", ClickAction = ClickRibbonSvgMenu0 });
             subItems.Add(new DataRibbonItem() { ImageName = "pic/turbine-2-large.svg", Text = "turbine-2-large", ClickAction = ClickRibbonSvgMenu0 });
 
+            subItems.Add(new DataRibbonItem() { ImageName = "svgtest/asset-cancel-2", Text = "asset-cancel-2", ClickAction = ClickRibbonSvgMenu0, ItemIsFirstInGroup = true });
+            subItems.Add(new DataRibbonItem() { ImageName = "svgtest/asset-filled-ok-2", Text = "asset-filled-ok-2", ClickAction = ClickRibbonSvgMenu0 });
+            subItems.Add(new DataRibbonItem() { ImageName = "svgtest/asset", Text = "asset", ClickAction = ClickRibbonSvgMenu0 });
+            subItems.Add(new DataRibbonItem() { ImageName = "svgtest/attach-1-add-2", Text = "attach-1-add-2", ClickAction = ClickRibbonSvgMenu0 });
+            subItems.Add(new DataRibbonItem() { ImageName = "svgtest/attach-1", Text = "attach-1", ClickAction = ClickRibbonSvgMenu0 });
+            subItems.Add(new DataRibbonItem() { ImageName = "svgtest/backspace", Text = "backspace", ClickAction = ClickRibbonSvgMenu0 });
+
             return subItems;
         }
         private List<IRibbonItem> CreateRibbonSvgMenu1()
@@ -586,13 +615,16 @@ namespace TestDevExpress.Forms
             subItems.Add(new DataRibbonItem() { ImageName = "devav/other/brand.svg", Text = "brand", ClickAction = ClickRibbonSvgMenu3 });
             subItems.Add(new DataRibbonItem() { ImageName = "devav/actions/cut.svg", Text = "cut", ClickAction = ClickRibbonSvgMenu3 });
             subItems.Add(new DataRibbonItem() { ImageName = "devav/actions/delete.svg", Text = "delete", ClickAction = ClickRibbonSvgMenu3 });
-
             subItems.Add(new DataRibbonItem() { ImageName = "devav/contacts/mail.svg", Text = "mail", ClickAction = ClickRibbonSvgMenu3 });
             subItems.Add(new DataRibbonItem() { ImageName = "devav/contacts/mail1.svg", Text = "mail1", ClickAction = ClickRibbonSvgMenu3 });
             subItems.Add(new DataRibbonItem() { ImageName = "devav/contacts/mail2.svg", Text = "mail2", ClickAction = ClickRibbonSvgMenu3 });
             subItems.Add(new DataRibbonItem() { ImageName = "devav/contacts/mail3.svg", Text = "mail3", ClickAction = ClickRibbonSvgMenu3 });
 
-            subItems.Add(new DataRibbonItem() { ImageName = "svgimages/icon%20builder/actions_add.svg", Text = "actions_add", ClickAction = ClickRibbonSvgMenu3 });
+            subItems.Add(new DataRibbonItem() { ImageName = "svgimages/icon%20builder/actions_add.svg", Text = "actions_add", ClickAction = ClickRibbonSvgMenu3, ItemIsFirstInGroup = true });
+
+            subItems.Add(new DataRibbonItem() { ImageName = "svgtest/suffix-add", Text = "suffix-add", ClickAction = ClickRibbonSvgMenu3, ItemIsFirstInGroup = true });
+            subItems.Add(new DataRibbonItem() { ImageName = "svgtest/suffix-cancel", Text = "suffix-cancel", ClickAction = ClickRibbonSvgMenu3 });
+            subItems.Add(new DataRibbonItem() { ImageName = "svgtest/suffix-aokdd", Text = "suffix-ok", ClickAction = ClickRibbonSvgMenu3 });
 
             return subItems;
         }
@@ -649,7 +681,7 @@ namespace TestDevExpress.Forms
             else
             {   // Přímo voláme SvgImageArraySupport.CreateSvgImage() :
                 // Zpracování:
-                var svgImageOut = SvgImageArraySupport.CreateSvgImage(svgImageArray);
+                var svgImageOut = SvgImageSupport.CreateSvgImage(svgImageArray);
 
                 // Výstup:
                 barItem.ImageOptions.SvgImage = svgImageOut;

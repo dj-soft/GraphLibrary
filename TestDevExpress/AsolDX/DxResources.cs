@@ -146,7 +146,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             bool hasName = !String.IsNullOrEmpty(imageName);
             bool hasCaption = !String.IsNullOrEmpty(caption);
 
-            if (hasName && SvgImageArraySupport.TryGetSvgImageArray(imageName, out var svgImageArray))
+            if (hasName && SvgImageSupport.TryGetSvgImageArray(imageName, out var svgImageArray))
                 return _GetVectorImageArray(svgImageArray, sizeType);
             if (hasName && _TrySearchApplicationResource(imageName, exactName, out var validItems, ResourceContentType.Vector))
                 return _GetVectorImageApplication(validItems, sizeType);
@@ -230,7 +230,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 try
                 {
                     // Resource může být Combined (=více SVG obrázků v jedném textu!):
-                    if (hasName && SvgImageArraySupport.TryGetSvgImageArray(imageName, out var svgImageArray))
+                    if (hasName && SvgImageSupport.TryGetSvgImageArray(imageName, out var svgImageArray))
                         _ApplyImageArray(imageOptions, svgImageArray, sizeType, imageSize);
                     else if (hasName && _ExistsApplicationResource(imageName, exactName))
                         _ApplyImageApplication(imageOptions, imageName, exactName, sizeType, imageSize);
@@ -261,11 +261,53 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="imageSize"></param>
         private void _ApplyImageArray(ImageOptions imageOptions, SvgImageArrayInfo svgImageArray, ResourceImageSizeType? sizeType, Size? imageSize)
         {
-            if (svgImageArray != null)
-            {
-                imageOptions.SvgImage = _GetVectorImageArray(svgImageArray, sizeType);
-                var size = _GetVectorSvgImageSize(sizeType, imageSize);
-                imageOptions.SvgImageSize = size;
+            if (svgImageArray == null) return;
+
+            if (imageOptions is DevExpress.XtraBars.BarItemImageOptions barOptions)
+            {   // Má prostor pro dvě velikosti obrázku najednou:
+                barOptions.Image = null;
+                barOptions.LargeImage = null;
+
+                bool hasIndexes = false;
+                if (barOptions.Images is SvgImageCollection)
+                {   // Máme připravenou podporu pro vektorový index, můžeme tam dát dvě velikosti:
+                    int smallIndex = _GetVectorImageIndex(svgImageArray, ResourceImageSizeType.Small);
+                    int largeIndex = _GetVectorImageIndex(svgImageArray, ResourceImageSizeType.Large);
+                    if (smallIndex >= 0 && largeIndex >= 0)
+                    {   // Máme indexy pro obě velikosti?
+                        barOptions.SvgImage = null;
+                        barOptions.SvgImageSize = Size.Empty;
+                        barOptions.ImageIndex = smallIndex;
+                        barOptions.LargeImageIndex = largeIndex;
+                        hasIndexes = true;
+                    }
+                }
+                if (!hasIndexes)
+                {
+                    barOptions.SvgImage = _GetVectorImageArray(svgImageArray, sizeType);
+                    barOptions.SvgImageSize = _GetVectorSvgImageSize(sizeType, imageSize);
+                }
+            }
+            else if (imageOptions is DevExpress.Utils.ImageCollectionImageOptions iciOptions)
+            {   // Může využívat Index:
+                iciOptions.Image = null;
+                if (iciOptions.Images is SvgImageCollection)
+                {   // Máme připravenou podporu pro vektorový index, můžeme tam dát index prvku v požadované velikosti (defalt = velká):
+                    iciOptions.SvgImage = null;
+                    iciOptions.SvgImageSize = Size.Empty;
+                    iciOptions.ImageIndex = _GetVectorImageIndex(svgImageArray, sizeType ?? ResourceImageSizeType.Large);
+                }
+                else
+                {   // Musíme tam dát přímo SvgImage:
+                    iciOptions.SvgImage = _GetVectorImageArray(svgImageArray, sizeType);
+                    iciOptions.SvgImageSize = _GetVectorSvgImageSize(sizeType, imageSize);
+                }
+            }
+            else
+            {   // Musíme vepsat přímo jeden obrázek:
+                imageOptions.Image = null;
+                imageOptions.SvgImage = _GetVectorImageApplication(resourceItems, sizeType);
+                imageOptions.SvgImageSize = _GetVectorSvgImageSize(sizeType, imageSize);
             }
         }
         /// <summary>
@@ -276,7 +318,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         private DevExpress.Utils.Svg.SvgImage _GetVectorImageArray(SvgImageArrayInfo svgImageArray, ResourceImageSizeType? sizeType)
         {
-            return SvgImageArraySupport.CreateSvgImage(svgImageArray, sizeType);
+            return SvgImageSupport.CreateSvgImage(svgImageArray, sizeType);
         }
         /// <summary>
         /// Aplikuje Image typu Vector nebo Bitmap (podle přípony) ze zdroje Aplikační do daného cíle <paramref name="imageOptions"/>.
@@ -753,6 +795,20 @@ namespace Noris.Clients.Win.Components.AsolDX
             var svgCollection = _GetVectorImageList(sizeType);
             return svgCollection.GetImageId(resourceItem.ItemKey, n => resourceItem.CreateSvgImage());
         }
+        /// <summary>
+        /// Najde a vrátí index ID pro vhodný vektorový obrázek z dodaných zdrojů, pro danou velikost.
+        /// </summary>
+        /// <param name="svgImageArray">Kombinovaná ikona</param>
+        /// <param name="sizeType">Cílový typ velikosti; každá velikost má svoji kolekci (viz <see cref="GetVectorImageList(ResourceImageSizeType)"/>)</param>
+        /// <returns></returns>
+        private int _GetVectorImageIndex(SvgImageArrayInfo svgImageArray, ResourceImageSizeType sizeType)
+        {
+            if (svgImageArray is null) return -1;
+            var svgCollection = _GetVectorImageList(sizeType);
+            string key = svgImageArray.Key;
+            return svgCollection.GetImageId(resourceItem.ItemKey, n => resourceItem.CreateSvgImage());
+        }
+
         /// <summary>Kolekce SvgImages pro použití v controlech, obsahuje DevExpress i Aplikační zdroje, instanční proměnná.</summary>
         private Dictionary<ResourceImageSizeType, DxSvgImageCollection> __VectorImageList;
         #endregion
@@ -1442,7 +1498,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         private bool _TryGetContentTypeImageArray(string imageName, out ResourceContentType contentType)
         {
-            if (SvgImageArraySupport.TryGetSvgImageArray(imageName, out var svgImageArray))
+            if (SvgImageSupport.TryGetSvgImageArray(imageName, out var svgImageArray))
             {
                 contentType = ResourceContentType.Vector;
                 return true;
@@ -1625,7 +1681,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                     }
                 }
                 if (!__Current.__IsResourceLoaded)
-                    __Current.TryLoadResources();
+                    __Current._TryLoadResources();
                 return __Current;
             }
         }
@@ -1664,27 +1720,44 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Zkusí najít adresáře se zdroji a načíst jejich soubory.
         /// Pokud načte alespoň jeden zdroj, nastaví <see cref="__IsResourceLoaded"/> = true.
         /// </summary>
-        protected void TryLoadResources()
+        private void _TryLoadResources()
         {
             try
             {
                 var resources = SystemAdapter.GetResources();
-                if (resources != null)
-                {   // Zdroje mohou být jen v jedné sadě, a to v té nejnovější:
-                    __ItemDict.Clear();
-                    __PackDict.Clear();
-                    foreach (var resource in resources)
-                    {
-                        ResourceItem item = ResourceItem.CreateFrom(resource);
-                        if (item == null) continue;
-                        __ItemDict.Store(item.ItemKey, item);
-                        var pack = __PackDict.Get(item.PackKey, () => new ResourcePack(item.PackKey));
-                        pack.AddItem(item);
-                    }
-                }
+                _AddResources(resources, true);
                 __IsResourceLoaded = (__ItemDict.Count > 0);
             }
             catch (Exception) { }
+        }
+        /// <summary>
+        /// Přidá další zdroje
+        /// </summary>
+        /// <param name="resources"></param>
+        public static void AddResources(IEnumerable<IResourceItem> resources) { Current._AddResources(resources, false); }
+        /// <summary>
+        /// Přidá další zdroje
+        /// </summary>
+        /// <param name="resources"></param>
+        /// <param name="withReset"></param>
+        private void _AddResources(IEnumerable<IResourceItem> resources, bool withReset)
+        {
+            if (resources != null)
+            {
+                if (withReset)
+                {
+                    __ItemDict.Clear();
+                    __PackDict.Clear();
+                }
+                foreach (var resource in resources)
+                {
+                    ResourceItem item = ResourceItem.CreateFrom(resource);
+                    if (item == null) continue;
+                    __ItemDict.Store(item.ItemKey, item);
+                    var pack = __PackDict.Get(item.PackKey, () => new ResourcePack(item.PackKey));
+                    pack.AddItem(item);
+                }
+            }
         }
         #endregion
         #region Public static rozhraní základní (Count, ContainsResource, TryGetResource, GetRandomName)
@@ -2794,14 +2867,15 @@ namespace Noris.Clients.Win.Components.AsolDX
         #endregion
     }
     #endregion
-    #region SvgImageArraySupport : podpora pro kombinace SVG images na straně klienta
+    #region SvgImageSupport : podpora práce se SVG images na straně klienta
     /// <summary>
-    /// SvgImageArraySupport : podpora pro kombinace SVG images na straně klienta
+    /// <see cref="SvgImageSupport"/> : podpora práce se SVG images na straně klienta
     /// </summary>
-    internal class SvgImageArraySupport
+    internal class SvgImageSupport
     {
+        #region Podpora pro kombinování více ikon (SvgImageArrayInfo)
         /// <summary>
-        /// Vrátí true, pokud dodaný string představuje instanci <see cref="SvgImageArraySupport"/>, a pokud ano pak ji rovnou vytvoří.
+        /// Vrátí true, pokud dodaný string představuje instanci <see cref="SvgImageSupport"/>, a pokud ano pak ji rovnou vytvoří.
         /// </summary>
         /// <param name="resourceName"></param>
         /// <param name="arrayInfo"></param>
@@ -2824,62 +2898,131 @@ namespace Noris.Clients.Win.Components.AsolDX
             List<SvgItemInfo> svgInfos = new List<SvgItemInfo>();
             foreach (var svgItem in svgImageArray.Items)
             {
-                SvgImage svgImage = DxComponent.GetVectorImage(svgItem.ImageName, false, sizeType);
+                SvgImage svgImage = DxComponent.GetVectorImage(svgItem.ImageName, false, sizeType);          // Požadovaná velikost (sizeType) se uplatňuje pouze tady = při výběru ikon (small / large)
                 SvgItemInfo svgInfo = new SvgItemInfo(svgItem, svgImage);
                 svgInfos.Add(svgInfo);
-                if (!svgInfo.HasTransform)
-                {
-
-                }
             }
 
-            // Zjistím, zda dodané SvgArray bude potřebovat transformace, a jaká bude velikost:
-            // (vezmu vstupní ikony, které nemají zadanou transformaci, a sečtu jejich prostor):
+            // Projdu vstupní ikony, vyberu z nich ty "bez transformace" = ty by měly být zobrazeny "nativně", a z nich zkusím odvodit sumární velikost pro výslednou ikonu:
             RectangleF? bounds = svgInfos
                 .Where(s => !s.HasTransform)
-                .Select(s => s.SvgCurrentBounds)
+                .Select(s => s.SvgImageBounds)
                 .SummaryVisibleRectangle();
 
-            // Bude se provádět transformace nějakých dalších ikon?
-            bool hasTransform = svgInfos.Any(s => s.HasTransform);
+            // Vytvořím základní SVG pro "podklad" = pro souřadnice sečtené z "nativních" (netransformovaných) ikon (cílový prostor má default 120p, pokud se nepodařilo najít nativní ikony):
+            if (!bounds.HasValue) bounds = new RectangleF(0f, 0f, 120f, 120f);
+            DxSvgImage svgImageOut = _CreateBaseSvg(svgImageArray.Key, bounds.Value);
 
-
-            // Vytvořím text SVG pro "podklad" = pro souřadnice
-            if (!bounds.HasValue) bounds = new RectangleF(0f, 0f, 120f, 120f);           // Výsledný prostor
-            string blankSvgXml = _CreateBaseSvgXml(bounds.Value);
-
-
-
-
-
-
-
-
-            bool needTransform = svgImageArray.Items.Any(i => _NeedTransform(i.ImageRelativeBounds));
-
-            // Výsledný SvgImage začne na prázdné louce:
-            DxSvgImage svgImageOut = DxSvgImage.Create(svgImageArray.Key, false, );
-
-            // DevExpress.Utils.Svg.SvgImage svgImageOut;
-            // using (var memoryStream = new System.IO.MemoryStream(_BlankSvgBaseBuffer))
-            //    svgImageOut = DevExpress.Utils.Svg.SvgImage.FromStream(memoryStream);
-
-            // Kombinace:
-            foreach (var svgItem in svgImageArray.Items)
+            // Kombinace vstupních SvgImages pomocí SvgGroup [plus transformací] do cílového svgImageOut:
+            foreach (var svgInfo in svgInfos)
             {
-                SvgImage svgImageInp = DxComponent.GetVectorImage(svgItem.ImageName, false, sizeType);
+                SvgImage svgImageInp = svgInfo.SvgImage;
                 if (svgImageInp is null) continue;
 
                 SvgGroup svgGroupSum = new SvgGroup();
-                if (_SvgCombineSetTransform(svgImageInp, svgItem, svgGroupSum))
+                bool hasTransform = svgInfo.HasTransform;
+                bool isValid = (!hasTransform || (hasTransform && _SetTransformForImage(svgInfo, bounds.Value, svgGroupSum)));
+                if (isValid)
                 {
-                    foreach (var svgElement in svgImageInp.Root.Elements)
-                        svgGroupSum.Elements.Add(svgElement.DeepCopy());
+                    svgImageInp.Root.Elements.ForEachExec(e => svgGroupSum.Elements.Add(e.DeepCopy()));
+                    svgImageOut.Root.Elements.Add(svgGroupSum);
                 }
-                svgImageOut.Root.Elements.Add(svgGroupSum);
             }
 
             return svgImageOut;
+        }
+        /// <summary>
+        /// Vrátí prázdný SVG image v dané cílové velikosti
+        /// </summary>
+        /// <param name="name"></param>
+        /// <param name="boundsF"></param>
+        /// <returns></returns>
+        private static DxSvgImage _CreateBaseSvg(string name, RectangleF boundsF)
+        {
+            Rectangle bounds = Rectangle.Ceiling(boundsF);
+            string xml = $"<svg x='{bounds.X}px' y='{bounds.Y}px' width='{bounds.Width}px' height='{bounds.Height}px' viewBox='{bounds.X} {bounds.Y} {bounds.Width} {bounds.Height}' xmlns='http://www.w3.org/2000/svg'></svg>";
+            xml = xml.Replace("'", "\"");
+            return DxSvgImage.Create(name, false, xml); ;
+        }
+        /// <summary>
+        /// Metoda nastaví do <paramref name="svgGroupSum"/> sadu transformací tak, 
+        /// aby vstupující SvgImage z <paramref name="svgInfo"/> 
+        /// byl správně umístěn do relativního prostoru podle daného předpisu, v rámci reálného cílového prostoru <paramref name="bounds"/>.
+        /// </summary>
+        /// <param name="svgInfo">Vstupní image (definice plus SvgImage)</param>
+        /// <param name="bounds">Reálný cílový prostor</param>
+        /// <param name="svgGroupSum">Grupa pro vložení transformace</param>
+        /// <returns></returns>
+        private static bool _SetTransformForImage(SvgItemInfo svgInfo, RectangleF bounds, SvgGroup svgGroupSum)
+        {
+            // Kontroly - sem máme chodit jen když jsou definované podklady, a ty definují potřebu transformace:
+            if (svgInfo is null || svgInfo.SvgImage is null || !svgInfo.ImageRelativeBounds.HasValue || svgInfo.SvgItem is null || !svgInfo.SvgImageBounds.HasValue || svgGroupSum is null) return false;
+
+            // Pokud dodaná ikona je neviditelná, skončím:
+            RectangleF currentBounds = svgInfo.SvgImageBounds.Value;
+            if (currentBounds.Width <= 0f || currentBounds.Height <= 0f) return false;
+
+            // Určím relativní pozici aktuální ikony v rámci celku:
+            float baseSize = SvgImageArrayInfo.BaseSize;
+            RectangleF targetData = svgInfo.ImageRelativeBounds.Value;
+            RectangleF targetRatio = new RectangleF(targetData.X / baseSize, targetData.Y / baseSize, targetData.Width / baseSize, targetData.Height / baseSize);                            // Ratio = požadované umístění v rozsahu 0-1
+            RectangleF targetBounds = new RectangleF(targetRatio.X * bounds.Width, targetRatio.Y * bounds.Height, targetRatio.Width * bounds.Width, targetRatio.Height * bounds.Height);     // Pixelové souřadnice cílového prostoru (nejde ještě o souřadnice konkrétní ikony, ale jen reálný prostor pro ni)
+
+            // Vezmu rozměry aktuální reálné ikony a zmenším je do velikosti 'targetBounds' se zachováním poměru stran:
+            //   (určím přepočtový Zoom z current do target Bounds, tak abych daný prostor targetBounds nepřelezl)
+            float zoomW = targetBounds.Width / currentBounds.Width;
+            float zoomH = targetBounds.Height / currentBounds.Height;
+            float zoom = (zoomW < zoomH ? zoomW : zoomH);
+            float imageW = zoom * currentBounds.Width;
+            float imageH = zoom * currentBounds.Height;
+
+            // Určím souřadnice reálné image tak, abych dodržel pozici reálné image v rámci bounds podle požadavku target:
+            float imageX = _GetImageBegin(bounds.Width, targetBounds.X, targetBounds.Width, imageW);
+            float imageY = _GetImageBegin(bounds.Height, targetBounds.Y, targetBounds.Height, imageH);
+            RectangleF imageBounds = new RectangleF(imageX, imageY, imageW, imageH);
+
+            string log = BoundsToLog("TotalBounds:", bounds) +
+                         BoundsToLog("; ImageRelativeBounds:", targetData) +
+                         BoundsToLog("; targetRatio:", targetRatio) +
+                         BoundsToLog("; targetBounds:", targetBounds) +
+                         BoundsToLog("; imageBounds:", imageBounds);
+
+            // Určím a vygeneruji SVG transformace:
+            if (imageX != 0f || imageY != 0f)
+                svgGroupSum.Transformations.Add(new SvgTranslate(new double[] { imageX, imageY }));
+
+            if (zoom != 1f)
+                svgGroupSum.Transformations.Add(new SvgScale(new double[] { zoom, zoom }));
+
+            return true;
+        }
+        /// <summary>
+        /// Vrátí počátek reálného prostoru <paramref name="realSize"/> v celkovém prostoru <paramref name="totalSize"/> tak, aby vyhovoval zadání <paramref name="targetBegin"/> a <paramref name="targetSize"/>.
+        /// </summary>
+        /// <param name="totalSize"></param>
+        /// <param name="targetBegin"></param>
+        /// <param name="targetSize"></param>
+        /// <param name="realSize"></param>
+        /// <returns></returns>
+        private static float _GetImageBegin(float totalSize, float targetBegin, float targetSize, float realSize)
+        {
+            if (targetBegin <= 0f) return 0f;                                                      // Real je úplně na začátku
+            if ((targetBegin + targetSize) >= totalSize) return (totalSize - realSize);            // Real je úplně na konci
+            if (realSize >= totalSize) return 0f;                                                  // Real je větší než Total, bude na začátku
+
+            // Real je někde uprostřed Total, přihlédneme k pozici prostoru Target v rámci Total:
+            float targetRatio = targetBegin / (totalSize - targetSize);
+            return targetRatio * (totalSize - realSize);
+        }
+        /// <summary>
+        /// Bounds to log
+        /// </summary>
+        /// <param name="title"></param>
+        /// <param name="bounds"></param>
+        /// <returns></returns>
+        private static string BoundsToLog(string title, RectangleF bounds)
+        {
+            return $"{title}{{ X={bounds.X}, Y={bounds.Y}, W={bounds.Width}, H={bounds.Height}, R={bounds.Right}, B={bounds.Bottom} }}";
         }
         /// <summary>
         /// Data o jedné položce kombinovaného SVG: podklady plus reálný obrázek
@@ -2891,7 +3034,13 @@ namespace Noris.Clients.Win.Components.AsolDX
                 this.SvgItem = svgItem;
                 this.SvgImage = svgImage;
             }
+            /// <summary>
+            /// Vstupní definice ikony (jméno a relativní umístění)
+            /// </summary>
             public SvgImageArrayItem SvgItem { get; private set; }
+            /// <summary>
+            /// Nalezený reálný SvgImage
+            /// </summary>
             public SvgImage SvgImage { get; private set; }
             /// <summary>
             /// Souřadnice cílové, ve 120px virtuálním prostoru
@@ -2905,13 +3054,16 @@ namespace Noris.Clients.Win.Components.AsolDX
                 get
                 {
                     var bounds = this.ImageRelativeBounds;
-                    return (bounds.HasValue && bounds.Value.X == 0 && bounds.Value.Y == 0 && bounds.Value.Width == 120 && bounds.Value.Height == 120);
+                    if (!bounds.HasValue) return false;              // Pokud nejsou definované Target souřadnice, nemáme transformaci.
+                    var b = bounds.Value;
+                    bool isWhole = (b.X == 0 && b.Y == 0 && b.Width == 120 && b.Height == 120);   // true pokud souřadnice jsou "plný rozměr" = 100% = 120p
+                    return !isWhole;                                 // Pokud NEJSME 100%, pak máme transformace!
                 }
             }
             /// <summary>
-            /// Souřadnice uvedené v SVG image
+            /// Souřadnice uvedené reálně v ikoně <see cref="SvgImage"/>
             /// </summary>
-            public RectangleF? SvgCurrentBounds
+            public RectangleF? SvgImageBounds
             {
                 get
                 {
@@ -2920,211 +3072,11 @@ namespace Noris.Clients.Win.Components.AsolDX
                     return new RectangleF((float)svgImage.OffsetX, (float)svgImage.OffsetY, (float)svgImage.Width, (float)svgImage.Height);
                 }
             }
-
         }
+        #endregion
+        #region Podpora pro konverzi SVG ikon na paletové barvy - TODO
 
-
-        private static string _CreateBaseSvgXml(RectangleF boundsF)
-        {
-            Rectangle bounds = Rectangle.Ceiling(boundsF);
-            string xml = $"<svg viewBox='{bounds.X} {bounds.Y} {bounds.Width} {bounds.Height}' xmlns='http://www.w3.org/2000/svg'></svg>";
-            /*  inspirace:
-
-<svg id='svg1' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'>
-  <circle r="32" cx="35" cy="65" fill="#F00" opacity="0.5"/>
-  <circle r="32" cx="65" cy="65" fill="#0F0" opacity="0.5"/>
-  <circle r="32" cx="50" cy="35" fill="#00F" opacity="0.5"/>
-</svg> 
-
-
-<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 100 102">
-  <radialGradient id="jsongrad" cx="65" cy="90" r="100" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#EEF"/><stop offset="1"/></radialGradient>
-  <path d="M61,02 A 49,49 0,0,0 39,98 C 9,79 10,24 45,25 C 72,24 65,75 50,75 C 93,79 91,21 62,02" id="jsonswirl" fill="url(#jsongrad)"/>
-  <use xlink:href="#jsonswirl" transform="rotate(180 50,50)"/>
-</svg> 
-
-
-<?xml version='1.0' encoding='UTF-8'?>
-<svg x="0px" y="0px" viewBox="0 0 32 32" 
-        version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xml:space="preserve" 
-        id="Layer_1" 
-        style="enable-background:new 0 0 32 32">
-  <style type="text/css">
-	.Red{fill:#D11C1C;}
-	.Green{fill:#039C23;}
-	.Blue{fill:#1177D7;}
-	.Yellow{fill:#FFB115;}
-	.Black{fill:#727272;}
-	.st0{opacity:0.75;}
-	.st1{opacity:0.5;}
-  </style>
-  <g id="iconAB" style="font-size: 16px; text-anchor: middle; font-family: serif; font-weight: bold">
-    <path d="M31,0H1C0.5,0,0,0.5,0,1v30c0,0.5,0.5,1,1,1h30c0.5,0,1-0.5,1-1V1C32,0.5,31.5,0,31,0z M30,30H2V2h28V30z" class="Black" />
-    <!--  path d="M0,0L31,0L31,31L0,31L0,0Z" class="Black" / -->
-    <text x="16" y="20" class="Blue">MM</text>
-  </g>
-</svg>
-
-<?xml version='1.0' encoding='UTF-8'?>
-<svg x="0px" y="0px" width="32px" height="32px" viewBox="0 0 32 32" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" enable-background="new 0 0 32 32" xml:space="preserve" id="Layer_1">
-  <g id="icon">
-    <rect x="1.5" y="7.5" width="29" height="22" rx="0" ry="0" fill="#FFFFFF" stroke="#383838" stroke-width="1px" stroke-miterlimit="5" />
-    <rect x="1.5" y="2.5" width="29" height="5" rx="0" ry="0" fill="#92CBEE" stroke="#0964B0" stroke-width="1px" stroke-linecap="round" stroke-miterlimit="5" />
-  </g>
-</svg>
-
-
-
-
-<?xml version='1.0' encoding='UTF-8'?>
-<svg x="0px" y="0px" viewBox="0 0 32 32" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xml:space="preserve" id="Layer_1" style="enable-background:new 0 0 32 32">
-  <style type="text/css">
-	.Blue{fill:#1177D7;}
-	.White{fill:#FFFFFF;}
-</style>
-  <g id="Layer_2">
-    <path d="M16,2c7.7,0,14,6.3,14,14s-6.3,14-14,14S2,23.7,2,16S8.3,2,16,2z" class="Blue" />
-    <circle cx="16" cy="10" r="2" class="White" />
-    <path d="M16,24L16,24c-1.1,0-2-0.9-2-2v-6c0-1.1,0.9-2,2-2l0,0c1.1,0,2,0.9,2,2v6C18,23.1,17.1,24,16,24z" class="White" />
-  </g>
-</svg>
-
-
-
-Výsledek spojení
-
-<?xml version='1.0' encoding='UTF-8'?>
-<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
-  <g transform="scale(3.75)">
-    <style type="text/css">
-	.Black{fill:#727272;}
-	.White{fill:#FFFFFF;}
-	.st0{opacity:0.6;}
-</style>
-    <path d="M4, 2L4, 30L28, 30L28, 8L28, 2L4, 2z" class="Black" />
-    <rect x="6" y="4" width="20" height="24" rx="0" ry="0" class="White" />
-    <g class="st0">
-      <rect x="8" y="6" width="16" height="2" rx="0" ry="0" class="Black" />
-      <rect x="8" y="18" width="12" height="2" rx="0" ry="0" class="Black" />
-      <rect x="8" y="10" width="16" height="2" rx="0" ry="0" class="Black" />
-      <rect x="8" y="14" width="16" height="2" rx="0" ry="0" class="Black" />
-    </g>
-  </g>
-  <g transform="translate(60, 60) scale(1.875)">
-    <style type="text/css">
-	.Blue{fill:#1177D7;}
-	.White{fill:#FFFFFF;}
-</style>
-    <g id="Layer_2">
-      <path d="M16, 2C23.7, 2 30, 8.3 30, 16C30, 23.7 23.7, 30 16, 30C8.3, 30 2, 23.7 2, 16C2, 8.3 8.3, 2 16, 2z" class="Blue" />
-      <circle cx="16" cy="10" r="2" class="White" />
-      <path d="M16, 24L16, 24C14.9, 24 14, 23.1 14, 22L14, 16C14, 14.9 14.9, 14 16, 14L16, 14C17.1, 14 18, 14.9 18, 16L18, 22C18, 23.1 17.1, 24 16, 24z" class="White" />
-    </g>
-  </g>
-</svg>
-
-            */
-        }
-
-
-        private static bool _NeedTransform(Noris.WS.DataContracts.Desktop.Data.SvgImageArrayItem svgItem)
-        {
-
-        }
-        /// <summary>
-        /// Metoda nastaví do <paramref name="svgGroupSum"/> sadu transformací tak, 
-        /// aby vstupující SvgImage <paramref name="svgImageInp"/> 
-        /// byl správně umístěn do relativního prostoru podle daného předpisu <paramref name="image"/>.
-        /// </summary>
-        /// <param name="svgImageInp"></param>
-        /// <param name="image"></param>
-        /// <param name="svgGroupSum"></param>
-        /// <returns></returns>
-        private static bool _SvgCombineSetTransform(DevExpress.Utils.Svg.SvgImage svgImageInp, SvgImageArrayItem image, DevExpress.Utils.Svg.SvgGroup svgGroupSum)
-        {
-            // Kontroly:
-            if (svgImageInp is null || image is null || svgGroupSum is null) return false;
-
-            // Nejprve zpracuji velikost (Width, Height) = přepočet z koordinátů vstupní ikony do koordinátů cílového prostoru:
-            // Vstupní ikona a její umístění a velikost:
-            double iw = svgImageInp.Width;
-            double ih = svgImageInp.Height;
-            if (iw <= 0d || ih <= 0d) return false;
-
-            // Target požadovaný prostor = jde o souřadnice v celkovém prostoru { 0, 0, 120, 120 }:
-            Rectangle? target = image.ImageRelativeBounds;
-            int ts = SvgImageArrayInfo.BaseSize;
-            double tw = target?.Width ?? ts;
-            double th = target?.Height ?? ts;
-            if (tw <= 0d || th <= 0d) return false;
-
-            // Koeficient změny velikosti vstupní ikony do target prostoru (je zajištěno, že Width i Height jsou kladné):
-            // Určím "rs" = poměr, jakým vynásobím vstupní velikosti (iw, ih) tak, abych zachoval poměr stran (obdélníky) a výsledek se vešel do daného prostoru (tw, th):
-            double rw = tw / iw;
-            double rh = th / ih;
-            double rs = (rw < rh ? rw : rh);
-
-            // Velikost vstupní ikony ve výstupním prostoru:
-            double ow = iw * rs;
-            double oh = ih * rs;
-
-            // Umístění ikony ve výstupním prostoru podle požadavku:
-            double tx = target?.X ?? 0;
-            double ty = target?.Y ?? 0;
-            double ox = _SvgCombineSetTransformDim(tx, tw, ow);
-            double oy = _SvgCombineSetTransformDim(ty, th, oh);
-
-            // První transformace = vstupní ikonu posunu tak, aby její obsah byl v souřadnici 0/0 (pokud to již není):
-            double ix = svgImageInp.OffsetX;
-            double iy = svgImageInp.OffsetY;
-            if (ix != 0d || iy != 0d)
-                svgGroupSum.Transformations.Add(new DevExpress.Utils.Svg.SvgTranslate(new double[] { -ix, -iy }));
-
-            // Třetí transformace = posunutí zmenšené ikony do cílového prostoru:
-            if (ox != 0d || oy != 0d)
-                svgGroupSum.Transformations.Add(new DevExpress.Utils.Svg.SvgTranslate(new double[] { ox, oy }));
-
-            // Druhá transformace = změna měřítka vstupní ikony:
-            if (rs != 1d)
-                svgGroupSum.Transformations.Add(new DevExpress.Utils.Svg.SvgScale(new double[] { rs, rs }));
-
-            string log = $"Input: {{ X={ix}, Y={iy}, W={iw}, H={ih}, R={ix + iw}, B={iy + ih} }}; Target: {{ X={tx}, Y={ty}, W={tw}, H={th}, R={tx + tw}, B={ty + th} }}; RatioSize: {rs}; Output: {{ X={ox}, Y={oy}, W={ow}, H={oh}, R={ox + ow}, B={oy + oh} }}";
-
-            return true;
-        }
-        /// <summary>
-        /// Metoda vrátí souřadnici reálného výstupu tak, aby tento výstup byl v prostoru <see cref="SvgImageArrayInfo.BaseSize"/> umístěn stejně, jako je umístěn prostor target.
-        /// Příklad: <paramref name="targetPoint"/> = 30, <paramref name="targetSize"/> = 60 (zabírá tedy prostor 30 + 60 + 30 = z celkem 120),
-        /// a velikost reálné ikony <paramref name="realSize"/> je 30, pak výstupem bude 45 = tak, aby ikona byla reálně svým koncem uprostřed prostoru (prostor 45 + 30 + 45 = 120).
-        /// <para/>
-        /// Velikosti <paramref name="targetSize"/> i <paramref name="realSize"/> jsou kladné, tato metoda to už nekontroluje.
-        /// </summary>
-        /// <param name="targetPoint"></param>
-        /// <param name="targetSize"></param>
-        /// <param name="realSize"></param>
-        private static double _SvgCombineSetTransformDim(double targetPoint, double targetSize, double realSize)
-        {
-            // Poměr prostoru před targetPoint vzhledem k volnému prostoru (=120 - targetSize)
-            //  => pokud targetPoint = 30 a targetSize = 60, pak target je přesně v polovině prostoru délky 120  (30 + 60 + 30 = 120) ... relative = 0.5d
-            double relative = (targetPoint > 0d && targetSize < _SvgTargetSize ? (targetPoint / (_SvgTargetSize - targetSize)) : 0d);
-
-            // Ve stejném poměru umístíme reálný prostor realSize (mělo by být zajištěno, že realSize <= targetSize, přepočtem velikosti pomocí koeficientu)
-            //  => pokud realSize = 30, a relative = 0.5d, pak realPoint musí být 45 = tak, aby realSize bylo uprostřed targetSize (45 + 30 + 45 = 120):
-            double realPoint = relative * (_SvgTargetSize - realSize);
-            return realPoint;
-        }
-        /// <summary>
-        /// Základní velikost cílového prostoru
-        /// </summary>
-        private static double _SvgTargetSize { get { return SvgImageArrayInfo.BaseSize; } }
-        /// <summary>
-        /// byte[] obsahující definici prázdného SVG Image o velikosti <see cref="SvgImageArrayInfo.BaseSize"/>
-        /// </summary>
-        private static byte[] _BlankSvgBaseBuffer { get { return Encoding.UTF8.GetBytes(_BlankSvgBaseXml); } }
-        /// <summary>
-        /// String  obsahující definici prázdného SVG Image o velikosti <see cref="SvgImageArrayInfo.BaseSize"/>
-        /// </summary>
-        private static string _BlankSvgBaseXml { get { string size = _SvgTargetSize.ToString(); return $"<svg viewBox='0 0 {size} {size}' xmlns='http://www.w3.org/2000/svg'></svg>"; } }
+        #endregion
     }
     #endregion
 }
