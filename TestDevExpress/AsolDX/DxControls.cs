@@ -333,7 +333,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         #endregion
     }
     #endregion
-    #region DxPanelControl
+    #region DxPanelControl + IDxPanelPaintedItem
     /// <summary>
     /// PanelControl
     /// </summary>
@@ -351,7 +351,9 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.LogActive = false;
             this._CurrentDpi = DxComponent.DesignDpi;
             this._LastDpi = DxComponent.DesignDpi;           // ??? anebo   0 ?
+            this._PaintedItems = new List<IDxPanelPaintedItem>();
             this.AllowTransparency = true;
+            this.SetStyle(ControlStyles.UserPaint | ControlStyles.OptimizedDoubleBuffer | ControlStyles.AllPaintingInWmPaint, true);
             DxComponent.RegisterListener(this);
         }
         /// <summary>
@@ -501,6 +503,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             base.OnPaint(e);
             this.PaintBackColorUser(e);
+            this.PaintItems(e);
         }
         /// <summary>
         /// Overlay kreslení BackColorUser
@@ -511,6 +514,21 @@ namespace Noris.Clients.Win.Components.AsolDX
             var backColorUser = BackColorUser;
             if (!backColorUser.HasValue) return;
             e.Graphics.FillRectangle(DxComponent.PaintGetSolidBrush(backColorUser.Value), this.ClientRectangle);
+        }
+        #endregion
+        #region PaintedItems
+        /// <summary>
+        /// Prvky, které se vykreslují přímo na podklad panelu
+        /// </summary>
+        public List<IDxPanelPaintedItem> PaintedItems { get { return _PaintedItems; } }
+        private List<IDxPanelPaintedItem> _PaintedItems;
+        /// <summary>
+        /// Zajistí, že pro prvky v poli <see cref="PaintedItems"/> bude provedena jejich metoda <see cref="IDxPanelPaintedItem.OnPaint(PaintEventArgs)"/>
+        /// </summary>
+        /// <param name="e"></param>
+        protected virtual void PaintItems(SWF.PaintEventArgs e)
+        {
+            PaintedItems.ForEachExec(i => i.OnPaint(e));
         }
         #endregion
         #region Style & Zoom Changed
@@ -635,6 +653,17 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         public override string ToString() { return this.GetTypeName(); }
         #endregion
+    }
+    /// <summary>
+    /// Interface, který zajistí, že konkrétní prvek bude mít možnost se vykreslit do svého hostitele, bude volána metoda <see cref="OnPaint(PaintEventArgs)"/>
+    /// </summary>
+    public interface IDxPanelPaintedItem
+    {
+        /// <summary>
+        /// Hostitel žádá své prvky o vykreslení
+        /// </summary>
+        /// <param name="e"></param>
+        void OnPaint(SWF.PaintEventArgs e);
     }
     #endregion
     #region DxAutoScrollPanelControl
@@ -2405,6 +2434,62 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         public override string ToString() { return this.GetTypeName() + ": '" + (this.Text ?? "NULL") + "'"; }
         #endregion
+    }
+    #endregion
+    #region DxImageArea
+    /// <summary>
+    /// Prvek, který může být vykreslen přímo do panelu <see cref="DxPanelControl"/> (a i jiných).
+    /// Prvek lze přidat do seznamu <see cref="DxPanelControl.PaintedItems"/>.
+    /// Prvek obsahuje souřadnice a definici obrázku, a tento obrázek je vykreslován do panelu na dané souřadnice.
+    /// Prvek nemá žádnou interaktivitu.
+    /// </summary>
+    public class DxImageArea : IDxPanelPaintedItem
+    {
+        /// <summary>
+        /// Souřadnice.
+        /// Setování hodnoty neprovádí refresh parent panelu.
+        /// </summary>
+        public Rectangle Bounds { get; set; }
+        /// <summary>
+        /// Jméno obrázku.
+        /// Default = null. Nekreslí se nic.
+        /// Setování hodnoty neprovádí refresh parent panelu.
+        /// </summary>
+        public string ImageName { get; set; }
+        /// <summary>
+        /// Jméno obrázku je exaktně dané.
+        /// Pokud je zde true, a ve jménu <see cref="ImageName"/> je jméno se suffixem velikosti a příponou, bude akceptováno. 
+        /// Default = false.
+        /// Setování hodnoty neprovádí refresh parent panelu.
+        /// </summary>
+        public bool ExactName { get; set; }
+        /// <summary>
+        /// Jaký obrázek má být preferován pro kreslení, pokud je na výběr? 
+        /// true preferuje vektor, false bitmapu, null podle systému <see cref="DxComponent.IsPreferredVectorImage"/>.
+        /// Default = null.
+        /// Setování hodnoty neprovádí refresh parent panelu.
+        /// </summary>
+        public bool? PreferVector { get; set; }
+        /// <summary>
+        /// Prvek bude vykreslen do panelu
+        /// </summary>
+        /// <param name="e"></param>
+        void IDxPanelPaintedItem.OnPaint(PaintEventArgs e)
+        {
+            var bounds = this.Bounds;
+            var sizeType = DxComponent.GetImageSizeType(bounds.Size);
+            if (sizeType == ResourceImageSizeType.None) return;
+            string imageName = this.ImageName;
+            if (String.IsNullOrEmpty(imageName)) return;
+
+            // e.Graphics.FillRectangle(Brushes.AntiqueWhite, this.Bounds);
+
+            if (!DxComponent.TryGetResources(imageName, this.ExactName, out var resourceItems)) return;    // Zadaný zdroj není nalezen
+
+            var resourceItem = resourceItems.FirstOrDefault(r => r.ContentType == ResourceContentType.Vector);
+            var svgImage = resourceItem.CreateSvgImage();
+            svgImage.RenderTo(e.Graphics, bounds);
+        }
     }
     #endregion
     #region DxTextEdit

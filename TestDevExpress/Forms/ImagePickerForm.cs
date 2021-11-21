@@ -148,7 +148,9 @@ namespace TestDevExpress.Forms
         {
             string name;
             name = "pic_0/win/dashboard/poznamkovy_blok";
+            name = "«devav/actions/printexcludeevaluations.svg»«devav/actions/add.svg<60.60.60.60>»";
             name = "devav/actions/support_32x32.png";
+            name = "pic/alert-filled-large.svg";
 
             DxComponent.ApplyIcon(this, name, ResourceImageSizeType.Large);
         }

@@ -97,6 +97,19 @@ namespace Noris.Clients.Win.Components.AsolDX
                 s = (targetDpi.HasValue ? ZoomToGui(s, targetDpi.Value) : ZoomToGui(s));
             return new Size(s, s);
         }
+        /// <summary>
+        /// Vrátí typ velikosti obrázku vhodný pro danou fyzickou velikost prostoru.
+        /// </summary>
+        /// <param name="currentSize"></param>
+        /// <returns></returns>
+        public static ResourceImageSizeType GetImageSizeType(Size currentSize)
+        {
+            int s = (currentSize.Width < currentSize.Height ? currentSize.Width : currentSize.Height);
+            if (s <= 3) return ResourceImageSizeType.None;
+            if (s <= 16) return ResourceImageSizeType.Small;
+            if (s <= 24) return ResourceImageSizeType.Medium;
+            return ResourceImageSizeType.Large;
+        }
         #endregion
         #region CreateVectorImage - Získání new instance vektorového obrázku, GetVectorImage - Rychlé získání instance vektorového obrázku
         /// <summary>
@@ -157,6 +170,130 @@ namespace Noris.Clients.Win.Components.AsolDX
             return null;
         }
         #endregion
+        #region Tvorba ICO pro dodaný zdroj
+        /// <summary>
+        /// Metoda najde a vrátí ikonu pro dané jméno (a velikost) zdroje.
+        /// Pokud najde zdroj typu <see cref="ResourceContentType.Icon"/>, vrací new instanci <see cref="Icon"/> vytvořenou z obsahu daného zdroje požadované velikosti.
+        /// Pokud najde zdroje typu <see cref="ResourceContentType.Bitmap"/>, vrací new instanci <see cref="Icon"/> vytvořenou konverzí ze všech/z odpovídající bitmapy.
+        /// Pro jiné zdroje vrací null. Třeba časem dokončíme i konverzi z SVG do ICO.
+        /// </summary>
+        /// <param name="imageName"></param>
+        /// <param name="exactName"></param>
+        /// <param name="sizeType"></param>
+        /// <returns></returns>
+        public static Icon CreateIconImage(string imageName, bool exactName = false, ResourceImageSizeType? sizeType = null)
+        { return Instance._CreateIconImage(imageName, exactName, sizeType); }
+        /// <summary>
+        /// Metoda najde a vrátí ikonu pro dané jméno (a velikost) zdroje.
+        /// </summary>
+        /// <param name="imageName"></param>
+        /// <param name="exactName"></param>
+        /// <param name="sizeType"></param>
+        /// <returns></returns>
+        private Icon _CreateIconImage(string imageName, bool exactName, ResourceImageSizeType? sizeType)
+        {
+            // Pouze aplikační zdroje!
+            DxApplicationResourceLibrary.ResourceItem[] validItems;
+
+            // Pro dané jméno zdroje máme k dispozici resource s typem Icon:
+            if (_TrySearchApplicationResource(imageName, exactName, out validItems, ResourceContentType.Icon))
+            {
+                DxApplicationResourceLibrary.ResourceItem iconItem = validItems[0];
+                if (validItems.Length > 1 && DxApplicationResourceLibrary.ResourcePack.TryGetOptimalSize(validItems, sizeType, out var item))
+                    iconItem = item;
+                return iconItem.CreateIconImage();
+            }
+
+            // Anebo najdeme Bitmapy a konvertujeme je do Icon:
+            if (_TrySearchApplicationResource(imageName, exactName, out validItems, ResourceContentType.Bitmap))
+            {
+                return _ConvertBitmapsToIcon(validItems, sizeType);
+            }
+
+            // Může to být Image z DevExpress?
+            if (_ExistsDevExpressResource(imageName))
+            {
+                using (var bitmap = _CreateBitmapImageDevExpress(imageName, sizeType, null))
+                    return _ConvertBitmapToIcon(bitmap);
+            }
+
+
+#warning Konverze ze zdroje typu SVG by byla možná = renderovat bitmapu a tu pak poslat do konverze do ICO!
+            return null;
+        }
+        /// <summary>
+        /// Dané pole Resource převede na bitmapy a ty vloží do ikony, kterou vrátí.
+        /// </summary>
+        /// <param name="bitmapItems"></param>
+        /// <param name="sizeType"></param>
+        /// <returns></returns>
+        private Icon _ConvertBitmapsToIcon(DxApplicationResourceLibrary.ResourceItem[] bitmapItems, ResourceImageSizeType? sizeType)
+        {
+            List<Tuple<Size, Image>> imageInfos = new List<Tuple<Size, Image>>();
+
+            if (sizeType.HasValue)
+            {
+                if (DxApplicationResourceLibrary.ResourcePack.TryGetOptimalSize(bitmapItems, sizeType, out var bitmapItem))
+                    imageInfos.Add(new Tuple<Size, Image>(GetImageSize(bitmapItem.SizeType), bitmapItem.CreateBmpImage()));
+            }
+            if (imageInfos.Count == 0)
+            {
+                foreach (var bitmapItem in bitmapItems)
+                    imageInfos.Add(new Tuple<Size, Image>(GetImageSize(bitmapItem.SizeType), bitmapItem.CreateBmpImage()));
+            }
+            return _ConvertBitmapsToIcon(imageInfos);
+        }
+        /// <summary>
+        /// Danou Bitmapu převede do ikony a vrátí ji.
+        /// </summary>
+        /// <param name="bitmap"></param>
+        /// <returns></returns>
+        private Icon _ConvertBitmapToIcon(Image bitmap)
+        {
+            if (bitmap == null) return null;
+
+            List<Tuple<Size, Image>> imageInfos = new List<Tuple<Size, Image>>();
+            imageInfos.Add(new Tuple<Size, Image>(bitmap.Size, bitmap));
+            return _ConvertBitmapsToIcon(imageInfos);
+        }
+        /// <summary>
+        /// Dané pole obrázků převede do formátu ICO a vrátí odpovídající MemoryStream
+        /// </summary>
+        /// <param name="imageInfos"></param>
+        /// <returns></returns>
+        private Icon _ConvertBitmapsToIcon(List<Tuple<Size, Image>> imageInfos)
+        {
+            using (var msIco = new System.IO.MemoryStream())
+            using (var bw = new System.IO.BinaryWriter(msIco))
+            {   // https://en.wikipedia.org/wiki/ICO_(file_format)
+                bw.Write((short)0);                                  // 0-1 reserved
+                bw.Write((short)1);                                  // 2-3 image type, 1 = icon, 2 = cursor
+                bw.Write((short)imageInfos.Count);                   // 4-5 number of images
+                foreach (var imageInfo in imageInfos)
+                {
+                    using (var msImg = new System.IO.MemoryStream())
+                    {
+                        var size = imageInfo.Item1;
+                        imageInfo.Item2.Save(msImg, System.Drawing.Imaging.ImageFormat.Png);
+
+                        bw.Write((byte)size.Width);                  // 6 image width
+                        bw.Write((byte)size.Height);                 // 7 image height
+                        bw.Write((byte)0);                           // 8 number of colors
+                        bw.Write((byte)0);                           // 9 reserved
+                        bw.Write((short)0);                          // 10-11 color planes
+                        bw.Write((short)32);                         // 12-13 bits per pixel
+                        bw.Write((int)msImg.Length);                 // 14-17 size of image data
+                        bw.Write(22);                                // 18-21 offset of image data
+                        bw.Write(msImg.ToArray());                   // write image data
+                    }
+                }
+                bw.Flush();
+                bw.Seek(0, System.IO.SeekOrigin.Begin);
+                msIco.Seek(0, System.IO.SeekOrigin.Begin);
+                return new Icon(msIco);
+            }
+        }
+        #endregion
         #region TryGetResource - hledání aplikačního zdroje
         /// <summary>
         /// Metoda se pokusí najít zdroj v Aplikačních zdrojích, pro dané jméno.
@@ -170,6 +307,15 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         public static bool TryGetResource(string imageName, out DxApplicationResourceLibrary.ResourceItem resourceItem, bool exactName = false, ResourceImageSizeType? sizeType = null, bool? isPreferredVectorImage = null)
         { return Instance._TryGetResource(imageName, exactName, sizeType, isPreferredVectorImage, out resourceItem); }
+        /// <summary>
+        /// Zkusí najít jeden nejvhodnější zdroj
+        /// </summary>
+        /// <param name="imageName"></param>
+        /// <param name="exactName"></param>
+        /// <param name="sizeType"></param>
+        /// <param name="isPreferredVectorImage"></param>
+        /// <param name="resourceItem"></param>
+        /// <returns></returns>
         private bool _TryGetResource(string imageName, bool exactName, ResourceImageSizeType? sizeType, bool? isPreferredVectorImage, out DxApplicationResourceLibrary.ResourceItem resourceItem)
         {
             resourceItem = null;
@@ -178,6 +324,17 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (!DxApplicationResourceLibrary.ResourcePack.TryGetOptimalSize(validItems, sizeType, out resourceItem)) return false;
             return true;
         }
+
+        /// <summary>
+        /// Metoda se pokusí najít požadované zdroje v Aplikačních zdrojích, pro dané jméno.
+        /// </summary>
+        /// <param name="imageName">Jméno zdroje</param>
+        /// <param name="exactName"></param>
+        /// <param name="resourceItems">Výstup - nalezené zdroje</param>
+        /// <param name="contentTypes"></param>
+        /// <returns></returns>
+        public static bool TryGetResources(string imageName, bool exactName, out DxApplicationResourceLibrary.ResourceItem[] resourceItems, params ResourceContentType[] contentTypes)
+        { return Instance._TrySearchApplicationResource(imageName, exactName, out resourceItems, contentTypes); }
         #endregion
         #region ApplyImage - do cílového objektu vepíše obrázek podle toho, jak je zadán a kam má být vepsán
         /// <summary>
@@ -306,7 +463,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             else
             {   // Musíme vepsat přímo jeden obrázek:
                 imageOptions.Image = null;
-                imageOptions.SvgImage = _GetVectorImageApplication(resourceItems, sizeType);
+                imageOptions.SvgImage = _GetVectorImageArray(svgImageArray, sizeType);
                 imageOptions.SvgImageSize = _GetVectorSvgImageSize(sizeType, imageSize);
             }
         }
@@ -485,40 +642,22 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             if (form is DevExpress.XtraEditors.XtraForm xtraForm)
                 ApplyImage(xtraForm.IconOptions, iconName, sizeType: sizeType);
-
-            //if (form is DxStdForm dxStdForm)
-            //    dxStdForm.ImageName = iconName;
-            //else if (form is DxRibbonForm dxRibbonForm)
-            //    dxRibbonForm.ImageName = iconName;
-            //else if (form is DevExpress.XtraEditors.XtraForm xtraForm)
-            //    ApplyImage(xtraForm.IconOptions, iconName, sizeType: sizeType);
-            //else if (form is DevExpress.XtraBars.Ribbon.RibbonForm ribbonForm)
-            //    ApplyImage(ribbonForm.IconOptions, iconName, sizeType: sizeType);
-
-
-            else if (iconName.IndexOfAny("«»<>".ToCharArray()) < 0)
-                _ApplyIconNative(form, iconName, sizeType);    // form.Icon = ComponentConnector.GraphicsCache.GetIcon(iconName);
+            else
+                _ApplyIcon(form, CreateIconImage(iconName));
         }
-        private void _ApplyIconNative(Form form, string iconName, ResourceImageSizeType? sizeType, 
-            string caption = null, bool exactName = false)
+        /// <summary>
+        /// Do daného formu vloží danou ikonu.
+        /// </summary>
+        /// <param name="form"></param>
+        /// <param name="icon"></param>
+        private void _ApplyIcon(Form form, Icon icon)
         {
-            var image = CreateBitmapImage(iconName, sizeType, exactName: exactName);
-            if (image is null) return;
-
-            // Nedobré = je tam chyba form.Icon = ImageIconConverter.BitmapToIcon(new Bitmap(image));
-
-            Icon icon = null;
-            using (Bitmap bitmap = new Bitmap(image))
-            {   // Ikona není použitelná:
-                bitmap.MakeTransparent(Color.White);
-                form.Icon = Icon.FromHandle(bitmap.GetHicon());
-            }
-//            form.Icon = icon;
-            
             if (form is DevExpress.XtraEditors.XtraForm xtraForm)
             {
                 xtraForm.IconOptions.Reset();
+                xtraForm.IconOptions.SvgImage = null;
             }
+            form.Icon = icon;
         }
         #endregion
         #region PreferredImageList - Seznam obrázků typu Bitmapa/Vektor, pro použití v controlech; GetPreferredImageList, GetPreferredImageIndex
@@ -796,7 +935,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             return svgCollection.GetImageId(resourceItem.ItemKey, n => resourceItem.CreateSvgImage());
         }
         /// <summary>
-        /// Najde a vrátí index ID pro vhodný vektorový obrázek z dodaných zdrojů, pro danou velikost.
+        /// Najde a vrátí index ID pro dodaný vektorový obrázek z ImageArray.
         /// </summary>
         /// <param name="svgImageArray">Kombinovaná ikona</param>
         /// <param name="sizeType">Cílový typ velikosti; každá velikost má svoji kolekci (viz <see cref="GetVectorImageList(ResourceImageSizeType)"/>)</param>
@@ -806,9 +945,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (svgImageArray is null) return -1;
             var svgCollection = _GetVectorImageList(sizeType);
             string key = svgImageArray.Key;
-            return svgCollection.GetImageId(resourceItem.ItemKey, n => resourceItem.CreateSvgImage());
+            return svgCollection.GetImageId(key, n => _GetVectorImageArray(svgImageArray, sizeType));
         }
-
         /// <summary>Kolekce SvgImages pro použití v controlech, obsahuje DevExpress i Aplikační zdroje, instanční proměnná.</summary>
         private Dictionary<ResourceImageSizeType, DxSvgImageCollection> __VectorImageList;
         #endregion
@@ -2126,6 +2264,10 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// </summary>
             public bool IsSvg { get { return (ContentType == ResourceContentType.Vector); } }
             /// <summary>
+            /// Obsahuje true, pokud this zdroj je typu <see cref="ResourceContentType.Icon"/> (má příponu ".ico")
+            /// </summary>
+            public bool IsIcon { get { return (ContentType == ResourceContentType.Icon); } }
+            /// <summary>
             /// Obsahuje true, pokud this zdroj je typu XML (má příponu ".xml")
             /// </summary>
             public bool IsXml { get { return (ContentType == ResourceContentType.Xml); } }
@@ -2137,7 +2279,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// </summary>
             public bool IsValid { get { return (this.Content != null); } }
             #endregion
-            #region Tvorba Image nebo SVG objektu
+            #region Tvorba Image nebo SVG nebo Icon objektu
             /// <summary>
             /// Metoda vrátí new instanci <see cref="System.Drawing.Image"/> vytvořenou z <see cref="Content"/>.
             /// Pokud ale this instance není Bitmap (<see cref="IsBitmap"/> je false) anebo není platná, vyhodí chybu!
@@ -2147,7 +2289,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// <returns></returns>
             public System.Drawing.Image CreateBmpImage()
             {
-                if (!IsBitmap) throw new InvalidOperationException($"ResourceItem.CreateBmpImage() error: Resource {ItemKey} is not BITMAP type.");
+                if (!IsBitmap) throw new InvalidOperationException($"ResourceItem.CreateBmpImage() error: Resource {ItemKey} is not BITMAP type, ContentType is {ContentType}.");
                 var content = Content;
                 if (content == null) throw new InvalidOperationException($"ResourceItem.CreateSvgImage() error: Resource {ItemKey} can not load content.");
 
@@ -2174,7 +2316,7 @@ namespace Noris.Clients.Win.Components.AsolDX
 
                 // Nemáme připravený SvgImage pro aktuální skin, musíme si jej připravit:
                 // Získám podkladová data pro SvgImage, v nativních barvách (světlý skin):
-                if (!IsSvg) throw new InvalidOperationException($"ResourceItem.CreateSvgImage() error: Resource {ItemKey} is not SVG type.");
+                if (!IsSvg) throw new InvalidOperationException($"ResourceItem.CreateSvgImage() error: Resource {ItemKey} is not SVG type, ContentType is {ContentType}.");
                 var content = Content;
                 if (content == null) throw new InvalidOperationException($"ResourceItem.CreateSvgImage() error: Resource {ItemKey} can not load content.");
 
@@ -2191,6 +2333,22 @@ namespace Noris.Clients.Win.Components.AsolDX
                     _SvgImageDark = DxComponent.ConvertToDarkSkin(this.ItemKey, content);
                     return _SvgImageDark;
                 }
+            }
+            /// <summary>
+            /// Metoda vrátí new instanci <see cref="System.Drawing.Icon"/> vytvořenou z <see cref="Content"/>.
+            /// Pokud ale this instance není Icon (<see cref="IsIcon"/> je false) anebo není platná, vyhodí chybu!
+            /// <para/>
+            /// Je vrácena new instance objektu, tato třída je <see cref="IDisposable"/>, používá se tedy v using { } patternu!
+            /// </summary>
+            /// <returns></returns>
+            public Icon CreateIconImage()
+            {
+                if (!IsIcon) throw new InvalidOperationException($"ResourceItem.CreateIconImage() error: Resource {ItemKey} is not ICON type, ContentType is {ContentType}.");
+                var content = Content;
+                if (content == null) throw new InvalidOperationException($"ResourceItem.CreateSvgImage() error: Resource {ItemKey} can not load content.");
+
+                using (System.IO.MemoryStream ms = new System.IO.MemoryStream(content))
+                    return new System.Drawing.Icon(ms);
             }
             private DxSvgImage _SvgImageNative;
             private DxSvgImage _SvgImageDark;
@@ -2570,6 +2728,25 @@ namespace Noris.Clients.Win.Components.AsolDX
         public static implicit operator DxSvgImage(byte[] data)
         {
             return Create(null, false, data);
+        }
+
+        public void RenderTo(Graphics graphics, Rectangle bounds)
+        {
+            // Matrix(a,b,c,d,e,f):  Xr = Xi * a ..... Yr = Yi * d  +  Xi * b......
+            //   a: zoom X
+            //   b: X * b => Y
+            //   c: Y * c => X
+            //   d: zoom Y
+            //   e: posun X
+            //   f: posun Y
+            var matrixOld = graphics.Transform;
+            graphics.Transform = new System.Drawing.Drawing2D.Matrix(1f, 0f, 0f, 1f, bounds.X, bounds.Y);
+            double scaleX = (double)bounds.Width / this.Width;
+            double scaleY = (double)bounds.Height / this.Height;
+            double scale = (scaleX <= scaleY ? scaleX : scaleY);
+            this.RenderToGraphics(graphics, null, scale);
+
+            graphics.Transform = matrixOld;
         }
     }
     #endregion
@@ -3074,64 +3251,12 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
         }
         #endregion
+
         #region Podpora pro konverzi SVG ikon na paletové barvy - TODO
 
         #endregion
+        
 
-        private Icon CreateIconFromImages(ResourceName resourceName)
-        {
-            List<Tuple<Size, Image>> images = new List<Tuple<Size, Image>>();
-
-            if (resourceName.IsNormalizedSize)
-            {
-                var image = GetResourceContent(resourceName.ServerResourceName, resourceName.NormalizedSize.Value);
-                if (image != null)
-                    images.Add(new Tuple<Size, Image>(Options.GetImageSize(resourceName.NormalizedSize.Value), image));
-            }
-            else
-            {
-                var image = GetResourceContent(resourceName.ServerResourceName, UserGraphicsSize.Large);
-                if (image != null)
-                    images.Add(new Tuple<Size, Image>(Options.LargeSize, image));
-
-                image = GetResourceContent(resourceName.ServerResourceName, UserGraphicsSize.Medium);
-                if (image != null)
-                    images.Add(new Tuple<Size, Image>(Options.MediumSize, image));
-
-                image = GetResourceContent(resourceName.ServerResourceName, UserGraphicsSize.Small);
-                if (image != null)
-                    images.Add(new Tuple<Size, Image>(Options.SmallSize, image));
-            }
-
-            Icon ico;
-            var msIco = new System.IO.MemoryStream();
-            using (var bw = new System.IO.BinaryWriter(msIco))
-            {
-                bw.Write((short)0);           //0-1 reserved
-                bw.Write((short)1);           //2-3 image type, 1 = icon, 2 = cursor
-                bw.Write((short)images.Count);           //4-5 number of images
-                foreach (var imgData in images)
-                {
-                    using (var msImg = new System.IO.MemoryStream())
-                    {
-                        imgData.Item2.Save(msImg, System.Drawing.Imaging.ImageFormat.Png);
-                        bw.Write((byte)imgData.Item1.Width);         //6 image width
-                        bw.Write((byte)imgData.Item1.Height);         //7 image height
-                        bw.Write((byte)0);            //8 number of colors
-                        bw.Write((byte)0);            //9 reserved
-                        bw.Write((short)0);           //10-11 color planes
-                        bw.Write((short)32);          //12-13 bits per pixel
-                        bw.Write((int)msImg.Length);  //14-17 size of image data
-                        bw.Write(22);                 //18-21 offset of image data
-                        bw.Write(msImg.ToArray());    // write image data
-                    }
-                }
-                bw.Flush();
-                bw.Seek(0, System.IO.SeekOrigin.Begin);
-                ico = new Icon(msIco);
-            }
-            return ico;
-        }
     }
     #endregion
 }

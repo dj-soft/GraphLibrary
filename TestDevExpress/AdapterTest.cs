@@ -472,7 +472,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             string packKey = GetItemKey(name);
             sizeType = ResourceImageSizeType.None;
             contentType = ResourceContentType.None;
-            if (!String.IsNullOrEmpty(packKey))
+            if (!String.IsNullOrEmpty(packKey) && !packKey.Contains("«"))
                 if (RemoveContentTypeByExtension(ref packKey, out contentType) && ContentTypeSupportSize(contentType))
                     RemoveSizeTypeBySuffix(ref packKey, out sizeType);
             return packKey;

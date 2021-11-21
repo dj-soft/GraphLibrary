@@ -508,11 +508,22 @@ namespace TestDevExpress.Forms
             _SvgCombineData[mainItemIndex] = subItem.Tag ?? subItem.ImageName;
 
             DataRibbonItem mainItem = _SvgCombineRibbonGroup.Items[mainItemIndex] as DataRibbonItem;
-            if (mainItemIndex == 0 || mainItemIndex == 1 || mainItemIndex == 3)
-                mainItem.ImageName = subItem.ImageName;
-            else if (mainItemIndex == 2)
-                mainItem.Text = "Velikost " + _SvgCombineData[2].ToString() + "%";
+            switch (mainItemIndex)
+            {
+                case 0:
+                    mainItem.ImageName = subItem.ImageName;
+                    this.EditorImageName = subItem.ImageName;
+                    break;
+                case 1:
+                case 3:
+                    mainItem.ImageName = subItem.ImageName;
+                    break;
+                case 2:
+                    mainItem.Text = "Velikost " + _SvgCombineData[2].ToString() + "%";
+                    break;
+            }
             mainItem.ToolTipText = subItem.Text;
+
             if (mainItem.RibbonItem != null)
                 this.DxRibbon.RefreshItem(mainItem, true);
 
@@ -2567,6 +2578,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
 
             PrepareEditorToken();
             PrepareEditorButtonEdit();
+            PrepareEditorImage();
         }
         #region Editor - Token
         private void PrepareEditorToken()
@@ -2768,6 +2780,48 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
         private DxButtonEdit _EditorTextButton2;
         private DxTextEdit _EditorText3;
         private DxButtonEdit _EditorTextButton3;
+        #endregion
+        #region EditorImage
+        private void PrepareEditorImage()
+        {
+            _PanelEditors.ClientSizeChanged += _PanelEditors_ClientSizeChanged;
+            _EditorImage1 = new DxImageArea() { ImageName = _EditorImageName };
+            _PanelEditors.PaintedItems.Add(_EditorImage1);
+            _EditorImageDoLayout();
+        }
+        private void _PanelEditors_ClientSizeChanged(object sender, EventArgs e)
+        {
+            _EditorImageDoLayout();
+        }
+        private void _EditorImageDoLayout()
+        {
+            var clientSize = _PanelEditors.ClientSize;
+            var editorBounds = _EditorTextButton1.Bounds;
+            var imageLocation = new Point(editorBounds.Right + 6, editorBounds.Top);
+            int imageWidth = 4 * (clientSize.Width - 6 - imageLocation.X) / 10;
+            int imageHeight = 7 * (clientSize.Height - 6 - imageLocation.Y) / 10;
+            int size = (imageWidth < imageHeight ? imageWidth : imageHeight);
+            if (size < 32) size = 32;
+            _EditorImage1.Bounds = new Rectangle(imageLocation.X, imageLocation.Y, size, size);
+        }
+        /// <summary>
+        /// Obrázek na záložce Editor 
+        /// </summary>
+        protected string EditorImageName 
+        {
+            get { return _EditorImageName; }
+            set 
+            {
+                _EditorImageName = value;
+                if (_EditorImage1 != null)
+                {
+                    _EditorImage1.ImageName = value;
+                    _PanelEditors.Invalidate();
+                }
+            }
+        }
+        private string _EditorImageName = "pic_0/Menu/frmcopy";
+        private DxImageArea _EditorImage1;
         #endregion
         #endregion
         #region TreeView

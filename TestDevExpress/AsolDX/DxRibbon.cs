@@ -277,6 +277,10 @@ namespace Noris.Clients.Win.Components.AsolDX
                 e.Graphics.DrawImage(image, _ImageBounds);
             _ImagePainted = paintImage;
         }
+        /// <summary>
+        /// Při pohybu myši
+        /// </summary>
+        /// <param name="e"></param>
         protected override void OnMouseMove(MouseEventArgs e)
         {
             base.OnMouseMove(e);
@@ -3456,8 +3460,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Ze zadaného stringu vytvoří struktury pro evidenci prvků pro toolbar QAT (pole <see cref="_QATUserItems"/> a <see cref="_QATUserItemDict"/>).
         /// Před tím zruší obsah fyzického QAT. Volitelně na konci znovu naplní fyzický QAT.
         /// </summary>
-        /// <param name="qatItemKeys"></param>
         /// <param name="refreshToolbar"></param>
+        /// <param name="force"></param>
         private void _SetQATUserItemKeys(bool refreshToolbar = false, bool force = false)
         {
             var qatLocation = DxQuickAccessToolbar.QATLocation;
@@ -3576,11 +3580,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         private string _QATLocalConfigValue;
         private List<QatItem> _QATUserItems;
         private Dictionary<string, QatItem> _QATUserItemDict;
-        /// <summary>
-        /// Index prvků this Ribbonu, které byly uživatelem interaktivně přidány (Value = true) / odebrány (Value = false) do / z Ribbonu v době, kdy this Ribbon byl mergován do Parenta.
-        /// Tyto prvky se po unmergování musí do this Ribbonu znovu refreshovat, protože DevExpress je přidal do Toolbaru toho Parent Ribbonu, odmergováním se prvky ztratily, a v this Ribbon.Toolbar nejsou přidány.
-        /// </summary>
-        private Dictionary<string, bool> _QATUserChangedItems;
         /// <summary>
         /// Příznak, že došlo ke změně obsahu QAT prvků v this Ribbonu, v době kdy tento Ribbon byl mergován do Parent Ribbonu.
         /// V takovém případě má DevExpress problém v tom, že Linky na naše prvky (Items) přidal do Parent Ribbonu a po odmergování this Ribbonu se tyto linky nenávratně ztratí.
@@ -5590,6 +5589,9 @@ namespace Noris.Clients.Win.Components.AsolDX
     [Flags]
     public enum DxRibbonCreateContentMode
     {
+        /// <summary>
+        /// Nic
+        /// </summary>
         None = 0,
         /// <summary>
         /// Pokud je nastaveno, MAJÍ se generovat všechny grupy a prvky první úrovně (viditelný obsah stránky v Ribbonu).
@@ -5603,7 +5605,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         CreateAllSubItems = 0x0004,
         /// <summary>
-        /// Pokud je nastaveno, MAJÍ se generovat alespoň ty prvky, které jsou obsaženy v QAT seznamu (podle jejich ItemId se detekují pomocí metody <see cref="ContainsQAT(IRibbonItem)"/>.
+        /// Pokud je nastaveno, MAJÍ se generovat alespoň ty prvky, které jsou obsaženy v QAT seznamu (podle jejich ItemId se detekují pomocí metody <see cref="DxRibbonControl.ContainsQAT(IRibbonItem)"/>.
         /// Tato hodnota se akceptuje jen tehdy, když NENÍ aktivní hodnota <see cref="CreateGroupsContent"/> ani <see cref="CreateAllSubItems"/>.
         /// </summary>
         CreateOnlyQATItems = 0x0010,
@@ -6095,15 +6097,15 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (iRibbonGroup.MergeOrder > 0) this.MergeOrder = iRibbonGroup.MergeOrder;             // Záporné číslo IRibbonGroup.MergeOrder říká: neměnit hodnotu, pokud grupa existuje. Důvod: při Refreshi existující grupy nechceme měnit její pozici.
             this.CaptionButtonVisible = (iRibbonGroup.GroupButtonVisible ? DefaultBoolean.True : DefaultBoolean.False);
             this.AllowTextClipping = iRibbonGroup.AllowTextClipping;
-            this.State = (iRibbonGroup.GroupState == RibbonGroupState.Expanded ? DevExpress.XtraBars.Ribbon.RibbonPageGroupState.Expanded :
-                         (iRibbonGroup.GroupState == RibbonGroupState.Collapsed ? DevExpress.XtraBars.Ribbon.RibbonPageGroupState.Collapsed :
+            this.State = (iRibbonGroup.GroupState == RibbonGroupState.Expanded ? RibbonPageGroupState.Expanded :
+                         (iRibbonGroup.GroupState == RibbonGroupState.Collapsed ? RibbonPageGroupState.Collapsed :
                           DevExpress.XtraBars.Ribbon.RibbonPageGroupState.Auto));
             this.ItemsLayout = (iRibbonGroup.LayoutType == RibbonGroupItemsLayout.Default ? RibbonPageGroupItemsLayout.Default :
                                (iRibbonGroup.LayoutType == RibbonGroupItemsLayout.OneRow ? RibbonPageGroupItemsLayout.OneRow :
                                (iRibbonGroup.LayoutType == RibbonGroupItemsLayout.TwoRows ? RibbonPageGroupItemsLayout.TwoRows :
                                (iRibbonGroup.LayoutType == RibbonGroupItemsLayout.ThreeRows ? RibbonPageGroupItemsLayout.ThreeRows :
                                 RibbonPageGroupItemsLayout.Default))));
-            this.ImageOptions.ImageIndex = DxComponent.GetBitmapImageIndex(iRibbonGroup.GroupImageName, DxRibbonControl.RibbonImageSize);
+            DxComponent.ApplyImage(this.ImageOptions, iRibbonGroup.GroupImageName, null, DxRibbonControl.RibbonImageSize);
             this.GroupData = iRibbonGroup;
             this.Tag = iRibbonGroup;
             iRibbonGroup.RibbonGroup = this;
@@ -6572,160 +6574,160 @@ namespace Noris.Clients.Win.Components.AsolDX
     #endregion
     #region TrackBar - TODO
     
-    #warning TrackBar - TODO
+    //#warning TrackBar - TODO
 
-    [DevExpress.XtraEditors.Registrator.UserRepositoryItem("RegisterMyTrackBar")]
-    public class RepositoryItemMyTrackBar : DevExpress.XtraEditors.Repository.RepositoryItemTrackBar
-    {
-        static RepositoryItemMyTrackBar()
-        {
-            RegisterMyTrackBar();
-        }
-        public static void RegisterMyTrackBar()
-        {
-            Image img = null;
-            DevExpress.XtraEditors.Registrator.EditorRegistrationInfo.Default.Editors.Add(new DevExpress.XtraEditors.Registrator.EditorClassInfo(CustomEditName, typeof(MyTrackBar), typeof(RepositoryItemMyTrackBar), typeof(MyTrackBarViewInfo), new MyTrackBarPainter(), true, img));
-        }
-
-
-        protected override int ConvertValue(object val)
-        {
-            return base.ConvertValue(val);
-        }
-
-        public const string CustomEditName = "MyTrackBar";
-
-        public RepositoryItemMyTrackBar() { }
+    //[DevExpress.XtraEditors.Registrator.UserRepositoryItem("RegisterMyTrackBar")]
+    //public class RepositoryItemMyTrackBar : DevExpress.XtraEditors.Repository.RepositoryItemTrackBar
+    //{
+    //    static RepositoryItemMyTrackBar()
+    //    {
+    //        RegisterMyTrackBar();
+    //    }
+    //    public static void RegisterMyTrackBar()
+    //    {
+    //        Image img = null;
+    //        DevExpress.XtraEditors.Registrator.EditorRegistrationInfo.Default.Editors.Add(new DevExpress.XtraEditors.Registrator.EditorClassInfo(CustomEditName, typeof(MyTrackBar), typeof(RepositoryItemMyTrackBar), typeof(MyTrackBarViewInfo), new MyTrackBarPainter(), true, img));
+    //    }
 
 
+    //    protected override int ConvertValue(object val)
+    //    {
+    //        return base.ConvertValue(val);
+    //    }
 
-        //---
+    //    public const string CustomEditName = "MyTrackBar";
 
-        public static RepositoryItemMyTrackBar SetupTrackBarDouble(double paramValue)
-        {
-
-            int paramValueInt = Convert.ToInt32(paramValue * 100);
-
-            RepositoryItemMyTrackBar trackbar = new RepositoryItemMyTrackBar()
-            {
-                Minimum = paramValueInt - 500,
-                Maximum = paramValueInt + 500,
-                SmallChange = 5,
-                ShowLabels = true
-            };
-
-            trackbar.Labels.Add(new DevExpress.XtraEditors.Repository.TrackBarLabel((Convert.ToDouble(trackbar.Minimum / 100d)).ToString(),
-              trackbar.Minimum));
-            trackbar.Labels.Add(new DevExpress.XtraEditors.Repository.TrackBarLabel((Convert.ToDouble(trackbar.Maximum / 100d)).ToString(),
-              trackbar.Maximum));
-            trackbar.Labels.Add(new DevExpress.XtraEditors.Repository.TrackBarLabel(paramValue.ToString(), paramValueInt));
-
-            return trackbar;
-        }
-
-        //---
+    //    public RepositoryItemMyTrackBar() { }
 
 
 
+    //    //---
 
-        public override string EditorTypeName { get { return CustomEditName; } }
+    //    public static RepositoryItemMyTrackBar SetupTrackBarDouble(double paramValue)
+    //    {
+
+    //        int paramValueInt = Convert.ToInt32(paramValue * 100);
+
+    //        RepositoryItemMyTrackBar trackbar = new RepositoryItemMyTrackBar()
+    //        {
+    //            Minimum = paramValueInt - 500,
+    //            Maximum = paramValueInt + 500,
+    //            SmallChange = 5,
+    //            ShowLabels = true
+    //        };
+
+    //        trackbar.Labels.Add(new DevExpress.XtraEditors.Repository.TrackBarLabel((Convert.ToDouble(trackbar.Minimum / 100d)).ToString(),
+    //          trackbar.Minimum));
+    //        trackbar.Labels.Add(new DevExpress.XtraEditors.Repository.TrackBarLabel((Convert.ToDouble(trackbar.Maximum / 100d)).ToString(),
+    //          trackbar.Maximum));
+    //        trackbar.Labels.Add(new DevExpress.XtraEditors.Repository.TrackBarLabel(paramValue.ToString(), paramValueInt));
+
+    //        return trackbar;
+    //    }
+
+    //    //---
+
+
+
+
+    //    public override string EditorTypeName { get { return CustomEditName; } }
 
       
 
-        public override void Assign(DevExpress.XtraEditors.Repository.RepositoryItem item)
-        {
-            BeginUpdate();
-            try
-            {
-                base.Assign(item);
-                RepositoryItemMyTrackBar source = item as RepositoryItemMyTrackBar;
-                if (source == null) return;
-                //
-            }
-            finally
-            {
-                EndUpdate();
-            }
-        }
-    }
+    //    public override void Assign(DevExpress.XtraEditors.Repository.RepositoryItem item)
+    //    {
+    //        BeginUpdate();
+    //        try
+    //        {
+    //            base.Assign(item);
+    //            RepositoryItemMyTrackBar source = item as RepositoryItemMyTrackBar;
+    //            if (source == null) return;
+    //            //
+    //        }
+    //        finally
+    //        {
+    //            EndUpdate();
+    //        }
+    //    }
+    //}
 
-    [System.ComponentModel.ToolboxItem(true)]
-    public class MyTrackBar : DevExpress.XtraEditors.TrackBarControl
-    {
-        static MyTrackBar()
-        {
-            RepositoryItemMyTrackBar.RegisterMyTrackBar();
-        }
+    //[System.ComponentModel.ToolboxItem(true)]
+    //public class MyTrackBar : DevExpress.XtraEditors.TrackBarControl
+    //{
+    //    static MyTrackBar()
+    //    {
+    //        RepositoryItemMyTrackBar.RegisterMyTrackBar();
+    //    }
 
-        public MyTrackBar()
-        {
-        }
+    //    public MyTrackBar()
+    //    {
+    //    }
 
-        public override object EditValue { get { return base.EditValue; } set { base.EditValue = value; } }
+    //    public override object EditValue { get { return base.EditValue; } set { base.EditValue = value; } }
 
-        [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Content)]
-        public new RepositoryItemMyTrackBar Properties { get { return base.Properties as RepositoryItemMyTrackBar; } }
+    //    [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Content)]
+    //    public new RepositoryItemMyTrackBar Properties { get { return base.Properties as RepositoryItemMyTrackBar; } }
 
-        protected override object ConvertCheckValue(object val)
-        {
-            return base.ConvertCheckValue(val);
-        }
+    //    protected override object ConvertCheckValue(object val)
+    //    {
+    //        return base.ConvertCheckValue(val);
+    //    }
 
-        public override string EditorTypeName { get { return RepositoryItemMyTrackBar.CustomEditName; } }
-    }
+    //    public override string EditorTypeName { get { return RepositoryItemMyTrackBar.CustomEditName; } }
+    //}
 
-    public class MyTrackBarViewInfo : DevExpress.XtraEditors.ViewInfo.TrackBarViewInfo
-    {
-        public MyTrackBarViewInfo(DevExpress.XtraEditors.Repository.RepositoryItem item)
-            : base(item)
-        {
-        }
+    //public class MyTrackBarViewInfo : DevExpress.XtraEditors.ViewInfo.TrackBarViewInfo
+    //{
+    //    public MyTrackBarViewInfo(DevExpress.XtraEditors.Repository.RepositoryItem item)
+    //        : base(item)
+    //    {
+    //    }
 
 
 
-        public override object EditValue
-        {
-            get
-            {
-                return base.EditValue;
-            }
-            set
-            {
-                try
-                {
-                    if (value is float)
-                    {
-                        int result = 0;
-                        result = (int)(Convert.ToSingle(value) * 100);
-                        base.EditValue = result;
-                    }
-                    else
-                        base.EditValue = value;
-                }
-                catch { }
-            }
-        }
+    //    public override object EditValue
+    //    {
+    //        get
+    //        {
+    //            return base.EditValue;
+    //        }
+    //        set
+    //        {
+    //            try
+    //            {
+    //                if (value is float)
+    //                {
+    //                    int result = 0;
+    //                    result = (int)(Convert.ToSingle(value) * 100);
+    //                    base.EditValue = result;
+    //                }
+    //                else
+    //                    base.EditValue = value;
+    //            }
+    //            catch { }
+    //        }
+    //    }
 
-        public override DevExpress.XtraEditors.Drawing.TrackBarObjectPainter GetTrackPainter()
-        {
-            return new SkinMyTrackBarObjectPainter(LookAndFeel);
-        }
-    }
+    //    public override DevExpress.XtraEditors.Drawing.TrackBarObjectPainter GetTrackPainter()
+    //    {
+    //        return new SkinMyTrackBarObjectPainter(LookAndFeel);
+    //    }
+    //}
 
-    public class MyTrackBarPainter : DevExpress.XtraEditors.Drawing.TrackBarPainter
-    {
-        public MyTrackBarPainter()
-        {
-        }
-    }
+    //public class MyTrackBarPainter : DevExpress.XtraEditors.Drawing.TrackBarPainter
+    //{
+    //    public MyTrackBarPainter()
+    //    {
+    //    }
+    //}
 
-    public class SkinMyTrackBarObjectPainter : DevExpress.XtraEditors.Drawing.SkinTrackBarObjectPainter
-    {
-        public SkinMyTrackBarObjectPainter(DevExpress.Skins.ISkinProvider provider)
-            : base(provider)
-        {
-        }
-    }
+    //public class SkinMyTrackBarObjectPainter : DevExpress.XtraEditors.Drawing.SkinTrackBarObjectPainter
+    //{
+    //    public SkinMyTrackBarObjectPainter(DevExpress.Skins.ISkinProvider provider)
+    //        : base(provider)
+    //    {
+    //    }
+    //}
     #endregion
     #region DxRibbonStatusBar
     /// <summary>
@@ -6844,7 +6846,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             ChildDxStatusBar = null;
         }
         /// <summary>
-        /// Obsahuje true, když v this StatusBaru je mergován nějaký Child (<see cref="ChildDxStatusBar"/> nebo alespoň <see cref="MergedStatusBar"/>)
+        /// Obsahuje true, když v this StatusBaru je mergován nějaký Child (<see cref="ChildDxStatusBar"/> nebo alespoň <see cref="RibbonStatusBar.MergedStatusBar"/>)
         /// </summary>
         protected bool HasMergedChildStatusBar { get { return (this.MergedStatusBar != null); } }
         /// <summary>
@@ -7121,11 +7123,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private const string LocationPrefix = "Location:";
         /// <summary>
-        /// Oddělovač jednotlivých klíčů v <see cref="QATItemKeys"/> (=tabulátor), string délky 1 znak
+        /// Oddělovač jednotlivých klíčů v <see cref="QATItems"/> (=tabulátor), string délky 1 znak
         /// </summary>
         private const string QATItemKeysDelimiter = "\t";
         /// <summary>
-        /// Oddělovač jednotlivých klíčů v <see cref="QATItemKeys"/> (=tabulátor), char
+        /// Oddělovač jednotlivých klíčů v <see cref="QATItems"/> (=tabulátor), char
         /// </summary>
         private const char QATItemKeysDelimiterChar = '\t';
         #endregion

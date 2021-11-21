@@ -1027,6 +1027,7 @@ namespace TestDevExpress.Forms
             int gi = Rand.Next(groupTotal);
             string groupId = pageId + "." + "Group" + gi;    // GroupId je shodné pro grupy konkrétního názvu na shodné stránce = pro Mergování!
             string groupText = GroupNames[gi];
+            string groupImageName = GetRandomImageName();
             bool groupButtonVisible = (groupText == "Rozšířené" || groupText == "Údržba" || groupText == "Oblíbené" || groupText == "Systém" || groupText == "Systém");
             bool groupCollapsed = (Random.IsTrue(10));
 
@@ -1034,6 +1035,7 @@ namespace TestDevExpress.Forms
             {
                 GroupId = groupId,
                 GroupText = groupText,
+                GroupImageName = groupImageName,
                 GroupButtonVisible = groupButtonVisible,
                 GroupState = (groupCollapsed ? RibbonGroupState.Collapsed : RibbonGroupState.Auto)
             };
