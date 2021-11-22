@@ -2482,13 +2482,15 @@ namespace Noris.Clients.Win.Components.AsolDX
             string imageName = this.ImageName;
             if (String.IsNullOrEmpty(imageName)) return;
 
-            // e.Graphics.FillRectangle(Brushes.AntiqueWhite, this.Bounds);
+            var svgImage = DxComponent.GetVectorImage(imageName, this.ExactName, sizeType);
+            if (svgImage != null)
+                DxSvgImage.RenderTo(svgImage, e.Graphics, bounds);
 
-            if (!DxComponent.TryGetResources(imageName, this.ExactName, out var resourceItems)) return;    // Zadaný zdroj není nalezen
+            //if (!DxComponent.TryGetApplicationResources(imageName, this.ExactName, out var resourceItems)) return;    // Zadaný zdroj není nalezen
 
-            var resourceItem = resourceItems.FirstOrDefault(r => r.ContentType == ResourceContentType.Vector);
-            var svgImage = resourceItem.CreateSvgImage();
-            svgImage.RenderTo(e.Graphics, bounds);
+            //var resourceItem = resourceItems.FirstOrDefault(r => r.ContentType == ResourceContentType.Vector);
+            //var svgImage = resourceItem.CreateSvgImage();
+            //svgImage.RenderTo(e.Graphics, bounds);
         }
     }
     #endregion

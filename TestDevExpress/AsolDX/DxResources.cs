@@ -60,7 +60,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (hasName && _TryGetContentTypeImageArray(imageName, out var _))
 #warning TODO konverze SvgArray to Bitmap !!!
                 return null;
-            if (hasName && _TrySearchApplicationResource(imageName, exactName, out var validItems, ResourceContentType.Bitmap, ResourceContentType.Vector))
+            if (hasName && _TryGetApplicationResources(imageName, exactName, out var validItems, ResourceContentType.Bitmap, ResourceContentType.Vector))
                 return _CreateBitmapImageApplication(validItems, sizeType, optimalSvgSize);
             if (hasName && _ExistsDevExpressResource(imageName))
                 return _CreateBitmapImageDevExpress(imageName, sizeType, optimalSvgSize);
@@ -161,7 +161,7 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             if (hasName && SvgImageSupport.TryGetSvgImageArray(imageName, out var svgImageArray))
                 return _GetVectorImageArray(svgImageArray, sizeType);
-            if (hasName && _TrySearchApplicationResource(imageName, exactName, out var validItems, ResourceContentType.Vector))
+            if (hasName && _TryGetApplicationResources(imageName, exactName, out var validItems, ResourceContentType.Vector))
                 return _GetVectorImageApplication(validItems, sizeType);
             if (hasName && _ExistsDevExpressResource(imageName) && _IsImageNameSvg(imageName))
                 return _GetVectorImageDevExpress(imageName);
@@ -196,7 +196,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             DxApplicationResourceLibrary.ResourceItem[] validItems;
 
             // Pro dané jméno zdroje máme k dispozici resource s typem Icon:
-            if (_TrySearchApplicationResource(imageName, exactName, out validItems, ResourceContentType.Icon))
+            if (_TryGetApplicationResources(imageName, exactName, out validItems, ResourceContentType.Icon))
             {
                 DxApplicationResourceLibrary.ResourceItem iconItem = validItems[0];
                 if (validItems.Length > 1 && DxApplicationResourceLibrary.ResourcePack.TryGetOptimalSize(validItems, sizeType, out var item))
@@ -205,7 +205,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
 
             // Anebo najdeme Bitmapy a konvertujeme je do Icon:
-            if (_TrySearchApplicationResource(imageName, exactName, out validItems, ResourceContentType.Bitmap))
+            if (_TryGetApplicationResources(imageName, exactName, out validItems, ResourceContentType.Bitmap))
             {
                 return _ConvertBitmapsToIcon(validItems, sizeType);
             }
@@ -305,8 +305,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="isPreferredVectorImage">Preferovat true = vektory / false = bitmapy / null = podle systému</param>
         /// <param name="exactName"></param>
         /// <returns></returns>
-        public static bool TryGetResource(string imageName, out DxApplicationResourceLibrary.ResourceItem resourceItem, bool exactName = false, ResourceImageSizeType? sizeType = null, bool? isPreferredVectorImage = null)
-        { return Instance._TryGetResource(imageName, exactName, sizeType, isPreferredVectorImage, out resourceItem); }
+        public static bool TryGetApplicationResource(string imageName, out DxApplicationResourceLibrary.ResourceItem resourceItem, bool exactName = false, ResourceImageSizeType? sizeType = null, bool? isPreferredVectorImage = null)
+        { return Instance._TryGetApplicationResource(imageName, exactName, sizeType, isPreferredVectorImage, out resourceItem); }
         /// <summary>
         /// Zkusí najít jeden nejvhodnější zdroj
         /// </summary>
@@ -316,11 +316,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="isPreferredVectorImage"></param>
         /// <param name="resourceItem"></param>
         /// <returns></returns>
-        private bool _TryGetResource(string imageName, bool exactName, ResourceImageSizeType? sizeType, bool? isPreferredVectorImage, out DxApplicationResourceLibrary.ResourceItem resourceItem)
+        private bool _TryGetApplicationResource(string imageName, bool exactName, ResourceImageSizeType? sizeType, bool? isPreferredVectorImage, out DxApplicationResourceLibrary.ResourceItem resourceItem)
         {
             resourceItem = null;
             ResourceContentType[] validContentTypes = _GetValidImageContentTypes(isPreferredVectorImage);
-            if (!_TrySearchApplicationResource(imageName, exactName, out var validItems, validContentTypes)) return false;
+            if (!_TryGetApplicationResources(imageName, exactName, out var validItems, validContentTypes)) return false;
             if (!DxApplicationResourceLibrary.ResourcePack.TryGetOptimalSize(validItems, sizeType, out resourceItem)) return false;
             return true;
         }
@@ -333,8 +333,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="resourceItems">Výstup - nalezené zdroje</param>
         /// <param name="contentTypes"></param>
         /// <returns></returns>
-        public static bool TryGetResources(string imageName, bool exactName, out DxApplicationResourceLibrary.ResourceItem[] resourceItems, params ResourceContentType[] contentTypes)
-        { return Instance._TrySearchApplicationResource(imageName, exactName, out resourceItems, contentTypes); }
+        public static bool TryGetApplicationResources(string imageName, bool exactName, out DxApplicationResourceLibrary.ResourceItem[] resourceItems, params ResourceContentType[] contentTypes)
+        { return Instance._TryGetApplicationResources(imageName, exactName, out resourceItems, contentTypes); }
         #endregion
         #region ApplyImage - do cílového objektu vepíše obrázek podle toho, jak je zadán a kam má být vepsán
         /// <summary>
@@ -487,7 +487,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="imageSize"></param>
         private void _ApplyImageApplication(ImageOptions imageOptions, string imageName, bool exactName, ResourceImageSizeType? sizeType, Size? imageSize)
         {
-            if (!_TrySearchApplicationResource(imageName, exactName, out var validItems, ResourceContentType.Vector, ResourceContentType.Bitmap)) return;
+            if (!_TryGetApplicationResources(imageName, exactName, out var validItems, ResourceContentType.Vector, ResourceContentType.Bitmap)) return;
 
             var contentType = validItems[0].ContentType;
             if (contentType == ResourceContentType.Vector)
@@ -1010,7 +1010,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             ResourceContentType[] validContentTypes = this._IsPreferredVectorImage ?
                 new ResourceContentType[] { ResourceContentType.Vector, ResourceContentType.Bitmap } :
                 new ResourceContentType[] { ResourceContentType.Bitmap, ResourceContentType.Vector };
-            return _TrySearchApplicationResource(imageName, exactName, out validItems, validContentTypes);
+            return _TryGetApplicationResources(imageName, exactName, out validItems, validContentTypes);
         }
         /// <summary>
         /// Zkusí najít daný zdroj v aplikačních zdrojích, zafiltruje na daný typ obsahu - typ obsahu je povinný. Velikost se řeší následně.
@@ -1026,7 +1026,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="validItems"></param>
         /// <param name="validContentTypes"></param>
         /// <returns></returns>
-        private bool _TrySearchApplicationResource(string imageName, bool exactName, out DxApplicationResourceLibrary.ResourceItem[] validItems,
+        private bool _TryGetApplicationResources(string imageName, bool exactName, out DxApplicationResourceLibrary.ResourceItem[] validItems,
             params ResourceContentType[] validContentTypes)
         {
             validItems = null;
@@ -1087,7 +1087,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         private Image _CreateImageApplication(string imageName, bool exactName,
             ResourceImageSizeType? sizeType, Size? optimalSvgSize)
         {
-            if (!_TrySearchApplicationResource(imageName, exactName, out var validItems, ResourceContentType.Bitmap, ResourceContentType.Vector)) return null;
+            if (!_TryGetApplicationResources(imageName, exactName, out var validItems, ResourceContentType.Bitmap, ResourceContentType.Vector)) return null;
             return _CreateBitmapImageApplication(validItems, sizeType, optimalSvgSize);
         }
         /// <summary>
@@ -1621,7 +1621,7 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             if (_TryGetContentTypeImageArray(imageName, out contentType))
                 return true;
-            if (_TrySearchApplicationResource(imageName, exactName, out var validItems))
+            if (_TryGetApplicationResources(imageName, exactName, out var validItems))
                 return _TryGetContentTypeApplication(validItems, sizeType, preferVector, out contentType);
             if (_ExistsDevExpressResource(imageName))
                 return _TryGetContentTypeDevExpress(imageName, out contentType);
@@ -2729,9 +2729,25 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             return Create(null, false, data);
         }
-
+        /// <summary>
+        /// Renderuje this image do dané grafiky na dané místo
+        /// </summary>
+        /// <param name="graphics"></param>
+        /// <param name="bounds"></param>
         public void RenderTo(Graphics graphics, Rectangle bounds)
         {
+            RenderTo(this, graphics, bounds);
+        }
+        /// <summary>
+        /// Renderuje this image do dané grafiky na dané místo
+        /// </summary>
+        /// <param name="svgImage"></param>
+        /// <param name="graphics"></param>
+        /// <param name="bounds"></param>
+        public static void RenderTo(SvgImage svgImage, Graphics graphics, Rectangle bounds)
+        {
+            if (svgImage is null || graphics is null || bounds.Width <= 2 || bounds.Height <= 2) return;
+
             // Matrix(a,b,c,d,e,f):  Xr = Xi * a ..... Yr = Yi * d  +  Xi * b......
             //   a: zoom X
             //   b: X * b => Y
@@ -2740,13 +2756,18 @@ namespace Noris.Clients.Win.Components.AsolDX
             //   e: posun X
             //   f: posun Y
             var matrixOld = graphics.Transform;
-            graphics.Transform = new System.Drawing.Drawing2D.Matrix(1f, 0f, 0f, 1f, bounds.X, bounds.Y);
-            double scaleX = (double)bounds.Width / this.Width;
-            double scaleY = (double)bounds.Height / this.Height;
-            double scale = (scaleX <= scaleY ? scaleX : scaleY);
-            this.RenderToGraphics(graphics, null, scale);
-
-            graphics.Transform = matrixOld;
+            try
+            {
+                graphics.Transform = new System.Drawing.Drawing2D.Matrix(1f, 0f, 0f, 1f, bounds.X, bounds.Y);
+                double scaleX = (double)bounds.Width / svgImage.Width;
+                double scaleY = (double)bounds.Height / svgImage.Height;
+                double scale = (scaleX <= scaleY ? scaleX : scaleY);
+                svgImage.RenderToGraphics(graphics, null, scale);
+            }
+            finally
+            {
+                graphics.Transform = matrixOld;
+            }
         }
     }
     #endregion

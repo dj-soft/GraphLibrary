@@ -515,11 +515,14 @@ namespace TestDevExpress.Forms
                     this.EditorImageName = subItem.ImageName;
                     break;
                 case 1:
-                case 3:
                     mainItem.ImageName = subItem.ImageName;
                     break;
                 case 2:
                     mainItem.Text = "Velikost " + _SvgCombineData[2].ToString() + "%";
+                    break;
+                case 3:
+                    mainItem.ImageName = subItem.ImageName;
+                    this.EditorImageName = subItem.ImageName;
                     break;
             }
             mainItem.ToolTipText = subItem.Text;
@@ -528,6 +531,9 @@ namespace TestDevExpress.Forms
                 this.DxRibbon.RefreshItem(mainItem, true);
 
             _SvgCombineRunAction(showStatus);
+
+            if (mainItemIndex == 3)
+                this.EditorImageName = _SvgCombineResultName;
         }
         private DataRibbonGroup _SvgCombineRibbonGroup;
         /// <summary>
@@ -668,9 +674,9 @@ namespace TestDevExpress.Forms
             SvgImageArrayInfo svgImageArray = new SvgImageArrayInfo(svgImageName0);
             svgImageArray.Add(svgImageName1, contentAlignment, percent);
             // Výsledný string:
-            string imageName = svgImageArray.Key;
+            _SvgCombineResultName = svgImageArray.Key;
 
-            bool ok = SvgImageArrayInfo.TryDeserialize(imageName, out var imgCopy);
+            bool ok = SvgImageArrayInfo.TryDeserialize(_SvgCombineResultName, out var imgCopy);
             string copyName = imgCopy?.Key;
 
             _SaveSvgImage(copyName);
@@ -682,7 +688,7 @@ namespace TestDevExpress.Forms
             if (isStandard)
             {   // Standardní cesta:
                 DataRibbonItem resultItem = _SvgCombineRibbonGroup.Items[4] as DataRibbonItem;
-                resultItem.ImageName = imageName;
+                resultItem.ImageName = _SvgCombineResultName;
                 this.DxRibbon.RefreshItem(resultItem, true);
 
                 // DxComponent.ApplyImage(barItem.ImageOptions, imageName);
@@ -703,6 +709,7 @@ namespace TestDevExpress.Forms
             if (showStatus)
                 this._StatusStartLabel.Caption = $"Key: {svgImageArray.Key}; {info}Time: {microsecs} microsecs";
         }
+        private string _SvgCombineResultName;
         private void _SaveSvgImage(string svgImageName)
         {
             DevExpress.Utils.Svg.SvgImage svgImage = DxComponent.CreateVectorImage(svgImageName);
