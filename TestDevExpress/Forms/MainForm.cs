@@ -445,19 +445,69 @@ namespace TestDevExpress.Forms
         #region Ribbon a SvgImage kombinace
         private DataRibbonPage CreateRibbonSvgImagesPage()
         {
+            var commonSkin = DS.CommonSkins.GetSkin(DevExpress.LookAndFeel.UserLookAndFeel.Default);
+            var ribbonSkin = DxComponent.GetSkinInfo(SkinElementColor.RibbonSkins);
+
+            var palette = new DevExpress.Utils.Svg.SvgPalette();
+            palette.Colors.Add(new DevExpress.Utils.Svg.SvgColor("modrá", Color.FromArgb(44, 55, 88)));
+
+            ribbonSkin.CustomSvgPalettes.Add(new DevExpress.Utils.Svg.SvgPaletteKey(0, "key0"), palette);
+
+            // commonSkin.CustomSvgPalettes.Add(new DevExpress.Utils.Svg.SvgPaletteKey(0, "key0"), palette);
+            DevExpress.LookAndFeel.LookAndFeelHelper.ForceDefaultLookAndFeelChanged();
+
             AddTestDxResources();
 
             _SvgCombineData = new object[4];
 
             DataRibbonPage page = new DataRibbonPage() { PageText = "SVG IKONY" };
             _SvgCombineRibbonGroup = new DataRibbonGroup() { GroupText = "Kombinace více ikon do jedné" };
-            page.Groups.Add(_SvgCombineRibbonGroup);
-
             _SvgCombineRibbonGroup.Items.Add(new DataRibbonItem() { Text = "Základ", ItemType = RibbonItemType.Menu, SubItems = CreateRibbonSvgMenu0(), RibbonStyle = RibbonItemStyles.Large });
             _SvgCombineRibbonGroup.Items.Add(new DataRibbonItem() { Text = "Umístění", ItemType = RibbonItemType.Menu, SubItems = CreateRibbonSvgMenu1(), RibbonStyle = RibbonItemStyles.Large });
             _SvgCombineRibbonGroup.Items.Add(new DataRibbonItem() { Text = "Velikost", ImageName = "svgimages/dashboards/zoom2.svg", ItemType = RibbonItemType.Menu, SubItems = CreateRibbonSvgMenu2(), RibbonStyle = RibbonItemStyles.Large });
             _SvgCombineRibbonGroup.Items.Add(new DataRibbonItem() { Text = "Přídavek", ItemType = RibbonItemType.Menu, SubItems = CreateRibbonSvgMenu3(), RibbonStyle = RibbonItemStyles.Large });
             _SvgCombineRibbonGroup.Items.Add(new DataRibbonItem() { Text = "Výsledek", ItemType = RibbonItemType.Button, RibbonStyle = RibbonItemStyles.Large, ItemIsFirstInGroup = true });
+            page.Groups.Add(_SvgCombineRibbonGroup);
+
+            _SvgDjColorRibbonGroup = new DataRibbonGroup() { GroupText = "Ukázky ikon Dj-Colorized" };
+            _SvgDjColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/DjColorized/robot-arm-filled", Text = "robot" });
+            _SvgDjColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/DjColorized/safe", Text = "safe" });
+            _SvgDjColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/DjColorized/salary", Text = "salary" });
+            _SvgDjColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/DjColorized/sale-blue-filled", Text = "sale-blue" });
+            _SvgDjColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/DjColorized/store-closed", Text = "store" });
+            _SvgDjColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/DjColorized/symbol-forbidden-script", Text = "forbidden" });
+            _SvgDjColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/DjColorized/symbol-refresh", Text = "refresh" });
+            _SvgDjColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/DjColorized/symbol-remove", Text = "remove" });
+            _SvgDjColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/DjColorized/symbol-update", Text = "update" });
+            _SvgDjColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/DjColorized/symbol-upload", Text = "upload" });
+            /*
+            _SvgDjColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/DjColorized/table", Text = "table" });
+            _SvgDjColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/DjColorized/text", Text = "text" });
+            _SvgDjColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/DjColorized/time", Text = "time" });
+            _SvgDjColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/DjColorized/toolbox", Text = "toolbox" });
+            _SvgDjColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/DjColorized/user", Text = "user" });
+            */
+            page.Groups.Add(_SvgDjColorRibbonGroup);
+
+            _SvgOrigColorRibbonGroup = new DataRibbonGroup() { GroupText = "Ukázky ikon ASOL original + DarkConvertor" };
+            _SvgOrigColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/AsolOriginal/robot-arm-filled", Text = "robot" });
+            _SvgOrigColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/AsolOriginal/safe", Text = "safe" });
+            _SvgOrigColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/AsolOriginal/salary", Text = "salary" });
+            _SvgOrigColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/AsolOriginal/sale-blue-filled", Text = "sale-blue" });
+            _SvgOrigColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/AsolOriginal/store-closed", Text = "store" });
+            _SvgOrigColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/AsolOriginal/symbol-forbidden-script", Text = "forbidden" });
+            _SvgOrigColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/AsolOriginal/symbol-refresh", Text = "refresh" });
+            _SvgOrigColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/AsolOriginal/symbol-remove", Text = "remove" });
+            _SvgOrigColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/AsolOriginal/symbol-update", Text = "update" });
+            _SvgOrigColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/AsolOriginal/symbol-upload", Text = "upload" });
+            /*
+            _SvgOrigColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/AsolOriginal/table", Text = "table" });
+            _SvgOrigColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/AsolOriginal/text", Text = "text" });
+            _SvgOrigColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/AsolOriginal/time", Text = "time" });
+            _SvgOrigColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/AsolOriginal/toolbox", Text = "toolbox" });
+            _SvgOrigColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/AsolOriginal/user", Text = "user" });
+            */
+            page.Groups.Add(_SvgOrigColorRibbonGroup);
 
             ClickRibbonSvgMenuAny(0, 0, false);
             ClickRibbonSvgMenuAny(1, 8, false);
@@ -536,6 +586,8 @@ namespace TestDevExpress.Forms
                 this.EditorImageName = _SvgCombineResultName;
         }
         private DataRibbonGroup _SvgCombineRibbonGroup;
+        private DataRibbonGroup _SvgDjColorRibbonGroup;
+        private DataRibbonGroup _SvgOrigColorRibbonGroup;
         /// <summary>
         /// Obsahuje prvky: ImageName základ; ContentAlignment; Size; ImageName přídavek
         /// </summary>
@@ -568,22 +620,15 @@ namespace TestDevExpress.Forms
             subItems.Add(new DataRibbonItem() { ImageName = "pic_0/Bar_s/vyhledavani-large.svg", Text = "vyhledavani-large", ClickAction = ClickRibbonSvgMenu0 });
             subItems.Add(new DataRibbonItem() { ImageName = "pic/waste-bin", Text = "waste-bin", ClickAction = ClickRibbonSvgMenu0 });
             subItems.Add(new DataRibbonItem() { ImageName = "pic/window", Text = "window", ClickAction = ClickRibbonSvgMenu0 });
-            subItems.Add(new DataRibbonItem() { ImageName = "pic/window-large.svg", Text = "window-large.svg", ClickAction = ClickRibbonSvgMenu0 });
-            subItems.Add(new DataRibbonItem() { ImageName = "pic/window-small.svg", Text = "window-small.svg", ClickAction = ClickRibbonSvgMenu0 });
-            subItems.Add(new DataRibbonItem() { ImageName = "pic_0/win/dashboard/poznamkovy_blok", Text = "poznamkovy_blok", ClickAction = ClickRibbonSvgMenu0 });
-            subItems.Add(new DataRibbonItem() { ImageName = "pic_0/win/dashboard/poznamkovy_blok-large", Text = "poznamkovy_blok-large", ClickAction = ClickRibbonSvgMenu0 });
-            subItems.Add(new DataRibbonItem() { ImageName = "pic_0/win/dashboard/poznamkovy_blok-small", Text = "poznamkovy_blok-small", ClickAction = ClickRibbonSvgMenu0 });
-            subItems.Add(new DataRibbonItem() { ImageName = "pic_0/win/dashboard/poznamkovy_blok-large.svg", Text = "poznamkovy_blok-large.svg", ClickAction = ClickRibbonSvgMenu0 });
-            subItems.Add(new DataRibbonItem() { ImageName = "pic_0/win/dashboard/poznamkovy_blok-small.svg", Text = "poznamkovy_blok-small.svg", ClickAction = ClickRibbonSvgMenu0 });
-            subItems.Add(new DataRibbonItem() { ImageName = "pic_0/win/dashboard/poznamkovy_blok-16x16.png", Text = "poznamkovy_blok-16x16.png", ClickAction = ClickRibbonSvgMenu0 });
-            subItems.Add(new DataRibbonItem() { ImageName = "pic_0/win/dashboard/poznamkovy_blok-32x32.png", Text = "poznamkovy_blok-32x32.png", ClickAction = ClickRibbonSvgMenu0 });
             subItems.Add(new DataRibbonItem() { ImageName = "pic/turbine-2-large.svg", Text = "turbine-2-large", ClickAction = ClickRibbonSvgMenu0 });
 
-            subItems.Add(new DataRibbonItem() { ImageName = "svgtest/asset-cancel-2", Text = "asset-cancel-2", ClickAction = ClickRibbonSvgMenu0, ItemIsFirstInGroup = true });
-            subItems.Add(new DataRibbonItem() { ImageName = "svgtest/asset-filled-ok-2", Text = "asset-filled-ok-2", ClickAction = ClickRibbonSvgMenu0 });
+            subItems.Add(new DataRibbonItem() { ImageName = "svgtest/poznamkovy_blok", Text = "poznamkovy_blok", ClickAction = ClickRibbonSvgMenu0, ItemIsFirstInGroup = true });
+            subItems.Add(new DataRibbonItem() { ImageName = "svgtest/kalendar", Text = "kalendar", ClickAction = ClickRibbonSvgMenu0 });
             subItems.Add(new DataRibbonItem() { ImageName = "svgtest/asset", Text = "asset", ClickAction = ClickRibbonSvgMenu0 });
-            subItems.Add(new DataRibbonItem() { ImageName = "svgtest/attach-1-add-2", Text = "attach-1-add-2", ClickAction = ClickRibbonSvgMenu0 });
+            subItems.Add(new DataRibbonItem() { ImageName = "svgtest/asset-cancel-2", Text = "asset-cancel-2", ClickAction = ClickRibbonSvgMenu0});
+            subItems.Add(new DataRibbonItem() { ImageName = "svgtest/asset-filled-ok-2", Text = "asset-filled-ok-2", ClickAction = ClickRibbonSvgMenu0 });
             subItems.Add(new DataRibbonItem() { ImageName = "svgtest/attach-1", Text = "attach-1", ClickAction = ClickRibbonSvgMenu0 });
+            subItems.Add(new DataRibbonItem() { ImageName = "svgtest/attach-1-add-2", Text = "attach-1-add-2", ClickAction = ClickRibbonSvgMenu0 });
             subItems.Add(new DataRibbonItem() { ImageName = "svgtest/backspace", Text = "backspace", ClickAction = ClickRibbonSvgMenu0 });
 
             return subItems;
@@ -641,7 +686,7 @@ namespace TestDevExpress.Forms
 
             subItems.Add(new DataRibbonItem() { ImageName = "svgtest/suffix-add", Text = "suffix-add", ClickAction = ClickRibbonSvgMenu3, ItemIsFirstInGroup = true });
             subItems.Add(new DataRibbonItem() { ImageName = "svgtest/suffix-cancel", Text = "suffix-cancel", ClickAction = ClickRibbonSvgMenu3 });
-            subItems.Add(new DataRibbonItem() { ImageName = "svgtest/suffix-aokdd", Text = "suffix-ok", ClickAction = ClickRibbonSvgMenu3 });
+            subItems.Add(new DataRibbonItem() { ImageName = "svgtest/suffix-ok", Text = "suffix-ok", ClickAction = ClickRibbonSvgMenu3 });
 
             return subItems;
         }
