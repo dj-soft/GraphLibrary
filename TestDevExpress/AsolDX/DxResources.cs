@@ -99,10 +99,38 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         /// <summary>
         /// Vrátí typ velikosti obrázku vhodný pro danou fyzickou velikost prostoru.
+        /// Pro střední velikost (17 až 24 px včetně) dovoluje zadat explicitní hodnotu, protože pro vektorové obrázky je lepší generovat Small než Large.
+        /// </summary>
+        /// <param name="currentSize"></param>
+        /// <param name="mediumSize"></param>
+        /// <returns></returns>
+        public static ResourceImageSizeType GetImageSizeType(Size currentSize, ResourceImageSizeType mediumSize = ResourceImageSizeType.Medium)
+        {
+            int s = (currentSize.Width < currentSize.Height ? currentSize.Width : currentSize.Height);
+            if (s <= 3) return ResourceImageSizeType.None;
+            if (s <= 16) return ResourceImageSizeType.Small;
+            if (s <= 24) return mediumSize;
+            return ResourceImageSizeType.Large;
+        }
+        /// <summary>
+        /// Vrátí typ velikosti obrázku vhodný pro danou fyzickou velikost prostoru, optimálně pro Vector.
         /// </summary>
         /// <param name="currentSize"></param>
         /// <returns></returns>
-        public static ResourceImageSizeType GetImageSizeType(Size currentSize)
+        public static ResourceImageSizeType GetImageSizeTypeVector(Size currentSize)
+        {
+            int s = (currentSize.Width < currentSize.Height ? currentSize.Width : currentSize.Height);
+            if (s <= 3) return ResourceImageSizeType.None;
+            if (s <= 24) return ResourceImageSizeType.Small;
+            return ResourceImageSizeType.Large;
+        }
+        /// <summary>
+        /// Vrátí typ velikosti obrázku vhodný pro danou fyzickou velikost prostoru, optimálně pro Bitmap.
+        /// Pro střední velikost (17 až 24 px včetně) dovoluje zadat explicitní hodnotu, protože pro vektorové obrázky je lepší generovat Small než Large.
+        /// </summary>
+        /// <param name="currentSize"></param>
+        /// <returns></returns>
+        public static ResourceImageSizeType GetImageSizeTypeBitmap(Size currentSize)
         {
             int s = (currentSize.Width < currentSize.Height ? currentSize.Width : currentSize.Height);
             if (s <= 3) return ResourceImageSizeType.None;
@@ -2744,7 +2772,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="svgImage"></param>
         /// <param name="graphics"></param>
         /// <param name="bounds"></param>
-        public static void RenderTo(SvgImage svgImage, Graphics graphics, Rectangle bounds)
+        /// <param name="alignment "></param>
+        public static void RenderTo(SvgImage svgImage, Graphics graphics, Rectangle bounds, ContentAlignment alignment = ContentAlignment.MiddleCenter)
         {
             if (svgImage is null || graphics is null || bounds.Width <= 2 || bounds.Height <= 2) return;
 
@@ -2755,18 +2784,29 @@ namespace Noris.Clients.Win.Components.AsolDX
             //   d: zoom Y
             //   e: posun X
             //   f: posun Y
+            var state = graphics.Save();
             var matrixOld = graphics.Transform;
             try
             {
-                graphics.Transform = new System.Drawing.Drawing2D.Matrix(1f, 0f, 0f, 1f, bounds.X, bounds.Y);
-                double scaleX = (double)bounds.Width / svgImage.Width;
-                double scaleY = (double)bounds.Height / svgImage.Height;
+                graphics.SetClip(bounds);
+
+                SizeF imageSize = new SizeF((float)svgImage.Width, (float)svgImage.Height);
+                RectangleF imageBounds = imageSize.ZoomTo((RectangleF)bounds, alignment);
+                graphics.Transform = new System.Drawing.Drawing2D.Matrix(1f, 0f, 0f, 1f, imageBounds.X, imageBounds.Y);
+                double scaleX = (double)imageBounds.Width / svgImage.Width;
+                double scaleY = (double)imageBounds.Height / svgImage.Height;
                 double scale = (scaleX <= scaleY ? scaleX : scaleY);
+
+                graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.HighQuality;
+                graphics.CompositingQuality = System.Drawing.Drawing2D.CompositingQuality.HighQuality;
+                graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
                 svgImage.RenderToGraphics(graphics, null, scale);
             }
             finally
             {
+                graphics.ResetClip();
                 graphics.Transform = matrixOld;
+                graphics.Restore(state);
             }
         }
     }

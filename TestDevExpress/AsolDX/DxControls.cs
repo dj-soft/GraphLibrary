@@ -2436,7 +2436,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         #endregion
     }
     #endregion
-    #region DxImageArea
+    #region DxImageArea : neinteraktivní obrázek s definovaným zdrojem a umístěním (v rámci nějakého parent controlu)
     /// <summary>
     /// Prvek, který může být vykreslen přímo do panelu <see cref="DxPanelControl"/> (a i jiných).
     /// Prvek lze přidat do seznamu <see cref="DxPanelControl.PaintedItems"/>.
@@ -2446,6 +2446,15 @@ namespace Noris.Clients.Win.Components.AsolDX
     public class DxImageArea : IDxPanelPaintedItem
     {
         /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public DxImageArea()
+        {
+            Alignment = ContentAlignment.MiddleCenter;
+            BackColor = null;
+            BorderColor = null;
+        }
+        /// <summary>
         /// Souřadnice.
         /// Setování hodnoty neprovádí refresh parent panelu.
         /// </summary>
@@ -2454,6 +2463,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Jméno obrázku.
         /// Default = null. Nekreslí se nic.
         /// Setování hodnoty neprovádí refresh parent panelu.
+        /// <para/>
+        /// Jméno je vyhledáno ve zdrojích aplikačních i DevExpress, smí to být vektor i bitmapa i skládaný vektorový obrázek.
+        /// Nepodporujeme náhradní obrázek vytvořený pro Caption.
         /// </summary>
         public string ImageName { get; set; }
         /// <summary>
@@ -2469,7 +2481,22 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Default = null.
         /// Setování hodnoty neprovádí refresh parent panelu.
         /// </summary>
-        public bool? PreferVector { get; set; }
+        public bool? IsPreferredVectorImage { get; set; }
+        /// <summary>
+        /// Barva pozadí, default: null = nekreslí se. Akceptuje se Alpha channel.
+        /// Kreslí se v souřadnici <see cref="Bounds"/>.
+        /// </summary>
+        public Color? BackColor { get; set; }
+        /// <summary>
+        /// Barva rámečku, default: null = nekreslí se. Akceptuje se Alpha channel.
+        /// Kreslí se v souřadnici <see cref="Bounds"/>.
+        /// </summary>
+        public Color? BorderColor { get; set; }
+        /// <summary>
+        /// Zarovnání obrazu do <see cref="Bounds"/>. 
+        /// Obraz bude zoomován do daného prostoru se zachováním proporcí.
+        /// </summary>
+        public ContentAlignment Alignment { get; set; }
         /// <summary>
         /// Prvek bude vykreslen do panelu
         /// </summary>
@@ -2477,20 +2504,56 @@ namespace Noris.Clients.Win.Components.AsolDX
         void IDxPanelPaintedItem.OnPaint(PaintEventArgs e)
         {
             var bounds = this.Bounds;
-            var sizeType = DxComponent.GetImageSizeType(bounds.Size);
-            if (sizeType == ResourceImageSizeType.None) return;
+
+            if (BackColor.HasValue)
+                e.Graphics.FillRectangle(DxComponent.PaintGetSolidBrush(BackColor.Value), bounds);
+            if (BorderColor.HasValue)
+            {
+                Rectangle borderBounds = new Rectangle(bounds.X, bounds.Y, bounds.Width - 1, bounds.Height - 1);
+                e.Graphics.DrawRectangle(DxComponent.PaintGetPen(BorderColor.Value), borderBounds);
+            }
+
+            var sizeTypeV = DxComponent.GetImageSizeTypeVector(bounds.Size);
+            var sizeTypeB = DxComponent.GetImageSizeTypeBitmap(bounds.Size);
+            if (sizeTypeV == ResourceImageSizeType.None) return;
             string imageName = this.ImageName;
             if (String.IsNullOrEmpty(imageName)) return;
 
+            bool preferVector = this.IsPreferredVectorImage ?? DxComponent.IsPreferredVectorImage;
+            if (preferVector && TryPaintVector(e.Graphics, imageName, sizeTypeV, bounds)) return;
+            if (TryPaintBitmap(e.Graphics, imageName, sizeTypeB, bounds)) return;
+            if (!preferVector) TryPaintVector(e.Graphics, imageName, sizeTypeV, bounds);  // Pokud vektor NENÍ preferován, tak jsem jej kreslit ještě nezkoušel. Zkusme to tedy nyní...
+        }
+        /// <summary>
+        /// Zkusí najít vektorový obrázek a vykreslit jej
+        /// </summary>
+        /// <param name="graphics"></param>
+        /// <param name="imageName"></param>
+        /// <param name="sizeType"></param>
+        /// <param name="bounds"></param>
+        /// <returns></returns>
+        private bool TryPaintVector(Graphics graphics, string imageName, ResourceImageSizeType sizeType, Rectangle bounds)
+        {
             var svgImage = DxComponent.GetVectorImage(imageName, this.ExactName, sizeType);
-            if (svgImage != null)
-                DxSvgImage.RenderTo(svgImage, e.Graphics, bounds);
-
-            //if (!DxComponent.TryGetApplicationResources(imageName, this.ExactName, out var resourceItems)) return;    // Zadaný zdroj není nalezen
-
-            //var resourceItem = resourceItems.FirstOrDefault(r => r.ContentType == ResourceContentType.Vector);
-            //var svgImage = resourceItem.CreateSvgImage();
-            //svgImage.RenderTo(e.Graphics, bounds);
+            if (svgImage == null) return false;
+            DxSvgImage.RenderTo(svgImage, graphics, bounds, Alignment);
+            return true;
+        }
+        /// <summary>
+        /// Zkusí najít bitmapový obrázek a vykreslit jej
+        /// </summary>
+        /// <param name="graphics"></param>
+        /// <param name="imageName"></param>
+        /// <param name="sizeType"></param>
+        /// <param name="bounds"></param>
+        /// <returns></returns>
+        private bool TryPaintBitmap(Graphics graphics, string imageName, ResourceImageSizeType sizeType, Rectangle bounds)
+        {
+            var bmpImage = DxComponent.GetBitmapImage(imageName, sizeType, exactName: this.ExactName);
+            if (bmpImage == null) return false;
+            RectangleF imageBounds = ((SizeF)bmpImage.Size).ZoomTo((RectangleF)bounds, Alignment);
+            graphics.DrawImage(bmpImage, imageBounds);
+            return true;
         }
     }
     #endregion

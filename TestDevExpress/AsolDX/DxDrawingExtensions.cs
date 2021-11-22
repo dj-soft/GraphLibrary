@@ -1548,6 +1548,31 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
             return new RectangleF(new PointF(x, y), size);
         }
+        /// <summary>
+        /// Upraví this velikost tak, aby se vešla do dané souřadnice, zachová poměr stran a umístí výslednou velikost do daného prostoru dle daného zarovnání.
+        /// </summary>
+        /// <param name="size"></param>
+        /// <param name="bounds"></param>
+        /// <param name="alignment"></param>
+        /// <returns></returns>
+        public static RectangleF ZoomTo(this SizeF size, RectangleF bounds, ContentAlignment alignment)
+        {
+            float boundsW = bounds.Width;
+            float boundsH = bounds.Height;
+            float sizeW = size.Width;
+            float sizeH = size.Height;
+            if (boundsW <= 0f || boundsH <= 0f || sizeW <= 0f || sizeH <= 0f) return new RectangleF(bounds.Center(), SizeF.Empty);
+
+            // Všechny velikosti jsou kladné, nejsou nulové:
+            // Určíme zoom tak, abych danou velikost vynásobil zoomem a dostal cílovou velikost:
+            float zoomW = boundsW / sizeW;
+            float zoomH = boundsH / sizeH;
+            float zoom = (zoomW < zoomH ? zoomW : zoomH);
+
+            // A dál pokračuji algoritmem pro zarovnání vypočítané Zoomované velikosti:
+            SizeF sizeZoom = new SizeF(zoom * sizeW, zoom * sizeH);
+            return sizeZoom.AlignTo(bounds, alignment);
+        }
         #endregion
         #region Rectangle: FromPoints, FromDim, FromCenter, End, GetVisualRange, GetSide, GetPoint
         /// <summary>

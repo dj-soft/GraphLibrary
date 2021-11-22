@@ -2792,7 +2792,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
         private void PrepareEditorImage()
         {
             _PanelEditors.ClientSizeChanged += _PanelEditors_ClientSizeChanged;
-            _EditorImage1 = new DxImageArea() { ImageName = _EditorImageName };
+            _EditorImage1 = new DxImageArea() { ImageName = _EditorImageName, BackColor = Color.FromArgb(60, Color.Wheat), BorderColor = Color.FromArgb(120, Color.Black) };
             _PanelEditors.PaintedItems.Add(_EditorImage1);
             _EditorImageDoLayout();
         }
@@ -2806,10 +2806,10 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
             var editorBounds = _EditorTextButton1.Bounds;
             var imageLocation = new Point(editorBounds.Right + 6, editorBounds.Top);
             int imageWidth = 4 * (clientSize.Width - 6 - imageLocation.X) / 10;
+            if (imageWidth < 4) imageWidth = 4;
             int imageHeight = 7 * (clientSize.Height - 6 - imageLocation.Y) / 10;
-            int size = (imageWidth < imageHeight ? imageWidth : imageHeight);
-            if (size < 32) size = 32;
-            _EditorImage1.Bounds = new Rectangle(imageLocation.X, imageLocation.Y, size, size);
+            if (imageHeight < 4) imageHeight = 4;
+            _EditorImage1.Bounds = new Rectangle(imageLocation.X, imageLocation.Y, imageWidth, imageHeight);
         }
         /// <summary>
         /// Obrázek na záložce Editor 
