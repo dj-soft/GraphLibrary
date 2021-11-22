@@ -52,31 +52,8 @@ namespace TestDevExpress.Components
             _SetLayout4Button = DxComponent.CreateDxSimpleButton(820, 6, 150, 37, _FunctionPanel, "Set Layout 4", _SetLayout4ButtonClick, toolTipText: "Vloží fixní layout 4");
             _SetLayout5Button = DxComponent.CreateDxSimpleButton(980, 6, 150, 37, _FunctionPanel, "Set Void Layout", _SetLayout5ButtonClick, toolTipText: "Vloží fixní layout obsahující i prázdné panely");
 
-            _Icons = new Image[] {
-                DxComponent.CreateBitmapImage("Images/Icons16/Ball01_16.png"),
-                DxComponent.CreateBitmapImage("Images/Icons16/Ball02_16.png"),
-                DxComponent.CreateBitmapImage("Images/Icons16/Ball03_16.png"),
-                DxComponent.CreateBitmapImage("Images/Icons16/Ball04_16.png"),
-                DxComponent.CreateBitmapImage("Images/Icons16/Ball05_16.png"),
-                DxComponent.CreateBitmapImage("Images/Icons16/Ball06_16.png"),
-                DxComponent.CreateBitmapImage("Images/Icons16/Ball07_16.png"),
-                DxComponent.CreateBitmapImage("Images/Icons16/Ball08_16.png"),
-                DxComponent.CreateBitmapImage("Images/Icons16/Ball09_16.png"),
-                DxComponent.CreateBitmapImage("Images/Icons16/Ball10_16.png"),
-                DxComponent.CreateBitmapImage("Images/Icons16/Ball11_16.png"),
-                DxComponent.CreateBitmapImage("Images/Icons16/Ball12_16.png"),
-                DxComponent.CreateBitmapImage("Images/Icons16/Ball13_16.png"),
-                DxComponent.CreateBitmapImage("Images/Icons16/Ball14_16.png"),
-                DxComponent.CreateBitmapImage("Images/Icons16/Ball15_16.png"),
-                DxComponent.CreateBitmapImage("Images/Icons16/Ball16_16.png"),
-                DxComponent.CreateBitmapImage("Images/Icons16/Ball17_16.png"),
-                DxComponent.CreateBitmapImage("Images/Icons16/Ball18_16.png"),
-                DxComponent.CreateBitmapImage("Images/Icons16/Ball19_16.png"),
-                DxComponent.CreateBitmapImage("Images/Icons16/Ball20_16.png"),
-                DxComponent.CreateBitmapImage("Images/Icons16/Ball21_16.png"),
-                DxComponent.CreateBitmapImage("Images/Icons16/Ball22_16.png"),
-                DxComponent.CreateBitmapImage("Images/Icons16/Ball23_16.png")
-            };
+            var resourcesSvg = DxComponent.GetResourceNames(".svg", true, false);
+            _ImageNames = Random.GetItems(36, resourcesSvg);
 
             Rectangle monitorBounds = System.Windows.Forms.Screen.PrimaryScreen.WorkingArea;
             Rectangle formBounds = new Rectangle(monitorBounds.X + monitorBounds.Width * 1 / 10, monitorBounds.Y + monitorBounds.Height * 1 / 10, monitorBounds.Width * 8 / 10, monitorBounds.Height * 8 / 10);
@@ -316,7 +293,7 @@ namespace TestDevExpress.Components
 
                         if (Random.IsTrue(20))
                         {   // 20% prvků bude mít náhodně změněnou ikonu:
-                            testPanel.TitleIcon = _GetIcon();
+                            testPanel.TitleImageName = _GetIconName();
                         }
                     }
 
@@ -334,7 +311,7 @@ namespace TestDevExpress.Components
         }
         private void PrepareTestPanel(LayoutTestPanel testPanel)
         {
-            testPanel.TitleIcon = _GetIcon();
+            testPanel.TitleImageName = _GetIconName();
 
             if (Random.IsTrue(40))
             {   // 40% prvků bude mít podtržení:
@@ -357,9 +334,9 @@ namespace TestDevExpress.Components
             }
         }
 
-        private Image _GetIcon()
+        private string _GetIconName()
         {
-            return Random.GetItem(_Icons);
+            return Random.GetItem(_ImageNames);
         }
         /// <summary>
         /// Chtěl bych zavřít formulář
@@ -402,7 +379,7 @@ namespace TestDevExpress.Components
         private DxSimpleButton _SetLayout3Button;
         private DxSimpleButton _SetLayout4Button;
         private DxSimpleButton _SetLayout5Button;
-        private Image[] _Icons;
+        private string[] _ImageNames;
         private Timer _Timer;
     }
     /// <summary>
@@ -459,12 +436,12 @@ namespace TestDevExpress.Components
         /// <summary>
         /// Ikona u titulku
         /// </summary>
-        public Image TitleIcon
+        public string TitleImageName
         {
-            get { return _TitleIcon; }
-            set { _TitleIcon = value; TitleChanged?.Invoke(this, EventArgs.Empty); }
+            get { return _TitleImageName; }
+            set { _TitleImageName = value; TitleChanged?.Invoke(this, EventArgs.Empty); }
         }
-        private Image _TitleIcon;
+        private string _TitleImageName;
         /// <summary>
         /// Barva linky pod titulkem.
         /// Šířka linky je dána v pixelech v <see cref="LineWidth"/>.
@@ -674,7 +651,7 @@ namespace TestDevExpress.Components
         bool ILayoutUserControl.TitleVisible { get { return true; } }
         string ILayoutUserControl.TitleText { get { return this.TitleText; } }
         string ILayoutUserControl.TitleSubstitute { get { return this.TitleSubstitute; } }
-        Image ILayoutUserControl.TitleIcon { get { return this.TitleIcon; } }
+        string ILayoutUserControl.TitleImageName { get { return this.TitleImageName; } }
         /// <summary>
         /// Šířka linky pod textem v pixelech. Násobí se Zoomem. Pokud je null nebo 0, pak se nekreslí.
         /// Může být extrémně vysoká, pak je barvou podbarven celý titulek.

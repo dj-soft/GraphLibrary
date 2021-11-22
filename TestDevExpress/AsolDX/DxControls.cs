@@ -2439,18 +2439,20 @@ namespace Noris.Clients.Win.Components.AsolDX
     #region DxImageArea : neinteraktivní obrázek s definovaným zdrojem a umístěním (v rámci nějakého parent controlu)
     /// <summary>
     /// Prvek, který může být vykreslen přímo do panelu <see cref="DxPanelControl"/> (a i jiných).
-    /// Prvek lze přidat do seznamu <see cref="DxPanelControl.PaintedItems"/>.
+    /// Prvek lze přidat do seznamu <see cref="DxPanelControl.PaintedItems"/>, nikoliv do <see cref="Control.Controls"/>.
     /// Prvek obsahuje souřadnice a definici obrázku, a tento obrázek je vykreslován do panelu na dané souřadnice.
     /// Prvek nemá žádnou interaktivitu.
     /// </summary>
     public class DxImageArea : IDxPanelPaintedItem
     {
         /// <summary>
-        /// Konstruktor
+        /// Konstruktor.
+        /// Prvek lze přidat do seznamu <see cref="DxPanelControl.PaintedItems"/>, nikoliv do <see cref="Control.Controls"/>.
         /// </summary>
         public DxImageArea()
         {
             Alignment = ContentAlignment.MiddleCenter;
+            Visible = true;
             BackColor = null;
             BorderColor = null;
         }
@@ -2459,6 +2461,26 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Setování hodnoty neprovádí refresh parent panelu.
         /// </summary>
         public Rectangle Bounds { get; set; }
+        /// <summary>
+        /// Umístění levého horního rohu. Lze setovat, velikost se nezmění.
+        /// </summary>
+        public Point Location
+        {
+            get { return Bounds.Location; }
+            set { Bounds = new Rectangle(value, Bounds.Size); }
+        }
+        /// <summary>
+        /// Velikost objektu. Lze setovat, umístění se nezmění.
+        /// </summary>
+        public Size Size
+        {
+            get { return Bounds.Size; }
+            set { Bounds = new Rectangle(Bounds.Location, value); }
+        }
+        /// <summary>
+        /// Prvek je viditelný
+        /// </summary>
+        public bool Visible { get; set; }
         /// <summary>
         /// Jméno obrázku.
         /// Default = null. Nekreslí se nic.

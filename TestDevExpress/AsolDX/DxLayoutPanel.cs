@@ -2677,7 +2677,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             _TitleBarVisible = iLayoutUserControl.TitleVisible;
             _TitleText = iLayoutUserControl.TitleText;
             _TitleSubstitute = iLayoutUserControl.TitleSubstitute;
-            _TitleIcon = iLayoutUserControl.TitleIcon;
+            _TitleImageName = iLayoutUserControl.TitleImageName;
             _LineWidth = iLayoutUserControl.LineWidth;
             _LineColor = iLayoutUserControl.LineColor;
             _LineColorEnd = iLayoutUserControl.LineColorEnd;
@@ -2713,8 +2713,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Ikona titulku
         /// </summary>
-        public Image TitleIcon { get { return _TitleIcon; } set { _TitleIcon = value; if (HasParent) this.RunInGui(_RefreshControlGui); } }
-        private Image _TitleIcon;
+        public string TitleImageName { get { return _TitleImageName; } set { _TitleImageName = value; if (HasParent) this.RunInGui(_RefreshControlGui); } }
+        private string _TitleImageName;
         /// <summary>
         /// Šířka linky pod textem v pixelech. Násobí se Zoomem. Pokud je null nebo 0, pak se nekreslí.
         /// Záporná hodnota: vyjadřuje plnou barvu, udává odstup od horního a dolního okraje titulku.
@@ -3001,7 +3001,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Ikona titulku
         /// </summary>
-        public override Image TitleIcon { get { return Owner?.TitleIcon ?? null; } set { } }
+        public override string TitleImageName { get { return Owner?.TitleImageName ?? null; } set { } }
         /// <summary>
         /// Text titulku
         /// </summary>
@@ -3340,8 +3340,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.UseSvgIcons = true;
             // Pořadí má vliv: TitleLabel až nakonec => bude "pod" ikonami:
             // TitlePicture = new DevExpress.XtraEditors.PictureEdit() { ReadOnly = true, Bounds = new Rectangle(12, 6, 24, 24), Visible = false, BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder, BackColor = Color.Transparent };
-            TitlePicture = new PictureBox() { Bounds = new Rectangle(12, 6, 24, 24), Visible = false, BorderStyle = System.Windows.Forms.BorderStyle.None, BackColor = Color.Transparent };
-            this.Controls.Add(TitlePicture);
+            TitlePicture = new DxImageArea() { Bounds = new Rectangle(12, 6, 24, 24), Visible = false };
+            this.PaintedItems.Add(TitlePicture);
 
             TitleLabel = DxComponent.CreateDxLabel(12, 6, 200, this, "", LabelStyleType.MainTitle, hAlignment: HorzAlignment.Near, autoSizeMode: DevExpress.XtraEditors.LabelAutoSizeMode.Horizontal);
             TitleLabel.AutoSizeMode = DevExpress.XtraEditors.LabelAutoSizeMode.None;
@@ -3426,16 +3426,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         protected virtual void DoLayoutTitleIcon(ref int y)
         {
             int labelX = BeginX;
-            Image image = this.TitleIcon;
-            if (image != null)
+            string imageName = this.TitleImageName;
+            if (!String.IsNullOrEmpty(imageName))
             {
                 int bs = ButtonSize;
-                TitlePicture.SizeMode = PictureBoxSizeMode.Zoom;
                 TitlePicture.Bounds = new Rectangle(labelX, y, bs, bs);
-                if (TitlePicture.Image == null)
-                    TitlePicture.Image = image;
-                if (!TitlePicture.IsSetVisible())
-                    TitlePicture.Visible = true;
+                TitlePicture.ImageName = imageName;
+                TitlePicture.Visible = true;
                 labelX += bs + ButtonSpace;
             }
             else
@@ -3502,7 +3499,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Ikona titulku
         /// </summary>
-        protected System.Windows.Forms.PictureBox TitlePicture;
+        protected AsolDX.DxImageArea TitlePicture;
         /// <summary>
         /// Label titulku
         /// </summary>
@@ -3526,7 +3523,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Ikona titulku
         /// </summary>
-        public virtual Image TitleIcon { get; set; }
+        public virtual string TitleImageName { get; set; }
         /// <summary>
         /// Text titulku
         /// </summary>
@@ -3578,12 +3575,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         protected void RefreshTitleIcon()
         {
-            Image image = this.TitleIcon;
-            if (image != null)
+            string imageName = this.TitleImageName;
+            if (!String.IsNullOrEmpty(imageName))
             {
                 int bs = ButtonSize;
                 TitlePicture.Size = new Size(bs, bs);
-                TitlePicture.Image = image;
+                TitlePicture.ImageName = imageName;
                 TitlePicture.Visible = true;
             }
             else
@@ -4288,7 +4285,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Ikonka před textem
         /// </summary>
-        Image TitleIcon { get; }
+        string TitleImageName { get; }
         /// <summary>
         /// Šířka linky pod textem v pixelech. Násobí se Zoomem. Pokud je null nebo 0, pak se nekreslí.
         /// Záporná hodnota: vyjadřuje plnou barvu, udává odstup od horního a dolního okraje titulku.
