@@ -573,13 +573,21 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="imageSize"></param>
         private void _ApplyImageApplication(ImageOptions imageOptions, string imageName, bool exactName, ResourceImageSizeType? sizeType, Size? imageSize)
         {
-            if (!_TryGetApplicationResources(imageName, exactName, out var validItems, ResourceContentType.Vector, ResourceContentType.Bitmap)) return;
+            if (!_TryGetApplicationResources(imageName, exactName, out var validItems, ResourceContentType.Vector, ResourceContentType.Bitmap, ResourceContentType.Icon)) return;
 
             var contentType = validItems[0].ContentType;
-            if (contentType == ResourceContentType.Vector)
-                _ApplyImageApplicationSvg(imageOptions, validItems, sizeType, imageSize);
-            else if (contentType == ResourceContentType.Bitmap)
-                _ApplyImageApplicationBmp(imageOptions, validItems, sizeType, imageSize);
+            switch (contentType)
+            {
+                case ResourceContentType.Vector:
+                    _ApplyImageApplicationSvg(imageOptions, validItems, sizeType, imageSize);
+                    break;
+                case ResourceContentType.Bitmap:
+                    _ApplyImageApplicationBmp(imageOptions, validItems, sizeType, imageSize);
+                    break;
+                case ResourceContentType.Icon:
+                    _ApplyImageApplicationIco(imageOptions, validItems, sizeType, imageSize);
+                    break;
+            }
         }
         /// <summary>
         /// Aplikuje Image typu Vector ze zdroje Aplikační do daného cíle <paramref name="imageOptions"/>.
@@ -638,7 +646,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
         }
         /// <summary>
-        /// Vrátí velikost pro SvgImage
+        /// Vrátí velikost obrázku SvgImage pro <see cref="ImageOptions.SvgImageSize"/>
         /// </summary>
         /// <param name="sizeType"></param>
         /// <param name="imageSize"></param>
@@ -660,6 +668,21 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             imageOptions.SvgImage = null;
             imageOptions.Image = _CreateBitmapImageApplication(resourceItems, sizeType, imageSize);
+        }
+        /// <summary>
+        /// Aplikuje Image typu Icon ze zdroje Aplikační do daného cíle <paramref name="imageOptions"/>.
+        /// </summary>
+        /// <param name="imageOptions"></param>
+        /// <param name="resourceItems"></param>
+        /// <param name="sizeType"></param>
+        /// <param name="imageSize"></param>
+        private void _ApplyImageApplicationIco(ImageOptions imageOptions, DxApplicationResourceLibrary.ResourceItem[] resourceItems, ResourceImageSizeType? sizeType, Size? imageSize)
+        {
+            imageOptions.SvgImage = null;
+            imageOptions.Image = null; //  _CreateBitmapImageApplication(resourceItems, sizeType, imageSize);
+            if (!DxApplicationResourceLibrary.ResourcePack.TryGetOptimalSize(resourceItems, sizeType, out var resourceItem)) return;
+            using (var icon = resourceItem.CreateIconImage())
+                imageOptions.Image = icon.ToBitmap();
         }
         /// <summary>
         /// Aplikuje Image typu Vector nebo Bitmap (podle přípony) ze zdroje DevExpress do daného cíle <paramref name="imageOptions"/>.
@@ -707,26 +730,28 @@ namespace Noris.Clients.Win.Components.AsolDX
             imageOptions.Image = _CreateBitmapImageDevExpressPng(imageName);          // Na vstupu je jméno bitmapy, tedy ji najdeme a dáme do Image. Tady nepřichází do úvahy renderování, velikost, paleta atd...
         }
         #endregion
-        #region ApplyIcon - Ikona do okna
+        #region ApplyIcon - do cílového formuláře vepíše obrázek podle toho, jaký je zadán a jaký je to formulář
         /// <summary>
         /// Do daného okna aplikuje danou ikonu.
         /// </summary>
         /// <param name="form"></param>
         /// <param name="iconName"></param>
         /// <param name="sizeType"></param>
-        public static void ApplyIcon(Form form, string iconName, ResourceImageSizeType? sizeType = null) { Instance._ApplyIcon(form, iconName, sizeType); }
+        /// <param name="forceToIcon">Povinně vkládat ikonu do <see cref="Form.Icon"/> i kdyby byl k dispozici objekt <see cref="XtraForm.IconOptions"/></param>
+        public static void ApplyIcon(Form form, string iconName, ResourceImageSizeType? sizeType = null, bool forceToIcon = false) { Instance._ApplyIcon(form, iconName, sizeType, forceToIcon); }
         /// <summary>
         /// Do daného okna aplikuje danou ikonu.
         /// </summary>
         /// <param name="form"></param>
         /// <param name="iconName"></param>
         /// <param name="sizeType"></param>
-        private void _ApplyIcon(Form form, string iconName, ResourceImageSizeType? sizeType)
+        /// <param name="forceToIcon">Povinně vkládat ikonu do <see cref="Form.Icon"/> i kdyby byl k dispozici objekt <see cref="XtraForm.IconOptions"/></param>
+        private void _ApplyIcon(Form form, string iconName, ResourceImageSizeType? sizeType, bool forceToIcon = false)
         {
             if (form is null || String.IsNullOrEmpty(iconName)) return;
             if (!sizeType.HasValue) sizeType = ResourceImageSizeType.Large;
 
-            if (form is DevExpress.XtraEditors.XtraForm xtraForm)
+            if (!forceToIcon && form is DevExpress.XtraEditors.XtraForm xtraForm)
                 ApplyImage(xtraForm.IconOptions, iconName, sizeType: sizeType);
             else
                 _ApplyIconToForm(form, CreateIconImage(iconName));

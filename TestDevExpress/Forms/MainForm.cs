@@ -500,6 +500,10 @@ namespace TestDevExpress.Forms
             _SvgOrigColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/AsolOriginal/symbol-remove", Text = "remove" });
             _SvgOrigColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/AsolOriginal/symbol-update", Text = "update" });
             _SvgOrigColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/AsolOriginal/symbol-upload", Text = "upload" });
+
+            _SvgOrigColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "pic_0/Win/AppIcons/Nephrite_15.ico", Text = "Nephrite_15.ico", ItemIsFirstInGroup = true });
+
+            // c:\CSharp\TestDevExpress\TestDevExpress\Images\NorisPic.zip\pic_0\Win\AppIcons\Nephrite_15.ico 
             /*
             _SvgOrigColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/AsolOriginal/table", Text = "table" });
             _SvgOrigColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/AsolOriginal/text", Text = "text" });

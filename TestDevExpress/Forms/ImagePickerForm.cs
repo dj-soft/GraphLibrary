@@ -152,7 +152,7 @@ namespace TestDevExpress.Forms
             name = "devav/actions/support_32x32.png";
             name = "pic/alert-filled-large.svg";
 
-            DxComponent.ApplyIcon(this, name, ResourceImageSizeType.Large);
+            DxComponent.ApplyIcon(this, name, ResourceImageSizeType.Large, true);
         }
         /// <summary>
         /// Inicializace vnitřního layoutu - splitpanel
