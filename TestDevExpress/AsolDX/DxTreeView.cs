@@ -616,6 +616,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.AfterExpand += _OnAfterExpand;
             this.BeforeCollapse += _OnBeforeCollapse;
             this.AfterCollapse += _OnAfterCollapse;
+            this.LostFocus += _LostFocus;
+            this.MouseLeave += _MouseLeave;
 
             // Preset:
             this.LazyLoadNodeText = "...";
@@ -796,7 +798,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             _ApplyTransparentBackground();
         }
         #endregion
-        #region ToolTipy pro nodes
+        #region ToolTipy pro nodes, HasMouse a IsFocused
         /// <summary>
         /// ToolTipy mohou obsahovat SimpleHtml tagy?
         /// </summary>
@@ -808,8 +810,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="e"></param>
         private void ToolTipController_GetActiveObjectInfo(object sender, ToolTipControllerGetActiveObjectInfoEventArgs e)
         {
-            if (e.SelectedControl is DevExpress.XtraTreeList.TreeList tree)
-            {
+            if (e.SelectedControl is DevExpress.XtraTreeList.TreeList tree && Object.ReferenceEquals(tree, this) && (this.HasMouse || this.IsFocused))
+            {   // Jen když pod myší jsme my jakoto TreeList, a když my máme myš nebo focus
+                //   (někdy se DevExpress ToolTip aktivuje i mimo myš a focus, viz IOU 000010080463)
                 var hit = _GetNodeHit(e.ControlMousePosition);
                 if (hit.IsInImagesOrCell)
                 {
@@ -827,6 +830,107 @@ namespace Noris.Clients.Win.Components.AsolDX
                 }
             }
         }
+        /// <summary>
+        /// Po odchodu z TreeListu zhasni ToolTip
+        /// </summary>
+        private void _ToolTipHide()
+        {
+            if (this.ToolTipController.Active)
+                this.ToolTipController.HideHint();
+        }
+        #region HasMouse
+        /// <summary>
+        /// Panel má na sobě myš?
+        /// </summary>
+        public bool HasMouse
+        {
+            get { return _HasMouse; }
+            private set
+            {
+                if (value != _HasMouse)
+                {
+                    _HasMouse = value;
+                    OnHasMouseChanged();
+                    HasMouseChanged?.Invoke(this, EventArgs.Empty);
+                }
+            }
+        }
+        private bool _HasMouse;
+        /// <summary>
+        /// Událost, když přišla nebo odešla myš
+        /// </summary>
+        protected virtual void OnHasMouseChanged() { }
+        /// <summary>
+        /// Událost, když přišla nebo odešla myš
+        /// </summary>
+        public event EventHandler HasMouseChanged;
+        /// <summary>
+        /// Panel.OnMouseEnter
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void OnMouseEnter(EventArgs e)
+        {
+            base.OnMouseEnter(e);
+            this.HasMouse = true;
+        }
+        /// <summary>
+        /// Panel.OnMouseLeave
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void OnMouseLeave(EventArgs e)
+        {
+            Point location = this.PointToClient(Control.MousePosition);
+            base.OnMouseLeave(e);
+            if (!this.ClientRectangle.Contains(location))
+                this.HasMouse = false;
+        }
+        #endregion
+        #region IsFocused
+        /// <summary>
+        /// TextBox má v sobě focus = kurzor?
+        /// </summary>
+        public bool IsFocused
+        {
+            get { return _IsFocused; }
+            private set
+            {
+                if (value != _IsFocused)
+                {
+                    _IsFocused = value;
+                    OnIsFocusedChanged();
+                    IsFocusedChanged?.Invoke(this, EventArgs.Empty);
+                }
+            }
+        }
+        private bool _IsFocused;
+        /// <summary>
+        /// Událost, když přišel nebo odešel focus = kurzor
+        /// </summary>
+        protected virtual void OnIsFocusedChanged() { }
+        /// <summary>
+        /// Událost, když přišla nebo odešla myš
+        /// </summary>
+        public event EventHandler IsFocusedChanged;
+        /// <summary>
+        /// OnEnter
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void OnEnter(EventArgs e)
+        {
+            base.OnEnter(e);
+            this.IsFocused = true;
+        }
+        /// <summary>
+        /// OnLeave
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void OnLeave(EventArgs e)
+        {
+            base.OnLeave(e);
+            this.IsFocused = false;
+        }
+        #endregion
+
         #endregion
         #region Řízení specifického vykreslení TreeNodu podle jeho nastavení: font, barvy, checkbox, atd
         /// <summary>
@@ -1155,6 +1259,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void _OnMouseClick(object sender, MouseEventArgs e)
         {
             var hit = _GetNodeHit(e.Location);
+            this._ToolTipHide();
             if (hit.IsInImages)
             {
                 ITreeListNode nodeInfo = this.FocusedNodeInfo;
@@ -1183,6 +1288,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void _OnPopupMenuShowing(object sender, DevExpress.XtraTreeList.PopupMenuShowingEventArgs e)
         {
             e.Allow = false;
+            this._ToolTipHide();
+
             var hitInfo = this._GetNodeHit(e.HitInfo);
             var treeNode = hitInfo.Node;
             if (treeNode != null && !treeNode.IsSelected && this.SelectNodeBeforeShowContextMenu)
@@ -1202,6 +1309,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             var hit = _GetNodeHit();
             ITreeListNode nodeInfo = this.FocusedNodeInfo;
+            this._ToolTipHide();
             if (nodeInfo != null)
             {
                 if (_IsMainActionRunEvent(nodeInfo, hit.IsInCell))
@@ -1260,6 +1368,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="e"></param>
         private void _OnEditorDoubleClick(object sender, EventArgs e)
         {
+            this._ToolTipHide();
             ITreeListNode nodeInfo = this.FocusedNodeInfo;
             if (nodeInfo != null)
             {
@@ -1371,6 +1480,24 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="args"></param>
         private void _OnAfterCollapse(object sender, DevExpress.XtraTreeList.NodeEventArgs args)
         {
+        }
+        /// <summary>
+        /// Po odchodu myši z TreeListu zhasni ToolTip
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _MouseLeave(object sender, EventArgs e)
+        {
+            this._ToolTipHide();
+        }
+        /// <summary>
+        /// Po odchodu focusu z TreeListu zhasni ToolTip
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _LostFocus(object sender, EventArgs e)
+        {
+            this._ToolTipHide();
         }
         /// <summary>
         /// Vrátí true pokud se po hlavní akci má provést RunEvent odpovídající aktuální aktivitě
@@ -1977,32 +2104,6 @@ namespace Noris.Clients.Win.Components.AsolDX
                 // Vytvoříme TreeListNode:
                 object nodeData = new object[] { nodeInfo.Text };
                 var parentPair = this._GetNodePair(parentNodeFullId);
-
-                /*
-                // Kontroly:
-
-                int parentId = _GetCurrentTreeNodeId(parentNodeFullId);
-                string foundParentNodeFullId= parentPair?.NodeInfo.FullNodeId;
-                if (!String.Equals(parentNodeFullId, foundParentNodeFullId))
-                {
-                    // Chyba v DxTreeListNative : pro nodeInfo.ParentNodeFullId jsem našel node, jehož FullNodeId je jiné
-                }
-
-                int originalParentId = parentPair.OriginalTreeNodeId;
-                if (originalParentId != parentId)
-                {
-                    // Změna ID v rámci DevExpress TreeListu
-                }
-
-                var parentTreeNode = this.FindNodeByID(parentId);
-                int parentTreeNodeId = parentTreeNode?.Id ?? -1;
-                if (parentTreeNodeId != parentId)
-                {
-                    // Chyba v DevExpress: TreeList našel pro zadané ID prvek, jehož ID je jiné!
-                }
-
-                // Konec kontrol.
-                */
 
                 // Přidám nový node buď jako Child do existujícího Parenta, anebo jako nový další do úrovně Root:
                 if (parentPair != null && parentPair.HasTreeNode)
@@ -2786,6 +2887,21 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
         }
         /// <summary>
+        /// Velikost ikonek
+        /// </summary>
+        private ResourceImageSizeType _NodeImageSize
+        {
+            get { return __NodeImageSize; }
+            set
+            {
+                var sizeType = value;
+                var minHeight = this.MinRowHeight;
+                var rowHeight = DxComponent.GetImageSize(sizeType).Height;
+                this.RowHeight = (rowHeight > minHeight ? rowHeight : minHeight);
+                this.__NodeImageSize = sizeType;
+            }
+        }
+        /// <summary>
         /// V nodu se povoluje HTML text fomrátování
         /// </summary>
         public bool NodeAllowHtmlText { get; set; }
@@ -2898,7 +3014,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Velikost ikonek
         /// </summary>
-        private ResourceImageSizeType _NodeImageSize;
+        private ResourceImageSizeType __NodeImageSize;
         /// <summary>
         /// Obsahuje true poté, kdy došlo k prvnímu nesouladu typu ikonek, a nesoulad byl hlášen.
         /// </summary>

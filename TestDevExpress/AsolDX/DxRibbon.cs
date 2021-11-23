@@ -6072,9 +6072,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="groups"></param>
         public DxRibbonGroup(IRibbonGroup iRibbonGroup, RibbonPageGroupCollection groups) : base() 
         {
+            if (groups != null) groups.Add(this);
             Init();
             Fill(iRibbonGroup, true);
-            if (groups != null) groups.Add(this);
         }
         /// <summary>
         /// Inicializace

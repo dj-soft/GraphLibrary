@@ -3990,6 +3990,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public static bool IsPreferredVectorImage { get { return Current.IsPreferredVectorImage; } }
         /// <summary>
+        /// Standardní velikost ikony
+        /// </summary>
+        public static ResourceImageSizeType ImageSizeStandard { get { return Current.ImageSizeStandard; } }
+        /// <summary>
         /// Volá se jedenkrát, vrátí kompletní seznam všech zdrojů (Resource).
         /// </summary>
         /// <returns></returns>
@@ -4063,6 +4067,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Obsahuje true, pokud na klientu máme preferovat Vektorové ikony.
         /// </summary>
         bool IsPreferredVectorImage { get; }
+        /// <summary>
+        /// Standardní velikost ikony
+        /// </summary>
+        ResourceImageSizeType ImageSizeStandard { get; }
         /// <summary>
         /// Volá se jedenkrát, vrátí kompletní seznam všech zdrojů (Resource).
         /// </summary>

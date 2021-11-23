@@ -25,6 +25,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         decimal ISystemAdapter.ZoomRatio { get { return 1.0m; } }
         string ISystemAdapter.GetMessage(MsgCode messageCode, params object[] parameters) { return AdapterSupport.GetMessage(messageCode, parameters); }
         bool ISystemAdapter.IsPreferredVectorImage { get { return true; } }
+        ResourceImageSizeType ISystemAdapter.ImageSizeStandard { get { return ResourceImageSizeType.Medium; } }
         IEnumerable<IResourceItem> ISystemAdapter.GetResources() { return DataResources.GetResources(); }
         string ISystemAdapter.GetResourceItemKey(string name) { return DataResources.GetItemKey(name); }
         string ISystemAdapter.GetResourcePackKey(string name, out ResourceImageSizeType sizeType, out ResourceContentType contentType) { return DataResources.GetPackKey(name, out sizeType, out contentType); }
