@@ -2541,10 +2541,14 @@ namespace Noris.Clients.Win.Components.AsolDX
             string imageName = this.ImageName;
             if (String.IsNullOrEmpty(imageName)) return;
 
-            bool preferVector = this.IsPreferredVectorImage ?? DxComponent.IsPreferredVectorImage;
-            if (preferVector && TryPaintVector(e.Graphics, imageName, sizeTypeV, bounds)) return;
-            if (TryPaintBitmap(e.Graphics, imageName, sizeTypeB, bounds)) return;
-            if (!preferVector) TryPaintVector(e.Graphics, imageName, sizeTypeV, bounds);  // Pokud vektor NENÍ preferován, tak jsem jej kreslit ještě nezkoušel. Zkusme to tedy nyní...
+            try
+            {
+                bool preferVector = this.IsPreferredVectorImage ?? DxComponent.IsPreferredVectorImage;
+                if (preferVector && TryPaintVector(e.Graphics, imageName, sizeTypeV, bounds)) return;
+                if (TryPaintBitmap(e.Graphics, imageName, sizeTypeB, bounds)) return;
+                if (!preferVector) TryPaintVector(e.Graphics, imageName, sizeTypeV, bounds);  // Pokud vektor NENÍ preferován, tak jsem jej kreslit ještě nezkoušel. Zkusme to tedy nyní...
+            }
+            catch { }
         }
         /// <summary>
         /// Zkusí najít vektorový obrázek a vykreslit jej

@@ -58,12 +58,15 @@ namespace Noris.Clients.Win.Components.AsolDX
             bool hasName = !String.IsNullOrEmpty(imageName);
             bool hasCaption = !String.IsNullOrEmpty(caption);
 
-            // složené vektory
-            ResourceContentType[] validContentTypes = _GetValidImageContentTypes(isPreferredVectorImage);
+            if (hasName && DxSvgImage.TryGetXmlContent(imageName, out var dxSvgImage))
+                return _ConvertVectorToImage(dxSvgImage, sizeType, optimalSvgSize);
             if (hasName && _TryGetContentTypeImageArray(imageName, out var _, out var svgImageArray))
                 return _CreateBitmapImageArray(svgImageArray, sizeType, optimalSvgSize);
+
+            ResourceContentType[] validContentTypes = _GetValidImageContentTypes(isPreferredVectorImage);
             if (hasName && _TryGetApplicationResources(imageName, exactName, out var validItems, validContentTypes))
                 return _CreateBitmapImageApplication(validItems, sizeType, optimalSvgSize);
+            
             if (hasName && _ExistsDevExpressResource(imageName))
                 return _CreateBitmapImageDevExpress(imageName, sizeType, optimalSvgSize);
             if (hasCaption)
@@ -189,6 +192,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             bool hasName = !String.IsNullOrEmpty(imageName);
             bool hasCaption = !String.IsNullOrEmpty(caption);
 
+            if (hasName && DxSvgImage.TryGetXmlContent(imageName, out var dxSvgImage))
+                return dxSvgImage;
             if (hasName && SvgImageSupport.TryGetSvgImageArray(imageName, out var svgImageArray))
                 return _GetVectorImageArray(svgImageArray, sizeType);
             if (hasName && _TryGetApplicationResources(imageName, exactName, out var validItems, ResourceContentType.Vector))
@@ -229,8 +234,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="sizeType"></param>
         /// <param name="optimalSvgSize"></param>
         /// <returns></returns>
-        private Image _RenderSvgImageToImage(SvgImage svgImage,
-            ResourceImageSizeType? sizeType, Size? optimalSvgSize)
+        private Image _ConvertVectorToImage(SvgImage svgImage, ResourceImageSizeType? sizeType, Size? optimalSvgSize)
         {
             if (svgImage is null) return null;
             var imageSize = optimalSvgSize ?? GetImageSize(sizeType);
@@ -238,6 +242,25 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (SystemAdapter.CanRenderSvgImages)
                 return SystemAdapter.RenderSvgImage(svgImage, imageSize, svgPalette);
             return svgImage.Render(imageSize, svgPalette);
+        }
+        /// <summary>
+        /// Vyrenderuje SVG obrázek do ikony
+        /// </summary>
+        /// <param name="svgImage"></param>
+        /// <param name="sizeType"></param>
+        /// <param name="optimalSvgSize"></param>
+        /// <returns></returns>
+        private Icon _ConvertVectorToIcon(SvgImage svgImage, ResourceImageSizeType? sizeType, Size? optimalSvgSize)
+        {
+            Icon icon = null;
+            using (var image = _ConvertVectorToImage(svgImage, sizeType, optimalSvgSize))
+            {
+                List<Tuple<Size, Image>> imageInfos = new List<Tuple<Size, Image>>();
+                imageInfos.Add(new Tuple<Size, Image>(image.Size, image));
+                icon = _ConvertBitmapsToIcon(imageInfos);
+                _DisposeImages(imageInfos);
+            }
+            return icon;
         }
         #endregion
         #region CreateIconImage - Tvorba ICO pro dodaný zdroj
@@ -262,16 +285,18 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         private Icon _CreateIconImage(string imageName, bool exactName, ResourceImageSizeType? sizeType)
         {
-            // Pouze aplikační zdroje!
-            DxApplicationResourceLibrary.ResourceItem[] validItems;
+            if (String.IsNullOrEmpty(imageName)) return null;
+
+            // Může to být explicitní SVG XML content:
+            if (DxSvgImage.TryGetXmlContent(imageName, out var dxSvgImage))
+                return _ConvertVectorToIcon(dxSvgImage, sizeType, null);
 
             // Může to být pole SVG images:
             if (_TryGetContentTypeImageArray(imageName, out var _, out var svgImageArray))
-            {
                 return _ConvertImageArrayToIcon(svgImageArray, sizeType);
-            }
 
             // Pro dané jméno zdroje máme k dispozici resource s typem Icon:
+            DxApplicationResourceLibrary.ResourceItem[] validItems;
             if (_TryGetApplicationResources(imageName, exactName, out validItems, ResourceContentType.Icon))
             {   // Tady můžeme vrátit jen jednu ikonu, podle požadované velikosti:
                 DxApplicationResourceLibrary.ResourceItem iconItem =
@@ -517,6 +542,8 @@ namespace Noris.Clients.Win.Components.AsolDX
                 try
                 {
                     // Resource může být Combined (=více SVG obrázků v jedném textu!):
+                    if (hasName && DxSvgImage.TryGetXmlContent(imageName, out var dxSvgImage))
+                        _ApplyDxSvgImage(imageOptions, dxSvgImage);
                     if (hasName && SvgImageSupport.TryGetSvgImageArray(imageName, out var svgImageArray))
                         _ApplyImageArray(imageOptions, svgImageArray, sizeType, imageSize);
                     else if (hasName && _ExistsApplicationResource(imageName, exactName))
@@ -538,6 +565,17 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 buttonImageOptions.Location = DevExpress.XtraEditors.ImageLocation.MiddleCenter;
             }
+        }
+        /// <summary>
+        /// Aplikuje explicitně dodaný <see cref="SvgImage"/> do daného objektu
+        /// </summary>
+        /// <param name="imageOptions"></param>
+        /// <param name="dxSvgImage"></param>
+        private void _ApplyDxSvgImage(ImageOptions imageOptions, DxSvgImage dxSvgImage)
+        {
+            if (imageOptions == null || dxSvgImage == null) return;
+            imageOptions.Reset();
+            imageOptions.SvgImage = dxSvgImage;
         }
         /// <summary>
         /// Aplikuje Image typu Array (ve jménu obrázku je více zdrojů) do daného cíle v <paramref name="imageOptions"/>.
@@ -1113,7 +1151,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         private Image _CreateBitmapImageArray(SvgImageArrayInfo svgImageArray, ResourceImageSizeType? sizeType, Size? optimalSvgSize)
         {
             var svgImage = SvgImageSupport.CreateSvgImage(svgImageArray, sizeType);
-            return _RenderSvgImageToImage(svgImage, sizeType, optimalSvgSize);
+            return _ConvertVectorToImage(svgImage, sizeType, optimalSvgSize);
         }
         /// <summary>
         /// Vyrenderuje dané pole vektorových image do bitmapy a z ní vytvoří a vrátí Icon
@@ -1124,7 +1162,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         private Icon _ConvertImageArrayToIcon(SvgImageArrayInfo svgImageArray, ResourceImageSizeType? sizeType)
         {
             var svgImage = SvgImageSupport.CreateSvgImage(svgImageArray, sizeType);
-            using (var bitmap = _RenderSvgImageToImage(svgImage, sizeType, null))
+            using (var bitmap = _ConvertVectorToImage(svgImage, sizeType, null))
                 return _ConvertBitmapToIcon(bitmap);
         }
         /// <summary>
@@ -1297,7 +1335,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                     case ResourceContentType.Bitmap:
                         return resourceItem.CreateBmpImage();
                     case ResourceContentType.Vector:
-                        return _RenderSvgImageToImage(resourceItem.CreateSvgImage(), sizeType, optimalSvgSize);
+                        return _ConvertVectorToImage(resourceItem.CreateSvgImage(), sizeType, optimalSvgSize);
                     case ResourceContentType.Icon:
                         return _ConvertIconToBitmap(resourceItem, sizeType);
                 }
@@ -1325,7 +1363,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         private Image _ConvertApplicationVectorToImage(DxApplicationResourceLibrary.ResourceItem vectorItem, ResourceImageSizeType? sizeType)
         {
             var svgImage = vectorItem.CreateSvgImage();
-            return _RenderSvgImageToImage(svgImage, sizeType, null);
+            return _ConvertVectorToImage(svgImage, sizeType, null);
         }
         #endregion
         #region Přístup na DevExpress zdroje
@@ -2972,7 +3010,37 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public DxSvgImage(System.IO.MemoryStream stream) : base(stream) { }
         /// <summary>
-        /// Static konstruktor
+        /// Static konstruktor z dodaného XML stringu
+        /// </summary>
+        /// <param name="xmlContent"></param>
+        /// <returns></returns>
+        public static DxSvgImage Create(string xmlContent)
+        {
+            if (String.IsNullOrEmpty(xmlContent)) return null;
+            return Create(null, false, Encoding.UTF8.GetBytes(xmlContent));
+        }
+        /// <summary>
+        /// Static konstruktor z podkladového <see cref="SvgImage"/>
+        /// </summary>
+        /// <param name="svgImage"></param>
+        /// <returns></returns>
+        public static DxSvgImage Create(SvgImage svgImage)
+        {
+            if (svgImage == null) return null;
+            return Create(null, false, svgImage.ToXmlString());
+        }
+        /// <summary>
+        /// Static konstruktor z dodaného pole byte
+        /// </summary>
+        /// <param name="data"></param>
+        /// <returns></returns>
+        public static DxSvgImage Create(byte[] data)
+        {
+            if (data == null) return null;
+            return Create(null, false, data);
+        }
+        /// <summary>
+        /// Static konstruktor pro dodaná data
         /// </summary>
         /// <param name="imageName"></param>
         /// <param name="isLightDarkCustomizable"></param>
@@ -2989,7 +3057,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             return dxSvgImage;
         }
         /// <summary>
-        /// Static konstruktor
+        /// Static konstruktor pro dodaná data
         /// </summary>
         /// <param name="imageName"></param>
         /// <param name="isLightDarkCustomizable"></param>
@@ -3001,6 +3069,26 @@ namespace Noris.Clients.Win.Components.AsolDX
             return Create(imageName, isLightDarkCustomizable, Encoding.UTF8.GetBytes(xmlContent));
         }
         /// <summary>
+        /// Metoda prověří, zda by dodaný string mohl být XML obsah, deklarující <see cref="DxSvgImage"/> a případně jej zkusí vytvořit.
+        /// </summary>
+        /// <param name="xmlContent"></param>
+        /// <param name="dxSvgImage"></param>
+        /// <returns></returns>
+        public static bool TryGetXmlContent(string xmlContent, out DxSvgImage dxSvgImage)
+        {
+            dxSvgImage = null;
+            if (String.IsNullOrEmpty(xmlContent)) return false;
+
+            xmlContent = xmlContent.Trim();
+            if (!xmlContent.StartsWith("<?xml version", StringComparison.InvariantCultureIgnoreCase)) return false;
+            if (xmlContent.IndexOf("<svg", StringComparison.InvariantCultureIgnoreCase) < 0) return false;
+            if (!xmlContent.EndsWith("</svg>", StringComparison.InvariantCultureIgnoreCase)) return false;
+
+            try { dxSvgImage = Create(xmlContent); }
+            catch { }
+            return (dxSvgImage != null);
+        }
+        /// <summary>
         /// Jméno zdroje
         /// </summary>
         public string ImageName { get; private set; }
@@ -3009,6 +3097,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Bohužel obsah SvgImage změnit nelze, je třeba vygenerovat new instanci.
         /// </summary>
         public bool IsLightDarkCustomizable { get; private set; }
+        /// <summary>
+        /// XML obsah tohoto objektu. 
+        /// Z principu nelze setovat - instance <see cref="DxSvgImage"/> stejně jako <see cref="SvgImage"/> je immutable.
+        /// </summary>
+        public string XmlContent { get { return this.ToXmlString(); } }
         /// <summary>
         /// Vrací new instanci z daného bufferu
         /// </summary>

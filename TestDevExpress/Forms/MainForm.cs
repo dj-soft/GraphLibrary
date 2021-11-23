@@ -54,11 +54,11 @@ namespace TestDevExpress.Forms
             InitSplitters();           // 2
             InitAnimation();           // 3
             InitResize();              // 4
-            InitChart();               // 6
-            InitMsgBox();              // 7
-            InitEditors();             // 8
-            InitTreeView();            // 9
-            InitDragDrop();            // 10
+            InitChart();               // 5
+            InitMsgBox();              // 6
+            InitEditors();             // 7
+            InitTreeView();            // 8
+            InitDragDrop();            // 9
 
             // TestResources();
 
@@ -469,17 +469,18 @@ namespace TestDevExpress.Forms
             _SvgCombineRibbonGroup.Items.Add(new DataRibbonItem() { Text = "Výsledek", ItemType = RibbonItemType.Button, RibbonStyle = RibbonItemStyles.Large, ItemIsFirstInGroup = true });
             page.Groups.Add(_SvgCombineRibbonGroup);
 
+            string toolTipText = "Kliknutím na ikonu bude zobrazen obsah SVG ikony; kliknutím s klávesou CTRL bude do ikony načten editovaný text.";
             _SvgDjColorRibbonGroup = new DataRibbonGroup() { GroupText = "Ukázky ikon Dj-Colorized" };
-            _SvgDjColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/DjColorized/robot-arm-filled", Text = "robot" });
-            _SvgDjColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/DjColorized/safe", Text = "safe" });
-            _SvgDjColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/DjColorized/salary", Text = "salary" });
-            _SvgDjColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/DjColorized/sale-blue-filled", Text = "sale-blue" });
-            _SvgDjColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/DjColorized/store-closed", Text = "store" });
-            _SvgDjColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/DjColorized/symbol-forbidden-script", Text = "forbidden" });
-            _SvgDjColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/DjColorized/symbol-refresh", Text = "refresh" });
-            _SvgDjColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/DjColorized/symbol-remove", Text = "remove" });
-            _SvgDjColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/DjColorized/symbol-update", Text = "update" });
-            _SvgDjColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/DjColorized/symbol-upload", Text = "upload" });
+            _SvgDjColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/DjColorized/robot-arm-filled", Text = "robot", ToolTipText = toolTipText, ClickAction = ClickRibbonDjColorized });
+            _SvgDjColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/DjColorized/safe", Text = "safe", ToolTipText = toolTipText, ClickAction = ClickRibbonDjColorized });
+            _SvgDjColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/DjColorized/salary", Text = "salary", ToolTipText = toolTipText, ClickAction = ClickRibbonDjColorized });
+            _SvgDjColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/DjColorized/sale-blue-filled", Text = "sale-blue", ToolTipText = toolTipText, ClickAction = ClickRibbonDjColorized });
+            _SvgDjColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/DjColorized/store-closed", Text = "store", ToolTipText = toolTipText, ClickAction = ClickRibbonDjColorized });
+            _SvgDjColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/DjColorized/symbol-forbidden-script", Text = "forbidden", ToolTipText = toolTipText, ClickAction = ClickRibbonDjColorized });
+            _SvgDjColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/DjColorized/symbol-refresh", Text = "refresh", ToolTipText = toolTipText, ClickAction = ClickRibbonDjColorized });
+            _SvgDjColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/DjColorized/symbol-remove", Text = "remove", ToolTipText = toolTipText, ClickAction = ClickRibbonDjColorized });
+            _SvgDjColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/DjColorized/symbol-update", Text = "update", ToolTipText = toolTipText, ClickAction = ClickRibbonDjColorized });
+            _SvgDjColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/DjColorized/symbol-upload", Text = "upload", ToolTipText = toolTipText, ClickAction = ClickRibbonDjColorized });
             /*
             _SvgDjColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/DjColorized/table", Text = "table" });
             _SvgDjColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/DjColorized/text", Text = "text" });
@@ -550,6 +551,50 @@ namespace TestDevExpress.Forms
         private void ClickRibbonSvgMenu1(IMenuItem item) { ClickRibbonSvgMenuAny(1, item as DataRibbonItem, true); }
         private void ClickRibbonSvgMenu2(IMenuItem item) { ClickRibbonSvgMenuAny(2, item as DataRibbonItem, true); }
         private void ClickRibbonSvgMenu3(IMenuItem item) { ClickRibbonSvgMenuAny(3, item as DataRibbonItem, true); }
+
+        private void ClickRibbonDjColorized(IMenuItem item)
+        {
+            bool isCtrl = (Control.ModifierKeys == Keys.Control);
+            var barItem = (item as IRibbonItem)?.RibbonItem?.Target;
+            if (barItem is null) return;
+
+            ActivatePage(7, true);
+
+            if (!isCtrl)
+                _RunDjColorizeGetImage(barItem);
+            else
+                _RunDjColorizeSetImage(barItem);
+
+            
+        }
+        private void _RunDjColorizeGetImage(XB.BarItem barItem)
+        {
+            DxSvgImage dxSvgImage = null;
+            if (barItem.ImageOptions.SvgImage != null)
+                dxSvgImage = DxSvgImage.Create(barItem.ImageOptions.SvgImage);
+            else if (barItem.ImageOptions.LargeImageIndex >= 0 && barItem.Images is DxSvgImageCollection svgImages)
+                dxSvgImage = DxSvgImage.Create(svgImages[barItem.ImageOptions.LargeImageIndex]);
+
+            if (dxSvgImage != null)
+            {
+                string xmlContent = dxSvgImage.XmlContent;
+                _EditorXmlImage.Text = xmlContent;
+                EditorImageName = xmlContent;
+                _DjColorizedBarItem = barItem;
+            }
+        }
+        private void _RunDjColorizeSetImage()
+        {
+            if (_DjColorizedBarItem != null)
+                _RunDjColorizeSetImage(_DjColorizedBarItem);
+        }
+        private void _RunDjColorizeSetImage(XB.BarItem barItem)
+        {
+            string xmlContent = _EditorXmlImage.Text;
+            barItem.ImageOptions.Reset();
+            barItem.ImageOptions.SvgImage = DxSvgImage.Create(xmlContent);
+        }
+        private XB.BarItem _DjColorizedBarItem;
         private void ClickRibbonSvgMenuAny(int mainItemIndex, int subItemIndex, bool showStatus)
         {
             DataRibbonItem mainItem = _SvgCombineRibbonGroup.Items[mainItemIndex] as DataRibbonItem;
@@ -2776,14 +2821,14 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
         #region Editor - ButtonEdit
         private void PrepareEditorButtonEdit()
         {
-            _EditorText1 = new DxTextEdit() { Bounds = new Rectangle(20, 150, 360, 20), BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.Simple };
-            _EditorTextButton1 = new DxButtonEdit() { Bounds = new Rectangle(400, 150, 360, 20), BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.Simple };
+            _EditorText1 = new DxTextEdit() { Bounds = new Rectangle(20, 100, 360, 20), BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.Simple };
+            _EditorTextButton1 = new DxButtonEdit() { Bounds = new Rectangle(400, 100, 360, 20), BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.Simple };
             _EditorTextButton1.ButtonClick += _EditorButtonClick;
-            _EditorText2 = new DxTextEdit() { Bounds = new Rectangle(20, 180, 360, 20), BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.Style3D };
-            _EditorTextButton2 = new DxButtonEdit() { Bounds = new Rectangle(400, 180, 360, 20), BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.Style3D };
+            _EditorText2 = new DxTextEdit() { Bounds = new Rectangle(20, 130, 360, 20), BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.Style3D };
+            _EditorTextButton2 = new DxButtonEdit() { Bounds = new Rectangle(400, 130, 360, 20), BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.Style3D };
             _EditorTextButton2.ButtonClick += _EditorButtonClick;
-            _EditorText3 = new DxTextEdit() { Bounds = new Rectangle(20, 210, 360, 20), BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.Office2003 };
-            _EditorTextButton3 = new DxButtonEdit() { Bounds = new Rectangle(400, 210, 360, 20), BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.Office2003 };
+            _EditorText3 = new DxTextEdit() { Bounds = new Rectangle(20, 160, 360, 20), BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.Office2003 };
+            _EditorTextButton3 = new DxButtonEdit() { Bounds = new Rectangle(400, 160, 360, 20), BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.Office2003 };
             _EditorTextButton3.ButtonClick += _EditorButtonClick;
             _PanelEditors.Controls.Add(_EditorText1);
             _PanelEditors.Controls.Add(_EditorTextButton1);
@@ -2841,6 +2886,9 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
         private void PrepareEditorImage()
         {
             _PanelEditors.ClientSizeChanged += _PanelEditors_ClientSizeChanged;
+            _EditorXmlImage = new DxMemoEdit();
+            _PanelEditors.Controls.Add(_EditorXmlImage);
+            _EditorReload = DxComponent.CreateDxSimpleButton(766, 70, 160, 26, _PanelEditors, "Reload SvgImage", _EditorImageReload);
             _EditorImage1 = new DxImageArea() { ImageName = _EditorImageName, BackColor = Color.FromArgb(60, Color.Wheat), BorderColor = Color.FromArgb(120, Color.Black) };
             _PanelEditors.PaintedItems.Add(_EditorImage1);
             _EditorImageDoLayout();
@@ -2852,13 +2900,27 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
         private void _EditorImageDoLayout()
         {
             var clientSize = _PanelEditors.ClientSize;
-            var editorBounds = _EditorTextButton1.Bounds;
-            var imageLocation = new Point(editorBounds.Right + 6, editorBounds.Top);
+
+            var button1RBounds = _EditorTextButton1.Bounds;
+            var button3LBounds = _EditorText3.Bounds;
+            Point editPoint = new Point(button3LBounds.X, button3LBounds.Bottom + 3);
+            int editHeight = clientSize.Height - 6 - editPoint.Y;
+            int editWidth = button1RBounds.Right - editPoint.X;
+            if (editHeight < 40) editHeight = 40;
+            _EditorXmlImage.Bounds = new Rectangle(editPoint.X, editPoint.Y, editWidth, editHeight);
+
+            var imageLocation = new Point(button1RBounds.Right + 6, button1RBounds.Top);
             int imageWidth = 4 * (clientSize.Width - 6 - imageLocation.X) / 10;
             if (imageWidth < 4) imageWidth = 4;
             int imageHeight = 7 * (clientSize.Height - 6 - imageLocation.Y) / 10;
             if (imageHeight < 4) imageHeight = 4;
             _EditorImage1.Bounds = new Rectangle(imageLocation.X, imageLocation.Y, imageWidth, imageHeight);
+        }
+        private void _EditorImageReload(object sender, EventArgs e)
+        {
+            string xmlContent = _EditorXmlImage.Text;
+            EditorImageName = xmlContent;
+            _RunDjColorizeSetImage();
         }
         /// <summary>
         /// Obrázek na záložce Editor 
@@ -2877,7 +2939,9 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
             }
         }
         private string _EditorImageName = "pic_0/Menu/frmcopy";
+        private DxSimpleButton _EditorReload;
         private DxImageArea _EditorImage1;
+        private DxMemoEdit _EditorXmlImage;
         #endregion
         #endregion
         #region TreeView

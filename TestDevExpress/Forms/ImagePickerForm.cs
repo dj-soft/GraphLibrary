@@ -146,11 +146,13 @@ namespace TestDevExpress.Forms
         /// </summary>
         private void InitForm()
         {
-            string name;
-            name = "pic_0/win/dashboard/poznamkovy_blok";
-            name = "«devav/actions/printexcludeevaluations.svg»«devav/actions/add.svg<60.60.60.60>»";
-            name = "devav/actions/support_32x32.png";
-            name = "pic/alert-filled-large.svg";
+            string name = Random.GetItem(new string[]
+            {
+                "pic_0/win/dashboard/poznamkovy_blok",
+                "«devav/actions/printexcludeevaluations.svg»«devav/actions/add.svg<60.60.60.60>»",
+                "devav/actions/support_32x32.png",
+                "pic/alert-filled-large.svg"
+            });
 
             DxComponent.ApplyIcon(this, name, ResourceImageSizeType.Large, true);
         }
