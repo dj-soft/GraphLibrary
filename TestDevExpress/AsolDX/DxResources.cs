@@ -521,30 +521,17 @@ namespace Noris.Clients.Win.Components.AsolDX
             bool hasImage = (image != null);
             bool hasName = !String.IsNullOrEmpty(imageName);
             bool hasCaption = !String.IsNullOrEmpty(caption);
-            if (hasImage)
+            try
             {
-                if (imageOptions is DevExpress.XtraBars.BarItemImageOptions barItemImageOptions)
+                if (hasImage)
                 {
-                    barItemImageOptions.Image = image;
-                    barItemImageOptions.LargeImage = image;
+                    _ApplyImageRaw(imageOptions, image);
                 }
-                else if (imageOptions is DevExpress.Utils.ImageCollectionImageOptions imageCollectionImageOptions)
+                else if (hasName || hasCaption)
                 {
-                    imageCollectionImageOptions.Image = image;
-                }
-                else
-                {
-                    imageOptions.Image = image;
-                }
-            }
-            else if (hasName || hasCaption)
-            {
-                try
-                {
-                    // Resource může být Combined (=více SVG obrázků v jedném textu!):
                     if (hasName && DxSvgImage.TryGetXmlContent(imageName, out var dxSvgImage))
                         _ApplyDxSvgImage(imageOptions, dxSvgImage);
-                    if (hasName && SvgImageSupport.TryGetSvgImageArray(imageName, out var svgImageArray))
+                    else if (hasName && SvgImageSupport.TryGetSvgImageArray(imageName, out var svgImageArray))
                         _ApplyImageArray(imageOptions, svgImageArray, sizeType, imageSize);
                     else if (hasName && _ExistsApplicationResource(imageName, exactName))
                         _ApplyImageApplication(imageOptions, imageName, exactName, sizeType, imageSize);
@@ -553,17 +540,37 @@ namespace Noris.Clients.Win.Components.AsolDX
                     else if (hasCaption)
                         _ApplyImageForCaption(imageOptions, caption, sizeType, imageSize);
                 }
-                catch { }
+                else
+                {
+                    imageOptions.SvgImage = null;
+                    imageOptions.Image = null;
+                }
+            }
+            catch { /* Někdy může dojít k chybě uvnitř DevExpress. I jejich vývojáři jsou jen lidé... */ }
+
+            // Malá služba nakonec:
+            if (smallButton && imageOptions is SimpleButtonImageOptions buttonImageOptions)
+                buttonImageOptions.Location = DevExpress.XtraEditors.ImageLocation.MiddleCenter;
+        }
+        /// <summary>
+        /// Aplikuje dodanou bitmapu do <see cref="ImageOptions"/>
+        /// </summary>
+        /// <param name="imageOptions"></param>
+        /// <param name="image"></param>
+        private void _ApplyImageRaw(ImageOptions imageOptions, Image image)
+        {
+            if (imageOptions is DevExpress.XtraBars.BarItemImageOptions barItemImageOptions)
+            {
+                barItemImageOptions.Image = image;
+                barItemImageOptions.LargeImage = image;
+            }
+            else if (imageOptions is DevExpress.Utils.ImageCollectionImageOptions imageCollectionImageOptions)
+            {
+                imageCollectionImageOptions.Image = image;
             }
             else
             {
-                imageOptions.SvgImage = null;
-                imageOptions.Image = null;
-            }
-
-            if (smallButton && imageOptions is SimpleButtonImageOptions buttonImageOptions)
-            {
-                buttonImageOptions.Location = DevExpress.XtraEditors.ImageLocation.MiddleCenter;
+                imageOptions.Image = image;
             }
         }
         /// <summary>
@@ -3070,6 +3077,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         /// <summary>
         /// Metoda prověří, zda by dodaný string mohl být XML obsah, deklarující <see cref="DxSvgImage"/> a případně jej zkusí vytvořit.
+        /// Pokud tedy vrátí true, pak v out <paramref name="dxSvgImage"/> bude vytvořený Image.
         /// </summary>
         /// <param name="xmlContent"></param>
         /// <param name="dxSvgImage"></param>
@@ -3080,12 +3088,14 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (String.IsNullOrEmpty(xmlContent)) return false;
 
             xmlContent = xmlContent.Trim();
-            if (!xmlContent.StartsWith("<?xml version", StringComparison.InvariantCultureIgnoreCase)) return false;
-            if (xmlContent.IndexOf("<svg", StringComparison.InvariantCultureIgnoreCase) < 0) return false;
-            if (!xmlContent.EndsWith("</svg>", StringComparison.InvariantCultureIgnoreCase)) return false;
+            bool startWithXml = xmlContent.StartsWith("<?xml version", StringComparison.InvariantCultureIgnoreCase);
+            bool startWithSvg = xmlContent.StartsWith("<svg ", StringComparison.InvariantCultureIgnoreCase);
+            if (!startWithXml && !startWithSvg) return false;        // Pokud text NEzačíná <xml a NEzačíná <svg , tak to nemůže být SvgImage.
+            if (!startWithSvg && xmlContent.IndexOf("<svg", StringComparison.InvariantCultureIgnoreCase) < 0) return false; // Pokud NEzačíná <svg  a ani neobsahuje <svg uvnitř, tak to nemůže být SvgImage.
+            if (!xmlContent.EndsWith("</svg>", StringComparison.InvariantCultureIgnoreCase)) return false;                  // Musí končit tagem </svg>
 
             try { dxSvgImage = Create(xmlContent); }
-            catch { }
+            catch { /* Daný text není správný, ale to nám tady nevadí, my jsme "TryGet..." metoda... */ }
             return (dxSvgImage != null);
         }
         /// <summary>

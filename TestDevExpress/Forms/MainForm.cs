@@ -466,52 +466,76 @@ namespace TestDevExpress.Forms
             _SvgCombineRibbonGroup.Items.Add(new DataRibbonItem() { Text = "Umístění", ItemType = RibbonItemType.Menu, SubItems = CreateRibbonSvgMenu1(), RibbonStyle = RibbonItemStyles.Large });
             _SvgCombineRibbonGroup.Items.Add(new DataRibbonItem() { Text = "Velikost", ImageName = "svgimages/dashboards/zoom2.svg", ItemType = RibbonItemType.Menu, SubItems = CreateRibbonSvgMenu2(), RibbonStyle = RibbonItemStyles.Large });
             _SvgCombineRibbonGroup.Items.Add(new DataRibbonItem() { Text = "Přídavek", ItemType = RibbonItemType.Menu, SubItems = CreateRibbonSvgMenu3(), RibbonStyle = RibbonItemStyles.Large });
-            _SvgCombineRibbonGroup.Items.Add(new DataRibbonItem() { Text = "Výsledek", ItemType = RibbonItemType.Button, RibbonStyle = RibbonItemStyles.Large, ItemIsFirstInGroup = true });
+            _SvgCombineRibbonGroup.Items.Add(new DataRibbonItem() { Text = "Výsledek", ItemType = RibbonItemType.Button, RibbonStyle = RibbonItemStyles.Large, ClickAction = ClickRibbonSvgReadOnly, ItemIsFirstInGroup = true });
             page.Groups.Add(_SvgCombineRibbonGroup);
 
             string toolTipText = "Kliknutím na ikonu bude zobrazen obsah SVG ikony; kliknutím s klávesou CTRL bude do ikony načten editovaný text.";
             _SvgDjColorRibbonGroup = new DataRibbonGroup() { GroupText = "Ukázky ikon Dj-Colorized" };
-            _SvgDjColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/DjColorized/robot-arm-filled", Text = "robot", ToolTipText = toolTipText, ClickAction = ClickRibbonDjColorized });
-            _SvgDjColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/DjColorized/safe", Text = "safe", ToolTipText = toolTipText, ClickAction = ClickRibbonDjColorized });
-            _SvgDjColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/DjColorized/salary", Text = "salary", ToolTipText = toolTipText, ClickAction = ClickRibbonDjColorized });
-            _SvgDjColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/DjColorized/sale-blue-filled", Text = "sale-blue", ToolTipText = toolTipText, ClickAction = ClickRibbonDjColorized });
-            _SvgDjColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/DjColorized/store-closed", Text = "store", ToolTipText = toolTipText, ClickAction = ClickRibbonDjColorized });
-            _SvgDjColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/DjColorized/symbol-forbidden-script", Text = "forbidden", ToolTipText = toolTipText, ClickAction = ClickRibbonDjColorized });
-            _SvgDjColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/DjColorized/symbol-refresh", Text = "refresh", ToolTipText = toolTipText, ClickAction = ClickRibbonDjColorized });
-            _SvgDjColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/DjColorized/symbol-remove", Text = "remove", ToolTipText = toolTipText, ClickAction = ClickRibbonDjColorized });
-            _SvgDjColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/DjColorized/symbol-update", Text = "update", ToolTipText = toolTipText, ClickAction = ClickRibbonDjColorized });
-            _SvgDjColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/DjColorized/symbol-upload", Text = "upload", ToolTipText = toolTipText, ClickAction = ClickRibbonDjColorized });
+            // _SvgDjColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/DjColorized/robot-arm-filled", Text = "robot", ToolTipText = toolTipText, ClickAction = ClickRibbonSvgEditable });
+            _SvgDjColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/DjColorized/safe", Text = "safe", ToolTipText = toolTipText, ClickAction = ClickRibbonSvgEditable });
+            // _SvgDjColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/DjColorized/salary", Text = "salary", ToolTipText = toolTipText, ClickAction = ClickRibbonSvgEditable });
+            _SvgDjColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/DjColorized/sale-blue-filled", Text = "sale-blue", ToolTipText = toolTipText, ClickAction = ClickRibbonSvgEditable });
+            // _SvgDjColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/DjColorized/store-closed", Text = "store", ToolTipText = toolTipText, ClickAction = ClickRibbonSvgEditable });
+            _SvgDjColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/DjColorized/symbol-forbidden-script", Text = "forbidden", ToolTipText = toolTipText, ClickAction = ClickRibbonSvgEditable });
+            _SvgDjColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/DjColorized/symbol-refresh", Text = "refresh", ToolTipText = toolTipText, ClickAction = ClickRibbonSvgEditable });
+            _SvgDjColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/DjColorized/symbol-remove", Text = "remove", ToolTipText = toolTipText, ClickAction = ClickRibbonSvgEditable });
+            _SvgDjColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/DjColorized/symbol-update", Text = "update", ToolTipText = toolTipText, ClickAction = ClickRibbonSvgEditable });
+            _SvgDjColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/DjColorized/symbol-upload", Text = "upload", ToolTipText = toolTipText, ClickAction = ClickRibbonSvgEditable });
+
+            // _SvgDjColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/DjColorized/table", Text = "table" });
+            // _SvgDjColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/DjColorized/text", Text = "text" });
+            // _SvgDjColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/DjColorized/time", Text = "time" });
+            // _SvgDjColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/DjColorized/toolbox", Text = "toolbox" });
+            // _SvgDjColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/DjColorized/user", Text = "user" });
+
+            _SvgDjColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "svgimages/dashboards/insertlistbox.svg", Text = "insertlistbox", ToolTipText = toolTipText, ClickAction = ClickRibbonSvgEditable, ItemIsFirstInGroup = true });
+            _SvgDjColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "svgimages/dashboards/new.svg", Text = "new", ToolTipText = toolTipText, ClickAction = ClickRibbonSvgEditable });
+            _SvgDjColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "svgimages/dashboards/parameters.svg", Text = "parameters", ToolTipText = toolTipText, ClickAction = ClickRibbonSvgEditable });
+            _SvgDjColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "svgimages/dashboards/showlegendinsidehorizontalbottomright.svg", Text = "bottomright", ToolTipText = toolTipText, ClickAction = ClickRibbonSvgEditable });
+
+
             /*
-            _SvgDjColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/DjColorized/table", Text = "table" });
-            _SvgDjColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/DjColorized/text", Text = "text" });
-            _SvgDjColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/DjColorized/time", Text = "time" });
-            _SvgDjColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/DjColorized/toolbox", Text = "toolbox" });
-            _SvgDjColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/DjColorized/user", Text = "user" });
+            string[] resources = new string[]
+            {
+    "svgimages/dashboards/insertlistbox.svg",
+    "svgimages/dashboards/new.svg",
+    "svgimages/dashboards/parameters.svg",
+    "svgimages/dashboards/showlegendinsidehorizontalbottomleft.svg",
+    "svgimages/dashboards/showlegendinsidehorizontalbottomright.svg",
+    "svgimages/dashboards/showlegendinsidehorizontaltopcenter.svg",
+    "svgimages/dashboards/showlegendinsidehorizontaltopleft.svg",
+    "svgimages/dashboards/showlegendinsidehorizontaltopright.svg"
+            };
             */
+
             page.Groups.Add(_SvgDjColorRibbonGroup);
 
             _SvgOrigColorRibbonGroup = new DataRibbonGroup() { GroupText = "Ukázky ikon ASOL original + DarkConvertor" };
-            _SvgOrigColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/AsolOriginal/robot-arm-filled", Text = "robot" });
-            _SvgOrigColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/AsolOriginal/safe", Text = "safe" });
-            _SvgOrigColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/AsolOriginal/salary", Text = "salary" });
-            _SvgOrigColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/AsolOriginal/sale-blue-filled", Text = "sale-blue" });
-            _SvgOrigColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/AsolOriginal/store-closed", Text = "store" });
-            _SvgOrigColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/AsolOriginal/symbol-forbidden-script", Text = "forbidden" });
-            _SvgOrigColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/AsolOriginal/symbol-refresh", Text = "refresh" });
-            _SvgOrigColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/AsolOriginal/symbol-remove", Text = "remove" });
-            _SvgOrigColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/AsolOriginal/symbol-update", Text = "update" });
-            _SvgOrigColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/AsolOriginal/symbol-upload", Text = "upload" });
+            // _SvgOrigColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/AsolOriginal/robot-arm-filled", Text = "robot", ClickAction = ClickRibbonSvgReadOnly });
+            _SvgOrigColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/AsolOriginal/safe", Text = "safe", ClickAction = ClickRibbonSvgReadOnly });
+            // _SvgOrigColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/AsolOriginal/salary", Text = "salary", ClickAction = ClickRibbonSvgReadOnly });
+            _SvgOrigColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/AsolOriginal/sale-blue-filled", Text = "sale-blue", ClickAction = ClickRibbonSvgReadOnly });
+            // _SvgOrigColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/AsolOriginal/store-closed", Text = "store", ClickAction = ClickRibbonSvgReadOnly });
+            _SvgOrigColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/AsolOriginal/symbol-forbidden-script", Text = "forbidden", ClickAction = ClickRibbonSvgReadOnly });
+            _SvgOrigColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/AsolOriginal/symbol-refresh", Text = "refresh", ClickAction = ClickRibbonSvgReadOnly });
+            _SvgOrigColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/AsolOriginal/symbol-remove", Text = "remove", ClickAction = ClickRibbonSvgReadOnly });
+            _SvgOrigColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/AsolOriginal/symbol-update", Text = "update", ClickAction = ClickRibbonSvgReadOnly });
+            _SvgOrigColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/AsolOriginal/symbol-upload", Text = "upload", ClickAction = ClickRibbonSvgReadOnly });
+
+            // _SvgOrigColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/AsolOriginal/table", Text = "table" });
+            // _SvgOrigColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/AsolOriginal/text", Text = "text" });
+            // _SvgOrigColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/AsolOriginal/time", Text = "time" });
+            // _SvgOrigColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/AsolOriginal/toolbox", Text = "toolbox" });
+            // _SvgOrigColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/AsolOriginal/user", Text = "user" });
+
+            _SvgOrigColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "svgimages/dashboards/insertlistbox.svg", Text = "insertlistbox", ToolTipText = toolTipText, ClickAction = ClickRibbonSvgReadOnly, ItemIsFirstInGroup = true });
+            _SvgOrigColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "svgimages/dashboards/new.svg", Text = "new", ToolTipText = toolTipText, ClickAction = ClickRibbonSvgReadOnly });
+            _SvgOrigColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "svgimages/dashboards/parameters.svg", Text = "parameters", ToolTipText = toolTipText, ClickAction = ClickRibbonSvgReadOnly });
+            _SvgOrigColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "svgimages/dashboards/showlegendinsidehorizontalbottomright.svg", Text = "bottomright", ToolTipText = toolTipText, ClickAction = ClickRibbonSvgReadOnly });
+
 
             _SvgOrigColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "pic_0/Win/AppIcons/Nephrite_15.ico", Text = "Nephrite_15.ico", ItemIsFirstInGroup = true });
 
-            // c:\CSharp\TestDevExpress\TestDevExpress\Images\NorisPic.zip\pic_0\Win\AppIcons\Nephrite_15.ico 
-            /*
-            _SvgOrigColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/AsolOriginal/table", Text = "table" });
-            _SvgOrigColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/AsolOriginal/text", Text = "text" });
-            _SvgOrigColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/AsolOriginal/time", Text = "time" });
-            _SvgOrigColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/AsolOriginal/toolbox", Text = "toolbox" });
-            _SvgOrigColorRibbonGroup.Items.Add(new DataRibbonItem() { ImageName = "SvgTest/AsolOriginal/user", Text = "user" });
-            */
             page.Groups.Add(_SvgOrigColorRibbonGroup);
 
             ClickRibbonSvgMenuAny(0, 0, false);
@@ -551,8 +575,28 @@ namespace TestDevExpress.Forms
         private void ClickRibbonSvgMenu1(IMenuItem item) { ClickRibbonSvgMenuAny(1, item as DataRibbonItem, true); }
         private void ClickRibbonSvgMenu2(IMenuItem item) { ClickRibbonSvgMenuAny(2, item as DataRibbonItem, true); }
         private void ClickRibbonSvgMenu3(IMenuItem item) { ClickRibbonSvgMenuAny(3, item as DataRibbonItem, true); }
-
-        private void ClickRibbonDjColorized(IMenuItem item)
+        /// <summary>
+        /// Kliknutí na button v Ribbonu, která dovoluje Read a Write
+        /// </summary>
+        /// <param name="item"></param>
+        private void ClickRibbonSvgEditable(IMenuItem item)
+        {
+            ClickRibbonSvgGetSet(item, true);
+        }
+        /// <summary>
+        /// Kliknutí na button v Ribbonu, která dovoluje Read only
+        /// </summary>
+        /// <param name="item"></param>
+        private void ClickRibbonSvgReadOnly(IMenuItem item)
+        {
+            ClickRibbonSvgGetSet(item, false);
+        }
+        /// <summary>
+        /// Kliknutí na button v Ribbonu, která dovoluje Read a volitelně Write (<paramref name="enableSet"/> je true)
+        /// </summary>
+        /// <param name="item"></param>
+        /// <param name="enableSet"></param>
+        private void ClickRibbonSvgGetSet(IMenuItem item, bool enableSet)
         {
             bool isCtrl = (Control.ModifierKeys == Keys.Control);
             var barItem = (item as IRibbonItem)?.RibbonItem?.Target;
@@ -561,13 +605,16 @@ namespace TestDevExpress.Forms
             ActivatePage(7, true);
 
             if (!isCtrl)
-                _RunDjColorizeGetImage(barItem);
-            else
+                _RunDjColorizeGetImage(barItem, enableSet);
+            else if (enableSet)
                 _RunDjColorizeSetImage(barItem);
-
-            
         }
-        private void _RunDjColorizeGetImage(XB.BarItem barItem)
+        /// <summary>
+        /// Z dodaného BarItem načte jeho SVG ikonu a zobrazí ji v textovém editoru a ve velkém Image
+        /// </summary>
+        /// <param name="barItem"></param>
+        /// <param name="enableSet">Pokud je true, pak tento BarItem uloží jako případný cíl pro Set metodu. Pokud je false, ponechá tam dosavadní cíl.</param>
+        private void _RunDjColorizeGetImage(XB.BarItem barItem, bool enableSet)
         {
             DxSvgImage dxSvgImage = null;
             if (barItem.ImageOptions.SvgImage != null)
@@ -580,20 +627,37 @@ namespace TestDevExpress.Forms
                 string xmlContent = dxSvgImage.XmlContent;
                 _EditorXmlImage.Text = xmlContent;
                 EditorImageName = xmlContent;
-                _DjColorizedBarItem = barItem;
+                if (enableSet)
+                    _DjColorizedBarItem = barItem;
             }
         }
+        /// <summary>
+        /// Editovanou ikonu uloží do aktivního BarItemu (posledně zobrazený)
+        /// </summary>
         private void _RunDjColorizeSetImage()
         {
             if (_DjColorizedBarItem != null)
                 _RunDjColorizeSetImage(_DjColorizedBarItem);
         }
+        /// <summary>
+        /// Editovanou ikonu uloží do dodaného BarItemu
+        /// </summary>
+        /// <param name="barItem"></param>
         private void _RunDjColorizeSetImage(XB.BarItem barItem)
         {
+            if (barItem is null) return;
             string xmlContent = _EditorXmlImage.Text;
-            barItem.ImageOptions.Reset();
-            barItem.ImageOptions.SvgImage = DxSvgImage.Create(xmlContent);
+            if (String.IsNullOrEmpty(xmlContent)) return;
+            try
+            {
+                barItem.ImageOptions.Reset();
+                barItem.ImageOptions.SvgImage = DxSvgImage.Create(xmlContent);
+            }
+            catch { }
         }
+        /// <summary>
+        /// Button, do kterého se provede setování obrázku (z něj byl naposledy načten obrázek pro režim Read a Write)
+        /// </summary>
         private XB.BarItem _DjColorizedBarItem;
         private void ClickRibbonSvgMenuAny(int mainItemIndex, int subItemIndex, bool showStatus)
         {
