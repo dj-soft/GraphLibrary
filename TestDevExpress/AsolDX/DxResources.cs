@@ -3008,6 +3008,7 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// </summary>
     public class DxSvgImage : SvgImage
     {
+        #region Tvorba - konstruktory, statické konstruktory, TryGet, implicit
         /// <summary>
         /// Konstruktor
         /// </summary>
@@ -3088,6 +3089,20 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (String.IsNullOrEmpty(xmlContent)) return false;
 
             xmlContent = xmlContent.Trim();
+            if (TryGetGenericSvg(xmlContent, out dxSvgImage)) return true;
+            if (TryGetRawSvg(xmlContent, out dxSvgImage)) return true;
+
+            return false;
+        }
+        /// <summary>
+        /// Může vygenerovat generické SVG podle dodaného XML obsahu
+        /// </summary>
+        /// <param name="xmlContent"></param>
+        /// <param name="dxSvgImage"></param>
+        /// <returns></returns>
+        protected static bool TryGetRawSvg(string xmlContent, out DxSvgImage dxSvgImage)
+        {
+            dxSvgImage = null;
             bool startWithXml = xmlContent.StartsWith("<?xml version", StringComparison.InvariantCultureIgnoreCase);
             bool startWithSvg = xmlContent.StartsWith("<svg ", StringComparison.InvariantCultureIgnoreCase);
             if (!startWithXml && !startWithSvg) return false;        // Pokud text NEzačíná <xml a NEzačíná <svg , tak to nemůže být SvgImage.
@@ -3098,6 +3113,16 @@ namespace Noris.Clients.Win.Components.AsolDX
             catch { /* Daný text není správný, ale to nám tady nevadí, my jsme "TryGet..." metoda... */ }
             return (dxSvgImage != null);
         }
+        /// <summary>
+        /// Vrací new instanci z daného bufferu
+        /// </summary>
+        /// <param name="data"></param>
+        public static implicit operator DxSvgImage(byte[] data)
+        {
+            return Create(null, false, data);
+        }
+        #endregion
+        #region Properties
         /// <summary>
         /// Jméno zdroje
         /// </summary>
@@ -3112,14 +3137,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Z principu nelze setovat - instance <see cref="DxSvgImage"/> stejně jako <see cref="SvgImage"/> je immutable.
         /// </summary>
         public string XmlContent { get { return this.ToXmlString(); } }
-        /// <summary>
-        /// Vrací new instanci z daného bufferu
-        /// </summary>
-        /// <param name="data"></param>
-        public static implicit operator DxSvgImage(byte[] data)
-        {
-            return Create(null, false, data);
-        }
+        #endregion
         #region RenderTo Graphics
         /// <summary>
         /// Renderuje this image do dané grafiky na dané místo
@@ -3211,6 +3229,64 @@ namespace Noris.Clients.Win.Components.AsolDX
                 graphics.Restore(state);
             }
         }
+        #endregion
+        #region Generické SVG
+        /// <summary>
+        /// Může vygenerovat generické SVG podle názvu a parametrů
+        /// </summary>
+        /// <param name="xmlContent"></param>
+        /// <param name="dxSvgImage"></param>
+        /// <returns></returns>
+        protected static bool TryGetGenericSvg(string xmlContent, out DxSvgImage dxSvgImage)
+        {
+            dxSvgImage = null;
+            return false;
+        }
+        /*   Kolečko s Gradient výplní a posunutým středem
+﻿<?xml version='1.0' encoding='UTF-8'?>
+<svg x="0px" y="0px" width="32px" height="32px" viewBox="0 0 32 32" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" enable-background="new 0 0 32 32" xml:space="preserve" id="Layer_1">
+  <g id="icon">
+    <defs>
+      <radialGradient id="MyGradient" gradientUnits="userSpaceOnUse" cx="18" cy="18" r="32" fx="24" fy="24">
+        <stop offset="0%" stop-color="blue" />
+        <stop offset="100%" stop-color="white" />
+      </radialGradient>
+    </defs>
+    <circle cx="16" cy="16" r="15" fill="url(#MyGradient)" stroke="red" stroke-width="0"  />
+  </g>
+</svg>
+        */
+
+        /* Dokument s podbarvením bez ohnutého rohu
+﻿<?xml version='1.0' encoding='UTF-8'?>
+<svg x="0px" y="0px" viewBox="0 0 32 32" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xml:space="preserve" id="Layer_1" style="enable-background:new 0 0 32 32">
+  <style type="text/css">
+	.Green{fill:#039C23;}
+	.Black{fill:#727272;}
+	.Red{fill:#D11C1C;}
+	.Yellow{fill:#FFB115;}
+	.Blue{fill:#1177D7;}
+	.White{fill:#FFFFFF;}
+	.st0{opacity:0.5;}
+	.st1{opacity:0.75;}
+</style>
+  <g id="InsertListBox">
+    <path d="M26,2H4v26h22V2z" fill="violet"  />
+    <path d="M27,30H3c-0.5,0-1-0.5-1-1V1c0-0.6,0.5-1,1-1h24c0.5,0,1,0.4,1,1v28C28,29.5,27.5,30,27,30z M26,2H4v26h22V2   z M22,6H8v2h14V6z M22,10H8v2h14V10z M22,14H8v2h14V14z M22,18H8v2h14V18z M22,22H8v2h14V22z" class="Black" />
+  </g>
+</svg>        
+        */
+
+        /* Dokument bez linek s ohnutým rohem a podbarvením
+﻿<?xml version='1.0' encoding='UTF-8'?>
+<svg x="0px" y="0px" viewBox="0 0 32 32" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xml:space="preserve" id="New" style="enable-background:new 0 0 32 32">
+  <style type="text/css">
+	.Black{fill:#727272;}
+</style>
+  <path d="M24,26H8V6h10v5c0,0.6,0.4,1,1,1h5  V26z" fill="violet"  />
+  <path d="M19,4H7C6.4,4,6,4.4,6,5v22c0,0.6,0.4,1,1,1h18c0.6,0,1-0.4,1-1V11L19,4z M24,26H8V6h10v5c0,0.6,0.4,1,1,1h5  V26z" class="Black" />
+</svg>
+        */
         #endregion
     }
     #endregion
