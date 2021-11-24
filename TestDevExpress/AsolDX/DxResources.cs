@@ -3144,9 +3144,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="graphics"></param>
         /// <param name="bounds"></param>
-        public void RenderTo(Graphics graphics, Rectangle bounds)
+        /// <param name="svgPalette">SVG paleta pro korekce barev. Může být null.</param>
+        public void RenderTo(Graphics graphics, Rectangle bounds, DevExpress.Utils.Design.ISvgPaletteProvider svgPalette = null)
         {
-            _RenderTo(this, graphics, bounds, ContentAlignment.MiddleCenter, out var _);
+            _RenderTo(this, graphics, bounds, ContentAlignment.MiddleCenter, svgPalette, out var _);
         }
         /// <summary>
         /// Renderuje this image do dané grafiky na dané místo
@@ -3157,7 +3158,19 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="alignment"></param>
         public void RenderTo(Graphics graphics, Rectangle bounds, ContentAlignment alignment, out RectangleF? imageBounds)
         {
-            _RenderTo(this, graphics, bounds, alignment, out imageBounds);
+            _RenderTo(this, graphics, bounds, alignment, null, out imageBounds);
+        }
+        /// <summary>
+        /// Renderuje this image do dané grafiky na dané místo
+        /// </summary>
+        /// <param name="graphics"></param>
+        /// <param name="bounds"></param>
+        /// <param name="alignment"></param>
+        /// <param name="svgPalette">SVG paleta pro korekce barev. Může být null.</param>
+        /// <param name="imageBounds"></param>
+        public void RenderTo(Graphics graphics, Rectangle bounds, ContentAlignment alignment, DevExpress.Utils.Design.ISvgPaletteProvider svgPalette, out RectangleF? imageBounds)
+        {
+            _RenderTo(this, graphics, bounds, alignment, svgPalette, out imageBounds);
         }
         /// <summary>
         /// Renderuje daný image do dané grafiky na dané místo
@@ -3166,9 +3179,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="graphics"></param>
         /// <param name="bounds"></param>
         /// <param name="alignment "></param>
-        public static void RenderTo(SvgImage svgImage, Graphics graphics, Rectangle bounds, ContentAlignment alignment = ContentAlignment.MiddleCenter)
+        /// <param name="svgPalette">SVG paleta pro korekce barev. Může být null.</param>
+        public static void RenderTo(SvgImage svgImage, Graphics graphics, Rectangle bounds, ContentAlignment alignment = ContentAlignment.MiddleCenter, DevExpress.Utils.Design.ISvgPaletteProvider svgPalette = null)
         {
-            _RenderTo(svgImage, graphics, bounds, alignment, out var _);
+            _RenderTo(svgImage, graphics, bounds, alignment, svgPalette, out var _);
         }
         /// <summary>
         /// Renderuje daný image do dané grafiky na dané místo
@@ -3178,9 +3192,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="bounds"></param>
         /// <param name="imageBounds"></param>
         /// <param name="alignment "></param>
-        public static void RenderTo(SvgImage svgImage, Graphics graphics, Rectangle bounds, out RectangleF? imageBounds, ContentAlignment alignment = ContentAlignment.MiddleCenter)
+        /// <param name="svgPalette">SVG paleta pro korekce barev. Může být null.</param>
+        public static void RenderTo(SvgImage svgImage, Graphics graphics, Rectangle bounds, out RectangleF? imageBounds, ContentAlignment alignment = ContentAlignment.MiddleCenter, DevExpress.Utils.Design.ISvgPaletteProvider svgPalette = null)
         {
-            _RenderTo(svgImage, graphics, bounds, alignment, out imageBounds);
+            _RenderTo(svgImage, graphics, bounds, alignment, svgPalette, out imageBounds);
         }
         /// <summary>
         /// Renderuje daný image do dané grafiky na dané místo
@@ -3189,8 +3204,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="graphics"></param>
         /// <param name="bounds"></param>
         /// <param name="imageBounds"></param>
+        /// <param name="svgPalette">SVG paleta pro korekce barev. Může být null.</param>
         /// <param name="alignment "></param>
-        private static void _RenderTo(SvgImage svgImage, Graphics graphics, Rectangle bounds, ContentAlignment alignment, out RectangleF? imageBounds)
+        private static void _RenderTo(SvgImage svgImage, Graphics graphics, Rectangle bounds, ContentAlignment alignment, DevExpress.Utils.Design.ISvgPaletteProvider svgPalette, out RectangleF? imageBounds)
         {
             imageBounds = null;
             if (svgImage is null || graphics is null || bounds.Width <= 2 || bounds.Height <= 2) return;
@@ -3218,7 +3234,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.HighQuality;
                 graphics.CompositingQuality = System.Drawing.Drawing2D.CompositingQuality.HighQuality;
                 graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
-                svgImage.RenderToGraphics(graphics, null, scale);
+                svgImage.RenderToGraphics(graphics, svgPalette, scale);
 
                 imageBounds = imgBounds;
             }

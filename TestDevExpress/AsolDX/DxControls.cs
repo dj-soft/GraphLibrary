@@ -2578,10 +2578,37 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         private bool TryPaintVector(Graphics graphics, string imageName, ResourceImageSizeType sizeType, Rectangle bounds, out Rectangle? edgeBounds)
         {
+            /*
+            var svgPaletteName = DevExpress.LookAndFeel.UserLookAndFeel.Default.ActiveSvgPaletteName;
+
+            var skin = DevExpress.Skins.CommonSkins.GetSkin(DevExpress.LookAndFeel.UserLookAndFeel.Default);
+            var svgPalettes = skin.SvgPalettes;
+            var customSvgPalettes = skin.CustomSvgPalettes;
+            var svgPalette = customSvgPalettes.Values.LastOrDefault();
+            */
+
+            //DevExpress.Utils.Svg.SvgStyle s;
+            //DevExpress.Utils.Svg.sty
+            //s.Attributes.
+            DevExpress.Utils.Svg.SvgPalette palette = new DevExpress.Utils.Svg.SvgPalette();
+            palette.Colors.Add(new DevExpress.Utils.Svg.SvgColor("Modrá", Color.FromArgb(33, 33, 240)));
+            palette.Colors.Add(new DevExpress.Utils.Svg.SvgColor("Fialová", Color.FromArgb(240, 33, 240)));
+            palette.Colors.Add(new DevExpress.Utils.Svg.SvgColor("Zelenkavá", Color.FromArgb(190, 210, 190)));
+            DevExpress.Utils.Svg.SvgPaletteKey key = new DevExpress.Utils.Svg.SvgPaletteKey(99, "Nephrite");
+
+            var commonSkin = DevExpress.Skins.CommonSkins.GetSkin(DevExpress.LookAndFeel.UserLookAndFeel.Default);
+            var ribbonSkin = DevExpress.Skins.RibbonSkins.GetSkin(DevExpress.LookAndFeel.UserLookAndFeel.Default);
+            var barSkin = DevExpress.Skins.BarSkins.GetSkin(DevExpress.LookAndFeel.UserLookAndFeel.Default);
+            ribbonSkin.CustomSvgPalettes.GetOrAdd(key, k => palette);
+            ribbonSkin.SvgPalettes.GetOrAdd(key, k => palette);
+
+            if (commonSkin.SvgPalettes[DevExpress.Skins.Skin.DefaultSkinPaletteName] != null)
+                commonSkin.SvgPalettes[DevExpress.Skins.Skin.DefaultSkinPaletteName].CustomPalette = palette;
+
             edgeBounds = null;
             var svgImage = DxComponent.GetVectorImage(imageName, this.ExactName, sizeType);
             if (svgImage == null) return false;
-            DxSvgImage.RenderTo(svgImage, graphics, bounds, out var imageBounds, Alignment);
+            DxSvgImage.RenderTo(svgImage, graphics, bounds, out var imageBounds, Alignment, palette);
             if (imageBounds.HasValue) edgeBounds = Rectangle.Ceiling(imageBounds.Value);
             return true;
         }
