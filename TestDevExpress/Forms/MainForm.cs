@@ -2951,9 +2951,10 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
         {
             _PanelEditors.ClientSizeChanged += _PanelEditors_ClientSizeChanged;
             _EditorXmlImage = new DxMemoEdit();
+            _EditorXmlImage.Font = new Font(FontFamily.GenericMonospace, 11f, FontStyle.Bold);
             _PanelEditors.Controls.Add(_EditorXmlImage);
             _EditorReload = DxComponent.CreateDxSimpleButton(766, 70, 160, 26, _PanelEditors, "Reload SvgImage", _EditorImageReload);
-            _EditorImage1 = new DxImageArea() { ImageName = _EditorImageName, BackColor = Color.FromArgb(60, Color.Wheat), BorderColor = Color.FromArgb(120, Color.Black) };
+            _EditorImage1 = new DxImageArea() { ImageName = _EditorImageName, BackColor = Color.FromArgb(60, Color.Wheat), BorderColor = Color.FromArgb(120, Color.Black), EdgeColor = Color.FromArgb(120, Color.Violet) };
             _PanelEditors.PaintedItems.Add(_EditorImage1);
             _EditorImageDoLayout();
         }

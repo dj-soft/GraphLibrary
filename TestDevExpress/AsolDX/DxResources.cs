@@ -3120,6 +3120,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             return Create(null, false, data);
         }
+        #region RenderTo Graphics
         /// <summary>
         /// Renderuje this image do dané grafiky na dané místo
         /// </summary>
@@ -3127,10 +3128,21 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="bounds"></param>
         public void RenderTo(Graphics graphics, Rectangle bounds)
         {
-            RenderTo(this, graphics, bounds);
+            _RenderTo(this, graphics, bounds, ContentAlignment.MiddleCenter, out var _);
         }
         /// <summary>
         /// Renderuje this image do dané grafiky na dané místo
+        /// </summary>
+        /// <param name="graphics"></param>
+        /// <param name="bounds"></param>
+        /// <param name="imageBounds"></param>
+        /// <param name="alignment"></param>
+        public void RenderTo(Graphics graphics, Rectangle bounds, ContentAlignment alignment, out RectangleF? imageBounds)
+        {
+            _RenderTo(this, graphics, bounds, alignment, out imageBounds);
+        }
+        /// <summary>
+        /// Renderuje daný image do dané grafiky na dané místo
         /// </summary>
         /// <param name="svgImage"></param>
         /// <param name="graphics"></param>
@@ -3138,6 +3150,31 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="alignment "></param>
         public static void RenderTo(SvgImage svgImage, Graphics graphics, Rectangle bounds, ContentAlignment alignment = ContentAlignment.MiddleCenter)
         {
+            _RenderTo(svgImage, graphics, bounds, alignment, out var _);
+        }
+        /// <summary>
+        /// Renderuje daný image do dané grafiky na dané místo
+        /// </summary>
+        /// <param name="svgImage"></param>
+        /// <param name="graphics"></param>
+        /// <param name="bounds"></param>
+        /// <param name="imageBounds"></param>
+        /// <param name="alignment "></param>
+        public static void RenderTo(SvgImage svgImage, Graphics graphics, Rectangle bounds, out RectangleF? imageBounds, ContentAlignment alignment = ContentAlignment.MiddleCenter)
+        {
+            _RenderTo(svgImage, graphics, bounds, alignment, out imageBounds);
+        }
+        /// <summary>
+        /// Renderuje daný image do dané grafiky na dané místo
+        /// </summary>
+        /// <param name="svgImage"></param>
+        /// <param name="graphics"></param>
+        /// <param name="bounds"></param>
+        /// <param name="imageBounds"></param>
+        /// <param name="alignment "></param>
+        private static void _RenderTo(SvgImage svgImage, Graphics graphics, Rectangle bounds, ContentAlignment alignment, out RectangleF? imageBounds)
+        {
+            imageBounds = null;
             if (svgImage is null || graphics is null || bounds.Width <= 2 || bounds.Height <= 2) return;
 
             // Matrix(a,b,c,d,e,f):  Xr = Xi * a ..... Yr = Yi * d  +  Xi * b......
@@ -3153,17 +3190,19 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 graphics.SetClip(bounds);
 
-                SizeF imageSize = new SizeF((float)svgImage.Width, (float)svgImage.Height);
-                RectangleF imageBounds = imageSize.ZoomTo((RectangleF)bounds, alignment);
-                graphics.Transform = new System.Drawing.Drawing2D.Matrix(1f, 0f, 0f, 1f, imageBounds.X, imageBounds.Y);
-                double scaleX = (double)imageBounds.Width / svgImage.Width;
-                double scaleY = (double)imageBounds.Height / svgImage.Height;
+                SizeF imgSize = new SizeF((float)svgImage.Width, (float)svgImage.Height);
+                RectangleF imgBounds = imgSize.ZoomTo((RectangleF)bounds, alignment);
+                graphics.Transform = new System.Drawing.Drawing2D.Matrix(1f, 0f, 0f, 1f, imgBounds.X, imgBounds.Y);
+                double scaleX = (double)imgBounds.Width / svgImage.Width;
+                double scaleY = (double)imgBounds.Height / svgImage.Height;
                 double scale = (scaleX <= scaleY ? scaleX : scaleY);
 
                 graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.HighQuality;
                 graphics.CompositingQuality = System.Drawing.Drawing2D.CompositingQuality.HighQuality;
                 graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
                 svgImage.RenderToGraphics(graphics, null, scale);
+
+                imageBounds = imgBounds;
             }
             finally
             {
@@ -3172,6 +3211,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 graphics.Restore(state);
             }
         }
+        #endregion
     }
     #endregion
     #region SvgImageCustomize : Třída pro úpravu obsahu SVG podle aktivního Skinu (Světlý / Tmavý)

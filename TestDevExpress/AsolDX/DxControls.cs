@@ -2439,7 +2439,7 @@ namespace Noris.Clients.Win.Components.AsolDX
     #region DxImageArea : neinteraktivní obrázek s definovaným zdrojem a umístěním (v rámci nějakého parent controlu)
     /// <summary>
     /// Prvek, který může být vykreslen přímo do panelu <see cref="DxPanelControl"/> (a i jiných).
-    /// Prvek lze přidat do seznamu <see cref="DxPanelControl.PaintedItems"/>, nikoliv do <see cref="Control.Controls"/>.
+    /// Prvek lze přidat do seznamu <see cref="DxPanelControl.PaintedItems"/>, nelze jej přidat do <see cref="Control.Controls"/> (on to není <see cref="Control"/>).
     /// Prvek obsahuje souřadnice a definici obrázku, a tento obrázek je vykreslován do panelu na dané souřadnice.
     /// Prvek nemá žádnou interaktivitu.
     /// </summary>
@@ -2515,6 +2515,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public Color? BorderColor { get; set; }
         /// <summary>
+        /// Barva hrany prostoru pro Image, default: null = nekreslí se. Akceptuje se Alpha channel.
+        /// Kreslí se v souřadnici vlastního obrázku po jeho zarovnání.
+        /// </summary>
+        public Color? EdgeColor { get; set; }
+        /// <summary>
         /// Zarovnání obrazu do <see cref="Bounds"/>. 
         /// Obraz bude zoomován do daného prostoru se zachováním proporcí.
         /// </summary>
@@ -2541,14 +2546,26 @@ namespace Noris.Clients.Win.Components.AsolDX
             string imageName = this.ImageName;
             if (String.IsNullOrEmpty(imageName)) return;
 
+            Rectangle? edgeBounds = null;
+            bool isPainted = false;
             try
             {
                 bool preferVector = this.IsPreferredVectorImage ?? DxComponent.IsPreferredVectorImage;
-                if (preferVector && TryPaintVector(e.Graphics, imageName, sizeTypeV, bounds)) return;
-                if (TryPaintBitmap(e.Graphics, imageName, sizeTypeB, bounds)) return;
-                if (!preferVector) TryPaintVector(e.Graphics, imageName, sizeTypeV, bounds);  // Pokud vektor NENÍ preferován, tak jsem jej kreslit ještě nezkoušel. Zkusme to tedy nyní...
+                if (preferVector)
+                    isPainted = TryPaintVector(e.Graphics, imageName, sizeTypeV, bounds, out edgeBounds);
+                if (!isPainted)
+                    isPainted = TryPaintBitmap(e.Graphics, imageName, sizeTypeB, bounds, out edgeBounds);
+                if (!isPainted)
+                    isPainted = TryPaintVector(e.Graphics, imageName, sizeTypeV, bounds, out edgeBounds);
             }
             catch { }
+
+            // Okolo prostoru reálného Image mohu vykreslit linku v barvě EdgeColor:
+            if (isPainted && edgeBounds.HasValue && this.EdgeColor.HasValue)
+            {
+                Rectangle borderBounds = new Rectangle(edgeBounds.Value.X, edgeBounds.Value.Y, edgeBounds.Value.Width - 1, edgeBounds.Value.Height - 1);
+                e.Graphics.DrawRectangle(DxComponent.PaintGetPen(EdgeColor.Value), borderBounds);
+            }
         }
         /// <summary>
         /// Zkusí najít vektorový obrázek a vykreslit jej
@@ -2557,12 +2574,15 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="imageName"></param>
         /// <param name="sizeType"></param>
         /// <param name="bounds"></param>
+        /// <param name="edgeBounds"></param>
         /// <returns></returns>
-        private bool TryPaintVector(Graphics graphics, string imageName, ResourceImageSizeType sizeType, Rectangle bounds)
+        private bool TryPaintVector(Graphics graphics, string imageName, ResourceImageSizeType sizeType, Rectangle bounds, out Rectangle? edgeBounds)
         {
+            edgeBounds = null;
             var svgImage = DxComponent.GetVectorImage(imageName, this.ExactName, sizeType);
             if (svgImage == null) return false;
-            DxSvgImage.RenderTo(svgImage, graphics, bounds, Alignment);
+            DxSvgImage.RenderTo(svgImage, graphics, bounds, out var imageBounds, Alignment);
+            if (imageBounds.HasValue) edgeBounds = Rectangle.Ceiling(imageBounds.Value);
             return true;
         }
         /// <summary>
@@ -2572,13 +2592,16 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="imageName"></param>
         /// <param name="sizeType"></param>
         /// <param name="bounds"></param>
+        /// <param name="edgeBounds"></param>
         /// <returns></returns>
-        private bool TryPaintBitmap(Graphics graphics, string imageName, ResourceImageSizeType sizeType, Rectangle bounds)
+        private bool TryPaintBitmap(Graphics graphics, string imageName, ResourceImageSizeType sizeType, Rectangle bounds, out Rectangle? edgeBounds)
         {
+            edgeBounds = null;
             var bmpImage = DxComponent.GetBitmapImage(imageName, sizeType, exactName: this.ExactName);
             if (bmpImage == null) return false;
             RectangleF imageBounds = ((SizeF)bmpImage.Size).ZoomTo((RectangleF)bounds, Alignment);
             graphics.DrawImage(bmpImage, imageBounds);
+            edgeBounds = Rectangle.Ceiling(imageBounds);
             return true;
         }
     }
