@@ -2968,18 +2968,56 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
 
             var button1RBounds = _EditorTextButton1.Bounds;
             var button3LBounds = _EditorText3.Bounds;
-            Point editPoint = new Point(button3LBounds.X, button3LBounds.Bottom + 3);
-            int editHeight = clientSize.Height - 6 - editPoint.Y;
-            int editWidth = button1RBounds.Right - editPoint.X;
-            if (editHeight < 40) editHeight = 40;
-            _EditorXmlImage.Bounds = new Rectangle(editPoint.X, editPoint.Y, editWidth, editHeight);
 
-            var imageLocation = new Point(button1RBounds.Right + 6, button1RBounds.Top);
-            int imageWidth = 4 * (clientSize.Width - 6 - imageLocation.X) / 10;
-            if (imageWidth < 4) imageWidth = 4;
-            int imageHeight = 7 * (clientSize.Height - 6 - imageLocation.Y) / 10;
-            if (imageHeight < 4) imageHeight = 4;
-            _EditorImage1.Bounds = new Rectangle(imageLocation.X, imageLocation.Y, imageWidth, imageHeight);
+            int minWidth = 8;
+            int maxWidth = 288;
+            int minHeight = 8;
+            int maxHeight = 256;
+
+            int imageX = button1RBounds.Right + 6;
+            int imageY = button1RBounds.Top;
+            int imageRight = clientSize.Width - 6;
+            int imageBottom = clientSize.Height - 6;
+            int imageWidth = imageRight - imageX;
+            int imageHeight = imageBottom - imageY;
+            if (imageWidth < minWidth)
+            {
+                imageWidth = minWidth;
+                imageX = imageRight - imageWidth;
+            }
+            if (imageWidth > maxWidth)
+            {
+                imageWidth = maxWidth;
+                imageX = imageRight - imageWidth;
+            }
+            if (imageHeight < minHeight)
+            {
+                imageHeight = minHeight;
+                imageY = imageBottom - imageHeight;
+            }
+                if (imageHeight > maxHeight)
+            {
+                imageHeight = maxHeight;
+                imageBottom = imageY + imageHeight;
+            }
+
+            int editX = button3LBounds.X;
+            int editY = button3LBounds.Bottom + 6;
+            int editRight = imageX - 6;
+            int editWidth = editRight - editX;
+            int editBottom = clientSize.Height - 6;
+            int editHeight = editBottom - editY;
+
+            int buttonRight = imageRight;
+            int buttonWidth = imageWidth;
+            if (buttonWidth < 100) buttonWidth = 100;
+            int buttonX = buttonRight - buttonWidth;
+            int buttonBottom = imageY - 6;
+            int buttonHeight = 26;
+            int buttonY = buttonBottom - buttonHeight;
+            _EditorXmlImage.Bounds = new Rectangle(editX, editY, editWidth, editHeight);
+            _EditorImage1.Bounds = new Rectangle(imageX, imageY, imageWidth, imageHeight);
+            _EditorReload.Bounds = new Rectangle(buttonX, buttonY, buttonWidth, buttonHeight);
         }
         private void _EditorImageReload(object sender, EventArgs e)
         {
