@@ -3513,7 +3513,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             string fontSize = (isLarge ? (isWide ? "16px" : "18px") : (isWide ? "8px" : "9px"));   // Dává optimální využití prostoru ikony
             string textX = (isLarge ? "15" : "7");         // Posunutí mírně doleva dává správný grafický výsledek, na rozdíl od středu: (isLarge ? "16" : "8");
             string textY = (isLarge ? (isWide ? "20" : "22") : (isWide ? "10" : "11"));
-            string weight = (isWide ? (isBold ? "600" : "300") : (isBold ? "600" : "300"));
+            string weight = (isBold ? (isLarge ? "400" : "600") : (isLarge ? "300" : "500"));      // dříve: (isWide ? (isBold ? "600" : "300") : (isBold ? "600" : "300"));
             string path2 = isLarge ?
                 (isBold ? "M30,30H2V2h28V30z" : "M31,31H1V1H31V31z") :
                 "M15,15H1V1h14V15z";
@@ -3534,7 +3534,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             svgContent = svgContent.Replace("'", "\"");
             return DxSvgImage.Create(caption, false, svgContent);
         }
-
         #endregion
     }
     #endregion
