@@ -2605,6 +2605,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (commonSkin.SvgPalettes[DevExpress.Skins.Skin.DefaultSkinPaletteName] != null)
                 commonSkin.SvgPalettes[DevExpress.Skins.Skin.DefaultSkinPaletteName].CustomPalette = palette;
 
+            // palette = null;
+
             edgeBounds = null;
             var svgImage = DxComponent.GetVectorImage(imageName, this.ExactName, sizeType);
             if (svgImage == null) return false;

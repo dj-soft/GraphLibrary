@@ -650,8 +650,9 @@ namespace TestDevExpress.Forms
             if (String.IsNullOrEmpty(xmlContent)) return;
             try
             {
-                barItem.ImageOptions.Reset();
-                barItem.ImageOptions.SvgImage = DxSvgImage.Create(xmlContent);
+                DxComponent.ApplyImage(barItem.ImageOptions, xmlContent, null, ResourceImageSizeType.Large);
+                //  barItem.ImageOptions.Reset();
+                //  barItem.ImageOptions.SvgImage = DxSvgImage.Create(xmlContent);
             }
             catch { }
         }
