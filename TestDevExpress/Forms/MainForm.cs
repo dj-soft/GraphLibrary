@@ -57,8 +57,9 @@ namespace TestDevExpress.Forms
             InitChart();               // 5
             InitMsgBox();              // 6
             InitEditors();             // 7
-            InitTreeView();            // 8
-            InitDragDrop();            // 9
+            InitSvgIcons();            // 8
+            InitTreeView();            // 9
+            InitDragDrop();            // 10
 
             // TestResources();
 
@@ -69,8 +70,8 @@ namespace TestDevExpress.Forms
 
             this.ApplyStyle();
 
-            // ActivatePage(7, true);
-            ActivatePage(10, true);
+            ActivatePage(8, true);
+            // ActivatePage(10, true);
         }
         private void MainForm_Disposed(object sender, EventArgs e)
         {
@@ -602,7 +603,7 @@ namespace TestDevExpress.Forms
             var barItem = (item as IRibbonItem)?.RibbonItem?.Target;
             if (barItem is null) return;
 
-            ActivatePage(7, true);
+            ActivatePage(8, true);
 
             if (!isCtrl)
                 _RunDjColorizeGetImage(barItem, enableSet);
@@ -625,7 +626,7 @@ namespace TestDevExpress.Forms
             if (dxSvgImage != null)
             {
                 string xmlContent = dxSvgImage.XmlContent;
-                _EditorXmlImage.Text = xmlContent;
+                _SvgIconXmlText.Text = xmlContent;
                 EditorImageName = xmlContent;
                 if (enableSet)
                     _DjColorizedBarItem = barItem;
@@ -646,7 +647,7 @@ namespace TestDevExpress.Forms
         private void _RunDjColorizeSetImage(XB.BarItem barItem)
         {
             if (barItem is null) return;
-            string xmlContent = _EditorXmlImage.Text;
+            string xmlContent = _SvgIconXmlText.Text;
             if (String.IsNullOrEmpty(xmlContent)) return;
             try
             {
@@ -2744,7 +2745,6 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
 
             PrepareEditorToken();
             PrepareEditorButtonEdit();
-            PrepareEditorImage();
         }
         #region Editor - Token
         private void PrepareEditorToken()
@@ -2947,65 +2947,108 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
         private DxTextEdit _EditorText3;
         private DxButtonEdit _EditorTextButton3;
         #endregion
-        #region EditorImage
-        private void PrepareEditorImage()
+        #endregion
+        #region Svg ikony
+        private void InitSvgIcons()
         {
-            _PanelEditors.ClientSizeChanged += _PanelEditors_ClientSizeChanged;
-            _EditorXmlImage = new DxMemoEdit();
-            _EditorXmlImage.Font = new Font(FontFamily.GenericMonospace, 11f, FontStyle.Bold);
-            _PanelEditors.Controls.Add(_EditorXmlImage);
-            _EditorReload = DxComponent.CreateDxSimpleButton(766, 70, 160, 26, _PanelEditors, "Reload SvgImage", _EditorImageReload);
-            _EditorImage1 = new DxImageArea() { ImageName = _EditorImageName, BackColor = Color.FromArgb(60, Color.Wheat), BorderColor = Color.FromArgb(120, Color.Black), EdgeColor = Color.FromArgb(120, Color.Violet) };
-            _PanelEditors.PaintedItems.Add(_EditorImage1);
-            _EditorImageDoLayout();
+            AddNewPage("SVG ikony", PrepareSvgIcons);
         }
-        private void _PanelEditors_ClientSizeChanged(object sender, EventArgs e)
+        private DxPanelControl _PanelSvgIcons;
+        private void PrepareSvgIcons(DxPanelControl panel)
         {
-            _EditorImageDoLayout();
+            _PanelSvgIcons = panel;
+
+            PrepareSvgIconsContent();
         }
-        private void _EditorImageDoLayout()
+        private void PrepareSvgIconsContent()
         {
-            var clientSize = _PanelEditors.ClientSize;
+            _PanelSvgIcons.ClientSizeChanged += _PanelSvgIcons_ClientSizeChanged;
+            _SvgIconXmlText = new DxMemoEdit();
+            _SvgIconXmlText.Font = new Font(FontFamily.GenericMonospace, 11f, FontStyle.Bold);
+            _PanelSvgIcons.Controls.Add(_SvgIconXmlText);
+            _SvgIconReloadButton = DxComponent.CreateDxSimpleButton(766, 70, 160, 26, _PanelSvgIcons, "Reload SvgImage", _SvgIconReload);
+            _SvgIconImage1 = new DxImageArea()
+            {
+                ImageName = _EditorImageName,
+                UseCustomPalette = true,
+                // BackColor = Color.FromArgb(60, Color.Wheat), 
+                BorderColor = Color.FromArgb(120, Color.Black),
+                EdgeColor = Color.FromArgb(120, Color.Violet),
+                DotColor = Color.FromArgb(100, Color.DarkMagenta)
+            };
+            _SvgIconImage2 = new DxImageArea()
+            {
+                ImageName = _EditorImageName,
+                UseCustomPalette = false,
+                // BackColor = Color.FromArgb(60, Color.Wheat),
+                BorderColor = Color.FromArgb(120, Color.Black),
+                EdgeColor = Color.FromArgb(120, Color.Violet),
+                DotColor = Color.FromArgb(100, Color.DarkMagenta)
+            };
+            _PanelSvgIcons.PaintedItems.Add(_SvgIconImage1);
+            _PanelSvgIcons.PaintedItems.Add(_SvgIconImage2);
+            _PanelSvgDoLayout();
+        }
+        private void _PanelSvgIcons_ClientSizeChanged(object sender, EventArgs e)
+        {
+            _PanelSvgDoLayout();
+        }
+        private void _PanelSvgDoLayout()
+        {
+            var clientSize = _PanelSvgIcons.ClientSize;
 
-            var button1RBounds = _EditorTextButton1.Bounds;
-            var button3LBounds = _EditorText3.Bounds;
+            int contentY = 36;
 
-            int minWidth = 8;
-            int maxWidth = 288;
-            int minHeight = 8;
-            int maxHeight = 256;
+            int minEditWidth = 300;
+            int minImgWidth = 16;
+            int maxImgWidth = 388;
+            int minImgHeight = 16;
+            int maxImgHeight = 320;
 
-            int imageX = button1RBounds.Right + 6;
-            int imageY = button1RBounds.Top;
+            int imageX = clientSize.Width - 6 - maxImgWidth;
+            int image1Y = contentY;
             int imageRight = clientSize.Width - 6;
             int imageBottom = clientSize.Height - 6;
             int imageWidth = imageRight - imageX;
-            int imageHeight = imageBottom - imageY;
-            if (imageWidth < minWidth)
+            int imageHeight = (imageBottom - image1Y - 6) / 2;
+            if (imageWidth < minImgWidth)
             {
-                imageWidth = minWidth;
+                imageWidth = minImgWidth;
                 imageX = imageRight - imageWidth;
             }
-            if (imageWidth > maxWidth)
+            if (imageWidth > maxImgWidth)
             {
-                imageWidth = maxWidth;
+                imageWidth = maxImgWidth;
                 imageX = imageRight - imageWidth;
             }
-            if (imageHeight < minHeight)
+            if (imageHeight < minImgHeight)
             {
-                imageHeight = minHeight;
-                imageY = imageBottom - imageHeight;
+                imageHeight = minImgHeight;
+                image1Y = imageBottom - imageHeight;
             }
-                if (imageHeight > maxHeight)
+            if (imageHeight > maxImgHeight)
             {
-                imageHeight = maxHeight;
-                imageBottom = imageY + imageHeight;
+                imageHeight = maxImgHeight;
+                imageBottom = image1Y + imageHeight;
             }
+            int image2Y = image1Y + imageHeight + 6;
 
-            int editX = button3LBounds.X;
-            int editY = button3LBounds.Bottom + 6;
+            int editX = 6;
+            int editY = contentY;
             int editRight = imageX - 6;
             int editWidth = editRight - editX;
+            if (editWidth < minEditWidth)
+            {
+                editWidth = minEditWidth;
+                editRight = editX + editWidth;
+                imageX = editRight + 6;
+                imageWidth = imageRight - imageX;
+                if (imageWidth < minImgWidth)
+                {
+                    imageWidth = minImgWidth;
+                    imageRight = imageX + imageWidth;
+                }
+            }
             int editBottom = clientSize.Height - 6;
             int editHeight = editBottom - editY;
 
@@ -3013,40 +3056,42 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
             int buttonWidth = imageWidth;
             if (buttonWidth < 100) buttonWidth = 100;
             int buttonX = buttonRight - buttonWidth;
-            int buttonBottom = imageY - 6;
+            int buttonBottom = image1Y - 6;
             int buttonHeight = 26;
             int buttonY = buttonBottom - buttonHeight;
-            _EditorXmlImage.Bounds = new Rectangle(editX, editY, editWidth, editHeight);
-            _EditorImage1.Bounds = new Rectangle(imageX, imageY, imageWidth, imageHeight);
-            _EditorReload.Bounds = new Rectangle(buttonX, buttonY, buttonWidth, buttonHeight);
+
+            _SvgIconXmlText.Bounds = new Rectangle(editX, editY, editWidth, editHeight);
+            _SvgIconImage1.Bounds = new Rectangle(imageX, image1Y, imageWidth, imageHeight);
+            _SvgIconImage2.Bounds = new Rectangle(imageX, image2Y, imageWidth, imageHeight);
+            _SvgIconReloadButton.Bounds = new Rectangle(buttonX, buttonY, buttonWidth, buttonHeight);
         }
-        private void _EditorImageReload(object sender, EventArgs e)
+        private void _SvgIconReload(object sender, EventArgs e)
         {
-            string xmlContent = _EditorXmlImage.Text;
+            string xmlContent = _SvgIconXmlText.Text;
             EditorImageName = xmlContent;
             _RunDjColorizeSetImage();
         }
         /// <summary>
         /// Obrázek na záložce Editor 
         /// </summary>
-        protected string EditorImageName 
+        protected string EditorImageName
         {
             get { return _EditorImageName; }
-            set 
+            set
             {
                 _EditorImageName = value;
-                if (_EditorImage1 != null)
-                {
-                    _EditorImage1.ImageName = value;
-                    _PanelEditors.Invalidate();
-                }
+                if (_SvgIconImage1 != null)
+                    _SvgIconImage1.ImageName = value;
+                if (_SvgIconImage2 != null)
+                    _SvgIconImage2.ImageName = value;
+                _PanelSvgIcons?.Invalidate();
             }
         }
         private string _EditorImageName = "pic_0/Menu/frmcopy";
-        private DxSimpleButton _EditorReload;
-        private DxImageArea _EditorImage1;
-        private DxMemoEdit _EditorXmlImage;
-        #endregion
+        private DxSimpleButton _SvgIconReloadButton;
+        private DxImageArea _SvgIconImage1;
+        private DxImageArea _SvgIconImage2;
+        private DxMemoEdit _SvgIconXmlText;
         #endregion
         #region TreeView
         private void InitTreeView()

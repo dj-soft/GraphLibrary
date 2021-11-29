@@ -2455,6 +2455,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             Visible = true;
             BackColor = null;
             BorderColor = null;
+            DotColor = null;
         }
         /// <summary>
         /// Souřadnice.
@@ -2481,6 +2482,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Prvek je viditelný
         /// </summary>
         public bool Visible { get; set; }
+        /// <summary>
+        /// Použít testovací paletu?
+        /// </summary>
+        public bool UseCustomPalette { get; set; }
         /// <summary>
         /// Jméno obrázku.
         /// Default = null. Nekreslí se nic.
@@ -2515,6 +2520,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public Color? BorderColor { get; set; }
         /// <summary>
+        /// Barva teček vyznačujících pixely.
+        /// <para/>
+        /// Doporučuje se použít průhlednost (A kanál), protože prvek vykresluje každou pátou tečku 2x přes sebe, tím jsou tyto tečky výraznější.
+        /// Ale pokud NENÍ barva zadána s určitou průhledností, pak se tento efekt neprojeví.
+        /// </summary>
+        public Color? DotColor { get; set; }
+        /// <summary>
         /// Barva hrany prostoru pro Image, default: null = nekreslí se. Akceptuje se Alpha channel.
         /// Kreslí se v souřadnici vlastního obrázku po jeho zarovnání.
         /// </summary>
@@ -2532,11 +2544,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             var bounds = this.Bounds;
 
+            int d = 0;
             if (BackColor.HasValue)
                 e.Graphics.FillRectangle(DxComponent.PaintGetSolidBrush(BackColor.Value), bounds);
             if (BorderColor.HasValue)
             {
-                Rectangle borderBounds = new Rectangle(bounds.X, bounds.Y, bounds.Width - 1, bounds.Height - 1);
+                Rectangle borderBounds = new Rectangle(bounds.X, bounds.Y, bounds.Width + d, bounds.Height + d);
                 e.Graphics.DrawRectangle(DxComponent.PaintGetPen(BorderColor.Value), borderBounds);
             }
 
@@ -2547,24 +2560,29 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (String.IsNullOrEmpty(imageName)) return;
 
             Rectangle? edgeBounds = null;
+            Rectangle? viewBounds = null;
             bool isPainted = false;
             try
             {
                 bool preferVector = this.IsPreferredVectorImage ?? DxComponent.IsPreferredVectorImage;
                 if (preferVector)
-                    isPainted = TryPaintVector(e.Graphics, imageName, sizeTypeV, bounds, out edgeBounds);
+                    isPainted = TryPaintVector(e.Graphics, imageName, sizeTypeV, bounds, out edgeBounds, out viewBounds);
                 if (!isPainted)
-                    isPainted = TryPaintBitmap(e.Graphics, imageName, sizeTypeB, bounds, out edgeBounds);
+                    isPainted = TryPaintBitmap(e.Graphics, imageName, sizeTypeB, bounds, out edgeBounds, out viewBounds);
                 if (!isPainted)
-                    isPainted = TryPaintVector(e.Graphics, imageName, sizeTypeV, bounds, out edgeBounds);
+                    isPainted = TryPaintVector(e.Graphics, imageName, sizeTypeV, bounds, out edgeBounds, out viewBounds);
             }
             catch { }
 
             // Okolo prostoru reálného Image mohu vykreslit linku v barvě EdgeColor:
             if (isPainted && edgeBounds.HasValue && this.EdgeColor.HasValue)
             {
-                Rectangle borderBounds = new Rectangle(edgeBounds.Value.X, edgeBounds.Value.Y, edgeBounds.Value.Width - 1, edgeBounds.Value.Height - 1);
+                Rectangle borderBounds = new Rectangle(edgeBounds.Value.X, edgeBounds.Value.Y, edgeBounds.Value.Width + d, edgeBounds.Value.Height + d);
                 e.Graphics.DrawRectangle(DxComponent.PaintGetPen(EdgeColor.Value), borderBounds);
+
+                // Mohu vykreslit tečky v místech pixelů:
+                if (viewBounds.HasValue && this.DotColor.HasValue)
+                    PaintPixelDots(e.Graphics, edgeBounds.Value, viewBounds.Value);
             }
         }
         /// <summary>
@@ -2575,9 +2593,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="sizeType"></param>
         /// <param name="bounds"></param>
         /// <param name="edgeBounds"></param>
+        /// <param name="viewBounds"></param>
         /// <returns></returns>
-        private bool TryPaintVector(Graphics graphics, string imageName, ResourceImageSizeType sizeType, Rectangle bounds, out Rectangle? edgeBounds)
+        private bool TryPaintVector(Graphics graphics, string imageName, ResourceImageSizeType sizeType, Rectangle bounds, out Rectangle? edgeBounds, out Rectangle? viewBounds)
         {
+            viewBounds = null;
             /*
             var svgPaletteName = DevExpress.LookAndFeel.UserLookAndFeel.Default.ActiveSvgPaletteName;
 
@@ -2587,31 +2607,32 @@ namespace Noris.Clients.Win.Components.AsolDX
             var svgPalette = customSvgPalettes.Values.LastOrDefault();
             */
 
-            //DevExpress.Utils.Svg.SvgStyle s;
-            //DevExpress.Utils.Svg.sty
-            //s.Attributes.
-            DevExpress.Utils.Svg.SvgPalette palette = new DevExpress.Utils.Svg.SvgPalette();
-            palette.Colors.Add(new DevExpress.Utils.Svg.SvgColor("Modrá", Color.FromArgb(33, 33, 240)));
-            palette.Colors.Add(new DevExpress.Utils.Svg.SvgColor("Fialová", Color.FromArgb(240, 33, 240)));
-            palette.Colors.Add(new DevExpress.Utils.Svg.SvgColor("Zelenkavá", Color.FromArgb(190, 210, 190)));
-            DevExpress.Utils.Svg.SvgPaletteKey key = new DevExpress.Utils.Svg.SvgPaletteKey(99, "Nephrite");
+            DevExpress.Utils.Svg.SvgPalette palette = null;
 
-            var commonSkin = DevExpress.Skins.CommonSkins.GetSkin(DevExpress.LookAndFeel.UserLookAndFeel.Default);
-            var ribbonSkin = DevExpress.Skins.RibbonSkins.GetSkin(DevExpress.LookAndFeel.UserLookAndFeel.Default);
-            var barSkin = DevExpress.Skins.BarSkins.GetSkin(DevExpress.LookAndFeel.UserLookAndFeel.Default);
-            ribbonSkin.CustomSvgPalettes.GetOrAdd(key, k => palette);
-            ribbonSkin.SvgPalettes.GetOrAdd(key, k => palette);
+            if (this.UseCustomPalette)
+            {
+                palette = new DevExpress.Utils.Svg.SvgPalette();
+                palette.Colors.Add(new DevExpress.Utils.Svg.SvgColor("Modrá", Color.FromArgb(33, 33, 240)));
+                palette.Colors.Add(new DevExpress.Utils.Svg.SvgColor("Fialová", Color.FromArgb(240, 33, 240)));
+                palette.Colors.Add(new DevExpress.Utils.Svg.SvgColor("Zelenkavá", Color.FromArgb(190, 210, 190)));
+                DevExpress.Utils.Svg.SvgPaletteKey key = new DevExpress.Utils.Svg.SvgPaletteKey(99, "Nephrite");
 
-            if (commonSkin.SvgPalettes[DevExpress.Skins.Skin.DefaultSkinPaletteName] != null)
-                commonSkin.SvgPalettes[DevExpress.Skins.Skin.DefaultSkinPaletteName].CustomPalette = palette;
+                var commonSkin = DevExpress.Skins.CommonSkins.GetSkin(DevExpress.LookAndFeel.UserLookAndFeel.Default);
+                var ribbonSkin = DevExpress.Skins.RibbonSkins.GetSkin(DevExpress.LookAndFeel.UserLookAndFeel.Default);
+                var barSkin = DevExpress.Skins.BarSkins.GetSkin(DevExpress.LookAndFeel.UserLookAndFeel.Default);
+                ribbonSkin.CustomSvgPalettes.GetOrAdd(key, k => palette);
+                ribbonSkin.SvgPalettes.GetOrAdd(key, k => palette);
 
-            // palette = null;
+                if (commonSkin.SvgPalettes[DevExpress.Skins.Skin.DefaultSkinPaletteName] != null)
+                    commonSkin.SvgPalettes[DevExpress.Skins.Skin.DefaultSkinPaletteName].CustomPalette = palette;
+            }
 
             edgeBounds = null;
             var svgImage = DxComponent.GetVectorImage(imageName, this.ExactName, sizeType);
             if (svgImage == null) return false;
             DxSvgImage.RenderTo(svgImage, graphics, bounds, out var imageBounds, Alignment, palette);
             if (imageBounds.HasValue) edgeBounds = Rectangle.Ceiling(imageBounds.Value);
+            viewBounds = Rectangle.Ceiling((svgImage is DxSvgImage dxSvgImage) ? dxSvgImage.ViewBounds : DxSvgImage.Create(svgImage).ViewBounds);
             return true;
         }
         /// <summary>
@@ -2622,16 +2643,54 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="sizeType"></param>
         /// <param name="bounds"></param>
         /// <param name="edgeBounds"></param>
+        /// <param name="viewBounds"></param>
         /// <returns></returns>
-        private bool TryPaintBitmap(Graphics graphics, string imageName, ResourceImageSizeType sizeType, Rectangle bounds, out Rectangle? edgeBounds)
+        private bool TryPaintBitmap(Graphics graphics, string imageName, ResourceImageSizeType sizeType, Rectangle bounds, out Rectangle? edgeBounds, out Rectangle? viewBounds)
         {
             edgeBounds = null;
+            viewBounds = null;
             var bmpImage = DxComponent.GetBitmapImage(imageName, sizeType, exactName: this.ExactName);
             if (bmpImage == null) return false;
-            RectangleF imageBounds = ((SizeF)bmpImage.Size).ZoomTo((RectangleF)bounds, Alignment);
+            var imageSize = bmpImage.Size;
+            RectangleF imageBounds = ((SizeF)imageSize).ZoomTo((RectangleF)bounds, Alignment);
             graphics.DrawImage(bmpImage, imageBounds);
             edgeBounds = Rectangle.Ceiling(imageBounds);
+            viewBounds = new Rectangle(Point.Empty, imageSize);
             return true;
+        }
+        /// <summary>
+        /// Vykreslí tečky na hranách pixelů
+        /// </summary>
+        /// <param name="graphics"></param>
+        /// <param name="edgeBounds"></param>
+        /// <param name="viewBounds"></param>
+        private void PaintPixelDots(Graphics graphics, Rectangle edgeBounds, Rectangle viewBounds)
+        {
+            if (!edgeBounds.HasPixels() || !viewBounds.HasPixels()) return;
+
+            float left = edgeBounds.Left;
+            float right = edgeBounds.Right;
+            float top = edgeBounds.Top;
+            float bottom = edgeBounds.Bottom;
+            float addX = (float)edgeBounds.Width / (float)viewBounds.Width;
+            float addY = (float)edgeBounds.Height / (float)viewBounds.Height;
+            var brush = DxComponent.PaintGetSolidBrush(this.DotColor.Value);
+            Rectangle r = new Rectangle(0, 0, 1, 1);
+            int ix = 0;
+            for (float x = left; x <= right; x += addX)
+            {
+                int iy = 0;
+                for (float y = top; y <= bottom; y += addY)
+                {
+                    r.X = (int)Math.Round(x, 0);
+                    r.Y = (int)Math.Round(y, 0);
+                    graphics.FillRectangle(brush, r);
+                    if (((ix % 5) == 0) || ((iy % 5) == 0))
+                        graphics.FillRectangle(brush, r);
+                    iy++;
+                }
+                ix++;
+            }
         }
     }
     #endregion

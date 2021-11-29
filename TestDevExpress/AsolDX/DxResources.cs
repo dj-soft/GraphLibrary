@@ -3114,6 +3114,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Z principu nelze setovat - instance <see cref="DxSvgImage"/> stejně jako <see cref="SvgImage"/> je immutable.
         /// </summary>
         public string XmlContent { get { return this.ToXmlString(); } }
+        /// <summary>
+        /// Souřadnice image (Offset + Size)
+        /// </summary>
+        public RectangleF ViewBounds { get { return new RectangleF((float)this.OffsetX, (float)this.OffsetY, (float)this.Width, (float)this.Height); } }
         #endregion
         #region RenderTo Graphics
         /// <summary>
@@ -3180,9 +3184,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="svgImage"></param>
         /// <param name="graphics"></param>
         /// <param name="bounds"></param>
-        /// <param name="imageBounds"></param>
-        /// <param name="svgPalette">SVG paleta pro korekce barev. Může být null.</param>
         /// <param name="alignment "></param>
+        /// <param name="svgPalette">SVG paleta pro korekce barev. Může být null.</param>
+        /// <param name="imageBounds"></param>
         private static void _RenderTo(SvgImage svgImage, Graphics graphics, Rectangle bounds, ContentAlignment alignment, DevExpress.Utils.Design.ISvgPaletteProvider svgPalette, out RectangleF? imageBounds)
         {
             imageBounds = null;
@@ -3200,7 +3204,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             try
             {
                 graphics.SetClip(bounds);
-
                 SizeF imgSize = new SizeF((float)svgImage.Width, (float)svgImage.Height);
                 RectangleF imgBounds = imgSize.ZoomTo((RectangleF)bounds, alignment);
                 graphics.Transform = new System.Drawing.Drawing2D.Matrix(1f, 0f, 0f, 1f, imgBounds.X, imgBounds.Y);
@@ -3238,15 +3241,16 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 switch (genericItems[1])
                 {
-                    case "circlegradient":
-                    case "circle": return _TryGetGenericSvgCircle(genericItems, sizeType, ref dxSvgImage);
+                    case "circlegradient1": return _TryGetGenericSvgCircleGradient1(genericItems, sizeType, ref dxSvgImage);
+                    case "circle": return _TryGetGenericSvgCircleGradient1(genericItems, sizeType, ref dxSvgImage);
+                    case "text": return _TryGetGenericSvgText(genericItems, sizeType, ref dxSvgImage);
                 }
             }
             return false;
         }
         /// <summary>
         /// Z dodané definice a pro danou velikost vygeneruje SvgImage obsahující Circle s Gradient výplní.
-        /// Očekávaná deklarace zní: "?circlegradient?violet?75", 
+        /// Očekávaná deklarace zní: "?circlegradient1?violet?75", 
         /// kde "circlegradient" je klíčové slovo (může být "circle");
         /// kde "violet" je barva středu (default = Green);
         /// kde "65" je 65% velký kruh v rámci ikony (default = 80%);
@@ -3255,7 +3259,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="sizeType"></param>
         /// <param name="dxSvgImage"></param>
         /// <returns></returns>
-        private static bool _TryGetGenericSvgCircle(string[] genericItems, ResourceImageSizeType? sizeType, ref DxSvgImage dxSvgImage)
+        private static bool _TryGetGenericSvgCircleGradient1(string[] genericItems, ResourceImageSizeType? sizeType, ref DxSvgImage dxSvgImage)
         {
             int size = (sizeType.HasValue && sizeType.Value == ResourceImageSizeType.Small ? 16 : 32);
             string xmlHeader = _GetXmlContentHeader(size);
@@ -3289,11 +3293,83 @@ namespace Noris.Clients.Win.Components.AsolDX
 </svg>
     */
         }
-
-        private static string _GetXmlColor(Color color)
+        /// <summary>
+        ///  Z dodané definice a pro danou velikost vygeneruje SvgImage obsahující text.
+        /// Očekávaná deklarace zní: "?text?ABCDEF?75", 
+        /// kde "text" je klíčové slovo (může být "circle");
+        /// kde "ABCDEF" je text (akceptují se nejvýše dva první znaky)
+        /// kde ...
+        /// </summary>
+        /// <param name="genericItems"></param>
+        /// <param name="sizeType"></param>
+        /// <param name="dxSvgImage"></param>
+        /// <returns></returns>
+        private static bool _TryGetGenericSvgText(string[] genericItems, ResourceImageSizeType? sizeType, ref DxSvgImage dxSvgImage)
         {
-            if (color.IsNamedColor) return color.Name.ToLower();
-            return "#" + color.R.ToString("X2") + color.G.ToString("X2") + color.B.ToString("X2");
+            int size = (sizeType.HasValue && sizeType.Value == ResourceImageSizeType.Small ? 16 : 32);
+            
+            string text = _GetGenericParam(genericItems, 2, "");                         // 2: Text, bude pouze Trimován
+            bool isBold = (_GetGenericParam(genericItems, 3, "N").StartsWith("B", StringComparison.InvariantCultureIgnoreCase));  // 3: Bold
+            string fontFamily = _GetGenericParam(genericItems, 4, "sans-serif");         // 4: Font: Default = bezpatkové písmo
+            string textClass = _GetGenericParam(genericItems, 5, "Black");               // 5: Barva písma: Default = černá
+            string borderClass = _GetGenericParam(genericItems, 6, "Blue");              // 6: Barva rámečku: Default = modrá, smí být none
+            string fillClass = _GetGenericParam(genericItems, 7, "White");               // 7: Barva podkladu: Default = bílá
+
+            TextInfo textInfo = new TextInfo(text, size, fontFamily, isBold);
+
+            bool isLarge = (sizeType != ResourceImageSizeType.Small);
+            string path2 = isLarge ?
+                (isBold ? "M30,30H2V2h28V30z" : "M31,31H1V1H31V31z") :
+                "M15,15H1V1h14V15z";
+            string path1 = isLarge ?
+                "M31,0H1C0.5,0,0,0.5,0,1v30c0,0.5,0.5,1,1,1h30c0.5,0,1-0.5,1-1V1C32,0.5,31.5,0,31,0z " + path2 :
+                "M15.5,0H0.5C0.25,0,0,0.25,0,0.5v15c0,0.25,0.25,0.5,0.5,0.5h15c0.25,0,0.5-0.25,0.5-0.5V0.5C16,0.25,15.75,0,15.5,0z " + path2;
+
+            string xmlHeader = _GetXmlContentHeader(size);
+            string xmlStyles = _GetXmlDevExpressStyles();
+            string xmlText = $@"    <g id='icon{textInfo.Text}' style='font-size: {textInfo.FontSize}; text-anchor: middle; font-family: {textInfo.FontFamily}; font-weight: {textInfo.FontWeight}'>
+      <path d='{path1}' class='{borderClass}' />
+      <path d='{path2}' class='{fillClass}' />
+      <text x='{textInfo.TextX}' y='{textInfo.TextY}' class='{textClass}'>{textInfo.Text}</text>
+    </g>
+";
+            string xmlFooter = _GetXmlContentFooter();
+
+            string xmlContent = xmlHeader + xmlStyles + xmlText + xmlFooter;
+            xmlContent = xmlContent.Replace("'", "\"");
+            dxSvgImage = DxSvgImage.Create(text, false, xmlContent);
+            return true;
+        }
+        private class TextInfo
+        {
+            /// <summary>
+            /// 
+            /// </summary>
+            /// <param name="text"></param>
+            /// <param name="size"></param>
+            /// <param name="fontFamily"></param>
+            /// <param name="isBold">true = písmo i rámeček (pro sizeType = Large) bude silnější, false = tenčí</param>
+            public TextInfo(string text, int size, string fontFamily, bool isBold)
+            {
+                text = (text ?? "").Trim();
+                if (text.Length > 2) text = text.Substring(0, 2);
+                bool isLarge = (size >= 32);
+
+                this.Text = text;
+                this.IsWide = (text == "MM" || text == "OO" || text == "WW" || text == "QQ" || text == "AA");
+                this.FontFamily = fontFamily;
+                this.FontSize = (isLarge ? (IsWide ? "16px" : "18px") : (IsWide ? "8px" : "9px"));      // Dává optimální využití prostoru ikony
+                this.FontWeight = (isBold ? (isLarge ? "600" : "800") : (isLarge ? "300" : "500"));     // dříve: (isWide ? (isBold ? "600" : "300") : (isBold ? "600" : "300"));
+                this.TextX = (isLarge ? "15" : "7");         // Posunutí mírně doleva dává správný grafický výsledek, na rozdíl od středu: (isLarge ? "16" : "8");
+                this.TextY = (isLarge ? (IsWide ? "20" : "22") : (IsWide ? "10" : "11"));
+            }
+            public string Text;
+            public bool IsWide;
+            public string FontFamily;
+            public string FontSize;
+            public string FontWeight;
+            public string TextX;
+            public string TextY;
         }
 
         /* Dokument s podbarvením bez ohnutého rohu
@@ -3319,11 +3395,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /* Dokument bez linek s ohnutým rohem a podbarvením
 ﻿<?xml version='1.0' encoding='UTF-8'?>
 <svg x="0px" y="0px" viewBox="0 0 32 32" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xml:space="preserve" id="New" style="enable-background:new 0 0 32 32">
-  <style type="text/css">
-	.Black{fill:#727272;}
-</style>
-  <path d="M24,26H8V6h10v5c0,0.6,0.4,1,1,1h5  V26z" fill="violet"  />
-  <path d="M19,4H7C6.4,4,6,4.4,6,5v22c0,0.6,0.4,1,1,1h18c0.6,0,1-0.4,1-1V11L19,4z M24,26H8V6h10v5c0,0.6,0.4,1,1,1h5  V26z" class="Black" />
+  <style type="text/css"> .Black{fill:#727272;} </style>
+  <g id="DocumentColor">
+    <path d="M24,26H8V6h10v5c0,0.6,0.4,1,1,1h5  V26z" fill="violet"  />
+    <path d="M19,4H7C6.4,4,6,4.4,6,5v22c0,0.6,0.4,1,1,1h18c0.6,0,1-0.4,1-1V11L19,4z M24,26H8V6h10v5c0,0.6,0.4,1,1,1h5  V26z" class="Black" />
+  </g>
 </svg>
         */
 
@@ -3348,7 +3424,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         private static string _GetXmlDevExpressStyles()
         {
-            string xml = @"  <style type='text/css'> .White{fill:#FFFFFF;} .Red{fill:#D11C1C;} .Green{fill:#039C23;} .Blue{fill:#1177D7;} .Yellow{fill:#FFB115;} .Black{fill:#727272;} .st0{opacity:0.75;} .st1{opacity:0.5;} </style>
+            string xml = @"    <style type='text/css'> .White{fill:#FFFFFF;} .Red{fill:#D11C1C;} .Green{fill:#039C23;} .Blue{fill:#1177D7;} .Yellow{fill:#FFB115;} .Black{fill:#727272;} .st0{opacity:0.75;} .st1{opacity:0.5;} </style>
 ";
             return xml.Replace("'", "\"");
         }
@@ -3468,6 +3544,16 @@ namespace Noris.Clients.Win.Components.AsolDX
             return (Color)value;
         }
         /// <summary>
+        /// Konvertuje dodanou barvu do stringu vhodného pro SVG
+        /// </summary>
+        /// <param name="color"></param>
+        /// <returns></returns>
+        private static string _GetXmlColor(Color color)
+        {
+            if (color.IsNamedColor) return color.Name.ToLower();
+            return "#" + color.R.ToString("X2") + color.G.ToString("X2") + color.B.ToString("X2");
+        }
+        /// <summary>
         /// Ze vstupního stringu detekuje parametry generického SVG
         /// </summary>
         /// <param name="imageName"></param>
@@ -3501,6 +3587,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             string text = DxComponent.GetCaptionForIcon(caption);
             bool isLarge = (sizeType != ResourceImageSizeType.Small);
+            int size = (isLarge ? 32 : 16);
 
             if (text.Length == 0) return null;
             bool isWide = (text == "MM" || text == "OO" || text == "WW" || text == "QQ" || text == "AA");
@@ -3508,7 +3595,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             string fillClass = "White";                    // Použití tříd se jmény DevExpress zajistí automatické přebarvení v různobarevných skinech
             string borderClass = "Blue";
             string textClass = "Black";
-            string svgSize = (isLarge ? "32" : "16");
             string fontFamily = "sans-serif";              // Vyžádáno bezpatkové písmo
             string fontSize = (isLarge ? (isWide ? "16px" : "18px") : (isWide ? "8px" : "9px"));   // Dává optimální využití prostoru ikony
             string textX = (isLarge ? "15" : "7");         // Posunutí mírně doleva dává správný grafický výsledek, na rozdíl od středu: (isLarge ? "16" : "8");
@@ -3520,19 +3606,20 @@ namespace Noris.Clients.Win.Components.AsolDX
             string path1 = isLarge ?
                 "M31,0H1C0.5,0,0,0.5,0,1v30c0,0.5,0.5,1,1,1h30c0.5,0,1-0.5,1-1V1C32,0.5,31.5,0,31,0z " + path2 :
                 "M15.5,0H0.5C0.25,0,0,0.25,0,0.5v15c0,0.25,0.25,0.5,0.5,0.5h15c0.25,0,0.5-0.25,0.5-0.5V0.5C16,0.25,15.75,0,15.5,0z " + path2;
-            string svgContent = @"﻿<?xml version='1.0' encoding='UTF-8'?>
-<svg x='0px' y='0px' viewBox='0 0 " + svgSize + @" " + svgSize + @"' 
-        version='1.1' xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' xml:space='preserve' id='Layer_1' 
-        style='enable-background:new 0 0 " + svgSize + @" " + svgSize + @"'>
-  <style type='text/css'> .White{fill:#FFFFFF;} .Red{fill:#D11C1C;} .Green{fill:#039C23;} .Blue{fill:#1177D7;} .Yellow{fill:#FFB115;} .Black{fill:#727272;} .st0{opacity:0.75;} .st1{opacity:0.5;} </style>
-  <g id='icon" + text + @"' style='font-size: " + fontSize + @"; text-anchor: middle; font-family: " + fontFamily + @"; font-weight: " + weight + @"'>
-    <path d='" + path1 + @"' class='" + borderClass + @"' />
-    <path d='" + path2 + @"' class='" + fillClass + @"' />
-    <text x='" + textX + @"' y='" + textY + @"' class='" + textClass + @"'>" + text + @"</text>
+
+            string xmlHeader = _GetXmlContentHeader(size);
+            string xmlStyles = _GetXmlDevExpressStyles();
+            string xmlText = $@"  <g id='icon{text}' style='font-size: {fontSize}; text-anchor: middle; font-family: {fontFamily}; font-weight: {weight}'>
+    <path d='{path1}' class='{borderClass}' />
+    <path d='{path2}' class='{fillClass}' />
+    <text x='{textX}' y='{textY}' class='{textClass}'>{text}</text>
   </g>
-</svg>";
-            svgContent = svgContent.Replace("'", "\"");
-            return DxSvgImage.Create(caption, false, svgContent);
+";
+            string xmlFooter = _GetXmlContentFooter();
+
+            string xmlContent = xmlHeader + xmlStyles + xmlText + xmlFooter;
+            xmlContent = xmlContent.Replace("'", "\"");
+            return DxSvgImage.Create(caption, false, xmlContent);
         }
         #endregion
     }
