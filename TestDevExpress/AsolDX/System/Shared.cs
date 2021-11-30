@@ -435,6 +435,7 @@ namespace Noris.WS.DataContracts.Desktop.Data
         {   // <?xml version="1.0" encoding="utf-16"?><id-persistent Version="2.00"><id-data><id-value id-value.Type="Noris.Clients.Win.Components.AsolDX.SvgImageArrayInfo"><Items><id-item><id-value ImageName="devav/actions/printexcludeevaluations.svg" /></id-item><id-item><id-value ImageName="devav/actions/about.svg" ImageRelativeBounds="60;60;60;60" /></id-item></Items></id-value></id-data></id-persistent>
             if (!String.IsNullOrEmpty(serial))
             {
+                serial = serial.Trim();
                 if (serial.StartsWith("<?xml version=") && serial.EndsWith("</id-persistent>"))
                 {   // Ze Serial:
                     object data = XmlSerializer.Persist.Deserialize(serial);
@@ -444,7 +445,7 @@ namespace Noris.WS.DataContracts.Desktop.Data
                         return true;
                     }
                 }
-                else if (serial.Contains(SvgImageArrayInfo.KeySplitDelimiter))
+                else if (serial.StartsWith(SvgImageArrayInfo.KeyItemBegin) && serial.EndsWith(SvgImageArrayInfo.KeyItemEnd))   //  serial.Contains(SvgImageArrayInfo.KeySplitDelimiter))
                 {   // Z Key = ten je ve tvaru:  «name1»«name2<X.Y.W.H>»    rozdělím v místě oddělovače »« ,  získám dva prvky   «name1    a    name2<X.Y.W.H>»   (v prvcích tedy může / nemusí být značka   «   anebo   »     (nemusí být u druhého prvku ze tří :-) )
                     SvgImageArrayInfo array = new SvgImageArrayInfo();
                     string[] serialItems = serial.Split(new string[] { SvgImageArrayInfo.KeySplitDelimiter }, StringSplitOptions.RemoveEmptyEntries);
@@ -520,15 +521,20 @@ namespace Noris.WS.DataContracts.Desktop.Data
         internal static bool TryDeserialize(string serialItem, out SvgImageArrayItem item)
         {
             item = null;
-            if (String.IsNullOrEmpty(serialItem) || serialItem.IndexOfAny("*?:\t\r\n".ToCharArray()) >= 0) return false;
+            if (String.IsNullOrEmpty(serialItem)) return false;
 
-            serialItem = serialItem.Replace(SvgImageArrayInfo.KeyItemBegin, "").Replace(SvgImageArrayInfo.KeyItemEnd, "");          // Odstraníme zbývající Begin a End značky   «   a   »  (pokud tam jsou)
+            serialItem = serialItem
+                .Replace(SvgImageArrayInfo.KeyItemBegin, "")
+                .Replace(SvgImageArrayInfo.KeyItemEnd, "")
+                .Trim();                                      // Odstraníme zbývající Begin a End značky   «   a   »  (pokud tam jsou)
+            if (!serialItem.StartsWith("?") && serialItem.IndexOfAny("*?:\t\r\n".ToCharArray()) >= 0) return false;
+
             var parts = serialItem.Split('<', '>');           // Z textu "imagename<0.0.60.30>" vytvořím tři prvky:    "imagename",    "0.0.60.30",    ""
             int count = parts.Length;
             if (parts.Length == 0) return false;
             string name = parts[0];
             if (String.IsNullOrEmpty(name)) return false;
-            name = name.Trim().ToLower();
+            name = name.Trim();
             Rectangle? bounds = null;
             if (parts.Length > 1)
             {

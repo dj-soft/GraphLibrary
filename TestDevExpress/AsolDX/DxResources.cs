@@ -3278,17 +3278,18 @@ namespace Noris.Clients.Win.Components.AsolDX
             dxSvgImage = DxSvgImage.Create(xmlContent);
             return true;
 
-            /*   Kolečko s Gradient výplní a posunutým středem
-﻿<?xml version='1.0' encoding='UTF-8'?>
-<svg x="0px" y="0px" width="32px" height="32px" viewBox="0 0 32 32" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" enable-background="new 0 0 32 32" xml:space="preserve" id="Layer_1">
+            /*     pro zadání    ?circlegradient1?violet?70    vygeneruje SVG:
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<svg x="0" y="0" width="32" height="32" viewBox="0 0 32 32" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" enable-background="new 0 0 32 32" xml:space="preserve" id="Layer_1">
   <g id="icon">
+    <style type="text/css"> .White{fill:#FFFFFF;} .Red{fill:#D11C1C;} .Green{fill:#039C23;} .Blue{fill:#1177D7;} .Yellow{fill:#FFB115;} .Black{fill:#727272;} .st0{opacity:0.75;} .st1{opacity:0.5;} </style>
     <defs>
-      <radialGradient id="MyGradient" gradientUnits="userSpaceOnUse" cx="18" cy="18" r="32" fx="24" fy="24">
-        <stop offset="0%" stop-color="blue" />
+      <radialGradient id="CircleGradient" gradientUnits="userSpaceOnUse" cx="20" cy="20" r="54" fx="17" fy="17">
+        <stop offset="0%" stop-color="violet" />
         <stop offset="100%" stop-color="white" />
       </radialGradient>
     </defs>
-    <circle cx="16" cy="16" r="15" fill="url(#MyGradient)" stroke="red" stroke-width="0"  />
+    <circle cx="16" cy="16" r="11" fill="url(#CircleGradient)" stroke="black" stroke-width="0"  />
   </g>
 </svg>
     */
@@ -3307,38 +3308,54 @@ namespace Noris.Clients.Win.Components.AsolDX
         private static bool _TryGetGenericSvgText(string[] genericItems, ResourceImageSizeType? sizeType, ref DxSvgImage dxSvgImage)
         {
             int size = (sizeType.HasValue && sizeType.Value == ResourceImageSizeType.Small ? 16 : 32);
-            
-            string text = _GetGenericParam(genericItems, 2, "");                         // 2: Text, bude pouze Trimován
-            bool isBold = (_GetGenericParam(genericItems, 3, "N").StartsWith("B", StringComparison.InvariantCultureIgnoreCase));  // 3: Bold
-            string fontFamily = _GetGenericParam(genericItems, 4, "sans-serif");         // 4: Font: Default = bezpatkové písmo
-            string textClass = _GetGenericParam(genericItems, 5, "Black");               // 5: Barva písma: Default = černá
-            string borderClass = _GetGenericParam(genericItems, 6, "Blue");              // 6: Barva rámečku: Default = modrá, smí být none
-            string fillClass = _GetGenericParam(genericItems, 7, "White");               // 7: Barva podkladu: Default = bílá
+
+            int p = 2;
+            string text = _GetGenericParam(genericItems, p++, "");                         // Text, bude pouze Trimován
+            string textClass = _GetGenericParam(genericItems, p++, "Black");               // Barva písma: Default = černá
+            string fontFamily = _GetGenericParam(genericItems, p++, "sans-serif");         // Font: Default = bezpatkové písmo
+            bool isBold = (_GetGenericParam(genericItems, p++, "N").StartsWith("B", StringComparison.InvariantCultureIgnoreCase));     // Bold
+            string borderClass = _GetGenericParam(genericItems, p++, "Blue");              // Barva rámečku: Default = modrá, smí být none
+            string fillClass = _GetGenericParam(genericItems, p++, "");                    // Barva podkladu: Default = průhledná
 
             TextInfo textInfo = new TextInfo(text, size, fontFamily, isBold);
 
-            bool isLarge = (sizeType != ResourceImageSizeType.Small);
-            string path2 = isLarge ?
-                (isBold ? "M30,30H2V2h28V30z" : "M31,31H1V1H31V31z") :
-                "M15,15H1V1h14V15z";
-            string path1 = isLarge ?
-                "M31,0H1C0.5,0,0,0.5,0,1v30c0,0.5,0.5,1,1,1h30c0.5,0,1-0.5,1-1V1C32,0.5,31.5,0,31,0z " + path2 :
-                "M15.5,0H0.5C0.25,0,0,0.25,0,0.5v15c0,0.25,0.25,0.5,0.5,0.5h15c0.25,0,0.5-0.25,0.5-0.5V0.5C16,0.25,15.75,0,15.5,0z " + path2;
-
             string xmlHeader = _GetXmlContentHeader(size);
             string xmlStyles = _GetXmlDevExpressStyles();
-            string xmlText = $@"    <g id='icon{textInfo.Text}' style='font-size: {textInfo.FontSize}; text-anchor: middle; font-family: {textInfo.FontFamily}; font-weight: {textInfo.FontWeight}'>
-      <path d='{path1}' class='{borderClass}' />
-      <path d='{path2}' class='{fillClass}' />
-      <text x='{textInfo.TextX}' y='{textInfo.TextY}' class='{textClass}'>{textInfo.Text}</text>
-    </g>
-";
+            string xmlTextBegin = textInfo.GetXmlGroupBegin();
+            string xmlPathBorder = _GetXmlPathBorderSquare(size, isBold, borderClass);
+            string xmlPathFill = _GetXmlPathFillSquare(size, isBold, fillClass);
+            string xmlTextText = textInfo.GetXmlGroupText(textClass);
             string xmlFooter = _GetXmlContentFooter();
 
-            string xmlContent = xmlHeader + xmlStyles + xmlText + xmlFooter;
-            xmlContent = xmlContent.Replace("'", "\"");
+            string xmlContent = xmlHeader + xmlStyles + xmlTextBegin + xmlPathBorder + xmlPathFill + xmlTextText + xmlFooter;
             dxSvgImage = DxSvgImage.Create(text, false, xmlContent);
             return true;
+
+            /*     pro zadání    ?text?OK    vygeneruje SVG:
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<svg x="0" y="0" width="32" height="32" viewBox="0 0 32 32" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" enable-background="new 0 0 32 32" xml:space="preserve" id="Layer_1">
+  <g id="icon">
+    <style type="text/css"> .White{fill:#FFFFFF;} .Red{fill:#D11C1C;} .Green{fill:#039C23;} .Blue{fill:#1177D7;} .Yellow{fill:#FFB115;} .Black{fill:#727272;} .st0{opacity:0.75;} .st1{opacity:0.5;} </style>
+    <g id='iconOK' style='font-size: 18px; text-anchor: middle; font-family: sans-serif; font-weight: 300'>
+      <path d="M1,0h30c0.5,0,1,0.5,1,1v30c0,0.5,-0.5,1,-1,1h-30c-0.5,0,-1,-0.5,-1,-1v-30c0,-0.5,0.5,-1,1,-1z M1,1v30h30v-30h-30z" class="Blue" />
+      <text x='15' y='22' class='Black'>OK</text>
+    </g>
+  </g>
+</svg>
+            */
+            /*     pro zadání    ?text?OK?Black??B?Blue?White    vygeneruje SVG:
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<svg x="0" y="0" width="32" height="32" viewBox="0 0 32 32" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" enable-background="new 0 0 32 32" xml:space="preserve" id="Layer_1">
+  <g id="icon">
+    <style type="text/css"> .White{fill:#FFFFFF;} .Red{fill:#D11C1C;} .Green{fill:#039C23;} .Blue{fill:#1177D7;} .Yellow{fill:#FFB115;} .Black{fill:#727272;} .st0{opacity:0.75;} .st1{opacity:0.5;} </style>
+    <g id='iconOK' style='font-size: 18px; text-anchor: middle; font-family: ; font-weight: 600'>
+      <path d="M1,0h30c0.5,0,1,0.5,1,1v30c0,0.5,-0.5,1,-1,1h-30c-0.5,0,-1,-0.5,-1,-1v-30c0,-0.5,0.5,-1,1,-1z M2,2v28h28v-28h-28z" class="Blue" />
+      <path d="M2,2h28v28h-28v-28z" class="White" />
+      <text x='15' y='22' class='Black'>OK</text>
+    </g>
+  </g>
+</svg>
+            */
         }
         private class TextInfo
         {
@@ -3352,7 +3369,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             public TextInfo(string text, int size, string fontFamily, bool isBold)
             {
                 text = (text ?? "").Trim();
-                if (text.Length > 2) text = text.Substring(0, 2);
+                // if (text.Length > 2) text = text.Substring(0, 2);
                 bool isLarge = (size >= 32);
 
                 this.Text = text;
@@ -3370,6 +3387,28 @@ namespace Noris.Clients.Win.Components.AsolDX
             public string FontWeight;
             public string TextX;
             public string TextY;
+            /// <summary>
+            /// Vrátí začátek grupy pro text, obsahuje popis fontu
+            /// </summary>
+            /// <returns></returns>
+            public string GetXmlGroupBegin()
+            {
+                string xmlText = $@"    <g id='icon{this.Text}' style='font-size: {this.FontSize}; text-anchor: middle; font-family: {this.FontFamily}; font-weight: {this.FontWeight}'>
+";
+                return xmlText;
+            }
+            /// <summary>
+            /// Vrátí konec grupy pro text, obsahuje text, jeho pozici a jeho třídu
+            /// </summary>
+            /// <param name="textClass"></param>
+            /// <returns></returns>
+            public string GetXmlGroupText(string textClass)
+            {
+                string xmlText = $@"      <text x='{this.TextX}' y='{this.TextY}' class='{textClass}'>{this.Text}</text>
+    </g>
+";
+                return xmlText;
+            }
         }
 
         /* Dokument s podbarvením bez ohnutého rohu
@@ -3391,7 +3430,6 @@ namespace Noris.Clients.Win.Components.AsolDX
   </g>
 </svg>        
         */
-
         /* Dokument bez linek s ohnutým rohem a podbarvením
 ﻿<?xml version='1.0' encoding='UTF-8'?>
 <svg x="0px" y="0px" viewBox="0 0 32 32" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xml:space="preserve" id="New" style="enable-background:new 0 0 32 32">
@@ -3402,7 +3440,20 @@ namespace Noris.Clients.Win.Components.AsolDX
   </g>
 </svg>
         */
-
+        /* Dokument s linkami, ohnutým rohem a podbarvením
+﻿<?xml version='1.0' encoding='UTF-8'?>
+<svg x="0px" y="0px" viewBox="0 0 32 32" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xml:space="preserve" id="New" style="enable-background:new 0 0 32 32">
+  <style type="text/css">
+	.Black{fill:#727272;}
+</style>
+  <path d="M24,26H8V6h10v5c0,0.6,0.4,1,1,1h5  V26z  " class="Yellow" />
+  <path d="M19,4H7C6.4,4,6,4.4,6,5v22c0,0.6,0.4,1,1,1h18c0.6,0,1-0.4,1-1V11L19,4z M24,26H8V6h10v5c0,0.6,0.4,1,1,1h5  V26z 
+M16,10H10v2H16v-2z 
+M22,14H10v2H22v-2z 
+M22,18H10v2H22v-2z 
+M22,22H10v2H22v-2z " class="Black" />
+</svg>
+        */
 
         /// <summary>
         /// Vrací XML text zahajující SVG image dané velikosti
@@ -3428,6 +3479,145 @@ namespace Noris.Clients.Win.Components.AsolDX
 ";
             return xml.Replace("'", "\"");
         }
+        /// <summary>
+        /// Vrátí element path, ve tvaru obdélníku (s kulatými rohy) vepsaného do dané velikosti (size), s okraji (padding) o síle okraje (isBold ? 2 : 1).
+        /// </summary>
+        /// <param name="size"></param>
+        /// <param name="isBold"></param>
+        /// <param name="borderClass"></param>
+        /// <param name="counterClockWise"></param>
+        /// <param name="padding"></param>
+        /// <returns></returns>
+        private static string _GetXmlPathBorderSquare(int size, bool isBold, string borderClass, bool counterClockWise = false, Padding? padding = null)
+        {
+            if (size <= 0 || String.IsNullOrEmpty(borderClass)) return "";
+
+            string pathData = _GetXmlPathDataBorderSquare(size, isBold, counterClockWise, padding);
+            string xml = $@"      <path d='{pathData}' class='{borderClass}' />
+";
+            return xml.Replace("'", "\"");
+        }
+        /// <summary>
+        ///  Vrátí čistá data pro element path, ve tvaru obdélníku (s kulatými rohy) vepsaného do dané velikosti (size), s okraji (padding) o síle okraje (isBold ? 2 : 1).
+        /// </summary>
+        /// <param name="size"></param>
+        /// <param name="isBold"></param>
+        /// <param name="counterClockWise"></param>
+        /// <param name="padding"></param>
+        /// <returns></returns>
+        private static string _GetXmlPathDataBorderSquare(int size, bool isBold, bool counterClockWise, Padding? padding = null)
+        {
+            if (size <= 0) return "";
+
+            Padding p = padding ?? Padding.Empty;
+            bool isLarge = (size >= 24);
+            int d = (isLarge ? 2 : 1);                     // Průměr kruhu zaoblení hran (=dva radiusy)
+            int w = size - (p.Horizontal + d);             // Šířka rovné části (tj. bez zaoblené části)
+            int h = size - (p.Vertical + d);               // Výška rovné části (tj. bez zaoblené části)
+            string r1 = _GetXmlNumber(0, d, 4);            // Deklarace křivky, polovina radiusu : pro large je zde "0.5", pro small je zde "0.25"
+            string r2 = _GetXmlNumber(0, d, 2);            // Deklarace křivky, celý radius      : pro large je zde "1", pro small je zde "0.50"
+
+            string xml, bx, by, tr, br, bl, tl;
+            if (!counterClockWise)
+            {   // Ve směru hodinových ručiček
+                bx = _GetXmlNumber(p.Left, d, 2);          // Počátek rovné části vlevo úplně nahoře, X
+                by = _GetXmlNumber(p.Top, 0, 1);           // Počátek rovné části vlevo úplně nahoře, Y
+                tr = _GetXmlQuadCurve(r1, r2, CurveDirections.RightDown);
+                br = _GetXmlQuadCurve(r1, r2, CurveDirections.DownLeft);
+                bl = _GetXmlQuadCurve(r1, r2, CurveDirections.LeftUp);
+                tl = _GetXmlQuadCurve(r1, r2, CurveDirections.UpRight);
+
+                xml = $"M{bx},{by}h{w}{tr}v{h}{br}h-{w}{bl}v-{h}{tl}z " + _GetXmlPathDataFillSquare(size, isBold, true, padding);
+            }
+            else
+            {   // V protisměru
+                bx = _GetXmlNumber(p.Left, 0, 1);          // Počátek rovné části úplně vlevo nahoře, X
+                by = _GetXmlNumber(p.Top, d, 2);           // Počátek rovné části úplně vlevo nahoře, Y
+                bl = _GetXmlQuadCurve(r1, r2, CurveDirections.DownRight);
+                br = _GetXmlQuadCurve(r1, r2, CurveDirections.RightUp);
+                tr = _GetXmlQuadCurve(r1, r2, CurveDirections.UpLeft);
+                tl = _GetXmlQuadCurve(r1, r2, CurveDirections.LeftDown);
+
+                xml = $"M{bx},{by}v{h}{bl}h{w}{br}v-{h}{tr}h-{w}{tl}z " + _GetXmlPathDataFillSquare(size, isBold, false, padding);
+
+            }
+            return xml.Replace("'", "\"");
+        }
+        /// <summary>
+        /// Vrátí element path, ve tvaru obdélníku vepsaného do dané velikosti (size), s okraji (padding) a s odstupem od okrajů (isBold ? 2 : 1).
+        /// Slouží mj. jako výplň do rámečku vráceného v metodě <see cref="_GetXmlPathBorderSquare(int, bool, string, bool, Padding?)"/>.
+        /// </summary>
+        /// <param name="size"></param>
+        /// <param name="isBold"></param>
+        /// <param name="fillClass"></param>
+        /// <param name="counterClockWise">Směr: false = po směru ručiček, true = proti směru</param>
+        /// <param name="padding"></param>
+        /// <returns></returns>
+        private static string _GetXmlPathFillSquare(int size, bool isBold, string fillClass, bool counterClockWise = false, Padding? padding = null)
+        {
+            if (size <= 0 || String.IsNullOrEmpty(fillClass)) return "";
+
+            string pathData = _GetXmlPathDataFillSquare(size, isBold, counterClockWise, padding);
+            string xml = $@"      <path d='{pathData}' class='{fillClass}' />
+";
+            return xml.Replace("'", "\"");
+        }
+        /// <summary>
+        /// Vrátí čistá data pro element path, ve tvaru obdélníku vepsaného do dané velikosti (size), s okraji (padding) a s odstupem od okrajů (isBold ? 2 : 1).
+        /// Slouží jako výplň do rámečku vráceného v metodě <see cref="_GetXmlPathDataBorderSquare(int, bool, bool, Padding?)"/>.
+        /// </summary>
+        /// <param name="size"></param>
+        /// <param name="isBold"></param>
+        /// <param name="counterClockWise">Směr: false = po směru ručiček, true = proti směru</param>
+        /// <param name="padding"></param>
+        /// <returns></returns>
+        private static string _GetXmlPathDataFillSquare(int size, bool isBold, bool counterClockWise, Padding? padding = null)
+        {
+            if (size <= 0) return "";
+
+            Padding p = padding ?? Padding.Empty;
+            bool isLarge = (size >= 24);
+            int s = (isLarge && isBold ? 2 : 1);           // Šířka linky
+            int l = p.Left + s;                            // Left, Top, Right, Bottom:
+            int t = p.Top + s;
+            int r = size - p.Right - s;
+            int b = size - p.Bottom - s;
+            int w = r - l;
+            int h = b - t;
+
+            string xml = !counterClockWise ?
+                $"M{l},{t}h{w}v{h}h-{w}v-{h}z" :           // Ve směru hodinových ručiček
+                $"M{l},{t}v{h}h{w}v-{h}h-{w}z";            // V protisměru
+
+            return xml.Replace("'", "\"");
+        }
+        /// <summary>
+        /// Vrátí křivku ve tvaru čtvrtkruhu, relativně umístěnou, v daném směru <paramref name="directions"/>;
+        /// kde parametr <paramref name="r1"/> určuje půlrádius a <paramref name="r2"/> určuje rádius.
+        /// </summary>
+        /// <param name="r1"></param>
+        /// <param name="r2"></param>
+        /// <param name="directions"></param>
+        /// <returns></returns>
+        private static string _GetXmlQuadCurve(string r1, string r2, CurveDirections directions)
+        {
+            switch (directions)
+            {
+                case CurveDirections.RightDown: return $"c{r1},0,{r2},{r1},{r2},{r2}";
+                case CurveDirections.RightUp: return $"c{r1},0,{r2},-{r1},{r2},-{r2}";
+                case CurveDirections.LeftDown: return $"c-{r1},0,-{r2},{r1},-{r2},{r2}";
+                case CurveDirections.LeftUp: return $"c-{r1},0,-{r2},-{r1},-{r2},-{r2}";
+                case CurveDirections.UpRight: return $"c0,-{r1},{r1},-{r2},{r2},-{r2}";
+                case CurveDirections.UpLeft: return $"c0,-{r1},-{r1},-{r2},-{r2},-{r2}";
+                case CurveDirections.DownRight: return $"c0,{r1},{r1},{r2},{r2},{r2}";
+                case CurveDirections.DownLeft: return $"c0,{r1},-{r1},{r2},-{r2},{r2}";
+            }
+            return "";
+        }
+        /// <summary>
+        /// Směr křivky
+        /// </summary>
+        private enum CurveDirections { None, RightDown, RightUp, LeftDown, LeftUp, UpRight, UpLeft, DownRight, DownLeft }
         /// <summary>
         /// Vrací XML text definující RadialGradient
         /// </summary>
@@ -3552,6 +3742,27 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             if (color.IsNamedColor) return color.Name.ToLower();
             return "#" + color.R.ToString("X2") + color.G.ToString("X2") + color.B.ToString("X2");
+        }
+        /// <summary>
+        /// Vrátí string obsahující výsledek (a + b / c) vyhovující XML zápisu (desetinná tečka, bez mezer, bez koncových nul)
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <param name="c"></param>
+        /// <param name="decimals"></param>
+        /// <returns></returns>
+        private static string _GetXmlNumber(int a, int b, int c, int decimals = 3)
+        {
+            decimal r = (decimal)a + ((decimal)b / (decimal)c);
+            string t = r.ToString();
+            if (t.Contains(",")) t = t.Replace(",", ".");
+            if (t.Contains(" ")) t = t.Replace(" ", "");
+            if (t.Contains("."))
+            {
+                while (t.Length > 1 && t.EndsWith("0"))
+                    t = t.Substring(0, t.Length - 1);
+            }
+            return t;
         }
         /// <summary>
         /// Ze vstupního stringu detekuje parametry generického SVG
