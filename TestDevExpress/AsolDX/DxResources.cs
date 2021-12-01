@@ -3365,7 +3365,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         public static SvgImage CreateCaptionVector(string caption, ResourceImageSizeType sizeType)
         {   // Využijeme metodu _TryGetGenericSvgText, předáme jí explicitní parametry:
             string text = DxComponent.GetCaptionForIcon(caption);
-            string imageName = $"?text?{text}";     //   ... ?fill='Black'?sans-serif?N?fill='DarkBlue'?fill='White'";
+            string imageName = $"@text|{text}";     //   ... |fill='Black'|sans-serif|N|fill='DarkBlue'|fill='White'";
             if (!TryGetGenericSvg(imageName, sizeType, out DxSvgImage dxSvgImage)) return null;
             return dxSvgImage;
         }
@@ -3517,28 +3517,26 @@ namespace Noris.Clients.Win.Components.AsolDX
             public TextInfo(string text, int size, string fontFamily, bool isBold)
             {
                 text = (text ?? "").Trim();
-                // if (text.Length > 2) text = text.Substring(0, 2);
-                bool isLarge = (size >= 32);
-
                 this.Text = text;
-                this.IsWide = (text == "MM" || text == "OO" || text == "WW" || text == "QQ" || text == "AA");
-                this.FontFamily = fontFamily;
-                this.FontSize = (isLarge ? (IsWide ? "16px" : "18px") : (IsWide ? "8px" : "9px"));      // Dává optimální využití prostoru ikony
-                this.FontWeight = (isBold ? (isLarge ? "600" : "800") : (isLarge ? "300" : "500"));     // dříve: (isWide ? (isBold ? "600" : "300") : (isBold ? "600" : "300"));
-                this.TextX = (isLarge ? "15" : "7");         // Posunutí mírně doleva dává správný grafický výsledek, na rozdíl od středu: (isLarge ? "16" : "8");
-                this.TextY = (isLarge ? (IsWide ? "20" : "22") : (IsWide ? "10" : "11"));
-
-                this.FontSize = (isLarge ? (IsWide ? "18px" : "20px") : (IsWide ? "9px" : "10px"));     // Dává optimální využití prostoru ikony
-                this.FontWeight = (isBold ? (isLarge ? "600" : "800") : (isLarge ? "500" : "700"));
-                this.TextY = (isLarge ? (IsWide ? "21" : "23") : (IsWide ? "10" : "11"));
+                if (size >= 32)
+                {
+                    this.IsWide = (text == "WW");                    // není nutno:  || text == "MM" || text == "OO" || text == "QQ" || text == "AA");
+                    this.FontFamily = fontFamily;
+                    this.FontSize = (IsWide ? "16px" : "18px");
+                    this.FontWeight = (isBold ? "600" : "200");
+                    this.TextX = "15.5";
+                    this.TextY = (IsWide ? "22" : "23");
+                }
+                else
+                {
+                    this.IsWide = (text == "WW" || text == "MM");    // není nutno: || text == "OO" || text == "QQ" || text == "AA");
+                    this.FontFamily = fontFamily;
+                    this.FontSize = (IsWide ? "8.2px" : "9.3px");
+                    this.FontWeight = (isBold ? "600" : "400");
+                    this.TextX = (IsWide ? "7.4" : "7.7");
+                    this.TextY = (IsWide ? "11" : "11.5");
+                }
             }
-            public string Text;
-            public bool IsWide;
-            public string FontFamily;
-            public string FontSize;
-            public string FontWeight;
-            public string TextX;
-            public string TextY;
             /// <summary>
             /// Vrátí začátek grupy pro text, obsahuje popis fontu
             /// </summary>
@@ -3562,18 +3560,25 @@ namespace Noris.Clients.Win.Components.AsolDX
 ";
                 return xmlText.Replace("'", "\"");
             }
+            public readonly string Text;
+            public readonly bool IsWide;
+            public readonly string FontFamily;
+            public readonly string FontSize;
+            public readonly string FontWeight;
+            public readonly string TextX;
+            public readonly string TextY;
         }
         /// <summary>Barva pro generický text, světlý skin: písmo</summary>
-        private static string _GenericTextColorLightSkinText { get { return "#000000"; } }    // "#383838"
-        /// <summary>Barva pro generický text, světlý skin: písmo</summary>
+        private static string _GenericTextColorLightSkinText { get { return "#202020"; } }    // "#383838"
+        /// <summary>Barva pro generický text, tmavý skin: písmo</summary>
         private static string _GenericTextColorDarkSkinText { get { return "#D4D4D4"; } }
         /// <summary>Barva pro generický text, světlý skin: okraj</summary>
-        private static string _GenericTextColorLightSkinBorder { get { return "#383838"; } }  // "#383838"
-        /// <summary>Barva pro generický text, světlý skin: okraj</summary>
+        private static string _GenericTextColorLightSkinBorder { get { return "#383838"; } }
+        /// <summary>Barva pro generický text, tmavý skin: okraj</summary>
         private static string _GenericTextColorDarkSkinBorder { get { return "#D4D4D4"; } }
         /// <summary>Barva pro generický text, světlý skin: výplň</summary>
-        private static string _GenericTextColorLightSkinFill { get { return "#FFFFFF"; } }
-        /// <summary>Barva pro generický text, světlý skin: výplň</summary>
+        private static string _GenericTextColorLightSkinFill { get { return "#FCFCFC"; } }
+        /// <summary>Barva pro generický text, tmavý skin: výplň</summary>
         private static string _GenericTextColorDarkSkinFill { get { return "#383838"; } }
         #endregion
 
@@ -3630,7 +3635,8 @@ M22,22H10v2H22v-2z " class="Black" />
         private static string _GetXmlContentHeader(int size)
         {
             string xml = $@"﻿<?xml version='1.0' encoding='UTF-8'?>
-<svg x='0' y='0' width='{size}' height='{size}' viewBox='0 0 {size} {size}' version='1.1' xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' enable-background='new 0 0 32 32' xml:space='preserve' id='Layer_1'>
+<svg x='0' y='0' width='{size}' height='{size}' viewBox='0 0 {size} {size}' enable-background='new 0 0 {size} {size}' 
+      version='1.1' xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' xml:space='preserve' id='Layer_1'>
   <g id='icon'>
 ";
             return xml.Replace("'", "\"");
