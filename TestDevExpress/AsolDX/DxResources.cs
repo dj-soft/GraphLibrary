@@ -3325,7 +3325,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             string xmlStyles = _GetXmlDevExpressStyles();
 
             string circleColorName = _GetGenericParam(genericItems, 1, "Green");
-            int radiusRel = _GetGenericParam(genericItems, 1, 80);
+            int radiusRel = _GetGenericParam(genericItems, 2, 80);
 
             string xmlGradient = _GetXmlContentGradientRadial(size, "CircleGradient", circleColorName, null, radiusRel);
             string xmlCircle = _GetXmlContentCircle(size, "url(#CircleGradient)", radiusRel);

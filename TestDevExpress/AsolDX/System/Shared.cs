@@ -527,7 +527,7 @@ namespace Noris.WS.DataContracts.Desktop.Data
                 .Replace(SvgImageArrayInfo.KeyItemBegin, "")
                 .Replace(SvgImageArrayInfo.KeyItemEnd, "")
                 .Trim();                                      // Odstraníme zbývající Begin a End značky   «   a   »  (pokud tam jsou)
-            if (!serialItem.StartsWith("?") && serialItem.IndexOfAny("*?:\t\r\n".ToCharArray()) >= 0) return false;
+            if (!serialItem.StartsWith("@") && serialItem.IndexOfAny("*?:\t\r\n".ToCharArray()) >= 0) return false;  // Znakem @ začíná GenericSvg, tam jsou pravidla mírnější...
 
             var parts = serialItem.Split('<', '>');           // Z textu "imagename<0.0.60.30>" vytvořím tři prvky:    "imagename",    "0.0.60.30",    ""
             int count = parts.Length;
