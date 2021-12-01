@@ -57,12 +57,16 @@ namespace Noris.Clients.Win.Components.AsolDX
                         if (_Instance == null)
                         {
                             _Instance = new DxComponent();
+                            _Instance._Prepare();
                         }
                     }
                 }
                 return _Instance;
             }
         }
+        /// <summary>
+        /// Konstruktor. V době jeho provádění se nesmí volat <see cref="DxComponent.Instance"/>!
+        /// </summary>
         private DxComponent()
         {
             this._InitCore();
@@ -75,6 +79,13 @@ namespace Noris.Clients.Win.Components.AsolDX
             this._InitSvgConvertor();
             this._InitClipboard();
             this._InitAppEvents();
+        }
+        /// <summary>
+        /// Příprava. V době provádění už se smí volat <see cref="DxComponent.Instance"/>
+        /// </summary>
+        private void _Prepare()
+        {
+            this._PrepareImageLists();
         }
         private static bool __IsInitialized = false;
         private static DxComponent _Instance;

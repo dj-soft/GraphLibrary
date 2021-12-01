@@ -14,6 +14,7 @@ using DevExpress.Utils.Svg;
 using DevExpress.Utils;
 
 using Noris.WS.DataContracts.Desktop.Data;
+using System.Runtime.CompilerServices;
 
 namespace Noris.Clients.Win.Components.AsolDX
 {
@@ -913,6 +914,20 @@ namespace Noris.Clients.Win.Components.AsolDX
             else
                 return this._GetBitmapImageIndex(imageName, exactName, sizeType, optimalSvgSize, caption);
         }
+        /// <summary>
+        /// Připraví ImageListy bitmapové i vektorové.
+        /// Je vhodné volat co nejdříve, aby se odpovídající objekty zaregistrovaly mezi prvními mezi ostatní Listenery.
+        /// </summary>
+        private void _PrepareImageLists()
+        {
+            _GetDxBitmapImageList(ResourceImageSizeType.Small);
+            _GetDxBitmapImageList(ResourceImageSizeType.Medium);
+            _GetDxBitmapImageList(ResourceImageSizeType.Large);
+
+            _GetVectorImageList(ResourceImageSizeType.Small);
+            _GetVectorImageList(ResourceImageSizeType.Medium);
+            _GetVectorImageList(ResourceImageSizeType.Large);
+        }
         #endregion
         #region BitmapImageList - Seznam obrázků typu Bitmapa, pro použití v controlech; GetBitmapImageList, GetBitmapImageIndex, GetBitmapImage
         /// <summary>
@@ -1704,9 +1719,9 @@ namespace Noris.Clients.Win.Components.AsolDX
                 //graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
                 var sysFont = _ButtonFont;
                 Rectangle textBounds = Rectangle.Ceiling(bounds);
-                textBounds.X = textBounds.X - 1;
-                textBounds.Width = textBounds.Width + 2;
-                using (var stringFormat = new StringFormat() { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center })
+                textBounds.X = textBounds.X - 2;
+                textBounds.Width = textBounds.Width + 4;   // Radši ať se znaky vejdou a ořízne se jejich okraj, než aby vypadl celý znak...
+                using (var stringFormat = new StringFormat() { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center, Trimming = StringTrimming.None })
                 {
                     if (sizeType.Value != ResourceImageSizeType.Large)
                     {   // Malé a střední ikony
