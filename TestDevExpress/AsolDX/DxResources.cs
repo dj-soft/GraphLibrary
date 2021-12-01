@@ -3249,7 +3249,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             dxSvgImage = null;
             if (_TryGetGenericParameters(imageName, out var genericItems))
             {
-                switch (genericItems[1])
+                switch (genericItems[0])
                 {
                     case "circlegradient1": return _TryGetGenericSvgCircleGradient1(imageName, genericItems, sizeType, ref dxSvgImage);
                     case "circle": return _TryGetGenericSvgCircleGradient1(imageName, genericItems, sizeType, ref dxSvgImage);
@@ -3278,6 +3278,32 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (TryGetGenericSvg(imageName, sizeType, out DxSvgImage dxSvgImage)) return dxSvgImage;
             return null;
         }
+        /// <summary>
+        /// Ze vstupního stringu detekuje parametry generického SVG.
+        /// Pokud vrátí true, pak na indexu [0] pole out <paramref name="genericItems"/> bude klíčové slovo, na indexech 1++ budou jeho parametry.
+        /// </summary>
+        /// <param name="imageName"></param>
+        /// <param name="genericItems"></param>
+        /// <returns></returns>
+        private static bool _TryGetGenericParameters(string imageName, out string[] genericItems)
+        {
+            genericItems = null;
+            bool result = false;
+            if (!String.IsNullOrEmpty(imageName) && imageName[0] == GenericHeader && imageName.Length > 1)
+            {
+                genericItems = imageName.Substring(1).Split(GenericParamSeparator);
+                result = (genericItems.Length >= 1 && genericItems[0].Length > 0);
+            }
+            return result;
+        }
+        /// <summary>
+        /// @  Úvodní znak generické deklarace SvgImage
+        /// </summary>
+        public static char GenericHeader { get { return '@'; } }
+        /// <summary>
+        /// |  Oddělovač parametrů v generické deklaraci SvgImage
+        /// </summary>
+        public static char GenericParamSeparator { get { return '|'; } }
         #region Circle
         /// <summary>
         /// Z dodané definice a pro danou velikost vygeneruje SvgImage obsahující Circle s Gradient výplní.
@@ -3298,8 +3324,8 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             string xmlStyles = _GetXmlDevExpressStyles();
 
-            string circleColorName = _GetGenericParam(genericItems, 2, "Green");
-            int radiusRel = _GetGenericParam(genericItems, 3, 80);
+            string circleColorName = _GetGenericParam(genericItems, 1, "Green");
+            int radiusRel = _GetGenericParam(genericItems, 1, 80);
 
             string xmlGradient = _GetXmlContentGradientRadial(size, "CircleGradient", circleColorName, null, radiusRel);
             string xmlCircle = _GetXmlContentCircle(size, "url(#CircleGradient)", radiusRel);
@@ -3312,7 +3338,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             dxSvgImage.GenericSource = imageName;
             return true;
 
-            /*     pro zadání    ?circlegradient1?violet?70    vygeneruje SVG:
+            /*     pro zadání    @circlegradient1|violet|70    vygeneruje SVG:
 ﻿<?xml version="1.0" encoding="UTF-8"?>
 <svg x="0" y="0" width="32" height="32" viewBox="0 0 32 32" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" enable-background="new 0 0 32 32" xml:space="preserve" id="Layer_1">
   <g id="icon">
@@ -3402,7 +3428,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         private static bool _TryGetGenericSvgText(string imageName, string[] genericItems, ResourceImageSizeType? sizeType, ref DxSvgImage dxSvgImage)
         {
             bool isDarkTheme = DxComponent.IsDarkTheme;
-            int p = 2;
+            int p = 1;
             string text = _GetGenericParam(genericItems, p++, "");                         // Text, bude pouze Trimován
             string textParam = _GetGenericParam(genericItems, p++, "");                    // Barva písma (class, fill, nic)
             if (String.IsNullOrEmpty(textParam)) textParam = $"fill='{(isDarkTheme ? _GenericTextColorDarkSkinText : _GenericTextColorLightSkinText)}'";
@@ -3448,7 +3474,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             dxSvgImage.GenericSource = imageName;
             return true;
 
-            /*     pro zadání    ?text?OK    vygeneruje SVG:
+            /*     pro zadání    @text|OK    vygeneruje SVG:
 ﻿<?xml version="1.0" encoding="UTF-8"?>
 <svg x="0" y="0" width="32" height="32" viewBox="0 0 32 32" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" enable-background="new 0 0 32 32" xml:space="preserve" id="Layer_1">
   <g id="icon">
@@ -3462,7 +3488,7 @@ namespace Noris.Clients.Win.Components.AsolDX
 </svg>
 
             */
-            /*     pro zadání    ?text?OK?Black??B?Blue?White    vygeneruje SVG:
+            /*     pro zadání    @text|OK|Black|B|Blue|White    vygeneruje SVG:
 ﻿<?xml version="1.0" encoding="UTF-8"?>
 <svg x="0" y="0" width="32" height="32" viewBox="0 0 32 32" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" enable-background="new 0 0 32 32" xml:space="preserve" id="Layer_1">
   <g id="icon">
@@ -3915,24 +3941,6 @@ M22,22H10v2H22v-2z " class="Black" />
             return t;
         }
         /// <summary>
-        /// Ze vstupního stringu detekuje parametry generického SVG
-        /// </summary>
-        /// <param name="imageName"></param>
-        /// <param name="genericItems"></param>
-        /// <returns></returns>
-        private static bool _TryGetGenericParameters(string imageName, out string[] genericItems)
-        {
-            genericItems = null;
-            bool result = false;
-            char separator = GenericParamSeparator;
-            if (!String.IsNullOrEmpty(imageName) && imageName[0] == separator)
-            {
-                genericItems = imageName.Split(separator);
-                result = (genericItems.Length >= 2 && genericItems[0].Length == 0 && genericItems[1].Length > 0);
-            }
-            return result;
-        }
-        /// <summary>
         /// Ošetří dodaný parametr. Vstup smí být prázdný, nebo může obsahovat kompletní definici vzhledu ("fill='#e02080' stroke='Black'")
         /// Pokud je prázdný, na výstupu je "".
         /// Pokud je zadán a neobsahuje rovnítko, předsadí:    class='param'.
@@ -3947,10 +3955,6 @@ M22,22H10v2H22v-2z " class="Black" />
             else if (param.IndexOf("=") < 0)
                 param = "class='" + param + "'";
         }
-        /// <summary>
-        /// Oddělovač parametrů v generické deklaraci SvgImage
-        /// </summary>
-        public static char GenericParamSeparator { get { return '?'; } }
         #endregion
         #endregion
     }
