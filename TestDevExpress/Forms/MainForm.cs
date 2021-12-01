@@ -60,6 +60,7 @@ namespace TestDevExpress.Forms
             InitSvgIcons();            // 8
             InitTreeView();            // 9
             InitDragDrop();            // 10
+            InitSyntaxEditor();        // 11
 
             // TestResources();
 
@@ -3676,6 +3677,105 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
         private DxListBoxControl _DragDropBList;
         private DxTreeList _DragDropATree;
         private DxMemoEdit _DragDropLogText;
+        #endregion
+        #region SyntaxEditor
+        protected void InitSyntaxEditor()
+        {
+            AddNewPage("Syntax Editor", PrepareSyntaxEditor);
+        }
+        private DxPanelControl _PanelSyntaxEditor;
+        private void PrepareSyntaxEditor(DxPanelControl panel)
+        {
+            _PanelSyntaxEditor = panel;
+            _PanelSyntaxEditor.ClientSizeChanged += _PanelSyntaxEditor_ClientSizeChanged;
+
+
+
+            _PanelSyntaxEditorDoLayout();
+        }
+        private void _PanelSyntaxEditor_ClientSizeChanged(object sender, EventArgs e)
+        {
+            _PanelSyntaxEditorDoLayout();
+        }
+        private void _PanelSyntaxEditorDoLayout()
+        {
+            var clientSize = _PanelSyntaxEditor.ClientSize;
+
+
+            /*
+            int contentY = 36;
+
+            int minEditWidth = 300;
+            int minImgWidth = 16;
+            int maxImgWidth = 388;
+            int minImgHeight = 16;
+            int maxImgHeight = 320;
+
+            int imageX = clientSize.Width - 6 - maxImgWidth;
+            int image1Y = contentY;
+            int imageRight = clientSize.Width - 6;
+            int imageBottom = clientSize.Height - 6;
+            int imageWidth = imageRight - imageX;
+            int imageHeight = (imageBottom - image1Y - 6) / 2;
+            if (imageWidth < minImgWidth)
+            {
+                imageWidth = minImgWidth;
+                imageX = imageRight - imageWidth;
+            }
+            if (imageWidth > maxImgWidth)
+            {
+                imageWidth = maxImgWidth;
+                imageX = imageRight - imageWidth;
+            }
+            if (imageHeight < minImgHeight)
+            {
+                imageHeight = minImgHeight;
+                image1Y = imageBottom - imageHeight;
+            }
+            if (imageHeight > maxImgHeight)
+            {
+                imageHeight = maxImgHeight;
+                imageBottom = image1Y + imageHeight;
+            }
+            int image2Y = image1Y + imageHeight + 6;
+
+            int editX = 6;
+            int editY = contentY;
+            int editRight = imageX - 6;
+            int editWidth = editRight - editX;
+            if (editWidth < minEditWidth)
+            {
+                editWidth = minEditWidth;
+                editRight = editX + editWidth;
+                imageX = editRight + 6;
+                imageWidth = imageRight - imageX;
+                if (imageWidth < minImgWidth)
+                {
+                    imageWidth = minImgWidth;
+                    imageRight = imageX + imageWidth;
+                }
+            }
+            int editBottom = clientSize.Height - 6;
+            int editHeight = editBottom - editY;
+
+            int buttonRight = imageRight;
+            int buttonWidth = imageWidth;
+            if (buttonWidth < 100) buttonWidth = 100;
+            int buttonX = buttonRight - buttonWidth;
+            int buttonBottom = image1Y - 6;
+            int buttonHeight = 26;
+            int buttonY = buttonBottom - buttonHeight;
+
+            _SvgIconXmlText.Bounds = new Rectangle(editX, editY, editWidth, editHeight);
+            _SvgIconImage1.Bounds = new Rectangle(imageX, image1Y, imageWidth, imageHeight);
+            _SvgIconImage2.Bounds = new Rectangle(imageX, image2Y, imageWidth, imageHeight);
+            _SvgIconReloadButton.Bounds = new Rectangle(buttonX, buttonY, buttonWidth, buttonHeight);
+            */
+        }
+        private DxCheckEdit _SyntaxCheckCSharp;
+        private DxCheckEdit _SyntaxCheckSQL;
+        private DxCheckEdit _SyntaxCheckXML;
+
         #endregion
         #region Random
         /// <summary>

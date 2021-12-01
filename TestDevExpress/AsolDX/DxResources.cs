@@ -118,18 +118,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             return ResourceImageSizeType.Large;
         }
         /// <summary>
-        /// Vrátí typ velikosti obrázku vhodný pro danou fyzickou velikost prostoru, optimálně pro Vector.
-        /// </summary>
-        /// <param name="currentSize"></param>
-        /// <returns></returns>
-        public static ResourceImageSizeType GetImageSizeTypeVector(Size currentSize)
-        {
-            int s = (currentSize.Width < currentSize.Height ? currentSize.Width : currentSize.Height);
-            if (s <= 3) return ResourceImageSizeType.None;
-            if (s <= 24) return ResourceImageSizeType.Small;
-            return ResourceImageSizeType.Large;
-        }
-        /// <summary>
         /// Vrátí typ velikosti obrázku vhodný pro danou fyzickou velikost prostoru, optimálně pro Bitmap.
         /// Pro střední velikost (17 až 24 px včetně) dovoluje zadat explicitní hodnotu, protože pro vektorové obrázky je lepší generovat Small než Large.
         /// </summary>
@@ -261,6 +249,18 @@ namespace Noris.Clients.Win.Components.AsolDX
                 _DisposeImages(imageInfos);
             }
             return icon;
+        }
+        /// <summary>
+        /// Vrátí typ velikosti obrázku vhodný pro danou fyzickou velikost prostoru, optimálně pro Vector.
+        /// </summary>
+        /// <param name="currentSize"></param>
+        /// <returns></returns>
+        public static ResourceImageSizeType GetImageSizeTypeVector(Size currentSize)
+        {
+            int s = (currentSize.Width < currentSize.Height ? currentSize.Width : currentSize.Height);
+            if (s <= 3) return ResourceImageSizeType.None;
+            if (s <= 24) return ResourceImageSizeType.Small;
+            return ResourceImageSizeType.Large;
         }
         #endregion
         #region CreateIconImage - Tvorba ICO pro dodaný zdroj
@@ -929,22 +929,31 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         private ImageList _GetBitmapImageList(ResourceImageSizeType sizeType)
         {
-            if (__BitmapImageList == null) __BitmapImageList = new Dictionary<ResourceImageSizeType, ImageList>();   // OnDemand tvorba, grafika se používá výhradně z GUI threadu takže tady zámek neřeším
+            return _GetDxBitmapImageList(sizeType).ImageList;
+        }
+        /// <summary>
+        /// Vrací objekt <see cref="DxBmpImageList"/>, obsahující bitmapové obrázky dané velikosti
+        /// </summary>
+        /// <param name="sizeType"></param>
+        /// <returns></returns>
+        private DxBmpImageList _GetDxBitmapImageList(ResourceImageSizeType sizeType)
+        {
+            if (__BitmapImageList == null) __BitmapImageList = new Dictionary<ResourceImageSizeType, DxBmpImageList>();   // OnDemand tvorba, grafika se používá výhradně z GUI threadu takže tady zámek neřeším
             var imageListDict = __BitmapImageList;
-            if (!imageListDict.TryGetValue(sizeType, out ImageList imageList))
+            if (!imageListDict.TryGetValue(sizeType, out DxBmpImageList dxBmpImageList))
             {
                 lock (imageListDict)
                 {
-                    if (!imageListDict.TryGetValue(sizeType, out imageList))
+                    if (!imageListDict.TryGetValue(sizeType, out dxBmpImageList))
                     {
-                        imageList = new System.Windows.Forms.ImageList();
-                        imageList.ImageSize = _GetVectorSvgImageSize(sizeType, null);
-                        imageList.ColorDepth = ColorDepth.Depth32Bit;
-                        imageListDict.Add(sizeType, imageList);
+                        dxBmpImageList = new DxBmpImageList(sizeType);
+                        dxBmpImageList.ImageSize = _GetVectorSvgImageSize(sizeType, null);
+                        dxBmpImageList.ColorDepth = ColorDepth.Depth32Bit;
+                        imageListDict.Add(sizeType, dxBmpImageList);
                     }
                 }
             }
-            return imageList;
+            return dxBmpImageList;
         }
         /// <summary>
         /// Vrátí index pro daný obrázek do odpovídajícího ImageListu.
@@ -1020,30 +1029,31 @@ namespace Noris.Clients.Win.Components.AsolDX
             bool hasName = !String.IsNullOrEmpty(imageName);
             string captionKey = DxComponent.GetCaptionForIcon(caption);
             bool hasCaption = (captionKey.Length > 0);
-            string key = (hasName ? imageName : hasCaption ? $"«:{captionKey}:»" : "").Trim().ToLower();
+            string key = (hasName ? imageName.ToLower() : hasCaption ? $"«:{captionKey}:»" : "").Trim();
             if (key.Length == 0) return null;
 
-            ImageList imageList = _GetBitmapImageList(sizeType);
+            var dxImageList = _GetDxBitmapImageList(sizeType);
             int index = -1;
-            if (imageList.Images.ContainsKey(key))
+            if (dxImageList.ContainsKey(key))
             {
-                index = imageList.Images.IndexOfKey(key);
+                index = dxImageList.IndexOfKey(key);
             }
             else if (hasName || hasCaption)
             {
                 Image image = _CreateBitmapImage(imageName, exactName, sizeType, optimalSvgSize, caption, null);
                 if (image != null)
                 {
-                    imageList.Images.Add(key, image);
-                    index = imageList.Images.IndexOfKey(key);
+                    bool isColorized = !hasName && hasCaption;       // Image lze přebarvovat tehdy, když nepochází z obrázku, ale z Caption
+                    dxImageList.Add(key, image, isColorized, imageName, exactName, optimalSvgSize, caption);
+                    index = dxImageList.IndexOfKey(key);
                 }
             }
-            return (index >= 0 ? new Tuple<ImageList, int>(imageList, index) : null);
+            return (index >= 0 ? new Tuple<ImageList, int>(dxImageList.ImageList, index) : null);
         }
         /// <summary>
         /// Dictionary ImageListů - pro každou velikost <see cref="ResourceImageSizeType"/> je jedna instance
         /// </summary>
-        private Dictionary<ResourceImageSizeType, System.Windows.Forms.ImageList> __BitmapImageList;
+        private Dictionary<ResourceImageSizeType, DxBmpImageList> __BitmapImageList;
         #endregion
         #region VectorImageList - Seznam obrázků typu Vector, pro použití v controlech; GetVectorImageList, GetVectorImageIndex
         /// <summary>
@@ -1688,26 +1698,35 @@ namespace Noris.Clients.Win.Components.AsolDX
                 borderBounds.Width--;
                 borderBounds.Height--;
                 graphics.DrawRectangle(DxComponent.PaintGetPen(lineColor), borderBounds);
-                graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAliasGridFit;
-                //graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+
+                graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.SystemDefault;
+                graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
                 //graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
-                var fontMenu = _RibbonFont;
-                if (sizeType.Value != ResourceImageSizeType.Large)
-                {   // Malé a střední ikony
-                    if (text.Length > 2) text = text.Substring(0, 2);                // Radši bych tu viděl jen jedno písmenko, ale JD...
-                    var font = fontMenu;
-                    var textSize = graphics.MeasureString(text, font);
-                    var textBounds = textSize.AlignTo(bounds, ContentAlignment.MiddleCenter);
-                    graphics.DrawString(text, font, DxComponent.PaintGetSolidBrush(textColor), textBounds.Location);
-                }
-                else
-                {   // Velké ikony
-                    if (text.Length > 2) text = text.Substring(0, 2);
-                    using (Font font = new Font(fontMenu.FontFamily, fontMenu.Size * 1.2f))
-                    {
-                        var textSize = graphics.MeasureString(text, font);
-                        var textBounds = textSize.AlignTo(bounds, ContentAlignment.MiddleCenter);
-                        graphics.DrawString(text, font, DxComponent.PaintGetSolidBrush(textColor), textBounds.Location);
+                var sysFont = _ButtonFont;
+                Rectangle textBounds = Rectangle.Ceiling(bounds);
+                textBounds.X = textBounds.X - 1;
+                textBounds.Width = textBounds.Width + 2;
+                using (var stringFormat = new StringFormat() { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center })
+                {
+                    if (sizeType.Value != ResourceImageSizeType.Large)
+                    {   // Malé a střední ikony
+                        if (text.Length > 2) text = text.Substring(0, 2);                // Radši bych tu viděl jen jedno písmenko, ale JD...
+                        using (Font font = new Font(sysFont.FontFamily, sysFont.Size * 1.0f))
+                        {
+                            //var textSize = graphics.MeasureString(text, font);
+                            //var textBounds = textSize.AlignTo(bounds, ContentAlignment.MiddleCenter);
+                            graphics.DrawString(text, font, DxComponent.PaintGetSolidBrush(textColor), textBounds, stringFormat);
+                        }
+                    }
+                    else
+                    {   // Velké ikony
+                        if (text.Length > 2) text = text.Substring(0, 2);
+                        using (Font font = new Font(sysFont.FontFamily, sysFont.Size * 1.4f))
+                        {
+                            //var textSize = graphics.MeasureString(text, font);
+                            //var textBounds = textSize.AlignTo(bounds, ContentAlignment.MiddleCenter);
+                            graphics.DrawString(text, font, DxComponent.PaintGetSolidBrush(textColor), textBounds, stringFormat);
+                        }
                     }
                 }
             }
@@ -1730,6 +1749,22 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
         }
         /// <summary>
+        /// Písmo použité v Buttonu
+        /// </summary>
+        private static Font _ButtonFont
+        {
+            get
+            {
+                Font font = null;
+                var skin = DxComponent.GetSkinInfo(SkinElementColor.CommonSkins);
+                if (skin != null)
+                    font = skin[DevExpress.Skins.CommonSkins.SkinButton]?.GetDefaultFont(DevExpress.LookAndFeel.UserLookAndFeel.Default.ActiveLookAndFeel);
+                if (font == null)
+                    font = SystemFonts.DefaultFont;
+                return font;
+            }
+        }
+        /// <summary>
         /// Do daného objektu vloží náhradní ikonu pro daný text
         /// </summary>
         /// <param name="imageOptions"></param>
@@ -1738,54 +1773,70 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="imageSize"></param>
         private void _ApplyImageForCaption(ImageOptions imageOptions, string caption, ResourceImageSizeType? sizeType, Size? imageSize)
         {
-            if (imageOptions is DevExpress.XtraBars.BarItemImageOptions barOptions)
-            {   // Má prostor pro dvě velikosti obrázku najednou:
-                barOptions.Image = null;
-                barOptions.LargeImage = null;
+            bool useVectorImage = false;
+            if (useVectorImage)
+            {
+                if (imageOptions is DevExpress.XtraBars.BarItemImageOptions barOptions)
+                {   // Má prostor pro dvě velikosti obrázku najednou:
+                    barOptions.Image = null;
+                    barOptions.LargeImage = null;
 
-                bool hasIndexes = false;
-                if (barOptions.Images is SvgImageCollection)
-                {   // Máme připravenou podporu pro vektorový index, můžeme tam dát dvě velikosti:
-                    int smallIndex = _GetCaptionVectorIndex(caption, ResourceImageSizeType.Small);
-                    int largeIndex = _GetCaptionVectorIndex(caption, ResourceImageSizeType.Large);
-                    if (smallIndex >= 0 && largeIndex >= 0)
-                    {   // Máme indexy pro obě velikosti?
-                        barOptions.SvgImage = null;
-                        barOptions.SvgImageSize = Size.Empty;
-                        barOptions.ImageIndex = smallIndex;
-                        barOptions.LargeImageIndex = largeIndex;
-                        hasIndexes = true;
+                    bool hasIndexes = false;
+                    if (barOptions.Images is SvgImageCollection)
+                    {   // Máme připravenou podporu pro vektorový index, můžeme tam dát dvě velikosti:
+                        int smallIndex = _GetCaptionVectorIndex(caption, ResourceImageSizeType.Small);
+                        int largeIndex = _GetCaptionVectorIndex(caption, ResourceImageSizeType.Large);
+                        if (smallIndex >= 0 && largeIndex >= 0)
+                        {   // Máme indexy pro obě velikosti?
+                            barOptions.SvgImage = null;
+                            barOptions.SvgImageSize = Size.Empty;
+                            barOptions.ImageIndex = smallIndex;
+                            barOptions.LargeImageIndex = largeIndex;
+                            hasIndexes = true;
+                        }
+                    }
+                    if (!hasIndexes)
+                    {
+                        barOptions.SvgImage = _CreateCaptionVector(caption, sizeType ?? ResourceImageSizeType.Large);
+                        barOptions.SvgImageSize = _GetVectorSvgImageSize(sizeType, imageSize);
                     }
                 }
-                if (!hasIndexes)
-                {
-                    barOptions.SvgImage = _CreateCaptionVector(caption, sizeType ?? ResourceImageSizeType.Large);
-                    barOptions.SvgImageSize = _GetVectorSvgImageSize(sizeType, imageSize);
-                }
-            }
-            else if (imageOptions is DevExpress.Utils.ImageCollectionImageOptions iciOptions)
-            {   // Může využívat Index:
-                iciOptions.Image = null;
-                if (iciOptions.Images is SvgImageCollection)
-                {   // Máme připravenou podporu pro vektorový index, můžeme tam dát index prvku v požadované velikosti (defalt = velká):
-                    iciOptions.SvgImage = null;
-                    iciOptions.SvgImageSize = Size.Empty;
-                    iciOptions.ImageIndex = _GetCaptionVectorIndex(caption, sizeType ?? ResourceImageSizeType.Large);
+                else if (imageOptions is DevExpress.Utils.ImageCollectionImageOptions iciOptions)
+                {   // Může využívat Index:
+                    iciOptions.Image = null;
+                    if (iciOptions.Images is SvgImageCollection)
+                    {   // Máme připravenou podporu pro vektorový index, můžeme tam dát index prvku v požadované velikosti (defalt = velká):
+                        iciOptions.SvgImage = null;
+                        iciOptions.SvgImageSize = Size.Empty;
+                        iciOptions.ImageIndex = _GetCaptionVectorIndex(caption, sizeType ?? ResourceImageSizeType.Large);
+                    }
+                    else
+                    {   // Musíme tam dát přímo SvgImage:
+                        iciOptions.SvgImage = _CreateCaptionVector(caption, sizeType ?? ResourceImageSizeType.Large);
+                        iciOptions.SvgImageSize = _GetVectorSvgImageSize(sizeType, imageSize);
+                    }
                 }
                 else
-                {   // Musíme tam dát přímo SvgImage:
-                    iciOptions.SvgImage = _CreateCaptionVector(caption, sizeType ?? ResourceImageSizeType.Large);
-                    iciOptions.SvgImageSize = _GetVectorSvgImageSize(sizeType, imageSize);
+                {   // Musíme vepsat přímo jeden obrázek:
+                    imageOptions.Image = null;
+                    imageOptions.SvgImage = _CreateCaptionVector(caption, sizeType ?? ResourceImageSizeType.Large);
+                    imageOptions.SvgImageSize = _GetVectorSvgImageSize(sizeType, imageSize);
                 }
             }
             else
-            {   // Musíme vepsat přímo jeden obrázek:
-                imageOptions.Image = null;
-                imageOptions.SvgImage = _CreateCaptionVector(caption, sizeType ?? ResourceImageSizeType.Large);
-                imageOptions.SvgImageSize = _GetVectorSvgImageSize(sizeType, imageSize);
+            {
+                imageOptions.Reset();
+                if (imageOptions is DevExpress.XtraBars.BarItemImageOptions barOptions)
+                {   // Má prostor pro dvě velikosti obrázku najednou:
+                    barOptions.Image = _GetBitmapImage(null, false, ResourceImageSizeType.Small, null, caption);       // CreateCaptionImage(caption, ResourceImageSizeType.Small, imageSize);
+                    barOptions.LargeImage = _GetBitmapImage(null, false, ResourceImageSizeType.Large, null, caption);  // CreateCaptionImage(caption, ResourceImageSizeType.Large, imageSize);
+                }
+                else
+                {
+                    imageOptions.Image = _GetBitmapImage(null, false, sizeType ?? ResourceImageSizeType.Small, null, caption); // CreateCaptionImage(caption, sizeType ?? ResourceImageSizeType.Large, imageSize);
+                }
             }
         }
-
         /// <summary>
         /// Vrátí text pro danou caption pro renderování ikony.
         /// Z textu odstraní mezery a znaky - _ + / * #
@@ -2768,6 +2819,170 @@ namespace Noris.Clients.Win.Components.AsolDX
         public const string DxDialogIconWarning = "pic_0/Win/MessageBox/warning";
         /// <summary>Standardní ikona pro danou příležitost</summary>
         public const string DxDialogIconError = "pic_0/Win/MessageBox/error";
+    }
+    #endregion
+    #region class DxBmpImageList : Kolekce Images rozšířená o možnost reloadu při změně barevnosti
+    /// <summary>
+    /// DxBmpImageList : Kolekce Images rozšířená o možnost reloadu při změně barevnosti
+    /// </summary>
+    public class DxBmpImageList : IListenerZoomChange, IListenerLightDarkChanged, IDisposable
+    {
+        #region Konstruktor, Dispose, Public property
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="sizeType"></param>
+        public DxBmpImageList(ResourceImageSizeType sizeType)
+        {
+            this.SizeType = sizeType;
+            this.ImageList = new ImageList();
+            this._ExtendedDict = new Dictionary<string, ImageInfo>();
+            DxComponent.RegisterListener(this);
+        }
+        /// <summary>
+        /// Typ velikosti
+        /// </summary>
+        public ResourceImageSizeType SizeType { get; private set; }
+        /// <summary>
+        /// Dispose
+        /// </summary>
+        public void Dispose()
+        {
+            DxComponent.UnregisterListener(this);
+            this._ExtendedDict?.Clear();
+            this._ExtendedDict = null;
+            this.ImageList?.Dispose();
+            this.ImageList = null;
+        }
+        /// <summary>
+        /// Byl objekt disposován?
+        /// </summary>
+        public bool IsDisposed { get { return (this.ImageList == null); } }
+        #endregion
+        #region Transparentnost do ImageListu
+        /// <summary>
+        /// Velikost obrázku
+        /// </summary>
+        public Size ImageSize { get { return ImageList.ImageSize; } set { ImageList.ImageSize = value; } }
+        /// <summary>
+        /// ColorDepth obrázků
+        /// </summary>
+        public ColorDepth ColorDepth { get { return ImageList.ColorDepth; } set { ImageList.ColorDepth = value; } }
+        /// <summary>
+        /// ImageList
+        /// </summary>
+        public ImageList ImageList { get; private set; }
+        /// <summary>
+        /// Obsahuje prvek?
+        /// </summary>
+        /// <param name="key"></param>
+        /// <returns></returns>
+        public bool ContainsKey(string key) { return this.ImageList.Images.ContainsKey(key); }
+        /// <summary>
+        /// Vrátí index prvku
+        /// </summary>
+        /// <param name="key"></param>
+        /// <returns></returns>
+        public int IndexOfKey(string key) { return this.ImageList.Images.IndexOfKey(key); }
+        /// <summary>
+        /// Přidá prvek
+        /// </summary>
+        /// <param name="key"></param>
+        /// <param name="image"></param>
+        public void Add(string key, Image image)  { this.ImageList.Images.Add(key, image); }
+        #endregion
+        #region Extended info
+        /// <summary>
+        /// Přidá prvek, který bude možno po změně skinu znovu vytvořit pro novou barevnost
+        /// </summary>
+        /// <param name="key"></param>
+        /// <param name="image"></param>
+        /// <param name="isColorized"></param>
+        /// <param name="imageName"></param>
+        /// <param name="exactName"></param>
+        /// <param name="optimalSvgSize"></param>
+        /// <param name="caption"></param>
+        public void Add(string key, Image image, bool isColorized, string imageName, bool exactName, Size? optimalSvgSize, string caption)
+        {
+            if (isColorized)
+            {
+                if (!_ExtendedDict.ContainsKey(key))
+                    _ExtendedDict.Add(key, new ImageInfo(key, imageName, exactName, this.SizeType, optimalSvgSize, caption));
+            }
+            this.ImageList.Images.Add(key, image);
+        }
+        /// <summary>
+        /// Dictionary prvků, pro které bude možno vytvořit new Image po změně skinu Light / Dark
+        /// </summary>
+        private Dictionary<string, ImageInfo> _ExtendedDict;
+        /// <summary>
+        /// Třída, která dokáže vytvořet new Image po změně skinu
+        /// </summary>
+        private class ImageInfo
+        {
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="key"></param>
+            /// <param name="imageName"></param>
+            /// <param name="exactName"></param>
+            /// <param name="sizeType"></param>
+            /// <param name="optimalSvgSize"></param>
+            /// <param name="caption"></param>
+            public ImageInfo(string key, string imageName, bool exactName, ResourceImageSizeType sizeType, Size? optimalSvgSize, string caption)
+            {
+                this.Key = key;
+                this.ImageName = imageName;
+                this.ExactName = exactName;
+                this.SizeType = sizeType;
+                this.OptimalSvgSize = optimalSvgSize;
+                this.Caption = caption;
+            }
+            /// <summary>
+            /// Vytvoří a vrátí new Image pro this data, tedy pro aktuálně platný skin
+            /// </summary>
+            /// <returns></returns>
+            public Image CreateImage()
+            {
+                return DxComponent.CreateBitmapImage(this.ImageName, this.SizeType, this.OptimalSvgSize, this.Caption, this.ExactName, false);
+            }
+            public readonly string Key;
+            public readonly string ImageName;
+            public readonly bool ExactName;
+            public readonly ResourceImageSizeType SizeType;
+            public readonly Size? OptimalSvgSize;
+            public readonly string Caption;
+        }
+        #endregion
+        #region IListenerZoomChange, IListenerLightDarkChanged
+        /// <summary>
+        /// Po změně Zoomu
+        /// </summary>
+        void IListenerZoomChange.ZoomChanged() { RefreshCurrentSize(); }
+        /// <summary>
+        /// Aktualizuje velikost ikon po změně Zoomu
+        /// </summary>
+        private void RefreshCurrentSize()
+        {
+            this.ImageSize = DxComponent.GetImageSize(SizeType, true);
+        }
+        /// <summary>
+        /// Po změně skinu LightDark
+        /// </summary>
+        void IListenerLightDarkChanged.LightDarkChanged() { OnLightDarkChanged(); }
+        /// <summary>
+        /// Přegeneruje svoje ikony po změně skinu
+        /// </summary>
+        private void OnLightDarkChanged()
+        {
+            foreach (var info in _ExtendedDict.Values)
+            {
+                int index = IndexOfKey(info.Key);
+                if (index >= 0)
+                    this.ImageList.Images[index] = info.CreateImage();
+            }
+        }
+        #endregion
     }
     #endregion
     #region class DxSvgImageCollection : Kolekce SvgImages rozšířená o numerický index
