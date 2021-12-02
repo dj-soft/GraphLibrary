@@ -218,7 +218,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>TimeStamp pro aktivní stránky</summary>
         private int LastTimeStamp;
         #endregion
-        #region Obrázek vpravo
+        #region Obrázek vpravo. Od verze DevExpress 21.1 bude možno použít property RibbonControl.EmptyAreaImageOptions, aktuálně jsme na 20.2
         /// <summary>
         /// Ikona vpravo pro velký Ribbon
         /// </summary>
