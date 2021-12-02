@@ -3687,20 +3687,37 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
         private void PrepareSyntaxEditor(DxPanelControl panel)
         {
             _PanelSyntaxEditor = panel;
-            _PanelSyntaxEditor.ClientSizeChanged += _PanelSyntaxEditor_ClientSizeChanged;
+            _PanelSyntaxEditor.ClientSizeChanged += _PanelSyntaxEditor_AnySizeChanged;
 
+            bool withRibbon = false;
 
+            _SyntaxRtfEdit = new DxSyntaxEditControl();
+            _PanelSyntaxEditor.Controls.Add(_SyntaxRtfEdit);
+
+            if (withRibbon)
+            {
+                _SyntaxRtfRibbon = _SyntaxRtfEdit.CreateRibbon(DevExpress.XtraRichEdit.RichEditToolbarType.All);
+                _SyntaxRtfRibbon.CommandLayout = XR.CommandLayout.Simplified;
+                _SyntaxRtfRibbon.SizeChanged += _PanelSyntaxEditor_AnySizeChanged;
+                _PanelSyntaxEditor.Controls.Add(_SyntaxRtfRibbon);
+            }
+
+            _SyntaxRtfEdit.SyntaxRules = Noris.WS.Parser.NetParser.DefaultSettings.MsSqlColor;
 
             _PanelSyntaxEditorDoLayout();
         }
-        private void _PanelSyntaxEditor_ClientSizeChanged(object sender, EventArgs e)
+        private void _PanelSyntaxEditor_AnySizeChanged(object sender, EventArgs e)
         {
             _PanelSyntaxEditorDoLayout();
         }
         private void _PanelSyntaxEditorDoLayout()
         {
+            if (_SyntaxRtfEdit == null) return;
+
             var clientSize = _PanelSyntaxEditor.ClientSize;
 
+            int y = (_SyntaxRtfRibbon != null ? _SyntaxRtfRibbon.Bottom : 0) + 6;
+            _SyntaxRtfEdit.Bounds = new Rectangle(6, y, clientSize.Width - 12, clientSize.Height - 6 - y);
 
             /*
             int contentY = 36;
@@ -3775,6 +3792,8 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
         private DxCheckEdit _SyntaxCheckCSharp;
         private DxCheckEdit _SyntaxCheckSQL;
         private DxCheckEdit _SyntaxCheckXML;
+        private DxSyntaxEditControl _SyntaxRtfEdit;
+        private XR.RibbonControl _SyntaxRtfRibbon;
 
         #endregion
         #region Random
