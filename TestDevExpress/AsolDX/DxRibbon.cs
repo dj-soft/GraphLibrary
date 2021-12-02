@@ -26,7 +26,7 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// <summary>
     /// Potomek Ribbonu
     /// </summary>
-    public class DxRibbonControl : DevExpress.XtraBars.Ribbon.RibbonControl, IDxRibbonInternal, IListenerApplicationIdle, IListenerLightDarkChanged
+    public class DxRibbonControl : DevExpress.XtraBars.Ribbon.RibbonControl, IDxRibbonInternal, IListenerApplicationIdle, IListenerLightDarkChanged, IListenerZoomChange
     {
         #region Konstruktor
         /// <summary>
@@ -5496,15 +5496,28 @@ namespace Noris.Clients.Win.Components.AsolDX
         void IDxRibbonInternal.RemoveGroups(IEnumerable<DxRibbonGroup> groupsToDelete) { RemoveGroups(groupsToDelete); }
         void IListenerApplicationIdle.ApplicationIdle() { _ApplicationIdle(); }
         #endregion
-        #region IListenerLightDarkChanged : reakce na změnu skinu světlý / tmavý = modifikace ikon
+        #region IListenerLightDarkChanged a IListenerZoomChange : reakce na změnu skinu světlý / tmavý = modifikace ikon, a na Zoom
         /// <summary>
         /// Po změně skinu světlý / tmavý
         /// </summary>
         void IListenerLightDarkChanged.LightDarkChanged()
         {
+            this.ReloadImages();
+        }
+        void IListenerZoomChange.ZoomChanged()
+        {
+            // Nemá význam přenačítat Images, když Zoom se netýká reálné velikosti Images v Ribbonu.
+            // Zatím nemám cestu, jak zoomovat obrázky v Ribbonu podle Zoomu Nephrite.
+            // Zoomuje se jen velikost textu.
+
+            // this.ReloadImages();
+        }
+        private void ReloadImages()
+        {
             try
             {
                 this.BeginUpdate();
+
                 foreach (BarItem barItem in this.Items)
                 {
                     if (barItem.Tag is BarItemTagInfo tagInfo)
@@ -5512,6 +5525,12 @@ namespace Noris.Clients.Win.Components.AsolDX
                         FillBarItemImage(barItem, tagInfo.Data, tagInfo.Level);
                     }
                 }
+
+//                foreach (var dxPage in this.AllOwnPages)
+//                    dxPage..ReApplyImage();
+
+                foreach (var dxGroup in this.Groups)
+                    dxGroup.ReApplyImage();
             }
             finally
             {
@@ -6109,6 +6128,15 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.GroupData = iRibbonGroup;
             this.Tag = iRibbonGroup;
             iRibbonGroup.RibbonGroup = this;
+        }
+        /// <summary>
+        /// Znovu aplikuje Image ze svého objektu <see cref="GroupData"/>
+        /// </summary>
+        public void ReApplyImage()
+        {
+            IRibbonGroup iRibbonGroup = this.GroupData;
+            if (iRibbonGroup != null)
+                DxComponent.ApplyImage(this.ImageOptions, iRibbonGroup.GroupImageName, null, DxRibbonControl.RibbonImageSize);
         }
         /// <summary>
         /// Uvolní svoje interní reference

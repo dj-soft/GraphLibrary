@@ -2896,7 +2896,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 var sizeType = value;
                 var minHeight = this.MinRowHeight;
-                var rowHeight = DxComponent.GetImageSize(sizeType).Height;
+                var rowHeight = DxComponent.GetDefaultImageSize(sizeType).Height;
                 this.RowHeight = (rowHeight > minHeight ? rowHeight : minHeight);
                 this.__NodeImageSize = sizeType;
             }

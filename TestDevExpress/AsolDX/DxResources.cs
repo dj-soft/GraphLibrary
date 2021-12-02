@@ -76,6 +76,15 @@ namespace Noris.Clients.Win.Components.AsolDX
             return null;
         }
         /// <summary>
+        /// Vrátí defaultní nezoomovanou velikost, tedy 16x16 / 24x24 / 32x32
+        /// </summary>
+        /// <param name="sizeType"></param>
+        /// <returns></returns>
+        public static Size GetDefaultImageSize(ResourceImageSizeType? sizeType)
+        {
+            return GetImageSize(sizeType, false, null);
+        }
+        /// <summary>
         /// Vrátí pixelovou velikost odpovídající dané typové velikost, započítá aktuální Zoom a cílové DPI
         /// </summary>
         /// <param name="sizeType"></param>
@@ -205,12 +214,12 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (sizeType.HasValue)
             {
                 if (DxApplicationResourceLibrary.ResourcePack.TryGetOptimalSize(vectorItems, sizeType, out var vectorItem))
-                    imageInfos.Add(new Tuple<Size, Image>(GetImageSize(vectorItem.SizeType), _ConvertApplicationVectorToImage(vectorItem, sizeType)));
+                    imageInfos.Add(new Tuple<Size, Image>(GetDefaultImageSize(vectorItem.SizeType), _ConvertApplicationVectorToImage(vectorItem, sizeType)));
             }
             if (imageInfos.Count == 0)
             {
                 foreach (var vectorItem in vectorItems)
-                    imageInfos.Add(new Tuple<Size, Image>(GetImageSize(vectorItem.SizeType), _ConvertApplicationVectorToImage(vectorItem, vectorItem.SizeType)));
+                    imageInfos.Add(new Tuple<Size, Image>(GetDefaultImageSize(vectorItem.SizeType), _ConvertApplicationVectorToImage(vectorItem, vectorItem.SizeType)));
             }
             var icon = _ConvertBitmapsToIcon(imageInfos);
             _DisposeImages(imageInfos);
@@ -226,7 +235,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         private Image _ConvertVectorToImage(SvgImage svgImage, ResourceImageSizeType? sizeType, Size? optimalSvgSize)
         {
             if (svgImage is null) return null;
-            var imageSize = optimalSvgSize ?? GetImageSize(sizeType);
+            var imageSize = optimalSvgSize ?? GetDefaultImageSize(sizeType);
             var svgPalette = DxComponent.GetSvgPalette();
             if (SystemAdapter.CanRenderSvgImages)
                 return SystemAdapter.RenderSvgImage(svgImage, imageSize, svgPalette);
@@ -343,12 +352,12 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (sizeType.HasValue)
             {
                 if (DxApplicationResourceLibrary.ResourcePack.TryGetOptimalSize(bitmapItems, sizeType, out var bitmapItem))
-                    imageInfos.Add(new Tuple<Size, Image>(GetImageSize(bitmapItem.SizeType), bitmapItem.CreateBmpImage()));
+                    imageInfos.Add(new Tuple<Size, Image>(GetDefaultImageSize(bitmapItem.SizeType), bitmapItem.CreateBmpImage()));
             }
             if (imageInfos.Count == 0)
             {
                 foreach (var bitmapItem in bitmapItems)
-                    imageInfos.Add(new Tuple<Size, Image>(GetImageSize(bitmapItem.SizeType), bitmapItem.CreateBmpImage()));
+                    imageInfos.Add(new Tuple<Size, Image>(GetDefaultImageSize(bitmapItem.SizeType), bitmapItem.CreateBmpImage()));
             }
             var icon = _ConvertBitmapsToIcon(imageInfos);
             _DisposeImages(imageInfos);
@@ -742,7 +751,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         private Size _GetVectorSvgImageSize(ResourceImageSizeType? sizeType, Size? imageSize)
         {
             if (imageSize.HasValue) return imageSize.Value;
-            if (sizeType.HasValue) return DxComponent.GetImageSize(sizeType.Value, true);
+            if (sizeType.HasValue) return DxComponent.GetDefaultImageSize(sizeType.Value);
             return Size.Empty;
         }
         /// <summary>
@@ -800,7 +809,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             imageOptions.Image = null;
             imageOptions.SvgImage = _GetVectorImageDevExpress(imageName);             // Na vstupu je jméno Vektoru, dáme jej tedy do SvgImage
             if (imageSize.HasValue) imageOptions.SvgImageSize = imageSize.Value;
-            else if (sizeType.HasValue) imageOptions.SvgImageSize = DxComponent.GetImageSize(sizeType.Value, true);
+            else if (sizeType.HasValue) imageOptions.SvgImageSize = DxComponent.GetDefaultImageSize(sizeType.Value);
         }
         /// <summary>
         /// Aplikuje Image typu Bitmap ze zdroje DevExpress do daného cíle <paramref name="imageOptions"/>.
@@ -1091,7 +1100,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                     if (!svgImageCollections.TryGetValue(sizeType, out svgCollection))
                     {
                         svgCollection = new DxSvgImageCollection(sizeType);
-                        svgCollection.ImageSize = GetImageSize(sizeType, true);          // Toto je třeba aktualizovat po změně Zoomu!!!  Viz metoda _RecalcSvgCollectionsSizeByZoom()
+                        svgCollection.ImageSize = GetDefaultImageSize(sizeType);         // Hodotu ani po změně Zoomu neměníme...
                         svgImageCollections.Add(sizeType, svgCollection);
                     }
                 }
@@ -1424,7 +1433,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         private Image _CreateBitmapImageDevExpressSvg(string imageName, ResourceImageSizeType? sizeType = null, Size? optimalSvgSize = null)
         {
             string resourceName = _GetDevExpressResourceKey(imageName);
-            Size size = optimalSvgSize ?? GetImageSize(sizeType);
+            Size size = optimalSvgSize ?? GetDefaultImageSize(sizeType);
 
             var svgPalette = GetSvgPalette();
             _RewindDevExpressResourceStream(resourceName);
@@ -1702,7 +1711,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             Color textColor = (isDark ? SvgImageCustomize.LightColorD4 : SvgImageCustomize.DarkColor38);
             Color lineColor = textColor;
 
-            var realSize = imageSize ?? DxComponent.GetImageSize(sizeType.Value, true);
+            var realSize = imageSize ?? DxComponent.GetDefaultImageSize(sizeType.Value);
             Bitmap bitmap = new Bitmap(realSize.Width, realSize.Height, System.Drawing.Imaging.PixelFormat.Format32bppPArgb);
             using (var graphics = Graphics.FromImage(bitmap))
             {
@@ -1721,12 +1730,13 @@ namespace Noris.Clients.Win.Components.AsolDX
                 Rectangle textBounds = Rectangle.Ceiling(bounds);
                 textBounds.X = textBounds.X - 2;
                 textBounds.Width = textBounds.Width + 4;   // Radši ať se znaky vejdou a ořízne se jejich okraj, než aby vypadl celý znak...
-                using (var stringFormat = new StringFormat() { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center, Trimming = StringTrimming.None })
+                using (var stringFormat = new StringFormat() { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center, Trimming = StringTrimming.None, FormatFlags = StringFormatFlags.NoWrap | StringFormatFlags.LineLimit | StringFormatFlags.FitBlackBox })
                 {
                     if (sizeType.Value != ResourceImageSizeType.Large)
                     {   // Malé a střední ikony
                         if (text.Length > 2) text = text.Substring(0, 2);                // Radši bych tu viděl jen jedno písmenko, ale JD...
-                        using (Font font = new Font(sysFont.FontFamily, sysFont.Size * 1.0f))
+                        float fontSize = _GetCaptionFontSize(graphics, sysFont, text, bounds.Width);
+                        using (Font font = new Font(sysFont.FontFamily, fontSize))
                         {
                             //var textSize = graphics.MeasureString(text, font);
                             //var textBounds = textSize.AlignTo(bounds, ContentAlignment.MiddleCenter);
@@ -1736,7 +1746,8 @@ namespace Noris.Clients.Win.Components.AsolDX
                     else
                     {   // Velké ikony
                         if (text.Length > 2) text = text.Substring(0, 2);
-                        using (Font font = new Font(sysFont.FontFamily, sysFont.Size * 1.4f))
+                        float fontSize = _GetCaptionFontSize(graphics, sysFont, text, bounds.Width - 2);
+                        using (Font font = new Font(sysFont.FontFamily, fontSize))
                         {
                             //var textSize = graphics.MeasureString(text, font);
                             //var textBounds = textSize.AlignTo(bounds, ContentAlignment.MiddleCenter);
@@ -1746,6 +1757,24 @@ namespace Noris.Clients.Win.Components.AsolDX
                 }
             }
             return bitmap;
+        }
+        /// <summary>
+        /// Vrátí vhodnou velikost fontu
+        /// </summary>
+        /// <param name="graphics"></param>
+        /// <param name="sysFont"></param>
+        /// <param name="text"></param>
+        /// <param name="width"></param>
+        /// <returns></returns>
+        private static float _GetCaptionFontSize(Graphics graphics, Font sysFont, string text, float width)
+        {
+            var textSize = graphics.MeasureString("XX", sysFont);
+            float tw = textSize.Width;
+            float fs = sysFont.Size;
+            if (tw <= 1f) return sysFont.Size;
+            float iw = width - 2f;
+            float ratio = iw / tw;
+            return ratio * fs;
         }
         /// <summary>
         /// Písmo použité v Ribbonu
@@ -1841,15 +1870,29 @@ namespace Noris.Clients.Win.Components.AsolDX
             else
             {
                 imageOptions.Reset();
+                // Měl jsem dobrou vůli použít _GetBitmapImage(), kterážto funkce používá ImageList pro cachování shodných Images.
+                // Ale narazil jsem na problém, kdy po přidání new Image do ImageListu pod konkrétním Key se tento Image neuloží do interního pole Images,
+                //   ale uloží se jen jeho Key, a následná metode GetIndexOfKey vrací -1.
                 if (imageOptions is DevExpress.XtraBars.BarItemImageOptions barOptions)
                 {   // Má prostor pro dvě velikosti obrázku najednou:
-                    barOptions.Image = _GetBitmapImage(null, false, ResourceImageSizeType.Small, null, caption);       // CreateCaptionImage(caption, ResourceImageSizeType.Small, imageSize);
-                    barOptions.LargeImage = _GetBitmapImage(null, false, ResourceImageSizeType.Large, null, caption);  // CreateCaptionImage(caption, ResourceImageSizeType.Large, imageSize);
+                    barOptions.Image = _GetBitmapImage(null, false, ResourceImageSizeType.Small, null, caption);
+                    barOptions.LargeImage = _GetBitmapImage(null, false, ResourceImageSizeType.Large, null, caption);
                 }
                 else
                 {
-                    imageOptions.Image = _GetBitmapImage(null, false, sizeType ?? ResourceImageSizeType.Small, null, caption); // CreateCaptionImage(caption, sizeType ?? ResourceImageSizeType.Large, imageSize);
+                    imageOptions.Image = _GetBitmapImage(null, false, sizeType ?? ResourceImageSizeType.Small, null, caption);
                 }
+
+                // Přecházím tedy na CreateCaptionImage...
+                //if (imageOptions is DevExpress.XtraBars.BarItemImageOptions barOptions)
+                //{   // Má prostor pro dvě velikosti obrázku najednou:
+                //    barOptions.Image = CreateCaptionImage(caption, ResourceImageSizeType.Small, imageSize);
+                //    barOptions.LargeImage = CreateCaptionImage(caption, ResourceImageSizeType.Large, imageSize);
+                //}
+                //else
+                //{
+                //    imageOptions.Image = CreateCaptionImage(caption, sizeType ?? ResourceImageSizeType.Large, imageSize);
+                //}
             }
         }
         /// <summary>
@@ -2954,7 +2997,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 this.Caption = caption;
             }
             /// <summary>
-            /// Vytvoří a vrátí new Image pro this data, tedy pro aktuálně platný skin
+            /// Vytvoří a vrátí new Image pro this data, tedy pro aktuálně platný skin a zoom
             /// </summary>
             /// <returns></returns>
             public Image CreateImage()
@@ -2979,7 +3022,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private void RefreshCurrentSize()
         {
-            this.ImageSize = DxComponent.GetImageSize(SizeType, true);
+            // Velikost po změně Zoomu neměníme:
+            //  this.ImageSize = DxComponent.GetImageSize(SizeType, true);
+            //  this.ReCreateImages();
         }
         /// <summary>
         /// Po změně skinu LightDark
@@ -2990,6 +3035,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private void OnLightDarkChanged()
         {
+            this.ReCreateImages();
+        }
+        /// <summary>
+        /// Vytvoří nově všechny potřebné Images
+        /// </summary>
+        private void ReCreateImages()
+        { 
             foreach (var info in _ExtendedDict.Values)
             {
                 int index = IndexOfKey(info.Key);
@@ -3064,7 +3116,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private void RefreshCurrentSize()
         {
-            this.ImageSize = DxComponent.GetImageSize(SizeType, true);
+            // Velikost po změně Zoomu neměníme:
+            //  this.ImageSize = DxComponent.GetImageSize(SizeType, true);
         }
         /// <summary>
         /// Po změně skinu LightDark
