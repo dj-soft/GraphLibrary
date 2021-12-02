@@ -12,49 +12,8 @@ using System.Threading.Tasks;
 // Blok tříd, které slouží k čistému parsování textu podle pravidel.
 // Vstupem je string plus pravidla, výstupem je strukturovaný objekt obsahující jednotlivé části vstupního textu, oddělené podle pravidel.
 // Pravidla popisují konkrétní "jazyk": SQL, C#, RTF, ...
-namespace Noris.Srv.Tree.NetParser
+namespace Noris.WS.Parser.NetParser
 {
-    #region Testy a ukázky
-    internal class ParserSamples
-    {
-        public static void Test1()
-        {
-            string sql = @"
-SELECT (SELECT top 1 sklad FROM lcs.sk_hlavicka h WHERE h.cislo_subjektu = s.cislo_subjektu)
- ,s.*
-FROM lcs. [subjekty] s with (updlock, holdlock)
-   /* podmnožina hlaviček pro pořadač 15307 a sklady s referencí 6%, a doklady s referencí obsahující 3 */
-inner join (select * from lcs.sk_hlavicka where cislo_poradace = 15307) x on x.cislo_subjektu = s.cislo_subjektu 
-    and (x.sklad in (select sk.cislo_subjektu from lcs.sk_sklad sk join lcs.subjekty su on su.cislo_subjektu = sk.cislo_subjektu where su.reference_subjektu like '6%'))
-where s.reference_subjektu like '%3%' or s.nazev_subjektu = 'Kontra''A';
-
-DECLARE @cislo INT;
-SET @cislo = 15307;
-";
-
-            ParsedItem result = Parser.ParseText(sql, DefaultSettings.MsSql);
-            string sq2 = result.Text;
-            string sq3 = ((IParsedItemExtended)result).TextEdit;
-
-            string segmentName = DefaultSettings.SQL_CODE;
-            string tables = "";
-            result.ScanItems(
-                recurseFilter: f => (f.SegmentName == segmentName),
-                textModifier: t =>
-                 {
-                     if (t.ItemType == NetParser.ItemType.Text)
-                     {
-                         Tree.Sql.SqlTableName tbn = t.Text;
-                         if (tbn.HasOwner)
-                             tables += tbn.FullTableSql + "; ";
-                     }
-                     return null;
-                 });
-
-            string rtf = ((IParsedItemExtended)result).RtfText;
-        }
-    }
-    #endregion
     #region class Parser : parser textu na jednotlivé prvky včetně hierarchické struktury, podle předepsaných pravidel pro čtení konkrétního textu (pravidla jazyka).
     /// <summary>
     /// Parser : parser textu na jednotlivé prvky včetně hierarchické struktury, podle předepsaných pravidel pro čtení konkrétního textu (pravidla jazyka).
@@ -3073,7 +3032,7 @@ SET @cislo = 15307;
                 }
             }
 
-            Message.SysError("AdmGdpr0028", iCurrent.BeginPointer, text, message);   // AdmGdpr0028 = "Bad SQL format at position %0, near %1: %2."
+            throw new InvalidOperationException($"Bad SQL format at position {iCurrent.BeginPointer}, near {text}: {message}.");
         }
         #endregion
         #region Metody pro čtení výrazu (Expression)
