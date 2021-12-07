@@ -3916,8 +3916,35 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="link"></param>
         protected override void OnAddToToolbar(DevExpress.XtraBars.BarItemLink link)
         {
-            base.OnAddToToolbar(link);
+            int count1 = link.Item.Links.Count;  // Vstupní parametr (link) je fyzické tlačítko, na které bylo kliknuto
+            base.OnAddToToolbar(link);           // Tady vznikne new instance Linku pro tlačítko, které bude umístěno do QAT
+            int count2 = link.Item.Links.Count;
+            if (count2 > count1)
+                ModifyLinkForToolbar(link.Item.Links[count2 - 1]);
+
             this.UserAddItemToQat(link);
+        }
+        /// <summary>
+        /// Upraví dodaný <see cref="BarItemLink"/> pro zobrazení v QAT
+        /// </summary>
+        /// <param name="qatLink"></param>
+        void IDxRibbonInternal.ModifyLinkForQat(BarItemLink qatLink) { ModifyLinkForToolbar(qatLink); }
+        /// <summary>
+        /// Metoda upraví vzhled tlačítka, které je aktuálně přidáváno do QAT.
+        /// Může změnit jeho styl atd.
+        /// </summary>
+        /// <param name="qatLink"></param>
+        private void ModifyLinkForToolbar(DevExpress.XtraBars.BarItemLink qatLink)
+        {
+            var barItem = qatLink.Item;
+            var itemInfo = barItem?.Tag as BarItemTagInfo;
+            if (itemInfo?.Data != null)
+            {
+                bool isVisibleQatText = false; // itemInfo.Data.RibbonStyle
+                qatLink.UserRibbonStyle = (isVisibleQatText ? DevExpress.XtraBars.Ribbon.RibbonItemStyles.SmallWithText : DevExpress.XtraBars.Ribbon.RibbonItemStyles.SmallWithoutText);
+               // qatLink.ImageIndex = DxComponent.GetVectorImageIndex("svgimages/chart/chart.svg", ResourceImageSizeType.Small);
+               // qatLink.ImageOptions.ImageIndex = qatLink.ImageIndex;
+            }
         }
         /// <summary>
         /// Uživatel něco přidal do QAT
@@ -4510,6 +4537,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                         link.BeginGroup = true;
                         isGroupBegin = false;
                     }
+                    ((IDxRibbonInternal)this._Owner).ModifyLinkForQat(link);
                     this._BarItemLink = link;
                 }
             }
@@ -5672,6 +5700,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="itemsToDelete"></param>
         void RemoveItemsFromQat(List<DevExpress.XtraBars.BarItem> itemsToDelete);
+        /// <summary>
+        /// Upraví dodaný <see cref="BarItemLink"/> pro zobrazení v QAT
+        /// </summary>
+        /// <param name="qatLink"></param>
+        void ModifyLinkForQat(BarItemLink qatLink);
         /// <summary>
         /// Aktuální TimeStamp, naposledy přidělený některé stránce
         /// </summary>
@@ -8004,11 +8037,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         Large = 1,
         /// <summary>
-        /// If active, an item can be displayed like a smal bar item with its caption.
+        /// If active, an item can be displayed like a smalL bar item with its caption.
         /// </summary>
         SmallWithText = 2,
         /// <summary>
-        /// If active, an item can be displayed like a smal bar item without its caption.
+        /// If active, an item can be displayed like a smalL bar item without its caption.
         /// </summary>
         SmallWithoutText = 4,
         /// <summary>

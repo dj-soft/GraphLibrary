@@ -295,7 +295,8 @@ namespace TestDevExpress.Forms
             group.Items.Add(ImagePickerForm.CreateRibbonButton());
             page.Groups.Add(group);
 
-            group = CreateFunctionGroup();
+
+            AddFunctionsGroup(page);
             if (group != null) page.Groups.Add(group);
 
             page = CreateRibbonSvgImagesPage();
@@ -331,23 +332,36 @@ namespace TestDevExpress.Forms
         }
         #endregion
         #region Ribbon Functions
-        private DataRibbonGroup CreateFunctionGroup()
+        private void AddFunctionsGroup(DataRibbonPage page)
         {
-            var group = new DataRibbonGroup() { GroupText = "FUNKCE" };
+            DataRibbonGroup group;
+
+            group = new DataRibbonGroup() { GroupText = "FUNKCE" };
             group.Items.Add(CreateRibbonFunction("GraphForm", "Graph Form", "svgimages/chart/chart.svg", "Ukázky grafů DevExpress", _OpenGraphFormButton_Click));
             group.Items.Add(CreateRibbonFunction("LayoutForm", "Layout Form", "devav/layout/pages.svg", "Otevře okno pro testování layoutu (pod-okna)", _OpenLayoutFormButton_Click));
             group.Items.Add(CreateRibbonFunction("DataForm1", "Data Form1", "svgimages/spreadsheet/showtabularformpivottable.svg", "Otevře okno pro testování DataFormu", _TestDataForm1ModalButton_Click));
             group.Items.Add(CreateRibbonFunction("DataForm2", "Data Form2", "svgimages/spreadsheet/showtabularformpivottable.svg", "Otevře okno pro testování DataFormu 2", _TestDataForm2ModalButton_Click));
             group.Items.Add(CreateRibbonFunction("RibbonForm", "Ribbon Form", "svgimages/reports/distributerowsevenly.svg", "Otevře okno pro testování Ribbonu", _TestDxRibbonFormModalButton_Click));
-            group.Items.Add(CreateRibbonFunction("DevExpressRibbon", "Native Ribbon", "svgimages/reports/gaugestylelinearhorizontal.svg", "Otevře okno s nativním Ribbonem", _TestDxDevExpressRibbon_Click, true));
+            group.Items.Add(CreateRibbonFunction("DevExpressRibbon", "Native Ribbon", "svgimages/reports/gaugestylelinearhorizontal.svg", "Otevře okno s nativním Ribbonem", _TestDxDevExpressRibbon_Click, null, true));
             // group.Items.Add(CreateRibbonFunction("RibbonFormClasses", "Classes Ribbon", "svgimages/reports/gaugestylelinearhorizontal.svg", "Otevře okno s ASOL Ribbonem, vytvořeným jen s použitím tříd DxRibbon", _TestDxRibbonFormClassesModalButton_Click));
             group.Items.Add(CreateRibbonFunction("TestRibbon", "Test Ribbon", "svgimages/reports/gaugestylelinearhorizontal.svg", "Otevře okno s ASOL Ribbonem, vytvořeným s využitím všech metod DxRibbon a rozhraní IRibbon", _TestDxTestRibbon_Click));
             group.Items.Add(CreateRibbonFunction("AsolRibbon", "ASOL Ribbon", "svgimages/reports/gaugestylelinearhorizontal.svg", "Otevře okno s ASOL Ribbonem, vytvořeným s použitím definičních dat IRibbon", _TestDxAsolRibbon_Click));
             // group.Items.Add(CreateRibbonFunction("RibbonFormData3", "IData3 Ribbon", "svgimages/reports/gaugestylelinearhorizontal.svg", "Otevře okno s ASOL Ribbonem, vytvořeným s použitím definičních dat IRibbon a s třístupňovým mergováním (Slave => Void => Desktop)", _TestDxRibbonFormData3ModalButton_Click));
+            page.Groups.Add(group);
 
-            return group;
+            group = new DataRibbonGroup() { GroupText = "STYLY" };
+            string resourceL = "svgimages/dashboards/editcolors.svg";
+            string resourceS = "svgimages/dashboards/editrules.svg";
+            group.Items.Add(CreateRibbonFunction("StylesAll", "All", resourceL, "Button ve stylu All", null, RibbonItemStyles.All, true));
+            group.Items.Add(CreateRibbonFunction("StylesDefault", "Default", resourceL, "Button ve stylu Default", null, RibbonItemStyles.Default));
+            group.Items.Add(CreateRibbonFunction("StylesLarge", "Large", resourceL, "Button ve stylu Large", null, RibbonItemStyles.Large));
+            // group.Items.Add(CreateRibbonFunction("StylesLarge", "Large", resourceL, "Button ve stylu Large", null, RibbonItemStyles.Large));
+            group.Items.Add(CreateRibbonFunction("StylesSmallWithoutText", "SmallWithoutText", resourceS, "Button ve stylu SmallWithoutText", null, RibbonItemStyles.SmallWithoutText));
+            group.Items.Add(CreateRibbonFunction("StylesSmallWithText", "SmallWithText", resourceS, "Button ve stylu SmallWithText", null, RibbonItemStyles.SmallWithText));
+            page.Groups.Add(group);
+
         }
-        protected DataRibbonItem CreateRibbonFunction(string itemId, string text, string image, string toolTipText, Action<IMenuItem> clickHandler = null, bool firstInGroup = false)
+        protected DataRibbonItem CreateRibbonFunction(string itemId, string text, string image, string toolTipText, Action<IMenuItem> clickHandler = null, RibbonItemStyles? styles = null, bool firstInGroup = false)
         {
             DataRibbonItem iRibbonItem = new DataRibbonItem()
             {
@@ -356,7 +370,7 @@ namespace TestDevExpress.Forms
                 ImageName = image,
                 ToolTipText = toolTipText,
                 ItemType = RibbonItemType.Button,
-                RibbonStyle = RibbonItemStyles.Large,
+                RibbonStyle = styles ?? RibbonItemStyles.All,
                 ItemIsFirstInGroup = firstInGroup,
                 ClickAction = clickHandler
             };
@@ -2986,6 +3000,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
                 EdgeColor = Color.FromArgb(120, Color.Violet),
                 DotColor = Color.FromArgb(100, Color.DarkMagenta)
             };
+            DevExpress.XtraBars.BarItemLink bl;
             _PanelSvgIcons.PaintedItems.Add(_SvgIconImage1);
             _PanelSvgIcons.PaintedItems.Add(_SvgIconImage2);
             _PanelSvgDoLayout();
