@@ -3916,13 +3916,24 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="link"></param>
         protected override void OnAddToToolbar(DevExpress.XtraBars.BarItemLink link)
         {
-            int count1 = link.Item.Links.Count;  // Vstupní parametr (link) je fyzické tlačítko, na které bylo kliknuto
-            base.OnAddToToolbar(link);           // Tady vznikne new instance Linku pro tlačítko, které bude umístěno do QAT
-            int count2 = link.Item.Links.Count;
-            if (count2 > count1)
-                ModifyLinkForToolbar(link.Item.Links[count2 - 1]);
-
+            var qatLinks = link.Item.Links;           // Vstupní parametr (link) je fyzické tlačítko, na které bylo kliknuto
+            int count1 = qatLinks.Count;              // Hodnota count1 odpovídá indexu prvního linku, který bude do pole qatLinks vygenerován jako QAT Link...
+            base.OnAddToToolbar(link);                // Tady vznikne new instance Linku pro tlačítko, které bude umístěno do QAT
+            ModifyLinksForToolbar(qatLinks, count1);  // Modifikujeme všechny nově přidané linky = všechny jsou linky v QAT Toolbarech (nativní plus mergovaný)
             this.UserAddItemToQat(link);
+        }
+        /// <summary>
+        /// Metoda upraví vzhled tlačítka, které je aktuálně přidáváno do QAT.
+        /// Může změnit jeho styl atd.
+        /// Na vstupu je kolekce všech linků na daný prvek, a index prvního linku který je třeba modifikovat.
+        /// </summary>
+        /// <param name="qatLinks"></param>
+        /// <param name="index"></param>
+        private void ModifyLinksForToolbar(DevExpress.XtraBars.BarItemLinkCollection qatLinks, int index)
+        {
+            int count = qatLinks.Count;
+            for (int i = index; i < count; i++)
+                ModifyLinkForToolbar(qatLinks[i]);
         }
         /// <summary>
         /// Upraví dodaný <see cref="BarItemLink"/> pro zobrazení v QAT
@@ -3936,15 +3947,16 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="qatLink"></param>
         private void ModifyLinkForToolbar(DevExpress.XtraBars.BarItemLink qatLink)
         {
-            var barItem = qatLink.Item;
-            var itemInfo = barItem?.Tag as BarItemTagInfo;
-            if (itemInfo?.Data != null)
-            {
-                bool isVisibleQatText = false; // itemInfo.Data.RibbonStyle
-                qatLink.UserRibbonStyle = (isVisibleQatText ? DevExpress.XtraBars.Ribbon.RibbonItemStyles.SmallWithText : DevExpress.XtraBars.Ribbon.RibbonItemStyles.SmallWithoutText);
-               // qatLink.ImageIndex = DxComponent.GetVectorImageIndex("svgimages/chart/chart.svg", ResourceImageSizeType.Small);
-               // qatLink.ImageOptions.ImageIndex = qatLink.ImageIndex;
+            bool isVisibleQatText = false;
+            if (qatLink?.Item?.Tag is BarItemTagInfo itemInfo)
+            {   // Pokud BarItem je vytvořen na základě dat IRibbonItem:
+                isVisibleQatText = itemInfo?.Data?.ShowTextInQAT ?? false;
             }
+            qatLink.UserRibbonStyle = (isVisibleQatText ? DevExpress.XtraBars.Ribbon.RibbonItemStyles.SmallWithText : DevExpress.XtraBars.Ribbon.RibbonItemStyles.SmallWithoutText);
+
+            //  Výměna ikony mi ještě nejde (změna se neprojeví v buttonu):
+            // qatLink.ImageIndex = DxComponent.GetVectorImageIndex("svgimages/chart/chart.svg", ResourceImageSizeType.Small);
+            // qatLink.ImageOptions.ImageIndex = qatLink.ImageIndex;
         }
         /// <summary>
         /// Uživatel něco přidal do QAT
@@ -7705,6 +7717,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public virtual RibbonItemStyles RibbonStyle { get; set; }
         /// <summary>
+        /// Zobrazovat text buttonu při jeho zobrazení v QAT?
+        /// </summary>
+        public virtual bool ShowTextInQAT { get; set; }
+        /// <summary>
         /// Zobrazit v Search menu?
         /// </summary>
         public virtual bool VisibleInSearchMenu { get; set; }
@@ -7903,6 +7919,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Styl zobrazení prvku
         /// </summary>
         RibbonItemStyles RibbonStyle { get; }
+        /// <summary>
+        /// Zobrazovat text buttonu při jeho zobrazení v QAT?
+        /// </summary>
+        bool ShowTextInQAT { get; }
         /// <summary>
         /// Zobrazit v Search menu?
         /// </summary>
