@@ -3458,9 +3458,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void _DxQATItemKeysChanged(object sender, EventArgs e)
         {
             string newKeys = DxQuickAccessToolbar.ConfigValue;
-            string oldKeys = this._QATLocalConfigValue;                  // Pokud jsem já (this, prostřednictvím uživatele) provedl změnu v QAT prvcích, pak jsem si nový stav uložil sem, a pak jsem nový stav poslal do DxQuickAccessToolbar.QATItemKeys
+            string oldKeys = this._QATLocalConfigValue;              // Pokud jsem já (this, prostřednictvím uživatele) provedl změnu v QAT prvcích, pak jsem si nový stav uložil sem, a pak jsem nový stav poslal do DxQuickAccessToolbar.QATItemKeys
             if (String.Equals(newKeys, oldKeys)) return;             //  => tedy pro mě ke změně nedošlo.
-            this._SetQATUserItemKeys(true);                 // Změnu způsobil jiný Ribbon anebo server = poslal nová data
+            this._SetQATUserItemKeys(true);                          // Změnu způsobil jiný Ribbon anebo server = poslal nová data
         }
         /// <summary>
         /// Metoda vrátí platný QAT klíč, pro použití v Dictionary.
@@ -3564,7 +3564,15 @@ namespace Noris.Clients.Win.Components.AsolDX
                 if (key == "") continue;
                 if (_QATUserItemDict.ContainsKey(key)) continue;     // Duplicita na vstupu: ignorujeme
                 QatItem qatItem = new QatItem(this, key);
-                if (refreshToolbar) qatItem.BarItem = this.Items[itemId];
+                if (refreshToolbar)
+                {
+                    qatItem.BarItem = this.Items[itemId];
+                    if (TryGetIRibbonData(qatItem.BarItem, out var _, out var iRibbonItem, out var iRibbonGroup, out var _))
+                    {
+                        qatItem.RibbonItem = iRibbonItem;
+                        qatItem.RibbonGroup = iRibbonGroup;
+                    }
+                }
                 _QATUserItems.Add(qatItem);
                 _QATUserItemDict.Add(key, qatItem);
             }
@@ -3682,6 +3690,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             string key = GetValidQATKey(ribbonItem.ItemId);
             if (!_QATUserItemDict.TryGetValue(key, out var qatItem)) return;       // Pro daný prvek Ribbonu nemáme záznam, že bychom měli přidat prvek do QAT.
             qatItem.BarItem = barItem;
+            qatItem.RibbonItem = ribbonItem;
+            qatItem.RibbonGroup = ribbonItem.ParentGroup;
         }
         /// <summary>
         /// Volá se na závěr přidávání dat do stránek: 
@@ -4140,7 +4150,20 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         private bool TryGetIRibbonData(DevExpress.XtraBars.BarItemLink link, out string key, out IRibbonItem iRibbonItem, out IRibbonGroup iRibbonGroup, out DxRibbonControl ownerRibbon)
         {
-            DevExpress.XtraBars.BarItem barItem = link?.Item;
+            return TryGetIRibbonData(link?.Item, out key, out iRibbonItem, out iRibbonGroup, out ownerRibbon);
+        }
+        /// <summary>
+        /// Metoda v dodaném linku najde jeho Item, jeho Tag, detekuje jeho typ a určí jeho Key, najde Ribbon, který prvek deklaroval, uloží typové výsledky a vrátí true.
+        /// Pokud se nezdaří, vrátí false.
+        /// </summary>
+        /// <param name="link"></param>
+        /// <param name="key"></param>
+        /// <param name="iRibbonItem"></param>
+        /// <param name="iRibbonGroup"></param>
+        /// <param name="ownerRibbon"></param>
+        /// <returns></returns>
+        private bool TryGetIRibbonData(DevExpress.XtraBars.BarItem barItem, out string key, out IRibbonItem iRibbonItem, out IRibbonGroup iRibbonGroup, out DxRibbonControl ownerRibbon)
+        {
             if (barItem != null)
             {
                 object tag = barItem.Tag;
@@ -4379,10 +4402,105 @@ namespace Noris.Clients.Win.Components.AsolDX
                     .ToArray();
             }
         }
-        private void ChangeQatItems(IMenuItem[]  currentItems, IMenuItem[] modifiedItems)
+        /// <summary>
+        /// Zpracuje požadavek na změnu ikon (přetřídění anebo vymazání) s ohledem na kompletní sadu QAT ikon v <see cref="DxQuickAccessToolbar.QATItems"/>.
+        /// V našich prvcích (parametry) je jen podmnožina z celkového pole QAT prvků (protože náš Ribbon nejspíš nezobrazuje všechny buttony z celé aplikace).
+        /// </summary>
+        /// <param name="currentItems"></param>
+        /// <param name="modifiedItems"></param>
+        private void ChangeQatItems(IMenuItem[] currentItems, IMenuItem[] modifiedItems)
         {
+            // Z dodaných dat si vytáhneme jen jejich klíče:
+            var currentIds = currentItems.Select(i => i.ItemId).ToArray();
+            var modifiedIds = modifiedItems.Select(i => i.ItemId).ToArray();
+            if (modifiedIds.Length > currentIds.Length)
+                throw new InvalidOperationException($"DxRibbonControl.ChangeQatItems() error: modifiedItems has more items than currentItems.");
+
+            // Zjistíme, zda vůbec došlo k nějaké změně:   pokud ne, pak nic dalšího nepodnikáme:
+            if (currentIds.Length == modifiedIds.Length && (currentIds.Length == 0 || currentIds.ToOneString() == modifiedIds.ToOneString())) return;
+
+            // Získám pole klíčů všech QAT prvků:
+            //  (QAT prvky mají tu vlastnost, že v jednom poli se nikdy nevyskytuje stejný klíč vícekrát = neexistují duplicity!!!)
             var allQatItems = DxQuickAccessToolbar.QATItems.ToList();
 
+            // Nyní si založím pole s informacemi ChangeQatInfo, ve kterém shrnu potřebná data:
+            int count = currentIds.Length;
+            ChangeQatInfo[] changeQats = new ChangeQatInfo[count];
+            for (int i = 0; i < currentIds.Length; i++)
+            {
+                string currentId = currentIds[i];
+                ChangeQatInfo changeQat = new ChangeQatInfo()
+                {
+                    CurrentId = currentId,
+                    CurrentAllQatIndex = allQatItems.IndexOf(currentId),
+                    IsDeleted = !modifiedIds.Any(m => m == currentId)
+                };
+                changeQats[i] = changeQat;
+            }
+
+            // Do těch prvků pole changeQats, které nejsou určeny ke smazání, vepíšu ItemId nových prvků = tím zajistím uložení změn pořadí prvků:
+            int index = 0;
+            foreach (var modifiedId in modifiedIds)
+            {
+                // Přeskočím prvky, které obsahují prvek, který se má smazat = jeho pozici nebudu obsazovat, ale na konci ji odeberu z DxQuickAccessToolbar.QATItems:
+                while (index < count && changeQats[index].IsDeleted) index++;
+                if (index >= count)
+                    throw new InvalidOperationException($"DxRibbonControl.ChangeQatItems() error: not enough space in changeQats to store modifiedItems.");
+
+                changeQats[index].ModifiedId = modifiedId;
+                index++;
+            }
+
+            // Kontrola: každý vstupující prvek musí být buď vymazaný, anebo pojmenovaný:
+            if (changeQats.Any(i => !i.IsDeleted && i.ModifiedId == null))
+                throw new InvalidOperationException($"DxRibbonControl.ChangeQatItems() error: not defined ModifiedId for odl CurrentId.");
+
+            // Nyní provedu nastřádané změny v poli allQatItems a uložím jej nazpátek:
+            var changeList = changeQats.ToList();
+            changeList.Sort((a, b) => b.CurrentAllQatIndex.CompareTo(a.CurrentAllQatIndex));       // Setřídím sestupně podle CurrentAllQatIndex, to pro snadnější odebírání prvků
+            foreach (var changeItem in changeList)
+            {
+                if (changeItem.IsDeleted)
+                    // Pokud určitý prvek má být odebrán, odebereme prvek na jeho indexu (jdeme sestupně, netřeba odčítávat již odebrané indexy):
+                    allQatItems.RemoveAt(changeItem.CurrentAllQatIndex);
+                else
+                    // Na místě daného původního prvku bude nyní modifikovaný prvek:
+                    allQatItems[changeItem.CurrentAllQatIndex] = changeItem.ModifiedId;
+            }
+
+            // Modifikované pole vložíme zpátky do správce, ten zajistí jeho promítnutí do všech aktivních Ribbonů i do Nephrite
+            //  - pomocí eventu DxQuickAccessToolbar.ConfigValueChanged:
+            DxQuickAccessToolbar.QATItems = allQatItems.ToArray();
+        }
+        /// <summary>
+        /// Malá třída pro usnadnění modifikace QAT prvků
+        /// </summary>
+        private class ChangeQatInfo
+        {
+            /// <summary>
+            /// ItemId stávajícího prvku
+            /// </summary>
+            public string CurrentId;
+            /// <summary>
+            /// Index stávajícího prvku ItemId v poli <see cref="DxQuickAccessToolbar.QATItems"/>
+            /// </summary>
+            public int CurrentAllQatIndex;
+            /// <summary>
+            /// Obsahuje true, když prvek s tímto ItemId (<see cref="CurrentId"/>) není přítomen v poli modifikovaný prvků = má být smazán
+            /// </summary>
+            public bool IsDeleted;
+            /// <summary>
+            /// ItemId prvku, který bude na této pozici <see cref="CurrentAllQatIndex"/> po změně = po změně pořadí prvků
+            /// </summary>
+            public string ModifiedId;
+            /// <summary>
+            /// Vizualizace
+            /// </summary>
+            /// <returns></returns>
+            public override string ToString()
+            {
+                return $"CurrentId: {CurrentId}, at index [{CurrentAllQatIndex}]; " + (IsDeleted ? "IsDeleted" : "ModifiedId: " + ModifiedId);
+            }
         }
         #endregion
         #region class QatItem : evidence pro jedno tlačítko QAT
@@ -4487,7 +4605,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// <summary>
             /// Definice prvku Ribbonu
             /// </summary>
-            public IRibbonItem RibbonItem { get; private set; }
+            public IRibbonItem RibbonItem { get; internal set; }
             /// <summary>
             /// Fyzický objekt Ribbonu.
             /// Setováním objektu do této property dojde k odstranění případně existujícího linku <see cref="BarItemLink"/> 
@@ -4506,7 +4624,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// <summary>
             /// Definice grupy Ribbonu
             /// </summary>
-            public IRibbonGroup RibbonGroup { get; private set; }
+            public IRibbonGroup RibbonGroup { get; internal set; }
             /// <summary>
             /// Fyzický objekt Ribbonu typu Grupa.
             /// Setováním objektu do této property dojde k odstranění případně existujícího linku <see cref="BarItemLink"/> 
@@ -4600,14 +4718,13 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// <param name="disposeBarItem">Volitelně disposovat i samotný prvek <see cref="BarItem"/></param>
             public void RemoveBarItemLink(bool disposeBarItem = false)
             {
-                var barLink = this.BarItemLink;
-                if (barLink != null)
+                string key = this.Key;
+                if (_Owner != null && _Owner.Toolbar != null && _Owner.Toolbar.ItemLinks.Count > 0)
                 {
-                    if (_Owner != null)
-                        _Owner.Toolbar.ItemLinks.Remove(barLink);
-                    // není vždy OK: barLink.Dispose();
-                    this._BarItemLink = null;
+                    _Owner.Toolbar.ItemLinks.RemoveWhere<BarItemLink>(b => b.Item.Name == key);
                 }
+
+                this._BarItemLink = null;
 
                 if (disposeBarItem)
                 {

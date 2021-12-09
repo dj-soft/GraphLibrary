@@ -279,6 +279,44 @@ namespace Noris.Clients.Win.Components.AsolDX
                 }
             }
         }
+        /// <summary>
+        /// Z dodané kolekce odebere všechny prvky, které vyhoví danému filtru
+        /// </summary>
+        /// <typeparam name="TItem"></typeparam>
+        /// <param name="items"></param>
+        /// <param name="predicate"></param>
+        public static void RemoveWhere<TItem>(this System.Collections.IList items, Func<TItem, bool> predicate)
+        {
+            if (items == null || items.Count == 0) return;
+            for (int index = 0; index < items.Count; index++)
+            {
+                object item = items[index];
+                if (item is TItem && predicate((TItem)item))
+                {
+                    items.RemoveAt(index);
+                    index--;
+                }
+            }
+        }
+        /// <summary>
+        /// Z dodané kolekce odebere všechny prvky, které vyhoví danému filtru
+        /// </summary>
+        /// <typeparam name="TItem"></typeparam>
+        /// <param name="items"></param>
+        /// <param name="predicate"></param>
+        public static void RemoveWhere<TItem>(this System.Collections.Generic.IList<TItem> items, Func<TItem, bool> predicate)
+        {
+            if (items == null || items.Count == 0) return;
+            for (int index = 0; index < items.Count; index++)
+            {
+                object item = items[index];
+                if (predicate((TItem)item))
+                {
+                    items.RemoveAt(index);
+                    index--;
+                }
+            }
+        }
         #endregion
         #region Dictionary
         /// <summary>

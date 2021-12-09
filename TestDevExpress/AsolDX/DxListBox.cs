@@ -46,7 +46,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             Rectangle innerBounds = this.GetInnerBounds();
             if (innerBounds.Width < 30 || innerBounds.Height < 30) return;
 
-            _ListBox.Bounds = new Rectangle(innerBounds.X, innerBounds.Y + 8, innerBounds.Width - 20, innerBounds.Height - 12);
+            _ListBox.Bounds = new Rectangle(innerBounds.X, innerBounds.Y + 8, innerBounds.Width - 0, innerBounds.Height - 10);
         }
         private DxListBoxControl _ListBox;
         #endregion
