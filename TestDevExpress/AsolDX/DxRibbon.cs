@@ -28,7 +28,7 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// </summary>
     public class DxRibbonControl : DevExpress.XtraBars.Ribbon.RibbonControl, IDxRibbonInternal, IListenerApplicationIdle, IListenerLightDarkChanged, IListenerZoomChange
     {
-        #region Konstruktor
+        #region Konstruktor a public property
         /// <summary>
         /// Konstruktor
         /// </summary>
@@ -90,6 +90,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             AllowMinimizeRibbon = false;    // Povolit minimalizaci Ribbonu? Pak ale nejde vrátit :-(
             AllowCustomization = false;     // Hodnota true povoluje (na pravé myši) otevřít okno Customizace Ribbonu, a to v Greenu nepodporujeme
             ShowQatLocationSelector = true; // Hodnota true povoluje změnu umístění Ribbonu
+            ShowTextInQAT = DefaultShowTextInQAT;
 
             AllowGlyphSkinning = false;     // Nikdy ne true!
             ShowItemCaptionsInQAT = true;
@@ -101,7 +102,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             _ImageHideOnMouse = true;       // Logo nekreslit, když v tom místě je myš
 
             Visible = true;
-            this.DxDisposed = false;
+            DxDisposed = false;
         }
         /// <summary>
         /// Nastaví základní uživatelské vlastnosti Ribbonu.
@@ -120,6 +121,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             ToolbarLocation = DxQuickAccessToolbar.QATLocation;                            // V této době již obsahuje platnou hodnotu.
             ShowItemCaptionsInQAT = true;
             ShowQatLocationSelector = true;
+            ShowTextInQAT = DefaultShowTextInQAT;
             ShowToolbarCustomizeItem = true;
             Toolbar.ShowCustomizeItem = false;
 
@@ -188,6 +190,33 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Celkem vytvořeno Ribbonů
         /// </summary>
         private static int TotalRibbonId;
+        /// <summary>
+        /// Zobrazovat v Toolbaru u tlačítek i text?
+        /// Hodnota true = všechny prvky v QAT budou s textem (pokud je k dispozici);
+        /// false = všechny budou bez textu (jen ikony);
+        /// null = viditelnost textu je daná stylem prvku dle <see cref="IRibbonItem.RibbonStyle"/>.
+        /// <para/>
+        /// Hodnotu lze změnit i za běhu.
+        /// Výchozí hodnota je převzata ze static property <see cref="DefaultShowTextInQAT"/>.
+        /// </summary>
+        public bool? ShowTextInQAT { get { return _ShowTextInQAT; } set { _ShowTextInQAT = value; ModifyLinksForToolbar(); } }
+        /// <summary>Zobrazovat v Toolbaru u tlačítek i text?</summary>
+        private bool? _ShowTextInQAT;
+        /// <summary>
+        /// Výchozí hodnota pro 'Zobrazovat v Toolbaru u tlačítek i text'.
+        /// Hodnota true = všechny prvky v QAT budou s textem (pokud je k dispozici);
+        /// false = všechny budou bez textu (jen ikony);
+        /// null = viditelnost textu je daná stylem prvku dle <see cref="IRibbonItem.RibbonStyle"/>.
+        /// <para/>
+        /// Setování je možné.
+        /// Nově setovaná hodnota se ale použije pouze pro nově vytvářené Ribbony.
+        /// Změna v této property se nepromítá do již existujících Ribbonů.
+        /// <para/>
+        /// Kterak změnit hodnotu <see cref="ShowTextInQAT"/> v existujících Ribbonech? Díky tomu, že <see cref="DxRibbonControl"/> je <see cref="IListener"/>,
+        /// tak je možno použít metodu <see cref="DxComponent.GetListeners{T}()"/>, ze které budou vráceny živé instance Ribbonů, 
+        /// a v nich je možno nastavit jejich instanční property <see cref="ShowTextInQAT"/>.
+        /// </summary>
+        public static bool? DefaultShowTextInQAT { get; set; } = false;
         /// <summary>
         /// Velikost malých ikon v Ribbonu
         /// </summary>
@@ -3789,7 +3818,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             else
                 items.Add(new DataMenuItem() { ItemId = $"CPM_{MsgCode.RibbonShowQatDown}", Text = DxComponent.Localize(MsgCode.RibbonShowQatDown), ImageName = ImageName.DxRibbonQatMenuMoveDown, ItemIsFirstInGroup = true, ClickAction = CustomizationPopupMenu_ExecMoveDown });
 
-            bool hasQatManager = System.Diagnostics.Debugger.IsAttached;
+            bool hasQatManager = DxComponent.IsDebuggerActive;
             if (hasQatManager)
             {
                 bool isAnyQatContent = (QatManagerItems.Length > 0);
@@ -3919,7 +3948,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             var qatLinks = link.Item.Links;           // Vstupní parametr (link) je fyzické tlačítko, na které bylo kliknuto
             int count1 = qatLinks.Count;              // Hodnota count1 odpovídá indexu prvního linku, který bude do pole qatLinks vygenerován jako QAT Link...
             base.OnAddToToolbar(link);                // Tady vznikne new instance Linku pro tlačítko, které bude umístěno do QAT
-            ModifyLinksForToolbar(qatLinks, count1);  // Modifikujeme všechny nově přidané linky = všechny jsou linky v QAT Toolbarech (nativní plus mergovaný)
+            ModifyLinksForToolbar(qatLinks, count1);  // Modifikujeme všechny nově přidané BarItemLink = všechny tyto nové linky jsou linky umístěné v QAT Toolbarech (nativní plus mergovaný Ribbon)
             this.UserAddItemToQat(link);
         }
         /// <summary>
@@ -3936,6 +3965,13 @@ namespace Noris.Clients.Win.Components.AsolDX
                 ModifyLinkForToolbar(qatLinks[i]);
         }
         /// <summary>
+        /// Metoda upraví vzhled všech tlačítek, které jsou aktuálně přítomny v QAT.
+        /// </summary>
+        private void ModifyLinksForToolbar()
+        {
+            this.Toolbar.ItemLinks.ForEachExec(l => ModifyLinkForToolbar(l));
+        }
+        /// <summary>
         /// Upraví dodaný <see cref="BarItemLink"/> pro zobrazení v QAT
         /// </summary>
         /// <param name="qatLink"></param>
@@ -3947,12 +3983,16 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="qatLink"></param>
         private void ModifyLinkForToolbar(DevExpress.XtraBars.BarItemLink qatLink)
         {
-            bool isVisibleQatText = false;
-            if (qatLink?.Item?.Tag is BarItemTagInfo itemInfo)
-            {   // Pokud BarItem je vytvořen na základě dat IRibbonItem:
-                isVisibleQatText = itemInfo?.Data?.ShowTextInQAT ?? false;
-            }
-            qatLink.UserRibbonStyle = (isVisibleQatText ? DevExpress.XtraBars.Ribbon.RibbonItemStyles.SmallWithText : DevExpress.XtraBars.Ribbon.RibbonItemStyles.SmallWithoutText);
+            bool? isVisibleQatText = this.ShowTextInQAT;
+            qatLink.UserRibbonStyle = 
+                (!isVisibleQatText.HasValue ? DevExpress.XtraBars.Ribbon.RibbonItemStyles.Default :          // null  : default = převezme se z BarItem
+                (isVisibleQatText.Value ? DevExpress.XtraBars.Ribbon.RibbonItemStyles.SmallWithText :        // true  : s textem
+                DevExpress.XtraBars.Ribbon.RibbonItemStyles.SmallWithoutText));                              // false : bez textu
+
+            //if (qatLink?.Item?.Tag is BarItemTagInfo itemInfo)
+            //{   // Pokud BarItem je vytvořen na základě dat IRibbonItem:
+            //    //  lze načíst další data
+            //}
 
             //  Výměna ikony mi ještě nejde (změna se neprojeví v buttonu):
             // qatLink.ImageIndex = DxComponent.GetVectorImageIndex("svgimages/chart/chart.svg", ResourceImageSizeType.Small);
@@ -4298,37 +4338,33 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private void ShowQatManager()
         {
-      /*    using (DxControlForm form = new DxControlForm())
+            using (DxControlForm form = new DxControlForm())
             {
-                form.PrepareStartPosition(true);
+                Size formSize = new Size(750, 450);
+                form.PrepareStartPosition(true, false, formSize);
                 form.Buttons = new IMenuItem[]
                 {
-                    new DataMenuItem() { ItemId = "OK", Text = "OK", ImageName = ImageName.DxDialogApply, HotKeys = Keys.Control | Keys.Enter },
-                    new DataMenuItem() { ItemId = "Cancel", Text = "Cancel", ImageName = ImageName.DxDialogCancel, HotKeys = Keys.Escape }
+                    new DataMenuItem() { ItemId = "OK", Text = "OK", ImageName = ImageName.DxDialogApply, HotKeys = Keys.Control | Keys.Enter, Tag = DialogResult.OK },
+                    new DataMenuItem() { ItemId = "Cancel", Text = "Cancel", ImageName = ImageName.DxDialogCancel, HotKeys = Keys.Escape, Tag = DialogResult.Cancel }
                 };
                 form.Text = DxComponent.Localize(MsgCode.RibbonQatManagerTitle);
-                form.Size = new Size(750, 450);
-                var list = new QatManagerPanel() { Dock = DockStyle.Fill };
-                form.ControlPanel.Controls.Add(list);
-                var items = QatManagerItems;
-                list.ListBox.Items.AddRange(items);
-                form.ShowDialog(this.FindForm());
-            }   */
-        }
-        /// <summary>
-        /// Třída reprezentující Qat Manager panel
-        /// </summary>
-        private class QatManagerPanel : DxPanelControl
-        {
-            public QatManagerPanel()
-            {
-                _ListBox = DxComponent.CreateDxListBox(dock: DockStyle.Fill, parent: this);
-                _ListBox.DragDropActions = DxDragDropActionType.ReorderItems;
-                _ListBox.EnabledKeyActions = KeyActionType.AltDown | KeyActionType.AltUp | KeyActionType.Delete;
-            }
-            private DxListBoxControl _ListBox;
-            
-            public DxListBoxControl ListBox { get { return _ListBox; } }
+
+                var qatPanel = new DxListBoxPanel() { Dock = DockStyle.Fill };
+                form.ControlPanel.Controls.Add(qatPanel);
+                var currentItems = QatManagerItems;
+                qatPanel.ListBox.ListItems = currentItems;
+                qatPanel.ListBox.SelectionMode = SelectionMode.MultiExtended;
+                qatPanel.ListBox.DragDropActions = DxDragDropActionType.ReorderItems;
+                qatPanel.ListBox.EnabledKeyActions = KeyActionType.AltDown | KeyActionType.AltUp | KeyActionType.Delete;
+
+                var result = form.ShowDialog(this.FindForm());
+
+                if (result == DialogResult.OK)
+                {
+                    var modifiedItems = qatPanel.ListBox.ListItems;
+                    ChangeQatItems(currentItems, modifiedItems);
+                }    
+            }     
         }
         /// <summary>
         /// Prvky QAT, které se budou zobrazovat v QatManageru
@@ -4342,6 +4378,11 @@ namespace Noris.Clients.Win.Components.AsolDX
                     .Select(q => q.RibbonItem)
                     .ToArray();
             }
+        }
+        private void ChangeQatItems(IMenuItem[]  currentItems, IMenuItem[] modifiedItems)
+        {
+            var allQatItems = DxQuickAccessToolbar.QATItems.ToList();
+
         }
         #endregion
         #region class QatItem : evidence pro jedno tlačítko QAT
@@ -7717,10 +7758,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public virtual RibbonItemStyles RibbonStyle { get; set; }
         /// <summary>
-        /// Zobrazovat text buttonu při jeho zobrazení v QAT?
-        /// </summary>
-        public virtual bool ShowTextInQAT { get; set; }
-        /// <summary>
         /// Zobrazit v Search menu?
         /// </summary>
         public virtual bool VisibleInSearchMenu { get; set; }
@@ -7919,10 +7956,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Styl zobrazení prvku
         /// </summary>
         RibbonItemStyles RibbonStyle { get; }
-        /// <summary>
-        /// Zobrazovat text buttonu při jeho zobrazení v QAT?
-        /// </summary>
-        bool ShowTextInQAT { get; }
         /// <summary>
         /// Zobrazit v Search menu?
         /// </summary>

@@ -18,7 +18,7 @@ namespace Noris.Clients.Win.Components.AsolDX
 {
     /// <summary>
     /// Formulář, který nabízí prostor pro uživatelský control <see cref="ControlPanel"/>, a dole pak lištu s buttony a status bar (s volitelnou viditelností).
-    /// Uživatel má svůj control vložit do <see cref="ControlPanel"/>, a nadefinovat buttony ().
+    /// Uživatel má svůj control vložit do <see cref="ControlPanel"/>, a nadefinovat buttony do pole <see cref="Buttons"/> (viz tam).
     /// </summary>
     public class DxControlForm : DxStdForm
     {
@@ -54,6 +54,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             _ButtonAlignment = AlignContentToSide.Begin;
             _ButtonDesignMargins = DxComponent.DefaultInnerMargins;
 
+            DialogResult = DialogResult.None;
             CloseOnClickButton = true;
         }
         private DxPanelControl _ControlPanel;
@@ -66,18 +67,28 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="byMousePosition">Pokud je true, pak pozice okna bude začínat na aktuální pozici myši.</param>
         /// <param name="onlyOnMouseDown">Pouze pokud je myš stisknutá. Pozor, například akce menu se volají až po uvolnění myši!</param>
-        public void PrepareStartPosition(bool byMousePosition = false, bool onlyOnMouseDown = false)
+        /// <param name="formSize"></param>
+        public void PrepareStartPosition(bool byMousePosition = false, bool onlyOnMouseDown = false, Size? formSize = null)
         {
             var mouseButtons = Control.MouseButtons;
             var mousePosition = Control.MousePosition;
             if (byMousePosition && (!onlyOnMouseDown || mouseButtons != MouseButtons.None))   // Podle pozice myši AND (bez ohledu na MouseDown anebo když zrovna je MouseDown):
             {
-                this.Location = mousePosition.Add(-30, -20);
                 this.StartPosition = FormStartPosition.Manual;
+                Point point = mousePosition.Add(-30, -20);
+                if (formSize.HasValue)
+                {
+                    Rectangle bounds = new Rectangle(point, formSize.Value);
+                    this.Bounds = bounds.FitIntoMonitors();
+                }
+                else
+                    this.Location = point;
             }
             else
             {
                 this.StartPosition = FormStartPosition.CenterParent;
+                if (formSize.HasValue)
+                    this.Size = formSize.Value;
             }
         }
         /// <summary>
@@ -224,6 +235,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void RunButtonClick(IMenuItem buttonItem)
         {
             ClickedButton = buttonItem;
+            if (buttonItem.Tag is DialogResult dialogResult)
+                this.DialogResult = dialogResult;
+
             OnButtonClick(buttonItem);
             ButtonClick?.Invoke(this, new TEventArgs<IMenuItem>(buttonItem));
 
@@ -272,13 +286,19 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public int ButtonsCount { get { return (_IButtons?.Length ?? 0); } }
         /// <summary>
-        /// Definice pro Buttony.
+        /// Definice pro Buttony. Aplikace sem vkládá sadu buttonů, které chce v okně zobrazit. 
+        /// Layout buttonů určují property <see cref="ButtonAlignment"/>, <see cref="ButtonsDesignHeight"/>, <see cref="ButtonDesignMargins"/> a <see cref="ButtonsVisible"/>.
+        /// <para/>
+        /// Aktivita buttonů:
         /// Aplikace může buď nastavit zdejší <see cref="CloseOnClickButton"/> na true, po kliknutí na button se zavře okno,
         /// a aplikace si pak vyhodnotí prvek uložený v <see cref="ClickedButton"/> = na něj uživatel klikl.
         /// Anebo si aplikace ošetří akci <see cref="IMenuItem.ClickAction"/> v konkrétních buttonech a sama reaguje,
         /// pak může sama zavřít okno bez závislosti na hodnotě <see cref="CloseOnClickButton"/>.
+        /// <para/>
+        /// Pokud button bude mít v <see cref="ITextItem.Tag"/> hodnotu typu <see cref="DialogResult"/>, 
+        /// pak po kliknutí na button bude tato hodnota uložena v <see cref="Form.DialogResult"/>, jinak tam bude výchozí hodnota <see cref="DialogResult.None"/>.
         /// </summary>
-        public IEnumerable<IMenuItem> Buttons { get { return _IButtons; } set { _IButtons = (value != null ? value.ToArray() : null); this.CreateButtons(); } }
+        public IEnumerable<IMenuItem> Buttons { get { return _IButtons; } set { _IButtons = value?.ToArray(); this.CreateButtons(); } }
         private IMenuItem[] _IButtons;
         /// <summary>
         /// Viditelnost pole buttonů.

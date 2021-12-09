@@ -227,11 +227,28 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public static string ApplicationPath { get { return System.IO.Path.GetDirectoryName(Instance._AppFile); } }
         /// <summary>
+        /// Obsahuje true jen tehdy, když je aplikace v režimu ladění s debuggerem VisualStudia
+        /// </summary>
+        public static bool IsDebuggerActive { get { return System.Diagnostics.Debugger.IsAttached; } }
+        /// <summary>
         /// Hlavní okno aplikace, pokud byla aplikace spuštěna pomocí <see cref="ApplicationStart(Type, Image)"/>
         /// </summary>
         public static Form MainForm { get { return Instance._MainForm; } }
-        public static void ApplicationStart(Type mainFormType, Image splashImage) { Instance._ApplicationStart(mainFormType, splashImage); }
-        public static void ApplicationRestart() { Instance._ApplicationRestart(); }
+        /// <summary>
+        /// Start aplikace, nepoužívat z Nephrite
+        /// </summary>
+        /// <param name="mainFormType"></param>
+        /// <param name="splashImage"></param>
+        internal static void ApplicationStart(Type mainFormType, Image splashImage) { Instance._ApplicationStart(mainFormType, splashImage); }
+        /// <summary>
+        /// ReStart aplikace, nepoužívat z Nephrite
+        /// </summary>
+        internal static void ApplicationRestart() { Instance._ApplicationRestart(); }
+        /// <summary>
+        /// Start aplikace, nepoužívat z Nephrite
+        /// </summary>
+        /// <param name="mainFormType"></param>
+        /// <param name="splashImage"></param>
         private void _ApplicationStart(Type mainFormType, Image splashImage)
         {
             while (true)
@@ -271,6 +288,9 @@ namespace Noris.Clients.Win.Components.AsolDX
                 mainForm.Shown -= MainForm_Shown;
             _SplashHide();
         }
+        /// <summary>
+        /// ReStart aplikace, nepoužívat z Nephrite
+        /// </summary>
         private void _ApplicationRestart()
         {
             List<Form> forms = new List<Form>();
@@ -1187,6 +1207,13 @@ namespace Noris.Clients.Win.Components.AsolDX
                 __Listeners.RemoveAll(s => !s.IsAlive || s.ContainsListener(listener));
             __ListenersLastClean = DateTime.Now;
         }
+        /// <summary>
+        /// Metoda najde a vrátí všechny živé listenery daného typu.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <returns></returns>
+        public static T[] GetListeners<T>() where T : IListener
+        { return Instance._GetListeners<T>(); }
         /// <summary>
         /// Vrátí pole živých Listenerů daného typu
         /// </summary>

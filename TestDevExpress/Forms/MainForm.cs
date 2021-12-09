@@ -354,10 +354,12 @@ namespace TestDevExpress.Forms
             string resourceS = "svgimages/dashboards/editrules.svg";
             group.Items.Add(CreateRibbonFunction("StylesAll", "All", resourceL, "Button ve stylu All", null, RibbonItemStyles.All, true));
             group.Items.Add(CreateRibbonFunction("StylesDefault", "Default", resourceL, "Button ve stylu Default", null, RibbonItemStyles.Default));
-            group.Items.Add(CreateRibbonFunction("StylesLarge", "Large", resourceL, "Button ve stylu Large", null, RibbonItemStyles.Large));
+            group.Items.Add(CreateRibbonFunction("StylesLarge", "Large", resourceL, "Button ve stylu Large", null, RibbonItemStyles.Large, true));
             // group.Items.Add(CreateRibbonFunction("StylesLarge", "Large", resourceL, "Button ve stylu Large", null, RibbonItemStyles.Large));
-            group.Items.Add(CreateRibbonFunction("StylesSmallWithoutText", "SmallWithoutText", resourceS, "Button ve stylu SmallWithoutText", null, RibbonItemStyles.SmallWithoutText));
             group.Items.Add(CreateRibbonFunction("StylesSmallWithText", "SmallWithText", resourceS, "Button ve stylu SmallWithText", null, RibbonItemStyles.SmallWithText));
+            group.Items.Add(CreateRibbonFunction("StylesSmallWithoutText", "SmallWithoutText", resourceS, "Button ve stylu SmallWithoutText", null, RibbonItemStyles.SmallWithoutText));
+            group.Items.Add(CreateRibbonFunction("StylesLargeSmallWithText", "Large WithText", resourceL, "Button ve stylu Large + SmallWithText", null, RibbonItemStyles.Large | RibbonItemStyles.SmallWithText, true));
+            group.Items.Add(CreateRibbonFunction("StylesLargeSmallWithoutText", "Large WithoutText", resourceL, "Button ve stylu Large + SmallWithoutText", null, RibbonItemStyles.Large | RibbonItemStyles.SmallWithoutText));
             page.Groups.Add(group);
 
         }

@@ -160,6 +160,9 @@
     </Compile>
     <Compile Include="AsolDX\DxDragDrop.cs" />
     <Compile Include="AsolDX\DxDrawingExtensions.cs" />
+    <Compile Include="AsolDX\DxListBox.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="AsolDX\DxResources.cs" />
     <Compile Include="AsolDX\DxControlForm.cs">
       <SubType>Form</SubType>

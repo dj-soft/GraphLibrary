@@ -166,6 +166,7 @@ namespace TestDevExpress.Forms
             page.Groups.Add(group);
             group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Test.UseLazyInit", Text = "Use Lazy Init", ToolTipText = "Zaškrtnuto: používat opožděné plnění stránek Ribbonu (=až bude potřeba)\r\nNezaškrtnuto: fyzicky naplní celý Ribbon okamžitě, delší čas přípravy okna", ItemType = RibbonItemType.CheckBoxToggle, Checked = UseLazyLoad, RibbonStyle = RibbonItemStyles.Large });
             group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Test.LogClear", Text = "Clear log", ToolTipText = "Smaže obsah logu vpravo", ImageName = imgLogClear, RibbonStyle = RibbonItemStyles.Large });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.ShowTextInQat", Text = "Show Text in QAT", ToolTipText = "Aktivuje / Deaktivuje text u prvků QAT", ItemType = RibbonItemType.CheckBoxStandard, Checked = this.ShowTextInQAT, RibbonStyle = RibbonItemStyles.Large });
 
             page = new DataRibbonPage() { PageId = "HELP", PageText = "Nápověda", MergeOrder = 9999, PageOrder = 9999 };
             pages.Add(page);
@@ -191,6 +192,9 @@ namespace TestDevExpress.Forms
                 case "Dx.Test.LogClear":
                     DxComponent.LogClear();
                     break;
+                case "Dx.ShowTextInQat":
+                    ShowTextInQAT = e.Item.Checked ?? false;         // Do ribbonů hodnotu vepíše set metoda.
+                    break;
 
             }
         }
@@ -199,6 +203,20 @@ namespace TestDevExpress.Forms
         /// </summary>
         public bool UseLazyLoad { get { return _UseLazyLoad; } set { _SetUseLazyLoad(value); } }
         private bool _UseLazyLoad;
+        /// <summary>
+        /// Zobrazovat v Toolbaru u tlačítek i text?
+        /// </summary>
+        public bool? ShowTextInQAT
+        {
+            get { return DxRibbonControl.DefaultShowTextInQAT; }
+            set
+            {
+                DxRibbonControl.DefaultShowTextInQAT = value;
+                var dxRibbons = DxComponent.GetListeners<DxRibbonControl>();
+                foreach (var dxRibbon in dxRibbons)
+                    dxRibbon.ShowTextInQAT = value;
+            }
+        }
         /// <summary>
         /// Nastaví hodnotu <see cref="UseLazyLoad"/> a vepíše ji do ribbonů. Neřeší ale hodnotu v CheckBoxu v Ribbonu.
         /// </summary>

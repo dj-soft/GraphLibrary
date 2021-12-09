@@ -265,6 +265,24 @@ namespace Noris.Clients.Win.Components.AsolDX
                     control.Size = newSize;
             }
         }
+        /// <summary>
+        /// Vrátí souřadnice prostoru, do kterého lze v this controlu pozicovat jeho Child.
+        /// Jde o <see cref="Control.ClientSize"/> zmenšený o <see cref="Control.Padding"/>
+        /// </summary>
+        /// <param name="control"></param>
+        /// <returns></returns>
+        public static Rectangle GetInnerBounds(this Control control)
+        {
+            if (control == null) return Rectangle.Empty;
+            Size clientSize = control.ClientSize;
+            Padding padding = control.Padding;
+            int x = padding.Left;
+            int y = padding.Top;
+            int w = clientSize.Width - padding.Horizontal;
+            int h = clientSize.Height - padding.Vertical;
+            if (w <= 0 || h <= 0) return Rectangle.Empty;
+            return new Rectangle(padding.Left, padding.Top, clientSize.Width - padding.Horizontal, clientSize.Height - padding.Vertical);
+        }
         #endregion
         #region Invoke to GUI: run, get, set
         /// <summary>
