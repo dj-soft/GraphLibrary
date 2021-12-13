@@ -4397,27 +4397,27 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             get 
             {
-                // Získám prvky:
-                var qatItems = this._QATUserItems
-                    .Where(q => q.CanRemoveFromQat && q.RibbonItem != null)
-                    .ToArray();
+                // Získám aktuálně viditelné prvky = BarItemy z this Ribbonu, plus BarItemy ze všech mergovaných ribbonů:
+                var items = this.Toolbar.ItemLinks.Select(l => l.Item).ToArray();
+
                 // Pokud najdeme ikonu, která má prázdný text a/nebo ikonu, získáme ji z BarItemu:
                 List<IMenuItem> menuItems = new List<IMenuItem>();
-                for (int i = 0; i < qatItems.Length; i++)
+                for (int i = 0; i < items.Length; i++)
                 {
-                    var qatItem = qatItems[i];
-                    var iMenuItem = qatItem.RibbonItem;              // Není null
-                    bool hasImage = (!String.IsNullOrEmpty(iMenuItem.ImageName) || iMenuItem.Image != null || iMenuItem.SvgImage != null);
-                    bool hasText = !String.IsNullOrEmpty(iMenuItem.Text);
+                    var barItem = items[i];
+                    if (!TryGetIRibbonData(barItem, out var _, out var iRibbonItem, out var _, out var _)) continue;
+
+                    bool hasImage = (!String.IsNullOrEmpty(iRibbonItem.ImageName) || iRibbonItem.Image != null || iRibbonItem.SvgImage != null);
+                    bool hasText = !String.IsNullOrEmpty(iRibbonItem.Text);
                     if (hasImage || hasText)
-                    {   // Běžný MenuItem s obrázkem anebo textem:
-                        menuItems.Add(iMenuItem);
+                    {   // Běžný standardně definovaný MenuItem (IRibbonItem) s obrázkem anebo textem:
+                        menuItems.Add(iRibbonItem);
                     }
                     else
-                    {   // Tady jsou typicky DevExpress itemy (skin, paleta):
-                        DataMenuItem menuItem = DataMenuItem.CreateClone(iMenuItem);
-                        if (!hasImage) { menuItem.Image = qatItem.BarItem.ImageOptions.Image; menuItem.SvgImage = qatItem.BarItem.ImageOptions.SvgImage; }
-                        if (!hasText) menuItem.Text = qatItem.BarItem.Caption;
+                    {   // Tady jsou typicky DevExpress itemy (skin, paleta), tam nedefinujeme ani text, ani obrázek, protože Ribbon je zobrazuje proměnné:
+                        DataMenuItem menuItem = DataMenuItem.CreateClone(iRibbonItem);
+                        if (!hasImage) { menuItem.Image = barItem.ImageOptions.Image; menuItem.SvgImage = barItem.ImageOptions.SvgImage; }
+                        if (!hasText) menuItem.Text = barItem.Caption;
 
                         hasImage = !String.IsNullOrEmpty(menuItem.ImageName) || menuItem.Image != null;
                         hasText = !String.IsNullOrEmpty(menuItem.Text);
