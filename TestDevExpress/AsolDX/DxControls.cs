@@ -2305,9 +2305,19 @@ namespace Noris.Clients.Win.Components.AsolDX
         //     DxTabPane_SelectedPageChanged;                            new
         //     TransitionManager_AfterTransitionEnds;                    new
 
+        /// <summary>
+        /// Před zahájením přepnutí stránky
+        /// </summary>
+        /// <param name="transition"></param>
+        /// <param name="e"></param>
         private void TransitionManager_BeforeTransitionStarts(DevExpress.Utils.Animation.ITransition transition, System.ComponentModel.CancelEventArgs e)
         {
         }
+        /// <summary>
+        /// Po dokončení přepnutí stránky
+        /// </summary>
+        /// <param name="transition"></param>
+        /// <param name="e"></param>
         private void TransitionManager_AfterTransitionEnds(DevExpress.Utils.Animation.ITransition transition, EventArgs e)
         {
         }
@@ -2334,7 +2344,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.RunPageChangingActivate(this.PageChangingPageNew);
             this.RunPageChangingRelease(this.PageChangingPageOld);
             this.PageChangingIsRunning = false;
-
         }
         #endregion
     }
@@ -2992,6 +3001,7 @@ namespace Noris.Clients.Win.Components.AsolDX
     }
     #endregion
     #region DxSyntaxEditControl
+    
     public class DxSyntaxEditControl : DxRichEditControl
     {
         public DxSyntaxEditControl()
@@ -3133,7 +3143,7 @@ namespace Noris.Clients.Win.Components.AsolDX
 
 
     }
-
+    
     // <summary>
     //  This class provides colors to highlight the tokens.
     // </summary>

@@ -4405,19 +4405,24 @@ namespace Noris.Clients.Win.Components.AsolDX
                 for (int i = 0; i < items.Length; i++)
                 {
                     var barItem = items[i];
+                    if (barItem.Visibility == BarItemVisibility.Never) continue;
                     if (!TryGetIRibbonData(barItem, out var _, out var iRibbonItem, out var _, out var _)) continue;
+
+                    if (!DxQuickAccessToolbar.ContainsQATItem(iRibbonItem.ItemId)) continue;   // Toto není UserQAT, ale FixedQAT prvek!
 
                     bool hasImage = (!String.IsNullOrEmpty(iRibbonItem.ImageName) || iRibbonItem.Image != null || iRibbonItem.SvgImage != null);
                     bool hasText = !String.IsNullOrEmpty(iRibbonItem.Text);
-                    if (hasImage || hasText)
-                    {   // Běžný standardně definovaný MenuItem (IRibbonItem) s obrázkem anebo textem:
+                    if (hasImage && hasText)
+                    {   // Běžný standardně definovaný MenuItem (IRibbonItem) s obrázkem i textem:
                         menuItems.Add(iRibbonItem);
                     }
                     else
                     {   // Tady jsou typicky DevExpress itemy (skin, paleta), tam nedefinujeme ani text, ani obrázek, protože Ribbon je zobrazuje proměnné:
+                        // ... anebo deklarované prvky bez textu, pro ně se podíváme i do ToolTipu:
                         DataMenuItem menuItem = DataMenuItem.CreateClone(iRibbonItem);
                         if (!hasImage) { menuItem.Image = barItem.ImageOptions.Image; menuItem.SvgImage = barItem.ImageOptions.SvgImage; }
                         if (!hasText) menuItem.Text = barItem.Caption;
+                        if (String.IsNullOrEmpty(menuItem.Text)) menuItem.Text = menuItem.ToolTipText;   // Když nenajdu text ani přímo v Buttonu, zkusím ještě ToolTip...
 
                         hasImage = !String.IsNullOrEmpty(menuItem.ImageName) || menuItem.Image != null;
                         hasText = !String.IsNullOrEmpty(menuItem.Text);
