@@ -593,6 +593,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (imageOptions == null || dxSvgImage == null) return;
             imageOptions.Reset();
             imageOptions.SvgImage = dxSvgImage;
+            imageOptions.SvgImageColorizationMode = SvgImageColorizationMode.None;
         }
         /// <summary>
         /// Aplikuje Image typu Array (ve jménu obrázku je více zdrojů) do daného cíle v <paramref name="imageOptions"/>.
@@ -651,6 +652,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 imageOptions.SvgImage = _GetVectorImageArray(svgImageArray, sizeType);
                 imageOptions.SvgImageSize = _GetVectorSvgImageSize(sizeType, imageSize);
             }
+            imageOptions.SvgImageColorizationMode = SvgImageColorizationMode.None;
         }
         /// <summary>
         /// Aplikuje Image typu Vector nebo Bitmap (podle přípony) ze zdroje Aplikační do daného cíle <paramref name="imageOptions"/>.
@@ -741,6 +743,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 if (imageOptions.SvgImage != null)
                     imageOptions.SvgImageSize = _GetVectorSvgImageSize(sizeType, imageSize);
             }
+            imageOptions.SvgImageColorizationMode = SvgImageColorizationMode.None;
         }
         /// <summary>
         /// Vrátí velikost obrázku SvgImage pro <see cref="ImageOptions.SvgImageSize"/>
@@ -822,6 +825,193 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             imageOptions.SvgImage = null;
             imageOptions.Image = _CreateBitmapImageDevExpressPng(imageName);          // Na vstupu je jméno bitmapy, tedy ji najdeme a dáme do Image. Tady nepřichází do úvahy renderování, velikost, paleta atd...
+        }
+        /// <summary>
+        /// Do daného objektu vloží náhradní ikonu pro daný text
+        /// </summary>
+        /// <param name="imageOptions"></param>
+        /// <param name="caption"></param>
+        /// <param name="sizeType"></param>
+        /// <param name="imageSize"></param>
+        private void _ApplyImageForCaption(ImageOptions imageOptions, string caption, ResourceImageSizeType? sizeType, Size? imageSize)
+        {
+            // _ApplyImageForCaptionSvg(imageOptions, caption, sizeType, imageSize);
+            // _ApplyImageForCaptionBmp(imageOptions, caption, sizeType, imageSize);
+            _ApplyImageForCaptionMix(imageOptions, caption, sizeType, imageSize);
+        }
+        /// <summary>
+        /// Do daného objektu vloží náhradní ikonu pro daný text - jako SVG.
+        /// Podle JD je malá ikona příliš rozmazaná.
+        /// </summary>
+        /// <param name="imageOptions"></param>
+        /// <param name="caption"></param>
+        /// <param name="sizeType"></param>
+        /// <param name="imageSize"></param>
+        private void _ApplyImageForCaptionSvg(ImageOptions imageOptions, string caption, ResourceImageSizeType? sizeType, Size? imageSize)
+        {
+            ResourceImageSizeType sizeT = sizeType ?? ResourceImageSizeType.Large;
+
+            if (imageOptions is DevExpress.XtraBars.BarItemImageOptions barOptions)
+            {   // Má prostor pro dvě velikosti obrázku najednou:
+                barOptions.Image = null;
+                barOptions.LargeImage = null;
+
+                bool hasIndexes = false;
+                if (barOptions.Images is SvgImageCollection)
+                {   // Máme připravenou podporu pro vektorový index, můžeme tam dát dvě velikosti:
+                    int smallIndex = _GetCaptionVectorIndex(caption, ResourceImageSizeType.Small);
+                    int largeIndex = _GetCaptionVectorIndex(caption, ResourceImageSizeType.Large);
+                    if (smallIndex >= 0 && largeIndex >= 0)
+                    {   // Máme indexy pro obě velikosti?
+                        barOptions.SvgImage = null;
+                        barOptions.SvgImageSize = Size.Empty;
+                        barOptions.ImageIndex = smallIndex;
+                        barOptions.LargeImageIndex = largeIndex;
+                        hasIndexes = true;
+                    }
+                }
+                if (!hasIndexes)
+                {
+                    barOptions.SvgImage = _CreateCaptionVector(caption, sizeT);
+                    barOptions.SvgImageSize = _GetVectorSvgImageSize(sizeType, imageSize);
+                }
+            }
+            else if (imageOptions is DevExpress.Utils.ImageCollectionImageOptions iciOptions)
+            {   // Může využívat Index:
+                iciOptions.Image = null;
+                if (iciOptions.Images is SvgImageCollection)
+                {   // Máme připravenou podporu pro vektorový index, můžeme tam dát index prvku v požadované velikosti (defalt = velká):
+                    iciOptions.SvgImage = null;
+                    iciOptions.SvgImageSize = Size.Empty;
+                    iciOptions.ImageIndex = _GetCaptionVectorIndex(caption, sizeT);
+                }
+                else
+                {   // Musíme tam dát přímo SvgImage:
+                    iciOptions.SvgImage = _CreateCaptionVector(caption, sizeT);
+                    iciOptions.SvgImageSize = _GetVectorSvgImageSize(sizeType, imageSize);
+                }
+            }
+            else
+            {   // Musíme vepsat přímo jeden obrázek:
+                imageOptions.Image = null;
+                imageOptions.SvgImage = _CreateCaptionVector(caption, sizeT);
+                imageOptions.SvgImageSize = _GetVectorSvgImageSize(sizeType, imageSize);
+            }
+
+            imageOptions.SvgImageColorizationMode = SvgImageColorizationMode.None;
+        }
+        /// <summary>
+        /// Do daného objektu vloží náhradní ikonu pro daný text - jako BMP.
+        /// Podle JD je velká ikona příliš tlustá.
+        /// </summary>
+        /// <param name="imageOptions"></param>
+        /// <param name="caption"></param>
+        /// <param name="sizeType"></param>
+        /// <param name="imageSize"></param>
+        private void _ApplyImageForCaptionBmp(ImageOptions imageOptions, string caption, ResourceImageSizeType? sizeType, Size? imageSize)
+        {
+            ResourceImageSizeType sizeT = sizeType ?? ResourceImageSizeType.Large;
+
+            imageOptions.Reset();
+            if (imageOptions is DevExpress.XtraBars.BarItemImageOptions barOptions)
+            {   // Má prostor pro dvě velikosti obrázku najednou:
+                barOptions.Image = _GetBitmapImage(null, false, ResourceImageSizeType.Small, null, caption);
+                barOptions.LargeImage = _GetBitmapImage(null, false, ResourceImageSizeType.Large, null, caption);
+            }
+            else
+            {   // Jen jeden obrázek:
+                imageOptions.Image = _GetBitmapImage(null, false, sizeT, null, caption);
+            }
+        }
+        /// <summary>
+        /// Do daného objektu vloží náhradní ikonu pro daný text - velkou jako SVG a malou jako BMP.
+        /// JD tvrdí, že to je nejlepší...
+        /// </summary>
+        /// <param name="imageOptions"></param>
+        /// <param name="caption"></param>
+        /// <param name="sizeType"></param>
+        /// <param name="imageSize"></param>
+        private void _ApplyImageForCaptionMix(ImageOptions imageOptions, string caption, ResourceImageSizeType? sizeType, Size? imageSize)
+        {
+            ResourceImageSizeType sizeT = sizeType ?? ResourceImageSizeType.Large;
+
+            if (imageOptions is DevExpress.XtraBars.BarItemImageOptions barOptions)
+            {   // Má prostor pro dvě velikosti obrázku najednou:
+                barOptions.Image = null;
+                barOptions.LargeImage = null;
+
+                bool hasIndexes = false;
+                if (barOptions.Images is SvgImageCollection)
+                {   // Máme připravenou podporu pro vektorový index, můžeme tam dát dvě velikosti:
+                    int largeIndex = _GetCaptionVectorIndex(caption, ResourceImageSizeType.Large);
+                    if (largeIndex >= 0)
+                    {   // Máme index pro Large = SVG:
+                        barOptions.SvgImage = null;
+                        barOptions.SvgImageSize = Size.Empty;
+                        barOptions.LargeImageIndex = largeIndex;
+                        // Malý = BMP:
+                        barOptions.Image = _GetBitmapImage(null, false, ResourceImageSizeType.Small, null, caption);
+                        hasIndexes = true;
+                    }
+                }
+                if (!hasIndexes)
+                {
+                    if (sizeT == ResourceImageSizeType.Large)
+                    {   // Velký = SVG:
+                        barOptions.SvgImage = _CreateCaptionVector(caption, sizeT);
+                        barOptions.SvgImageSize = _GetVectorSvgImageSize(sizeType, imageSize);
+                    }
+                    else
+                    {   // Malý = BMP:
+                        barOptions.Image = _GetBitmapImage(null, false, ResourceImageSizeType.Small, null, caption);
+                    }
+                }
+            }
+            else if (imageOptions is DevExpress.Utils.ImageCollectionImageOptions iciOptions)
+            {   // Může využívat Index:
+                iciOptions.Image = null;
+                if (sizeT == ResourceImageSizeType.Large)
+                {   // Velký = SVG:
+                    if (iciOptions.Images is SvgImageCollection)
+                    {   // Máme připravenou podporu pro vektorový index, můžeme tam dát index prvku v požadované velikosti (defalt = velká):
+                        iciOptions.SvgImage = null;
+                        iciOptions.SvgImageSize = Size.Empty;
+                        iciOptions.ImageIndex = _GetCaptionVectorIndex(caption, sizeT);
+                    }
+                    else
+                    {   // Musíme tam dát přímo SvgImage:
+                        iciOptions.SvgImage = _CreateCaptionVector(caption, sizeT);
+                        iciOptions.SvgImageSize = _GetVectorSvgImageSize(sizeType, imageSize);
+                    }
+                }
+                else
+                {   // Malý = BMP:
+                    if (iciOptions.Images is ImageList)
+                    {   // Máme připravenou podporu pro BMP index = dáme index:
+                        iciOptions.ImageIndex = _GetBitmapImageIndex(null, false, ResourceImageSizeType.Small, null, caption);
+                    }
+                    else
+                    {   // Dáme Image, ale z interního ImageListu (GetImage versus CreateImage):
+                        iciOptions.Image = _GetBitmapImage(null, false, ResourceImageSizeType.Small, null, caption);
+                    }
+                }
+            }
+            else
+            {   // Musíme vepsat přímo jeden obrázek:
+                if (sizeT == ResourceImageSizeType.Large)
+                {   // Velký = SVG:
+                    imageOptions.Image = null;
+                    imageOptions.SvgImage = _CreateCaptionVector(caption, sizeT);
+                    imageOptions.SvgImageSize = _GetVectorSvgImageSize(sizeType, imageSize);
+                }
+                else
+                {   // Malý = BMP:
+                    imageOptions.SvgImage = null;
+                    imageOptions.Image = _GetBitmapImage(null, false, ResourceImageSizeType.Small, null, caption);
+                }
+            }
+
+            imageOptions.SvgImageColorizationMode = SvgImageColorizationMode.None;
         }
         #endregion
         #region ApplyIcon - do cílového formuláře vepíše obrázek podle toho, jaký je zadán a jaký je to formulář
@@ -1157,7 +1347,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>Kolekce SvgImages pro použití v controlech, obsahuje DevExpress i Aplikační zdroje, instanční proměnná.</summary>
         private Dictionary<ResourceImageSizeType, DxSvgImageCollection> __VectorImageList;
         #endregion
-        #region VectorArray: více vektorových ikon v jednom názvu Image
+        #region ImageArray : více vektorových ikon v jednom názvu Image
         /// <summary>
         /// Vytvoří a vrátí bitmapu z pole vektorových image
         /// </summary>
@@ -1806,93 +1996,6 @@ namespace Noris.Clients.Win.Components.AsolDX
                 if (font == null)
                     font = SystemFonts.DefaultFont;
                 return font;
-            }
-        }
-        /// <summary>
-        /// Do daného objektu vloží náhradní ikonu pro daný text
-        /// </summary>
-        /// <param name="imageOptions"></param>
-        /// <param name="caption"></param>
-        /// <param name="sizeType"></param>
-        /// <param name="imageSize"></param>
-        private void _ApplyImageForCaption(ImageOptions imageOptions, string caption, ResourceImageSizeType? sizeType, Size? imageSize)
-        {
-            bool useVectorImage = false;
-            if (useVectorImage)
-            {
-                if (imageOptions is DevExpress.XtraBars.BarItemImageOptions barOptions)
-                {   // Má prostor pro dvě velikosti obrázku najednou:
-                    barOptions.Image = null;
-                    barOptions.LargeImage = null;
-
-                    bool hasIndexes = false;
-                    if (barOptions.Images is SvgImageCollection)
-                    {   // Máme připravenou podporu pro vektorový index, můžeme tam dát dvě velikosti:
-                        int smallIndex = _GetCaptionVectorIndex(caption, ResourceImageSizeType.Small);
-                        int largeIndex = _GetCaptionVectorIndex(caption, ResourceImageSizeType.Large);
-                        if (smallIndex >= 0 && largeIndex >= 0)
-                        {   // Máme indexy pro obě velikosti?
-                            barOptions.SvgImage = null;
-                            barOptions.SvgImageSize = Size.Empty;
-                            barOptions.ImageIndex = smallIndex;
-                            barOptions.LargeImageIndex = largeIndex;
-                            hasIndexes = true;
-                        }
-                    }
-                    if (!hasIndexes)
-                    {
-                        barOptions.SvgImage = _CreateCaptionVector(caption, sizeType ?? ResourceImageSizeType.Large);
-                        barOptions.SvgImageSize = _GetVectorSvgImageSize(sizeType, imageSize);
-                    }
-                }
-                else if (imageOptions is DevExpress.Utils.ImageCollectionImageOptions iciOptions)
-                {   // Může využívat Index:
-                    iciOptions.Image = null;
-                    if (iciOptions.Images is SvgImageCollection)
-                    {   // Máme připravenou podporu pro vektorový index, můžeme tam dát index prvku v požadované velikosti (defalt = velká):
-                        iciOptions.SvgImage = null;
-                        iciOptions.SvgImageSize = Size.Empty;
-                        iciOptions.ImageIndex = _GetCaptionVectorIndex(caption, sizeType ?? ResourceImageSizeType.Large);
-                    }
-                    else
-                    {   // Musíme tam dát přímo SvgImage:
-                        iciOptions.SvgImage = _CreateCaptionVector(caption, sizeType ?? ResourceImageSizeType.Large);
-                        iciOptions.SvgImageSize = _GetVectorSvgImageSize(sizeType, imageSize);
-                    }
-                }
-                else
-                {   // Musíme vepsat přímo jeden obrázek:
-                    imageOptions.Image = null;
-                    imageOptions.SvgImage = _CreateCaptionVector(caption, sizeType ?? ResourceImageSizeType.Large);
-                    imageOptions.SvgImageSize = _GetVectorSvgImageSize(sizeType, imageSize);
-                }
-            }
-            else
-            {
-                imageOptions.Reset();
-                // Měl jsem dobrou vůli použít _GetBitmapImage(), kterážto funkce používá ImageList pro cachování shodných Images.
-                // Ale narazil jsem na problém, kdy po přidání new Image do ImageListu pod konkrétním Key se tento Image neuloží do interního pole Images,
-                //   ale uloží se jen jeho Key, a následná metode GetIndexOfKey vrací -1.
-                if (imageOptions is DevExpress.XtraBars.BarItemImageOptions barOptions)
-                {   // Má prostor pro dvě velikosti obrázku najednou:
-                    barOptions.Image = _GetBitmapImage(null, false, ResourceImageSizeType.Small, null, caption);
-                    barOptions.LargeImage = _GetBitmapImage(null, false, ResourceImageSizeType.Large, null, caption);
-                }
-                else
-                {
-                    imageOptions.Image = _GetBitmapImage(null, false, sizeType ?? ResourceImageSizeType.Small, null, caption);
-                }
-
-                // Přecházím tedy na CreateCaptionImage...
-                //if (imageOptions is DevExpress.XtraBars.BarItemImageOptions barOptions)
-                //{   // Má prostor pro dvě velikosti obrázku najednou:
-                //    barOptions.Image = CreateCaptionImage(caption, ResourceImageSizeType.Small, imageSize);
-                //    barOptions.LargeImage = CreateCaptionImage(caption, ResourceImageSizeType.Large, imageSize);
-                //}
-                //else
-                //{
-                //    imageOptions.Image = CreateCaptionImage(caption, sizeType ?? ResourceImageSizeType.Large, imageSize);
-                //}
             }
         }
         /// <summary>
@@ -3536,6 +3639,9 @@ namespace Noris.Clients.Win.Components.AsolDX
                 {
                     case "circlegradient1": return _TryGetGenericSvgCircleGradient1(imageName, genericItems, sizeType, ref dxSvgImage);
                     case "circle": return _TryGetGenericSvgCircleGradient1(imageName, genericItems, sizeType, ref dxSvgImage);
+                    case "arrowsmall": return _TryGetGenericSvgArrowSmall(imageName, genericItems, sizeType, ref dxSvgImage);
+                    case "arrow1": return _TryGetGenericSvgArrow1(imageName, genericItems, sizeType, ref dxSvgImage);
+                    case "arrow": return _TryGetGenericSvgArrow1(imageName, genericItems, sizeType, ref dxSvgImage);
                     case "text": return _TryGetGenericSvgText(imageName, genericItems, sizeType, ref dxSvgImage);
                 }
             }
@@ -3590,7 +3696,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         #region Circle
         /// <summary>
         /// Z dodané definice a pro danou velikost vygeneruje SvgImage obsahující Circle s Gradient výplní.
-        /// Očekávaná deklarace zní: "?circlegradient1?violet?75", 
+        /// Očekávaná deklarace zní: "@circlegradient1|violet|75", 
         /// kde "circlegradient" je klíčové slovo (může být "circle");
         /// kde "violet" je barva středu (default = Green);
         /// kde "65" je 65% velký kruh v rámci ikony (default = 80%);
@@ -3637,6 +3743,305 @@ namespace Noris.Clients.Win.Components.AsolDX
 </svg>
     */
         }
+        #endregion
+        #region Arrow
+        /// <summary>
+        /// Tvoří malou šipku.
+        /// Očekávaná deklarace zní: "@arrowsmall|U|blue", 
+        /// kde "arrowsmall" je klíč pro malou šipku;
+        /// kde "U" je směr a typ šipky (první písmeno z: Ceiling, Up, Down, Floor, Begin, Left, Right, End);
+        /// kde "violet" je typ barvy;
+        /// Argumenty:
+        /// </summary>
+        /// <param name="imageName"></param>
+        /// <param name="genericItems"></param>
+        /// <param name="sizeType"></param>
+        /// <param name="dxSvgImage"></param>
+        /// <returns></returns>
+        private static bool _TryGetGenericSvgArrowSmall(string imageName, string[] genericItems, ResourceImageSizeType? sizeType, ref DxSvgImage dxSvgImage)
+        {
+            // Souřadný systém pro šipky (a jiné tvary):
+            //  pro otáčení tvaru svisle/vodorovně platí: definujeme souřadnice 'a' a 'b', kde pro svislý tvar x = a, y = b; a pro vodorovný tvar x = b, y = a;
+            //  pro zrcadlení tvaru nahoru/dolů použijeme záporné souřadnice, generátor je pak otočí vzhledem k velikosti tvaru size.
+            //    Máme li např. základu na souřadnici 5, pak pro zrcadlený tvar předáme -5, a generátor tvarů pro size = 32 provede (32 + (-5)) = 27 = zrcadlená hodnota 5.
+            // Velikost deklarujeme pro 32px, pro malé tvary následně dělíme 2.
+            //      Komentáře souřadnic jsou pro šipku nahoru s horní linkou, tvar  ArrowType.Ceiling,  kde a=x,  b=y :
+            //      Obrazec se skládá ze šipky, z čáry vedoucí do šipky, z linky nad šipkou
+            int a0 = 8;                // levý okraj šipky
+            int a2 = 14;               // levý okraj čáry
+            int a4 = 16;               // střed šipky
+            int a6 = 18;               // pravý okraj čáry
+            int a8 = 24;               // pravý okraj šipky
+            int b0 = 24;               // dolní hrana čáry
+            int b2 = 18;               // dolní hrana šipky
+            int b4 = 10;               // horní hrana šipky
+            int b6 = 10;               // dolní hrana linky
+            int b8 = 8;                // horní hrana linky
+
+            return _TryGetGenericSvgArrowAny(imageName, genericItems, sizeType, ref dxSvgImage,
+                a0, a2, a4, a6, a8, b0, b2, b4, b6, b8);
+        }
+        /// <summary>
+        /// Tvoří šipku.
+        /// Očekávaná deklarace zní: "@arrow|U|violet", 
+        /// kde "arrow" je klíč pro šipku;
+        /// kde "U" je směr a typ šipky (první písmeno z: Ceiling, Up, Down, Floor, Begin, Left, Right, End);
+        /// kde "violet" je typ barvy;
+        /// Argumenty:
+        /// </summary>
+        /// <param name="imageName"></param>
+        /// <param name="genericItems"></param>
+        /// <param name="sizeType"></param>
+        /// <param name="dxSvgImage"></param>
+        /// <returns></returns>
+        private static bool _TryGetGenericSvgArrow1(string imageName, string[] genericItems, ResourceImageSizeType? sizeType, ref DxSvgImage dxSvgImage)
+        {
+            // Souřadný systém pro šipky (a jiné tvary):
+            //  pro otáčení tvaru svisle/vodorovně platí: definujeme souřadnice 'a' a 'b', kde pro svislý tvar x = a, y = b; a pro vodorovný tvar x = b, y = a;
+            //  pro zrcadlení tvaru nahoru/dolů použijeme záporné souřadnice, generátor je pak otočí vzhledem k velikosti tvaru size.
+            //    Máme li např. základu na souřadnici 5, pak pro zrcadlený tvar předáme -5, a generátor tvarů pro size = 32 provede (32 + (-5)) = 27 = zrcadlená hodnota 5.
+            // Velikost deklarujeme pro 32px, pro malé tvary následně dělíme 2.
+            //      Komentáře souřadnic jsou pro šipku nahoru s horní linkou, tvar  ArrowType.Ceiling,  kde a=x,  b=y :
+            //      Obrazec se skládá ze šipky, z čáry vedoucí do šipky, z linky nad šipkou
+            int a0 = 4;                // levý okraj šipky
+            int a2 = 12;               // levý okraj čáry
+            int a4 = 16;               // střed šipky
+            int a6 = 20;               // pravý okraj čáry
+            int a8 = 28;               // pravý okraj šipky
+            int b0 = 28;               // dolní hrana čáry
+            int b2 = 18;               // dolní hrana šipky
+            int b4 = 6;                // horní hrana šipky
+            int b6 = 6;                // dolní hrana linky
+            int b8 = 2;                // horní hrana linky
+
+            return _TryGetGenericSvgArrowAny(imageName, genericItems, sizeType, ref dxSvgImage,
+                a0, a2, a4, a6, a8, b0, b2, b4, b6, b8);
+        }
+        /// <summary>
+        /// Tvoří šipku.
+        /// Očekávaná deklarace zní: "@arrow|U|violet", 
+        /// kde "arrow1" je klíč pro šipku;
+        /// kde "T" je směr a typ šipky (první písmeno z: Ceiling, Up, Down, Floor, Begin, Left, Right, End);
+        /// kde "violet" je typ barvy;
+        /// <para/>
+        /// Souřadný systém pro šipky (a jiné tvary):
+        ///  pro otáčení tvaru svisle/vodorovně platí: definujeme souřadnice 'a' a 'b', kde pro svislý tvar x = a, y = b; a pro vodorovný tvar x = b, y = a;
+        ///  pro zrcadlení tvaru nahoru/dolů použijeme záporné souřadnice, generátor je pak otočí vzhledem k velikosti tvaru size.
+        ///    Máme li např. základu na souřadnici 5, pak pro zrcadlený tvar předáme -5, a generátor tvarů pro size = 32 provede (32 + (-5)) = 27 = zrcadlená hodnota 5.
+        /// Velikost deklarujeme pro 32px, pro malé tvary následně dělíme 2.
+        ///      Komentáře souřadnic jsou pro šipku nahoru s horní linkou, tvar  ArrowType.Ceiling,  kde a=x,  b=y :
+        ///      Obrazec se skládá ze šipky, z čáry vedoucí do šipky, z linky nad šipkou
+        /// </summary>
+        /// <param name="imageName"></param>
+        /// <param name="genericItems"></param>
+        /// <param name="sizeType"></param>
+        /// <param name="dxSvgImage"></param>
+        /// <param name="a0">levý okraj šipky</param>
+        /// <param name="a2">levý okraj čáry</param>
+        /// <param name="a4">střed šipky</param>
+        /// <param name="a6">pravý okraj čáry</param>
+        /// <param name="a8">pravý okraj šipky</param>
+        /// <param name="b0">dolní hrana čáry</param>
+        /// <param name="b2">dolní hrana šipky</param>
+        /// <param name="b4">horní hrana šipky</param>
+        /// <param name="b6">dolní hrana linky</param>
+        /// <param name="b8">horní hrana linky</param>
+        /// <returns></returns>
+        private static bool _TryGetGenericSvgArrowAny(string imageName, string[] genericItems, ResourceImageSizeType? sizeType, ref DxSvgImage dxSvgImage,
+            int a0, int a2, int a4, int a6, int a8, int b0, int b2, int b4, int b6, int b8)
+        {
+            int size = (sizeType.HasValue && sizeType.Value == ResourceImageSizeType.Small ? 16 : 32);
+            string xmlHeader = _GetXmlContentHeader(size);
+
+            string xmlStyles = _GetXmlDevExpressStyles();
+
+            ArrowType arrowType = _GetArrowType(_GetGenericParam(genericItems, 1, ""));
+            string arrowColorName = _GetGenericParam(genericItems, 2, "");
+            _ResolveParam(ref arrowColorName, "class='Blue'");
+
+            int arrowLineDiff = _GetGenericParam(genericItems, 3, -1);
+            if (arrowLineDiff >= 0)
+            {   // Tento parametr může určovat délku čáry v šipce, tedy rozdíl b0 - b2.
+                // Pokud je 0 a kladný, pak nastavuje b0 = b2 + Diff, přičemž výsledné b0 nemůže být větší než 32:
+                b0 = b2 + arrowLineDiff;
+                if (b0 > 32) b0 = 32;
+            }
+
+            string xmlGradient = "";
+
+            string paths = "";
+            switch (arrowType)
+            {
+                case ArrowType.Ceiling:
+                    paths += _GetArrowPartArrow(size, arrowColorName, false, false, b0, b2, b4, a2, a0, a4, a8, a6);
+                    paths += _GetArrowPartLine(size, arrowColorName, false, false, b6, b8, a0, a8);
+                    break;
+                case ArrowType.Up:
+                    paths += _GetArrowPartArrow(size, arrowColorName, false, false, b0, b2, b4, a2, a0, a4, a8, a6);
+                    break;
+                case ArrowType.Down:
+                    paths += _GetArrowPartArrow(size, arrowColorName, false, true, b0, b2, b4, a2, a0, a4, a8, a6);
+                    break;
+                case ArrowType.Floor:
+                    paths += _GetArrowPartArrow(size, arrowColorName, false, true, b0, b2, b4, a2, a0, a4, a8, a6);
+                    paths += _GetArrowPartLine(size, arrowColorName, false, true, b6, b8, a0, a8);
+                    break;
+
+                case ArrowType.Begin:
+                    paths += _GetArrowPartArrow(size, arrowColorName, true, false, b0, b2, b4, a2, a0, a4, a8, a6);
+                    paths += _GetArrowPartLine(size, arrowColorName, true, false, b6, b8, a0, a8);
+                    break;
+                case ArrowType.Left:
+                    paths += _GetArrowPartArrow(size, arrowColorName, true, false, b0, b2, b4, a2, a0, a4, a8, a6);
+                    break;
+                case ArrowType.Right:
+                    paths += _GetArrowPartArrow(size, arrowColorName, true, true, b0, b2, b4, a2, a0, a4, a8, a6);
+                    break;
+                case ArrowType.End:
+                    paths += _GetArrowPartArrow(size, arrowColorName, true, true, b0, b2, b4, a2, a0, a4, a8, a6);
+                    paths += _GetArrowPartLine(size, arrowColorName, true, true, b6, b8, a0, a8);
+                    break;
+
+            }
+
+            string xmlFooter = _GetXmlContentFooter();
+
+            string xmlContent = xmlHeader + xmlStyles + xmlGradient + paths + xmlFooter;
+            dxSvgImage = DxSvgImage.Create(imageName, true, xmlContent);
+            dxSvgImage.SizeType = sizeType;
+            dxSvgImage.GenericSource = imageName;
+            return true;
+
+            /*     pro zadání    @arrow|C|Blue   vygeneruje SVG:
+﻿<?xml version='1.0' encoding='UTF-8'?>
+<svg x="0px" y="0px" viewBox="0 0 32 32" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xml:space="preserve" id="Layer_1" style="enable-background:new 0 0 32 32">
+  <style type="text/css"> .Blue{fill:#1177D7;} </style>
+  <polygon points="20,28 12,28 12,18 4,18 16,6 28,18 20,18 " class="Blue" />
+  <polygon points="4,6 4,2 28,2 28,6 " class="Blue" />
+</svg>
+            */
+        }
+        /// <summary>
+        /// Vytvoří a vrátí tvar šipky
+        /// </summary>
+        /// <param name="size"></param>
+        /// <param name="arrowColorName"></param>
+        /// <param name="swapXY"></param>
+        /// <param name="mirror"></param>
+        /// <param name="b0"></param>
+        /// <param name="b2"></param>
+        /// <param name="b4"></param>
+        /// <param name="a2"></param>
+        /// <param name="a0"></param>
+        /// <param name="a4"></param>
+        /// <param name="a8"></param>
+        /// <param name="a6"></param>
+        /// <returns></returns>
+        private static string _GetArrowPartArrow(int size, string arrowColorName, bool swapXY, bool mirror, int b0, int b2, int b4, int a2, int a0, int a4, int a8, int a6)
+        {
+            bool half = (size <= 16);
+            if (half || mirror)
+            {
+                _GetArrowModifyDim(ref b0, half, size, mirror);
+                _GetArrowModifyDim(ref b2, half, size, mirror);
+                _GetArrowModifyDim(ref b4, half, size, mirror);
+                _GetArrowModifyDim(ref a0, half, size, mirror);
+                _GetArrowModifyDim(ref a2, half, size, mirror);
+                _GetArrowModifyDim(ref a4, half, size, mirror);
+                _GetArrowModifyDim(ref a6, half, size, mirror);
+                _GetArrowModifyDim(ref a8, half, size, mirror);
+            }
+
+            return (!swapXY ?
+                $"    <polygon points=\"{a6},{b0} {a2},{b0} {a2},{b2} {a0},{b2} {a4},{b4} {a8},{b2} {a6},{b2} \" {arrowColorName} />\r\n" :
+                $"    <polygon points=\"{b0},{a6} {b0},{a2} {b2},{a2} {b2},{a0} {b4},{a4} {b2},{a8} {b2},{a6} \" {arrowColorName} />\r\n");
+        }
+        /// <summary>
+        /// Vytvoří a vrátí tvar šipky
+        /// </summary>
+        /// <param name="size"></param>
+        /// <param name="arrowColorName"></param>
+        /// <param name="swapXY"></param>
+        /// <param name="mirror"></param>
+        /// <param name="b6"></param>
+        /// <param name="b8"></param>
+        /// <param name="a0"></param>
+        /// <param name="a8"></param>
+        /// <returns></returns>
+        private static string _GetArrowPartLine(int size, string arrowColorName, bool swapXY, bool mirror, int b6, int b8, int a0, int a8)
+        {
+            bool half = (size <= 16);
+            if (half || mirror)
+            {
+                _GetArrowModifyDim(ref b6, half, size, mirror);
+                _GetArrowModifyDim(ref b8, half, size, mirror);
+                _GetArrowModifyDim(ref a0, half, size, mirror);
+                _GetArrowModifyDim(ref a8, half, size, mirror);
+            }
+
+            return (!swapXY ?
+                $"    <polygon points=\"{a0},{b6} {a0},{b8} {a8},{b8} {a8},{b6} \" {arrowColorName} />\r\n" :
+                $"    <polygon points=\"{b6},{a0} {b8},{a0} {b8},{a8} {b6},{a8} \" {arrowColorName} />\r\n");
+        }
+        /// <summary>
+        /// Modifikuje dimenzi
+        /// </summary>
+        /// <param name="dim"></param>
+        /// <param name="half"></param>
+        /// <param name="size"></param>
+        /// <param name="mirror"></param>
+        private static void _GetArrowModifyDim(ref int dim, bool half, int size, bool mirror)
+        {
+            if (mirror) dim = size - dim;
+            if (half) dim = dim / 2;
+        }
+        /// <summary>
+        /// Konvertuje zadaný string na typ šipky
+        /// </summary>
+        /// <param name="text"></param>
+        /// <returns></returns>
+        private static ArrowType _GetArrowType(string text)
+        {
+            string key = (text ?? "U").Trim().ToUpper();
+            switch (key)
+            {   // Ceiling, Up, Down, Floor, Begin, Left, Right, End, Stop
+                case "CEILING":
+                case "TOP":
+                case "FIRST":
+                case "C":
+                case "T": return ArrowType.Ceiling;
+
+                case "UP":
+                case "PREV":
+                case "P":
+                case "U": return ArrowType.Up;
+
+                case "DOWN":
+                case "NEXT":
+                case "N":
+                case "D": return ArrowType.Down;
+
+                case "FLOOR":
+                case "BOTTOM":
+                case "LAST":
+                case "F": return ArrowType.Floor;
+
+                case "BEGIN":
+                case "B": return ArrowType.Begin;
+
+                case "LEFT":
+                case "L": return ArrowType.Left;
+
+                case "RIGHT":
+                case "R": return ArrowType.Right;
+
+                case "END":
+                case "E": return ArrowType.End;
+            }
+
+            return ArrowType.Stop;
+        }
+        private enum ArrowType { None, Ceiling, Up, Down, Floor, Begin, Left, Right, End, Stop }
         #endregion
         #region Text
         /// <summary>
@@ -3911,7 +4316,7 @@ M22,22H10v2H22v-2z " class="Black" />
 
         #region Generic Support: Header, Styles, Paths, Curve, Footer, Convertors, Parameters...
         /// <summary>
-        /// Vrací XML text zahajující SVG image dané velikosti
+        /// Vrací XML text zahajující SVG image dané velikosti. Generuje záhlaví SVG a otevírá element G.
         /// </summary>
         /// <param name="size"></param>
         /// <returns></returns>
@@ -3927,6 +4332,7 @@ M22,22H10v2H22v-2z " class="Black" />
         /// <summary>
         /// Vrací XML text definující styly DevExpress.
         /// Dává se hned za Header = <see cref="_GetXmlContentHeader(int)"/>.
+        /// Obsahuje pouze kompletní tag STYLE, nezačíná tag G.
         /// </summary>
         /// <returns></returns>
         private static string _GetXmlDevExpressStyles()
@@ -4143,7 +4549,7 @@ M22,22H10v2H22v-2z " class="Black" />
             return xml.Replace("'", "\"");
         }
         /// <summary>
-        /// Vrací XML text ukončující SVG image
+        /// Vrací XML text ukončující SVG image: ukončuje element G a poté SVG.
         /// </summary>
         /// <returns></returns>
         private static string _GetXmlContentFooter()
@@ -4255,6 +4661,7 @@ M22,22H10v2H22v-2z " class="Black" />
     internal class SvgImageCustomize
     {
         #region Colours constans
+        private const string DarkColorCodeTransparent = "#00FFFFFF";    //RMC 0070095 10.12.2021 Barvy ikon v QuickAccessToolbaru
         private const string DarkColorCode00 = "#000000";
         private const string DarkColorCode38 = "#383838";
         private const string LightColorCodeD4 = "#D4D4D4";
@@ -4423,8 +4830,8 @@ M22,22H10v2H22v-2z " class="Black" />
                 contentXml = contentXml.Replace($"fill=\"{DarkColorCode0BA04A}\"", $"fill=\"{LightColorCode17AB4F}\""); //JD 0065749 22.07.2020
                 contentXml = contentXml.Replace($"stroke=\"{DarkColorCode0BA04A}\"", $"stroke=\"{LightColorCode17AB4F}\""); //JD 0065749 03.08.2020
 
-                //bílá -> tmavě šedá                    
-                contentXml = contentXml.Replace($"fill=\"{LightColorCodeFF}\"", $"fill=\"{DarkColorCode38}\"");
+                //bílá -> tmavě šedá
+                contentXml = contentXml.Replace($"fill=\"{LightColorCodeFF}\"", $"fill=\"{DarkColorCodeTransparent}\"");    //RMC 0070095 10.12.2021 Barvy ikon v QuickAccessToolbaru; pro bílý fill nahradit transparent
 
                 //černá a tmavě šedá -> světle šedá
                 contentXml = contentXml.Replace($"stroke=\"{DarkColorCode00}\"", $"stroke=\"{LightColorCodeD4}\"");
