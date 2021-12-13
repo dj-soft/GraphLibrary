@@ -637,7 +637,7 @@ namespace TestDevExpress.Forms
             DxSvgImage dxSvgImage = null;
             if (barItem.ImageOptions.SvgImage != null)
                 dxSvgImage = DxSvgImage.Create(barItem.ImageOptions.SvgImage);
-            else if (barItem.ImageOptions.LargeImageIndex >= 0 && barItem.Images is DxSvgImageCollection svgImages)
+            else if (barItem.ImageOptions.LargeImageIndex >= 0 && barItem.LargeImages is DxSvgImageCollection svgImages)
                 dxSvgImage = DxSvgImage.Create(svgImages[barItem.ImageOptions.LargeImageIndex]);
 
             if (dxSvgImage != null)

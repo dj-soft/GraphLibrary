@@ -4153,10 +4153,10 @@ namespace Noris.Clients.Win.Components.AsolDX
             return TryGetIRibbonData(link?.Item, out key, out iRibbonItem, out iRibbonGroup, out ownerRibbon);
         }
         /// <summary>
-        /// Metoda v dodaném linku najde jeho Item, jeho Tag, detekuje jeho typ a určí jeho Key, najde Ribbon, který prvek deklaroval, uloží typové výsledky a vrátí true.
+        /// Metoda pro dodaný BarItem najde jeho Tag, detekuje jeho typ a určí jeho Key, najde Ribbon, který prvek deklaroval, uloží typové výsledky a vrátí true.
         /// Pokud se nezdaří, vrátí false.
         /// </summary>
-        /// <param name="link"></param>
+        /// <param name="barItem"></param>
         /// <param name="key"></param>
         /// <param name="iRibbonItem"></param>
         /// <param name="iRibbonGroup"></param>
@@ -4377,6 +4377,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 var currentItems = QatManagerItems;
                 qatPanel.ListBox.ListItems = currentItems;
                 qatPanel.ListBox.SelectionMode = SelectionMode.MultiExtended;
+                qatPanel.ListBox.ItemHeight = 20;
                 qatPanel.ListBox.DragDropActions = DxDragDropActionType.ReorderItems;
                 qatPanel.ListBox.EnabledKeyActions = KeyActionType.AltDown | KeyActionType.AltUp | KeyActionType.Delete;
 
@@ -4396,10 +4397,35 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             get 
             {
-                return this._QATUserItems
+                // Získám prvky:
+                var qatItems = this._QATUserItems
                     .Where(q => q.CanRemoveFromQat && q.RibbonItem != null)
-                    .Select(q => q.RibbonItem)
                     .ToArray();
+                // Pokud najdeme ikonu, která má prázdný text a/nebo ikonu, získáme ji z BarItemu:
+                List<IMenuItem> menuItems = new List<IMenuItem>();
+                for (int i = 0; i < qatItems.Length; i++)
+                {
+                    var qatItem = qatItems[i];
+                    var iMenuItem = qatItem.RibbonItem;              // Není null
+                    bool hasImage = (!String.IsNullOrEmpty(iMenuItem.ImageName) || iMenuItem.Image != null || iMenuItem.SvgImage != null);
+                    bool hasText = !String.IsNullOrEmpty(iMenuItem.Text);
+                    if (hasImage || hasText)
+                    {   // Běžný MenuItem s obrázkem anebo textem:
+                        menuItems.Add(iMenuItem);
+                    }
+                    else
+                    {   // Tady jsou typicky DevExpress itemy (skin, paleta):
+                        DataMenuItem menuItem = DataMenuItem.CreateClone(iMenuItem);
+                        if (!hasImage) { menuItem.Image = qatItem.BarItem.ImageOptions.Image; menuItem.SvgImage = qatItem.BarItem.ImageOptions.SvgImage; }
+                        if (!hasText) menuItem.Text = qatItem.BarItem.Caption;
+
+                        hasImage = !String.IsNullOrEmpty(menuItem.ImageName) || menuItem.Image != null;
+                        hasText = !String.IsNullOrEmpty(menuItem.Text);
+                        if (hasImage || hasText)
+                            menuItems.Add(menuItem);
+                    }
+                }
+                return menuItems.ToArray();
             }
         }
         /// <summary>

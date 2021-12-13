@@ -3538,7 +3538,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         #endregion
     }
     #endregion
-    
     #region DxSimpleButton
     /// <summary>
     /// SimpleButton
@@ -6317,6 +6316,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public virtual Image Image { get; set; }
         /// <summary>
+        /// Fyzický vektor ikony
+        /// </summary>
+        public virtual DevExpress.Utils.Svg.SvgImage SvgImage { get; set; }
+        /// <summary>
         /// Jméno běžné ikony.
         /// Pro prvek typu CheckBox tato ikona reprezentuje stav, kdy <see cref="Checked"/> = NULL.
         /// </summary>
@@ -6397,6 +6400,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Fyzický obrázek ikony.
         /// </summary>
         Image Image { get; }
+        /// <summary>
+        /// Fyzický vektor ikony
+        /// </summary>
+        DevExpress.Utils.Svg.SvgImage SvgImage { get; }
         /// <summary>
         /// Jméno ikony.
         /// Pro prvek typu CheckBox tato ikona reprezentuje stav, kdy <see cref="Checked"/> = NULL.

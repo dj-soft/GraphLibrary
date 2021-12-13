@@ -261,7 +261,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         protected override void OnPaintBackground(PaintEventArgs pevent)
         {
             base.OnPaintBackground(pevent);
-            _ItemImageSize = DxComponent.GetImageSize(this.ItemSizeType, true, this.DeviceDpi);
+            // _ItemImageSize = DxComponent.GetImageSize(this.ItemSizeType, true, this.DeviceDpi);
         }
         /// <summary>
         /// Vrátí Image pro daný index
@@ -273,8 +273,15 @@ namespace Noris.Clients.Win.Components.AsolDX
             var menuItem = this.ListItems[index];
             if (menuItem != null)
             {
+                Size itemSize = _ItemImageSize;
+
+                //var skinProvider = DevExpress.LookAndFeel.UserLookAndFeel.Default;
+                //var svgState = DevExpress.Utils.Drawing.ObjectState.Normal;
+                //var svgPalette = DevExpress.Utils.Svg.SvgPaletteHelper.GetSvgPalette(skinProvider, svgState);
+
                 if (menuItem.Image != null) return menuItem.Image;
-                if (menuItem.ImageName != null) return DxComponent.GetBitmapImage(menuItem.ImageName, this.ItemSizeType);
+                if (menuItem.SvgImage != null) return DxComponent.RenderSvgImage(menuItem.SvgImage, itemSize, null);
+                if (menuItem.ImageName != null) return DxComponent.GetBitmapImage(menuItem.ImageName, this.ItemSizeType, itemSize);
             }
             return base.GetItemImage(index);
         }
@@ -296,7 +303,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             set
             {
                 _ItemSizeType = (value == ResourceImageSizeType.Small || value == ResourceImageSizeType.Medium || value == ResourceImageSizeType.Large) ? value : ResourceImageSizeType.Small;
-                _ItemImageSize = DxComponent.GetImageSize(this.ItemSizeType, true, this.DeviceDpi);
                 if (this.Parent != null) this.Invalidate();
             }
         }
@@ -305,9 +311,20 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private ResourceImageSizeType _ItemSizeType = ResourceImageSizeType.Small;
         /// <summary>
-        /// Velikost ikony, určuje se na začátku procesu 
+        /// Velikost ikony
         /// </summary>
-        private Size _ItemImageSize;
+        private Size _ItemImageSize
+        {
+            get 
+            {
+                int h = this.ViewInfo.ItemHeight - 2;
+                if (h < 24) h = 16;
+                else if (h < 32) h = 24;
+                else if (h < 48) h = 32;
+                else h = 48;
+                return new Size(h, h); 
+            }
+        }
         #endregion
         #region ToolTip
         /// <summary>

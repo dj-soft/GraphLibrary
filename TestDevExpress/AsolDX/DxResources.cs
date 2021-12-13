@@ -67,7 +67,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             ResourceContentType[] validContentTypes = _GetValidImageContentTypes(isPreferredVectorImage);
             if (hasName && _TryGetApplicationResources(imageName, exactName, out var validItems, validContentTypes))
                 return _CreateBitmapImageApplication(validItems, sizeType, optimalSvgSize);
-            
+
             if (hasName && _ExistsDevExpressResource(imageName))
                 return _CreateBitmapImageDevExpress(imageName, sizeType, optimalSvgSize);
             if (hasCaption)
@@ -140,6 +140,45 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (s <= 16) return ResourceImageSizeType.Small;
             if (s <= 24) return ResourceImageSizeType.Medium;
             return ResourceImageSizeType.Large;
+        }
+        /// <summary>
+        /// Vyrenderuje daný <see cref="SvgImage"/> do Image
+        /// </summary>
+        /// <param name="svgImage"></param>
+        /// <param name="sizeType"></param>
+        /// <param name="targetDpi"></param>
+        /// <param name="svgPalette"></param>
+        /// <returns></returns>
+        public static Image RenderSvgImage(SvgImage svgImage, ResourceImageSizeType sizeType, int? targetDpi = null, DevExpress.Utils.Design.ISvgPaletteProvider svgPalette = null)
+        {
+            if (svgImage == null) return null;
+            Size imageSize = GetImageSize(sizeType, true, targetDpi);
+            return Instance._RenderSvgImage(svgImage, imageSize, svgPalette);
+        }
+        /// <summary>
+        /// Vyrenderuje daný <see cref="SvgImage"/> do Image
+        /// </summary>
+        /// <param name="svgImage"></param>
+        /// <param name="imageSize"></param>
+        /// <param name="svgPalette"></param>
+        /// <returns></returns>
+        public static Image RenderSvgImage(SvgImage svgImage, Size imageSize, DevExpress.Utils.Design.ISvgPaletteProvider svgPalette = null)
+        {
+            if (svgImage == null) return null;
+            return Instance._RenderSvgImage(svgImage, imageSize, svgPalette);
+        }
+        /// <summary>
+        /// Vyrenderuje daný <see cref="SvgImage"/> do Image
+        /// </summary>
+        /// <param name="svgImage"></param>
+        /// <param name="imageSize"></param>
+        /// <param name="svgPalette"></param>
+        /// <returns></returns>
+        private Image _RenderSvgImage(SvgImage svgImage, Size imageSize, DevExpress.Utils.Design.ISvgPaletteProvider svgPalette)
+        {
+            if (svgImage == null) return null;
+            Image image = DxSvgImage.RenderToImage(svgImage, imageSize, ContentAlignment.MiddleCenter, svgPalette);
+            return image;
         }
         #endregion
         #region CreateVectorImage - Získání new instance vektorového obrázku, GetVectorImage - Rychlé získání instance vektorového obrázku
@@ -3517,6 +3556,24 @@ namespace Noris.Clients.Win.Components.AsolDX
         #endregion
         #region RenderTo Graphics
         /// <summary>
+        /// Vyrenderuje SvgImage do Image
+        /// </summary>
+        /// <param name="svgImage"></param>
+        /// <param name="size"></param>
+        /// <param name="alignment"></param>
+        /// <param name="svgPalette"></param>
+        /// <returns></returns>
+        public static Image RenderToImage(SvgImage svgImage, Size size, ContentAlignment alignment = ContentAlignment.MiddleCenter, DevExpress.Utils.Design.ISvgPaletteProvider svgPalette = null)
+        {
+            Rectangle bounds = new Rectangle(Point.Empty, size);
+            Bitmap image = new Bitmap(size.Width, size.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+            using (Graphics graphics = Graphics.FromImage(image))
+            {
+                _RenderTo(svgImage, graphics, bounds, alignment, svgPalette, out var imageBounds);
+            }
+            return image;
+        }
+        /// <summary>
         /// Renderuje this image do dané grafiky na dané místo
         /// </summary>
         /// <param name="graphics"></param>
@@ -3588,7 +3645,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             imageBounds = null;
             if (svgImage is null || graphics is null || bounds.Width <= 2 || bounds.Height <= 2) return;
 
-            // Matrix(a,b,c,d,e,f):  Xr = Xi * a ..... Yr = Yi * d  +  Xi * b......
+            // Matrix(a,b,c,d,e,f):  Xr = (a * Xi  +  c * Yi  +  e);   Yr = (d * Yi  +  b * Xi  +  f);
             //   a: zoom X
             //   b: X * b => Y
             //   c: Y * c => X
@@ -5156,12 +5213,9 @@ M22,22H10v2H22v-2z " class="Black" />
             }
         }
         #endregion
-
         #region Podpora pro konverzi SVG ikon na paletové barvy - TODO
 
         #endregion
-        
-
     }
     #endregion
 }
