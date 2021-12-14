@@ -526,6 +526,11 @@ namespace TestDevExpress
         public Color SurroundColor { get { return _SurroundColor; } set { _SurroundColor = value; Invalidate(); } }
         private Color _SurroundColor;
         /// <summary>
+        /// Barva okraje 1px
+        /// </summary>
+        public Color? BorderColor { get { return _BorderColor; } set { _BorderColor = value; Invalidate(); } }
+        private Color? _BorderColor;
+        /// <summary>
         /// Barva na okraji se má převzít z barvy parenta.
         /// Default = true
         /// </summary>
@@ -566,6 +571,15 @@ namespace TestDevExpress
                     e.Graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.High;
                     e.Graphics.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.HighQuality;
                     e.Graphics.FillPath(pgb, path);
+                }
+                var borderColor = BorderColor;
+                if (borderColor.HasValue)
+                {
+                    Rectangle bounds = this.ClientRectangle;
+                    bounds.Width -= 1;
+                    bounds.Height -=1;
+                    Pen pen = DxComponent.PaintGetPen(borderColor.Value);
+                    e.Graphics.DrawRectangle(pen, bounds);
                 }
             }
         }

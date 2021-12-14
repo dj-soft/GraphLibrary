@@ -394,6 +394,20 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             return count == 1;
         }
+        /// <summary>
+        /// Vrátí true, pokud this hodnota má stejně nastavený daný bit, jako daná old hodnota.
+        /// Používá se pro detekci změny v enumech typu Flags.
+        /// </summary>
+        /// <param name="newValue"></param>
+        /// <param name="oldValue"></param>
+        /// <param name="bit"></param>
+        /// <returns></returns>
+        public static bool HasEqualsBit(this Enum newValue, Enum oldValue, Enum bit)
+        {
+            bool oldBit = oldValue.HasFlag(bit);
+            bool newBit = newValue.HasFlag(bit);
+            return (oldBit == newBit);
+        }
         #endregion
         #region Align
         /// <summary>

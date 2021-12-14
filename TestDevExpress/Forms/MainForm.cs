@@ -1335,25 +1335,190 @@ namespace TestDevExpress.Forms
         {
             _PanelTabHeader = panel;
             _SplitTabHeader = DxComponent.CreateDxSplitContainer(_PanelTabHeader, dock: DockStyle.Fill, splitLineOrientation: Orientation.Horizontal, fixedPanel: DevExpress.XtraEditors.SplitFixedPanel.None, showSplitGlyph: true);
+            _SplitTabHeader.FixedPanel = DevExpress.XtraEditors.SplitFixedPanel.Panel1;
+          //  _SplitTabHeader.Panel2.BackColor = Color.FromArgb(200, 225, 250);
 
-            _TabTopAddBtn1 = DxComponent.CreateDxSimpleButton(3, 170, 143, 44, _SplitTabHeader.Panel1, "Přidej 2 záložky", _TabTopAddBtn1_Click);
-            _TabTopAddBtn2 = DxComponent.CreateDxSimpleButton(152, 170, 143, 44, _SplitTabHeader.Panel1, "Smaž vše", _TabTopAddBtn2_Click);
-            _TabTopAddBtn3 = DxComponent.CreateDxSimpleButton(301, 170, 143, 44, _SplitTabHeader.Panel1, "Smaž a přidej", _TabTopAddBtn3_Click);
+            int x = 10;
+            int y = 9;
+            int w = 180;
+            int h = 36;
+            DxComponent.CreateDxSimpleButton(x, y, w, h, _SplitTabHeader.Panel1, "Smaž vše", _TabHeadersClear_Click); x += (w + 10);
+            DxComponent.CreateDxSimpleButton(x, y, w, h, _SplitTabHeader.Panel1, "Přidej 4 stránky", _TabHeadersAdd4_Click); x += (w + 10);
+            DxComponent.CreateDxSimpleButton(x, y, w, h, _SplitTabHeader.Panel1, "Smaž a přidej 4", _TabHeadersClearAdd4_Click); x += (w + 10);
+            DxComponent.CreateDxSimpleButton(x, y, w, h, _SplitTabHeader.Panel1, "ReFill beze změny", _TabHeadersClearReFill_Click); x += (w + 10);
+            y += (h + 6);
 
-            this._NativeAddCheck = DxComponent.CreateDxCheckEdit(654, 182, 97, _SplitTabHeader.Panel1, "Native Add");
-            this._NativeAddCheck.Checked = true;
-            this._TabTopAddSilentCheck = DxComponent.CreateDxCheckEdit(469, 182, 97, _SplitTabHeader.Panel1, "Akce v Silent modu");
-            this._TabTopAddSilentCheck.Checked = true;
+            x = 10;
+            h = 28;
+            DxComponent.CreateDxSimpleButton(x, y, w, h, _SplitTabHeader.Panel1, "Nahoře", _TabHeadersPositionTop_Click); x += (w + 10);
+            DxComponent.CreateDxSimpleButton(x, y, w, h, _SplitTabHeader.Panel1, "Dole", _TabHeadersPositionBottom_Click); x += (w + 10);
+            DxComponent.CreateDxSimpleButton(x, y, w, h, _SplitTabHeader.Panel1, "Vlevo s textem", _TabHeadersPositionLeftText_Click); x += (w + 10);
+            DxComponent.CreateDxSimpleButton(x, y, w, h, _SplitTabHeader.Panel1, "Vlevo jen ikona", _TabHeadersPositionLeftIcon_Click); x += (w + 10);
+            DxComponent.CreateDxSimpleButton(x, y, w, h, _SplitTabHeader.Panel1, "Vpravo svislý text", _TabHeadersPositionRightVerticalText_Click); x += (w + 10);
+            y += (h + 6);
 
-            this.InitTabHeaders1();
-            this.InitTabHeaders2();
+            _SplitTabHeader.SplitterPosition = y + 4;
+
+            _XtraTabControl = new DxXtraTabControl();
+
+            _XtraTabImages = new string[]
+            {
+    "svgimages/icon%20builder/weather_fog.svg",
+    "svgimages/icon%20builder/weather_hail.svg",
+    "svgimages/icon%20builder/weather_humidity.svg",
+    "svgimages/icon%20builder/weather_lightning.svg",
+    "svgimages/icon%20builder/weather_moon.svg",
+    "svgimages/icon%20builder/weather_partlycloudyday.svg",
+    "svgimages/icon%20builder/weather_partlycloudynight.svg",
+    "svgimages/icon%20builder/weather_rain.svg",
+    "svgimages/icon%20builder/weather_rainandhail.svg",
+    "svgimages/icon%20builder/weather_rainheavy.svg",
+    "svgimages/icon%20builder/weather_rainlight.svg",
+    "svgimages/icon%20builder/weather_snow.svg",
+    "svgimages/icon%20builder/weather_snowfall.svg",
+    "svgimages/icon%20builder/weather_snowfallheavy.svg",
+    "svgimages/icon%20builder/weather_snowfalllight.svg",
+    "svgimages/icon%20builder/weather_storm.svg",
+    "svgimages/icon%20builder/weather_sunny.svg",
+    "svgimages/icon%20builder/weather_temperature.svg",
+    "svgimages/icon%20builder/weather_umbrella.svg",
+    "svgimages/icon%20builder/weather_water.svg",
+    "svgimages/icon%20builder/weather_wind.svg",
+    "svgimages/icon%20builder/weather_winddirection.svg"
+            };
+
+            _XtraTabAddPages(5);
+            _SplitTabHeader.Panel2.Controls.Add(_XtraTabControl);
+            _SplitTabHeader.Panel2.SizeChanged += _SplitTabHeaderPanel2_SizeChanged;
+            _XtraTabControl.PageHeaderPosition = DxPageHeaderPosition.Default;
+
+            _XtraTabControl.HeaderSizeChanged += _TabHeaderPane_HeaderHeightChanged;
         }
+
         DxSplitContainerControl _SplitTabHeader;
-        DxSimpleButton _TabTopAddBtn1;
-        DxSimpleButton _TabTopAddBtn2;
-        DxSimpleButton _TabTopAddBtn3;
-        DxCheckEdit _NativeAddCheck;
-        DxCheckEdit _TabTopAddSilentCheck;
+        DxXtraTabControl _XtraTabControl;
+        string[] _XtraTabImages;
+        private void _TabHeaderClear()
+        {
+            _XtraTabControl.ClearPages();
+        }
+        private void _XtraTabAddPages(int count, bool withClear = false)
+        {
+            _XtraTabControl.AddPages(_XtraTabGetPages(count));
+        }
+        private List<IPageItem> _XtraTabGetPages(int count)
+        {
+            List<IPageItem> pages = new List<IPageItem>();
+            int index = _XtraTabControl.PageCount;
+            for (int i = 0; i < count; i++)
+            {
+                pages.Add(new DataPageItem()
+                {
+                    ItemId = "Id" + index.ToString(),
+                    Text = (index + 1).ToString() + ". " + Random.GetWord(true),
+                    ToolTipText = Random.GetSentences(1, 8, 1, 6),
+                    ImageName = Random.GetItem(_XtraTabImages)
+                });
+                index++;
+            }
+            return pages;
+        }
+        private void _TabHeaderReFill() { }
+        private void _TabHeadersClear_Click(object sender, EventArgs e) { _TabHeaderClear(); }
+        private void _TabHeadersAdd4_Click(object sender, EventArgs e) { _XtraTabAddPages(4); }
+        private void _TabHeadersClearAdd4_Click(object sender, EventArgs e) { _TabHeaderClear(); _XtraTabAddPages(4); }
+        private void _TabHeadersClearReFill_Click(object sender, EventArgs e) { _TabHeaderReFill(); }
+
+        private void _TabHeadersPositionTop_Click(object sender, EventArgs e) { _TabHeaderSetPosition(DxPageHeaderPosition.Top);  }
+        private void _TabHeadersPositionBottom_Click(object sender, EventArgs e) { _TabHeaderSetPosition(DxPageHeaderPosition.Bottom); }
+        private void _TabHeadersPositionLeftText_Click(object sender, EventArgs e) { _TabHeaderSetPosition(DxPageHeaderPosition.PositionLeft | DxPageHeaderPosition.IconText); }
+        private void _TabHeadersPositionLeftIcon_Click(object sender, EventArgs e) { _TabHeaderSetPosition(DxPageHeaderPosition.PositionLeft | DxPageHeaderPosition.IconOnly); }
+        private void _TabHeadersPositionRightVerticalText_Click(object sender, EventArgs e) { _TabHeaderSetPosition(DxPageHeaderPosition.PositionRight | DxPageHeaderPosition.TextOnly | DxPageHeaderPosition.VerticalText); }
+
+        private void _SplitTabHeaderPanel2_SizeChanged(object sender, EventArgs e)
+        {
+            _TabHeaderDoLayout();
+        }
+        private void _TabHeaderPane_HeaderHeightChanged(object sender, EventArgs e)
+        {
+            _TabHeaderDoLayout();
+        }
+        private void _TabHeaderSetPosition(DxPageHeaderPosition headerPosition)
+        {
+            _XtraTabControl.PageHeaderPosition = headerPosition;
+            _TabHeaderDoLayout();
+        }
+        private void _TabHeaderDoLayout()
+        {
+            var innerBounds = _SplitTabHeader.Panel2.GetInnerBounds();
+            if (innerBounds.Width < 100 || innerBounds.Height < 15) return;
+
+            var headerPosition = _XtraTabControl.PageHeaderPosition & DxPageHeaderPosition.PositionSummary;
+            int headerHeight, headerWidth;
+            switch (headerPosition)
+            {
+                case DxPageHeaderPosition.PositionTop:
+                    headerHeight = _XtraTabControl.HeaderHeight;
+                    _XtraTabControl.Bounds = new Rectangle(innerBounds.X, innerBounds.Y + 10, innerBounds.Width, headerHeight);
+                    break;
+                case DxPageHeaderPosition.PositionBottom:
+                    headerHeight = _XtraTabControl.HeaderHeight;
+                    _XtraTabControl.Bounds = new Rectangle(innerBounds.X, innerBounds.Bottom - 10 - headerHeight, innerBounds.Width, headerHeight);
+                    break;
+                case DxPageHeaderPosition.PositionLeft:
+                    headerWidth = _XtraTabControl.HeaderWidth;
+                    _XtraTabControl.Bounds = new Rectangle(innerBounds.X + 10, innerBounds.Y, headerWidth, innerBounds.Height);
+                    break;
+                case DxPageHeaderPosition.PositionRight:
+                    headerWidth = _XtraTabControl.HeaderWidth;
+                    _XtraTabControl.Bounds = new Rectangle(innerBounds.Right - 10 - headerWidth, innerBounds.Y, headerWidth, innerBounds.Height);
+                    break;
+                default:
+                    _XtraTabControl.Bounds = innerBounds;
+                    break;
+            }
+        }
+
+        #region staré a opuštěné
+        /*
+
+
+        DxTabPane _TabHeaderTabPane;
+        AsolSamplePanel _TabHeaderSamplePanel;
+
+        private void _SplitTabHeaderPanel2_SizeChanged(object sender, EventArgs e)
+        {
+            _SplitTabHeaderDoLayout();
+        }
+
+        private void _TabHeaderPane_HeaderHeightChanged(object sender, EventArgs e)
+        {
+            _SplitTabHeaderDoLayout();
+        }
+        private void _SplitTabHeaderDoLayout()
+        {
+            if (_TabHeaderTabPane is null) return;
+
+            var clientBounds = _SplitTabHeader.Panel2.GetInnerBounds();
+            int tabHeaderHeight = _TabHeaderTabPane.HeaderHeight;
+            _TabHeaderTabPane.Bounds = new Rectangle(clientBounds.X, clientBounds.Y, clientBounds.Width, tabHeaderHeight);
+
+            int samplePanelY = _TabHeaderTabPane.Bounds.Bottom;
+            _TabHeaderSamplePanel.Bounds = new Rectangle(clientBounds.X, samplePanelY, clientBounds.Width, clientBounds.Bottom - samplePanelY);
+        }
+
+        private void _TabHeaderClear()
+        {
+            if (_TabHeaderTabPane is null) return;
+            _TabHeaderTabPane.ClearPages();
+        }
+        private void _TabHeaderAdd(int count)
+        {
+            if (_TabHeaderTabPane is null) return;
+            string id = (Guid.NewGuid()).ToString();
+            _TabHeaderTabPane.AddNewPage(id, id);
+        }
+
         private void InitTabHeaders1()
         {
             _TabHeaderStrip1 = TabHeaderStrip.Create(TabHeaderStrip.HeaderType.DevExpressTop);
@@ -1714,7 +1879,7 @@ namespace TestDevExpress.Forms
             AddTabPages(tabPane);
 
             #region fungující algoritmy
-            /*
+            / *
              * 
             tabPane.AddPage("TabPane.TabNavigationPage 1", "page1");
             tabPane.AddPage("Titulek 2", "page2");
@@ -1753,7 +1918,7 @@ namespace TestDevExpress.Forms
             var type = tabPane.Pages[0].GetType();
 
 
-            */
+            * /
             #endregion
 
             _SplitTabHeader.Panel2.Controls.Add(tabPane);
@@ -1869,6 +2034,9 @@ namespace TestDevExpress.Forms
 
             _SplitTabHeader.Panel2.Controls.Add(navPane);
         }
+        */
+        #endregion
+
         #endregion
         #region Splittery
         private void InitSplitters()
