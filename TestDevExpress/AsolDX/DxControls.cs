@@ -2490,6 +2490,7 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// </summary>
     public class DxXtraTabControl : DevExpress.XtraTab.XtraTabControl, IListenerStyleChanged, IListenerZoomChange
     {
+        #region Konstruktor, eventy
         /// <summary>
         /// Konstruktor
         /// </summary>
@@ -2499,6 +2500,9 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.InitEvents();
              DxComponent.RegisterListener(this);
         }
+        /// <summary>
+        /// Inicializace výchozích vlastností
+        /// </summary>
         protected void InitProperties()
         {
             AppearancePage.HeaderActive.FontStyleDelta = FontStyle.Bold;
@@ -2514,16 +2518,43 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             PageHeaderPosition = DxPageHeaderPosition.Default;
         }
+        /// <summary>
+        /// Inicializace eventů
+        /// </summary>
         protected void InitEvents()
         {
+            this.SelectedPageChanging += DxXtraTabControl_SelectedPageChanging;
+            this.SelectedPageChanged += DxXtraTabControl_SelectedPageChanged;
             this.SizeChanged += _SizeChanged;
         }
+        /// <summary>
+        /// Při změně vybrané stránky
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void DxXtraTabControl_SelectedPageChanging(object sender, DevExpress.XtraTab.TabPageChangingEventArgs e)
+        { }
+        /// <summary>
+        /// Po změně vybrané stránky
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void DxXtraTabControl_SelectedPageChanged(object sender, DevExpress.XtraTab.TabPageChangedEventArgs e)
+        {
+            if (!_SelectedIPageChangedSuppress)
+                RunSelectedIPageChanged();
+        }
+        /// <summary>
+        /// Dispose
+        /// </summary>
+        /// <param name="disposing"></param>
         protected override void Dispose(bool disposing)
         {
             DxComponent.UnregisterListener(this);
 
             base.Dispose(disposing);
         }
+        #endregion
         #region Public properties
         /// <summary>
         /// Umístění a vzhled záhlaví
@@ -2591,9 +2622,15 @@ namespace Noris.Clients.Win.Components.AsolDX
         #endregion
         #region Pages
         /// <summary>
-        /// Stránky datové
+        /// Stránky datové.
+        /// Lze i setovat. Při setování se control pokusí ponechat jako selectovanou stránku tu, která je aktuálně selectovaná, podle jejího <see cref="ITextItem.ItemId"/>.
+        /// Pokud to nebude možné (v nové sadě stránek nebude takové ID existovat), pak vyselectuje první existující stránku a vyvolá událost <see cref="SelectedIPageChanged"/>
         /// </summary>
-        public IPageItem[] Pages { get { return this.DxPages.Select(p => p.PageData).ToArray(); } }
+        public IPageItem[] IPages 
+        { 
+            get { return this.DxPages.Select(p => p.PageData).ToArray(); }
+            set { SetPages(value); }
+        }
         /// <summary>
         /// Stránky vizuální
         /// </summary>
@@ -2601,36 +2638,201 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Počet stránek
         /// </summary>
-        public int PageCount { get { return Pages.Length; } }
+        public int IPageCount { get { return IPages.Length; } }
+        /// <summary>
+        /// Data aktuálně vybrané stránky nebo null pokud <see cref="IPageCount"/> == 0.
+        /// Lze setovat. Při změně proběhne událost <see cref="SelectedIPageChanged"/>.
+        /// </summary>
+        public IPageItem SelectedIPage 
+        {
+            get
+            {
+                var tabPage = this.SelectedTabPage;
+                return (tabPage != null && tabPage is DxXtraTabPage dxPage) ? dxPage.PageData : null;
+            }
+            set 
+            {
+                DxXtraTabPage dxPage = null;
+                IPageItem iPage = value;
+                if (iPage != null)
+                {
+                    DxXtraTabPage[] dxPages = DxPages;
+                    dxPage = dxPages.FirstOrDefault(p => Object.ReferenceEquals(p.PageData, iPage));
+                    if (dxPage == null && iPage.ItemId != null)
+                        dxPage = dxPages.FirstOrDefault(p => String.Equals(p.PageData.ItemId, iPage.ItemId));
+                }
+                this.SelectedTabPage = dxPage;
+            } 
+        }
+        /// <summary>
+        /// <see cref="ITextItem.ItemId"/> aktuálně vybrané stránky nebo null pokud <see cref="IPageCount"/> == 0.
+        /// Lze setovat. Při změně proběhne událost <see cref="SelectedIPageChanged"/>.
+        /// </summary>
+        public string SelectedIPageId
+        {
+            get
+            {
+                var tabPage = this.SelectedTabPage;
+                return (tabPage != null && tabPage is DxXtraTabPage dxPage) ? dxPage.PageData.ItemId : null;
+            }
+            set
+            {
+                DxXtraTabPage dxPage = null;
+                string itemId = value;
+                if (itemId != null)
+                {
+                    DxXtraTabPage[] dxPages = DxPages;
+                    dxPage = dxPages.FirstOrDefault(p => String.Equals(p.PageData.ItemId, itemId));
+                }
+                this.SelectedTabPage = dxPage;
+            }
+        }
+        /// <summary>
+        /// Vyvolá metodu <see cref="OnSelectedIPageChanged"/> a event <see cref="SelectedIPageChanged"/>, bez podmínky na <see cref="_SelectedIPageChangedSuppress"/>
+        /// </summary>
+        private void RunSelectedIPageChanged()
+        {
+            OnSelectedIPageChanged();
+            SelectedIPageChanged?.Invoke(this, EventArgs.Empty);
+        }
+        /// <summary>
+        /// Událost volaná při změně aktivní stránky <see cref="SelectedIPage"/>
+        /// </summary>
+        protected virtual void OnSelectedIPageChanged() { }
+        /// <summary>
+        /// Událost volaná při změně aktivní stránky <see cref="SelectedIPage"/>
+        /// </summary>
+        public event EventHandler SelectedIPageChanged;
+        /// <summary>
+        /// Hodnota true potlačí volání události <see cref="SelectedIPageChanged"/>, 
+        /// použije se při interních změnách obsahu, 
+        /// když víme že na konci změn nastavíme správnou hodnotu a/nebo vyvoláme explicitně event.
+        /// </summary>
+        private bool _SelectedIPageChangedSuppress = false;
+        /// <summary>
+        /// Smaže všechny stránky
+        /// </summary>
         public void ClearPages()
         {
-            this.TabPages.Clear();
-            _CheckHeaderSizeChangeForce();
+            _AddPages(true, null, null);
         }
+        /// <summary>
+        /// Smaže aktuální stránky, vloží dodanou sadu, a poté se pokusí reaktivovat nově dodanou stránku se shodným ID jaké měla dosud aktivní stránka.
+        /// Pokud nebyla nebo ji nenajde, pak aktivuje stránku s dodaným ID, anebo první dodanou stránku.
+        /// </summary>
+        /// <param name="pages"></param>
+        /// <param name="selectPageId"></param>
+        public void SetPages(IEnumerable<IPageItem> pages, string selectPageId = null)
+        {
+            _AddPages(true, pages, selectPageId);
+        }
+        /// <summary>
+        /// Přidá dané stránky.
+        /// </summary>
+        /// <param name="pages"></param>
         public void AddPages(IEnumerable<IPageItem> pages)
         {
-            foreach (var page in pages)
-                _AddPage(page);
-            _CheckHeaderSizeChangeForce();
+            _AddPages(false, pages, null);
         }
+        /// <summary>
+        /// Přidá danou stránku.
+        /// </summary>
+        /// <param name="page"></param>
         public void AddPage(IPageItem page)
         {
-            _AddPage(page);
-            _CheckHeaderSizeChangeForce();
+            if (page != null)
+                _AddPages(false, new IPageItem[] { page }, null);
         }
-        private void _AddPage(IPageItem page)
+        /// <summary>
+        /// Přidá stránky
+        /// </summary>
+        /// <param name="clear"></param>
+        /// <param name="pages"></param>
+        /// <param name="selectPageId"></param>
+        private void _AddPages(bool clear, IEnumerable<IPageItem> pages, string selectPageId)
         {
-            bool forceResize = (this.TabPages.Count == 0);
-            DxXtraTabPage dxPage = new DxXtraTabPage(this, page);
-            this.TabPages.Add(dxPage);
-            if (forceResize) _CheckHeaderSizeChange(true);
-        }
+            var oldPage = SelectedIPage;
+            bool isSuppress = _SelectedIPageChangedSuppress;
+            bool isActiveOldPage = false;
+            bool runEventChanged = false;
+            IPageItem[] allPages = null;
+            try
+            {
+                this.BeginUpdate();
+                using (this.ScopeSuspendParentLayout())
+                {
+                    _SelectedIPageChangedSuppress = true;
+                    bool forceResize = (this.TabPages.Count == 0);
 
+                    if (clear)
+                        this.TabPages.Clear();
+
+                    if (pages != null)
+                    {
+                        foreach (var page in pages)
+                        {
+                            if (page != null)
+                            {
+                                DxXtraTabPage dxPage = new DxXtraTabPage(this, page);
+                                this.TabPages.Add(dxPage);
+                                if (forceResize)
+                                {
+                                    _CheckHeaderSizeChange(true);
+                                    forceResize = false;
+                                }
+                            }
+                        }
+                    }
+                    allPages = this.IPages;
+
+                    bool hasOldPage = (oldPage != null);
+                    isActiveOldPage = (hasOldPage && Object.ReferenceEquals(oldPage, this.SelectedIPage));
+                    if (hasOldPage && !isActiveOldPage && allPages.Length > 0)
+                    {   // Pokud dříve byla nějaká stránka aktivní, a nyní je aktivní jiná, pak se pokusím reaktivovat původní stránku:
+                        IPageItem newPage;
+                        if (!allPages.TryGetFirst(p => Object.ReferenceEquals(oldPage, p), out newPage) && oldPage.ItemId != null)   // Hledám identickou stránku
+                            allPages.TryGetFirst(p => String.Equals(oldPage.ItemId, p.ItemId), out newPage);                         // Hledám stránku se shodným ID
+                        if (newPage != null)
+                        {
+                            this.SelectedIPage = newPage;      // Fyzicky aktivuji stránku, ale event SelectedIPageChanged je potlačený (_SelectedIPageChangedSuppress) = takže se neprovede
+                            isActiveOldPage = true;
+                        }
+                    }
+
+                    // Pokud se mi nepodařilo aktivovat původní stránku (oldPage), tak nejspíš proto že původně nebylo nic, anebo jsme původní stránku smazali;
+                    // pak nyní najdu vhodnou stránku a vložím ji do 
+                    if (!isActiveOldPage && allPages != null)
+                    {
+                        if (allPages.Length == 0)
+                        {   // Nyní nemám žádné stránky,
+                            // a pokud jsem dosud měl nějakou aktivní, tak zavoláme event (změna Page => null):
+                            runEventChanged = (oldPage != null);
+                        }
+                        else
+                        {
+                            IPageItem newPage = null;
+                            if (selectPageId != null)
+                                allPages.TryGetFirst(p => String.Equals(selectPageId, p.ItemId), out newPage);
+                            if (newPage == null)
+                                newPage = allPages[0];
+                            this.SelectedIPage = newPage;      // Fyzicky aktivuji stránku, ale event SelectedIPageChanged je potlačený (_SelectedIPageChangedSuppress) = takže se neprovede
+                            runEventChanged = true;
+                        }
+                    }
+                }
+            }
+            finally
+            {
+                _SelectedIPageChangedSuppress = isSuppress;
+                this.EndUpdate();
+                _CheckHeaderSizeChangeForce();
+            }
+
+            if (runEventChanged)
+                RunSelectedIPageChanged();
+        }
         #endregion
         #region Výška a šířka prostoru záhlaví
-
-        
-
         /// <summary>
         /// Po změně velikosti
         /// </summary>
@@ -2642,9 +2844,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         /// <summary>
         /// Ověří, zda nedošlo ke změně výšky nebo šířky záhlaví (podle orientace), a pokud ano, pak vyvolá patřičné události.
+        /// Použije brutální sílu k prolomení neproniknutelné hradby DevExpress.
         /// </summary>
         private void _CheckHeaderSizeChangeForce()
-        {
+        {   // Musí být dvakrát, jinak špatně funguje změna z nuly na více záložek, nebo změna u levého i pravého umístění.
             _CheckHeaderSizeChange(true);
             _CheckHeaderSizeChange(true);
         }
@@ -2678,6 +2881,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private void _CheckHeaderHeightChange(bool force)
         {
+            _HeaderWidth = 0;
             if (this.Width < 10) return;
 
             int headerHeight = 0;
@@ -2720,6 +2924,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private void _CheckHeaderWidthChange(bool force)
         {
+            _HeaderHeight = 0;
             if (this.Height < 10) return;
 
             int headerWidth = 0;

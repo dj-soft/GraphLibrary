@@ -1345,7 +1345,11 @@ namespace TestDevExpress.Forms
             DxComponent.CreateDxSimpleButton(x, y, w, h, _SplitTabHeader.Panel1, "Smaž vše", _TabHeadersClear_Click); x += (w + 10);
             DxComponent.CreateDxSimpleButton(x, y, w, h, _SplitTabHeader.Panel1, "Přidej 4 stránky", _TabHeadersAdd4_Click); x += (w + 10);
             DxComponent.CreateDxSimpleButton(x, y, w, h, _SplitTabHeader.Panel1, "Smaž a přidej 4", _TabHeadersClearAdd4_Click); x += (w + 10);
-            DxComponent.CreateDxSimpleButton(x, y, w, h, _SplitTabHeader.Panel1, "ReFill beze změny", _TabHeadersClearReFill_Click); x += (w + 10);
+            DxComponent.CreateDxSimpleButton(x, y, w, h, _SplitTabHeader.Panel1, "ReFill beze změny", _TabHeadersReFill_Click); x += (w + 10);
+            int x1 = x;
+            int y1 = y;
+            int h1 = h;
+
             y += (h + 6);
 
             x = 10;
@@ -1355,7 +1359,19 @@ namespace TestDevExpress.Forms
             DxComponent.CreateDxSimpleButton(x, y, w, h, _SplitTabHeader.Panel1, "Vlevo s textem", _TabHeadersPositionLeftText_Click); x += (w + 10);
             DxComponent.CreateDxSimpleButton(x, y, w, h, _SplitTabHeader.Panel1, "Vlevo jen ikona", _TabHeadersPositionLeftIcon_Click); x += (w + 10);
             DxComponent.CreateDxSimpleButton(x, y, w, h, _SplitTabHeader.Panel1, "Vpravo svislý text", _TabHeadersPositionRightVerticalText_Click); x += (w + 10);
-            y += (h + 6);
+            int x2 = x;
+            int y2 = y;
+            int h2 = h;
+
+            y += (h + 12);
+
+            x = (x1 > x2 ? x1 : x2) + 50;
+            y = y1;
+            DxComponent.CreateDxSimpleButton(x, y, w, h1, _SplitTabHeader.Panel1, "DxXtraTab control", _TabHeadersDxXtraTabControl_Click);
+            y = y2;
+            DxComponent.CreateDxSimpleButton(x, y, w, h1, _SplitTabHeader.Panel1, "DxTabPane control", _TabHeadersDxTabPaneControl_Click);
+
+            y = y2 + h1 + 12;
 
             _SplitTabHeader.SplitterPosition = y + 4;
 
@@ -1395,6 +1411,11 @@ namespace TestDevExpress.Forms
             _XtraTabControl.HeaderSizeChanged += _TabHeaderPane_HeaderHeightChanged;
         }
 
+        private void _TabHeaderActivateDxXtraTabControl()
+        { }
+        private void _TabHeaderActivateDxTabPaneControl()
+        { }
+
         DxSplitContainerControl _SplitTabHeader;
         DxXtraTabControl _XtraTabControl;
         string[] _XtraTabImages;
@@ -1402,14 +1423,19 @@ namespace TestDevExpress.Forms
         {
             _XtraTabControl.ClearPages();
         }
-        private void _XtraTabAddPages(int count, bool withClear = false)
+        private void _XtraTabAddPages(int count)
         {
             _XtraTabControl.AddPages(_XtraTabGetPages(count));
         }
-        private List<IPageItem> _XtraTabGetPages(int count)
+        private void _TabHeaderReFill() 
+        {
+            int count = _XtraTabControl.IPageCount;
+            _XtraTabControl.SetPages(_XtraTabGetPages(count, 0));
+        }
+        private List<IPageItem> _XtraTabGetPages(int count, int? firstIndex = null)
         {
             List<IPageItem> pages = new List<IPageItem>();
-            int index = _XtraTabControl.PageCount;
+            int index = (firstIndex.HasValue ? firstIndex.Value : _XtraTabControl.IPageCount);
             for (int i = 0; i < count; i++)
             {
                 pages.Add(new DataPageItem()
@@ -1423,11 +1449,13 @@ namespace TestDevExpress.Forms
             }
             return pages;
         }
-        private void _TabHeaderReFill() { }
         private void _TabHeadersClear_Click(object sender, EventArgs e) { _TabHeaderClear(); }
         private void _TabHeadersAdd4_Click(object sender, EventArgs e) { _XtraTabAddPages(4); }
         private void _TabHeadersClearAdd4_Click(object sender, EventArgs e) { _TabHeaderClear(); _XtraTabAddPages(4); }
-        private void _TabHeadersClearReFill_Click(object sender, EventArgs e) { _TabHeaderReFill(); }
+        private void _TabHeadersReFill_Click(object sender, EventArgs e) { _TabHeaderReFill(); }
+
+        private void _TabHeadersDxXtraTabControl_Click(object sender, EventArgs e) { _TabHeaderActivateDxXtraTabControl(); }
+        private void _TabHeadersDxTabPaneControl_Click(object sender, EventArgs e) { _TabHeaderActivateDxTabPaneControl(); }
 
         private void _TabHeadersPositionTop_Click(object sender, EventArgs e) { _TabHeaderSetPosition(DxPageHeaderPosition.Top);  }
         private void _TabHeadersPositionBottom_Click(object sender, EventArgs e) { _TabHeaderSetPosition(DxPageHeaderPosition.Bottom); }
