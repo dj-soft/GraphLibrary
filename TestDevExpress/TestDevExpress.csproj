@@ -167,6 +167,9 @@
     <Compile Include="AsolDX\DxControlForm.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="AsolDX\News\DxControlsNew.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="AsolDX\News\DxIconConverter.cs" />
     <Compile Include="AsolDX\System\NrsParser.cs" />
     <Compile Include="AsolDX\System\Shared.cs" />
