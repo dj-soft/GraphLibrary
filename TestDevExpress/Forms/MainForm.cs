@@ -1439,7 +1439,9 @@ namespace TestDevExpress.Forms
                 tabHeader.PageHeaderPosition = DxPageHeaderPosition.Default;
                 tabHeader.HeaderSizeChanged += _TabHeaderPane_HeaderSizeChanged;
                 tabHeader.SelectedIPageChanged += _TabHeaderPane_SelectedIPageChanged;
-
+                tabHeader.IPageClosing += TabHeader_IPageClosing;
+                tabHeader.IPageRemoved += TabHeader_IPageRemoved;
+                tabHeader.PageHeaderMultiLine = true;
                 _TabHeaderControl = tabHeader;
                 _SplitTabHeader.Panel2.Controls.Add(control);
 
@@ -1453,8 +1455,12 @@ namespace TestDevExpress.Forms
                 var tabHeader = _TabHeaderControl;
                 tabHeader.HeaderSizeChanged -= _TabHeaderPane_HeaderSizeChanged;
                 tabHeader.SelectedIPageChanged -= _TabHeaderPane_SelectedIPageChanged;
+                tabHeader.IPageClosing -= TabHeader_IPageClosing;
+                tabHeader.IPageRemoved -= TabHeader_IPageRemoved;
 
                 _SplitTabHeader.Panel2.Controls.Remove(control);
+
+                control.Dispose();
             }
         }
         private void _TabHeaderClear()
@@ -1485,12 +1491,14 @@ namespace TestDevExpress.Forms
             int index = (firstIndex.HasValue ? firstIndex.Value : _TabHeaderControl.IPageCount);
             for (int i = 0; i < count; i++)
             {
+                bool closeButtonVisible = ((index % 3) == 1);
                 pages.Add(new DataPageItem()
                 {
                     ItemId = "Id" + index.ToString(),
-                    Text = (index + 1).ToString() + ". " + Random.GetWord(true),
+                    Text = (index + 1).ToString() + ". " + Random.GetWord(true) + (closeButtonVisible ? " ×" : ""),
                     ToolTipText = Random.GetSentences(1, 8, 1, 6),
-                    ImageName = Random.GetItem(_XtraTabImages)
+                    ImageName = Random.GetItem(_XtraTabImages),
+                    CloseButtonVisible = closeButtonVisible
                 });
                 index++;
             }
@@ -1523,6 +1531,14 @@ namespace TestDevExpress.Forms
         private void _TabHeaderPane_SelectedIPageChanged(object sender, EventArgs e)
         {
             _TabHeaderTextAddLine($"Event SelectedIPageChanged({_TabHeaderControl.SelectedIPage})");
+        }
+        private void TabHeader_IPageClosing(object sender, TEventCancelArgs<IPageItem> e)
+        {
+            _TabHeaderTextAddLine($"Event IPageClosing({e.Item})");
+        }
+        private void TabHeader_IPageRemoved(object sender, TEventArgs<IPageItem> e)
+        {
+            _TabHeaderTextAddLine($"Event IPageRemoved({e.Item})");
         }
 
         private void _TabHeaderSetPosition(DxPageHeaderPosition headerPosition)

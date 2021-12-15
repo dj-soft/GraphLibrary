@@ -2078,6 +2078,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         DxPageHeaderPosition PageHeaderPosition { get; set; }
         /// <summary>
+        /// Možnost zobrazit více řádek záhlaví
+        /// </summary>
+        bool PageHeaderMultiLine { get; set; }
+        /// <summary>
         /// Počet stránek
         /// </summary>
         int IPageCount { get; }
@@ -2117,6 +2121,20 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="pages"></param>
         void AddPages(IEnumerable<IPageItem> pages);
+        /// <summary>
+        /// Odstraní danou stránku podle jejího ID
+        /// </summary>
+        /// <param name="itemId"></param>
+        void RemovePage(string itemId);
+        /// <summary>
+        /// Volá se při pokusu o zavírání stránky.
+        /// Eventhandler může zavření potlačit nastavením Cancel = true. Pokud to nenastaví, stránka bude zavřena.
+        /// </summary>
+        event EventHandler<TEventCancelArgs<IPageItem>> IPageClosing;
+        /// <summary>
+        /// Volá se po zavření (odebrání) stránky (záložky).
+        /// </summary>
+        event EventHandler<TEventArgs<IPageItem>> IPageRemoved;
         /// <summary>
         /// Aktuální výška záhlaví. 
         /// Je nastavováno pouze pro záhlaví umístěné Top nebo Bottom.
@@ -2267,9 +2285,9 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.PageProperties.ShowMode = DevExpress.XtraBars.Navigation.ItemShowMode.ImageAndText;
             this.AllowCollapse = DevExpress.Utils.DefaultBoolean.False;          // Nedovolí uživateli skrýt headery
 
-            this.LookAndFeel.Style = DevExpress.LookAndFeel.LookAndFeelStyle.Style3D;
-            this.LookAndFeel.UseWindowsXPTheme = true;
-            this.OverlayResizeZoneThickness = 20;
+            //this.LookAndFeel.Style = DevExpress.LookAndFeel.LookAndFeelStyle.Style3D;
+            //this.LookAndFeel.UseWindowsXPTheme = true;
+            //this.OverlayResizeZoneThickness = 20;
             this.ItemOrientation = Orientation.Horizontal;                       // Vertical = kreslí řadu záhlaví vodorovně, ale obsah jednotlivého buttonu svisle :-(
 
             this.TransitionType = DxTabPaneTransitionType.FadeFast;
@@ -2356,6 +2374,14 @@ namespace Noris.Clients.Win.Components.AsolDX
                 using (this.ScopeSuspendParentLayout())
                 {
                     var oldHeaderPosition = _PageHeaderPosition;
+
+                    // Tato třída implementuje jen podmnožinu požadovaných hodnot:
+                    DxPageHeaderPosition validPositions = DxPageHeaderPosition.PositionTop | DxPageHeaderPosition.PositionBottom | DxPageHeaderPosition.IconOnly | DxPageHeaderPosition.TextOnly;
+                    newHeaderPosition = newHeaderPosition & validPositions;
+                    // Náhradní pozice při zadání Left nebo Right je Top:
+                    if ((newHeaderPosition & (DxPageHeaderPosition.PositionTop | DxPageHeaderPosition.PositionBottom)) == 0)
+                        newHeaderPosition |= DxPageHeaderPosition.PositionTop;
+
                     _PageHeaderPosition = newHeaderPosition;             // Od teď platí nová pravidla
 
                     // Změna zobrazení Icon a Text:
@@ -2371,6 +2397,11 @@ namespace Noris.Clients.Win.Components.AsolDX
                 _CheckHeaderSizeChangeForce();
             }
         }
+        /// <summary>
+        /// Možnost zobrazit více řádek záhlaví.
+        /// Tato třída tuto vlastnost nepodporuje, vždy je false.
+        /// </summary>
+        public bool PageHeaderMultiLine { get { return false; } set { } }
         #endregion
         #region Transitions
         /// <summary>
@@ -2562,19 +2593,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 var tabPage = this.SelectedPage;
                 return (tabPage != null && tabPage is DxTabPage dxPage) ? dxPage.PageData : null;
             }
-            set
-            {
-                DxTabPage dxPage = null;
-                IPageItem iPage = value;
-                if (iPage != null)
-                {
-                    DxTabPage[] dxPages = DxPages;
-                    dxPage = dxPages.FirstOrDefault(p => Object.ReferenceEquals(p.PageData, iPage));
-                    if (dxPage == null && iPage.ItemId != null)
-                        dxPage = dxPages.FirstOrDefault(p => String.Equals(p.PageData.ItemId, iPage.ItemId));
-                }
-                this.SelectedPage = dxPage;
-            }
+            set { this.SelectedPage = SearchDxPage(value); }
         }
         /// <summary>
         /// <see cref="ITextItem.ItemId"/> aktuálně vybrané stránky nebo null pokud <see cref="IPageCount"/> == 0.
@@ -2587,17 +2606,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 var tabPage = this.SelectedPage;
                 return (tabPage != null && tabPage is DxTabPage dxPage) ? dxPage.PageData.ItemId : null;
             }
-            set
-            {
-                DxTabPage dxPage = null;
-                string itemId = value;
-                if (itemId != null)
-                {
-                    DxTabPage[] dxPages = DxPages;
-                    dxPage = dxPages.FirstOrDefault(p => String.Equals(p.PageData.ItemId, itemId));
-                }
-                this.SelectedPage = dxPage;
-            }
+            set { this.SelectedPage = SearchDxPage(value); }
         }
         /// <summary>
         /// Vyvolá metodu <see cref="OnSelectedIPageChanged"/> a event <see cref="SelectedIPageChanged"/>, bez podmínky na <see cref="_SelectedIPageChangedSuppress"/>
@@ -2667,7 +2676,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             bool isSuppress = _SelectedIPageChangedSuppress;
             bool isActiveOldPage = false;
             bool runEventChanged = false;
-            int headerHeightOld = (this.Pages.Count > 0 ? this.ViewInfo.ButtonsBounds.Height : 0);
+            Size headerSizeOld = (this.Pages.Count > 0 ? this.ViewInfo.ButtonsBounds.Size : Size.Empty);
             IPageItem[] allPages = null;
             try
             {
@@ -2688,8 +2697,8 @@ namespace Noris.Clients.Win.Components.AsolDX
                                 DxTabPage dxPage = new DxTabPage(this, page);
                                 this.Pages.Add(dxPage);
                                 if (forceResize)
-                                {
-                                    _CheckHeaderSizeChange(true);
+                                {   // Po přidání úplně první stránky do TabHeaders:
+                                    _CheckHeaderSizeChange(true, headerSizeOld);
                                     forceResize = false;
                                 }
                             }
@@ -2736,11 +2745,129 @@ namespace Noris.Clients.Win.Components.AsolDX
             finally
             {
                 _SelectedIPageChangedSuppress = isSuppress;
-                _CheckHeaderSizeChangeForce(headerHeightOld);
+                _CheckHeaderSizeChangeForce(headerSizeOld);
             }
 
             if (runEventChanged)
                 RunSelectedIPageChanged();
+        }
+
+        /// <summary>
+        /// Odstraní danou stránku podle jejího ID
+        /// </summary>
+        /// <param name="itemId"></param>
+        public void RemovePage(string itemId)
+        {
+            _RemovePage(SearchDxPage(itemId));
+        }
+        /// <summary>
+        /// Odstraní danou stránku podle jejího objektu
+        /// </summary>
+        /// <param name="iPage"></param>
+        public void RemovePage(IPageItem iPage)
+        {
+            _RemovePage(SearchDxPage(iPage));
+        }
+        /// <summary>
+        /// Odstraní danou stránku
+        /// </summary>
+        /// <param name="dxPage"></param>
+        private void _RemovePage(DxTabPage dxPage)
+        {
+            if (dxPage != null)
+            {
+                Size headerSizeOld = (this.Pages.Count > 0 ? this.ViewInfo.ButtonsBounds.Size : Size.Empty);
+                if (Object.ReferenceEquals(this.SelectedPage, dxPage))
+                    _SelectAnyNearPage(dxPage);
+                this.Pages.Remove(dxPage);
+                RunIPageRemoved(new TEventArgs<IPageItem>(dxPage.PageData));
+                _CheckHeaderSizeChange(true, headerSizeOld);
+            }
+        }
+        /// <summary>
+        /// Aktivuje nejbližší sousední stránku ke stránce dané
+        /// </summary>
+        /// <param name="dxPage"></param>
+        private void _SelectAnyNearPage(DxTabPage dxPage)
+        {
+            if (dxPage is null) return;
+            int index = this.Pages.IndexOf(dxPage);
+            if (index < 0) return;
+            int last = this.Pages.Count - 1;
+            if (index < last)
+                this.SelectedPageIndex = index + 1;
+            else if (index > 0)
+                this.SelectedPageIndex = index - 1;
+        }
+        /// <summary>
+        /// Uživatel kliknul na křížek, a chce zavřít stránku. 
+        /// Zavírací křížek je uživateli zobrazen proto, že stránka je deklarovaná s <see cref="IPageItem.CloseButtonVisible"/> = true.
+        /// </summary>
+        /// <param name="args"></param>
+        private void RunIPageClosing(TEventCancelArgs<IPageItem> args)
+        {
+            OnIPageClosing(args);
+            IPageClosing?.Invoke(this, args);
+        }
+        /// <summary>
+        /// Volá se při pokusu o zavírání stránky.
+        /// </summary>
+        /// <param name="args"></param>
+        protected virtual void OnIPageClosing(TEventCancelArgs<IPageItem> args) { }
+        /// <summary>
+        /// Volá se při pokusu o zavírání stránky.
+        /// Eventhandler může zavření potlačit nastavením Cancel = true. Pokud to nenastaví, stránka bude zavřena.
+        /// </summary>
+        public event EventHandler<TEventCancelArgs<IPageItem>> IPageClosing;
+        /// <summary>
+        /// Proběhlo odstranění stránky (záložky).
+        /// </summary>
+        /// <param name="args"></param>
+        private void RunIPageRemoved(TEventArgs<IPageItem> args)
+        {
+            OnIPageRemoved(args);
+            IPageRemoved?.Invoke(this, args);
+        }
+        /// <summary>
+        /// Volá se po zavření (odebrání) stránky (záložky).
+        /// </summary>
+        /// <param name="args"></param>
+        protected virtual void OnIPageRemoved(TEventArgs<IPageItem> args) { }
+        /// <summary>
+        /// Volá se po zavření (odebrání) stránky (záložky).
+        /// </summary>
+        public event EventHandler<TEventArgs<IPageItem>> IPageRemoved;
+        /// <summary>
+        /// Najde fyzickou stránku pro danou datovou stránku, nebo pro její ID
+        /// </summary>
+        /// <param name="iPage"></param>
+        /// <returns></returns>
+        private DxTabPage SearchDxPage(IPageItem iPage)
+        {
+            DxTabPage dxPage = null;
+            if (iPage != null)
+            {
+                DxTabPage[] dxPages = DxPages;
+                dxPage = dxPages.FirstOrDefault(p => Object.ReferenceEquals(p.PageData, iPage));
+                if (dxPage == null && iPage.ItemId != null)
+                    dxPage = dxPages.FirstOrDefault(p => String.Equals(p.PageData.ItemId, iPage.ItemId));
+            }
+            return dxPage;
+        }
+        /// <summary>
+        /// Najde fyzickou stránku pro dané ID stránky
+        /// </summary>
+        /// <param name="itemId"></param>
+        /// <returns></returns>
+        private DxTabPage SearchDxPage(string itemId)
+        {
+            DxTabPage dxPage = null;
+            if (itemId != null)
+            {
+                DxTabPage[] dxPages = DxPages;
+                dxPage = dxPages.FirstOrDefault(p => String.Equals(p.PageData.ItemId, itemId));
+            }
+            return dxPage;
         }
         #endregion
         #region Výška a šířka prostoru záhlaví
@@ -2766,19 +2893,21 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Ověří, zda nedošlo ke změně výšky nebo šířky záhlaví (podle orientace), a pokud ano, pak vyvolá patřičné události.
         /// Použije brutální sílu k prolomení neproniknutelné hradby DevExpress.
         /// </summary>
-        /// <param name="headerHeightOld">Předešlá výška záhlaví</param>
-        private void _CheckHeaderSizeChangeForce(int? headerHeightOld = null)
+        /// <param name="headerSizeOld">Předešlá velikost záhlaví</param>
+        private void _CheckHeaderSizeChangeForce(Size? headerSizeOld = null)
         {   // Musí být dvakrát, jinak špatně funguje změna z nuly na více záložek, nebo změna u levého i pravého umístění.
-            _CheckHeaderSizeChange(true, headerHeightOld);
+            _CheckHeaderSizeChange(true, headerSizeOld);
             // TabPane nepomáhá nic...   ani druhé volání :      _CheckHeaderSizeChange(true);
         }
         /// <summary>
         /// Ověří, zda nedošlo ke změně výšky nebo šířky záhlaví (podle orientace), a pokud ano, pak vyvolá patřičné události.
         /// </summary>
         /// <param name="force"></param>
-        /// <param name="headerHeightOld">Předešlá výška záhlaví</param>
-        private void _CheckHeaderSizeChange(bool force = false, int? headerHeightOld = null)
+        /// <param name="headerSizeOld">Předešlá velikost záhlaví</param>
+        private void _CheckHeaderSizeChange(bool force = false, Size? headerSizeOld = null)
         {
+            if (this.Parent is null) return;
+
             if (!_CheckHeaderSizeInProgress || force)
             {
                 bool oldInProgress = _CheckHeaderSizeInProgress;
@@ -2786,7 +2915,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 {
                     _CheckHeaderSizeInProgress = true;
                     // Tato třída má záhlaví pouze v pozici Top, hlídáme pouze Height:
-                    _CheckHeaderHeightChange(force, headerHeightOld);
+                    _CheckHeaderHeightChange(force, headerSizeOld);
                 }
                 finally
                 {
@@ -2794,14 +2923,17 @@ namespace Noris.Clients.Win.Components.AsolDX
                 }
             }
         }
+        /// <summary>
+        /// Právě nyní probíhá kontrola velikosti záhlaví
+        /// </summary>
         private bool _CheckHeaderSizeInProgress = false;
         /// <summary>
         /// Ověří, zda nedošlo ke změně výšky záhlaví (pro záhlaví umístěné Top nebo Bottom),
         /// a pokud ano, pak vyvolá patřičné události.
         /// </summary>
         /// <param name="force"></param>
-        /// <param name="headerHeightOld">Předešlá výška záhlaví</param>
-        private void _CheckHeaderHeightChange(bool force, int? headerHeightOld = null)
+        /// <param name="headerSizeOld">Předešlá velikost záhlaví</param>
+        private void _CheckHeaderHeightChange(bool force, Size? headerSizeOld = null)
         {
             _HeaderWidth = 0;
             if (this.Width < 10) return;
@@ -2826,7 +2958,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                     headerHeight = headerBounds.Value.Height;
 
                     // Máme výšku z nedávného stavu?  Ta sem přichází z metody _AddPages(), kde jsme si ji zapamatovali před Pages.Clear():
-                    if (headerHeight < minHeight && headerHeightOld.HasValue) headerHeight = headerHeightOld.Value;
+                    if (headerHeight < minHeight && headerSizeOld.HasValue) headerHeight = headerSizeOld.Value.Height;
 
                     if (headerHeight >= minHeight)
                     {   // Komponenta dokázala určit správnou výšku - zapamatujeme si ji:
@@ -2888,31 +3020,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public event EventHandler HeaderSizeChanged;
         #endregion
-
-        #region Výška prostoru záhlaví - ke smazání
-        /// <summary>
-        /// Ověří, zda nedošlo ke změně výšky záhlaví, a pokud ano, pak vyvolá patřičné události.
-        /// </summary>
-        //private void _CheckHeaderHeightChange()
-        //{
-        //    int headerHeight = 0;
-        //    if (this.Pages.Count > 0)
-        //    {
-        //        var bounds = this.ViewInfo.ButtonsBounds;
-        //        var pfs = this.Pages[0].GetPreferredSize(new Size(50, 10));
-        //        int minHeight = 10;
-        //        // DevExpress.Skins.EditorsSkins.GetSkin
-        //        if (headerHeight < minHeight) headerHeight = minHeight;
-        //        headerHeight = bounds.Height + 4;
-        //    }
-        //    if (headerHeight == _HeaderHeight) return;       // Výška záhlaví nebyla změněna
-
-        //    _HeaderHeight = headerHeight;
-        //    //OnHeaderHeightChanged();
-        //    //HeaderHeightChanged?.Invoke(this, EventArgs.Empty);
-        //}
-        #endregion
-
         #region IListenerStyleChanged, IListenerZoomChange
         void IListenerStyleChanged.StyleChanged() { this._CheckHeaderSizeChange(); }
         void IListenerZoomChange.ZoomChanged() { this._CheckHeaderSizeChange(); }
@@ -3080,27 +3187,69 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             Size = new Size(640, 120);
 
-            AppearancePage.HeaderActive.FontStyleDelta = FontStyle.Bold;
-            AppearancePage.HeaderHotTracked.FontStyleDelta = FontStyle.Underline;
-
-            ClosePageButtonShowMode = DevExpress.XtraTab.ClosePageButtonShowMode.Default; // .InActiveTabPageHeader;
-            CustomHeaderButtons.Clear();                        // .Add(new DevExpress.XtraTab.Buttons.CustomHeaderButton(DevExpress.XtraEditors.Controls.ButtonPredefines.Clear));
+            ClosePageButtonShowMode = DevExpress.XtraTab.ClosePageButtonShowMode.InActiveTabPageHeaderAndOnMouseHover;   // Podporuje zavírací křížek na konkrétní stránce
+            CustomHeaderButtons.Clear();
             HeaderAutoFill = DevExpress.Utils.DefaultBoolean.False;
-            HeaderButtons = DevExpress.XtraTab.TabButtons.None; // DevExpress.XtraTab.TabButtons.Close | DevExpress.XtraTab.TabButtons.Prev | DevExpress.XtraTab.TabButtons.Next;
-            HeaderButtonsShowMode = DevExpress.XtraTab.TabButtonShowMode.Never;
+            HeaderButtons = DevExpress.XtraTab.TabButtons.None;       // DevExpress.XtraTab.TabButtons.Close | DevExpress.XtraTab.TabButtons.Prev | DevExpress.XtraTab.TabButtons.Next;
+            HeaderButtonsShowMode = DevExpress.XtraTab.TabButtonShowMode.WhenNeeded;     // Podporuje zavírací křížek na konkrétní stránce
             MultiLine = DevExpress.Utils.DefaultBoolean.True;
             PageImagePosition = DevExpress.XtraTab.TabPageImagePosition.Near;
 
             PageHeaderPosition = DxPageHeaderPosition.Default;
+
+            // Požadavky designu na vzhled buttonů:
+            AppearancePage.Header.FontSizeDelta = 2;
+            AppearancePage.Header.FontStyleDelta = FontStyle.Regular;
+            AppearancePage.HeaderHotTracked.FontSizeDelta = 2;
+            AppearancePage.HeaderHotTracked.FontStyleDelta = FontStyle.Underline;
+            AppearancePage.HeaderActive.FontSizeDelta = 2;
+            AppearancePage.HeaderActive.FontStyleDelta = FontStyle.Bold;
+
+            SetHeaderHAlignment(HorzAlignment.Center);
+        }
+        /// <summary>
+        /// Nastaví zarovnání textu v záhlaví. Je vhodné nastavit podle pozice záhlaví.
+        /// </summary>
+        /// <param name="headerLocation"></param>
+        protected void SetHeaderHAlignment(DevExpress.XtraTab.TabHeaderLocation headerLocation)
+        {
+            HorzAlignment hAlignment =
+                (headerLocation == DevExpress.XtraTab.TabHeaderLocation.Top ? HorzAlignment.Center :
+                (headerLocation == DevExpress.XtraTab.TabHeaderLocation.Bottom ? HorzAlignment.Center :
+                (headerLocation == DevExpress.XtraTab.TabHeaderLocation.Left ? HorzAlignment.Near :
+                (headerLocation == DevExpress.XtraTab.TabHeaderLocation.Right ? HorzAlignment.Near : HorzAlignment.Center))));
+
+            SetHeaderHAlignment(hAlignment);
+        }
+        /// <summary>
+        /// Nastaví zarovnání textu v záhlaví. Je vhodné nastavit podle pozice záhlaví.
+        /// </summary>
+        /// <param name="hAlignment"></param>
+        protected void SetHeaderHAlignment(HorzAlignment hAlignment)
+        {
+            AppearancePage.Header.TextOptions.HAlignment = hAlignment;
+            AppearancePage.HeaderHotTracked.TextOptions.HAlignment = hAlignment;
+            AppearancePage.HeaderActive.TextOptions.HAlignment = hAlignment;
         }
         /// <summary>
         /// Inicializace eventů
         /// </summary>
-        protected void InitEvents()
+        private void InitEvents()
         {
             this.SelectedPageChanging += _SelectedPageChanging;
             this.SelectedPageChanged += _SelectedPageChanged;
+            this.PageClosing += _PageClosing;
             this.SizeChanged += _SizeChanged;
+        }
+        /// <summary>
+        /// Deaktivuje vlastní eventy
+        /// </summary>
+        private void RemoveEvents()
+        {
+            this.SelectedPageChanging -= _SelectedPageChanging;
+            this.SelectedPageChanged -= _SelectedPageChanged;
+            this.PageClosing -= _PageClosing;
+            this.SizeChanged -= _SizeChanged;
         }
         /// <summary>
         /// Při změně vybrané stránky
@@ -3120,13 +3269,28 @@ namespace Noris.Clients.Win.Components.AsolDX
                 RunSelectedIPageChanged();
         }
         /// <summary>
+        /// Zavírání konkrétní stránky
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _PageClosing(object sender, DevExpress.XtraTab.TabPageCancelEventArgs e)
+        {
+            if (e.Page is DxXtraTabPage dxPage)
+            {
+                TEventCancelArgs<IPageItem> args = new TEventCancelArgs<IPageItem>(dxPage.PageData);
+                RunIPageClosing(args);
+                if (!args.Cancel)
+                    this.RemovePage(dxPage.PageData);
+            }
+        }
+        /// <summary>
         /// Dispose
         /// </summary>
         /// <param name="disposing"></param>
         protected override void Dispose(bool disposing)
         {
             DxComponent.UnregisterListener(this);
-
+            this.RemoveEvents();
             base.Dispose(disposing);
         }
         #endregion
@@ -3159,6 +3323,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                     HeaderLocation = headerLocation.Value;
                     HeaderOrientation = GetTabHeaderOrientation(newHeaderPosition);
                     ShowTabHeader = DefaultBoolean.True;
+                    SetHeaderHAlignment(headerLocation.Value);
                 }
                 else
                 {   // Bez záhlaví:
@@ -3194,6 +3359,10 @@ namespace Noris.Clients.Win.Components.AsolDX
             if ((headerPosition.HasFlag(DxPageHeaderPosition.PositionLeft) || headerPosition.HasFlag(DxPageHeaderPosition.PositionRight)) && headerPosition.HasFlag(DxPageHeaderPosition.VerticalText)) return DevExpress.XtraTab.TabOrientation.Vertical;
             return DevExpress.XtraTab.TabOrientation.Horizontal;
         }
+        /// <summary>
+        /// Možnost zobrazit více řádek záhlaví
+        /// </summary>
+        public bool PageHeaderMultiLine { get { return (this.MultiLine == DefaultBoolean.True); } set { this.MultiLine = (value ? DefaultBoolean.True : DefaultBoolean.False); } }
         #endregion
         #region Pages
         /// <summary>
@@ -3225,19 +3394,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 var tabPage = this.SelectedTabPage;
                 return (tabPage != null && tabPage is DxXtraTabPage dxPage) ? dxPage.PageData : null;
             }
-            set 
-            {
-                DxXtraTabPage dxPage = null;
-                IPageItem iPage = value;
-                if (iPage != null)
-                {
-                    DxXtraTabPage[] dxPages = DxPages;
-                    dxPage = dxPages.FirstOrDefault(p => Object.ReferenceEquals(p.PageData, iPage));
-                    if (dxPage == null && iPage.ItemId != null)
-                        dxPage = dxPages.FirstOrDefault(p => String.Equals(p.PageData.ItemId, iPage.ItemId));
-                }
-                this.SelectedTabPage = dxPage;
-            } 
+            set { this.SelectedTabPage = SearchDxPage(value); } 
         }
         /// <summary>
         /// <see cref="ITextItem.ItemId"/> aktuálně vybrané stránky nebo null pokud <see cref="IPageCount"/> == 0.
@@ -3250,17 +3407,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 var tabPage = this.SelectedTabPage;
                 return (tabPage != null && tabPage is DxXtraTabPage dxPage) ? dxPage.PageData.ItemId : null;
             }
-            set
-            {
-                DxXtraTabPage dxPage = null;
-                string itemId = value;
-                if (itemId != null)
-                {
-                    DxXtraTabPage[] dxPages = DxPages;
-                    dxPage = dxPages.FirstOrDefault(p => String.Equals(p.PageData.ItemId, itemId));
-                }
-                this.SelectedTabPage = dxPage;
-            }
+            set { this.SelectedTabPage = SearchDxPage(value); }
         }
         /// <summary>
         /// Vyvolá metodu <see cref="OnSelectedIPageChanged"/> a event <see cref="SelectedIPageChanged"/>, bez podmínky na <see cref="_SelectedIPageChangedSuppress"/>
@@ -3330,6 +3477,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             bool isSuppress = _SelectedIPageChangedSuppress;
             bool isActiveOldPage = false;
             bool runEventChanged = false;
+            bool hasPages = this.TabPages.Count > 0;
+            Size headerSizeOld = ((hasPages && this.ViewInfo?.HeaderInfo != null) ? this.ViewInfo.HeaderInfo.Bounds.Size : Size.Empty);
             IPageItem[] allPages = null;
             try
             {
@@ -3337,7 +3486,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 using (this.ScopeSuspendParentLayout())
                 {
                     _SelectedIPageChangedSuppress = true;
-                    bool forceResize = (this.TabPages.Count == 0);
+                    bool forceResize = !hasPages;
 
                     if (clear)
                         this.TabPages.Clear();
@@ -3351,8 +3500,8 @@ namespace Noris.Clients.Win.Components.AsolDX
                                 DxXtraTabPage dxPage = new DxXtraTabPage(this, page);
                                 this.TabPages.Add(dxPage);
                                 if (forceResize)
-                                {
-                                    _CheckHeaderSizeChange(true);
+                                {   // Po přidání úplně první stránky do TabHeaders:
+                                    _CheckHeaderSizeChange(true, headerSizeOld);
                                     forceResize = false;
                                 }
                             }
@@ -3400,11 +3549,129 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 _SelectedIPageChangedSuppress = isSuppress;
                 this.EndUpdate();
-                _CheckHeaderSizeChangeForce();
+                _CheckHeaderSizeChangeForce(headerSizeOld);
             }
 
             if (runEventChanged)
                 RunSelectedIPageChanged();
+        }
+
+        /// <summary>
+        /// Odstraní danou stránku podle jejího ID
+        /// </summary>
+        /// <param name="itemId"></param>
+        public void RemovePage(string itemId)
+        {
+            _RemovePage(SearchDxPage(itemId));
+        }
+        /// <summary>
+        /// Odstraní danou stránku podle jejího objektu
+        /// </summary>
+        /// <param name="iPage"></param>
+        public void RemovePage(IPageItem iPage)
+        {
+            _RemovePage(SearchDxPage(iPage));
+        }
+        /// <summary>
+        /// Odstraní danou stránku
+        /// </summary>
+        /// <param name="dxPage"></param>
+        private void _RemovePage(DxXtraTabPage dxPage)
+        {
+            if (dxPage != null)
+            {
+                Size headerSizeOld = ((this.TabPages.Count > 0 && this.ViewInfo?.HeaderInfo != null) ? this.ViewInfo.HeaderInfo.Bounds.Size : Size.Empty);
+                if (Object.ReferenceEquals(this.SelectedTabPage, dxPage))
+                    _SelectAnyNearPage(dxPage);
+                this.TabPages.Remove(dxPage);
+                RunIPageRemoved(new TEventArgs<IPageItem>(dxPage.PageData));
+                _CheckHeaderSizeChange(true, headerSizeOld);
+            }
+        }
+        /// <summary>
+        /// Aktivuje nejbližší sousední stránku ke stránce dané
+        /// </summary>
+        /// <param name="dxPage"></param>
+        private void _SelectAnyNearPage(DxXtraTabPage dxPage)
+        {
+            if (dxPage is null) return;
+            int index = this.TabPages.IndexOf(dxPage);
+            if (index < 0) return;
+            int last = this.TabPages.Count - 1;
+            if (index < last)
+                this.SelectedTabPageIndex = index + 1;
+            else if (index > 0)
+                this.SelectedTabPageIndex = index - 1;
+        }
+        /// <summary>
+        /// Uživatel kliknul na křížek, a chce zavřít stránku. 
+        /// Zavírací křížek je uživateli zobrazen proto, že stránka je deklarovaná s <see cref="IPageItem.CloseButtonVisible"/> = true.
+        /// </summary>
+        /// <param name="args"></param>
+        private void RunIPageClosing(TEventCancelArgs<IPageItem> args)
+        {
+            OnIPageClosing(args);
+            IPageClosing?.Invoke(this, args);
+        }
+        /// <summary>
+        /// Volá se při pokusu o zavírání stránky.
+        /// </summary>
+        /// <param name="args"></param>
+        protected virtual void OnIPageClosing(TEventCancelArgs<IPageItem> args) { }
+        /// <summary>
+        /// Volá se při pokusu o zavírání stránky.
+        /// Eventhandler může zavření potlačit nastavením Cancel = true. Pokud to nenastaví, stránka bude zavřena.
+        /// </summary>
+        public event EventHandler<TEventCancelArgs<IPageItem>> IPageClosing;
+        /// <summary>
+        /// Proběhlo odstranění stránky (záložky).
+        /// </summary>
+        /// <param name="args"></param>
+        private void RunIPageRemoved(TEventArgs<IPageItem> args)
+        {
+            OnIPageRemoved(args);
+            IPageRemoved?.Invoke(this, args);
+        }
+        /// <summary>
+        /// Volá se po zavření (odebrání) stránky (záložky).
+        /// </summary>
+        /// <param name="args"></param>
+        protected virtual void OnIPageRemoved(TEventArgs<IPageItem> args) { }
+        /// <summary>
+        /// Volá se po zavření (odebrání) stránky (záložky).
+        /// </summary>
+        public event EventHandler<TEventArgs<IPageItem>> IPageRemoved;
+        /// <summary>
+        /// Najde fyzickou stránku pro danou datovou stránku, nebo pro její ID
+        /// </summary>
+        /// <param name="iPage"></param>
+        /// <returns></returns>
+        private DxXtraTabPage SearchDxPage(IPageItem iPage)
+        {
+            DxXtraTabPage dxPage = null;
+            if (iPage != null)
+            {
+                DxXtraTabPage[] dxPages = DxPages;
+                dxPage = dxPages.FirstOrDefault(p => Object.ReferenceEquals(p.PageData, iPage));
+                if (dxPage == null && iPage.ItemId != null)
+                    dxPage = dxPages.FirstOrDefault(p => String.Equals(p.PageData.ItemId, iPage.ItemId));
+            }
+            return dxPage;
+        }
+        /// <summary>
+        /// Najde fyzickou stránku pro dané ID stránky
+        /// </summary>
+        /// <param name="itemId"></param>
+        /// <returns></returns>
+        private DxXtraTabPage SearchDxPage(string itemId)
+        {
+            DxXtraTabPage dxPage = null;
+            if (itemId != null)
+            {
+                DxXtraTabPage[] dxPages = DxPages;
+                dxPage = dxPages.FirstOrDefault(p => String.Equals(p.PageData.ItemId, itemId));
+            }
+            return dxPage;
         }
         #endregion
         #region Výška a šířka prostoru záhlaví
@@ -3421,7 +3688,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Ověří, zda nedošlo ke změně výšky nebo šířky záhlaví (podle orientace), a pokud ano, pak vyvolá patřičné události.
         /// Použije brutální sílu k prolomení neproniknutelné hradby DevExpress.
         /// </summary>
-        private void _CheckHeaderSizeChangeForce()
+        private void _CheckHeaderSizeChangeForce(Size? headerSizeOld = null)
         {   // Musí být dvakrát, jinak špatně funguje změna z nuly na více záložek, nebo změna u levého i pravého umístění.
             _CheckHeaderSizeChange(true);
             _CheckHeaderSizeChange(true);
@@ -3429,8 +3696,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Ověří, zda nedošlo ke změně výšky nebo šířky záhlaví (podle orientace), a pokud ano, pak vyvolá patřičné události.
         /// </summary>
-        private void _CheckHeaderSizeChange(bool force = false)
+        private void _CheckHeaderSizeChange(bool force = false, Size? headerSizeOld = null)
         {
+            if (this.Parent is null) return;
+
             if (!_CheckHeaderSizeInProgress || force)
             {
                 bool oldInProgress = _CheckHeaderSizeInProgress;
@@ -3439,9 +3708,9 @@ namespace Noris.Clients.Win.Components.AsolDX
                     _CheckHeaderSizeInProgress = true;
                     var headerPosition = this.PageHeaderPosition;
                     if (headerPosition.HasFlag(DxPageHeaderPosition.PositionTop) || headerPosition.HasFlag(DxPageHeaderPosition.PositionBottom))
-                        _CheckHeaderHeightChange(force);
+                        _CheckHeaderHeightChange(force, headerSizeOld);
                     else if (headerPosition.HasFlag(DxPageHeaderPosition.PositionLeft) || headerPosition.HasFlag(DxPageHeaderPosition.PositionRight))
-                        _CheckHeaderWidthChange(force);
+                        _CheckHeaderWidthChange(force, headerSizeOld);
                 }
                 finally
                 {
@@ -3454,7 +3723,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Ověří, zda nedošlo ke změně výšky záhlaví (pro záhlaví umístěné Top nebo Bottom),
         /// a pokud ano, pak vyvolá patřičné události.
         /// </summary>
-        private void _CheckHeaderHeightChange(bool force)
+        private void _CheckHeaderHeightChange(bool force, Size? headerSizeOld)
         {
             _HeaderWidth = 0;
             if (this.Width < 10) return;
@@ -3477,7 +3746,15 @@ namespace Noris.Clients.Win.Components.AsolDX
                 var headerBounds = this.ViewInfo?.HeaderInfo?.Bounds;
                 if (headerBounds.HasValue)
                 {   // Čistá cesta:
-                    headerHeight = headerBounds.Value.Height + 1;
+                    headerHeight = headerBounds.Value.Height;
+
+                    // Kontroly, korekce, náhrady:
+                    if (headerHeight >= minHeight)
+                        headerHeight += 1;                           // Máme výšku určenou: přidáme 1px pro okraj
+                    else if (headerSizeOld.HasValue)
+                        headerHeight = headerSizeOld.Value.Height;   // Výška je nyní určena špatně, ale máme info od posledně
+                    else
+                        headerHeight = 40;                           // Nouzový stav, snad nebude nastávat často
                 }
                 else
                 {   // Náhradní cesta:
@@ -3497,7 +3774,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Ověří, zda nedošlo ke změně šířky záhlaví (pro záhlaví umístěné Left nebo Right),
         /// a pokud ano, pak vyvolá patřičné události.
         /// </summary>
-        private void _CheckHeaderWidthChange(bool force)
+        private void _CheckHeaderWidthChange(bool force, Size? headerSizeOld)
         {
             _HeaderHeight = 0;
             if (this.Height < 10) return;
@@ -3520,7 +3797,15 @@ namespace Noris.Clients.Win.Components.AsolDX
                 var headerBounds = this.ViewInfo?.HeaderInfo?.Bounds;
                 if (headerBounds.HasValue)
                 {   // Čistá cesta:
-                    headerWidth = headerBounds.Value.Width - 1;
+                    headerWidth = headerBounds.Value.Width;
+
+                    // Kontroly, korekce, náhrady:
+                    if (headerWidth >= minWidth)
+                        headerWidth -= 1;                            // Máme výšku určenou: odebereme 1px pro okraj
+                    else if (headerSizeOld.HasValue)
+                        headerWidth = headerSizeOld.Value.Width;     // Výška je nyní určena špatně, ale máme info od posledně
+                    else
+                        headerWidth = 40;                            // Nouzový stav, snad nebude nastávat často
                 }
                 else
                 {   // Náhradní cesta:
@@ -3624,8 +3909,11 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             Name = pageData.ItemId;
             Text = (hasText ? pageData.Text : "");
-            TooltipTitle = pageData.ToolTipTitle;
-            Tooltip = pageData.ToolTipText;
+            //TooltipTitle = pageData.ToolTipTitle;
+            //Tooltip = pageData.ToolTipText;
+            SuperTip = DxComponent.CreateDxSuperTip(pageData);
+
+            this.ShowCloseButton = (pageData.CloseButtonVisible ? DefaultBoolean.True : DefaultBoolean.False);
 
             if (hasIcon)
                 DxComponent.ApplyImage(ImageOptions, pageData.ImageName, sizeType: ResourceImageSizeType.Medium);
