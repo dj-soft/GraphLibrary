@@ -1,4 +1,9 @@
-﻿using System;
+﻿// Supervisor: David Janáček, od 01.02.2021
+// Part of Helios Nephrite, proprietary software, (c) Asseco Solutions, a. s.
+// Redistribution and use in source and binary forms, with or without modification, 
+// is not permitted without valid contract with Asseco Solutions, a. s.
+
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -41,7 +46,7 @@ namespace TestDevExpress.Forms
 
             InitializeComponent();
             InitData();
-            
+
             DxLocalizer.Enabled = true;
             DxLocalizer.HighlightNonTranslated = true;
 
@@ -310,7 +315,7 @@ namespace TestDevExpress.Forms
 
         private void DxQuickAccessToolbar_ConfigValueChanged(object sender, EventArgs e)
         {
-            
+
         }
 
         private List<DataRibbonPage> _RibbonPages;
@@ -322,7 +327,7 @@ namespace TestDevExpress.Forms
 
         private void _BarManager_CloseButtonClick(object sender, EventArgs e)
         {
-            
+
         }
 
         private void _BarManager_ItemClick(object sender, XB.ItemClickEventArgs e)
@@ -378,7 +383,7 @@ namespace TestDevExpress.Forms
             };
             return iRibbonItem;
         }
-        
+
         private void _OpenGraphFormButton_Click(IMenuItem menuItem)
         {
             DxComponent.TryRun(() =>
@@ -579,7 +584,7 @@ namespace TestDevExpress.Forms
             for (int i = 0; i < upDirs && !String.IsNullOrEmpty(path); i++)
                 path = System.IO.Path.GetDirectoryName(path);
             if (String.IsNullOrEmpty(path)) return null;
-            if (!String.IsNullOrEmpty(subDir)) 
+            if (!String.IsNullOrEmpty(subDir))
                 path = System.IO.Path.Combine(path, subDir);
             System.IO.DirectoryInfo dirInfo = new System.IO.DirectoryInfo(path);
             if (!dirInfo.Exists) return null;
@@ -757,7 +762,7 @@ namespace TestDevExpress.Forms
             subItems.Add(new DataRibbonItem() { ImageName = "svgtest/poznamkovy_blok", Text = "poznamkovy_blok", ClickAction = ClickRibbonSvgMenu0, ItemIsFirstInGroup = true });
             subItems.Add(new DataRibbonItem() { ImageName = "svgtest/kalendar", Text = "kalendar", ClickAction = ClickRibbonSvgMenu0 });
             subItems.Add(new DataRibbonItem() { ImageName = "svgtest/asset", Text = "asset", ClickAction = ClickRibbonSvgMenu0 });
-            subItems.Add(new DataRibbonItem() { ImageName = "svgtest/asset-cancel-2", Text = "asset-cancel-2", ClickAction = ClickRibbonSvgMenu0});
+            subItems.Add(new DataRibbonItem() { ImageName = "svgtest/asset-cancel-2", Text = "asset-cancel-2", ClickAction = ClickRibbonSvgMenu0 });
             subItems.Add(new DataRibbonItem() { ImageName = "svgtest/asset-filled-ok-2", Text = "asset-filled-ok-2", ClickAction = ClickRibbonSvgMenu0 });
             subItems.Add(new DataRibbonItem() { ImageName = "svgtest/attach-1", Text = "attach-1", ClickAction = ClickRibbonSvgMenu0 });
             subItems.Add(new DataRibbonItem() { ImageName = "svgtest/attach-1-add-2", Text = "attach-1-add-2", ClickAction = ClickRibbonSvgMenu0 });
@@ -926,7 +931,7 @@ namespace TestDevExpress.Forms
             _PreparedPages = new Dictionary<int, PageInfo>();
         }
         private void AddNewPage(string pageText,
-            Action<DxPanelControl> prepareMethod, Action activateMethod = null, Action deactivateMethod = null, 
+            Action<DxPanelControl> prepareMethod, Action activateMethod = null, Action deactivateMethod = null,
             string pageToolTip = null, string pageImageName = null)
         {
             int index = _MainTabs.Pages.Count;
@@ -1046,7 +1051,7 @@ namespace TestDevExpress.Forms
 
             XB.BarHeaderItem bh1 = new XB.BarHeaderItem() { Caption = "Základní" };
             pm.AddItem(bh1);
-            pm.AddItem(new XB.BarButtonItem(_BarManager, "První") {  Hint = "Hint k položce", Glyph = DxComponent.CreateBitmapImage("Images/Actions24/db_add(24).png") });
+            pm.AddItem(new XB.BarButtonItem(_BarManager, "První") { Hint = "Hint k položce", Glyph = DxComponent.CreateBitmapImage("Images/Actions24/db_add(24).png") });
             pm.AddItem(new XB.BarButtonItem(_BarManager, "Druhý") { ButtonStyle = XB.BarButtonStyle.Check, Glyph = DxComponent.CreateBitmapImage("Images/Actions24/dialog-close(24).png"), PaintStyle = XB.BarItemPaintStyle.Caption });
 
             XB.BarButtonItem bi3 = new XB.BarButtonItem(_BarManager, "Třetí&nbsp;<b>zvýrazněný</b> a <i>kurzivový</i> <u>text</u>");
@@ -1186,7 +1191,7 @@ namespace TestDevExpress.Forms
             rm.BackColor = Color.LightBlue;         // Barva pozadí
             rm.Glyph = DxComponent.CreateBitmapImage("Images/Actions24/dialog-close(24).png");      // Ikona uprostřed menu
             rm.PaintStyle = XR.PaintStyle.Skin;
-            
+
 
             // Create bar items to display in Radial Menu 
             XB.BarItem btnCopy = new XB.BarButtonItem(barManager, "Copy");
@@ -1241,7 +1246,7 @@ namespace TestDevExpress.Forms
             _ShowContextMenu(MousePosition);
         }
         private void _ShowContextMenu(Point mousePosition)
-        { 
+        {
             DM.DXPopupMenu popup = new DM.DXPopupMenu(this);
             popup.Items.Add(new DM.DXMenuHeaderItem() { Caption = "Header" });
             popup.Items.Add(new DM.DXMenuItem("MenuItem 1"));
@@ -1337,7 +1342,7 @@ namespace TestDevExpress.Forms
             _PanelTabHeader = panel;
             _SplitTabHeader = DxComponent.CreateDxSplitContainer(_PanelTabHeader, dock: DockStyle.Fill, splitLineOrientation: Orientation.Horizontal, fixedPanel: DevExpress.XtraEditors.SplitFixedPanel.None, showSplitGlyph: true);
             _SplitTabHeader.FixedPanel = DevExpress.XtraEditors.SplitFixedPanel.Panel1;
-          //  _SplitTabHeader.Panel2.BackColor = Color.FromArgb(200, 225, 250);
+            //  _SplitTabHeader.Panel2.BackColor = Color.FromArgb(200, 225, 250);
 
             int x = 10;
             int w1 = 180;
@@ -1438,9 +1443,11 @@ namespace TestDevExpress.Forms
             {
                 tabHeader.PageHeaderPosition = DxPageHeaderPosition.Default;
                 tabHeader.HeaderSizeChanged += _TabHeaderPane_HeaderSizeChanged;
-                tabHeader.SelectedIPageChanged += _TabHeaderPane_SelectedIPageChanged;
+                tabHeader.SelectedIPageChanging += _TabHeaders_SelectedIPageChanging;
+                tabHeader.SelectedIPageChanged += _TabHeaders_SelectedIPageChanged;
                 tabHeader.IPageClosing += TabHeader_IPageClosing;
                 tabHeader.IPageRemoved += TabHeader_IPageRemoved;
+
                 tabHeader.PageHeaderMultiLine = true;
                 _TabHeaderControl = tabHeader;
                 _SplitTabHeader.Panel2.Controls.Add(control);
@@ -1454,7 +1461,7 @@ namespace TestDevExpress.Forms
             {
                 var tabHeader = _TabHeaderControl;
                 tabHeader.HeaderSizeChanged -= _TabHeaderPane_HeaderSizeChanged;
-                tabHeader.SelectedIPageChanged -= _TabHeaderPane_SelectedIPageChanged;
+                tabHeader.SelectedIPageChanged -= _TabHeaders_SelectedIPageChanged;
                 tabHeader.IPageClosing -= TabHeader_IPageClosing;
                 tabHeader.IPageRemoved -= TabHeader_IPageRemoved;
 
@@ -1477,7 +1484,7 @@ namespace TestDevExpress.Forms
 
             _TabHeaderControl.AddPages(_XtraTabGetPages(count));
         }
-        private void _TabHeaderReFill() 
+        private void _TabHeaderReFill()
         {
             _TabHeaderTextAddLine($"Run SetPages()");
             if (_TabHeaderControl is null) return;
@@ -1528,13 +1535,46 @@ namespace TestDevExpress.Forms
             _TabHeaderTextAddLine($"Event HeaderSizeChanged()");
             _TabHeaderDoLayout();
         }
-        private void _TabHeaderPane_SelectedIPageChanged(object sender, EventArgs e)
+
+        private void _TabHeaders_SelectedIPageChanging(object sender, TEventCancelArgs<IPageItem> e)
         {
-            _TabHeaderTextAddLine($"Event SelectedIPageChanged({_TabHeaderControl.SelectedIPage})");
+            string suffix = "";
+            if (Random.IsTrue(60))
+            {
+                if (Random.IsTrue(30))
+                {
+                    suffix = ";   Cancelled!";
+                }
+                else
+                {
+                    suffix = ";   Postponed...";
+                    Task.Run(() => _TabHeaders_SelectPageDelay(e.Item.ItemId));
+                }
+                e.Cancel = true;
+            }
+            _TabHeaderTextAddLine($"Event SelectedIPageChanging({e.Item})" + suffix);
+        }
+        private void _TabHeaders_SelectPageDelay(string itemId)
+        {
+            System.Threading.Thread.Sleep(1000);
+
+            var tabHeaders = _TabHeaderControl;
+            if (tabHeaders != null)
+                tabHeaders.SelectedIPageIdForce = itemId;
+        }
+        private void _TabHeaders_SelectedIPageChanged(object sender, TEventArgs<IPageItem> e)
+        {
+            _TabHeaderTextAddLine($"Event SelectedIPageChanged({e.Item})");
         }
         private void TabHeader_IPageClosing(object sender, TEventCancelArgs<IPageItem> e)
         {
-            _TabHeaderTextAddLine($"Event IPageClosing({e.Item})");
+            string suffix = "";
+            if (Random.IsTrue(60))
+            {
+                suffix = ";   Cancelled";
+                e.Cancel = true;
+            }
+            _TabHeaderTextAddLine($"Event IPageClosing({e.Item})" + suffix);
         }
         private void TabHeader_IPageRemoved(object sender, TEventArgs<IPageItem> e)
         {
