@@ -2102,9 +2102,14 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         string SelectedIPageId { get; set; }
         /// <summary>
+        /// Volá se při pokusu o aktivaci jiné záložky.
+        /// Eventhandler může zavření potlačit nastavením Cancel = true. Pokud to nenastaví, nová stránka bude aktivována.
+        /// </summary>
+        event EventHandler<TEventCancelArgs<IPageItem>> SelectedIPageChanging;
+        /// <summary>
         /// Událost volaná při změně aktivní stránky <see cref="SelectedIPage"/>
         /// </summary>
-        event EventHandler SelectedIPageChanged;
+        event EventHandler<TEventArgs<IPageItem>> SelectedIPageChanged;
         /// <summary>
         /// Smaže všechny stránky
         /// </summary>
