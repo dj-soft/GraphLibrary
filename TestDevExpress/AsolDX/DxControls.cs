@@ -3144,8 +3144,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         public event EventHandler HeaderSizeChanged;
         #endregion
         #region IListenerStyleChanged, IListenerZoomChange
-        void IListenerStyleChanged.StyleChanged() { this._CheckHeaderSizeChange(); }
-        void IListenerZoomChange.ZoomChanged() { this._CheckHeaderSizeChange(); }
+        void IListenerStyleChanged.StyleChanged() { this._CheckHeaderSizeChange(true); }
+        void IListenerZoomChange.ZoomChanged() { this._CheckHeaderSizeChange(true); }
         #endregion
     }
     #region DxTabPage : jedna stránka v DxTabPane

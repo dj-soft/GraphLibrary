@@ -214,6 +214,66 @@ namespace Noris.Clients.Win.Components.AsolDX
             return result;
         }
         /// <summary>
+        /// Metoda vrací true, pokud this kolekce obsahuje duplictní hodnoty.
+        /// Metoda vrátí true ihned po nalezení první duplicity, neřeší počet duplicit ani duplicitní záznamy.
+        /// </summary>
+        /// <typeparam name="TItem"></typeparam>
+        /// <typeparam name="TKey"></typeparam>
+        /// <param name="items"></param>
+        /// <param name="keySelector"></param>
+        /// <returns></returns>
+        public static bool ContainsDuplicityKey<TItem, TKey>(this IEnumerable<TItem> items, Func<TItem, TKey> keySelector) where TKey : IEquatable<TKey>
+        {
+            if (items == null) return false;
+            Dictionary<TKey, TItem> keys = new Dictionary<TKey, TItem>();
+            foreach (var item in items)
+            {
+                var key = keySelector(item);
+                if (keys.ContainsKey(key)) return true;
+                keys.Add(key, item);
+            }
+            return false;
+        }
+        /// <summary>
+        /// Metoda vrací true, pokud this kolekce obsahuje duplictní hodnoty, nalezené duplicity vyhledává a vrací v out parametru <paramref name="duplicities"/>.
+        /// Pokud vrací false, pak <paramref name="duplicities"/> je null.
+        /// Pokud vrátí true, pak v <paramref name="duplicities"/> je pole, jehož prvky jsou Tuple, kde Item1 je klíč duplicity a Item2 je pole prvků s tímto duplicitním klíčem.
+        /// </summary>
+        /// <typeparam name="TItem"></typeparam>
+        /// <typeparam name="TKey"></typeparam>
+        /// <param name="items"></param>
+        /// <param name="keySelector"></param>
+        /// <param name="duplicities"></param>
+        /// <returns></returns>
+        public static bool TryFoundDuplicityItems<TItem, TKey>(this IEnumerable<TItem> items, Func<TItem, TKey> keySelector, out Tuple<TKey, TItem[]>[] duplicities) where TKey : IEquatable<TKey>
+        {
+            bool hasDuplicity = false;
+            duplicities = null;
+            if (items == null) return false;
+
+            // V podstatě grupování podle klíče:
+            Dictionary<TKey, List<TItem>> keys = new Dictionary<TKey, List<TItem>>();
+            foreach (var item in items)
+            {
+                var key = keySelector(item);
+                if (!keys.TryGetValue(key, out var list))
+                {
+                    list = new List<TItem>();
+                    keys.Add(key, list);
+                }
+                list.Add(item);
+                if (!hasDuplicity && list.Count > 1) hasDuplicity = true;
+            }
+            if (!hasDuplicity) return false;
+
+            // Máme duplicity, sestavíme pole, jehož prvky budou Tuple, kde Item1 je klíč duplicity a Item2 je pole prvků s tímto duplicitním klíčem:
+            duplicities = keys
+                .Where(kvp => kvp.Value.Count > 1)
+                .Select(kvp => new Tuple<TKey, TItem[]>(kvp.Key, kvp.Value.ToArray()))
+                .ToArray();
+            return true;
+        }
+        /// <summary>
         /// Metoda vrátí ten prvek z dané kolekce, který má největší hodnotu klíče. Klíč z daného prvku vybírá dodaný <paramref name="keySelector"/>. 
         /// Vrácený klíč musí být <see cref="IComparable"/>, jinak nelze určovat porovnání větší / menší.
         /// <para/>
