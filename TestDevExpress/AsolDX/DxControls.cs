@@ -2018,13 +2018,202 @@ namespace Noris.Clients.Win.Components.AsolDX
     public class DxSplitContainerControl : DevExpress.XtraEditors.SplitContainerControl
     { }
     #endregion
+    #region ControlFactory : generuje instance controlů
+    /// <summary>
+    /// Vytvoří a vrátí TabPage určitého typu
+    /// </summary>
+    public class ControlFactory
+    {
+        /// <summary>
+        /// Vytvoří a vrátí TabPage požadovaného typu
+        /// </summary>
+        /// <param name="controlType"></param>
+        /// <returns></returns>
+        public static Control CreateTabHeaderControl(TabHeaderControlType controlType)
+        {
+            switch (controlType)
+            {
+                case TabHeaderControlType.DxTabPane:
+                    return new DxTabPane();
+                case TabHeaderControlType.DxXtraTabControl:
+                    return new DxXtraTabControl();
+                default:
+                    if (DxComponent.IsDebuggerActive)
+                        return new DxXtraTabControl();
+                    return new DxTabPane();
+            }
+        }
+    }
+    /// <summary>
+    /// Typ controlu, který má vrátit factory <see cref="ControlFactory"/>
+    /// </summary>
+    public enum TabHeaderControlType
+    {
+        /// <summary>
+        /// Nic
+        /// </summary>
+        None,
+        /// <summary>
+        /// Výchozí typ, obecně Control implementující <see cref="AsolDX.ITabHeaderControl"/>
+        /// </summary>
+        ITabHeaderControl,
+        /// <summary>
+        /// Explicitně určený <see cref="AsolDX.DxTabPane"/>
+        /// </summary>
+        DxTabPane,
+        /// <summary>
+        /// Explicitně určený <see cref="AsolDX.DxXtraTabControl"/>
+        /// </summary>
+        DxXtraTabControl
+    }
+    #endregion
+    #region ITabHeaderControl : interface definující obecný control se záložkami
+    /// <summary>
+    /// Rozhraní na obecný TabHeader control
+    /// </summary>
+    public interface ITabHeaderControl
+    {
+        /// <summary>
+        /// Pozice záhlaví a jeho vlastnosti
+        /// </summary>
+        DxPageHeaderPosition PageHeaderPosition { get; set; }
+        /// <summary>
+        /// Počet stránek
+        /// </summary>
+        int IPageCount { get; }
+        /// <summary>
+        /// Stránky datové.
+        /// Lze i setovat. Při setování se control pokusí ponechat jako selectovanou stránku tu, která je aktuálně selectovaná, podle jejího <see cref="ITextItem.ItemId"/>.
+        /// Pokud to nebude možné (v nové sadě stránek nebude takové ID existovat), pak vyselectuje první existující stránku a vyvolá událost <see cref="SelectedIPageChanged"/>
+        /// </summary>
+        IPageItem[] IPages { get; set; }
+        /// <summary>
+        /// Data aktuálně vybrané stránky nebo null pokud <see cref="IPageCount"/> == 0.
+        /// Lze setovat. Při změně proběhne událost <see cref="SelectedIPageChanged"/>.
+        /// </summary>
+        IPageItem SelectedIPage { get; set; }
+        /// <summary>
+        /// <see cref="ITextItem.ItemId"/> aktuálně vybrané stránky nebo null pokud <see cref="IPageCount"/> == 0.
+        /// Lze setovat. Při změně proběhne událost <see cref="SelectedIPageChanged"/>.
+        /// </summary>
+        string SelectedIPageId { get; set; }
+        /// <summary>
+        /// Událost volaná při změně aktivní stránky <see cref="SelectedIPage"/>
+        /// </summary>
+        event EventHandler SelectedIPageChanged;
+        /// <summary>
+        /// Smaže všechny stránky
+        /// </summary>
+        void ClearPages();
+        /// <summary>
+        /// Smaže aktuální stránky, vloží dodanou sadu, a poté se pokusí reaktivovat nově dodanou stránku se shodným ID jaké měla dosud aktivní stránka.
+        /// Pokud nebyla nebo ji nenajde, pak aktivuje stránku s dodaným ID, anebo první dodanou stránku.
+        /// </summary>
+        /// <param name="pages"></param>
+        /// <param name="selectPageId"></param>
+        void SetPages(IEnumerable<IPageItem> pages, string selectPageId);
+        /// <summary>
+        /// Přidá dané stránky.
+        /// </summary>
+        /// <param name="pages"></param>
+        void AddPages(IEnumerable<IPageItem> pages);
+        /// <summary>
+        /// Aktuální výška záhlaví. 
+        /// Je nastavováno pouze pro záhlaví umístěné Top nebo Bottom.
+        /// </summary>
+        int HeaderHeight { get; }
+        /// <summary>
+        /// Aktuální šířka záhlaví. 
+        /// Je nastavováno pouze pro záhlaví umístěné Left nebo Right.
+        /// </summary>
+        int HeaderWidth { get; }
+        /// <summary>
+        /// Došlo ke změně výšky nebo šířky záhlaví:
+        /// výška <see cref="HeaderHeight"/> pro pozici záhlaví Top nebo Bottom;
+        /// šířka <see cref="HeaderWidth"/> pro pozici záhlaví Left nebo Right;
+        /// </summary>
+        event EventHandler HeaderSizeChanged;
+        /// <summary>
+        /// Souřadnice prvku
+        /// </summary>
+        Rectangle Bounds { get; set; }
+    }
+    /// <summary>
+    /// Pozice záhlaví stránky
+    /// </summary>
+    [Flags]
+    public enum DxPageHeaderPosition
+    {
+        /// <summary>
+        /// Bez záhlaví
+        /// </summary>
+        None = 0,
+        /// <summary>
+        /// Záhlaví nahoře, přidejte hodnotu <see cref="IconOnly"/> anebo <see cref="TextOnly"/> anebo <see cref="IconText"/>
+        /// </summary>
+        PositionTop = 0x01,
+        /// <summary>
+        /// Záhlaví dole, přidejte hodnotu <see cref="IconOnly"/> anebo <see cref="TextOnly"/> anebo <see cref="IconText"/>
+        /// </summary>
+        PositionBottom = 0x02,
+        /// <summary>
+        /// Záhlaví vlevo, přidejte hodnotu <see cref="IconOnly"/> anebo <see cref="TextOnly"/> anebo <see cref="IconText"/>
+        /// </summary>
+        PositionLeft = 0x04,
+        /// <summary>
+        /// Záhlaví vpravo, přidejte hodnotu <see cref="IconOnly"/> anebo <see cref="TextOnly"/> anebo <see cref="IconText"/>
+        /// </summary>
+        PositionRight = 0x08,
+        /// <summary>
+        /// Zobrazit jen ikonu
+        /// </summary>
+        IconOnly = 0x10,
+        /// <summary>
+        /// Zobrazit jen text
+        /// </summary>
+        TextOnly = 0x20,
+        /// <summary>
+        /// Svislý text, vypadá to sice hrozně, ale 'De gustibus non est disputandum'...
+        /// </summary>
+        VerticalText = 0x100,
+
+        /// <summary>
+        /// Ikona a text
+        /// </summary>
+        IconText = IconOnly | TextOnly,
+        /// <summary>
+        /// Nahoře s ikonou a textem
+        /// </summary>
+        Top = PositionTop | IconText,
+        /// <summary>
+        /// Dole s ikonou a textem
+        /// </summary>
+        Bottom = PositionBottom | IconText,
+        /// <summary>
+        /// Vlevo s ikonou
+        /// </summary>
+        Left = PositionLeft | IconOnly,
+        /// <summary>
+        /// Vpravo s ikonou
+        /// </summary>
+        Right = PositionRight | IconOnly,
+        /// <summary>
+        /// Default = <see cref="Top"/> = Nahoře s ikonou a textem
+        /// </summary>
+        Default = Top,
+        /// <summary>
+        /// Souhrn všech bitů pozic, pro výpočet masky. Běžně se jako hodnota nepoužívá.
+        /// </summary>
+        PositionSummary = PositionTop | PositionBottom | PositionLeft | PositionRight
+    }
+    #endregion
     #region DxTabPane : Control se záložkami = DevExpress.XtraBars.Navigation.TabPane
     /// <summary>
     /// Control se záložkami = <see cref="DevExpress.XtraBars.Navigation.TabPane"/>
     /// </summary>
-    public class DxTabPane : DevExpress.XtraBars.Navigation.TabPane, IListenerStyleChanged, IListenerZoomChange
+    public class DxTabPane : DevExpress.XtraBars.Navigation.TabPane, ITabHeaderControl, IListenerStyleChanged, IListenerZoomChange
     {
-        #region Konstruktor a zjednodušené přidání záložky
+        #region Konstruktor, vnitřní eventy
         /// <summary>
         /// Konstruktor
         /// </summary>
@@ -2033,55 +2222,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             InitProperties();
             InitEvents();
             DxComponent.RegisterListener(this);
-        }
-        /// <summary>
-        /// Přidá novou stránku (záložku) do this containeru
-        /// </summary>
-        /// <param name="pageId"></param>
-        /// <param name="pageText"></param>
-        /// <param name="pageToolTip"></param>
-        /// <param name="pageImageName"></param>
-        /// <returns></returns>
-        public DevExpress.XtraBars.Navigation.TabNavigationPage AddNewPage(string pageId, string pageText, string pageToolTip = null, string pageImageName = null)
-        {
-            var page = new DxTabPage()
-            {
-                Name = pageId,
-                Caption = pageText,
-                PageText = pageText,
-                ToolTip = pageToolTip
-            };
-
-            this.Pages.Add(page);
-            _CheckHeaderHeightChange();
-
-            return page;
-        }
-        /// <summary>
-        /// Odebere danou stránku
-        /// </summary>
-        /// <param name="page"></param>
-        public void RemovePage(DevExpress.XtraBars.Navigation.TabNavigationPage page)
-        {
-            this.Pages.Remove(page);
-            _CheckHeaderHeightChange();
-        }
-        /// <summary>
-        /// Odebere stránku daného jména
-        /// </summary>
-        /// <param name="pageId"></param>
-        public void RemovePage(string pageId)
-        {
-            this.Pages.Remove(p => p.Name == pageId);
-            _CheckHeaderHeightChange();
-        }
-        /// <summary>
-        /// Zahodí všechny stránky
-        /// </summary>
-        public void ClearPages()
-        {
-            this.Pages.Clear();
-            _CheckHeaderHeightChange();
         }
         /// <summary>
         /// Dispose
@@ -2094,10 +2234,34 @@ namespace Noris.Clients.Win.Components.AsolDX
             base.Dispose(disposing);
         }
         /// <summary>
+        /// Aktivuje vlastní eventy
+        /// </summary>
+        private void InitEvents()
+        {
+            this.TransitionManager.BeforeTransitionStarts += TransitionManager_BeforeTransitionStarts;
+            this.TransitionManager.AfterTransitionEnds += TransitionManager_AfterTransitionEnds;
+            this.SelectedPageChanging += _SelectedPageChanging;
+            this.SelectedPageChanged += _SelectedPageChanged;
+            this.ClientSizeChanged += _ClientSizeChanged;
+            this.SizeChanged += _SizeChanged;
+        }
+        /// <summary>
+        /// Deaktivuje vlastní eventy
+        /// </summary>
+        private void RemoveEvents()
+        {
+            this.TransitionManager.BeforeTransitionStarts -= TransitionManager_BeforeTransitionStarts;
+            this.TransitionManager.AfterTransitionEnds -= TransitionManager_AfterTransitionEnds;
+            this.SelectedPageChanging -= _SelectedPageChanging;
+            this.SelectedPageChanged -= _SelectedPageChanged;
+        }
+        /// <summary>
         /// Nastaví defaultní vlastnosti
         /// </summary>
         private void InitProperties()
         {
+            this.Size = new Size(640, 120);
+
             this.TabAlignment = DevExpress.XtraEditors.Alignment.Near;           // Near = doleva, Far = doprava, Center = uprostřed
             this.PageProperties.AllowBorderColorBlending = true;
             this.PageProperties.ShowMode = DevExpress.XtraBars.Navigation.ItemShowMode.ImageAndText;
@@ -2121,6 +2285,94 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.AppearanceButton.Pressed.FontStyleDelta = FontStyle.Bold;
             this.AppearanceButton.Pressed.TextOptions.HAlignment = DevExpress.Utils.HorzAlignment.Center;
         }
+
+        // Pořadí eventů v konstuktoru:
+        //     DxTabPane_SelectedPageChanging;
+        //     DxTabPane_SelectedPageChanged;
+        // Pořadí eventů při přepínání stránky s transicí:        SelectedPageIndex
+        //     DxTabPane_SelectedPageChanging;                           old           mám k dispozici old i new page v argumentu
+        //     TransitionManager_BeforeTransitionStarts;                 old
+        //     DxTabPane_SelectedPageChanged;                            new
+        //     TransitionManager_AfterTransitionEnds;                    new
+
+        /// <summary>
+        /// Před zahájením přepnutí stránky
+        /// </summary>
+        /// <param name="transition"></param>
+        /// <param name="e"></param>
+        private void TransitionManager_BeforeTransitionStarts(DevExpress.Utils.Animation.ITransition transition, System.ComponentModel.CancelEventArgs e)
+        {
+        }
+        /// <summary>
+        /// Po dokončení přepnutí stránky
+        /// </summary>
+        /// <param name="transition"></param>
+        /// <param name="e"></param>
+        private void TransitionManager_AfterTransitionEnds(DevExpress.Utils.Animation.ITransition transition, EventArgs e)
+        {
+        }
+        /// <summary>
+        /// Na začátku přepínání záložek
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _SelectedPageChanging(object sender, DevExpress.XtraBars.Navigation.SelectedPageChangingEventArgs e)
+        {
+            this.PageChangingPageOld = e.OldPage as DevExpress.XtraBars.Navigation.TabNavigationPage;
+            this.PageChangingPageNew = e.Page as DevExpress.XtraBars.Navigation.TabNavigationPage;
+            this.PageChangingIsRunning = true;
+            this.RunPageChangingDeactivate(this.PageChangingPageOld);
+            this.RunPageChangingPrepare(this.PageChangingPageNew);
+        }
+        /// <summary>
+        /// Na konci přepínání záložek
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _SelectedPageChanged(object sender, DevExpress.XtraBars.Navigation.SelectedPageChangedEventArgs e)
+        {
+            this.RunPageChangingActivate(this.PageChangingPageNew);
+            this.RunPageChangingRelease(this.PageChangingPageOld);
+            this.PageChangingIsRunning = false;
+
+            if (!_SelectedIPageChangedSuppress)
+                RunSelectedIPageChanged();
+        }
+        #endregion
+        #region Public properties
+        /// <summary>
+        /// Umístění a vzhled záhlaví
+        /// </summary>
+        public DxPageHeaderPosition PageHeaderPosition { get { return _PageHeaderPosition; } set { ApplyHeaderPosition(value); } }
+        private DxPageHeaderPosition _PageHeaderPosition = DxPageHeaderPosition.None;
+        /// <summary>
+        /// Aplikuje pozici záhlaví
+        /// </summary>
+        /// <param name="newHeaderPosition"></param>
+        protected void ApplyHeaderPosition(DxPageHeaderPosition newHeaderPosition)
+        {
+            try
+            {
+                using (this.ScopeSuspendParentLayout())
+                {
+                    var oldHeaderPosition = _PageHeaderPosition;
+                    _PageHeaderPosition = newHeaderPosition;             // Od teď platí nová pravidla
+
+                    // Změna zobrazení Icon a Text:
+                    if (!newHeaderPosition.HasEqualsBit(oldHeaderPosition, DxPageHeaderPosition.IconOnly) || !newHeaderPosition.HasEqualsBit(oldHeaderPosition, DxPageHeaderPosition.TextOnly))
+                        DxPages.ForEachExec(p => p.RefreshData());
+
+                    // Pozice záhlaví, orientace:
+                    //   tady není možno měnit.
+                }
+            }
+            finally
+            {
+                _CheckHeaderSizeChangeForce();
+            }
+        }
+        #endregion
+        #region Transitions
         /// <summary>
         /// Typ přechodového efektu
         /// </summary>
@@ -2186,76 +2438,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
         }
         private DxTabPaneTransitionType _TransitionType;
-        /// <summary>
-        /// Aktivuje vlastní eventy
-        /// </summary>
-        private void InitEvents()
-        {
-            this.TransitionManager.BeforeTransitionStarts += TransitionManager_BeforeTransitionStarts;
-            this.TransitionManager.AfterTransitionEnds += TransitionManager_AfterTransitionEnds;
-            this.SelectedPageChanging += DxTabPane_SelectedPageChanging;
-            this.SelectedPageChanged += DxTabPane_SelectedPageChanged;
-            this.ClientSizeChanged += DxTabPane_ClientSizeChanged;
-        }
-
-
-        /// <summary>
-        /// Deaktivuje vlastní eventy
-        /// </summary>
-        private void RemoveEvents()
-        {
-            this.TransitionManager.BeforeTransitionStarts -= TransitionManager_BeforeTransitionStarts;
-            this.TransitionManager.AfterTransitionEnds -= TransitionManager_AfterTransitionEnds;
-            this.SelectedPageChanging -= DxTabPane_SelectedPageChanging;
-            this.SelectedPageChanged -= DxTabPane_SelectedPageChanged;
-        }
-        #endregion
-        #region Výška prostoru záhlaví
-        /// <summary>
-        /// Po změně velikosti
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void DxTabPane_ClientSizeChanged(object sender, EventArgs e)
-        {
-            _CheckHeaderHeightChange();
-        }
-        /// <summary>
-        /// Ověří, zda nedošlo ke změně výšky záhlaví, a pokud ano, pak vyvolá patřičné události.
-        /// </summary>
-        private void _CheckHeaderHeightChange()
-        {
-            int headerHeight = 0;
-            if (this.Pages.Count > 0)
-            {
-                var bounds = this.ViewInfo.ButtonsBounds;
-                var pfs = this.Pages[0].GetPreferredSize(new Size(50, 10));
-                int minHeight = 10;
-                // DevExpress.Skins.EditorsSkins.GetSkin
-                if (headerHeight < minHeight) headerHeight = minHeight;
-                headerHeight = bounds.Height + 4;
-            }
-            if (headerHeight == _HeaderHeight) return;       // Výška záhlaví nebyla změněna
-
-            _HeaderHeight = headerHeight;
-            OnHeaderHeightChanged();
-            HeaderHeightChanged?.Invoke(this, EventArgs.Empty);
-        }
-        /// <summary>
-        /// Aktuální výška záhlaví
-        /// </summary>
-        public int HeaderHeight { get { return _HeaderHeight; } }
-        private int _HeaderHeight;
-        /// <summary>
-        /// Při změně výšky záhlaví
-        /// </summary>
-        protected virtual void OnHeaderHeightChanged() { }
-        /// <summary>
-        /// Došlo ke změně výšky záhlaví
-        /// </summary>
-        public event EventHandler HeaderHeightChanged;
-        #endregion
-        #region Přepínání záložek a volání událostí pro podporu deaktivace a aktivace správné stránky
         /// <summary>
         /// Obsahuje true, pokud jsme v procesu přepínání záložek, false v běžném stavu
         /// </summary>
@@ -2349,75 +2531,466 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public event EventHandler<TEventArgs<DevExpress.XtraBars.Navigation.TabNavigationPage>> PageChangingRelease;
 
-        // Pořadí eventů v konstuktoru:
-        //     DxTabPane_SelectedPageChanging;
-        //     DxTabPane_SelectedPageChanged;
-        // Pořadí eventů při přepínání stránky s transicí:        SelectedPageIndex
-        //     DxTabPane_SelectedPageChanging;                           old           mám k dispozici old i new page v argumentu
-        //     TransitionManager_BeforeTransitionStarts;                 old
-        //     DxTabPane_SelectedPageChanged;                            new
-        //     TransitionManager_AfterTransitionEnds;                    new
+        #endregion
+        #region Pages
+        /// <summary>
+        /// Stránky datové.
+        /// Lze i setovat. Při setování se control pokusí ponechat jako selectovanou stránku tu, která je aktuálně selectovaná, podle jejího <see cref="ITextItem.ItemId"/>.
+        /// Pokud to nebude možné (v nové sadě stránek nebude takové ID existovat), pak vyselectuje první existující stránku a vyvolá událost <see cref="SelectedIPageChanged"/>
+        /// </summary>
+        public IPageItem[] IPages
+        {
+            get { return this.DxPages.Select(p => p.PageData).ToArray(); }
+            set { SetPages(value); }
+        }
+        /// <summary>
+        /// Stránky vizuální
+        /// </summary>
+        protected DxTabPage[] DxPages { get { return this.Pages.OfType<DxTabPage>().ToArray(); } }
+        /// <summary>
+        /// Počet stránek
+        /// </summary>
+        public int IPageCount { get { return IPages.Length; } }
+        /// <summary>
+        /// Data aktuálně vybrané stránky nebo null pokud <see cref="IPageCount"/> == 0.
+        /// Lze setovat. Při změně proběhne událost <see cref="SelectedIPageChanged"/>.
+        /// </summary>
+        public IPageItem SelectedIPage
+        {
+            get
+            {
+                var tabPage = this.SelectedPage;
+                return (tabPage != null && tabPage is DxTabPage dxPage) ? dxPage.PageData : null;
+            }
+            set
+            {
+                DxTabPage dxPage = null;
+                IPageItem iPage = value;
+                if (iPage != null)
+                {
+                    DxTabPage[] dxPages = DxPages;
+                    dxPage = dxPages.FirstOrDefault(p => Object.ReferenceEquals(p.PageData, iPage));
+                    if (dxPage == null && iPage.ItemId != null)
+                        dxPage = dxPages.FirstOrDefault(p => String.Equals(p.PageData.ItemId, iPage.ItemId));
+                }
+                this.SelectedPage = dxPage;
+            }
+        }
+        /// <summary>
+        /// <see cref="ITextItem.ItemId"/> aktuálně vybrané stránky nebo null pokud <see cref="IPageCount"/> == 0.
+        /// Lze setovat. Při změně proběhne událost <see cref="SelectedIPageChanged"/>.
+        /// </summary>
+        public string SelectedIPageId
+        {
+            get
+            {
+                var tabPage = this.SelectedPage;
+                return (tabPage != null && tabPage is DxTabPage dxPage) ? dxPage.PageData.ItemId : null;
+            }
+            set
+            {
+                DxTabPage dxPage = null;
+                string itemId = value;
+                if (itemId != null)
+                {
+                    DxTabPage[] dxPages = DxPages;
+                    dxPage = dxPages.FirstOrDefault(p => String.Equals(p.PageData.ItemId, itemId));
+                }
+                this.SelectedPage = dxPage;
+            }
+        }
+        /// <summary>
+        /// Vyvolá metodu <see cref="OnSelectedIPageChanged"/> a event <see cref="SelectedIPageChanged"/>, bez podmínky na <see cref="_SelectedIPageChangedSuppress"/>
+        /// </summary>
+        private void RunSelectedIPageChanged()
+        {
+            OnSelectedIPageChanged();
+            SelectedIPageChanged?.Invoke(this, EventArgs.Empty);
+        }
+        /// <summary>
+        /// Událost volaná při změně aktivní stránky <see cref="SelectedIPage"/>
+        /// </summary>
+        protected virtual void OnSelectedIPageChanged() { }
+        /// <summary>
+        /// Událost volaná při změně aktivní stránky <see cref="SelectedIPage"/>
+        /// </summary>
+        public event EventHandler SelectedIPageChanged;
+        /// <summary>
+        /// Hodnota true potlačí volání události <see cref="SelectedIPageChanged"/>, 
+        /// použije se při interních změnách obsahu, 
+        /// když víme že na konci změn nastavíme správnou hodnotu a/nebo vyvoláme explicitně event.
+        /// </summary>
+        private bool _SelectedIPageChangedSuppress = false;
+        /// <summary>
+        /// Smaže všechny stránky
+        /// </summary>
+        public void ClearPages()
+        {
+            _AddPages(true, null, null);
+        }
+        /// <summary>
+        /// Smaže aktuální stránky, vloží dodanou sadu, a poté se pokusí reaktivovat nově dodanou stránku se shodným ID jaké měla dosud aktivní stránka.
+        /// Pokud nebyla nebo ji nenajde, pak aktivuje stránku s dodaným ID, anebo první dodanou stránku.
+        /// </summary>
+        /// <param name="pages"></param>
+        /// <param name="selectPageId"></param>
+        public void SetPages(IEnumerable<IPageItem> pages, string selectPageId = null)
+        {
+            _AddPages(true, pages, selectPageId);
+        }
+        /// <summary>
+        /// Přidá dané stránky.
+        /// </summary>
+        /// <param name="pages"></param>
+        public void AddPages(IEnumerable<IPageItem> pages)
+        {
+            _AddPages(false, pages, null);
+        }
+        /// <summary>
+        /// Přidá danou stránku.
+        /// </summary>
+        /// <param name="page"></param>
+        public void AddPage(IPageItem page)
+        {
+            if (page != null)
+                _AddPages(false, new IPageItem[] { page }, null);
+        }
+        /// <summary>
+        /// Přidá stránky
+        /// </summary>
+        /// <param name="clear"></param>
+        /// <param name="pages"></param>
+        /// <param name="selectPageId"></param>
+        private void _AddPages(bool clear, IEnumerable<IPageItem> pages, string selectPageId)
+        {
+            var oldPage = SelectedIPage;
+            bool isSuppress = _SelectedIPageChangedSuppress;
+            bool isActiveOldPage = false;
+            bool runEventChanged = false;
+            int headerHeightOld = (this.Pages.Count > 0 ? this.ViewInfo.ButtonsBounds.Height : 0);
+            IPageItem[] allPages = null;
+            try
+            {
+                using (this.ScopeSuspendParentLayout())
+                {
+                    _SelectedIPageChangedSuppress = true;
+                    bool forceResize = (this.Pages.Count == 0);
 
-        /// <summary>
-        /// Před zahájením přepnutí stránky
-        /// </summary>
-        /// <param name="transition"></param>
-        /// <param name="e"></param>
-        private void TransitionManager_BeforeTransitionStarts(DevExpress.Utils.Animation.ITransition transition, System.ComponentModel.CancelEventArgs e)
-        {
-        }
-        /// <summary>
-        /// Po dokončení přepnutí stránky
-        /// </summary>
-        /// <param name="transition"></param>
-        /// <param name="e"></param>
-        private void TransitionManager_AfterTransitionEnds(DevExpress.Utils.Animation.ITransition transition, EventArgs e)
-        {
-        }
-        /// <summary>
-        /// Na začátku přepínání záložek
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void DxTabPane_SelectedPageChanging(object sender, DevExpress.XtraBars.Navigation.SelectedPageChangingEventArgs e)
-        {
-            this.PageChangingPageOld = e.OldPage as DevExpress.XtraBars.Navigation.TabNavigationPage;
-            this.PageChangingPageNew = e.Page as DevExpress.XtraBars.Navigation.TabNavigationPage;
-            this.PageChangingIsRunning = true;
-            this.RunPageChangingDeactivate(this.PageChangingPageOld);
-            this.RunPageChangingPrepare(this.PageChangingPageNew);
-        }
-        /// <summary>
-        /// Na konci přepínání záložek
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void DxTabPane_SelectedPageChanged(object sender, DevExpress.XtraBars.Navigation.SelectedPageChangedEventArgs e)
-        {
-            this.RunPageChangingActivate(this.PageChangingPageNew);
-            this.RunPageChangingRelease(this.PageChangingPageOld);
-            this.PageChangingIsRunning = false;
+                    if (clear)
+                        this.Pages.Clear();
+
+                    if (pages != null)
+                    {
+                        foreach (var page in pages)
+                        {
+                            if (page != null)
+                            {
+                                DxTabPage dxPage = new DxTabPage(this, page);
+                                this.Pages.Add(dxPage);
+                                if (forceResize)
+                                {
+                                    _CheckHeaderSizeChange(true);
+                                    forceResize = false;
+                                }
+                            }
+                        }
+                    }
+                    allPages = this.IPages;
+
+                    bool hasOldPage = (oldPage != null);
+                    isActiveOldPage = (hasOldPage && Object.ReferenceEquals(oldPage, this.SelectedIPage));
+                    if (hasOldPage && !isActiveOldPage && allPages.Length > 0)
+                    {   // Pokud dříve byla nějaká stránka aktivní, a nyní je aktivní jiná, pak se pokusím reaktivovat původní stránku:
+                        IPageItem newPage;
+                        if (!allPages.TryGetFirst(p => Object.ReferenceEquals(oldPage, p), out newPage) && oldPage.ItemId != null)   // Hledám identickou stránku
+                            allPages.TryGetFirst(p => String.Equals(oldPage.ItemId, p.ItemId), out newPage);                         // Hledám stránku se shodným ID
+                        if (newPage != null)
+                        {
+                            this.SelectedIPage = newPage;      // Fyzicky aktivuji stránku, ale event SelectedIPageChanged je potlačený (_SelectedIPageChangedSuppress) = takže se neprovede
+                            isActiveOldPage = true;
+                        }
+                    }
+
+                    // Pokud se mi nepodařilo aktivovat původní stránku (oldPage), tak nejspíš proto že původně nebylo nic, anebo jsme původní stránku smazali;
+                    // pak nyní najdu vhodnou stránku a vložím ji do 
+                    if (!isActiveOldPage && allPages != null)
+                    {
+                        if (allPages.Length == 0)
+                        {   // Nyní nemám žádné stránky,
+                            // a pokud jsem dosud měl nějakou aktivní, tak zavoláme event (změna Page => null):
+                            runEventChanged = (oldPage != null);
+                        }
+                        else
+                        {
+                            IPageItem newPage = null;
+                            if (selectPageId != null)
+                                allPages.TryGetFirst(p => String.Equals(selectPageId, p.ItemId), out newPage);
+                            if (newPage == null)
+                                newPage = allPages[0];
+                            this.SelectedIPage = newPage;      // Fyzicky aktivuji stránku, ale event SelectedIPageChanged je potlačený (_SelectedIPageChangedSuppress) = takže se neprovede
+                            runEventChanged = true;
+                        }
+                    }
+                }
+            }
+            finally
+            {
+                _SelectedIPageChangedSuppress = isSuppress;
+                _CheckHeaderSizeChangeForce(headerHeightOld);
+            }
+
+            if (runEventChanged)
+                RunSelectedIPageChanged();
         }
         #endregion
+        #region Výška a šířka prostoru záhlaví
+        /// <summary>
+        /// Po změně velikosti
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _ClientSizeChanged(object sender, EventArgs e)
+        {
+            _CheckHeaderSizeChange();
+        }
+        /// <summary>
+        /// Po změně velikosti
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _SizeChanged(object sender, EventArgs e)
+        {
+            _CheckHeaderSizeChange();
+        }
+        /// <summary>
+        /// Ověří, zda nedošlo ke změně výšky nebo šířky záhlaví (podle orientace), a pokud ano, pak vyvolá patřičné události.
+        /// Použije brutální sílu k prolomení neproniknutelné hradby DevExpress.
+        /// </summary>
+        /// <param name="headerHeightOld">Předešlá výška záhlaví</param>
+        private void _CheckHeaderSizeChangeForce(int? headerHeightOld = null)
+        {   // Musí být dvakrát, jinak špatně funguje změna z nuly na více záložek, nebo změna u levého i pravého umístění.
+            _CheckHeaderSizeChange(true, headerHeightOld);
+            // TabPane nepomáhá nic...   ani druhé volání :      _CheckHeaderSizeChange(true);
+        }
+        /// <summary>
+        /// Ověří, zda nedošlo ke změně výšky nebo šířky záhlaví (podle orientace), a pokud ano, pak vyvolá patřičné události.
+        /// </summary>
+        /// <param name="force"></param>
+        /// <param name="headerHeightOld">Předešlá výška záhlaví</param>
+        private void _CheckHeaderSizeChange(bool force = false, int? headerHeightOld = null)
+        {
+            if (!_CheckHeaderSizeInProgress || force)
+            {
+                bool oldInProgress = _CheckHeaderSizeInProgress;
+                try
+                {
+                    _CheckHeaderSizeInProgress = true;
+                    // Tato třída má záhlaví pouze v pozici Top, hlídáme pouze Height:
+                    _CheckHeaderHeightChange(force, headerHeightOld);
+                }
+                finally
+                {
+                    _CheckHeaderSizeInProgress = oldInProgress;
+                }
+            }
+        }
+        private bool _CheckHeaderSizeInProgress = false;
+        /// <summary>
+        /// Ověří, zda nedošlo ke změně výšky záhlaví (pro záhlaví umístěné Top nebo Bottom),
+        /// a pokud ano, pak vyvolá patřičné události.
+        /// </summary>
+        /// <param name="force"></param>
+        /// <param name="headerHeightOld">Předešlá výška záhlaví</param>
+        private void _CheckHeaderHeightChange(bool force, int? headerHeightOld = null)
+        {
+            _HeaderWidth = 0;
+            if (this.Width < 10) return;
+
+            int headerHeight = 0;
+            if (this.Pages.Count > 0)
+            {
+                int minHeight = 10;
+
+                // První naplnění stránkami dělá problémy, protože velikost může být menší než je potřebná, a pak ViewInfo obsahuje "náhradní záporné hodnoty".
+                // To ale tady nechceme!
+                if (force || this.Height <= minHeight)
+                {
+                    if (this.Height <= minHeight)
+                        this.Height = 50;
+                    this.Refresh();
+                }
+
+                var headerBounds = this.ViewInfo?.ButtonsBounds;
+                if (headerBounds.HasValue)
+                {   // Čistá cesta:
+                    headerHeight = headerBounds.Value.Height;
+
+                    // Máme výšku z nedávného stavu?  Ta sem přichází z metody _AddPages(), kde jsme si ji zapamatovali před Pages.Clear():
+                    if (headerHeight < minHeight && headerHeightOld.HasValue) headerHeight = headerHeightOld.Value;
+
+                    if (headerHeight >= minHeight)
+                    {   // Komponenta dokázala určit správnou výšku - zapamatujeme si ji:
+                        _HeaderHeightLastValid = headerHeight;
+                        // a přidáme 1px pro okraj:
+                        headerHeight += 1;
+                    }
+                    else
+                    {   // Komponenta NEdokázala určit správnou výšku - možná si ji pamatujeme offline od posledně:
+                        headerHeight = _HeaderHeightLastValid;
+                        if (headerHeight > 0)
+                            // Máme jí! Tak přidáme 12px pro okraj a tělo stránky:
+                            headerHeight += 12;
+                        else
+                            // Nemáme ji, použijeme kouzelnou konstantu:
+                            headerHeight = 50;
+                    }
+                }
+                else
+                {   // Náhradní cesta:
+                    bool isTop = !this.PageHeaderPosition.HasFlag(DxPageHeaderPosition.PositionBottom);
+                    headerHeight = (isTop ? (this.DisplayRectangle.Y + 2) : (this.ClientSize.Height - this.DisplayRectangle.Height));
+                }
+                if (headerHeight < minHeight) headerHeight = minHeight;
+            }
+            if (headerHeight != _HeaderHeight)
+            {   // Výška záhlaví byla změněna:
+                _HeaderHeight = headerHeight;
+                OnHeaderSizeChanged();
+                HeaderSizeChanged?.Invoke(this, EventArgs.Empty);
+            }
+        }
+        /// <summary>
+        /// Aktuální výška záhlaví. 
+        /// Je nastavováno pouze pro záhlaví umístěné Top nebo Bottom.
+        /// </summary>
+        public int HeaderHeight { get { return _HeaderHeight; } }
+        private int _HeaderHeight;
+        /// <summary>
+        /// Posledně platná výška záhlaví. Tahle komponenta někdy nedokáže určit ViewInfo.ButtonsBounds.Height (po Clear() a po AddPage() obsahuje Height = 0).
+        /// </summary>
+        private int _HeaderHeightLastValid;
+        /// <summary>
+        /// Aktuální šířka záhlaví. 
+        /// Je nastavováno pouze pro záhlaví umístěné Left nebo Right.
+        /// </summary>
+        public int HeaderWidth { get { return _HeaderWidth; } }
+        private int _HeaderWidth;
+        /// <summary>
+        /// Při změně výšky nebo šířky záhlaví:
+        /// výška <see cref="HeaderHeight"/> pro pozici záhlaví Top nebo Bottom;
+        /// šířka <see cref="HeaderWidth"/> pro pozici záhlaví Left nebo Right;
+        /// </summary>
+        protected virtual void OnHeaderSizeChanged() { }
+        /// <summary>
+        /// Došlo ke změně výšky nebo šířky záhlaví:
+        /// výška <see cref="HeaderHeight"/> pro pozici záhlaví Top nebo Bottom;
+        /// šířka <see cref="HeaderWidth"/> pro pozici záhlaví Left nebo Right;
+        /// </summary>
+        public event EventHandler HeaderSizeChanged;
+        #endregion
+
+        #region Výška prostoru záhlaví - ke smazání
+        /// <summary>
+        /// Ověří, zda nedošlo ke změně výšky záhlaví, a pokud ano, pak vyvolá patřičné události.
+        /// </summary>
+        //private void _CheckHeaderHeightChange()
+        //{
+        //    int headerHeight = 0;
+        //    if (this.Pages.Count > 0)
+        //    {
+        //        var bounds = this.ViewInfo.ButtonsBounds;
+        //        var pfs = this.Pages[0].GetPreferredSize(new Size(50, 10));
+        //        int minHeight = 10;
+        //        // DevExpress.Skins.EditorsSkins.GetSkin
+        //        if (headerHeight < minHeight) headerHeight = minHeight;
+        //        headerHeight = bounds.Height + 4;
+        //    }
+        //    if (headerHeight == _HeaderHeight) return;       // Výška záhlaví nebyla změněna
+
+        //    _HeaderHeight = headerHeight;
+        //    //OnHeaderHeightChanged();
+        //    //HeaderHeightChanged?.Invoke(this, EventArgs.Empty);
+        //}
+        #endregion
+
         #region IListenerStyleChanged, IListenerZoomChange
-        void IListenerStyleChanged.StyleChanged() { this._CheckHeaderHeightChange(); }
-        void IListenerZoomChange.ZoomChanged() { this._CheckHeaderHeightChange(); }
+        void IListenerStyleChanged.StyleChanged() { this._CheckHeaderSizeChange(); }
+        void IListenerZoomChange.ZoomChanged() { this._CheckHeaderSizeChange(); }
         #endregion
     }
+    #region DxTabPage : jedna stránka v DxTabPane
+    /// <summary>
+    /// Třída jedné stránky
+    /// </summary>
     public class DxTabPage : DevExpress.XtraBars.Navigation.TabNavigationPage
     {
-        protected override DevExpress.XtraBars.Navigation.NavigationPageViewInfo CreateViewInfo()
+        /// <summary>
+        /// Konstruktor, nepoužívat v aplikaci
+        /// </summary>
+        public DxTabPage() { }
+        /// <summary>
+        /// Konstruktor s daty
+        /// </summary>
+        /// <param name="tabOwner"></param>
+        /// <param name="pageData"></param>
+        public DxTabPage(DxTabPane tabOwner, IPageItem pageData)
         {
-            var vif = base.CreateViewInfo();
-            return vif;
+            _TabOwner = tabOwner;
+            PageData = pageData;
+            RefreshData();
         }
-        public override Size GetPreferredSize(Size proposedSize)
+        /// <summary>
+        /// Dispose
+        /// </summary>
+        /// <param name="disposing"></param>
+        protected override void Dispose(bool disposing)
         {
-            var size = base.GetPreferredSize(proposedSize);
-            return size;
+            if (PageData != null)
+            {
+                PageData.PageControl = null;
+                PageData = null;
+            }
+            base.Dispose(disposing);
         }
+        /// <summary>
+        /// Vlastník
+        /// </summary>
+        protected DxTabPane TabOwner { get { return _TabOwner?.Target; } }
+        private WeakTarget<DxTabPane> _TabOwner;
+        /// <summary>
+        /// Data stránky
+        /// </summary>
+        public IPageItem PageData { get; private set; }
+        /// <summary>
+        /// Do this stránky refreshuje data ze svého objektu <see cref="IPageItem"/>
+        /// </summary>
+        public void RefreshData()
+        {
+            var pageData = PageData;
+            if (pageData is null) return;
 
+            var headerPosition = TabOwner?.PageHeaderPosition ?? DxPageHeaderPosition.Top;
+            bool hasText = headerPosition.HasFlag(DxPageHeaderPosition.TextOnly);
+            bool hasIcon = headerPosition.HasFlag(DxPageHeaderPosition.IconOnly);
+
+            this.Name = pageData.ItemId;
+            this.Caption = (hasText ? pageData.Text : "");
+            // this.ToolTip = pageData.ToolTipText;
+            this.SuperTip = DxComponent.CreateDxSuperTip(pageData);
+
+            if (hasIcon)
+                DxComponent.ApplyImage(ImageOptions, pageData.ImageName, sizeType: ResourceImageSizeType.Medium);
+            else
+                ImageOptions.Reset();
+
+            pageData.PageControl = this;
+        }
+        /// <summary>
+        /// Informace o aktuálním View
+        /// </summary>
+        internal DevExpress.XtraBars.Navigation.NavigationPageViewInfo CurrentViewInfo { get { return this.CreateViewInfo(); } }
     }
+    #endregion
     #region enum DxTabPaneTransitionType
     /// <summary>
     /// Typ přechodového efektu v <see cref="DxTabPane"/>
@@ -2484,13 +3057,13 @@ namespace Noris.Clients.Win.Components.AsolDX
     }
     #endregion
     #endregion
-    #region DxXtraTabControl : Jiný záložkovník
+    #region DxXtraTabControl : rozsáhlejší záložkovník
     /// <summary>
     /// <see cref="DxXtraTabControl"/> : Jiný záložkovník
     /// </summary>
-    public class DxXtraTabControl : DevExpress.XtraTab.XtraTabControl, IListenerStyleChanged, IListenerZoomChange
+    public class DxXtraTabControl : DevExpress.XtraTab.XtraTabControl, ITabHeaderControl, IListenerStyleChanged, IListenerZoomChange
     {
-        #region Konstruktor, eventy
+        #region Konstruktor, vnitřní eventy
         /// <summary>
         /// Konstruktor
         /// </summary>
@@ -2505,6 +3078,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         protected void InitProperties()
         {
+            Size = new Size(640, 120);
+
             AppearancePage.HeaderActive.FontStyleDelta = FontStyle.Bold;
             AppearancePage.HeaderHotTracked.FontStyleDelta = FontStyle.Underline;
 
@@ -2523,8 +3098,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         protected void InitEvents()
         {
-            this.SelectedPageChanging += DxXtraTabControl_SelectedPageChanging;
-            this.SelectedPageChanged += DxXtraTabControl_SelectedPageChanged;
+            this.SelectedPageChanging += _SelectedPageChanging;
+            this.SelectedPageChanged += _SelectedPageChanged;
             this.SizeChanged += _SizeChanged;
         }
         /// <summary>
@@ -2532,14 +3107,14 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void DxXtraTabControl_SelectedPageChanging(object sender, DevExpress.XtraTab.TabPageChangingEventArgs e)
+        private void _SelectedPageChanging(object sender, DevExpress.XtraTab.TabPageChangingEventArgs e)
         { }
         /// <summary>
         /// Po změně vybrané stránky
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void DxXtraTabControl_SelectedPageChanged(object sender, DevExpress.XtraTab.TabPageChangedEventArgs e)
+        private void _SelectedPageChanged(object sender, DevExpress.XtraTab.TabPageChangedEventArgs e)
         {
             if (!_SelectedIPageChangedSuppress)
                 RunSelectedIPageChanged();
@@ -2963,12 +3538,14 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
         }
         /// <summary>
-        /// Aktuální výška záhlaví
+        /// Aktuální výška záhlaví. 
+        /// Je nastavováno pouze pro záhlaví umístěné Top nebo Bottom.
         /// </summary>
         public int HeaderHeight { get { return _HeaderHeight; } }
         private int _HeaderHeight;
         /// <summary>
-        /// Aktuální šířka záhlaví
+        /// Aktuální šířka záhlaví. 
+        /// Je nastavováno pouze pro záhlaví umístěné Left nebo Right.
         /// </summary>
         public int HeaderWidth { get { return _HeaderWidth; } }
         private int _HeaderWidth;
@@ -2989,8 +3566,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         void IListenerStyleChanged.StyleChanged() { this._CheckHeaderSizeChange(); }
         void IListenerZoomChange.ZoomChanged() { this._CheckHeaderSizeChange(); }
         #endregion
-        
     }
+    #region DxXtraTabPage : jedna stránka v DxXtraTabControl
     /// <summary>
     /// Jedna stránka
     /// </summary>
@@ -3003,19 +3580,32 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Konstruktor s daty
         /// </summary>
-        /// <param name="owner"></param>
+        /// <param name="tabOwner"></param>
         /// <param name="pageData"></param>
-        public DxXtraTabPage(DxXtraTabControl owner, IPageItem pageData)
+        public DxXtraTabPage(DxXtraTabControl tabOwner, IPageItem pageData)
         {
-            _Owner = owner;
+            _TabOwner = tabOwner;
             PageData = pageData;
             RefreshData();
         }
         /// <summary>
+        /// Dispose
+        /// </summary>
+        /// <param name="disposing"></param>
+        protected override void Dispose(bool disposing)
+        {
+            if (PageData != null)
+            {
+                PageData.PageControl = null;
+                PageData = null;
+            }
+            base.Dispose(disposing);
+        }
+        /// <summary>
         /// Vlastník
         /// </summary>
-        protected DxXtraTabControl Owner { get { return _Owner?.Target; } }
-        private WeakTarget<DxXtraTabControl> _Owner;
+        protected DxXtraTabControl TabOwner { get { return _TabOwner?.Target; } }
+        private WeakTarget<DxXtraTabControl> _TabOwner;
         /// <summary>
         /// Data stránky
         /// </summary>
@@ -3028,7 +3618,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             var pageData = PageData;
             if (pageData is null) return;
 
-            var headerPosition = Owner?.PageHeaderPosition ?? DxPageHeaderPosition.Top;
+            var headerPosition = TabOwner?.PageHeaderPosition ?? DxPageHeaderPosition.Top;
             bool hasText = headerPosition.HasFlag(DxPageHeaderPosition.TextOnly);
             bool hasIcon = headerPosition.HasFlag(DxPageHeaderPosition.IconOnly);
 
@@ -3041,76 +3631,11 @@ namespace Noris.Clients.Win.Components.AsolDX
                 DxComponent.ApplyImage(ImageOptions, pageData.ImageName, sizeType: ResourceImageSizeType.Medium);
             else
                 ImageOptions.Reset();
+
+            pageData.PageControl = this;
         }
     }
-    /// <summary>
-    /// Pozice záhlaví stránky
-    /// </summary>
-    [Flags]
-    public enum DxPageHeaderPosition
-    {
-        /// <summary>
-        /// Bez záhlaví
-        /// </summary>
-        None = 0,
-        /// <summary>
-        /// Záhlaví nahoře, přidejte hodnotu <see cref="IconOnly"/> anebo <see cref="TextOnly"/> anebo <see cref="IconText"/>
-        /// </summary>
-        PositionTop = 0x01,
-        /// <summary>
-        /// Záhlaví dole, přidejte hodnotu <see cref="IconOnly"/> anebo <see cref="TextOnly"/> anebo <see cref="IconText"/>
-        /// </summary>
-        PositionBottom = 0x02,
-        /// <summary>
-        /// Záhlaví vlevo, přidejte hodnotu <see cref="IconOnly"/> anebo <see cref="TextOnly"/> anebo <see cref="IconText"/>
-        /// </summary>
-        PositionLeft = 0x04,
-        /// <summary>
-        /// Záhlaví vpravo, přidejte hodnotu <see cref="IconOnly"/> anebo <see cref="TextOnly"/> anebo <see cref="IconText"/>
-        /// </summary>
-        PositionRight = 0x08,
-        /// <summary>
-        /// Zobrazit jen ikonu
-        /// </summary>
-        IconOnly = 0x10,
-        /// <summary>
-        /// Zobrazit jen text
-        /// </summary>
-        TextOnly = 0x20,
-        /// <summary>
-        /// Svislý text, vypadá to sice hrozně, ale 'De gustibus non est disputandum'...
-        /// </summary>
-        VerticalText = 0x100,
-
-        /// <summary>
-        /// Ikona a text
-        /// </summary>
-        IconText = IconOnly | TextOnly,
-        /// <summary>
-        /// Nahoře s ikonou a textem
-        /// </summary>
-        Top = PositionTop | IconText,
-        /// <summary>
-        /// Dole s ikonou a textem
-        /// </summary>
-        Bottom = PositionBottom | IconText,
-        /// <summary>
-        /// Vlevo s ikonou
-        /// </summary>
-        Left = PositionLeft | IconOnly,
-        /// <summary>
-        /// Vpravo s ikonou
-        /// </summary>
-        Right = PositionRight | IconOnly,
-        /// <summary>
-        /// Default = <see cref="Top"/> = Nahoře s ikonou a textem
-        /// </summary>
-        Default = Top,
-        /// <summary>
-        /// Souhrn všech bitů pozic, pro výpočet masky. Běžně se jako hodnota nepoužívá.
-        /// </summary>
-        PositionSummary = PositionTop | PositionBottom | PositionLeft | PositionRight
-    }
+    #endregion
     #endregion
     #region DxLabelControl
     /// <summary>
@@ -6915,6 +7440,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Zobrazit Close button?
         /// </summary>
         public virtual bool CloseButtonVisible { get; set; }
+        /// <summary>
+        /// Prvek stránky reprezentující vizuální control
+        /// </summary>
+        public virtual Control PageControl { get { return _PageControl?.Target; } set { _PageControl = value; } }
+        private WeakTarget<Control> _PageControl;
     }
     /// <summary>
     /// Definice prvku umístěného jako stránka v záložkovníku
@@ -6925,6 +7455,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Zobrazit Close button?
         /// </summary>
         bool CloseButtonVisible { get; }
+        /// <summary>
+        /// Prvek stránky reprezentující vizuální control
+        /// </summary>
+        Control PageControl { get; set; }
     }
     /// <summary>
     /// Definice prvku umístěného v Ribbonu nebo podpoložka prvku Ribbonu (položka menu / split ribbonu atd) nebo jako prvek ListBoxu nebo ComboBoxu

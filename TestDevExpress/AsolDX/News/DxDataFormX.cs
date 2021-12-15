@@ -240,8 +240,9 @@ namespace Noris.Clients.Win.Components.AsolDX
 
                 foreach (var pageData in pagesData)
                 {
-                    var pane = _TabPane.AddNewPage(pageData.PageName ?? "", pageData.PageText ?? "Záložka s daty", pageData.PageToolTipText);
-                    pageData.PlaceToParent(pane);
+                    DataPageItem dataPageItem = new DataPageItem() { ItemId = pageData.PageName, Text = pageData.Text };
+                    _TabPane.AddPage(dataPageItem);
+                    pageData.PlaceToParent(dataPageItem.PageControl);
                     pageData.Dock = WF.DockStyle.Fill;
                 }
 

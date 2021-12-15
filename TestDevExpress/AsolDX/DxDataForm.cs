@@ -427,14 +427,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private void _PrepareDataFormTabPages()
         {
-            _DataFormTabPane.ClearPages();
-            if (_DataFormTabs != null)
-            {
-                foreach (var dataTab in _DataFormTabs)
-                {
-                    _DataFormTabPane.AddNewPage(dataTab.TabName, dataTab.TabText, dataTab.TabToolTipText);
-                }
-            }
+            _DataFormTabPane.SetPages(_DataFormTabs);
         }
         /// <summary>
         /// Disposuje vlastní záložkovník TabPane
@@ -3785,7 +3778,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
     /// <summary>
     /// Data jedné viditelné záložky. Záložka může shrnovat grupy z více stránek, pokud to layout umožní a potřebuje.
     /// </summary>
-    internal class DxDataFormTab
+    internal class DxDataFormTab : IPageItem
     {
         #region Konstruktor, vlastník, prvky
         /// <summary>
@@ -3823,6 +3816,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         public List<DxDataFormPage> Pages { get { return _Pages; } }
         /// <summary>
+        /// První nenulový <see cref="DxDataFormPage.PageImageName"/>
+        /// </summary>
+        public string ImageName { get { return Pages.Select(p => p.PageImageName).Where(i => i != null).FirstOrDefault(); } }
+        /// <summary>
         /// Titulek záložky = <see cref="IDataFormPage.PageText"/>, případně sloučený z více stránek
         /// </summary>
         public string TabText { get { return Pages.Select(p => p.PageText).ToOneString(" + "); } }
@@ -3851,6 +3848,95 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             }
         }
         private DxDataFormState _State;
+        #endregion
+        #region IPageItem
+        /// <summary>
+        /// Zobrazit Close button?
+        /// </summary>
+        bool IPageItem.CloseButtonVisible { get { return false; } }
+        /// <summary>
+        /// Sem bude umístěn Control záložky po přidání do TabPageHeaderu
+        /// </summary>
+        Control IPageItem.PageControl { get { return TabPageControl; } set { TabPageControl = value; } }
+        /// <summary>
+        /// Sem bude umístěn Control záložky po přidání do TabPageHeaderu
+        /// </summary>
+        protected Control TabPageControl { get; set; }
+        /// <summary>
+        /// Stringová identifikace prvku, musí být jednoznačná v rámci nadřízeného prvku
+        /// </summary>
+        string ITextItem.ItemId { get { return this.TabName; } }
+        /// <summary>
+        /// Hlavní text v prvku
+        /// </summary>
+        string ITextItem.Text { get { return this.TabText; } }
+        /// <summary>
+        /// Pořadí prvku, použije se pro setřídění v rámci nadřazeného prvku
+        /// </summary>
+        int ITextItem.ItemOrder { get; set; }
+        /// <summary>
+        /// Obsahuje tre tehdy, když před prvkem má být oddělovač
+        /// </summary>
+        bool ITextItem.ItemIsFirstInGroup { get { return false; } }
+        /// <summary>
+        /// Prvek je Visible?
+        /// </summary>
+        bool ITextItem.Visible { get { return true; } }
+        /// <summary>
+        /// Prvek je Enabled?
+        /// </summary>
+        bool ITextItem.Enabled { get { return true; } }
+        /// <summary>
+        /// Určuje, zda CheckBox je zaškrtnutý.
+        /// Po změně zaškrtnutí v Ribbonu (uživatelem) je do této property setována aktuální hodnota z Ribbonu 
+        /// a poté je vyvolána událost <see cref="DxRibbonControl.RibbonItemClick"/>.
+        /// Hodnota může být null, pak první kliknutí nastaví false, druhé true, třetí zase false (na NULL se interaktivně nedá doklikat).
+        /// <para/>
+        /// Pokud konkrétní prvek nepodporuje null, akceptuje null jako false.
+        /// </summary>
+        bool? ITextItem.Checked { get; set; }
+        /// <summary>
+        /// Fyzický obrázek ikony.
+        /// </summary>
+        Image ITextItem.Image { get { return null; } }
+        /// <summary>
+        /// Fyzický vektor ikony
+        /// </summary>
+        DevExpress.Utils.Svg.SvgImage ITextItem.SvgImage { get { return null; } }
+        /// <summary>
+        /// Jméno ikony.
+        /// Pro prvek typu CheckBox tato ikona reprezentuje stav, kdy <see cref="ITextItem.Checked"/> = NULL.
+        /// </summary>
+        string ITextItem.ImageName { get { return this.ImageName; } }
+        /// <summary>
+        /// Jméno ikony pro stav UnChecked u typu <see cref="RibbonItemType.CheckBoxToggle"/>
+        /// </summary>
+        string ITextItem.ImageNameUnChecked { get { return null; } }
+        /// <summary>
+        /// Jméno ikony pro stav Checked u typu <see cref="RibbonItemType.CheckBoxToggle"/>
+        /// </summary>
+        string ITextItem.ImageNameChecked { get { return null; } }
+        /// <summary>
+        /// Styl zobrazení
+        /// </summary>
+        BarItemPaintStyle ITextItem.ItemPaintStyle { get { return BarItemPaintStyle.Standard; } }
+        /// <summary>
+        /// Libovolná data aplikace
+        /// </summary>
+        object ITextItem.Tag { get { return null; } }
+        /// <summary>
+        /// Text ToolTipu
+        /// </summary>
+        string IToolTipItem.ToolTipText { get { return this.TabToolTipText; } }
+        /// <summary>
+        /// Titulek ToolTipu. Pokud nebude naplněn, vezme se text prvku.
+        /// </summary>
+        string IToolTipItem.ToolTipTitle { get { return this.TabToolTipTitle; } }
+        /// <summary>
+        /// Ikona ToolTipu
+        /// </summary>
+        string IToolTipItem.ToolTipIcon { get { return null; } }
+
         #endregion
     }
     #endregion
