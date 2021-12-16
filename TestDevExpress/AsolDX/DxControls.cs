@@ -2113,6 +2113,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         string SelectedIPageIdForce { get; set; }
         /// <summary>
+        /// Prostý index aktuálně vybrané stránky nebo -1 pokud <see cref="IPageCount"/> == 0.
+        /// Lze setovat. Při změně proběhne událost <see cref="SelectedIPageChanging"/> a poté <see cref="SelectedIPageChanged"/>.
+        /// <para/>
+        /// Lze setovat i z threadu na pozadí
+        /// </summary>
+        int SelectedIPageIndex { get; set; }
+        /// <summary>
         /// Volá se při pokusu o aktivaci jiné záložky.
         /// Eventhandler může zavření potlačit nastavením Cancel = true. Pokud to nenastaví, nová stránka bude aktivována.
         /// </summary>
@@ -2121,6 +2128,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Událost volaná při změně aktivní stránky <see cref="SelectedIPage"/>
         /// </summary>
         event EventHandler<TEventArgs<IPageItem>> SelectedIPageChanged;
+        /// <summary>
+        /// Zjistí, zda na zadané relativní souřadnici se nachází nějaké záhlaví, a pokud ano pak najde odpovídající stránku <see cref="IPageItem"/>.
+        /// </summary>
+        /// <param name="point"></param>
+        /// <param name="iPage"></param>
+        /// <returns></returns>
+        bool TryFindTabHeader(Point point, out IPageItem iPage);
         /// <summary>
         /// Smaže všechny stránky
         /// </summary>
@@ -2171,6 +2185,14 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Souřadnice prvku
         /// </summary>
         Rectangle Bounds { get; set; }
+        /// <summary>
+        /// Byl objekt Disposován?
+        /// </summary>
+        bool IsDisposed { get; }
+        /// <summary>
+        /// Disposuj objekt
+        /// </summary>
+        void Dispose();
     }
     /// <summary>
     /// Pozice záhlaví stránky
@@ -2646,6 +2668,17 @@ namespace Noris.Clients.Win.Components.AsolDX
             set { this.SetGuiValue<string>(v => SetGuiPageId(v, true, false), value); } 
         }
         /// <summary>
+        /// Prostý index aktuálně vybrané stránky nebo -1 pokud <see cref="IPageCount"/> == 0.
+        /// Lze setovat. Při změně proběhne událost <see cref="SelectedIPageChanging"/> a poté <see cref="SelectedIPageChanged"/>.
+        /// <para/>
+        /// Lze setovat i z threadu na pozadí
+        /// </summary>
+        public int SelectedIPageIndex
+        {
+            get { return this.GetGuiValue<int>(() => GetGuiIndex()); }
+            set { this.SetGuiValue<int>(v => SetGuiIndex(v, true, false), value); }
+        }
+        /// <summary>
         /// Vrátí aktuální stránku <see cref="IPageItem"/>, provádí se v GUI threadu
         /// </summary>
         /// <returns></returns>
@@ -2677,7 +2710,6 @@ namespace Noris.Clients.Win.Components.AsolDX
                 _SelectedIPageChangedSuppress = isChangedSuppress;
             }
         }
-        
         /// <summary>
         /// Setuje hodnotu SelectedPage na danou stránku, potlačí eventy, provádí se v GUI threadu
         /// </summary>
@@ -2694,6 +2726,37 @@ namespace Noris.Clients.Win.Components.AsolDX
                 _SelectedIPageChangedSuppress = suppressChanged;
 
                 this.SelectedPage = SearchDxPage(pageId);
+            }
+            finally
+            {
+                _SelectedIPageChangingSuppress = isChangingSuppress;
+                _SelectedIPageChangedSuppress = isChangedSuppress;
+            }
+        }
+        /// <summary>
+        /// Vrátí index aktuální stránky, provádí se v GUI threadu
+        /// </summary>
+        /// <returns></returns>
+        private int GetGuiIndex()
+        {
+            return this.SelectedPageIndex;
+        }
+        /// <summary>
+        /// Setuje index aktuální stránky na danou stránku, potlačí eventy, provádí se v GUI threadu
+        /// </summary>
+        /// <param name="index"></param>
+        /// <param name="suppressChanging"></param>
+        /// <param name="suppressChanged"></param>
+        private void SetGuiIndex(int index, bool suppressChanging, bool suppressChanged)
+        {
+            bool isChangingSuppress = _SelectedIPageChangingSuppress;
+            bool isChangedSuppress = _SelectedIPageChangedSuppress;
+            try
+            {
+                _SelectedIPageChangingSuppress = suppressChanging;
+                _SelectedIPageChangedSuppress = suppressChanged;
+
+                this.SelectedPageIndex = index;
             }
             finally
             {
@@ -2752,6 +2815,23 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// když víme že na konci změn nastavíme správnou hodnotu a/nebo vyvoláme explicitně event.
         /// </summary>
         private bool _SelectedIPageChangedSuppress = false;
+        /// <summary>
+        /// Zjistí, zda na zadané relativní souřadnici se nachází nějaké záhlaví, a pokud ano pak najde odpovídající stránku <see cref="IPageItem"/>.
+        /// </summary>
+        /// <param name="point"></param>
+        /// <param name="iPage"></param>
+        /// <returns></returns>
+        public bool TryFindTabHeader(Point point, out IPageItem iPage)
+        {
+            var hit = this.CalcHitInfo(point);
+            if (hit != null && hit is DxTabPage dxPage)
+            {
+                iPage = dxPage.PageData;
+                return (iPage != null);
+            }
+            iPage = null;
+            return false;
+        }
         /// <summary>
         /// Smaže všechny stránky
         /// </summary>
@@ -3563,6 +3643,17 @@ namespace Noris.Clients.Win.Components.AsolDX
             set { this.SetGuiValue<string>(v => SetGuiPageId(v, true, false), value); }
         }
         /// <summary>
+        /// Prostý index aktuálně vybrané stránky nebo -1 pokud <see cref="IPageCount"/> == 0.
+        /// Lze setovat. Při změně proběhne událost <see cref="SelectedIPageChanging"/> a poté <see cref="SelectedIPageChanged"/>.
+        /// <para/>
+        /// Lze setovat i z threadu na pozadí
+        /// </summary>
+        public int SelectedIPageIndex
+        {
+            get { return this.GetGuiValue<int>(() => GetGuiIndex()); }
+            set { this.SetGuiValue<int>(v => SetGuiIndex(v, true, false), value); }
+        }
+        /// <summary>
         /// Vrátí aktuální stránku <see cref="IPageItem"/>, provádí se v GUI threadu
         /// </summary>
         /// <returns></returns>
@@ -3594,7 +3685,6 @@ namespace Noris.Clients.Win.Components.AsolDX
                 _SelectedIPageChangedSuppress = isChangedSuppress;
             }
         }
-
         /// <summary>
         /// Setuje hodnotu SelectedPage na danou stránku, potlačí eventy, provádí se v GUI threadu
         /// </summary>
@@ -3611,6 +3701,37 @@ namespace Noris.Clients.Win.Components.AsolDX
                 _SelectedIPageChangedSuppress = suppressChanged;
 
                 this.SelectedTabPage = SearchDxPage(pageId);
+            }
+            finally
+            {
+                _SelectedIPageChangingSuppress = isChangingSuppress;
+                _SelectedIPageChangedSuppress = isChangedSuppress;
+            }
+        }
+        /// <summary>
+        /// Vrátí index aktuální stránky, provádí se v GUI threadu
+        /// </summary>
+        /// <returns></returns>
+        private int GetGuiIndex()
+        {
+            return this.SelectedTabPageIndex;
+        }
+        /// <summary>
+        /// Setuje index aktuální stránky na danou stránku, potlačí eventy, provádí se v GUI threadu
+        /// </summary>
+        /// <param name="index"></param>
+        /// <param name="suppressChanging"></param>
+        /// <param name="suppressChanged"></param>
+        private void SetGuiIndex(int index, bool suppressChanging, bool suppressChanged)
+        {
+            bool isChangingSuppress = _SelectedIPageChangingSuppress;
+            bool isChangedSuppress = _SelectedIPageChangedSuppress;
+            try
+            {
+                _SelectedIPageChangingSuppress = suppressChanging;
+                _SelectedIPageChangedSuppress = suppressChanged;
+
+                this.SelectedTabPageIndex = index;
             }
             finally
             {
@@ -3669,6 +3790,24 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// když víme že na konci změn nastavíme správnou hodnotu a/nebo vyvoláme explicitně event.
         /// </summary>
         private bool _SelectedIPageChangedSuppress = false;
+        /// <summary>
+        /// Zjistí, zda na zadané relativní souřadnici se nachází nějaké záhlaví, a pokud ano pak najde odpovídající stránku <see cref="IPageItem"/>.
+        /// </summary>
+        /// <param name="point"></param>
+        /// <param name="iPage"></param>
+        /// <returns></returns>
+        public bool TryFindTabHeader(Point point, out IPageItem iPage)
+        {
+            var hit = this.CalcHitInfo(point);
+            if (hit != null && hit.IsValid && hit.Page is DxXtraTabPage dxPage)
+            {
+                iPage = dxPage.PageData;
+                return (iPage != null);
+            }
+            iPage = null;
+            return false;
+        }
+
         /// <summary>
         /// Smaže všechny stránky
         /// </summary>

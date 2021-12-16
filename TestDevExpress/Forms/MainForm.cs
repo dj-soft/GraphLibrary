@@ -1359,6 +1359,7 @@ namespace TestDevExpress.Forms
             DxComponent.CreateDxSimpleButton(x, y1, w1, h1, _SplitTabHeader.Panel1, "Přidej 4 stránky", _TabHeadersAdd4_Click); x += (w1 + 10);
             DxComponent.CreateDxSimpleButton(x, y1, w1, h1, _SplitTabHeader.Panel1, "Smaž a přidej 4", _TabHeadersClearAdd4_Click); x += (w1 + 10);
             DxComponent.CreateDxSimpleButton(x, y1, w1, h1, _SplitTabHeader.Panel1, "ReFill beze změny", _TabHeadersReFill_Click); x += (w1 + 10);
+            DxComponent.CreateDxSimpleButton(x, y1, w1, h1, _SplitTabHeader.Panel1, "Test TryFindTabHeader()", _TabHeadersTryFindHeader_Click); x += (w1 + 10);
             int r1 = x;
 
             x = 10;
@@ -1492,6 +1493,24 @@ namespace TestDevExpress.Forms
             int count = _TabHeaderControl.IPageCount;
             _TabHeaderControl.SetPages(_XtraTabGetPages(count, 0), null);
         }
+        private void _TabHeadersTryFindHeader()
+        {
+            var iTabHeader = _TabHeaderControl;
+            if (iTabHeader is null) return;
+            var mousePoint = Control.MousePosition;
+            if (!(iTabHeader is Control tabControl)) return;
+            var relativePoint = tabControl.PointToClient(mousePoint);
+            if (!tabControl.ClientRectangle.Contains(relativePoint))
+            {
+                _TabHeaderTextAddLine($"Umístěte myš nad záhlaví záložek, neklikejte, a pak klávesnicí (mezerníkem) aktivujte tlačítko s focusem.");
+                return;
+            }
+            bool found = iTabHeader.TryFindTabHeader(relativePoint, out var iPage);
+            if (found)
+                _TabHeaderTextAddLine($"Pro souřadnici {relativePoint} byla nalezena stránka: '{iPage}'.");
+            else
+                _TabHeaderTextAddLine($"Pro souřadnici {relativePoint} nebyla nalezena stránka IPageItem.");
+        }
         private List<IPageItem> _XtraTabGetPages(int count, int? firstIndex = null)
         {
             List<IPageItem> pages = new List<IPageItem>();
@@ -1515,6 +1534,8 @@ namespace TestDevExpress.Forms
         private void _TabHeadersAdd4_Click(object sender, EventArgs e) { _XtraTabAddPages(4); }
         private void _TabHeadersClearAdd4_Click(object sender, EventArgs e) { _TabHeaderClear(); _XtraTabAddPages(4); }
         private void _TabHeadersReFill_Click(object sender, EventArgs e) { _TabHeaderReFill(); }
+        private void _TabHeadersTryFindHeader_Click(object sender, EventArgs e) { _TabHeadersTryFindHeader(); }
+        
 
         private void _TabHeadersDxXtraTabControl_Click(object sender, EventArgs e) { _TabHeaderActivateDxXtraTabControl(); }
         private void _TabHeadersDxTabPaneControl_Click(object sender, EventArgs e) { _TabHeaderActivateDxTabPaneControl(); }
@@ -1645,10 +1666,9 @@ namespace TestDevExpress.Forms
         {
             _TabHeaderTextNumber = 0;
             _TabHeaderTextContent = "";
+            _TabHeaderTextEdit.Text = _TabHeaderTextContent;
             if (line != null)
                 _TabHeaderTextAddLine(line);
-            else
-                _TabHeaderTextEdit.Text = "";
         }
         private void _TabHeaderTextAddLine(string line)
         {

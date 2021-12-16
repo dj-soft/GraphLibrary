@@ -163,27 +163,41 @@ namespace Noris.Clients.Win.Components.AsolDX
             return false;
         }
         /// <summary>
-        /// Metoda vyhledá Child control v this controlu, který se nachází jako nejhlubší Child control na dané souřadnici.
-        /// Souřadnice je dána jako absolutní (v koordinátech Screen).
+        /// Metoda vyhledá takový Child control v this controlu, který se nachází jako nejhlubší Child control na dané souřadnici.
+        /// Souřadnice na vstupu je dána jako absolutní (v koordinátech Screen).
+        /// <para/>
+        /// Volitelně může být zadána podmínka <paramref name="searchForChild"/>: pokud je zadaná, pak hledání najde první výskyt child controlu, který vyhovuje dané podmínce.
+        /// Je tedy možno tímto filtrem najít určitou komponentu na dané souřadnici, když hierarchie controlů je hluboká (Splittery, TabPages, panely, vnořené...),
+        /// a my nehledáme nejhlubší Child control (kterým může být nějaký malý button nebo textový editor), ale hledáme například Grid nebo DataForm.
         /// </summary>
-        /// <param name="control"></param>
-        /// <param name="screenTargetPoint"></param>
-        /// <param name="skip"></param>
-        /// <param name="result"></param>
+        /// <param name="control">V tomto controlu hledání začíná. I on musí být na zadané souřadnici. Pokud on sám vyhovuje filtru <paramref name="searchForChild"/>, bude vrácen.</param>
+        /// <param name="screenTargetPoint">Souřadnice absolutní (Screen)</param>
+        /// <param name="skip">Definice přeskakování controlů (mají li se ignorovat controly neviditelné, disablované anebo transparentní)</param>
+        /// <param name="result">Výstup nalezeného Child controlu</param>
+        /// <param name="searchForChild">Optional Podmínka pro hledání Childu</param>
         /// <returns></returns>
-        public static bool TryGetChildAtPoint(this Control control, Point screenTargetPoint, GetChildAtPointSkip skip, out Control result)
+        public static bool TryGetChildAtPoint(this Control control, Point screenTargetPoint, GetChildAtPointSkip skip, out Control result, Func<Control, bool> searchForChild = null)
         {
             result = null;
+            bool hasFilter = (searchForChild != null);
             for (int i = 0; i < 100; i++)
             {   // Timeout:
                 if (control == null) break;
                 Point controlPoint = control.PointToClient(screenTargetPoint);
                 if (!control.ClientRectangle.Contains(controlPoint)) break;              // Daný bod se nenachází v klientské oblasti daného controlu = bod je mimo: skončíme, v result je poslední platný control (nebo null)
                 result = control;
+                if (hasFilter && searchForChild(control)) return true;                   // Nalezený Child vyhovuje filtru: result je nalezen a vracíme true, a dál do hloubky nehledáme.
+
                 var child = control.GetChildAtPoint(controlPoint, skip);
                 if (child == null || Object.ReferenceEquals(child, control)) break;      // Daný bod je sice v klientské oblasti daného controlu, ale na dané souřadnici není žádný Child control: skončíme, v result je aktuální control
                 control = child;
             }
+
+            // Pokud máme zadaný filtr, ale skončili jsme bez výsledku, pak nemůžeme vrátit nalezený nejhlubší Child,
+            // protože on nevyhovuje danému filtru (to bychom byli bývali skončili už dříve:    return true; ):
+            // Tedy "nenašli jsme nic":
+            if (hasFilter) result = null;
+
             return (result != null);
         }
         /// <summary>
