@@ -3544,29 +3544,38 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="forceAll">true = Povinně zpracovat všechny zprávy. Default = false: negenerují se zprávy pro GETTEXTLENGTH(0x000E) a GETTEXT(0x000D).</param>
         /// <returns></returns>
         public static string GetWinMessage(Message m, bool forceAll = false)
+        { return Instance._GetWinMessage(m, forceAll); }
+        /// <summary>
+        /// Vrátí string odpovídající dané Win Message. Obsahuje název události a její hodnotu.
+        /// Metoda může vrátit NULL pro zprávy, které se mají ignorovat (viz parametr <paramref name="forceAll"/>).
+        /// </summary>
+        /// <param name="m"></param>
+        /// <param name="forceAll">true = Povinně zpracovat všechny zprávy. Default = false: negenerují se zprávy pro GETTEXTLENGTH(0x000E) a GETTEXT(0x000D).</param>
+        /// <returns></returns>
+        private string _GetWinMessage(Message m, bool forceAll = false)
         {
             int code = m.Msg;
-            if (!forceAll && (code == WM.GETTEXTLENGTH || code == WM.GETTEXT)) return null;
+            if (!forceAll && (code == DxWin32.WM.GETTEXTLENGTH || code == DxWin32.WM.GETTEXT)) return null;
 
-            var wmDict = WmDict;
+            var wmDict = _WmDict;
             string name = (wmDict.TryGetValue(m.Msg, out string value) ? value : "???");
             string message = $"{name} (0x{(m.Msg.ToString("X4"))})";
             return message;
         }
         /// <summary>
-        /// Dictionary známých zpráv WinMsg
+        /// Dictionary známých zpráv WinMsg, autoinicializační instanční property
         /// </summary>
-        private static Dictionary<int, string> WmDict { get { if (_WmDict is null) _WmDict = GetWmDict(); return _WmDict; } }
-        private static Dictionary<int, string> _WmDict;
+        private Dictionary<int, string> _WmDict { get { if (__WmDict is null) __WmDict = _GetWmDict(); return __WmDict; } }
+        private Dictionary<int, string> __WmDict;
         /// <summary>
         /// Vygeneruje a vrátí Dictionary obsahující známé WinMSG kódy a jejich názvy.
-        /// Používá konstanty v třídě <see cref="WM"/>.
+        /// Používá konstanty v třídě <see cref="DxWin32.WM"/>.
         /// </summary>
         /// <returns></returns>
-        internal static Dictionary<int, string> GetWmDict()
+        private static Dictionary<int, string> _GetWmDict()
         {
             Dictionary<int, string> wmDict = new Dictionary<int, string>();
-            var fields = typeof(WM).GetFields(System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public);
+            var fields = typeof(DxWin32.WM).GetFields(System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public);
             foreach (var field in fields)
             {
                 string name = field.Name;
@@ -3602,296 +3611,494 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// </summary>
     public class SkinElementColor
     {
+        /// <summary>Jméno celého skinu</summary>
         public static string Control { get { return "Control."; } }
+        /// <summary>Jméno konkrétní barvy konkrétního skinu</summary>
         public static string Control_LabelForeColor { get { return Control + "LabelForeColor"; } }
+        /// <summary>Jméno konkrétní barvy konkrétního skinu</summary>
         public static string Control_TextBoxForeColor { get { return Control + "TextBoxForeColor"; } }
+        /// <summary>Jméno konkrétní barvy konkrétního skinu</summary>
         public static string Control_TextBoxBackColor { get { return Control + "TextBoxBackColor"; } }
+        /// <summary>Jméno konkrétní barvy konkrétního skinu</summary>
         public static string Control_PanelBackColor { get { return Control + "PanelBackColor"; } }
 
+        /// <summary>Jméno celého skinu</summary>
         public static string CommonSkins { get { return "CommonSkins."; } }
+        /// <summary>Jméno konkrétní barvy konkrétního skinu</summary>
         public static string CommonSkins_WindowText { get { return CommonSkins + "WindowText"; } }
+        /// <summary>Jméno konkrétní barvy konkrétního skinu</summary>
         public static string CommonSkins_ReadOnly { get { return CommonSkins + "ReadOnly"; } }
+        /// <summary>Jméno konkrétní barvy konkrétního skinu</summary>
         public static string CommonSkins_Info { get { return CommonSkins + "Info"; } }
+        /// <summary>Jméno konkrétní barvy konkrétního skinu</summary>
         public static string CommonSkins_Success { get { return CommonSkins + "Success"; } }
+        /// <summary>Jméno konkrétní barvy konkrétního skinu</summary>
         public static string CommonSkins_HotTrackedForeColor { get { return CommonSkins + "HotTrackedForeColor"; } }
+        /// <summary>Jméno konkrétní barvy konkrétního skinu</summary>
         public static string CommonSkins_Danger { get { return CommonSkins + "Danger"; } }
+        /// <summary>Jméno konkrétní barvy konkrétního skinu</summary>
         public static string CommonSkins_Control { get { return CommonSkins + "Control"; } }
+        /// <summary>Jméno konkrétní barvy konkrétního skinu</summary>
         public static string CommonSkins_DisabledText { get { return CommonSkins + "DisabledText"; } }
+        /// <summary>Jméno konkrétní barvy konkrétního skinu</summary>
         public static string CommonSkins_Highlight { get { return CommonSkins + "Highlight"; } }
+        /// <summary>Jméno konkrétní barvy konkrétního skinu</summary>
         public static string CommonSkins_Question { get { return CommonSkins + "Question"; } }
+        /// <summary>Jméno konkrétní barvy konkrétního skinu</summary>
         public static string CommonSkins_Primary { get { return CommonSkins + "Primary"; } }
+        /// <summary>Jméno konkrétní barvy konkrétního skinu</summary>
         public static string CommonSkins_HighlightAlternate { get { return CommonSkins + "HighlightAlternate"; } }
+        /// <summary>Jméno konkrétní barvy konkrétního skinu</summary>
         public static string CommonSkins_WarningFill { get { return CommonSkins + "WarningFill"; } }
+        /// <summary>Jméno konkrétní barvy konkrétního skinu</summary>
         public static string CommonSkins_InfoText { get { return CommonSkins + "InfoText"; } }
+        /// <summary>Jméno konkrétní barvy konkrétního skinu</summary>
         public static string CommonSkins_HotTrackedColor { get { return CommonSkins + "HotTrackedColor"; } }
+        /// <summary>Jméno konkrétní barvy konkrétního skinu</summary>
         public static string CommonSkins_DisabledControl { get { return CommonSkins + "DisabledControl"; } }
+        /// <summary>Jméno konkrétní barvy konkrétního skinu</summary>
         public static string CommonSkins_Information { get { return CommonSkins + "Information"; } }
+        /// <summary>Jméno konkrétní barvy konkrétního skinu</summary>
         public static string CommonSkins_HighlightText { get { return CommonSkins + "HighlightText"; } }
+        /// <summary>Jméno konkrétní barvy konkrétního skinu</summary>
         public static string CommonSkins_ControlText { get { return CommonSkins + "ControlText"; } }
+        /// <summary>Jméno konkrétní barvy konkrétního skinu</summary>
         public static string CommonSkins_QuestionFill { get { return CommonSkins + "QuestionFill"; } }
+        /// <summary>Jméno konkrétní barvy konkrétního skinu</summary>
         public static string CommonSkins_Warning { get { return CommonSkins + "Warning"; } }
+        /// <summary>Jméno konkrétní barvy konkrétního skinu</summary>
         public static string CommonSkins_InactiveCaptionText { get { return CommonSkins + "InactiveCaptionText"; } }
+        /// <summary>Jméno konkrétní barvy konkrétního skinu</summary>
         public static string CommonSkins_Window { get { return CommonSkins + "Window"; } }
+        /// <summary>Jméno konkrétní barvy konkrétního skinu</summary>
         public static string CommonSkins_HideSelection { get { return CommonSkins + "HideSelection"; } }
+        /// <summary>Jméno konkrétní barvy konkrétního skinu</summary>
         public static string CommonSkins_Menu { get { return CommonSkins + "Menu"; } }
+        /// <summary>Jméno konkrétní barvy konkrétního skinu</summary>
         public static string CommonSkins_MenuText { get { return CommonSkins + "MenuText"; } }
+        /// <summary>Jméno konkrétní barvy konkrétního skinu</summary>
         public static string CommonSkins_Critical { get { return CommonSkins + "Critical"; } }
 
+        /// <summary>Jméno celého skinu</summary>
         public static string EditorsSkins { get { return "EditorsSkins."; } }
+        /// <summary>Jméno konkrétní barvy konkrétního skinu</summary>
         public static string EditorsSkins_ProgressBarEmptyTextColor { get { return EditorsSkins + "ProgressBarEmptyTextColor"; } }
+        /// <summary>Jméno konkrétní barvy konkrétního skinu</summary>
         public static string EditorsSkins_FluentCalendarWeekDayForeColor { get { return EditorsSkins + "FluentCalendarWeekDayForeColor"; } }
+        /// <summary>Jméno konkrétní barvy konkrétního skinu</summary>
         public static string EditorsSkins_CalendarSelectedCellColor { get { return EditorsSkins + "CalendarSelectedCellColor"; } }
+        /// <summary>Jméno konkrétní barvy konkrétního skinu</summary>
         public static string EditorsSkins_FilterControlValueTextColor { get { return EditorsSkins + "FilterControlValueTextColor"; } }
+        /// <summary>Jméno konkrétní barvy konkrétního skinu</summary>
         public static string EditorsSkins_FilterControlGroupOperatorTextColor { get { return EditorsSkins + "FilterControlGroupOperatorTextColor"; } }
+        /// <summary>Jméno konkrétní barvy konkrétního skinu</summary>
         public static string EditorsSkins_BeakFormBorderColor { get { return EditorsSkins + "BeakFormBorderColor"; } }
+        /// <summary>Jméno konkrétní barvy konkrétního skinu</summary>
         public static string EditorsSkins_HyperLinkTextColor { get { return EditorsSkins + "HyperLinkTextColor"; } }
+        /// <summary>Jméno konkrétní barvy konkrétního skinu</summary>
         public static string EditorsSkins_FilterControlEmptyValueTextColor { get { return EditorsSkins + "FilterControlEmptyValueTextColor"; } }
+        /// <summary>Jméno konkrétní barvy konkrétního skinu</summary>
         public static string EditorsSkins_FluentCalendarSeparatorColor { get { return EditorsSkins + "FluentCalendarSeparatorColor"; } }
+        /// <summary>Jméno konkrétní barvy konkrétního skinu</summary>
         public static string EditorsSkins_ProgressBarFilledTextColor { get { return EditorsSkins + "ProgressBarFilledTextColor"; } }
+        /// <summary>Jméno konkrétní barvy konkrétního skinu</summary>
         public static string EditorsSkins_FluentCalendarBackColor { get { return EditorsSkins + "FluentCalendarBackColor"; } }
+        /// <summary>Jméno konkrétní barvy konkrétního skinu</summary>
         public static string EditorsSkins_FluentCalendarWeekNumberForeColor { get { return EditorsSkins + "FluentCalendarWeekNumberForeColor"; } }
+        /// <summary>Jméno konkrétní barvy konkrétního skinu</summary>
         public static string EditorsSkins_FilterControlFieldNameTextColor { get { return EditorsSkins + "FilterControlFieldNameTextColor"; } }
+        /// <summary>Jméno konkrétní barvy konkrétního skinu</summary>
         public static string EditorsSkins_CalcEditOperationTextColor { get { return EditorsSkins + "CalcEditOperationTextColor"; } }
+        /// <summary>Jméno konkrétní barvy konkrétního skinu</summary>
         public static string EditorsSkins_FilterControlOperatorTextColor { get { return EditorsSkins + "FilterControlOperatorTextColor"; } }
+        /// <summary>Jméno konkrétní barvy konkrétního skinu</summary>
         public static string EditorsSkins_FluentCalendarHolidayCellColor { get { return EditorsSkins + "FluentCalendarHolidayCellColor"; } }
+        /// <summary>Jméno konkrétní barvy konkrétního skinu</summary>
         public static string EditorsSkins_CalcEditDigitTextColor { get { return EditorsSkins + "CalcEditDigitTextColor"; } }
+        /// <summary>Jméno konkrétní barvy konkrétního skinu</summary>
         public static string EditorsSkins_CalendarTodayCellColor { get { return EditorsSkins + "CalendarTodayCellColor"; } }
+        /// <summary>Jméno konkrétní barvy konkrétního skinu</summary>
         public static string EditorsSkins_CalendarInactiveCellColor { get { return EditorsSkins + "CalendarInactiveCellColor"; } }
+        /// <summary>Jméno konkrétní barvy konkrétního skinu</summary>
         public static string EditorsSkins_CalendarNormalCellColor { get { return EditorsSkins + "CalendarNormalCellColor"; } }
+        /// <summary>Jméno konkrétní barvy konkrétního skinu</summary>
         public static string EditorsSkins_CalendarHolidayCellColor { get { return EditorsSkins + "CalendarHolidayCellColor"; } }
 
+        /// <summary>Jméno celého skinu</summary>
         public static string BarSkins { get { return "BarSkins."; } }
+        /// <summary>Jméno konkrétní barvy konkrétního skinu</summary>
         public static string BarSkins_ColorLinkDisabledForeColor { get { return BarSkins + "ColorLinkDisabledForeColor"; } }
 
+        /// <summary>Jméno celého skinu</summary>
         public static string ChartSkins { get { return "ChartSkins."; } }
+        /// <summary>Jméno konkrétní barvy konkrétního skinu</summary>
         public static string ChartSkins_ColorLine3DMarker { get { return ChartSkins + "ColorLine3DMarker"; } }
+        /// <summary>Jméno konkrétní barvy konkrétního skinu</summary>
         public static string ChartSkins_ColorConstantLineTitle { get { return ChartSkins + "ColorConstantLineTitle"; } }
+        /// <summary>Jméno konkrétní barvy konkrétního skinu</summary>
         public static string ChartSkins_ColorArea3DMarker { get { return ChartSkins + "ColorArea3DMarker"; } }
+        /// <summary>Jméno konkrétní barvy konkrétního skinu</summary>
         public static string ChartSkins_ColorConstantLine { get { return ChartSkins + "ColorConstantLine"; } }
+        /// <summary>Jméno konkrétní barvy konkrétního skinu</summary>
         public static string ChartSkins_ColorChartTitle { get { return ChartSkins + "ColorChartTitle"; } }
 
+        /// <summary>Jméno celého skinu</summary>
         public static string DashboardSkins { get { return "DashboardSkins."; } }
+        /// <summary>Jméno konkrétní barvy konkrétního skinu</summary>
         public static string DashboardSkins_ChartPaneRemoveButton { get { return DashboardSkins + "ChartPaneRemoveButton"; } }
+        /// <summary>Jméno konkrétní barvy konkrétního skinu</summary>
         public static string DashboardSkins_BarAxisColor { get { return DashboardSkins + "BarAxisColor"; } }
 
+        /// <summary>Jméno celého skinu</summary>
         public static string DockingSkins { get { return "DockingSkins."; } }
+        /// <summary>Jméno konkrétní barvy konkrétního skinu</summary>
         public static string DockingSkins_DocumentGroupHeaderTextColor { get { return DockingSkins + "DocumentGroupHeaderTextColor"; } }
+        /// <summary>Jméno konkrétní barvy konkrétního skinu</summary>
         public static string DockingSkins_DocumentGroupHeaderTextColorDisabled { get { return DockingSkins + "DocumentGroupHeaderTextColorDisabled"; } }
+        /// <summary>Jméno konkrétní barvy konkrétního skinu</summary>
         public static string DockingSkins_DocumentGroupHeaderTextColorHot { get { return DockingSkins + "DocumentGroupHeaderTextColorHot"; } }
+        /// <summary>Jméno konkrétní barvy konkrétního skinu</summary>
         public static string DockingSkins_TabHeaderTextColorActive { get { return DockingSkins + "TabHeaderTextColorActive"; } }
+        /// <summary>Jméno konkrétní barvy konkrétního skinu</summary>
         public static string DockingSkins_TabHeaderTextColorDisabled { get { return DockingSkins + "TabHeaderTextColorDisabled"; } }
+        /// <summary>Jméno konkrétní barvy konkrétního skinu</summary>
         public static string DockingSkins_TabHeaderTextColorHot { get { return DockingSkins + "TabHeaderTextColorHot"; } }
+        /// <summary>Jméno konkrétní barvy konkrétního skinu</summary>
         public static string DockingSkins_DocumentGroupHeaderTextColorActive { get { return DockingSkins + "DocumentGroupHeaderTextColorActive"; } }
+        /// <summary>Jméno konkrétní barvy konkrétního skinu</summary>
         public static string DockingSkins_TabHeaderTextColor { get { return DockingSkins + "TabHeaderTextColor"; } }
+        /// <summary>Jméno konkrétní barvy konkrétního skinu</summary>
         public static string DockingSkins_DocumentGroupHeaderTextColorGroupInactive { get { return DockingSkins + "DocumentGroupHeaderTextColorGroupInactive"; } }
 
+        /// <summary>Jméno celého skinu</summary>
         public static string FormSkins { get { return "FormSkins."; } }
+        /// <summary>Jméno konkrétní barvy konkrétního skinu</summary>
         public static string FormSkins_TextShadowColor { get { return FormSkins + "TextShadowColor"; } }
+        /// <summary>Jméno konkrétní barvy konkrétního skinu</summary>
         public static string FormSkins_InactiveColor { get { return FormSkins + "InactiveColor"; } }
 
+        /// <summary>Jméno celého skinu</summary>
         public static string RibbonSkins { get { return "RibbonSkins."; } }
+        /// <summary>Jméno konkrétní barvy konkrétního skinu</summary>
         public static string RibbonSkins_ForeColorDisabledInCaptionQuickAccessToolbar { get { return RibbonSkins + "ForeColorDisabledInCaptionQuickAccessToolbar"; } }
+        /// <summary>Jméno konkrétní barvy konkrétního skinu</summary>
         public static string RibbonSkins_ForeColorDisabledInBottomQuickAccessToolbar { get { return RibbonSkins + "ForeColorDisabledInBottomQuickAccessToolbar"; } }
+        /// <summary>Jméno konkrétní barvy konkrétního skinu</summary>
         public static string RibbonSkins_ForeColorDisabledInCaptionQuickAccessToolbarInActive2010 { get { return RibbonSkins + "ForeColorDisabledInCaptionQuickAccessToolbarInActive2010"; } }
+        /// <summary>Jméno konkrétní barvy konkrétního skinu</summary>
         public static string RibbonSkins_ButtonDisabled { get { return RibbonSkins + "ButtonDisabled"; } }
+        /// <summary>Jméno konkrétní barvy konkrétního skinu</summary>
         public static string RibbonSkins_ForeColorInBackstageViewTitle { get { return RibbonSkins + "ForeColorInBackstageViewTitle"; } }
+        /// <summary>Jméno konkrétní barvy konkrétního skinu</summary>
         public static string RibbonSkins_ForeColorDisabledInTopQuickAccessToolbar { get { return RibbonSkins + "ForeColorDisabledInTopQuickAccessToolbar"; } }
+        /// <summary>Jméno konkrétní barvy konkrétního skinu</summary>
         public static string RibbonSkins_ForeColorDisabledInCaptionQuickAccessToolbar2010 { get { return RibbonSkins + "ForeColorDisabledInCaptionQuickAccessToolbar2010"; } }
+        /// <summary>Jméno konkrétní barvy konkrétního skinu</summary>
         public static string RibbonSkins_EditorBackground { get { return RibbonSkins + "EditorBackground"; } }
+        /// <summary>Jméno konkrétní barvy konkrétního skinu</summary>
         public static string RibbonSkins_RadialMenuColor { get { return RibbonSkins + "RadialMenuColor"; } }
+        /// <summary>Jméno konkrétní barvy konkrétního skinu</summary>
         public static string RibbonSkins_ForeColorDisabledInPageHeader { get { return RibbonSkins + "ForeColorDisabledInPageHeader"; } }
+        /// <summary>Jméno konkrétní barvy konkrétního skinu</summary>
         public static string RibbonSkins_ForeColorInCaptionQuickAccessToolbar2010 { get { return RibbonSkins + "ForeColorInCaptionQuickAccessToolbar2010"; } }
 
+        /// <summary>Jméno celého skinu</summary>
         public static string TabSkins { get { return "TabHeaderTextColorActive"; } }
+        /// <summary>Jméno konkrétní barvy konkrétního skinu</summary>
         public static string TabSkins_TabHeaderTextColorActive { get { return TabSkins + "TabHeaderTextColorActive"; } }
+        /// <summary>Jméno konkrétní barvy konkrétního skinu</summary>
         public static string TabSkins_TabHeaderButtonTextColorHot { get { return TabSkins + "TabHeaderButtonTextColorHot"; } }
+        /// <summary>Jméno konkrétní barvy konkrétního skinu</summary>
         public static string TabSkins_TabHeaderButtonTextColor { get { return TabSkins + "TabHeaderButtonTextColor"; } }
+        /// <summary>Jméno konkrétní barvy konkrétního skinu</summary>
         public static string TabSkins_TabHeaderTextColorDisabled { get { return TabSkins + "TabHeaderTextColorDisabled"; } }
+        /// <summary>Jméno konkrétní barvy konkrétního skinu</summary>
         public static string TabSkins_TabHeaderTextColor { get { return TabSkins + "TabHeaderTextColor"; } }
+        /// <summary>Jméno konkrétní barvy konkrétního skinu</summary>
         public static string TabSkins_TabHeaderTextColorHot { get { return TabSkins + "TabHeaderTextColorHot"; } }
 
+        /// <summary>Jméno konkrétní systémové barvy</summary>
         public static string SystemColorActiveBorder { get { return SystemColors.ActiveBorder.Name; } }
+        /// <summary>Jméno konkrétní systémové barvy</summary>
         public static string SystemColorActiveCaption { get { return SystemColors.ActiveCaption.Name; } }
+        /// <summary>Jméno konkrétní systémové barvy</summary>
         public static string SystemColorActiveCaptionText { get { return SystemColors.ActiveCaptionText.Name; } }
+        /// <summary>Jméno konkrétní systémové barvy</summary>
         public static string SystemColorAppWorkspace { get { return SystemColors.AppWorkspace.Name; } }
+        /// <summary>Jméno konkrétní systémové barvy</summary>
         public static string SystemColorButtonFace { get { return SystemColors.ButtonFace.Name; } }
+        /// <summary>Jméno konkrétní systémové barvy</summary>
         public static string SystemColorButtonHighlight { get { return SystemColors.ButtonHighlight.Name; } }
+        /// <summary>Jméno konkrétní systémové barvy</summary>
         public static string SystemColorButtonShadow { get { return SystemColors.ButtonShadow.Name; } }
+        /// <summary>Jméno konkrétní systémové barvy</summary>
         public static string SystemColorControl { get { return SystemColors.Control.Name; } }
+        /// <summary>Jméno konkrétní systémové barvy</summary>
         public static string SystemColorControlDark { get { return SystemColors.ControlDark.Name; } }
+        /// <summary>Jméno konkrétní systémové barvy</summary>
         public static string SystemColorControlDarkDark { get { return SystemColors.ControlDarkDark.Name; } }
+        /// <summary>Jméno konkrétní systémové barvy</summary>
         public static string SystemColorControlLight { get { return SystemColors.ControlLight.Name; } }
+        /// <summary>Jméno konkrétní systémové barvy</summary>
         public static string SystemColorControlLightLight { get { return SystemColors.ControlLightLight.Name; } }
+        /// <summary>Jméno konkrétní systémové barvy</summary>
         public static string SystemColorControlText { get { return SystemColors.ControlText.Name; } }
+        /// <summary>Jméno konkrétní systémové barvy</summary>
         public static string SystemColorDesktop { get { return SystemColors.Desktop.Name; } }
+        /// <summary>Jméno konkrétní systémové barvy</summary>
         public static string SystemColorGradientActiveCaption { get { return SystemColors.GradientActiveCaption.Name; } }
+        /// <summary>Jméno konkrétní systémové barvy</summary>
         public static string SystemColorGradientInactiveCaption { get { return SystemColors.GradientInactiveCaption.Name; } }
+        /// <summary>Jméno konkrétní systémové barvy</summary>
         public static string SystemColorGrayText { get { return SystemColors.GrayText.Name; } }
+        /// <summary>Jméno konkrétní systémové barvy</summary>
         public static string SystemColorHighlight { get { return SystemColors.Highlight.Name; } }
+        /// <summary>Jméno konkrétní systémové barvy</summary>
         public static string SystemColorHighlightText { get { return SystemColors.HighlightText.Name; } }
+        /// <summary>Jméno konkrétní systémové barvy</summary>
         public static string SystemColorHotTrack { get { return SystemColors.HotTrack.Name; } }
+        /// <summary>Jméno konkrétní systémové barvy</summary>
         public static string SystemColorInactiveBorder { get { return SystemColors.InactiveBorder.Name; } }
+        /// <summary>Jméno konkrétní systémové barvy</summary>
         public static string SystemColorInactiveCaption { get { return SystemColors.InactiveCaption.Name; } }
+        /// <summary>Jméno konkrétní systémové barvy</summary>
         public static string SystemColorInactiveCaptionText { get { return SystemColors.InactiveCaptionText.Name; } }
+        /// <summary>Jméno konkrétní systémové barvy</summary>
         public static string SystemColorInfo { get { return SystemColors.Info.Name; } }
+        /// <summary>Jméno konkrétní systémové barvy</summary>
         public static string SystemColorInfoText { get { return SystemColors.InfoText.Name; } }
+        /// <summary>Jméno konkrétní systémové barvy</summary>
         public static string SystemColorMenu { get { return SystemColors.Menu.Name; } }
+        /// <summary>Jméno konkrétní systémové barvy</summary>
         public static string SystemColorMenuBar { get { return SystemColors.MenuBar.Name; } }
+        /// <summary>Jméno konkrétní systémové barvy</summary>
         public static string SystemColorMenuHighlight { get { return SystemColors.MenuHighlight.Name; } }
+        /// <summary>Jméno konkrétní systémové barvy</summary>
         public static string SystemColorMenuText { get { return SystemColors.MenuText.Name; } }
+        /// <summary>Jméno konkrétní systémové barvy</summary>
         public static string SystemColorScrollBar { get { return SystemColors.ScrollBar.Name; } }
+        /// <summary>Jméno konkrétní systémové barvy</summary>
         public static string SystemColorWindow { get { return SystemColors.Window.Name; } }
+        /// <summary>Jméno konkrétní systémové barvy</summary>
         public static string SystemColorWindowFrame { get { return SystemColors.WindowFrame.Name; } }
+        /// <summary>Jméno konkrétní systémové barvy</summary>
         public static string SystemColorWindowText { get { return SystemColors.WindowText.Name; } }
-
     }
     #endregion
     #endregion
-    #region MsgCode
+    #region enum MsgCode : kódy textů pro lokalizaci
     /// <summary>
     /// Knihovna standardních hlášek k lokalizaci
     /// </summary>
     public enum MsgCode
     {
+        /// <summary>Žádná hláška / nedefinovaná</summary>
         None = 0,
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("SYSTÉM")]
         RibbonAppHomeText,
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Systémový prvek, nelze jej odebrat")]
         RibbonDirectQatItem,
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Přidat na panel nástrojů Rychlý přístup")]
         RibbonAddToQat,
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Odebrat z panelu nástrojů Rychlý přístup")]
         RibbonRemoveFromQat,
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Zobrazit panel nástrojů Rychlý přístup nad pásem karet")]
         RibbonShowQatTop,
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Zobrazit panel nástrojů Rychlý přístup pod pásem karet")]
         RibbonShowQatDown,
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Upravit obsah panelu nástrojů Rychlý přístup")]
         RibbonShowManager,
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Zmenšit")]
         RibbonMinimizeQat,
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Nastavení oblíbených položek")]
         RibbonQatManagerTitle,
 
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Chyba")]
         DialogFormTitleError,
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Došlo k chybě")]
         DialogFormTitlePrefix,
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Ctrl+C: zkopírovat")]
         DialogFormCtrlCText,
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Ctrl+C: zkopíruje všechny informace z okna do schránky Windows")]
         DialogFormCtrlCToolTip,
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Text zkopírován")]
         DialogFormCtrlCInfo,
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Více informací")]
         DialogFormAltMsgButtonText,
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Zobrazí větší okno s více informacemi")]
         DialogFormAltMsgButtonToolTip,
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Méně informací")]
         DialogFormStdMsgButtonText,
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Zobrazí základní okno s méně informacemi")]
         DialogFormStdMsgButtonToolTip,
 
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("prefix")]
         DialogFormResultPrefix,
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("OK")]
         DialogFormResultOk,
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Ano")]
         DialogFormResultYes,
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Ne")]
         DialogFormResultNo,
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Zrušit")]
         DialogFormResultAbort,
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Znovu")]
         DialogFormResultRetry,
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Ignoruj")]
         DialogFormResultIgnore,
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Storno")]
         DialogFormResultCancel,
 
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Orientace")]
         LayoutPanelContextMenuTitle,
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Vedle sebe")]
         LayoutPanelHorizontalText,
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Panely vlevo a vpravo, oddělovač je svislý")]
         LayoutPanelHorizontalToolTip,
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Pod sebou")]
         LayoutPanelVerticalText,
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Panely nahoře a dole, oddělovač je vodorovný")]
         LayoutPanelVerticalToolTip,
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Zavřít")]
         MenuCloseText,
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Zavře nabídku bez provedení akce")]
         MenuCloseToolTip,
 
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Smazat")]
         DxFilterBoxClearTipTitle,
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Zruší zadaný filtr")]
         DxFilterBoxClearTipText,
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Obsahuje")]
         DxFilterOperatorContainsText,
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Vybere ty položky, které obsahují zadaný text")]
         DxFilterOperatorContainsTip,
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Neobsahuje")]
         DxFilterOperatorDoesNotContainText,
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Vybere ty položky, které neobsahují zadaný text")]
         DxFilterOperatorDoesNotContainTip,
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Začíná")]
         DxFilterOperatorStartWithText,
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Vybere ty položky, jejichž text začíná zadaným textem")]
         DxFilterOperatorStartWithTip,
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Nezačíná")]
         DxFilterOperatorDoesNotStartWithText,
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Vybere ty položky, jejichž text začíná jinak, než je zadáno")]
         DxFilterOperatorDoesNotStartWithTip,
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Končí")]
         DxFilterOperatorEndWithText,
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Vybere ty položky, jejichž text končí zadaným textem")]
         DxFilterOperatorEndWithTip,
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Nekončí")]
         DxFilterOperatorDoesNotEndWithText,
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Vybere ty položky, jejichž text končí jinak, než je zadáno")]
         DxFilterOperatorDoesNotEndWithTip,
 
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Podobá se")]
         DxFilterOperatorLikeText,
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("?")]
         DxFilterOperatorLikeTip,
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Nepodobá se")]
         DxFilterOperatorNotLikeText,
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("?")]
         DxFilterOperatorNotLikeTip,
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Odpovídá")]
         DxFilterOperatorMatchText,
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("?")]
         DxFilterOperatorMatchTip,
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Neodpovídá")]
         DxFilterOperatorDoesNotMatchText,
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("?")]
         DxFilterOperatorDoesNotMatchTip,
 
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Menší než")]
         DxFilterOperatorLessThanText,
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Hodnoty menší než zadaná hodnota")]
         DxFilterOperatorLessThanTip,
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Menší nebo rovno")]
         DxFilterOperatorLessThanOrEqualToText,
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Hodnoty menší nebo rovny jako zadaná hodnota")]
         DxFilterOperatorLessThanOrEqualToTip,
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Rovno")]
         DxFilterOperatorEqualsText,
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Hodnoty rovné dané hodnotě")]
         DxFilterOperatorEqualsTip,
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Nerovno")]
         DxFilterOperatorNotEqualsText,
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Hodnoty jiné než je daná hodnota")]
         DxFilterOperatorNotEqualsTip,
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Větší nebo rovno")]
         DxFilterOperatorGreaterThanOrEqualToText,
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Hodnoty větší nebo rovny jako zadaná hodnota")]
         DxFilterOperatorGreaterThanOrEqualToTip,
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Větší než")]
         DxFilterOperatorGreaterThanText,
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Hodnoty větší než zadaná hodnota")]
         DxFilterOperatorGreaterThanTip
        
@@ -3970,18 +4177,19 @@ namespace Noris.Clients.Win.Components.AsolDX
         void ApplicationIdle();
     }
     #endregion
-    #region SystemAdapter - přístupový bod k adapteru na lokální systém
+    #region class SystemAdapter - přístupový bod k adapteru na aktuální aplikační systém
     /// <summary>
-    /// Tato třída reprezentuje adapter na systémové metody.
+    /// Tato třída reprezentuje adapter na systémové metody aktuálního aplikačního systému.
     /// Prvky této třídy jsou volány z různých míst komponent AsolDX a jejich úkolem je převolat odpovídající metody konkrétního systému.
-    /// K tomu účelu si zdejší třída vytvoří interní instanci konkrétního systému (zde NephriteAdapter).
+    /// K tomu účelu si zdejší třída vytvoří interní instanci konkrétního systému (zde NephriteAdapter / TestAdapter).
     /// <para/>
-    /// Komponenty volají statické metody <see cref="SystemAdapter"/>, ty uvnitř převolají odpovídající svoje instanční abstraktní metody, 
-    /// které jsou implementované v konkrétním potomku adapteru.
+    /// Komponenty AsolDX tedy volají statické metody této třídy <see cref="SystemAdapter"/>, 
+    /// ty potom uvnitř převolají odpovídající metody, které jsou fyzicky realizované 
+    /// v konkrétním adapteru implementujícím <see cref="ISystemAdapter"/>.
     /// </summary>
     internal static class SystemAdapter
     {
-        #region Zásuvný modul pro konkrétní systém
+        #region Zásuvný modul pro konkrétní systém = instance implementující ISystemAdapter
         /// <summary>
         /// Aktuální adapter
         /// </summary>
@@ -4239,6 +4447,9 @@ namespace Noris.Clients.Win.Components.AsolDX
     #endregion
     #endregion
     #region class Algebra
+    /// <summary>
+    /// Algebraické třídy, rovnice
+    /// </summary>
     public class Algebra
     {
         /// <summary>
