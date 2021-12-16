@@ -3213,9 +3213,8 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             this.Name = pageData.ItemId;
             this.Caption = (hasText ? pageData.Text : "");
-            // this.ToolTip = pageData.ToolTipText;
             this.SuperTip = DxComponent.CreateDxSuperTip(pageData);
-
+            
             if (hasIcon)
                 DxComponent.ApplyImage(ImageOptions, pageData.ImageName, sizeType: ResourceImageSizeType.Medium);
             else
@@ -3223,10 +3222,6 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             pageData.PageControl = this;
         }
-        /// <summary>
-        /// Informace o aktuálním View
-        /// </summary>
-        internal DevExpress.XtraBars.Navigation.NavigationPageViewInfo CurrentViewInfo { get { return this.CreateViewInfo(); } }
     }
     #endregion
     #region enum DxTabPaneTransitionType
@@ -4161,8 +4156,6 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             Name = pageData.ItemId;
             Text = (hasText ? pageData.Text : "");
-            //TooltipTitle = pageData.ToolTipTitle;
-            //Tooltip = pageData.ToolTipText;
             SuperTip = DxComponent.CreateDxSuperTip(pageData);
 
             this.ShowCloseButton = (pageData.CloseButtonVisible ? DefaultBoolean.True : DefaultBoolean.False);
