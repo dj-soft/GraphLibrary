@@ -27,6 +27,55 @@ using DevExpress.XtraEditors.ViewInfo;
 
 namespace Noris.Clients.Win.Components.AsolDX
 {
+    #region ControlFactory : generuje instance controlů
+    /// <summary>
+    /// Vytvoří a vrátí TabPage určitého typu
+    /// </summary>
+    public class ControlFactory
+    {
+        /// <summary>
+        /// Vytvoří a vrátí TabPage požadovaného typu
+        /// </summary>
+        /// <param name="controlType"></param>
+        /// <returns></returns>
+        public static Control CreateControl(FactoryControlType controlType)
+        {
+            switch (controlType)
+            {
+                case FactoryControlType.DxTabPane:
+                    return new DxTabPane();
+                case FactoryControlType.DxXtraTabControl:
+                    return new DxXtraTabControl();
+                default:
+                    //if (DxComponent.IsDebuggerActive)
+                    //    return new DxXtraTabControl();
+                    return new DxTabPane();
+            }
+        }
+    }
+    /// <summary>
+    /// Typ controlu, který má vrátit factory <see cref="ControlFactory"/>
+    /// </summary>
+    public enum FactoryControlType
+    {
+        /// <summary>
+        /// Nic
+        /// </summary>
+        None,
+        /// <summary>
+        /// Výchozí typ, obecně Control implementující <see cref="AsolDX.ITabHeaderControl"/>
+        /// </summary>
+        ITabHeaderControl,
+        /// <summary>
+        /// Explicitně určený <see cref="AsolDX.DxTabPane"/>
+        /// </summary>
+        DxTabPane,
+        /// <summary>
+        /// Explicitně určený <see cref="AsolDX.DxXtraTabControl"/>
+        /// </summary>
+        DxXtraTabControl
+    }
+    #endregion
     #region DxStdForm
     /// <summary>
     /// Základní formulář bez Ribbonu a StatusBaru
@@ -2018,55 +2067,6 @@ namespace Noris.Clients.Win.Components.AsolDX
     public class DxSplitContainerControl : DevExpress.XtraEditors.SplitContainerControl
     { }
     #endregion
-    #region ControlFactory : generuje instance controlů
-    /// <summary>
-    /// Vytvoří a vrátí TabPage určitého typu
-    /// </summary>
-    public class ControlFactory
-    {
-        /// <summary>
-        /// Vytvoří a vrátí TabPage požadovaného typu
-        /// </summary>
-        /// <param name="controlType"></param>
-        /// <returns></returns>
-        public static Control CreateControl(FactoryControlType controlType)
-        {
-            switch (controlType)
-            {
-                case FactoryControlType.DxTabPane:
-                    return new DxTabPane();
-                case FactoryControlType.DxXtraTabControl:
-                    return new DxXtraTabControl();
-                default:
-                    if (DxComponent.IsDebuggerActive)
-                        return new DxXtraTabControl();
-                    return new DxTabPane();
-            }
-        }
-    }
-    /// <summary>
-    /// Typ controlu, který má vrátit factory <see cref="ControlFactory"/>
-    /// </summary>
-    public enum FactoryControlType
-    {
-        /// <summary>
-        /// Nic
-        /// </summary>
-        None,
-        /// <summary>
-        /// Výchozí typ, obecně Control implementující <see cref="AsolDX.ITabHeaderControl"/>
-        /// </summary>
-        ITabHeaderControl,
-        /// <summary>
-        /// Explicitně určený <see cref="AsolDX.DxTabPane"/>
-        /// </summary>
-        DxTabPane,
-        /// <summary>
-        /// Explicitně určený <see cref="AsolDX.DxXtraTabControl"/>
-        /// </summary>
-        DxXtraTabControl
-    }
-    #endregion
     #region ITabHeaderControl : interface definující obecný control se záložkami
     /// <summary>
     /// Rozhraní na obecný TabHeader control
@@ -2362,8 +2362,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private void RemoveEvents()
         {
-            this.TransitionManager.BeforeTransitionStarts -= TransitionManager_BeforeTransitionStarts;
-            this.TransitionManager.AfterTransitionEnds -= TransitionManager_AfterTransitionEnds;
+            if (this.IsDisposed) return;
+            if (this.TransitionManager != null)
+            {
+                this.TransitionManager.BeforeTransitionStarts -= TransitionManager_BeforeTransitionStarts;
+                this.TransitionManager.AfterTransitionEnds -= TransitionManager_AfterTransitionEnds;
+            }
             this.SelectedPageChanging -= _SelectedPageChanging;
             this.SelectedPageChanged -= _SelectedPageChanged;
         }
@@ -3220,7 +3224,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                     {   // Komponenta dokázala určit správnou výšku - zapamatujeme si ji:
                         _HeaderHeightLastValid = headerHeight;
                         // a přidáme 1px pro okraj:
-                        headerHeight += 1;
+                        headerHeight += 3;
                     }
                     else
                     {   // Komponenta NEdokázala určit správnou výšku - možná si ji pamatujeme offline od posledně:
@@ -3529,6 +3533,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private void RemoveEvents()
         {
+            if (this.IsDisposed) return;
             this.SelectedPageChanging -= _SelectedPageChanging;
             this.SelectedPageChanged -= _SelectedPageChanged;
             this.PageClosing -= _PageClosing;
@@ -4218,7 +4223,7 @@ namespace Noris.Clients.Win.Components.AsolDX
 
                     // Kontroly, korekce, náhrady:
                     if (headerHeight >= minHeight)
-                        headerHeight += (isTop ? 1 : 2);             // Máme výšku určenou: přidáme 1px pro okraj
+                        headerHeight += (isTop ? 1 : 1);             // Máme výšku určenou: přidáme 1px pro okraj
                     else if (headerSizeOld.HasValue)
                         headerHeight = headerSizeOld.Value.Height;   // Výška je nyní určena špatně, ale máme info od posledně
                     else

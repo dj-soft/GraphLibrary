@@ -231,6 +231,39 @@ namespace Noris.Clients.Win.Components.AsolDX
                 _ScanAllChildControls(child, scanAction, nextlevel, maxLevel);
         }
         /// <summary>
+        /// Metoda prochází všechny Child controly včetně this controlu, a pro každý control provede danou akci.
+        /// Prochází maximálně 42 (nebo <paramref name="maxLevel"/>) úrovní vnoření.
+        /// <para/>
+        /// Pokud je dodána scan funkce, pak vrací true = scanovat i do hloubky (=Child controly daného controlu) / false = do hloubky už nejdeme
+        /// </summary>
+        /// <param name="control"></param>
+        /// <param name="scanAction"></param>
+        /// <param name="maxLevel"></param>
+        public static void ScanAllChildControls(this Control control, Func<Control, bool> scanAction, int maxLevel = 42)
+        {
+            if (scanAction != null)
+                _ScanAllChildControls(control, scanAction, 0, maxLevel);
+        }
+        /// <summary>
+        /// Scanuje (<paramref name="scanAction"/>) daný prvek <paramref name="control"/>,
+        /// a zpracuje i jeho Child controly, pokud daná level <paramref name="level"/> nepřekračuje <paramref name="maxLevel"/>.
+        /// </summary>
+        /// <param name="control"></param>
+        /// <param name="scanAction"></param>
+        /// <param name="level"></param>
+        /// <param name="maxLevel"></param>
+        private static void _ScanAllChildControls(Control control, Func<Control, bool> scanAction, int level, int maxLevel)
+        {
+            if (control is null) return;
+            bool result = scanAction(control);
+            if (!result) return;
+            var childs = control.Controls;
+            if (level >= maxLevel || childs is null) return;
+            int nextlevel = level + 1;
+            foreach (Control child in childs)
+                _ScanAllChildControls(child, scanAction, nextlevel, maxLevel);
+        }
+        /// <summary>
         /// Vrátí nejbližšího Parenta požadovaného typu pro this control.
         /// </summary>
         /// <typeparam name="T"></typeparam>
