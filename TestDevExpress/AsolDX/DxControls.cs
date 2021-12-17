@@ -3470,7 +3470,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             ClosePageButtonShowMode = DevExpress.XtraTab.ClosePageButtonShowMode.InActiveTabPageHeaderAndOnMouseHover;   // Podporuje zavírací křížek na konkrétní stránce
             CustomHeaderButtons.Clear();
             HeaderAutoFill = DevExpress.Utils.DefaultBoolean.False;
-            HeaderButtons = DevExpress.XtraTab.TabButtons.None;       // DevExpress.XtraTab.TabButtons.Close | DevExpress.XtraTab.TabButtons.Prev | DevExpress.XtraTab.TabButtons.Next;
             HeaderButtonsShowMode = DevExpress.XtraTab.TabButtonShowMode.WhenNeeded;     // Podporuje zavírací křížek na konkrétní stránce
             MultiLine = DevExpress.Utils.DefaultBoolean.True;
             PageImagePosition = DevExpress.XtraTab.TabPageImagePosition.Near;
@@ -3672,7 +3671,16 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Možnost zobrazit více řádek záhlaví
         /// </summary>
-        public bool PageHeaderMultiLine { get { return (this.MultiLine == DefaultBoolean.True); } set { this.MultiLine = (value ? DefaultBoolean.True : DefaultBoolean.False); } }
+        public bool PageHeaderMultiLine 
+        {
+            get { return (this.MultiLine == DefaultBoolean.True); } 
+            set 
+            {
+                this.MultiLine = (value ? DefaultBoolean.True : DefaultBoolean.False);
+                // Když je možno zobrazit více řádků, nepotřebujeme buttony Prev a Next; a naopak:
+                this.HeaderButtons = (value ? DevExpress.XtraTab.TabButtons.None : DevExpress.XtraTab.TabButtons.Prev | DevExpress.XtraTab.TabButtons.Next);
+            }
+        }
         #endregion
         #region Pages
         /// <summary>

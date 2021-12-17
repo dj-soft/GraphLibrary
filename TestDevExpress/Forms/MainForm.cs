@@ -1449,7 +1449,7 @@ namespace TestDevExpress.Forms
                 tabHeader.IPageClosing += TabHeader_IPageClosing;
                 tabHeader.IPageRemoved += TabHeader_IPageRemoved;
 
-                tabHeader.PageHeaderMultiLine = true;
+                // tabHeader.PageHeaderMultiLine = true;
                 _TabHeaderControl = tabHeader;
                 _SplitTabHeader.Panel2.Controls.Add(control);
 
