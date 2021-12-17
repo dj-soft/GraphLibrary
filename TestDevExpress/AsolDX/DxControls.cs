@@ -107,7 +107,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             return base.ProcessCmdKey(ref msg, keyData);
         }
         /// <summary>
-        /// Najde ovládací prvek odpovídající aktuální klávese. Hledá rekurzivně.
+        /// Najde ovládací prvek odpovídající aktuální klávese. Hledá rekurzivně. Hledá pouze prvky, které jsou Enabled a Visible.
         /// Hledá prvek implementující <see cref="IHotKeyControl"/> s klávesou <see cref="IHotKeyControl.HotKey"/> odpovídající aktuální klávese <paramref name="keyData"/>.
         /// Pokud najde, provede jeho <see cref="IHotKeyControl.PerformClick"/> a vrátí true.
         /// </summary>
@@ -2029,13 +2029,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="controlType"></param>
         /// <returns></returns>
-        public static Control CreateTabHeaderControl(TabHeaderControlType controlType)
+        public static Control CreateControl(FactoryControlType controlType)
         {
             switch (controlType)
             {
-                case TabHeaderControlType.DxTabPane:
+                case FactoryControlType.DxTabPane:
                     return new DxTabPane();
-                case TabHeaderControlType.DxXtraTabControl:
+                case FactoryControlType.DxXtraTabControl:
                     return new DxXtraTabControl();
                 default:
                     if (DxComponent.IsDebuggerActive)
@@ -2047,7 +2047,7 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// <summary>
     /// Typ controlu, který má vrátit factory <see cref="ControlFactory"/>
     /// </summary>
-    public enum TabHeaderControlType
+    public enum FactoryControlType
     {
         /// <summary>
         /// Nic
@@ -2077,6 +2077,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Pozice záhlaví a jeho vlastnosti
         /// </summary>
         DxPageHeaderPosition PageHeaderPosition { get; set; }
+        /// <summary>
+        /// Umístění záložek na začátek / střed / konec
+        /// </summary>
+        AlignContentToSide PageHeaderAlignment { get; set; }
         /// <summary>
         /// Možnost zobrazit více řádek záhlaví
         /// </summary>
@@ -2113,6 +2117,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         string SelectedIPageIdForce { get; set; }
         /// <summary>
+        /// <see cref="ITextItem.ItemId"/> aktuálně vybrané stránky nebo null pokud <see cref="IPageCount"/> == 0.
+        /// Lze setovat. Při změně NEPROBĚHNE žádná událost, ani <see cref="SelectedIPageChanging"/>, ani <see cref="SelectedIPageChanged"/>.
+        /// <para/>
+        /// Lze setovat i z threadu na pozadí
+        /// </summary>
+        string SelectedIPageIdSilent { get; set; }
+        /// <summary>
         /// Prostý index aktuálně vybrané stránky nebo -1 pokud <see cref="IPageCount"/> == 0.
         /// Lze setovat. Při změně proběhne událost <see cref="SelectedIPageChanging"/> a poté <see cref="SelectedIPageChanged"/>.
         /// <para/>
@@ -2131,10 +2142,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Zjistí, zda na zadané relativní souřadnici se nachází nějaké záhlaví, a pokud ano pak najde odpovídající stránku <see cref="IPageItem"/>.
         /// </summary>
-        /// <param name="point"></param>
-        /// <param name="iPage"></param>
+        /// <param name="relativePoint">Souřadnice relativní k this controlu</param>
+        /// <param name="iPage">Výstup = nalezená stránka<see cref="IPageItem"/></param>
         /// <returns></returns>
-        bool TryFindTabHeader(Point point, out IPageItem iPage);
+        bool TryFindTabHeader(Point relativePoint, out IPageItem iPage);
         /// <summary>
         /// Smaže všechny stránky
         /// </summary>
@@ -2276,6 +2287,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         public DxTabPane()
         {
             InitProperties();
+            InitTab();
             InitEvents();
             DxComponent.RegisterListener(this);
         }
@@ -2288,28 +2300,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             DxComponent.UnregisterListener(this);
             this.RemoveEvents();
             base.Dispose(disposing);
-        }
-        /// <summary>
-        /// Aktivuje vlastní eventy
-        /// </summary>
-        private void InitEvents()
-        {
-            this.TransitionManager.BeforeTransitionStarts += TransitionManager_BeforeTransitionStarts;
-            this.TransitionManager.AfterTransitionEnds += TransitionManager_AfterTransitionEnds;
-            this.SelectedPageChanging += _SelectedPageChanging;
-            this.SelectedPageChanged += _SelectedPageChanged;
-            this.ClientSizeChanged += _ClientSizeChanged;
-            this.SizeChanged += _SizeChanged;
-        }
-        /// <summary>
-        /// Deaktivuje vlastní eventy
-        /// </summary>
-        private void RemoveEvents()
-        {
-            this.TransitionManager.BeforeTransitionStarts -= TransitionManager_BeforeTransitionStarts;
-            this.TransitionManager.AfterTransitionEnds -= TransitionManager_AfterTransitionEnds;
-            this.SelectedPageChanging -= _SelectedPageChanging;
-            this.SelectedPageChanged -= _SelectedPageChanged;
         }
         /// <summary>
         /// Nastaví defaultní vlastnosti
@@ -2340,6 +2330,38 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.AppearanceButton.Pressed.FontSizeDelta = 2;
             this.AppearanceButton.Pressed.FontStyleDelta = FontStyle.Bold;
             this.AppearanceButton.Pressed.TextOptions.HAlignment = DevExpress.Utils.HorzAlignment.Center;
+
+            this.PageHeaderPosition = DxPageHeaderPosition.Top;
+            this.PageHeaderAlignment = AlignContentToSide.Begin;
+        }
+        /// <summary>
+        /// Vloží jednu výchozí záložku, aby Control mohl správně detekovat svoje rozměry.
+        /// </summary>
+        protected void InitTab()
+        {
+            // nepomáhá :  this.AddPage("", "");
+        }
+        /// <summary>
+        /// Aktivuje vlastní eventy
+        /// </summary>
+        private void InitEvents()
+        {
+            this.TransitionManager.BeforeTransitionStarts += TransitionManager_BeforeTransitionStarts;
+            this.TransitionManager.AfterTransitionEnds += TransitionManager_AfterTransitionEnds;
+            this.SelectedPageChanging += _SelectedPageChanging;
+            this.SelectedPageChanged += _SelectedPageChanged;
+            this.ClientSizeChanged += _ClientSizeChanged;
+            this.SizeChanged += _SizeChanged;
+        }
+        /// <summary>
+        /// Deaktivuje vlastní eventy
+        /// </summary>
+        private void RemoveEvents()
+        {
+            this.TransitionManager.BeforeTransitionStarts -= TransitionManager_BeforeTransitionStarts;
+            this.TransitionManager.AfterTransitionEnds -= TransitionManager_AfterTransitionEnds;
+            this.SelectedPageChanging -= _SelectedPageChanging;
+            this.SelectedPageChanged -= _SelectedPageChanged;
         }
 
         // Pořadí eventů v konstuktoru:
@@ -2448,6 +2470,22 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 _CheckHeaderSizeChangeForce();
             }
+        }
+        /// <summary>
+        /// Umístění záložek na začátek / střed / konec
+        /// </summary>
+        public AlignContentToSide PageHeaderAlignment { get { return _PageHeaderAlignment; } set { ApplyHeaderAlignment(value); } }
+        private AlignContentToSide _PageHeaderAlignment;
+        /// <summary>
+        /// Aplikuje zarovnání záhlaví
+        /// </summary>
+        /// <param name="headerAlignment"></param>
+        protected void ApplyHeaderAlignment(AlignContentToSide headerAlignment)
+        {
+            this._PageHeaderAlignment = headerAlignment;
+            this.TabAlignment = (headerAlignment == AlignContentToSide.Begin ? Alignment.Near :
+                                (headerAlignment == AlignContentToSide.Center ? Alignment.Center :
+                                (headerAlignment == AlignContentToSide.End ? Alignment.Far : Alignment.Near)));
         }
         /// <summary>
         /// Možnost zobrazit více řádek záhlaví.
@@ -2668,6 +2706,17 @@ namespace Noris.Clients.Win.Components.AsolDX
             set { this.SetGuiValue<string>(v => SetGuiPageId(v, true, false), value); } 
         }
         /// <summary>
+        /// <see cref="ITextItem.ItemId"/> aktuálně vybrané stránky nebo null pokud <see cref="IPageCount"/> == 0.
+        /// Lze setovat. Při změně NEPROBĚHNE žádná událost, ani <see cref="SelectedIPageChanging"/>, ani <see cref="SelectedIPageChanged"/>.
+        /// <para/>
+        /// Lze setovat i z threadu na pozadí
+        /// </summary>
+        public string SelectedIPageIdSilent
+        {
+            get { return this.GetGuiValue<string>(() => GetGuiIPage()?.ItemId); }
+            set { this.SetGuiValue<string>(v => SetGuiPageId(v, true, true), value); }
+        }
+        /// <summary>
         /// Prostý index aktuálně vybrané stránky nebo -1 pokud <see cref="IPageCount"/> == 0.
         /// Lze setovat. Při změně proběhne událost <see cref="SelectedIPageChanging"/> a poté <see cref="SelectedIPageChanged"/>.
         /// <para/>
@@ -2818,12 +2867,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Zjistí, zda na zadané relativní souřadnici se nachází nějaké záhlaví, a pokud ano pak najde odpovídající stránku <see cref="IPageItem"/>.
         /// </summary>
-        /// <param name="point"></param>
-        /// <param name="iPage"></param>
+        /// <param name="relativePoint">Souřadnice relativní k this controlu</param>
+        /// <param name="iPage">Výstup = nalezená stránka<see cref="IPageItem"/></param>
         /// <returns></returns>
-        public bool TryFindTabHeader(Point point, out IPageItem iPage)
+        public bool TryFindTabHeader(Point relativePoint, out IPageItem iPage)
         {
-            var hit = this.CalcHitInfo(point);
+            var hit = this.CalcHitInfo(relativePoint);
             if (hit != null && hit is DxTabPage dxPage)
             {
                 iPage = dxPage.PageData;
@@ -3383,8 +3432,19 @@ namespace Noris.Clients.Win.Components.AsolDX
         public DxXtraTabControl()
         {
             this.InitProperties();
+            InitTab();
             this.InitEvents();
-             DxComponent.RegisterListener(this);
+            DxComponent.RegisterListener(this);
+        }
+        /// <summary>
+        /// Dispose
+        /// </summary>
+        /// <param name="disposing"></param>
+        protected override void Dispose(bool disposing)
+        {
+            DxComponent.UnregisterListener(this);
+            this.RemoveEvents();
+            base.Dispose(disposing);
         }
         /// <summary>
         /// Inicializace výchozích vlastností
@@ -3403,8 +3463,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             MultiLine = DevExpress.Utils.DefaultBoolean.True;
             PageImagePosition = DevExpress.XtraTab.TabPageImagePosition.Near;
 
-            PageHeaderPosition = DxPageHeaderPosition.Default;
-
             // Požadavky designu na vzhled buttonů:
             AppearancePage.Header.FontSizeDelta = 2;
             AppearancePage.Header.FontStyleDelta = FontStyle.Regular;
@@ -3413,7 +3471,15 @@ namespace Noris.Clients.Win.Components.AsolDX
             AppearancePage.HeaderActive.FontSizeDelta = 2;
             AppearancePage.HeaderActive.FontStyleDelta = FontStyle.Bold;
 
-            SetHeaderHAlignment(HorzAlignment.Center);
+            PageHeaderPosition = DxPageHeaderPosition.Default;
+            PageHeaderAlignment = AlignContentToSide.Begin;
+        }
+        /// <summary>
+        /// Vloží jednu výchozí záložku, aby Control mohl správně detekovat svoje rozměry.
+        /// </summary>
+        protected void InitTab()
+        {
+            // nepomáhá :  this.TabPages.Add();
         }
         /// <summary>
         /// Nastaví zarovnání textu v záhlaví. Je vhodné nastavit podle pozice záhlaví.
@@ -3509,16 +3575,6 @@ namespace Noris.Clients.Win.Components.AsolDX
                     this.RemovePage(dxPage.PageData);
             }
         }
-        /// <summary>
-        /// Dispose
-        /// </summary>
-        /// <param name="disposing"></param>
-        protected override void Dispose(bool disposing)
-        {
-            DxComponent.UnregisterListener(this);
-            this.RemoveEvents();
-            base.Dispose(disposing);
-        }
         #endregion
         #region Public properties
         /// <summary>
@@ -3586,6 +3642,20 @@ namespace Noris.Clients.Win.Components.AsolDX
             return DevExpress.XtraTab.TabOrientation.Horizontal;
         }
         /// <summary>
+        /// Umístění záložek na začátek / střed / konec
+        /// </summary>
+        public AlignContentToSide PageHeaderAlignment { get { return _PageHeaderAlignment; } set { ApplyHeaderAlignment(value); } }
+        private AlignContentToSide _PageHeaderAlignment;
+        /// <summary>
+        /// Aplikuje zarovnání záhlaví
+        /// </summary>
+        /// <param name="headerAlignment"></param>
+        protected void ApplyHeaderAlignment(AlignContentToSide headerAlignment)
+        {
+            // Zatím nevím jak nastavit jinou hodnotu:
+            this._PageHeaderAlignment = AlignContentToSide.Begin;
+        }
+        /// <summary>
         /// Možnost zobrazit více řádek záhlaví
         /// </summary>
         public bool PageHeaderMultiLine { get { return (this.MultiLine == DefaultBoolean.True); } set { this.MultiLine = (value ? DefaultBoolean.True : DefaultBoolean.False); } }
@@ -3641,6 +3711,17 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             get { return this.GetGuiValue<string>(() => GetGuiIPage()?.ItemId); }
             set { this.SetGuiValue<string>(v => SetGuiPageId(v, true, false), value); }
+        }
+        /// <summary>
+        /// <see cref="ITextItem.ItemId"/> aktuálně vybrané stránky nebo null pokud <see cref="IPageCount"/> == 0.
+        /// Lze setovat. Při změně NEPROBĚHNE žádná událost, ani <see cref="SelectedIPageChanging"/>, ani <see cref="SelectedIPageChanged"/>.
+        /// <para/>
+        /// Lze setovat i z threadu na pozadí
+        /// </summary>
+        public string SelectedIPageIdSilent
+        {
+            get { return this.GetGuiValue<string>(() => GetGuiIPage()?.ItemId); }
+            set { this.SetGuiValue<string>(v => SetGuiPageId(v, true, true), value); }
         }
         /// <summary>
         /// Prostý index aktuálně vybrané stránky nebo -1 pokud <see cref="IPageCount"/> == 0.
@@ -3793,12 +3874,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Zjistí, zda na zadané relativní souřadnici se nachází nějaké záhlaví, a pokud ano pak najde odpovídající stránku <see cref="IPageItem"/>.
         /// </summary>
-        /// <param name="point"></param>
-        /// <param name="iPage"></param>
+        /// <param name="relativePoint">Souřadnice relativní k this controlu</param>
+        /// <param name="iPage">Výstup = nalezená stránka<see cref="IPageItem"/></param>
         /// <returns></returns>
-        public bool TryFindTabHeader(Point point, out IPageItem iPage)
+        public bool TryFindTabHeader(Point relativePoint, out IPageItem iPage)
         {
-            var hit = this.CalcHitInfo(point);
+            var hit = this.CalcHitInfo(relativePoint);
             if (hit != null && hit.IsValid && hit.Page is DxXtraTabPage dxPage)
             {
                 iPage = dxPage.PageData;
@@ -7933,6 +8014,40 @@ namespace Noris.Clients.Win.Components.AsolDX
     public class DataPageItem : DataTextItem, IPageItem
     {
         /// <summary>
+        /// Identifikátor stránky z pohledu aplikace.
+        /// Tato hodnota může být prázdná nebo null, a v tom stavu i zůstane.
+        /// Tato hodnota se posílá aplikaci, když aplikace chce identifikovat objekt stránky. Aplikaci nikdy neposíláme ItemId!
+        /// Tato hodnota, pokud je neprázdná, se ukládá i do <see cref="ITextItem.ItemId"/>, protože pak slouží jako reálná identifikace objektu stránky.
+        /// Pokud je ale <see cref="PageId"/> prázdné, pak ji do <see cref="ITextItem.ItemId"/> neukládáme, a defaultní implementace hodnoty <see cref="ITextItem.ItemId"/>
+        /// ji naplní unikátním GUIDem, který slouží jako identifikátor stránky uvnitř komponenty.
+        /// <para/>
+        /// Tedy shrnutí:
+        /// 1. Klíč stránky z aplikace uložíme vždy do <see cref="PageId"/>, a pokud není prázdný pak i do <see cref="ITextItem.ItemId"/>;
+        /// (toto setování zajišťuje přímo tato třída <see cref="DataPageItem"/> při setování hodnoty do této property <see cref="PageId"/>!)
+        /// 2. S komponentou komunikujeme přes <see cref="ITextItem.ItemId"/>;
+        /// 3. S aplikací komunikujeme přes <see cref="PageId"/>.
+        /// Do aplikace nikdy neposílám <see cref="ITextItem.ItemId"/>, protože tam může být privátní GUID, který aplikace nezná.
+        /// </summary>
+        public virtual string PageId 
+        { 
+            get { return _PageId; }
+            set
+            {
+                _PageId = value;
+                if (!String.IsNullOrEmpty(value))
+                    base.ItemId = value;
+            }
+        }
+        /// <summary>
+        /// Stringová identifikace prvku, musí být jednoznačná v rámci nadřízeného prvku
+        /// </summary>
+        public override string ItemId 
+        {
+            get { return base.ItemId; }     // Pro čtení platí pravidla ItemId: čteme reálnou hodnotu uloženou v _ItemId, nebo (pro null) vygenerujeme new GUID a ten pak používáme.
+            set { this.PageId = value; }    // Pro zápis platí pravidla PageId: setujeme jen neprázdnou hodnotu.
+        }
+        private string _PageId;
+        /// <summary>
         /// Zobrazit Close button?
         /// </summary>
         public virtual bool CloseButtonVisible { get; set; }
@@ -7947,6 +8062,20 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// </summary>
     public interface IPageItem : ITextItem
     {
+        /// <summary>
+        /// Identifikátor stránky z pohledu aplikace.
+        /// Tato hodnota může být prázdná nebo null, a v tom stavu i zůstane.
+        /// Tato hodnota se posílá aplikaci, když aplikace chce identifikovat objekt stránky. Aplikaci nikdy neposíláme ItemId!
+        /// Tato hodnota, pokud je neprázdná, se ukládá i do <see cref="ITextItem.ItemId"/>, protože pak slouží jako reálná identifikace objektu stránky.
+        /// Pokud je ale <see cref="PageId"/> prázdné, pak ji do <see cref="ITextItem.ItemId"/> neukládáme, a defaultní implementace hodnoty <see cref="ITextItem.ItemId"/>
+        /// ji naplní unikátním GUIDem, který slouží jako identifikátor stránky uvnitř komponenty.
+        /// <para/>
+        /// Tedy shrnutí:
+        /// 1. Klíč stránky z aplikace uložíme vždy do <see cref="PageId"/>, a pokud není prázdný pak i do <see cref="ITextItem.ItemId"/>;
+        /// 2. S komponentou komunikujeme přes <see cref="ITextItem.ItemId"/>;
+        /// 3. S aplikací komunikujeme přes <see cref="PageId"/>
+        /// </summary>
+        string PageId { get; }
         /// <summary>
         /// Zobrazit Close button?
         /// </summary>
@@ -8208,7 +8337,13 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// </summary>
     public interface IHotKeyControl
     {
+        /// <summary>
+        /// Definice klávesy
+        /// </summary>
         Keys HotKey { get; }
+        /// <summary>
+        /// Byla detekována zdejší <see cref="HotKey"/>, má být provedena odpovídající akce
+        /// </summary>
         void PerformClick();
     }
     #endregion
@@ -8276,6 +8411,24 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Dodatková informace
         /// </summary>
         Info
+    }
+    /// <summary>
+    /// Druh zarovnání obsahu v jedné ose (X, Y, číslená...)
+    /// </summary>
+    public enum AlignContentToSide
+    {
+        /// <summary>
+        /// K začátku (Top, Left, 0)
+        /// </summary>
+        Begin,
+        /// <summary>
+        /// Na střed
+        /// </summary>
+        Center,
+        /// <summary>
+        /// Ke konci (Bottom, Right, nekonečno)
+        /// </summary>
+        End
     }
     /// <summary>
     /// Vyjádření názvu hrany na objektu Rectangle (Horní, Vpravo, Dolní, Vlevo).

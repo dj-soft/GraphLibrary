@@ -2666,24 +2666,6 @@ namespace Noris.Clients.Win.Components
         Shield
     }
     /// <summary>
-    /// Druh zarovnání obsahu v jedné ose (X, Y, číslená...)
-    /// </summary>
-    public enum AlignContentToSide
-    {
-        /// <summary>
-        /// K začátku (Top, Left, 0)
-        /// </summary>
-        Begin,
-        /// <summary>
-        /// Na střed
-        /// </summary>
-        Center,
-        /// <summary>
-        /// Ke konci (Bottom, Right, nekonečno)
-        /// </summary>
-        End
-    }
-    /// <summary>
     /// Zobrazit vstupní políčko pro zadání textu? Jakého typu...
     /// </summary>
     public enum ShowInputTextType

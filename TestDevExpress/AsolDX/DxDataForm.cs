@@ -3851,6 +3851,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         #endregion
         #region IPageItem
         /// <summary>
+        /// PageId stránky
+        /// </summary>
+        string IPageItem.PageId { get { return this.TabName; } }
+        /// <summary>
         /// Zobrazit Close button?
         /// </summary>
         bool IPageItem.CloseButtonVisible { get { return false; } }

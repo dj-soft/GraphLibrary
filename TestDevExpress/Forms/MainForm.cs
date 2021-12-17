@@ -1424,7 +1424,7 @@ namespace TestDevExpress.Forms
         {
             _TabHeaderPositionButtonBold(1);
             _TabHeaderTextReset("Create component DxXtraTab");
-            _TabHeaderActivate(TabHeaderControlType.DxXtraTabControl);
+            _TabHeaderActivate(FactoryControlType.DxXtraTabControl);
             _TabHeaderControlXtra.Appearance.FontStyleDelta = FontStyle.Bold;
             _TabHeaderControlPane.Appearance.FontStyleDelta = FontStyle.Regular;
         }
@@ -1432,14 +1432,14 @@ namespace TestDevExpress.Forms
         {
             _TabHeaderPositionButtonBold(1);
             _TabHeaderTextReset("Create component DxTabPane");
-            _TabHeaderActivate(TabHeaderControlType.DxTabPane);
+            _TabHeaderActivate(FactoryControlType.DxTabPane);
             _TabHeaderControlPane.Appearance.FontStyleDelta = FontStyle.Bold;
             _TabHeaderControlXtra.Appearance.FontStyleDelta = FontStyle.Regular;
         }
-        private void _TabHeaderActivate(TabHeaderControlType controlType)
+        private void _TabHeaderActivate(FactoryControlType controlType)
         {
             _TabHeaderDeActivate();
-            var control = ControlFactory.CreateTabHeaderControl(controlType);
+            var control = ControlFactory.CreateControl(controlType);
             if (control is ITabHeaderControl tabHeader)
             {
                 tabHeader.PageHeaderPosition = DxPageHeaderPosition.Default;
@@ -1453,7 +1453,7 @@ namespace TestDevExpress.Forms
                 _TabHeaderControl = tabHeader;
                 _SplitTabHeader.Panel2.Controls.Add(control);
 
-                _XtraTabAddPages(5);
+                _XtraTabAddPages(5, true);
             }
         }
         private void _TabHeaderDeActivate()
@@ -1478,12 +1478,15 @@ namespace TestDevExpress.Forms
 
             _TabHeaderControl.ClearPages();
         }
-        private void _XtraTabAddPages(int count)
+        private void _XtraTabAddPages(int count, bool setPages = false)
         {
             _TabHeaderTextAddLine($"Run AddPages({count})");
             if (_TabHeaderControl is null) return;
 
-            _TabHeaderControl.AddPages(_XtraTabGetPages(count));
+            if (setPages)
+                _TabHeaderControl.SetPages(_XtraTabGetPages(count, 0), null);
+            else
+                _TabHeaderControl.AddPages(_XtraTabGetPages(count));
         }
         private void _TabHeaderReFill()
         {
@@ -1573,7 +1576,7 @@ namespace TestDevExpress.Forms
                 }
                 e.Cancel = true;
             }
-            _TabHeaderTextAddLine($"Event SelectedIPageChanging({e.Item})" + suffix);
+            _TabHeaderTextAddLine($"Event SelectedIPageChanging, current page: {_TabHeaderControl.SelectedIPage}, new page: {e.Item}" + suffix);
         }
         private void _TabHeaders_SelectPageDelay(string itemId)
         {
@@ -1585,7 +1588,7 @@ namespace TestDevExpress.Forms
         }
         private void _TabHeaders_SelectedIPageChanged(object sender, TEventArgs<IPageItem> e)
         {
-            _TabHeaderTextAddLine($"Event SelectedIPageChanged({e.Item})");
+            _TabHeaderTextAddLine($"Event SelectedIPageChanged, current page: {_TabHeaderControl.SelectedIPage}, new page: {e.Item}");
         }
         private void TabHeader_IPageClosing(object sender, TEventCancelArgs<IPageItem> e)
         {
@@ -2710,9 +2713,9 @@ namespace TestDevExpress.Forms
             dialogArgs.PrepareButtons(DialogResult.OK);
             dialogArgs.MessageText = "Jistě, pane ministře.";
             dialogArgs.AutoCenterSmallText = true;
-            //  dialogArgs.MessageHorizontalAlignment = NWC.AlignContentToSide.Center;
-            //  dialogArgs.MessageVerticalAlignment = NWC.AlignContentToSide.Center;
-            dialogArgs.ButtonsAlignment = NWC.AlignContentToSide.Center;
+            //  dialogArgs.MessageHorizontalAlignment = AlignContentToSide.Center;
+            //  dialogArgs.MessageVerticalAlignment = AlignContentToSide.Center;
+            dialogArgs.ButtonsAlignment = AlignContentToSide.Center;
             dialogArgs.StatusBarVisible = false;
 
             DialogForm(dialogArgs);
@@ -2725,9 +2728,9 @@ namespace TestDevExpress.Forms
             dialogArgs.PrepareButtons(DialogResult.OK);
             dialogArgs.MessageText = "Tento text má být automaticky vystředěn, pokud je v jednom řádku a má dostatek místa.";
             dialogArgs.AutoCenterSmallText = true;
-            //  dialogArgs.MessageHorizontalAlignment = NWC.AlignContentToSide.Center;
-            //  dialogArgs.MessageVerticalAlignment = NWC.AlignContentToSide.Center;
-            dialogArgs.ButtonsAlignment = NWC.AlignContentToSide.Center;
+            //  dialogArgs.MessageHorizontalAlignment = AlignContentToSide.Center;
+            //  dialogArgs.MessageVerticalAlignment = AlignContentToSide.Center;
+            dialogArgs.ButtonsAlignment = AlignContentToSide.Center;
             dialogArgs.StatusBarVisible = true;
 
             DialogForm(dialogArgs);
@@ -2777,12 +2780,12 @@ namespace TestDevExpress.Forms
             dialogArgs.StatusBarVisible = true;
             dialogArgs.SystemIcon = NWC.DialogSystemIcon.Question;
             dialogArgs.MessageText = "Přejete si další chod k obědu?" + Environment.NewLine + Random.GetSentences(4, 8, 3, 12);
-            dialogArgs.MessageHorizontalAlignment = NWC.AlignContentToSide.End;
-            dialogArgs.MessageVerticalAlignment = NWC.AlignContentToSide.Center;
+            dialogArgs.MessageHorizontalAlignment = AlignContentToSide.End;
+            dialogArgs.MessageVerticalAlignment = AlignContentToSide.Center;
             dialogArgs.PrepareButtons(DialogResult.Yes, DialogResult.No);
             dialogArgs.Buttons[1].IsInitialButton = true;
             dialogArgs.ButtonPanelDock = DockStyle.Bottom;
-            dialogArgs.ButtonsAlignment = NWC.AlignContentToSide.End;
+            dialogArgs.ButtonsAlignment = AlignContentToSide.End;
             dialogArgs.StatusBarCtrlCText = "Ctrl+C = Zkopíruj";
             DialogForm(dialogArgs);
         }
@@ -2806,11 +2809,11 @@ namespace TestDevExpress.Forms
             dialogArgs.StatusBarVisible = true;
             dialogArgs.SystemIcon = NWC.DialogSystemIcon.Exclamation;
             dialogArgs.MessageText = "Došlo k chybě. Můžete zrušit celou akci, nebo zopakovat pokus, anebo tuto chybu ignorovat a pokračovat dál..." + Environment.NewLine + Random.GetSentences(4, 9, 8, 20);
-            dialogArgs.MessageHorizontalAlignment = NWC.AlignContentToSide.End;
-            dialogArgs.MessageVerticalAlignment = NWC.AlignContentToSide.End;
+            dialogArgs.MessageHorizontalAlignment = AlignContentToSide.End;
+            dialogArgs.MessageVerticalAlignment = AlignContentToSide.End;
             dialogArgs.PrepareButtons(DialogResult.Abort, DialogResult.Retry, DialogResult.Ignore);
             dialogArgs.ButtonPanelDock = DockStyle.Right;
-            dialogArgs.ButtonsAlignment = NWC.AlignContentToSide.End;
+            dialogArgs.ButtonsAlignment = AlignContentToSide.End;
             dialogArgs.StatusBarCtrlCVisible = true;
 
             DialogForm(dialogArgs);
@@ -2824,7 +2827,7 @@ namespace TestDevExpress.Forms
             dialogArgs.MessageText = "Došlo k chybě. Můžete zrušit celou akci, nebo zopakovat pokus, anebo tuto chybu ignorovat a pokračovat dál..." + Environment.NewLine + Random.GetSentences(4, 9, 8, 20);
             dialogArgs.PrepareButtons(DialogResult.Abort, DialogResult.Retry, DialogResult.Ignore);
             dialogArgs.ButtonPanelDock = DockStyle.Right;
-            dialogArgs.ButtonsAlignment = NWC.AlignContentToSide.Begin;
+            dialogArgs.ButtonsAlignment = AlignContentToSide.Begin;
             dialogArgs.StatusBarCtrlCVisible = true;
 
             DialogForm(dialogArgs);
@@ -2862,7 +2865,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
             dialogArgs.SystemIcon = NWC.DialogSystemIcon.Information;
             dialogArgs.MessageText = Random.Text1;
             dialogArgs.PrepareButtons(DialogResult.OK, DialogResult.No);
-            dialogArgs.ButtonsAlignment = NWC.AlignContentToSide.Center;
+            dialogArgs.ButtonsAlignment = AlignContentToSide.Center;
             dialogArgs.ButtonHeight = 26;
 
             DialogForm(dialogArgs);
@@ -2874,7 +2877,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
             dialogArgs.Icon = DxComponent.CreateBitmapImage("Images/Actions48/help-hint(48).png");
             dialogArgs.MessageText = "Více tlačítek";
             dialogArgs.StatusBarCtrlCText = "Ctrl+C = COPY";
-            dialogArgs.ButtonsAlignment = NWC.AlignContentToSide.End;
+            dialogArgs.ButtonsAlignment = AlignContentToSide.End;
             dialogArgs.AddButton(new NWC.DialogArgs.ButtonInfo() { Text = "Zkopíruj do schránky", ResultValue = "COPY", StatusBarText = "Zobrazený text zkopíruje do schránky Windows, pak můžete Ctrl+V text vložit jinam.", Image = DxComponent.CreateBitmapImage("Images/Actions24/edit-copy-3(24).png") });
             dialogArgs.AddButton(new NWC.DialogArgs.ButtonInfo() { Text = "Odešli mailem", ResultValue = "MAIL", StatusBarText = "Otevře novou mailovou zprávu, a do ní vloží tuto hlášku.", Image = DxComponent.CreateBitmapImage("Images/Actions24/document-import(24).png") });
             dialogArgs.AddButton(new NWC.DialogArgs.ButtonInfo() { Text = "Otevři v prohlížeči", ResultValue = "VIEW", StatusBarText = "Otevře hlášku v internetovém prohlížeči. Netuším, jak.", Image = DxComponent.CreateBitmapImage("Images/Actions24/go-home-9(24)") });
@@ -2895,7 +2898,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
             dialogArgs.InputTextValue = "Moje přání je...";
             dialogArgs.InputTextStatusInfo = "Bez obav zadejte svoje přání, ale pozor - může se splnit!";
             dialogArgs.StatusBarCtrlCText = "Ctrl+C = COPY";
-            dialogArgs.ButtonsAlignment = NWC.AlignContentToSide.Begin;
+            dialogArgs.ButtonsAlignment = AlignContentToSide.Begin;
             dialogArgs.PrepareButtons(DialogResult.OK, DialogResult.Cancel);
             dialogArgs.DefaultResultValue = DialogResult.Cancel;
 
@@ -2911,7 +2914,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
             dialogArgs.InputTextStatusInfo = "Bez obav zadejte svoje přání, ale pozor - může se splnit!";
             dialogArgs.InputTextSize = new Size(300, 70);
             dialogArgs.StatusBarCtrlCText = "Ctrl+C = COPY";
-            dialogArgs.ButtonsAlignment = NWC.AlignContentToSide.Begin;
+            dialogArgs.ButtonsAlignment = AlignContentToSide.Begin;
             dialogArgs.PrepareButtons(DialogResult.OK, DialogResult.Cancel);
             dialogArgs.DefaultResultValue = DialogResult.Cancel;
 
@@ -2924,7 +2927,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
             dialogArgs.SystemIcon = NWC.DialogSystemIcon.Information;
             dialogArgs.PrepareButtons(DialogResult.OK);
             dialogArgs.MessageText = "Jistě, pane premiére.";
-            dialogArgs.ButtonsAlignment = NWC.AlignContentToSide.Center;
+            dialogArgs.ButtonsAlignment = AlignContentToSide.Center;
 
             DialogFormNonModal(dialogArgs);
         }
