@@ -201,6 +201,36 @@ namespace Noris.Clients.Win.Components.AsolDX
             return (result != null);
         }
         /// <summary>
+        /// Metoda prochází všechny Child controly včetně this controlu, a pro každý control provede danou akci.
+        /// Prochází maximálně 42 (nebo <paramref name="maxLevel"/>) úrovní vnoření.
+        /// </summary>
+        /// <param name="control"></param>
+        /// <param name="scanAction"></param>
+        /// <param name="maxLevel"></param>
+        public static void ScanAllChildControls(this Control control, Action<Control> scanAction, int maxLevel = 42)
+        {
+            if (scanAction != null)
+                _ScanAllChildControls(control, scanAction, 0, maxLevel);
+        }
+        /// <summary>
+        /// Scanuje (<paramref name="scanAction"/>) daný prvek <paramref name="control"/>,
+        /// a zpracuje i jeho Child controly, pokud daná level <paramref name="level"/> nepřekračuje <paramref name="maxLevel"/>.
+        /// </summary>
+        /// <param name="control"></param>
+        /// <param name="scanAction"></param>
+        /// <param name="level"></param>
+        /// <param name="maxLevel"></param>
+        private static void _ScanAllChildControls(Control control, Action<Control> scanAction, int level, int maxLevel)
+        {
+            if (control is null) return;
+            scanAction(control);
+            var childs = control.Controls;
+            if (level >= maxLevel || childs is null) return;
+            int nextlevel = level + 1;
+            foreach (Control child in childs)
+                _ScanAllChildControls(child, scanAction, nextlevel, maxLevel);
+        }
+        /// <summary>
         /// Vrátí nejbližšího Parenta požadovaného typu pro this control.
         /// </summary>
         /// <typeparam name="T"></typeparam>

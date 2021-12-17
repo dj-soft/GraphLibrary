@@ -2177,6 +2177,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         event EventHandler<TEventArgs<IPageItem>> IPageRemoved;
         /// <summary>
+        /// Aktuálně prověří velikost záhlaví <see cref="HeaderHeight"/> a/nebo <see cref="HeaderWidth"/>.
+        /// </summary>
+        void CheckHeaderSize();
+        /// <summary>
         /// Aktuální výška záhlaví. 
         /// Je nastavováno pouze pro záhlaví umístěné Top nebo Bottom.
         /// </summary>
@@ -3244,6 +3248,10 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
         }
         /// <summary>
+        /// Aktuálně prověří velikost záhlaví <see cref="HeaderHeight"/> a/nebo <see cref="HeaderWidth"/>.
+        /// </summary>
+        public void CheckHeaderSize() { _CheckHeaderSizeChangeForce(); }
+        /// <summary>
         /// Aktuální výška záhlaví. 
         /// Je nastavováno pouze pro záhlaví umístěné Top nebo Bottom.
         /// </summary>
@@ -3473,6 +3481,7 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             PageHeaderPosition = DxPageHeaderPosition.Default;
             PageHeaderAlignment = AlignContentToSide.Begin;
+            PageHeaderMultiLine = false;
         }
         /// <summary>
         /// Vloží jednu výchozí záložku, aby Control mohl správně detekovat svoje rozměry.
@@ -4201,7 +4210,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                     this.ViewInfo.Resize();
                     this.Refresh();
                 }
-
+                bool isTop = !this.PageHeaderPosition.HasFlag(DxPageHeaderPosition.PositionBottom);
                 var headerBounds = this.ViewInfo?.HeaderInfo?.Bounds;
                 if (headerBounds.HasValue)
                 {   // Čistá cesta:
@@ -4209,7 +4218,7 @@ namespace Noris.Clients.Win.Components.AsolDX
 
                     // Kontroly, korekce, náhrady:
                     if (headerHeight >= minHeight)
-                        headerHeight += 1;                           // Máme výšku určenou: přidáme 1px pro okraj
+                        headerHeight += (isTop ? 1 : 2);             // Máme výšku určenou: přidáme 1px pro okraj
                     else if (headerSizeOld.HasValue)
                         headerHeight = headerSizeOld.Value.Height;   // Výška je nyní určena špatně, ale máme info od posledně
                     else
@@ -4217,7 +4226,6 @@ namespace Noris.Clients.Win.Components.AsolDX
                 }
                 else
                 {   // Náhradní cesta:
-                    bool isTop = !this.PageHeaderPosition.HasFlag(DxPageHeaderPosition.PositionBottom);
                     headerHeight = (isTop ? (this.DisplayRectangle.Y + 2) : (this.ClientSize.Height - this.DisplayRectangle.Height));
                 }
                 if (headerHeight < minHeight) headerHeight = minHeight;
@@ -4281,6 +4289,10 @@ namespace Noris.Clients.Win.Components.AsolDX
                 HeaderSizeChanged?.Invoke(this, EventArgs.Empty);
             }
         }
+        /// <summary>
+        /// Aktuálně prověří velikost záhlaví <see cref="HeaderHeight"/> a/nebo <see cref="HeaderWidth"/>.
+        /// </summary>
+        public void CheckHeaderSize() { _CheckHeaderSizeChangeForce(); }
         /// <summary>
         /// Aktuální výška záhlaví. 
         /// Je nastavováno pouze pro záhlaví umístěné Top nebo Bottom.
