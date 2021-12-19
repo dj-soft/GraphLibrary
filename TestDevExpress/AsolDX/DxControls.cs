@@ -2325,13 +2325,10 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.TransitionType = DxTabPaneTransitionType.FadeFast;
 
             // Požadavky designu na vzhled buttonů:
-            this.AppearanceButton.Normal.FontSizeDelta = 2;
             this.AppearanceButton.Normal.FontStyleDelta = FontStyle.Regular;
             this.AppearanceButton.Normal.TextOptions.HAlignment = DevExpress.Utils.HorzAlignment.Center;
-            this.AppearanceButton.Hovered.FontSizeDelta = 2;
             this.AppearanceButton.Hovered.FontStyleDelta = FontStyle.Underline;
             this.AppearanceButton.Hovered.TextOptions.HAlignment = DevExpress.Utils.HorzAlignment.Center;
-            this.AppearanceButton.Pressed.FontSizeDelta = 2;
             this.AppearanceButton.Pressed.FontStyleDelta = FontStyle.Bold;
             this.AppearanceButton.Pressed.TextOptions.HAlignment = DevExpress.Utils.HorzAlignment.Center;
 
@@ -3475,11 +3472,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             PageImagePosition = DevExpress.XtraTab.TabPageImagePosition.Near;
 
             // Požadavky designu na vzhled buttonů:
-            AppearancePage.Header.FontSizeDelta = 2;
             AppearancePage.Header.FontStyleDelta = FontStyle.Regular;
-            AppearancePage.HeaderHotTracked.FontSizeDelta = 2;
             AppearancePage.HeaderHotTracked.FontStyleDelta = FontStyle.Underline;
-            AppearancePage.HeaderActive.FontSizeDelta = 2;
             AppearancePage.HeaderActive.FontStyleDelta = FontStyle.Bold;
 
             PageHeaderPosition = DxPageHeaderPosition.Default;
