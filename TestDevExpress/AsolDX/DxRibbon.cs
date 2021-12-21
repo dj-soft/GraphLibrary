@@ -105,6 +105,19 @@ namespace Noris.Clients.Win.Components.AsolDX
             DxDisposed = false;
         }
         /// <summary>
+        /// Nastaví ImageListy pro Ribbon, podle aktuálně platné předvolby <see cref="DxComponent.IsPreferredVectorImage"/> (Vektor /Retro)
+        /// </summary>
+        /// <param name="force"></param>
+        internal void InitImageLists(bool force = false)
+        {
+            Images = DxComponent.GetPreferredImageList(RibbonImageSize);
+            LargeImages = DxComponent.GetPreferredImageList(RibbonLargeImageSize);
+
+            // Projde všechny BarItem, které jsou v evidenci Ribbonu, i Grupy v Ribonu, a do každé znovu aplikuje Image.
+            // Nyní je připraven vhodný ImageList, a Indexy obrázku tedy budou odpovídat novému ImageListu:
+            ReloadImages();
+        }
+        /// <summary>
         /// Nastaví základní uživatelské vlastnosti Ribbonu.
         /// </summary>
         /// <param name="forDesktop"></param>

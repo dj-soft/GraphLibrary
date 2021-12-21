@@ -4409,6 +4409,7 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// <summary>
     /// Druh obsahu resource
     /// </summary>
+    [Flags]
     public enum ResourceContentType
     {
         /// <summary>
@@ -4416,33 +4417,63 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         None = 0,
         /// <summary>
-        /// Bitmapa (BMP, JPG, PNG, PCX, GIF, TIF)
-        /// </summary>
-        Bitmap,
-        /// <summary>
         /// Vektor (SVG)
         /// </summary>
-        Vector,
+        Vector = 0x0001,
         /// <summary>
-        /// Video (MP4, AVI, MPEG)
+        /// Bitmapa (BMP, JPG, PNG, PCX, GIF, TIF)
         /// </summary>
-        Video,
-        /// <summary>
-        /// Audio (MP3, WAV, FLAC)
-        /// </summary>
-        Audio,
+        Bitmap = 0x0002,
         /// <summary>
         /// Ikona (ICO)
         /// </summary>
-        Icon,
+        Icon = 0x0004,
         /// <summary>
         /// Kurzor (CUR)
         /// </summary>
-        Cursor,
+        Cursor = 0x0008,
+        /// <summary>
+        /// Audio (MP3, WAV, FLAC)
+        /// </summary>
+        Audio = 0x0010,
+        /// <summary>
+        /// Video (MP4, AVI, MPEG)
+        /// </summary>
+        Video = 0x0020,
+        /// <summary>
+        /// Txt
+        /// </summary>
+        Txt = 0x0100,
         /// <summary>
         /// Xml (XML, HTML)
         /// </summary>
-        Xml
+        Xml = 0x0200,
+
+        /// <summary>
+        /// Základní obrázky (<see cref="Bitmap"/> a <see cref="Vector"/>).
+        /// Prioritu obrázků určuje hodnota <see cref="DxComponent.IsPreferredVectorImage"/>.
+        /// </summary>
+        BasicImage = Bitmap | Vector,
+        /// <summary>
+        /// Běžně konvertibilní obrázky (mimo <see cref="Cursor"/>)
+        /// </summary>
+        StandardImage = Bitmap | Vector | Icon,
+        /// <summary>
+        /// Všechny obrázky (včetně <see cref="Cursor"/>)
+        /// </summary>
+        AnyImage = Bitmap | Vector | Icon | Cursor,
+        /// <summary>
+        /// Jakákoli multimedia
+        /// </summary>
+        AnyMultimedia = Audio | Video,
+        /// <summary>
+        /// Jakýkoli text
+        /// </summary>
+        AnyText = Txt | Xml,
+        /// <summary>
+        /// Cokoli
+        /// </summary>
+        All = AnyImage | AnyMultimedia | AnyText
     }
     #endregion
     #endregion
