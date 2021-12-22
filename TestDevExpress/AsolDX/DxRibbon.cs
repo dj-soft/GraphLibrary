@@ -5713,6 +5713,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         private static void SetUhdPaint(IMenuItem menuItem) 
         {
             DxComponent.UhdPaintEnabled = (menuItem?.Checked ?? false);
+            DxComponent.Settings.SetRawValue("Components", "UhdPaintEnabled", DxComponent.UhdPaintEnabled ? "True" : "False");
             DxComponent.ApplicationRestart();
         }
         /// <summary>
