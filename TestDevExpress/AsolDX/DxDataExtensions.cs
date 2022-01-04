@@ -469,6 +469,28 @@ namespace Noris.Clients.Win.Components.AsolDX
             return (oldBit == newBit);
         }
         #endregion
+        #region String
+        /// <summary>
+        /// Z dodaného textu (this) odebere všechny znaky dodané v poli <paramref name="removeChars"/>.
+        /// </summary>
+        /// <param name="text"></param>
+        /// <param name="removeChars"></param>
+        /// <returns></returns>
+        public static string RemoveChars(this string text, char[] removeChars)
+        {
+            if (text == null || text.Length == 0) return text;
+            if (removeChars is null || removeChars.Length == 0) return text;
+            foreach (char removeChar in removeChars)
+            {
+                if (text.IndexOf(removeChar) >= 0)
+                {
+                    text = text.Replace(removeChar.ToString(), "");
+                    if (text.Length == 0) break;
+                }
+            }
+            return text;
+        }
+        #endregion
         #region Align
         /// <summary>
         /// Vrátí danou hodnotu zarovnanou do mezí min, max.

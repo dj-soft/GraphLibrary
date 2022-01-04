@@ -20,7 +20,7 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// </summary>
     public class DxListBoxPanel : DxPanelControl
     {
-        #region Konstruktor, torba, privátní proměnné, layout
+        #region Konstruktor, tvorba, privátní proměnné, layout
         /// <summary>
         /// Konstruktor
         /// </summary>
@@ -37,15 +37,15 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             DoLayout();
         }
-
         /// <summary>
-        /// Rozmístí prvky podle pravidel do svého prostoru
+        /// Rozmístí prvky (tlačítka a ListBox) podle pravidel do svého prostoru
         /// </summary>
         protected virtual void DoLayout()
         {
             Rectangle innerBounds = this.GetInnerBounds();
             if (innerBounds.Width < 30 || innerBounds.Height < 30) return;
 
+            _DoLayoutButtons(ref innerBounds);
             _ListBox.Bounds = new Rectangle(innerBounds.X, innerBounds.Y + 8, innerBounds.Width - 0, innerBounds.Height - 10);
         }
         private DxListBoxControl _ListBox;
@@ -54,6 +54,151 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// ListBox
         /// </summary>
         public DxListBoxControl ListBox { get { return _ListBox; } }
+        /// <summary>
+        /// Umístění tlačítek
+        /// </summary>
+        public ToolbarPosition ButtonsPosition { get { return _ButtonsPosition; } set { _ButtonsPosition = value; DoLayout(); } }
+        /// <summary>
+        /// Typy dostupných tlačítek
+        /// </summary>
+        public ListBoxButtonType ButtonsType { get { return _ButtonsType; } set { _ButtonsType = value; AcceptButtonsType(); DoLayout(); } }
+
+        #region Tlačíka
+        /// <summary>
+        /// Umístí tlačítka podle potřeby do daného vnitřního prostoru, ten zmenší o prostor zabraný tlačítky
+        /// </summary>
+        /// <param name="innerBounds"></param>
+        private void _DoLayoutButtons(ref Rectangle innerBounds)
+        { }
+        /// <summary>
+        /// Aktuální povolená tlačítka promítne i do ListBoxu jako povolené klávesové akce
+        /// </summary>
+        private void AcceptButtonsType()
+        {
+            ListBoxButtonType buttons = _ButtonsType;
+
+            // 1. Buttony z _ButtonsType převedu na povolené akce v ListBoxu a sloučím s akcemi dosud povolenými:
+            KeyActionType oldActions = _ListBox.EnabledKeyActions;
+            KeyActionType newActions = ConvertButtonsToActions(buttons);
+            _ListBox.EnabledKeyActions = (newActions | oldActions);
+
+            // 2. Vytvořím potřebné buttony a nastavím Visible existujícím buttonům:
+
+        }
+        /// <summary>
+        /// Konvertuje hodnoty z typu <see cref="ListBoxButtonType"/> na hodnoty typu <see cref="KeyActionType"/>
+        /// </summary>
+        /// <param name="buttons"></param>
+        /// <returns></returns>
+        public static KeyActionType ConvertButtonsToActions(ListBoxButtonType buttons)
+        {
+            KeyActionType actions =
+                (buttons.HasFlag(ListBoxButtonType.ClipCopy) ? KeyActionType.ClipCopy : KeyActionType.None) |
+                (buttons.HasFlag(ListBoxButtonType.ClipCut) ? KeyActionType.ClipCut : KeyActionType.None) |
+                (buttons.HasFlag(ListBoxButtonType.ClipPaste) ? KeyActionType.ClipPaste : KeyActionType.None) |
+                (buttons.HasFlag(ListBoxButtonType.Delete) ? KeyActionType.Delete : KeyActionType.None) |
+                (buttons.HasFlag(ListBoxButtonType.SelectAll) ? KeyActionType.SelectAll : KeyActionType.None) |
+                (buttons.HasFlag(ListBoxButtonType.GoBegin) ? KeyActionType.GoBegin : KeyActionType.None) |
+                (buttons.HasFlag(ListBoxButtonType.GoEnd) ? KeyActionType.GoEnd : KeyActionType.None) |
+                (buttons.HasFlag(ListBoxButtonType.MoveTop) ? KeyActionType.MoveTop : KeyActionType.None) |
+                (buttons.HasFlag(ListBoxButtonType.MoveUp) ? KeyActionType.MoveUp : KeyActionType.None) |
+                (buttons.HasFlag(ListBoxButtonType.MoveDown) ? KeyActionType.MoveDown : KeyActionType.None) |
+                (buttons.HasFlag(ListBoxButtonType.MoveBottom) ? KeyActionType.MoveBottom : KeyActionType.None);
+            return actions;
+        }
+        /// <summary>
+        /// Konvertuje hodnoty z typu <see cref="ListBoxButtonType"/> na hodnoty typu <see cref="KeyActionType"/>
+        /// </summary>
+        /// <param name="actions"></param>
+        /// <returns></returns>
+        public static ListBoxButtonType ConvertActionsToButtons(KeyActionType actions)
+        {
+            ListBoxButtonType buttons =
+                (actions.HasFlag(KeyActionType.ClipCopy) ? ListBoxButtonType.ClipCopy : ListBoxButtonType.None) |
+                (actions.HasFlag(KeyActionType.ClipCut) ? ListBoxButtonType.ClipCut : ListBoxButtonType.None) |
+                (actions.HasFlag(KeyActionType.ClipPaste) ? ListBoxButtonType.ClipPaste : ListBoxButtonType.None) |
+                (actions.HasFlag(KeyActionType.Delete) ? ListBoxButtonType.Delete : ListBoxButtonType.None) |
+                (actions.HasFlag(KeyActionType.SelectAll) ? ListBoxButtonType.SelectAll : ListBoxButtonType.None) |
+                (actions.HasFlag(KeyActionType.GoBegin) ? ListBoxButtonType.GoBegin : ListBoxButtonType.None) |
+                (actions.HasFlag(KeyActionType.GoEnd) ? ListBoxButtonType.GoEnd : ListBoxButtonType.None) |
+                (actions.HasFlag(KeyActionType.MoveTop) ? ListBoxButtonType.MoveTop : ListBoxButtonType.None) |
+                (actions.HasFlag(KeyActionType.MoveUp) ? ListBoxButtonType.MoveUp : ListBoxButtonType.None) |
+                (actions.HasFlag(KeyActionType.MoveDown) ? ListBoxButtonType.MoveDown : ListBoxButtonType.None) |
+                (actions.HasFlag(KeyActionType.MoveBottom) ? ListBoxButtonType.MoveBottom : ListBoxButtonType.None);
+            return buttons;
+        }
+        /// <summary>
+        /// Umístění tlačítek
+        /// </summary>
+        private ToolbarPosition _ButtonsPosition;
+        /// <summary>
+        /// Typy dostupných tlačítek
+        /// </summary>
+        private ListBoxButtonType _ButtonsType;
+        /// <summary>
+        /// Tlačítka
+        /// </summary>
+        private Dictionary<ListBoxButtonType, DxSimpleButton> _Buttons;
+        #endregion
+    }
+    /// <summary>
+    /// Typy tlačítek dostupných u Listboxu pro jeho ovládání (vnitřní příkazy, nikoli Drag and Drop)
+    /// </summary>
+    [Flags]
+    public enum ListBoxButtonType
+    {
+        /// <summary>
+        /// Žádný button
+        /// </summary>
+        None = 0,
+
+        /// <summary>
+        /// Copy: Zkopírovat do schránky
+        /// </summary>
+        ClipCopy = 0x0001,
+        /// <summary>
+        /// Cut: Zkopírovat do schránky a smazat
+        /// </summary>
+        ClipCut = 0x0002,
+        /// <summary>
+        /// Paste: Vložit ze schránky
+        /// </summary>
+        ClipPaste = 0x0004,
+        /// <summary>
+        /// Smazat vybrané
+        /// </summary>
+        Delete = 0x0008,
+
+        /// <summary>
+        /// Vybrat vše
+        /// </summary>
+        SelectAll = 0x0010,
+        /// <summary>
+        /// Přejdi na začátek
+        /// </summary>
+        GoBegin = 0x0020,
+        /// <summary>
+        /// Přejdi na konec
+        /// </summary>
+        GoEnd = 0x0040,
+
+        /// <summary>
+        /// Přemístit úplně nahoru
+        /// </summary>
+        MoveTop = 0x0100,
+        /// <summary>
+        /// Přemístit o 1 nahoru
+        /// </summary>
+        MoveUp = 0x0200,
+        /// <summary>
+        /// Přemístit o 1 dolů
+        /// </summary>
+        MoveDown = 0x0400,
+        /// <summary>
+        /// Přemístit úplně dolů
+        /// </summary>
+        MoveBottom = 0x0800
+
     }
     /// <summary>
     /// ListBoxControl s podporou pro drag and drop a reorder
@@ -420,26 +565,26 @@ namespace Noris.Clients.Win.Components.AsolDX
                     _DoKeyAction(KeyActionType.Delete);
                     break;
                 case Keys.Control | Keys.A:
-                    _DoKeyAction(KeyActionType.CtrlA);
+                    _DoKeyAction(KeyActionType.SelectAll);
                     break;
                 case Keys.Control | Keys.C:
-                    _DoKeyAction(KeyActionType.CtrlC);
+                    _DoKeyAction(KeyActionType.ClipCopy);
                     break;
                 case Keys.Control | Keys.X:
                     // Ctrl+X : pokud je povoleno, provedu; pokud nelze provést Ctrl+X ale lze provést Ctrl+C, tak se provede to:
-                    if (EnabledKeyActions.HasFlag(KeyActionType.CtrlX))
-                        _DoKeyAction(KeyActionType.CtrlX);
-                    else if (EnabledKeyActions.HasFlag(KeyActionType.CtrlC))
-                        _DoKeyAction(KeyActionType.CtrlC);
+                    if (EnabledKeyActions.HasFlag(KeyActionType.ClipCut))
+                        _DoKeyAction(KeyActionType.ClipCut);
+                    else if (EnabledKeyActions.HasFlag(KeyActionType.ClipCopy))
+                        _DoKeyAction(KeyActionType.ClipCopy);
                     break;
                 case Keys.Control | Keys.V:
-                    _DoKeyAction(KeyActionType.CtrlV);
+                    _DoKeyAction(KeyActionType.ClipPaste);
                     break;
                 case Keys.Alt | Keys.Up:
-                    _DoKeyAction(KeyActionType.AltUp);
+                    _DoKeyAction(KeyActionType.MoveUp);
                     break;
                 case Keys.Alt | Keys.Down:
-                    _DoKeyAction(KeyActionType.AltDown);
+                    _DoKeyAction(KeyActionType.MoveDown);
                     break;
             }
         }
@@ -451,12 +596,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void _DoKeyAction(KeyActionType action, bool force = false)
         {
             _DoKeyAction(action, KeyActionType.Delete, force, _DoKeyActionDelete);
-            _DoKeyAction(action, KeyActionType.CtrlA, force, _DoKeyActionCtrlA);
-            _DoKeyAction(action, KeyActionType.CtrlC, force, _DoKeyActionCtrlC);
-            _DoKeyAction(action, KeyActionType.CtrlX, force, _DoKeyActionCtrlX);
-            _DoKeyAction(action, KeyActionType.CtrlV, force, _DoKeyActionCtrlV);
-            _DoKeyAction(action, KeyActionType.AltUp, force, _DoKeyActionAltUp);
-            _DoKeyAction(action, KeyActionType.AltDown, force, _DoKeyActionAltDown);
+            _DoKeyAction(action, KeyActionType.SelectAll, force, _DoKeyActionCtrlA);
+            _DoKeyAction(action, KeyActionType.ClipCopy, force, _DoKeyActionCtrlC);
+            _DoKeyAction(action, KeyActionType.ClipCut, force, _DoKeyActionCtrlX);
+            _DoKeyAction(action, KeyActionType.ClipPaste, force, _DoKeyActionCtrlV);
+            _DoKeyAction(action, KeyActionType.MoveUp, force, _DoKeyActionAltUp);
+            _DoKeyAction(action, KeyActionType.MoveDown, force, _DoKeyActionAltDown);
         }
         /// <summary>
         /// Pokud v soupisu akcí <paramref name="action"/> je příznak akce <paramref name="flag"/>, pak provede danou akci <paramref name="runMethod"/>, 

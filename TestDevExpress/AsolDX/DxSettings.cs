@@ -18,6 +18,7 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// </summary>
     public class DxSettings
     {
+        #region Public svět
         /// <summary>
         /// Vrátí obsah daného klíče z dané sekce. Může vrátit null, když nejsou data.
         /// </summary>
@@ -68,9 +69,50 @@ namespace Noris.Clients.Win.Components.AsolDX
             _SaveValues(values, _ConfigFileName);
         }
         /// <summary>
+        /// Jméno firmy, použije se pro určení adresáře pro config soubor v rámci adresáře ProgramData
+        /// </summary>
+        public string CompanyName { get { return _CompanyName; } set { _SetConfigFile(null, value, _ApplicationName); } }
+        private string _CompanyName;
+        /// <summary>
+        /// Jméno aplikace, použije se pro určení adresáře pro config soubor v rámci adresáře ProgramData
+        /// </summary>
+        public string ApplicationName { get { return _ApplicationName; } set { _SetConfigFile(null, _CompanyName, value); } }
+        private string _ApplicationName;
+        /// <summary>
         /// Plné jméno konfiguračního souboru
         /// </summary>
-        public string ConfigFileName { get { return _ConfigFileName; } set { _ConfigFileName = value; _InvalidateData(); } }
+        public string ConfigFileName { get { return _ConfigFileName; } set { _SetConfigFile(value, null, null); } }
+        /// <summary>
+        /// Jméno souboru, který má být načten ve <see cref="_Values"/>
+        /// </summary>
+        private string _ConfigFileName;
+        /// <summary>
+        /// Do proměnných uloží dané hodnoty určující Config soubor
+        /// </summary>
+        /// <param name="configFile"></param>
+        /// <param name="companyName"></param>
+        /// <param name="applicationName"></param>
+        private void _SetConfigFile(string configFile, string companyName, string applicationName)
+        {
+            _CompanyName = companyName;
+            _ApplicationName = applicationName;
+            _ConfigFileName = configFile;
+            if (String.IsNullOrEmpty(_ConfigFileName))
+            {
+                companyName = GetValidFileName(companyName, "MsDotNet");
+                applicationName = GetValidFileName(applicationName, "SampleApp");
+                string rootPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+                _ConfigFileName = Path.Combine(rootPath, companyName, applicationName, "settings.dat");
+            }
+            _InvalidateData();
+        }
+        private static string GetValidFileName(string file, string defValue)
+        {
+            string name = file.RemoveChars(Path.GetInvalidFileNameChars());
+            if (String.IsNullOrEmpty(name)) return defValue;
+            return (name.Length < 100 ? name : name.Substring(0, 100));
+        }
+        #endregion
         #region Získání dat ze souboru, kontroly aktuálnosti, načtení dat
         /// <summary>
         /// Obsahuje platná data nebo prázdnou dvojitou Dictionary
@@ -333,10 +375,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             _FileStateNextCheckTime = DateTime.Now.AddSeconds(60d);
         }
         /// <summary>
-        /// Jméno souboru, který má být načten ve <see cref="_Values"/>
-        /// </summary>
-        private string _ConfigFileName;
-        /// <summary>
         /// Jméno souboru, který je načten ve <see cref="_Values"/>
         /// </summary>
         private string _LoadedFileName;
@@ -372,7 +410,11 @@ namespace Noris.Clients.Win.Components.AsolDX
 
         #endregion
         #region Ukládání dat
-
+        /// <summary>
+        /// Uloží data
+        /// </summary>
+        /// <param name="values"></param>
+        /// <param name="configFileName"></param>
         private void _SaveValues(Dictionary<string, Dictionary<string, string>> values, string configFileName)
         {
             DxSettingsData dxSettingsData = this._ConvertValues(values);
@@ -380,9 +422,12 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 _FileWatcherDeactivate();
                 string text = Noris.WS.Parser.XmlSerializer.Persist.Serialize(dxSettingsData, Noris.WS.Parser.XmlSerializer.PersistArgs.Default);
+                string path = Path.GetDirectoryName(configFileName);
+                if (!Directory.Exists(path))
+                    Directory.CreateDirectory(path);
                 File.WriteAllText(configFileName, text, Encoding.UTF8);
             }
-            catch { }
+            catch (Exception exc) { }
             finally
             {
                 _SetFileWatchers(configFileName);
@@ -407,6 +452,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         #endregion
     }
+    #region DxSettingsData : Ukládaná data konfigurace
+    /// <summary>
+    /// Ukládaná data konfigurace
+    /// </summary>
     internal class DxSettingsData
     {
         public DxSettingsData() { }
@@ -421,14 +470,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             public string Name { get; set; }
             public string Value{ get; set; }
         }
-
     }
-    /*
-
-
-
-
-    */
+    #endregion
     #region Přístup na Settings z DxComponent
     public partial class DxComponent
     {

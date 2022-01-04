@@ -769,9 +769,10 @@ namespace TestDevExpress.Forms
             dialogArgs.MessageTextContainsHtml = true;
             
             string messageText = $"Uživatel kliknul na prvek <b>{iRibbonItem.ItemType}</b>, s textem <b>{iRibbonItem.Text}</b>, z Ribbonu <b>{this.Ribbon.DebugName}</b>\r\n";
-            if (iRibbonItem.ParentGroup?.ParentPage?.Category != null) messageText += $"Kategorie: <b>{iRibbonItem.ParentGroup.ParentPage.Category.CategoryText}</b>;  ";
-            if (iRibbonItem.ParentGroup?.ParentPage != null) messageText += $"Stránka: <b>{iRibbonItem.ParentGroup.ParentPage.PageText}</b>;  ";
-            if (iRibbonItem.ParentGroup != null) messageText += $"Skupina <b>{iRibbonItem.ParentGroup.GroupText}</b>;  ";
+            if (iRibbonItem.ParentGroup?.ParentPage?.Category != null) messageText += $"Kategorie: <b>{iRibbonItem.ParentGroup.ParentPage.Category.CategoryText}</b>;\r\n";
+            if (iRibbonItem.ParentGroup?.ParentPage != null) messageText += $"Stránka: <b>{iRibbonItem.ParentGroup.ParentPage.PageText}</b>;\r\n";
+            if (iRibbonItem.ParentGroup != null) messageText += $"Skupina <b>{iRibbonItem.ParentGroup.GroupText}</b>;\r\n";
+            messageText += $"ImageName <b>{iRibbonItem.ImageName}</b>;  ";
             dialogArgs.MessageText = messageText.Trim();
 
             dialogArgs.PrepareButtons(System.Windows.Forms.MessageBoxButtons.OK);

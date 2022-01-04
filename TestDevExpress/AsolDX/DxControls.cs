@@ -8518,6 +8518,67 @@ namespace Noris.Clients.Win.Components.AsolDX
         All = Left | Top | Right | Bottom
     }
     /// <summary>
+    /// Umístění sady objektů (typicky tlačítka toolbaru) na okraji prostoru
+    /// </summary>
+    public enum ToolbarPosition
+    {
+        /// <summary>
+        /// Neurčeno
+        /// </summary>
+        None,
+        /// <summary>
+        /// Na horní straně, zarovnáno vlevo
+        /// </summary>
+        TopSideLeft,
+        /// <summary>
+        /// Na horní straně, zarovnáno uprostřed
+        /// </summary>
+        TopSideCenter,
+        /// <summary>
+        /// Na horní straně, zarovnáno doprava
+        /// </summary>
+        TopSideRight,
+        /// <summary>
+        /// Na pravé straně, zarovnáno nahoru
+        /// </summary>
+        RightSideTop,
+        /// <summary>
+        /// Na pravé straně, zarovnáno uprostřed
+        /// </summary>
+        RightSideCenter,
+        /// <summary>
+        /// Na pravé straně, zarovnáno dolů
+        /// </summary>
+        RightSideBottom,
+        /// <summary>
+        /// Na dolní straně, zarovnáno nahoru
+        /// </summary>
+        BottomSideRight,
+        /// <summary>
+        /// Na pravé straně, zarovnáno uprostřed
+        /// </summary>
+        BottomSideCenter,
+        /// <summary>
+        /// Na pravé straně, zarovnáno nahoru
+        /// </summary>
+        BottomSideLeft,
+        /// <summary>
+        /// Na pravé straně, zarovnáno nahoru
+        /// </summary>
+        LeftSideBottom,
+        /// <summary>
+        /// Na pravé straně, zarovnáno dolů
+        /// </summary>
+        LeftSideCenter,
+        /// <summary>
+        /// Na pravé straně, zarovnáno nahoru
+        /// </summary>
+        LeftSideTop
+        /// <summary>
+        /// Na pravé straně, zarovnáno nahoru
+        /// </summary>
+    }
+    /// <summary>
     /// Vyjádření názvu rohu na objektu Rectangle (Vlevo nahoře, Vpravo nahoře, ...)
     /// </summary>
     public enum RectangleCorner
@@ -8595,40 +8656,71 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Žádná akce
         /// </summary>
         None = 0,
-        /// <summary>
-        /// Klávesa Delete = smazat výběr
-        /// </summary>
-        Delete = 0x0001,
-        /// <summary>
-        /// Klávesa CtrlA = vybrat vše
-        /// </summary>
-        CtrlA = 0x0010,
-        /// <summary>
-        /// Klávesa CtrlC = zkopírovat
-        /// </summary>
-        CtrlC = 0x0020,
-        /// <summary>
-        /// Klávesa CtrlX = vyjmout
-        /// </summary>
-        CtrlX = 0x0040,
-        /// <summary>
-        /// Klávesa CtrlV = vložit
-        /// </summary>
-        CtrlV = 0x0080,
 
         /// <summary>
-        /// Klávesa AltUp (kurzor) = přemístit o jednu pozici nahoru
+        /// Klávesa CtrlC: zkopírovat
         /// </summary>
-        AltUp = 0x0100,
+        ClipCopy = 0x0001,
         /// <summary>
-        /// Klávesa AltDown (kurzor) = přemístit o jednu pozici dolů
+        /// Klávesa CtrlX: vyjmout
         /// </summary>
-        AltDown = 0x0200,
+        ClipCut = 0x0002,
+        /// <summary>
+        /// Klávesa CtrlV: vložit
+        /// </summary>
+        ClipPaste = 0x0004,
+        /// <summary>
+        /// Klávesa Delete: Smazat vybrané
+        /// </summary>
+        Delete = 0x0008,
+
+        /// <summary>
+        /// Klávesa CtrlA: vybrat vše
+        /// </summary>
+        SelectAll = 0x0010,
+        /// <summary>
+        /// Klávesa Ctrl Home: přejdi na začátek
+        /// </summary>
+        GoBegin = 0x0020,
+        /// <summary>
+        /// Klávesa Ctrl End: přejdi na konec
+        /// </summary>
+        GoEnd = 0x0040,
+
+        /// <summary>
+        /// Klávesa CtrlAltUp (kurzor): přemístit na první pozici
+        /// </summary>
+        MoveTop = 0x0100,
+        /// <summary>
+        /// Klávesa AltUp (kurzor): přemístit o jednu pozici nahoru
+        /// </summary>
+        MoveUp = 0x0200,
+        /// <summary>
+        /// Klávesa AltDown (kurzor): přemístit o jednu pozici dolů
+        /// </summary>
+        MoveDown = 0x0400,
+        /// <summary>
+        /// Klávesa CtrlAltDown (kurzor): přemístit na poslední pozici
+        /// </summary>
+        MoveBottom = 0x0800,
+
+        /// <summary>
+        /// Všechny práce s clipboardem
+        /// </summary>
+        AllClipboard = ClipCopy | ClipCut | ClipPaste,
+        /// <summary>
+        /// Všechny pohyby kurzoru
+        /// </summary>
+        AllGo = GoBegin | GoEnd,
+        /// <summary>
+        /// Všechny přesuny
+        /// </summary>
+        AllMove = MoveTop | MoveUp | MoveDown | MoveBottom,
 
         /// <summary>
         /// Všechny akce
         /// </summary>
-        All = Delete | CtrlA | CtrlC | CtrlX | CtrlV | AltUp
+        All = AllClipboard | Delete | SelectAll | AllGo | AllMove
     }
     #endregion
 }

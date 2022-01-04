@@ -1245,7 +1245,7 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             // Pokud pro tuhle stránku mám aktivovat budoucí plnění v režimu OnIdle (=nyní jen generujeme prázdnou stránku, anebo jen obsahující QAT prvky, nebo ne-kompletní Sub-Menu), tak si to poznamenám:
             if (currentMode.HasFlag(DxRibbonCreateContentMode.ActivateOnIdleLoad))
-                _ActiveLazyLoadOnIdle = true;
+                _ActiveLazyLoadPagesOnIdle = true;
 
             // Pokud pro tuhle stránku v tuhle chvíli nebudu generovat vůbec nic, skončíme:
             if (!currentMode.HasFlag(DxRibbonCreateContentMode.PrepareAnyContent))
@@ -1353,7 +1353,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                                     PrepareBarItemTag(itemMenu, iRibbonItem, 0, dxGroup);
 
                                     // OK:  Eventy
-                                    itemMenu.GetItemData += Menu_GetItemData;
+                                    itemMenu.GetItemData += _BarMenu_GetItemData;
                                     itemMenu.CloseUp += _BarMenu_CloseUp;
 
                                     // OK:  vzhled:
@@ -1844,12 +1844,28 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private void _ApplicationIdle()
         {
-            if (_ActiveLazyLoadOnIdle)
+            if (!_ActiveLazyLoadOnIdle) return;
+
+            if (_ActiveLazyLoadPagesOnIdle)
+                // Při první události 'Application.OnIdle' si vygeneruji obsah všech stránek Ribbonu, pro které máme statická data:
+                //  ale nebudu volat OnDemand load jednotlivých položek serveru - to si necháme na druhou událost 'Application.OnIdle':
+                //  (metoda na svém konci shodí příznak _ActiveLazyLoadPagesOnIdle na false)
                 _PrepareLazyLoadStaticPages();
+            else if (_ActiveLazyLoadItemsOnIdle)
+                // Při první události 'Application.OnIdle' si vyhledám prvky Ribbonu, které dosud nemají svůj obsah,
+                //  a buď fyzicky vytvořím obsah prvku (typicky: menu) anebo o něj požádáme server:
+                //  (metoda na svém konci shodí příznak _ActiveLazyLoadItemsOnIdle na false)
+                _PrepareLazyLoadOnDemandItems();
         }
         /// <summary>
+        /// Hodnota true říká, že this Ribon má nějaké Pages nebo Items ve stavu LazyLoad se statickým obsahem.
+        /// Pak v době, kdy systém má volný čas (když je volána metoda <see cref="IListenerApplicationIdle.ApplicationIdle()"/>) 
+        /// si Ribbon fyzicky vygeneruje reálný obsah daných Pages anebo si vyžádá donačtení dat ze serveru a následný Refresh.
+        /// </summary>
+        private bool _ActiveLazyLoadOnIdle { get { return (_ActiveLazyLoadPagesOnIdle | _ActiveLazyLoadItemsOnIdle); } }
+        /// <summary>
         /// Tato metoda je volána v situaci, kdy GUI thread má nějaký volný čas (ApplicationIdle) 
-        /// a this Ribbon má nastavený příznak <see cref="_ActiveLazyLoadOnIdle"/> == true;
+        /// a this Ribbon má nastavený příznak <see cref="_ActiveLazyLoadPagesOnIdle"/> == true;
         /// tedy očekáváme, že existuje nějaká vlastní stránka Ribbonu, která má Static data v režimu LazyLoad, 
         /// a bylo by vhodné z nich vytvořit fyzické controly.
         /// To je úkolem této metody.
@@ -1874,8 +1890,13 @@ namespace Noris.Clients.Win.Components.AsolDX
 
                 if (LogActive) DxComponent.LogAddLineTime($" === Ribbon {DebugName}: CreateLazyStaticPages; Create: {pageCount} Pages; {itemCount} BarItem[s]; {DxComponent.LogTokenTimeMilisec} === ", startTime);
             }
-            _ActiveLazyLoadOnIdle = false;
+            _ActiveLazyLoadPagesOnIdle = false;
         }
+        /// <summary>
+        /// Zajistí vygenerování obsahu dané stránky ribbonu v režimu LazyLoad
+        /// </summary>
+        /// <param name="lazyPage"></param>
+        /// <param name="itemCount"></param>
         private void _PrepareLazyLoadStaticPage(DxRibbonPage lazyPage, ref int itemCount)
         {
             IRibbonPage iRibbonPage = lazyPage.PageData;
@@ -1887,7 +1908,46 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Pak v době, kdy systém má volný čas (když je volána metoda <see cref="IListenerApplicationIdle.ApplicationIdle()"/>) 
         /// si Ribbon fyzicky vygeneruje reálný obsah daných Pages.
         /// </summary>
-        private bool _ActiveLazyLoadOnIdle;
+        private bool _ActiveLazyLoadPagesOnIdle;
+        /// <summary>
+        /// Tato metoda je volána v situaci, kdy GUI thread má nějaký volný čas (ApplicationIdle) 
+        /// a this Ribbon má nastavený příznak <see cref="_ActiveLazyLoadItemsOnIdle"/> == true;
+        /// tedy evidujeme nějaký prvek typu Grupa nebo Menu, které se má donačítat OnDemand ze serveru.
+        /// Tato metoda vyvolá akce, které zajistí donačtení dat na serveru a jejich odeslání na klienta, do události Menu.Refresh,
+        /// a následně se tedy vygeneruje obsah těchto prvků do Ribbonu.
+        /// Důvodem je to, aby tyto OnDemand prvky byly fyzicky přítomné v Ribbonu a bylo je možno najít pomocí akce Search v záhlaví Ribbonu.
+        /// </summary>
+        private void _PrepareLazyLoadOnDemandItems()
+        {
+            var dxPages = this.GetPages(PagePosition.AllOwn).OfType<DxRibbonPage>().ToList();
+            foreach (var dxPage in dxPages)
+                _PrepareLazyLoadOnDemandItemsOnPage(dxPage);
+            _ActiveLazyLoadItemsOnIdle = false;
+        }
+        /// <summary>
+        /// Zajistí vytvoření obsahu fyzických prvků v dané stránce Ribbonu v režimu LazyLoad v čase ApplicationIdle.
+        /// Stránka jako taková by již měla být vygenerována, protože zdejší metoda běží až ve druhé vlně,
+        ///  když v první vlně (v čase ApplicationIdle) byly vygenerovány všechny stránky a jejich obsah (viz metoda _PrepareLazyLoadStaticPages()).
+        /// Nyní tedy v každé stránce najdeme její prvky, které ještě nemají svůj obsah (SubItems), a zajistíme jeho tvorbu, podle typu prvku (Menu, SplitButton, atd).
+        /// </summary>
+        /// <param name="dxPage"></param>
+        private void _PrepareLazyLoadOnDemandItemsOnPage(DxRibbonPage dxPage)
+        {
+            var allPageItems = dxPage.GroupItems.SelectMany(gi => gi.Item2).ToList();
+            foreach (var barItem in allPageItems)
+            {
+                if (barItem is DevExpress.XtraBars.BarSubItem barMenu && barItem.Tag is BarItemTagInfo menuItemInfo && menuItemInfo.LazyInfo != null)
+                    _BarMenu_CreateItems(barMenu, menuItemInfo);
+                else if (barItem is DevExpress.XtraBars.BarButtonItem splitButton && splitButton.DropDownControl is DevExpress.XtraBars.PopupMenu dxPopup && dxPopup.Tag is BarItemTagInfo popupItemInfo && popupItemInfo.LazyInfo != null)
+                    _PopupMenu_CreateLazyItems(dxPopup, popupItemInfo);
+            }
+        }
+        /// <summary>
+        /// Hodnota true říká, že this Ribon má nějaké prvky (grupy, menu, atd) Pages ve stavu LazyLoad s obsahem typu LoadOnce.
+        /// Pak v době, kdy systém má volný čas (když je volána metoda <see cref="IListenerApplicationIdle.ApplicationIdle()"/>) 
+        /// si Ribbon fyzicky vyžádá donačtení dat ze serveru a následný Refresh.
+        /// </summary>
+        private bool _ActiveLazyLoadItemsOnIdle;
         /// <summary>
         /// Vrátí true, pokud daná stránka obsahuje v jakékoli grupě alespoň jeden prvek, který má deklarované statické subpoložky v <see cref="IRibbonItem.SubItems"/>.
         /// Tento test slouží k určení potřeby LazyLoad OnIdle.
@@ -2201,35 +2261,31 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (HasCreate(changeMode))
             {
                 if (HasReFill(changeMode) && barItem != null)
-                { }
+                { /*  Vymazat reálné SubBarItemy ...  */ }
 
                 bool reallyCreateSubItems = currentMode.HasFlag(DxRibbonCreateContentMode.CreateAllSubItems);
                 if (barItem is null)
                     barItem = PrepareItem(iRibbonItem, dxGroup, level, reallyCreateSubItems, null, ref count);
                 else if (reallyCreateSubItems && iRibbonItem.SubItems != null && iRibbonItem.SubItems.Any())
                     RefillSubItems(iRibbonItem, dxGroup, barItem, level, null, ref count);
-                if (HasReFill(changeMode))
-                {
-                    //  ClearItem(barItem);
-                }
                
                 if (barItem is null) return null;
+
                 // Prvek přidám do grupy jen tehdy, když tam ještě není:
                 if (!dxGroup.ItemLinks.TryGetFirst(l => l.Item.Name == iRibbonItem.ItemId, out var barLink))
                     barLink = dxGroup.ItemLinks.Add(barItem);
                 barLink.BeginGroup = iRibbonItem.ItemIsFirstInGroup;
                 PrepareBarItemTag(barItem, iRibbonItem, level, dxGroup);
                 FillBarItem(barItem, iRibbonItem, level);
+
+                // Pokud prvek má mít SubItems, ale dosud nebyly vygenerovány (buď LazyLoad, anebo OnDemandLoad), řešíme to zde:
+                DetectLazyLoadSubItems(barItem, iRibbonItem, level);
             }
             else if (HasRemove(changeMode))
-            {
-
+            {   // Zatím prvky neodebíráme touto cestou.
+                // V případě potřeby se prvky reálně odebírají tak, že se refreshuje celá grupa, tam se nejprve zahodí všechny její prvky a pak se vygenerují nové platné.
+                // Zdejší cesta by byla o refreshi jednoho prvku, se zadáním jeho ItemId a s režimem změny Remove. To se ale dosud nepoužívá.
             }
-
-            //// Prvek patří do QAT?
-            //if (DefinedInQAT(iRibbonItem.ItemId))
-            //    this.AddBarItemToQATUserList(barItem, iRibbonItem);
-            //  přemístěno do PrepareItem()
 
             return barItem;
         }
@@ -2237,6 +2293,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Vytvoří prvek BarItem pro daná data a vrátí jej.
         /// Prvek NEMÁ naplněné svoje property, to nechť zajistí volající metoda.
         /// Tato metoda NEVKLÁDÁ vytovřený prvek do dodané grupy; grupa smí být null.
+        /// <para/>
+        /// Tato metoda ale může vygenerovat SubItems do vytvořeného prvku, pokud je to možné dle typu prvku, a je to požadováno dle parametru <paramref name="reallyCreateSubItems"/>
         /// </summary>
         /// <param name="iRibbonItem"></param>
         /// <param name="dxGroup"></param>
@@ -2360,7 +2418,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         /// <summary>
         /// Do daného prvku vepíše data z definice.
-        /// Aktualizuje i obsah BarItem.Tag
+        /// Aktualizuje i obsah BarItem.Tag.
+        /// Tato metoda negeneruje SubItems!  Pouze řeší vlastnosti prvku (jako je Enabled, ImageName, Text a ToolTip, atd).
         /// </summary>
         /// <param name="barItem"></param>
         /// <param name="iRibbonItem"></param>
@@ -2573,6 +2632,24 @@ namespace Noris.Clients.Win.Components.AsolDX
                     return RibbonItemType.Button;
             }
         }
+        /// <summary>
+        /// Metoda detekuje, zda prvek má mít nějaké SubItems, zda je reálně má, a vytvoří odpovídající příznaky pro LazyLoad tvorbu SubItems
+        /// a nastaví do <see cref="_ActiveLazyLoadItemsOnIdle"/> hodnotu true = aby Ribbon věděl, že ve stavu ApplicationIdle má něco provádět pro svoje Items.
+        /// </summary>
+        /// <param name="barItem"></param>
+        /// <param name="iRibbonItem"></param>
+        /// <param name="level"></param>
+        protected void DetectLazyLoadSubItems(BarItem barItem, IRibbonItem iRibbonItem, int level)
+        {
+            // Pokud už teď máme nastaven příznak _ActiveLazyLoadItemsOnIdle = true, pak další není nutno provádět (jeden příznak stačí, víc jich stejně nemáme):
+            if (_ActiveLazyLoadItemsOnIdle) return;
+
+            // Zjistíme, zda daný prvek bude potřebovat nějaký LazyLoad:
+            RibbonItemType itemType = iRibbonItem.ItemType;
+            bool needSubItems = (itemType == RibbonItemType.ButtonGroup || itemType == RibbonItemType.SplitButton || itemType == RibbonItemType.Menu || itemType == RibbonItemType.InRibbonGallery);
+            if (needSubItems && barItem.Tag is BarItemTagInfo itemInfo && itemInfo.LazyInfo != null)
+                _ActiveLazyLoadItemsOnIdle = true;
+        }
 
         // PopupMenu - pro SplitButton:
         /// <summary>
@@ -2607,7 +2684,8 @@ namespace Noris.Clients.Win.Components.AsolDX
 
                 // Pokud právě nyní generujeme PopupMenu, jehož ItemId se shoduje s prvkem menu, který je připraven ke znovuotevření v proměnné _OpenItemPopupMenu (identifikátor _OpenItemPopupMenuItemId je shodný s aktuálním menu),
                 //   pak se právě nyní provádí velký refresh (stránky / grupy), který zahodil dosavadní staré PopupMenu a nyní se vygeneroval nový PopupMenu.
-                // Znamená to, že si do proměnné _OpenItemPopupMenu musíme uložit novou instanci (menu), protože ji zanedlouho budeme otevírat! Stará instance, uložená v _OpenItemPopupMenu, je k nepoužití, protože je odebraná z Ribbonu...
+                // Znamená to, že si do proměnné _OpenItemPopupMenu musíme uložit novou instanci (menu), protože ji zanedlouho budeme otevírat!
+                // Stará instance, uložená v _OpenItemPopupMenu, je k nepoužití, protože je odebraná z Ribbonu...
                 if (_OpenItemPopupMenuItemId != null && _OpenItemPopupMenu != null && _OpenItemPopupMenuItemId == parentItem.ItemId)
                     _OpenItemPopupMenu = dxPopupMenu;
             }
@@ -2629,33 +2707,34 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (itemInfo != null && itemInfo.LazyInfo != null)
             {   // Pokud máme LazyInfo:
                 int level = itemInfo.Level;
-                var lazySubItems = itemInfo.LazyInfo;
+                var lazyinfo = itemInfo.LazyInfo;
                 // Mohou nastat dvě situace:
                 bool cancel = true;                                       // Zobrazení menu možná potlačíme, pokud nebudeme mít k dispozici stávající definované prvky
-                if (lazySubItems.SubItems != null)
+                if (lazyinfo.SubItems != null)
                 {   // 1. SubItems jsou deklarované přímo zde (Static), pak z nich vytvoříme nabídku a necháme ji uživateli zobrazit:
                     var startTime = DxComponent.LogTimeCurrent;
                     int count = 0;
-                    _PopupMenu_FillItems(dxPopup, level + 1, itemInfo.DxGroup, lazySubItems.ParentItem, lazySubItems.SubItems, true, ref count);
+                    _PopupMenu_FillItems(dxPopup, level + 1, itemInfo.DxGroup, lazyinfo.ParentItem, lazyinfo.SubItems, true, ref count);
                     if (LogActive) DxComponent.LogAddLineTime($"LazyLoad SplitButton menu create: {count} items, {DxComponent.LogTokenTimeMilisec}", startTime);
                     
-                    if (lazySubItems.SubItemsContentMode == RibbonContentMode.OnDemandLoadEveryTime || lazySubItems.SubItemsContentMode == RibbonContentMode.OnDemandLoadOnce)
+                    if (lazyinfo.SubItemsContentMode == RibbonContentMode.OnDemandLoadEveryTime || lazyinfo.SubItemsContentMode == RibbonContentMode.OnDemandLoadOnce)
                         deactivatePopupEvent = false;                     // Pokud máme o SubItems žádat server, necháme si aktivní událost Popup
                     else
-                        itemInfo.LazyInfo = null;                         // Data máme Více již LazyInfo nebudeme potřebovat, a událost Popup deaktivujeme.
+                        itemInfo.LazyInfo = null;                         // Data máme. Více již LazyInfo nebudeme potřebovat, a událost Popup deaktivujeme.
                     cancel = false;                                       // Otevírání Popup menu nebudeme blokovat, protože v něm jsou nějaká data
                 }
-                if (lazySubItems.SubItemsContentMode == RibbonContentMode.OnDemandLoadOnce || lazySubItems.SubItemsContentMode == RibbonContentMode.OnDemandLoadEveryTime)
+                if (lazyinfo.SubItemsContentMode == RibbonContentMode.OnDemandLoadOnce || lazyinfo.SubItemsContentMode == RibbonContentMode.OnDemandLoadEveryTime)
                 {   // 2. SubItems mi dodá aplikace - na základě obsluhy eventu ItemOnDemandLoad; pak dojde k vyvolání zdejší metody _PopupMenu_RefreshItems():
-                    if (!IsSearchEditActive)
+                    if (!IsSearchEditActive && !lazyinfo.RefreshPending)
                     {
                         _OpenItemPopupMenu = dxPopup;
                         _OpenItemPopupMenuItemId = itemInfo.Data.ItemId;
                         _OpenMenuLocation = GetPopupLocation(dxPopup.Activator as DevExpress.XtraBars.BarItemLink);
-                        lazySubItems.Activator = null;
-                        lazySubItems.PopupLocation = _OpenMenuLocation;
-                        lazySubItems.CurrentMergeLevel = this.MergeLevel;
-                        this.RunItemOnDemandLoad(lazySubItems.ParentItem);    // Vyvoláme event pro načtení dat, ten zavolá RefreshItem, ten provede UnMerge - Modify - Merge, a v Modify vyvolá zdejší metodu _PopupMenu_RefreshItems()...
+                        lazyinfo.Activator = null;
+                        lazyinfo.PopupLocation = _OpenMenuLocation;
+                        lazyinfo.CurrentMergeLevel = this.MergeLevel;
+                        lazyinfo.RefreshPending = true;
+                        this.RunItemOnDemandLoad(lazyinfo.ParentItem);    // Vyvoláme event pro načtení dat, ten zavolá RefreshItem, ten provede UnMerge - Modify - Merge, a v Modify vyvolá zdejší metodu _PopupMenu_RefreshItems()...
                     }
                     deactivatePopupEvent = false;                         // Dokud nedoběhnou ze serveru data (OnDemandLoad => RefreshItem() ), tak necháme aktivní událost Popup = pro jistotu...
                 }
@@ -2665,6 +2744,48 @@ namespace Noris.Clients.Win.Components.AsolDX
                     itemInfo.LazyInfo = null;                             // Více již LazyInfo nebudeme potřebovat...
                 }
                 e.Cancel = cancel;
+            }
+
+            // Deaktivovat zdejší handler?
+            if (deactivatePopupEvent)
+                dxPopup.BeforePopup -= _PopupMenu_BeforePopup;
+        }
+        /// <summary>
+        /// Metoda zajistí vytvoření obsahu menu Popup, buď z prvků již definovaných anebo si položky menu vyžádá prostřednictvím metody <see cref="RunItemOnDemandLoad(IRibbonItem)"/>.
+        /// Tato metoda se volá výhradně při řešení LazyItems v rámci Application.Idle.
+        /// </summary>
+        private void _PopupMenu_CreateLazyItems(DevExpress.XtraBars.PopupMenu dxPopup, BarItemTagInfo itemInfo)
+        {
+            if (dxPopup is null || itemInfo is null || itemInfo.LazyInfo is null) return;
+
+            bool deactivatePopupEvent = true;
+            var lazyInfo = itemInfo.LazyInfo;
+            if (lazyInfo.SubItems != null)
+            {   // 1. SubItems jsou deklarované přímo zde (Static), pak z nich vytvoříme nabídku a je hotovo:
+                var startTime = DxComponent.LogTimeCurrent;
+                int count = 0;
+                _PopupMenu_FillItems(dxPopup, itemInfo.Level + 1, itemInfo.DxGroup, lazyInfo.ParentItem, lazyInfo.SubItems, true, ref count);
+                if (LogActive) DxComponent.LogAddLineTime($"LazyLoad SplitButton menu create: {count} items, {DxComponent.LogTokenTimeMilisec}", startTime);
+
+                if (lazyInfo.SubItemsContentMode == RibbonContentMode.OnDemandLoadEveryTime || lazyInfo.SubItemsContentMode == RibbonContentMode.OnDemandLoadOnce)
+                    deactivatePopupEvent = false;                     // Pokud máme o SubItems žádat server, necháme si aktivní událost Popup
+                else
+                    itemInfo.LazyInfo = null;                         // Data máme. Více již LazyInfo nebudeme potřebovat, a událost Popup deaktivujeme.
+            }
+            if (lazyInfo.SubItemsContentMode == RibbonContentMode.OnDemandLoadOnce || lazyInfo.SubItemsContentMode == RibbonContentMode.OnDemandLoadEveryTime)
+            {   // 2. SubItems mi dodá aplikace - na základě obsluhy eventu ItemOnDemandLoad; pak dojde k vyvolání zdejší metody _PopupMenu_RefreshItems():
+                if (!IsSearchEditActive && !lazyInfo.RefreshPending)
+                {
+                    lazyInfo.CurrentMergeLevel = this.MergeLevel;
+                    lazyInfo.RefreshPending = true;
+                    this.RunItemOnDemandLoad(lazyInfo.ParentItem);    // Vyvoláme event pro načtení dat, ten zavolá RefreshItem, ten provede UnMerge - Modify - Merge, a v Modify vyvolá zdejší metodu _PopupMenu_RefreshItems()...
+                }
+                deactivatePopupEvent = false;                         // Dokud nedoběhnou ze serveru data (OnDemandLoad => RefreshItem() ), tak necháme aktivní událost Popup = pro jistotu...
+            }
+            else
+            {   // 3. Nemáme Static prvky SubItems, ale ani je nemáme načítat OnDemand...
+                //    necháme odpojit event Popup, a zahodíme LazyInfo.
+                itemInfo.LazyInfo = null;                             // Více již LazyInfo nebudeme potřebovat...
             }
 
             // Deaktivovat zdejší handler?
@@ -2718,10 +2839,12 @@ namespace Noris.Clients.Win.Components.AsolDX
                     itemInfo.LazyInfo = new LazySubItemsInfo(newRibbonItem, newRibbonItem.SubItemsContentMode, newRibbonItem.SubItems);
                     deactivatePopupEvent = false;                     // Pokud máme o SubItems vždycky žádat server, necháme si aktivní událost Popup
                 }
-
+                else
+                {
+                    itemInfo.LazyInfo = null;
+                }
                 // Aktualizujeme info uložené v splitButton.DropDownControl.Tag  (tj. PopupMenu.Tag):
                 itemInfo.Data = newRibbonItem;
-                itemInfo.LazyInfo = null;
 
                 // Deaktivace eventu BeforePopup, pokud je požadována (tj. kromě režimu OnDemandLoadEveryTime)
                 if (deactivatePopupEvent)
@@ -2826,7 +2949,7 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             if (level == 0)
             {   // Události navazuji jen pro level = 0 = tlačítko Menu:
-                menu.GetItemData += Menu_GetItemData;
+                menu.GetItemData += _BarMenu_GetItemData;
                 menu.CloseUp += _BarMenu_CloseUp;
 
                 // Pokud právě nyní generujeme BarItem Menu, jehož ItemId se shoduje s prvkem menu, který je připraven ke znovuotevření v proměnné _OpenItemBarMenu (identifikátor _OpenItemBarMenuItemId je shodný s aktuálním menu),
@@ -2842,7 +2965,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void Menu_GetItemData(object sender, EventArgs e)
+        private void _BarMenu_GetItemData(object sender, EventArgs e)
         {
             if (!(sender is BarSubItem menu)) return;
 
@@ -2852,15 +2975,14 @@ namespace Noris.Clients.Win.Components.AsolDX
             var itemInfo = menu.Tag as BarItemTagInfo;               // Do Menu jsme instanci BarItemTagInfo vytvořili při jeho tvorbě v metodě PrepareBarMenu()
             if (itemInfo != null && itemInfo.LazyInfo != null)
             {   // Pokud máme LazyInfo:
-                var lazySubItems = itemInfo.LazyInfo;
-                int level = itemInfo.Level;
+                var lazyInfo = itemInfo.LazyInfo;
                 // OnDemand = položka se má donačíst ze serveru:
-                bool isOnDemand = (lazySubItems.SubItemsContentMode == RibbonContentMode.OnDemandLoadEveryTime || lazySubItems.SubItemsContentMode == RibbonContentMode.OnDemandLoadOnce);
+                bool isOnDemand = (lazyInfo.SubItemsContentMode == RibbonContentMode.OnDemandLoadEveryTime || lazyInfo.SubItemsContentMode == RibbonContentMode.OnDemandLoadOnce);
                 // Budeme volat server? Ano když je OnDemand, ale ne když to máme přeskočit (je to potlačeno) a ne když jsme v Search textboxu (to by se rozjelo donačítání všech prvků):
-                bool needRunOnDemandLoad = (isOnDemand && !_OpenItemBarMenuSkipRunOnDemandLoad && !IsSearchEditActive);
+                bool needRunOnDemandLoad = (isOnDemand && !_OpenItemBarMenuSkipRunOnDemandLoad && !IsSearchEditActive && !lazyInfo.RefreshPending);
                 // Máme statická data?
-                bool hasNewItems = (lazySubItems.SubItems != null);
-                // Budeme generovat nové položky do menu? Ano, pokud je máme, a pokud NEbudeme colat server o nové položky
+                bool hasNewItems = (lazyInfo.SubItems != null);
+                // Budeme generovat nové položky do menu? Ano, pokud je máme, a pokud NEbudeme žádat server o nové položky
                 //  (kdybychom položky vytvořili, a následně volali server pro OnDemandLoad, pak bychom ty prvky z menu hned zase zahodili):
                 bool needFillMenu = hasNewItems && !needRunOnDemandLoad;
                 // Mohou nastat dvě situace:
@@ -2869,22 +2991,23 @@ namespace Noris.Clients.Win.Components.AsolDX
                 {   // 1. SubItems jsou deklarované přímo zde (Static), pak z nich vytvoříme nabídku a necháme ji uživateli zobrazit:
                     var startTime = DxComponent.LogTimeCurrent;
                     int count = 0;
-                    _BarMenu_FillItems(menu, level + 1, itemInfo.DxGroup, lazySubItems.ParentItem, lazySubItems.SubItems, true, ref count);
-                    lazySubItems.SubItems = null;                    // SubItems, které jsme nyní vložili do menu, už příště nebudeme potřebovat. Jsou v menu, a dokud nepřijde Refresh, tak tam budou.
-                    itemInfo.ValidMenu = true;                           // Prvek nyní obsahuje validní menu
+                    _BarMenu_FillItems(menu, itemInfo.Level + 1, itemInfo.DxGroup, lazyInfo.ParentItem, lazyInfo.SubItems, true, ref count);
+                    lazyInfo.SubItems = null;                        // SubItems, které jsme nyní vložili do menu, už příště nebudeme potřebovat. Jsou v menu, a dokud nepřijde Refresh, tak tam budou.
+                    itemInfo.ValidMenu = true;                       // Prvek nyní obsahuje validní menu
                     if (LogActive) DxComponent.LogAddLineTime($"LazyLoad Menu create: {count} items, {DxComponent.LogTokenTimeMilisec}", startTime);
                 }
                 //  b) Je třeba zavolat server, aby nám dal nové prvky do menu (eventu ItemOnDemandLoad => RefreshItems => _BarMenu_OpenMenu()),
                 //      pak ale stávající prvky menu uživateli nezobrazíme:
                 if (needRunOnDemandLoad)
-                {   // 2. O prvky SubItems máme požádat server - na základě obsluhy  :
+                {   // 2. O prvky SubItems máme požádat server - na základě obsluhy eventu ItemOnDemandLoad; pak dojde k vyvolání zdejší metody _BarMenu_RefreshItems():
                     _OpenMenuLocation = mousePoint;
                     _OpenItemBarMenu = menu;
                     _OpenItemBarMenuItemId = itemInfo.Data.ItemId;
 
-                    lazySubItems.PopupLocation = mousePoint;
-                    lazySubItems.CurrentMergeLevel = this.MergeLevel;
-                    this.RunItemOnDemandLoad(lazySubItems.ParentItem);
+                    lazyInfo.PopupLocation = mousePoint;
+                    lazyInfo.CurrentMergeLevel = this.MergeLevel;
+                    lazyInfo.RefreshPending = true;
+                    this.RunItemOnDemandLoad(lazyInfo.ParentItem);
 
                     // Tento kód zajistí, že vlastní menu nebude rozsvíceno - protože očekáváme dodání nového obsahu menu ze serveru (v RefreshMenu).
                     // Kdyby to tu nebylo, pak bude menu blikat (rozsvítil by se starý obsah a po refreshi by se aktivoval nový obsah).
@@ -2896,9 +3019,52 @@ namespace Noris.Clients.Win.Components.AsolDX
                 }
                 // Prvek již NENÍ OnDemand: odpojíme tedy jeho LazyInfo:
                 if (!isOnDemand)
-                    itemInfo.LazyInfo = null;                    // Data máme. Prvek již NENÍ OnDemand. Více již LazyInfo nebudeme potřebovat.
+                    itemInfo.LazyInfo = null;                        // Data máme. Prvek již NENÍ OnDemand. Více již LazyInfo nebudeme potřebovat.
 
             }
+        }
+        /// <summary>
+        /// Metoda zajistí vytvoření obsahu menu, buď z prvků již definovaných anebo si položky menu vyžádá prostřednictvím metody <see cref="RunItemOnDemandLoad(IRibbonItem)"/>.
+        /// Tato metoda se volá výhradně při řešení LazyItems v rámci Application.Idle.
+        /// </summary>
+        private void _BarMenu_CreateItems(DevExpress.XtraBars.BarSubItem barMenu, BarItemTagInfo itemInfo)
+        {
+            if (barMenu is null || itemInfo is null || itemInfo.LazyInfo is null) return;
+
+            var lazyInfo = itemInfo.LazyInfo;
+
+            // OnDemand = položka se má donačíst ze serveru:
+            bool isOnDemand = (lazyInfo.SubItemsContentMode == RibbonContentMode.OnDemandLoadEveryTime || lazyInfo.SubItemsContentMode == RibbonContentMode.OnDemandLoadOnce);
+            // Budeme volat server? Ano když je OnDemand, ale ne když to máme přeskočit (je to potlačeno) a ne když jsme v Search textboxu (to by se rozjelo donačítání všech prvků):
+            bool needRunOnDemandLoad = (isOnDemand && !_OpenItemBarMenuSkipRunOnDemandLoad && !IsSearchEditActive && !lazyInfo.RefreshPending);
+            // Máme statická data?
+            bool hasNewItems = (lazyInfo.SubItems != null);
+            // Budeme generovat nové položky do menu? Ano, pokud je máme, a pokud NEbudeme žádat server o nové položky
+            //  (kdybychom položky vytvořili, a následně volali server pro OnDemandLoad, pak bychom ty prvky z menu hned zase zahodili):
+            bool needFillMenu = hasNewItems && !needRunOnDemandLoad;
+            // Mohou nastat dvě situace:
+            //  a) Máme nové prky do menu, a NEbudeme volat server = pak ty prvky uživateli nabídneme:
+            if (needFillMenu)
+            {   // 1. SubItems jsou deklarované přímo zde (Static), pak z nich vytvoříme nabídku a necháme ji uživateli zobrazit:
+                var startTime = DxComponent.LogTimeCurrent;
+                int count = 0;
+                _BarMenu_FillItems(barMenu, itemInfo.Level + 1, itemInfo.DxGroup, lazyInfo.ParentItem, lazyInfo.SubItems, true, ref count);
+                lazyInfo.SubItems = null;                            // SubItems, které jsme nyní vložili do menu, už příště nebudeme potřebovat. Jsou v menu, a dokud nepřijde Refresh, tak tam budou.
+                itemInfo.ValidMenu = true;                           // Prvek nyní obsahuje validní menu
+                if (LogActive) DxComponent.LogAddLineTime($"LazyLoad Menu create: {count} items, {DxComponent.LogTokenTimeMilisec}", startTime);
+            }
+            //  b) Je třeba zavolat server, aby nám dal nové prvky do menu (eventu ItemOnDemandLoad => RefreshItems => _BarMenu_OpenMenu()),
+            //      pak ale stávající prvky menu uživateli nezobrazíme:
+            if (needRunOnDemandLoad)
+            {   // 2. O prvky SubItems máme požádat server - na základě obsluhy eventu ItemOnDemandLoad; pak dojde k vyvolání zdejší metody _BarMenu_RefreshItems():
+                lazyInfo.CurrentMergeLevel = this.MergeLevel;
+                lazyInfo.RefreshPending = true;
+                this.RunItemOnDemandLoad(lazyInfo.ParentItem);
+            }
+            // Prvek již NENÍ OnDemand: odpojíme tedy jeho LazyInfo:
+            if (!isOnDemand)
+                itemInfo.LazyInfo = null;                            // Data máme. Prvek již NENÍ OnDemand. Více již LazyInfo nebudeme potřebovat.
+
         }
         /// <summary>
         /// Při zavírání Bar menu
@@ -3372,6 +3538,12 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// </summary>
             public RibbonContentMode SubItemsContentMode { get; private set; }
             /// <summary>
+            /// Právě probíhá Refresh prvků menu: byl vydán požadavek na refresh, ale dosud nebyla dodána data.
+            /// Na true se nastavuje při otevírání menu a při LazyLoad, na false pak při Refresh obsahu prvku.
+            /// Obě metody probíhají v GUI threadu.
+            /// </summary>
+            public bool RefreshPending { get; set; }
+            /// <summary>
             /// SubPrvky
             /// </summary>
             public IEnumerable<IRibbonItem> SubItems { get; set; }
@@ -3580,7 +3752,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 if (refreshToolbar)
                 {
                     qatItem.BarItem = this.Items[itemId];
-                    if (TryGetIRibbonData(qatItem.BarItem, out var _, out var iRibbonItem, out var iRibbonGroup, out var _))
+                    if (TryGetIRibbonData(qatItem.BarItem, out var _, out var iRibbonItem, out var iRibbonGroup))
                     {
                         qatItem.RibbonItem = iRibbonItem;
                         qatItem.RibbonGroup = iRibbonGroup;
@@ -4166,7 +4338,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             return TryGetIRibbonData(link?.Item, out key, out iRibbonItem, out iRibbonGroup, out ownerRibbon);
         }
         /// <summary>
-        /// Metoda pro dodaný BarItem najde jeho Tag, detekuje jeho typ a určí jeho Key, najde Ribbon, který prvek deklaroval, uloží typové výsledky a vrátí true.
+        /// Metoda pro dodaný BarItem najde jeho Tag, detekuje jeho typ a určí jeho Key, a najde i Ribbon, který prvek deklaroval, uloží typové výsledky a vrátí true.
         /// Pokud se nezdaří, vrátí false.
         /// </summary>
         /// <param name="barItem"></param>
@@ -4177,6 +4349,22 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         private bool TryGetIRibbonData(DevExpress.XtraBars.BarItem barItem, out string key, out IRibbonItem iRibbonItem, out IRibbonGroup iRibbonGroup, out DxRibbonControl ownerRibbon)
         {
+            if (TryGetIRibbonData(barItem, out key, out iRibbonItem, out iRibbonGroup))
+                return (_TryGetDxRibbon(barItem, out ownerRibbon));
+            ownerRibbon = null;
+            return false;
+        }
+        /// <summary>
+        /// Metoda pro dodaný BarItem najde jeho Tag, detekuje jeho typ a určí jeho Key, uloží typové výsledky a vrátí true.
+        /// Pokud se nezdaří, vrátí false.
+        /// </summary>
+        /// <param name="barItem"></param>
+        /// <param name="key"></param>
+        /// <param name="iRibbonItem"></param>
+        /// <param name="iRibbonGroup"></param>
+        /// <returns></returns>
+        private bool TryGetIRibbonData(DevExpress.XtraBars.BarItem barItem, out string key, out IRibbonItem iRibbonItem, out IRibbonGroup iRibbonGroup)
+        {
             if (barItem != null)
             {
                 object tag = barItem.Tag;
@@ -4185,34 +4373,29 @@ namespace Noris.Clients.Win.Components.AsolDX
                     key = GetValidQATKey(itemInfo.Data.ItemId);
                     iRibbonItem = itemInfo.Data;
                     iRibbonGroup = itemInfo.Data.ParentGroup;
-                    return (_TryGetDxRibbon(barItem, out ownerRibbon));
                 }
                 if (tag is IRibbonItem iItem)
                 {
                     key = GetValidQATKey(iItem.ItemId);
                     iRibbonItem = iItem;
                     iRibbonGroup = iItem.ParentGroup;
-                    return (_TryGetDxRibbon(barItem, out ownerRibbon));
                 }
                 if (tag is IRibbonGroup iGroup)
                 {
                     key = GetValidQATKey(iGroup.GroupId);
                     iRibbonItem = null;
                     iRibbonGroup = iGroup;
-                    return (_TryGetDxRibbon(barItem, out ownerRibbon));
                 }
                 if ((tag is DxRibbonGroup ribbonGroup) && (ribbonGroup.Tag is IRibbonGroup iiGroup))
                 {
                     key = GetValidQATKey(iiGroup.GroupId);
                     iRibbonItem = null;
                     iRibbonGroup = iiGroup;
-                    return (_TryGetDxRibbon(barItem, out ownerRibbon));
                 }
             }
             key = null;
             iRibbonItem = null;
             iRibbonGroup = null;
-            ownerRibbon = null;
             return false;
         }
         /// <summary>
@@ -4392,7 +4575,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 qatPanel.ListBox.SelectionMode = SelectionMode.MultiExtended;
                 qatPanel.ListBox.ItemHeight = 20;
                 qatPanel.ListBox.DragDropActions = DxDragDropActionType.ReorderItems;
-                qatPanel.ListBox.EnabledKeyActions = KeyActionType.AltDown | KeyActionType.AltUp | KeyActionType.Delete;
+                qatPanel.ListBox.EnabledKeyActions = KeyActionType.MoveDown | KeyActionType.MoveUp | KeyActionType.Delete;
 
                 var result = form.ShowDialog(this.FindForm());
 
@@ -4419,7 +4602,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 {
                     var barItem = items[i];
                     if (barItem.Visibility == BarItemVisibility.Never) continue;
-                    if (!TryGetIRibbonData(barItem, out var _, out var iRibbonItem, out var _, out var _)) continue;
+                    if (!TryGetIRibbonData(barItem, out var _, out var iRibbonItem, out var _)) continue;
 
                     if (!DxQuickAccessToolbar.ContainsQATItem(iRibbonItem.ItemId)) continue;   // Toto není UserQAT, ale FixedQAT prvek!
 
@@ -6264,6 +6447,30 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         protected DxRibbonLazyLoadInfo LazyLoadInfo { get; private set; }
         /// <summary>
+        /// Obsahuje všechny grupy a jejich prvky, které jsou fyzicky přítomné v this stránce.
+        /// Jde o pole, jehož prvky jsou Tuple s dvěma prvky, kde Item1 je samotná grupa, a Item2 je pole prvků BarItem, přítomných v dané grupě.
+        /// Z tohoto pole lze poměrně snadno sestavit jednoduché pole všech BarItemů:
+        /// <code>
+        /// var barItems = GroupItems.SelectMany(gi => gi.Item2).ToArray();
+        /// </code>
+        /// </summary>
+        internal Tuple<RibbonPageGroup, BarItem[]>[] GroupItems
+        {
+            get
+            {
+                List<Tuple<RibbonPageGroup, BarItem[]>> groupItems = new List<Tuple<RibbonPageGroup, BarItem[]>>();
+
+                string lazyGroupId = DxRibbonLazyLoadInfo.LazyLoadGroupId;
+                foreach (RibbonPageGroup group in this.Groups)
+                {
+                    if (group.Name == lazyGroupId) continue;
+                    groupItems.Add(new Tuple<RibbonPageGroup, BarItem[]>(group, group.ItemLinks.Select(l => l.Item).ToArray()));
+                }
+                var barItems = groupItems.SelectMany(gi => gi.Item2).ToArray();
+                return groupItems.ToArray();
+            }
+        }
+        /// <summary>
         /// Smaže obsah dané stránky.
         /// </summary>
         /// <param name="page"></param>
@@ -6296,16 +6503,16 @@ namespace Noris.Clients.Win.Components.AsolDX
             {   // Standardní grupy a itemy:
                 var iOwnerRibbon = this.OwnerDxRibbon as IDxRibbonInternal;
 
-                string groupId = DxRibbonLazyLoadInfo.LazyLoadGroupId;
-                var ownerRibbonItems = this.OwnerDxRibbon.Items;
-                var groupsToDelete = this.Groups.OfType<DevExpress.XtraBars.Ribbon.RibbonPageGroup>().Where(g => g.Name != groupId).ToList();
-                var itemsToDelete = groupsToDelete.SelectMany(g => g.ItemLinks).Select(l => l.Item).ToList();
+                var groupItems = this.GroupItems;
+                var groupsToDelete = groupItems.Select(gi => gi.Item1).ToList();
+                var itemsToDelete = groupItems.SelectMany(gi => gi.Item2).ToList();
                 iOwnerRibbon.RemoveGroups(groupsToDelete.OfType<DxRibbonGroup>());
 
                 // Před fyzickým odebráním grup a prvků z RibbonPage je předám do QAT systému v Ribbonu, aby si je odebral ze své evidence: 
                 iOwnerRibbon.RemoveGroupsFromQat(groupsToDelete);
                 iOwnerRibbon.RemoveItemsFromQat(itemsToDelete);
 
+                var ownerRibbonItems = this.OwnerDxRibbon.Items;
                 var groups = this.Groups;
                 groupsToDelete.ForEach(g => groups.Remove(g));
                 itemsToDelete.ForEach(i => ownerRibbonItems.Remove(i));

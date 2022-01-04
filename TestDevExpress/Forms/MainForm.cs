@@ -3949,7 +3949,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
         {
             _PanelDragDrop = panel;
 
-            KeyActionType sourceKeyActions = KeyActionType.CtrlA | KeyActionType.CtrlC;
+            KeyActionType sourceKeyActions = KeyActionType.SelectAll | KeyActionType.ClipCopy;
             DxDragDropActionType sourceDDActions = DxDragDropActionType.CopyItemsFrom;
             _DragDropAList = new DxListBoxControl() { SelectionMode = SelectionMode.MultiExtended, DragDropActions = sourceDDActions, EnabledKeyActions = sourceKeyActions };
             _DragDropAList.Name = "AList";
