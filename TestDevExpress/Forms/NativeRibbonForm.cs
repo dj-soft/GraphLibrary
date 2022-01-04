@@ -272,10 +272,100 @@ namespace TestDevExpress.Forms
         private void StoreContentDataDirect(DxRibbonControl dxRibbon, string prefix, int pageCount)
         {
             var iPages = CreateIPagesTest(prefix, pageCount);
+            dxRibbon.AddPages(iPages);
+
 
             // dxRibbon.AddPages(iPages);
             // dxRibbon.AddPagesTestGui(iPages);
+
+            /*
             dxRibbon.AddPagesNative(iPages);
+
+            V DxRibbonu byla metoda:
+        internal void AddPagesNative(IEnumerable<IRibbonPage> iRibbonPages)
+        {
+            if (iRibbonPages == null) return;
+            foreach (var iRibbonPage in iRibbonPages)
+            {
+                // var pageCategory = GetPageCategory(iRibbonPage.Category, iRibbonPage.ChangeMode);      // Pokud je to třeba, vygeneruje Kategorii
+                // RibbonPageCollection pages = (pageCategory != null ? pageCategory.Pages : this.Pages); // Kolekce stránek: kategorie / ribbon
+
+                DxRibbonPage dxPage = new DxRibbonPage(this, iRibbonPage.PageText);
+
+                List<DxRibbonGroup> dxGroups = new List<DxRibbonGroup>();
+                var list = DataRibbonGroup.SortGroups(iRibbonPage.Groups);
+                foreach (var iGroup in list)
+                {
+                    DxRibbonGroup dxGroup = new DxRibbonGroup(iGroup.GroupText);
+                    foreach (var iRibbonItem in iGroup.Items)
+                    {
+                        BarItem dxItem;
+                        switch (iRibbonItem.ItemType)
+                        {
+                            case RibbonItemType.CheckBoxStandard:
+                                //var checkButton = this.Items.CreateCheckItem(iItem.Text, false);
+                                //dxItem = checkButton;
+                                dxItem = this.CreateItem(iRibbonItem);
+                                break;
+                            case RibbonItemType.Menu:
+                                int i = 2;
+                                if (i == 0)
+                                {
+                                    // OK:  nejprve Sub BarItems, z nich potom rovnou Menu:
+                                    // var subItems1 = iItem.SubItems.Select(s => this.Items.CreateButton(s.Text)).ToArray();
+                                    // var itemMenu1 = this.Items.CreateMenu(iItem.Text, subItems1);
+
+
+                                    // OK:  Nejprve Menu, pak samotné SubItems, a nakonec SubItems vložit do Menu:
+                                    var itemMenu = this.Items.CreateMenu(iRibbonItem.Text);
+                                    var subItems = iRibbonItem.SubItems.Select(s => this.Items.CreateButton(s.Text)).ToArray();
+                                    subItems.ForEachExec(subItem => itemMenu.AddItem(subItem));
+
+                                    // OK:  Tag
+                                    PrepareBarItemTag(itemMenu, iRibbonItem, 0, dxGroup);
+
+                                    // OK:  Eventy
+                                    itemMenu.GetItemData += _BarMenu_GetItemData;
+                                    itemMenu.CloseUp += _BarMenu_CloseUp;
+
+                                    // OK:  vzhled:
+                                    itemMenu.RibbonStyle = (iRibbonItem.RibbonStyle == RibbonItemStyles.Large ? DevExpress.XtraBars.Ribbon.RibbonItemStyles.Large : DevExpress.XtraBars.Ribbon.RibbonItemStyles.SmallWithText);
+                                    itemMenu.ImageOptions.SvgImage = DxComponent.CreateVectorImage(iRibbonItem.ImageName);
+
+                                    // ??
+
+
+                                    dxItem = itemMenu;
+                                }
+                                else if (i == 1)
+                                {   // 
+                                    int count = 0;
+                                    dxItem = PrepareItem(iRibbonItem, dxGroup, 0, true, null, ref count);
+                                }
+                                else
+                                {   // TADY JE CHYBA
+                                    dxItem = this.CreateItem(iRibbonItem);
+                                }
+                                break;
+                            case RibbonItemType.Button:
+                                dxItem = this.CreateItem(iRibbonItem);
+                                break;
+                            default:
+                                dxItem = this.CreateItem(iRibbonItem);
+                                break;
+                        }
+                        dxGroup.ItemLinks.Add(dxItem);
+                    }
+                    dxGroups.Add(dxGroup);
+                }
+                dxPage.Groups.AddRange(dxGroups.ToArray());
+
+                this.Pages.Add(dxPage);
+            }
+        }
+
+
+            */
         }
         private List<IRibbonPage> CreateIPagesTest(string prefix, int pageCount)
         {
@@ -429,7 +519,97 @@ namespace TestDevExpress.Forms
             */
 
             // dxRibbon.AddPages(iPages, true);
+
+
+            /*
             dxRibbon.AddPagesNative(iPages);
+
+            v DxRibbon byla metoda:
+        internal void AddPagesNative(IEnumerable<IRibbonPage> iRibbonPages)
+        {
+            if (iRibbonPages == null) return;
+            foreach (var iRibbonPage in iRibbonPages)
+            {
+                // var pageCategory = GetPageCategory(iRibbonPage.Category, iRibbonPage.ChangeMode);      // Pokud je to třeba, vygeneruje Kategorii
+                // RibbonPageCollection pages = (pageCategory != null ? pageCategory.Pages : this.Pages); // Kolekce stránek: kategorie / ribbon
+
+                DxRibbonPage dxPage = new DxRibbonPage(this, iRibbonPage.PageText);
+
+                List<DxRibbonGroup> dxGroups = new List<DxRibbonGroup>();
+                var list = DataRibbonGroup.SortGroups(iRibbonPage.Groups);
+                foreach (var iGroup in list)
+                {
+                    DxRibbonGroup dxGroup = new DxRibbonGroup(iGroup.GroupText);
+                    foreach (var iRibbonItem in iGroup.Items)
+                    {
+                        BarItem dxItem;
+                        switch (iRibbonItem.ItemType)
+                        {
+                            case RibbonItemType.CheckBoxStandard:
+                                //var checkButton = this.Items.CreateCheckItem(iItem.Text, false);
+                                //dxItem = checkButton;
+                                dxItem = this.CreateItem(iRibbonItem);
+                                break;
+                            case RibbonItemType.Menu:
+                                int i = 2;
+                                if (i == 0)
+                                {
+                                    // OK:  nejprve Sub BarItems, z nich potom rovnou Menu:
+                                    // var subItems1 = iItem.SubItems.Select(s => this.Items.CreateButton(s.Text)).ToArray();
+                                    // var itemMenu1 = this.Items.CreateMenu(iItem.Text, subItems1);
+
+
+                                    // OK:  Nejprve Menu, pak samotné SubItems, a nakonec SubItems vložit do Menu:
+                                    var itemMenu = this.Items.CreateMenu(iRibbonItem.Text);
+                                    var subItems = iRibbonItem.SubItems.Select(s => this.Items.CreateButton(s.Text)).ToArray();
+                                    subItems.ForEachExec(subItem => itemMenu.AddItem(subItem));
+
+                                    // OK:  Tag
+                                    PrepareBarItemTag(itemMenu, iRibbonItem, 0, dxGroup);
+
+                                    // OK:  Eventy
+                                    itemMenu.GetItemData += _BarMenu_GetItemData;
+                                    itemMenu.CloseUp += _BarMenu_CloseUp;
+
+                                    // OK:  vzhled:
+                                    itemMenu.RibbonStyle = (iRibbonItem.RibbonStyle == RibbonItemStyles.Large ? DevExpress.XtraBars.Ribbon.RibbonItemStyles.Large : DevExpress.XtraBars.Ribbon.RibbonItemStyles.SmallWithText);
+                                    itemMenu.ImageOptions.SvgImage = DxComponent.CreateVectorImage(iRibbonItem.ImageName);
+
+                                    // ??
+
+
+                                    dxItem = itemMenu;
+                                }
+                                else if (i == 1)
+                                {   // 
+                                    int count = 0;
+                                    dxItem = PrepareItem(iRibbonItem, dxGroup, 0, true, null, ref count);
+                                }
+                                else
+                                {   // TADY JE CHYBA
+                                    dxItem = this.CreateItem(iRibbonItem);
+                                }
+                                break;
+                            case RibbonItemType.Button:
+                                dxItem = this.CreateItem(iRibbonItem);
+                                break;
+                            default:
+                                dxItem = this.CreateItem(iRibbonItem);
+                                break;
+                        }
+                        dxGroup.ItemLinks.Add(dxItem);
+                    }
+                    dxGroups.Add(dxGroup);
+                }
+                dxPage.Groups.AddRange(dxGroups.ToArray());
+
+                this.Pages.Add(dxPage);
+            }
+        }
+
+
+
+            */
         }
         private void _ModifyGroup(Noris.Clients.Win.Components.AsolDX.IRibbonGroup iGroup)
         {

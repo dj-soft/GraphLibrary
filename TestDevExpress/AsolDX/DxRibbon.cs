@@ -1259,143 +1259,6 @@ namespace Noris.Clients.Win.Components.AsolDX
                 _AddGroup(iRibbonGroup, page, currentMode, ref count);
             }
         }
-
-        #region TESTY => SMAZAT
-
-        internal void AddPagesTest(IEnumerable<IRibbonPage> iRibbonPages)
-        {
-            if (iRibbonPages == null) return;
-
-            _UnMergeModifyMergeCurrentRibbon(() =>
-                {
-                    // if (clearCurrentContent) _ClearPagesContents();
-                    AddPagesTestUnMerged(iRibbonPages);
-                    // if (clearCurrentContent) _RemoveVoidContainers();
-                }
-                , true);
-
-            /*
-            this.ParentOwner.RunInGui(() =>
-            {
-                _UnMergeModifyMergeCurrentRibbon(() => 
-                {
-                    // if (clearCurrentContent) _ClearPagesContents();
-                    AddPagesTestGui(iRibbonPages);
-                    // if (clearCurrentContent) _RemoveVoidContainers();
-                }
-                , true);
-            });
-            //CheckLazyContentCurrentPage(isCalledFromReFill);
-
-            */
-        }
-        internal void AddPagesTestUnMerged(IEnumerable<IRibbonPage> iRibbonPages)
-        {
-            foreach (var iRibbonPage in iRibbonPages)
-            {
-                if (iRibbonPage is null) return;
-
-                var pageCategory = GetPageCategory(iRibbonPage.Category, iRibbonPage.ChangeMode);      // Pokud je to třeba, vygeneruje Kategorii
-                RibbonPageCollection pages = (pageCategory != null ? pageCategory.Pages : this.Pages); // Kolekce stránek: kategorie / ribbon
-                var page = GetPage(iRibbonPage, pages);                            // Najde / Vytvoří stránku do this.Pages nebo do category.Pages
-                if (page is null) return;
-
-                int count = 0;
-                var list = DataRibbonGroup.SortGroups(iRibbonPage.Groups);
-                foreach (var iRibbonGroup in list)
-                {
-                    iRibbonGroup.ParentPage = iRibbonPage;
-                    _AddGroup(iRibbonGroup, page, (DxRibbonCreateContentMode.CreateGroupsContent | DxRibbonCreateContentMode.CreateAllSubItems), ref count);
-                }
-            }
-        }
-
-        internal void AddPagesNative(IEnumerable<IRibbonPage> iRibbonPages)
-        {
-            if (iRibbonPages == null) return;
-            foreach (var iRibbonPage in iRibbonPages)
-            {
-                // var pageCategory = GetPageCategory(iRibbonPage.Category, iRibbonPage.ChangeMode);      // Pokud je to třeba, vygeneruje Kategorii
-                // RibbonPageCollection pages = (pageCategory != null ? pageCategory.Pages : this.Pages); // Kolekce stránek: kategorie / ribbon
-
-                DxRibbonPage dxPage = new DxRibbonPage(this, iRibbonPage.PageText);
-
-                List<DxRibbonGroup> dxGroups = new List<DxRibbonGroup>();
-                var list = DataRibbonGroup.SortGroups(iRibbonPage.Groups);
-                foreach (var iGroup in list)
-                {
-                    DxRibbonGroup dxGroup = new DxRibbonGroup(iGroup.GroupText);
-                    foreach (var iRibbonItem in iGroup.Items)
-                    {
-                        BarItem dxItem;
-                        switch (iRibbonItem.ItemType)
-                        {
-                            case RibbonItemType.CheckBoxStandard:
-                                //var checkButton = this.Items.CreateCheckItem(iItem.Text, false);
-                                //dxItem = checkButton;
-                                dxItem = this.CreateItem(iRibbonItem);
-                                break;
-                            case RibbonItemType.Menu:
-                                int i = 2;
-                                if (i == 0)
-                                {
-                                    // OK:  nejprve Sub BarItems, z nich potom rovnou Menu:
-                                    // var subItems1 = iItem.SubItems.Select(s => this.Items.CreateButton(s.Text)).ToArray();
-                                    // var itemMenu1 = this.Items.CreateMenu(iItem.Text, subItems1);
-
-
-                                    // OK:  Nejprve Menu, pak samotné SubItems, a nakonec SubItems vložit do Menu:
-                                    var itemMenu = this.Items.CreateMenu(iRibbonItem.Text);
-                                    var subItems = iRibbonItem.SubItems.Select(s => this.Items.CreateButton(s.Text)).ToArray();
-                                    subItems.ForEachExec(subItem => itemMenu.AddItem(subItem));
-
-                                    // OK:  Tag
-                                    PrepareBarItemTag(itemMenu, iRibbonItem, 0, dxGroup);
-
-                                    // OK:  Eventy
-                                    itemMenu.GetItemData += _BarMenu_GetItemData;
-                                    itemMenu.CloseUp += _BarMenu_CloseUp;
-
-                                    // OK:  vzhled:
-                                    itemMenu.RibbonStyle = (iRibbonItem.RibbonStyle == RibbonItemStyles.Large ? DevExpress.XtraBars.Ribbon.RibbonItemStyles.Large : DevExpress.XtraBars.Ribbon.RibbonItemStyles.SmallWithText);
-                                    itemMenu.ImageOptions.SvgImage = DxComponent.CreateVectorImage(iRibbonItem.ImageName);
-
-                                    // ??
-
-
-                                    dxItem = itemMenu;
-                                }
-                                else if (i == 1)
-                                {   // 
-                                    int count = 0;
-                                    dxItem = PrepareItem(iRibbonItem, dxGroup, 0, true, null, ref count);
-                                }
-                                else
-                                {   // TADY JE CHYBA
-                                    dxItem = this.CreateItem(iRibbonItem);
-                                }
-                                break;
-                            case RibbonItemType.Button:
-                                dxItem = this.CreateItem(iRibbonItem);
-                                break;
-                            default:
-                                dxItem = this.CreateItem(iRibbonItem);
-                                break;
-                        }
-                        dxGroup.ItemLinks.Add(dxItem);
-                    }
-                    dxGroups.Add(dxGroup);
-                }
-                dxPage.Groups.AddRange(dxGroups.ToArray());
-
-                this.Pages.Add(dxPage);
-            }
-        }
-        #endregion
-
-
-
-
         /// <summary>
         /// Metoda přidá danou grupu do dané stránky
         /// </summary>
@@ -1772,7 +1635,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             //  už dva BarItem Buttony, každý nese v Tagu svou instanci DxRibbonLazyLoadInfo. A tak lze mergovat DxRibbonLazyLoadInfo víceúrovňově.
             // Pak tedy pro jednu stránku můžeme získat sadu instancí DxRibbonLazyLoadInfo, které definují LazyLoad nebo OnDemand načítání obsahu.
             foreach (var lazyDxPage in lazyDxPages)
-                lazyDxPage.PrepareRealLazyItems(isCalledFromReFill);           // Tato metoda převolá zdejší metodu : IDxRibbonInternal.PrepareRealLazyItems()
+                lazyDxPage.PrepareRealLazyItems(isCalledFromReFill);           // Tato metoda převolá zdejší metodu : void PrepareRealLazyItems(DxRibbonLazyLoadInfo lazyGroup, bool isCalledFromReFill)
         }
         /// <summary>
         /// Vrátí true, pokud stránka s daným <paramref name="pageId"/> je naší vlastní stránkou (je v <see cref="AllOwnPages"/>).
@@ -5893,11 +5756,13 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             return iGroup;
         }
-        private static void SetUhdPaint(IMenuItem menuItem) 
+        private static void SetUhdPaint(IMenuItem menuItem)
         {
+#if Compile_TestDevExpress
             DxComponent.UhdPaintEnabled = (menuItem?.Checked ?? false);
             DxComponent.Settings.SetRawValue("Components", "UhdPaintEnabled", DxComponent.UhdPaintEnabled ? "True" : "False");
             DxComponent.ApplicationRestart();
+#endif
         }
         /// <summary>
         /// Zajistí nastavení stavu Checked do navázaného prvku a odeslání události do odpovídajícho Ribbonu
@@ -6347,7 +6212,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             bool activateOnIdle = (pageContentMode == RibbonContentMode.Static && (!isCreateGroupContent || (!isCreateAllSubItems && DxRibbonControl.ContainsAnyStaticSubItems(iRibbonPage))));
 
             // Potřebujeme nebo nepotřebujeme LazyInfo (tj. data pro budoucí OnDemand tvorbu obsahu nebo požadavek na donačtení obsahu ze serveru)?
-            bool createLazyInfo = (activateOnIdle || isCreateOnlyQatItems || pageContentMode == RibbonContentMode.OnDemandLoadEveryTime || (pageContentMode == RibbonContentMode.OnDemandLoadOnce && !isOnDemandFill));
+            bool createLazyInfo = (activateOnIdle || isCreateOnlyQatItems || pageContentMode == RibbonContentMode.OnDemandLoadEveryTime || (pageContentMode == RibbonContentMode.OnDemandLoadOnce   /*   && !isOnDemandFill   */ ));
             if (createLazyInfo)
                 PrepareLazyLoadInfo(iRibbonPage);
             else
