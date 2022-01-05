@@ -569,7 +569,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public event EventHandler<TEventArgs<IRibbonPage>> SelectedDxPageChanged;
         #endregion
-        #region Quick Search menu - po dobu přítomnosti v něm je potlačeno provádění OnDemand Load
+        #region Quick Search menu - po dobu přítomnosti v něm je potlačeno provádění OnDemand Load, zajistí si donačtení dalších prvků
         /// <summary>
         /// Inicializace eventů v prvku SearchEditItemLink?.Edit
         /// </summary>
@@ -581,16 +581,44 @@ namespace Noris.Clients.Win.Components.AsolDX
                 editor.Enter += SearchEdit_Enter;
                 editor.Leave += SearchEdit_Leave;
             }
+            this.CustomizeSearchMenu += _CustomizeSearchMenu;
             _CurrentIsSearchEditActive = false;
+            _SearchEditItems = null;
+            _SearchEditItemsLoading = false;
         }
+        /// <summary>
+        /// Uživatel vstoupil v this Ribbonu do políčka Search
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void SearchEdit_Enter(object sender, EventArgs e)
         {
+            RefreshSearchEditItems();
             _CurrentIsSearchEditActive = true;
         }
+        /// <summary>
+        /// Uživatel opustil v this Ribbonu políčko Search
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void SearchEdit_Leave(object sender, EventArgs e)
         {
             _CurrentIsSearchEditActive = false;
         }
+        /// <summary>
+        /// Umožní upravit položky menu Search v this Ribbonu
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _CustomizeSearchMenu(object sender, RibbonSearchMenuEventArgs e)
+        {
+            ModifySearchEditItems(e);
+        }
+        /// <summary>
+        /// this Ribbon má aktivní políčko SearchEdit = uživatel provádí hledání prvků Ribbonu.
+        /// Pokud this Ribbon je mergován do <see cref="MergedIntoParentDxRibbon"/>, pak this Ribbon fyzicky nemá políčko Search, a uživatel hledá prostřednictvím Top parent Ribbonu.
+        /// Pak je zde false, ale v TopParent Ribbonu je true. Viz property <see cref="IsSearchEditActive"/>.
+        /// </summary>
         private bool _CurrentIsSearchEditActive;
         /// <summary>
         /// Obsahuje true, pokud this Ribbon (nebo některý náš Parent) má nyní aktivní SearchEditor.
@@ -605,6 +633,133 @@ namespace Noris.Clients.Win.Components.AsolDX
                 return false;
             }
         }
+        /// <summary>
+        /// Zajistí, že v this Ribbonu a v jeho Child ribbonech bude připraven seznam dodatkových prvků v poli <see cref="_SearchEditItems"/>.
+        /// Tato metoda se má volat při každém vstupu do políčka SearchEdit.
+        /// </summary>
+        protected void RefreshSearchEditItems()
+        {
+            if (_SearchEditItems == null && !_SearchEditItemsLoading)
+                RunLoadSearchEditItems();
+            this.MergedChildDxRibbon?.RefreshSearchEditItems();
+        }
+        /// <summary>
+        /// Vyžádá si donačtení prvků do <see cref="_SearchEditItems"/>
+        /// </summary>
+        private void RunLoadSearchEditItems()
+        {
+            _SearchEditItemsLoading = true;
+            OnLoadSearchEditItems();
+            LoadSearchEditItems?.Invoke(this, EventArgs.Empty);
+        }
+        /// <summary>
+        /// Metoda je volána v okamžiku, kdy je třeba získat dodatkové prvky do SearchEdit v tomto Ribbonu.
+        /// </summary>
+        protected virtual void OnLoadSearchEditItems() { }
+        /// <summary>
+        /// Událost je volána v okamžiku, kdy je třeba získat dodatkové prvky do SearchEdit v tomto Ribbonu.
+        /// Aplikace má za úkol vytvořit pole prvků, které budou nabízeny v SearchEdit políčku pro rychlé hledání, a toto pole vložit do <see cref="SearchEditItems"/>.
+        /// </summary>
+        public event EventHandler LoadSearchEditItems;
+        /// <summary>
+        /// Metoda zajistí doplnění SearchEdit položek o odpovídající položky z přídavných prvků v poli <see cref="SearchEditItems"/> plus ze všech Child Ribbonů.
+        /// </summary>
+        /// <param name="e"></param>
+        private void ModifySearchEditItems(RibbonSearchMenuEventArgs e)
+        {
+            if (String.IsNullOrEmpty(e.SearchString) || e.SearchString.Trim().Length < 1) return;
+            var menuItemsDict = e.Menu.ItemLinks.Select(l => l.Item).Where(i => (i != null && !String.IsNullOrEmpty(i.Name))).CreateDictionary(i => i.Name, true);
+            this.AddSearchEditItems(e, menuItemsDict, true);
+        }
+        /// <summary>
+        /// Metoda zajistí doplnění SearchEdit položek o odpovídající položky z přídavných prvků v poli <see cref="SearchEditItems"/> pouze za this Ribbon.
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="menuItemsDict"></param>
+        /// <param name="addHeader"></param>
+        private void AddSearchEditItems(RibbonSearchMenuEventArgs e, Dictionary<string, BarItem> menuItemsDict, bool addHeader)
+        {
+            // Moje přídavné prvky:
+            var iRibbonItems = _SearchEditItems;
+            if (iRibbonItems != null && iRibbonItems.Length > 0)
+            {
+                foreach (var iRibbonItem in iRibbonItems)
+                {
+                    if (iRibbonItem != null && !String.IsNullOrEmpty(iRibbonItem.ItemId) && !menuItemsDict.ContainsKey(iRibbonItem.ItemId) && CanAddItemToSearchMenu(iRibbonItem.Text, e.SearchString))
+                    {
+                        AddSearchEditHeader(e, ref addHeader);
+                        AddSearchEditItem(e, menuItemsDict, iRibbonItem);
+                    }
+                }
+            }
+
+            // Totéž pro moje Child Ribbony:
+            this.MergedChildDxRibbon?.AddSearchEditItems(e, menuItemsDict, addHeader);
+        }
+        /// <summary>
+        /// Vrátí true pokud prvek s daným textem má být přidán do Search menu
+        /// </summary>
+        /// <param name="itemText"></param>
+        /// <param name="searchText"></param>
+        /// <returns></returns>
+        private bool CanAddItemToSearchMenu(string itemText, string searchText)
+        {
+            return (itemText != null && itemText.IndexOf(searchText, StringComparison.CurrentCultureIgnoreCase) >= 0);
+        }
+        private void AddSearchEditHeader(RibbonSearchMenuEventArgs e, ref bool addHeader)
+        {
+            if (addHeader)
+            {
+                DevExpress.XtraBars.BarHeaderItem header = new BarHeaderItem() { Caption = "..." };
+                e.Menu.AddItem(header);
+                addHeader = false;
+            }
+        }
+        /// <summary>
+        /// Zajistí přidání jednoho dalšího prvku do Search menu
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="menuItemsDict"></param>
+        /// <param name="iRibbonItem"></param>
+        private void AddSearchEditItem(RibbonSearchMenuEventArgs e, Dictionary<string, BarItem> menuItemsDict, IRibbonItem iRibbonItem)
+        {
+            BarItem barItem = iRibbonItem.RibbonItem;
+            if (barItem is null)
+            {
+                int count = 0;
+                barItem = GetItem(iRibbonItem, null, 0, DxRibbonCreateContentMode.CreateAllSubItems, ref count);
+                iRibbonItem.RibbonItem = barItem;
+            }
+            var link = e.Menu.AddItem(barItem);
+            menuItemsDict.Add(iRibbonItem.ItemId, barItem);
+        }
+        /// <summary>
+        /// Pole prvků, které budou nabízeny v SearchEdit políčku pro rychlé hledání.
+        /// Prvky mohou být vloženy kdykoliv, i z threadu na pozadí.
+        /// Typicky jsou vloženy po proběhnutí eventu <see cref="LoadSearchEditItems"/>, ale mohou být vloženy i kdykoliv jindy (při refreshi ribbonu).
+        /// Pozor: po vložení null bude v případě potřeby znovu volán event <see cref="LoadSearchEditItems"/>. 
+        /// Pokud aplikace nemá žádné takové prvky, pak ať nereaguje na event <see cref="LoadSearchEditItems"/>, nebo ať sem vloží prázdné pole.
+        /// </summary>
+        public IRibbonItem[] SearchEditItems
+        {
+            get { return _SearchEditItems; }
+            set
+            {
+                _SearchEditItems = value;
+                _SearchEditItemsLoading = false;
+            }
+        }
+        /// <summary>
+        /// Pole dodatkových prvků do SearchEdit, za tis Ribbon (neobsahuje prvky Child Ribbonů).
+        /// Pokud je null, nebylo dosud načteno. Pokud je null a přitom v <see cref="_SearchEditItemsLoading"/> je true, pak aktuálně běží načítání a není třeba načítat opakovaně.
+        /// </summary>
+        private IRibbonItem[] _SearchEditItems;
+        /// <summary>
+        /// Aktuálně byl vydán požadavek na načtení prvků do pole <see cref="_SearchEditItems"/> (událost <see cref="LoadSearchEditItems"/>), 
+        /// ale dosud nebyla dodána data do <see cref="SearchEditItems"/>.
+        /// Po dodání dat bude opět nastaveno false.
+        /// </summary>
+        private bool _SearchEditItemsLoading;
         #endregion
         #region Aktuálně otevřené menu
         /// <summary>
@@ -1356,6 +1511,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         public void RefreshPages(IEnumerable<IRibbonPage> iRibbonPages)
         {
             if (iRibbonPages == null) return;
+            if (this.IsDisposed) return;
+
             this.ParentOwner.RunInGui(() =>
             {
                 _UnMergeModifyMergeCurrentRibbon(() =>
@@ -1458,6 +1615,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="iRibbonPages"></param>
         private void _RefreshPages(IEnumerable<IRibbonPage> iRibbonPages)
         {
+            if (this.IsDisposed) return;
+            
             var reFillPages = _PrepareReFill(iRibbonPages, true);
             DxRibbonCreateContentMode createMode = DxRibbonCreateContentMode.CreateGroupsContent | DxRibbonCreateContentMode.CreateAllSubItems | DxRibbonCreateContentMode.RunningOnDemandFill;
             _AddPages(iRibbonPages, createMode, "OnDemand");
@@ -1782,9 +1941,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private void _PrepareLazyLoadOnDemandItems()
         {
-            var dxPages = this.GetPages(PagePosition.AllOwn).OfType<DxRibbonPage>().ToList();
-            foreach (var dxPage in dxPages)
-                _PrepareLazyLoadOnDemandItemsOnPage(dxPage);
+            // DAJ + STR : zrušeno, výkonová katastrofa - v závislosti na velikosti dat...
+
+            //var dxPages = this.GetPages(PagePosition.AllOwn).OfType<DxRibbonPage>().ToList();
+            //foreach (var dxPage in dxPages)
+            //    _PrepareLazyLoadOnDemandItemsOnPage(dxPage);
+            
             _ActiveLazyLoadItemsOnIdle = false;
         }
         /// <summary>
@@ -2117,7 +2279,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         protected DevExpress.XtraBars.BarItem GetItem(IRibbonItem iRibbonItem, DxRibbonGroup dxGroup, int level, DxRibbonCreateContentMode currentMode, ref int count)
         {
-            if (iRibbonItem is null || dxGroup is null) return null;
+            if (iRibbonItem is null) return null;
 
             var changeMode = ((IRibbonObject)iRibbonItem).ChangeMode;
             DevExpress.XtraBars.BarItem barItem = Items[iRibbonItem.ItemId];
@@ -2134,10 +2296,13 @@ namespace Noris.Clients.Win.Components.AsolDX
                
                 if (barItem is null) return null;
 
-                // Prvek přidám do grupy jen tehdy, když tam ještě není:
-                if (!dxGroup.ItemLinks.TryGetFirst(l => l.Item.Name == iRibbonItem.ItemId, out var barLink))
-                    barLink = dxGroup.ItemLinks.Add(barItem);
-                barLink.BeginGroup = iRibbonItem.ItemIsFirstInGroup;
+                // Prvek přidám do grupy jen tehdy, když máme grupu, a prvek v ní ještě není:
+                if (dxGroup != null)
+                {
+                    if (!dxGroup.ItemLinks.TryGetFirst(l => l.Item.Name == iRibbonItem.ItemId, out var barLink))
+                        barLink = dxGroup.ItemLinks.Add(barItem);
+                    barLink.BeginGroup = iRibbonItem.ItemIsFirstInGroup;
+                }
                 PrepareBarItemTag(barItem, iRibbonItem, level, dxGroup);
                 FillBarItem(barItem, iRibbonItem, level);
 
@@ -2165,8 +2330,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="reallyCreateSubItems">Skutečně se mají vytvářet SubMenu?</param>
         /// <param name="forceItemType">Vynucený typ prvku, má přednost před <see cref="IRibbonItem.ItemType"/>; standardně zadávejme NULL</param>
         /// <param name="count"></param>
+        /// <param name="ignoreQat">Neřešit QAT</param>
         /// <returns></returns>
-        protected DevExpress.XtraBars.BarItem PrepareItem(IRibbonItem iRibbonItem, DxRibbonGroup dxGroup, int level, bool reallyCreateSubItems, RibbonItemType? forceItemType, ref int count)
+        protected DevExpress.XtraBars.BarItem PrepareItem(IRibbonItem iRibbonItem, DxRibbonGroup dxGroup, int level, bool reallyCreateSubItems, RibbonItemType? forceItemType, ref int count, bool ignoreQat = false)
         {
             DevExpress.XtraBars.BarItem barItem = null;
             RibbonItemType itemType = forceItemType ?? GetValidCommonItemType(iRibbonItem.ItemType) ?? iRibbonItem.ItemType;
@@ -2252,7 +2418,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 PrepareBarItemTag(barItem, iRibbonItem, level, dxGroup);
 
                 // Prvek patří do QAT?
-                if (DefinedInQAT(iRibbonItem.ItemId))
+                if (!ignoreQat && DefinedInQAT(iRibbonItem.ItemId))
                     this.AddBarItemToQATUserList(barItem, iRibbonItem);
             }
             return barItem;

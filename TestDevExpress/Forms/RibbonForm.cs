@@ -292,6 +292,7 @@ namespace TestDevExpress.Forms
             _Ribbon.RibbonGroupButtonClick += _Ribbon_RibbonGroupButtonClick;
             _Ribbon.RibbonItemClick += _Ribbon_RibbonItemClick;
             _Ribbon.QATItemKeysChanged += _Ribbon_QATItemKeysChanged;
+            _Ribbon.LoadSearchEditItems += _Ribbon_LoadSearchEditItems;
 
             this.Controls.Add(_Ribbon);
 
@@ -717,6 +718,38 @@ namespace TestDevExpress.Forms
         private void _Ribbon_ItemOnDemandLoad(object sender, TEventArgs<IRibbonItem> e)
         {
             ThreadManager.AddAction(_LoadItemFromServer, e.Item);
+        }
+        private void _Ribbon_LoadSearchEditItems(object sender, EventArgs e)
+        {
+            ThreadManager.AddAction(_LoadSearchEditItems);
+        }
+        private void _LoadSearchEditItems()
+        {
+            System.Threading.Thread.Sleep(100);
+
+            List<IRibbonItem> searchItems = new List<IRibbonItem>();
+            string[] resources = new string[]
+{
+    "svgimages/spreadsheet/createconebar3dchart.svg",
+    "svgimages/spreadsheet/createconefullstackedbar3dchart.svg",
+    "svgimages/spreadsheet/createconemanhattanbarchart.svg",
+    "svgimages/spreadsheet/createconestackedbar3dchart.svg",
+    "svgimages/spreadsheet/createcylinderbar3dchart.svg",
+    "svgimages/spreadsheet/createcylinderfullstackedbar3dchart.svg",
+    "svgimages/spreadsheet/createcylindermanhattanbarchart.svg",
+    "svgimages/spreadsheet/createcylinderstackedbar3dchart.svg"
+};
+
+            searchItems.Add(new DataRibbonItem() { Text = $"{Ribbon.DebugName}: Přidaný prvek 1", ItemType = RibbonItemType.Button, RibbonStyle = RibbonItemStyles.SmallWithText, ImageName = resources[0] });
+            searchItems.Add(new DataRibbonItem() { Text = $"{Ribbon.DebugName}: Přidaný prvek 2", ItemType = RibbonItemType.Button, RibbonStyle = RibbonItemStyles.SmallWithText, ImageName = resources[1] });
+            searchItems.Add(new DataRibbonItem() { Text = $"{Ribbon.DebugName}: Přidaný prvek 3", ItemType = RibbonItemType.Button, RibbonStyle = RibbonItemStyles.SmallWithText, ImageName = resources[2] });
+            searchItems.Add(new DataRibbonItem() { Text = $"{Ribbon.DebugName}: Přidaný prvek 4", ItemType = RibbonItemType.Button, RibbonStyle = RibbonItemStyles.SmallWithText, ImageName = resources[3] });
+            searchItems.Add(new DataRibbonItem() { Text = $"{Ribbon.DebugName}: Přidaný prvek 5", ItemType = RibbonItemType.Button, RibbonStyle = RibbonItemStyles.SmallWithText, ImageName = resources[4] });
+            searchItems.Add(new DataRibbonItem() { Text = $"{Ribbon.DebugName}: Přidaný prvek 6", ItemType = RibbonItemType.Button, RibbonStyle = RibbonItemStyles.SmallWithText, ImageName = resources[5] });
+            searchItems.Add(new DataRibbonItem() { Text = $"{Ribbon.DebugName}: Přidaný prvek 7", ItemType = RibbonItemType.Button, RibbonStyle = RibbonItemStyles.SmallWithText, ImageName = resources[6] });
+            searchItems.Add(new DataRibbonItem() { Text = $"{Ribbon.DebugName}: Přidaný prvek 8", ItemType = RibbonItemType.Button, RibbonStyle = RibbonItemStyles.SmallWithText, ImageName = resources[7] });
+
+            this._Ribbon.SearchEditItems = searchItems.ToArray();
         }
         private void _LoadItemFromServer(object[] args)
         {
