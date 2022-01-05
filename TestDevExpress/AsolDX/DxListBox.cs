@@ -28,7 +28,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             _ListBox = new DxListBoxControl();
             this.Controls.Add(_ListBox);
-            this.Padding = new Padding(3);
+            this.Padding = new Padding(0);
             this.ClientSizeChanged += _ClientSizeChanged;
             DoLayout();
         }
@@ -46,7 +46,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (innerBounds.Width < 30 || innerBounds.Height < 30) return;
 
             _DoLayoutButtons(ref innerBounds);
-            _ListBox.Bounds = new Rectangle(innerBounds.X, innerBounds.Y + 8, innerBounds.Width - 0, innerBounds.Height - 10);
+            _ListBox.Bounds = new Rectangle(innerBounds.X, innerBounds.Y, innerBounds.Width - 0, innerBounds.Height);
         }
         private DxListBoxControl _ListBox;
         #endregion

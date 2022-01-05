@@ -4236,24 +4236,28 @@ namespace Noris.Clients.Win.Components.AsolDX
                     key = GetValidQATKey(itemInfo.Data.ItemId);
                     iRibbonItem = itemInfo.Data;
                     iRibbonGroup = itemInfo.Data.ParentGroup;
+                    return true;
                 }
                 if (tag is IRibbonItem iItem)
                 {
                     key = GetValidQATKey(iItem.ItemId);
                     iRibbonItem = iItem;
                     iRibbonGroup = iItem.ParentGroup;
+                    return true;
                 }
                 if (tag is IRibbonGroup iGroup)
                 {
                     key = GetValidQATKey(iGroup.GroupId);
                     iRibbonItem = null;
                     iRibbonGroup = iGroup;
+                    return true;
                 }
                 if ((tag is DxRibbonGroup ribbonGroup) && (ribbonGroup.Tag is IRibbonGroup iiGroup))
                 {
                     key = GetValidQATKey(iiGroup.GroupId);
                     iRibbonItem = null;
                     iRibbonGroup = iiGroup;
+                    return true;
                 }
             }
             key = null;

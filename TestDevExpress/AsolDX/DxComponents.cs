@@ -501,10 +501,11 @@ namespace Noris.Clients.Win.Components.AsolDX
             _DetailXMargin = 6;
             _DetailYMargin = 4;
 
-            _DefaultButtonPanelHeight = 40;
+            _DefaultButtonPanelHeight = 38;
             _DefaultButtonWidth = 150;
-            _DefaultButtonHeight = 32;
+            _DefaultButtonHeight = 30;
             _DefaultButtonXSpace = 6;
+            _DefaultButtonYSpace = 6;
 
             _Zoom = 1m;
             _DesignDpi = 96;
@@ -571,10 +572,14 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="targetDpi">Cílové DPI. Typicky se má použít hodnota <see cref="DxPanelControl.CurrentDpi"/> (nebo <see cref="DxStdForm.CurrentDpi"/>)</param>
         public static int GetDetailYFirst(int targetDpi) { return ZoomToGui(Instance._DetailYFirst, targetDpi); }
         /// <summary>
-        /// Vnitřní okraje, defaultní hodnota, vychází z <see cref="GetDetailXMargin(int)"/> a <see cref="GetDetailYMargin(int)"/>
+        /// Vnitřní okraje, defaultní hodnota, obsahuje hodnoty <see cref="DetailXMargin"/> a <see cref="DetailYMargin"/>
         /// </summary>
         /// <returns></returns>
-        public static Padding DefaultInnerMargins { get { int x = Instance._DetailXMargin; int y = Instance._DetailYMargin; return new Padding(x, y, x, y); } }
+        public static Padding DefaultInnerMargins { get { return Instance._DetailMargin; } }
+        /// <summary>
+        /// Vnitřní okraje, obsahuje hodnoty <see cref="_DetailXMargin"/> a <see cref="_DetailYMargin"/>
+        /// </summary>
+        private Padding _DetailMargin { get { int x = _DetailXMargin; int y = _DetailYMargin; return new Padding(x, y, x, y); } }
         /// <summary>
         /// Vnitřní okraje, defaultní hodnota, vychází z <see cref="GetDetailXMargin(int)"/> a <see cref="GetDetailYMargin(int)"/>
         /// </summary>
@@ -639,14 +644,23 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="targetDpi">Cílové DPI. Typicky se má použít hodnota <see cref="DxPanelControl.CurrentDpi"/> (nebo <see cref="DxStdForm.CurrentDpi"/>)</param>
         public static int GetDefaultButtonHeight(int targetDpi) { return ZoomToGui(Instance._DefaultButtonHeight, targetDpi); }
         /// <summary>
-        /// Defaultní mezera mezi buttony, designová hodnota
+        /// Defaultní mezera X mezi buttony, designová hodnota
         /// </summary>
         public static int DefaultButtonXSpace { get { return Instance._DefaultButtonXSpace; } }
         /// <summary>
-        /// Defaultní mezera mezi buttony
+        /// Defaultní mezera Y mezi buttony, designová hodnota
+        /// </summary>
+        public static int DefaultButtonYSpace { get { return Instance._DefaultButtonYSpace; } }
+        /// <summary>
+        /// Defaultní mezera Y mezi buttony pro dané DPI
         /// </summary>
         /// <param name="targetDpi">Cílové DPI. Typicky se má použít hodnota <see cref="DxPanelControl.CurrentDpi"/> (nebo <see cref="DxStdForm.CurrentDpi"/>)</param>
         public static int GetDefaultButtonXSpace(int targetDpi) { return ZoomToGui(Instance._DefaultButtonXSpace, targetDpi); }
+        /// <summary>
+        /// Defaultní mezera Y mezi buttony pro dané DPI
+        /// </summary>
+        /// <param name="targetDpi">Cílové DPI. Typicky se má použít hodnota <see cref="DxPanelControl.CurrentDpi"/> (nebo <see cref="DxStdForm.CurrentDpi"/>)</param>
+        public static int GetDefaultButtonYSpace(int targetDpi) { return ZoomToGui(Instance._DefaultButtonYSpace, targetDpi); }
         /// <summary>
         /// Vrásí souřadnici, na které má začínat obsah velký <paramref name="contentSize"/> uvnitř daného prostoru <paramref name="totalSize"/>,
         /// tak aby obsah byl zarovnán na začátek / na střed / na konec podle <paramref name="alignment"/>.
@@ -753,8 +767,139 @@ namespace Noris.Clients.Win.Components.AsolDX
         private int _DefaultButtonWidth;
         private int _DefaultButtonHeight;
         private int _DefaultButtonXSpace;
+        private int _DefaultButtonYSpace;
         private DevExpress.XtraBars.BarManager _DefaultBarManager;
         private ToolTipController _DefaultToolTipController;
+        #region Rozmístění prvků typu ControlItemLayoutInfo do daného vnitřního prostoru
+        /// <summary>
+        /// Určí rozmístění prvků typu ControlItemLayoutInfo do daného vnitřního prostoru.
+        /// <para/>
+        /// Máme vnitřní prostor nějakého panelu (parametr <paramref name="innerBounds"/>, 
+        /// a dovnitř do něj budeme umisťovat sadu controlů <paramref name="items"/> (typicky malá tlačítka).
+        /// Tato metoda určí souřadnice těchto controlů podle daného pozicování <paramref name="position"/>.
+        /// Pokud je málo prostoru, tato metoda neprovádí Wrapping = controly, které se nevejdou do prostoru,
+        /// nepřeskočí na nový řádek, ale jsou v neviditelné pozici.
+        /// </summary>
+        /// <param name="innerBounds"></param>
+        /// <param name="items"></param>
+        /// <param name="position"></param>
+        /// <param name="margins"></param>
+        /// <param name="itemSpace"></param>
+        /// <returns></returns>
+        internal static Rectangle CalculateControlItemsLayout(Rectangle innerBounds, ControlItemLayoutInfo[] items, ToolbarPosition position, Padding? margins = null, Size? itemSpace = null)
+        { return Instance._CalculateControlItemsLayout(innerBounds, items, position, out var _, margins, itemSpace); }
+        /// <summary>
+        /// Určí rozmístění prvků typu ControlItemLayoutInfo do daného vnitřního prostoru.
+        /// <para/>
+        /// Máme vnitřní prostor nějakého panelu (parametr <paramref name="innerBounds"/>, 
+        /// a dovnitř do něj budeme umisťovat sadu controlů <paramref name="items"/> (typicky malá tlačítka).
+        /// Tato metoda určí souřadnice těchto controlů podle daného pozicování <paramref name="position"/>.
+        /// Pokud je málo prostoru, tato metoda neprovádí Wrapping = controly, které se nevejdou do prostoru,
+        /// nepřeskočí na nový řádek, ale jsou v neviditelné pozici.
+        /// </summary>
+        /// <param name="innerBounds"></param>
+        /// <param name="items"></param>
+        /// <param name="position"></param>
+        /// <param name="buttonsBounds"></param>
+        /// <param name="margins"></param>
+        /// <param name="itemSpace"></param>
+        /// <returns></returns>
+        internal static Rectangle CalculateControlItemsLayout(Rectangle innerBounds, ControlItemLayoutInfo[] items, ToolbarPosition position, out Rectangle buttonsBounds, Padding? margins = null, Size? itemSpace = null)
+        { return Instance._CalculateControlItemsLayout(innerBounds, items, position, out buttonsBounds, margins, itemSpace); }
+        private Rectangle _CalculateControlItemsLayout(Rectangle innerBounds, ControlItemLayoutInfo[] items, ToolbarPosition position, out Rectangle buttonsBounds, Padding? margins, Size? itemSpace)
+        {
+            Rectangle contentBounds = innerBounds;
+            buttonsBounds = Rectangle.Empty;
+            int count = items?.Length ?? 0;
+            if (count == 0) return contentBounds;
+
+            Padding margin = margins ?? _DetailMargin;
+            int spaceX = itemSpace.HasValue ? itemSpace.Value.Width : _DefaultButtonXSpace;
+            int spaceY = itemSpace.HasValue ? itemSpace.Value.Height : _DefaultButtonYSpace;
+
+            bool isLeftSide = DataExtensions.IsAnyOf(position, ToolbarPosition.LeftSideTop, ToolbarPosition.LeftSideCenter, ToolbarPosition.LeftSideBottom);
+            bool isTopSide = DataExtensions.IsAnyOf(position, ToolbarPosition.TopSideLeft, ToolbarPosition.TopSideCenter, ToolbarPosition.TopSideRight);
+            bool isRightSide = DataExtensions.IsAnyOf(position, ToolbarPosition.RightSideTop, ToolbarPosition.RightSideCenter, ToolbarPosition.RightSideBottom);
+            bool isBottomSide = DataExtensions.IsAnyOf(position, ToolbarPosition.BottomSideLeft, ToolbarPosition.BottomSideCenter, ToolbarPosition.BottomSideRight);
+
+            bool isAlignedBegin = DataExtensions.IsAnyOf(position, ToolbarPosition.LeftSideTop, ToolbarPosition.TopSideLeft, ToolbarPosition.RightSideTop, ToolbarPosition.BottomSideLeft);
+            bool isAlignedCenter = DataExtensions.IsAnyOf(position, ToolbarPosition.LeftSideCenter, ToolbarPosition.TopSideCenter, ToolbarPosition.RightSideCenter, ToolbarPosition.BottomSideCenter);
+            bool isAlignedEnd = DataExtensions.IsAnyOf(position, ToolbarPosition.LeftSideBottom, ToolbarPosition.TopSideRight, ToolbarPosition.RightSideBottom, ToolbarPosition.BottomSideRight);
+            AlignContentToSide alignment = (isAlignedEnd ? AlignContentToSide.End : (isAlignedCenter ? AlignContentToSide.Center : AlignContentToSide.Begin));
+
+            if (isLeftSide || isRightSide)
+            {   // Svisle uspořádané:
+                // 1. Jednotlivé itemy:
+                int height = items.Sum(i => i.Size.Height) + ((count - 1) * spaceY);
+                int maxWidth = items.Max(i => i.Size.Width);
+                int y = innerBounds.Y + CalculateAlignedBegin(innerBounds.Height, height, alignment);
+                int b = isLeftSide ? innerBounds.Left : innerBounds.Right;     // Tady je Left buttonu, pokud jsou LeftSide, anebo Right buttonu, pokud jsou RightSide
+                int e = b;                                                     // Tady je Max(Right) buttonu pro LeftSide, anebo Min(Left) Buttonu pro RightSide
+                foreach (var item in items)
+                {
+                    Size size = item.Size;                                     // Požadovaná velikost prvku
+                    Point location = new Point((isLeftSide ? b : b - size.Width), y);
+                    Rectangle bounds = new Rectangle(location, size);
+                    item.Bounds = bounds;                                      // Setování souřadnice se promítne i do vloženého Controlu (pokud tam je)
+                    y += size.Height + spaceY;
+
+                    // Střádám Max(Right) pro LeftSide:
+                    if (isLeftSide && bounds.Right > e)
+                        e = bounds.Right;
+                    // .. anebo Min(Left) pro RightSide:
+                    else if (isRightSide && bounds.Left < e)
+                        e = bounds.Left;
+                }
+                // 2. Prostor pro content je vedle buttonů (doprava / doleva) při zachování Margins (Left / Right) odstupu od okraje buttonů (e):
+                if (isLeftSide)
+                {
+                    buttonsBounds = Rectangle.FromLTRB(b, innerBounds.Top, e, innerBounds.Bottom);
+                    contentBounds = Rectangle.FromLTRB(e + margin.Left, innerBounds.Top, innerBounds.Right, innerBounds.Bottom);
+                }
+                else if (isRightSide)
+                {
+                    buttonsBounds = Rectangle.FromLTRB(e, innerBounds.Top, b, innerBounds.Bottom);
+                    contentBounds = Rectangle.FromLTRB(innerBounds.Left, innerBounds.Top, e - margin.Right, innerBounds.Bottom);
+                }
+            }
+            else if (isTopSide || isBottomSide)
+            {   // Vodorovně uspořádané:
+                int width = items.Sum(i => i.Size.Width) + ((count - 1) * spaceX);
+                int maxHeight = items.Max(i => i.Size.Height);
+                int x = innerBounds.X + CalculateAlignedBegin(innerBounds.Width, width, alignment);
+                int b = isTopSide ? innerBounds.Top : innerBounds.Bottom;      // Tady je Top buttonu, pokud jsou TopSide, anebo Bottom buttonu, pokud jsou BottomSide
+                int e = b;                                                     // Tady je Max(Bottom) buttonu pro TopSide, anebo Min(Top) Buttonu pro BottomSide
+                foreach (var item in items)
+                {
+                    Size size = item.Size;                                     // Požadovaná velikost prvku
+                    Point location = new Point(x, (isTopSide ? b : b - size.Height));
+                    Rectangle bounds = new Rectangle(location, size);
+                    item.Bounds = bounds;                                      // Setování souřadnice se promítne i do vloženého Controlu (pokud tam je)
+                    x += size.Width + spaceX;
+
+                    // Střádám Max(Bottom) pro TopSide:
+                    if (isTopSide && bounds.Bottom > e)
+                        e = bounds.Bottom;
+                    // .. anebo Min(Left) pro RightSide:
+                    else if (isBottomSide && bounds.Top < e)
+                        e = bounds.Top;
+                }
+                // 2. Prostor pro content je vedle buttonů (dolů / nahoru) při zachování Margins (Bottom / Top) odstupu od okraje buttonů (e):
+                if (isTopSide)
+                {
+                    buttonsBounds = Rectangle.FromLTRB(innerBounds.Left, b, innerBounds.Right, e);
+                    contentBounds = Rectangle.FromLTRB(innerBounds.Left, e + margin.Top, innerBounds.Right, innerBounds.Bottom);
+                }
+                else if (isBottomSide)
+                {
+                    buttonsBounds = Rectangle.FromLTRB(innerBounds.Left, e, innerBounds.Right, b);
+                    contentBounds = Rectangle.FromLTRB(innerBounds.Left, innerBounds.Top, innerBounds.Right, e - margin.Bottom);
+                }
+            }
+
+            return contentBounds;
+        }
+        #endregion
         #endregion
         #region Rozhraní na Zoom
         /// <summary>

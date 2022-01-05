@@ -513,5 +513,20 @@ namespace Noris.Clients.Win.Components.AsolDX
             return value;
         }
         #endregion
+        #region IComparable
+        /// <summary>
+        /// Metoda vrátí true, pokud dodaná hodnota <paramref name="testValue"/> odpovídá některé ze zadaných hodnot.
+        /// Jde tedy o náhradu výrazu: "testValue = values[0] || testValue = values[1] || testValue = values[2] || testValue = values[3] ..."
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="testValue"></param>
+        /// <param name="values"></param>
+        /// <returns></returns>
+        public static bool IsAnyOf<T>(T testValue, params T[] values) where T : IComparable
+        {
+            if (values == null || values.Length == 0) return false;
+            return (values.Any(v => testValue.CompareTo(v) == 0));
+        }
+        #endregion
     }
 }

@@ -46,19 +46,17 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void InitializeControls()
         {
             _ControlPanel = DxComponent.CreateDxPanel(this, DockStyle.Fill, borderStyles: DevExpress.XtraEditors.Controls.BorderStyles.NoBorder);
-            _ButtonsPanel = DxComponent.CreateDxPanel(this, DockStyle.Bottom, borderStyles: DevExpress.XtraEditors.Controls.BorderStyles.NoBorder, height: 30);
             _StatusBar = DxComponent.CreateDxStatusBar(this);
 
             _ButtonsVisible = null;
-            _ButtonsDesignHeight = DxComponent.DefaultButtonPanelHeight;
-            _ButtonAlignment = AlignContentToSide.Begin;
-            _ButtonDesignMargins = DxComponent.DefaultInnerMargins;
+            _ButtonsDesignHeight = DxComponent.DefaultButtonHeight;
+            _ButtonsPosition = ToolbarPosition.BottomSideLeft;
+            _DesignMargins = DxComponent.DefaultInnerMargins;
 
             DialogResult = DialogResult.None;
             CloseOnClickButton = true;
         }
         private DxPanelControl _ControlPanel;
-        private DxPanelControl _ButtonsPanel;
         private DxRibbonStatusBar _StatusBar;
         #endregion
         #region Layout
@@ -105,7 +103,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private void DoLayout()
         {
-            // Dost layoutu dělá Winform tím, že máme nastaveno dokování. Na zdejší metodu už zbývá jen reagovat na Visible a nastavit prostor pro buttony a rozmístit je.
             if (this.WasShown)
             {   // Nemá význam dělat layout dřív, než bude okno zobrazeno:
                 DoLayoutStatusBar();
@@ -113,61 +110,54 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
         }
         /// <summary>
-        /// Nastaví Layout pro Buttons - nastavuje Visible, Height, velikost a pozici buttonů
+        /// Nastaví Layout pro Buttons - nastavuje Visible, Height, velikost a pozici buttonů.
+        /// Pracuje s volnými panely pro obsah a pro buttony.
+        /// Nastaví i souřadnice pro panel <see cref="_ControlPanel"/>.
         /// </summary>
         private void DoLayoutButtons()
         {
-            int buttonsCount = ButtonsCount;
+            // Patřičné dokování:
+            if (_ControlPanel.Dock != DockStyle.None) _ControlPanel.Dock = DockStyle.None;
 
-            // Visible:
-            bool buttonsVisible = (ButtonsVisible ?? (buttonsCount> 0));
-            var panel = _ButtonsPanel;
-            if (panel.VisibleInternal != buttonsVisible)
-                panel.VisibleInternal = buttonsVisible;
+            // Prostor pro ControlPanel a pro buttony:
+            Padding margins = DxComponent.ZoomToGui(this.DesignMargins, this.CurrentDpi);
+            Rectangle innerBounds = this.GetInnerBounds(margins);
+            if (_StatusBar.VisibleInternal && _StatusBar.Height > 0) innerBounds.Height = innerBounds.Height - _StatusBar.Height;
 
-            // Layout:
-            if (!buttonsVisible) return;
-            int height = DxComponent.ZoomToGui(this.ButtonsDesignHeight, this.CurrentDpi);
-            if (buttonsCount == 0 || _ButtonControls == null)
-            {   // Pouze nastavím požadovanou výšku a končím:
-                if (panel.Height != height)
-                    panel.Height = height;           // Panel nemá Borders, proto Height (vnější) = ClientSize.Height (vnitřní)
-                return;
-            }
+            // Pole buttonů:
+            var buttons = GetLayoutButtons();
 
-            // Buttony:
-            var panelSize = panel.ClientSize;
-            Padding buttonsPadding = DxComponent.ZoomToGui(this.ButtonDesignMargins, this.CurrentDpi);
-            var alignment = this.ButtonAlignment;
-            int buttonHeight = height - buttonsPadding.Vertical;
-            if (buttonHeight < 22)
-            {
-                buttonHeight = 22;
-                height = buttonHeight + buttonsPadding.Vertical;
-            }
-            if (panel.Height != height)
-                panel.Height = height;
+            // Rozmístit buttony a umístit Content:
+            Rectangle contentBounds = DxComponent.CalculateControlItemsLayout(innerBounds, buttons, this.ButtonsPosition, margins);
+            if (_ControlPanel.Bounds != contentBounds) _ControlPanel.Bounds = contentBounds;
+        }
+        /// <summary>
+        /// Vrátí pole obsahující buttony připravené pro layout
+        /// </summary>
+        /// <returns></returns>
+        private ControlItemLayoutInfo[] GetLayoutButtons()
+        {
+            List<ControlItemLayoutInfo> buttons = new List<ControlItemLayoutInfo>();
 
-            // Určíme velikost všech buttonů:
+            // Vytvořím si pracovní pole buttonů, určíme max Width:
             int widthOneMax = 0;
+            var panelSize = this.ClientSize;
             foreach (var button in _ButtonControls)
             {
                 var preferresSize = button.GetPreferredSize(panelSize);
                 if (widthOneMax < preferresSize.Width)
                     widthOneMax = preferresSize.Width;
+                buttons.Add(new ControlItemLayoutInfo() { Control = button });
             }
-            int buttonWidth = widthOneMax + (3 * buttonHeight / 2);
-            int spaceX = DxComponent.GetDefaultButtonXSpace(this.CurrentDpi);
-            int widthButtons = (buttonsCount * buttonWidth) + ((buttonsCount - 1) * spaceX);
-            int widthSpace = panelSize.Width - buttonsPadding.Horizontal;
-            int x = buttonsPadding.Left + DxComponent.CalculateAlignedBegin(widthSpace, widthButtons, this.ButtonAlignment);
-            int y = buttonsPadding.Top;
 
-            foreach (var button in _ButtonControls)
-            {
-                button.Bounds = new Rectangle(x, y, buttonWidth, buttonHeight);
-                x += (buttonWidth + spaceX);
-            }
+            // Do pracovního pole vložím velikost buttonů = všechny stejně:
+            int innerWidth = widthOneMax.Align(60, 300);
+            int buttonHeight = DxComponent.ZoomToGui(this.ButtonsDesignHeight, this.CurrentDpi);
+            int buttonWidth = innerWidth + (3 * buttonHeight / 2);
+            Size buttonSize = new Size(buttonWidth, buttonHeight);
+            buttons.ForEachExec(l => l.Size = buttonSize);
+
+            return buttons.ToArray();
         }
         /// <summary>
         /// Nastaví Layout pro StatusBar - nastavuje Visible
@@ -196,7 +186,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             int x = 5;
             foreach (var iButton in iButtons)
             {
-                var buttonControl = DxComponent.CreateDxSimpleButton(x, 0, 100, 20, _ButtonsPanel, iButton);
+                var buttonControl = DxComponent.CreateDxSimpleButton(x, 0, 100, 20, this, iButton);
                 buttonControl.Click += ButtonControl_Click;
                 x += 105;
                 buttonControls.Add(buttonControl);
@@ -282,12 +272,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public bool CloseOnClickButton { get; private set; }
         /// <summary>
-        /// Počet definovaných buttonů
-        /// </summary>
-        public int ButtonsCount { get { return (_IButtons?.Length ?? 0); } }
-        /// <summary>
         /// Definice pro Buttony. Aplikace sem vkládá sadu buttonů, které chce v okně zobrazit. 
-        /// Layout buttonů určují property <see cref="ButtonAlignment"/>, <see cref="ButtonsDesignHeight"/>, <see cref="ButtonDesignMargins"/> a <see cref="ButtonsVisible"/>.
+        /// Layout buttonů určují property <see cref="ButtonsPosition"/>, <see cref="ButtonsDesignHeight"/>, <see cref="DesignMargins"/> a <see cref="ButtonsVisible"/>.
         /// <para/>
         /// Aktivita buttonů:
         /// Aplikace může buď nastavit zdejší <see cref="CloseOnClickButton"/> na true, po kliknutí na button se zavře okno,
@@ -301,27 +287,31 @@ namespace Noris.Clients.Win.Components.AsolDX
         public IEnumerable<IMenuItem> Buttons { get { return _IButtons; } set { _IButtons = value?.ToArray(); this.CreateButtons(); } }
         private IMenuItem[] _IButtons;
         /// <summary>
+        /// Počet definovaných buttonů
+        /// </summary>
+        public int ButtonsCount { get { return (_IButtons?.Length ?? 0); } }
+        /// <summary>
         /// Viditelnost pole buttonů.
         /// Výchozí hodnota je null = řídí se podle přítomnosti nějakého buttonu.
         /// </summary>
         public bool? ButtonsVisible { get { return _ButtonsVisible; } set { _ButtonsVisible = value; this.DoLayout(); } }
         private bool? _ButtonsVisible;
         /// <summary>
-        /// Výška prostoru pro buttony, v design pixelech.
-        /// Výchozí je 36. Platný rozsah 16 - 120.
+        /// Výška jednotlivých buttonů, v design pixelech.
+        /// Výchozí je 30. Platný rozsah 16 - 120.
         /// </summary>
         public int ButtonsDesignHeight { get { return _ButtonsDesignHeight; } set { _ButtonsDesignHeight = value.Align(16, 120); this.DoLayout(); } }
         private int _ButtonsDesignHeight;
         /// <summary>
-        /// Vnitřní okraje panelu buttonů, v design pixelech.
+        /// Vnitřní okraje mezo formulářem a obsahem, v design pixelech.
         /// </summary>
-        public Padding ButtonDesignMargins { get { return _ButtonDesignMargins; } set { _ButtonDesignMargins = value; this.DoLayout(); } }
-        private Padding _ButtonDesignMargins;
+        public Padding DesignMargins { get { return _DesignMargins; } set { _DesignMargins = value; this.DoLayout(); } }
+        private Padding _DesignMargins;
         /// <summary>
-        /// Umístění buttonů vlevo / střed / vpravo
+        /// Umístění buttonů. Výchozí hodnota je <see cref="ToolbarPosition.BottomSideLeft"/>.
         /// </summary>
-        public AlignContentToSide ButtonAlignment { get { return _ButtonAlignment; } set { _ButtonAlignment = value; this.DoLayout(); } }
-        private AlignContentToSide _ButtonAlignment;
+        public ToolbarPosition ButtonsPosition { get { return _ButtonsPosition; } set { _ButtonsPosition = value; this.DoLayout(); } }
+        private ToolbarPosition _ButtonsPosition;
         /// <summary>
         /// Status bar
         /// </summary>
@@ -341,8 +331,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             base.Refresh();
         }
         #endregion
-
-
     }
     /*  NOVINKY
 

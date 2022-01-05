@@ -8366,7 +8366,38 @@ namespace Noris.Clients.Win.Components.AsolDX
         void PerformClick();
     }
     #endregion
-    #region Enumy: LabelStyleType, RectangleSide, RectangleCorner
+    #region class ControlItemLayoutInfo
+    /// <summary>
+    /// Třída pro výpočty layoutu controlů
+    /// </summary>
+    internal class ControlItemLayoutInfo
+    {
+        /// <summary>
+        /// Fyzický control, smí být null
+        /// </summary>
+        public Control Control { get; set; }
+        /// <summary>
+        /// Požadovaná velikost
+        /// </summary>
+        public Size Size { get; set; }
+        /// <summary>
+        /// Umístění.
+        /// Setování hodnoty se propíše i do <see cref="Control"/>, pokud ten není null.
+        /// </summary>
+        public Rectangle Bounds 
+        {
+            get { return _Bounds; }
+            set
+            {
+                _Bounds = value;
+                if (Control != null)
+                    Control.Bounds = value;
+            }
+        }
+        private Rectangle _Bounds;
+    }
+    #endregion
+    #region Enumy: LabelStyleType, RectangleSide, RectangleCorner, ...
     /// <summary>
     /// Druh položky menu
     /// </summary>

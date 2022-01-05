@@ -351,8 +351,19 @@ namespace Noris.Clients.Win.Components.AsolDX
         public static Rectangle GetInnerBounds(this Control control)
         {
             if (control == null) return Rectangle.Empty;
+            return GetInnerBounds(control, control.Padding);
+        }
+        /// <summary>
+        /// Vrátí souřadnice prostoru, do kterého lze v this controlu pozicovat jeho Child.
+        /// Jde o <see cref="Control.ClientSize"/> zmenšený o <see cref="Control.Padding"/>
+        /// </summary>
+        /// <param name="control"></param>
+        /// <param name="padding">Explicitně definované vitřní okraje, defaultně se berou z <see cref="Control.Padding"/> </param>
+        /// <returns></returns>
+        public static Rectangle GetInnerBounds(this Control control, Padding padding)
+        {
+            if (control == null) return Rectangle.Empty;
             Size clientSize = control.ClientSize;
-            Padding padding = control.Padding;
             int x = padding.Left;
             int y = padding.Top;
             int w = clientSize.Width - padding.Horizontal;
