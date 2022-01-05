@@ -225,11 +225,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <para/>
         /// POZOR, DŮLEŽITÉ UPOZORNĚNÍ:
         /// Tuto metodu nesmíme volat z vlákna, které právě provádí některou akci, protože v této metodě se čeká a čeká na doběhnutí akce = tedy sebe sama, a proto se nikdy nedočkáme.
+        /// Pokud to někdo provede, skončí to ihned chybou (metoda pozná, že je spuštěna v threadu, který je některým z Working threadů).
+        /// Volající si to může otestovat čtením hodnoty <see cref="IsInAnyWorkingThread"/>: při čtení z Working threadu obsahuje true.
         /// <para/>
         /// </summary>
         public static void WaitToAllActionsDone(TimeSpan? timeout = null) { Instance.__WaitToAllActionsDone(timeout); }
 
-        public static void WaitToActionDone(IActionInfo action, TimeSpan? timeout = null)
+        private static void WaitToActionDone(IActionInfo action, TimeSpan? timeout = null)
         { }
         /// <summary>
         /// Metoda počká, až všechny dané akce dokončí svoji činnost = přejdou do stavu <see cref="ThreadActionState.Completed"/>, a teprve pak se vrátí řízení z této metody.
@@ -541,6 +543,16 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         protected class ActionInfo : IActionInfo
         {
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="name"></param>
+            /// <param name="actionRun"></param>
+            /// <param name="actionRunArgs"></param>
+            /// <param name="runArguments"></param>
+            /// <param name="actionDone"></param>
+            /// <param name="actionDoneArgs"></param>
+            /// <param name="doneArguments"></param>
             public ActionInfo(string name, Action actionRun, Action<object[]> actionRunArgs, object[] runArguments, Action actionDone, Action<object[]> actionDoneArgs, object[] doneArguments)
             {
                 _ActionName = name;
@@ -572,10 +584,21 @@ namespace Noris.Clients.Win.Components.AsolDX
             private Action<object[]> _ActionDoneArgs;
             private object[] _DoneArguments;
             private WeakReference<Thread> _WorkingThread;
-
+            /// <summary>
+            /// Vlastník akce = <see cref="ThreadManager"/>
+            /// </summary>
             public ThreadManager Owner { get { return _Owner; } set { _Owner = value; } }
+            /// <summary>
+            /// Jméno akce
+            /// </summary>
             public string ActionName { get { return _ActionName; } }
+            /// <summary>
+            /// ID akce
+            /// </summary>
             public int Id { get { return _Id; } set { _Id = value; } }
+            /// <summary>
+            /// Stav akce
+            /// </summary>
             public ThreadActionState ActionState
             {
                 get { return _ActionState; }
@@ -588,12 +611,33 @@ namespace Noris.Clients.Win.Components.AsolDX
                     }
                 }
             }
+            /// <summary>
+            /// Reference na metodu bez parametrů, které se bude provádět jako akční metoda
+            /// </summary>
             public Action ActionRun { get { return _ActionRun; } }
+            /// <summary>
+            /// Reference na metodu s parametry, které se bude provádět jako akční metoda
+            /// </summary>
             public Action<object[]> ActionRunArgs { get { return _ActionRunArgs; } }
+            /// <summary>
+            /// Argumenty pro akční metodu s parametry
+            /// </summary>
             public object[] RunArguments { get { return _RunArguments; } }
+            /// <summary>
+            /// Reference na Done metodu bez parametrů, které se bude provádět po doběhnutí akční metody
+            /// </summary>
             public Action ActionDone { get { return _ActionDone; } }
+            /// <summary>
+            /// Reference na Done metodu s parametry, které se bude provádět po doběhnutí akční metody
+            /// </summary>
             public Action<object[]> ActionDoneArgs { get { return _ActionDoneArgs; } }
+            /// <summary>
+            /// Argumenty pro Done metodu s parametry
+            /// </summary>
             public object[] DoneArguments { get { return _DoneArguments; } }
+            /// <summary>
+            /// Přiřazený thread, ve kterém akce běží
+            /// </summary>
             protected Thread WorkingThread
             {
                 get
@@ -875,7 +919,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Obsahuje true, pokud aktuálně běžící kód běží ve vláknu, které je spravováno jako vlákno pro spouštěné akce.
         /// Tedy, pokud tuto hodnotu čteme z vlákna provádějícího akci, obsahuje true, z jiných vláken obsahuje false.
         /// </summary>
-        private bool __IsInAnyWorkingThread { get { return __TryGetCurrentThread(out ThreadWrap threadWrap); } }
+        private bool __IsInAnyWorkingThread { get { return __TryGetCurrentThread(out ThreadWrap _); } }
         /// <summary>
         /// Metoda zkusí získat obálku threadu, který se právě provádí. 
         /// Úspěšná je tato metoda pouze tehdy, když aktuální thread je jedním z těch threadů, které jsou obsluhovány tímto ThreadManagerem.
@@ -1012,6 +1056,9 @@ namespace Noris.Clients.Win.Components.AsolDX
             private Thread __Thread;
             private string __Name;
             private volatile ActionInfo __ActionInfo;
+            /// <summary>
+            /// Jméno threadu
+            /// </summary>
             public string Name { get { return __Name; } }
             /// <summary>
             /// Název SOURCE do logu
@@ -1050,12 +1097,9 @@ namespace Noris.Clients.Win.Components.AsolDX
                 return isAllocated;
             }
             /// <summary>
-            /// V libovolném threadu (v jiném než na pozadí) požádá o provedené dané akce na pozadí (v this threadu).
+            /// V libovolném threadu (v jiném než na pozadí) požádá o provedení dané akce na pozadí (v this threadu).
             /// </summary>
-            /// <param name="action"></param>
-            /// <param name="actionArgs"></param>
-            /// <param name="arguments"></param>
-            /// <param name="done"></param>
+            /// <param name="actionInfo"></param>
             public void RunAction(ActionInfo actionInfo)
             {
                 if (actionInfo == null || !actionInfo.IsValid)
@@ -1174,7 +1218,13 @@ namespace Noris.Clients.Win.Components.AsolDX
                     }
                 }
             }
+            /// <summary>
+            /// Thread končí svůj život: má nastaveno <see cref="__End"/> = true nebo stav <see cref="__State"/> = <see cref="ThreadWrapState.Abort"/>
+            /// </summary>
             protected bool IsEnding { get { var s = __State; return (__End || s == ThreadWrapState.Abort); } }
+            /// <summary>
+            /// Zavolá Ownera, že this thread je nyní k dispozici
+            /// </summary>
             protected void AfterThreadDisponible()
             {
                 __Owner.ThreadDisponible(this);
@@ -1453,6 +1503,9 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// </summary>
     public enum ThreadWrapState
     {
+        /// <summary>
+        /// Nezadáno
+        /// </summary>
         None,
         /// <summary>
         /// Po inicializaci, kdy je thread k dispozici v poolu.
