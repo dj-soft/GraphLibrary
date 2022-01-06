@@ -651,6 +651,9 @@ namespace Noris.Clients.Win.Components.AsolDX
                     else _WorkingThread = new WeakReference<Thread>(value);
                 }
             }
+            /// <summary>
+            /// Obsahuje true, pokud this action je validní = má definovanou akční metodu <see cref="ActionRun"/> nebo <see cref="ActionRunArgs"/>
+            /// </summary>
             public bool IsValid { get { return (_ActionRun != null || _ActionRunArgs != null); } }
             /// <summary>
             /// Provede požadovanou sérii akcí
@@ -1355,9 +1358,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Volající vlákno si zde počká na signál z jiného threadu, pak se vrátí řízení, s daným timeoutem.
         /// </summary>
-        /// <param name="timeout"></param>
+        /// <param name="milliseconds"></param>
         /// <returns></returns>
-        bool WaitOne(int timeout);
+        bool WaitOne(int milliseconds);
     }
     /// <summary>
     /// V metodě <see cref="Create(bool, bool)"/> vygeneruje a vrátí vhodnou implementaci objektu <see cref="ISignal"/>
@@ -1391,18 +1394,40 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             private readonly AutoResetEvent _AutoReset;
             private readonly bool _autoResetSignal;
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
             public SignalAutoReset()
               : this(false, false)
             {
             }
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="initialState"></param>
+            /// <param name="autoReset"></param>
             public SignalAutoReset(bool initialState, bool autoReset)
             {
                 _AutoReset = new AutoResetEvent(initialState);
                 _autoResetSignal = autoReset;
             }
+            /// <summary>
+            /// Zruší vydaný signál
+            /// </summary>
             public void Reset() { _AutoReset.Reset(); }
+            /// <summary>
+            /// Pošle signál čekajícímu threadu
+            /// </summary>
             public void Set() { _AutoReset.Set(); }
+            /// <summary>
+            /// Volající vlákno si zde počká na signál z jiného threadu, pak se vrátí řízení, bez timeoutu.
+            /// </summary>
             public void WaitOne() { _AutoReset.WaitOne(); }
+            /// <summary>
+            /// Volající vlákno si zde počká na signál z jiného threadu, pak se vrátí řízení, s daným timeoutem.
+            /// </summary>
+            /// <param name="milliseconds"></param>
+            /// <returns></returns>
             public bool WaitOne(int milliseconds) { return _AutoReset.WaitOne(milliseconds); }
         }
         /// <summary>
@@ -1413,19 +1438,33 @@ namespace Noris.Clients.Win.Components.AsolDX
             private readonly object _Lock = new object();
             private readonly bool _AutoResetSignal;
             private bool _IsNotified;
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
             public SignalMonitor()
               : this(false, false)
             {
             }
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="initialState"></param>
+            /// <param name="autoReset"></param>
             public SignalMonitor(bool initialState, bool autoReset)
             {
                 _IsNotified = initialState;
                 _AutoResetSignal = autoReset;
             }
+            /// <summary>
+            /// Zruší vydaný signál
+            /// </summary>
             public void Reset()
             {
                 _IsNotified = false;
             }
+            /// <summary>
+            /// Pošle signál čekajícímu threadu
+            /// </summary>
             public void Set()
             {
                 lock (_Lock)
@@ -1441,10 +1480,18 @@ namespace Noris.Clients.Win.Components.AsolDX
                     }
                 }
             }
+            /// <summary>
+            /// Volající vlákno si zde počká na signál z jiného threadu, pak se vrátí řízení, bez timeoutu.
+            /// </summary>
             public void WaitOne()
             {
                 WaitOne(Timeout.Infinite);
             }
+            /// <summary>
+            /// Volající vlákno si zde počká na signál z jiného threadu, pak se vrátí řízení, s daným timeoutem.
+            /// </summary>
+            /// <param name="milliseconds"></param>
+            /// <returns></returns>
             public bool WaitOne(int milliseconds)
             {
                 lock (_Lock)
