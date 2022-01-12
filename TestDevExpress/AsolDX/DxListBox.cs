@@ -27,12 +27,17 @@ namespace Noris.Clients.Win.Components.AsolDX
         public DxListBoxPanel()
         {
             _ListBox = new DxListBoxControl();
+            _Buttons = new Dictionary<ListBoxButtonType, DxSimpleButton>();
             this.Controls.Add(_ListBox);
             this.Padding = new Padding(0);
             this.ClientSizeChanged += _ClientSizeChanged;
             DoLayout();
         }
-
+        /// <summary>
+        /// Po změně velikosti se provede <see cref="DoLayout"/>
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void _ClientSizeChanged(object sender, EventArgs e)
         {
             DoLayout();
@@ -82,8 +87,20 @@ namespace Noris.Clients.Win.Components.AsolDX
             KeyActionType newActions = ConvertButtonsToActions(buttons);
             _ListBox.EnabledKeyActions = (newActions | oldActions);
 
-            // 2. Vytvořím potřebné buttony a nastavím Visible existujícím buttonům:
-
+            // 2. Vytvořím potřebné buttony a nastavím Visible požadovaným buttonům:
+            _Buttons.Values.Where(b => b != null).ForEachExec(b => b.Visible = false);
+            AcceptButtonType(ListBoxButtonType.MoveTop, buttons, "");
+        }
+        private void AcceptButtonType(ListBoxButtonType buttonType, ListBoxButtonType buttons, string imageName)
+        {
+            bool isVisible = buttons.HasFlag(buttonType);
+            DxSimpleButton dxButton = null;
+            if (isVisible && !_Buttons.TryGetValue(buttonType, out dxButton))
+            {
+                //qqq
+            }
+            if (dxButton != null)
+                dxButton.Visible = isVisible;
         }
         /// <summary>
         /// Konvertuje hodnoty z typu <see cref="ListBoxButtonType"/> na hodnoty typu <see cref="KeyActionType"/>

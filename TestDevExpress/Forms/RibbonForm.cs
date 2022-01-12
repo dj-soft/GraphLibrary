@@ -740,14 +740,16 @@ namespace TestDevExpress.Forms
     "svgimages/spreadsheet/createcylinderstackedbar3dchart.svg"
 };
 
-            searchItems.Add(new DataRibbonItem() { Text = $"{Ribbon.DebugName}: Přidaný prvek 1", ItemType = RibbonItemType.Button, RibbonStyle = RibbonItemStyles.SmallWithText, ImageName = resources[0] });
-            searchItems.Add(new DataRibbonItem() { Text = $"{Ribbon.DebugName}: Přidaný prvek 2", ItemType = RibbonItemType.Button, RibbonStyle = RibbonItemStyles.SmallWithText, ImageName = resources[1] });
-            searchItems.Add(new DataRibbonItem() { Text = $"{Ribbon.DebugName}: Přidaný prvek 3", ItemType = RibbonItemType.Button, RibbonStyle = RibbonItemStyles.SmallWithText, ImageName = resources[2] });
-            searchItems.Add(new DataRibbonItem() { Text = $"{Ribbon.DebugName}: Přidaný prvek 4", ItemType = RibbonItemType.Button, RibbonStyle = RibbonItemStyles.SmallWithText, ImageName = resources[3] });
-            searchItems.Add(new DataRibbonItem() { Text = $"{Ribbon.DebugName}: Přidaný prvek 5", ItemType = RibbonItemType.Button, RibbonStyle = RibbonItemStyles.SmallWithText, ImageName = resources[4] });
-            searchItems.Add(new DataRibbonItem() { Text = $"{Ribbon.DebugName}: Přidaný prvek 6", ItemType = RibbonItemType.Button, RibbonStyle = RibbonItemStyles.SmallWithText, ImageName = resources[5] });
-            searchItems.Add(new DataRibbonItem() { Text = $"{Ribbon.DebugName}: Přidaný prvek 7", ItemType = RibbonItemType.Button, RibbonStyle = RibbonItemStyles.SmallWithText, ImageName = resources[6] });
-            searchItems.Add(new DataRibbonItem() { Text = $"{Ribbon.DebugName}: Přidaný prvek 8", ItemType = RibbonItemType.Button, RibbonStyle = RibbonItemStyles.SmallWithText, ImageName = resources[7] });
+            DataRibbonGroup groupF = new DataRibbonGroup() { GroupText = "++ Funkce" };
+            DataRibbonGroup groupV = new DataRibbonGroup() { GroupText = "++ Vztahy" };
+            searchItems.Add(new DataRibbonItem() { Text = $"{Ribbon.DebugName}: Funkce A", ParentGroup = groupF, ItemType = RibbonItemType.Button, RibbonStyle = RibbonItemStyles.SmallWithText, ImageName = resources[0] });
+            searchItems.Add(new DataRibbonItem() { Text = $"{Ribbon.DebugName}: Funkce B", ParentGroup = groupF, ItemType = RibbonItemType.Button, RibbonStyle = RibbonItemStyles.SmallWithText, ImageName = resources[1] });
+            searchItems.Add(new DataRibbonItem() { Text = $"{Ribbon.DebugName}: Funkce C", ParentGroup = groupF, ItemType = RibbonItemType.Button, RibbonStyle = RibbonItemStyles.SmallWithText, ImageName = resources[2] });
+            searchItems.Add(new DataRibbonItem() { Text = $"{Ribbon.DebugName}: Funkce D", ParentGroup = groupF, ItemType = RibbonItemType.Button, RibbonStyle = RibbonItemStyles.SmallWithText, ImageName = resources[3] });
+            searchItems.Add(new DataRibbonItem() { Text = $"{Ribbon.DebugName}: Vztah W", ParentGroup = groupV, SearchTags = "1234", ItemType = RibbonItemType.Button, RibbonStyle = RibbonItemStyles.SmallWithText, ImageName = resources[4] });
+            searchItems.Add(new DataRibbonItem() { Text = $"{Ribbon.DebugName}: Vztah X", ParentGroup = groupV, SearchTags = "2345", ItemType = RibbonItemType.Button, RibbonStyle = RibbonItemStyles.SmallWithText, ImageName = resources[5] });
+            searchItems.Add(new DataRibbonItem() { Text = $"{Ribbon.DebugName}: Vztah Y", ParentGroup = groupV, SearchTags = "3456", ItemType = RibbonItemType.Button, RibbonStyle = RibbonItemStyles.SmallWithText, ImageName = resources[6] });
+            searchItems.Add(new DataRibbonItem() { Text = $"{Ribbon.DebugName}: Vztah Z", ParentGroup = groupV, SearchTags = "4567", ItemType = RibbonItemType.Button, RibbonStyle = RibbonItemStyles.SmallWithText, ImageName = resources[7] });
 
             this._Ribbon.SearchEditItems = searchItems.ToArray();
         }

@@ -370,6 +370,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="previousControl"></param>
         /// <param name="position"></param>
         /// <param name="titleText"></param>
+        /// <param name="titleSubstitute"></param>
         /// <param name="fixedPanel"></param>
         /// <param name="isFixedSplitter"></param>
         /// <param name="previousSize">Nastavit tuto velikost v pixelech pro Previous control, null = neřešit (dá 50%)</param>
@@ -401,6 +402,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="userControl"></param>
         /// <param name="areaId"></param>
         /// <param name="titleText"></param>
+        /// <param name="titleSubstitute"></param>
         /// <param name="removeOld"></param>
         public void AddControlToArea(Control userControl, string areaId, string titleText = null, string titleSubstitute = null, bool removeOld = false)
         {
