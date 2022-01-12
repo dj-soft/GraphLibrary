@@ -791,12 +791,20 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="addGroupItems"></param>
         private void AddSearchEditItems(RibbonSearchMenuEventArgs e, Dictionary<string, List<Tuple<IRibbonItem, string>>> addGroupItems)
         {
+            // Skupiny setřídit podle titulku:
             var addGroupItemsList = addGroupItems.ToList();
-            addGroupItemsList.Sort((a, b) => String.Compare(a.Key, b.Key, StringComparison.CurrentCultureIgnoreCase));
+            if (addGroupItemsList.Count > 1)
+                addGroupItemsList.Sort((a, b) => String.Compare(a.Key, b.Key, StringComparison.CurrentCultureIgnoreCase));
             foreach (var addGroupItem in addGroupItemsList)
             {
+                // Záhlaví skupiny přidat do menu:
                 AddSearchEditHeader(e, addGroupItem.Key);
-                foreach (var addItem in addGroupItem.Value)
+
+                // Prvky ve skupině setřídit podle textu (Item2 = explicitní ?? Item1.Text = výchozí), a přidat do menu:
+                var addItems = addGroupItem.Value;
+                if (addItems.Count > 1)
+                    addItems.Sort((a, b) => String.Compare((a.Item2 ?? a.Item1.Text), (b.Item2 ?? b.Item1.Text), StringComparison.CurrentCultureIgnoreCase));
+                foreach (var addItem in addItems)
                     AddSearchEditItem(e, addItem.Item1, addItem.Item2);
             }
         }

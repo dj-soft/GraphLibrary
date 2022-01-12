@@ -742,14 +742,14 @@ namespace TestDevExpress.Forms
 
             DataRibbonGroup groupF = new DataRibbonGroup() { GroupText = "++ Funkce" };
             DataRibbonGroup groupV = new DataRibbonGroup() { GroupText = "++ Vztahy" };
-            searchItems.Add(new DataRibbonItem() { Text = $"{Ribbon.DebugName}: Funkce A", ParentGroup = groupF, ItemType = RibbonItemType.Button, RibbonStyle = RibbonItemStyles.SmallWithText, ImageName = resources[0] });
-            searchItems.Add(new DataRibbonItem() { Text = $"{Ribbon.DebugName}: Funkce B", ParentGroup = groupF, ItemType = RibbonItemType.Button, RibbonStyle = RibbonItemStyles.SmallWithText, ImageName = resources[1] });
-            searchItems.Add(new DataRibbonItem() { Text = $"{Ribbon.DebugName}: Funkce C", ParentGroup = groupF, ItemType = RibbonItemType.Button, RibbonStyle = RibbonItemStyles.SmallWithText, ImageName = resources[2] });
-            searchItems.Add(new DataRibbonItem() { Text = $"{Ribbon.DebugName}: Funkce D", ParentGroup = groupF, ItemType = RibbonItemType.Button, RibbonStyle = RibbonItemStyles.SmallWithText, ImageName = resources[3] });
-            searchItems.Add(new DataRibbonItem() { Text = $"{Ribbon.DebugName}: Vztah W", ParentGroup = groupV, SearchTags = "1234", ItemType = RibbonItemType.Button, RibbonStyle = RibbonItemStyles.SmallWithText, ImageName = resources[4] });
-            searchItems.Add(new DataRibbonItem() { Text = $"{Ribbon.DebugName}: Vztah X", ParentGroup = groupV, SearchTags = "2345", ItemType = RibbonItemType.Button, RibbonStyle = RibbonItemStyles.SmallWithText, ImageName = resources[5] });
-            searchItems.Add(new DataRibbonItem() { Text = $"{Ribbon.DebugName}: Vztah Y", ParentGroup = groupV, SearchTags = "3456", ItemType = RibbonItemType.Button, RibbonStyle = RibbonItemStyles.SmallWithText, ImageName = resources[6] });
-            searchItems.Add(new DataRibbonItem() { Text = $"{Ribbon.DebugName}: Vztah Z", ParentGroup = groupV, SearchTags = "4567", ItemType = RibbonItemType.Button, RibbonStyle = RibbonItemStyles.SmallWithText, ImageName = resources[7] });
+            searchItems.Add(new DataRibbonItem() { Text = $"Funkce VYTVOŘ [{Ribbon.DebugName}.1]", ParentGroup = groupF, SearchTags = "create", ItemType = RibbonItemType.Button, RibbonStyle = RibbonItemStyles.SmallWithText, ImageName = resources[0] });
+            searchItems.Add(new DataRibbonItem() { Text = $"Funkce REALIZUJ [{Ribbon.DebugName}.2]", ParentGroup = groupF, ItemType = RibbonItemType.Button, RibbonStyle = RibbonItemStyles.SmallWithText, ImageName = resources[1] });
+            searchItems.Add(new DataRibbonItem() { Text = $"Funkce ZAÚČTUJ [{Ribbon.DebugName}].3", ParentGroup = groupF, SearchTags = "account", ItemType = RibbonItemType.Button, RibbonStyle = RibbonItemStyles.SmallWithText, ImageName = resources[2] });
+            searchItems.Add(new DataRibbonItem() { Text = $"Funkce AKTUALIZUJ [{Ribbon.DebugName}.4]", ParentGroup = groupF, ItemType = RibbonItemType.Button, RibbonStyle = RibbonItemStyles.SmallWithText, ImageName = resources[3] });
+            searchItems.Add(new DataRibbonItem() { Text = $"Vztah DODAVATEL [{Ribbon.DebugName}.5]", ParentGroup = groupV, SearchTags = "1234", ItemType = RibbonItemType.Button, RibbonStyle = RibbonItemStyles.SmallWithText, ImageName = resources[4] });
+            searchItems.Add(new DataRibbonItem() { Text = $"Vztah SKLAD [{Ribbon.DebugName}.6]", ParentGroup = groupV, SearchTags = "2345", ItemType = RibbonItemType.Button, RibbonStyle = RibbonItemStyles.SmallWithText, ImageName = resources[5] });
+            searchItems.Add(new DataRibbonItem() { Text = $"Vztah ODBĚRATEL [{Ribbon.DebugName}.7]", ParentGroup = groupV, SearchTags = "3456", ItemType = RibbonItemType.Button, RibbonStyle = RibbonItemStyles.SmallWithText, ImageName = resources[6] });
+            searchItems.Add(new DataRibbonItem() { Text = $"Vztah PLÁTCE [{Ribbon.DebugName}.8]", ParentGroup = groupV, SearchTags = "4567", ItemType = RibbonItemType.Button, RibbonStyle = RibbonItemStyles.SmallWithText, ImageName = resources[7] });
 
             this._Ribbon.SearchEditItems = searchItems.ToArray();
         }
