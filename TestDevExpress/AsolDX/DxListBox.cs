@@ -27,7 +27,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         public DxListBoxPanel()
         {
             _ListBox = new DxListBoxControl();
-            _Buttons = new Dictionary<ListBoxButtonType, DxSimpleButton>();
+            _Buttons = new List<DxSimpleButton>();
             this.Controls.Add(_ListBox);
             this.Padding = new Padding(0);
             this.ClientSizeChanged += _ClientSizeChanged;
@@ -66,7 +66,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Typy dostupných tlačítek
         /// </summary>
-        public ListBoxButtonType ButtonsType { get { return _ButtonsType; } set { _ButtonsType = value; AcceptButtonsType(); DoLayout(); } }
+        public ListBoxButtonType ButtonsTypes { get { return _ButtonsTypes; } set { _ButtonsTypes = value; AcceptButtonsType(); DoLayout(); } }
 
         #region Tlačíka
         /// <summary>
@@ -74,33 +74,93 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="innerBounds"></param>
         private void _DoLayoutButtons(ref Rectangle innerBounds)
-        { }
+        {
+            if (!TryGetButtonsInfo(out var layoutInfos)) return;
+
+            Padding margins = DxComponent.ZoomToGui(new Padding(3), this.CurrentDpi);
+
+            innerBounds = DxComponent.CalculateControlItemsLayout(innerBounds, layoutInfos, this.ButtonsPosition, margins);
+        }
+        private bool TryGetButtonsInfo(out ControlItemLayoutInfo[] layoutInfos)
+        {
+            layoutInfos = null;
+            var buttons = _Buttons;
+            if (buttons == null || buttons.Count == 0) return false;
+
+            Size size = new Size(24, 24);
+            layoutInfos = new ControlItemLayoutInfo[buttons.Count];
+            for (int b = 0; b < buttons.Count; b++)
+                layoutInfos[b] = new ControlItemLayoutInfo() { Control = buttons[b], Size = size };
+
+            return true;
+        }
         /// <summary>
         /// Aktuální povolená tlačítka promítne i do ListBoxu jako povolené klávesové akce
         /// </summary>
         private void AcceptButtonsType()
         {
-            ListBoxButtonType buttons = _ButtonsType;
+            ListBoxButtonType buttonsTypes = _ButtonsTypes;
 
-            // 1. Buttony z _ButtonsType převedu na povolené akce v ListBoxu a sloučím s akcemi dosud povolenými:
+            // Buttony z _ButtonsType převedu na povolené akce v ListBoxu a sloučím s akcemi dosud povolenými:
             KeyActionType oldActions = _ListBox.EnabledKeyActions;
-            KeyActionType newActions = ConvertButtonsToActions(buttons);
+            KeyActionType newActions = ConvertButtonsToActions(buttonsTypes);
             _ListBox.EnabledKeyActions = (newActions | oldActions);
 
-            // 2. Vytvořím potřebné buttony a nastavím Visible požadovaným buttonům:
-            _Buttons.Values.Where(b => b != null).ForEachExec(b => b.Visible = false);
-            AcceptButtonType(ListBoxButtonType.MoveTop, buttons, "");
+            // Odstraním stávající buttony:
+            RemoveButtons();
+
+            // Vytvořím potřebné buttony:
+            AcceptButtonType(ListBoxButtonType.MoveTop, buttonsTypes, "@arrowsmall|top|blue", MsgCode.None);
+            AcceptButtonType(ListBoxButtonType.MoveUp, buttonsTypes, "@arrowsmall|up|blue", MsgCode.None);
+            AcceptButtonType(ListBoxButtonType.SelectAll, buttonsTypes, "", MsgCode.None);
+            AcceptButtonType(ListBoxButtonType.Delete, buttonsTypes, "", MsgCode.None);
+            AcceptButtonType(ListBoxButtonType.MoveDown, buttonsTypes, "@arrowsmall|down|blue", MsgCode.None);
+            AcceptButtonType(ListBoxButtonType.MoveBottom, buttonsTypes, "@arrowsmall|bottom|blue", MsgCode.None);
         }
-        private void AcceptButtonType(ListBoxButtonType buttonType, ListBoxButtonType buttons, string imageName)
+        /// <summary>
+        /// Odebere všechny buttony přítomné v poli <see cref="_Buttons"/>
+        /// </summary>
+        private void RemoveButtons()
         {
-            bool isVisible = buttons.HasFlag(buttonType);
-            DxSimpleButton dxButton = null;
-            if (isVisible && !_Buttons.TryGetValue(buttonType, out dxButton))
+            if (_Buttons == null)
+                _Buttons = new List<DxSimpleButton>();
+            else if (_Buttons.Count > 0)
             {
-                //qqq
+                foreach (var button in _Buttons)
+                {
+                    button.RemoveControlFromParent();
+                    button.Dispose();
+                }
+                _Buttons.Clear();
             }
-            if (dxButton != null)
-                dxButton.Visible = isVisible;
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="buttonType">Typ konkrétního jednoho buttonu</param>
+        /// <param name="buttonsTypes">Soupis požadovaných buttonů</param>
+        /// <param name="imageName"></param>
+        /// <param name="msgToolTip"></param>
+        private void AcceptButtonType(ListBoxButtonType buttonType, ListBoxButtonType buttonsTypes, string imageName, MsgCode msgToolTip)
+        {
+            if (!buttonsTypes.HasFlag(buttonType)) return;
+
+            string toolTipText = DxComponent.Localize(msgToolTip);
+            DxSimpleButton dxButton = DxComponent.CreateDxMiniButton(0, 0, 24, 24, this, this._ButtonClick, resourceName: imageName, toolTipText: toolTipText, tabStop: false, allowFocus: false, tag: buttonType);
+            _Buttons.Add(dxButton);
+        }
+        /// <summary>
+        /// Provede akci danou buttonem <paramref name="sender"/>
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="args"></param>
+        private void _ButtonClick(object sender, EventArgs args)
+        {
+            if (sender is DxSimpleButton dxButton && dxButton.Tag is ListBoxButtonType buttonType)
+            {
+                KeyActionType action = ConvertButtonsToActions(buttonType);
+                _ListBox.DoKeyActions(action);
+            }
         }
         /// <summary>
         /// Konvertuje hodnoty z typu <see cref="ListBoxButtonType"/> na hodnoty typu <see cref="KeyActionType"/>
@@ -151,11 +211,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Typy dostupných tlačítek
         /// </summary>
-        private ListBoxButtonType _ButtonsType;
+        private ListBoxButtonType _ButtonsTypes;
         /// <summary>
-        /// Tlačítka
+        /// Tlačítka, která mají být dostupná, v patřičném pořadí
         /// </summary>
-        private Dictionary<ListBoxButtonType, DxSimpleButton> _Buttons;
+        private List<DxSimpleButton> _Buttons;
         #endregion
     }
     /// <summary>

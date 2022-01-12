@@ -4740,6 +4740,8 @@ namespace Noris.Clients.Win.Components.AsolDX
                 qatPanel.ListBox.ItemHeight = 20;
                 qatPanel.ListBox.DragDropActions = DxDragDropActionType.ReorderItems;
                 qatPanel.ListBox.EnabledKeyActions = KeyActionType.MoveDown | KeyActionType.MoveUp | KeyActionType.Delete;
+                qatPanel.ButtonsPosition = ToolbarPosition.RightSideCenter;
+                qatPanel.ButtonsTypes = ListBoxButtonType.MoveUp | ListBoxButtonType.MoveTop | ListBoxButtonType.MoveDown | ListBoxButtonType.MoveBottom | ListBoxButtonType.SelectAll;
 
                 var result = form.ShowDialog(this.FindForm());
 
