@@ -593,7 +593,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="e"></param>
         private void SearchEdit_Enter(object sender, EventArgs e)
         {
-            RefreshSearchEditItems();
+            RefreshSearchEditItems(0);
             _AddedSearchMenuItems = new List<BarItemLink>();
             _CurrentIsSearchEditActive = true;
         }
@@ -639,11 +639,15 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Zajistí, že v this Ribbonu a v jeho Child ribbonech bude připraven seznam dodatkových prvků v poli <see cref="_SearchEditItems"/>.
         /// Tato metoda se má volat při každém vstupu do políčka SearchEdit.
         /// </summary>
-        protected void RefreshSearchEditItems()
+        /// <param name="level"></param>
+        protected void RefreshSearchEditItems(int level)
         {
             if (_SearchEditItems == null && !_SearchEditItemsLoading)
                 RunLoadSearchEditItems();
-            this.MergedChildDxRibbon?.RefreshSearchEditItems();
+
+            // Totéž pro moje Child Ribbony, rekurzivně, až do dvanáctého kolena:
+            if (level < 12)
+                this.MergedChildDxRibbon?.RefreshSearchEditItems(level + 1);
         }
         /// <summary>
         /// Vyžádá si donačtení prvků do <see cref="_SearchEditItems"/>
@@ -672,8 +676,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             // Sem vstupuje řízení pokaždé, když uživatel v SearchMenu edituje text (vepíše/smaže znak):
 
             // Prvky přidané při předchozím písmenku budou z menu odstraněny:
-            if (_AddedSearchMenuItems != null && _AddedSearchMenuItems.Count > 0)
-                _AddedSearchMenuItems.ForEachExec(l => e.Menu.RemoveLink(l));
+            RemoveAddedSearchMenuItems(e);
 
             // Pokud uživatel nic nezadal, skončíme:
             if (String.IsNullOrEmpty(e.SearchString) || e.SearchString.Trim().Length < 1) return;
@@ -682,14 +685,28 @@ namespace Noris.Clients.Win.Components.AsolDX
             var menuItemsDict = e.Menu.ItemLinks.Select(l => l.Item).Where(i => (i != null && !String.IsNullOrEmpty(i.Name))).CreateDictionary(i => i.Name, true);
             // Tento i Child Ribbony sestaví soupis těch přidaných prvků, které mají být přítomny v Search menu:
             var addGroupItems = new Dictionary<string, List<Tuple<IRibbonItem, string>>>();
-            PrepareSearchEditItems(e, menuItemsDict, addGroupItems);
+            PrepareSearchEditItems(e, menuItemsDict, addGroupItems, 0);
 
             // Zajistíme, že nově vybrané prvky budou přidány do SearchMenu:
             AddSearchEditItems(e, addGroupItems);
 
-            // Zhasneme prvek "Nic jsem nenašel", pokud je zobrazen, a v přidaných prvcích jsme něco našli (pak by to vypadalo blbě), anebo mu dáme lokalizovaný text:
-            ModifySearchEditNotFoundItemVisible(e);
-
+            // Zhasneme prvek "Nic jsem nenašel", pokud je zobrazen, a pokud v přidaných prvcích jsme něco našli (pak by to vypadalo blbě), anebo mu dáme lokalizovaný text:
+            ModifySearchEditNotFoundItem(e);
+        }
+        /// <summary>
+        /// Z dodaného SearchMenu odebere linky na prvky, které byly přidány posledně jako AddItems (v metodě <see cref="AddSearchEditItems"/>).
+        /// Vyčistí pole <see cref="_AddedSearchMenuItems"/>.
+        /// </summary>
+        /// <param name="e"></param>
+        private void RemoveAddedSearchMenuItems(RibbonSearchMenuEventArgs e)
+        {
+            if (_AddedSearchMenuItems is null)
+                _AddedSearchMenuItems = new List<BarItemLink>();
+            else if (_AddedSearchMenuItems.Count > 0)
+            {
+                _AddedSearchMenuItems.ForEachExec(l => e.Menu.RemoveLink(l));
+                _AddedSearchMenuItems.Clear();
+            }
         }
         /// <summary>
         /// Metoda zajistí doplnění SearchEdit položek o odpovídající položky z přídavných prvků v poli <see cref="SearchEditItems"/> do předaného pole <paramref name="addGroupItems"/>
@@ -698,7 +715,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="e"></param>
         /// <param name="menuItemsDict"></param>
         /// <param name="addGroupItems"></param>
-        private void PrepareSearchEditItems(RibbonSearchMenuEventArgs e, Dictionary<string, BarItem> menuItemsDict, Dictionary<string, List<Tuple<IRibbonItem, string>>> addGroupItems)
+        private void PrepareSearchEditItems(RibbonSearchMenuEventArgs e, Dictionary<string, BarItem> menuItemsDict, Dictionary<string, List<Tuple<IRibbonItem, string>>> addGroupItems, int level)
         {
             // Moje přídavné prvky:
             var iRibbonItems = _SearchEditItems;
@@ -711,21 +728,40 @@ namespace Noris.Clients.Win.Components.AsolDX
                         // a) do indexu prvků, které jsou nalezeny (abychom shodný prvek nezobrazovali dvakrát):
                         menuItemsDict.Add(iRibbonItem.ItemId, null);
 
-                        // b) do pole, které obsahuje grupy a pole prvků v grupách:
+                        // b) zajistím, že v IRibbonItem bude vytvořen fyzický BarItem, protože ten musí vytvořit this Ribbon jako aoutor, on si pak bude obsluhovat Click event na itemu:
+                        PrepareSearchEditBarItem(iRibbonItem);
+
+                        // c) do pole, které obsahuje grupy a pole prvků v grupách:
                         string headerText = iRibbonItem.ParentGroup?.GroupText ?? "...";           // Titulek grupy nebo ...
                         if (!addGroupItems.TryGetValue(headerText, out var items))
                         {   // Nová grupa:
                             items = new List<Tuple<IRibbonItem, string>>();
                             addGroupItems.Add(headerText, items);
                         }
-                        // přidám prvek do grupy:
+                        // d) přidám prvek do grupy:
                         items.Add(new Tuple<IRibbonItem, string>(iRibbonItem, itemCaption));
                     }
                 }
             }
 
-            // Totéž pro moje Child Ribbony, rekurzivně:
-            this.MergedChildDxRibbon?.PrepareSearchEditItems(e, menuItemsDict, addGroupItems);
+            // Totéž pro moje Child Ribbony, rekurzivně, až do dvanáctého kolena:
+            if (level < 12)
+                this.MergedChildDxRibbon?.PrepareSearchEditItems(e, menuItemsDict, addGroupItems, level + 1);
+        }
+        /// <summary>
+        /// V rámci daného <see cref="IRibbonItem"/> prověří existenci reálného BarItem v <see cref="IRibbonItem.RibbonItem"/>, a případně jej vytvoří.
+        /// Klíčové je, že BarItem vytváří právě ta instance Ribbonu, kde je prvek deklarován, protože ta instance pak bude obsluhovat jeho Click.
+        /// </summary>
+        /// <param name="iRibbonItem"></param>
+        private void PrepareSearchEditBarItem(IRibbonItem iRibbonItem)
+        {
+            BarItem barItem = iRibbonItem.RibbonItem;
+            if (barItem is null)
+            {
+                int count = 0;
+                barItem = GetItem(iRibbonItem, null, 0, DxRibbonCreateContentMode.CreateAllSubItems, ref count);
+                iRibbonItem.RibbonItem = barItem;
+            }
         }
         /// <summary>
         /// Vrátí true pokud prvek s daným textem má být přidán do Search menu
@@ -786,21 +822,16 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void AddSearchEditItem(RibbonSearchMenuEventArgs e, IRibbonItem iRibbonItem, string itemCaption)
         {
             BarItem barItem = iRibbonItem.RibbonItem;
-            if (barItem is null)
-            {
-                int count = 0;
-                barItem = GetItem(iRibbonItem, null, 0, DxRibbonCreateContentMode.CreateAllSubItems, ref count);
-                iRibbonItem.RibbonItem = barItem;
-            }
+            if (barItem is null) return;
             var link = e.Menu.AddItem(barItem);
             link.UserCaption = itemCaption ?? iRibbonItem.Text;
             _AddedSearchMenuItems.Add(link);
         }
         /// <summary>
-        /// Zhasneme prvek "Nic jsem nenašel", pokud je zobrazen, a v přidaných prvcích jsme něco našli (pak by to vypadalo blbě), anebo mu dáme lokalizovaný text:
+        /// Upraví prvek menu "Nic jsem nenašel" v SearchEdit menu: nastaví jeho lokalizovaný text a aktuálně potřebnou viditelnoust.
         /// </summary>
         /// <param name="e"></param>
-        private void ModifySearchEditNotFoundItemVisible(RibbonSearchMenuEventArgs e)
+        private void ModifySearchEditNotFoundItem(RibbonSearchMenuEventArgs e)
         {
             // a) Caption:
             var link = e.Menu.ItemLinks.FirstOrDefault(l => l.Item.Tag is MsgCode && ((MsgCode)l.Item.Tag) == MsgCode.RibbonNoMatchesFound);
@@ -5222,6 +5253,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void RibbonControl_ItemClick(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
         {
             // poznámka: tady nemusím řešit přechod z Ribbonu "ke se kliklo" do Ribbonu "kde byl prvek definován", tady to už interně vyřešil DevExpress!
+            // Tady jsem v té instanci Ribbonu, která deklarovala BarItem a navázala do něj svůj Click eventhandler...
             if (_TryGetIRibbonItem(e.Item, out IRibbonItem iRibbonItem))
             {
                 if (e.Item is DevExpress.XtraBars.BarCheckItem checkItem)
