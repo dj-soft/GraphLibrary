@@ -25,6 +25,8 @@ using DevExpress.XtraEditors.Filtering.Templates;
 using DevExpress.Utils.Extensions;
 using DevExpress.XtraEditors.ViewInfo;
 
+using XS = Noris.WS.Parser.XmlSerializer;
+
 namespace Noris.Clients.Win.Components.AsolDX
 {
     #region ControlFactory : generuje instance controlů
@@ -7949,6 +7951,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Parent prvku = jiný prvek <see cref="IMenuItem"/>
         /// </summary>
+        [XS.PersistingEnabled(false)]
         public virtual IMenuItem ParentItem { get; set; }
         /// <summary>
         /// Typ položky
@@ -7978,6 +7981,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Explicitně daná akce po aktivaci této položky menu
         /// </summary>
+        [XS.PersistingEnabled(false)]
         public Action<IMenuItem> ClickAction { get; set; }
 
         /// <summary>
@@ -8073,6 +8077,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Prvek stránky reprezentující vizuální control
         /// </summary>
+        [XS.PersistingEnabled(false)]
         public virtual Control PageControl { get { return _PageControl?.Target; } set { _PageControl = value; } }
         private WeakTarget<Control> _PageControl;
     }
@@ -8221,10 +8226,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Fyzický obrázek ikony.
         /// </summary>
+        [XS.PersistingEnabled(false)]
         public virtual Image Image { get; set; }
         /// <summary>
         /// Fyzický vektor ikony
         /// </summary>
+        [XS.PersistingEnabled(false)]
         public virtual DevExpress.Utils.Svg.SvgImage SvgImage { get; set; }
         /// <summary>
         /// Jméno běžné ikony.
@@ -8258,6 +8265,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Libovolná data aplikace
         /// </summary>
+        [XS.PersistingEnabled(false)]
         public object Tag { get; set; }
 
         /// <summary>

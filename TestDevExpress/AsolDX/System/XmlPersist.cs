@@ -2776,14 +2776,16 @@ namespace Noris.WS.Parser.XmlSerializer.InternalPersistor
             /// <param name="estimatedType"></param>
             /// <param name="targetName"></param>
             /// <param name="xmlElement"></param>
+            /// <param name="level"></param>
             /// <param name="typeLibrary"></param>
-            internal XmlPersistSaveArgs(object data, string objectName, Type estimatedType, string targetName, XmlElement xmlElement, TypeLibrary typeLibrary)
+            internal XmlPersistSaveArgs(object data, string objectName, Type estimatedType, string targetName, XmlElement xmlElement, int level, TypeLibrary typeLibrary)
             {
                 this.Data = data;
                 this.ObjectName = objectName;
                 this.EstimatedType = estimatedType;
                 this.TargetName = targetName;
                 this.XmlElement = xmlElement;
+                this.Level = level;
                 this.DataTypeInfo = (data == null ? null : typeLibrary.GetInfo(data.GetType()));
             }
             /// <summary>
@@ -2816,6 +2818,10 @@ namespace Noris.WS.Parser.XmlSerializer.InternalPersistor
             /// XML element, do kterého se budou ukládat aktuální data
             /// </summary>
             internal XmlElement XmlElement { get; private set; }
+            /// <summary>
+            /// Úroveň zanoření pro tuto iteraci. Při překročení 255 úrovní dojde k chybě.
+            /// </summary>
+            internal int Level { get; private set; }
             /// <summary>
             /// Datový typ
             /// </summary>
@@ -2989,7 +2995,7 @@ namespace Noris.WS.Parser.XmlSerializer.InternalPersistor
                     //**//Dořešit, Windows.Forms zde nejsou k dispoziciCreateAttribute("Creator", System.Windows.Forms.SystemInformation.UserName, xRootElement);
                 }
                 XmlElement xDataElement = CreateElement(_DocumentNameData, xRootElement);
-                XmlPersistSaveArgs saveArgs = CreateSaveArgs(data, _DocumentNameValue, null, null, xDataElement);
+                XmlPersistSaveArgs saveArgs = CreateSaveArgs(data, _DocumentNameValue, null, null, xDataElement, 0);
                 this.SaveObject(saveArgs);
             }
             bool IXmlPersistVersion.IsValidFormat(XmDocument xmDoc)
@@ -3327,7 +3333,7 @@ namespace Noris.WS.Parser.XmlSerializer.InternalPersistor
                         CreateAttribute(_ArrayNameItemIndices, ArrayIndices.SerialIndices(indices), xmlItemElement);
 
                         // Vypíšu obsah itemu:
-                        XmlPersistSaveArgs nextArgs = CreateSaveArgs(item, _ElementNameValue, itemType, null, xmlItemElement);
+                        XmlPersistSaveArgs nextArgs = CreateSaveArgs(item, _ElementNameValue, itemType, null, xmlItemElement, args.Level);
                         this.SaveObject(nextArgs);
                     }
                 }
@@ -3416,7 +3422,7 @@ namespace Noris.WS.Parser.XmlSerializer.InternalPersistor
                     // Obsah tohoto prvku vepíšeme, jen když obsah prvku pole není null:
                     if (item != null)
                     {
-                        XmlPersistSaveArgs nextArgs = CreateSaveArgs(item, _ElementNameValue, itemType, null, xmlItemElement);
+                        XmlPersistSaveArgs nextArgs = CreateSaveArgs(item, _ElementNameValue, itemType, null, xmlItemElement, args.Level);
                         this.SaveObject(nextArgs);
                     }
                 }
@@ -3494,8 +3500,8 @@ namespace Noris.WS.Parser.XmlSerializer.InternalPersistor
                     // Element za tento prvek seznamu založíme, protože je třeba zachovávat pořadí položek (tj. ani null položky nelze vynechávat):
                     XmlElement xmlItemElement = CreateElement(_DictNamePair, xmlDictElement);
 
-                    this.SaveObject(CreateSaveArgs(entry.Key, _DictNameKey, keyType, null, xmlItemElement));
-                    this.SaveObject(CreateSaveArgs(entry.Value, _DictNameValue, valueType, null, xmlItemElement));
+                    this.SaveObject(CreateSaveArgs(entry.Key, _DictNameKey, keyType, null, xmlItemElement, args.Level));
+                    this.SaveObject(CreateSaveArgs(entry.Value, _DictNameValue, valueType, null, xmlItemElement, args.Level));
                 }
             }
             /// <summary>
@@ -3574,7 +3580,7 @@ namespace Noris.WS.Parser.XmlSerializer.InternalPersistor
                 {
                     args.CurrentProperty = propInfo.Name;
                     object value = propInfo.GetValue(args.Data);
-                    this.SaveObject(CreateSaveArgs(value, propInfo.XmlName, propInfo.PropertyType, propInfo.XmlName, xmlCurrElement));
+                    this.SaveObject(CreateSaveArgs(value, propInfo.XmlName, propInfo.PropertyType, propInfo.XmlName, xmlCurrElement, args.Level));
                 }
                 args.CurrentProperty = null;
 
@@ -3680,7 +3686,7 @@ namespace Noris.WS.Parser.XmlSerializer.InternalPersistor
                 XmlElement xmlElementHeap = (parameters.DataHeapEnabled ? CreateElement(_DocumentNameHeap, xmlElementRoot) : null);
 
                 XmlElement xmlElementData = CreateElement(_DocumentNameData, xmlElementRoot);
-                XmlPersistSaveArgs saveArgs = CreateSaveArgs(data, _DocumentNameValue, null, null, xmlElementData);
+                XmlPersistSaveArgs saveArgs = CreateSaveArgs(data, _DocumentNameValue, null, null, xmlElementData, 0);
                 this.SaveObject(saveArgs);
 
                 this.HeapSave(xmlElementHeap);
@@ -4064,7 +4070,7 @@ namespace Noris.WS.Parser.XmlSerializer.InternalPersistor
                         CreateAttribute(_ArrayNameItemIndices, ArrayIndices.SerialIndices(indices), xmlItemElement);
 
                         // Do XML elementu pro prvek pole vložím hodnoty z objektu:
-                        XmlPersistSaveArgs nextArgs = CreateSaveArgs(item, _ElementNameValue, itemType, null, xmlItemElement);
+                        XmlPersistSaveArgs nextArgs = CreateSaveArgs(item, _ElementNameValue, itemType, null, xmlItemElement, args.Level);
                         this.SaveObject(nextArgs);
                     }
                 }
@@ -4153,7 +4159,7 @@ namespace Noris.WS.Parser.XmlSerializer.InternalPersistor
                     // Obsah tohoto prvku vepíšeme, jen když obsah prvku pole není null:
                     if (item != null)
                     {
-                        XmlPersistSaveArgs nextArgs = CreateSaveArgs(item, _ElementNameValue, itemType, null, xmlItemElement);
+                        XmlPersistSaveArgs nextArgs = CreateSaveArgs(item, _ElementNameValue, itemType, null, xmlItemElement, args.Level);
                         this.SaveObject(nextArgs);
                     }
                 }
@@ -4237,8 +4243,8 @@ namespace Noris.WS.Parser.XmlSerializer.InternalPersistor
                     // Element za tento prvek seznamu založíme, protože je třeba zachovávat pořadí položek (tj. ani null položky nelze vynechávat):
                     XmlElement xmlItemElement = CreateElement(_DictNamePair, xmlDictElement);
 
-                    this.SaveObject(CreateSaveArgs(entry.Key, _DictNameKey, keyType, null, xmlItemElement));
-                    this.SaveObject(CreateSaveArgs(entry.Value, _DictNameValue, valueType, null, xmlItemElement));
+                    this.SaveObject(CreateSaveArgs(entry.Key, _DictNameKey, keyType, null, xmlItemElement, args.Level));
+                    this.SaveObject(CreateSaveArgs(entry.Value, _DictNameValue, valueType, null, xmlItemElement, args.Level));
                 }
             }
             /// <summary>
@@ -4349,7 +4355,8 @@ namespace Noris.WS.Parser.XmlSerializer.InternalPersistor
                     //  konkrétní roztřídění řeší až metoda SaveObject() - podle druhu persistence dle typu konkrétního objektu.
                     args.CurrentProperty = propInfo.Name;
                     object value = propInfo.GetValue(args.Data);
-                    this.SaveObject(CreateSaveArgs(value, propInfo.XmlName, propInfo.PropertyType, propInfo.XmlName, xmlCurrElement));
+                    if (value != null)
+                        this.SaveObject(CreateSaveArgs(value, propInfo.XmlName, propInfo.PropertyType, propInfo.XmlName, xmlCurrElement, args.Level));
                 }
                 args.CurrentProperty = null;
             }
@@ -4966,10 +4973,12 @@ namespace Noris.WS.Parser.XmlSerializer.InternalPersistor
             /// <param name="targetName"></param>
             /// <param name="estimatedType"></param>
             /// <param name="xmlElement"></param>
+            /// <param name="level"></param>
             /// <returns></returns>
-            protected XmlPersistSaveArgs CreateSaveArgs(object data, string objectName, Type estimatedType, string targetName, XmlElement xmlElement)
+            protected XmlPersistSaveArgs CreateSaveArgs(object data, string objectName, Type estimatedType, string targetName, XmlElement xmlElement, int level)
             {
-                return new XmlPersistSaveArgs(data, objectName, estimatedType, targetName, xmlElement, this.TypeLibrary);
+                if (level >= 255) throw new InvalidOperationException($"XmlPersist error: nested depth exceed 255 levels; data probably contain cyclic relation between instances or global references. Use [PersistingEnabled(false)] attribute on global properties!");
+                return new XmlPersistSaveArgs(data, objectName, estimatedType, targetName, xmlElement, level + 1, this.TypeLibrary);
             }
             /// <summary>
             /// Vytvoří a vrátí argument pro načítání dat.

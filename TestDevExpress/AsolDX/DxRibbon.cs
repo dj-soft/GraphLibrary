@@ -20,6 +20,7 @@ using DevExpress.XtraBars;
 using DevExpress.XtraBars.Ribbon;
 using DevExpress.PivotGrid.CollapseState;
 using DevExpress.PivotGrid.OLAP;
+using XS = Noris.WS.Parser.XmlSerializer;
 
 namespace Noris.Clients.Win.Components.AsolDX
 {
@@ -4741,7 +4742,10 @@ namespace Noris.Clients.Win.Components.AsolDX
                 qatPanel.ListBox.DragDropActions = DxDragDropActionType.ReorderItems;
                 qatPanel.ListBox.EnabledKeyActions = KeyActionType.MoveDown | KeyActionType.MoveUp | KeyActionType.Delete;
                 qatPanel.ButtonsPosition = ToolbarPosition.RightSideCenter;
-                qatPanel.ButtonsTypes = ListBoxButtonType.MoveUp | ListBoxButtonType.MoveTop | ListBoxButtonType.MoveDown | ListBoxButtonType.MoveBottom | ListBoxButtonType.SelectAll;
+                qatPanel.ButtonsTypes = 
+                    ListBoxButtonType.MoveUp | ListBoxButtonType.MoveTop | ListBoxButtonType.MoveDown | ListBoxButtonType.MoveBottom | 
+                    ListBoxButtonType.SelectAll | ListBoxButtonType.Delete | 
+                    ListBoxButtonType.ClipCopy | ListBoxButtonType.ClipCut | ListBoxButtonType.ClipPaste;
 
                 var result = form.ShowDialog(this.FindForm());
 
@@ -7910,10 +7914,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Sem bude umístěna fyzická <see cref="DxRibbonPage"/> po jejím vytvoření.
         /// </summary>
+        [XS.PersistingEnabled(false)]
         public virtual WeakTarget<DxRibbonPage> RibbonPage { get; set; }
         /// <summary>
         /// Libovolná data aplikace
         /// </summary>
+        [XS.PersistingEnabled(false)]
         public virtual object Tag { get; set; }
     }
     /// <summary>
@@ -7987,10 +7993,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Sem bude umístěna fyzická <see cref="DxRibbonPageCategory"/> po jejím vytvoření.
         /// </summary>
+        [XS.PersistingEnabled(false)]
         public virtual WeakTarget<DxRibbonPageCategory> RibbonCategory { get; set; }
         /// <summary>
         /// Libovolná data aplikace
         /// </summary>
+        [XS.PersistingEnabled(false)]
         public virtual object Tag { get; set; }
     }
     /// <summary>
@@ -8054,6 +8062,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Parent prvku = <see cref="IRibbonPage"/>
         /// </summary>
+        [XS.PersistingEnabled(false)]
         public IRibbonPage ParentPage { get; set; }
         /// <summary>
         /// ID grupy, musí být jednoznačné v rámci stránky
@@ -8123,10 +8132,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Sem bude umístěna fyzická <see cref="DxRibbonGroup"/> po jejím vytvoření.
         /// </summary>
+        [XS.PersistingEnabled(false)]
         public virtual WeakTarget<DxRibbonGroup> RibbonGroup { get; set; }
         /// <summary>
         /// Libovolná data aplikace
         /// </summary>
+        [XS.PersistingEnabled(false)]
         public virtual object Tag { get; set; }
     }
     /// <summary>
@@ -8282,10 +8293,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Parent prvku = <see cref="IRibbonGroup"/>
         /// </summary>
+        [XS.PersistingEnabled(false)]
         public virtual IRibbonGroup ParentGroup { get; set; }
         /// <summary>
         /// Parent prvku = jiný prvek <see cref="IRibbonItem"/>
         /// </summary>
+        [XS.PersistingEnabled(false)]
         public virtual IRibbonItem ParentRibbonItem { get; set; }
         /// <summary>
         /// Typ prvku
@@ -8319,6 +8332,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Sem bude umístěn fyzický BarItem po jeho vytvoření.
         /// </summary>
+        [XS.PersistingEnabled(false)]
         public virtual WeakTarget<BarItem> RibbonItem { get; set; }
     }
     #endregion

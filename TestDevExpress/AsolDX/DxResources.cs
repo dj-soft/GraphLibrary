@@ -807,8 +807,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                     {   // Tady dochází k chybě v DevExpress v situaci, kdy provádím Refresh obrázku. Nevím proč...
                         if (iciOptions.SvgImage != null) iciOptions.SvgImage = null;
                         int imageIndex = _GetVectorImageIndex(resourceItems, sizeType ?? ResourceImageSizeType.Large);
-                        if (iciOptions.ImageIndex != imageIndex)
-                            iciOptions.ImageIndex = imageIndex;
+                        if (iciOptions.ImageIndex != imageIndex) iciOptions.ImageIndex = imageIndex;
                     }
                     catch { }
                 }

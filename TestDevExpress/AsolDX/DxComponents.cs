@@ -4068,7 +4068,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         RibbonQatManagerTitle,
         /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Nenalezeno")]
-        RibbonNoMatchesFound,
+        RibbonNoMatchesFound,                                                                      // PŘIDAT !!!
 
         /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Chyba")]
@@ -4248,8 +4248,37 @@ namespace Noris.Clients.Win.Components.AsolDX
         DxFilterOperatorGreaterThanText,
         /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Hodnoty větší než zadaná hodnota")]
-        DxFilterOperatorGreaterThanTip
-       
+        DxFilterOperatorGreaterThanTip,
+
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
+        [DefaultMessageText("Přesunout na začátek")]
+        DxKeyActionMoveTop,                                                                        // PŘIDAT !!!
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
+        [DefaultMessageText("Přesunout o řádek nahoru")]
+        DxKeyActionMoveUp,                                                                         // PŘIDAT !!!
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
+        [DefaultMessageText("Přesunout o řádek dolů")]
+        DxKeyActionMoveDown,                                                                       // PŘIDAT !!!
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
+        [DefaultMessageText("Přesunout na konec")]
+        DxKeyActionMoveBottom,                                                                     // PŘIDAT !!!
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
+        [DefaultMessageText("Vybrat vše")]
+        DxKeyActionSelectAll,                                                                      // PŘIDAT !!!
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
+        [DefaultMessageText("Zkopírovat do schránky")]
+        DxKeyActionClipCopy,                                                                       // PŘIDAT !!!
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
+        [DefaultMessageText("Přenést do schránky")]
+        DxKeyActionClipCut,                                                                        // PŘIDAT !!!
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
+        [DefaultMessageText("Vložit ze schránky")]
+        DxKeyActionClipPaste,                                                                      // PŘIDAT !!!
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
+        [DefaultMessageText("Smazat")]
+        DxKeyActionDelete,                                                                         // PŘIDAT !!!
+
+
 
         // Nové kódy přidej do Messages.xml v klientu!!!     Do AdapterTest.cs není nutno, tam se načítá hodnota atributu DefaultMessageText() !
     }

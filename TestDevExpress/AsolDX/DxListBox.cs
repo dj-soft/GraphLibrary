@@ -20,7 +20,7 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// </summary>
     public class DxListBoxPanel : DxPanelControl
     {
-        #region Konstruktor, tvorba, privátní proměnné, layout
+        #region Konstruktor, tvorba, privátní proměnné, layout celkový
         /// <summary>
         /// Konstruktor
         /// </summary>
@@ -28,6 +28,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             _ListBox = new DxListBoxControl();
             _Buttons = new List<DxSimpleButton>();
+            _ButtonsPosition = ToolbarPosition.RightSideCenter;
+            _ButtonsTypes = ListBoxButtonType.None;
+            _ButtonsSize = ResourceImageSizeType.Medium;
             this.Controls.Add(_ListBox);
             this.Padding = new Padding(0);
             this.ClientSizeChanged += _ClientSizeChanged;
@@ -43,6 +46,14 @@ namespace Noris.Clients.Win.Components.AsolDX
             DoLayout();
         }
         /// <summary>
+        /// Po změně DPI
+        /// </summary>
+        protected override void OnCurrentDpiChanged()
+        {
+            base.OnCurrentDpiChanged();
+            DoLayout();
+        }
+        /// <summary>
         /// Rozmístí prvky (tlačítka a ListBox) podle pravidel do svého prostoru
         /// </summary>
         protected virtual void DoLayout()
@@ -53,46 +64,58 @@ namespace Noris.Clients.Win.Components.AsolDX
             _DoLayoutButtons(ref innerBounds);
             _ListBox.Bounds = new Rectangle(innerBounds.X, innerBounds.Y, innerBounds.Width - 0, innerBounds.Height);
         }
+        /// <summary>
+        /// Instance ListBoxu
+        /// </summary>
         private DxListBoxControl _ListBox;
         #endregion
+        #region Public prvky
         /// <summary>
         /// ListBox
         /// </summary>
         public DxListBoxControl ListBox { get { return _ListBox; } }
         /// <summary>
+        /// Typy dostupných tlačítek
+        /// </summary>
+        public ListBoxButtonType ButtonsTypes { get { return _ButtonsTypes; } set { _ButtonsTypes = value; AcceptButtonsType(); DoLayout(); } }
+        /// <summary>
         /// Umístění tlačítek
         /// </summary>
         public ToolbarPosition ButtonsPosition { get { return _ButtonsPosition; } set { _ButtonsPosition = value; DoLayout(); } }
         /// <summary>
-        /// Typy dostupných tlačítek
+        /// Velikost tlačítek
         /// </summary>
-        public ListBoxButtonType ButtonsTypes { get { return _ButtonsTypes; } set { _ButtonsTypes = value; AcceptButtonsType(); DoLayout(); } }
-
-        #region Tlačíka
+        public ResourceImageSizeType ButtonsSize { get { return _ButtonsSize; } set { _ButtonsSize = value; DoLayout(); } }
+        #endregion
+        #region Tlačítka
         /// <summary>
         /// Umístí tlačítka podle potřeby do daného vnitřního prostoru, ten zmenší o prostor zabraný tlačítky
         /// </summary>
         /// <param name="innerBounds"></param>
         private void _DoLayoutButtons(ref Rectangle innerBounds)
         {
-            if (!TryGetButtonsInfo(out var layoutInfos)) return;
-
-            Padding margins = DxComponent.ZoomToGui(new Padding(3), this.CurrentDpi);
-
-            innerBounds = DxComponent.CalculateControlItemsLayout(innerBounds, layoutInfos, this.ButtonsPosition, margins);
+            var layoutInfos = GetButtonsInfo();
+            if (layoutInfos != null)
+            {
+                Padding margins = DxComponent.GetDefaultInnerMargins(this.CurrentDpi);
+                innerBounds = DxComponent.CalculateControlItemsLayout(innerBounds, layoutInfos, this.ButtonsPosition, margins);
+            }
         }
-        private bool TryGetButtonsInfo(out ControlItemLayoutInfo[] layoutInfos)
+        /// <summary>
+        /// Načte a vrátí informace pro tvorbu layoutu buttonů
+        /// </summary>
+        /// <returns></returns>
+        private ControlItemLayoutInfo[] GetButtonsInfo()
         {
-            layoutInfos = null;
             var buttons = _Buttons;
-            if (buttons == null || buttons.Count == 0) return false;
+            if (buttons == null || buttons.Count == 0) return null;
 
-            Size size = new Size(24, 24);
-            layoutInfos = new ControlItemLayoutInfo[buttons.Count];
+            Size size = DxComponent.GetImageSize(_ButtonsSize, true, this.CurrentDpi).Add(4, 4);
+            ControlItemLayoutInfo[] layoutInfos = new ControlItemLayoutInfo[buttons.Count];
             for (int b = 0; b < buttons.Count; b++)
                 layoutInfos[b] = new ControlItemLayoutInfo() { Control = buttons[b], Size = size };
 
-            return true;
+            return layoutInfos;
         }
         /// <summary>
         /// Aktuální povolená tlačítka promítne i do ListBoxu jako povolené klávesové akce
@@ -110,12 +133,15 @@ namespace Noris.Clients.Win.Components.AsolDX
             RemoveButtons();
 
             // Vytvořím potřebné buttony:
-            AcceptButtonType(ListBoxButtonType.MoveTop, buttonsTypes, "@arrowsmall|top|blue", MsgCode.None);
-            AcceptButtonType(ListBoxButtonType.MoveUp, buttonsTypes, "@arrowsmall|up|blue", MsgCode.None);
-            AcceptButtonType(ListBoxButtonType.SelectAll, buttonsTypes, "", MsgCode.None);
-            AcceptButtonType(ListBoxButtonType.Delete, buttonsTypes, "", MsgCode.None);
-            AcceptButtonType(ListBoxButtonType.MoveDown, buttonsTypes, "@arrowsmall|down|blue", MsgCode.None);
-            AcceptButtonType(ListBoxButtonType.MoveBottom, buttonsTypes, "@arrowsmall|bottom|blue", MsgCode.None);
+            AcceptButtonType(ListBoxButtonType.MoveTop, buttonsTypes, "@arrowsmall|top|blue", MsgCode.DxKeyActionMoveTop);
+            AcceptButtonType(ListBoxButtonType.MoveUp, buttonsTypes, "@arrowsmall|up|blue", MsgCode.DxKeyActionMoveUp);
+            AcceptButtonType(ListBoxButtonType.MoveDown, buttonsTypes, "@arrowsmall|down|blue", MsgCode.DxKeyActionMoveDown);
+            AcceptButtonType(ListBoxButtonType.MoveBottom, buttonsTypes, "@arrowsmall|bottom|blue", MsgCode.DxKeyActionMoveBottom);
+            AcceptButtonType(ListBoxButtonType.SelectAll, buttonsTypes, "devav/actions/select%20all2.svg", MsgCode.DxKeyActionSelectAll);
+            AcceptButtonType(ListBoxButtonType.ClipCopy, buttonsTypes, "devav/actions/copy.svg", MsgCode.DxKeyActionClipCopy);
+            AcceptButtonType(ListBoxButtonType.ClipCut, buttonsTypes, "devav/actions/cut.svg", MsgCode.DxKeyActionClipCut);
+            AcceptButtonType(ListBoxButtonType.ClipPaste, buttonsTypes, "devav/actions/paste.svg", MsgCode.DxKeyActionClipPaste);
+            AcceptButtonType(ListBoxButtonType.Delete, buttonsTypes, "devav/actions/delete.svg", MsgCode.DxKeyActionDelete);
         }
         /// <summary>
         /// Odebere všechny buttony přítomné v poli <see cref="_Buttons"/>
@@ -205,19 +231,24 @@ namespace Noris.Clients.Win.Components.AsolDX
             return buttons;
         }
         /// <summary>
+        /// Typy dostupných tlačítek
+        /// </summary>
+        private ListBoxButtonType _ButtonsTypes;
+        /// <summary>
         /// Umístění tlačítek
         /// </summary>
         private ToolbarPosition _ButtonsPosition;
         /// <summary>
-        /// Typy dostupných tlačítek
+        /// Velikost tlačítek
         /// </summary>
-        private ListBoxButtonType _ButtonsTypes;
+        private ResourceImageSizeType _ButtonsSize;
         /// <summary>
         /// Tlačítka, která mají být dostupná, v patřičném pořadí
         /// </summary>
         private List<DxSimpleButton> _Buttons;
         #endregion
     }
+    #region enum ListBoxButtonType : Typy tlačítek dostupných u Listboxu pro jeho ovládání (vnitřní příkazy, nikoli Drag and Drop)
     /// <summary>
     /// Typy tlačítek dostupných u Listboxu pro jeho ovládání (vnitřní příkazy, nikoli Drag and Drop)
     /// </summary>
@@ -275,8 +306,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Přemístit úplně dolů
         /// </summary>
         MoveBottom = 0x0800
-
     }
+    #endregion
     /// <summary>
     /// ListBoxControl s podporou pro drag and drop a reorder
     /// </summary>
@@ -600,7 +631,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="defaultTitle">Náhradní titulek, použije se když je zadán text ale není zadán titulek</param>
         public void SetToolTip(string title, string text, string defaultTitle = null) { this.SuperTip = DxComponent.CreateDxSuperTip(title, text, defaultTitle); }
         #endregion
-        #region Remove, Delete, CtrlC, CtrlX
+        #region DoKeyActions; Delete, CtrlA, CtrlC, CtrlX, CtrlV; Move, Insert, Remove
         /// <summary>
         /// Povolené akce. Výchozí je <see cref="KeyActionType.None"/>
         /// </summary>
@@ -677,8 +708,10 @@ namespace Noris.Clients.Win.Components.AsolDX
             _DoKeyAction(action, KeyActionType.ClipCopy, force, _DoKeyActionCtrlC);
             _DoKeyAction(action, KeyActionType.ClipCut, force, _DoKeyActionCtrlX);
             _DoKeyAction(action, KeyActionType.ClipPaste, force, _DoKeyActionCtrlV);
-            _DoKeyAction(action, KeyActionType.MoveUp, force, _DoKeyActionAltUp);
-            _DoKeyAction(action, KeyActionType.MoveDown, force, _DoKeyActionAltDown);
+            _DoKeyAction(action, KeyActionType.MoveTop, force, _DoKeyActionMoveTop);
+            _DoKeyAction(action, KeyActionType.MoveUp, force, _DoKeyActionMoveUp);
+            _DoKeyAction(action, KeyActionType.MoveDown, force, _DoKeyActionMoveDown);
+            _DoKeyAction(action, KeyActionType.MoveBottom, force, _DoKeyActionMoveBottom);
         }
         /// <summary>
         /// Pokud v soupisu akcí <paramref name="action"/> je příznak akce <paramref name="flag"/>, pak provede danou akci <paramref name="runMethod"/>, 
@@ -743,24 +776,118 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.SelectedItems = itemList;
         }
         /// <summary>
-        /// Provedení klávesové akce: AltUp
+        /// Provedení klávesové akce: MoveTop
         /// </summary>
-        private void _DoKeyActionAltUp()
+        private void _DoKeyActionMoveTop()
         {
-            var selectedItems = this.SelectedItems;
-
-
-
+            _MoveSelectedItems(items => 0);
         }
         /// <summary>
-        /// Provedení klávesové akce: AltDown
+        /// Provedení klávesové akce: MoveUp
         /// </summary>
-        private void _DoKeyActionAltDown()
+        private void _DoKeyActionMoveUp()
         {
-            var selectedItems = this.SelectedItems;
+            _MoveSelectedItems(
+                items =>
+                {   // Přesun o jeden prvek nahoru: najdeme nejmenší index z dodaných prvků, a přesuneme prvky na index o 1 menší, přinejmenším na 0:
+                    // Vstupní pole není null a má nejméně jeden prvek!
+                    int targetIndex = items.Select(i => i.Item1).Min() - 1;    // Cílový index je o 1 menší, než nejmenší vybraný index, 
+                    if (targetIndex < 0) targetIndex = 0;                      //  anebo 0 (když je vybrán prvek na indexu 0)
+                    return targetIndex;
+                });
+        }
+        /// <summary>
+        /// Provedení klávesové akce: MoveDown
+        /// </summary>
+        private void _DoKeyActionMoveDown()
+        {
+            _MoveSelectedItems(
+                items =>
+                {   // Přesun o jeden prvek dolů: najdeme nejmenší index z dodaných prvků, a přesuneme prvky na index o 1 vyšší, nebo null = na konec:
+                    // Vstupní pole není null a má nejméně jeden prvek!
+                    int targetIndex = items.Select(i => i.Item1).Min() + 1;    // Cílový index je o 1 větší, než nejmenší vybraný index, 
+                    int countRemain = this.ItemCount - items.Length;           // Počet prvků v Listu, které NEJSOU přesouvány
+                    if (targetIndex < countRemain) return targetIndex;         // Pokud cílový index bude menší než poslední zbývající prvek, pak prvky přesuneme pod něj
+                    return null;                                               // null => prvky přemístíme na konec zbývajících prvků v Listu
+                });
+        }
+        /// <summary>
+        /// Provedení klávesové akce: MoveBottom
+        /// </summary>
+        private void _DoKeyActionMoveBottom()
+        {
+            _MoveSelectedItems(items => null);
+        }
+        /// <summary>
+        /// Provedení akce: Move[někam].
+        /// Metoda zjistí, které prvky jsou selectované (a pokud žádný, tak skončí).
+        /// Metoda se zeptá dodaného lokátora, kam (na který index) chce přesunout vybrané prvky, ty předá lokátoru.
+        /// </summary>
+        /// <param name="targetIndexLocator">Lokátor: pro dodané selectované prvky vrátí index přesunu. Prvky nejsou null a je nejméně jeden. Jinak se přesun neprovádí.</param>
+        private void _MoveSelectedItems(Func<Tuple<int, IMenuItem, Rectangle?>[], int?> targetIndexLocator)
+        {
+            var selectedItemsInfo = this.SelectedItemsInfo;
+            if (selectedItemsInfo.Length == 0) return;
 
+            var targetIndex = targetIndexLocator(selectedItemsInfo);
+            _MoveItems(selectedItemsInfo, targetIndex);
+        }
+        /// <summary>
+        /// Provedení akce: přesuň zdejší dodané prvky na cílovou pozici.
+        /// </summary>
+        private void _MoveItems(Tuple<int, IMenuItem, Rectangle?>[] selectedItemsInfo, int? targetIndex)
+        {
+            if (selectedItemsInfo is null || selectedItemsInfo.Length == 0) return;
 
+            // Odebereme zdrojové prvky a vložíme je na zadaný index:
+            RemoveIndexes(selectedItemsInfo.Select(t => t.Item1));
+            InsertItems(selectedItemsInfo.Select(i => i.Item2), targetIndex, true);
+        }
+        /// <summary>
+        /// Metoda zajistí přesunutí označených prvků na danou pozici.
+        /// Pokud je zadaná pozice 0, pak jsou prvky přemístěny v jejich pořadí úplně na začátek Listu.
+        /// Pokud je daná pozice 1, a stávající List má alespoň jeden prvek, pak dané prvky jsou přemístěny za první prvek.
+        /// Pokud je daná pozice null nebo větší než počet prvků, jsou prvky přemístěny na konec listu.
+        /// </summary>
+        /// <param name="targetIndex"></param>
+        public void MoveSelectedItems(int? targetIndex)
+        {
+            _MoveItems(this.SelectedItemsInfo, targetIndex);
+        }
+        /// <summary>
+        /// Do this listu vloží další prvky <paramref name="sourceItems"/>, počínaje danou pozicí <paramref name="insertIndex"/>.
+        /// Pokud je zadaná pozice 0, pak jsou prvky vloženy v jejich pořadí úplně na začátek Listu.
+        /// Pokud je daná pozice 1, a stávající List má alespoň jeden prvek, pak dané prvky jsou vloženy za první prvek.
+        /// Pokud je daná pozice null nebo větší než počet prvků, jsou dané prvky přidány na konec listu.
+        /// </summary>
+        /// <param name="sourceItems"></param>
+        /// <param name="insertIndex"></param>
+        /// <param name="selectNewItems">Nově vložené prvky mají být po vložení vybrané (Selected)?</param>
+        public void InsertItems(IEnumerable<IMenuItem> sourceItems, int? insertIndex, bool selectNewItems)
+        {
+            if (sourceItems is null || !sourceItems.Any()) return;
 
+            List<int> selectedIndexes = new List<int>();
+            if (insertIndex.HasValue && insertIndex.Value >= 0 && insertIndex.Value < this.ItemCount)
+            {
+                int index = insertIndex.Value;
+                foreach (var sourceItem in sourceItems)
+                {
+                    DevExpress.XtraEditors.Controls.ImageListBoxItem imgItem = new DevExpress.XtraEditors.Controls.ImageListBoxItem(sourceItem);
+                    selectedIndexes.Add(index);
+                    this.Items.Insert(index++, imgItem);
+                }
+            }
+            else
+            {
+                int index = this.ItemCount;
+                foreach (var sourceItem in sourceItems)
+                    selectedIndexes.Add(index++);
+                this.Items.AddRange(sourceItems.ToArray());
+            }
+
+            if (selectNewItems)
+                this.SelectedIndexes = selectedIndexes;
         }
         /// <summary>
         /// Z this Listu odebere prvky na daných indexech.
@@ -924,7 +1051,9 @@ namespace Noris.Clients.Win.Components.AsolDX
             args.CurrentEffect = args.SuggestedDragDropEffect;
         }
         /// <summary>
-        /// Když úspěšně končí proces Drag, a this objekt je zdrojem
+        /// Když úspěšně končí proces Drag, a this objekt je zdrojem dat:
+        /// Pokud (this objekt je zdrojem i cílem současně) anebo (this je jen zdroj, a režim je Move = přemístit prvky),
+        /// pak musíme prvky z this listu (Source) odebrat, a pokud this je i cílem, pak před tím musíme podle pozice myši určit cílový index pro přemístění prvků.
         /// </summary>
         /// <param name="args"></param>
         private void DoDragSourceDrop(DxDragDropArgs args)
@@ -961,34 +1090,15 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (!args.InsertIndex.HasValue)
                 args.InsertIndex = args.TargetIndex.GetInsertIndex();
 
-            if (DxDragTargetTryGetItems(args, out var items))
-            {
-                List<int> selectedIndexes = new List<int>();
-                if (args.InsertIndex.HasValue && args.InsertIndex.Value >= 0 && args.InsertIndex.Value < this.ItemCount)
-                {
-                    int insertIndex = args.InsertIndex.Value;
-                    foreach (var item in items)
-                    {
-                        DevExpress.XtraEditors.Controls.ImageListBoxItem imgItem = new DevExpress.XtraEditors.Controls.ImageListBoxItem(item);
-                        selectedIndexes.Add(insertIndex);
-                        this.Items.Insert(insertIndex++, imgItem);
-                    }
-                }
-                else
-                {
-                    int addIndex = this.ItemCount;
-                    foreach (var item in items)
-                        selectedIndexes.Add(addIndex++);
-                    this.Items.AddRange(items);
-                }
-                this.SelectedIndexes = selectedIndexes;
-            }
+            // Vložit prvky do this Listu, na daný index, a selectovat je:
+            if (DxDragTargetTryGetItems(args, out var sourceItems))
+                InsertItems(sourceItems, args.InsertIndex, true);
 
             MouseDragTargetIndex = null;
             this.Invalidate();
         }
         /// <summary>
-        /// 
+        /// Pokusí se najít v argumentu <see cref="DxDragDropArgs"/> zdrojový objekt a z něj získat pole prvků <see cref="IMenuItem"/>.
         /// </summary>
         /// <param name="args"></param>
         /// <param name="items"></param>
@@ -1009,6 +1119,10 @@ namespace Noris.Clients.Win.Components.AsolDX
             MouseDragTargetIndex = null;
             this.Invalidate();
         }
+        /// <summary>
+        /// Po skončení procesu Drag
+        /// </summary>
+        /// <param name="args"></param>
         private void DoDragTargetEnd(DxDragDropArgs args)
         {
             MouseDragTargetIndex = null;
