@@ -498,8 +498,10 @@ namespace Noris.Clients.Win.Components.AsolDX
             _DetailYOffsetLabelText = 5;
             _DetailYSpaceLabel = 2;
             _DetailYSpaceText = 3;
-            _DetailXMargin = 6;
-            _DetailYMargin = 4;
+            _DefaultInnerMarginX = 6;
+            _DefaultInnerMarginY = 4;
+            _DefaultInnerSpacingW = 3;
+            _DefaultInnerSpacingH = 3;
 
             _DefaultButtonPanelHeight = 38;
             _DefaultButtonWidth = 150;
@@ -572,20 +574,34 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="targetDpi">Cílové DPI. Typicky se má použít hodnota <see cref="DxPanelControl.CurrentDpi"/> (nebo <see cref="DxStdForm.CurrentDpi"/>)</param>
         public static int GetDetailYFirst(int targetDpi) { return ZoomToGui(Instance._DetailYFirst, targetDpi); }
         /// <summary>
-        /// Vnitřní okraje, defaultní hodnota, obsahuje hodnoty <see cref="DetailXMargin"/> a <see cref="DetailYMargin"/>
+        /// Vnitřní okraje, defaultní hodnota, obsahuje hodnoty <see cref="_DefaultInnerMarginX"/> a <see cref="_DefaultInnerMarginY"/>
         /// </summary>
         /// <returns></returns>
-        public static Padding DefaultInnerMargins { get { return Instance._DetailMargin; } }
+        public static Padding DefaultInnerMargins { get { return Instance._DefaultInnerMargins; } }
         /// <summary>
-        /// Vnitřní okraje, obsahuje hodnoty <see cref="_DetailXMargin"/> a <see cref="_DetailYMargin"/>
+        /// Vnitřní rozestupy mezi prvky, defaultní hodnota
         /// </summary>
-        private Padding _DetailMargin { get { int x = _DetailXMargin; int y = _DetailYMargin; return new Padding(x, y, x, y); } }
+        public static Size DefaultInnerSpacing { get { return Instance._DefaultInnerSpacing; } }
         /// <summary>
-        /// Vnitřní okraje, defaultní hodnota, vychází z <see cref="GetDetailXMargin(int)"/> a <see cref="GetDetailYMargin(int)"/>
+        /// Vnitřní okraje, obsahuje hodnoty <see cref="_DefaultInnerMarginX"/> a <see cref="_DefaultInnerMarginY"/>
+        /// </summary>
+        private Padding _DefaultInnerMargins { get { int x = _DefaultInnerMarginX; int y = _DefaultInnerMarginY; return new Padding(x, y, x, y); } }
+        /// <summary>
+        /// Vnitřní rozestupy mezi prvky, defaultní hodnota
+        /// </summary>
+        private Size _DefaultInnerSpacing { get { int w = _DefaultInnerSpacingW; int h = _DefaultInnerSpacingH; return new Size(w, h); } }
+        /// <summary>
+        /// Vnitřní okraje, defaultní hodnota, vychází z <see cref="GetDefaultInnerMarginX(int)"/> a <see cref="GetDefaultInnerMarginY(int)"/>
         /// </summary>
         /// <param name="targetDpi">Cílové DPI. Typicky se má použít hodnota <see cref="DxPanelControl.CurrentDpi"/> (nebo <see cref="DxStdForm.CurrentDpi"/>)</param>
         /// <returns></returns>
         public static Padding GetDefaultInnerMargins(int targetDpi) { return ZoomToGui(DefaultInnerMargins, targetDpi); }
+        /// <summary>
+        /// Vnitřní rozestupy mezi prvky, hodnota pro dané DPI
+        /// </summary>
+        /// <param name="targetDpi"></param>
+        /// <returns></returns>
+        public static Size GetDefaultInnerSpacing(int targetDpi) { return ZoomToGui(DefaultInnerSpacing, targetDpi); }
         /// <summary>
         /// Výchozí hodnota výšky labelu
         /// </summary>
@@ -611,15 +627,15 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="targetDpi">Cílové DPI. Typicky se má použít hodnota <see cref="DxPanelControl.CurrentDpi"/> (nebo <see cref="DxStdForm.CurrentDpi"/>)</param>
         public static int GetDetailYSpaceText(int targetDpi) { return ZoomToGui(Instance._DetailYSpaceText, targetDpi); }
         /// <summary>
-        /// Okraj v ose X
+        /// Okraj v ose X, mezi vnitřním okrajem labelu a prvním prvkem
         /// </summary>
         /// <param name="targetDpi">Cílové DPI. Typicky se má použít hodnota <see cref="DxPanelControl.CurrentDpi"/> (nebo <see cref="DxStdForm.CurrentDpi"/>)</param>
-        public static int GetDetailXMargin(int targetDpi) { return ZoomToGui(Instance._DetailXMargin, targetDpi); }
+        public static int GetDefaultInnerMarginX(int targetDpi) { return ZoomToGui(Instance._DefaultInnerMarginX, targetDpi); }
         /// <summary>
-        /// Okraj v ose Y
+        /// Okraj v ose Y, mezi vnitřním okrajem labelu a prvním prvkem
         /// </summary>
         /// <param name="targetDpi">Cílové DPI. Typicky se má použít hodnota <see cref="DxPanelControl.CurrentDpi"/> (nebo <see cref="DxStdForm.CurrentDpi"/>)</param>
-        public static int GetDetailYMargin(int targetDpi) { return ZoomToGui(Instance._DetailYMargin, targetDpi); }
+        public static int GetDefaultInnerMarginY(int targetDpi) { return ZoomToGui(Instance._DefaultInnerMarginY, targetDpi); }
         /// <summary>
         /// Defaultní výška panelu s buttony, designová hodnota
         /// </summary>
@@ -761,8 +777,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         private int _DetailYOffsetLabelText;
         private int _DetailYSpaceLabel;
         private int _DetailYSpaceText;
-        private int _DetailXMargin;
-        private int _DetailYMargin;
+        private int _DefaultInnerMarginX;
+        private int _DefaultInnerMarginY;
+        private int _DefaultInnerSpacingW;
+        private int _DefaultInnerSpacingH;
         private int _DefaultButtonPanelHeight;
         private int _DefaultButtonWidth;
         private int _DefaultButtonHeight;
@@ -813,9 +831,10 @@ namespace Noris.Clients.Win.Components.AsolDX
             int count = items?.Length ?? 0;
             if (count == 0) return contentBounds;
 
-            Padding margin = margins ?? _DetailMargin;
-            int spaceX = itemSpace.HasValue ? itemSpace.Value.Width : _DefaultButtonXSpace;
-            int spaceY = itemSpace.HasValue ? itemSpace.Value.Height : _DefaultButtonYSpace;
+            Padding margin = margins ?? _DefaultInnerMargins;
+            Size space = itemSpace ?? _DefaultInnerSpacing;
+            int spaceX = space.Width;
+            int spaceY = space.Height;
 
             bool isLeftSide = DataExtensions.IsAnyOf(position, ToolbarPosition.LeftSideTop, ToolbarPosition.LeftSideCenter, ToolbarPosition.LeftSideBottom);
             bool isTopSide = DataExtensions.IsAnyOf(position, ToolbarPosition.TopSideLeft, ToolbarPosition.TopSideCenter, ToolbarPosition.TopSideRight);
@@ -3411,75 +3430,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// </summary>
             public object Data { get; set; }
         }
-
-
-        /*
-        private void _ClipboardInsert(object applicationData, object windowsData, string windowsFormat)
-        {
-            ClipboardContainer container = new ClipboardContainer() { ApplicationId = _ClipboardApplicationId, Data = Persist.Serialize(applicationData, PersistArgs.Default) };
-            DataObject dataObject = new DataObject();
-            string applicationXml = Persist.Serialize(applicationData, PersistArgs.Default);
-            dataObject.SetData(ClipboardAppDataId, applicationXml);
-            if (windowsData != null)
-            {
-                if (windowsFormat == null) windowsFormat = DataFormats.Text;
-                dataObject.SetData(windowsFormat, windowsData);
-            }
-            try { System.Windows.Forms.Clipboard.SetDataObject(dataObject, true); }
-            catch { }
-        }
-        private bool _ClipboardTryGetApplicationData(out object applicationData)
-        {
-            applicationData = null;
-            IDataObject dataObject = null;
-            try { dataObject = System.Windows.Forms.Clipboard.GetDataObject(); }
-            catch { }
-            if (dataObject == null) return false;
-            bool containsText = dataObject.GetDataPresent(DataFormats.Text);
-            bool containsNephrite = dataObject.GetDataPresent("Nephrite");
-            if (!dataObject.GetDataPresent("Nephrite")) return false;
-            string nephriteXml = dataObject.GetData("Nephrite") as string;
-            applicationData = Persist.Deserialize(nephriteXml);
-            return true;
-        }
-        */
-        /*
-        private void _ClipboardCopy(object nephriteData, object windowsData, string windowsFormat)
-        {
-            NephriteDataObject container = new NephriteDataObject();
-            container.SetData("Nephrite", nephriteData);
-            container.NephriteData = nephriteData;
-            if (windowsData != null)
-            {
-                if (windowsFormat == null) windowsFormat = DataFormats.Text;
-                container.SetData(windowsFormat, windowsData);
-            }
-            try { System.Windows.Forms.Clipboard.SetDataObject(container, true); }
-            catch { }
-        }
-        private bool _ClipboardTryGetNephriteData(out object nephriteData)
-        {
-            nephriteData = null;
-            IDataObject dataObject = null;
-            try { dataObject = System.Windows.Forms.Clipboard.GetDataObject(); }
-            catch { }
-            if (dataObject == null) return false;
-            if (!(dataObject is NephriteDataObject ndo)) return false;
-            if (!ndo.HasNephriteData) return false;
-            nephriteData = ndo.NephriteData;
-            return true;
-        }
-
-        private class NephriteDataObject : DataObject
-        {
-            public object NephriteData 
-            { 
-                get;
-                set;
-            }
-            public bool HasNephriteData { get; set; }
-        }
-        */
         #endregion
         #region Win32Api informace a další metody
         [DllImport("User32")]
@@ -4251,32 +4201,59 @@ namespace Noris.Clients.Win.Components.AsolDX
         DxFilterOperatorGreaterThanTip,
 
         /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
+        [DefaultMessageText("Alt+Home")]
+        DxKeyActionMoveTopTitle,                                                                   // PŘIDAT !!!
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Přesunout na začátek")]
-        DxKeyActionMoveTop,                                                                        // PŘIDAT !!!
+        DxKeyActionMoveTopText,                                                                    // PŘIDAT !!!
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
+        [DefaultMessageText("Alt+Nahoru")]
+        DxKeyActionMoveUpTitle,                                                                    // PŘIDAT !!!
         /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Přesunout o řádek nahoru")]
-        DxKeyActionMoveUp,                                                                         // PŘIDAT !!!
+        DxKeyActionMoveUpText,                                                                     // PŘIDAT !!!
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
+        [DefaultMessageText("Alt+Dolů")]
+        DxKeyActionMoveDownTitle,                                                                  // PŘIDAT !!!
         /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Přesunout o řádek dolů")]
-        DxKeyActionMoveDown,                                                                       // PŘIDAT !!!
+        DxKeyActionMoveDownText,                                                                   // PŘIDAT !!!
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
+        [DefaultMessageText("Alt+End")]
+        DxKeyActionMoveBottomTitle,                                                                // PŘIDAT !!!
         /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Přesunout na konec")]
-        DxKeyActionMoveBottom,                                                                     // PŘIDAT !!!
+        DxKeyActionMoveBottomText,                                                                 // PŘIDAT !!!
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
+        [DefaultMessageText("Ctrl+A")]
+        DxKeyActionSelectAllTitle,                                                                 // PŘIDAT !!!
         /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Vybrat vše")]
-        DxKeyActionSelectAll,                                                                      // PŘIDAT !!!
+        DxKeyActionSelectAllText,                                                                  // PŘIDAT !!!
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
+        [DefaultMessageText("Ctrl+C")]
+        DxKeyActionClipCopyTitle,                                                                  // PŘIDAT !!!
         /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Zkopírovat do schránky")]
-        DxKeyActionClipCopy,                                                                       // PŘIDAT !!!
+        DxKeyActionClipCopyText,                                                                   // PŘIDAT !!!
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
+        [DefaultMessageText("Ctrl+X")]
+        DxKeyActionClipCutTitle,                                                                   // PŘIDAT !!!
         /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Přenést do schránky")]
-        DxKeyActionClipCut,                                                                        // PŘIDAT !!!
+        DxKeyActionClipCutText,                                                                    // PŘIDAT !!!
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
+        [DefaultMessageText("Ctrl+V")]
+        DxKeyActionClipPasteTitle,                                                                 // PŘIDAT !!!
         /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Vložit ze schránky")]
-        DxKeyActionClipPaste,                                                                      // PŘIDAT !!!
+        DxKeyActionClipPasteText,                                                                  // PŘIDAT !!!
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
+        [DefaultMessageText("Delete")]
+        DxKeyActionDeleteTitle,                                                                    // PŘIDAT !!!
         /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Smazat")]
-        DxKeyActionDelete,                                                                         // PŘIDAT !!!
+        DxKeyActionDeleteText                                                                      // PŘIDAT !!!
 
 
 

@@ -701,13 +701,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="e"></param>
         private void RemoveAddedSearchMenuItems(RibbonSearchMenuEventArgs e)
         {
-            if (_AddedSearchMenuItems is null)
-                _AddedSearchMenuItems = new List<BarItemLink>();
-            else if (_AddedSearchMenuItems.Count > 0)
-            {
-                _AddedSearchMenuItems.ForEachExec(l => e.Menu.RemoveLink(l));
-                _AddedSearchMenuItems.Clear();
-            }
+            var items = _AddedSearchMenuItems;
+            if (items != null && items.Count > 0)
+                items.ForEachExec(l => e.Menu.RemoveLink(l));
+            _AddedSearchMenuItems = null;
         }
         /// <summary>
         /// Metoda zajistí doplnění SearchEdit položek o odpovídající položky z přídavných prvků v poli <see cref="SearchEditItems"/> do předaného pole <paramref name="addGroupItems"/>
@@ -786,12 +783,14 @@ namespace Noris.Clients.Win.Components.AsolDX
             return false;
         }
         /// <summary>
-        /// Metoda zajistí doplnění SearchEdit položek o odpovídající položky z dodaného indexu
+        /// Metoda zajistí doplnění SearchEdit položek o odpovídající položky z dodaného indexu.
+        /// Přidané prvky budou uloženy do pole v <see cref="_AddedSearchMenuItems"/>.
         /// </summary>
         /// <param name="e"></param>
         /// <param name="addGroupItems"></param>
         private void AddSearchEditItems(RibbonSearchMenuEventArgs e, Dictionary<string, List<Tuple<IRibbonItem, string>>> addGroupItems)
         {
+            var addedItems = new List<BarItemLink>();
             // Skupiny setřídit podle titulku:
             var addGroupItemsList = addGroupItems.ToList();
             if (addGroupItemsList.Count > 1)
@@ -799,42 +798,45 @@ namespace Noris.Clients.Win.Components.AsolDX
             foreach (var addGroupItem in addGroupItemsList)
             {
                 // Záhlaví skupiny přidat do menu:
-                AddSearchEditHeader(e, addGroupItem.Key);
+                AddSearchEditHeader(e, addGroupItem.Key, addedItems);
 
                 // Prvky ve skupině setřídit podle textu (Item2 = explicitní ?? Item1.Text = výchozí), a přidat do menu:
                 var addItems = addGroupItem.Value;
                 if (addItems.Count > 1)
                     addItems.Sort((a, b) => String.Compare((a.Item2 ?? a.Item1.Text), (b.Item2 ?? b.Item1.Text), StringComparison.CurrentCultureIgnoreCase));
                 foreach (var addItem in addItems)
-                    AddSearchEditItem(e, addItem.Item1, addItem.Item2);
+                    AddSearchEditItem(e, addItem.Item1, addItem.Item2, addedItems);
             }
+            _AddedSearchMenuItems = addedItems;
         }
         /// <summary>
-        /// Do Search menu přidá záhlaví skupiny s daným textem. 
-        /// Link přidá do pole <see cref="_AddedSearchMenuItems"/>.
+        /// Do Search menu přidá záhlaví skupiny s daným textem.
+        /// Link přidá do pole v parametru <paramref name="addedItems"/>.
         /// </summary>
         /// <param name="e"></param>
         /// <param name="headerText"></param>
-        private void AddSearchEditHeader(RibbonSearchMenuEventArgs e, string headerText)
+        /// <param name="addedItems"></param>
+        private void AddSearchEditHeader(RibbonSearchMenuEventArgs e, string headerText, List<BarItemLink> addedItems)
         {
             DevExpress.XtraBars.BarHeaderItem header = new BarHeaderItem() { Caption = headerText };
             var link = e.Menu.AddItem(header);
-            _AddedSearchMenuItems.Add(link);
+            addedItems.Add(link);
         }
         /// <summary>
         /// Zajistí přidání jednoho dalšího prvku do Search menu.
-        /// Link přidá do pole <see cref="_AddedSearchMenuItems"/>.
+        /// Link přidá do pole v parametru <paramref name="addedItems"/>.
         /// </summary>
         /// <param name="e"></param>
         /// <param name="iRibbonItem"></param>
         /// <param name="itemCaption"></param>
-        private void AddSearchEditItem(RibbonSearchMenuEventArgs e, IRibbonItem iRibbonItem, string itemCaption)
+        /// <param name="addedItems"></param>
+        private void AddSearchEditItem(RibbonSearchMenuEventArgs e, IRibbonItem iRibbonItem, string itemCaption, List<BarItemLink> addedItems)
         {
             BarItem barItem = iRibbonItem.RibbonItem;
             if (barItem is null) return;
             var link = e.Menu.AddItem(barItem);
             link.UserCaption = itemCaption ?? iRibbonItem.Text;
-            _AddedSearchMenuItems.Add(link);
+            addedItems.Add(link);
         }
         /// <summary>
         /// Upraví prvek menu "Nic jsem nenašel" v SearchEdit menu: nastaví jeho lokalizovaný text a aktuálně potřebnou viditelnoust.
@@ -4174,7 +4176,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             else
                 items.Add(new DataMenuItem() { ItemId = $"CPM_{MsgCode.RibbonShowQatDown}", Text = DxComponent.Localize(MsgCode.RibbonShowQatDown), ImageName = ImageName.DxRibbonQatMenuMoveDown, ItemIsFirstInGroup = true, ClickAction = CustomizationPopupMenu_ExecMoveDown });
 
-            bool hasQatManager = DxComponent.IsDebuggerActive;
+            bool hasQatManager = true;           // Možnost potlačit managera je jednoduchá...
             if (hasQatManager)
             {
                 bool isAnyQatContent = (QatManagerItems.Length > 0);
@@ -4742,10 +4744,9 @@ namespace Noris.Clients.Win.Components.AsolDX
                 qatPanel.ListBox.DragDropActions = DxDragDropActionType.ReorderItems;
                 qatPanel.ListBox.EnabledKeyActions = KeyActionType.MoveDown | KeyActionType.MoveUp | KeyActionType.Delete;
                 qatPanel.ButtonsPosition = ToolbarPosition.RightSideCenter;
-                qatPanel.ButtonsTypes = 
-                    ListBoxButtonType.MoveUp | ListBoxButtonType.MoveTop | ListBoxButtonType.MoveDown | ListBoxButtonType.MoveBottom | 
-                    ListBoxButtonType.SelectAll | ListBoxButtonType.Delete | 
-                    ListBoxButtonType.ClipCopy | ListBoxButtonType.ClipCut | ListBoxButtonType.ClipPaste;
+                qatPanel.ButtonsTypes =
+                    ListBoxButtonType.MoveTop | ListBoxButtonType.MoveUp | ListBoxButtonType.MoveDown | ListBoxButtonType.MoveBottom |
+                    ListBoxButtonType.SelectAll | ListBoxButtonType.Delete; // | ListBoxButtonType.ClipCopy | ListBoxButtonType.ClipCut | ListBoxButtonType.ClipPaste;
 
                 var result = form.ShowDialog(this.FindForm());
 

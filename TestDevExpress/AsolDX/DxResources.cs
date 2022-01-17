@@ -3982,6 +3982,8 @@ namespace Noris.Clients.Win.Components.AsolDX
                     case "arrowsmall": return _TryGetGenericSvgArrowSmall(imageName, genericItems, sizeType, ref dxSvgImage);
                     case "arrow1": return _TryGetGenericSvgArrow1(imageName, genericItems, sizeType, ref dxSvgImage);
                     case "arrow": return _TryGetGenericSvgArrow1(imageName, genericItems, sizeType, ref dxSvgImage);
+                    case "editsmall": return _TryGetGenericSvgEditSmall(imageName, genericItems, sizeType, ref dxSvgImage);
+                    case "edit": return _TryGetGenericSvgEditStandard(imageName, genericItems, sizeType, ref dxSvgImage);
                     case "text": return _TryGetGenericSvgText(imageName, genericItems, sizeType, ref dxSvgImage);
                 }
             }
@@ -4197,7 +4199,7 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             ArrowType arrowType = _GetArrowType(_GetGenericParam(genericItems, 1, ""));
             string arrowColorName = _GetGenericParam(genericItems, 2, "");
-            _ResolveParam(ref arrowColorName, "class='Blue'");
+            _ResolveSvgDesignParam(ref arrowColorName, "class='Blue'");
 
             int arrowLineDiff = _GetGenericParam(genericItems, 3, -1);
             if (arrowLineDiff >= 0)
@@ -4377,11 +4379,310 @@ namespace Noris.Clients.Win.Components.AsolDX
 
                 case "END":
                 case "E": return ArrowType.End;
+
+                case "STOP":
+                case "S": return ArrowType.Stop;
             }
 
-            return ArrowType.Stop;
+            return ArrowType.None;
         }
+        /// <summary>
+        /// Typy ikon pro Šipky
+        /// </summary>
         private enum ArrowType { None, Ceiling, Up, Down, Floor, Begin, Left, Right, End, Stop }
+        #endregion
+        #region Edit
+        /// <summary>
+        /// Vytvoří ikonu pro editaci, malou
+        /// </summary>
+        /// <param name="imageName"></param>
+        /// <param name="genericItems"></param>
+        /// <param name="sizeType"></param>
+        /// <param name="dxSvgImage"></param>
+        /// <returns></returns>
+        private static bool _TryGetGenericSvgEditSmall(string imageName, string[] genericItems, ResourceImageSizeType? sizeType, ref DxSvgImage dxSvgImage)
+        {
+            return _TryGetGenericSvgEditAny(imageName, genericItems, sizeType, ref dxSvgImage, 24);
+        }
+        /// <summary>
+        /// Vytvoří ikonu pro editaci, standardní velikost
+        /// </summary>
+        /// <param name="imageName"></param>
+        /// <param name="genericItems"></param>
+        /// <param name="sizeType"></param>
+        /// <param name="dxSvgImage"></param>
+        /// <returns></returns>
+        private static bool _TryGetGenericSvgEditStandard(string imageName, string[] genericItems, ResourceImageSizeType? sizeType, ref DxSvgImage dxSvgImage)
+        {
+            return _TryGetGenericSvgEditAny(imageName, genericItems, sizeType, ref dxSvgImage, 32);
+        }
+        /// <summary>
+        /// Vytvoří ikonu pro editaci, v dané velikosti
+        /// </summary>
+        /// <param name="imageName"></param>
+        /// <param name="genericItems"></param>
+        /// <param name="sizeType"></param>
+        /// <param name="dxSvgImage"></param>
+        /// <param name="es"></param>
+        /// <returns></returns>
+        private static bool _TryGetGenericSvgEditAny(string imageName, string[] genericItems, ResourceImageSizeType? sizeType, ref DxSvgImage dxSvgImage,
+            int es)
+        {
+            int size = (sizeType.HasValue && sizeType.Value == ResourceImageSizeType.Small ? 16 : 32);
+            string xmlHeader = _GetXmlContentHeader(size);
+
+            string xmlStyles = _GetXmlDevExpressStyles();
+
+            EditType editType = _GetEditType(_GetGenericParam(genericItems, 1, ""));
+            string editColorName = _GetGenericParam(genericItems, 2, "");
+            _ResolveSvgDesignParam(ref editColorName, "class='Blue'");
+            string editBlackName = "class='Black'";
+
+            int de = (32 - es) / 2;                        // O kolik menší ikonu mám udělat proti ikoně fullsize, počet pixelů od okraje dovnitř;
+            de = (de < 0 ? 0 : (de > 8 ? 8 : de));         //  v rozmezí 0-8, kde 0=plný formát, 8=na okraji nechat 8px prázdno a kreslit dovnitř
+            int b0, b1, b2, c4, c5, c6, e2, e1, e0;
+            string xmlGradient = "";
+
+            string paths = "";
+            switch (editType)
+            {
+                case EditType.SelectAll1:
+                    // Střední čtverec dané barvy a černý tečkovaný okraj:
+                    paths += _GetEditPartCenter1(de, editColorName);
+                    paths += _GetEditPartBorder(de, editBlackName);
+                    break;
+                case EditType.Delete1:
+                    // tenká linka:
+                    paths += _GetEditPartXCross(de, editColorName, 4, 2);
+                    break;
+                case EditType.Delete2:
+                    // tlustší linka:
+                    paths += _GetEditPartXCross(de, editColorName, 3, 3);
+                    break;
+            }
+
+            string xmlFooter = _GetXmlContentFooter();
+
+            string xmlContent = xmlHeader + xmlStyles + xmlGradient + paths + xmlFooter;
+            dxSvgImage = DxSvgImage.Create(imageName, true, xmlContent);
+            dxSvgImage.SizeType = sizeType;
+            dxSvgImage.GenericSource = imageName;
+            return true;
+        }
+        private static string _GetEditPartCenter1(int de, string editColorName)
+        {
+            int type = de / 2;                   // Vstupní de je v rozsahu 0-8; výstupní type má hodnoty 0,1,2,3,4; které určují velikost a typ okraje
+            int c0 = 6 + (2 * type);             // Souřadnice počátku středu v ose X i Y je na pozici 6,8,10,12,14
+            int c1 = 32 - c0;
+            string paths = $"    <polygon points=\"{c0},{c0} {c1},{c0} {c1},{c1} {c0},{c1} \" {editColorName} />\r\n";
+            return paths;
+        }
+        private static string _GetEditPartBorder(int de, string editColorName)
+        {
+            int type = de / 2;                   // Vstupní de je v rozsahu 0-8; výstupní type má hodnoty 0,1,2,3,4; které určují velikost a typ okraje
+            string paths = "";
+
+            //   Vzoreček pro typ = 0 = rozměr 2 ÷ 30:
+            //paths += $"    <polygon points=\"2,2 6,2 6,4 4,4 4,6 2,6 \" {editColorName} />\r\n";
+            //paths += $"    <polygon points=\"8,2 12,2 12,4 8,4 \" {editColorName} />\r\n";
+            //paths += $"    <polygon points=\"14,2 18,2 18,4 14,4 \" {editColorName} />\r\n";
+            //paths += $"    <polygon points=\"20,2 24,2 24,4 20,4 \" {editColorName} />\r\n";
+            //paths += $"    <polygon points=\"26,2 30,2 30,6 28,6 28,4 26,4 \" {editColorName} />\r\n";
+            //paths += $"    <polygon points=\"28,8 30,8 30,12 28,12 \" {editColorName} />\r\n";
+            //paths += $"    <polygon points=\"28,14 30,14 30,18 28,18 \" {editColorName} />\r\n";
+            //paths += $"    <polygon points=\"28,20 30,20 30,24 28,24 \" {editColorName} />\r\n";
+            //paths += $"    <polygon points=\"28,26,30,26 30,30 26,30 26,28 28,28 \" {editColorName} />\r\n";
+            //paths += $"    <polygon points=\"20,28 24,28 24,30 20,30 \" {editColorName} />\r\n";
+            //paths += $"    <polygon points=\"14,28 18,28 18,30 14,30 \" {editColorName} />\r\n";
+            //paths += $"    <polygon points=\"8,28 12,28 12,30 8,30 \" {editColorName} />\r\n";
+            //paths += $"    <polygon points=\"2,26 4,26 4,28 6,28 6,30 2,30 \" {editColorName} />\r\n";
+            //paths += $"    <polygon points=\"2,20 4,20 4,24 2,24 \" {editColorName} />\r\n";
+            //paths += $"    <polygon points=\"2,14 4,14 4,18 2,18 \" {editColorName} />\r\n";
+            //paths += $"    <polygon points=\"2,8 4,8 4,12 2,12 \" {editColorName} />\r\n";
+
+            switch (type)
+            {
+                case 0:
+                    {
+                        int a0 = 2, a1 = 4, a2 = 6, bl = 8, br = 12, cl = 14, cr = 18, dl = 20, dr = 24, e2 = 26, e1 = 28, e0 = 30;
+                        paths += $"    <polygon points=\"{a0},{a0} {a2},{a0} {a2},{a1} {a1},{a1} {a1},{a2} {a0},{a2} \" {editColorName} />\r\n";
+                        paths += $"    <polygon points=\"{bl},{a0} {br},{a0} {br},{a1} {bl},{a1} \" {editColorName} />\r\n";
+                        paths += $"    <polygon points=\"{cl},{a0} {cr},{a0} {cr},{a1} {cl},{a1} \" {editColorName} />\r\n";
+                        paths += $"    <polygon points=\"{dl},{a0} {dr},{a0} {dr},{a1} {dl},{a1} \" {editColorName} />\r\n";
+                        paths += $"    <polygon points=\"{e2},{a0} {e0},{a0} {e0},{a2} {e1},{a2} {e1},{a1} {e2},{a1} \" {editColorName} />\r\n";
+                        paths += $"    <polygon points=\"{e1},{bl} {e0},{bl} {e0},{br} {e1},{br} \" {editColorName} />\r\n";
+                        paths += $"    <polygon points=\"{e1},{cl} {e0},{cl} {e0},{cr} {e1},{cr} \" {editColorName} />\r\n";
+                        paths += $"    <polygon points=\"{e1},{dl} {e0},{dl} {e0},{dr} {e1},{dr} \" {editColorName} />\r\n";
+                        paths += $"    <polygon points=\"{e1},{e2},{e0},{e2} {e2},{e0} {e2},{e0} {e2},{e1} {e1},{e1} \" {editColorName} />\r\n";
+                        paths += $"    <polygon points=\"{dl},{e1} {dr},{e1} {dr},{e0} {dl},{e0} \" {editColorName} />\r\n";
+                        paths += $"    <polygon points=\"{cl},{e1} {cr},{e1} {cr},{e0} {cl},{e0} \" {editColorName} />\r\n";
+                        paths += $"    <polygon points=\"{bl},{e1} {br},{e1} {br},{e0} {bl},{e0} \" {editColorName} />\r\n";
+                        paths += $"    <polygon points=\"{a0},{e2} {a1},{e2} {a1},{e1} {a2},{e1} {a2},{e0} {a0},{e0} \" {editColorName} />\r\n";
+                        paths += $"    <polygon points=\"{a0},{dl} {a1},{dl} {a1},{dr} {a0},{dr} \" {editColorName} />\r\n";
+                        paths += $"    <polygon points=\"{a0},{cl} {a1},{cl} {a1},{cr} {a0},{cr} \" {editColorName} />\r\n";
+                        paths += $"    <polygon points=\"{a0},{bl} {a1},{bl} {a1},{br} {a0},{br} \" {editColorName} />\r\n";
+                    }
+                    break;
+                case 1:
+                    {
+                        int a0 = 4, a1 = 6, a2 = 8, bl = 10, br = 12, cl = 14, cr = 18, dl = 20, dr = 22, e2 = 24, e1 = 26, e0 = 28;
+                        paths += $"    <polygon points=\"{a0},{a0} {a2},{a0} {a2},{a1} {a1},{a1} {a1},{a2} {a0},{a2} \" {editColorName} />\r\n";
+                        paths += $"    <polygon points=\"{bl},{a0} {br},{a0} {br},{a1} {bl},{a1} \" {editColorName} />\r\n";
+                        paths += $"    <polygon points=\"{cl},{a0} {cr},{a0} {cr},{a1} {cl},{a1} \" {editColorName} />\r\n";
+                        paths += $"    <polygon points=\"{dl},{a0} {dr},{a0} {dr},{a1} {dl},{a1} \" {editColorName} />\r\n";
+                        paths += $"    <polygon points=\"{e2},{a0} {e0},{a0} {e0},{a2} {e1},{a2} {e1},{a1} {e2},{a1} \" {editColorName} />\r\n";
+                        paths += $"    <polygon points=\"{e1},{bl} {e0},{bl} {e0},{br} {e1},{br} \" {editColorName} />\r\n";
+                        paths += $"    <polygon points=\"{e1},{cl} {e0},{cl} {e0},{cr} {e1},{cr} \" {editColorName} />\r\n";
+                        paths += $"    <polygon points=\"{e1},{dl} {e0},{dl} {e0},{dr} {e1},{dr} \" {editColorName} />\r\n";
+                        paths += $"    <polygon points=\"{e1},{e2},{e0},{e2} {e0},{e0} {e2},{e0} {e2},{e1} {e1},{e1} \" {editColorName} />\r\n";
+                        paths += $"    <polygon points=\"{dl},{e1} {dr},{e1} {dr},{e0} {dl},{e0} \" {editColorName} />\r\n";
+                        paths += $"    <polygon points=\"{cl},{e1} {cr},{e1} {cr},{e0} {cl},{e0} \" {editColorName} />\r\n";
+                        paths += $"    <polygon points=\"{bl},{e1} {br},{e1} {br},{e0} {bl},{e0} \" {editColorName} />\r\n";
+                        paths += $"    <polygon points=\"{a0},{e2} {a1},{e2} {a1},{e1} {a2},{e1} {a2},{e0} {a0},{e0} \" {editColorName} />\r\n";
+                        paths += $"    <polygon points=\"{a0},{dl} {a1},{dl} {a1},{dr} {a0},{dr} \" {editColorName} />\r\n";
+                        paths += $"    <polygon points=\"{a0},{cl} {a1},{cl} {a1},{cr} {a0},{cr} \" {editColorName} />\r\n";
+                        paths += $"    <polygon points=\"{a0},{bl} {a1},{bl} {a1},{br} {a0},{br} \" {editColorName} />\r\n";
+                    }
+                    break;
+                case 2:
+                    {
+                        int a0 = 6, a1 = 8, a2 = 12, cl = 14, cr = 18, e2 = 20, e1 = 24, e0 = 26;
+                        paths += $"    <polygon points=\"{a0},{a0} {a2},{a0} {a2},{a1} {a1},{a1} {a1},{a2} {a0},{a2} \" {editColorName} />\r\n";
+                        paths += $"    <polygon points=\"{cl},{a0} {cr},{a0} {cr},{a1} {cl},{a1} \" {editColorName} />\r\n";
+                        paths += $"    <polygon points=\"{e2},{a0} {e0},{a0} {e0},{a2} {e1},{a2} {e1},{a1} {e2},{a1} \" {editColorName} />\r\n";
+                        paths += $"    <polygon points=\"{e1},{cl} {e0},{cl} {e0},{cr} {e1},{cr} \" {editColorName} />\r\n";
+                        paths += $"    <polygon points=\"{e1},{e2},{e0},{e2} {e0},{e0} {e2},{e0} {e2},{e1} {e1},{e1} \" {editColorName} />\r\n";
+                        paths += $"    <polygon points=\"{cl},{e1} {cr},{e1} {cr},{e0} {cl},{e0} \" {editColorName} />\r\n";
+                        paths += $"    <polygon points=\"{a0},{e2} {a1},{e2} {a1},{e1} {a2},{e1} {a2},{e0} {a0},{e0} \" {editColorName} />\r\n";
+                        paths += $"    <polygon points=\"{a0},{cl} {a1},{cl} {a1},{cr} {a0},{cr} \" {editColorName} />\r\n";
+                    }
+                    break;
+                case 3:
+                    {
+                        int a0 = 8, a1 = 10, a2 = 12, cl = 14, cr = 18, e2 = 20, e1 = 22, e0 = 24;
+                        paths += $"    <polygon points=\"{a0},{a0} {a2},{a0} {a2},{a1} {a1},{a1} {a1},{a2} {a0},{a2} \" {editColorName} />\r\n";
+                        paths += $"    <polygon points=\"{cl},{a0} {cr},{a0} {cr},{a1} {cl},{a1} \" {editColorName} />\r\n";
+                        paths += $"    <polygon points=\"{e2},{a0} {e0},{a0} {e0},{a2} {e1},{a2} {e1},{a1} {e2},{a1} \" {editColorName} />\r\n";
+                        paths += $"    <polygon points=\"{e1},{cl} {e0},{cl} {e0},{cr} {e1},{cr} \" {editColorName} />\r\n";
+                        paths += $"    <polygon points=\"{e1},{e2},{e0},{e2} {e0},{e0} {e2},{e0} {e2},{e1} {e1},{e1} \" {editColorName} />\r\n";
+                        paths += $"    <polygon points=\"{cl},{e1} {cr},{e1} {cr},{e0} {cl},{e0} \" {editColorName} />\r\n";
+                        paths += $"    <polygon points=\"{a0},{e2} {a1},{e2} {a1},{e1} {a2},{e1} {a2},{e0} {a0},{e0} \" {editColorName} />\r\n";
+                        paths += $"    <polygon points=\"{a0},{cl} {a1},{cl} {a1},{cr} {a0},{cr} \" {editColorName} />\r\n";
+                    }
+                    break;
+                case 4:
+                    {
+                        int a0 = 8, a1 = 10, a2 = 12, e2 = 20, e1 = 22, e0 = 24;
+                        paths += $"    <polygon points=\"{a0},{a0} {a2},{a0} {a2},{a1} {a1},{a1} {a1},{a2} {a0},{a2} \" {editColorName} />\r\n";
+                        paths += $"    <polygon points=\"{e2},{a0} {e0},{a0} {e0},{a2} {e1},{a2} {e1},{a1} {e2},{a1} \" {editColorName} />\r\n";
+                        paths += $"    <polygon points=\"{e1},{e2},{e0},{e2} {e0},{e0} {e2},{e0} {e2},{e1} {e1},{e1} \" {editColorName} />\r\n";
+                        paths += $"    <polygon points=\"{a0},{e2} {a1},{e2} {a1},{e1} {a2},{e1} {a2},{e0} {a0},{e0} \" {editColorName} />\r\n";
+                    }
+                    break;
+            }
+
+            return paths;
+        }
+        /// <summary>
+        /// Vrátí paths ve tvaru X, s daným okrajem <paramref name="de"/>, s danou šířkou <paramref name="d1"/> a <paramref name="d2"/>.
+        /// </summary>
+        /// <param name="de"></param>
+        /// <param name="editColorName"></param>
+        /// <param name="d1"></param>
+        /// <param name="d2"></param>
+        /// <returns></returns>
+        private static string _GetEditPartXCross(int de, string editColorName, int d1, int d2)
+        {
+            // Reálné souřadnice    Designové souřadnice pro představu:
+            int b0 = de;           // 0
+            int b1 = b0 + d1;      // 4
+            int b2 = b1 + d2;      // 6
+            int c5 = 16;           // 16 = střed
+            int c4 = c5 - d2;      // 14 = před středem
+            int c6 = c5 + d2;      // 18 = za středem
+            int e0 = 32 - de;      // 32
+            int e1 = e0 - d1;      // 28
+            int e2 = e1 - d2;      // 26
+            /*   ILUSTRACE JEDNOTLIVÝCH BODŮ
+                         4       2
+                         /\      /\
+                      5 /  \    /  \ 1
+                        \   \3 /   /
+                         \   \/   /
+                        6 \      / 12
+                          /      \
+                         /   /\   \
+                      7 /   /9 \   \ 11
+                        \  /    \  /
+                         \/      \/
+                         8       10
+            */
+            // Začneme malovat kříž počínaje zprava nahoře, doleva nahoru, střed nahoře, doleva nahoru, doleva, střed vlevo, doleva dolů, dolů, střed dole, atd...
+            string paths = $"    <polygon points=\"{e1},{b2} {e2},{b1} {c5},{c4} {b2},{b1} {b1},{b2} {c4},{c5} {b1},{e2} {b2},{e1} {c5},{c6} {e2},{e1} {e1},{e2} {c6},{c5} \" {editColorName} />\r\n";
+            return paths;
+        }
+
+        /// <summary>
+        /// Konvertuje zadaný string na typ editační ikony
+        /// </summary>
+        /// <param name="text"></param>
+        /// <returns></returns>
+        private static EditType _GetEditType(string text)
+        {
+            string key = (text ?? "U").Trim().ToUpper();
+            switch (key)
+            {   // Ceiling, Up, Down, Floor, Begin, Left, Right, End, Stop
+                case "SELECTALL":
+                case "SELECTALL1":
+                case "ALL":
+                case "ALL1":
+                case "A":
+                case "A1": return EditType.SelectAll1;
+
+                case "SELECTALL2":
+                case "ALL2":
+                case "A2": return EditType.SelectAll2;
+
+                case "DELETE":
+                case "DELETE1":
+                case "DEL":
+                case "DEL1":
+                case "D":
+                case "D1": return EditType.Delete1;
+
+                case "DELETE2":
+                case "DEL2":
+                case "D2": return EditType.Delete2;
+
+                case "CTRL+C":
+                case "CTRLC":
+                case "COPY":
+                case "C": return EditType.Copy;
+
+                case "CTRL+X":
+                case "CTRLX":
+                case "CUT":
+                case "X": return EditType.Cut;
+
+                case "CTRL+V":
+                case "CTRLV":
+                case "PASTE":
+                case "V": return EditType.Paste;
+
+                case "UNDO":
+                case "U": return EditType.Undo;
+
+                case "REDO":
+                case "R": return EditType.Redo;
+
+            }
+
+            return EditType.None;
+        }
+        /// <summary>
+        /// Typy ikon pro Editaci
+        /// </summary>
+        private enum EditType { None, SelectAll1, SelectAll2, Delete1, Delete2, Copy, Cut, Paste, Undo, Redo }
         #endregion
         #region Text
         /// <summary>
@@ -4582,7 +4883,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// <returns></returns>
             public string GetXmlGroupText(string textParam)
             {
-                _ResolveParam(ref textParam, "class='Black'");
+                _ResolveSvgDesignParam(ref textParam, "class='Black'");
                 string xmlText = $@"      <text x='{this.TextX}' y='{this.TextY}' {textParam} text-rendering='optimizeLegibility' >{this.Text}</text>
     </g>
 ";
@@ -4692,7 +4993,7 @@ M22,22H10v2H22v-2z " class="Black" />
         /// <returns></returns>
         private static string _GetXmlPathBorderSquare(int size, bool isBold, string borderParam, bool counterClockWise = false, Padding? padding = null)
         {
-            _ResolveParam(ref borderParam);
+            _ResolveSvgDesignParam(ref borderParam);
             if (size <= 0 || String.IsNullOrEmpty(borderParam)) return "";
 
             string pathData = _GetXmlPathDataBorderSquare(size, isBold, counterClockWise, padding);
@@ -4758,7 +5059,7 @@ M22,22H10v2H22v-2z " class="Black" />
         /// <returns></returns>
         private static string _GetXmlPathFillSquare(int size, bool isBold, string fillParam, bool counterClockWise = false, Padding? padding = null)
         {
-            _ResolveParam(ref fillParam);
+            _ResolveSvgDesignParam(ref fillParam);
             if (size <= 0 || String.IsNullOrEmpty(fillParam)) return "";
 
             string pathData = _GetXmlPathDataFillSquare(size, isBold, counterClockWise, padding);
@@ -4976,14 +5277,21 @@ M22,22H10v2H22v-2z " class="Black" />
             return t;
         }
         /// <summary>
-        /// Ošetří dodaný parametr. Vstup smí být prázdný, nebo může obsahovat kompletní definici vzhledu ("fill='#e02080' stroke='Black'")
+        /// Ošetří dodaný parametr, definující SVG vzhled. 
+        /// Vstup smí být prázdný, nebo může obsahovat kompletní definici vzhledu ("fill='#e02080' stroke='Black'")
         /// Pokud je prázdný, na výstupu je "".
-        /// Pokud je zadán a neobsahuje rovnítko, předsadí:    class='param'.
+        /// Pokud je zadán a neobsahuje rovnítko, předsadí class, rovnítko a obalí apostrofy:    class='param'.
         /// Jinak jej ponechá beze změny.
+        /// <para/>
+        /// Tedy: 
+        /// - pokud na vstupu je param = null nebo prázdný string, pak na výstupu je v param = defValue (nebo prázdný string);
+        /// - pokud na vstupu je param obsahující mimo jiné rovnítko, pak na výstupu je param beze změny (ponecháme explicitní deklaraci)
+        /// - pokud tedy na vstupu je neprázdný text bez rovnítka, považuje se text za jméno třídy CSS stylu a pak na výstupu je param:   class='vstupní text param'
+        /// (například: vstup = "blue", výstup = "class='blue'")
         /// </summary>
         /// <param name="param"></param>
         /// <param name="defValue"></param>
-        private static void _ResolveParam(ref string param, string defValue = null)
+        private static void _ResolveSvgDesignParam(ref string param, string defValue = null)
         {
             if (String.IsNullOrEmpty(param))
                 param = defValue ?? "";

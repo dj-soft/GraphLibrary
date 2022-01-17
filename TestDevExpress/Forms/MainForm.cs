@@ -3355,7 +3355,8 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
             _SvgIconXmlText = new DxMemoEdit();
             _SvgIconXmlText.Font = new Font(FontFamily.GenericMonospace, 11f, FontStyle.Bold);
             _PanelSvgIcons.Controls.Add(_SvgIconXmlText);
-            _SvgIconReloadButton = DxComponent.CreateDxSimpleButton(766, 70, 160, 26, _PanelSvgIcons, "Reload SvgImage", _SvgIconReload);
+            _SvgIconReloadButton = DxComponent.CreateDxSimpleButton(766, 70, 160, 26, _PanelSvgIcons, "F5: Reload SvgImage", _SvgIconReload);
+            _SvgIconReloadButton.HotKey = Keys.F5;
             _SvgIconImage1 = new DxImageArea()
             {
                 ImageName = _EditorImageName,
@@ -3460,6 +3461,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
             string xmlContent = _SvgIconXmlText.Text;
             EditorImageName = xmlContent;
             _RunDjColorizeSetImage();
+            _SvgIconXmlText.Focus();
         }
         /// <summary>
         /// Obrázek na záložce Editor 
