@@ -427,7 +427,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private void _PrepareDataFormTabPages()
         {
-            _DataFormTabPane.SetPages(_DataFormTabs);
+            _DataFormTabPane.SetPages(_DataFormTabs, null, true, true);
         }
         /// <summary>
         /// Disposuje vlastní záložkovník TabPane

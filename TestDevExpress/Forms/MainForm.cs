@@ -1419,7 +1419,6 @@ namespace TestDevExpress.Forms
         ITabHeaderControl _TabHeaderControl;
         DxSplitContainerControl _SplitTabHeader;
         string[] _XtraTabImages;
-
         private void _TabHeaderActivateDxXtraTabControl()
         {
             _TabHeaderPositionButtonBold(1);
@@ -1484,7 +1483,7 @@ namespace TestDevExpress.Forms
             if (_TabHeaderControl is null) return;
 
             if (setPages)
-                _TabHeaderControl.SetPages(_XtraTabGetPages(count, 0), null);
+                _TabHeaderControl.SetPages(_XtraTabGetPages(count, 0), null, true, true);
             else
                 _TabHeaderControl.AddPages(_XtraTabGetPages(count));
         }
@@ -1494,7 +1493,7 @@ namespace TestDevExpress.Forms
             if (_TabHeaderControl is null) return;
 
             int count = _TabHeaderControl.IPageCount;
-            _TabHeaderControl.SetPages(_XtraTabGetPages(count, 0), null);
+            _TabHeaderControl.SetPages(_XtraTabGetPages(count, 0), null, true, true);
         }
         private void _TabHeadersTryFindHeader()
         {
@@ -1538,17 +1537,13 @@ namespace TestDevExpress.Forms
         private void _TabHeadersClearAdd4_Click(object sender, EventArgs e) { _TabHeaderClear(); _XtraTabAddPages(4); }
         private void _TabHeadersReFill_Click(object sender, EventArgs e) { _TabHeaderReFill(); }
         private void _TabHeadersTryFindHeader_Click(object sender, EventArgs e) { _TabHeadersTryFindHeader(); }
-        
-
         private void _TabHeadersDxXtraTabControl_Click(object sender, EventArgs e) { _TabHeaderActivateDxXtraTabControl(); }
         private void _TabHeadersDxTabPaneControl_Click(object sender, EventArgs e) { _TabHeaderActivateDxTabPaneControl(); }
-
         private void _TabHeadersPositionTop_Click(object sender, EventArgs e) { _TabHeaderSetPosition(DxPageHeaderPosition.Top); _TabHeaderPositionButtonBold(1); }
         private void _TabHeadersPositionBottom_Click(object sender, EventArgs e) { _TabHeaderSetPosition(DxPageHeaderPosition.Bottom); _TabHeaderPositionButtonBold(2); }
         private void _TabHeadersPositionLeftText_Click(object sender, EventArgs e) { _TabHeaderSetPosition(DxPageHeaderPosition.PositionLeft | DxPageHeaderPosition.IconText); _TabHeaderPositionButtonBold(3); }
         private void _TabHeadersPositionLeftIcon_Click(object sender, EventArgs e) { _TabHeaderSetPosition(DxPageHeaderPosition.PositionLeft | DxPageHeaderPosition.IconOnly); _TabHeaderPositionButtonBold(4); }
         private void _TabHeadersPositionRightVerticalText_Click(object sender, EventArgs e) { _TabHeaderSetPosition(DxPageHeaderPosition.PositionRight | DxPageHeaderPosition.TextOnly | DxPageHeaderPosition.VerticalText); _TabHeaderPositionButtonBold(5); }
-
         private void _SplitTabHeaderPanel2_SizeChanged(object sender, EventArgs e)
         {
             _TabHeaderTextAddLine($"Event SizeChanged()");
@@ -1559,7 +1554,6 @@ namespace TestDevExpress.Forms
             _TabHeaderTextAddLine($"Event HeaderSizeChanged()");
             _TabHeaderDoLayout();
         }
-
         private void _TabHeaders_SelectedIPageChanging(object sender, TEventCancelArgs<IPageItem> e)
         {
             string suffix = "";
@@ -1604,7 +1598,6 @@ namespace TestDevExpress.Forms
         {
             _TabHeaderTextAddLine($"Event IPageRemoved({e.Item})");
         }
-
         private void _TabHeaderSetPosition(DxPageHeaderPosition headerPosition)
         {
             _TabHeaderTextAddLine($"Run PageHeaderPosition({headerPosition})");
@@ -1664,7 +1657,6 @@ namespace TestDevExpress.Forms
             }
             _TabHeaderTextEdit.Bounds = textBounds;
         }
-
         private void _TabHeaderTextReset(string line = null)
         {
             _TabHeaderTextNumber = 0;

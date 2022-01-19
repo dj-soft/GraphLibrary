@@ -3092,17 +3092,25 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         public static Rectangle FitIntoMonitors(this Rectangle bounds, bool toWorkingArea = true, bool toMultiMonitors = false, bool shrinkToFit = true)
         {
-            var monitorBounds = Screen.AllScreens.Select(s => (toWorkingArea ? s.WorkingArea : s.Bounds)).ToArray();   // Souřadnice monitorů pracovní / úplné
-            if (monitorBounds.Length == 0) return bounds;                           // Není žádný monitor => není žádná legrace :-)
+            var allScreens = Screen.AllScreens;                                     // Kdoví, co nám operační systém podvrhne za informace...
+            if (allScreens == null || allScreens.Length == 0) return bounds;        //  ... když nám nedá nic rozumného, nebudeme vstupní souřadnice omezovat.
+            var monitorBounds = allScreens
+                .Select(s => (toWorkingArea ? s.WorkingArea : s.Bounds))            // Souřadnice monitorů pracovní / úplné
+                .Where(b => (b.Width > 0 && b.Height > 0))                          //  ... jen reálně použitelné
+                .ToArray();
+            if (monitorBounds.Length == 0) return bounds;                           // Není žádný slušný monitor => není žádná legrace :-)
             if (monitorBounds.Any(s => s.Contains(bounds))) return bounds;          // Pokud se zadaná souřadnice už teď nachází zcela v některém monitoru, není co upravovat...
+
             if (monitorBounds.Length > 1 && toMultiMonitors)
             {   // Máme-li více monitorů, a je povoleno umístit souřadnice přes více monitorů:
                 var summaryBounds = monitorBounds.SummaryVisibleRectangle().Value;  // Sumární souřadnice z více monitorů = nikdy nevrátí null
                 return FitInto(bounds, summaryBounds, shrinkToFit);                 // Prostě souřadnici zarovnáme do sumárního prostoru.
             }
+
             // Souřadnice máme zarovnat do jednoho konkrétního monitoru. Ale - do kterého?
-            var nearestMonitor = bounds.GetNearestBounds(monitorBounds).Value;      // Počet monitorů je nejméně 1, proto metoda GetNearestBounds() nevrátí null...
-            return FitInto(bounds, nearestMonitor, shrinkToFit);                    // Prostě danou souřadnici zarovnáme do prostoru nejbližšího monitoru.
+            var nearestMonitor = bounds.GetNearestBounds(monitorBounds);            // DAJ 0070281: v poli monitorBounds je vždy nejméně jeden prvek, možná i více. Ale i tak může metoda GetNearestBounds() vrátit null!
+            if (!nearestMonitor.HasValue) nearestMonitor = monitorBounds[0];        //  Pak akceptujeme první monitor = primární
+            return FitInto(bounds, nearestMonitor.Value, shrinkToFit);              // ... a danou souřadnici zarovnáme do prostoru nejbližšího monitoru.
         }
         /// <summary>
         /// Metoda vrátí jednu ze souřadnic z pole <paramref name="otherBounds"/>, která je nejbližší k this souřadnici.

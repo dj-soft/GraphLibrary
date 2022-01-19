@@ -2158,7 +2158,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="pages"></param>
         /// <param name="selectPageId"></param>
-        void SetPages(IEnumerable<IPageItem> pages, string selectPageId);
+        /// <param name="callEventChanging">true = při reálné změně stránky volat událost <see cref="SelectedIPageChanging"/></param>
+        /// <param name="callEventChanged">true = při reálné změně stránky volat událost <see cref="SelectedIPageChanged"/></param>
+        void SetPages(IEnumerable<IPageItem> pages, string selectPageId, bool callEventChanging, bool callEventChanged);
         /// <summary>
         /// Přidá dané stránky.
         /// </summary>
@@ -2198,6 +2200,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// šířka <see cref="HeaderWidth"/> pro pozici záhlaví Left nebo Right;
         /// </summary>
         event EventHandler HeaderSizeChanged;
+        /// <summary>
+        /// Metoda, která zapisuje do trace
+        /// </summary>
+        Action<Type, string, string, string, string, string> TraceMethod { get; set; }
         /// <summary>
         /// Souřadnice prvku
         /// </summary>
@@ -2296,6 +2302,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             InitTab();
             InitEvents();
             DxComponent.RegisterListener(this);
+            this.IsPrepared = true;
         }
         /// <summary>
         /// Dispose
@@ -2303,10 +2310,16 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="disposing"></param>
         protected override void Dispose(bool disposing)
         {
+            this.IsPrepared = false;
             DxComponent.UnregisterListener(this);
             this.RemoveEvents();
             base.Dispose(disposing);
         }
+        /// <summary>
+        /// Obsahuje true v době, kdy control je korektně inicializován (na true se nastaví na konci konstruktoru),
+        /// a pouze do doby, než začíná Dispose (na false se nastaví na začátku Dispose).
+        /// </summary>
+        public bool IsPrepared { get; protected set; }
         /// <summary>
         /// Nastaví defaultní vlastnosti
         /// </summary>
@@ -2436,6 +2449,18 @@ namespace Noris.Clients.Win.Components.AsolDX
                 TEventArgs<IPageItem> args = new TEventArgs<IPageItem>(dxPage.PageData);
                 RunSelectedIPageChanged(args);
             }
+        }
+        /// <summary>
+        /// Uloží dodané informace do trace
+        /// </summary>
+        /// <param name="method"></param>
+        /// <param name="user0"></param>
+        /// <param name="user1"></param>
+        /// <param name="user2"></param>
+        private void _Trace(string method, string user0 = null, string user1 = null, string user2 = null)
+        {
+            if (TraceMethod != null)
+                TraceMethod(this.GetType(), method, "AsolDx.internal", user0, user1, user2);
         }
         #endregion
         #region Public properties
@@ -2585,9 +2610,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="pageNew"></param>
         private void RunPageChangingPrepare(DevExpress.XtraBars.Navigation.TabNavigationPage pageNew)
         {
-            TEventArgs<DevExpress.XtraBars.Navigation.TabNavigationPage> args = new TEventArgs<DevExpress.XtraBars.Navigation.TabNavigationPage>(pageNew);
-            OnPageChangingPrepare(args);
-            PageChangingPrepare?.Invoke(this, args);
+            if (this.IsPrepared)
+            {
+                TEventArgs<DevExpress.XtraBars.Navigation.TabNavigationPage> args = new TEventArgs<DevExpress.XtraBars.Navigation.TabNavigationPage>(pageNew);
+                OnPageChangingPrepare(args);
+                PageChangingPrepare?.Invoke(this, args);
+            }
         }
         /// <summary>
         /// Volá se pro přípravu obsahu nové stránky před přepnutím na ni (stránka dosud není vidět)
@@ -2605,9 +2633,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="pageNew"></param>
         private void RunPageChangingActivate(DevExpress.XtraBars.Navigation.TabNavigationPage pageNew)
         {
-            TEventArgs<DevExpress.XtraBars.Navigation.TabNavigationPage> args = new TEventArgs<DevExpress.XtraBars.Navigation.TabNavigationPage>(pageNew);
-            OnPageChangingActivate(args);
-            PageChangingActivate?.Invoke(this, args);
+            if (this.IsPrepared)
+            {
+                TEventArgs<DevExpress.XtraBars.Navigation.TabNavigationPage> args = new TEventArgs<DevExpress.XtraBars.Navigation.TabNavigationPage>(pageNew);
+                OnPageChangingActivate(args);
+                PageChangingActivate?.Invoke(this, args);
+            }
         }
         /// <summary>
         /// Volá se pro aktivaci obsahu nové stránky po přepnutím na ni (stránka už je vidět)
@@ -2625,9 +2656,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="pageOld"></param>
         private void RunPageChangingDeactivate(DevExpress.XtraBars.Navigation.TabNavigationPage pageOld)
         {
-            TEventArgs<DevExpress.XtraBars.Navigation.TabNavigationPage> args = new TEventArgs<DevExpress.XtraBars.Navigation.TabNavigationPage>(pageOld);
-            OnPageChangingDeactivate(args);
-            PageChangingDeactivate?.Invoke(this, args);
+            if (this.IsPrepared)
+            {
+                TEventArgs<DevExpress.XtraBars.Navigation.TabNavigationPage> args = new TEventArgs<DevExpress.XtraBars.Navigation.TabNavigationPage>(pageOld);
+                OnPageChangingDeactivate(args);
+                PageChangingDeactivate?.Invoke(this, args);
+            }
         }
         /// <summary>
         /// Volá se pro deaktivaci obsahu staré stránky před přepnutím z ní (stránka je dosud vidět)
@@ -2645,9 +2679,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="pageOld"></param>
         private void RunPageChangingRelease(DevExpress.XtraBars.Navigation.TabNavigationPage pageOld)
         {
-            TEventArgs<DevExpress.XtraBars.Navigation.TabNavigationPage> args = new TEventArgs<DevExpress.XtraBars.Navigation.TabNavigationPage>(pageOld);
-            OnPageChangingRelease(args);
-            PageChangingRelease?.Invoke(this, args);
+            if (this.IsPrepared)
+            {
+                TEventArgs<DevExpress.XtraBars.Navigation.TabNavigationPage> args = new TEventArgs<DevExpress.XtraBars.Navigation.TabNavigationPage>(pageOld);
+                OnPageChangingRelease(args);
+                PageChangingRelease?.Invoke(this, args);
+            }
         }
         /// <summary>
         /// Volá se pro uvolnění obsahu staré stránky před přepnutím z ní (stránka už není vidět)
@@ -2669,7 +2706,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         public IPageItem[] IPages
         {
             get { return this.DxPages.Select(p => p.PageData).ToArray(); }
-            set { SetPages(value); }
+            set { SetPages(value, null, true, true); }
         }
         /// <summary>
         /// Stránky vizuální
@@ -2707,10 +2744,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <para/>
         /// Lze setovat i z threadu na pozadí
         /// </summary>
-        public string SelectedIPageIdForce 
+        public string SelectedIPageIdForce
         {
             get { return this.GetGuiValue<string>(() => GetGuiIPage()?.ItemId); }
-            set { this.SetGuiValue<string>(v => SetGuiPageId(v, true, false), value); } 
+            set { this.SetGuiValue<string>(v => SetGuiPageId(v, true, false), value); }
         }
         /// <summary>
         /// <see cref="ITextItem.ItemId"/> aktuálně vybrané stránky nebo null pokud <see cref="IPageCount"/> == 0.
@@ -2828,8 +2865,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="args"></param>
         private void RunSelectedIPageChanging(TEventCancelArgs<IPageItem> args)
         {
-            OnSelectedIPageChanging(args);
-            SelectedIPageChanging?.Invoke(this, args);
+            if (this.IsPrepared)
+            {
+                OnSelectedIPageChanging(args);
+                SelectedIPageChanging?.Invoke(this, args);
+            }
         }
         /// <summary>
         /// Událost volaná při pokusu o aktivaci jiné záložky.
@@ -2848,8 +2888,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="args"></param>
         private void RunSelectedIPageChanged(TEventArgs<IPageItem> args)
         {
-            OnSelectedIPageChanged(args);
-            SelectedIPageChanged?.Invoke(this, args);
+            if (this.IsPrepared)
+            {
+                OnSelectedIPageChanged(args);
+                SelectedIPageChanged?.Invoke(this, args);
+            }
         }
         /// <summary>
         /// Událost volaná při změně aktivní stránky <see cref="SelectedIPage"/>
@@ -2872,6 +2915,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private bool _SelectedIPageChangedSuppress = false;
         /// <summary>
+        /// Hodnota true potlačí kontroly výšky záhlaví. Nastavuje se na true v procesu mazání stránek v <see cref="_RemovePages()"/>.
+        /// </summary>
+        private bool _SizeChangedHeightCheckSuppress = false;
+        /// <summary>
         /// Zjistí, zda na zadané relativní souřadnici se nachází nějaké záhlaví, a pokud ano pak najde odpovídající stránku <see cref="IPageItem"/>.
         /// </summary>
         /// <param name="relativePoint">Souřadnice relativní k this controlu</param>
@@ -2893,7 +2940,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public void ClearPages()
         {
-            _AddPages(true, null, null);
+            _AddPages(true, null, null, true, true);
         }
         /// <summary>
         /// Smaže aktuální stránky, vloží dodanou sadu, a poté se pokusí reaktivovat nově dodanou stránku se shodným ID jaké měla dosud aktivní stránka.
@@ -2901,9 +2948,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="pages"></param>
         /// <param name="selectPageId"></param>
-        public void SetPages(IEnumerable<IPageItem> pages, string selectPageId = null)
+        /// <param name="callEventChanging">true = při reálné změně stránky volat událost <see cref="SelectedIPageChanging"/></param>
+        /// <param name="callEventChanged">true = při reálné změně stránky volat událost <see cref="SelectedIPageChanged"/></param>
+        public void SetPages(IEnumerable<IPageItem> pages, string selectPageId, bool callEventChanging, bool callEventChanged)
         {
-            _AddPages(true, pages, selectPageId);
+            _AddPages(true, pages, selectPageId, callEventChanging, callEventChanged);
         }
         /// <summary>
         /// Přidá dané stránky.
@@ -2911,7 +2960,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="pages"></param>
         public void AddPages(IEnumerable<IPageItem> pages)
         {
-            _AddPages(false, pages, null);
+            _AddPages(false, pages, null, true, true);
         }
         /// <summary>
         /// Přidá danou stránku.
@@ -2920,7 +2969,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         public void AddPage(IPageItem page)
         {
             if (page != null)
-                _AddPages(false, new IPageItem[] { page }, null);
+                _AddPages(false, new IPageItem[] { page }, null, true, true);
         }
         /// <summary>
         /// Přidá stránky
@@ -2928,52 +2977,86 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="clear"></param>
         /// <param name="pages"></param>
         /// <param name="selectPageId"></param>
-        private void _AddPages(bool clear, IEnumerable<IPageItem> pages, string selectPageId)
+        /// <param name="callEventChanging">true = při reálné změně stránky volat událost <see cref="SelectedIPageChanging"/></param>
+        /// <param name="callEventChanged">true = při reálné změně stránky volat událost <see cref="SelectedIPageChanged"/></param>
+        private void _AddPages(bool clear, IEnumerable<IPageItem> pages, string selectPageId, bool callEventChanging, bool callEventChanged)
         {
+            int oldPagesCount = this.Pages.Count;
+            int oldDxPagesCount = this.DxPages.Length;
+            int newPagesCount = pages?.Count() ?? 0;
+            if (oldPagesCount == 0 && newPagesCount == 0)
+            {   // Nic nebylo, nic nebude = zkratka:
+                _Trace("_AddPages", $"SetPages", "Zero=Zero");
+                return;
+            }
+            if (oldPagesCount == newPagesCount && oldDxPagesCount == newPagesCount && clear)
+            {   // Stejný počet stránek = nepotřebujeme provádět Remove a Add, provedeme jen Refresh jejich obsahu (a možná změnu aktivní stránky):
+                _Trace("_AddPages", $"RefreshOnly", $"Pages.Count={oldPagesCount }");
+                _RefreshPages(pages.ToArray(), selectPageId, callEventChanging, callEventChanged);
+                return;
+            }
+
+            // Reload / Add pages:
+            _Trace("_AddPages", $"_AddPages(clear={clear}, pages={pages?.Count().ToString() ?? "NULL"}, selectPageId={selectPageId}, callEventChanging={callEventChanging}, callEventChanged={callEventChanged})");
+
             var oldPage = SelectedIPage;
             bool isChangingSuppress = _SelectedIPageChangingSuppress;
             bool isChangedSuppress = _SelectedIPageChangedSuppress;
             bool isActiveOldPage = false;
             bool runEventChanged = false;
+
+            _Trace("_AddPages", $"OldPages.count: {oldPagesCount}");
             Size headerSizeOld = (this.Pages.Count > 0 ? this.ViewInfo.ButtonsBounds.Size : Size.Empty);
+            _Trace("_AddPages", $"OldHeaders.Size: {headerSizeOld}");
+
             DxTabPage activatePage = null;
             IPageItem[] allPages = null;
             try
             {
                 using (this.ScopeSuspendParentLayout())
                 {
+                    _Trace("_AddPages", $"in ScopeSuspendParentLayout");
+
                     _SelectedIPageChangingSuppress = true;
                     _SelectedIPageChangedSuppress = true;
                     bool forceResize = (this.Pages.Count == 0);
 
                     if (clear)
-                        this.Pages.Clear();
+                        this._RemovePages();
 
+                    int pageIndex = 0;
                     if (pages != null)
                     {
                         foreach (var page in pages)
                         {
                             if (page != null)
                             {
+                                _Trace("_AddPages", $"ProcessPage [{pageIndex}]: {page.Text}", "Begin");
                                 DxTabPage dxPage = new DxTabPage(this, page);
                                 this.Pages.Add(dxPage);
                                 if (forceResize)
                                 {   // Po přidání úplně první stránky do TabHeaders:
+                                    _Trace("_AddPages", $"_CheckHeaderSizeChange");
                                     _CheckHeaderSizeChange(true, headerSizeOld);
                                     forceResize = false;
                                 }
+                                _Trace("_AddPages", $"ProcessPage [{pageIndex}]: {page.Text}", "End");
                             }
+                            pageIndex++;
                         }
                     }
                     allPages = this.IPages;
+                    _Trace("_AddPages", $"Processed all pages, total count: {allPages.Length}");
 
                     bool hasOldPage = (oldPage != null);
                     isActiveOldPage = (hasOldPage && Object.ReferenceEquals(oldPage, this.SelectedIPage));
                     if (hasOldPage && !isActiveOldPage && allPages.Length > 0)
                     {   // Pokud dříve byla nějaká stránka aktivní, a nyní je aktivní jiná, pak se pokusím reaktivovat původní stránku:
+                        _Trace("_AddPages", $"Search OldPage: {oldPage.Text}");
                         activatePage = this.SearchDxPage(oldPage);
                         if (activatePage != null)
                         {
+                            _Trace("_AddPages", $"ActivateOldPage: {activatePage.Text}", "SilentMode");
                             this.SelectedPage = activatePage;  // Fyzicky aktivuji stránku, ale event SelectedIPageChanged je potlačený (_SelectedIPageChangedSuppress) = takže se neprovede
                             isActiveOldPage = true;
                         }
@@ -2988,6 +3071,8 @@ namespace Noris.Clients.Win.Components.AsolDX
                         {   // Nyní nemám žádné stránky,
                             // a pokud jsem dosud měl nějakou aktivní, tak zavoláme event (změna Page => null):
                             runEventChanged = (oldPage != null);
+                            if (oldPage != null)
+                                _Trace("_AddPages", $"ActivateOldPage: No pages exists, deactivate old page: {oldPage.Text}");
                         }
                         else
                         {
@@ -2996,6 +3081,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                             if (activatePage == null)
                                 activatePage = this.Pages[0] as DxTabPage;
                             runEventChanged = true;
+                            _Trace("_AddPages", $"ActivateOldPage: {activatePage.Text}");
                         }
                     }
                 }
@@ -3008,9 +3094,104 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
 
             if (runEventChanged)
-                this.SelectedPage = activatePage;
-        }
+            {
+                _Trace("_AddPages", $"SelectPage: {activatePage.Text}, callEventChanging={callEventChanging}, callEventChanged={callEventChanged})");
+                this.SelectPage(activatePage, callEventChanging, callEventChanged);
+            }
 
+            _Trace("_AddPages", $"Done.");
+        }
+        /// <summary>
+        /// Refresh vzhledu stránek = bez jejich změny
+        /// </summary>
+        /// <param name="pages"></param>
+        /// <param name="selectPageId"></param>
+        /// <param name="callEventChanging"></param>
+        /// <param name="callEventChanged"></param>
+        private void _RefreshPages(IPageItem[] pages, string selectPageId, bool callEventChanging, bool callEventChanged)
+        {
+            var dxPages = this.DxPages;
+            if (dxPages.Length != pages.Length)
+                throw new ArgumentException($"DxTabPane error in _RefreshPages(): new pages length = {pages.Length} differ from current DxPages length = {dxPages.Length}.");
+
+            // Nyní aktivní stránka:
+            var oldSelectedPageId = this.SelectedIPageId;
+
+            // Refresh vizuálních stránek pomocí dat z dodaných logických stránek:
+            int length = dxPages.Length;
+            for (int p = 0; p < length; p++)
+                dxPages[p].RefreshData(pages[p]);
+
+            // Po změně obsahu stránek se sice nezmění aktuálně vybraná stránka, ale může se změnit její ID:
+            string currentSelectedIPageId = this.SelectedIPageId;
+            if (String.IsNullOrEmpty(selectPageId))
+            {   // Pokud není zadána explicitní stránka, aktivujeme stránku s ID odpovídající dřívějšímu ID - pokud tedy došlo ke změně ID (málokdy):
+                if (!String.Equals(currentSelectedIPageId, oldSelectedPageId, StringComparison.Ordinal))
+                    this.SelectedIPageIdSilent = oldSelectedPageId;
+            }
+            else if (!String.Equals(currentSelectedIPageId, selectPageId, StringComparison.Ordinal))
+            {   // Je dána explicitní stránka pro aktivaci, a nyní není aktivní? Aktivujme ji - potichu nebo s eventy, podle požadavků:
+                SetGuiPageId(selectPageId, !callEventChanging, !callEventChanged);
+            }
+        }
+        /// <summary>
+        /// Metoda zajistí odstranění všech stránek, ale potlačí volání událostí při změně velikosti záhlaví.
+        /// V této době mají být potlačeny i eventy o změnách aktivní stránky, to ale tato metoda neřídí.
+        /// </summary>
+        private void _RemovePages()
+        {
+            int count = this.Pages.Count;
+            _Trace("_RemovePages", $"Clear pages begin, Count={count}");
+            if (count > 0)
+            {
+                bool isHeightCheckSuppress = _SizeChangedHeightCheckSuppress;
+                try
+                {
+                    _SizeChangedHeightCheckSuppress = true;
+                    var pages = this.Pages.ToArray();
+                    foreach (var page in pages)
+                    {
+                        if (this.Pages.Contains(page))
+                        {
+                            _Trace("_RemovePages", $"Remove page: {page.Caption}...");
+                            this.Pages.Remove(page);
+                            _Trace("_RemovePages", $"Page: {page.Caption} removed.");
+                        }
+                        else
+                        {
+                            _Trace("_RemovePages", $"Removeing page: {page.Caption} : page disappeared.");
+                        }
+                    }
+                }
+                finally
+                {
+                    _SizeChangedHeightCheckSuppress = isHeightCheckSuppress;
+                }
+            }
+            _Trace("_RemovePages", $"Clear pages done.");
+        }
+        /// <summary>
+        /// Selectuje danou stránku, vyvolá přitom požadované události
+        /// </summary>
+        /// <param name="activatePage"></param>
+        /// <param name="callEventChanging"></param>
+        /// <param name="callEventChanged"></param>
+        protected void SelectPage(DxTabPage activatePage, bool callEventChanging, bool callEventChanged)
+        {
+            bool isChangingSuppress = _SelectedIPageChangingSuppress;
+            bool isChangedSuppress = _SelectedIPageChangedSuppress;
+            try
+            {
+                _SelectedIPageChangingSuppress = !callEventChanging; // callEventChanging = true => volat event => NEpotlačit volání eventu !
+                _SelectedIPageChangedSuppress = !callEventChanged;
+                this.SelectedPage = activatePage;
+            }
+            finally
+            {
+                _SelectedIPageChangingSuppress = isChangingSuppress;
+                _SelectedIPageChangedSuppress = isChangedSuppress;
+            }
+        }
         /// <summary>
         /// Odstraní danou stránku podle jejího ID
         /// </summary>
@@ -3065,8 +3246,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="args"></param>
         private void RunIPageClosing(TEventCancelArgs<IPageItem> args)
         {
-            OnIPageClosing(args);
-            IPageClosing?.Invoke(this, args);
+            if (this.IsPrepared)
+            {
+                OnIPageClosing(args);
+                IPageClosing?.Invoke(this, args);
+            }
         }
         /// <summary>
         /// Volá se při pokusu o zavírání stránky.
@@ -3084,8 +3268,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="args"></param>
         private void RunIPageRemoved(TEventArgs<IPageItem> args)
         {
-            OnIPageRemoved(args);
-            IPageRemoved?.Invoke(this, args);
+            if (this.IsPrepared)
+            {
+                OnIPageRemoved(args);
+                IPageRemoved?.Invoke(this, args);
+            }
         }
         /// <summary>
         /// Volá se po zavření (odebrání) stránky (záložky).
@@ -3165,7 +3352,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="headerSizeOld">Předešlá velikost záhlaví</param>
         private void _CheckHeaderSizeChange(bool force = false, Size? headerSizeOld = null)
         {
-            if (this.Parent is null) return;
+            bool parentIsNull = (this.Parent is null);
+            bool checkSuppress = _SizeChangedHeightCheckSuppress;
+            _Trace("_CheckHeaderSizeChange", $"Parent: {(parentIsNull ? "Null=>Skip" : "OK")}; HeightCheckSuppress: {(checkSuppress ? "True=>Skip" : "False")}");
+            if (parentIsNull || checkSuppress) return;
 
             if (!_CheckHeaderSizeInProgress || force)
             {
@@ -3243,6 +3433,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 }
                 if (headerHeight < minHeight) headerHeight = minHeight;
             }
+            _Trace("_CheckHeaderSizeChange", $"OldHeight: {_HeaderHeight}; NewHeight: {headerHeight}");
             if (headerHeight != _HeaderHeight)
             {   // Výška záhlaví byla změněna:
                 _HeaderHeight = headerHeight;
@@ -3282,6 +3473,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// šířka <see cref="HeaderWidth"/> pro pozici záhlaví Left nebo Right;
         /// </summary>
         public event EventHandler HeaderSizeChanged;
+        /// <summary>
+        /// Metoda, která zapisuje do trace
+        /// </summary>
+        public Action<Type, string, string, string, string, string> TraceMethod { get; set; }
         #endregion
         #region IListenerStyleChanged, IListenerZoomChange
         void IListenerStyleChanged.StyleChanged() { this._CheckHeaderSizeChange(true); }
@@ -3297,7 +3492,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Konstruktor, nepoužívat v aplikaci
         /// </summary>
-        public DxTabPage() { }
+        public DxTabPage()
+        {
+            this.IsPrepared = true;
+        }
         /// <summary>
         /// Konstruktor s daty
         /// </summary>
@@ -3308,6 +3506,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             _TabOwner = tabOwner;
             PageData = pageData;
             RefreshData();
+            this.IsPrepared = true;
         }
         /// <summary>
         /// Vizualizace
@@ -3323,13 +3522,25 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="disposing"></param>
         protected override void Dispose(bool disposing)
         {
-            if (PageData != null)
-            {
-                PageData.PageControl = null;
-                PageData = null;
-            }
+            this.IsPrepared = false;
+            this.ReleasePageData();
             base.Dispose(disposing);
         }
+        /// <summary>
+        /// Uvolní dosud přiřazený objekt <see cref="PageData"/>
+        /// </summary>
+        protected void ReleasePageData()
+        {
+            var pageData = PageData;
+            if (pageData != null)
+                pageData.PageControl = null;
+            PageData = null;
+        }
+        /// <summary>
+        /// Obsahuje true v době, kdy control je korektně inicializován (na true se nastaví na konci konstruktoru),
+        /// a pouze do doby, neý začíná Dispose (na false se nastaví na začátku Dispose).
+        /// </summary>
+        public bool IsPrepared { get; protected set; }
         /// <summary>
         /// Vlastník
         /// </summary>
@@ -3339,6 +3550,16 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Data stránky
         /// </summary>
         public IPageItem PageData { get; private set; }
+        /// <summary>
+        /// Do this stránky refreshuje data z dodaného objektu <see cref="IPageItem"/>
+        /// </summary>
+        /// <param name="pageData"></param>
+        public void RefreshData(IPageItem pageData)
+        {
+            ReleasePageData();
+            PageData = pageData;
+            RefreshData();
+        }
         /// <summary>
         /// Do this stránky refreshuje data ze svého objektu <see cref="IPageItem"/>
         /// </summary>
@@ -3354,7 +3575,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.Name = pageData.ItemId;
             this.Caption = (hasText ? pageData.Text : "");
             this.SuperTip = DxComponent.CreateDxSuperTip(pageData);
-            
+
             if (hasIcon)
                 DxComponent.ApplyImage(ImageOptions, pageData.ImageName, sizeType: ResourceImageSizeType.Medium);
             else
@@ -3446,6 +3667,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             InitTab();
             this.InitEvents();
             DxComponent.RegisterListener(this);
+            this.IsPrepared = true;
         }
         /// <summary>
         /// Dispose
@@ -3453,10 +3675,16 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="disposing"></param>
         protected override void Dispose(bool disposing)
         {
+            this.IsPrepared = false;
             DxComponent.UnregisterListener(this);
             this.RemoveEvents();
             base.Dispose(disposing);
         }
+        /// <summary>
+        /// Obsahuje true v době, kdy control je korektně inicializován (na true se nastaví na konci konstruktoru),
+        /// a pouze do doby, neý začíná Dispose (na false se nastaví na začátku Dispose).
+        /// </summary>
+        public bool IsPrepared { get; protected set; }
         /// <summary>
         /// Inicializace výchozích vlastností
         /// </summary>
@@ -3667,10 +3895,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Možnost zobrazit více řádek záhlaví
         /// </summary>
-        public bool PageHeaderMultiLine 
+        public bool PageHeaderMultiLine
         {
-            get { return (this.MultiLine == DefaultBoolean.True); } 
-            set 
+            get { return (this.MultiLine == DefaultBoolean.True); }
+            set
             {
                 this.MultiLine = (value ? DefaultBoolean.True : DefaultBoolean.False);
                 // Když je možno zobrazit více řádků, nepotřebujeme buttony Prev a Next; a naopak:
@@ -3684,10 +3912,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Lze i setovat. Při setování se control pokusí ponechat jako selectovanou stránku tu, která je aktuálně selectovaná, podle jejího <see cref="ITextItem.ItemId"/>.
         /// Pokud to nebude možné (v nové sadě stránek nebude takové ID existovat), pak vyselectuje první existující stránku a vyvolá událost <see cref="SelectedIPageChanged"/>
         /// </summary>
-        public IPageItem[] IPages 
-        { 
+        public IPageItem[] IPages
+        {
             get { return this.DxPages.Select(p => p.PageData).ToArray(); }
-            set { SetPages(value); }
+            set { SetPages(value, null, true, true); }
         }
         /// <summary>
         /// Stránky vizuální
@@ -3846,8 +4074,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="args"></param>
         private void RunSelectedIPageChanging(TEventCancelArgs<IPageItem> args)
         {
-            OnSelectedIPageChanging(args);
-            SelectedIPageChanging?.Invoke(this, args);
+            if (this.IsPrepared)
+            {
+                OnSelectedIPageChanging(args);
+                SelectedIPageChanging?.Invoke(this, args);
+            }
         }
         /// <summary>
         /// Událost volaná při pokusu o aktivaci jiné záložky.
@@ -3865,8 +4096,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private void RunSelectedIPageChanged(TEventArgs<IPageItem> args)
         {
-            OnSelectedIPageChanged(args);
-            SelectedIPageChanged?.Invoke(this, args);
+            if (this.IsPrepared)
+            {
+                OnSelectedIPageChanged(args);
+                SelectedIPageChanged?.Invoke(this, args);
+            }
         }
         /// <summary>
         /// Událost volaná při změně aktivní stránky <see cref="SelectedIPage"/>
@@ -3912,7 +4146,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public void ClearPages()
         {
-            _AddPages(true, null, null);
+            _AddPages(true, null, null, true, true);
         }
         /// <summary>
         /// Smaže aktuální stránky, vloží dodanou sadu, a poté se pokusí reaktivovat nově dodanou stránku se shodným ID jaké měla dosud aktivní stránka.
@@ -3920,9 +4154,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="pages"></param>
         /// <param name="selectPageId"></param>
-        public void SetPages(IEnumerable<IPageItem> pages, string selectPageId = null)
+        /// <param name="callEventChanging">true = při reálné změně stránky volat událost <see cref="SelectedIPageChanging"/></param>
+        /// <param name="callEventChanged">true = při reálné změně stránky volat událost <see cref="SelectedIPageChanged"/></param>
+        public void SetPages(IEnumerable<IPageItem> pages, string selectPageId, bool callEventChanging, bool callEventChanged)
         {
-            _AddPages(true, pages, selectPageId);
+            _AddPages(true, pages, selectPageId, callEventChanging, callEventChanged);
         }
         /// <summary>
         /// Přidá dané stránky.
@@ -3930,7 +4166,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="pages"></param>
         public void AddPages(IEnumerable<IPageItem> pages)
         {
-            _AddPages(false, pages, null);
+            _AddPages(false, pages, null, true, true);
         }
         /// <summary>
         /// Přidá danou stránku.
@@ -3939,7 +4175,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         public void AddPage(IPageItem page)
         {
             if (page != null)
-                _AddPages(false, new IPageItem[] { page }, null);
+                _AddPages(false, new IPageItem[] { page }, null, true, true);
         }
         /// <summary>
         /// Přidá stránky
@@ -3947,7 +4183,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="clear"></param>
         /// <param name="pages"></param>
         /// <param name="selectPageId"></param>
-        private void _AddPages(bool clear, IEnumerable<IPageItem> pages, string selectPageId)
+        /// <param name="callEventChanging">true = při reálné změně stránky volat událost <see cref="SelectedIPageChanging"/></param>
+        /// <param name="callEventChanged">true = při reálné změně stránky volat událost <see cref="SelectedIPageChanged"/></param>
+        private void _AddPages(bool clear, IEnumerable<IPageItem> pages, string selectPageId, bool callEventChanging, bool callEventChanged)
         {
             var oldPage = SelectedIPage;
             bool isChangingSuppress = _SelectedIPageChangingSuppress;
@@ -4030,9 +4268,30 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
 
             if (runEventChanged)
-                this.SelectedTabPage = activatePage;
+                this.SelectPage(activatePage, callEventChanging, callEventChanged);
         }
-
+        /// <summary>
+        /// Selectuje danou stránku, vyvolá přitom požadované události
+        /// </summary>
+        /// <param name="activatePage"></param>
+        /// <param name="callEventChanging"></param>
+        /// <param name="callEventChanged"></param>
+        protected void SelectPage(DxXtraTabPage activatePage, bool callEventChanging, bool callEventChanged)
+        {
+            bool isChangingSuppress = _SelectedIPageChangingSuppress;
+            bool isChangedSuppress = _SelectedIPageChangedSuppress;
+            try
+            {
+                _SelectedIPageChangingSuppress = !callEventChanging; // callEventChanging = true => volat event => NEpotlačit volání eventu !
+                _SelectedIPageChangedSuppress = !callEventChanged;
+                this.SelectedTabPage = activatePage;
+            }
+            finally
+            {
+                _SelectedIPageChangingSuppress = isChangingSuppress;
+                _SelectedIPageChangedSuppress = isChangedSuppress;
+            }
+        }
         /// <summary>
         /// Odstraní danou stránku podle jejího ID
         /// </summary>
@@ -4087,8 +4346,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="args"></param>
         private void RunIPageClosing(TEventCancelArgs<IPageItem> args)
         {
-            OnIPageClosing(args);
-            IPageClosing?.Invoke(this, args);
+            if (this.IsPrepared)
+            {
+                OnIPageClosing(args);
+                IPageClosing?.Invoke(this, args);
+            }
         }
         /// <summary>
         /// Volá se při pokusu o zavírání stránky.
@@ -4106,8 +4368,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="args"></param>
         private void RunIPageRemoved(TEventArgs<IPageItem> args)
         {
-            OnIPageRemoved(args);
-            IPageRemoved?.Invoke(this, args);
+            if (this.IsPrepared)
+            {
+                OnIPageRemoved(args);
+                IPageRemoved?.Invoke(this, args);
+            }
         }
         /// <summary>
         /// Volá se po zavření (odebrání) stránky (záložky).
@@ -4326,6 +4591,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// šířka <see cref="HeaderWidth"/> pro pozici záhlaví Left nebo Right;
         /// </summary>
         public event EventHandler HeaderSizeChanged;
+        /// <summary>
+        /// Metoda, která zapisuje do trace
+        /// </summary>
+        public Action<Type, string, string, string, string, string> TraceMethod { get; set; }
         #endregion
         #region IListenerStyleChanged, IListenerZoomChange
         void IListenerStyleChanged.StyleChanged() { this._CheckHeaderSizeChange(); }
@@ -4341,7 +4610,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Konstruktor, nepoužívat v aplikaci
         /// </summary>
-        public DxXtraTabPage() { }
+        public DxXtraTabPage()
+        {
+            this.IsPrepared = true;
+        }
         /// <summary>
         /// Konstruktor s daty
         /// </summary>
@@ -4352,6 +4624,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             _TabOwner = tabOwner;
             PageData = pageData;
             RefreshData();
+            this.IsPrepared = true;
         }
         /// <summary>
         /// Vizualizace
@@ -4367,6 +4640,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="disposing"></param>
         protected override void Dispose(bool disposing)
         {
+            this.IsPrepared = false;
             if (PageData != null)
             {
                 PageData.PageControl = null;
@@ -4374,6 +4648,11 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
             base.Dispose(disposing);
         }
+        /// <summary>
+        /// Obsahuje true v době, kdy control je korektně inicializován (na true se nastaví na konci konstruktoru),
+        /// a pouze do doby, neý začíná Dispose (na false se nastaví na začátku Dispose).
+        /// </summary>
+        public bool IsPrepared { get; protected set; }
         /// <summary>
         /// Vlastník
         /// </summary>
