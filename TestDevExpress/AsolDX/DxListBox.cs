@@ -518,6 +518,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         protected override void OnPaint(PaintEventArgs e)
         {
             base.OnPaint(e);
+            this.OnPaintList(e);
             this.PaintList?.Invoke(this, e);
             this.MouseDragPaint(e);
         }
@@ -1262,6 +1263,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         #endregion
         #region Public eventy
+
+        /// <summary>
+        /// Volá se po vykreslení základu Listu, před vykreslením Reorder ikony
+        /// </summary>
+        /// <param name="e"></param>
+        protected virtual void OnPaintList(PaintEventArgs e) { }
         /// <summary>
         /// Událost volaná po vykreslení základu Listu, před vykreslením Reorder ikony
         /// </summary>
