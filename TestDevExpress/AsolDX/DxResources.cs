@@ -4086,7 +4086,7 @@ namespace Noris.Clients.Win.Components.AsolDX
     */
         }
         #endregion
-        #region Arrow
+        #region Arrow - šipky, zatím nepracují v systému Coordinates; viz Edit
         /// <summary>
         /// Tvoří malou šipku.
         /// Očekávaná deklarace zní: "@arrowsmall|U|blue", 
@@ -4402,7 +4402,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         private static bool _TryGetGenericSvgEditSmall(string imageName, string[] genericItems, ResourceImageSizeType? sizeType, ref DxSvgImage dxSvgImage)
         {
-            return _TryGetGenericSvgEditAny(imageName, genericItems, sizeType, ref dxSvgImage, 24);
+            return _TryGetGenericSvgEditAny(imageName, genericItems, sizeType, ref dxSvgImage, 3);
         }
         /// <summary>
         /// Vytvoří ikonu pro editaci, standardní velikost
@@ -4414,7 +4414,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         private static bool _TryGetGenericSvgEditStandard(string imageName, string[] genericItems, ResourceImageSizeType? sizeType, ref DxSvgImage dxSvgImage)
         {
-            return _TryGetGenericSvgEditAny(imageName, genericItems, sizeType, ref dxSvgImage, 32);
+            return _TryGetGenericSvgEditAny(imageName, genericItems, sizeType, ref dxSvgImage, 0);
         }
         /// <summary>
         /// Vytvoří ikonu pro editaci, v dané velikosti
@@ -4423,65 +4423,127 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="genericItems"></param>
         /// <param name="sizeType"></param>
         /// <param name="dxSvgImage"></param>
-        /// <param name="es"></param>
+        /// <param name="subSize">Počet jednotek od okraje, o kolik má být ikona zmenšená. Hodnota 0=kreslí se až k okraji, 3=vynechá 3px z 16px ikony nebo 6px z 32px ikony...; povolené hodnoty 0-4</param>
         /// <returns></returns>
-        private static bool _TryGetGenericSvgEditAny(string imageName, string[] genericItems, ResourceImageSizeType? sizeType, ref DxSvgImage dxSvgImage,
-            int es)
+        private static bool _TryGetGenericSvgEditAny(string imageName, string[] genericItems, ResourceImageSizeType? sizeType, ref DxSvgImage dxSvgImage, int subSize)
         {
-            int size = (sizeType.HasValue && sizeType.Value == ResourceImageSizeType.Small ? 16 : 32);
-            string xmlHeader = _GetXmlContentHeader(size);
-
-            string xmlStyles = _GetXmlDevExpressStyles();
+            int[] coordinates = _GetCoordinates(sizeType);
+            subSize = (subSize < 0 ? 0 : (subSize > 4 ? 4 : subSize));
 
             EditType editType = _GetEditType(_GetGenericParam(genericItems, 1, ""));
             string editColorName = _GetGenericParam(genericItems, 2, "");
             _ResolveSvgDesignParam(ref editColorName, "class='Blue'");
             string editBlackName = "class='Black'";
 
-            int de = (32 - es) / 2;                        // O kolik menší ikonu mám udělat proti ikoně fullsize, počet pixelů od okraje dovnitř;
-            de = (de < 0 ? 0 : (de > 8 ? 8 : de));         //  v rozmezí 0-8, kde 0=plný formát, 8=na okraji nechat 8px prázdno a kreslit dovnitř
-            int b0, b1, b2, c4, c5, c6, e2, e1, e0;
+            string xmlHeader = _GetXmlContentHeader(coordinates);
+            string xmlStyles = _GetXmlDevExpressStyles();
             string xmlGradient = "";
 
-            string paths = "";
+            string xmlPaths = "";
             switch (editType)
             {
                 case EditType.SelectAll1:
                     // Střední čtverec dané barvy a černý tečkovaný okraj:
-                    paths += _GetEditPartCenter1(de, editColorName);
-                    paths += _GetEditPartBorder(de, editBlackName);
+                    xmlPaths += _GetEditPartCenter1(coordinates, subSize, editColorName);
+                    xmlPaths += _GetEditPartBorder(coordinates, subSize, editBlackName);
+                    break;
+                case EditType.SelectAll2:
+                    // Střední čtverec dané barvy a černý tečkovaný okraj:
+                    xmlPaths += _GetEditPartCenter2(coordinates, subSize, editColorName);
+                    xmlPaths += _GetEditPartBorder(coordinates, subSize, editBlackName);
                     break;
                 case EditType.Delete1:
                     // tenká linka:
-                    paths += _GetEditPartXCross(de, editColorName, 4, 2);
+                    xmlPaths += _GetEditPartXCross(coordinates, subSize, editColorName, 1);
                     break;
                 case EditType.Delete2:
                     // tlustší linka:
-                    paths += _GetEditPartXCross(de, editColorName, 3, 3);
+                    xmlPaths += _GetEditPartXCross(coordinates, subSize, editColorName, 2);
+                    break;
+                case EditType.Copy:
+
                     break;
             }
 
             string xmlFooter = _GetXmlContentFooter();
 
-            string xmlContent = xmlHeader + xmlStyles + xmlGradient + paths + xmlFooter;
+            string xmlContent = xmlHeader + xmlStyles + xmlGradient + xmlPaths + xmlFooter;
             dxSvgImage = DxSvgImage.Create(imageName, true, xmlContent);
             dxSvgImage.SizeType = sizeType;
             dxSvgImage.GenericSource = imageName;
             return true;
         }
-        private static string _GetEditPartCenter1(int de, string editColorName)
+        /// <summary>
+        /// Vykreslí střed = rectangle pro SelectAll1
+        /// </summary>
+        /// <param name="coordinates">Fyzické souřadnice</param>
+        /// <param name="subSize">Okraj ikony, číslo v rozsahu 0-4 včetně</param>
+        /// <param name="editColorName"></param>
+        /// <returns></returns>
+        private static string _GetEditPartCenter1(int[] coordinates, int subSize, string editColorName)
         {
-            int type = de / 2;                   // Vstupní de je v rozsahu 0-8; výstupní type má hodnoty 0,1,2,3,4; které určují velikost a typ okraje
-            int c0 = 6 + (2 * type);             // Souřadnice počátku středu v ose X i Y je na pozici 6,8,10,12,14
-            int c1 = 32 - c0;
-            string paths = $"    <polygon points=\"{c0},{c0} {c1},{c0} {c1},{c1} {c0},{c1} \" {editColorName} />\r\n";
-            return paths;
+            int b = coordinates[3 + subSize];
+            int e = coordinates[13 - subSize];
+            int s = e - b;
+            string xmlPaths = _GetXmlPathRectangle(b, b, s, s, editColorName);
+            return xmlPaths;
         }
-        private static string _GetEditPartBorder(int de, string editColorName)
+        /// <summary>
+        /// Vykreslí střed = rectangle pro SelectAll2
+        /// </summary>
+        /// <param name="coordinates">Fyzické souřadnice</param>
+        /// <param name="subSize">Okraj ikony, číslo v rozsahu 0-4 včetně</param>
+        /// <param name="editColorName"></param>
+        /// <returns></returns>
+        private static string _GetEditPartCenter2(int[] coordinates, int subSize, string editColorName)
         {
-            int type = de / 2;                   // Vstupní de je v rozsahu 0-8; výstupní type má hodnoty 0,1,2,3,4; které určují velikost a typ okraje
-            string paths = "";
+            if (subSize >= 3) return _GetEditPartCenter1(coordinates, subSize, editColorName);    // Velké okraje = malý střed => vrátím plný střed jako pro SelectAll1.
 
+            string xmlPaths = "";
+            switch (subSize)
+            {
+                case 0:
+                    {
+                        int x0 = coordinates[3], x1 = coordinates[5], x8 = coordinates[11], x9 = coordinates[13];
+                        int y0 = coordinates[3], y1 = coordinates[5], y2 = coordinates[6], y3 = coordinates[8], 
+                            y4 = coordinates[9], y5 = coordinates[10], y6 = coordinates[11], y9 = coordinates[13];
+                        xmlPaths += _GetXmlPathRectangle(x0, y0, x9 - x0, y9 - y0, 2, editColorName);
+                        xmlPaths += _GetXmlPathRectangle(x1, y1, x8 - x1, y2 - y1, editColorName);
+                        xmlPaths += _GetXmlPathRectangle(x1, y3, x8 - x1, y4 - y1, editColorName);
+                        xmlPaths += _GetXmlPathRectangle(x1, y5, x8 - x1, y6 - y1, editColorName);
+                    }
+                    break;
+                case 1:
+                    {
+                        int x0 = coordinates[4], x1 = coordinates[6], x8 = coordinates[10], x9 = coordinates[12];
+                        int y0 = coordinates[4], y1 = coordinates[6], y2 = coordinates[7], y3 = coordinates[9],
+                            y4 = coordinates[10], y9 = coordinates[12];
+                        xmlPaths += _GetXmlPathRectangle(x0, y0, x9 - x0, y9 - y0, 2, editColorName);
+                        xmlPaths += _GetXmlPathRectangle(x1, y1, x8 - x1, y2 - y1, editColorName);
+                        xmlPaths += _GetXmlPathRectangle(x1, y3, x8 - x1, y4 - y1, editColorName);
+                    }
+                    break;
+                case 2:
+                    {
+                        int x0 = coordinates[5], x1 = coordinates[7], x8 = coordinates[9], x9 = coordinates[11];
+                        int y0 = coordinates[5], y1 = coordinates[7], y2 = coordinates[9], y9 = coordinates[11];
+                        xmlPaths += _GetXmlPathRectangle(x0, y0, x9 - x0, y9 - y0, 2, editColorName);
+                        xmlPaths += _GetXmlPathRectangle(x1, y1, x8 - x1, y2 - y1, editColorName);
+                    }
+                    break;
+            }
+
+            return xmlPaths;
+        }
+        /// <summary>
+        /// Vykreslí okraj = border pro SelectAll1 i SelectAll2
+        /// </summary>
+        /// <param name="coordinates">Fyzické souřadnice</param>
+        /// <param name="subSize">Okraj ikony, číslo v rozsahu 0-4 včetně</param>
+        /// <param name="editColorName"></param>
+        /// <returns></returns>
+        private static string _GetEditPartBorder(int[] coordinates, int subSize, string editColorName)
+        {
             //   Vzoreček pro typ = 0 = rozměr 2 ÷ 30:
             //paths += $"    <polygon points=\"2,2 6,2 6,4 4,4 4,6 2,6 \" {editColorName} />\r\n";
             //paths += $"    <polygon points=\"8,2 12,2 12,4 8,4 \" {editColorName} />\r\n";
@@ -4500,112 +4562,124 @@ namespace Noris.Clients.Win.Components.AsolDX
             //paths += $"    <polygon points=\"2,14 4,14 4,18 2,18 \" {editColorName} />\r\n";
             //paths += $"    <polygon points=\"2,8 4,8 4,12 2,12 \" {editColorName} />\r\n";
 
-            switch (type)
+            string xmlPaths = "";
+            switch (subSize)
             {
                 case 0:
                     {
-                        int a0 = 2, a1 = 4, a2 = 6, bl = 8, br = 12, cl = 14, cr = 18, dl = 20, dr = 24, e2 = 26, e1 = 28, e0 = 30;
-                        paths += $"    <polygon points=\"{a0},{a0} {a2},{a0} {a2},{a1} {a1},{a1} {a1},{a2} {a0},{a2} \" {editColorName} />\r\n";
-                        paths += $"    <polygon points=\"{bl},{a0} {br},{a0} {br},{a1} {bl},{a1} \" {editColorName} />\r\n";
-                        paths += $"    <polygon points=\"{cl},{a0} {cr},{a0} {cr},{a1} {cl},{a1} \" {editColorName} />\r\n";
-                        paths += $"    <polygon points=\"{dl},{a0} {dr},{a0} {dr},{a1} {dl},{a1} \" {editColorName} />\r\n";
-                        paths += $"    <polygon points=\"{e2},{a0} {e0},{a0} {e0},{a2} {e1},{a2} {e1},{a1} {e2},{a1} \" {editColorName} />\r\n";
-                        paths += $"    <polygon points=\"{e1},{bl} {e0},{bl} {e0},{br} {e1},{br} \" {editColorName} />\r\n";
-                        paths += $"    <polygon points=\"{e1},{cl} {e0},{cl} {e0},{cr} {e1},{cr} \" {editColorName} />\r\n";
-                        paths += $"    <polygon points=\"{e1},{dl} {e0},{dl} {e0},{dr} {e1},{dr} \" {editColorName} />\r\n";
-                        paths += $"    <polygon points=\"{e1},{e2},{e0},{e2} {e2},{e0} {e2},{e0} {e2},{e1} {e1},{e1} \" {editColorName} />\r\n";
-                        paths += $"    <polygon points=\"{dl},{e1} {dr},{e1} {dr},{e0} {dl},{e0} \" {editColorName} />\r\n";
-                        paths += $"    <polygon points=\"{cl},{e1} {cr},{e1} {cr},{e0} {cl},{e0} \" {editColorName} />\r\n";
-                        paths += $"    <polygon points=\"{bl},{e1} {br},{e1} {br},{e0} {bl},{e0} \" {editColorName} />\r\n";
-                        paths += $"    <polygon points=\"{a0},{e2} {a1},{e2} {a1},{e1} {a2},{e1} {a2},{e0} {a0},{e0} \" {editColorName} />\r\n";
-                        paths += $"    <polygon points=\"{a0},{dl} {a1},{dl} {a1},{dr} {a0},{dr} \" {editColorName} />\r\n";
-                        paths += $"    <polygon points=\"{a0},{cl} {a1},{cl} {a1},{cr} {a0},{cr} \" {editColorName} />\r\n";
-                        paths += $"    <polygon points=\"{a0},{bl} {a1},{bl} {a1},{br} {a0},{br} \" {editColorName} />\r\n";
+                        int a0 = coordinates[1], a1 = coordinates[2], a2 = coordinates[3], 
+                            bl = coordinates[4], br = coordinates[6], cl = coordinates[7], cr = coordinates[9], dl = coordinates[10], dr = coordinates[12], 
+                            e2 = coordinates[13], e1 = coordinates[14], e0 = coordinates[15];
+                        xmlPaths += $"    <polygon points=\"{a0},{a0} {a2},{a0} {a2},{a1} {a1},{a1} {a1},{a2} {a0},{a2} \" {editColorName} />\r\n";
+                        xmlPaths += $"    <polygon points=\"{bl},{a0} {br},{a0} {br},{a1} {bl},{a1} \" {editColorName} />\r\n";
+                        xmlPaths += $"    <polygon points=\"{cl},{a0} {cr},{a0} {cr},{a1} {cl},{a1} \" {editColorName} />\r\n";
+                        xmlPaths += $"    <polygon points=\"{dl},{a0} {dr},{a0} {dr},{a1} {dl},{a1} \" {editColorName} />\r\n";
+                        xmlPaths += $"    <polygon points=\"{e2},{a0} {e0},{a0} {e0},{a2} {e1},{a2} {e1},{a1} {e2},{a1} \" {editColorName} />\r\n";
+                        xmlPaths += $"    <polygon points=\"{e1},{bl} {e0},{bl} {e0},{br} {e1},{br} \" {editColorName} />\r\n";
+                        xmlPaths += $"    <polygon points=\"{e1},{cl} {e0},{cl} {e0},{cr} {e1},{cr} \" {editColorName} />\r\n";
+                        xmlPaths += $"    <polygon points=\"{e1},{dl} {e0},{dl} {e0},{dr} {e1},{dr} \" {editColorName} />\r\n";
+                        xmlPaths += $"    <polygon points=\"{e1},{e2},{e0},{e2} {e2},{e0} {e2},{e0} {e2},{e1} {e1},{e1} \" {editColorName} />\r\n";
+                        xmlPaths += $"    <polygon points=\"{dl},{e1} {dr},{e1} {dr},{e0} {dl},{e0} \" {editColorName} />\r\n";
+                        xmlPaths += $"    <polygon points=\"{cl},{e1} {cr},{e1} {cr},{e0} {cl},{e0} \" {editColorName} />\r\n";
+                        xmlPaths += $"    <polygon points=\"{bl},{e1} {br},{e1} {br},{e0} {bl},{e0} \" {editColorName} />\r\n";
+                        xmlPaths += $"    <polygon points=\"{a0},{e2} {a1},{e2} {a1},{e1} {a2},{e1} {a2},{e0} {a0},{e0} \" {editColorName} />\r\n";
+                        xmlPaths += $"    <polygon points=\"{a0},{dl} {a1},{dl} {a1},{dr} {a0},{dr} \" {editColorName} />\r\n";
+                        xmlPaths += $"    <polygon points=\"{a0},{cl} {a1},{cl} {a1},{cr} {a0},{cr} \" {editColorName} />\r\n";
+                        xmlPaths += $"    <polygon points=\"{a0},{bl} {a1},{bl} {a1},{br} {a0},{br} \" {editColorName} />\r\n";
                     }
                     break;
                 case 1:
                     {
-                        int a0 = 4, a1 = 6, a2 = 8, bl = 10, br = 12, cl = 14, cr = 18, dl = 20, dr = 22, e2 = 24, e1 = 26, e0 = 28;
-                        paths += $"    <polygon points=\"{a0},{a0} {a2},{a0} {a2},{a1} {a1},{a1} {a1},{a2} {a0},{a2} \" {editColorName} />\r\n";
-                        paths += $"    <polygon points=\"{bl},{a0} {br},{a0} {br},{a1} {bl},{a1} \" {editColorName} />\r\n";
-                        paths += $"    <polygon points=\"{cl},{a0} {cr},{a0} {cr},{a1} {cl},{a1} \" {editColorName} />\r\n";
-                        paths += $"    <polygon points=\"{dl},{a0} {dr},{a0} {dr},{a1} {dl},{a1} \" {editColorName} />\r\n";
-                        paths += $"    <polygon points=\"{e2},{a0} {e0},{a0} {e0},{a2} {e1},{a2} {e1},{a1} {e2},{a1} \" {editColorName} />\r\n";
-                        paths += $"    <polygon points=\"{e1},{bl} {e0},{bl} {e0},{br} {e1},{br} \" {editColorName} />\r\n";
-                        paths += $"    <polygon points=\"{e1},{cl} {e0},{cl} {e0},{cr} {e1},{cr} \" {editColorName} />\r\n";
-                        paths += $"    <polygon points=\"{e1},{dl} {e0},{dl} {e0},{dr} {e1},{dr} \" {editColorName} />\r\n";
-                        paths += $"    <polygon points=\"{e1},{e2},{e0},{e2} {e0},{e0} {e2},{e0} {e2},{e1} {e1},{e1} \" {editColorName} />\r\n";
-                        paths += $"    <polygon points=\"{dl},{e1} {dr},{e1} {dr},{e0} {dl},{e0} \" {editColorName} />\r\n";
-                        paths += $"    <polygon points=\"{cl},{e1} {cr},{e1} {cr},{e0} {cl},{e0} \" {editColorName} />\r\n";
-                        paths += $"    <polygon points=\"{bl},{e1} {br},{e1} {br},{e0} {bl},{e0} \" {editColorName} />\r\n";
-                        paths += $"    <polygon points=\"{a0},{e2} {a1},{e2} {a1},{e1} {a2},{e1} {a2},{e0} {a0},{e0} \" {editColorName} />\r\n";
-                        paths += $"    <polygon points=\"{a0},{dl} {a1},{dl} {a1},{dr} {a0},{dr} \" {editColorName} />\r\n";
-                        paths += $"    <polygon points=\"{a0},{cl} {a1},{cl} {a1},{cr} {a0},{cr} \" {editColorName} />\r\n";
-                        paths += $"    <polygon points=\"{a0},{bl} {a1},{bl} {a1},{br} {a0},{br} \" {editColorName} />\r\n";
+                        int a0 = coordinates[2], a1 = coordinates[3], a2 = coordinates[4], 
+                            bl = coordinates[5], br = coordinates[6], cl = coordinates[7], cr = coordinates[9], dl = coordinates[10], dr = coordinates[11], 
+                            e2 = coordinates[12], e1 = coordinates[13], e0 = coordinates[14];
+                        xmlPaths += $"    <polygon points=\"{a0},{a0} {a2},{a0} {a2},{a1} {a1},{a1} {a1},{a2} {a0},{a2} \" {editColorName} />\r\n";
+                        xmlPaths += $"    <polygon points=\"{bl},{a0} {br},{a0} {br},{a1} {bl},{a1} \" {editColorName} />\r\n";
+                        xmlPaths += $"    <polygon points=\"{cl},{a0} {cr},{a0} {cr},{a1} {cl},{a1} \" {editColorName} />\r\n";
+                        xmlPaths += $"    <polygon points=\"{dl},{a0} {dr},{a0} {dr},{a1} {dl},{a1} \" {editColorName} />\r\n";
+                        xmlPaths += $"    <polygon points=\"{e2},{a0} {e0},{a0} {e0},{a2} {e1},{a2} {e1},{a1} {e2},{a1} \" {editColorName} />\r\n";
+                        xmlPaths += $"    <polygon points=\"{e1},{bl} {e0},{bl} {e0},{br} {e1},{br} \" {editColorName} />\r\n";
+                        xmlPaths += $"    <polygon points=\"{e1},{cl} {e0},{cl} {e0},{cr} {e1},{cr} \" {editColorName} />\r\n";
+                        xmlPaths += $"    <polygon points=\"{e1},{dl} {e0},{dl} {e0},{dr} {e1},{dr} \" {editColorName} />\r\n";
+                        xmlPaths += $"    <polygon points=\"{e1},{e2},{e0},{e2} {e0},{e0} {e2},{e0} {e2},{e1} {e1},{e1} \" {editColorName} />\r\n";
+                        xmlPaths += $"    <polygon points=\"{dl},{e1} {dr},{e1} {dr},{e0} {dl},{e0} \" {editColorName} />\r\n";
+                        xmlPaths += $"    <polygon points=\"{cl},{e1} {cr},{e1} {cr},{e0} {cl},{e0} \" {editColorName} />\r\n";
+                        xmlPaths += $"    <polygon points=\"{bl},{e1} {br},{e1} {br},{e0} {bl},{e0} \" {editColorName} />\r\n";
+                        xmlPaths += $"    <polygon points=\"{a0},{e2} {a1},{e2} {a1},{e1} {a2},{e1} {a2},{e0} {a0},{e0} \" {editColorName} />\r\n";
+                        xmlPaths += $"    <polygon points=\"{a0},{dl} {a1},{dl} {a1},{dr} {a0},{dr} \" {editColorName} />\r\n";
+                        xmlPaths += $"    <polygon points=\"{a0},{cl} {a1},{cl} {a1},{cr} {a0},{cr} \" {editColorName} />\r\n";
+                        xmlPaths += $"    <polygon points=\"{a0},{bl} {a1},{bl} {a1},{br} {a0},{br} \" {editColorName} />\r\n";
                     }
                     break;
                 case 2:
                     {
-                        int a0 = 6, a1 = 8, a2 = 12, cl = 14, cr = 18, e2 = 20, e1 = 24, e0 = 26;
-                        paths += $"    <polygon points=\"{a0},{a0} {a2},{a0} {a2},{a1} {a1},{a1} {a1},{a2} {a0},{a2} \" {editColorName} />\r\n";
-                        paths += $"    <polygon points=\"{cl},{a0} {cr},{a0} {cr},{a1} {cl},{a1} \" {editColorName} />\r\n";
-                        paths += $"    <polygon points=\"{e2},{a0} {e0},{a0} {e0},{a2} {e1},{a2} {e1},{a1} {e2},{a1} \" {editColorName} />\r\n";
-                        paths += $"    <polygon points=\"{e1},{cl} {e0},{cl} {e0},{cr} {e1},{cr} \" {editColorName} />\r\n";
-                        paths += $"    <polygon points=\"{e1},{e2},{e0},{e2} {e0},{e0} {e2},{e0} {e2},{e1} {e1},{e1} \" {editColorName} />\r\n";
-                        paths += $"    <polygon points=\"{cl},{e1} {cr},{e1} {cr},{e0} {cl},{e0} \" {editColorName} />\r\n";
-                        paths += $"    <polygon points=\"{a0},{e2} {a1},{e2} {a1},{e1} {a2},{e1} {a2},{e0} {a0},{e0} \" {editColorName} />\r\n";
-                        paths += $"    <polygon points=\"{a0},{cl} {a1},{cl} {a1},{cr} {a0},{cr} \" {editColorName} />\r\n";
+                        int a0 = coordinates[3], a1 = coordinates[4], a2 = coordinates[6], 
+                            cl = coordinates[7], cr = coordinates[9], 
+                            e2 = coordinates[10], e1 = coordinates[12], e0 = coordinates[13];
+                        xmlPaths += $"    <polygon points=\"{a0},{a0} {a2},{a0} {a2},{a1} {a1},{a1} {a1},{a2} {a0},{a2} \" {editColorName} />\r\n";
+                        xmlPaths += $"    <polygon points=\"{cl},{a0} {cr},{a0} {cr},{a1} {cl},{a1} \" {editColorName} />\r\n";
+                        xmlPaths += $"    <polygon points=\"{e2},{a0} {e0},{a0} {e0},{a2} {e1},{a2} {e1},{a1} {e2},{a1} \" {editColorName} />\r\n";
+                        xmlPaths += $"    <polygon points=\"{e1},{cl} {e0},{cl} {e0},{cr} {e1},{cr} \" {editColorName} />\r\n";
+                        xmlPaths += $"    <polygon points=\"{e1},{e2},{e0},{e2} {e0},{e0} {e2},{e0} {e2},{e1} {e1},{e1} \" {editColorName} />\r\n";
+                        xmlPaths += $"    <polygon points=\"{cl},{e1} {cr},{e1} {cr},{e0} {cl},{e0} \" {editColorName} />\r\n";
+                        xmlPaths += $"    <polygon points=\"{a0},{e2} {a1},{e2} {a1},{e1} {a2},{e1} {a2},{e0} {a0},{e0} \" {editColorName} />\r\n";
+                        xmlPaths += $"    <polygon points=\"{a0},{cl} {a1},{cl} {a1},{cr} {a0},{cr} \" {editColorName} />\r\n";
                     }
                     break;
                 case 3:
                     {
-                        int a0 = 8, a1 = 10, a2 = 12, cl = 14, cr = 18, e2 = 20, e1 = 22, e0 = 24;
-                        paths += $"    <polygon points=\"{a0},{a0} {a2},{a0} {a2},{a1} {a1},{a1} {a1},{a2} {a0},{a2} \" {editColorName} />\r\n";
-                        paths += $"    <polygon points=\"{cl},{a0} {cr},{a0} {cr},{a1} {cl},{a1} \" {editColorName} />\r\n";
-                        paths += $"    <polygon points=\"{e2},{a0} {e0},{a0} {e0},{a2} {e1},{a2} {e1},{a1} {e2},{a1} \" {editColorName} />\r\n";
-                        paths += $"    <polygon points=\"{e1},{cl} {e0},{cl} {e0},{cr} {e1},{cr} \" {editColorName} />\r\n";
-                        paths += $"    <polygon points=\"{e1},{e2},{e0},{e2} {e0},{e0} {e2},{e0} {e2},{e1} {e1},{e1} \" {editColorName} />\r\n";
-                        paths += $"    <polygon points=\"{cl},{e1} {cr},{e1} {cr},{e0} {cl},{e0} \" {editColorName} />\r\n";
-                        paths += $"    <polygon points=\"{a0},{e2} {a1},{e2} {a1},{e1} {a2},{e1} {a2},{e0} {a0},{e0} \" {editColorName} />\r\n";
-                        paths += $"    <polygon points=\"{a0},{cl} {a1},{cl} {a1},{cr} {a0},{cr} \" {editColorName} />\r\n";
+                        int a0 = coordinates[4], a1 = coordinates[5], a2 = coordinates[6], 
+                            cl = coordinates[7], cr = coordinates[9], 
+                            e2 = coordinates[10], e1 = coordinates[11], e0 = coordinates[12];
+                        xmlPaths += $"    <polygon points=\"{a0},{a0} {a2},{a0} {a2},{a1} {a1},{a1} {a1},{a2} {a0},{a2} \" {editColorName} />\r\n";
+                        xmlPaths += $"    <polygon points=\"{cl},{a0} {cr},{a0} {cr},{a1} {cl},{a1} \" {editColorName} />\r\n";
+                        xmlPaths += $"    <polygon points=\"{e2},{a0} {e0},{a0} {e0},{a2} {e1},{a2} {e1},{a1} {e2},{a1} \" {editColorName} />\r\n";
+                        xmlPaths += $"    <polygon points=\"{e1},{cl} {e0},{cl} {e0},{cr} {e1},{cr} \" {editColorName} />\r\n";
+                        xmlPaths += $"    <polygon points=\"{e1},{e2},{e0},{e2} {e0},{e0} {e2},{e0} {e2},{e1} {e1},{e1} \" {editColorName} />\r\n";
+                        xmlPaths += $"    <polygon points=\"{cl},{e1} {cr},{e1} {cr},{e0} {cl},{e0} \" {editColorName} />\r\n";
+                        xmlPaths += $"    <polygon points=\"{a0},{e2} {a1},{e2} {a1},{e1} {a2},{e1} {a2},{e0} {a0},{e0} \" {editColorName} />\r\n";
+                        xmlPaths += $"    <polygon points=\"{a0},{cl} {a1},{cl} {a1},{cr} {a0},{cr} \" {editColorName} />\r\n";
                     }
                     break;
                 case 4:
                     {
-                        int a0 = 8, a1 = 10, a2 = 12, e2 = 20, e1 = 22, e0 = 24;
-                        paths += $"    <polygon points=\"{a0},{a0} {a2},{a0} {a2},{a1} {a1},{a1} {a1},{a2} {a0},{a2} \" {editColorName} />\r\n";
-                        paths += $"    <polygon points=\"{e2},{a0} {e0},{a0} {e0},{a2} {e1},{a2} {e1},{a1} {e2},{a1} \" {editColorName} />\r\n";
-                        paths += $"    <polygon points=\"{e1},{e2},{e0},{e2} {e0},{e0} {e2},{e0} {e2},{e1} {e1},{e1} \" {editColorName} />\r\n";
-                        paths += $"    <polygon points=\"{a0},{e2} {a1},{e2} {a1},{e1} {a2},{e1} {a2},{e0} {a0},{e0} \" {editColorName} />\r\n";
+                        int a0 = coordinates[4], a1 = coordinates[5], a2 = coordinates[6],
+                            e2 = coordinates[10], e1 = coordinates[11], e0 = coordinates[12];
+                        xmlPaths += $"    <polygon points=\"{a0},{a0} {a2},{a0} {a2},{a1} {a1},{a1} {a1},{a2} {a0},{a2} \" {editColorName} />\r\n";
+                        xmlPaths += $"    <polygon points=\"{e2},{a0} {e0},{a0} {e0},{a2} {e1},{a2} {e1},{a1} {e2},{a1} \" {editColorName} />\r\n";
+                        xmlPaths += $"    <polygon points=\"{e1},{e2},{e0},{e2} {e0},{e0} {e2},{e0} {e2},{e1} {e1},{e1} \" {editColorName} />\r\n";
+                        xmlPaths += $"    <polygon points=\"{a0},{e2} {a1},{e2} {a1},{e1} {a2},{e1} {a2},{e0} {a0},{e0} \" {editColorName} />\r\n";
                     }
                     break;
             }
 
-            return paths;
+            return xmlPaths;
         }
         /// <summary>
         /// Vrátí paths ve tvaru X, s daným okrajem <paramref name="de"/>, s danou šířkou <paramref name="d1"/> a <paramref name="d2"/>.
         /// </summary>
-        /// <param name="de"></param>
+        /// <param name="coordinates">Fyzické souřadnice</param>
+        /// <param name="subSize">Okraj ikony, číslo v rozsahu 0-4 včetně</param>
         /// <param name="editColorName"></param>
-        /// <param name="d1"></param>
-        /// <param name="d2"></param>
+        /// <param name="thick"></param>
         /// <returns></returns>
-        private static string _GetEditPartXCross(int de, string editColorName, int d1, int d2)
+        private static string _GetEditPartXCross(int[] coordinates, int subSize, string editColorName, int thick)
         {
-            // Reálné souřadnice    Designové souřadnice pro představu:
-            int b0 = de;           // 0
-            int b1 = b0 + d1;      // 4
-            int b2 = b1 + d2;      // 6
-            int c5 = 16;           // 16 = střed
-            int c4 = c5 - d2;      // 14 = před středem
-            int c6 = c5 + d2;      // 18 = za středem
-            int e0 = 32 - de;      // 32
-            int e1 = e0 - d1;      // 28
-            int e2 = e1 - d2;      // 26
+            int th = (thick < 1 ? 1 : (thick > 4 ? 4 : thick));      // Tloušťka půl-linky v ose X a Y
+            int bp = subSize;                                        // Index souřadnice bodu uprostřed okrajové linie (mezi 4 a 5) na začátku
+            int ep = 16 - subSize;                                   // Index souřadnice bodu uprostřed okrajové linie (mezi 2 a 1) na konci
+
+            // Reálné souřadnice    Designové souřadnice pro představu, na 32px, pro thick = 2:
+            int b1 = coordinates[bp];           //  4
+            int b2 = coordinates[bp + th];      //  6
+            int c4 = coordinates[8 - th];       // 14 = před středem
+            int c5 = coordinates[8];            // 16 = střed
+            int c6 = coordinates[8 + th];       // 18 = za středem
+            int e1 = coordinates[ep];           // 28
+            int e2 = coordinates[ep - th];      // 26
             /*   ILUSTRACE JEDNOTLIVÝCH BODŮ
                          4       2
-                         /\      /\
+                       bp/\      /\ep
                       5 /  \    /  \ 1
                         \   \3 /   /
                          \   \/   /
@@ -4959,6 +5033,15 @@ M22,22H10v2H22v-2z " class="Black" />
         /// <summary>
         /// Vrací XML text zahajující SVG image dané velikosti. Generuje záhlaví SVG a otevírá element G.
         /// </summary>
+        /// <param name="coordinates"></param>
+        /// <returns></returns>
+        private static string _GetXmlContentHeader(int[] coordinates)
+        {
+            return _GetXmlContentHeader(coordinates[16]);
+        }
+        /// <summary>
+        /// Vrací XML text zahajující SVG image dané velikosti. Generuje záhlaví SVG a otevírá element G.
+        /// </summary>
         /// <param name="size"></param>
         /// <returns></returns>
         private static string _GetXmlContentHeader(int size)
@@ -4983,21 +5066,66 @@ M22,22H10v2H22v-2z " class="Black" />
             return xml.Replace("'", "\"");
         }
         /// <summary>
+        /// Metoda vrací pole obsahující 17 prvků, určujících klíčové souřadnice pro danou celkovou velikost <paramref name="sizeType"/>.
+        /// Pole se používá pro určení souřadnic v rastru dané velikosti. Pro vstupní hodnotu 16 pole obsahuje čísla: 0,1,2,3,...,14,15,16.
+        /// Pro hodnotu 32 obsahuje čísla 0,2,4,6,...,28,30,32. 
+        /// Pro větší hodnoty obdobně. Pro vstupní hodnoty nezarovnané na dělitele 16 obsahuje nejbližší nižší násobky. 
+        /// Pro vstupní hodnotu menší než 16 výstup odpovídá velikosti 16.
+        /// Modulo (=1 krok) se nachází samozřejmě v prvku [1], protože v prvku [0] je 0.
+        /// <para/>
+        /// Pole slouží jako základna pro určení pozic v ikonách, 
+        /// s tím že použitím pole místo konstant je implicitně řešeno zoomování ikony 
+        /// i určení souřadnic pro nejmenší ikonu 16x16px.
+        /// </summary>
+        /// <param name="sizeType"></param>
+        /// <returns></returns>
+        private static int[] _GetCoordinates(ResourceImageSizeType? sizeType)
+        {
+            int size = (sizeType.HasValue && sizeType.Value == ResourceImageSizeType.Small ? 16 : 32);
+            return _GetCoordinates(size);
+        }
+        /// <summary>
+        /// Metoda vrací pole obsahující 17 prvků, určujících klíčové souřadnice pro danou celkovou velikost <paramref name="size"/>.
+        /// Pole se používá pro určení souřadnic v rastru dané velikosti. Pro vstupní hodnotu 16 pole obsahuje čísla: 0,1,2,3,...,14,15,16.
+        /// Pro hodnotu 32 obsahuje čísla 0,2,4,6,...,28,30,32. 
+        /// Pro větší hodnoty obdobně. Pro vstupní hodnoty nezarovnané na dělitele 16 obsahuje nejbližší nižší násobky. 
+        /// Pro vstupní hodnotu menší než 16 výstup odpovídá velikosti 16.
+        /// Modulo (=1 krok) se nachází samozřejmě v prvku [1], protože v prvku [0] je 0.
+        /// <para/>
+        /// Pole slouží jako základna pro určení pozic v ikonách, 
+        /// s tím že použitím pole místo konstant je implicitně řešeno zoomování ikony 
+        /// i určení souřadnic pro nejmenší ikonu 16x16px.
+        /// </summary>
+        /// <param name="size"></param>
+        /// <returns></returns>
+        private static int[] _GetCoordinates(int size)
+        {
+            int[] result = new int[17];
+            int modulo = (size < 16 ? 1 : size / 16);
+            int coordinate = 0;
+            for (int i = 0; i < 17; i++)
+            {
+                result[i] = coordinate;
+                coordinate += modulo;
+            }
+            return result;
+        }
+        /// <summary>
         /// Vrátí element path, ve tvaru obdélníku (s kulatými rohy) vepsaného do dané velikosti (size), s okraji (padding) o síle okraje (isBold ? 2 : 1).
         /// </summary>
         /// <param name="size"></param>
         /// <param name="isBold"></param>
-        /// <param name="borderParam"></param>
+        /// <param name="styleParam"></param>
         /// <param name="counterClockWise"></param>
         /// <param name="padding"></param>
         /// <returns></returns>
-        private static string _GetXmlPathBorderSquare(int size, bool isBold, string borderParam, bool counterClockWise = false, Padding? padding = null)
+        private static string _GetXmlPathBorderSquare(int size, bool isBold, string styleParam, bool counterClockWise = false, Padding? padding = null)
         {
-            _ResolveSvgDesignParam(ref borderParam);
-            if (size <= 0 || String.IsNullOrEmpty(borderParam)) return "";
+            _ResolveSvgDesignParam(ref styleParam);
+            if (size <= 0 || String.IsNullOrEmpty(styleParam)) return "";
 
             string pathData = _GetXmlPathDataBorderSquare(size, isBold, counterClockWise, padding);
-            string xml = $@"      <path d='{pathData}' {borderParam} />
+            string xml = $@"      <path d='{pathData}' {styleParam} />
 ";
             return xml.Replace("'", "\"");
         }
@@ -5053,17 +5181,17 @@ M22,22H10v2H22v-2z " class="Black" />
         /// </summary>
         /// <param name="size"></param>
         /// <param name="isBold"></param>
-        /// <param name="fillParam"></param>
+        /// <param name="styleParam"></param>
         /// <param name="counterClockWise">Směr: false = po směru ručiček, true = proti směru</param>
         /// <param name="padding"></param>
         /// <returns></returns>
-        private static string _GetXmlPathFillSquare(int size, bool isBold, string fillParam, bool counterClockWise = false, Padding? padding = null)
+        private static string _GetXmlPathFillSquare(int size, bool isBold, string styleParam, bool counterClockWise = false, Padding? padding = null)
         {
-            _ResolveSvgDesignParam(ref fillParam);
-            if (size <= 0 || String.IsNullOrEmpty(fillParam)) return "";
+            _ResolveSvgDesignParam(ref styleParam);
+            if (size <= 0 || String.IsNullOrEmpty(styleParam)) return "";
 
             string pathData = _GetXmlPathDataFillSquare(size, isBold, counterClockWise, padding);
-            string xml = $@"      <path d='{pathData}' {fillParam} />
+            string xml = $@"      <path d='{pathData}' {styleParam} />
 ";
             return xml.Replace("'", "\"");
         }
@@ -5090,12 +5218,87 @@ M22,22H10v2H22v-2z " class="Black" />
             int w = r - l;
             int h = b - t;
 
-            string xml = !counterClockWise ?
-                $"M{l},{t}h{w}v{h}h-{w}v-{h}z" :           // Ve směru hodinových ručiček
-                $"M{l},{t}v{h}h{w}v-{h}h-{w}z";            // V protisměru
+            string xml = _GetXmlPathDataRectangle(l, t, w, h, counterClockWise);
 
             return xml.Replace("'", "\"");
         }
+        /// <summary>
+        /// Vrací kompletní element "path" pro rectangle dané velikosti s danými vlastnostmi, plný (bez vnitřního otvoru)
+        /// </summary>
+        /// <param name="l"></param>
+        /// <param name="t"></param>
+        /// <param name="w"></param>
+        /// <param name="h"></param>
+        /// <param name="styleParam"></param>
+        /// <returns></returns>
+        private static string _GetXmlPathRectangle(int l, int t, int w, int h, string styleParam)
+        {
+            return _GetXmlPathRectangle(l, t, w, h, 0, styleParam);
+        }
+        /// <summary>
+        /// Vrací kompletní element "path" pro rectangle dané velikosti s danými vlastnostmi, uprostřed prázdný = má vnitřní rectangle tak, aby měl danou šířku linie <paramref name="thick"/>
+        /// </summary>
+        /// <param name="l"></param>
+        /// <param name="t"></param>
+        /// <param name="w"></param>
+        /// <param name="h"></param>
+        /// <param name="thick"></param>
+        /// <param name="styleParam"></param>
+        /// <returns></returns>
+        private static string _GetXmlPathRectangle(int l, int t, int w, int h, int thick, string styleParam)
+        {
+            string pathData1 = _GetXmlPathDataRectangle(l, t, w, h, true);
+            string pathData2 = "";
+            if (thick > 0 && thick < w && thick < h)
+            {
+                int th1 = thick;
+                int th2 = 2 * th1;
+                pathData2 = _GetXmlPathDataRectangle(l + th1, t + th1, w - th2, h - th2, false);
+            }
+            string xml = $@"      <path d='{pathData1}{pathData2}' {styleParam} />
+";
+            return xml.Replace("'", "\"");
+        }
+        /// <summary>
+        /// Vrátí čistá data pro XML path pro rectangle na dané souřadnici (l,t) a velikosti (w,h), v daném směru.
+        /// </summary>
+        /// <param name="l"></param>
+        /// <param name="t"></param>
+        /// <param name="w"></param>
+        /// <param name="h"></param>
+        /// <param name="counterClockWise"></param>
+        /// <returns></returns>
+        private static string _GetXmlPathDataRectangle(int l, int t, int w, int h, bool counterClockWise)
+        {
+            string xml = !counterClockWise ?
+                $"M{l},{t}h{w}v{h}h-{w}v-{h}z " :          // Ve směru hodinových ručiček
+                $"M{l},{t}v{h}h{w}v-{h}h-{w}z ";           // V protisměru
+            return xml;
+        }
+
+        private static string _GetXmlPathDocumentInt(int l, int t, int w, int h, int thick, int corner, string styleParam)
+        {
+            string pathData = _GetXmlPathDataRectangle(l, t, w, h, true);
+            string xml = $@"      <path d='{pathData}' {styleParam} />
+";
+            return xml.Replace("'", "\"");
+        }
+        /// <summary>
+        /// Vrací čistá data pro Path reprezentující vnitřek dokumentu
+        /// </summary>
+        /// <returns></returns>
+        private static string _GetXmlPathDataDocumentInt(int l, int t, int w, int h, int thick, int corner)
+        {
+            if (thick < 0) thick = 0;
+            int th1 = thick;
+            int th2 = 2 * th1;
+            int x0 = l + th1;
+            int x1 = l + w - th2;
+            int y0 = t + th1;
+            int y1 = t + h - th2;
+            return "";
+        }
+
         /// <summary>
         /// Vrátí křivku ve tvaru čtvrtkruhu, relativně umístěnou, v daném směru <paramref name="directions"/>;
         /// kde parametr <paramref name="r1"/> určuje půlrádius a <paramref name="r2"/> určuje rádius.
