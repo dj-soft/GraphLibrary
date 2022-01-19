@@ -117,41 +117,4 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <assembly alias="System.Windows.Forms" name="System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" />
-  <data name="document_edit_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Images\Actions24\document-edit(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="document_new_4_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Images\Actions24\document-new-4(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="edit_3_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Images\Actions24\edit-3(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="edit_clear_4_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Images\Actions24\edit-clear-4(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="edit_copy_4_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Images\Actions24\edit-copy-4(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="edit_cut_4_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Images\Actions24\edit-cut-4(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="edit_delete_6_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Images\Actions24\edit-delete-6(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="edit_paste_4_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Images\Actions24\edit-paste-4(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="Menu2" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Images\Menu2.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="select_rectangular_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Images\Actions24\select-rectangular(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="document_export_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Images\Actions24\document-export(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="document_print_3_24_" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Images\Actions24\document-print-3(24).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
 </root>

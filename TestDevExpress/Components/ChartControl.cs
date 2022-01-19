@@ -81,7 +81,8 @@ namespace Noris.Clients.Win.Components
             _Tools.Controls.Add(_SettingsCombo);
 
             _EditButton = new DE.DropDownButton() { Bounds = new System.Drawing.Rectangle(262, 0, 30, 28), DropDownArrowStyle = DE.DropDownArrowStyle.Hide, PaintStyle = DE.Controls.PaintStyles.Light };
-            _EditButton.ImageOptions.Image = ChartResources.Menu2;
+            _EditButton.ImageOptions.Image = AsolDX.DxComponent.GetBitmapImage("images/richedit/documentproperties_16x16.png", AsolDX.ResourceImageSizeType.Small);
+
             // _EditButton.ImageOptions.ImageToTextAlignment = DE.ImageAlignToText.BottomCenter;
             _EditButton.ImageOptions.ImageToTextAlignment = DE.ImageAlignToText.LeftCenter;
 
@@ -416,14 +417,24 @@ namespace Noris.Clients.Win.Components
         private void MenuDeclare()
         {
             _EditDxMenu = new DM.DXPopupMenu();
-            _EditDxMenu.Items.Add(CreateMenuItem("Nový prázdný", "Vytvoří novou prázdnou definici grafu nad týmiž daty.", ChartResources.document_new_4_24_, MenuAction.NewEmpty));
-            _EditDxMenu.Items.Add(CreateMenuItem("Nový z aktuálního grafu", "Vytvoří novou definici grafu nad týmiž daty, vzhled převezme z aktuálního grafu.", ChartResources.document_edit_24_, MenuAction.NewCopy));
-            _EditDxMenu.Items.Add(CreateMenuItem("Nový ze schránky", "Pokusí se najít ve schránce (Clipboard) definici grafu a vloží ji jako novou.", ChartResources.edit_paste_4_24_, MenuAction.PasteFromClipboard));
-            _EditDxMenu.Items.Add(CreateMenuItem("Přejmenovat název nabídky", "Umožní změnit název aktuální definice grafu.", ChartResources.edit_3_24_, MenuAction.Rename));
-            _EditDxMenu.Items.Add(CreateMenuItem("Upravit vzhled", "Otevře editor vzhledu grafu.", ChartResources.select_rectangular_24_, MenuAction.Edit));
-            _EditDxMenu.Items.Add(CreateMenuItem("Uložit do schránky", "Aktuální vzhled grafu uloží do schránky (Clipboard), bude možno jej např. vložit jako soubor nebo přílohu mailu (Ctrl+V)", ChartResources.edit_copy_4_24_, MenuAction.CopyToClipboard));
-            _EditDxMenu.Items.Add(CreateMenuItem("Odstranit definici", "Aktuální definici odebere a zahodí.", ChartResources.edit_delete_6_24_, MenuAction.Delete));
-            _EditDxMenu.Items.Add(CreateMenuItem("Tisk do PDF", "Aktuální graf uloží jako PDF.", ChartResources.document_print_3_24_, MenuAction.ExportPdf));
+
+            var imageNew = AsolDX.DxComponent.GetBitmapImage("images/actions/new_32x32.png");
+            var imageClone = AsolDX.DxComponent.GetBitmapImage("images/xaf/action_clonemerge_clone_object_32x32.png");
+            var imagePaste = AsolDX.DxComponent.GetBitmapImage("images/edit/paste_32x32.png");
+            var imageRename = AsolDX.DxComponent.GetBitmapImage("images/richedit/highlight_32x32.png");
+            var imageEditor = AsolDX.DxComponent.GetBitmapImage("images/chart/chartchangestyle_32x32.png");
+            var imageCopy = AsolDX.DxComponent.GetBitmapImage("images/edit/copy_32x32.png");
+            var imageDelete = AsolDX.DxComponent.GetBitmapImage("images/actions/deletelist_32x32.png");
+            var imagePrintPdf = AsolDX.DxComponent.GetBitmapImage("images/xaf/action_export_topdf_32x32.png");
+
+            _EditDxMenu.Items.Add(CreateMenuItem("Nový prázdný", "Vytvoří novou prázdnou definici grafu nad týmiž daty.", imageNew, MenuAction.NewEmpty));
+            _EditDxMenu.Items.Add(CreateMenuItem("Nový z aktuálního grafu", "Vytvoří novou definici grafu nad týmiž daty, vzhled převezme z aktuálního grafu.", imageClone, MenuAction.NewCopy));
+            _EditDxMenu.Items.Add(CreateMenuItem("Nový ze schránky", "Pokusí se najít ve schránce (Clipboard) definici grafu a vloží ji jako novou.", imagePaste, MenuAction.PasteFromClipboard));
+            _EditDxMenu.Items.Add(CreateMenuItem("Přejmenovat název nabídky", "Umožní změnit název aktuální definice grafu.", imageRename, MenuAction.Rename));
+            _EditDxMenu.Items.Add(CreateMenuItem("Upravit vzhled", "Otevře editor vzhledu grafu.", imageEditor, MenuAction.Edit));
+            _EditDxMenu.Items.Add(CreateMenuItem("Uložit do schránky", "Aktuální vzhled grafu uloží do schránky (Clipboard), bude možno jej např. vložit jako soubor nebo přílohu mailu (Ctrl+V)", imageCopy, MenuAction.CopyToClipboard));
+            _EditDxMenu.Items.Add(CreateMenuItem("Odstranit definici", "Aktuální definici odebere a zahodí.", imageDelete, MenuAction.Delete));
+            _EditDxMenu.Items.Add(CreateMenuItem("Tisk do PDF", "Aktuální graf uloží jako PDF.", imagePrintPdf, MenuAction.ExportPdf));
         }
         /// <summary>
         /// Vytvoří a vrátí jednu položku menu

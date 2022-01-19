@@ -225,9 +225,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         private static void AddResourcesFromResourcesBin(List<IResourceItem> resourceList)
         {
             string resourcePath = DxComponent.ApplicationPath;
-            LoadFromResourcesBinInDirectory(resourcePath, 0, "", resourceList);               // Tady je umístěn soubor "ServerResources.bin" v uživatelském běhu
+            LoadFromResourcesBinInDirectory(resourcePath, 0, "", resourceList);               // Tady je umístěn soubor "ServerResources.bin" v uživatelském běhu klienta
             if (resourceList.Count == 0)
-                LoadFromResourcesBinInDirectory(resourcePath, 3, "Download", resourceList);   // Tady je umístěn v běhu na vývojovém serveru = adresář aplikačního serveru
+                LoadFromResourcesBinInDirectory(resourcePath, 3, "Noris\\Download", resourceList);   // Tady je umístěn v běhu TestDevExpress v Noris99\Noris_Support\TestDevExpress\bin\ : o 3 nahoru = "Noris99", a v něm "Noris\Download"
+            if (resourceList.Count == 0)
+                LoadFromResourcesBinInDirectory(resourcePath, 3, "Download", resourceList);   // Tady je umístěn v běhu klienta na vývojovém serveru = adresář aplikačního serveru Noris/Download
         }
         /// <summary>
         /// Načte obsah souboru "ServerResources.bin" z určeného adresáře (počet úrovní nahoru nahoru od aktuálního, a daný subdir)
