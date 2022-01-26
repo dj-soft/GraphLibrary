@@ -143,7 +143,7 @@ namespace TestDevExpress.Forms
             view.BestFitColumns();
             var timeFitColumns = DxComponent.LogGetTimeElapsed(timeStart, DxComponent.LogTokenTimeSec);
 
-            StatusText = $"Tvorba GridSplitContainer: {timeInit} sec; Přidání na Form: {timeAdd} sec; {dataLog}Generování View: {timeCreateView} sec; BestFitColumns: {timeFitColumns} sec";
+            StatusText = $"Tvorba GridSplitContainer: {timeInit} sec;     Přidání na Form: {timeAdd} sec;     {dataLog}Generování View: {timeCreateView} sec;     BestFitColumns: {timeFitColumns} sec";
         }
         private void FillBrowse(int rowCount)
         {
@@ -160,7 +160,7 @@ namespace TestDevExpress.Forms
             _Grid.DataSource = data;
             var timeSetData = DxComponent.LogGetTimeElapsed(timeStart, DxComponent.LogTokenTimeSec);
 
-            string logText = $"Generování DataTable[{rowCount}]: {timeCreateData} sec; Vložení DataTable do Gridu: {timeSetData} sec; ";
+            string logText = $"Generování DataTable[{rowCount}]: {timeCreateData} sec;     Vložení DataTable do Gridu: {timeSetData} sec;     ";
             return logText;
         }
         private DevExpress.XtraGrid.GridSplitContainer _GridContainer;
@@ -168,6 +168,9 @@ namespace TestDevExpress.Forms
 
         private System.Data.DataTable _CreateGridDataTable(int rowCount)
         {
+            var currWords = Random.ActiveWordBook;
+            Random.ActiveWordBook = Random.WordBookType.TaborSvatych;
+            
             System.Data.DataTable table = new System.Data.DataTable();
 
             table.Columns.Add(new System.Data.DataColumn() { ColumnName = "id", Caption = "ID", DataType = typeof(int) });
@@ -179,6 +182,7 @@ namespace TestDevExpress.Forms
             table.Columns.Add(new System.Data.DataColumn() { ColumnName = "quantity", Caption = "Počet kusů", DataType = typeof(decimal) });
             table.Columns.Add(new System.Data.DataColumn() { ColumnName = "price_unit", Caption = "Cena jednotková", DataType = typeof(decimal) });
             table.Columns.Add(new System.Data.DataColumn() { ColumnName = "price_total", Caption = "Cena celková", DataType = typeof(decimal) });
+            table.Columns.Add(new System.Data.DataColumn() { ColumnName = "note", Caption = "Poznámka", DataType = typeof(string) });
 
             string[] categories = new string[] { "NÁKUP", "PRODEJ", "SKLAD", "TUZEMSKO", "EXPORT", "IMPORT" };
             int year = DateTime.Now.Year;
@@ -194,8 +198,11 @@ namespace TestDevExpress.Forms
                 decimal qty = (decimal)(Random.Rand.Next(10, 1000)) / 10m;
                 decimal price1 = (decimal)(Random.Rand.Next(10, 10000)) / 10m;
                 decimal priceT = qty * price1;
-                table.Rows.Add(id, refer, nazev, category, dateInp, dateOut, qty, price1, priceT);
+                string note = Random.GetSentence(5, 9, true);
+                table.Rows.Add(id, refer, nazev, category, dateInp, dateOut, qty, price1, priceT, note);
             }
+
+            Random.ActiveWordBook = currWords;
 
             return table;
         }

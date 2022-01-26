@@ -96,7 +96,7 @@ namespace TestDevExpress
             for (int w = 0; w < count; w++)
                 sentence += (sentence.Length > 0 ? ((Rand.Next(12) < 1) ? ", " : " ") : "") + GetWord((w == 0));
             if (addDot)
-                sentence += ".";
+                sentence += GetItem(SentenceDots);
             return sentence;
         }
         #endregion
@@ -107,12 +107,23 @@ namespace TestDevExpress
         public static string[] WordBook { get { if (_WordBook is null) _WordBook = _GetWordBook(); return _WordBook; } }
         private static string[] _WordBook;
         /// <summary>
+        /// Aktivní slovní zásoba
+        /// </summary>
+        public static WordBookType ActiveWordBook { get { return _ActiveWordBook; } set { _ActiveWordBook = value; _WordBook = null; } }
+        private static WordBookType _ActiveWordBook = WordBookType.TriMuziNaToulkach;
+        /// <summary>
+        /// Zdroj slovní zásoby
+        /// </summary>
+        public enum WordBookType { TriMuziNaToulkach, TaborSvatych,  }
+        /// <summary>
         /// Vrátí pole náhodných slov
         /// </summary>
         /// <returns></returns>
         private static string[] _GetWordBook()
         {
-            string text = Text0B;
+            string text = (_ActiveWordBook == WordBookType.TriMuziNaToulkach ? Text0 : 
+                          (_ActiveWordBook == WordBookType.TaborSvatych ? Text1 :
+                          Text0));
 
             // Některé znaky odstraníme, text rozdělíme na slova, a z nich vybereme pouze slova se 4 znaky a více:
             text = text.Replace("„", " ");
@@ -123,6 +134,8 @@ namespace TestDevExpress
             text = text.Replace(":", " ");
             text = text.Replace("?", " ");
             text = text.Replace("!", " ");
+            text = text.Replace("«", " ");
+            text = text.Replace("»", " ");
             text = text.ToLower();
             var words = text.Split(" \r\n\t".ToCharArray(), StringSplitOptions.RemoveEmptyEntries);
             return words.Where(w => w.Length >= 4).ToArray();
@@ -131,78 +144,6 @@ namespace TestDevExpress
         /// Text "Tři muži na toulkách"
         /// </summary>
         public static string Text0
-        {
-            get
-            {
-                return @"„Potřebujeme změnit způsob života,“ řekl Harris.
-V tom okamžiku se otevřely dveře a nakoukla k nám paní Harrisová; že prý ji posílá Ethelberta, aby mi
-připomněla, že kvůli Clarencovi nesmíme přijít domů moc pozdě. Já si teda myslím, že Ethleberta si o naše děti
-dělá zbytečné starosti. Tomu klukovi vlastně vůbec nic nebylo. Dopoledne byl venku s tetou; a když se roztouženě
-zakouká do výkladní skříně u cukráře, ta teta ho vezme do krámu a tak dlouho mu kupuje trubičky se šlehačkou a
-mandlové dorty, dokud kluk neprohlásí, že už nemůže, a zdvořile, leč rezolutně cokoli dalšího sníst neodmítne. U
-oběda pak pochopitelně nechce druhou porci nákypu a Ethelberta si hned myslí, že je to příznak nějaké nemoci.
-Paní Harrisová dále dodala, že bychom vůbec měli přijít co nejdřív nahoru, pro své vlastní blaho, jinak že
-zmeškáme výstup slečny Muriel, která přednese Bláznivou svačinu z Alenky v kraji divů. Muriel je ta Harrisova
-starší, osmiletá; dítě bystré a inteligentní; ale já za svou osobu ji poslouchám raději, když recituje něco vážného.
-Řekli jsme paní Harrisové, že jen dokouříme cigarety a přijdeme co nevidět; a prosili jsme ji, aby Muriel
-nedovolila začít, dokud tam nebudeme. Slíbila, že se vynasnaží udržet to dítko na uzdě co nejdéle, a odešla. A
-jakmile se za ní zavřely dveře, Harris se vrátil k větě, při níž ho prve přerušila.
-„Důkladně změnit způsob života,“ řekl. „No však vy víte, jak to myslím.“
-Problém byl jenom v tom, jak toho dosáhnout.
-George navrhoval „úřední záležitost“. To bylo pro George typické, takový návrh. Svobodný mládenec se
-domnívá, že vdaná žena nemá ponětí, jak se vyhnout parnímu válci. Znal jsem kdysi jednoho mládence, inženýra,
-který si usmyslil, že si „v úřední záležitosti“ vyjede do Vídně. Jeho žena si přála vědět, v jaké úřední záležitosti.
-Řekl jí tedy, že dostal za úkol navštívit všechny doly v okolí rakouského hlavního města a podat o nich hlášení.
-Manželka prohlásila, že pojede s ním; taková to byla manželka. Pokoušel se jí to rozmluvit; vykládal jí, že důl není
-vhodné prostředí pro krásnou ženu. Odvětila, to že instinktivně vycítila sama, a že s ním tedy nebude fárat dolů do
-šachet; jen ho k nim každé ráno doprovodí a pak se až do jeho návratu na zem bude bavit po svém; bude se dívat
-po vídeňských obchodech a sem tam si koupí pár věciček, které se jí třeba budou hodit. Protože s tím programem
-přišel sám, nevěděl, chudák, jak se z něho vyvléci; a tak deset dlouhých letních dní skutečně trávil v dolech v okolí
-Vídně a po večerech o nich psal hlášení a jeho žena je sama odesílala jeho firmě, která o ně vůbec neměla zájem.
-Ne že bych si myslel, že Ethelberta nebo paní Harrisová patří k téhle sortě žen, ale s „úřední záležitostí“ se
-prostě nemá přehánět - tu si má člověk schovávat jen pro případ potřeby zcela naléhavé.
-„Ne, ne,“ pravil jsem tedy, „na to se musí jít zpříma a mužně. Já řeknu Ethelbertě, že jsem dospěl k závěru, že
-manžel nikdy nepozná pravou cenu štěstí, když se mu těší neustále. Řeknu jí, že se chci naučit vážit si výhod, jichž
-se mi dostává, vážit si jich tak, jak si to zasluhují, a z toho důvodu že se nejméně na tři týdny hodlám násilím
-odtrhnout od ní a od dětí. A řeknu jí,“ dodal jsem obraceje se k Harrisovi, „žes to byl ty, kdo mě na mé povinnosti
-v tomto směru upozornil; tobě že vděčíme...“
-Harris tak nějak zbrkle postavil na stůl svou sklenici.
-„Jestli tě smím o něco prosit, člověče,“ přerušil mě, „tak nic takového radši neříkej. Ethelberta by se o tom
-určitě zmínila mé ženě a... no, já si zkrátka nechci přisvojovat zásluhy, které mi nepatří.“
-„Jak to, že ti nepatří?“ pravil jsem. „To byl přece tvůj nápad!“
-„Ale tys mě na něj přivedl,“ znovu mě přerušil Harris. „Říkal jsi přece, že to je chyba, když člověk zapadne do
-vyježděných kolejí, a nepřetržitý život v kruhu rodinném že otupuje ducha.“
-„To bylo míněno všeobecně,“ vysvětloval jsem.
-„Mně to připadalo velice výstižné,“ pravil Harris, „a říkal jsem si, že to budu citovat Claře; Clara si o tobě
-myslí, že jsi člověk velice rozumný, vím, že má o tobě vysoké mínění. A tak jsem přesvědčen, že...“
-Teď jsem zase já přerušil jeho: „Hele, radši nebudeme nic riskovat. Tohle jsou choulostivé věci. A já už vím,
-jak na to. Řekneme, že s tím nápadem přišel George.“
-Georgeovi, jak si často s rozhořčením všímám, naprosto chybí přívětivá ochota podat někomu pomocnou ruku.
-Řekli byste, že příležitost vysvobodit dva staré kamarády z těžkého dilematu přímo uvítá; ale on místo toho velice
-zprotivněl.
-„Jen si to zkuste,“ pravil, „a já jim oběma řeknu, že můj původní návrh zněl, abychom jeli společně, s dětmi a s
-celými rodinami; já že bych byl s sebou vzal svou tetu a že jsme si mohli najmout rozkošný starý zámeček v
-Normandii, o kterém dobře vím a který stojí hned u moře, kde je podnebí speciálně vhodné pro choulostivé dětičky
-a kde mají mléko, jaké se v Anglii nesežene. A ještě jim řeknu, že vy jste ten návrh úplně rozmetali kategorickou
-námitkou, že nám bude mnohem líp, když pojedeme sami.“
-S člověkem, jako je George, nemá smysl jednat vlídně; na takového platí jen pevná rozhodnost.
-„Jen si to zkus,“ pravil Harris, „a já, co mě se týče, tu tvou nabídku okamžitě přijmu. A ten zámek si najmeme.
-Ty s sebou vezmeš tetu - o to se postarám - a protáhneme si to na celý měsíc. Naše děcka se v tobě vidí; Jerome a
-já nebudeme nikdy k dosažení. Slíbil jsi, že Edgara naučíš chytat ryby; a hrát si na divokou zvěř, to taky zůstane na
-tobě. Dick a Muriel beztak od minulé neděle nemluví o ničem jiném než o tom, jak jsi jim dělal hrocha. Budeme v
-hájích pořádat společné pikniky - jenom nás jedenáct - a večer co večer bude na programu hudba a recitace.
-Muriel, jak víš, umí zpaměti už šest básniček; a ostatní děti se učí ohromně rychle.“
-A tak se George podvolil - on nemá moc pevné zásady -, i když ne zrovna ochotně. Co mu prý zbývá, když jsme
-takoví neřádi a zbabělci a falešníci, že bychom se dokázali snížit k tak mrzkým úkladům? A jestli prý nemám v
-úmyslu vypít celou láhev toho claretu sám, tak ať mu laskavě naleju aspoň jednu skleničku. A ještě dodal, poněkud
-nelogicky, že je to ostatně úplně jedno, neboť jak Ethelberta tak paní Harrisová jsou ženy velice prozíravé a mají o
-něm mnohem lepší mínění, než aby byť jenom na okamžik uvěřily, že by takový návrh mohl opravdu vyjít od něho.";
-            }
-        }
-        /// <summary>
-        /// Text "Tři muži na toulkách" celá první kapitola
-        /// </summary>
-        public static string Text0B
         {
             get
             {
@@ -592,6 +533,21 @@ osobnosti. Západ ve svojí jediné pravdě… Hlas zpravodaje vytrhl profesora 
 „Vláda shromážděná kolem prezidenta republiky zasedala celý den v Elysejském paláci.";
             }
         }
+        /// <summary>
+        /// Různé varianty tečky za větou.
+        /// Nejčastější tečka za větou je tečka (7x častější než ostatní), ale může tam být trojtečka nebo otazník nebo vykřičník
+        /// </summary>
+        protected static string[] SentenceDots 
+        {
+            get
+            {
+                if (_SentenceDots is null)
+                    // Nejčastější tečka za větou je tečka (7x častější než ostatní), ale může tam být trojtečka nebo otazník nebo vykřičník
+                    _SentenceDots = ".×.×.×.×.×.×.×...×?×!".Split('×');
+                return _SentenceDots;
+            }
+        }
+        private static string[] _SentenceDots = null;
         #endregion
         #region Generátor náhodné pravděpodobnosti, čísla, barvy...
         /// <summary>
