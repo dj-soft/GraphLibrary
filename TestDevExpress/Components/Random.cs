@@ -126,7 +126,7 @@ namespace TestDevExpress
                           (_ActiveWordBook == WordBookType.CampOfSaints ? Text_CampOfSaints :
                           Text_TriMuziNaToulkach)));
 
-            // Některé znaky odstraníme, text rozdělíme na slova, a z nich vybereme pouze slova se 4 znaky a více:
+            // Některé znaky odstraníme, text rozdělíme na slova, a z nich vybereme pouze slova se 3 znaky a více:
             text = text.Replace("„", " ");
             text = text.Replace("“", " ");
             text = text.Replace(".", " ");
@@ -138,6 +138,14 @@ namespace TestDevExpress
             text = text.Replace(",", " ");
             text = text.Replace("«", " ");
             text = text.Replace("»", " ");
+            text = text.Replace("(", " ");
+            text = text.Replace(")", " ");
+            text = text.Replace("[", " ");
+            text = text.Replace("]", " ");
+            text = text.Replace("{", " ");
+            text = text.Replace("}", " ");
+            text = text.Replace("<", " ");
+            text = text.Replace(">", " ");
             text = text.Replace("0", " ");
             text = text.Replace("1", " ");
             text = text.Replace("2", " ");
@@ -152,7 +160,7 @@ namespace TestDevExpress
             text = text.Replace("=", " ");
             text = text.ToLower();
             var words = text.Split(" \r\n\t".ToCharArray(), StringSplitOptions.RemoveEmptyEntries);
-            return words.Where(w => w.Length >= 4).ToArray();
+            return words.Where(w => w.Length >= 3).ToArray();
         }
         /// <summary>
         /// Text "Tři muži na toulkách"

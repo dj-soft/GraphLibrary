@@ -48,14 +48,16 @@ namespace TestDevExpress.Forms
 
             group = new DataRibbonGroup() { GroupId = "params", GroupText = "BROWSE TEST" };
             page.Groups.Add(group);
+            string resourceClear = "svgimages/spreadsheet/removetablerows.svg";
             string resourceAddIcon = "svgimages/richedit/addparagraphtotableofcontents.svg";
-            string resourceGenericText = "@textonly|×|fill='black'||N";       // textonly; parametry: text, barva písma, font písma, Bold
-            string resourceAdd = $"«{resourceAddIcon}»«{resourceGenericText }»";
-            resourceAdd = resourceAddIcon;       // Nebudu dávat text overlay.
-            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Test.Add1k", Text = "Vlož 1000", ToolTipText = "Do Gridu vloží 1 000 řádek", ItemType = RibbonItemType.Button, ImageName = resourceAdd.Replace("×", "1K"), RibbonStyle = RibbonItemStyles.Large });
-            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Test.Add10k", Text = "Vlož 10000", ToolTipText = "Do Gridu vloží 10 000 řádek", ItemType = RibbonItemType.Button, ImageName = resourceAdd.Replace("×", "10K"), RibbonStyle = RibbonItemStyles.Large });
-            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Test.Add100k", Text = "Vlož 100000", ToolTipText = "Do Gridu vloží 100 000 řádek", ItemType = RibbonItemType.Button, ImageName = resourceAdd.Replace("×", "100K"), RibbonStyle = RibbonItemStyles.Large });
-            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Test.Add500k", Text = "Vlož 500000", ToolTipText = "Do Gridu vloží 500 000 řádek", ItemType = RibbonItemType.Button, ImageName = resourceAdd.Replace("×", "500K"), RibbonStyle = RibbonItemStyles.Large });
+            string resourceBestFit = "svgimages/richedit/tableautofitwindow.svg";
+
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Test.Clear", Text = "Smaž řádky", ToolTipText = "Do Gridu vloží tabulku bez řádků", ItemType = RibbonItemType.Button, ImageName = resourceClear, RibbonStyle = RibbonItemStyles.Large });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Test.Add1k", Text = "Vlož 1000", ToolTipText = "Do Gridu vloží 1 000 řádek", ItemType = RibbonItemType.Button, ImageName = resourceAddIcon, RibbonStyle = RibbonItemStyles.Large, ItemIsFirstInGroup = true });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Test.Add10k", Text = "Vlož 10000", ToolTipText = "Do Gridu vloží 10 000 řádek", ItemType = RibbonItemType.Button, ImageName = resourceAddIcon, RibbonStyle = RibbonItemStyles.Large });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Test.Add100k", Text = "Vlož 100000", ToolTipText = "Do Gridu vloží 100 000 řádek", ItemType = RibbonItemType.Button, ImageName = resourceAddIcon, RibbonStyle = RibbonItemStyles.Large });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Test.Add500k", Text = "Vlož 500000", ToolTipText = "Do Gridu vloží 500 000 řádek", ItemType = RibbonItemType.Button, ImageName = resourceAddIcon, RibbonStyle = RibbonItemStyles.Large });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Test.BestFit", Text = "Uprav šířky", ToolTipText = "V Gridu upraví šířky sloupců podle jejich obsahu", ItemType = RibbonItemType.Button, ImageName = resourceBestFit, RibbonStyle = RibbonItemStyles.Large });
 
             this.DxRibbon.Clear();
             this.DxRibbon.AddPages(pages);
@@ -66,6 +68,9 @@ namespace TestDevExpress.Forms
         {
             switch (e.Item.ItemId)
             {
+                case "Dx.Test.Clear":
+                    FillBrowse(0);
+                    break;
                 case "Dx.Test.Add1k":
                     FillBrowse(1000, Random.WordBookType.TriMuziNaToulkach);
                     break;
@@ -77,6 +82,9 @@ namespace TestDevExpress.Forms
                     break;
                 case "Dx.Test.Add500k":
                     FillBrowse(500000, Random.WordBookType.CampOfSaints);
+                    break;
+                case "Dx.Test.BestFit":
+                    BestFitBrowse();
                     break;
             }
         }
@@ -107,11 +115,14 @@ namespace TestDevExpress.Forms
         public string StatusText { get { return _StatusItemTitle?.Caption; } set { if (_StatusItemTitle != null) _StatusItemTitle.Caption = value; } }
         #endregion
         #region Browse
+        private DevExpress.XtraGrid.GridSplitContainer _GridContainer;
+        private DevExpress.XtraGrid.GridControl _Grid;
+        private DevExpress.XtraGrid.Views.Grid.GridView _View;
         /// <summary>
-        /// Vytvoří objekt Browse a dá mu základní vzhled, ale nikoli data.
-        /// Data je třeba dodat explicitně.
+        /// Vytvoří objekt Browse a dá mu základní vzhled.
+        /// Vloží tabulku s daty s daným počtem řádků, default = 0 (tzn. budou tam jen sloupce!).
         /// </summary>
-        protected void CreateBrowse()
+        protected void CreateBrowse(int rowCount = 0)
         {
             var timeStart = DxComponent.LogTimeCurrent;
 
@@ -129,11 +140,11 @@ namespace TestDevExpress.Forms
             var timeAdd = DxComponent.LogGetTimeElapsed(timeStart, DxComponent.LogTokenTimeSec);
 
             // Specify a data source:
-            int rowCount = 5000;
             string dataLog = FillData(rowCount, Random.WordBookType.TriMuziNaToulkach);
        
             timeStart = DxComponent.LogTimeCurrent;
             var view = grid.AvailableViews["GridView"].CreateView(grid) as DevExpress.XtraGrid.Views.Grid.GridView;
+            _View = view;
             view.OptionsFind.AlwaysVisible = true;
             view.OptionsDetail.DetailMode = DevExpress.XtraGrid.Views.Grid.DetailMode.Embedded;
             grid.MainView = view;
@@ -146,11 +157,32 @@ namespace TestDevExpress.Forms
 
             StatusText = $"Tvorba GridSplitContainer: {timeInit} sec;     Přidání na Form: {timeAdd} sec;     {dataLog}Generování View: {timeCreateView} sec;     BestFitColumns: {timeFitColumns} sec";
         }
+        /// <summary>
+        /// Vytvoří Main data a vloží je do <see cref="_Grid"/>, a do Status baru vloží odpovídající text (časy)
+        /// </summary>
+        /// <param name="rowCount"></param>
+        /// <param name="wordBookType"></param>
         private void FillBrowse(int rowCount, Random.WordBookType wordBookType = Random.WordBookType.TriMuziNaToulkach)
         {
             string dataLog = FillData(rowCount, wordBookType);
             StatusText = dataLog;
         }
+        /// <summary>
+        /// Vytvoří Main data a vloží je do <see cref="_Grid"/>, a do Status baru vloží odpovídající text (časy)
+        /// </summary>
+        private void BestFitBrowse()
+        {
+            var timeStart = DxComponent.LogTimeCurrent;
+            _View.BestFitColumns();
+            var timeFitColumns = DxComponent.LogGetTimeElapsed(timeStart, DxComponent.LogTokenTimeSec);
+            StatusText = $"BestFitColumns: {timeFitColumns} sec";
+        }
+        /// <summary>
+        /// Vytvoří Main data a vloží je do <see cref="_Grid"/>, sestaví a vrátí text (obsahující časy) určený do Status baru (ale nevkládá jej tam)
+        /// </summary>
+        /// <param name="rowCount"></param>
+        /// <param name="wordBookType"></param>
+        /// <returns></returns>
         private string FillData(int rowCount, Random.WordBookType wordBookType = Random.WordBookType.TriMuziNaToulkach)
         {
             var timeStart = DxComponent.LogTimeCurrent;
@@ -164,9 +196,12 @@ namespace TestDevExpress.Forms
             string logText = $"Generování DataTable[{rowCount}]: {timeCreateData} sec;     Vložení DataTable do Gridu: {timeSetData} sec;     ";
             return logText;
         }
-        private DevExpress.XtraGrid.GridSplitContainer _GridContainer;
-        private DevExpress.XtraGrid.GridControl _Grid;
-
+        /// <summary>
+        /// Vytvoří a vrátí data pro hlavní tabulku
+        /// </summary>
+        /// <param name="rowCount"></param>
+        /// <param name="wordBookType"></param>
+        /// <returns></returns>
         private System.Data.DataTable _CreateGridDataTable(int rowCount, Random.WordBookType wordBookType = Random.WordBookType.TriMuziNaToulkach)
         {
             var currWords = Random.ActiveWordBook;
