@@ -217,6 +217,9 @@
     </Compile>
     <Compile Include="Components\Random.cs" />
     <Compile Include="Components\ThreadManager.cs" />
+    <Compile Include="Forms\BrowseForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="Forms\DataFormV1.cs">
       <SubType>Form</SubType>
     </Compile>

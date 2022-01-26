@@ -137,6 +137,9 @@ namespace TestDevExpress.Forms
         private DevExpress.XtraBars.BarStaticItem _StatusItemTitle;
         #endregion
         #region Ribbon a StatusBar - obsah a rozcestník
+        /// <summary>
+        /// Připraví obsah Ribbonu
+        /// </summary>
         protected override void DxRibbonPrepare()
         {
             this.UseLazyLoad = true;
@@ -230,6 +233,9 @@ namespace TestDevExpress.Forms
             if (this._TestPanel2a != null) this._TestPanel2a.UseLazyLoad = UseLazyLoad;
             if (this._TestPanel2b != null) this._TestPanel2b.UseLazyLoad = UseLazyLoad;
         }
+        /// <summary>
+        /// Připraví obsah StatusBaru
+        /// </summary>
         protected override void DxStatusPrepare()
         {
             this._StatusItemTitle = CreateStatusBarItem();

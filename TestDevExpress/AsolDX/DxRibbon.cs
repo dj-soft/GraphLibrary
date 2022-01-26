@@ -570,7 +570,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public event EventHandler<TEventArgs<IRibbonPage>> SelectedDxPageChanged;
         #endregion
-        #region Quick Search menu - po dobu přítomnosti v něm je potlačeno provádění OnDemand Load, zajistí si donačtení dalších prvků
+        #region Quick Search menu
         /// <summary>
         /// Inicializace eventů v prvku SearchEditItemLink?.Edit
         /// </summary>
@@ -682,6 +682,9 @@ namespace Noris.Clients.Win.Components.AsolDX
             // Pokud uživatel nic nezadal, skončíme:
             if (String.IsNullOrEmpty(e.SearchString) || e.SearchString.Trim().Length < 1) return;
 
+            // Modifikujeme záhlaví nalezených prvků tak, aby obsahovalo název stránky + název grupy:
+            ModifySearchMenuTitles(e);
+
             // Najdeme klíče nativních prvků v menu, abychom je nepřidávali duplicitně:
             var menuItemsDict = e.Menu.ItemLinks.Select(l => l.Item).Where(i => (i != null && !String.IsNullOrEmpty(i.Name))).CreateDictionary(i => i.Name, true);
             // Tento i Child Ribbony sestaví soupis těch přidaných prvků, které mají být přítomny v Search menu:
@@ -706,6 +709,36 @@ namespace Noris.Clients.Win.Components.AsolDX
                 items.ForEachExec(l => e.Menu.RemoveLink(l));
             _AddedSearchMenuItems = null;
         }
+        private void ModifySearchMenuTitles(RibbonSearchMenuEventArgs e)
+        {
+            BarHeaderItem lastHeaderItem = null;
+            bool isModified = false;
+            foreach (BarItemLink link in e.Menu.ItemLinks)
+            {
+                if (link.Item is BarHeaderItem headerItem)
+                {
+                    lastHeaderItem = headerItem;
+                    isModified = false;
+                }
+                else if (link.Visible)
+                {
+                    link.UserRibbonStyle = DevExpress.XtraBars.Ribbon.RibbonItemStyles.SmallWithText;
+                    if (lastHeaderItem != null && !isModified && link.Item is BarItem item && TryGetSearchMenuTitle(item, out string titleCaption))
+                    {
+                        lastHeaderItem.Caption = titleCaption;
+                        isModified = true;
+                    }
+                }
+            }
+        }
+        private bool TryGetSearchMenuTitle(BarItem item, out string titleCaption)
+        {
+            titleCaption = null;
+            if (!_TryGetIRibbonItem(item, out var iRibbonItem)) return false;
+            if (iRibbonItem.ParentGroup is null || iRibbonItem.ParentGroup.ParentPage is null) return false;
+            titleCaption = $"{iRibbonItem.ParentGroup.ParentPage.PageText}: {iRibbonItem.ParentGroup.GroupText}";
+            return true;
+        }
         /// <summary>
         /// Metoda zajistí doplnění SearchEdit položek o odpovídající položky z přídavných prvků v poli <see cref="SearchEditItems"/> do předaného pole <paramref name="addGroupItems"/>
         /// za this Ribbon a pak i rekurzivně za Child Ribbony.
@@ -726,7 +759,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                         // a) do indexu prvků, které jsou nalezeny (abychom shodný prvek nezobrazovali dvakrát):
                         menuItemsDict.Add(iRibbonItem.ItemId, null);
 
-                        // b) zajistím, že v IRibbonItem bude vytvořen fyzický BarItem, protože ten musí vytvořit this Ribbon jako aoutor, on si pak bude obsluhovat Click event na itemu:
+                        // b) zajistím, že v IRibbonItem bude vytvořen fyzický BarItem, protože ten musí vytvořit this Ribbon jako autor, on si pak bude obsluhovat Click event na itemu:
                         PrepareSearchEditBarItem(iRibbonItem);
 
                         // c) do pole, které obsahuje grupy a pole prvků v grupách:
@@ -4746,6 +4779,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 qatPanel.ButtonsPosition = ToolbarPosition.RightSideCenter;
                 qatPanel.ButtonsTypes =
                     ListBoxButtonType.MoveTop | ListBoxButtonType.MoveUp | ListBoxButtonType.MoveDown | ListBoxButtonType.MoveBottom |
+                    ListBoxButtonType.ClipCopy |
                     ListBoxButtonType.SelectAll | ListBoxButtonType.Delete; // | ListBoxButtonType.ClipCopy | ListBoxButtonType.ClipCut | ListBoxButtonType.ClipPaste;
 
                 var result = form.ShowDialog(this.FindForm());
