@@ -2867,7 +2867,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
             dialogArgs.Title = "Dialog [OK] ExtraLong";
             dialogArgs.StatusBarVisible = true;
             dialogArgs.SystemIcon = NWC.DialogSystemIcon.Information;
-            dialogArgs.MessageText = Random.Text1;
+            dialogArgs.MessageText = Random.Text_TaborSvatych;
             dialogArgs.PrepareButtons(DialogResult.OK, DialogResult.No);
             dialogArgs.ButtonsAlignment = AlignContentToSide.Center;
             dialogArgs.ButtonHeight = 26;

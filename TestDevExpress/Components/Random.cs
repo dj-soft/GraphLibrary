@@ -114,16 +114,17 @@ namespace TestDevExpress
         /// <summary>
         /// Zdroj slovní zásoby
         /// </summary>
-        public enum WordBookType { TriMuziNaToulkach, TaborSvatych,  }
+        public enum WordBookType { TriMuziNaToulkach, TaborSvatych, CampOfSaints  }
         /// <summary>
         /// Vrátí pole náhodných slov
         /// </summary>
         /// <returns></returns>
         private static string[] _GetWordBook()
         {
-            string text = (_ActiveWordBook == WordBookType.TriMuziNaToulkach ? Text0 : 
-                          (_ActiveWordBook == WordBookType.TaborSvatych ? Text1 :
-                          Text0));
+            string text = (_ActiveWordBook == WordBookType.TriMuziNaToulkach ? Text_TriMuziNaToulkach : 
+                          (_ActiveWordBook == WordBookType.TaborSvatych ? Text_TaborSvatych :
+                          (_ActiveWordBook == WordBookType.CampOfSaints ? Text_CampOfSaints :
+                          Text_TriMuziNaToulkach)));
 
             // Některé znaky odstraníme, text rozdělíme na slova, a z nich vybereme pouze slova se 4 znaky a více:
             text = text.Replace("„", " ");
@@ -134,8 +135,21 @@ namespace TestDevExpress
             text = text.Replace(":", " ");
             text = text.Replace("?", " ");
             text = text.Replace("!", " ");
+            text = text.Replace(",", " ");
             text = text.Replace("«", " ");
             text = text.Replace("»", " ");
+            text = text.Replace("0", " ");
+            text = text.Replace("1", " ");
+            text = text.Replace("2", " ");
+            text = text.Replace("3", " ");
+            text = text.Replace("4", " ");
+            text = text.Replace("5", " ");
+            text = text.Replace("6", " ");
+            text = text.Replace("7", " ");
+            text = text.Replace("8", " ");
+            text = text.Replace("9", " ");
+            text = text.Replace("+", " ");
+            text = text.Replace("=", " ");
             text = text.ToLower();
             var words = text.Split(" \r\n\t".ToCharArray(), StringSplitOptions.RemoveEmptyEntries);
             return words.Where(w => w.Length >= 4).ToArray();
@@ -143,7 +157,7 @@ namespace TestDevExpress
         /// <summary>
         /// Text "Tři muži na toulkách"
         /// </summary>
-        public static string Text0
+        public static string Text_TriMuziNaToulkach
         {
             get
             {
@@ -436,7 +450,7 @@ Georgeovi.";
         /// <summary>
         /// Text "Tábor svatých"
         /// </summary>
-        public static string Text1
+        public static string Text_TaborSvatych
         {
             get
             {
@@ -533,6 +547,159 @@ osobnosti. Západ ve svojí jediné pravdě… Hlas zpravodaje vytrhl profesora 
 „Vláda shromážděná kolem prezidenta republiky zasedala celý den v Elysejském paláci.";
             }
         }
+        /// <summary>
+        /// Text "Camp Of Saints"
+        /// </summary>
+        public static string Text_CampOfSaints
+        {
+            get
+            {
+                return @"The old professor had a rather simple thought. Given the wholly abnormal conditions, he had read, and reasoned, and even written
+too much—versed as he was in the workings of the mind—to dare propose anything, even to himself, but the most banal of reflections,
+worthy of a schoolboy’s theme. It was a lovely day, warm but not hot, with a cool spring breeze rolling gently and noiselessly over the
+covered terrace outside the house. His was one of the last houses up toward the crest of the hill, perched on the rocky slope like an
+outpost guarding the old brown-hued village that stood out above the landscape, towering over it all, as far as the tourist resort down
+below; as far as the sumptuous boulevard along the water, with its green palms, tips barely visible, and its fine white homes; as far as the
+sea itself, calm and blue, the rich man’s sea, now suddenly stripped of all the opulent veneer that usually overspread its surface—the
+chrome-covered yachts, the muscle-bulging skiers, the gold-skinned girls, the fat bellies lining the decks of sailboats, large but
+discreet—and now, stretching over that empty sea, aground some fifty yards out, the incredible fleet from the other side of the globe, the
+rusty, creaking fleet that the old professor had been eyeing since morning. The stench had faded away at last, the terrible stench of
+latrines, that had heralded the fleet’s arrival, like thunder before a storm. The old man took his eye from the spyglass, moved back from
+the tripod. The amazing invasion had loomed up so close that it already seemed to be swarming over the hill and into his house. He
+rubbed his weary eye, looked toward the door. It was a door of solid oak, like some deathless mass, jointed with fortress hinges. The
+ancestral name was carved in somber wood, and the year that one of the old man’s forebears, in uninterrupted line, had completed the
+house: 1673. The door opened out on the terrace from the large main room that served as his library, parlor, and study, all in one. There
+was no other door in the house. The terrace, in fact, ran right to the road, down five little steps, with nothing like a gate to close them off,
+open to any and every passerby who felt like walking up and saying hello, the way they did so often in the village. Each day, from dawn
+to dusk, that door stood open. And on this particular evening, as the sun was beginning to sink down to its daily demise, it was open as
+well—a fact that seemed to strike the old man for the very first time. It was then that he had this fleeting thought, whose utter banality
+brought a kind of rapturous smile to his lips: “I wonder,” he said to himself, “if, under the circumstances, the proverb is right, and if a
+door really has to be open or shut ...”
+Then he took up his watch again, eye to glass, to make the most of the sun’s last, low-skimming rays, as they lit the unlikely sight
+one more time before dark. How many of them were there, out on those grounded wrecks? If the figures could be believed—the
+horrendous figures that each terse news bulletin had announced through the day, one after another—then the decks and holds must be
+piled high with layer on layer of human bodies, clustered in heaps around smokestacks and gangways, with the dead underneath
+supporting the living, like one of those columns of ants on the march, teeming with life on top, exposed to view, and below, a kind of
+ant-paved path, with millions of trampled cadavers. The old professor—Calgues by name—aimed his glass at one of the ships still lit by
+the sun, then patiently focused the lens until the image was as sharp as he could make it, like a scientist over his microscope, peering in
+to find his culture swarming with the microbes that he knew all the time must be there. The ship was a steamer, a good sixty years old.
+Her five stacks, straight up, like pipes, showed how very old she was. Four of them were lopped off at different levels, by time, by rust,
+by lack of care, by chance—in short, by gradual decay. She had run aground just off the beach, and lay there, listing at some ten degrees.
+Like all the ships in this phantom fleet, there wasn’t a light to be seen on her once it was dark, not even a glimmer. Everything must
+have gone dead—boilers, generators, everything, all at once—as she ran to meet her self-imposed disaster. Perhaps there had been just
+fuel enough for this one and only voyage. Or perhaps there was no one on board anymore who felt the need to take care of such things—
+or of anything else—now that the exodus had finally led to the gates of the newfound paradise. Old Monsieur Calguès took careful note
+of all he saw, of each and every detail, unaware of the slightest emotion within him. Except, that is, for his interest; a prodigious interest
+in this vanguard of an antiworld bent on coming in the flesh to knock, at long last, at the gates of abundance. He pressed his eye to the
+glass, and the first things he saw were arms. As best he could tell, his range of vision described a circle on deck ten yards or so in
+diameter. Then he started to count. Calm and unhurried. But it was like trying to count all the trees in the forest, those arms raised high
+in the air, waving and shaking together, all outstretched toward the nearby shore. Scraggy branches, brown and black, quickened by a
+breath of hope. All bare, those fleshless Gandhi-arms. And they rose up out of scraps of cloth, white cloth that must have been tunics
+once, and togas, and pilgrims’ saris. The professor reached two hundred, then stopped. He had counted as far as he could within the
+bounds of the circle. Then he did some rapid calculation. Given the length and breadth of the deck, it was likely that more than thirty
+such circles could be laid out side by side, and that between every pair of tangent circumferences there would be two spaces, more or
+less triangular in shape, opposite one another, vertex to vertex, each with an area roughly equal to one-third of a circle, which would
+give a total of 30 + 10 = 40 circles, 40 x 200 arms = 8,000 arms. Or four thousand bodies! On this one deck alone! Now, assuming that
+they might be several layers thick, or at least no less thick on each of the decks—and between decks and belowdecks too—then the
+figure, astounding enough as it was, would have to be multiplied by eight. Or thirty thousand creatures on a single ship! Not to mention
+the dead, floating here and there around the hull, trailing their white rags over the water, corpses that the living had been throwing
+overboard since morning. A curious act, all in all, and one not inspired by reasons of hygiene, to be sure. Otherwise, why wait for the
+end of the voyage? But Monsieur Calgues felt certain he had hit on the one explanation. He believed in God. He believed in all the rest:
+eternal life, redemption, heavenly mercy, hope and faith. He believed as well, with firm conviction, that the corpses thrown out on the
+shores of France had reached their paradise too to waft their way through it, unconstrained, forevermore. Even more blessed than the
+living themselves, who, throwing them into the sea, had offered their dead, then and there, the gift of salvation, joy, and all eternity.
+Such an act was called love. At least that was how the old professor understood it.
+And so night settled in, but not until daylight had glimmered its last red rays once more on the grounded fleet. There were better
+than a hundred ships in all, each one caked with rust, unfit for the sea, and each one proof of the miracle that had somehow guided them,
+safe and sound, from the other side of the earth. All but one, that is, wrecked off the coast of Ceylon. They had lined up in almost
+mannerly fashion, one after the other, stuck in the sand or in among the rocks, bows upraised in one final yearning thrust toward shore.
+And all around, thousands of floating, white-clad corpses, that daylight’s last waves were beginning to wash aground, laying them gently
+down on the beach, then rolling back to sea to look for more. A hundred ships! The old professor felt a shudder well up within him, that
+quiver of exaltation and humility combined, the feeling we sometimes get when we turn our minds, hard as we can, to notions of the
+infinite and the eternal. On this Easter Sunday evening, eight hundred thousand living beings, and thousands of dead ones, were making
+their peaceful assault on the Western World. Tomorrow it would all be over. And now, rising up from the coast to the hills, to the
+village, to the house and its terrace, a gentle chanting, yet so very strong for all its gentleness, like a kind of singsong, droned by a
+chorus of eight hundred thousand voices. Long, long ago, the Crusaders had sung as they circled Jerusalem, on the eve of their last
+attack. And Jericho’s walls had crumbled without a fight when the trumpets sounded for the seventh time. Perhaps when all was silent,
+when the chanting was finally stilled, the chosen people too would feel the force of divine displeasure. ... There were other sounds as
+well. The roar of hundreds of trucks. Since morning, the army had taken up positions on the Mediterranean beaches. But there in the
+darkness there was nothing beyond the terrace but sky and stars.
+It was cool in the house when the professor went inside, but he left the door open all the same. Can a door protect a world that has
+lived too long? Even a marvel of workmanship, three hundred years old, and one carved out of such utterly respectable Western oak? ...
+There was no electricity. Obviously, the technicians from the power plants along the coast had fled north too, with all the others, the
+petrified mob, turning tail and running off without a word, so as not to have to look, not see a thing, which meant they wouldn’t have to
+understand, or even try. The professor lit the oil lamps that he always kept on hand in case the lights went out. He threw one of the
+matches into the fireplace. The kindling, carefully arranged, flashed up with a roar, crackled, and spread its light and warmth over the
+room. Then he turned on his transistor, tuned all day long to the national chain. Gone now the pop and the jazz, the crooning ladies and
+the vapid babblers, the black saxophonists, the gurus, the smug stars of stage and screen, the experts on health and love and sex. All
+gone from the airwaves, all suddenly judged indecent, as if the threatened West were concerned with the last acoustic image it presented
+of itself. Nothing but Mozart, the same on every station. Eine kleine Nachtmusik, no less. And the old professor had a kindly thought for
+the program director, there in his studio in Paris. He couldn’t possibly see or know, and yet he had understood. For those eight hundred
+thousand singsong voices that he couldn’t even hear, he had found, instinctively, the most fitting reply. What was there in the world
+more Western than Mozart, more civilized, more perfect? No eight hundred thousand voices could drone their chant to Mozart’s notes.
+Mozart had never written to stir the masses, but to touch the heart of each single human being, in his private self. What a lovely symbol,
+really! The Western World summed up in its ultimate truth ... An announcer’s voice roused the old professor from his musings:
+“The President of the Republic has been meeting all day at the Élysée Palace with government leaders. Also present, in view of the
+gravity of the situation, are the chiefs of staff of the three branches of the armed forces, as well as the heads of the local and state police,
+the prefects of the departments of Var and Alpes-Maritimes, and, in a strictly advisory capacity, His Eminence the Cardinal Archbishop
+of Paris, the papal nuncio, and most of the Western ambassadors currently stationed in the capital. At present the meeting is still in
+progress. A government spokesman, however, has just announced that this evening, at about midnight, the President of the Republic will
+go on the air with an address of utmost importance to the nation. According to reports reaching us from the south, all still seems quiet on
+board the ships of the refugee fleet. A communiqué from army headquarters confirms that two divisions have been deployed along the
+coast in the face ... in the face of ...” (The announcer hesitated. And who could blame him? Just what should one call that numberless,
+miserable mass? The enemy? The horde? The invasion? The Third World on the march?) “... in the face of this unprecedented incursion
+(There! Not too bad at all!) “... and that three divisions of reinforcements are heading south at this moment, despite considerable
+difficulty of movement. In another communiqué, issued not more than five minutes ago, army chief of staff Colonel Dragasès has
+reported that troops under his command have begun setting fire to some twenty immense wooden piles along the shore, in order to ...
+(Another hesitation. The announcer seemed to gasp. The old professor even thought he heard him mutter “My God!”) “... in order to
+burn the thousands of dead bodies thrown overboard from all the ships ...”
+And that was all. A moment later, with hardly a break, Mozart was back, replacing those three divisions hurtling southward, and the
+score of funeral pyres that must have begun to crackle by now in the crisp air down by the coast. The West doesn’t like to burn its dead.
+It tucks away its cremation urns, hides them out in the hinterlands of its cemeteries. The Seine, the Rhine, the Loire, the Rhône, the
+Thames are no Ganges or Indus. Not even the Guadalquivir and the Tiber. Their shores never stank with the stench of roasting corpses.
+Yes, they have flowed with blood, their waters have run red, and many a peasant has crossed himself as he used his pitchfork to push
+aside the human carcasses floating downstream. But in Western times, on their bridges and banks, people danced and drank their wine
+and beer, men tickled the fresh, young laughing lasses, and everyone laughed at the wretch on the rack, laughed in his face, and the
+wretch on the gallows, tongue dangling, and the wretch on the block, neck severed—because, indeed, the Western World, staid as it was,
+knew how to laugh as well as cry—and then, as their belfreys called them to prayer, they would all go partake of their fleshly god,
+secure in the knowledge that their dead were there, protecting them, safe as could be, laid out in rows beneath their timeless slabs and
+crosses, in graveyards nestled against the hills, since burning, after all, was only for devilish fiends, or wizards, or poor souls with the
+plague. ... The professor stepped out on the terrace. Down below, the shoreline was lit with a score of reddish glows, ringed round with
+billows of smoke. He opened his binoculars and trained them on the highest of the piles, flaming neatly along like a wooden tower,
+loaded with corpses from bottom to top. The soldiers had stacked it with care, first a layer of wood, then a layer of flesh, and so on all
+the way up. At least some trace of respect for death seemed to show in its tidy construction. Then all at once, down it crashed, still
+burning, nothing now but a loathsome mass, like a heap of smoking rubble along the public way. And no one troubled to build the nice
+neat tower again. Bulldozers rolled up, driven by men in diving suits, then other machines fitted with great jointed claws and shovels,
+pushing the bodies together into soft, slimy mounds, scooping a load in the air and pouring it onto the fire, as arms and legs and heads,
+and even whole cadavers overflowed around them and fell to the ground. It was then that the professor saw the first soldier turn and run,
+calling to mind yet another cliché, arms and legs flapping like a puppet on a string, in perfect pantomime of unbridled panic. The young
+man had dropped the corpse he was dragging. He had wildly thrown down his helmet and mask, ripped off his safety gloves. Then,
+hands clutched to temples, he dashed off, zigzag, like a terrified jackrabbit, into the ring of darkness beyond the burning pile. Five
+minutes more, and ten other soldiers had done the same. The professor closed his binoculars. He understood. That scorn of a people for
+other races, the knowledge that one’s own is best, the triumphant joy at feeling oneself to be part of humanity’s finest—none of that had
+ever filled these youngsters’ addled brains, or at least so little that the monstrous cancer implanted in the Western conscience had
+quashed it in no time at all. In their case it wasn’t a matter of tender heart, but a morbid, contagious excess of sentiment, most interesting
+to find in the flesh and observe, at last, in action. The real men of heart would be toiling that night, and nobody else. Just a moment
+before, as the nice young man was running away, old Calguès had turned his glasses briefly on a figure that looked like some uniformed
+giant, standing at the foot of the burning pile, legs spread, and hurling up each corpse passed over to him, one by one, with a powerful,
+rhythmic fling, like a stoker of yesteryear deep belowdecks, feeding his boiler with shovelfuls of coal. Perhaps he too was pained at the
+sight, but if so, his pain didn’t leave much room for pity. In fact, he probably didn’t think of it at all, convinced that now, finally, the
+human race no longer formed one great fraternal whole—as the popes, philosophers, intellects, politicos, and priests of the West had
+been claiming for much too long. Unless, that is, the old professor, watching “the stoker” and his calm resolve—the one he called “the
+stoker” was really Colonel Dragases, the chief of staff, up front to set his men an example—was simply ascribing to him his own ideas.
+... That night, love too was not of one mind. Man never has really loved humanity all of a piece—all its races, its peoples, its religions—
+but only those creatures he feels are his kin, a part of his clan, no matter how vast. As far as the rest are concerned, he forces himself,
+and lets the world force him. And then, when he does, when the damage is done, he himself falls apart. In this curious war taking shape,
+those who loved themselves best were the ones who would triumph. How many would they be, next morning, still joyously standing
+their ground on the beach, as the hideous army slipped down by the thousands, down into the water, for the onslaught by the living, in
+the wake of their dead? Joyously! That was what mattered the most. A moment before, as he watched “the stoker,” the professor had
+thought he could see him move his lips, wide open, as if he were singing. Yes, by God, singing! If even just the two of them could stand
+there and sing, perhaps they could wake up the rest from their deathly sleep. ... But no other sound came rising from the shore, no sound
+but the soft, foreboding chant welling up out of eight hundred thousand throats.
+“Pretty cool, man, huh!” exclaimed a voice in the shadows.";
+            }
+        }
+
         /// <summary>
         /// Různé varianty tečky za větou.
         /// Nejčastější tečka za větou je tečka (7x častější než ostatní), ale může tam být trojtečka nebo otazník nebo vykřičník

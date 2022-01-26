@@ -66,16 +66,16 @@ namespace TestDevExpress.Forms
             switch (e.Item.ItemId)
             {
                 case "Dx.Test.Add1k":
-                    FillBrowse(1000);
+                    FillBrowse(1000, Random.WordBookType.TriMuziNaToulkach);
                     break;
                 case "Dx.Test.Add10k":
-                    FillBrowse(10000);
+                    FillBrowse(10000, Random.WordBookType.TriMuziNaToulkach);
                     break;
                 case "Dx.Test.Add100k":
-                    FillBrowse(100000);
+                    FillBrowse(100000, Random.WordBookType.TaborSvatych);
                     break;
                 case "Dx.Test.Add500k":
-                    FillBrowse(500000);
+                    FillBrowse(500000, Random.WordBookType.CampOfSaints);
                     break;
             }
         }
@@ -129,7 +129,7 @@ namespace TestDevExpress.Forms
 
             // Specify a data source:
             int rowCount = 50000;
-            string dataLog = FillData(rowCount);
+            string dataLog = FillData(rowCount, Random.WordBookType.TriMuziNaToulkach);
        
             timeStart = DxComponent.LogTimeCurrent;
             var view = grid.AvailableViews["GridView"].CreateView(grid) as DevExpress.XtraGrid.Views.Grid.GridView;
@@ -145,15 +145,15 @@ namespace TestDevExpress.Forms
 
             StatusText = $"Tvorba GridSplitContainer: {timeInit} sec;     Přidání na Form: {timeAdd} sec;     {dataLog}Generování View: {timeCreateView} sec;     BestFitColumns: {timeFitColumns} sec";
         }
-        private void FillBrowse(int rowCount)
+        private void FillBrowse(int rowCount, Random.WordBookType wordBookType = Random.WordBookType.TriMuziNaToulkach)
         {
-            string dataLog = FillData(rowCount);
+            string dataLog = FillData(rowCount, wordBookType);
             StatusText = dataLog;
         }
-        private string FillData(int rowCount)
+        private string FillData(int rowCount, Random.WordBookType wordBookType = Random.WordBookType.TriMuziNaToulkach)
         {
             var timeStart = DxComponent.LogTimeCurrent;
-            var data = _CreateGridDataTable(rowCount);
+            var data = _CreateGridDataTable(rowCount, wordBookType);
             var timeCreateData = DxComponent.LogGetTimeElapsed(timeStart, DxComponent.LogTokenTimeSec);
 
             timeStart = DxComponent.LogTimeCurrent;
@@ -166,11 +166,11 @@ namespace TestDevExpress.Forms
         private DevExpress.XtraGrid.GridSplitContainer _GridContainer;
         private DevExpress.XtraGrid.GridControl _Grid;
 
-        private System.Data.DataTable _CreateGridDataTable(int rowCount)
+        private System.Data.DataTable _CreateGridDataTable(int rowCount, Random.WordBookType wordBookType = Random.WordBookType.TriMuziNaToulkach)
         {
             var currWords = Random.ActiveWordBook;
-            Random.ActiveWordBook = Random.WordBookType.TaborSvatych;
-            
+            Random.ActiveWordBook = wordBookType;
+
             System.Data.DataTable table = new System.Data.DataTable();
 
             table.Columns.Add(new System.Data.DataColumn() { ColumnName = "id", Caption = "ID", DataType = typeof(int) });
