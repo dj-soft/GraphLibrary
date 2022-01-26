@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using DevExpress.Utils.Extensions;
 using DevExpress.Utils.Menu;
+using DevExpress.XtraEditors.Filtering.Templates;
 using Noris.Clients.Win.Components.AsolDX;
 
 namespace TestDevExpress.Forms
@@ -128,7 +129,7 @@ namespace TestDevExpress.Forms
             var timeAdd = DxComponent.LogGetTimeElapsed(timeStart, DxComponent.LogTokenTimeSec);
 
             // Specify a data source:
-            int rowCount = 50000;
+            int rowCount = 5000;
             string dataLog = FillData(rowCount, Random.WordBookType.TriMuziNaToulkach);
        
             timeStart = DxComponent.LogTimeCurrent;
@@ -177,6 +178,7 @@ namespace TestDevExpress.Forms
             table.Columns.Add(new System.Data.DataColumn() { ColumnName = "refer", Caption = "Reference", DataType = typeof(string) });
             table.Columns.Add(new System.Data.DataColumn() { ColumnName = "nazev", Caption = "Název", DataType = typeof(string) });
             table.Columns.Add(new System.Data.DataColumn() { ColumnName = "category", Caption = "Kategorie", DataType = typeof(string) });
+            table.Columns.Add(new System.Data.DataColumn() { ColumnName = "period", Caption = "Období", DataType = typeof(string) });
             table.Columns.Add(new System.Data.DataColumn() { ColumnName = "date_inp", Caption = "Datum vstupu", DataType = typeof(DateTime) });
             table.Columns.Add(new System.Data.DataColumn() { ColumnName = "date_out", Caption = "Datum výstupu", DataType = typeof(DateTime) });
             table.Columns.Add(new System.Data.DataColumn() { ColumnName = "quantity", Caption = "Počet kusů", DataType = typeof(decimal) });
@@ -195,11 +197,12 @@ namespace TestDevExpress.Forms
                 string category = Random.GetItem(categories);
                 DateTime dateInp = dateBase.AddDays(Random.Rand.Next(0, 730));
                 DateTime dateOut = dateInp.AddDays(Random.Rand.Next(7, 90));
+                string period = dateInp.Year.ToString() + "-" + dateInp.Month.ToString("00");
                 decimal qty = (decimal)(Random.Rand.Next(10, 1000)) / 10m;
                 decimal price1 = (decimal)(Random.Rand.Next(10, 10000)) / 10m;
                 decimal priceT = qty * price1;
                 string note = Random.GetSentence(5, 9, true);
-                table.Rows.Add(id, refer, nazev, category, dateInp, dateOut, qty, price1, priceT, note);
+                table.Rows.Add(id, refer, nazev, category, period, dateInp, dateOut, qty, price1, priceT, note);
             }
 
             Random.ActiveWordBook = currWords;
