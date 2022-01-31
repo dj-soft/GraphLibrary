@@ -791,6 +791,9 @@ namespace TestDevExpress.Forms
         {
             IRibbonGroup ribbonGroup = e.Item;
 
+            DxComponent.SystemSoundPlay(SystemSoundType.Exclamation);
+            DxComponent.SystemSoundPlay(SystemSoundType.Asterisk);
+
             Noris.Clients.Win.Components.DialogArgs dialogArgs = new Noris.Clients.Win.Components.DialogArgs();
             dialogArgs.Title = "Ribbon Group Click";
             dialogArgs.MessageTextContainsHtml = true;

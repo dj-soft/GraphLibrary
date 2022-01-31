@@ -2936,6 +2936,51 @@ namespace Noris.Clients.Win.Components.AsolDX
             DialogForm.ShowDialog(args);
         }
         #endregion
+        #region SystemSounds
+        /// <summary>
+        /// Přehraje daný systémový zvuk <paramref name="soundType"/>.
+        /// Pokud v uplynulých 800 milisekundách byl jiný požadavek, pak aktuální se bude ignorovat.
+        /// Parametrem <paramref name="force"/> lze interval zmenšit na 150 milisekund, ale nijak nelze vynutit interval kratší.
+        /// </summary>
+        /// <param name="soundType"></param>
+        /// <param name="force"></param>
+        public static void SystemSoundPlay(SystemSoundType soundType, bool force = false) { Instance._SystemSoundPlay(soundType, force); }
+        private void _SystemSoundPlay(SystemSoundType soundType, bool force)
+        {
+            var last = _LastSystemSoundTime;
+            double pause = force ? 0.15d : 0.80d;          // Pauza mezi dvěma melodiemi: vynucené hraní po 150ms, běžné hraní po 800ms
+            if (!last.HasValue || (last.HasValue && (((TimeSpan)(DateTime.Now - _LastSystemSoundTime.Value)).TotalSeconds >= pause)))
+            {   // Dosud jsme nehráli, anebo jsme už hráli, ale čas nyní mínus čas posledního hraní je větší než požadovaná pauza v sekundách:
+                try
+                {
+                    switch (soundType)
+                    {
+                        case SystemSoundType.Asterisk:
+                            System.Media.SystemSounds.Asterisk.Play();
+                            break;
+                        case SystemSoundType.Beep:
+                            System.Media.SystemSounds.Beep.Play();
+                            break;
+                        case SystemSoundType.Exclamation:
+                            System.Media.SystemSounds.Exclamation.Play();
+                            break;
+                        case SystemSoundType.Hand:
+                            System.Media.SystemSounds.Hand.Play();
+                            break;
+                        case SystemSoundType.Question:
+                            System.Media.SystemSounds.Question.Play();
+                            break;
+                    }
+                }
+                catch { }
+                _LastSystemSoundTime = DateTime.Now;
+            }
+        }
+        /// <summary>
+        /// Čas posledního systémového zvuku, to abychom nezahltili zvukovody DDOS útokem
+        /// </summary>
+        private DateTime? _LastSystemSoundTime;
+        #endregion
         #region SkinSupport a Colors, GetSkinColor, IsDarkTheme
         /// <summary>
         /// Vrátí aktuálně platnou barvu dle skinu.
@@ -3683,6 +3728,36 @@ namespace Noris.Clients.Win.Components.AsolDX
         #endregion
     }
     #region Enumy
+    /// <summary>
+    /// Typ systémového zvuku
+    /// </summary>
+    public enum SystemSoundType
+    {
+        /// <summary>
+        /// Není definován
+        /// </summary>
+        None,
+        /// <summary>
+        /// Asterisk
+        /// </summary>
+        Asterisk,
+        /// <summary>
+        /// Beep
+        /// </summary>
+        Beep,
+        /// <summary>
+        /// Exclamation
+        /// </summary>
+        Exclamation,
+        /// <summary>
+        /// Hand
+        /// </summary>
+        Hand,
+        /// <summary>
+        /// Question
+        /// </summary>
+        Question
+    }
     /// <summary>
     /// Typ barvy
     /// </summary>

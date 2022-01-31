@@ -165,7 +165,14 @@
     <Compile Include="AsolDX\DxControlForm.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="AsolDX\DxScroll.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="AsolDX\DxSettings.cs" />
+    <Compile Include="AsolDX\DxSvgImage.cs" />
+    <Compile Include="AsolDX\DxTabHeaders.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="AsolDX\News\DxControlsNew.cs">
       <SubType>Component</SubType>
     </Compile>
