@@ -2941,10 +2941,17 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Přehraje daný systémový zvuk <paramref name="soundType"/>.
         /// Pokud v uplynulých 800 milisekundách byl jiný požadavek, pak aktuální se bude ignorovat.
         /// Parametrem <paramref name="force"/> lze interval zmenšit na 150 milisekund, ale nijak nelze vynutit interval kratší.
+        /// <para/>
+        /// Konkrétní zvuky jsou dané zvoleným tématem Windows. U mě osobně jsou zvuky Asterisk a Beep a Exclamation a Question stejné, odlišný je Hand.
         /// </summary>
         /// <param name="soundType"></param>
         /// <param name="force"></param>
         public static void SystemSoundPlay(SystemSoundType soundType, bool force = false) { Instance._SystemSoundPlay(soundType, force); }
+        /// <summary>
+        /// Přehraje daný systémový zvuk.
+        /// </summary>
+        /// <param name="soundType"></param>
+        /// <param name="force"></param>
         private void _SystemSoundPlay(SystemSoundType soundType, bool force)
         {
             var last = _LastSystemSoundTime;
@@ -3729,7 +3736,8 @@ namespace Noris.Clients.Win.Components.AsolDX
     }
     #region Enumy
     /// <summary>
-    /// Typ systémového zvuku
+    /// Typ systémového zvuku.
+    /// Konkrétní zvuky jsou dané zvoleným tématem Windows. U mě osobně jsou zvuky Asterisk a Beep a Exclamation a Question stejné, odlišný je Hand.
     /// </summary>
     public enum SystemSoundType
     {
