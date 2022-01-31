@@ -189,6 +189,18 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public bool DxDisposed { get; private set; }
         /// <summary>
+        /// Obsahuje true, pokud this Ribbon má svůj <see cref="OwnerControl"/>, který je Disposing nebo IsDisposed.
+        /// </summary>
+        public bool DxOwnerDisposed
+        {
+            get
+            {
+                var ownerControl = this.OwnerControl;
+                if (ownerControl is null) return false;
+                return ownerControl.Disposing || ownerControl.IsDisposed;
+            }
+        }
+        /// <summary>
         /// Jsou aktivní zápisy do logu? Default = false
         /// </summary>
         public virtual bool LogActive { get; set; }
@@ -5739,6 +5751,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         public override void MergeRibbon(DevExpress.XtraBars.Ribbon.RibbonControl childRibbon)
         {
             if (childRibbon == null) return;
+            if (this.DxDisposed || this.DxOwnerDisposed) return;               // V tomhle stavu už nemá smysl pracovat. V komponentě DevExpress pak dochází k chybám.
+
+            var childDxRibbon = childRibbon as DxRibbonControl;
+            if (childDxRibbon != null && (childDxRibbon.DxDisposed || childDxRibbon.DxOwnerDisposed)) return;          // V tomhle stavu Child Ribbonu už taky nemá smysl pracovat.
 
             var startTime = DxComponent.LogTimeCurrent;
 
@@ -5748,7 +5764,6 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             bool currentDxRibbonState = this.CurrentModifiedState;
 
-            var childDxRibbon = childRibbon as DxRibbonControl;
             bool childDxRibbonState = false;
             try
             {

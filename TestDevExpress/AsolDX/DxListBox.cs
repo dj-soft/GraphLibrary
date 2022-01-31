@@ -347,6 +347,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             KeyActionsInit();
             DxDragDropInit(DxDragDropActionType.None);
             ToolTipInit();
+            ImageInit();
             ItemSizeType = ResourceImageSizeType.Small;
         }
         /// <summary>
@@ -517,6 +518,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="e"></param>
         protected override void OnPaint(PaintEventArgs e)
         {
+            __ItemImageSize = null;
             base.OnPaint(e);
             this.OnPaintList(e);
             this.PaintList?.Invoke(this, e);
@@ -534,13 +536,20 @@ namespace Noris.Clients.Win.Components.AsolDX
         #endregion
         #region Images
         /// <summary>
-        /// Při kreslení nejprve spočítám velikost ikon
+        /// Inicializace pro Images
+        /// </summary>
+        protected virtual void ImageInit()
+        {
+            this.MeasureItem += _MeasureItem;
+            this.__ItemImageSize = null;
+        }
+        /// <summary>
+        /// Při kreslení pozadí ...
         /// </summary>
         /// <param name="pevent"></param>
         protected override void OnPaintBackground(PaintEventArgs pevent)
         {
             base.OnPaintBackground(pevent);
-            // _ItemImageSize = DxComponent.GetImageSize(this.ItemSizeType, true, this.DeviceDpi);
         }
         /// <summary>
         /// Vrátí Image pro daný index
@@ -574,6 +583,18 @@ namespace Noris.Clients.Win.Components.AsolDX
             return _ItemImageSize;
         }
         /// <summary>
+        /// Určí výšku prvku
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _MeasureItem(object sender, MeasureItemEventArgs e)
+        {
+            var menuItem = this.ListItems[e.Index];
+            if (menuItem != null)
+            {
+            }
+        }
+        /// <summary>
         /// Velikost ikon
         /// </summary>
         public ResourceImageSizeType ItemSizeType
@@ -581,7 +602,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             get { return _ItemSizeType; }
             set
             {
-                _ItemSizeType = (value == ResourceImageSizeType.Small || value == ResourceImageSizeType.Medium || value == ResourceImageSizeType.Large) ? value : ResourceImageSizeType.Small;
+                _ItemSizeType = value;
+                __ItemImageSize = null;
                 if (this.Parent != null) this.Invalidate();
             }
         }
@@ -590,20 +612,21 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private ResourceImageSizeType _ItemSizeType = ResourceImageSizeType.Small;
         /// <summary>
-        /// Velikost ikony
+        /// Velikost ikony, vychází z <see cref="ItemSizeType"/> a aktuálního DPI.
         /// </summary>
         private Size _ItemImageSize
         {
             get 
             {
-                int h = this.ViewInfo.ItemHeight - 2;
-                if (h < 24) h = 16;
-                else if (h < 32) h = 24;
-                else if (h < 48) h = 32;
-                else h = 48;
-                return new Size(h, h); 
+                if (!__ItemImageSize.HasValue)
+                    __ItemImageSize = DxComponent.GetImageSize(this.ItemSizeType, true, this.DeviceDpi);
+                return __ItemImageSize.Value;
             }
         }
+        /// <summary>
+        /// Velikost ikon, null = je nutno spočítat
+        /// </summary>
+        private Size? __ItemImageSize;
         #endregion
         #region ToolTip
         /// <summary>
