@@ -2954,10 +2954,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="force"></param>
         private void _SystemSoundPlay(SystemSoundType soundType, bool force)
         {
-            var last = _LastSystemSoundTime;
-            double pause = force ? 0.15d : 0.80d;          // Pauza mezi dvěma melodiemi: vynucené hraní po 150ms, běžné hraní po 800ms
-            if (!last.HasValue || (last.HasValue && (((TimeSpan)(DateTime.Now - _LastSystemSoundTime.Value)).TotalSeconds >= pause)))
-            {   // Dosud jsme nehráli, anebo jsme už hráli, ale čas nyní mínus čas posledního hraní je větší než požadovaná pauza v sekundách:
+            if (_IsTimeForNextPlay(force))
+            {
                 try
                 {
                     switch (soundType)
@@ -2980,8 +2978,102 @@ namespace Noris.Clients.Win.Components.AsolDX
                     }
                 }
                 catch { }
-                _LastSystemSoundTime = DateTime.Now;
             }
+        }
+        /// <summary>
+        /// Přehraje daný systémový zvuk <paramref name="sound"/>.
+        /// Zvuky a jejich názvy najdeme v property <see cref="DxComponent.SystemEventSounds"/>.
+        /// Touto cestou lze přehrát všechny zvuky, které jsou k dispozici v Control panelu: "mmsys.cpl" (nebo "control mmsys.cpl") - záložka Zvuky.
+        /// <para/>
+        /// Pokud v uplynulých 800 milisekundách byl jiný požadavek, pak aktuální se bude ignorovat.
+        /// Parametrem <paramref name="force"/> lze interval zmenšit na 150 milisekund, ale nijak nelze vynutit interval kratší.
+        /// </summary>
+        /// <param name="sound"></param>
+        /// <param name="force"></param>
+        /// <param name="command"></param>
+        public static void SystemSoundPlay(SystemEventSound sound, bool force = false, SystemEventSound.PlayCommands command = SystemEventSound.PlayCommands.Default) { Instance._SystemSoundPlay(sound, force, command); }
+        /// <summary>
+        /// Přehraje daný systémový zvuk.
+        /// </summary>
+        /// <param name="sound"></param>
+        /// <param name="force"></param>
+        /// <param name="command"></param>
+        private void _SystemSoundPlay(SystemEventSound sound, bool force, SystemEventSound.PlayCommands command = SystemEventSound.PlayCommands.Default)
+        {
+            if (sound != null && _IsTimeForNextPlay(force))
+                sound.Play(command);
+        }
+        /// <summary>
+        /// Přehraje daný systémový zvuk <paramref name="soundEventName"/>.
+        /// Zvuky a jejich názvy najdeme v property <see cref="DxComponent.SystemEventSounds"/>.
+        /// Touto cestou lze přehrát všechny zvuky, které jsou k dispozici v Control panelu: "mmsys.cpl" (nebo "control mmsys.cpl") - záložka Zvuky.
+        /// <para/>
+        /// Pokud v uplynulých 800 milisekundách byl jiný požadavek, pak aktuální se bude ignorovat.
+        /// Parametrem <paramref name="force"/> lze interval zmenšit na 150 milisekund, ale nijak nelze vynutit interval kratší.
+        /// </summary>
+        /// <param name="soundEventName"></param>
+        /// <param name="force"></param>
+        /// <param name="command"></param>
+        public static void SystemSoundPlay(string soundEventName, bool force = false, SystemEventSound.PlayCommands command = SystemEventSound.PlayCommands.Default) { Instance._SystemSoundPlay(soundEventName, force, command); }
+        /// <summary>
+        /// Přehraje daný systémový zvuk.
+        /// </summary>
+        /// <param name="soundEventName"></param>
+        /// <param name="force"></param>
+        /// <param name="command"></param>
+        private void _SystemSoundPlay(string soundEventName, bool force, SystemEventSound.PlayCommands command = SystemEventSound.PlayCommands.Default)
+        {
+            if (!String.IsNullOrEmpty(soundEventName) && _IsTimeForNextPlay(force))
+                SystemEventSound.PlaySystemEvent(soundEventName, command);
+        }
+        /// <summary>
+        /// Přehraje daný soubor WAV <paramref name="fileNameWav"/>.
+        /// <para/>
+        /// Pokud v uplynulých 800 milisekundách byl jiný požadavek, pak aktuální se bude ignorovat.
+        /// Parametrem <paramref name="force"/> lze interval zmenšit na 150 milisekund, ale nijak nelze vynutit interval kratší.
+        /// </summary>
+        /// <param name="fileNameWav"></param>
+        /// <param name="force"></param>
+        /// <param name="command"></param>
+        public static void AudioSoundWavPlay(string fileNameWav, bool force = false, SystemEventSound.PlayCommands command = SystemEventSound.PlayCommands.Default) { Instance._AudioSoundWavPlay(fileNameWav, force, command); }
+        /// <summary>
+        /// Přehraje daný soubor WAV <paramref name="fileNameWav"/>.
+        /// </summary>
+        /// <param name="fileNameWav"></param>
+        /// <param name="force"></param>
+        /// <param name="command"></param>
+        private void _AudioSoundWavPlay(string fileNameWav, bool force, SystemEventSound.PlayCommands command = SystemEventSound.PlayCommands.Default)
+        {
+            if (String.IsNullOrEmpty(fileNameWav) && _IsTimeForNextPlay(force))
+                SystemEventSound.PlayFileWav(fileNameWav, command);
+        }
+        /// <summary>
+        /// Zvuky definované v systému Windows pro jednotlivé události
+        /// </summary>
+        public static SystemEventSound[] SystemEventSounds { get { return Instance._SystemEventSounds; } }
+        /// <summary>Zvuky definované v systému Windows pro jednotlivé události</summary>
+        private SystemEventSound[] _SystemEventSounds { get { if (__SystemEventSounds is null) __SystemEventSounds = SystemEventSound.ReadEventSounds(); return __SystemEventSounds; } }
+        private SystemEventSound[] __SystemEventSounds;
+        /// <summary>
+        /// Metoda zjistí, zda už je možno přehrát další zvuk s ohledem na čas předešlého zvuku.
+        /// Pokud ano, tak si uloží aktuální čas pro hlídání dalšího požadavku.
+        /// <para/>
+        /// Vrátí true, pokud jsme dosud nehráli, anebo jsme už hráli, ale čas nyní mínus čas posledního hraní je větší než požadovaná pauza v sekundách.
+        /// </summary>
+        /// <param name="force"></param>
+        /// <returns></returns>
+        private bool _IsTimeForNextPlay(bool force)
+        {
+            bool result = false;
+            var last = _LastSystemSoundTime;
+            var now = DateTime.Now;
+            double pause = force ? 0.15d : 0.80d;          // Pauza mezi dvěma melodiemi: vynucené hraní po 150ms, běžné hraní po 800ms
+            if (!last.HasValue || (last.HasValue && (((TimeSpan)(now - last.Value)).TotalSeconds >= pause)))
+            {
+                result = true;
+                _LastSystemSoundTime = now;
+            }
+            return result;
         }
         /// <summary>
         /// Čas posledního systémového zvuku, to abychom nezahltili zvukovody DDOS útokem
@@ -4713,6 +4805,343 @@ namespace Noris.Clients.Win.Components.AsolDX
         All = AnyImage | AnyMultimedia | AnyText
     }
     #endregion
+    #endregion
+    #region class SystemEventSound : Systémové zvuky
+    /// <summary>
+    /// Systémové zvuky: načtení z registru, evidence, přehrání zvuku
+    /// </summary>
+    public class SystemEventSound
+    {
+        #region Konstruktor a public data, private subclass ApplicationInfo
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="eventName"></param>
+        /// <param name="description"></param>
+        /// <param name="soundSource"></param>
+        private SystemEventSound(string eventName, string description, string soundSource)
+        {
+            EventName = eventName ?? "";
+            SoundSource = soundSource;
+            Description = description;
+            _Applications = new List<ApplicationInfo>();
+        }
+        private List<ApplicationInfo> _Applications;
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return $"EventName: {EventName}; SoundSource: {SoundSource}";
+        }
+        /// <summary>
+        /// Klíčový název události
+        /// </summary>
+        public string EventName { get; private set; }
+        /// <summary>
+        /// Uživatelský popis události
+        /// </summary>
+        public string Description { get; private set; }
+        /// <summary>
+        /// Zdroj zvuku
+        /// </summary>
+        public string SoundSource { get; private set; }
+        /// <summary>
+        /// Má tato událost definován zdroj v <see cref="SoundSource"/> ?
+        /// </summary>
+        public bool HasSoundSource { get { return !String.IsNullOrWhiteSpace(SoundSource); } }
+        /// <summary>
+        /// Aplikace používající tuto událost
+        /// </summary>
+        public string[] Applications { get { return _Applications.Select(a => a.ApplicationName).ToArray(); } }
+        /// <summary>
+        /// Existuje nějaká aplikace, která definuje konkrétní zvuk Current?
+        /// </summary>
+        public bool ExistsCurrentSource { get { return _Applications.Any(a => a.ExistsCurrentSource); } }
+        /// <summary>
+        /// Existuje nějaká aplikace, která definuje konkrétní zvuk Default?
+        /// </summary>
+        public bool ExistsDefaultSource { get { return _Applications.Any(a => a.ExistsDefaultSource); } }
+        /// <summary>
+        /// Do this eventu přidá další aplikaci, která jej používá
+        /// </summary>
+        /// <param name="applicationName"></param>
+        /// <param name="applicationDescription"></param>
+        /// <param name="currentSource"></param>
+        /// <param name="defaultSource"></param>
+        private void AddApplication(string applicationName, string applicationDescription, string currentSource, string defaultSource)
+        {
+            _Applications.Add(new ApplicationInfo(this, applicationName, applicationDescription, currentSource, defaultSource));
+        }
+        /// <summary>
+        /// Info o jedné aplikaci
+        /// </summary>
+        private class ApplicationInfo
+        {
+            /// <summary>
+            /// 
+            /// </summary>
+            /// <param name="parent"></param>
+            /// <param name="applicationName"></param>
+            /// <param name="applicationDescription"></param>
+            /// <param name="currentSource"></param>
+            /// <param name="defaultSource"></param>
+            public ApplicationInfo(SystemEventSound parent, string applicationName, string applicationDescription, string currentSource, string defaultSource)
+            {
+                Parent = parent;
+                ApplicationName = applicationName;
+                ApplicationDescription = applicationDescription;
+                CurrentSource = currentSource;
+                DefaultSource = defaultSource;
+            }
+            /// <summary>
+            /// Vizualizace
+            /// </summary>
+            /// <returns></returns>
+            public override string ToString()
+            {
+                return $"Application: {ApplicationDescription}; CurrentSource: {CurrentSource}; DefaultSource: {DefaultSource}";
+            }
+            /// <summary>
+            /// Parent = zvukový event
+            /// </summary>
+            public SystemEventSound Parent { get; private set; }
+            /// <summary>
+            /// Klíčové jméno aplikace (např ".Default")
+            /// </summary>
+            public string ApplicationName { get; private set; }
+            /// <summary>
+            /// Uživatelské jméno aplikace (např "Windows")
+            /// </summary>
+            public string ApplicationDescription { get; private set; }
+            /// <summary>
+            /// Aktuální zdroj zvuku
+            /// </summary>
+            public string CurrentSource { get; private set; }
+            /// <summary>
+            /// Defaultní zdroj zvuku
+            /// </summary>
+            public string DefaultSource { get; private set; }
+            /// <summary>
+            /// Má tato aplikace definován konkrétní zvuk <see cref="CurrentSource"/>?
+            /// </summary>
+            public bool ExistsCurrentSource { get { return !String.IsNullOrEmpty(CurrentSource); } }
+            /// <summary>
+            /// Má tato aplikace definován konkrétní zvuk <see cref="DefaultSource"/>?
+            /// </summary>
+            public bool ExistsDefaultSource { get { return !String.IsNullOrEmpty(DefaultSource); } }
+        }
+        #endregion
+        #region Přehrání systémových zvuků a souborů WAV
+        /// <summary>
+        /// Přehraje this zvuk
+        /// </summary>
+        /// <param name="playCommands"></param>
+        public void Play(PlayCommands playCommands = PlayCommands.Default)
+        {
+            PlaySystemEvent(this.EventName, playCommands);
+        }
+        /// <summary>
+        /// Přehraje daný systémový zvuk. Jméno má pocházet z <see cref="SystemEventSound.EventName"/>
+        /// </summary>
+        /// <param name="eventName"></param>
+        /// <param name="playCommands"></param>
+        public static void PlaySystemEvent(string eventName, PlayCommands playCommands = PlayCommands.Default)
+        {
+            if (String.IsNullOrEmpty(eventName)) return;
+
+            SND command = DefaultCommand | SND.SND_ALIAS;
+            if (!playCommands.HasFlag(PlayCommands.Synchronously)) command |= SND.SND_ASYNC;
+            if (!playCommands.HasFlag(PlayCommands.StopCurrentSound)) command |= SND.SND_NOSTOP;
+
+            _PlaySound(eventName, command);
+        }
+        /// <summary>
+        /// Přehraje daný WAV soubor.
+        /// Pokud soubor není zadán, nebo pokud nemá příponu WAV, nebo pokud neexistuje, nic nedělá.
+        /// </summary>
+        /// <param name="fileName"></param>
+        /// <param name="playCommands"></param>
+        public static void PlayFileWav(string fileName, PlayCommands playCommands = PlayCommands.Default)
+        {
+            if (String.IsNullOrEmpty(fileName)) return;
+            fileName = fileName.Trim();
+            if (System.IO.Path.GetExtension(fileName).Trim().ToLower() != ".wav") return;
+            if (!System.IO.File.Exists(fileName)) return;
+
+            SND command = DefaultCommand | SND.SND_FILENAME;
+            if (!playCommands.HasFlag(PlayCommands.Synchronously)) command |= SND.SND_ASYNC;
+            if (!playCommands.HasFlag(PlayCommands.StopCurrentSound)) command |= SND.SND_NOSTOP;
+
+            _PlaySound(fileName, command);
+        }
+        private static SND DefaultCommand { get { return SND.SND_NODEFAULT | SND.SND_NOWAIT; } }
+        private static void _PlaySound(string sound, SND command)
+        {
+            PlaySound(sound, 0, (int)command);
+        }
+        /// <summary>
+        /// Pokyny k přehrání zvuku v metodách <see cref="SystemEventSound.Play(PlayCommands)"/>
+        /// </summary>
+        public enum PlayCommands
+        {
+            /// <summary>
+            /// Nic speciálního
+            /// </summary>
+            None = 0,
+            /// <summary>
+            /// Synchronní běh = řízení se vrátí až po dokončení zadaného zvuku
+            /// </summary>
+            Synchronously = 0x0001,
+            /// <summary>
+            /// Asynchronní běh = řízení se vrátí ihned, nečeká se na dokončení zadaného zvuku
+            /// </summary>
+            Asynchronously = 0x0002,
+            /// <summary>
+            /// Pokud aktuálně zní nějaký zvuk, zruš jej a pusť tam daný zvuk (bez tohoto příznaku: nechá aktuální zvuk doznít)
+            /// </summary>
+            StopCurrentSound = 0x0004,
+
+            /// <summary>
+            /// Default
+            /// </summary>
+            Default = Asynchronously
+        }
+        /// <summary>
+        /// API Parameter Flags for PlaySound method
+        /// </summary>
+        private enum SND
+        {
+            /// <summary>play synchronously (default)</summary>
+            SND_SYNC =         0x0000,
+            /// <summary>play asynchronously</summary>
+            SND_ASYNC =        0x0001,
+            /// <summary>silence (!default) if sound not found</summary>
+            SND_NODEFAULT =    0x0002,
+            /// <summary>pszSound points to a memory file</summary>
+            SND_MEMORY =       0x0004,
+            /// <summary>loop the sound until next sndPlaySound</summary>
+            SND_LOOP =         0x0008,
+            /// <summary>don't stop any currently playing sound</summary>
+            SND_NOSTOP =       0x0010,
+            /// <summary>don't wait if the driver is busy</summary>
+            SND_NOWAIT =   0x00002000,
+            /// <summary>name is a registry alias</summary>
+            SND_ALIAS =    0x00010000,
+            /// <summary>alias is a pre d ID</summary>
+            SND_ALIAS_ID = 0x00110000,
+            /// <summary>name is file name</summary>
+            SND_FILENAME = 0x00020000,
+            /// <summary>name is resource name or atom</summary>
+            SND_RESOURCE = 0x00040004,
+            /// <summary>purge non-static events for task</summary>
+            SND_PURGE =        0x0040,
+            /// <summary>look for application specific association</summary>
+            SND_APPLICATION =  0x0080 
+        }
+        [DllImport("winmm.dll", EntryPoint = "PlaySound", CharSet = CharSet.Auto)]
+        private static extern int PlaySound(String pszSound, int hmod, int falgs);
+        #endregion
+        #region Načtení seznamu systémových zvuků ze systému (WinRegistry) 
+        /// <summary>
+        /// Načte ze systému (WinRegistry) seznam systémových zvuků, jejich zdroje a jejich využití
+        /// </summary>
+        /// <returns></returns>
+        public static SystemEventSound[] ReadEventSounds()
+        {
+            Dictionary<string, SystemEventSound> soundDict = new Dictionary<string, SystemEventSound>();
+
+            try
+            {
+                using (Microsoft.Win32.RegistryKey userKey = Microsoft.Win32.Registry.CurrentUser)
+                {
+                    // a) Načtu jména událostí a jejich zvuky:
+                    using (Microsoft.Win32.RegistryKey eventKeys = userKey.OpenSubKey(@"AppEvents\EventLabels"))
+                    {
+                        string[] eventNames = eventKeys.GetSubKeyNames();                // .Default; BlockedPopup; DeleteObject; Minimize; ...
+                        eventKeys.Close();
+                        foreach (string eventName in eventNames)
+                        {
+                            try
+                            {
+                                using (Microsoft.Win32.RegistryKey eventKey = userKey.OpenSubKey(@"AppEvents\EventLabels\" + eventName))
+                                {
+                                    string description = eventKey.GetValue("", "") as string;
+                                    if (String.IsNullOrEmpty(description)) description = eventName;
+                                    string soundSource = eventKey.GetValue("DispFileName", "") as string;
+                                    eventKey.Close();
+                                    soundDict.Add(eventName, new SystemEventSound(eventName, description, soundSource));
+                                }
+                            }
+                            catch { }
+                        }
+                    }
+
+                    // b) Načtu aplikace a jejich události:
+                    using (Microsoft.Win32.RegistryKey appsKey = userKey.OpenSubKey(@"AppEvents\Schemes\Apps"))
+                    {
+                        string[] appNames = appsKey.GetSubKeyNames();                    // .Default; Explorer; WinHTTrack; ...
+                        appsKey.Close();
+                        foreach (string appName in appNames)
+                        {   // Každá jedna aplikace:
+                            try
+                            {
+                                using (Microsoft.Win32.RegistryKey appKey = userKey.OpenSubKey(@"AppEvents\Schemes\Apps\" + appName))
+                                {   // Její klíč v registru:
+                                    string appDescription = appKey.GetValue("", "") as string;     // např pro appKey = "Explorer" je appDescription = "File Explorer"
+                                    string[] eventNames = appKey.GetSubKeyNames();       // Close; CriticalBatteryAlarm; PrintComplete; ...
+                                    appKey.Close();
+                                    foreach (string eventName in eventNames)
+                                    {
+                                        try
+                                        {
+                                            string currentValue = null;
+                                            string defaultValue = null;
+                                            using (Microsoft.Win32.RegistryKey currentKey = userKey.OpenSubKey(@"AppEvents\Schemes\Apps\" + appName + @"\" + eventName + @"\.Current"))
+                                            {
+                                                if (currentKey != null)
+                                                {
+                                                    currentValue = currentKey.GetValue("", "") as string;
+                                                    currentKey.Close();
+                                                }
+                                            }
+                                            using (Microsoft.Win32.RegistryKey defaultKey = userKey.OpenSubKey(@"AppEvents\Schemes\Apps\" + appName + @"\" + eventName + @"\.Default"))
+                                            {
+                                                if (defaultKey != null)
+                                                {
+                                                    defaultValue = defaultKey.GetValue("", "") as string;
+                                                    defaultKey.Close();
+                                                }
+                                            }
+
+                                            if (!soundDict.TryGetValue(eventName, out var sound))
+                                            {
+                                                sound = new SystemEventSound(eventName, null, null);
+                                                soundDict.Add(eventName, sound);
+                                            }
+                                            sound.AddApplication(appName, appDescription, currentValue, defaultValue);
+
+                                        }
+                                        catch { }
+                                    }
+                                }
+                            }
+                            catch { }
+                        }
+                    }
+                    userKey.Close();
+                }
+            }
+            catch { }
+
+            var soundList = soundDict.Values.ToList();
+            soundList.Sort((a, b) => String.Compare(a.Description, b.Description, StringComparison.CurrentCultureIgnoreCase));
+
+            return soundList.ToArray();
+        }
+        #endregion
+    }
     #endregion
     #region class Algebra
     /// <summary>

@@ -353,6 +353,9 @@ namespace TestDevExpress.Forms
             // group.Items.Add(CreateRibbonFunction("TestRibbon", "Test Ribbon", "svgimages/reports/gaugestylelinearhorizontal.svg", "Otevře okno s ASOL Ribbonem, vytvořeným s využitím všech metod DxRibbon a rozhraní IRibbon", _TestDxTestRibbon_Click));
             // group.Items.Add(CreateRibbonFunction("AsolRibbon", "ASOL Ribbon", "svgimages/reports/gaugestylelinearhorizontal.svg", "Otevře okno s ASOL Ribbonem, vytvořeným s použitím definičních dat IRibbon", _TestDxAsolRibbon_Click));
             // // group.Items.Add(CreateRibbonFunction("RibbonFormData3", "IData3 Ribbon", "svgimages/reports/gaugestylelinearhorizontal.svg", "Otevře okno s ASOL Ribbonem, vytvořeným s použitím definičních dat IRibbon a s třístupňovým mergováním (Slave => Void => Desktop)", _TestDxRibbonFormData3ModalButton_Click));
+
+            group.Items.Add(CreateRibbonSoundsMenu());
+
             page.Groups.Add(group);
 
             group = new DataRibbonGroup() { GroupText = "BROWSE" };
@@ -373,6 +376,53 @@ namespace TestDevExpress.Forms
             page.Groups.Add(group);
 
         }
+        protected DataRibbonItem CreateRibbonSoundsMenu()
+        {
+            DataRibbonItem menu = new DataRibbonItem()
+            {
+                ItemId = "RibbonSoundMenu",
+                Text = "Zvuky",
+                ImageName = "images/media/audiocontent_32x32.png",
+                ToolTipText = "Nabídka systémových zvuků",
+                ItemType = RibbonItemType.Menu,
+                RibbonStyle = RibbonItemStyles.Large,
+                SubItems = new List<IRibbonItem>(),
+                ItemIsFirstInGroup = false,
+                ClickAction = null
+            };
+
+            var sounds = DxComponent.SystemEventSounds;
+            foreach (var sound in sounds)
+            {
+                string tti =
+                    (sound.HasSoundSource ? "; HasSoundSource" : "") +
+                    (sound.ExistsCurrentSource ? "; ExistsCurrentSource" : "") +
+                    (sound.ExistsDefaultSource ? "; ExistsDefaultSource" : "");
+                if (tti.Length > 0) tti = tti.Substring(2); else tti = "NotDefined";
+                string image =
+                    (sound.ExistsCurrentSource ? "images/arrows/play_16x16.png" : "" +
+                    (sound.ExistsDefaultSource ? "images/media/audiocontent_16x16.png" : 
+                    (sound.HasSoundSource ? "" : 
+                    "")));
+
+                DataRibbonItem item = new DataRibbonItem()
+                {
+                    ItemId = "RibbonSoundItem_" + sound.EventName,
+                    Text = sound.Description + "  (" + tti + ")",
+                    ImageName = image,
+                    ToolTipTitle = sound.Description,
+                    ToolTipText = sound.EventName + "\r\n" + sound.SoundSource + "\r\n" + tti,
+                    ItemType = RibbonItemType.Button,
+                    RibbonStyle = RibbonItemStyles.SmallWithText,
+                    ItemIsFirstInGroup = false,
+                    ClickAction = _PlaySystemSound,
+                    Tag = sound
+                };
+                menu.SubItems.Add(item);
+            }
+
+            return menu;
+        }
         protected DataRibbonItem CreateRibbonFunction(string itemId, string text, string image, string toolTipText, Action<IMenuItem> clickHandler = null, RibbonItemStyles? styles = null, bool firstInGroup = false)
         {
             DataRibbonItem iRibbonItem = new DataRibbonItem()
@@ -387,6 +437,14 @@ namespace TestDevExpress.Forms
                 ClickAction = clickHandler
             };
             return iRibbonItem;
+        }
+        private void _PlaySystemSound(IMenuItem menuItem)
+        {
+            if (menuItem?.Tag is SystemEventSound sound)
+            {
+                sound.Play();
+                DxComponent.ClipboardInsert($"   string soundEventName = \"{sound.EventName}\";     // {sound.Description}");
+            }
         }
         private void _OpenGraphFormButton_Click(IMenuItem menuItem)
         {
