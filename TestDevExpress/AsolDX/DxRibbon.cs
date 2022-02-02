@@ -889,20 +889,49 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="e"></param>
         private void ModifySearchEditNotFoundItem(RibbonSearchMenuEventArgs e)
         {
-            // a) Caption:
-            var link = e.Menu.ItemLinks.FirstOrDefault(l => l.Item.Tag is MsgCode && ((MsgCode)l.Item.Tag) == MsgCode.RibbonNoMatchesFound);
-            if (link == null) link = e.Menu.ItemLinks.FirstOrDefault(l => l.Item.Caption == "No matches found");
-            if (link != null)
-            {   // Zkontrolovat text a Tag (pro příští rychlé vyhledání):
-                var item = link.Item;
-                string caption = DxComponent.Localize(MsgCode.RibbonNoMatchesFound);
-                if (!(item.Tag is MsgCode)) item.Tag = MsgCode.RibbonNoMatchesFound;
-                if (item.Caption != caption) item.Caption = caption;
-            }
+            if (!TryGetNotFoundItem(e.Menu.ItemLinks, out var link)) return;
 
-            // b) Visible:
+            // Zkontrolovat Tag (pro příští rychlé vyhledání):
+            var item = link.Item;
+            if (!(item.Tag is MsgCode)) item.Tag = MsgCode.RibbonNoMatchesFound;
+
+            // Caption:
+            string caption = DxComponent.Localize(MsgCode.RibbonNoMatchesFound);
+            if (item.Caption != caption) item.Caption = caption;
+
+            // Visible:
             var otherVisibleLinks = e.Menu.ItemLinks.Where(l => l.Visible && !Object.ReferenceEquals(l, link)).ToArray();
             link.Visible = (otherVisibleLinks.Length == 0);
+        }
+        /// <summary>
+        /// Pokusí se v dodané kolekci prvků najít prvek "No matches found" (nebo jiný odpovídající text).
+        /// </summary>
+        /// <param name="itemLinks"></param>
+        /// <param name="link"></param>
+        /// <returns></returns>
+        private bool TryGetNotFoundItem(BarItemLinkCollection itemLinks, out BarItemLink link)
+        {
+            var barStaticType = typeof(BarStaticItem);
+            var links = itemLinks.Where(l => l.Item.GetType() == barStaticType).ToArray();         // Prvek je dozajista BarStaticItem;
+
+            // a) Měl bych mít od posledního hledání v Tagu uložený kód hlášky:
+            link = links.FirstOrDefault(l => l.Item.Tag is MsgCode code && code == MsgCode.RibbonNoMatchesFound);
+            if (link != null) return true;
+
+            // b) Dosud jsme nehledali, zkusím najít prvek podle standardně lokalizovaného textu:
+            string caption = DevExpress.XtraBars.Localization.BarLocalizer.Active.GetLocalizedString(DevExpress.XtraBars.Localization.BarString.RibbonSearchItemNoMatchesFound);
+            link = links.FirstOrDefault(l => l.Item.Caption == caption);
+            if (link != null) return true;
+
+            // c) Zoufalství v jazyce anglickém:
+            link = links.FirstOrDefault(l => l.Item.Caption == "No matches found");
+            if (link != null) return true;
+
+            // d) Šílené zoufalství v jazyce českém:
+            link = links.FirstOrDefault(l => l.Item.Caption == "Nenalezeny žádné shody");
+            if (link != null) return true;
+
+            return false;
         }
         /// <summary>
         /// Pole prvků, které budou nabízeny v SearchEdit políčku pro rychlé hledání.
@@ -4791,8 +4820,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 qatPanel.ButtonsPosition = ToolbarPosition.RightSideCenter;
                 qatPanel.ButtonsTypes =
                     ListBoxButtonType.MoveTop | ListBoxButtonType.MoveUp | ListBoxButtonType.MoveDown | ListBoxButtonType.MoveBottom |
-                    ListBoxButtonType.ClipCopy |
-                    ListBoxButtonType.SelectAll | ListBoxButtonType.Delete; // | ListBoxButtonType.ClipCopy | ListBoxButtonType.ClipCut | ListBoxButtonType.ClipPaste;
+                    ListBoxButtonType.SelectAll | ListBoxButtonType.Delete;
 
                 var result = form.ShowDialog(this.FindForm());
 

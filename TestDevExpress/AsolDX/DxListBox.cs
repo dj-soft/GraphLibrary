@@ -589,10 +589,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="e"></param>
         private void _MeasureItem(object sender, MeasureItemEventArgs e)
         {
-            var menuItem = this.ListItems[e.Index];
-            if (menuItem != null)
-            {
-            }
+            //var items = this.ListItems;
+            //if (e.Index >= 0 && e.Index < items.Length)
+            //{
+            //    var menuItem = this.ListItems[e.Index];
+            //}
         }
         /// <summary>
         /// Velikost ikon

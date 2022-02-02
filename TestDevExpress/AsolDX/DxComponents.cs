@@ -4193,7 +4193,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         RibbonQatManagerTitle,
         /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Nenalezeno")]
-        RibbonNoMatchesFound,                                                                      // PŘIDAT !!!
+        RibbonNoMatchesFound,
 
         /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Chyba")]
@@ -4403,7 +4403,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         [DefaultMessageText("Ctrl+A")]
         DxKeyActionSelectAllTitle,                                                                 // PŘIDAT !!!
         /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
-        [DefaultMessageText("Vybrat vše")]
+        [DefaultMessageText("Označit vše")]
         DxKeyActionSelectAllText,                                                                  // PŘIDAT !!!
         /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Ctrl+C")]
