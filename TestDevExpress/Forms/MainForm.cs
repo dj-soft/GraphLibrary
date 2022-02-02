@@ -354,7 +354,7 @@ namespace TestDevExpress.Forms
             // group.Items.Add(CreateRibbonFunction("AsolRibbon", "ASOL Ribbon", "svgimages/reports/gaugestylelinearhorizontal.svg", "Otevře okno s ASOL Ribbonem, vytvořeným s použitím definičních dat IRibbon", _TestDxAsolRibbon_Click));
             // // group.Items.Add(CreateRibbonFunction("RibbonFormData3", "IData3 Ribbon", "svgimages/reports/gaugestylelinearhorizontal.svg", "Otevře okno s ASOL Ribbonem, vytvořeným s použitím definičních dat IRibbon a s třístupňovým mergováním (Slave => Void => Desktop)", _TestDxRibbonFormData3ModalButton_Click));
 
-            group.Items.Add(CreateRibbonSoundsMenu());
+            AddRibbonSoundsMenu(group);
 
             page.Groups.Add(group);
 
@@ -376,52 +376,76 @@ namespace TestDevExpress.Forms
             page.Groups.Add(group);
 
         }
-        protected DataRibbonItem CreateRibbonSoundsMenu()
+        protected void AddRibbonSoundsMenu(DataRibbonGroup group)
         {
-            DataRibbonItem menu = new DataRibbonItem()
+            DataRibbonItem menu1 = new DataRibbonItem()
             {
-                ItemId = "RibbonSoundMenu",
+                ItemId = "RibbonSoundMenuOn",
                 Text = "Zvuky",
                 ImageName = "images/media/audiocontent_32x32.png",
-                ToolTipText = "Nabídka systémových zvuků",
+                ToolTipText = "Nabídka AKTUÁLNĚ POUŽITELNÝCH systémových zvuků.\r\nKliknutí na zvuk jej přehraje, a do clipboardu vloží jeho EventName.",
                 ItemType = RibbonItemType.Menu,
                 RibbonStyle = RibbonItemStyles.Large,
                 SubItems = new List<IRibbonItem>(),
                 ItemIsFirstInGroup = false,
                 ClickAction = null
             };
+            group.Items.Add(menu1);
+
+            DataRibbonItem menu2 = new DataRibbonItem()
+            {
+                ItemId = "RibbonSoundMenuOff",
+                Text = "Ne-Zvuky",
+                ImageName = "images/media/audiocontent_16x16.png",
+                ToolTipText = "Nabídka systémových zvuků, které NEMAJÍ definovaný konkrétní zvuk.\r\nKliknutí na zvuk jej zkusí přehrát, a do clipboardu vloží jeho EventName.",
+                ItemType = RibbonItemType.Menu,
+                RibbonStyle = RibbonItemStyles.Large,
+                SubItems = new List<IRibbonItem>(),
+                ItemIsFirstInGroup = false,
+                ClickAction = null
+            };
+            group.Items.Add(menu2);
 
             var sounds = DxComponent.SystemEventSounds;
             foreach (var sound in sounds)
             {
-                string tti =
-                    (sound.HasSoundSource ? "; HasSoundSource" : "") +
-                    (sound.ExistsCurrentSource ? "; ExistsCurrentSource" : "") +
-                    (sound.ExistsDefaultSource ? "; ExistsDefaultSource" : "");
-                if (tti.Length > 0) tti = tti.Substring(2); else tti = "NotDefined";
-                string image =
-                    (sound.ExistsCurrentSource ? "images/arrows/play_16x16.png" : "" +
-                    (sound.ExistsDefaultSource ? "images/media/audiocontent_16x16.png" : 
-                    (sound.HasSoundSource ? "" : 
-                    "")));
-
-                DataRibbonItem item = new DataRibbonItem()
+                if (sound.ExistsCurrentSource)
                 {
-                    ItemId = "RibbonSoundItem_" + sound.EventName,
-                    Text = sound.Description + "  (" + tti + ")",
-                    ImageName = image,
-                    ToolTipTitle = sound.Description,
-                    ToolTipText = sound.EventName + "\r\n" + sound.SoundSource + "\r\n" + tti,
-                    ItemType = RibbonItemType.Button,
-                    RibbonStyle = RibbonItemStyles.SmallWithText,
-                    ItemIsFirstInGroup = false,
-                    ClickAction = _PlaySystemSound,
-                    Tag = sound
-                };
-                menu.SubItems.Add(item);
+                    string image = "images/arrows/play_16x16.png";
+                    DataRibbonItem item = new DataRibbonItem()
+                    {
+                        ItemId = "RibbonSoundItem_" + sound.EventName,
+                        Text = sound.Description + "  [" + sound.EventName + "]",
+                        ImageName = image,
+                        ToolTipTitle = sound.Description,
+                        ToolTipText = sound.EventName + "\r\n" + sound.SoundSource + "\r\n",
+                        ItemType = RibbonItemType.Button,
+                        RibbonStyle = RibbonItemStyles.SmallWithText,
+                        ItemIsFirstInGroup = false,
+                        ClickAction = _PlaySystemSound,
+                        Tag = sound
+                    };
+                    menu1.SubItems.Add(item);
+                }
+                else
+                {
+                    string image = "";
+                    DataRibbonItem item = new DataRibbonItem()
+                    {
+                        ItemId = "RibbonSoundItem_" + sound.EventName,
+                        Text = sound.Description + "  [" + sound.EventName + "]",
+                        ImageName = image,
+                        ToolTipTitle = sound.Description,
+                        ToolTipText = sound.EventName + "\r\n" + sound.SoundSource + "\r\n",
+                        ItemType = RibbonItemType.Button,
+                        RibbonStyle = RibbonItemStyles.SmallWithText,
+                        ItemIsFirstInGroup = false,
+                        ClickAction = _PlaySystemSound,
+                        Tag = sound
+                    };
+                    menu2.SubItems.Add(item);
+                }
             }
-
-            return menu;
         }
         protected DataRibbonItem CreateRibbonFunction(string itemId, string text, string image, string toolTipText, Action<IMenuItem> clickHandler = null, RibbonItemStyles? styles = null, bool firstInGroup = false)
         {
@@ -443,7 +467,10 @@ namespace TestDevExpress.Forms
             if (menuItem?.Tag is SystemEventSound sound)
             {
                 sound.Play();
-                DxComponent.ClipboardInsert($"   string soundEventName = \"{sound.EventName}\";     // {sound.Description}");
+                string code = $"            string soundEventName = \"{sound.EventName}\";";
+                if (code.Length < 80) code = code.PadRight(80);
+                code += $"// {sound.Description}\r\n";
+                DxComponent.ClipboardInsert(code);
             }
         }
         private void _OpenGraphFormButton_Click(IMenuItem menuItem)
