@@ -312,8 +312,8 @@ namespace Noris.Clients.Win.Components.AsolDX
                     case "arrowsmall": return _TryGetGenericSvgArrowSmall(imageName, genericItems, sizeType, ref dxSvgImage);
                     case "arrow1": return _TryGetGenericSvgArrow1(imageName, genericItems, sizeType, ref dxSvgImage);
                     case "arrow": return _TryGetGenericSvgArrow1(imageName, genericItems, sizeType, ref dxSvgImage);
-                    case "editsmall": return _TryGetGenericSvgEditSmall(imageName, genericItems, sizeType, ref dxSvgImage);
-                    case "edit": return _TryGetGenericSvgEditStandard(imageName, genericItems, sizeType, ref dxSvgImage);
+                    case "editsmall": return _TryGetGenericSvgEditAny(imageName, genericItems, sizeType, ref dxSvgImage, 2);
+                    case "edit": return _TryGetGenericSvgEditAny(imageName, genericItems, sizeType, ref dxSvgImage, 0);
                     case "text": return _TryGetGenericSvgText(imageName, genericItems, sizeType, ref dxSvgImage);
                     case "textonly": return _TryGetGenericSvgTextOnly(imageName, genericItems, sizeType, ref dxSvgImage);
                 }
@@ -724,30 +724,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         #endregion
         #region Edit
         /// <summary>
-        /// Vytvoří ikonu pro editaci, malou
-        /// </summary>
-        /// <param name="imageName"></param>
-        /// <param name="genericItems"></param>
-        /// <param name="sizeType"></param>
-        /// <param name="dxSvgImage"></param>
-        /// <returns></returns>
-        private static bool _TryGetGenericSvgEditSmall(string imageName, string[] genericItems, ResourceImageSizeType? sizeType, ref DxSvgImage dxSvgImage)
-        {
-            return _TryGetGenericSvgEditAny(imageName, genericItems, sizeType, ref dxSvgImage, 2);
-        }
-        /// <summary>
-        /// Vytvoří ikonu pro editaci, standardní velikost
-        /// </summary>
-        /// <param name="imageName"></param>
-        /// <param name="genericItems"></param>
-        /// <param name="sizeType"></param>
-        /// <param name="dxSvgImage"></param>
-        /// <returns></returns>
-        private static bool _TryGetGenericSvgEditStandard(string imageName, string[] genericItems, ResourceImageSizeType? sizeType, ref DxSvgImage dxSvgImage)
-        {
-            return _TryGetGenericSvgEditAny(imageName, genericItems, sizeType, ref dxSvgImage, 0);
-        }
-        /// <summary>
         /// Vytvoří ikonu pro editaci, v dané velikosti
         /// </summary>
         /// <param name="imageName"></param>
@@ -771,18 +747,24 @@ namespace Noris.Clients.Win.Components.AsolDX
             switch (editType)
             {
                 case EditType.SelectAll1:
-                    // Střední čtverec dané barvy a černý tečkovaný okraj:
+                    // Čtyři čtverce kousek od sebe:
                     editStyle1 = _GetGenericSvgDesignParam(genericItems, 2, "class='Blue'");
-                    xmlPaths += _GetEditPartCenter1(coordinates, subSize, editStyle1);
-                    editStyle2 = _GetGenericSvgDesignParam(genericItems, 3, "class='Black'");
-                    xmlPaths += _GetEditPartBorder(coordinates, subSize, editStyle2);
+                    editStyle2 = _GetGenericSvgDesignParam(genericItems, 3, "class='White'");
+                    xmlPaths += _GetEditPartSelectAll1(coordinates, subSize, editStyle1, editStyle2);
                     break;
                 case EditType.SelectAll2:
                     // Střední čtverec dané barvy a černý tečkovaný okraj:
                     editStyle1 = _GetGenericSvgDesignParam(genericItems, 2, "class='Blue'");
-                    xmlPaths += _GetEditPartCenter2(coordinates, subSize, editStyle1);
+                    xmlPaths += _GetEditPartSelectAllCenter2(coordinates, subSize, editStyle1);
                     editStyle2 = _GetGenericSvgDesignParam(genericItems, 3, "class='Black'");
-                    xmlPaths += _GetEditPartBorder(coordinates, subSize, editStyle2);
+                    xmlPaths += _GetEditPartBorderIntermitent(coordinates, subSize, editStyle2);
+                    break;
+                case EditType.SelectAll3:
+                    // Střední čtverec dané barvy a černý tečkovaný okraj:
+                    editStyle1 = _GetGenericSvgDesignParam(genericItems, 2, "class='Blue'");
+                    xmlPaths += _GetEditPartSelectAllCenter3(coordinates, subSize, editStyle1);
+                    editStyle2 = _GetGenericSvgDesignParam(genericItems, 3, "class='Black'");
+                    xmlPaths += _GetEditPartBorderIntermitent(coordinates, subSize, editStyle2);
                     break;
                 case EditType.Delete1:
                     // tenká linka:
@@ -817,9 +799,41 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="coordinates">Fyzické souřadnice</param>
         /// <param name="subSize">Okraj ikony, číslo v rozsahu 0-4 včetně</param>
+        /// <param name="borderStyle"></param>
+        /// <param name="fillStyle"></param>
+        /// <returns></returns>
+        private static string _GetEditPartSelectAll1(int[] coordinates, int subSize, string borderStyle, string fillStyle)
+        {
+            int a = 1;
+            switch (subSize)
+            {
+                case 0: a = 1; break;
+                case 1: a = 2; break;
+                case 2: a = 3; break;
+                case 3: a = 4; break;
+                case 4: a = 4; break;
+            }
+            int thick = coordinates[1];
+            int d0 = coordinates[a];
+            int d1 = coordinates[9];
+            int w = coordinates[7] - d0;
+
+            string xmlPaths =
+                _GetXmlPathRectangleFill(d0, d0, w, w, thick, borderStyle, fillStyle) +
+                _GetXmlPathRectangleFill(d1, d0, w, w, thick, borderStyle, fillStyle) +
+                _GetXmlPathRectangleFill(d0, d1, w, w, thick, borderStyle, fillStyle) +
+                _GetXmlPathRectangleFill(d1, d1, w, w, thick, borderStyle, fillStyle);
+
+            return xmlPaths;
+        }
+        /// <summary>
+        /// Vykreslí střed pro ikonu SelectAll2
+        /// </summary>
+        /// <param name="coordinates">Fyzické souřadnice</param>
+        /// <param name="subSize">Okraj ikony, číslo v rozsahu 0-4 včetně</param>
         /// <param name="editColorName"></param>
         /// <returns></returns>
-        private static string _GetEditPartCenter1(int[] coordinates, int subSize, string editColorName)
+        private static string _GetEditPartSelectAllCenter2(int[] coordinates, int subSize, string editColorName)
         {
             int b = coordinates[3 + subSize];
             int e = coordinates[13 - subSize];
@@ -828,15 +842,15 @@ namespace Noris.Clients.Win.Components.AsolDX
             return xmlPaths;
         }
         /// <summary>
-        /// Vykreslí střed = rectangle pro SelectAll2
+        /// Vykreslí střed = rectangle pro SelectAll3
         /// </summary>
         /// <param name="coordinates">Fyzické souřadnice</param>
         /// <param name="subSize">Okraj ikony, číslo v rozsahu 0-4 včetně</param>
         /// <param name="editColorName"></param>
         /// <returns></returns>
-        private static string _GetEditPartCenter2(int[] coordinates, int subSize, string editColorName)
+        private static string _GetEditPartSelectAllCenter3(int[] coordinates, int subSize, string editColorName)
         {
-            if (subSize >= 3) return _GetEditPartCenter1(coordinates, subSize, editColorName);    // Velké okraje = malý střed => vrátím plný střed jako pro SelectAll1.
+            if (subSize >= 3) return _GetEditPartSelectAllCenter2(coordinates, subSize, editColorName);    // Velké okraje = malý střed => vrátím plný střed jako pro SelectAll1.
 
             string xmlPaths = "";
             switch (subSize)
@@ -881,7 +895,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="subSize">Okraj ikony, číslo v rozsahu 0-4 včetně</param>
         /// <param name="editColorName"></param>
         /// <returns></returns>
-        private static string _GetEditPartBorder(int[] coordinates, int subSize, string editColorName)
+        private static string _GetEditPartBorderIntermitent(int[] coordinates, int subSize, string editColorName)
         {
             //   Vzoreček pro typ = 0 = rozměr 2 ÷ 30:
             //paths += $"    <polygon points=\"2,2 6,2 6,4 4,4 4,6 2,6 \" {editColorName} />\r\n";
@@ -1157,6 +1171,10 @@ namespace Noris.Clients.Win.Components.AsolDX
                 case "ALL2":
                 case "A2": return EditType.SelectAll2;
 
+                case "SELECTALL3":
+                case "ALL3":
+                case "A3": return EditType.SelectAll3;
+
                 case "DELETE":
                 case "DELETE1":
                 case "DEL":
@@ -1196,7 +1214,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Typy ikon pro Editaci
         /// </summary>
-        private enum EditType { None, SelectAll1, SelectAll2, Delete1, Delete2, Copy, Cut, Paste, Undo, Redo }
+        private enum EditType { None, SelectAll1, SelectAll2, SelectAll3, Delete1, Delete2, Copy, Cut, Paste, Undo, Redo }
         #endregion
         #region Text
         /// <summary>
@@ -1697,6 +1715,29 @@ M22,22H10v2H22v-2z " class="Black" />
             string xml = _GetXmlPathDataRectangle(l, t, w, h, counterClockWise);
 
             return xml.Replace("'", "\"");
+        }
+        /// <summary>
+        /// Vrací kompletní element "path" pro rectangle dané velikosti s danými vlastnostmi, plný (bez vnitřního otvoru)
+        /// </summary>
+        /// <param name="l"></param>
+        /// <param name="t"></param>
+        /// <param name="w"></param>
+        /// <param name="h"></param>
+        /// <param name="thick"></param>
+        /// <param name="borderStyle"></param>
+        /// <param name="fillStyle"></param>
+        /// <returns></returns>
+        private static string _GetXmlPathRectangleFill(int l, int t, int w, int h, int thick, string borderStyle, string fillStyle)
+        {
+            string xml = "";
+            xml += _GetXmlPathRectangle(l, t, w, h, thick, borderStyle);
+            if (thick > 0)
+            {
+                int t1 = thick;
+                int t2 = 2 * thick;
+                xml += _GetXmlPathRectangle(l + t1, t + t1, w - t2, h - t2, 0, fillStyle);
+            }
+            return xml;
         }
         /// <summary>
         /// Vrací kompletní element "path" pro rectangle dané velikosti s danými vlastnostmi, plný (bez vnitřního otvoru)
