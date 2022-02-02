@@ -3044,7 +3044,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="command"></param>
         private void _AudioSoundWavPlay(string fileNameWav, bool force, SystemEventSound.PlayCommands command = SystemEventSound.PlayCommands.Default)
         {
-            if (String.IsNullOrEmpty(fileNameWav) && _IsTimeForNextPlay(force))
+            if (!String.IsNullOrEmpty(fileNameWav) && _IsTimeForNextPlay(force))
                 SystemEventSound.PlayFileWav(fileNameWav, command);
         }
         /// <summary>

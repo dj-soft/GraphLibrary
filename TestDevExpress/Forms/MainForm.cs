@@ -355,6 +355,7 @@ namespace TestDevExpress.Forms
             // // group.Items.Add(CreateRibbonFunction("RibbonFormData3", "IData3 Ribbon", "svgimages/reports/gaugestylelinearhorizontal.svg", "Otevře okno s ASOL Ribbonem, vytvořeným s použitím definičních dat IRibbon a s třístupňovým mergováním (Slave => Void => Desktop)", _TestDxRibbonFormData3ModalButton_Click));
 
             AddRibbonSoundsMenu(group);
+            AddRibbonWavFilesMenu(group);
 
             page.Groups.Add(group);
 
@@ -387,7 +388,7 @@ namespace TestDevExpress.Forms
                 ItemType = RibbonItemType.Menu,
                 RibbonStyle = RibbonItemStyles.Large,
                 SubItems = new List<IRibbonItem>(),
-                ItemIsFirstInGroup = false,
+                ItemIsFirstInGroup = true,
                 ClickAction = null
             };
             group.Items.Add(menu1);
@@ -447,6 +448,64 @@ namespace TestDevExpress.Forms
                 }
             }
         }
+        protected void AddRibbonWavFilesMenu(DataRibbonGroup group)
+        {
+            string path = System.IO.Path.Combine(DxComponent.ApplicationPath, "media");
+            DataRibbonItem menuW = new DataRibbonItem()
+            {
+                ItemId = "RibbonWavFilesMenu",
+                Text = "Nahrávky",
+                ImageName = "images/xaf/bo_folder_32x32.png",
+                ToolTipText = $"Nabídka zvuků z adresáře '{path}', které lze přehrát.\r\nKliknutí na soubor jej zkusí přehrát, a do clipboardu vloží jeho FullName.",
+                ItemType = RibbonItemType.Menu,
+                RibbonStyle = RibbonItemStyles.Large,
+                SubItems = new List<IRibbonItem>(),
+                ItemIsFirstInGroup = false,
+                ClickAction = null
+            };
+            group.Items.Add(menuW);
+
+            List<string> files = null;
+            if (System.IO.Directory.Exists(path))
+                files = System.IO.Directory.GetFiles(path, "*.wav").ToList();
+
+            if (files.Count == 0)
+            {
+                DataRibbonItem item = new DataRibbonItem()
+                {
+                    ItemId = "RibbonWavFile_None",
+                    Text = "Adresář Media neexistuje nebo neobsahuje žádný WAV soubor",
+                    ImageName = "",
+                    ItemType = RibbonItemType.Button,
+                    RibbonStyle = RibbonItemStyles.SmallWithText,
+                    ItemIsFirstInGroup = false
+                };
+                menuW.SubItems.Add(item);
+                return;
+            }
+
+            files.Sort();
+            foreach (var fullName in files)
+            {
+                string image = "images/arrows/play_16x16.png";
+                string fileName = System.IO.Path.GetFileName(fullName);
+                string name = System.IO.Path.GetFileNameWithoutExtension(fullName);
+                DataRibbonItem item = new DataRibbonItem()
+                {
+                    ItemId = "RibbonWavFile_" + name,
+                    Text = fileName,
+                    ImageName = image,
+                    ToolTipTitle = name,
+                    ToolTipText = fullName,
+                    ItemType = RibbonItemType.Button,
+                    RibbonStyle = RibbonItemStyles.SmallWithText,
+                    ItemIsFirstInGroup = false,
+                    ClickAction = _PlayWavFile,
+                    Tag = fullName
+                };
+                menuW.SubItems.Add(item);
+            }
+        }
         protected DataRibbonItem CreateRibbonFunction(string itemId, string text, string image, string toolTipText, Action<IMenuItem> clickHandler = null, RibbonItemStyles? styles = null, bool firstInGroup = false)
         {
             DataRibbonItem iRibbonItem = new DataRibbonItem()
@@ -470,6 +529,15 @@ namespace TestDevExpress.Forms
                 string code = $"            string soundEventName = \"{sound.EventName}\";";
                 if (code.Length < 80) code = code.PadRight(80);
                 code += $"// {sound.Description}\r\n";
+                DxComponent.ClipboardInsert(code);
+            }
+        }
+        private void _PlayWavFile(IMenuItem menuItem)
+        {
+            if (menuItem?.Tag is string fullName)
+            {
+                DxComponent.AudioSoundWavPlay(fullName);
+                string code = $"            string fileName = @\"{fullName}\";";
                 DxComponent.ClipboardInsert(code);
             }
         }
