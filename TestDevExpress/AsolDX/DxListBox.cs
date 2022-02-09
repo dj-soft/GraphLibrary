@@ -772,6 +772,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             _DoKeyAction(action, KeyActionType.MoveDown, force, _DoKeyActionMoveDown, ref handled);
             _DoKeyAction(action, KeyActionType.MoveBottom, force, _DoKeyActionMoveBottom, ref handled);
             _DoKeyAction(action, KeyActionType.Delete, force, _DoKeyActionDelete, ref handled);
+            _DoKeyAction(action, KeyActionType.Undo, force, _DoKeyActionUndo, ref handled);
+            _DoKeyAction(action, KeyActionType.Redo, force, _DoKeyActionRedo, ref handled);
             return handled;
         }
         /// <summary>
@@ -881,6 +883,16 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             _MoveSelectedItems(items => null);
         }
+        /// <summary>
+        /// Provedení klávesové akce: Undo
+        /// </summary>
+        private void _DoKeyActionUndo()
+        { }
+        /// <summary>
+        /// Provedení klávesové akce: Redo
+        /// </summary>
+        private void _DoKeyActionRedo()
+        { }
         /// <summary>
         /// Provedení akce: Move[někam].
         /// Metoda zjistí, které prvky jsou selectované (a pokud žádný, tak skončí).

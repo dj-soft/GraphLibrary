@@ -4709,6 +4709,187 @@ namespace Noris.Clients.Win.Components.AsolDX
         private Rectangle _Bounds;
     }
     #endregion
+    #region class UndoRedoController
+    /// <summary>
+    /// Kontroller pro akce Undo a Redo
+    /// </summary>
+    internal class UndoRedoController
+    {
+        /// <summary>
+        /// Konstruktor, lze zadat maximální počet kroků Undo
+        /// </summary>
+        /// <param name="maxStepCount"></param>
+        public UndoRedoController(int maxStepCount = 64)
+        {
+            _MaxStepCount = (maxStepCount < 4 ? 4 : (maxStepCount > 1024 ? 1024 : maxStepCount));
+            _Steps = new List<UndoRedoStep>();
+            _Pointer = 0;
+        }
+        /// <summary>
+        /// Maximální počet evidovaných kroků
+        /// </summary>
+        private int _MaxStepCount;
+        /// <summary>
+        /// Uložené stavy = jednotlivé kroky zpět a vpřed, podle pointeru <see cref="_Pointer"/>
+        /// </summary>
+        private List<UndoRedoStep> _Steps;
+        /// <summary>
+        /// Ukazatel.
+        /// <para/>
+        /// Výchozí hodnota po inicializaci je 0. Protože i <see cref="_Steps"/> má 0 prvků, nelze provést ani Undo, ani Redo.
+        /// Undo lze provést tehdy, když <see cref="_Pointer"/> je větší než 0.
+        /// Redo lze provést tehdy, když <see cref="_Pointer"/> je menší než poslední index.
+        /// <para/>
+        /// Po přidání prvního (a jakéhokoli dalšího) stavu je do <see cref="_Pointer"/> vložena hodnota <see cref="_Steps"/>.Count.
+        /// <see cref="_Pointer"/> tedy ukazuje za posledně přidaný Step.
+        /// Pokud <see cref="_Pointer"/> je větší než 0, lze provést Undo.
+        /// <para/>
+        /// Provedení akce Undo (metoda <see cref="DoUndo()"/>) vezme stav <see cref="_Pointer"/>, sníží jej o 1, 
+        /// a výslednou hodnotu použije jako index do pole <see cref="_Steps"/>, odkud vezme stav pro vrácení aplikaci.
+        /// 
+        /// 
+        /// </summary>
+        private int _Pointer;
+        /// <summary>
+        /// Aplikace provedla změny dat a nyní je chce uložit do UndoRedo containeru.
+        /// Typicky první stav se vkládá po dokončení inicializace controlu = naplnění daty, těsně před představením uživateli.
+        /// Poté uživatel může provést změny dat, po dokončení jeho změny se stav dat opět uloží do this UndoRedo containeru.
+        /// <para/>
+        /// Pokud aplikace před vložením stavu pomocí této metody provedla nějaké kroky Undo (tj. byla tu možnost dát Redo), 
+        /// pak zdejší metoda <see cref="AddState(IUndoRedoControl, object)"/> zahodí kroky Redo (=odrolované kroky), už nebude možné se k nim vrátit.
+        /// To vychází z elementární logiky: Pokud provedu kroky editace A1, A2, A3, A4; potom krok A4 zruším a vrátím se na A3, a provedu B4, 
+        /// pak je nesmysl provádět Redo do kroku A4.
+        /// </summary>
+        /// <param name="control"></param>
+        /// <param name="state"></param>
+        public void AddState(IUndoRedoControl control, object state)
+        {
+            _ClearRedoSteps();
+            _ClearDeadControls();
+            _ClearOldMaxSteps(1);
+            _Steps.Add(new UndoRedoStep(control, state));
+            _Pointer = _Count;
+        }
+        /// <summary>
+        /// Požádá o provedení kroku UNDO.
+        /// Najde se nejbližší krok zpět, najde se jeho control a provede se.
+        /// </summary>
+        public void DoUndo()
+        {
+            int start = _Pointer - 1;
+            for (int pointer = start; pointer >= 0; pointer--)
+            {
+                var step = _Steps[pointer];
+                if (step != null && step.IsAlive)
+                {
+                    _Pointer = (pointer > 0 ? pointer : 0);
+                    step.DoStep();
+                    break;
+                }
+            }
+        }
+        public void DoRedo()
+        { }
+        /// <summary>
+        /// Obsahuje true, pokud uživatel může dát UNDO
+        /// </summary>
+        public bool UndoEnabled { get { return (_Pointer > 0); } }
+        /// <summary>
+        /// Obsahuje true, pokud uživatel může dát REDO
+        /// </summary>
+        public bool RedoEnabled { get { return (_Count > 0 && _Pointer <= _Count); } }
+
+        
+        private int _Count { get { return _Steps.Count; } }
+        /// <summary>
+        /// Odstraní dostupné kroky REDO.
+        /// Používá se před vložením nového stavu v metodě <see cref="AddState(IUndoRedoControl, object)"/>.
+        /// </summary>
+        private void _ClearRedoSteps()
+        {
+            int oldCount = _Count;
+            int pointer = _Pointer;
+            if (pointer >= oldCount) return;
+
+        }
+        /// <summary>
+        /// Odstraní kroky, které náleží controlům, které už neexistují.
+        /// </summary>
+        private void _ClearDeadControls()
+        {
+            _Steps.RemoveAll(s => !s.IsAlive);
+        }
+        /// <summary>
+        /// Odstraní staré stavy před přidáním nového jednoho. Účelem je nepřekročit počet uložených stavů <see cref="_MaxStepCount"/>.
+        /// </summary>
+        /// <param name="addCount">Kolik pozic chci odebrat navíc protože je budu přidávat? Typicky 1 v <see cref="AddState(IUndoRedoControl, object)"/>.</param>
+        private void _ClearOldMaxSteps(int addCount)
+        {
+            int oldCount = _Count;
+            int newCount = oldCount + addCount;
+            int maxCount = _MaxStepCount;
+            if (newCount <= maxCount) return;
+
+            int index = 1;
+            int remCount = newCount - maxCount;
+            _Steps.RemoveRange(index, remCount);
+            _Pointer -= remCount;
+            if (_Pointer < 1) _Pointer = 1;
+        }
+        /// <summary>
+        /// Jeden krok v zásobníku UndoRedo. Obsahuje control, který bude krok provádět, a jeho data.
+        /// </summary>
+        private class UndoRedoStep
+        {
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="control"></param>
+            /// <param name="state"></param>
+            public UndoRedoStep(IUndoRedoControl control, object state)
+            {
+                __Control = control != null ? new WeakTarget<IUndoRedoControl>(control) : null;
+                State = state;
+            }
+            /// <summary>
+            /// Control, který bude provádět kroky Undo/Redo pomocí metody <see cref="IUndoRedoControl.DoUndoRedoStep(object)"/>
+            /// </summary>
+            public IUndoRedoControl Control { get { return __Control?.Target; } }
+            private WeakTarget<IUndoRedoControl> __Control;
+            /// <summary>
+            /// Obsahuje true, pokud je control <see cref="Control"/> živý.
+            /// </summary>
+            public bool IsAlive { get { return __Control != null && __Control.IsAlive; } }
+            /// <summary>
+            /// Stavová data
+            /// </summary>
+            public object State { get; set; }
+            /// <summary>
+            /// Control <see cref="Control"/> provede svoji akci <see cref="IUndoRedoControl.DoUndoRedoStep(object)"/> pro zde uložená data
+            /// </summary>
+            public void DoStep()
+            { }
+        }
+    }
+    /// <summary>
+    /// Rozhraní, které musí implementovat jakýkoli prvek, aby mohl provádět kroky Undo a Redo.
+    /// Každý takový krok je prováděn tak, že daný Control je zavolán z controlleru <see cref="UndoRedoController"/> do metody <see cref="IUndoRedoControl.DoUndoRedoStep(object)"/>,
+    /// controlu je předá jeho vlastní uložený stav, a control podle něj nastaví svoje hodnoty.
+    /// <para/>
+    /// Tato akce je výsledkem volání <see cref="UndoRedoController.DoUndo()"/> nebo <see cref="UndoRedoController.DoRedo()"/>, typicky z klávesové zkratky nebo z tlačítka (Ribbon, Button).
+    /// Vkládaný stav (parametr 'state' metody <see cref="IUndoRedoControl.DoUndoRedoStep(object)"/>) si daný control uložil ve vhodném okamžiku do controlleru <see cref="UndoRedoController"/>, 
+    /// typicky po inicializaci (jako první) anebo průběžně po dokončení nějakého uživatelského editačního kroku.
+    /// </summary>
+    internal interface IUndoRedoControl
+    {
+        /// <summary>
+        /// Control si má nastavit svoje vizuální data podle hodnot z dodaného objektu <paramref name="state"/>.
+        /// Tento objekt si control uložil do controlleru voláním metody <see cref="UndoRedoController.AddState(IUndoRedoControl, object)"/>.
+        /// </summary>
+        /// <param name="state"></param>
+        void DoUndoRedoStep(object state);
+    }
+    #endregion
     #region Enumy: LabelStyleType, RectangleSide, RectangleCorner, ...
     /// <summary>
     /// Druh položky menu
@@ -4917,9 +5098,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Na pravé straně, zarovnáno nahoru
         /// </summary>
         LeftSideTop
-        /// <summary>
-        /// Na pravé straně, zarovnáno nahoru
-        /// </summary>
     }
     /// <summary>
     /// Vyjádření názvu rohu na objektu Rectangle (Vlevo nahoře, Vpravo nahoře, ...)
@@ -5046,6 +5224,15 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Klávesa CtrlAltDown (kurzor): přemístit na poslední pozici
         /// </summary>
         MoveBottom = 0x0800,
+
+        /// <summary>
+        /// Klávesa CtrlZ: Undo (odvolat poslední změnu)
+        /// </summary>
+        Undo = 0x1000,
+        /// <summary>
+        /// Klávesa CtrlY: Redo (znovu provést poslední změnu)
+        /// </summary>
+        Redo = 0x2000,
 
         /// <summary>
         /// Všechny práce s clipboardem

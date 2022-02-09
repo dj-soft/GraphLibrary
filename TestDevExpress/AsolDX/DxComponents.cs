@@ -3048,7 +3048,8 @@ namespace Noris.Clients.Win.Components.AsolDX
                 SystemEventSound.PlayFileWav(fileNameWav, command);
         }
         /// <summary>
-        /// Zvuky definované v systému Windows pro jednotlivé události
+        /// Zvuky definované v systému Windows pro jednotlivé události.
+        /// Obsahuje zvuky a události, které jsou k dispozici v Control panelu: "mmsys.cpl" (nebo "control mmsys.cpl") - záložka Zvuky.
         /// </summary>
         public static SystemEventSound[] SystemEventSounds { get { return Instance._SystemEventSounds; } }
         /// <summary>Zvuky definované v systému Windows pro jednotlivé události</summary>
