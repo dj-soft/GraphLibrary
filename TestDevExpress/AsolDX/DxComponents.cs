@@ -4378,59 +4378,71 @@ namespace Noris.Clients.Win.Components.AsolDX
 
         /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Alt+Home")]
-        DxKeyActionMoveTopTitle,                                                                   // PŘIDAT !!!
+        DxKeyActionMoveTopTitle,
         /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Přesunout na začátek")]
-        DxKeyActionMoveTopText,                                                                    // PŘIDAT !!!
+        DxKeyActionMoveTopText,
         /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Alt+Nahoru")]
-        DxKeyActionMoveUpTitle,                                                                    // PŘIDAT !!!
+        DxKeyActionMoveUpTitle,
         /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Přesunout o řádek nahoru")]
-        DxKeyActionMoveUpText,                                                                     // PŘIDAT !!!
+        DxKeyActionMoveUpText,
         /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Alt+Dolů")]
-        DxKeyActionMoveDownTitle,                                                                  // PŘIDAT !!!
+        DxKeyActionMoveDownTitle,
         /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Přesunout o řádek dolů")]
-        DxKeyActionMoveDownText,                                                                   // PŘIDAT !!!
+        DxKeyActionMoveDownText,
         /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Alt+End")]
-        DxKeyActionMoveBottomTitle,                                                                // PŘIDAT !!!
+        DxKeyActionMoveBottomTitle,
         /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Přesunout na konec")]
-        DxKeyActionMoveBottomText,                                                                 // PŘIDAT !!!
+        DxKeyActionMoveBottomText,
         /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Ctrl+A")]
-        DxKeyActionSelectAllTitle,                                                                 // PŘIDAT !!!
+        DxKeyActionSelectAllTitle,
         /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Označit vše")]
-        DxKeyActionSelectAllText,                                                                  // PŘIDAT !!!
+        DxKeyActionSelectAllText,
         /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Ctrl+C")]
-        DxKeyActionClipCopyTitle,                                                                  // PŘIDAT !!!
+        DxKeyActionClipCopyTitle,
         /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Zkopírovat do schránky")]
-        DxKeyActionClipCopyText,                                                                   // PŘIDAT !!!
+        DxKeyActionClipCopyText,
         /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Ctrl+X")]
-        DxKeyActionClipCutTitle,                                                                   // PŘIDAT !!!
+        DxKeyActionClipCutTitle,
         /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Přenést do schránky")]
-        DxKeyActionClipCutText,                                                                    // PŘIDAT !!!
+        DxKeyActionClipCutText,
         /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Ctrl+V")]
-        DxKeyActionClipPasteTitle,                                                                 // PŘIDAT !!!
+        DxKeyActionClipPasteTitle,
         /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Vložit ze schránky")]
-        DxKeyActionClipPasteText,                                                                  // PŘIDAT !!!
+        DxKeyActionClipPasteText,
         /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Delete")]
-        DxKeyActionDeleteTitle,                                                                    // PŘIDAT !!!
+        DxKeyActionDeleteTitle,
         /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Smazat")]
-        DxKeyActionDeleteText                                                                      // PŘIDAT !!!
+        DxKeyActionDeleteText,
 
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
+        [DefaultMessageText("Ctrl+Y")]
+        DxKeyActionUndoTitle,//                                                                    // PŘIDAT !!!
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
+        [DefaultMessageText("O krok zpět v editaci")]
+        DxKeyActionUndoText,//                                                                     // PŘIDAT !!!
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
+        [DefaultMessageText("Ctrl+Z")]
+        DxKeyActionRedoTitle,//                                                                    // PŘIDAT !!!
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
+        [DefaultMessageText("O krok vpřed. Znovu provede krok editace, který byl zrušen krokem zpět")]
+        DxKeyActionRedoText//                                                                      // PŘIDAT !!!
 
 
         // Nové kódy přidej do Messages.xml v klientu!!!     Do AdapterTest.cs není nutno, tam se načítá hodnota atributu DefaultMessageText() !

@@ -34,6 +34,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.Controls.Add(_ListBox);
             this.Padding = new Padding(0);
             this.ClientSizeChanged += _ClientSizeChanged;
+            _ListBox.UndoRedoEnabledChanged += _ListBox_UndoRedoEnabledChanged;
             DoLayout();
         }
         /// <summary>
@@ -164,6 +165,10 @@ namespace Noris.Clients.Win.Components.AsolDX
             AcceptButtonType(ListBoxButtonType.ClipCopy, validButtonsTypes, "devav/actions/copy.svg", MsgCode.DxKeyActionClipCopyTitle, MsgCode.DxKeyActionClipCopyText);
             AcceptButtonType(ListBoxButtonType.ClipCut, validButtonsTypes, "devav/actions/cut.svg", MsgCode.DxKeyActionClipCutTitle, MsgCode.DxKeyActionClipCutText);
             AcceptButtonType(ListBoxButtonType.ClipPaste, validButtonsTypes, "devav/actions/paste.svg", MsgCode.DxKeyActionClipPasteTitle, MsgCode.DxKeyActionClipPasteText);
+            AcceptButtonType(ListBoxButtonType.Undo, validButtonsTypes, "svgimages/dashboards/undo.svg", MsgCode.DxKeyActionUndoTitle, MsgCode.DxKeyActionUndoText);
+            AcceptButtonType(ListBoxButtonType.Redo, validButtonsTypes, "svgimages/dashboards/redo.svg", MsgCode.DxKeyActionRedoTitle, MsgCode.DxKeyActionRedoText);
+
+            SetButtonsEnabled();
         }
         /// <summary>
         /// Metoda vytvoří Button, pokud má být vytvořen. Tedy pokud typ buttonu v <paramref name="buttonType"/> bude přítomen v povolených buttonech v <paramref name="validButtonsTypes"/>.
@@ -201,6 +206,33 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
         }
         /// <summary>
+        /// Promítne stav <see cref="UndoRedoController.UndoEnabled"/> a <see cref="UndoRedoController.RedoEnabled"/> 
+        /// z controlleru <see cref="UndoRedoController"/> do buttonů.
+        /// </summary>
+        private void _ListBox_UndoRedoEnabledChanged(object sender, EventArgs e)
+        {
+            SetButtonsEnabled();
+        }
+        /// <summary>
+        /// Nastaví Enabled buttonů
+        /// </summary>
+        private void SetButtonsEnabled()
+        {
+            bool undoRedoEnabled = this.UndoRedoEnabled;
+            SetButtonEnabled(ListBoxButtonType.Undo, (undoRedoEnabled && this.UndoRedoController.UndoEnabled));
+            SetButtonEnabled(ListBoxButtonType.Redo, (undoRedoEnabled && this.UndoRedoController.RedoEnabled));
+        }
+        /// <summary>
+        /// Nastaví do daného buttonu stav enabled
+        /// </summary>
+        /// <param name="buttonType"></param>
+        /// <param name="enabled"></param>
+        private void SetButtonEnabled(ListBoxButtonType buttonType, bool enabled)
+        {
+            if (_Buttons.TryGetFirst(b => b.Tag is ListBoxButtonType bt && bt == buttonType, out var button))
+                button.Enabled = enabled;
+        }
+        /// <summary>
         /// Provede akci danou buttonem <paramref name="sender"/>
         /// </summary>
         /// <param name="sender"></param>
@@ -231,7 +263,9 @@ namespace Noris.Clients.Win.Components.AsolDX
                 (buttons.HasFlag(ListBoxButtonType.MoveTop) ? KeyActionType.MoveTop : KeyActionType.None) |
                 (buttons.HasFlag(ListBoxButtonType.MoveUp) ? KeyActionType.MoveUp : KeyActionType.None) |
                 (buttons.HasFlag(ListBoxButtonType.MoveDown) ? KeyActionType.MoveDown : KeyActionType.None) |
-                (buttons.HasFlag(ListBoxButtonType.MoveBottom) ? KeyActionType.MoveBottom : KeyActionType.None);
+                (buttons.HasFlag(ListBoxButtonType.MoveBottom) ? KeyActionType.MoveBottom : KeyActionType.None) |
+                (buttons.HasFlag(ListBoxButtonType.Undo) ? KeyActionType.Undo : KeyActionType.None) |
+                (buttons.HasFlag(ListBoxButtonType.Redo) ? KeyActionType.Redo : KeyActionType.None);
             return actions;
         }
         /// <summary>
@@ -252,7 +286,9 @@ namespace Noris.Clients.Win.Components.AsolDX
                 (actions.HasFlag(KeyActionType.MoveTop) ? ListBoxButtonType.MoveTop : ListBoxButtonType.None) |
                 (actions.HasFlag(KeyActionType.MoveUp) ? ListBoxButtonType.MoveUp : ListBoxButtonType.None) |
                 (actions.HasFlag(KeyActionType.MoveDown) ? ListBoxButtonType.MoveDown : ListBoxButtonType.None) |
-                (actions.HasFlag(KeyActionType.MoveBottom) ? ListBoxButtonType.MoveBottom : ListBoxButtonType.None);
+                (actions.HasFlag(KeyActionType.MoveBottom) ? ListBoxButtonType.MoveBottom : ListBoxButtonType.None) |
+                (actions.HasFlag(KeyActionType.Undo) ? ListBoxButtonType.Undo : ListBoxButtonType.None) |
+                (actions.HasFlag(KeyActionType.Redo) ? ListBoxButtonType.Redo : ListBoxButtonType.None);
             return buttons;
         }
         /// <summary>
@@ -271,6 +307,19 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Tlačítka, která mají být dostupná, v patřičném pořadí
         /// </summary>
         private List<DxSimpleButton> _Buttons;
+        #endregion
+        #region UndoRedo manager (přístup do vnitřního Listu)
+        /// <summary>
+        /// UndoRedoEnabled List má povoleny akce Undo a Redo?
+        /// </summary>
+        public bool UndoRedoEnabled { get { return _ListBox.UndoRedoEnabled; } set { _ListBox.UndoRedoEnabled = value; } }
+        /// <summary>
+        /// Controller UndoRedo.
+        /// Pokud není povoleno <see cref="UndoRedoController"/>, je zde null.
+        /// Pokud je povoleno, je zde vždy instance. 
+        /// Instanci lze setovat, lze ji sdílet mezi více / všemi controly na jedné stránce / okně.
+        /// </summary>
+        public UndoRedoController UndoRedoController { get { return _ListBox.UndoRedoController; } set { _ListBox.UndoRedoController = value; } }
         #endregion
     }
     #region enum ListBoxButtonType : Typy tlačítek dostupných u Listboxu pro jeho ovládání (vnitřní příkazy, nikoli Drag and Drop)
@@ -330,13 +379,22 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Přemístit úplně dolů
         /// </summary>
-        MoveBottom = 0x0800
+        MoveBottom = 0x0800,
+
+        /// <summary>
+        /// Akce UNDO
+        /// </summary>
+        Undo = 0x1000,
+        /// <summary>
+        /// Akce REDO
+        /// </summary>
+        Redo = 0x2000
     }
     #endregion
     /// <summary>
     /// ListBoxControl s podporou pro drag and drop a reorder
     /// </summary>
-    public class DxListBoxControl : DevExpress.XtraEditors.ImageListBoxControl, IDxDragDropControl   // původně :ListBoxControl, nyní: https://docs.devexpress.com/WindowsForms/DevExpress.XtraEditors.ImageListBoxControl
+    public class DxListBoxControl : DevExpress.XtraEditors.ImageListBoxControl, IDxDragDropControl, IUndoRedoControl   // původně :ListBoxControl, nyní: https://docs.devexpress.com/WindowsForms/DevExpress.XtraEditors.ImageListBoxControl
     {
         #region Public členy
         /// <summary>
@@ -751,6 +809,12 @@ namespace Noris.Clients.Win.Components.AsolDX
                 case Keys.Alt | Keys.End:
                     handled = _DoKeyAction(KeyActionType.MoveBottom);
                     break;
+                case Keys.Control | Keys.Z:
+                    handled = _DoKeyAction(KeyActionType.Undo);
+                    break;
+                case Keys.Control | Keys.Y:
+                    handled = _DoKeyAction(KeyActionType.Redo);
+                    break;
             }
             if (handled)
                 e.Handled = true; 
@@ -887,12 +951,16 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Provedení klávesové akce: Undo
         /// </summary>
         private void _DoKeyActionUndo()
-        { }
+        {
+            if (this.UndoRedoEnabled) this.UndoRedoController.DoUndo();
+        }
         /// <summary>
         /// Provedení klávesové akce: Redo
         /// </summary>
         private void _DoKeyActionRedo()
-        { }
+        {
+            if (this.UndoRedoEnabled) this.UndoRedoController.DoRedo();
+        }
         /// <summary>
         /// Provedení akce: Move[někam].
         /// Metoda zjistí, které prvky jsou selectované (a pokud žádný, tak skončí).
@@ -1297,6 +1365,80 @@ namespace Noris.Clients.Win.Components.AsolDX
             Rectangle iconBounds = new Rectangle(x0 - 1, itemBounds.Value.Y, wb + 1, itemBounds.Value.Height);
             return iconBounds;
         }
+        #endregion
+        #region UndoRedo manager + akce
+        /// <summary>
+        /// UndoRedoEnabled List má povoleny akce Undo a Redo?
+        /// </summary>
+        public bool UndoRedoEnabled 
+        { 
+            get { return _UndoRedoEnabled; } 
+            set 
+            {
+                _UndoRedoEnabled = value;
+                RunUndoRedoEnabledChanged();
+            } 
+        }
+        private bool _UndoRedoEnabled;
+        /// <summary>
+        /// Controller UndoRedo.
+        /// Pokud není povoleno <see cref="UndoRedoController"/>, je zde null.
+        /// Pokud je povoleno, je zde vždy instance. 
+        /// Instanci lze setovat, lze ji sdílet mezi více / všemi controly na jedné stránce / okně.
+        /// </summary>
+        public UndoRedoController UndoRedoController
+        {
+            get 
+            {
+                if (!UndoRedoEnabled) return null;
+                if (_UndoRedoController is null)
+                    _UndoRedoControllerSet(new UndoRedoController());
+                return _UndoRedoController;
+            }
+            set
+            {
+                _UndoRedoControllerSet(value);
+            }
+        }
+        private UndoRedoController _UndoRedoController;
+        /// <summary>
+        /// Vloží do this instance dodaný controller <see cref="UndoRedoController"/>.
+        /// Řeší odvázání eventhandleru od dosavadního controlleru, pak i navázání eventhandleru do nového controlleru, a ihned provede <see cref="RunUndoRedoEnabledChanged"/>.
+        /// </summary>
+        /// <param name="controller"></param>
+        private void _UndoRedoControllerSet(UndoRedoController controller)
+        {
+            if (_UndoRedoController != null) _UndoRedoController.UndoRedoEnabledChanged -= _UndoRedoEnabledChanged;
+            _UndoRedoController = controller;
+            if (_UndoRedoController != null)
+            {
+                _UndoRedoController.UndoRedoEnabledChanged -= _UndoRedoEnabledChanged;
+                _UndoRedoController.UndoRedoEnabledChanged += _UndoRedoEnabledChanged;
+            }
+            RunUndoRedoEnabledChanged();
+        }
+        /// <summary>
+        /// Eventhandler události, kdy controller <see cref="UndoRedoController"/> 
+        /// provedl změnu stavu <see cref="UndoRedoController.UndoEnabled"/> anebo <see cref="UndoRedoController.RedoEnabled"/>.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="args"></param>
+        private void _UndoRedoEnabledChanged(object sender, EventArgs args)
+        {
+            RunUndoRedoEnabledChanged();
+        }
+        /// <summary>
+        /// Vyvolá háček <see cref="OnUndoRedoEnabledChanged"/> a událost <see cref="UndoRedoEnabledChanged"/>.
+        /// </summary>
+        private void RunUndoRedoEnabledChanged()
+        {
+            OnUndoRedoEnabledChanged();
+            UndoRedoEnabledChanged?.Invoke(this, EventArgs.Empty);
+        }
+        protected virtual void OnUndoRedoEnabledChanged() { }
+        public event EventHandler UndoRedoEnabledChanged;
+        void IUndoRedoControl.DoUndoRedoStep(object state)
+        { }
         #endregion
         #region Public eventy
 

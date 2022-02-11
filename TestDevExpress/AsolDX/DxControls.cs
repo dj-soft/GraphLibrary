@@ -4713,7 +4713,7 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// <summary>
     /// Kontroller pro akce Undo a Redo
     /// </summary>
-    internal class UndoRedoController
+    public class UndoRedoController
     {
         /// <summary>
         /// Konstruktor, lze zadat maximální počet kroků Undo
@@ -4798,8 +4798,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Obsahuje true, pokud uživatel může dát REDO
         /// </summary>
         public bool RedoEnabled { get { return (_Count > 0 && _Pointer <= _Count); } }
-
-        
+        /// <summary>
+        /// Událost je vyvolaná tehdy, když se změní stav <see cref="UndoEnabled"/> nebo <see cref="RedoEnabled"/>.
+        /// Eventhandler této události pak může reagovat změnou Enabled odpovídajících buttonů.
+        /// </summary>
+        public event EventHandler UndoRedoEnabledChanged;
         private int _Count { get { return _Steps.Count; } }
         /// <summary>
         /// Odstraní dostupné kroky REDO.
@@ -4880,7 +4883,7 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// Vkládaný stav (parametr 'state' metody <see cref="IUndoRedoControl.DoUndoRedoStep(object)"/>) si daný control uložil ve vhodném okamžiku do controlleru <see cref="UndoRedoController"/>, 
     /// typicky po inicializaci (jako první) anebo průběžně po dokončení nějakého uživatelského editačního kroku.
     /// </summary>
-    internal interface IUndoRedoControl
+    public interface IUndoRedoControl
     {
         /// <summary>
         /// Control si má nastavit svoje vizuální data podle hodnot z dodaného objektu <paramref name="state"/>.

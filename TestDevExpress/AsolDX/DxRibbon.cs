@@ -4820,7 +4820,9 @@ namespace Noris.Clients.Win.Components.AsolDX
                 qatPanel.ButtonsPosition = ToolbarPosition.RightSideCenter;
                 qatPanel.ButtonsTypes =
                     ListBoxButtonType.MoveTop | ListBoxButtonType.MoveUp | ListBoxButtonType.MoveDown | ListBoxButtonType.MoveBottom |
-                    ListBoxButtonType.SelectAll | ListBoxButtonType.Delete;
+                    ListBoxButtonType.SelectAll | ListBoxButtonType.Delete 
+                    | ListBoxButtonType.Undo | ListBoxButtonType.Redo;
+                qatPanel.UndoRedoEnabled = true;
 
                 var result = form.ShowDialog(this.FindForm());
 
