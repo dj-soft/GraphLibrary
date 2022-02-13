@@ -35,6 +35,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.Padding = new Padding(0);
             this.ClientSizeChanged += _ClientSizeChanged;
             _ListBox.UndoRedoEnabledChanged += _ListBox_UndoRedoEnabledChanged;
+            _ListBox.SelectedItemsChanged += _ListBox_SelectedItemsChanged;
             DoLayout();
         }
         /// <summary>
@@ -211,16 +212,55 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private void _ListBox_UndoRedoEnabledChanged(object sender, EventArgs e)
         {
-            SetButtonsEnabled();
+            SetButtonsEnabledUndoRedo();
+        }
+        /// <summary>
+        /// Po změně Selected prvků reaguje Enabled buttonů
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _ListBox_SelectedItemsChanged(object sender, EventArgs e)
+        {
+            SetButtonsEnabledSelection();
         }
         /// <summary>
         /// Nastaví Enabled buttonů
         /// </summary>
         private void SetButtonsEnabled()
         {
+            SetButtonsEnabledUndoRedo();
+            SetButtonsEnabledSelection();
+        }
+        /// <summary>
+        /// Nastaví Enabled buttonů typu UndoRedo
+        /// </summary>
+        private void SetButtonsEnabledUndoRedo()
+        {
             bool undoRedoEnabled = this.UndoRedoEnabled;
             SetButtonEnabled(ListBoxButtonType.Undo, (undoRedoEnabled && this.UndoRedoController.UndoEnabled));
             SetButtonEnabled(ListBoxButtonType.Redo, (undoRedoEnabled && this.UndoRedoController.RedoEnabled));
+        }
+        /// <summary>
+        /// Nastaví Enabled buttonů typu OnSelected
+        /// </summary>
+        private void SetButtonsEnabledSelection()
+        {
+            int selectedCount = this._ListBox.SelectedIndices.Count;
+            int totalCount = this._ListBox.ItemCount;
+
+            bool isAnySelected = selectedCount > 0;
+            SetButtonEnabled(ListBoxButtonType.ClipCopy, isAnySelected);
+            SetButtonEnabled(ListBoxButtonType.ClipCut, isAnySelected);
+            SetButtonEnabled(ListBoxButtonType.Delete, isAnySelected);
+
+            bool canMove = (selectedCount > 0 && selectedCount < totalCount);
+            SetButtonEnabled(ListBoxButtonType.MoveTop, canMove);
+            SetButtonEnabled(ListBoxButtonType.MoveUp, canMove);
+            SetButtonEnabled(ListBoxButtonType.MoveDown, canMove);
+            SetButtonEnabled(ListBoxButtonType.MoveBottom, canMove);
+
+            bool canSelectAll = (totalCount > 0 && selectedCount < totalCount);
+            SetButtonEnabled(ListBoxButtonType.SelectAll, canSelectAll);
         }
         /// <summary>
         /// Nastaví do daného buttonu stav enabled
@@ -590,6 +630,16 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             base.OnKeyDown(e);
             OnMouseItemIndex = -1;
+        }
+        /// <summary>
+        /// Po změně vybraných prvků
+        /// </summary>
+        protected override void OnSelectionChanged()
+        {
+            base.OnSelectionChanged();
+            EventArgs args = EventArgs.Empty;
+            OnSelectedItemsChanged(args);
+            SelectedItemsChanged?.Invoke(this, args);
         }
         #endregion
         #region Images
@@ -1441,7 +1491,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         { }
         #endregion
         #region Public eventy
-
         /// <summary>
         /// Volá se po vykreslení základu Listu, před vykreslením Reorder ikony
         /// </summary>
@@ -1451,6 +1500,15 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Událost volaná po vykreslení základu Listu, před vykreslením Reorder ikony
         /// </summary>
         public event PaintEventHandler PaintList;
+        /// <summary>
+        /// Volá se po změně selected prvků
+        /// </summary>
+        /// <param name="e"></param>
+        protected virtual void OnSelectedItemsChanged(EventArgs e) { }
+        /// <summary>
+        /// Událost volaná po změně selected prvků
+        /// </summary>
+        public event EventHandler SelectedItemsChanged;
         #endregion
     }
 }
