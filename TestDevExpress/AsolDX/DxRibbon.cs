@@ -4818,11 +4818,16 @@ namespace Noris.Clients.Win.Components.AsolDX
                 qatPanel.ListBox.DragDropActions = DxDragDropActionType.ReorderItems;
                 qatPanel.ListBox.EnabledKeyActions = KeyActionType.MoveDown | KeyActionType.MoveUp | KeyActionType.Delete;
                 qatPanel.ButtonsPosition = ToolbarPosition.RightSideCenter;
-                qatPanel.ButtonsTypes =
+
+                ListBoxButtonType buttonsTypes =
                     ListBoxButtonType.MoveTop | ListBoxButtonType.MoveUp | ListBoxButtonType.MoveDown | ListBoxButtonType.MoveBottom |
-                    ListBoxButtonType.SelectAll | ListBoxButtonType.Delete 
-                    | ListBoxButtonType.Undo | ListBoxButtonType.Redo;
-                qatPanel.UndoRedoEnabled = true;
+                    ListBoxButtonType.SelectAll | ListBoxButtonType.Delete;
+                
+                if (DxComponent.IsDebuggerActive)
+                    buttonsTypes |= ListBoxButtonType.Undo | ListBoxButtonType.Redo;
+
+                qatPanel.ButtonsTypes = buttonsTypes;
+
 
                 var result = form.ShowDialog(this.FindForm());
 

@@ -169,6 +169,10 @@ namespace Noris.Clients.Win.Components.AsolDX
             AcceptButtonType(ListBoxButtonType.Undo, validButtonsTypes, "svgimages/dashboards/undo.svg", MsgCode.DxKeyActionUndoTitle, MsgCode.DxKeyActionUndoText);
             AcceptButtonType(ListBoxButtonType.Redo, validButtonsTypes, "svgimages/dashboards/redo.svg", MsgCode.DxKeyActionRedoTitle, MsgCode.DxKeyActionRedoText);
 
+            // Pokud bylo povoleno UndoRedo, pak povolím i odpovídající funkcionalitu:
+            if ((newActions.HasFlag(KeyActionType.Undo) || newActions.HasFlag(KeyActionType.Redo)) || !this.UndoRedoEnabled)
+                this.UndoRedoEnabled = true;
+
             SetButtonsEnabled();
         }
         /// <summary>
