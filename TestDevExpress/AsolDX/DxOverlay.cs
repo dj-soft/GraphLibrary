@@ -143,7 +143,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Content of graphic buffer
         /// </summary>
         private BufferedGraphics _GraphicsData;
-
         #endregion
     }
     #endregion
