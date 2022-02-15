@@ -97,23 +97,47 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             if (!_WasShown)
             {
+                this.OnFirstShownBefore();
+                this.FirstShownBefore?.Invoke(this, EventArgs.Empty);
+                base.OnShown(e);
                 _WasShown = true;
-                this.OnBeforeFirstShown();
-                this.BeforeFirstShown?.Invoke(this, EventArgs.Empty);
+                this.OnFirstShownAfter();
+                this.FirstShownAfter?.Invoke(this, EventArgs.Empty);
             }
-            base.OnShown(e);
+            else
+            {
+                base.OnShown(e);
+                this.OnNextShown();
+                this.NextShown?.Invoke(this, EventArgs.Empty);
+            }
         }
         /// <summary>
-        /// Je vyvoláno jedenkrát v životě okna, těsně před prvním zobrazením okna
+        /// Je vyvoláno jedenkrát v životě okna, těsně před prvním zobrazením okna. Nyní je hodnota <see cref="WasShown"/> = false.
         /// </summary>
-        protected virtual void OnBeforeFirstShown() { }
+        protected virtual void OnFirstShownBefore() { }
         /// <summary>
-        /// Je vyvoláno jedenkrát v životě okna, těsně před prvním zobrazením okna
+        /// Je vyvoláno jedenkrát v životě okna, těsně před prvním zobrazením okna. Nyní je hodnota <see cref="WasShown"/> = false.
         /// </summary>
-        public event EventHandler BeforeFirstShown;
+        public event EventHandler FirstShownBefore;
+        /// <summary>
+        /// Je vyvoláno jedenkrát v životě okna, těsně po prvním zobrazením okna. Nyní je hodnota <see cref="WasShown"/> = true.
+        /// </summary>
+        protected virtual void OnFirstShownAfter() { }
+        /// <summary>
+        /// Je vyvoláno jedenkrát v životě okna, těsně po prvním zobrazením okna. Nyní je hodnota <see cref="WasShown"/> = true.
+        /// </summary>
+        public event EventHandler FirstShownAfter;
+        /// <summary>
+        /// Je vyvoláno těsně po druhém a každém dalším zobrazením okna. Nikoli po prvním.
+        /// </summary>
+        protected virtual void OnNextShown() { }
+        /// <summary>
+        /// Je vyvoláno těsně po druhém a každém dalším zobrazením okna. Nikoli po prvním.
+        /// </summary>
+        public event EventHandler NextShown;
         /// <summary>
         /// Obsahuje true poté, kdy formulář byl zobrazen. 
-        /// Obsahuje true již v metodě <see cref="OnBeforeFirstShown"/> a v eventu <see cref="BeforeFirstShown"/>.
+        /// Obsahuje true již v metodě <see cref="OnFirstShownAfter"/> a v eventu <see cref="FirstShownAfter"/>.
         /// </summary>
         public bool WasShown { get { return _WasShown; } }
         /// <summary>
@@ -239,23 +263,47 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             if (!_WasShown)
             {
+                this.OnFirstShownBefore();
+                this.FirstShownBefore?.Invoke(this, EventArgs.Empty);
+                base.OnShown(e);
                 _WasShown = true;
-                this.OnBeforeFirstShown();
-                this.BeforeFirstShown?.Invoke(this, EventArgs.Empty);
+                this.OnFirstShownAfter();
+                this.FirstShownAfter?.Invoke(this, EventArgs.Empty);
             }
-            base.OnShown(e);
+            else
+            {
+                base.OnShown(e);
+                this.OnNextShown();
+                this.NextShown?.Invoke(this, EventArgs.Empty);
+            }
         }
         /// <summary>
-        /// Je vyvoláno jedenkrát v životě okna, těsně před prvním zobrazením okna
+        /// Je vyvoláno jedenkrát v životě okna, těsně před prvním zobrazením okna. Nyní je hodnota <see cref="WasShown"/> = false.
         /// </summary>
-        protected virtual void OnBeforeFirstShown() { }
+        protected virtual void OnFirstShownBefore() { }
         /// <summary>
-        /// Je vyvoláno jedenkrát v životě okna, těsně před prvním zobrazením okna
+        /// Je vyvoláno jedenkrát v životě okna, těsně před prvním zobrazením okna. Nyní je hodnota <see cref="WasShown"/> = false.
         /// </summary>
-        public event EventHandler BeforeFirstShown;
+        public event EventHandler FirstShownBefore;
+        /// <summary>
+        /// Je vyvoláno jedenkrát v životě okna, těsně po prvním zobrazením okna. Nyní je hodnota <see cref="WasShown"/> = true.
+        /// </summary>
+        protected virtual void OnFirstShownAfter() { }
+        /// <summary>
+        /// Je vyvoláno jedenkrát v životě okna, těsně po prvním zobrazením okna. Nyní je hodnota <see cref="WasShown"/> = true.
+        /// </summary>
+        public event EventHandler FirstShownAfter;
+        /// <summary>
+        /// Je vyvoláno těsně po druhém a každém dalším zobrazením okna. Nikoli po prvním.
+        /// </summary>
+        protected virtual void OnNextShown() { }
+        /// <summary>
+        /// Je vyvoláno těsně po druhém a každém dalším zobrazením okna. Nikoli po prvním.
+        /// </summary>
+        public event EventHandler NextShown;
         /// <summary>
         /// Obsahuje true poté, kdy formulář byl zobrazen. 
-        /// Obsahuje true již v metodě <see cref="OnBeforeFirstShown"/> a v eventu <see cref="BeforeFirstShown"/>.
+        /// Obsahuje true již v metodě <see cref="OnFirstShownAfter"/> a v eventu <see cref="FirstShownAfter"/>.
         /// </summary>
         public bool WasShown { get { return _WasShown; } }
         /// <summary>

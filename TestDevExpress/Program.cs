@@ -29,10 +29,6 @@ namespace TestDevExpress
  
                 var moon10 = Noris.Clients.Win.Components.AsolDX.DxComponent.CreateBitmapImage("Images/Moon10.png");
                 Noris.Clients.Win.Components.AsolDX.DxComponent.ApplicationStart(typeof(TestDevExpress.Forms.MainForm), moon10);
-
-                // Application.Run(new TestDevExpress.Forms.GraphForm());
-
-                // Application.Run(new TestDevExpress.Forms.MdiParentForm());
             }
             finally
             {

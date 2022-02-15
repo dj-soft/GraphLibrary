@@ -289,7 +289,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 var windowState = parentForm.WindowState;
                 var isTabbed = parentForm.IsMdiChild;
-                if (!isTabbed && windowState == FormWindowState.Normal || windowState == FormWindowState.Maximized)
+                if (!isTabbed && (windowState == FormWindowState.Normal || windowState == FormWindowState.Maximized))
                     _ParentFormState = windowState;
                 if (!isTabbed && windowState == FormWindowState.Normal)
                     _ParentFormNormalBounds = parentForm.Bounds;

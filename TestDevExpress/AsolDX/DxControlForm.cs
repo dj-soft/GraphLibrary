@@ -34,9 +34,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Při prvním zobrazení okna
         /// </summary>
-        protected override void OnBeforeFirstShown()
+        protected override void OnFirstShownAfter()
         {
-            base.OnBeforeFirstShown();
+            base.OnFirstShownAfter();
             MoveToVisibleScreen();
             DoLayout();
         }

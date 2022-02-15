@@ -48,6 +48,7 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             if (value is null) value = "";
             var values = _ValidValues;
+            bool isChanged = true;
             if (!values.TryGetValue(section, out var sectionValues))
             {
                 lock (values)
@@ -63,10 +64,13 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 if (!sectionValues.ContainsKey(key))
                     sectionValues.Add(key, value);
-                else
+                else if (!String.Equals(sectionValues[key], value, StringComparison.Ordinal))
                     sectionValues[key] = value;
+                else
+                    isChanged = false;
             }
-            _SaveValues(values, _ConfigFileName);
+            if (isChanged)
+                _SaveValues(values, _ConfigFileName);
         }
         /// <summary>
         /// Jméno firmy, použije se pro určení adresáře pro config soubor v rámci adresáře ProgramData

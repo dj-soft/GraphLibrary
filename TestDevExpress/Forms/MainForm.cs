@@ -47,6 +47,8 @@ namespace TestDevExpress.Forms
             InitializeComponent();
             InitData();
 
+            InitPosition();
+
             DxLocalizer.Enabled = false;
             DxLocalizer.HighlightNonTranslated = true;
 
@@ -83,9 +85,14 @@ namespace TestDevExpress.Forms
         {
             DxComponent.LogTextChanged -= DxComponent_LogTextChanged;
         }
-        protected override void OnBeforeFirstShown()
+        protected override void OnFirstShownBefore()
         {
-            base.OnBeforeFirstShown();
+            RestorePosition();
+            base.OnFirstShownBefore();
+        }
+        protected override void OnFirstShownAfter()
+        {
+            base.OnFirstShownAfter();
             ApplyRibbonSvgImagesResult(false);
         }
         protected override void OnStyleChanged()
@@ -217,7 +224,61 @@ namespace TestDevExpress.Forms
                 }
             }
         }
-
+        #region Pozice okna
+        /// <summary>
+        /// Aktivuje eventhandlery pro hlídání pozice.
+        /// Načte pozici okna z konfigurace do <see cref="InitialPosition"/>.
+        /// </summary>
+        private void InitPosition()
+        {
+            this.SizeChanged += _PositionChanged;
+            this.LocationChanged += _PositionChanged;
+            this.FormClosed += _PositionChangedOnClose;
+            string position = DxComponent.Settings.GetRawValue("FormPosition", "MainForm");
+            InitialPosition = position;
+            DxComponent.FormPositionSet(this, position);             // Je nutno setovat jednak v konstruktoru, a druhak v OnFirstShownBefore(), kvůli UHD grafice a přepočtu rozměrů !!!
+        }
+        /// <summary>
+        /// Uloženou pozici okna z <see cref="InitialPosition"/> promítne do this formuláře.
+        /// Je nutno volat v procesu protected override void OnFirstShownBefore(), to kvůli UHD grafice a přepočtu DPI.
+        /// </summary>
+        private void RestorePosition()
+        {
+            string position = DxComponent.Settings.GetRawValue("FormPosition", "MainForm");
+            if (position != null)
+                DxComponent.FormPositionSet(this, position);         // Je nutno setovat jednak v konstruktoru, a druhak v OnFirstShownBefore(), kvůli UHD grafice a přepočtu rozměrů !!!
+        }
+        private string InitialPosition;
+        /// <summary>
+        /// Uloží pozici okna. Volat po každé změně.
+        /// </summary>
+        private void SetPosition()
+        {
+            if (this.WasShown)
+            {
+                string position = DxComponent.FormPositionGet(this);
+                DxComponent.Settings.SetRawValue("FormPosition", "MainForm", position);
+            }
+        }
+        /// <summary>
+        /// Event po změně pozice okna
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _PositionChanged(object sender, EventArgs e)
+        {
+            this.SetPosition();
+        }
+        /// <summary>
+        /// Po zavření okna chci taky uložit pozici okna
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _PositionChangedOnClose(object sender, FormClosedEventArgs e)
+        {
+            this.SetPosition();
+        }
+        #endregion
         #region Log
 
         private void DxComponent_LogTextChanged(object sender, EventArgs e)
