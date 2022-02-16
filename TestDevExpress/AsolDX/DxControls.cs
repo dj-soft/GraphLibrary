@@ -4831,13 +4831,29 @@ namespace Noris.Clients.Win.Components.AsolDX
                 if (step != null && step.IsAlive)
                 {
                     _Pointer = (pointer > 0 ? pointer : 0);
-                    step.DoStep();
+                    step.DoUndoStep();
                     break;
                 }
             }
         }
+        /// <summary>
+        /// Požádá o provedení kroku REDO.
+        /// Najde se nejbližší krok vpřed, najde se jeho control a provede se.
+        /// </summary>
         public void DoRedo()
-        { }
+        {
+            int start = _Pointer;
+            for (int pointer = start; pointer < _Steps.Count; pointer++)
+            {
+                var step = _Steps[pointer];
+                if (step != null && step.IsAlive)
+                {
+                    _Pointer = (pointer > 0 ? pointer : 0);
+                    step.DoRedoStep();
+                    break;
+                }
+            }
+        }
         /// <summary>
         /// Obsahuje true, pokud uživatel může dát UNDO
         /// </summary>
@@ -4903,7 +4919,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 State = state;
             }
             /// <summary>
-            /// Control, který bude provádět kroky Undo/Redo pomocí metody <see cref="IUndoRedoControl.DoUndoRedoStep(object)"/>
+            /// Control, který bude provádět kroky Undo/Redo pomocí metody <see cref="IUndoRedoControl.DoUndoStep(object)"/> a <see cref="IUndoRedoControl.DoRedoStep(object)"/>
             /// </summary>
             public IUndoRedoControl Control { get { return __Control?.Target; } }
             private WeakTarget<IUndoRedoControl> __Control;
@@ -4916,29 +4932,48 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// </summary>
             public object State { get; set; }
             /// <summary>
-            /// Control <see cref="Control"/> provede svoji akci <see cref="IUndoRedoControl.DoUndoRedoStep(object)"/> pro zde uložená data
+            /// Control <see cref="Control"/> provede svoji akci <see cref="IUndoRedoControl.DoUndoStep(object)"/> pro zde uložená data
             /// </summary>
-            public void DoStep()
-            { }
+            public void DoUndoStep()
+            {
+                if (IsAlive)
+                    Control.DoUndoStep(State);
+            }
+            /// <summary>
+            /// Control <see cref="Control"/> provede svoji akci <see cref="IUndoRedoControl.DoRedoStep(object)"/> pro zde uložená data
+            /// </summary>
+            public void DoRedoStep()
+            {
+                if (IsAlive)
+                    Control.DoRedoStep(State);
+            }
         }
     }
     /// <summary>
     /// Rozhraní, které musí implementovat jakýkoli prvek, aby mohl provádět kroky Undo a Redo.
-    /// Každý takový krok je prováděn tak, že daný Control je zavolán z controlleru <see cref="UndoRedoController"/> do metody <see cref="IUndoRedoControl.DoUndoRedoStep(object)"/>,
-    /// controlu je předá jeho vlastní uložený stav, a control podle něj nastaví svoje hodnoty.
+    /// Každý takový krok je prováděn tak, že daný Control je zavolán z controlleru <see cref="UndoRedoController"/> 
+    /// do metody <see cref="IUndoRedoControl.DoUndoStep(object)"/> nebo <see cref="IUndoRedoControl.DoRedoStep(object)"/>,
+    /// controlu je předán jeho vlastní uložený stav, a control podle něj nastaví svoje hodnoty.
     /// <para/>
     /// Tato akce je výsledkem volání <see cref="UndoRedoController.DoUndo()"/> nebo <see cref="UndoRedoController.DoRedo()"/>, typicky z klávesové zkratky nebo z tlačítka (Ribbon, Button).
-    /// Vkládaný stav (parametr 'state' metody <see cref="IUndoRedoControl.DoUndoRedoStep(object)"/>) si daný control uložil ve vhodném okamžiku do controlleru <see cref="UndoRedoController"/>, 
-    /// typicky po inicializaci (jako první) anebo průběžně po dokončení nějakého uživatelského editačního kroku.
+    /// Vkládaný stav (parametr 'state' metod <see cref="IUndoRedoControl.DoUndoStep(object)"/> a <see cref="IUndoRedoControl.DoRedoStep(object)"/>) 
+    /// si daný control uložil ve vhodném okamžiku do controlleru <see cref="UndoRedoController"/>, 
+    /// typicky při provádění nějakého uživatelského editačního kroku.
     /// </summary>
     public interface IUndoRedoControl
     {
         /// <summary>
-        /// Control si má nastavit svoje vizuální data podle hodnot z dodaného objektu <paramref name="state"/>.
+        /// Control si má nastavit svoje vizuální data podle hodnot z dodaného objektu <paramref name="state"/>, pro akci Undo = zrušit změny provedené v daném kroku.
         /// Tento objekt si control uložil do controlleru voláním metody <see cref="UndoRedoController.AddState(IUndoRedoControl, object)"/>.
         /// </summary>
         /// <param name="state"></param>
-        void DoUndoRedoStep(object state);
+        void DoUndoStep(object state);
+        /// <summary>
+        /// Control si má nastavit svoje vizuální data podle hodnot z dodaného objektu <paramref name="state"/>, pro akci Redo = znovou provést daný krok.
+        /// Tento objekt si control uložil do controlleru voláním metody <see cref="UndoRedoController.AddState(IUndoRedoControl, object)"/>.
+        /// </summary>
+        /// <param name="state"></param>
+        void DoRedoStep(object state);
     }
     #endregion
     #region Enumy: LabelStyleType, RectangleSide, RectangleCorner, ...

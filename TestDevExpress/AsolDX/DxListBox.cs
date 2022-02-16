@@ -1491,7 +1491,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         protected virtual void OnUndoRedoEnabledChanged() { }
         public event EventHandler UndoRedoEnabledChanged;
-        void IUndoRedoControl.DoUndoRedoStep(object state)
+        void IUndoRedoControl.DoUndoStep(object state)
+        { }
+        void IUndoRedoControl.DoRedoStep(object state)
         { }
         #endregion
         #region Public eventy
