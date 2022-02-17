@@ -129,9 +129,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Povolené akce. Výchozí je <see cref="KeyActionType.None"/>
         /// </summary>
         public KeyActionType EnabledKeyActions { get { return _ListBox.EnabledKeyActions; } set { _ListBox.EnabledKeyActions = value; } }
-
-        
-        
         #endregion
         #region FilterRow
         /// <summary>
@@ -140,6 +137,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void _FilterBoxInitialize()
         {
             _FilterBox = new DxFilterBox() { Dock = DockStyle.None, Visible = false, TabIndex = 0 };
+            _FilterBox.FilterOperators = DxFilterBox.CreateDefaultOperatorItems(FilterBoxOperatorItems.DefaultText);
             _FilterBoxVisible = false;
             _RegisterFilterRowEventHandlers();
             this.Controls.Add(_FilterBox);

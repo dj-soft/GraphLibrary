@@ -274,6 +274,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void _FilterBoxInitialize()
         {
             _FilterBox = new DxFilterBox() { Dock = DockStyle.Top, Visible = false, TabIndex = 0 };
+            _FilterBox.FilterOperators = DxFilterBox.CreateDefaultOperatorItems(FilterBoxOperatorItems.DefaultText);
             _FilterBoxVisible = false;
             _RegisterFilterRowEventHandlers();
             this.Controls.Add(_FilterBox);
