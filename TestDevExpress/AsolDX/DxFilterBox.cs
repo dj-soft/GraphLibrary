@@ -174,8 +174,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             if (button == null) return;
             if (String.IsNullOrEmpty(imageName)) imageName = imageNameDefault;
-            int buttonSize = button.Width;
-            Size imageSize = new Size(buttonSize - 4, buttonSize - 4);
+            Size imageSize = DxComponent.GetOptimalImageSize(button.Size, 3);
             DxComponent.ApplyImage(button.ImageOptions, imageName, null, ResourceImageSizeType.Small, imageSize, true);
             button.SetToolTip(toolTipTitle, toolTipText);
         }
@@ -384,7 +383,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Aplikuje ikonu a tooltip z aktuální položky <see cref="_CurrentFilterOperator"/> do buttonu <see cref="_OperatorButton"/>.
         /// </summary>
-        /// <param name="setChecked">Nastavit v poli operátorů <see cref="FilterOperators"/> hodnotu <see cref="IMenuItem.Checked"/> na true/false pro vybraný záznam</param>
+        /// <param name="setChecked">Nastavit v poli operátorů <see cref="FilterOperators"/> hodnotu <see cref="ITextItem.Checked"/> na true/false pro vybraný záznam</param>
         /// <param name="applyToButton"></param>
         protected virtual void ApplyCurrentOperator(bool setChecked, bool applyToButton)
         {
@@ -761,7 +760,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         public bool IsEmpty { get { return String.IsNullOrEmpty(this.FilterText); } }
         /// <summary>
         /// Vrátí true pokud this instance obsahuje shodná data jako daná instance.
-        /// U typu operátoru <see cref="FilterOperator"/> se porovnává hodnota <see cref="IMenuItem.ItemId"/>.
+        /// U typu operátoru <see cref="FilterOperator"/> se porovnává hodnota <see cref="ITextItem.ItemId"/>.
         /// Neporovnává se <see cref="FilterValue"/>, porovnává se text v <see cref="FilterText"/>.
         /// </summary>
         /// <param name="other"></param>

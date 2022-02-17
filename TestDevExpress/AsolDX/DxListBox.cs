@@ -26,6 +26,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public DxListBoxPanel()
         {
+            this.Initialize();
+        }
+        /// <summary>
+        /// Inicializace komponent a hodnot
+        /// </summary>
+        private void Initialize()
+        {
             _ListBox = new DxListBoxControl();
             _Buttons = new List<DxSimpleButton>();
             _ButtonsPosition = ToolbarPosition.RightSideCenter;
@@ -36,6 +43,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.ClientSizeChanged += _ClientSizeChanged;
             _ListBox.UndoRedoEnabledChanged += _ListBox_UndoRedoEnabledChanged;
             _ListBox.SelectedItemsChanged += _ListBox_SelectedItemsChanged;
+            _FilterBoxInitialize();
             DoLayout();
         }
         /// <summary>
@@ -64,12 +72,20 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (innerBounds.Width < 30 || innerBounds.Height < 30) return;
 
             _DoLayoutButtons(ref innerBounds);
+            _FilterBoxDoLayout(ref innerBounds);
             _ListBox.Bounds = new Rectangle(innerBounds.X, innerBounds.Y, innerBounds.Width - 0, innerBounds.Height);
         }
         /// <summary>
         /// Instance ListBoxu
         /// </summary>
         private DxListBoxControl _ListBox;
+        /// <summary>
+        /// Dá Focus do main controlu
+        /// </summary>
+        private void _MainControlFocus()
+        {
+            _ListBox.Focus();
+        }
         #endregion
         #region Public prvky
         /// <summary>
@@ -88,6 +104,138 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Velikost tlačítek
         /// </summary>
         public ResourceImageSizeType ButtonsSize { get { return _ButtonsSize; } set { _ButtonsSize = value; DoLayout(); } }
+        #endregion
+        #region Přímý přístup na prvky DxListBoxControlu
+        /// <summary>
+        /// Prvky Listu typované na <see cref="IMenuItem"/>.
+        /// Pokud v Listu budou obsaženy jiné prvky než <see cref="IMenuItem"/>, pak na jejich místě v tomto poli bude null.
+        /// Toto pole má stejný počet prvků jako pole this.Items
+        /// Pole jako celek lze setovat: vymění se obsah, ale zachová se pozice.
+        /// </summary>
+        public IMenuItem[] ListItems { get { return _ListBox.ListItems; } set { _ListBox.ListItems = value; } }
+        /// <summary>
+        /// Prvky Listu
+        /// </summary>
+        public DevExpress.XtraEditors.Controls.ImageListBoxItemCollection Items { get { return _ListBox.Items; } }
+        /// <summary>
+        /// Režim označování prvků
+        /// </summary>
+        public SelectionMode SelectionMode { get { return _ListBox.SelectionMode; } set { _ListBox.SelectionMode = value; } }
+        /// <summary>
+        /// Souhrn povolených akcí Drag and Drop
+        /// </summary>
+        public DxDragDropActionType DragDropActions { get { return _ListBox.DragDropActions; } set { _ListBox.DragDropActions = value; } }
+        /// <summary>
+        /// Povolené akce. Výchozí je <see cref="KeyActionType.None"/>
+        /// </summary>
+        public KeyActionType EnabledKeyActions { get { return _ListBox.EnabledKeyActions; } set { _ListBox.EnabledKeyActions = value; } }
+
+        
+        
+        #endregion
+        #region FilterRow
+        /// <summary>
+        /// Inicializace FilterBoxu, a jeho vložení do this.Controls
+        /// </summary>
+        private void _FilterBoxInitialize()
+        {
+            _FilterBox = new DxFilterBox() { Dock = DockStyle.None, Visible = false, TabIndex = 0 };
+            _FilterBoxVisible = false;
+            _RegisterFilterRowEventHandlers();
+            this.Controls.Add(_FilterBox);
+        }
+        /// <summary>
+        /// Zaregistruje zdejší eventhandlery na události v nativním <see cref="_FilterBox"/>
+        /// </summary>
+        private void _RegisterFilterRowEventHandlers()
+        {
+            _FilterBox.FilterValueChangedSources = DxFilterBoxChangeEventSource.DefaultGreen;
+            _FilterBox.FilterValueChanged += FilterBox_Changed;      // Změna obsahu filtru a Enter
+            _FilterBox.KeyEnterPress += FilterBox_KeyEnter;
+        }
+        /// <summary>
+        /// Zobrazovat řádkový filtr? Default = NE
+        /// </summary>
+        public bool FilterBoxVisible { get { return _FilterBoxVisible; } set { _FilterBoxVisible = value; this.RunInGui(FilterBoxSetVisible); } } private bool _FilterBoxVisible = false;
+        /// <summary>
+        /// Instance řádkového filtru
+        /// </summary>
+        public DxFilterBox FilterBox { get { return _FilterBox; } }
+        /// <summary>
+        /// Aktuální text v řádkovém filtru
+        /// </summary>
+        public DxFilterBoxValue FilterBoxValue { get { return _FilterBox.FilterValue; } set { _FilterBox.FilterValue = value; } }
+        /// <summary>
+        /// Pole operátorů nabízených pod tlačítkem vlevo.
+        /// Pokud bude vloženo null nebo prázdné pole, pak tlačítko vlevo nebude zobrazeno vůbec, a v hodnotě FilterValue bude Operator = null.
+        /// </summary>
+        public List<IMenuItem> FilterBoxOperators { get { return _FilterBox.FilterOperators; } set { _FilterBox.FilterOperators = value; } }
+        /// <summary>
+        /// Za jakých událostí se volá event <see cref="FilterBoxChanged"/>
+        /// </summary>
+        public DxFilterBoxChangeEventSource FilterBoxChangedSources { get { return _FilterBox.FilterValueChangedSources; } set { _FilterBox.FilterValueChangedSources = value; } }
+        /// <summary>
+        /// Událost volaná po hlídané změně obsahu filtru.
+        /// Argument obsahuje hodnotu filtru a druh události, která vyvolala event.
+        /// Druhy události, pro které se tento event volá, lze nastavit v <see cref="FilterBoxChangedSources"/>.
+        /// </summary>
+        public event EventHandler<DxFilterBoxChangeArgs> FilterBoxChanged;
+        /// <summary>
+        /// Provede se po stisku Enter v řádkovém filtru (i bez změny textu), vhodné pro řízení Focusu
+        /// </summary>
+        public event EventHandler FilterBoxKeyEnter;
+        /// <summary>
+        /// Aplikuje viditelnost pro FilterRow
+        /// </summary>
+        private void FilterBoxSetVisible()
+        {
+            _FilterBox.Visible = _FilterBoxVisible;
+            DoLayout();
+        }
+        /// <summary>
+        /// Umístí FilterBox (pokud je Visible) do daného prostoru, a ten zmenší o velikost FilterBoxu
+        /// </summary>
+        /// <param name="innerBounds"></param>
+        private void _FilterBoxDoLayout(ref Rectangle innerBounds)
+        {
+            if (!_FilterBoxVisible) return;
+            Rectangle filterBounds = new Rectangle(innerBounds.X, innerBounds.Y, innerBounds.Width, _FilterBox.Height);
+            _FilterBox.Bounds = filterBounds;
+            innerBounds = new Rectangle(innerBounds.X, filterBounds.Bottom, innerBounds.Width, innerBounds.Bottom - filterBounds.Bottom);
+        }
+        /// <summary>
+        /// Po jakékoli změně v řádkovém filtru
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="args"></param>
+        private void FilterBox_Changed(object sender, DxFilterBoxChangeArgs args)
+        {
+            OnFilterBoxChanged(args);
+            FilterBoxChanged?.Invoke(this, args);
+        }
+        /// <summary>
+        /// Proběhne po jakékoli změně v řádkovém filtru
+        /// </summary>
+        protected virtual void OnFilterBoxChanged(DxFilterBoxChangeArgs args) { }
+        /// <summary>
+        /// Po stisku Enter v řádkovém filtru
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void FilterBox_KeyEnter(object sender, EventArgs e)
+        {
+            _MainControlFocus();
+            OnFilterBoxKeyEnter();
+            FilterBoxKeyEnter?.Invoke(this, e);
+        }
+        /// <summary>
+        /// Proběhne po stisku Enter v řádkovém filtru
+        /// </summary>
+        protected virtual void OnFilterBoxKeyEnter() { }
+        /// <summary>
+        /// DxFilterBox
+        /// </summary>
+        private DxFilterBox _FilterBox;
         #endregion
         #region Tlačítka
         /// <summary>

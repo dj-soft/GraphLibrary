@@ -38,15 +38,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private void Initialize()
         {
-            _FilterBox = new DxFilterBox() { Dock = DockStyle.Top, Visible = false, TabIndex = 0 };
-            _RegisterFilterRowEventHandlers();
             _TreeListNative = new DxTreeListNative() { Dock = DockStyle.Fill, TabIndex = 1 };
             _RegisterTreeListEventHandlers();
             this.Controls.Add(_TreeListNative);
-            this.Controls.Add(_FilterBox);
+            _FilterBoxInitialize();
             this.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder;
         }
-        private DxFilterBox _FilterBox;
         private DxTreeListNative _TreeListNative;
         #endregion
         #region Vlastnosti DxTreeListNative
@@ -162,6 +159,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="method"></param>
         /// <param name="args"></param>
         public void RunInLock(Delegate method, params object[] args) { _TreeListNative.RunInLock(method, args); }
+        /// <summary>
+        /// Dá Focus do main controlu
+        /// </summary>
+        private void _MainControlFocus()
+        {
+            _TreeListNative.Focus();
+        }
         #endregion
         #region Nody DxTreeListNative: aktivní node, kolekce nodů, vyhledání, přidání, odebrání
         /// <summary>
@@ -265,6 +269,16 @@ namespace Noris.Clients.Win.Components.AsolDX
         #endregion
         #region FilterRow
         /// <summary>
+        /// Inicializace FilterBoxu, a jeho vložení do this.Controls
+        /// </summary>
+        private void _FilterBoxInitialize()
+        {
+            _FilterBox = new DxFilterBox() { Dock = DockStyle.Top, Visible = false, TabIndex = 0 };
+            _FilterBoxVisible = false;
+            _RegisterFilterRowEventHandlers();
+            this.Controls.Add(_FilterBox);
+        }
+        /// <summary>
         /// Zaregistruje zdejší eventhandlery na události v nativním <see cref="_FilterBox"/>
         /// </summary>
         private void _RegisterFilterRowEventHandlers()
@@ -332,7 +346,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="e"></param>
         private void FilterBox_KeyEnter(object sender, EventArgs e)
         {
-            _TreeListNative.Focus();
+            _MainControlFocus();
             OnFilterBoxKeyEnter();
             FilterBoxKeyEnter?.Invoke(this, e);
         }
@@ -340,6 +354,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Proběhne po stisku Enter v řádkovém filtru
         /// </summary>
         protected virtual void OnFilterBoxKeyEnter() { }
+        /// <summary>
+        /// DxFilterBox
+        /// </summary>
+        private DxFilterBox _FilterBox;
         #endregion
         #region Eventy a další akce DxTreeListNative
         /// <summary>

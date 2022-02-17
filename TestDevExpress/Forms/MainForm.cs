@@ -4171,18 +4171,20 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
 
             KeyActionType sourceKeyActions = KeyActionType.SelectAll | KeyActionType.ClipCopy;
             DxDragDropActionType sourceDDActions = DxDragDropActionType.CopyItemsFrom;
-            _DragDropAList = new DxListBoxControl() { SelectionMode = SelectionMode.MultiExtended, DragDropActions = sourceDDActions, EnabledKeyActions = sourceKeyActions };
+            _DragDropAList = new DxListBoxPanel() { SelectionMode = SelectionMode.MultiExtended, DragDropActions = sourceDDActions, EnabledKeyActions = sourceKeyActions };
             _DragDropAList.Name = "AList";
             _DragDropAList.Items.AddRange(_CreateListItems(100, false, true));
             _DragDropAList.MouseDown += _DragDrop_MouseDown;
+            _DragDropAList.FilterBoxVisible = true;
             _PanelDragDrop.Controls.Add(_DragDropAList);
 
             KeyActionType targetKeyActions = KeyActionType.All;
             DxDragDropActionType targetDDActions = DxDragDropActionType.ReorderItems | DxDragDropActionType.ImportItemsInto | DxDragDropActionType.CopyItemsFrom | DxDragDropActionType.MoveItemsFrom;
-            _DragDropBList = new DxListBoxControl() { SelectionMode = SelectionMode.MultiExtended, DragDropActions = targetDDActions, EnabledKeyActions = targetKeyActions };
+            _DragDropBList = new DxListBoxPanel() { SelectionMode = SelectionMode.MultiExtended, DragDropActions = targetDDActions, EnabledKeyActions = targetKeyActions };
             _DragDropBList.Name = "BList";
             _DragDropBList.Items.AddRange(_CreateListItems(18, true, false));
             _DragDropBList.MouseDown += _DragDrop_MouseDown;
+            _DragDropBList.FilterBoxVisible = false;
             _PanelDragDrop.Controls.Add(_DragDropBList);
 
             _DragDropATree = new DxTreeList() { FilterBoxVisible = true, DragDropActions = targetDDActions };
@@ -4282,8 +4284,8 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
             if (_DragDropATree != null) _DragDropATree.Bounds = new Rectangle(xm + 2 * ws, ym, w, h);
             if (_DragDropLogText != null) _DragDropLogText.Bounds = new Rectangle(xm + 3 * ws, ym, w, h);
         }
-        private DxListBoxControl _DragDropAList;
-        private DxListBoxControl _DragDropBList;
+        private DxListBoxPanel _DragDropAList;
+        private DxListBoxPanel _DragDropBList;
         private DxTreeList _DragDropATree;
         private DxMemoEdit _DragDropLogText;
         #endregion

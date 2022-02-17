@@ -121,6 +121,25 @@ namespace Noris.Clients.Win.Components.AsolDX
             return new Size(s, s);
         }
         /// <summary>
+        /// Metoda vrátí optimální velikost pro Image tak, aby se vešel do dané velikosti, 
+        /// s případně danými okraji, zarovnanou dolů na násobky 8, nejméně 16 x 16 (vždy vrací čtverec)
+        /// </summary>
+        /// <param name="size"></param>
+        /// <param name="padding"></param>
+        /// <returns></returns>
+        public static Size GetOptimalImageSize(Size size, int padding = 0)
+        {
+            int s = (size.Width < size.Height ? size.Width : size.Height);
+            if (padding > 0) s = s - (2 * padding);
+            if (s < 24) s = 16;
+            else if (s < 32) s = 24;
+            else if (s < 40) s = 32;
+            else if (s < 48) s = 40;
+            else if (s < 64) s = 48;
+            else s = 64;
+            return new Size(s, s);
+        }
+        /// <summary>
         /// Vrátí typ velikosti obrázku vhodný pro danou fyzickou velikost prostoru.
         /// Pro střední velikost (17 až 24 px včetně) dovoluje zadat explicitní hodnotu, protože pro vektorové obrázky je lepší generovat Small než Large.
         /// </summary>
