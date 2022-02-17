@@ -4184,7 +4184,9 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
             _DragDropBList.Name = "BList";
             _DragDropBList.Items.AddRange(_CreateListItems(18, true, false));
             _DragDropBList.MouseDown += _DragDrop_MouseDown;
-            _DragDropBList.FilterBoxVisible = false;
+            _DragDropBList.FilterBoxVisible = true;
+            _DragDropBList.ButtonsPosition = ToolbarPosition.BottomSideCenter;
+            _DragDropBList.ButtonsTypes = ListBoxButtonType.MoveAll;
             _PanelDragDrop.Controls.Add(_DragDropBList);
 
             _DragDropATree = new DxTreeList() { FilterBoxVisible = true, DragDropActions = targetDDActions };

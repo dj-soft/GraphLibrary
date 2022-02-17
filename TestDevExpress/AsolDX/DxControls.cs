@@ -145,6 +145,15 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private bool _WasShown = false;
         /// <summary>
+        /// Obsahuje true v situaci, kdy toto okno již prošlo fází zobrazení (<see cref="WasShown"/> je true) a dosud nebylo disposováno.
+        /// </summary>
+        public bool IsLive { get { return _WasShown && !Disposing && !IsDisposed; } }
+        /// <summary>
+        /// Obsahuje true v situaci, kdy toto okno je ve viditelném stavu = je živé <see cref="IsLive"/> a není minimalizované.
+        /// V tomto stavu má smysl provádět Layout okna.
+        /// </summary>
+        public bool IsDisplayed { get { return IsLive && WindowState != FormWindowState.Minimized; } }
+        /// <summary>
         /// Aktuálně platná hodnota DeviceDpi
         /// </summary>
         public int CurrentDpi { get { return this.DeviceDpi; } }
@@ -310,6 +319,15 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Okno již bylo zobrazeno?
         /// </summary>
         private bool _WasShown = false;
+        /// <summary>
+        /// Obsahuje true v situaci, kdy toto okno již prošlo fází zobrazení (<see cref="WasShown"/> je true) a dosud nebylo disposováno.
+        /// </summary>
+        public bool IsLive { get { return _WasShown && !Disposing && !IsDisposed; } }
+        /// <summary>
+        /// Obsahuje true v situaci, kdy toto okno je ve viditelném stavu = je živé <see cref="IsLive"/> a není minimalizované.
+        /// V tomto stavu má smysl provádět Layout okna.
+        /// </summary>
+        public bool IsDisplayed { get { return IsLive && WindowState != FormWindowState.Minimized; } }
         /// <summary>
         /// Aktuálně platná hodnota DeviceDpi
         /// </summary>

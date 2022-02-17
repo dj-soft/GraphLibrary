@@ -59,6 +59,92 @@ namespace Noris.Clients.Win.Components.AsolDX
         private DxPanelControl _ControlPanel;
         private DxRibbonStatusBar _StatusBar;
         #endregion
+        #region Public rozhraní na prvky
+        /// <summary>
+        /// Panel, do kterého se má vložit uživatelský obsah.
+        /// Pokud uživatelský obsah má nějakou minimální / maximální velikost, má být vepsána do <see cref="Control.MinimumSize"/> a do <see cref="Control.MaximumSize"/>.
+        /// </summary>
+        public DxPanelControl ControlPanel { get { return _ControlPanel; } }
+        /// <summary>
+        /// Minimální velikost požadovaná pro <see cref="ControlPanel"/>
+        /// </summary>
+        public Size? ControlPanelMinimumSize { get { return _ControlPanelMinimumSize; } set { _ControlPanelMinimumSize = value; this.DoLayout(); } }
+        private Size? _ControlPanelMinimumSize;
+        /// <summary>
+        /// Maximální velikost požadovaná pro <see cref="ControlPanel"/>
+        /// </summary>
+        public Size? ControlPanelMaximumSize { get { return _ControlPanelMaximumSize; } set { _ControlPanelMaximumSize = value; this.DoLayout(); } }
+        private Size? _ControlPanelMaximumSize;
+        /// <summary>
+        /// Button, který byl naposledy aktivován
+        /// </summary>
+        public IMenuItem ClickedButton { get; private set; }
+        /// <summary>
+        /// Zavřít okno po kliknutí na kterýkoli button? Default = true.
+        /// Kliknutý button bude uchován v <see cref="ClickedButton"/>.
+        /// Bude vyvolána událost <see cref="ButtonClick"/>.
+        /// </summary>
+        public bool CloseOnClickButton { get; private set; }
+        /// <summary>
+        /// Definice pro Buttony. Aplikace sem vkládá sadu buttonů, které chce v okně zobrazit. 
+        /// Layout buttonů určují property <see cref="ButtonsPosition"/>, <see cref="ButtonsDesignHeight"/>, <see cref="DesignMargins"/> a <see cref="ButtonsVisible"/>.
+        /// <para/>
+        /// Aktivita buttonů:
+        /// Aplikace může buď nastavit zdejší <see cref="CloseOnClickButton"/> na true, po kliknutí na button se zavře okno,
+        /// a aplikace si pak vyhodnotí prvek uložený v <see cref="ClickedButton"/> = na něj uživatel klikl.
+        /// Anebo si aplikace ošetří akci <see cref="IMenuItem.ClickAction"/> v konkrétních buttonech a sama reaguje,
+        /// pak může sama zavřít okno bez závislosti na hodnotě <see cref="CloseOnClickButton"/>.
+        /// <para/>
+        /// Pokud button bude mít v <see cref="ITextItem.Tag"/> hodnotu typu <see cref="DialogResult"/>, 
+        /// pak po kliknutí na button bude tato hodnota uložena v <see cref="Form.DialogResult"/>, jinak tam bude výchozí hodnota <see cref="DialogResult.None"/>.
+        /// </summary>
+        public IEnumerable<IMenuItem> Buttons { get { return _IButtons; } set { _IButtons = value?.ToArray(); this.CreateButtons(); } }
+        private IMenuItem[] _IButtons;
+        /// <summary>
+        /// Počet definovaných buttonů
+        /// </summary>
+        public int ButtonsCount { get { return (_IButtons?.Length ?? 0); } }
+        /// <summary>
+        /// Viditelnost pole buttonů.
+        /// Výchozí hodnota je null = řídí se podle přítomnosti nějakého buttonu.
+        /// </summary>
+        public bool? ButtonsVisible { get { return _ButtonsVisible; } set { _ButtonsVisible = value; this.DoLayout(); } }
+        private bool? _ButtonsVisible;
+        /// <summary>
+        /// Výška jednotlivých buttonů, v design pixelech.
+        /// Výchozí je 30. Platný rozsah 16 - 120.
+        /// </summary>
+        public int ButtonsDesignHeight { get { return _ButtonsDesignHeight; } set { _ButtonsDesignHeight = value.Align(16, 120); this.DoLayout(); } }
+        private int _ButtonsDesignHeight;
+        /// <summary>
+        /// Vnitřní okraje mezo formulářem a obsahem, v design pixelech.
+        /// </summary>
+        public Padding DesignMargins { get { return _DesignMargins; } set { _DesignMargins = value; this.DoLayout(); } }
+        private Padding _DesignMargins;
+        /// <summary>
+        /// Umístění buttonů. Výchozí hodnota je <see cref="ToolbarPosition.BottomSideLeft"/>.
+        /// </summary>
+        public ToolbarPosition ButtonsPosition { get { return _ButtonsPosition; } set { _ButtonsPosition = value; this.DoLayout(); } }
+        private ToolbarPosition _ButtonsPosition;
+        /// <summary>
+        /// Status bar
+        /// </summary>
+        public DxRibbonStatusBar StatusBar { get { return _StatusBar; } }
+        /// <summary>
+        /// Viditelnost statusbaru.
+        /// Výchozí hodnota je null = řídí se podle přítomnosti nějakého prvku.
+        /// </summary>
+        public bool? StatusBarVisible { get { return _StatusBarVisible; } set { _StatusBarVisible = value; this.DoLayout(); } }
+        private bool? _StatusBarVisible;
+        /// <summary>
+        /// Refresh: uspořádá layout. Je vhodné volat po změně obsahu StatusBaru.
+        /// </summary>
+        public override void Refresh()
+        {
+            DoLayout();
+            base.Refresh();
+        }
+        #endregion
         #region Layout
         /// <summary>
         /// Připraví pozici okna podle pozice myši nebo pro zobrazení na středu parent okna
@@ -103,7 +189,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private void DoLayout()
         {
-            if (this.WasShown)
+            if (this.IsDisplayed)
             {   // Nemá význam dělat layout dřív, než bude okno zobrazeno:
                 DoLayoutStatusBar();
                 DoLayoutButtons();
@@ -244,92 +330,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public event EventHandler<TEventArgs<IMenuItem>> ButtonClick;
         private DxSimpleButton[] _ButtonControls;
-        #endregion
-        #region Public rozhraní na prvky
-        /// <summary>
-        /// Panel, do kterého se má vložit uživatelský obsah.
-        /// Pokud uživatelský obsah má nějakou minimální / maximální velikost, má být vepsána do <see cref="Control.MinimumSize"/> a do <see cref="Control.MaximumSize"/>.
-        /// </summary>
-        public DxPanelControl ControlPanel { get { return _ControlPanel; } }
-        /// <summary>
-        /// Minimální velikost požadovaná pro <see cref="ControlPanel"/>
-        /// </summary>
-        public Size? ControlPanelMinimumSize { get { return _ControlPanelMinimumSize; } set { _ControlPanelMinimumSize = value; this.DoLayout(); } }
-        private Size? _ControlPanelMinimumSize;
-        /// <summary>
-        /// Maximální velikost požadovaná pro <see cref="ControlPanel"/>
-        /// </summary>
-        public Size? ControlPanelMaximumSize { get { return _ControlPanelMaximumSize; } set { _ControlPanelMaximumSize = value; this.DoLayout(); } }
-        private Size? _ControlPanelMaximumSize;
-        /// <summary>
-        /// Button, který byl naposledy aktivován
-        /// </summary>
-        public IMenuItem ClickedButton { get; private set; }
-        /// <summary>
-        /// Zavřít okno po kliknutí na kterýkoli button? Default = true.
-        /// Kliknutý button bude uchován v <see cref="ClickedButton"/>.
-        /// Bude vyvolána událost <see cref="ButtonClick"/>.
-        /// </summary>
-        public bool CloseOnClickButton { get; private set; }
-        /// <summary>
-        /// Definice pro Buttony. Aplikace sem vkládá sadu buttonů, které chce v okně zobrazit. 
-        /// Layout buttonů určují property <see cref="ButtonsPosition"/>, <see cref="ButtonsDesignHeight"/>, <see cref="DesignMargins"/> a <see cref="ButtonsVisible"/>.
-        /// <para/>
-        /// Aktivita buttonů:
-        /// Aplikace může buď nastavit zdejší <see cref="CloseOnClickButton"/> na true, po kliknutí na button se zavře okno,
-        /// a aplikace si pak vyhodnotí prvek uložený v <see cref="ClickedButton"/> = na něj uživatel klikl.
-        /// Anebo si aplikace ošetří akci <see cref="IMenuItem.ClickAction"/> v konkrétních buttonech a sama reaguje,
-        /// pak může sama zavřít okno bez závislosti na hodnotě <see cref="CloseOnClickButton"/>.
-        /// <para/>
-        /// Pokud button bude mít v <see cref="ITextItem.Tag"/> hodnotu typu <see cref="DialogResult"/>, 
-        /// pak po kliknutí na button bude tato hodnota uložena v <see cref="Form.DialogResult"/>, jinak tam bude výchozí hodnota <see cref="DialogResult.None"/>.
-        /// </summary>
-        public IEnumerable<IMenuItem> Buttons { get { return _IButtons; } set { _IButtons = value?.ToArray(); this.CreateButtons(); } }
-        private IMenuItem[] _IButtons;
-        /// <summary>
-        /// Počet definovaných buttonů
-        /// </summary>
-        public int ButtonsCount { get { return (_IButtons?.Length ?? 0); } }
-        /// <summary>
-        /// Viditelnost pole buttonů.
-        /// Výchozí hodnota je null = řídí se podle přítomnosti nějakého buttonu.
-        /// </summary>
-        public bool? ButtonsVisible { get { return _ButtonsVisible; } set { _ButtonsVisible = value; this.DoLayout(); } }
-        private bool? _ButtonsVisible;
-        /// <summary>
-        /// Výška jednotlivých buttonů, v design pixelech.
-        /// Výchozí je 30. Platný rozsah 16 - 120.
-        /// </summary>
-        public int ButtonsDesignHeight { get { return _ButtonsDesignHeight; } set { _ButtonsDesignHeight = value.Align(16, 120); this.DoLayout(); } }
-        private int _ButtonsDesignHeight;
-        /// <summary>
-        /// Vnitřní okraje mezo formulářem a obsahem, v design pixelech.
-        /// </summary>
-        public Padding DesignMargins { get { return _DesignMargins; } set { _DesignMargins = value; this.DoLayout(); } }
-        private Padding _DesignMargins;
-        /// <summary>
-        /// Umístění buttonů. Výchozí hodnota je <see cref="ToolbarPosition.BottomSideLeft"/>.
-        /// </summary>
-        public ToolbarPosition ButtonsPosition { get { return _ButtonsPosition; } set { _ButtonsPosition = value; this.DoLayout(); } }
-        private ToolbarPosition _ButtonsPosition;
-        /// <summary>
-        /// Status bar
-        /// </summary>
-        public DxRibbonStatusBar StatusBar { get { return _StatusBar; } }
-        /// <summary>
-        /// Viditelnost statusbaru.
-        /// Výchozí hodnota je null = řídí se podle přítomnosti nějakého prvku.
-        /// </summary>
-        public bool? StatusBarVisible { get { return _StatusBarVisible; } set { _StatusBarVisible = value; this.DoLayout(); } }
-        private bool? _StatusBarVisible;
-        /// <summary>
-        /// Refresh: uspořádá layout. Je vhodné volat po změně obsahu StatusBaru.
-        /// </summary>
-        public override void Refresh()
-        {
-            DoLayout();
-            base.Refresh();
-        }
         #endregion
     }
 }

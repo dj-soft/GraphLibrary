@@ -578,7 +578,16 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Akce REDO
         /// </summary>
-        Redo = 0x2000
+        Redo = 0x2000,
+
+        /// <summary>
+        /// Souhrn všech pohybů
+        /// </summary>
+        MoveAll = MoveTop | MoveUp | MoveDown | MoveBottom,
+        /// <summary>
+        /// Souhrn Undo + Redo
+        /// </summary>
+        UndoRedo = Undo | Redo
     }
     #endregion
     /// <summary>
