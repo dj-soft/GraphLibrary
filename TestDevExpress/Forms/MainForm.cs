@@ -4173,7 +4173,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
             DxDragDropActionType sourceDDActions = DxDragDropActionType.CopyItemsFrom;
             _DragDropAList = new DxListBoxPanel() { SelectionMode = SelectionMode.MultiExtended, DragDropActions = sourceDDActions, EnabledKeyActions = sourceKeyActions };
             _DragDropAList.Name = "AList";
-            _DragDropAList.Items.AddRange(_CreateListItems(100, false, true));
+            _DragDropAList.ListItems = _CreateListItems(100, false, true);
             _DragDropAList.MouseDown += _DragDrop_MouseDown;
             _DragDropAList.FilterBoxVisible = true;
             _PanelDragDrop.Controls.Add(_DragDropAList);
@@ -4182,7 +4182,8 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
             DxDragDropActionType targetDDActions = DxDragDropActionType.ReorderItems | DxDragDropActionType.ImportItemsInto | DxDragDropActionType.CopyItemsFrom | DxDragDropActionType.MoveItemsFrom;
             _DragDropBList = new DxListBoxPanel() { SelectionMode = SelectionMode.MultiExtended, DragDropActions = targetDDActions, EnabledKeyActions = targetKeyActions };
             _DragDropBList.Name = "BList";
-            _DragDropBList.Items.AddRange(_CreateListItems(18, true, false));
+            _DragDropBList.DuplicityEnabled = false;
+            _DragDropBList.ListItems = _CreateListItems(18, true, false);
             _DragDropBList.MouseDown += _DragDrop_MouseDown;
             _DragDropBList.FilterBoxVisible = true;
             _DragDropBList.ButtonsPosition = ToolbarPosition.BottomSideCenter;
@@ -4257,7 +4258,14 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
         {
             DragDropDoLayout();
         }
-        private object[] _CreateListItems(int count, bool fileTypes = true, bool chartTypes = true)
+        /// <summary>
+        /// Vygeneruje prvky menu v daném počtu a s daným typem Images
+        /// </summary>
+        /// <param name="count"></param>
+        /// <param name="fileTypes"></param>
+        /// <param name="chartTypes"></param>
+        /// <returns></returns>
+        private IMenuItem[] _CreateListItems(int count, bool fileTypes = true, bool chartTypes = true)
         {
             List<IMenuItem> items = new List<IMenuItem>();
             for (int i = 0; i < count; i++)

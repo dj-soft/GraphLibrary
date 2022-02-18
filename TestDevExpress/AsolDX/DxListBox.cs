@@ -107,6 +107,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         #endregion
         #region Přímý přístup na prvky DxListBoxControlu
         /// <summary>
+        /// Pokud obsahuje true, pak List smí obsahovat duplicitní klíče (defaultní hodnota je true).
+        /// Pokud je false, pak vložení dalšího záznamu s klíčem, který už v Listu je, bude ignorováno.
+        /// Pozor, pokud List obsahuje nějaké duplicitní záznamy a poté bude nastaveno <see cref="DuplicityEnabled"/> na false, NEBUDOU duplicitní záznamy odstraněny.
+        /// </summary>
+        public bool DuplicityEnabled { get { return _ListBox.DuplicityEnabled; } set { _ListBox.DuplicityEnabled = value; } }
+        /// <summary>
         /// Prvky Listu typované na <see cref="IMenuItem"/>.
         /// Pokud v Listu budou obsaženy jiné prvky než <see cref="IMenuItem"/>, pak na jejich místě v tomto poli bude null.
         /// Toto pole má stejný počet prvků jako pole this.Items
@@ -605,6 +611,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             DxDragDropInit(DxDragDropActionType.None);
             ToolTipInit();
             ImageInit();
+            DuplicityEnabled = true;
             ItemSizeType = ResourceImageSizeType.Small;
         }
         /// <summary>
@@ -764,9 +771,16 @@ namespace Noris.Clients.Win.Components.AsolDX
             set
             {
                 this.Items.Clear();
-                this.Items.AddRange(value);
+                var validItems = _GetOnlyValidItems(value, true);
+                this.Items.AddRange(validItems);
             }
         }
+        /// <summary>
+        /// Pokud obsahuje true, pak List smí obsahovat duplicitní klíče (defaultní hodnota je true).
+        /// Pokud je false, pak vložení dalšího záznamu s klíčem, který už v Listu je, bude ignorováno.
+        /// Pozor, pokud List obsahuje nějaké duplicitní záznamy a poté bude nastaveno <see cref="DuplicityEnabled"/> na false, NEBUDOU duplicitní záznamy odstraněny.
+        /// </summary>
+        public bool DuplicityEnabled { get; set; }
         #endregion
         #region Overrides
         /// <summary>
@@ -968,13 +982,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private void KeyActionsInit()
         {
-            this.PreviewKeyDown += DxListBoxControl_PreviewKeyDown;
             this.KeyDown += DxListBoxControl_KeyDown;
             this.EnabledKeyActions = KeyActionType.None;
-        }
-        private void DxListBoxControl_PreviewKeyDown(object sender, PreviewKeyDownEventArgs e)
-        {
-
         }
         /// <summary>
         /// Obsluha kláves
@@ -1104,14 +1113,11 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (!DxComponent.ClipboardTryGetApplicationData(out var data)) return;
             if (!(data is IEnumerable<IMenuItem> items)) return;
 
-            var itemList = items.ToList();
-            if (itemList.Count == 0) return;
-
-            foreach (var item in itemList)
-                this.Items.Add(item);
-
-            this.SelectedItem = itemList[0];
-            this.SelectedItems = itemList;
+            if (items.Any())
+            {
+                int? insertIndex = (this.Items.Count > 0 && this.SelectedIndex >= 0 ? (int?)this.SelectedIndex : (int?)null);
+                InsertItems(items, insertIndex, true);
+            }
         }
         /// <summary>
         /// Provedení klávesové akce: MoveTop
@@ -1181,9 +1187,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             var selectedItemsInfo = this.SelectedItemsInfo;
             if (selectedItemsInfo.Length == 0) return;
 
-            // int i = this.HotItemIndex;
-            // var s = this.SelectedIndex;
-
             var targetIndex = targetIndexLocator(selectedItemsInfo);
             _MoveItems(selectedItemsInfo, targetIndex);
         }
@@ -1222,11 +1225,14 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             if (sourceItems is null || !sourceItems.Any()) return;
 
+            var validItems = _GetOnlyValidItems(sourceItems, true);
+            if (validItems.Length == 0) return;
+
             List<int> selectedIndexes = new List<int>();
             if (insertIndex.HasValue && insertIndex.Value >= 0 && insertIndex.Value < this.ItemCount)
             {
                 int index = insertIndex.Value;
-                foreach (var sourceItem in sourceItems)
+                foreach (var sourceItem in validItems)
                 {
                     DevExpress.XtraEditors.Controls.ImageListBoxItem imgItem = new DevExpress.XtraEditors.Controls.ImageListBoxItem(sourceItem);
                     selectedIndexes.Add(index);
@@ -1236,9 +1242,9 @@ namespace Noris.Clients.Win.Components.AsolDX
             else
             {
                 int index = this.ItemCount;
-                foreach (var sourceItem in sourceItems)
+                foreach (var sourceItem in validItems)
                     selectedIndexes.Add(index++);
-                this.Items.AddRange(sourceItems.ToArray());
+                this.Items.AddRange(validItems);
             }
 
             if (selectNewItems)
@@ -1274,6 +1280,35 @@ namespace Noris.Clients.Win.Components.AsolDX
                 if (listItem != null && removeArray.Any(t => Object.ReferenceEquals(t, listItem)))
                     this.Items.RemoveAt(i);
             }
+        }
+        /// <summary>
+        /// Metoda z dodané kolekce prvku vrátí jen ty platné.
+        /// To jsou ty, které nejsou NULL a které dodržují pravidlo nonduplicity.
+        /// Pokud NENÍ povolena duplicita (tj. <see cref="DuplicityEnabled"/> je false), pak:
+        /// - Každý prvek musí mít nenulové <see cref="ITextItem.ItemId"/>;
+        /// - Jedna hodnota <see cref="ITextItem.ItemId"/> se v Listu nesmí opakovat; opakovaný výskyt je ignorován
+        /// </summary>
+        /// <param name="items"></param>
+        /// <param name="withCurrentList">Do kontroly duplicity zahrnout i stávající prvky Listu?</param>
+        /// <returns></returns>
+        private IMenuItem[] _GetOnlyValidItems(IEnumerable<IMenuItem> items, bool withCurrentList)
+        {
+            List<IMenuItem> validItems = new List<IMenuItem>();
+            if (items != null)
+            {
+                bool duplicityEnabled = this.DuplicityEnabled;
+                Dictionary<string, IMenuItem> itemIdDict = (duplicityEnabled ? null : 
+                      (withCurrentList ? this.ListItems.Where(i => i.ItemId != null).CreateDictionary(i => i.ItemId, true) : 
+                      new Dictionary<string, IMenuItem>()));
+                foreach (var item in items)
+                {
+                    if (item is null) continue;
+                    if (!duplicityEnabled && (item.ItemId is null || itemIdDict.ContainsKey(item.ItemId))) continue;
+                    validItems.Add(item);
+                    if (!duplicityEnabled) itemIdDict.Add(item.ItemId, item);
+                }
+            }
+            return validItems.ToArray();
         }
         #endregion
         #region Přesouvání prvků pomocí myši

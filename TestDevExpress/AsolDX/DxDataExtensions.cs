@@ -58,8 +58,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <typeparam name="TKey"></typeparam>
         /// <typeparam name="TValue"></typeparam>
         /// <param name="items"></param>
-        /// <param name="keySelector"></param>
-        /// <param name="ignoreDuplicity"></param>
+        /// <param name="keySelector">Funkce, která vybere klíč ze záznamu</param>
+        /// <param name="ignoreDuplicity">Pokud je zadáno true, pak duplicitní klíče budou ignorovány, nebudou způsobovat chybu.</param>
         /// <returns></returns>
         public static Dictionary<TKey, TValue> CreateDictionary<TKey, TValue>(this IEnumerable<TValue> items, Func<TValue, TKey> keySelector, bool ignoreDuplicity = false)
         {
