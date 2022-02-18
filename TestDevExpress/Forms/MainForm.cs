@@ -3797,7 +3797,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
             _SplitContainer.Panel1.Controls.Add(_TreeMultiCheckBox);      // 
 
             DateTime t0 = DateTime.Now;
-            var nodes = _CreateSampleList(ItemCountType.Big);
+            var nodes = _CreateSampleTreeNodes(ItemCountType.Big);
             DateTime t1 = DateTime.Now;
             _TreeList.AddNodes(nodes);
             DateTime t2 = DateTime.Now;
@@ -4042,7 +4042,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
             _TreeListMemoEdit.Text = log;
         }
         int _InternalNodeId;
-        private List<DataTreeListNode> _CreateSampleList(ItemCountType countType = ItemCountType.Standard)
+        private List<DataTreeListNode> _CreateSampleTreeNodes(ItemCountType countType = ItemCountType.Standard)
         {
             List<DataTreeListNode> list = new List<DataTreeListNode>();
 
@@ -4173,7 +4173,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
             DxDragDropActionType sourceDDActions = DxDragDropActionType.CopyItemsFrom;
             _DragDropAList = new DxListBoxPanel() { SelectionMode = SelectionMode.MultiExtended, DragDropActions = sourceDDActions, EnabledKeyActions = sourceKeyActions };
             _DragDropAList.Name = "AList";
-            _DragDropAList.ListItems = _CreateListItems(100, false, true);
+            _DragDropAList.ListItems = _CreateSampleListItems(100, false, true);
             _DragDropAList.MouseDown += _DragDrop_MouseDown;
             _DragDropAList.FilterBoxVisible = true;
             _PanelDragDrop.Controls.Add(_DragDropAList);
@@ -4183,26 +4183,26 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
             _DragDropBList = new DxListBoxPanel() { SelectionMode = SelectionMode.MultiExtended, DragDropActions = targetDDActions, EnabledKeyActions = targetKeyActions };
             _DragDropBList.Name = "BList";
             _DragDropBList.DuplicityEnabled = false;
-            _DragDropBList.ListItems = _CreateListItems(18, true, false);
+            _DragDropBList.ListItems = _CreateSampleListItems(18, true, false);
             _DragDropBList.MouseDown += _DragDrop_MouseDown;
             _DragDropBList.FilterBoxVisible = true;
             _DragDropBList.ButtonsPosition = ToolbarPosition.BottomSideCenter;
             _DragDropBList.ButtonsTypes = ListBoxButtonType.MoveAll;
             _PanelDragDrop.Controls.Add(_DragDropBList);
 
-            _DragDropATree = new DxTreeList() { FilterBoxVisible = true, DragDropActions = targetDDActions };
-            _DragDropATree.Name = "ATree";
-            _DragDropATree.MultiSelectEnabled = true;
-            _DragDropATree.SelectNodeBeforeShowContextMenu = false;
-            _DragDropATree.TransparentBackground = true;
+            _DragDropCTree = new DxTreeList() { FilterBoxVisible = true, DragDropActions = targetDDActions };
+            _DragDropCTree.Name = "CTree";
+            _DragDropCTree.MultiSelectEnabled = true;
+            _DragDropCTree.SelectNodeBeforeShowContextMenu = false;
+            _DragDropCTree.TransparentBackground = true;
 
-            var nodes = _CreateSampleList();
+            var nodes = _CreateSampleTreeNodes();
             nodes.ForEachExec(n => { if (Random.IsTrue(5)) n.Selected = true; });
-            _DragDropATree.AddNodes(nodes);
+            _DragDropCTree.AddNodes(nodes);
             
-            _DragDropATree.ShowContextMenu += _DragDropATree_ShowContextMenu;
-            _DragDropATree.MouseDown += _DragDrop_MouseDown;
-            _PanelDragDrop.Controls.Add(_DragDropATree);
+            _DragDropCTree.ShowContextMenu += _DragDropATree_ShowContextMenu;
+            _DragDropCTree.MouseDown += _DragDrop_MouseDown;
+            _PanelDragDrop.Controls.Add(_DragDropCTree);
 
             _DragDropLogText = DxComponent.CreateDxMemoEdit(_PanelDragDrop, System.Windows.Forms.DockStyle.None, readOnly: true, tabStop: false);
 
@@ -4265,7 +4265,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
         /// <param name="fileTypes"></param>
         /// <param name="chartTypes"></param>
         /// <returns></returns>
-        private IMenuItem[] _CreateListItems(int count, bool fileTypes = true, bool chartTypes = true)
+        private IMenuItem[] _CreateSampleListItems(int count, bool fileTypes = true, bool chartTypes = true)
         {
             List<IMenuItem> items = new List<IMenuItem>();
             for (int i = 0; i < count; i++)
@@ -4291,12 +4291,12 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
             int h = size.Height - 20;
             if (_DragDropAList != null) _DragDropAList.Bounds = new Rectangle(xm, ym, w, h);
             if (_DragDropBList != null) _DragDropBList.Bounds = new Rectangle(xm + 1 * ws, ym, w, h);
-            if (_DragDropATree != null) _DragDropATree.Bounds = new Rectangle(xm + 2 * ws, ym, w, h);
+            if (_DragDropCTree != null) _DragDropCTree.Bounds = new Rectangle(xm + 2 * ws, ym, w, h);
             if (_DragDropLogText != null) _DragDropLogText.Bounds = new Rectangle(xm + 3 * ws, ym, w, h);
         }
         private DxListBoxPanel _DragDropAList;
         private DxListBoxPanel _DragDropBList;
-        private DxTreeList _DragDropATree;
+        private DxTreeList _DragDropCTree;
         private DxMemoEdit _DragDropLogText;
         #endregion
         #region SyntaxEditor
