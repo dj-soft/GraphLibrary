@@ -4184,6 +4184,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
             _DragDropAList.Name = "AList";
             _DragDropAList.ListItems = _CreateSampleListItems(100, false, true);
             _DragDropAList.MouseDown += _DragDrop_MouseDown;
+            _DragDropAList.ExchangeCrossType = DataExchangeCrossType.None;
             _DragDropAList.FilterBoxVisible = true;
             _PanelDragDrop.Controls.Add(_DragDropAList);
 
@@ -4194,6 +4195,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
             _DragDropBList.DuplicityEnabled = false;
             _DragDropBList.ListItems = _CreateSampleListItems(18, true, false);
             _DragDropBList.MouseDown += _DragDrop_MouseDown;
+            _DragDropBList.ExchangeCrossType = DataExchangeCrossType.AllControlsInCurrentApplication | DataExchangeCrossType.AnyOtherApplications;
             _DragDropBList.FilterBoxVisible = true;
             _DragDropBList.ButtonsPosition = ToolbarPosition.BottomSideCenter;
             _DragDropBList.ButtonsTypes = ListBoxButtonType.MoveAll;

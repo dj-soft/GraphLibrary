@@ -3631,13 +3631,39 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         private bool _CanAcceptExchangeData(DataExchangeContainer appDataContainer, string targetControlId, DataExchangeCrossType crossType, string enabledSources)
         {
-            if (appDataContainer is null || appDataContainer.Data is null) return false;
-            switch (crossType)
+            if (appDataContainer is null || appDataContainer.Data is null || crossType == DataExchangeCrossType.None) return false;
+
+            // Zdrojem dat je naše aktuální aplikace? A řešení předvoleb:
+            bool isEqualApplication = String.Equals(appDataContainer.ApplicationGuid, DxComponent.ApplicationGuid, StringComparison.Ordinal);
+            if (isEqualApplication && !crossType.HasFlag(DataExchangeCrossType.CurrentApplication)) return false;
+            if (!isEqualApplication && !crossType.HasFlag(DataExchangeCrossType.AnyOtherApplications)) return false;
+
+            // Zdrojem dat je aktuální control?
+            bool isEqualControl = (isEqualApplication && String.Equals(appDataContainer.DataSourceId, targetControlId, StringComparison.Ordinal));
+            if (isEqualControl) return crossType.HasFlag(DataExchangeCrossType.OwnControl);
+
+            // Pokud je zdrojem dat jiný než aktuální control, a je specifikováno že lze akceptovat kterýkoli jiný:
+            if (!isEqualControl && crossType.HasFlag(DataExchangeCrossType.AnyOtherControls)) return true;
+
+            // Pokud máme kontrolovat jiné zdroje jmenovitě, provedeme to nyní:
+            if (crossType.HasFlag(DataExchangeCrossType.OtherSelectedControls)) return _CanAcceptExchangeDataSources(appDataContainer.DataSourceId, enabledSources);
+
+            return false;
+        }
+        /// <summary>
+        /// Vrátí true, pokud zdroj dat <paramref name="dataSourceId"/> lze akceptovat pro zadané povolené zdroje <paramref name="enabledSources"/>.
+        /// Zatím neřešíme Wildcards.
+        /// </summary>
+        /// <param name="dataSourceId"></param>
+        /// <param name="enabledSources"></param>
+        /// <returns></returns>
+        private bool _CanAcceptExchangeDataSources(string dataSourceId, string enabledSources)
+        {
+            if (String.IsNullOrEmpty(enabledSources)) return false;
+            var enabledItems = enabledSources.Split('\r', '\n');
+            foreach (var enabledItem in enabledItems)
             {
-                case DataExchangeCrossType.None: return false;
-                case DataExchangeCrossType.OwnControlDataOnly:
-                    return String.Equals(appDataContainer.ApplicationGuid, DxComponent.ApplicationGuid, StringComparison.Ordinal) &&
-                           String.Equals(appDataContainer.DataSourceId, targetControlId, StringComparison.Ordinal);
+                if (String.Equals(dataSourceId, enabledItem, StringComparison.Ordinal)) return true;
             }
             return false;
         }
@@ -3965,9 +3991,10 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// <para/>
     /// Cíl dat, tedy control, kam jsou data vkládána (Ctrl+V nebo Drop při DragAndDrop) si pak zjistí, zda existují Exchange data,
     /// a následně se optá, zda tato data může do sebe akceptovat.
-    /// K tomu slouží metoda <see cref="DxComponent.CanAcceptExchangeData(DataExchangeContainer, DataExchangeCrossType, string)"/>.
+    /// K tomu slouží metoda <see cref="DxComponent.CanAcceptExchangeData(DataExchangeContainer, string, DataExchangeCrossType, string)"/>.
     /// Metodě předává získaná Exchange data a parametry deklarované v cílovém controlu - které slouží pro volbu akceptování dat z Exchange.
     /// </summary>
+    [Flags]
     public enum DataExchangeCrossType
     {
         /// <summary>
@@ -3975,14 +4002,47 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         None = 0,
         /// <summary>
-        /// Pouze data z vlastního controlu. Pak není nutno 
+        /// Lze akceptovat data pocházející z vlastního controlu
         /// </summary>
-        OwnControlDataOnly,
+        OwnControl = 0x0001,
+        /// <summary>
+        /// Lze akceptovat data pocházející z jiných controlů, 
+        /// jejich výběr (ID) je uveden v parametru metody <see cref="DxComponent.CanAcceptExchangeData(DataExchangeContainer, string, DataExchangeCrossType, string)"/>
+        /// </summary>
+        OtherSelectedControls = 0x0002,
+        /// <summary>
+        /// Lze akceptovat data pocházející z kteréhokoli jiného controlů, bez omezení;
+        /// ale akceptování zdroje dat z vlastního controlu stále ovládá příznak <see cref="OwnControl"/>;
+        /// </summary>
+        AnyOtherControls = 0x0004,
 
+        /// <summary>
+        /// Lze akceptovat data pocházející z aktuální aplikace.
+        /// Pozor, toto NENÍ default: tuto volbu je třeba explicitně nastavit (anebo vybrat volbu kombinovanou, která už tuto hodnotu obsahuje).
+        /// </summary>
+        CurrentApplication = 0x0010,
+        /// <summary>
+        /// Lze akceptovat data pocházející z jakékoli jiné aplikace;
+        /// ale akceptování zdroje dat z aktuální aplikace stále ovládá příznak <see cref="CurrentApplication"/>;
+        /// </summary>
+        AnyOtherApplications = 0x0020,
 
+        /// <summary>
+        /// Pouze data z vlastního controlu a vlastní aplikace. 
+        /// Pak není nutno určovat povolené zdrojové controly.
+        /// </summary>
+        OwnControlOnly = OwnControl | CurrentApplication,
+        /// <summary>
+        /// Data z jakéhokoli jiného controlu (kromě vlastního controlu) z aktuální aplikace
+        /// </summary>
+        AnyOtherControlsInCurrentApplication = AnyOtherControls | CurrentApplication,
+        /// <summary>
+        /// Data z jakéhokoli controlu (včetně vlastního controlu) z aktuální aplikace
+        /// </summary>
+        AllControlsInCurrentApplication = OwnControl | AnyOtherControls | CurrentApplication,
     }
     /// <summary>
-    /// Názvy barev, skinů a elementů, pro které lze získat barvz pomocí metody <see cref="DxComponent.GetSkinColor(string)"/>
+    /// Názvy barev, skinů a elementů, pro které lze získat barvy pomocí metody <see cref="DxComponent.GetSkinColor(string)"/>
     /// </summary>
     public class SkinElementColor
     {

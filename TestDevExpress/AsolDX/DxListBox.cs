@@ -135,6 +135,26 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Povolené akce. Výchozí je <see cref="KeyActionType.None"/>
         /// </summary>
         public KeyActionType EnabledKeyActions { get { return _ListBox.EnabledKeyActions; } set { _ListBox.EnabledKeyActions = value; } }
+        /// <summary>
+        /// ID tohoto objektu, je vkládáno do balíčku s daty při CtrlC, CtrlX a při DragAndDrop z tohoto zdroje.
+        /// Je součástí Exchange dat uložených do <see cref="DataExchangeContainer.DataSourceId"/>.
+        /// </summary>
+        public string ExchangeCurrentDataId { get { return _ListBox.ExchangeCurrentDataId; } set { _ListBox.ExchangeCurrentDataId = value; } }
+        /// <summary>
+        /// Režim výměny dat při pokusu o vkládání do tohoto objektu.
+        /// Pokud některý jiný objekt provedl Ctrl+C, pak svoje data vložil do balíčku <see cref="DataExchangeContainer"/>,
+        /// přidal k tomu svoje ID controlu (jako zdejší <see cref="ExchangeCurrentDataId"/>) do <see cref="DataExchangeContainer.DataSourceId"/>,
+        /// do balíčku se přidalo ID aplikace do <see cref="DataExchangeContainer.ApplicationGuid"/>, a tato data jsou uložena v Clipboardu.
+        /// <para/>
+        /// Pokud nyní zdejší control zaeviduje klávesu Ctrl+V, pak zjistí, zda v Clipboardu existuje balíček <see cref="DataExchangeContainer"/>,
+        /// a pokud ano, pak prověří, zda this control může akceptovat data ze zdroje v balíčku uvedeného, na základě nastavení režimu výměny v <see cref="ExchangeCrossType"/>
+        /// a ID zdrojového controlu podle <see cref="ExchangeAcceptSourceDataId"/>.
+        /// </summary>
+        public DataExchangeCrossType ExchangeCrossType { get { return _ListBox.ExchangeCrossType; } set { _ListBox.ExchangeCrossType = value; } }
+        /// <summary>
+        /// Povolené zdroje dat pro vkládání do this controlu pomocí výměnného balíčku <see cref="DataExchangeContainer"/>.
+        /// </summary>
+        public string ExchangeAcceptSourceDataId { get { return _ListBox.ExchangeAcceptSourceDataId; } set { _ListBox.ExchangeAcceptSourceDataId = value; } }
         #endregion
         #region FilterRow
         /// <summary>
