@@ -118,6 +118,7 @@ namespace TestDevExpress.Forms
         private DevExpress.XtraGrid.GridSplitContainer _GridContainer;
         private DevExpress.XtraGrid.GridControl _Grid;
         private DevExpress.XtraGrid.Views.Grid.GridView _View;
+        private System.Data.DataTable _DataSource;
         /// <summary>
         /// Vytvoří objekt Browse a dá mu základní vzhled.
         /// Vloží tabulku s daty s daným počtem řádků, default = 0 (tzn. budou tam jen sloupce!).
@@ -140,13 +141,36 @@ namespace TestDevExpress.Forms
             var timeAdd = DxComponent.LogGetTimeElapsed(timeStart, DxComponent.LogTokenTimeSec);
 
             // Specify a data source:
-            string dataLog = FillData(rowCount, Random.WordBookType.TriMuziNaToulkach);
-       
+            _DataSource = _CreateGridDataTable();
+            _Grid.DataSource = _DataSource;
+            // string dataLog = FillData(rowCount, Random.WordBookType.TriMuziNaToulkach);
+            string dataLog = AddDataRows(500);
+
             timeStart = DxComponent.LogTimeCurrent;
             var view = grid.AvailableViews["GridView"].CreateView(grid) as DevExpress.XtraGrid.Views.Grid.GridView;
             _View = view;
             view.OptionsFind.AlwaysVisible = true;
+            view.OptionsView.ShowAutoFilterRow = true;
+            view.OptionsView.ShowGroupPanelColumnsAsSingleRow = true;             // to je dobrý!
+            //   view.OptionsView.ShowPreview = true;    preview je přidaný řádek pod každý řádek s daty
+
             view.OptionsDetail.DetailMode = DevExpress.XtraGrid.Views.Grid.DetailMode.Embedded;
+            view.VertScrollTipFieldName = "nazev";
+            view.OptionsScrollAnnotations.ShowCustomAnnotations = DevExpress.Utils.DefaultBoolean.True;
+            view.OptionsBehavior.Editable = false;
+            view.OptionsBehavior.SmartVertScrollBar = true;
+            view.OptionsScrollAnnotations.ShowFocusedRow = DevExpress.Utils.DefaultBoolean.True;
+            view.OptionsScrollAnnotations.ShowSelectedRows = DevExpress.Utils.DefaultBoolean.True;
+            view.OptionsScrollAnnotations.ShowCustomAnnotations = DevExpress.Utils.DefaultBoolean.True;
+            view.CustomScrollAnnotation += View_CustomScrollAnnotation;
+
+            // Ošetřit v době plnění daty:
+            view.TopRowChanged += View_TopRowChanged;
+            view.RowCountChanged += View_RowCountChanged;
+            
+            
+
+
             grid.MainView = view;
             var timeCreateView = DxComponent.LogGetTimeElapsed(timeStart, DxComponent.LogTokenTimeSec);
 
@@ -157,6 +181,22 @@ namespace TestDevExpress.Forms
 
             StatusText = $"Tvorba GridSplitContainer: {timeInit} sec;     Přidání na Form: {timeAdd} sec;     {dataLog}Generování View: {timeCreateView} sec;     BestFitColumns: {timeFitColumns} sec";
         }
+
+        private void View_CustomScrollAnnotation(object sender, DevExpress.XtraGrid.Views.Grid.GridCustomScrollAnnotationsEventArgs e)
+        {
+            e.Annotations = new List<DevExpress.XtraGrid.Views.Grid.GridScrollAnnotationInfo>();
+            e.Annotations.Add(new DevExpress.XtraGrid.Views.Grid.GridScrollAnnotationInfo() { Index = 32, Color = System.Drawing.Color.DarkBlue, RowHandle = 32 });
+            e.Annotations.Add(new DevExpress.XtraGrid.Views.Grid.GridScrollAnnotationInfo() { Index = 480, Color = System.Drawing.Color.Violet, RowHandle = 480 });
+        }
+
+        private void View_TopRowChanged(object sender, EventArgs e)
+        {
+        }
+
+        private void View_RowCountChanged(object sender, EventArgs e)
+        {
+        }
+
         /// <summary>
         /// Vytvoří Main data a vloží je do <see cref="_Grid"/>, a do Status baru vloží odpovídající text (časy)
         /// </summary>
@@ -164,8 +204,13 @@ namespace TestDevExpress.Forms
         /// <param name="wordBookType"></param>
         private void FillBrowse(int rowCount, Random.WordBookType wordBookType = Random.WordBookType.TriMuziNaToulkach)
         {
-            string dataLog = FillData(rowCount, wordBookType);
-            StatusText = dataLog;
+            if (rowCount <= 0)
+                _DataSource.Rows.Clear();
+            else
+            {
+                string dataLog = AddDataRows(rowCount, wordBookType);
+                StatusText = dataLog;
+            }
         }
         /// <summary>
         /// Vytvoří Main data a vloží je do <see cref="_Grid"/>, a do Status baru vloží odpovídající text (časy)
@@ -183,30 +228,32 @@ namespace TestDevExpress.Forms
         /// <param name="rowCount"></param>
         /// <param name="wordBookType"></param>
         /// <returns></returns>
-        private string FillData(int rowCount, Random.WordBookType wordBookType = Random.WordBookType.TriMuziNaToulkach)
+        private string AddDataRows(int rowCount, Random.WordBookType wordBookType = Random.WordBookType.TriMuziNaToulkach)
         {
             var timeStart = DxComponent.LogTimeCurrent;
-            var data = _CreateGridDataTable(rowCount, wordBookType);
+            var rows = _CreateDataRows(rowCount, wordBookType);
             var timeCreateData = DxComponent.LogGetTimeElapsed(timeStart, DxComponent.LogTokenTimeSec);
 
+            // nevolat event View_RowCountChanged o změně počtu řádků:
+            _Grid.BeginInit();
+            _Grid.SuspendLayout();
             timeStart = DxComponent.LogTimeCurrent;
-            _Grid.DataSource = data;
+            foreach (var row in rows)
+                _DataSource.Rows.Add(row);
+            _Grid.ResumeLayout();
+            _Grid.EndInit();
+
             var timeSetData = DxComponent.LogGetTimeElapsed(timeStart, DxComponent.LogTokenTimeSec);
 
-            string logText = $"Generování DataTable[{rowCount}]: {timeCreateData} sec;     Vložení DataTable do Gridu: {timeSetData} sec;     ";
+            string logText = $"Generování řádků [{rowCount}]: {timeCreateData} sec;     Vložení DataTable do Gridu: {timeSetData} sec;     ";
             return logText;
         }
         /// <summary>
-        /// Vytvoří a vrátí data pro hlavní tabulku
+        /// Vytvoří a vrátí data pro hlavní tabulku, bez řádků
         /// </summary>
-        /// <param name="rowCount"></param>
-        /// <param name="wordBookType"></param>
         /// <returns></returns>
-        private System.Data.DataTable _CreateGridDataTable(int rowCount, Random.WordBookType wordBookType = Random.WordBookType.TriMuziNaToulkach)
+        private System.Data.DataTable _CreateGridDataTable()
         {
-            var currWords = Random.ActiveWordBook;
-            Random.ActiveWordBook = wordBookType;
-
             System.Data.DataTable table = new System.Data.DataTable();
 
             table.Columns.Add(new System.Data.DataColumn() { ColumnName = "id", Caption = "ID", DataType = typeof(int) });
@@ -221,12 +268,27 @@ namespace TestDevExpress.Forms
             table.Columns.Add(new System.Data.DataColumn() { ColumnName = "price_total", Caption = "Cena celková", DataType = typeof(decimal) });
             table.Columns.Add(new System.Data.DataColumn() { ColumnName = "note", Caption = "Poznámka", DataType = typeof(string) });
 
+            return table;
+        }
+        /// <summary>
+        /// Vytvoří a vrátí řádky pro hlavní tabulku
+        /// </summary>
+        /// <param name="rowCount"></param>
+        /// <param name="wordBookType"></param>
+        /// <returns></returns>
+        private List<object[]> _CreateDataRows(int rowCount, Random.WordBookType wordBookType = Random.WordBookType.TriMuziNaToulkach)
+        {
+            List<object[]> rows = new List<object[]>();
+            var currWords = Random.ActiveWordBook;
+            Random.ActiveWordBook = wordBookType;
+
             string[] categories = new string[] { "NÁKUP", "PRODEJ", "SKLAD", "TUZEMSKO", "EXPORT", "IMPORT" };
             int year = DateTime.Now.Year;
             DateTime dateBase = new DateTime(year, 1, 1);
+            int currCount = _DataSource.Rows.Count;
             for (int i = 0; i < rowCount; i++)
             {
-                int id = i + 1;
+                int id = currCount + i + 1;
                 string refer = "DL:" + Random.Rand.Next(100000, 1000000).ToString();
                 string nazev = Random.GetSentence(1, 3, false);
                 string category = Random.GetItem(categories);
@@ -237,12 +299,14 @@ namespace TestDevExpress.Forms
                 decimal price1 = (decimal)(Random.Rand.Next(10, 10000)) / 10m;
                 decimal priceT = qty * price1;
                 string note = Random.GetSentence(5, 9, true);
-                table.Rows.Add(id, refer, nazev, category, period, dateInp, dateOut, qty, price1, priceT, note);
+
+                object[] row = new object[] { id, refer, nazev, category, period, dateInp, dateOut, qty, price1, priceT, note };
+                rows.Add(row);
             }
 
             Random.ActiveWordBook = currWords;
 
-            return table;
+            return rows;
         }
         #endregion
     }
@@ -396,9 +460,29 @@ namespace TestDevExpress.Forms
             StatusText = $"Tvorba GridSplitContainer: {timeInit} sec;     Přidání na Form: {timeAdd} sec;     {dataLog}Generování View: {timeCreateView} sec;     BestFitColumns: {timeFitColumns} sec";
         }
 
-        private void _VirtualDataSource_MoreRows(object sender, DevExpress.Data.VirtualServerModeRowsEventArgs e)
+        private void _VirtualDataSource_AcquireInnerList(object sender, DevExpress.Data.VirtualServerModeAcquireInnerListEventArgs e)
         {
-            
+            e.ClearAndAddRowsFunc = _VirtualDataSource_ClearAndAddRowsFunc;
+            e.AddMoreRowsFunc = _VirtualDataSource_AddMoreRowsFunc;
+            e.InnerList = new System.Collections.ArrayList();
+            e.InnerList.Add(_CreateGridTableCells());
+            e.InnerList.Add(_CreateGridTableCells());
+            e.InnerList.Add(_CreateGridTableCells());
+            e.InnerList.Add(_CreateGridTableCells());
+            e.InnerList.Add(_CreateGridTableCells());
+            e.InnerList.Add(_CreateGridTableCells());
+            e.ReleaseAction = _VirtualDataSource_ReleaseAction;
+        }
+        private System.Collections.IList _VirtualDataSource_ClearAndAddRowsFunc(System.Collections.IList list1, System.Collections.IEnumerable list2)
+        {
+            return null;
+        }
+        private System.Collections.IList _VirtualDataSource_AddMoreRowsFunc(System.Collections.IList list1, System.Collections.IEnumerable list2)
+        {
+            return null;
+        }
+        private void _VirtualDataSource_ReleaseAction(System.Collections.IList list1)
+        {
         }
 
         private void _VirtualDataSource_ConfigurationChanged(object sender, DevExpress.Data.VirtualServerModeRowsEventArgs e)
@@ -406,7 +490,7 @@ namespace TestDevExpress.Forms
             
         }
 
-        private void _VirtualDataSource_AcquireInnerList(object sender, DevExpress.Data.VirtualServerModeAcquireInnerListEventArgs e)
+        private void _VirtualDataSource_MoreRows(object sender, DevExpress.Data.VirtualServerModeRowsEventArgs e)
         {
             
         }
@@ -486,23 +570,34 @@ namespace TestDevExpress.Forms
             DateTime dateBase = new DateTime(year, 1, 1);
             for (int i = 0; i < rowCount; i++)
             {
-                int id = i + 1;
-                string refer = "DL:" + Random.Rand.Next(100000, 1000000).ToString();
-                string nazev = Random.GetSentence(1, 3, false);
-                string category = Random.GetItem(categories);
-                DateTime dateInp = dateBase.AddDays(Random.Rand.Next(0, 730));
-                DateTime dateOut = dateInp.AddDays(Random.Rand.Next(7, 90));
-                string period = dateInp.Year.ToString() + "-" + dateInp.Month.ToString("00");
-                decimal qty = (decimal)(Random.Rand.Next(10, 1000)) / 10m;
-                decimal price1 = (decimal)(Random.Rand.Next(10, 10000)) / 10m;
-                decimal priceT = qty * price1;
-                string note = Random.GetSentence(5, 9, true);
-                table.Rows.Add(id, refer, nazev, category, period, dateInp, dateOut, qty, price1, priceT, note);
+                var cells = _CreateGridTableCells(i + 1, categories, dateBase);
+                table.Rows.Add(cells);
             }
 
             Random.ActiveWordBook = currWords;
 
             return table;
+        }
+        private object[] _CreateGridTableCells()
+        {
+            string[] categories = new string[] { "NÁKUP", "PRODEJ", "SKLAD", "TUZEMSKO", "EXPORT", "IMPORT" };
+            int year = DateTime.Now.Year;
+            DateTime dateBase = new DateTime(year, 1, 1);
+            return _CreateGridTableCells(0, categories, dateBase);
+        }
+        private object[] _CreateGridTableCells(int id, string[] categories, DateTime dateBase)
+        {
+            string refer = "DL:" + Random.Rand.Next(100000, 1000000).ToString();
+            string nazev = Random.GetSentence(1, 3, false);
+            string category = Random.GetItem(categories);
+            DateTime dateInp = dateBase.AddDays(Random.Rand.Next(0, 730));
+            DateTime dateOut = dateInp.AddDays(Random.Rand.Next(7, 90));
+            string period = dateInp.Year.ToString() + "-" + dateInp.Month.ToString("00");
+            decimal qty = (decimal)(Random.Rand.Next(10, 1000)) / 10m;
+            decimal price1 = (decimal)(Random.Rand.Next(10, 10000)) / 10m;
+            decimal priceT = qty * price1;
+            string note = Random.GetSentence(5, 9, true);
+            return new object[] { id, refer, nazev, category, period, dateInp, dateOut, qty, price1, priceT, note };
         }
         #endregion
     }
