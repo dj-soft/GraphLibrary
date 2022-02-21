@@ -1000,13 +1000,13 @@ namespace Noris.Clients.Win.Components
         /// <summary>
         /// Konstruktor
         /// </summary>
-        public ChartSetting() { Id = GetNewGuid(); Name = ""; Layout = ""; }
+        public ChartSetting() { Id = AsolDX.DxComponent.CreateGuid(); Name = ""; Layout = ""; }
         /// <summary>
         /// Konstruktor
         /// </summary>
         /// <param name="name"></param>
         /// <param name="layout"></param>
-        public ChartSetting(string name, string layout) { Id = GetNewGuid(); Name = name; Layout = layout; }
+        public ChartSetting(string name, string layout) { Id = AsolDX.DxComponent.CreateGuid(); Name = name; Layout = layout; }
         /// <summary>
         /// Konstruktor
         /// </summary>
@@ -1014,11 +1014,6 @@ namespace Noris.Clients.Win.Components
         /// <param name="name"></param>
         /// <param name="layout"></param>
         public ChartSetting(string id, string name, string layout) { Id = id; Name = name; Layout = layout; }
-        /// <summary>
-        /// Vrátí new Guid jako string
-        /// </summary>
-        /// <returns></returns>
-        protected static string GetNewGuid() { return Guid.NewGuid().ToString(); }
         /// <summary>
         /// Vizualizace
         /// </summary>

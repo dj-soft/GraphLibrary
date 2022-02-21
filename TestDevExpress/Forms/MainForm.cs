@@ -3817,7 +3817,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
             _TreeList.EditorDoubleClick += _TreeList_DoubleClick;
             _TreeList.NodeEdited += _TreeList_NodeEdited;
             _TreeList.NodeCheckedChange += _TreeList_AnyAction;
-            _TreeList.NodeDelete += _TreeList_NodeDelete;
+            _TreeList.NodesDelete += _TreeList_NodesDelete;
             _TreeList.LazyLoadChilds += _TreeList_LazyLoadChilds;
 
             int y = 0;
@@ -3874,6 +3874,10 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
         private void _TreeList_AnyAction(object sender, DxTreeListNodeArgs args)
         {
             _AddTreeNodeLog(args.Action.ToString(), args, (args.Action == TreeListActionType.NodeEdited || args.Action == TreeListActionType.EditorDoubleClick || args.Action == TreeListActionType.NodeCheckedChange));
+        }
+        private void _TreeList_AnyAction(object sender, DxTreeListNodesArgs args)
+        {
+            _AddTreeNodeLog(args.Action.ToString(), args);
         }
         private void _TreeList_SelectedNodesChanged(object sender, DxTreeListNodeArgs args)
         {
@@ -4014,23 +4018,28 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
                ), args.Node);
             }
         }
-        private void _TreeList_NodeDelete(object sender, DxTreeListNodeArgs args)
+        private void _TreeList_NodesDelete(object sender, DxTreeListNodesArgs args)
         {
             _TreeList_AnyAction(sender, args);
             ThreadManager.AddAction(() => _TreeNodeDeleteBgr(args));
         }
-        private void _TreeNodeDeleteBgr(DxTreeListNodeArgs args)
+        private void _TreeNodeDeleteBgr(DxTreeListNodesArgs args)
         {
-            string nodeId = args.Node.ItemId;
+            var removeNodeKeys = args.Nodes.Select(n => n.ItemId).ToArray();
 
             System.Threading.Thread.Sleep(720);                      // Něco jako uděláme...
 
-            _TreeList.RemoveNode(nodeId);
+            _TreeList.RemoveNodes(removeNodeKeys);
         }
         private void _AddTreeNodeLog(string actionName, DxTreeListNodeArgs args, bool showValue = false)
         {
             string value = (showValue ? ", Value: " + (args.EditedValue == null ? "NULL" : "'" + args.EditedValue.ToString() + "'") : "");
             _AddLogLine($"{actionName}: Node: {args.Node}{value}");
+        }
+        private void _AddTreeNodeLog(string actionName, DxTreeListNodesArgs args)
+        {
+            string nodes = args.Nodes.ToOneString("; ");
+            _AddLogLine($"{actionName}: Nodes: {nodes}");
         }
         private void _AddLogLine(string line)
         {

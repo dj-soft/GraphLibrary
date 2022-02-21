@@ -4557,7 +4557,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             get
             {
-                if (_ItemId == null) _ItemId = Guid.NewGuid().ToString();
+                if (_ItemId == null) _ItemId = DxComponent.CreateGuid();
                 return _ItemId;
             }
             set { _ItemId = value; }

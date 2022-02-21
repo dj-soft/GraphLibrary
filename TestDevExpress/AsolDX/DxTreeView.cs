@@ -378,7 +378,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             _TreeListNative.EditorDoubleClick += _TreeListNative_EditorDoubleClick;
             _TreeListNative.NodeEdited += _TreeListNative_NodeEdited;
             _TreeListNative.NodeCheckedChange += _TreeListNative_NodeCheckedChange;
-            _TreeListNative.NodeDelete += _TreeListNative_NodeDelete;
+            _TreeListNative.NodesDelete += _TreeListNative_NodesDelete;
             _TreeListNative.LazyLoadChilds += _TreeListNative_LazyLoadChilds;
         }
         private void _TreeListNative_NodeKeyDown(object sender, DxTreeListNodeKeyArgs args) { this.OnNodeKeyDown(args); this.NodeKeyDown?.Invoke(this, args); }
@@ -393,136 +393,137 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void _TreeListNative_EditorDoubleClick(object sender, DxTreeListNodeArgs args) { this.OnEditorDoubleClick(args); this.EditorDoubleClick?.Invoke(this, args); }
         private void _TreeListNative_NodeEdited(object sender, DxTreeListNodeArgs args) { this.OnNodeEdited(args); this.NodeEdited?.Invoke(this, args); }
         private void _TreeListNative_NodeCheckedChange(object sender, DxTreeListNodeArgs args) { this.OnNodeCheckedChange(args); this.NodeCheckedChange?.Invoke(this, args); }
-        private void _TreeListNative_NodeDelete(object sender, DxTreeListNodeArgs args) { this.OnNodeDelete(args); this.NodeDelete?.Invoke(this, args); }
+        private void _TreeListNative_NodesDelete(object sender, DxTreeListNodesArgs args) { this.OnNodesDelete(args); this.NodesDelete?.Invoke(this, args); }
         private void _TreeListNative_LazyLoadChilds(object sender, DxTreeListNodeArgs args) { this.OnLazyLoadChilds(args); this.LazyLoadChilds?.Invoke(this, args); }
 
         /// <summary>
         /// TreeList má KeyUp na určitém Node.
         /// Pozor, aby se tento event vyvolal, je třeba nejdřív nastavit kolekci <see cref="HotKeys"/>!
         /// </summary>
-        public event DxTreeListNodeKeyHandler NodeKeyDown;
-        /// <summary>
-        /// Vyvolá event <see cref="NodeKeyDown"/>
-        /// </summary>
         /// <param name="args"></param>
         protected virtual void OnNodeKeyDown(DxTreeListNodeKeyArgs args) { }
+        /// <summary>
+        /// TreeList má KeyUp na určitém Node.
+        /// Pozor, aby se tento event vyvolal, je třeba nejdřív nastavit kolekci <see cref="HotKeys"/>!
+        /// </summary>
+        public event DxTreeListNodeKeyHandler NodeKeyDown;
+        /// <summary>
+        /// TreeList aktivoval určitý Node
+        /// </summary>
+        /// <param name="args">Data o události</param>
+        protected virtual void OnNodeFocusedChanged(DxTreeListNodeArgs args) { }
         /// <summary>
         /// TreeList aktivoval určitý Node
         /// </summary>
         public event DxTreeListNodeHandler NodeFocusedChanged;
         /// <summary>
-        /// Vyvolá event <see cref="NodeFocusedChanged"/>
+        /// TreeList změnil seznam <see cref="SelectedNodes"/>
         /// </summary>
         /// <param name="args">Data o události</param>
-        protected virtual void OnNodeFocusedChanged(DxTreeListNodeArgs args) { }
+        protected virtual void OnSelectedNodesChanged(DxTreeListNodeArgs args) { }
         /// <summary>
         /// TreeList změnil seznam <see cref="SelectedNodes"/>
         /// </summary>
         public event DxTreeListNodeHandler SelectedNodesChanged;
         /// <summary>
-        /// Vyvolá event <see cref="SelectedNodesChanged"/>
+        /// Uživatel chce zobrazit kontextové menu
         /// </summary>
         /// <param name="args">Data o události</param>
-        protected virtual void OnSelectedNodesChanged(DxTreeListNodeArgs args) { }
+        protected virtual void OnShowContextMenu(DxTreeListNodeContextMenuArgs args) { }
         /// <summary>
         /// Uživatel chce zobrazit kontextové menu
         /// </summary>
         public event DxTreeListNodeContextMenuHandler ShowContextMenu;
         /// <summary>
-        /// Vyvolá event <see cref="ShowContextMenu"/>
+        /// TreeList má Mouseclick na ikonu pro určitý Node
         /// </summary>
         /// <param name="args">Data o události</param>
-        protected virtual void OnShowContextMenu(DxTreeListNodeContextMenuArgs args) { }
+        protected virtual void OnNodeIconClick(DxTreeListNodeArgs args) { }
         /// <summary>
         /// TreeList má Mouseclick na ikonu pro určitý Node
         /// </summary>
         public event DxTreeListNodeHandler NodeIconClick;
         /// <summary>
-        /// Vyvolá event <see cref="NodeIconClick"/>
+        /// TreeList má Doubleclick na určitý Node
         /// </summary>
         /// <param name="args">Data o události</param>
-        protected virtual void OnNodeIconClick(DxTreeListNodeArgs args) { }
+        protected virtual void OnNodeDoubleClick(DxTreeListNodeArgs args) { }
         /// <summary>
         /// TreeList má Doubleclick na určitý Node
         /// </summary>
         public event DxTreeListNodeHandler NodeDoubleClick;
         /// <summary>
-        /// Vyvolá event <see cref="NodeDoubleClick"/>
+        /// TreeList právě rozbaluje určitý Node (je jedno, zda má nebo nemá <see cref="ITreeListNode.LazyExpandable"/>).
         /// </summary>
         /// <param name="args">Data o události</param>
-        protected virtual void OnNodeDoubleClick(DxTreeListNodeArgs args) { }
+        protected virtual void OnNodeExpanded(DxTreeListNodeArgs args) { }
         /// <summary>
         /// TreeList právě rozbaluje určitý Node (je jedno, zda má nebo nemá <see cref="ITreeListNode.LazyExpandable"/>).
         /// </summary>
         public event DxTreeListNodeHandler NodeExpanded;
         /// <summary>
-        /// Vyvolá event <see cref="NodeExpanded"/>
+        /// TreeList právě sbaluje určitý Node.
         /// </summary>
         /// <param name="args">Data o události</param>
-        protected virtual void OnNodeExpanded(DxTreeListNodeArgs args) { }
+        protected virtual void OnNodeCollapsed(DxTreeListNodeArgs args) { }
         /// <summary>
         /// TreeList právě sbaluje určitý Node.
         /// </summary>
         public event DxTreeListNodeHandler NodeCollapsed;
         /// <summary>
-        /// Vyvolá event <see cref="NodeCollapsed"/>
+        /// TreeList právě začíná editovat text daného node = je aktivován editor.
         /// </summary>
         /// <param name="args">Data o události</param>
-        protected virtual void OnNodeCollapsed(DxTreeListNodeArgs args) { }
+        protected virtual void OnActivatedEditor(DxTreeListNodeArgs args) { }
         /// <summary>
         /// TreeList právě začíná editovat text daného node = je aktivován editor.
         /// </summary>
         public event DxTreeListNodeHandler ActivatedEditor;
         /// <summary>
-        /// Vyvolá event <see cref="ActivatedEditor"/>
+        /// Uživatel dal DoubleClick v políčku kde právě edituje text. Text je součástí argumentu.
         /// </summary>
         /// <param name="args">Data o události</param>
-        protected virtual void OnActivatedEditor(DxTreeListNodeArgs args) { }
+        protected virtual void OnEditorDoubleClick(DxTreeListNodeArgs args) { }
         /// <summary>
         /// Uživatel dal DoubleClick v políčku kde právě edituje text. Text je součástí argumentu.
         /// </summary>
         public event DxTreeListNodeHandler EditorDoubleClick;
         /// <summary>
-        /// Vyvolá event <see cref="EditorDoubleClick"/>
+        /// TreeList právě skončil editaci určitého Node.
         /// </summary>
         /// <param name="args">Data o události</param>
-        protected virtual void OnEditorDoubleClick(DxTreeListNodeArgs args) { }
+        protected virtual void OnNodeEdited(DxTreeListNodeArgs args) { }
         /// <summary>
         /// TreeList právě skončil editaci určitého Node.
         /// </summary>
         public event DxTreeListNodeHandler NodeEdited;
         /// <summary>
-        /// Vyvolá event <see cref="NodeEdited"/>
+        /// Uživatel změnil stav Checked na prvku.
         /// </summary>
         /// <param name="args">Data o události</param>
-        protected virtual void OnNodeEdited(DxTreeListNodeArgs args) { }
+        protected virtual void OnNodeCheckedChange(DxTreeListNodeArgs args) { }
         /// <summary>
         /// Uživatel změnil stav Checked na prvku.
         /// </summary>
         public event DxTreeListNodeHandler NodeCheckedChange;
         /// <summary>
-        /// Vyvolá event <see cref="NodeCheckedChange"/>
+        /// Uživatel dal Delete na uzlu, který se needituje.
         /// </summary>
         /// <param name="args">Data o události</param>
-        protected virtual void OnNodeCheckedChange(DxTreeListNodeArgs args) { }
+        protected virtual void OnNodesDelete(DxTreeListNodesArgs args) { }
         /// <summary>
         /// Uživatel dal Delete na uzlu, který se needituje.
         /// </summary>
-        public event DxTreeListNodeHandler NodeDelete;
+        public event DxTreeListNodesHandler NodesDelete;
         /// <summary>
-        /// Vyvolá event <see cref="NodeDelete"/>
+        ///  TreeList rozbaluje node, který má nastaveno načítání ze serveru : <see cref="ITreeListNode.LazyExpandable"/> je true.
         /// </summary>
         /// <param name="args">Data o události</param>
-        protected virtual void OnNodeDelete(DxTreeListNodeArgs args) { }
+        protected virtual void OnLazyLoadChilds(DxTreeListNodeArgs args) { }
         /// <summary>
         /// TreeList rozbaluje node, který má nastaveno načítání ze serveru : <see cref="ITreeListNode.LazyExpandable"/> je true.
         /// </summary>
         public event DxTreeListNodeHandler LazyLoadChilds;
-        /// <summary>
-        /// Vyvolá event <see cref="LazyLoadChilds"/>
-        /// </summary>
-        /// <param name="args">Data o události</param>
-        protected virtual void OnLazyLoadChilds(DxTreeListNodeArgs args) { }
         #endregion
     }
     #endregion
@@ -544,6 +545,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             this._NodesKey = new Dictionary<string, NodePair>();
             this.RootNodeVisible = true;
             InitTreeList();
+            DataExchangeInit();
             DxDragDropInit(DxDragDropActionType.None);
             DxComponent.RegisterListener(this);
         }
@@ -1149,6 +1151,29 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="e"></param>
         private void _OnKeyDown(object sender, KeyEventArgs e)
         {
+            bool isHandled = _OnKeyDownFocusExpand(e);
+            if (isHandled)
+                isHandled = _OnKeyDownClipboardDelete(e);
+            if (isHandled)
+                isHandled = _OnKeyDownHotKey(e);
+
+            if (isHandled)
+                e.Handled = true;
+            _CurrentKeyHandled = isHandled;
+        }
+        /// <summary>
+        /// Řeší stisk klávesy - změny focusu a Expand nodu.
+        /// <para/>
+        /// Tyto události považujeme za natolik nativní akce v TreeListu, že je řešíme bez vlivu nějakých konfigurací.
+        /// Jejich důsledkem je: změna vybraného nodu, Expand nebo Collapse nodu, stejně jako po kliknutí myší.
+        /// Je na ně reagováno stejně jako na myš = v handlerech: <see cref="_OnFocusedNodeChanged(object, DevExpress.XtraTreeList.FocusedNodeChangedEventArgs)"/>;
+        /// <see cref="_OnBeforeExpand(object, DevExpress.XtraTreeList.BeforeExpandEventArgs)"/> atd...
+        /// </summary>
+        /// <param name="e"></param>
+        /// <returns></returns>
+        private bool _OnKeyDownFocusExpand(KeyEventArgs e)
+        {
+            bool isHandled = false;
             DevExpress.XtraTreeList.Nodes.TreeListNode node;
             switch (e.KeyData)
             {
@@ -1157,7 +1182,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                     if (node != null && node.HasChildren && !node.Expanded)
                     {
                         node.Expanded = true;
-                        e.Handled = true;
+                        isHandled = true;
                     }
                     break;
                 case Keys.Left:
@@ -1167,20 +1192,13 @@ namespace Noris.Clients.Win.Components.AsolDX
                         if (node.HasChildren && node.Expanded)
                         {
                             node.Expanded = false;
-                            e.Handled = true;
+                            isHandled = true;
                         }
                         else if (node.ParentNode != null)
                         {
                             this.FocusedNode = node.ParentNode;
-                            e.Handled = true;
+                            isHandled = true;
                         }
-                    }
-                    break;
-                case Keys.Delete:
-                    if (!IsActiveEditor)
-                    {   // Mimo editor reagujeme na Delete jako DeleteNode:
-                        this._OnNodeDelete(this.FocusedNodeInfo);
-                        e.Handled = true;
                     }
                     break;
                 case Keys.Up | Keys.Control:
@@ -1193,7 +1211,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                             if (newNode != null)
                             {
                                 this.FocusedNode = newNode;
-                                e.Handled = true;
+                                isHandled = true;
                             }
                         }
                     }
@@ -1208,17 +1226,13 @@ namespace Noris.Clients.Win.Components.AsolDX
                             if (newNode != null)
                             {
                                 this.FocusedNode = newNode;
-                                e.Handled = true;
+                                isHandled = true;
                             }
                         }
                     }
                     break;
             }
-
-            if (_IsHotKeyInEditor(e.KeyData))
-                this.OnNodeKeyDown(this.FocusedNodeInfo, e);
-
-            _CurrentKeyHandled = e.Handled;
+            return isHandled;
         }
         /// <summary>
         /// Po uvolnění klávesy ji můžeme předat do vyššího procesu
@@ -1245,7 +1259,7 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             if (nodeInfo != null && !this.IsLocked)
             {
-                this.OnNodeFocusedChanged(nodeInfo);
+                this.RaiseNodeFocusedChanged(nodeInfo);
                 if (!this.MultiSelectEnabled)
                     this._OnSelectedNodesChanged();                  // Pokud NENÍ nastaveno MultiSelectEnabled, pak TreeList nevyvolá svůj event _OnSelectionChanged, ale nás to může zajímat
             }
@@ -1268,7 +1282,70 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             var synchronize = _SynchronizeINodes();
             if (synchronize.Item1)
-                this.OnSelectedNodesChanged();
+                this.RaiseSelectedNodesChanged();
+        }
+        /// <summary>
+        /// Před rozbalením nodu:
+        /// - lze tomu zabránit, pokud pro daný node evidujeme DoubleClick
+        /// - volá se public event <see cref="NodeExpanded"/>,
+        ///  a pokud node má nastaveno <see cref="ITreeListNode.LazyExpandable"/> = true, pak se ovlá ještě <see cref="LazyLoadChilds"/>.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="args"></param>
+        private void _OnBeforeExpand(object sender, DevExpress.XtraTreeList.BeforeExpandEventArgs args)
+        {
+            ITreeListNode nodeInfo = _GetNodeInfo(args.Node);
+            if (nodeInfo != null)
+            {
+                nodeInfo.Expanded = true;
+                this.RaiseNodeExpanded(nodeInfo);
+                if (nodeInfo.Expanded)
+                {   // Instance ITreeListNode mohla potlačit stav Expanded = true (nastavila false) anebo k tomu došlo v eventu, pak NEPROVEDEME další akce:
+                    if (nodeInfo.LazyExpandable)
+                        this.RaiseLazyLoadChilds(nodeInfo);
+                }
+                else
+                {
+                    args.CanExpand = false;
+                }
+            }
+        }
+        /// <summary>
+        /// Po rozbalení nodu
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _OnAfterExpand(object sender, DevExpress.XtraTreeList.NodeEventArgs e)
+        {
+        }
+        /// <summary>
+        /// Před zabalením nodu se volá public event <see cref="NodeCollapsed"/>
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="args"></param>
+        private void _OnBeforeCollapse(object sender, DevExpress.XtraTreeList.BeforeCollapseEventArgs args)
+        {
+            ITreeListNode nodeInfo = _GetNodeInfo(args.Node);
+            if (nodeInfo != null)
+            {
+                nodeInfo.Expanded = false;
+                this.RaiseNodeCollapsed(nodeInfo);
+                if (!nodeInfo.Expanded)
+                {   // Instance ITreeListNode mohla potlačit stav Expanded = false (nastavila true) anebo k tomu došlo v eventu, pak NEPROVEDEME další akce:
+                }
+                else
+                {
+                    args.CanCollapse = false;
+                }
+            }
+        }
+        /// <summary>
+        /// Po zabalení nodu
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="args"></param>
+        private void _OnAfterCollapse(object sender, DevExpress.XtraTreeList.NodeEventArgs args)
+        {
         }
         /// <summary>
         /// MouseClick vyvolá public event
@@ -1285,7 +1362,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 if (nodeInfo != null)
                 {
                     if (_IsMainActionRunEvent(nodeInfo, hit.IsInCell))
-                        this.OnNodeIconClick(nodeInfo, hit.PartType);
+                        this.RaiseNodeIconClick(nodeInfo, hit.PartType);
                     if (_IsMainActionExpandCollapse(nodeInfo, hit.IsInCell))
                         this._NodeExpandCollapse(hit);
                 }
@@ -1317,7 +1394,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 this.FocusedNode = treeNode;
             }
 
-            this.OnShowContextMenu(hitInfo);
+            this.RaiseShowContextMenu(hitInfo);
         }
         /// <summary>
         /// Doubleclick převolá public event
@@ -1332,7 +1409,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (nodeInfo != null)
             {
                 if (_IsMainActionRunEvent(nodeInfo, hit.IsInCell))
-                    this.OnNodeDoubleClick(nodeInfo, hit.PartType);
+                    this.RaiseNodeDoubleClick(nodeInfo, hit.PartType);
                 if (_IsMainActionExpandCollapse(nodeInfo, hit.IsInCell))
                     this._NodeExpandCollapse(hit);
             }
@@ -1354,7 +1431,7 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             ITreeListNode nodeInfo = this.FocusedNodeInfo;
             if (nodeInfo != null)
-                this.OnActivatedEditor(nodeInfo);
+                this.RaiseActivatedEditor(nodeInfo);
         }
         /// <summary>
         /// Po klávese (KeyUp) v editoru
@@ -1363,8 +1440,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="e"></param>
         private void _OnEditorKeyUp(object sender, KeyEventArgs e)
         {
-            if (_IsHotKeyInEditor(e.KeyData))
-                OnNodeKeyDown(this.FocusedNodeInfo, e);
+            _OnKeyDownHotKey(e);
         }
         /// <summary>
         /// Ukončení editoru volá public event
@@ -1377,7 +1453,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (nodeInfo != null)
             {
                 nodeInfo.TextEdited = this.EditingValue as string;
-                this.OnNodeEdited(nodeInfo, this.EditingValue);
+                this.RaiseNodeEdited(nodeInfo, this.EditingValue);
             }
         }
         /// <summary>
@@ -1393,7 +1469,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 nodeInfo.TextEdited = this.EditingValue as string;
                 if (_IsMainActionRunEvent(nodeInfo, true))
-                    this.OnEditorDoubleClick(nodeInfo, this.EditingValue);
+                    this.RaiseEditorDoubleClick(nodeInfo, this.EditingValue);
                 if (_IsMainActionExpandCollapse(nodeInfo, true))
                     this._NodeExpandCollapse(nodeInfo);
             }
@@ -1425,80 +1501,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 bool isChecked = args.Node.Checked;
                 nodeInfo.NodeChecked = isChecked;
-                this.OnNodeCheckedChange(nodeInfo, isChecked);
+                this.RaiseNodeCheckedChange(nodeInfo, isChecked);
             }
-        }
-        /// <summary>
-        /// Po klávese Delete nad nodem bez editace
-        /// </summary>
-        /// <param name="nodeInfo"></param>
-        private void _OnNodeDelete(ITreeListNode nodeInfo)
-        {
-            if (nodeInfo != null && nodeInfo.CanDelete)
-                this.OnNodeDelete(nodeInfo);
-        }
-        /// <summary>
-        /// Před rozbalením nodu:
-        /// - lze tomu zabránit, pokud pro daný node evidujeme DoubleClick
-        /// - volá se public event <see cref="NodeExpanded"/>,
-        ///  a pokud node má nastaveno <see cref="ITreeListNode.LazyExpandable"/> = true, pak se ovlá ještě <see cref="LazyLoadChilds"/>.
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="args"></param>
-        private void _OnBeforeExpand(object sender, DevExpress.XtraTreeList.BeforeExpandEventArgs args)
-        {
-            ITreeListNode nodeInfo = _GetNodeInfo(args.Node);
-            if (nodeInfo != null)
-            {
-                nodeInfo.Expanded = true;
-                this.OnNodeExpanded(nodeInfo);
-                if (nodeInfo.Expanded)
-                {   // Instance ITreeListNode mohla potlačit stav Expanded = true (nastavila false) anebo k tomu došlo v eventu, pak NEPROVEDEME další akce:
-                    if (nodeInfo.LazyExpandable)
-                        this.OnLazyLoadChilds(nodeInfo);
-                }
-                else
-                {
-                    args.CanExpand = false;
-                }
-            }
-        }
-        /// <summary>
-        /// Po rozbalení nodu
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void _OnAfterExpand(object sender, DevExpress.XtraTreeList.NodeEventArgs e)
-        {
-        }
-        /// <summary>
-        /// Před zabalením nodu se volá public event <see cref="NodeCollapsed"/>
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="args"></param>
-        private void _OnBeforeCollapse(object sender, DevExpress.XtraTreeList.BeforeCollapseEventArgs args)
-        {
-            ITreeListNode nodeInfo = _GetNodeInfo(args.Node);
-            if (nodeInfo != null)
-            {
-                nodeInfo.Expanded = false;
-                this.OnNodeCollapsed(nodeInfo);
-                if (!nodeInfo.Expanded)
-                {   // Instance ITreeListNode mohla potlačit stav Expanded = false (nastavila true) anebo k tomu došlo v eventu, pak NEPROVEDEME další akce:
-                }
-                else
-                {
-                    args.CanCollapse = false;
-                }
-            }
-        }
-        /// <summary>
-        /// Po zabalení nodu
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="args"></param>
-        private void _OnAfterCollapse(object sender, DevExpress.XtraTreeList.NodeEventArgs args)
-        {
         }
         /// <summary>
         /// Po odchodu myši z TreeListu zhasni ToolTip
@@ -1995,7 +1999,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                     string oldNodeId = _FocusedNodeId;
                     string newNodeId = focusedNodeInfo?.ItemId;
                     if (!String.Equals(oldNodeId, newNodeId))
-                        owner.OnNodeFocusedChanged(focusedNodeInfo);
+                        owner.RaiseNodeFocusedChanged(focusedNodeInfo);
                 }
             }
             private DxTreeListNative _Owner;
@@ -2083,6 +2087,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (nodeInfo.LazyExpandable)
                 _AddNodeLazyLoad(nodeInfo);                                    // Pokud node má nastaveno LazyExpandable, pak pod něj vložím jako jeho Child nový node, reprezentující "načítání z databáze"
         }
+        private void _InsertNodes(IEnumerable<ITreeListNode> nodeInfos)
+        { }
         /// <summary>
         /// Pod daného parenta přidá Child node typu LazyLoad
         /// </summary>
@@ -2459,6 +2465,54 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public int NodesCount { get { return _NodesId.Count(n => n.Value.HasTreeNode); } }
         #endregion
+        #region DataExchange
+        private void DataExchangeInit()
+        {
+            ExchangeCurrentDataId = DxComponent.CreateGuid();
+        }
+        /// <summary>
+        /// ID tohoto objektu, je vkládáno do balíčku s daty při CtrlC, CtrlX a při DragAndDrop z tohoto zdroje.
+        /// Je součástí Exchange dat uložených do <see cref="DataExchangeContainer.DataSourceId"/>.
+        /// </summary>
+        public string ExchangeCurrentDataId { get; set; }
+        /// <summary>
+        /// Režim výměny dat při pokusu o vkládání do tohoto objektu.
+        /// Pokud některý jiný objekt provedl Ctrl+C, pak svoje data vložil do balíčku <see cref="DataExchangeContainer"/>,
+        /// přidal k tomu svoje ID controlu (jako zdejší <see cref="ExchangeCurrentDataId"/>) do <see cref="DataExchangeContainer.DataSourceId"/>,
+        /// do balíčku se přidalo ID aplikace do <see cref="DataExchangeContainer.ApplicationGuid"/>, a tato data jsou uložena v Clipboardu.
+        /// <para/>
+        /// Pokud nyní zdejší control zaeviduje klávesu Ctrl+V, pak zjistí, zda v Clipboardu existuje balíček <see cref="DataExchangeContainer"/>,
+        /// a pokud ano, pak prověří, zda this control může akceptovat data ze zdroje v balíčku uvedeného, na základě nastavení režimu výměny v <see cref="ExchangeCrossType"/>
+        /// a ID zdrojového controlu podle <see cref="ExchangeAcceptSourceDataId"/>.
+        /// </summary>
+        public DataExchangeCrossType ExchangeCrossType { get; set; }
+        /// <summary>
+        /// Povolené zdroje dat pro vkládání do this controlu pomocí výměnného balíčku <see cref="DataExchangeContainer"/>.
+        /// </summary>
+        public string ExchangeAcceptSourceDataId { get; set; }
+        /// <summary>
+        /// Dodaná data umístí do clipboardu 
+        /// </summary>
+        /// <param name="data"></param>
+        /// <param name="text"></param>
+        private void DataExchangeClipboardPublish(object data, string text)
+        {
+            DxComponent.ClipboardInsert(ExchangeCurrentDataId, data, text);
+        }
+        /// <summary>
+        /// Pokusí se z Clipboardu získat data pro this control, podle aktuálního nastavení. Vrací true = máme data.
+        /// </summary>
+        /// <param name="data"></param>
+        /// <returns></returns>
+        private bool DataExchangeClipboardAcquire(out object data)
+        {
+            data = null;
+            if (!DxComponent.ClipboardTryGetApplicationData(out DataExchangeContainer appDataContainer)) return false;
+            if (!DxComponent.CanAcceptExchangeData(appDataContainer, this.ExchangeCurrentDataId, this.ExchangeCrossType, this.ExchangeAcceptSourceDataId)) return false;
+            data = appDataContainer.Data;
+            return true;
+        }
+        #endregion
         #region Drag and Drop
         /// <summary>
         /// Souhrn povolených akcí Drag and Drop
@@ -2682,86 +2736,22 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private IndexRatio MouseDragTargetIndex;
         #endregion
-        #region Public vlastnosti, kolekce nodů, vyhledání nodu podle klíče, vyhledání child nodů
+        #region Public vlastnosti, kolekce nodů, nastavení práce, vyhledání nodu podle klíče, vyhledání child nodů
         /// <summary>
-        /// Text (lokalizovaný) pro text uzlu, který reprezentuje "LazyLoadChild", např. něco jako "Načítám data..."
+        /// Pole všech nodů = třída <see cref="ITreeListNode"/> = data o nodech
         /// </summary>
-        public string LazyLoadNodeText { get; set; }
+        public ITreeListNode[] NodeInfos { get { return this._NodesStandard.ToArray(); } }
         /// <summary>
-        /// Název ikony uzlu, který reprezentuje "LazyLoadChild", např. něco jako přesýpací hodiny...
+        /// Najde a vrátí pole nodů, které jsou Child nody daného klíče.
+        /// Reálně provádí Scan všech nodů.
         /// </summary>
-        public string LazyLoadNodeImageName { get; set; }
-        /// <summary>
-        /// Akce, která zahájí editaci buňky.
-        /// Výchozí je MouseUp (nejhezčí), ale je možno nastavit i jinak.
-        /// </summary>
-        public DevExpress.XtraTreeList.TreeListEditorShowMode EditorShowMode
+        /// <param name="parentKey"></param>
+        /// <returns></returns>
+        public ITreeListNode[] GetChildNodeInfos(string parentKey)
         {
-            get { return this.OptionsBehavior.EditorShowMode; }
-            set { this.OptionsBehavior.EditorShowMode = value; }
+            if (parentKey == null) return null;
+            return this._NodesStandard.Where(n => n.ParentNodeFullId != null && n.ParentNodeFullId == parentKey).ToArray();
         }
-        /// <summary>
-        /// Režim inkrementálního vyhledávání (=psaní na klávesnici).
-        /// Default = <see cref="TreeListIncrementalSearchMode.InExpandedNodesOnly"/>
-        /// </summary>
-        public TreeListIncrementalSearchMode IncrementalSearchMode
-        {
-            get { return _IncrementalSearchMode; }
-            set
-            {
-                _IncrementalSearchMode = value;
-                this.OptionsFind.AllowIncrementalSearch = (value == TreeListIncrementalSearchMode.InExpandedNodesOnly || value == TreeListIncrementalSearchMode.InAllNodes);
-                this.OptionsFind.ExpandNodesOnIncrementalSearch = (value == TreeListIncrementalSearchMode.InAllNodes);
-            }
-        }
-        private TreeListIncrementalSearchMode _IncrementalSearchMode;
-        /// <summary>
-        /// Má být selectován ten node, pro který se právě chystáme zobrazit kontextovém menu?
-        /// <para/>
-        /// Pokud je zobrazováno kontextové menu nad určitým nodem, a tento node není selectován, pak hodnota true zajistí, že tento node bude nejprve selectován.
-        /// Hodnota true je defaultní.
-        /// <para/>
-        /// Pokud bude false, pak neselectovaný node bude ponechán neselectovaný.
-        /// Událost <see cref="ShowContextMenu"/> dostává argument, v němž je definován ten node na který bylo kliknuto, i když není Selected.
-        /// </summary>
-        public bool SelectNodeBeforeShowContextMenu { get; set; }
-        /// <summary>
-        /// Co provede DoubleClick na textu anebo Click na ikoně
-        /// </summary>
-        public NodeMainClickMode MainClickMode { get { return _MainClickMode; } set { _MainClickModeSet(value); } } private NodeMainClickMode _MainClickMode;
-        /// <summary>
-        /// Uloží daný režim do proměnné a nastaví podle něj nativní chování TreeListu
-        /// </summary>
-        /// <param name="mainClickMode"></param>
-        private void _MainClickModeSet(NodeMainClickMode mainClickMode)
-        {
-            bool allowExpandOnDblClick = (mainClickMode == NodeMainClickMode.ExpandCollapse || mainClickMode == NodeMainClickMode.ExpandCollapseRunEvent);
-            this.OptionsBehavior.AllowExpandOnDblClick = allowExpandOnDblClick;
-            _MainClickMode = mainClickMode;
-        }
-        /// <summary>
-        /// Zobrazovat Root node?
-        /// Má se nastavit po inicializaci nebo po <see cref="ClearNodes"/>. Změna nastavení později nemá význam.
-        /// </summary>
-        public bool RootNodeVisible { get; set; }
-        /// <summary>
-        /// Po LazyLoad aktivovat první načtený node?
-        /// </summary>
-        public TreeListLazyLoadFocusNodeType LazyLoadFocusNode { get; set; }
-        /// <summary>
-        /// Režim zobrazení Checkboxů. 
-        /// Výchozí je <see cref="TreeListCheckBoxMode.None"/>
-        /// </summary>
-        public TreeListCheckBoxMode CheckBoxMode
-        {
-            get { return _CheckBoxMode; }
-            set
-            {
-                _CheckBoxMode = value;
-                this.OptionsView.ShowCheckBoxes = (value == TreeListCheckBoxMode.AllNodes || value == TreeListCheckBoxMode.SpecifyByNode);
-            }
-        }
-        private TreeListCheckBoxMode _CheckBoxMode;
         /// <summary>
         /// Aktuálně vybraný Node
         /// </summary>
@@ -2801,37 +2791,258 @@ namespace Noris.Clients.Win.Components.AsolDX
             return result;
         }
         /// <summary>
-        /// Pole všech nodů = třída <see cref="ITreeListNode"/> = data o nodech
+        /// Režim zobrazení Checkboxů. 
+        /// Výchozí je <see cref="TreeListCheckBoxMode.None"/>
         /// </summary>
-        public ITreeListNode[] NodeInfos { get { return this._NodesStandard.ToArray(); } }
-        /// <summary>
-        /// Najde a vrátí pole nodů, které jsou Child nody daného klíče.
-        /// Reálně provádí Scan všech nodů.
-        /// </summary>
-        /// <param name="parentKey"></param>
-        /// <returns></returns>
-        public ITreeListNode[] GetChildNodeInfos(string parentKey)
+        public TreeListCheckBoxMode CheckBoxMode
         {
-            if (parentKey == null) return null;
-            return this._NodesStandard.Where(n => n.ParentNodeFullId != null && n.ParentNodeFullId == parentKey).ToArray();
+            get { return _CheckBoxMode; }
+            set
+            {
+                _CheckBoxMode = value;
+                this.OptionsView.ShowCheckBoxes = (value == TreeListCheckBoxMode.AllNodes || value == TreeListCheckBoxMode.SpecifyByNode);
+            }
+        }
+        private TreeListCheckBoxMode _CheckBoxMode;
+        /// <summary>
+        /// Zobrazovat Root node?
+        /// Má se nastavit po inicializaci nebo po <see cref="ClearNodes"/>. Změna nastavení později nemá význam.
+        /// </summary>
+        public bool RootNodeVisible { get; set; }
+        /// <summary>
+        /// Po LazyLoad aktivovat první načtený node?
+        /// </summary>
+        public TreeListLazyLoadFocusNodeType LazyLoadFocusNode { get; set; }
+        /// <summary>
+        /// Akce, která zahájí editaci buňky.
+        /// Výchozí je MouseUp (nejhezčí), ale je možno nastavit i jinak.
+        /// </summary>
+        public DevExpress.XtraTreeList.TreeListEditorShowMode EditorShowMode
+        {
+            get { return this.OptionsBehavior.EditorShowMode; }
+            set { this.OptionsBehavior.EditorShowMode = value; }
+        }
+        /// <summary>
+        /// Režim inkrementálního vyhledávání (=psaní na klávesnici).
+        /// Default = <see cref="TreeListIncrementalSearchMode.InExpandedNodesOnly"/>
+        /// </summary>
+        public TreeListIncrementalSearchMode IncrementalSearchMode
+        {
+            get { return _IncrementalSearchMode; }
+            set
+            {
+                _IncrementalSearchMode = value;
+                this.OptionsFind.AllowIncrementalSearch = (value == TreeListIncrementalSearchMode.InExpandedNodesOnly || value == TreeListIncrementalSearchMode.InAllNodes);
+                this.OptionsFind.ExpandNodesOnIncrementalSearch = (value == TreeListIncrementalSearchMode.InAllNodes);
+            }
+        }
+        private TreeListIncrementalSearchMode _IncrementalSearchMode;
+        /// <summary>
+        /// Má být selectován ten node, pro který se právě chystáme zobrazit kontextovém menu?
+        /// <para/>
+        /// Pokud je zobrazováno kontextové menu nad určitým nodem, a tento node není selectován, pak hodnota true zajistí, že tento node bude nejprve selectován.
+        /// Hodnota true je defaultní.
+        /// <para/>
+        /// Pokud bude false, pak neselectovaný node bude ponechán neselectovaný.
+        /// Událost <see cref="ShowContextMenu"/> dostává argument, v němž je definován ten node na který bylo kliknuto, i když není Selected.
+        /// </summary>
+        public bool SelectNodeBeforeShowContextMenu { get; set; }
+        /// <summary>
+        /// Co provede DoubleClick na textu anebo Click na ikoně
+        /// </summary>
+        public NodeMainClickMode MainClickMode { get { return _MainClickMode; } set { _MainClickModeSet(value); } }
+        private NodeMainClickMode _MainClickMode;
+        /// <summary>
+        /// Text (lokalizovaný) pro text uzlu, který reprezentuje "LazyLoadChild", např. něco jako "Načítám data..."
+        /// </summary>
+        public string LazyLoadNodeText { get; set; }
+        /// <summary>
+        /// Název ikony uzlu, který reprezentuje "LazyLoadChild", např. něco jako přesýpací hodiny...
+        /// </summary>
+        public string LazyLoadNodeImageName { get; set; }
+        /// <summary>
+        /// Uloží daný režim do proměnné a nastaví podle něj nativní chování TreeListu
+        /// </summary>
+        /// <param name="mainClickMode"></param>
+        private void _MainClickModeSet(NodeMainClickMode mainClickMode)
+        {
+            bool allowExpandOnDblClick = (mainClickMode == NodeMainClickMode.ExpandCollapse || mainClickMode == NodeMainClickMode.ExpandCollapseRunEvent);
+            this.OptionsBehavior.AllowExpandOnDblClick = allowExpandOnDblClick;
+            _MainClickMode = mainClickMode;
         }
         /// <summary>
         /// Obsahuje kolekci všech nodů, které nejsou IsLazyChild.
         /// Node typu IsLazyChild je dočasně přidaný child node do těch nodů, jejichž Childs se budou načítat po rozbalení.
         /// </summary>
         private IEnumerable<ITreeListNode> _NodesStandard { get { return this._NodesId.Values.Where(p => !p.IsLazyChild).Select(p => p.NodeInfo); } }
+        #endregion
+        #region DoKeyActions; CtrlA, CtrlC, CtrlX, CtrlV, Delete
+        /// <summary>
+        /// Povolené akce. Výchozí je <see cref="KeyActionType.None"/>
+        /// </summary>
+        public KeyActionType EnabledKeyActions { get; set; }
+        /// <summary>
+        /// Provede zadané akce v pořadí jak jsou zadány. Pokud v jedné hodnotě je více akcí (<see cref="KeyActionType"/> je typu Flags), pak jsou prováděny v pořadí bitů od nejnižšího.
+        /// Upozornění: požadované akce budou provedeny i tehdy, když v <see cref="EnabledKeyActions"/> nejsou povoleny = tamní hodnota má za úkol omezit uživatele, ale ne aplikační kód, který danou akci může provést i tak.
+        /// </summary>
+        /// <param name="actions"></param>
+        public void DoKeyActions(params KeyActionType[] actions)
+        {
+            foreach (KeyActionType action in actions)
+                _DoKeyAction(action, true);
+        }
+        /// <summary>
+        /// Řeší stisk klávesy - Delete a Clipboard.
+        /// <para/>
+        /// Tyto události jsou předány do obecnější metody 
+        /// </summary>
+        /// <param name="e"></param>
+        /// <returns></returns>
+        private bool _OnKeyDownClipboardDelete(KeyEventArgs e)
+        {
+            // Pokud je aktivní editor, pak tyto klávesy (Delete, Ctrl+C, Ctrl+V, ...) neřešíme vůbec - ty patří do editoru:
+            if (IsActiveEditor) return false;
+
+            bool isHandled = false;
+            switch (e.KeyData)
+            {
+                case Keys.Delete:
+                    isHandled = _DoKeyAction(KeyActionType.Delete);
+                    break;
+                case Keys.Control | Keys.A:
+                    isHandled = _DoKeyAction(KeyActionType.SelectAll);
+                    break;
+                case Keys.Control | Keys.C:
+                    isHandled = _DoKeyAction(KeyActionType.ClipCopy);
+                    break;
+                case Keys.Control | Keys.X:
+                    // Ctrl+X : pokud je povoleno, provedu; pokud nelze provést Ctrl+X ale lze provést Ctrl+C, tak se provede to:
+                    if (EnabledKeyActions.HasFlag(KeyActionType.ClipCut))
+                        isHandled = _DoKeyAction(KeyActionType.ClipCut);
+                    else if (EnabledKeyActions.HasFlag(KeyActionType.ClipCopy))
+                        isHandled = _DoKeyAction(KeyActionType.ClipCopy);
+                    break;
+                case Keys.Control | Keys.V:
+                    isHandled = _DoKeyAction(KeyActionType.ClipPaste);
+                    break;
+            }
+            return isHandled;
+        }
+        /// <summary>
+        /// Provede akce zadané jako bity v dané akci (<paramref name="action"/>), s testem povolení dle <see cref="EnabledKeyActions"/> nebo povinně (<paramref name="force"/>)
+        /// </summary>
+        /// <param name="action"></param>
+        /// <param name="force"></param>
+        private bool _DoKeyAction(KeyActionType action, bool force = false)
+        {
+            bool isHandled = false;
+            _DoKeyAction(action, KeyActionType.SelectAll, force, _DoKeyActionCtrlA, ref isHandled);
+            _DoKeyAction(action, KeyActionType.ClipCopy, force, _DoKeyActionCtrlC, ref isHandled);
+            _DoKeyAction(action, KeyActionType.ClipCut, force, _DoKeyActionCtrlX, ref isHandled);
+            _DoKeyAction(action, KeyActionType.ClipPaste, force, _DoKeyActionCtrlV, ref isHandled);
+            /*
+            _DoKeyAction(action, KeyActionType.MoveTop, force, _DoKeyActionMoveTop, ref isHandled);
+            _DoKeyAction(action, KeyActionType.MoveUp, force, _DoKeyActionMoveUp, ref isHandled);
+            _DoKeyAction(action, KeyActionType.MoveDown, force, _DoKeyActionMoveDown, ref isHandled);
+            _DoKeyAction(action, KeyActionType.MoveBottom, force, _DoKeyActionMoveBottom, ref isHandled);
+            */
+            _DoKeyAction(action, KeyActionType.Delete, force, _DoKeyActionDelete, ref isHandled);
+            _DoKeyAction(action, KeyActionType.Undo, force, _DoKeyActionUndo, ref isHandled);
+            _DoKeyAction(action, KeyActionType.Redo, force, _DoKeyActionRedo, ref isHandled);
+            return isHandled;
+        }
+        /// <summary>
+        /// Pokud v soupisu akcí <paramref name="action"/> je příznak akce <paramref name="flag"/>, pak provede danou akci <paramref name="runMethod"/>, 
+        /// s testem povolení dle <see cref="EnabledKeyActions"/> nebo povinně (<paramref name="force"/>)
+        /// </summary>
+        /// <param name="action"></param>
+        /// <param name="flag"></param>
+        /// <param name="force"></param>
+        /// <param name="runMethod"></param>
+        /// <param name="handled">Nastaví na true, pokud byla provedena požadovaná akce</param>
+        private void _DoKeyAction(KeyActionType action, KeyActionType flag, bool force, Action runMethod, ref bool handled)
+        {
+            if (!action.HasFlag(flag)) return;
+            if (!force && !EnabledKeyActions.HasFlag(flag)) return;
+            runMethod();
+            handled = true;
+        }
+        /// <summary>
+        /// Provedení klávesové akce: CtrlA
+        /// </summary>
+        private void _DoKeyActionCtrlA() { }
+        /// <summary>
+        /// Provedení klávesové akce: CtrlC
+        /// </summary>
+        private void _DoKeyActionCtrlC()
+        {
+            var selectedNodes = this.SelectedNodes;
+            string textTxt = selectedNodes.ToOneString();
+            DataExchangeClipboardPublish(selectedNodes, textTxt);
+        }
+        /// <summary>
+        /// Provedení klávesové akce: CtrlX
+        /// </summary>
+        private void _DoKeyActionCtrlX()
+        {
+            _DoKeyActionCtrlC();
+            _DoKeyActionDelete();
+        }
+        /// <summary>
+        /// Provedení klávesové akce: CtrlV
+        /// </summary>
+        private void _DoKeyActionCtrlV()
+        {
+            if (!DataExchangeClipboardAcquire(out var data)) return;
+            if (data is IEnumerable<ITreeListNode> nodes) _InsertNodes(nodes);
+        }
+        /// <summary>
+        /// Provedení klávesové akce: Delete
+        /// </summary>
+        private void _DoKeyActionDelete()
+        {
+            var deleteNodes = this.SelectedNodes.Where(n => n.CanDelete).ToArray();
+            if (deleteNodes.Length > 0)
+                this.RaiseNodesDelete(deleteNodes);
+        }
+        /// <summary>
+        /// Provedení klávesové akce: Undo
+        /// </summary>
+        private void _DoKeyActionUndo()
+        {
+            // if (this.UndoRedoEnabled) this.UndoRedoController.DoUndo();
+        }
+        /// <summary>
+        /// Provedení klávesové akce: Redo
+        /// </summary>
+        private void _DoKeyActionRedo()
+        {
+            // if (this.UndoRedoEnabled) this.UndoRedoController.DoRedo();
+        }
         /// <summary>
         /// Seznam HotKeys = klávesy, pro které se volá událost <see cref="NodeKeyDown"/>.
         /// </summary>
         public IEnumerable<Keys> HotKeys
         { 
             get { return _HotKeys?.Keys; } 
-            set 
-            {
-                _HotKeys = value.CreateDictionary(k => k, true);
-            }
+            set { _HotKeys = value.CreateDictionary(k => k, true); }
         }
         private Dictionary<Keys, Keys> _HotKeys;
+        /// <summary>
+        /// Řeší HotKey deklarované uživatelem
+        /// </summary>
+        /// <param name="e"></param>
+        /// <returns></returns>
+        private bool _OnKeyDownHotKey(KeyEventArgs e)
+        {
+            bool isHandled = _IsHotKeyInEditor(e.KeyData);
+            if (isHandled)
+            {
+                e.Handled = true;
+                this.RaiseNodeKeyDown(e);
+            }
+            return isHandled;
+        }
         /// <summary>
         /// Vrátí true, pokud daná klávesa je v seznamu HotKey
         /// </summary>
@@ -3041,179 +3252,289 @@ namespace Noris.Clients.Win.Components.AsolDX
         #endregion
         #region Public eventy a jejich volání
         /// <summary>
-        /// TreeList má KeyDown na určitém Node.
-        /// Pozor, aby se tento event vyvolal, je třeba nejdřív nastavit kolekci <see cref="HotKeys"/>!
-        /// </summary>
-        public event DxTreeListNodeKeyHandler NodeKeyDown;
-        /// <summary>
-        /// Vyvolá event <see cref="NodeKeyDown"/>
+        /// Vyvolá metodu <see cref="OnNodeFocusedChanged(DxTreeListNodeArgs)"/> a event <see cref="NodeFocusedChanged"/>
         /// </summary>
         /// <param name="nodeInfo"></param>
-        /// <param name="keyArgs"></param>
-        protected virtual void OnNodeKeyDown(ITreeListNode nodeInfo, KeyEventArgs keyArgs)
+        private void RaiseNodeFocusedChanged(ITreeListNode nodeInfo)
         {
-            if (NodeKeyDown != null) NodeKeyDown(this, new DxTreeListNodeKeyArgs(nodeInfo, TreeListActionType.KeyDown, this.IsActiveEditor, keyArgs));
+            DxTreeListNodeArgs args = new DxTreeListNodeArgs(nodeInfo, TreeListActionType.NodeFocusedChanged, TreeListPartType.None, this.IsActiveEditor);
+            OnNodeFocusedChanged(args);
+            NodeFocusedChanged?.Invoke(this, args);
         }
         /// <summary>
         /// TreeList aktivoval určitý Node
         /// </summary>
-        public event DxTreeListNodeHandler NodeFocusedChanged;
+        /// <param name="args"></param>
+        protected virtual void OnNodeFocusedChanged(DxTreeListNodeArgs args) { }
         /// <summary>
-        /// Vyvolá event <see cref="NodeFocusedChanged"/>
+        /// TreeList aktivoval určitý Node
         /// </summary>
-        /// <param name="nodeInfo"></param>
-        protected virtual void OnNodeFocusedChanged(ITreeListNode nodeInfo)
+        public event DxTreeListNodeHandler NodeFocusedChanged;
+
+        /// <summary>
+        /// Vyvolá metodu <see cref="OnSelectedNodesChanged(DxTreeListNodeArgs)"/> a event <see cref="SelectedNodesChanged"/>
+        /// </summary>
+        private void RaiseSelectedNodesChanged()
         {
-            if (NodeFocusedChanged != null) NodeFocusedChanged(this, new DxTreeListNodeArgs(nodeInfo, TreeListActionType.NodeFocusedChanged, TreeListPartType.None, this.IsActiveEditor));
+            DxTreeListNodeArgs args = new DxTreeListNodeArgs(null, TreeListActionType.SelectedNodesChanged, TreeListPartType.None, this.IsActiveEditor);
+            OnSelectedNodesChanged(args);
+            SelectedNodesChanged?.Invoke(this, args);
         }
         /// <summary>
         /// TreeList změnil seznam <see cref="SelectedNodes"/>
         /// </summary>
-        public event DxTreeListNodeHandler SelectedNodesChanged;
+        protected virtual void OnSelectedNodesChanged(DxTreeListNodeArgs args) { }
         /// <summary>
-        /// Vyvolá event <see cref="SelectedNodesChanged"/>
+        /// TreeList změnil seznam <see cref="SelectedNodes"/>
         /// </summary>
-        protected virtual void OnSelectedNodesChanged()
+        public event DxTreeListNodeHandler SelectedNodesChanged;
+
+        /// <summary>
+        /// Vyvolá metodu <see cref="OnShowContextMenu(DxTreeListNodeContextMenuArgs)"/> a event <see cref="ShowContextMenu"/>
+        /// </summary>
+        /// <param name="hitInfo"></param>
+        private void RaiseShowContextMenu(TreeListVisualNodeInfo hitInfo)
         {
-            if (SelectedNodesChanged != null) SelectedNodesChanged(this, new DxTreeListNodeArgs(null, TreeListActionType.SelectedNodesChanged, TreeListPartType.None, this.IsActiveEditor));
+            DxTreeListNodeContextMenuArgs args = new DxTreeListNodeContextMenuArgs(hitInfo.NodeInfo, TreeListActionType.ShowContextMenu, this.IsActiveEditor, hitInfo);
+            OnShowContextMenu(args);
+            ShowContextMenu?.Invoke(this, args);
         }
         /// <summary>
         /// Uživatel chce zobrazit kontextové menu
         /// </summary>
-        public event DxTreeListNodeContextMenuHandler ShowContextMenu;
+        /// <param name="args"></param>
+        protected virtual void OnShowContextMenu(DxTreeListNodeContextMenuArgs args) { }
         /// <summary>
-        /// Vyvolá event <see cref="ShowContextMenu"/>
+        /// Uživatel chce zobrazit kontextové menu
         /// </summary>
-        /// <param name="hitInfo"></param>
-        protected virtual void OnShowContextMenu(TreeListVisualNodeInfo hitInfo)
+        public event DxTreeListNodeContextMenuHandler ShowContextMenu;
+
+        /// <summary>
+        /// Vyvolá metodu <see cref="OnNodeIconClick(DxTreeListNodeArgs)"/> a event <see cref="NodeIconClick"/>
+        /// </summary>
+        /// <param name="nodeInfo"></param>
+        /// <param name="partType"></param>
+        private void RaiseNodeIconClick(ITreeListNode nodeInfo, TreeListPartType partType)
         {
-            if (ShowContextMenu != null) ShowContextMenu(this, new DxTreeListNodeContextMenuArgs(hitInfo.NodeInfo, TreeListActionType.ShowContextMenu, this.IsActiveEditor, hitInfo));
+            DxTreeListNodeArgs args = new DxTreeListNodeArgs(nodeInfo, TreeListActionType.NodeIconClick, partType, this.IsActiveEditor);
+            OnNodeIconClick(args);
+            NodeIconClick?.Invoke(this, args);
         }
+        /// <summary>
+        /// Vyvolá event <see cref="NodeIconClick"/>
+        /// </summary>
+        /// <param name="args"></param>
+        protected virtual void OnNodeIconClick(DxTreeListNodeArgs args) { }
         /// <summary>
         /// TreeList má NodeIconClick na určitý Node
         /// </summary>
         public event DxTreeListNodeHandler NodeIconClick;
+
         /// <summary>
-        /// Vyvolá event <see cref="NodeIconClick"/>
+        /// Vyvolá metodu <see cref="OnNodeDoubleClick(DxTreeListNodeArgs)"/> a event <see cref="NodeDoubleClick"/>
         /// </summary>
         /// <param name="nodeInfo"></param>
         /// <param name="partType"></param>
-        protected virtual void OnNodeIconClick(ITreeListNode nodeInfo, TreeListPartType partType)
+        private void RaiseNodeDoubleClick(ITreeListNode nodeInfo, TreeListPartType partType)
         {
-            if (NodeIconClick != null) NodeIconClick(this, new DxTreeListNodeArgs(nodeInfo, TreeListActionType.NodeIconClick, partType, this.IsActiveEditor));
+            DxTreeListNodeArgs args = new DxTreeListNodeArgs(nodeInfo, TreeListActionType.NodeDoubleClick, partType, this.IsActiveEditor);
+            OnNodeDoubleClick(args);
+            NodeDoubleClick?.Invoke(this, args);
         }
         /// <summary>
         /// TreeList má Doubleclick na určitý Node
         /// </summary>
-        public event DxTreeListNodeHandler NodeDoubleClick;
+        /// <param name="args"></param>
+        protected virtual void OnNodeDoubleClick(DxTreeListNodeArgs args) { }
         /// <summary>
-        /// Vyvolá event <see cref="NodeDoubleClick"/>
+        /// TreeList má Doubleclick na určitý Node
+        /// </summary>
+        public event DxTreeListNodeHandler NodeDoubleClick;
+
+        /// <summary>
+        /// Vyvolá metodu <see cref="OnNodeExpanded(DxTreeListNodeArgs)"/> a event <see cref="NodeExpanded"/>
         /// </summary>
         /// <param name="nodeInfo"></param>
-        /// <param name="partType"></param>
-        protected virtual void OnNodeDoubleClick(ITreeListNode nodeInfo, TreeListPartType partType)
+        private void RaiseNodeExpanded(ITreeListNode nodeInfo)
         {
-            if (NodeDoubleClick != null) NodeDoubleClick(this, new DxTreeListNodeArgs(nodeInfo, TreeListActionType.NodeDoubleClick, partType, this.IsActiveEditor));
+            DxTreeListNodeArgs args = new DxTreeListNodeArgs(nodeInfo, TreeListActionType.NodeExpanded, TreeListPartType.None, this.IsActiveEditor);
+            OnNodeExpanded(args);
+            NodeExpanded?.Invoke(this, args);
         }
         /// <summary>
         /// TreeList právě rozbaluje určitý Node (je jedno, zda má nebo nemá <see cref="ITreeListNode.LazyExpandable"/>).
         /// </summary>
-        public event DxTreeListNodeHandler NodeExpanded;
+        /// <param name="args"></param>
+        protected virtual void OnNodeExpanded(DxTreeListNodeArgs args) { }
         /// <summary>
-        /// Vyvolá event <see cref="NodeExpanded"/>
+        /// TreeList právě rozbaluje určitý Node (je jedno, zda má nebo nemá <see cref="ITreeListNode.LazyExpandable"/>).
+        /// </summary>
+        public event DxTreeListNodeHandler NodeExpanded;
+
+        /// <summary>
+        /// Vyvolá metodu <see cref="OnNodeCollapsed(DxTreeListNodeArgs)"/> a event <see cref="NodeCollapsed"/>
         /// </summary>
         /// <param name="nodeInfo"></param>
-        protected virtual void OnNodeExpanded(ITreeListNode nodeInfo)
+        private void RaiseNodeCollapsed(ITreeListNode nodeInfo)
         {
-            if (NodeExpanded != null) NodeExpanded(this, new DxTreeListNodeArgs(nodeInfo, TreeListActionType.NodeExpanded, TreeListPartType.None, this.IsActiveEditor));
+            DxTreeListNodeArgs args = new DxTreeListNodeArgs(nodeInfo, TreeListActionType.NodeCollapsed, TreeListPartType.None, this.IsActiveEditor);
+            OnNodeCollapsed(args);
+            NodeCollapsed?.Invoke(this, args);
         }
         /// <summary>
         /// TreeList právě sbaluje určitý Node.
         /// </summary>
-        public event DxTreeListNodeHandler NodeCollapsed;
+        /// <param name="args"></param>
+        protected virtual void OnNodeCollapsed(DxTreeListNodeArgs args) { }
         /// <summary>
-        /// Vyvolá event <see cref="NodeCollapsed"/>
+        /// TreeList právě sbaluje určitý Node.
+        /// </summary>
+        public event DxTreeListNodeHandler NodeCollapsed;
+
+        /// <summary>
+        /// Vyvolá metodu <see cref="OnActivatedEditor(DxTreeListNodeArgs)"/> a event <see cref="ActivatedEditor"/>
         /// </summary>
         /// <param name="nodeInfo"></param>
-        protected virtual void OnNodeCollapsed(ITreeListNode nodeInfo)
+        private void RaiseActivatedEditor(ITreeListNode nodeInfo)
         {
-            if (NodeCollapsed != null) NodeCollapsed(this, new DxTreeListNodeArgs(nodeInfo, TreeListActionType.NodeCollapsed, TreeListPartType.None, this.IsActiveEditor));
+            DxTreeListNodeArgs args = new DxTreeListNodeArgs(nodeInfo, TreeListActionType.ActivatedEditor, TreeListPartType.None, this.IsActiveEditor);
+            OnActivatedEditor(args);
+            ActivatedEditor.Invoke(this, args);
         }
         /// <summary>
         /// TreeList právě začíná editovat text daného node = je aktivován editor.
         /// </summary>
-        public event DxTreeListNodeHandler ActivatedEditor;
+        /// <param name="args"></param>
+        protected virtual void OnActivatedEditor(DxTreeListNodeArgs args) { }
         /// <summary>
-        /// Vyvolá event <see cref="ActivatedEditor"/>
+        /// TreeList právě začíná editovat text daného node = je aktivován editor.
+        /// </summary>
+        public event DxTreeListNodeHandler ActivatedEditor;
+
+        /// <summary>
+        /// Vyvolá metodu <see cref="OnEditorDoubleClick(DxTreeListNodeArgs)"/> a event <see cref="EditorDoubleClick"/>
         /// </summary>
         /// <param name="nodeInfo"></param>
-        protected virtual void OnActivatedEditor(ITreeListNode nodeInfo)
+        /// <param name="editedValue"></param>
+        private void RaiseEditorDoubleClick(ITreeListNode nodeInfo, object editedValue)
         {
-            if (ActivatedEditor != null) ActivatedEditor(this, new DxTreeListNodeArgs(nodeInfo, TreeListActionType.ActivatedEditor, TreeListPartType.None, this.IsActiveEditor));
+            DxTreeListNodeArgs args = new DxTreeListNodeArgs(nodeInfo, TreeListActionType.EditorDoubleClick, TreeListPartType.Cell, this.IsActiveEditor, editedValue);
+            OnEditorDoubleClick(args);
+            EditorDoubleClick?.Invoke(this, args);
         }
         /// <summary>
         /// Uživatel dal DoubleClick v políčku kde právě edituje text. Text je součástí argumentu.
         /// </summary>
-        public event DxTreeListNodeHandler EditorDoubleClick;
+        /// <param name="args"></param>
+        protected virtual void OnEditorDoubleClick(DxTreeListNodeArgs args) { }
         /// <summary>
-        /// Vyvolá event <see cref="EditorDoubleClick"/>
+        /// Uživatel dal DoubleClick v políčku kde právě edituje text. Text je součástí argumentu.
+        /// </summary>
+        public event DxTreeListNodeHandler EditorDoubleClick;
+
+        /// <summary>
+        /// Vyvolá metodu <see cref="OnNodeEdited(DxTreeListNodeArgs)"/> a event <see cref="NodeEdited"/>
         /// </summary>
         /// <param name="nodeInfo"></param>
         /// <param name="editedValue"></param>
-        protected virtual void OnEditorDoubleClick(ITreeListNode nodeInfo, object editedValue)
+        private void RaiseNodeEdited(ITreeListNode nodeInfo, object editedValue)
         {
-            if (EditorDoubleClick != null) EditorDoubleClick(this, new DxTreeListNodeArgs(nodeInfo, TreeListActionType.EditorDoubleClick, TreeListPartType.Cell, this.IsActiveEditor, editedValue));
+            DxTreeListNodeArgs args = new DxTreeListNodeArgs(nodeInfo, TreeListActionType.NodeEdited, TreeListPartType.Cell, this.IsActiveEditor, editedValue);
+            OnNodeEdited(args);
+            NodeEdited?.Invoke(this, args);
         }
         /// <summary>
         /// TreeList právě skončil editaci určitého Node.
         /// </summary>
-        public event DxTreeListNodeHandler NodeEdited;
+        /// <param name="args"></param>
+        protected virtual void OnNodeEdited(DxTreeListNodeArgs args) { }
         /// <summary>
-        /// Vyvolá event <see cref="NodeEdited"/>
+        /// TreeList právě skončil editaci určitého Node.
+        /// </summary>
+        public event DxTreeListNodeHandler NodeEdited;
+
+        /// <summary>
+        /// Vyvolá metodu <see cref="OnNodeKeyDown(DxTreeListNodeKeyArgs)"/> a event <see cref="NodeKeyDown"/>
+        /// </summary>
+        /// <param name="e"></param>
+        private void RaiseNodeKeyDown(KeyEventArgs e)
+        {
+            DxTreeListNodeKeyArgs args = new DxTreeListNodeKeyArgs(this.FocusedNodeInfo, TreeListActionType.KeyDown, this.IsActiveEditor, e);
+            OnNodeKeyDown(args);
+            NodeKeyDown?.Invoke(this, args);
+        }
+        /// <summary>
+        /// Je voláno po stisku klávesy na určitém node.
+        /// Pozor, aby se tento event vyvolal, je třeba nejdřív nastavit kolekci <see cref="HotKeys"/>!
+        /// </summary>
+        /// <param name="args"></param>
+        protected virtual void OnNodeKeyDown(DxTreeListNodeKeyArgs args) { }
+        /// <summary>
+        /// TreeList má KeyDown na určitém Node.
+        /// Pozor, aby se tento event vyvolal, je třeba nejdřív nastavit kolekci <see cref="HotKeys"/>!
+        /// </summary>
+        public event DxTreeListNodeKeyHandler NodeKeyDown;
+
+        /// <summary>
+        /// Vyvolá metodu <see cref="OnNodeCheckedChange(DxTreeListNodeArgs)"/> a event <see cref="NodeCheckedChange"/>
         /// </summary>
         /// <param name="nodeInfo"></param>
-        /// <param name="editedValue"></param>
-        protected virtual void OnNodeEdited(ITreeListNode nodeInfo, object editedValue)
+        /// <param name="isChecked"></param>
+        private void RaiseNodeCheckedChange(ITreeListNode nodeInfo, bool isChecked)
         {
-            if (NodeEdited != null) NodeEdited(this, new DxTreeListNodeArgs(nodeInfo, TreeListActionType.NodeEdited, TreeListPartType.Cell, this.IsActiveEditor, editedValue));
+            DxTreeListNodeArgs args = new DxTreeListNodeArgs(nodeInfo, TreeListActionType.NodeCheckedChange, TreeListPartType.NodeCheckBox, this.IsActiveEditor, isChecked);
+            OnNodeCheckedChange(args);
+            NodeCheckedChange?.Invoke(this, args);
         }
         /// <summary>
         /// Uživatel změnil stav Checked na prvku.
         /// </summary>
+        /// <param name="args"></param>
+        protected virtual void OnNodeCheckedChange(DxTreeListNodeArgs args) { }
+        /// <summary>
+        /// Uživatel změnil stav Checked na prvku.
+        /// </summary>
         public event DxTreeListNodeHandler NodeCheckedChange;
+
         /// <summary>
-        /// Vyvolá event <see cref="NodeCheckedChange"/>
+        /// Vyvolá metodu <see cref="OnNodesDelete(DxTreeListNodesArgs)"/> a event <see cref="NodesDelete"/>
         /// </summary>
-        /// <param name="nodeInfo"></param>
-        /// <param name="isChecked"></param>
-        protected virtual void OnNodeCheckedChange(ITreeListNode nodeInfo, bool isChecked)
+        /// <param name="nodesInfo"></param>
+        private void RaiseNodesDelete(IEnumerable<ITreeListNode> nodesInfo)
         {
-            if (NodeCheckedChange != null) NodeCheckedChange(this, new DxTreeListNodeArgs(nodeInfo, TreeListActionType.NodeCheckedChange, TreeListPartType.NodeCheckBox, this.IsActiveEditor, isChecked));
+            DxTreeListNodesArgs args = new DxTreeListNodesArgs(nodesInfo, TreeListActionType.NodeDelete);
+            OnNodesDelete(args);
+            NodesDelete?.Invoke(this, args);
         }
         /// <summary>
-        /// Uživatel dal Delete na uzlu, který se needituje.
+        /// Uživatel dal Delete na nodech (mimo editor)
         /// </summary>
-        public event DxTreeListNodeHandler NodeDelete;
+        /// <param name="args"></param>
+        protected virtual void OnNodesDelete(DxTreeListNodesArgs args) { }
         /// <summary>
-        /// Vyvolá event <see cref="NodeDelete"/>
+        /// Uživatel dal Delete na nodech (mimo editor)
+        /// </summary>
+        public event DxTreeListNodesHandler NodesDelete;
+
+        /// <summary>
+        /// Vyvolá metodu <see cref="OnLazyLoadChilds(DxTreeListNodeArgs)"/> a event <see cref="LazyLoadChilds"/>
         /// </summary>
         /// <param name="nodeInfo"></param>
-        protected virtual void OnNodeDelete(ITreeListNode nodeInfo)
+        private void RaiseLazyLoadChilds(ITreeListNode nodeInfo)
         {
-            if (NodeDelete != null) NodeDelete(this, new DxTreeListNodeArgs(nodeInfo, TreeListActionType.NodeDelete, TreeListPartType.None, this.IsActiveEditor));
+            DxTreeListNodeArgs args = new DxTreeListNodeArgs(nodeInfo, TreeListActionType.LazyLoadChilds, TreeListPartType.None, this.IsActiveEditor);
+            OnLazyLoadChilds(args);
+            LazyLoadChilds?.Invoke(this, args);
         }
+        /// <summary>
+        /// Vyvolá event <see cref="LazyLoadChilds"/>
+        /// </summary>
+        /// <param name="args"></param>
+        protected virtual void OnLazyLoadChilds(DxTreeListNodeArgs args) { }
         /// <summary>
         /// TreeList rozbaluje node, který má nastaveno načítání ze serveru : <see cref="ITreeListNode.LazyExpandable"/> je true.
         /// </summary>
         public event DxTreeListNodeHandler LazyLoadChilds;
-        /// <summary>
-        /// Vyvolá event <see cref="LazyLoadChilds"/>
-        /// </summary>
-        /// <param name="nodeInfo"></param>
-        protected virtual void OnLazyLoadChilds(ITreeListNode nodeInfo)
-        {
-            if (LazyLoadChilds != null) LazyLoadChilds(this, new DxTreeListNodeArgs(nodeInfo, TreeListActionType.LazyLoadChilds, TreeListPartType.None, this.IsActiveEditor));
-        }
         #endregion
     }
     #region Deklarace delegátů a tříd pro eventhandlery, další enumy
@@ -3272,6 +3593,41 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Data o klávese
         /// </summary>
         public KeyEventArgs KeyArgs { get; private set; }
+    }
+    /// <summary>
+    /// Předpis pro eventhandlery
+    /// </summary>
+    /// <param name="sender"></param>
+    /// <param name="args"></param>
+    public delegate void DxTreeListNodesHandler(object sender, DxTreeListNodesArgs args);
+    /// <summary>
+    /// Argument pro eventhandlery
+    /// </summary>
+    public class DxTreeListNodesArgs : EventArgs
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="nodes"></param>
+        /// <param name="action"></param>
+        public DxTreeListNodesArgs(IEnumerable<ITreeListNode> nodes, TreeListActionType action)
+        {
+            this.MousePosition = Control.MousePosition;
+            this.Nodes = nodes;
+            this.Action = action;
+        }
+        /// <summary>
+        /// Absolutní pozice myši v době události
+        /// </summary>
+        public Point MousePosition { get; private set; }
+        /// <summary>
+        /// Data o aktuálních nodech
+        /// </summary>
+        public IEnumerable<ITreeListNode> Nodes { get; private set; }
+        /// <summary>
+        /// Druh akce
+        /// </summary>
+        public TreeListActionType Action { get; private set; }
     }
     /// <summary>
     /// Předpis pro eventhandlery

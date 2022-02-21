@@ -6994,7 +6994,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             get 
             {
                 if (__LazyLoadGroupId == null)
-                    __LazyLoadGroupId = "LazyLoadGroupId_" + new Guid().ToString();
+                    __LazyLoadGroupId = "LazyLoadGroupId_" + DxComponent.CreateGuid();
                 return __LazyLoadGroupId;
             }
         }
@@ -7946,7 +7946,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             get
             {
-                if (_PageId == null) _PageId = Guid.NewGuid().ToString();
+                if (_PageId == null) _PageId = DxComponent.CreateGuid();
                 return _PageId;
             }
             set { _PageId = value; }
@@ -8050,7 +8050,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             get
             {
-                if (_CategoryId == null) _CategoryId = Guid.NewGuid().ToString();
+                if (_CategoryId == null) _CategoryId = DxComponent.CreateGuid();
                 return _CategoryId;
             }
             set { _CategoryId = value; }
@@ -8156,7 +8156,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             get
             {
-                if (_GroupId == null) _GroupId = Guid.NewGuid().ToString();
+                if (_GroupId == null) _GroupId = DxComponent.CreateGuid();
                 return _GroupId;
             }
             set { _GroupId = value; }

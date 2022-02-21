@@ -3475,6 +3475,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         #endregion
         #region Static helpers
+        public static string CreateGuid() { return Guid.NewGuid().ToString(); }
         /// <summary>
         /// Vrátí <see cref="DefaultBoolean"/> z hodnoty nullable <see cref="Boolean"/>.
         /// </summary>
@@ -3501,8 +3502,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private void _InitClipboard()
         {
-            _ClipboardApplicationId = Guid.NewGuid().ToString();
+            _ApplicationGuid = CreateGuid();
+            _ClipboardApplicationId = _ApplicationGuid;
         }
+        /// <summary>
+        /// Guid aplikace = náhodný string, po dobu života aplikace konstantní, unikátní
+        /// </summary>
+        public static string ApplicationGuid { get { return Instance._ApplicationGuid; } }
         /// <summary>
         /// ID aplikace = odlišuje typicky dvě různé aplikace otevřené v jeden okamžik
         /// </summary>
@@ -3513,25 +3519,39 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="text"></param>
         public static void ClipboardInsert(string text) { Instance._ClipboardInsert(null, text, DataFormats.Text); }
         /// <summary>
-        /// Vloží do Clipboardu daná aplikační data a další údaj, typicky text
+        /// Vloží do Clipboardu daná aplikační data a další běžně zpracovatelný údaj, typicky jde o prostý text (může to být i RTF nebo HTML text, obrázek, atd)
         /// </summary>
-        /// <param name="applicationData"></param>
+        /// <param name="appDataId">Identifikátor zdroje konkrétních dat, dovoluje cílovému objektu řídit, zda tato data bude/nebude akceptovat</param>
+        /// <param name="appData">Vlastní aplikační data</param>
+        /// <param name="windowsData">Uživatelská data pro Windows (typicky text)</param>
+        /// <param name="windowsFormat">Formát uživatelských dat, default = TXT</param>
+        public static void ClipboardInsert(string appDataId, object appData, object windowsData, string windowsFormat = null) { Instance._ClipboardInsert(new DataExchangeContainer(appDataId, appData), windowsData, windowsFormat); }
+        /// <summary>
+        /// Vloží do Clipboardu daná aplikační data a další běžně zpracovatelný údaj, typicky jde o prostý text (může to být i RTF nebo HTML text, obrázek, atd)
+        /// </summary>
+        /// <param name="appDataContainer"></param>
         /// <param name="windowsData"></param>
         /// <param name="windowsFormat"></param>
-        public static void ClipboardInsert(object applicationData, object windowsData, string windowsFormat = null) { Instance._ClipboardInsert(applicationData, windowsData, windowsFormat); }
+        public static void ClipboardInsert(DataExchangeContainer appDataContainer, object windowsData, string windowsFormat = null) { Instance._ClipboardInsert(appDataContainer, windowsData, windowsFormat); }
         /// <summary>
-        /// Zkusí z Clipboardu vytáhnout nějaká aplikační data
+        /// Zkusí z Clipboardu vytáhnout aplikační data ve standardním containeru <see cref="DataExchangeContainer"/>, vrací true = data jsou k dispozici
         /// </summary>
-        /// <param name="applicationData"></param>
+        /// <param name="appDataContainer"></param>
         /// <returns></returns>
-        public static bool ClipboardTryGetApplicationData(out object applicationData) { return Instance._ClipboardTryGetApplicationData(out applicationData, out string applicationId); }
+        public static bool ClipboardTryGetApplicationData(out DataExchangeContainer appDataContainer) { return Instance._ClipboardTryGetApplicationData(out appDataContainer); }
         /// <summary>
-        /// Zkusí z Clipboardu vytáhnout nějaká aplikační data a ID aplikace Nephrite, která je tam vložila
+        /// Vrátí true, pokud v dodaném balíčku s daty jsou data pocházející ze zdroje, který je podle daných parametrů akceptovatelný.
         /// </summary>
-        /// <param name="applicationData"></param>
-        /// <param name="applicationId"></param>
+        /// <param name="appDataContainer">Container s daty</param>
+        /// <param name="targetControlId">ID cílového controlu</param>
+        /// <param name="crossType">Režim výměny dat: co akceptuje cílový control</param>
+        /// <param name="enabledSources">Povolené zdroje pro cílový control</param>
         /// <returns></returns>
-        public static bool ClipboardTryGetApplicationData(out object applicationData, out string applicationId) { return Instance._ClipboardTryGetApplicationData(out applicationData, out applicationId); }
+        public static bool CanAcceptExchangeData(DataExchangeContainer appDataContainer, string targetControlId, DataExchangeCrossType crossType, string enabledSources) { return Instance._CanAcceptExchangeData(appDataContainer, targetControlId, crossType, enabledSources); }
+        /// <summary>
+        /// Guid aplikace = náhodný string, po dobu života aplikace konstantní, unikátní
+        /// </summary>
+        private string _ApplicationGuid; 
         /// <summary>
         /// ID aktuální aplikace, přidává se do Clipboardu.
         /// Výchozí hodnota je unikátní Guid.
@@ -3540,20 +3560,22 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Vloží data do Clipboardu
         /// </summary>
-        /// <param name="applicationData"></param>
+        /// <param name="appDataContainer"></param>
         /// <param name="windowsData"></param>
         /// <param name="windowsFormat"></param>
-        private void _ClipboardInsert(object applicationData, object windowsData, string windowsFormat)
+        private void _ClipboardInsert(DataExchangeContainer appDataContainer, object windowsData, string windowsFormat)
         {
+            // Do Clipboardu vložím instanci WinForms:DataObject, která v sobě může najednou obsahovat více formátů dat
+            //   (např. ve Wordu používá se pro vložení formátu RTF i TXT),
+            //   my tam vložíme naše aplikační data (ClipboardContainer) + relativně čitelná data, která může poskytnout volající jako windowsData + windowsFormat:
             DataObject dataObject = new DataObject();
             int count = 0;
             string errorMsg = "";
-            if (applicationData != null)
-            {
-                ClipboardContainer container = new ClipboardContainer() { ApplicationId = _ClipboardApplicationId, Data = applicationData };
+            if (appDataContainer != null)
+            {   // Strojová data - která může zpracovat tentýž nebo jiný klient Nephrite:
                 try
                 {
-                    string containerXml = WSXmlSerializer.Persist.Serialize(container, WSXmlSerializer.PersistArgs.Default);
+                    string containerXml = WSXmlSerializer.Persist.Serialize(appDataContainer, WSXmlSerializer.PersistArgs.Default);
                     dataObject.SetData(ClipboardAppDataId, containerXml);
                     count++;
                 }
@@ -3563,7 +3585,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 }
             }
             if (windowsData != null)
-            {
+            {   // Otevřeně čitelná data:
                 if (windowsFormat == null) windowsFormat = DataFormats.Text;
                 dataObject.SetData(windowsFormat, windowsData);
                 count++;
@@ -3582,13 +3604,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Zkusí z Clipboardu vytáhnout nějaká aplikační data a ID aplikace Nephrite, která je tam vložila
         /// </summary>
-        /// <param name="applicationData"></param>
-        /// <param name="applicationId"></param>
+        /// <param name="appDataContainer">Výstup nalezených dat</param>
         /// <returns></returns>
-        private bool _ClipboardTryGetApplicationData(out object applicationData, out string applicationId)
+        private bool _ClipboardTryGetApplicationData(out DataExchangeContainer appDataContainer)
         {
-            applicationData = null;
-            applicationId = null;
+            appDataContainer = null;
             IDataObject dataObject = null;
             try { dataObject = System.Windows.Forms.Clipboard.GetDataObject(); }
             catch { }
@@ -3596,32 +3616,35 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (!dataObject.GetDataPresent(ClipboardAppDataId)) return false;
             string containerXml = dataObject.GetData(ClipboardAppDataId) as string;
             if (containerXml == null) return false;
-            ClipboardContainer container = WSXmlSerializer.Persist.Deserialize(containerXml) as ClipboardContainer;
+            DataExchangeContainer container = WSXmlSerializer.Persist.Deserialize(containerXml) as DataExchangeContainer;
             if (container == null) return false;
-            applicationId = container.ApplicationId;
-            applicationData = container.Data;
+            appDataContainer = container;
             return true;
+        }
+        /// <summary>
+        /// Vrátí true, pokud v dodaném balíčku s daty jsou data pocházející ze zdroje, který je podle daných parametrů akceptovatelný.
+        /// </summary>
+        /// <param name="appDataContainer">Container s daty</param>
+        /// <param name="targetControlId">ID cílového controlu</param>
+        /// <param name="crossType">Režim výměny dat: co akceptuje cílový control</param>
+        /// <param name="enabledSources">Povolené zdroje pro cílový control</param>
+        /// <returns></returns>
+        private bool _CanAcceptExchangeData(DataExchangeContainer appDataContainer, string targetControlId, DataExchangeCrossType crossType, string enabledSources)
+        {
+            if (appDataContainer is null || appDataContainer.Data is null) return false;
+            switch (crossType)
+            {
+                case DataExchangeCrossType.None: return false;
+                case DataExchangeCrossType.OwnControlDataOnly:
+                    return String.Equals(appDataContainer.ApplicationGuid, DxComponent.ApplicationGuid, StringComparison.Ordinal) &&
+                           String.Equals(appDataContainer.DataSourceId, targetControlId, StringComparison.Ordinal);
+            }
+            return false;
         }
         /// <summary>
         /// Typ dat ukládaných v Clipboardu pro aplikační data
         /// </summary>
-        private const string ClipboardAppDataId = "DxAppData";
-
-        /// <summary>
-        /// Obsah clipboardu = ID plus Data
-        /// </summary>
-        [Serializable]
-        private class ClipboardContainer
-        {
-            /// <summary>
-            /// ID zdroje dat
-            /// </summary>
-            public string ApplicationId { get; set; }
-            /// <summary>
-            /// Vlastní data
-            /// </summary>
-            public object Data { get; set; }
-        }
+        private const string ClipboardAppDataId = "DxApplicationData";
         #endregion
         #region Win32Api informace a další metody
         [DllImport("User32")]
@@ -3926,6 +3949,37 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Temné barvy
         /// </summary>
         Dark
+    }
+    /// <summary>
+    /// Určuje, z jakého typu zdroje může určitý cíl akceptovat data.
+    /// <para/>
+    /// Máme k dispozici výměnu dat, realizovanou jednak pomocí Clipboardu a druhak pomocí DragAndDrop procesu. 
+    /// Oba způsoby mohou teoreticky vzít libovolná data z jedné této aplikace a přemístit je do jiné aplikace, 
+    /// anebo je přemístit v rámci jedné aplikace mezi různými okny a controly.
+    /// Potřebujeme ale řídit, zda do cílového controlu (ListBox, TreeList, Grid, DataForm, atd) lze nebo nelze vložit data z libovolného zdroje.
+    /// <para/>
+    /// Zdroj dat (určitý zdrojový control) sestavuje balík konkrétních dat určitého typu (řádky ListBoxu, nody TreeView, RecordId v Gridu atd),
+    /// a tento balík vkládá (pomocí Ctrl+C do clipboardu nebo při zahájení DragAndDrop) do new instance třídy <see cref="DataExchangeContainer"/>.
+    /// Při tom je do <see cref="DataExchangeContainer"/> vepsána informace o zdroji (konkrétní aplikace - ID procesu) a ID zdrojového controlu.
+    /// Toto ID je controlu přiděleno při jeho vytvoření, typicky jde o ID stránky a ID controlu.
+    /// <para/>
+    /// Cíl dat, tedy control, kam jsou data vkládána (Ctrl+V nebo Drop při DragAndDrop) si pak zjistí, zda existují Exchange data,
+    /// a následně se optá, zda tato data může do sebe akceptovat.
+    /// K tomu slouží metoda <see cref="DxComponent.CanAcceptExchangeData(DataExchangeContainer, DataExchangeCrossType, string)"/>.
+    /// Metodě předává získaná Exchange data a parametry deklarované v cílovém controlu - které slouží pro volbu akceptování dat z Exchange.
+    /// </summary>
+    public enum DataExchangeCrossType
+    {
+        /// <summary>
+        /// Nezadáno, výchozí stav, control neůže akceptovat žádná vstupující data, ani svoje vlastní.
+        /// </summary>
+        None = 0,
+        /// <summary>
+        /// Pouze data z vlastního controlu. Pak není nutno 
+        /// </summary>
+        OwnControlDataOnly,
+
+
     }
     /// <summary>
     /// Názvy barev, skinů a elementů, pro které lze získat barvz pomocí metody <see cref="DxComponent.GetSkinColor(string)"/>
@@ -5441,6 +5495,48 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             return result;
         }
+    }
+    #endregion
+    #region class ClipboardContainer : Obsah clipboardu = ID aplikace, ID zdroje dat plus vlastní Data
+    /// <summary>
+    /// Obsah clipboardu = ID aplikace, ID zdroje dat plus vlastní Data
+    /// </summary>
+    [Serializable]
+    public class DataExchangeContainer
+    {
+        /// <summary>
+        /// Kvůli XmlPersist
+        /// </summary>
+        private DataExchangeContainer() { }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="dataId"></param>
+        /// <param name="data"></param>
+        public DataExchangeContainer(string dataId, object data)
+        {
+            this.ApplicationGuid = DxComponent.ApplicationGuid;
+            this.ApplicationId = DxComponent.ClipboardApplicationId;
+            this.DataSourceId = dataId;
+            this.Data = data;
+        }
+        /// <summary>
+        /// Guid aplikace, která je zdrojem dat
+        /// </summary>
+        public string ApplicationGuid { get; private set; }
+        /// <summary>
+        /// ID aplikace, která je zdrojem dat
+        /// </summary>
+        public string ApplicationId { get; private set; }
+        /// <summary>
+        /// ID zdroje dat v rámci jedné aplikace. Identifikuje zdroj dat, který tato data připravil a do balíčku vložil, typicky při Ctrl+C.
+        /// To je informace pro cíl, aby se moho rozhodnout, zda tato data chce / nechce přijmout.
+        /// </summary>
+        public string DataSourceId { get; private set; }
+        /// <summary>
+        /// Vlastní data, jejich konkrétní datový typ je dán zdrojem dat
+        /// </summary>
+        public object Data { get; set; }
     }
     #endregion
     #region class ActionScope : Jednoduchý scope, který provede při vytvoření akci OnBegin, a při Dispose akci OnEnd

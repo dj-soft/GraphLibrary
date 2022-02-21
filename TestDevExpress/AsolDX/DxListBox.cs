@@ -608,6 +608,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         public DxListBoxControl()
         {
             KeyActionsInit();
+            DataExchangeInit();
             DxDragDropInit(DxDragDropActionType.None);
             ToolTipInit();
             ImageInit();
@@ -962,7 +963,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="defaultTitle">Náhradní titulek, použije se když je zadán text ale není zadán titulek</param>
         public void SetToolTip(string title, string text, string defaultTitle = null) { this.SuperTip = DxComponent.CreateDxSuperTip(title, text, defaultTitle); }
         #endregion
-        #region DoKeyActions; Delete, CtrlA, CtrlC, CtrlX, CtrlV; Move, Insert, Remove
+        #region DoKeyActions; CtrlA, CtrlC, CtrlX, CtrlV, Delete; Move, Insert, Remove
         /// <summary>
         /// Povolené akce. Výchozí je <see cref="KeyActionType.None"/>
         /// </summary>
@@ -993,48 +994,48 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void DxListBoxControl_KeyDown(object sender, KeyEventArgs e)
         {
             var enabledActions = EnabledKeyActions;
-            bool handled = false;
+            bool isHandled = false;
             switch (e.KeyData)
             {
                 case Keys.Delete:
-                    handled = _DoKeyAction(KeyActionType.Delete);
+                    isHandled = _DoKeyAction(KeyActionType.Delete);
                     break;
                 case Keys.Control | Keys.A:
-                    handled = _DoKeyAction(KeyActionType.SelectAll);
+                    isHandled = _DoKeyAction(KeyActionType.SelectAll);
                     break;
                 case Keys.Control | Keys.C:
-                    handled = _DoKeyAction(KeyActionType.ClipCopy);
+                    isHandled = _DoKeyAction(KeyActionType.ClipCopy);
                     break;
                 case Keys.Control | Keys.X:
                     // Ctrl+X : pokud je povoleno, provedu; pokud nelze provést Ctrl+X ale lze provést Ctrl+C, tak se provede to:
                     if (EnabledKeyActions.HasFlag(KeyActionType.ClipCut))
-                        handled = _DoKeyAction(KeyActionType.ClipCut);
+                        isHandled = _DoKeyAction(KeyActionType.ClipCut);
                     else if (EnabledKeyActions.HasFlag(KeyActionType.ClipCopy))
-                        handled = _DoKeyAction(KeyActionType.ClipCopy);
+                        isHandled = _DoKeyAction(KeyActionType.ClipCopy);
                     break;
                 case Keys.Control | Keys.V:
-                    handled = _DoKeyAction(KeyActionType.ClipPaste);
+                    isHandled = _DoKeyAction(KeyActionType.ClipPaste);
                     break;
                 case Keys.Alt | Keys.Home:
-                    handled = _DoKeyAction(KeyActionType.MoveTop);
+                    isHandled = _DoKeyAction(KeyActionType.MoveTop);
                     break;
                 case Keys.Alt | Keys.Up:
-                    handled = _DoKeyAction(KeyActionType.MoveUp);
+                    isHandled = _DoKeyAction(KeyActionType.MoveUp);
                     break;
                 case Keys.Alt | Keys.Down:
-                    handled = _DoKeyAction(KeyActionType.MoveDown);
+                    isHandled = _DoKeyAction(KeyActionType.MoveDown);
                     break;
                 case Keys.Alt | Keys.End:
-                    handled = _DoKeyAction(KeyActionType.MoveBottom);
+                    isHandled = _DoKeyAction(KeyActionType.MoveBottom);
                     break;
                 case Keys.Control | Keys.Z:
-                    handled = _DoKeyAction(KeyActionType.Undo);
+                    isHandled = _DoKeyAction(KeyActionType.Undo);
                     break;
                 case Keys.Control | Keys.Y:
-                    handled = _DoKeyAction(KeyActionType.Redo);
+                    isHandled = _DoKeyAction(KeyActionType.Redo);
                     break;
             }
-            if (handled)
+            if (isHandled)
                 e.Handled = true; 
         }
         /// <summary>
@@ -1075,13 +1076,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             handled = true;
         }
         /// <summary>
-        /// Provedení klávesové akce: Delete
-        /// </summary>
-        private void _DoKeyActionDelete()
-        {
-            RemoveIndexes(this.SelectedIndexes);
-        }
-        /// <summary>
         /// Provedení klávesové akce: CtrlA
         /// </summary>
         private void _DoKeyActionCtrlA()
@@ -1095,7 +1089,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             var selectedItems = this.SelectedItems;
             string textTxt = selectedItems.ToOneString();
-            DxComponent.ClipboardInsert(selectedItems, textTxt);
+            DataExchangeClipboardPublish(selectedItems, textTxt);
         }
         /// <summary>
         /// Provedení klávesové akce: CtrlX
@@ -1110,14 +1104,15 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private void _DoKeyActionCtrlV()
         {
-            if (!DxComponent.ClipboardTryGetApplicationData(out var data)) return;
-            if (!(data is IEnumerable<IMenuItem> items)) return;
-
-            if (items.Any())
-            {
-                int? insertIndex = (this.Items.Count > 0 && this.SelectedIndex >= 0 ? (int?)this.SelectedIndex : (int?)null);
-                InsertItems(items, insertIndex, true);
-            }
+            if (!DataExchangeClipboardAcquire(out var data)) return;
+            if (data is IEnumerable<IMenuItem> items) InsertItems(items, true, true);
+        }
+        /// <summary>
+        /// Provedení klávesové akce: Delete
+        /// </summary>
+        private void _DoKeyActionDelete()
+        {
+            RemoveIndexes(this.SelectedIndexes);
         }
         /// <summary>
         /// Provedení klávesové akce: MoveTop
@@ -1211,6 +1206,19 @@ namespace Noris.Clients.Win.Components.AsolDX
         public void MoveSelectedItems(int? targetIndex)
         {
             _MoveItems(this.SelectedItemsInfo, targetIndex);
+        }
+        /// <summary>
+        /// Do this listu vloží další prvky <paramref name="sourceItems"/>, počínaje aktuální pozicí vybraného prvku.
+        /// </summary>
+        /// <param name="sourceItems"></param>
+        /// <param name="atCurrentIndex">Požadavek true = na pozici aktuálního prvku / false = na konec</param>
+        /// <param name="selectNewItems">Nově vložené prvky mají být po vložení vybrané (Selected)?</param>
+        public void InsertItems(IEnumerable<IMenuItem> sourceItems, bool atCurrentIndex, bool selectNewItems)
+        {
+            if (sourceItems is null || !sourceItems.Any()) return;
+
+            int? insertIndex = (atCurrentIndex && this.Items.Count > 0 && this.SelectedIndex >= 0 ? (int?)this.SelectedIndex : (int?)null);
+            InsertItems(sourceItems, insertIndex, true);
         }
         /// <summary>
         /// Do this listu vloží další prvky <paramref name="sourceItems"/>, počínaje danou pozicí <paramref name="insertIndex"/>.
@@ -1311,7 +1319,55 @@ namespace Noris.Clients.Win.Components.AsolDX
             return validItems.ToArray();
         }
         #endregion
-        #region Přesouvání prvků pomocí myši
+        #region DataExchange
+        private void DataExchangeInit()
+        {
+            ExchangeCurrentDataId = DxComponent.CreateGuid();
+        }
+        /// <summary>
+        /// ID tohoto objektu, je vkládáno do balíčku s daty při CtrlC, CtrlX a při DragAndDrop z tohoto zdroje.
+        /// Je součástí Exchange dat uložených do <see cref="DataExchangeContainer.DataSourceId"/>.
+        /// </summary>
+        public string ExchangeCurrentDataId { get; set; }
+        /// <summary>
+        /// Režim výměny dat při pokusu o vkládání do tohoto objektu.
+        /// Pokud některý jiný objekt provedl Ctrl+C, pak svoje data vložil do balíčku <see cref="DataExchangeContainer"/>,
+        /// přidal k tomu svoje ID controlu (jako zdejší <see cref="ExchangeCurrentDataId"/>) do <see cref="DataExchangeContainer.DataSourceId"/>,
+        /// do balíčku se přidalo ID aplikace do <see cref="DataExchangeContainer.ApplicationGuid"/>, a tato data jsou uložena v Clipboardu.
+        /// <para/>
+        /// Pokud nyní zdejší control zaeviduje klávesu Ctrl+V, pak zjistí, zda v Clipboardu existuje balíček <see cref="DataExchangeContainer"/>,
+        /// a pokud ano, pak prověří, zda this control může akceptovat data ze zdroje v balíčku uvedeného, na základě nastavení režimu výměny v <see cref="ExchangeCrossType"/>
+        /// a ID zdrojového controlu podle <see cref="ExchangeAcceptSourceDataId"/>.
+        /// </summary>
+        public DataExchangeCrossType ExchangeCrossType { get; set; }
+        /// <summary>
+        /// Povolené zdroje dat pro vkládání do this controlu pomocí výměnného balíčku <see cref="DataExchangeContainer"/>.
+        /// </summary>
+        public string ExchangeAcceptSourceDataId { get; set; }
+        /// <summary>
+        /// Dodaná data umístí do clipboardu 
+        /// </summary>
+        /// <param name="data"></param>
+        /// <param name="text"></param>
+        private void DataExchangeClipboardPublish(object data, string text)
+        {
+            DxComponent.ClipboardInsert(ExchangeCurrentDataId, data, text);
+        }
+        /// <summary>
+        /// Pokusí se z Clipboardu získat data pro this control, podle aktuálního nastavení. Vrací true = máme data.
+        /// </summary>
+        /// <param name="data"></param>
+        /// <returns></returns>
+        private bool DataExchangeClipboardAcquire(out object data)
+        {
+            data = null;
+            if (!DxComponent.ClipboardTryGetApplicationData(out DataExchangeContainer appDataContainer)) return false;
+            if (!DxComponent.CanAcceptExchangeData(appDataContainer, this.ExchangeCurrentDataId, this.ExchangeCrossType, this.ExchangeAcceptSourceDataId)) return false;
+            data = appDataContainer.Data;
+            return true;
+        }
+        #endregion
+        #region Drag and Drop
         /// <summary>
         /// Souhrn povolených akcí Drag and Drop
         /// </summary>
