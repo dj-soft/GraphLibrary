@@ -1025,6 +1025,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                     break;
                 case Keys.Control | Keys.C:
                     isHandled = _DoKeyAction(KeyActionType.ClipCopy);
+                    isHandled = true;            // I kdyby tato akce NEBYLA povolena, chci ji označit jako Handled = nechci, aby v případě NEPOVOLENÉ akce dával objekt nativně věci do clipbardu.
                     break;
                 case Keys.Control | Keys.X:
                     // Ctrl+X : pokud je povoleno, provedu; pokud nelze provést Ctrl+X ale lze provést Ctrl+C, tak se provede to:
@@ -1032,9 +1033,11 @@ namespace Noris.Clients.Win.Components.AsolDX
                         isHandled = _DoKeyAction(KeyActionType.ClipCut);
                     else if (EnabledKeyActions.HasFlag(KeyActionType.ClipCopy))
                         isHandled = _DoKeyAction(KeyActionType.ClipCopy);
+                    isHandled = true;            // I kdyby tato akce NEBYLA povolena, chci ji označit jako Handled = nechci, aby v případě NEPOVOLENÉ akce dával objekt nativně věci do clipbardu.
                     break;
                 case Keys.Control | Keys.V:
                     isHandled = _DoKeyAction(KeyActionType.ClipPaste);
+                    isHandled = true;            // I kdyby tato akce NEBYLA povolena, chci ji označit jako Handled = nechci, aby v případě NEPOVOLENÉ akce dával objekt nativně věci do clipbardu.
                     break;
                 case Keys.Alt | Keys.Home:
                     isHandled = _DoKeyAction(KeyActionType.MoveTop);

@@ -142,6 +142,16 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public int NodesCount { get { return _TreeListNative.NodesCount; } }
         /// <summary>
+        /// Povolené akce. Výchozí je <see cref="KeyActionType.None"/>
+        /// </summary>
+        public KeyActionType EnabledKeyActions { get { return _TreeListNative.EnabledKeyActions; } set { _TreeListNative.EnabledKeyActions = value; } }
+        /// <summary>
+        /// Provede zadané akce v pořadí jak jsou zadány. Pokud v jedné hodnotě je více akcí (<see cref="KeyActionType"/> je typu Flags), pak jsou prováděny v pořadí bitů od nejnižšího.
+        /// Upozornění: požadované akce budou provedeny i tehdy, když v <see cref="EnabledKeyActions"/> nejsou povoleny = tamní hodnota má za úkol omezit uživatele, ale ne aplikační kód, který danou akci může provést i tak.
+        /// </summary>
+        /// <param name="actions"></param>
+        public void DoKeyActions(params KeyActionType[] actions) { _TreeListNative.DoKeyActions(actions); }
+        /// <summary>
         /// Seznam HotKeys = klávesy, pro které se volá událost <see cref="NodeKeyDown"/>.
         /// </summary>
         public IEnumerable<Keys> HotKeys { get { return _TreeListNative.HotKeys; } set { _TreeListNative.HotKeys = value; } }
@@ -1152,9 +1162,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void _OnKeyDown(object sender, KeyEventArgs e)
         {
             bool isHandled = _OnKeyDownFocusExpand(e);
-            if (isHandled)
+            if (!isHandled)
                 isHandled = _OnKeyDownClipboardDelete(e);
-            if (isHandled)
+            if (!isHandled)
                 isHandled = _OnKeyDownHotKey(e);
 
             if (isHandled)
@@ -2914,6 +2924,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                     break;
                 case Keys.Control | Keys.C:
                     isHandled = _DoKeyAction(KeyActionType.ClipCopy);
+                    isHandled = true;            // I kdyby tato akce NEBYLA povolena, chci ji označit jako Handled = nechci, aby v případě NEPOVOLENÉ akce dával objekt nativně věci do clipbardu.
                     break;
                 case Keys.Control | Keys.X:
                     // Ctrl+X : pokud je povoleno, provedu; pokud nelze provést Ctrl+X ale lze provést Ctrl+C, tak se provede to:
@@ -2921,9 +2932,11 @@ namespace Noris.Clients.Win.Components.AsolDX
                         isHandled = _DoKeyAction(KeyActionType.ClipCut);
                     else if (EnabledKeyActions.HasFlag(KeyActionType.ClipCopy))
                         isHandled = _DoKeyAction(KeyActionType.ClipCopy);
+                    isHandled = true;            // I kdyby tato akce NEBYLA povolena, chci ji označit jako Handled = nechci, aby v případě NEPOVOLENÉ akce dával objekt nativně věci do clipbardu.
                     break;
                 case Keys.Control | Keys.V:
                     isHandled = _DoKeyAction(KeyActionType.ClipPaste);
+                    isHandled = true;            // I kdyby tato akce NEBYLA povolena, chci ji označit jako Handled = nechci, aby v případě NEPOVOLENÉ akce dával objekt nativně věci do clipbardu.
                     break;
             }
             return isHandled;

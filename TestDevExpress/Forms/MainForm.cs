@@ -422,6 +422,7 @@ namespace TestDevExpress.Forms
 
             group = new DataRibbonGroup() { GroupText = "BROWSE" };
             group.Items.Add(CreateRibbonFunction("BrowseStd", "Browse Standard", "svgimages/dashboards/grid.svg", "Otevře okno pro testování standardního Browse", _TestDxBrowseStandardForm_Click));
+            group.Items.Add(CreateRibbonFunction("BrowseVir", "Browse Virtual", "svgimages/dashboards/grid.svg", "Otevře okno pro testování Browse s virtuálním zdrojem dat", _TestDxBrowseVirtualForm_Click));
             page.Groups.Add(group);
 
             group = new DataRibbonGroup() { GroupText = "STYLY" };
@@ -684,7 +685,15 @@ namespace TestDevExpress.Forms
         }
         private void _TestDxBrowseStandardForm_Click(IMenuItem menuItem)
         {
-            using (var dxBrowseForm = new DxBrowseForm())
+            using (var dxBrowseForm = new DxBrowseStandardForm())
+            {
+                dxBrowseForm.WindowState = FormWindowState.Maximized;
+                dxBrowseForm.ShowDialog();
+            }
+        }
+        private void _TestDxBrowseVirtualForm_Click(IMenuItem menuItem)
+        {
+            using (var dxBrowseForm = new DxBrowseVirtualForm())
             {
                 dxBrowseForm.WindowState = FormWindowState.Maximized;
                 dxBrowseForm.ShowDialog();
@@ -4201,7 +4210,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
             _DragDropBList.ButtonsTypes = ListBoxButtonType.MoveAll;
             _PanelDragDrop.Controls.Add(_DragDropBList);
 
-            _DragDropCTree = new DxTreeList() { FilterBoxVisible = true, DragDropActions = targetDDActions };
+            _DragDropCTree = new DxTreeList() { FilterBoxVisible = true, DragDropActions = targetDDActions, EnabledKeyActions = sourceKeyActions };
             _DragDropCTree.Name = "CTree";
             _DragDropCTree.MultiSelectEnabled = true;
             _DragDropCTree.SelectNodeBeforeShowContextMenu = false;

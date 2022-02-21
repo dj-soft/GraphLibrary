@@ -3475,6 +3475,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         #endregion
         #region Static helpers
+        /// <summary>
+        /// Vytvoří a vrátí string obsahující new Guid
+        /// </summary>
+        /// <returns></returns>
         public static string CreateGuid() { return Guid.NewGuid().ToString(); }
         /// <summary>
         /// Vrátí <see cref="DefaultBoolean"/> z hodnoty nullable <see cref="Boolean"/>.
@@ -3496,7 +3500,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                    (value == DefaultBoolean.False ? (bool?)false : (bool?)null));
         }
         #endregion
-        #region DxClipboard : obálka nad systémovým clipboardem
+        #region DxClipboard : obálka nad systémovým clipboardem plus support pro DataExchangeContainer
         /// <summary>
         /// Inicializac clipboardu
         /// </summary>
@@ -3652,7 +3656,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         /// <summary>
         /// Vrátí true, pokud zdroj dat <paramref name="dataSourceId"/> lze akceptovat pro zadané povolené zdroje <paramref name="enabledSources"/>.
-        /// Zatím neřešíme Wildcards.
+        /// Povolené zdroje mohou obsahovat více položek, oddělených CrLf.
+        /// Každý jednotlivý povolený zdroj v <paramref name="enabledSources"/> může obsahovat Wildcard ve stylu FileName (např. "Page10001*ListBox*"), 
+        /// pak se vyhodnocuje jako WildCard Pattern.
         /// </summary>
         /// <param name="dataSourceId"></param>
         /// <param name="enabledSources"></param>
@@ -3663,7 +3669,9 @@ namespace Noris.Clients.Win.Components.AsolDX
             var enabledItems = enabledSources.Split('\r', '\n');
             foreach (var enabledItem in enabledItems)
             {
+                if (String.IsNullOrEmpty(enabledItem)) continue;
                 if (String.Equals(dataSourceId, enabledItem, StringComparison.Ordinal)) return true;
+                if ((enabledItem.Contains("*") || enabledItem.Contains("?")) && RegexSupport.IsMatchWildcards(dataSourceId, enabledItem)) return true;
             }
             return false;
         }
@@ -4006,8 +4014,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         OwnControl = 0x0001,
         /// <summary>
-        /// Lze akceptovat data pocházející z jiných controlů, 
-        /// jejich výběr (ID) je uveden v parametru metody <see cref="DxComponent.CanAcceptExchangeData(DataExchangeContainer, string, DataExchangeCrossType, string)"/>
+        /// Lze akceptovat data pocházející z jiných controlů, jejich výběr (DataSourceId) je uveden v parametru 'enabledSources' 
+        /// metody <see cref="DxComponent.CanAcceptExchangeData(DataExchangeContainer, string, DataExchangeCrossType, string)"/>
         /// </summary>
         OtherSelectedControls = 0x0002,
         /// <summary>
@@ -4019,6 +4027,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Lze akceptovat data pocházející z aktuální aplikace.
         /// Pozor, toto NENÍ default: tuto volbu je třeba explicitně nastavit (anebo vybrat volbu kombinovanou, která už tuto hodnotu obsahuje).
+        /// Pokud nebude nastaven tento příznak, nebudou akceptovány zdroje z aktuální aplikace - a to ani zdroj <see cref="OwnControl"/>!
         /// </summary>
         CurrentApplication = 0x0010,
         /// <summary>
