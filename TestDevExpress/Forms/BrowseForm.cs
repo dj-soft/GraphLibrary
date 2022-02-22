@@ -54,8 +54,10 @@ namespace TestDevExpress.Forms
 
             group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Test.Clear", Text = "Smaž řádky", ToolTipText = "Do Gridu vloží tabulku bez řádků", ItemType = RibbonItemType.Button, ImageName = resourceClear, RibbonStyle = RibbonItemStyles.Large });
             group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Test.Add10", Text = "Vlož 10", ToolTipText = "Do Gridu vloží 10 řádek", ItemType = RibbonItemType.Button, ImageName = resourceAddIcon, RibbonStyle = RibbonItemStyles.Large, ItemIsFirstInGroup = true });
-            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Test.Add50", Text = "Vlož 50", ToolTipText = "Do Gridu vloží 50 řádek", ItemType = RibbonItemType.Button, ImageName = resourceAddIcon, RibbonStyle = RibbonItemStyles.Large, ItemIsFirstInGroup = true });
-            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Test.Add1k", Text = "Vlož 1000", ToolTipText = "Do Gridu vloží 1 000 řádek", ItemType = RibbonItemType.Button, ImageName = resourceAddIcon, RibbonStyle = RibbonItemStyles.Large, ItemIsFirstInGroup = true });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Test.Add50", Text = "Vlož 50", ToolTipText = "Do Gridu vloží 50 řádek", ItemType = RibbonItemType.Button, ImageName = resourceAddIcon, RibbonStyle = RibbonItemStyles.Large });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Test.Add100", Text = "Vlož 100", ToolTipText = "Do Gridu vloží 100 řádek", ItemType = RibbonItemType.Button, ImageName = resourceAddIcon, RibbonStyle = RibbonItemStyles.Large });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Test.Add500", Text = "Vlož 500", ToolTipText = "Do Gridu vloží 500 řádek", ItemType = RibbonItemType.Button, ImageName = resourceAddIcon, RibbonStyle = RibbonItemStyles.Large });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Test.Add1k", Text = "Vlož 1000", ToolTipText = "Do Gridu vloží 1 000 řádek", ItemType = RibbonItemType.Button, ImageName = resourceAddIcon, RibbonStyle = RibbonItemStyles.Large });
             group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Test.Add10k", Text = "Vlož 10000", ToolTipText = "Do Gridu vloží 10 000 řádek", ItemType = RibbonItemType.Button, ImageName = resourceAddIcon, RibbonStyle = RibbonItemStyles.Large });
             group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Test.Add100k", Text = "Vlož 100000", ToolTipText = "Do Gridu vloží 100 000 řádek", ItemType = RibbonItemType.Button, ImageName = resourceAddIcon, RibbonStyle = RibbonItemStyles.Large });
             group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Test.Add500k", Text = "Vlož 500000", ToolTipText = "Do Gridu vloží 500 000 řádek", ItemType = RibbonItemType.Button, ImageName = resourceAddIcon, RibbonStyle = RibbonItemStyles.Large });
@@ -71,22 +73,44 @@ namespace TestDevExpress.Forms
             switch (e.Item.ItemId)
             {
                 case "Dx.Test.Clear":
+                    TargetRowCount = null;
+                    HasAllRows = false;
                     FillBrowse(0);
                     break;
                 case "Dx.Test.Add10":
+                    TargetRowCount = 10;
+                    HasAllRows = false;
                     FillBrowse(10, Random.WordBookType.TriMuziNaToulkach);
                     break;
                 case "Dx.Test.Add50":
+                    TargetRowCount = 50;
+                    HasAllRows = false;
+                    FillBrowse(50, Random.WordBookType.TriMuziNaToulkach);
+                    break;
+                case "Dx.Test.Add100":
+                    TargetRowCount = 100;
+                    HasAllRows = false;
+                    FillBrowse(50, Random.WordBookType.TriMuziNaToulkach);
+                    break;
+                case "Dx.Test.Add500":
+                    TargetRowCount = 500;
+                    HasAllRows = false;
                     FillBrowse(50, Random.WordBookType.TriMuziNaToulkach);
                     break;
                 case "Dx.Test.Add1k":
-                    FillBrowse(1000, Random.WordBookType.TriMuziNaToulkach);
+                    TargetRowCount = 1000;
+                    HasAllRows = false;
+                    FillBrowse(200, Random.WordBookType.TriMuziNaToulkach);
                     break;
                 case "Dx.Test.Add10k":
-                    FillBrowse(10000, Random.WordBookType.TriMuziNaToulkach);
+                    TargetRowCount = 10000;
+                    HasAllRows = false;
+                    FillBrowse(200, Random.WordBookType.TriMuziNaToulkach);
                     break;
                 case "Dx.Test.Add100k":
-                    FillBrowse(100000, Random.WordBookType.TaborSvatych);
+                    TargetRowCount = 100000;
+                    HasAllRows = false;
+                    FillBrowse(200, Random.WordBookType.TaborSvatych);
                     break;
                 case "Dx.Test.Add500k":
                     FillBrowse(500000, Random.WordBookType.CampOfSaints);
@@ -189,7 +213,14 @@ namespace TestDevExpress.Forms
 
             StatusText = $"Tvorba GridSplitContainer: {timeInit} sec;     Přidání na Form: {timeAdd} sec;     {dataLog}Generování View: {timeCreateView} sec;     BestFitColumns: {timeFitColumns} sec";
         }
-
+        /// <summary>
+        /// Cílový počet řádků, null = bez omezení
+        /// </summary>
+        protected int? TargetRowCount { get; set; } = null;
+        /// <summary>
+        /// Jsou načteny všechny řádky?
+        /// </summary>
+        protected bool HasAllRows { get; set; } = false;
         private void View_CustomDrawScroll(object sender, DevExpress.XtraEditors.ScrollBarCustomDrawEventArgs e)
         {
             var v = e.Info.ScrollBar.Value;
@@ -198,7 +229,7 @@ namespace TestDevExpress.Forms
             {
                 Int32Range total = new Int32Range(e.Info.ScrollBar.Minimum, e.Info.ScrollBar.Maximum);
                 Int32Range visible = new Int32Range(e.Info.ScrollBar.Value, e.Info.ScrollBar.Value + e.Info.ScrollBar.LargeChange);
-                if (visible.End > (total.End - 2 * visible.Size))
+                if (!HasAllRows && (visible.End > (total.End - 2 * visible.Size)))
                 {
                     this.AddDataRows(4 * visible.Size);
                 }
@@ -304,9 +335,11 @@ namespace TestDevExpress.Forms
         private List<object[]> _CreateDataRows(int rowCount, Random.WordBookType wordBookType = Random.WordBookType.TriMuziNaToulkach)
         {
             List<object[]> rows = new List<object[]>();
+
             var currWords = Random.ActiveWordBook;
             Random.ActiveWordBook = wordBookType;
 
+            int? targetRowCount = this.TargetRowCount;
             string[] categories = new string[] { "NÁKUP", "PRODEJ", "SKLAD", "TUZEMSKO", "EXPORT", "IMPORT" };
             int year = DateTime.Now.Year;
             DateTime dateBase = new DateTime(year, 1, 1);
@@ -314,6 +347,11 @@ namespace TestDevExpress.Forms
             for (int i = 0; i < rowCount; i++)
             {
                 int id = currCount + i + 1;
+                if (targetRowCount.HasValue && id > targetRowCount.Value)
+                {
+                    HasAllRows = true;
+                    break;
+                }
                 string refer = "DL:" + Random.Rand.Next(100000, 1000000).ToString();
                 string nazev = Random.GetSentence(1, 3, false);
                 string category = Random.GetItem(categories);
