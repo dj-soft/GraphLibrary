@@ -167,7 +167,7 @@ namespace TestDevExpress.Forms
             // Ošetřit v době plnění daty:
             view.TopRowChanged += View_TopRowChanged;
             view.RowCountChanged += View_RowCountChanged;
-            
+            view.CustomDrawScroll += View_CustomDrawScroll;
             
 
 
@@ -180,6 +180,11 @@ namespace TestDevExpress.Forms
             var timeFitColumns = DxComponent.LogGetTimeElapsed(timeStart, DxComponent.LogTokenTimeSec);
 
             StatusText = $"Tvorba GridSplitContainer: {timeInit} sec;     Přidání na Form: {timeAdd} sec;     {dataLog}Generování View: {timeCreateView} sec;     BestFitColumns: {timeFitColumns} sec";
+        }
+
+        private void View_CustomDrawScroll(object sender, DevExpress.XtraEditors.ScrollBarCustomDrawEventArgs e)
+        {
+            var v = e.Info.ScrollBar.Value;
         }
 
         private void View_CustomScrollAnnotation(object sender, DevExpress.XtraGrid.Views.Grid.GridCustomScrollAnnotationsEventArgs e)
