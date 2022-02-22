@@ -53,6 +53,8 @@ namespace TestDevExpress.Forms
             string resourceBestFit = "svgimages/richedit/tableautofitwindow.svg";
 
             group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Test.Clear", Text = "Smaž řádky", ToolTipText = "Do Gridu vloží tabulku bez řádků", ItemType = RibbonItemType.Button, ImageName = resourceClear, RibbonStyle = RibbonItemStyles.Large });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Test.Add10", Text = "Vlož 10", ToolTipText = "Do Gridu vloží 10 řádek", ItemType = RibbonItemType.Button, ImageName = resourceAddIcon, RibbonStyle = RibbonItemStyles.Large, ItemIsFirstInGroup = true });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Test.Add50", Text = "Vlož 50", ToolTipText = "Do Gridu vloží 50 řádek", ItemType = RibbonItemType.Button, ImageName = resourceAddIcon, RibbonStyle = RibbonItemStyles.Large, ItemIsFirstInGroup = true });
             group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Test.Add1k", Text = "Vlož 1000", ToolTipText = "Do Gridu vloží 1 000 řádek", ItemType = RibbonItemType.Button, ImageName = resourceAddIcon, RibbonStyle = RibbonItemStyles.Large, ItemIsFirstInGroup = true });
             group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Test.Add10k", Text = "Vlož 10000", ToolTipText = "Do Gridu vloží 10 000 řádek", ItemType = RibbonItemType.Button, ImageName = resourceAddIcon, RibbonStyle = RibbonItemStyles.Large });
             group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Test.Add100k", Text = "Vlož 100000", ToolTipText = "Do Gridu vloží 100 000 řádek", ItemType = RibbonItemType.Button, ImageName = resourceAddIcon, RibbonStyle = RibbonItemStyles.Large });
@@ -70,6 +72,12 @@ namespace TestDevExpress.Forms
             {
                 case "Dx.Test.Clear":
                     FillBrowse(0);
+                    break;
+                case "Dx.Test.Add10":
+                    FillBrowse(10, Random.WordBookType.TriMuziNaToulkach);
+                    break;
+                case "Dx.Test.Add50":
+                    FillBrowse(50, Random.WordBookType.TriMuziNaToulkach);
                     break;
                 case "Dx.Test.Add1k":
                     FillBrowse(1000, Random.WordBookType.TriMuziNaToulkach);
@@ -185,6 +193,18 @@ namespace TestDevExpress.Forms
         private void View_CustomDrawScroll(object sender, DevExpress.XtraEditors.ScrollBarCustomDrawEventArgs e)
         {
             var v = e.Info.ScrollBar.Value;
+
+            if (e.Info.ScrollBar.ScrollBarType == DevExpress.XtraEditors.ScrollBarType.Vertical)
+            {
+                Int32Range total = new Int32Range(e.Info.ScrollBar.Minimum, e.Info.ScrollBar.Maximum);
+                Int32Range visible = new Int32Range(e.Info.ScrollBar.Value, e.Info.ScrollBar.Value + e.Info.ScrollBar.LargeChange);
+                if (visible.End > (total.End - 2 * visible.Size))
+                {
+                    this.AddDataRows(4 * visible.Size);
+                }
+
+            }
+
         }
 
         private void View_CustomScrollAnnotation(object sender, DevExpress.XtraGrid.Views.Grid.GridCustomScrollAnnotationsEventArgs e)
