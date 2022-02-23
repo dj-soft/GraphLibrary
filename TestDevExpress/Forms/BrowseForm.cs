@@ -62,6 +62,7 @@ namespace TestDevExpress.Forms
             group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Test.Add100k", Text = "Vlož 100000", ToolTipText = "Do Gridu vloží 100 000 řádek", ItemType = RibbonItemType.Button, ImageName = resourceAddIcon, RibbonStyle = RibbonItemStyles.Large });
             group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Test.Add500k", Text = "Vlož 500000", ToolTipText = "Do Gridu vloží 500 000 řádek", ItemType = RibbonItemType.Button, ImageName = resourceAddIcon, RibbonStyle = RibbonItemStyles.Large });
             group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Test.BestFit", Text = "Uprav šířky", ToolTipText = "V Gridu upraví šířky sloupců podle jejich obsahu", ItemType = RibbonItemType.Button, ImageName = resourceBestFit, RibbonStyle = RibbonItemStyles.Large });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Test.Refresh", Text = "Refresh", ToolTipText = "Občas něco změní - odebere řádek, vymění hodnoty, přidá řádky", ItemType = RibbonItemType.Button, ImageName = resourceAddIcon, RibbonStyle = RibbonItemStyles.Large, ItemIsFirstInGroup = true });
 
             this.DxRibbon.Clear();
             this.DxRibbon.AddPages(pages);
@@ -117,6 +118,9 @@ namespace TestDevExpress.Forms
                     break;
                 case "Dx.Test.BestFit":
                     BestFitBrowse();
+                    break;
+                case "Dx.Test.Refresh":
+                    GridRefresh();
                     break;
             }
         }
@@ -231,7 +235,7 @@ namespace TestDevExpress.Forms
                 Int32Range visible = new Int32Range(e.Info.ScrollBar.Value, e.Info.ScrollBar.Value + e.Info.ScrollBar.LargeChange);
                 if (!HasAllRows && (visible.End > (total.End - 2 * visible.Size)))
                 {
-                    this.AddDataRows(4 * visible.Size);
+                    this.AddDataRowsAsync(4 * visible.Size);
                 }
 
             }
@@ -261,7 +265,10 @@ namespace TestDevExpress.Forms
         private void FillBrowse(int rowCount, Random.WordBookType wordBookType = Random.WordBookType.TriMuziNaToulkach)
         {
             if (rowCount <= 0)
+            {
                 _DataSource.Rows.Clear();
+                _NextRowId = 0;
+            }
             else
             {
                 string dataLog = AddDataRows(rowCount, wordBookType);
@@ -277,6 +284,142 @@ namespace TestDevExpress.Forms
             _View.BestFitColumns();
             var timeFitColumns = DxComponent.LogGetTimeElapsed(timeStart, DxComponent.LogTokenTimeSec);
             StatusText = $"BestFitColumns: {timeFitColumns} sec";
+        }
+        /// <summary>
+        /// Refresh dat
+        /// </summary>
+        private void GridRefresh()
+        {
+            var source = _DataSource;
+            Dictionary<int, object[]> changes = _CreateDataChanges(source.Rows.Count);
+            int cnt = this._View.DataRowCount;
+            var firstVisibleIndex = this._View.TopRowIndex;
+            var focusedRowIndex = this._View.FocusedRowHandle;
+            var firstVisibleId = (firstVisibleIndex >= 0 && firstVisibleIndex < cnt) ? source.Rows[firstVisibleIndex][0] : null;
+            var focusedRowId = (focusedRowIndex >= 0 && focusedRowIndex < cnt) ? source.Rows[focusedRowIndex][0] : null;
+
+
+            // Handle se odvolává na total index, kdežto VisibleIndex pracuje jen nad filtrovanými řádky.
+            // VisibleIndex nepracuje s CurrentVisibleArea.
+            int visInd = this._View.GetVisibleIndex(this._View.FocusedRowHandle);
+
+            var dh = this._Grid.FocusedView.DetailHeight;          // 350 = nejde o plochu dat
+
+            var focusRow = _View.GetFocusedDataRow();
+
+            if (this._View.FocusedRowHandle >= 0)
+            {
+                int vi = _View.GetVisibleIndex(this._View.FocusedRowHandle);
+            }
+            _View.FocusRectStyle = DevExpress.XtraGrid.Views.Grid.DrawFocusRectStyle.RowFullFocus;
+
+
+
+            _ApplyDataChanges(source, changes);
+
+
+        }
+        /// <summary>
+        /// Vytvoří a vrátí Dictionary obsahující změny dat pro cílovou tabulku se stávajícím daným počtem vět
+        /// </summary>
+        /// <param name="currCount"></param>
+        /// <returns></returns>
+        private Dictionary<int, object[]> _CreateDataChanges(int currCount)
+        {
+            Dictionary<int, object[]> changes = new Dictionary<int, object[]>();
+
+            int deleteCount = 0;
+            int modifyCount = 0;
+            int appendCount = 0;
+
+            // Některé řádky smažeme:
+            if (currCount >= 20)
+            {
+                deleteCount = (currCount <= 60 ? currCount / 10 : currCount / 15);       // currCount je dozajista 20 a více. Pokud je do 60, pak deleteCount je 2 až 6; pro větší je 4 a více (1/15 = 6.66%)
+                deleteCount = Random.Rand.Next(1, deleteCount);                          // deleteCount je 1 až 10% počtu pro malé seznamy, nebo 1 až 6.66% pro velké...
+                for (int i = 0; i < deleteCount; i++)
+                {
+                    int index = Random.Rand.Next(0, currCount);                          // Index řádku k vymazání
+                    if (!changes.ContainsKey(index))                                     // Když index ještě není použit, přidáme jej; Value NULL = odebrat
+                        changes.Add(index, null);
+                    else
+                        i--;                                                             // Pokud náhodný index už v seznamu máme, dáme si další pokus...
+                }
+            }
+
+            // Některé řádky modifikujeme:
+            if (currCount >= 20)
+            {
+                modifyCount = (currCount <= 60 ? currCount / 10 : currCount / 15);       // currCount je dozajista 20 a více. Pokud je do 60, pak modifyCount je 2 až 6; pro větší je 4 a více (1/15 = 6.66%)
+                modifyCount = Random.Rand.Next(1, modifyCount);                          // modifyCount je 1 až 10% počtu pro malé seznamy, nebo 1 až 6.66% pro velké...
+                for (int i = 0; i < modifyCount; i++)
+                {
+                    int index = Random.Rand.Next(0, currCount);                          // Index řádku k modifikování
+                    if (!changes.ContainsKey(index))                                     // Když index ještě není použit, přidáme jej; Value dostane ID = (index + 1)
+                        changes.Add(index, _CreateDataRow(index + 1));
+                    else
+                        i--;                                                             // Pokud náhodný index už v seznamu máme, dáme si další pokus...
+                }
+            }
+
+            // Několik řádků přidáme:   přidáme přesně tolik řádků, kolik jsme jich smazali!
+            // appendCount = Random.Rand.Next(10, 20 + (currCount / 20));
+            appendCount = deleteCount;
+            int rowId = currCount;
+            for (int i = 0; i < appendCount; i++)
+            {
+                changes.Add(rowId++, _CreateNewDataRow());
+            }
+
+            return changes;
+        }
+        /// <summary>
+        /// Do dané tabulky aplikuje dodané změny
+        /// </summary>
+        /// <param name="source"></param>
+        /// <param name="changes"></param>
+        private void _ApplyDataChanges(System.Data.DataTable source, Dictionary<int, object[]> changes)
+        {
+            int currCount = source.Rows.Count;
+
+            // Modifikovat řádky (provést před smazáním, aby platily indexy): ty, které mají index menší než Count, a které mají data:
+            var modifyRows = changes.Where(c => c.Key < currCount && c.Value != null).ToList();
+            modifyRows.Sort((a, b) => a.Key.CompareTo(b.Key));
+            foreach (var modifyRow in modifyRows)
+                source.Rows[modifyRow.Key].ItemArray = modifyRow.Value;
+
+            // Smazat řádky (setřídit podle indexu sestupně): ty, které mají index menší než Count, a které nemají data:
+            var deleteRows = changes.Where(c => c.Value is null).ToList();
+            deleteRows.Sort((a, b) => b.Key.CompareTo(a.Key));
+            foreach (var deleteRow in deleteRows)
+                source.Rows.RemoveAt(deleteRow.Key);
+
+            // Přidat nové řádky (v pořadí jejich indexu): ty, které mají index menší než výchozí Count, a které mají data:
+            var appendRows = changes.Where(c => c.Key >= currCount && c.Value != null).ToList();
+            appendRows.Sort((a, b) => a.Key.CompareTo(b.Key));
+            foreach (var appendRow in appendRows)
+                source.Rows.Add(appendRow.Value);
+        }
+        /// <summary>
+        /// Vytvoří Main data a vloží je do <see cref="_Grid"/>, sestaví a vrátí text (obsahující časy) určený do Status baru (ale nevkládá jej tam)
+        /// </summary>
+        /// <param name="rowCount"></param>
+        /// <returns></returns>
+        private string AddDataRowsAsync(int rowCount)
+        {
+            ThreadManager.AddAction(() => AddDataRowsBgr(rowCount));
+            return "Background...";
+        }
+        /// <summary>
+        /// Vytvoří Main data a vloží je do <see cref="_Grid"/>, sestaví a vrátí text (obsahující časy) určený do Status baru (ale nevkládá jej tam)
+        /// </summary>
+        /// <param name="rowCount"></param>
+        /// <returns></returns>
+        private void AddDataRowsBgr(int rowCount)
+        {
+            System.Threading.Thread.Sleep(500);                      // Něco jako uděláme...  - doba pro krátké čekání na data ze serveru
+
+            this.RunInGui(() => AddDataRows(rowCount));              // Naplnění dáme do GUI
         }
         /// <summary>
         /// Vytvoří Main data a vloží je do <see cref="_Grid"/>, sestaví a vrátí text (obsahující časy) určený do Status baru (ale nevkládá jej tam)
@@ -340,9 +483,6 @@ namespace TestDevExpress.Forms
             Random.ActiveWordBook = wordBookType;
 
             int? targetRowCount = this.TargetRowCount;
-            string[] categories = new string[] { "NÁKUP", "PRODEJ", "SKLAD", "TUZEMSKO", "EXPORT", "IMPORT" };
-            int year = DateTime.Now.Year;
-            DateTime dateBase = new DateTime(year, 1, 1);
             int currCount = _DataSource.Rows.Count;
             for (int i = 0; i < rowCount; i++)
             {
@@ -352,25 +492,57 @@ namespace TestDevExpress.Forms
                     HasAllRows = true;
                     break;
                 }
-                string refer = "DL:" + Random.Rand.Next(100000, 1000000).ToString();
-                string nazev = Random.GetSentence(1, 3, false);
-                string category = Random.GetItem(categories);
-                DateTime dateInp = dateBase.AddDays(Random.Rand.Next(0, 730));
-                DateTime dateOut = dateInp.AddDays(Random.Rand.Next(7, 90));
-                string period = dateInp.Year.ToString() + "-" + dateInp.Month.ToString("00");
-                decimal qty = (decimal)(Random.Rand.Next(10, 1000)) / 10m;
-                decimal price1 = (decimal)(Random.Rand.Next(10, 10000)) / 10m;
-                decimal priceT = qty * price1;
-                string note = Random.GetSentence(5, 9, true);
-
-                object[] row = new object[] { id, refer, nazev, category, period, dateInp, dateOut, qty, price1, priceT, note };
-                rows.Add(row);
+                rows.Add(_CreateNewDataRow());
             }
 
             Random.ActiveWordBook = currWords;
 
             return rows;
         }
+        private object[] _CreateNewDataRow()
+        {
+            int rowId = ++_NextRowId;
+            return _CreateDataRow(rowId);
+        }
+        private object[] _CreateDataRow(int rowId)
+        {
+            string refer = "DL:" + Random.Rand.Next(100000, 1000000).ToString();
+            string nazev = Random.GetSentence(1, 3, false);
+            string category = Random.GetItem(Categories);
+            DateTime dateInp = DateFirst.AddDays(Random.Rand.Next(0, 730));
+            DateTime dateOut = dateInp.AddDays(Random.Rand.Next(7, 90));
+            string period = dateInp.Year.ToString() + "-" + dateInp.Month.ToString("00");
+            decimal qty = (decimal)(Random.Rand.Next(10, 1000)) / 10m;
+            decimal price1 = (decimal)(Random.Rand.Next(10, 10000)) / 10m;
+            decimal priceT = qty * price1;
+            string note = Random.GetSentence(5, 9, true);
+
+            object[] row = new object[] { rowId, refer, nazev, category, period, dateInp, dateOut, qty, price1, priceT, note };
+            return row;
+        }
+        private string[] Categories 
+        {
+            get
+            {
+                if (_Categories is null)
+                    _Categories = new string[] { "NÁKUP", "PRODEJ", "SKLAD", "TUZEMSKO", "EXPORT", "IMPORT" };
+                return _Categories;
+            }
+        }
+        private string[] _Categories = null;
+
+        private DateTime DateFirst
+        {
+            get
+            {
+                if (!_DateFirst.HasValue)
+                    _DateFirst = new DateTime(DateTime.Now.Year, 1, 1);
+                return _DateFirst.Value;
+            }
+        }
+        private DateTime? _DateFirst = null;
+
+        private int _NextRowId = 0;
         #endregion
     }
 
