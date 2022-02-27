@@ -74,8 +74,8 @@ namespace TestDevExpress.Forms
             switch (e.Item.ItemId)
             {
                 case "Dx.Test.Clear":
-                    TargetRowCount = null;
-                    HasAllRows = false;
+                    TargetRowCount = 0;
+                    HasAllRows = true;
                     FillBrowse(0);
                     break;
                 case "Dx.Test.Add10":
@@ -86,12 +86,12 @@ namespace TestDevExpress.Forms
                 case "Dx.Test.Add50":
                     TargetRowCount = 50;
                     HasAllRows = false;
-                    FillBrowse(50, Random.WordBookType.TriMuziNaToulkach);
+                    FillBrowse(20, Random.WordBookType.TriMuziNaToulkach);
                     break;
                 case "Dx.Test.Add100":
                     TargetRowCount = 100;
                     HasAllRows = false;
-                    FillBrowse(50, Random.WordBookType.TriMuziNaToulkach);
+                    FillBrowse(20, Random.WordBookType.TriMuziNaToulkach);
                     break;
                 case "Dx.Test.Add500":
                     TargetRowCount = 500;
@@ -185,19 +185,23 @@ namespace TestDevExpress.Forms
             timeStart = DxComponent.LogTimeCurrent;
             var view = grid.AvailableViews["GridView"].CreateView(grid) as DevExpress.XtraGrid.Views.Grid.GridView;
             _View = view;
+
+            view.VertScrollTipFieldName = "nazev";
+            view.ScrollStyle = DevExpress.XtraGrid.Views.Grid.ScrollStyleFlags.LiveHorzScroll | DevExpress.XtraGrid.Views.Grid.ScrollStyleFlags.LiveVertScroll;
+            view.VertScrollVisibility = DevExpress.XtraGrid.Views.Base.ScrollVisibility.Always;
+            view.FocusRectStyle = DevExpress.XtraGrid.Views.Grid.DrawFocusRectStyle.RowFullFocus;
+
             view.OptionsFind.AlwaysVisible = true;
             view.OptionsView.ShowAutoFilterRow = true;
             view.OptionsView.ShowGroupPanelColumnsAsSingleRow = true;             // to je dobrý!
             //   view.OptionsView.ShowPreview = true;    preview je přidaný řádek pod každý řádek s daty
 
             view.OptionsDetail.DetailMode = DevExpress.XtraGrid.Views.Grid.DetailMode.Embedded;
-            view.VertScrollTipFieldName = "nazev";
-            view.OptionsScrollAnnotations.ShowCustomAnnotations = DevExpress.Utils.DefaultBoolean.True;
             view.OptionsBehavior.Editable = false;
             view.OptionsBehavior.SmartVertScrollBar = true;
+            view.OptionsScrollAnnotations.ShowCustomAnnotations = DevExpress.Utils.DefaultBoolean.True;
             view.OptionsScrollAnnotations.ShowFocusedRow = DevExpress.Utils.DefaultBoolean.True;
             view.OptionsScrollAnnotations.ShowSelectedRows = DevExpress.Utils.DefaultBoolean.True;
-            view.OptionsScrollAnnotations.ShowCustomAnnotations = DevExpress.Utils.DefaultBoolean.True;
             view.CustomScrollAnnotation += View_CustomScrollAnnotation;
 
             // Ošetřit v době plnění daty:
@@ -292,15 +296,19 @@ namespace TestDevExpress.Forms
         {
             var source = _DataSource;
             Dictionary<int, object[]> changes = _CreateDataChanges(source.Rows.Count);
+
             int cnt = this._View.DataRowCount;
             var firstVisibleIndex = this._View.TopRowIndex;
-            var focusedRowIndex = this._View.FocusedRowHandle;
+            int focusedRowIndex = this._View.GetFocusedDataSourceRowIndex();
+            int focusedRowVisibleOffset = focusedRowIndex - firstVisibleIndex;
+
+
             var firstVisibleId = (firstVisibleIndex >= 0 && firstVisibleIndex < cnt) ? source.Rows[firstVisibleIndex][0] : null;
             var focusedRowId = (focusedRowIndex >= 0 && focusedRowIndex < cnt) ? source.Rows[focusedRowIndex][0] : null;
 
 
             // Handle se odvolává na total index, kdežto VisibleIndex pracuje jen nad filtrovanými řádky.
-            // VisibleIndex nepracuje s CurrentVisibleArea.
+            // VisibleIndex ale nijak nepracuje s reálně viditelnými řádky v CurrentVisibleArea.
             int visInd = this._View.GetVisibleIndex(this._View.FocusedRowHandle);
 
             var dh = this._Grid.FocusedView.DetailHeight;          // 350 = nejde o plochu dat
@@ -311,12 +319,16 @@ namespace TestDevExpress.Forms
             {
                 int vi = _View.GetVisibleIndex(this._View.FocusedRowHandle);
             }
-            _View.FocusRectStyle = DevExpress.XtraGrid.Views.Grid.DrawFocusRectStyle.RowFullFocus;
 
 
 
-            _ApplyDataChanges(source, changes);
+            _ApplyDataChanges(source, changes, ref focusedRowIndex);
 
+
+            firstVisibleIndex = focusedRowIndex - focusedRowVisibleOffset;
+            this._View.TopRowIndex = firstVisibleIndex;
+            int newRowHandle = this._View.GetRowHandle(focusedRowIndex);
+            this._View.FocusedRowHandle = newRowHandle;
 
         }
         /// <summary>
@@ -378,7 +390,11 @@ namespace TestDevExpress.Forms
         /// </summary>
         /// <param name="source"></param>
         /// <param name="changes"></param>
-        private void _ApplyDataChanges(System.Data.DataTable source, Dictionary<int, object[]> changes)
+        /// <param name="focusedRowIndex">Index řádku s focusem v rámci tabulky.
+        /// Pokud tento řádek v rámci aplikace změn smažu, měl bych do této proměnné vložit nejbližší vyšší řádek. 
+        /// Pokud smažu řádky nižší, měl bych zmenšit tento index, aby ukazoval na stále tentýž řádek.
+        /// Na výstupu by měla být hodnota 0 až (RowCount-1).</param>
+        private void _ApplyDataChanges(System.Data.DataTable source, Dictionary<int, object[]> changes, ref int focusedRowIndex)
         {
             int currCount = source.Rows.Count;
 
@@ -392,13 +408,22 @@ namespace TestDevExpress.Forms
             var deleteRows = changes.Where(c => c.Value is null).ToList();
             deleteRows.Sort((a, b) => b.Key.CompareTo(a.Key));
             foreach (var deleteRow in deleteRows)
-                source.Rows.RemoveAt(deleteRow.Key);
+            {
+                int deleteIndex = deleteRow.Key;
+                if (deleteIndex == focusedRowIndex) focusedRowIndex++;
+                else if (deleteIndex < focusedRowIndex) focusedRowIndex++;
+                source.Rows.RemoveAt(deleteIndex);
+            }
 
             // Přidat nové řádky (v pořadí jejich indexu): ty, které mají index menší než výchozí Count, a které mají data:
             var appendRows = changes.Where(c => c.Key >= currCount && c.Value != null).ToList();
             appendRows.Sort((a, b) => a.Key.CompareTo(b.Key));
             foreach (var appendRow in appendRows)
                 source.Rows.Add(appendRow.Value);
+
+            int rowCount = source.Rows.Count;
+            if (focusedRowIndex >= rowCount) focusedRowIndex = rowCount - 1;
+            if (focusedRowIndex < 0) focusedRowIndex = (rowCount == 0 ? -1 : 0);
         }
         /// <summary>
         /// Vytvoří Main data a vloží je do <see cref="_Grid"/>, sestaví a vrátí text (obsahující časy) určený do Status baru (ale nevkládá jej tam)
