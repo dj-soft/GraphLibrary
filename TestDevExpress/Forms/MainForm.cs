@@ -219,7 +219,7 @@ namespace TestDevExpress.Forms
                 var funcRibbonForm = _RibbonPages[0].Groups[1].Items.FirstOrDefault(i => i.ItemId == "RibbonForm");
                 if (funcRibbonForm?.RibbonItem != null && funcRibbonForm.RibbonItem.IsAlive && funcRibbonForm.RibbonItem.Target != null)
                 {
-                    funcRibbonForm.RibbonItem.Target.ImageOptions.SvgImage = item.CreateSvgImage();
+                    funcRibbonForm.RibbonItem.Target.ImageOptions.SvgImage = item.CreateSvgImage(DxComponent.GetImagePalette(DxComponent.IsDarkTheme, false));
                     if (caption != null) funcRibbonForm.RibbonItem.Target.Caption = caption;
                 }
             }
@@ -408,6 +408,7 @@ namespace TestDevExpress.Forms
             group.Items.Add(CreateRibbonFunction("DataForm1", "Data Form1", "svgimages/spreadsheet/showtabularformpivottable.svg", "Otevře okno pro testování DataFormu", _TestDataForm1ModalButton_Click));
             group.Items.Add(CreateRibbonFunction("DataForm2", "Data Form2", "svgimages/spreadsheet/showtabularformpivottable.svg", "Otevře okno pro testování DataFormu 2", _TestDataForm2ModalButton_Click));
             group.Items.Add(CreateRibbonFunction("RibbonForm", "Ribbon Form", "svgimages/reports/distributerowsevenly.svg", "Otevře okno pro testování Ribbonu", _TestDxRibbonFormModalButton_Click));
+            group.Items.Add(CreateRibbonFunction("DisableSvgForm", "Disabled SVG", "svgimages/icon%20builder/actions_calendar.svg", "Otevře okno s Ribbonem s Enabled/Disabled tlačítky", _TestDxDisabledSvgRibbonFormModalButton_Click));
 
             // group.Items.Add(CreateRibbonFunction("DevExpressRibbon", "Native Ribbon", "svgimages/reports/gaugestylelinearhorizontal.svg", "Otevře okno s nativním Ribbonem", _TestDxDevExpressRibbon_Click, null, true));
             // // group.Items.Add(CreateRibbonFunction("RibbonFormClasses", "Classes Ribbon", "svgimages/reports/gaugestylelinearhorizontal.svg", "Otevře okno s ASOL Ribbonem, vytvořeným jen s použitím tříd DxRibbon", _TestDxRibbonFormClassesModalButton_Click));
@@ -651,6 +652,14 @@ namespace TestDevExpress.Forms
         private void _TestDxRibbonFormModalButton_Click(IMenuItem menuItem)
         {
             using (var ribbonForm = new RibbonForm())
+            {
+                ribbonForm.WindowState = FormWindowState.Maximized;
+                ribbonForm.ShowDialog();
+            }
+        }
+        private void _TestDxDisabledSvgRibbonFormModalButton_Click(IMenuItem menuItem)
+        {
+            using (var ribbonForm = new TestSvgForm())
             {
                 ribbonForm.WindowState = FormWindowState.Maximized;
                 ribbonForm.ShowDialog();

@@ -47,36 +47,29 @@ namespace Noris.Clients.Win.Components.AsolDX
         public static Image CreateBitmapImage(string imageName,
             ResourceImageSizeType? sizeType = null, Size? optimalSvgSize = null,
             string caption = null, bool exactName = false, bool? isPreferredVectorImage = null)
-        { return Instance._CreateBitmapImage(imageName, exactName, sizeType, optimalSvgSize, caption, isPreferredVectorImage); }
+        { return Instance._CreateBitmapImage(new ResourceArgs(imageName, exactName, sizeType, optimalSvgSize, null, caption, isPreferredVectorImage)); }
         /// <summary>
         /// Vygeneruje a vrátí nový obrázek daného jména.
         /// </summary>
-        /// <param name="imageName"></param>
-        /// <param name="exactName"></param>
-        /// <param name="sizeType"></param>
-        /// <param name="optimalSvgSize"></param>
-        /// <param name="caption"></param>
-        /// <param name="isPreferredVectorImage">Preference vektorů: true = vektory; false = bitmapy, null = podle konfigurace</param>
+        /// <param name="args"></param>
         /// <returns></returns>
-        private Image _CreateBitmapImage(string imageName, bool exactName,
-            ResourceImageSizeType? sizeType, Size? optimalSvgSize,
-            string caption, bool? isPreferredVectorImage)
+        private Image _CreateBitmapImage(ResourceArgs args)
         {
-            bool hasName = !String.IsNullOrEmpty(imageName);
-            bool hasCaption = !String.IsNullOrEmpty(caption);
+            bool hasName = args.HasImageName;
+            bool hasCaption = args.HasCaption;
 
-            if (hasName && DxSvgImage.TryGetXmlContent(imageName, sizeType, out var dxSvgImage))
-                return _ConvertVectorToImage(dxSvgImage, sizeType, optimalSvgSize);
-            if (hasName && _TryGetContentTypeImageArray(imageName, out var _, out var svgImageArray))
-                return _CreateBitmapImageArray(svgImageArray, sizeType, optimalSvgSize);
+            if (hasName && DxSvgImage.TryGetXmlContent(args.ImageName, args.SizeType, out var dxSvgImage))
+                return _ConvertVectorToImage(dxSvgImage, args);
+            if (hasName && _TryGetContentTypeImageArray(args.ImageName, out var _, out var svgImageArray))
+                return _CreateBitmapImageArray(svgImageArray, args);
 
-            if (hasName && _TryGetApplicationResources(imageName, exactName, ResourceContentType.StandardImage, out var validItems))
-                return _CreateBitmapImageApplication(validItems, sizeType, optimalSvgSize);
+            if (hasName && _TryGetApplicationResources(args, ResourceContentType.StandardImage, out var validItems))
+                return _CreateBitmapImageApplication(validItems, args);
 
-            if (hasName && _ExistsDevExpressResource(imageName))
-                return _CreateBitmapImageDevExpress(imageName, sizeType, optimalSvgSize);
+            if (hasName && _ExistsDevExpressResource(args.ImageName))
+                return _CreateBitmapImageDevExpress(args);
             if (hasCaption)
-                return CreateCaptionImage(caption, sizeType, null);
+                return _CreateCaptionImage(args);
 
             return null;
         }
@@ -216,9 +209,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="exactName"></param>
         /// <param name="sizeType"></param>
         /// <param name="caption"></param>
+        /// <param name="disabled">Převést barvy na Disabled variantu (pokud má hodnotu true)</param>
         /// <returns></returns>
-        public static SvgImage CreateVectorImage(string imageName, bool exactName = false, ResourceImageSizeType? sizeType = null, string caption = null)
-        { return Instance._CreateVectorImage(imageName, exactName, sizeType, caption); }
+        public static SvgImage CreateVectorImage(string imageName, bool exactName = false, ResourceImageSizeType? sizeType = null, string caption = null, bool? disabled = null)
+        { return Instance._CreateVectorImage(new ResourceArgs(imageName, exactName, sizeType, caption: caption, disabled: disabled)); }
         /// <summary>
         /// Najde a rychle vrátí <see cref="SvgImage"/> pro dané jméno, hledá v DevExpress i Aplikačních zdrojích
         /// </summary>
@@ -226,66 +220,61 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="exactName"></param>
         /// <param name="sizeType"></param>
         /// <param name="caption"></param>
+        /// <param name="disabled">Převést barvy na Disabled variantu (pokud má hodnotu true)</param>
         /// <returns></returns>
-        public static SvgImage GetVectorImage(string imageName, bool exactName = false, ResourceImageSizeType? sizeType = null, string caption = null)
-        { return Instance._GetVectorImage(imageName, exactName, sizeType, caption); }
+        public static SvgImage GetVectorImage(string imageName, bool exactName = false, ResourceImageSizeType? sizeType = null, string caption = null, bool? disabled = null)
+        { return Instance._GetVectorImage(new ResourceArgs(imageName, exactName, sizeType, caption: caption, disabled: disabled)); }
         /// <summary>
         /// Najde a vrátí <see cref="SvgImage"/> pro dané jméno, hledá v DevExpress i Aplikačních zdrojích
         /// </summary>
-        /// <param name="imageName"></param>
-        /// <param name="exactName"></param>
-        /// <param name="sizeType"></param>
-        /// <param name="caption"></param>
+        /// <param name="args"></param>
         /// <returns></returns>
-        private SvgImage _CreateVectorImage(string imageName, bool exactName, ResourceImageSizeType? sizeType, string caption = null)
+        private SvgImage _CreateVectorImage(ResourceArgs args)
         {
-            return _GetVectorImage(imageName, exactName, sizeType, caption);
+            return _GetVectorImage(args);
         }
         /// <summary>
         /// Najde a rychle vrátí <see cref="SvgImage"/> pro dané jméno, hledá v DevExpress i Aplikačních zdrojích
         /// </summary>
-        /// <param name="imageName"></param>
-        /// <param name="exactName"></param>
-        /// <param name="sizeType"></param>
-        /// <param name="caption"></param>
+        /// <param name="args"></param>
         /// <returns></returns>
-        private SvgImage _GetVectorImage(string imageName, bool exactName, ResourceImageSizeType? sizeType, string caption)
+        private SvgImage _GetVectorImage(ResourceArgs args)
         {
-            if (String.IsNullOrEmpty(imageName)) return null;
+            if (!args.HasImageName) return null;
 
-            bool hasName = !String.IsNullOrEmpty(imageName);
-            bool hasCaption = !String.IsNullOrEmpty(caption);
+            bool hasName = args.HasImageName;
+            bool hasCaption = args.HasCaption;
 
-            if (hasName && DxSvgImage.TryGetXmlContent(imageName, sizeType, out var dxSvgImage))
+            if (hasName && DxSvgImage.TryGetXmlContent(args.ImageName, args.SizeType, out var dxSvgImage))
                 return dxSvgImage;
-            if (hasName && SvgImageSupport.TryGetSvgImageArray(imageName, out var svgImageArray))
-                return _GetVectorImageArray(svgImageArray, sizeType);
-            if (hasName && _TryGetApplicationResources(imageName, exactName, ResourceContentType.Vector, out var validItems))
-                return _GetVectorImageApplication(validItems, sizeType);
-            if (hasName && _ExistsDevExpressResource(imageName) && _IsImageNameSvg(imageName))
-                return _GetVectorImageDevExpress(imageName);
+            if (hasName && SvgImageSupport.TryGetSvgImageArray(args.ImageName, out var svgImageArray))
+                return _GetVectorImageArray(svgImageArray, args);
+            if (hasName && _TryGetApplicationResources(args, ResourceContentType.Vector, out var validItems))
+                return _GetVectorImageApplication(validItems, args);
+            if (hasName && _ExistsDevExpressResource(args.ImageName) && _IsImageNameSvg(args.ImageName))
+                return _GetVectorImageDevExpress(args);
             if (hasCaption)
-                return CreateCaptionVector(caption, sizeType);
+                return _CreateCaptionVector(args);
             return null;
         }
         /// <summary>
         /// Dodané pole vektorových images vyrenderuje do Image a ty zabalí a vrátí do jedné Icon
         /// </summary>
         /// <param name="vectorItems"></param>
-        /// <param name="sizeType"></param>
+        /// <param name="args"></param>
         /// <returns></returns>
-        private Icon _ConvertApplicationVectorsToIcon(DxApplicationResourceLibrary.ResourceItem[] vectorItems, ResourceImageSizeType? sizeType)
+        private Icon _ConvertApplicationVectorsToIcon(DxApplicationResourceLibrary.ResourceItem[] vectorItems, ResourceArgs args)
         {
             List<Tuple<Size, Image>> imageInfos = new List<Tuple<Size, Image>>();
-            if (sizeType.HasValue)
+            if (args.SizeType.HasValue)
             {
-                if (DxApplicationResourceLibrary.ResourcePack.TryGetOptimalSize(vectorItems, sizeType, out var vectorItem))
-                    imageInfos.Add(new Tuple<Size, Image>(GetDefaultImageSize(vectorItem.SizeType), _ConvertApplicationVectorToImage(vectorItem, sizeType)));
+                if (DxApplicationResourceLibrary.ResourcePack.TryGetOptimalSize(vectorItems, args.SizeType, out var vectorItem))
+                    imageInfos.Add(new Tuple<Size, Image>(GetDefaultImageSize(vectorItem.SizeType), _ConvertApplicationVectorToImage(vectorItem, args)));
             }
             if (imageInfos.Count == 0)
             {
                 foreach (var vectorItem in vectorItems)
-                    imageInfos.Add(new Tuple<Size, Image>(GetDefaultImageSize(vectorItem.SizeType), _ConvertApplicationVectorToImage(vectorItem, vectorItem.SizeType)));
+                    imageInfos.Add(new Tuple<Size, Image>(GetDefaultImageSize(vectorItem.SizeType), _ConvertApplicationVectorToImage(vectorItem, args)));
             }
             var icon = _ConvertBitmapsToIcon(imageInfos);
             _DisposeImages(imageInfos);
@@ -295,13 +284,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Vyrenderuje SVG obrázek do bitmapy
         /// </summary>
         /// <param name="svgImage"></param>
-        /// <param name="sizeType"></param>
-        /// <param name="optimalSvgSize"></param>
+        /// <param name="args"></param>
         /// <returns></returns>
-        private Image _ConvertVectorToImage(SvgImage svgImage, ResourceImageSizeType? sizeType, Size? optimalSvgSize)
+        private Image _ConvertVectorToImage(SvgImage svgImage, ResourceArgs args)
         {
             if (svgImage is null) return null;
-            var imageSize = optimalSvgSize ?? GetDefaultImageSize(sizeType);
+            var imageSize = args.OptimalSvgSize ?? GetDefaultImageSize(args.SizeType);
             var svgPalette = DxComponent.GetSvgPalette();
             if (SystemAdapter.CanRenderSvgImages)
                 return SystemAdapter.RenderSvgImage(svgImage, imageSize, svgPalette);
@@ -311,13 +299,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Vyrenderuje SVG obrázek do ikony
         /// </summary>
         /// <param name="svgImage"></param>
-        /// <param name="sizeType"></param>
-        /// <param name="optimalSvgSize"></param>
+        /// <param name="args"></param>
         /// <returns></returns>
-        private Icon _ConvertVectorToIcon(SvgImage svgImage, ResourceImageSizeType? sizeType, Size? optimalSvgSize)
+        private Icon _ConvertVectorToIcon(SvgImage svgImage, ResourceArgs args)
         {
             Icon icon = null;
-            using (var image = _ConvertVectorToImage(svgImage, sizeType, optimalSvgSize))
+            using (var image = _ConvertVectorToImage(svgImage, args))
             {
                 List<Tuple<Size, Image>> imageInfos = new List<Tuple<Size, Image>>();
                 imageInfos.Add(new Tuple<Size, Image>(image.Size, image));
@@ -351,44 +338,42 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="sizeType"></param>
         /// <returns></returns>
         public static Icon CreateIconImage(string imageName, bool exactName = false, ResourceImageSizeType? sizeType = null)
-        { return Instance._CreateIconImage(imageName, exactName, sizeType); }
+        { return Instance._CreateIconImage(new ResourceArgs(imageName, exactName, sizeType)); }
         /// <summary>
         /// Metoda najde a vrátí ikonu pro dané jméno (a velikost) zdroje.
         /// </summary>
-        /// <param name="imageName"></param>
-        /// <param name="exactName"></param>
-        /// <param name="sizeType"></param>
+        /// <param name="args"></param>
         /// <returns></returns>
-        private Icon _CreateIconImage(string imageName, bool exactName, ResourceImageSizeType? sizeType)
+        private Icon _CreateIconImage(ResourceArgs args)
         {
-            if (String.IsNullOrEmpty(imageName)) return null;
+            if (!args.HasImageName) return null;
 
             // Může to být explicitní SVG XML content:
-            if (DxSvgImage.TryGetXmlContent(imageName, sizeType, out var dxSvgImage))
-                return _ConvertVectorToIcon(dxSvgImage, sizeType, null);
+            if (DxSvgImage.TryGetXmlContent(args.ImageName, args.SizeType, out var dxSvgImage))
+                return _ConvertVectorToIcon(dxSvgImage, args);
 
             // Může to být pole SVG images:
-            if (_TryGetContentTypeImageArray(imageName, out var _, out var svgImageArray))
-                return _ConvertImageArrayToIcon(svgImageArray, sizeType);
+            if (_TryGetContentTypeImageArray(args.ImageName, out var _, out var svgImageArray))
+                return _ConvertImageArrayToIcon(svgImageArray, args);
 
             // Pro dané jméno zdroje máme k dispozici resource s typem Icon:
             DxApplicationResourceLibrary.ResourceItem[] validItems;
-            if (_TryGetApplicationResources(imageName, exactName, ResourceContentType.Icon, out validItems))
+            if (_TryGetApplicationResources(args, ResourceContentType.Icon, out validItems))
             {   // Tady můžeme vrátit jen jednu ikonu, podle požadované velikosti:
                 DxApplicationResourceLibrary.ResourceItem iconItem =
-                    ((validItems.Length > 1 && DxApplicationResourceLibrary.ResourcePack.TryGetOptimalSize(validItems, sizeType, out var item)) ?
+                    ((validItems.Length > 1 && DxApplicationResourceLibrary.ResourcePack.TryGetOptimalSize(validItems, args.SizeType, out var item)) ?
                     item : validItems[0]);
                 return iconItem?.CreateIconImage();
             }
 
             // Najdeme v aplikačních zdrojích Vektor nebo Bitmapu (podle preferencí)? Pokud ano, vyřešíme ji:
-            if (_TryGetApplicationResources(imageName, exactName, ResourceContentType.BasicImage, out validItems, out var validType))
-                return _ConvertApplicationResourceToIcon(validItems, validType, sizeType);
+            if (_TryGetApplicationResources(args, ResourceContentType.BasicImage, out validItems, out var validType))
+                return _ConvertApplicationResourceToIcon(validItems, validType, args);
 
             // Může to být Image z DevExpress?
-            if (_ExistsDevExpressResource(imageName))
+            if (_ExistsDevExpressResource(args.ImageName))
             {
-                using (var bitmap = _CreateBitmapImageDevExpress(imageName, sizeType, null))
+                using (var bitmap = _CreateBitmapImageDevExpress(args))
                     return _ConvertBitmapToIcon(bitmap);
             }
 
@@ -399,33 +384,33 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="validItems"></param>
         /// <param name="contentType"></param>
-        /// <param name="sizeType"></param>
+        /// <param name="args"></param>
         /// <returns></returns>
-        private Icon _ConvertApplicationResourceToIcon(DxApplicationResourceLibrary.ResourceItem[] validItems, ResourceContentType contentType, ResourceImageSizeType? sizeType)
+        private Icon _ConvertApplicationResourceToIcon(DxApplicationResourceLibrary.ResourceItem[] validItems, ResourceContentType contentType, ResourceArgs args)
         {
             switch (contentType)
             {
                 case ResourceContentType.Bitmap:
-                    return _ConvertApplicationBitmapsToIcon(validItems, sizeType);
+                    return _ConvertApplicationBitmapsToIcon(validItems, args);
                 case ResourceContentType.Vector:
-                    return _ConvertApplicationVectorsToIcon(validItems, sizeType);
+                    return _ConvertApplicationVectorsToIcon(validItems, args);
             }
             return null;
         }
         /// <summary>
         /// Dané pole Resource převede na bitmapy a ty vloží do ikony, kterou vrátí.
-        /// Pokud je daná velikost <paramref name="sizeType"/>, pak výsledná ikona bude obsahovat jen jednu ikonu (bitmapu) v požadované velikosti.
-        /// Pokud je <paramref name="sizeType"/> = null, pak výsledná ikona bude obsahovat všechny dostupné bitmapy.
+        /// Pokud je daná velikost <paramref name="args"/>, pak výsledná ikona bude obsahovat jen jednu ikonu (bitmapu) v požadované velikosti.
+        /// Pokud je <paramref name="args"/> = null, pak výsledná ikona bude obsahovat všechny dostupné bitmapy.
         /// </summary>
         /// <param name="bitmapItems"></param>
-        /// <param name="sizeType"></param>
+        /// <param name="args"></param>
         /// <returns></returns>
-        private Icon _ConvertApplicationBitmapsToIcon(DxApplicationResourceLibrary.ResourceItem[] bitmapItems, ResourceImageSizeType? sizeType)
+        private Icon _ConvertApplicationBitmapsToIcon(DxApplicationResourceLibrary.ResourceItem[] bitmapItems, ResourceArgs args)
         {
             List<Tuple<Size, Image>> imageInfos = new List<Tuple<Size, Image>>();
-            if (sizeType.HasValue)
+            if (args.SizeType.HasValue)
             {
-                if (DxApplicationResourceLibrary.ResourcePack.TryGetOptimalSize(bitmapItems, sizeType, out var bitmapItem))
+                if (DxApplicationResourceLibrary.ResourcePack.TryGetOptimalSize(bitmapItems, args.SizeType, out var bitmapItem))
                     imageInfos.Add(new Tuple<Size, Image>(GetDefaultImageSize(bitmapItem.SizeType), bitmapItem.CreateBmpImage()));
             }
             if (imageInfos.Count == 0)
@@ -511,22 +496,22 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Z dodaných zdrojů najde a vybere ikonu vhodné velikosti, konvertuje ji na Bitmapu a vrátí ji.
         /// </summary>
         /// <param name="resourceItems"></param>
-        /// <param name="sizeType"></param>
+        /// <param name="args"></param>
         /// <returns></returns>
-        private Image _ConvertIconToBitmap(DxApplicationResourceLibrary.ResourceItem[] resourceItems, ResourceImageSizeType? sizeType)
+        private Image _ConvertIconToBitmap(DxApplicationResourceLibrary.ResourceItem[] resourceItems, ResourceArgs args)
         {
             Image image = null;
-            if (DxApplicationResourceLibrary.ResourcePack.TryGetOptimalSize(resourceItems, sizeType, out var resourceItem) && resourceItem.IsIcon)
-                image = _ConvertIconToBitmap(resourceItem, sizeType);
+            if (DxApplicationResourceLibrary.ResourcePack.TryGetOptimalSize(resourceItems, args.SizeType, out var resourceItem) && resourceItem.IsIcon)
+                image = _ConvertIconToBitmap(resourceItem, args);
             return image;
         }
         /// <summary>
         /// Z dodaného zdroje vezme ikonu, konvertuje ji na Bitmapu a vrátí ji.
         /// </summary>
         /// <param name="resourceItem"></param>
-        /// <param name="sizeType"></param>
+        /// <param name="args"></param>
         /// <returns></returns>
-        private Image _ConvertIconToBitmap(DxApplicationResourceLibrary.ResourceItem resourceItem, ResourceImageSizeType? sizeType)
+        private Image _ConvertIconToBitmap(DxApplicationResourceLibrary.ResourceItem resourceItem, ResourceArgs args)
         {
             Image image = null;
             if (resourceItem != null && resourceItem.IsIcon)
@@ -559,7 +544,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="isPreferredVectorImage">Preferovat true = vektory / false = bitmapy / null = podle systému</param>
         /// <returns></returns>
         public static bool ContainsApplicationResource(string imageName, bool exactName = false, ResourceContentType? contentTypes = null, ResourceImageSizeType? sizeType = null, bool? isPreferredVectorImage = null)
-        { return Instance._TryGetApplicationResource(imageName, exactName, contentTypes, sizeType, isPreferredVectorImage, out var _); }
+        { return Instance._TryGetApplicationResource(new ResourceArgs(imageName, exactName, sizeType, isPreferredVectorImage: isPreferredVectorImage), contentTypes, out var _); }
         /// <summary>
         /// Metoda se pokusí najít zdroj v Aplikačních zdrojích, pro dané jméno.
         /// Prohledává obrázky vektorové a bitmapové, může preferovat vektory - pokud <paramref name="isPreferredVectorImage"/> je true.
@@ -572,22 +557,19 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="exactName">Hledat přesně daný název?</param>
         /// <returns></returns>
         public static bool TryGetApplicationResource(string imageName, out DxApplicationResourceLibrary.ResourceItem resourceItem, bool exactName = false, ResourceContentType? contentTypes = null, ResourceImageSizeType? sizeType = null, bool? isPreferredVectorImage = null)
-        { return Instance._TryGetApplicationResource(imageName, exactName, contentTypes, sizeType, isPreferredVectorImage, out resourceItem); }
+        { return Instance._TryGetApplicationResource(new ResourceArgs(imageName, exactName, sizeType, isPreferredVectorImage: isPreferredVectorImage), contentTypes, out resourceItem); }
         /// <summary>
         /// Zkusí najít jeden nejvhodnější zdroj
         /// </summary>
-        /// <param name="imageName"></param>
-        /// <param name="exactName"></param>
+        /// <param name="args"></param>
         /// <param name="contentTypes">Druhy obsahu, bez zadání = Bitmapy a vektory, dle preference</param>
-        /// <param name="sizeType"></param>
-        /// <param name="isPreferredVectorImage"></param>
         /// <param name="resourceItem"></param>
         /// <returns></returns>
-        private bool _TryGetApplicationResource(string imageName, bool exactName, ResourceContentType? contentTypes, ResourceImageSizeType? sizeType, bool? isPreferredVectorImage, out DxApplicationResourceLibrary.ResourceItem resourceItem)
+        private bool _TryGetApplicationResource(ResourceArgs args, ResourceContentType? contentTypes, out DxApplicationResourceLibrary.ResourceItem resourceItem)
         {
             resourceItem = null;
-            if (!_TryGetApplicationResources(imageName, exactName, contentTypes ?? ResourceContentType.BasicImage, isPreferredVectorImage, out var validItems)) return false;
-            if (!DxApplicationResourceLibrary.ResourcePack.TryGetOptimalSize(validItems, sizeType, out resourceItem)) return false;
+            if (!_TryGetApplicationResources(args, contentTypes ?? ResourceContentType.BasicImage, out var validItems)) return false;
+            if (!DxApplicationResourceLibrary.ResourcePack.TryGetOptimalSize(validItems, args.SizeType, out resourceItem)) return false;
             return true;
         }
         /// <summary>
@@ -599,7 +581,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="resourceItems">Výstup - nalezené zdroje</param>
         /// <returns></returns>
         public static bool TryGetApplicationResources(string imageName, bool exactName, ResourceContentType validTypes, out DxApplicationResourceLibrary.ResourceItem[] resourceItems)
-        { return Instance._TryGetApplicationResources(imageName, exactName, validTypes, out resourceItems); }
+        { return Instance._TryGetApplicationResources(new ResourceArgs(imageName, exactName), validTypes, out resourceItems); }
         #endregion
         #region ApplyImage - do cílového objektu vepíše obrázek podle toho, jak je zadán a kam má být vepsán
         /// <summary>
@@ -613,42 +595,37 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="smallButton"></param>
         /// <param name="caption"></param>
         /// <param name="exactName"></param>
-        public static void ApplyImage(ImageOptions imageOptions, string imageName = null, Image image = null, ResourceImageSizeType? sizeType = null, Size? imageSize = null, bool smallButton = false, string caption = null, bool exactName = false)
-        { Instance._ApplyImage(imageOptions, imageName, exactName, image, sizeType, imageSize, smallButton, caption); }
+        /// <param name="disabled">Převést barvy na Disabled variantu (pokud má hodnotu true)</param>
+        public static void ApplyImage(ImageOptions imageOptions, string imageName = null, Image image = null, ResourceImageSizeType? sizeType = null, Size? imageSize = null, bool smallButton = false, string caption = null, bool exactName = false, bool? disabled = null)
+        { Instance._ApplyImage(imageOptions, new ResourceArgs(imageName, exactName, sizeType, imageSize, null, caption, null, disabled, image, smallButton)); }
         /// <summary>
         /// ApplyImage - do cílového objektu vepíše obrázek podle toho, jak je zadán a kam má být vepsán
         /// </summary>
         /// <param name="imageOptions"></param>
-        /// <param name="imageName"></param>
-        /// <param name="exactName"></param>
-        /// <param name="image"></param>
-        /// <param name="sizeType"></param>
-        /// <param name="imageSize"></param>
-        /// <param name="smallButton"></param>
-        /// <param name="caption"></param>
-        private void _ApplyImage(ImageOptions imageOptions, string imageName, bool exactName, Image image, ResourceImageSizeType? sizeType, Size? imageSize, bool smallButton, string caption = null)
+        /// <param name="args"></param>
+        private void _ApplyImage(ImageOptions imageOptions, ResourceArgs args)
         {
-            bool hasImage = (image != null);
-            bool hasName = !String.IsNullOrEmpty(imageName);
-            bool hasCaption = !String.IsNullOrEmpty(caption);
+            bool hasImage = args.HasImage;
+            bool hasName = args.HasImageName;
+            bool hasCaption = args.HasCaption;
             try
             {
                 if (hasImage)
                 {
-                    _ApplyImageRaw(imageOptions, image);
+                    _ApplyImageRaw(imageOptions, args);
                 }
                 else if (hasName || hasCaption)
                 {
-                    if (hasName && DxSvgImage.TryGetXmlContent(imageName, sizeType, out var dxSvgImage))
-                        _ApplyDxSvgImage(imageOptions, dxSvgImage);
-                    else if (hasName && SvgImageSupport.TryGetSvgImageArray(imageName, out var svgImageArray))
-                        _ApplyImageArray(imageOptions, svgImageArray, sizeType, imageSize);
-                    else if (hasName && _TryGetApplicationResources(imageName, exactName, _ValidImageTypes, out var validItems, out ResourceContentType contentType))
-                        _ApplyImageApplication(imageOptions, validItems, contentType, sizeType, imageSize);
-                    else if (hasName && _ExistsDevExpressResource(imageName))
-                        _ApplyImageDevExpress(imageOptions, imageName, sizeType, imageSize);
+                    if (hasName && DxSvgImage.TryGetXmlContent(args.ImageName, args.SizeType, out var dxSvgImage))
+                        _ApplyDxSvgImage(imageOptions, dxSvgImage, args);
+                    else if (hasName && SvgImageSupport.TryGetSvgImageArray(args.ImageName, out var svgImageArray))
+                        _ApplyImageArray(imageOptions, svgImageArray, args);
+                    else if (hasName && _TryGetApplicationResources(args, _ValidImageTypes, out var validItems, out ResourceContentType contentType))
+                        _ApplyImageApplication(imageOptions, validItems, contentType, args);
+                    else if (hasName && _ExistsDevExpressResource(args.ImageName))
+                        _ApplyImageDevExpress(imageOptions, args);
                     else if (hasCaption)
-                        _ApplyImageForCaption(imageOptions, caption, sizeType, imageSize);
+                        _ApplyImageForCaption(imageOptions, args);
                 }
                 else
                 {
@@ -659,28 +636,28 @@ namespace Noris.Clients.Win.Components.AsolDX
             catch { /* Někdy může dojít k chybě uvnitř DevExpress. I jejich vývojáři jsou jen lidé... */ }
 
             // Malá služba nakonec:
-            if (smallButton && imageOptions is SimpleButtonImageOptions buttonImageOptions)
+            if (args.SmallButton && imageOptions is SimpleButtonImageOptions buttonImageOptions)
                 buttonImageOptions.Location = DevExpress.XtraEditors.ImageLocation.MiddleCenter;
         }
         /// <summary>
         /// Aplikuje dodanou bitmapu do <see cref="ImageOptions"/>
         /// </summary>
         /// <param name="imageOptions"></param>
-        /// <param name="image"></param>
-        private void _ApplyImageRaw(ImageOptions imageOptions, Image image)
+        /// <param name="args"></param>
+        private void _ApplyImageRaw(ImageOptions imageOptions, ResourceArgs args)
         {
             if (imageOptions is DevExpress.XtraBars.BarItemImageOptions barItemImageOptions)
             {
-                barItemImageOptions.Image = image;
-                barItemImageOptions.LargeImage = image;
+                barItemImageOptions.Image = args.Image;
+                barItemImageOptions.LargeImage = args.Image;
             }
             else if (imageOptions is DevExpress.Utils.ImageCollectionImageOptions imageCollectionImageOptions)
             {
-                imageCollectionImageOptions.Image = image;
+                imageCollectionImageOptions.Image = args.Image;
             }
             else
             {
-                imageOptions.Image = image;
+                imageOptions.Image = args.Image;
             }
         }
         /// <summary>
@@ -688,7 +665,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="imageOptions"></param>
         /// <param name="dxSvgImage"></param>
-        private void _ApplyDxSvgImage(ImageOptions imageOptions, DxSvgImage dxSvgImage)
+        /// <param name="args"></param>
+        private void _ApplyDxSvgImage(ImageOptions imageOptions, DxSvgImage dxSvgImage, ResourceArgs args)
         {
             if (imageOptions == null || dxSvgImage == null) return;
             imageOptions.Reset();
@@ -700,9 +678,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="imageOptions"></param>
         /// <param name="svgImageArray"></param>
-        /// <param name="sizeType"></param>
-        /// <param name="imageSize"></param>
-        private void _ApplyImageArray(ImageOptions imageOptions, SvgImageArrayInfo svgImageArray, ResourceImageSizeType? sizeType, Size? imageSize)
+        /// <param name="args"></param>
+        private void _ApplyImageArray(ImageOptions imageOptions, SvgImageArrayInfo svgImageArray, ResourceArgs args)
         {
             if (svgImageArray == null) return;
 
@@ -714,8 +691,8 @@ namespace Noris.Clients.Win.Components.AsolDX
                 bool hasIndexes = false;
                 if (barOptions.Images is SvgImageCollection)
                 {   // Máme připravenou podporu pro vektorový index, můžeme tam dát dvě velikosti:
-                    int smallIndex = _GetVectorImageIndex(svgImageArray, ResourceImageSizeType.Small);
-                    int largeIndex = _GetVectorImageIndex(svgImageArray, ResourceImageSizeType.Large);
+                    int smallIndex = _GetVectorImageIndex(svgImageArray, args.CloneForSize(ResourceImageSizeType.Small));
+                    int largeIndex = _GetVectorImageIndex(svgImageArray, args.CloneForSize(ResourceImageSizeType.Large));
                     if (smallIndex >= 0 && largeIndex >= 0)
                     {   // Máme indexy pro obě velikosti?
                         barOptions.SvgImage = null;
@@ -727,8 +704,8 @@ namespace Noris.Clients.Win.Components.AsolDX
                 }
                 if (!hasIndexes)
                 {
-                    barOptions.SvgImage = _GetVectorImageArray(svgImageArray, sizeType);
-                    barOptions.SvgImageSize = _GetVectorSvgImageSize(sizeType, imageSize);
+                    barOptions.SvgImage = _GetVectorImageArray(svgImageArray, args);
+                    _ApplySvgImageSize(barOptions, args);
                 }
             }
             else if (imageOptions is DevExpress.Utils.ImageCollectionImageOptions iciOptions)
@@ -738,19 +715,19 @@ namespace Noris.Clients.Win.Components.AsolDX
                 {   // Máme připravenou podporu pro vektorový index, můžeme tam dát index prvku v požadované velikosti (defalt = velká):
                     iciOptions.SvgImage = null;
                     iciOptions.SvgImageSize = Size.Empty;
-                    iciOptions.ImageIndex = _GetVectorImageIndex(svgImageArray, sizeType ?? ResourceImageSizeType.Large);
+                    iciOptions.ImageIndex = _GetVectorImageIndex(svgImageArray, args);
                 }
                 else
                 {   // Musíme tam dát přímo SvgImage:
-                    iciOptions.SvgImage = _GetVectorImageArray(svgImageArray, sizeType);
-                    iciOptions.SvgImageSize = _GetVectorSvgImageSize(sizeType, imageSize);
+                    iciOptions.SvgImage = _GetVectorImageArray(svgImageArray, args);
+                    _ApplySvgImageSize(iciOptions, args);
                 }
             }
             else
             {   // Musíme vepsat přímo jeden obrázek:
                 imageOptions.Image = null;
-                imageOptions.SvgImage = _GetVectorImageArray(svgImageArray, sizeType);
-                imageOptions.SvgImageSize = _GetVectorSvgImageSize(sizeType, imageSize);
+                imageOptions.SvgImage = _GetVectorImageArray(svgImageArray, args);
+                _ApplySvgImageSize(imageOptions, args);
             }
             imageOptions.SvgImageColorizationMode = SvgImageColorizationMode.None;
         }
@@ -758,14 +735,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Aplikuje Image typu Vector nebo Bitmap (podle přípony) ze zdroje Aplikační do daného cíle <paramref name="imageOptions"/>.
         /// </summary>
         /// <param name="imageOptions"></param>
-        /// <param name="imageName"></param>
-        /// <param name="exactName"></param>
-        /// <param name="sizeType"></param>
-        /// <param name="imageSize"></param>
-        private void _ApplyImageApplication(ImageOptions imageOptions, string imageName, bool exactName, ResourceImageSizeType? sizeType, Size? imageSize)
+        /// <param name="args"></param>
+        private void _ApplyImageApplication(ImageOptions imageOptions, ResourceArgs args)
         {
-            if (_TryGetApplicationResources(imageName, exactName, ResourceContentType.StandardImage, out var validItems, out ResourceContentType contentType))
-                _ApplyImageApplication(imageOptions, validItems, contentType, sizeType, imageSize);
+            if (_TryGetApplicationResources(args, ResourceContentType.StandardImage, out var validItems, out ResourceContentType contentType))
+                _ApplyImageApplication(imageOptions, validItems, contentType, args);
         }
         /// <summary>
         /// Aplikuje Image typu Vector nebo Bitmap (podle přípony) ze zdroje Aplikační do daného cíle <paramref name="imageOptions"/>.
@@ -773,20 +747,19 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="imageOptions"></param>
         /// <param name="validItems"></param>
         /// <param name="contentType"></param>
-        /// <param name="sizeType"></param>
-        /// <param name="imageSize"></param>
-        private void _ApplyImageApplication(ImageOptions imageOptions, DxApplicationResourceLibrary.ResourceItem[] validItems, ResourceContentType contentType, ResourceImageSizeType? sizeType, Size? imageSize)
+        /// <param name="args"></param>
+        private void _ApplyImageApplication(ImageOptions imageOptions, DxApplicationResourceLibrary.ResourceItem[] validItems, ResourceContentType contentType, ResourceArgs args)
         {
             switch (contentType)
             {
                 case ResourceContentType.Vector:
-                    _ApplyImageApplicationSvg(imageOptions, validItems, sizeType, imageSize);
+                    _ApplyImageApplicationSvg(imageOptions, validItems, args);
                     break;
                 case ResourceContentType.Bitmap:
-                    _ApplyImageApplicationBmp(imageOptions, validItems, sizeType, imageSize);
+                    _ApplyImageApplicationBmp(imageOptions, validItems, args);
                     break;
                 case ResourceContentType.Icon:
-                    _ApplyImageApplicationIco(imageOptions, validItems, sizeType, imageSize);
+                    _ApplyImageApplicationIco(imageOptions, validItems, args);
                     break;
             }
         }
@@ -795,9 +768,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="imageOptions"></param>
         /// <param name="resourceItems"></param>
-        /// <param name="sizeType"></param>
-        /// <param name="imageSize"></param>
-        private void _ApplyImageApplicationSvg(ImageOptions imageOptions, DxApplicationResourceLibrary.ResourceItem[] resourceItems, ResourceImageSizeType? sizeType, Size? imageSize)
+        /// <param name="args"></param>
+        private void _ApplyImageApplicationSvg(ImageOptions imageOptions, DxApplicationResourceLibrary.ResourceItem[] resourceItems, ResourceArgs args)
         {
             if (imageOptions is DevExpress.XtraBars.BarItemImageOptions barOptions)
             {   // Máme prostor pro dvě velikosti obrázku najednou:
@@ -808,8 +780,9 @@ namespace Noris.Clients.Win.Components.AsolDX
                 bool hasIndexes = false;
                 if (barOptions.Images is SvgImageCollection)
                 {   // Máme připravenou podporu pro vektorový index, můžeme tam dát dvě velikosti:
-                    int smallIndex = _GetVectorImageIndex(resourceItems, ResourceImageSizeType.Small);
-                    int largeIndex = _GetVectorImageIndex(resourceItems, ResourceImageSizeType.Large);
+                    //  (Máme pochopitelně za to, že barOptions.Images obsahuje kolekci velikostí Small, a barOptions.LargeImages velikost Large)
+                    int smallIndex = _GetVectorImageIndex(resourceItems, args.CloneForSize(ResourceImageSizeType.Small));
+                    int largeIndex = _GetVectorImageIndex(resourceItems, args.CloneForSize(ResourceImageSizeType.Large));
                     if (smallIndex >= 0 && largeIndex >= 0)
                     {   // Máme indexy pro obě velikosti?
                         if (barOptions.SvgImage != null) barOptions.SvgImage = null;
@@ -817,53 +790,62 @@ namespace Noris.Clients.Win.Components.AsolDX
                         if (barOptions.ImageIndex != smallIndex) barOptions.ImageIndex = smallIndex;
                         if (barOptions.LargeImageIndex != largeIndex) barOptions.LargeImageIndex = largeIndex;
                         hasIndexes = true;
+
+                        if (_NeedDisabledImage(args.Disabled, barOptions.Item))
+                        {
+                            var argsDis = args.CloneForDisabled(true);
+                            barOptions.DisabledImageIndex = _GetVectorImageIndex(resourceItems, argsDis.CloneForSize(ResourceImageSizeType.Small)); ;
+                            barOptions.DisabledLargeImageIndex = _GetVectorImageIndex(resourceItems, argsDis.CloneForSize(ResourceImageSizeType.Large));
+                        }
                     }
                 }
                 if (!hasIndexes)
-                {
-                    barOptions.SvgImage = _GetVectorImageApplication(resourceItems, sizeType);
+                {   // Nemáme-li indexy, vložíme SvgImage přímo (typicky: kolekce obrázků je Bitmapová a my vkládáme Vektor)
+                    barOptions.SvgImage = _GetVectorImageApplication(resourceItems, args);
                     if (barOptions.SvgImage != null)
-                        barOptions.SvgImageSize = _GetVectorSvgImageSize(sizeType, imageSize);
+                        _ApplySvgImageSize(barOptions, args);
                 }
             }
             else if (imageOptions is DevExpress.Utils.ImageCollectionImageOptions iciOptions)
-            {   // Může využívat Index:
-                if (iciOptions.Images is SvgImageCollection)
-                {   // Máme připravenou podporu pro vektorový index, můžeme tam dát index prvku v požadované velikosti (defalt = velká):
+            {   // Můžeme využívat Index:
+                if (iciOptions.Images is SvgImageCollection svgCollection)
+                {   // Máme připravenou podporu pro vektorový index, můžeme tam dát index prvku - ale právě v té velikosti, která je použita v svgCollection,
+                    //  protože právě v té kolekci se bude pro zadaný index hledat reálná ikona!
+                    var sizeType = DxSvgImageCollection.GetSizeType(svgCollection);
+                    var argsSize = args.CloneForSize(sizeType);
                     try
                     {   // Tady dochází k chybě v DevExpress v situaci, kdy provádím Refresh obrázku. Nevím proč...
                         if (iciOptions.SvgImage != null) iciOptions.SvgImage = null;
-                        int imageIndex = _GetVectorImageIndex(resourceItems, sizeType ?? ResourceImageSizeType.Large);
+                        int imageIndex = _GetVectorImageIndex(resourceItems, argsSize);            // Obrázek musím vygenerovat pro tu velikost, kterou obsahuje Collection!
                         if (iciOptions.ImageIndex != imageIndex) iciOptions.ImageIndex = imageIndex;
                     }
                     catch { }
                 }
                 else
                 {   // Musíme tam dát přímo SvgImage:
-                    iciOptions.SvgImage = _GetVectorImageApplication(resourceItems, sizeType);
+                    iciOptions.SvgImage = _GetVectorImageApplication(resourceItems, args);
                     if (iciOptions.SvgImage != null)
-                        iciOptions.SvgImageSize = _GetVectorSvgImageSize(sizeType, imageSize);
+                        _ApplySvgImageSize(iciOptions, args);
                 }
             }
             else
             {   // Musíme vepsat přímo jeden obrázek:
                 imageOptions.Image = null;
-                imageOptions.SvgImage = _GetVectorImageApplication(resourceItems, sizeType);
+                imageOptions.SvgImage = _GetVectorImageApplication(resourceItems, args);
                 if (imageOptions.SvgImage != null)
-                    imageOptions.SvgImageSize = _GetVectorSvgImageSize(sizeType, imageSize);
+                    _ApplySvgImageSize(imageOptions, args);
             }
             imageOptions.SvgImageColorizationMode = SvgImageColorizationMode.None;
         }
         /// <summary>
         /// Vrátí velikost obrázku SvgImage pro <see cref="ImageOptions.SvgImageSize"/>
         /// </summary>
-        /// <param name="sizeType"></param>
-        /// <param name="imageSize"></param>
+        /// <param name="args"></param>
         /// <returns></returns>
-        private Size _GetVectorSvgImageSize(ResourceImageSizeType? sizeType, Size? imageSize)
+        private Size _GetVectorSvgImageSize(ResourceArgs args)
         {
-            if (imageSize.HasValue) return imageSize.Value;
-            if (sizeType.HasValue) return DxComponent.GetDefaultImageSize(sizeType.Value);
+            if (args.ImageSize.HasValue) return args.ImageSize.Value;
+            if (args.SizeType.HasValue) return DxComponent.GetDefaultImageSize(args.SizeType.Value);
             return Size.Empty;
         }
         /// <summary>
@@ -871,10 +853,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="imageOptions"></param>
         /// <param name="resourceItems"></param>
-        /// <param name="sizeType"></param>
-        /// <param name="imageSize"></param>
-        private void _ApplyImageApplicationBmp(ImageOptions imageOptions, DxApplicationResourceLibrary.ResourceItem[] resourceItems, ResourceImageSizeType? sizeType, Size? imageSize)
+        /// <param name="args"></param>
+        private void _ApplyImageApplicationBmp(ImageOptions imageOptions, DxApplicationResourceLibrary.ResourceItem[] resourceItems, ResourceArgs args)
         {
+            // Poznámka k parametru disabled: Zde řeším ikony typu Bitmap, jejich konverzi do Disabled stavu není třeba provádět zde,
+            //   to si pro Bitmapy zajistí grafika DevExpress!
             imageOptions.Reset();
             if (imageOptions is DevExpress.XtraBars.BarItemImageOptions barOptions)
             {   // Máme prostor pro dvě velikosti obrázku najednou:
@@ -885,8 +868,8 @@ namespace Noris.Clients.Win.Components.AsolDX
                 bool hasIndexes = false;
                 if (barOptions.Images is ImageList)
                 {   // Máme připravenou podporu pro bitmapový index, můžeme tam dát dvě velikosti:
-                    int smallIndex = _GetBitmapImageIndex(resourceItems, ResourceImageSizeType.Small);
-                    int largeIndex = _GetBitmapImageIndex(resourceItems, ResourceImageSizeType.Large);
+                    int smallIndex = _GetBitmapImageIndex(resourceItems, args.CloneForSize(ResourceImageSizeType.Small));
+                    int largeIndex = _GetBitmapImageIndex(resourceItems, args.CloneForSize(ResourceImageSizeType.Large));
                     if (smallIndex >= 0 && largeIndex >= 0)
                     {   // Máme indexy pro obě velikosti?
                         if (barOptions.SvgImage != null) barOptions.SvgImage = null;
@@ -898,8 +881,8 @@ namespace Noris.Clients.Win.Components.AsolDX
                 }
                 if (!hasIndexes)
                 {   // Nemám ImageList pro bitmapy (tedy ImageList je zjevně null nebo vektorový), pak do prvku můžu dát jen fyzický obrázek:
-                    barOptions.Image = _GetBitmapImage(resourceItems, ResourceImageSizeType.Small);
-                    barOptions.LargeImage = _GetBitmapImage(resourceItems, ResourceImageSizeType.Large);
+                    barOptions.Image = _GetBitmapImage(resourceItems, args.CloneForSize(ResourceImageSizeType.Small));
+                    barOptions.LargeImage = _GetBitmapImage(resourceItems, args.CloneForSize(ResourceImageSizeType.Large));
                 }
             }
             else if (imageOptions is DevExpress.Utils.ImageCollectionImageOptions iciOptions)
@@ -909,7 +892,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                     try
                     {   // Tady dochází k chybě v DevExpress v situaci, kdy provádím Refresh obrázku. Nevím proč...
                         if (iciOptions.SvgImage != null) iciOptions.SvgImage = null;
-                        int imageIndex = _GetBitmapImageIndex(resourceItems, sizeType ?? ResourceImageSizeType.Large);
+                        int imageIndex = _GetBitmapImageIndex(resourceItems, args);
                         if (iciOptions.ImageIndex != imageIndex)
                             iciOptions.ImageIndex = imageIndex;
                     }
@@ -917,12 +900,12 @@ namespace Noris.Clients.Win.Components.AsolDX
                 }
                 else
                 {   // Nemám ImageList pro bitmapy (tedy ImageList je zjevně null nebo vektorový), pak do prvku můžu dát jen fyzický obrázek:
-                    iciOptions.Image = _GetBitmapImage(resourceItems, sizeType ?? ResourceImageSizeType.Large);
+                    iciOptions.Image = _GetBitmapImage(resourceItems, args);
                 }
             }
             else
             {   // Musíme vepsat přímo jeden obrázek:
-                imageOptions.Image = _GetBitmapImage(resourceItems, sizeType ?? ResourceImageSizeType.Large);
+                imageOptions.Image = _GetBitmapImage(resourceItems, args);
                 imageOptions.SvgImage = null;
             }
             imageOptions.SvgImageColorizationMode = SvgImageColorizationMode.None;
@@ -932,83 +915,69 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="imageOptions"></param>
         /// <param name="resourceItems"></param>
-        /// <param name="sizeType"></param>
-        /// <param name="imageSize"></param>
-        private void _ApplyImageApplicationIco(ImageOptions imageOptions, DxApplicationResourceLibrary.ResourceItem[] resourceItems, ResourceImageSizeType? sizeType, Size? imageSize)
+        /// <param name="args"></param>
+        private void _ApplyImageApplicationIco(ImageOptions imageOptions, DxApplicationResourceLibrary.ResourceItem[] resourceItems, ResourceArgs args)
         {
             imageOptions.SvgImage = null;
-            imageOptions.Image = _ConvertIconToBitmap(resourceItems, sizeType);
+            imageOptions.Image = _ConvertIconToBitmap(resourceItems, args);
         }
         /// <summary>
         /// Aplikuje Image typu Vector nebo Bitmap (podle přípony) ze zdroje DevExpress do daného cíle <paramref name="imageOptions"/>.
         /// </summary>
         /// <param name="imageOptions"></param>
-        /// <param name="imageName"></param>
-        /// <param name="sizeType"></param>
-        /// <param name="imageSize"></param>
-        /// <param name="extension"></param>
-        private void _ApplyImageDevExpress(ImageOptions imageOptions, string imageName, ResourceImageSizeType? sizeType, Size? imageSize, string extension = null)
+        /// <param name="args"></param>
+        private void _ApplyImageDevExpress(ImageOptions imageOptions, ResourceArgs args)
         {
-            if (extension == null) extension = _GetDevExpressResourceExtension(imageName);
+            string extension = _GetDevExpressResourceExtension(args.ImageName);
             if (extension != null)
             {
                 if (extension == "svg")
-                    _ApplyImageDevExpressSvg(imageOptions, imageName, sizeType, imageSize);
+                    _ApplyImageDevExpressSvg(imageOptions, args);
                 else
-                    _ApplyImageDevExpressBmp(imageOptions, imageName, sizeType, imageSize);
+                    _ApplyImageDevExpressBmp(imageOptions, args);
             }
         }
         /// <summary>
         /// Aplikuje Image typu Vector ze zdroje DevExpress do daného cíle <paramref name="imageOptions"/>.
         /// </summary>
         /// <param name="imageOptions"></param>
-        /// <param name="imageName"></param>
-        /// <param name="sizeType"></param>
-        /// <param name="imageSize"></param>
-        private void _ApplyImageDevExpressSvg(ImageOptions imageOptions, string imageName, ResourceImageSizeType? sizeType, Size? imageSize)
+        /// <param name="args"></param>
+        private void _ApplyImageDevExpressSvg(ImageOptions imageOptions, ResourceArgs args)
         {
             imageOptions.Image = null;
-            imageOptions.SvgImage = _GetVectorImageDevExpress(imageName);             // Na vstupu je jméno Vektoru, dáme jej tedy do SvgImage
-            if (imageSize.HasValue) imageOptions.SvgImageSize = imageSize.Value;
-            else if (sizeType.HasValue) imageOptions.SvgImageSize = DxComponent.GetDefaultImageSize(sizeType.Value);
+            imageOptions.SvgImage = _GetVectorImageDevExpress(args);             // Na vstupu je jméno Vektoru, dáme jej tedy do SvgImage
+            _ApplySvgImageSize(imageOptions, args);
         }
         /// <summary>
         /// Aplikuje Image typu Bitmap ze zdroje DevExpress do daného cíle <paramref name="imageOptions"/>.
         /// </summary>
         /// <param name="imageOptions"></param>
-        /// <param name="imageName"></param>
-        /// <param name="sizeType"></param>
-        /// <param name="imageSize"></param>
-        private void _ApplyImageDevExpressBmp(ImageOptions imageOptions, string imageName, ResourceImageSizeType? sizeType, Size? imageSize)
+        /// <param name="args"></param>
+        private void _ApplyImageDevExpressBmp(ImageOptions imageOptions, ResourceArgs args)
         {
             imageOptions.SvgImage = null;
-            imageOptions.Image = _CreateBitmapImageDevExpressPng(imageName);          // Na vstupu je jméno bitmapy, tedy ji najdeme a dáme do Image. Tady nepřichází do úvahy renderování, velikost, paleta atd...
+            imageOptions.Image = _CreateBitmapImageDevExpressPng(args);             // Na vstupu je jméno bitmapy, tedy ji najdeme a dáme do Image. Tady nepřichází do úvahy renderování, velikost, paleta atd...
         }
         /// <summary>
         /// Do daného objektu vloží náhradní ikonu pro daný text
         /// </summary>
         /// <param name="imageOptions"></param>
-        /// <param name="caption"></param>
-        /// <param name="sizeType"></param>
-        /// <param name="imageSize"></param>
-        private void _ApplyImageForCaption(ImageOptions imageOptions, string caption, ResourceImageSizeType? sizeType, Size? imageSize)
+        /// <param name="args"></param>
+        private void _ApplyImageForCaption(ImageOptions imageOptions, ResourceArgs args)
         {
+            args = args.CloneForOnlyCaption();
             // _ApplyImageForCaptionSvg(imageOptions, caption, sizeType, imageSize);
             // _ApplyImageForCaptionBmp(imageOptions, caption, sizeType, imageSize);
-            _ApplyImageForCaptionMix(imageOptions, caption, sizeType, imageSize);
+            _ApplyImageForCaptionMix(imageOptions, args);
         }
         /// <summary>
         /// Do daného objektu vloží náhradní ikonu pro daný text - jako SVG.
         /// Podle JD je malá ikona příliš rozmazaná.
         /// </summary>
         /// <param name="imageOptions"></param>
-        /// <param name="caption"></param>
-        /// <param name="sizeType"></param>
-        /// <param name="imageSize"></param>
-        private void _ApplyImageForCaptionSvg(ImageOptions imageOptions, string caption, ResourceImageSizeType? sizeType, Size? imageSize)
+        /// <param name="args"></param>
+        private void _ApplyImageForCaptionSvg(ImageOptions imageOptions, ResourceArgs args)
         {
-            ResourceImageSizeType sizeT = sizeType ?? ResourceImageSizeType.Large;
-
             if (imageOptions is DevExpress.XtraBars.BarItemImageOptions barOptions)
             {   // Má prostor pro dvě velikosti obrázku najednou:
                 barOptions.Image = null;
@@ -1017,8 +986,8 @@ namespace Noris.Clients.Win.Components.AsolDX
                 bool hasIndexes = false;
                 if (barOptions.Images is SvgImageCollection)
                 {   // Máme připravenou podporu pro vektorový index, můžeme tam dát dvě velikosti:
-                    int smallIndex = _GetCaptionVectorIndex(caption, ResourceImageSizeType.Small);
-                    int largeIndex = _GetCaptionVectorIndex(caption, ResourceImageSizeType.Large);
+                    int smallIndex = _GetCaptionVectorIndex(args.CloneForSize(ResourceImageSizeType.Small));
+                    int largeIndex = _GetCaptionVectorIndex(args.CloneForSize(ResourceImageSizeType.Large));
                     if (smallIndex >= 0 && largeIndex >= 0)
                     {   // Máme indexy pro obě velikosti?
                         barOptions.SvgImage = null;
@@ -1030,8 +999,8 @@ namespace Noris.Clients.Win.Components.AsolDX
                 }
                 if (!hasIndexes)
                 {
-                    barOptions.SvgImage = _CreateCaptionVector(caption, sizeT);
-                    barOptions.SvgImageSize = _GetVectorSvgImageSize(sizeType, imageSize);
+                    barOptions.SvgImage = _CreateCaptionVector(args);
+                    barOptions.SvgImageSize = _GetVectorSvgImageSize(args);
                 }
             }
             else if (imageOptions is DevExpress.Utils.ImageCollectionImageOptions iciOptions)
@@ -1041,19 +1010,19 @@ namespace Noris.Clients.Win.Components.AsolDX
                 {   // Máme připravenou podporu pro vektorový index, můžeme tam dát index prvku v požadované velikosti (defalt = velká):
                     iciOptions.SvgImage = null;
                     iciOptions.SvgImageSize = Size.Empty;
-                    iciOptions.ImageIndex = _GetCaptionVectorIndex(caption, sizeT);
+                    iciOptions.ImageIndex = _GetCaptionVectorIndex(args);
                 }
                 else
                 {   // Musíme tam dát přímo SvgImage:
-                    iciOptions.SvgImage = _CreateCaptionVector(caption, sizeT);
-                    iciOptions.SvgImageSize = _GetVectorSvgImageSize(sizeType, imageSize);
+                    iciOptions.SvgImage = _CreateCaptionVector(args);
+                    iciOptions.SvgImageSize = _GetVectorSvgImageSize(args);
                 }
             }
             else
             {   // Musíme vepsat přímo jeden obrázek:
                 imageOptions.Image = null;
-                imageOptions.SvgImage = _CreateCaptionVector(caption, sizeT);
-                imageOptions.SvgImageSize = _GetVectorSvgImageSize(sizeType, imageSize);
+                imageOptions.SvgImage = _CreateCaptionVector(args);
+                imageOptions.SvgImageSize = _GetVectorSvgImageSize(args);
             }
 
             imageOptions.SvgImageColorizationMode = SvgImageColorizationMode.None;
@@ -1063,22 +1032,18 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Podle JD je velká ikona příliš tlustá.
         /// </summary>
         /// <param name="imageOptions"></param>
-        /// <param name="caption"></param>
-        /// <param name="sizeType"></param>
-        /// <param name="imageSize"></param>
-        private void _ApplyImageForCaptionBmp(ImageOptions imageOptions, string caption, ResourceImageSizeType? sizeType, Size? imageSize)
+        /// <param name="args"></param>
+        private void _ApplyImageForCaptionBmp(ImageOptions imageOptions, ResourceArgs args)
         {
-            ResourceImageSizeType sizeT = sizeType ?? ResourceImageSizeType.Large;
-
             imageOptions.Reset();
             if (imageOptions is DevExpress.XtraBars.BarItemImageOptions barOptions)
             {   // Má prostor pro dvě velikosti obrázku najednou:
-                barOptions.Image = _GetBitmapImage(null, false, ResourceImageSizeType.Small, null, caption);
-                barOptions.LargeImage = _GetBitmapImage(null, false, ResourceImageSizeType.Large, null, caption);
+                barOptions.Image = _GetBitmapImage(args.CloneForSize(ResourceImageSizeType.Small));
+                barOptions.LargeImage = _GetBitmapImage(args.CloneForSize(ResourceImageSizeType.Large));
             }
             else
             {   // Jen jeden obrázek:
-                imageOptions.Image = _GetBitmapImage(null, false, sizeT, null, caption);
+                imageOptions.Image = _GetBitmapImage(args);
             }
         }
         /// <summary>
@@ -1086,12 +1051,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// JD tvrdí, že to je nejlepší...
         /// </summary>
         /// <param name="imageOptions"></param>
-        /// <param name="caption"></param>
-        /// <param name="sizeType"></param>
-        /// <param name="imageSize"></param>
-        private void _ApplyImageForCaptionMix(ImageOptions imageOptions, string caption, ResourceImageSizeType? sizeType, Size? imageSize)
+        /// <param name="args"></param>
+        private void _ApplyImageForCaptionMix(ImageOptions imageOptions, ResourceArgs args)
         {
-            ResourceImageSizeType sizeT = sizeType ?? ResourceImageSizeType.Large;
+            ResourceImageSizeType sizeT = args.CurrentSizeType;
 
             if (imageOptions is DevExpress.XtraBars.BarItemImageOptions barOptions)
             {   // Má prostor pro dvě velikosti obrázku najednou:
@@ -1101,14 +1064,14 @@ namespace Noris.Clients.Win.Components.AsolDX
                 bool hasIndexes = false;
                 if (barOptions.Images is SvgImageCollection)
                 {   // Máme připravenou podporu pro vektorový index, můžeme tam dát dvě velikosti:
-                    int largeIndex = _GetCaptionVectorIndex(caption, ResourceImageSizeType.Large);
+                    int largeIndex = _GetCaptionVectorIndex(args.CloneForSize(ResourceImageSizeType.Large));
                     if (largeIndex >= 0)
                     {   // Máme index pro Large = SVG:
                         barOptions.SvgImage = null;
                         barOptions.SvgImageSize = Size.Empty;
                         barOptions.LargeImageIndex = largeIndex;
                         // Malý = BMP:
-                        barOptions.Image = _GetBitmapImage(null, false, ResourceImageSizeType.Small, null, caption);
+                        barOptions.Image = _GetBitmapImage(args.CloneForSize(ResourceImageSizeType.Small));
                         hasIndexes = true;
                     }
                 }
@@ -1116,12 +1079,12 @@ namespace Noris.Clients.Win.Components.AsolDX
                 {
                     if (sizeT == ResourceImageSizeType.Large)
                     {   // Velký = SVG:
-                        barOptions.SvgImage = _CreateCaptionVector(caption, sizeT);
-                        barOptions.SvgImageSize = _GetVectorSvgImageSize(sizeType, imageSize);
+                        barOptions.SvgImage = _CreateCaptionVector(args.CloneForSize(ResourceImageSizeType.Large));
+                        _ApplySvgImageSize(barOptions, args);
                     }
                     else
                     {   // Malý = BMP:
-                        barOptions.Image = _GetBitmapImage(null, false, ResourceImageSizeType.Small, null, caption);
+                        barOptions.Image = _GetBitmapImage(args.CloneForSize(ResourceImageSizeType.Small));
                     }
                 }
             }
@@ -1134,23 +1097,23 @@ namespace Noris.Clients.Win.Components.AsolDX
                     {   // Máme připravenou podporu pro vektorový index, můžeme tam dát index prvku v požadované velikosti (defalt = velká):
                         iciOptions.SvgImage = null;
                         iciOptions.SvgImageSize = Size.Empty;
-                        iciOptions.ImageIndex = _GetCaptionVectorIndex(caption, sizeT);
+                        iciOptions.ImageIndex = _GetCaptionVectorIndex(args.CloneForSize(ResourceImageSizeType.Large));
                     }
                     else
                     {   // Musíme tam dát přímo SvgImage:
-                        iciOptions.SvgImage = _CreateCaptionVector(caption, sizeT);
-                        iciOptions.SvgImageSize = _GetVectorSvgImageSize(sizeType, imageSize);
+                        iciOptions.SvgImage = _CreateCaptionVector(args.CloneForSize(ResourceImageSizeType.Large));
+                        _ApplySvgImageSize(iciOptions, args);
                     }
                 }
                 else
                 {   // Malý = BMP:
                     if (iciOptions.Images is ImageList)
                     {   // Máme připravenou podporu pro BMP index = dáme index:
-                        iciOptions.ImageIndex = _GetBitmapImageIndex(null, false, ResourceImageSizeType.Small, null, caption);
+                        iciOptions.ImageIndex = _GetBitmapImageIndex(args.CloneForSize(ResourceImageSizeType.Small));
                     }
                     else
                     {   // Dáme Image, ale z interního ImageListu (GetImage versus CreateImage):
-                        iciOptions.Image = _GetBitmapImage(null, false, ResourceImageSizeType.Small, null, caption);
+                        iciOptions.Image = _GetBitmapImage(args.CloneForSize(ResourceImageSizeType.Small));
                     }
                 }
             }
@@ -1159,17 +1122,40 @@ namespace Noris.Clients.Win.Components.AsolDX
                 if (sizeT == ResourceImageSizeType.Large)
                 {   // Velký = SVG:
                     imageOptions.Image = null;
-                    imageOptions.SvgImage = _CreateCaptionVector(caption, sizeT);
-                    imageOptions.SvgImageSize = _GetVectorSvgImageSize(sizeType, imageSize);
+                    imageOptions.SvgImage = _CreateCaptionVector(args.CloneForSize(ResourceImageSizeType.Large));
+                    _ApplySvgImageSize(imageOptions, args);
                 }
                 else
                 {   // Malý = BMP:
                     imageOptions.SvgImage = null;
-                    imageOptions.Image = _GetBitmapImage(null, false, ResourceImageSizeType.Small, null, caption);
+                    imageOptions.Image = _GetBitmapImage(args.CloneForSize(ResourceImageSizeType.Small));
                 }
             }
 
             imageOptions.SvgImageColorizationMode = SvgImageColorizationMode.None;
+        }
+        /// <summary>
+        /// Do daného <see cref="ImageOptions"/> vloží odpovídající velikost <see cref="ImageOptions.SvgImageSize"/>, 
+        /// pokud v <paramref name="args"/> jsou nějaké podklady.
+        /// </summary>
+        /// <param name="imageOptions"></param>
+        /// <param name="args"></param>
+        private void _ApplySvgImageSize(ImageOptions imageOptions, ResourceArgs args)
+        {
+            if (args.ImageSize.HasValue) imageOptions.SvgImageSize = args.ImageSize.Value;
+            else if (args.SizeType.HasValue) imageOptions.SvgImageSize = DxComponent.GetDefaultImageSize(args.SizeType.Value);
+        }
+        /// <summary>
+        /// Vrátí true, pokud prvek má mít ikonku typu Disabled.
+        /// </summary>
+        /// <param name="disabled"></param>
+        /// <param name="item"></param>
+        /// <returns></returns>
+        private static bool _NeedDisabledImage(bool? disabled, DevExpress.XtraBars.BarItem item = null)
+        {
+            if (disabled.HasValue) return disabled.Value;            // Je dána hodnota disabled? Vrátíme její hodnotu (vracíme = Disabled)
+            if (item != null) return !item.Enabled;                  // Je dán prvek BarItem? Vrátíme true, když prvek má Enabled = false 
+            return false;                                            // Nepotřebujeme ikonku Disabled
         }
         #endregion
         #region ApplyIcon - do cílového formuláře vepíše obrázek podle toho, jaký je zadán a jaký je to formulář
@@ -1180,23 +1166,21 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="iconName"></param>
         /// <param name="sizeType"></param>
         /// <param name="forceToIcon">Povinně vkládat ikonu do <see cref="Form.Icon"/> i kdyby byl k dispozici objekt <see cref="XtraForm.IconOptions"/></param>
-        public static void ApplyIcon(Form form, string iconName, ResourceImageSizeType? sizeType = null, bool forceToIcon = false) { Instance._ApplyIcon(form, iconName, sizeType, forceToIcon); }
+        public static void ApplyIcon(Form form, string iconName, ResourceImageSizeType? sizeType = null, bool forceToIcon = false) 
+        { Instance._ApplyIcon(form, new ResourceArgs(iconName, false, sizeType, forceToIcon: forceToIcon)); }
         /// <summary>
         /// Do daného okna aplikuje danou ikonu.
         /// </summary>
         /// <param name="form"></param>
-        /// <param name="iconName"></param>
-        /// <param name="sizeType"></param>
-        /// <param name="forceToIcon">Povinně vkládat ikonu do <see cref="Form.Icon"/> i kdyby byl k dispozici objekt <see cref="XtraForm.IconOptions"/></param>
-        private void _ApplyIcon(Form form, string iconName, ResourceImageSizeType? sizeType, bool forceToIcon = false)
+        /// <param name="args"></param>
+        private void _ApplyIcon(Form form, ResourceArgs args)
         {
-            if (form is null || String.IsNullOrEmpty(iconName)) return;
-            if (!sizeType.HasValue) sizeType = ResourceImageSizeType.Large;
+            if (form is null || !args.HasImageName) return;
 
-            if (!forceToIcon && form is DevExpress.XtraEditors.XtraForm xtraForm)
-                ApplyImage(xtraForm.IconOptions, iconName, sizeType: sizeType);
+            if (!args.ForceToIcon && form is DevExpress.XtraEditors.XtraForm xtraForm)
+                _ApplyImage(xtraForm.IconOptions, args);
             else
-                _ApplyIconToForm(form, _CreateIconImage(iconName, false, sizeType));
+                _ApplyIconToForm(form, _CreateIconImage(args));
         }
         /// <summary>
         /// Do daného formu vloží danou ikonu.
@@ -1220,24 +1204,23 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Používá se pro ty DevExpress controly, které podporují ImageList typu Object, například Ribbon.
         /// Následně je možno do jednotlivých prvků objektu (typicky BarItem) vkládat index obrázku do ImageIndex / LargeImageIndex.
         /// <para/>
-        /// Související metodou je <see cref="GetPreferredImageIndex(string, ResourceImageSizeType, Size?, string, bool)"/>.
+        /// Související metodou je <see cref="GetPreferredImageIndex(string, ResourceImageSizeType, Size?, string, bool, bool?)"/>.
         /// Ta metoda vrátí index z ImageList preferovaného typu (je to po celou dobu běhu aplikace shodný typ: Bitmap nebo Vector).
         /// </summary>
         /// <param name="sizeType"></param>
         /// <returns></returns>
-        public static object GetPreferredImageList(ResourceImageSizeType sizeType)
-        { return Instance._GetPreferredImageList(sizeType); }
+        public static object GetPreferredImageList(ResourceImageSizeType sizeType) { return Instance._GetPreferredImageList(new ResourceArgs(sizeType: sizeType)); }
         /// <summary>
         /// Vrací objekt <see cref="ImageList"/>, obsahující bitmapové obrázky dané velikosti
         /// </summary>
-        /// <param name="sizeType"></param>
+        /// <param name="args"></param>
         /// <returns></returns>
-        private object _GetPreferredImageList(ResourceImageSizeType sizeType)
+        private object _GetPreferredImageList(ResourceArgs args)
         {
             if (this._IsPreferredVectorImage)
-                return this._GetVectorImageList(sizeType);
+                return this._GetVectorImageList(args);
             else
-                return this._GetBitmapImageList(sizeType);
+                return this._GetBitmapImageList(args);
         }
         /// <summary>
         /// Vrátí index pro daný obrázek do odpovídajícího <see cref="ImageList"/> anebo <see cref="SvgImageCollection"/>, obsahující bitmapové nebo vektorové obrázky dané velikosti.
@@ -1251,25 +1234,22 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="optimalSvgSize"></param>
         /// <param name="caption"></param>
         /// <param name="exactName"></param>
+        /// <param name="disabled">Převést barvy na Disabled variantu (pokud má hodnotu true)</param>
         /// <returns></returns>
-        public static int GetPreferredImageIndex(string imageName, ResourceImageSizeType sizeType, Size? optimalSvgSize = null, string caption = null, bool exactName = false)
-        { return Instance._GetPreferredImageIndex(imageName, exactName, sizeType, optimalSvgSize, caption); }
+        public static int GetPreferredImageIndex(string imageName, ResourceImageSizeType sizeType, Size? optimalSvgSize = null, string caption = null, bool exactName = false, bool? disabled = null)
+        { return Instance._GetPreferredImageIndex(new ResourceArgs(imageName, exactName, sizeType, optimalSvgSize, caption: caption, disabled: disabled)); }
         /// <summary>
         /// Vrátí index pro daný obrázek do odpovídajícího ImageListu.
         /// Pokud není k dispozici požadovaný obrázek, a je dodán <paramref name="caption"/>, je vygenerován náhradní obrázek v požadované velikosti.
         /// </summary>
-        /// <param name="imageName"></param>
-        /// <param name="exactName"></param>
-        /// <param name="sizeType"></param>
-        /// <param name="optimalSvgSize"></param>
-        /// <param name="caption"></param>
+        /// <param name="args"></param>
         /// <returns></returns>
-        private int _GetPreferredImageIndex(string imageName, bool exactName, ResourceImageSizeType sizeType, Size? optimalSvgSize, string caption)
+        private int _GetPreferredImageIndex(ResourceArgs args)
         {
             if (this._IsPreferredVectorImage)
-                return this._GetVectorImageIndex(imageName, exactName, sizeType, caption);
+                return this._GetVectorImageIndex(args);
             else
-                return this._GetBitmapImageIndex(imageName, exactName, sizeType, optimalSvgSize, caption);
+                return this._GetBitmapImageIndex(args);
         }
         /// <summary>
         /// Připraví ImageListy bitmapové i vektorové.
@@ -1277,13 +1257,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private void _PrepareImageLists()
         {
-            _GetDxBitmapImageList(ResourceImageSizeType.Small);
-            _GetDxBitmapImageList(ResourceImageSizeType.Medium);
-            _GetDxBitmapImageList(ResourceImageSizeType.Large);
+            _GetDxBitmapImageList(new ResourceArgs(sizeType: ResourceImageSizeType.Small));
+            _GetDxBitmapImageList(new ResourceArgs(sizeType: ResourceImageSizeType.Medium));
+            _GetDxBitmapImageList(new ResourceArgs(sizeType: ResourceImageSizeType.Large));
 
-            _GetVectorImageList(ResourceImageSizeType.Small);
-            _GetVectorImageList(ResourceImageSizeType.Medium);
-            _GetVectorImageList(ResourceImageSizeType.Large);
+            _GetVectorImageList(new ResourceArgs(sizeType: ResourceImageSizeType.Small));
+            _GetVectorImageList(new ResourceArgs(sizeType: ResourceImageSizeType.Medium));
+            _GetVectorImageList(new ResourceArgs(sizeType: ResourceImageSizeType.Large));
         }
         #endregion
         #region BitmapImageList - Seznam obrázků typu Bitmapa, pro použití v controlech; GetBitmapImageList, GetBitmapImageIndex, GetBitmapImage
@@ -1292,26 +1272,26 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="sizeType"></param>
         /// <returns></returns>
-        public static ImageList GetBitmapImageList(ResourceImageSizeType sizeType)
-        { return Instance._GetBitmapImageList(sizeType); }
+        public static ImageList GetBitmapImageList(ResourceImageSizeType sizeType) { return Instance._GetBitmapImageList(new ResourceArgs(sizeType: sizeType)); }
         /// <summary>
         /// Vrací objekt <see cref="ImageList"/>, obsahující bitmapové obrázky dané velikosti
         /// </summary>
-        /// <param name="sizeType"></param>
+        /// <param name="args"></param>
         /// <returns></returns>
-        private ImageList _GetBitmapImageList(ResourceImageSizeType sizeType)
+        private ImageList _GetBitmapImageList(ResourceArgs args)
         {
-            return _GetDxBitmapImageList(sizeType).ImageList;
+            return _GetDxBitmapImageList(args).ImageList;
         }
         /// <summary>
         /// Vrací objekt <see cref="DxBmpImageList"/>, obsahující bitmapové obrázky dané velikosti
         /// </summary>
-        /// <param name="sizeType"></param>
+        /// <param name="args"></param>
         /// <returns></returns>
-        private DxBmpImageList _GetDxBitmapImageList(ResourceImageSizeType sizeType)
+        private DxBmpImageList _GetDxBitmapImageList(ResourceArgs args)
         {
             if (__BitmapImageList == null) __BitmapImageList = new Dictionary<ResourceImageSizeType, DxBmpImageList>();   // OnDemand tvorba, grafika se používá výhradně z GUI threadu takže tady zámek neřeším
             var imageListDict = __BitmapImageList;
+            var sizeType = args.CurrentSizeType;
             if (!imageListDict.TryGetValue(sizeType, out DxBmpImageList dxBmpImageList))
             {
                 lock (imageListDict)
@@ -1319,7 +1299,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                     if (!imageListDict.TryGetValue(sizeType, out dxBmpImageList))
                     {
                         dxBmpImageList = new DxBmpImageList(sizeType);
-                        dxBmpImageList.ImageSize = _GetVectorSvgImageSize(sizeType, null);
+                        dxBmpImageList.ImageSize = _GetVectorSvgImageSize(args);
                         dxBmpImageList.ColorDepth = ColorDepth.Depth32Bit;
                         imageListDict.Add(sizeType, dxBmpImageList);
                     }
@@ -1338,20 +1318,16 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="exactName"></param>
         /// <returns></returns>
         public static int GetBitmapImageIndex(string imageName, ResourceImageSizeType sizeType, Size? optimalSvgSize = null, string caption = null, bool exactName = false)
-        { return Instance._GetBitmapImageIndex(imageName, exactName, sizeType, optimalSvgSize, caption); }
+        { return Instance._GetBitmapImageIndex(new ResourceArgs(imageName, exactName, sizeType, optimalSvgSize, caption: caption)); }
         /// <summary>
         /// Vrátí index pro daný obrázek do odpovídajícího ImageListu.
-        /// Pokud není k dispozici požadovaný obrázek, a je dodán <paramref name="caption"/>, je vygenerován náhradní obrázek v požadované velikosti.
+        /// Pokud není k dispozici požadovaný obrázek, a je dodán <see cref="ResourceArgs.Caption"/>, je vygenerován náhradní obrázek v požadované velikosti.
         /// </summary>
-        /// <param name="imageName"></param>
-        /// <param name="exactName"></param>
-        /// <param name="sizeType"></param>
-        /// <param name="optimalSvgSize"></param>
-        /// <param name="caption"></param>
+        /// <param name="args"></param>
         /// <returns></returns>
-        private int _GetBitmapImageIndex(string imageName, bool exactName, ResourceImageSizeType sizeType, Size? optimalSvgSize, string caption)
+        private int _GetBitmapImageIndex(ResourceArgs args)
         {
-            var imageInfo = _GetBitmapImageListItem(imageName, exactName, sizeType, optimalSvgSize, caption);
+            var imageInfo = _GetBitmapImageListItem(args);
             return imageInfo?.Item2 ?? -1;
         }
         /// <summary>
@@ -1360,13 +1336,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Pokud daný Resource ještě není uložen v odpovídajícím ImageListu (pro danou velikost), pak je Image vytvořen a do ImageListu přidán.
         /// </summary>
         /// <param name="resourceItems">Dodané zdroje různých velikostí</param>
-        /// <param name="sizeType">Cílový typ velikosti; každá velikost má svoji kolekci (viz <see cref="GetVectorImageList(ResourceImageSizeType)"/>)</param>
+        /// <param name="args"></param>
         /// <returns></returns>
-        private int _GetBitmapImageIndex(DxApplicationResourceLibrary.ResourceItem[] resourceItems, ResourceImageSizeType sizeType)
+        private int _GetBitmapImageIndex(DxApplicationResourceLibrary.ResourceItem[] resourceItems, ResourceArgs args)
         {
-            if (!DxApplicationResourceLibrary.ResourcePack.TryGetOptimalSize(resourceItems, sizeType, out var resourceItem)) return -1;
-            var dxImageList = _GetDxBitmapImageList(sizeType);
-            return dxImageList.GetImageId(resourceItem.ItemKey, n => _CreateBitmapImageApplication(resourceItem, sizeType, null));
+            if (!DxApplicationResourceLibrary.ResourcePack.TryGetOptimalSize(resourceItems, args.SizeType, out var resourceItem)) return -1;
+            var dxImageList = _GetDxBitmapImageList(args);
+            return dxImageList.GetImageId(resourceItem.ItemKey, n => _CreateBitmapImageApplication(resourceItem, args));
         }
         /// <summary>
         /// Najde a vrátí Image z dodaných zdrojů, pro danou velikost.
@@ -1374,13 +1350,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Pokud daný Resource ještě není uložen v odpovídajícím ImageListu (pro danou velikost), pak je Image vytvořen a do ImageListu přidán.
         /// </summary>
         /// <param name="resourceItems">Dodané zdroje různých velikostí</param>
-        /// <param name="sizeType">Cílový typ velikosti; každá velikost má svoji kolekci (viz <see cref="GetVectorImageList(ResourceImageSizeType)"/>)</param>
+        /// <param name="args"></param>
         /// <returns></returns>
-        private Image _GetBitmapImage(DxApplicationResourceLibrary.ResourceItem[] resourceItems, ResourceImageSizeType sizeType)
+        private Image _GetBitmapImage(DxApplicationResourceLibrary.ResourceItem[] resourceItems, ResourceArgs args)
         {
-            if (!DxApplicationResourceLibrary.ResourcePack.TryGetOptimalSize(resourceItems, sizeType, out var resourceItem)) return null;
-            var dxImageList = _GetDxBitmapImageList(sizeType);
-            return dxImageList.GetImage(resourceItem.ItemKey, n => _CreateBitmapImageApplication(resourceItem, sizeType, null));
+            if (!DxApplicationResourceLibrary.ResourcePack.TryGetOptimalSize(resourceItems, args.SizeType, out var resourceItem)) return null;
+            var dxImageList = _GetDxBitmapImageList(args);
+            return dxImageList.GetImage(resourceItem.ItemKey, n => _CreateBitmapImageApplication(resourceItem, args));
         }
         /// <summary>
         /// Najde nebo vytvoří a uloží a vrátí nový obrázek daného jména.
@@ -1395,44 +1371,32 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="exactName"></param>
         /// <returns></returns>
         public static Image GetBitmapImage(string imageName, ResourceImageSizeType? sizeType = null, Size? optimalSvgSize = null, string caption = null, bool exactName = false)
-        { return Instance._GetBitmapImage(imageName, exactName, sizeType ?? ResourceImageSizeType.Large, optimalSvgSize, caption); }
+        { return Instance._GetBitmapImage(new ResourceArgs(imageName, exactName, sizeType, optimalSvgSize, caption: caption)); }
         /// <summary>
         /// Vrátí index pro daný obrázek do odpovídajícího ImageListu.
-        /// Pokud není k dispozici požadovaný obrázek, a je dodán <paramref name="caption"/>, je vygenerován náhradní obrázek v požadované velikosti.
+        /// Pokud není k dispozici požadovaný obrázek, a je dodán <see cref="ResourceArgs.Caption"/>, je vygenerován náhradní obrázek v požadované velikosti.
         /// </summary>
-        /// <param name="imageName"></param>
-        /// <param name="exactName"></param>
-        /// <param name="sizeType"></param>
-        /// <param name="optimalSvgSize"></param>
-        /// <param name="caption"></param>
+        /// <param name="args"></param>
         /// <returns></returns>
-        private Image _GetBitmapImage(string imageName, bool exactName,
-            ResourceImageSizeType sizeType, Size? optimalSvgSize,
-            string caption)
+        private Image _GetBitmapImage(ResourceArgs args)
         {
-            var imageInfo = _GetBitmapImageListItem(imageName, exactName, sizeType, optimalSvgSize, caption);
+            var imageInfo = _GetBitmapImageListItem(args);
             return ((imageInfo == null || imageInfo.Item1 == null || imageInfo.Item2 < 0) ? null : imageInfo.Item1.Images[imageInfo.Item2]);
         }
         /// <summary>
         /// Metoda vyhledá, zda daný obrázek existuje
         /// </summary>
-        /// <param name="imageName"></param>
-        /// <param name="exactName"></param>
-        /// <param name="sizeType"></param>
-        /// <param name="optimalSvgSize"></param>
-        /// <param name="caption"></param>
+        /// <param name="args"></param>
         /// <returns></returns>
-        private Tuple<ImageList, int> _GetBitmapImageListItem(string imageName, bool exactName,
-            ResourceImageSizeType sizeType, Size? optimalSvgSize,
-            string caption)
+        private Tuple<ImageList, int> _GetBitmapImageListItem(ResourceArgs args)
         {
-            bool hasName = !String.IsNullOrEmpty(imageName);
-            string captionKey = DxComponent.GetCaptionForIcon(caption);
+            bool hasName = args.HasImageName;
+            string captionKey = DxComponent.GetCaptionForIcon(args.Caption);
             bool hasCaption = (captionKey.Length > 0);
-            string key = (hasName ? imageName.ToLower() : hasCaption ? $"«:{captionKey}:»" : "").Trim();
+            string key = (hasName ? args.ImageName.ToLower() : hasCaption ? $"«:{captionKey}:»" : "").Trim();
             if (key.Length == 0) return null;
 
-            var dxImageList = _GetDxBitmapImageList(sizeType);
+            var dxImageList = _GetDxBitmapImageList(args);
             int index = -1;
             if (dxImageList.ContainsKey(key))
             {
@@ -1440,11 +1404,11 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
             else if (hasName || hasCaption)
             {
-                Image image = _CreateBitmapImage(imageName, exactName, sizeType, optimalSvgSize, caption, null);
+                Image image = _CreateBitmapImage(args);
                 if (image != null)
                 {
                     bool isColorized = !hasName && hasCaption;       // Image lze přebarvovat tehdy, když nepochází z obrázku, ale z Caption
-                    dxImageList.Add(key, image, isColorized, imageName, exactName, optimalSvgSize, caption);
+                    dxImageList.Add(key, image, isColorized, args.ImageName, args.ExactName, args.OptimalSvgSize, args.Caption);
                     index = dxImageList.IndexOfKey(key);
                 }
             }
@@ -1460,15 +1424,16 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Vrátí kolekci SvgImages pro použití v controlech, obsahuje DevExpress i Aplikační zdroje. Pro danou cílovou velikost.
         /// </summary>
         /// <param name="sizeType"></param>
-        public static SvgImageCollection GetVectorImageList(ResourceImageSizeType sizeType) { return Instance._GetVectorImageList(sizeType); }
+        public static SvgImageCollection GetVectorImageList(ResourceImageSizeType sizeType) { return Instance._GetVectorImageList(new ResourceArgs(sizeType: sizeType)); }
         /// <summary>
         /// Vrátí kolekci SvgImages pro použití v controlech, obsahuje DevExpress i Aplikační zdroje. Pro danou cílovou velikost.
         /// </summary>
-        /// <param name="sizeType"></param>
-        private DxSvgImageCollection _GetVectorImageList(ResourceImageSizeType sizeType)
+        /// <param name="args"></param>
+        private DxSvgImageCollection _GetVectorImageList(ResourceArgs args)
         {
             if (__VectorImageList == null) __VectorImageList = new Dictionary<ResourceImageSizeType, DxSvgImageCollection>();      // OnDemand tvorba, grafika se používá výhradně z GUI threadu takže tady zámek neřeším
             var svgImageCollections = __VectorImageList;
+            var sizeType = args.CurrentSizeType;
             if (!svgImageCollections.TryGetValue(sizeType, out DxSvgImageCollection svgCollection))
             {
                 lock (svgImageCollections)
@@ -1476,7 +1441,6 @@ namespace Noris.Clients.Win.Components.AsolDX
                     if (!svgImageCollections.TryGetValue(sizeType, out svgCollection))
                     {
                         svgCollection = new DxSvgImageCollection(sizeType);
-                        svgCollection.ImageSize = GetDefaultImageSize(sizeType);         // Hodotu ani po změně Zoomu neměníme...
                         svgImageCollections.Add(sizeType, svgCollection);
                     }
                 }
@@ -1490,32 +1454,33 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="sizeType">Cílový typ velikosti; každá velikost má svoji kolekci (viz <see cref="GetVectorImageList(ResourceImageSizeType)"/>)</param>
         /// <param name="exactName"></param>
         /// <param name="caption"></param>
+        /// <param name="disabled">Převést barvy na Disabled variantu (pokud má hodnotu true)</param>
         /// <returns></returns>
-        public static int GetVectorImageIndex(string imageName, ResourceImageSizeType sizeType, bool exactName = false, string caption = null) { return Instance._GetVectorImageIndex(imageName, exactName, sizeType, caption); }
+        public static int GetVectorImageIndex(string imageName, ResourceImageSizeType sizeType, bool exactName = false, string caption = null, bool? disabled = null) 
+        { return Instance._GetVectorImageIndex(new ResourceArgs(imageName, exactName, sizeType, caption: caption, disabled: disabled)); }
         /// <summary>
         /// Najde a vrátí index ID pro vektorový obrázek daného jména, obrázek je uložen v kolekci <see cref="SvgImageCollection"/>
         /// </summary>
-        /// <param name="imageName">Jméno obrázku</param>
-        /// <param name="exactName"></param>
-        /// <param name="sizeType">Cílový typ velikosti; každá velikost má svoji kolekci (viz <see cref="GetVectorImageList(ResourceImageSizeType)"/>)</param>
-        /// <param name="caption"></param>
+        /// <param name="args"></param>
         /// <returns></returns>
-        private int _GetVectorImageIndex(string imageName, bool exactName, ResourceImageSizeType sizeType, string caption)
+        private int _GetVectorImageIndex(ResourceArgs args)
         {
-            var svgCollection = _GetVectorImageList(sizeType);
-            return svgCollection.GetImageId(imageName, n => _GetVectorImage(n, exactName, sizeType, caption));
+            var svgCollection = _GetVectorImageList(args);
+            return svgCollection.GetImageId(args.ImageName, n => _GetVectorImage(args));
         }
         /// <summary>
         /// Najde a vrátí index ID pro vhodný vektorový obrázek z dodaných zdrojů, pro danou velikost.
         /// </summary>
         /// <param name="resourceItems">Dodané zdroje různých velikostí</param>
-        /// <param name="sizeType">Cílový typ velikosti; každá velikost má svoji kolekci (viz <see cref="GetVectorImageList(ResourceImageSizeType)"/>)</param>
+        /// <param name="args"></param>
         /// <returns></returns>
-        private int _GetVectorImageIndex(DxApplicationResourceLibrary.ResourceItem[] resourceItems, ResourceImageSizeType sizeType)
+        private int _GetVectorImageIndex(DxApplicationResourceLibrary.ResourceItem[] resourceItems, ResourceArgs args)
         {
-            if (!DxApplicationResourceLibrary.ResourcePack.TryGetOptimalSize(resourceItems, sizeType, out var resourceItem)) return -1;
-            var svgCollection = _GetVectorImageList(sizeType);
-            return svgCollection.GetImageId(resourceItem.ItemKey, n => resourceItem.CreateSvgImage());
+            if (!DxApplicationResourceLibrary.ResourcePack.TryGetOptimalSize(resourceItems, args.SizeType, out var resourceItem)) return -1;
+            var svgCollection = _GetVectorImageList(args);
+            DxSvgImagePaletteType palette = GetImagePalette(DxComponent.IsDarkTheme, args.Disabled);
+            string key = CreateVectorImageKey(resourceItem.ItemKey, palette);
+            return svgCollection.GetImageId(key, n => resourceItem.CreateSvgImage(palette));
         }
         /// <summary>
         /// Najde a vrátí index ID pro dodaný vektorový obrázek z ImageArray.
@@ -1523,13 +1488,61 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="svgImageArray">Kombinovaná ikona</param>
         /// <param name="sizeType">Cílový typ velikosti; každá velikost má svoji kolekci (viz <see cref="GetVectorImageList(ResourceImageSizeType)"/>)</param>
         /// <returns></returns>
-        private int _GetVectorImageIndex(SvgImageArrayInfo svgImageArray, ResourceImageSizeType sizeType)
+        private int _GetVectorImageIndex(SvgImageArrayInfo svgImageArray, ResourceArgs args)
         {
             if (svgImageArray is null) return -1;
-            var svgCollection = _GetVectorImageList(sizeType);
+            var svgCollection = _GetVectorImageList(args);
             string key = svgImageArray.Key;
-            return svgCollection.GetImageId(key, n => _GetVectorImageArray(svgImageArray, sizeType));
+            return svgCollection.GetImageId(key, n => _GetVectorImageArray(svgImageArray, args));
         }
+
+        /// <summary>
+        /// Metoda vrátí typ palety pro daný odstín a Disabled.
+        /// </summary>
+        /// <param name="darkSkin">Převést barvy na tmavý skin</param>
+        /// <param name="disabled">Převést barvy na Disabled variantu (pokud má hodnotu true)</param>
+        /// <returns></returns>
+        internal static DxSvgImagePaletteType GetImagePalette(bool darkSkin, bool? disabled)
+        {
+            bool isDisabled = (disabled ?? false);
+            DxSvgImagePaletteType palette =
+                (!darkSkin ? (!isDisabled ? DxSvgImagePaletteType.LightSkin : DxSvgImagePaletteType.LightSkinDisabled)
+                           : (!isDisabled ? DxSvgImagePaletteType.DarkSkin : DxSvgImagePaletteType.DarkSkinDisabled));
+            return palette;
+        }
+        /// <summary>
+        /// Metoda vrátí klíč vektorového obrázku, do něhož je zakomponován tmavý skin a příznak Disabled.
+        /// </summary>
+        /// <param name="itemKey"></param>
+        /// <param name="darkSkin"></param>
+        /// <param name="isDisabled"></param>
+        /// <returns></returns>
+        internal static string CreateVectorImageKey(string itemKey, bool darkSkin, bool isDisabled)
+        {
+            string prefix = (!darkSkin ? (!isDisabled ? _KeyPrefixLightSkin : _KeyPrefixLightSkinDisabled)
+                                       : (!isDisabled ? _KeyPrefixDarkSkin : _KeyPrefixDarkSkinDisabled));
+            return prefix + itemKey;
+        }
+        /// <summary>
+        /// Metoda vrátí klíč vektorového obrázku, do něhož je zakomponován typ palety.
+        /// </summary>
+        /// <param name="itemKey"></param>
+        /// <param name="palette"></param>
+        /// <returns></returns>
+        internal static string CreateVectorImageKey(string itemKey, DxSvgImagePaletteType palette)
+        {
+            string prefix = (palette == DxSvgImagePaletteType.LightSkin ? _KeyPrefixLightSkin :
+                            (palette == DxSvgImagePaletteType.LightSkinDisabled ? _KeyPrefixLightSkinDisabled :
+                            (palette == DxSvgImagePaletteType.DarkSkin ? _KeyPrefixDarkSkin :
+                            (palette == DxSvgImagePaletteType.DarkSkinDisabled ? _KeyPrefixDarkSkinDisabled : _KeyPrefixExplicit))));
+            return prefix + itemKey;
+        }
+        private const string _KeyPrefixLightSkin = "G";
+        private const string _KeyPrefixLightSkinDisabled = "W";
+        private const string _KeyPrefixDarkSkin = "E";
+        private const string _KeyPrefixDarkSkinDisabled = "D";
+        private const string _KeyPrefixExplicit = "X";
+
         /// <summary>Kolekce SvgImages pro použití v controlech, obsahuje DevExpress i Aplikační zdroje, instanční proměnná.</summary>
         private Dictionary<ResourceImageSizeType, DxSvgImageCollection> __VectorImageList;
         #endregion
@@ -1538,35 +1551,34 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Vytvoří a vrátí bitmapu z pole vektorových image
         /// </summary>
         /// <param name="svgImageArray"></param>
-        /// <param name="sizeType"></param>
-        /// <param name="optimalSvgSize"></param>
+        /// <param name="args"></param>
         /// <returns></returns>
-        private Image _CreateBitmapImageArray(SvgImageArrayInfo svgImageArray, ResourceImageSizeType? sizeType, Size? optimalSvgSize)
+        private Image _CreateBitmapImageArray(SvgImageArrayInfo svgImageArray, ResourceArgs args)
         {
-            var svgImage = SvgImageSupport.CreateSvgImage(svgImageArray, sizeType);
-            return _ConvertVectorToImage(svgImage, sizeType, optimalSvgSize);
+            var svgImage = SvgImageSupport.CreateSvgImage(svgImageArray, args.SizeType);
+            return _ConvertVectorToImage(svgImage, args);
         }
         /// <summary>
         /// Vyrenderuje dané pole vektorových image do bitmapy a z ní vytvoří a vrátí Icon
         /// </summary>
         /// <param name="svgImageArray"></param>
-        /// <param name="sizeType"></param>
+        /// <param name="args"></param>
         /// <returns></returns>
-        private Icon _ConvertImageArrayToIcon(SvgImageArrayInfo svgImageArray, ResourceImageSizeType? sizeType)
+        private Icon _ConvertImageArrayToIcon(SvgImageArrayInfo svgImageArray, ResourceArgs args)
         {
-            var svgImage = SvgImageSupport.CreateSvgImage(svgImageArray, sizeType);
-            using (var bitmap = _ConvertVectorToImage(svgImage, sizeType, null))
+            var svgImage = SvgImageSupport.CreateSvgImage(svgImageArray, args.SizeType);
+            using (var bitmap = _ConvertVectorToImage(svgImage, args))
                 return _ConvertBitmapToIcon(bitmap);
         }
         /// <summary>
         /// Vrátí SVG Image typu Array
         /// </summary>
         /// <param name="svgImageArray"></param>
-        /// <param name="sizeType"></param>
+        /// <param name="args"></param>
         /// <returns></returns>
-        private DevExpress.Utils.Svg.SvgImage _GetVectorImageArray(SvgImageArrayInfo svgImageArray, ResourceImageSizeType? sizeType)
+        private DevExpress.Utils.Svg.SvgImage _GetVectorImageArray(SvgImageArrayInfo svgImageArray, ResourceArgs args)
         {
-            return SvgImageSupport.CreateSvgImage(svgImageArray, sizeType);
+            return SvgImageSupport.CreateSvgImage(svgImageArray, args.SizeType);
         }
         #endregion
         #region Přístup na Aplikační zdroje (přes AsolDX.DxResourceLibrary, s pomocí SystemAdapter)
@@ -1584,14 +1596,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Určí typ obsahu daného Aplikačního zdroje
         /// </summary>
         /// <param name="validItems"></param>
-        /// <param name="sizeType"></param>
-        /// <param name="preferVector"></param>
+        /// <param name="args"></param>
         /// <param name="contentType"></param>
         /// <returns></returns>
-        private bool _TryGetContentTypeApplication(DxApplicationResourceLibrary.ResourceItem[] validItems, ResourceImageSizeType sizeType, bool? preferVector, out ResourceContentType contentType)
+        private bool _TryGetContentTypeApplication(DxApplicationResourceLibrary.ResourceItem[] validItems, ResourceArgs args, out ResourceContentType contentType)
         {
             contentType = ResourceContentType.None;
-            bool isPreferredVector = preferVector ?? this._IsPreferredVectorImage;
+            bool isPreferredVector = args.IsPreferredVectorImage ?? this._IsPreferredVectorImage;
             if (validItems == null || validItems.Length == 0) return false;
             if (isPreferredVector && validItems.Any(i => i.ContentType == ResourceContentType.Vector))
                 contentType = ResourceContentType.Vector;
@@ -1621,13 +1632,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <para/>
         /// Pokud vrátí true, pak v poli <paramref name="validItems"/> je nejméně jeden prvek.
         /// </summary>
-        /// <param name="imageName"></param>
-        /// <param name="exactName"></param>
+        /// <param name="args"></param>
         /// <param name="validItems"></param>
         /// <returns></returns>
-        private bool _TryGetApplicationResources(string imageName, bool exactName, out DxApplicationResourceLibrary.ResourceItem[] validItems)
+        private bool _TryGetApplicationResources(ResourceArgs args, out DxApplicationResourceLibrary.ResourceItem[] validItems)
         {
-            return __TryGetApplicationResources(imageName, exactName, ResourceContentType.BasicImage, null, out validItems, out var _);
+            return __TryGetApplicationResources(args, ResourceContentType.BasicImage, out validItems, out var _);
         }
         /// <summary>
         /// Zkusí najít daný zdroj v aplikačních zdrojích, zafiltruje na daný typ obsahu 
@@ -1639,15 +1649,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <para/>
         /// Pokud vrátí true, pak v poli <paramref name="validItems"/> je nejméně jeden prvek.
         /// </summary>
-        /// <param name="imageName"></param>
-        /// <param name="exactName"></param>
+        /// <param name="args"></param>
         /// <param name="contentTypes"></param>
-        /// <param name="isPreferredVectorImage"></param>
         /// <param name="validItems"></param>
         /// <returns></returns>
-        private bool _TryGetApplicationResources(string imageName, bool exactName, ResourceContentType contentTypes, bool? isPreferredVectorImage, out DxApplicationResourceLibrary.ResourceItem[] validItems)
+        private bool _TryGetApplicationResources(ResourceArgs args, ResourceContentType contentTypes, out DxApplicationResourceLibrary.ResourceItem[] validItems)
         {
-            return __TryGetApplicationResources(imageName, exactName, contentTypes, isPreferredVectorImage, out validItems, out var _);
+            return __TryGetApplicationResources(args, contentTypes, out validItems, out var _);
         }
         /// <summary>
         /// Na vstupu dostává 
@@ -1661,35 +1669,14 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <para/>
         /// Pokud vrátí true, pak v poli <paramref name="validItems"/> je nejméně jeden prvek.
         /// </summary>
-        /// <param name="imageName"></param>
-        /// <param name="exactName"></param>
+        /// <param name="args"></param>
         /// <param name="contentTypes"></param>
         /// <param name="validItems"></param>
+        /// <param name="validType"></param>
         /// <returns></returns>
-        private bool _TryGetApplicationResources(string imageName, bool exactName, ResourceContentType contentTypes, out DxApplicationResourceLibrary.ResourceItem[] validItems)
+        private bool _TryGetApplicationResources(ResourceArgs args, ResourceContentType contentTypes, out DxApplicationResourceLibrary.ResourceItem[] validItems, out ResourceContentType validType)
         {
-            return __TryGetApplicationResources(imageName, exactName, contentTypes, null, out validItems, out ResourceContentType _);
-        }
-        /// <summary>
-        /// Na vstupu dostává 
-        /// Zkusí najít daný zdroj v aplikačních zdrojích, zafiltruje na daný typ obsahu - typ obsahu je povinný. Velikost se řeší následně.
-        /// <para/>
-        /// Na vstupu je dán požadovaný typ obrázků. Pokud jsou zadány hodnoty <see cref="ResourceContentType.Bitmap"/> a <see cref="ResourceContentType.Vector"/>,
-        /// pak preferenci mezi typy řeší tato metoda podle hodnoty <see cref="DxComponent.IsPreferredVectorImage"/>.
-        /// <para/>
-        /// Pokud není zadán žádný typ zdroje, akceptuje jakýkoli nalezený typ.
-        /// Pokud na vstupu v poli <paramref name="validItems"/> je jen jeden prvek, pak jej vrátí jen tehdy, pokud jeho konkrétní typ obsahu vyhovuje danému <paramref name="contentTypes"/>.
-        /// <para/>
-        /// Pokud vrátí true, pak v poli <paramref name="validItems"/> je nejméně jeden prvek.
-        /// </summary>
-        /// <param name="imageName"></param>
-        /// <param name="exactName"></param>
-        /// <param name="contentTypes"></param>
-        /// <param name="validItems"></param>
-        /// <returns></returns>
-        private bool _TryGetApplicationResources(string imageName, bool exactName, ResourceContentType contentTypes, out DxApplicationResourceLibrary.ResourceItem[] validItems, out ResourceContentType validType)
-        {
-            return __TryGetApplicationResources(imageName, exactName, contentTypes, null, out validItems, out validType);
+            return __TryGetApplicationResources(args, contentTypes, out validItems, out validType);
         }
         /// <summary>
         /// Obsahuje platné typy obsahu pro obrázky, podle aktuální preference vektorů <see cref="IsPreferredVectorImage"/>.
@@ -1707,19 +1694,17 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <para/>
         /// Pokud vrátí true, pak v poli <paramref name="validItems"/> je nejméně jeden prvek.
         /// </summary>
-        /// <param name="imageName"></param>
-        /// <param name="exactName"></param>
+        /// <param name="args"></param>
         /// <param name="contentTypes"></param>
-        /// <param name="isPreferredVectorImage"></param>
         /// <param name="validItems"></param>
         /// <param name="validType"></param>
         /// <returns></returns>
-        private bool __TryGetApplicationResources(string imageName, bool exactName, ResourceContentType contentTypes, bool? isPreferredVectorImage, out DxApplicationResourceLibrary.ResourceItem[] validItems, out ResourceContentType validType)
+        private bool __TryGetApplicationResources(ResourceArgs args, ResourceContentType contentTypes, out DxApplicationResourceLibrary.ResourceItem[] validItems, out ResourceContentType validType)
         {
             validItems = null;
             validType = ResourceContentType.None;
-            if (String.IsNullOrEmpty(imageName) || contentTypes == ResourceContentType.None) return false;
-            if (!DxApplicationResourceLibrary.TryGetResource(imageName, exactName, out var resourceItem, out var resourcePack)) return false;
+            if (!args.HasImageName || contentTypes == ResourceContentType.None) return false;
+            if (!DxApplicationResourceLibrary.TryGetResource(args.ImageName, args.ExactName, out var resourceItem, out var resourcePack)) return false;
 
             // Pokud jsem našel jeden konkrétní zdroj (je zadané explicitní jméno, a to bylo nalezeno):
             if (resourceItem != null)
@@ -1738,7 +1723,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             //   pak z něj vyberu jen ty zdroje, které odpovídají požadovanému typu obsahu:
             if (resourcePack != null)
             {
-                bool isPreferredVector = isPreferredVectorImage ?? _IsPreferredVectorImage;
+                bool isPreferredVector = args.IsPreferredVectorImage ?? _IsPreferredVectorImage;
 
                 // Postupně hledáme zdroje určitého typu:
                 if ((contentTypes & ResourceContentType.StandardImage) != 0)
@@ -1793,31 +1778,26 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         /// <summary>
         /// Vrátí Image z knihovny zdrojů.
-        /// Na vstupu (<paramref name="imageName"/>) nemusí být uvedena přípona, může být uvedeno obecné jméno, např. "pic\address-book-undo-2";
+        /// Na vstupu (<paramref name="args"/> : <see cref="ResourceArgs.ImageName"/>) nemusí být uvedena přípona, může být uvedeno obecné jméno, např. "pic\address-book-undo-2";
         /// a až knihovna zdrojů sama najde reálné obrázky: "pic\address-book-undo-2-large.svg" anebo "pic\address-book-undo-2-small.svg".
         /// </summary>
-        /// <param name="imageName"></param>
-        /// <param name="exactName"></param>
-        /// <param name="sizeType"></param>
-        /// <param name="optimalSvgSize"></param>
         /// <returns></returns>
-        private Image _CreateImageApplication(string imageName, bool exactName, ResourceImageSizeType? sizeType, Size? optimalSvgSize)
+        private Image _CreateImageApplication(ResourceArgs args)
         {
-            if (!_TryGetApplicationResources(imageName, exactName, ResourceContentType.StandardImage, out var validItems)) return null;
-            return _CreateBitmapImageApplication(validItems, sizeType, optimalSvgSize);
+            if (!_TryGetApplicationResources(args, ResourceContentType.StandardImage, out var validItems)) return null;
+            return _CreateBitmapImageApplication(validItems, args);
         }
         /// <summary>
         /// Vrátí Image z knihovny zdrojů.
         /// Na vstupu (<paramref name="resourceItems"/>) je seznam zdrojů, z nich bude vybrán zdroj vhodné velikosti.
         /// </summary>
         /// <param name="resourceItems"></param>
-        /// <param name="sizeType"></param>
-        /// <param name="optimalSvgSize"></param>
+        /// <param name="args"></param>
         /// <returns></returns>
-        private Image _CreateBitmapImageApplication(DxApplicationResourceLibrary.ResourceItem[] resourceItems, ResourceImageSizeType? sizeType, Size? optimalSvgSize)
+        private Image _CreateBitmapImageApplication(DxApplicationResourceLibrary.ResourceItem[] resourceItems, ResourceArgs args)
         {
-            if (DxApplicationResourceLibrary.ResourcePack.TryGetOptimalSize(resourceItems, sizeType, out var resourceItem))
-                return _CreateBitmapImageApplication(resourceItem, sizeType, optimalSvgSize);
+            if (DxApplicationResourceLibrary.ResourcePack.TryGetOptimalSize(resourceItems, args.SizeType, out var resourceItem))
+                return _CreateBitmapImageApplication(resourceItem, args);
             return null;
         }
         /// <summary>
@@ -1825,21 +1805,20 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <see cref="ResourceContentType.Vector"/> i <see cref="ResourceContentType.Icon"/>.
         /// </summary>
         /// <param name="resourceItem"></param>
-        /// <param name="sizeType"></param>
-        /// <param name="optimalSvgSize"></param>
+        /// <param name="args"></param>
         /// <returns></returns>
-        private Image _CreateBitmapImageApplication(DxApplicationResourceLibrary.ResourceItem resourceItem, ResourceImageSizeType? sizeType, Size? optimalSvgSize)
+        private Image _CreateBitmapImageApplication(DxApplicationResourceLibrary.ResourceItem resourceItem, ResourceArgs args)
         {
             if (resourceItem != null)
             {
                 switch (resourceItem.ContentType)
                 {
                     case ResourceContentType.Vector:
-                        return _ConvertVectorToImage(resourceItem.CreateSvgImage(), sizeType, optimalSvgSize);
+                        return _ConvertVectorToImage(resourceItem.CreateSvgImage(GetImagePalette(DxComponent.IsDarkTheme, args.Disabled)), args);
                     case ResourceContentType.Bitmap:
                         return resourceItem.CreateBmpImage();
                     case ResourceContentType.Icon:
-                        return _ConvertIconToBitmap(resourceItem, sizeType);
+                        return _ConvertIconToBitmap(resourceItem, args);
                 }
             }
             return null;
@@ -1848,24 +1827,24 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Najde a rychle vrátí <see cref="SvgImage"/> pro dané jméno, hledá v dodaných Aplikačních zdrojích
         /// </summary>
         /// <param name="resourceItems"></param>
-        /// <param name="sizeType"></param>
+        /// <param name="args"></param>
         /// <returns></returns>
-        private SvgImage _GetVectorImageApplication(DxApplicationResourceLibrary.ResourceItem[] resourceItems, ResourceImageSizeType? sizeType)
+        private SvgImage _GetVectorImageApplication(DxApplicationResourceLibrary.ResourceItem[] resourceItems, ResourceArgs args)
         {
-            if (!DxApplicationResourceLibrary.ResourcePack.TryGetOptimalSize(resourceItems, sizeType ?? ResourceImageSizeType.Large, out var resourceItem))
+            if (!DxApplicationResourceLibrary.ResourcePack.TryGetOptimalSize(resourceItems, (args.SizeType ?? ResourceImageSizeType.Large), out var resourceItem))
                 return null;
-            return resourceItem.CreateSvgImage();
+            return resourceItem.CreateSvgImage(GetImagePalette(DxComponent.IsDarkTheme, args.Disabled));
         }
         /// <summary>
         /// Konveruje (renderuje) dodaný aplikační vektorový obrázek na Bitmapu = Image
         /// </summary>
         /// <param name="vectorItem"></param>
-        /// <param name="sizeType"></param>
+        /// <param name="args"></param>
         /// <returns></returns>
-        private Image _ConvertApplicationVectorToImage(DxApplicationResourceLibrary.ResourceItem vectorItem, ResourceImageSizeType? sizeType)
+        private Image _ConvertApplicationVectorToImage(DxApplicationResourceLibrary.ResourceItem vectorItem, ResourceArgs args)
         {
-            var svgImage = vectorItem.CreateSvgImage();
-            return _ConvertVectorToImage(svgImage, sizeType, null);
+            var svgImage = vectorItem.CreateSvgImage(GetImagePalette(DxComponent.IsDarkTheme, args.Disabled));
+            return _ConvertVectorToImage(svgImage, args);
         }
         #endregion
         #region Přístup na DevExpress zdroje
@@ -1896,29 +1875,25 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Vrátí bitmapu z DevExpress zdrojů, ať už tam je jako Png nebo Svg (Svg vyrenderuje)
         /// </summary>
-        /// <param name="imageName"></param>
-        /// <param name="sizeType"></param>
-        /// <param name="optimalSvgSize"></param>
+        /// <param name="args"></param>
         /// <returns></returns>
-        private Image _CreateBitmapImageDevExpress(string imageName, ResourceImageSizeType? sizeType = null, Size? optimalSvgSize = null)
+        private Image _CreateBitmapImageDevExpress(ResourceArgs args)
         {
-            if (_IsImageNameSvg(imageName))
-                return _CreateBitmapImageDevExpressSvg(imageName, sizeType, optimalSvgSize);
+            if (_IsImageNameSvg(args.ImageName))
+                return _CreateBitmapImageDevExpressSvg(args);
             else
-                return _CreateBitmapImageDevExpressPng(imageName, sizeType, optimalSvgSize);
+                return _CreateBitmapImageDevExpressPng(args);
         }
         /// <summary>
         /// Vrátí bitmapu z obrázku typu SVG uloženou v DevExpress zdrojích.
         /// Tato metoda již netestuje existenci zdroje, to má provést někdo před voláním této metody.
         /// </summary>
-        /// <param name="imageName"></param>
-        /// <param name="sizeType"></param>
-        /// <param name="optimalSvgSize"></param>
+        /// <param name="args"></param>
         /// <returns></returns>
-        private Image _CreateBitmapImageDevExpressSvg(string imageName, ResourceImageSizeType? sizeType = null, Size? optimalSvgSize = null)
+        private Image _CreateBitmapImageDevExpressSvg(ResourceArgs args)
         {
-            string resourceName = _GetDevExpressResourceKey(imageName);
-            Size size = optimalSvgSize ?? GetDefaultImageSize(sizeType);
+            string resourceName = _GetDevExpressResourceKey(args.ImageName);
+            Size size = args.OptimalSvgSize ?? GetDefaultImageSize(args.SizeType);
 
             var svgPalette = GetSvgPalette();
             _RewindDevExpressResourceStream(resourceName);
@@ -1934,23 +1909,21 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Vrátí bitmapu uloženou v DevExpress zdrojích.
         /// Tato metoda již netestuje existenci zdroje, to má provést někdo před voláním této metody.
         /// </summary>
-        /// <param name="imageName"></param>
-        /// <param name="sizeType"></param>
-        /// <param name="optimalSvgSize"></param>
+        /// <param name="args"></param>
         /// <returns></returns>
-        private Image _CreateBitmapImageDevExpressPng(string imageName, ResourceImageSizeType? sizeType = null, Size? optimalSvgSize = null)
+        private Image _CreateBitmapImageDevExpressPng(ResourceArgs args)
         {
-            string resourceName = _GetDevExpressResourceKey(imageName);
+            string resourceName = _GetDevExpressResourceKey(args.ImageName);
             return _DevExpressResourceCache.GetImage(resourceName).Clone() as Image;
         }
         /// <summary>
         /// Najde a vrátí <see cref="SvgImage"/> pro dané jméno, hledá v DevExpress zdrojích
         /// </summary>
-        /// <param name="imageName"></param>
+        /// <param name="args"></param>
         /// <returns></returns>
-        private SvgImage _GetVectorImageDevExpress(string imageName)
+        private SvgImage _GetVectorImageDevExpress(ResourceArgs args)
         {
-            string resourceName = _GetDevExpressResourceKey(imageName);
+            string resourceName = _GetDevExpressResourceKey(args.ImageName);
             if (String.IsNullOrEmpty(resourceName)) return null;
             var vectorDict = _DevExpressVectorDictionary;
             byte[] svgContent = null;
@@ -2153,30 +2126,28 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="sizeType"></param>
         /// <returns></returns>
         public static SvgImage CreateCaptionVector(string caption, ResourceImageSizeType? sizeType = null)
-        { return Instance._CreateCaptionVector(caption, sizeType ?? ResourceImageSizeType.Large); }
+        { return Instance._CreateCaptionVector(new ResourceArgs(sizeType: (sizeType ?? ResourceImageSizeType.Large), caption: caption)); }
         /// <summary>
         /// Vytvoří <see cref="SvgImage"/> pro daný text, namísto chybějící ikony.
         /// Pokud vrátí null, zkusí se provést <see cref="CreateCaptionImage(string, ResourceImageSizeType?, Size?)"/>.
         /// </summary>
-        /// <param name="caption"></param>
-        /// <param name="sizeType"></param>
+        /// <param name="args"></param>
         /// <returns></returns>
-        private SvgImage _CreateCaptionVector(string caption, ResourceImageSizeType sizeType)
+        private SvgImage _CreateCaptionVector(ResourceArgs args)
         {
-            return DxSvgImage.CreateCaptionVector(caption, sizeType);
+            return DxSvgImage.CreateCaptionVector(args.Caption, (args.SizeType ?? ResourceImageSizeType.Large));
         }
         /// <summary>
         /// Najde a vrátí index pro SVG image pro daný text Caption. Nebo SVG image vytvoří, uloží a vrátí jeho index.
         /// </summary>
-        /// <param name="caption"></param>
-        /// <param name="sizeType"></param>
+        /// <param name="args"></param>
         /// <returns></returns>
-        private int _GetCaptionVectorIndex(string caption, ResourceImageSizeType sizeType)
+        private int _GetCaptionVectorIndex(ResourceArgs args)
         {
-            var svgCollection = _GetVectorImageList(sizeType);
-            string text = DxComponent.GetCaptionForIcon(caption);
+            var svgCollection = _GetVectorImageList(args);
+            string text = DxComponent.GetCaptionForIcon(args.Caption);
             string key = "*" + text;
-            return svgCollection.GetImageId(key, n => _CreateCaptionVector(caption, sizeType));
+            return svgCollection.GetImageId(key, n => _CreateCaptionVector(args));
         }
         /// <summary>
         /// Vyrenderuje dodaný text jako náhradní ikonu
@@ -2186,17 +2157,24 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="imageSize"></param>
         /// <returns></returns>
         public static Image CreateCaptionImage(string caption, ResourceImageSizeType? sizeType, Size? imageSize)
+        { return Instance._CreateCaptionImage(new ResourceArgs(sizeType: sizeType, imageSize: imageSize, caption: caption)); }
+        /// <summary>
+        /// Vyrenderuje dodaný text jako náhradní ikonu
+        /// </summary>
+        /// <param name="args"></param>
+        /// <returns></returns>
+        private Image _CreateCaptionImage(ResourceArgs args)
         {
-            string text = DxComponent.GetCaptionForIcon(caption);                    // Odeberu mezery a nepísmenové znaky
+            string text = DxComponent.GetCaptionForIcon(args.Caption);                    // Odeberu mezery a nepísmenové znaky
             if (text.Length == 0) return null;
 
-            if (!sizeType.HasValue) sizeType = ResourceImageSizeType.Large;
+            if (!args.SizeType.HasValue) args.SizeType = ResourceImageSizeType.Large;
             bool isDark = DxComponent.IsDarkTheme;
             Color backColor = (isDark ? SvgImageCustomize.DarkColor38 : SvgImageCustomize.LightColorFF);
             Color textColor = (isDark ? SvgImageCustomize.LightColorD4 : SvgImageCustomize.DarkColor38);
             Color lineColor = textColor;
 
-            var realSize = imageSize ?? DxComponent.GetDefaultImageSize(sizeType.Value);
+            var realSize = args.ImageSize ?? DxComponent.GetDefaultImageSize(args.SizeType.Value);
             Bitmap bitmap = new Bitmap(realSize.Width, realSize.Height, System.Drawing.Imaging.PixelFormat.Format32bppPArgb);
             using (var graphics = Graphics.FromImage(bitmap))
             {
@@ -2217,7 +2195,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 textBounds.Width = textBounds.Width + 4;   // Radši ať se znaky vejdou a ořízne se jejich okraj, než aby vypadl celý znak...
                 using (var stringFormat = new StringFormat() { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center, Trimming = StringTrimming.None, FormatFlags = StringFormatFlags.NoWrap | StringFormatFlags.LineLimit | StringFormatFlags.FitBlackBox })
                 {
-                    if (sizeType.Value != ResourceImageSizeType.Large)
+                    if (args.SizeType.Value != ResourceImageSizeType.Large)
                     {   // Malé a střední ikony
                         if (text.Length > 2) text = text.Substring(0, 2);                // Radši bych tu viděl jen jedno písmenko, ale JD...
                         float fontSize = _GetCaptionFontSize(graphics, sysFont, text, bounds.Width);
@@ -2363,18 +2341,18 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="contentType"></param>
         /// <returns></returns>
         public static bool TryGetResourceContentType(string imageName, ResourceImageSizeType sizeType, out ResourceContentType contentType, bool? preferVector = null, bool exactName = false)
-        { return Instance._TryGetResourceContentType(imageName, exactName, sizeType, preferVector, out contentType); }
-        private bool _TryGetResourceContentType(string imageName, bool exactName, ResourceImageSizeType sizeType, bool? preferVector, out ResourceContentType contentType)
+        { return Instance._TryGetResourceContentType(new ResourceArgs(imageName, exactName, sizeType, null, null, null, preferVector), out contentType); }
+        private bool _TryGetResourceContentType(ResourceArgs args, out ResourceContentType contentType)
         {
             contentType = ResourceContentType.None;
-            if (String.IsNullOrEmpty(imageName)) return false;
+            if (!args.HasImageName) return false;
 
-            if (_TryGetContentTypeImageArray(imageName, out contentType, out var _))
+            if (_TryGetContentTypeImageArray(args.ImageName, out contentType, out var _))
                 return true;
-            if (_TryGetApplicationResources(imageName, exactName, ResourceContentType.All, preferVector, out var validItems))
-                return _TryGetContentTypeApplication(validItems, sizeType, preferVector, out contentType);
-            if (_ExistsDevExpressResource(imageName))
-                return _TryGetContentTypeDevExpress(imageName, out contentType);
+            if (_TryGetApplicationResources(args, ResourceContentType.All, out var validItems))
+                return _TryGetContentTypeApplication(validItems, args, out contentType);
+            if (_ExistsDevExpressResource(args.ImageName))
+                return _TryGetContentTypeDevExpress(args.ImageName, out contentType);
 
             return false;
         }
@@ -2566,6 +2544,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void _InitSvgConvertor()
         {
             __SvgImageCustomize = new SvgImageCustomize();
+            __SvgImageModifier = new SvgImageModifier();
         }
         /// <summary>
         /// Instance Svg convertoru
@@ -2589,6 +2568,149 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         public static DxSvgImage ConvertToDarkSkin(string imageName, SvgImage svgImage, Size? targetSize = null)
         { return Instance.__SvgImageCustomize.ConvertToDarkSkin(imageName, svgImage, targetSize); }
+        /// <summary>
+        /// Instance Svg modifikátoru
+        /// </summary>
+        private SvgImageModifier __SvgImageModifier;
+        /// <summary>
+        /// Dodaný vektorový obrázek (<see cref="SvgImage"/>) převede do dané cílové palety
+        /// </summary>
+        /// <param name="content">Obsah definice obrázku</param>
+        /// <param name="paletteType">Cílová paleta</param>
+        /// <param name="imageName">Jméno obrázku, může vyvolat další konverze</param>
+        /// <param name="targetSize">Cílová velikost, může vyvolat další konverze</param>
+        /// <returns></returns>
+        internal static byte[] ModifySvgToConvertToDarkSkin(byte[] content, DxSvgImagePaletteType paletteType, string imageName = null, Size? targetSize = null)
+        { return Instance.__SvgImageModifier.Convert(content, paletteType, imageName, targetSize); }
+        #endregion
+        #region class Args
+        private class ResourceArgs
+        {
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="imageName">Jméno obrázku</param>
+            /// <param name="exactName"></param>
+            /// <param name="sizeType">Cílový typ velikosti; každá velikost má svoji kolekci (viz <see cref="GetVectorImageList(ResourceImageSizeType)"/>)</param>
+            /// <param name="optimalSvgSize"></param>
+            /// <param name="imageSize"></param>
+            /// <param name="caption"></param>
+            /// <param name="isPreferredVectorImage"></param>
+            /// <param name="disabled">Převést barvy na Disabled variantu (pokud má hodnotu true)</param>
+            /// <param name="image"></param>
+            /// <param name="smallButton"></param>
+            /// <param name="forceToIcon">Povinně vkládat ikonu do <see cref="Form.Icon"/> i kdyby byl k dispozici objekt <see cref="XtraForm.IconOptions"/></param>
+            public ResourceArgs(string imageName = null, bool exactName = false,
+                    ResourceImageSizeType? sizeType = null, Size? optimalSvgSize = null, Size? imageSize = null,
+                    string caption = null, bool? isPreferredVectorImage = null, bool? disabled = null,
+                    Image image = null, bool smallButton = false, bool forceToIcon = false)
+            {
+                this.ImageName = imageName;
+                this.ExactName = exactName;
+                this.SizeType = sizeType;
+                this.OptimalSvgSize = optimalSvgSize;
+                this.ImageSize = imageSize;
+                this.Caption = caption;
+                this.IsPreferredVectorImage = isPreferredVectorImage;
+                this.Disabled = disabled;
+                this.Image = image;
+                this.SmallButton = smallButton;
+                this.ForceToIcon = forceToIcon;
+            }
+            /// <summary>
+            /// Vrátí klon this, kde nuluje <see cref="Image"/> a <see cref="ImageName"/>, ponechá tedy jen <see cref="Caption"/>.
+            /// </summary>
+            /// <returns></returns>
+            public ResourceArgs CloneForOnlyCaption()
+            {
+                ResourceArgs clone = this.MemberwiseClone() as ResourceArgs;
+                clone.ImageName = null;
+                clone.Image = null;
+                return clone;
+            }
+            /// <summary>
+            /// Vrátí klon this, kde nastaví na danou hodnotu <see cref="SizeType"/>.
+            /// </summary>
+            /// <param name="sizeType"></param>
+            /// <returns></returns>
+            public ResourceArgs CloneForSize(ResourceImageSizeType? sizeType)
+            {
+                ResourceArgs clone = this.MemberwiseClone() as ResourceArgs;
+                clone.SizeType = sizeType;
+                return clone;
+            }
+            /// <summary>
+            /// Vrátí klon this, kde nastaví na danou hodnotu <see cref="Disabled"/>.
+            /// </summary>
+            /// <param name="disabled"></param>
+            /// <returns></returns>
+            public ResourceArgs CloneForDisabled(bool? disabled)
+            {
+                ResourceArgs clone = this.MemberwiseClone() as ResourceArgs;
+                clone.Disabled = disabled;
+                return clone;
+            }
+            /// <summary>
+            /// Jméno obrázku
+            /// </summary>
+            public string ImageName { get; set; }
+            /// <summary>
+            /// Je zadané jméno <see cref="ImageName"/> ?
+            /// </summary>
+            public bool HasImageName { get { return !String.IsNullOrEmpty(ImageName); } }
+            /// <summary>
+            /// Jméno má být chápáno exaktně = včetně suffixu s velikostí a včetně přípony
+            /// </summary>
+            public bool ExactName { get; set; }
+            /// <summary>
+            /// Typ velikosti
+            /// </summary>
+            public ResourceImageSizeType? SizeType { get; set; }
+            /// <summary>
+            /// Platný typ velikosti <see cref="SizeType"/>, default = <see cref="ResourceImageSizeType.Large"/>
+            /// </summary>
+            public ResourceImageSizeType CurrentSizeType { get { return (this.SizeType ?? ResourceImageSizeType.Large); } }
+            /// <summary>
+            /// Cílová velikost SVG
+            /// </summary>
+            public Size? OptimalSvgSize { get; set; }
+            /// <summary>
+            /// Požadovaná velikost IMG
+            /// </summary>
+            public Size? ImageSize { get; set; }
+            /// <summary>
+            /// Náhradní text tlačítka
+            /// </summary>
+            public string Caption { get; set; }
+            /// <summary>
+            /// Je zadaný text <see cref="Caption"/> ?
+            /// </summary>
+            public bool HasCaption { get { return !String.IsNullOrEmpty(Caption); } }
+            /// <summary>
+            /// Explicitně dodaný obrázek
+            /// </summary>
+            public Image Image { get; set; }
+            /// <summary>
+            /// Je zadaný explicitní obrázek <see cref="Image"/> ?
+            /// </summary>
+            public bool HasImage { get { return (this.Image != null); } }
+            /// <summary>
+            /// Cílem má být malý button
+            /// </summary>
+            public bool SmallButton { get; set; }
+            /// <summary>
+            /// Povinně vkládat ikonu do <see cref="Form.Icon"/> i kdyby byl k dispozici objekt <see cref="XtraForm.IconOptions"/>
+            /// </summary>
+            public bool ForceToIcon { get; set; }
+            /// <summary>
+            /// Preference vektorů: true = vektory; false = bitmapy, null = podle konfigurace
+            /// </summary>
+            public bool? IsPreferredVectorImage { get; set; }
+            /// <summary>
+            /// Má být generován obrázek Disabled (týká se pouze aplikačních vektorových ikon)
+            /// </summary>
+            public bool? Disabled { get; set; }
+        }
         #endregion
     }
     /// <summary>
@@ -2598,7 +2720,7 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// Toto je pouze knihovna = zdroj dat (a jejich vyhledávání), ale nikoli výkonný blok, tady se negenerují obrázky ani nic dalšího.
     /// <para/>
     /// Zastřešující algoritmy pro oba druhy zdrojů (aplikační i DevExpress) jsou v <see cref="DxComponent"/>, 
-    /// metody typicky <see cref="DxComponent.ApplyImage(ImageOptions, string, Image, ResourceImageSizeType?, Size?, bool, string, bool)"/>.
+    /// metody typicky <see cref="DxComponent.ApplyImage(ImageOptions, string, Image, ResourceImageSizeType?, Size?, bool, string, bool, bool?)"/>.
     /// Aplikační kódy by tedy neměly komunikovat napřímo s touto třídou <see cref="DxApplicationResourceLibrary"/>, ale s <see cref="DxComponent"/>,
     /// aby měly k dispozici zdroje obou druhů.
     /// </summary>
@@ -3046,6 +3168,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             private ResourceItem(IResourceItem iResourceItem)
             {
                 this._IResourceItem = iResourceItem;
+                this._SvgImagesContent = new Dictionary<DxSvgImagePaletteType, byte[]>();
             }
             /// <summary>Podkladová data</summary>
             private IResourceItem _IResourceItem;
@@ -3136,30 +3259,41 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// <returns></returns>
             public DxSvgImage CreateSvgImage()
             {
-                // V první řadě mohu použít cachovaný SvgImage pro aktuální skin (tmavý / světlý), pokud pro daný skin máme připraven SvgImage:
-                bool isDarkSkin = DxComponent.IsDarkTheme;
-                if (!isDarkSkin && _SvgImageNative != null) return _SvgImageNative;
-                if (isDarkSkin && _SvgImageDark != null) return _SvgImageDark;
+                return CreateSvgImage(DxSvgImagePaletteType.LightSkin);
+            }
+            /// <summary>
+            /// Metoda vrátí new instanci <see cref="DevExpress.Utils.Svg.SvgImage"/> vytvořenou z <see cref="Content"/>.
+            /// Pokud ale this instance není SVG (<see cref="IsSvg"/> je false) anebo není platná, vyhodí chybu!
+            /// Vrácený objekt není nutno rewindovat (jako u nativní knihovny DevExpress).
+            /// <para/>
+            /// Je vrácena new instance objektu, ale tato třída není <see cref="IDisposable"/>, tedy nepoužívá se v using { } patternu.
+            /// <para/>
+            /// Pozor, tato třída v této metodě řeší přebarvení aplikační SVG ikony ze světlého skinu (=nativní) 
+            /// do cílové palety.
+            /// </summary>
+            /// <param name="palette">Cílová paleta barev</param>
+            /// <returns></returns>
+            public DxSvgImage CreateSvgImage(DxSvgImagePaletteType palette)
+            {
+                // Klíč obrázku obsahuje jako prefix informaci o (darkSkin, isDisabled):
+                string key = DxComponent.CreateVectorImageKey(this.ItemKey, palette);
 
-                // Nemáme připravený SvgImage pro aktuální skin, musíme si jej připravit:
-                // Získám podkladová data pro SvgImage, v nativních barvách (světlý skin):
-                if (!IsSvg) throw new InvalidOperationException($"ResourceItem.CreateSvgImage() error: Resource {ItemKey} is not SVG type, ContentType is {ContentType}.");
-                var content = Content;
-                if (content == null) throw new InvalidOperationException($"ResourceItem.CreateSvgImage() error: Resource {ItemKey} can not load content.");
+                // V Dictionary _SvgImagesContent si držím pole byte pro jednotlivé palety (světlý/tmavý skin, enabled/disabled):
+                bool exists = _SvgImagesContent.TryGetValue(palette, out var imageContent);
+                if (imageContent is null)
+                {   // Pokud pro danou kombinaci (darkSkin, isDisabled) dosud nemáme konvertovaná data, pak je musíme vygenerovat:
+                    if (!IsSvg) throw new InvalidOperationException($"ResourceItem.CreateSvgImage() error: Resource {ItemKey} is not SVG type, ContentType is {ContentType}.");
+                    var resourceContent = Content;
+                    if (resourceContent == null) throw new InvalidOperationException($"ResourceItem.CreateSvgImage() error: Resource {ItemKey} can not load content.");
 
-                // Uložíme si odpovídající SvgImage:
-                if (!isDarkSkin)
-                {
-                    _SvgImageDark = null;
-                    _SvgImageNative = DxSvgImage.Create(this.ItemKey, true, content);
-                    return _SvgImageNative;
+                    imageContent = DxComponent.ModifySvgToConvertToDarkSkin(resourceContent, palette, this.ItemKey);
+                    if (!exists)
+                        _SvgImagesContent.Add(palette, imageContent);
+                    else
+                        _SvgImagesContent[palette] = imageContent;
                 }
-                else
-                {
-                    _SvgImageNative = null;
-                    _SvgImageDark = DxComponent.ConvertToDarkSkin(this.ItemKey, content);
-                    return _SvgImageDark;
-                }
+
+                return DxSvgImage.Create(key, palette, imageContent);
             }
             /// <summary>
             /// Metoda vrátí new instanci <see cref="System.Drawing.Icon"/> vytvořenou z <see cref="Content"/>.
@@ -3177,8 +3311,10 @@ namespace Noris.Clients.Win.Components.AsolDX
                 using (System.IO.MemoryStream ms = new System.IO.MemoryStream(content))
                     return new System.Drawing.Icon(ms);
             }
-            private DxSvgImage _SvgImageNative;
-            private DxSvgImage _SvgImageDark;
+            /// <summary>
+            /// Obsah SvgImage pro jednotlivé palety barev
+            /// </summary>
+            private Dictionary<DxSvgImagePaletteType, byte[]> _SvgImagesContent;
             #endregion
         }
         #endregion
@@ -3403,7 +3539,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             return this.ImageList.Images[key];
         }
         /// <summary>
-        /// Přidá prvek, který bude možno po změně skinu znovu vytvořit pro novou barevnost
+        /// Přidá prvek, který bude možno po změně skinu znovu vytvořit pro novou barevnost (podpora pro tvorbu Image pro světlý / tmavý skin, tvorba Image podle Caption)
         /// </summary>
         /// <param name="key"></param>
         /// <param name="image"></param>

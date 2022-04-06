@@ -377,6 +377,34 @@ namespace Noris.Clients.Win.Components.AsolDX
                 }
             }
         }
+        /// <summary>
+        /// Vrátí dodané prvky (this) v jiném náhodném pořadí (promíchá je jako karty v balíčku).
+        /// Lze specifikovat počet promíchání (zvýšit náhodné rozmístění)
+        /// </summary>
+        /// <typeparam name="TItem"></typeparam>
+        /// <param name="items"></param>
+        /// <param name="shuffles"></param>
+        /// <returns></returns>
+        public static TItem[] Shuffle<TItem>(this System.Collections.Generic.IList<TItem> items, int shuffles = 0)
+        {
+            if (items is null) return null;
+            var result = items.ToArray();
+            int length = result.Length;
+            if (length < 2) return result;
+            Random rand = new Random();
+            int loops = (2 + (shuffles <= 1 ? 1 : (shuffles > 100 ? 100 : shuffles))) * length;
+            for (int c = 0; c < loops; c++)
+            {
+                int i0 = rand.Next(length);
+                int i1 = rand.Next(length);
+                if (i0 == i1) continue;
+                var item0 = result[i0];
+                var item1 = result[i1];
+                result[i0] = item1;
+                result[i1] = item0;
+            }
+            return result;
+        }
         #endregion
         #region Dictionary
         /// <summary>

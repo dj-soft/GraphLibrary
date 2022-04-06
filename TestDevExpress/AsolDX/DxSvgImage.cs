@@ -41,7 +41,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         public static DxSvgImage Create(string xmlContent)
         {
             if (String.IsNullOrEmpty(xmlContent)) return null;
-            return Create(null, false, Encoding.UTF8.GetBytes(xmlContent));
+            return Create(null, DxSvgImagePaletteType.Explicit, Encoding.UTF8.GetBytes(xmlContent));
         }
         /// <summary>
         /// Static konstruktor z podkladového <see cref="SvgImage"/>
@@ -51,7 +51,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         public static DxSvgImage Create(SvgImage svgImage)
         {
             if (svgImage == null) return null;
-            return Create(null, false, svgImage.ToXmlString());
+            return Create(null, DxSvgImagePaletteType.Explicit, svgImage.ToXmlString());
         }
         /// <summary>
         /// Static konstruktor z dodaného pole byte
@@ -61,36 +61,36 @@ namespace Noris.Clients.Win.Components.AsolDX
         public static DxSvgImage Create(byte[] data)
         {
             if (data == null) return null;
-            return Create(null, false, data);
+            return Create(null, DxSvgImagePaletteType.Explicit, data);
         }
         /// <summary>
         /// Static konstruktor pro dodaná data
         /// </summary>
         /// <param name="imageName"></param>
-        /// <param name="isLightDarkCustomizable"></param>
+        /// <param name="palette"></param>
         /// <param name="data"></param>
         /// <returns></returns>
-        public static DxSvgImage Create(string imageName, bool isLightDarkCustomizable, byte[] data)
+        public static DxSvgImage Create(string imageName, DxSvgImagePaletteType palette, byte[] data)
         {
             if (data is null) return null;
             DxSvgImage dxSvgImage = null;
             using (var stream = new System.IO.MemoryStream(data))
                 dxSvgImage = new DxSvgImage(stream);
             dxSvgImage.ImageName = imageName;
-            dxSvgImage.IsLightDarkCustomizable = isLightDarkCustomizable;
+            dxSvgImage.Palette = palette;
             return dxSvgImage;
         }
         /// <summary>
         /// Static konstruktor pro dodaná data
         /// </summary>
         /// <param name="imageName"></param>
-        /// <param name="isLightDarkCustomizable"></param>
+        /// <param name="palette"></param>
         /// <param name="xmlContent"></param>
         /// <returns></returns>
-        public static DxSvgImage Create(string imageName, bool isLightDarkCustomizable, string xmlContent)
+        public static DxSvgImage Create(string imageName, DxSvgImagePaletteType palette, string xmlContent)
         {
             if (String.IsNullOrEmpty(xmlContent)) return null;
-            return Create(imageName, isLightDarkCustomizable, Encoding.UTF8.GetBytes(xmlContent));
+            return Create(imageName, palette, Encoding.UTF8.GetBytes(xmlContent));
         }
         /// <summary>
         /// Metoda prověří, zda by dodaný string mohl být XML obsah, deklarující <see cref="DxSvgImage"/> a případně jej zkusí vytvořit.
@@ -136,7 +136,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="data"></param>
         public static implicit operator DxSvgImage(byte[] data)
         {
-            return Create(null, false, data);
+            return Create(null, DxSvgImagePaletteType.Explicit, data);
         }
         #endregion
         #region Standardní public properties
@@ -149,10 +149,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public ResourceImageSizeType? SizeType { get; private set; }
         /// <summary>
-        /// Po změně skinu (Světlý - Tmavý) je nutno obsah přegenerovat.
-        /// Bohužel obsah SvgImage změnit nelze, je třeba vygenerovat new instanci.
+        /// Paleta tohoto obrázku
         /// </summary>
-        public bool IsLightDarkCustomizable { get; private set; }
+        public DxSvgImagePaletteType Palette { get; private set; }
         /// <summary>
         /// Zdrojová definice generického Image
         /// </summary>
@@ -329,7 +328,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (!String.IsNullOrEmpty(this.GenericSource))
                 return CreateGenericClone(this.GenericSource, this.SizeType);
             else
-                return Create(this.ImageName, this.IsLightDarkCustomizable, this.XmlContent);
+                return Create(this.ImageName, this.Palette, this.XmlContent);
         }
         /// <summary>
         /// Vytvoří klon aktuálního objektu dle generické definice, pro aktuální barvu skinu
@@ -395,7 +394,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             string xmlFooter = _GetXmlContentFooter();
 
             string xmlContent = xmlHeader + xmlStyles + xmlGradient + xmlCircle + xmlFooter;
-            dxSvgImage = DxSvgImage.Create(imageName, true, xmlContent);
+            dxSvgImage = DxSvgImage.Create(imageName, DxSvgImagePaletteType.LightSkin, xmlContent);
             dxSvgImage.SizeType = sizeType;
             dxSvgImage.GenericSource = imageName;
             return true;
@@ -580,7 +579,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             string xmlFooter = _GetXmlContentFooter();
 
             string xmlContent = xmlHeader + xmlStyles + xmlGradient + paths + xmlFooter;
-            dxSvgImage = DxSvgImage.Create(imageName, true, xmlContent);
+            dxSvgImage = DxSvgImage.Create(imageName, DxSvgImagePaletteType.LightSkin, xmlContent);
             dxSvgImage.SizeType = sizeType;
             dxSvgImage.GenericSource = imageName;
             return true;
@@ -789,7 +788,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             string xmlFooter = _GetXmlContentFooter();
 
             string xmlContent = xmlHeader + xmlStyles + xmlGradient + xmlPaths + xmlFooter;
-            dxSvgImage = DxSvgImage.Create(imageName, true, xmlContent);
+            dxSvgImage = DxSvgImage.Create(imageName, DxSvgImagePaletteType.LightSkin, xmlContent);
             dxSvgImage.SizeType = sizeType;
             dxSvgImage.GenericSource = imageName;
             return true;
@@ -1272,7 +1271,7 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             string xmlContent = xmlHeader + xmlStyles + xmlText + xmlFooter;
             xmlContent = xmlContent.Replace("'", "\"");
-            return DxSvgImage.Create(caption, false, xmlContent);
+            return DxSvgImage.Create(caption, DxSvgImagePaletteType.LightSkin, xmlContent);
         }
         /// <summary>
         ///  Z dodané definice a pro danou velikost vygeneruje SvgImage obsahující text.
@@ -1355,7 +1354,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             string xmlFooter = _GetXmlContentFooter();
 
             string xmlContent = xmlHeader + xmlStyles + xmlTextBegin + xmlPathBorder + xmlPathFill + xmlTextText + xmlFooter;
-            dxSvgImage = DxSvgImage.Create(text, true, xmlContent);
+            dxSvgImage = DxSvgImage.Create(text, DxSvgImagePaletteType.LightSkin, xmlContent);
             dxSvgImage.SizeType = sizeType;
             dxSvgImage.GenericSource = imageName;
             return true;
@@ -2058,6 +2057,36 @@ M22,22H10v2H22v-2z " class="Black" />
         #endregion
         #endregion
     }
+    /// <summary>
+    /// Typ palety obrázku
+    /// </summary>
+    public enum DxSvgImagePaletteType
+    {
+        /// <summary>
+        /// Neurčeno
+        /// </summary>
+        None = 0,
+        /// <summary>
+        /// Světlý skin = tmavé kontury
+        /// </summary>
+        LightSkin,
+        /// <summary>
+        /// Světlý skin a Šedé barvy pro Disabled prvky
+        /// </summary>
+        LightSkinDisabled,
+        /// <summary>
+        /// Tmavý skin = světlé kontrury
+        /// </summary>
+        DarkSkin,
+        /// <summary>
+        /// Tmavý skin a Disabled prvek
+        /// </summary>
+        DarkSkinDisabled,
+        /// <summary>
+        /// Explicitní barvy, platí zákaz je měnit
+        /// </summary>
+        Explicit
+    }
     #endregion
     #region class DxSvgImageCollection : Kolekce SvgImages rozšířená o numerický index
     /// <summary>
@@ -2088,12 +2117,13 @@ M22,22H10v2H22v-2z " class="Black" />
             return $"DxSvgImageCollection Count: {this.Count}";
         }
         /// <summary>
-        /// Inicializace
+        /// Inicializace pro zadanou velikost
         /// </summary>
         private void Initialize(ResourceImageSizeType sizeType)
         {
             _NameIdDict = new Dictionary<string, int>();
             SizeType = sizeType;
+            ImageSize = DxComponent.GetDefaultImageSize(sizeType);         // Hodnotu ani po změně Zoomu neměníme...
             RefreshCurrentSize();
             DxComponent.RegisterListener(this);
         }
@@ -2140,11 +2170,11 @@ M22,22H10v2H22v-2z " class="Black" />
             {   // Procházím to takhle dřevěně proto, že
                 //  a) potřebuji index [i] pro setování modifikovaného objektu,
                 //  b) a protože v foreach cyklu není dobré kolekci měnit
-                if (this[i] is DxSvgImage dxSvgImage && dxSvgImage.IsLightDarkCustomizable)
+                if (this[i] is DxSvgImage dxSvgImage && dxSvgImage.Palette != DxSvgImagePaletteType.Explicit)
                 {   // Pokud na dané pozici je DxSvgImage, který je LightDarkCustomizable,
                     //  pak si pro jeho jméno získám instanci zdroje (resourceItem) a tento zdroj mi vytvoří aktuálně platný SvgImage (Světlý nebo Tmavý, podle aktuálního = nového skinu):
                     if (DxApplicationResourceLibrary.TryGetResource(dxSvgImage.ImageName, true, out var resourceItem, out var _) && resourceItem != null && resourceItem.ContentType == ResourceContentType.Vector)
-                        this[i] = resourceItem.CreateSvgImage();
+                        this[i] = resourceItem.CreateSvgImage(dxSvgImage.Palette);
                     else
                         this[i] = dxSvgImage.CreateClone();
                 }
@@ -2267,10 +2297,131 @@ M22,22H10v2H22v-2z " class="Black" />
         {
             return (name == null ? "" : name.Trim().ToLower());
         }
+        /// <summary>
+        /// Vrátí typ velikosti ikon v dané kolekci
+        /// </summary>
+        /// <param name="svgImages"></param>
+        /// <returns></returns>
+        public static ResourceImageSizeType GetSizeType(DevExpress.Utils.SvgImageCollection svgImages)
+        {
+            // Default:
+            if (svgImages is null) return ResourceImageSizeType.Large;
+
+            // Pokud na vstupu je naše zdejší třída, pak druh velikosti máme uložen v SizeType:
+            if (svgImages is DxSvgImageCollection dxSvgImages) return dxSvgImages.SizeType;
+
+            // Vyjdeme z pixelové velikosti SvgImageCollection.ImageSize:
+            return DxComponent.GetImageSizeType(svgImages.ImageSize, ResourceImageSizeType.Small);
+        }
         #endregion
     }
     #endregion
     #region SvgImageCustomize : Třída pro úpravu obsahu SVG podle aktivního Skinu (Světlý / Tmavý)
+    /// <summary>
+    /// Třída modifikující barevnost dodaného SVG image pro danou cílovou paletu
+    /// </summary>
+    internal class SvgImageModifier
+    {
+        #region Public rozhraní
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public SvgImageModifier()
+        {
+            _PalettesDict = new Dictionary<DxSvgImagePaletteType, Dictionary<string, string>>();
+        }
+        /// <summary>
+        /// Vrátí obsah SVG image konvertovaný do daného cílového odstínu
+        /// </summary>
+        /// <param name="content"></param>
+        /// <param name="paletteType"></param>
+        /// <param name="imageName"></param>
+        /// <param name="targetSize"></param>
+        /// <returns></returns>
+        public byte[] Convert(byte[] content, DxSvgImagePaletteType paletteType, string imageName = null, Size? targetSize = null)
+        {
+            string xmlTextInp = Encoding.UTF8.GetString(content);
+            string xmlTextOut = Convert(xmlTextInp, paletteType, imageName, targetSize);
+            byte[] result = Encoding.UTF8.GetBytes(xmlTextOut);
+            return result;
+        }
+        /// <summary>
+        /// Vrátí obsah SVG image konvertovaný do daného cílového odstínu
+        /// </summary>
+        /// <param name="xmlTextInp"></param>
+        /// <param name="paletteType"></param>
+        /// <param name="imageName"></param>
+        /// <param name="targetSize"></param>
+        /// <returns></returns>
+        public string Convert(string xmlTextInp, DxSvgImagePaletteType paletteType, string imageName = null, Size? targetSize = null)
+        {
+            var palette = GetPalette(paletteType);
+            return ConvertXml(xmlTextInp, paletteType, palette, imageName, targetSize);
+        }
+        #endregion
+        #region Vlastní koverze
+
+        private string ConvertXml(string xmlTextInp, DxSvgImagePaletteType paletteType, Dictionary<string, string> palette, string imageName, Size? targetSize)
+        {
+            string xmlText = xmlTextInp;
+            if (palette != null) xmlText = ConvertXmlColor(xmlText, paletteType, palette, imageName, targetSize);
+            if (targetSize.HasValue) xmlText = ConvertXmlSize(xmlText, paletteType, palette, imageName, targetSize);
+            return xmlText;
+        }
+        private string ConvertXmlColor(string xmlTextInp, DxSvgImagePaletteType paletteType, Dictionary<string, string> palette, string imageName, Size? targetSize)
+        {
+            return xmlTextInp;
+        }
+        private string ConvertXmlSize(string xmlTextInp, DxSvgImagePaletteType paletteType, Dictionary<string, string> palette, string imageName, Size? targetSize)
+        {
+            return xmlTextInp; 
+        }
+        #endregion
+        #region Správa konverzních palet
+        /// <summary>
+        /// Najde / vytvoří a vrátí paletu pro danou konverzi 
+        /// </summary>
+        /// <param name="paletteType"></param>
+        /// <returns></returns>
+        private Dictionary<string, string> GetPalette(DxSvgImagePaletteType paletteType)
+        {
+            if (!_PalettesDict.TryGetValue(paletteType, out var palette))
+            {
+                palette = CreatePalette(paletteType);
+                _PalettesDict.Add(paletteType, palette);
+            }
+            return palette;
+        }
+        /// <summary>
+        /// Vygeneruje a vrátí paletu pro danou konverzi
+        /// </summary>
+        /// <param name="paletteType"></param>
+        /// <returns></returns>
+        private Dictionary<string, string> CreatePalette(DxSvgImagePaletteType paletteType)
+        {
+            Dictionary<string, string> palette = new Dictionary<string, string>(StringComparer.InvariantCultureIgnoreCase);
+
+
+
+            return palette;
+        }
+        /// <summary>
+        /// Palety pro jednotlivé cílové odstíny.
+        /// Key = typ konverze;
+        /// Value = paleta;
+        /// <para/>
+        /// Jedna každá paleta: 
+        /// Key = string barvy v deklaraci SvgImage;
+        /// Value = string výsledné barvy ve výstupním SvgImage.
+        /// <para/>
+        /// Pokud pro klíč TargetType neexistuje paleta, bude ondemand vytvořena. 
+        /// Získání palety z této Dictionary provádí metoda 
+        /// Prvnotní tvorbu palety provádí metoda 
+        /// Pokud paleta pro určitý klíč TargetType je null, nebude se provádět konverze barev; pouze konverze podle TargetSize.
+        /// </summary>
+        private Dictionary<DxSvgImagePaletteType, Dictionary<string, string>> _PalettesDict;
+        #endregion
+    }
     /// <summary>
     /// SvgImageModify : Třída pro úpravu obsahu SVG podle aktivního Skinu
     /// </summary>
@@ -2479,7 +2630,7 @@ M22,22H10v2H22v-2z " class="Black" />
 
             // Upravený string contentXml převedu do byte[], a z něj pak implicitní konverzí do SvgImage:
             byte[] darkContent = Encoding.UTF8.GetBytes(contentXml);
-            return DxSvgImage.Create(imageName, true, darkContent);
+            return DxSvgImage.Create(imageName, DxSvgImagePaletteType.DarkSkin, darkContent);
         }
         private void _ProcessSvgNode(XmlNode node)
         {
@@ -2640,7 +2791,7 @@ M22,22H10v2H22v-2z " class="Black" />
             Rectangle bounds = Rectangle.Ceiling(boundsF);
             string xml = $"<svg x='{bounds.X}px' y='{bounds.Y}px' width='{bounds.Width}px' height='{bounds.Height}px' viewBox='{bounds.X} {bounds.Y} {bounds.Width} {bounds.Height}' xmlns='http://www.w3.org/2000/svg'></svg>";
             xml = xml.Replace("'", "\"");
-            return DxSvgImage.Create(name, false, xml); ;
+            return DxSvgImage.Create(name, DxSvgImagePaletteType.Explicit, xml); ;
         }
         /// <summary>
         /// Metoda nastaví do <paramref name="svgGroupSum"/> sadu transformací tak, 

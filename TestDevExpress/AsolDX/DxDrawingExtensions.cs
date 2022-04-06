@@ -3266,13 +3266,24 @@ namespace Noris.Clients.Win.Components.AsolDX
         public static string ToXmlString(this SvgImage svgImage)
         {
             if (svgImage == null) return null;
+            byte[] content = ToByteArray(svgImage);
+            return content != null ? Encoding.UTF8.GetString(content) : null;
+        }
+        /// <summary>
+        /// Vrací byte[] content daného SVG Image
+        /// </summary>
+        /// <param name="svgImage"></param>
+        /// <returns></returns>
+        public static byte[] ToByteArray(this SvgImage svgImage)
+        {
+            if (svgImage == null) return null;
             byte[] content = null;
             using (System.IO.MemoryStream ms = new System.IO.MemoryStream())
             {
                 svgImage.Save(ms);
                 content = ms.ToArray();
             }
-            return Encoding.UTF8.GetString(content);
+            return content;
         }
         #endregion
         #region ConvertToDpi

@@ -10,7 +10,7 @@ using Noris.Clients.Win.Components.AsolDX;
 namespace TestDevExpress.Forms
 {
     /// <summary>
-    /// Formukář pro testy Ribbonů
+    /// Formulář pro testy Ribbonů
     /// </summary>
     public class RibbonForm : DxRibbonForm
     {
@@ -1130,12 +1130,14 @@ namespace TestDevExpress.Forms
             string itemText = Random.GetWord(true);
             string itemImageName = GetRandomImageName();
             bool isFirst = (remainingRadioCount == 0 ? (forceFirstInGroup || (Rand.Next(10) < 3)) : false);          // Pokud nyní připravuji Radio, pak nedávám IsFirst !
-            bool addToQat = (Rand.Next(100) < 12);
+            bool isEnabled = Random.IsTrue(80);                           // 80% prvků má Enabled = true
+            bool addToQat = Random.IsTrue(10);                            // 10% prvků jde do QAT
 
             DataRibbonItem item = new DataRibbonItem()
             {
                 ItemId = itemId,
                 Text = itemText,
+                Enabled = isEnabled,
                 ImageName = itemImageName,
                 RibbonStyle = RibbonItemStyles.All,
                 ToolTipIcon = "help_hint_48_"
@@ -1167,15 +1169,15 @@ namespace TestDevExpress.Forms
                     containsRadioGroup = true;                            // RibbonGroup již obsahuje RadioGrupu, víc RadioSkupin tam dávat už nebudu
                 }
 
-                if (Rand.Next(100) < 20) 
+                if (Random.IsTrue(15))                                    // 15% prvků nemá Image
                     item.ImageName = null;
 
                 if (item.ItemType == RibbonItemType.CheckBoxStandard || item.ItemType == RibbonItemType.RadioItem)
                 {
-                    if (Rand.Next(100) < 50) item.Checked = true;
+                    item.Checked = Random.IsTrue(30);                     // 30% CheckBoxů je zaškrtnutých
                 }
 
-                if (Rand.Next(10) < 3)
+                if (Random.IsTrue(30))                                    // 30% všech prvků je Small
                 {
                     item.RibbonStyle = RibbonItemStyles.SmallWithText;
                 }

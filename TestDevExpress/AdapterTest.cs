@@ -95,7 +95,7 @@ namespace Noris.Clients.Win.Components.AsolDX
   </g>
 </svg>";
             svgContent = svgContent.Replace("'", "\"");
-            return DxSvgImage.Create(caption, false, svgContent);
+            return DxSvgImage.Create(caption, DxSvgImagePaletteType.Explicit, svgContent);
 
             /*
 
