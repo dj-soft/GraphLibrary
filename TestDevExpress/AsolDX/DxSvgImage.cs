@@ -2340,6 +2340,9 @@ M22,22H10v2H22v-2z " class="Black" />
         /// <returns></returns>
         public byte[] Convert(byte[] content, DxSvgImagePaletteType paletteType, string imageName = null, Size? targetSize = null)
         {
+            if (imageName == "pic/folder-action-close-filled-small.svg" && paletteType == DxSvgImagePaletteType.LightSkinDisabled)
+            { }
+
             string xmlTextInp = Encoding.UTF8.GetString(content);
             string xmlTextOut = ConvertXml(xmlTextInp, paletteType, imageName, targetSize);
             byte[] result = Encoding.UTF8.GetBytes(xmlTextOut);
@@ -2397,6 +2400,7 @@ M22,22H10v2H22v-2z " class="Black" />
                 if (isSpecific)
                     xmlText = xmlText.Replace($"fill=\"{Palette.ColorCodeF7DA8E}\" stroke=\"{Palette.ColorCodeE57428}\"", $"fill=\"{palette[Palette.ColorCodeF7DA8E]}\" stroke=\"none\""); //path - žlutá je specifická
 
+                /*
                 foreach (var lightDarkColor in palette.Pairs)
                 {   // JD 0065749 26.06.2020
                     if (isSpecific)
@@ -2409,6 +2413,7 @@ M22,22H10v2H22v-2z " class="Black" />
                         xmlText = xmlText.Replace($"stroke=\"{lightDarkColor.Value}\"", $"stroke=\"{lightDarkColor.Key}\"");
                     }
                 }
+                */
 
                 //světle modrá -> světlejší modrá
                 xmlText = xmlText.Replace($"fill=\"none\" stroke=\"{Palette.ColorCode228BCB}\"", $"fill=\"none\" stroke=\"{palette[Palette.ColorCode228BCB]}\""); //JD 0065749 22.07.2020
@@ -2545,8 +2550,17 @@ M22,22H10v2H22v-2z " class="Black" />
             {
                 foreach (XmlAttribute attr in node.Attributes)
                 {
-                    if (attr.Name == "fill")
-                        attr.Value = palette[attr.Value];
+                    switch (attr.Name)
+                    {
+                        case "fill":
+                            if (palette.ModifyFill)
+                                attr.Value = palette[attr.Value];
+                            break;
+                        case "stroke":
+                            if (palette.ModifyStroke)
+                                attr.Value = palette[attr.Value];
+                            break;
+                    }
                 }
             }
         }
@@ -2556,8 +2570,17 @@ M22,22H10v2H22v-2z " class="Black" />
             {
                 foreach (XmlAttribute attr in node.Attributes)
                 {
-                    if (attr.Name == "fill")
-                        attr.Value = palette[attr.Value];
+                    switch (attr.Name)
+                    {
+                        case "fill":
+                            if (palette.ModifyFill)
+                                attr.Value = palette[attr.Value];
+                            break;
+                        case "stroke":
+                            if (palette.ModifyStroke)
+                                attr.Value = palette[attr.Value];
+                            break;
+                    }
                 }
             }
         }
@@ -2623,6 +2646,14 @@ M22,22H10v2H22v-2z " class="Black" />
             /// </summary>
             internal bool IsEmpty { get { return (_ColorDict.Count == 0); } }
             /// <summary>
+            /// Obsahuje true u palety, která má modifikovat generické atributy FILL
+            /// </summary>
+            internal bool ModifyFill { get; private set; }
+            /// <summary>
+            /// Obsahuje true u palety, která má modifikovat generické atributy STROKE
+            /// </summary>
+            internal bool ModifyStroke { get; private set; }
+            /// <summary>
             /// Pole párů hodnot Původní / Nová hodnota
             /// </summary>
             internal KeyValuePair<string, string>[] Pairs { get { return _ColorDict.ToArray(); } }
@@ -2641,7 +2672,13 @@ M22,22H10v2H22v-2z " class="Black" />
             {
                 switch (this._PaletteType)
                 {
+                    case DxSvgImagePaletteType.LightSkin:
+                        this.ModifyFill = true;
+                        this.ModifyStroke = false;
+                        break;
                     case DxSvgImagePaletteType.DarkSkin:
+                        this.ModifyFill = true;
+                        this.ModifyStroke = false;
                         // Aby nedošlo k zacyklení, tak nesmím na pravé straně použít tutéž hodnotu, která je (i někde jinde) na straně levé:
                         AddPair(ColorCodeFFFFFF, "#383837");
                         AddPair(ColorCodeF7DA8E, "#F7D52B");
@@ -2663,6 +2700,8 @@ M22,22H10v2H22v-2z " class="Black" />
                         AddPair(ColorCode000000, "#D4D4D3");
                         break;
                     case DxSvgImagePaletteType.LightSkinDisabled:
+                        this.ModifyFill = true;
+                        this.ModifyStroke = true;
                         // Aby nedošlo k zacyklení, tak nesmím na pravé straně použít tutéž hodnotu, která je (i někde jinde) na straně levé:
                         AddPair(ColorCodeFFFFFF, "#E8E8E7");
                         AddPair(ColorCodeF7DA8E, "#E0E0E1");
@@ -2684,6 +2723,8 @@ M22,22H10v2H22v-2z " class="Black" />
                         AddPair(ColorCode000000, "#484847");
                         break;
                     case DxSvgImagePaletteType.DarkSkinDisabled:
+                        this.ModifyFill = true;
+                        this.ModifyStroke = true;
                         AddPair(ColorCodeFFFFFF, "#484847");
                         AddPair(ColorCodeF7DA8E, "#505051");
                         AddPair(ColorCodeF7CDA7, "#585857");
@@ -2731,8 +2772,50 @@ M22,22H10v2H22v-2z " class="Black" />
                 {
                     if (_ColorDict.ContainsKey(current))
                         throw new ArgumentException($"Palette initialization error, duplicite color key: {current} for new target {target}, contains old target = {(_ColorDict[current])}.");
+                    // Do Dictionary nesmím vložit Value, která je rovna nějakému existujícímu klíči Key.
+                    // Proč: protože konverze barev probíhá někdy ve více vlnách, a pokud bych na místo barvy AAA dal barvu BBB, pak v další vlně se bude hledat barva BBB a najde se CCC,
+                    //   pokud bych v Dictionary měl Key AAA => Value BBB; a Key BBB => Value CCC.
+                    // Proto nyní, když mám vložit Value = BBB, a už existuje jiný klíč BBB, tak vložím value BBC = o jedna jinou barvu.
+                    // Vizuálně se to nepozná, ale nespustí to cyklickou změnu:
+                    if (_ColorDict.ContainsKey(target))
+                        target = SearchUniqueValue(target);
                     _ColorDict.Add(current, target);
                 }
+            }
+            /// <summary>
+            /// Najde těsně sousedící barvu s brvou danou, která dosud není klíčem v <see cref="_ColorDict"/>
+            /// </summary>
+            /// <param name="value"></param>
+            /// <returns></returns>
+            private string SearchUniqueValue(string value)
+            {
+                if (!TryParseColor(value, out var color)) return value;
+                int r = color.R;
+                int g = color.G;
+                int b = color.B;
+                var patterns = "112;121;122;212;221;222;110;101;100;102;120;010;011;211;210;202;222;000".Split(';');
+                foreach (var pattern in patterns)
+                {
+                    int rm = GetModifiedColor(r, pattern[0]);
+                    int gm = GetModifiedColor(g, pattern[1]);
+                    int bm = GetModifiedColor(b, pattern[2]);
+                    string test = FormatColor(Color.FromArgb(rm, gm, bm));
+                    if (!_ColorDict.ContainsKey(test)) return test;
+                }
+                return value;
+            }
+            /// <summary>
+            /// Vrací složku barvy modifikovanou daným číslem
+            /// </summary>
+            /// <param name="value"></param>
+            /// <param name="diff"></param>
+            /// <returns></returns>
+            private int GetModifiedColor(int value, char diff)
+            {
+                int d = (int)diff - 48;                     // Ze znaku '0' udělá int 0; ze znaku '2' udělá 2...
+                if (value < 5) return value + d;
+                if (value < 250) return value - 1 + d;
+                return value - 2 + d;
             }
             /// <summary>
             /// Vrátí barvu Fill cílovou pro danou barvu vstupní
@@ -2751,11 +2834,12 @@ M22,22H10v2H22v-2z " class="Black" />
                 // Režim OnlyGray a dosud neznámá barva? Danou barvu odbarvíme, upravíme pro Dark skin a přidáme do Dictionary:
                 if (!TryParseColor(current, out var color)) return current;
                 var colorG = color.GrayScale();
-
-
+                if (this._IsDarkMode)
+                    colorG = colorG.Contrast(64);
                 string result = FormatColor(colorG);
 
-                // Do Dictionary:
+                // Uložíme upravenou barvu do Dictionary, abych ji příště nemusel počítat:
+                AddPair(current, result);
 
                 return result;
             }
