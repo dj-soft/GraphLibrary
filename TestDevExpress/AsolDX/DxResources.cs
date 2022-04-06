@@ -596,8 +596,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="caption"></param>
         /// <param name="exactName"></param>
         /// <param name="disabled">Převést barvy na Disabled variantu (pokud má hodnotu true)</param>
-        public static void ApplyImage(ImageOptions imageOptions, string imageName = null, Image image = null, ResourceImageSizeType? sizeType = null, Size? imageSize = null, bool smallButton = false, string caption = null, bool exactName = false, bool? disabled = null)
-        { Instance._ApplyImage(imageOptions, new ResourceArgs(imageName, exactName, sizeType, imageSize, null, caption, null, disabled, image, smallButton)); }
+        /// <param name="prepareDisabledImage">Požadavek na přípravu ikony typu 'Disabled' i pro ten prvek Ribbonu, který má aktuálně hodnotu Enabled = true;</param>
+        public static void ApplyImage(ImageOptions imageOptions, string imageName = null, Image image = null, ResourceImageSizeType? sizeType = null, Size? imageSize = null, bool smallButton = false, string caption = null, bool exactName = false, bool? disabled = null, bool prepareDisabledImage = false)
+        { Instance._ApplyImage(imageOptions, new ResourceArgs(imageName, exactName, sizeType, imageSize, null, caption, null, disabled, image, smallButton, false, prepareDisabledImage)); }
         /// <summary>
         /// ApplyImage - do cílového objektu vepíše obrázek podle toho, jak je zadán a kam má být vepsán
         /// </summary>
@@ -791,7 +792,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                         if (barOptions.LargeImageIndex != largeIndex) barOptions.LargeImageIndex = largeIndex;
                         hasIndexes = true;
 
-                        if (_NeedDisabledImage(args.Disabled, barOptions.Item))
+                        if (args.PrepareDisabledImage || _NeedDisabledImage(args.Disabled, barOptions.Item))
                         {
                             var argsDis = args.CloneForDisabled(true);
                             barOptions.DisabledImageIndex = _GetVectorImageIndex(resourceItems, argsDis.CloneForSize(ResourceImageSizeType.Small)); ;
@@ -2580,10 +2581,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="imageName">Jméno obrázku, může vyvolat další konverze</param>
         /// <param name="targetSize">Cílová velikost, může vyvolat další konverze</param>
         /// <returns></returns>
-        internal static byte[] ModifySvgToConvertToDarkSkin(byte[] content, DxSvgImagePaletteType paletteType, string imageName = null, Size? targetSize = null)
+        internal static byte[] ConvertSvgImageToPalette(byte[] content, DxSvgImagePaletteType paletteType, string imageName = null, Size? targetSize = null)
         { return Instance.__SvgImageModifier.Convert(content, paletteType, imageName, targetSize); }
         #endregion
         #region class Args
+        /// <summary>
+        /// Třída, obsahující argumenty předávané mezi metodami pro práci se zdroji v <see cref="DxComponent"/>.
+        /// </summary>
         private class ResourceArgs
         {
             /// <summary>
@@ -2600,10 +2604,11 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// <param name="image"></param>
             /// <param name="smallButton"></param>
             /// <param name="forceToIcon">Povinně vkládat ikonu do <see cref="Form.Icon"/> i kdyby byl k dispozici objekt <see cref="XtraForm.IconOptions"/></param>
+            /// <param name="prepareDisabledImage">Požadavek na přípravu ikony typu 'Disabled' i pro ten prvek Ribbonu, který má aktuálně hodnotu Enabled = true;</param>
             public ResourceArgs(string imageName = null, bool exactName = false,
                     ResourceImageSizeType? sizeType = null, Size? optimalSvgSize = null, Size? imageSize = null,
                     string caption = null, bool? isPreferredVectorImage = null, bool? disabled = null,
-                    Image image = null, bool smallButton = false, bool forceToIcon = false)
+                    Image image = null, bool smallButton = false, bool forceToIcon = false, bool prepareDisabledImage = false)
             {
                 this.ImageName = imageName;
                 this.ExactName = exactName;
@@ -2616,6 +2621,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 this.Image = image;
                 this.SmallButton = smallButton;
                 this.ForceToIcon = forceToIcon;
+                this.PrepareDisabledImage = prepareDisabledImage;
             }
             /// <summary>
             /// Vrátí klon this, kde nuluje <see cref="Image"/> a <see cref="ImageName"/>, ponechá tedy jen <see cref="Caption"/>.
@@ -2702,6 +2708,10 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// Povinně vkládat ikonu do <see cref="Form.Icon"/> i kdyby byl k dispozici objekt <see cref="XtraForm.IconOptions"/>
             /// </summary>
             public bool ForceToIcon { get; set; }
+            /// <summary>
+            /// Požadavek na přípravu ikony typu 'Disabled' i pro ten prvek Ribbonu, který má aktuálně hodnotu Enabled = true
+            /// </summary>
+            public bool PrepareDisabledImage { get; set; }
             /// <summary>
             /// Preference vektorů: true = vektory; false = bitmapy, null = podle konfigurace
             /// </summary>
@@ -3286,14 +3296,14 @@ namespace Noris.Clients.Win.Components.AsolDX
                     var resourceContent = Content;
                     if (resourceContent == null) throw new InvalidOperationException($"ResourceItem.CreateSvgImage() error: Resource {ItemKey} can not load content.");
 
-                    imageContent = DxComponent.ModifySvgToConvertToDarkSkin(resourceContent, palette, this.ItemKey);
+                    imageContent = DxComponent.ConvertSvgImageToPalette(resourceContent, palette, this.ItemKey);
                     if (!exists)
                         _SvgImagesContent.Add(palette, imageContent);
                     else
                         _SvgImagesContent[palette] = imageContent;
                 }
 
-                return DxSvgImage.Create(key, palette, imageContent);
+                return DxSvgImage.Create(this.ItemKey, palette, imageContent);
             }
             /// <summary>
             /// Metoda vrátí new instanci <see cref="System.Drawing.Icon"/> vytvořenou z <see cref="Content"/>.

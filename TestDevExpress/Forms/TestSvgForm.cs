@@ -34,7 +34,7 @@ namespace TestDevExpress.Forms
             page.Groups.Add(group);
 
             AddDevExpGroup(page, 7);
-            AddAsolGroup(page, 7);
+            AddAsolGroup(page, 9);
 
             this.DxRibbon.Clear();
             this.DxRibbon.AddPages(pages);
@@ -64,7 +64,7 @@ namespace TestDevExpress.Forms
     "svgimages/richedit/documentstatistics.svg",
     "svgimages/richedit/draftview.svg"
 };
-            AddTestGroup(page, resources, "DEVEXPRESS", count);
+            AddTestGroup(page, resources, "DEVEXPRESS", false, count);
         }
         /// <summary>
         /// Přidá testovací grupu ASOL
@@ -75,20 +75,53 @@ namespace TestDevExpress.Forms
         {
             string[] resources = new string[]
 {
-    Noris.Clients.Win.Components.AsolDX.ImageName.DxFilterOperatorContains,
-    Noris.Clients.Win.Components.AsolDX.ImageName.DxFilterOperatorDoesNotContain,
-    Noris.Clients.Win.Components.AsolDX.ImageName.DxFilterOperatorEndWith,
-    Noris.Clients.Win.Components.AsolDX.ImageName.DxFilterOperatorDoesNotEndWith,
+    "pic/application",
+    "pic/application-windows",
+    "pic/asset-filled",
+    "pic/calendar-selection",
+    "pic/certificate-business",
+    "pic/certificate-license",
+    "pic/cleanup",
+    "pic/close",
+    "pic/component",
+    "pic/constant-filled",
+    "pic/conveyor-belt",
+    "pic/credit-card-back-filled",
+    //   "pic/folder10",
+    //   "pic/folder20",
+    //   "pic/folder30",
+    //   "pic/folder40",
+    "pic/folder50",
+    //   "pic/folder60",
+    //   "pic/folder70",
+    //   "pic/folder80",
+    //   "pic/folder90",
+    "pic/folder-action-close-filled",
+    "pic/folders-tree-filled",
+    //   "pic/form-colour-10",
+    //   "pic/form-colour-20",
+    //   "pic/form-colour-30",
+    //   "pic/form-colour-40",
+    "pic/form-colour-50",
+    //   "pic/form-colour-60",
+    //   "pic/form-colour-70",
+    //   "pic/form-colour-80",
+    //   "pic/form-colour-90",
+    //   Noris.Clients.Win.Components.AsolDX.ImageName.DxFilterOperatorContains,
+    //   Noris.Clients.Win.Components.AsolDX.ImageName.DxFilterOperatorDoesNotContain,
+    //   Noris.Clients.Win.Components.AsolDX.ImageName.DxFilterOperatorEndWith,
+    //   Noris.Clients.Win.Components.AsolDX.ImageName.DxFilterOperatorDoesNotEndWith,
     Noris.Clients.Win.Components.AsolDX.ImageName.DxFilterOperatorEquals,
     Noris.Clients.Win.Components.AsolDX.ImageName.DxFilterOperatorNotEquals,
-    Noris.Clients.Win.Components.AsolDX.ImageName.DxFilterOperatorStartWith,
-    Noris.Clients.Win.Components.AsolDX.ImageName.DxFilterOperatorDoesNotStartWith,
-    Noris.Clients.Win.Components.AsolDX.ImageName.DxFilterOperatorLessThan,
-    Noris.Clients.Win.Components.AsolDX.ImageName.DxFilterOperatorLessThanOrEqualTo,
+    //   Noris.Clients.Win.Components.AsolDX.ImageName.DxFilterOperatorStartWith,
+    //   Noris.Clients.Win.Components.AsolDX.ImageName.DxFilterOperatorDoesNotStartWith,
+    //   Noris.Clients.Win.Components.AsolDX.ImageName.DxFilterOperatorLessThan,
+    //   Noris.Clients.Win.Components.AsolDX.ImageName.DxFilterOperatorLessThanOrEqualTo,
     Noris.Clients.Win.Components.AsolDX.ImageName.DxFilterOperatorGreaterThan,
-    Noris.Clients.Win.Components.AsolDX.ImageName.DxFilterOperatorGreaterThanOrEqualTo
+    //   Noris.Clients.Win.Components.AsolDX.ImageName.DxFilterOperatorGreaterThanOrEqualTo,
+    "pic/invoice"
 };
-            AddTestGroup(page, resources, "ASOL", count);
+            AddTestGroup(page, resources, "ASOL", true, count);
         }
         /// <summary>
         /// Přidá testovací grupu
@@ -96,8 +129,9 @@ namespace TestDevExpress.Forms
         /// <param name="page"></param>
         /// <param name="resources"></param>
         /// <param name="groupText"></param>
+        /// <param name="prepareDisabledImage"></param>
         /// <param name="count"></param>
-        private void AddTestGroup(DataRibbonPage page, string[] resources, string groupText, int count)
+        private void AddTestGroup(DataRibbonPage page, string[] resources, string groupText, bool prepareDisabledImage, int count)
         {
             resources = resources.Shuffle();
 
@@ -115,26 +149,27 @@ namespace TestDevExpress.Forms
                     ToolTipText = (enabled ? "Enabled:" : "Disabled:") + "\r\n" + resource, 
                     ItemType = RibbonItemType.Button, 
                     RibbonStyle = RibbonItemStyles.Large, 
-                    Enabled = enabled
+                    Enabled = enabled,
+                    PrepareDisabledImage = prepareDisabledImage
                 };
                 group.Items.Add(button);
             }
 
             page.Groups.Add(group);
         }
+        /// <summary>
+        /// Po kliknutí
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void _DxRibbonControl_RibbonItemClick(object sender, TEventArgs<IRibbonItem> e)
         {
-            switch (e.Item.ItemId)
-            {
-                case "Dx.Test.ImgPick":
-                    ImagePickerForm.ShowForm(this);
-                    break;
-                default:
-                    var barItem = e.Item.RibbonItem.Target;
-                    if (barItem != null)
-                        barItem.Enabled = !barItem.Enabled;
-                    PrepareAnyEnabled(e.Item);
-                    break;
+            if (e.Item.ParentGroup.GroupId == "DEVEXPRESS" || e.Item.ParentGroup.GroupId == "ASOL")
+            {   // 
+                var barItem = e.Item.RibbonItem.Target;
+                if (barItem != null)
+                    SetEnabled(barItem, !barItem.Enabled);
+                PrepareAnyEnabled(e.Item);
             }
         }
         /// <summary>
@@ -166,7 +201,7 @@ namespace TestDevExpress.Forms
                 barItem = i.RibbonItem.Target;
                 if (barItem != null)
                 {
-                    barItem.Enabled = true;
+                    SetEnabled(barItem, true);
                     enabledCount++;
                 }
             }
@@ -176,8 +211,21 @@ namespace TestDevExpress.Forms
             barItem = item.RibbonItem.Target;
             if (barItem != null)
             {
-                barItem.Enabled = true;
+                SetEnabled(barItem, true);
                 enabledCount++;
+            }
+        }
+
+        private void SetEnabled(DevExpress.XtraBars.BarItem barItem, bool enabled)
+        {
+            barItem.Enabled = enabled;
+            string caption = barItem.Caption;
+            string badCaption = (enabled ? "Disabled" : "Enabled");
+            string goodCaption = (enabled ? "Enabled" : "Disabled");
+            if (caption.Contains(badCaption))
+            {
+                caption = caption.Replace(badCaption, goodCaption);
+                barItem.Caption = caption;
             }
         }
     }

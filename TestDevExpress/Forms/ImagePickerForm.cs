@@ -50,18 +50,23 @@ namespace TestDevExpress.Forms
             }
         }
         /// <summary>
-        /// Vygneruje a vrátí prvek do Ribbonu, který zobrazí this formulář
+        /// Vygneruje a vrátí prvek do Ribbonu, který zobrazí this formulář.
+        /// Jeho ID = <see cref="RibbonBarItemId"/>
         /// </summary>
         /// <returns></returns>
         public static IRibbonItem CreateRibbonButton()
         {
             return new DataRibbonItem()
             {
-                ItemId = "_SYS__DevExpress_ShowImagePickerForm", Text = "DevExpress Images", ToolTipText = "Otevře okno s nabídkou systémových ikon",
+                ItemId = RibbonBarItemId, Text = "DevExpress Images", ToolTipText = "Otevře okno s nabídkou systémových ikon",
                 ItemType = RibbonItemType.Button, RibbonStyle = RibbonItemStyles.Large,
                 ImageName = "svgimages/icon%20builder/actions_image.svg", ClickAction = ShowImagePicker
             };
         }
+        /// <summary>
+        /// ID buttonu, který vytváří metoda <see cref="CreateRibbonButton"/>
+        /// </summary>
+        public const string RibbonBarItemId = "_SYS__DevExpress_ShowImagePickerForm";
         /// <summary>
         /// Zajistí zobrazení this formuláře jako reakce na kliknutí na Ribbon
         /// </summary>

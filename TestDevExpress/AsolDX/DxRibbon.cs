@@ -2717,7 +2717,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             bool isLargeIcon = (level == 0 && (iRibbonItem.RibbonStyle.HasFlag(RibbonItemStyles.Large) || iRibbonItem.RibbonStyle == RibbonItemStyles.Default));
             ResourceImageSizeType sizeType = (isLargeIcon ? ResourceImageSizeType.Large : ResourceImageSizeType.Small);
             string caption = (level == 0 ? iRibbonItem.Text : null);                     // Náhradní ikonky (pro nezadané nebo neexistující ImageName) budeme generovat jen pro level = 0 = Ribbon, a ne pro Menu!
-            DxComponent.ApplyImage(barItem.ImageOptions, iRibbonItem.ImageName, iRibbonItem.Image, sizeType, caption: caption);
+            DxComponent.ApplyImage(barItem.ImageOptions, iRibbonItem.ImageName, iRibbonItem.Image, sizeType, caption: caption, prepareDisabledImage: iRibbonItem.PrepareDisabledImage);
         }
         /// <summary>
         /// Do daného prvku Ribbonu vepíše vše pro jeho HotKey
@@ -6124,7 +6124,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         #endregion
         #region Static helpers
         /// <summary>
-        /// Vytvoří a vrátí logickou Grupu do Ribbonu s obsahem tlačítek pro skiny (tedy definici pro tuto grupu)
+        /// Vytvoří a vrátí logickou Grupu do Ribbonu s obsahem tlačítek pro skiny (tedy definici pro tuto grupu).
+        /// Grupa má ID = <see cref="SkinIGroupId"/>.
         /// </summary>
         /// <param name="groupText"></param>
         /// <param name="addSkinButton"></param>
@@ -6135,7 +6136,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         public static IRibbonGroup CreateSkinIGroup(string groupText = null, bool addSkinButton = true, bool addPaletteButton = true, bool addPaletteGallery = false, bool addUhdSupport = false)
         {
             string text = (!String.IsNullOrEmpty(groupText) ? groupText : "Výběr vzhledu");
-            DataRibbonGroup iGroup = new DataRibbonGroup() { GroupText = text };
+            DataRibbonGroup iGroup = new DataRibbonGroup() { GroupId = SkinIGroupId, GroupText = text };
 
             if (addSkinButton) iGroup.Items.Add(new DataRibbonItem() { ItemId = "_SYS__DevExpress_SkinSetDropDown", ItemType = RibbonItemType.SkinSetDropDown });
             if (addPaletteButton) iGroup.Items.Add(new DataRibbonItem() { ItemId = "_SYS__DevExpress_SkinPaletteDropDown", ItemType = RibbonItemType.SkinPaletteDropDown });
@@ -6149,6 +6150,7 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             return iGroup;
         }
+        internal const string SkinIGroupId = "_SYS__DevExpress_Design";
         private static void SetUhdPaint(IMenuItem menuItem)
         {
 #if Compile_TestDevExpress
@@ -8394,6 +8396,14 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public virtual RibbonItemStyles RibbonStyle { get; set; }
         /// <summary>
+        /// Požadavek na přípravu ikony typu 'Disabled' i pro ten prvek Ribbonu, který má aktuálně hodnotu Enabled = true;
+        /// <para/>
+        /// Důvod: pokud budeme řídit přímo hodnotu BarItem.Enabled až po vytvoření BarItem, pak si tento BarItem sám řídí, který Image zobrazuje: zda standardní, nebo Disabled.
+        /// <para/>
+        /// V Nephrite může zůstat false, protože Nephrite mění hodnotu Enabled pomocí refreshe celého prvku, a po změně Enabled se vygeneruje správný Image automaticky.
+        /// </summary>
+        public virtual bool PrepareDisabledImage { get; set; }
+        /// <summary>
         /// Zobrazit v Search menu?
         /// </summary>
         public virtual bool VisibleInSearchMenu { get; set; }
@@ -8597,6 +8607,14 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Styl zobrazení prvku
         /// </summary>
         RibbonItemStyles RibbonStyle { get; }
+        /// <summary>
+        /// Požadavek na přípravu ikony typu 'Disabled' i pro ten prvek Ribbonu, který má aktuálně hodnotu Enabled = true;
+        /// <para/>
+        /// Důvod: pokud budeme řídit přímo hodnotu BarItem.Enabled až po vytvoření BarItem, pak si tento BarItem sám řídí, který Image zobrazuje: zda standardní, nebo Disabled.
+        /// <para/>
+        /// V Nephrite může zůstat false, protože Nephrite mění hodnotu Enabled pomocí refreshe celého prvku, a po změně Enabled se vygeneruje správný Image automaticky.
+        /// </summary>
+        bool PrepareDisabledImage { get; }
         /// <summary>
         /// Zobrazit v Search menu?
         /// </summary>
