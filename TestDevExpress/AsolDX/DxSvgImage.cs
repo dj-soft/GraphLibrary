@@ -2361,7 +2361,7 @@ M22,22H10v2H22v-2z " class="Black" />
             return ConvertXml(xmlTextInp, paletteType, imageName, targetSize);
         }
         #endregion
-        #region Vlastní koverze
+        #region Vlastní konverze
 
         private string ConvertXml(string xmlText, DxSvgImagePaletteType paletteType, string imageName, Size? targetSize)
         {
