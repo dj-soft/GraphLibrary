@@ -2517,10 +2517,9 @@ M22,22H10v2H22v-2z " class="Black" />
         {
             if (node.Name == "svg")
             {
-                foreach (XmlNode childNodeOfSvg in node.ChildNodes)
-                {
-                    _ProcessGNode(childNodeOfSvg, palette);
-                }
+                foreach (XmlNode childNode in node.ChildNodes)
+                    if (childNode.Name == "g")
+                        _ProcessGNode(childNode, palette);
             }
         }
         private void _ProcessGNode(XmlNode node, Palette palette)
@@ -2529,21 +2528,34 @@ M22,22H10v2H22v-2z " class="Black" />
             {
                 foreach (XmlNode childNode in node.ChildNodes)
                 {
-                    if (childNode.Name == "polygon") //path created by polygon
-                    {
-                        _ProcessPolygonNode(childNode, palette);
-                    }
-                    else if (childNode.Name == "path") //filled path
-                    {
-                        _ProcessPathNode(childNode, palette);
-                    }
-                    else if (childNode.Name == "g")
-                    {
+                    if (childNode.Name == "g")
                         _ProcessGNode(childNode, palette); //recursion
+                    else
+                        _ProcessGraphicNode(childNode, palette);
+                }
+            }
+        }
+        private void _ProcessGraphicNode(XmlNode node, Palette palette)
+        {
+            if (node.Name == "path" || node.Name == "polygon" || node.Name == "rect" || node.Name == "circle" || node.Name == "polyline" || node.Name == "ellipse")
+            {
+                foreach (XmlAttribute attr in node.Attributes)
+                {
+                    switch (attr.Name)
+                    {
+                        case "fill":
+                            if (palette.ModifyFill)
+                                attr.Value = palette[attr.Value];
+                            break;
+                        case "stroke":
+                            if (palette.ModifyStroke)
+                                attr.Value = palette[attr.Value];
+                            break;
                     }
                 }
             }
         }
+
         private void _ProcessPolygonNode(XmlNode node, Palette palette)
         {
             if (node.Name == "polygon")
@@ -2584,6 +2596,7 @@ M22,22H10v2H22v-2z " class="Black" />
                 }
             }
         }
+      
         #endregion
         #region Správa konverzních palet
         /// <summary>
@@ -2843,6 +2856,12 @@ M22,22H10v2H22v-2z " class="Black" />
 
                 return result;
             }
+            /// <summary>
+            /// Z dodaného stringu "#D044AA" vrátí odpovídající barvu
+            /// </summary>
+            /// <param name="text"></param>
+            /// <param name="color"></param>
+            /// <returns></returns>
             private bool TryParseColor(string text, out Color color)
             {
                 color = Color.Empty;
@@ -2860,6 +2879,11 @@ M22,22H10v2H22v-2z " class="Black" />
                 color = Color.FromArgb(value);
                 return true;
             }
+            /// <summary>
+            /// Z dodané barvu vrátí odpovídající string "#D044AA"
+            /// </summary>
+            /// <param name="color"></param>
+            /// <returns></returns>
             private string FormatColor(Color color)
             {
                 int value = color.ToArgb();
