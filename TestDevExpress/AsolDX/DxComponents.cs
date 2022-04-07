@@ -4802,6 +4802,15 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="svgPalette"></param>
         /// <returns></returns>
         internal static Image RenderSvgImage(SvgImage svgImage, Size size, ISvgPaletteProvider svgPalette) { return Current.RenderSvgImage(svgImage, size, svgPalette); }
+        /// <summary>
+        /// Zapíše do trace dané informace
+        /// </summary>
+        /// <param name="level"></param>
+        /// <param name="type"></param>
+        /// <param name="method"></param>
+        /// <param name="keyword"></param>
+        /// <param name="arguments"></param>
+        internal static void TraceText(TraceLevel level, Type type, string method, string keyword, params object[] arguments) { Current.TraceText(level, type, method, keyword, arguments); }
         #endregion
     }
     #region interface ISystemAdapter : Požadavky na adapter na support systém
@@ -4880,6 +4889,15 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="shortCut"></param>
         /// <returns></returns>
         Shortcut GetShortcutKeys(string shortCut);
+        /// <summary>
+        /// Zapíše do trace dané informace
+        /// </summary>
+        /// <param name="level"></param>
+        /// <param name="type"></param>
+        /// <param name="method"></param>
+        /// <param name="keyword"></param>
+        /// <param name="arguments"></param>
+        void TraceText(TraceLevel level, Type type, string method, string keyword, params object[] arguments);
     }
     /// <summary>
     /// Popis jednoho prvku resource (odpovídá typicky jednomu souboru, který obsahuje jednu verzi obrázku).
@@ -4989,6 +5007,32 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Cokoli
         /// </summary>
         All = AnyImage | AnyMultimedia | AnyText
+    }
+    /// <summary>
+    /// Level zápisu do Trace
+    /// </summary>
+    internal enum TraceLevel
+    {
+        /// <summary>
+        /// Neurčeno
+        /// </summary>
+        None,
+        /// <summary>
+        /// Informace
+        /// </summary>
+        Info,
+        /// <summary>
+        /// Varování
+        /// </summary>
+        Warning,
+        /// <summary>
+        /// Chyba
+        /// </summary>
+        Error,
+        /// <summary>
+        /// Systémová chyba
+        /// </summary>
+        SysError
     }
     #endregion
     #endregion

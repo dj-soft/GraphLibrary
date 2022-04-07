@@ -1309,8 +1309,9 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 nodeInfo.Expanded = true;
                 this.RaiseNodeExpanded(nodeInfo);
-                if (nodeInfo.Expanded)
-                {   // Instance ITreeListNode mohla potlačit stav Expanded = true (nastavila false) anebo k tomu došlo v eventu, pak NEPROVEDEME další akce:
+                bool isExpanded = nodeInfo.Expanded;                 // DAJ 0070650: hodnota byla setována se zpožděním - asynchronně, opravno tam (v Noris.Clients.Controllers.ObservableObjectFacadeBusySupport), zde čteno do proměnné pro porovnání
+                if (isExpanded)
+                {   // Instance ITreeListNode mohla potlačit stav Expanded = true (nastavila zpátky false) anebo k tomu došlo v eventu, pak NEPROVEDEME další akce:
                     if (nodeInfo.LazyExpandable)
                         this.RaiseLazyLoadChilds(nodeInfo);
                 }
@@ -1340,8 +1341,9 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 nodeInfo.Expanded = false;
                 this.RaiseNodeCollapsed(nodeInfo);
-                if (!nodeInfo.Expanded)
-                {   // Instance ITreeListNode mohla potlačit stav Expanded = false (nastavila true) anebo k tomu došlo v eventu, pak NEPROVEDEME další akce:
+                bool isExpanded = nodeInfo.Expanded;                 // DAJ 0070650: hodnota byla setována se zpožděním - asynchronně, opravno tam (v Noris.Clients.Controllers.ObservableObjectFacadeBusySupport), zde čteno do proměnné pro porovnání
+                if (!isExpanded)
+                {   // Instance ITreeListNode mohla potlačit stav Expanded = false (nastavila zpátky true) anebo k tomu došlo v eventu, pak NEPROVEDEME další akce:
                 }
                 else
                 {

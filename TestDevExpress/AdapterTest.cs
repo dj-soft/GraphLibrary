@@ -36,6 +36,7 @@ namespace Noris.Clients.Win.Components.AsolDX
 
         System.ComponentModel.ISynchronizeInvoke ISystemAdapter.Host { get { return DxComponent.MainForm ?? WinForm.Form.ActiveForm; } }
         WinForm.Shortcut ISystemAdapter.GetShortcutKeys(string shortCut) { return WinForm.Shortcut.None; }
+        void ISystemAdapter.TraceText(TraceLevel level, Type type, string method, string keyword, params object[] arguments) { }
     }
     /// <summary>
     /// Rozhraní předepisuje metodu <see cref="HandleEscapeKey()"/>, která umožní řešit klávesu Escape v rámci systému

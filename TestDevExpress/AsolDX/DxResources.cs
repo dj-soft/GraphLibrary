@@ -265,19 +265,19 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         private Icon _ConvertApplicationVectorsToIcon(DxApplicationResourceLibrary.ResourceItem[] vectorItems, ResourceArgs args)
         {
-            List<Tuple<Size, Image>> imageInfos = new List<Tuple<Size, Image>>();
+            List<Tuple<Size, Image, string>> imageInfos = new List<Tuple<Size, Image, string>>();
             if (args.SizeType.HasValue)
             {
                 if (DxApplicationResourceLibrary.ResourcePack.TryGetOptimalSize(vectorItems, args.SizeType, out var vectorItem))
-                    imageInfos.Add(new Tuple<Size, Image>(GetDefaultImageSize(vectorItem.SizeType), _ConvertApplicationVectorToImage(vectorItem, args)));
+                    imageInfos.Add(new Tuple<Size, Image, string>(GetDefaultImageSize(vectorItem.SizeType), _ConvertApplicationVectorToImage(vectorItem, args), vectorItem.ItemKey));
             }
             if (imageInfos.Count == 0)
             {
                 foreach (var vectorItem in vectorItems)
-                    imageInfos.Add(new Tuple<Size, Image>(GetDefaultImageSize(vectorItem.SizeType), _ConvertApplicationVectorToImage(vectorItem, args)));
+                    imageInfos.Add(new Tuple<Size, Image, string>(GetDefaultImageSize(vectorItem.SizeType), _ConvertApplicationVectorToImage(vectorItem, args), vectorItem.ItemKey));
             }
             var icon = _ConvertBitmapsToIcon(imageInfos);
-            _DisposeImages(imageInfos);
+            _DisposeImages(imageInfos.Select(ii => ii.Item2));
             return icon;
         }
         /// <summary>
@@ -306,10 +306,10 @@ namespace Noris.Clients.Win.Components.AsolDX
             Icon icon = null;
             using (var image = _ConvertVectorToImage(svgImage, args))
             {
-                List<Tuple<Size, Image>> imageInfos = new List<Tuple<Size, Image>>();
-                imageInfos.Add(new Tuple<Size, Image>(image.Size, image));
+                List<Tuple<Size, Image, string>> imageInfos = new List<Tuple<Size, Image, string>>();
+                imageInfos.Add(new Tuple<Size, Image, string>(image.Size, image, args.ImageName));
                 icon = _ConvertBitmapsToIcon(imageInfos);
-                _DisposeImages(imageInfos);
+                _DisposeImages(imageInfos.Select(ii => ii.Item2));
             }
             return icon;
         }
@@ -407,19 +407,21 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         private Icon _ConvertApplicationBitmapsToIcon(DxApplicationResourceLibrary.ResourceItem[] bitmapItems, ResourceArgs args)
         {
-            List<Tuple<Size, Image>> imageInfos = new List<Tuple<Size, Image>>();
+            if (bitmapItems.Length == 0) return null;
+
+            List<Tuple<Size, Image, string>> imageInfos = new List<Tuple<Size, Image, string>>();
             if (args.SizeType.HasValue)
             {
                 if (DxApplicationResourceLibrary.ResourcePack.TryGetOptimalSize(bitmapItems, args.SizeType, out var bitmapItem))
-                    imageInfos.Add(new Tuple<Size, Image>(GetDefaultImageSize(bitmapItem.SizeType), bitmapItem.CreateBmpImage()));
+                    imageInfos.Add(new Tuple<Size, Image, string>(GetDefaultImageSize(bitmapItem.SizeType), bitmapItem.CreateBmpImage(), bitmapItem.ItemKey));
             }
             if (imageInfos.Count == 0)
             {
                 foreach (var bitmapItem in bitmapItems)
-                    imageInfos.Add(new Tuple<Size, Image>(GetDefaultImageSize(bitmapItem.SizeType), bitmapItem.CreateBmpImage()));
+                    imageInfos.Add(new Tuple<Size, Image, string>(GetDefaultImageSize(bitmapItem.SizeType), bitmapItem.CreateBmpImage(), bitmapItem.ItemKey));
             }
             var icon = _ConvertBitmapsToIcon(imageInfos);
-            _DisposeImages(imageInfos);
+            _DisposeImages(imageInfos.Select(ii => ii.Item2));
             return icon;
         }
         /// <summary>
@@ -427,25 +429,55 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="bitmap"></param>
         /// <param name="disposeImage"></param>
+        /// <param name="name"></param>
         /// <returns></returns>
-        private Icon _ConvertBitmapToIcon(Image bitmap, bool disposeImage = false)
+        private Icon _ConvertBitmapToIcon(Image bitmap, bool disposeImage = false, string name = null)
         {
             if (bitmap == null) return null;
 
             // Konverzi zajistí metoda _ConvertBitmapsToIcon(), která požaduje na vstupu pole Image a jejich Size (imageInfos):
-            List<Tuple<Size, Image>> imageInfos = new List<Tuple<Size, Image>>();
-            imageInfos.Add(new Tuple<Size, Image>(bitmap.Size, bitmap));
+            List<Tuple<Size, Image, string>> imageInfos = new List<Tuple<Size, Image, string>>();
+            imageInfos.Add(new Tuple<Size, Image, string>(bitmap.Size, bitmap, name));
             var icon = _ConvertBitmapsToIcon(imageInfos);
             if (disposeImage)    // Tady bude Dispose jen na požadavek, typicky ne: Image vzniká jinde, ať si jej disposuje ten kdo jej vytvořil!
-                _DisposeImages(imageInfos);
+                _DisposeImages(imageInfos.Select(ii => ii.Item2));
             return icon;
         }
         /// <summary>
-        /// Dané pole obrázků převede do formátu ICO a vrátí odpovídající MemoryStream
+        /// Dané pole obrázků převede do formátu ICO a vrátí ji, bezpečná obálka
         /// </summary>
         /// <param name="imageInfos"></param>
         /// <returns></returns>
-        private Icon _ConvertBitmapsToIcon(List<Tuple<Size, Image>> imageInfos)
+        private Icon _ConvertBitmapsToIcon(List<Tuple<Size, Image, string>> imageInfos)
+        {
+            // DAJ 0070675 28.2.2022: odfiltrujeme nesmyslné požadavky:
+            if (imageInfos is null || imageInfos.Count == 0) return null;
+            imageInfos = imageInfos.Where(i => (i.Item1.Width >= 8 && i.Item1.Width <= 64 && i.Item1.Height >= 8 && i.Item1.Height <= 64)).ToList();
+            if (imageInfos.Count == 0) return null;
+
+            // Simulace chyby:
+            var imageInfo = imageInfos[0];
+            imageInfos = new List<Tuple<Size, Image, string>>();
+            imageInfos.Add(new Tuple<Size, Image, string>(new Size(0, 0), imageInfo.Item2, imageInfo.Item3));
+
+            // DAJ 0070675 28.2.2022: odstíníme chyby:
+            try
+            {
+                return _ConvertBitmapsToIconExec(imageInfos);
+            }
+            catch (Exception exc)
+            {
+                string names = imageInfos.Select(ii => ii.Item3).Where(n => !String.IsNullOrEmpty(n)).ToOneString(", ");
+                SystemAdapter.TraceText(TraceLevel.Error, typeof(DxComponent), nameof(_ConvertBitmapsToIcon), "INVALID_ICON", $"_ConvertBitmapsToIcon() error: {exc.Message}; ImageNames: {names}");
+            }
+            return null;
+        }
+        /// <summary>
+        /// Dané pole obrázků převede do formátu ICO a vrátí ji, výkonná metoda
+        /// </summary>
+        /// <param name="imageInfos"></param>
+        /// <returns></returns>
+        private Icon _ConvertBitmapsToIconExec(List<Tuple<Size, Image, string>> imageInfos)
         {
             using (var msIco = new System.IO.MemoryStream())
             using (var bw = new System.IO.BinaryWriter(msIco))
@@ -524,13 +556,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Disposuje Images v daném poli
         /// </summary>
-        /// <param name="imageInfos"></param>
-        private void _DisposeImages(List<Tuple<Size, Image>> imageInfos)
+        /// <param name="images"></param>
+        private void _DisposeImages(IEnumerable<Image> images)
         {
-            if (imageInfos == null || imageInfos.Count == 0) return;
-            foreach (var imageInfo in imageInfos)
-                imageInfo?.Item2?.Dispose();
-            imageInfos.Clear();
+            if (images == null) return;
+            foreach (var image in images)
+                image?.Dispose();
         }
         #endregion
         #region TryGetResource - hledání aplikačního zdroje
