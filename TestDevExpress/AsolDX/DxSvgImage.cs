@@ -2384,7 +2384,7 @@ M22,22H10v2H22v-2z " class="Black" />
         /// <returns></returns>
         private string ConvertXmlColor(string xmlText, DxSvgImagePaletteType paletteType, Palette palette, string imageName, Size? targetSize)
         {
-            if (palette.IsEmpty) return xmlText;
+            if (!palette.ContainsColorChange) return xmlText;
 
             xmlText = ConvertXmlColorSpecific(xmlText, palette, imageName);
             if (TextContainsAny(xmlText, "fill", "stroke") && TextContainsAny(xmlText, "path", "polygon", "rect", "circle", "polyline", "ellipse"))
@@ -2634,6 +2634,7 @@ M22,22H10v2H22v-2z " class="Black" />
             public Palette(DxSvgImagePaletteType paletteType)
             {
                 this._PaletteType = paletteType;
+                this._ForceColorChange = true;
                 this._AllColorsToGray = (paletteType == DxSvgImagePaletteType.LightSkinDisabled || paletteType == DxSvgImagePaletteType.DarkSkinDisabled);
                 this._UseGenericGrayPalette = true;
                 this._IsDarkMode = (paletteType == DxSvgImagePaletteType.DarkSkin || paletteType == DxSvgImagePaletteType.DarkSkinDisabled);
@@ -2644,6 +2645,10 @@ M22,22H10v2H22v-2z " class="Black" />
             /// Typ palety
             /// </summary>
             private DxSvgImagePaletteType _PaletteType;
+            /// <summary>
+            /// Je povinné provádět změny barev
+            /// </summary>
+            private bool _ForceColorChange;
             /// <summary>
             /// Všechny barvy (nejen ty základní <see cref="ColorCodes"/>) se mají konvertovat do šedé barvy (Disabled).
             /// Tedy vstupující barvy, které nejsou základní, se mají ondemand konvertovat do šedé!
@@ -2666,9 +2671,9 @@ M22,22H10v2H22v-2z " class="Black" />
             /// </summary>
             internal DxSvgImagePaletteType PaletteType { get { return _PaletteType; } }
             /// <summary>
-            /// Obsahuje true u prázdné palety = tam nemá význam provádět konverzi barev
+            /// Obsahuje true u palety, která obsahuje změny barev = pro takovou paletu je třeba provádět konverzi barev
             /// </summary>
-            internal bool IsEmpty { get { return (_ColorDict.Count == 0); } }
+            internal bool ContainsColorChange { get { return (_ForceColorChange || _ColorDict.Count > 0); } }
             /// <summary>
             /// Obsahuje true u palety, která má modifikovat generické atributy FILL
             /// </summary>
@@ -2699,7 +2704,8 @@ M22,22H10v2H22v-2z " class="Black" />
                 {
                     case DxSvgImagePaletteType.LightSkin:
                         this.ModifyFill = true;
-                        this.ModifyStroke = false;
+                        this.ModifyStroke = true;
+                        // AddPair(ColorCodeFFFFFF, "#FEFEFE");        // Konvertujeme výchozí barvu #FFFFFF na barvu lehce jinou: DevExpress kreslí barvu #FFFFFF jako transparentní, ale o číslo jinou kreslí jako bílou!
                         break;
                     case DxSvgImagePaletteType.DarkSkin:
                         this.ModifyFill = true;
