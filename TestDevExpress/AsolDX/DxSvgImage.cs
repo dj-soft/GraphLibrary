@@ -2340,13 +2340,9 @@ M22,22H10v2H22v-2z " class="Black" />
         /// <returns></returns>
         public byte[] Convert(byte[] content, DxSvgImagePaletteType paletteType, string imageName = null, Size? targetSize = null)
         {
-            if (imageName == "pic/folder-action-close-filled-small.svg" && paletteType == DxSvgImagePaletteType.LightSkinDisabled)
-            { }
-
             string xmlTextInp = Encoding.UTF8.GetString(content);
             string xmlTextOut = ConvertXml(xmlTextInp, paletteType, imageName, targetSize);
-            byte[] result = Encoding.UTF8.GetBytes(xmlTextOut);
-            return result;
+            return Encoding.UTF8.GetBytes(xmlTextOut);
         }
         /// <summary>
         /// Vrátí obsah SVG image konvertovaný do daného cílového odstínu
@@ -2362,7 +2358,14 @@ M22,22H10v2H22v-2z " class="Black" />
         }
         #endregion
         #region Vlastní konverze
-
+        /// <summary>
+        /// Konvertuje XML text
+        /// </summary>
+        /// <param name="xmlText"></param>
+        /// <param name="paletteType"></param>
+        /// <param name="imageName"></param>
+        /// <param name="targetSize"></param>
+        /// <returns></returns>
         private string ConvertXml(string xmlText, DxSvgImagePaletteType paletteType, string imageName, Size? targetSize)
         {
             var palette = GetPalette(paletteType);
@@ -2370,35 +2373,52 @@ M22,22H10v2H22v-2z " class="Black" />
             if (targetSize.HasValue) xmlText = ConvertXmlSize(xmlText, paletteType, palette, imageName, targetSize);
             return xmlText;
         }
+        /// <summary>
+        /// Zpracuje barvy
+        /// </summary>
+        /// <param name="xmlText"></param>
+        /// <param name="paletteType"></param>
+        /// <param name="palette"></param>
+        /// <param name="imageName"></param>
+        /// <param name="targetSize"></param>
+        /// <returns></returns>
         private string ConvertXmlColor(string xmlText, DxSvgImagePaletteType paletteType, Palette palette, string imageName, Size? targetSize)
         {
             if (palette.IsEmpty) return xmlText;
 
-            if (xmlText.Contains("fill") && (xmlText.Contains("path") || xmlText.Contains("polygon"))) //JD 0064459 07.02.2020 //JD 0065749 26.06.2020
-                xmlText = ConvertXmlColorNodes(xmlText, palette, imageName);
             xmlText = ConvertXmlColorSpecific(xmlText, palette, imageName);
+            if (TextContainsAny(xmlText, "fill", "stroke") && TextContainsAny(xmlText, "path", "polygon", "rect", "circle", "polyline", "ellipse"))
+                xmlText = ConvertXmlColorNodes(xmlText, palette, imageName);
+
             return xmlText;
         }
+        /// <summary>
+        /// Zpracuje barvy specificky podle jména ikony
+        /// </summary>
+        /// <param name="xmlText"></param>
+        /// <param name="palette"></param>
+        /// <param name="imageName"></param>
+        /// <returns></returns>
         private string ConvertXmlColorSpecific(string xmlText, Palette palette, string imageName)
         {
             // swap light and dark colours of class-colour, form-colour, tag and button-grey
             if (TextContainsAny(imageName, "class-colour-10", "form-colour-10", "tag-filled-grey", "button-grey-filled"))
             {   // JD 0065426 26.05.2020; JD 0066902 20.11.2020; JD 0065749 26.06.2020
-                xmlText = xmlText.Replace($"fill=\"{Palette.ColorCodeC8C6C4}\" stroke=\"{Palette.ColorCode383838}\"", $"fill=\"{palette[Palette.ColorCodeC8C6C4]}\" stroke=\"none\""); //circle/rect
-                xmlText = xmlText.Replace($"fill=\"{Palette.ColorCodeFFFFFF}\" stroke=\"{Palette.ColorCode383838}\"", $"fill=\"{palette[Palette.ColorCodeFFFFFF]}\" stroke=\"{palette[Palette.ColorCode383838]}\"");    // path
+                xmlText = xmlText.Replace($"fill=\"{Palette.ColorCodeC8C6C4}\" stroke=\"{Palette.ColorCode383838}\"", $"fill=\"{palette[Palette.ColorCodeC8C6C4, false]}\" stroke=\"none\""); //circle/rect
+                xmlText = xmlText.Replace($"fill=\"{Palette.ColorCodeFFFFFF}\" stroke=\"{Palette.ColorCode383838}\"", $"fill=\"{palette[Palette.ColorCodeFFFFFF, false]}\" stroke=\"{palette[Palette.ColorCode383838, true]}\"");    // path
             }
             else if (TextContainsAny(imageName, "Rel1ExtDoc", "RelNExtDoc"))
             {   // JD 0067697 19.02.2021 Ve formuláři nejsou označ.blokované DV
-                xmlText = xmlText.Replace($"fill=\"{Palette.ColorCodeF7DA8E}\" stroke=\"{Palette.ColorCode383838}\"", $"fill=\"{palette[Palette.ColorCodeF7DA8E]}\" stroke=\"{palette[Palette.ColorCode383838]}\"");    // rect
-                xmlText = xmlText.Replace($"fill=\"none\" stroke=\"{Palette.ColorCode383838}\"", $"fill=\"none\" stroke=\"{palette[Palette.ColorCode383838]}\""); //path
-                xmlText = xmlText.Replace($"fill=\"none\" stroke=\"{Palette.ColorCodeE57428}\"", $"fill=\"none\" stroke=\"{palette[Palette.ColorCodeE57428]}\""); //path
+                xmlText = xmlText.Replace($"fill=\"{Palette.ColorCodeF7DA8E}\" stroke=\"{Palette.ColorCode383838}\"", $"fill=\"{palette[Palette.ColorCodeF7DA8E, false]}\" stroke=\"{palette[Palette.ColorCode383838, true]}\"");    // rect
+                xmlText = xmlText.Replace($"fill=\"none\" stroke=\"{Palette.ColorCode383838}\"", $"fill=\"none\" stroke=\"{palette[Palette.ColorCode383838, true]}\""); //path
+                xmlText = xmlText.Replace($"fill=\"none\" stroke=\"{Palette.ColorCodeE57428}\"", $"fill=\"none\" stroke=\"{palette[Palette.ColorCodeE57428, true]}\""); //path
             }
             else
             {
                 bool isSpecific = TextContainsAny(imageName, "class-colour", "form-colour", "tag-filled", "DynRel")       // JD 0065426 26.05.2020; JD 0066902 20.11.2020; JD 0067697 19.02.2021 Ve formuláři nejsou označ.blokované DV
                                || TextContainsAll(imageName, "button", "filled");
                 if (isSpecific)
-                    xmlText = xmlText.Replace($"fill=\"{Palette.ColorCodeF7DA8E}\" stroke=\"{Palette.ColorCodeE57428}\"", $"fill=\"{palette[Palette.ColorCodeF7DA8E]}\" stroke=\"none\""); //path - žlutá je specifická
+                    xmlText = xmlText.Replace($"fill=\"{Palette.ColorCodeF7DA8E}\" stroke=\"{Palette.ColorCodeE57428}\"", $"fill=\"{palette[Palette.ColorCodeF7DA8E, false]}\" stroke=\"none\""); //path - žlutá je specifická
 
                 /*
                 foreach (var lightDarkColor in palette.Pairs)
@@ -2416,21 +2436,21 @@ M22,22H10v2H22v-2z " class="Black" />
                 */
 
                 //světle modrá -> světlejší modrá
-                xmlText = xmlText.Replace($"fill=\"none\" stroke=\"{Palette.ColorCode228BCB}\"", $"fill=\"none\" stroke=\"{palette[Palette.ColorCode228BCB]}\""); //JD 0065749 22.07.2020
-                xmlText = xmlText.Replace($"fill=\"{Palette.ColorCodeFFFFFF}\" stroke=\"{Palette.ColorCode228BCB}\"", $"fill=\"none\" stroke=\"{palette[Palette.ColorCode228BCB]}\""); //JD 0065749 22.07.2020
-                xmlText = xmlText.Replace($"fill=\"{Palette.ColorCode228BCB}\"", $"fill=\"{palette[Palette.ColorCode228BCB]}\""); //JD 0065749 22.07.2020
-                xmlText = xmlText.Replace($"stroke=\"{Palette.ColorCode228BCB}\"", $"stroke=\"{palette[Palette.ColorCode228BCB]}\""); //JD 0065749 03.08.2020
+                xmlText = xmlText.Replace($"fill=\"none\" stroke=\"{Palette.ColorCode228BCB}\"", $"fill=\"none\" stroke=\"{palette[Palette.ColorCode228BCB, true]}\""); //JD 0065749 22.07.2020
+                xmlText = xmlText.Replace($"fill=\"{Palette.ColorCodeFFFFFF}\" stroke=\"{Palette.ColorCode228BCB}\"", $"fill=\"none\" stroke=\"{palette[Palette.ColorCode228BCB, true]}\""); //JD 0065749 22.07.2020
+                xmlText = xmlText.Replace($"fill=\"{Palette.ColorCode228BCB}\"", $"fill=\"{palette[Palette.ColorCode228BCB, false]}\""); //JD 0065749 22.07.2020
+                xmlText = xmlText.Replace($"stroke=\"{Palette.ColorCode228BCB}\"", $"stroke=\"{palette[Palette.ColorCode228BCB, true]}\""); //JD 0065749 03.08.2020
 
                 //tmavě zelená -> zelená
-                xmlText = xmlText.Replace($"fill=\"{Palette.ColorCode0BA04A}\"", $"fill=\"{palette[Palette.ColorCode0BA04A]}\""); //JD 0065749 22.07.2020
-                xmlText = xmlText.Replace($"stroke=\"{Palette.ColorCode0BA04A}\"", $"stroke=\"{palette[Palette.ColorCode0BA04A]}\""); //JD 0065749 03.08.2020
+                xmlText = xmlText.Replace($"fill=\"{Palette.ColorCode0BA04A}\"", $"fill=\"{palette[Palette.ColorCode0BA04A, false]}\""); //JD 0065749 22.07.2020
+                xmlText = xmlText.Replace($"stroke=\"{Palette.ColorCode0BA04A}\"", $"stroke=\"{palette[Palette.ColorCode0BA04A, true]}\""); //JD 0065749 03.08.2020
 
                 //bílá -> tmavě šedá
-                xmlText = xmlText.Replace($"fill=\"{Palette.ColorCodeFFFFFF}\"", $"fill=\"{palette[Palette.ColorCodeFFFFFF]}\"");
+                xmlText = xmlText.Replace($"fill=\"{Palette.ColorCodeFFFFFF}\"", $"fill=\"{palette[Palette.ColorCodeFFFFFF, false]}\"");
 
                 //černá a tmavě šedá -> světle šedá
-                xmlText = xmlText.Replace($"stroke=\"{Palette.ColorCode000000}\"", $"stroke=\"{palette[Palette.ColorCode000000]}\"");
-                xmlText = xmlText.Replace($"stroke=\"{Palette.ColorCode383838}\"", $"stroke=\"{palette[Palette.ColorCode383838]}\"");
+                xmlText = xmlText.Replace($"stroke=\"{Palette.ColorCode000000}\"", $"stroke=\"{palette[Palette.ColorCode000000, true]}\"");
+                xmlText = xmlText.Replace($"stroke=\"{Palette.ColorCode383838}\"", $"stroke=\"{palette[Palette.ColorCode383838, true]}\"");
             }
             return xmlText;
         }
@@ -2470,26 +2490,6 @@ M22,22H10v2H22v-2z " class="Black" />
             return xmlText;
         }
         /// <summary>
-        /// Vrátí true, pokud v daném textu <paramref name="text"/> bude nalezen některý ze zadaných textů.
-        /// </summary>
-        /// <param name="text"></param>
-        /// <param name="contains"></param>
-        /// <returns></returns>
-        private bool TextContainsAny(string text, params string[] contains)
-        {
-            return contains.Any(c => text.Contains(c));
-        }
-        /// <summary>
-        /// Vrátí true, pokud v daném textu <paramref name="text"/> budou nalezeny všechny ze zadané textů.
-        /// </summary>
-        /// <param name="text"></param>
-        /// <param name="contains"></param>
-        /// <returns></returns>
-        private bool TextContainsAll(string text, params string[] contains)
-        {
-            return contains.All(c => text.Contains(c));
-        }
-        /// <summary>
         /// Zpracuje rekurzivně strukturu XML nodů a nahradí barvy
         /// </summary>
         /// <param name="xmlText"></param>
@@ -2513,6 +2513,11 @@ M22,22H10v2H22v-2z " class="Black" />
             }
             return xmlText;
         }
+        /// <summary>
+        /// Zpracuje obecné nody v SVG
+        /// </summary>
+        /// <param name="node"></param>
+        /// <param name="palette"></param>
         private void _ProcessSvgNode(XmlNode node, Palette palette)
         {
             if (node.Name == "svg")
@@ -2522,6 +2527,11 @@ M22,22H10v2H22v-2z " class="Black" />
                         _ProcessGNode(childNode, palette);
             }
         }
+        /// <summary>
+        /// Zpracuje nody G (grupa): buď rekurzivně do vnořené grupy, nebo do garfického nodu <see cref="_ProcessGraphicNode(XmlNode, Palette)"/>
+        /// </summary>
+        /// <param name="node"></param>
+        /// <param name="palette"></param>
         private void _ProcessGNode(XmlNode node, Palette palette)
         {
             if (node.Name == "g")
@@ -2535,6 +2545,11 @@ M22,22H10v2H22v-2z " class="Black" />
                 }
             }
         }
+        /// <summary>
+        /// Zpracuje nody, které by mohly obsahovat grafiku
+        /// </summary>
+        /// <param name="node"></param>
+        /// <param name="palette"></param>
         private void _ProcessGraphicNode(XmlNode node, Palette palette)
         {
             if (node.Name == "path" || node.Name == "polygon" || node.Name == "rect" || node.Name == "circle" || node.Name == "polyline" || node.Name == "ellipse")
@@ -2545,58 +2560,36 @@ M22,22H10v2H22v-2z " class="Black" />
                     {
                         case "fill":
                             if (palette.ModifyFill)
-                                attr.Value = palette[attr.Value];
+                                attr.Value = palette[attr.Value, false];
                             break;
                         case "stroke":
                             if (palette.ModifyStroke)
-                                attr.Value = palette[attr.Value];
+                                attr.Value = palette[attr.Value, true];
                             break;
                     }
                 }
             }
         }
-
-        private void _ProcessPolygonNode(XmlNode node, Palette palette)
+        /// <summary>
+        /// Vrátí true, pokud v daném textu <paramref name="text"/> bude nalezen některý ze zadaných textů.
+        /// </summary>
+        /// <param name="text"></param>
+        /// <param name="contains"></param>
+        /// <returns></returns>
+        private bool TextContainsAny(string text, params string[] contains)
         {
-            if (node.Name == "polygon")
-            {
-                foreach (XmlAttribute attr in node.Attributes)
-                {
-                    switch (attr.Name)
-                    {
-                        case "fill":
-                            if (palette.ModifyFill)
-                                attr.Value = palette[attr.Value];
-                            break;
-                        case "stroke":
-                            if (palette.ModifyStroke)
-                                attr.Value = palette[attr.Value];
-                            break;
-                    }
-                }
-            }
+            return contains.Any(c => text.Contains(c));
         }
-        private void _ProcessPathNode(XmlNode node, Palette palette)
+        /// <summary>
+        /// Vrátí true, pokud v daném textu <paramref name="text"/> budou nalezeny všechny zadané texty.
+        /// </summary>
+        /// <param name="text"></param>
+        /// <param name="contains"></param>
+        /// <returns></returns>
+        private bool TextContainsAll(string text, params string[] contains)
         {
-            if (node.Name == "path")
-            {
-                foreach (XmlAttribute attr in node.Attributes)
-                {
-                    switch (attr.Name)
-                    {
-                        case "fill":
-                            if (palette.ModifyFill)
-                                attr.Value = palette[attr.Value];
-                            break;
-                        case "stroke":
-                            if (palette.ModifyStroke)
-                                attr.Value = palette[attr.Value];
-                            break;
-                    }
-                }
-            }
+            return contains.All(c => text.Contains(c));
         }
-      
         #endregion
         #region Správa konverzních palet
         /// <summary>
@@ -2641,14 +2634,32 @@ M22,22H10v2H22v-2z " class="Black" />
             public Palette(DxSvgImagePaletteType paletteType)
             {
                 this._PaletteType = paletteType;
-                this._OnlyGrayTarget = (paletteType == DxSvgImagePaletteType.LightSkinDisabled || paletteType == DxSvgImagePaletteType.DarkSkinDisabled);
+                this._AllColorsToGray = (paletteType == DxSvgImagePaletteType.LightSkinDisabled || paletteType == DxSvgImagePaletteType.DarkSkinDisabled);
+                this._UseGenericGrayPalette = true;
                 this._IsDarkMode = (paletteType == DxSvgImagePaletteType.DarkSkin || paletteType == DxSvgImagePaletteType.DarkSkinDisabled);
                 this._ColorDict = new Dictionary<string, string>(StringComparer.InvariantCultureIgnoreCase);
                 this.CreateValues();
             }
+            /// <summary>
+            /// Typ palety
+            /// </summary>
             private DxSvgImagePaletteType _PaletteType;
-            private bool _OnlyGrayTarget;
+            /// <summary>
+            /// Všechny barvy (nejen ty základní <see cref="ColorCodes"/>) se mají konvertovat do šedé barvy (Disabled).
+            /// Tedy vstupující barvy, které nejsou základní, se mají ondemand konvertovat do šedé!
+            /// </summary>
+            private bool _AllColorsToGray;
+            /// <summary>
+            /// Pro základní barvy (<see cref="ColorCodes"/>) vygenerovat cílové šedé barvy (Disabled): true = algoritmicky, false = explicitně vyjmenovat
+            /// </summary>
+            private bool _UseGenericGrayPalette;
+            /// <summary>
+            /// Obsahuje true pro tmavou paletu, ovlivňuje tvorbu základní barvy pro generické šedé odstíny
+            /// </summary>
             private bool _IsDarkMode;
+            /// <summary>
+            /// Index barev
+            /// </summary>
             private Dictionary<string, string> _ColorDict;
             /// <summary>
             /// Typ palety
@@ -2667,15 +2678,16 @@ M22,22H10v2H22v-2z " class="Black" />
             /// </summary>
             internal bool ModifyStroke { get; private set; }
             /// <summary>
-            /// Pole párů hodnot Původní / Nová hodnota
+            /// Pole párů hodnot Původní / Nová hodnota, obě v notaci XML = "#RRGGBB"
             /// </summary>
             internal KeyValuePair<string, string>[] Pairs { get { return _ColorDict.ToArray(); } }
             /// <summary>
             /// Obsahuje cílovou barvu pro danou vstupní (definiční) barvu.
             /// </summary>
-            /// <param name="current"></param>
+            /// <param name="current">Klíč aktuální barvy v notaci XML = "#RRGGBB"</param>
+            /// <param name="stroke">Použít konverzi pro: false = fill / true = stroke</param>
             /// <returns></returns>
-            internal string this[string current] { get { return GetTargetValue(current); } }
+            internal string this[string current, bool stroke] { get { return GetTargetValue(current, stroke); } }
             #endregion
             #region Vytvoření jednotlivých převodních palet pro typ palety
             /// <summary>
@@ -2691,8 +2703,7 @@ M22,22H10v2H22v-2z " class="Black" />
                         break;
                     case DxSvgImagePaletteType.DarkSkin:
                         this.ModifyFill = true;
-                        this.ModifyStroke = false;
-                        // Aby nedošlo k zacyklení, tak nesmím na pravé straně použít tutéž hodnotu, která je (i někde jinde) na straně levé:
+                        this.ModifyStroke = true;
                         AddPair(ColorCodeFFFFFF, "#383837");
                         AddPair(ColorCodeF7DA8E, "#F7D52B");
                         AddPair(ColorCodeF7CDA7, "#E57427");
@@ -2702,8 +2713,8 @@ M22,22H10v2H22v-2z " class="Black" />
                         AddPair(ColorCodeDDAE85, "#9B5434");
                         AddPair(ColorCodeD4D4D4, "#383837");
                         AddPair(ColorCodeC8C6C4, "#787877");
-                        AddPair(ColorCodeBEE2E5, "#21B4C8");
                         AddPair(ColorCodeACD8B1, "#0BA049");
+                        AddPair(ColorCodeBEE2E5, "#21B4C8");
                         AddPair(ColorCode92CBEE, "#0964B1");
                         AddPair(ColorCode787878, "#C8C6C3");
                         AddPair(ColorCode383838, "#D4D4D3");
@@ -2715,47 +2726,62 @@ M22,22H10v2H22v-2z " class="Black" />
                     case DxSvgImagePaletteType.LightSkinDisabled:
                         this.ModifyFill = true;
                         this.ModifyStroke = true;
-                        // Aby nedošlo k zacyklení, tak nesmím na pravé straně použít tutéž hodnotu, která je (i někde jinde) na straně levé:
-                        AddPair(ColorCodeFFFFFF, "#E8E8E7");
-                        AddPair(ColorCodeF7DA8E, "#E0E0E1");
-                        AddPair(ColorCodeF7CDA7, "#D8D8D7");
-                        AddPair(ColorCodeF3B8B8, "#D0D0D1");
-                        AddPair(ColorCodeE57428, "#C8C8C7");
-                        AddPair(ColorCodeDFBCD9, "#C0C0C1");
-                        AddPair(ColorCodeDDAE85, "#B8B8B7");
-                        AddPair(ColorCodeD4D4D4, "#B0B0B1");
-                        AddPair(ColorCodeC8C6C4, "#A8A8A7");
-                        AddPair(ColorCodeBEE2E5, "#A0A0A1");
-                        AddPair(ColorCodeACD8B1, "#808087");
-                        AddPair(ColorCode92CBEE, "#787877");
-                        AddPair(ColorCode787878, "#707071");
-                        AddPair(ColorCode383838, "#686867");
-                        AddPair(ColorCode228BCB, "#606061");
-                        AddPair(ColorCode17AB4F, "#585857");
-                        AddPair(ColorCode0BA04A, "#505051");
-                        AddPair(ColorCode000000, "#484847");
+                        if (this._UseGenericGrayPalette)
+                        {
+                            foreach (var colorCode in ColorCodes)
+                                AddPair(colorCode, GetGrayValue(colorCode));
+                        }
+                        else
+                        {
+                            AddPair(ColorCodeFFFFFF, "#E8E8E7");
+                            AddPair(ColorCodeF7DA8E, "#E0E0E1");
+                            AddPair(ColorCodeF7CDA7, "#D8D8D7");
+                            AddPair(ColorCodeF3B8B8, "#D0D0D1");
+                            AddPair(ColorCodeE57428, "#C8C8C7");
+                            AddPair(ColorCodeACD8B1, "#C4C4C3");
+                            AddPair(ColorCodeDFBCD9, "#C0C0C1");
+                            AddPair(ColorCodeDDAE85, "#B8B8B7");
+                            AddPair(ColorCodeD4D4D4, "#B0B0B1");
+                            AddPair(ColorCodeC8C6C4, "#A8A8A7");
+                            AddPair(ColorCodeBEE2E5, "#A0A0A1");
+                            AddPair(ColorCode92CBEE, "#787877");
+                            AddPair(ColorCode787878, "#707071");
+                            AddPair(ColorCode383838, "#686867");
+                            AddPair(ColorCode228BCB, "#606061");
+                            AddPair(ColorCode17AB4F, "#585857");
+                            AddPair(ColorCode0BA04A, "#505051");
+                            AddPair(ColorCode000000, "#484847");
+                        }
                         break;
                     case DxSvgImagePaletteType.DarkSkinDisabled:
                         this.ModifyFill = true;
                         this.ModifyStroke = true;
-                        AddPair(ColorCodeFFFFFF, "#484847");
-                        AddPair(ColorCodeF7DA8E, "#505051");
-                        AddPair(ColorCodeF7CDA7, "#585857");
-                        AddPair(ColorCodeF3B8B8, "#606061");
-                        AddPair(ColorCodeE57428, "#686867");
-                        AddPair(ColorCodeDFBCD9, "#707071");
-                        AddPair(ColorCodeDDAE85, "#787877");
-                        AddPair(ColorCodeD4D4D4, "#808087");
-                        AddPair(ColorCodeC8C6C4, "#A0A0A1");
-                        AddPair(ColorCodeBEE2E5, "#A8A8A7");
-                        AddPair(ColorCodeACD8B1, "#B0B0B1");
-                        AddPair(ColorCode92CBEE, "#B8B8B7");
-                        AddPair(ColorCode787878, "#C0C0C1");
-                        AddPair(ColorCode383838, "#C8C8C7");
-                        AddPair(ColorCode228BCB, "#D0D0D1");
-                        AddPair(ColorCode17AB4F, "#D8D8D7");
-                        AddPair(ColorCode0BA04A, "#E0E0E1");
-                        AddPair(ColorCode000000, "#E8E8E7");
+                        if (this._UseGenericGrayPalette)
+                        {
+                            foreach (var colorCode in ColorCodes)
+                                AddPair(colorCode, GetGrayValue(colorCode));
+                        }
+                        else
+                        {
+                            AddPair(ColorCodeFFFFFF, "#484847");
+                            AddPair(ColorCodeF7DA8E, "#505051");
+                            AddPair(ColorCodeF7CDA7, "#585857");
+                            AddPair(ColorCodeF3B8B8, "#606061");
+                            AddPair(ColorCodeE57428, "#686867");
+                            AddPair(ColorCodeDFBCD9, "#707071");
+                            AddPair(ColorCodeDDAE85, "#787877");
+                            AddPair(ColorCodeD4D4D4, "#808087");
+                            AddPair(ColorCodeC8C6C4, "#A0A0A1");
+                            AddPair(ColorCodeACD8B1, "#A8A8A7");
+                            AddPair(ColorCodeBEE2E5, "#B0B0B1");
+                            AddPair(ColorCode92CBEE, "#B8B8B7");
+                            AddPair(ColorCode787878, "#C0C0C1");
+                            AddPair(ColorCode383838, "#C8C8C7");
+                            AddPair(ColorCode228BCB, "#D0D0D1");
+                            AddPair(ColorCode17AB4F, "#D8D8D7");
+                            AddPair(ColorCode0BA04A, "#E0E0E1");
+                            AddPair(ColorCode000000, "#E8E8E7");
+                        }
                         break;
                 }
 
@@ -2766,6 +2792,7 @@ M22,22H10v2H22v-2z " class="Black" />
                 var pairs = this.Pairs;
                 foreach (var pair1 in pairs)
                 {
+                    if (pair1.Value == pair1.Key) continue;          // Shodná barva Value == Key mi nevadí, protože nevede k vícekrokové změně barvy.
                     if (_ColorDict.TryGetValue(pair1.Value, out var value2))
                     {
                         errors += $"Nalezeno zacyklení: Key1:'{pair1.Key}' => Value1: '{pair1.Value}' == Key2:'{pair1.Value} => Value2: '{value2}'.\r\n";
@@ -2786,36 +2813,49 @@ M22,22H10v2H22v-2z " class="Black" />
                     if (_ColorDict.ContainsKey(current))
                         throw new ArgumentException($"Palette initialization error, duplicite color key: {current} for new target {target}, contains old target = {(_ColorDict[current])}.");
                     // Do Dictionary nesmím vložit Value, která je rovna nějakému existujícímu klíči Key.
-                    // Proč: protože konverze barev probíhá někdy ve více vlnách, a pokud bych na místo barvy AAA dal barvu BBB, pak v další vlně se bude hledat barva BBB a najde se CCC,
+                    //  Proč: protože konverze barev probíhá někdy ve více vlnách, a pokud bych na místo barvy AAA dal barvu BBB, pak v další vlně se bude hledat barva BBB a najde se CCC,
                     //   pokud bych v Dictionary měl Key AAA => Value BBB; a Key BBB => Value CCC.
-                    // Proto nyní, když mám vložit Value = BBB, a už existuje jiný klíč BBB, tak vložím value BBC = o jedna jinou barvu.
-                    // Vizuálně se to nepozná, ale nespustí to cyklickou změnu:
+                    //  Proto nyní, když mám vložit Value = BBB, a už existuje jiný klíč BBB, tak vložím value BBC = o jedna jinou barvu.
+                    //  Vizuálně se to nepozná, ale nespustí to cyklickou změnu.
+                    // Mohu ale použít takovou Value, která je rovna svému vlastnímu klíči (jde o barvu, která se nemění),
+                    //  taková kombinace nezpůsobí cyklické změny barvy AAA => BBB => CCC, protože zůstává beze změny EEE => EEE
                     if (_ColorDict.ContainsKey(target))
                         target = SearchUniqueValue(target);
                     _ColorDict.Add(current, target);
                 }
             }
             /// <summary>
-            /// Najde těsně sousedící barvu s brvou danou, která dosud není klíčem v <see cref="_ColorDict"/>
+            /// Najde a vrátí těsně sousedící barvu (ve formě Xml) s barvou danou, která ale dosud není klíčem v <see cref="_ColorDict"/>.
             /// </summary>
             /// <param name="value"></param>
             /// <returns></returns>
             private string SearchUniqueValue(string value)
             {
                 if (!TryParseColor(value, out var color)) return value;
-                int r = color.R;
-                int g = color.G;
-                int b = color.B;
-                var patterns = "112;121;122;212;221;222;110;101;100;102;120;010;011;211;210;202;222;000".Split(';');
-                foreach (var pattern in patterns)
+                var modifiers = "112;121;122;212;221;222;110;101;100;102;120;010;011;211;210;202;222;000".Split(';');
+                foreach (var modifier in modifiers)
                 {
-                    int rm = GetModifiedColor(r, pattern[0]);
-                    int gm = GetModifiedColor(g, pattern[1]);
-                    int bm = GetModifiedColor(b, pattern[2]);
-                    string test = FormatColor(Color.FromArgb(rm, gm, bm));
+                    string test = Convertor.ColorToXmlString(GetModifiedColor(color, modifier));
                     if (!_ColorDict.ContainsKey(test)) return test;
                 }
                 return value;
+            }
+            /// <summary>
+            /// Vrací danou barvu modifikovanou daným číslem.
+            /// Modifikátor musí být string délky tři znaky, kde každý znak smí být pouze "0", "1", "2".
+            /// <paramref name="modifier"/> tedy může být typicky "001" nebo "121" nebo "201" atd.
+            /// Hodnoty modifikátoru se přičtou/odečtou od složky barvy tak, aby modifikovaná složka byla v rozsahu 0-255, a vrací se upravená barva.
+            /// Výsledná barva se tedy může od vstupní barvy lišit nanejvýše o 2 v každé složce.
+            /// </summary>
+            /// <param name="color"></param>
+            /// <param name="modifier"></param>
+            /// <returns></returns>
+            private static Color GetModifiedColor(Color color, string modifier)
+            {
+                int r = GetModifiedColorPart(color.R, modifier[0]);
+                int g = GetModifiedColorPart(color.G, modifier[1]);
+                int b = GetModifiedColorPart(color.B, modifier[2]);
+                return Color.FromArgb(r, g, b);
             }
             /// <summary>
             /// Vrací složku barvy modifikovanou daným číslem
@@ -2823,74 +2863,95 @@ M22,22H10v2H22v-2z " class="Black" />
             /// <param name="value"></param>
             /// <param name="diff"></param>
             /// <returns></returns>
-            private int GetModifiedColor(int value, char diff)
+            private static int GetModifiedColorPart(int value, char diff)
             {
-                int d = (int)diff - 48;                     // Ze znaku '0' udělá int 0; ze znaku '2' udělá 2...
-                if (value < 5) return value + d;
-                if (value < 250) return value - 1 + d;
-                return value - 2 + d;
+                int d = (int)diff - 48;                     // Ze znaku char '0' udělá int 0; ze znaku '2' udělá 2...
+                if (value < 5) return value + d;            // Pokud vstupní hodnota složky je malá, pak modifikátor přičteme (+0 až +2)
+                if (value < 250) return value - 1 + d;      // Pokud vstupní hodnota složky je přiměřená, použijeme rozsah (-1 až +1)
+                return value - 2 + d;                       // Pokud vstupní hodnota složky je malá, pak modifikátor odečteme (-2 až 0)
             }
             /// <summary>
-            /// Vrátí barvu Fill cílovou pro danou barvu vstupní
+            /// Vrátí barvu cílovou pro danou barvu vstupní v rámci aktuální palety.
             /// </summary>
-            /// <param name="current"></param>
+            /// <param name="current">Klíč aktuální barvy</param>
+            /// <param name="stroke">Použít konverzi pro: false = fill / true = stroke</param>
             /// <returns></returns>
-            private string GetTargetValue(string current)
+            private string GetTargetValue(string current, bool stroke /* stroke se zatím nevyužívá, barva pro FILL i STROKE je zatím stejná */ )
             {
                 if (String.IsNullOrEmpty(current)) return current;
                 current = current.Trim();
                 if (String.Equals(current, "none", StringComparison.OrdinalIgnoreCase)) return current;
 
                 if (_ColorDict.TryGetValue(current, out string target)) return target;   // Známe cílovou barvu
-                if (!this._OnlyGrayTarget) return current;                               // Není režim OnlyGray: vrátíme vstupní barvu
+                if (!this._AllColorsToGray) return current;                              // Není režim OnlyGray: vrátíme vstupní barvu
 
                 // Režim OnlyGray a dosud neznámá barva? Danou barvu odbarvíme, upravíme pro Dark skin a přidáme do Dictionary:
-                if (!TryParseColor(current, out var color)) return current;
-                var colorG = color.GrayScale();
-                if (this._IsDarkMode)
-                    colorG = colorG.Contrast(64);
-                string result = FormatColor(colorG);
-
-                // Uložíme upravenou barvu do Dictionary, abych ji příště nemusel počítat:
+                string result = GetGrayValue(current);
                 AddPair(current, result);
-
                 return result;
             }
             /// <summary>
-            /// Z dodaného stringu "#D044AA" vrátí odpovídající barvu
+            /// Metoda vrátí kód šedé (Disabled) barvy k dané barvě.
+            /// </summary>
+            /// <param name="current"></param>
+            /// <returns></returns>
+            private string GetGrayValue(string current)
+            {
+                if (!TryParseColor(current, out var color)) return current;
+                // Následující řádek provádí Morphování barvy zadané směrem k barvě cílové, v daném poměru.
+                // Morphování = lineární aproximace dané hodnoty (color) k cílové hodnotě.
+                // Cílová hodnota pro světlý skin je tmavší a pro tmavý skin je světlejší (kontrastní)
+                Color other = (!this._IsDarkMode ? Color.FromArgb(192, 192, 192) : Color.FromArgb(64, 64, 64));
+                // Pokud tedy na vstupu je barva R = 40, cílová R = 192 (pro tmavý skin), a morph = 0.5d, pak výsledná barva R = 40 + 50% vzdálenosti k cíli,
+                //   tedy:  40.Morph(192, 0.5) =  40 + 0.5 * (192 -  40) = 116;
+                //   nebo: 220.Morph(192, 0.5) = 220 + 0.5 * (192 - 220) = 206;
+                color = color.Morph(other, 0.5f);
+                color = color.GrayScale();
+                return Convertor.ColorToXmlString(color);
+            }
+            /// <summary>
+            /// Z dodaného stringu "#D044AA" určí odpovídající barvu a vrátí true.
             /// </summary>
             /// <param name="text"></param>
             /// <param name="color"></param>
             /// <returns></returns>
             private bool TryParseColor(string text, out Color color)
             {
-                color = Color.Empty;
-                if (String.IsNullOrEmpty(text)) return false;
-                text = text.Trim();
-                if (text.Length < 6) return false;
-
-                int value;
-                bool isValid;
-                if (text[0] == '#')
-                    isValid = Int32.TryParse(text.Substring(1), System.Globalization.NumberStyles.HexNumber, System.Globalization.CultureInfo.CurrentCulture.NumberFormat, out value);
-                else
-                    isValid = Int32.TryParse(text, System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.CurrentCulture.NumberFormat, out value);
-                if (!isValid) return false;
-                color = Color.FromArgb(value);
-                return true;
-            }
-            /// <summary>
-            /// Z dodané barvu vrátí odpovídající string "#D044AA"
-            /// </summary>
-            /// <param name="color"></param>
-            /// <returns></returns>
-            private string FormatColor(Color color)
-            {
-                int value = color.ToArgb();
-                return "#" + value.ToString("X6");
+                color = Convertor.XmlStringToColor(text);
+                return !color.IsEmpty;
             }
             #endregion
             #region Konstanty - hodnoty barev používané v definici SVG
+            /// <summary>
+            /// Souhrn všech vstupních explicitních barev
+            /// </summary>
+            private static string[] ColorCodes 
+            {
+                get 
+                {
+                    return new string[]
+                    {
+                        ColorCodeFFFFFF,
+                        ColorCodeF7DA8E,
+                        ColorCodeF7CDA7,
+                        ColorCodeF3B8B8,
+                        ColorCodeE57428,
+                        ColorCodeDFBCD9,
+                        ColorCodeDDAE85,
+                        ColorCodeD4D4D4,
+                        ColorCodeC8C6C4,
+                        ColorCodeBEE2E5,
+                        ColorCodeACD8B1,
+                        ColorCode92CBEE,
+                        ColorCode787878,
+                        ColorCode383838,
+                        ColorCode228BCB,
+                        ColorCode17AB4F,
+                        ColorCode0BA04A,
+                        ColorCode000000
+                    };
+                }
+            }
             internal const string ColorCodeFFFFFF = "#FFFFFF";
             internal const string ColorCodeF7DA8E = "#F7DA8E";
             internal const string ColorCodeF7CDA7 = "#F7CDA7";

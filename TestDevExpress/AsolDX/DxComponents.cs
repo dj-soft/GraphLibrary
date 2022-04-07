@@ -7018,11 +7018,42 @@ namespace Noris.Clients.Win.Components.AsolDX
             return StringNameToColor(t);
         }
         /// <summary>
+        /// Z dodané barvy vrátí hexadecimální formát ve formě "#RRGGBB".
+        /// </summary>
+        /// <param name="data"></param>
+        /// <returns></returns>
+        public static string ColorToXmlString(Color data)
+        {
+            if (data.A < 255)
+                return ("#" + data.A.ToString("X2") + data.R.ToString("X2") + data.G.ToString("X2") + data.B.ToString("X2")).ToUpper();
+            return ("#" + data.R.ToString("X2") + data.G.ToString("X2") + data.B.ToString("X2")).ToUpper();
+        }
+        /// <summary>
+        /// Z deklarace barvy ve formě "#RRGGBB" v hexadecimálním formátu vrátí odpovídající barvu.
+        /// Barva bude mít hodnotu Alpha = 255.
+        /// </summary>
+        /// <param name="text"></param>
+        /// <returns></returns>
+        public static Color XmlStringToColor(string text)
+        {
+            if (String.IsNullOrEmpty(text)) return Color.Empty;
+            string t = text.Trim();                      // Jméno "Orchid", nebo hexa #806040 (RGB), nebo 0xD02000 (RGB), nebo hexa "#FF808040" (ARGB) nebo 0x40C0C0FF (ARGB).
+            if (t.Length == 7 && t[0] == '#' && ContainOnlyHexadecimals(t.Substring(1, 6)))
+                return StringRgbToColor(t.Substring(1, 6));
+            if (t.Length == 8 && t.Substring(0, 2).ToLower() == "0x" && ContainOnlyHexadecimals(t.Substring(2, 6)))
+                return StringRgbToColor(t.Substring(2, 6));
+            if (t.Length == 9 && t[0] == '#' && ContainOnlyHexadecimals(t.Substring(1, 8)))
+                return StringARgbToColor(t.Substring(1, 8));
+            if (t.Length == 10 && t.Substring(0, 2).ToLower() == "0x" && ContainOnlyHexadecimals(t.Substring(2, 8)))
+                return StringARgbToColor(t.Substring(2, 8));
+            return StringNameToColor(t);
+        }
+        /// <summary>
         /// Konkrétní konvertor
         /// </summary>
         /// <param name="name"></param>
         /// <returns></returns>
-        private static object StringNameToColor(string name)
+        private static Color StringNameToColor(string name)
         {
             KnownColor known;
             if (System.Enum.TryParse<KnownColor>(name, out known))
@@ -7041,7 +7072,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="t"></param>
         /// <returns></returns>
-        private static object StringRgbToColor(string t)
+        private static Color StringRgbToColor(string t)
         {
             int r = HexadecimalToInt32(t.Substring(0, 2));
             int g = HexadecimalToInt32(t.Substring(2, 2));
@@ -7053,7 +7084,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="t"></param>
         /// <returns></returns>
-        private static object StringARgbToColor(string t)
+        private static Color StringARgbToColor(string t)
         {
             int a = HexadecimalToInt32(t.Substring(0, 2));
             int r = HexadecimalToInt32(t.Substring(2, 2));

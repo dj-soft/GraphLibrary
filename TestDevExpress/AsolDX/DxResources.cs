@@ -634,7 +634,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                     imageOptions.Image = null;
                 }
             }
-            catch { /* Někdy může dojít k chybě uvnitř DevExpress. I jejich vývojáři jsou jen lidé... */ }
+            catch (Exception exc) { /* Někdy může dojít k chybě uvnitř DevExpress. I jejich vývojáři jsou jen lidé... */ }
 
             // Malá služba nakonec:
             if (args.SmallButton && imageOptions is SimpleButtonImageOptions buttonImageOptions)

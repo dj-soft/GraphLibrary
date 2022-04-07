@@ -14,6 +14,10 @@ namespace TestDevExpress.Forms
     /// </summary>
     public class TestSvgForm : DxRibbonForm
     {
+        public TestSvgForm()
+        {
+            this.Text = "Testování SVG ikon a stavu Disabled";
+        }
         protected override void DxRibbonPrepare()
         {
             this.DxRibbon.DebugName = "TestSvgRibbon";
