@@ -2616,9 +2616,9 @@ M22,22H10v2H22v-2z " class="Black" />
         /// Value = string výsledné barvy ve výstupním SvgImage.
         /// <para/>
         /// Pokud pro klíč TargetType neexistuje paleta, bude ondemand vytvořena. 
-        /// Získání palety z této Dictionary provádí metoda 
-        /// Prvnotní tvorbu palety provádí metoda 
-        /// Pokud paleta pro určitý klíč TargetType je null, nebude se provádět konverze barev; pouze konverze podle TargetSize.
+        /// Získání palety z této Dictionary provádí metoda <see cref="GetPalette(DxSvgImagePaletteType)"/>.
+        /// Tvorbu konkrétné palety provádí její konstruktor, třída <see cref="Palette"/>.
+        /// Pokud paleta pro určitý klíč TargetType je null, nebude se provádět konverze barev; proběhne pouze konverze velikostí (podle TargetSize).
         /// </summary>
         private Dictionary<DxSvgImagePaletteType, Palette> _PalettesDict;
         /// <summary>
