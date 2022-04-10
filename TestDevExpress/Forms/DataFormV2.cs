@@ -315,7 +315,7 @@ namespace TestDevExpress.Forms
         }
         private void _AddDataFormSample(int sampleId)
         {
-            if (!DxDataFormSamples.AllowedSampled(sampleId)) return;
+            if (!Noris.Clients.Win.Components.AsolDX.DataForm.DxDataFormSamples.AllowedSampled(sampleId)) return;
 
 
             string[] texts = Random.GetSentencesArray(1, 3, 160, 320, false);
@@ -339,7 +339,7 @@ namespace TestDevExpress.Forms
             }
 
             startTime = DxComponent.LogTimeCurrent;
-            dataForm.Pages = DxDataFormSamples.CreateSampleDefinition(sampleId, texts, tooltips);
+            dataForm.Pages = Noris.Clients.Win.Components.AsolDX.DataForm.DxDataFormSamples.CreateSampleDefinition(sampleId, texts, tooltips);
             int rowCount = (sampleId == 40 ? 200 : 1);
             dataForm.Data.Source = this.CreateDataSource(rowCount, dataForm.Pages);
             _DxTestPanel.Controls.Add(dataForm);
@@ -374,7 +374,7 @@ namespace TestDevExpress.Forms
             DxDataForm dataForm = new DxDataForm();
             string[] texts = Random.GetSentencesArray(1, 3, 120, 240, false);
             string[] tooltips = Random.GetSentencesArray(7, 16, 120, 240, true);
-            dataForm.Pages = DxDataFormSamples.CreateSampleDefinition(10, texts, tooltips);
+            dataForm.Pages = Noris.Clients.Win.Components.AsolDX.DataForm.DxDataFormSamples.CreateSampleDefinition(10, texts, tooltips);
             dataForm.GotFocus += DxDataForm_GotFocus;
 
             _DxDataFormV2 = dataForm;
