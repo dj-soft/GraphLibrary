@@ -4071,6 +4071,9 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
         int _InternalNodeId;
         private List<DataTreeListNode> _CreateSampleTreeNodes(ItemCountType countType = ItemCountType.Standard)
         {
+            if (_TreeListImageType == ResourceContentType.None)
+                _TreeListImageType = ResourceContentType.Vector;
+
             List<DataTreeListNode> list = new List<DataTreeListNode>();
 
             int rootCount = GetItemCount(countType, false);

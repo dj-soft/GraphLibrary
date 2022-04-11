@@ -2589,7 +2589,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="content"></param>
         /// <param name="targetSize"></param>
         /// <returns></returns>
-        public static DxSvgImage ConvertToDarkSkin(string imageName, byte[] content, Size? targetSize = null)
+        [Obsolete("Používá se metoda ConvertSvgImageToPalette!", true)]
+        private static DxSvgImage ConvertToDarkSkin(string imageName, byte[] content, Size? targetSize = null)
         { return Instance.__SvgImageCustomize.ConvertToDarkSkin(imageName, content, targetSize); }
         /// <summary>
         /// Dodaný <see cref="SvgImage"/> převede do dark skin barev
@@ -2598,7 +2599,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="svgImage"></param>
         /// <param name="targetSize"></param>
         /// <returns></returns>
-        public static DxSvgImage ConvertToDarkSkin(string imageName, SvgImage svgImage, Size? targetSize = null)
+        [Obsolete("Používá se metoda ConvertSvgImageToPalette!", true)]
+        private static DxSvgImage ConvertToDarkSkin(string imageName, SvgImage svgImage, Size? targetSize = null)
         { return Instance.__SvgImageCustomize.ConvertToDarkSkin(imageName, svgImage, targetSize); }
         /// <summary>
         /// Instance Svg modifikátoru
@@ -2761,7 +2763,7 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// Toto je pouze knihovna = zdroj dat (a jejich vyhledávání), ale nikoli výkonný blok, tady se negenerují obrázky ani nic dalšího.
     /// <para/>
     /// Zastřešující algoritmy pro oba druhy zdrojů (aplikační i DevExpress) jsou v <see cref="DxComponent"/>, 
-    /// metody typicky <see cref="DxComponent.ApplyImage(ImageOptions, string, Image, ResourceImageSizeType?, Size?, bool, string, bool, bool?)"/>.
+    /// metody typicky <see cref="DxComponent.ApplyImage(ImageOptions, string, Image, ResourceImageSizeType?, Size?, bool, string, bool, bool?, bool)"/>.
     /// Aplikační kódy by tedy neměly komunikovat napřímo s touto třídou <see cref="DxApplicationResourceLibrary"/>, ale s <see cref="DxComponent"/>,
     /// aby měly k dispozici zdroje obou druhů.
     /// </summary>
@@ -3295,7 +3297,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// Je vrácena new instance objektu, ale tato třída není <see cref="IDisposable"/>, tedy nepoužívá se v using { } patternu.
             /// <para/>
             /// Pozor, tato třída v této metodě řeší přebarvení aplikační SVG ikony ze světlého skinu (=nativní) 
-            /// do tmavého skinu (pomocí metody <see cref="DxComponent.ConvertToDarkSkin(string, byte[], Size?)"/>
+            /// do tmavého skinu (pomocí metody <see cref="DxComponent.ConvertSvgImageToPalette(byte[], DxSvgImagePaletteType, string, Size?)"/>
             /// </summary>
             /// <returns></returns>
             public DxSvgImage CreateSvgImage()
