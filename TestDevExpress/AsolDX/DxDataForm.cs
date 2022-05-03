@@ -2582,7 +2582,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         #endregion
         #region Fyzické controly - tvorba, správa, vykreslení bitmapy skrze control
         /// <summary>
-        /// Kompletní informace o jednom prvku: index řádku, dekarace, control set a fyzický control
+        /// Kompletní informace o jednom prvku: index řádku, deklarace, control set a fyzický control
         /// </summary>
         private class ControlOneInfo
         {
