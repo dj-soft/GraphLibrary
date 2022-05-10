@@ -177,6 +177,7 @@
       <SubType>Component</SubType>
     </Compile>
     <Compile Include="AsolDX\News\DxIconConverter.cs" />
+    <Compile Include="AsolDX\News\DxTools.cs" />
     <Compile Include="AsolDX\System\NrsParser.cs" />
     <Compile Include="AsolDX\System\Shared.cs" />
     <Compile Include="AsolDX\System\XmlPersist.cs" />
