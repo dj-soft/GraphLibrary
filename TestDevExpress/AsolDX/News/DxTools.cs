@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace TestDevExpress.AsolDX.News
 {
-    #region FilterOperators
+    #region class DxClsTools : Třída poskytující nástroje pro práci s výrazem v jazyce "DevExpress Criteria Language Syntax"
     /// <summary>
     /// Třída poskytující nástroje pro práci s výrazem v jazyce "DevExpress Criteria Language Syntax".
     /// <para/>
@@ -20,7 +20,7 @@ namespace TestDevExpress.AsolDX.News
     /// </summary>
     internal class DxClsTools
     {
-        #region ConvertToMsSqlParts() : Převod DxCls výrazu do MS SQL částic
+        #region Public rozhraní
         /// <summary>
         /// Metoda analyzuje dodaný výraz v jazyce <b>DevExpress Criteria Language Syntax</b> (parametr <paramref name="clsExpression"/>),
         /// vyhledá v něm jména sloupců, ty odešle do dodané filtrační metody <paramref name="columnFilter"/>,
@@ -43,6 +43,14 @@ namespace TestDevExpress.AsolDX.News
             }
             return context.ResultFilter?.ToString() ?? "";
         }
+        /// <summary>
+        /// Metoda najde sloupce v daném DxCls výrazu a nahradí jejich text jiným textem, který vygeneruje dodaný <paramref name="columnRename"/>.
+        /// Je vhodné pro převod řádkového filtru mezi šablonami, kdy v prvním průchodu nahradíme aliasy sloupců plným názvem sloupce včetně FullEntityKey,
+        /// a v druhém průchodu pak tyto FullColumnName vyhledáme v nové šabloně a do výrazu vložíme aliasy sloupců v této nové šabloně.
+        /// </summary>
+        /// <param name="clsExpression">Text podmínky v jazyce "DevExpress : Criteria Language Syntax"</param>
+        /// <param name="columnRename">Metoda, která dostává názvy sloupců nalezené ve výrazu, a vrací nové názvy, které se do vytvářeného výrazu vkládají. Pokud vrátí null, část výrazu bude odebrána.</param>
+        /// <returns></returns>
         internal static string RenameColumnsInDxClsExpression(string clsExpression, Func<string, string> columnRename)
         {
             WorkContext context = new WorkContext(WorkType.RenameColumns, clsExpression, null, columnRename);
@@ -65,7 +73,7 @@ namespace TestDevExpress.AsolDX.News
         /// </list>
         /// <param name="clsExpression">Text podmínky v jazyce "DevExpress : Criteria Language Syntax"</param>
         /// <returns>Částice výrazu</returns>
-        internal static MsSqlPart[] ConvertToMsSqlParts(string clsExpression)
+        internal static ExpressionPart[] ConvertToMsSqlParts(string clsExpression)
         {
             WorkContext context = new WorkContext(WorkType.ConvertToMsSql, clsExpression, null, null);
             try
@@ -78,11 +86,12 @@ namespace TestDevExpress.AsolDX.News
             }
             return context.Parts?.ToArray();
         }
+        #endregion
         #region Analýza DxCls filtru, vyhledání sloupců a hodnot, jejich nahrazení tokeny nebo jmény, nahrazení konstantních hodnot za property (podle požadavku, příprava na DbParametry)
         /// <summary>
         /// Provede patřičné operace s filtrem
         /// </summary>
-        /// <param name="context"></param>
+        /// <param name="context">Pracovní kontext</param>
         private static void RunAction(WorkContext context)
         {
             // Parsujeme filtr:
@@ -104,7 +113,9 @@ namespace TestDevExpress.AsolDX.News
         /// Prověří platnost daného operátoru a jeho sub-operátorů.
         /// </summary>
         /// <param name="operand"></param>
-        /// <param name="context"></param>
+        /// <param name="context">Pracovní kontext</param>
+        /// <param name="owner">Prvek, v němž je daný operátor uložen</param>
+        /// <param name="index">Index prvku v poli Ownera, pokud je prvek uložen v poli (Grupy, operátor In, Funkce)</param>
         private static DevExpress.Data.Filtering.CriteriaOperator DoConvertOperator(DevExpress.Data.Filtering.CriteriaOperator operand, WorkContext context, DevExpress.Data.Filtering.CriteriaOperator owner = null, int? index = null)
         {
             if (operand is null) return operand;
@@ -124,7 +135,9 @@ namespace TestDevExpress.AsolDX.News
         /// Provede konverzi prvků dodané grupy
         /// </summary>
         /// <param name="group"></param>
-        /// <param name="context"></param>
+        /// <param name="context">Pracovní kontext</param>
+        /// <param name="owner">Prvek, v němž je daný operátor uložen</param>
+        /// <param name="index">Index prvku v poli Ownera, pokud je prvek uložen v poli (Grupy, operátor In, Funkce)</param>
         /// <returns></returns>
         private static DevExpress.Data.Filtering.CriteriaOperator DoConvertGroup(DevExpress.Data.Filtering.GroupOperator group, WorkContext context, DevExpress.Data.Filtering.CriteriaOperator owner = null, int? index = null)
         {
@@ -146,7 +159,9 @@ namespace TestDevExpress.AsolDX.News
         /// Provede konverzi prvků daného operátoru typu UnaryOperator a jeho sub-operátorů.
         /// </summary>
         /// <param name="opUnary"></param>
-        /// <param name="context"></param>
+        /// <param name="context">Pracovní kontext</param>
+        /// <param name="owner">Prvek, v němž je daný operátor uložen</param>
+        /// <param name="index">Index prvku v poli Ownera, pokud je prvek uložen v poli (Grupy, operátor In, Funkce)</param>
         /// <returns></returns>
         private static DevExpress.Data.Filtering.CriteriaOperator DoConvertUnary(DevExpress.Data.Filtering.UnaryOperator opUnary, WorkContext context, DevExpress.Data.Filtering.CriteriaOperator owner = null, int? index = null)
         {
@@ -158,7 +173,9 @@ namespace TestDevExpress.AsolDX.News
         /// Provede konverzi prvků daného operátoru typu BinaryOperator a jeho sub-operátorů.
         /// </summary>
         /// <param name="opBinary"></param>
-        /// <param name="context"></param>
+        /// <param name="context">Pracovní kontext</param>
+        /// <param name="owner">Prvek, v němž je daný operátor uložen</param>
+        /// <param name="index">Index prvku v poli Ownera, pokud je prvek uložen v poli (Grupy, operátor In, Funkce)</param>
         /// <returns></returns>
         private static DevExpress.Data.Filtering.CriteriaOperator DoConvertBinary(DevExpress.Data.Filtering.BinaryOperator opBinary, WorkContext context, DevExpress.Data.Filtering.CriteriaOperator owner = null, int? index = null)
         {
@@ -172,7 +189,9 @@ namespace TestDevExpress.AsolDX.News
         /// Provede konverzi prvků daného operátoru typu BetweenOperator a jeho sub-operátorů.
         /// </summary>
         /// <param name="opBetween"></param>
-        /// <param name="context"></param>
+        /// <param name="context">Pracovní kontext</param>
+        /// <param name="owner">Prvek, v němž je daný operátor uložen</param>
+        /// <param name="index">Index prvku v poli Ownera, pokud je prvek uložen v poli (Grupy, operátor In, Funkce)</param>
         /// <returns></returns>
         private static DevExpress.Data.Filtering.CriteriaOperator DoConvertBetween(DevExpress.Data.Filtering.BetweenOperator opBetween, WorkContext context, DevExpress.Data.Filtering.CriteriaOperator owner = null, int? index = null)
         {
@@ -187,7 +206,9 @@ namespace TestDevExpress.AsolDX.News
         /// Provede konverzi prvků daného operátoru typu InOperator a jeho sub-operátorů.
         /// </summary>
         /// <param name="opIn"></param>
-        /// <param name="context"></param>
+        /// <param name="context">Pracovní kontext</param>
+        /// <param name="owner">Prvek, v němž je daný operátor uložen</param>
+        /// <param name="index">Index prvku v poli Ownera, pokud je prvek uložen v poli (Grupy, operátor In, Funkce)</param>
         /// <returns></returns>
         private static DevExpress.Data.Filtering.CriteriaOperator DoConvertIn(DevExpress.Data.Filtering.InOperator opIn, WorkContext context, DevExpress.Data.Filtering.CriteriaOperator owner = null, int? index = null)
         {
@@ -212,7 +233,9 @@ namespace TestDevExpress.AsolDX.News
         /// Provede konverzi prvků daného operátoru typu OperandProperty a jeho sub-operátorů.
         /// </summary>
         /// <param name="opProperty"></param>
-        /// <param name="context"></param>
+        /// <param name="context">Pracovní kontext</param>
+        /// <param name="owner">Prvek, v němž je daný operátor uložen</param>
+        /// <param name="index">Index prvku v poli Ownera, pokud je prvek uložen v poli (Grupy, operátor In, Funkce)</param>
         /// <returns></returns>
         private static DevExpress.Data.Filtering.CriteriaOperator DoConvertProperty(DevExpress.Data.Filtering.OperandProperty opProperty, WorkContext context, DevExpress.Data.Filtering.CriteriaOperator owner = null, int? index = null)
         {
@@ -241,8 +264,10 @@ namespace TestDevExpress.AsolDX.News
         /// <summary>
         /// Provede konverzi prvků daného operátoru typu OperandParameter a jeho sub-operátorů.
         /// </summary>
-        /// <param name="opProperty"></param>
-        /// <param name="context"></param>
+        /// <param name="opParameter"></param>
+        /// <param name="context">Pracovní kontext</param>
+        /// <param name="owner">Prvek, v němž je daný operátor uložen</param>
+        /// <param name="index">Index prvku v poli Ownera, pokud je prvek uložen v poli (Grupy, operátor In, Funkce)</param>
         /// <returns></returns>
         private static DevExpress.Data.Filtering.CriteriaOperator DoConvertParameter(DevExpress.Data.Filtering.OperandParameter opParameter, WorkContext context, DevExpress.Data.Filtering.CriteriaOperator owner = null, int? index = null)
         {
@@ -251,8 +276,10 @@ namespace TestDevExpress.AsolDX.News
         /// <summary>
         /// Provede konverzi prvků daného operátoru typu ConstantValue a jeho sub-operátorů.
         /// </summary>
-        /// <param name="opValue"></param>
-        /// <param name="context"></param>
+        /// <param name="opConstant"></param>
+        /// <param name="context">Pracovní kontext</param>
+        /// <param name="owner">Prvek, v němž je daný operátor uložen</param>
+        /// <param name="index">Index prvku v poli Ownera, pokud je prvek uložen v poli (Grupy, operátor In, Funkce)</param>
         /// <returns></returns>
         private static DevExpress.Data.Filtering.CriteriaOperator DoConvertConstant(DevExpress.Data.Filtering.ConstantValue opConstant, WorkContext context, DevExpress.Data.Filtering.CriteriaOperator owner = null, int? index = null)
         {
@@ -275,7 +302,9 @@ namespace TestDevExpress.AsolDX.News
         /// Provede konverzi prvků daného operátoru typu OperandValue a jeho sub-operátorů.
         /// </summary>
         /// <param name="opValue"></param>
-        /// <param name="context"></param>
+        /// <param name="context">Pracovní kontext</param>
+        /// <param name="owner">Prvek, v němž je daný operátor uložen</param>
+        /// <param name="index">Index prvku v poli Ownera, pokud je prvek uložen v poli (Grupy, operátor In, Funkce)</param>
         /// <returns></returns>
         private static DevExpress.Data.Filtering.CriteriaOperator DoConvertValue(DevExpress.Data.Filtering.OperandValue opValue, WorkContext context, DevExpress.Data.Filtering.CriteriaOperator owner = null, int? index = null)
         {
@@ -285,7 +314,9 @@ namespace TestDevExpress.AsolDX.News
         /// Provede konverzi prvků daného operátoru typu FunctionOperator a jeho sub-operátorů.
         /// </summary>
         /// <param name="opFunction"></param>
-        /// <param name="context"></param>
+        /// <param name="context">Pracovní kontext</param>
+        /// <param name="owner">Prvek, v němž je daný operátor uložen</param>
+        /// <param name="index">Index prvku v poli Ownera, pokud je prvek uložen v poli (Grupy, operátor In, Funkce)</param>
         /// <returns></returns>
         private static DevExpress.Data.Filtering.CriteriaOperator DoConvertFunction(DevExpress.Data.Filtering.FunctionOperator opFunction, WorkContext context, DevExpress.Data.Filtering.CriteriaOperator owner = null, int? index = null)
         {
@@ -384,13 +415,13 @@ namespace TestDevExpress.AsolDX.News
                 ColumnFilter = columnFilter;
                 ColumnRename = columnRename;
 
-                Parts = new List<MsSqlPart>();
+                Parts = new List<ExpressionPart>();
                 Columns = new Dictionary<string, string>(StringComparer.InvariantCultureIgnoreCase);
                 Tokens = new Dictionary<string, TokenInfo>();
                 IsChanged = false;
                 HasColumnFilter = (columnFilter != null);
                 HasColumnRename = (columnRename != null);
-                Rand = new Random();
+                Rand = new System.Random();
                 Chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".ToCharArray();
             }
             /// <summary>
@@ -432,7 +463,7 @@ namespace TestDevExpress.AsolDX.News
             /// <summary>
             /// Výstupní částice
             /// </summary>
-            public List<MsSqlPart> Parts { get; private set; }
+            public List<ExpressionPart> Parts { get; private set; }
             /// <summary>
             /// Dictionary sloupců (Key) a jejich zástupných tokenů (Values).
             /// Jeden název sloupce má vždy shodný token.
@@ -457,7 +488,7 @@ namespace TestDevExpress.AsolDX.News
             /// <summary>
             /// Random pro generátor tokenů
             /// </summary>
-            private Random Rand;
+            private System.Random Rand;
             /// <summary>
             /// Pole znaků povolených v tokenech, na prvních 26 pozicích jsou znaky povolené na první pozici
             /// </summary>
@@ -506,7 +537,7 @@ namespace TestDevExpress.AsolDX.News
                 string key = columnName.Trim();
                 if (!Columns.TryGetValue(key, out var token))
                 {
-                    token = CreateNewToken("C", ExpressionCategory.Column, columnName, null);
+                    token = CreateNewToken("C", TextPartCategory.ColumnAlias, columnName, null);
                     Columns.Add(key, token);
                 }
                 isValid = true;
@@ -519,7 +550,7 @@ namespace TestDevExpress.AsolDX.News
             /// <returns></returns>
             public string GetConstantValueToken(object value)
             {
-                string token = CreateNewToken("V", ExpressionCategory.Value, null, value);
+                string token = CreateNewToken("V", TextPartCategory.ValueConstant, null, value);
                 return token;
             }
             /// <summary>
@@ -528,7 +559,7 @@ namespace TestDevExpress.AsolDX.News
             /// </summary>
             /// <param name="prefix"></param>
             /// <returns></returns>
-            private string CreateNewToken(string prefix, ExpressionCategory target, string columnName, object value)
+            private string CreateNewToken(string prefix, TextPartCategory target, string columnName, object value)
             {
                 var expression = ClsExpression;
                 var rand = Rand;
@@ -602,7 +633,7 @@ namespace TestDevExpress.AsolDX.News
                 int textEndIndex = (tokenIndex > 0 ? tokenIndex : textLength);
                 if (textEndIndex > index)
                 {
-                    AddPart(ExpressionCategory.Text, text.Substring(index, textEndIndex - index), null, null);
+                    AddPartText(text.Substring(index, textEndIndex - index));
                     nextIndex = textEndIndex;
                 }
 
@@ -611,11 +642,11 @@ namespace TestDevExpress.AsolDX.News
                 {
                     switch (token.Target)
                     {
-                        case ExpressionCategory.Column:
-                            AddPart(ExpressionCategory.Column, token.ColumnName, token.ColumnName, null);
+                        case TextPartCategory.ColumnAlias:
+                            AddPartColumnAlias(token.ColumnName);
                             break;
-                        case ExpressionCategory.Value:
-                            AddPart(ExpressionCategory.Value, token.Value.ToString(), null, token.Value);
+                        case TextPartCategory.ValueConstant:
+                            AddPartValueConstant(token.Value.ToString(), token.Value);
                             break;
                     }
                     nextIndex = tokenIndex + token.Token.Length;
@@ -624,9 +655,17 @@ namespace TestDevExpress.AsolDX.News
 
                 return nextIndex;
             }
-            private void AddPart(ExpressionCategory category, string text, string columnName, object value)
+            private void AddPartText(string text)
             {
-                this.Parts.Add(new MsSqlPart(category, text, columnName, value));
+                this.Parts.Add(ExpressionPart.CreatePartText(text));
+            }
+            private void AddPartColumnAlias(string columnName)
+            {
+                this.Parts.Add(ExpressionPart.CreatePartColumn(TextPartCategory.ColumnAlias, columnName));
+            }
+            private void AddPartValueConstant(string name, object value)
+            {
+                this.Parts.Add(ExpressionPart.CreatePartValueConstant(name, value));
             }
         }
         /// <summary>
@@ -645,7 +684,7 @@ namespace TestDevExpress.AsolDX.News
             /// <param name="target"></param>
             /// <param name="columnName"></param>
             /// <param name="value"></param>
-            public TokenInfo(string token, ExpressionCategory target, string columnName, object value)
+            public TokenInfo(string token, TextPartCategory target, string columnName, object value)
             {
                 this.Token = token;
                 this.Target = target;
@@ -658,47 +697,331 @@ namespace TestDevExpress.AsolDX.News
             /// <returns></returns>
             public override string ToString()
             {
-                return this.Token + " = " + (this.Target == ExpressionCategory.Column ? "Column: " + ColumnName : (this.Target == ExpressionCategory.Value ? "Value: " + Value.ToString() : "???"));
+                return this.Token + " = " + (this.Target == TextPartCategory.ColumnAlias ? "Column: " + ColumnName : (this.Target == TextPartCategory.ValueConstant ? "Value: " + Value.ToString() : "???"));
             }
             public string Token { get; private set; }
-            public ExpressionCategory Target { get; private set; }
+            public TextPartCategory Target { get; private set; }
             public string ColumnName { get; private set; }
             public object Value { get; private set; }
         }
         #endregion
-        #endregion
     }
+    #endregion
+
+    #region Třídy ExpressionPart a patřičné potomstvo
+    #region class ExpressionPartArgument : třída obsahující proměnnou hodnotu zadávanou uživatelem, typicky položku v okně parametrů
     /// <summary>
-    /// Částice výrazu
+    /// Částice výrazu, obsahující proměnnou hodnotu zadávanou uživatelem, typicky položku v okně parametrů.
     /// </summary>
-    public class MsSqlPart
+    public class ExpressionPartArgument : ExpressionPartValue
     {
-        public MsSqlPart(ExpressionCategory category, string text, string columnName, object value)
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="category"></param>
+        /// <param name="name"></param>
+        /// <param name="value"></param>
+        internal ExpressionPartArgument(string argumenName, ParsedItem parsedItem)
+            : base(TextPartCategory.ValueArgument, argumenName, null)
         {
-            this.Category = category;
-            this.OriginalText = text;
-            this.ColumnName = columnName;
-            this.Value = value;
+            ParsedItem = parsedItem;
         }
-        public override string ToString() { return this.ResultText; }
-        public ExpressionCategory Category { get; set; }
-        public string OriginalText { get; set; }
-        public string ResultText
+        #region ParsedItem a informace z něj vytěžené
+
+        /// <summary>
+        /// Vlastní definice argumentu. Obsahuje 
+        /// </summary>
+        public ParsedItem ParsedItem { get; private set; }
+        #endregion
+        #region Aktuální hodnota a související příznaky
+        /// <summary>
+        /// Aktuální hodnota. 
+        /// Pokud není od uživatele vyplněna, nebo uživatel řekl 'Přeskočit', nebo aplikační kód vložil NULL, pak je čtena jako null.
+        /// <para/>
+        /// Pokud je typu <see cref="String"/>, pak výsledná hodnota je opatřena <see cref="StringValuePrefix"/> a <see cref="StringValuePostfix"/>.
+        /// Pokud je dynamická, je vyhodnocena nyní.
+        /// Pokud je <see cref="IsRange"/>, zde je z rozsahu vybrána konkrétní hodnota <see cref="ValuePosition"/>.
+        /// <para/>
+        /// Hodnota by měla být čtena pokud možno co nejblíže k aplikaci výsledného SQL SELECTU, protože hodnota může obsahovat údaje platné v době čtení.
+        /// Jinými slovy, hodnota může obsahovat aktuální datum a čas; a pokud vrácený údaj bude dlouhodobě skladován, bude ztrácet na aktuálnosti.
+        /// </summary>
+        protected override object CurrentValue
         {
             get
             {
-                switch (this.Category)
-                {
-                    case ExpressionCategory.Text: return this.OriginalText;
-                    case ExpressionCategory.Column: return this.ColumnName;
-                    case ExpressionCategory.Value: return ToSql(this.Value);
-                }
-                return "{" + this.Category.ToString() + "}";
+                if (!IsDefined || IsSkipped || IsNull) return null;
+                return base.CurrentValue;
             }
         }
-        public string ColumnName { get; set; }
+        /// <summary>
+        /// Resetuje hodnotu argumentu do výchozího stavu, včetně příznaků.
+        /// Bude se tvářit jako čerstvě vytvořený argument.
+        /// </summary>
+        public void Reset()
+        {
+            Value = null;
+            IsDefined = false;
+            IsSkipped = false;
+            IsNull = false;
+        }
+        /// <summary>
+        /// Nastaví se na true po vyplnění hodnoty.
+        /// </summary>
+        public bool IsDefined { get; set; }
+        /// <summary>
+        /// Nastaví se na true po požadavku na přeskočení podmínky.
+        /// </summary>
+        public bool IsSkipped { get; set; }
+        /// <summary>
+        /// Nastaví se na true po požadavku na NULL hodnotu.
+        /// </summary>
+        public bool IsNull { get; set; }
+        #endregion
+    }
+    #endregion
+    #region class ExpressionPartVariable : třída obsahující proměnnou hodnotu: klíčové slovo
+    /// <summary>
+    /// Částice výrazu, obsahující proměnnou hodnotu, typicky klíčové slovo.
+    /// </summary>
+    public class ExpressionPartVariable : ExpressionPartValue
+    {
+        #region Základní data
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="category"></param>
+        /// <param name="name"></param>
+        /// <param name="value"></param>
+        internal ExpressionPartVariable(string variableName, ParsedItem parsedItem)
+            : base(TextPartCategory.ValueVariable, variableName, null)
+        {
+            ParsedItem = parsedItem;
+        }
+        /// <summary>
+        /// Vlastní hodnota
+        /// </summary>
+        public ParsedItem ParsedItem { get; private set; }
+        /// <summary>
+        /// Aktuální hodnota.
+        /// Pokud je typu <see cref="String"/>, pak výsledná hodnota je opatřena <see cref="StringValuePrefix"/> a <see cref="StringValuePostfix"/>.
+        /// Pokud je dynamická, je vyhodnocena nyní.
+        /// Pokud je <see cref="IsRange"/>, zde je z rozsahu vybrána konkrétní hodnota <see cref="ValuePosition"/>.
+        /// </summary>
+        protected override object CurrentValue
+        {
+            get
+            {
+                var value = GetVariableValue(ValueName, ParsedItem);
+                return value;
+            }
+        }
+        /// <summary>
+        /// Úvodní HTML TAGy vkládané do hodnoty <see cref="ExpressionPart.ResultTextHtml"/> před hodnotu <see cref="ExpressionPart.ResultText"/>
+        /// </summary>
+        protected override string BeginTagHtml { get { return "<span style=\"color:#C01080\"><b>"; } }
+        /// <summary>
+        /// Závěrečné HTML TAGy vkládané do hodnoty <see cref="ExpressionPart.ResultTextHtml"/> za hodnotu <see cref="ExpressionPart.ResultText"/>
+        /// </summary>
+        protected override string EndTagHtml { get { return "</b></span>"; } }
+        #endregion
+        #region Proměnná hodnota - klíčové slovo a jeho vyhodnocení
+        /// <summary>
+        /// Metoda vrátí aktuálně platnou hodnotu dané proměnné
+        /// </summary>
+        /// <param name="variableName"></param>
+        /// <param name="parsedItem"></param>
+        /// <returns></returns>
+        protected object GetVariableValue(string variableName, ParsedItem parsedItem)
+        {
+            return null;
+        }
+        #endregion
+    }
+    #endregion
+    #region class ExpressionPartValue : třída obsahující hodnotu
+    /// <summary>
+    /// Částice výrazu, obsahující hodnotu (ve třídě <see cref="ExpressionPartValue"/> jde o hodnotu fixně danou).
+    /// Pro proměnnou anebo uživatelský argument je třeba vytvořit odpovídajícího potomka této třídy.
+    /// <para/>
+    /// Zdejší třída <see cref="ExpressionPartValue"/> podporuje předání hodnoty do Db parametru.
+    /// </summary>
+    public class ExpressionPartValue : ExpressionPart
+    {
+        #region Základní data
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="category"></param>
+        /// <param name="valueName"></param>
+        /// <param name="value"></param>
+        internal ExpressionPartValue(TextPartCategory category, string valueName, object value)
+            : base(category)
+        {
+            ValueName = valueName;
+            Value = value;
+            ParamName = null;
+        }
+        /// <summary>
+        /// Textové označení hodnoty, typicky její textové vyjádření.
+        /// </summary>
+        public string ValueName { get; private set; }
+        /// <summary>
+        /// Vlastní hodnota
+        /// </summary>
         public object Value { get; set; }
-        private static string ToSql(object value)
+        /// <summary>
+        /// Aktuální hodnota.
+        /// Pokud je typu <see cref="String"/>, pak výsledná hodnota je opatřena <see cref="StringValuePrefix"/> a <see cref="StringValuePostfix"/>.
+        /// Pokud je dynamická, je vyhodnocena nyní.
+        /// Pokud je <see cref="IsRange"/>, zde je z rozsahu vybrána konkrétní hodnota <see cref="ValuePosition"/>.
+        /// <para/>
+        /// Hodnota by měla být čtena pokud možno co nejblíže k aplikaci výsledného SQL SELECTU, protože hodnota může obsahovat údaje platné v době čtení.
+        /// Jinými slovy, hodnota může obsahovat aktuální datum a čas; a pokud vrácený údaj bude dlouhodobě skladován, bude ztrácet na aktuálnosti.
+        /// </summary>
+        protected virtual object CurrentValue
+        {
+            get
+            {
+                var value = Value;
+                if (IsDynamic)
+                    value = GetDynamicValue(value);
+                //if (IsRange)
+                //    value = GetRangeValue(value);
+                if (value is string text)
+                    value = GetPrefixedStringValue(text);
+                return value;
+            }
+        }
+        /// <summary>
+        /// Výsledný text výrazu, v notaci SQL.
+        /// Výstupní text = jméno parametru <see cref="ParamName"/> (pokud je přiděleno: <see cref="HasParameter"/>),
+        /// anebo přítomná hodnota <see cref="Value"/>, formátovaná do SQL notace (bude v SQL citována jako konstanta).
+        /// <para/>
+        /// Hodnota by měla být čtena pokud možno co nejblíže k aplikaci výsledného SQL SELECTU, protože hodnota může obsahovat údaje platné v době čtení.
+        /// Jinými slovy, hodnota může obsahovat aktuální datum a čas; a pokud vrácený údaj bude dlouhodobě skladován, bude ztrácet na aktuálnosti.
+        /// <br/>
+        /// To platí jak pro variantu s DB parametrem, tak i pro přímou citaci do výsledného textu.
+        /// </summary>
+        public override string ResultText { get { return (!HasParameter ? ToSql(CurrentValue) : "@" + ParamName); } }
+        /// <summary>
+        /// Úvodní HTML TAGy vkládané do hodnoty <see cref="ExpressionPart.ResultTextHtml"/> před hodnotu <see cref="ExpressionPart.ResultText"/>
+        /// </summary>
+        protected override string BeginTagHtml { get { return "<span style=\"color:#C01010\"><b>"; } }
+        /// <summary>
+        /// Závěrečné HTML TAGy vkládané do hodnoty <see cref="ExpressionPart.ResultTextHtml"/> za hodnotu <see cref="ExpressionPart.ResultText"/>
+        /// </summary>
+        protected override string EndTagHtml { get { return "</b></span>"; } }
+        #endregion
+        #region String prefix a postfix "%...%" - pro vyhledávání s pomocí LIKE, a to i v potmkovi typu Variable a Argument
+        /// <summary>
+        /// Prefix textu: použije se pouze pokud <see cref="Value"/> je typu String, předsadí se před text.
+        /// Umožní tak požít prefix i v případě, kdy hodnota je určená jako Argument = Value je zadaná bez "%", ale do SQL výrazu se předsadí "%"
+        /// </summary>
+        public virtual string StringValuePrefix { get { return _StringValuePrefix; } set { _StringValuePrefix = value; } }
+        private string _StringValuePrefix;
+        /// <summary>
+        /// Postix textu: použije se pouze pokud <see cref="Value"/> je typu String, přidá se za text.
+        /// Umožní tak požít prefix i v případě, kdy hodnota je určená jako Argument = Value je zadaná bez "%", ale do SQL výrazu se připojí "%"
+        /// </summary>
+        public virtual string StringValuePostfix { get { return _StringValuePostfix; } set { _StringValuePostfix = value; } }
+        private string _StringValuePostfix;
+        /// <summary>
+        /// Vrací zadanou hodnotu opatřenou prefixem <see cref="StringValuePrefix"/> a postfixem <see cref="StringValuePostfix"/>
+        /// </summary>
+        /// <param name="text"></param>
+        /// <returns></returns>
+        protected string GetPrefixedStringValue(string text)
+        {
+            if (StringValuePrefix != null || StringValuePostfix != null)
+            {
+                string prefix = StringValuePrefix ?? "";
+                string postfix = StringValuePostfix ?? "";
+                text = prefix + (text ?? "") + postfix;
+            }
+            return text;
+        }
+        #endregion
+        #region DbParameter
+        /// <summary>
+        /// Obsahuje true, pokud tato instance umožňuje pracovat s DB parametrem.
+        /// Bázová třída <see cref=""/>
+        /// </summary>
+        public bool EnableDbParameters { get { return true; } set { } }
+        /// <summary>
+        /// Název parametru, bez úvodního znaku @.
+        /// Pokud je vložen neplatný text, obsahuje null.
+        /// <para/>
+        /// <u>Práce s parametry:</u><br/>
+        /// 1. Hodnota <see cref="ExpressionPartValue"/> může být vytvořena bez názvu parametru; 
+        ///  v takovém případě je do SQL výrazu (tj. do <see cref="ResultText"/>) vkládána napřímo, formátovaná do SQL notace<br/>
+        /// 2. Hodnotu lze vytvořit se jménem parametru, nebo do <see cref="ParamName"/> jméno parametru vložit;<br/>
+        /// a. Pak do výstupního SQL výrazu (tj. do <see cref="ResultText"/>) je vloženo jméno parametru s @;<br/>
+        /// b. V tom případě je nutno vyzvednout instanci <see cref="Srv.DbParameter"/> a přidat ji do pole ostatních parametrů a použít v rámci SQL SELECTU
+        /// </summary>
+        public virtual string ParamName { get { return _ParamName; } set { _ParamName = GetParamName(value); } }
+        private string _ParamName;
+        /// <summary>
+        /// Obsahuje true, pokud this hodnota má parametr = má je povolené (<see cref="EnableDbParameters"/> je true), 
+        /// a aktuálně je zadané jméno parametru (<see cref="ParamName"/> není null)
+        /// </summary>
+        protected bool HasParameter { get { return (EnableDbParameters && (ParamName != null)); } }
+        /// <summary>
+        /// Db parametr.
+        /// <para/>
+        /// Hodnota by měla být čtena pokud možno co nejblíže k aplikaci výsledného SQL SELECTU, protože hodnota může obsahovat údaje platné v době čtení.
+        /// Jinými slovy, hodnota může obsahovat aktuální datum a čas; a pokud vrácený údaj bude dlouhodobě skladován, bude ztrácet na aktuálnosti.
+        /// <br/>
+        /// To platí jak pro variantu s DB parametrem, tak i pro přímou citaci do výsledného textu.
+        /// </summary>
+        protected virtual DbParameter DbParameter { get { return (HasParameter ? new DbParameter(ParamName, CurrentValue) : null); } }
+        /// <summary>
+        /// Resetuje parametr = zahodí jej, následně bude SQL výraz obsahovat explicitní hodnotu, a nikoli parametr.
+        /// </summary>
+        internal void ResetDbParameters()
+        {
+            if (EnableDbParameters)
+                _ParamName = null;
+        }
+        /// <summary>
+        /// Přidá svůj parametr(y) do daného pole.
+        /// </summary>
+        /// <param name="dbParameters"></param>
+        internal void AddDbParameters(List<DbParameter> dbParameters)
+        {
+            if (!EnableDbParameters) return;
+
+            // Bylo by vhodné, aby parametry se stejnou hodnotou nebyly duplikované.
+            // Typicky pokud stavím filtr na číslo pořadače int 5926, pak je zbytečné dodávat dva či více parametrů s tímto číslem.
+            // Konec konců pokud by filtr potřeboval docela jiné atributy, ale na shodnou hodnotu
+            //   (např. v jedné podmínce číslo pořadače int 5926 a současně v jiné podmínce na číslo vztahu int 5926),
+            //   tak je SQL serveru srdečně jedno, kdyby pro obě podmínky měl použít shodný parametr @Par1, který má hodnotu int 5926).
+            // Takže než založíme nový parametr, podíváme se v poli dbParameters, zda tam už není stejná hodnota:
+            object value = this.Value;
+            DbParameter dbParameter;
+            if (dbParameters.TryFindFirst(out dbParameter, dbp => IsEqualValue(dbp.Value, value)))
+            {   // Pro naši hodnotu Value už v poli parametrů 'dbParameters' existuje parametr zadaný někde jinde:
+                // Použijeme tedy jeho jméno i pro nás, další nový parametr do pole nepřidáváme, a je hotovo:
+                ParamName = dbParameter.Name;
+                return;
+            }
+
+            // Naše hodnota ještě v poli parametrů není, přidáme ji tam jako nový parametr:
+            ParamName = DbParameterNamePrefix + (dbParameters.Count + 1).ToString();
+            dbParameter = this.DbParameter;
+
+            if (dbParameter != null)
+                dbParameters.Add(dbParameter);
+        }
+        /// <summary>
+        /// Prefix jména parametru
+        /// </summary>
+        protected virtual string DbParameterNamePrefix { get { return "filtpar"; } }
+        /// <summary>
+        /// Konverze hodnoty do SQL notace
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        protected static string ToSql(object value)
         {
             if (value is null) return "NULL";
             string type = value.GetType().Name;
@@ -728,45 +1051,399 @@ namespace TestDevExpress.AsolDX.News
             return value.ToString();
         }
         /// <summary>
+        /// Vrátí platné jméno proměnné z daného textu, nebo null (odebere mezery, tečky a zavináče a uzenáče)
+        /// </summary>
+        /// <param name="name"></param>
+        /// <returns></returns>
+        protected string GetParamName(string name)
+        {
+            if (String.IsNullOrEmpty(name)) return null;
+            if (name.Contains(" ")) name = name.Replace(" ", "");
+            if (name.Contains(".")) name = name.Replace(".", "");
+            if (name.Contains("@")) name = name.Replace("@", "");
+            if (String.IsNullOrEmpty(name)) return null;
+            return name;
+        }
+        /// <summary>
+        /// Vrátí true, pokud dva objekty obsahují shodnou hodnotu.
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
+        protected static bool IsEqualValue(object a, object b)
+        {
+            bool an = (a is null);
+            bool bn = (b is null);
+            if (an && bn) return true;
+            if (an || bn) return false;
+            // Oba objekty nejsou null:
+            return (Type.Equals(a, b));
+        }
+        #endregion
+        #region Dynamic Value (klíčové slovo, název časového období, ...)
+        protected ExpressionValueDataType DataType { get; set; }
+        /// <summary>
+        /// Metoda vrací dynamicky určenou hodnotu
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        protected virtual object GetDynamicValue(object value)
+        {
+            //switch (this.DataType)
+            //{
+            //    case ExpressionValueDataType.Integer:
+            //    case ExpressionValueDataType.Decimal:
+            //    case ExpressionValueDataType.Relation:
+            //        if (this._DynamicKey is string)
+            //        {
+            //            string keyword = (string)this._DynamicKey;
+            //            var numeric = NrsFilterSupport.ConvertKeyWordToNumeric(keyword);
+            //            value = numeric;
+            //        }
+            //        break;
+            //    case ExpressionValueDataType.Date:
+            //        if (this._DynamicKey is DateFilterKeyWord)
+            //        {
+            //            DateFilterKeyWord dateKey = (DateFilterKeyWord)this._DynamicKey;
+            //            TimeRange timeRange = NrsFilterSupport.ConvertKeyWordToDateTimeRange(dateKey);
+            //            value = timeRange;
+            //        }
+            //        break;
+            //}
+            return value;
+        }
+        /// <summary>
+        /// Určení zdroje dynamické hodnoty, záleží na datovém typu hodnoty
+        /// </summary>
+        private object _DynamicKey;
+        /// <summary>
+        /// Hodnota je dynamická = je nutno ji vyhodnotit až v okamžiku potřeby
+        /// </summary>
+        public bool IsDynamic { get { return _IsDynamic; } }
+        private bool _IsDynamic;
+        #endregion
+
+
+
+    }
+    #endregion
+    #region class ExpressionPartColumn : třída obsahující sloupec
+    /// <summary>
+    /// Částice výrazu, obsahující sloupec (buď alias sloupce, nebo přímo sloupec tabulky, nebo i včetně klíče entity)
+    /// </summary>
+    public class ExpressionPartColumn : ExpressionPart
+    {
+        #region Základní data
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="category"></param>
+        /// <param name="column"></param>
+        internal ExpressionPartColumn(TextPartCategory category, string column)
+            : base(category)
+        {
+            Column = column;
+            ColumnSource = null;
+        }
+        /// <summary>
+        /// Jméno sloupce původní, nalezené v textu
+        /// </summary>
+        public string Column { get; private set; }
+        /// <summary>
+        /// Zdrojový výraz pro sloupec
+        /// </summary>
+        public string ColumnSource { get; set; }
+        /// <summary>
+        /// Výsledný text výrazu, v notaci SQL.
+        /// Výstupní text = <see cref="CurrentText"/> (pokud není null), nebo <see cref="OriginalText"/> (výchozí stav).
+        /// </summary>
+        public override string ResultText { get { return ColumnSource ?? Column; } }
+        /// <summary>
+        /// Úvodní HTML TAGy vkládané do hodnoty <see cref="ExpressionPart.ResultTextHtml"/> před hodnotu <see cref="ExpressionPart.ResultText"/>
+        /// </summary>
+        protected override string BeginTagHtml { get { return "<span style=\"color:#1010C0\"><u>"; } }
+        /// <summary>
+        /// Závěrečné HTML TAGy vkládané do hodnoty <see cref="ExpressionPart.ResultTextHtml"/> za hodnotu <see cref="ExpressionPart.ResultText"/>
+        /// </summary>
+        protected override string EndTagHtml { get { return "</u></span>"; } }
+        #endregion
+        #region Práce se sloupcem
+        #endregion
+    }
+    #endregion
+    #region class ExpressionPartText : třída obsahující prostý text
+    /// <summary>
+    /// Částice výrazu, obsahující prostý text
+    /// </summary>
+    public class ExpressionPartText : ExpressionPart
+    {
+        #region Základní data
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="text"></param>
+        internal ExpressionPartText(string text)
+            : base(TextPartCategory.Text)
+        {
+            this.SourceText = text;
+            this.CurrentText = null;
+        }
+        /// <summary>
+        /// Výchozí text.
+        /// </summary>
+        public string SourceText { get; private set; }
+        /// <summary>
+        /// Zadaný aktuální text. 
+        /// Pokud bude null (výchozí stav), pak jak <see cref="ResultText"/> bude obsažen výchozí <see cref="SourceText "/>.
+        /// </summary>
+        public string CurrentText { get; set; }
+        /// <summary>
+        /// Výsledný text výrazu, v notaci SQL.
+        /// Výstupní text = <see cref="CurrentText"/> (pokud není null), nebo <see cref="SourceText "/> (výchozí stav).
+        /// </summary>
+        public override string ResultText { get { return CurrentText ?? SourceText; } }
+        /// <summary>
+        /// Úvodní HTML TAGy vkládané do hodnoty <see cref="ExpressionPart.ResultTextHtml"/> před hodnotu <see cref="ExpressionPart.ResultText"/>
+        /// </summary>
+        protected override string BeginTagHtml { get { return "<span style=\"color:#101020\">"; } }
+        /// <summary>
+        /// Závěrečné HTML TAGy vkládané do hodnoty <see cref="ExpressionPart.ResultTextHtml"/> za hodnotu <see cref="ExpressionPart.ResultText"/>
+        /// </summary>
+        protected override string EndTagHtml { get { return "</span>"; } }
+        #endregion
+    }
+    #endregion
+    #region class ExpressionPart : bázová abstraktní třída pro všechny konkrétní potomky
+    /// <summary>
+    /// Částice výrazu
+    /// </summary>
+    public abstract class ExpressionPart
+    {
+        #region Factory metody
+        /// <summary>
+        /// Vrátí část textu obsahující prostý text
+        /// </summary>
+        /// <param name="text"></param>
+        /// <returns></returns>
+        public static ExpressionPart CreatePartText(string text)
+        {
+            return new ExpressionPartText(text);
+        }
+        /// <summary>
+        /// Vrátí část textu obsahující sloupec (buď alias sloupce, nebo přímo sloupec tabulky, nebo i včetně klíče entity)
+        /// </summary>
+        /// <param name="category"></param>
+        /// <param name="column"></param>
+        /// <returns></returns>
+        public static ExpressionPart CreatePartColumn(TextPartCategory category, string column)
+        {
+            return new ExpressionPartColumn(category, column);
+        }
+        /// <summary>
+        /// Vrátí část textu obsahující konstantní hodnotu
+        /// </summary>
+        /// <param name="category"></param>
+        /// <param name="column"></param>
+        /// <returns></returns>
+        public static ExpressionPart CreatePartValueConstant(string name, object value)
+        {
+            return new ExpressionPartValue(TextPartCategory.ValueConstant, name, value);
+        }
+        /// <summary>
+        /// Vrátí část textu obsahující proměnnou hodnotu (klíčové slovo)
+        /// </summary>
+        /// <param name="variableName"></param>
+        /// <param name="parsedItem"></param>
+        /// <returns></returns>
+        public static ExpressionPart CreatePartValueVariable(string variableName, ParsedItem parsedItem)
+        {
+            return new ExpressionPartVariable(variableName, parsedItem);
+        }
+        /// <summary>
+        /// Protected konstruktor
+        /// </summary>
+        /// <param name="category"></param>
+        protected ExpressionPart(TextPartCategory category)
+        {
+            Category = category;
+        }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString() { return this.ResultText; }
+        /// <summary>
+        /// Obsahuje true, pokud this instance je kategorie <see cref="TextPartCategory.Text"/>, 
+        /// tedy typu <see cref="ExpressionPartText"/>.
+        /// </summary>
+        public bool IsText { get { return IsAnyCategory(TextPartCategory.Text); } }
+        /// <summary>
+        /// Obsahuje true, pokud this instance je kategorie <see cref="TextPartCategory.ColumnAlias"/> nebo <see cref="TextPartCategory.ColumnFull"/>, 
+        /// tedy typu <see cref="ExpressionPartColumn"/>.
+        /// </summary>
+        public bool IsColumn { get { return IsAnyCategory(TextPartCategory.ColumnAlias, TextPartCategory.ColumnFull); } }
+        /// <summary>
+        /// Obsahuje true, pokud this instance je kategorie <see cref="TextPartCategory.ValueConstant"/> nebo <see cref="TextPartCategory.ValueVariable"/> nebo <see cref="TextPartCategory.ValueArgument"/>,
+        /// tedy typu <see cref="ExpressionPartValue"/> nebo potomek.
+        /// Tento typ může mít DbParametr.
+        /// </summary>
+        public bool IsValue { get { return IsAnyCategory(TextPartCategory.ValueConstant, TextPartCategory.ValueVariable, TextPartCategory.ValueArgument); } }
+        /// <summary>
+        /// Obsahuje true, pokud this instance je kategorie <see cref="TextPartCategory.ValueConstant"/>,
+        /// tedy typu <see cref="ExpressionPartValue"/>.
+        /// </summary>
+        public bool IsConstant { get { return IsAnyCategory(TextPartCategory.ValueConstant); } }
+        /// <summary>
+        /// Obsahuje true, pokud this instance je kategorie <see cref="TextPartCategory.ValueVariable"/>,
+        /// tedy typu <see cref="ExpressionPartVariable"/>.
+        /// </summary>
+        public bool IsVariable { get { return IsAnyCategory(TextPartCategory.ValueVariable); } }
+        /// <summary>
+        /// Obsahuje true, pokud this instance je kategorie <see cref="TextPartCategory.ValueArgument"/>,
+        /// tedy typu <see cref="ExpressionPartArgument"/>.
+        /// </summary>
+        public bool IsArgument { get { return IsAnyCategory(TextPartCategory.ValueArgument); } }
+        /// <summary>
+        /// Vrátí true, pokud zdejší <see cref="Category"/> je některá z daných kategorií
+        /// </summary>
+        /// <param name="categories"></param>
+        /// <returns></returns>
+        protected bool IsAnyCategory(params TextPartCategory[] categories)
+        {
+            return categories.Any(c => c == this.Category);
+        }
+        #endregion
+        #region Vlastní data
+        /// <summary>
+        /// Kategorie částice
+        /// </summary>
+        public TextPartCategory Category { get; protected set; }
+        /// <summary>
+        /// Výsledný text výrazu, v notaci SQL.
+        /// <para/>
+        /// Hodnota by měla být čtena pokud možno co nejblíže k aplikaci výsledného SQL SELECTU, protože hodnota může obsahovat údaje platné v době čtení.
+        /// Jinými slovy, hodnota může obsahovat aktuální datum a čas; a pokud vrácený údaj bude dlouhodobě skladován, bude ztrácet na aktuálnosti.
+        /// </summary>
+        public abstract string ResultText { get; }
+        #endregion
+        #region Podpora pro tvorbu sumárního textu SQL a HTML
+        /// <summary>
+        /// Sloučí dodané prvky do jednoho prostého textu
+        /// </summary>
+        /// <param name="parts"></param>
+        /// <returns></returns>
+        internal static string MergeToText(IEnumerable<ExpressionPart> parts)
+        {
+            StringBuilder sb = new StringBuilder();
+            foreach (var part in parts)
+                sb.Append(part.ResultText);
+            return sb.ToString();
+        }
+        /// <summary>
         /// Sloučí dodané prvky do jednoho HTML textu
         /// </summary>
         /// <param name="parts"></param>
         /// <returns></returns>
-        internal static string MergeToHtml(IEnumerable<MsSqlPart> parts)
+        internal static string MergeToHtml(IEnumerable<ExpressionPart> parts)
         {
-            string htmlBegin = "<html><body style=\"background-color:#EEEEFF;\"><p align=\"left\"><code>";
-            string htmlEnd = "</code></p></body></html>";
-            string textBegin = "<span style=\"color:#101020\">";
-            string textEnd = "</span>";
-            string columnBegin = "<span style=\"color:#1010C0\"><u>";
-            string columnEnd = "</u></span>";
-            string valueBegin = "<span style=\"color:#C01010\"><b>";
-            string valueEnd = "</b></span>";
-
             StringBuilder sb = new StringBuilder();
-            sb.Append(htmlBegin);
+            sb.Append(DocBeginTagHtml);
             foreach (var part in parts)
-            {
-                var type = part.Category;
-                var text = part.ResultText;
-                switch (type)
-                {
-                    case Djs.Test.DxCls.ExpressionCategory.Text:
-                        sb.Append(textBegin + text + textEnd); ;
-                        break;
-                    case Djs.Test.DxCls.ExpressionCategory.Column:
-                        sb.Append(columnBegin + text + columnEnd); ;
-                        break;
-                    case Djs.Test.DxCls.ExpressionCategory.Value:
-                        sb.Append(valueBegin + text + valueEnd); ;
-                        break;
-                }
-            }
-            sb.Append(htmlEnd);
+                sb.Append(part.ResultTextHtml);
+            sb.Append(DocEndTagHtml);
             return sb.ToString();
         }
+        /// <summary>
+        /// Výsledný text výrazu, v notaci HTML, pro zvýraznění obsahu / syntaxe
+        /// </summary>
+        protected virtual string ResultTextHtml { get { return BeginTagHtml + ResultText + EndTagHtml; } }
+        /// <summary>
+        /// Úvodní HTML TAGy vkládané do hodnoty <see cref="ExpressionPart.ResultTextHtml"/> před hodnotu <see cref="ExpressionPart.ResultText"/>
+        /// </summary>
+        protected virtual string BeginTagHtml { get { return ""; } }
+        /// <summary>
+        /// Závěrečné HTML TAGy vkládané do hodnoty <see cref="ExpressionPart.ResultTextHtml"/> za hodnotu <see cref="ExpressionPart.ResultText"/>
+        /// </summary>
+        protected virtual string EndTagHtml { get { return ""; } }
+        /// <summary>
+        /// Úvodní HTML tagy na začátek dokumentu, před sloučený text prvků
+        /// </summary>
+        protected static string DocBeginTagHtml { get { return "<html><body style=\"background-color:#EEEEFF;\"><p align=\"left\"><code>"; } }
+        /// <summary>
+        /// Závěrečné HTML tagy na konec dokumentu, za sloučený text prvků
+        /// </summary>
+        protected static string DocEndTagHtml { get { return "</code></p></body></html>"; } }
+        #endregion
     }
-    public enum ExpressionCategory { None, Text, Column, Value }
-
     #endregion
+    #region enum TextPartCategory, ExpressionValueDataType
+    /// <summary>
+    /// Kategorie textu
+    /// </summary>
+    public enum TextPartCategory
+    {
+        /// <summary>
+        /// Nezadáno. Pro účely parametrování. Žádná existující částice by neměla mít tuto hodnotu.
+        /// </summary>
+        None,
+        /// <summary>
+        /// Prostý text
+        /// </summary>
+        Text,
+        /// <summary>
+        /// Alias sloupce
+        /// </summary>
+        ColumnAlias,
+        /// <summary>
+        /// Název zdrojového sloupce
+        /// </summary>
+        ColumnFull,
+        /// <summary>
+        /// Konstantní hodnota
+        /// </summary>
+        ValueConstant,
+        /// <summary>
+        /// Proměnná hodnota = klíčové slovo atd.
+        /// </summary>
+        ValueVariable,
+        /// <summary>
+        /// Uživatelem zadávaná hodnota v okně parametrů
+        /// </summary>
+        ValueArgument
+    }
+    #endregion
+    #endregion
+
+    // náhražky pro překlad
+    public enum ExpressionValueDataType
+    {
+        None,
+        Boolean,
+        Integer,
+        Decimal,
+        Relation,
+        Date,
+
+    }
+
+    public class ParsedItem
+    { }
+    public class DbParameter
+    {
+        public DbParameter(string paramName, object value)
+        {
+            this.Name = paramName;
+            this.Value = value;
+        }
+        public string Name { get; set; }
+        public object Value { get; set; }
+    }
+    public static class Extensions
+    {
+        public static bool TryFindFirst<T>(this IEnumerable<T> items, out T found, Func<T, bool> filter) where T : class
+        {
+            found = items.FirstOrDefault(filter);
+            return (found != null);
+        }
+    }
 }
