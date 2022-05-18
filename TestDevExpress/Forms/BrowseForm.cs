@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -208,9 +209,7 @@ namespace TestDevExpress.Forms
             view.TopRowChanged += View_TopRowChanged;
             view.RowCountChanged += View_RowCountChanged;
             view.CustomDrawScroll += View_CustomDrawScroll;
-            
-
-
+           
             grid.MainView = view;
             var timeCreateView = DxComponent.LogGetTimeElapsed(timeStart, DxComponent.LogTokenTimeSec);
 
@@ -219,7 +218,140 @@ namespace TestDevExpress.Forms
             view.BestFitColumns();
             var timeFitColumns = DxComponent.LogGetTimeElapsed(timeStart, DxComponent.LogTokenTimeSec);
 
+            // EditStyle for "status":
+            PrepareEditStyleForStatus(view);
+            view.CustomDrawCell += View_CustomDrawCell; // += new DevExpress.XtraGrid.Views.Base.RowCellCustomDrawEventHandler(this.gridView1_CustomDrawCell);
+
             StatusText = $"Tvorba GridSplitContainer: {timeInit} sec;     Přidání na Form: {timeAdd} sec;     {dataLog}Generování View: {timeCreateView} sec;     BestFitColumns: {timeFitColumns} sec";
+        }
+
+        private void PrepareEditStyleForStatus(DevExpress.XtraGrid.Views.Grid.GridView view)
+        {
+            var colStatus = view.Columns["status"];
+            // colStatus.
+
+
+        }
+
+        private void View_CustomDrawCell(object sender, DevExpress.XtraGrid.Views.Base.RowCellCustomDrawEventArgs e)
+        {
+            if (e.Column.FieldName == "status")
+                DrawStatusCell(sender as DevExpress.XtraGrid.Views.Grid.GridView, e);
+        }
+
+        private void DrawStatusCell(DevExpress.XtraGrid.Views.Grid.GridView view, DevExpress.XtraGrid.Views.Base.RowCellCustomDrawEventArgs e)
+        {
+            string value = (string)e.CellValue;             // (sender as GridView).GetRowCellValue(e.RowHandle, e.Column);
+
+            if (!IsStatusValid(value)) return;
+
+            e.DisplayText = "      " + GetStatusText(value);
+            e.Appearance.ForeColor = GetStatusTextColor(value);
+            e.Appearance.BackColor = GetStatusBackColor(value);
+            e.Appearance.BackColor2 = Color.White;
+            e.Appearance.GradientMode = System.Drawing.Drawing2D.LinearGradientMode.Horizontal;
+            e.DefaultDraw();
+
+            string imageName = GetStatusImage(value);
+            if (!String.IsNullOrEmpty(imageName))
+            {
+                var image = DxComponent.GetBitmapImage(imageName);
+                Rectangle bounds = new Rectangle(e.Bounds.X + 2, (e.Bounds.Y + (e.Bounds.Height / 2)) - 8, 16, 16);
+                e.Graphics.DrawImage(image, bounds);
+            }
+
+            e.Handled = true;
+
+        }
+        private bool IsStatusValid(string statusCode)
+        {
+            switch (statusCode)
+            {
+                case "A":
+                case "B":
+                case "C":
+                case "D":
+                case "E":
+                case "F":
+                case "G":
+                case "H": return true;
+            }
+            return false;
+        }
+        private string GetStatusText(string statusCode)
+        {
+            switch (statusCode)
+            {
+                case "A": return "Akorát";
+                case "B": return "Beze všeho";
+                case "C": return "Co byste ještě chtěli";
+                case "D": return "Děkujeme";
+                case "E": return "Extra přídavek";
+                case "F": return "Fakturovat";
+                case "G": return "Grupování";
+                case "H": return "Hotovo";
+            }
+            return statusCode;
+        }
+        private Color GetStatusTextColor(string statusCode)
+        {
+            switch (statusCode)
+            {
+                case "A": return Color.FromArgb(0, 0, 0);
+                case "B": return Color.FromArgb(0, 0, 40);
+                case "C": return Color.FromArgb(0, 40, 0);
+                case "D": return Color.FromArgb(0, 40, 40);
+                case "E": return Color.FromArgb(40, 0, 0);
+                case "F": return Color.FromArgb(40, 0, 40);
+                case "G": return Color.FromArgb(40, 40, 0);
+                case "H": return Color.FromArgb(40, 40, 40);
+            }
+            return Color.FromArgb(0, 0, 0);
+        }
+        private Color GetStatusBackColor(string statusCode)
+        {
+            switch (statusCode)
+            {
+                case "A": return Color.FromArgb(255, 210, 255);
+                case "B": return Color.FromArgb(255, 210, 255);
+                case "C": return Color.FromArgb(255, 255, 210);
+                case "D": return Color.FromArgb(255, 255, 210);
+                case "E": return Color.FromArgb(210, 255, 255);
+                case "F": return Color.FromArgb(210, 255, 255);
+                case "G": return Color.FromArgb(210, 255, 210);
+                case "H": return Color.FromArgb(210, 255, 210);
+            }
+            return Color.FromArgb(0, 0, 0);
+        }
+        private string GetStatusImage(string statusCode)
+        {
+            string[] resources = new string[]
+            {
+    "images/scales/bluewhitered_16x16.png",
+    "images/scales/geenyellow_16x16.png",
+    "images/scales/greenwhite_16x16.png",
+    "images/scales/greenwhitered_16x16.png",
+    "images/scales/greenyellowred_16x16.png",
+    "images/scales/redwhite_16x16.png",
+    "images/scales/redwhiteblue_16x16.png",
+    "images/scales/redwhitegreen_16x16.png",
+    "images/scales/redyellowgreen_16x16.png",
+    "images/scales/whitegreen_16x16.png",
+    "images/scales/whitered_16x16.png",
+    "images/scales/yellowgreen_16x16.png"
+            };
+            switch (statusCode)
+            {
+                case "A": return resources[0];
+                case "B": return resources[1];
+                case "C": return resources[2];
+                case "D": return resources[3];
+                case "E": return resources[4];
+                case "F": return resources[5];
+                case "G": return resources[6];
+                case "H": return resources[7];
+            }
+            return "";
         }
         /// <summary>
         /// Cílový počet řádků, null = bez omezení
@@ -484,6 +616,8 @@ namespace TestDevExpress.Forms
             table.Columns.Add(new System.Data.DataColumn() { ColumnName = "refer", Caption = "Reference", DataType = typeof(string) });
             table.Columns.Add(new System.Data.DataColumn() { ColumnName = "nazev", Caption = "Název", DataType = typeof(string) });
             table.Columns.Add(new System.Data.DataColumn() { ColumnName = "category", Caption = "Kategorie", DataType = typeof(string) });
+            table.Columns.Add(new System.Data.DataColumn() { ColumnName = "status_code", Caption = "Status", DataType = typeof(string) });
+            table.Columns.Add(new System.Data.DataColumn() { ColumnName = "status", Caption = "Stav", DataType = typeof(string) });
             table.Columns.Add(new System.Data.DataColumn() { ColumnName = "period", Caption = "Období", DataType = typeof(string) });
             table.Columns.Add(new System.Data.DataColumn() { ColumnName = "date_inp", Caption = "Datum vstupu", DataType = typeof(DateTime) });
             table.Columns.Add(new System.Data.DataColumn() { ColumnName = "date_out", Caption = "Datum výstupu", DataType = typeof(DateTime) });
@@ -534,6 +668,7 @@ namespace TestDevExpress.Forms
             string refer = "DL:" + Random.Rand.Next(100000, 1000000).ToString();
             string nazev = Random.GetSentence(1, 3, false);
             string category = Random.GetItem(Categories);
+            string status = Random.GetItem(Statuses);
             DateTime dateInp = DateFirst.AddDays(Random.Rand.Next(0, 730));
             DateTime dateOut = dateInp.AddDays(Random.Rand.Next(7, 90));
             string period = dateInp.Year.ToString() + "-" + dateInp.Month.ToString("00");
@@ -542,7 +677,7 @@ namespace TestDevExpress.Forms
             decimal priceT = qty * price1;
             string note = Random.GetSentence(5, 9, true);
 
-            object[] row = new object[] { rowId, refer, nazev, category, period, dateInp, dateOut, qty, price1, priceT, note };
+            object[] row = new object[] { rowId, refer, nazev, category, status, status, period, dateInp, dateOut, qty, price1, priceT, note };
             return row;
         }
         private string[] Categories 
@@ -555,6 +690,16 @@ namespace TestDevExpress.Forms
             }
         }
         private string[] _Categories = null;
+        private string[] Statuses
+        {
+            get
+            {
+                if (_Statuses is null)
+                    _Statuses = new string[] { "A", "B", "C", "D", "E", "F", "G", "H" };
+                return _Statuses;
+            }
+        }
+        private string[] _Statuses = null;
 
         private DateTime DateFirst
         {
