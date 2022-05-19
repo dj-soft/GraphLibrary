@@ -294,11 +294,18 @@ namespace TestDevExpress.Forms
         /// 
         /// </summary>
         private ComboCodeTable StatusCodeTable;
-        private class ComboCodeTable
+        /// <summary>
+        /// Tabulka obsahující položky editačního stylu
+        /// </summary>
+        internal class ComboCodeTable
         {
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="items"></param>
             public ComboCodeTable(params Item[] items)
             {
-                Items = items;
+                _ItemsDict = items.CreateDictionary(i => i.Value);
                 GetValidResourceType();
             }
             /// <summary>
@@ -307,21 +314,27 @@ namespace TestDevExpress.Forms
             /// <returns></returns>
             public override string ToString()
             {
-                return $"CodeTable; {Items.Length} items.";
+                return $"CodeTable; {ItemsCount} items.";
             }
             /// <summary>
             /// Prvky
             /// </summary>
-            public Item[] Items;
+            public Item[] Items { get { return _ItemsDict.Values.ToArray(); } }
+            public int ItemsCount { get { return this._ItemsDict.Count; } }
+            /// <summary>
+            /// Prvky
+            /// </summary>
+            private Dictionary<object, Item> _ItemsDict;
             public DevExpress.XtraEditors.Repository.RepositoryItemImageComboBox CreateRepositoryCombo()
             {
                 DevExpress.XtraEditors.Repository.RepositoryItemImageComboBox repoCombo = new DevExpress.XtraEditors.Repository.RepositoryItemImageComboBox();
                 var resourceType = GetValidResourceType();
                 var imageCollection = GetImageCollection(ResourceImageSizeType.Small, resourceType);
                 repoCombo.SmallImages = imageCollection;
-                foreach (var item in Items)
+                foreach (var item in _ItemsDict.Values)
                     repoCombo.Items.Add(item.CreateComboItem(ResourceImageSizeType.Small, resourceType));
-                repoCombo.DropDownRows = (Items.Length < 3 ? 3 : Items.Length < 12 ? Items.Length : 12);
+                int count = ItemsCount;
+                repoCombo.DropDownRows = (count < 3 ? 3 : count < 12 ? count : 12);
                 return repoCombo;
             }
             /// <summary>
@@ -329,7 +342,7 @@ namespace TestDevExpress.Forms
             /// Zde lze kontrolovat, že jsou zadány ikony shodného typu (pak má pole jen jeden prvek).
             /// Prvky bez ikony jsou ignorovány.
             /// </summary>
-            private ResourceContentType[] ResourceTypes { get { return this.Items.Select(i => i.ContentType).Where(t => t != ResourceContentType.None).Distinct().ToArray(); } }
+            private ResourceContentType[] ResourceTypes { get { return this._ItemsDict.Values.Select(i => i.ContentType).Where(t => t != ResourceContentType.None).Distinct().ToArray(); } }
             /// <summary>
             /// Metoda vrátí použitelný typ ikon. Pokud je zadán mix (vektor i bitmapy), vyhodí chybu.
             /// </summary>
@@ -375,8 +388,7 @@ namespace TestDevExpress.Forms
             public void DrawStatusCellCodeTable(DevExpress.XtraGrid.Views.Grid.GridView view, DevExpress.XtraGrid.Views.Base.RowCellCustomDrawEventArgs e)
             {
                 object value = e.CellValue;
-                var item = Items.FirstOrDefault(i => Object.Equals(i.Value, value));
-                if (item is null) return;
+                if (value is null || !_ItemsDict.TryGetValue(value, out var item)) return;
 
                 e.Appearance.BackColor = item.BackColor1.Value;
                 e.Appearance.BackColor2 = item.BackColor2 ?? Color.Empty;
