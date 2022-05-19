@@ -228,12 +228,15 @@ namespace Noris.Clients.Win.Components.AsolDX
             // Vytvořím si pracovní pole buttonů, určíme max Width:
             int widthOneMax = 0;
             var panelSize = this.ClientSize;
-            foreach (var button in _ButtonControls)
+            if (_ButtonControls != null)
             {
-                var preferresSize = button.GetPreferredSize(panelSize);
-                if (widthOneMax < preferresSize.Width)
-                    widthOneMax = preferresSize.Width;
-                buttons.Add(new ControlItemLayoutInfo() { Control = button });
+                foreach (var button in _ButtonControls)
+                {
+                    var preferresSize = button.GetPreferredSize(panelSize);
+                    if (widthOneMax < preferresSize.Width)
+                        widthOneMax = preferresSize.Width;
+                    buttons.Add(new ControlItemLayoutInfo() { Control = button });
+                }
             }
 
             // Do pracovního pole vložím velikost buttonů = všechny stejně:
@@ -268,6 +271,7 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             var iButtons = _IButtons;
             if (iButtons is null) return;
+
             List<DxSimpleButton> buttonControls = new List<DxSimpleButton>();
             int x = 5;
             foreach (var iButton in iButtons)

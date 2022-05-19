@@ -48,6 +48,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         #endregion
         #region Vlastnosti DxTreeListNative
         /// <summary>
+        /// Fyzický control <see cref="DxTreeListNative"/>, umístěný v this panelu
+        /// </summary>
+        internal DxTreeListNative TreeListNative { get { return _TreeListNative; } }
+        /// <summary>
         /// Text (lokalizovaný) pro text uzlu, který reprezentuje "LazyLoadChild", např. něco jako "Načítám data..."
         /// </summary>
         public string LazyLoadNodeText { get { return _TreeListNative.LazyLoadNodeText; } set { _TreeListNative.LazyLoadNodeText = value; } }
@@ -118,6 +122,18 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// ToolTipy mohou obsahovat SimpleHtml tagy?
         /// </summary>
         public bool ToolTipAllowHtmlText { get { return _TreeListNative.ToolTipAllowHtmlText; } set { _TreeListNative.ToolTipAllowHtmlText = value; } }
+        /// <summary>
+        /// Gets or sets whether to use animation effects when expanding/collapsing nodes using the expand button.
+        /// </summary>
+        public DevExpress.Utils.DefaultBoolean AllowOptionExpandAnimation { get { return _TreeListNative.AllowOptionExpandAnimation; } set { _TreeListNative.AllowOptionExpandAnimation = value; } }
+        /// <summary>
+        /// Gets or sets the animation mode, which identifies cells for which animation is enabled.
+        /// </summary>
+        public DevExpress.XtraTreeList.TreeListAnimationType AnimationType { get { return _TreeListNative.AnimationType; } set { _TreeListNative.AnimationType = value; } }
+        /// <summary>
+        /// Gets or sets a value that specifies how the focus rectangle is painted.
+        /// </summary>
+        public DevExpress.XtraTreeList.DrawFocusRectStyle FocusRectStyle { get { return _TreeListNative.FocusRectStyle; } set { _TreeListNative.FocusRectStyle = value; } }
         /// <summary>
         /// Co provede DoubleClick na textu anebo Click na ikoně
         /// </summary>
@@ -217,6 +233,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Pokud je zadán parametr <paramref name="clear"/> = true, pak smaže všechny aktuální nody, a provede to v jednom vizuálním zámku s přidáním nodů.
         /// Lze tak přidat například jednu podvětev.
         /// Na konci provede Refresh.
+        /// <br/>
+        /// Po dobu provádění této akce nejsou volány žádné události.
         /// </summary>
         /// <param name="addNodes"></param>
         /// <param name="clear">Smazat všechny aktuální nody?</param>
@@ -230,6 +248,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Nejprve najde daného parenta, a zruší z něj příznak LazyLoad (protože právě tímto načtením jsou jeho nody vyřešeny). Současně odebere "wait" node (prázdný node, simulující načítání dat).
         /// Pak teprve přidá nové nody.
         /// Na konci provede Refresh.
+        /// <br/>
+        /// Po dobu provádění této akce nejsou volány žádné události.
         /// </summary>
         /// <param name="parentNodeId"></param>
         /// <param name="addNodes"></param>
@@ -279,6 +299,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         #endregion
         #region FilterRow
         /// <summary>
+        /// Fyzický control <see cref="DxFilterBox"/>, umístěný v this panelu
+        /// </summary>
+        internal DxFilterBox FilterBox { get { return _FilterBox; } }
+        /// <summary>
         /// Inicializace FilterBoxu, a jeho vložení do this.Controls
         /// </summary>
         private void _FilterBoxInitialize()
@@ -302,10 +326,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Zobrazovat řádkový filtr? Default = NE
         /// </summary>
         public bool FilterBoxVisible { get { return _FilterBoxVisible; } set { _FilterBoxVisible = value; this.RunInGui(FilterBoxSetVisible); } } private bool _FilterBoxVisible = false;
-        /// <summary>
-        /// Instance řádkového filtru
-        /// </summary>
-        public DxFilterBox FilterBox { get { return _FilterBox; } }
         /// <summary>
         /// Aktuální text v řádkovém filtru
         /// </summary>
@@ -768,6 +788,18 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Pozadí TreeListu je transparentní (pak je vidět podkladový Panel)
         /// </summary>
         public bool TransparentBackground { get { return _TransparentBackground; } set { _TransparentBackground = value; _ApplyTransparentBackground(); } } private bool _TransparentBackground;
+        /// <summary>
+        /// Gets or sets whether to use animation effects when expanding/collapsing nodes using the expand button.
+        /// </summary>
+        public DevExpress.Utils.DefaultBoolean AllowOptionExpandAnimation { get { return OptionsBehavior.AllowExpandAnimation; } set { OptionsBehavior.AllowExpandAnimation = value; } }
+        /// <summary>
+        /// Gets or sets the animation mode, which identifies cells for which animation is enabled.
+        /// </summary>
+        public DevExpress.XtraTreeList.TreeListAnimationType AnimationType { get { return OptionsView.AnimationType; } set { OptionsView.AnimationType = value; } }
+        /// <summary>
+        /// Gets or sets a value that specifies how the focus rectangle is painted.
+        /// </summary>
+        public DevExpress.XtraTreeList.DrawFocusRectStyle FocusRectStyle { get { return OptionsView.FocusRectStyle; } set { OptionsView.FocusRectStyle = value; } }
         /// <summary>
         /// TreeList povoluje provést MultiSelect = označit více nodů.
         /// Default = false.
@@ -1286,7 +1318,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         /// <summary>
         /// Volá se po každé změně stavu Selected.
-        /// Zajistí nastavení odpovídajícího příznaku do <see cref="ITreeListNode.Selected"/>, a pokud dojde ke změně, pak volá <see cref="OnSelectedNodesChanged()"/>.
+        /// Zajistí nastavení odpovídajícího příznaku do <see cref="ITreeListNode.Selected"/>, a pokud dojde ke změně, pak volá <see cref="OnSelectedNodesChanged(DxTreeListNodeArgs)"/>.
         /// </summary>
         private void _OnSelectedNodesChanged()
         {
@@ -1658,6 +1690,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Pokud je zadán parametr <paramref name="clear"/> = true, pak smaže všechny aktuální nody, a provede to v jednom vizuálním zámku s přidáním nodů.
         /// Lze tak přidat například jednu podvětev.
         /// Na konci provede Refresh.
+        /// <br/>
+        /// Po dobu provádění této akce nejsou volány žádné události.
         /// </summary>
         /// <param name="addNodes"></param>
         /// <param name="clear">Smazat všechny aktuální nody?</param>
@@ -1676,6 +1710,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Nejprve najde daného parenta, a zruší z něj příznak LazyLoad (protože právě tímto načtením jsou jeho nody vyřešeny). Současně odebere "wait" node (prázdný node, simulující načítání dat).
         /// Pak teprve přidá nové nody.
         /// Na konci provede Refresh.
+        /// <br/>
+        /// Po dobu provádění této akce nejsou volány žádné události.
         /// </summary>
         /// <param name="parentNodeId"></param>
         /// <param name="addNodes"></param>
@@ -1983,8 +2019,11 @@ namespace Noris.Clients.Win.Components.AsolDX
                     owner.BeginUnboundLoad();
 
                     _Owner = owner;
+                    _SilentMode = owner._SilentMode;
                     _WithRefresh = withRefresh;
                     _FocusedNodeId = owner.FocusedNodeInfo?.ItemId;
+
+                    _Owner._SilentMode = true;
                 }
             }
             void IDisposable.Dispose()
@@ -1996,6 +2035,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                     int topVisibleIndex = owner.TopVisibleNodeIndex;
                     int topVisiblePixel = owner.TopVisibleNodePixel;
 
+                    owner._SilentMode = _SilentMode;
                     owner.EndUnboundLoad();
                     ((System.ComponentModel.ISupportInitialize)(owner)).EndInit();
 
@@ -2015,6 +2055,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 }
             }
             private DxTreeListNative _Owner;
+            private bool _SilentMode;
             private bool _WithRefresh;
             private string _FocusedNodeId;
         }
@@ -2026,12 +2067,40 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Přidá více node do stromu a do evidence (z <paramref name="addNodes"/>).
         /// Neřeší blokování GUI.
         /// Metoda vrací první vytvořený <see cref="NodePair"/>.
+        /// <br/>
+        /// Po dobu provádění této akce nejsou volány žádné události.
         /// </summary>
         /// <param name="clearAll"></param>
         /// <param name="removeNodeKeys"></param>
         /// <param name="addNodes"></param>
         /// <param name="preserveProperties"></param>
         private NodePair _RemoveAddNodes(bool clearAll, IEnumerable<string> removeNodeKeys, IEnumerable<ITreeListNode> addNodes, PreservePropertiesMode preserveProperties)
+        {
+            NodePair nodePair = null;
+            bool oldSilentMode = _SilentMode;
+            try
+            {
+                _SilentMode = true;
+                nodePair = _RemoveAddNodesSilent(clearAll, removeNodeKeys, addNodes, preserveProperties);
+            }
+            finally
+            {
+                _SilentMode = oldSilentMode;
+            }
+            return nodePair;
+        }
+        /// <summary>
+        /// Smaže všechny nody (podle <paramref name="clearAll"/>).
+        /// Odebere nody ze stromu a z evidence (podle <paramref name="removeNodeKeys"/>).
+        /// Přidá více node do stromu a do evidence (z <paramref name="addNodes"/>).
+        /// Neřeší blokování GUI.
+        /// Metoda vrací první vytvořený <see cref="NodePair"/>.
+        /// </summary>
+        /// <param name="clearAll"></param>
+        /// <param name="removeNodeKeys"></param>
+        /// <param name="addNodes"></param>
+        /// <param name="preserveProperties"></param>
+        private NodePair _RemoveAddNodesSilent(bool clearAll, IEnumerable<string> removeNodeKeys, IEnumerable<ITreeListNode> addNodes, PreservePropertiesMode preserveProperties)
         {
             NodePair firstPair = null;
 
@@ -3272,6 +3341,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="nodeInfo"></param>
         private void RaiseNodeFocusedChanged(ITreeListNode nodeInfo)
         {
+            if (_SilentMode) return;
+
             DxTreeListNodeArgs args = new DxTreeListNodeArgs(nodeInfo, TreeListActionType.NodeFocusedChanged, TreeListPartType.None, this.IsActiveEditor);
             OnNodeFocusedChanged(args);
             NodeFocusedChanged?.Invoke(this, args);
@@ -3291,6 +3362,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private void RaiseSelectedNodesChanged()
         {
+            if (_SilentMode) return;
+
             DxTreeListNodeArgs args = new DxTreeListNodeArgs(null, TreeListActionType.SelectedNodesChanged, TreeListPartType.None, this.IsActiveEditor);
             OnSelectedNodesChanged(args);
             SelectedNodesChanged?.Invoke(this, args);
@@ -3310,6 +3383,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="hitInfo"></param>
         private void RaiseShowContextMenu(TreeListVisualNodeInfo hitInfo)
         {
+            if (_SilentMode) return;
+
             DxTreeListNodeContextMenuArgs args = new DxTreeListNodeContextMenuArgs(hitInfo.NodeInfo, TreeListActionType.ShowContextMenu, this.IsActiveEditor, hitInfo);
             OnShowContextMenu(args);
             ShowContextMenu?.Invoke(this, args);
@@ -3331,6 +3406,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="partType"></param>
         private void RaiseNodeIconClick(ITreeListNode nodeInfo, TreeListPartType partType)
         {
+            if (_SilentMode) return;
+
             DxTreeListNodeArgs args = new DxTreeListNodeArgs(nodeInfo, TreeListActionType.NodeIconClick, partType, this.IsActiveEditor);
             OnNodeIconClick(args);
             NodeIconClick?.Invoke(this, args);
@@ -3352,6 +3429,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="partType"></param>
         private void RaiseNodeDoubleClick(ITreeListNode nodeInfo, TreeListPartType partType)
         {
+            if (_SilentMode) return;
+
             DxTreeListNodeArgs args = new DxTreeListNodeArgs(nodeInfo, TreeListActionType.NodeDoubleClick, partType, this.IsActiveEditor);
             OnNodeDoubleClick(args);
             NodeDoubleClick?.Invoke(this, args);
@@ -3372,6 +3451,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="nodeInfo"></param>
         private void RaiseNodeExpanded(ITreeListNode nodeInfo)
         {
+            if (_SilentMode) return;
+
             DxTreeListNodeArgs args = new DxTreeListNodeArgs(nodeInfo, TreeListActionType.NodeExpanded, TreeListPartType.None, this.IsActiveEditor);
             OnNodeExpanded(args);
             NodeExpanded?.Invoke(this, args);
@@ -3392,6 +3473,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="nodeInfo"></param>
         private void RaiseNodeCollapsed(ITreeListNode nodeInfo)
         {
+            if (_SilentMode) return;
+
             DxTreeListNodeArgs args = new DxTreeListNodeArgs(nodeInfo, TreeListActionType.NodeCollapsed, TreeListPartType.None, this.IsActiveEditor);
             OnNodeCollapsed(args);
             NodeCollapsed?.Invoke(this, args);
@@ -3412,6 +3495,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="nodeInfo"></param>
         private void RaiseActivatedEditor(ITreeListNode nodeInfo)
         {
+            if (_SilentMode) return;
+
             DxTreeListNodeArgs args = new DxTreeListNodeArgs(nodeInfo, TreeListActionType.ActivatedEditor, TreeListPartType.None, this.IsActiveEditor);
             OnActivatedEditor(args);
             ActivatedEditor.Invoke(this, args);
@@ -3433,6 +3518,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="editedValue"></param>
         private void RaiseEditorDoubleClick(ITreeListNode nodeInfo, object editedValue)
         {
+            if (_SilentMode) return;
+
             DxTreeListNodeArgs args = new DxTreeListNodeArgs(nodeInfo, TreeListActionType.EditorDoubleClick, TreeListPartType.Cell, this.IsActiveEditor, editedValue);
             OnEditorDoubleClick(args);
             EditorDoubleClick?.Invoke(this, args);
@@ -3454,6 +3541,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="editedValue"></param>
         private void RaiseNodeEdited(ITreeListNode nodeInfo, object editedValue)
         {
+            if (_SilentMode) return;
+
             DxTreeListNodeArgs args = new DxTreeListNodeArgs(nodeInfo, TreeListActionType.NodeEdited, TreeListPartType.Cell, this.IsActiveEditor, editedValue);
             OnNodeEdited(args);
             NodeEdited?.Invoke(this, args);
@@ -3474,6 +3563,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="e"></param>
         private void RaiseNodeKeyDown(KeyEventArgs e)
         {
+            if (_SilentMode) return;
+
             DxTreeListNodeKeyArgs args = new DxTreeListNodeKeyArgs(this.FocusedNodeInfo, TreeListActionType.KeyDown, this.IsActiveEditor, e);
             OnNodeKeyDown(args);
             NodeKeyDown?.Invoke(this, args);
@@ -3497,6 +3588,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="isChecked"></param>
         private void RaiseNodeCheckedChange(ITreeListNode nodeInfo, bool isChecked)
         {
+            if (_SilentMode) return;
+
             DxTreeListNodeArgs args = new DxTreeListNodeArgs(nodeInfo, TreeListActionType.NodeCheckedChange, TreeListPartType.NodeCheckBox, this.IsActiveEditor, isChecked);
             OnNodeCheckedChange(args);
             NodeCheckedChange?.Invoke(this, args);
@@ -3517,6 +3610,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="nodesInfo"></param>
         private void RaiseNodesDelete(IEnumerable<ITreeListNode> nodesInfo)
         {
+            if (_SilentMode) return;
+
             DxTreeListNodesArgs args = new DxTreeListNodesArgs(nodesInfo, TreeListActionType.NodeDelete);
             OnNodesDelete(args);
             NodesDelete?.Invoke(this, args);
@@ -3537,6 +3632,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="nodeInfo"></param>
         private void RaiseLazyLoadChilds(ITreeListNode nodeInfo)
         {
+            if (_SilentMode) return;
+
             DxTreeListNodeArgs args = new DxTreeListNodeArgs(nodeInfo, TreeListActionType.LazyLoadChilds, TreeListPartType.None, this.IsActiveEditor);
             OnLazyLoadChilds(args);
             LazyLoadChilds?.Invoke(this, args);
@@ -3550,6 +3647,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// TreeList rozbaluje node, který má nastaveno načítání ze serveru : <see cref="ITreeListNode.LazyExpandable"/> je true.
         /// </summary>
         public event DxTreeListNodeHandler LazyLoadChilds;
+
+        /// <summary>
+        /// Tichý režim = bez eventů.
+        /// Na true se aktivuje pouze po dobu odebírání a přidávání nodů v metodě <see cref="_RemoveAddNodesSilent(bool, IEnumerable{string}, IEnumerable{ITreeListNode}, PreservePropertiesMode)"/>.
+        /// </summary>
+        private bool _SilentMode;
         #endregion
     }
     #region Deklarace delegátů a tříd pro eventhandlery, další enumy
@@ -4177,7 +4280,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public virtual bool CanEdit { get; set; }
         /// <summary>
-        /// Uživatel může stisknout Delete nad uzlem, bude vyvolána událost <see cref="DxTreeListNative.NodeDelete"/>
+        /// Uživatel může stisknout Delete nad uzlem, bude vyvolána událost <see cref="DxTreeListNative.NodesDelete"/>
         /// </summary>
         public virtual bool CanDelete { get; set; }
         /// <summary>
@@ -4288,7 +4391,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         bool CanEdit { get; }
         /// <summary>
-        /// Uživatel může stisknout Delete nad uzlem, bude vyvolána událost <see cref="DxTreeListNative.NodeDelete"/>
+        /// Uživatel může stisknout Delete nad uzlem, bude vyvolána událost <see cref="DxTreeListNative.NodesDelete"/>
         /// </summary>
         bool CanDelete { get; }
         /// <summary>

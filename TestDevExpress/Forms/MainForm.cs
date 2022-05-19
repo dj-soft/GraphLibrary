@@ -416,6 +416,8 @@ namespace TestDevExpress.Forms
             // group.Items.Add(CreateRibbonFunction("AsolRibbon", "ASOL Ribbon", "svgimages/reports/gaugestylelinearhorizontal.svg", "Otevře okno s ASOL Ribbonem, vytvořeným s použitím definičních dat IRibbon", _TestDxAsolRibbon_Click));
             // // group.Items.Add(CreateRibbonFunction("RibbonFormData3", "IData3 Ribbon", "svgimages/reports/gaugestylelinearhorizontal.svg", "Otevře okno s ASOL Ribbonem, vytvořeným s použitím definičních dat IRibbon a s třístupňovým mergováním (Slave => Void => Desktop)", _TestDxRibbonFormData3ModalButton_Click));
 
+            group.Items.Add(CreateRibbonFunction("TreeBgrForm", "TreeBgr Form", "svgimages/diagramicons/tipovertree_right.svg", "Otevře okno pro testování TreeListu s akcemi na pozadí", _TestDxTreeBgrFormButton_Click));
+
             AddRibbonSoundsMenu(group);
             AddRibbonWavFilesMenu(group);
 
@@ -423,7 +425,7 @@ namespace TestDevExpress.Forms
 
             group = new DataRibbonGroup() { GroupText = "BROWSE" };
             group.Items.Add(CreateRibbonFunction("BrowseStd", "Browse Standard", "svgimages/dashboards/grid.svg", "Otevře okno pro testování standardního Browse", _TestDxBrowseStandardForm_Click));
-            group.Items.Add(CreateRibbonFunction("BrowseVir", "Browse Virtual", "svgimages/dashboards/grid.svg", "Otevře okno pro testování Browse s virtuálním zdrojem dat", _TestDxBrowseVirtualForm_Click));
+            // group.Items.Add(CreateRibbonFunction("BrowseVir", "Browse Virtual", "svgimages/dashboards/grid.svg", "Otevře okno pro testování Browse s virtuálním zdrojem dat", _TestDxBrowseVirtualForm_Click));
             page.Groups.Add(group);
 
             group = new DataRibbonGroup() { GroupText = "STYLY" };
@@ -663,6 +665,14 @@ namespace TestDevExpress.Forms
             {
                 ribbonForm.WindowState = FormWindowState.Maximized;
                 ribbonForm.ShowDialog();
+            }
+        }
+        private void _TestDxTreeBgrFormButton_Click(IMenuItem menuItem)
+        {
+            using (var form = new TreeBgrForm())
+            {
+                form.WindowState = FormWindowState.Maximized;
+                form.ShowDialog();
             }
         }
         private void _TestDxDevExpressRibbon_Click(IMenuItem menuItem)

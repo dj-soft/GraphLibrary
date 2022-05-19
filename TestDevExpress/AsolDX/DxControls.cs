@@ -778,7 +778,18 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// SplitContainerControl
     /// </summary>
     public class DxSplitContainerControl : DevExpress.XtraEditors.SplitContainerControl
-    { }
+    {
+        /// <summary>
+        /// Zde je uvedena orientace oddělovací čáry. Lze setovat.
+        /// Pokud jsou panely vlevo a vpravo, pak dělící čára má orientaci <see cref="SplitterOrientation"/> = <see cref="Orientation.Vertical"/> = je svislá;
+        /// Pokud jsou panely nahoře a dole, pak dělící čára má orientaci <see cref="SplitterOrientation"/> = <see cref="Orientation.Horizontal"/> = je vodorovná;
+        /// </summary>
+        public Orientation SplitterOrientation
+        {
+            get { return (Horizontal ? Orientation.Vertical : Orientation.Horizontal); }
+            set { Horizontal = (value == Orientation.Vertical); }
+        }
+    }
     #endregion
     #region DxLabelControl
     /// <summary>
