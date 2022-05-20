@@ -232,14 +232,14 @@ namespace TestDevExpress.Forms
         {
             if (e.Column.FieldName == "status")
             {
-                DrawStatusCellCodeTable(sender as DevExpress.XtraGrid.Views.Grid.GridView, e);
-                DrawStatusCellDirectPaint(sender as DevExpress.XtraGrid.Views.Grid.GridView, e);
+                StatusCodeTable.DrawStatusCellCodeTable(sender, e);
             }
         }
 
         #region Buňka s ImageComboBox jako CodeTable
         private void PrepareEditStyleForStatus(DevExpress.XtraGrid.Views.Grid.GridView view)
         {
+            // Testovací definice editačního stylu:
             string[] displayValues = new string[]
             {
                 "Akorát", "Beze všeho", "Co byste ještě chtěli", "Děkujeme", "Extra přídavek", "Fakturovat", "Grupování", "Hotovo"
@@ -267,311 +267,32 @@ namespace TestDevExpress.Forms
             Color backColor2 = Color.White;
             Color textColor = Color.Black;
 
+            // Standardní instance ComboCodeTable:
             StatusCodeTable = new ComboCodeTable
-                (
-                new ComboCodeTable.Item() { Value = "A", DisplayText = displayValues[0], IconName = iconNames[0], BackColor1 = backColors[0], BackColor2 = backColor2, TextColor = textColor },
-                new ComboCodeTable.Item() { Value = "B", DisplayText = displayValues[1], IconName = iconNames[1], BackColor1 = backColors[1], BackColor2 = backColor2, TextColor = textColor },
-                new ComboCodeTable.Item() { Value = "C", DisplayText = displayValues[2], IconName = iconNames[2], BackColor1 = backColors[2], BackColor2 = backColor2, TextColor = textColor },
-                new ComboCodeTable.Item() { Value = "D", DisplayText = displayValues[3], IconName = iconNames[3], BackColor1 = backColors[3], BackColor2 = backColor2, TextColor = textColor },
-                new ComboCodeTable.Item() { Value = "E", DisplayText = displayValues[4], IconName = iconNames[4], BackColor1 = backColors[4], BackColor2 = backColor2, TextColor = textColor },
-                new ComboCodeTable.Item() { Value = "F", DisplayText = displayValues[5], IconName = iconNames[5], BackColor1 = backColors[5], BackColor2 = backColor2, TextColor = textColor },
-                new ComboCodeTable.Item() { Value = "G", DisplayText = displayValues[6], IconName = iconNames[6], BackColor1 = backColors[6], BackColor2 = backColor2, TextColor = textColor },
-                new ComboCodeTable.Item() { Value = "H", DisplayText = displayValues[7], IconName = iconNames[7], BackColor1 = backColors[7], BackColor2 = backColor2, TextColor = textColor }
-                );
+            (
+                new ComboCodeTable.Item("A", displayValues[0], iconNames[0], backColors[0], backColor2, textColor),
+                new ComboCodeTable.Item("B", displayValues[1], iconNames[1], backColors[1], backColor2, textColor),
+                new ComboCodeTable.Item("C", displayValues[2], iconNames[2], backColors[2], backColor2, textColor),
+                new ComboCodeTable.Item("D", displayValues[3], iconNames[3], backColors[3], backColor2, textColor),
+                new ComboCodeTable.Item("E", displayValues[4], iconNames[4], backColors[4], backColor2, textColor),
+                new ComboCodeTable.Item("F", displayValues[5], iconNames[5], backColors[5], backColor2, textColor),
+                new ComboCodeTable.Item("G", displayValues[6], iconNames[6], backColors[6], backColor2, textColor),
+                new ComboCodeTable.Item("H", displayValues[7], iconNames[7], backColors[7], backColor2, textColor)
+            );
 
+            // Styl buňky s hodnotou, která není null ale není součástí editačního stylu:
+            StatusCodeTable.NotFoundItemStyle = new ComboCodeTable.Item(null, null, null, Color.FromArgb(255, 160, 192), textStyle: FontStyle.Italic);
 
             DevExpress.XtraEditors.Repository.RepositoryItemImageComboBox repoCombo = StatusCodeTable.CreateRepositoryCombo();
-            _RepoCombo = repoCombo;
+            _Grid.RepositoryItems.Add(repoCombo);
             var colStatus = view.Columns["status"];
             colStatus.ColumnEdit = repoCombo;
+            colStatus.Tag = StatusCodeTable;
         }
-        private void DrawStatusCellCodeTable(DevExpress.XtraGrid.Views.Grid.GridView view, DevExpress.XtraGrid.Views.Base.RowCellCustomDrawEventArgs e)
-        {
-            StatusCodeTable.DrawStatusCellCodeTable(view, e);
-        }
-        private DevExpress.XtraEditors.Repository.RepositoryItemImageComboBox _RepoCombo;
         /// <summary>
-        /// 
+        /// Úložiště editačního stylu
         /// </summary>
         private ComboCodeTable StatusCodeTable;
-        /// <summary>
-        /// Tabulka obsahující položky editačního stylu
-        /// </summary>
-        internal class ComboCodeTable
-        {
-            /// <summary>
-            /// Konstruktor
-            /// </summary>
-            /// <param name="items"></param>
-            public ComboCodeTable(params Item[] items)
-            {
-                _ItemsDict = items.CreateDictionary(i => i.Value);
-                GetValidResourceType();
-            }
-            /// <summary>
-            /// Vizualizace
-            /// </summary>
-            /// <returns></returns>
-            public override string ToString()
-            {
-                return $"CodeTable; {ItemsCount} items.";
-            }
-            /// <summary>
-            /// Prvky
-            /// </summary>
-            public Item[] Items { get { return _ItemsDict.Values.ToArray(); } }
-            public int ItemsCount { get { return this._ItemsDict.Count; } }
-            /// <summary>
-            /// Prvky
-            /// </summary>
-            private Dictionary<object, Item> _ItemsDict;
-            public DevExpress.XtraEditors.Repository.RepositoryItemImageComboBox CreateRepositoryCombo()
-            {
-                DevExpress.XtraEditors.Repository.RepositoryItemImageComboBox repoCombo = new DevExpress.XtraEditors.Repository.RepositoryItemImageComboBox();
-                var resourceType = GetValidResourceType();
-                var imageCollection = GetImageCollection(ResourceImageSizeType.Small, resourceType);
-                repoCombo.SmallImages = imageCollection;
-                foreach (var item in _ItemsDict.Values)
-                    repoCombo.Items.Add(item.CreateComboItem(ResourceImageSizeType.Small, resourceType));
-                int count = ItemsCount;
-                repoCombo.DropDownRows = (count < 3 ? 3 : count < 12 ? count : 12);
-                return repoCombo;
-            }
-            /// <summary>
-            /// Pole obsahující Distinct typy ikon.
-            /// Zde lze kontrolovat, že jsou zadány ikony shodného typu (pak má pole jen jeden prvek).
-            /// Prvky bez ikony jsou ignorovány.
-            /// </summary>
-            private ResourceContentType[] ResourceTypes { get { return this._ItemsDict.Values.Select(i => i.ContentType).Where(t => t != ResourceContentType.None).Distinct().ToArray(); } }
-            /// <summary>
-            /// Metoda vrátí použitelný typ ikon. Pokud je zadán mix (vektor i bitmapy), vyhodí chybu.
-            /// </summary>
-            /// <returns></returns>
-            private ResourceContentType GetValidResourceType()
-            {
-                var resourceTypes = ResourceTypes;
-                if (resourceTypes.Length == 0) return ResourceContentType.None;
-                if (resourceTypes.Length > 1) throw new InvalidOperationException($"Nelze v jedné CodeTable kombinovat různé typy ikon (bitmapy a vektory), aktuálně jsou detekovány: {resourceTypes.ToOneString(",")}.");
-                return resourceTypes[0];
-            }
-            /// <summary>
-            /// Vrátí ImageList pro aktuální druh ikon (vektor / bitmapa)
-            /// </summary>
-            /// <param name="sizeType"></param>
-            /// <returns></returns>
-            private object GetImageCollection(ResourceImageSizeType sizeType)
-            {
-                ResourceContentType resourceType = GetValidResourceType();
-                return GetImageCollection(sizeType, resourceType);
-            }
-            /// <summary>
-            /// Vrátí ImageList pro daný druh ikon (vektor / bitmapa)
-            /// </summary>
-            /// <param name="sizeType"></param>
-            /// <param name="resourceType"></param>
-            /// <returns></returns>
-            private object GetImageCollection(ResourceImageSizeType sizeType, ResourceContentType resourceType)
-            {
-                switch (resourceType)
-                {
-                    case ResourceContentType.None:
-                        return null;
-                    case ResourceContentType.Bitmap:
-                        return DxComponent.GetBitmapImageList(sizeType);
-                    case ResourceContentType.Vector:
-                        return DxComponent.GetVectorImageList(sizeType);
-                    default:
-                        throw new InvalidOperationException($"V CodeTable nelze použít jako ikony druh zdroje '{resourceType}'.");
-                }
-            }
-
-            public void DrawStatusCellCodeTable(DevExpress.XtraGrid.Views.Grid.GridView view, DevExpress.XtraGrid.Views.Base.RowCellCustomDrawEventArgs e)
-            {
-                object value = e.CellValue;
-                if (value is null || !_ItemsDict.TryGetValue(value, out var item)) return;
-
-                e.Appearance.BackColor = item.BackColor1.Value;
-                e.Appearance.BackColor2 = item.BackColor2 ?? Color.Empty;
-                e.Appearance.ForeColor = item.TextColor ?? Color.Empty;
-                e.Appearance.GradientMode = System.Drawing.Drawing2D.LinearGradientMode.Horizontal;
-                e.DefaultDraw();
-                e.Handled = true;
-            }
-            /// <summary>
-            /// Jeden prvek CodeTable
-            /// </summary>
-            public class Item
-            {
-                /// <summary>
-                /// Vizualizace
-                /// </summary>
-                /// <returns></returns>
-                public override string ToString()
-                {
-                    return $"Value: '{Value}'; DisplayText: '{DisplayText}'";
-                }
-                public object Value;
-                public string DisplayText;
-                public string IconName;
-                public Color? BackColor1;
-                public Color? BackColor2;
-                public Color? TextColor;
-                /// <summary>
-                /// Druh obrázku podle přípony <see cref="IconName"/>
-                /// </summary>
-                public ResourceContentType ContentType
-                {
-                    get
-                    {
-                        string iconName = this.IconName;
-                        if (String.IsNullOrEmpty(iconName)) return ResourceContentType.None;
-                        string extension = System.IO.Path.GetExtension(iconName);
-                        if (String.IsNullOrEmpty(extension)) return ResourceContentType.None;
-                        return DxComponent.GetContentTypeFromExtension(extension);
-                    }
-                }
-
-                public DevExpress.XtraEditors.Controls.ImageComboBoxItem CreateComboItem(ResourceImageSizeType sizeType, ResourceContentType resourceType)
-                {
-                    int imageIndex = GetImageIndex(this.IconName, sizeType, resourceType);
-                    var comboItem = new DevExpress.XtraEditors.Controls.ImageComboBoxItem(this.DisplayText, this.Value, imageIndex);
-                    return comboItem;
-                }
-                private int GetImageIndex(string imageName, ResourceImageSizeType sizeType, ResourceContentType resourceType)
-                {
-                    switch (resourceType)
-                    {
-                        case ResourceContentType.Bitmap:
-                            return DxComponent.GetBitmapImageIndex(imageName, sizeType);
-                        case ResourceContentType.Vector:
-                            return DxComponent.GetVectorImageIndex(imageName, sizeType);
-                    }
-                    return -1;
-                }
-            }
-        }
-        #endregion
-        #region Custom kreslení buňky jako CodeTable
-        private void DrawStatusCellDirectPaint(DevExpress.XtraGrid.Views.Grid.GridView view, DevExpress.XtraGrid.Views.Base.RowCellCustomDrawEventArgs e)
-        {
-            // zrušeno:
-            return;
-
-
-
-
-            string value = (string)e.CellValue;             // (sender as GridView).GetRowCellValue(e.RowHandle, e.Column);
-
-            if (!IsStatusValid(value)) return;
-
-            e.DisplayText = "      " + GetStatusText(value);
-            e.Appearance.ForeColor = GetStatusTextColor(value);
-            e.Appearance.BackColor = GetStatusBackColor(value);
-            e.Appearance.BackColor2 = Color.White;
-            e.Appearance.GradientMode = System.Drawing.Drawing2D.LinearGradientMode.Horizontal;
-            e.DefaultDraw();
-
-            string imageName = GetStatusImage(value);
-            if (!String.IsNullOrEmpty(imageName))
-            {
-                var image = DxComponent.GetBitmapImage(imageName);
-                Rectangle bounds = new Rectangle(e.Bounds.X + 2, (e.Bounds.Y + (e.Bounds.Height / 2)) - 8, 16, 16);
-                e.Graphics.DrawImage(image, bounds);
-            }
-
-            e.Handled = true;
-
-        }
-        private bool IsStatusValid(string statusCode)
-        {
-            switch (statusCode)
-            {
-                case "A":
-                case "B":
-                case "C":
-                case "D":
-                case "E":
-                case "F":
-                case "G":
-                case "H": return true;
-            }
-            return false;
-        }
-        private string GetStatusText(string statusCode)
-        {
-            switch (statusCode)
-            {
-                case "A": return "Akorát";
-                case "B": return "Beze všeho";
-                case "C": return "Co byste ještě chtěli";
-                case "D": return "Děkujeme";
-                case "E": return "Extra přídavek";
-                case "F": return "Fakturovat";
-                case "G": return "Grupování";
-                case "H": return "Hotovo";
-            }
-            return statusCode;
-        }
-        private Color GetStatusTextColor(string statusCode)
-        {
-            switch (statusCode)
-            {
-                case "A": return Color.FromArgb(0, 0, 0);
-                case "B": return Color.FromArgb(0, 0, 40);
-                case "C": return Color.FromArgb(0, 40, 0);
-                case "D": return Color.FromArgb(0, 40, 40);
-                case "E": return Color.FromArgb(40, 0, 0);
-                case "F": return Color.FromArgb(40, 0, 40);
-                case "G": return Color.FromArgb(40, 40, 0);
-                case "H": return Color.FromArgb(40, 40, 40);
-            }
-            return Color.FromArgb(0, 0, 0);
-        }
-        private Color GetStatusBackColor(string statusCode)
-        {
-            switch (statusCode)
-            {
-                case "A": return Color.FromArgb(255, 210, 255);
-                case "B": return Color.FromArgb(255, 210, 255);
-                case "C": return Color.FromArgb(255, 255, 210);
-                case "D": return Color.FromArgb(255, 255, 210);
-                case "E": return Color.FromArgb(210, 255, 255);
-                case "F": return Color.FromArgb(210, 255, 255);
-                case "G": return Color.FromArgb(210, 255, 210);
-                case "H": return Color.FromArgb(210, 255, 210);
-            }
-            return Color.FromArgb(0, 0, 0);
-        }
-        private string GetStatusImage(string statusCode)
-        {
-            string[] resources = new string[]
-            {
-    "images/scales/bluewhitered_16x16.png",
-    "images/scales/geenyellow_16x16.png",
-    "images/scales/greenwhite_16x16.png",
-    "images/scales/greenwhitered_16x16.png",
-    "images/scales/greenyellowred_16x16.png",
-    "images/scales/redwhite_16x16.png",
-    "images/scales/redwhiteblue_16x16.png",
-    "images/scales/redwhitegreen_16x16.png",
-    "images/scales/redyellowgreen_16x16.png",
-    "images/scales/whitegreen_16x16.png",
-    "images/scales/whitered_16x16.png",
-    "images/scales/yellowgreen_16x16.png"
-            };
-            switch (statusCode)
-            {
-                case "A": return resources[0];
-                case "B": return resources[1];
-                case "C": return resources[2];
-                case "D": return resources[3];
-                case "E": return resources[4];
-                case "F": return resources[5];
-                case "G": return resources[6];
-                case "H": return resources[7];
-            }
-            return "";
-        }
         #endregion
         #region Scrollbar a Auto LoadNext
         /// <summary>
@@ -887,7 +608,11 @@ namespace TestDevExpress.Forms
             string refer = "DL:" + Random.Rand.Next(100000, 1000000).ToString();
             string nazev = Random.GetSentence(1, 3, false);
             string category = Random.GetItem(Categories);
+
             string status = Random.GetItem(Statuses);
+            if (Random.IsTrue(5)) status = null;                     // Testujeme i hodnotu NULL
+            else if (Random.IsTrue(4)) status = "X";                 // Testujeme i hodnotu mimo CodeTable
+            
             DateTime dateInp = DateFirst.AddDays(Random.Rand.Next(0, 730));
             DateTime dateOut = dateInp.AddDays(Random.Rand.Next(7, 90));
             string period = dateInp.Year.ToString() + "-" + dateInp.Month.ToString("00");
