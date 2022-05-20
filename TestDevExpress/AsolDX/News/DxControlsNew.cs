@@ -284,7 +284,7 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             // repoCombo.ImmediatePopup = false;
             // repoCombo.NullValuePrompt = "Vyberte...";
-            repoCombo.PopupSizeable = true;
+            // repoCombo.PopupSizeable = true;
             // repoCombo.ReadOnly = false;
             repoCombo.ShowDropDown = DevExpress.XtraEditors.Controls.ShowDropDown.SingleClick;
 

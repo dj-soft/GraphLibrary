@@ -11,16 +11,30 @@ using Noris.Clients.Win.Components.AsolDX;
 
 namespace TestDevExpress.Forms
 {
+    /// <summary>
+    /// Formulář pro test TreeListu s během refreshe na pozadí
+    /// </summary>
     public class TreeBgrForm : DxControlForm
     {
         #region Fyzická tvorba instancí
-        public TreeBgrForm()
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public TreeBgrForm() : base()
         {
             this.InitSplitContainer();
             this.InitTreeList();
             this.InitEvents();
             this.PrepareTreeNodes();
             this.ApplyTreeNodes(true, false);
+        }
+        /// <summary>
+        /// Inicializace samotného formuláře, probíhá úplně první, ještě není vytvořen žádný control
+        /// </summary>
+        protected override void InitializeForm()
+        {
+            this.Text = "Test TreeListu s akcí refreshe nodů volanou z Background threadu";
+            base.InitializeForm();
         }
         private void InitSplitContainer()
         {

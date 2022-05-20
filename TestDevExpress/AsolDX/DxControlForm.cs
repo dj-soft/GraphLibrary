@@ -29,7 +29,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         public DxControlForm()
         {
             this.InitializeControls();
-                
         }
         /// <summary>
         /// Při prvním zobrazení okna

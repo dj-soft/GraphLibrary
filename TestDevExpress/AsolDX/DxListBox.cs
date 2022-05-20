@@ -289,7 +289,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             Size spaceSize = new Size(buttonSize.Width / 8, buttonSize.Height / 8);
             List<ControlItemLayoutInfo> layoutInfos = new List<ControlItemLayoutInfo>();
             ListBoxButtonType group1 = ListBoxButtonType.MoveTop | ListBoxButtonType.MoveUp | ListBoxButtonType.MoveDown | ListBoxButtonType.MoveBottom;
-            ListBoxButtonType group2 = ListBoxButtonType.SelectAll | ListBoxButtonType.Delete;
+            ListBoxButtonType group2 = ListBoxButtonType.Refresh | ListBoxButtonType.SelectAll | ListBoxButtonType.Delete;
             ListBoxButtonType group3 = ListBoxButtonType.ClipCopy | ListBoxButtonType.ClipCut | ListBoxButtonType.ClipPaste;
             int currentGroup = 0;
             for (int b = 0; b < buttons.Count; b++)
@@ -333,6 +333,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             AcceptButtonType(ListBoxButtonType.MoveUp, validButtonsTypes, "@arrowsmall|up|blue", MsgCode.DxKeyActionMoveUpTitle, MsgCode.DxKeyActionMoveUpText);
             AcceptButtonType(ListBoxButtonType.MoveDown, validButtonsTypes, "@arrowsmall|down|blue", MsgCode.DxKeyActionMoveDownTitle, MsgCode.DxKeyActionMoveDownText);
             AcceptButtonType(ListBoxButtonType.MoveBottom, validButtonsTypes, "@arrowsmall|bottom|blue", MsgCode.DxKeyActionMoveBottomTitle, MsgCode.DxKeyActionMoveBottomText);
+            AcceptButtonType(ListBoxButtonType.Refresh, validButtonsTypes, "@editsmall|all|blue", MsgCode.DxKeyActionRefreshTitle, MsgCode.DxKeyActionRefreshText);
             AcceptButtonType(ListBoxButtonType.SelectAll, validButtonsTypes, "@editsmall|all|blue", MsgCode.DxKeyActionSelectAllTitle, MsgCode.DxKeyActionSelectAllText);
             AcceptButtonType(ListBoxButtonType.Delete, validButtonsTypes, "@editsmall|del|red", MsgCode.DxKeyActionDeleteTitle, MsgCode.DxKeyActionDeleteText);  // "devav/actions/delete.svg"
             AcceptButtonType(ListBoxButtonType.ClipCopy, validButtonsTypes, "devav/actions/copy.svg", MsgCode.DxKeyActionClipCopyTitle, MsgCode.DxKeyActionClipCopyText);
@@ -473,6 +474,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 (buttons.HasFlag(ListBoxButtonType.ClipCut) ? KeyActionType.ClipCut : KeyActionType.None) |
                 (buttons.HasFlag(ListBoxButtonType.ClipPaste) ? KeyActionType.ClipPaste : KeyActionType.None) |
                 (buttons.HasFlag(ListBoxButtonType.Delete) ? KeyActionType.Delete : KeyActionType.None) |
+                (buttons.HasFlag(ListBoxButtonType.Refresh) ? KeyActionType.Refresh: KeyActionType.None) |
                 (buttons.HasFlag(ListBoxButtonType.SelectAll) ? KeyActionType.SelectAll : KeyActionType.None) |
                 (buttons.HasFlag(ListBoxButtonType.GoBegin) ? KeyActionType.GoBegin : KeyActionType.None) |
                 (buttons.HasFlag(ListBoxButtonType.GoEnd) ? KeyActionType.GoEnd : KeyActionType.None) |
@@ -496,6 +498,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 (actions.HasFlag(KeyActionType.ClipCut) ? ListBoxButtonType.ClipCut : ListBoxButtonType.None) |
                 (actions.HasFlag(KeyActionType.ClipPaste) ? ListBoxButtonType.ClipPaste : ListBoxButtonType.None) |
                 (actions.HasFlag(KeyActionType.Delete) ? ListBoxButtonType.Delete : ListBoxButtonType.None) |
+                (actions.HasFlag(KeyActionType.Refresh) ? ListBoxButtonType.Refresh : ListBoxButtonType.None) |
                 (actions.HasFlag(KeyActionType.SelectAll) ? ListBoxButtonType.SelectAll : ListBoxButtonType.None) |
                 (actions.HasFlag(KeyActionType.GoBegin) ? ListBoxButtonType.GoBegin : ListBoxButtonType.None) |
                 (actions.HasFlag(KeyActionType.GoEnd) ? ListBoxButtonType.GoEnd : ListBoxButtonType.None) |
@@ -605,6 +608,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Akce REDO
         /// </summary>
         Redo = 0x2000,
+
+        /// <summary>
+        /// Akce Refresh
+        /// </summary>
+        Refresh = 0x00010000,
 
         /// <summary>
         /// Souhrn všech pohybů

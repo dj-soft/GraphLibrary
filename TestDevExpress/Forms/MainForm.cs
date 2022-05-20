@@ -417,6 +417,7 @@ namespace TestDevExpress.Forms
             // // group.Items.Add(CreateRibbonFunction("RibbonFormData3", "IData3 Ribbon", "svgimages/reports/gaugestylelinearhorizontal.svg", "Otevře okno s ASOL Ribbonem, vytvořeným s použitím definičních dat IRibbon a s třístupňovým mergováním (Slave => Void => Desktop)", _TestDxRibbonFormData3ModalButton_Click));
 
             group.Items.Add(CreateRibbonFunction("TreeBgrForm", "TreeBgr Form", "svgimages/diagramicons/tipovertree_right.svg", "Otevře okno pro testování TreeListu s akcemi na pozadí", _TestDxTreeBgrFormButton_Click));
+            group.Items.Add(CreateRibbonFunction("HandleScan", "Handle Scan", "svgimages/spreadsheet/createline3dchart.svg", "Otevře okno pro měření systémových handle běžících procesů", _TestHandleScanFormButton_Click));
 
             AddRibbonSoundsMenu(group);
             AddRibbonWavFilesMenu(group);
@@ -670,6 +671,14 @@ namespace TestDevExpress.Forms
         private void _TestDxTreeBgrFormButton_Click(IMenuItem menuItem)
         {
             using (var form = new TreeBgrForm())
+            {
+                form.WindowState = FormWindowState.Maximized;
+                form.ShowDialog();
+            }
+        }
+        private void _TestHandleScanFormButton_Click(IMenuItem menuItem)
+        {
+            using (var form = new HandleScanForm())
             {
                 form.WindowState = FormWindowState.Maximized;
                 form.ShowDialog();

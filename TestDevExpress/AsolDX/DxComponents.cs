@@ -4574,6 +4574,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         [DefaultMessageText("Přesunout na konec")]
         DxKeyActionMoveBottomText,
         /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
+        [DefaultMessageText("Ctrl+R")]
+        DxKeyActionRefreshTitle,
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
+        [DefaultMessageText("Aktualizovat")]
+        DxKeyActionRefreshText,
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Ctrl+A")]
         DxKeyActionSelectAllTitle,
         /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>

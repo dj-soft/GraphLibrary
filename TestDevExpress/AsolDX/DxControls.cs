@@ -81,6 +81,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public DxStdForm()
         {
+            this.InitializeForm();
             this.ImageName = AsolDX.ImageName.DxFormIcon;
             DxComponent.RegisterListener(this);
         }
@@ -89,6 +90,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <returns></returns>
         public override string ToString() { return this.GetTypeName() + ": '" + (this.Text ?? "NULL") + "'"; }
+        /// <summary>
+        /// Inicializace samotného formuláře, probíhá úplně první, ještě není vytvořen žádný control
+        /// </summary>
+        protected virtual void InitializeForm()
+        { }
         /// <summary>
         /// Při zobrazení okna
         /// </summary>
@@ -5348,6 +5354,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Klávesa CtrlY: Redo (znovu provést poslední změnu)
         /// </summary>
         Redo = 0x2000,
+
+        /// <summary>
+        /// Klávesa CtrlR: Refresh
+        /// </summary>
+        Refresh = 0x00010000,
 
         /// <summary>
         /// Všechny práce s clipboardem
