@@ -281,6 +281,13 @@ namespace Noris.Clients.Win.Components.AsolDX
             var resourceType = GetValidResourceType();
             var imageCollection = GetImageCollection(ResourceImageSizeType.Small, resourceType);
             repoCombo.SmallImages = imageCollection;
+
+            // repoCombo.ImmediatePopup = false;
+            // repoCombo.NullValuePrompt = "Vyberte...";
+            repoCombo.PopupSizeable = true;
+            // repoCombo.ReadOnly = false;
+            repoCombo.ShowDropDown = DevExpress.XtraEditors.Controls.ShowDropDown.SingleClick;
+
             foreach (var item in _ItemsDict.Values)
                 repoCombo.Items.Add(item.CreateComboItem(ResourceImageSizeType.Small, resourceType));
             int count = ItemsCount;
