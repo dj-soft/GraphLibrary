@@ -3712,6 +3712,19 @@ namespace Noris.Clients.Win.Components.AsolDX
                 }
             }
             /// <summary>
+            /// Získá a vrátí informace o využití zdrojů operačního systému pro explicitně daný proces
+            /// </summary>
+            /// <param name="process"></param>
+            /// <returns></returns>
+            public static WinProcessInfo GetInfoForProcess(System.Diagnostics.Process process)
+            {
+                long privateMemory = process.PrivateMemorySize64;
+                long workingSet64 = process.WorkingSet64;
+                int gDIHandleCount = GetGuiResources(process.Handle, 0);
+                int userHandleCount = GetGuiResources(process.Handle, 1);
+                return new WinProcessInfo(privateMemory, workingSet64, gDIHandleCount, userHandleCount);
+            }
+            /// <summary>
             /// Konstruktor
             /// </summary>
             /// <param name="privateMemory"></param>
