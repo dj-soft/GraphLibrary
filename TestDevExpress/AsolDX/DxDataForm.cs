@@ -2934,6 +2934,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         bool? ITextItem.Checked { get; set; }
         /// <summary>
+        /// Styl písma
+        /// </summary>
+        FontStyle? ITextItem.FontStyle { get { return null; } }
+        /// <summary>
         /// Fyzický obrázek ikony.
         /// </summary>
         Image ITextItem.Image { get { return null; } }

@@ -16,7 +16,7 @@ using DevExpress.XtraEditors;
 namespace Noris.Clients.Win.Components.AsolDX
 {
     /// <summary>
-    /// Panel obsahující <see cref="DxListBoxControl"/> plus tlačítka pro přesuny nahoru / dolů
+    /// Panel obsahující <see cref="DxListBoxControl"/> (potomek <see cref="DevExpress.XtraEditors.ImageListBoxControl"/>) plus tlačítka pro přesuny nahoru / dolů
     /// </summary>
     public class DxListBoxPanel : DxPanelControl
     {
@@ -43,6 +43,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.ClientSizeChanged += _ClientSizeChanged;
             _ListBox.UndoRedoEnabledChanged += _ListBox_UndoRedoEnabledChanged;
             _ListBox.SelectedItemsChanged += _ListBox_SelectedItemsChanged;
+            _ListBox.SelectedMenuItemChanged += _ListBox_SelectedMenuItemChanged;
+            _ListBox.ActionRefresh += _ListBox_ActionRefresh;
             _FilterBoxInitialize();
             DoLayout();
         }
@@ -105,7 +107,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public ResourceImageSizeType ButtonsSize { get { return _ButtonsSize; } set { _ButtonsSize = value; DoLayout(); } }
         #endregion
-        #region Přímý přístup na prvky DxListBoxControlu
+        #region DxListBoxControlu (přímý přístup na jeho prvky)
         /// <summary>
         /// Pokud obsahuje true, pak List smí obsahovat duplicitní klíče (defaultní hodnota je true).
         /// Pokud je false, pak vložení dalšího záznamu s klíčem, který už v Listu je, bude ignorováno.
@@ -119,6 +121,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Pole jako celek lze setovat: vymění se obsah, ale zachová se pozice.
         /// </summary>
         public IMenuItem[] ListItems { get { return _ListBox.ListItems; } set { _ListBox.ListItems = value; } }
+        /// <summary>
+        /// Aktuálně vybraný prvek typu <see cref="IMenuItem"/>. Lze setovat, ale pouze takový prvek, kteý je přítomen (hledá se <see cref="Object.ReferenceEquals(object, object)"/>).
+        /// </summary>
+        public IMenuItem SelectedMenuItem { get { return _ListBox.SelectedMenuItem; } set { _ListBox.SelectedMenuItem = value; } }
         /// <summary>
         /// Prvky Listu
         /// </summary>
@@ -155,8 +161,66 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Povolené zdroje dat pro vkládání do this controlu pomocí výměnného balíčku <see cref="DataExchangeContainer"/>.
         /// </summary>
         public string ExchangeAcceptSourceDataId { get { return _ListBox.ExchangeAcceptSourceDataId; } set { _ListBox.ExchangeAcceptSourceDataId = value; } }
+        /// <summary>
+        /// Při požadavku na Refresh, z tlačítka v ListBoxu
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _ListBox_ActionRefresh(object sender, EventArgs e)
+        {
+            OnActionRefresh(e);
+            ActionRefresh?.Invoke(this, e);
+        }
+        /// <summary>
+        /// Volá se při požadavku na Refresh
+        /// </summary>
+        /// <param name="e"></param>
+        protected virtual void OnActionRefresh(EventArgs e) { }
+        /// <summary>
+        /// Událost volaná při požadavku na Refresh
+        /// </summary>
+        public event EventHandler ActionRefresh;
+
+        /// <summary>
+        /// Při změně Selected prvků, libovolného typu
+        /// </summary>
+        /// <param name="e"></param>
+        private void RunSelectedItemsChanged(TEventArgs<object> e)
+        {
+            OnSelectedItemsChanged(e);
+            SelectedItemsChanged?.Invoke(this, e);
+        }
+        /// <summary>
+        /// Volá se při změně Selected prvku, libovolného typu
+        /// </summary>
+        /// <param name="e"></param>
+        protected virtual void OnSelectedItemsChanged(TEventArgs<object> e) { }
+        /// <summary>
+        /// Událost, kdy v <see cref="ListBox"/> je vybrán nějaký konkrétní prvek.
+        /// </summary>
+        public event EventHandler<TEventArgs<object>> SelectedItemsChanged;
+
+        /// <summary>
+        /// Provede se když v <see cref="ListBox"/> je vybrán nějaký prvek typu <see cref="IMenuItem"/>
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _ListBox_SelectedMenuItemChanged(object sender, TEventArgs<IMenuItem> e)
+        {
+            OnSelectedMenuItemChanged(e);
+            SelectedMenuItemChanged?.Invoke(this, e);
+        }
+        /// <summary>
+        /// Volá se při změně Selected prvku typu typu <see cref="IMenuItem"/>
+        /// </summary>
+        /// <param name="e"></param>
+        protected virtual void OnSelectedMenuItemChanged(TEventArgs<IMenuItem> e) { }
+        /// <summary>
+        /// Událost, kdy v <see cref="ListBox"/> je vybrán nějaký prvek typu <see cref="IMenuItem"/>
+        /// </summary>
+        public event EventHandler<TEventArgs<IMenuItem>> SelectedMenuItemChanged;
         #endregion
-        #region FilterRow
+        #region FilterBox (přímý přístup na jeho prvky)
         /// <summary>
         /// Inicializace FilterBoxu, a jeho vložení do this.Controls
         /// </summary>
@@ -333,9 +397,9 @@ namespace Noris.Clients.Win.Components.AsolDX
             AcceptButtonType(ListBoxButtonType.MoveUp, validButtonsTypes, "@arrowsmall|up|blue", MsgCode.DxKeyActionMoveUpTitle, MsgCode.DxKeyActionMoveUpText);
             AcceptButtonType(ListBoxButtonType.MoveDown, validButtonsTypes, "@arrowsmall|down|blue", MsgCode.DxKeyActionMoveDownTitle, MsgCode.DxKeyActionMoveDownText);
             AcceptButtonType(ListBoxButtonType.MoveBottom, validButtonsTypes, "@arrowsmall|bottom|blue", MsgCode.DxKeyActionMoveBottomTitle, MsgCode.DxKeyActionMoveBottomText);
-            AcceptButtonType(ListBoxButtonType.Refresh, validButtonsTypes, "@editsmall|all|blue", MsgCode.DxKeyActionRefreshTitle, MsgCode.DxKeyActionRefreshText);
+            AcceptButtonType(ListBoxButtonType.Refresh, validButtonsTypes, "devav/actions/refresh.svg", MsgCode.DxKeyActionRefreshTitle, MsgCode.DxKeyActionRefreshText);   // qqq
             AcceptButtonType(ListBoxButtonType.SelectAll, validButtonsTypes, "@editsmall|all|blue", MsgCode.DxKeyActionSelectAllTitle, MsgCode.DxKeyActionSelectAllText);
-            AcceptButtonType(ListBoxButtonType.Delete, validButtonsTypes, "@editsmall|del|red", MsgCode.DxKeyActionDeleteTitle, MsgCode.DxKeyActionDeleteText);  // "devav/actions/delete.svg"
+            AcceptButtonType(ListBoxButtonType.Delete, validButtonsTypes, "@editsmall|del|red", MsgCode.DxKeyActionDeleteTitle, MsgCode.DxKeyActionDeleteText);       // "devav/actions/delete.svg"
             AcceptButtonType(ListBoxButtonType.ClipCopy, validButtonsTypes, "devav/actions/copy.svg", MsgCode.DxKeyActionClipCopyTitle, MsgCode.DxKeyActionClipCopyText);
             AcceptButtonType(ListBoxButtonType.ClipCut, validButtonsTypes, "devav/actions/cut.svg", MsgCode.DxKeyActionClipCutTitle, MsgCode.DxKeyActionClipCutText);
             AcceptButtonType(ListBoxButtonType.ClipPaste, validButtonsTypes, "devav/actions/paste.svg", MsgCode.DxKeyActionClipPasteTitle, MsgCode.DxKeyActionClipPasteText);
@@ -396,9 +460,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void _ListBox_SelectedItemsChanged(object sender, EventArgs e)
+        private void _ListBox_SelectedItemsChanged(object sender, TEventArgs<object> e)
         {
             SetButtonsEnabledSelection();
+            RunSelectedItemsChanged(e);
         }
         /// <summary>
         /// Nastaví Enabled buttonů
@@ -571,17 +636,21 @@ namespace Noris.Clients.Win.Components.AsolDX
         Delete = 0x0008,
 
         /// <summary>
+        /// Akce Refresh
+        /// </summary>
+        Refresh = 0x0010,
+        /// <summary>
         /// Vybrat vše
         /// </summary>
-        SelectAll = 0x0010,
+        SelectAll = 0x0020,
         /// <summary>
         /// Přejdi na začátek
         /// </summary>
-        GoBegin = 0x0020,
+        GoBegin = 0x0040,
         /// <summary>
         /// Přejdi na konec
         /// </summary>
-        GoEnd = 0x0040,
+        GoEnd = 0x0080,
 
         /// <summary>
         /// Přemístit úplně nahoru
@@ -608,11 +677,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Akce REDO
         /// </summary>
         Redo = 0x2000,
-
-        /// <summary>
-        /// Akce Refresh
-        /// </summary>
-        Refresh = 0x00010000,
 
         /// <summary>
         /// Souhrn všech pohybů
@@ -642,6 +706,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             ImageInit();
             DuplicityEnabled = true;
             ItemSizeType = ResourceImageSizeType.Small;
+            DrawItem += DxListBoxControl_DrawItem;
         }
         /// <summary>
         /// Dispose
@@ -799,10 +864,50 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
             set
             {
+                var validItems = _GetOnlyValidItems(value, false);
                 this.Items.Clear();
-                var validItems = _GetOnlyValidItems(value, true);
                 this.Items.AddRange(validItems);
             }
+        }
+        /// <summary>
+        /// Aktuálně vybraný prvek typu <see cref="IMenuItem"/>. Lze setovat, ale pouze takový prvek, kteý je přítomen (hledá se <see cref="Object.ReferenceEquals(object, object)"/>).
+        /// </summary>
+        public IMenuItem SelectedMenuItem
+        {
+            get
+            {   // Vrátím IMenuItem nalezený v aktuálně vybraném prvku:
+                return ((this.Items.Count > 0 && TryFindIMenuItem(this.SelectedItem, out var menuItem)) ? menuItem : null);
+            }
+            set
+            {   // Najdu první prvek zdejšího pole, který v sobě obsahuje IMenuItem, který je identický s dodanou value:
+                object selectedItem = null;
+                if (this.Items.Count > 0 && value != null)
+                    selectedItem = this.Items.FirstOrDefault(i => (TryFindIMenuItem(i, out var iMenuItem) && Object.ReferenceEquals(iMenuItem, value)));
+                this.SelectedItem = selectedItem;
+            }
+        }
+        /// <summary>
+        /// Metoda zkusí najít a vrátit <see cref="IMenuItem"/> z dodaného prvku ListBoxu
+        /// </summary>
+        /// <param name="item"></param>
+        /// <param name="menuItem"></param>
+        /// <returns></returns>
+        private bool TryFindIMenuItem(object item, out IMenuItem menuItem)
+        {
+            menuItem = null;
+            if (item is null) return false;
+
+            if (item is DevExpress.XtraEditors.Controls.ImageListBoxItem listItem && listItem.Value is IMenuItem menuItem1)
+            {
+                menuItem = menuItem1;
+                return true;
+            }
+            if (item is IMenuItem menuItem2)
+            {
+                menuItem = menuItem2;
+                return true;
+            }
+            return false;
         }
         /// <summary>
         /// Pokud obsahuje true, pak List smí obsahovat duplicitní klíče (defaultní hodnota je true).
@@ -820,9 +925,21 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             __ItemImageSize = null;
             base.OnPaint(e);
-            this.OnPaintList(e);
-            this.PaintList?.Invoke(this, e);
+            this.RunPaintList(e);
             this.MouseDragPaint(e);
+        }
+        /// <summary>
+        /// Je voláno před vykreslením každého prvku. Může upravit jeho vzhled.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void DxListBoxControl_DrawItem(object sender, ListBoxDrawItemEventArgs e)
+        {
+            if (e.Item is IMenuItem iMenuItem && iMenuItem.FontStyle.HasValue)
+            {
+                e.Appearance.FontStyleDelta = iMenuItem.FontStyle.Value;
+                e.Appearance.Options.UseTextOptions = true;
+            }
         }
         /// <summary>
         /// Po stisku klávesy
@@ -839,10 +956,29 @@ namespace Noris.Clients.Win.Components.AsolDX
         protected override void OnSelectionChanged()
         {
             base.OnSelectionChanged();
-            EventArgs args = EventArgs.Empty;
-            OnSelectedItemsChanged(args);
-            SelectedItemsChanged?.Invoke(this, args);
+
+            TEventArgs<object> args = new TEventArgs<object>(this.SelectedItem);
+            RunSelectedItemsChanged(args);
+
+            DetectSelectedMenuItemChanged();
         }
+        /// <summary>
+        /// Detekuje zda aktuálně vybraný prvek obsahuje jiný <see cref="IMenuItem"/>, než který byl posledně oznámen
+        /// </summary>
+        private void DetectSelectedMenuItemChanged()
+        {
+            var selectedMenuItem = this.SelectedMenuItem;
+            if (!Object.ReferenceEquals(selectedMenuItem, _LastSelectedItem))
+            {
+                this.RunSelectedMenuItemChanged(new TEventArgs<IMenuItem>(selectedMenuItem));
+                _LastSelectedItem = selectedMenuItem;
+            }
+        }
+        /// <summary>
+        /// Objekt, který byl naposledy předán do metody <see cref="RunSelectedMenuItemChanged(TEventArgs{IMenuItem})"/>.
+        /// Poku dbude napříště vybrán jiný objekt, bude předán i ten další.
+        /// </summary>
+        private IMenuItem _LastSelectedItem;
         #endregion
         #region Images
         /// <summary>
@@ -1077,6 +1213,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         private bool _DoKeyAction(KeyActionType action, bool force = false)
         {
             bool handled = false;
+            _DoKeyAction(action, KeyActionType.Refresh, force, _DoKeyActionRefresh, ref handled);
             _DoKeyAction(action, KeyActionType.SelectAll, force, _DoKeyActionCtrlA, ref handled);
             _DoKeyAction(action, KeyActionType.ClipCopy, force, _DoKeyActionCtrlC, ref handled);
             _DoKeyAction(action, KeyActionType.ClipCut, force, _DoKeyActionCtrlX, ref handled);
@@ -1105,6 +1242,13 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (!force && !EnabledKeyActions.HasFlag(flag)) return;
             runMethod();
             handled = true;
+        }
+        /// <summary>
+        /// Provedení klávesové akce: Refresh
+        /// </summary>
+        private void _DoKeyActionRefresh()
+        {
+            RunActionRefresh(EventArgs.Empty);
         }
         /// <summary>
         /// Provedení klávesové akce: CtrlA
@@ -1766,7 +1910,13 @@ namespace Noris.Clients.Win.Components.AsolDX
             OnUndoRedoEnabledChanged();
             UndoRedoEnabledChanged?.Invoke(this, EventArgs.Empty);
         }
+        /// <summary>
+        /// Po změně stavu Undo/Redo
+        /// </summary>
         protected virtual void OnUndoRedoEnabledChanged() { }
+        /// <summary>
+        /// Po změně stavu Undo/Redo
+        /// </summary>
         public event EventHandler UndoRedoEnabledChanged;
         void IUndoRedoControl.DoUndoStep(object state)
         { }
@@ -1778,20 +1928,77 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Volá se po vykreslení základu Listu, před vykreslením Reorder ikony
         /// </summary>
         /// <param name="e"></param>
+        private void RunPaintList(PaintEventArgs e)
+        {
+            OnPaintList(e);
+            PaintList?.Invoke(this, e);
+        }
+        /// <summary>
+        /// Volá se po vykreslení základu Listu, před vykreslením Reorder ikony
+        /// </summary>
+        /// <param name="e"></param>
         protected virtual void OnPaintList(PaintEventArgs e) { }
         /// <summary>
         /// Událost volaná po vykreslení základu Listu, před vykreslením Reorder ikony
         /// </summary>
         public event PaintEventHandler PaintList;
+
         /// <summary>
         /// Volá se po změně selected prvků
         /// </summary>
         /// <param name="e"></param>
-        protected virtual void OnSelectedItemsChanged(EventArgs e) { }
+        private void RunSelectedItemsChanged(TEventArgs<object> e)
+        {
+            OnSelectedItemsChanged(e);
+            SelectedItemsChanged?.Invoke(this, e);
+        }
+        /// <summary>
+        /// Volá se po změně selected prvků
+        /// </summary>
+        /// <param name="e"></param>
+        protected virtual void OnSelectedItemsChanged(TEventArgs<object> e) { }
         /// <summary>
         /// Událost volaná po změně selected prvků
         /// </summary>
-        public event EventHandler SelectedItemsChanged;
+        public event EventHandler<TEventArgs<object>> SelectedItemsChanged;
+
+        /// <summary>
+        /// Volá se po změně selected prvku
+        /// </summary>
+        /// <param name="e"></param>
+        private void RunSelectedMenuItemChanged(TEventArgs<IMenuItem> e)
+        {
+            OnSelectedMenuItemChanged(e);
+            SelectedMenuItemChanged?.Invoke(this, e);
+        }
+        /// <summary>
+        /// Volá se po změně selected prvku typu <see cref="IMenuItem"/>
+        /// </summary>
+        /// <param name="e"></param>
+        protected virtual void OnSelectedMenuItemChanged(TEventArgs<IMenuItem> e) { }
+        /// <summary>
+        /// Událost volaná po změně selected prvku typu <see cref="IMenuItem"/>
+        /// </summary>
+        public event EventHandler<TEventArgs<IMenuItem>> SelectedMenuItemChanged;
+
+        /// <summary>
+        /// Volá se při požadavku na Refresh
+        /// </summary>
+        /// <param name="e"></param>
+        private void RunActionRefresh(EventArgs e)
+        {
+            OnActionRefresh(e);
+            ActionRefresh?.Invoke(this, e);
+        }
+        /// <summary>
+        /// Volá se při požadavku na Refresh
+        /// </summary>
+        /// <param name="e"></param>
+        protected virtual void OnActionRefresh(EventArgs e) { }
+        /// <summary>
+        /// Událost volaná při požadavku na Refresh
+        /// </summary>
+        public event EventHandler ActionRefresh;
         #endregion
     }
 }

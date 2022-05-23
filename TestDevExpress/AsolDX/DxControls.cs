@@ -4611,6 +4611,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public virtual bool? Checked { get; set; }
         /// <summary>
+        /// Styl písma, null = neměnit
+        /// </summary>
+        public virtual FontStyle? FontStyle { get; set; }
+        /// <summary>
         /// Fyzický obrázek ikony.
         /// </summary>
         [XS.PersistingEnabled(false)]
@@ -4698,6 +4702,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Pokud konkrétní prvek nepodporuje null, akceptuje null jako false.
         /// </summary>
         bool? Checked { get; set; }
+        /// <summary>
+        /// Styl písma, null = neměnit
+        /// </summary>
+        FontStyle? FontStyle { get; }
         /// <summary>
         /// Fyzický obrázek ikony.
         /// </summary>
@@ -5317,17 +5325,21 @@ namespace Noris.Clients.Win.Components.AsolDX
         Delete = 0x0008,
 
         /// <summary>
+        /// Klávesa CtrlR: Refresh
+        /// </summary>
+        Refresh = 0x0010,
+        /// <summary>
         /// Klávesa CtrlA: vybrat vše
         /// </summary>
-        SelectAll = 0x0010,
+        SelectAll = 0x0020,
         /// <summary>
         /// Klávesa Ctrl Home: přejdi na začátek
         /// </summary>
-        GoBegin = 0x0020,
+        GoBegin = 0x0040,
         /// <summary>
         /// Klávesa Ctrl End: přejdi na konec
         /// </summary>
-        GoEnd = 0x0040,
+        GoEnd = 0x0080,
 
         /// <summary>
         /// Klávesa CtrlAltUp (kurzor): přemístit na první pozici
@@ -5354,11 +5366,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Klávesa CtrlY: Redo (znovu provést poslední změnu)
         /// </summary>
         Redo = 0x2000,
-
-        /// <summary>
-        /// Klávesa CtrlR: Refresh
-        /// </summary>
-        Refresh = 0x00010000,
 
         /// <summary>
         /// Všechny práce s clipboardem

@@ -4,8 +4,10 @@ using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows.Forms;
 using DevExpress.Utils.Extensions;
 using DevExpress.Utils.Menu;
+using DevExpress.Utils.Svg;
 using DevExpress.XtraEditors.Filtering.Templates;
 using Noris.Clients.Win.Components.AsolDX;
 
@@ -27,6 +29,11 @@ namespace TestDevExpress.Forms
             this.Text = "Měření počtu SystemHandles u běžících procesů";
             base.InitializeForm();
         }
+        protected override void OnFirstShownAfter()
+        {
+            base.OnFirstShownAfter();
+            this.RunProcessRefresh();
+        }
         private void InitSplitContainer()
         {
             _SplitContainer = new DxSplitContainerControl()
@@ -39,16 +46,229 @@ namespace TestDevExpress.Forms
             };
             this.ControlPanel.Controls.Add(_SplitContainer);
         }
+        private DxSplitContainerControl _SplitContainer;
+
+        #region Seznam procesů
+
         private void InitProcessList()
         {
             _ProcessListBox = new DxListBoxPanel()
             {
-                ButtonsPosition = ToolbarPosition.TopSideLeft,
-                ButtonsTypes = ListBoxButtonType.None
-            }
+                ButtonsPosition = ToolbarPosition.BottomSideRight,
+                ButtonsTypes = ListBoxButtonType.Refresh,
+                ButtonsSize = ResourceImageSizeType.Medium,
+                FilterBoxVisible = true,
+                Dock = System.Windows.Forms.DockStyle.Fill
+            };
+            _ProcessListBox.ActionRefresh += _ProcessListBox_ActionRefresh;
+            _ProcessListBox.FilterBoxKeyEnter += _ProcessListBox_FilterBoxKeyEnter;
+            _ProcessListBox.SelectedMenuItemChanged += _ProcessListBox_SelectedMenuItemChanged;
+            _SplitContainer.Panel1.Controls.Add(_ProcessListBox);
         }
-        private DxSplitContainerControl _SplitContainer;
+
+        private void _ProcessListBox_SelectedMenuItemChanged(object sender, TEventArgs<IMenuItem> e)
+        {
+        }
+
+        private void _ProcessListBox_ActionRefresh(object sender, EventArgs e)
+        {
+            RunProcessRefresh();
+        }
+
+        private void _ProcessListBox_FilterBoxKeyEnter(object sender, EventArgs e)
+        {
+        }
+
+        private void RunProcessRefresh()
+        {
+            var currentSelectedProcess = this.SelectedProcess;
+            var currentProcessInfos = ProcessInfo.SearchProcesses(out var currentProcess);         // Nové instance informací o aktuálních procesech
+            var processInfos = ProcessInfo.MergeProcesses(_ProcessInfos, currentProcessInfos);     // Sloučit s dosavadními informacemi: dosavadní informace nebudu zahazovat!
+            var selectId = (currentSelectedProcess ?? currentProcess)?.ProcessId ?? 0;
+            var newSelectedProcess = processInfos.FirstOrDefault(p => p.ProcessId == selectId);    // Nový SelectedMenuItem musí být instance z processInfos
+            _ProcessListBox.ListItems = processInfos;
+            _ProcessListBox.SelectedMenuItem = newSelectedProcess;
+            _ProcessInfos = processInfos;
+        }
+
+        private ProcessInfo SelectedProcess
+        {
+            get { return _ProcessListBox.SelectedMenuItem as ProcessInfo; }
+            set { _ProcessListBox.SelectedMenuItem = value; }
+        }
+
+        private ProcessInfo[] _ProcessInfos;
+        private class ProcessInfo : IMenuItem
+        {
+            public static ProcessInfo[] SearchProcesses()
+            {
+                return SearchProcesses(out var _);
+            }
+            /// <summary>
+            /// Najde a vrátí informace o aktuálně běžících procesech.
+            /// </summary>
+            /// <param name="currentProcessInfo"></param>
+            /// <returns></returns>
+            public static ProcessInfo[] SearchProcesses(out ProcessInfo currentProcessInfo)
+            {
+                List<ProcessInfo> processInfos = new List<ProcessInfo>();
+                var processes = System.Diagnostics.Process.GetProcesses();
+                var currentProcessId = System.Diagnostics.Process.GetCurrentProcess()?.Id ?? 0;
+                currentProcessInfo = null;
+                foreach (var process in processes)
+                {
+                    string processName = process.ProcessName.Trim().ToLower();
+                    if (processName == "firefox" || processName == "svchost" || processName == "explorer" || processName == "teams" || processName == "runtimebroker") continue;
+                    var handle = process.MainWindowHandle;
+                    if (handle.ToInt64() != 0L)
+                    {
+                        bool isCurrentProcess = (process.Id == currentProcessId);
+                        ProcessInfo processInfo = new ProcessInfo(process, isCurrentProcess);
+                        processInfos.Add(processInfo);
+                        if (isCurrentProcess) currentProcessInfo = processInfo;
+                    }
+                }
+                processInfos.Sort(ProcessInfo.CompareByText);
+                return processInfos.ToArray();
+            }
+
+            /// <summary>
+            /// Vrátí sloučené pole informací o procesech
+            /// </summary>
+            /// <param name="processInfos"></param>
+            /// <param name="newProcessInfos"></param>
+            /// <returns></returns>
+            internal static ProcessInfo[] MergeProcesses(ProcessInfo[] processInfos, ProcessInfo[] newProcessInfos)
+            {
+                var summaryDict = (processInfos != null ? processInfos.CreateDictionary(p => p.ProcessId, true) : new Dictionary<int, ProcessInfo>());
+                if (newProcessInfos != null) newProcessInfos.ForEach(p => { if (!summaryDict.ContainsKey(p.ProcessId)) summaryDict.Add(p.ProcessId, p); });
+                var summaryList = summaryDict.Values.ToList();
+                summaryList.Sort(CompareByText);
+                return summaryList.ToArray();
+            }
+
+            public ProcessInfo(System.Diagnostics.Process process, bool isCurrentProcess)
+            {
+                ProcessId = process.Id;
+                ProcessName = process.ProcessName;
+                try { WindowTitle = process.MainWindowTitle; } catch { }
+                IsCurrentProcess = isCurrentProcess;
+            }
+            public override string ToString()
+            {
+                return this.Text;
+            }
+            public readonly int ProcessId;
+            public readonly string ProcessName;
+            public readonly string WindowTitle;
+            public readonly bool IsCurrentProcess;
+            public string Text { get { return (!String.IsNullOrEmpty(WindowTitle) ? WindowTitle : $"({ProcessName})"); } }
+            public FontStyle? ItemFontStyle 
+            { 
+                get 
+                {
+                    if (this.IsCurrentProcess) return FontStyle.Bold;
+                    if (!this.IsAlive) return FontStyle.Italic;
+                    return null;
+                }
+            }
+            public string ToolTip { get; set; }
+            /// <summary>
+            /// Obsahuje true, pokud je proces živý
+            /// </summary>
+            public bool IsAlive 
+            { 
+                get 
+                {
+                    try 
+                    {
+                        var process = Process;
+                        if (process != null && !process.HasExited) return true;
+                        return false;
+                    }
+                    catch { return false; }
+                }
+            }
+            /// <summary>
+            /// Infromace o procesu. Může být null, když je po něm.
+            /// </summary>
+            private System.Diagnostics.Process Process 
+            {
+                get 
+                {
+                    try { return System.Diagnostics.Process.GetProcessById(ProcessId); }
+                    catch { return null; }
+                }
+            }
+
+            public DevExpress.XtraEditors.Controls.ImageListBoxItem CreateListBoxItem()
+            {
+
+                var listItem = new DevExpress.XtraEditors.Controls.ImageListBoxItem(this, this.Text, new DevExpress.XtraEditors.Controls.ImageListBoxItemImageOptions(), this);
+                listItem.ImageOptions.Image = DxComponent.GetBitmapImage("", ResourceImageSizeType.Small);
+                return listItem;
+            }
+            public static int CompareByText(ProcessInfo a, ProcessInfo b)
+            {
+                return String.Compare(a.Text, b.Text);
+            }
+            #region IMenuItem
+
+            IMenuItem IMenuItem.ParentItem { get { return null; } set { } }
+
+            MenuItemType IMenuItem.ItemType { get { return MenuItemType.MenuItem; } }
+
+            ContentChangeMode IMenuItem.ChangeMode { get { return ContentChangeMode.Add; } }
+
+            Keys? IMenuItem.HotKeys { get { return null; } }
+
+            Shortcut? IMenuItem.Shortcut { get { return null; } }
+
+            string IMenuItem.HotKey { get { return null; } }
+
+            IEnumerable<IMenuItem> IMenuItem.SubItems { get { return null; } }
+
+            Action<IMenuItem> IMenuItem.ClickAction { get { return null; } }
+
+            string ITextItem.ItemId { get { return ProcessId.ToString(); } }
+
+            string ITextItem.Text { get { return Text; } }
+
+            int ITextItem.ItemOrder { get; set; }
+
+            bool ITextItem.ItemIsFirstInGroup { get { return false; } }
+
+            bool ITextItem.Visible { get { return true; } }
+
+            bool ITextItem.Enabled { get { return this.IsAlive; } }
+
+            bool? ITextItem.Checked { get; set; }
+            FontStyle? ITextItem.FontStyle { get { return ItemFontStyle; } }
+
+            Image ITextItem.Image { get { return null; } }
+
+            SvgImage ITextItem.SvgImage { get { return null; } }
+
+            string ITextItem.ImageName { get { return null; } }
+
+            string ITextItem.ImageNameUnChecked { get { return null; } }
+
+            string ITextItem.ImageNameChecked { get { return null; } }
+
+            BarItemPaintStyle ITextItem.ItemPaintStyle { get { return BarItemPaintStyle.CaptionGlyph; } }
+
+            object ITextItem.Tag { get { return null; } }
+
+            string IToolTipItem.ToolTipText { get { return Text; } }
+
+            string IToolTipItem.ToolTipTitle { get { return null; } }
+
+            string IToolTipItem.ToolTipIcon { get { return ToolTip; } }
+
+            #endregion
+        }
         private DxListBoxPanel _ProcessListBox;
+        #endregion
 
     }
 }
