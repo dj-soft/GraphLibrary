@@ -152,6 +152,7 @@ namespace TestDevExpress.Forms
                     processInfos.Add(processInfo);
                     if (isCurrentProcess) currentProcessInfo = processInfo;
                 }
+                process.Dispose();
             }
             processInfos.Sort(ProcessInfo.CompareByText);
             return processInfos.ToArray();
@@ -207,9 +208,10 @@ namespace TestDevExpress.Forms
             {
                 try
                 {
-                    var process = Process;
-                    if (process != null) return true;
-                    return false;
+                    using (var process = GetProcess())
+                    {
+                        return (process != null);
+                    }
                 }
                 catch { return false; }
             }
@@ -217,13 +219,10 @@ namespace TestDevExpress.Forms
         /// <summary>
         /// Informace o procesu. Může být null, když už je po něm.
         /// </summary>
-        private System.Diagnostics.Process Process
+        private System.Diagnostics.Process GetProcess()
         {
-            get
-            {
-                try { return System.Diagnostics.Process.GetProcessById(ProcessId); }
-                catch { return null; }
-            }
+            try { return System.Diagnostics.Process.GetProcessById(ProcessId); }
+            catch { return null; }
         }
         public static int CompareByText(ProcessInfo a, ProcessInfo b)
         {
@@ -233,7 +232,10 @@ namespace TestDevExpress.Forms
         #region MemoryScan
         internal void RunMemoryScan()
         {
-            var info = Noris.Clients.Win.Components.AsolDX.DxComponent.WinProcessInfo.GetInfoForProcess(this.Process);
+            using (var process = GetProcess())
+            {
+                var info = Noris.Clients.Win.Components.AsolDX.DxComponent.WinProcessInfo.GetInfoForProcess(process);
+            }
         }
         #endregion
         #region IMenuItem
