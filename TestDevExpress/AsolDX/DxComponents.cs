@@ -3692,7 +3692,51 @@ namespace Noris.Clients.Win.Components.AsolDX
             return WinProcessInfo.GetCurent();
         }
         /// <summary>
-        /// Informace o využití zdrojů operačního systému
+        /// Obsahuje jméno frameworku, na kterém aktuálně běžíme.
+        /// </summary>
+        public static string FrameworkName { get { return Instance._FrameworkName; } }
+        private string _FrameworkName
+        {
+            get
+            {
+                if (__FrameworkName == null)
+                    __FrameworkName = AppDomain.CurrentDomain.SetupInformation.TargetFrameworkName;
+                return __FrameworkName;
+            }
+        }
+        private string __FrameworkName;
+        /// <summary>
+        /// Aplikace má podporu pro UHD monitory (PerMonitorDPI)
+        /// </summary>
+        public static bool UhdPaintEnabled { get { return Instance._UhdPaintEnabled; } set { Instance._SetUhdPaint(value); } }
+        /// <summary>
+        /// Nastaví požadovaný režim UHD
+        /// </summary>
+        /// <param name="uhdEnable"></param>
+        private void _SetUhdPaint(bool uhdEnable)
+        {
+            if (uhdEnable)
+            {
+                DevExpress.XtraEditors.WindowsFormsSettings.AllowDpiScale = false;
+                DevExpress.XtraEditors.WindowsFormsSettings.ForceDirectXPaint();
+                DevExpress.XtraEditors.WindowsFormsSettings.SetPerMonitorDpiAware();
+                _UhdPaintEnabled = true;
+            }
+            else
+            {
+                DevExpress.XtraEditors.WindowsFormsSettings.AllowAutoScale = DevExpress.Utils.DefaultBoolean.True;
+                DevExpress.XtraEditors.WindowsFormsSettings.AllowDpiScale = true;
+                DevExpress.XtraEditors.WindowsFormsSettings.ForceGDIPlusPaint();
+                _UhdPaintEnabled = false;
+            }
+        }
+        /// <summary>
+        /// Aktuální hodnota UHD Paint
+        /// </summary>
+        private bool _UhdPaintEnabled;
+        #region class WinProcessInfo : Informace o využití zdrojů operačního systému
+        /// <summary>
+        /// <see cref="WinProcessInfo"/> : Informace o využití zdrojů operačního systému
         /// </summary>
         public class WinProcessInfo
         {
@@ -3725,6 +3769,36 @@ namespace Noris.Clients.Win.Components.AsolDX
                 return new WinProcessInfo(privateMemory, workingSet64, gDIHandleCount, userHandleCount);
             }
             /// <summary>
+            /// Obsahuje ID aktuálního procesu.
+            /// </summary>
+            public static int CurrentProcessId
+            {
+                get
+                {
+                    using (var process = System.Diagnostics.Process.GetCurrentProcess())
+                    {
+                        return (process?.Id ?? 0);
+                    }
+                }
+            }
+            /// <summary>
+            /// Vrátí true, pokud dané dvě instance obsahují shodná data (neporovnává se čas)
+            /// </summary>
+            /// <param name="a"></param>
+            /// <param name="b"></param>
+            /// <returns></returns>
+            public static bool EqualsContent(WinProcessInfo a, WinProcessInfo b)
+            {
+                bool an = a is null;
+                bool bn = a is null;
+                if (an && bn) return true;
+                if (an || bn) return false;
+                return (a.PrivateMemory == b.PrivateMemory &&
+                        a.WorkingSet == b.WorkingSet &&
+                        a.GDIHandleCount == b.GDIHandleCount &&
+                        a.UserHandleCount == b.PrivateMemory);
+            }
+            /// <summary>
             /// Konstruktor
             /// </summary>
             /// <param name="privateMemory"></param>
@@ -3733,6 +3807,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// <param name="userHandleCount"></param>
             public WinProcessInfo(long privateMemory, long workingSet, int gDIHandleCount, int userHandleCount)
             {
+                this.Time = DateTime.Now;
                 this.PrivateMemory = privateMemory;
                 this.WorkingSet = workingSet;
                 this.GDIHandleCount = gDIHandleCount;
@@ -3788,6 +3863,10 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// </summary>
             public static string Text4Info { get { return "\r\nPriv: spotřeba paměti 'Private KB'\r\nWork: spotřeba paměti 'WorkingSet KB'\r\nGDI: počet GDI Handles z WinAPI\r\nUser: počet User Handles z WinAPI"; } }
             /// <summary>
+            /// Čas získání hodnot
+            /// </summary>
+            public DateTime Time { get; private set; }
+            /// <summary>
             /// <see cref="System.Diagnostics.Process.PrivateMemorySize64"/>
             /// </summary>
             public long PrivateMemory { get; private set; }
@@ -3826,46 +3905,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 return new WinProcessInfo(a.PrivateMemory - b.PrivateMemory, a.WorkingSet - b.WorkingSet, a.GDIHandleCount - b.GDIHandleCount, a.UserHandleCount - b.UserHandleCount);
             }
         }
-        /// <summary>
-        /// Obsahuje jméno frameworku, na kterém aktuálně běžíme.
-        /// </summary>
-        public static string FrameworkName { get { return Instance._FrameworkName; } }
-        private string _FrameworkName
-        {
-            get
-            {
-                if (__FrameworkName == null)
-                    __FrameworkName = AppDomain.CurrentDomain.SetupInformation.TargetFrameworkName;
-                return __FrameworkName;
-            }
-        }
-        private string __FrameworkName;
-        /// <summary>
-        /// Aplikace má podporu pro UHD monitory (PerMonitorDPI)
-        /// </summary>
-        public static bool UhdPaintEnabled { get { return Instance._UhdPaintEnabled; } set { Instance._SetUhdPaint(value); } }
-        /// <summary>
-        /// Nastaví požadovaný režim UHD
-        /// </summary>
-        /// <param name="uhdEnable"></param>
-        private void _SetUhdPaint(bool uhdEnable)
-        {
-            if (uhdEnable)
-            {
-                DevExpress.XtraEditors.WindowsFormsSettings.AllowDpiScale = false;
-                DevExpress.XtraEditors.WindowsFormsSettings.ForceDirectXPaint();
-                DevExpress.XtraEditors.WindowsFormsSettings.SetPerMonitorDpiAware();
-                _UhdPaintEnabled = true;
-            }
-            else
-            {
-                DevExpress.XtraEditors.WindowsFormsSettings.AllowAutoScale = DevExpress.Utils.DefaultBoolean.True;
-                DevExpress.XtraEditors.WindowsFormsSettings.AllowDpiScale = true;
-                DevExpress.XtraEditors.WindowsFormsSettings.ForceGDIPlusPaint();
-                _UhdPaintEnabled = false;
-            }
-        }
-        private bool _UhdPaintEnabled;
+        #endregion
         #endregion
         #region Win32Api Block input a DoEventsBlockingInput
         [DllImport("user32.dll", EntryPoint = "BlockInput")]

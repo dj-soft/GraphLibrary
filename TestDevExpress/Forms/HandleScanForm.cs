@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -9,6 +10,7 @@ using DevExpress.Utils.Extensions;
 using DevExpress.Utils.Menu;
 using DevExpress.Utils.Svg;
 using DevExpress.XtraEditors.Filtering.Templates;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Noris.Clients.Win.Components.AsolDX;
 
 namespace TestDevExpress.Forms
@@ -73,6 +75,7 @@ namespace TestDevExpress.Forms
 
         private void _ProcessListBox_SelectedMenuItemChanged(object sender, TEventArgs<IMenuItem> e)
         {
+            RunMemoryScan(true);
         }
 
         private void _ProcessListBox_ActionRefresh(object sender, EventArgs e)
@@ -100,64 +103,150 @@ namespace TestDevExpress.Forms
         private ProcessInfo[] _ProcessInfos;
         private DxListBoxPanel _ProcessListBox;
         #endregion
+        #region Scan paměti procesu, ukládání a vyvolání Paint
         private void InitMemoryScan()
         {
+            _ScanLock = new object();
             _CallMeTimerGuid = Noris.Clients.Win.Components.WatchTimer.CallMeEvery(RunMemoryScan, 1000);
         }
+        /// <summary>
+        /// Zastaví timer, který spouští <see cref="RunMemoryScan()"/> (jeho Guid je v <see cref="_CallMeTimerGuid"/>).
+        /// </summary>
         private void DoneMemoryScan()
         {
             if (_CallMeTimerGuid.HasValue)
                 Noris.Clients.Win.Components.WatchTimer.Remove(_CallMeTimerGuid.Value);
             _CallMeTimerGuid = null;
         }
+        /// <summary>
+        /// Provede jednu akci pro scanování paměti pro aktuální proces <see cref="SelectedProcess"/>.
+        /// Volá se občas, z threadu na pozadí.
+        /// </summary>
         private void RunMemoryScan()
         {
-            ProcessInfo process = SelectedProcess;
-            if (process != null)
-            {
-                process.RunMemoryScan();
-            }
+            RunMemoryScan(false);
         }
-        Guid? _CallMeTimerGuid;
+        /// <summary>
+        /// Provede jednu akci pro scanování paměti pro aktuální proces <see cref="SelectedProcess"/>.
+        /// Volá se občas, z threadu na pozadí. Anebo na popředí po změně procesu.
+        /// </summary>
+        private void RunMemoryScan(bool forcePaint)
+        {
+            if (_ScanRunning) return;            // Lehký test bez locku
 
+            ProcessInfo process = SelectedProcess;
+            bool hasChanges = false;
+            lock (_ScanLock)
+            {
+                if (!_ScanRunning)               // Zodpovědný test včetně locku
+                {
+                    try
+                    {
+                        _ScanRunning = true;
+                        if (process != null)
+                        {
+                            process.RunMemoryScan(out hasChanges);
+                        }
+                    }
+                    finally
+                    {
+                        _ScanRunning = false;
+                    }
+                }
+            }
+            if (hasChanges || forcePaint)
+                RunPaintProcessInfo(process);
+        }
+
+        private void RunPaintProcessInfo(ProcessInfo process)
+        {
+            
+        }
+
+        /// <summary>
+        /// Guid timeru, který volá <see cref="RunMemoryScan()"/>. 
+        /// Při Dispose je nutno jej zastavit.
+        /// </summary>
+        private Guid? _CallMeTimerGuid;
+        /// <summary>
+        /// Příznak běžícího procesu <see cref="RunMemoryScan()"/>
+        /// </summary>
+        private bool _ScanRunning;
+        /// <summary>
+        /// Lock pro proces <see cref="RunMemoryScan()"/>
+        /// </summary>
+        private Object _ScanLock;
+        #endregion
     }
     #region class ProcessInfo
+    /// <summary>
+    /// Data o jednom procesu. Tuto třídu není nutno Disposovat, nedrží si handles procesu, ale jen ID procesu.
+    /// </summary>
     internal class ProcessInfo : IMenuItem
     {
         #region Konstruktor, získání seznamu, základní property
+        /// <summary>
+        /// Najde a vrátí informace o aktuálně běžících procesech.
+        /// </summary>
+        /// <returns></returns>
         public static ProcessInfo[] SearchProcesses()
         {
             return SearchProcesses(out var _);
         }
         /// <summary>
         /// Najde a vrátí informace o aktuálně běžících procesech.
+        /// Do out parametru vloží info o procesu aktuálním.
         /// </summary>
         /// <param name="currentProcessInfo"></param>
         /// <returns></returns>
         public static ProcessInfo[] SearchProcesses(out ProcessInfo currentProcessInfo)
         {
-            List<ProcessInfo> processInfos = new List<ProcessInfo>();
+            var processInfos = new List<ProcessInfo>();
             var processes = System.Diagnostics.Process.GetProcesses();
-            var currentProcessId = System.Diagnostics.Process.GetCurrentProcess()?.Id ?? 0;
+            var currentProcessId = DxComponent.WinProcessInfo.CurrentProcessId;
             currentProcessInfo = null;
             foreach (var process in processes)
             {
-                string processName = process.ProcessName.Trim().ToLower();
-                if (processName == "firefox" || processName == "svchost" || processName == "explorer" || processName == "teams" || processName == "runtimebroker") continue;
-                var handle = process.MainWindowHandle;
-                if (handle.ToInt64() != 0L)
+                try
                 {
-                    bool isCurrentProcess = (process.Id == currentProcessId);
-                    ProcessInfo processInfo = new ProcessInfo(process, isCurrentProcess);
-                    processInfos.Add(processInfo);
-                    if (isCurrentProcess) currentProcessInfo = processInfo;
+                    if (ProcessInfo.AcceptProcess(process))
+                    {
+                        bool isCurrentProcess = (process.Id == currentProcessId);
+                        ProcessInfo processInfo = new ProcessInfo(process, isCurrentProcess);
+                        processInfos.Add(processInfo);
+                        if (isCurrentProcess) currentProcessInfo = processInfo;
+                    }
                 }
-                process.Dispose();
+                catch { }
+
+                // Dispose vždy:
+                try { process.Dispose(); } catch { }
             }
+
             processInfos.Sort(ProcessInfo.CompareByText);
             return processInfos.ToArray();
         }
+        /// <summary>
+        /// Vrátí true, pokud daný proces se má zařadit do pole sledovaných procesů.
+        /// Některé systémové procesy, a některé známé obludy vyřazujeme.
+        /// Vyřazujeme i procesy bez okna = sledujeme hlavně GDI, a tyto procesy je nemají.
+        /// </summary>
+        /// <param name="process"></param>
+        /// <returns></returns>
+        internal static bool AcceptProcess(System.Diagnostics.Process process)
+        {
+            try
+            {
+                string processName = process.ProcessName.Trim().ToLower();
+                if (processName == "firefox" || processName == "svchost" || processName == "explorer" || processName == "teams" || processName == "runtimebroker") return false;
 
+                var handle = process.MainWindowHandle;
+                if (handle.ToInt64() == 0L) return false;
+
+                return true;
+            }
+            catch { return false; }
+        }
         /// <summary>
         /// Vrátí sloučené pole informací o procesech
         /// </summary>
@@ -217,7 +306,8 @@ namespace TestDevExpress.Forms
             }
         }
         /// <summary>
-        /// Informace o procesu. Může být null, když už je po něm.
+        /// Informace o procesu. Může být null, když už je po něm. 
+        /// Používat v using() patternu!
         /// </summary>
         private System.Diagnostics.Process GetProcess()
         {
@@ -230,13 +320,37 @@ namespace TestDevExpress.Forms
         }
         #endregion
         #region MemoryScan
+        /// <summary>
+        /// Načte informace o this procesu a uloží si je do paměti, pokud jsou jiné než poslední.
+        /// </summary>
         internal void RunMemoryScan()
+        {
+            RunMemoryScan(out var _);
+        }
+        /// <summary>
+        /// Načte informace o this procesu a uloží si je do paměti, pokud jsou jiné než poslední.
+        /// Tento příznak i vrací.
+        /// </summary>
+        /// <param name="hasChange"></param>
+        internal void RunMemoryScan(out bool hasChange)
         {
             using (var process = GetProcess())
             {
                 var info = Noris.Clients.Win.Components.AsolDX.DxComponent.WinProcessInfo.GetInfoForProcess(process);
+                this.AddInfo(info, out hasChange);
             }
         }
+        private void AddInfo(DxComponent.WinProcessInfo info, out bool hasChange)
+        {
+            hasChange = false;
+            var lastInfo = (_MemoryInfoList != null && _MemoryInfoList.Count > 0 ? _MemoryInfoList[_MemoryInfoList.Count - 1] : null);
+            if (lastInfo != null && DxComponent.WinProcessInfo.EqualsContent(lastInfo, info)) return;             // Nebudu si množit stejná data
+            hasChange = true;
+            MemoryInfoList.Add(info);
+        }
+        public IList<Noris.Clients.Win.Components.AsolDX.DxComponent.WinProcessInfo> MemoryInfos { get { return MemoryInfoList; } }
+        private List<Noris.Clients.Win.Components.AsolDX.DxComponent.WinProcessInfo> MemoryInfoList { get { if (_MemoryInfoList is null) _MemoryInfoList = new List<DxComponent.WinProcessInfo>(); return _MemoryInfoList; } }
+        private List<Noris.Clients.Win.Components.AsolDX.DxComponent.WinProcessInfo> _MemoryInfoList;
         #endregion
         #region IMenuItem
 
