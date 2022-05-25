@@ -25,6 +25,12 @@ namespace TestDevExpress.Forms
             this.InitSplitContainer();
             this.InitProcessList();
             this.InitMemoryScan();
+            DxComponent.LogClear();
+        }
+        protected override void OnClosed(EventArgs e)
+        {
+            base.OnClosed(e);
+            string log = DxComponent.LogText;
         }
         protected override void Dispose(bool disposing)
         {
@@ -75,7 +81,7 @@ namespace TestDevExpress.Forms
 
         private void _ProcessListBox_SelectedMenuItemChanged(object sender, TEventArgs<IMenuItem> e)
         {
-            RunMemoryScan(true);
+            RunMemoryScanAsync();
         }
 
         private void _ProcessListBox_ActionRefresh(object sender, EventArgs e)
@@ -107,10 +113,10 @@ namespace TestDevExpress.Forms
         private void InitMemoryScan()
         {
             _ScanLock = new object();
-            _CallMeTimerGuid = Noris.Clients.Win.Components.WatchTimer.CallMeEvery(RunMemoryScan, 1000);
+            _CallMeTimerGuid = Noris.Clients.Win.Components.WatchTimer.CallMeEvery(RunMemoryScanSilent, 1000);
         }
         /// <summary>
-        /// Zastaví timer, který spouští <see cref="RunMemoryScan()"/> (jeho Guid je v <see cref="_CallMeTimerGuid"/>).
+        /// Zastaví timer, který spouští <see cref="RunMemoryScan(bool)"/> (jeho Guid je v <see cref="_CallMeTimerGuid"/>).
         /// </summary>
         private void DoneMemoryScan()
         {
@@ -120,9 +126,17 @@ namespace TestDevExpress.Forms
         }
         /// <summary>
         /// Provede jednu akci pro scanování paměti pro aktuální proces <see cref="SelectedProcess"/>.
+        /// Volá se po změně vybraného procesu, z GUI threadu, je třeba provést asynchronně
+        /// </summary>
+        private void RunMemoryScanAsync()
+        {
+            ThreadManager.AddAction(() => RunMemoryScan(true));
+        }
+        /// <summary>
+        /// Provede jednu akci pro scanování paměti pro aktuální proces <see cref="SelectedProcess"/>.
         /// Volá se občas, z threadu na pozadí.
         /// </summary>
-        private void RunMemoryScan()
+        private void RunMemoryScanSilent()
         {
             RunMemoryScan(false);
         }
@@ -164,16 +178,16 @@ namespace TestDevExpress.Forms
         }
 
         /// <summary>
-        /// Guid timeru, který volá <see cref="RunMemoryScan()"/>. 
+        /// Guid timeru, který volá <see cref="RunMemoryScan(bool)"/>. 
         /// Při Dispose je nutno jej zastavit.
         /// </summary>
         private Guid? _CallMeTimerGuid;
         /// <summary>
-        /// Příznak běžícího procesu <see cref="RunMemoryScan()"/>
+        /// Příznak běžícího procesu <see cref="RunMemoryScan(bool)"/>
         /// </summary>
         private bool _ScanRunning;
         /// <summary>
-        /// Lock pro proces <see cref="RunMemoryScan()"/>
+        /// Lock pro proces <see cref="RunMemoryScan(bool)"/>
         /// </summary>
         private Object _ScanLock;
         #endregion
@@ -282,9 +296,12 @@ namespace TestDevExpress.Forms
         {
             get
             {
-                if (this.IsCurrentProcess) return FontStyle.Bold;
-                if (!this.IsAlive) return FontStyle.Italic;
-                return null;
+                DxComponent.LogAddLine($"Process {Text} detect ItemFontStyle...");
+                FontStyle? result = null;
+                if (this.IsCurrentProcess) result = FontStyle.Bold;
+                else if (!this.IsAlive) result = FontStyle.Italic;
+                DxComponent.LogAddLine($"Process {Text} detected ItemFontStyle: {result}");
+                return result;
             }
         }
         public string ToolTip { get; set; }
