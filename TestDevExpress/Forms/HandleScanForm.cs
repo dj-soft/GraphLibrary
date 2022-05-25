@@ -198,7 +198,7 @@ namespace TestDevExpress.Forms
     /// </summary>
     internal class ProcessInfo : IMenuItem
     {
-        #region Konstruktor, získání seznamu, základní property
+        #region Získání seznamu, sloučení dvou seznamů (dosavadní a nový)
         /// <summary>
         /// Najde a vrátí informace o aktuálně běžících procesech.
         /// </summary>
@@ -269,13 +269,38 @@ namespace TestDevExpress.Forms
         /// <returns></returns>
         internal static ProcessInfo[] MergeProcesses(ProcessInfo[] processInfos, ProcessInfo[] newProcessInfos)
         {
+            // Dosavadní procesy zaeviduji do výstupní Dictionary přednostně, mohou obsahovat celou historii informací:
             var summaryDict = (processInfos != null ? processInfos.CreateDictionary(p => p.ProcessId, true) : new Dictionary<int, ProcessInfo>());
-            if (newProcessInfos != null) newProcessInfos.ForEach(p => { if (!summaryDict.ContainsKey(p.ProcessId)) summaryDict.Add(p.ProcessId, p); });
+            // Dosavadním procesům nastavím IsAlive = false; uvidíme v dalším kroku, zda jsou živé:
+            summaryDict.Values.ForEachExec(p => p.IsAlive = false);
+            // Do výstupní Dictionary přidám / aktualizuje nově nalezené procesy:
+            if (newProcessInfos != null)
+            {
+                foreach (var newProcessInfo in newProcessInfos)
+                {
+                    if (!summaryDict.TryGetValue(newProcessInfo.ProcessId, out var oldProcessInfo))
+                    {
+                        newProcessInfo.IsAlive = true;
+                        summaryDict.Add(newProcessInfo.ProcessId, newProcessInfo);
+                    }
+                    else
+                    {
+                        oldProcessInfo.IsAlive = true;
+                    }
+                }
+            }
+            // Vytvoříme výsledný soupis, setřídíme podle Textu:
             var summaryList = summaryDict.Values.ToList();
             summaryList.Sort(CompareByText);
             return summaryList.ToArray();
         }
-
+        #endregion
+        #region Konstktor a základní data
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="process"></param>
+        /// <param name="isCurrentProcess"></param>
         public ProcessInfo(System.Diagnostics.Process process, bool isCurrentProcess)
         {
             ProcessId = process.Id;
@@ -287,6 +312,9 @@ namespace TestDevExpress.Forms
         {
             return this.Text;
         }
+        /// <summary>
+        /// ID procesu
+        /// </summary>
         public readonly int ProcessId;
         public readonly string ProcessName;
         public readonly string WindowTitle;
@@ -306,22 +334,9 @@ namespace TestDevExpress.Forms
         }
         public string ToolTip { get; set; }
         /// <summary>
-        /// Obsahuje true, pokud je proces živý
+        /// Obsahuje true, pokud je proces živý. Je určeno při každém procesu <see cref="MergeProcesses(ProcessInfo[], ProcessInfo[])"/>.
         /// </summary>
-        public bool IsAlive
-        {
-            get
-            {
-                try
-                {
-                    using (var process = GetProcess())
-                    {
-                        return (process != null);
-                    }
-                }
-                catch { return false; }
-            }
-        }
+        public bool IsAlive { get; private set; }
         /// <summary>
         /// Informace o procesu. Může být null, když už je po něm. 
         /// Používat v using() patternu!
@@ -369,59 +384,33 @@ namespace TestDevExpress.Forms
         private List<Noris.Clients.Win.Components.AsolDX.DxComponent.WinProcessInfo> MemoryInfoList { get { if (_MemoryInfoList is null) _MemoryInfoList = new List<DxComponent.WinProcessInfo>(); return _MemoryInfoList; } }
         private List<Noris.Clients.Win.Components.AsolDX.DxComponent.WinProcessInfo> _MemoryInfoList;
         #endregion
-        #region IMenuItem
-
+        #region IMenuItem - instance této třídy se může prezentovat vizuálně pomocí tohoto interface
         IMenuItem IMenuItem.ParentItem { get { return null; } set { } }
-
         MenuItemType IMenuItem.ItemType { get { return MenuItemType.MenuItem; } }
-
         ContentChangeMode IMenuItem.ChangeMode { get { return ContentChangeMode.Add; } }
-
         Keys? IMenuItem.HotKeys { get { return null; } }
-
         Shortcut? IMenuItem.Shortcut { get { return null; } }
-
         string IMenuItem.HotKey { get { return null; } }
-
         IEnumerable<IMenuItem> IMenuItem.SubItems { get { return null; } }
-
         Action<IMenuItem> IMenuItem.ClickAction { get { return null; } }
-
         string ITextItem.ItemId { get { return ProcessId.ToString(); } }
-
         string ITextItem.Text { get { return Text; } }
-
         int ITextItem.ItemOrder { get; set; }
-
         bool ITextItem.ItemIsFirstInGroup { get { return false; } }
-
         bool ITextItem.Visible { get { return true; } }
-
         bool ITextItem.Enabled { get { return this.IsAlive; } }
-
         bool? ITextItem.Checked { get; set; }
         FontStyle? ITextItem.FontStyle { get { return ItemFontStyle; } }
-
         Image ITextItem.Image { get { return null; } }
-
         SvgImage ITextItem.SvgImage { get { return null; } }
-
         string ITextItem.ImageName { get { return null; } }
-
         string ITextItem.ImageNameUnChecked { get { return null; } }
-
         string ITextItem.ImageNameChecked { get { return null; } }
-
         BarItemPaintStyle ITextItem.ItemPaintStyle { get { return BarItemPaintStyle.CaptionGlyph; } }
-
         object ITextItem.Tag { get { return null; } }
-
         string IToolTipItem.ToolTipText { get { return Text; } }
-
         string IToolTipItem.ToolTipTitle { get { return null; } }
-
         string IToolTipItem.ToolTipIcon { get { return ToolTip; } }
-
         #endregion
     }
     #endregion

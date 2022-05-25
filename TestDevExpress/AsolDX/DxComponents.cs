@@ -3748,11 +3748,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 using (var process = System.Diagnostics.Process.GetCurrentProcess())
                 {
-                    long privateMemory = process.PrivateMemorySize64;
-                    long workingSet64 = process.WorkingSet64;
-                    int gDIHandleCount = GetGuiResources(process.Handle, 0);
-                    int userHandleCount = GetGuiResources(process.Handle, 1);
-                    return new WinProcessInfo(privateMemory, workingSet64, gDIHandleCount, userHandleCount);
+                    return GetInfoForProcess(process);
                 }
             }
             /// <summary>
@@ -3762,10 +3758,15 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// <returns></returns>
             public static WinProcessInfo GetInfoForProcess(System.Diagnostics.Process process)
             {
-                long privateMemory = process.PrivateMemorySize64;
-                long workingSet64 = process.WorkingSet64;
-                int gDIHandleCount = GetGuiResources(process.Handle, 0);
-                int userHandleCount = GetGuiResources(process.Handle, 1);
+
+                long privateMemory = 0L;
+                long workingSet64 = 0L;
+                int gDIHandleCount = 0;
+                int userHandleCount = 0;
+                try { privateMemory = process.PrivateMemorySize64; } catch { }
+                try { workingSet64 = process.WorkingSet64; } catch { }
+                try { gDIHandleCount = GetGuiResources(process.Handle, 0); } catch { }
+                try { userHandleCount = GetGuiResources(process.Handle, 1); } catch { }
                 return new WinProcessInfo(privateMemory, workingSet64, gDIHandleCount, userHandleCount);
             }
             /// <summary>
