@@ -47,8 +47,6 @@ namespace TestDevExpress.Forms
             InitializeComponent();
             InitData();
 
-            InitPosition();
-
             DxLocalizer.Enabled = false;
             DxLocalizer.HighlightNonTranslated = true;
 
@@ -80,15 +78,11 @@ namespace TestDevExpress.Forms
 
             ActivatePage(8, true);
             // ActivatePage(10, true);
+
         }
         private void MainForm_Disposed(object sender, EventArgs e)
         {
             DxComponent.LogTextChanged -= DxComponent_LogTextChanged;
-        }
-        protected override void OnFirstShownBefore()
-        {
-            RestorePosition();
-            base.OnFirstShownBefore();
         }
         protected override void OnFirstShownAfter()
         {
@@ -226,57 +220,26 @@ namespace TestDevExpress.Forms
         }
         #region Pozice okna
         /// <summary>
-        /// Aktivuje eventhandlery pro hlídání pozice.
-        /// Načte pozici okna z konfigurace do <see cref="InitialPosition"/>.
+        /// Zde formulář umožňuje potomkovi, aby odněkud načetl pozici a stav okna pro obnovení uložené pozice při otevírání okna, a zde ji vrátil.
+        /// Pro uložení pozice okna po interaktivní změně je určena metoda <see cref="DxRibbonForm.OnFormPositionSave(string, bool)"/>.
+        /// <para/>
+        /// Tato virtual metoda je volaná z konstruktoru - proto nemá smysl, aby existoval párový eventhandler - není kdy ho zaregistrovat (a po provedení konstruktoru je pozdě).
         /// </summary>
-        private void InitPosition()
+        /// <returns></returns>
+        protected override string OnFormPositionLoad()
         {
-            this.SizeChanged += _PositionChanged;
-            this.LocationChanged += _PositionChanged;
-            this.FormClosed += _PositionChangedOnClose;
-            string position = DxComponent.Settings.GetRawValue("FormPosition", "MainForm");
-            InitialPosition = position;
-            DxComponent.FormPositionSet(this, position);             // Je nutno setovat jednak v konstruktoru, a druhak v OnFirstShownBefore(), kvůli UHD grafice a přepočtu rozměrů !!!
+            return DxComponent.Settings.GetRawValue("FormPosition", "MainForm");
         }
         /// <summary>
-        /// Uloženou pozici okna z <see cref="InitialPosition"/> promítne do this formuláře.
-        /// Je nutno volat v procesu protected override void OnFirstShownBefore(), to kvůli UHD grafice a přepočtu DPI.
+        /// Zde formulář oznamuje potomkovi, že změnil svoji velikost a pozici, a potomek si ji může uložit do své konfigurace. Současně se potomkovi sděluje parametrem <paramref name="isFinal"/>,
+        /// zda určená pozice je průběžná (při jakékoli změně za života formuláře), anebo již finální (při ukončování formuláře).
         /// </summary>
-        private void RestorePosition()
+        /// <param name="position">Pozice okna, tak jak ji následně očekává metoda <see cref="DxRibbonForm.OnFormPositionLoad"/></param>
+        /// <param name="isFinal">Pozice je finální? false = při každé změně / true = při zavírání formuláře</param>
+        protected override void OnFormPositionSave(string position, bool isFinal)
         {
-            string position = DxComponent.Settings.GetRawValue("FormPosition", "MainForm");
-            if (position != null)
-                DxComponent.FormPositionSet(this, position);         // Je nutno setovat jednak v konstruktoru, a druhak v OnFirstShownBefore(), kvůli UHD grafice a přepočtu rozměrů !!!
-        }
-        private string InitialPosition;
-        /// <summary>
-        /// Uloží pozici okna. Volat po každé změně.
-        /// </summary>
-        private void SetPosition()
-        {
-            if (this.WasShown)
-            {
-                string position = DxComponent.FormPositionGet(this);
+            if (isFinal)
                 DxComponent.Settings.SetRawValue("FormPosition", "MainForm", position);
-            }
-        }
-        /// <summary>
-        /// Event po změně pozice okna
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void _PositionChanged(object sender, EventArgs e)
-        {
-            this.SetPosition();
-        }
-        /// <summary>
-        /// Po zavření okna chci taky uložit pozici okna
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void _PositionChangedOnClose(object sender, FormClosedEventArgs e)
-        {
-            this.SetPosition();
         }
         #endregion
         #region Log
@@ -678,12 +641,22 @@ namespace TestDevExpress.Forms
         }
         private void _TestHandleScanFormButton_Click(IMenuItem menuItem)
         {
-            using (var form = new HandleScanForm())
+            if (_HandleScanForm is null || _HandleScanForm.ActivityState == WindowActivityState.Closing || _HandleScanForm.ActivityState == WindowActivityState.Closed || _HandleScanForm.ActivityState == WindowActivityState.Disposed || _HandleScanForm.ActivityState == WindowActivityState.Disposed)
             {
-                form.WindowState = FormWindowState.Maximized;
-                form.ShowDialog();
+                _HandleScanForm = new HandleScanForm();
+                _HandleScanForm.WindowState = FormWindowState.Maximized;
+                _HandleScanForm.Show();
+            }
+            else
+            {
+                _HandleScanForm.Show();
+                _HandleScanForm.Activate();
             }
         }
+        /// <summary>
+        /// Formulář ScanForm
+        /// </summary>
+        private HandleScanForm _HandleScanForm;
         private void _TestDxDevExpressRibbon_Click(IMenuItem menuItem)
         {
             _TestDxRibbonFormNative(NativeRibbonForm.CreateMode.DevExpress, false);

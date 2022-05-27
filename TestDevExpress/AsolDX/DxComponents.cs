@@ -2316,53 +2316,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             return DxSuperToolTip.CreateDxSuperTip(toolTipItem);
         }
         #endregion
-        #region Pozice okna
-        /// <summary>
-        /// Vrátí pozici daného okna. Následně se okno na tuto pozici může umístit voláním metody <see cref="FormPositionSet(Form, string, bool)"/>.
-        /// </summary>
-        /// <param name="form"></param>
-        /// <returns></returns>
-        public static string FormPositionGet(Form form)
-        {
-            if (form is null) return "";
-            var state = form.WindowState;
-            var bounds = (state == FormWindowState.Normal ? form.Bounds : form.RestoreBounds);
-            string s = (state == FormWindowState.Maximized ? "X" : (state == FormWindowState.Normal ? "B" : "N"));
-            return $"{s},{bounds.X},{bounds.Y},{bounds.Width},{bounds.Height}";
-        }
-        /// <summary>
-        /// Do daného okna nastaví pozici a souřadnice dle daného stringu, který byl vygenerován metodou <see cref="FormPositionGet(Form)"/>.
-        /// Může/nemusí souřadnice okna zarovnat do viditelných monitorů.
-        /// </summary>
-        /// <param name="form"></param>
-        /// <param name="position"></param>
-        /// <param name="skipAlign">Pokud bude false (default), pak se dodané souřadnice zarovnají do aktuálně připojených monitorů. To je lepší pro to, že nově otevřené okno se neotevře na nějaké neviditelné pozici.
-        /// Hodnota true tuto akci přeskočí, okno bude umístěno přesně tam, kde je zadáno, i když nebude vidět.</param>
-        public static bool FormPositionSet(Form form, string position, bool skipAlign = false)
-        {
-            if (form is null || position is null || position.Length < 9) return false;
-            var items = position.Split(',');
-            if (items.Length < 5) return false;
-            if ((items[0] == "X" || items[0] == "B" || items[0] == "N") &&
-                (Int32.TryParse(items[1], out int x)) &&
-                (Int32.TryParse(items[2], out int y)) &&
-                (Int32.TryParse(items[3], out int w) && w > 0) &&
-                (Int32.TryParse(items[4], out int h) && h > 0))
-            {
-                FormWindowState state = (items[0] == "X" ? FormWindowState.Maximized : (items[0] == "B" ? FormWindowState.Normal : FormWindowState.Minimized));
-                Rectangle bounds = new Rectangle(x, y, w, h);
-                if (!skipAlign)
-                    bounds = bounds.FitIntoMonitors();
-                form.WindowState = FormWindowState.Normal;
-                if (state == FormWindowState.Normal)
-                    form.StartPosition = FormStartPosition.Manual;
-                form.Bounds = bounds;
-                form.WindowState = state;
-                return true;
-            }
-            return false;
-        }
-        #endregion
         #region TryRun
         /// <summary>
         /// Provede danou akci v bloku try - catch, volitelně s potlačením chybové hlášky
@@ -6049,6 +6002,41 @@ namespace Noris.Clients.Win.Components.AsolDX
         public bool Changed { get; private set; } = false;
     }
     /// <summary>
+    /// Třída argumentů obsahující dva prvky generického typu <typeparamref name="T"/> s charakterem 
+    /// Původní hodnota <see cref="OldValue"/> a Nová hodnota <see cref="NewValue"/>.
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    public class TEventValueChangedArgs<T> : EventArgs
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="source">Zdroj události</param>
+        /// <param name="oldValue">Původní hodnota</param>
+        /// <param name="newValue">Nová hodnota</param>
+        public TEventValueChangedArgs(EventSource source, T oldValue, T newValue) { Source = source; OldValue = oldValue; NewValue = newValue; }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return $"Change from: {OldValue}, to: {NewValue}, source: {Source}";
+        }
+        /// <summary>
+        /// Zdroj události
+        /// </summary>
+        public EventSource Source { get; private set; }
+        /// <summary>
+        /// Původní hodnota. Nelze změnit.
+        /// </summary>
+        public T OldValue { get; private set; }
+        /// <summary>
+        /// Nová hodnota. Nelze změnit.
+        /// </summary>
+        public T NewValue { get; private set; }
+    }
+    /// <summary>
     /// Zdroj eventu
     /// </summary>
     public enum EventSource
@@ -7200,21 +7188,23 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Konkrétní konvertor
         /// </summary>
         /// <param name="value"></param>
+        /// <param name="delimiter">Oddělovač hodnot, default ";"</param>
         /// <returns></returns>
-        public static string PointToString(object value)
+        public static string PointToString(object value, char delimiter = ';')
         {
             Point data = (Point)value;
-            return data.X.ToString() + ";" + data.Y.ToString();
+            return $"{data.X}{delimiter}{data.Y}";
         }
         /// <summary>
         /// Konkrétní konvertor
         /// </summary>
         /// <param name="text"></param>
+        /// <param name="delimiter">Oddělovač hodnot, default ";"</param>
         /// <returns></returns>
-        public static object StringToPoint(string text)
+        public static object StringToPoint(string text, char delimiter = ';')
         {
             if (String.IsNullOrEmpty(text)) return Point.Empty;
-            string[] items = text.Split(';');
+            string[] items = text.Split(delimiter);
             if (items.Length != 2) return Point.Empty;
             int x = StringInt32(items[0]);
             int y = StringInt32(items[1]);
@@ -7224,21 +7214,23 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Konkrétní konvertor
         /// </summary>
         /// <param name="value"></param>
+        /// <param name="delimiter">Oddělovač hodnot, default ";"</param>
         /// <returns></returns>
-        public static string PointFToString(object value)
+        public static string PointFToString(object value, char delimiter = ';')
         {
             PointF data = (PointF)value;
-            return data.X.ToString("N", _Nmfi) + ";" + data.Y.ToString("N", _Nmfi);
+            return $"{data.X.ToString("N", _Nmfi)}{delimiter}{data.Y.ToString("N", _Nmfi)}";
         }
         /// <summary>
         /// Konkrétní konvertor
         /// </summary>
         /// <param name="text"></param>
+        /// <param name="delimiter">Oddělovač hodnot, default ";"</param>
         /// <returns></returns>
-        public static object StringToPointF(string text)
+        public static object StringToPointF(string text, char delimiter = ';')
         {
             if (String.IsNullOrEmpty(text)) return PointF.Empty;
-            string[] items = text.Split(';');
+            string[] items = text.Split(delimiter);
             if (items.Length != 2) return PointF.Empty;
             Single x = StringSingle(items[0]);
             Single y = StringSingle(items[1]);
@@ -7248,21 +7240,23 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Konkrétní konvertor
         /// </summary>
         /// <param name="value"></param>
+        /// <param name="delimiter">Oddělovač hodnot, default ";"</param>
         /// <returns></returns>
-        public static string RectangleToString(object value)
+        public static string RectangleToString(object value, char delimiter = ';')
         {
             Rectangle data = (Rectangle)value;
-            return data.X.ToString() + ";" + data.Y.ToString() + ";" + data.Width.ToString() + ";" + data.Height.ToString();
+            return $"{data.X}{delimiter}{data.Y}{delimiter}{data.Width}{delimiter}{data.Height}";
         }
         /// <summary>
         /// Konkrétní konvertor
         /// </summary>
         /// <param name="text"></param>
+        /// <param name="delimiter">Oddělovač hodnot, default ";"</param>
         /// <returns></returns>
-        public static object StringToRectangle(string text)
+        public static object StringToRectangle(string text, char delimiter = ';')
         {
             if (String.IsNullOrEmpty(text)) return Rectangle.Empty;
-            string[] items = text.Split(';');
+            string[] items = text.Split(delimiter);
             if (items.Length != 4) return Rectangle.Empty;
             int x = StringInt32(items[0]);
             int y = StringInt32(items[1]);
@@ -7274,21 +7268,23 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Konkrétní konvertor
         /// </summary>
         /// <param name="value"></param>
+        /// <param name="delimiter">Oddělovač hodnot, default ";"</param>
         /// <returns></returns>
-        public static string RectangleFToString(object value)
+        public static string RectangleFToString(object value, char delimiter = ';')
         {
             RectangleF data = (RectangleF)value;
-            return data.X.ToString("N", _Nmfi) + ";" + data.Y.ToString("N", _Nmfi) + ";" + data.Width.ToString("N", _Nmfi) + ";" + data.Height.ToString("N", _Nmfi);
+            return $"{data.X.ToString("N", _Nmfi)}{delimiter}{data.Y.ToString("N", _Nmfi)}{delimiter}{data.Width.ToString("N", _Nmfi)}{delimiter}{data.Height.ToString("N", _Nmfi)}";
         }
         /// <summary>
         /// Konkrétní konvertor
         /// </summary>
         /// <param name="text"></param>
+        /// <param name="delimiter">Oddělovač hodnot, default ";"</param>
         /// <returns></returns>
-        public static object StringToRectangleF(string text)
+        public static object StringToRectangleF(string text, char delimiter = ';')
         {
             if (String.IsNullOrEmpty(text)) return RectangleF.Empty;
-            string[] items = text.Split(';');
+            string[] items = text.Split(delimiter);
             if (items.Length != 4) return RectangleF.Empty;
             Single x = StringSingle(items[0]);
             Single y = StringSingle(items[1]);
@@ -7300,21 +7296,23 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Konkrétní konvertor
         /// </summary>
         /// <param name="value"></param>
+        /// <param name="delimiter">Oddělovač hodnot, default ";"</param>
         /// <returns></returns>
-        public static string SizeToString(object value)
+        public static string SizeToString(object value, char delimiter = ';')
         {
             Size data = (Size)value;
-            return data.Width.ToString() + ";" + data.Height.ToString();
+            return $"{data.Width}{delimiter}{data.Height}";
         }
         /// <summary>
         /// Konkrétní konvertor
         /// </summary>
         /// <param name="text"></param>
+        /// <param name="delimiter">Oddělovač hodnot, default ";"</param>
         /// <returns></returns>
-        public static object StringToSize(string text)
+        public static object StringToSize(string text, char delimiter = ';')
         {
             if (String.IsNullOrEmpty(text)) return Size.Empty;
-            string[] items = text.Split(';');
+            string[] items = text.Split(delimiter);
             if (items.Length != 2) return Size.Empty;
             int w = StringInt32(items[0]);
             int h = StringInt32(items[1]);
@@ -7324,18 +7322,20 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Konkrétní konvertor
         /// </summary>
         /// <param name="value"></param>
+        /// <param name="delimiter">Oddělovač hodnot, default ";"</param>
         /// <returns></returns>
-        public static string SizeFToString(object value)
+        public static string SizeFToString(object value, char delimiter = ';')
         {
             SizeF data = (SizeF)value;
-            return data.Width.ToString("N", _Nmfi) + ";" + data.Height.ToString("N", _Nmfi);
+            return $"{data.Width.ToString("N", _Nmfi)}{delimiter}{data.Height.ToString("N", _Nmfi)}";
         }
         /// <summary>
         /// Konkrétní konvertor
         /// </summary>
         /// <param name="text"></param>
+        /// <param name="delimiter">Oddělovač hodnot, default ";"</param>
         /// <returns></returns>
-        public static object StringToSizeF(string text)
+        public static object StringToSizeF(string text, char delimiter = ';')
         {
             if (String.IsNullOrEmpty(text)) return SizeF.Empty;
             string[] items = text.Split(';');

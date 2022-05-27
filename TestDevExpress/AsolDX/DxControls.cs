@@ -17,6 +17,7 @@ using DevExpress.Utils.Extensions;
 using DevExpress.XtraEditors.ViewInfo;
 
 using XS = Noris.WS.Parser.XmlSerializer;
+using System.ComponentModel;
 
 namespace Noris.Clients.Win.Components.AsolDX
 {
@@ -81,6 +82,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public DxStdForm()
         {
+            this.ActivityStateInit();
             this.InitializeForm();
             this.ImageName = AsolDX.ImageName.DxFormIcon;
             DxComponent.RegisterListener(this);
@@ -103,6 +105,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             if (!_WasShown)
             {
+                this.ActivityState = WindowActivityState.FirstShow;
                 this.OnFirstShownBefore();
                 this.FirstShownBefore?.Invoke(this, EventArgs.Empty);
                 base.OnShown(e);
@@ -116,6 +119,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 this.OnNextShown();
                 this.NextShown?.Invoke(this, EventArgs.Empty);
             }
+            this.ActivityState = WindowActivityState.Visible;
         }
         /// <summary>
         /// Je vyvoláno jedenkrát v životě okna, těsně před prvním zobrazením okna. Nyní je hodnota <see cref="WasShown"/> = false.
@@ -217,8 +221,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="disposing"></param>
         protected override void Dispose(bool disposing)
         {
+            this.ActivityState = WindowActivityState.Disposing;
             DxComponent.UnregisterListener(this);
             base.Dispose(disposing);
+            this.ActivityState = WindowActivityState.Disposed;
         }
         #endregion
         #region Ikona okna
@@ -227,6 +233,134 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public string ImageName { get { return _ImageName; } set { _ImageName = value; DxComponent.ApplyImage(this.IconOptions, value, sizeType: ResourceImageSizeType.Large); } }
         private string _ImageName;
+        #endregion
+        #region Stav okna, změny stavu
+        /// <summary>
+        /// Stav aktivity okna. Při změně je volána událost <see cref="ActivityStateChanged"/>.
+        /// </summary>
+        public WindowActivityState ActivityState
+        { 
+            get { return _ActivityState; } 
+            protected set
+            {
+                var oldValue = _ActivityState;
+                var newValue = value;
+                if (newValue != oldValue)
+                {
+                    _ActivityState = newValue;
+                    RunActivityStateChanged(oldValue, newValue);
+                }
+            }
+        }
+        /// <summary>Stav okna</summary>
+        private WindowActivityState _ActivityState;
+        /// <summary>
+        /// Inicializace stavu okna a odpovídajících handlerů
+        /// </summary>
+        private void ActivityStateInit()
+        {
+            this.ActivityState = WindowActivityState.Creating;
+
+            this.Activated += ActivityStateDetect_Activated;
+            this.Deactivate += ActivityStateDetect_Deactivate;
+            this.GotFocus += ActivityStateDetect_GotFocus;
+            this.LostFocus += ActivityStateDetect_LostFocus;
+            this.VisibleChanged += ActivityStateDetect_VisibleChanged;
+            this.SizeChanged += ActivityStateDetect_SizeChanged;
+            this.FormClosing += ActivityStateDetect_FormClosing;
+            this.FormClosed += ActivityStateDetect_FormClosed;
+        }
+        /// <summary>
+        /// Hlídáme změny stavu <see cref="ActivityState"/>
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void ActivityStateDetect_Activated(object sender, EventArgs e)
+        {
+            this.ActivityState = WindowActivityState.Active;
+        }
+        /// <summary>
+        /// Hlídáme změny stavu <see cref="ActivityState"/>
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void ActivityStateDetect_Deactivate(object sender, EventArgs e)
+        {
+            this.ActivityState = WindowActivityState.Inactive;
+        }
+        /// <summary>
+        /// Hlídáme změny stavu <see cref="ActivityState"/>
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void ActivityStateDetect_GotFocus(object sender, EventArgs e)
+        {
+            this.ActivityState = WindowActivityState.Active;
+        }
+        /// <summary>
+        /// Hlídáme změny stavu <see cref="ActivityState"/>
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void ActivityStateDetect_LostFocus(object sender, EventArgs e)
+        {
+            this.ActivityState = WindowActivityState.Inactive;
+        }
+        /// <summary>
+        /// Hlídáme změny stavu <see cref="ActivityState"/>
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void ActivityStateDetect_VisibleChanged(object sender, EventArgs e)
+        {
+            this.ActivityState = (this.Visible ? WindowActivityState.Visible : WindowActivityState.Invisible);
+        }
+        /// <summary>
+        /// Hlídáme změny stavu <see cref="ActivityState"/>
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void ActivityStateDetect_SizeChanged(object sender, EventArgs e)
+        {
+        }
+        /// <summary>
+        /// Hlídáme změny stavu <see cref="ActivityState"/>
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void ActivityStateDetect_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            this.ActivityState = WindowActivityState.Closing;
+        }
+        /// <summary>
+        /// Hlídáme změny stavu <see cref="ActivityState"/>
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void ActivityStateDetect_FormClosed(object sender, FormClosedEventArgs e)
+        {
+            this.ActivityState = WindowActivityState.Closed;
+        }
+        /// <summary>
+        /// Vyvolá <see cref="OnActivityStateChanged(TEventValueChangedArgs{WindowActivityState})"/> a event <see cref="ActivityStateChanged"/>.
+        /// </summary>
+        /// <param name="oldValue"></param>
+        /// <param name="newValue"></param>
+        private void RunActivityStateChanged(WindowActivityState oldValue, WindowActivityState newValue)
+        {
+            var args = new TEventValueChangedArgs<WindowActivityState>(EventSource.None, oldValue, newValue);
+            OnActivityStateChanged(args);
+            ActivityStateChanged?.Invoke(this, args);
+        }
+        /// <summary>
+        /// Metoda proběhne při změně stavu <see cref="ActivityState"/>, těsně po nastavení nového stavu do <see cref="ActivityState"/>.
+        /// </summary>
+        /// <param name="args"></param>
+        protected virtual void OnActivityStateChanged(TEventValueChangedArgs<WindowActivityState> args) { }
+        /// <summary>
+        /// Událost volaná při změně stavu <see cref="ActivityState"/>, těsně po nastavení nového stavu do <see cref="ActivityState"/>.
+        /// </summary>
+        public event EventHandler<TEventValueChangedArgs<WindowActivityState>> ActivityStateChanged;
         #endregion
         #region Style & Zoom Changed
         void IListenerZoomChange.ZoomChanged() { OnZoomChanged(); }
@@ -261,6 +395,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public DxRibbonForm()
         {
+            this.ActivityStateInit();
+            this.FormPositionInit();
             this.ImageName = AsolDX.ImageName.DxFormIcon;
             this.InitDxRibbonForm();
             DxComponent.RegisterListener(this);
@@ -278,6 +414,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             if (!_WasShown)
             {
+                this.ActivityState = WindowActivityState.FirstShow;
+                this.FormPositionApply();
                 this.OnFirstShownBefore();
                 this.FirstShownBefore?.Invoke(this, EventArgs.Empty);
                 base.OnShown(e);
@@ -291,6 +429,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 this.OnNextShown();
                 this.NextShown?.Invoke(this, EventArgs.Empty);
             }
+            this.ActivityState = WindowActivityState.Visible;
         }
         /// <summary>
         /// Je vyvoláno jedenkrát v životě okna, těsně před prvním zobrazením okna. Nyní je hodnota <see cref="WasShown"/> = false.
@@ -339,18 +478,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public int CurrentDpi { get { return this.DeviceDpi; } }
         /// <summary>
-        /// Umístí toto okno do viditelných souřadnic monitorů.
-        /// Pokud je parametr <paramref name="force"/> = false (default), 
-        /// pak to provádí jen když pozice okna <see cref="Form.StartPosition"/> je <see cref="FormStartPosition.Manual"/>.
-        /// Pokud parametr <paramref name="force"/> = true, provede to vždy.
-        /// </summary>
-        /// <param name="force"></param>
-        public void MoveToVisibleScreen(bool force = false)
-        {
-            if (!force && this.StartPosition != FormStartPosition.Manual) return;
-            this.Bounds = this.Bounds.FitIntoMonitors(true, false, true);
-        }
-        /// <summary>
         /// Najde ovládací prvek odpovídající aktuální klávese.
         /// </summary>
         /// <param name="msg"></param>
@@ -368,8 +495,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="disposing"></param>
         protected override void Dispose(bool disposing)
         {
+            this.ActivityState = WindowActivityState.Disposing;
             DxComponent.UnregisterListener(this);
             base.Dispose(disposing);
+            this.ActivityState = WindowActivityState.Disposed;
         }
         #endregion
         #region Ikona okna
@@ -378,6 +507,243 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public string ImageName { get { return _ImageName; } set { _ImageName = value; DxComponent.ApplyImage(this.IconOptions, value, sizeType: ResourceImageSizeType.Large); } }
         private string _ImageName;
+        #endregion
+        #region Pozice okna
+        /// <summary>
+        /// Umístí toto okno do viditelných souřadnic monitorů.
+        /// Pokud je parametr <paramref name="force"/> = false (default), 
+        /// pak to provádí jen když pozice okna <see cref="Form.StartPosition"/> je <see cref="FormStartPosition.Manual"/>.
+        /// Pokud parametr <paramref name="force"/> = true, provede to vždy.
+        /// </summary>
+        /// <param name="force"></param>
+        public void MoveToVisibleScreen(bool force = false)
+        {
+            if (!force && this.StartPosition != FormStartPosition.Manual) return;
+            this.Bounds = this.Bounds.FitIntoMonitors(true, false, true);
+        }
+        /// <summary>
+        /// Inicializace hlídání pozice okna
+        /// </summary>
+        private void FormPositionInit()
+        {
+            this.FormPositionRestore();
+            this.SizeChanged += FormPosition_SizeChanged;
+            this.LocationChanged += FormPosition_SizeChanged;
+            this.FormClosed += FormPosition_FormClosed;
+            this.FormPositionApply();
+        }
+        /// <summary>
+        /// Připraví si pozici okna - načte ji z aplikace pomocí metody <see cref="OnFormPositionLoad()"/> a správně si výsledek zapamatuje.
+        /// </summary>
+        private void FormPositionRestore()
+        {
+            string position = OnFormPositionLoad();
+            _FormPositionRegister = position;
+            FormPositionInfo.TryParse(position, out _FormPositionInfo);
+        }
+        /// <summary>
+        /// Aplikuje souřadnice do okna.
+        /// Je nutno setovat jednak v konstruktoru, a druhak v OnFirstShownBefore(), kvůli UHD grafice a přepočtu rozměrů !!!
+        /// </summary>
+        private void FormPositionApply()
+        {
+            var formPosition = _FormPositionInfo;
+            if (formPosition is null) return;
+            if (formPosition.WindowState == FormWindowState.Maximized)
+            {
+                var maximizedBounds = formPosition.MaximizedBounds.FitIntoMonitors(true, false, true);
+                if (this.WindowState != FormWindowState.Maximized) this.WindowState = FormWindowState.Maximized;
+                if (this.Bounds != maximizedBounds) this.Bounds = maximizedBounds;
+                this._FormBoundsNormal = formPosition.NormalBounds;
+            }
+            else
+            {
+                var normalBounds = formPosition.NormalBounds.FitIntoMonitors(true, false, true);
+                if (this.WindowState != FormWindowState.Normal) this.WindowState = FormWindowState.Normal;
+                if (this.StartPosition != FormStartPosition.Manual) this.StartPosition = FormStartPosition.Manual;
+                if (this.Bounds != normalBounds) this.Bounds = normalBounds;
+                this._FormBoundsNormal = null;
+            }
+        }
+        /// <summary>
+        /// Hlídá změnu pozice okna průběžně
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void FormPosition_SizeChanged(object sender, EventArgs e)
+        {
+            this.FormPositionOnChange(false);
+        }
+        /// <summary>
+        /// Hlídá změnu pozice okna finálně
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void FormPosition_FormClosed(object sender, FormClosedEventArgs e)
+        {
+            this.FormPositionOnChange(true);
+        }
+        /// <summary>
+        /// Pokud již this okno bylo zobrazeno = předáno uživateli, pak zdejší metoda hlásí změny rozměru do metody <see cref="OnFormPositionSave(string, bool)"/>.
+        /// </summary>
+        /// <param name="isFinal"></param>
+        private void FormPositionOnChange(bool isFinal)
+        {
+            if (this.WasShown)
+            {
+                string position = FormPositionInfo.CreatePosition(this);
+                OnFormPositionSave(position, isFinal);
+            }
+        }
+        /// <summary>
+        /// Zde formulář umožňuje potomkovi, aby odněkud načetl pozici a stav okna pro obnovení uložené pozice při otevírání okna, a zde ji vrátil.
+        /// Pro uložení pozice okna po interaktivní změně je určena metoda <see cref="DxRibbonForm.OnFormPositionSave(string, bool)"/>.
+        /// <para/>
+        /// Tato virtual metoda je volaná z konstruktoru - proto nemá smysl, aby existoval párový eventhandler - není kdy ho zaregistrovat (a po provedení konstruktoru je pozdě).
+        /// </summary>
+        /// <returns></returns>
+        protected virtual string OnFormPositionLoad() { return null; }
+        /// <summary>
+        /// Zde formulář oznamuje potomkovi, že změnil svoji velikost a pozici, a potomek si ji může uložit do své konfigurace. Současně se potomkovi sděluje parametrem <paramref name="isFinal"/>,
+        /// zda určená pozice je průběžná (při jakékoli změně za života formuláře), anebo již finální (při ukončování formuláře).
+        /// </summary>
+        /// <param name="position">Pozice okna, tak jak ji následně očekává metoda <see cref="DxRibbonForm.OnFormPositionLoad"/></param>
+        /// <param name="isFinal">Pozice je finální? false = při každé změně / true = při zavírání formuláře</param>
+        protected virtual void OnFormPositionSave(string position, bool isFinal) { }
+        /// <summary>
+        /// Registr pozice okna, která je známa aplikaci (potomkovi).
+        /// </summary>
+        private string _FormPositionRegister;
+        private FormPositionInfo _FormPositionInfo;
+        private Rectangle? _FormBoundsNormal;
+        #endregion
+        #region Stav okna, změny stavu
+        /// <summary>
+        /// Stav aktivity okna. Při změně je volána událost <see cref="ActivityStateChanged"/>.
+        /// </summary>
+        public WindowActivityState ActivityState
+        {
+            get { return _ActivityState; }
+            protected set
+            {
+                var oldValue = _ActivityState;
+                var newValue = value;
+                if (newValue != oldValue)
+                {
+                    _ActivityState = newValue;
+                    RunActivityStateChanged(oldValue, newValue);
+                }
+            }
+        }
+        /// <summary>Stav okna</summary>
+        private WindowActivityState _ActivityState;
+        /// <summary>
+        /// Inicializace stavu okna a odpovídajících handlerů
+        /// </summary>
+        private void ActivityStateInit()
+        {
+            this.ActivityState = WindowActivityState.Creating;
+
+            this.Activated += ActivityStateDetect_Activated;
+            this.Deactivate += ActivityStateDetect_Deactivate;
+            this.GotFocus += ActivityStateDetect_GotFocus;
+            this.LostFocus += ActivityStateDetect_LostFocus;
+            this.VisibleChanged += ActivityStateDetect_VisibleChanged;
+            this.SizeChanged += ActivityStateDetect_SizeChanged;
+            this.FormClosing += ActivityStateDetect_FormClosing;
+            this.FormClosed += ActivityStateDetect_FormClosed;
+        }
+        /// <summary>
+        /// Hlídáme změny stavu <see cref="ActivityState"/>
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void ActivityStateDetect_Activated(object sender, EventArgs e)
+        {
+            this.ActivityState = WindowActivityState.Active;
+        }
+        /// <summary>
+        /// Hlídáme změny stavu <see cref="ActivityState"/>
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void ActivityStateDetect_Deactivate(object sender, EventArgs e)
+        {
+            this.ActivityState = WindowActivityState.Inactive;
+        }
+        /// <summary>
+        /// Hlídáme změny stavu <see cref="ActivityState"/>
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void ActivityStateDetect_GotFocus(object sender, EventArgs e)
+        {
+            this.ActivityState = WindowActivityState.Active;
+        }
+        /// <summary>
+        /// Hlídáme změny stavu <see cref="ActivityState"/>
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void ActivityStateDetect_LostFocus(object sender, EventArgs e)
+        {
+            this.ActivityState = WindowActivityState.Inactive;
+        }
+        /// <summary>
+        /// Hlídáme změny stavu <see cref="ActivityState"/>
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void ActivityStateDetect_VisibleChanged(object sender, EventArgs e)
+        {
+            this.ActivityState = (this.Visible ? WindowActivityState.Visible : WindowActivityState.Invisible);
+        }
+        /// <summary>
+        /// Hlídáme změny stavu <see cref="ActivityState"/>
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void ActivityStateDetect_SizeChanged(object sender, EventArgs e)
+        {
+        }
+        /// <summary>
+        /// Hlídáme změny stavu <see cref="ActivityState"/>
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void ActivityStateDetect_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            this.ActivityState = WindowActivityState.Closing;
+        }
+        /// <summary>
+        /// Hlídáme změny stavu <see cref="ActivityState"/>
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void ActivityStateDetect_FormClosed(object sender, FormClosedEventArgs e)
+        {
+            this.ActivityState = WindowActivityState.Closed;
+        }
+        /// <summary>
+        /// Vyvolá <see cref="OnActivityStateChanged(TEventValueChangedArgs{WindowActivityState})"/> a event <see cref="ActivityStateChanged"/>.
+        /// </summary>
+        /// <param name="oldValue"></param>
+        /// <param name="newValue"></param>
+        private void RunActivityStateChanged(WindowActivityState oldValue, WindowActivityState newValue)
+        {
+            var args = new TEventValueChangedArgs<WindowActivityState>(EventSource.None, oldValue, newValue);
+            OnActivityStateChanged(args);
+            ActivityStateChanged?.Invoke(this, args);
+        }
+        /// <summary>
+        /// Metoda proběhne při změně stavu <see cref="ActivityState"/>, těsně po nastavení nového stavu do <see cref="ActivityState"/>.
+        /// </summary>
+        /// <param name="args"></param>
+        protected virtual void OnActivityStateChanged(TEventValueChangedArgs<WindowActivityState> args) { }
+        /// <summary>
+        /// Událost volaná při změně stavu <see cref="ActivityState"/>, těsně po nastavení nového stavu do <see cref="ActivityState"/>.
+        /// </summary>
+        public event EventHandler<TEventValueChangedArgs<WindowActivityState>> ActivityStateChanged;
         #endregion
         #region Style & Zoom Changed
         void IListenerZoomChange.ZoomChanged() { OnZoomChanged(); }
@@ -444,6 +810,89 @@ namespace Noris.Clients.Win.Components.AsolDX
         private DxPanelControl _DxMainPanel;
         private DxRibbonStatusBar _DxStatusBar;
         #endregion
+    }
+    /// <summary>
+    /// Třída určená pro uchování pozice formuláře, pro jeho persistenci
+    /// </summary>
+    internal class FormPositionInfo
+    {
+        /// <summary>
+        /// Vrátí řetězec popisující pozici daného formuláře
+        /// </summary>
+        /// <param name="form"></param>
+        /// <returns></returns>
+        public static string CreatePosition(Form form)
+        {
+            if (form is null) return null;
+            FormWindowState windowState = form.WindowState;
+            Rectangle normalBounds = (windowState == FormWindowState.Normal ? form.Bounds : form.RestoreBounds);
+            Rectangle maximizedBounds = form.Bounds;
+            return CreatePosition(windowState, normalBounds, maximizedBounds);
+        }
+        /// <summary>
+        /// Vrátí řetězec popisující pozici daného formuláře
+        /// </summary>
+        /// <param name="windowState"></param>
+        /// <param name="normalBounds"></param>
+        /// <param name="maximizedBounds"></param>
+        /// <returns></returns>
+        private static string CreatePosition(FormWindowState windowState, Rectangle normalBounds, Rectangle maximizedBounds)
+        {
+            string state = (windowState == FormWindowState.Maximized ? "X" : "N");
+            return $"{state};{Convertor.RectangleToString(normalBounds, ',')};{Convertor.RectangleToString(maximizedBounds, ',')}";
+        }
+        /// <summary>
+        /// Z daného řetězce zkusí parsovat původní stav formuláře
+        /// </summary>
+        /// <param name="position"></param>
+        /// <param name="positionInfo"></param>
+        /// <returns></returns>
+        public static bool TryParse(string position, out FormPositionInfo positionInfo)
+        {
+            positionInfo = null;
+            if (String.IsNullOrEmpty(position)) return false;
+            var parts = position.Split(';');
+            if (parts.Length < 2) return false;
+            FormWindowState windowState = (parts[0] == "X" ? FormWindowState.Maximized : parts[0] == "N" ? FormWindowState.Normal : FormWindowState.Minimized);
+            if (windowState == FormWindowState.Minimized) return false;
+            Rectangle normalBounds = (Rectangle)Convertor.StringToRectangle(parts[1], ',');
+            if (normalBounds.IsEmpty || normalBounds.Width <= 0 || normalBounds.Height <= 0) return false;
+            Rectangle maximizedBounds = Rectangle.Empty;
+            if (parts.Length >= 3)
+                maximizedBounds = (Rectangle)Convertor.StringToRectangle(parts[2], ',');
+            if (maximizedBounds.IsEmpty || maximizedBounds.Width <= 0 || maximizedBounds.Height <= 0)
+                maximizedBounds = normalBounds;
+            positionInfo = new FormPositionInfo(windowState, normalBounds, maximizedBounds);
+            return true;
+        }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="windowState"></param>
+        /// <param name="normalBounds"></param>
+        /// <param name="maximizedBounds"></param>
+        private FormPositionInfo(FormWindowState windowState, Rectangle normalBounds, Rectangle maximizedBounds)
+        {
+            this.WindowState = windowState;
+            this.NormalBounds = normalBounds;
+            this.MaximizedBounds = maximizedBounds;
+        }
+        /// <summary>
+        /// Stav okna <see cref="FormWindowState.Maximized"/> nebo <see cref="FormWindowState.Normal"/>
+        /// </summary>
+        public FormWindowState WindowState { get; private set; }
+        /// <summary>
+        /// Souřadnice ve stavu <see cref="FormWindowState.Normal"/>
+        /// </summary>
+        public Rectangle NormalBounds { get; private set; }
+        /// <summary>
+        /// Souřadnice ve stavu <see cref="FormWindowState.Maximized"/>
+        /// </summary>
+        public Rectangle MaximizedBounds { get; private set; }
+        /// <summary>
+        /// Stringová pozice
+        /// </summary>
+        public string Position { get { return CreatePosition(WindowState, NormalBounds, MaximizedBounds); } }
     }
     #endregion
     #region DxPanelControl + IDxPanelPaintedItem
@@ -5295,7 +5744,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         OnActiveControl = OnMouse | OnFocus
     }
-
     /// <summary>
     /// Klávesové akce
     /// </summary>
@@ -5384,6 +5832,56 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Všechny akce
         /// </summary>
         All = AllClipboard | Delete | SelectAll | AllGo | AllMove
+    }
+    /// <summary>
+    /// Stav aktivity okna
+    /// </summary>
+    public enum WindowActivityState
+    {
+        /// <summary>
+        /// Výchozí stav, v němž se okno nikdy nenachází
+        /// </summary>
+        None,
+        /// <summary>
+        /// Stav počínaje konstruktorem, stav končí prvním zobrazením
+        /// </summary>
+        Creating,
+        /// <summary>
+        /// Právě bylo zahájeno první zobrazení okna
+        /// </summary>
+        FirstShow,
+        /// <summary>
+        /// Okno již bylo zobrazeno a je viditelné, nyní může být aktivováno, nebo skryto nebo zavřeno
+        /// </summary>
+        Visible,
+        /// <summary>
+        /// Okno je viditelné a aktivní (má Focus)
+        /// </summary>
+        Active,
+        /// <summary>
+        /// Okno je viditelné, ale nemá focus
+        /// </summary>
+        Inactive,
+        /// <summary>
+        /// Okno je skryto
+        /// </summary>
+        Invisible,
+        /// <summary>
+        /// Bylo zahájeno zavírání okna
+        /// </summary>
+        Closing,
+        /// <summary>
+        /// Okno je zavřeno, ale dosud neprošlo Dispose
+        /// </summary>
+        Closed,
+        /// <summary>
+        /// Začal proces Dispose
+        /// </summary>
+        Disposing,
+        /// <summary>
+        /// Ukončen proces Dispose
+        /// </summary>
+        Disposed
     }
     #endregion
 }
