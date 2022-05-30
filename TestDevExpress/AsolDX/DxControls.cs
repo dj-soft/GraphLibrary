@@ -415,7 +415,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (!_WasShown)
             {
                 this.ActivityState = WindowActivityState.FirstShow;
-                this.FormPositionApply();
+                this.FormPositionApply(true);
                 this.OnFirstShownBefore();
                 this.FirstShownBefore?.Invoke(this, EventArgs.Empty);
                 base.OnShown(e);
@@ -527,10 +527,77 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void FormPositionInit()
         {
             this.FormPositionRestore();
-            this.SizeChanged += FormPosition_SizeChanged;
-            this.LocationChanged += FormPosition_SizeChanged;
+            this.SizeChanged += FormPositionChanged;
+            this.LocationChanged += FormPositionChanged;
             this.FormClosed += FormPosition_FormClosed;
-            this.FormPositionApply();
+            this.FormPositionApply(false);
+
+            this.SetStyle(ControlStyles.EnableNotifyMessage, true);
+        }
+        protected override void OnNotifyMessage(Message m)
+        {
+            bool logMessage = NeedLogMessage(m);
+
+            string suffix = ((m.Msg == DxWin32.WM.WINDOWPOSCHANGING || m.Msg == DxWin32.WM.WINDOWPOSCHANGED) ? "; Bounds: " + Convertor.RectangleToString(Bounds) : "");
+
+            if (logMessage) DxComponent.LogAddMessage(m, this, "Start.", suffix);
+            base.OnNotifyMessage(m);
+            if (logMessage) DxComponent.LogAddMessage(m, this, "  End.", suffix);
+        }
+        private bool NeedLogMessage(Message m)
+        {
+            // Pro zprávy zde vyjmenované vrátím false, takže se NEBUDOU logovat:
+            return (!(m.Msg == DxWin32.WM.STYLECHANGED || m.Msg == DxWin32.WM.STYLECHANGING || m.Msg == DxWin32.WM.NCCALCSIZE || m.Msg == DxWin32.WM.CAPTURECHANGED));
+        }
+        protected override bool ProcessKeyMessage(ref Message m)
+        {
+            return base.ProcessKeyMessage(ref m);
+        }
+        public override bool PreProcessMessage(ref Message msg)
+        {
+            return base.PreProcessMessage(ref msg);
+        }
+
+        /// <summary>
+        /// Při změně umístění
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void OnLocationChanged(EventArgs e)
+        {
+            AddLogPosition("OnLocationChanged.Before: ");
+            PrepareNormalBounds();
+            base.OnLocationChanged(e);
+            AddLogPosition("OnLocationChanged.After: ");
+        }
+        /// <summary>
+        /// Při změně velikosti
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void OnSizeChanged(EventArgs e)
+        {
+            AddLogPosition("OnSizeChanged.Before: ");
+            PrepareNormalBounds();
+            base.OnSizeChanged(e);
+            AddLogPosition("OnSizeChanged.After: ");
+        }
+        private void PrepareNormalBounds()
+        {
+            if (_FormBoundsNormal.HasValue && this.WindowState == FormWindowState.Normal)
+            {
+                Rectangle boundsNormal = _FormBoundsNormal.Value;
+                DxComponent.LogAddLine($"PrepareNormalBounds: BoundsNormal={Convertor.RectangleToString(boundsNormal)}");
+                _FormBoundsNormal = null;
+                this.Bounds = boundsNormal;
+            }
+        }
+        /// <summary>
+        /// Loguje pozici a stav okna
+        /// </summary>
+        /// <param name="prefix"></param>
+        private void AddLogPosition(string prefix)
+        {
+            string line = $"{prefix}WindowState={WindowState}; Bounds={Convertor.RectangleToString(this.Bounds)}; RestoreBounds={Convertor.RectangleToString(this.RestoreBounds)}";
+            DxComponent.LogAddLine(line);
         }
         /// <summary>
         /// Připraví si pozici okna - načte ji z aplikace pomocí metody <see cref="OnFormPositionLoad()"/> a správně si výsledek zapamatuje.
@@ -545,16 +612,26 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Aplikuje souřadnice do okna.
         /// Je nutno setovat jednak v konstruktoru, a druhak v OnFirstShownBefore(), kvůli UHD grafice a přepočtu rozměrů !!!
         /// </summary>
-        private void FormPositionApply()
+        /// <param name="isShown"></param>
+        private void FormPositionApply(bool isShown)
         {
+            AddLogPosition("FormPositionApply.Before: ");
             var formPosition = _FormPositionInfo;
             if (formPosition is null) return;
             if (formPosition.WindowState == FormWindowState.Maximized)
             {
+                var normalBounds = formPosition.NormalBounds.FitIntoMonitors(true, false, true);
+                if (!isShown)
+                {
+                  //  if (this.WindowState != FormWindowState.Normal) this.WindowState = FormWindowState.Normal;
+                  //  if (this.Bounds != normalBounds) this.Bounds = normalBounds;
+                }
                 var maximizedBounds = formPosition.MaximizedBounds.FitIntoMonitors(true, false, true);
                 if (this.WindowState != FormWindowState.Maximized) this.WindowState = FormWindowState.Maximized;
-                if (this.Bounds != maximizedBounds) this.Bounds = maximizedBounds;
-                this._FormBoundsNormal = formPosition.NormalBounds;
+                // if (this.Bounds != maximizedBounds) this.Bounds = maximizedBounds;
+
+                this._FormBoundsNormal = normalBounds;
+
             }
             else
             {
@@ -564,13 +641,14 @@ namespace Noris.Clients.Win.Components.AsolDX
                 if (this.Bounds != normalBounds) this.Bounds = normalBounds;
                 this._FormBoundsNormal = null;
             }
+            AddLogPosition("FormPositionApply.After: ");
         }
         /// <summary>
         /// Hlídá změnu pozice okna průběžně
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void FormPosition_SizeChanged(object sender, EventArgs e)
+        private void FormPositionChanged(object sender, EventArgs e)
         {
             this.FormPositionOnChange(false);
         }
@@ -581,6 +659,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="e"></param>
         private void FormPosition_FormClosed(object sender, FormClosedEventArgs e)
         {
+            string text = DxComponent.LogText;
+
             this.FormPositionOnChange(true);
         }
         /// <summary>

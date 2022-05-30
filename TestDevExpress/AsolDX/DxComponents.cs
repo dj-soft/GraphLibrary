@@ -2385,6 +2385,14 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="startTime"></param>
         public static void LogAddLineTime(string line, long? startTime) { Instance._LogAddLineTime(line, startTime); }
         /// <summary>
+        /// Do logu vepíše danou Message z daného controlu
+        /// </summary>
+        /// <param name="msg"></param>
+        /// <param name="control"></param>
+        /// <param name="prefix"></param>
+        /// <param name="suffix"></param>
+        public static void LogAddMessage(Message msg, Control control = null, string prefix = null, string suffix = null) { Instance._LogAddMessage(msg, control, prefix, suffix); }
+        /// <summary>
         /// Přidá dodaný řádek do logu. 
         /// Nepřidává se nic víc.
         /// </summary>
@@ -2556,6 +2564,31 @@ namespace Noris.Clients.Win.Components.AsolDX
                 line = line.Replace(LogTokenTimeMicrosec, info);
             }
             _LogAddLine(line, false, startTime, nowTime);
+        }
+        /// <summary>
+        /// Do logu vepíše danou Message z daného controlu
+        /// </summary>
+        /// <param name="msg"></param>
+        /// <param name="control"></param>
+        /// <param name="prefix"></param>
+        /// <param name="suffix"></param>
+        private void _LogAddMessage(Message msg, Control control, string prefix, string suffix)
+        {
+            long nowTime = _LogWatch.ElapsedTicks;
+
+            var msgName = _GetWinMessage(msg, false);
+            if (msgName != null)
+            {
+                var wParam = msg.WParam.ToInt64().ToString("X16");
+                var lParam = msg.LParam.ToInt64().ToString("X16");
+                string line = (prefix ?? "") + $"Message: {msgName}; WParam: {wParam}; LParam: {lParam}";
+                if (control != null)
+                    line += $"; Control: {control.GetType().Name};";       // Ne abys přidal Control.Text, to se zacyklíš (protože čtení property Text vyvolá zprávu GETTEXT)
+                if (suffix != null)
+                    line += suffix;
+
+                _LogAddLine(line, false, null, nowTime);
+            }
         }
         /// <summary>
         /// Přidá daný text jako další řádek
