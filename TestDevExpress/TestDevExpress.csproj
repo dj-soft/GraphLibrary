@@ -187,6 +187,9 @@
     <Compile Include="AsolDX\News\DxControlsNew.cs">
       <SubType>Component</SubType>
     </Compile>
+    <Compile Include="AsolDX\News\DxDiagramControl.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="AsolDX\News\DxIconConverter.cs" />
     <Compile Include="AsolDX\News\DxTools.cs" />
     <Compile Include="AsolDX\System\NrsParser.cs" />
