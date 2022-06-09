@@ -856,7 +856,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public DxRibbonStatusBar DxStatusBar { get { return _DxStatusBar; } }
         /// <summary>
-        /// Inicializace Ribbonu a StatusBaru. Volá se v konstruktoru <see cref="DxRibbonForm"/>.
+        /// Inicializace Ribbonu a StatusBaru. Volá se v konstruktoru třídy <see cref="DxRibbonForm"/>!
         /// </summary>
         protected virtual void InitDxRibbonForm()
         {
@@ -876,14 +876,16 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         /// <summary>
         /// Provede přípravu obsahu Ribbonu.
-        /// Pozor: Bázová třída <see cref="DxRibbonForm"/> nastaví <see cref="DxRibbon"/>.Visible = false; !!!
+        /// Pozor: Bázová třída <see cref="DxRibbonForm"/> pouze nastaví <see cref="DxRibbonForm.DxRibbon"/>.Visible = false; nic jiného neprovádí !!!
         /// To proto, když by potomek nijak s Ribbonem nepracoval, pak nebude Ribbon zobrazen.
+        /// U této metody tedy není vhodné volat base metodu, anebo je třeba po jejím volání nastavit viditelnost Ribbonu na true.
         /// </summary>
         protected virtual void DxRibbonPrepare() { this._DxRibbon.Visible = false; }
         /// <summary>
-        /// Provede přípravu obsahu Ribbonu.
-        /// Pozor: Bázová třída <see cref="DxRibbonForm"/> nastaví <see cref="DxStatusBar"/>.Visible = false; !!!
+        /// Provede přípravu obsahu StatusBaru.
+        /// Pozor: Bázová třída <see cref="DxRibbonForm"/> nastaví <see cref="DxRibbonForm.DxStatusBar"/>.Visible = false; nic jiného neprovádí !!!
         /// To proto, když by potomek nijak se StatusBarem nepracoval, pak nebude StatusBar zobrazen.
+        /// U této metody tedy není vhodné volat base metodu, anebo je třeba po jejím volání nastavit viditelnost StatusBaru na true.
         /// </summary>
         protected virtual void DxStatusPrepare() { this._DxStatusBar.Visible = false; }
         private DxRibbonControl _DxRibbon;

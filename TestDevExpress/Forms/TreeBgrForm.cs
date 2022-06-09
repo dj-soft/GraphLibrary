@@ -67,7 +67,7 @@ namespace TestDevExpress.Forms
         private DxSplitContainerControl _SplitContainer;
         private DxTreeList _TreeList;
         #endregion
-        #region Příprava dat nodů a jejich vložení do TreeLiszu
+        #region Příprava dat nodů a jejich vložení do TreeListu
         private void PrepareTreeNodes()
         {
             PrepareImages();

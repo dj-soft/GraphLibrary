@@ -53,6 +53,10 @@
     <Reference Include="DevExpress.Data.v21.1">
       <HintPath>..\..\DevExpressDll\DX21.1\DevExpress.Data.v21.1.dll</HintPath>
     </Reference>
+    <Reference Include="DevExpress.Diagram.v21.1.Core, Version=21.1.5.0, Culture=neutral, PublicKeyToken=b88d1754d700e49a, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\DevExpressDll\DX21.1\DevExpress.Diagram.v21.1.Core.dll</HintPath>
+    </Reference>
     <Reference Include="DevExpress.Dialogs.v21.1.Core">
       <HintPath>..\..\DevExpressDll\DX21.1\DevExpress.Dialogs.v21.1.Core.dll</HintPath>
     </Reference>
@@ -101,6 +105,9 @@
     </Reference>
     <Reference Include="DevExpress.XtraCharts.v21.1.Wizard">
       <HintPath>..\..\DevExpressDll\DX21.1\DevExpress.XtraCharts.v21.1.Wizard.dll</HintPath>
+    </Reference>
+    <Reference Include="DevExpress.XtraDiagram.v21.1">
+      <HintPath>..\..\DevExpressDll\DX21.1\DevExpress.XtraDiagram.v21.1.dll</HintPath>
     </Reference>
     <Reference Include="DevExpress.XtraEditors.v21.1">
       <HintPath>..\..\DevExpressDll\DX21.1\DevExpress.XtraEditors.v21.1.dll</HintPath>
@@ -230,6 +237,9 @@
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="Forms\DataFormV2.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\DiagramControlForm.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="Forms\GraphForm.cs">
