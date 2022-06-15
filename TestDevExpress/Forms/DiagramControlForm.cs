@@ -65,6 +65,12 @@ namespace TestDevExpress.Forms
         {
             this.DxStatusBar.ItemLinks.Add(new DxBarStaticItem() { Caption = "DiagramControl", Border = DevExpress.XtraEditors.Controls.BorderStyles.HotFlat });
         }
+        protected override void OnFirstShownAfter()
+        {
+            base.OnFirstShownAfter();
+
+            _DiagramControl.Toolbox.RefreshGroups();
+        }
         /// <summary>
         /// Stránky v Ribbonu
         /// </summary>
