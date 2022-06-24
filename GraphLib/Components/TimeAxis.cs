@@ -30,6 +30,14 @@ namespace Asol.Tools.WorkScheduler.Components
             this.ScaleLimit = new DecimalNRange(1m, 7200m);                    // ScaleLimit for TimeAxis: = number of seconds per one visual pixel (Min - Max), default for 1 pixel: 1 sec to 2 hours.
         }
         /// <summary>
+        /// Konstruktor s parametrem Maximální velikost zobrazené časové osy
+        /// </summary>
+        public TimeAxis(decimal timeScaleMax) : base()
+        {
+            this.TimeAxisConvertor = new TimeAxisConvertor(this);
+            this.ScaleLimit = new DecimalNRange(1m, timeScaleMax);                    // ScaleLimit for TimeAxis: = number of seconds per one visual pixel (Min - Max), default for 1 pixel: 1 sec to 2 hours.
+        }
+        /// <summary>
         /// Instance TimeAxis konvertoru, navázaná na this
         /// </summary>
         protected TimeAxisConvertor TimeAxisConvertor;

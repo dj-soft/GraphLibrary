@@ -98,6 +98,7 @@
     <Compile Include="Components\Styles.cs" />
     <Compile Include="Components\TextEditOverlay.cs" />
     <Compile Include="Components\TextObject.cs" />
+    <Compile Include="Components\WatchTimer.cs" />
     <Compile Include="Components\_Tests.cs" />
     <Compile Include="GameComponents\Coord3D.cs" />
     <Compile Include="GameComponents\GameCamera.cs" />
@@ -240,7 +241,6 @@
   </ItemGroup>
   <ItemGroup />
   <ItemGroup>
-    <Content Include="_UkolyProVyvoj.txt" />
     <Content Include="select-rectangular.ico" />
   </ItemGroup>
   <ItemGroup>

@@ -224,8 +224,18 @@ namespace Asol.Tools.WorkScheduler.Data
             }
             else
             {
-                decimal ratio = this.Divide(this.SubSize(center, this.Begin), this.Size);// Relative position (=ratio) of point "center" on current Size
-                begin = this.SubEdge(center, this.Multiply(size, ratio));                // New Begin = point "center" minus (center position on new Time)
+                decimal ratio = 0m;
+                int compare = this.CompareEdge(this.End, this.Begin);          // Vrátí 0, když velikost úseku == 0
+                if (compare == 0)
+                {
+                    ratio = 0.5m;                                              // Pokud aktuální velikost == 0, pak Zoom proběhne symetricky doleva i doprava okolo středu
+                }
+                else
+                {
+                    var distance = this.SubSize(center, this.Begin);           // Vzdálenost do Begin do požadovaného středu absolutní
+                    ratio = this.Divide(distance, this.Size);                  // Relativní pozice požadovaného středu k aktuální velikosti
+                }
+                begin = this.SubEdge(center, this.Multiply(size, ratio));      // New Begin = point "center" minus (center position on new Time)
                 end = this.Add(begin, size);
             }
         }

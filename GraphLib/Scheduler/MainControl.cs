@@ -43,6 +43,17 @@ namespace Asol.Tools.WorkScheduler.Scheduler
 
             using (App.Trace.Scope(TracePriority.Priority2_Lowest, "MainControl", "CalculateLayout", ""))
                 this.CalculateLayout();
+
+            WatchTimer.MainForm = this;
+        }
+        /// <summary>
+        /// Dispose
+        /// </summary>
+        /// <param name="disposing"></param>
+        protected override void Dispose(bool disposing)
+        {
+            WatchTimer.MainForm = null;
+            base.Dispose(disposing);
         }
         /// <summary>
         /// Reference na hlavní datový objekt

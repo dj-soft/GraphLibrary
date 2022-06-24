@@ -222,10 +222,21 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Požadovaný režim odesílání informací o změně času na časové ose z pluginu do servisní funkce.
         /// Podle tohoto režimu bude po změně času odeslán command <see cref="GuiRequest.COMMAND_TimeChange"/>.
         /// Servisní funkce může reagovat = donačte další data, a v <see cref="GuiResponse"/> předá nové řádky a nové prvky grafů pro nový časový interval.
-        /// Plugin je zařadí do svých stávajících vizuálních dat a zobrazí je.
-        /// Další informace v property
+        /// Plugin je zařadí do svých stávajících vizuálních dat a zobrazí je.<br/>
+        /// Plugin odesílá tuto akci okamžitě po kždé sebemenší změně na časové ose, pokud <see cref="TimeChangeSendDelay"/> je 0 (nebo záporné).
+        /// Pokud je v <see cref="TimeChangeSendDelay"/> kladná hodnota, pak se informace o změně odešle na server až poté, kdy od poslední interaktivní změny uběhl daný čas.
         /// </summary>
         public TimeChangeSendMode TimeChangeSend { get; set; }
+        /// <summary>
+        /// Zpoždění v milisekundách, po kterém dojde k odeslání commandu TimeChange po poslední změně časové osy.<br/>
+        /// Pokud dvě (nebo více) po sobě následující změny na časové ose proběhnou v intervalu kratším než je tato hodnota, pak ta předchozí změna se neodesílá na server;<br/>
+        /// a od aktuální změny se opět čeká zde daný čas. Pokud v daném čase již nedojde k další změně, pak teprve se na server odešle tato poslední evidovaná hodnota.
+        /// <para/>
+        /// Default = 0: akce se odesílá ihned (stejně jako pro záporné hodnoty).<br/>
+        /// Velké kladné číslo je přípustné (není definována Max hodnota), ale rozumné to není.<br/>
+        /// Optimální hodnota je 300-700 (milisekund).
+        /// </summary>
+        public int TimeChangeSendDelay { get; set; }
         /// <summary>
         /// Zvětšení časového intervalu aktuální časové osy použité do requestu <see cref="GuiRequest.COMMAND_TimeChange"/>.
         /// Pokud je požadavek na odesílání tohoto commandu po změně času v režimu <see cref="TimeChangeSendMode.OnNewTime"/>, 

@@ -1685,7 +1685,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 item.RepaintToLayers = GInteractiveDrawLayer.None;
             }
             this._MouseCursorType = null;
-            this._DrawState = InteractiveDrawState.InteractiveEvent;
+            this.DrawState = InteractiveDrawState.InteractiveEvent;
         }
         /// <summary>
         /// Uložení požadavků na překreslení controlu po provedení jedné interaktivní události
@@ -1723,14 +1723,14 @@ namespace Asol.Tools.WorkScheduler.Components
                 {
                     try
                     {
-                        this._DrawState = InteractiveDrawState.InteractiveRepaint;
+                        this.DrawState = InteractiveDrawState.InteractiveRepaint;
                         this.Draw(drawRequest);
                     }
                     finally
                     {
                         this.StopwatchStop();
                         this._ActivateCursor(this._MouseCursorType);
-                        this._DrawState = InteractiveDrawState.Standard;
+                        this.DrawState = InteractiveDrawState.Standard;
                     }
                 }
             }
@@ -1740,7 +1740,7 @@ namespace Asol.Tools.WorkScheduler.Components
                 this._ActivateCursor(this._MouseCursorType);
             }
             this._MouseCursorType = null;
-            this._DrawState = InteractiveDrawState.Standard;
+            this.DrawState = InteractiveDrawState.Standard;
             this._ShowContextMenu();
         }
         /// <summary>
@@ -2389,12 +2389,12 @@ namespace Asol.Tools.WorkScheduler.Components
                 {
                     try
                     {
-                        this._DrawState = InteractiveDrawState.InteractiveRepaint;
+                        this.DrawState = InteractiveDrawState.InteractiveRepaint;
                         this.Draw(request);
                     }
                     finally
                     {
-                        this._DrawState = InteractiveDrawState.Standard;
+                        this.DrawState = InteractiveDrawState.Standard;
                     }
                 }
             }
@@ -2611,7 +2611,7 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// true = můžeme kreslit?
         /// </summary>
-        protected override bool CanDraw { get { return (this._DrawState == InteractiveDrawState.Standard || this._DrawState == InteractiveDrawState.InteractiveRepaint); } }
+        protected override bool CanDraw { get { return (this.DrawState == InteractiveDrawState.Standard || this.DrawState == InteractiveDrawState.InteractiveRepaint); } }
         /// <summary>
         /// Inicializuje subsystém Draw
         /// </summary>
@@ -2654,7 +2654,7 @@ namespace Asol.Tools.WorkScheduler.Components
 
                 this._PaintStopwatch(e);
 
-                this._DrawState = InteractiveDrawState.Standard;
+                this.DrawState = InteractiveDrawState.Standard;
                 this._RepaintAllItems = false;
             }
         }
@@ -2806,7 +2806,11 @@ namespace Asol.Tools.WorkScheduler.Components
             set { this.__CurrentCursorType = value; }
         }
         private SysCursorType? __CurrentCursorType;
-        private InteractiveDrawState _DrawState = InteractiveDrawState.Standard;
+        /// <summary>
+        /// Stav kreslení
+        /// </summary>
+        private InteractiveDrawState DrawState { get { return __DrawState; } set { __DrawState = value; } }
+        private InteractiveDrawState __DrawState = InteractiveDrawState.Standard;
         private enum InteractiveDrawState { Standard = 0, InteractiveEvent, InteractiveRepaint }
         /// <summary>
         /// Zajistí překreslení všech prvků
@@ -2847,14 +2851,27 @@ namespace Asol.Tools.WorkScheduler.Components
         public event PaintEventHandler DrawStandardLayer;
         /// <summary>
         /// Metoda zajistí překreslení celého tohoto controlu.
-        /// Pokud ale v této době probíhá nějaká interaktivní akce (typicky myšovitá), pak se nevyvolá tento Refresh(), protože by docházelo k blikální.
+        /// Pokud ale v této době probíhá nějaká interaktivní akce (typicky myšovitá), pak se nevyvolá tento Refresh(), protože by docházelo k blikání.
+        /// Na konci interaktivní operace se provádí překreslení, a to tedy zajistí překreslení objektu, které je požadováno zde.
+        /// </summary>
+        public void Refresh(bool force)
+        {
+            if (force && this.DrawState == InteractiveDrawState.InteractiveEvent)
+                this.DrawState = InteractiveDrawState.Standard;
+
+            this.Refresh();
+        }
+        /// <summary>
+        /// Metoda zajistí překreslení celého tohoto controlu.
+        /// Pokud ale v této době probíhá nějaká interaktivní akce (typicky myšovitá), pak se nevyvolá tento Refresh(), protože by docházelo k blikání.
         /// Na konci interaktivní operace se provádí překreslení, a to tedy zajistí překreslení objektu, které je požadováno zde.
         /// </summary>
         public override void Refresh()
         {
-            if (this.InteractiveProcessing)
+            if (this.InteractiveProcessing || !this.ReallyCanDraw)
             {   // Chtěli bychom Refresh, ale běží nám Interactive proces => nelze dát Refresh, musí to počkat až skončí interaktivita:
                 this._PendingRefresh = true;
+                this.PendingFullDraw = true;
             }
             else
             {   // Neběží nám žádný Interactive proces => zavoláme Refresh, a ještě před tím shodíme případný příznak čekajícího Refreshe:

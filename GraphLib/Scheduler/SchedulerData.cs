@@ -1708,7 +1708,39 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 TimeRangeKnown = this._TimeAxisKnownArray.Items.Select(t => (GuiTimeRange)t).ToArray()
             };
 
-            this._CallAppHostFunction(request, _TimeAxisChangeApplicationResponse);
+
+            // Vyvoláme akci ihned nebo až po nějakém čase?
+            _TimeAxisChangeRequest = request;
+            int delay = this._TimeChangeSendDelay;
+            if (delay <= 0)
+                // Odeslat ihned:
+                _TimeAxisChangeSendCommand();
+            else
+                // Odeslat se zpožděním, a pokud mezitím přijde další request, pak restartovat daný budík (_TimeAxisChangeTimerGuid):
+                _TimeAxisChangeTimerGuid = WatchTimer.CallMeAfter(_TimeAxisChangeSendCommand, delay, true, _TimeAxisChangeTimerGuid);
+        }
+        /// <summary>
+        /// Zde je uložený posledně platný požadavek pro vyvolání akce na server typu <see cref="GuiRequest.COMMAND_TimeChange"/>.
+        /// Na server jej odešle metoda <see cref="_TimeAxisChangeSendCommand"/>.
+        /// </summary>
+        private GuiRequest _TimeAxisChangeRequest;
+        /// <summary>
+        /// Guid obsahující klíč budíku v <see cref="WatchTimer"/>, který řeší Delay při odesílání akce <see cref="_TimeAxisChangeSendCommand"/>.
+        /// </summary>
+        private Guid? _TimeAxisChangeTimerGuid;
+        /// <summary>
+        /// Zde je uložený posledně platný požadavek pro vyvolání akce na server typu <see cref="GuiRequest.COMMAND_TimeChange"/>.
+        /// Na server jej odešle metoda 
+        /// </summary>
+        private void _TimeAxisChangeSendCommand()
+        {   // Běžím v GUI threadu, tím jsem spolehlivě jediný v této metodě!
+            // I metoda _TimeAxisChangeCallAppHost() běží výhradně v GUI threadu, proto se nepohádám (ThreadSync) ani o proměnnou _TimeAxisChangeTimerGuid:
+            _TimeAxisChangeTimerGuid = null;                         // Tímto zajistím, že případný příští požadavek si nastartuje svého vlastního budíka.
+
+            var request = _TimeAxisChangeRequest;
+            _TimeAxisChangeRequest = null;                           // Tímto zajistím převzetí argumentu z proměnné a její nulování a tedy pouze 1x odeslání na server:
+            if (request != null)
+                this._CallAppHostFunction(request, _TimeAxisChangeApplicationResponse);
         }
         /// <summary>
         /// Zpracování odpovědi z aplikační funkce, na událost TimeChange
@@ -1734,6 +1766,12 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Načten z <see cref="GuiProperties.TimeChangeSend"/> zde při inicializaci v metodě <see cref="_FillMainControlPagesFromGui()"/>
         /// </summary>
         private TimeChangeSendMode _TimeChangeSend;
+        /// <summary>
+        /// Zpoždění v milisekundách, po kterém dojde k odeslání commandu TimeChange po poslední změně časové osy.
+        /// Pokud mezi dvěma změnami na časové ose dojde v kratším intervalu, pak se ta předchozí neodesílá, odešle se až ta poslední.<br/>
+        /// Default = 0: odesílá se ihned (stejně jako pro záporné hodnoty).
+        /// </summary>
+        private int _TimeChangeSendDelay;
         /// <summary>
         /// Zvětšení časového intervalu aktuální časové osy použité do requestu <see cref="GuiRequest.COMMAND_TimeChange"/>.
         /// Načten z <see cref="GuiProperties.TimeChangeSendEnlargement"/> zde při inicializaci v metodě <see cref="_FillMainControlPagesFromGui()"/>
@@ -2216,6 +2254,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             {
                 this._TimeAxisKnownArray = new TimeRangeArray();
                 this._TimeChangeSend = this.GuiData.Properties.TimeChangeSend;
+                this._TimeChangeSendDelay = this.GuiData.Properties.TimeChangeSendDelay;
                 this._TimeChangeSendEnlargement = this.GuiData.Properties.TimeChangeSendEnlargement;
                 this._TimeAxisKnownArray.Merge(this.GuiData.Properties.TimeChangeInitialValue);
                 this._MainControl.ClearPages();
