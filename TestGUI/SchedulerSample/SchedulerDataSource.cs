@@ -886,15 +886,16 @@ Nástroje:{tab}Voltmetr, Ampermetr, Posuvné měřítko (šupléra).";
         {
             this.MainData.Properties.InitialTimeRange = this.TimeRangeCurrent;
             this.MainData.Properties.TotalTimeRange = this.TimeRangeTotal;
+            this.MainData.Properties.TimeChangeInitialValue = this.TimeRangeCurrent;
+            this.MainData.Properties.TimeChangeSend = TimeChangeSendMode.Allways;
+            this.MainData.Properties.TimeChangeSendDelay = 500;
+            this.MainData.Properties.TimeChangeSendEnlargement = 2d;
             this.MainData.Properties.UseInitialTimeRangeFromLastRun = true;
             this.MainData.Properties.PluginFormBorder = PluginFormBorderStyle.Sizable;
             this.MainData.Properties.PluginFormIsMaximized = true;
             this.MainData.Properties.PluginFormTitle = "Plánovací nářadí";
             this.MainData.Properties.GraphItemMoveSameGraph = GraphItemMoveAlignY.OnOriginalItemPosition;
             this.MainData.Properties.GraphItemMoveOtherGraph = GraphItemMoveAlignY.OnMousePosition;
-            this.MainData.Properties.TimeChangeSend = TimeChangeSendMode.OnNewTime;
-            this.MainData.Properties.TimeChangeSendEnlargement = 2d;
-            this.MainData.Properties.TimeChangeInitialValue = this.TimeRangeCurrent;
             this.MainData.Properties.DoubleClickOnGraph = GuiDoubleClickAction.OpenForm;
             this.MainData.Properties.DoubleClickOnGraphItem = GuiDoubleClickAction.TimeZoom;
             this.MainData.Properties.LineShapeEndBegin = GuiLineShape.ZigZagOptimal;
@@ -968,21 +969,7 @@ Nástroje:{tab}Voltmetr, Ampermetr, Posuvné měřítko (šupléra).";
                 GuiActions = GuiActionType.EnableMousePaintLinkLine | GuiActionType.SuppressCallAppHost
             });
 
-            this.MainData.ToolbarItems.Add(new GuiToolbarItem()
-            {
-                Name = GuiNameToolbarFilterLeft,
-                Size = FunctionGlobalItemSize.Half,
-                LayoutHint = LayoutHint.NextItemSkipToNextRow,
-                GroupName = "NASTAVENÍ",
-                Title = "Filtruj VP",
-                ToolTip = "Pokud bude aktivní, budou v levé tabulce zobrazeny jen ty Výrobní příkazy, jejichž některá operace se provádí na aktuálním pracovišti.",
-                IsCheckable = true,
-                StoreValueToConfig = false,         /* Button sice jde aktivovat, ale tento stav nechceme ukládat pro příští start. */
-                Image = RES.Images.Actions24.FormatIndentLess3Png,
-                GuiActions = GuiActionType.ResetAllRowFilters | GuiActionType.RunInteractions | GuiActionType.SuppressCallAppHost,
-                RunInteractionNames = GuiFullNameGridCenterWorkplaces + ":" + GuiNameInteractionFilterProductOrder,
-                RunInteractionSource = SourceActionType.TableRowActivatedOnly | SourceActionType.TableRowChecked
-            });
+            this.MainData.ToolbarItems.Add(CreateButtonFiltrujVP());
 
             this.MainData.ToolbarItems.Add(new GuiToolbarItem()
             {
@@ -1185,6 +1172,27 @@ Nástroje:{tab}Voltmetr, Ampermetr, Posuvné měřítko (šupléra).";
                 ActionTargetNames = GuiFullNameGridCenterWorkplaces + GuiData.NAME_DELIMITER + GuiData.TABLELINK_NAME,
                 Image = RES.Images.Actions.OfficeChartLineStackedPng
             });
+        }
+        private GuiToolbarItem CreateButtonFiltrujVP(int? id = null)
+        {
+            var buttonFiltrujVp = new GuiToolbarItem()
+            {
+                Name = GuiNameToolbarFilterLeft,
+                Size = FunctionGlobalItemSize.Half,
+                LayoutHint = LayoutHint.NextItemSkipToNextRow,
+                GroupName = "NASTAVENÍ",
+                Title = "Filtruj VP",
+                ToolTip = "Pokud bude aktivní, budou v levé tabulce zobrazeny jen ty Výrobní příkazy, jejichž některá operace se provádí na aktuálním pracovišti.",
+                IsCheckable = true,
+                StoreValueToConfig = false,         /* Button sice jde aktivovat, ale tento stav nechceme ukládat pro příští start. */
+                Image = RES.Images.Actions24.FormatIndentLess3Png,
+                GuiActions = GuiActionType.ResetAllRowFilters | GuiActionType.RunInteractions | GuiActionType.SuppressCallAppHost,
+                RunInteractionNames = GuiFullNameGridCenterWorkplaces + ":" + GuiNameInteractionFilterProductOrder,
+                RunInteractionSource = SourceActionType.TableRowActivatedOnly | SourceActionType.TableRowChecked
+            };
+            if (id.HasValue && id.Value > 0)
+                buttonFiltrujVp.Title += $" [{id}]";
+            return buttonFiltrujVp;
         }
         /// <summary>
         /// Vygeneruje kontextové funkce
@@ -2927,7 +2935,11 @@ Nástroje:{tab}Voltmetr, Ampermetr, Posuvné měřítko (šupléra).";
                         if (requestArgs.Request.KeyPress != null && requestArgs.Request.KeyPress.KeyData == Keys.Delete)
                             this.DeleteGraphItems(requestArgs.Request, responseArgs.GuiResponse);
                         break;
-
+                    case GuiRequest.COMMAND_TimeChange:
+                        responseArgs.GuiResponse.ToolbarItems = new List<GuiToolbarItem>();
+                        int id = ++_TimeAxisChangeId;
+                        responseArgs.GuiResponse.ToolbarItems.Add(CreateButtonFiltrujVP(id));
+                        break;
                     case GuiRequest.COMMAND_GraphItemMove:
                         this.MoveGraphItem(requestArgs.Request, responseArgs.GuiResponse);
                         break;
@@ -3039,6 +3051,7 @@ Nástroje:{tab}Voltmetr, Ampermetr, Posuvné měřítko (šupléra).";
             if (requestArgs.CallBackAction != null)
                 requestArgs.CallBackAction(responseArgs);
         }
+        private int _TimeAxisChangeId = 0;
         /// <summary>
         /// Vstupní metoda pro řešení requestů z GUI vrstvy
         /// </summary>
