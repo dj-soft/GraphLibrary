@@ -405,6 +405,7 @@ namespace Noris.Clients.Win.Components
             }
             /// <summary>
             /// Do this instance vloží data z dodané instance, a volitelně provede aktivaci.
+            /// Naopak do dodané instance <paramref name="sourceItem"/> vloží zdejší Guid, protože zdejší Guid je permanentní, ale výstupem volající metody je Guid z <paramref name="sourceItem"/>.
             /// </summary>
             /// <param name="sourceItem">Zdrojový prvek, odsud se budou brát data, která se vloží do this instance</param>
             /// <param name="activate">true = provést aktivaci this instance <see cref="Activate(int?)"/> po vložení nových dat (aktivace nastaví cílový čas, kdy bude this budík aktivován)</param>
@@ -413,7 +414,9 @@ namespace Noris.Clients.Win.Components
             {
                 lock (this)
                 {
-                    this._Guid = sourceItem._Guid;
+                    // Do sourceItem vložím náš permanentní Guid, pod kterým jsem vedený ve WatchTimer v Dictionary _Items:
+                    sourceItem._Guid = this._Guid;
+                    // Ostatní data přepíšu do zdejšího permanentního prvku:
                     this._Action = sourceItem._Action;
                     this._ActionParam = sourceItem._ActionParam;
                     this._Param = sourceItem._Param;

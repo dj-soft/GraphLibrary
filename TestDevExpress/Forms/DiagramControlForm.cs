@@ -118,6 +118,9 @@ namespace TestDevExpress.Forms
             _DiagramControl.OptionsBehavior.ShowQuickShapes = true;
             _DiagramControl.OptionsBehavior.EnableProportionalResizing = false;
             _DiagramControl.OptionsBehavior.GlueToConnectionPointDistance = 12;
+            var allStencils = new string[] { "BasicShapes", "BasicFlowchartShapes", "ArrowShapes", "DecorativeShapes", "SDLDiagramShapes" };
+            _DiagramControl.OptionsBehavior.SelectedStencils = new DevExpress.Diagram.Core.StencilCollection(allStencils); // new string[] { "BasicShapes", "BasicFlowchartShapes" });
+            
 
             DxMainPanel.Controls.Add(_ToolboxControl);
             DxMainPanel.Controls.Add(_DiagramControl);

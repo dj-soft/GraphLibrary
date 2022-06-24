@@ -128,6 +128,8 @@ namespace Noris.Clients.Win.Components.AsolDX
 
                 }
                 // a další jako: ... return DevExpress.Diagram.Core.DecorativeShapes.Cloud; ... 
+                // DevExpress.Diagram.Core.SDLDiagramShapes
+                
             }
 
             // default:
