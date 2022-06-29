@@ -1010,8 +1010,8 @@ namespace Asol.Tools.WorkScheduler.Data
                 bool oldValue = this.Visible;
                 this.TableSize.Visible = value;
                 bool newValue = this.Visible;
-                if ((newValue != oldValue) && this.HasGTable)
-                    this.GTable.InvalidateData(InvalidateItem.TableHeight);
+                if ((newValue != oldValue) && this.HasGTable && this.GTable.HasGrid)
+                    this.GTable.Grid.RefreshColumns();
             }
         }
         /// <summary>
@@ -2877,7 +2877,7 @@ namespace Asol.Tools.WorkScheduler.Data
         #region Výška řádku, kompletní layout okolo výšky řádku, implementace ISequenceLayout a IVisualParent
         /// <summary>
         /// Koordinátor výšky řádku.
-        /// Hodnota může být čtena i jako Int32 (implciitní konverze) = přímo výška řádku.
+        /// Hodnota může být čtena i jako Int32 (implicitní konverze) = přímo výška řádku.
         /// </summary>
         internal ItemSizeInt RowSize { get { if (this._RowSize == null) this._RowSize = new ItemSizeInt(this.Table?.RowSize); return this._RowSize; } }
         private ItemSizeInt _RowSize;
@@ -2893,6 +2893,13 @@ namespace Asol.Tools.WorkScheduler.Data
         /// Tato hodnota odráží reálnou aktuální viditelnost v Gridu.
         /// </summary>
         public bool Visible { get { return this.RowSize.Visible; } set { this.RowSize.Visible = value; } }
+        /// <summary>
+        /// Režim dynamické viditelnosti řádku. Null = default = <see cref="GuiRowsVisibilityMode.Default"/>.
+        /// <para/>
+        /// Pozor, aby bylů režim aktivní, je třeba nastavit do <see cref="GuiGridProperties.DynamicRowsVisibilityTimeRangeEnlargement"/> hodnotu 1 nebo vyšší.
+        /// Výchozí hodnota je tam null a paktím je systém neaktivní!
+        /// </summary>
+        public GuiRowsVisibilityMode? DynamicVisibility { get; set; }
         /// <summary>
         /// true pro řádek, který nemá být zobrazován z aplikačního důvodu, false (default) = řádek je dostupný
         /// </summary>
@@ -3699,6 +3706,8 @@ namespace Asol.Tools.WorkScheduler.Data
             this.RowCheckedImage = guiRow.RowCheckedImage;
             this.RowNonCheckedImage = guiRow.RowNonCheckedImage;
             this.Icon = guiRow.Icon;
+            this.Visible = (guiRow.Visible.HasValue ? guiRow.Visible.Value : true);
+            this.DynamicVisibility = guiRow.DynamicVisibility;
             this.UserData = guiRow;
         }
         /// <summary>

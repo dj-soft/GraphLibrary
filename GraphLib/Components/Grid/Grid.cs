@@ -452,15 +452,16 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Zajistí, že pole sloupců budou obsahovat platné hodnoty
         /// </summary>
-        private void _ColumnsCheck()
+        private void _ColumnsCheck(bool force = false)
         {
             bool needContent = (this._ColumnDict == null || this._Columns == null || this._AllColumns == null);
             bool needRecalc = !this._ColumnsLayoutValid || !this._ColumnsSizeValid;
-            if (needContent || needRecalc)
+            if (force || needContent || needRecalc)
             {
-                Dictionary<int, GridColumn> columnDict = this._ColumnDict;
-                GridColumn[] allColumns = this._AllColumns;
-                if (needContent)
+                var columnDict = this._ColumnDict;
+                var allColumns = this._AllColumns;
+                var oldColumnDict = columnDict;
+                if (force || needContent)
                 {    // Je nutné vygenerovat obsah těchto polí:
                      // Vytvořím index, kde klíčem je ColumnId, a hodnotou je instance GridColumn.
                      // každá jedna instance GridColumn bude obsahovat souhrn všech viditelných sloupců shodného ColumnId, ze všech viditelných tabulek.
@@ -468,7 +469,7 @@ namespace Asol.Tools.WorkScheduler.Components
                     Dictionary<int, GridColumn> allColumnDict = new Dictionary<int, GridColumn>();        // Všechny sloupce z viditelných tabulek
                     foreach (GTable table in this._Tables)
                     {
-                        if (table.DataTable == null || !table.DataTable.Visible) continue;              // Neviditelné tabulky nebudu vůbec řešit
+                        if (table.DataTable == null || !table.DataTable.Visible) continue;                // Neviditelné tabulky nebudu vůbec řešit. Změna viditelnosti tabulky (Data.Table.Visible) vyvolá GGrid.RefreshColumns(), odkud se volá _ColumnsCheck(true).
                         foreach (Column column in table.DataTable.Columns)
                         {
                             int columnId = column.ColumnId;
@@ -493,7 +494,9 @@ namespace Asol.Tools.WorkScheduler.Components
                 List<GridColumn> columnList = columnDict.Values.ToList();
                 columnList.Sort(GridColumn.CompareOrder);
 
-                if (!this._ColumnsSizeValid)
+                if (force)
+                    _ColumnsPositionSizeRefresh(columnList, oldColumnDict);
+                if (force || !this._ColumnsSizeValid)
                     _ColumnsPositionCalculateAutoSize(columnList);
 
                 // Zajistím provedení nápočtu pozic (ISequenceLayout.Begin, End):
@@ -690,6 +693,17 @@ namespace Asol.Tools.WorkScheduler.Components
             }
 
             return isChanged;
+        }
+        /// <summary>
+        /// Zajistí refresh synchronních šířek sloupců všech tabulek pod sebou v tomto Gridu, volá se například po změně viditelnosti tabulek za běhu systému.
+        /// Nově zviditelněné tabulky se v této metodě zapojí do systému synchronizovaných sloupců (nastaví si šířku podle Master tabulky).
+        /// </summary>
+        public void RefreshColumns()
+        {
+            this._TablesVisibleCheck(true);
+            this._TablesPositionCalculateAutoSize();
+            this._ColumnsCheck(true);
+            this.Invalidate(InvalidateItem.All);
         }
         /// <summary>
         /// Metoda zajistí nastavení hodnoty isVisible do daného sloupce plus vyvolání další logiky (event)
@@ -939,10 +953,10 @@ namespace Asol.Tools.WorkScheduler.Components
         /// <summary>
         /// Ověří a zajistí připravenost pole <see cref="TablesVisible"/> a hodnoty <see cref="_TablesVisibleDataSize"/>.
         /// </summary>
-        private void _TablesVisibleCheck()
+        private void _TablesVisibleCheck(bool force = false)
         {
             GTable[] tablesVisible = this._TablesVisible;
-            if (tablesVisible == null)
+            if (force || tablesVisible == null)
             {   // Tabulky v TablesVisible mají být sice VŠECHNY, ale jen ty všechny, které se uživateli mohou zobrazit při vhodném scrollování gridu nahoru/dolů.
                 //  Proto v nich NESMÍ být tabulky, které jsou označeny jako IsVisible = false:
                 List<GTable> tableList = this._Tables.Where(t => t.Is.Visible).ToList();
@@ -1083,6 +1097,21 @@ namespace Asol.Tools.WorkScheduler.Components
             ISequenceLayout[] array = this.Columns;
             int count = array.Length;
             return (count > 0 ? array[count - 1].End : 0);
+        }
+        /// <summary>
+        /// Zajistí synchronizaci šířek všech sloupců
+        /// </summary>
+        /// <param name="columns"></param>
+        /// <param name="defaultWidths"></param>
+        private void _ColumnsPositionSizeRefresh(IEnumerable<GridColumn> columns = null, Dictionary<int, GridColumn> defaultWidths = null)
+        {
+            if (columns == null) columns = this.Columns;
+            bool hasDefaults = (defaultWidths != null && defaultWidths.Count > 0);
+            foreach (var column in columns)
+            {
+                int width = ((hasDefaults && defaultWidths.TryGetValue(column.ColumnId, out var defaultColumn)) ? defaultColumn.ColumnWidth : column.ColumnWidth);       // column.ColumnWidth get: jde z MasterColumn
+                column.ColumnWidth = width;                                                                                                                              // column.ColumnWidth set: jde do všech Columns
+            }
         }
         /// <summary>
         /// Umožní sloupcům aplikovat jejich AutoSize (pokud některý sloupec tuto vlastnost má), pro danou šířku viditelné oblasti
@@ -1345,6 +1374,10 @@ namespace Asol.Tools.WorkScheduler.Components
             if (items.HasFlag(InvalidateItem.GridItems))
             {
                 this._ChildArrayValid = false;
+            }
+            if (items.HasAnyFlag(InvalidateItem.AnyRow))
+            {
+                callTables = true;
             }
             if (items.HasFlag(InvalidateItem.Paint))
             {
@@ -2141,7 +2174,12 @@ namespace Asol.Tools.WorkScheduler.Components
         Table = TablePosition | TableSize | TableTagFilter | TableHeight | TableItems | TableOrder | 
                 ColumnsCount | ColumnOrder | ColumnWidth | ColumnScroll | ColumnHeader |
                 RowsCount | RowOrder | RowHeight | RowScroll | RowHeader |
-                Paint
+                Paint,
+
+        /// <summary>
+        /// Vcelku všechno
+        /// </summary>
+        All = AnyTable | AnyRow | AnyGrid | Table
     }
     #endregion
 }

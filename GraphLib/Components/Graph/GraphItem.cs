@@ -775,16 +775,18 @@ namespace Asol.Tools.WorkScheduler.Components.Graphs
         /// <param name="boundsAbsolute"></param>
         /// <param name="boundsVisibleAbsolute"></param>
         /// <param name="drawMode"></param>
-        internal void DrawImages(GInteractiveDrawArgs e, ref Rectangle boundsAbsolute, Rectangle boundsVisibleAbsolute, DrawItemMode drawMode)
+        /// <param name="cropBoundsAbsolute">true pokud chceme zmenšit <paramref name="boundsAbsolute"/> o prostor ikony / false = neměnit</param>
+        internal void DrawImages(GInteractiveDrawArgs e, ref Rectangle boundsAbsolute, Rectangle boundsVisibleAbsolute, DrawItemMode drawMode, bool cropBoundsAbsolute)
         {
             Image image;
 
             image = this._Owner.ImageBegin;
             if (image != null)
-                this.DrawImage(image, e, ref boundsAbsolute, ContentAlignment.MiddleLeft, boundsVisibleAbsolute, drawMode);
+                this.DrawImage(image, e, ref boundsAbsolute, ContentAlignment.MiddleLeft, boundsVisibleAbsolute, drawMode, cropBoundsAbsolute);
+
             image = this._Owner.ImageEnd;
             if (image != null)
-                this.DrawImage(image, e, ref boundsAbsolute, ContentAlignment.MiddleRight, boundsVisibleAbsolute, drawMode);
+                this.DrawImage(image, e, ref boundsAbsolute, ContentAlignment.MiddleRight, boundsVisibleAbsolute, drawMode, cropBoundsAbsolute);
         }
         /// <summary>
         /// Vykreslí Image
@@ -795,13 +797,21 @@ namespace Asol.Tools.WorkScheduler.Components.Graphs
         /// <param name="imageAlignment"></param>
         /// <param name="boundsVisibleAbsolute"></param>
         /// <param name="drawMode"></param>
-        protected void DrawImage(Image image, GInteractiveDrawArgs e, ref Rectangle boundsAbsolute, ContentAlignment imageAlignment, Rectangle boundsVisibleAbsolute, DrawItemMode drawMode)
+        /// <param name="cropBoundsAbsolute">true pokud chceme zmenšit <paramref name="boundsAbsolute"/> o prostor ikony / false = neměnit</param>
+        protected void DrawImage(Image image, GInteractiveDrawArgs e, ref Rectangle boundsAbsolute, ContentAlignment imageAlignment, Rectangle boundsVisibleAbsolute, DrawItemMode drawMode, bool cropBoundsAbsolute)
         {
             if (image == null) return;
             Size imageSize = image.Size;
+
             int height = boundsAbsolute.Height - 2;
             if (imageSize.Height > height)
                 imageSize = imageSize.ZoomToHeight(height);
+
+            // Pokud se obrázek nevejde na šířku dovnitř elementu, tak budu kreslit vodorovně na střed:
+            int width = boundsAbsolute.Width - 2;
+            if (imageSize.Width > width)
+                imageAlignment = ContentAlignment.MiddleCenter;
+
             Rectangle imageBounds = imageSize.AlignTo(boundsAbsolute, imageAlignment);
             if (!boundsVisibleAbsolute.IntersectsWith(imageBounds)) return;
 
@@ -809,18 +819,21 @@ namespace Asol.Tools.WorkScheduler.Components.Graphs
             e.Graphics.DrawImage(image, imageBounds);
 
             // Upravím souřadnice boundsAbsolute tak, aby nepokrývaly oblast, do které byl vykreslen Image:
-            switch (imageAlignment)
+            if (cropBoundsAbsolute)
             {
-                case ContentAlignment.TopLeft:
-                case ContentAlignment.MiddleLeft:
-                case ContentAlignment.BottomLeft:
-                    boundsAbsolute = new Rectangle(imageBounds.Right, boundsAbsolute.Y, boundsAbsolute.Right - imageBounds.Right, boundsAbsolute.Height);
-                    break;
-                case ContentAlignment.TopRight:
-                case ContentAlignment.MiddleRight:
-                case ContentAlignment.BottomRight:
-                    boundsAbsolute = new Rectangle(boundsAbsolute.X, boundsAbsolute.Y, imageBounds.X - boundsAbsolute.X, boundsAbsolute.Height);
-                    break;
+                switch (imageAlignment)
+                {
+                    case ContentAlignment.TopLeft:
+                    case ContentAlignment.MiddleLeft:
+                    case ContentAlignment.BottomLeft:
+                        boundsAbsolute = new Rectangle(imageBounds.Right, boundsAbsolute.Y, boundsAbsolute.Right - imageBounds.Right, boundsAbsolute.Height);
+                        break;
+                    case ContentAlignment.TopRight:
+                    case ContentAlignment.MiddleRight:
+                    case ContentAlignment.BottomRight:
+                        boundsAbsolute = new Rectangle(boundsAbsolute.X, boundsAbsolute.Y, imageBounds.X - boundsAbsolute.X, boundsAbsolute.Height);
+                        break;
+                }
             }
         }
         /// <summary>

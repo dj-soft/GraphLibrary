@@ -22,7 +22,8 @@ namespace Asol.Tools.WorkScheduler.Scheduler
     {
         #region Konstruktor, inicializace, privátní proměnné
         /// <summary>
-        /// Konstruktor, automaticky provede načtení dat z dat guiPage
+        /// Konstruktor.
+        /// Vytvoří vizuální control, ale nenačítá data - k tomu slouží metoda <see cref="LoadData()"/>.
         /// </summary>
         /// <param name="mainControl">Vizuální control</param>
         /// <param name="guiPage">Data pro tento panel</param>
@@ -161,7 +162,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 this._SetBounds(this._RightPanelTabs, this._PanelLayout.CurrentRightPanelBounds, ref isChanged);
                 this._SetBounds(this._BottomPanelSplitter, this._PanelLayout.CurrentBottomSplitterValue, this._PanelLayout.CurrentBottomSplitterBounds, ref isChanged);
                 this._SetBounds(this._BottomPanelTabs, this._PanelLayout.CurrentBottomPanelBounds, ref isChanged);
-               
+
                 if (isChanged)
                     this._IsChildValid = false;
             }
@@ -292,7 +293,14 @@ namespace Asol.Tools.WorkScheduler.Scheduler
 
         private MainControl _MainControl;
         private GuiPage _GuiPage;
-
+        /// <summary>
+        /// MainData
+        /// </summary>
+        protected MainData MainData { get { return _MainControl?.MainData; } }
+        /// <summary>
+        /// IMainDataInternal
+        /// </summary>
+        protected IMainDataInternal IMainData { get { return MainData as IMainDataInternal; } }
         /// <summary>
         /// Konfigurace uživatelská
         /// </summary>
@@ -479,6 +487,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         private MainDataTable _LoadDataToMainTable(GGrid gGrid, GuiGrid guiGrid)
         {
             MainDataTable mainDataTable = null;
+            this.IMainData.Colorize(guiGrid);
             using (App.Trace.Scope(TracePriority.Priority2_Lowest, "SchedulerPanel", "LoadDataToMainTable", "", guiGrid.FullName))
                 mainDataTable = new MainDataTable(this, gGrid, guiGrid);
 
@@ -499,6 +508,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         private List<GGrid> _GGridList;
         private const string _GRID_MAIN_NAME = "MainGrid";
         #endregion
+        
         #region Společné textové tabulky
         /// <summary>
         /// Načte textová data (texty nebo tooltipy) z dodaných GUI tabulek do datových tabulek do this.

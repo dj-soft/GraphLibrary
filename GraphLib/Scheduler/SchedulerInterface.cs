@@ -30,6 +30,47 @@ namespace Asol.Tools.WorkScheduler
         /// </summary>
         /// <param name="args">Data pro funkci</param>
         AppHostResponseArgs CallAppHostFunction(AppHostRequestArgs args);
+        /// <summary>
+        /// Obsahuje true, pokud tento hostitel podporuje styly (pak má smysl provádět Colorize)
+        /// </summary>
+        bool HasStyles { get; }
+        /// <summary>
+        /// Vyhledání barvy a dalších vizuálních hodnot podle jména stylu: <paramref name="styleName"/>, a daného druhu hodnoty <paramref name="stylePart"/>.
+        /// Hostitel na základě daného jména stylu najde odpovídající definici stylu, a v ní najde odpovídaící hodnotu.
+        /// Pokud najde, vrací true a hodnotu dává do out <paramref name="value"/>.
+        /// Pokud nenajde, vrací false.
+        /// </summary>
+        /// <param name="styleName"></param>
+        /// <param name="stylePart"></param>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        bool TryGetStylePartValue(string styleName, StylePartType stylePart, out object value);
+    }
+    /// <summary>
+    /// Prvky stylu, na které se dotazuje metoda <see cref="IAppHost.TryGetStylePartValue(string, StylePartType, out object)"/>
+    /// </summary>
+    public enum StylePartType
+    {
+        /// <summary>
+        /// Neurčeno
+        /// </summary>
+        None,
+        /// <summary>
+        /// Barva pozadí TextArea (používá se pro pozadí prvku grafu)
+        /// </summary>
+        TextAreaBackColor,
+        /// <summary>
+        /// Barva popředí TextArea (používá se pro text v prvku grafu)
+        /// </summary>
+        TextAreaForeColor,
+        /// <summary>
+        /// Barva písma Labelu (používá se pro pozadí popisku stojícího mimo TextBox)
+        /// </summary>
+        TextLabelBackColor,
+        /// <summary>
+        /// Barva písma Labelu (používá se pro písmo popisku stojícího mimo TextBox)
+        /// </summary>
+        TextLabelForeColor,
     }
     #endregion
     #region Argumenty metod IAppHost

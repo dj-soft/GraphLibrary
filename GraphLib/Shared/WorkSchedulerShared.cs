@@ -1,5 +1,5 @@
-﻿// Supervisor: DAJ
-// Part of Helios Green, proprietary software, (c) LCS International, a. s.
+﻿// Supervisor: David Janáček
+// Part of Helios Green, proprietary software, Asseco Solutions, a. s.
 // Redistribution and use in source and binary forms, with or without modification, 
 // is not permitted without valid contract with LCS International, a. s. 
 using System;
@@ -287,6 +287,10 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Tvar spojovací linky výchozí pro spojnici prvků grafu typu End to Begin.
         /// </summary>
         public GuiLineShape? LineShapeEndBegin { get; set; }
+        /// <summary>
+        /// Maximální velikost zobrazené časové osy
+        /// </summary>
+        public int? TimeScaleMax { get; set; }
         /// <summary>
         /// Defaultní časový interval pro <see cref="TotalTimeRange"/>
         /// </summary>
@@ -721,6 +725,11 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public int TagFilterRoundItemPercent { get; set; }
         /// <summary>
+        /// Název stylu který obsahuje barvu:
+        /// Barva pozadí filtru TagFilter
+        /// </summary>
+        public string TagFilterBackColorName { get; set; }
+        /// <summary>
         /// Barva pozadí filtru TagFilter
         /// </summary>
         public Color? TagFilterBackColor { get; set; }
@@ -729,6 +738,17 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Nezadáno = <see cref="GuiChildRowsEvaluateMode.Static"/>.
         /// </summary>
         public GuiChildRowsEvaluateMode? ChildRowsEvaluate { get; set; }
+        /// <summary>
+        /// Pokud je viditelnost řádku daná dynamicky podle rozsahu časové osy (<see cref="GuiDataRow.DynamicVisibility"/> je <see cref="GuiRowsVisibilityMode.WithVisibleGraphItemAny"/>),
+        /// pak tento koeficient dovolí zobrazit i řádky, které mají prvky grafu "těsně vedle viditelného časového rozmezí".
+        /// Jinými slovy, reálné viditelné časové rozmezí se navýší tímto koeficientem, a pak se hledají prvky grafu v tomto rozšířeném časovém úseku.<br/>
+        /// Hodnota koeficientu <see cref="DynamicRowsVisibilityTimeRangeEnlargement"/> musí být větší nebo rovna 1, aby byla brána v potaz.
+        /// Například hodnota 2.0f zvětší aktuální časový úsek o 50% doleva a o 50% doprava (celkem tedy o 100% = koeficient 2).
+        /// <para/>
+        /// Pokud hodnota bude null nebo menší než 1, pak <see cref="GuiDataRow.DynamicVisibility"/> nebude akceptováno. Důvodem je optimalizace množství výpočtů při posunu časové osy.<br/>
+        /// Hodnota null je výchozí = neaktivní.
+        /// </summary>
+        public float? DynamicRowsVisibilityTimeRangeEnlargement { get; set; }
         /// <summary>
         /// Zdrojová tabulka pro Child řádky, pokud v <see cref="ChildRowsEvaluate"/> je nastaven bit <see cref="GuiChildRowsEvaluateMode.InOtherTable"/>
         /// </summary>
@@ -974,9 +994,19 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public GuiLineShape? PaintLineShape { get; set; }
         /// <summary>
+        /// Název stylu který obsahuje barvu:
+        /// Barva spojovací linky, pokud ukazuje na povolený cíl
+        /// </summary>
+        public string EnabledLineForeColorName { get; set; }
+        /// <summary>
         /// Barva spojovací linky, pokud ukazuje na povolený cíl
         /// </summary>
         public Color? EnabledLineForeColor { get; set; }
+        /// <summary>
+        /// Název stylu který obsahuje barvu:
+        /// Barva podkladu spojovací linky, pokud ukazuje na povolený cíl
+        /// </summary>
+        public string EnabledLineBackColorName { get; set; }
         /// <summary>
         /// Barva podkladu spojovací linky, pokud ukazuje na povolený cíl
         /// </summary>
@@ -990,9 +1020,19 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public GuiLineEndingCap? EnabledLineEndingCap { get; set; }
         /// <summary>
+        /// Název stylu který obsahuje barvu:
+        /// Barva spojovací linky, pokud ukazuje na NEpovolený cíl
+        /// </summary>
+        public string DisabledLineForeColorName { get; set; }
+        /// <summary>
         /// Barva spojovací linky, pokud ukazuje na NEpovolený cíl
         /// </summary>
         public Color? DisabledLineForeColor { get; set; }
+        /// <summary>
+        /// Název stylu který obsahuje barvu:
+        /// Barva spojovací linky, pokud ukazuje na NEpovolený cíl
+        /// </summary>
+        public string DisabledLineBackColorName { get; set; }
         /// <summary>
         /// Barva podkladu spojovací linky, pokud ukazuje na NEpovolený cíl
         /// </summary>
@@ -1005,6 +1045,21 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Druh zakončení spojovací linky, pokud ukazuje na NEpovolený cíl
         /// </summary>
         public GuiLineEndingCap? DisabledLineEndingCap { get; set; }
+    }
+    /// <summary>
+    /// Definice dynamické viditelnosti řádku v Gridu podle jejich stavu a podle stavu grafu vůči časové ose.
+    /// Je vyhodnocováno po každé změně časové osy.
+    /// </summary>
+    public enum GuiRowsVisibilityMode
+    {
+        /// <summary>
+        /// Implicitně - zobrazit všechny řádky
+        /// </summary>
+        Default = 0,
+        /// <summary>
+        /// Zobrazovat pouze řádky, jejichž graf má ve viditelném časovém úseku nějaké prvky grafu (i kdyby nulové délky)
+        /// </summary>
+        WithVisibleGraphItemAny
     }
     /// <summary>
     /// Předpis pro vyhledání Child řádků k danému Parent řádku
@@ -1501,6 +1556,11 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Styl kreslení linky mezi Root nodem a jeho Child nody. Default = Dot.
         /// </summary>
         public GuiTreeViewLinkMode? TreeViewLinkMode { get; set; }
+        /// <summary>
+        /// Název stylu který obsahuje barvu:
+        /// Barva linky mezi Root nodem a jeho Child nody. Může obsahovat Alpha kanál.
+        /// </summary>
+        public string TreeViewLinkColorName { get; set; }
         /// <summary>
         /// Barva linky mezi Root nodem a jeho Child nody. Může obsahovat Alpha kanál.
         /// </summary>
@@ -2100,6 +2160,13 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Viditelnost řádku. Null = default = true.
         /// </summary>
         public bool? Visible { get; set; }
+        /// <summary>
+        /// Režim dynamické viditelnosti řádku. Null = default = <see cref="GuiRowsVisibilityMode.Default"/>.
+        /// <para/>
+        /// Pozor, aby bylů režim aktivní, je třeba nastavit do <see cref="GuiGridProperties.DynamicRowsVisibilityTimeRangeEnlargement"/> hodnotu 1 nebo vyšší.
+        /// Výchozí hodnota je tam null a paktím je systém neaktivní!
+        /// </summary>
+        public GuiRowsVisibilityMode? DynamicVisibility { get; set; }
         #endregion
         #region Servis
         /// <summary>
@@ -2388,9 +2455,19 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public float? TagSize { get; set; }
         /// <summary>
+        /// Název stylu který obsahuje barvu:
+        /// Barva pozadí v běžném (nevybraném) stavu
+        /// </summary>
+        public string BackColorName { get; set; }
+        /// <summary>
         /// Barva pozadí v běžném (nevybraném) stavu
         /// </summary>
         public Color? BackColor { get; set; }
+        /// <summary>
+        /// Název stylu který obsahuje barvu:
+        /// Barva pozadí ve stavu, kdy je prvek označen (aktivní)
+        /// </summary>
+        public string BackColorCheckedName { get; set; }
         /// <summary>
         /// Barva pozadí ve stavu, kdy je prvek označen (aktivní)
         /// </summary>
@@ -2438,10 +2515,23 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public GuiGraphProperties GraphProperties { get; set; }
         /// <summary>
+        /// Název stylu který obsahuje barvu:
+        /// Barva pozadí.
+        /// Pokud není zadána, pak je pozadí grafu průhledné = vykresluje se do svého Parent prvku.
+        /// </summary>
+        public string BackgroundColorName { get; set; }
+        /// <summary>
         /// Barva pozadí.
         /// Pokud není zadána, pak je pozadí grafu průhledné = vykresluje se do svého Parent prvku.
         /// </summary>
         public Color? BackgroundColor { get; set; }
+        /// <summary>
+        /// Název stylu který obsahuje barvu:
+        /// Podbarvení počátku grafu.
+        /// Podbarvení je postupné (LinearGradientBrush) : na počátku grafu je barva <see cref="BeginShadowColor"/>,
+        /// podbarvení má šířku <see cref="BeginShadowArea"/> a plynule přechází do barvy pozadí grafu <see cref="BackgroundColor"/>.
+        /// </summary>
+        public string BeginShadowColorName { get; set; }
         /// <summary>
         /// Podbarvení počátku grafu.
         /// Podbarvení je postupné (LinearGradientBrush) : na počátku grafu je barva <see cref="BeginShadowColor"/>,
@@ -2458,6 +2548,13 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Typicky vyjadřuje problém na počátku.
         /// </summary>
         public GuiImage BeginImage { get; set; }
+        /// <summary>
+        /// Název stylu který obsahuje barvu:
+        /// Podbarvení počátku grafu.
+        /// Podbarvení je postupné (LinearGradientBrush) : na počátku grafu je barva <see cref="EndShadowColor"/>,
+        /// podbarvení má šířku <see cref="EndShadowArea"/> a plynule přechází do barvy pozadí grafu <see cref="BackgroundColor"/>.
+        /// </summary>
+        public string EndShadowColorName { get; set; }
         /// <summary>
         /// Podbarvení počátku grafu.
         /// Podbarvení je postupné (LinearGradientBrush) : na počátku grafu je barva <see cref="EndShadowColor"/>,
@@ -2548,6 +2645,12 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Režim zobrazování času na ose X
         /// </summary>
         public TimeGraphTimeAxisMode TimeAxisMode { get; set; }
+        /// <summary>
+        /// Název stylu který obsahuje barvu:
+        /// Barva pozadí časové osy, defaultní.
+        /// Časová osa může mít definované časové segmenty, viz property <see cref="TimeAxisSegmentList"/>, ty mohou mít jinou barvu.
+        /// </summary>
+        public string TimeAxisBackColorName { get; set; }
         /// <summary>
         /// Barva pozadí časové osy, defaultní.
         /// Časová osa může mít definované časové segmenty, viz property <see cref="TimeAxisSegmentList"/>, ty mohou mít jinou barvu.
@@ -2650,6 +2753,14 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public GuiGraphLinkMode LinkMode { get; set; }
         /// <summary>
+        /// Název stylu který obsahuje barvu:
+        /// Barva linky základní.
+        /// Pro typ linky ve směru Prev - Next platí:
+        /// v situaci, kdy Next.Begin je větší nebo rovno Prev.End, pak se použije <see cref="LinkColorStandard"/>.
+        /// Další barvy viz <see cref="LinkColorWarning"/> a <see cref="LinkColorError"/>
+        /// </summary>
+        public string LinkColorStandardName { get; set; }
+        /// <summary>
         /// Barva linky základní.
         /// Pro typ linky ve směru Prev - Next platí:
         /// v situaci, kdy Next.Begin je větší nebo rovno Prev.End, pak se použije <see cref="LinkColorStandard"/>.
@@ -2657,12 +2768,28 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public Color? LinkColorStandard { get; set; }
         /// <summary>
+        /// Název stylu který obsahuje barvu:
+        /// Barva linky varovná.
+        /// Pro typ linky ve směru Prev - Next platí:
+        /// v situaci, kdy Next.Begin je menší než Prev.End, ale Next.Begin je větší nebo rovno Prev.Begin, pak se použije <see cref="LinkColorWarning"/>.
+        /// Další barvy viz <see cref="LinkColorStandard"/> a <see cref="LinkColorError"/>
+        /// </summary>
+        public string LinkColorWarningName { get; set; }
+        /// <summary>
         /// Barva linky varovná.
         /// Pro typ linky ve směru Prev - Next platí:
         /// v situaci, kdy Next.Begin je menší než Prev.End, ale Next.Begin je větší nebo rovno Prev.Begin, pak se použije <see cref="LinkColorWarning"/>.
         /// Další barvy viz <see cref="LinkColorStandard"/> a <see cref="LinkColorError"/>
         /// </summary>
         public Color? LinkColorWarning { get; set; }
+        /// <summary>
+        /// Název stylu který obsahuje barvu:
+        /// Barva linky chybová.
+        /// Pro typ linky ve směru Prev - Next platí:
+        /// v situaci, kdy Next.Begin je menší než Prev.Begin, pak se použije <see cref="LinkColorError"/>.
+        /// Další barvy viz <see cref="LinkColorStandard"/> a <see cref="LinkColorWarning"/>
+        /// </summary>
+        public string LinkColorErrorName { get; set; }
         /// <summary>
         /// Barva linky chybová.
         /// Pro typ linky ve směru Prev - Next platí:
@@ -2725,6 +2852,11 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Časový rozsah
         /// </summary>
         public GuiTimeRange TimeRange { get; set; }
+        /// <summary>
+        /// Název stylu který obsahuje barvu:
+        /// Barva pozadí v tomto segmentu
+        /// </summary>
+        public string BackColorName { get; set; }
         /// <summary>
         /// Barva pozadí v tomto segmentu
         /// </summary>
@@ -3116,6 +3248,23 @@ namespace Noris.LCS.Base.WorkScheduler
         [PersistingEnabled(false)]               // Tato hodnota se persistuje v rámci skinu, tato property hodnotu čte a ukládá do skinu
         public bool? IsVisible { get { return this.SkinCurrent.IsVisible ?? this.SkinDefault.IsVisible; } set { this.SkinCurrent.IsVisible = value; } }
         /// <summary>
+        /// Název stylu který obsahuje barvu:
+        /// Barva pozadí prvku.
+        /// Pokud bude null, pak prvek nebude mít vyplněný svůj prostor (obdélník). Může mít vykreslené okraje (barva <see cref="LineColor"/>).
+        /// Anebo může mít kreslené Ratio (viz property <see cref="RatioBegin"/>, <see cref="RatioEnd"/>, 
+        /// <see cref="RatioBeginBackColor"/>, <see cref="RatioLineColor"/>, <see cref="RatioLineWidth"/>).
+        /// Z databáze se načítá ze sloupce: "back_color", je NEPOVINNÝ.
+        /// </summary>
+        [PersistingEnabled(false)]               // Tato hodnota se persistuje v rámci skinu, tato property hodnotu čte a ukládá do skinu
+        public string BackColorName { get { return this.SkinCurrent.BackColorName ?? this.SkinDefault.BackColorName; } set { this.SkinCurrent.BackColorName = value; } }
+        /// <summary>
+        /// Hodnota průhlednosti barvy <see cref="BackColor"/> nebo barvy dle stylu <see cref="BackColorName"/>.
+        /// Pokud bude null, pak prvek barva pozadí bude "plná" = neprůhledná, stejně jako při hodnotě 0.
+        /// Hodnota má rozsah 0 = neprůhledná až 100 (=100%) = úplně průhledná, pak je vidět vše, co je pod prvkem, jako by barva <see cref="BackColor"/> nebyla zadaná.
+        /// </summary>
+        [PersistingEnabled(false)]               // Tato hodnota se persistuje v rámci skinu, tato property hodnotu čte a ukládá do skinu
+        public int? BackColorTransparency { get { return this.SkinCurrent.BackColorTransparency ?? this.SkinDefault.BackColorTransparency; } set { this.SkinCurrent.BackColorTransparency = value; } }
+        /// <summary>
         /// Barva pozadí prvku.
         /// Pokud bude null, pak prvek nebude mít vyplněný svůj prostor (obdélník). Může mít vykreslené okraje (barva <see cref="LineColor"/>).
         /// Anebo může mít kreslené Ratio (viz property <see cref="RatioBegin"/>, <see cref="RatioEnd"/>, 
@@ -3125,12 +3274,40 @@ namespace Noris.LCS.Base.WorkScheduler
         [PersistingEnabled(false)]               // Tato hodnota se persistuje v rámci skinu, tato property hodnotu čte a ukládá do skinu
         public Color? BackColor { get { return this.SkinCurrent.BackColor ?? this.SkinDefault.BackColor; } set { this.SkinCurrent.BackColor = value; } }
         /// <summary>
+        /// Název stylu který obsahuje barvu:
+        /// Barva textu (písma).
+        /// Pokud bude null, pak se barva textu odvodí jako kontrastní barva (černá/bílá) k barvě pozadí <see cref="BackColor"/> 
+        /// nebo k barvě Ratio <see cref="RatioBeginBackColor"/>.
+        /// </summary>
+        [PersistingEnabled(false)]               // Tato hodnota se persistuje v rámci skinu, tato property hodnotu čte a ukládá do skinu
+        public string TextColorName { get { return this.SkinCurrent.TextColorName ?? this.SkinDefault.TextColorName; } set { this.SkinCurrent.TextColorName = value; } }
+        /// <summary>
         /// Barva textu (písma).
         /// Pokud bude null, pak se barva textu odvodí jako kontrastní barva (černá/bílá) k barvě pozadí <see cref="BackColor"/> 
         /// nebo k barvě Ratio <see cref="RatioBeginBackColor"/>.
         /// </summary>
         [PersistingEnabled(false)]               // Tato hodnota se persistuje v rámci skinu, tato property hodnotu čte a ukládá do skinu
         public Color? TextColor { get { return this.SkinCurrent.TextColor ?? this.SkinDefault.TextColor; } set { this.SkinCurrent.TextColor = value; } }
+        /// <summary>
+        /// Název stylu který obsahuje barvu:
+        /// Barva šrafování prvku, kreslená stylem <see cref="BackStyle"/>.
+        /// Prvek nejprve vykreslí svoje pozadí barvou <see cref="BackColor"/>, 
+        /// a pokud má definovaný styl <see cref="BackStyle"/>, pak přes toto pozadí vykreslí ještě daný styl (šrafování, jiné překrytí) touto barvou.
+        /// Pokud bude definován styl <see cref="BackStyle"/> a nebude daná barva <see cref="HatchColor"/>,
+        /// použije se barva <see cref="LineColor"/>.
+        /// <para/>
+        /// Aby bylo vykresleno nějaké šrafování, musí být zadána hodnota do property <see cref="BackStyle"/> (styl šrafování) a také do <see cref="HatchColor"/> nebo <see cref="LineColor"/> (barva šrafování).
+        /// <para/>
+        /// </summary>
+        [PersistingEnabled(false)]               // Tato hodnota se persistuje v rámci skinu, tato property hodnotu čte a ukládá do skinu
+        public string HatchColorName { get { return this.SkinCurrent.HatchColorName ?? this.SkinDefault.HatchColorName; } set { this.SkinCurrent.HatchColorName = value; } }
+        /// <summary>
+        /// Hodnota průhlednosti barvy <see cref="HatchColor"/> nebo barvy dle stylu <see cref="HatchColorName"/>.
+        /// Pokud bude null, pak prvek barva pozadí bude "plná" = neprůhledná, stejně jako při hodnotě 0.
+        /// Hodnota má rozsah 0 = neprůhledná až 100 (=100%) = úplně průhledná, pak je vidět vše, co je pod prvkem, jako by barva <see cref="HatchColor"/> nebyla zadaná.
+        /// </summary>
+        [PersistingEnabled(false)]               // Tato hodnota se persistuje v rámci skinu, tato property hodnotu čte a ukládá do skinu
+        public int? HatchColorTransparency { get { return this.SkinCurrent.HatchColorTransparency ?? this.SkinDefault.HatchColorTransparency; } set { this.SkinCurrent.HatchColorTransparency = value; } }
         /// <summary>
         /// Barva šrafování prvku, kreslená stylem <see cref="BackStyle"/>.
         /// Prvek nejprve vykreslí svoje pozadí barvou <see cref="BackColor"/>, 
@@ -3143,6 +3320,18 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         [PersistingEnabled(false)]               // Tato hodnota se persistuje v rámci skinu, tato property hodnotu čte a ukládá do skinu
         public Color? HatchColor { get { return this.SkinCurrent.HatchColor ?? this.SkinDefault.HatchColor; } set { this.SkinCurrent.HatchColor = value; } }
+        /// <summary>
+        /// Název stylu který obsahuje barvu:
+        /// Barva linek ohraničení prvku.
+        /// Pokud je null, pak prvek odvozuje barvu okraje od barvy pozadí (tzv. 3D efekt od barvy <see cref="BackColor"/>).
+        /// Pokud chceme potlačit kreslení okraje, zadáme barvu <see cref="Color.Empty"/>.
+        /// Pro efekt prvku <see cref="GuiGraphItemBackEffectStyle.Simple"/> se běžně okraje nekreslí (pomocí odvození barvy okraje od barvy pozadí).
+        /// Pokud ale pro Simple efekt chceme kreslit okraje, zadáme barvu do <see cref="LineColor"/>, ale okraje nebudou mít 3D efekt = vykreslí se prostá stejnobarevná čára.
+        /// <para/>
+        /// Z databáze se načítá ze sloupce: "line_color", je NEPOVINNÝ.
+        /// </summary>
+        [PersistingEnabled(false)]               // Tato hodnota se persistuje v rámci skinu, tato property hodnotu čte a ukládá do skinu
+        public string LineColorName { get { return this.SkinCurrent.LineColorName ?? this.SkinDefault.LineColorName; } set { this.SkinCurrent.LineColorName = value; } }
         /// <summary>
         /// Barva linek ohraničení prvku.
         /// Pokud je null, pak prvek odvozuje barvu okraje od barvy pozadí (tzv. 3D efekt od barvy <see cref="BackColor"/>).
@@ -3165,6 +3354,30 @@ namespace Noris.LCS.Base.WorkScheduler
         [PersistingEnabled(false)]               // Tato hodnota se persistuje v rámci skinu, tato property hodnotu čte a ukládá do skinu
         public System.Drawing.Drawing2D.HatchStyle? BackStyle { get { return this.SkinCurrent.BackStyle ?? this.SkinDefault.BackStyle; } set { this.SkinCurrent.BackStyle = value; } }
         /// <summary>
+        /// Název stylu který obsahuje barvu:
+        /// Barva pozadí prvku, kreslená v části Ratio, na straně času Begin.
+        /// Použije se tehdy, když hodnota <see cref="RatioBegin"/> a/nebo <see cref="RatioEnd"/> má hodnotu větší než 0f.
+        /// Touto barvou je vykreslena dolní část prvku, která symbolizuje míru "naplnění" daného úseku.
+        /// Tato část má tvar lichoběžníku, dolní okraj je na hodnotě 0, levý okraj má výšku <see cref="RatioBegin"/>, pravý okraj má výšku <see cref="RatioEnd"/>.
+        /// Může sloužit k zobrazení vyčerpané pracovní kapacity, nebo jako lineární částečka grafu sloupcového nebo liniového.
+        /// Tato barva se použije buď jako Solid color pro celý prvek v části Ratio, 
+        /// anebo jako počáteční barva na souřadnici X = čas Begin při výplni Linear, 
+        /// a to tehdy, pokud je zadána i barva <see cref="RatioEndBackColor"/> (ta reprezentuje barvu na souřadnici X = čas End).
+        /// <para/>
+        /// Aby bylo vykresleno Ratio, je nutno zadat přinejmenším <see cref="RatioBegin"/> a (<see cref="RatioBeginBackColor"/> nebo <see cref="RatioLineColor"/>).
+        /// <para/>
+        /// Z databáze se načítá ze sloupce: "ratio_begin_back_color", je NEPOVINNÝ.
+        /// </summary>
+        [PersistingEnabled(false)]               // Tato hodnota se persistuje v rámci skinu, tato property hodnotu čte a ukládá do skinu
+        public string RatioBeginBackColorName { get { return this.SkinCurrent.RatioBeginBackColorName ?? this.SkinDefault.RatioBeginBackColorName; } set { this.SkinCurrent.RatioBeginBackColorName = value; } }
+        /// <summary>
+        /// Hodnota průhlednosti barvy <see cref="RatioBeginBackColor"/> nebo barvy dle stylu <see cref="RatioBeginBackColorName"/>.
+        /// Pokud bude null, pak prvek barva pozadí bude "plná" = neprůhledná, stejně jako při hodnotě 0.
+        /// Hodnota má rozsah 0 = neprůhledná až 100 (=100%) = úplně průhledná, pak je vidět vše, co je pod prvkem, jako by barva <see cref="RatioBeginBackColor"/> nebyla zadaná.
+        /// </summary>
+        [PersistingEnabled(false)]               // Tato hodnota se persistuje v rámci skinu, tato property hodnotu čte a ukládá do skinu
+        public int? RatioBeginBackColorTransparency { get { return this.SkinCurrent.RatioBeginBackColorTransparency ?? this.SkinDefault.RatioBeginBackColorTransparency; } set { this.SkinCurrent.RatioBeginBackColorTransparency = value; } }
+        /// <summary>
         /// Barva pozadí prvku, kreslená v části Ratio, na straně času Begin.
         /// Použije se tehdy, když hodnota <see cref="RatioBegin"/> a/nebo <see cref="RatioEnd"/> má hodnotu větší než 0f.
         /// Touto barvou je vykreslena dolní část prvku, která symbolizuje míru "naplnění" daného úseku.
@@ -3181,6 +3394,26 @@ namespace Noris.LCS.Base.WorkScheduler
         [PersistingEnabled(false)]               // Tato hodnota se persistuje v rámci skinu, tato property hodnotu čte a ukládá do skinu
         public Color? RatioBeginBackColor { get { return this.SkinCurrent.RatioBeginBackColor ?? this.SkinDefault.RatioBeginBackColor; } set { this.SkinCurrent.RatioBeginBackColor = value; } }
         /// <summary>
+        /// Název stylu který obsahuje barvu:
+        /// Barva pozadí prvku, kreslená v části Ratio, na straně času End.
+        /// Použije se tehdy, když hodnota <see cref="RatioBegin"/> a/nebo <see cref="RatioEnd"/> má hodnotu větší než 0f.
+        /// Touto barvou je vykreslena dolní část prvku, která symbolizuje míru "naplnění" daného úseku.
+        /// Tato část má tvar lichoběžníku, dolní okraj je na hodnotě 0, levý okraj má výšku <see cref="RatioBegin"/>, pravý okraj má výšku <see cref="RatioEnd"/>.
+        /// Může sloužit k zobrazení vyčerpané pracovní kapacity, nebo jako lineární částečka grafu sloupcového nebo liniového.
+        /// Tato barva se použije jako koncová barva (na souřadnici X = čas End) v lineární výplni prostoru Ratio,
+        /// kde počáteční barva výplně (na souřadnici X = čas Begin) je dána v <see cref="RatioBeginBackColor"/>.
+        /// Z databáze se načítá ze sloupce: "ratio_end_back_color", je NEPOVINNÝ.
+        /// </summary>
+        [PersistingEnabled(false)]               // Tato hodnota se persistuje v rámci skinu, tato property hodnotu čte a ukládá do skinu
+        public string RatioEndBackColorName { get { return this.SkinCurrent.RatioEndBackColorName ?? this.SkinDefault.RatioEndBackColorName; } set { this.SkinCurrent.RatioEndBackColorName = value; } }
+        /// <summary>
+        /// Hodnota průhlednosti barvy <see cref="RatioEndBackColor"/> nebo barvy dle stylu <see cref="RatioEndBackColorName"/>.
+        /// Pokud bude null, pak prvek barva pozadí bude "plná" = neprůhledná, stejně jako při hodnotě 0.
+        /// Hodnota má rozsah 0 = neprůhledná až 100 (=100%) = úplně průhledná, pak je vidět vše, co je pod prvkem, jako by barva <see cref="BackColor"/> nebyla zadaná.
+        /// </summary>
+        [PersistingEnabled(false)]               // Tato hodnota se persistuje v rámci skinu, tato property hodnotu čte a ukládá do skinu
+        public int? RatioEndBackColorTransparency { get { return this.SkinCurrent.RatioEndBackColorTransparency ?? this.SkinDefault.RatioEndBackColorTransparency; } set { this.SkinCurrent.RatioEndBackColorTransparency = value; } }
+        /// <summary>
         /// Barva pozadí prvku, kreslená v části Ratio, na straně času End.
         /// Použije se tehdy, když hodnota <see cref="RatioBegin"/> a/nebo <see cref="RatioEnd"/> má hodnotu větší než 0f.
         /// Touto barvou je vykreslena dolní část prvku, která symbolizuje míru "naplnění" daného úseku.
@@ -3192,6 +3425,19 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         [PersistingEnabled(false)]               // Tato hodnota se persistuje v rámci skinu, tato property hodnotu čte a ukládá do skinu
         public Color? RatioEndBackColor { get { return this.SkinCurrent.RatioEndBackColor ?? this.SkinDefault.RatioEndBackColor; } set { this.SkinCurrent.RatioEndBackColor = value; } }
+        /// <summary>
+        /// Název stylu který obsahuje barvu:
+        /// Barva linky, kreslená v úrovni Ratio.
+        /// Použije se tehdy, když hodnota <see cref="RatioBegin"/> a/nebo <see cref="RatioEnd"/> má zadanou hodnotu v rozsahu 0 (včetně) a více.
+        /// Touto barvou je vykreslena přímá linie, která symbolizuje míru "naplnění" daného úseku, 
+        /// a spojuje body Begin = { <see cref="Time"/>.Begin, <see cref="RatioBegin"/> } a { <see cref="Time"/>.End, <see cref="RatioEnd"/> }.
+        /// <para/>
+        /// Aby bylo vykresleno Ratio, je nutno zadat přinejmenším <see cref="RatioBegin"/> a (<see cref="RatioBeginBackColor"/> nebo <see cref="RatioLineColor"/>).
+        /// <para/>
+        /// Z databáze se načítá ze sloupce: "ratio_line_color", je NEPOVINNÝ.
+        /// </summary>
+        [PersistingEnabled(false)]               // Tato hodnota se persistuje v rámci skinu, tato property hodnotu čte a ukládá do skinu
+        public string RatioLineColorName { get { return this.SkinCurrent.RatioLineColorName ?? this.SkinDefault.RatioLineColorName; } set { this.SkinCurrent.RatioLineColorName = value; } }
         /// <summary>
         /// Barva linky, kreslená v úrovni Ratio.
         /// Použije se tehdy, když hodnota <see cref="RatioBegin"/> a/nebo <see cref="RatioEnd"/> má zadanou hodnotu v rozsahu 0 (včetně) a více.
@@ -3388,9 +3634,25 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public bool? IsVisible { get; set; }
         /// <summary>
+        /// Název stylu který obsahuje barvu:
+        /// Barva pozadí prvku.
+        /// </summary>
+        public string BackColorName { get; set; }
+        /// <summary>
+        /// Hodnota průhlednosti barvy <see cref="BackColor"/> nebo barvy dle stylu <see cref="BackColorName"/>.
+        /// Pokud bude null, pak prvek barva pozadí bude "plná" = neprůhledná, stejně jako při hodnotě 0.
+        /// Hodnota má rozsah 0 = neprůhledná až 100 (=100%) = úplně průhledná, pak je vidět vše, co je pod prvkem, jako by barva <see cref="BackColor"/> nebyla zadaná.
+        /// </summary>
+        public int? BackColorTransparency { get; set; }
+        /// <summary>
         /// Barva pozadí prvku.
         /// </summary>
         public Color? BackColor { get; set; }
+        /// <summary>
+        /// Název stylu který obsahuje barvu:
+        /// Barva textu (písma)
+        /// </summary>
+        public string TextColorName { get; set; }
         /// <summary>
         /// Barva textu (písma)
         /// </summary>
@@ -3402,6 +3664,21 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public System.Drawing.Drawing2D.HatchStyle? BackStyle { get; set; }
         /// <summary>
+        /// Název stylu který obsahuje barvu:
+        /// Barva šrafování prvku, kreslená stylem <see cref="BackStyle"/>.
+        /// Prvek nejprve vykreslí svoje pozadí barvou <see cref="BackColor"/>, 
+        /// a pokud má definovaný styl <see cref="BackStyle"/>, pak přes toto pozadí vykreslí ještě daný styl (šrafování, jiné překrytí) touto barvou.
+        /// Pokud bude definován styl <see cref="BackStyle"/> a nebude daná barva <see cref="HatchColor"/>,
+        /// použije se barva <see cref="LineColor"/>.
+        /// </summary>
+        public string HatchColorName { get; set; }
+        /// <summary>
+        /// Hodnota průhlednosti barvy <see cref="HatchColor"/> nebo barvy dle stylu <see cref="HatchColorName"/>.
+        /// Pokud bude null, pak prvek barva pozadí bude "plná" = neprůhledná, stejně jako při hodnotě 0.
+        /// Hodnota má rozsah 0 = neprůhledná až 100 (=100%) = úplně průhledná, pak je vidět vše, co je pod prvkem, jako by barva <see cref="HatchColor"/> nebyla zadaná.
+        /// </summary>
+        public int? HatchColorTransparency { get; set; }
+        /// <summary>
         /// Barva šrafování prvku, kreslená stylem <see cref="BackStyle"/>.
         /// Prvek nejprve vykreslí svoje pozadí barvou <see cref="BackColor"/>, 
         /// a pokud má definovaný styl <see cref="BackStyle"/>, pak přes toto pozadí vykreslí ještě daný styl (šrafování, jiné překrytí) touto barvou.
@@ -3410,11 +3687,37 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public Color? HatchColor { get; set; }
         /// <summary>
+        /// Název stylu který obsahuje barvu:
+        /// Barva linek ohraničení prvku.
+        /// Pokud je null, pak prvek nemá ohraničení pomocí linky (Border).
+        /// Z databáze se načítá ze sloupce: "line_color", je NEPOVINNÝ.
+        /// </summary>
+        public string LineColorName { get; set; }
+        /// <summary>
         /// Barva linek ohraničení prvku.
         /// Pokud je null, pak prvek nemá ohraničení pomocí linky (Border).
         /// Z databáze se načítá ze sloupce: "line_color", je NEPOVINNÝ.
         /// </summary>
         public Color? LineColor { get; set; }
+        /// <summary>
+        /// Název stylu který obsahuje barvu:
+        /// Barva pozadí prvku, kreslená v části Ratio, na straně času Begin.
+        /// Použije se tehdy, když hodnota <see cref="GuiGraphItem.RatioBegin"/> a/nebo <see cref="GuiGraphItem.RatioEnd"/> má hodnotu větší než 0f.
+        /// Touto barvou je vykreslena dolní část prvku, která symbolizuje míru "naplnění" daného úseku.
+        /// Tato část má tvar lichoběžníku, dolní okraj je na hodnotě 0, levý okraj má výšku <see cref="GuiGraphItem.RatioBegin"/>, pravý okraj má výšku <see cref="GuiGraphItem.RatioEnd"/>.
+        /// Může sloužit k zobrazení vyčerpané pracovní kapacity, nebo jako lineární částečka grafu sloupcového nebo liniového.
+        /// Tato barva se použije buď jako Solid color pro celý prvek v části Ratio, 
+        /// anebo jako počáteční barva na souřadnici X = čas Begin při výplni Linear, 
+        /// a to tehdy, pokud je zadána i barva <see cref="RatioEndBackColor"/> (ta reprezentuje barvu na souřadnici X = čas End).
+        /// Z databáze se načítá ze sloupce: "ratio_begin_back_color", je NEPOVINNÝ.
+        /// </summary>
+        public string RatioBeginBackColorName { get; set; }
+        /// <summary>
+        /// Hodnota průhlednosti barvy <see cref="RatioBeginBackColor"/> nebo barvy dle stylu <see cref="RatioBeginBackColorName"/>.
+        /// Pokud bude null, pak prvek barva pozadí bude "plná" = neprůhledná, stejně jako při hodnotě 0.
+        /// Hodnota má rozsah 0 = neprůhledná až 100 (=100%) = úplně průhledná, pak je vidět vše, co je pod prvkem, jako by barva <see cref="RatioBeginBackColor"/> nebyla zadaná.
+        /// </summary>
+        public int? RatioBeginBackColorTransparency { get; set; }
         /// <summary>
         /// Barva pozadí prvku, kreslená v části Ratio, na straně času Begin.
         /// Použije se tehdy, když hodnota <see cref="GuiGraphItem.RatioBegin"/> a/nebo <see cref="GuiGraphItem.RatioEnd"/> má hodnotu větší než 0f.
@@ -3428,6 +3731,24 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public Color? RatioBeginBackColor { get; set; }
         /// <summary>
+        /// Název stylu který obsahuje barvu:
+        /// Barva pozadí prvku, kreslená v části Ratio, na straně času End.
+        /// Použije se tehdy, když hodnota <see cref="GuiGraphItem.RatioBegin"/> a/nebo <see cref="GuiGraphItem.RatioEnd"/> má hodnotu větší než 0f.
+        /// Touto barvou je vykreslena dolní část prvku, která symbolizuje míru "naplnění" daného úseku.
+        /// Tato část má tvar lichoběžníku, dolní okraj je na hodnotě 0, levý okraj má výšku <see cref="GuiGraphItem.RatioBegin"/>, pravý okraj má výšku <see cref="GuiGraphItem.RatioEnd"/>.
+        /// Může sloužit k zobrazení vyčerpané pracovní kapacity, nebo jako lineární částečka grafu sloupcového nebo liniového.
+        /// Tato barva se použije jako koncová barva (na souřadnici X = čas End) v lineární výplni prostoru Ratio,
+        /// kde počáteční barva výplně (na souřadnici X = čas Begin) je dána v <see cref="RatioBeginBackColor"/>.
+        /// Z databáze se načítá ze sloupce: "ratio_end_back_color", je NEPOVINNÝ.
+        /// </summary>
+        public string RatioEndBackColorName { get; set; }
+        /// <summary>
+        /// Hodnota průhlednosti barvy <see cref="RatioEndBackColor"/> nebo barvy dle stylu <see cref="RatioEndBackColorName"/>.
+        /// Pokud bude null, pak prvek barva pozadí bude "plná" = neprůhledná, stejně jako při hodnotě 0.
+        /// Hodnota má rozsah 0 = neprůhledná až 100 (=100%) = úplně průhledná, pak je vidět vše, co je pod prvkem, jako by barva <see cref="BackColor"/> nebyla zadaná.
+        /// </summary>
+        public int? RatioEndBackColorTransparency { get; set; }
+        /// <summary>
         /// Barva pozadí prvku, kreslená v části Ratio, na straně času End.
         /// Použije se tehdy, když hodnota <see cref="GuiGraphItem.RatioBegin"/> a/nebo <see cref="GuiGraphItem.RatioEnd"/> má hodnotu větší než 0f.
         /// Touto barvou je vykreslena dolní část prvku, která symbolizuje míru "naplnění" daného úseku.
@@ -3438,6 +3759,15 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Z databáze se načítá ze sloupce: "ratio_end_back_color", je NEPOVINNÝ.
         /// </summary>
         public Color? RatioEndBackColor { get; set; }
+        /// <summary>
+        /// Název stylu který obsahuje barvu:
+        /// Barva linky, kreslená v úrovni Ratio.
+        /// Použije se tehdy, když hodnota <see cref="GuiGraphItem.RatioBegin"/> a/nebo <see cref="GuiGraphItem.RatioEnd"/> má zadanou hodnotu v rozsahu 0 (včetně) a více.
+        /// Touto barvou je vykreslena přímá linie, která symbolizuje míru "naplnění" daného úseku, 
+        /// a spojuje body Begin = { <see cref="GuiGraphItem.Time"/>.Begin, <see cref="GuiGraphItem.RatioBegin"/> } a { <see cref="GuiGraphItem.Time"/>.End, <see cref="GuiGraphItem.RatioEnd"/> }.
+        /// Z databáze se načítá ze sloupce: "ratio_line_color", je NEPOVINNÝ.
+        /// </summary>
+        public string RatioLineColorName { get; set; }
         /// <summary>
         /// Barva linky, kreslená v úrovni Ratio.
         /// Použije se tehdy, když hodnota <see cref="GuiGraphItem.RatioBegin"/> a/nebo <see cref="GuiGraphItem.RatioEnd"/> má zadanou hodnotu v rozsahu 0 (včetně) a více.
@@ -3569,6 +3899,15 @@ namespace Noris.LCS.Base.WorkScheduler
         [PersistingEnabled(false)]       // Serializaci zajišťuje property Specification
         public int? LinkWidth { get; set; }
         /// <summary>
+        /// Název stylu který obsahuje barvu:
+        /// Barva linky základní.
+        /// Pro typ linky ve směru Prev - Next platí:
+        /// v situaci, kdy Next.Begin je větší nebo rovno Prev.End, pak se použije <see cref="LinkColorStandard"/>.
+        /// Další barvy viz <see cref="LinkColorWarning"/> a <see cref="LinkColorError"/>.
+        /// Pokud bude null, převezme se barva z definice vlastností grafu <see cref="GuiGraphProperties.LinkColorStandard"/>.
+        /// </summary>
+        public string LinkColorStandardName { get; set; }
+        /// <summary>
         /// Barva linky základní.
         /// Pro typ linky ve směru Prev - Next platí:
         /// v situaci, kdy Next.Begin je větší nebo rovno Prev.End, pak se použije <see cref="LinkColorStandard"/>.
@@ -3577,6 +3916,15 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public Color? LinkColorStandard { get; set; }
         /// <summary>
+        /// Název stylu který obsahuje barvu:
+        /// Barva linky varovná.
+        /// Pro typ linky ve směru Prev - Next platí:
+        /// v situaci, kdy Next.Begin je menší než Prev.End, ale Next.Begin je větší nebo rovno Prev.Begin, pak se použije <see cref="LinkColorWarning"/>.
+        /// Další barvy viz <see cref="LinkColorStandard"/> a <see cref="LinkColorError"/>
+        /// Pokud bude null, převezme se barva z definice vlastností grafu <see cref="GuiGraphProperties.LinkColorWarning"/>.
+        /// </summary>
+        public string LinkColorWarningName { get; set; }
+        /// <summary>
         /// Barva linky varovná.
         /// Pro typ linky ve směru Prev - Next platí:
         /// v situaci, kdy Next.Begin je menší než Prev.End, ale Next.Begin je větší nebo rovno Prev.Begin, pak se použije <see cref="LinkColorWarning"/>.
@@ -3584,6 +3932,15 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Pokud bude null, převezme se barva z definice vlastností grafu <see cref="GuiGraphProperties.LinkColorWarning"/>.
         /// </summary>
         public Color? LinkColorWarning { get; set; }
+        /// <summary>
+        /// Název stylu který obsahuje barvu:
+        /// Barva linky chybová.
+        /// Pro typ linky ve směru Prev - Next platí:
+        /// v situaci, kdy Next.Begin je menší než Prev.Begin, pak se použije <see cref="LinkColorError"/>.
+        /// Další barvy viz <see cref="LinkColorStandard"/> a <see cref="LinkColorWarning"/>
+        /// Pokud bude null, převezme se barva z definice vlastností grafu <see cref="GuiGraphProperties.LinkColorError"/>.
+        /// </summary>
+        public string LinkColorErrorName { get; set; }
         /// <summary>
         /// Barva linky chybová.
         /// Pro typ linky ve směru Prev - Next platí:
@@ -4093,6 +4450,11 @@ namespace Noris.LCS.Base.WorkScheduler
             this.Items = new List<GuiContextMenuItem>();
         }
         /// <summary>
+        /// Název stylu který obsahuje barvu:
+        /// Barva pozadí menu
+        /// </summary>
+        public string BackColorName { get; set; }
+        /// <summary>
         /// Barva pozadí menu
         /// </summary>
         public Color? BackColor { get; set; }
@@ -4150,6 +4512,11 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public GuiContextMenuItem()
         { }
+        /// <summary>
+        /// Název stylu který obsahuje barvu:
+        /// Barva pozadí položky menu: má přednost před barvou menu pokud je zadána
+        /// </summary>
+        public string BackColorName { get; set; }
         /// <summary>
         /// Barva pozadí položky menu: má přednost před barvou menu pokud je zadána
         /// </summary>

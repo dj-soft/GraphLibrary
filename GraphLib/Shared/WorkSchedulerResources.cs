@@ -1,7 +1,7 @@
 ﻿// Supervisor: DAJ
-// Part of Helios Green, proprietary software, (c) LCS International, a. s.
+// Part of Helios Green, proprietary software, (c) Asseco solutions, a. s.
 // Redistribution and use in source and binary forms, with or without modification, 
-// is not permitted without valid contract with LCS International, a. s. 
+// is not permitted without valid contract with Asseco solutions, a. s. 
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -17,7 +17,7 @@ using System.Threading.Tasks;
 //   Pokud fyzické zdroje ("ASOL.GraphLib.res") jsou novější, pak znovu vygeneruje kompletní obsah souboru "WorkSchedulerResources.cs".
 // Generátor tohoto souboru je v aplikaci GraphLib, v kódu "GraphLib\Application\Resources.cs".
 // Místo, kde je uloženo datum "LastWriteTime" souboru "ASOL.GraphLib.res" je na následujícím řádku:
-//     ResourceFile.LastWriteTime = 2019-12-02 10:00
+//     ResourceFile.LastWriteTime = 2021-06-04 14:41
 #pragma warning disable 1591
 namespace Noris.LCS.Base.WorkScheduler.Resources.Images
 {
@@ -31,7 +31,7 @@ namespace Noris.LCS.Base.WorkScheduler.Resources.Images
     /// Programátor, který chce doplnit další resource, si do výše uvedeného rozbaleného adresáře přidá nové ikony nebno adresář s ikonami nebo jiná data,
     /// poté celý adresář zazipuje, přejmenuje celý zip na "ASOL.GraphLib.res" a vloží soubor do balíčku WorkScheduleru.
     /// <para/>
-    /// Poté programátor spustí WorkScheduler z Visual studia v režimu Debug, a plugin při startu nově vygeneruje soubor WorkSchedulerResources.cs, obsahující nově dodané položky jako konstanty.
+    /// Poté programátor spustí WorkScheduler z Visual studia v režimu Debug, a plugin při startu nově vygeneruje soubor Shared/WorkSchedulerResources.cs, obsahující nově dodané položky jako konstanty.
     /// </summary>
     public class Actions
     {
@@ -1227,7 +1227,7 @@ namespace Noris.LCS.Base.WorkScheduler.Resources.Images
     /// Programátor, který chce doplnit další resource, si do výše uvedeného rozbaleného adresáře přidá nové ikony nebno adresář s ikonami nebo jiná data,
     /// poté celý adresář zazipuje, přejmenuje celý zip na "ASOL.GraphLib.res" a vloží soubor do balíčku WorkScheduleru.
     /// <para/>
-    /// Poté programátor spustí WorkScheduler z Visual studia v režimu Debug, a plugin při startu nově vygeneruje soubor WorkSchedulerResources.cs, obsahující nově dodané položky jako konstanty.
+    /// Poté programátor spustí WorkScheduler z Visual studia v režimu Debug, a plugin při startu nově vygeneruje soubor Shared/WorkSchedulerResources.cs, obsahující nově dodané položky jako konstanty.
     /// </summary>
     public class Asol
     {
@@ -1276,7 +1276,7 @@ namespace Noris.LCS.Base.WorkScheduler.Resources.Images
     /// Programátor, který chce doplnit další resource, si do výše uvedeného rozbaleného adresáře přidá nové ikony nebno adresář s ikonami nebo jiná data,
     /// poté celý adresář zazipuje, přejmenuje celý zip na "ASOL.GraphLib.res" a vloží soubor do balíčku WorkScheduleru.
     /// <para/>
-    /// Poté programátor spustí WorkScheduler z Visual studia v režimu Debug, a plugin při startu nově vygeneruje soubor WorkSchedulerResources.cs, obsahující nově dodané položky jako konstanty.
+    /// Poté programátor spustí WorkScheduler z Visual studia v režimu Debug, a plugin při startu nově vygeneruje soubor Shared/WorkSchedulerResources.cs, obsahující nově dodané položky jako konstanty.
     /// </summary>
     public class Categories
     {
@@ -1384,7 +1384,7 @@ namespace Noris.LCS.Base.WorkScheduler.Resources.Images
     /// Programátor, který chce doplnit další resource, si do výše uvedeného rozbaleného adresáře přidá nové ikony nebno adresář s ikonami nebo jiná data,
     /// poté celý adresář zazipuje, přejmenuje celý zip na "ASOL.GraphLib.res" a vloží soubor do balíčku WorkScheduleru.
     /// <para/>
-    /// Poté programátor spustí WorkScheduler z Visual studia v režimu Debug, a plugin při startu nově vygeneruje soubor WorkSchedulerResources.cs, obsahující nově dodané položky jako konstanty.
+    /// Poté programátor spustí WorkScheduler z Visual studia v režimu Debug, a plugin při startu nově vygeneruje soubor Shared/WorkSchedulerResources.cs, obsahující nově dodané položky jako konstanty.
     /// </summary>
     public class Status
     {
@@ -1745,7 +1745,7 @@ namespace Noris.LCS.Base.WorkScheduler.Resources.Images
     /// Programátor, který chce doplnit další resource, si do výše uvedeného rozbaleného adresáře přidá nové ikony nebno adresář s ikonami nebo jiná data,
     /// poté celý adresář zazipuje, přejmenuje celý zip na "ASOL.GraphLib.res" a vloží soubor do balíčku WorkScheduleru.
     /// <para/>
-    /// Poté programátor spustí WorkScheduler z Visual studia v režimu Debug, a plugin při startu nově vygeneruje soubor WorkSchedulerResources.cs, obsahující nově dodané položky jako konstanty.
+    /// Poté programátor spustí WorkScheduler z Visual studia v režimu Debug, a plugin při startu nově vygeneruje soubor Shared/WorkSchedulerResources.cs, obsahující nově dodané položky jako konstanty.
     /// </summary>
     public class Actions24
     {
@@ -3016,7 +3016,7 @@ namespace Noris.LCS.Base.WorkScheduler.Resources.Images
     /// Programátor, který chce doplnit další resource, si do výše uvedeného rozbaleného adresáře přidá nové ikony nebno adresář s ikonami nebo jiná data,
     /// poté celý adresář zazipuje, přejmenuje celý zip na "ASOL.GraphLib.res" a vloží soubor do balíčku WorkScheduleru.
     /// <para/>
-    /// Poté programátor spustí WorkScheduler z Visual studia v režimu Debug, a plugin při startu nově vygeneruje soubor WorkSchedulerResources.cs, obsahující nově dodané položky jako konstanty.
+    /// Poté programátor spustí WorkScheduler z Visual studia v režimu Debug, a plugin při startu nově vygeneruje soubor Shared/WorkSchedulerResources.cs, obsahující nově dodané položky jako konstanty.
     /// </summary>
     public class Actions16
     {
@@ -5116,7 +5116,7 @@ namespace Noris.LCS.Base.WorkScheduler.Resources.Images
     /// Programátor, který chce doplnit další resource, si do výše uvedeného rozbaleného adresáře přidá nové ikony nebno adresář s ikonami nebo jiná data,
     /// poté celý adresář zazipuje, přejmenuje celý zip na "ASOL.GraphLib.res" a vloží soubor do balíčku WorkScheduleru.
     /// <para/>
-    /// Poté programátor spustí WorkScheduler z Visual studia v režimu Debug, a plugin při startu nově vygeneruje soubor WorkSchedulerResources.cs, obsahující nově dodané položky jako konstanty.
+    /// Poté programátor spustí WorkScheduler z Visual studia v režimu Debug, a plugin při startu nově vygeneruje soubor Shared/WorkSchedulerResources.cs, obsahující nově dodané položky jako konstanty.
     /// </summary>
     public class Others16
     {
@@ -5241,7 +5241,7 @@ namespace Noris.LCS.Base.WorkScheduler.Resources.Images
     /// Programátor, který chce doplnit další resource, si do výše uvedeného rozbaleného adresáře přidá nové ikony nebno adresář s ikonami nebo jiná data,
     /// poté celý adresář zazipuje, přejmenuje celý zip na "ASOL.GraphLib.res" a vloží soubor do balíčku WorkScheduleru.
     /// <para/>
-    /// Poté programátor spustí WorkScheduler z Visual studia v režimu Debug, a plugin při startu nově vygeneruje soubor WorkSchedulerResources.cs, obsahující nově dodané položky jako konstanty.
+    /// Poté programátor spustí WorkScheduler z Visual studia v režimu Debug, a plugin při startu nově vygeneruje soubor Shared/WorkSchedulerResources.cs, obsahující nově dodané položky jako konstanty.
     /// </summary>
     public class Small16
     {
@@ -5278,7 +5278,7 @@ namespace Noris.LCS.Base.WorkScheduler.Resources.Images
     /// Programátor, který chce doplnit další resource, si do výše uvedeného rozbaleného adresáře přidá nové ikony nebno adresář s ikonami nebo jiná data,
     /// poté celý adresář zazipuje, přejmenuje celý zip na "ASOL.GraphLib.res" a vloží soubor do balíčku WorkScheduleru.
     /// <para/>
-    /// Poté programátor spustí WorkScheduler z Visual studia v režimu Debug, a plugin při startu nově vygeneruje soubor WorkSchedulerResources.cs, obsahující nově dodané položky jako konstanty.
+    /// Poté programátor spustí WorkScheduler z Visual studia v režimu Debug, a plugin při startu nově vygeneruje soubor Shared/WorkSchedulerResources.cs, obsahující nově dodané položky jako konstanty.
     /// </summary>
     public class Status16
     {

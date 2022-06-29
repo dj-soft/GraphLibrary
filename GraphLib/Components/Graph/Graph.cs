@@ -1035,6 +1035,7 @@ namespace Asol.Tools.WorkScheduler.Components.Graphs
             lock (this._ValidityLock)
             {
                 List<TimeGraphGroup> visibleGroupList = new List<TimeGraphGroup>();
+                List<TimeGraphGroup> visibleGroupTopList = new List<TimeGraphGroup>();
 
                 using (var scope = Application.App.Trace.Scope(Application.TracePriority.Priority1_ElementaryTimeDebug, "GTimeGraph", "ItemsRecalculateVisibleList", ""))
                 {
@@ -1047,16 +1048,16 @@ namespace Asol.Tools.WorkScheduler.Components.Graphs
                         {
                             case TimeGraphTimeAxisMode.ProportionalScale:
                                 foreach (TimeGraphGroup groupItem in layerList)
-                                    this.RecalculateCoordinateXProportional(visibleGroupList, groupItem, offsetX, counters);
+                                    this.RecalculateCoordinateXProportional(visibleGroupList, visibleGroupTopList , groupItem, offsetX, counters);
                                 break;
                             case TimeGraphTimeAxisMode.LogarithmicScale:
                                 foreach (TimeGraphGroup groupItem in layerList)
-                                    this.RecalculateCoordinateXLogarithmic(visibleGroupList, groupItem, offsetX, counters);
+                                    this.RecalculateCoordinateXLogarithmic(visibleGroupList, visibleGroupTopList, groupItem, offsetX, counters);
                                 break;
                             case TimeGraphTimeAxisMode.Standard:
                             default:
                                 foreach (TimeGraphGroup groupItem in layerList)
-                                    this.RecalculateCoordinateXStandard(visibleGroupList, groupItem, offsetX, counters);
+                                    this.RecalculateCoordinateXStandard(visibleGroupList, visibleGroupTopList, groupItem, offsetX, counters);
                                 break;
                         }
                     }
@@ -1067,6 +1068,9 @@ namespace Asol.Tools.WorkScheduler.Components.Graphs
 
                     scope.AddValues(counters, "Visual Layers Count: ", "Visual Groups Count: ", "Visual Items Count: ");
                 }
+                if (visibleGroupTopList.Count > 0)
+                    visibleGroupList.AddRange(visibleGroupTopList);
+
                 this._VisibleGroupList = visibleGroupList;
             }
             this.Invalidate(InvalidateItems.Bounds);
@@ -1091,64 +1095,91 @@ namespace Asol.Tools.WorkScheduler.Components.Graphs
         /// v režimu <see cref="TimeGraphTimeAxisMode.Standard"/>
         /// </summary>
         /// <param name="visibleGroupList">Seznam viditelných prvků</param>
+        /// <param name="visibleGroupTopList">Seznam viditelných prvků, které mají být umístěny nahoru na ose Z (jsou malé)</param>
         /// <param name="groupItem">Jedna ucelená skupina grafických prvků <see cref="ITimeGraphItem"/></param>
         /// <param name="offsetX">Ofset na ose X = posun prvků</param>
         /// <param name="counters">Počitadla</param>
-        protected void RecalculateCoordinateXStandard(List<TimeGraphGroup> visibleGroupList, TimeGraphGroup groupItem, int offsetX, int[] counters)
+        protected void RecalculateCoordinateXStandard(List<TimeGraphGroup> visibleGroupList, List<TimeGraphGroup> visibleGroupTopList, TimeGraphGroup groupItem, int offsetX, int[] counters)
         {
             ITimeAxisConvertor timeConvertor = this._TimeConvertor;
             int size = this.Bounds.Width;
             int minWidth = this.GraphItemMinPixelWidth;
-            groupItem.PrepareCoordinateX(t => timeConvertor.GetProportionalPixelRange(t, size), offsetX, minWidth, ref counters[2]);
+            groupItem.PrepareCoordinateX(t => timeConvertor.GetProportionalPixelRange(t, size), offsetX, minWidth, out bool isSubMinWidth, ref counters[2]);
 
-            if (groupItem.IsValidRealTime && timeConvertor.Value.HasIntersect(groupItem.Time))
-            {   // Prvek je alespoň zčásti viditelný v časovém okně:
-                counters[1]++;
-                visibleGroupList.Add(groupItem);
-            }
+            bool timeIsOnAxis = timeConvertor.Value.HasIntersect(groupItem.Time);
+            RecalculateCoordinateXStoreResults(visibleGroupList, visibleGroupTopList, groupItem, isSubMinWidth, timeIsOnAxis, counters);
         }
         /// <summary>
         /// Metoda připraví data pro jeden grafický prvek typu <see cref="TimeGraphGroup"/> pro aktuální stav časové osy grafu, 
         /// v režimu <see cref="TimeGraphTimeAxisMode.ProportionalScale"/>
         /// </summary>
         /// <param name="visibleGroupList">Seznam viditelných prvků</param>
+        /// <param name="visibleGroupTopList">Seznam viditelných prvků, které mají být umístěny nahoru na ose Z (jsou malé)</param>
         /// <param name="groupItem">Jedna ucelená skupina grafických prvků <see cref="ITimeGraphItem"/></param>
         /// <param name="offsetX">Ofset na ose X = posun prvků</param>
         /// <param name="counters">Počitadla</param>
-        protected void RecalculateCoordinateXProportional(List<TimeGraphGroup> visibleGroupList, TimeGraphGroup groupItem, int offsetX, int[] counters)
+        protected void RecalculateCoordinateXProportional(List<TimeGraphGroup> visibleGroupList, List<TimeGraphGroup> visibleGroupTopList, TimeGraphGroup groupItem, int offsetX, int[] counters)
         {
             ITimeAxisConvertor timeConvertor = this._TimeConvertor;
             int size = this.Bounds.Width;
             int minWidth = this.GraphItemMinPixelWidth;
-            groupItem.PrepareCoordinateX(t => timeConvertor.GetProportionalPixelRange(t, size), offsetX, minWidth, ref counters[2]);
+            groupItem.PrepareCoordinateX(t => timeConvertor.GetProportionalPixelRange(t, size), offsetX, minWidth, out bool isSubMinWidth, ref counters[2]);
 
-            if (groupItem.IsValidRealTime && timeConvertor.Value.HasIntersect(groupItem.Time))
-            {   // Prvek je alespoň zčásti viditelný v časovém okně:
-                counters[1]++;
-                visibleGroupList.Add(groupItem);
-            }
+            bool timeIsOnAxis = timeConvertor.Value.HasIntersect(groupItem.Time);
+            RecalculateCoordinateXStoreResults(visibleGroupList, visibleGroupTopList, groupItem, isSubMinWidth, timeIsOnAxis, counters);
         }
         /// <summary>
         /// Metoda připraví data pro jeden grafický prvek typu <see cref="TimeGraphGroup"/> pro aktuální stav časové osy grafu, 
         /// v režimu <see cref="TimeGraphTimeAxisMode.LogarithmicScale"/>
         /// </summary>
         /// <param name="visibleGroupList">Seznam viditelných prvků</param>
+        /// <param name="visibleGroupTopList">Seznam viditelných prvků, které mají být umístěny nahoru na ose Z (jsou malé)</param>
         /// <param name="groupItem">Jedna ucelená skupina grafických prvků <see cref="ITimeGraphItem"/></param>
         /// <param name="offsetX">Ofset na ose X = posun prvků</param>
         /// <param name="counters">Počitadla</param>
-        protected void RecalculateCoordinateXLogarithmic(List<TimeGraphGroup> visibleGroupList, TimeGraphGroup groupItem, int offsetX, int[] counters)
+        protected void RecalculateCoordinateXLogarithmic(List<TimeGraphGroup> visibleGroupList, List<TimeGraphGroup> visibleGroupTopList, TimeGraphGroup groupItem, int offsetX, int[] counters)
         {
             ITimeAxisConvertor timeConvertor = this._TimeConvertor;
             int size = this.Bounds.Width;
             int minWidth = this.GraphItemMinPixelWidth;
             float proportionalRatio = this.CurrentGraphProperties.LogarithmicRatio;
-            groupItem.PrepareCoordinateX(t => timeConvertor.GetLogarithmicPixelRange(t, size, proportionalRatio), offsetX, minWidth, ref counters[2]);
+            groupItem.PrepareCoordinateX(t => timeConvertor.GetLogarithmicPixelRange(t, size, proportionalRatio), offsetX, minWidth, out bool isSubMinWidth, ref counters[2]);
 
             // Pozor: režim Logarithmic zajistí, že zobrazeny budou VŠECHNY prvky, takže prvky nefiltrujeme s ohledem na jejich čas : VisibleTime.HasIntersect() !
-            if (groupItem.IsValidRealTime)
-            {   // ... ale prvek musí mít kladný čas od Begin do End:
+            bool timeIsOnAxis = true;
+            RecalculateCoordinateXStoreResults(visibleGroupList, visibleGroupTopList, groupItem, isSubMinWidth, timeIsOnAxis, counters);
+        }
+        /// <summary>
+        /// Zajistí standardní uložení grupy podle výsledků do odpovídajícího seznamu, nastaví do grupy hodnotu <see cref="TimeGraphGroup.CurrentSizeState"/>.
+        /// </summary>
+        /// <param name="visibleGroupList"></param>
+        /// <param name="visibleGroupTopList"></param>
+        /// <param name="groupItem"></param>
+        /// <param name="isSubMinWidth"></param>
+        /// <param name="timeIsOnAxis"></param>
+        /// <param name="counters"></param>
+        protected void RecalculateCoordinateXStoreResults(List<TimeGraphGroup> visibleGroupList, List<TimeGraphGroup> visibleGroupTopList,
+            TimeGraphGroup groupItem, bool isSubMinWidth, bool timeIsOnAxis, int[] counters)
+        {
+            bool timeIsReal = groupItem.IsValidRealTime;
+
+            if (timeIsReal && timeIsOnAxis)
+            {   // Prvek je alespoň zčásti viditelný v časovém okně:
+                if (isSubMinWidth)
+                {
+                    groupItem.CurrentSizeState = TimeGraphElementSizeState.VisibleSmallSize;
+                    visibleGroupTopList.Add(groupItem);
+                }
+                else
+                {
+                    groupItem.CurrentSizeState = TimeGraphElementSizeState.Visible;
+                    visibleGroupList.Add(groupItem);
+                }
                 counters[1]++;
-                visibleGroupList.Add(groupItem);
+            }
+            else
+            {
+                groupItem.CurrentSizeState = (!timeIsOnAxis ? TimeGraphElementSizeState.InvisibleOutOfAxis : TimeGraphElementSizeState.InvisibleSmallSize);
             }
         }
         /// <summary>
@@ -2427,6 +2458,11 @@ namespace Asol.Tools.WorkScheduler.Components.Graphs
         /// </summary>
         public StringFormatFlags TextStringFormat { get { return this._TextStringFormat; } set { this._TextStringFormat = value; } }
         private StringFormatFlags _TextStringFormat;
+        /// <summary>
+        /// Maximální velikost zobrazené časové osy
+        /// </summary>
+        public int? TimeScaleMax { get { return this._TimeScaleMax; } set { this._TimeScaleMax = value; } }
+        private int? _TimeScaleMax;
     }
     #endregion
     #region Interface ITimeInteractiveGraph, ITimeGraph, ITimeGraphItem; enum TimeGraphAxisXMode
@@ -2735,6 +2771,32 @@ namespace Asol.Tools.WorkScheduler.Components.Graphs
         /// Vodorovné plnění zleva doprava, o 1-3 vnořené dovnitř elementu
         /// </summary>
         HorizontalInner
+    }
+    /// <summary>
+    /// Druh viditelnosti / neviditelnosti prvku z důvodu umístění a velikosti dle časové osy
+    /// </summary>
+    public enum TimeGraphElementSizeState
+    {
+        /// <summary>
+        /// Neurčeno
+        /// </summary>
+        None = 0,
+        /// <summary>
+        /// Mimo časovou osu
+        /// </summary>
+        InvisibleOutOfAxis,
+        /// <summary>
+        /// Neviditelný pro rozměr menší než je viditelný 1px
+        /// </summary>
+        InvisibleSmallSize,
+        /// <summary>
+        /// Viditelný, zvětšený na MinSize
+        /// </summary>
+        VisibleSmallSize,
+        /// <summary>
+        /// Standardně viditelný
+        /// </summary>
+        Visible
     }
     #endregion
     #region Interface ITimeGraphDataSource a příslušné třídy argumentů

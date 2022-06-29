@@ -16,7 +16,7 @@ using System.Threading.Tasks;
 //   Pokud fyzické zdroje ("ASOL.GraphLib.ics") jsou novější, pak znovu vygeneruje kompletní obsah souboru "IconResources.cs".
 // Generátor tohoto souboru je v aplikaci GraphLib, v kódu "GraphLib\Application\Resources.cs".
 // Místo, kde je uloženo datum "LastWriteTime" souboru "ASOL.GraphLib.ics" je na následujícím řádku:
-//     ResourceFile.LastWriteTime = 2020-11-03 06:45
+//     ResourceFile.LastWriteTime = 2022-06-29 07:44
 #pragma warning disable 1591
 namespace Asol.Tools.WorkScheduler.Resources.Images
 {

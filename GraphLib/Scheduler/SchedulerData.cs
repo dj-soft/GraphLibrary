@@ -37,6 +37,8 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         {
             this._DataState = DataStateType.Initialising;
             this._AppHost = host;
+            this._HasHost = (host != null);
+            this._HasStyles = (host != null && host.HasStyles);
             this._SessionId = sessionId;
             this.Init();
 
@@ -47,21 +49,25 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             this._DataState = DataStateType.Initialised;
         }
         /// <summary>
-        /// Obsahuje, true pokud máme vztah na datového hostitele
+        /// Datový hostitel
         /// </summary>
-        private bool _HasHost { get { return (this._AppHost != null); } }
+        private IAppHost _AppHost;
         /// <summary>
-        /// Pořadové číslo requestu
+        /// Obsahuje true, pokud máme vztah na datového hostitele
         /// </summary>
-        private int _RequestId;
+        private bool _HasHost;
+        /// <summary>
+        /// Obsahuje true, pokud máme vztah na datového hostitele a ten podporuje styly (pak má smysl provádět Colorize)
+        /// </summary>
+        private bool _HasStyles;
         /// <summary>
         /// ID číslo this session pluginu. Identifikace pro volající systém (ten může mít otevřených více oken pluginů)
         /// </summary>
         private int? _SessionId;
         /// <summary>
-        /// Datový hostitel
+        /// Pořadové číslo requestu
         /// </summary>
-        private IAppHost _AppHost;
+        private int _RequestId;
         private GuiData _GuiData;
         PluginActivity IPlugin.Activity { get { return PluginActivity.Standard; } }
         /// <summary>
@@ -1383,7 +1389,11 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             if (items.HasFlag(ToolbarSystemItem.TimeAxisZoomWholeWeek))
                 this._ToolbarSystemTimeAxisGroup.Items.Add(_CreateToolbarItem(_Tlb_TimeAxis_WholeWeek, R.Images.Asol.Calendarweek32x32Png, null, "Celý týden Po-Ne", size: FunctionGlobalItemSize.Half, layoutHint: LayoutHint.NextItemOnSameRow, isSelectable: true, /* isSelected: (timeAxisZoom == ToolbarSystemItem.TimeAxisZoomWholeWeek), */ isPersistEnabled: true, selectionGroupName: "TimeZoom", systemItemId: ToolbarSystemItem.TimeAxisZoomWholeWeek));
             if (items.HasFlag(ToolbarSystemItem.TimeAxisZoomMonth))
-                this._ToolbarSystemTimeAxisGroup.Items.Add(_CreateToolbarItem(_Tlb_TimeAxis_Month, R.Images.Asol.Calendarmonth32x32Png, null, "Měsíc 30 dní", size: FunctionGlobalItemSize.Half, layoutHint: LayoutHint.NextItemSkipToNextRow, isSelectable: true, /* isSelected: (timeAxisZoom == ToolbarSystemItem.TimeAxisZoomMonth), */ isPersistEnabled: true, selectionGroupName: "TimeZoom", systemItemId: ToolbarSystemItem.TimeAxisZoomMonth));
+                this._ToolbarSystemTimeAxisGroup.Items.Add(_CreateToolbarItem(_Tlb_TimeAxis_Month, R.Images.Asol.Calendarmonth32x32Png, null, "Měsíc 30 dní", size: FunctionGlobalItemSize.Half, layoutHint: LayoutHint.NextItemOnSameRow, isSelectable: true, /* isSelected: (timeAxisZoom == ToolbarSystemItem.TimeAxisZoomMonth), */ isPersistEnabled: true, selectionGroupName: "TimeZoom", systemItemId: ToolbarSystemItem.TimeAxisZoomMonth));
+            if (items.HasFlag(ToolbarSystemItem.TimeAxisZoomHalfYear))
+                this._ToolbarSystemTimeAxisGroup.Items.Add(_CreateToolbarItem(_Tlb_TimeAxis_HalfYear, R.Images.Actions.ViewProcessAllTreePng, null, "Půl rok", size: FunctionGlobalItemSize.Half, layoutHint: LayoutHint.NextItemOnSameRow, isSelectable: true, /* isSelected: (timeAxisZoom == ToolbarSystemItem.TimeAxisZoomMonth), */ isPersistEnabled: true, selectionGroupName: "TimeZoom", systemItemId: ToolbarSystemItem.TimeAxisZoomHalfYear));
+            if (items.HasFlag(ToolbarSystemItem.TimeAxisZoomWholeYear))
+                this._ToolbarSystemTimeAxisGroup.Items.Add(_CreateToolbarItem(_Tlb_TimeAxis_WholeYear, R.Images.Actions.CodeBlockPng, null, "Celý rok", size: FunctionGlobalItemSize.Half, layoutHint: LayoutHint.NextItemOnSameRow, isSelectable: true, /* isSelected: (timeAxisZoom == ToolbarSystemItem.TimeAxisZoomMonth), */ isPersistEnabled: true, selectionGroupName: "TimeZoom", systemItemId: ToolbarSystemItem.TimeAxisZoomWholeYear));
 
             // Go:
             if (items.HasFlag(ToolbarSystemItem.TimeAxisGoPrev))
@@ -1491,6 +1501,8 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 case ToolbarSystemItem.TimeAxisZoomWorkWeek: return _TimeAxisGetNewTimeZoomWorkWeek(date);
                 case ToolbarSystemItem.TimeAxisZoomWholeWeek: return _TimeAxisGetNewTimeZoomWholeWeek(date);
                 case ToolbarSystemItem.TimeAxisZoomMonth: return _TimeAxisGetNewTimeZoomMonth(date);
+                case ToolbarSystemItem.TimeAxisZoomHalfYear: return _TimeAxisGetNewTimeZoomHalfYear(date);
+                case ToolbarSystemItem.TimeAxisZoomWholeYear: return _TimeAxisGetNewTimeZoomWholeYear(date);
                 case ToolbarSystemItem.TimeAxisGoPrev: return _TimeAxisGetNewTimeGoPrev(currentTime, zoom);
                 case ToolbarSystemItem.TimeAxisGoHome: return _TimeAxisGetNewTimeGoHome(currentTime, zoom);
                 case ToolbarSystemItem.TimeAxisGoNext: return _TimeAxisGetNewTimeGoNext(currentTime, zoom);
@@ -1576,6 +1588,30 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             return time.ZoomToRatio(time.Center.Value, _TimeAxisEnlargeRatio);
         }
         /// <summary>
+        /// Vrátí nový časový interval pro časovou osu pro současný interval a požadavek <see cref="ToolbarSystemItem.TimeAxisZoomHalfYear"/>
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        private static TimeRange _TimeAxisGetNewTimeZoomHalfYear(DateTime value)
+        {
+            DateTime begin = value.Date.FirstDayOf(DateTimePart.HalfYear);
+            DateTime end = begin.AddMonths(6);
+            TimeRange time = new TimeRange(begin, end);
+            return time.ZoomToRatio(time.Center.Value, _TimeAxisEnlargeRatio);
+        }
+        /// <summary>
+        /// Vrátí nový časový interval pro časovou osu pro současný interval a požadavek <see cref="ToolbarSystemItem.TimeAxisZoomWholeYear"/>
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        private static TimeRange _TimeAxisGetNewTimeZoomWholeYear(DateTime value)
+        {
+            DateTime begin = value.Date.FirstDayOf(DateTimePart.Year);
+            DateTime end = begin.AddMonths(12);
+            TimeRange time = new TimeRange(begin, end);
+            return time.ZoomToRatio(time.Center.Value, _TimeAxisEnlargeRatio);
+        }
+        /// <summary>
         /// Vrátí nový časový interval pro časovou osu pro současný interval a požadavek <see cref="ToolbarSystemItem.TimeAxisGoPrev"/>
         /// </summary>
         /// <param name="currentTime"></param>
@@ -1622,6 +1658,8 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         private const string _Tlb_TimeAxis_WorkWeek = "TimeAxisWorkWeek";
         private const string _Tlb_TimeAxis_WholeWeek = "TimeAxisWholeWeek";
         private const string _Tlb_TimeAxis_Month = "TimeAxisMonth";
+        private const string _Tlb_TimeAxis_HalfYear = "TimeAxisHalfYear";
+        private const string _Tlb_TimeAxis_WholeYear = "TimeAxisWholeYear";
         private const string _Tlb_TimeAxis_GoPrev = "TimeAxisGoPrev";
         private const string _Tlb_TimeAxis_GoHome = "TimeAxisGoHome";
         private const string _Tlb_TimeAxis_GoNext = "TimeAxisGoNext";
@@ -3222,6 +3260,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         {
             Dictionary<string, MainDataTable> mainTableDict = this.DataTables.Where(t => t.TableName != null).GetDictionary(t => t.TableName, true);
             Dictionary<uint, TimeGraph> repaintGraphDict = new Dictionary<uint, TimeGraph>();
+            this.Colorize(guiResponse);
             this._ProcessResponseCommon(guiResponse.Common, mainTableDict);
             this._ProcessResponseToolbarItems(guiResponse.ToolbarItems);
             this._ProcessResponseTime(guiResponse.TimeAxisValue);
@@ -3232,6 +3271,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             this._ProcessResponseExpandRows(guiResponse.ExpandRows, mainTableDict, repaintGraphDict);
             this._ProcessResponseRefreshProperties(guiResponse.RefreshProperties, mainTableDict, repaintGraphDict);
             this._ProcessResponseRepaintGraphs(repaintGraphDict.Values);
+            this._ProcessResponseRecalcGrids(repaintGraphDict, mainTableDict);
             this._ProcessResponseRepaintParentChilds(repaintGraphDict.Values);
             this._ProcessResponseRepaintControl(repaintGraphDict.Values);
         }
@@ -3399,7 +3439,25 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="repaintGraphs"></param>
         private void _ProcessResponseRepaintGraphs(IEnumerable<TimeGraph> repaintGraphs)
         {
-            repaintGraphs.ForEachItem(g => g.Refresh());
+            TimeGraph.InvalidateItems invalidateParts = 
+                TimeGraph.InvalidateItems.CoordinateX | TimeGraph.InvalidateItems.AllGroups |
+                TimeGraph.InvalidateItems.CoordinateYVirtual | TimeGraph.InvalidateItems.CoordinateYReal;
+            repaintGraphs.ForEachItem(g => g.Invalidate(invalidateParts));   // Nedávám Refresh, to by došlo k opakovanému Refresh() Hosta (Controlu)!
+        }
+        /// <summary>
+        /// Metoda zajistí přepočet souřadnic v gridech pro dané grafy
+        /// </summary>
+        /// <param name="repaintGraphDict"></param>
+        /// <param name="mainTableDict"></param>
+        private void _ProcessResponseRecalcGrids(Dictionary<uint, TimeGraph> repaintGraphDict, Dictionary<string, MainDataTable> mainTableDict)
+        {
+            if (repaintGraphDict == null || repaintGraphDict.Count == 0) return;
+
+            InvalidateItem invalidate = InvalidateItem.RowHeight;
+            foreach (var table in this.DataTables)
+            {
+                table.GGrid.Invalidate(invalidate);
+            }
         }
         /// <summary>
         /// Metoda zajistí nové vyhodnocení vztahů Parent - Child v těch tabulkách, kde došlo ke změně v grafech
@@ -3430,7 +3488,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="repaintGraphs"></param>
         private void _ProcessResponseRepaintControl(IEnumerable<TimeGraph> repaintGraphs)
         {
-            this._MainControl.Refresh();
+            this._MainControl.Refresh(true);
         }
         #endregion
         #region Zpracování dialogu
@@ -3468,6 +3526,301 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             return this._MainControl.ShowDialog(message, title, guiButtons, icon);
         }
         #endregion
+        #endregion
+        #region Colorize
+        /// <summary>
+        /// Metoda zajistí aplikaci stylu na daný prvek, ať už je to cokoliv
+        /// </summary>
+        /// <param name="data"></param>
+        protected void Colorize(object data)
+        {
+            if (!_HasStyles) return;
+            if (data is GuiGrid guiGrid) { this.Colorize(guiGrid); return; }
+            if (data is GuiGridProperties gridProperties) { this.Colorize(gridProperties); return; }
+            if (data is GuiDataTable dataTable) { this.Colorize(dataTable); return; }
+            if (data is IEnumerable<GuiDataRow> dataRows) { this.Colorize(dataRows); return; }
+            if (data is GuiDataRow dataRow) { this.Colorize(dataRow); return; }
+            if (data is IEnumerable<GuiGraphLink> graphLinks) { this.Colorize(graphLinks); return; }
+            if (data is GuiGraphLink graphLink) { this.Colorize(graphLink); return; }
+            if (data is GuiGraph graph) { this.Colorize(graph); return; }
+            if (data is GuiGraphProperties graphProperties) { this.Colorize(graphProperties); return; }
+            if (data is IEnumerable<GuiGraphItem> graphItems) { this.Colorize(graphItems); return; }
+            if (data is GuiGraphItem graphItem) { this.Colorize(graphItem); return; }
+            if (data is GuiGraphSkin graphSkin) { this.Colorize(graphSkin); return; }
+            if (data is IEnumerable<GuiTagItem> tagItems) { this.Colorize(tagItems); return; }
+            if (data is GuiTagItem tagItem) { this.Colorize(tagItem); return; }
+            if (data is GuiResponse guiResponse) { this.Colorize(guiResponse); return; }
+            if (data is IEnumerable<GuiRefreshRow> refreshRows) { this.Colorize(refreshRows); return; }
+            if (data is GuiRefreshRow refreshRow) { this.Colorize(refreshRow); return; }
+            if (data is IEnumerable<GuiRefreshGraph> refreshGraphs) { this.Colorize(refreshGraphs); return; }
+            if (data is GuiRefreshGraph refreshGraph) { this.Colorize(refreshGraph); return; }
+            if (data is IEnumerable<GuiRefreshGraphItem> refreshGraphItems) { this.Colorize(refreshGraphItems); return; }
+            if (data is GuiRefreshGraphItem refreshGraphItem) { this.Colorize(refreshGraphItem); return; }
+        }
+        /// <summary>
+        /// Vrátí požadovanou barvu pro dané jméno stylu a danou barvu.
+        /// Aplikuje hodnotu <paramref name="transparency"/>.
+        /// </summary>
+        /// <param name="styleName"></param>
+        /// <param name="stylePart"></param>
+        /// <param name="color"></param>
+        /// <param name="transparency">Pokud bude null, pak prvek barva pozadí bude "plná" = neprůhledná, stejně jako při hodnotě 0.
+        /// Hodnota má rozsah 0 = neprůhledná až 100 (=100%) = úplně průhledná, pak je vidět vše, co je pod prvkem, jako by barva nebyla zadaná.</param>
+        /// <returns></returns>
+        protected Color? GetStylePartColor(string styleName, StylePartType stylePart, Color? color, int? transparency)
+        {
+            Color? resultColor = GetStylePartColor(styleName, stylePart, color);
+            if (resultColor.HasValue && transparency.HasValue)
+            {   // Aplikujeme průhlednost: převedeme hodnotu transparency z { 0 ÷ 100 } na hodnotu Alpha { 255 ÷ 0 }:
+                int alpha = ConvertTransparencyToAlpha(transparency.Value);
+                resultColor = Color.FromArgb(alpha, resultColor.Value.R, resultColor.Value.G, resultColor.Value.B);
+            }
+            return resultColor;
+        }
+        /// <summary>
+        /// Převede hodnotu transparency z { 0 ÷ 100 } na hodnotu Alpha { 255 ÷ 0 }:
+        /// </summary>
+        /// <param name="transparency"></param>
+        /// <returns></returns>
+        protected int ConvertTransparencyToAlpha(int transparency)
+        {
+            if (transparency <= 0) return 255;             // Průhlednost =   0  =>  Alpha (tj. krytí) = 255 = plná barva
+            if (transparency >= 100) return 0;             // Průhlednost = 100  =>  Alpha (tj. krytí) =   0 = průhledná barva
+            decimal ratio = (100m - (decimal)transparency) / 100m;
+            return (int)Math.Round((255m * ratio), 0);
+        }
+        /// <summary>
+        /// Vrátí požadovanou barvu pro dané jméno stylu a danou barvu
+        /// </summary>
+        /// <param name="styleName"></param>
+        /// <param name="stylePart"></param>
+        /// <param name="color"></param>
+        /// <returns></returns>
+        protected Color? GetStylePartColor(string styleName, StylePartType stylePart, Color? color)
+        {
+            if (String.IsNullOrEmpty(styleName) || !_HasStyles) return color;
+            if (this._AppHost.TryGetStylePartValue(styleName, stylePart, out var value))
+            {
+                if (value is Color) return (Color)value;
+                if (value is Color?) return (Color?)value;
+            }
+            return color;
+        }
+        /// <summary>
+        /// Naplní barvy dle kalíšků pro <see cref="GuiGrid"/>
+        /// </summary>
+        /// <param name="guiGrid"></param>
+        protected void Colorize(GuiGrid guiGrid)
+        {
+            if (guiGrid == null || !_HasStyles) return;
+
+            this.Colorize(guiGrid.GraphProperties);
+            this.Colorize(guiGrid.GridProperties);
+            this.Colorize(guiGrid.RowTable?.Rows);
+            this.Colorize(guiGrid.RowTable?.TagItems);
+        }
+        /// <summary>
+        /// Naplní barvy dle kalíšků pro <see cref="GuiGridProperties"/>
+        /// </summary>
+        /// <param name="gridProperties"></param>
+        protected void Colorize(GuiGridProperties gridProperties)
+        {
+            if (gridProperties == null || !_HasStyles) return;
+            gridProperties.TagFilterBackColor = this.GetStylePartColor(gridProperties.TagFilterBackColorName, StylePartType.TextAreaBackColor, gridProperties.TagFilterBackColor);
+        }
+        /// <summary>
+        /// Naplní barvy dle kalíšků pro <see cref="GuiDataTable"/>
+        /// </summary>
+        /// <param name="dataTable"></param>
+        protected void Colorize(GuiDataTable dataTable)
+        {
+            if (dataTable == null || !_HasStyles) return;
+            dataTable.TreeViewLinkColor = this.GetStylePartColor(dataTable.TreeViewLinkColorName, StylePartType.TextAreaBackColor, dataTable.TreeViewLinkColor);
+            Colorize(dataTable.Rows);
+            Colorize(dataTable.GraphLinks);
+        }
+        /// <summary>
+        /// Naplní barvy dle kalíšků pro prvky v kolekci <see cref="GuiDataRow"/>
+        /// </summary>
+        /// <param name="dataRows"></param>
+        protected void Colorize(IEnumerable<GuiDataRow> dataRows)
+        {
+            if (dataRows == null || !_HasStyles) return;
+            dataRows.ForEachItem(row => Colorize(row));
+        }
+        /// <summary>
+        /// Naplní barvy dle kalíšků pro <see cref="GuiDataRow"/>
+        /// </summary>
+        /// <param name="dataRow"></param>
+        protected void Colorize(GuiDataRow dataRow)
+        {
+            if (dataRow == null || !_HasStyles) return;
+            Colorize(dataRow.Graph);
+        }
+        /// <summary>
+        /// Naplní barvy dle kalíšků pro prvky v kolekci <see cref="GuiGraphLink"/>
+        /// </summary>
+        /// <param name="graphLinks"></param>
+        protected void Colorize(IEnumerable<GuiGraphLink> graphLinks)
+        {
+            if (graphLinks == null || !_HasStyles) return;
+            graphLinks.ForEachItem(graphLink => Colorize(graphLink));
+        }
+        /// <summary>
+        /// Naplní barvy dle kalíšků pro <see cref="GuiGraphLink"/>
+        /// </summary>
+        /// <param name="graphLink"></param>
+        protected void Colorize(GuiGraphLink graphLink)
+        {
+            if (graphLink == null || !_HasStyles) return;
+            graphLink.LinkColorStandard = this.GetStylePartColor(graphLink.LinkColorStandardName, StylePartType.TextAreaBackColor, graphLink.LinkColorStandard);
+            graphLink.LinkColorWarning = this.GetStylePartColor(graphLink.LinkColorWarningName, StylePartType.TextAreaBackColor, graphLink.LinkColorWarning);
+            graphLink.LinkColorError = this.GetStylePartColor(graphLink.LinkColorErrorName, StylePartType.TextAreaBackColor, graphLink.LinkColorError);
+        }
+        /// <summary>
+        /// Naplní barvy dle kalíšků pro <see cref="GuiGraph"/>
+        /// </summary>
+        /// <param name="graph"></param>
+        protected void Colorize(GuiGraph graph)
+        {
+            if (graph == null || !_HasStyles) return;
+            Colorize(graph.GraphProperties);
+            graph.BackgroundColor = this.GetStylePartColor(graph.BackgroundColorName, StylePartType.TextAreaBackColor, graph.BackgroundColor);
+            graph.BeginShadowColor = this.GetStylePartColor(graph.BeginShadowColorName, StylePartType.TextAreaBackColor, graph.BeginShadowColor);
+            graph.EndShadowColor = this.GetStylePartColor(graph.EndShadowColorName, StylePartType.TextAreaBackColor, graph.EndShadowColor);
+            Colorize(graph.GraphItems);
+        }
+        /// <summary>
+        /// Naplní barvy dle kalíšků pro <see cref="GuiGraphProperties"/>
+        /// </summary>
+        /// <param name="graphProperties"></param>
+        protected void Colorize(GuiGraphProperties graphProperties)
+        {
+            if (graphProperties == null || !_HasStyles) return;
+            graphProperties.TimeAxisBackColor = this.GetStylePartColor(graphProperties.TimeAxisBackColorName, StylePartType.TextAreaBackColor, graphProperties.TimeAxisBackColor);
+            graphProperties.LinkColorStandard = this.GetStylePartColor(graphProperties.LinkColorStandardName, StylePartType.TextAreaBackColor, graphProperties.LinkColorStandard);
+            graphProperties.LinkColorWarning = this.GetStylePartColor(graphProperties.LinkColorWarningName, StylePartType.TextAreaBackColor, graphProperties.LinkColorWarning);
+            graphProperties.LinkColorError = this.GetStylePartColor(graphProperties.LinkColorErrorName, StylePartType.TextAreaBackColor, graphProperties.LinkColorError);
+        }
+        /// <summary>
+        /// Naplní barvy dle kalíšků pro prvky v kolekci <see cref="GuiGraphItem"/>
+        /// </summary>
+        /// <param name="graphItems"></param>
+        protected void Colorize(IEnumerable<GuiGraphItem> graphItems)
+        {
+            if (graphItems == null || !_HasStyles) return;
+            graphItems.ForEachItem(item => Colorize(item));
+        }
+        /// <summary>
+        /// Naplní barvy dle kalíšků pro <see cref="GuiGraphItem"/>
+        /// </summary>
+        /// <param name="graphItem"></param>
+        protected void Colorize(GuiGraphItem graphItem)
+        {
+            if (graphItem == null || !_HasStyles) return;
+            Colorize(graphItem.SkinDefault);
+            graphItem.SkinDict?.Values.ForEachItem(skin => Colorize(skin));
+        }
+        /// <summary>
+        /// Naplní barvy dle kalíšků pro <see cref="GuiGraphSkin"/>
+        /// </summary>
+        /// <param name="graphSkin"></param>
+        protected void Colorize(GuiGraphSkin graphSkin)
+        {
+            if (graphSkin == null || !_HasStyles) return;
+            graphSkin.TextColor = this.GetStylePartColor(graphSkin.TextColorName, StylePartType.TextAreaForeColor, graphSkin.TextColor);
+            graphSkin.BackColor = this.GetStylePartColor(graphSkin.BackColorName, StylePartType.TextAreaBackColor, graphSkin.BackColor, graphSkin.BackColorTransparency);
+            graphSkin.HatchColor = this.GetStylePartColor(graphSkin.HatchColorName, StylePartType.TextAreaBackColor, graphSkin.HatchColor, graphSkin.HatchColorTransparency);
+            graphSkin.LineColor = this.GetStylePartColor(graphSkin.LineColorName, StylePartType.TextAreaForeColor, graphSkin.LineColor);
+            graphSkin.RatioBeginBackColor = this.GetStylePartColor(graphSkin.RatioBeginBackColorName, StylePartType.TextAreaBackColor, graphSkin.RatioBeginBackColor, graphSkin.RatioBeginBackColorTransparency);
+            graphSkin.RatioEndBackColor = this.GetStylePartColor(graphSkin.RatioEndBackColorName, StylePartType.TextAreaBackColor, graphSkin.RatioEndBackColor, graphSkin.RatioEndBackColorTransparency);
+            graphSkin.RatioLineColor = this.GetStylePartColor(graphSkin.RatioLineColorName, StylePartType.TextAreaForeColor, graphSkin.RatioLineColor);
+        }
+        /// <summary>
+        /// Naplní barvy dle kalíšků pro prvky v kolekci <see cref="GuiTagItem"/>
+        /// </summary>
+        /// <param name="tagItems"></param>
+        protected void Colorize(IEnumerable<GuiTagItem> tagItems)
+        {
+            if (tagItems == null || !_HasStyles) return;
+            tagItems.ForEachItem(tag => Colorize(tag));
+        }
+        /// <summary>
+        /// Naplní barvy dle kalíšků pro <see cref="GuiTagItem"/>
+        /// </summary>
+        /// <param name="tagItem"></param>
+        protected void Colorize(GuiTagItem tagItem)
+        {
+            if (tagItem == null || !_HasStyles) return;
+            tagItem.BackColor = this.GetStylePartColor(tagItem.BackColorName, StylePartType.TextAreaBackColor, tagItem.BackColor);
+            tagItem.BackColorChecked = this.GetStylePartColor(tagItem.BackColorCheckedName, StylePartType.TextAreaBackColor, tagItem.BackColorChecked);
+        }
+        /// <summary>
+        /// Naplní barvy dle kalíšků pro <see cref="GuiResponse"/>
+        /// </summary>
+        /// <param name="guiResponse"></param>
+        protected void Colorize(GuiResponse guiResponse)
+        {
+            if (guiResponse == null || !_HasStyles) return;
+            this.Colorize(guiResponse.RefreshRows);
+            this.Colorize(guiResponse.RefreshGraphs);
+            this.Colorize(guiResponse.RefreshGraphItems);
+            this.Colorize(guiResponse.ChangeLinks);
+        }
+        /// <summary>
+        /// Naplní barvy dle kalíšků pro prvky v kolekci <see cref="GuiRefreshRow"/>
+        /// </summary>
+        /// <param name="refreshRows"></param>
+        protected void Colorize(IEnumerable<GuiRefreshRow> refreshRows)
+        {
+            if (refreshRows == null || !_HasStyles) return;
+            refreshRows.ForEachItem(refreshRow => Colorize(refreshRow));
+        }
+        /// <summary>
+        /// Naplní barvy dle kalíšků pro <see cref="GuiRefreshRow"/>
+        /// </summary>
+        /// <param name="refreshRow"></param>
+        protected void Colorize(GuiRefreshRow refreshRow)
+        {
+            if (refreshRow == null || !_HasStyles) return;
+            Colorize(refreshRow.RowData);
+        }
+        /// <summary>
+        /// Naplní barvy dle kalíšků pro prvky v kolekci <see cref="GuiRefreshGraph"/>
+        /// </summary>
+        /// <param name="refreshGraphs"></param>
+        protected void Colorize(IEnumerable<GuiRefreshGraph> refreshGraphs)
+        {
+            if (refreshGraphs == null || !_HasStyles) return;
+            refreshGraphs.ForEachItem(refreshGraph => Colorize(refreshGraph));
+        }
+        /// <summary>
+        /// Naplní barvy dle kalíšků pro <see cref="GuiRefreshGraph"/>
+        /// </summary>
+        /// <param name="refreshGraph"></param>
+        protected void Colorize(GuiRefreshGraph refreshGraph)
+        {
+            if (refreshGraph == null || !_HasStyles) return;
+            Colorize(refreshGraph.GraphData);
+        }
+        /// <summary>
+        /// Naplní barvy dle kalíšků pro prvky v kolekci <see cref="GuiRefreshGraphItem"/>
+        /// </summary>
+        /// <param name="refreshGraphItems"></param>
+        protected void Colorize(IEnumerable<GuiRefreshGraphItem> refreshGraphItems)
+        {
+            if (refreshGraphItems == null || !_HasStyles) return;
+            refreshGraphItems.ForEachItem(refreshGraphItem => Colorize(refreshGraphItem));
+        }
+        /// <summary>
+        /// Naplní barvy dle kalíšků pro <see cref="GuiRefreshGraphItem"/>
+        /// </summary>
+        /// <param name="refreshGraphItem"></param>
+        protected void Colorize(GuiRefreshGraphItem refreshGraphItem)
+        {
+            if (refreshGraphItem == null || !_HasStyles) return;
+            Colorize(refreshGraphItem.ItemData);
+        }
         #endregion
         #region Zavírání hlavního okna
         /// <summary>
@@ -3700,6 +4053,19 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="blockGuiTime"></param>
         void IMainDataInternal.CallAppHostFunction(GuiRequest request, Action<AppHostResponseArgs> callBackAction, TimeSpan? blockGuiTime) { this._CallAppHostFunction(request, callBackAction, blockGuiTime); }
         /// <summary>
+        /// Metoda zajistí aplikaci stylu na daný prvek, ať už je to cokoliv
+        /// </summary>
+        /// <param name="data"></param>
+        void IMainDataInternal.Colorize(object data) { this.Colorize(data); }
+        /// <summary>
+        /// Vrátí požadovanou barvu pro dané jméno stylu a danou barvu
+        /// </summary>
+        /// <param name="styleName"></param>
+        /// <param name="stylePart"></param>
+        /// <param name="color"></param>
+        /// <returns></returns>
+        Color? IMainDataInternal.GetStylePartColor(string styleName, StylePartType stylePart, Color? color) { return this.GetStylePartColor(styleName, stylePart, color); }
+        /// <summary>
         /// Zpracuje odpověď z aplikační vrstvy
         /// </summary>
         /// <param name="response"></param>
@@ -3773,6 +4139,19 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="callBackAction"></param>
         /// <param name="blockGuiTime"></param>
         void CallAppHostFunction(GuiRequest request, Action<AppHostResponseArgs> callBackAction, TimeSpan? blockGuiTime);
+        /// <summary>
+        /// Metoda zajistí aplikaci stylu na daný prvek, ať už je to cokoliv
+        /// </summary>
+        /// <param name="data"></param>
+        void Colorize(object data);
+        /// <summary>
+        /// Vrátí požadovanou barvu pro dané jméno stylu a danou barvu
+        /// </summary>
+        /// <param name="styleName"></param>
+        /// <param name="stylePart"></param>
+        /// <param name="color"></param>
+        /// <returns></returns>
+        Color? GetStylePartColor(string styleName, StylePartType stylePart, Color? color);
         /// <summary>
         /// Zpracuje odpověď z aplikační vrstvy
         /// </summary>

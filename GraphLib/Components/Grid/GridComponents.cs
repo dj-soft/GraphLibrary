@@ -602,8 +602,13 @@ namespace Asol.Tools.WorkScheduler.Components.Grids
             // Zkontroluji objekt časové osy:
             if (this._TimeAxis == null)
             {
-                this._TimeAxis = new TimeAxis();
                 Components.Graphs.TimeGraphProperties graphParameters = this.OwnerColumn.GraphParameters;
+
+                // Maximální velikost zobrazené časové osy - pokud je zadaná
+                if (graphParameters != null && graphParameters.TimeScaleMax != null)
+                    this._TimeAxis = new TimeAxis(graphParameters.TimeScaleMax.Value);
+                else
+                    this._TimeAxis = new TimeAxis();
 
                 // Maximální hodnota na časové ose dosažitelná:
                 if (graphParameters != null)

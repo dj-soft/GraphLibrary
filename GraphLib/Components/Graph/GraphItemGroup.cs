@@ -142,11 +142,13 @@ namespace Asol.Tools.WorkScheduler.Components.Graphs
         /// <param name="timeConvert"></param>
         /// <param name="offsetX"></param>
         /// <param name="minWidth"></param>
+        /// <param name="isSubMinWidth">Out: šířka prvku by byla menší než <paramref name="minWidth"/> a byla tedy navýšena</param>
         /// <param name="itemsCount"></param>
-        public void PrepareCoordinateX(Func<TimeRange, DoubleRange> timeConvert, int offsetX, int minWidth, ref int itemsCount)
+        public void PrepareCoordinateX(Func<TimeRange, DoubleRange> timeConvert, int offsetX, double minWidth, out bool isSubMinWidth, ref int itemsCount)
         {
             Int32Range coordX;
             DoubleRange groupX = timeConvert(this.Time);             // Vrací souřadnici X v koordinátech grafu
+            isSubMinWidth = (groupX.Size < minWidth);
             coordX = ResizeRangeToMinWidth(groupX, minWidth);        // Zaokrouhlím Begin i End
             int groupB = coordX.Begin;                               // Offset z absolutní do relativní souřadnice pro jednotlivé prvky
             if (offsetX != 0d) coordX = coordX.ShiftBy(offsetX);     // Posun celé grupy vlivem offsetu grafu vůči časové ose
@@ -340,6 +342,10 @@ namespace Asol.Tools.WorkScheduler.Components.Graphs
         /// </summary>
         internal bool IsValidRealTime { get { return this._IsValidRealTime; } }
         /// <summary>
+        /// Viditelnost prvku z důvodu velikosti a časové osy
+        /// </summary>
+        internal TimeGraphElementSizeState CurrentSizeState { get; set; }
+        /// <summary>
         /// Obsahuje průhlednost pro vykreslení tohoto prvku do vrstvy Interactive.
         /// Vkládá se sem v procesu Drag and Drop, čte se v procesu Draw na prvku třídy <see cref="TimeGraphItem"/>
         /// </summary>
@@ -410,8 +416,12 @@ namespace Asol.Tools.WorkScheduler.Components.Graphs
             if (e.DrawLayer == GInteractiveDrawLayer.Standard)
                 boundsVisibleAbsolute = e.GetClip(boundsAbsolute);
 
-            this.ControlBuffered.DrawImages(e, ref boundsAbsolute, boundsVisibleAbsolute, drawMode);
+            // 1. Obrázky:
+            // Pokud máme hodně prostoru, tak vypisovaný text posuneme mimo ikony (true = pokud chceme zmenšit "boundsAbsolute" o prostor ikony / false = neměnit)
+            bool cropBoundsAbsolute = (boundsAbsolute.Width > 65);
+            this.ControlBuffered.DrawImages(e, ref boundsAbsolute, boundsVisibleAbsolute, drawMode, cropBoundsAbsolute);
 
+            // 2. Textový popisek do prvku:
             if (!this.DrawTextInCurrentState) return;
 
             if (e.DrawLayer == GInteractiveDrawLayer.Standard)

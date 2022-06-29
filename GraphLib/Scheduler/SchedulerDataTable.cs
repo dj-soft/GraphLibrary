@@ -93,6 +93,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         internal void PrepareAfterLoad()
         {
+            this.RefreshDynamicRowsFilter(this.MainData.GuiData.Properties?.InitialTimeRange, true);
             this.PrepareDynamicChilds(this.MainData.GuiData.Properties?.InitialTimeRange, true);
         }
         #endregion
@@ -212,7 +213,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 GTable gTableRow = this.GTableRow;
                 GuiGridProperties gridProperties = this.GuiGrid.GridProperties;
                 gTableRow.DataTable.Visible = gridProperties.Visible;
-                gTableRow.TagFilterBackColor = gridProperties.TagFilterBackColor;
+                gTableRow.TagFilterBackColor = this.IMainData.GetStylePartColor(gridProperties.TagFilterBackColorName, StylePartType.TextAreaBackColor, gridProperties.TagFilterBackColor);
                 gTableRow.TagFilterEnabled = gridProperties.TagFilterEnabled;
                 gTableRow.TagFilterItemHeight = gridProperties.TagFilterItemHeight;
                 gTableRow.TagFilterItemMaxCount = gridProperties.TagFilterItemMaxCount;
@@ -353,7 +354,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         protected void PrepareTableForGraphs()
         {
             bool isGraphInColumn = (this.GraphPosition == DataGraphPositionType.InLastColumn);
-            TimeGraphProperties graphProperties = this.GraphProperties.CreateTimeGraphProperties(isGraphInColumn, this.MainControl.SynchronizedTime.Value, this.MainData.GuiData.Properties.TotalTimeRange);
+            TimeGraphProperties graphProperties = this.GraphProperties.CreateTimeGraphProperties(isGraphInColumn, this.MainControl.SynchronizedTime.Value, this.MainData.GuiData.Properties.TotalTimeRange, this.MainData.GuiData.Properties.TimeScaleMax);
             if (isGraphInColumn)
             {
                 Column graphColumn = new Column("__time__graph__");
@@ -1047,7 +1048,11 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         private void RefreshPropertyTable(GuiRefreshProperty refreshProperty, Dictionary<uint, TimeGraph> repaintGraphDict = null)
         {
             if (refreshProperty.PropertyName == nameof(GuiGridProperties.Visible) && refreshProperty.Value != null && refreshProperty.Value is bool)
-                this.TableRow.Visible = (bool)refreshProperty.Value;
+            {
+                bool visible = (bool)refreshProperty.Value;
+                if (this.TableRow.Visible != visible)
+                    this.TableRow.Visible = visible;
+            }
         }
         /// <summary>
         /// Refresh dalších vlastností prvků v rámci řádku
@@ -1060,6 +1065,8 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             if (!this.TryGetRow(refreshProperty.GridItemId.RowId, out row)) return;
             if (refreshProperty.PropertyName == nameof(GuiDataRow.Visible) && refreshProperty.Value != null && refreshProperty.Value is bool)
                 row.Visible = (bool)refreshProperty.Value;
+            else if (refreshProperty.PropertyName == nameof(GuiDataRow.DynamicVisibility) && refreshProperty.Value != null && refreshProperty.Value is GuiRowsVisibilityMode)
+                row.DynamicVisibility= (GuiRowsVisibilityMode)refreshProperty.Value;
         }
         /// <summary>
         /// Refresh dalších vlastností prvků v rámci prvku grafu
@@ -1607,28 +1614,77 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <summary>
         /// Připraví definice Dynamického řádkového filtru
         /// </summary>
-        private void PrepareDynamicRowsFilter()
+        private void _PrepareDynamicRowsFilter()
         {
-
-        }
-        /// <summary>
-        /// 
-        /// </summary>
-        private void RefreshDynamicRowsFilter(bool invalidateTable)
-        {
-            RefreshDynamicRowsFilter(this.SynchronizedTime, true);
-            if (invalidateTable)
-                this.GTableRow.InvalidateData();
+            var timeEnlargement = this.GuiGrid.GridProperties.DynamicRowsVisibilityTimeRangeEnlargement;
+            bool isActive = (timeEnlargement.HasValue && timeEnlargement >= 1f);
+            this.DynamicRowFilterIsActive = isActive;
+            this.DynamicRowFilterTimeRangeEnlargement = (isActive ? timeEnlargement.Value : 0f);
+            if (isActive)
+                this.TableRow.AddFilter(DynamicRowFilterTimeRangeName, row => DynamicRowFilterExecute(row));      // V této chvíli ještě neexistuje grafická komponenta this.GTableRow, máme jen datovou tabulku TableRow.
         }
         /// <summary>
         /// 
         /// </summary>
         private void RefreshDynamicRowsFilter(TimeRange timeRange, bool force)
-        { }
+        {
+            if (!DynamicRowFilterIsActive) return;
+
+            // Rozšíříme zadané časové okno pomocí koeficientu DynamicRowFilterTimeRangeEnlargement :
+            if (timeRange != null && timeRange.Center.HasValue && DynamicRowFilterTimeRangeEnlargement > 1f) timeRange = timeRange.ZoomToRatio(timeRange.Center.Value, (double)DynamicRowFilterTimeRangeEnlargement);
+
+            // Pokud nové okno je shodné jako dosavadní, a není force, pak skončíme (není nutno):
+            if (!force && TimeRange.Equal(timeRange, _DynamicRowsLastTimeRange)) return;
+
+            // Invalidace dat tabulky zajistí přepočty řádkového filtru (mj. dojde k vyvolání DynamicRowFilterExecute()) i vizuální invalidaci tabulky a gridu:
+            _DynamicRowsLastTimeRange = timeRange;
+            this.GTableRow.DataTable.InvalidateRows();
+        }
+        /// <summary>
+        /// Výkonná metoda pro filtrování konkrétního řádku podle dynamické hodnoty TimeRange
+        /// </summary>
+        /// <param name="row"></param>
+        /// <returns></returns>
+        private bool DynamicRowFilterExecute(Row row)
+        {
+            if (DynamicRowFilterIsActive && _DynamicRowsLastTimeRange != null && row.DynamicVisibility.HasValue && row.DynamicVisibility.Value == GuiRowsVisibilityMode.WithVisibleGraphItemAny)
+                return DynamicRowFilterGetVisibility(row);
+            return true;
+        }
+        /// <summary>
+        /// Výkonná metoda pro filtrování konkrétního řádku podle dynamické hodnoty TimeRange, vlastní filtr dle obsahu grafu
+        /// </summary>
+        /// <param name="row"></param>
+        /// <returns></returns>
+        private bool DynamicRowFilterGetVisibility(Row row)
+        {
+            var timeRange = _DynamicRowsLastTimeRange;
+            if (timeRange is null) return true;
+
+            var timeGraph = row.Cells.Select(c => c.Value).FirstOrDefault(c => c is TimeGraph) as TimeGraph;
+            if (timeGraph is null) return true;
+
+            var visibleItems = timeGraph.VisibleGraphItems;
+            bool exists = (visibleItems != null && visibleItems.Any(i => timeRange.HasIntersect(i.Time)));
+
+            return exists;
+        }
         /// <summary>
         /// Obsahuje true tehdy, když je aktivní Dynamický řádkový filtr
         /// </summary>
         private bool DynamicRowFilterIsActive { get; set; }
+        /// <summary>
+        /// Obsahuje hodnotu rozšíření časového intervalu pokud je aktivní systém <see cref="DynamicRowFilterIsActive"/>.
+        /// </summary>
+        private float DynamicRowFilterTimeRangeEnlargement { get; set; }
+        /// <summary>
+        /// Jméno řádkového filtru typu 'DynamicRowFilterTimeRange'
+        /// </summary>
+        private const string DynamicRowFilterTimeRangeName = "DynamicRowFilterTimeRange";
+        /// <summary>
+        /// Posledně platná hodnota času při detekci v metodě <see cref="RefreshDynamicRowsFilter(TimeRange, bool)"/>
+        /// </summary>
+        private TimeRange _DynamicRowsLastTimeRange;
         #endregion
         #region ParentChilds - Vztahy mezi řádky
         /// <summary>
@@ -4139,7 +4195,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         private void LoadPaintLinkParam(GuiMousePaintLink guiPaints)
         {
-            this.MousePaintDefinitionParam = new MousePaintLinkParam(guiPaints);
+            this.MousePaintDefinitionParam = new MousePaintLinkParam(this.MainData, guiPaints);
         }
         /// <summary>
         /// Vrátí true, pokud mezi zadanými prvky jsou některé, které povolují kreslit LinkLine z daného zdroje
@@ -4377,16 +4433,21 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             /// <summary>
             /// Konstruktor
             /// </summary>
+            /// <param name="mainData"></param>
             /// <param name="guiPaints"></param>
-            public MousePaintLinkParam(GuiMousePaintLink guiPaints)
+            public MousePaintLinkParam(MainData mainData, GuiMousePaintLink guiPaints)
             {
+                this.MainData = mainData;
+
                 this.PaintLineShape = GetValue(guiPaints.PaintLineShape, GuiLineShape.SCurveHorizontal);
-                this.EnabledLineForeColor = GetValue(guiPaints.EnabledLineForeColor, Color.LightGreen);
-                this.EnabledLineBackColor = GetValue(guiPaints.EnabledLineBackColor, Color.DimGray);
+
+                this.EnabledLineForeColor = this.IMainData.GetStylePartColor(guiPaints.EnabledLineBackColorName, StylePartType.TextAreaForeColor, GetValue(guiPaints.EnabledLineForeColor, Color.LightGreen));
+                this.EnabledLineBackColor = this.IMainData.GetStylePartColor(guiPaints.EnabledLineBackColorName, StylePartType.TextAreaBackColor, GetValue(guiPaints.EnabledLineBackColor, Color.DimGray));
                 this.EnabledLineWidth = GetValue(guiPaints.EnabledLineWidth, 5);
                 this.EnabledLineEndingCap = GetValue(guiPaints.EnabledLineEndingCap, GuiLineEndingCap.ArrowAnchor);
-                this.DisabledLineForeColor = GetValue(guiPaints.DisabledLineForeColor, Color.LightGray);
-                this.DisabledLineBackColor = GetValue(guiPaints.DisabledLineBackColor, Color.Gray);
+
+                this.DisabledLineForeColor = this.IMainData.GetStylePartColor(guiPaints.DisabledLineForeColorName, StylePartType.TextAreaForeColor, GetValue(guiPaints.DisabledLineForeColor, Color.LightGray));
+                this.DisabledLineBackColor = this.IMainData.GetStylePartColor(guiPaints.DisabledLineBackColorName, StylePartType.TextAreaBackColor, GetValue(guiPaints.DisabledLineBackColor, Color.Gray));
                 this.DisabledLineWidth = GetValue(guiPaints.DisabledLineWidth, 3);
                 this.DisabledLineEndingCap = GetValue(guiPaints.DisabledLineEndingCap, GuiLineEndingCap.Round);
 
@@ -4398,7 +4459,6 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             {
                 return (value.HasValue ? value.Value : defaultValue);
             }
-
             private static TOut GetEnum<TInp, TOut>(TInp inpValue, TOut defaultValue) where TInp : struct where TOut : struct
             {
                 string name = Enum.GetName(typeof(TInp), inpValue);
@@ -4406,6 +4466,14 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 if (Enum.TryParse<TOut>(name, out outValue)) return outValue;
                 return defaultValue;
             }
+            /// <summary>
+            /// Main data
+            /// </summary>
+            protected MainData MainData { get; set; }
+            /// <summary>
+            /// IMainData
+            /// </summary>
+            protected IMainDataInternal IMainData { get { return this.MainData as IMainDataInternal; } }
             /// <summary>
             /// Typ čáry
             /// </summary>
@@ -4428,7 +4496,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 paintInfo.ObjectType = this.LineShape;
                 if (isEnabled)
                 {
-                    paintInfo.LineColor = this.EnabledLineForeColor.Value;
+                    paintInfo.LineColor = this.EnabledLineForeColor.Value;          // Tady jsou hodnoty už předpřipravené z konstruktoru
                     paintInfo.FillColor = this.EnabledLineBackColor.Value;
                     paintInfo.LineWidth = this.EnabledLineWidth.Value;
                     paintInfo.EndCap = this.EnabledEndingCap;
@@ -5768,8 +5836,9 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="isGraphInColumn"></param>
         /// <param name="initialValue"></param>
         /// <param name="maximalValue"></param>
+        /// <param name="timeScaleMax">Maximální velikost zobrazené časové osyparam>
         /// <returns></returns>
-        internal TimeGraphProperties CreateTimeGraphProperties(bool isGraphInColumn, TimeRange initialValue, TimeRange maximalValue)
+        internal TimeGraphProperties CreateTimeGraphProperties(bool isGraphInColumn, TimeRange initialValue, TimeRange maximalValue, int? timeScaleMax)
         {
             GuiGraphProperties guiProperties = this.GuiGraphProperties;
             TimeGraphProperties timeProperties = new TimeGraphProperties();
@@ -5793,6 +5862,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             timeProperties.LinkColorWarning = guiProperties.LinkColorWarning;
             timeProperties.LinkColorError = guiProperties.LinkColorError;
             timeProperties.TimeAxisSegments = ConvertSegments(guiProperties.TimeAxisSegmentList);
+            timeProperties.TimeScaleMax = timeScaleMax;
             return timeProperties;
         }
         /// <summary>

@@ -769,8 +769,8 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <returns></returns>
         public bool IsEqual(BaseRange<TEdge, TSize> a, BaseRange<TEdge, TSize> b)
         {
-            bool ae = ((object)a == null || a.IsEmpty);
-            bool be = ((object)b == null || b.IsEmpty);
+            bool ae = (a is null || a.IsEmpty);
+            bool be = (b is null || b.IsEmpty);
             if (ae && be) return true;                               // Booth is null or empty
             else if (ae || be) return false;                         // Only one is null or empty
 
