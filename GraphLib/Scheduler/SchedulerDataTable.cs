@@ -112,6 +112,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             this.TableRow.UserData = this;
             this._PrepareActiveKeys();
             this._PrepareRowDragMove();
+            this._PrepareDynamicRowsFilter();
             this._PrepareRowSearchChild();
         }
         /// <summary>
@@ -296,6 +297,9 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="e"></param>
         private void _GTableTimeAxisValueChanged(object sender, GPropertyChangeArgs<TimeRange> e)
         {
+            if (this.DynamicRowFilterIsActive)
+                this.RefreshDynamicRowsFilter(e.NewValue, false);
+
             // Pokud současný systém vztahů Parent-Child je závislý na viditelném časovém intervalu, zavoláme jeho refresh:
             if (this.CurrentSearchChildInfo.IsVisibleTimeOnly)
                 this.PrepareDynamicChilds(e.NewValue, false);
@@ -1598,6 +1602,33 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Může rovněž obsahovat NULL pro daný GId, to když nebyl nalezen řádek.
         /// </summary>
         public Dictionary<GId, Row> TableToolTipRowDict { get; private set; }
+        #endregion
+        #region Dynamický řádkový filtr
+        /// <summary>
+        /// Připraví definice Dynamického řádkového filtru
+        /// </summary>
+        private void PrepareDynamicRowsFilter()
+        {
+
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        private void RefreshDynamicRowsFilter(bool invalidateTable)
+        {
+            RefreshDynamicRowsFilter(this.SynchronizedTime, true);
+            if (invalidateTable)
+                this.GTableRow.InvalidateData();
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        private void RefreshDynamicRowsFilter(TimeRange timeRange, bool force)
+        { }
+        /// <summary>
+        /// Obsahuje true tehdy, když je aktivní Dynamický řádkový filtr
+        /// </summary>
+        private bool DynamicRowFilterIsActive { get; set; }
         #endregion
         #region ParentChilds - Vztahy mezi řádky
         /// <summary>
