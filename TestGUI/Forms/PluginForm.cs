@@ -13,7 +13,7 @@ using Noris.LCS.Base.WorkScheduler;
 namespace Asol.Tools.WorkScheduler.TestGUI
 {
     /// <summary>
-    /// Třída PluginForm pro účely testování nahrazuje klietnský plugin.
+    /// Třída PluginForm pro účely testování nahrazuje klientský plugin.
     /// Zajistí v podstatě totéž, co zajišťuje Connector v pluginu: 
     /// vytvoření datového objektu WorkScheduler, 
     /// jeho iniciaci pomocí datového balíku, 
@@ -136,6 +136,15 @@ namespace Asol.Tools.WorkScheduler.TestGUI
                 this._SendResponse(appRequest, appResponse);
 
             return appResponse;
+        }
+        /// <summary>
+        /// Obsahuje true, pokud tento hostitel podporuje styly (pak má smysl provádět Colorize)
+        /// </summary>
+        bool IAppHost.HasStyles { get { return false; } }
+        bool IAppHost.TryGetStylePartValue(string styleName, StylePartType stylePart, out object value)
+        {
+            value = null;
+            return false;
         }
         /// <summary>
         /// Vrátí response na daný request

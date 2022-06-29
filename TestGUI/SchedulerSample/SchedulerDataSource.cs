@@ -69,8 +69,8 @@ namespace Asol.Tools.WorkScheduler.TestGUI
         {
             DateTime now = DateTime.Now;
             this.DateTimeNow = now.Date;
-            this.DateTimeFirst = new DateTime(now.Year, now.Month, 1).AddMonths(-2);
-            this.DateTimeLast = this.DateTimeFirst.AddMonths(14);
+            this.DateTimeFirst = new DateTime(now.Year, now.Month, 1).AddMonths(-1);
+            this.DateTimeLast = this.DateTimeFirst.AddMonths(3);
             this.TimeRangeCurrent = new GuiTimeRange(this.DateTimeNow, this.DateTimeNow.AddDays(7d));
             this.TimeRangeTotal = new GuiTimeRange(this.DateTimeFirst, this.DateTimeLast);
             this.DataChanged = false;
@@ -285,10 +285,10 @@ Nástroje:{tab}Voltmetr, Ampermetr, Posuvné měřítko (šupléra).";
                     break;
 
                 case ProductTpv.Cooperation:
-                    CreateProductOperation(productOrder, ++line, cols[13], "Kooperace", "Udělá to někdo jiný", WP_KOOP, qty, "B", false, 360, 30, 1440);
-                    CreateProductOperation(productOrder, ++line, cols[15], "Kontrola", "Kontrolovat kooperaci", WP_KONT, qty, "", false, 1440, 30, 60);
-                    CreateProductOperation(productOrder, ++line, cols[14], "Scan kódu", "Scanování kódu před kontrolou", WP_KONT, qty, "", false, 0, 0, 0);
-                    CreateProductOperation(productOrder, ++line, cols[15], "Kontrola", finalToolTip, WP_KONT, qty, "OZ", false, 30, 20, 0);
+                    CreateProductOperation(productOrder, ++line, StyleOperace1, "Kooperace", "Udělá to někdo jiný", WP_KOOP, qty, "B", false, 360, 30, 1440);
+                    CreateProductOperation(productOrder, ++line, StyleOperace1, "Kontrola", "Kontrolovat kooperaci", WP_KONT, qty, "", false, 1440, 30, 60);
+                    CreateProductOperation(productOrder, ++line, StyleOperace1, "Scan kódu", "Scanování kódu před kontrolou", WP_KONT, qty, "", false, 0, 0, 0);
+                    CreateProductOperation(productOrder, ++line, StyleOperace1, "Kontrola", finalToolTip, WP_KONT, qty, "OZ", false, 30, 20, 0);
                     break;
 
             }
@@ -329,7 +329,28 @@ Nástroje:{tab}Voltmetr, Ampermetr, Posuvné měřítko (šupléra).";
         /// </summary>
         /// <param name="productOrder"></param>
         /// <param name="line"></param>
-        /// <param name="time"></param>
+        /// <param name="styleName"></param>
+        /// <param name="name"></param>
+        /// <param name="toolTip"></param>
+        /// <param name="qty"></param>
+        /// <param name="isFragment"></param>
+        /// <param name="tbcMin"></param>
+        /// <param name="tacMin"></param>
+        /// <param name="tecMin"></param>
+        /// <param name="isFixed"></param>
+        /// <returns></returns>
+        protected ProductOperation CreateProductOperation(ProductOrder productOrder, int line, string styleName, string name, string toolTip,
+            string workPlace, decimal qty, string components, bool isFragment, int tbcMin, int tacMin, int tecMin, bool isFixed = false)
+        {
+            return _CreateProductOperation(productOrder, line, styleName, null, name, toolTip,
+              workPlace, qty, components, isFragment, tbcMin, tacMin, tecMin, isFixed);
+        }
+        /// <summary>
+        /// Vytvoří a vrátí jednu operaci pro dané zadání.
+        /// Operaci přidá do daného VP a do indexu <see cref="ProductOperationDict"/>.
+        /// </summary>
+        /// <param name="productOrder"></param>
+        /// <param name="line"></param>
         /// <param name="backColor"></param>
         /// <param name="name"></param>
         /// <param name="toolTip"></param>
@@ -343,6 +364,28 @@ Nástroje:{tab}Voltmetr, Ampermetr, Posuvné měřítko (šupléra).";
         protected ProductOperation CreateProductOperation(ProductOrder productOrder, int line, Color backColor, string name, string toolTip,
             string workPlace, decimal qty, string components, bool isFragment, int tbcMin, int tacMin, int tecMin, bool isFixed = false)
         {
+            return _CreateProductOperation(productOrder, line, null, backColor, name, toolTip,
+                        workPlace, qty, components, isFragment, tbcMin, tacMin, tecMin, isFixed);
+        }
+        /// <summary>
+        /// Vytvoří a vrátí jednu operaci pro dané zadání.
+        /// Operaci přidá do daného VP a do indexu <see cref="ProductOperationDict"/>.
+        /// </summary>
+        /// <param name="productOrder"></param>
+        /// <param name="line"></param>
+        /// <param name="backColor"></param>
+        /// <param name="name"></param>
+        /// <param name="toolTip"></param>
+        /// <param name="qty"></param>
+        /// <param name="isFragment"></param>
+        /// <param name="tbcMin"></param>
+        /// <param name="tacMin"></param>
+        /// <param name="tecMin"></param>
+        /// <param name="isFixed"></param>
+        /// <returns></returns>
+        protected ProductOperation _CreateProductOperation(ProductOrder productOrder, int line, string styleName, Color? backColor, string name, string toolTip,
+            string workPlace, decimal qty, string components, bool isFragment, int tbcMin, int tacMin, int tecMin, bool isFixed = false)
+        {
             Color textColor = (((line % 4) == 0) ? Color.IndianRed : Color.Black);
             float height = CreateOperationHeight(isFragment);
             ProductOperation operation = new ProductOperation(this)
@@ -352,7 +395,8 @@ Nástroje:{tab}Voltmetr, Ampermetr, Posuvné měřítko (šupléra).";
                 Refer = (10 * line).ToString(),
                 Name = name,
                 IsFixed = isFixed,
-                BackColor = backColor,
+                StyleName = styleName,
+                BackColor = backColor ?? Color.Violet,
                 TextColor = textColor,
                 Qty = qty,
                 Height = height,
@@ -855,6 +899,8 @@ Nástroje:{tab}Voltmetr, Ampermetr, Posuvné měřítko (šupléra).";
         /// <param name="flowTime"></param>
         protected void PlanProductOperationToWorkplaces(ProductOperation productOperation, ref DateTime flowTime)
         {
+            bool isZero = (productOperation.TTc.Ticks == 0L);
+
             string workPlace = productOperation.WorkPlace;
             if (String.IsNullOrEmpty(workPlace)) return;
 
@@ -869,9 +915,12 @@ Nástroje:{tab}Voltmetr, Ampermetr, Posuvné měřítko (šupléra).";
             PlanUnitC source = null;
             if (Pbb(33)) source = this.GetRandomFrom(this.SourceDict.Values);
 
-            if (Pbb(25))
+            if (isZero || Pbb(25))
                 flowTime = flowTime + TimeSpan.FromHours(Rand.Next(1, 9));        // Random pauza mezi operacemi 1 až 8 hodin, zařadím v 25% případů
             productOperation.PlanTimeOperation(ref flowTime, Direction.Positive, workplace, person, source);
+
+            if (isZero)
+                flowTime = flowTime + TimeSpan.FromHours(Rand.Next(1, 3));        // Random pauza za Zero operací 1 až 2 hodiny
 
             foreach (WorkUnit workUnit in productOperation.WorkUnitDict.Values)   // Sumarizuji WorkUnit z operace do globální Dictionary
                 this.WorkUnitDict.Add(workUnit.RecordGid, workUnit);
@@ -905,7 +954,7 @@ Nástroje:{tab}Voltmetr, Ampermetr, Posuvné měřítko (šupléra).";
         /// </summary>
         protected void CreateToolBar()
         {
-            this.MainData.ToolbarItems.ToolbarShowSystemItems = ToolbarSystemItem.Default;
+            this.MainData.ToolbarItems.ToolbarShowSystemItems = ToolbarSystemItem.Default | ToolbarSystemItem.TimeAxisZoomHalfYear | ToolbarSystemItem.TimeAxisZoomWholeYear;
 
             this.MainData.ToolbarItems.Add(new GuiToolbarItem()
             {
@@ -1147,14 +1196,15 @@ Nástroje:{tab}Voltmetr, Ampermetr, Posuvné měřítko (šupléra).";
                 Size = FunctionGlobalItemSize.Half,
                 LayoutHint = LayoutHint.ThisItemSkipToNextRow,
                 IsCheckable = true,
-                IsChecked = true,
+                IsChecked = false,
                 StoreValueToConfig = true,
                 CheckedGroupName = null,
                 GroupName = "DALŠÍ TABULKY",
                 Title = "Zdroje operací",
                 ToolTip = "Zobrazí tabulku zdrojů operací (vždy je pouze dole)",
-                GuiActions = GuiActionType.SetVisibleForControl | GuiActionType.SuppressCallAppHost,
-                ActionTargetNames = GuiFullNameGridCenterSources,
+                // Zavoláme si na to aplikaci! :
+                // GuiActions = GuiActionType.SetVisibleForControl | GuiActionType.SuppressCallAppHost,
+                // ActionTargetNames = GuiFullNameGridCenterSources,
                 Image = RES.Images.Categories.ApplicationsDevelopment4Png
             });
 
@@ -1427,7 +1477,7 @@ Nástroje:{tab}Voltmetr, Ampermetr, Posuvné měřítko (šupléra).";
             foreach (ProductOrder productOrder in this.ProductOrderDict.Values)
             {
                 string tagText = "Ref" + productOrder.Refer.Substring(productOrder.Refer.Length - 2, 1);
-                tagItems.Add(new GuiTagItem() { RowId = productOrder.RecordGid, BackColor = Color.LightSeaGreen, TagText = tagText });
+                tagItems.Add(new GuiTagItem() { RowId = productOrder.RecordGid, BackColorName = StyleTagSeaGreen /* BackColor = Color.LightSeaGreen */, TagText = tagText });
             }
             guiTable.TagItems = tagItems;
         }
@@ -1439,6 +1489,7 @@ Nástroje:{tab}Voltmetr, Ampermetr, Posuvné měřítko (šupléra).";
             GuiGrid gridCenterWorkplaces = new GuiGrid() { Name = GuiNameGridCenterWorkplaces, Title = "Pracoviště" };
 
             this.SetCenterGridProperties(gridCenterWorkplaces, true, true, true, true, GuiNameRowsCenterWorkplaces);
+            gridCenterWorkplaces.GridProperties.DynamicRowsVisibilityTimeRangeEnlargement = 1.00f;
             gridCenterWorkplaces.RowTable.RowCheckEnabled = false;
             // gridCenterWorkplace.RowTable.DefaultVisualStyle = new GuiVisualStyle() { FontBold = true, FontRelativeSize = 105 };
             // gridCenterWorkplace.RowTable.DefaultChildVisualStyle = new GuiVisualStyle() { FontBold = false, FontItalic = true, FontRelativeSize = 90, BackColor = Color.FromArgb(240, 240, 240) };
@@ -1568,6 +1619,7 @@ Nástroje:{tab}Voltmetr, Ampermetr, Posuvné měřítko (šupléra).";
             GuiGrid gridCenterSources = new GuiGrid() { Name = GuiNameGridCenterSources, Title = "Další zdroje" };
 
             this.SetCenterGridProperties(gridCenterSources, true, true, true, true, GuiNameRowsCenterSources);
+            gridCenterSources.GridProperties.Visible = false;
             gridCenterSources.RowTable.DefaultVisualStyle = new GuiVisualStyle() { FontBold = true, FontRelativeSize = 105 };
             gridCenterSources.RowTable.DefaultChildVisualStyle = new GuiVisualStyle() { FontBold = false, FontItalic = true, FontRelativeSize = 90, BackColor = Color.FromArgb(240, 240, 240) };
             gridCenterSources.RowTable.RowCheckEnabled = false;
@@ -1599,9 +1651,27 @@ Nástroje:{tab}Voltmetr, Ampermetr, Posuvné měřítko (šupléra).";
             gridCenterSources.ActiveKeys = new List<GuiKeyAction>();
             gridCenterSources.ActiveKeys.Add(new GuiKeyAction() { KeyData = Keys.Delete, BlockGuiTime = TimeSpan.FromSeconds(15d), BlockGuiMessage = "Smazat..." });
 
+            this.GridTableSourceVisible = true;
             this.GridCenterSources = gridCenterSources;
             this.MainPage.MainPanel.Grids.Add(gridCenterSources);
         }
+        /// <summary>
+        /// Přepne viditelnost panelu Source
+        /// </summary>
+        /// <param name="guiRequest"></param>
+        /// <param name="guiResponse"></param>
+        protected void SwitchTableSource(GuiRequest guiRequest, GuiResponse guiResponse) 
+        {
+            if (guiResponse.RefreshProperties is null) guiResponse.RefreshProperties = new List<GuiRefreshProperty>();
+
+            if (guiRequest.ToolbarItem != null && guiRequest.ToolbarItem.IsChecked.HasValue)
+                GridTableSourceVisible = guiRequest.ToolbarItem.IsChecked.Value;
+            else
+                GridTableSourceVisible = !GridTableSourceVisible;
+
+            guiResponse.RefreshProperties.Add(new GuiRefreshProperty() { GridItemId = new GuiGridItemId() { TableName = GuiFullNameGridCenterSources }, PropertyName = "Visible", Value = GridTableSourceVisible });
+        }
+        private bool GridTableSourceVisible;
         /// <summary>
         /// Vytvoří panel vpravo se zaměstnanci
         /// </summary>
@@ -1853,12 +1923,22 @@ Nástroje:{tab}Voltmetr, Ampermetr, Posuvné měřítko (šupléra).";
                 case "30032018":
                 case "19042019":
                 case "10042020":
+                case "02042021":
+                case "15042022":
+                case "07042023":
+                case "29032024":
+                case "18042025":
                     name = "Velikonoční Pátek";
                     break;
                 case "17042017":
                 case "02042018":
                 case "22042019":
                 case "13042020":
+                case "05042021":
+                case "18042022":
+                case "10042023":
+                case "01042024":
+                case "21042025":
                     name = "Velikonoční Pondělí";
                     break;
             }
@@ -2989,13 +3069,15 @@ Nástroje:{tab}Voltmetr, Ampermetr, Posuvné měřítko (šupléra).";
                                 {
                                     new GuiToolbarItem() { Name = "SaveData", Enable = false }
                                 };
-
                                 break;
                             case GuiNameToolbarAddRow1:
                                 this.AddRowToGraph(requestArgs.Request, responseArgs.GuiResponse);
                                 break;
                             case GuiNameToolbarDelRow1:
                                 this.RemoveRowFromGraph(requestArgs.Request, responseArgs.GuiResponse);
+                                break;
+                            case GuiNameToolbarSwitchSources:
+                                this.SwitchTableSource(requestArgs.Request, responseArgs.GuiResponse);
                                 break;
                         }
                         break;
@@ -3062,6 +3144,138 @@ Nástroje:{tab}Voltmetr, Ampermetr, Posuvné měřítko (šupléra).";
             this.AppHostAddRequest(requestArgs);
             return null;              // Jsme asynchronní AppHost, vracíme null.
         }
+        /// <summary>
+        /// Obsahuje true, pokud tento hostitel podporuje styly (pak má smysl provádět Colorize)
+        /// </summary>
+        bool IAppHost.HasStyles { get { return true; } }
+        /// <summary>
+        /// Vyhledání barvy a dalších vizuálních hodnot podle jména stylu: <paramref name="styleName"/>, a daného druhu hodnoty <paramref name="stylePart"/>.
+        /// Hostitel na základě daného jména stylu najde odpovídající definici stylu, a v ní najde odpovídaící hodnotu.
+        /// Pokud najde, vrací true a hodnotu dává do out <paramref name="value"/>.
+        /// Pokud nenajde, vrací false.
+        /// </summary>
+        /// <param name="styleName"></param>
+        /// <param name="stylePart"></param>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        bool IAppHost.TryGetStylePartValue(string styleName, StylePartType stylePart, out object value)
+        {
+            value = null;
+            if (String.IsNullOrEmpty(styleName)) return false;
+            switch (styleName)
+            {
+                case StyleModra:
+                    switch (stylePart)
+                    {
+                        case StylePartType.TextAreaBackColor:
+                            value = Color.FromArgb(192, 196, 240);
+                            return true;
+                        case StylePartType.TextAreaForeColor:
+                            value = Color.Black;
+                            return true;
+                        case StylePartType.TextLabelBackColor:
+                            value = Color.FromArgb(220, 224, 255);
+                            return true;
+                        case StylePartType.TextLabelForeColor:
+                            value = Color.Black;
+                            return true;
+                    }
+                    break;
+                case StyleZelena:
+                    switch (stylePart)
+                    {
+                        case StylePartType.TextAreaBackColor:
+                            value = Color.FromArgb(192, 240, 196);
+                            return true;
+                        case StylePartType.TextAreaForeColor:
+                            value = Color.Black;
+                            return true;
+                        case StylePartType.TextLabelBackColor:
+                            value = Color.FromArgb(220, 255, 224);
+                            return true;
+                        case StylePartType.TextLabelForeColor:
+                            value = Color.Black;
+                            return true;
+                    }
+                    break;
+                case StyleCervena:
+                    switch (stylePart)
+                    {
+                        case StylePartType.TextAreaBackColor:
+                            value = Color.FromArgb(240, 192, 196);
+                            return true;
+                        case StylePartType.TextAreaForeColor:
+                            value = Color.Black;
+                            return true;
+                        case StylePartType.TextLabelBackColor:
+                            value = Color.FromArgb(255, 220, 224);
+                            return true;
+                        case StylePartType.TextLabelForeColor:
+                            value = Color.Black;
+                            return true;
+                    }
+                    break;
+                case StyleFialova:
+                    switch (stylePart)
+                    {
+                        case StylePartType.TextAreaBackColor:
+                            value = Color.FromArgb(240, 160, 240);
+                            return true;
+                        case StylePartType.TextAreaForeColor:
+                            value = Color.Black;
+                            return true;
+                        case StylePartType.TextLabelBackColor:
+                            value = Color.FromArgb(255, 180, 255);
+                            return true;
+                        case StylePartType.TextLabelForeColor:
+                            value = Color.Black;
+                            return true;
+                    }
+                    break;
+                case StyleTagSeaGreen:
+                    switch (stylePart)
+                    {
+                        case StylePartType.TextAreaBackColor:
+                            value = Color.LightSeaGreen;
+                            return true;
+                        case StylePartType.TextAreaForeColor:
+                            value = Color.Black;
+                            return true;
+                        case StylePartType.TextLabelBackColor:
+                            value = Color.LightSeaGreen;
+                            return true;
+                        case StylePartType.TextLabelForeColor:
+                            value = Color.Black;
+                            return true;
+                    }
+                    break;
+                case StyleOperace1:
+                    switch (stylePart)
+                    {
+                        case StylePartType.TextAreaBackColor:
+                            value = Color.BlueViolet;
+                            return true;
+                        case StylePartType.TextAreaForeColor:
+                            value = Color.Black;
+                            return true;
+                        case StylePartType.TextLabelBackColor:
+                            value = Color.PaleVioletRed;
+                            return true;
+                        case StylePartType.TextLabelForeColor:
+                            value = Color.Black;
+                            return true;
+                    }
+                    break;
+            }
+            return false;
+        }
+        protected const string StyleModra = "Modrá";
+        protected const string StyleZelena = "Zelená";
+        protected const string StyleCervena = "Červená";
+        protected const string StyleFialova = "Fialová";
+        protected const string StyleTagSeaGreen = "TagFilterSeaGreen";
+        protected const string StyleOperace1 = "OperaceVP1";
+
         /// <summary>
         /// Prvotní inicializace výkonného threadu OnBackground, v němž se fyzicky provádí zpracování requestů z GUI vrstvy
         /// </summary>
@@ -3297,6 +3511,7 @@ Nástroje:{tab}Voltmetr, Ampermetr, Posuvné měřítko (šupléra).";
         public GuiTimeRange TimeTBc { get; set; }
         public GuiTimeRange TimeTAc { get; set; }
         public GuiTimeRange TimeTEc { get; set; }
+        public string StyleName { get; set; }
         public Color BackColor { get; set; }
         public Color? TextColor { get; set; }
         /// <summary>
@@ -3363,9 +3578,11 @@ Nástroje:{tab}Voltmetr, Ampermetr, Posuvné měřítko (šupléra).";
             if (!(direction == Direction.Positive || direction == Direction.Negative))
                 throw new Asol.Tools.WorkScheduler.Application.GraphLibCodeException("Směr plánu musí být pouze Positive nebo Negative.");
 
-            this.TimeTBc = this.PlanTimePhase(ref flowTime, direction, workplace, person, source, this.TBc, this.BackColor.Morph(Color.Green, 0.25f), this.TextColor);
-            this.TimeTAc = this.PlanTimePhase(ref flowTime, direction, workplace, person, source, this.TAc, this.BackColor, this.TextColor);
-            this.TimeTEc = this.PlanTimePhase(ref flowTime, direction, workplace, person, source, this.TEc, this.BackColor.Morph(Color.Black, 0.25f), this.TextColor);
+            bool addZeroTimeTAc = (this.TTc.Ticks <= 0L);                // Pokud celá operace má nulový čas, tak vytvoříme WorkUnit alespoň pro TAC
+
+            this.TimeTBc = this.PlanTimePhase(ref flowTime, direction, workplace, person, source, this.TBc, this.StyleName, this.BackColor.Morph(Color.Green, 0.25f), this.TextColor, false);
+            this.TimeTAc = this.PlanTimePhase(ref flowTime, direction, workplace, person, source, this.TAc, this.StyleName, this.BackColor, this.TextColor, addZeroTimeTAc);
+            this.TimeTEc = this.PlanTimePhase(ref flowTime, direction, workplace, person, source, this.TEc, this.StyleName, this.BackColor.Morph(Color.Black, 0.25f), this.TextColor, false);
             this.Time = new GuiTimeRange(this.TimeTBc.Begin, this.TimeTEc.End);
         }
         /// <summary>
@@ -3378,9 +3595,11 @@ Nástroje:{tab}Voltmetr, Ampermetr, Posuvné měřítko (šupléra).";
         /// <param name="requestTime"></param>
         /// <param name="backColor"></param>
         /// <param name="textColor"></param>
-        protected GuiTimeRange PlanTimePhase(ref DateTime flowTime, Data.Direction direction, PlanUnitC workplace, PlanUnitC person, PlanUnitC source, TimeSpan requestTime, Color backColor, Color? textColor)
+        protected GuiTimeRange PlanTimePhase(ref DateTime flowTime, Data.Direction direction, PlanUnitC workplace, PlanUnitC person, PlanUnitC source, TimeSpan requestTime, 
+            string styleName, Color backColor, Color? textColor, bool addZeroTime = false)
         {
-            if (workplace == null || requestTime.Ticks <= 0L) return new GuiTimeRange(flowTime, flowTime);
+            // Nulový čas jen když je to vyžádáno:
+            if (workplace == null || (requestTime.Ticks <= 0L && !addZeroTime)) return new GuiTimeRange(flowTime, flowTime);
 
             DateTime? phaseBegin = null;
             DateTime? phaseEnd = null;
@@ -3391,19 +3610,27 @@ Nástroje:{tab}Voltmetr, Ampermetr, Posuvné měřítko (šupléra).";
             if (person != null) planUnits.Add(person);
             if (source != null) planUnits.Add(source);
 
+            if (requestTime.Ticks <= 0L)
+            {   // Nulový čas:
+                if (planUnits.Count > 1) planUnits = new List<PlanUnitC>() { workplace };          // Operaci s nulovým časem zaplánujeme jen na pracoviště.
+                this.PlanTimePart(ref flowTime, direction, ref phaseBegin, ref phaseEnd, planUnits, ref requestTime, styleName, backColor, textColor);
+            }
+            else
+            {   // Standardní zaplánování
             while (planUnits.Count > 0)
             {   // Dokud máme nějaké KPJ, kam máme dávat práci:
                 flowTime = startTime;
                 for (int t = 0; t < 25; t++)               // jenom Timeout
                 {
                     if (requestTime.Ticks <= 0L) break;    // Je hotovo.
-                    bool isPlanned = this.PlanTimePart(ref flowTime, direction, ref phaseBegin, ref phaseEnd, planUnits, ref requestTime, backColor, textColor);
+                        bool isPlanned = this.PlanTimePart(ref flowTime, direction, ref phaseBegin, ref phaseEnd, planUnits, ref requestTime, styleName, backColor, textColor);
                     if (!isPlanned) break;                 // Nejde to.
                 }
                 if (requestTime.Ticks <= 0L) break;        // Je hotovo.
 
                 // Není hotovo => odebereme poslední KPJ:
                 planUnits.RemoveAt(planUnits.Count - 1);
+            }
             }
 
             if (!phaseBegin.HasValue || !phaseEnd.HasValue) return new GuiTimeRange(startTime, startTime);
@@ -3422,7 +3649,8 @@ Nástroje:{tab}Voltmetr, Ampermetr, Posuvné měřítko (šupléra).";
         /// <param name="backColor"></param>
         /// <param name="textColor"></param>
         /// <returns></returns>
-        protected bool PlanTimePart(ref DateTime flowTime, Data.Direction direction, ref DateTime? phaseBegin, ref DateTime? phaseEnd, List<PlanUnitC> planUnits, ref TimeSpan needTime, Color backColor, Color? textColor)
+        protected bool PlanTimePart(ref DateTime flowTime, Data.Direction direction, ref DateTime? phaseBegin, ref DateTime? phaseEnd, List<PlanUnitC> planUnits, ref TimeSpan needTime,
+            string styleName, Color backColor, Color? textColor)
         {
             // Provedu přípravu pracovních časů pro každou PlanUnitC tak, aby její CurrentWorkTime začínal v flowTime nebo později:
             foreach (PlanUnitC planUnit in planUnits)
@@ -3473,7 +3701,7 @@ Nástroje:{tab}Voltmetr, Ampermetr, Posuvné měřítko (šupléra).";
             // Vygenerujeme pracovní časy do odpovídajících Kapacitních jednotek:
             GuiTimeRange workTimeRange = new GuiTimeRange(begin, end);
             foreach (PlanUnitC workingUnit in workingUnits)
-                workingUnit.AddUnitTime(this.CreateUnitTime(workingUnit, workTimeRange, backColor, textColor));
+                workingUnit.AddUnitTime(this.CreateUnitTime(workingUnit, workTimeRange, styleName, backColor, textColor));
 
             // Řešíme čas celé fáze (phaseBegin - phaseEnd), a posun flowTime - a to podle směru plánu:
             switch (direction)
@@ -3500,7 +3728,7 @@ Nástroje:{tab}Voltmetr, Ampermetr, Posuvné měřítko (šupléra).";
         /// <param name="backColor"></param>
         /// <param name="textColor"></param>
         /// <returns></returns>
-        protected WorkUnit CreateUnitTime(PlanUnitC planUnitC, GuiTimeRange time, Color backColor, Color? textColor)
+        protected WorkUnit CreateUnitTime(PlanUnitC planUnitC, GuiTimeRange time, string styleName, Color backColor, Color? textColor)
         {
             WorkUnit workUnit = new WorkUnit(this.DataSource)
             {
@@ -3508,6 +3736,7 @@ Nástroje:{tab}Voltmetr, Ampermetr, Posuvné měřítko (šupléra).";
                 PlanUnitC = planUnitC,
                 Time = time,
                 Height = this.Height,
+                StyleName = styleName,
                 BackColor = backColor,
                 TextColor = textColor,
                 IsEditable = true,
@@ -3727,6 +3956,7 @@ Nástroje:{tab}Voltmetr, Ampermetr, Posuvné měřítko (šupléra).";
             }
             guiRow.RowGuiId = this.RecordGid;
             guiRow.Style = new GuiVisualStyle() { BackColor = this.RowBackColor };
+            guiRow.DynamicVisibility = GuiRowsVisibilityMode.WithVisibleGraphItemAny;
             guiRow.TagItems = new List<GuiTagItem>(this.TagItems);
             return guiRow;
         }
@@ -3775,6 +4005,7 @@ Nástroje:{tab}Voltmetr, Ampermetr, Posuvné měřítko (šupléra).";
         public PlanUnitC PlanUnitC { get; set; }
         public GuiTimeRange Time { get; set; }
         public float Height { get; set; }
+        public string StyleName { get; set; }
         public Color BackColor { get; set; }
         public Color? TextColor { get; set; }
         public bool IsEditable { get; set; }
@@ -3798,7 +4029,9 @@ Nástroje:{tab}Voltmetr, Ampermetr, Posuvné měřítko (šupléra).";
                 DataId = this.Operation?.RecordGid,
                 RowId = this.PlanUnitC?.RecordGid,
                 Layer = 2,
+                BackColorName = this.StyleName,
                 BackColor = this.BackColor,
+                TextColorName = this.StyleName,
                 TextColor = this.TextColor,
                 BehaviorMode = GraphItemBehaviorMode.ShowCaptionAllways | GraphItemBehaviorMode.ShowToolTipFadeIn,
                 Height = this.Height,
