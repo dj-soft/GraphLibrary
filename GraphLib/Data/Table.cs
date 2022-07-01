@@ -1011,7 +1011,7 @@ namespace Asol.Tools.WorkScheduler.Data
                 this.TableSize.Visible = value;
                 bool newValue = this.Visible;
                 if ((newValue != oldValue) && this.HasGTable && this.GTable.HasGrid)
-                    this.GTable.Grid.RefreshColumns();
+                    this.GTable.Grid.RefreshColumns(newValue);
             }
         }
         /// <summary>

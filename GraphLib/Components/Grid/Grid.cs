@@ -698,11 +698,14 @@ namespace Asol.Tools.WorkScheduler.Components
         /// Zajistí refresh synchronních šířek sloupců všech tabulek pod sebou v tomto Gridu, volá se například po změně viditelnosti tabulek za běhu systému.
         /// Nově zviditelněné tabulky se v této metodě zapojí do systému synchronizovaných sloupců (nastaví si šířku podle Master tabulky).
         /// </summary>
-        public void RefreshColumns()
+        /// <param name="synchronizeTime">Zajistit i synchronizaci času (je vhodné tehdy, když došlo k přidání nové tabulky do Gridu a je třeba, aby měla zobrazený správný čas)</param>
+        public void RefreshColumns(bool synchronizeTime)
         {
             this._TablesVisibleCheck(true);
             this._TablesPositionCalculateAutoSize();
             this._ColumnsCheck(true);
+            if (synchronizeTime)
+                this.RefreshTimeRange();
             this.Invalidate(InvalidateItem.All);
         }
         /// <summary>
@@ -1233,8 +1236,31 @@ namespace Asol.Tools.WorkScheduler.Components
                 {
                     gridColumn.OnChangeTimeAxis(tableId, e);                             // Novou hodnotu promítneme do sousedních tabulek v this Gridu (vyjma tabulky tableId, ta událost vyvolala, a novou hodnotu už má vyřešenou interně)
                     if (this.HasSynchronizedTime && gridColumn.UseTimeAxisSynchronized)  // Pokud se má řešit synchronicita časové osy:
-                        this.SynchronizedTime.SetValue(e.NewValue, this, e.EventSource); //  Vložíme novou hodnotou do synchronizátoru, ten si ji uloží a pošle event všem, kd o to stojí (tedy i nám do metody _SynchronizedTime_ValueChanging)
+                        this.SynchronizedTime.SetValue(e.NewValue, this, e.EventSource); //  Vložíme novou hodnotou do synchronizátoru, ten si ji uloží a pošle event všem, kdo o to stojí (tedy i nám do metody _SynchronizedTime_ValueChanging)
                 }
+            }
+            finally
+            {
+                this._TimeAxisValueIsChanging = false;
+            }
+        }
+        /// <summary>
+        /// Zajistí Refresh časové osy v jednotlivých tabulkách po změně viditelnosti jedné z těchto tabulek.
+        /// </summary>
+        internal void RefreshTimeRange()
+        {
+            if (this._TimeAxisValueIsChanging) return;                                   // Zabráníme rekurzi
+            if (this._ColumnDict is null || this._ColumnDict.Count == 0) return;
+            var syncTimeRange = this.SynchronizedTime?.Value;
+            if (syncTimeRange is null) return;
+            var syncColumns = this._ColumnDict.Values.Where(c => c.UseTimeAxisSynchronized).ToArray();
+            if (syncColumns.Length == 0) return;
+
+            try
+            {
+                this._TimeAxisValueIsChanging = true;
+                foreach (var syncColumn in syncColumns)
+                    syncColumn.RefreshTimeRange(syncTimeRange);
             }
             finally
             {
@@ -1682,6 +1708,22 @@ namespace Asol.Tools.WorkScheduler.Components
                 {
                     column.Table.GTable.RefreshTimeAxis(column, e);
                 }
+            }
+        }
+        /// <summary>
+        /// Aktualizuje hodnotu časové osy do svých fyzických columnů
+        /// </summary>
+        /// <param name="timeRange"></param>
+        internal void RefreshTimeRange(TimeRange timeRange)
+        {
+            if (!this.UseTimeAxis) return;
+
+            // Do každého sloupce pošleme požadavek na refresh se specifickým argumentem, který obsahuje jako OldValue jeho dosavadní hodnotu:
+            foreach (Column column in this._ColumnList)
+            {
+                TimeRange oldTimeRange = (column.UseTimeAxis ? column?.ColumnHeader?.TimeAxis.Value : null);
+                GPropertyChangeArgs<TimeRange> e = new GPropertyChangeArgs<TimeRange>(oldTimeRange, timeRange, EventSourceType.ApplicationCode | EventSourceType.ValueChange);
+                column.Table.GTable.RefreshTimeAxis(column, e);
             }
         }
         #endregion
