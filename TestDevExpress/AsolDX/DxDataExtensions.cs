@@ -405,6 +405,72 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
             return result;
         }
+        /// <summary>
+        /// Metoda z dodané kolekce prvků <paramref name="items"/> vytvoří grupy a ty setřídí.
+        /// Z každého prvku určí klíč cílové grupy pomocí selectoru <paramref name="groupKeySelector"/>.
+        /// Z každého prvku určí hodnotu pro třídění grupy pomocí selectoru <paramref name="sortValueSelector"/>.
+        /// Protože hodnotu pro třídění grupy generujeme z každého prvku vstupního pole, pak tyto hodnoty se mohou pro jednotlivé prvky lišit 
+        /// (příklad: prvek 1 generuje klíč grupy A a třídící hodnotu 10, prvek 2 generuje klíč grupy A a třídící hodnotu 20).
+        /// Proto se třídící hodnota pro grupu agreguje pomocí <paramref name="sortValueAggregator"/>, viz tam.
+        /// </summary>
+        /// <typeparam name="TItem"></typeparam>
+        /// <typeparam name="TGroup"></typeparam>
+        /// <typeparam name="TSort"></typeparam>
+        /// <param name="items">Prvky</param>
+        /// <param name="groupKeySelector">Selector určí hodnotu klíče grupy z prvku</param>
+        /// <param name="sortValueSelector">Selector určí hodnotu pro třídění grupy z prvku</param>
+        /// <param name="sortValueAggregator">
+        /// Agregátor sloučí dvě hodnoty pro třídění grupy, kde parametr 1 je stávající hodnota grupy, parametr 2 je nová hodnota z prvku, výsledek je výsledná hodnota pro třídění grupy.
+        /// Může se tak jako třídící hodnota brát Max() z přítomných jednotlivých hodnot.
+        /// </param>
+        /// <returns></returns>
+        public static Tuple<TGroup, TItem[]>[] CreateSortedGroups<TItem, TGroup, TSort>(this IEnumerable<TItem> items, Func<TItem, TGroup> groupKeySelector, Func<TItem, TSort> sortValueSelector, Func<TSort, TSort, TSort> sortValueAggregator)
+            where TSort : IComparable
+        {
+            var valueDict = new Dictionary<TGroup, SortedGroupItem<TSort, TItem>>();
+
+            // 1. Nastřádat dané hodnoty a klíče:
+            foreach (var item in items)
+            {
+                var key = groupKeySelector(item);
+                var itemSort = sortValueSelector(item);
+                SortedGroupItem<TSort, TItem> groupItems;
+                if (valueDict.TryGetValue(key, out groupItems))
+                {   // Pro tuto grupu už záznam máme, musíme vyřešit agregaci třídící hodnoty:
+                    groupItems.Sort = sortValueAggregator(groupItems.Sort, itemSort);
+                }
+                else
+                {   // Pro tuto grupu dosud záznam nemáme:
+                    groupItems = new SortedGroupItem<TSort, TItem>() { Sort = itemSort };
+                    valueDict.Add(key, groupItems);
+                }
+                groupItems.Items.Add(item);
+            }
+            // Nyní máme v 'valueDict' jednotlivé grupy (klíč v Dictionary 'valueDict'), ke grupě máme data v Dictionary.Values, kde je agregovaná hodnota Sort, a nastřádané (nijak netříděné) prvky dané grupy Items.
+
+            // 2. Vytvoříme List, aby bylo co třídit:
+            var valueList = valueDict.Select(kvp => new Tuple<TGroup, TSort, List<TItem>>(kvp.Key, kvp.Value.Sort, kvp.Value.Items)).ToList();
+            valueList.Sort((a, b) => a.Item2.CompareTo(b.Item2));
+            // Nyní máme setříděný List 'valueList' prvků Tuple, kde Item1 = klíč grupy, Item2 = hodnota třídění, Item3 = List prvků grupy.
+
+            // 3. Vytvoříme finální pole:
+            var result = valueList.Select(g => new Tuple<TGroup, TItem[]>(g.Item1, g.Item3.ToArray())).ToArray();
+            return result;
+        }
+        /// <summary>
+        /// Pomocná třída pro metodu <see cref="CreateSortedGroups{TItem, TGroup, TSort}(IEnumerable{TItem}, Func{TItem, TGroup}, Func{TItem, TSort}, Func{TSort, TSort, TSort})"/>
+        /// </summary>
+        /// <typeparam name="TSort"></typeparam>
+        /// <typeparam name="TItem"></typeparam>
+        private class SortedGroupItem<TSort, TItem>
+        {
+            public SortedGroupItem()
+            {
+                Items = new List<TItem>();
+            }
+            public TSort Sort;
+            public List<TItem> Items;
+        }
         #endregion
         #region Dictionary
         /// <summary>

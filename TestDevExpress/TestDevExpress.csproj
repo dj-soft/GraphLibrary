@@ -172,6 +172,9 @@
     <Compile Include="AsolDX\DxListBox.cs">
       <SubType>Component</SubType>
     </Compile>
+    <Compile Include="AsolDX\DxMainAppForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="AsolDX\DxResources.cs" />
     <Compile Include="AsolDX\DxControlForm.cs">
       <SubType>Form</SubType>
@@ -262,6 +265,9 @@
     </Compile>
     <Compile Include="Forms\InputForm.Designer.cs">
       <DependentUpon>InputForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\MainAppForm.cs">
+      <SubType>Form</SubType>
     </Compile>
     <Compile Include="Forms\MdiBaseForm.cs">
       <SubType>Form</SubType>

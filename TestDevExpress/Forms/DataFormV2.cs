@@ -83,6 +83,10 @@ namespace TestDevExpress.Forms
 
         private DxPanelControl _DxTestPanel;
         private DxMemoEdit _DxLogMemoEdit;
+        /// <summary>
+        /// Deklarace tlačítka v <see cref="MainAppForm"/> pro spuštění tohoto formuláře
+        /// </summary>
+        public static RunFormInfo RunFormInfo { get { return new RunFormInfo() { ButtonText = "DataForm 2", ButtonImage = "svgimages/spreadsheet/showtabularformpivottable.svg", GroupText = "DATAFORM" } ; } }
         #endregion
         #region Ribbon - obsah a rozcestník
         protected override void DxRibbonPrepare()

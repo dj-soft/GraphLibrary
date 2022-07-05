@@ -29,6 +29,10 @@ namespace TestDevExpress.Forms
             InitChart();
         }
         /// <summary>
+        /// Deklarace tlačítka v <see cref="MainAppForm"/> pro spuštění tohoto formuláře
+        /// </summary>
+        public static RunFormInfo RunFormInfo { get { return new RunFormInfo() { ButtonText = "Graf", ButtonImage = "svgimages/dashboards/chart.svg" }; } }
+        /// <summary>
         /// Inicializace grafu
         /// </summary>
         protected void InitChart()

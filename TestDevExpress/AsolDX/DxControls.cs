@@ -384,28 +384,69 @@ namespace Noris.Clients.Win.Components.AsolDX
     #region DxRibbonForm
     /// <summary>
     /// Formulář s ribbonem.
-    /// Obsahuje připravený Ribbon <see cref="DxRibbon"/> a připravený StatusBar <see cref="DxStatusBar"/>, 
-    /// a hlavní Panel nacházející se mzi Ribbonem a StatusBarem <see cref="DxMainPanel"/>.
+    /// Obsahuje připravený Ribbon <see cref="DxRibbonBaseForm.DxRibbon"/> a připravený StatusBar <see cref="DxRibbonBaseForm.DxStatusBar"/>, 
+    /// a hlavní Panel <see cref="DxMainPanel"/> nacházející se mezi Ribbonem a StatusBarem.
     /// </summary>
-    public class DxRibbonForm : DevExpress.XtraBars.Ribbon.RibbonForm, IListenerZoomChange, IListenerStyleChanged, IListenerApplicationIdle
+    public class DxRibbonForm : DxRibbonBaseForm
+    {
+        #region MainPanel
+        /// <summary>
+        /// Hlavní panel, mezi Ribbonem a StatusBarem
+        /// </summary>
+        public DxPanelControl DxMainPanel { get { return _DxMainPanel; } }
+        /// <summary>
+        /// Provede tvorbu hlavního panelu okna <see cref="DxMainPanel"/> a jeho přidání do okna včetně zadokování.
+        /// Provádí se před vytvořením Ribbonu a Status baru, aby <see cref="DxMainPanel"/> byl správně umístěn na Z ose.
+        /// </summary>
+        protected override void DxMainContentCreate()
+        {
+            this._DxMainPanel = DxComponent.CreateDxPanel(this, System.Windows.Forms.DockStyle.Fill, borderStyles: DevExpress.XtraEditors.Controls.BorderStyles.NoBorder);
+        }
+        /// <summary>
+        /// Provede přípravu obsahu hlavního panelu <see cref="DxMainPanel"/>. Panel je již vytvořen a umístěn v okně, Ribbon i StatusBar existují.<br/>
+        /// Zde se typicky vytváří obsah do hlavního panelu.
+        /// </summary>
+        protected override void DxMainContentPrepare()
+        {
+            this._DxMainPanel.Visible = true;
+        }
+        private DxPanelControl _DxMainPanel;
+        #endregion
+    }
+    /// <summary>
+    /// Formulář s ribbonem.
+    /// Obsahuje připravený Ribbon <see cref="DxRibbon"/> a připravený StatusBar <see cref="DxStatusBar"/>.
+    /// </summary>
+    public abstract class DxRibbonBaseForm : DevExpress.XtraBars.Ribbon.RibbonForm, IListenerZoomChange, IListenerStyleChanged, IListenerApplicationIdle
     {
         #region Konstruktor a základní vlastnosti
         /// <summary>
         /// Konstruktor
         /// </summary>
-        public DxRibbonForm()
+        public DxRibbonBaseForm()
         {
             this.ActivityStateInit();
             this.FormPositionInit();
             this.ImageName = AsolDX.ImageName.DxFormIcon;
             this.InitDxRibbonForm();
             DxComponent.RegisterListener(this);
+            this.EndInitDxRibbonForm();
         }
         /// <summary>
         /// Vizualizace
         /// </summary>
         /// <returns></returns>
         public override string ToString() { return this.GetTypeName() + ": '" + (this.Text ?? "NULL") + "'"; }
+        /// <summary>
+        /// Je voláno na konci konstruktoru třídy <see cref="DxRibbonBaseForm"/>.
+        /// Typicky je zde ukončen cyklus BeginInit jednoltivých komponent.
+        /// <para/>
+        /// Je povinné volat base metodu, typicky na konci metody override.
+        /// </summary>
+        protected virtual void EndInitDxRibbonForm()
+        {
+            ((System.ComponentModel.ISupportInitialize)(_DxRibbon)).EndInit();
+        }
         /// <summary>
         /// Při zobrazení okna
         /// </summary>
@@ -557,7 +598,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             return base.PreProcessMessage(ref msg);
         }
-
         /// <summary>
         /// Při změně umístění
         /// </summary>
@@ -617,7 +657,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             AddLogPosition("FormPositionApply.Before: ");
             var formPosition = _FormPositionInfo;
-            if (formPosition is null) return;
+            if (formPosition is null)
+            {
+                this.WindowState = FormWindowState.Maximized;
+                return;
+            }
             if (formPosition.WindowState == FormWindowState.Maximized)
             {
                 var normalBounds = formPosition.NormalBounds.FitIntoMonitors(true, false, true);
@@ -842,15 +886,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         protected virtual void OnApplicationIdle() { }
         #endregion
-        #region Ribbon, MainPanel a StatusBar
+        #region Ribbon a StatusBar
         /// <summary>
         /// Ribbon
         /// </summary>
         public DxRibbonControl DxRibbon { get { return _DxRibbon; } }
-        /// <summary>
-        /// Hlavní panel, mezi Ribbonem a StatusBarem
-        /// </summary>
-        public DxPanelControl DxMainPanel { get { return _DxMainPanel; } }
         /// <summary>
         /// Status bar
         /// </summary>
@@ -860,9 +900,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         protected virtual void InitDxRibbonForm()
         {
-            this._DxMainPanel = DxComponent.CreateDxPanel(this, System.Windows.Forms.DockStyle.Fill, borderStyles: DevExpress.XtraEditors.Controls.BorderStyles.NoBorder);
+            this.DxMainContentCreate();
 
             this._DxRibbon = new DxRibbonControl() { Visible = true };
+            ((System.ComponentModel.ISupportInitialize)(_DxRibbon)).BeginInit();
             this.Ribbon = _DxRibbon;
             this.Controls.Add(this._DxRibbon);
 
@@ -873,7 +914,13 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             this.DxRibbonPrepare();
             this.DxStatusPrepare();
+            this.DxMainContentPrepare();
         }
+        /// <summary>
+        /// Provede tvorbu hlavního obsahue okna, podle jeho typu, a jeho přidání do okna včetně zadokování.
+        /// Provádí se před vytvořením Ribbonu a Status baru, aby obsah byl správně umístěn na Z ose.
+        /// </summary>
+        protected abstract void DxMainContentCreate();
         /// <summary>
         /// Provede přípravu obsahu Ribbonu.
         /// Pozor: Bázová třída <see cref="DxRibbonForm"/> pouze nastaví <see cref="DxRibbonForm.DxRibbon"/>.Visible = false; nic jiného neprovádí !!!
@@ -888,8 +935,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// U této metody tedy není vhodné volat base metodu, anebo je třeba po jejím volání nastavit viditelnost StatusBaru na true.
         /// </summary>
         protected virtual void DxStatusPrepare() { this._DxStatusBar.Visible = false; }
+        /// <summary>
+        /// Provede přípravu obsahu hlavního obshau okna. Obsah je již vytvořen a umístěn v okně, Ribbon i StatusBar existují.<br/>
+        /// Zde se typicky vytváří obsah do hlavního panelu.
+        /// </summary>
+        protected abstract void DxMainContentPrepare();
         private DxRibbonControl _DxRibbon;
-        private DxPanelControl _DxMainPanel;
         private DxRibbonStatusBar _DxStatusBar;
         #endregion
     }

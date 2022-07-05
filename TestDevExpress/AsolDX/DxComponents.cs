@@ -2911,6 +2911,96 @@ namespace Noris.Clients.Win.Components.AsolDX
             return message;
         }
         #endregion
+        #region Vyhledání Typů v Assembly
+        /// <summary>
+        /// Načte a vrátí typy z dodané Assembly, vyhovující určitému filtru.
+        /// Může vrátit null pokud ododaná assembly je null nebo ji nelze vůbec načíst.
+        /// </summary>
+        /// <param name="assembly"></param>
+        /// <param name="filter"></param>
+        /// <returns></returns>
+        public static Type[] GetTypes(System.Reflection.Assembly assembly, Func<Type, bool> filter)
+        {
+            if (assembly is null) return null;
+
+            var types = _GetTypes(assembly);
+            if (types != null && filter != null)
+                types = types.Where(t => filter(t)).ToArray();
+            return types;
+        }
+        /// <summary>
+        /// Načte a vrátí typy z dodané Assembly
+        /// </summary>
+        /// <param name="assembly"></param>
+        /// <returns></returns>
+        private static Type[] _GetTypes(System.Reflection.Assembly assembly)
+        {
+            Type[] types = null;
+            try
+            {
+                types = assembly.GetTypes();
+            }
+            catch (System.Reflection.ReflectionTypeLoadException rtle)
+            {
+                types = GetTypesFromException(rtle, $"Assembly {assembly.FullName}", out string message);
+                // ShowError(message);
+            }
+            catch (Exception)
+            {
+                // ShowError(exc);
+            }
+            return types;
+        }
+        /// <summary>
+        /// Načte a vrátí typy z výjimky <see cref="System.Reflection.ReflectionTypeLoadException"/> a současně vytvoří zprávu o chybě
+        /// </summary>
+        /// <param name="rtle"></param>
+        /// <param name="resourceName"></param>
+        /// <param name="messageText"></param>
+        /// <returns></returns>
+        private static Type[] GetTypesFromException(System.Reflection.ReflectionTypeLoadException rtle, string resourceName, out string messageText)
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.AppendLine($"ReflectionTypeLoadException: Nelze načíst jeden nebo více typů uložených v {resourceName}.");
+            sb.AppendLine($"======================================================================================================.");
+
+            var messages = rtle.LoaderExceptions.Select(le => GetMissingComponentText(le.Message)).GroupBy(m => m).ToList();
+            int errorCount = messages.Count;
+            messages.Sort((a, b) => String.Compare(a.Key, b.Key));
+
+            sb.AppendLine($"Celkem: {errorCount} chyb:");
+            int lineCount = 0;
+            foreach (var message in messages)
+            {
+                lineCount++;
+                int typeCount = message.Count();
+                string itemsText = (typeCount == 1 ? "prvek" : typeCount < 5 ? "prvky" : "prvků");
+                sb.AppendLine($"{lineCount}. {message.Key} (pro {typeCount} {itemsText});");
+                if (lineCount > 60)
+                {
+                    sb.AppendLine($"... a dalších {errorCount - lineCount} problémů.");
+                    break;
+                }
+            }
+            messageText = sb.ToString();
+
+            return rtle.Types;
+        }
+        /// <summary>
+        /// Vrátí text o chybějící knihovně
+        /// </summary>
+        /// <param name="message"></param>
+        /// <returns></returns>
+        private static string GetMissingComponentText(string message)
+        {
+            if (String.IsNullOrEmpty(message)) return "";
+            int indexEnd = -1;
+            if (indexEnd < 0) indexEnd = message.IndexOf(", Version", StringComparison.InvariantCultureIgnoreCase);
+            if (indexEnd < 0) indexEnd = message.IndexOf(", Verze", StringComparison.InvariantCultureIgnoreCase);
+            if (indexEnd > 5) message = message.Substring(0, indexEnd);
+            return message;
+        }
+        #endregion
         #region MessageBox
         /// <summary>
         /// Zobrazí informaci
