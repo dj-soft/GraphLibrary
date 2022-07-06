@@ -204,7 +204,8 @@ namespace TestDevExpress.Forms
         private void Run(Type formType)
         {
             var form = System.Activator.CreateInstance(formType) as System.Windows.Forms.Form;
-            form.ShowDialog();
+            DxMainAppForm.ShowChildForm(form, this.RunAsFloating);
+            // form.ShowDialog();
         }
         #endregion
     }

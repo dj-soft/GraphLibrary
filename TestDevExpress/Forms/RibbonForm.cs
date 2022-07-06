@@ -497,7 +497,7 @@ namespace TestDevExpress.Forms
         private void AddNewQatItems(string newQatItems)
         {
             var location = DxQuickAccessToolbar.QATLocation;
-            List<string> currItems = DxQuickAccessToolbar.QATItems.ToList();
+            List<string> currItems = DxQuickAccessToolbar.QATItems?.ToList() ?? new List<string>();
             int currCount = currItems.Count;
 
             var newItems = newQatItems.Split('\t');

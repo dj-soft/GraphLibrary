@@ -446,6 +446,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         protected virtual void EndInitDxRibbonForm()
         {
             ((System.ComponentModel.ISupportInitialize)(_DxRibbon)).EndInit();
+
+            // Form Layout:
+            this.ResumeLayout(false);
+            this.PerformLayout();
         }
         /// <summary>
         /// Při zobrazení okna
