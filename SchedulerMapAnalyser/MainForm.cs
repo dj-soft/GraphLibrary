@@ -22,6 +22,7 @@ namespace SchedulerMapAnalyser
             this.WindowState = FormWindowState.Maximized;
             _Analyser = null;
             _ProcesInfo = System.Diagnostics.Process.GetCurrentProcess();
+            _SelectedFileInit();
             ShowButtonsEnabledByRunning(false);
             RefreshStatusBarGui();
             _Timer.Enabled = true;
@@ -45,16 +46,69 @@ namespace SchedulerMapAnalyser
             }
             // _Analyser = null;
         }
+        private void _FileButton_Click(object sender, EventArgs e)
+        {
+            _SelectFile();
+        }
         private void _Timer_Tick(object sender, EventArgs e)
         {
             RefreshStatusBar();
+        }
+        private void _SelectedFileInit()
+        {
+            string defaultFolder = @"Software\DjSoft\SchedulerMapAnalyser";
+            DjSoft.Support.WinReg.SetRootDefaultFolder(defaultFolder);
+            SelectedFile = LastSelectedFile;
+        }
+        private void _SelectFile()
+        {
+            string selectedFile = SelectedFile;
+            using (var dialog = new System.Windows.Forms.OpenFileDialog())
+            {
+                dialog.Filter = "CSV soubory (*.csv)|*.csv|Všechny soubory (*.*)|*.*";   // Řetězec filtru musí obsahovat popis filtru, svislou čáru (|) a vzorek filtru. Řetězce pro různé volby filtrování rovněž musí být odděleny svislou čarou. Příklad: Textové soubory (*.txt)|*.txt|Všechny soubory (*.*)|*.*'
+                dialog.Title = "Vyber soubor k analýze";
+                dialog.Multiselect = false;
+                dialog.RestoreDirectory = true;
+                if (!String.IsNullOrEmpty(selectedFile))
+                {
+                    dialog.FileName = System.IO.Path.GetFileName(SelectedFile);
+                    dialog.InitialDirectory = System.IO.Path.GetDirectoryName(SelectedFile);
+                }
+
+                var result = dialog.ShowDialog(this);
+                if (result == DialogResult.OK)
+                {
+                    selectedFile = dialog.FileName;
+                    SelectedFile = selectedFile;
+                    LastSelectedFile = selectedFile;
+                }
+            }
+        }
+        private string SelectedFile
+        {
+            get { return _FileText.Text; }
+            set { _FileText.Text = value ?? ""; }
+        }
+        private string LastSelectedFile
+        {
+            get { return DjSoft.Support.WinReg.ReadString("", "SelectedFile", DefaultSelectedFile); }
+            set { DjSoft.Support.WinReg.WriteString("", "SelectedFile", value); }
+        }
+        private static string DefaultSelectedFile
+        {
+            get
+            {
+                var machineName = System.Environment.MachineName;
+                if (machineName == "PC-D") return @"D:\Asol\SchedulerMaps\MapAx12702.csv";
+                return "";
+            }
         }
         private void Analyse()
         {
             var analyser = _Analyser;
             if (analyser != null) return;
 
-            string file = @"D:\Asol\SchedulerMaps\MapAx12702.csv";
+            string file = SelectedFile;
             analyser = new Analyser
             {
                 File = file,
@@ -81,6 +135,9 @@ namespace SchedulerMapAnalyser
         private void ShowButtonsEnabledByRunningGui()
         {
             bool running = _Running;
+            _OnlyProcessedCheck.Enabled = !running;
+            _SimulCycleText.Enabled = !running;
+            _FileButton.Enabled = !running;
             _RunButton.Enabled = !running;
             _StopButton.Enabled = running;
         }
@@ -130,5 +187,6 @@ namespace SchedulerMapAnalyser
             string analyserText = _Analyser?.StatusInfo ?? "";
             this._StatusAnalyserText.Text = analyserText;
         }
+
     }
 }

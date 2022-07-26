@@ -242,12 +242,30 @@ namespace SchedulerMapAnalyser
         {
             if (Cancel) return;
 
-            // Tady nemohu začít těmi prvky, které jsou "First", protože zacyklení může být absolutní  (úplný kruh ve tvaru O, nejen zacyklení kdesi v polovině ve tvaru 6).
-            // Proto máme na prvku příznak bool? IsCycled
+            MapItem[] items;
 
-            var items = this._MapSegment.Items;
+            // Nejprve zpracuji prvky, které jsou IsFirst: v nezacyklených datech to je optimální cesta (začnu prvním prvkem a cestou doprava najdu všechny větve i zacyklení):
+            items = this._MapSegment.FirstItems;
+            _BreakCycles(items, "Výchozí prvky");
+
+            // Mohlo by se stát, že některé prvky jsme neřešili, protože jsou v zacyklených oblastech (nemáme jejich první prvek), dohledám je a zpracuji nyní:
+            items = this._MapSegment.Items.Where(i => !i.IsCycled.HasValue).ToArray();
+            _BreakCycles(items, "Cyklické prvky");
+
+            // Cancel tady platí pouze na hledání cyklu:
+            if (Cancel)
+            {
+                _ShowInfoLine($" - Vyhledávání zacyklení přerušeno.");
+                Cancel = false;
+            }
+        }
+        private void _BreakCycles(MapItem[] items, string prefix)
+        {
+            if (Cancel) return;
+            if (items is null || items.Length == 0) return;
+
             int count = items.Length;
-            _ShowInfoLine($"Vyhledávám zacyklení, počet prvků: {Format(count)}");
+            _ShowInfoLine($"Vyhledávám zacyklení - {prefix} počet prvků: {Format(count)}");
             for (int i = 0; i < count; i++)
             {
                 if (Cancel) break;
@@ -260,12 +278,6 @@ namespace SchedulerMapAnalyser
                 }
             }
 
-            // Cancel tady platí pouze na hledání cyklu:
-            if (Cancel)
-            {
-                _ShowInfoLine($" - Vyhledávání zacyklení přerušeno.");
-                Cancel = false;
-            }
         }
         private void _BreakCyclesOne(MapItem item, string infoPrefix = "")
         {
@@ -561,6 +573,13 @@ namespace SchedulerMapAnalyser
                 */
 
             }
+            /// <summary>
+            /// Najde Link, který by bylo vhodné přerušit. Hledá v dané cestě prvek daného typu.
+            /// Konkrétně najde prvek prvního ze zadaných typů, a vrátí jeho NextLink na navazující prvek v dané sekvenci.
+            /// </summary>
+            /// <param name="cycleItems"></param>
+            /// <param name="types"></param>
+            /// <returns></returns>
             private MapLink SearchBreakLink(List<PathSpiderNode> cycleItems, params string[] types)
             {
                 if (cycleItems is null || cycleItems.Count == 0) return null;
@@ -568,7 +587,7 @@ namespace SchedulerMapAnalyser
                 foreach (var type in types)
                 {   // Postupně budu hledat první prvek daného typu, jeden typ po druhém:
                     var node = cycleItems.FirstOrDefault(n =>
-                    {
+                    {   // Vezmu Node, jeho aktuální NextLink, otestuji jeho PrevItem.Type a případně vracím ten NextLink:
                         var mapLink = n.CurrentNextLink;
                         return (mapLink != null && mapLink.PrevItem.Type == type);
                     });
@@ -1372,13 +1391,15 @@ namespace SchedulerMapAnalyser
         }
         private static int SearchExpectedSequence(MapItem topItem)
         {
-            int sequence = 1;
+            int sequence = 0;                    // Průběžně určená sekvence prvku topItem (výstup metody) u nalezených finálních hodnot
+            int distance = 0;                    // Vzdálenost zpracovávaných prvků od prvku topItem (jednotlivé vrstvy předchozích prvků)
             Dictionary<int, MapItem> workDict = new Dictionary<int, MapItem>();
             Queue<MapItem> currentQueue = new Queue<MapItem>();
             Queue<MapItem> nextQueue = new Queue<MapItem>();
 
             workDict.Add(topItem.ItemId, topItem);
             currentQueue.Enqueue(topItem);
+            distance++;
             while (true)
             {
                 var item = currentQueue.Dequeue();
@@ -1392,23 +1413,39 @@ namespace SchedulerMapAnalyser
                         var prevItem = prevLink.PrevItem;
                         if (prevItem != null)
                         {
-                            if (!workDict.ContainsKey(prevItem.ItemId))
-                            {   // Dosud neznámý prvek:
-                                workDict.Add(prevItem.ItemId, prevItem);
-                                nextQueue.Enqueue(prevItem);
+                            if (prevItem.ResultSequence < 0)
+                            {   // Předchozí prvek dosud nemá napočtenou sekvenci? Pokusíme se ji určit výpočtem tady.
+                                // Toto je nouzová varianta pro neřešené zacyklené prvky, protože algoritmus nápočtu sekvence postupuje dopředně,
+                                // a hodnotu ExpectedSequence načítá jen z těch prvků, jejichž všechny Prev prvky už jsou zpracované!
+                                if (!workDict.ContainsKey(prevItem.ItemId))
+                                {   // Dosud neznámý prvek:
+                                    workDict.Add(prevItem.ItemId, prevItem);
+                                    nextQueue.Enqueue(prevItem);
+                                }
+                            }
+                            else
+                            {   // Když předchozí prvek už má finálně určenou sekvenci, nemusím procházet jeho zdroje,
+                                // ale rovnou si načtu jeho finální sekvenci a určím naši min sekvenci (=sekvence prev prvku plus distance mezi naším prvkem a prvkem prev):
+                                int minResultSequence = prevItem.ResultSequence + distance;
+                                if (minResultSequence > sequence) sequence = minResultSequence;
                             }
                         }
                     }
                 }
                 if (currentQueue.Count == 0)
-                {
+                {   // Doleva pokračujeme po ucelených vlnách, kdy v jedné vlně (currentQueue) máme prvky jedné předchozí hladiny,
+                    //  a v následující vlně (nextQueue) jsou jejich vlastní Prev prvky (pouze distinct prostřednictvím workDict).
                     if (nextQueue.Count == 0) break;
 
-                    sequence++;
+                    // Tudy projdeme jen tehdy, když v Prev prvcích byl nalezen některý, který dosud nebyl zpracovaný:
+                    distance++;                            // Vzdálenost "vlny" od výchozího prvku
                     currentQueue = nextQueue;
                     nextQueue = new Queue<MapItem>();
                 }
             }
+
+            // Vyhodnocení napočítané finální sekvence (sequence) určené z předchozích zpracovaných prvků, a z nejhlubší vlny:
+            if (distance > sequence) sequence = distance;
 
             return sequence;
         }

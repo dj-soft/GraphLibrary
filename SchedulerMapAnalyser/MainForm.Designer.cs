@@ -40,26 +40,28 @@ namespace SchedulerMapAnalyser
             this._OnlyProcessedCheck = new System.Windows.Forms.CheckBox();
             this._SimulCycleText = new System.Windows.Forms.NumericUpDown();
             this.label1 = new System.Windows.Forms.Label();
+            this._FileButton = new System.Windows.Forms.Button();
+            this._FileText = new System.Windows.Forms.TextBox();
             this._StatusBar.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this._SimulCycleText)).BeginInit();
             this.SuspendLayout();
             // 
             // _RunButton
             // 
-            this._RunButton.Location = new System.Drawing.Point(37, 29);
+            this._RunButton.Location = new System.Drawing.Point(13, 42);
             this._RunButton.Name = "_RunButton";
             this._RunButton.Size = new System.Drawing.Size(185, 44);
-            this._RunButton.TabIndex = 0;
+            this._RunButton.TabIndex = 3;
             this._RunButton.Text = "START";
             this._RunButton.UseVisualStyleBackColor = true;
             this._RunButton.Click += new System.EventHandler(this._StartClick);
             // 
             // _StopButton
             // 
-            this._StopButton.Location = new System.Drawing.Point(37, 193);
+            this._StopButton.Location = new System.Drawing.Point(13, 206);
             this._StopButton.Name = "_StopButton";
             this._StopButton.Size = new System.Drawing.Size(185, 44);
-            this._StopButton.TabIndex = 1;
+            this._StopButton.TabIndex = 7;
             this._StopButton.Text = "STOP";
             this._StopButton.UseVisualStyleBackColor = true;
             this._StopButton.Click += new System.EventHandler(this._StopClick);
@@ -70,13 +72,13 @@ namespace SchedulerMapAnalyser
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this._ProgressText.Font = new System.Drawing.Font("Courier New", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(238)));
-            this._ProgressText.Location = new System.Drawing.Point(235, 32);
+            this._ProgressText.Location = new System.Drawing.Point(210, 38);
             this._ProgressText.Multiline = true;
             this._ProgressText.Name = "_ProgressText";
             this._ProgressText.ReadOnly = true;
             this._ProgressText.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
-            this._ProgressText.Size = new System.Drawing.Size(725, 467);
-            this._ProgressText.TabIndex = 2;
+            this._ProgressText.Size = new System.Drawing.Size(1085, 563);
+            this._ProgressText.TabIndex = 9;
             this._ProgressText.WordWrap = false;
             // 
             // _StatusBar
@@ -85,9 +87,9 @@ namespace SchedulerMapAnalyser
             this._StatusBar.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this._StatusProcessText,
             this._StatusAnalyserText});
-            this._StatusBar.Location = new System.Drawing.Point(0, 502);
+            this._StatusBar.Location = new System.Drawing.Point(0, 604);
             this._StatusBar.Name = "_StatusBar";
-            this._StatusBar.Size = new System.Drawing.Size(972, 22);
+            this._StatusBar.Size = new System.Drawing.Size(1307, 22);
             this._StatusBar.TabIndex = 3;
             this._StatusBar.Text = "_StatusBar";
             // 
@@ -103,7 +105,7 @@ namespace SchedulerMapAnalyser
             // _StatusAnalyserText
             // 
             this._StatusAnalyserText.Name = "_StatusAnalyserText";
-            this._StatusAnalyserText.Size = new System.Drawing.Size(707, 17);
+            this._StatusAnalyserText.Size = new System.Drawing.Size(1042, 17);
             this._StatusAnalyserText.Spring = true;
             this._StatusAnalyserText.Text = "_StatusAnalyserText";
             this._StatusAnalyserText.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -115,7 +117,7 @@ namespace SchedulerMapAnalyser
             // 
             // _OnlyProcessedCheck
             // 
-            this._OnlyProcessedCheck.Location = new System.Drawing.Point(37, 82);
+            this._OnlyProcessedCheck.Location = new System.Drawing.Point(13, 95);
             this._OnlyProcessedCheck.Name = "_OnlyProcessedCheck";
             this._OnlyProcessedCheck.Size = new System.Drawing.Size(192, 31);
             this._OnlyProcessedCheck.TabIndex = 4;
@@ -124,7 +126,7 @@ namespace SchedulerMapAnalyser
             // 
             // _SimulCycleText
             // 
-            this._SimulCycleText.Location = new System.Drawing.Point(168, 114);
+            this._SimulCycleText.Location = new System.Drawing.Point(144, 127);
             this._SimulCycleText.Maximum = new decimal(new int[] {
             9,
             0,
@@ -138,17 +140,38 @@ namespace SchedulerMapAnalyser
             // label1
             // 
             this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(34, 116);
+            this.label1.Location = new System.Drawing.Point(31, 129);
             this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(93, 13);
-            this.label1.TabIndex = 7;
-            this.label1.Text = "SImuluj zacyklení:";
+            this.label1.Size = new System.Drawing.Size(92, 13);
+            this.label1.TabIndex = 5;
+            this.label1.Text = "Simuluj zacyklení:";
             // 
-            // Form1
+            // _FileButton
+            // 
+            this._FileButton.Location = new System.Drawing.Point(13, 12);
+            this._FileButton.Name = "_FileButton";
+            this._FileButton.Size = new System.Drawing.Size(184, 24);
+            this._FileButton.TabIndex = 1;
+            this._FileButton.Text = "Soubor...";
+            this._FileButton.UseVisualStyleBackColor = true;
+            this._FileButton.Click += new System.EventHandler(this._FileButton_Click);
+            // 
+            // _FileText
+            // 
+            this._FileText.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this._FileText.Location = new System.Drawing.Point(210, 12);
+            this._FileText.Name = "_FileText";
+            this._FileText.Size = new System.Drawing.Size(1083, 20);
+            this._FileText.TabIndex = 2;
+            // 
+            // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(972, 524);
+            this.ClientSize = new System.Drawing.Size(1307, 626);
+            this.Controls.Add(this._FileText);
+            this.Controls.Add(this._FileButton);
             this.Controls.Add(this.label1);
             this.Controls.Add(this._SimulCycleText);
             this.Controls.Add(this._OnlyProcessedCheck);
@@ -156,7 +179,7 @@ namespace SchedulerMapAnalyser
             this.Controls.Add(this._ProgressText);
             this.Controls.Add(this._StopButton);
             this.Controls.Add(this._RunButton);
-            this.Name = "Form1";
+            this.Name = "MainForm";
             this.Text = "Scheduler map analyser";
             this._StatusBar.ResumeLayout(false);
             this._StatusBar.PerformLayout();
@@ -178,6 +201,8 @@ namespace SchedulerMapAnalyser
         private System.Windows.Forms.CheckBox _OnlyProcessedCheck;
         private System.Windows.Forms.NumericUpDown _SimulCycleText;
         private System.Windows.Forms.Label label1;
+        private System.Windows.Forms.Button _FileButton;
+        private System.Windows.Forms.TextBox _FileText;
     }
 }
 
