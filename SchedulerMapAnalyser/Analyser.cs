@@ -24,6 +24,10 @@ namespace SchedulerMapAnalyser
         /// </summary>
         public int CycleSimulation { get { return _MapSegment.CycleSimulation; } set { _MapSegment.CycleSimulation = value; } }
         /// <summary>
+        /// Do procesu brát i Vedlejší prodkuty
+        /// </summary>
+        public bool ScanByProduct { get { return _MapSegment.ScanByProduct; } set { _MapSegment.ScanByProduct = value; } }
+        /// <summary>
         /// Akce, kam se bude posílat text o progresu
         /// </summary>
         public Action<string> ShowInfo { get; set; }
@@ -291,7 +295,8 @@ namespace SchedulerMapAnalyser
             }
 
             // Akce:
-            PathSpiderLine path = new PathSpiderLine(item, ignoreByProducts: true);
+            bool scanByProducts = ScanByProduct;
+            PathSpiderLine path = new PathSpiderLine(item, 0, scanByProducts);
             int loops = 0;
             while (true)
             {
@@ -328,10 +333,10 @@ namespace SchedulerMapAnalyser
 
         private class PathSpiderLine
         {
-            public PathSpiderLine(MapItem rootItem, int maxLinks = 0, bool ignoreByProducts = false)
+            public PathSpiderLine(MapItem rootItem, int maxLinks = 0, bool scanByProducts = false)
             {
                 MaxLinks = maxLinks;
-                IgnoreByProducts = ignoreByProducts;
+                ScanByProducts = scanByProducts;
                 Path = new List<PathSpiderNode>();
                 CurrentNodeIndex = 0;
                 AddLastNode(rootItem);
@@ -388,9 +393,9 @@ namespace SchedulerMapAnalyser
             /// </summary>
             private int MaxLinks;
             /// <summary>
-            /// Vynechávat ByProducts
+            /// Scanovat i ByProducts
             /// </summary>
-            private bool IgnoreByProducts;
+            private bool ScanByProducts;
             /// <summary>
             /// Sekvence nodů. Pozor, pole se nezmenšuje při odebírání, jen se posouvá <see cref="CurrentNodeIndex"/>!
             /// </summary>
@@ -436,14 +441,14 @@ namespace SchedulerMapAnalyser
                     else
                     {   // Tento prvek [i] nemůže udělat další krok, a je to nějaký Next prvek (nikoli Root) = odeberu jej:
                         RemoveLastNode();
-                        // Bude následovat další cyklus na nižším indexu, tam přejdeme na sousendí cestu nebo zase půjdeme dolů...
+                        // Bude následovat další cyklus na nižším indexu, tam přejdeme na sousední cestu nebo zase půjdeme dolů...
                     }
                 }
                 return false;
             }
             private void AddLastNode(MapItem mapItem)
             {
-                var node = new PathSpiderNode(mapItem, MaxLinks, IgnoreByProducts);
+                var node = new PathSpiderNode(mapItem, MaxLinks, ScanByProducts);
                 if (CurrentNodeIndex >= LastItemIndex)
                 {
                     Path.Add(node);
@@ -607,11 +612,11 @@ namespace SchedulerMapAnalyser
         }
         private class PathSpiderNode
         {
-            public PathSpiderNode(MapItem mapItem, int maxLinks = 0, bool ignoreByProducts = false)
+            public PathSpiderNode(MapItem mapItem, int maxLinks = 0, bool scanByProducts = false)
             {
                 this.MapItem = mapItem;
                 this.NextLinks = mapItem.NextLinks;
-                if (ignoreByProducts && this.NextLinks != null)
+                if (!scanByProducts && this.NextLinks != null)
                 {
                     int byProductCount = this.NextLinks.Count(l => l.NextItem.IsByProduct);
                     if (byProductCount > 0 && byProductCount < this.NextLinks.Length)
@@ -907,6 +912,10 @@ namespace SchedulerMapAnalyser
         /// Simuluj zacyklení dat pro daný počet položek. Minimum = 0 = bez zacyklení, maximum = 9
         /// </summary>
         public int CycleSimulation { get; set; }
+        /// <summary>
+        /// Do procesu brát i Vedlejší prodkuty
+        /// </summary>
+        public bool ScanByProduct { get; set; }
         /// <summary>
         /// Pole prvních prvků. Netříděné.
         /// </summary>

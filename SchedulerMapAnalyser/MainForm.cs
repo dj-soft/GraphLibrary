@@ -113,6 +113,7 @@ namespace SchedulerMapAnalyser
             {
                 File = file,
                 OnlyProcessedItems = _OnlyProcessedCheck.Checked,
+                ScanByProduct = _ByProductCheck.Checked,
                 CycleSimulation = (int)_SimulCycleText.Value,
                 ShowInfo = ShowProgress
             };
@@ -135,6 +136,7 @@ namespace SchedulerMapAnalyser
         private void ShowButtonsEnabledByRunningGui()
         {
             bool running = _Running;
+            _ByProductCheck.Enabled = !running;
             _OnlyProcessedCheck.Enabled = !running;
             _SimulCycleText.Enabled = !running;
             _FileButton.Enabled = !running;
