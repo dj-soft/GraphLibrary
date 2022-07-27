@@ -49,7 +49,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Analyser.cs" />
+    <Compile Include="Data\Analyser.cs" />
     <Compile Include="Components\VirtualSpace.cs" />
     <Compile Include="MainForm.cs">
       <SubType>Form</SubType>
