@@ -63,7 +63,7 @@
     <Compile Include="Components\VisualiserControl.cs">
       <SubType>Component</SubType>
     </Compile>
-    <Compile Include="WinReg.cs" />
+    <Compile Include="Data\WinReg.cs" />
     <EmbeddedResource Include="MainForm.resx">
       <DependentUpon>MainForm.cs</DependentUpon>
     </EmbeddedResource>
