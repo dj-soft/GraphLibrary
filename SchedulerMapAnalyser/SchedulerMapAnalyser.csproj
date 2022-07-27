@@ -101,6 +101,8 @@
     <None Include="pic\blockdevice-2-48.png" />
     <None Include="pic\blockdevice-2-24.png" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <Folder Include="Data\" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
