@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace SchedulerMapAnalyser
+namespace DjSoft.SchedulerMap.Analyser
 {
     public class Analyser
     {

@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace SchedulerMapAnalyser.Properties {
+namespace DjSoft.SchedulerMap.Analyser.Properties {
     using System;
     
     
@@ -39,7 +39,7 @@ namespace SchedulerMapAnalyser.Properties {
         internal static global::System.Resources.ResourceManager ResourceManager {
             get {
                 if (object.ReferenceEquals(resourceMan, null)) {
-                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("SchedulerMapAnalyser.Properties.Resources", typeof(Resources).Assembly);
+                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("DjSoft.SchedulerMap.Analyser.Properties.Resources", typeof(Resources).Assembly);
                     resourceMan = temp;
                 }
                 return resourceMan;
@@ -63,9 +63,9 @@ namespace SchedulerMapAnalyser.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
-        internal static System.Drawing.Bitmap folder_blue {
+        internal static System.Drawing.Bitmap blockdevice_2_24 {
             get {
-                object obj = ResourceManager.GetObject("folder-blue", resourceCulture);
+                object obj = ResourceManager.GetObject("blockdevice_2_24", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
@@ -73,9 +73,9 @@ namespace SchedulerMapAnalyser.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
-        internal static System.Drawing.Bitmap go_next_2 {
+        internal static System.Drawing.Bitmap blockdevice_2_48 {
             get {
-                object obj = ResourceManager.GetObject("go-next-2", resourceCulture);
+                object obj = ResourceManager.GetObject("blockdevice_2_48", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
@@ -83,9 +83,9 @@ namespace SchedulerMapAnalyser.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
-        internal static System.Drawing.Bitmap go_next_4 {
+        internal static System.Drawing.Bitmap folder_blue_24 {
             get {
-                object obj = ResourceManager.GetObject("go-next-4", resourceCulture);
+                object obj = ResourceManager.GetObject("folder_blue_24", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
@@ -93,9 +93,9 @@ namespace SchedulerMapAnalyser.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
-        internal static System.Drawing.Bitmap go_next_5 {
+        internal static System.Drawing.Bitmap fsview_24 {
             get {
-                object obj = ResourceManager.GetObject("go-next-5", resourceCulture);
+                object obj = ResourceManager.GetObject("fsview_24", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
@@ -103,9 +103,39 @@ namespace SchedulerMapAnalyser.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
-        internal static System.Drawing.Bitmap media_playback_stop_2 {
+        internal static System.Drawing.Bitmap go_next_2_24 {
             get {
-                object obj = ResourceManager.GetObject("media-playback-stop-2", resourceCulture);
+                object obj = ResourceManager.GetObject("go_next_2_24", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap go_next_4_24 {
+            get {
+                object obj = ResourceManager.GetObject("go_next_4_24", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap go_next_5_24 {
+            get {
+                object obj = ResourceManager.GetObject("go_next_5_24", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap media_playback_stop_2_24 {
+            get {
+                object obj = ResourceManager.GetObject("media_playback_stop_2_24", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }

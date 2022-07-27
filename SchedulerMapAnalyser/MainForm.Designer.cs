@@ -1,5 +1,5 @@
 ﻿
-namespace SchedulerMapAnalyser
+namespace DjSoft.SchedulerMap.Analyser
 {
     partial class MainForm
     {
@@ -30,8 +30,7 @@ namespace SchedulerMapAnalyser
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
-            this._RunButton = new System.Windows.Forms.Button();
-            this._StopButton = new System.Windows.Forms.Button();
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainForm));
             this._ProgressText = new System.Windows.Forms.TextBox();
             this._StatusBar = new System.Windows.Forms.StatusStrip();
             this._StatusProcessText = new System.Windows.Forms.ToolStripStatusLabel();
@@ -40,38 +39,14 @@ namespace SchedulerMapAnalyser
             this._OnlyProcessedCheck = new System.Windows.Forms.CheckBox();
             this._SimulCycleText = new System.Windows.Forms.NumericUpDown();
             this.label1 = new System.Windows.Forms.Label();
-            this._FileButton = new System.Windows.Forms.Button();
             this._FileText = new System.Windows.Forms.TextBox();
             this._ByProductCheck = new System.Windows.Forms.CheckBox();
+            this._FileButton = new System.Windows.Forms.Button();
+            this._StopButton = new System.Windows.Forms.Button();
+            this._RunButton = new System.Windows.Forms.Button();
             this._StatusBar.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this._SimulCycleText)).BeginInit();
             this.SuspendLayout();
-            // 
-            // _RunButton
-            // 
-            this._RunButton.Image = global::SchedulerMapAnalyser.Properties.Resources.go_next_2;
-            this._RunButton.Location = new System.Drawing.Point(13, 150);
-            this._RunButton.Name = "_RunButton";
-            this._RunButton.Size = new System.Drawing.Size(185, 44);
-            this._RunButton.TabIndex = 7;
-            this._RunButton.Text = "START";
-            this._RunButton.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
-            this._RunButton.TextImageRelation = System.Windows.Forms.TextImageRelation.ImageBeforeText;
-            this._RunButton.UseVisualStyleBackColor = true;
-            this._RunButton.Click += new System.EventHandler(this._StartClick);
-            // 
-            // _StopButton
-            // 
-            this._StopButton.Image = global::SchedulerMapAnalyser.Properties.Resources.media_playback_stop_2;
-            this._StopButton.Location = new System.Drawing.Point(13, 221);
-            this._StopButton.Name = "_StopButton";
-            this._StopButton.Size = new System.Drawing.Size(185, 44);
-            this._StopButton.TabIndex = 8;
-            this._StopButton.Text = "STOP";
-            this._StopButton.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
-            this._StopButton.TextImageRelation = System.Windows.Forms.TextImageRelation.ImageBeforeText;
-            this._StopButton.UseVisualStyleBackColor = true;
-            this._StopButton.Click += new System.EventHandler(this._StopClick);
             // 
             // _ProgressText
             // 
@@ -133,7 +108,7 @@ namespace SchedulerMapAnalyser
             // 
             // _SimulCycleText
             // 
-            this._SimulCycleText.Location = new System.Drawing.Point(143, 109);
+            this._SimulCycleText.Location = new System.Drawing.Point(143, 149);
             this._SimulCycleText.Maximum = new decimal(new int[] {
             9,
             0,
@@ -147,24 +122,11 @@ namespace SchedulerMapAnalyser
             // label1
             // 
             this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(29, 111);
+            this.label1.Location = new System.Drawing.Point(29, 151);
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(92, 13);
             this.label1.TabIndex = 5;
             this.label1.Text = "Simuluj zacyklení:";
-            // 
-            // _FileButton
-            // 
-            this._FileButton.Image = global::SchedulerMapAnalyser.Properties.Resources.folder_blue;
-            this._FileButton.Location = new System.Drawing.Point(13, 12);
-            this._FileButton.Name = "_FileButton";
-            this._FileButton.Size = new System.Drawing.Size(184, 36);
-            this._FileButton.TabIndex = 1;
-            this._FileButton.Text = "Soubor...";
-            this._FileButton.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
-            this._FileButton.TextImageRelation = System.Windows.Forms.TextImageRelation.ImageBeforeText;
-            this._FileButton.UseVisualStyleBackColor = true;
-            this._FileButton.Click += new System.EventHandler(this._FileButton_Click);
             // 
             // _FileText
             // 
@@ -177,12 +139,51 @@ namespace SchedulerMapAnalyser
             // 
             // _ByProductCheck
             // 
-            this._ByProductCheck.Location = new System.Drawing.Point(13, 77);
+            this._ByProductCheck.Location = new System.Drawing.Point(13, 117);
             this._ByProductCheck.Name = "_ByProductCheck";
             this._ByProductCheck.Size = new System.Drawing.Size(192, 31);
             this._ByProductCheck.TabIndex = 4;
             this._ByProductCheck.Text = "Mapuj i Vedlejší produkty";
             this._ByProductCheck.UseVisualStyleBackColor = true;
+            // 
+            // _FileButton
+            // 
+            this._FileButton.Image = global::DjSoft.SchedulerMap.Analyser.Properties.Resources.folder_blue_24;
+            this._FileButton.Location = new System.Drawing.Point(13, 12);
+            this._FileButton.Name = "_FileButton";
+            this._FileButton.Size = new System.Drawing.Size(184, 36);
+            this._FileButton.TabIndex = 1;
+            this._FileButton.Text = "Soubor...";
+            this._FileButton.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
+            this._FileButton.TextImageRelation = System.Windows.Forms.TextImageRelation.ImageBeforeText;
+            this._FileButton.UseVisualStyleBackColor = true;
+            this._FileButton.Click += new System.EventHandler(this._FileButton_Click);
+            // 
+            // _StopButton
+            // 
+            this._StopButton.Image = global::DjSoft.SchedulerMap.Analyser.Properties.Resources.media_playback_stop_2_24;
+            this._StopButton.Location = new System.Drawing.Point(12, 373);
+            this._StopButton.Name = "_StopButton";
+            this._StopButton.Size = new System.Drawing.Size(185, 44);
+            this._StopButton.TabIndex = 8;
+            this._StopButton.Text = "STOP";
+            this._StopButton.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
+            this._StopButton.TextImageRelation = System.Windows.Forms.TextImageRelation.ImageBeforeText;
+            this._StopButton.UseVisualStyleBackColor = true;
+            this._StopButton.Click += new System.EventHandler(this._StopClick);
+            // 
+            // _RunButton
+            // 
+            this._RunButton.Image = global::DjSoft.SchedulerMap.Analyser.Properties.Resources.go_next_2_24;
+            this._RunButton.Location = new System.Drawing.Point(13, 190);
+            this._RunButton.Name = "_RunButton";
+            this._RunButton.Size = new System.Drawing.Size(185, 44);
+            this._RunButton.TabIndex = 7;
+            this._RunButton.Text = "ANALYZUJ";
+            this._RunButton.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
+            this._RunButton.TextImageRelation = System.Windows.Forms.TextImageRelation.ImageBeforeText;
+            this._RunButton.UseVisualStyleBackColor = true;
+            this._RunButton.Click += new System.EventHandler(this._StartClick);
             // 
             // MainForm
             // 
@@ -199,6 +200,7 @@ namespace SchedulerMapAnalyser
             this.Controls.Add(this._ProgressText);
             this.Controls.Add(this._StopButton);
             this.Controls.Add(this._RunButton);
+            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.Name = "MainForm";
             this.Text = "Scheduler map analyser";
             this._StatusBar.ResumeLayout(false);
