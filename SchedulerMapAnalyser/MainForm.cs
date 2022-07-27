@@ -235,6 +235,7 @@ namespace DjSoft.SchedulerMap.Analyser
             _AnalyseTitleLabel.Visible = isInDialog || isInAnalyse;
             _ByProductCheck.Visible = isInDialog || isInAnalyse;
             _ByProductCheck.Enabled = isInDialog;
+            _SimulCycleLabel.Visible = isInDialog || isInAnalyse;
             _SimulCycleText.Visible = isInDialog || isInAnalyse;
             _SimulCycleText.Enabled = isInDialog;
             _AnalyseStartButton.Visible = isInDialog || isInAnalyse;
@@ -306,8 +307,6 @@ namespace DjSoft.SchedulerMap.Analyser
             string analyserText = _Analyser?.StatusInfo ?? "";
             this._StatusAnalyserText.Text = analyserText;
         }
-
-
         private enum ActionType
         {
             Dialog,

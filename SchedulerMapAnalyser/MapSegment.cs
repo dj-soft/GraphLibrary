@@ -24,7 +24,7 @@ namespace DjSoft.SchedulerMap.Analyser
 
             this.FileName = fileName;
             this.OnlyProcessedItems = onlyProcessed;
-            this.IsLoaded = false;
+            this._DataState = LoadingState.None;
         }
         /// <summary>
         /// Vrátí true pokud this instance je platná pro daný soubor a volbu.
@@ -53,7 +53,11 @@ namespace DjSoft.SchedulerMap.Analyser
         /// <summary>
         /// true po načtení dat
         /// </summary>
-        public bool IsLoaded { get; private set; }
+        public bool IsLoaded { get { return (DataState == LoadingState.Loaded); } }
+        /// <summary>
+        /// true v době načítání dat
+        /// </summary>
+        public bool IsLoading { get { return (DataState == LoadingState.Loading); } }
         /// <summary>
         /// Stav dat
         /// </summary>
@@ -96,6 +100,7 @@ namespace DjSoft.SchedulerMap.Analyser
 
             this.Clear();
 
+            this.DataState = LoadingState.Loading;
             progressAction?.Invoke($"Načítám data ze souboru '{fileName}'...", 0m);
 
             int rowId = 0;
@@ -110,8 +115,8 @@ namespace DjSoft.SchedulerMap.Analyser
                 statusAction?.Invoke($"Načteno {Format(ItemsCount)} položek...", (filePosition / fileLength));
             }
 
+            this.DataState = (!Cancel ? LoadingState.Loaded : LoadingState.Cancelled);
             progressAction?.Invoke($"Zpracováno {Format(rowId)} řádků souboru, získáno {Format(ItemsCount)} položek mapy.", 1m);
-            if (!Cancel) IsLoaded = true;
         }
         /// <summary>
         /// Počet simulovaných zacyklení v datech
@@ -188,7 +193,7 @@ namespace DjSoft.SchedulerMap.Analyser
             }
 
             // Najdu vhodný Poslední prvek:
-            var allItems = secondItem.AllNextItems;
+            var allItems = secondItem.GetAllNextItems();
             var lastItem = allItems.Where(i => i.IsLast).FirstOrDefault();
             if (lastItem is null)
             {
@@ -326,10 +331,10 @@ namespace DjSoft.SchedulerMap.Analyser
         /// </summary>
         public void Clear()
         {
+            this.DataState = LoadingState.None;
             MapItems.Clear();
             MapLinks.Clear();
             StringHeap.Clear();
-            IsLoaded = false;
             SimulatedCycleCount = 0;
         }
         /// <summary>
@@ -685,62 +690,56 @@ namespace DjSoft.SchedulerMap.Analyser
         /// </summary>
         /// <param name="firstItem"></param>
         /// <returns></returns>
-        public MapItem[] AllPrevItems
+        public MapItem[] GetAllPrevItems()
         {
-            get
+            Dictionary<int, MapItem> allDict = new Dictionary<int, MapItem>();
+            Queue<MapItem> queue = new Queue<MapItem>();
+            queue.Enqueue(this);
+            while (queue.Count > 0)
             {
-                Dictionary<int, MapItem> allDict = new Dictionary<int, MapItem>();
-                Queue<MapItem> queue = new Queue<MapItem>();
-                queue.Enqueue(this);
-                while (queue.Count > 0)
-                {
-                    // Vyzvednu prvek ke zpracování, ale pokud jej už mám ve výsledku, pak ho tam nedám a ani neřeším jeho Next prvky = ochrana před zacyklením:
-                    var item = queue.Dequeue();
-                    if (allDict.ContainsKey(item.ItemId)) continue;
-                    allDict.Add(item.ItemId, item);
+                // Vyzvednu prvek ke zpracování, ale pokud jej už mám ve výsledku, pak ho tam nedám a ani neřeším jeho Next prvky = ochrana před zacyklením:
+                var item = queue.Dequeue();
+                if (allDict.ContainsKey(item.ItemId)) continue;
+                allDict.Add(item.ItemId, item);
 
-                    // Prvek jsme dosud neměli - detekuji jeho Prev prvky a podmíněně je přidám do fronty ke zpracování:
-                    var prevLinks = item.PrevLinks;
-                    if (prevLinks is null || prevLinks.Length == 0) continue;
-                    foreach (var prevLink in prevLinks)
-                    {   // Zařadím Prev prvky do dalšího kola zpracování
-                        if (!prevLink.IsLinkDisconnected && prevLink.PrevItem != null && !allDict.ContainsKey(prevLink.PrevItem.ItemId))
-                            queue.Enqueue(prevLink.PrevItem);
-                    }
+                // Prvek jsme dosud neměli - detekuji jeho Prev prvky a podmíněně je přidám do fronty ke zpracování:
+                var prevLinks = item.PrevLinks;
+                if (prevLinks is null || prevLinks.Length == 0) continue;
+                foreach (var prevLink in prevLinks)
+                {   // Zařadím Prev prvky do dalšího kola zpracování
+                    if (!prevLink.IsLinkDisconnected && prevLink.PrevItem != null && !allDict.ContainsKey(prevLink.PrevItem.ItemId))
+                        queue.Enqueue(prevLink.PrevItem);
                 }
-                return allDict.Values.ToArray();
             }
+            return allDict.Values.ToArray();
         }
         /// <summary>
         /// Obsahuje všechny prvky počínaje z daného prvku včetně ve směru Next. Pokud dojde k zacyklení ve vstupních datech, nezacyklí se.
         /// </summary>
         /// <param name="firstItem"></param>
         /// <returns></returns>
-        public MapItem[] AllNextItems
+        public MapItem[] GetAllNextItems()
         {
-            get
+            Dictionary<int, MapItem> allDict = new Dictionary<int, MapItem>();
+            Queue<MapItem> queue = new Queue<MapItem>();
+            queue.Enqueue(this);
+            while (queue.Count > 0)
             {
-                Dictionary<int, MapItem> allDict = new Dictionary<int, MapItem>();
-                Queue<MapItem> queue = new Queue<MapItem>();
-                queue.Enqueue(this);
-                while (queue.Count > 0)
-                {
-                    // Vyzvednu prvek ke zpracování, ale pokud jej už mám ve výsledku, pak ho tam nedám a ani neřeším jeho Next prvky = ochrana před zacyklením:
-                    var item = queue.Dequeue();
-                    if (allDict.ContainsKey(item.ItemId)) continue;
-                    allDict.Add(item.ItemId, item);
+                // Vyzvednu prvek ke zpracování, ale pokud jej už mám ve výsledku, pak ho tam nedám a ani neřeším jeho Next prvky = ochrana před zacyklením:
+                var item = queue.Dequeue();
+                if (allDict.ContainsKey(item.ItemId)) continue;
+                allDict.Add(item.ItemId, item);
 
-                    // Prvek jsme dosud neměli - detekuji jeho Next prvky a podmíněně je přidám do fronty ke zpracování:
-                    var nextLinks = item.NextLinks;
-                    if (nextLinks is null || nextLinks.Length == 0) continue;
-                    foreach (var nextLink in nextLinks)
-                    {   // Zařadím Next prvky do dalšího kola zpracování
-                        if (!nextLink.IsLinkDisconnected && nextLink.NextItem != null && !allDict.ContainsKey(nextLink.NextItem.ItemId))
-                            queue.Enqueue(nextLink.NextItem);
-                    }
+                // Prvek jsme dosud neměli - detekuji jeho Next prvky a podmíněně je přidám do fronty ke zpracování:
+                var nextLinks = item.NextLinks;
+                if (nextLinks is null || nextLinks.Length == 0) continue;
+                foreach (var nextLink in nextLinks)
+                {   // Zařadím Next prvky do dalšího kola zpracování
+                    if (!nextLink.IsLinkDisconnected && nextLink.NextItem != null && !allDict.ContainsKey(nextLink.NextItem.ItemId))
+                        queue.Enqueue(nextLink.NextItem);
                 }
-                return allDict.Values.ToArray();
             }
+            return allDict.Values.ToArray();
         }
         /// <summary>
         /// Obsahuje true, pokud všechny vztahy mezi Prev prvky v <see cref="PrevLinks"/> a this prvkem jsou zpracované = mají <see cref="MapLink.IsLinkProcessed"/> = true;

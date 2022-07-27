@@ -50,6 +50,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Analyser.cs" />
+    <Compile Include="Components\VirtualSpace.cs" />
     <Compile Include="MainForm.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -59,7 +60,7 @@
     <Compile Include="MapSegment.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Visualiser.cs">
+    <Compile Include="Components\VisualiserControl.cs">
       <SubType>Component</SubType>
     </Compile>
     <Compile Include="WinReg.cs" />

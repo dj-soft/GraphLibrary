@@ -38,7 +38,7 @@ namespace DjSoft.SchedulerMap.Analyser
             this._Timer = new System.Windows.Forms.Timer(this.components);
             this._OnlyProcessedCheck = new System.Windows.Forms.CheckBox();
             this._SimulCycleText = new System.Windows.Forms.NumericUpDown();
-            this.label1 = new System.Windows.Forms.Label();
+            this._SimulCycleLabel = new System.Windows.Forms.Label();
             this._FileText = new System.Windows.Forms.TextBox();
             this._ByProductCheck = new System.Windows.Forms.CheckBox();
             this._FileButton = new System.Windows.Forms.Button();
@@ -49,7 +49,7 @@ namespace DjSoft.SchedulerMap.Analyser
             this._MapTitleLabel = new System.Windows.Forms.Label();
             this._ReloadFileCheck = new System.Windows.Forms.CheckBox();
             this._MainPanel = new System.Windows.Forms.Panel();
-            this._VisualiserPanel = new DjSoft.SchedulerMap.Analyser.Visualiser();
+            this._VisualiserPanel = new DjSoft.SchedulerMap.Analyser.VisualiserControl();
             this._StatusBar.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this._SimulCycleText)).BeginInit();
             this._MainPanel.SuspendLayout();
@@ -126,14 +126,14 @@ namespace DjSoft.SchedulerMap.Analyser
             this._SimulCycleText.TabIndex = 6;
             this._SimulCycleText.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
             // 
-            // label1
+            // _SimulCycleLabel
             // 
-            this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(29, 178);
-            this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(92, 13);
-            this.label1.TabIndex = 5;
-            this.label1.Text = "Simuluj zacyklení:";
+            this._SimulCycleLabel.AutoSize = true;
+            this._SimulCycleLabel.Location = new System.Drawing.Point(29, 178);
+            this._SimulCycleLabel.Name = "_SimulCycleLabel";
+            this._SimulCycleLabel.Size = new System.Drawing.Size(92, 13);
+            this._SimulCycleLabel.TabIndex = 5;
+            this._SimulCycleLabel.Text = "Simuluj zacyklení:";
             // 
             // _FileText
             // 
@@ -249,6 +249,7 @@ namespace DjSoft.SchedulerMap.Analyser
             // _VisualiserPanel
             // 
             this._VisualiserPanel.Location = new System.Drawing.Point(503, 17);
+            this._VisualiserPanel.MapSegment = null;
             this._VisualiserPanel.Name = "_VisualiserPanel";
             this._VisualiserPanel.Size = new System.Drawing.Size(482, 501);
             this._VisualiserPanel.TabIndex = 10;
@@ -267,7 +268,7 @@ namespace DjSoft.SchedulerMap.Analyser
             this.Controls.Add(this._ByProductCheck);
             this.Controls.Add(this._FileText);
             this.Controls.Add(this._FileButton);
-            this.Controls.Add(this.label1);
+            this.Controls.Add(this._SimulCycleLabel);
             this.Controls.Add(this._SimulCycleText);
             this.Controls.Add(this._OnlyProcessedCheck);
             this.Controls.Add(this._StatusBar);
@@ -298,7 +299,7 @@ namespace DjSoft.SchedulerMap.Analyser
         private System.Windows.Forms.ToolStripStatusLabel _StatusAnalyserText;
         private System.Windows.Forms.CheckBox _OnlyProcessedCheck;
         private System.Windows.Forms.NumericUpDown _SimulCycleText;
-        private System.Windows.Forms.Label label1;
+        private System.Windows.Forms.Label _SimulCycleLabel;
         private System.Windows.Forms.Button _FileButton;
         private System.Windows.Forms.TextBox _FileText;
         private System.Windows.Forms.CheckBox _ByProductCheck;
@@ -307,7 +308,7 @@ namespace DjSoft.SchedulerMap.Analyser
         private System.Windows.Forms.Label _MapTitleLabel;
         private System.Windows.Forms.CheckBox _ReloadFileCheck;
         private System.Windows.Forms.Panel _MainPanel;
-        private Visualiser _VisualiserPanel;
+        private VisualiserControl _VisualiserPanel;
     }
 }
 
