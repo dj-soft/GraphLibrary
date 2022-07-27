@@ -11,22 +11,23 @@ namespace DjSoft.SchedulerMap.Analyser
         #region Konstrukce a režie
         public Analyser()
         {
-            _MapSegment = new MapSegment();
             _ShowInfoText = new StringBuilder();
         }
-        public string File { get; set; }
         /// <summary>
-        /// Zpracovávat jen prvky, které prošly procesem (dle mapy)
+        /// Data segmentu. Před spuštěním analýzy musí být instance mapy setována do této property.
+        /// Nemusí ale mít načtená data, je vhodnější nechat načtení na analyzeru, protože umí obsloužit progress a cancel.
+        /// Při startu analýzy jsou data přenesena do interní proměnné a celý proces analýzy běží v takto akceptovaných datech. Setování jiné instance následně nemá vliv.
+        /// Nicméně používání shodné instance i pro příští běhy zajistí sdílení dat.
         /// </summary>
-        public bool OnlyProcessedItems { get { return _MapSegment.OnlyProcessedItems; } set { _MapSegment.OnlyProcessedItems = value; } }
+        public MapSegment MapSegment { get; set; }
         /// <summary>
         /// Simuluj zacyklení dat pro daný počet položek. Minimum = 0 = bez zacyklení, maximum = 9
         /// </summary>
-        public int CycleSimulation { get { return _MapSegment.CycleSimulation; } set { _MapSegment.CycleSimulation = value; } }
+        public int CycleSimulation { get; set; }
         /// <summary>
         /// Do procesu brát i Vedlejší prodkuty
         /// </summary>
-        public bool ScanByProduct { get { return _MapSegment.ScanByProduct; } set { _MapSegment.ScanByProduct = value; } }
+        public bool ScanByProduct { get; set; }
         /// <summary>
         /// Akce, kam se bude posílat text o progresu
         /// </summary>
@@ -34,11 +35,54 @@ namespace DjSoft.SchedulerMap.Analyser
         /// <summary>
         /// Asynchronně aktualizovaný a přebíraný status (analyzer sem kdykoliv píše, ale neinformuje o změně; volající si čas od času text přečte a vloží do status baru)
         /// </summary>
-        public string StatusInfo { get; set; }
+        public string StatusInfo { get; private set; }
+        /// <summary>
+        /// Asynchronně aktualizovaný a přebíraný ukazatel pokroku (analyzer sem kdykoliv píše, ale neinformuje o změně; volající si čas od času text přečte a vloží do status baru)
+        /// </summary>
+        public decimal StatusProgressRatio { get; private set; }
         /// <summary>
         /// Požadavek na storno procesu, lze nastavit kdykoliv, ve vhodném okamžiku bude akceptováno.
         /// </summary>
-        public bool Cancel { get; set; }
+        public bool Cancel 
+        {
+            get { return _Cancel; }
+            set { _Cancel = value; if (MapSegment != null) MapSegment.Cancel = value; if (_MapSegment != null) _MapSegment.Cancel = value; }
+        }
+        private bool _Cancel;
+        public void Run()
+        {
+            try
+            {
+                _Run();
+            }
+            catch (Exception exc)
+            {
+                _ShowInfoLine($"EXCEPTION {exc.Message}");
+                _ShowInfoLine(exc.StackTrace);
+            }
+        }
+        private void _Run()
+        {
+            this.Cancel = false;
+            _CheckMapSegment();
+            _BreakCycles();
+            _AnalyseItems();
+            _CancelRun = Cancel;
+            // _ShowDone();
+            _ClearMemory();
+            if (_CancelRun) _ShowInfoLine($"PŘERUŠENO UŽIVATELEM !");
+        }
+
+        private void _ProgressAction(string text, decimal? progressRatio)
+        {
+            _ShowInfoLine(text);
+            if (progressRatio.HasValue) StatusProgressRatio = progressRatio.Value;
+        }
+        private void _StatusAction(string text, decimal? progressRatio)
+        {
+            StatusInfo = text;
+            if (progressRatio.HasValue) StatusProgressRatio = progressRatio.Value;
+        }
         /// <summary>
         /// Kompletní text do progress textu do metody <see cref="ShowInfo"/>
         /// </summary>
@@ -62,30 +106,6 @@ namespace DjSoft.SchedulerMap.Analyser
         {
             ShowInfo?.Invoke(info);
         }
-        public void Run()
-        {
-            try
-            {
-                _Run();
-            }
-            catch (Exception exc)
-            {
-                _ShowInfoLine($"EXCEPTION {exc.Message}");
-                _ShowInfoLine(exc.StackTrace);
-            }
-        }
-        private void _Run()
-        {
-            string file = this.File;
-            _LoadItems(file);
-            _SimulateCycling();
-            _BreakCycles();
-            _AnalyseItems();
-            _CancelRun = Cancel;
-            // _ShowDone();
-            _ClearMemory();
-            if (_CancelRun) _ShowInfoLine($"PŘERUŠENO UŽIVATELEM !");
-        }
         private void _ShowDone()
         {
             if (!Cancel)
@@ -106,7 +126,7 @@ namespace DjSoft.SchedulerMap.Analyser
         private bool _CancelRun;
         private void _ClearMemory()
         {
-            _MapSegment.Clear();
+            // _MapSegment.Clear();
             GC.Collect();
         }
         private string Format(int value)
@@ -115,127 +135,23 @@ namespace DjSoft.SchedulerMap.Analyser
         }
         MapSegment _MapSegment;
         #endregion
-        #region Načtení a simulace zacyklení dat
-        private void _LoadItems(string file)
-        {
-            if (String.IsNullOrEmpty(file)) throw new ArgumentNullException("Není zadané jméno souboru.");
-            if (!System.IO.File.Exists(file)) throw new ArgumentNullException($"Soubor jména '{file}' neexistuje.");
-
-            if (Cancel) return;
-
-            _ShowInfoLine($"Načítám data ze souboru '{file}'...");
-            int rowId = 0;
-            foreach (var line in System.IO.File.ReadLines(file))
-            {
-                if (Cancel) break;
-                _MapSegment.AddLine(ref rowId, line);
-                StatusInfo = $"Načteno {Format(_MapSegment.ItemsCount)} položek...";
-            }
-            _ShowInfoLine($"Zpracováno {Format(rowId)} řádků souboru, získáno {Format(_MapSegment.ItemsCount)} položek mapy.");
-        }
+        #region Příprava dat segmentu (načtení a simulace zacyklení)
         /// <summary>
-        /// Do dat přidej simulaci zacyklení, pokud je to žádáno
+        /// Zajistí převzetí segmentu z <see cref="MapSegment"/> do privátního <see cref="_MapSegment"/>, kontrolu a zajištěné načtení dat a zajistí i počet simulací cyklu.
         /// </summary>
-        private void _SimulateCycling()
+        private void _CheckMapSegment()
         {
-            int cycleSimulation = this.CycleSimulation;
-            if (cycleSimulation <= 0) return;
-            if (cycleSimulation > 9) cycleSimulation = 9;
+            _MapSegment = MapSegment;
+            if (_MapSegment is null) throw new ArgumentNullException("Do Analyseru nebyla předána instance datového segmentu 'MapSegment'.");
+            _MapSegment.Cancel = false;
 
-            _ShowInfoLine($"Vytvářím zacyklení v datech...");
+            if (!_MapSegment.IsLoaded || _MapSegment.SimulatedCycleCount > this.CycleSimulation)
+                _MapSegment.LoadData(_ProgressAction, _StatusAction);
+            
+            if (_MapSegment.SimulatedCycleCount < this.CycleSimulation)
+                _MapSegment.SimulatedCycleCreate(this.CycleSimulation, _ProgressAction);
 
-            var firstItems = _MapSegment.FirstItems;
-            var firstCount = firstItems.Length;
-            if (firstCount == 0)
-            {
-                _ShowInfoLine($"Nejsou žádné FirstItems, nebude žádné zacyklení.");
-                return;
-            }
-
-            // Vytvořím zacyklení:
-            List<MapItem> cycleItems = new List<MapItem>();
-            int firstIndex = firstCount / 2 - 5;
-            if (firstIndex < 0) firstIndex = 0;
-            for (int i = 0; i < cycleSimulation; i++)
-            {
-                int index = firstIndex + i;
-                if (index >= firstCount) break;
-                var firstItem = firstItems[index];
-                bool isCycled = _CycleSimulationOne(firstItem);
-                if (!isCycled) cycleSimulation++;                    // Pokud jsem pro aktuální prvek nepřidal zacyklení, tak budu zkoušet o jeden další prvek víc...
-            }
-        }
-        /// <summary>
-        /// Přidá zacyklení do stromu vycházejícího z daného First prvku:
-        /// </summary>
-        /// <param name="firstItem"></param>
-        private bool _CycleSimulationOne(MapItem firstItem)
-        {
-            _ShowInfoLine($"Přidávám zacyklení do stromu k prvku {firstItem}");
-
-            // Zacyklení přidám do druhého prvku (z posledního prvku), to proto abych First item nechal jako First (když bych do něj přidal nějaký Prev prvek, už by nebyl First)
-            var nextLinks = firstItem.NextLinks;
-            var secondItem = (nextLinks is null || nextLinks.Length == 0 ? null : nextLinks[0].NextItem);
-            if (secondItem is null)
-            {
-                _ShowInfoLine($" - nelze přidat zacyklení, prvek FirstItem je solitér: {firstItem}");
-                return false;
-            }
-
-            // Najdu vhodný Poslední prvek:
-            var allItems = _GetAllItems(secondItem);
-            var lastItem = allItems.Where(i => i.IsLast).FirstOrDefault();
-            if (lastItem is null)
-            {
-                _ShowInfoLine($" - nelze přidat zacyklení, nenašli jsme žádný LastItem - asi už tu zacyklení máme: {firstItem}");
-                return false;
-            }
-
-            // Pokud by Druhá == Poslední (tj. tam kde bych chtěl přidat zacyklovací vztah), ohlásím nemožnost:
-            if (secondItem.ItemId == lastItem.ItemId)
-            {
-                _ShowInfoLine($" - nelze přidat zacyklení, zvolený LastItem == SecondItem (jde o příliš krátký řetězec)");
-                return false;
-            }
-
-            // Zajistím zacyklení Last => Second:
-            secondItem.AddPrevLink(lastItem.ItemId);
-            lastItem.AddNextLink(secondItem.ItemId);
-            _ShowInfoLine($" - přidáno zacyklení: Last: {lastItem.TextShort} => Second: {secondItem.TextShort}.");
-
-
-            var es = secondItem.ExpectedSequence;
-
-
-            return true;
-        }
-        /// <summary>
-        /// Metoda vrátí všechny prvky počínaje z daného prvku včetně ve směru Next. Pokud dojde k zacyklení ve vstupních datech, nezacyklí se.
-        /// </summary>
-        /// <param name="firstItem"></param>
-        /// <returns></returns>
-        private MapItem[] _GetAllItems(MapItem firstItem)
-        {
-            Dictionary<int, MapItem> allDict = new Dictionary<int, MapItem>();
-            Queue<MapItem> queue = new Queue<MapItem>();
-            queue.Enqueue(firstItem);
-            while (queue.Count > 0)
-            {
-                // Vyzvednu prvek ke zpracování, ale pokud jej už mám ve výsledku, pak ho tam nedám a ani neřeším jeho Next prvky = ochrana před zacyklením:
-                var item = queue.Dequeue();
-                if (allDict.ContainsKey(item.ItemId)) continue;
-                allDict.Add(item.ItemId, item);
-
-                // Prvek jsme dosud neměli - detekuji jeho Next prvky a podmíněně je přidám do fronty ke zpracování:
-                var nextLinks = item.NextLinks;
-                if (nextLinks is null || nextLinks.Length == 0) continue;
-                foreach (var nextLink in nextLinks)
-                {   // Zařadím Next prvky do dalšího kola zpracování
-                    if (!nextLink.IsLinkDisconnected && nextLink.NextItem != null && !allDict.ContainsKey(nextLink.NextItem.ItemId))
-                        queue.Enqueue(nextLink.NextItem);
-                }
-            }
-            return allDict.Values.ToArray();
+            _MapSegment.ResetItems();
         }
         #endregion
         #region Přerušení zacyklení položek
@@ -244,7 +160,7 @@ namespace DjSoft.SchedulerMap.Analyser
         /// </summary>
         private void _BreakCycles()
         {
-            if (Cancel) return;
+            if (Cancel || !_MapSegment.IsLoaded) return;
 
             MapItem[] items;
 
@@ -690,7 +606,7 @@ namespace DjSoft.SchedulerMap.Analyser
         /// </summary>
         private void _AnalyseItems()
         {
-            if (Cancel) return;
+            if (Cancel || !_MapSegment.IsLoaded) return;
 
             _MapSegment.ResetItems();
 
@@ -704,6 +620,7 @@ namespace DjSoft.SchedulerMap.Analyser
             while (queue.Count > 0)
             {
                 if (Cancel) break;
+
                 var item = queue.Dequeue();
                 _AnalyseItem(item, queue, workDict);
                 if (queue.Count == 0)
@@ -714,7 +631,7 @@ namespace DjSoft.SchedulerMap.Analyser
             var lastItems = _MapSegment.LastItems;
             var lastProcItems = lastItems.Where(i => i.Sequence != "??").ToArray();
 
-            _ShowInfoLine($"Analýza dokončena.");
+            _ShowInfoLine($"Analýza {(!Cancel ? "dokončena" : "PŘERUŠENA")}.");
         }
         /// <summary>
         /// Analýza jedné položky a zařazení jejích přímých Next prvků do fronty
@@ -863,784 +780,4 @@ namespace DjSoft.SchedulerMap.Analyser
         }
         #endregion
     }
-    #region class MapSegment
-    /// <summary>
-    /// Segment plánu, obsahuje pole prvků a řídí tvorbu linků mezi prvky a přístup k datům.
-    /// Segment neřídí analýzu.
-    /// </summary>
-    public class MapSegment
-    {
-        /// <summary>
-        /// Konstruktor
-        /// </summary>
-        public MapSegment()
-        {
-            this.MapItems = new Dictionary<int, MapItem>();
-            this.MapLinks = new Dictionary<long, MapLink>();
-            this.StringHeap = new StringHeap();
-        }
-        /// <summary>
-        /// Vloží nový prvek z dodaného řádku mapy.
-        /// </summary>
-        /// <param name="rowId"></param>
-        /// <param name="line"></param>
-        public void AddLine(ref int rowId, string line)
-        {
-            rowId++;
-            if (rowId == 1) return;                                       // Titulkový řádek
-
-            if (String.IsNullOrEmpty(line)) return;
-
-            var cells = line.Split('\t');
-            int count = cells.Length;
-            if (count < 11) return;
-
-            MapItem mapItem = new MapItem(this, rowId, cells);
-            if (mapItem.ItemId == 0) return;
-            if (OnlyProcessedItems && mapItem.Sequence == "??") return;   // Prvek nezprocesovaný v mapě
-
-            if (MapItems.ContainsKey(mapItem.ItemId))
-                throw new ArgumentException($"Vstupní soubor obsahuje duplicitní položku '{mapItem.ItemIdText}'");
-
-            MapItems.Add(mapItem.ItemId, mapItem);
-        }
-        /// <summary>
-        /// Zpracovávat jen prvky, které prošly procesem (dle mapy)
-        /// </summary>
-        public bool OnlyProcessedItems { get; set; }
-        /// <summary>
-        /// Simuluj zacyklení dat pro daný počet položek. Minimum = 0 = bez zacyklení, maximum = 9
-        /// </summary>
-        public int CycleSimulation { get; set; }
-        /// <summary>
-        /// Do procesu brát i Vedlejší prodkuty
-        /// </summary>
-        public bool ScanByProduct { get; set; }
-        /// <summary>
-        /// Pole prvních prvků. Netříděné.
-        /// </summary>
-        public MapItem[] Items
-        {
-            get
-            {
-                var items = MapItems.Values.ToArray();
-                return items;
-            }
-        }
-        /// <summary>
-        /// Pole prvních prvků, setřídění podle <see cref="MapItem.CompareByItemId"/>
-        /// </summary>
-        public MapItem[] FirstItems
-        {
-            get
-            {
-                var items = MapItems.Values.Where(i => i.IsFirst).ToList();
-                items.Sort((a, b) => MapItem.CompareByItemId(a, b));
-                return items.ToArray();
-            }
-        }
-        /// <summary>
-        /// Pole posledních prvků, setřídění podle <see cref="MapItem.CompareByItemId"/>
-        /// </summary>
-        public MapItem[] LastItems
-        {
-            get
-            {
-                var items = MapItems.Values.Where(i => i.IsLast).ToList();
-                items.Sort((a, b) => MapItem.CompareByItemId(a, b));
-                return items.ToArray();
-            }
-        }
-        /// <summary>
-        /// Počet prvků celkem
-        /// </summary>
-        public int ItemsCount { get { return MapItems.Count; } }
-        /// <summary>
-        /// Pole prvků již vyřešených
-        /// </summary>
-        public MapItem[] ItemsProcessed { get { return MapItems.Values.Where(i => i.IsProcessed).ToArray(); } }
-        /// <summary>
-        /// Počet prvků již vyřešených
-        /// </summary>
-        public int ItemsProcessedCount { get { return ItemsProcessed.Length; } }
-        /// <summary>
-        /// Pole prvků čekajících za zpracování
-        /// </summary>
-        public MapItem[] ItemsWaiting { get { return MapItems.Values.Where(i => !i.IsProcessed).ToArray(); } }
-        /// <summary>
-        /// Počet prvků čekajících za zpracování
-        /// </summary>
-        public int ItemsWaitingCount { get { return ItemsWaiting.Length; } }
-        /// <summary>
-        /// Dictionary všech prvků
-        /// </summary>
-        public Dictionary<int, MapItem> MapItems { get; private set; }
-        /// <summary>
-        /// Pole vztahů mez dvěma prvky <see cref="MapItem"/>, klíčem je složený klíč obou prvků, viz metoda 
-        /// </summary>
-        public Dictionary<long, MapLink> MapLinks { get; private set; }
-        public StringHeap StringHeap { get; private set; }
-        /// <summary>
-        /// Resetuje všechny prvky = budou uvedeny do stavu před zahájením analýzy
-        /// </summary>
-        public void ResetItems()
-        {
-            foreach (var item in MapItems.Values)
-                item.ResetItem();
-        }
-        /// <summary>
-        /// Uvolní všechny prvky
-        /// </summary>
-        public void Clear()
-        {
-            MapItems.Clear();
-            MapLinks.Clear();
-            StringHeap.Clear();
-        }
-        #region Vyhledání prvků, vyhledání a tvorba linků
-        /// <summary>
-        /// Zkusí najít prvek daného ID
-        /// </summary>
-        /// <param name="itemId"></param>
-        /// <param name="item"></param>
-        /// <returns></returns>
-        public bool TryGetMapItem(int itemId, out MapItem item)
-        {
-            if (MapItems.TryGetValue(itemId, out item)) return true;
-            return false;
-        }
-        /// <summary>
-        /// Vyhledá prvky pro dané hodnoty <see cref="MapItem.ItemId"/> a nalezené prvky (ne null) vrátí jako pole.
-        /// </summary>
-        /// <param name="itemIds"></param>
-        /// <returns></returns>
-        public MapItem[] GetMapItems(IEnumerable<int> itemIds)
-        {
-            var items = new List<MapItem>();
-            if (itemIds != null)
-            {
-                foreach (var itemId in itemIds)
-                {
-                    if (MapItems.TryGetValue(itemId, out var item))
-                        items.Add(item);
-                }
-            }
-            return items.ToArray();
-        }
-        /// <summary>
-        /// Najde nebo vytvoří a vrátí pole vztahů pro dané pole ID záznamů vztahů <paramref name="itemIds"/>,
-        /// a kde je dodaný konstantní prvek každého vztahu <paramref name="prevItem"/> nebo <paramref name="nextItem"/>.
-        /// Tak lze vytvořit pole vztahů z Prev i z Next prvku.
-        /// </summary>
-        /// <param name="prevId"></param>
-        /// <param name="nextId"></param>
-        /// <returns></returns>
-        public MapLink[] GetMapLinks(int prevId, int nextId)
-        {
-            return _GetMapLinks(null, prevId, nextId);
-        }
-        /// <summary>
-        /// Najde nebo vytvoří a vrátí pole vztahů pro dané pole ID záznamů vztahů <paramref name="itemIds"/>,
-        /// a kde je dodaný konstantní prvek každého vztahu <paramref name="prevItem"/> nebo <paramref name="nextItem"/>.
-        /// Tak lze vytvořit pole vztahů z Prev i z Next prvku.
-        /// </summary>
-        /// <param name="prevIds"></param>
-        /// <param name="nextId"></param>
-        /// <returns></returns>
-        public MapLink[] GetMapLinks(IEnumerable<int> prevIds, int nextId)
-        {
-            return _GetMapLinks(prevIds, 0, nextId);
-        }
-        /// <summary>
-        /// Najde nebo vytvoří a vrátí pole vztahů pro dané pole ID záznamů vztahů <paramref name="itemIds"/>,
-        /// a kde je dodaný konstantní prvek každého vztahu <paramref name="prevItem"/> nebo <paramref name="nextItem"/>.
-        /// Tak lze vytvořit pole vztahů z Prev i z Next prvku.
-        /// </summary>
-        /// <param name="prevId"></param>
-        /// <param name="nextIds"></param>
-        /// <returns></returns>
-        public MapLink[] GetMapLinks(int prevId, IEnumerable<int> nextIds)
-        {
-            return _GetMapLinks(nextIds, prevId, 0);
-        }
-        /// <summary>
-        /// Najde nebo vytvoří a vrátí pole vztahů pro dané pole ID záznamů vztahů <paramref name="itemIds"/>,
-        /// a kde je dodaný konstantní prvek každého vztahu <paramref name="prevItem"/> nebo <paramref name="nextItem"/>.
-        /// Tak lze vytvořit pole vztahů z Prev i z Next prvku.
-        /// </summary>
-        /// <param name="itemIds"></param>
-        /// <param name="prevItem"></param>
-        /// <param name="nextId"></param>
-        /// <returns></returns>
-        private MapLink[] _GetMapLinks(IEnumerable<int> itemIds, int prevId, int nextId)
-        {
-            var mapLinks = new List<MapLink>();
-            bool prevFix = prevId > 0;
-            bool nextFix = nextId > 0;
-            if (prevFix && nextFix)
-                AddMapLinksTo(prevId, nextId, mapLinks);                                      // Mám Prev i Next, řešíme pouze jednu konstantní propojku
-            else if (prevFix || nextFix)
-            {
-                foreach (var itemId in itemIds)
-                {
-                    if (prevFix && !nextFix) AddMapLinksTo(prevId, itemId, mapLinks);         // Mám Prev ale ne Next, doplním jako Next nalezený vztažený
-                    else if (!prevFix && nextFix) AddMapLinksTo(itemId, nextId, mapLinks);    // Mám Next ale ne Prev, doplním jako Prev nalezený vztažený
-                }
-            }
-            return mapLinks.ToArray();
-        }
-        /// <summary>
-        /// Pokud najde/vytvoří propojku pro dva dané prvky, pak tuto propojku přidá do daného pole.
-        /// </summary>
-        /// <param name="prevId"></param>
-        /// <param name="nextId"></param>
-        /// <param name="mapLinks"></param>
-        private void AddMapLinksTo(int prevId, int nextId, List<MapLink> mapLinks)
-        {
-            var link = GetMapLink(prevId, nextId);
-            if (link != null)
-                mapLinks.Add(link);
-        }
-        /// <summary>
-        /// Najde nebo vytvoří propojku <see cref="MapLink"/> pro dané dva prvky <paramref name="prevId"/> a <paramref name="nextId"/>.
-        /// Propojky jsou klíčovány pomocí klíčů prvků a evidovány v Dictionary <see cref="MapLinks"/>, proto vždy existuje jen jedna instance propojky pro dva prvky <see cref="MapItem"/>.
-        /// </summary>
-        /// <param name="prevId"></param>
-        /// <param name="nextId"></param>
-        /// <returns></returns>
-        public MapLink GetMapLink(int prevId, int nextId)
-        {
-            if (prevId <= 0 || nextId <= 0) return null;
-            var linkId = ConvertPairIdToLinkId(prevId, nextId);
-            if (!MapLinks.TryGetValue(linkId, out var mapLink))
-            {
-                bool hasPrevItem = TryGetMapItem(prevId, out var prevItem);
-                bool hasNextItem = TryGetMapItem(nextId, out var nextItem);
-                if (hasPrevItem && hasNextItem)
-                {
-                    mapLink = new MapLink(prevItem, nextItem);
-                    MapLinks.Add(linkId, mapLink);
-                }
-            }
-            return mapLink;
-        }
-        /// <summary>
-        /// Najde nebo vytvoří propojku <see cref="MapLink"/> pro dané dva prvky <paramref name="prevItem"/> a <paramref name="nextItem"/>.
-        /// Propojky jsou klíčovány pomocí klíčů prvků a evidovány v Dictionary <see cref="MapLinks"/>, proto vždy existuje jen jedna instance propojky pro dva prvky <see cref="MapItem"/>.
-        /// </summary>
-        /// <param name="prevItem"></param>
-        /// <param name="nextItem"></param>
-        /// <returns></returns>
-        public MapLink GetMapLink(MapItem prevItem, MapItem nextItem)
-        {
-            if (prevItem is null || nextItem is null) return null;
-            var linkId = ConvertPairIdToLinkId(prevItem.ItemId, nextItem.ItemId);
-            if (!MapLinks.TryGetValue(linkId, out var mapLink))
-            {
-                mapLink = new MapLink(prevItem, nextItem);
-                MapLinks.Add(linkId, mapLink);
-            }
-            return mapLink;
-        }
-        #endregion
-        #region Konvertory ID
-        /// <summary>
-        /// Pro dvě hodnoty <see cref="MapItem.ItemId"/> (ve smyslu Prev, Next) vrátí LinkId obsahující obě hodnoty.
-        /// </summary>
-        /// <param name="prevId"></param>
-        /// <param name="nextId"></param>
-        /// <returns></returns>
-        public static long ConvertPairIdToLinkId(int prevId, int nextId)
-        {
-            return OffsetPx * (long)prevId + (long)nextId;
-        }
-        /// <summary>
-        /// Pro danou kolekci stringových Id ve tvaru "Ax12345" nebo "Tc4567" vrátí pole odpovídajících Int32 hodnot
-        /// </summary>
-        /// <param name="idsText"></param>
-        /// <returns></returns>
-        public static int[] ConvertIdToInt(string[] idsText)
-        {
-            if (idsText is null) return null;
-            var ids = idsText
-                .Select(i => ConvertIdToInt(i))
-                .Where(i => i > 0)
-                .ToArray();
-            if (ids.Length == 0) return null;
-            return ids;
-        }
-        /// <summary>
-        /// Pro dané stringové Id ve tvaru "Ax12345" nebo "Tc4567" vrátí odpovídající Int32 hodnotu
-        /// </summary>
-        /// <param name="idText"></param>
-        /// <returns></returns>
-        public static int ConvertIdToInt(string idText)
-        {
-            if (String.IsNullOrEmpty(idText) || idText.Length < 3) return 0;
-            string prefix = idText.Substring(0, 2);
-            int value = (prefix == "Ax" ? OffsetAx : (prefix == "Tc" ? OffsetTc : 0));
-            if (value == 0) return 0;
-            string number = idText.Substring(2);
-            if (!Int32.TryParse(number, out var n)) return 0;
-            return value + n;
-        }
-        /// <summary>
-        /// Pro danou Int hodnotu Id vrátí vizuální hodnotu stringového Id ve tvaru "Ax12345" nebo "Tc4567"
-        /// </summary>
-        /// <param name="idInt"></param>
-        /// <returns></returns>
-        public static string ConvertIdToText(int idInt)
-        {
-            if (idInt < OffsetAx) return "";
-            if (idInt < OffsetTc) return "Ax" + (idInt - OffsetAx).ToString();
-            if (idInt < OffsetMx) return "Tc" + (idInt - OffsetTc).ToString();
-            return "";
-        }
-        private const int OffsetAx = 100000000;
-        private const int OffsetTc = 200000000;
-        private const int OffsetMx = 300000000;
-        private const long OffsetPx = 1000000000L;
-        #endregion
-    }
-    #endregion
-    #region class MapItem
-    public class MapItem
-    {
-        #region Tvorba prvku
-        public MapItem(MapSegment segment, int rowId, string[] cells)
-        {
-            _Segment = segment;
-            _RowId = rowId;
-
-            // Pořadí prvků:
-            // LocalID	Owner	Type	Previous	Next	Qty	Time	Sequence	GlobalID	Value	Descriptions
-            //    0      1       2        3          4       5   6       7           8           9       10  11  12
-            int count = cells.Length;
-
-            _ItemId = MapSegment.ConvertIdToInt(cells[0]);
-            _OwnerId = MapSegment.ConvertIdToInt(cells[1]);
-            _Type = segment.StringHeap.GetId(cells[2]);
-            _PrevIds = MapSegment.ConvertIdToInt(SplitItems(cells[3]));
-            _NextIds = MapSegment.ConvertIdToInt(SplitItems(cells[4]));
-            _Qty = segment.StringHeap.GetId(cells[5]);
-            _Time = segment.StringHeap.GetId(cells[6]);
-            _Sequence = segment.StringHeap.GetId(cells[7]);
-            _Value = segment.StringHeap.GetId(cells[9]);
-            _Description1 = (count >= 11 ? segment.StringHeap.GetId(cells[10]) : 0);
-            _Description2 = (count >= 12 ? segment.StringHeap.GetId(cells[11]) : 0);
-            _Description3 = (count >= 13 ? segment.StringHeap.GetId(cells[12]) : 0);
-        }
-        private static string[] SplitItems(string cell)
-        {
-            if (String.IsNullOrEmpty(cell)) return null;
-
-            if (_Separator == null) _Separator = new string[] { ", " };
-
-            return cell.Split(_Separator, StringSplitOptions.RemoveEmptyEntries);
-        }
-        private static string[] _Separator;
-        public override string ToString()
-        {
-            return TextLong;
-        }
-        /// <summary>
-        /// Krátký text : ItemIdText Type "Description1"
-        /// </summary>
-        public string TextShort { get { return $"{ItemIdText} {Type} \"{Description1}\""; } }
-        /// <summary>
-        /// Dlouhý text : ItemIdText Type PrevInfo NextInfo "Description1"
-        /// </summary>
-        public string TextLong { get { return $"ItemId: {ItemIdText}; Type: {Type}; Prev: {PrevInfo}; Next: {NextInfo}; Info: {Description1}"; } }
-        #endregion
-        #region Data prvku základní
-        private MapSegment _Segment;
-        public int RowId { get { return _RowId; } } private int _RowId;
-        public int ItemId { get { return _ItemId; } } private int _ItemId;
-        public string ItemIdText { get { return MapSegment.ConvertIdToText(_ItemId); } }
-        public int OwnerId { get { return _OwnerId; } } private int _OwnerId;
-        public string OwnerIdText { get { return MapSegment.ConvertIdToText(_OwnerId); } }
-        public string Type { get { return _Segment.StringHeap.GetText(_Type); } } private int _Type;
-        public int[] PrevIds { get { return _PrevIds; } } private int[] _PrevIds;
-        public int[] NextIds { get { return _NextIds; } } private int[] _NextIds;
-        public string Qty { get { return _Segment.StringHeap.GetText(_Qty); } } private int _Qty;
-        public string Time { get { return _Segment.StringHeap.GetText(_Time); } } private int _Time;
-        public string Sequence { get { return _Segment.StringHeap.GetText(_Sequence); } } private int _Sequence;
-        public string Value { get { return _Segment.StringHeap.GetText(_Value); } } private int _Value;
-        public string Description1 { get { return _Segment.StringHeap.GetText(_Description1); } } private int _Description1;
-        public string Description2 { get { return _Segment.StringHeap.GetText(_Description2); } } private int _Description2;
-        public string Description3 { get { return _Segment.StringHeap.GetText(_Description3); } } private int _Description3;
-        #endregion
-        #region Data prvku podpůrná, komparátory
-        private string PrevInfo { get { return (IsFirst ? "IsFirst" : PrevIds.Length.ToString() + " items"); } }
-        private string NextInfo { get { return (IsLast ? "IsLast" : NextIds.Length.ToString() + " items"); } }
-        public bool IsFirst { get { return this.PrevIds is null; } }
-        public bool IsLast { get { return this.NextIds is null; } }
-        /// <summary>
-        /// Komparátor podle <see cref="ItemId"/>: nejprve dává Ax, poté Tc; pak podle hodnoty.
-        /// </summary>
-        /// <param name="a"></param>
-        /// <param name="b"></param>
-        /// <returns></returns>
-        public static int CompareByItemId(MapItem a, MapItem b)
-        {
-            return a.ItemId.CompareTo(b.ItemId);
-        }
-        #endregion
-        #region Podpora pro analýzu
-        /// <summary>
-        /// Příznak, zda prvek byl zacyklen; výchozí je null = nevíme.
-        /// </summary>
-        public bool? IsCycled { get; set; }
-        /// <summary>
-        /// Jde o ByProduct?
-        /// </summary>
-        public bool IsByProduct
-        {
-            get
-            {
-                string type = this.Type;
-                return type.StartsWith("IncrementByRealByProduct") || type.StartsWith("IncrementByPlanByProduct");
-            }
-        }
-        /// <summary>
-        /// Prev vztahy.
-        /// Ve vztahu je jako <see cref="MapLink.NextItem"/> prvek this a ve vztahu <see cref="MapLink.PrevItem"/> je prvek vpravo.
-        /// Toto pole může být null, pokud this prvek je první = má <see cref="IsFirst"/> = true.
-        /// Pokud není null, pak typicky obsahuje nějaký prvek, tyto prvky vždy mají naplněné obě instance (<see cref="MapLink.PrevItem"/> i <see cref="MapLink.NextItem"/>).
-        /// </summary>
-        public MapLink[] PrevLinks
-        {
-            get
-            {
-                if (!IsFirst && _PrevLinks is null)
-                    _PrevLinks = _Segment.GetMapLinks(_PrevIds, ItemId);
-                return _PrevLinks;
-            }
-        }
-        private MapLink[] _PrevLinks;
-        /// <summary>
-        /// Next vztahy.
-        /// Ve vztahu je jako <see cref="MapLink.PrevItem"/> prvek this a ve vztahu <see cref="MapLink.NextItem"/> je prvek vpravo.
-        /// Toto pole může být null, pokud this prvek je poslední = má <see cref="IsLast"/> = true.
-        /// Pokud není null, pak typicky obsahuje nějaký prvek, tyto prvky vždy mají naplněné obě instance (<see cref="MapLink.PrevItem"/> i <see cref="MapLink.NextItem"/>).
-        /// </summary>
-        public MapLink[] NextLinks
-        {
-            get
-            {
-                if (!IsLast && _NextLinks is null)
-                    _NextLinks = _Segment.GetMapLinks(ItemId, _NextIds);
-                return _NextLinks;
-            }
-        }
-        private MapLink[] _NextLinks;
-        /// <summary>
-        /// Obsahuje true, pokud všechny vztahy mezi Prev prvky v <see cref="PrevLinks"/> a this prvkem jsou zpracované = mají <see cref="MapLink.IsLinkProcessed"/> = true;
-        /// Pokud this prvek nemá žádné Prev prvky (zdejší <see cref="IsFirst"/> je true), pak <see cref="AllPrevLinksIsProcessed"/> je true.
-        /// </summary>
-        public bool AllPrevLinksIsProcessed
-        {
-            get
-            {
-                if (IsFirst) return true;
-                var prevLinks = PrevLinks;
-                return (prevLinks is null || prevLinks.Length == 0 || prevLinks.All(l => l.IsLinkProcessed || l.IsLinkDisconnected));
-            }
-        }
-        /// <summary>
-        /// Obsahuje true, pokud všechny vztahy mezi this prvkem a Next prvky v <see cref="NextLinks"/> jsou zpracované = mají <see cref="MapLink.IsLinkProcessed"/> = true;
-        /// Pokud this prvek nemá žádné Next prvky (zdejší <see cref="IsLast"/> je true), pak <see cref="AllNextLinksIsProcessed"/> je true.
-        /// </summary>
-        public bool AllNextLinksIsProcessed
-        {
-            get
-            {
-                if (IsLast) return true;
-                var nextLinks = NextLinks;
-                return (nextLinks is null || nextLinks.Length == 0 || nextLinks.All(l => l.IsLinkProcessed));
-            }
-        }
-        /// <summary>
-        /// Resetuje tento prvek = bude uveden do stavu před zahájením analýzy
-        /// </summary>
-        public void ResetItem()
-        {
-            ResultSequence = 0;
-        }
-        /// <summary>
-        /// Obsahuje true u položky, která již má přidělenou výslednou sekvenci ve <see cref="ResultSequence"/>
-        /// </summary>
-        public bool IsProcessed { get { return (ResultSequence > 0); } }
-        /// <summary>
-        /// Zadané výsledné pořadí. Je vloženo v procesu analýzy, je resetováno metodu <see cref="ResetItem"/>.
-        /// Hodnota 0 = před zahájením analýzy.
-        /// První prvek má +1, jeho nejbližší Next má 2, atd...
-        /// </summary>
-        public int ResultSequence { get; set; }
-        /// <summary>
-        /// Aktuálně očekávané pořadí = Max(z Prev prvků z jejich <see cref="ExpectedSequence"/>) + 1.
-        /// Pokud Prev prvky nejsou (my jsme First), pak je zde 1;
-        /// Pokud žádný z Prev prvků nemá určenou svoji sekvenci, pak je zde 0.
-        /// Pokud alespoň jeden Prev prvek má určenou svoji sekvenci, pak je zde Max(Prev) + 1.
-        /// První prvek (který má <see cref="IsFirst"/> = true) má hodnotu <see cref="ExpectedSequence"/> = 1.
-        /// </summary>
-        public int ExpectedSequence
-        {
-            get
-            {
-                if (IsFirst) return 1;
-
-                // Pokud do this prvku už někdo vepsal hodnotu ResultSequence, pak ji akceptujeme:
-                if (IsProcessed) return ResultSequence;
-
-                // Pokud ne, pak získáme naši sekvenci z Prev prvků:
-                int seqence = SearchExpectedSequence(this);
-                return seqence;
-            }
-        }
-        private static int SearchExpectedSequence(MapItem topItem)
-        {
-            int sequence = 0;                    // Průběžně určená sekvence prvku topItem (výstup metody) u nalezených finálních hodnot
-            int distance = 0;                    // Vzdálenost zpracovávaných prvků od prvku topItem (jednotlivé vrstvy předchozích prvků)
-            Dictionary<int, MapItem> workDict = new Dictionary<int, MapItem>();
-            Queue<MapItem> currentQueue = new Queue<MapItem>();
-            Queue<MapItem> nextQueue = new Queue<MapItem>();
-
-            workDict.Add(topItem.ItemId, topItem);
-            currentQueue.Enqueue(topItem);
-            distance++;
-            while (true)
-            {
-                var item = currentQueue.Dequeue();
-                var prevLinks = item.PrevLinks;
-                if (prevLinks != null && prevLinks.Length > 0)
-                {
-                    foreach (var prevLink in prevLinks)
-                    {
-                        if (prevLink.IsLinkDisconnected) continue;
-
-                        var prevItem = prevLink.PrevItem;
-                        if (prevItem != null)
-                        {
-                            if (prevItem.ResultSequence < 0)
-                            {   // Předchozí prvek dosud nemá napočtenou sekvenci? Pokusíme se ji určit výpočtem tady.
-                                // Toto je nouzová varianta pro neřešené zacyklené prvky, protože algoritmus nápočtu sekvence postupuje dopředně,
-                                // a hodnotu ExpectedSequence načítá jen z těch prvků, jejichž všechny Prev prvky už jsou zpracované!
-                                if (!workDict.ContainsKey(prevItem.ItemId))
-                                {   // Dosud neznámý prvek:
-                                    workDict.Add(prevItem.ItemId, prevItem);
-                                    nextQueue.Enqueue(prevItem);
-                                }
-                            }
-                            else
-                            {   // Když předchozí prvek už má finálně určenou sekvenci, nemusím procházet jeho zdroje,
-                                // ale rovnou si načtu jeho finální sekvenci a určím naši min sekvenci (=sekvence prev prvku plus distance mezi naším prvkem a prvkem prev):
-                                int minResultSequence = prevItem.ResultSequence + distance;
-                                if (minResultSequence > sequence) sequence = minResultSequence;
-                            }
-                        }
-                    }
-                }
-                if (currentQueue.Count == 0)
-                {   // Doleva pokračujeme po ucelených vlnách, kdy v jedné vlně (currentQueue) máme prvky jedné předchozí hladiny,
-                    //  a v následující vlně (nextQueue) jsou jejich vlastní Prev prvky (pouze distinct prostřednictvím workDict).
-                    if (nextQueue.Count == 0) break;
-
-                    // Tudy projdeme jen tehdy, když v Prev prvcích byl nalezen některý, který dosud nebyl zpracovaný:
-                    distance++;                            // Vzdálenost "vlny" od výchozího prvku
-                    currentQueue = nextQueue;
-                    nextQueue = new Queue<MapItem>();
-                }
-            }
-
-            // Vyhodnocení napočítané finální sekvence (sequence) určené z předchozích zpracovaných prvků, a z nejhlubší vlny:
-            if (distance > sequence) sequence = distance;
-
-            return sequence;
-        }
-        private static int SearchExpectedSequenceBlbe(MapItem topItem)
-        {
-            int sequence = 1;
-            Dictionary<int, MapItem> workDict = new Dictionary<int, MapItem>();
-            Queue<MapItem> currentQueue = new Queue<MapItem>();
-            Queue<MapItem> nextQueue = new Queue<MapItem>();
-
-            workDict.Add(topItem.ItemId, topItem);
-            currentQueue.Enqueue(topItem);
-            while (true)
-            {
-                var item = currentQueue.Dequeue();
-                var prevLinks = item.PrevLinks;
-                if (prevLinks != null && prevLinks.Length > 0)
-                {
-                    foreach (var prevLink in prevLinks)
-                    {
-                        if (prevLink.IsLinkDisconnected) continue;
-
-                        var prevItem = prevLink.PrevItem;
-                        if (prevItem != null)
-                        {
-                            if (workDict.ContainsKey(prevItem.ItemId))
-                            {   // Zacyklení!
-                                sequence = 0;
-                                break;
-                            }
-                            else
-                            {   // Dosud neznámý prvek:
-                                workDict.Add(prevItem.ItemId, prevItem);
-                                nextQueue.Enqueue(prevItem);
-                            }
-                        }
-                    }
-                    if (sequence == 0) break;
-                }
-                if (currentQueue.Count == 0)
-                {
-                    if (nextQueue.Count == 0) break;
-
-                    sequence++;
-                    currentQueue = nextQueue;
-                    nextQueue = new Queue<MapItem>();
-                }
-            }
-
-            return sequence;
-        }
-        #endregion
-        #region Modifikace
-        /// <summary>
-        /// Přidá dané ID do pole Prev
-        /// </summary>
-        /// <param name="prevId"></param>
-        public void AddPrevLink(int prevId)
-        {
-            _AddLink(ref _PrevIds, ref _PrevLinks, prevId);
-        }
-        /// <summary>
-        /// Přidá dané ID do pole Next
-        /// </summary>
-        /// <param name="nextId"></param>
-        public void AddNextLink(int nextId)
-        {
-            _AddLink(ref _NextIds, ref _NextLinks, nextId);
-        }
-        /// <summary>
-        /// Přidá dané ID do daného pole Prev nebo Next, nuluje dané pole linků
-        /// </summary>
-        /// <param name="itemIds"></param>
-        /// <param name="itemLinks"></param>
-        /// <param name="itemId"></param>
-        private void _AddLink(ref int[] itemIds, ref MapLink[] itemLinks, int itemId)
-        {
-            if (itemId <= 0) return;
-            List<int> ids = new List<int>();
-            if (itemIds != null) ids.AddRange(itemIds);
-            if (!ids.Contains(itemId)) ids.Add(itemId);
-
-            itemIds = ids.ToArray();             // Tato proměnná je instanční proměnná _PrevIds nebo _NextIds
-            itemLinks = null;                    // Pole linků se dopočítá OnDemand, jde o instanční proměnnou _PrevLinks nebo _NextLinks
-        }
-        #endregion
-    }
-    #endregion
-    #region class MapLink
-    public class MapLink
-    {
-        public MapLink(MapItem prevItem, MapItem nextItem)
-        {
-            this.PrevItem = prevItem;
-            this.NextItem = nextItem;
-        }
-        public override string ToString()
-        {
-            return $"Prev: {PrevItem.TextShort} => Next: {NextItem.TextShort}";
-        }
-        public readonly MapItem PrevItem;
-        public readonly MapItem NextItem;
-        /// <summary>
-        /// true po zpracování vztahu
-        /// </summary>
-        public bool IsLinkProcessed { get; set; }
-        /// <summary>
-        /// true když tento vztah je přerušen z pohledu logiky plánu.
-        /// Takový vztah se při plánování musí ignorovat, jinak mohou být cesty plánu zacyklené!!!
-        /// </summary>
-        public bool IsLinkDisconnected { get; set; }
-    }
-    #endregion
-    #region class StringHeap
-    /// <summary>
-    /// Paměťově úsporné úložiště stringů. Každý unikátní string ukládá jen jednou.
-    /// Funguje jako úschovna na nádraží: vložíme sem String a dostaneme jeho Int32 ID a to si uschováme.
-    /// Když pak chceme původní String, získáme ho z dodaného Int32 ID.
-    /// <para/>
-    /// Úspora vzniká tehdy, když uchováváme stejný String z vícero míst: 
-    /// pak neuschováváme více instancí stejného Stringu, ale více hodnot typu Int32, jejichž stejná hodnota reprezentuje shodný String.
-    /// Cílové property typu String mají get { } a set { } metody, 
-    /// které používají zdejší metody <see cref="StringHeap.GetId(string)"/> a <see cref="StringHeap.GetText(int)"/>, 
-    /// a pak mají privátní field typu Int32, kam fyzicky ukládají / čtou ID svého Stringu.
-    /// </summary>
-    public class StringHeap
-    {
-        public StringHeap()
-        {
-            _Values = new Dictionary<int, string>();
-            _Index = new Dictionary<string, int>();
-            _LastId = 0;
-        }
-        /// <summary>
-        /// Vrátí ID pro daný text
-        /// </summary>
-        /// <param name="value"></param>
-        /// <returns></returns>
-        public int GetId(string value)
-        {
-            if (value is null) return -1;
-            if (value.Length == 0) return 0;
-            if (!_Index.TryGetValue(value, out var id))
-            {
-                id = ++_LastId;
-                _Values.Add(id, value);
-                _Index.Add(value, id);
-            }
-            return id;
-        }
-        /// <summary>
-        /// Vrátí text pro daný ID
-        /// </summary>
-        /// <param name="id"></param>
-        /// <returns></returns>
-        public string GetText(int id)
-        {
-            if (id < 0) return null;
-            if (id == 0) return "";
-            if (!_Values.TryGetValue(id, out var text)) return null;
-            return text;
-        }
-        /// <summary>
-        /// Uvolní všechny prvky
-        /// </summary>
-        public void Clear()
-        {
-            _Values.Clear();
-            _Index.Clear();
-            _LastId = 0;
-        }
-        private int _LastId;
-        private Dictionary<int, string> _Values;
-        private Dictionary<string, int> _Index;
-        private class StringItem
-        {
-            public StringItem(string value)
-            {
-                Value = value;
-            }
-            public override string ToString()
-            {
-                return this.Value;
-            }
-            public readonly string Value;
-        }
-    }
-    #endregion
 }

@@ -90,21 +90,6 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="pic\folder-blue.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="pic\go-next-2.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="pic\go-next-4.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="pic\go-next-5.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="pic\media-playback-stop-2.png" />
-  </ItemGroup>
-  <ItemGroup>
     <Content Include="blockdevice-2.ico" />
     <None Include="pic\folder-blue-24.png" />
     <None Include="pic\media-playback-stop-2-24.png" />

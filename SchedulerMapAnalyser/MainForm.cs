@@ -12,6 +12,7 @@ namespace DjSoft.SchedulerMap.Analyser
 {
     public partial class MainForm : Form
     {
+        #region Konstruktor, proměnné, eventy
         public MainForm()
         {
             InitializeComponent();
@@ -23,19 +24,25 @@ namespace DjSoft.SchedulerMap.Analyser
             _Analyser = null;
             _ProcesInfo = System.Diagnostics.Process.GetCurrentProcess();
             _SelectedFileInit();
-            ShowButtonsEnabledByRunning(false);
+            ShowButtonsByState(ActionType.Dialog);
             RefreshStatusBarGui();
             _Timer.Enabled = true;
         }
         private System.Diagnostics.Process _ProcesInfo;
         private Analyser _Analyser;
-        private bool _Running;
-        private void _StartClick(object sender, EventArgs e)
+        private ActionType _CurrentState;
+        private void MainForm_Load(object sender, EventArgs e)
         {
-            if (_Analyser != null) return;
 
-            ShowButtonsEnabledByRunning(true);
-            Task.Factory.StartNew(Analyse);
+        }
+        private void _AnalyseStartClick(object sender, EventArgs e)
+        {
+            AnalyseStart();
+        }
+
+        private void _VisualiserButton_Click(object sender, EventArgs e)
+        {
+            VisualiserStart();
         }
         private void _StopClick(object sender, EventArgs e)
         {
@@ -44,6 +51,9 @@ namespace DjSoft.SchedulerMap.Analyser
             {
                 analyser.Cancel = true;
             }
+            if (_CurrentState == ActionType.ActiveVisualiser)
+                ShowButtonsByState(ActionType.Dialog);
+
             // _Analyser = null;
         }
         private void _FileButton_Click(object sender, EventArgs e)
@@ -54,6 +64,9 @@ namespace DjSoft.SchedulerMap.Analyser
         {
             RefreshStatusBar();
         }
+        #endregion
+        #region Výběr souboru, aktuální soubor, předvolby načítání
+
         private void _SelectedFileInit()
         {
             string defaultFolder = @"Software\DjSoft\SchedulerMapAnalyser";
@@ -84,16 +97,41 @@ namespace DjSoft.SchedulerMap.Analyser
                 }
             }
         }
+        /// <summary>
+        /// Aktuální vybraný soubor
+        /// </summary>
         private string SelectedFile
         {
             get { return _FileText.Text; }
             set { _FileText.Text = value ?? ""; }
         }
+        /// <summary>
+        /// Aktuálně je zaškrtnuto "Pouze zpracované položky"
+        /// </summary>
+        private bool OnlyProcessed
+        {
+            get { return _OnlyProcessedCheck.Checked; }
+            set { _OnlyProcessedCheck.Checked = value; }
+        }
+        /// <summary>
+        /// Aktuálně je zaškrtnuto "Vždy zznovu načíst data"
+        /// </summary>
+        private bool ReloadFile
+        {
+            get { return _ReloadFileCheck.Checked; }
+            set { _ReloadFileCheck.Checked = value; }
+        }
+        /// <summary>
+        /// Soubor v registrech
+        /// </summary>
         private string LastSelectedFile
         {
             get { return DjSoft.Support.WinReg.ReadString("", "SelectedFile", DefaultSelectedFile); }
             set { DjSoft.Support.WinReg.WriteString("", "SelectedFile", value); }
         }
+        /// <summary>
+        /// Výchozí soubor podle jména počítače
+        /// </summary>
         private static string DefaultSelectedFile
         {
             get
@@ -103,31 +141,79 @@ namespace DjSoft.SchedulerMap.Analyser
                 return "";
             }
         }
+        #endregion
+        #region Načtená data souboru
+        private MapSegment ValidMapSegment
+        {
+            get
+            {
+                string fileName = SelectedFile;
+                bool onlyProcessed = OnlyProcessed;
+                if (ReloadFile || _MapSegment is null || !_MapSegment.IsValidFor(fileName, onlyProcessed))
+                    _MapSegment = new MapSegment(fileName, onlyProcessed);
+                return _MapSegment;
+            }
+        }
+        private MapSegment _MapSegment;
+        #endregion
+        #region Provádění analýzy
+        private void AnalyseStart()
+        {
+            if (_Analyser != null) return;
+            ShowButtonsByState(ActionType.RunningAnalyse);
+            Task.Factory.StartNew(Analyse);
+        }
         private void Analyse()
         {
             var analyser = _Analyser;
             if (analyser != null) return;
 
             string file = SelectedFile;
+
             analyser = new Analyser
             {
-                File = file,
-                OnlyProcessedItems = _OnlyProcessedCheck.Checked,
-                ScanByProduct = _ByProductCheck.Checked,
-                CycleSimulation = (int)_SimulCycleText.Value,
+                MapSegment = ValidMapSegment,
+                ScanByProduct = AnalyseScanByProduct,
+                CycleSimulation = AnalyseCycleSimulation,
                 ShowInfo = ShowProgress
             };
             _Analyser = analyser;
             analyser.Run();
             // Po doběhnutí anebo po Cancel:
             RefreshStatusBar();
-            ShowButtonsEnabledByRunning(false);
+            ShowButtonsByState(ActionType.Dialog);
             analyser.ShowInfo = null;
             _Analyser = null;
         }
-        private void ShowButtonsEnabledByRunning(bool running)
+        /// <summary>
+        /// Analyzovat i vztahy vedlejších produktů?
+        /// </summary>
+        private bool AnalyseScanByProduct
         {
-            this._Running = running;
+            get { return _ByProductCheck.Checked; }
+            set { _ByProductCheck.Checked = value; }
+        }
+        /// <summary>
+        /// Simulovat daný počet zacyklení
+        /// </summary>
+        private int AnalyseCycleSimulation
+        {
+            get { return (int)_SimulCycleText.Value; }
+            set { _SimulCycleText.Value = value; }
+        }
+        #endregion
+        #region Vizualizer
+        private void VisualiserStart()
+        {
+            ShowButtonsByState(ActionType.ActiveVisualiser);
+            _VisualiserPanel.MapSegment = this.ValidMapSegment;      // Získám validní segment pro aktuální soubor a předvolby, nemusí v něm ale být dosud načtena jeho data
+            _VisualiserPanel.ActivateMapItem(null);
+        }
+        #endregion
+        #region Řízení GUI
+        private void ShowButtonsByState(ActionType state)
+        {
+            this._CurrentState = state;
             if (this.InvokeRequired)
                 Invoke(new Action(ShowButtonsEnabledByRunningGui));
             else
@@ -135,13 +221,44 @@ namespace DjSoft.SchedulerMap.Analyser
         }
         private void ShowButtonsEnabledByRunningGui()
         {
-            bool running = _Running;
-            _ByProductCheck.Enabled = !running;
-            _OnlyProcessedCheck.Enabled = !running;
-            _SimulCycleText.Enabled = !running;
-            _FileButton.Enabled = !running;
-            _RunButton.Enabled = !running;
-            _StopButton.Enabled = running;
+            var state = _CurrentState;
+            bool isInDialog = (state == ActionType.Dialog);
+            bool isInAnalyse = (state == ActionType.RunningAnalyse);
+            bool isInVisualiser = (state == ActionType.ActiveVisualiser);
+            bool isInAction = (isInAnalyse || isInVisualiser);
+
+            _FileButton.Enabled = isInDialog;
+            _FileText.Enabled = isInDialog;
+            _OnlyProcessedCheck.Enabled = isInDialog;
+            _ReloadFileCheck.Enabled = isInDialog;
+
+            _AnalyseTitleLabel.Visible = isInDialog || isInAnalyse;
+            _ByProductCheck.Visible = isInDialog || isInAnalyse;
+            _ByProductCheck.Enabled = isInDialog;
+            _SimulCycleText.Visible = isInDialog || isInAnalyse;
+            _SimulCycleText.Enabled = isInDialog;
+            _AnalyseStartButton.Visible = isInDialog || isInAnalyse;
+            _AnalyseStartButton.Enabled = isInDialog;
+
+            _MapTitleLabel.Visible = isInDialog || isInVisualiser;
+            _VisualiserButton.Visible = isInDialog || isInVisualiser;
+            _VisualiserButton.Enabled = isInDialog;
+
+
+            bool visibleAnalyser = isInAnalyse;
+            bool visibleVisualiser = isInVisualiser;
+            if (!visibleAnalyser && !visibleVisualiser)
+            {
+                visibleAnalyser = _ProgressText.Visible || !_VisualiserPanel.Visible;
+            }
+            if (visibleAnalyser && _ProgressText.Dock != DockStyle.Fill) _ProgressText.Dock = DockStyle.Fill;
+            _ProgressText.Visible = visibleAnalyser;
+
+            if (visibleVisualiser && _VisualiserPanel.Dock != DockStyle.Fill) _VisualiserPanel.Dock = DockStyle.Fill;
+            _VisualiserPanel.Visible = visibleVisualiser;
+
+            _StopButton.Visible = isInAction;
+            _StopButton.Enabled = isInAction;
         }
         private void ShowProgress(string info)
         {
@@ -190,5 +307,13 @@ namespace DjSoft.SchedulerMap.Analyser
             this._StatusAnalyserText.Text = analyserText;
         }
 
+
+        private enum ActionType
+        {
+            Dialog,
+            RunningAnalyse,
+            ActiveVisualiser
+        }
+        #endregion
     }
 }

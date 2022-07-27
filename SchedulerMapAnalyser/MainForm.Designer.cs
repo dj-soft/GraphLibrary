@@ -43,9 +43,16 @@ namespace DjSoft.SchedulerMap.Analyser
             this._ByProductCheck = new System.Windows.Forms.CheckBox();
             this._FileButton = new System.Windows.Forms.Button();
             this._StopButton = new System.Windows.Forms.Button();
-            this._RunButton = new System.Windows.Forms.Button();
+            this._AnalyseStartButton = new System.Windows.Forms.Button();
+            this._VisualiserButton = new System.Windows.Forms.Button();
+            this._AnalyseTitleLabel = new System.Windows.Forms.Label();
+            this._MapTitleLabel = new System.Windows.Forms.Label();
+            this._ReloadFileCheck = new System.Windows.Forms.CheckBox();
+            this._MainPanel = new System.Windows.Forms.Panel();
+            this._VisualiserPanel = new DjSoft.SchedulerMap.Analyser.Visualiser();
             this._StatusBar.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this._SimulCycleText)).BeginInit();
+            this._MainPanel.SuspendLayout();
             this.SuspendLayout();
             // 
             // _ProgressText
@@ -54,12 +61,12 @@ namespace DjSoft.SchedulerMap.Analyser
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this._ProgressText.Font = new System.Drawing.Font("Courier New", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(238)));
-            this._ProgressText.Location = new System.Drawing.Point(210, 38);
+            this._ProgressText.Location = new System.Drawing.Point(29, 14);
             this._ProgressText.Multiline = true;
             this._ProgressText.Name = "_ProgressText";
             this._ProgressText.ReadOnly = true;
             this._ProgressText.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
-            this._ProgressText.Size = new System.Drawing.Size(1085, 563);
+            this._ProgressText.Size = new System.Drawing.Size(441, 505);
             this._ProgressText.TabIndex = 9;
             this._ProgressText.WordWrap = false;
             // 
@@ -102,13 +109,13 @@ namespace DjSoft.SchedulerMap.Analyser
             this._OnlyProcessedCheck.Location = new System.Drawing.Point(13, 54);
             this._OnlyProcessedCheck.Name = "_OnlyProcessedCheck";
             this._OnlyProcessedCheck.Size = new System.Drawing.Size(192, 31);
-            this._OnlyProcessedCheck.TabIndex = 3;
+            this._OnlyProcessedCheck.TabIndex = 2;
             this._OnlyProcessedCheck.Text = "Pouze zpracované položky";
             this._OnlyProcessedCheck.UseVisualStyleBackColor = true;
             // 
             // _SimulCycleText
             // 
-            this._SimulCycleText.Location = new System.Drawing.Point(143, 149);
+            this._SimulCycleText.Location = new System.Drawing.Point(143, 176);
             this._SimulCycleText.Maximum = new decimal(new int[] {
             9,
             0,
@@ -122,7 +129,7 @@ namespace DjSoft.SchedulerMap.Analyser
             // label1
             // 
             this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(29, 151);
+            this.label1.Location = new System.Drawing.Point(29, 178);
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(92, 13);
             this.label1.TabIndex = 5;
@@ -139,7 +146,7 @@ namespace DjSoft.SchedulerMap.Analyser
             // 
             // _ByProductCheck
             // 
-            this._ByProductCheck.Location = new System.Drawing.Point(13, 117);
+            this._ByProductCheck.Location = new System.Drawing.Point(13, 144);
             this._ByProductCheck.Name = "_ByProductCheck";
             this._ByProductCheck.Size = new System.Drawing.Size(192, 31);
             this._ByProductCheck.TabIndex = 4;
@@ -162,9 +169,9 @@ namespace DjSoft.SchedulerMap.Analyser
             // _StopButton
             // 
             this._StopButton.Image = global::DjSoft.SchedulerMap.Analyser.Properties.Resources.media_playback_stop_2_24;
-            this._StopButton.Location = new System.Drawing.Point(12, 373);
+            this._StopButton.Location = new System.Drawing.Point(13, 455);
             this._StopButton.Name = "_StopButton";
-            this._StopButton.Size = new System.Drawing.Size(185, 44);
+            this._StopButton.Size = new System.Drawing.Size(184, 44);
             this._StopButton.TabIndex = 8;
             this._StopButton.Text = "STOP";
             this._StopButton.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
@@ -172,24 +179,91 @@ namespace DjSoft.SchedulerMap.Analyser
             this._StopButton.UseVisualStyleBackColor = true;
             this._StopButton.Click += new System.EventHandler(this._StopClick);
             // 
-            // _RunButton
+            // _AnalyseStartButton
             // 
-            this._RunButton.Image = global::DjSoft.SchedulerMap.Analyser.Properties.Resources.go_next_2_24;
-            this._RunButton.Location = new System.Drawing.Point(13, 190);
-            this._RunButton.Name = "_RunButton";
-            this._RunButton.Size = new System.Drawing.Size(185, 44);
-            this._RunButton.TabIndex = 7;
-            this._RunButton.Text = "ANALYZUJ";
-            this._RunButton.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
-            this._RunButton.TextImageRelation = System.Windows.Forms.TextImageRelation.ImageBeforeText;
-            this._RunButton.UseVisualStyleBackColor = true;
-            this._RunButton.Click += new System.EventHandler(this._StartClick);
+            this._AnalyseStartButton.Image = global::DjSoft.SchedulerMap.Analyser.Properties.Resources.go_next_2_24;
+            this._AnalyseStartButton.Location = new System.Drawing.Point(13, 217);
+            this._AnalyseStartButton.Name = "_AnalyseStartButton";
+            this._AnalyseStartButton.Size = new System.Drawing.Size(184, 44);
+            this._AnalyseStartButton.TabIndex = 7;
+            this._AnalyseStartButton.Text = "ANALYZUJ";
+            this._AnalyseStartButton.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
+            this._AnalyseStartButton.TextImageRelation = System.Windows.Forms.TextImageRelation.ImageBeforeText;
+            this._AnalyseStartButton.UseVisualStyleBackColor = true;
+            this._AnalyseStartButton.Click += new System.EventHandler(this._AnalyseStartClick);
+            // 
+            // _VisualiserButton
+            // 
+            this._VisualiserButton.Image = global::DjSoft.SchedulerMap.Analyser.Properties.Resources.fsview_24;
+            this._VisualiserButton.Location = new System.Drawing.Point(13, 359);
+            this._VisualiserButton.Name = "_VisualiserButton";
+            this._VisualiserButton.Size = new System.Drawing.Size(184, 44);
+            this._VisualiserButton.TabIndex = 10;
+            this._VisualiserButton.Text = "ZOBRAZ";
+            this._VisualiserButton.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
+            this._VisualiserButton.TextImageRelation = System.Windows.Forms.TextImageRelation.ImageBeforeText;
+            this._VisualiserButton.UseVisualStyleBackColor = true;
+            this._VisualiserButton.Click += new System.EventHandler(this._VisualiserButton_Click);
+            // 
+            // _AnalyseTitleLabel
+            // 
+            this._AnalyseTitleLabel.AutoSize = true;
+            this._AnalyseTitleLabel.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, ((System.Drawing.FontStyle)((System.Drawing.FontStyle.Bold | System.Drawing.FontStyle.Underline))), System.Drawing.GraphicsUnit.Point, ((byte)(238)));
+            this._AnalyseTitleLabel.Location = new System.Drawing.Point(29, 126);
+            this._AnalyseTitleLabel.Name = "_AnalyseTitleLabel";
+            this._AnalyseTitleLabel.Size = new System.Drawing.Size(110, 15);
+            this._AnalyseTitleLabel.TabIndex = 11;
+            this._AnalyseTitleLabel.Text = "ANALÝZA MAPY:";
+            // 
+            // _MapTitleLabel
+            // 
+            this._MapTitleLabel.AutoSize = true;
+            this._MapTitleLabel.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, ((System.Drawing.FontStyle)((System.Drawing.FontStyle.Bold | System.Drawing.FontStyle.Underline))), System.Drawing.GraphicsUnit.Point, ((byte)(238)));
+            this._MapTitleLabel.Location = new System.Drawing.Point(29, 290);
+            this._MapTitleLabel.Name = "_MapTitleLabel";
+            this._MapTitleLabel.Size = new System.Drawing.Size(128, 15);
+            this._MapTitleLabel.TabIndex = 12;
+            this._MapTitleLabel.Text = "ZOBRAZENÍ MAPY:";
+            // 
+            // _ReloadFileCheck
+            // 
+            this._ReloadFileCheck.Location = new System.Drawing.Point(13, 83);
+            this._ReloadFileCheck.Name = "_ReloadFileCheck";
+            this._ReloadFileCheck.Size = new System.Drawing.Size(192, 31);
+            this._ReloadFileCheck.TabIndex = 3;
+            this._ReloadFileCheck.Text = "Vždy znovu načíst data";
+            this._ReloadFileCheck.UseVisualStyleBackColor = true;
+            // 
+            // _MainPanel
+            // 
+            this._MainPanel.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this._MainPanel.Controls.Add(this._VisualiserPanel);
+            this._MainPanel.Controls.Add(this._ProgressText);
+            this._MainPanel.Location = new System.Drawing.Point(210, 45);
+            this._MainPanel.Name = "_MainPanel";
+            this._MainPanel.Size = new System.Drawing.Size(1083, 556);
+            this._MainPanel.TabIndex = 13;
+            // 
+            // _VisualiserPanel
+            // 
+            this._VisualiserPanel.Location = new System.Drawing.Point(503, 17);
+            this._VisualiserPanel.Name = "_VisualiserPanel";
+            this._VisualiserPanel.Size = new System.Drawing.Size(482, 501);
+            this._VisualiserPanel.TabIndex = 10;
+            this._VisualiserPanel.Text = "visualiser1";
             // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(1307, 626);
+            this.Controls.Add(this._MainPanel);
+            this.Controls.Add(this._ReloadFileCheck);
+            this.Controls.Add(this._MapTitleLabel);
+            this.Controls.Add(this._AnalyseTitleLabel);
+            this.Controls.Add(this._VisualiserButton);
             this.Controls.Add(this._ByProductCheck);
             this.Controls.Add(this._FileText);
             this.Controls.Add(this._FileButton);
@@ -197,15 +271,17 @@ namespace DjSoft.SchedulerMap.Analyser
             this.Controls.Add(this._SimulCycleText);
             this.Controls.Add(this._OnlyProcessedCheck);
             this.Controls.Add(this._StatusBar);
-            this.Controls.Add(this._ProgressText);
             this.Controls.Add(this._StopButton);
-            this.Controls.Add(this._RunButton);
+            this.Controls.Add(this._AnalyseStartButton);
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.Name = "MainForm";
             this.Text = "Scheduler map analyser";
+            this.Load += new System.EventHandler(this.MainForm_Load);
             this._StatusBar.ResumeLayout(false);
             this._StatusBar.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this._SimulCycleText)).EndInit();
+            this._MainPanel.ResumeLayout(false);
+            this._MainPanel.PerformLayout();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -213,7 +289,7 @@ namespace DjSoft.SchedulerMap.Analyser
 
         #endregion
 
-        private System.Windows.Forms.Button _RunButton;
+        private System.Windows.Forms.Button _AnalyseStartButton;
         private System.Windows.Forms.Button _StopButton;
         private System.Windows.Forms.TextBox _ProgressText;
         private System.Windows.Forms.StatusStrip _StatusBar;
@@ -226,6 +302,12 @@ namespace DjSoft.SchedulerMap.Analyser
         private System.Windows.Forms.Button _FileButton;
         private System.Windows.Forms.TextBox _FileText;
         private System.Windows.Forms.CheckBox _ByProductCheck;
+        private System.Windows.Forms.Button _VisualiserButton;
+        private System.Windows.Forms.Label _AnalyseTitleLabel;
+        private System.Windows.Forms.Label _MapTitleLabel;
+        private System.Windows.Forms.CheckBox _ReloadFileCheck;
+        private System.Windows.Forms.Panel _MainPanel;
+        private Visualiser _VisualiserPanel;
     }
 }
 
