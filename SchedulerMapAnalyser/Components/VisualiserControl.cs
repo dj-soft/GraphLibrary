@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Drawing;
+using System.Drawing.Drawing2D;
 
 namespace DjSoft.SchedulerMap.Analyser
 {
@@ -349,12 +350,94 @@ namespace DjSoft.SchedulerMap.Analyser
         {
             return new SizeF(80f, 60f);
         }
+
+        internal static GraphicsPathSet CreateGraphicsPaths(IVisualItem visualItem, MapItem mapItem)
+        {
+            var bounds = visualItem.CurrentBounds;
+            GraphicsPathSet set = new GraphicsPathSet(bounds);
+
+            var outlineColor = visualItem.CurrentOutlineColor;
+            if (outlineColor.HasValue)
+            {
+                set.OutlineBrush = new SolidBrush(outlineColor.Value);
+                set.OutlinePath = new GraphicsPath();
+                set.OutlinePath.AddRectangle(bounds);
+            }
+
+            var backgroundColor = Color.FromArgb(200, 200, 218);
+            set.BackgroundBrush = new SolidBrush(backgroundColor);
+            set.BackgroundPath = new GraphicsPath();
+            Rectangle backgroundBounds = new Rectangle(bounds.X + 3, bounds.Y + 3, bounds.Width - 6, bounds.Height - 6);
+            set.BackgroundPath.AddRectangle(backgroundBounds);
+
+            return set;
+        }
+    }
+    internal class GraphicsPathSet : IDisposable
+    {
+        public GraphicsPathSet(Rectangle bounds)
+        {
+            this.Bounds = bounds;
+        }
+        /// <summary>
+        /// Vnější souřadnice oblasti. Vhodné pro Clip grafiky.
+        /// </summary>
+        public Rectangle Bounds { get; private set; }
+        /// <summary>
+        /// Barva pro vykreslení stínu pod prvkem / Selection / MouseOver.
+        /// Kreslí se jako první.
+        /// </summary>
+        public Brush OutlineBrush { get; set; }
+        /// <summary>
+        /// Oblast pro vykreslení stínu pod prvkem / Selection / MouseOver.
+        /// Kreslí se jako první.
+        /// </summary>
+        public GraphicsPath OutlinePath { get; set; }
+        /// <summary>
+        /// Barva pro vykreslení pozadí prvku.
+        /// Kreslí se jako druhá.
+        /// </summary>
+        public Brush BackgroundBrush { get; set; }
+        /// <summary>
+        /// Oblast pro vykreslení pozadí prvku.
+        /// Kreslí se jako druhá.
+        /// </summary>
+        public GraphicsPath BackgroundPath { get; set; }
+        /// <summary>
+        /// Barva pro vykreslení okrajů vnějších a vnitřních předělů, barva okraje.
+        /// Kreslí se jako třetí.
+        /// </summary>
+        public Brush BorderBrush { get; set; }
+        /// <summary>
+        /// Oblast pro vykreslení okrajů vnějších a vnitřních předělů, barva okraje.
+        /// Kreslí se jako třetí.
+        /// </summary>
+        public GraphicsPath BorderPath { get; set; }
+        /// <summary>
+        /// Dispose setu
+        /// </summary>
+        public void Dispose()
+        {
+            this.OutlineBrush?.Dispose();
+            this.OutlinePath?.Dispose();
+            this.BackgroundBrush?.Dispose();
+            this.BackgroundPath?.Dispose();
+            this.BorderBrush?.Dispose();
+            this.BorderPath?.Dispose();
+
+            this.OutlineBrush = null;
+            this.OutlinePath = null;
+            this.BackgroundBrush = null;
+            this.BackgroundPath = null;
+            this.BorderBrush = null;
+            this.BorderPath = null;
+        }
     }
     #region class VisualItem : Prvek mapy umístěný ve virtuálním prostoru
     internal class VisualItem : VirtualItemBase, IVisualItem
     {
         public VisualItem(VisualiserControl visualiser, MapItem mapItem, PointF center, SizeF size)
-            : base(visualiser.VirtualSpace)
+            : base(visualiser)
         {
             Visualiser = visualiser;
             MapItem = mapItem;
@@ -372,13 +455,16 @@ namespace DjSoft.SchedulerMap.Analyser
 
         public void OnPaint(PaintEventArgs e)
         {
-            var bounds = this.CurrentBounds;
-            var brush = (this.Selected ? Brushes.LightCyan : Brushes.LightGray);
-            e.Graphics.FillRectangle(brush, bounds);
-            var pen = (this.MouseState == ItemMouseState.OnMouse ? Pens.Blue : Pens.Black);
-            e.Graphics.DrawRectangle(pen, bounds);
-            e.Graphics.DrawString(MapItem.Description3, SystemFonts.DefaultFont, Brushes.Black, bounds.X + 3, bounds.Y + 4);
+            using (var pathSet = MapItemPainter.CreateGraphicsPaths(this, this.MapItem))
+            {
+                // Barvy a tvary pozadí a okrajů:
+                if (pathSet.OutlineBrush != null) e.Graphics.FillPath(pathSet.OutlineBrush, pathSet.OutlinePath);
+                if (pathSet.BackgroundBrush != null) e.Graphics.FillPath(pathSet.BackgroundBrush, pathSet.BackgroundPath);
+                if (pathSet.BorderBrush != null) e.Graphics.FillPath(pathSet.BorderBrush, pathSet.BorderPath);
 
+
+
+            }
         }
         bool IVisualItem.IsActiveOnCurrentPoint(Point currentPoint)
         {
@@ -421,6 +507,10 @@ namespace DjSoft.SchedulerMap.Analyser
         /// </summary>
         bool Selected { get; set; }
         /// <summary>
+        /// Aktuální barva orámování, vychází z hodnot <see cref="Selected"/> a <see cref="MouseState"/>
+        /// </summary>
+        Color? CurrentOutlineColor { get; }
+        /// <summary>
         /// Vykresli se do grafiky
         /// </summary>
         /// <param name="e"></param>
@@ -434,7 +524,6 @@ namespace DjSoft.SchedulerMap.Analyser
         None,
         OnMouse,
         LeftDown,
-        RightDown,
-        Wheel
+        RightDown
     }
 }

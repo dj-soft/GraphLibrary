@@ -50,7 +50,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Data\Analyser.cs" />
-    <Compile Include="Components\VirtualSpace.cs" />
+    <Compile Include="Components\VirtualSpace.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="MainForm.cs">
       <SubType>Form</SubType>
     </Compile>

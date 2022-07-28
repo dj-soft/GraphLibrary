@@ -8,8 +8,93 @@ using System.Drawing;
 
 namespace DjSoft.SchedulerMap.Analyser
 {
+    public class VirtualControl : Control
+    {
+        public VirtualControl()
+        {
+            VirtualSpace = new VirtualSpace(this);
+            InitColors();
+        }
+        protected override void Dispose(bool disposing)
+        {
+            VirtualSpace.Dispose();
+            base.Dispose(disposing);
+        }
+        /// <summary>
+        /// Virtuální prostor - výpočetní mechanismus pro oboustranný přepočet Virtuální - Fyzická souřadnice;
+        /// včetně jeho řízení pomocí myši
+        /// </summary>
+        public VirtualSpace VirtualSpace { get; private set; }
+        /// <summary>
+        /// Zajistí nové vykreslení obsahu
+        /// </summary>
+        public virtual void RefreshContent()
+        {
+            this.Invalidate();
+        }
+        #region Implicitní barvy
+        protected virtual void InitColors()
+        {
+            ColorOutlineNone = null;
+            ColorOutlineOnMouse = Color.FromArgb(100, 182, 255, 0);
+            ColorOutlineLeftDown = Color.FromArgb(100, 188, 66, 255);
+            ColorOutlineRightDown = Color.FromArgb(100, 188, 66, 255);
+
+            ColorOutlineNoneSelected = Color.FromArgb(220, 255, 216, 0);
+            ColorOutlineOnMouseSelected = Color.FromArgb(220, 182, 255, 0);
+            ColorOutlineLeftDownSelected = Color.FromArgb(200, 188, 66, 255);
+            ColorOutlineRightDownSelected = Color.FromArgb(200, 188, 66, 255);
+        }
+        public Color? GetOutlineColor(VirtualItemBase item)
+        {
+            bool isNone = !item.Selected;
+            switch (item.MouseState)
+            {
+                case ItemMouseState.None: return isNone ? ColorOutlineNone : ColorOutlineNoneSelected;
+                case ItemMouseState.OnMouse: return isNone ? ColorOutlineOnMouse : ColorOutlineOnMouseSelected;
+                case ItemMouseState.LeftDown: return isNone ? ColorOutlineLeftDown : ColorOutlineLeftDownSelected;
+                case ItemMouseState.RightDown: return isNone ? ColorOutlineRightDown : ColorOutlineRightDownSelected;
+            }
+            return null;
+        }
+        /// <summary>
+        /// Barva orámování bez Selectu za stavu myši <see cref="ItemMouseState.None"/>
+        /// </summary>
+        public Color? ColorOutlineNone { get; set; }
+        /// <summary>
+        /// Barva orámování Selectovaného prvku za stavu myši <see cref="ItemMouseState.None"/>
+        /// </summary>
+        public Color? ColorOutlineNoneSelected { get; set; }
+        /// <summary>
+        /// Barva orámování bez Selectu za stavu myši <see cref="ItemMouseState.OnMouse"/>
+        /// </summary>
+        public Color? ColorOutlineOnMouse { get; set; }
+        /// <summary>
+        /// Barva orámování Selectovaného prvku za stavu myši <see cref="ItemMouseState.OnMouse"/>
+        /// </summary>
+        public Color? ColorOutlineOnMouseSelected { get; set; }
+        /// <summary>
+        /// Barva orámování bez Selectu za stavu myši <see cref="ItemMouseState.LeftDown"/>
+        /// </summary>
+        public Color? ColorOutlineLeftDown { get; set; }
+        /// <summary>
+        /// Barva orámování Selectovaného prvku za stavu myši <see cref="ItemMouseState.LeftDown"/>
+        /// </summary>
+        public Color? ColorOutlineLeftDownSelected { get; set; }
+        /// <summary>
+        /// Barva orámování bez Selectu za stavu myši <see cref="ItemMouseState.RightDown"/>
+        /// </summary>
+        public Color? ColorOutlineRightDown { get; set; }
+        /// <summary>
+        /// Barva orámování Selectovaného prvku za stavu myši <see cref="ItemMouseState.RightDown"/>
+        /// </summary>
+        public Color? ColorOutlineRightDownSelected { get; set; }
+        #endregion
+    }
+
     /// <summary>
-    /// Virtuální prostor
+    /// Virtuální prostor - výpočetní mechanismus pro oboustranný přepočet Virtuální - Fyzická souřadnice;
+    /// včetně jeho řízení pomocí myši
     /// </summary>
     public class VirtualSpace : IDisposable
     {
@@ -84,21 +169,25 @@ namespace DjSoft.SchedulerMap.Analyser
         /// Konstruktor
         /// </summary>
         /// <param name="virtualSpace"></param>
-        public VirtualItemBase(VirtualSpace virtualSpace)
+        public VirtualItemBase(VirtualControl virtualControl)
         {
-            VirtualSpace = virtualSpace;
+            VirtualControl = virtualControl;
             VirtualBounds = new BoundsF();
         }
         /// <summary>
+        /// Hostitelský control
+        /// </summary>
+        protected VirtualControl VirtualControl { get; private set; }
+        /// <summary>
         /// Koordinátor virtuálních souřadnic
         /// </summary>
-        protected VirtualSpace VirtualSpace { get; private set; }
+        protected VirtualSpace VirtualSpace { get { return VirtualControl.VirtualSpace; } }
         /// <summary>
         /// Dispose
         /// </summary>
         public virtual void Dispose()
         {
-            VirtualSpace = null;
+            VirtualControl = null;
             VirtualBounds = null;
         }
         #region Virtuální pozice
@@ -145,28 +234,12 @@ namespace DjSoft.SchedulerMap.Analyser
         /// Prvek je Selectován
         /// </summary>
         public bool Selected { get; set; }
+        /// <summary>
+        /// Aktuální barva orámování, vychází z hodnot <see cref="Selected"/> a <see cref="MouseState"/>
+        /// </summary>
+        public virtual Color? CurrentOutlineColor { get { return VirtualControl.GetOutlineColor(this); } }
     }
 
-    public class VirtualControl : Control
-    {
-        public VirtualControl()
-        {
-            VirtualSpace = new VirtualSpace(this);
-        }
-        protected override void Dispose(bool disposing)
-        {
-            VirtualSpace.Dispose();
-            base.Dispose(disposing);
-        }
-        public VirtualSpace VirtualSpace { get; private set; }
-        /// <summary>
-        /// Zajistí nové vykreslení obsahu
-        /// </summary>
-        public virtual void RefreshContent() 
-        {
-            this.Invalidate();
-        }
-    }
 
     /// <summary>
     /// Souřadnice typu Float se setovacími hodnotami X; Y; Width; Height; CenterX; CenterY
