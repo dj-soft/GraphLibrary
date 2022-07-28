@@ -18,7 +18,7 @@ namespace DjSoft.SchedulerMap.Analyser
         {
             ControlInit();
             DataInit();
-            MouseInit();
+            _MouseInit();
             SelectionInit();
         }
         protected void ControlInit()
@@ -48,7 +48,7 @@ namespace DjSoft.SchedulerMap.Analyser
         private Dictionary<int, VisualItem> _VisualItems;
         #endregion
         #region Myš
-        protected void MouseInit()
+        private void _MouseInit()
         {
             this.MouseEnter += _MouseEnter;
             this.MouseMove += _MouseMove;
@@ -69,30 +69,23 @@ namespace DjSoft.SchedulerMap.Analyser
         {
             if (e.Button == MouseButtons.None)
                 ActivateItemForPoint(e.Location, MouseButtons.None);
-            else
-                VirtualSpace.MouseDrag(e.Location, e.Button);
         }
         private void _MouseDown(object sender, MouseEventArgs e)
         {
             ActivateItemForPoint(e.Location, e.Button);
-            CurrentItemMouseDown = CurrentItemAtMouse;
-            VirtualSpace.MouseDown(e.Location, e.Button);
         }
         private void _MouseUp(object sender, MouseEventArgs e)
         {
-            if (VirtualSpace.IsMouseDrag)
-                VirtualSpace.MouseUp(e.Location);
-            else
+            if (!VirtualSpace.IsMouseDrag)
                 SelectItem(CurrentItemMouseDown);
             ActivateItemForPoint(e.Location, MouseButtons.None);
         }
         private void _MouseLeave(object sender, EventArgs e)
         {
-            this.CurrentItemAtMouse = null;
+            this.SetCurrentItemAtMouse(null, null);
         }
         private void _MouseWheel(object sender, MouseEventArgs e)
         {
-            VirtualSpace.MouseWheel(e.Location, e.Delta);
         }
 
 
@@ -104,10 +97,8 @@ namespace DjSoft.SchedulerMap.Analyser
         private void ActivateItemForPoint(Point currentPoint, MouseButtons button)
         {
             var activeItems = _SearchForItemsOnPoint(currentPoint);
-            var activeItem = SearchForActiveItem(activeItems, CurrentItemAtMouse);
-            if (activeItem != null && button != MouseButtons.None)
-                activeItem.MouseState = (button == MouseButtons.Left ? ItemMouseState.LeftDown : (button == MouseButtons.Right ? ItemMouseState.RightDown : ItemMouseState.OnMouse));
-            this.CurrentItemAtMouse = activeItem;
+            var activeItem = SearchForActiveItem(activeItems, CurrentItemMouseOn);
+            SetCurrentItemAtMouse(activeItem, button);
         }
         /// <summary>
         /// Najdi jeden vybraný aktivní prvek , s příchylností k dosavadnímu <paramref name="oldActiveItem"/>
@@ -128,26 +119,43 @@ namespace DjSoft.SchedulerMap.Analyser
         /// <summary>
         /// Aktuálně aktivní prvek s myší, proměnná
         /// </summary>
-        public IVisualItem CurrentItemAtMouse
+        public IVisualItem CurrentItemMouseOn { get { return _CurrentItemMouseOn; } }
+        protected void SetCurrentItemAtMouse(IVisualItem newItem, MouseButtons? button)
         {
-            get { return _CurrentItemAtMouse; }
-            set
-            {
-                var oldItem = _CurrentItemAtMouse;
-                var newItem = value;
-                if (Object.ReferenceEquals(oldItem, newItem)) return;
+            SetCurrentItemAtMouse(newItem, GetItemMouseState(button));
+        }
+        /// <summary>
+        /// Aktivuje daný prvek i jeho stav jako prvek <see cref="CurrentItemMouseOn"/> a případně <see cref="CurrentItemMouseDown"/>.
+        /// </summary>
+        /// <param name="newItem"></param>
+        /// <param name="newState"></param>
+        protected void SetCurrentItemAtMouse(IVisualItem newItem, ItemMouseState newState)
+        {
+            var oldItem = _CurrentItemMouseOn;
+            if (Object.ReferenceEquals(oldItem, newItem) && (newItem is null || newItem.MouseState == newState)) return;   // Není změna prvku ani změna jeho stavu
 
-                if (oldItem != null) oldItem.MouseState = ItemMouseState.None;
-                _CurrentItemAtMouse = newItem;
-                if (newItem != null) newItem.MouseState = ItemMouseState.OnMouse;
-
-                this.Invalidate();
-            }
+            if (oldItem != null) oldItem.MouseState = ItemMouseState.None;
+            _CurrentItemMouseOn = newItem;
+            _CurrentItemMouseDown = ((newState == ItemMouseState.LeftDown || newState == ItemMouseState.RightDown) ? newItem : null);
+            if (newItem != null) newItem.MouseState = newState;
+        }
+        /// <summary>
+        /// Vrátí stav prvku <see cref="ItemMouseState"/> pro daný button myši <see cref="MouseButtons"/>. 
+        /// Pokud <paramref name="button"/> je null, pak vrací <see cref="ItemMouseState.None"/>
+        /// </summary>
+        /// <param name="button"></param>
+        /// <returns></returns>
+        protected static ItemMouseState GetItemMouseState(MouseButtons? button)
+        {
+            if (!button.HasValue) return ItemMouseState.None;
+            if (button.Value == MouseButtons.Left) return ItemMouseState.LeftDown;
+            if (button.Value == MouseButtons.Right) return ItemMouseState.RightDown;
+            return ItemMouseState.OnMouse;
         }
         /// <summary>
         /// Aktuálně aktivní prvek s myší, proměnná
         /// </summary>
-        private IVisualItem _CurrentItemAtMouse;
+        private IVisualItem _CurrentItemMouseOn;
         #endregion
         #region Selectované prvky
         protected void SelectionInit()
@@ -208,7 +216,8 @@ namespace DjSoft.SchedulerMap.Analyser
         /// <summary>
         /// Aktuální prvek, na kterém se stiskla myš
         /// </summary>
-        private IVisualItem CurrentItemMouseDown;
+        public IVisualItem CurrentItemMouseDown { get { return _CurrentItemMouseDown; } }
+        private IVisualItem _CurrentItemMouseDown;
         /// <summary>
         /// Prvky, které jsou označeny klikáním myši
         /// </summary>
@@ -317,13 +326,15 @@ namespace DjSoft.SchedulerMap.Analyser
                 float y = 35f;
                 foreach (var mapItem in _MapSegment.Items)
                 {
+                    if (_VisualItems.Count > 5000) break;
+
                     var itemSize = MapItemPainter.GetVirtualSize(mapItem);
                     var visualItem = new VisualItem(this, mapItem, new PointF(x, y), itemSize);
                     _VisualItems.Add(mapItem.ItemId, visualItem);
                     y += 80f;
-                    if (y > 600)
+                    if (y > 1100)
                     {
-                        x += 90f;
+                        x += 85f;
                         y = 35f;
                     }
                 }
@@ -337,7 +348,88 @@ namespace DjSoft.SchedulerMap.Analyser
             foreach (var item in VisibleItems)
                 item.OnPaint(e);
         }
+        /// <summary>
+        /// Vrátí typ objektu pro daný objekt. Typ objektu deklaruje barvy a tvary.
+        /// </summary>
+        /// <param name="mapItem"></param>
+        /// <returns></returns>
+        internal VisualObjectType GetVisualObjectType(MapItem mapItem)
+        {
+            var type = mapItem.Type;
+            switch (type)
+            {
+                case "IncrementByRealSupplierOrder": return VisualObjectType.IncrementByRealSupplierOrder;
+                case "IncrementByPlanSupplierOrder": return VisualObjectType.IncrementByPlanSupplierOrder;
+                case "IncrementByProposalReceipt": return VisualObjectType.IncrementByProposalReceipt;
+                case "DecrementByProposalRequisition": return VisualObjectType.DecrementByProposalRequisition;
+                case "IncrementByPlanStockTransfer": return VisualObjectType.IncrementByPlanStockTransfer;
+                case "DecrementByRealComponent": return VisualObjectType.DecrementByRealComponent;
+                case "DecrementByPlanComponent": return VisualObjectType.DecrementByPlanComponent;
+                case "IncrementByRealByProductSuitable": return VisualObjectType.IncrementByRealByProductSuitable;
+                case "IncrementByPlanByProductSuitable": return VisualObjectType.IncrementByPlanByProductSuitable;
+                case "IncrementByRealByProductDissonant": return VisualObjectType.IncrementByRealByProductDissonant;
+                case "IncrementByPlanByProductDissonant": return VisualObjectType.IncrementByPlanByProductDissonant;
+                case "IncrementByRealProductOrder": return VisualObjectType.IncrementByRealProductOrder;
+                case "IncrementByPlanProductOrder": return VisualObjectType.IncrementByPlanProductOrder;
+                case "DecrementByRealEnquiry": return VisualObjectType.DecrementByRealEnquiry;
+                case "DecrementByPlanEnquiry": return VisualObjectType.DecrementByPlanEnquiry;
+            }
 
+            if (type.StartsWith("OpVP: ")) return VisualObjectType.OperationPlan;
+            if (type.StartsWith("OpSTPV: ")) return VisualObjectType.OperationReal;
+
+            return VisualObjectType.None;
+        }
+        /// <summary>
+        /// Vrátí barvu pozdí pro prvek daného typu.
+        /// </summary>
+        /// <param name="visualType"></param>
+        /// <returns></returns>
+        internal Color GetVisualObjectBackColor(VisualObjectType visualType)
+        {
+            switch (visualType)
+            {
+                case VisualObjectType.IncrementByRealSupplierOrder: return Color.FromArgb(255, 94, 255, 94);
+                case VisualObjectType.IncrementByPlanSupplierOrder: return Color.FromArgb(255, 193, 255, 193);
+                case VisualObjectType.IncrementByProposalReceipt: return Color.FromArgb(255, 191, 255, 223);
+                case VisualObjectType.DecrementByProposalRequisition: return Color.FromArgb(255, 255, 255, 211);
+                case VisualObjectType.IncrementByPlanStockTransfer: return Color.FromArgb(255, 224, 255, 193);
+                case VisualObjectType.DecrementByRealComponent: return Color.FromArgb(255, 214, 94, 255);
+                case VisualObjectType.DecrementByPlanComponent: return Color.FromArgb(255, 232, 163, 255);
+                case VisualObjectType.IncrementByRealByProductSuitable: return Color.FromArgb(255, 255, 137, 255);
+                case VisualObjectType.IncrementByPlanByProductSuitable: return Color.FromArgb(255, 240, 196, 255);
+                case VisualObjectType.IncrementByRealByProductDissonant: return Color.FromArgb(255, 204, 153, 255);
+                case VisualObjectType.IncrementByPlanByProductDissonant: return Color.FromArgb(255, 255, 196, 255);
+                case VisualObjectType.OperationPlan: return Color.FromArgb(255, 119, 119, 255);
+                case VisualObjectType.OperationReal: return Color.FromArgb(255, 168, 168, 255);
+                case VisualObjectType.IncrementByRealProductOrder: return Color.FromArgb(255, 68, 255, 255);
+                case VisualObjectType.IncrementByPlanProductOrder: return Color.FromArgb(255, 158, 255, 255);
+                case VisualObjectType.DecrementByRealEnquiry: return Color.FromArgb(255, 255, 81, 81);
+                case VisualObjectType.DecrementByPlanEnquiry: return Color.FromArgb(255, 255, 173, 173);
+            }
+            return Color.FromArgb(255, 216, 216, 216);
+        }
+    }
+    internal enum VisualObjectType
+    {
+        None,
+        IncrementByRealSupplierOrder,
+        IncrementByPlanSupplierOrder,
+        IncrementByProposalReceipt,
+        DecrementByProposalRequisition,
+        IncrementByPlanStockTransfer,
+        DecrementByRealComponent,
+        DecrementByPlanComponent,
+        OperationReal,
+        OperationPlan,
+        IncrementByRealByProductSuitable,
+        IncrementByPlanByProductSuitable,
+        IncrementByRealByProductDissonant,
+        IncrementByPlanByProductDissonant,
+        IncrementByRealProductOrder,
+        IncrementByPlanProductOrder,
+        DecrementByRealEnquiry,
+        DecrementByPlanEnquiry
     }
     internal class MapItemPainter
     {
@@ -351,7 +443,7 @@ namespace DjSoft.SchedulerMap.Analyser
             return new SizeF(80f, 60f);
         }
 
-        internal static GraphicsPathSet CreateGraphicsPaths(IVisualItem visualItem, MapItem mapItem)
+        internal static GraphicsPathSet CreateGraphicsPaths(VisualItem visualItem)
         {
             var bounds = visualItem.CurrentBounds;
             GraphicsPathSet set = new GraphicsPathSet(bounds);
@@ -364,7 +456,7 @@ namespace DjSoft.SchedulerMap.Analyser
                 set.OutlinePath.AddRectangle(bounds);
             }
 
-            var backgroundColor = Color.FromArgb(200, 200, 218);
+            var backgroundColor = visualItem.BackColor; // Color.FromArgb(200, 200, 218);
             set.BackgroundBrush = new SolidBrush(backgroundColor);
             set.BackgroundPath = new GraphicsPath();
             Rectangle backgroundBounds = new Rectangle(bounds.X + 3, bounds.Y + 3, bounds.Width - 6, bounds.Height - 6);
@@ -373,8 +465,17 @@ namespace DjSoft.SchedulerMap.Analyser
             return set;
         }
     }
+    #region class GraphicsPathSet : Sada grafických nástrojů pro kreslení podkresu - pozadí - okraje prvku
+    /// <summary>
+    /// Sada grafických nástrojů pro kreslení podkresu - pozadí - okraje prvku.
+    /// Neřeší kreslení obsahu (texty, šipky).
+    /// </summary>
     internal class GraphicsPathSet : IDisposable
     {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="bounds"></param>
         public GraphicsPathSet(Rectangle bounds)
         {
             this.Bounds = bounds;
@@ -433,6 +534,7 @@ namespace DjSoft.SchedulerMap.Analyser
             this.BorderPath = null;
         }
     }
+    #endregion
     #region class VisualItem : Prvek mapy umístěný ve virtuálním prostoru
     internal class VisualItem : VirtualItemBase, IVisualItem
     {
@@ -452,10 +554,21 @@ namespace DjSoft.SchedulerMap.Analyser
         protected VisualiserControl Visualiser { get; private set; }
         protected MapItem MapItem { get; private set; }
 
+        public VisualObjectType VisualType
+        {
+            get
+            {
+                if (!_VisualType.HasValue)
+                    _VisualType = Visualiser.GetVisualObjectType(this.MapItem);
+                return _VisualType.Value;
+            }
+        }
+        private VisualObjectType? _VisualType;
+        public Color BackColor { get { return Visualiser.GetVisualObjectBackColor(this.VisualType); } }
 
         public void OnPaint(PaintEventArgs e)
         {
-            using (var pathSet = MapItemPainter.CreateGraphicsPaths(this, this.MapItem))
+            using (var pathSet = MapItemPainter.CreateGraphicsPaths(this))
             {
                 // Barvy a tvary pozadí a okrajů:
                 if (pathSet.OutlineBrush != null) e.Graphics.FillPath(pathSet.OutlineBrush, pathSet.OutlinePath);
@@ -473,12 +586,20 @@ namespace DjSoft.SchedulerMap.Analyser
         }
     }
     #endregion
+    #region interface IVisualItem : Obecný interface pro grafický prvek, enum ItemMouseState
+    /// <summary>
+    /// Obecný interface pro grafický prvek
+    /// </summary>
     public interface IVisualItem
     {
         /// <summary>
         /// Vrstva prvku: čím vyšší hodnota, tím vyšší vrstva = prvek bude kreslen "nad" prvky s nižší vrstvou, a stejně tak bude i aktivní
         /// </summary>
         int Layer { get; }
+        /// <summary>
+        /// Aktuální [Logaritmický] Zoom (= pro nativní přepočet velikosti Fyzická = Zoom * Virtuální)
+        /// </summary>
+        float Zoom { get; }
         /// <summary>
         /// Fyzické souřadnice celého prvku v aktuálním controlu.
         /// </summary>
@@ -489,15 +610,15 @@ namespace DjSoft.SchedulerMap.Analyser
         /// </summary>
         Rectangle? CurrentVisibleBounds { get; }
         /// <summary>
+        /// Je prvek aktuálně viditelný v rámci svého Owner controlu ?
+        /// </summary>
+        bool IsVisibleInOwner { get; }
+        /// <summary>
         /// Je prvek aktivní na dané fyzické souřadnici?
         /// </summary>
         /// <param name="currentPoint"></param>
         /// <returns></returns>
         bool IsActiveOnCurrentPoint(Point currentPoint);
-        /// <summary>
-        /// Je prvek aktuálně viditelný v rámci svého Owner controlu ?
-        /// </summary>
-        bool IsVisibleInOwner { get; }
         /// <summary>
         /// Stav prvku z hlediska myši
         /// </summary>
@@ -526,4 +647,5 @@ namespace DjSoft.SchedulerMap.Analyser
         LeftDown,
         RightDown
     }
+    #endregion
 }
