@@ -41,7 +41,7 @@ namespace DjSoft.SchedulerMap.Analyser
             this.Invalidate();
         }
         #endregion
-        #region Implicitní barvy
+        #region Implicitní barvy a další hodnoty
         /// <summary>
         /// Inicializace výchozích hodnot barev typu Outline
         /// </summary>
@@ -101,6 +101,20 @@ namespace DjSoft.SchedulerMap.Analyser
         /// Barva orámování Selectovaného prvku za stavu myši <see cref="ItemMouseState.RightDown"/>
         /// </summary>
         public Color? ColorOutlineRightDownSelected { get; set; }
+        /// <summary>
+        /// Vrátí velikost okraje Outline pro daný zoom. 
+        /// Outline margin je logaritmický, pro malé Zoom je 1px, pro zoom 1 je 2px, pro velké Zoomy 4px.
+        /// </summary>
+        /// <param name="zoom">Logaritmický Zoom v rozsahu 0.01 - 100</param>
+        /// <returns></returns>
+        public static float GetOutlineMargin(float zoom)
+        {
+            if (zoom < 0.25f) return 1f;
+            if (zoom < 0.80f) return 2f;
+            if (zoom < 3.0f) return 3f;
+            if (zoom < 9.0f) return 4f;
+            return 5f;
+        }
         #endregion
     }
 
@@ -819,7 +833,6 @@ Linear	Log
         public virtual Color? CurrentOutlineColor { get { return VirtualControl.GetOutlineColor(this); } }
         #endregion
     }
-
     /// <summary>
     /// Souřadnice typu Float se setovacími hodnotami X; Y; Width; Height; CenterX; CenterY
     /// </summary>

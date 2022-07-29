@@ -384,7 +384,7 @@ namespace DjSoft.SchedulerMap.Analyser
             return VisualObjectType.None;
         }
         /// <summary>
-        /// Vrátí barvu pozdí pro prvek daného typu.
+        /// Vrátí barvu pozadí pro prvek daného typu.
         /// </summary>
         /// <param name="visualType"></param>
         /// <returns></returns>
@@ -411,6 +411,68 @@ namespace DjSoft.SchedulerMap.Analyser
                 case VisualObjectType.DecrementByPlanEnquiry: return Color.FromArgb(255, 255, 173, 173);
             }
             return Color.FromArgb(255, 216, 216, 216);
+        }
+        /// <summary>
+        /// Vrátí barvu textu pro prvek daného typu.
+        /// </summary>
+        /// <param name="visualType"></param>
+        /// <returns></returns>
+        internal Color GetVisualObjectTextColor(VisualObjectType visualType)
+        {
+            switch (visualType)
+            {
+                case VisualObjectType.IncrementByRealSupplierOrder:
+                case VisualObjectType.DecrementByRealComponent:
+                case VisualObjectType.IncrementByRealByProductSuitable:
+                case VisualObjectType.IncrementByRealByProductDissonant:
+                case VisualObjectType.OperationReal:
+                case VisualObjectType.IncrementByRealProductOrder:
+                case VisualObjectType.DecrementByRealEnquiry: return Color.FromArgb(255, 0, 0, 0);
+
+                case VisualObjectType.IncrementByProposalReceipt:
+                case VisualObjectType.DecrementByProposalRequisition:
+                case VisualObjectType.IncrementByPlanStockTransfer: return Color.FromArgb(255, 96, 96, 96);
+
+                case VisualObjectType.IncrementByPlanSupplierOrder:
+                case VisualObjectType.DecrementByPlanComponent:
+                case VisualObjectType.IncrementByPlanByProductSuitable:
+                case VisualObjectType.IncrementByPlanByProductDissonant:
+                case VisualObjectType.OperationPlan:
+                case VisualObjectType.IncrementByPlanProductOrder:
+                case VisualObjectType.DecrementByPlanEnquiry: return Color.FromArgb(255, 64, 64, 64);
+            }
+            return Color.FromArgb(255, 32, 0, 64);
+        }
+        internal string GetVisualObjectText(VisualItem visualItem)
+        {
+            switch (visualItem.VisualType)
+            {
+                case VisualObjectType.IncrementByRealSupplierOrder:
+                case VisualObjectType.IncrementByPlanSupplierOrder: return GetTextAfter(visualItem.MapItem.Description1, "Unit=", ": ");
+                case VisualObjectType.IncrementByProposalReceipt: 
+                case VisualObjectType.DecrementByProposalRequisition: 
+                case VisualObjectType.IncrementByPlanStockTransfer: 
+                case VisualObjectType.DecrementByRealComponent: 
+                case VisualObjectType.DecrementByPlanComponent: 
+                case VisualObjectType.IncrementByRealByProductSuitable: 
+                case VisualObjectType.IncrementByPlanByProductSuitable: 
+                case VisualObjectType.IncrementByRealByProductDissonant: 
+                case VisualObjectType.IncrementByPlanByProductDissonant: return GetTextAfter(visualItem.MapItem.Description1, "Unit=", ": ");
+                case VisualObjectType.OperationPlan: 
+                case VisualObjectType.OperationReal: return GetTextAfter(visualItem.MapItem.Description1, "Operation", "=");    // Operation=50: DC 3
+                case VisualObjectType.IncrementByRealProductOrder: 
+                case VisualObjectType.IncrementByPlanProductOrder: return GetTextAfter(visualItem.MapItem.Description1, "Unit=", ": ");
+                case VisualObjectType.DecrementByRealEnquiry: 
+                case VisualObjectType.DecrementByPlanEnquiry: return GetTextAfter(visualItem.MapItem.Description1, "Unit=", ": ");
+            }
+            return null;
+        }
+        private static string GetTextAfter(string text, string startWith, string delimiter)
+        {
+            if (String.IsNullOrEmpty(text) || !text.StartsWith(startWith)) return null;
+            int delimiterIndex = text.IndexOf(delimiter, startWith.Length);
+            if (delimiterIndex < 0) return null;
+            return text.Substring(delimiterIndex + delimiter.Length);
         }
         /// <summary>
         /// Metoda vrátí definici tvaru pro prvek daného typu.
@@ -513,13 +575,18 @@ namespace DjSoft.SchedulerMap.Analyser
                 set.OutlinePath = visualShape.CreateGraphicsPath(bounds, 0f);
             }
 
+            float backgroundMargin = VirtualControl.GetOutlineMargin(visualItem.Zoom);
+
             var backgroundColor = visualItem.BackColor;
             set.BackgroundBrush = new SolidBrush(backgroundColor);
-            set.BackgroundPath = visualShape.CreateGraphicsPath(bounds, 3f);
+            set.BackgroundPath = visualShape.CreateGraphicsPath(bounds, backgroundMargin);
+
+            set.TextBounds = new Rectangle(bounds.X + 8, bounds.Y + bounds.Height / 2 - 10, bounds.Width - 16, 20);
 
             return set;
         }
     }
+
     #region class GraphicsPathSet : Sada grafických nástrojů pro kreslení podkresu - pozadí - okraje prvku
     /// <summary>
     /// Sada grafických nástrojů pro kreslení podkresu - pozadí - okraje prvku.
@@ -539,6 +606,14 @@ namespace DjSoft.SchedulerMap.Analyser
         /// Vnější souřadnice oblasti. Vhodné pro Clip grafiky.
         /// </summary>
         public Rectangle Bounds { get; private set; }
+        /// <summary>
+        /// Velikost textu
+        /// </summary>
+        public float TextEmSize { get; set; }
+        /// <summary>
+        /// Souřadnice textu
+        /// </summary>
+        public Rectangle TextBounds { get; set; }
         /// <summary>
         /// Barva pro vykreslení stínu pod prvkem / Selection / MouseOver.
         /// Kreslí se jako první.
@@ -602,6 +677,10 @@ namespace DjSoft.SchedulerMap.Analyser
         }
     }
     #endregion
+    #region class VisualShape : Obálka definující vizuální tvar
+    /// <summary>
+    /// Obálka definující vizuální tvar
+    /// </summary>
     internal class VisualShape
     {
         /// <summary>
@@ -627,37 +706,83 @@ namespace DjSoft.SchedulerMap.Analyser
             _PointsX = pointsX;
         }
         private int[] _PointsX;
-
-        public GraphicsPath CreateGraphicsPath(RectangleF bounds, float margin)
+        /// <summary>
+        /// Vygeneruje fyzickou grafickou komponentu pro svůj tvar
+        /// </summary>
+        /// <param name="bounds"></param>
+        /// <param name="margin"></param>
+        /// <param name="border"></param>
+        /// <returns></returns>
+        public GraphicsPath CreateGraphicsPath(RectangleF bounds, float margin, float? border = null)
         {
             if (_PointsX is null || _PointsX.Length < 6)
                 throw new InvalidOperationException("VisualShape.CreateGraphicsPath() error: PointsX is invalid.");
 
-            float module = bounds.Height / 30f;            // velikost jednotky v PointsX: při výšce 60px je jednotka 2px, hodnota 3 odpovídá 6px, hodnota 6 = 12px, což v grafickém editoru vypadá přiměřeně.
+            // Rozměry vnitřního obdélníku, zmenšeného o margin:
+            float h = bounds.Height;
+            float h2 = h / 2f;
+            float module = h / 30f;              // velikost jednotky v PointsX: při výšce 60px je jednotka 2px, hodnota 3 odpovídá 6px, hodnota 6 = 12px, což v grafickém editoru vypadá přiměřeně.
             float l = bounds.X + margin;
             float r = bounds.Right - margin;
             float t = bounds.Y + margin;
-            float c = bounds.Y + bounds.Height / 2f;
+            float c = bounds.Y + h2;
             float b = bounds.Bottom - margin;
             if ((r - l) <= 12f || (b - t) <= 6f) return null;
 
+            // Souřadnice X všech šesti bodů, platné ale na souřadnici bez margins (=nahoře a dole):
+            float x0 = module * (float)_PointsX[0];
+            float x1 = module * (float)_PointsX[1];
+            float x2 = module * (float)_PointsX[2];
+            float x3 = module * (float)_PointsX[3];
+            float x4 = module * (float)_PointsX[4];
+            float x5 = module * (float)_PointsX[5];
+
+            // Korekce souřadnic 0, 2, 3, 5 (pro body na horní a dolní lince) pro případ, kdy je kladný margin, a bod je tedy mírně posunut dolů (pod horní linku) nebo nahoru (nad dolní linku)
+            // tak, aby souřadnice X byla přiměřeně odsunutá, když sousední střední bod (1, 4) není svisle (její x1 nebo x4 je jiné než x0 ...)  [ono to chce obrázek]
+            if (margin != 0f)
+            {
+                if (_PointsX[0] != _PointsX[1]) x0 = _ShiftX(x0, x1, h2, margin);
+                if (_PointsX[2] != _PointsX[1]) x2 = _ShiftX(x2, x1, h2, margin);
+                if (_PointsX[3] != _PointsX[4]) x3 = _ShiftX(x3, x4, h2, margin);
+                if (_PointsX[5] != _PointsX[4]) x5 = _ShiftX(x5, x4, h2, margin);
+            }
+
+
+            // Path včetně polygonu:
             GraphicsPath path = new GraphicsPath();
             path.AddPolygon(new PointF[]
             {
-                new PointF(l + module * (float)_PointsX[0], t),
-                new PointF(l + module * (float)_PointsX[1], c),
-                new PointF(l + module * (float)_PointsX[2], b),
-                new PointF(r - module * (float)_PointsX[3], b),
-                new PointF(r - module * (float)_PointsX[4], c),
-                new PointF(r - module * (float)_PointsX[5], t),
-                new PointF(l + module * (float)_PointsX[0], t),
+                new PointF(l + x0, t),
+                new PointF(l + x1, c),
+                new PointF(l + x2, b),
+                new PointF(r - x3, b),
+                new PointF(r - x4, c),
+                new PointF(r - x5, t),
+                new PointF(l + x0, t),
             });
             path.CloseFigure();
             return path;
         }
+        /// <summary>
+        /// Zajistí posunutí souřadnice X na šikmé lince z bodu X1 do X2 při dané výšce Y pro posun na ose Y o daný margin
+        /// </summary>
+        /// <param name="x1"></param>
+        /// <param name="x2"></param>
+        /// <param name="y"></param>
+        /// <param name="margin"></param>
+        /// <returns></returns>
+        private static float _ShiftX(float x1, float x2, float y, float margin)
+        {
+            if (x1 == x2 || y <= 1f) return x1;
+            float dx = x1 - x2;
+            return x1 - margin * (dx / y);
+        }
     }
-
+    #endregion
     #region class VisualItem : Prvek mapy umístěný ve virtuálním prostoru
+    /// <summary>
+    /// Prvek mapy umístěný ve virtuálním prostoru
+    /// </summary>
     internal class VisualItem : VirtualItemBase, IVisualItem
     {
         public VisualItem(VisualiserControl visualiser, MapItem mapItem, PointF center, SizeF size)
@@ -666,6 +791,11 @@ namespace DjSoft.SchedulerMap.Analyser
             Visualiser = visualiser;
             MapItem = mapItem;
             VirtualBounds.SetCenterSize(center, size);
+
+            VisualType = visualiser.GetVisualObjectType(mapItem);
+            BackColor = Visualiser.GetVisualObjectBackColor(this.VisualType);
+            TextColor = visualiser.GetVisualObjectTextColor(this.VisualType);
+            Text = visualiser.GetVisualObjectText(this);
         }
         public override void Dispose()
         {
@@ -674,24 +804,30 @@ namespace DjSoft.SchedulerMap.Analyser
             MapItem = null;
         }
         protected VisualiserControl Visualiser { get; private set; }
-        protected MapItem MapItem { get; private set; }
+        /// <summary>
+        /// Zobrazovaný prvek
+        /// </summary>
+        public MapItem MapItem { get; private set; }
+        /// <summary>
+        /// Virtuální střed objektu. Lze přemístit jinam.
+        /// </summary>
+        public PointF Center { get { return VirtualBounds.Center; } set { VirtualBounds.Center = value; } }
         /// <summary>
         /// Typ tvaru
         /// </summary>
-        public VisualObjectType VisualType
-        {
-            get
-            {
-                if (!_VisualType.HasValue)
-                    _VisualType = Visualiser.GetVisualObjectType(this.MapItem);
-                return _VisualType.Value;
-            }
-        }
-        private VisualObjectType? _VisualType;
+        public VisualObjectType VisualType { get; private set; }
         /// <summary>
         /// Barva pozadí
         /// </summary>
-        public Color BackColor { get { return Visualiser.GetVisualObjectBackColor(this.VisualType); } }
+        public Color BackColor { get; private set; }
+        /// <summary>
+        /// Barva písma
+        /// </summary>
+        public Color TextColor { get; private set; }
+        /// <summary>
+        /// Text zobrazený v prvku
+        /// </summary>
+        public string Text { get; private set; }
         /// <summary>
         /// Definice vizuálního tvaru
         /// </summary>
@@ -701,12 +837,22 @@ namespace DjSoft.SchedulerMap.Analyser
         {
             using (var pathSet = MapItemPainter.CreateGraphicsPaths(this))
             {
+                e.Graphics.SetClip(pathSet.Bounds);
+
                 // Barvy a tvary pozadí a okrajů:
                 e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
-
                 if (pathSet.HasOutline) e.Graphics.FillPath(pathSet.OutlineBrush, pathSet.OutlinePath);
                 if (pathSet.HasBackground) e.Graphics.FillPath(pathSet.BackgroundBrush, pathSet.BackgroundPath);
                 if (pathSet.HasBorder) e.Graphics.FillPath(pathSet.BorderBrush, pathSet.BorderPath);
+
+                string text = this.Text;
+                if (!String.IsNullOrEmpty(text))
+                {
+                    using (SolidBrush br = new SolidBrush(this.TextColor))
+                        e.Graphics.DrawString(text, SystemFonts.DialogFont, br, pathSet.TextBounds);
+                }
+
+                e.Graphics.ResetClip();
             }
         }
         bool IVisualItem.IsActiveOnCurrentPoint(Point currentPoint)
