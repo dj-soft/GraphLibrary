@@ -18,12 +18,13 @@ namespace DjSoft.SchedulerMap.Analyser
         {
             ControlInit();
             DataInit();
+            CoordInit();
             _MouseInit();
             SelectionInit();
         }
         protected void ControlInit()
         {
-            this.SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint | ControlStyles.ResizeRedraw | ControlStyles.OptimizedDoubleBuffer | ControlStyles.Selectable | ControlStyles.UserMouse, true);
+            this.SetStyle(ControlStyles.Selectable, true);
         }
         protected override void Dispose(bool disposing)
         {
@@ -61,26 +62,28 @@ namespace DjSoft.SchedulerMap.Analyser
 
 
         }
-
         private void _MouseEnter(object sender, EventArgs e)
         {
             ActivateItemForPoint(this.PointToClient(Control.MousePosition), MouseButtons.None);
         }
-
         private void _MouseMove(object sender, MouseEventArgs e)
         {
+            MouseButtons? button = (Control.ModifierKeys != Keys.Alt ? MouseButtons.None : (MouseButtons?)null);
             if (e.Button == MouseButtons.None)
-                ActivateItemForPoint(e.Location, MouseButtons.None);
+                ActivateItemForPoint(e.Location, button);
         }
         private void _MouseDown(object sender, MouseEventArgs e)
-        {
-            ActivateItemForPoint(e.Location, e.Button);
+        {   // Stisk myši akceptuji jen když k tomu není stisknutá klávesa
+            _MouseDownKeys = Control.ModifierKeys;
+            if (_MouseDownKeys == Keys.None || _MouseDownKeys == Keys.Control)
+                ActivateItemForPoint(e.Location, e.Button);
         }
         private void _MouseUp(object sender, MouseEventArgs e)
         {
-            if (!VirtualSpace.IsMouseDrag)
-                SelectItem(CurrentItemMouseDown);
+            if (!VirtualSpace.IsMouseDrag && (_MouseDownKeys == Keys.None || _MouseDownKeys == Keys.Control))
+                SelectItem(CurrentItemMouseDown, _MouseDownKeys);
             ActivateItemForPoint(e.Location, MouseButtons.None);
+            _MouseDownKeys = Keys.None;
         }
         private void _MouseLeave(object sender, EventArgs e)
         {
@@ -89,6 +92,7 @@ namespace DjSoft.SchedulerMap.Analyser
         private void _MouseWheel(object sender, MouseEventArgs e)
         {
         }
+        private Keys _MouseDownKeys;
 
 
         /// <summary>
@@ -96,7 +100,7 @@ namespace DjSoft.SchedulerMap.Analyser
         /// </summary>
         /// <param name="currentPoint"></param>
         /// <param name="button"></param>
-        private void ActivateItemForPoint(Point currentPoint, MouseButtons button)
+        private void ActivateItemForPoint(Point currentPoint, MouseButtons? button)
         {
             var activeItems = _SearchForItemsOnPoint(currentPoint);
             var activeItem = SearchForActiveItem(activeItems, CurrentItemMouseOn);
@@ -168,9 +172,10 @@ namespace DjSoft.SchedulerMap.Analyser
         /// Zajistí označení daného prvku. Může to být i null = pak jde o odselectování všech.
         /// </summary>
         /// <param name="selectedItem"></param>
-        protected void SelectItem(IVisualItem selectedItem)
+        /// <param name="mouseDownKeys"></param>
+        protected void SelectItem(IVisualItem selectedItem, Keys mouseDownKeys)
         {
-            bool extendedSelect = (Control.ModifierKeys == Keys.Control);
+            bool extendedSelect = (mouseDownKeys == Keys.Control);
             bool runRefresh = false;
             if (!extendedSelect)
             {   // Basic režim bez klávesy Ctrl
@@ -269,7 +274,12 @@ namespace DjSoft.SchedulerMap.Analyser
         private IVisualItem[] _GetVisibleItems()
         {
             List<IVisualItem> items = new List<IVisualItem>();
-            items.AddRange(_VisualItems.Values.Where(i => i.IsVisibleInOwner));
+            foreach (var item in _VisualItems.Values)
+            {
+                item.CurrentlyIsVisible = item.IsVisibleInOwner;
+                if (item.CurrentlyIsVisible)
+                    items.Add(item);
+            }
             items.Sort(VisualItemLayerComparer);
             return items.ToArray();
         }
@@ -286,13 +296,63 @@ namespace DjSoft.SchedulerMap.Analyser
             return al.CompareTo(bl);
         }
         #endregion
+        #region Koordinátor obsahu buněk
+        /// <summary>
+        /// Inicializace koordinátů
+        /// </summary>
+        protected void CoordInit()
+        {
+            _CellBounds = new RectangleF(5f, 5f, 90f, 60f);
+            _CellArray = new SortedList<int, SortedList<int, VisualItem>>();
+            
+        }
+        /// <summary>
+        /// Vrátí souřadnice virtuálního středu dané buňky
+        /// </summary>
+        /// <param name="cell"></param>
+        /// <returns></returns>
+        public PointF GetVirtualCenter(Point cell)
+        {
+            var cellBounds = CellBounds;
+            return new PointF((float)cell.X * cellBounds.Width, (float)cell.Y * cellBounds.Height);
+        }
+        /// <summary>
+        /// Definice velikosti a rozestupů logických buněk, ve virtuálních hodnotách.
+        /// Hodnota X a Y určuje rozestupy mezi buňkami, hodnota Width a Height určuje velikost buňky.
+        /// </summary>
+        public RectangleF CellBounds 
+        {
+            get { return _CellBounds; }
+            set { _SetCellBounds(value); }
+        }
+        private void _SetCellBounds(RectangleF cellBounds)
+        {
+            float x = VirtualSpace.Align(cellBounds.X, 2f, 50f);
+            float y = VirtualSpace.Align(cellBounds.Y, 2f, 50f);
+            float w = VirtualSpace.Align(cellBounds.Width, 40f, 600f);
+            float h = VirtualSpace.Align(cellBounds.Height, 40f, 600f);
 
+            var oldBounds = _CellBounds;
+            if (x == oldBounds.X && y == oldBounds.Y && w == oldBounds.Width && h == oldBounds.Height) return;
+
+            _CellBounds = cellBounds;
+            RecalculateVirtualBounds();
+        }
+        private RectangleF _CellBounds;
+        /// <summary>
+        /// Do všech existujících viditelných prvků znovu vepíše jejich VirtualBounds po změně souřadnic buňky <see cref="CellBounds"/>
+        /// </summary>
+        private void RecalculateVirtualBounds()
+        { }
+        SortedList<int, SortedList<int, VisualItem>> _CellArray;
+
+        #endregion
 
 
         public void ActivateMapItem(int? itemId)
         {
             if (_MapSegment is null) return;
-            _VisualItems.Clear();
+            _VisualItemsClear();
 
             _ActiveItemId = itemId;
             if (!(_MapSegment.IsLoaded || _MapSegment.IsLoading))
@@ -304,6 +364,14 @@ namespace DjSoft.SchedulerMap.Analyser
                 _ActivateMapItem();
             }
 
+        }
+        /// <summary>
+        /// Vyprázdní obsah <see cref="_VisualItems"/>, včetně Dispose prvků
+        /// </summary>
+        private void _VisualItemsClear()
+        {
+            foreach (var i in _VisualItems.Values) i.Dispose();
+            _VisualItems.Clear();
         }
         private int? _ActiveItemId;
         private void _LoadMapSegment()
@@ -347,8 +415,13 @@ namespace DjSoft.SchedulerMap.Analyser
         {
             base.OnPaint(e);
 
+            Dictionary<long, MapLink> paintedLinks = new Dictionary<long, MapLink>();
+            e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
             foreach (var item in VisibleItems)
-                item.OnPaint(e);
+                item.OnPaintLinks(e, paintedLinks);
+
+            foreach (var item in VisibleItems)
+                item.OnPaintItem(e);
         }
         #region Typy objektů, barvy a Tvary
         /// <summary>
@@ -431,7 +504,7 @@ namespace DjSoft.SchedulerMap.Analyser
 
                 case VisualObjectType.IncrementByProposalReceipt:
                 case VisualObjectType.DecrementByProposalRequisition:
-                case VisualObjectType.IncrementByPlanStockTransfer: return Color.FromArgb(255, 96, 96, 96);
+                case VisualObjectType.IncrementByPlanStockTransfer: return Color.FromArgb(255, 64, 96, 96);
 
                 case VisualObjectType.IncrementByPlanSupplierOrder:
                 case VisualObjectType.DecrementByPlanComponent:
@@ -528,6 +601,9 @@ namespace DjSoft.SchedulerMap.Analyser
         }
         #endregion
     }
+    /// <summary>
+    /// Druhy vizuálních objektů, odpovídají detailnímu typu prvku plánu (Osa S a Task C)
+    /// </summary>
     internal enum VisualObjectType
     {
         None,
@@ -580,6 +656,11 @@ namespace DjSoft.SchedulerMap.Analyser
             var backgroundColor = visualItem.BackColor;
             set.BackgroundBrush = new SolidBrush(backgroundColor);
             set.BackgroundPath = visualShape.CreateGraphicsPath(bounds, backgroundMargin);
+
+            var borderColor = Color.Black;
+            set.BorderBrush = new SolidBrush(borderColor);
+            set.BorderPath = visualShape.CreateGraphicsPath(bounds, backgroundMargin, 3f);
+
 
             set.TextBounds = new Rectangle(bounds.X + 8, bounds.Y + bounds.Height / 2 - 10, bounds.Width - 16, 20);
 
@@ -718,6 +799,24 @@ namespace DjSoft.SchedulerMap.Analyser
             if (_PointsX is null || _PointsX.Length < 6)
                 throw new InvalidOperationException("VisualShape.CreateGraphicsPath() error: PointsX is invalid.");
 
+            if (bounds.Width < 12f || bounds.Height < 12f) return null;
+
+            GraphicsPath path = new GraphicsPath();
+
+            if (border.HasValue && border.Value > 0f)
+            {
+                AddPath(bounds, margin, path, false, false);
+                AddPath(bounds, margin + border.Value, path, true, true);
+            }
+            else
+            {
+                AddPath(bounds, margin, path, false, true);
+            }
+
+            return path;
+        }
+        private void AddPath(RectangleF bounds, float margin, GraphicsPath path, bool reverse, bool closeFigure)
+        {
             // Rozměry vnitřního obdélníku, zmenšeného o margin:
             float h = bounds.Height;
             float h2 = h / 2f;
@@ -727,7 +826,6 @@ namespace DjSoft.SchedulerMap.Analyser
             float t = bounds.Y + margin;
             float c = bounds.Y + h2;
             float b = bounds.Bottom - margin;
-            if ((r - l) <= 12f || (b - t) <= 6f) return null;
 
             // Souřadnice X všech šesti bodů, platné ale na souřadnici bez margins (=nahoře a dole):
             float x0 = module * (float)_PointsX[0];
@@ -747,21 +845,30 @@ namespace DjSoft.SchedulerMap.Analyser
                 if (_PointsX[5] != _PointsX[4]) x5 = _ShiftX(x5, x4, h2, margin);
             }
 
+            if(!reverse)
+                path.AddPolygon(new PointF[]
+                {
+                    new PointF(l + x0, t),
+                    new PointF(l + x1, c),
+                    new PointF(l + x2, b),
+                    new PointF(r - x3, b),
+                    new PointF(r - x4, c),
+                    new PointF(r - x5, t),
+                    new PointF(l + x0, t),
+                });
+            else
+                path.AddPolygon(new PointF[]
+                {
+                    new PointF(l + x0, t),
+                    new PointF(r - x5, t),
+                    new PointF(r - x4, c),
+                    new PointF(r - x3, b),
+                    new PointF(l + x2, b),
+                    new PointF(l + x1, c),
+                    new PointF(l + x0, t),
+                });
 
-            // Path včetně polygonu:
-            GraphicsPath path = new GraphicsPath();
-            path.AddPolygon(new PointF[]
-            {
-                new PointF(l + x0, t),
-                new PointF(l + x1, c),
-                new PointF(l + x2, b),
-                new PointF(r - x3, b),
-                new PointF(r - x4, c),
-                new PointF(r - x5, t),
-                new PointF(l + x0, t),
-            });
-            path.CloseFigure();
-            return path;
+            if (closeFigure) path.CloseFigure();
         }
         /// <summary>
         /// Zajistí posunutí souřadnice X na šikmé lince z bodu X1 do X2 při dané výšce Y pro posun na ose Y o daný margin
@@ -790,6 +897,7 @@ namespace DjSoft.SchedulerMap.Analyser
         {
             Visualiser = visualiser;
             MapItem = mapItem;
+            MapItem.VisualItem = this;
             VirtualBounds.SetCenterSize(center, size);
 
             VisualType = visualiser.GetVisualObjectType(mapItem);
@@ -801,6 +909,7 @@ namespace DjSoft.SchedulerMap.Analyser
         {
             base.Dispose();
             Visualiser = null;
+            MapItem.VisualItem = null;
             MapItem = null;
         }
         protected VisualiserControl Visualiser { get; private set; }
@@ -808,6 +917,17 @@ namespace DjSoft.SchedulerMap.Analyser
         /// Zobrazovaný prvek
         /// </summary>
         public MapItem MapItem { get; private set; }
+        /// <summary>
+        /// Adresa buňky ve formě Point (X, Y). 
+        /// Adresu setuje koordinátor, který udržuje vizuální mapu objektů. Adresu může kdykoliv změnit.
+        /// Přepočet do virtuální souřadnice provádí metoda <see cref="VisualiserControl.GetVirtualCenter(Point)"/>
+        /// </summary>
+        public Point Cell
+        {
+            get { return _Cell; }
+            set { _Cell = value; Center = Visualiser.GetVirtualCenter(value); }
+        }
+        private Point _Cell;
         /// <summary>
         /// Virtuální střed objektu. Lze přemístit jinam.
         /// </summary>
@@ -833,7 +953,41 @@ namespace DjSoft.SchedulerMap.Analyser
         /// </summary>
         public VisualShape VisualShape { get { return Visualiser.GetVisualObjectShape(this.VisualType); } }
 
-        public void OnPaint(PaintEventArgs e)
+        /// <summary>
+        /// Vykreslí svoje linky, pokud dosud nejsou uvedeny v <paramref name="paintedLinks"/> - tam se dávají při vykreslení.
+        /// Nechceme jeden Link kreslit dvakrát v průběhu jednoho Paint controlu (jednak kvůli času a výkonu, druhak proto že dvojí kreslení s antialiasem dává "zvýrazněný" obraz.
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="paintedLinks"></param>
+        public void OnPaintLinks(PaintEventArgs e, Dictionary<long, MapLink> paintedLinks)
+        {
+            OnPaintLinks(e, this.MapItem.PrevLinks, paintedLinks);
+            OnPaintLinks(e, this.MapItem.NextLinks, paintedLinks);
+        }
+        private void OnPaintLinks(PaintEventArgs e, MapLink[] mapLinks, Dictionary<long, MapLink> paintedLinks)
+        {
+            if (mapLinks != null && mapLinks.Length > 0)
+            {
+                foreach (var mapLink in mapLinks)
+                    OnPaintLink(e, mapLink, paintedLinks);
+            }
+        }
+        private void OnPaintLink(PaintEventArgs e, MapLink mapLink, Dictionary<long, MapLink> paintedLinks)
+        {
+            if (mapLink is null || paintedLinks.ContainsKey(mapLink.LinkId)) return;
+            paintedLinks.Add(mapLink.LinkId, mapLink);
+
+            var prevVisualItem = mapLink.PrevItem.VisualItem;
+            var nextVisualItem = mapLink.NextItem.VisualItem;
+            if (prevVisualItem is null || nextVisualItem is null) return;
+
+            var prevBounds = prevVisualItem.CurrentBounds;
+            var nextBounds = nextVisualItem.CurrentBounds;
+            Point prevPoint = new Point(prevBounds.Right, prevBounds.Y + prevBounds.Height / 2);
+            Point nextPoint = new Point(nextBounds.Left, nextBounds.Y + nextBounds.Height / 2);
+            e.Graphics.DrawLine(Pens.Red, prevPoint, nextPoint);
+        }
+        public void OnPaintItem(PaintEventArgs e)
         {
             using (var pathSet = MapItemPainter.CreateGraphicsPaths(this))
             {
@@ -890,6 +1044,10 @@ namespace DjSoft.SchedulerMap.Analyser
         /// </summary>
         bool IsVisibleInOwner { get; }
         /// <summary>
+        /// Sem je nastaveno true/false v okamžiku vyhodnocené viditelnosti prvku.
+        /// </summary>
+        bool CurrentlyIsVisible { get; set; }
+        /// <summary>
         /// Je prvek aktivní na dané fyzické souřadnici?
         /// </summary>
         /// <param name="currentPoint"></param>
@@ -911,7 +1069,13 @@ namespace DjSoft.SchedulerMap.Analyser
         /// Vykresli se do grafiky
         /// </summary>
         /// <param name="e"></param>
-        void OnPaint(PaintEventArgs e);
+        void OnPaintItem(PaintEventArgs e);
+        /// <summary>
+        /// Vykreslí svoje linky, pokud dosud nejsou v <paramref name="paintedLinks"/>
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="paintedLinks"></param>
+        void OnPaintLinks(PaintEventArgs e, Dictionary<long, MapLink> paintedLinks);
     }
     /// <summary>
     /// Stav prvku z hlediska myši

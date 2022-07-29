@@ -20,6 +20,7 @@ namespace DjSoft.SchedulerMap.Analyser
         /// </summary>
         public VirtualControl()
         {
+            this.SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint | ControlStyles.ResizeRedraw | ControlStyles.OptimizedDoubleBuffer | ControlStyles.Selectable | ControlStyles.UserMouse, true);
             VirtualSpace = new VirtualSpace(this);
             InitColors();
         }
@@ -402,14 +403,28 @@ Linear	Log
         /// </summary>
         /// <param name="nativeZoom"></param>
         /// <returns></returns>
-        private static double GetAlignedNativeZoom(double nativeZoom) { return (nativeZoom < ZoomMin ? ZoomMin : (nativeZoom > ZoomMax ? ZoomMax : nativeZoom)); }
+        private static double GetAlignedNativeZoom(double nativeZoom) { return Align(nativeZoom, ZoomMin, ZoomMax); }
         /// <summary>
         /// Zarovná a vrátí lineární Zoom do povolených hranic, které jsou <see cref="ZoomMin"/> a <see cref="ZoomMax"/>
         /// </summary>
         /// <param name="linearZoom"></param>
         /// <returns></returns>
-        private static double GetAlignedLinearZoom(double linearZoom) { return (linearZoom < ZoomLinearMin ? ZoomLinearMin : (linearZoom > ZoomLinearMax ? ZoomLinearMax : linearZoom)); }
-
+        private static double GetAlignedLinearZoom(double linearZoom) { return Align(linearZoom, ZoomLinearMin, ZoomLinearMax); }
+        /// <summary>
+        /// Vrátí danou hodnotu zarovnanou do daných mezí
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="value"></param>
+        /// <param name="min"></param>
+        /// <param name="max"></param>
+        /// <returns></returns>
+        internal static T Align<T>(T value, T min, T max) where T : IComparable<T>
+        {
+            if (min.CompareTo(max) > 0) throw new ArgumentException($"Align() error: Min {min} musí být menší než Max {max} !");
+            if (value.CompareTo(min) < 0) value = min;
+            if (value.CompareTo(max) > 0) value = max;
+            return value;
+        }
         /// <summary>
         /// Nastaví Zoom, při změně hodnoty volitelně volá <see cref="_RunCoordinateChanged"/>, vrací příznak změny
         /// </summary>
@@ -785,6 +800,10 @@ Linear	Log
         /// Obsahuje true, pokud tento prvek je nyní iditelný v rámci viditelné oblasti Ownera
         /// </summary>
         public bool IsVisibleInOwner { get { var currentVisibleBounds = VirtualSpace.GetCurrentVisibleBounds(VirtualBounds); return currentVisibleBounds.HasValue; } }
+        /// <summary>
+        /// Sem je nastaveno true/false v okamžiku vyhodnocené viditelnosti prvku.
+        /// </summary>
+        public bool CurrentlyIsVisible { get; set; }
         /// <summary>
         /// Vrátí true, pokud daný fyzický bod leží na fyzických souřadnicích tohoto prvku ve viditelné oblasti Ownera
         /// </summary>

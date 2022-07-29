@@ -17,6 +17,8 @@ namespace DjSoft.SchedulerMap.Analyser
         {
             InitializeComponent();
             InitializeState();
+
+            Data.Testy.Run();
         }
         private void InitializeState()
         {

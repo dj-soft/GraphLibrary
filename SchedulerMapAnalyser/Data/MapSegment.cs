@@ -457,7 +457,7 @@ namespace DjSoft.SchedulerMap.Analyser
                 bool hasNextItem = TryGetMapItem(nextId, out var nextItem);
                 if (hasPrevItem && hasNextItem)
                 {
-                    mapLink = new MapLink(prevItem, nextItem);
+                    mapLink = new MapLink(linkId, prevItem, nextItem);
                     MapLinks.Add(linkId, mapLink);
                 }
             }
@@ -476,7 +476,7 @@ namespace DjSoft.SchedulerMap.Analyser
             var linkId = ConvertPairIdToLinkId(prevItem.ItemId, nextItem.ItemId);
             if (!MapLinks.TryGetValue(linkId, out var mapLink))
             {
-                mapLink = new MapLink(prevItem, nextItem);
+                mapLink = new MapLink(linkId, prevItem, nextItem);
                 MapLinks.Add(linkId, mapLink);
             }
             return mapLink;
@@ -959,8 +959,9 @@ namespace DjSoft.SchedulerMap.Analyser
     #region class MapLink
     public class MapLink
     {
-        public MapLink(MapItem prevItem, MapItem nextItem)
+        public MapLink(long linkId, MapItem prevItem, MapItem nextItem)
         {
+            this.LinkId = linkId;
             this.PrevItem = prevItem;
             this.NextItem = nextItem;
         }
@@ -968,6 +969,7 @@ namespace DjSoft.SchedulerMap.Analyser
         {
             return $"Prev: {PrevItem.TextShort} => Next: {NextItem.TextShort}";
         }
+        public readonly long LinkId;
         public readonly MapItem PrevItem;
         public readonly MapItem NextItem;
         /// <summary>
