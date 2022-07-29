@@ -41,7 +41,9 @@ namespace DjSoft.SchedulerMap.Analyser
         }
         private MapSegment _MapSegment;
         protected void InvalidateData()
-        { }
+        {
+
+        }
         protected void CheckData()
         { }
 
@@ -348,6 +350,7 @@ namespace DjSoft.SchedulerMap.Analyser
             foreach (var item in VisibleItems)
                 item.OnPaint(e);
         }
+        #region Typy objektů, barvy a Tvary
         /// <summary>
         /// Vrátí typ objektu pro daný objekt. Typ objektu deklaruje barvy a tvary.
         /// </summary>
@@ -409,6 +412,59 @@ namespace DjSoft.SchedulerMap.Analyser
             }
             return Color.FromArgb(255, 216, 216, 216);
         }
+        /// <summary>
+        /// Metoda vrátí definici tvaru pro prvek daného typu.
+        /// </summary>
+        /// <param name="visualType"></param>
+        /// <returns></returns>
+        internal VisualShape GetVisualObjectShape(VisualObjectType visualType)
+        {
+            switch (visualType)
+            {
+                case VisualObjectType.IncrementByRealSupplierOrder: 
+                case VisualObjectType.IncrementByPlanSupplierOrder: 
+                case VisualObjectType.IncrementByProposalReceipt: return ShapeRight;
+                case VisualObjectType.DecrementByProposalRequisition: return ShapeDown; 
+                case VisualObjectType.IncrementByPlanStockTransfer: return ShapeUp;
+                case VisualObjectType.DecrementByRealComponent: 
+                case VisualObjectType.DecrementByPlanComponent: return ShapeDownHalf;
+                case VisualObjectType.IncrementByRealByProductSuitable: 
+                case VisualObjectType.IncrementByPlanByProductSuitable: return ShapeUpHalf;
+                case VisualObjectType.IncrementByRealByProductDissonant: 
+                case VisualObjectType.IncrementByPlanByProductDissonant: return ShapeUpHalf;
+                case VisualObjectType.OperationPlan: 
+                case VisualObjectType.OperationReal: return ShapeTask;
+                case VisualObjectType.IncrementByRealProductOrder: 
+                case VisualObjectType.IncrementByPlanProductOrder: return ShapeUpWide;
+                case VisualObjectType.DecrementByRealEnquiry: 
+                case VisualObjectType.DecrementByPlanEnquiry: return ShapeLeft;
+            }
+            return ShapeBasic;
+        }
+        private VisualShape ShapeBasic { get { return GetCreate(ref _ShapeBasic, () => new int[] { 0, 0, 0, 0, 0, 0 }); } } private VisualShape _ShapeBasic;
+        private VisualShape ShapeRight { get { return GetCreate(ref _ShapeRight, () => new int[] { 0, 0, 0, 6, 0, 6 }); } } private VisualShape _ShapeRight;
+        private VisualShape ShapeLeft { get { return GetCreate(ref _ShapeLeft, () => new int[] { 6, 0, 6, 0, 0, 0 }); } } private VisualShape _ShapeLeft;
+        private VisualShape ShapeDown { get { return GetCreate(ref _ShapeDown, () => new int[] { 0, 3, 6, 6, 3, 0 }); } } private VisualShape _ShapeDown;
+        private VisualShape ShapeUp { get { return GetCreate(ref _ShapeUp, () => new int[] { 6, 3, 0, 0, 3, 6 }); } } private VisualShape _ShapeUp;
+        private VisualShape ShapeDownHalf { get { return GetCreate(ref _ShapeDownHalf, () => new int[] { 0, 0, 3, 3, 0, 0 }); } } private VisualShape _ShapeDownHalf;
+        private VisualShape ShapeUpHalf { get { return GetCreate(ref _ShapeUpHalf, () => new int[] { 3, 0, 0, 0, 0, 3 }); } } private VisualShape _ShapeUpHalf;
+        private VisualShape ShapeTask { get { return GetCreate(ref _ShapeTask, () => new int[] { 0, 6, 0, 6, 0, 6 }); } } private VisualShape _ShapeTask;
+        private VisualShape ShapeUpWide { get { return GetCreate(ref _ShapeUpWide, () => new int[] { 6, 0, 0, 0, 0, 6 }); } } private VisualShape _ShapeUpWide;
+        private VisualShape ShapeDownWide { get { return GetCreate(ref _ShapeDownWide, () => new int[] { 0, 0, 6, 6, 0, 0 }); } } private VisualShape _ShapeDownWide;
+
+        private VisualShape GetCreate(ref VisualShape shape, Func<int[]> creator)
+        {
+            if (shape is null)
+                shape = new VisualShape(creator());
+            return shape;
+        }
+        private VisualShape GetCreate(ref VisualShape shape, Func<VisualShape> creator)
+        {
+            if (shape is null)
+                shape = creator();
+            return shape;
+        }
+        #endregion
     }
     internal enum VisualObjectType
     {
@@ -448,19 +504,18 @@ namespace DjSoft.SchedulerMap.Analyser
             var bounds = visualItem.CurrentBounds;
             GraphicsPathSet set = new GraphicsPathSet(bounds);
 
+            var visualShape = visualItem.VisualShape;
+
             var outlineColor = visualItem.CurrentOutlineColor;
             if (outlineColor.HasValue)
             {
                 set.OutlineBrush = new SolidBrush(outlineColor.Value);
-                set.OutlinePath = new GraphicsPath();
-                set.OutlinePath.AddRectangle(bounds);
+                set.OutlinePath = visualShape.CreateGraphicsPath(bounds, 0f);
             }
 
-            var backgroundColor = visualItem.BackColor; // Color.FromArgb(200, 200, 218);
+            var backgroundColor = visualItem.BackColor;
             set.BackgroundBrush = new SolidBrush(backgroundColor);
-            set.BackgroundPath = new GraphicsPath();
-            Rectangle backgroundBounds = new Rectangle(bounds.X + 3, bounds.Y + 3, bounds.Width - 6, bounds.Height - 6);
-            set.BackgroundPath.AddRectangle(backgroundBounds);
+            set.BackgroundPath = visualShape.CreateGraphicsPath(bounds, 3f);
 
             return set;
         }
@@ -495,6 +550,10 @@ namespace DjSoft.SchedulerMap.Analyser
         /// </summary>
         public GraphicsPath OutlinePath { get; set; }
         /// <summary>
+        /// true pokud máme Outline
+        /// </summary>
+        public bool HasOutline { get { return (OutlineBrush != null && OutlinePath != null); } }
+        /// <summary>
         /// Barva pro vykreslení pozadí prvku.
         /// Kreslí se jako druhá.
         /// </summary>
@@ -505,6 +564,10 @@ namespace DjSoft.SchedulerMap.Analyser
         /// </summary>
         public GraphicsPath BackgroundPath { get; set; }
         /// <summary>
+        /// true pokud máme Background
+        /// </summary>
+        public bool HasBackground { get { return (BackgroundBrush != null && BackgroundPath != null); } }
+        /// <summary>
         /// Barva pro vykreslení okrajů vnějších a vnitřních předělů, barva okraje.
         /// Kreslí se jako třetí.
         /// </summary>
@@ -514,6 +577,10 @@ namespace DjSoft.SchedulerMap.Analyser
         /// Kreslí se jako třetí.
         /// </summary>
         public GraphicsPath BorderPath { get; set; }
+        /// <summary>
+        /// true pokud máme Border
+        /// </summary>
+        public bool HasBorder { get { return (BorderBrush != null && BorderPath != null); } }
         /// <summary>
         /// Dispose setu
         /// </summary>
@@ -535,6 +602,61 @@ namespace DjSoft.SchedulerMap.Analyser
         }
     }
     #endregion
+    internal class VisualShape
+    {
+        /// <summary>
+        /// Konstruktor
+        /// <para/>
+        /// Metoda dostává šest hodnot, které vyjadřují relativní posun šesti bodů ve směru osy X, ve směru od okraje prostoru prvku směrem dovnitř. Hodnoty by tedy měly být nula nebo kladné.<br/>
+        /// <u>Postupně se jedná o body:</u><br/>
+        /// [0] = vlevo nahoře; [1] = vlevo uprostřed; [2] = vlevo dole;<br/>
+        /// [3] = vpravo dole; [4] = vpravo uprostřed; [5] = vpravo nahoře;<br/>
+        /// <u>Hodnota pro jednotlivý bod:</u><br/>
+        /// Nula = bod se nachází na hraně přiděleného prostoru<br/>
+        /// Kladná hodnota = bod se blíží směrem ke středu na ose X v prostoru prvku<br/>
+        /// Doporučené hodnoty: 0, 2, 3, 6
+        /// <para/>
+        /// Například pole bodů { 0, 0, 0, 0, 0, 0 } vygeneruje běžný obdélník v celé ploše;<br/>
+        /// Například pole bodů { 3, 0, 3, 3, 0, 3 } vygeneruje obdobu klasického šestiúhelníku;<br/>
+        /// Například pole bodů { 6, 0, 0, 0, 0, 6 } vygeneruje obdobu domečku;<br/>
+        /// Například pole bodů { 0, 6, 0, 6, 0, 6 } vygeneruje obdobu segment BreadCrumbu (pásová šipka ukazující doprava), vhodné pro Operaci výroby;<br/>
+        /// </summary>
+        /// <param name="pointsX"></param>
+        public VisualShape(int[] pointsX)
+        {
+            _PointsX = pointsX;
+        }
+        private int[] _PointsX;
+
+        public GraphicsPath CreateGraphicsPath(RectangleF bounds, float margin)
+        {
+            if (_PointsX is null || _PointsX.Length < 6)
+                throw new InvalidOperationException("VisualShape.CreateGraphicsPath() error: PointsX is invalid.");
+
+            float module = bounds.Height / 30f;            // velikost jednotky v PointsX: při výšce 60px je jednotka 2px, hodnota 3 odpovídá 6px, hodnota 6 = 12px, což v grafickém editoru vypadá přiměřeně.
+            float l = bounds.X + margin;
+            float r = bounds.Right - margin;
+            float t = bounds.Y + margin;
+            float c = bounds.Y + bounds.Height / 2f;
+            float b = bounds.Bottom - margin;
+            if ((r - l) <= 12f || (b - t) <= 6f) return null;
+
+            GraphicsPath path = new GraphicsPath();
+            path.AddPolygon(new PointF[]
+            {
+                new PointF(l + module * (float)_PointsX[0], t),
+                new PointF(l + module * (float)_PointsX[1], c),
+                new PointF(l + module * (float)_PointsX[2], b),
+                new PointF(r - module * (float)_PointsX[3], b),
+                new PointF(r - module * (float)_PointsX[4], c),
+                new PointF(r - module * (float)_PointsX[5], t),
+                new PointF(l + module * (float)_PointsX[0], t),
+            });
+            path.CloseFigure();
+            return path;
+        }
+    }
+
     #region class VisualItem : Prvek mapy umístěný ve virtuálním prostoru
     internal class VisualItem : VirtualItemBase, IVisualItem
     {
@@ -553,7 +675,9 @@ namespace DjSoft.SchedulerMap.Analyser
         }
         protected VisualiserControl Visualiser { get; private set; }
         protected MapItem MapItem { get; private set; }
-
+        /// <summary>
+        /// Typ tvaru
+        /// </summary>
         public VisualObjectType VisualType
         {
             get
@@ -564,19 +688,25 @@ namespace DjSoft.SchedulerMap.Analyser
             }
         }
         private VisualObjectType? _VisualType;
+        /// <summary>
+        /// Barva pozadí
+        /// </summary>
         public Color BackColor { get { return Visualiser.GetVisualObjectBackColor(this.VisualType); } }
+        /// <summary>
+        /// Definice vizuálního tvaru
+        /// </summary>
+        public VisualShape VisualShape { get { return Visualiser.GetVisualObjectShape(this.VisualType); } }
 
         public void OnPaint(PaintEventArgs e)
         {
             using (var pathSet = MapItemPainter.CreateGraphicsPaths(this))
             {
                 // Barvy a tvary pozadí a okrajů:
-                if (pathSet.OutlineBrush != null) e.Graphics.FillPath(pathSet.OutlineBrush, pathSet.OutlinePath);
-                if (pathSet.BackgroundBrush != null) e.Graphics.FillPath(pathSet.BackgroundBrush, pathSet.BackgroundPath);
-                if (pathSet.BorderBrush != null) e.Graphics.FillPath(pathSet.BorderBrush, pathSet.BorderPath);
+                e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
 
-
-
+                if (pathSet.HasOutline) e.Graphics.FillPath(pathSet.OutlineBrush, pathSet.OutlinePath);
+                if (pathSet.HasBackground) e.Graphics.FillPath(pathSet.BackgroundBrush, pathSet.BackgroundPath);
+                if (pathSet.HasBorder) e.Graphics.FillPath(pathSet.BorderBrush, pathSet.BorderPath);
             }
         }
         bool IVisualItem.IsActiveOnCurrentPoint(Point currentPoint)

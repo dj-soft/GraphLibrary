@@ -914,6 +914,12 @@ namespace DjSoft.SchedulerMap.Analyser
             return sequence;
         }
         #endregion
+        #region Podpora pro vizualizaci
+        /// <summary>
+        /// Vizuální prvek
+        /// </summary>
+        internal VisualItem VisualItem { get; set; }
+        #endregion
         #region Modifikace
         /// <summary>
         /// Přidá dané ID do pole Prev
