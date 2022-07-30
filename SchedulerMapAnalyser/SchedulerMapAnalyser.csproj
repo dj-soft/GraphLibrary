@@ -53,6 +53,7 @@
     <Compile Include="Components\VirtualSpace.cs">
       <SubType>Component</SubType>
     </Compile>
+    <Compile Include="Data\Cells.cs" />
     <Compile Include="Data\Testy.cs" />
     <Compile Include="MainForm.cs">
       <SubType>Form</SubType>

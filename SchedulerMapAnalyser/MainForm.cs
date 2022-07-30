@@ -209,7 +209,7 @@ namespace DjSoft.SchedulerMap.Analyser
         {
             ShowButtonsByState(ActionType.ActiveVisualiser);
             _VisualiserPanel.MapSegment = this.ValidMapSegment;      // Získám validní segment pro aktuální soubor a předvolby, nemusí v něm ale být dosud načtena jeho data
-            _VisualiserPanel.ActivateMapItem(null);
+            _VisualiserPanel.ActivateMapItem();
         }
         #endregion
         #region Řízení GUI

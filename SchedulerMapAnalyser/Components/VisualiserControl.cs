@@ -43,7 +43,8 @@ namespace DjSoft.SchedulerMap.Analyser
         private MapSegment _MapSegment;
         protected void InvalidateData()
         {
-
+            _VisualItems.Clear();
+            RefreshContent();
         }
         protected void CheckData()
         { }
@@ -302,8 +303,8 @@ namespace DjSoft.SchedulerMap.Analyser
         /// </summary>
         protected void CoordInit()
         {
-            _CellBounds = new RectangleF(5f, 5f, 90f, 60f);
-            _CellArray = new SortedList<int, SortedList<int, VisualItem>>();
+            _CellBounds = new RectangleF(5f, 5f, 120f, 60f);
+            _Cells = new Cells();
             
         }
         /// <summary>
@@ -344,17 +345,22 @@ namespace DjSoft.SchedulerMap.Analyser
         /// </summary>
         private void RecalculateVirtualBounds()
         { }
-        SortedList<int, SortedList<int, VisualItem>> _CellArray;
+        private Cells _Cells;
 
         #endregion
 
-
-        public void ActivateMapItem(int? itemId)
+        /// <summary>
+        /// Metoda aktivuje Vizualizer, 
+        /// a jakmile bude mít k dispozici načtená data <see cref="MapSegment"/>, pak do vizualizeru aktivuje požadované prvky, 
+        /// které dodá selector <paramref name="initialItemsSelector"/>. Pokud není dodán Selector pak aktivuje prvních 100 z FirstItems.
+        /// </summary>
+        /// <param name="initialItemsSelector">Funkce, je volaná po načtení dat do segmentu</param>
+        public void ActivateMapItem(Func<MapSegment, IEnumerable<MapItem>> initialItemsSelector = null)
         {
             if (_MapSegment is null) return;
             _VisualItemsClear();
 
-            _ActiveItemId = itemId;
+            _InitialItemsSelector = initialItemsSelector;
             if (!(_MapSegment.IsLoaded || _MapSegment.IsLoading))
             {
                 Task.Factory.StartNew(_LoadMapSegment);
@@ -363,8 +369,11 @@ namespace DjSoft.SchedulerMap.Analyser
             {
                 _ActivateMapItem();
             }
-
         }
+        /// <summary>
+        /// Selector, který má najít první prvky k zobrazení.
+        /// </summary>
+        private Func<MapSegment, IEnumerable<MapItem>> _InitialItemsSelector;
         /// <summary>
         /// Vyprázdní obsah <see cref="_VisualItems"/>, včetně Dispose prvků
         /// </summary>
@@ -373,9 +382,8 @@ namespace DjSoft.SchedulerMap.Analyser
             foreach (var i in _VisualItems.Values) i.Dispose();
             _VisualItems.Clear();
         }
-        private int? _ActiveItemId;
         private void _LoadMapSegment()
-        {
+        {   // Běží v pracovním threadu na pozadí!
             _MapSegment.LoadData();
             _ActivateMapItem();
         }
@@ -388,29 +396,57 @@ namespace DjSoft.SchedulerMap.Analyser
         }
         private void _ActivateMapItemGui()
         {
-            var itemId = _ActiveItemId;
+            MapItem[] visualItems = _GetInitialItems();
+            if (visualItems is null || visualItems.Length == 0) return;
 
-            if (_MapSegment != null && _MapSegment.ItemsCount > 0)
+            var raster = _CellBounds;
+
+            float x = raster.Right;
+            float y = raster.Bottom;
+            foreach (var mapItem in visualItems)
             {
-                float x = 60f;
-                float y = 35f;
-                foreach (var mapItem in _MapSegment.Items)
+                if (_VisualItems.ContainsKey(mapItem.ItemId)) continue;
+                var itemSize = MapItemPainter.GetVirtualSize(mapItem, raster.Size);
+                var visualItem = new VisualItem(this, mapItem, new PointF(x, y), itemSize);
+                _VisualItems.Add(mapItem.ItemId, visualItem);
+                y += raster.Bottom;
+                if (y > 1100f)
                 {
-                    if (_VisualItems.Count > 5000) break;
-
-                    var itemSize = MapItemPainter.GetVirtualSize(mapItem);
-                    var visualItem = new VisualItem(this, mapItem, new PointF(x, y), itemSize);
-                    _VisualItems.Add(mapItem.ItemId, visualItem);
-                    y += 80f;
-                    if (y > 1100)
-                    {
-                        x += 85f;
-                        y = 35f;
-                    }
+                    x += raster.Right;
+                    y = raster.Bottom;
                 }
-                RefreshContent();
+                if (_VisualItems.Count >= 5000) break;
             }
+            RefreshContent();
         }
+        /// <summary>
+        /// Metoda získá seznam prvků, které mají být zobrazeny jako výchozí.
+        /// Pro jejich získání použije funkci uloženou v <see cref="_InitialItemsSelector"/>, defaultně vezme FirstItems, nanejvýše 100 prvků.
+        /// </summary>
+        /// <returns></returns>
+        private MapItem[] _GetInitialItems()
+        {
+            var mapSegment = this._MapSegment;
+            if (mapSegment is null || mapSegment.ItemsCount == 0) return null;
+
+            var initialItemsSelector = _InitialItemsSelector;
+            MapItem[] visualItems = null;
+            if (initialItemsSelector != null)
+            {
+                var selectedItems = initialItemsSelector(mapSegment);
+                if (selectedItems != null)
+                    visualItems = selectedItems.ToArray();
+            }
+            if (visualItems is null || visualItems.Length == 0)
+            {
+                visualItems = mapSegment.FirstItems;
+                if (visualItems.Length > 100)
+                    visualItems = visualItems.Take(100).ToArray();
+            }
+            _InitialItemsSelector = null;
+            return visualItems;
+        }
+
         protected override void OnPaint(PaintEventArgs e)
         {
             base.OnPaint(e);
@@ -632,9 +668,9 @@ namespace DjSoft.SchedulerMap.Analyser
         /// </summary>
         /// <param name="mapItem"></param>
         /// <returns></returns>
-        internal static SizeF GetVirtualSize(MapItem mapItem)
+        internal static SizeF GetVirtualSize(MapItem mapItem, SizeF rasterSize)
         {
-            return new SizeF(80f, 60f);
+            return rasterSize;
         }
 
         internal static GraphicsPathSet CreateGraphicsPaths(VisualItem visualItem)
@@ -919,15 +955,16 @@ namespace DjSoft.SchedulerMap.Analyser
         public MapItem MapItem { get; private set; }
         /// <summary>
         /// Adresa buňky ve formě Point (X, Y). 
-        /// Adresu setuje koordinátor, který udržuje vizuální mapu objektů. Adresu může kdykoliv změnit.
-        /// Přepočet do virtuální souřadnice provádí metoda <see cref="VisualiserControl.GetVirtualCenter(Point)"/>
+        /// Adresu setuje koordinátor <see cref="Cells"/>, který udržuje vizuální mapu objektů. Adresu může kdykoliv změnit.
+        /// Přepočet do virtuální souřadnice provádí metoda <see cref="VisualiserControl.GetVirtualCenter(Point)"/>, kterou toto setování vyvolá. 
+        /// Setování dále vyvolá invalidaci controlu pro jeho překreslení.
         /// </summary>
-        public Point Cell
+        public Point Coordinate
         {
-            get { return _Cell; }
-            set { _Cell = value; Center = Visualiser.GetVirtualCenter(value); }
+            get { return _Coordinate; }
+            set { _Coordinate = value; Center = Visualiser.GetVirtualCenter(value); this.InvalidateControl(); }
         }
-        private Point _Cell;
+        private Point _Coordinate;
         /// <summary>
         /// Virtuální střed objektu. Lze přemístit jinam.
         /// </summary>
