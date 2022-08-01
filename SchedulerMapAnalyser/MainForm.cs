@@ -140,6 +140,7 @@ namespace DjSoft.SchedulerMap.Analyser
             {
                 var machineName = System.Environment.MachineName;
                 if (machineName == "PC-D") return @"D:\Asol\SchedulerMaps\MapAx12702.csv";
+                if (machineName == "JANACEKDA-PC2") return @"d:\DavidPrac\TraceVisualiser\Brano\2022-07-20 Scheduler\Map.csv";
                 return "";
             }
         }

@@ -118,7 +118,6 @@ namespace DjSoft.SchedulerMap.Analyser
         }
         #endregion
     }
-
     /// <summary>
     /// Virtuální prostor - výpočetní mechanismus pro oboustranný přepočet Virtuální - Fyzická souřadnice;
     /// včetně jeho řízení pomocí myši
@@ -176,6 +175,7 @@ namespace DjSoft.SchedulerMap.Analyser
         {
             _Zoom = 1d;
             _ZoomF = 1f;
+            _CurrentZeroMouseShift = 30;
             _ZoomMouseStep = 5d;
             _CurrentZeroX = 0f;
             _CurrentZeroY = 0f;
@@ -248,10 +248,11 @@ namespace DjSoft.SchedulerMap.Analyser
             CoordinateChanged?.Invoke(this, EventArgs.Empty);
         }
         protected virtual void OnCoordinateChanged() { }
+        /// <summary>
+        /// Událost, kterou <see cref="VirtualSpace"/> vyvolá po každé změně souřadného systému = po změně <see cref="Zoom"/> i po změně koordinátů 
+        /// </summary>
         public event EventHandler CoordinateChanged;
 
-        private float _CurrentZeroX;
-        private float _CurrentZeroY;
         #endregion
         #region Určení fyzických souřadnic v rámci prostoru Ownera včetně průniku a viditelnosti
         /// <summary>
@@ -283,7 +284,50 @@ namespace DjSoft.SchedulerMap.Analyser
             return Rectangle.Round(GetCurrentRectangle(virtualBounds.RectangleF));
         }
         #endregion
-        #region Zoom
+        #region Souřadnice počátku
+        /// <summary>
+        /// Souřadnice počátku = toho bodu, kde je na viditelném controlu zobrazována virtuální souřadnice { 0/0 }.
+        /// Pokud máme dán virtuální bod { X=20, Y=10 } a <see cref="Zoom"/> = 2.0f, a <see cref="CurrentZero"/> = { X=50, Y=16 };
+        /// pak tento bod bude promítnut do viditelného controlu do jeho souřadnice: { X = (50 + 2.0f * 20) = 90px, Y = (16 + 2.0f * 10) = 36px }.
+        /// </summary>
+        public PointF CurrentZero 
+        {
+            get { return new PointF(_CurrentZeroX, _CurrentZeroY); }
+            set 
+            {
+                if (_CurrentZeroX == value.X && _CurrentZeroY == value.Y) return;
+                _CurrentZeroX = value.X;
+                _CurrentZeroY = value.Y;
+                _RunCoordinateChanged();
+            }
+        }
+        /// <summary>
+        /// Krok posunu pomocí kolečka myši, ve fyzických pixelech.
+        /// Výchozí hodnota = 30; přípustný rozsah hodnot: 10 až 400.
+        /// </summary>
+        public int CurrentZeroMouseShift
+        {
+            get { return _CurrentZeroMouseShift; }
+            set { _CurrentZeroMouseShift = Align(value, 10, 400); }
+        }
+        /// <summary>
+        /// Krok posunu pomocí kolečka myši, ve fyzických pixelech
+        /// </summary>
+        private int _CurrentZeroMouseShift;
+        /// <summary>
+        /// Fyzické (pixelové) souřadnice toho bodu, kde je na viditelném controlu zobrazována virtuální souřadnice { 0/0 }, v ose X.
+        /// Pokud máme dán virtuální bod { X=20, Y=10 } a <see cref="Zoom"/> = 2.0f, a <see cref="_CurrentZeroX"/> = 50;
+        /// pak tento bod bude promítnut do viditelného controlu do jeho souřadnice: (50 + 2.0f * 20) = 90px.
+        /// </summary>
+        private float _CurrentZeroX;
+        /// <summary>
+        /// Fyzické (pixelové) souřadnice toho bodu, kde je na viditelném controlu zobrazována virtuální souřadnice { 0/0 }, v ose Y.
+        /// Pokud máme dán virtuální bod { X=20, Y=10 } a <see cref="Zoom"/> = 2.0f, a <see cref="_CurrentZeroY"/> = 16;
+        /// pak tento bod bude promítnut do viditelného controlu do jeho souřadnice: (16 + 2.0f * 10) = 36px.
+        /// </summary>
+        private float _CurrentZeroY;
+        #endregion
+        #region Zoom nativní i lineární
         /// <summary>
         /// Aktuální Zoom, výchozí = 1f. Nikdy není nula ani záporné. <br/>
         /// Menší hodnota = menší objekty, např. <see cref="Zoom"/> = 0.5f způsobí, že objekt s virtuální šířkou 100 bude mít vizuální šířku 50px.<br/>
@@ -560,7 +604,9 @@ Linear	Log
         private void _MouseWheel(object sender, MouseEventArgs e)
         {
             if (Control.ModifierKeys == Keys.Control || Control.ModifierKeys == Keys.Alt)
-                MouseWheel(e.Location, e.Delta);
+                MouseWheelZoom(e.Location, e.Delta);
+            else
+                MouseWheelMove(e.Location, e.Delta);
         }
         #endregion
         #region Přesouvání prostoru pomocí myši
@@ -603,7 +649,6 @@ Linear	Log
         /// Proběhne při ukončení procesu Drag poté, kdy byl zahájen
         /// </summary>
         public event EventHandler MouseDragEnd;
-
         /// <summary>
         /// Akce: uživatel zmáčkl levou myš při klávese Alt: mohl by začít přetahovat prostor
         /// </summary>
@@ -669,7 +714,7 @@ Linear	Log
         /// </summary>
         /// <param name="currentPoint"></param>
         /// <param name="delta"></param>
-        private void MouseWheel(Point currentPoint, int delta)
+        private void MouseWheelZoom(Point currentPoint, int delta)
         {
             double oldZoomNative = this.Zoom;
             double zoomStep = this.ZoomMouseStep;
@@ -679,6 +724,17 @@ Linear	Log
             if (newZoomNative == oldZoomNative) return;
 
             this._SetZoom(currentPoint, newZoomNative, true);
+        }
+        /// <summary>
+        /// Měli bychom měnit pozici souřadného systému podle otáčení kolečkem myši, nad daným bodem v daném směru
+        /// </summary>
+        /// <param name="currentPoint"></param>
+        /// <param name="delta"></param>
+        private void MouseWheelMove(Point currentPoint, int delta)
+        {
+            float step = (delta < 0 ? -_CurrentZeroMouseShift : _CurrentZeroMouseShift);
+            _CurrentZeroY = _CurrentZeroY + step;
+            _RunCoordinateChanged();
         }
         /// <summary>
         /// Bod kde byla stisknuta myš. 
