@@ -110,11 +110,50 @@ namespace DjSoft.SchedulerMap.Analyser
         /// <returns></returns>
         public static float GetOutlineMargin(float zoom)
         {
-            if (zoom < 0.25f) return 1f;
-            if (zoom < 0.80f) return 2f;
-            if (zoom < 3.0f) return 3f;
-            if (zoom < 9.0f) return 4f;
-            return 5f;
+            if (zoom < 0.50f) return 1f;
+            if (zoom < 1.25f) return 2f;
+            if (zoom < 3.125f) return 3f;
+            if (zoom < 7.812f) return 4f;
+            if (zoom < 19.53f) return 5f;
+            if (zoom < 48.83) return 6f;
+            return 7f;
+        }
+        /// <summary>
+        /// Vrátí velikost okraje Border pro daný zoom. 
+        /// Outline margin je logaritmický, pro malé Zoom je 1px, pro zoom 1 je 2px, pro velké Zoomy 4px.
+        /// </summary>
+        /// <param name="zoom">Logaritmický Zoom v rozsahu 0.01 - 100</param>
+        /// <returns></returns>
+        public static float GetBorderMargin(float zoom)
+        {
+            if (zoom < 0.40f) return 1f;
+            if (zoom < 1.00f) return 2f;
+            if (zoom < 2.50f) return 3f;
+            if (zoom < 6.25f) return 4f;
+            if (zoom < 15.65f) return 5f;
+            if (zoom < 39.0) return 6f;
+            if (zoom < 95.0) return 7f;
+            return 8f;
+        }
+        /// <summary>
+        /// Vrátí velikost písma pro daný zoom. 
+        /// Outline margin je logaritmický, pro malé Zoom je 1px, pro zoom 1 je 2px, pro velké Zoomy 4px.
+        /// </summary>
+        /// <param name="zoom">Logaritmický Zoom v rozsahu 0.01 - 100</param>
+        /// <returns></returns>
+        public static float GetFontSizeEm(float zoom)
+        {
+            if (zoom < 0.40f) return 6.5f;
+            if (zoom < 1.00f) return 7.8f;
+            if (zoom < 2.50f) return 9.5f;
+            if (zoom < 6.25f) return 11.0f;
+            if (zoom < 9.75f) return 12.0f;
+            if (zoom < 15.65f) return 13.5f;
+            if (zoom < 22.0f) return 14.5f;
+            if (zoom < 39.0) return 16f;
+            if (zoom < 62.0) return 17f;
+            if (zoom < 95.0) return 18f;
+            return 20f;
         }
         #endregion
     }

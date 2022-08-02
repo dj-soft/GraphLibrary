@@ -963,24 +963,47 @@ namespace DjSoft.SchedulerMap.Analyser
     /// </summary>
     internal enum MapItemType : int
     {
-        None,
-        IncrementByRealSupplierOrder,
-        IncrementByPlanSupplierOrder,
-        IncrementByProposalReceipt,
-        DecrementByProposalRequisition,
-        IncrementByPlanStockTransfer,
-        DecrementByRealComponent,
-        DecrementByPlanComponent,
+        /// <summary>0: Není určeno</summary>
+        None = 0,
+        /// <summary>1: Toto není změna</summary>
+        NotChange = 1,
+        /// <summary>2: Zvýšení zásoby příjmem z existující objednávky od dodavatele</summary>
+        IncrementByRealSupplierOrder = 2,
+        /// <summary>3: Zvýšení zásoby příjmem z návrhu objednávky od dodavatele</summary>
+        IncrementByPlanSupplierOrder = 3,
+        /// <summary>4: Zvýšení zásoby příjmem z existujícího výrobního příkazu</summary>
+        IncrementByRealProductOrder = 4,
+        /// <summary>5: Zvýšení zásoby příjmem z návrhu výrobního příkazu</summary>
+        IncrementByPlanProductOrder = 5,
+        /// <summary>6: Zvýšení zásoby příjmem z vedlejšího produktu existujícího výrobního příkazu, použitelný materiál/polotovar</summary>
+        IncrementByRealByProductSuitable = 6,
+        /// <summary>7: Zvýšení zásoby příjmem z vedlejšího produktu návrhu výrobního příkazu, použitelný materiál/polotovar</summary>
+        IncrementByPlanByProductSuitable = 7,
+        /// <summary>8: Zvýšení zásoby příjmem z vedlejšího produktu existujícího výrobního příkazu, nepoužitelný materiál/polotovar</summary>
+        IncrementByRealByProductDissonant = 8,
+        /// <summary>9: Zvýšení zásoby příjmem z vedlejšího produktu návrhu výrobního příkazu, nepoužitelný materiál/polotovar</summary>
+        IncrementByPlanByProductDissonant = 9,
+        /// <summary>10: Zvýšení návrhem na příjem (obecný, který se má specifikovat na hodnotu: IncrementByPlanProductOrder nebo IncrementByPlanOrder nebo IncrementByPlanStockTransfer)</summary>
+        IncrementByProposalReceipt = 10,
+        /// <summary>11: Snížení zásoby výdejem do reálné poptávky</summary>
+        DecrementByRealEnquiry = 11,
+        /// <summary>12: Snížení zásoby výdejem do plánované poptávky (obchodní plán)</summary>
+        DecrementByPlanEnquiry = 12,
+        /// <summary>13: Snížení zásoby výdejem do komponenty reálného výrobního příkazu</summary>
+        DecrementByRealComponent = 13,
+        /// <summary>14: Snížení zásoby výdejem do komponenty plánovaného výrobního příkazu</summary>
+        DecrementByPlanComponent = 14,
+        /// <summary>15: Snížení zásoby návrhem na výdej do jiného skladu</summary>
+        DecrementByProposalRequisition = 15,
+        /// <summary>16: Příjem ze skladové objednávky, zajištěné vlastní výrobou</summary>
+        IncrementByOrderProduction = 16,
+        /// <summary>17: Příjem z návrhu převodu z jiného skladu</summary>
+        IncrementByPlanStockTransfer = 17,
+
+        /// <summary>Operace Výrobního příkazu</summary>
         OperationReal,
-        OperationPlan,
-        IncrementByRealByProductSuitable,
-        IncrementByPlanByProductSuitable,
-        IncrementByRealByProductDissonant,
-        IncrementByPlanByProductDissonant,
-        IncrementByRealProductOrder,
-        IncrementByPlanProductOrder,
-        DecrementByRealEnquiry,
-        DecrementByPlanEnquiry
+        /// <summary>Operace Návrhu výrobního příkazu</summary>
+        OperationPlan
     }
     #endregion
     #region class MapLink

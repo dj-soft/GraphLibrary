@@ -14,6 +14,7 @@ namespace DjSoft.SchedulerMap.Analyser
     /// </summary>
     public class VisualiserControl : VirtualControl
     {
+        #region Konstruktor a Dispose
         public VisualiserControl()
         {
             ControlInit();
@@ -28,8 +29,10 @@ namespace DjSoft.SchedulerMap.Analyser
         }
         protected override void Dispose(bool disposing)
         {
+            this.DisposePainters();
             base.Dispose(disposing);
         }
+        #endregion
         #region Data
         protected void DataInit()
         {
@@ -348,7 +351,7 @@ namespace DjSoft.SchedulerMap.Analyser
         private Cells _Cells;
 
         #endregion
-
+        #region Načítání dat a úvodní rozsvícení prvků
         /// <summary>
         /// Metoda aktivuje Vizualizer, 
         /// a jakmile bude mít k dispozici načtená data <see cref="MapSegment"/>, pak do vizualizeru aktivuje požadované prvky, 
@@ -446,78 +449,177 @@ namespace DjSoft.SchedulerMap.Analyser
             _InitialItemsSelector = null;
             return visualItems;
         }
-
+        #endregion
+        #region Kreslení a podpora pro něj
         protected override void OnPaint(PaintEventArgs e)
         {
             base.OnPaint(e);
 
+            // Kreslení vztahů těch prvků, které jsou vidět:
             Dictionary<long, MapLink> paintedLinks = new Dictionary<long, MapLink>();
             e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
             foreach (var item in VisibleItems)
                 item.OnPaintLinks(e, paintedLinks);
 
+            // Kreslení prvků:
             foreach (var item in VisibleItems)
                 item.OnPaintItem(e);
+
+            // Kreslení overlaye:
+
         }
-        #region Typy objektů, barvy a Tvary
         /// <summary>
-        /// Vrátí typ objektu pro daný objekt. Typ objektu deklaruje barvy a tvary.
+        /// Podejte mi obyčejný štětec dané barvy!
+        /// Štětec nezahazujme, bude se hodit někomu dalšímu.
         /// </summary>
-        /// <param name="mapItem"></param>
+        /// <param name="color"></param>
         /// <returns></returns>
-        internal VisualObjectType GetVisualObjectType(MapItem mapItem)
+        public Brush GetStandardBrush(Color color)
         {
-            var type = mapItem.Type;
-            switch (type)
-            {
-                case "IncrementByRealSupplierOrder": return VisualObjectType.IncrementByRealSupplierOrder;
-                case "IncrementByPlanSupplierOrder": return VisualObjectType.IncrementByPlanSupplierOrder;
-                case "IncrementByProposalReceipt": return VisualObjectType.IncrementByProposalReceipt;
-                case "DecrementByProposalRequisition": return VisualObjectType.DecrementByProposalRequisition;
-                case "IncrementByPlanStockTransfer": return VisualObjectType.IncrementByPlanStockTransfer;
-                case "DecrementByRealComponent": return VisualObjectType.DecrementByRealComponent;
-                case "DecrementByPlanComponent": return VisualObjectType.DecrementByPlanComponent;
-                case "IncrementByRealByProductSuitable": return VisualObjectType.IncrementByRealByProductSuitable;
-                case "IncrementByPlanByProductSuitable": return VisualObjectType.IncrementByPlanByProductSuitable;
-                case "IncrementByRealByProductDissonant": return VisualObjectType.IncrementByRealByProductDissonant;
-                case "IncrementByPlanByProductDissonant": return VisualObjectType.IncrementByPlanByProductDissonant;
-                case "IncrementByRealProductOrder": return VisualObjectType.IncrementByRealProductOrder;
-                case "IncrementByPlanProductOrder": return VisualObjectType.IncrementByPlanProductOrder;
-                case "DecrementByRealEnquiry": return VisualObjectType.DecrementByRealEnquiry;
-                case "DecrementByPlanEnquiry": return VisualObjectType.DecrementByPlanEnquiry;
-            }
-
-            if (type.StartsWith("OpVP: ")) return VisualObjectType.OperationPlan;
-            if (type.StartsWith("OpSTPV: ")) return VisualObjectType.OperationReal;
-
-            return VisualObjectType.None;
+            var brush = StandardBrush;
+            brush.Color = color;
+            return brush;
         }
+        /// <summary>
+        /// Podejte mi řádně namočené, připravené a kvalitně píšící pero dané barvy!!!
+        /// Pero nezahazujme, bude se hodit někomu dalšímu.
+        /// </summary>
+        /// <param name="color">Barva inkoustu</param>
+        /// <param name="width">Šířka pera</param>
+        /// <param name="dashStyle">Tečkování čáry</param>
+        /// <param name="startCap">Styl začátku</param>
+        /// <param name="endCap">Styl konce</param>
+        /// <returns></returns>
+        public Pen GetPen(Color color, float? width = null, DashStyle? dashStyle = null, LineCap? startCap = null, LineCap? endCap = null)
+        {
+            var pen = _StandardPen;
+            pen.Color = color;
+            pen.Width = (width ?? 1f);
+            pen.DashStyle = (dashStyle ?? DashStyle.Solid);
+            pen.StartCap = startCap ?? LineCap.Round;
+            pen.EndCap = endCap ?? LineCap.Round;
+            return pen;
+        }
+        /// <summary>
+        /// Podejte mi font dané kvality.
+        /// Font nezahazujme, bude se hodit někomu dalšímu.
+        /// </summary>
+        /// <param name="fontSizeEm"></param>
+        /// <param name="fontStyle"></param>
+        /// <returns></returns>
+        public Font GetFont(float fontSizeEm, FontStyle fontStyle)
+        {
+            var fontDict = this.StardardFontDict;
+            string key = GetFontKey(fontSizeEm, fontStyle);
+            if (!fontDict.TryGetValue(key, out var font))
+            {
+                font = new Font(SystemFonts.DefaultFont.FontFamily, fontSizeEm, fontStyle);
+                fontDict.Add(key, font);
+            }
+            return font;
+        }
+        /// <summary>
+        /// Vrátí klíč pro daný font
+        /// </summary>
+        /// <param name="fontSizeEm"></param>
+        /// <param name="fontStyle"></param>
+        /// <returns></returns>
+        private string GetFontKey(float fontSizeEm, FontStyle fontStyle)
+        {
+            string key = fontSizeEm.ToString("##0.0") + ":" +
+                (fontStyle.HasFlag(FontStyle.Bold) ? "B" : "-") +
+                (fontStyle.HasFlag(FontStyle.Italic) ? "I" : "-") +
+                (fontStyle.HasFlag(FontStyle.Underline) ? "I" : "-") +
+                (fontStyle.HasFlag(FontStyle.Strikeout) ? "S" : "-");
+            return key;
+        }
+        /// <summary>
+        /// Obyčejný štětec s barvou pro výplně
+        /// </summary>
+        protected SolidBrush StandardBrush
+        {
+            get
+            {
+                if (_StandardBrush == null) _StandardBrush = new SolidBrush(Color.White);
+                return _StandardBrush;
+            }
+        }
+        private SolidBrush _StandardBrush;
+        /// <summary>
+        /// Obyčejné pero s násadkou pro kreslení čar
+        /// </summary>
+        protected Pen StandardPen
+        {
+            get
+            {
+                if (_StandardPen == null) _StandardPen = new Pen(Color.Black);
+                return _StandardPen;
+            }
+        }
+        private Pen _StandardPen;
+        /// <summary>
+        /// Dictionary obsahující písma
+        /// </summary>
+        protected Dictionary<string, Font> StardardFontDict
+        {
+            get
+            {
+                if (_StardardFontDict is null) _StardardFontDict = new Dictionary<string, Font>();
+                return _StardardFontDict;
+            }
+        }
+        private Dictionary<string, Font> _StardardFontDict;
+        /// <summary>
+        /// DIsposuje grafické prvky
+        /// </summary>
+        protected void DisposePainters()
+        {
+            if (_StandardBrush != null)
+            {
+                _StandardBrush.Dispose();
+                _StandardBrush = null;
+            }
+            if (_StandardPen != null)
+            {
+                _StandardPen.Dispose();
+                _StandardPen = null;
+            }
+            if (_StardardFontDict != null)
+            {
+                foreach (var font in _StardardFontDict.Values)
+                    font.Dispose();
+                _StardardFontDict.Clear();
+                _StardardFontDict = null;
+            }
+        }
+        #endregion
+        #region Typy objektů, barvy a Tvary
         /// <summary>
         /// Vrátí barvu pozadí pro prvek daného typu.
         /// </summary>
         /// <param name="visualType"></param>
         /// <returns></returns>
-        internal Color GetVisualObjectBackColor(VisualObjectType visualType)
+        internal Color GetVisualObjectBackColor(MapItemType visualType)
         {
             switch (visualType)
             {
-                case VisualObjectType.IncrementByRealSupplierOrder: return Color.FromArgb(255, 94, 255, 94);
-                case VisualObjectType.IncrementByPlanSupplierOrder: return Color.FromArgb(255, 193, 255, 193);
-                case VisualObjectType.IncrementByProposalReceipt: return Color.FromArgb(255, 191, 255, 223);
-                case VisualObjectType.DecrementByProposalRequisition: return Color.FromArgb(255, 255, 255, 211);
-                case VisualObjectType.IncrementByPlanStockTransfer: return Color.FromArgb(255, 224, 255, 193);
-                case VisualObjectType.DecrementByRealComponent: return Color.FromArgb(255, 214, 94, 255);
-                case VisualObjectType.DecrementByPlanComponent: return Color.FromArgb(255, 232, 163, 255);
-                case VisualObjectType.IncrementByRealByProductSuitable: return Color.FromArgb(255, 255, 137, 255);
-                case VisualObjectType.IncrementByPlanByProductSuitable: return Color.FromArgb(255, 240, 196, 255);
-                case VisualObjectType.IncrementByRealByProductDissonant: return Color.FromArgb(255, 204, 153, 255);
-                case VisualObjectType.IncrementByPlanByProductDissonant: return Color.FromArgb(255, 255, 196, 255);
-                case VisualObjectType.OperationPlan: return Color.FromArgb(255, 119, 119, 255);
-                case VisualObjectType.OperationReal: return Color.FromArgb(255, 168, 168, 255);
-                case VisualObjectType.IncrementByRealProductOrder: return Color.FromArgb(255, 68, 255, 255);
-                case VisualObjectType.IncrementByPlanProductOrder: return Color.FromArgb(255, 158, 255, 255);
-                case VisualObjectType.DecrementByRealEnquiry: return Color.FromArgb(255, 255, 81, 81);
-                case VisualObjectType.DecrementByPlanEnquiry: return Color.FromArgb(255, 255, 173, 173);
+                case MapItemType.IncrementByRealSupplierOrder: return Color.FromArgb(255, 94, 255, 94);
+                case MapItemType.IncrementByPlanSupplierOrder: return Color.FromArgb(255, 193, 255, 193);
+                case MapItemType.IncrementByProposalReceipt: return Color.FromArgb(255, 191, 255, 223);
+                case MapItemType.DecrementByProposalRequisition: return Color.FromArgb(255, 255, 255, 211);
+                case MapItemType.IncrementByPlanStockTransfer: return Color.FromArgb(255, 224, 255, 193);
+                case MapItemType.DecrementByRealComponent: return Color.FromArgb(255, 214, 94, 255);
+                case MapItemType.DecrementByPlanComponent: return Color.FromArgb(255, 232, 163, 255);
+                case MapItemType.IncrementByRealByProductSuitable: return Color.FromArgb(255, 255, 137, 255);
+                case MapItemType.IncrementByPlanByProductSuitable: return Color.FromArgb(255, 240, 196, 255);
+                case MapItemType.IncrementByRealByProductDissonant: return Color.FromArgb(255, 204, 153, 255);
+                case MapItemType.IncrementByPlanByProductDissonant: return Color.FromArgb(255, 255, 196, 255);
+                case MapItemType.OperationPlan: return Color.FromArgb(255, 119, 119, 255);
+                case MapItemType.OperationReal: return Color.FromArgb(255, 168, 168, 255);
+                case MapItemType.IncrementByRealProductOrder: return Color.FromArgb(255, 68, 255, 255);
+                case MapItemType.IncrementByPlanProductOrder: return Color.FromArgb(255, 158, 255, 255);
+                case MapItemType.DecrementByRealEnquiry: return Color.FromArgb(255, 255, 81, 81);
+                case MapItemType.DecrementByPlanEnquiry: return Color.FromArgb(255, 255, 173, 173);
             }
             return Color.FromArgb(255, 216, 216, 216);
         }
@@ -526,56 +628,68 @@ namespace DjSoft.SchedulerMap.Analyser
         /// </summary>
         /// <param name="visualType"></param>
         /// <returns></returns>
-        internal Color GetVisualObjectTextColor(VisualObjectType visualType)
+        internal Color GetVisualObjectTextColor(MapItemType visualType)
         {
             switch (visualType)
             {
-                case VisualObjectType.IncrementByRealSupplierOrder:
-                case VisualObjectType.DecrementByRealComponent:
-                case VisualObjectType.IncrementByRealByProductSuitable:
-                case VisualObjectType.IncrementByRealByProductDissonant:
-                case VisualObjectType.OperationReal:
-                case VisualObjectType.IncrementByRealProductOrder:
-                case VisualObjectType.DecrementByRealEnquiry: return Color.FromArgb(255, 0, 0, 0);
+                case MapItemType.IncrementByRealSupplierOrder:
+                case MapItemType.DecrementByRealComponent:
+                case MapItemType.IncrementByRealByProductSuitable:
+                case MapItemType.IncrementByRealByProductDissonant:
+                case MapItemType.OperationReal:
+                case MapItemType.IncrementByRealProductOrder:
+                case MapItemType.DecrementByRealEnquiry: return Color.FromArgb(255, 0, 0, 0);
 
-                case VisualObjectType.IncrementByProposalReceipt:
-                case VisualObjectType.DecrementByProposalRequisition:
-                case VisualObjectType.IncrementByPlanStockTransfer: return Color.FromArgb(255, 64, 96, 96);
+                case MapItemType.IncrementByProposalReceipt:
+                case MapItemType.DecrementByProposalRequisition:
+                case MapItemType.IncrementByPlanStockTransfer: return Color.FromArgb(255, 64, 96, 96);
 
-                case VisualObjectType.IncrementByPlanSupplierOrder:
-                case VisualObjectType.DecrementByPlanComponent:
-                case VisualObjectType.IncrementByPlanByProductSuitable:
-                case VisualObjectType.IncrementByPlanByProductDissonant:
-                case VisualObjectType.OperationPlan:
-                case VisualObjectType.IncrementByPlanProductOrder:
-                case VisualObjectType.DecrementByPlanEnquiry: return Color.FromArgb(255, 64, 64, 64);
+                case MapItemType.IncrementByPlanSupplierOrder:
+                case MapItemType.DecrementByPlanComponent:
+                case MapItemType.IncrementByPlanByProductSuitable:
+                case MapItemType.IncrementByPlanByProductDissonant:
+                case MapItemType.OperationPlan:
+                case MapItemType.IncrementByPlanProductOrder:
+                case MapItemType.DecrementByPlanEnquiry: return Color.FromArgb(255, 64, 64, 64);
             }
             return Color.FromArgb(255, 32, 0, 64);
         }
+        /// <summary>
+        /// Vrať vhodný text do prvku
+        /// </summary>
+        /// <param name="visualItem"></param>
+        /// <returns></returns>
         internal string GetVisualObjectText(VisualItem visualItem)
         {
-            switch (visualItem.VisualType)
+            switch (visualItem.ItemType)
             {
-                case VisualObjectType.IncrementByRealSupplierOrder:
-                case VisualObjectType.IncrementByPlanSupplierOrder: return GetTextAfter(visualItem.MapItem.Description1, "Unit=", ": ");
-                case VisualObjectType.IncrementByProposalReceipt: 
-                case VisualObjectType.DecrementByProposalRequisition: 
-                case VisualObjectType.IncrementByPlanStockTransfer: 
-                case VisualObjectType.DecrementByRealComponent: 
-                case VisualObjectType.DecrementByPlanComponent: 
-                case VisualObjectType.IncrementByRealByProductSuitable: 
-                case VisualObjectType.IncrementByPlanByProductSuitable: 
-                case VisualObjectType.IncrementByRealByProductDissonant: 
-                case VisualObjectType.IncrementByPlanByProductDissonant: return GetTextAfter(visualItem.MapItem.Description1, "Unit=", ": ");
-                case VisualObjectType.OperationPlan: 
-                case VisualObjectType.OperationReal: return GetTextAfter(visualItem.MapItem.Description1, "Operation", "=");    // Operation=50: DC 3
-                case VisualObjectType.IncrementByRealProductOrder: 
-                case VisualObjectType.IncrementByPlanProductOrder: return GetTextAfter(visualItem.MapItem.Description1, "Unit=", ": ");
-                case VisualObjectType.DecrementByRealEnquiry: 
-                case VisualObjectType.DecrementByPlanEnquiry: return GetTextAfter(visualItem.MapItem.Description1, "Unit=", ": ");
+                case MapItemType.IncrementByRealSupplierOrder:
+                case MapItemType.IncrementByPlanSupplierOrder: return GetTextAfter(visualItem.MapItem.Description1, "Unit=", ": ");
+                case MapItemType.IncrementByProposalReceipt: 
+                case MapItemType.DecrementByProposalRequisition: 
+                case MapItemType.IncrementByPlanStockTransfer: 
+                case MapItemType.DecrementByRealComponent: 
+                case MapItemType.DecrementByPlanComponent: 
+                case MapItemType.IncrementByRealByProductSuitable: 
+                case MapItemType.IncrementByPlanByProductSuitable: 
+                case MapItemType.IncrementByRealByProductDissonant: 
+                case MapItemType.IncrementByPlanByProductDissonant: return GetTextAfter(visualItem.MapItem.Description1, "Unit=", ": ");
+                case MapItemType.OperationPlan: 
+                case MapItemType.OperationReal: return GetTextAfter(visualItem.MapItem.Description1, "Operation", "=");    // Operation=50: DC 3
+                case MapItemType.IncrementByRealProductOrder: 
+                case MapItemType.IncrementByPlanProductOrder: return GetTextAfter(visualItem.MapItem.Description1, "Unit=", ": ");
+                case MapItemType.DecrementByRealEnquiry: 
+                case MapItemType.DecrementByPlanEnquiry: return GetTextAfter(visualItem.MapItem.Description1, "Unit=", ": ");
             }
             return null;
         }
+        /// <summary>
+        /// Vrať text, který se nachází za delimiterem <paramref name="delimiter"/>, pokud vstupní text <paramref name="text"/> začíná daným začátkem <paramref name="startWith"/>.
+        /// </summary>
+        /// <param name="text"></param>
+        /// <param name="startWith"></param>
+        /// <param name="delimiter"></param>
+        /// <returns></returns>
         private static string GetTextAfter(string text, string startWith, string delimiter)
         {
             if (String.IsNullOrEmpty(text) || !text.StartsWith(startWith)) return null;
@@ -588,27 +702,27 @@ namespace DjSoft.SchedulerMap.Analyser
         /// </summary>
         /// <param name="visualType"></param>
         /// <returns></returns>
-        internal VisualShape GetVisualObjectShape(VisualObjectType visualType)
+        internal VisualShape GetVisualObjectShape(MapItemType visualType)
         {
             switch (visualType)
             {
-                case VisualObjectType.IncrementByRealSupplierOrder: 
-                case VisualObjectType.IncrementByPlanSupplierOrder: 
-                case VisualObjectType.IncrementByProposalReceipt: return ShapeRight;
-                case VisualObjectType.DecrementByProposalRequisition: return ShapeDown; 
-                case VisualObjectType.IncrementByPlanStockTransfer: return ShapeUp;
-                case VisualObjectType.DecrementByRealComponent: 
-                case VisualObjectType.DecrementByPlanComponent: return ShapeDownHalf;
-                case VisualObjectType.IncrementByRealByProductSuitable: 
-                case VisualObjectType.IncrementByPlanByProductSuitable: return ShapeUpHalf;
-                case VisualObjectType.IncrementByRealByProductDissonant: 
-                case VisualObjectType.IncrementByPlanByProductDissonant: return ShapeUpHalf;
-                case VisualObjectType.OperationPlan: 
-                case VisualObjectType.OperationReal: return ShapeTask;
-                case VisualObjectType.IncrementByRealProductOrder: 
-                case VisualObjectType.IncrementByPlanProductOrder: return ShapeUpWide;
-                case VisualObjectType.DecrementByRealEnquiry: 
-                case VisualObjectType.DecrementByPlanEnquiry: return ShapeLeft;
+                case MapItemType.IncrementByRealSupplierOrder: 
+                case MapItemType.IncrementByPlanSupplierOrder: 
+                case MapItemType.IncrementByProposalReceipt: return ShapeRight;
+                case MapItemType.DecrementByProposalRequisition: return ShapeDown; 
+                case MapItemType.IncrementByPlanStockTransfer: return ShapeUp;
+                case MapItemType.DecrementByRealComponent: 
+                case MapItemType.DecrementByPlanComponent: return ShapeDownHalf;
+                case MapItemType.IncrementByRealByProductSuitable: 
+                case MapItemType.IncrementByPlanByProductSuitable: return ShapeUpHalf;
+                case MapItemType.IncrementByRealByProductDissonant: 
+                case MapItemType.IncrementByPlanByProductDissonant: return ShapeUpHalf;
+                case MapItemType.OperationPlan: 
+                case MapItemType.OperationReal: return ShapeTask;
+                case MapItemType.IncrementByRealProductOrder: 
+                case MapItemType.IncrementByPlanProductOrder: return ShapeUpWide;
+                case MapItemType.DecrementByRealEnquiry: 
+                case MapItemType.DecrementByPlanEnquiry: return ShapeLeft;
             }
             return ShapeBasic;
         }
@@ -637,30 +751,6 @@ namespace DjSoft.SchedulerMap.Analyser
         }
         #endregion
     }
-    /// <summary>
-    /// Druhy vizuálních objektů, odpovídají detailnímu typu prvku plánu (Osa S a Task C)
-    /// </summary>
-    internal enum VisualObjectType
-    {
-        None,
-        IncrementByRealSupplierOrder,
-        IncrementByPlanSupplierOrder,
-        IncrementByProposalReceipt,
-        DecrementByProposalRequisition,
-        IncrementByPlanStockTransfer,
-        DecrementByRealComponent,
-        DecrementByPlanComponent,
-        OperationReal,
-        OperationPlan,
-        IncrementByRealByProductSuitable,
-        IncrementByPlanByProductSuitable,
-        IncrementByRealByProductDissonant,
-        IncrementByPlanByProductDissonant,
-        IncrementByRealProductOrder,
-        IncrementByPlanProductOrder,
-        DecrementByRealEnquiry,
-        DecrementByPlanEnquiry
-    }
     internal class MapItemPainter
     {
         /// <summary>
@@ -688,22 +778,22 @@ namespace DjSoft.SchedulerMap.Analyser
             }
 
             float backgroundMargin = VirtualControl.GetOutlineMargin(visualItem.Zoom);
-
             var backgroundColor = visualItem.BackColor;
             set.BackgroundBrush = new SolidBrush(backgroundColor);
             set.BackgroundPath = visualShape.CreateGraphicsPath(bounds, backgroundMargin);
 
+            float borderMargin = VirtualControl.GetBorderMargin(visualItem.Zoom);
             var borderColor = Color.Black;
             set.BorderBrush = new SolidBrush(borderColor);
-            set.BorderPath = visualShape.CreateGraphicsPath(bounds, backgroundMargin, 3f);
+            set.BorderPath = visualShape.CreateGraphicsPath(bounds, backgroundMargin, borderMargin);
 
-
-            set.TextBounds = new Rectangle(bounds.X + 8, bounds.Y + bounds.Height / 2 - 10, bounds.Width - 16, 20);
+            set.TextEmSize = VirtualControl.GetFontSizeEm(visualItem.Zoom);
+            set.TextColor = visualItem.TextColor;
+            set.TextBounds = visualShape.CreateTextBounds(bounds, 2f * borderMargin);
 
             return set;
         }
     }
-
     #region class GraphicsPathSet : Sada grafických nástrojů pro kreslení podkresu - pozadí - okraje prvku
     /// <summary>
     /// Sada grafických nástrojů pro kreslení podkresu - pozadí - okraje prvku.
@@ -724,15 +814,12 @@ namespace DjSoft.SchedulerMap.Analyser
         /// </summary>
         public Rectangle Bounds { get; private set; }
         /// <summary>
-        /// Velikost textu
-        /// </summary>
-        public float TextEmSize { get; set; }
-        /// <summary>
-        /// Souřadnice textu
-        /// </summary>
-        public Rectangle TextBounds { get; set; }
-        /// <summary>
         /// Barva pro vykreslení stínu pod prvkem / Selection / MouseOver.
+        /// Kreslí se jako první.
+        /// </summary>
+        public Color? OutlineColor { get; set; }
+        /// <summary>
+        /// Štětec pro vykreslení stínu pod prvkem / Selection / MouseOver.
         /// Kreslí se jako první.
         /// </summary>
         public Brush OutlineBrush { get; set; }
@@ -744,9 +831,15 @@ namespace DjSoft.SchedulerMap.Analyser
         /// <summary>
         /// true pokud máme Outline
         /// </summary>
-        public bool HasOutline { get { return (OutlineBrush != null && OutlinePath != null); } }
+        public bool HasOutline { get { return ((OutlineColor.HasValue || OutlineBrush != null) && OutlinePath != null); } }
+
         /// <summary>
         /// Barva pro vykreslení pozadí prvku.
+        /// Kreslí se jako druhá.
+        /// </summary>
+        public Color? BackgroundColor { get; set; }
+        /// <summary>
+        /// Štětec pro vykreslení pozadí prvku.
         /// Kreslí se jako druhá.
         /// </summary>
         public Brush BackgroundBrush { get; set; }
@@ -758,7 +851,13 @@ namespace DjSoft.SchedulerMap.Analyser
         /// <summary>
         /// true pokud máme Background
         /// </summary>
-        public bool HasBackground { get { return (BackgroundBrush != null && BackgroundPath != null); } }
+        public bool HasBackground { get { return ((BackgroundColor.HasValue || BackgroundBrush != null) && BackgroundPath != null); } }
+
+        /// <summary>
+        /// Barva pro vykreslení okrajů vnějších a vnitřních předělů, barva okraje.
+        /// Kreslí se jako třetí.
+        /// </summary>
+        public Color? BorderColor { get; set; }
         /// <summary>
         /// Barva pro vykreslení okrajů vnějších a vnitřních předělů, barva okraje.
         /// Kreslí se jako třetí.
@@ -772,7 +871,21 @@ namespace DjSoft.SchedulerMap.Analyser
         /// <summary>
         /// true pokud máme Border
         /// </summary>
-        public bool HasBorder { get { return (BorderBrush != null && BorderPath != null); } }
+        public bool HasBorder { get { return ((BorderColor.HasValue || BorderBrush != null) && BorderPath != null); } }
+
+        /// <summary>
+        /// Velikost textu
+        /// </summary>
+        public float TextEmSize { get; set; }
+        /// <summary>
+        /// Barva pro vykreslení textu.
+        /// </summary>
+        public Color? TextColor { get; set; }
+        /// <summary>
+        /// Souřadnice textu
+        /// </summary>
+        public RectangleF TextBounds { get; set; }
+
         /// <summary>
         /// Dispose setu
         /// </summary>
@@ -785,10 +898,13 @@ namespace DjSoft.SchedulerMap.Analyser
             this.BorderBrush?.Dispose();
             this.BorderPath?.Dispose();
 
+            this.OutlineColor = null;
             this.OutlineBrush = null;
             this.OutlinePath = null;
+            this.BackgroundColor = null;
             this.BackgroundBrush = null;
             this.BackgroundPath = null;
+            this.BorderColor = null;
             this.BorderBrush = null;
             this.BorderPath = null;
         }
@@ -920,6 +1036,44 @@ namespace DjSoft.SchedulerMap.Analyser
             float dx = x1 - x2;
             return x1 - margin * (dx / y);
         }
+        /// <summary>
+        /// Určí souřadnice oblasti, kam lze psát text
+        /// </summary>
+        /// <param name="bounds"></param>
+        /// <param name="margin"></param>
+        /// <returns></returns>
+        public RectangleF CreateTextBounds(RectangleF bounds, float margin)
+        {
+            // Rozměry vnitřního obdélníku, zmenšeného o margin:
+            float h = bounds.Height;
+            float h2 = h / 2f;
+            float module = h / 30f;              // velikost jednotky v PointsX: při výšce 60px je jednotka 2px, hodnota 3 odpovídá 6px, hodnota 6 = 12px, což v grafickém editoru vypadá přiměřeně.
+            float l = bounds.X + margin;
+            float r = bounds.Right - margin;
+            float t = bounds.Y + margin;
+            float c = bounds.Y + h2;
+            float b = bounds.Bottom - margin;
+
+            // Souřadnice X všech šesti bodů, platné ale na souřadnici bez margins (=nahoře a dole):
+            float x0 = module * (float)_PointsX[0];
+            float x1 = module * (float)_PointsX[1];
+            float x2 = module * (float)_PointsX[2];
+            float x3 = module * (float)_PointsX[3];
+            float x4 = module * (float)_PointsX[4];
+            float x5 = module * (float)_PointsX[5];
+
+            // Největší souřadnice vlevo a vpravo:
+            float maxL = _Max(x0, x1, x2);
+            float maxR = _Max(x3, x4, x5);
+
+            return RectangleF.FromLTRB(l + maxL, t, r - maxR, b);
+        }
+        private static float _Max(params float[] values)
+        {
+            if (values.Length == 0) return 0f;
+            return values.Max();
+        }
+
     }
     #endregion
     #region class VisualItem : Prvek mapy umístěný ve virtuálním prostoru
@@ -936,10 +1090,10 @@ namespace DjSoft.SchedulerMap.Analyser
             MapItem.VisualItem = this;
             VirtualBounds.SetCenterSize(center, size);
 
-            VisualType = visualiser.GetVisualObjectType(mapItem);
-            BackColor = Visualiser.GetVisualObjectBackColor(this.VisualType);
-            TextColor = visualiser.GetVisualObjectTextColor(this.VisualType);
+            BackColor = visualiser.GetVisualObjectBackColor(this.ItemType);
+            TextColor = visualiser.GetVisualObjectTextColor(this.ItemType);
             Text = visualiser.GetVisualObjectText(this);
+            VisualShape = visualiser.GetVisualObjectShape(this.ItemType);
         }
         public override void Dispose()
         {
@@ -953,6 +1107,42 @@ namespace DjSoft.SchedulerMap.Analyser
         /// Zobrazovaný prvek
         /// </summary>
         public MapItem MapItem { get; private set; }
+        /// <summary>
+        /// Typ prvku <see cref="Type"/> ondemand převedený na enum
+        /// </summary>
+        internal MapItemType ItemType { get { return this.MapItem.ItemType; } }
+        /// <summary>
+        /// Prev vztahy.
+        /// Ve vztahu je jako <see cref="MapLink.NextItem"/> prvek this a ve vztahu <see cref="MapLink.PrevItem"/> je prvek vpravo.
+        /// Toto pole může být null, pokud this prvek je první = má <see cref="IsFirst"/> = true.
+        /// Pokud není null, pak typicky obsahuje nějaký prvek, tyto prvky vždy mají naplněné obě instance (<see cref="MapLink.PrevItem"/> i <see cref="MapLink.NextItem"/>).
+        /// </summary>
+        public MapLink[] PrevLinks { get { return this.MapItem.PrevLinks; } }
+        /// <summary>
+        /// Next vztahy.
+        /// Ve vztahu je jako <see cref="MapLink.PrevItem"/> prvek this a ve vztahu <see cref="MapLink.NextItem"/> je prvek vpravo.
+        /// Toto pole může být null, pokud this prvek je poslední = má <see cref="IsLast"/> = true.
+        /// Pokud není null, pak typicky obsahuje nějaký prvek, tyto prvky vždy mají naplněné obě instance (<see cref="MapLink.PrevItem"/> i <see cref="MapLink.NextItem"/>).
+        /// </summary>
+        public MapLink[] NextLinks { get { return this.MapItem.NextLinks; } }
+
+        /// <summary>
+        /// Barva pozadí
+        /// </summary>
+        public Color BackColor { get; private set; }
+        /// <summary>
+        /// Barva písma
+        /// </summary>
+        public Color TextColor { get; private set; }
+        /// <summary>
+        /// Text zobrazený v prvku
+        /// </summary>
+        public string Text { get; private set; }
+        /// <summary>
+        /// Definice vizuálního tvaru
+        /// </summary>
+        public VisualShape VisualShape { get; private set; }
+
         /// <summary>
         /// Adresa buňky ve formě Point (X, Y). 
         /// Adresu setuje koordinátor <see cref="Cells"/>, který udržuje vizuální mapu objektů. Adresu může kdykoliv změnit.
@@ -969,26 +1159,6 @@ namespace DjSoft.SchedulerMap.Analyser
         /// Virtuální střed objektu. Lze přemístit jinam.
         /// </summary>
         public PointF Center { get { return VirtualBounds.Center; } set { VirtualBounds.Center = value; } }
-        /// <summary>
-        /// Typ tvaru
-        /// </summary>
-        public VisualObjectType VisualType { get; private set; }
-        /// <summary>
-        /// Barva pozadí
-        /// </summary>
-        public Color BackColor { get; private set; }
-        /// <summary>
-        /// Barva písma
-        /// </summary>
-        public Color TextColor { get; private set; }
-        /// <summary>
-        /// Text zobrazený v prvku
-        /// </summary>
-        public string Text { get; private set; }
-        /// <summary>
-        /// Definice vizuálního tvaru
-        /// </summary>
-        public VisualShape VisualShape { get { return Visualiser.GetVisualObjectShape(this.VisualType); } }
 
         /// <summary>
         /// Vykreslí svoje linky, pokud dosud nejsou uvedeny v <paramref name="paintedLinks"/> - tam se dávají při vykreslení.
@@ -998,8 +1168,8 @@ namespace DjSoft.SchedulerMap.Analyser
         /// <param name="paintedLinks"></param>
         public void OnPaintLinks(PaintEventArgs e, Dictionary<long, MapLink> paintedLinks)
         {
-            OnPaintLinks(e, this.MapItem.PrevLinks, paintedLinks);
-            OnPaintLinks(e, this.MapItem.NextLinks, paintedLinks);
+            OnPaintLinks(e, this.PrevLinks, paintedLinks);
+            OnPaintLinks(e, this.NextLinks, paintedLinks);
         }
         private void OnPaintLinks(PaintEventArgs e, MapLink[] mapLinks, Dictionary<long, MapLink> paintedLinks)
         {
@@ -1032,19 +1202,92 @@ namespace DjSoft.SchedulerMap.Analyser
 
                 // Barvy a tvary pozadí a okrajů:
                 e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
-                if (pathSet.HasOutline) e.Graphics.FillPath(pathSet.OutlineBrush, pathSet.OutlinePath);
-                if (pathSet.HasBackground) e.Graphics.FillPath(pathSet.BackgroundBrush, pathSet.BackgroundPath);
-                if (pathSet.HasBorder) e.Graphics.FillPath(pathSet.BorderBrush, pathSet.BorderPath);
+                OnPaintPath(e, pathSet.HasOutline, pathSet.OutlineBrush, pathSet.OutlineColor, pathSet.OutlinePath);
+                OnPaintPath(e, pathSet.HasBackground, pathSet.BackgroundBrush, pathSet.BackgroundColor, pathSet.BackgroundPath);
+                OnPaintPath(e, pathSet.HasBorder, pathSet.BorderBrush, pathSet.BorderColor, pathSet.BorderPath);
 
-                string text = this.Text;
-                if (!String.IsNullOrEmpty(text))
-                {
-                    using (SolidBrush br = new SolidBrush(this.TextColor))
-                        e.Graphics.DrawString(text, SystemFonts.DialogFont, br, pathSet.TextBounds);
-                }
+                OnPaintText(e, pathSet.TextEmSize, pathSet.TextColor, pathSet.TextBounds);
 
                 e.Graphics.ResetClip();
             }
+        }
+        /// <summary>
+        /// Vykreslí danou Path daným štětcem / barvou
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="hasData"></param>
+        /// <param name="brush"></param>
+        /// <param name="color"></param>
+        /// <param name="path"></param>
+        private void OnPaintPath(PaintEventArgs e, bool hasData, Brush brush, Color? color, GraphicsPath path)
+        {
+            if (hasData)
+            {
+                if (brush != null)
+                    e.Graphics.FillPath(brush, path);
+                else if (color.HasValue)
+                    e.Graphics.FillPath(Visualiser.GetStandardBrush(color.Value), path);
+            }
+        }
+        private void OnPaintText(PaintEventArgs e, float fontEmSize, Color? color, RectangleF textBouds)
+        {
+            if (!color.HasValue) return;
+
+            string text = this.Text;
+            if (String.IsNullOrEmpty(text)) return;
+
+            var font = Visualiser.GetFont(fontEmSize, FontStyle.Regular);
+            var brush = Visualiser.GetStandardBrush(color.Value);
+
+            var textSize = e.Graphics.MeasureString(text, font, (int)textBouds.Width);
+            var fontBounds = AlignSizeToBounds(textBouds, textSize, ContentAlignment.MiddleLeft, true);
+            e.Graphics.DrawString(text, font, brush, fontBounds);
+        }
+        private static RectangleF AlignSizeToBounds(RectangleF bounds, SizeF size, ContentAlignment alignment, bool clip = false)
+        {
+            float w = size.Width;
+            if (clip && w > bounds.Width) w = bounds.Width;
+            float h = size.Height;
+            if (clip && h > bounds.Height) h = bounds.Height;
+            float x = bounds.X;
+            float y = bounds.Y;
+            float dx = bounds.Width - w;
+            float dy = bounds.Height - h;
+
+            switch (alignment)
+            {
+                case ContentAlignment.TopLeft:
+                    break;
+                case ContentAlignment.TopCenter:
+                    x += dx / 2f;
+                    break;
+                case ContentAlignment.TopRight:
+                    x += dx;
+                    break;
+                case ContentAlignment.MiddleLeft:
+                    y += dy / 2f;
+                    break;
+                case ContentAlignment.MiddleCenter:
+                    y += dy / 2f;
+                    x += dx / 2f;
+                    break;
+                case ContentAlignment.MiddleRight:
+                    y += dy / 2f;
+                    x += dx;
+                    break;
+                case ContentAlignment.BottomLeft:
+                    y += dy;
+                    break;
+                case ContentAlignment.BottomCenter:
+                    y += dy;
+                    x += dx / 2f;
+                    break;
+                case ContentAlignment.BottomRight:
+                    y += dy;
+                    x += dx;
+                    break;
+            }
+            return new RectangleF(x, y, w, h);
         }
         bool IVisualItem.IsActiveOnCurrentPoint(Point currentPoint)
         {
