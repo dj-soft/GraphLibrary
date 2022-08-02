@@ -622,9 +622,27 @@ namespace DjSoft.SchedulerMap.Analyser
         private int _Description3;
         #endregion
         #region Data prvku podpůrná, komparátory
+        /// <summary>
+        /// Typ prvku <see cref="Type"/> ondemand převedený na enum
+        /// </summary>
+        internal MapItemType ItemType
+        {
+            get
+            {
+                if (!_ItemType.HasValue) _ItemType = GetMapItemType(this.Type);
+                return _ItemType.Value;
+            }
+        }
+        private MapItemType? _ItemType;
         private string PrevInfo { get { return (IsFirst ? "IsFirst" : PrevIds.Length.ToString() + " items"); } }
         private string NextInfo { get { return (IsLast ? "IsLast" : NextIds.Length.ToString() + " items"); } }
+        /// <summary>
+        /// true pokud prvek je PRVNÍ v řadě
+        /// </summary>
         public bool IsFirst { get { return this.PrevIds is null; } }
+        /// <summary>
+        /// true pokud prvek je POSLEDNÍ v řadě
+        /// </summary>
         public bool IsLast { get { return this.NextIds is null; } }
         /// <summary>
         /// Komparátor podle <see cref="ItemId"/>: nejprve dává Ax, poté Tc; pak podle hodnoty.
@@ -865,53 +883,38 @@ namespace DjSoft.SchedulerMap.Analyser
 
             return sequence;
         }
-        private static int SearchExpectedSequenceBlbe(MapItem topItem)
+        /// <summary>
+        /// Metoda přeevede typ prvku ze stringu na enum
+        /// </summary>
+        /// <param name="type"></param>
+        /// <returns></returns>
+        internal static MapItemType GetMapItemType(string type)
         {
-            int sequence = 1;
-            Dictionary<int, MapItem> workDict = new Dictionary<int, MapItem>();
-            Queue<MapItem> currentQueue = new Queue<MapItem>();
-            Queue<MapItem> nextQueue = new Queue<MapItem>();
+            if (String.IsNullOrEmpty(type)) return MapItemType.None;
 
-            workDict.Add(topItem.ItemId, topItem);
-            currentQueue.Enqueue(topItem);
-            while (true)
+            switch (type)
             {
-                var item = currentQueue.Dequeue();
-                var prevLinks = item.PrevLinks;
-                if (prevLinks != null && prevLinks.Length > 0)
-                {
-                    foreach (var prevLink in prevLinks)
-                    {
-                        if (prevLink.IsLinkDisconnected) continue;
-
-                        var prevItem = prevLink.PrevItem;
-                        if (prevItem != null)
-                        {
-                            if (workDict.ContainsKey(prevItem.ItemId))
-                            {   // Zacyklení!
-                                sequence = 0;
-                                break;
-                            }
-                            else
-                            {   // Dosud neznámý prvek:
-                                workDict.Add(prevItem.ItemId, prevItem);
-                                nextQueue.Enqueue(prevItem);
-                            }
-                        }
-                    }
-                    if (sequence == 0) break;
-                }
-                if (currentQueue.Count == 0)
-                {
-                    if (nextQueue.Count == 0) break;
-
-                    sequence++;
-                    currentQueue = nextQueue;
-                    nextQueue = new Queue<MapItem>();
-                }
+                case "IncrementByRealSupplierOrder": return MapItemType.IncrementByRealSupplierOrder;
+                case "IncrementByPlanSupplierOrder": return MapItemType.IncrementByPlanSupplierOrder;
+                case "IncrementByProposalReceipt": return MapItemType.IncrementByProposalReceipt;
+                case "DecrementByProposalRequisition": return MapItemType.DecrementByProposalRequisition;
+                case "IncrementByPlanStockTransfer": return MapItemType.IncrementByPlanStockTransfer;
+                case "DecrementByRealComponent": return MapItemType.DecrementByRealComponent;
+                case "DecrementByPlanComponent": return MapItemType.DecrementByPlanComponent;
+                case "IncrementByRealByProductSuitable": return MapItemType.IncrementByRealByProductSuitable;
+                case "IncrementByPlanByProductSuitable": return MapItemType.IncrementByPlanByProductSuitable;
+                case "IncrementByRealByProductDissonant": return MapItemType.IncrementByRealByProductDissonant;
+                case "IncrementByPlanByProductDissonant": return MapItemType.IncrementByPlanByProductDissonant;
+                case "IncrementByRealProductOrder": return MapItemType.IncrementByRealProductOrder;
+                case "IncrementByPlanProductOrder": return MapItemType.IncrementByPlanProductOrder;
+                case "DecrementByRealEnquiry": return MapItemType.DecrementByRealEnquiry;
+                case "DecrementByPlanEnquiry": return MapItemType.DecrementByPlanEnquiry;
             }
 
-            return sequence;
+            if (type.StartsWith("OpVP: ")) return MapItemType.OperationPlan;
+            if (type.StartsWith("OpSTPV: ")) return MapItemType.OperationReal;
+
+            return MapItemType.None;
         }
         #endregion
         #region Podpora pro vizualizaci
@@ -954,6 +957,30 @@ namespace DjSoft.SchedulerMap.Analyser
             itemLinks = null;                    // Pole linků se dopočítá OnDemand, jde o instanční proměnnou _PrevLinks nebo _NextLinks
         }
         #endregion
+    }
+    /// <summary>
+    /// Druh prvku podle jeho typu
+    /// </summary>
+    internal enum MapItemType : int
+    {
+        None,
+        IncrementByRealSupplierOrder,
+        IncrementByPlanSupplierOrder,
+        IncrementByProposalReceipt,
+        DecrementByProposalRequisition,
+        IncrementByPlanStockTransfer,
+        DecrementByRealComponent,
+        DecrementByPlanComponent,
+        OperationReal,
+        OperationPlan,
+        IncrementByRealByProductSuitable,
+        IncrementByPlanByProductSuitable,
+        IncrementByRealByProductDissonant,
+        IncrementByPlanByProductDissonant,
+        IncrementByRealProductOrder,
+        IncrementByPlanProductOrder,
+        DecrementByRealEnquiry,
+        DecrementByPlanEnquiry
     }
     #endregion
     #region class MapLink
