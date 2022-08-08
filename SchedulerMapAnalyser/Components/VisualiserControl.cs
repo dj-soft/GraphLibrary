@@ -442,7 +442,7 @@ namespace DjSoft.SchedulerMap.Analyser
             }
             if (visualItems is null || visualItems.Length == 0)
             {
-                visualItems = mapSegment.FirstItems;
+                visualItems = mapSegment.FirstMainItems;
                 if (visualItems.Length > 100)
                     visualItems = visualItems.Take(100).ToArray();
             }
@@ -492,7 +492,7 @@ namespace DjSoft.SchedulerMap.Analyser
         /// <returns></returns>
         public Pen GetPen(Color color, float? width = null, DashStyle? dashStyle = null, LineCap? startCap = null, LineCap? endCap = null)
         {
-            var pen = _StandardPen;
+            var pen = StandardPen;
             pen.Color = color;
             pen.Width = (width ?? 1f);
             pen.DashStyle = (dashStyle ?? DashStyle.Solid);
@@ -774,20 +774,20 @@ namespace DjSoft.SchedulerMap.Analyser
             if (outlineColor.HasValue)
             {
                 set.OutlineBrush = new SolidBrush(outlineColor.Value);
-                set.OutlinePath = visualShape.CreateGraphicsPath(bounds, 0f);
+                set.OutlinePath = visualShape.CreateBaseGraphicsPath(bounds, 0f);
             }
 
             float backgroundMargin = VirtualControl.GetOutlineMargin(visualItem.Zoom);
             var backgroundColor = visualItem.BackColor;
             set.BackgroundBrush = new SolidBrush(backgroundColor);
-            set.BackgroundPath = visualShape.CreateGraphicsPath(bounds, backgroundMargin);
+            set.BackgroundPath = visualShape.CreateBaseGraphicsPath(bounds, backgroundMargin);
 
             float borderMargin = VirtualControl.GetBorderMargin(visualItem.Zoom);
             var borderColor = Color.Black;
             set.BorderBrush = new SolidBrush(borderColor);
-            set.BorderPath = visualShape.CreateGraphicsPath(bounds, backgroundMargin, borderMargin);
+            set.BorderPath = visualShape.CreateBaseGraphicsPath(bounds, backgroundMargin, borderMargin);
 
-            set.TextEmSize = VirtualControl.GetFontSizeEm(visualItem.Zoom);
+            set.TextEmSize = VirtualControl.GetFontSizeEm(visualItem.ZoomLinear);
             set.TextColor = visualItem.TextColor;
             set.TextBounds = visualShape.CreateTextBounds(bounds, 2f * borderMargin);
 
@@ -946,7 +946,7 @@ namespace DjSoft.SchedulerMap.Analyser
         /// <param name="margin"></param>
         /// <param name="border"></param>
         /// <returns></returns>
-        public GraphicsPath CreateGraphicsPath(RectangleF bounds, float margin, float? border = null)
+        public GraphicsPath CreateBaseGraphicsPath(RectangleF bounds, float margin = 0f, float? border = null)
         {
             if (_PointsX is null || _PointsX.Length < 6)
                 throw new InvalidOperationException("VisualShape.CreateGraphicsPath() error: PointsX is invalid.");
@@ -1196,53 +1196,139 @@ namespace DjSoft.SchedulerMap.Analyser
         }
         public void OnPaintItem(PaintEventArgs e)
         {
-            using (var pathSet = MapItemPainter.CreateGraphicsPaths(this))
+            var currentBounds = this.CurrentBounds;
+            e.Graphics.SetClip(currentBounds);
+            e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+            PaintBasePath(e.Graphics, currentBounds);
+            PaintItemText(e.Graphics, currentBounds);
+            e.Graphics.ResetClip();
+        }
+        private void PaintBasePath(Graphics graphics, Rectangle currentBounds)
+        {
+            using (var graphicsPath = this.VisualShape.CreateBaseGraphicsPath(currentBounds))
             {
-                e.Graphics.SetClip(pathSet.Bounds);
+                // Podklad v jednoduché barvě:
+                var brush1 = GetBackBrush();
+                if (brush1 != null)
+                    graphics.FillPath(brush1, graphicsPath);
+                else
+                {   // Anebo podklad s komplexní výplní (typicky LinearGradient):
+                    using (var brush2 = CreateBackBrush())
+                    {
+                        if (brush2 != null)
+                            graphics.FillPath(brush2, graphicsPath);
+                    }
+                }
 
-                // Barvy a tvary pozadí a okrajů:
-                e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
-                OnPaintPath(e, pathSet.HasOutline, pathSet.OutlineBrush, pathSet.OutlineColor, pathSet.OutlinePath);
-                OnPaintPath(e, pathSet.HasBackground, pathSet.BackgroundBrush, pathSet.BackgroundColor, pathSet.BackgroundPath);
-                OnPaintPath(e, pathSet.HasBorder, pathSet.BorderBrush, pathSet.BorderColor, pathSet.BorderPath);
+                // Pero podkladové (může být širší):
+                var pen1 = GetPen1();
+                if (pen1 != null)
+                    graphics.DrawPath(pen1, graphicsPath);
 
-                OnPaintText(e, pathSet.TextEmSize, pathSet.TextColor, pathSet.TextBounds);
-
-                e.Graphics.ResetClip();
+                // Pero vrchní (bude tenčí než pero 1):
+                var pen2 = GetPen2();
+                if (pen2 != null)
+                    graphics.DrawPath(pen2, graphicsPath);
             }
         }
-        /// <summary>
-        /// Vykreslí danou Path daným štětcem / barvou
-        /// </summary>
-        /// <param name="e"></param>
-        /// <param name="hasData"></param>
-        /// <param name="brush"></param>
-        /// <param name="color"></param>
-        /// <param name="path"></param>
-        private void OnPaintPath(PaintEventArgs e, bool hasData, Brush brush, Color? color, GraphicsPath path)
+        private void PaintItemText(Graphics graphics, Rectangle currentBounds)
         {
-            if (hasData)
-            {
-                if (brush != null)
-                    e.Graphics.FillPath(brush, path);
-                else if (color.HasValue)
-                    e.Graphics.FillPath(Visualiser.GetStandardBrush(color.Value), path);
-            }
-        }
-        private void OnPaintText(PaintEventArgs e, float fontEmSize, Color? color, RectangleF textBouds)
-        {
-            if (!color.HasValue) return;
-
             string text = this.Text;
             if (String.IsNullOrEmpty(text)) return;
 
-            var font = Visualiser.GetFont(fontEmSize, FontStyle.Regular);
-            var brush = Visualiser.GetStandardBrush(color.Value);
+            var textEmSize = VirtualControl.GetFontSizeEm(this.ZoomLinear);
+            var font = Visualiser.GetFont(textEmSize, FontStyle.Regular);
 
-            var textSize = e.Graphics.MeasureString(text, font, (int)textBouds.Width);
-            var fontBounds = AlignSizeToBounds(textBouds, textSize, ContentAlignment.MiddleLeft, true);
-            e.Graphics.DrawString(text, font, brush, fontBounds);
+            var textColor = this.TextColor;
+            var brush = Visualiser.GetStandardBrush(textColor);
+
+            var borderMargin = VirtualControl.GetBorderMargin(this.Zoom);
+            var textBounds = this.VisualShape.CreateTextBounds(currentBounds, 2f * borderMargin);
+            var textSize = graphics.MeasureString(text, font, (int)textBounds.Width);
+            var fontBounds = AlignSizeToBounds(textBounds, textSize, ContentAlignment.MiddleLeft, true);
+
+            graphics.DrawString(text, font, brush, fontBounds);
         }
+        /// <summary>
+        /// Vrátí štětec pro vykreslení výplně pozadí prvku. 
+        /// Tento nástroj nesmí volající disposovat, používá se opakovaně.
+        /// </summary>
+        /// <returns></returns>
+        private Brush GetBackBrush()
+        {
+            return Visualiser.GetStandardBrush(this.BackColor);
+        }
+        private Brush CreateBackBrush()
+        {
+            return null;
+        }
+        /// <summary>
+        /// Vrátí pero pro vykreslení okraje prvku, podkladová vrstva. 
+        /// Tento nástroj nesmí volající disposovat, používá se opakovaně.
+        /// </summary>
+        /// <returns></returns>
+        private Pen GetPen1()
+        {
+            var borderColor = this.CurrentOutlineColor;
+            if (!borderColor.HasValue) return null;
+            var borderMargin = VirtualControl.GetBorderMargin(this.Zoom);
+            return Visualiser.GetPen(borderColor.Value, borderMargin);
+        }
+        /// <summary>
+        /// Vrátí pero pro vykreslení okraje prvku, horní vrstva. 
+        /// Tento nástroj nesmí volající disposovat, používá se opakovaně.
+        /// </summary>
+        /// <returns></returns>
+        private Pen GetPen2()
+        {
+            var borderColor = Color.Black;
+            var borderMargin = 1f;
+            return Visualiser.GetPen(borderColor, borderMargin);
+        }
+
+
+        ///// <summary>
+        ///// Vykreslí danou Path daným štětcem / barvou
+        ///// </summary>
+        ///// <param name="e"></param>
+        ///// <param name="hasData"></param>
+        ///// <param name="brush"></param>
+        ///// <param name="color"></param>
+        ///// <param name="path"></param>
+        //private void OnPaintPath(PaintEventArgs e, bool hasData, Brush brush, Color? color, GraphicsPath path)
+        //{
+        //    if (hasData)
+        //    {
+        //        if (brush != null)
+        //            e.Graphics.FillPath(brush, path);
+        //        else if (color.HasValue)
+        //            e.Graphics.FillPath(Visualiser.GetStandardBrush(color.Value), path);
+        //    }
+        //}
+        //private void OnPaintText(PaintEventArgs e, float fontEmSize, Color? color, RectangleF textBouds)
+        //{
+        //    if (!color.HasValue) return;
+
+        //    string text = this.Text;
+        //    if (String.IsNullOrEmpty(text)) return;
+
+        //    var font = Visualiser.GetFont(fontEmSize, FontStyle.Regular);
+        //    var brush = Visualiser.GetStandardBrush(color.Value);
+
+        //    var textSize = e.Graphics.MeasureString(text, font, (int)textBouds.Width);
+        //    var fontBounds = AlignSizeToBounds(textBouds, textSize, ContentAlignment.MiddleLeft, true);
+        //    e.Graphics.DrawString(text, font, brush, fontBounds);
+        //}
+
+        /// <summary>
+        /// Umístí danou cílovou velikost <paramref name="size"/> do daného prostoru <paramref name="bounds"/> tak, aby v něm byla cílová velikost umístěna v daném zarovnání <paramref name="alignment"/>.
+        /// Pokud by daný prostor <paramref name="bounds"/> byl menší než potřebný, může / nemusí být cílová velikost <paramref name="size"/> zmenšena tak, aby se do prostoru vešla.
+        /// </summary>
+        /// <param name="bounds"></param>
+        /// <param name="size"></param>
+        /// <param name="alignment"></param>
+        /// <param name="clip"></param>
+        /// <returns></returns>
         private static RectangleF AlignSizeToBounds(RectangleF bounds, SizeF size, ContentAlignment alignment, bool clip = false)
         {
             float w = size.Width;

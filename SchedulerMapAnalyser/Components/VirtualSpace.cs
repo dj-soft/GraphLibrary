@@ -136,25 +136,46 @@ namespace DjSoft.SchedulerMap.Analyser
             return 8f;
         }
         /// <summary>
-        /// Vrátí velikost písma pro daný zoom. 
-        /// Outline margin je logaritmický, pro malé Zoom je 1px, pro zoom 1 je 2px, pro velké Zoomy 4px.
+        /// Vrátí velikost písma pro daný zoom.
+        /// Vstupní Zoom je Lineární, v rozsahu 0 - 200, kde 100 = 1:1.
+        /// Výstupní velikost písma odpovídá dané základní velikosti, zoomu a zdravému rozumu.
         /// </summary>
-        /// <param name="zoom">Logaritmický Zoom v rozsahu 0.01 - 100</param>
+        /// <param name="zoomLinear">Lineární Zoom v rozsahu 0 - 200, kde 100 = 1:1</param>
+        /// <param name="baseSize">Základní velikost písma pro Zoom 100, default = null odpovídá 8.5f, přípustný rozsah = 4 až 24</param>
         /// <returns></returns>
-        public static float GetFontSizeEm(float zoom)
+        public static float GetFontSizeEm(float zoomLinear, float? baseSize = null)
         {
-            if (zoom < 0.40f) return 6.5f;
-            if (zoom < 1.00f) return 7.8f;
-            if (zoom < 2.50f) return 9.5f;
-            if (zoom < 6.25f) return 11.0f;
-            if (zoom < 9.75f) return 12.0f;
-            if (zoom < 15.65f) return 13.5f;
-            if (zoom < 22.0f) return 14.5f;
-            if (zoom < 39.0) return 16f;
-            if (zoom < 62.0) return 17f;
-            if (zoom < 95.0) return 18f;
-            return 20f;
+            float size = VirtualSpace.Align((baseSize ?? 8.5f), 4f, 24f);
+            float ratio = ((zoomLinear - 100f) / 100f);                                            // Vyjadřuje základnu lineární změny velikosti: -1 = největší zmenšení;   0 = 1:1;   +1 = největší zvětšení
+            float zoom = 1f + (ratio > 0f ? ZoomToFontRatioHigh : ZoomToFontRatioLow) * ratio;     // Vyjadřuje změnu základní velikosti fontu: 1 = beze změny, <1 = zmenšení,  >1 = zvětšení
+            float emSize = VirtualSpace.Align((size * zoom), 4f, 64f);
+            return (float)Math.Round(emSize, 1);
         }
+        /// <summary>
+        /// Přepočtová konstanta mezi lineárním zoomem a velikostí písma, určuje poměr zmenšení písma při zmenšení Zoomu, <br/>
+        /// <u>pro oblast Zoomu MENŠÍ než 100 (Linear).</u><br/>
+        /// Čím menší hodnota, tím menší vliv má změna Zoomu na změnu velikosti písma.
+        /// Větší hodnota <see cref="ZoomToFontRatioLow"/> způsobí větší změny velikosti písma při změně Zoomu.
+        /// <para/>
+        /// Hodnota 1.5 dává vcelku dobrou reakci, <br/>
+        /// hodnota 1 dává poměrně velká písmena při hodně zmenšených objektech = nepřirozeně velké písmo (pomalá reakce na Zoom).<br/>
+        /// hodnota 3 dává rychlou reakci (při zmenšování motivu se písmo zmenšuje rychle a brzy je nečitelné).<br/>
+        /// hodnota 0 nereaguje na Zoom.
+        /// </summary>
+        private static float ZoomToFontRatioLow { get { return 1.5f; } }         // optimálně 1.5f
+        /// <summary>
+        /// Přepočtová konstanta mezi lineárním zoomem a velikostí písma, určuje poměr zvětšení písma při zvětšení Zoomu, <br/>
+        /// <u>pro oblast Zoomu VĚTŠÍ než 100 (Linear).</u><br/>
+        /// Čím menší hodnota, tím menší vliv má změna Zoomu na změnu velikosti písma.
+        /// Větší hodnota <see cref="ZoomToFontRatioHigh"/> způsobí větší změny velikosti písma při změně Zoomu.
+        /// <para/>
+        /// Hodnota 3 dává vcelku dobrou reakci, <br/>
+        /// hodnota 5 dává přiměřenou reakci (písmo se zvětšuje úměrně motivu).<br/>
+        /// hodnota 8 dává velkou reakci (při zvětšování motivu se písmo zvětšuje rychle, zbytečně vyplňuje prostor a to není účelem Zoomu).<br/>
+        /// hodnota 1 dává poměrně menší písmena při hodně zvětšených objektech = nepřirozeně malé písmo (pomalá reakce na Zoom).<br/>
+        /// hodnota 0 nereaguje na Zoom.
+        /// </summary>
+        private static float ZoomToFontRatioHigh { get { return 4.0f; } }         // optimálně 4.0f
         #endregion
     }
     /// <summary>
@@ -838,23 +859,23 @@ Linear	Log
         /// <param name="virtualSpace"></param>
         public VirtualItemBase(VirtualControl virtualControl)
         {
-            VirtualControl = virtualControl;
+            VirtualHost = virtualControl;
             VirtualBounds = new BoundsF();
         }
         /// <summary>
         /// Hostitelský control
         /// </summary>
-        protected VirtualControl VirtualControl { get; private set; }
+        protected VirtualControl VirtualHost { get; private set; }
         /// <summary>
         /// Koordinátor virtuálních souřadnic
         /// </summary>
-        protected VirtualSpace VirtualSpace { get { return VirtualControl.VirtualSpace; } }
+        protected VirtualSpace VirtualSpace { get { return VirtualHost.VirtualSpace; } }
         /// <summary>
         /// Dispose
         /// </summary>
         public virtual void Dispose()
         {
-            VirtualControl = null;
+            VirtualHost = null;
             VirtualBounds = null;
         }
         /// <summary>
@@ -862,7 +883,7 @@ Linear	Log
         /// </summary>
         protected virtual void InvalidateControl()
         {
-            VirtualControl?.Invalidate();
+            VirtualHost?.Invalidate();
         }
         #endregion
         #region Virtuální pozice
@@ -882,6 +903,10 @@ Linear	Log
         /// Aktuální [Logaritmický] Zoom (= pro nativní přepočet velikosti Fyzická = Zoom * Virtuální)
         /// </summary>
         public float Zoom { get { return (float)VirtualSpace.Zoom; } }
+        /// <summary>
+        /// Aktuální [Lineární] Zoom (= pro jiné výpočty založené na Zoomu)
+        /// </summary>
+        public float ZoomLinear { get { return (float)VirtualSpace.ZoomLinear; } }
         /// <summary>
         /// Fyzické souřadnice celého prvku v aktuálním controlu.
         /// </summary>
@@ -944,7 +969,7 @@ Linear	Log
         /// <summary>
         /// Aktuální barva orámování, vychází z hodnot <see cref="Selected"/> a <see cref="MouseState"/>
         /// </summary>
-        public virtual Color? CurrentOutlineColor { get { return VirtualControl.GetOutlineColor(this); } }
+        public virtual Color? CurrentOutlineColor { get { return VirtualHost.GetOutlineColor(this); } }
         #endregion
     }
     /// <summary>

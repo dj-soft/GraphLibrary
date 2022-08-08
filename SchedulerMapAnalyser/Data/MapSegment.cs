@@ -268,7 +268,7 @@ namespace DjSoft.SchedulerMap.Analyser
             }
         }
         /// <summary>
-        /// Pole prvních prvků, setřídění podle <see cref="MapItem.CompareByItemId"/>
+        /// Pole prvních prvků, setříděné podle <see cref="MapItem.CompareByItemId"/>
         /// </summary>
         public MapItem[] FirstItems
         {
@@ -280,7 +280,7 @@ namespace DjSoft.SchedulerMap.Analyser
             }
         }
         /// <summary>
-        /// Pole posledních prvků, setřídění podle <see cref="MapItem.CompareByItemId"/>
+        /// Pole posledních prvků, setříděné podle <see cref="MapItem.CompareByItemId"/>
         /// </summary>
         public MapItem[] LastItems
         {
@@ -289,6 +289,37 @@ namespace DjSoft.SchedulerMap.Analyser
                 var items = MapItems.Values.Where(i => i.IsLast).ToList();
                 items.Sort((a, b) => MapItem.CompareByItemId(a, b));
                 return items.ToArray();
+            }
+        }
+        /// <summary>
+        /// Pole prvních Main prvků, setříděné podle <see cref="MapItem.CompareByItemId"/>
+        /// </summary>
+        public MapItem[] FirstMainItems
+        {
+            get
+            {
+                var firstMainItems = new Dictionary<int, MapItem>();
+                var firstItems = FirstItems;
+                foreach (var firstItem in firstItems)
+                {
+                    if (firstItem.IsMainItem)
+                    {
+                        if (!firstMainItems.ContainsKey(firstItem.ItemId))
+                            firstMainItems.Add(firstItem.ItemId, firstItem);
+                    }
+                    else
+                    {
+                        var nextMainItems = firstItem.MainNextItems;
+                        foreach (var nextMainItem in nextMainItems)
+                        {
+                            if (!firstMainItems.ContainsKey(nextMainItem.ItemId))
+                                firstMainItems.Add(nextMainItem.ItemId, nextMainItem);
+                        }
+                    }
+                }
+                var result = firstMainItems.Values.ToList();
+                result.Sort((a, b) => MapItem.CompareByItemId(a, b));
+                return result.ToArray();
             }
         }
         /// <summary>
@@ -350,19 +381,18 @@ namespace DjSoft.SchedulerMap.Analyser
         }
         /// <summary>
         /// Vyhledá prvky pro dané hodnoty <see cref="MapItem.ItemId"/> a nalezené prvky (ne null) vrátí jako pole.
+        /// pokud na vstupu je null, pak vrátí null.
         /// </summary>
         /// <param name="itemIds"></param>
         /// <returns></returns>
         public MapItem[] GetMapItems(IEnumerable<int> itemIds)
         {
+            if (itemIds is null) return null;
             var items = new List<MapItem>();
-            if (itemIds != null)
+            foreach (var itemId in itemIds)
             {
-                foreach (var itemId in itemIds)
-                {
-                    if (MapItems.TryGetValue(itemId, out var item))
-                        items.Add(item);
-                }
+                if (MapItems.TryGetValue(itemId, out var item))
+                    items.Add(item);
             }
             return items.ToArray();
         }
@@ -567,6 +597,15 @@ namespace DjSoft.SchedulerMap.Analyser
             _Description1 = (count >= 11 ? segment.StringHeap.GetId(cells[10]) : 0);
             _Description2 = (count >= 12 ? segment.StringHeap.GetId(cells[11]) : 0);
             _Description3 = (count >= 13 ? segment.StringHeap.GetId(cells[12]) : 0);
+
+            // Sekundární:
+            var itemType = GetMapItemType(cells[2]);
+            _ItemType = itemType;
+            _IsByProduct = (itemType == MapItemType.IncrementByRealByProductSuitable || itemType == MapItemType.IncrementByPlanByProductSuitable || itemType == MapItemType.IncrementByRealByProductDissonant || itemType == MapItemType.IncrementByPlanByProductDissonant);
+            _IsMainItem = (itemType == MapItemType.IncrementByRealSupplierOrder
+                || itemType == MapItemType.OperationReal || itemType == MapItemType.OperationPlan
+                || itemType == MapItemType.IncrementByRealProductOrder || itemType == MapItemType.IncrementByPlanProductOrder 
+                || itemType == MapItemType.DecrementByPlanEnquiry || itemType == MapItemType.DecrementByRealEnquiry);
         }
         private static string[] SplitItems(string cell)
         {
@@ -622,18 +661,6 @@ namespace DjSoft.SchedulerMap.Analyser
         private int _Description3;
         #endregion
         #region Data prvku podpůrná, komparátory
-        /// <summary>
-        /// Typ prvku <see cref="Type"/> ondemand převedený na enum
-        /// </summary>
-        internal MapItemType ItemType
-        {
-            get
-            {
-                if (!_ItemType.HasValue) _ItemType = GetMapItemType(this.Type);
-                return _ItemType.Value;
-            }
-        }
-        private MapItemType? _ItemType;
         private string PrevInfo { get { return (IsFirst ? "IsFirst" : PrevIds.Length.ToString() + " items"); } }
         private string NextInfo { get { return (IsLast ? "IsLast" : NextIds.Length.ToString() + " items"); } }
         /// <summary>
@@ -661,19 +688,26 @@ namespace DjSoft.SchedulerMap.Analyser
         /// </summary>
         public bool? IsCycled { get; set; }
         /// <summary>
-        /// Jde o ByProduct?
+        /// Typ prvku <see cref="Type"/> ondemand převedený na enum
         /// </summary>
-        public bool IsByProduct
-        {
-            get
-            {
-                string type = this.Type;
-                return type.StartsWith("IncrementByRealByProduct") || type.StartsWith("IncrementByPlanByProduct");
-            }
-        }
+        internal MapItemType ItemType { get { return _ItemType; } } private MapItemType _ItemType;
+        /// <summary>
+        /// Jde o ByProduct?
+        /// Tedy typ prvku je: <see cref="MapItemType.IncrementByRealByProductSuitable"/> nebo <see cref="MapItemType.IncrementByPlanByProductSuitable "/> 
+        /// nebo <see cref="MapItemType.IncrementByRealByProductDissonant"/> nebo <see cref="MapItemType.IncrementByPlanByProductDissonant"/>
+        /// </summary>
+        public bool IsByProduct { get { return _IsByProduct; } } private bool _IsByProduct;
+        /// <summary>
+        /// Tento prvek je Main, tedy bude zobrazován ve zjednodušené mapě?
+        /// Tedy typ prvku je: <see cref="MapItemType.IncrementByRealSupplierOrder"/> 
+        /// nebo <see cref="MapItemType.OperationReal "/> nebo <see cref="MapItemType.OperationPlan"/> 
+        /// nebo <see cref="MapItemType.IncrementByRealProductOrder "/> nebo <see cref="MapItemType.IncrementByPlanProductOrder"/> 
+        /// nebo <see cref="MapItemType.DecrementByPlanEnquiry"/> nebo <see cref="MapItemType.DecrementByRealEnquiry"/>
+        /// </summary>
+        public bool IsMainItem { get { return _IsMainItem; } } private bool _IsMainItem;
         /// <summary>
         /// Prev vztahy.
-        /// Ve vztahu je jako <see cref="MapLink.NextItem"/> prvek this a ve vztahu <see cref="MapLink.PrevItem"/> je prvek vpravo.
+        /// Ve vztahu je jako <see cref="MapLink.NextItem"/> prvek this a ve vztahu <see cref="MapLink.PrevItem"/> je prvek vlevo.
         /// Toto pole může být null, pokud this prvek je první = má <see cref="IsFirst"/> = true.
         /// Pokud není null, pak typicky obsahuje nějaký prvek, tyto prvky vždy mají naplněné obě instance (<see cref="MapLink.PrevItem"/> i <see cref="MapLink.NextItem"/>).
         /// </summary>
@@ -687,6 +721,14 @@ namespace DjSoft.SchedulerMap.Analyser
             }
         }
         private MapLink[] _PrevLinks;
+        /// <summary>
+        /// Předchozí prvky
+        /// </summary>
+        public MapItem[] PrevItems { get { return _Segment.GetMapItems(_PrevIds); } }
+        /// <summary>
+        /// Následující prvky
+        /// </summary>
+        public MapItem[] NextItems { get { return _Segment.GetMapItems(_NextIds); } }
         /// <summary>
         /// Next vztahy.
         /// Ve vztahu je jako <see cref="MapLink.PrevItem"/> prvek this a ve vztahu <see cref="MapLink.NextItem"/> je prvek vpravo.
@@ -704,12 +746,23 @@ namespace DjSoft.SchedulerMap.Analyser
         }
         private MapLink[] _NextLinks;
         /// <summary>
+        /// Pole prvků typu Main ve směru Prev (vlevo) z this prvku.
+        /// Toto pole může být prázdné, pokud this v daném směru už neexistuje žádný Main prvek, ale nebude null.
+        /// </summary>
+        public MapItem[] MainPrevItems { get { return GetOtherItems(this, Side.Prev, add => (add.ItemId != this.ItemId && add.IsMainItem), scan => (scan.ItemId == this.ItemId || !scan.IsMainItem)); } }
+        /// <summary>
+        /// Pole prvků typu Main ve směru Prev (vlevo) z this prvku.
+        /// Toto pole může být prázdné, pokud this v daném směru už neexistuje žádný Main prvek, ale nebude null.
+        /// </summary>
+        public MapItem[] MainNextItems { get { return GetOtherItems(this, Side.Next, add => (add.ItemId != this.ItemId && add.IsMainItem), scan => (scan.ItemId == this.ItemId || !scan.IsMainItem)); } }
+        /// <summary>
         /// Obsahuje všechny prvky počínaje z daného prvku včetně ve směru Prev. Pokud dojde k zacyklení ve vstupních datech, nezacyklí se.
         /// </summary>
         /// <param name="firstItem"></param>
         /// <returns></returns>
-        public MapItem[] GetAllPrevItems()
-        {
+        public MapItem[] GetAllPrevItems() { return GetOtherItems(this, Side.Prev, add => true, scan => true); }
+
+            /*
             Dictionary<int, MapItem> allDict = new Dictionary<int, MapItem>();
             Queue<MapItem> queue = new Queue<MapItem>();
             queue.Enqueue(this);
@@ -730,14 +783,16 @@ namespace DjSoft.SchedulerMap.Analyser
                 }
             }
             return allDict.Values.ToArray();
-        }
+            */
+
         /// <summary>
         /// Obsahuje všechny prvky počínaje z daného prvku včetně ve směru Next. Pokud dojde k zacyklení ve vstupních datech, nezacyklí se.
         /// </summary>
         /// <param name="firstItem"></param>
         /// <returns></returns>
-        public MapItem[] GetAllNextItems()
-        {
+        public MapItem[] GetAllNextItems() { return GetOtherItems(this, Side.Next, add => true, scan => true); }
+
+            /*
             Dictionary<int, MapItem> allDict = new Dictionary<int, MapItem>();
             Queue<MapItem> queue = new Queue<MapItem>();
             queue.Enqueue(this);
@@ -758,7 +813,54 @@ namespace DjSoft.SchedulerMap.Analyser
                 }
             }
             return allDict.Values.ToArray();
+            */
+
+        /// <summary>
+        /// Vrátí patřičné sousední prvky od daného výchozího prvku
+        /// </summary>
+        /// <param name="rootItem"></param>
+        /// <param name="side"></param>
+        /// <param name="addToResultFunc"></param>
+        /// <param name="scanOtherItemsFunc"></param>
+        /// <returns></returns>
+        private static MapItem[] GetOtherItems(MapItem rootItem, Side side, Func<MapItem, bool> addToResultFunc, Func<MapItem, bool> scanOtherItemsFunc)
+        {
+            List<MapItem> result = new List<MapItem>();                                  // Toto je náš výsledek
+            Dictionary<int, MapItem> allScan = new Dictionary<int, MapItem>();           // Tyto prvky jsme už prošli (to abychom se při nalezené jiné boční cesty anebo zacyklení neopakovali)
+            Queue<MapItem> queue = new Queue<MapItem>();                                 // Tyto prvky teprve budeme procházet (fronta práce)
+
+            // Začneme a pojedeme tak dlouho, dokud bude co dělat:
+            queue.Enqueue(rootItem);
+            while (queue.Count > 0)
+            {
+                // Vyzvednu prvek ke zpracování, ale pokud jej už mám ve výsledku, pak ho tam nedám a ani neřeším jeho Prev/Next prvky = ochrana před zacyklením:
+                var item = queue.Dequeue();
+                if (allScan.ContainsKey(item.ItemId)) continue;
+                allScan.Add(item.ItemId, item);
+
+                // Tento prvek vidíme prvně; chceme ho dát do výsledného soupisu?
+                if (addToResultFunc(item)) result.Add(item);
+
+                // Prvek jsme tu dosud neměli - zjistím, zda mám zpracovávat i jeho Prev/Next prvky, a podmíněně je přidám do fronty ke zpracování:
+                if (!scanOtherItemsFunc(item)) continue;
+
+                // Vezmu vztahy na sousední prvky v požadovaném směru:
+                var otherLinks = (side == Side.Prev ? item.PrevLinks : (side == Side.Next ? item.NextLinks: null));
+                if (otherLinks is null || otherLinks.Length == 0) continue;
+                foreach (var otherLink in otherLinks)
+                {   // Zařadím Prev/Next prvky do dalšího kola zpracování
+                    if (otherLink.IsLinkDisconnected) continue;
+                    var otherItem = (side == Side.Prev ? otherLink.PrevItem : (side == Side.Next ? otherLink.NextItem : null));
+                    if (otherItem != null && !allScan.ContainsKey(otherItem.ItemId))
+                        queue.Enqueue(otherItem);
+                }
+            }
+            return result.ToArray();
         }
+        /// <summary>
+        /// Strana
+        /// </summary>
+        private enum Side { None, Prev, Next }
         /// <summary>
         /// Obsahuje true, pokud všechny vztahy mezi Prev prvky v <see cref="PrevLinks"/> a this prvkem jsou zpracované = mají <see cref="MapLink.IsLinkProcessed"/> = true;
         /// Pokud this prvek nemá žádné Prev prvky (zdejší <see cref="IsFirst"/> je true), pak <see cref="AllPrevLinksIsProcessed"/> je true.
