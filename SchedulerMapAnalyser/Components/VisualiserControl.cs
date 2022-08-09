@@ -308,7 +308,6 @@ namespace DjSoft.SchedulerMap.Analyser
         {
             _CellBounds = new RectangleF(5f, 5f, 120f, 60f);
             _Cells = new Cells();
-            
         }
         /// <summary>
         /// Vrátí souřadnice virtuálního středu dané buňky
@@ -349,7 +348,6 @@ namespace DjSoft.SchedulerMap.Analyser
         private void RecalculateVirtualBounds()
         { }
         private Cells _Cells;
-
         #endregion
         #region Načítání dat a úvodní rozsvícení prvků
         /// <summary>
@@ -409,7 +407,7 @@ namespace DjSoft.SchedulerMap.Analyser
             foreach (var mapItem in visualItems)
             {
                 if (_VisualItems.ContainsKey(mapItem.ItemId)) continue;
-                var itemSize = MapItemPainter.GetVirtualSize(mapItem, raster.Size);
+                var itemSize = raster.Size;
                 var visualItem = new VisualItem(this, mapItem, new PointF(x, y), itemSize);
                 _VisualItems.Add(mapItem.ItemId, visualItem);
                 y += raster.Bottom;
@@ -697,6 +695,7 @@ namespace DjSoft.SchedulerMap.Analyser
             if (delimiterIndex < 0) return null;
             return text.Substring(delimiterIndex + delimiter.Length);
         }
+        #region Vizuální tvary pro jednotlivé typy prvků, jejich cache, jejich tvorba
         /// <summary>
         /// Metoda vrátí definici tvaru pro prvek daného typu.
         /// </summary>
@@ -704,212 +703,85 @@ namespace DjSoft.SchedulerMap.Analyser
         /// <returns></returns>
         internal VisualShape GetVisualObjectShape(MapItemType visualType)
         {
+            VisualShape visualShape = null;
+            if (_ShapeDict is null) _ShapeDict = new Dictionary<MapItemType, VisualShape>();
+            if (!_ShapeDict.TryGetValue(visualType, out visualShape))
+            {
+                visualShape = CreateVisualObjectShape(visualType);
+                _ShapeDict.Add(visualType, visualShape);
+            }
+            return visualShape;
+        }
+        /// <summary>
+        /// Vytvoří new instanci vizuálního tvaru pro daný typ prvku <paramref name="visualType"/> a vrátí tento <see cref="VisualShape"/>.
+        /// </summary>
+        /// <param name="visualType"></param>
+        /// <returns></returns>
+        private VisualShape CreateVisualObjectShape(MapItemType visualType)
+        {
+            VisualShape visualShape = new VisualShape();
             switch (visualType)
             {
                 case MapItemType.IncrementByRealSupplierOrder: 
                 case MapItemType.IncrementByPlanSupplierOrder: 
-                case MapItemType.IncrementByProposalReceipt: return ShapeRight;
-                case MapItemType.DecrementByProposalRequisition: return ShapeDown; 
-                case MapItemType.IncrementByPlanStockTransfer: return ShapeUp;
+                case MapItemType.IncrementByProposalReceipt:
+                    visualShape.Points = CreatePoints(5, 5, 5, 94, 183, 94, 194, 83, 194, 16, 183, 5);
+                    visualShape.TextBounds = new RectangleF(20f, 16f, 160f, 68f);
+                    break;
+                case MapItemType.DecrementByProposalRequisition:
+                case MapItemType.IncrementByPlanStockTransfer:
                 case MapItemType.DecrementByRealComponent: 
-                case MapItemType.DecrementByPlanComponent: return ShapeDownHalf;
+                case MapItemType.DecrementByPlanComponent:
                 case MapItemType.IncrementByRealByProductSuitable: 
-                case MapItemType.IncrementByPlanByProductSuitable: return ShapeUpHalf;
+                case MapItemType.IncrementByPlanByProductSuitable:
                 case MapItemType.IncrementByRealByProductDissonant: 
-                case MapItemType.IncrementByPlanByProductDissonant: return ShapeUpHalf;
+                case MapItemType.IncrementByPlanByProductDissonant:
+                    visualShape.Points = CreatePoints(16, 5, 5, 16, 5, 83, 16, 94, 183, 94, 194, 83, 194, 16, 183, 5);
+                    visualShape.TextBounds = new RectangleF(20f, 16f, 160f, 68f);
+                    break;
                 case MapItemType.OperationPlan: 
-                case MapItemType.OperationReal: return ShapeTask;
+                case MapItemType.OperationReal:
+                    visualShape.Points = CreatePoints(5, 5, 5, 72, 27, 94, 194, 94, 194, 27, 172, 5);
+                    visualShape.TextBounds = new RectangleF(20f, 16f, 160f, 68f);
+                    break;
                 case MapItemType.IncrementByRealProductOrder: 
-                case MapItemType.IncrementByPlanProductOrder: return ShapeUpWide;
+                case MapItemType.IncrementByPlanProductOrder:
+                    visualShape.Points = CreatePoints(5, 5, 5, 94, 194, 94, 194, 5);
+                    visualShape.TextBounds = new RectangleF(20f, 16f, 160f, 68f);
+                    break;
                 case MapItemType.DecrementByRealEnquiry: 
-                case MapItemType.DecrementByPlanEnquiry: return ShapeLeft;
+                case MapItemType.DecrementByPlanEnquiry:
+                    visualShape.Points = CreatePoints(16, 5, 5, 16, 5, 83, 16, 94, 194, 94, 194, 5);
+                    visualShape.TextBounds = new RectangleF(20f, 16f, 160f, 68f);
+                    break;
+                default:
+                    visualShape.Points = CreatePoints(5, 5, 5, 94, 194, 94, 194, 5);
+                    visualShape.TextBounds = new RectangleF(20f, 16f, 160f, 68f);
+                    break;
             }
-            return ShapeBasic;
+            return visualShape;
         }
-        private VisualShape ShapeBasic { get { return GetCreate(ref _ShapeBasic, () => new int[] { 0, 0, 0, 0, 0, 0 }); } } private VisualShape _ShapeBasic;
-        private VisualShape ShapeRight { get { return GetCreate(ref _ShapeRight, () => new int[] { 0, 0, 0, 6, 0, 6 }); } } private VisualShape _ShapeRight;
-        private VisualShape ShapeLeft { get { return GetCreate(ref _ShapeLeft, () => new int[] { 6, 0, 6, 0, 0, 0 }); } } private VisualShape _ShapeLeft;
-        private VisualShape ShapeDown { get { return GetCreate(ref _ShapeDown, () => new int[] { 0, 3, 6, 6, 3, 0 }); } } private VisualShape _ShapeDown;
-        private VisualShape ShapeUp { get { return GetCreate(ref _ShapeUp, () => new int[] { 6, 3, 0, 0, 3, 6 }); } } private VisualShape _ShapeUp;
-        private VisualShape ShapeDownHalf { get { return GetCreate(ref _ShapeDownHalf, () => new int[] { 0, 0, 3, 3, 0, 0 }); } } private VisualShape _ShapeDownHalf;
-        private VisualShape ShapeUpHalf { get { return GetCreate(ref _ShapeUpHalf, () => new int[] { 3, 0, 0, 0, 0, 3 }); } } private VisualShape _ShapeUpHalf;
-        private VisualShape ShapeTask { get { return GetCreate(ref _ShapeTask, () => new int[] { 0, 6, 0, 6, 0, 6 }); } } private VisualShape _ShapeTask;
-        private VisualShape ShapeUpWide { get { return GetCreate(ref _ShapeUpWide, () => new int[] { 6, 0, 0, 0, 0, 6 }); } } private VisualShape _ShapeUpWide;
-        private VisualShape ShapeDownWide { get { return GetCreate(ref _ShapeDownWide, () => new int[] { 0, 0, 6, 6, 0, 0 }); } } private VisualShape _ShapeDownWide;
+        /// <summary>
+        /// Ze zadaných souřadnic (v pořadí X0,Y0, X1,Y1, X2,Y2, ... Xn,Yn) vytvoří pole bodů a to vrátí.
+        /// </summary>
+        /// <param name="values"></param>
+        /// <returns></returns>
+        private static PointF[] CreatePoints(params int[] values)
+        {
+            List<PointF> points = new List<PointF>();
+            int count = values.Length;
+            for (int i = 0; i < count; i += 2)
+                points.Add(new PointF(values[i], values[i + 1]));
+            return points.ToArray();
+        }
+        /// <summary>
+        /// Úložiště vizuálních tvarů
+        /// </summary>
+        private Dictionary<MapItemType, VisualShape> _ShapeDict;
+        #endregion
 
-        private VisualShape GetCreate(ref VisualShape shape, Func<int[]> creator)
-        {
-            if (shape is null)
-                shape = new VisualShape(creator());
-            return shape;
-        }
-        private VisualShape GetCreate(ref VisualShape shape, Func<VisualShape> creator)
-        {
-            if (shape is null)
-                shape = creator();
-            return shape;
-        }
         #endregion
     }
-    internal class MapItemPainter
-    {
-        /// <summary>
-        /// Vrátí virtuální velikost pro daný prvek
-        /// </summary>
-        /// <param name="mapItem"></param>
-        /// <returns></returns>
-        internal static SizeF GetVirtualSize(MapItem mapItem, SizeF rasterSize)
-        {
-            return rasterSize;
-        }
-
-        internal static GraphicsPathSet CreateGraphicsPaths(VisualItem visualItem)
-        {
-            var bounds = visualItem.CurrentBounds;
-            GraphicsPathSet set = new GraphicsPathSet(bounds);
-
-            var visualShape = visualItem.VisualShape;
-
-            var outlineColor = visualItem.CurrentOutlineColor;
-            if (outlineColor.HasValue)
-            {
-                set.OutlineBrush = new SolidBrush(outlineColor.Value);
-                set.OutlinePath = visualShape.CreateBaseGraphicsPath(bounds, 0f);
-            }
-
-            float backgroundMargin = VirtualControl.GetOutlineMargin(visualItem.Zoom);
-            var backgroundColor = visualItem.BackColor;
-            set.BackgroundBrush = new SolidBrush(backgroundColor);
-            set.BackgroundPath = visualShape.CreateBaseGraphicsPath(bounds, backgroundMargin);
-
-            float borderMargin = VirtualControl.GetBorderMargin(visualItem.Zoom);
-            var borderColor = Color.Black;
-            set.BorderBrush = new SolidBrush(borderColor);
-            set.BorderPath = visualShape.CreateBaseGraphicsPath(bounds, backgroundMargin, borderMargin);
-
-            set.TextEmSize = VirtualControl.GetFontSizeEm(visualItem.ZoomLinear);
-            set.TextColor = visualItem.TextColor;
-            set.TextBounds = visualShape.CreateTextBounds(bounds, 2f * borderMargin);
-
-            return set;
-        }
-    }
-    #region class GraphicsPathSet : Sada grafických nástrojů pro kreslení podkresu - pozadí - okraje prvku
-    /// <summary>
-    /// Sada grafických nástrojů pro kreslení podkresu - pozadí - okraje prvku.
-    /// Neřeší kreslení obsahu (texty, šipky).
-    /// </summary>
-    internal class GraphicsPathSet : IDisposable
-    {
-        /// <summary>
-        /// Konstruktor
-        /// </summary>
-        /// <param name="bounds"></param>
-        public GraphicsPathSet(Rectangle bounds)
-        {
-            this.Bounds = bounds;
-        }
-        /// <summary>
-        /// Vnější souřadnice oblasti. Vhodné pro Clip grafiky.
-        /// </summary>
-        public Rectangle Bounds { get; private set; }
-        /// <summary>
-        /// Barva pro vykreslení stínu pod prvkem / Selection / MouseOver.
-        /// Kreslí se jako první.
-        /// </summary>
-        public Color? OutlineColor { get; set; }
-        /// <summary>
-        /// Štětec pro vykreslení stínu pod prvkem / Selection / MouseOver.
-        /// Kreslí se jako první.
-        /// </summary>
-        public Brush OutlineBrush { get; set; }
-        /// <summary>
-        /// Oblast pro vykreslení stínu pod prvkem / Selection / MouseOver.
-        /// Kreslí se jako první.
-        /// </summary>
-        public GraphicsPath OutlinePath { get; set; }
-        /// <summary>
-        /// true pokud máme Outline
-        /// </summary>
-        public bool HasOutline { get { return ((OutlineColor.HasValue || OutlineBrush != null) && OutlinePath != null); } }
-
-        /// <summary>
-        /// Barva pro vykreslení pozadí prvku.
-        /// Kreslí se jako druhá.
-        /// </summary>
-        public Color? BackgroundColor { get; set; }
-        /// <summary>
-        /// Štětec pro vykreslení pozadí prvku.
-        /// Kreslí se jako druhá.
-        /// </summary>
-        public Brush BackgroundBrush { get; set; }
-        /// <summary>
-        /// Oblast pro vykreslení pozadí prvku.
-        /// Kreslí se jako druhá.
-        /// </summary>
-        public GraphicsPath BackgroundPath { get; set; }
-        /// <summary>
-        /// true pokud máme Background
-        /// </summary>
-        public bool HasBackground { get { return ((BackgroundColor.HasValue || BackgroundBrush != null) && BackgroundPath != null); } }
-
-        /// <summary>
-        /// Barva pro vykreslení okrajů vnějších a vnitřních předělů, barva okraje.
-        /// Kreslí se jako třetí.
-        /// </summary>
-        public Color? BorderColor { get; set; }
-        /// <summary>
-        /// Barva pro vykreslení okrajů vnějších a vnitřních předělů, barva okraje.
-        /// Kreslí se jako třetí.
-        /// </summary>
-        public Brush BorderBrush { get; set; }
-        /// <summary>
-        /// Oblast pro vykreslení okrajů vnějších a vnitřních předělů, barva okraje.
-        /// Kreslí se jako třetí.
-        /// </summary>
-        public GraphicsPath BorderPath { get; set; }
-        /// <summary>
-        /// true pokud máme Border
-        /// </summary>
-        public bool HasBorder { get { return ((BorderColor.HasValue || BorderBrush != null) && BorderPath != null); } }
-
-        /// <summary>
-        /// Velikost textu
-        /// </summary>
-        public float TextEmSize { get; set; }
-        /// <summary>
-        /// Barva pro vykreslení textu.
-        /// </summary>
-        public Color? TextColor { get; set; }
-        /// <summary>
-        /// Souřadnice textu
-        /// </summary>
-        public RectangleF TextBounds { get; set; }
-
-        /// <summary>
-        /// Dispose setu
-        /// </summary>
-        public void Dispose()
-        {
-            this.OutlineBrush?.Dispose();
-            this.OutlinePath?.Dispose();
-            this.BackgroundBrush?.Dispose();
-            this.BackgroundPath?.Dispose();
-            this.BorderBrush?.Dispose();
-            this.BorderPath?.Dispose();
-
-            this.OutlineColor = null;
-            this.OutlineBrush = null;
-            this.OutlinePath = null;
-            this.BackgroundColor = null;
-            this.BackgroundBrush = null;
-            this.BackgroundPath = null;
-            this.BorderColor = null;
-            this.BorderBrush = null;
-            this.BorderPath = null;
-        }
-    }
-    #endregion
     #region class VisualShape : Obálka definující vizuální tvar
     /// <summary>
     /// Obálka definující vizuální tvar
@@ -918,162 +790,86 @@ namespace DjSoft.SchedulerMap.Analyser
     {
         /// <summary>
         /// Konstruktor
-        /// <para/>
-        /// Metoda dostává šest hodnot, které vyjadřují relativní posun šesti bodů ve směru osy X, ve směru od okraje prostoru prvku směrem dovnitř. Hodnoty by tedy měly být nula nebo kladné.<br/>
-        /// <u>Postupně se jedná o body:</u><br/>
-        /// [0] = vlevo nahoře; [1] = vlevo uprostřed; [2] = vlevo dole;<br/>
-        /// [3] = vpravo dole; [4] = vpravo uprostřed; [5] = vpravo nahoře;<br/>
-        /// <u>Hodnota pro jednotlivý bod:</u><br/>
-        /// Nula = bod se nachází na hraně přiděleného prostoru<br/>
-        /// Kladná hodnota = bod se blíží směrem ke středu na ose X v prostoru prvku<br/>
-        /// Doporučené hodnoty: 0, 2, 3, 6
-        /// <para/>
-        /// Například pole bodů { 0, 0, 0, 0, 0, 0 } vygeneruje běžný obdélník v celé ploše;<br/>
-        /// Například pole bodů { 3, 0, 3, 3, 0, 3 } vygeneruje obdobu klasického šestiúhelníku;<br/>
-        /// Například pole bodů { 6, 0, 0, 0, 0, 6 } vygeneruje obdobu domečku;<br/>
-        /// Například pole bodů { 0, 6, 0, 6, 0, 6 } vygeneruje obdobu segment BreadCrumbu (pásová šipka ukazující doprava), vhodné pro Operaci výroby;<br/>
         /// </summary>
-        /// <param name="pointsX"></param>
-        public VisualShape(int[] pointsX)
+        public VisualShape()
         {
-            _PointsX = pointsX;
         }
-        private int[] _PointsX;
         /// <summary>
-        /// Vygeneruje fyzickou grafickou komponentu pro svůj tvar
+        /// Souřadnice bodů okraje obrazce.
+        /// <para/>
+        /// Vyhrazená souřadnice pro obrazec je { 0f, 0f, 200f, 100f }. V tomto prostoru mají být definovány oblasti obrazce.
+        /// Následně bude obrazec transformován do cílového souřadného systému a vykreslen.
+        /// Uvnitř těchto okrajů se má vyskytovat prostor textu <see cref="TextBounds"/>.
+        /// <para/>
+        /// Souřadnice mají uvažovat s tím, že okraje prostoru budou vykreslovány linkou určité tloušťky a budou tedy přesahovat i ven a dovnitř od této souřadnice, 
+        /// proto by tyto souřadnice měly ponechávat odstup 5 jednotek od okraje prostoru obrazce, tedy měly by se pohybovat v rozmezí { 5f, 5f, 190f, 90f }.
+        /// </summary>
+        public PointF[] Points { get; set; }
+        /// <summary>
+        /// Souřadnice vyhrazená pro text, uvnitř obrazce.
+        /// <para/>
+        /// Vyhrazená souřadnice pro obrazec je { 0f, 0f, 200f, 100f }. Prostor textu by měl být o 5 jednotek menší než vnitřní souřadnice okraje, kvůli tloušťce orámování.
+        /// </summary>
+        public RectangleF TextBounds { get; set; }
+
+        /// <summary>
+        /// Vygeneruje fyzickou grafickou komponentu pro svůj tvar, převedenou do daného cílového prostoru.
         /// </summary>
         /// <param name="bounds"></param>
         /// <param name="margin"></param>
         /// <param name="border"></param>
         /// <returns></returns>
-        public GraphicsPath CreateBaseGraphicsPath(RectangleF bounds, float margin = 0f, float? border = null)
+        public GraphicsPath CreateBaseGraphicsPath(RectangleF bounds)
         {
-            if (_PointsX is null || _PointsX.Length < 6)
-                throw new InvalidOperationException("VisualShape.CreateGraphicsPath() error: PointsX is invalid.");
-
             if (bounds.Width < 12f || bounds.Height < 12f) return null;
 
-            GraphicsPath path = new GraphicsPath();
+            int count = this.Points?.Length ?? 0;
+            if (count == 0) return null;
 
-            if (border.HasValue && border.Value > 0f)
+            List<PointF> points = new List<PointF>();
+            PointF? first = null;
+            for (int i = 0; i < count; i++)
             {
-                AddPath(bounds, margin, path, false, false);
-                AddPath(bounds, margin + border.Value, path, true, true);
+                PointF point = GetCurrentPoint(this.Points[i], bounds);
+                points.Add(point);
+                if (!first.HasValue) first = point;
             }
-            else
-            {
-                AddPath(bounds, margin, path, false, true);
-            }
+            if (first.HasValue) points.Add(first.Value);
+
+            GraphicsPath path = new GraphicsPath();
+            path.AddPolygon(points.ToArray());
+            path.CloseFigure();
 
             return path;
         }
-        private void AddPath(RectangleF bounds, float margin, GraphicsPath path, bool reverse, bool closeFigure)
-        {
-            // Rozměry vnitřního obdélníku, zmenšeného o margin:
-            float h = bounds.Height;
-            float h2 = h / 2f;
-            float module = h / 30f;              // velikost jednotky v PointsX: při výšce 60px je jednotka 2px, hodnota 3 odpovídá 6px, hodnota 6 = 12px, což v grafickém editoru vypadá přiměřeně.
-            float l = bounds.X + margin;
-            float r = bounds.Right - margin;
-            float t = bounds.Y + margin;
-            float c = bounds.Y + h2;
-            float b = bounds.Bottom - margin;
-
-            // Souřadnice X všech šesti bodů, platné ale na souřadnici bez margins (=nahoře a dole):
-            float x0 = module * (float)_PointsX[0];
-            float x1 = module * (float)_PointsX[1];
-            float x2 = module * (float)_PointsX[2];
-            float x3 = module * (float)_PointsX[3];
-            float x4 = module * (float)_PointsX[4];
-            float x5 = module * (float)_PointsX[5];
-
-            // Korekce souřadnic 0, 2, 3, 5 (pro body na horní a dolní lince) pro případ, kdy je kladný margin, a bod je tedy mírně posunut dolů (pod horní linku) nebo nahoru (nad dolní linku)
-            // tak, aby souřadnice X byla přiměřeně odsunutá, když sousední střední bod (1, 4) není svisle (její x1 nebo x4 je jiné než x0 ...)  [ono to chce obrázek]
-            if (margin != 0f)
-            {
-                if (_PointsX[0] != _PointsX[1]) x0 = _ShiftX(x0, x1, h2, margin);
-                if (_PointsX[2] != _PointsX[1]) x2 = _ShiftX(x2, x1, h2, margin);
-                if (_PointsX[3] != _PointsX[4]) x3 = _ShiftX(x3, x4, h2, margin);
-                if (_PointsX[5] != _PointsX[4]) x5 = _ShiftX(x5, x4, h2, margin);
-            }
-
-            if(!reverse)
-                path.AddPolygon(new PointF[]
-                {
-                    new PointF(l + x0, t),
-                    new PointF(l + x1, c),
-                    new PointF(l + x2, b),
-                    new PointF(r - x3, b),
-                    new PointF(r - x4, c),
-                    new PointF(r - x5, t),
-                    new PointF(l + x0, t),
-                });
-            else
-                path.AddPolygon(new PointF[]
-                {
-                    new PointF(l + x0, t),
-                    new PointF(r - x5, t),
-                    new PointF(r - x4, c),
-                    new PointF(r - x3, b),
-                    new PointF(l + x2, b),
-                    new PointF(l + x1, c),
-                    new PointF(l + x0, t),
-                });
-
-            if (closeFigure) path.CloseFigure();
-        }
         /// <summary>
-        /// Zajistí posunutí souřadnice X na šikmé lince z bodu X1 do X2 při dané výšce Y pro posun na ose Y o daný margin
+        /// Vrátí souřadnici textu <see cref="TextBounds"/> převedenou do daného cílového prostoru.
         /// </summary>
-        /// <param name="x1"></param>
-        /// <param name="x2"></param>
-        /// <param name="y"></param>
-        /// <param name="margin"></param>
+        /// <param name="targetBounds"></param>
         /// <returns></returns>
-        private static float _ShiftX(float x1, float x2, float y, float margin)
+        public RectangleF GetCurrentTextBounds(RectangleF targetBounds)
         {
-            if (x1 == x2 || y <= 1f) return x1;
-            float dx = x1 - x2;
-            return x1 - margin * (dx / y);
-        }
-        /// <summary>
-        /// Určí souřadnice oblasti, kam lze psát text
-        /// </summary>
-        /// <param name="bounds"></param>
-        /// <param name="margin"></param>
-        /// <returns></returns>
-        public RectangleF CreateTextBounds(RectangleF bounds, float margin)
-        {
-            // Rozměry vnitřního obdélníku, zmenšeného o margin:
-            float h = bounds.Height;
-            float h2 = h / 2f;
-            float module = h / 30f;              // velikost jednotky v PointsX: při výšce 60px je jednotka 2px, hodnota 3 odpovídá 6px, hodnota 6 = 12px, což v grafickém editoru vypadá přiměřeně.
-            float l = bounds.X + margin;
-            float r = bounds.Right - margin;
-            float t = bounds.Y + margin;
-            float c = bounds.Y + h2;
-            float b = bounds.Bottom - margin;
-
-            // Souřadnice X všech šesti bodů, platné ale na souřadnici bez margins (=nahoře a dole):
-            float x0 = module * (float)_PointsX[0];
-            float x1 = module * (float)_PointsX[1];
-            float x2 = module * (float)_PointsX[2];
-            float x3 = module * (float)_PointsX[3];
-            float x4 = module * (float)_PointsX[4];
-            float x5 = module * (float)_PointsX[5];
-
-            // Největší souřadnice vlevo a vpravo:
-            float maxL = _Max(x0, x1, x2);
-            float maxR = _Max(x3, x4, x5);
-
-            return RectangleF.FromLTRB(l + maxL, t, r - maxR, b);
-        }
-        private static float _Max(params float[] values)
-        {
-            if (values.Length == 0) return 0f;
-            return values.Max();
+            return GetCurrentBounds(this.TextBounds, targetBounds);
         }
 
+        private RectangleF GetCurrentBounds(RectangleF designBounds, RectangleF targetBounds)
+        {
+            float zoomX = targetBounds.Width / 200f;
+            float zoomY = targetBounds.Height / 100f;
+            float x = targetBounds.X + zoomX * designBounds.X;
+            float y = targetBounds.Y + zoomY * designBounds.Y;
+            float w = zoomX * designBounds.Width;
+            float h = zoomY * designBounds.Height;
+            return new RectangleF(x, y, w, h);
+        }
+        private PointF GetCurrentPoint(PointF designPoint, RectangleF targetBounds)
+        {
+            float zoomX = targetBounds.Width / 200f;
+            float zoomY = targetBounds.Height / 100f;
+            float x = targetBounds.X + zoomX * designPoint.X;
+            float y = targetBounds.Y + zoomY * designPoint.Y;
+            return new PointF(x, y);
+        }
     }
     #endregion
     #region class VisualItem : Prvek mapy umístěný ve virtuálním prostoru
@@ -1243,7 +1039,7 @@ namespace DjSoft.SchedulerMap.Analyser
             var brush = Visualiser.GetStandardBrush(textColor);
 
             var borderMargin = VirtualControl.GetBorderMargin(this.Zoom);
-            var textBounds = this.VisualShape.CreateTextBounds(currentBounds, 2f * borderMargin);
+            var textBounds = this.VisualShape.GetCurrentTextBounds(currentBounds);
             var textSize = graphics.MeasureString(text, font, (int)textBounds.Width);
             var fontBounds = AlignSizeToBounds(textBounds, textSize, ContentAlignment.MiddleLeft, true);
 
