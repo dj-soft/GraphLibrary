@@ -9,6 +9,182 @@ using System.Drawing;
 namespace DjSoft.SchedulerMap.Analyser
 {
     /// <summary>
+    /// Container obsahující <see cref="VirtualControl"/> a odpovídající scrollbary
+    /// </summary>
+    public class VirtualContainer : Control
+    {
+        #region Konstruktor 
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public VirtualContainer()
+        {
+            this.CreateComponents();
+        }
+        /// <summary>
+        /// Dispose
+        /// </summary>
+        /// <param name="disposing"></param>
+        protected override void Dispose(bool disposing)
+        {
+            _VirtualControl?.Dispose();
+            _VirtualControl = null;
+            _VScrollBar?.Dispose();
+            _VScrollBar = null;
+            _HScrollBar?.Dispose();
+            _HScrollBar = null;
+
+            base.Dispose(disposing);
+        }
+        /// <summary>
+        /// Vytvoří komponenty a zaregistruje eventhandlery
+        /// </summary>
+        private void CreateComponents()
+        {
+            _VirtualControl = new VirtualControl();
+            _VScrollBar = new VScrollBar();
+            _HScrollBar = new HScrollBar();
+            this.Controls.Add(_VirtualControl);
+            this.Controls.Add(_VScrollBar);
+            this.Controls.Add(_HScrollBar);
+
+            this.ClientSizeChanged += _ClientSizeChanged;
+            this._VirtualControl.VirtualPaint += _VirtualPaint;
+        }
+        /// <summary>
+        /// Handler události VirtualPaint
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _VirtualPaint(object sender, PaintEventArgs e)
+        {
+            OnVirtualPaint(e);
+            VirtualPaint?.Invoke(this, e);
+        }
+        /// <summary>
+        /// Háček události VirtualPaint
+        /// </summary>
+        /// <param name="e"></param>
+        protected virtual void OnVirtualPaint(PaintEventArgs e)
+        { }
+        /// <summary>
+        /// Událost VirtualPaint
+        /// </summary>
+        public event PaintEventHandler VirtualPaint;
+        /// <summary>
+        /// Po změně velikosti
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _ClientSizeChanged(object sender, EventArgs e)
+        {
+            DoLayout();
+        }
+        /// <summary>
+        /// Do svých controlů nastaví souřadnice podle aktuálních možností a potřeb
+        /// </summary>
+        private void DoLayout()
+        { 
+            var size = this.ClientSize;
+            int width = size.Width;
+            int height = size.Height;
+            int vScrWidth = _VScrollBar.Width;
+            int hScrHeight = _HScrollBar.Height;
+
+            int r = width - vScrWidth;
+            int b = height - hScrHeight;
+
+            _VirtualControl.Bounds = new Rectangle(0, 0, r, b);
+            _VScrollBar.Bounds = new Rectangle(r, 0, vScrWidth, b);
+            _HScrollBar.Bounds = new Rectangle(0, b, r, hScrHeight);
+        }
+
+        private VirtualControl _VirtualControl;
+        private System.Windows.Forms.VScrollBar _VScrollBar;
+        private System.Windows.Forms.HScrollBar _HScrollBar;
+        #endregion
+        #region Container <=> VirtualControl
+        /// <summary>
+        /// Nativní zobrazovací control
+        /// </summary>
+        public VirtualControl VirtualControl { get { return this._VirtualControl; } }
+        /// <summary>
+        /// Virtuální prostor - výpočetní mechanismus pro oboustranný přepočet Virtuální - Fyzická souřadnice;
+        /// včetně jeho řízení pomocí myši
+        /// </summary>
+        public VirtualSpace VirtualSpace { get { return this.VirtualControl.VirtualSpace; } }
+        /// <summary>
+        /// Zajistí nové vykreslení obsahu
+        /// </summary>
+        public virtual void RefreshContent() { VirtualControl.RefreshContent(); }
+        /// <summary>
+        /// Kolekce všech virtuálních prvků, které mohou být zobrazeny v this controlu.
+        /// </summary>
+        protected virtual IEnumerable<VirtualItemBase> ItemsAll { get { return null; } }
+        /// <summary>
+        /// Barva orámování bez Selectu za stavu myši <see cref="ItemMouseState.None"/>
+        /// </summary>
+        public Color? ColorOutlineNone { get { return VirtualControl.ColorOutlineNone; } set { VirtualControl.ColorOutlineNone = value; } }
+        /// <summary>
+        /// Barva orámování Selectovaného prvku za stavu myši <see cref="ItemMouseState.None"/>
+        /// </summary>
+        public Color? ColorOutlineNoneSelected { get { return VirtualControl.ColorOutlineNoneSelected; } set { VirtualControl.ColorOutlineNoneSelected = value; } }
+        /// <summary>
+        /// Barva orámování bez Selectu za stavu myši <see cref="ItemMouseState.OnMouse"/>
+        /// </summary>
+        public Color? ColorOutlineOnMouse { get { return VirtualControl.ColorOutlineOnMouse; } set { VirtualControl.ColorOutlineOnMouse = value; } }
+        /// <summary>
+        /// Barva orámování Selectovaného prvku za stavu myši <see cref="ItemMouseState.OnMouse"/>
+        /// </summary>
+        public Color? ColorOutlineOnMouseSelected { get { return VirtualControl.ColorOutlineOnMouseSelected; } set { VirtualControl.ColorOutlineOnMouseSelected = value; } }
+        /// <summary>
+        /// Barva orámování bez Selectu za stavu myši <see cref="ItemMouseState.LeftDown"/>
+        /// </summary>
+        public Color? ColorOutlineLeftDown { get { return VirtualControl.ColorOutlineLeftDown; } set { VirtualControl.ColorOutlineLeftDown = value; } }
+        /// <summary>
+        /// Barva orámování Selectovaného prvku za stavu myši <see cref="ItemMouseState.LeftDown"/>
+        /// </summary>
+        public Color? ColorOutlineLeftDownSelected { get { return VirtualControl.ColorOutlineLeftDownSelected; } set { VirtualControl.ColorOutlineLeftDownSelected = value; } }
+        /// <summary>
+        /// Barva orámování bez Selectu za stavu myši <see cref="ItemMouseState.RightDown"/>
+        /// </summary>
+        public Color? ColorOutlineRightDown { get { return VirtualControl.ColorOutlineRightDown; } set { VirtualControl.ColorOutlineRightDown = value; } }
+        /// <summary>
+        /// Barva orámování Selectovaného prvku za stavu myši <see cref="ItemMouseState.RightDown"/>
+        /// </summary>
+        public Color? ColorOutlineRightDownSelected { get { return VirtualControl.ColorOutlineRightDownSelected; } set { VirtualControl.ColorOutlineRightDownSelected = value; } }
+        /// <summary>
+        /// Vrátí barvu linky pro daný prvek (podle jeho stavu)
+        /// </summary>
+        /// <param name="item"></param>
+        /// <returns></returns>
+        public Color? GetOutlineColor(VirtualItemBase item) { return VirtualControl.GetOutlineColor(item); }
+        /// <summary>
+        /// Vrátí velikost okraje Outline pro daný zoom. 
+        /// Outline margin je logaritmický, pro malé Zoom je 1px, pro zoom 1 je 2px, pro velké Zoomy 4px.
+        /// </summary>
+        /// <param name="zoom">Logaritmický Zoom v rozsahu 0.01 - 100</param>
+        /// <returns></returns>
+        public static float GetOutlineMargin(float zoom) { return VirtualControl.GetOutlineMargin(zoom); }
+        /// <summary>
+        /// Vrátí velikost okraje Border pro daný zoom. 
+        /// Outline margin je logaritmický, pro malé Zoom je 1px, pro zoom 1 je 2px, pro velké Zoomy 4px.
+        /// </summary>
+        /// <param name="zoom">Logaritmický Zoom v rozsahu 0.01 - 100</param>
+        /// <returns></returns>
+        public static float GetBorderMargin(float zoom) { return VirtualControl.GetBorderMargin(zoom); }
+        /// <summary>
+        /// Vrátí velikost písma pro daný zoom.
+        /// Vstupní Zoom je Lineární, v rozsahu 0 - 200, kde 100 = 1:1.
+        /// Výstupní velikost písma odpovídá dané základní velikosti, zoomu a zdravému rozumu.
+        /// </summary>
+        /// <param name="zoomLinear">Lineární Zoom v rozsahu 0 - 200, kde 100 = 1:1</param>
+        /// <param name="baseSize">Základní velikost písma pro Zoom 100, default = null odpovídá 8.5f, přípustný rozsah = 4 až 24</param>
+        /// <returns></returns>
+        public static float GetFontSizeEm(float zoomLinear, float? baseSize = null) { return VirtualControl.GetFontSizeEm(zoomLinear, baseSize); }
+        #endregion
+    }
+    /// <summary>
     /// Vizuální Control, s podporou pro virtualizaci prostoru (Zoomování a posouvání obsahu), 
     /// a s instancí <see cref="VirtualSpace"/> pro přepočty souřadnic
     /// </summary>
@@ -23,7 +199,28 @@ namespace DjSoft.SchedulerMap.Analyser
             this.SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint | ControlStyles.ResizeRedraw | ControlStyles.OptimizedDoubleBuffer | ControlStyles.Selectable | ControlStyles.UserMouse, true);
             VirtualSpace = new VirtualSpace(this);
             InitColors();
+            this.Paint += _VirtualPaint;
         }
+        /// <summary>
+        /// Handler události VirtualPaint
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _VirtualPaint(object sender, PaintEventArgs e)
+        {
+            OnVirtualPaint(e);
+            VirtualPaint?.Invoke(this, e);
+        }
+        /// <summary>
+        /// Háček události VirtualPaint
+        /// </summary>
+        /// <param name="e"></param>
+        protected virtual void OnVirtualPaint(PaintEventArgs e)
+        { }
+        /// <summary>
+        /// Událost VirtualPaint
+        /// </summary>
+        public event PaintEventHandler VirtualPaint;
         protected override void Dispose(bool disposing)
         {
             VirtualSpace.Dispose();
@@ -64,6 +261,11 @@ namespace DjSoft.SchedulerMap.Analyser
             ColorOutlineLeftDownSelected = Color.FromArgb(220, 255, 144, 33);
             ColorOutlineRightDownSelected = Color.FromArgb(220, 255, 179, 104);
         }
+        /// <summary>
+        /// Vrátí barvu linky pro daný prvek (podle jeho stavu)
+        /// </summary>
+        /// <param name="item"></param>
+        /// <returns></returns>
         public Color? GetOutlineColor(VirtualItemBase item)
         {
             bool isNone = !item.Selected;
@@ -254,7 +456,7 @@ namespace DjSoft.SchedulerMap.Analyser
         /// </summary>
         public Rectangle? CurrentVisibleBounds { get { return VirtualSpace.GetCurrentVisibleBounds(VirtualBounds); } }
         /// <summary>
-        /// Obsahuje true, pokud tento prvek je nyní iditelný v rámci viditelné oblasti Ownera
+        /// Obsahuje true, pokud tento prvek je nyní viditelný v rámci viditelné oblasti Ownera
         /// </summary>
         public bool IsVisibleInOwner { get { var currentVisibleBounds = VirtualSpace.GetCurrentVisibleBounds(VirtualBounds); return currentVisibleBounds.HasValue; } }
         /// <summary>

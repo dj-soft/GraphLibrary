@@ -12,7 +12,7 @@ namespace DjSoft.SchedulerMap.Analyser
     /// <summary>
     /// Vizualizer mapy
     /// </summary>
-    public class MapVisualiserControl : VirtualControl
+    public class MapVisualiserControl : VirtualContainer    // VirtualControl
     {
         #region Konstruktor a Dispose
         public MapVisualiserControl()
@@ -57,18 +57,18 @@ namespace DjSoft.SchedulerMap.Analyser
         #region Myš
         private void _MouseInit()
         {
-            this.MouseEnter += _MouseEnter;
-            this.MouseMove += _MouseMove;
-            this.MouseDown += _MouseDown;
-            this.MouseUp += _MouseUp;
-            this.MouseWheel += _MouseWheel;
-            this.MouseLeave += _MouseLeave;
-
-
+            var control = this.VirtualControl;
+            control.MouseEnter += _MouseEnter;
+            control.MouseMove += _MouseMove;
+            control.MouseDown += _MouseDown;
+            control.MouseUp += _MouseUp;
+            control.MouseWheel += _MouseWheel;
+            control.MouseLeave += _MouseLeave;
         }
         private void _MouseEnter(object sender, EventArgs e)
         {
-            ActivateItemForPoint(this.PointToClient(Control.MousePosition), MouseButtons.None);
+            var control = this.VirtualControl;
+            ActivateItemForPoint(control.PointToClient(Control.MousePosition), MouseButtons.None);
         }
         private void _MouseMove(object sender, MouseEventArgs e)
         {
@@ -450,10 +450,8 @@ namespace DjSoft.SchedulerMap.Analyser
         }
         #endregion
         #region Kreslení a podpora pro něj
-        protected override void OnPaint(PaintEventArgs e)
+        protected override void OnVirtualPaint(PaintEventArgs e)
         {
-            base.OnPaint(e);
-
             // Kreslení vztahů těch prvků, které jsou vidět:
             Dictionary<long, MapLink> paintedLinks = new Dictionary<long, MapLink>();
             e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
@@ -956,7 +954,7 @@ namespace DjSoft.SchedulerMap.Analyser
     internal class MapVisualItem : VirtualItemBase, IVisualItem
     {
         public MapVisualItem(MapVisualiserControl visualiser, MapItem mapItem, PointF center, SizeF size)
-            : base(visualiser)
+            : base(visualiser.VirtualControl)
         {
             Visualiser = visualiser;
             MapItem = mapItem;
