@@ -441,8 +441,9 @@ namespace DjSoft.SchedulerMap.Analyser
             if (visualItems is null || visualItems.Length == 0)
             {
                 visualItems = mapSegment.FirstMainItems;
-                if (visualItems.Length > 100)
-                    visualItems = visualItems.Take(100).ToArray();
+                if (visualItems.Length < 60) visualItems = mapSegment.FirstItems;
+                if (visualItems.Length < 60) visualItems = mapSegment.Items;
+                if (visualItems.Length > 100) visualItems = visualItems.Take(100).ToArray();
             }
             _InitialItemsSelector = null;
             return visualItems;
@@ -742,7 +743,7 @@ namespace DjSoft.SchedulerMap.Analyser
                 case MapItemType.OperationPlan: 
                 case MapItemType.OperationReal:
                     visualShape.Points = CreatePoints(5, 5, 5, 72, 27, 94, 194, 94, 194, 27, 172, 5);
-                    visualShape.TextBounds = new RectangleF(20f, 16f, 160f, 68f);
+                    visualShape.TextBounds = new RectangleF(27f, 16f, 146f, 68f);
                     break;
                 case MapItemType.IncrementByRealProductOrder: 
                 case MapItemType.IncrementByPlanProductOrder:
@@ -826,11 +827,13 @@ namespace DjSoft.SchedulerMap.Analyser
             int count = this.Points?.Length ?? 0;
             if (count == 0) return null;
 
+            bool useFloat = (bounds.Width < 60f);
+
             List<PointF> points = new List<PointF>();
             PointF? first = null;
             for (int i = 0; i < count; i++)
             {
-                PointF point = GetCurrentPoint(this.Points[i], bounds);
+                PointF point = GetCurrentPoint(this.Points[i], bounds, useFloat);
                 points.Add(point);
                 if (!first.HasValue) first = point;
             }
@@ -852,7 +855,7 @@ namespace DjSoft.SchedulerMap.Analyser
             return GetCurrentBounds(this.TextBounds, targetBounds);
         }
 
-        private RectangleF GetCurrentBounds(RectangleF designBounds, RectangleF targetBounds)
+        private RectangleF GetCurrentBounds(RectangleF designBounds, RectangleF targetBounds, bool useFloat = false)
         {
             float zoomX = targetBounds.Width / 200f;
             float zoomY = targetBounds.Height / 100f;
@@ -860,14 +863,28 @@ namespace DjSoft.SchedulerMap.Analyser
             float y = targetBounds.Y + zoomY * designBounds.Y;
             float w = zoomX * designBounds.Width;
             float h = zoomY * designBounds.Height;
+            if (!useFloat)
+            {
+                float r = x + w;
+                float b = y + h;
+                x = (float)Math.Round(x, 0);
+                y = (float)Math.Round(y, 0);
+                w = (float)Math.Round(r, 0) - x;
+                h = (float)Math.Round(b, 0) - y;
+            }
             return new RectangleF(x, y, w, h);
         }
-        private PointF GetCurrentPoint(PointF designPoint, RectangleF targetBounds)
+        private PointF GetCurrentPoint(PointF designPoint, RectangleF targetBounds, bool useFloat = false)
         {
             float zoomX = targetBounds.Width / 200f;
             float zoomY = targetBounds.Height / 100f;
             float x = targetBounds.X + zoomX * designPoint.X;
             float y = targetBounds.Y + zoomY * designPoint.Y;
+            if (!useFloat)
+            {
+                x = (float)Math.Round(x, 0);
+                y = (float)Math.Round(y, 0);
+            }
             return new PointF(x, y);
         }
     }
