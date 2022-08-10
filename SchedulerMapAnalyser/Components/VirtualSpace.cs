@@ -42,6 +42,12 @@ namespace DjSoft.SchedulerMap.Analyser
             this.Invalidate();
         }
         #endregion
+        #region Virtuální prvky umístěné v tomto controlu
+        /// <summary>
+        /// Kolekce všech virtuálních prvků, které mohou být zobrazeny v this controlu.
+        /// </summary>
+        protected virtual IEnumerable<VirtualItemBase> ItemsAll { get { return null; } }
+        #endregion
         #region Implicitní barvy a další hodnoty
         /// <summary>
         /// Inicializace výchozích hodnot barev typu Outline
@@ -176,6 +182,149 @@ namespace DjSoft.SchedulerMap.Analyser
         /// hodnota 0 nereaguje na Zoom.
         /// </summary>
         private static float ZoomToFontRatioHigh { get { return 4.0f; } }         // optimálně 4.0f
+        #endregion
+    }
+    /// <summary>
+    /// Bázová třída pro objekty, reprezentující prvky umístěné ve virtuálním controlu <see cref="VirtualControl"/>, spolupracuje s jeho virtuálním prostorem <see cref="VirtualSpace"/>.
+    /// </summary>
+    public class VirtualItemBase : IVisualItem, IDisposable
+    {
+        #region Konstruktor
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="virtualSpace"></param>
+        public VirtualItemBase(VirtualControl virtualControl)
+        {
+            VirtualHost = virtualControl;
+            VirtualBounds = new BoundsF();
+        }
+        /// <summary>
+        /// Hostitelský control
+        /// </summary>
+        protected VirtualControl VirtualHost { get; private set; }
+        /// <summary>
+        /// Koordinátor virtuálních souřadnic
+        /// </summary>
+        protected VirtualSpace VirtualSpace { get { return VirtualHost.VirtualSpace; } }
+        /// <summary>
+        /// Dispose
+        /// </summary>
+        public virtual void Dispose()
+        {
+            VirtualHost = null;
+            VirtualBounds = null;
+        }
+        /// <summary>
+        /// Invaliduje hostitelský Control
+        /// </summary>
+        protected virtual void InvalidateControl()
+        {
+            VirtualHost?.Invalidate();
+        }
+        #endregion
+        #region Virtuální pozice
+        /// <summary>
+        /// Virtuální souřadnice vztažené k celé pracovní ploše. 
+        /// Tuto hodnotu nelze setovat, ale lze nastavovat její veškeré hodnoty
+        /// </summary>
+        public virtual BoundsF VirtualBounds { get; private set; }
+        #endregion
+        #region Podpora pro interface IVisualItem - ale nikoli jeho plná implementace
+        /// <summary>
+        /// Vrstva prvku: čím vyšší hodnota, tím vyšší vrstva = prvek bude kreslen "nad" prvky s nižší vrstvou, a stejně tak bude i aktivní.
+        /// Defaultní je 0.
+        /// </summary>
+        public virtual int Layer { get { return 0; } }
+        /// <summary>
+        /// Aktuální [Logaritmický] Zoom (= pro nativní přepočet velikosti Fyzická = Zoom * Virtuální)
+        /// </summary>
+        public float Zoom { get { return (float)VirtualSpace.Zoom; } }
+        /// <summary>
+        /// Aktuální [Lineární] Zoom (= pro jiné výpočty založené na Zoomu)
+        /// </summary>
+        public float ZoomLinear { get { return (float)VirtualSpace.ZoomLinear; } }
+        /// <summary>
+        /// Fyzické souřadnice celého prvku v aktuálním controlu.
+        /// </summary>
+        public Rectangle CurrentBounds { get { return VirtualSpace.GetCurrentBounds(VirtualBounds, out var _); } }
+        /// <summary>
+        /// Fyzické souřadnice viditelné části prvku v aktuálním controlu, nebo null když prvek není viditelný.
+        /// Tedy tyto souřadnice jsou oříznuty do viditelné oblasti
+        /// </summary>
+        public Rectangle? CurrentVisibleBounds { get { return VirtualSpace.GetCurrentVisibleBounds(VirtualBounds); } }
+        /// <summary>
+        /// Obsahuje true, pokud tento prvek je nyní iditelný v rámci viditelné oblasti Ownera
+        /// </summary>
+        public bool IsVisibleInOwner { get { var currentVisibleBounds = VirtualSpace.GetCurrentVisibleBounds(VirtualBounds); return currentVisibleBounds.HasValue; } }
+        /// <summary>
+        /// Sem je nastaveno true/false v okamžiku vyhodnocené viditelnosti prvku.
+        /// </summary>
+        public bool CurrentlyIsVisible { get; set; }
+        /// <summary>
+        /// Vrátí true, pokud daný fyzický bod leží na fyzických souřadnicích tohoto prvku ve viditelné oblasti Ownera
+        /// </summary>
+        /// <param name="currentPoint"></param>
+        /// <returns></returns>
+        public virtual bool IsVisibleOnCurrentPoint(Point currentPoint)
+        {
+            var currentVisibleBounds = VirtualSpace.GetCurrentVisibleBounds(VirtualBounds);
+            return (currentVisibleBounds.HasValue && currentVisibleBounds.Value.Contains(currentPoint));
+        }
+        public virtual bool IsActiveOnCurrentPoint(Point currentPoint)
+        {
+            var currentBounds = this.CurrentVisibleBounds;
+            return (currentBounds.HasValue && currentBounds.Value.Contains(currentPoint));
+        }
+
+        /// <summary>
+        /// Stav prvku z hlediska myši
+        /// </summary>
+        public ItemMouseState MouseState
+        {
+            get { return _MouseState; }
+            set
+            {
+                if (value != _MouseState)
+                {
+                    _MouseState = value;
+                    InvalidateControl();
+                }
+            }
+        }
+        private ItemMouseState _MouseState;
+        /// <summary>
+        /// Prvek je Selectován
+        /// </summary>
+        public bool Selected
+        {
+            get { return _Selected; }
+            set
+            {
+                if (value != _Selected)
+                {
+                    _Selected = value;
+                    InvalidateControl();
+                }
+            }
+        }
+        private bool _Selected;
+        /// <summary>
+        /// Aktuální barva orámování, vychází z hodnot <see cref="Selected"/> a <see cref="MouseState"/>
+        /// </summary>
+        public virtual Color? CurrentOutlineColor { get { return VirtualHost.GetOutlineColor(this); } }
+        /// <summary>
+        /// Vykreslí sebe jako prvek do grafiky
+        /// </summary>
+        /// <param name="e"></param>
+        public virtual void OnPaintItem(PaintEventArgs e) { }
+        /// <summary>
+        /// Vykreslí svoje linky, pokud dosud nejsou v <paramref name="paintedLinks"/>.
+        /// Vykreslené linky přidává do dictionary - aby se nekreslily opakovaně (tj. z druhé strany).
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="paintedLinks"></param>
+        public virtual void OnPaintLinks(PaintEventArgs e, Dictionary<long, MapLink> paintedLinks) { }
         #endregion
     }
     /// <summary>
@@ -848,131 +997,6 @@ Linear	Log
         #endregion
     }
     /// <summary>
-    /// Základní objekt pro prvky umístěné ve virtuálním prostoru
-    /// </summary>
-    public class VirtualItemBase : IDisposable
-    {
-        #region Konstruktor
-        /// <summary>
-        /// Konstruktor
-        /// </summary>
-        /// <param name="virtualSpace"></param>
-        public VirtualItemBase(VirtualControl virtualControl)
-        {
-            VirtualHost = virtualControl;
-            VirtualBounds = new BoundsF();
-        }
-        /// <summary>
-        /// Hostitelský control
-        /// </summary>
-        protected VirtualControl VirtualHost { get; private set; }
-        /// <summary>
-        /// Koordinátor virtuálních souřadnic
-        /// </summary>
-        protected VirtualSpace VirtualSpace { get { return VirtualHost.VirtualSpace; } }
-        /// <summary>
-        /// Dispose
-        /// </summary>
-        public virtual void Dispose()
-        {
-            VirtualHost = null;
-            VirtualBounds = null;
-        }
-        /// <summary>
-        /// Invaliduje hostitelský Control
-        /// </summary>
-        protected virtual void InvalidateControl()
-        {
-            VirtualHost?.Invalidate();
-        }
-        #endregion
-        #region Virtuální pozice
-        /// <summary>
-        /// Virtuální souřadnice vztažené k celé pracovní ploše. 
-        /// Tuto hodnotu nelze setovat, ale lze nastavovat její veškeré hodnoty
-        /// </summary>
-        public virtual BoundsF VirtualBounds { get; private set; }
-        #endregion
-        #region Podpora pro interface IVisualItem - ale nikoli jeho plná implementace
-        /// <summary>
-        /// Vrstva prvku: čím vyšší hodnota, tím vyšší vrstva = prvek bude kreslen "nad" prvky s nižší vrstvou, a stejně tak bude i aktivní.
-        /// Defaultní je 0.
-        /// </summary>
-        public virtual int Layer { get { return 0; } }
-        /// <summary>
-        /// Aktuální [Logaritmický] Zoom (= pro nativní přepočet velikosti Fyzická = Zoom * Virtuální)
-        /// </summary>
-        public float Zoom { get { return (float)VirtualSpace.Zoom; } }
-        /// <summary>
-        /// Aktuální [Lineární] Zoom (= pro jiné výpočty založené na Zoomu)
-        /// </summary>
-        public float ZoomLinear { get { return (float)VirtualSpace.ZoomLinear; } }
-        /// <summary>
-        /// Fyzické souřadnice celého prvku v aktuálním controlu.
-        /// </summary>
-        public Rectangle CurrentBounds { get { return VirtualSpace.GetCurrentBounds(VirtualBounds, out var _); } }
-        /// <summary>
-        /// Fyzické souřadnice viditelné části prvku v aktuálním controlu, nebo null když prvek není viditelný.
-        /// Tedy tyto souřadnice jsou oříznuty do viditelné oblasti
-        /// </summary>
-        public Rectangle? CurrentVisibleBounds { get { return VirtualSpace.GetCurrentVisibleBounds(VirtualBounds); } }
-        /// <summary>
-        /// Obsahuje true, pokud tento prvek je nyní iditelný v rámci viditelné oblasti Ownera
-        /// </summary>
-        public bool IsVisibleInOwner { get { var currentVisibleBounds = VirtualSpace.GetCurrentVisibleBounds(VirtualBounds); return currentVisibleBounds.HasValue; } }
-        /// <summary>
-        /// Sem je nastaveno true/false v okamžiku vyhodnocené viditelnosti prvku.
-        /// </summary>
-        public bool CurrentlyIsVisible { get; set; }
-        /// <summary>
-        /// Vrátí true, pokud daný fyzický bod leží na fyzických souřadnicích tohoto prvku ve viditelné oblasti Ownera
-        /// </summary>
-        /// <param name="currentPoint"></param>
-        /// <returns></returns>
-        public bool IsVisibleOnCurrentPoint(Point currentPoint)
-        {
-            var currentVisibleBounds = VirtualSpace.GetCurrentVisibleBounds(VirtualBounds);
-            return (currentVisibleBounds.HasValue && currentVisibleBounds.Value.Contains(currentPoint));
-        }
-        /// <summary>
-        /// Stav prvku z hlediska myši
-        /// </summary>
-        public ItemMouseState MouseState
-        {
-            get { return _MouseState; }
-            set
-            {
-                if (value != _MouseState)
-                {
-                    _MouseState = value;
-                    InvalidateControl();
-                }
-            }
-        }
-        private ItemMouseState _MouseState;
-        /// <summary>
-        /// Prvek je Selectován
-        /// </summary>
-        public bool Selected
-        {
-            get { return _Selected; }
-            set
-            {
-                if (value != _Selected)
-                {
-                    _Selected = value;
-                    InvalidateControl();
-                }
-            }
-        }
-        private bool _Selected;
-        /// <summary>
-        /// Aktuální barva orámování, vychází z hodnot <see cref="Selected"/> a <see cref="MouseState"/>
-        /// </summary>
-        public virtual Color? CurrentOutlineColor { get { return VirtualHost.GetOutlineColor(this); } }
-        #endregion
-    }
-    /// <summary>
     /// Souřadnice typu Float se setovacími hodnotami X; Y; Width; Height; CenterX; CenterY
     /// </summary>
     public class BoundsF
@@ -1214,4 +1238,90 @@ Linear	Log
         private float HalfHeight { get { return _Height / 2f; } }
         #endregion
     }
+    #region interface IVisualItem : Obecný interface pro grafický prvek, enum ItemMouseState
+    /// <summary>
+    /// Obecný interface pro grafický prvek
+    /// </summary>
+    public interface IVisualItem
+    {
+        /// <summary>
+        /// Vrstva prvku: čím vyšší hodnota, tím vyšší vrstva = prvek bude kreslen "nad" prvky s nižší vrstvou, a stejně tak bude i aktivní
+        /// </summary>
+        int Layer { get; }
+        /// <summary>
+        /// Aktuální [Logaritmický] Zoom (= pro nativní přepočet velikosti Fyzická = Zoom * Virtuální)
+        /// </summary>
+        float Zoom { get; }
+        /// <summary>
+        /// Fyzické souřadnice celého prvku v aktuálním controlu.
+        /// </summary>
+        Rectangle CurrentBounds { get; }
+        /// <summary>
+        /// Fyzické souřadnice viditelné části prvku v aktuálním controlu, nebo null když prvek není viditelný.
+        /// Tedy tyto souřadnice jsou oříznuty do viditelné oblasti
+        /// </summary>
+        Rectangle? CurrentVisibleBounds { get; }
+        /// <summary>
+        /// Je prvek aktuálně viditelný v rámci svého Owner controlu ?
+        /// </summary>
+        bool IsVisibleInOwner { get; }
+        /// <summary>
+        /// Sem je nastaveno true/false v okamžiku vyhodnocené viditelnosti prvku.
+        /// </summary>
+        bool CurrentlyIsVisible { get; set; }
+        /// <summary>
+        /// Je prvek aktivní na dané fyzické souřadnici?
+        /// </summary>
+        /// <param name="currentPoint"></param>
+        /// <returns></returns>
+        bool IsActiveOnCurrentPoint(Point currentPoint);
+        /// <summary>
+        /// Stav prvku z hlediska myši
+        /// </summary>
+        ItemMouseState MouseState { get; set; }
+        /// <summary>
+        /// Prvek je Selectován
+        /// </summary>
+        bool Selected { get; set; }
+        /// <summary>
+        /// Aktuální barva orámování, vychází z hodnot <see cref="Selected"/> a <see cref="MouseState"/>
+        /// </summary>
+        Color? CurrentOutlineColor { get; }
+        /// <summary>
+        /// Vykreslí sebe jako prvek do grafiky
+        /// </summary>
+        /// <param name="e"></param>
+        void OnPaintItem(PaintEventArgs e);
+        /// <summary>
+        /// Vykreslí svoje linky, pokud dosud nejsou v <paramref name="paintedLinks"/>.
+        /// Vykreslené linky přidává do dictionary - aby se nekreslily opakovaně (tj. z druhé strany).
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="paintedLinks"></param>
+        void OnPaintLinks(PaintEventArgs e, Dictionary<long, MapLink> paintedLinks);
+    }
+    /// <summary>
+    /// Stav prvku z hlediska myši
+    /// </summary>
+    public enum ItemMouseState
+    {
+        /// <summary>
+        /// Myš není na prvku
+        /// </summary>
+        None,
+        /// <summary>
+        /// Myš je nad prvkem
+        /// </summary>
+        OnMouse,
+        /// <summary>
+        /// Myš má zmáčknuté levé ouško
+        /// </summary>
+        LeftDown,
+        /// <summary>
+        /// Myš má zmáčknuté pravé ouško
+        /// </summary>
+        RightDown
+    }
+    #endregion
+
 }

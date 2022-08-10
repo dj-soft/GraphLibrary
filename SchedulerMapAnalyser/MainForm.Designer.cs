@@ -49,7 +49,7 @@ namespace DjSoft.SchedulerMap.Analyser
             this._MapTitleLabel = new System.Windows.Forms.Label();
             this._ReloadFileCheck = new System.Windows.Forms.CheckBox();
             this._MainPanel = new System.Windows.Forms.Panel();
-            this._VisualiserPanel = new DjSoft.SchedulerMap.Analyser.VisualiserControl();
+            this._VisualiserPanel = new DjSoft.SchedulerMap.Analyser.MapVisualiserControl();
             this._StatusBar.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this._SimulCycleText)).BeginInit();
             this._MainPanel.SuspendLayout();
@@ -308,7 +308,7 @@ namespace DjSoft.SchedulerMap.Analyser
         private System.Windows.Forms.Label _MapTitleLabel;
         private System.Windows.Forms.CheckBox _ReloadFileCheck;
         private System.Windows.Forms.Panel _MainPanel;
-        private VisualiserControl _VisualiserPanel;
+        private MapVisualiserControl _VisualiserPanel;
     }
 }
 

@@ -1023,7 +1023,7 @@ namespace DjSoft.SchedulerMap.Analyser
         /// <summary>
         /// Vizuální prvek
         /// </summary>
-        internal VisualItem VisualItem { get; set; }
+        internal MapVisualItem VisualItem { get; set; }
         #endregion
         #region Modifikace
         /// <summary>
