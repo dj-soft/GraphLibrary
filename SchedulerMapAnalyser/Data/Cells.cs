@@ -10,6 +10,9 @@ namespace DjSoft.SchedulerMap.Analyser
     /// Obsahuje pole buněk = adresy (souřadnice) pro zobrazované prvky.
     /// Umožňuje uspořádávat prvky do pravoúhlé sítě, kdy Next prvky jsou na souřadnici X+1 proti svému Parentu, a Prev prvky na souřadnici X-1 proti Parentu.
     /// Sousedící prvky jsou na shodné souřadnici X, na těsně sousedícím bloku souřadnic Y.
+    /// <para/>
+    /// Prvky jsou umístěny do celočíselného rastru, tedy prvek A leží na souřadnici X, a prvek B může ležet hned vpravo na souřadnici X+1.
+    /// 
     /// </summary>
     public class Cells
     {

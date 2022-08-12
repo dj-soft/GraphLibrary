@@ -385,7 +385,7 @@ namespace DjSoft.SchedulerMap.Analyser
         }
         private void _LoadMapSegment()
         {   // Běží v pracovním threadu na pozadí!
-            _MapSegment.LoadData();
+            _MapSegment.LoadData(_LoadProgress);
             _ActivateMapItem();
         }
         private void _ActivateMapItem()
@@ -448,9 +448,43 @@ namespace DjSoft.SchedulerMap.Analyser
             _InitialItemsSelector = null;
             return visualItems;
         }
+        #region Load data progress
+        private void _LoadProgress(ProgressArgs args)
+        {
+            _LoadProgressState = args.State;
+            _LoadProgressRatio = args.Ratio;
+            if (!_LoadProgressTime.HasValue || args.State == ProgressState.Starting || args.State == ProgressState.Done || 
+                (_LoadProgressTime.HasValue && (DateTime.Now - _LoadProgressTime.Value).TotalMilliseconds > 50d))
+            {
+                _LoadProgressTime = DateTime.Now;
+                _LoadProgressPaint = true;
+                this.Invalidate();
+                this.BeginInvoke(new Action(Refresh));
+            }
+        }
+        private void OnLoadProgressPaint(PaintEventArgs e)
+        {
+            _LoadProgressPaint = false;
+            Rectangle outBounds = new Rectangle(50, 70, 250, 45);
+            System.Windows.Forms.ProgressBarRenderer.DrawHorizontalBar(e.Graphics, outBounds);
+            Rectangle intBounds = new Rectangle(55, 75, ((int)(240m * _LoadProgressRatio.Value)), 35);
+            System.Windows.Forms.ProgressBarRenderer.DrawHorizontalChunks(e.Graphics, intBounds);
+        }
+        private ProgressState _LoadProgressState;
+        private decimal? _LoadProgressRatio;
+        private DateTime? _LoadProgressTime;
+        private bool _LoadProgressPaint;
+        #endregion
         #endregion
         #region Kreslení a podpora pro něj
         protected override void OnVirtualPaint(PaintEventArgs e)
+        {
+            if (_LoadProgressPaint)
+                OnLoadProgressPaint(e);
+            else if (VisibleItems.Length > 0)
+                OnVisibleItemsPaint(e);
+        }
+        private void OnVisibleItemsPaint(PaintEventArgs e)
         {
             // Kreslení vztahů těch prvků, které jsou vidět:
             Dictionary<long, MapLink> paintedLinks = new Dictionary<long, MapLink>();

@@ -85,11 +85,10 @@ namespace DjSoft.SchedulerMap.Analyser
         /// </summary>
         public enum LoadingState { None, Loading, Cancelled, Loaded }
         /// <summary>
-        /// Načte data, postup odesílá do <paramref name="progressAction"/> = začátek a konec, a do <paramref name="statusAction"/> = každý řádek.
+        /// Načte data, postup odesílá do <paramref name="progressAction"/>.
         /// </summary>
         /// <param name="progressAction"></param>
-        /// <param name="statusAction"></param>
-        public void LoadData(Action<string, decimal?> progressAction = null, Action<string, decimal?> statusAction = null)
+        public void LoadData(Action<ProgressArgs> progressAction = null)
         {
             string fileName = this.FileName;
             if (String.IsNullOrEmpty(fileName)) throw new ArgumentNullException("Není zadané jméno souboru.");
@@ -101,8 +100,9 @@ namespace DjSoft.SchedulerMap.Analyser
             this.Clear();
 
             this.DataState = LoadingState.Loading;
-            progressAction?.Invoke($"Načítám data ze souboru '{fileName}'...", 0m);
+            DoProgressAction(progressAction, ProgressState.Starting, $"Načítám data ze souboru '{fileName}'...", 0m);
 
+            int i = 0;
             int rowId = 0;
             decimal fileLength = fileInfo.Length;
             decimal filePosition = 0m;
@@ -112,11 +112,14 @@ namespace DjSoft.SchedulerMap.Analyser
                 filePosition += (decimal)(line.Length + 2);
                 this.AddLine(ref rowId, line);
 
-                statusAction?.Invoke($"Načteno {Format(ItemsCount)} položek...", (filePosition / fileLength));
+                // Jednou za 100 řádků pošlu progres typu Loading:
+                if (((i++) % 100) == 0) DoProgressAction(progressAction, ProgressState.Loading, $"Načteno {Format(ItemsCount)} položek...", (filePosition / fileLength));
             }
+            // Na konci pošlu výsledný progres typu Loading:
+            DoProgressAction(progressAction, ProgressState.Loading, $"Načteno {Format(ItemsCount)} položek...", 1m);
 
             this.DataState = (!Cancel ? LoadingState.Loaded : LoadingState.Cancelled);
-            progressAction?.Invoke($"Zpracováno {Format(rowId)} řádků souboru, získáno {Format(ItemsCount)} položek mapy.", 1m);
+            DoProgressAction(progressAction, (Cancel ? ProgressState.Cancelled : ProgressState.Done), $"Zpracováno {Format(rowId)} řádků souboru, získáno {Format(ItemsCount)} položek mapy.", 1m);
         }
         /// <summary>
         /// Počet simulovaných zacyklení v datech
@@ -128,7 +131,7 @@ namespace DjSoft.SchedulerMap.Analyser
         /// <param name="simulatedCycleCount"></param>
         /// <param name="progressAction"></param>
         /// <param name="statusAction"></param>
-        public void SimulatedCycleCreate(int simulatedCycleCount, Action<string, decimal?> progressAction = null, Action<string, decimal?> statusAction = null)
+        public void SimulatedCycleCreate(int simulatedCycleCount, Action<ProgressArgs> progressAction = null)
         {
             if (!IsLoaded) return;
 
@@ -141,14 +144,13 @@ namespace DjSoft.SchedulerMap.Analyser
             if (requestCount < currentCount)                         // Odebírat neumíme:
                 throw new InvalidOperationException($"MapSegment.SimulatedCycleCreate() nemůže odebrat simulované zacyklení: obsahuje jich {currentCount}, je požadováno {requestCount}. Je třeba data znovu načíst a poté vytvořit simulaci zacyklení.");
 
-
-            progressAction?.Invoke($"Vytvářím zacyklení v datech...", 0m);
+            DoProgressAction(progressAction, ProgressState.Starting, $"Vytvářím zacyklení v datech...", 0m);
 
             var firstItems = FirstItems;
             var firstCount = firstItems.Length;
             if (firstCount == 0)
             {
-                progressAction?.Invoke($"Nejsou žádné FirstItems, nebude žádné zacyklení.", 0m);
+                DoProgressAction(progressAction, ProgressState.Done, $"Nejsou žádné FirstItems, nebude žádné zacyklení.", 0m);
                 return;
             }
 
@@ -166,12 +168,14 @@ namespace DjSoft.SchedulerMap.Analyser
 
                 var firstItem = firstItems[index];
                 decimal ratio = (decimal)(i + 1) / (decimal)count;
-                bool isCycled = _CycleSimulationOne(firstItem, ratio, progressAction, statusAction);
+                bool isCycled = _CycleSimulationOne(firstItem, ratio, progressAction);
                 if (isCycled)
                     currentCount++;                                  // Vytvořeno => počet aktuální zvýšíme, na závěr tuto hodnotu uložíme do SimulatedCycleCount
                 else
                     count++;                                         // Pokud jsem pro aktuální prvek nepřidal zacyklení, tak budu zkoušet o jeden další prvek víc...
             }
+
+            DoProgressAction(progressAction, ProgressState.Done, $"Vytvářím zacyklení - hotovo.", 0m);
 
             SimulatedCycleCount = currentCount;
         }
@@ -179,16 +183,16 @@ namespace DjSoft.SchedulerMap.Analyser
         /// Přidá zacyklení do stromu vycházejícího z daného First prvku:
         /// </summary>
         /// <param name="firstItem"></param>
-        private bool _CycleSimulationOne(MapItem firstItem, decimal ratio, Action<string, decimal?> progressAction = null, Action<string, decimal?> statusAction = null)
+        private bool _CycleSimulationOne(MapItem firstItem, decimal ratio, Action<ProgressArgs> progressAction = null)
         {
-            progressAction?.Invoke($"Přidávám zacyklení do stromu k prvku {firstItem}", ratio);
+            DoProgressAction(progressAction, ProgressState.Working, $"Přidávám zacyklení do stromu k prvku {firstItem}", ratio);
 
             // Zacyklení přidám do druhého prvku (z posledního prvku), to proto abych First item nechal jako First (když bych do něj přidal nějaký Prev prvek, už by nebyl First)
             var nextLinks = firstItem.NextLinks;
             var secondItem = (nextLinks is null || nextLinks.Length == 0 ? null : nextLinks[0].NextItem);
             if (secondItem is null)
             {
-                progressAction?.Invoke($" - nelze přidat zacyklení, prvek FirstItem je solitér: {firstItem}", null);
+                DoProgressAction(progressAction, ProgressState.Working, $" - nelze přidat zacyklení, prvek FirstItem je solitér: {firstItem}", null);
                 return false;
             }
 
@@ -197,21 +201,21 @@ namespace DjSoft.SchedulerMap.Analyser
             var lastItem = allItems.Where(i => i.IsLast).FirstOrDefault();
             if (lastItem is null)
             {
-                progressAction?.Invoke($" - nelze přidat zacyklení, nenašli jsme žádný LastItem - asi už tu zacyklení máme: {firstItem}", null);
+                DoProgressAction(progressAction, ProgressState.Working, $" - nelze přidat zacyklení, nenašli jsme žádný LastItem - asi už tu zacyklení máme: {firstItem}", null);
                 return false;
             }
 
             // Pokud by Druhá == Poslední (tj. tam kde bych chtěl přidat zacyklovací vztah), ohlásím nemožnost:
             if (secondItem.ItemId == lastItem.ItemId)
             {
-                progressAction?.Invoke($" - nelze přidat zacyklení, zvolený LastItem == SecondItem (jde o příliš krátký řetězec)", null);
+                DoProgressAction(progressAction, ProgressState.Working, $" - nelze přidat zacyklení, zvolený LastItem == SecondItem (jde o příliš krátký řetězec)", null);
                 return false;
             }
 
             // Zajistím zacyklení Last => Second:
             secondItem.AddPrevLink(lastItem.ItemId);
             lastItem.AddNextLink(secondItem.ItemId);
-            progressAction?.Invoke($" - přidáno zacyklení: Last: {lastItem.TextShort} => Second: {secondItem.TextShort}.", null);
+            DoProgressAction(progressAction, ProgressState.Working, $" - přidáno zacyklení: Last: {lastItem.TextShort} => Second: {secondItem.TextShort}.", null);
 
             return true;
         }
@@ -248,6 +252,22 @@ namespace DjSoft.SchedulerMap.Analyser
                 throw new ArgumentException($"Vstupní soubor obsahuje duplicitní položku '{mapItem.ItemIdText}'");
 
             MapItems.Add(mapItem.ItemId, mapItem);
+        }
+        /// <summary>
+        /// zavolá progress akci a převezme výsledný Cancel
+        /// </summary>
+        /// <param name="progressAction"></param>
+        /// <param name="state"></param>
+        /// <param name="text"></param>
+        /// <param name="ratio"></param>
+        private void DoProgressAction(Action<ProgressArgs> progressAction, ProgressState state, string text, decimal? ratio)
+        {
+            if (progressAction != null)
+            {
+                var args = new ProgressArgs(state, text, ratio);
+                progressAction(args);
+                if (args.Cancel) this.Cancel = true;
+            }
         }
         #endregion
         #region Data segmentu = jednotlivé MapItem a vztahy MapLink
@@ -1208,6 +1228,77 @@ namespace DjSoft.SchedulerMap.Analyser
             }
             public readonly string Value;
         }
+    }
+    #endregion
+    #region class ProgressArgs a enum
+    /// <summary>
+    /// Data o postupu
+    /// </summary>
+    public class ProgressArgs : EventArgs
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="state"></param>
+        /// <param name="text"></param>
+        /// <param name="ratio"></param>
+        public ProgressArgs(ProgressState state, string text, decimal? ratio = null)
+        {
+            this.State = state;
+            this.Text = text;
+            this.Ratio = ratio;
+            this.Cancel = false;
+        }
+        /// <summary>
+        /// Stav akce
+        /// </summary>
+        public ProgressState State { get; private set; }
+        /// <summary>
+        /// Textová informace
+        /// </summary>
+        public string Text { get; private set; }
+        /// <summary>
+        /// Poměr postupu v rozsahu 0-1. Null když progres nemá určeno ratio.
+        /// </summary>
+        public decimal? Ratio { get; private set; }
+        /// <summary>
+        /// Požadavek na zastavení
+        /// </summary>
+        public bool Cancel { get; set; }
+    }
+    /// <summary>
+    /// Stav progresu
+    /// </summary>
+    public enum ProgressState
+    {
+        /// <summary>
+        /// Nic se neděje
+        /// </summary>
+        None,
+        /// <summary>
+        /// Zahajuji akci
+        /// </summary>
+        Starting,
+        /// <summary>
+        /// Načítám data
+        /// </summary>
+        Loading,
+        /// <summary>
+        /// Zpracovávám data
+        /// </summary>
+        Working,
+        /// <summary>
+        /// Došlo k chybě
+        /// </summary>
+        Error,
+        /// <summary>
+        /// Akce zrušena
+        /// </summary>
+        Cancelled,
+        /// <summary>
+        /// Akce dokončena
+        /// </summary>
+        Done
     }
     #endregion
 }

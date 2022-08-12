@@ -57,8 +57,8 @@ namespace DjSoft.SchedulerMap.Analyser
             }
             catch (Exception exc)
             {
-                _ShowInfoLine($"EXCEPTION {exc.Message}");
-                _ShowInfoLine(exc.StackTrace);
+                _ShowWorkingText($"EXCEPTION {exc.Message}");
+                _ShowWorkingText(exc.StackTrace);
             }
         }
         private void _Run()
@@ -70,24 +70,30 @@ namespace DjSoft.SchedulerMap.Analyser
             _CancelRun = Cancel;
             // _ShowDone();
             _ClearMemory();
-            if (_CancelRun) _ShowInfoLine($"PŘERUŠENO UŽIVATELEM !");
+            if (_CancelRun) _ShowWorkingText($"PŘERUŠENO UŽIVATELEM !");
         }
-
-        private void _ProgressAction(string text, decimal? progressRatio)
+        /// <summary>
+        /// Metoda pro obecné zpracování progresu
+        /// </summary>
+        /// <param name="args"></param>
+        private void _ProgressAction(ProgressArgs args)
         {
-            _ShowInfoLine(text);
-            if (progressRatio.HasValue) StatusProgressRatio = progressRatio.Value;
-        }
-        private void _StatusAction(string text, decimal? progressRatio)
-        {
-            StatusInfo = text;
-            if (progressRatio.HasValue) StatusProgressRatio = progressRatio.Value;
+            switch (args.State)
+            {
+                case ProgressState.Working:
+                    _ShowWorkingText(args.Text);
+                    break;
+                default:
+                    StatusInfo = args.Text;
+                    break;
+            }
+            if (args.Ratio.HasValue) StatusProgressRatio = args.Ratio.Value;
         }
         /// <summary>
         /// Kompletní text do progress textu do metody <see cref="ShowInfo"/>
         /// </summary>
         private StringBuilder _ShowInfoText;
-        private void _ShowInfoLine(string line)
+        private void _ShowWorkingText(string line)
         {
             if (line is null) return;
 
@@ -146,7 +152,7 @@ namespace DjSoft.SchedulerMap.Analyser
             _MapSegment.Cancel = false;
 
             if (!_MapSegment.IsLoaded || _MapSegment.SimulatedCycleCount > this.CycleSimulation)
-                _MapSegment.LoadData(_ProgressAction, _StatusAction);
+                _MapSegment.LoadData(_ProgressAction);
             
             if (_MapSegment.SimulatedCycleCount < this.CycleSimulation)
                 _MapSegment.SimulatedCycleCreate(this.CycleSimulation, _ProgressAction);
@@ -175,7 +181,7 @@ namespace DjSoft.SchedulerMap.Analyser
             // Cancel tady platí pouze na hledání cyklu:
             if (Cancel)
             {
-                _ShowInfoLine($" - Vyhledávání zacyklení přerušeno.");
+                _ShowWorkingText($" - Vyhledávání zacyklení přerušeno.");
                 Cancel = false;
             }
         }
@@ -185,7 +191,7 @@ namespace DjSoft.SchedulerMap.Analyser
             if (items is null || items.Length == 0) return;
 
             int count = items.Length;
-            _ShowInfoLine($"Vyhledávám zacyklení - {prefix} počet prvků: {Format(count)}");
+            _ShowWorkingText($"Vyhledávám zacyklení - {prefix} počet prvků: {Format(count)}");
             for (int i = 0; i < count; i++)
             {
                 if (Cancel) break;
@@ -224,8 +230,8 @@ namespace DjSoft.SchedulerMap.Analyser
                 if (path.IsCycled(out int startCycle))
                 {
                     string text = path.GetTextLong(startCycle);
-                    this._ShowInfoLine("Nalezeno zacyklení:");
-                    this._ShowInfoLine(text);
+                    this._ShowWorkingText("Nalezeno zacyklení:");
+                    this._ShowWorkingText(text);
 
                     path.BreakCycle(startCycle);
                 }
@@ -237,16 +243,14 @@ namespace DjSoft.SchedulerMap.Analyser
                 }
             }
         }
-
         private void _BreakCyclesOneShowProgress(string infoPrefix, MapItem item, PathSpiderLine path, ref int loops)
         {
             loops++;
             if (loops == 5000)
-                _ShowInfoLine($" - {infoPrefix}{item.TextLong}");
+                _ShowWorkingText($" - {infoPrefix}{item.TextLong}");
             if ((loops % 10) == 0)
                 StatusInfo = $"{Format(loops)} : Hledám zacyklení v prvku: {infoPrefix}{item.TextLong}, délka cesty: {path.NodeCount }";
         }
-
         private class PathSpiderLine
         {
             public PathSpiderLine(MapItem rootItem, int maxLinks = 0, bool scanByProducts = false)
@@ -612,7 +616,7 @@ namespace DjSoft.SchedulerMap.Analyser
 
             Queue<MapItem> queue = new Queue<MapItem>();
             Dictionary<int, MapItem> workDict = new Dictionary<int, MapItem>();
-            _ShowInfoLine($"Začíná analýza...");
+            _ShowWorkingText($"Začíná analýza...");
             AddToQueue(queue, _MapSegment.FirstItems);
             int round = 0;
 
@@ -631,7 +635,7 @@ namespace DjSoft.SchedulerMap.Analyser
             var lastItems = _MapSegment.LastItems;
             var lastProcItems = lastItems.Where(i => i.Sequence != "??").ToArray();
 
-            _ShowInfoLine($"Analýza {(!Cancel ? "dokončena" : "PŘERUŠENA")}.");
+            _ShowWorkingText($"Analýza {(!Cancel ? "dokončena" : "PŘERUŠENA")}.");
         }
         /// <summary>
         /// Analýza jedné položky a zařazení jejích přímých Next prvků do fronty
@@ -679,7 +683,7 @@ namespace DjSoft.SchedulerMap.Analyser
         /// <param name="round"></param>
         private void _PrepareNextItemsToQueue(Queue<MapItem> queue, Dictionary<int, MapItem> workDict, ref int round)
         {
-            _ShowInfoLine($"Dokončen cyklus {round}; vyřešeno položek: {Format(_MapSegment.ItemsProcessedCount)} / {Format(_MapSegment.ItemsCount)}");
+            _ShowWorkingText($"Dokončen cyklus {round}; vyřešeno položek: {Format(_MapSegment.ItemsProcessedCount)} / {Format(_MapSegment.ItemsCount)}");
 
             int workCount = workDict.Count;
             var preparedItems = workDict.Values.Where(i => i.AllPrevLinksIsProcessed).ToList();
@@ -696,7 +700,7 @@ namespace DjSoft.SchedulerMap.Analyser
             int nextCount = queue.Count;
             if (nextCount > 0)
             {
-                _ShowInfoLine($"Příprava pro další cyklus {(round + 1)}; nachystáno položek: {Format(workCount)}, do dalšího kola: {Format(preparedItems.Count)}, ke zpracování: {Format(nextCount)}");
+                _ShowWorkingText($"Příprava pro další cyklus {(round + 1)}; nachystáno položek: {Format(workCount)}, do dalšího kola: {Format(preparedItems.Count)}, ke zpracování: {Format(nextCount)}");
                 _LogNextRound(ref round, nextCount);
                 return;
             }
@@ -704,7 +708,7 @@ namespace DjSoft.SchedulerMap.Analyser
             // 
 
 
-                _ShowInfoLine($"Příprava pro další cyklus {(round + 1)}; nachystáno položek: {Format(workCount)}, do dalšího kola: {Format(preparedItems.Count)}, vše je zpracováno.");
+                _ShowWorkingText($"Příprava pro další cyklus {(round + 1)}; nachystáno položek: {Format(workCount)}, do dalšího kola: {Format(preparedItems.Count)}, vše je zpracováno.");
         }
         /// <summary>
         /// Závěrečná analýza nezpracovaných prvků
@@ -715,17 +719,17 @@ namespace DjSoft.SchedulerMap.Analyser
             int count = nonProcessedItems.Length;
             if (count == 0) return;
 
-            _ShowInfoLine($"Analýza nezpracovaných položek, počet: {Format(count)}");
+            _ShowWorkingText($"Analýza nezpracovaných položek, počet: {Format(count)}");
             for (int i = 0; i < count; i++)
             {
                 if (Cancel) break;
                 if (i > 500)
                 {
-                    _ShowInfoLine($" ... a další, celkem {Format(count)}...");
+                    _ShowWorkingText($" ... a další, celkem {Format(count)}...");
                     break;
                 }
                 var currentItem = nonProcessedItems[i];
-                _ShowInfoLine($"Položka {Format(i)} / {Format(count)}: {currentItem.TextLong}");
+                _ShowWorkingText($"Položka {Format(i)} / {Format(count)}: {currentItem.TextLong}");
             }
         }
         private int _AnalyseStepCount;
@@ -734,7 +738,7 @@ namespace DjSoft.SchedulerMap.Analyser
         private void _LogNextRound(ref int round, int count)
         {
             round++;
-            _ShowInfoLine($"Start cyklu {round}; počet položek: {Format(count)}");
+            _ShowWorkingText($"Start cyklu {round}; počet položek: {Format(count)}");
         }
         /// <summary>
         /// Do fronty <paramref name="queue"/> přidá platné prvky z kolekce <paramref name="items"/>.
