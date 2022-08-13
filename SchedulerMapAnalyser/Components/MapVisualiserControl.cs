@@ -462,13 +462,36 @@ namespace DjSoft.SchedulerMap.Analyser
                 this.BeginInvoke(new Action(Refresh));
             }
         }
+        /// <summary>
+        /// Vykreslí progress
+        /// </summary>
+        /// <param name="e"></param>
         private void OnLoadProgressPaint(PaintEventArgs e)
         {
             _LoadProgressPaint = false;
-            Rectangle outBounds = new Rectangle(50, 70, 250, 45);
+            var progressBounds = _GetProgressBounds();
+            if (!progressBounds.HasValue) return;
+
+            Rectangle outBounds = progressBounds.Value;
             System.Windows.Forms.ProgressBarRenderer.DrawHorizontalBar(e.Graphics, outBounds);
-            Rectangle intBounds = new Rectangle(55, 75, ((int)(240m * _LoadProgressRatio.Value)), 35);
-            System.Windows.Forms.ProgressBarRenderer.DrawHorizontalChunks(e.Graphics, intBounds);
+            Rectangle intBounds = new Rectangle(outBounds.X + 3, outBounds.Y + 3, ((int)((decimal)(outBounds.Width - 6) * _LoadProgressRatio.Value)), outBounds.Height - 6);
+            if (intBounds.Width > 0 && outBounds.Height > 0)
+                System.Windows.Forms.ProgressBarRenderer.DrawHorizontalChunks(e.Graphics, intBounds);
+        }
+        /// <summary>
+        /// Vrátí souřadnice progresu
+        /// </summary>
+        /// <returns></returns>
+        private Rectangle? _GetProgressBounds()
+        {
+            var clientBounds = this.VirtualControl.ClientRectangle;
+            if (clientBounds.Width < 100 || clientBounds.Height < 40) return null;
+
+            int h = 15;
+            int y = clientBounds.Height - h - 10;
+            int w = clientBounds.Width / 2;
+            int x = w / 2;
+            return new Rectangle(x, y, w, h);
         }
         private ProgressState _LoadProgressState;
         private decimal? _LoadProgressRatio;
