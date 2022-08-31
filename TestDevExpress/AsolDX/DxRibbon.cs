@@ -49,10 +49,47 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="disposing"></param>
         protected override void Dispose(bool disposing)
         {
+            this.DestroyContent();
             this.DxDisposed = true;
             DxComponent.UnregisterListener(this);
             DxQuickAccessToolbar.ConfigValueChanged -= _DxQATItemKeysChanged;
             base.Dispose(disposing);
+        }
+        /// <summary>
+        /// Zruší veškerý svůj obsah v procesu Dispose. Volá base.DestroyContent() !!!
+        /// </summary>
+        protected virtual void DestroyContent()
+        {
+            Images = null;
+            LargeImages = null;
+            SearchItemShortcut = null;
+            ToolTipController = null;
+
+            _Groups?.ForEach(g => g?.Dispose());
+            _Groups = null;
+
+            _ImageRightFull = null;
+            _ImageRightMini = null;
+
+            SelectedDxPageChanged = null;
+
+            _SearchEditItems = null;
+            _AddedSearchMenuItems = null;
+
+            _OpenItemPopupMenu = null;
+            _OpenItemBarMenu = null;
+
+            PageOnDemandLoad = null;
+            ItemOnDemandLoad = null;
+
+            _QATUserItems?.ForEach(q => q?.Dispose());
+            _QATUserItems?.Clear();
+            _QATUserItems = null;
+            _QATUserItemDict?.Clear();
+            _QATUserItemDict = null;
+
+            _QATDirectItems?.ForEach(q => q?.Dispose());
+            _QATDirectItems = null;
         }
         /// <summary>
         /// Nastaví základní systémové vlastnosti Ribbonu.
@@ -166,9 +203,47 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="e"></param>
         protected override void OnPaint(PaintEventArgs e)
         {
+            if (!this.IsRibbonAlreadyPainted) { BeforeFirstPaint(); }
             base.OnPaint(e);
             this.PaintAfter(e);
+            this.ContentPaintedAfter();
+            if (!this.IsRibbonAlreadyPainted) { this.IsRibbonAlreadyPainted = true; AfterFirstPaint(); }
         }
+        /// <summary>
+        /// Volá se před zahájením prvního vykreslení Ribbonu.
+        /// V tuto dobu je <see cref="IsRibbonAlreadyPainted"/> = false.
+        /// </summary>
+        protected virtual void BeforeFirstPaint()
+        { }
+        /// <summary>
+        /// Zajistí nastavení <see cref="IsContentAlreadyPainted"/> pro všechny aktuálně mergované Ribbony.
+        /// </summary>
+        private void ContentPaintedAfter()
+        {
+            var ribbons = this.MergedRibbonsDown;
+            foreach (var ribbon in ribbons)
+            {
+                if (!ribbon.Item1.IsContentAlreadyPainted)
+                    ribbon.Item1.IsContentAlreadyPainted = true;
+            }
+        }
+        /// <summary>
+        /// Volá se po dokončení zahájením prvního vykreslení Ribbonu.
+        /// V tuto dobu je <see cref="IsRibbonAlreadyPainted"/> = true.
+        /// </summary>
+        protected virtual void AfterFirstPaint()
+        { }
+        /// <summary>
+        /// Obsahuje true po skončení prvního vykreslení tohoto Ribbonu = tedy po zobrazení Ribbonu uživateli.
+        /// POZOR: u Ribbonu, který je Mergován do Parent Ribbonu, může tato hodnota být stále false, protože Ribbon jako prvek vykreslen nebyl.
+        /// Pokud nás zajímá, zda náš obsah (tj. naše vlastní stránky a jejich prvky) byly někdy vykresleny, testujeme property <see cref="IsContentAlreadyPainted"/>.
+        /// </summary>
+        public bool IsRibbonAlreadyPainted { get; private set; }
+        /// <summary>
+        /// Obsahuje true po skončení prvního vykreslení OBSAHU tohoto Ribbonu = tedy po zobrazení zdejších dat v některém Ribbonu uživateli.
+        /// Zde je tedy true i tehdy, když this Ribbon fyzicky vykreslen není (protože je Mergován do některého parenta).
+        /// </summary>
+        public bool IsContentAlreadyPainted { get; private set; }
         /// <summary>
         /// Vizualizace
         /// </summary>
@@ -290,7 +365,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         public bool ImageHideOnMouse { get { return _ImageHideOnMouse; } set { _ImageHideOnMouse = value; this.Refresh(); } }
         private bool _ImageHideOnMouse;
         /// <summary>
-        /// Vykreslí ikonu vpravo
+        /// Vykreslí ikonu vpravo.
+        /// V tuto dobu je <see cref="IsRibbonAlreadyPainted"/> = podle stavu vykreslení: při prvním kreslení je false, při dalším je true.
         /// </summary>
         /// <param name="e"></param>
         private void PaintAfter(PaintEventArgs e)
@@ -303,6 +379,9 @@ namespace Noris.Clients.Win.Components.AsolDX
                 PaintLogoImage(e, image, isSmallRibbon);
             else
                 _ImageBounds = Rectangle.Empty;
+
+            // Bez tohoto řádku je obtížnější změnit stránku ribbonu "Domů" na jinou stránku po prvním otevření okna (musí se kliknout dvakrát):
+            this.SelectedPageFixed = null;
 
             OnPaintImageRightAfter(e);
         }
@@ -475,10 +554,41 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="prev"></param>
         protected override void OnSelectedPageChanged(DevExpress.XtraBars.Ribbon.RibbonPage prev)
         {
+            if (this.ModifySelectedPage()) return;
+
             this.StoreLastSelectedPage();
             base.OnSelectedPageChanged(prev);
             if (!this.CurrentModifiedState) this.CheckLazyContent(this.SelectedPage, false);
         }
+        /// <summary>
+        /// Pokud je přednastavena fixní stránka <see cref="SelectedPageFixed"/>, pak zajistí její aktivaci.
+        /// </summary>
+        /// <returns></returns>
+        private bool ModifySelectedPage()
+        {
+            var selectedPageFixed = this.SelectedPageFixed;
+            if (selectedPageFixed is null) return false;   // Nemáme fixní cílovou stránku = necháme přepnout na požadovanou...
+
+            this.SelectedPageFixed = null;
+            this.SelectedPage = selectedPageFixed;         // Tady se vyvolá OnSelectedPageChanged() pro nově zadanou stránku, vleze to do této metody, ale v druhím řádku vypadneme protože (SelectedPageFixed == null)!
+            return true;
+        }
+        /// <summary>
+        /// Povinná cílová stránka Ribbonu.
+        /// <para/>
+        /// DAJ 0071844 31.8.2022:<br/>
+        /// Řeší to komplikaci, kdy máme otevřené okno "A" a na něm aktivní stránku "X" (např. Přehled, nikoli Domů), 
+        /// a nově otevíráme okno B, kde chceme aktivovat jako výchozí stránku = "Domů".<br/>
+        /// Nicméně v procesu Mergování ribbonu pocházejícího z okna "B" do Desktopového Ribbonu tento (desktopový = vizuální) Ribbon má tendenci i pro nové okno "B" ponechat aktivní stránku Ribbonu stejnou, 
+        /// jaká byla aktivní dosud z okna "A" = stránka "Přehled", a tak při aktivaci okna "B" před jeho zobrazením ten RibbonControl nasetuje do SelectedPage tu stránku "Přehled" = probíhá metoda OnSelectedPageChanged(),
+        /// kde 'prev' = "Domů" a SelectedPage = "Přehled".<br/>
+        /// Nedá se tomu zabránit jinak, než v dané metodě OnSelectedPageChanged() násilně změnit SelectedPage = SelectedPageFixed.<br/>
+        /// Nastavení hodnoty do SelectedPageFixed se děje při Mergování ribbonu, když do Parent Ribbonu aktivuji vhodnou SelectedPage.<br/>
+        /// Hodnota SelectedPageFixed se použije jen jedenkrát, ihned se nuluje - viz <see cref="ModifySelectedPage()"/>.<br/>
+        /// Vykreslení Ribbonu (OnPaint) hodnotu SelectedPageFixed rovněž nuluje, aby bylo možno uživatelsky změnit aktivní stránku 
+        /// (bez tohoto nulování je po otevření okna "B" zafixována stránka "Domů" a na jinou stránku se musí kliknout dvakrát, protože první kliknutí jenom vynuluje fixovanou stránku).<br/>
+        /// </summary>
+        private RibbonPage SelectedPageFixed { get; set; }
         /// <summary>
         /// Označí si nativní stránky Ribonu jako "aktuálně selectované".
         /// Na základě tohoto označení následně lze určit pro každý (i mergovaný) Ribbon, která jeho stránka byla naposledy aktivní, 
@@ -496,9 +606,29 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (force || (!_ClearingNow && _CurrentMergeState == MergeState.None && !this.CurrentModifiedState))
             {   // Pokud akce je povinná (force) anebo pokud je přípustná za aktuálního stavu:
                 // Označím si stránky (nativní = těch může být více = z více mergovaných ribbonů), které jsou nyní aktivní:
-                DxRibbonPage[] nativePages = _GetNativePages(this.SelectedPage);
-                nativePages.ForEachExec(p => p.OnActivate());
+                StoreLastSelectedPage(this.SelectedPage, false);
             }
+        }
+        /// <summary>
+        /// Metoda najde první svoji stránku a nastaví ji jako aktivní - a to ještě před zobrazením Ribbonu uživateli.
+        /// </summary>
+        protected void StoreFirstPageAsLastActivePage()
+        {
+            var pages = this.GetPages(PagePosition.AllOwn);
+            if (pages.Count > 0)
+                StoreLastSelectedPage(pages[0], true);
+        }
+        /// <summary>
+        /// Pro danou stránku <paramref name="selectedPage"/> najde její nativní stránky (tj. všechny, které jsou do dané stránky aktuálně mergované),
+        /// a označí si tyto nativní stránky jako 'Aktivované' = právě nyní aktivní.
+        /// Volá se po uživatelské aktivaci stránky, a po prvotním naplnění Ribbonu daty (tam se aktivuje první z naplněných stránek).
+        /// </summary>
+        /// <param name="selectedPage">Stránka která má být aktivní</param>
+        /// <param name="force">Požadavek na provedení aktivace stránky i pro takový Ribbon, který ještě nebyl zobrazen uživateli (používá se při inicializaci pro aktivaci první stránky)</param>
+        protected void StoreLastSelectedPage(RibbonPage selectedPage, bool force = false)
+        {
+            DxRibbonPage[] nativePages = _GetNativePages(selectedPage);
+            nativePages.ForEachExec(p => p.OnActivate(force));
         }
         /// <summary>
         /// Metoda v this Ribbonu aktivuje (selectuje) tu stránku, která byla naposledy aktivní = včetně stránek Mergovaných (pokud jsou).
@@ -1444,7 +1574,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             //  Řešení:
             //   - příznak isReFill říká, že nyní přicházejí naplněná data (a nebude se tedy žádat o jejich další donačtení)
             //   - příznak isReFill určíme podle toho, že ve vstupních datech je alespoň jedna stránka typu OnDemand, která už v sobě obsahuje data
-
+            bool isEmptyRibbon = (this.GetPages(PagePosition.AllOwn).Count == 0);
             bool isCalledFromReFill = iRibbonPages.Any(p => ((p.PageContentMode == RibbonContentMode.OnDemandLoadOnce || p.PageContentMode == RibbonContentMode.OnDemandLoadEveryTime) && p.Groups.Any()));
             this.ParentOwner.RunInGui(() =>
             {
@@ -1458,6 +1588,9 @@ namespace Noris.Clients.Win.Components.AsolDX
                 ,true);
             });
             CheckLazyContentCurrentPage(isCalledFromReFill);
+
+            // Do první stránky (v aktuálním Ribbonu) vepsat, že má být Aktivní:
+            if (isEmptyRibbon || clearCurrentContent) StoreFirstPageAsLastActivePage();
         }
         /// <summary>
         /// Metoda vrátí seznam těch zdejších stránek, jejichž Name se vyskytují v dodaném seznamu nových prvků.
@@ -2415,6 +2548,7 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             dxGroup.Reset();
             this._Groups.Remove(dxGroup);
+            dxGroup.Dispose();
         }
 
         /// <summary>
@@ -5672,6 +5806,29 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
         }
         /// <summary>
+        /// Obsahuje všechny aktuální Ribbony mergované od this až do nejnižšího Child, včetně this.
+        /// this ribbon je na pozici [0], jeho Child je na pozici [1], a tak dál dolů. Pole tedy má vždy alespoň jeden prvek.
+        /// Každý další prvek (na nižším indexu) je Child prvku předchozího.
+        /// <para/>
+        /// Prvek Tuple.Item1 = Ribbon; prvek Tuple.Item2 je stav <see cref="CurrentModifiedState"/> daného Ribbonu.
+        /// <para/>
+        /// Používá se při zápisu do všech Child Ribbonů.
+        /// </summary>
+        public List<Tuple<DxRibbonControl, bool>> MergedRibbonsDown
+        {
+            get
+            {
+                var result = new List<Tuple<DxRibbonControl, bool>>();
+                DxRibbonControl ribbon = this;
+                while (ribbon != null)
+                {
+                    result.Add(new Tuple<DxRibbonControl, bool>(ribbon, ribbon.CurrentModifiedState));
+                    ribbon = ribbon.MergedChildDxRibbon;
+                }
+                return result;
+            }
+        }
+        /// <summary>
         /// Aktuálně mergovaný Child Ribbon
         /// </summary>
         protected DevExpress.XtraBars.Ribbon.RibbonControl MergedChildRibbon { get; set; }
@@ -5833,7 +5990,11 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 if (slaveSelectedPageId != null) this.SelectedPageFullId = slaveSelectedPageId;
                 if (!String.Equals(this.SelectedPageFullId, slaveSelectedPageId) && slaveSelectedPage != null)
+                {
                     this.SelectedPage = slaveSelectedPage;
+                    if (this.IsContentAlreadyPainted)
+                        this.SelectedPageFixed = this.SelectedPage;
+                }
             }
             
             this.StoreLastSelectedPage();
@@ -6556,13 +6717,19 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Vyvolá se po každé aktivaci stránky, inkrementuje <see cref="ActivateTimeStamp"/> a vyvolá událost <see cref="DxRibbonControl.SelectedDxPageChanged"/> prostřednictvím <see cref="IDxRibbonInternal.OnActivatePage(DxRibbonPage)"/>.
         /// </summary>
-        public void OnActivate()  
+        /// <param name="force">Požadavek na provedení aktivace i pro takový Ribbon, který ještě nebyl zobrazen uživateli (používá se při inicializaci pro aktivaci první stránky)</param>
+        public void OnActivate(bool force = false)
         {
-            if (this.IOwnerDxRibbon != null && (this.ActivateTimeStamp == 0 || this.ActivateTimeStamp < this.IOwnerDxRibbon.CurrentTimeStamp))
-            {   // Pokud naše (Page) hodnota ActivateTimeStamp je menší, než jakou eviduje náš Ribbon, je zjevné že Ribbon už nějakou další hodnotu přidělil nějaké jiné stránce.
-                // Pak tedy aktivace this stránky (zdejší metoda) je reálnou změnou aktivní stránky, a ne jen opakovanou akcí na téže stránce...
-                ActivateTimeStamp = this.IOwnerDxRibbon.GetNextTimeStamp();
-                this.IOwnerDxRibbon.OnActivatePage(this);
+            // Pokud obsah Ribbonu dosud nebyl zobrazen uživateli (OwnerDxRibbon.IsContentAlreadyPainted), pak nebudu aktivovat stránku = jde o Mergovací hrátky Ribbonu před jeho vlastním zobrazením:
+            bool canActivate = (this.OwnerDxRibbon != null && (force || this.OwnerDxRibbon.IsContentAlreadyPainted));
+            if (canActivate)
+            {
+                if (this.IOwnerDxRibbon != null && (this.ActivateTimeStamp == 0 || this.ActivateTimeStamp < this.IOwnerDxRibbon.CurrentTimeStamp))
+                {   // Pokud naše (Page) hodnota ActivateTimeStamp je menší, než jakou eviduje náš Ribbon, je zjevné že Ribbon už nějakou další hodnotu přidělil nějaké jiné stránce.
+                    // Pak tedy aktivace this stránky (zdejší metoda) je reálnou změnou aktivní stránky, a ne jen opakovanou akcí na téže stránce...
+                    ActivateTimeStamp = this.IOwnerDxRibbon.GetNextTimeStamp();
+                    this.IOwnerDxRibbon.OnActivatePage(this);
+                }
             }
         }
         /// <summary>
@@ -6809,6 +6976,15 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (groups != null) groups.Add(this);
             Init();
             Fill(iRibbonGroup, true);
+        }
+        /// <summary>
+        /// Dispose
+        /// </summary>
+        /// <param name="disposing"></param>
+        protected override void Dispose(bool disposing)
+        {
+            this.Reset();
+            base.Dispose(disposing);
         }
         /// <summary>
         /// Inicializace

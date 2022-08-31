@@ -223,8 +223,18 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             this.ActivityState = WindowActivityState.Disposing;
             DxComponent.UnregisterListener(this);
+            DestroyContent();
             base.Dispose(disposing);
             this.ActivityState = WindowActivityState.Disposed;
+        }
+        /// <summary>
+        /// Zruší veškerý svůj obsah v procesu Dispose. Volá base.DestroyContent() !!!
+        /// </summary>
+        protected virtual void DestroyContent()
+        {
+            FirstShownBefore = null;
+            FirstShownAfter = null;
+            NextShown = null;
         }
         #endregion
         #region Ikona okna
@@ -542,8 +552,18 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             this.ActivityState = WindowActivityState.Disposing;
             DxComponent.UnregisterListener(this);
+            DestroyContent();
             base.Dispose(disposing);
             this.ActivityState = WindowActivityState.Disposed;
+        }
+        /// <summary>
+        /// Zruší veškerý svůj obsah v procesu Dispose. Volá base.DestroyContent() !!!
+        /// </summary>
+        protected virtual void DestroyContent()
+        {
+            FirstShownBefore = null;
+            FirstShownAfter = null;
+            NextShown = null;
         }
         #endregion
         #region Ikona okna
@@ -579,6 +599,10 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             this.SetStyle(ControlStyles.EnableNotifyMessage, true);
         }
+        /// <summary>
+        /// Notifies the control of Windows messages.
+        /// </summary>
+        /// <param name="m">A System.Windows.Forms.Message that represents the Windows message.</param>
         protected override void OnNotifyMessage(Message m)
         {
             bool logMessage = NeedLogMessage(m);
@@ -589,18 +613,18 @@ namespace Noris.Clients.Win.Components.AsolDX
             base.OnNotifyMessage(m);
             if (logMessage) DxComponent.LogAddMessage(m, this, "  End.", suffix);
         }
+        /// <summary>
+        /// Vrátí true pokud daná message se má logovat
+        /// </summary>
+        /// <param name="m"></param>
+        /// <returns></returns>
         private bool NeedLogMessage(Message m)
         {
+            // Pokud log obecně není aktivní, neloguji žádnou zprávu:
+            if (!DxComponent.LogActive) return false;
+
             // Pro zprávy zde vyjmenované vrátím false, takže se NEBUDOU logovat:
             return (!(m.Msg == DxWin32.WM.STYLECHANGED || m.Msg == DxWin32.WM.STYLECHANGING || m.Msg == DxWin32.WM.NCCALCSIZE || m.Msg == DxWin32.WM.CAPTURECHANGED));
-        }
-        protected override bool ProcessKeyMessage(ref Message m)
-        {
-            return base.ProcessKeyMessage(ref m);
-        }
-        public override bool PreProcessMessage(ref Message msg)
-        {
-            return base.PreProcessMessage(ref msg);
         }
         /// <summary>
         /// Při změně umístění
@@ -1061,8 +1085,17 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="disposing"></param>
         protected override void Dispose(bool disposing)
         {
-            base.Dispose(disposing);
             DxComponent.UnregisterListener(this);
+            DestroyContent();
+            base.Dispose(disposing);
+        }
+        /// <summary>
+        /// Zruší veškerý svůj obsah v procesu Dispose. Volá base.DestroyContent() !!!
+        /// </summary>
+        protected virtual void DestroyContent()
+        {
+            _PaintedItems?.Clear();
+            _PaintedItems = null;
         }
         /// <summary>
         /// Barva pozadí uživatelská, má přednost před skinem, aplikuje se na hotový skin, může obsahovat Alpha kanál = pak skrz tuto barvu prosvítá podkladový skin

@@ -51,7 +51,14 @@ namespace Noris.Clients.Win.Components
                 // Owner okno vyjmu z argumentu, aby tam nezůstala reference na něj (= pak by se okno bránilo zavření!)
                 var owner = args.Owner;
                 args.Owner = null;
-                form.ShowDialog(owner);
+                try
+                {
+                    form.ShowDialog(owner);
+                }
+                catch (Exception exc)
+                {
+
+                }
 
                 if (owner != null && owner is Form ownerForm && !ownerForm.IsDisposed)
                     ownerForm.Activate();

@@ -206,11 +206,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="control"></param>
         /// <param name="scanAction"></param>
-        /// <param name="maxLevel"></param>
+        /// <param name="maxLevel">Nejvyšší povolená hloubka vnoření</param>
         public static void ScanAllChildControls(this Control control, Action<Control> scanAction, int maxLevel = 42)
         {
             if (scanAction != null)
-                _ScanAllChildControls(control, scanAction, 0, maxLevel);
+                _ScanAllChildControlsA(control, scanAction, 0, maxLevel);
         }
         /// <summary>
         /// Scanuje (<paramref name="scanAction"/>) daný prvek <paramref name="control"/>,
@@ -219,8 +219,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="control"></param>
         /// <param name="scanAction"></param>
         /// <param name="level"></param>
-        /// <param name="maxLevel"></param>
-        private static void _ScanAllChildControls(Control control, Action<Control> scanAction, int level, int maxLevel)
+        /// <param name="maxLevel">Nejvyšší povolená hloubka vnoření</param>
+        private static void _ScanAllChildControlsA(Control control, Action<Control> scanAction, int level, int maxLevel)
         {
             if (control is null) return;
             scanAction(control);
@@ -228,7 +228,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (level >= maxLevel || childs is null) return;
             int nextlevel = level + 1;
             foreach (Control child in childs)
-                _ScanAllChildControls(child, scanAction, nextlevel, maxLevel);
+                _ScanAllChildControlsA(child, scanAction, nextlevel, maxLevel);
         }
         /// <summary>
         /// Metoda prochází všechny Child controly včetně this controlu, a pro každý control provede danou akci.
@@ -237,12 +237,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Pokud je dodána scan funkce, pak vrací true = scanovat i do hloubky (=Child controly daného controlu) / false = do hloubky už nejdeme
         /// </summary>
         /// <param name="control"></param>
-        /// <param name="scanAction"></param>
-        /// <param name="maxLevel"></param>
+        /// <param name="scanAction">Funkce dostává každý nalezený control, pokud vrátí true, pak se bude scanovat i jeho Childs</param>
+        /// <param name="maxLevel">Nejvyšší povolená hloubka vnoření</param>
         public static void ScanAllChildControls(this Control control, Func<Control, bool> scanAction, int maxLevel = 42)
         {
             if (scanAction != null)
-                _ScanAllChildControls(control, scanAction, 0, maxLevel);
+                _ScanAllChildControlsF(control, scanAction, 0, maxLevel);
         }
         /// <summary>
         /// Scanuje (<paramref name="scanAction"/>) daný prvek <paramref name="control"/>,
@@ -251,8 +251,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="control"></param>
         /// <param name="scanAction"></param>
         /// <param name="level"></param>
-        /// <param name="maxLevel"></param>
-        private static void _ScanAllChildControls(Control control, Func<Control, bool> scanAction, int level, int maxLevel)
+        /// <param name="maxLevel">Nejvyšší povolená hloubka vnoření</param>
+        private static void _ScanAllChildControlsF(Control control, Func<Control, bool> scanAction, int level, int maxLevel)
         {
             if (control is null) return;
             bool result = scanAction(control);
@@ -261,7 +261,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (level >= maxLevel || childs is null) return;
             int nextlevel = level + 1;
             foreach (Control child in childs)
-                _ScanAllChildControls(child, scanAction, nextlevel, maxLevel);
+                _ScanAllChildControlsF(child, scanAction, nextlevel, maxLevel);
         }
         /// <summary>
         /// Vrátí nejbližšího Parenta požadovaného typu pro this control.
@@ -280,7 +280,29 @@ namespace Noris.Clients.Win.Components.AsolDX
             return null;
         }
         /// <summary>
-        /// Korektně disposuje všechny Child prvky.
+        /// Vrátí první Child control požadovaného typu pro this control. This control se testuje podle parametru <paramref name="includeThis"/>.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="control">Prohledávaný container, testuje se on a jeho childs.</param>
+        /// <param name="filter">Přidaný filtr, dostává jen instance očekávaného typu, pokud vrátí true bude objekt akceptován. Může být null, pak se akceptuje první instance <typeparamref name="T"/>.</param>
+        /// <param name="includeThis">Otestovat i this control?</param>
+        /// <param name="maxLevel">Nejvyšší povolená hloubka vnoření</param>
+        /// <returns></returns>
+        public static T SearchForFirstChildOfType<T>(this Control control, Func<T, bool> filter = null, bool includeThis = false, int maxLevel = 42) where T : Control
+        {
+            if (control is null) return null;
+            bool hasFilter = (filter != null);
+
+            // includeThis ?
+            if (includeThis && (control is T th && (!hasFilter || filter(th)))) return th;
+
+            // Childs:
+            T result = null;
+            _ScanAllChildControlsF(control, c => { if (result is null && (c is T ch && (!hasFilter || filter(ch)))) result = ch; return (result is null); }, 0, maxLevel);
+            return result;
+        }
+        /// <summary>
+        /// Korektně disposuje všechny Child prvky, provede i Controls.Clear().
         /// </summary>
         /// <param name="control"></param>
         public static void DisposeContent(this Control control)
@@ -306,6 +328,8 @@ namespace Noris.Clients.Win.Components.AsolDX
                 try { child.Dispose(); }
                 catch { }
             }
+
+            control.Controls.Clear();
         }
         /// <summary>
         /// Do this controlu vloží potřebné souřadnice, pokud jsou změněny.

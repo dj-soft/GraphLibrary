@@ -1369,7 +1369,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void _UnregisterListener(IListener listener)
         {
             lock (__Listeners)
-                __Listeners.RemoveAll(s => !s.IsAlive || s.ContainsListener(listener));
+                __Listeners.RemoveWhere(s => (!s.IsAlive || s.ContainsListener(listener)), a => a.ClearListener());
+
             __ListenersLastClean = DateTime.Now;
         }
         /// <summary>
@@ -1401,7 +1402,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             if (!force && ((TimeSpan)(DateTime.Now - __ListenersLastClean)).TotalSeconds < 30d) return;  // Když to není nutné, nebudeme to řešit
             lock (__Listeners)
-                __Listeners.RemoveAll(s => !s.IsAlive);
+                __Listeners.RemoveWhere(s => !s.IsAlive, a => a.ClearListener());
             __ListenersLastClean = DateTime.Now;
         }
         /// <summary>
@@ -1435,8 +1436,15 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// </summary>
             public bool ContainsListener(IListener testListener)
             {
-                IListener mySubscriber = __Listener.Target;
-                return (mySubscriber != null && Object.ReferenceEquals(mySubscriber, testListener));
+                IListener myListener = __Listener.Target;
+                return (myListener != null && Object.ReferenceEquals(myListener, testListener));
+            }
+            /// <summary>
+            /// Zahodí a uvolní instanci v this instanci <see cref="_ListenerInstance"/>
+            /// </summary>
+            public void ClearListener()
+            {
+                __Listener = null;
             }
         }
         #endregion
@@ -2314,6 +2322,53 @@ namespace Noris.Clients.Win.Components.AsolDX
         public static SuperToolTip CreateDxSuperTip(IToolTipItem toolTipItem)
         {
             return DxSuperToolTip.CreateDxSuperTip(toolTipItem);
+        }
+        #endregion
+        #region Pozice okna
+        /// <summary>
+        /// Vrátí pozici daného okna. Následně se okno na tuto pozici může umístit voláním metody <see cref="FormPositionSet(Form, string, bool)"/>.
+        /// </summary>
+        /// <param name="form"></param>
+        /// <returns></returns>
+        public static string FormPositionGet(Form form)
+        {
+            if (form is null) return "";
+            var state = form.WindowState;
+            var bounds = (state == FormWindowState.Normal ? form.Bounds : form.RestoreBounds);
+            string s = (state == FormWindowState.Maximized ? "X" : (state == FormWindowState.Normal ? "B" : "N"));
+            return $"{s},{bounds.X},{bounds.Y},{bounds.Width},{bounds.Height}";
+        }
+        /// <summary>
+        /// Do daného okna nastaví pozici a souřadnice dle daného stringu, který byl vygenerován metodou <see cref="FormPositionGet(Form)"/>.
+        /// Může/nemusí souřadnice okna zarovnat do viditelných monitorů.
+        /// </summary>
+        /// <param name="form"></param>
+        /// <param name="position"></param>
+        /// <param name="skipAlign">Pokud bude false (default), pak se dodané souřadnice zarovnají do aktuálně připojených monitorů. To je lepší pro to, že nově otevřené okno se neotevře na nějaké neviditelné pozici.
+        /// Hodnota true tuto akci přeskočí, okno bude umístěno přesně tam, kde je zadáno, i když nebude vidět.</param>
+        public static bool FormPositionSet(Form form, string position, bool skipAlign = false)
+        {
+            if (form is null || position is null || position.Length < 9) return false;
+            var items = position.Split(',');
+            if (items.Length < 5) return false;
+            if ((items[0] == "X" || items[0] == "B" || items[0] == "N") &&
+                (Int32.TryParse(items[1], out int x)) &&
+                (Int32.TryParse(items[2], out int y)) &&
+                (Int32.TryParse(items[3], out int w) && w > 0) &&
+                (Int32.TryParse(items[4], out int h) && h > 0))
+            {
+                FormWindowState state = (items[0] == "X" ? FormWindowState.Maximized : (items[0] == "B" ? FormWindowState.Normal : FormWindowState.Minimized));
+                Rectangle bounds = new Rectangle(x, y, w, h);
+                if (!skipAlign)
+                    bounds = bounds.FitIntoMonitors();
+                form.WindowState = FormWindowState.Normal;
+                if (state == FormWindowState.Normal)
+                    form.StartPosition = FormStartPosition.Manual;
+                form.Bounds = bounds;
+                form.WindowState = state;
+                return true;
+            }
+            return false;
         }
         #endregion
         #region TryRun

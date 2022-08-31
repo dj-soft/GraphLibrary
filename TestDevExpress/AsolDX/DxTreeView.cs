@@ -3632,7 +3632,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="nodeInfo"></param>
         private void RaiseLazyLoadChilds(ITreeListNode nodeInfo)
         {
-            if (_SilentMode) return;
+            // Tato událost má výjimku, protože donačíst LazyChild se musí i když jsme Silent...:
+            // if (_SilentMode) return;
 
             DxTreeListNodeArgs args = new DxTreeListNodeArgs(nodeInfo, TreeListActionType.LazyLoadChilds, TreeListPartType.None, this.IsActiveEditor);
             OnLazyLoadChilds(args);

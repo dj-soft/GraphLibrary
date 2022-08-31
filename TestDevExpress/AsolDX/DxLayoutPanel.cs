@@ -53,6 +53,15 @@ namespace Noris.Clients.Win.Components.AsolDX
             base.Dispose(disposing);
         }
         /// <summary>
+        /// Zruší veškerý svůj obsah v procesu Dispose. Volá base.DestroyContent() !!!
+        /// </summary>
+        protected override void DestroyContent()
+        {
+            base.DestroyContent();
+            this._Controls?.ForEach(t => t.DestroyContent());
+            this._Controls = null;
+        }
+        /// <summary>
         /// Metoda najde a vrátí instanci <see cref="DxLayoutPanel"/>, do které patří daný control
         /// </summary>
         /// <param name="control"></param>
@@ -647,6 +656,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                     OnUserControlRemoved(removeControl);   // Pošleme uživateli událost UserControlRemoved
                 }
             }
+            removeInfo.DestroyContent();
             _RaiseEventsLayoutChange(removedLastControl);
         }
         /// <summary>
@@ -2207,6 +2217,23 @@ namespace Noris.Clients.Win.Components.AsolDX
 
                 RefreshTitleFromUserControl();
             }
+            /// <summary>
+            /// Zruší svůj obsah. Toto není Control, nevolá base.
+            /// </summary>
+            internal void DestroyContent()
+            {
+                var iLayoutUserControl = ILayoutUserControl;
+                if (iLayoutUserControl != null)
+                    iLayoutUserControl.TitleChanged -= UserControlTitleChanged;
+
+                var hostControl = HostControl;
+                if (hostControl != null)
+                    hostControl.Dispose();
+
+                __Parent = null;
+                __HostControl = null;
+                __UserControl = null;
+            }
             private WeakTarget<Control> __Parent;
             private WeakTarget<DxLayoutItemPanel> __HostControl;
             private WeakTarget<Control> __UserControl;
@@ -2582,6 +2609,40 @@ namespace Noris.Clients.Win.Components.AsolDX
             this._DockButtonDisabledPosition = LayoutPosition.None;
         }
         /// <summary>
+        /// Uvolnění zdrojů
+        /// </summary>
+        /// <param name="disposing"></param>
+        protected override void Dispose(bool disposing)
+        {
+            base.Dispose(disposing);
+        }
+        /// <summary>
+        /// Zruší veškerý svůj obsah v procesu Dispose. Volá base.DestroyContent() !!!
+        /// </summary>
+        protected override void DestroyContent()
+        {
+            base.DestroyContent();
+
+            DockButtonClick = null;
+            CloseButtonClick = null;
+
+            _TitleBarVisible = false;
+            _IsPrimaryPanel = false;
+
+            this.Controls.Clear();
+
+            if (_TitleBar != null)
+            {
+                _TitleBar.Dispose();
+                _TitleBar = null;
+            }
+
+            // Tady nesmí být Dispose, protože tohle je aplikační control, a ten si disposuje ten, kdo ho vytvořil...
+            _UserControl = null;
+
+            __Owner = null;
+        }
+        /// <summary>
         /// Vlastník = kompletní layout
         /// </summary>
         public DxLayoutPanel Owner { get { return __Owner; } }
@@ -2629,35 +2690,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         public void ReleaseUserControl()
         {
             this.UserControl = null;                     // Korektně odebere stávající UserControl z this.Controls i ze zdejší proměnné, ale nedisposuje jej
-        }
-        /// <summary>
-        /// Uvolnění zdrojů
-        /// </summary>
-        /// <param name="disposing"></param>
-        protected override void Dispose(bool disposing)
-        {
-            base.Dispose(disposing);
-            this._Dispose();
-        }
-        /// <summary>
-        /// Vnitřní Dispose
-        /// </summary>
-        private void _Dispose()
-        {
-            _TitleBarVisible = false;
-            _IsPrimaryPanel = false;
-
-            this.Controls.Clear();
-            if (_TitleBar != null)
-            {
-                _TitleBar.Dispose();
-                _TitleBar = null;
-            }
-
-            // Tady nesmí být Dispose, protože tohle je aplikační control...
-            _UserControl = null;
-
-            __Owner = null;
         }
         #endregion
         #region Naše vlastní data pro Titulkový panel, eventy
@@ -2981,6 +3013,14 @@ namespace Noris.Clients.Win.Components.AsolDX
             RefreshButtons(true);
         }
         /// <summary>
+        /// Zruší veškerý svůj obsah v procesu Dispose. Volá base.DestroyContent() !!!
+        /// </summary>
+        protected override void DestroyContent()
+        {
+            base.DestroyContent();
+            __Owner = null;
+        }
+        /// <summary>
         /// Vlastník titulku = <see cref="DxLayoutItemPanel"/> jednoho UserControlu.
         /// </summary>
         public DxLayoutItemPanel Owner { get { return __Owner; } }
@@ -3143,6 +3183,32 @@ namespace Noris.Clients.Win.Components.AsolDX
             base.Initialize();
 
             MouseActivityInit();
+        }
+        /// <summary>
+        /// Dispose
+        /// </summary>
+        /// <param name="disposing"></param>
+        protected override void Dispose(bool disposing)
+        {
+            base.Dispose(disposing);
+        }
+        /// <summary>
+        /// Zruší veškerý svůj obsah v procesu Dispose. Volá base.DestroyContent() !!!
+        /// </summary>
+        protected override void DestroyContent()
+        {
+            base.DestroyContent();
+
+            DockButtonClick = null;
+
+            _DockLeftButton?.Dispose();
+            _DockLeftButton = null;
+            _DockTopButton?.Dispose();
+            _DockTopButton = null;
+            _DockBottomButton?.Dispose();
+            _DockBottomButton = null;
+            _DockRightButton?.Dispose();
+            _DockRightButton = null;
         }
         /// <summary>
         /// Rozmístí svoje buttony, posouvá souřadnice podle umístěných buttonů.
@@ -3353,6 +3419,31 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             this.Height = 35;
             this.Dock = DockStyle.Top;
+        }
+        /// <summary>
+        /// Dispose
+        /// </summary>
+        /// <param name="disposing"></param>
+        protected override void Dispose(bool disposing)
+        {
+            base.Dispose(disposing);
+        }
+        /// <summary>
+        /// Zruší veškerý svůj obsah v procesu Dispose. Volá base.DestroyContent() !!!
+        /// </summary>
+        protected override void DestroyContent()
+        {
+            base.DestroyContent();
+
+            CloseButtonClick = null;
+
+            CloseButton?.Dispose();
+            CloseButton = null;
+
+            TitlePicture = null;
+
+            TitleLabel?.Dispose();
+            TitleLabel = null;
         }
         /// <summary>
         /// Po změně velikosti vyvolá <see cref="DoLayout()"/>

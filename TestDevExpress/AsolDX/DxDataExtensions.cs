@@ -340,20 +340,24 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
         }
         /// <summary>
-        /// Z dodané kolekce odebere všechny prvky, které vyhoví danému filtru
+        /// Z dodané kolekce odebere všechny prvky, které vyhoví danému filtru.
+        /// Pokud je zadaná akce <paramref name="onRemove"/>, tak tato akce je provedena ihned po odebrání prvku z listu.
         /// </summary>
         /// <typeparam name="TItem"></typeparam>
-        /// <param name="items"></param>
-        /// <param name="predicate"></param>
-        public static void RemoveWhere<TItem>(this System.Collections.IList items, Func<TItem, bool> predicate)
+        /// <param name="items">Seznam prvků</param>
+        /// <param name="predicate">Podmínka pro odebrání, nesmí být null</param>
+        /// <param name="onRemove">Akce volaná po odebrání ze seznamu, smí být null</param>
+        public static void RemoveWhere<TItem>(this System.Collections.IList items, Func<TItem, bool> predicate, Action<TItem> onRemove = null)
         {
             if (items == null || items.Count == 0) return;
+            bool hasRemoveAction = (onRemove != null);
             for (int index = 0; index < items.Count; index++)
             {
                 object item = items[index];
-                if (item is TItem && predicate((TItem)item))
+                if (item is TItem tItem && predicate(tItem))
                 {
                     items.RemoveAt(index);
+                    if (hasRemoveAction) onRemove(tItem);
                     index--;
                 }
             }
@@ -362,17 +366,20 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Z dodané kolekce odebere všechny prvky, které vyhoví danému filtru
         /// </summary>
         /// <typeparam name="TItem"></typeparam>
-        /// <param name="items"></param>
-        /// <param name="predicate"></param>
-        public static void RemoveWhere<TItem>(this System.Collections.Generic.IList<TItem> items, Func<TItem, bool> predicate)
+        /// <param name="items">Seznam prvků</param>
+        /// <param name="predicate">Podmínka pro odebrání, nesmí být null</param>
+        /// <param name="onRemove">Akce volaná po odebrání ze seznamu, smí být null</param>
+        public static void RemoveWhere<TItem>(this System.Collections.Generic.IList<TItem> items, Func<TItem, bool> predicate, Action<TItem> onRemove = null)
         {
             if (items == null || items.Count == 0) return;
+            bool hasRemoveAction = (onRemove != null);
             for (int index = 0; index < items.Count; index++)
             {
-                object item = items[index];
-                if (predicate((TItem)item))
+                TItem item = items[index];
+                if (predicate(item))
                 {
                     items.RemoveAt(index);
+                    if (hasRemoveAction) onRemove(item);
                     index--;
                 }
             }
