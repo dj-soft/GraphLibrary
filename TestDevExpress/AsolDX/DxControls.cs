@@ -411,6 +411,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         protected override void DxMainContentCreate()
         {
             this._DxMainPanel = DxComponent.CreateDxPanel(this, System.Windows.Forms.DockStyle.Fill, borderStyles: DevExpress.XtraEditors.Controls.BorderStyles.NoBorder);
+
         }
         /// <summary>
         /// Provede přípravu obsahu hlavního panelu <see cref="DxMainPanel"/>. Panel je již vytvořen a umístěn v okně, Ribbon i StatusBar existují.<br/>
@@ -421,6 +422,51 @@ namespace Noris.Clients.Win.Components.AsolDX
             this._DxMainPanel.Visible = true;
         }
         private DxPanelControl _DxMainPanel;
+        #endregion
+        #region TitleButtons
+        public DataMenuItem[] TitleBarButtons 
+        { 
+            get { return _TitleBarButtons; } 
+            set 
+            {
+                _TitleBarButtons = value;
+
+                string resource1 = "svgimages/setup/pagesetup.svg";
+                string resource2 = "svgimages/setup/properties.svg";
+
+                var button = new DevExpress.XtraBars.BarButtonItem() { Caption = "..." };
+                DxComponent.ApplyImage(button.ImageOptions, resource2);
+                button.SuperTip = DxComponent.CreateDxSuperTip("SYSTEM", "Menu systémových nástrojů");
+                this.DxRibbon.Items.Add(button);
+                this.DxRibbon.CaptionBarItemLinks.Add(button);
+            }
+        }
+        private DataMenuItem[] _TitleBarButtons;
+        public FormRibbonVisibilityMode FormRibbonVisibility
+        {
+            get { return _FormRibbonVisibility; }
+            set
+            {
+                switch (value)
+                {
+                    case FormRibbonVisibilityMode.Nothing:
+                        this.RibbonVisibility = DevExpress.XtraBars.Ribbon.RibbonVisibility.Hidden;
+                        this.DxRibbon.Visible = false;
+                        break;
+                    case FormRibbonVisibilityMode.FormTitleRow:
+                        this.RibbonVisibility = DevExpress.XtraBars.Ribbon.RibbonVisibility.Hidden;
+                        this.DxRibbon.Visible = true;
+                        break;
+                    case FormRibbonVisibilityMode.Standard:
+                        this.RibbonVisibility = DevExpress.XtraBars.Ribbon.RibbonVisibility.Visible;
+                        this.DxRibbon.Visible = true;
+                        break;
+                }
+                _FormRibbonVisibility = value;
+               
+            }
+        }
+        private FormRibbonVisibilityMode _FormRibbonVisibility = FormRibbonVisibilityMode.Standard;
         #endregion
     }
     /// <summary>
@@ -964,13 +1010,22 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         protected virtual void DxStatusPrepare() { this._DxStatusBar.Visible = false; }
         /// <summary>
-        /// Provede přípravu obsahu hlavního obshau okna. Obsah je již vytvořen a umístěn v okně, Ribbon i StatusBar existují.<br/>
+        /// Provede přípravu obsahu hlavního obsahu okna. Obsah je již vytvořen a umístěn v okně, Ribbon i StatusBar existují.<br/>
         /// Zde se typicky vytváří obsah do hlavního panelu.
         /// </summary>
         protected abstract void DxMainContentPrepare();
         private DxRibbonControl _DxRibbon;
         private DxRibbonStatusBar _DxStatusBar;
         #endregion
+    }
+    /// <summary>
+    /// Režim viditelnosti titulkového řádku okna a Ribbonu
+    /// </summary>
+    public enum FormRibbonVisibilityMode
+    {
+        Nothing,
+        FormTitleRow,
+        Standard
     }
     /// <summary>
     /// Třída určená pro uchování pozice formuláře, pro jeho persistenci

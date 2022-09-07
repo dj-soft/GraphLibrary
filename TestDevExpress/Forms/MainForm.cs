@@ -382,13 +382,7 @@ namespace TestDevExpress.Forms
             group.Items.Add(CreateRibbonFunction("TreeBgrForm", "TreeBgr Form", "svgimages/diagramicons/tipovertree_right.svg", "Otevře okno pro testování TreeListu s akcemi na pozadí", _TestDxTreeBgrFormButton_Click));
             group.Items.Add(CreateRibbonFunction("DiagramControlForm", "Diagram Control", "svgimages/diagramicons/relayoutparts.svg", "Otevře okno pro Diagram Control", _TestDxDiagramControlFormButton_Click));
             group.Items.Add(CreateRibbonFunction("HandleScan", "Handle Scan", "svgimages/spreadsheet/createline3dchart.svg", "Otevře okno pro měření systémových handle běžících procesů", _TestHandleScanFormButton_Click));
-
-            //string resource5 = "svgimages/diagramicons/leftright.svg";
-            //string resource6 = "svgimages/diagramicons/mindmaptree_horizontal.svg";
-            //string resource7 = "svgimages/diagramicons/mindmaptree_vertical.svg";
-            //string resource8 = "svgimages/diagramicons/relayoutparts.svg";
-
-
+            group.Items.Add(CreateRibbonFunction("FormWithTitleButton", "Title Button", "devav/ui/window/window.svg", "Otevře okno, které má v titulkovém řádku přidaný Button", _TestFormWithTitleButton_Click));
 
             AddRibbonSoundsMenu(group);
             AddRibbonWavFilesMenu(group);
@@ -667,6 +661,25 @@ namespace TestDevExpress.Forms
             {
                 _HandleScanForm.Show();
                 _HandleScanForm.Activate();
+            }
+        }
+        private void _TestFormWithTitleButton_Click(IMenuItem menuItem)
+        {
+            using (var form = new DxRibbonForm())
+            {
+                form.FormRibbonVisibility = FormRibbonVisibilityMode.Nothing;
+                form.FormRibbonVisibility = FormRibbonVisibilityMode.FormTitleRow;
+                form.FormRibbonVisibility = FormRibbonVisibilityMode.Standard;
+                form.Text = "Ukázka okna s tlačítkem navíc...";
+                form.WindowState = FormWindowState.Normal;
+                form.Size = new Size(800, 600);
+                form.StartPosition = FormStartPosition.CenterParent;
+                form.TitleBarButtons = new DataMenuItem[] { new DataMenuItem() { ItemId = "SysMenu", Text = "", ToolTipText = "Systémové menu", ImageName = "svgimages/setup/pagesetup.svg" } };
+                form.ShowDialog();
+
+                string resource1 = "svgimages/setup/pagesetup.svg";
+                string resource2 = "svgimages/setup/properties.svg";
+
             }
         }
         /// <summary>
