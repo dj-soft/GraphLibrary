@@ -4551,8 +4551,20 @@ namespace Noris.Clients.Win.Components.AsolDX
         [DefaultMessageText("Nastavení oblíbených položek")]
         RibbonQatManagerTitle,
         /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
-        [DefaultMessageText("Nenalezeno")]
-        RibbonNoMatchesFound,
+        [DefaultMessageText("Výsledky hledání")]
+        RibbonSearchMenuGroupGeneralCaption,
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
+        [DefaultMessageText("Ostatní")]
+        RibbonSearchMenuGroupOtherCaption,
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
+        [DefaultMessageText("Příliš mnoho výsledků")]
+        RibbonSearchMenuGroupTooManyMatchesCaption,
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
+        [DefaultMessageText("Upřesněte zadání")]
+        RibbonSearchMenuItemTooManyMatchesCaption,
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
+        [DefaultMessageText("Nenalezeny žádné shody")]
+        RibbonSearchMenuItemNoMatchesCaption,
 
         /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Chyba")]

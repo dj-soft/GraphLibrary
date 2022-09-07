@@ -7,7 +7,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
 using System.Windows.Forms;
 using System.Drawing;
@@ -15,11 +14,8 @@ using System.Drawing;
 using DevExpress.Utils;
 using System.Diagnostics;
 using DevExpress.Utils.Extensions;
-using System.Security.Policy;
 using DevExpress.XtraBars;
 using DevExpress.XtraBars.Ribbon;
-using DevExpress.PivotGrid.CollapseState;
-using DevExpress.PivotGrid.OLAP;
 using XS = Noris.WS.Parser.XmlSerializer;
 
 namespace Noris.Clients.Win.Components.AsolDX
@@ -90,6 +86,8 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             _QATDirectItems?.ForEach(q => q?.Dispose());
             _QATDirectItems = null;
+
+            SearchMenuDestroyContent();
         }
         /// <summary>
         /// Nastaví základní systémové vlastnosti Ribbonu.
@@ -138,6 +136,10 @@ namespace Noris.Clients.Win.Components.AsolDX
             CheckLazyContentEnabled = true;
 
             _ImageHideOnMouse = true;       // Logo nekreslit, když v tom místě je myš
+
+            SearchMenuGroupSort = SearchMenuGroupSortMode.PageOrderGroupCaption;
+            SearchMenuMaxResultCount = 24;
+            SearchMenuShrinkResultCount = 0;
 
             Visible = true;
             DxDisposed = false;
@@ -736,7 +738,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="e"></param>
         private void SearchEdit_Enter(object sender, EventArgs e)
         {
-            RefreshSearchEditItems(0);
+            RefreshSearchEditItems();
             _AddedSearchMenuItems = new List<BarItemLink>();
             _CurrentIsSearchEditActive = true;
         }
@@ -747,6 +749,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="e"></param>
         private void SearchEdit_Leave(object sender, EventArgs e)
         {
+            DisposeLastSearchMenuItems();
             _CurrentIsSearchEditActive = false;
             _AddedSearchMenuItems = null;
         }
@@ -779,18 +782,722 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
         }
         /// <summary>
+        /// Metoda zajistí kompletně nové vytvoření všech položek do QuickSearch Menu.
+        /// Metoda je volána po každém vepsání / editaci textu v políčku pro rychlé hledání funkcí v Ribbonu.
+        /// <para/>
+        /// Ribbon předpřipraví menu (v e.Menu), ale toto menu má z hlediska Nephrite několik vad na kráse:
+        /// a) neobsahuje všechny prvky, protože Ribbon má některé prvky dotahované OnDemand (otevírací menu na tlačítku "Funkce: Tři tečky"), a ty nemusí být v Ribbonu reálně vloženy = Ribbon je nenajde;
+        /// b) Nephrite vyžaduje, aby hlavičky skupin v menu obsahovaly "Název stránky: Název grupy", ale Ribbon dává jen "Název grupy";
+        /// c) Předešlý bod chování komponenty DevExpress vede k tomu, že: když máme stejné tlačítko ve stejně pojmenované grupě na dvou různých stránkách (Domů - Záznam - Otevřít; a Přehled - Záznam - Otevřít), 
+        ///   pak DevExpress obě tlačítka vidí ve stejnojmenné skupině "Záznam" a v menu je zařadí do společné skupiny "Záznam", což dost znemožňuje zobrazit každé tlačítko v jiné správně pojmenované skupině
+        /// d) Nephrite vyžaduje, aby skupiny byly tříděny podle POŘADÍ stránky a grupy ve stránce, kdežto DevExpress řadí grupy abecedně.
+        /// <para/>
+        /// Řešení: zahodíme vygenerované DevExpress menu, najdeme si vyhovující položky podle našich pravidel, pojmenujeme jejich skupiny podle naší potřeby, seřadíme grupy podle našich požadavků, a vygenerujeme nové menu z našich prvků.
+        /// </summary>
+        /// <param name="e"></param>
+        private void ModifySearchEditItems(RibbonSearchMenuEventArgs e)
+        {
+            // Sem vstupuje řízení pokaždé, když uživatel v SearchMenu edituje text (vepíše/smaže znak):
+            DisposeLastSearchMenuItems();
+
+            // Pokud uživatel nic nezadal, skončíme:
+            if (String.IsNullOrEmpty(e.SearchString) || e.SearchString.Trim().Length < 1)
+            {
+                e.Menu.HidePopup();
+                return;
+            }
+
+            // Najdeme případný NotFound prvek:
+            DetectNotFoundItem(e);
+
+            // Začneme s kompletním seznamem prvků v Ribbonu, a to včetně Mergovaných ribbonů::
+            List<BarItem> items = new List<BarItem>();
+            FillItemsForSearch(items, this);
+            SearchMenuItems finalItems = new SearchMenuItems(items);
+           
+            // Získáme seznam nativních prvků (nikoli GroupHeader), které vyhovují zadanému textu:
+            AddSearchItemsNative(e, finalItems);
+
+            // Přidáme seznam přidaných prvků (bez GroupHeader), které dosud nejsou vygenerovány do Ribbonu:
+            AddSearchItemsAdded(e, finalItems);
+
+            // Zajistíme prvek "Nic nenalezeno":
+            AddSearchItemsNotFound(e, finalItems);
+
+            // Modifikujeme vzhled i obsah menu podle počtu výsledků:
+            ModifySearchMenuByResults(e, finalItems);
+
+            // Získám setříděné grupy prvků, kde klíčem grupy je text grupy:
+            var groups = CreateSearchItemGroups(finalItems);
+
+            // Vložím tyto grupy do menu:
+            AddSearchGroupsToMenu(e, finalItems, groups);
+        }
+        /// <summary>
+        /// Pokud dosud nemáme nalezen prvek <see cref="SearchItemNotFoundRibbonItem"/>, pokusí se jej najít nyní v dodaném menu.
+        /// </summary>
+        /// <param name="e"></param>
+        private void DetectNotFoundItem(RibbonSearchMenuEventArgs e)
+        {
+            if (SearchItemNotFoundRibbonItem is null)
+            {   // Jen poprve za život Ribbonu:
+                string localizedCaption = DxComponent.Localize(MsgCode.RibbonSearchMenuItemNoMatchesCaption);
+                foreach (BarItemLink link in e.Menu.ItemLinks)
+                {
+                    if (IsSearchItemNotFound(link, localizedCaption, out BarStaticItem notFoundItem))
+                    {   // Prvek "Nenalezeny odpovídající položky":
+                        SearchItemNotFoundRibbonItem = notFoundItem;
+                        break;
+                    }
+                }
+            }
+        }
+        /// <summary>
+        /// Vrátí true, pokud dodaný prvek obsahuje význam "Nenalezeny odpovídající položky"
+        /// </summary>
+        /// <param name="link"></param>
+        /// <param name="localizedCaption"></param>
+        /// <param name="notFoundItem"></param>
+        /// <returns></returns>
+        private bool IsSearchItemNotFound(BarItemLink link, string localizedCaption, out BarStaticItem notFoundItem)
+        {
+            // Prvek musí být BarStaticItem, jiné neberu:
+            notFoundItem = null;
+            if (!(link.Item is BarStaticItem staticItem)) return false;
+
+            // Měl bych mít od posledního hledání v Tagu uložený kód hlášky:
+            bool result = (staticItem.Tag is MsgCode code && code == MsgCode.RibbonSearchMenuItemNoMatchesCaption);
+
+            if (!result)
+            {
+                // Zkusím najít prvek podle standardně lokalizovaného textu:
+                string caption = DevExpress.XtraBars.Localization.BarLocalizer.Active.GetLocalizedString(DevExpress.XtraBars.Localization.BarString.RibbonSearchItemNoMatchesFound);
+                result = (staticItem.Caption == caption);
+
+                // Standardní lokalizace:
+                if (!result && localizedCaption != null) result = (staticItem.Caption == localizedCaption);
+
+                // Zoufalství v jazyce anglickém:
+                if (!result) result = (staticItem.Caption == "No matches found");
+
+                // Šílené zoufalství v jazyce českém:
+                if (!result) result = (staticItem.Caption == "Nenalezeny žádné shody");
+
+                // Nalezeno? Označkujme:
+                if (result)
+                    staticItem.Tag = MsgCode.RibbonSearchMenuItemNoMatchesCaption;
+            }
+
+            if (result)
+                notFoundItem = staticItem;
+
+            return result;
+        }
+        /// <summary>
+        /// Metoda projde seznam linků v menu, a prvky (nikoli <see cref="BarHeaderItem"/>), které jsou Visible, vloží do <paramref name="finalItems"/>.
+        /// Současně k nim přidává potřebný titulek grupy.
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="finalItems"></param>
+        /// <returns></returns>
+        private void AddSearchItemsNative(RibbonSearchMenuEventArgs e, SearchMenuItems finalItems)
+        {
+            foreach (BarItem barItem in finalItems.AllItems)
+            {
+                if (_TryGetIRibbonItem(barItem, out var iRibbonItem))
+                {   // a) prvky vytvořené pro konkrétní IRibbonItem:
+                    string itemId = "ID:" + iRibbonItem.ItemId;
+                    if (!finalItems.FoundItems.ContainsKey(itemId))
+                    {
+                        if (CanAddItemToSearchMenu(iRibbonItem, e.SearchString, out string itemCaption))
+                        {
+                            string groupCaption = GetSearchItemGroupCaption(iRibbonItem, out string groupSortOrder);
+                            finalItems.FoundItems.Add(itemId, new SearchMenuItem(itemId, itemCaption, groupCaption, groupSortOrder, iRibbonItem, barItem));
+                        }
+                    }
+                }
+                else
+                {   // b) prvky vytvořené fixně v WDesktopu:
+                    if (CanAddItemToSearchMenu(barItem, e.SearchString, out string itemCaption))
+                    {
+                        string itemId = "TX:" + finalItems.FoundItems.Count.ToString();
+                        string groupCaption = GetSearchItemGroupCaption(barItem, out string groupSortOrder);
+                        finalItems.FoundItems.Add(itemId, new SearchMenuItem(itemId, itemCaption, groupCaption, groupSortOrder, null, barItem));
+                    }
+                }
+            }
+        }
+        /// <summary>
+        /// Metoda přidá donačtené prvky nad rámec prvků přítomných v Ribbonu do seznamu v <paramref name="finalItems"/>.
+        /// Současně k nim přidává potřebný titulek grupy.
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="finalItems"></param>
+        private void AddSearchItemsAdded(RibbonSearchMenuEventArgs e, SearchMenuItems finalItems)
+        {
+            // Provedeme pro všechny mergované instance Ribonů, počínaje this, až do dvanáctého kolena:
+            var ribbon = this;
+            for (int l = 0; l < 12; l++)
+            {
+                if (ribbon is null) break;
+                var iRibbonItems = ribbon._SearchEditItems;
+                if (iRibbonItems != null && iRibbonItems.Length > 0)
+                {
+                    foreach (var iRibbonItem in iRibbonItems)
+                    {
+                        if (iRibbonItem != null && !String.IsNullOrEmpty(iRibbonItem.ItemId))
+                        {
+                            // Máme prvek a máme ID:
+                            string itemId = "ID:" + iRibbonItem.ItemId;
+                            if (!finalItems.FoundItems.ContainsKey(itemId) && CanAddItemToSearchMenu(iRibbonItem, e.SearchString, out string itemCaption))
+                            {   // Prvek má být přidán do menu (ještě tam není, a jeho text vyhovuje zadaném stringu):
+                                // zajistím, že v IRibbonItem bude vytvořen fyzický BarItem, protože ten musí vytvořit this Ribbon jako autor, on si pak bude obsluhovat Click event na itemu:
+                                ribbon.PrepareSearchEditBarItem(iRibbonItem);
+
+                                string groupCaption = ribbon.GetSearchItemGroupCaption(iRibbonItem, out string groupSortOrder);
+                                finalItems.FoundItems.Add(itemId, new SearchMenuItem(itemId, itemCaption, groupCaption, groupSortOrder, iRibbonItem, iRibbonItem.RibbonItem));
+                            }
+                        }
+                    }
+                }
+                // Přejdeme na můj Child Ribbon:
+                ribbon = ribbon.MergedChildDxRibbon;
+            }
+        }
+        /// <summary>
+        /// Vrátí true pokud prvek s daným textem má být přidán do Search menu
+        /// </summary>
+        /// <param name="iRibbonItem"></param>
+        /// <param name="searchText"></param>
+        /// <param name="itemCaption"></param>
+        /// <returns></returns>
+        private bool CanAddItemToSearchMenu(IRibbonItem iRibbonItem, string searchText, out string itemCaption)
+        {
+            itemCaption = null;
+            if (iRibbonItem is null || !iRibbonItem.VisibleInSearchMenu) return false;
+            if (CanAddTextToSearchMenu(iRibbonItem.Text, searchText)) return true;
+            if (CanAddTextToSearchMenu(iRibbonItem.SearchTags, searchText))
+            {
+                itemCaption = $"{iRibbonItem.Text} ({iRibbonItem.SearchTags})";
+                return true;
+            }
+            return false;
+        }
+        /// <summary>
+        /// Vrátí true pokud prvek s daným textem má být přidán do Search menu
+        /// </summary>
+        /// <param name="barItem"></param>
+        /// <param name="searchText"></param>
+        /// <param name="itemCaption"></param>
+        /// <returns></returns>
+        private bool CanAddItemToSearchMenu(BarItem barItem, string searchText, out string itemCaption)
+        {
+            itemCaption = null;
+            if (barItem is null || !barItem.VisibleInSearchMenu) return false;
+            if (CanAddTextToSearchMenu(barItem.Caption, searchText)) return true;
+            if (CanAddTextToSearchMenu(barItem.SearchTags, searchText))
+            {
+                itemCaption = $"{barItem.Caption} ({barItem.SearchTags})";
+                return true;
+            }
+            return false;
+        }
+        /// <summary>
+        /// Vrátí true pokud daným text vyhovuje zadání a má být přidán do Search menu
+        /// </summary>
+        /// <param name="itemText"></param>
+        /// <param name="searchText"></param>
+        /// <returns></returns>
+        private bool CanAddTextToSearchMenu(string itemText, string searchText)
+        {
+            return (itemText != null && itemText.Length > 0 && itemText.IndexOf(searchText, StringComparison.CurrentCultureIgnoreCase) >= 0);
+        }
+        /// <summary>
+        /// V rámci daného <see cref="IRibbonItem"/> prověří existenci reálného BarItem v <see cref="IRibbonItem.RibbonItem"/>, a případně jej vytvoří.
+        /// Klíčové je, že BarItem vytváří právě ta instance Ribbonu, kde je prvek deklarován, protože ta instance pak bude obsluhovat jeho Click.
+        /// </summary>
+        /// <param name="iRibbonItem"></param>
+        private void PrepareSearchEditBarItem(IRibbonItem iRibbonItem)
+        {
+            BarItem barItem = iRibbonItem.RibbonItem;
+            if (barItem is null)
+            {
+                int count = 0;
+                barItem = GetItem(iRibbonItem, null, 0, DxRibbonCreateContentMode.CreateAllSubItems, ref count);
+                iRibbonItem.RibbonItem = barItem;
+            }
+        }
+        /// <summary>
+        /// Modifikuje menu podle nalezených položek
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="finalItems"></param>
+        private void ModifySearchMenuByResults(RibbonSearchMenuEventArgs e, SearchMenuItems finalItems)
+        {
+            e.Menu.MenuDrawMode = MenuDrawMode.SmallImagesText;
+
+            int resultCount = finalItems.FoundItems.Count;
+            if (SearchMenuMaxResultCount > 0 && resultCount > SearchMenuMaxResultCount)
+            {
+                AddSearchItemsTooManyMatches(e, finalItems, resultCount);
+            }
+            else if (SearchMenuShrinkResultCount > 0 && resultCount > SearchMenuShrinkResultCount)
+            {
+                setMenuColumns(10);
+            }
+            else
+            {
+                setMenuColumns(0);
+            }
+
+            void setMenuColumns(int columnCount)
+            {
+                DefaultBoolean multiColumn = (columnCount <= 0 ? DefaultBoolean.False : DefaultBoolean.True);
+                if (e.Menu.MultiColumn != multiColumn) e.Menu.MultiColumn = multiColumn;
+                if (e.Menu.OptionsMultiColumn.ColumnCount != columnCount) e.Menu.OptionsMultiColumn.ColumnCount = columnCount;
+            }
+        }
+        /// <summary>
+        /// Metoda sestaví a vrátí grupy do menu Search.
+        /// Výstupem je List, který obsahuje prvky grupy, kde Key = titulek grupy, a prvky grupy jsou typu <see cref="SearchMenuItem"/>.
+        /// </summary>
+        /// <param name="finalItems"></param>
+        /// <returns></returns>
+        private List<IGrouping<string, SearchMenuItem>> CreateSearchItemGroups(SearchMenuItems finalItems)
+        {
+            var groups = finalItems.FoundItems.Values
+                .GroupBy(i => i.GroupCaption)
+                .ToList();
+
+            if (SearchMenuGroupSort == SearchMenuGroupSortMode.PageOrderGroupCaption)
+                // Třídění podle grupovacího výrazu:
+                groups.Sort((a, b) => String.Compare(a.FirstOrDefault().GroupSortOrder, b.FirstOrDefault().GroupSortOrder));
+            else
+                // Třídění podle textu grupy (Název stránky: Název grupy):
+                groups.Sort((a, b) => String.Compare(a.Key, b.Key));
+
+            return groups;
+        }
+        /// <summary>
+        /// Zajistí, že v menu budou obsaženy prvky z dodaných dat groups.
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="finalItems"></param>
+        /// <param name="groups"></param>
+        private void AddSearchGroupsToMenu(RibbonSearchMenuEventArgs e, SearchMenuItems finalItems, List<IGrouping<string, SearchMenuItem>> groups)
+        {
+            e.Menu.ClearLinks();
+
+            foreach (var group in groups)
+            {
+                AddSearchGroupToMenuTitle(e, group.Key);
+                // Třídění obsahu skupiny bych řešil tady:
+                var items = group.ToList();
+                items.Sort((a, b) => String.Compare(a.ItemCaption, b.ItemCaption));
+                foreach (var item in items)
+                    AddSearchGroupToMenuItem(e, item);
+            }
+        }
+        /// <summary>
+        /// Do SearchMenu přidá záhlaví skupiny = <see cref="BarHeaderItem"/> pro daný titulek
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="title"></param>
+        private void AddSearchGroupToMenuTitle(RibbonSearchMenuEventArgs e, string title)
+        {
+            if (!String.IsNullOrEmpty(title))
+                e.Menu.AddItem(new BarHeaderItem() { Caption = title });
+        }
+        /// <summary>
+        /// Do SearchMenu přidá nový prvek (Link) z dodaných dat
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="item"></param>
+        private void AddSearchGroupToMenuItem(RibbonSearchMenuEventArgs e, SearchMenuItem item)
+        {
+            if (item is null || item.BarItem is null) return;
+            
+            var barLink = e.Menu.AddItem(item.BarItem);
+            ModifySearchMenuItemImage(barLink, item);
+            item.BarLink = barLink;
+        }
+        /// <summary>
+        /// Metoda upraví velikost Image pro SearchMenu v případě, kdy je to nezbytné.
+        /// </summary>
+        /// <param name="barLink"></param>
+        /// <param name="item"></param>
+        private void ModifySearchMenuItemImage(BarItemLink barLink, SearchMenuItem item)
+        {
+            // Fixní styl:
+            barLink.UserPaintStyle = DevExpress.XtraBars.BarItemPaintStyle.CaptionGlyph;
+            barLink.UserRibbonStyle = DevExpress.XtraBars.Ribbon.RibbonItemStyles.SmallWithText;
+
+            // Kdy je nutné upravit Image? Když máme definovaný Image typu Bitmapa natvrdo = nikoli přes ImageList, a je veliký:
+            if (barLink.ImageOptions.ImageIndex < 0 && barLink.ImageOptions.Image != null)
+            {   // Řeším jen Image, nikoli LargeImage... Tohle menu používá malé obrázky.
+                if (barLink.ImageOptions.Image.Size.Height > 20)
+                {
+                    item.BarLinkThumbImage = CreateSmallImage(barLink.ImageOptions.Image, 16);
+                    barLink.ImageOptions.Image = item.BarLinkThumbImage;
+                }
+            }
+        }
+        /// <summary>
+        /// Vytvoří thumbnail obrázek v dané velikosti
+        /// </summary>
+        /// <param name="source"></param>
+        /// <param name="height"></param>
+        /// <returns></returns>
+        private Image CreateSmallImage(Image source, int height)
+        {
+            if (source is null) return null;
+            try
+            {
+                var size = source.Size;
+                int width = size.Width * height / size.Height;
+                return source.GetThumbnailImage(width, height, null, IntPtr.Zero);
+            }
+            catch { return null; }
+        }
+        /// <summary>
+        /// Vrací standardní titulek grupy pro daný prvek v menu QuickSearch
+        /// </summary>
+        /// <param name="iRibbonItem"></param>
+        /// <param name="groupSortOrder"></param>
+        /// <returns></returns>
+        private string GetSearchItemGroupCaption(IRibbonItem iRibbonItem, out string groupSortOrder)
+        {
+            groupSortOrder = SearchMenuGroupOtherSortOrder;
+            if (iRibbonItem is null) return SearchMenuGroupOtherCaption;
+            var parentGroup = SearchForParentGroupForItem(iRibbonItem);
+            if (parentGroup is null) return SearchMenuGroupOtherCaption;
+
+            if (parentGroup.ParentPage is null)
+            {
+                groupSortOrder = parentGroup.MergeOrder.ToString("0000000") + " => " + parentGroup.GroupText;
+                return parentGroup.GroupText;
+            }
+            var parentPage = parentGroup.ParentPage;
+            groupSortOrder = parentPage.MergeOrder.ToString("0000000") + " => " + parentPage.PageText + " => " + parentGroup.MergeOrder.ToString("0000000") + " => " + parentGroup.GroupText;
+            return $"{parentPage.PageText}: {parentGroup.GroupText}";
+        }
+        /// <summary>
+        /// Najde grupu Ribbonu <see cref="IRibbonGroup"/>, do které patří daný prvek ribbonu.
+        /// Pozor, prvek může existovat v Ribbonu standardně (viditelný) anebo může být Added = připravený pro OnDemand doplnění, ale i v tom případě chceme najít reálnou deklaraci grupy, do které bude prvek patřit!
+        /// </summary>
+        /// <param name="iRibbonItem"></param>
+        /// <returns></returns>
+        private IRibbonGroup SearchForParentGroupForItem(IRibbonItem iRibbonItem)
+        {
+            if (iRibbonItem is null || iRibbonItem.ParentGroup is null) return null;               // Pokud prvek není anebo nemá definici grupy, nelze ji najít.
+
+            // Musíme najít reálnou grupu použitou v Ribbonu - podle jejího ID:
+            string groupId = iRibbonItem.ParentGroup.GroupId;
+            if (!this.AllGroups.TryGetFirst(g => g.GroupData.GroupId == groupId, out var dxGroup)) return null;
+            return dxGroup.GroupData;
+        }
+        /// <summary>
+        /// Vrací standardní titulek grupy pro daný prvek v menu QuickSearch
+        /// </summary>
+        /// <param name="barItem"></param>
+        /// <param name="groupSortOrder"></param>
+        /// <returns></returns>
+        private string GetSearchItemGroupCaption(BarItem barItem, out string groupSortOrder)
+        {
+            groupSortOrder = SearchMenuGroupOtherSortOrder;
+            var links = barItem.GetVisibleLinks();
+            var link = (links.Count > 0 ? links[0] : null);
+            return SearchMenuGroupOtherCaption;
+        }
+        /// <summary>
+        /// Metoda do menu přidá prvek "Příliš mnoho výsledků"
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="finalItems"></param>
+        /// <param name="resultCount"></param>
+        private void AddSearchItemsTooManyMatches(RibbonSearchMenuEventArgs e, SearchMenuItems finalItems, int? resultCount = null)
+        {
+            if (!resultCount.HasValue) resultCount = finalItems.FoundItems.Count;
+
+            if (finalItems.FoundItems.Count > 0)
+                finalItems.FoundItems.Clear();
+
+            // Musím někde najít/vytvořit prvek MaxCount:
+            var maxCountItem = SearchItemMaxCountLocalItem;
+            if (maxCountItem is null)
+            {
+                CreateSearchItemTooManyMatches();
+                maxCountItem = SearchItemMaxCountLocalItem;
+            }
+
+            string groupCaption = SearchMenuGroupTooManyMatchesFoundCaption;
+            finalItems.FoundItems.Add("", new SearchMenuItem("", null, groupCaption, null, null, maxCountItem));
+        }
+        /// <summary>
+        /// Metoda zajistí, že pokud není nalezen žádný prvek, bude v menu alespoň prvek NotFound.
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="finalItems"></param>
+        /// <returns></returns>
+        private void AddSearchItemsNotFound(RibbonSearchMenuEventArgs e, SearchMenuItems finalItems)
+        {
+            // Pokud jsme našli nějaké použitelné prvky, pak NotFound přidávat netřeba:
+            if (finalItems.FoundItems.Count > 0) return;
+
+            // Musím někde najít/vytvořit prvek NotFound:
+            var notFoundItem = SearchItemNotFoundRibbonItem;
+            if (notFoundItem is null)
+            {
+                notFoundItem = SearchItemNotFoundLocalItem;
+                if (notFoundItem is null)
+                {
+                    CreateSearchItemsNotFound();
+                    notFoundItem = SearchItemNotFoundLocalItem;
+                }
+            }
+            string groupCaption = SearchMenuGroupGeneralCaption;
+            finalItems.FoundItems.Add("", new SearchMenuItem("", null, groupCaption, null, null, notFoundItem));
+        }
+        /// <summary>
+        /// Obsahuje lokalizovaný titulek obecné skupiny v SearchMenu "Výsledky hledání"
+        /// </summary>
+        private string SearchMenuGroupGeneralCaption { get { return DxComponent.Localize(MsgCode.RibbonSearchMenuGroupGeneralCaption); } }
+        /// <summary>
+        /// Obsahuje hodnotu třídění náhradní skupiny v SearchMenu "Ostatní"
+        /// </summary>
+        private string SearchMenuGroupOtherSortOrder { get { return "zzzzzz"; /* "§§§§§§"; */ } }
+        /// <summary>
+        /// Obsahuje lokalizovaný titulek náhradní skupiny v SearchMenu "Ostatní"
+        /// </summary>
+        private string SearchMenuGroupOtherCaption { get { return DxComponent.Localize(MsgCode.RibbonSearchMenuGroupOtherCaption); } }
+        /// <summary>
+        /// Obsahuje lokalizovaný titulek skupiny v SearchMenu "Příliš mnoho výsledků"
+        /// </summary>
+        private string SearchMenuGroupTooManyMatchesFoundCaption  { get { return DxComponent.Localize(MsgCode.RibbonSearchMenuGroupTooManyMatchesCaption); } }
+        /// <summary>
+        /// Obsahuje lokalizovaný text prvku v SearchMenu "Upřesněte hledaný text"
+        /// </summary>
+        private string SearchMenuItemTooManyMatchesFoundCaption { get { return DxComponent.Localize(MsgCode.RibbonSearchMenuItemTooManyMatchesCaption); } }
+        /// <summary>
+        /// Obsahuje lokalizovaný text prvku v SearchMenu "Nenalezeny žádné shody"
+        /// </summary>
+        private string SearchMenuItemNoMatchesFoundCaption { get { return DxComponent.Localize(MsgCode.RibbonSearchMenuItemNoMatchesCaption); } }
+        /// <summary>
+        /// Vytvoří new prvek menu typu "Příliš mnoho výsledků"
+        /// </summary>
+        /// <returns></returns>
+        private void CreateSearchItemTooManyMatches()
+        {
+            BarStaticItem maxCountItem = new BarStaticItem() { Caption = SearchMenuItemTooManyMatchesFoundCaption, Tag = MsgCode.RibbonSearchMenuItemTooManyMatchesCaption };
+            SearchItemMaxCountLocalItem = maxCountItem;
+            this.Items.Add(maxCountItem);
+        }
+        /// <summary>
+        /// Vytvoří new prvek menu typu "Nenalezeny odpovídající položky"
+        /// </summary>
+        /// <returns></returns>
+        private void CreateSearchItemsNotFound()
+        {
+            BarStaticItem notFoundItem = new BarStaticItem() { Caption = SearchMenuItemNoMatchesFoundCaption, Tag = MsgCode.RibbonSearchMenuItemNoMatchesCaption };
+            SearchItemNotFoundLocalItem = notFoundItem;
+            this.Items.Add(notFoundItem);
+        }
+        /// <summary>
+        /// Korektně uvolní prvky, které byly vytvořeny pro Search menu
+        /// </summary>
+        private void DisposeLastSearchMenuItems()
+        {
+            var searchMenuLastItems = SearchMenuLastItems;
+            if (searchMenuLastItems is null) return;
+
+            searchMenuLastItems.DisposeItems();
+
+            SearchMenuLastItems = null;
+        }
+        /// <summary>
+        /// Při Dispose Ribbonu
+        /// </summary>
+        private void SearchMenuDestroyContent()
+        {
+            DisposeLastSearchMenuItems();
+            SearchItemNotFoundRibbonItem = null;
+            if (SearchItemNotFoundLocalItem != null)
+            {
+                this.Items.Remove(SearchItemNotFoundLocalItem);
+                SearchItemNotFoundLocalItem.Dispose();
+            }
+            SearchItemNotFoundLocalItem = null;
+
+            if (SearchItemMaxCountLocalItem != null)
+            {
+                this.Items.Remove(SearchItemMaxCountLocalItem);
+                SearchItemMaxCountLocalItem.Dispose();
+            }
+            SearchItemMaxCountLocalItem = null;
+        }
+        /// <summary>
+        /// Prvky menu SearchMenu posledně vygenerované. Měly by být zlikvidovány. 
+        /// Provede se na začátku hledání v <see cref="ModifySearchEditItems(RibbonSearchMenuEventArgs)"/> a při opuštění políčka v <see cref="SearchEdit_Leave(object, EventArgs)"/>, pomocí metody <see cref="DisposeLastSearchMenuItems"/>.
+        /// </summary>
+        private SearchMenuItems SearchMenuLastItems;
+        /// <summary>
+        /// Ribbonem vytvořený BarItem pro prvek SearchMenu "Nenalezeny odpovídající položky", používaný opakovaně v rámci Ribbonu
+        /// </summary>
+        private BarStaticItem SearchItemNotFoundRibbonItem;
+        /// <summary>
+        /// Lokálně vytvořený BarItem pro prvek SearchMenu "Nenalezeny odpovídající položky", používaný opakovaně v rámci Ribbonu
+        /// </summary>
+        private BarStaticItem SearchItemNotFoundLocalItem;
+        /// <summary>
+        /// Lokálně vytvořený BarItem pro prvek SearchMenu "Příliš mnoho výsledků", používaný opakovaně v rámci Ribbonu
+        /// </summary>
+        private BarStaticItem SearchItemMaxCountLocalItem;
+        /// <summary>
+        /// Režim třídění skupin v SearchMenu
+        /// </summary>
+        public SearchMenuGroupSortMode SearchMenuGroupSort { get; set; }
+        /// <summary>
+        /// Počet výsledků v SearchMenu, při jehož překročení bude ve výsledcích zobrazen pouze static item s textem "Příliš mnoho výsledků".
+        /// Hodnota 0 a záporné = neaktivní, vždy budou zobrazeny všechny výsledky.
+        /// </summary>
+        public int SearchMenuMaxResultCount { get; set; }
+        /// <summary>
+        /// Počet výsledků v SearchMenu, při jehož překročení budou výsledky zobrazeny "úsporně" = pouze ikony vedle sebe, bez textu.
+        /// Hodnota 0 a záporné = neaktivní, vždy budou zobrazeny všechny výsledky v plné formě.
+        /// </summary>
+        public int SearchMenuShrinkResultCount { get; set; }
+        /// <summary>
+        /// Třídění skupin v SearchMenu
+        /// </summary>
+        public enum SearchMenuGroupSortMode 
+        {
+            /// <summary>
+            /// Skupiny v SearchMenu budou tříděny podle <u>názvu stránky a názvu skupiny</u>.
+            /// </summary>
+            PageCaptionGroupCaption,
+            /// <summary>
+            /// Skupiny v SearchMenu budou tříděny podle <u>pořadí stránky v Ribbonu a pořadí skupiny skupiny na stránce</u>.
+            /// </summary>
+            PageOrderGroupCaption
+        }
+
+        #region private třídy SearchMenuItems (celý balíček dat) a SearchMenuItem (jedna položka v SearchMenu)
+        /// <summary>
+        /// Třída zapouzdřující data pro modifikaci Search menu
+        /// </summary>
+        private class SearchMenuItems
+        {
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            public SearchMenuItems(List<BarItem> allItems)
+            {
+                this.AllItems = allItems;
+                this.FoundItems = new Dictionary<string, SearchMenuItem>();
+            }
+            /// <summary>
+            /// Vizualizace
+            /// </summary>
+            /// <returns></returns>
+            public override string ToString()
+            {
+                return "FoundItems.Count: " + FoundItems.Count.ToString();
+            }
+            /// <summary>
+            /// Korektně uvolní prvky, které byly vytvořeny pro Search menu
+            /// </summary>
+            public void DisposeItems()
+            {
+                this.AllItems = null;
+
+                var foundItems = this.FoundItems;
+                if (foundItems != null)
+                {
+                    foreach (var foundItem in foundItems.Values)
+                        foundItem.DisposeItem();
+                    this.FoundItems = null;
+                }
+            }
+            /// <summary>
+            /// Všechny prvky k prohledání
+            /// </summary>
+            public List<BarItem> AllItems;
+            /// <summary>
+            /// Kolekce prvků.
+            /// Klíčem v Dictionary je ID prvku s prefixem "ID:", prvky které nemají ID zde mají pořadové číslo prvku s prefixem "TX:";
+            /// </summary>
+            public Dictionary<string, SearchMenuItem> FoundItems;
+        }
+        /// <summary>
+        /// Jeden prvek v SearchMenu, jeho data
+        /// </summary>
+        private class SearchMenuItem
+        {
+            public SearchMenuItem() { }
+            public SearchMenuItem(string itemId, string itemCaption, string groupCaption, string groupSortOrder, IRibbonItem item, BarItem barItem)
+            {
+                ItemId = itemId;
+                ItemCaption = itemCaption ?? item?.Text ?? barItem?.Caption ?? "";
+                GroupCaption = groupCaption;
+                GroupSortOrder = groupSortOrder ?? "";
+                Item = item;
+                BarItem = barItem;
+            }
+            /// <summary>
+            /// Vizualizace
+            /// </summary>
+            /// <returns></returns>
+            public override string ToString()
+            {
+                return $"Group: {GroupCaption}; Item: {ItemCaption}";
+            }
+
+            /// <summary>
+            /// Uvolní z paměti svoje data
+            /// </summary>
+            public void DisposeItem()
+            {
+                BarLink?.Dispose();
+                BarLinkThumbImage?.Dispose();
+
+                ItemId = null;
+                ItemCaption = null;
+                GroupCaption = null;
+                Item = null;
+                BarItem = null;
+                BarLink = null;
+                BarLinkThumbImage = null;
+            }
+            public string ItemId;
+            public string ItemCaption;
+            public string GroupCaption;
+            public string GroupSortOrder;
+            public IRibbonItem Item;
+            public BarItem BarItem;
+            public BarItemLink BarLink;
+            public Image BarLinkThumbImage;
+        }
+        #endregion
+
+        /// <summary>
         /// Zajistí, že v this Ribbonu a v jeho Child ribbonech bude připraven seznam dodatkových prvků v poli <see cref="_SearchEditItems"/>.
         /// Tato metoda se má volat při každém vstupu do políčka SearchEdit.
         /// </summary>
-        /// <param name="level"></param>
-        protected void RefreshSearchEditItems(int level)
+        protected void RefreshSearchEditItems()
         {
-            if (_SearchEditItems == null && !_SearchEditItemsLoading)
-                RunLoadSearchEditItems();
+            // Provedeme pro všechny mergované instance Ribonů, počínaje this, až do dvanáctého kolena:
+            var ribbon = this;
+            for (int l = 0; l < 12; l++)
+            {
+                if (ribbon is null) break;
 
-            // Totéž pro moje Child Ribbony, rekurzivně, až do dvanáctého kolena:
-            if (level < 12)
-                this.MergedChildDxRibbon?.RefreshSearchEditItems(level + 1);
+                // Pokud konkrétní Ribbon dosud nemá připravené prvky v _SearchEditItems a aktuálně ani nebylo vyvoláno jejich donačítání, zahájíme to nyní v rímci toho Ribbonu:
+                if (ribbon._SearchEditItems == null && !ribbon._SearchEditItemsLoading)
+                    ribbon.RunLoadSearchEditItems();
+
+                // Přejdeme na můj Child Ribbon:
+                ribbon = ribbon.MergedChildDxRibbon;
+            }
         }
         /// <summary>
         /// Vyžádá si donačtení prvků do <see cref="_SearchEditItems"/>
@@ -810,259 +1517,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Aplikace má za úkol vytvořit pole prvků, které budou nabízeny v SearchEdit políčku pro rychlé hledání, a toto pole vložit do <see cref="SearchEditItems"/>.
         /// </summary>
         public event EventHandler LoadSearchEditItems;
-        /// <summary>
-        /// Metoda zajistí doplnění SearchEdit položek o odpovídající položky z přídavných prvků v poli <see cref="SearchEditItems"/> plus ze všech Child Ribbonů.
-        /// </summary>
-        /// <param name="e"></param>
-        private void ModifySearchEditItems(RibbonSearchMenuEventArgs e)
-        {
-            // Sem vstupuje řízení pokaždé, když uživatel v SearchMenu edituje text (vepíše/smaže znak):
-
-            // Prvky přidané při předchozím písmenku budou z menu odstraněny:
-            RemoveAddedSearchMenuItems(e);
-
-            // Pokud uživatel nic nezadal, skončíme:
-            if (String.IsNullOrEmpty(e.SearchString) || e.SearchString.Trim().Length < 1) return;
-
-            // Modifikujeme záhlaví nalezených prvků tak, aby obsahovalo název stránky + název grupy:
-            ModifySearchMenuTitles(e);
-
-            // Najdeme klíče nativních prvků v menu, abychom je nepřidávali duplicitně:
-            var menuItemsDict = e.Menu.ItemLinks.Select(l => l.Item).Where(i => (i != null && !String.IsNullOrEmpty(i.Name))).CreateDictionary(i => i.Name, true);
-            // Tento i Child Ribbony sestaví soupis těch přidaných prvků, které mají být přítomny v Search menu:
-            var addGroupItems = new Dictionary<string, List<Tuple<IRibbonItem, string>>>();
-            PrepareSearchEditItems(e, menuItemsDict, addGroupItems, 0);
-
-            // Zajistíme, že nově vybrané prvky budou přidány do SearchMenu:
-            AddSearchEditItems(e, addGroupItems);
-
-            // Zhasneme prvek "Nic jsem nenašel", pokud je zobrazen, a pokud v přidaných prvcích jsme něco našli (pak by to vypadalo blbě), anebo mu dáme lokalizovaný text:
-            ModifySearchEditNotFoundItem(e);
-        }
-        /// <summary>
-        /// Z dodaného SearchMenu odebere linky na prvky, které byly přidány posledně jako AddItems (v metodě <see cref="AddSearchEditItems"/>).
-        /// Vyčistí pole <see cref="_AddedSearchMenuItems"/>.
-        /// </summary>
-        /// <param name="e"></param>
-        private void RemoveAddedSearchMenuItems(RibbonSearchMenuEventArgs e)
-        {
-            var items = _AddedSearchMenuItems;
-            if (items != null && items.Count > 0)
-                items.ForEachExec(l => e.Menu.RemoveLink(l));
-            _AddedSearchMenuItems = null;
-        }
-        private void ModifySearchMenuTitles(RibbonSearchMenuEventArgs e)
-        {
-            BarHeaderItem lastHeaderItem = null;
-            bool isModified = false;
-            foreach (BarItemLink link in e.Menu.ItemLinks)
-            {
-                if (link.Item is BarHeaderItem headerItem)
-                {
-                    lastHeaderItem = headerItem;
-                    isModified = false;
-                }
-                else if (link.Visible)
-                {
-                    link.UserRibbonStyle = DevExpress.XtraBars.Ribbon.RibbonItemStyles.SmallWithText;
-                    if (lastHeaderItem != null && !isModified && link.Item is BarItem item && TryGetSearchMenuTitle(item, out string titleCaption))
-                    {
-                        lastHeaderItem.Caption = titleCaption;
-                        isModified = true;
-                    }
-                }
-            }
-        }
-        private bool TryGetSearchMenuTitle(BarItem item, out string titleCaption)
-        {
-            titleCaption = null;
-            if (!_TryGetIRibbonItem(item, out var iRibbonItem)) return false;
-            if (iRibbonItem.ParentGroup is null || iRibbonItem.ParentGroup.ParentPage is null) return false;
-            titleCaption = $"{iRibbonItem.ParentGroup.ParentPage.PageText}: {iRibbonItem.ParentGroup.GroupText}";
-            return true;
-        }
-        /// <summary>
-        /// Metoda zajistí doplnění SearchEdit položek o odpovídající položky z přídavných prvků v poli <see cref="SearchEditItems"/> do předaného pole <paramref name="addGroupItems"/>
-        /// za this Ribbon a pak i rekurzivně za Child Ribbony.
-        /// </summary>
-        /// <param name="e"></param>
-        /// <param name="menuItemsDict"></param>
-        /// <param name="addGroupItems"></param>
-        private void PrepareSearchEditItems(RibbonSearchMenuEventArgs e, Dictionary<string, BarItem> menuItemsDict, Dictionary<string, List<Tuple<IRibbonItem, string>>> addGroupItems, int level)
-        {
-            // Moje přídavné prvky:
-            var iRibbonItems = _SearchEditItems;
-            if (iRibbonItems != null && iRibbonItems.Length > 0)
-            {
-                foreach (var iRibbonItem in iRibbonItems)
-                {
-                    if (iRibbonItem != null && !String.IsNullOrEmpty(iRibbonItem.ItemId) && !menuItemsDict.ContainsKey(iRibbonItem.ItemId) && CanAddItemToSearchMenu(iRibbonItem, e.SearchString, out string itemCaption))
-                    {   // Tento IRibbonItem je správně zadán, a jeho texty odpovídají hledanému textu: přidáme jej do výstupu:
-                        // a) do indexu prvků, které jsou nalezeny (abychom shodný prvek nezobrazovali dvakrát):
-                        menuItemsDict.Add(iRibbonItem.ItemId, null);
-
-                        // b) zajistím, že v IRibbonItem bude vytvořen fyzický BarItem, protože ten musí vytvořit this Ribbon jako autor, on si pak bude obsluhovat Click event na itemu:
-                        PrepareSearchEditBarItem(iRibbonItem);
-
-                        // c) do pole, které obsahuje grupy a pole prvků v grupách:
-                        string headerText = iRibbonItem.ParentGroup?.GroupText ?? "...";           // Titulek grupy nebo ...
-                        if (!addGroupItems.TryGetValue(headerText, out var items))
-                        {   // Nová grupa:
-                            items = new List<Tuple<IRibbonItem, string>>();
-                            addGroupItems.Add(headerText, items);
-                        }
-                        // d) přidám prvek do grupy:
-                        items.Add(new Tuple<IRibbonItem, string>(iRibbonItem, itemCaption));
-                    }
-                }
-            }
-
-            // Totéž pro moje Child Ribbony, rekurzivně, až do dvanáctého kolena:
-            if (level < 12)
-                this.MergedChildDxRibbon?.PrepareSearchEditItems(e, menuItemsDict, addGroupItems, level + 1);
-        }
-        /// <summary>
-        /// V rámci daného <see cref="IRibbonItem"/> prověří existenci reálného BarItem v <see cref="IRibbonItem.RibbonItem"/>, a případně jej vytvoří.
-        /// Klíčové je, že BarItem vytváří právě ta instance Ribbonu, kde je prvek deklarován, protože ta instance pak bude obsluhovat jeho Click.
-        /// </summary>
-        /// <param name="iRibbonItem"></param>
-        private void PrepareSearchEditBarItem(IRibbonItem iRibbonItem)
-        {
-            BarItem barItem = iRibbonItem.RibbonItem;
-            if (barItem is null)
-            {
-                int count = 0;
-                barItem = GetItem(iRibbonItem, null, 0, DxRibbonCreateContentMode.CreateAllSubItems, ref count);
-                iRibbonItem.RibbonItem = barItem;
-            }
-        }
-        /// <summary>
-        /// Vrátí true pokud prvek s daným textem má být přidán do Search menu
-        /// </summary>
-        /// <param name="iRibbonItem"></param>
-        /// <param name="searchText"></param>
-        /// <param name="itemCaption"></param>
-        /// <returns></returns>
-        private bool CanAddItemToSearchMenu(IRibbonItem iRibbonItem, string searchText, out string itemCaption)
-        {
-            itemCaption = null;
-            if (iRibbonItem is null || !iRibbonItem.VisibleInSearchMenu) return false;
-            string text = iRibbonItem.Text;
-            if (text != null && text.IndexOf(searchText, StringComparison.CurrentCultureIgnoreCase) >= 0) return true;
-            text = iRibbonItem.SearchTags;
-            if (text != null && text.IndexOf(searchText, StringComparison.CurrentCultureIgnoreCase) >= 0)
-            {
-                itemCaption = $"{iRibbonItem.Text} ({iRibbonItem.SearchTags})";
-                return true;
-            }
-            return false;
-        }
-        /// <summary>
-        /// Metoda zajistí doplnění SearchEdit položek o odpovídající položky z dodaného indexu.
-        /// Přidané prvky budou uloženy do pole v <see cref="_AddedSearchMenuItems"/>.
-        /// </summary>
-        /// <param name="e"></param>
-        /// <param name="addGroupItems"></param>
-        private void AddSearchEditItems(RibbonSearchMenuEventArgs e, Dictionary<string, List<Tuple<IRibbonItem, string>>> addGroupItems)
-        {
-            var addedItems = new List<BarItemLink>();
-            // Skupiny setřídit podle titulku:
-            var addGroupItemsList = addGroupItems.ToList();
-            if (addGroupItemsList.Count > 1)
-                addGroupItemsList.Sort((a, b) => String.Compare(a.Key, b.Key, StringComparison.CurrentCultureIgnoreCase));
-            foreach (var addGroupItem in addGroupItemsList)
-            {
-                // Záhlaví skupiny přidat do menu:
-                AddSearchEditHeader(e, addGroupItem.Key, addedItems);
-
-                // Prvky ve skupině setřídit podle textu (Item2 = explicitní ?? Item1.Text = výchozí), a přidat do menu:
-                var addItems = addGroupItem.Value;
-                if (addItems.Count > 1)
-                    addItems.Sort((a, b) => String.Compare((a.Item2 ?? a.Item1.Text), (b.Item2 ?? b.Item1.Text), StringComparison.CurrentCultureIgnoreCase));
-                foreach (var addItem in addItems)
-                    AddSearchEditItem(e, addItem.Item1, addItem.Item2, addedItems);
-            }
-            _AddedSearchMenuItems = addedItems;
-        }
-        /// <summary>
-        /// Do Search menu přidá záhlaví skupiny s daným textem.
-        /// Link přidá do pole v parametru <paramref name="addedItems"/>.
-        /// </summary>
-        /// <param name="e"></param>
-        /// <param name="headerText"></param>
-        /// <param name="addedItems"></param>
-        private void AddSearchEditHeader(RibbonSearchMenuEventArgs e, string headerText, List<BarItemLink> addedItems)
-        {
-            DevExpress.XtraBars.BarHeaderItem header = new BarHeaderItem() { Caption = headerText };
-            var link = e.Menu.AddItem(header);
-            addedItems.Add(link);
-        }
-        /// <summary>
-        /// Zajistí přidání jednoho dalšího prvku do Search menu.
-        /// Link přidá do pole v parametru <paramref name="addedItems"/>.
-        /// </summary>
-        /// <param name="e"></param>
-        /// <param name="iRibbonItem"></param>
-        /// <param name="itemCaption"></param>
-        /// <param name="addedItems"></param>
-        private void AddSearchEditItem(RibbonSearchMenuEventArgs e, IRibbonItem iRibbonItem, string itemCaption, List<BarItemLink> addedItems)
-        {
-            BarItem barItem = iRibbonItem.RibbonItem;
-            if (barItem is null) return;
-            var link = e.Menu.AddItem(barItem);
-            link.UserCaption = itemCaption ?? iRibbonItem.Text;
-            addedItems.Add(link);
-        }
-        /// <summary>
-        /// Upraví prvek menu "Nic jsem nenašel" v SearchEdit menu: nastaví jeho lokalizovaný text a aktuálně potřebnou viditelnoust.
-        /// </summary>
-        /// <param name="e"></param>
-        private void ModifySearchEditNotFoundItem(RibbonSearchMenuEventArgs e)
-        {
-            if (!TryGetNotFoundItem(e.Menu.ItemLinks, out var link)) return;
-
-            // Zkontrolovat Tag (pro příští rychlé vyhledání):
-            var item = link.Item;
-            if (!(item.Tag is MsgCode)) item.Tag = MsgCode.RibbonNoMatchesFound;
-
-            // Caption:
-            string caption = DxComponent.Localize(MsgCode.RibbonNoMatchesFound);
-            if (item.Caption != caption) item.Caption = caption;
-
-            // Visible:
-            var otherVisibleLinks = e.Menu.ItemLinks.Where(l => l.Visible && !Object.ReferenceEquals(l, link)).ToArray();
-            link.Visible = (otherVisibleLinks.Length == 0);
-        }
-        /// <summary>
-        /// Pokusí se v dodané kolekci prvků najít prvek "No matches found" (nebo jiný odpovídající text).
-        /// </summary>
-        /// <param name="itemLinks"></param>
-        /// <param name="link"></param>
-        /// <returns></returns>
-        private bool TryGetNotFoundItem(BarItemLinkCollection itemLinks, out BarItemLink link)
-        {
-            var barStaticType = typeof(BarStaticItem);
-            var links = itemLinks.Where(l => l.Item.GetType() == barStaticType).ToArray();         // Prvek je dozajista BarStaticItem;
-
-            // a) Měl bych mít od posledního hledání v Tagu uložený kód hlášky:
-            link = links.FirstOrDefault(l => l.Item.Tag is MsgCode code && code == MsgCode.RibbonNoMatchesFound);
-            if (link != null) return true;
-
-            // b) Dosud jsme nehledali, zkusím najít prvek podle standardně lokalizovaného textu:
-            string caption = DevExpress.XtraBars.Localization.BarLocalizer.Active.GetLocalizedString(DevExpress.XtraBars.Localization.BarString.RibbonSearchItemNoMatchesFound);
-            link = links.FirstOrDefault(l => l.Item.Caption == caption);
-            if (link != null) return true;
-
-            // c) Zoufalství v jazyce anglickém:
-            link = links.FirstOrDefault(l => l.Item.Caption == "No matches found");
-            if (link != null) return true;
-
-            // d) Šílené zoufalství v jazyce českém:
-            link = links.FirstOrDefault(l => l.Item.Caption == "Nenalezeny žádné shody");
-            if (link != null) return true;
-
-            return false;
-        }
         /// <summary>
         /// Pole prvků, které budou nabízeny v SearchEdit políčku pro rychlé hledání.
         /// Prvky mohou být vloženy kdykoliv, i z threadu na pozadí.
@@ -1333,7 +1787,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         private List<DxRibbonGroup> _Groups;
         /// <summary>
-        /// Metoda zkusí najít existující grupu, pouze vlastní v this ribbonu, ne v mergovaných.
+        /// Metoda zkusí najít existující grupu, pouze vlastní v this ribbonu, anebo včetně mergovaných (podle <paramref name="searchAllGroups"/>).
         /// Hledá podle jejího ID <see cref="RibbonPageGroup.Name"/>, které by mělo být unikátní.
         /// Unikátnost přes celý Ribbon ale není striktně vyžadována, teoreticky smí být více grup se shodným ID, pokud jsou na různých stránkách.
         /// Doporučuje se ale používat ID unikátně přes celý Ribbon.
@@ -1341,17 +1795,19 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Tato metoda vrací FirstOrDefault(). Pokud je třeba najít všechny grupy podle ID, použijte pole <see cref="Groups"/>.
         /// Tato metoda tedy nepoužívá Dictionary, ale prosté iterování pole.
         /// </summary>
-        /// <param name="groupId"></param>
-        /// <param name="dxGroup"></param>
+        /// <param name="groupId">ID hledané grupy</param>
+        /// <param name="searchAllGroups">true = hledat včetně mergovaných grup / false = jen zdejší</param>
+        /// <param name="dxGroup">Out nalezená grupa</param>
         /// <returns></returns>
-        internal bool TryGetGroup(string groupId, out DxRibbonGroup dxGroup)
+        internal bool TryGetGroup(string groupId, bool searchAllGroups, out DxRibbonGroup dxGroup)
         {
             if (groupId == null)
             {
                 dxGroup = null;
                 return false;
             }
-            return this._Groups.TryGetFirst(g => g.Name == groupId, out dxGroup);
+            var groups = searchAllGroups ? this.AllGroups : this.Groups;
+            return groups.TryGetFirst(g => g.Name == groupId, out dxGroup);
         }
         /// <summary>
         /// Metoda zkusí najít existující stránku, pouze vlastní v this ribbonu, ne v mergovaných
@@ -2013,7 +2469,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         private bool _TryGetDataForRefreshGroup(IRibbonGroup iRibbonGroup, out DxRibbonGroup dxGroup, out DxRibbonPage dxPage)
         {
             dxPage = null;
-            bool hasGroup = TryGetGroup(iRibbonGroup.GroupId, out dxGroup);
+            bool hasGroup = TryGetGroup(iRibbonGroup.GroupId, false, out dxGroup);
             if (!hasGroup)
             {
                 if (iRibbonGroup.ChangeMode == ContentChangeMode.Remove) return false;             // Odebrat stránku, která neexistuje: to není problém :-)
@@ -2591,6 +3047,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             var itemInfo = barItem.Tag as BarItemTagInfo;
             if (itemInfo == null) return;
 
+            RefreshCurrentIRibbonItem(itemInfo, barItem, iRibbonItem);
             FillBarItem(barItem, iRibbonItem, itemInfo.Level);
 
             if (iRibbonItem.SubItems != null)
@@ -2608,6 +3065,18 @@ namespace Noris.Clients.Win.Components.AsolDX
                         break;
                 }
             }
+        }
+        /// <summary>
+        /// Do nově dodaného datového <see cref="IRibbonItem"/> vloží existující data o vizuálním prvku Ribbonu z dodaného balíčku informací <see cref="BarItemTagInfo"/>.
+        /// Provádí se v procesu Refreshe, když do Ribobnu dorazí nová definice prvku <see cref="IRibbonItem"/>, a je třeba do ní vepsat reálné vazby na prvky/grupy v Ribbonu.
+        /// </summary>
+        /// <param name="sourceItemInfo"></param>
+        /// <param name="barItem"></param>
+        /// <param name="targetIRibbonItem"></param>
+        protected void RefreshCurrentIRibbonItem(BarItemTagInfo sourceItemInfo, BarItem barItem, IRibbonItem targetIRibbonItem)
+        {
+            targetIRibbonItem.RibbonItem = barItem;
+            targetIRibbonItem.ParentGroup = sourceItemInfo.Data.ParentGroup;
         }
         /// <summary>
         /// Rozpozná, najde, vytvoří a vrátí BarItem pro daná data.
@@ -2804,6 +3273,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             barItem.Enabled = iRibbonItem.Enabled;
             barItem.Visibility = iRibbonItem.Visible ? BarItemVisibility.Always : BarItemVisibility.Never;
             barItem.VisibleInSearchMenu = iRibbonItem.VisibleInSearchMenu;
+            barItem.SearchTags = iRibbonItem.SearchTags;
             FillBarItemHotKey(barItem, iRibbonItem, level, withReset);
 
             if (barItem is DevExpress.XtraBars.BarCheckItem checkItem)
@@ -3805,7 +4275,13 @@ namespace Noris.Clients.Win.Components.AsolDX
             iRibbonItem.RibbonItem = barItem;
             if (barItem == null) return;
             if (barItem.Tag is BarItemTagInfo itemInfo)
+            {
+                if (iRibbonItem.ParentGroup == null && itemInfo.Data != null && itemInfo.Data.ParentGroup != null)
+                    // Pokud dodaná definice prvku iRibbonItem neobsahuje vztah na definující grupu (iRibbonItem.ParentGroup), ale stávající data (v barItem.Tag) mají definici obsahující grupu,
+                    //  pak tuto grupu převezmu:
+                    iRibbonItem.ParentGroup = itemInfo.Data.ParentGroup;
                 itemInfo.Data = iRibbonItem;
+            }
         }
         /// <summary>
         /// Do Tagu daného prvku vloží nová definiční data
