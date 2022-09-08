@@ -463,7 +463,6 @@ namespace Noris.Clients.Win.Components.AsolDX
                         break;
                 }
                 _FormRibbonVisibility = value;
-               
             }
         }
         private FormRibbonVisibilityMode _FormRibbonVisibility = FormRibbonVisibilityMode.Standard;
@@ -1023,8 +1022,17 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// </summary>
     public enum FormRibbonVisibilityMode
     {
+        /// <summary>
+        /// Není zobrazen ani Ribbon, ani TitleRow okna!!!
+        /// </summary>
         Nothing,
+        /// <summary>
+        /// Je zobrazen TitleRow okna, ale není Ribbon, a to ani Toolbar ani Search ani PageHeaders. Jako by Ribbon nebyl.
+        /// </summary>
         FormTitleRow,
+        /// <summary>
+        /// Standardní zobrazení TitleRow okna a Ribbonu
+        /// </summary>
         Standard
     }
     /// <summary>
