@@ -686,7 +686,7 @@ namespace TestDevExpress.Forms
             var itemId = e.Item.ItemId;
             if (itemId == "SysMenu1")
                 TitleBarDxRibbonChangeRefresh(e.Item);
-            if (itemId != "SysMenu3_xx" && itemId != "SysMenu3")
+            if (itemId != "SysSkin1" && itemId != "SysSkin2" && itemId != "SysMenu3" && itemId != "SysMenu3_xx")
                 DxComponent.ShowMessageInfo($"Uživatel si přeje provést akci: '{e.Item.ItemId}' = '{e.Item.Text}' '{e.Item.ToolTipText}'");
         }
 
@@ -710,9 +710,11 @@ namespace TestDevExpress.Forms
 
             var titleBarItems = new IRibbonItem[]
             {
+                    new DataRibbonItem() { ItemId = "SysSkin1", ItemType = RibbonItemType.SkinSetDropDown },
+                    new DataRibbonItem() { ItemId = "SysSkin2", ItemType = RibbonItemType.SkinPaletteDropDown },
                     new DataRibbonItem() { ItemId = "SysMenu1", Text = "", ToolTipTitle = "Systémová akce 1", ToolTipText = "Zobrazí strukturu controlů v okně.\r\nKaždým kliknutím se tento button promění !", ImageName = resourceStruct },
                     new DataRibbonItem() { ItemId = "SysMenu2", Text = "", ToolTipTitle = "Systémová akce 2", ToolTipText = "Zobrazí strukturu controllerů", ImageName = resourceTree },
-                    new DataRibbonItem() { ItemId = "SysMenu3", Text = "", ToolTipTitle = "Systémové menu", ToolTipText = "Nabídne funkce pro uložení pozice okna", ImageName = resourceMenu1, ItemType = RibbonItemType.Menu, SubItems = sysMenu3SubItems  }
+                    new DataRibbonItem() { ItemId = "SysMenu3", Text = "", ToolTipTitle = "Systémové menu", ToolTipText = "Nabídne funkce pro uložení pozice okna", ImageName = resourceMenu2, ItemType = RibbonItemType.Menu, SubItems = sysMenu3SubItems  }
             };
 
             return titleBarItems;
