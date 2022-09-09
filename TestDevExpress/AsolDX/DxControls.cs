@@ -442,6 +442,9 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
         }
         private DataMenuItem[] _TitleBarButtons;
+        /// <summary>
+        /// Viditelnost Ribbonu a titulkového řádku okna
+        /// </summary>
         public FormRibbonVisibilityMode FormRibbonVisibility
         {
             get { return _FormRibbonVisibility; }
@@ -465,6 +468,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 _FormRibbonVisibility = value;
             }
         }
+        /// <summary>Viditelnost Ribbonu a titulkového řádku okna</summary>
         private FormRibbonVisibilityMode _FormRibbonVisibility = FormRibbonVisibilityMode.Standard;
         #endregion
     }
