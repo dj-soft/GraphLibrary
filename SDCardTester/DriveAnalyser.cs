@@ -9,6 +9,9 @@ using System.ComponentModel;
 
 namespace SDCardTester
 {
+    /// <summary>
+    /// Analyzer stavu disku
+    /// </summary>
     public class DriveAnalyser
     {
         #region Konstrukce a základní data
