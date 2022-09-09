@@ -423,25 +423,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         private DxPanelControl _DxMainPanel;
         #endregion
-        #region TitleButtons
-        public DataMenuItem[] TitleBarButtons 
-        { 
-            get { return _TitleBarButtons; } 
-            set 
-            {
-                _TitleBarButtons = value;
-
-                string resource1 = "svgimages/setup/pagesetup.svg";
-                string resource2 = "svgimages/setup/properties.svg";
-
-                var button = new DevExpress.XtraBars.BarButtonItem() { Caption = "..." };
-                DxComponent.ApplyImage(button.ImageOptions, resource2);
-                button.SuperTip = DxComponent.CreateDxSuperTip("SYSTEM", "Menu systémových nástrojů");
-                this.DxRibbon.Items.Add(button);
-                this.DxRibbon.CaptionBarItemLinks.Add(button);
-            }
-        }
-        private DataMenuItem[] _TitleBarButtons;
+        #region FormRibbonVisibility
         /// <summary>
         /// Viditelnost Ribbonu a titulkového řádku okna
         /// </summary>

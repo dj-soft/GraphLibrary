@@ -667,20 +667,93 @@ namespace TestDevExpress.Forms
         {
             using (var form = new DxRibbonForm())
             {
-                form.FormRibbonVisibility = FormRibbonVisibilityMode.Nothing;
-                form.FormRibbonVisibility = FormRibbonVisibilityMode.FormTitleRow;
-                form.FormRibbonVisibility = FormRibbonVisibilityMode.Standard;
                 form.Text = "Ukázka okna s tlačítkem navíc...";
                 form.WindowState = FormWindowState.Normal;
+                form.FormRibbonVisibility = FormRibbonVisibilityMode.FormTitleRow;          // Nothing  FormTitleRow  Standard
                 form.Size = new Size(800, 600);
                 form.StartPosition = FormStartPosition.CenterParent;
-                form.TitleBarButtons = new DataMenuItem[] { new DataMenuItem() { ItemId = "SysMenu", Text = "", ToolTipText = "Systémové menu", ImageName = "svgimages/setup/pagesetup.svg" } };
+
+                var titleBarItems = _CreateTitleBarItems();
+                form.DxRibbon.TitleBarItems = titleBarItems;
+                form.DxRibbon.RibbonItemClick += TitleBarDxRibbon_RibbonItemClick;
                 form.ShowDialog();
-
-                string resource1 = "svgimages/setup/pagesetup.svg";
-                string resource2 = "svgimages/setup/properties.svg";
-
             }
+        }
+
+        private void TitleBarDxRibbon_RibbonItemClick(object sender, TEventArgs<IRibbonItem> e)
+        {
+            if (e.Item is null) return;
+            var itemId = e.Item.ItemId;
+            if (itemId == "SysMenu1")
+                TitleBarDxRibbonChangeRefresh(e.Item);
+            if (itemId != "SysMenu3_xx" && itemId != "SysMenu3")
+                DxComponent.ShowMessageInfo($"Uživatel si přeje provést akci: '{e.Item.ItemId}' = '{e.Item.Text}' '{e.Item.ToolTipText}'");
+        }
+
+        private IRibbonItem[] _CreateTitleBarItems()
+        {
+            string resourceStruct = "svgimages/dashboards/treemap.svg";
+            string resourceTree = "svgimages/dashboards/inserttreeview.svg";
+            string resourceMenu1 = "svgimages/hybriddemoicons/bottompanel/hybriddemo_settings.svg";
+            string resourceMenu2 = "svgimages/icon%20builder/actions_settings.svg";
+
+            string resourceSave = "svgimages/xaf/action_save_new.svg";
+            string resourceReset = "svgimages/xaf/action_save_close.svg";
+            string resourcePreview = "svgimages/print/preview.svg";
+            string resourceCancel = "svgimages/hybriddemoicons/bottompanel/hybriddemo_cancel.svg";
+
+            var sysMenu3SubItems = new List<IRibbonItem>();
+            sysMenu3SubItems.Add(new DataRibbonItem() { ItemId = "SysMenu3_01", Text = "Uložit pozici okna", ImageName = resourceSave });
+            sysMenu3SubItems.Add(new DataRibbonItem() { ItemId = "SysMenu3_02", Text = "Resetovat pozici okna", ImageName = resourceReset });
+            sysMenu3SubItems.Add(new DataRibbonItem() { ItemId = "SysMenu3_03", Text = "Zobrazit pozici okna", ImageName = resourcePreview });
+            sysMenu3SubItems.Add(new DataRibbonItem() { ItemId = "SysMenu3_xx", Text = "Zavřít", ItemIsFirstInGroup = true, ImageName = resourceCancel });
+
+            var titleBarItems = new IRibbonItem[]
+            {
+                    new DataRibbonItem() { ItemId = "SysMenu1", Text = "", ToolTipTitle = "Systémová akce 1", ToolTipText = "Zobrazí strukturu controlů v okně.\r\nKaždým kliknutím se tento button promění !", ImageName = resourceStruct },
+                    new DataRibbonItem() { ItemId = "SysMenu2", Text = "", ToolTipTitle = "Systémová akce 2", ToolTipText = "Zobrazí strukturu controllerů", ImageName = resourceTree },
+                    new DataRibbonItem() { ItemId = "SysMenu3", Text = "", ToolTipTitle = "Systémové menu", ToolTipText = "Nabídne funkce pro uložení pozice okna", ImageName = resourceMenu1, ItemType = RibbonItemType.Menu, SubItems = sysMenu3SubItems  }
+            };
+
+            return titleBarItems;
+        }
+
+        private void TitleBarDxRibbonChangeRefresh(IRibbonItem iRibbonItem)
+        {
+            DataRibbonItem ribbonItem = iRibbonItem as DataRibbonItem;
+            if (ribbonItem is null) return;
+
+            string resource0 = "svgimages/dashboards/treemap.svg";
+            string resource1 = "svgimages/dashboards/sliceanddice.svg";
+            string resource2 = "svgimages/dashboards/squarified.svg";
+            string resource3 = "svgimages/dashboards/striped.svg";
+
+            string toolTipText = "Zobrazí strukturu controlů v okně.\r\nKaždým kliknutím se tento button promění !\r\n\r\n";
+            int version = ((ribbonItem.Tag is int number) ? number : 0);
+            switch (version)
+            {
+                case 0:
+                    ribbonItem.ImageName = resource1;
+                    ribbonItem.ToolTipText = toolTipText + "Nyní je aktivní varianta 1";
+                    ribbonItem.Tag = 1;
+                    break;
+                case 1:
+                    ribbonItem.ImageName = resource2;
+                    ribbonItem.ToolTipText = toolTipText + "Nyní je aktivní varianta 2";
+                    ribbonItem.Tag = 2;
+                    break;
+                case 2:
+                    ribbonItem.ImageName = resource3;
+                    ribbonItem.ToolTipText = toolTipText + "Nyní je aktivní varianta 3";
+                    ribbonItem.Tag = 3;
+                    break;
+                case 3:
+                    ribbonItem.ImageName = resource0;
+                    ribbonItem.ToolTipText = toolTipText + "Nyní je aktivní varianta 0";
+                    ribbonItem.Tag = 0;
+                    break;
+            }
+            ribbonItem.Refresh();
         }
         /// <summary>
         /// Formulář ScanForm

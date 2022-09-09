@@ -1553,6 +1553,59 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private bool _SearchEditItemsLoading;
         #endregion
+        #region TitleButtons
+        /// <summary>
+        /// Prvky zobrazené v TitleBaru = titulek okna, napravo, doleva od tří systémových buttonů (Minimize - Maximize - Close).
+        /// </summary>
+        public IRibbonItem[] TitleBarItems
+        {
+            get { return _TitleBarItems; }
+            set
+            {
+                _TitleBarRemoveItems(_TitleBarItems);
+                _TitleBarAddItems(value, true);
+                _TitleBarItems = value;
+            }
+        }
+        /// <summary>Prvky zobrazené v TitleBaru</summary>
+        private IRibbonItem[] _TitleBarItems;
+        private void _TitleBarAddItems(IEnumerable<IRibbonItem> items, bool clear = false)
+        {
+            if (clear) _TitleBarClearItems();
+            if (items is null) return;
+
+            var mode = DxRibbonCreateContentMode.CreateAllSubItems;
+            int count = 0;
+            foreach (var iRibbonItem in items)
+            {
+                var item = this.GetItem(iRibbonItem, null, 0, mode, ref count);
+                this.CaptionBarItemLinks.Add(item);
+            }
+        }
+        private void _TitleBarRemoveItems(IEnumerable<IRibbonItem> items)
+        {
+            if (items is null) return;
+
+        }
+        /// <summary>
+        /// Smaže všechny prvky zobrazované v TitleBaru
+        /// </summary>
+        private void _TitleBarClearItems()
+        {
+            var captionLinks = this.CaptionBarItemLinks;
+            if (captionLinks is null || captionLinks.Count == 0) return;
+
+            BarItemLink[] links = captionLinks.OfType<BarItemLink>().ToArray();
+            captionLinks.Clear();
+
+            foreach (var link in links)
+            {
+                var item = link.Item;
+                if (this.Items.Contains(item))
+                    this.Items.Remove(item);
+            }
+        }
+        #endregion
         #region Aktuálně otevřené menu
         /// <summary>
         /// Control, který bude otevřen jako PopupControl v případě potřeby.
@@ -2376,7 +2429,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Lze refreshovat text, tooltip, image, checked, subitems.
         /// Lze vyžádat otevření submenu, pokud to submenu je.
         /// </summary>
-        /// <param name="iRibbonItem"></param>
+        /// <param name="iRibbonItem">Definice prvku</param>
         /// <param name="force">Provést refresh povinně, i když se prvek zdá být nezměněn</param>
         public void RefreshItem(IRibbonItem iRibbonItem, bool force = false)
         {
@@ -2391,6 +2444,25 @@ namespace Noris.Clients.Win.Components.AsolDX
                 }, true);
                 DoOpenMenu();
             });
+        }
+        /// <summary>
+        /// Metoda zajistí, že vizuální prvek (BarItem nebo obdobná instance) v jeho Ribbonu bude refreshován.
+        /// Pokud dosud vizuální prvek neexistuje, tak ale nebude vytvořen!
+        /// Do daného prvku se znovunaplní jeho vlastnosti (=Refresh) + jeho subpoložky.
+        /// Touto cestou nelze změnit typ prvku!
+        /// Lze refreshovat text, tooltip, image, checked, subitems.
+        /// </summary>
+        /// <param name="iRibbonItem">Definice prvku</param>
+        /// <param name="force">Provést refresh povinně, i když se prvek zdá být nezměněn</param>
+        public static void RefreshIRibbonItem(IRibbonItem iRibbonItem, bool force = false)
+        {
+            if (iRibbonItem == null) return;
+            var barItem = iRibbonItem.RibbonItem?.Target;
+            if (barItem is null) return;
+
+            // Musíme najít instanci toho Ribbonu, který je majitelem daného prvku (který jej vytvořil), a nikoli tu, která jej právě nyní zobrazuje (případ mergovaného Ribbonu):
+            var dxRibbon = (barItem.Manager as RibbonBarManager)?.Ribbon as DxRibbonControl;
+            dxRibbon?.RefreshItem(iRibbonItem, force);
         }
         /// <summary>
         /// Provede refresh dodaných objektů. Provede se jedním chodem.
@@ -2535,6 +2607,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             {   // Prvek existuje: Refresh je třeba, pokud prvek nemá existovat, anebo když aktuálně obsahuje jiná data než je nyní požadováno:
                 if (!needExists) return true;
                 if (!isValid) return true;                           // Nevalidní prvek je třeba refreshovat
+                if (Object.ReferenceEquals(iRibbonItem, iCurrentItem)) return true;      // Pokud dodaná instance (iRibbonItem) a zdejší instance (iCurrentItem) je totožná, pak Refresh je nutný - neboť nedokážu rozpoznat, jestli došlo ke změně. To dokážu jen pro dvě odlišné instance!
                 if (DataRibbonItem.HasEqualContent(iRibbonItem, iCurrentItem)) return false;       
                 return true;                                         // Výstup je true (Refresh) tehdy, když dva prvky (nově požadovaný a stávající) NEJSOU shodné!   Takhle je tu podmínka proto, abych na Equals mohl dát breakpoint...
             }
@@ -9081,6 +9154,14 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         [XS.PersistingEnabled(false)]
         public virtual WeakTarget<BarItem> RibbonItem { get; set; }
+        /// <summary>
+        /// Metoda zajistí aktualizaci vizuálního buttonu <see cref="RibbonItem"/> z dat, která jsou aktuálně přítomna v this instanci.
+        /// Je vhodné volat tehdy, když podle this definice už byl vytvořen prvek v reálném Ribbonu, a my jsme v definici provedli nějaké změny a přejeme si je promítnout do vizuálního prvku.
+        /// </summary>
+        public virtual void Refresh()
+        {
+            DxRibbonControl.RefreshIRibbonItem(this);
+        }
     }
     #endregion
     #region Interface IRibbonPage, IRibbonCategory, IRibbonGroup, IRibbonItem;  Enumy RibbonPageType, RibbonContentMode, RibbonItemStyles, BarItemPaintStyle, RibbonItemType.
