@@ -72,10 +72,10 @@ namespace SDCardTester
         private void TestSaveButton_Click(object sender, EventArgs e)
         {
             RunDriveTestSave();
-            ShowControls(ActionState.TestSave, true);
         }
         private void TestReadButton_Click(object sender, EventArgs e)
         {
+            RunDriveTestRead();
             ShowControls(ActionState.TestRead, true);
         }
         private void StopButton_Click(object sender, EventArgs e)
@@ -84,6 +84,10 @@ namespace SDCardTester
             {
                 case ActionState.AnalyseContent:
                     StopDriveAnalyse();
+                    break;
+                case ActionState.TestSave:
+                case ActionState.TestRead:
+                    StopDriveTest();
                     break;
                 default:
                     ShowControls(ActionState.Dialog, false);
@@ -110,7 +114,7 @@ namespace SDCardTester
                 if (withDataPanel)
                 {
                     PropertiesPanel.Visible = (state == ActionState.Dialog);
-                    AnalyseInfoPanel.Visible = (state == ActionState.AnalyseContent);
+                    ResultsInfoPanel.Visible = (state == ActionState.AnalyseContent);
                     CurrentDataPanelState = state;
                 }
 
@@ -136,6 +140,21 @@ namespace SDCardTester
             AnalyseContent,
             TestSave,
             TestRead
+        }
+        /// <summary>
+        /// Smaže prvky <see cref="DriveResultControl"/> z panelu informací <see cref="ResultsInfoPanel"/>
+        /// </summary>
+        private void ResultsInfoPanelClear()
+        {
+            for (int i = ResultsInfoPanel.Controls.Count - 1; i >= 0; i--)
+            {
+                var control = ResultsInfoPanel.Controls[i];
+                if (control is DriveResultControl)
+                {
+                    ResultsInfoPanel.Controls.RemoveAt(i);
+                    control.Dispose();
+                }
+            }
         }
         #endregion
         #region Načtení a zobrazení seznamu Drives a detailních vlastností
@@ -278,7 +297,7 @@ namespace SDCardTester
         /// </summary>
         private void RunDriveAnalyse()
         {
-            AnalyseInfoPanelClear();
+            ResultsInfoPanelClear();
             ShowControls(ActionState.AnalyseContent, true);
 
             DriveAnalyser driveAnalyser = new DriveAnalyser();
@@ -333,53 +352,38 @@ namespace SDCardTester
                 DriveAnalyser driveAnalyser = _DriveAnalyser;
                 if (driveAnalyser != null)
                 {
-                    AnalyseInfoPanelFillData(driveAnalyser);
+                    ResultsInfoPanelFillData(driveAnalyser);
                     VisualPanelFillData(driveAnalyser);
                 }
             }
         }
         /// <summary>
-        /// Smaže prvky <see cref="DriveAnalyseGroupPanel"/> z panelu informací <see cref="AnalyseInfoPanel"/>
-        /// </summary>
-        private void AnalyseInfoPanelClear()
-        {
-            for (int i = AnalyseInfoPanel.Controls.Count - 1; i >= 0; i--)
-            {
-                var control = AnalyseInfoPanel.Controls[i];
-                if (control is DriveAnalyseGroupPanel)
-                {
-                    AnalyseInfoPanel.Controls.RemoveAt(i);
-                    control.Dispose();
-                }
-            }
-        }
-        /// <summary>
-        /// Do prvků v panelu informací <see cref="AnalyseInfoPanel"/> vygeneruje prvky <see cref="DriveAnalyseGroupPanel"/> pro zobrazování dat skupin z analyzeru
+        /// Do prvků v panelu informací <see cref="ResultsInfoPanel"/> vygeneruje prvky <see cref="DriveAnalyseGroupControl"/> pro zobrazování dat skupin z analyzeru
         /// </summary>
         /// <param name="driveAnalyser"></param>
         private void AnalyseInfoPanelPrepare(DriveAnalyser driveAnalyser)
         {
-            var analyserGroups = new List<Tuple<DriveAnalyser.FileGroup, DriveAnalyseGroupPanel>>();
+            var analyserGroups = new List<Tuple<DriveAnalyser.FileGroup, DriveAnalyseGroupControl>>();
             var groups = driveAnalyser.FileGroups;
             int x = 3;
             int y = 3;
-            int w = AnalyseInfoPanel.ClientRectangle.Width - 6;
-            int h = DriveAnalyseGroupPanel.OptimalHeight;
+            int w = ResultsInfoPanel.ClientRectangle.Width - 6;
+            int h = DriveAnalyseGroupControl.OptimalHeight;
             foreach (var group in groups)
             {
-                var panel = new DriveAnalyseGroupPanel(group.Name, group.Color);
+                var panel = new DriveAnalyseGroupControl(group.Name, group.Color);
                 panel.Bounds = new Rectangle(x, y, w, h);
-                AnalyseInfoPanel.Controls.Add(panel);
+                ResultsInfoPanel.Controls.Add(panel);
                 y += panel.Height;
-                analyserGroups.Add(new Tuple<DriveAnalyser.FileGroup, DriveAnalyseGroupPanel>(group, panel));
+                analyserGroups.Add(new Tuple<DriveAnalyser.FileGroup, DriveAnalyseGroupControl>(group, panel));
             }
             _DriveAnalyserGroups = analyserGroups;
         }
         /// <summary>
-        /// Do prvků v panelu informací <see cref="AnalyseInfoPanel"/> aktualizuje hodnoty v controlech <see cref="DriveAnalyseGroupPanel"/> z dat skupin z analyzeru
+        /// Do prvků v panelu informací <see cref="ResultsInfoPanel"/> aktualizuje hodnoty v controlech <see cref="DriveAnalyseGroupControl"/> z dat skupin z analyzeru
         /// </summary>
         /// <param name="driveAnalyser"></param>
-        private void AnalyseInfoPanelFillData(DriveAnalyser driveAnalyser)
+        private void ResultsInfoPanelFillData(DriveAnalyser driveAnalyser)
         {
             var analyserGroups = _DriveAnalyserGroups;
             if (analyserGroups is null || analyserGroups.Count == 0) return;
@@ -410,9 +414,9 @@ namespace SDCardTester
         /// Vstupní prvek je <see cref="TestControl.Item"/> = prvek, který byl vložen do vizuální mapy. 
         /// Tento prvek byl vytvořen v metodě <see cref="VisualPanelFillData(DriveAnalyser)"/>, 
         /// a ve své property <see cref="TestControl.Item.Data"/> by měl obsahovat grupu z analyzeru <see cref="DriveAnalyser.FileGroup"/>.
-        /// Tutéž grupu najdeme v panelu <see cref="AnalyseInfoPanel"/> = tam se zobrazují jednotlivé skupiny souborů a jejich sumární hodnota, a tam bych rád zvýraznil grupu, která je aktivní v mapě.
+        /// Tutéž grupu najdeme v panelu <see cref="ResultsInfoPanel"/> = tam se zobrazují jednotlivé skupiny souborů a jejich sumární hodnota, a tam bych rád zvýraznil grupu, která je aktivní v mapě.
         /// Grupu najdu v prvku v poli <see cref="_DriveAnalyserGroups"/>, kde je umístěna v Item1. 
-        /// Tam pak jako párovou Item2 najdu instanci vizuálního controlu <see cref="DriveAnalyseGroupPanel"/>.
+        /// Tam pak jako párovou Item2 najdu instanci vizuálního controlu <see cref="DriveAnalyseGroupControl"/>.
         /// </summary>
         /// <param name="activeItem"></param>
         private void AnalyseActiveItemChanged(TestControl.Item activeItem)
@@ -441,22 +445,132 @@ namespace SDCardTester
         /// <summary>
         /// Instance analyzovaných skupin, nenuluje se po doběhnutí
         /// </summary>
-        private List<Tuple<DriveAnalyser.FileGroup, DriveAnalyseGroupPanel>> _DriveAnalyserGroups;
+        private List<Tuple<DriveAnalyser.FileGroup, DriveAnalyseGroupControl>> _DriveAnalyserGroups;
         #endregion
         #region Vepsání testovacích dat do volného prostoru daného disku a jejich čtení a ověření
         /// <summary>
         /// Požadavek na start zápisu dat na disk
         /// </summary>
-        private void RunDriveTestSave()
+        private void RunDriveTestSave() { RunDriveTest(ActionState.TestSave); }
+        /// <summary>
+        /// Požadavek na start čtení dat z disku
+        /// </summary>
+        private void RunDriveTestRead() { RunDriveTest(ActionState.TestRead); }
+        /// <summary>
+        /// Požadavek na start zápisu / čtení dat z disku
+        /// </summary>
+        private void RunDriveTest(ActionState action)
         {
-            DriveTester driveTester = new DriveTester();
+            bool doSave = (action == ActionState.TestSave);
+            bool doRead = (action == ActionState.TestRead);
+            if (!(doSave || doRead)) return;
 
+            ResultsInfoPanelClear();
+            ShowControls(action, true);
+
+            DriveTester driveTester = new DriveTester();
+            TestInfoPanelPrepare(driveTester);
+            driveTester.TestStep += DriveTester_TestStep;
+            driveTester.TestDone += DriveTester_TestDone;
             _DriveTester = driveTester;
-            driveTester.BeginTest(this.SelectedDrive, true, true);
+            driveTester.BeginTest(this.SelectedDrive, doSave, doRead);
         }
+        /// <summary>
+        /// Požadavek na zastavení testu
+        /// </summary>
+        private void StopDriveTest()
+        {
+            if (_DriveTester != null)
+                _DriveTester?.StopTest();
+            else
+                ShowControls(ActionState.Dialog, false);
+        }
+        /// <summary>
+        /// Tester provedl krok testu a volá refresh dat
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void DriveTester_TestStep(object sender, EventArgs e)
+        {
+            DriveTesterRefresh();
+        }
+        /// <summary>
+        /// Tester skončil svoji činnost
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void DriveTester_TestDone(object sender, EventArgs e)
+        {
+            DriveTesterRefresh();
+            _DriveTester = null;
+            ShowControls(ActionState.Dialog, false);
+        }
+        /// <summary>
+        /// Zajistí refresh dat po jednom každém postupném kroku testeru
+        /// </summary>
+        private void DriveTesterRefresh()
+        {
+            if (_DriveTester is null) return;
+
+            if (this.InvokeRequired)
+                this.BeginInvoke(new Action(DriveTesterRefresh));
+            else
+            {
+                var driveTester = _DriveTester;
+                if (driveTester != null)
+                {
+                    ResultsInfoPanelFillData(driveTester);
+                    VisualPanelFillData(driveTester);
+                }
+            }
+        }
+        /// <summary>
+        /// Do prvků v panelu informací <see cref="ResultsInfoPanel"/> vygeneruje prvky <see cref="DriveTestPhaseControl"/> pro zobrazování dat skupin z analyzeru
+        /// </summary>
+        /// <param name="driveAnalyser"></param>
+        private void TestInfoPanelPrepare(DriveTester driveTester)
+        {
+        
+
+        }
+        /// <summary>
+        /// Do prvků v panelu informací <see cref="ResultsInfoPanel"/> aktualizuje hodnoty v controlech <see cref="DriveAnalyseGroupControl"/> z dat skupin z analyzeru
+        /// </summary>
+        /// <param name="driveAnalyser"></param>
+        private void ResultsInfoPanelFillData(DriveTester driveTester)
+        {
+            //var analyserGroups = _DriveAnalyserGroups;
+            //if (analyserGroups is null || analyserGroups.Count == 0) return;
+            //long totalSize = analyserGroups.Sum(g => g.Item1.TotalLength);
+            //foreach (var analyserGroup in analyserGroups)
+            //{
+            //    long currentSize = analyserGroup.Item1.TotalLength;
+            //    analyserGroup.Item2.GroupRatio = (totalSize > 0L ? (double)currentSize / (double)totalSize : 0d);
+            //    analyserGroup.Item2.Refresh();
+            //}
+        }
+        /// <summary>
+        /// Do mapy <see cref="VisualMapPanel"/> vloží prvky pocházející ze skupin z testeru
+        /// </summary>
+        /// <param name="driveAnalyser"></param>
+        private void VisualPanelFillData(DriveTester driveTester)
+        {
+            //var items = new List<TestControl.Item>();
+            //var groups = driveAnalyser.FileGroups;
+            //if (groups != null)
+            //    items.AddRange(groups.Select(g => new TestControl.Item(g.TotalLength, g.Color, null, g)));
+
+            //this.VisualMapPanel.Items = items;
+            //this.VisualMapPanel.Refresh();
+        }
+        /// <summary>
+        /// Instance testeru
+        /// </summary>
         private DriveTester _DriveTester;
         #endregion
     }
+    public class DriveResultControl : Control
+    { }
     public class TextDataInfo
     {
         public override string ToString()

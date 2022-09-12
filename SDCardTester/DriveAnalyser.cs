@@ -377,15 +377,15 @@ namespace SDCardTester
     /// <summary>
     /// Vizuální control pro orientační zobrazení obsahu jedné grupy v přehledném panelu
     /// </summary>
-    public class DriveAnalyseGroupPanel : Control
+    public class DriveAnalyseGroupControl : DriveResultControl
     {
-        public DriveAnalyseGroupPanel(string name, Color color)
+        public DriveAnalyseGroupControl(string name, Color color)
             : this()
         {
             this.GroupText = name;
             this.GroupColor = color;
         }
-        public DriveAnalyseGroupPanel()
+        public DriveAnalyseGroupControl()
         {
             this.SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.Opaque | ControlStyles.OptimizedDoubleBuffer | ControlStyles.ResizeRedraw | ControlStyles.UserPaint, true);
             this.SetStyle(ControlStyles.ContainerControl | ControlStyles.Selectable | ControlStyles.SupportsTransparentBackColor, false);

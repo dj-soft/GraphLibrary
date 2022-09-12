@@ -55,7 +55,7 @@ namespace SDCardTester
             this.StopPanel = new System.Windows.Forms.Panel();
             this.StopButton = new System.Windows.Forms.Button();
             this.VisualMapPanel = new SDCardTester.TestControl();
-            this.AnalyseInfoPanel = new System.Windows.Forms.Panel();
+            this.ResultsInfoPanel = new System.Windows.Forms.Panel();
             this.UserPanel.SuspendLayout();
             this.DrivesPanel.SuspendLayout();
             this.PropertiesPanel.SuspendLayout();
@@ -69,7 +69,7 @@ namespace SDCardTester
             this.UserPanel.Controls.Add(this.PropertiesPanel);
             this.UserPanel.Controls.Add(this.CommandsPanel);
             this.UserPanel.Controls.Add(this.StopPanel);
-            this.UserPanel.Controls.Add(this.AnalyseInfoPanel);
+            this.UserPanel.Controls.Add(this.ResultsInfoPanel);
             this.UserPanel.Dock = System.Windows.Forms.DockStyle.Left;
             this.UserPanel.Location = new System.Drawing.Point(0, 0);
             this.UserPanel.Name = "UserPanel";
@@ -367,10 +367,10 @@ namespace SDCardTester
             // 
             // AnalyseInfoPanel
             // 
-            this.AnalyseInfoPanel.Location = new System.Drawing.Point(3, 93);
-            this.AnalyseInfoPanel.Name = "AnalyseInfoPanel";
-            this.AnalyseInfoPanel.Size = new System.Drawing.Size(243, 428);
-            this.AnalyseInfoPanel.TabIndex = 23;
+            this.ResultsInfoPanel.Location = new System.Drawing.Point(3, 93);
+            this.ResultsInfoPanel.Name = "AnalyseInfoPanel";
+            this.ResultsInfoPanel.Size = new System.Drawing.Size(243, 428);
+            this.ResultsInfoPanel.TabIndex = 23;
             // 
             // MainForm
             // 
@@ -421,7 +421,7 @@ namespace SDCardTester
         private System.Windows.Forms.Panel DrivesPanel;
         private System.Windows.Forms.Panel StopPanel;
         private System.Windows.Forms.Button StopButton;
-        private System.Windows.Forms.Panel AnalyseInfoPanel;
+        private System.Windows.Forms.Panel ResultsInfoPanel;
     }
 }
 

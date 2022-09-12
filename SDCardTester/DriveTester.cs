@@ -18,7 +18,9 @@ namespace SDCardTester
         /// Konstruktor
         /// </summary>
         public DriveTester()
-        { }
+        {
+            InitStopwatch();
+        }
         protected System.IO.DriveInfo _Drive;
         /// <summary>
         /// Požádá o provedení testu zápisu a čtení daného disku
@@ -87,8 +89,10 @@ namespace SDCardTester
         {
             LastStepTime = null;
             string testDir = null;
+            RunInfoClear();
             if (DoTestSave) RunTestSave(ref testDir);
             if (DoTestRead) RunTestRead(ref testDir);
+            CallTestDone();
         }
         /// <summary>
         /// Čas posledního hlášení změny
@@ -97,15 +101,46 @@ namespace SDCardTester
         /// <summary>
         /// Vyvolá událost <see cref="TestStep"/>, pokud je odpovídající čas
         /// </summary>
-        /// <param name="queueCount"></param>
         /// <param name="force"></param>
-        protected void CallTestStep(int queueCount, bool force = false)
+        /// <param name="currentLength"></param>
+        /// <param name="startTime"></param>
+        /// <param name="currentTime"></param>
+        protected void CallTestStep(bool force = false, long? currentLength = null, long? startTime = null, long? currentTime = null)
         {
             var nowTime = DateTime.Now;
             var lastTime = LastStepTime;
             var stepTime = TestStepTime;
             if (force || !lastTime.HasValue || stepTime.TotalMilliseconds <= 0d || (lastTime.HasValue && ((TimeSpan)(nowTime - lastTime.Value) >= stepTime)))
-            {
+            {   // Je čas na volání eventu:
+
+                // Do public properites dáme informace o hotových průchodech:
+                TimeInfoSaveShort = TimeInfoSaveShortDone;
+                TimeInfoSaveLong = TimeInfoSaveLongDone;
+                TimeInfoReadShort = TimeInfoReadShortDone;
+                TimeInfoReadLong = TimeInfoReadLongDone;
+
+                if (currentLength.HasValue && startTime.HasValue && currentTime.HasValue)
+                {   // Máme k dispozici "rozpracovaná data":
+                    TestPhase testPhase = this.TimeInfoCurrentPhase;
+                    decimal elapsedTime = this.GetSeconds(startTime.Value, currentTime.Value);
+                    // Do odpovídající public property vložím součet hodnoty Done + rozpracované hodnoty daného režimu:
+                    switch (testPhase)
+                    {
+                        case TestPhase.SaveShortFile:
+                            TimeInfoSaveShort = new FileTimeInfo(TimeInfoSaveShortDone, 0, currentLength.Value, elapsedTime);
+                            break;
+                        case TestPhase.SaveLongFile:
+                            TimeInfoSaveLong = new FileTimeInfo(TimeInfoSaveLongDone, 0, currentLength.Value, elapsedTime);
+                            break;
+                        case TestPhase.ReadShortFile:
+                            TimeInfoReadShort = new FileTimeInfo(TimeInfoReadShortDone, 0, currentLength.Value, elapsedTime);
+                            break;
+                        case TestPhase.ReadLongFile:
+                            TimeInfoReadLong = new FileTimeInfo(TimeInfoReadLongDone, 0, currentLength.Value, elapsedTime);
+                            break;
+                    }
+                }
+
                 TestStep?.Invoke(this, EventArgs.Empty);
                 LastStepTime = nowTime;
             }
@@ -117,6 +152,29 @@ namespace SDCardTester
         {
             TestDone?.Invoke(this, EventArgs.Empty);
         }
+        /// <summary>
+        /// Vynuluje data o výsledných časech
+        /// </summary>
+        protected void RunInfoClear()
+        {
+            TimeInfoSaveShort = new FileTimeInfo(TestPhase.SaveShortFile);
+            TimeInfoSaveLong = new FileTimeInfo(TestPhase.SaveLongFile);
+            TimeInfoReadShort = new FileTimeInfo(TestPhase.ReadShortFile);
+            TimeInfoReadLong = new FileTimeInfo(TestPhase.ReadLongFile);
+            TimeInfoSaveShortDone = new FileTimeInfo(TestPhase.SaveShortFile);
+            TimeInfoSaveLongDone = new FileTimeInfo(TestPhase.SaveLongFile);
+            TimeInfoReadShortDone = new FileTimeInfo(TestPhase.ReadShortFile);
+            TimeInfoReadLongDone = new FileTimeInfo(TestPhase.ReadLongFile);
+        }
+        public TestPhase TimeInfoCurrentPhase { get; private set; }
+        public FileTimeInfo TimeInfoSaveShort { get; private set; }
+        public FileTimeInfo TimeInfoSaveLong { get; private set; }
+        public FileTimeInfo TimeInfoReadShort { get; private set; }
+        public FileTimeInfo TimeInfoReadLong { get; private set; }
+        protected FileTimeInfo TimeInfoSaveShortDone { get; private set; }
+        protected FileTimeInfo TimeInfoSaveLongDone { get; private set; }
+        protected FileTimeInfo TimeInfoReadShortDone { get; private set; }
+        protected FileTimeInfo TimeInfoReadLongDone { get; private set; }
         #endregion
         #region Vlastní test zápisu
         /// <summary>
@@ -134,100 +192,96 @@ namespace SDCardTester
             // Nejprve vepíšeme 512 souborů o velikosti 4096 B = 2 MB (2 097 152 B);
             // Zbývajících 3584 souborů bude mít velikost (celková velikost disku / 3584) zarovnáno na 4KB bloky, pro 8TB disk tedy velikost = 2 454 265 856 = 2.5 GB
             long totalSize = _Drive.TotalSize;
-            long longFilesLength = totalSize / 3584L;                                    // Délka velkého souboru tak, aby jich v jednom adresáři na prázdném disku bylo max 3584 souborů
+            long longFilesLength = totalSize / LongFilesCount;                           // Délka velkého souboru tak, aby jich v jednom adresáři na prázdném disku bylo celkem max 4096 souborů
             longFilesLength = (longFilesLength / ShortFilesLength) * ShortFilesLength;   // Zarovnáno na 4KB bloky
-            long minLength = (256L * 1024L * 1024L);
-            if (longFilesLength < minLength) longFilesLength = minLength;                // Ne menší než 256 MB, aby bylo možno měřit rychlost zápisu i čtení, když někdy je deklarováno 80 MB/sec
+            long longFilesMinLength = LongFilesMinLength;
+            if (longFilesLength < longFilesMinLength) longFilesLength = longFilesMinLength;        // Velké soubory by neměly být menší než 16 MB, aby bylo možno měřit rychlost zápisu i čtení, když někdy je deklarováno 80 MB/sec
 
+            TimeInfoCurrentPhase = TestPhase.SaveShortFile;
+            CallTestStep(true);
             int fileNumber = GetNextFileNumber(testDir);
-            while (!TestStopping)
+            this.RestartStopwatch();
+            try
             {
-                if (IsShortFile(fileNumber))
+                while (!TestStopping)
                 {
-                    RunTestSaveOneShort(testDir, fileNumber, ShortFilesLength);
+                    if (IsShortFile(fileNumber))
+                    {
+                        TimeInfoCurrentPhase = TestPhase.SaveShortFile;
+                        var timeInfoSaveShort = RunTestSaveOneFile(testDir, fileNumber, ShortFilesLength);
+                        TimeInfoSaveShortDone.Add(timeInfoSaveShort);
+                    }
+                    else
+                    {
+                        if (!CanWriteFile(longFilesLength)) break;
+                        TimeInfoCurrentPhase = TestPhase.SaveLongFile;
+                        var timeInfoSaveLong = RunTestSaveOneFile(testDir, fileNumber, longFilesLength);
+                        TimeInfoSaveShortDone.Add(timeInfoSaveLong);
+                    }
+                    fileNumber++;
                 }
-                else
-                {
-                    if (!CanWriteFile(longFilesLength)) break;
-                    break;
-                    RunTestSaveOneLong(testDir, fileNumber, longFilesLength);
-                }
-                fileNumber++;
             }
+            catch (Exception exc) { }
+            CallTestStep(true);
         }
-        protected void RunTestSaveOneShort(string testDir, int fileNumber, long targetLength)
+        /// <summary>
+        /// Zapíše jeden soubor daného čísla, dané délky a změří čas a vrátí časovou položku.
+        /// </summary>
+        /// <param name="testDir"></param>
+        /// <param name="fileNumber"></param>
+        /// <param name="targetLength"></param>
+        /// <returns></returns>
+        protected FileTimeInfo RunTestSaveOneFile(string testDir, int fileNumber, long targetLength)
         {
+            if (TestStopping) return null;
+
             string fileName = GetFileName(testDir, fileNumber);
             int bufferIndex = 0;
+            if (TestStopping) return null;
+
+            long startTime = this.CurrentTime;
+            long currentLength = 0L;
+            int asyncOk = 0;
+            int asyncSlow = 0;
+            decimal asyncTimeOk = 0m;
             using (System.IO.FileStream fst = new System.IO.FileStream(fileName, System.IO.FileMode.Create, System.IO.FileAccess.Write))
             {
-                long currentLength = 0L;
                 var data = GetData(fileNumber, bufferIndex);
                 bool doWrite = true;
-                while (doWrite)
+                while (doWrite && !TestStopping)
                 {
                     var buffer = data;           // Nezbytnost!!! : protože 'buffer' odchází do FileStreamu k zápisu, a současně (protože .WriteAsync) se do jiné proměnné 'data' připravuje nový obsah pro další cyklus
                     int oneLength = buffer.Length;
-                    var task = fst.WriteAsync(buffer , 0, oneLength);
-                    currentLength += (long)oneLength;
-                    doWrite = currentLength < targetLength;
-                    if (doWrite)
-                        data = GetData(fileNumber, ++bufferIndex);
-                    task.Wait();
+                    using (var task = fst.WriteAsync(buffer, 0, oneLength))    // Zde asynchronně začíná zápis dat do souboru
+                    {
+                        currentLength += (long)oneLength;
+                        doWrite = currentLength < targetLength;
+                        if (doWrite)
+                            data = GetData(fileNumber, ++bufferIndex);         // A zatímco se do souboru v jiném threadu zapisuje, my si zde připravujeme data do dalšího kola zápisu.
+
+                        if (task.IsCompleted)
+                        {   // Problém: jsme pomalí! Než jsme si stihli připravit data (data = GetData()), tak se předchozí buffer stihl zapsat na cílový disk.
+                            asyncSlow++;
+                        }
+                        else
+                        {   // Sem bychom měli dojít vždy = značí to, že data pro příští buffer jsme připravili včas, a zápis souboru ještě nedoběhl = stíháme data generovat rychleji, než se zapisují...
+                            long waitStart = this.CurrentTime;                 // Pro zajímavost: jak dlouho čekáme?
+                            asyncOk++;
+                            task.Wait();                                       // Počkáme na dokončení zápisu bufferu do souboru...
+                            long waitDone = this.CurrentTime;
+                            decimal waitTime = this.GetSeconds(waitStart, waitDone);     // Sekundy čekání na Write jednoho bufferu.  Sem bychom měli dojít vždy.
+                            asyncTimeOk += waitTime;
+                        }
+                    }
+                    var currentTime = this.CurrentTime;
+                    CallTestStep(false, currentLength, startTime, currentTime);
                 }
                 fst.Flush();
                 fst.Close();
             }
-        }
-        protected void RunTestSaveOneLong(string testDir, int fileNumber, long length)
-        {
-        }
 
-        /// <summary>
-        /// Vrátí následující číslo souboru tak, aby navazovalo na soubory již existující
-        /// </summary>
-        /// <param name="testDir"></param>
-        /// <returns></returns>
-        protected int GetNextFileNumber(string testDir)
-        {
-            int lastNumber = 0;
-            var files = System.IO.Directory.GetFiles(testDir, "*.*");
-            foreach (var file in files)
-            {
-                var name = System.IO.Path.GetFileNameWithoutExtension(file).ToLower();
-                if (name.StartsWith("test~") && name.Length == 10 && Int32.TryParse(name.Substring(5,5), out int number))
-                {
-                    if (number > lastNumber)
-                        lastNumber = number;
-                }
-            }
-            return lastNumber + 1;
-        }
-        /// <summary>
-        /// Vrátí číslo získané z názvu testovacího souboru
-        /// </summary>
-        /// <param name="fileName"></param>
-        /// <returns></returns>
-        protected int GetFileNumber(string fileName)
-        {
-            if (!String.IsNullOrEmpty(fileName))
-            {
-                var name = System.IO.Path.GetFileNameWithoutExtension(fileName).ToLower();
-                if (name.StartsWith("test~") && name.Length == 10 && Int32.TryParse(name.Substring(5, 5), out int number)) 
-                    return number;
-            }
-            return 0;
-        }
-        /// <summary>
-        /// Vrátí jméno souboru podle pravidel pro dané číslo
-        /// </summary>
-        /// <param name="testDir"></param>
-        /// <param name="number"></param>
-        /// <returns></returns>
-        protected string GetFileName(string testDir, int number)
-        {
-            string name = "test~" + number.ToString("00000") + ".tmp";
-            return System.IO.Path.Combine(testDir, name);
+            decimal elapsedTime = this.GetSeconds(startTime);
+            return new FileTimeInfo(this.TimeInfoCurrentPhase, 1, currentLength, elapsedTime);
         }
         /// <summary>
         /// Mohu zapsat soubor dané délky? Máme na disku dost místa?
@@ -260,7 +314,54 @@ namespace SDCardTester
         /// </summary>
         protected bool DoTestRead;
         #endregion
-        #region Generátor dat, adresáře, souborů
+        #region Přesná časomíra
+        /// <summary>
+        /// Inicializuje časomíru
+        /// </summary>
+        protected void InitStopwatch()
+        {
+            Stopwatch = new System.Diagnostics.Stopwatch();
+            Frequency = (decimal)System.Diagnostics.Stopwatch.Frequency;
+        }
+        /// <summary>
+        /// Nuluje a nastartuje časomíru
+        /// </summary>
+        /// <returns></returns>
+        protected long RestartStopwatch()
+        {
+            Stopwatch.Restart();
+            return Stopwatch.ElapsedTicks;
+        }
+        /// <summary>
+        /// Aktuální čas (ticky), použije se jako parametr do metody <see cref="GetSeconds(long)"/> na konci měřeného cyklu
+        /// </summary>
+        protected long CurrentTime { get { return Stopwatch.ElapsedTicks; } }
+        /// <summary>
+        /// Vrátí počet sekund od daného počátečního času. Bez parametru = od restartu časovače = <see cref="RestartStopwatch"/>.
+        /// </summary>
+        /// <param name="startTime"></param>
+        /// <returns></returns>
+        protected decimal GetSeconds(long startTime = 0L) { return GetSeconds(startTime, CurrentTime); }
+        /// <summary>
+        /// Vrátí počet sekund od daného počátečního do daného koncového času.
+        /// </summary>
+        /// <param name="startTime"></param>
+        /// <returns></returns>
+        protected decimal GetSeconds(long startTime, long stopTime)
+        {
+            decimal elapsedTime = (decimal)(stopTime - startTime);
+            return elapsedTime / Frequency;
+        }
+        /// <summary>
+        /// Časovač
+        /// </summary>
+        protected System.Diagnostics.Stopwatch Stopwatch;
+        /// <summary>
+        /// Frekvence časovače = počet ticků / sekunda
+        /// </summary>
+        protected decimal Frequency;
+        #endregion
+        #region Generátor dat, tvorba adresáře, tvorba a detekce názvu souborů a jejich čísla
         /// <summary>
         /// Vygeneruje blok dat do daného čísla souboru (počínaje 1) do daného bloku (počínaje 0), v délce <see cref="BufferLength"/>.
         /// </summary>
@@ -279,9 +380,14 @@ namespace SDCardTester
             }
             return buffer;
         }
+        /// <summary>
+        /// Vrátí název testovacího adresáře
+        /// </summary>
+        /// <param name="canCreate"></param>
+        /// <returns></returns>
         protected string GetTestDirectory(bool canCreate)
         {
-            string dirName = System.IO.Path.Combine(this._Drive.RootDirectory.FullName, "_TestDir.1968");
+            string dirName = System.IO.Path.Combine(this._Drive.RootDirectory.FullName, TestDirectory);
             var dirInfo = new System.IO.DirectoryInfo(dirName);
             try
             {
@@ -296,15 +402,172 @@ namespace SDCardTester
             return null;
         }
         /// <summary>
+        /// Vrátí následující číslo souboru tak, aby navazovalo na soubory již existující
+        /// </summary>
+        /// <param name="testDir"></param>
+        /// <returns></returns>
+        protected int GetNextFileNumber(string testDir)
+        {
+            int lastNumber = 0;
+            var files = System.IO.Directory.GetFiles(testDir, "*.*");
+            foreach (var file in files)
+            {
+                int number = GetFileNumber(file);
+                if (number > lastNumber)
+                    lastNumber = number;
+            }
+            return lastNumber + 1;
+        }
+        /// <summary>
+        /// Vrátí číslo získané z názvu testovacího souboru. 
+        /// Pokud na vstupu není testovací soubor, pak výstupem je -1.
+        /// </summary>
+        /// <param name="fileName"></param>
+        /// <returns></returns>
+        protected int GetFileNumber(string fileName)
+        {
+            IsTestFileName(fileName, out var number);
+            return number;
+        }
+        /// <summary>
+        /// Vrátí jméno souboru podle pravidel pro dané číslo
+        /// </summary>
+        /// <param name="testDir"></param>
+        /// <param name="number"></param>
+        /// <returns></returns>
+        protected string GetFileName(string testDir, int number)
+        {
+            string name = FileNamePrefix + number.ToString("00000") + FileNameExtension;
+            return System.IO.Path.Combine(testDir, name);
+        }
+        /// <summary>
+        /// Vrátí true, pokud daný název souboru je jménem testovacího souboru
+        /// </summary>
+        /// <param name="fileName"></param>
+        /// <returns></returns>
+        protected bool IsTestFileName(string fileName)
+        {
+            return IsTestFileName(fileName, out var _);
+        }
+        /// <summary>
+        /// Vrátí true, pokud daný název souboru je jménem testovacího souboru
+        /// </summary>
+        /// <param name="fileName"></param>
+        /// <param name="fileNumber"></param>
+        /// <returns></returns>
+        protected bool IsTestFileName(string fileName, out int fileNumber)
+        {
+            if (!String.IsNullOrEmpty(fileName))
+            {
+                var name = System.IO.Path.GetFileNameWithoutExtension(fileName).ToLower();
+                var extn = System.IO.Path.GetExtension(fileName).ToLower();
+                if (name.StartsWith(FileNamePrefix) && name.Length == 10 && extn == FileNameExtension && Int32.TryParse(name.Substring(5, 5), out int number) && number > 0)
+                {
+                    fileNumber = number;
+                    return true;
+                }
+            }
+            fileNumber = -1;
+            return true;
+        }
+        /// <summary>
         /// Vrátí true, pokud soubor s daným číslem bude "krátký"
         /// </summary>
         /// <param name="number"></param>
         /// <returns></returns>
         protected bool IsShortFile(int number) { return (number <= ShortFilesCount); }
+        protected const string TestDirectory = "_TestDir.1968";
+        protected const string FileNamePrefix = "test~";
+        protected const string FileNameExtension = ".tmp";
         protected const long ShortFilesLength = 4096L;
         protected const int ShortFilesCount = 512;
+        protected const int LongFilesCount = 3584;
         protected const long LongFileReserve = 32L * 1024L * 1024L;
+        protected const long LongFilesMinLength = 16L * 1024L * 1024L;
         protected const int BufferLength = 4096;
         #endregion
+        #region SubClass
+        /// <summary>
+        /// Třída obsahující údaje o počtu testovaných souborů, o jejich celkové délce a celkové době času testu
+        /// </summary>
+        public class FileTimeInfo
+        {
+            public FileTimeInfo(TestPhase testPhase)
+            {
+                TestPhase = testPhase;
+                FileCount = 0;
+                TotalLength = 0L;
+                TimeTotal = 0m;
+            }
+            public FileTimeInfo(TestPhase testPhase, int fileCount, long totalLength, decimal timeTotal)
+            {
+                TestPhase = testPhase;
+                FileCount = fileCount;
+                TotalLength = totalLength;
+                TimeTotal = timeTotal;
+            }
+            public FileTimeInfo(FileTimeInfo a, FileTimeInfo b)
+            {
+                TestPhase = a.TestPhase;
+                FileCount = a.FileCount + b.FileCount;
+                TotalLength = a.TotalLength + b.TotalLength;
+                TimeTotal = a.TimeTotal + b.TimeTotal;
+            }
+            public FileTimeInfo(FileTimeInfo a, int fileCount, long totalLength, decimal timeTotal)
+            {
+                TestPhase = a.TestPhase;
+                FileCount = a.FileCount + fileCount;
+                TotalLength = a.TotalLength + totalLength;
+                TimeTotal = a.TimeTotal + timeTotal;
+            }
+            public override string ToString()
+            {
+                return $"Phase: {TestPhase}; Count: {FileCount}; Length: {TotalLength}; Time: {TimeTotal}";
+            }
+            /// <summary>
+            /// Testovací fáze = typ testu
+            /// </summary>
+            public TestPhase TestPhase { get; private set; }
+            /// <summary>
+            /// Celkový počet souborů
+            /// </summary>
+            public int FileCount { get; private set; }
+            /// <summary>
+            /// Celková délka
+            /// </summary>
+            public long TotalLength { get; private set; }
+            /// <summary>
+            /// Celkový čas
+            /// </summary>
+            public decimal TimeTotal { get; private set; }
+            /// <summary>
+            /// Do this instance přidá data z dodané instance
+            /// </summary>
+            /// <param name="add"></param>
+            public void Add(FileTimeInfo add)
+            {
+                if (add != null)
+                {
+                    this.FileCount += add.FileCount;
+                    this.TotalLength += add.TotalLength;
+                    this.TimeTotal += add.TimeTotal;
+                }
+            }
+        }
+        /// <summary>
+        /// Fáze testu = konkrétní typ akce
+        /// </summary>
+        public enum TestPhase
+        {
+            None,
+            SaveShortFile,
+            SaveLongFile,
+            ReadShortFile,
+            ReadLongFile
+        }
+        #endregion
     }
+
+    public class DriveTestPhaseControl : DriveResultControl
+    { }
 }
