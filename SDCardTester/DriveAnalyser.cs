@@ -42,7 +42,7 @@ namespace SDCardTester
         /// <summary>
         /// Drive pro analýzu
         /// </summary>
-        public System.IO.DriveInfo Drive { get { return _Drive; } set { _Drive = value; } }
+        public System.IO.DriveInfo Drive { get { return _Drive; } }
         /// <summary>
         /// Aktuální stav skupin souborů.
         /// </summary>
@@ -326,6 +326,9 @@ namespace SDCardTester
                 _GroupRemaining.TotalLength = remainingTotal;
             }
         }
+        /// <summary>
+        /// Čas posledního hlášení změny
+        /// </summary>
         protected DateTime? LastStepTime;
         /// <summary>
         /// Vyvolá událost <see cref="AnalyseStep"/>, pokud je odpovídající čas
@@ -425,10 +428,20 @@ namespace SDCardTester
         }
         private void PaintText(PaintEventArgs e, Rectangle clientBounds, Rectangle outerBounds, Rectangle innerBounds)
         {
-            Painter.PaintText(e.Graphics, this.Font, this.GroupText, this.ForeColor, innerBounds, ContentAlignment.MiddleLeft);
+            var font = this.Font;
+            bool disposeFont = false;
+            if (this.IsActive)
+            {
+                font = new Font(font, FontStyle.Bold);
+                disposeFont = true;
+            }
+            Painter.PaintText(e.Graphics, font, this.GroupText, this.ForeColor, innerBounds, ContentAlignment.MiddleLeft);
             
             string text = Math.Round(100d * this.GroupRatio, 1).ToString() + "%";
-            Painter.PaintText(e.Graphics, this.Font, text, this.ForeColor, innerBounds, ContentAlignment.MiddleRight);
+            Painter.PaintText(e.Graphics, font, text, this.ForeColor, innerBounds, ContentAlignment.MiddleRight);
+
+            if (disposeFont)
+                font.Dispose();
         }
         /// <summary>
         /// Zajistí Refresh zobrazení. 
@@ -449,6 +462,8 @@ namespace SDCardTester
         public Color GroupColor { get; set; }
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public double GroupRatio { get; set; }
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+        public bool IsActive { get; set; }
     }
     #endregion
 }

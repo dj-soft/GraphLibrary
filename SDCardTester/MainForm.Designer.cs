@@ -54,7 +54,7 @@ namespace SDCardTester
             this.TestReadButton = new System.Windows.Forms.Button();
             this.StopPanel = new System.Windows.Forms.Panel();
             this.StopButton = new System.Windows.Forms.Button();
-            this.VisualPanel = new SDCardTester.TestControl();
+            this.VisualMapPanel = new SDCardTester.TestControl();
             this.AnalyseInfoPanel = new System.Windows.Forms.Panel();
             this.UserPanel.SuspendLayout();
             this.DrivesPanel.SuspendLayout();
@@ -358,12 +358,12 @@ namespace SDCardTester
             // 
             // VisualPanel
             // 
-            this.VisualPanel.BackColor = System.Drawing.Color.Snow;
-            this.VisualPanel.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.VisualPanel.Location = new System.Drawing.Point(251, 0);
-            this.VisualPanel.Name = "VisualPanel";
-            this.VisualPanel.Size = new System.Drawing.Size(764, 600);
-            this.VisualPanel.TabIndex = 1;
+            this.VisualMapPanel.BackColor = System.Drawing.Color.Snow;
+            this.VisualMapPanel.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.VisualMapPanel.Location = new System.Drawing.Point(251, 0);
+            this.VisualMapPanel.Name = "VisualPanel";
+            this.VisualMapPanel.Size = new System.Drawing.Size(764, 600);
+            this.VisualMapPanel.TabIndex = 1;
             // 
             // AnalyseInfoPanel
             // 
@@ -377,7 +377,7 @@ namespace SDCardTester
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(1015, 600);
-            this.Controls.Add(this.VisualPanel);
+            this.Controls.Add(this.VisualMapPanel);
             this.Controls.Add(this.UserPanel);
             this.MinimumSize = new System.Drawing.Size(819, 617);
             this.Name = "MainForm";
@@ -397,7 +397,7 @@ namespace SDCardTester
 
         private System.Windows.Forms.Panel UserPanel;
         private System.Windows.Forms.ComboBox DriveCombo;
-        private SDCardTester.TestControl VisualPanel;
+        private SDCardTester.TestControl VisualMapPanel;
         private System.Windows.Forms.Label DriveLabel;
         private System.Windows.Forms.CheckBox OnlyRemovableCheck;
         private System.Windows.Forms.TextBox DriveTypeText;

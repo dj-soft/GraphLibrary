@@ -20,6 +20,7 @@ namespace SDCardTester
         {
             this.SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.Opaque | ControlStyles.OptimizedDoubleBuffer | ControlStyles.ResizeRedraw | ControlStyles.UserPaint, true);
             this.SetStyle(ControlStyles.ContainerControl | ControlStyles.Selectable | ControlStyles.SupportsTransparentBackColor, false);
+            this.MouseInit();
         }
         /// <summary>
         /// Seznam prvků. Není null. Setováním null se zde vytvoří new prázdná instance.
@@ -58,6 +59,62 @@ namespace SDCardTester
         }
         private int _LineHeight = 8;
         #endregion
+        #region Pohyb myši a detekce prvku Item pod myší
+        /// <summary>
+        /// Inicializace eventů myši
+        /// </summary>
+        private void MouseInit()
+        {
+            this.MouseMove += _MouseMove;
+        }
+        /// <summary>
+        /// Po každém pohybu myši
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _MouseMove(object sender, MouseEventArgs e)
+        {
+            DetectActiveItem(e.Location);
+        }
+        /// <summary>
+        /// Detekuje aktivní prvek na aktuálním bodu myši
+        /// </summary>
+        private void DetectActiveItem()
+        {
+            Point point = this.PointToClient(Control.MousePosition);
+            DetectActiveItem(point);
+        }
+        /// <summary>
+        /// Detekuje aktivní prvek na daném bodu myši (lokální souřadnice)
+        /// </summary>
+        /// <param name="point"></param>
+        private void DetectActiveItem(Point point)
+        {
+            Item item = null;
+            var lines = this.Lines;
+            if (lines != null)
+            {
+                var line = lines.FirstOrDefault(l => l.ContainsPoint(point));
+                if (line != null)
+                    item = line.GetItemAtPoint(point);
+            }
+            if (!Object.ReferenceEquals(item, _ActiveItem))
+                CallActiveItemChanged(item);
+        }
+        /// <summary>
+        /// Aktivní prvek = nad tímto prvkem je myš. Při změně je volána událost <see cref="ActiveItemChanged"/>.
+        /// </summary>
+        public Item ActiveItem { get { return _ActiveItem; } }
+        private Item _ActiveItem;
+        private void CallActiveItemChanged(Item activeItem)
+        {
+            _ActiveItem = activeItem;
+            OnActiveItemChanged();
+            ActiveItemChanged?.Invoke(this, EventArgs.Empty);
+        }
+        protected virtual void OnActiveItemChanged() { }
+        public event EventHandler ActiveItemChanged;
+        #endregion
         #region Refresh a vykreslení controlu
         /// <summary>
         /// Zajistí Refresh zobrazení. 
@@ -78,6 +135,7 @@ namespace SDCardTester
         {
             PaintBackground(e);
             PaintItems(e);
+            DetectActiveItem();
         }
         /// <summary>
         /// Vykreslí pozadí, určí souřadnice řádků do <see cref="Lines"/>
@@ -191,10 +249,12 @@ namespace SDCardTester
         public class Item
         {
             public Item() { }
-            public Item(long length, Color? color)
+            public Item(long length, Color? color, string text = null, object data = null)
             {
                 Length = length;
                 Color = color;
+                Text = text;
+                Data = data;
             }
             public override string ToString()
             {
@@ -213,7 +273,10 @@ namespace SDCardTester
             /// Text do ToolTipu
             /// </summary>
             public string Text { get; set; }
-
+            /// <summary>
+            /// Aplikační data
+            /// </summary>
+            public object Data { get; set; }
         }
         /// <summary>
         /// Data o vizuální lince
@@ -268,6 +331,27 @@ namespace SDCardTester
                 return ((pixel >= this.PixelBegin && pixel < this.PixelEnd) || (acceptOnEnd && pixel == this.PixelEnd));
             }
             /// <summary>
+            /// Vrátí true, pokud daný fyzický bod v controlu se nachází v prostoru tohoto řádku
+            /// </summary>
+            /// <param name="point"></param>
+            /// <returns></returns>
+            public bool ContainsPoint(Point point)
+            {
+                return this.Bounds.Contains(point);
+            }
+            /// <summary>
+            /// Vrátí prvek, který se v rámci this řádku nachází na dané souřadnici
+            /// </summary>
+            /// <param name="point"></param>
+            /// <returns></returns>
+            public Item GetItemAtPoint(Point point)
+            {
+                Item item = null;
+                if (_Parts != null)
+                    item = _Parts.FirstOrDefault(t => t.Item1.Contains(point))?.Item2;
+                return item;
+            }
+            /// <summary>
             /// Vrátí souřadnice prostoru, která má daný začátek a konec. Akceptuje i indexy řádku počátku a konce.
             /// </summary>
             /// <param name="begin"></param>
@@ -298,6 +382,9 @@ namespace SDCardTester
             {
                 this._Parts.Add(new Tuple<Rectangle, Item>(bounds, item));
             }
+            /// <summary>
+            /// Částice
+            /// </summary>
             private List<Tuple<Rectangle, Item>> _Parts;
         }
         /// <summary>
