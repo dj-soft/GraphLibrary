@@ -504,16 +504,19 @@ namespace Noris.Clients.Win.Components.AsolDX
                 this.FormPositionApply(true);
                 this.OnFirstShownBefore();
                 this.FirstShownBefore?.Invoke(this, EventArgs.Empty);
+                this.ActivityState = WindowActivityState.ShowBefore;
                 base.OnShown(e);
                 _WasShown = true;
                 this.OnFirstShownAfter();
                 this.FirstShownAfter?.Invoke(this, EventArgs.Empty);
+                this.ActivityState = WindowActivityState.ShowAfter;
             }
             else
             {
                 base.OnShown(e);
                 this.OnNextShown();
                 this.NextShown?.Invoke(this, EventArgs.Empty);
+                this.ActivityState = WindowActivityState.ShowAfter;
             }
             this.ActivityState = WindowActivityState.Visible;
         }
@@ -718,7 +721,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             var formPosition = _FormPositionInfo;
             if (formPosition is null)
             {
-                this.WindowState = FormWindowState.Maximized;
+                // this.WindowState = FormWindowState.Maximized;
                 return;
             }
             if (formPosition.WindowState == FormWindowState.Maximized)
@@ -826,7 +829,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void ActivityStateInit()
         {
             this.ActivityState = WindowActivityState.Creating;
-
             this.Activated += ActivityStateDetect_Activated;
             this.Deactivate += ActivityStateDetect_Deactivate;
             this.GotFocus += ActivityStateDetect_GotFocus;
@@ -879,7 +881,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="e"></param>
         private void ActivityStateDetect_VisibleChanged(object sender, EventArgs e)
         {
-            this.ActivityState = (this.Visible ? WindowActivityState.Visible : WindowActivityState.Invisible);
+            if (this.WasShown)
+                this.ActivityState = (this.Visible ? WindowActivityState.Visible : WindowActivityState.Invisible);
         }
         /// <summary>
         /// Hlídáme změny stavu <see cref="ActivityState"/>
@@ -6069,6 +6072,14 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Právě bylo zahájeno první zobrazení okna
         /// </summary>
         FirstShow,
+        /// <summary>
+        /// Právě bylo zahájeno zobrazení okna (jak první, tak následující), volá se před fyzickým Show
+        /// </summary>
+        ShowBefore,
+        /// <summary>
+        /// Právě bylo dokončeno zobrazení okna
+        /// </summary>
+        ShowAfter,
         /// <summary>
         /// Okno již bylo zobrazeno a je viditelné, nyní může být aktivováno, nebo skryto nebo zavřeno
         /// </summary>

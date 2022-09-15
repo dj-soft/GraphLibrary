@@ -672,12 +672,33 @@ namespace TestDevExpress.Forms
                 form.FormRibbonVisibility = FormRibbonVisibilityMode.FormTitleRow;          // Nothing  FormTitleRow  Standard
                 form.Size = new Size(800, 600);
                 form.StartPosition = FormStartPosition.CenterParent;
-
+                form.ActivityStateChanged += MainForm_ActivityStateChanged;
+                form.DxMainPanel.Controls.Add(new System.Windows.Forms.Panel() { Bounds = new Rectangle(0, 0, 64, 64), BorderStyle = BorderStyle.FixedSingle, BackColor = Color.LightSkyBlue });
                 var titleBarItems = _CreateTitleBarItems();
                 form.DxRibbon.TitleBarItems = titleBarItems;
                 form.DxRibbon.RibbonItemClick += TitleBarDxRibbon_RibbonItemClick;
                 form.ShowDialog();
             }
+        }
+
+        private void MainForm_ActivityStateChanged(object sender, TEventValueChangedArgs<WindowActivityState> e)
+        {
+            var dxRibbonForm = sender as DxRibbonForm;
+            var ribbonSize = dxRibbonForm?.Ribbon.Size;
+
+            if (e.NewValue == WindowActivityState.ShowAfter)
+            {
+            
+            }
+            else if (e.NewValue == WindowActivityState.Visible)
+            {
+
+            }
+            else if (e.NewValue == WindowActivityState.Active)
+            {
+
+            }
+
         }
 
         private void TitleBarDxRibbon_RibbonItemClick(object sender, TEventArgs<IRibbonItem> e)
@@ -695,7 +716,7 @@ namespace TestDevExpress.Forms
             string resourceStruct = "svgimages/dashboards/treemap.svg";
             string resourceTree = "svgimages/dashboards/inserttreeview.svg";
             string resourceMenu1 = "svgimages/hybriddemoicons/bottompanel/hybriddemo_settings.svg";
-            string resourceMenu2 = "svgimages/icon%20builder/actions_settings.svg";
+            string resourceSysMenu = "images/setup/properties_16x16.png";
 
             string resourceSave = "svgimages/xaf/action_save_new.svg";
             string resourceReset = "svgimages/xaf/action_save_close.svg";
@@ -708,16 +729,14 @@ namespace TestDevExpress.Forms
             sysMenu3SubItems.Add(new DataRibbonItem() { ItemId = "SysMenu3_03", Text = "Zobrazit pozici okna", ImageName = resourcePreview });
             sysMenu3SubItems.Add(new DataRibbonItem() { ItemId = "SysMenu3_xx", Text = "Zavřít", ItemIsFirstInGroup = true, ImageName = resourceCancel });
 
-            var titleBarItems = new IRibbonItem[]
-            {
-                    new DataRibbonItem() { ItemId = "SysSkin1", ItemType = RibbonItemType.SkinSetDropDown },
-                    new DataRibbonItem() { ItemId = "SysSkin2", ItemType = RibbonItemType.SkinPaletteDropDown },
-                    new DataRibbonItem() { ItemId = "SysMenu1", Text = "", ToolTipTitle = "Systémová akce 1", ToolTipText = "Zobrazí strukturu controlů v okně.\r\nKaždým kliknutím se tento button promění !", ImageName = resourceStruct },
-                    new DataRibbonItem() { ItemId = "SysMenu2", Text = "", ToolTipTitle = "Systémová akce 2", ToolTipText = "Zobrazí strukturu controllerů", ImageName = resourceTree },
-                    new DataRibbonItem() { ItemId = "SysMenu3", Text = "", ToolTipTitle = "Systémové menu", ToolTipText = "Nabídne funkce pro uložení pozice okna", ImageName = resourceMenu2, ItemType = RibbonItemType.Menu, SubItems = sysMenu3SubItems  }
-            };
+            List<DataRibbonItem> sysMenuItems = new List<DataRibbonItem>();
+            sysMenuItems.Add(new DataRibbonItem() { ItemId = "SysSkin1", ItemType = RibbonItemType.SkinSetDropDown });
+            sysMenuItems.Add(new DataRibbonItem() { ItemId = "SysSkin2", ItemType = RibbonItemType.SkinPaletteDropDown });
+            // sysMenuItems.Add(new DataRibbonItem() { ItemId = "SysMenu1", Text = "", ToolTipTitle = "Systémová akce 1", ToolTipText = "Zobrazí strukturu controlů v okně.\r\nKaždým kliknutím se tento button promění !", ImageName = resourceStruct });
+            // sysMenuItems.Add(new DataRibbonItem() { ItemId = "SysMenu2", Text = "", ToolTipTitle = "Systémová akce 2", ToolTipText = "Zobrazí strukturu controllerů", ImageName = resourceTree });
+            sysMenuItems.Add(new DataRibbonItem() { ItemId = "SysMenu3", Text = "", ToolTipTitle = "Systémové menu", ToolTipText = "Nabídne funkce pro uložení pozice okna", ImageName = resourceSysMenu, ItemType = RibbonItemType.Menu, SubItems = sysMenu3SubItems });
 
-            return titleBarItems;
+            return sysMenuItems.ToArray();
         }
 
         private void TitleBarDxRibbonChangeRefresh(IRibbonItem iRibbonItem)

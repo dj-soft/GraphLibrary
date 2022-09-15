@@ -209,6 +209,9 @@ namespace TestDevExpress.Forms
             view.OptionsScrollAnnotations.ShowSelectedRows = DevExpress.Utils.DefaultBoolean.True;
             view.CustomScrollAnnotation += View_CustomScrollAnnotation;
 
+            // zkoušky
+            view.OptionsCustomization.UseAdvancedCustomizationForm = DevExpress.Utils.DefaultBoolean.True;
+
             // Ošetřit v době plnění daty:
             view.TopRowChanged += View_TopRowChanged;
             view.RowCountChanged += View_RowCountChanged;
