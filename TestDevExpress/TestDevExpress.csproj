@@ -187,6 +187,7 @@
     <Compile Include="AsolDX\DxTabHeaders.cs">
       <SubType>Component</SubType>
     </Compile>
+    <Compile Include="AsolDX\DxWinReg.cs" />
     <Compile Include="AsolDX\News\DxControlsNew.cs">
       <SubType>Component</SubType>
     </Compile>
