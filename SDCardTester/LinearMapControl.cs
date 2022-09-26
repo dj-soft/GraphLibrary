@@ -8,15 +8,15 @@ using System.Drawing.Drawing2D;
 using System.Windows.Forms;
 using System.ComponentModel;
 
-namespace SDCardTester
+namespace DjSoftSDCardTester
 {
-    public class TestControl : Control
+    public class LinearMapControl : Control
     {
         #region Konstruktor a public data
         /// <summary>
         /// Konstruktor
         /// </summary>
-        public TestControl()
+        public LinearMapControl()
         {
             this.SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.Opaque | ControlStyles.OptimizedDoubleBuffer | ControlStyles.ResizeRedraw | ControlStyles.UserPaint, true);
             this.SetStyle(ControlStyles.ContainerControl | ControlStyles.Selectable | ControlStyles.SupportsTransparentBackColor, false);
@@ -123,7 +123,7 @@ namespace SDCardTester
         public override void Refresh()
         {
             if (this.InvokeRequired)
-                this.BeginInvoke(new Action(base.Refresh));
+                this.Invoke(new Action(base.Refresh));
             else
                 base.Refresh();
         }
@@ -146,7 +146,7 @@ namespace SDCardTester
             var lines = new List<LineInfo>();
 
             var bounds = this.ClientRectangle;
-            e.Graphics.FillRectangle(Brushes.WhiteSmoke, bounds);
+            e.Graphics.FillRectangle(Painter.GetSolidBrush(Skin.BackgroundColor), bounds);
 
             Padding innerPadding = new Padding(2);
             var innerBounds = new Rectangle(bounds.X + innerPadding.Left, bounds.Y + innerPadding.Top, bounds.Width - innerPadding.Horizontal, bounds.Height - innerPadding.Vertical);
@@ -419,6 +419,7 @@ namespace SDCardTester
     public class Skin
     {
         #region Public static
+        public static Color BackgroundColor { get { return Instance._BackgroundColor; } set { Instance._BackgroundColor = value; } }
         public static Color OtherSpaceColor { get { return Instance._OtherSpaceColor; } set { Instance._OtherSpaceColor = value; } }
         public static Color UsedSpaceColor { get { return Instance._UsedSpaceColor; } set { Instance._UsedSpaceColor = value; } }
         public static Color FreeSpaceColor { get { return Instance._FreeSpaceColor; } set { Instance._FreeSpaceColor = value; } }
@@ -430,6 +431,14 @@ namespace SDCardTester
         public static Color ApplicationGroupColor { get { return Instance._ApplicationGroupColor; } set { Instance._ApplicationGroupColor = value; } }
         public static Color DevelopmentGroupColor { get { return Instance._DevelopmentGroupColor; } set { Instance._DevelopmentGroupColor = value; } }
         public static Color ArchiveGroupColor { get { return Instance._ArchiveGroupColor; } set { Instance._ArchiveGroupColor = value; } }
+
+        public static Color TestFilesGroupColor { get { return Instance._TestFilesGroupColor; } set { Instance._TestFilesGroupColor = value; } }
+
+        public static Color TestPhaseSaveShortFileBackColor { get { return Instance._TestPhaseSaveShortFileBackColor; } set { Instance._TestPhaseSaveShortFileBackColor = value; } }
+        public static Color TestPhaseSaveLongFileBackColor { get { return Instance._TestPhaseSaveLongFileBackColor; } set { Instance._TestPhaseSaveLongFileBackColor = value; } }
+        public static Color TestPhaseReadShortFileBackColor { get { return Instance._TestPhaseReadShortFileBackColor; } set { Instance._TestPhaseReadShortFileBackColor = value; } }
+        public static Color TestPhaseReadLongFileBackColor { get { return Instance._TestPhaseReadLongFileBackColor; } set { Instance._TestPhaseReadLongFileBackColor = value; } }
+        public static Color TestAsyncErrorColor { get { return Instance._TestAsyncErrorColor; } set { Instance._TestAsyncErrorColor = value; } }
 
         /// <summary>
         /// Typ palety
@@ -463,6 +472,7 @@ namespace SDCardTester
         {
             _SetPalette(PaletteType.Light);
         }
+        private Color _BackgroundColor;
         private Color _OtherSpaceColor;
         private Color _UsedSpaceColor;
         private Color _FreeSpaceColor;
@@ -473,6 +483,13 @@ namespace SDCardTester
         private Color _ApplicationGroupColor;
         private Color _DevelopmentGroupColor;
         private Color _ArchiveGroupColor;
+        private Color _TestFilesGroupColor;
+        private Color _TestPhaseSaveShortFileBackColor;
+        private Color _TestPhaseSaveLongFileBackColor;
+        private Color _TestPhaseReadShortFileBackColor;
+        private Color _TestPhaseReadLongFileBackColor;
+        private Color _TestAsyncErrorColor;
+
         #endregion
         #region Přednastavené palety
         /// <summary>
@@ -486,9 +503,10 @@ namespace SDCardTester
         private PaletteType _Palette;
         private void _SetPalette(PaletteType palette)
         {
-            switch(palette)
+            switch (palette)
             {
                 case PaletteType.Light:
+                    _BackgroundColor = Color.FromArgb(240, 248, 255);
                     _OtherSpaceColor = Color.FromArgb(160, 160, 160);
                     _UsedSpaceColor = Color.FromArgb(255, 114, 149);
                     _FreeSpaceColor = Color.FromArgb(191, 255, 170);
@@ -499,9 +517,16 @@ namespace SDCardTester
                     _ApplicationGroupColor = Color.FromArgb(141, 239, 239);
                     _DevelopmentGroupColor = Color.FromArgb(153, 196, 239);
                     _ArchiveGroupColor = Color.FromArgb(212, 239, 129);
+                    _TestFilesGroupColor = Color.FromArgb(212, 160, 190);
+                    _TestPhaseSaveShortFileBackColor = Color.FromArgb(255, 190, 190);
+                    _TestPhaseSaveLongFileBackColor = Color.FromArgb(255, 220, 220);
+                    _TestPhaseReadShortFileBackColor = Color.FromArgb(190, 190, 255);
+                    _TestPhaseReadLongFileBackColor = Color.FromArgb(220, 220, 255);
+                    _TestAsyncErrorColor = Color.FromArgb(192, 64, 64);
                     _Palette = palette;
                     break;
                 case PaletteType.Pastel:
+                    _BackgroundColor = Color.FromArgb(240, 248, 255);
                     _OtherSpaceColor = Color.FromArgb(0xF2CCFF);
                     _UsedSpaceColor = Color.FromArgb(0xFFDACE);
                     _FreeSpaceColor = Color.FromArgb(0xCEFFDA);
@@ -512,9 +537,16 @@ namespace SDCardTester
                     _ApplicationGroupColor = Color.FromArgb(0xCEDAFF);
                     _DevelopmentGroupColor = Color.FromArgb(0xCEFFFF);
                     _ArchiveGroupColor = Color.FromArgb(0xFFF2CE);
+                    _TestFilesGroupColor = Color.FromArgb(212, 160, 190);
+                    _TestPhaseSaveShortFileBackColor = Color.FromArgb(255, 190, 190);
+                    _TestPhaseSaveLongFileBackColor = Color.FromArgb(255, 220, 220);
+                    _TestPhaseReadShortFileBackColor = Color.FromArgb(190, 190, 255);
+                    _TestPhaseReadLongFileBackColor = Color.FromArgb(220, 220, 255);
+                    _TestAsyncErrorColor = Color.FromArgb(192, 64, 64);
                     _Palette = palette;
                     break;
                 case PaletteType.Dark:
+                    _BackgroundColor = Color.FromArgb(240, 248, 255);
                     _OtherSpaceColor = Color.FromArgb(0xF2CCFF);
                     _UsedSpaceColor = Color.FromArgb(0xFFDACE);
                     _FreeSpaceColor = Color.FromArgb(0xCEFFDA);
@@ -525,6 +557,12 @@ namespace SDCardTester
                     _ApplicationGroupColor = Color.FromArgb(0xCEDAFF);
                     _DevelopmentGroupColor = Color.FromArgb(0xCEFFFF);
                     _ArchiveGroupColor = Color.FromArgb(0xFFF2CE);
+                    _TestFilesGroupColor = Color.FromArgb(212, 160, 190);
+                    _TestPhaseSaveShortFileBackColor = Color.FromArgb(255, 190, 190);
+                    _TestPhaseSaveLongFileBackColor = Color.FromArgb(255, 220, 220);
+                    _TestPhaseReadShortFileBackColor = Color.FromArgb(190, 190, 255);
+                    _TestPhaseReadLongFileBackColor = Color.FromArgb(220, 220, 255);
+                    _TestAsyncErrorColor = Color.FromArgb(192, 64, 64);
                     _Palette = palette;
                     break;
             }
@@ -554,7 +592,7 @@ namespace SDCardTester
         /// <param name="bounds"></param>
         public static void PaintBar3D(Graphics graphics, Color color, Rectangle bounds)
         {
-            using (var brush = GetBrush3D(color, bounds.Y - 1, bounds.Height))
+            using (var brush = CreateBrush3D(color, bounds.Y - 1, bounds.Height))
                 graphics.FillRectangle(brush, bounds);
         }
         /// <summary>
@@ -640,11 +678,9 @@ namespace SDCardTester
             return new RectangleF(sx, sy, sw, sh);
         }
         /// <summary>
-        /// Vrátí SolidBrush
+        /// Vrátí SolidBrush. Je k dispozici ihned, ale nesmí se Disposovat.
         /// </summary>
         /// <param name="color"></param>
-        /// <param name="y"></param>
-        /// <param name="height"></param>
         /// <returns></returns>
         public static Brush GetSolidBrush(Color color)
         {
@@ -654,13 +690,13 @@ namespace SDCardTester
         }
         private static SolidBrush _SolidBrush;
         /// <summary>
-        /// Vrátí 3D Brush
+        /// Vrátí 3D Brush. Je vyroben na zakázku a musí se Disposovat.
         /// </summary>
         /// <param name="color"></param>
         /// <param name="y"></param>
         /// <param name="height"></param>
         /// <returns></returns>
-        public static Brush GetBrush3D(Color color, int y, int height)
+        public static Brush CreateBrush3D(Color color, int y, int height)
         {
             GetColors(color, out Color color1, out Color color2, 16);
             return new LinearGradientBrush(new Point(0, y), new PointF(0, y + height), color1, color2);

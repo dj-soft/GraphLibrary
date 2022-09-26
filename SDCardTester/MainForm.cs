@@ -8,7 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
-namespace SDCardTester
+namespace DjSoftSDCardTester
 {
     public partial class MainForm : Form
     {
@@ -17,6 +17,7 @@ namespace SDCardTester
         {
             InitializeComponent();
             InitContent();
+            VisualMapPanelInit();
             ShowProperties();
             InitEvents();
             ShowControls(ActionState.Dialog, true);
@@ -37,7 +38,6 @@ namespace SDCardTester
             this.OnlyRemovableCheck.CheckedChanged += OnlyRemovableCheck_CheckedChanged;
             this.VisualMapPanel.ActiveItemChanged += VisualPanel_ActiveItemChanged;
         }
-
         private void VisualPanel_ActiveItemChanged(object sender, EventArgs e)
         {
             switch (CurrentDataPanelState)
@@ -114,7 +114,7 @@ namespace SDCardTester
                 if (withDataPanel)
                 {
                     PropertiesPanel.Visible = (state == ActionState.Dialog);
-                    ResultsInfoPanel.Visible = (state == ActionState.AnalyseContent);
+                    ResultsInfoPanel.Visible = (state == ActionState.AnalyseContent || state == ActionState.TestSave || state == ActionState.TestRead);
                     CurrentDataPanelState = state;
                 }
 
@@ -157,7 +157,7 @@ namespace SDCardTester
             }
         }
         #endregion
-        #region Načtení a zobrazení seznamu Drives a detailních vlastností
+        #region Načtení a zobrazení seznamu Drives a detailních vlastností o zvoleném disku, včetně mapy
         /// <summary>
         /// Aktuálně vybraný disk
         /// </summary>
@@ -233,32 +233,57 @@ namespace SDCardTester
             this.DriveFreeText.Text = getCapacityText(selectedDrive?.TotalFreeSpace);
             this.DriveAvailableText.Text = getCapacityText(selectedDrive?.AvailableFreeSpace);
 
-            this.VisualMapPanel.TotalLength = selectedDrive?.TotalSize ?? 0L;
-            this.VisualMapPanel.Items.Clear();
-            if (selectedDrive != null)
-            {
-                long totalSize = selectedDrive.TotalSize;
-                if (totalSize < 0L) totalSize = 0L;
-                long usedSize = totalSize - selectedDrive.TotalFreeSpace;
-                if (usedSize < 0L) usedSize = 0L;
-                long otherSize = selectedDrive.TotalFreeSpace - selectedDrive.AvailableFreeSpace;
-                if (otherSize < 0L) otherSize = 0L;
-                long freeSize = selectedDrive.TotalSize - usedSize - otherSize;
-                if (freeSize < 0L) freeSize = 0L;
-
-                this.VisualMapPanel.LineHeight = GetLineHeight(totalSize);
-                this.VisualMapPanel.TotalLength = totalSize;
-                this.VisualMapPanel.Items.Add(new TestControl.Item(otherSize, Skin.OtherSpaceColor));
-                this.VisualMapPanel.Items.Add(new TestControl.Item(usedSize, Skin.UsedSpaceColor));
-                this.VisualMapPanel.Items.Add(new TestControl.Item(freeSize, Skin.FreeSpaceColor));
-            }
-            this.VisualMapPanel.Refresh();
+            VisualMapPanelFillBasicData(selectedDrive);
 
             string getCapacityText(long? capacity)
             {
                 if (!capacity.HasValue) return "";
                 return capacity.Value.ToString("### ### ### ### ##0");
             }
+        }
+        /// <summary>
+        /// Inicializace vizuálního controlu
+        /// </summary>
+        private void VisualMapPanelInit()
+        {
+            Skin.Palette = Skin.PaletteType.Light;
+        }
+        /// <summary>
+        /// Do mapy <see cref="VisualMapPanel"/> načte a vepíše základní informace o daném disku <paramref name="drive"/> (velikost, obsazenost, testovací data).
+        /// </summary>
+        /// <param name="drive"></param>
+        private void VisualMapPanelFillBasicData(System.IO.DriveInfo drive)
+        {
+            var fileGroups = DriveAnalyser.GetFileGroupsForDrive(drive, out long totalSize);
+            VisualMapPanelFillData(fileGroups, totalSize);
+        }
+        /// <summary>
+        /// Do mapy <see cref="VisualMapPanel"/> vloží prvky popisující stav obsazení disku podle dodaných <see cref="DriveAnalyser.FileGroup"/>.
+        /// </summary>
+        /// <param name="fileGroups"></param>
+        private void VisualMapPanelFillData(IEnumerable<DriveAnalyser.FileGroup> fileGroups, long? totalSize = null)
+        {
+            var items = new List<LinearMapControl.Item>();
+            if (fileGroups != null)
+                items.AddRange(fileGroups.Select(g => new LinearMapControl.Item(g.TotalLength, g.Color, null, g)));
+
+            if (totalSize.HasValue)
+                VisualMapPanelSetupHeight(totalSize.Value, false);
+
+            this.VisualMapPanel.Items = items;
+            this.VisualMapPanel.Refresh();
+        }
+        /// <summary>
+        /// Do mapy <see cref="VisualMapPanel"/> vloží prvky popisující stav obsazení disku podle dodaných <see cref="DriveAnalyser.FileGroup"/>.
+        /// </summary>
+        /// <param name="fileGroups"></param>
+        private void VisualMapPanelSetupHeight(long totalSize, bool refresh)
+        {
+            this.VisualMapPanel.LineHeight = GetLineHeight(totalSize);
+            this.VisualMapPanel.TotalLength = totalSize;
+
+            if (refresh)
+                this.VisualMapPanel.Refresh();
         }
         /// <summary>
         /// Vrátí výšku jedné vizuální linky pro danou velikost disku: menší disk = vyšší linky, velký disk = malé linky (víc se tam toho vejde)
@@ -353,7 +378,7 @@ namespace SDCardTester
                 if (driveAnalyser != null)
                 {
                     ResultsInfoPanelFillData(driveAnalyser);
-                    VisualPanelFillData(driveAnalyser);
+                    VisualMapPanelFillData(driveAnalyser);
                 }
             }
         }
@@ -374,8 +399,8 @@ namespace SDCardTester
                 var panel = new DriveAnalyseGroupControl(group.Name, group.Color);
                 panel.Bounds = new Rectangle(x, y, w, h);
                 ResultsInfoPanel.Controls.Add(panel);
-                y += panel.Height;
                 analyserGroups.Add(new Tuple<DriveAnalyser.FileGroup, DriveAnalyseGroupControl>(group, panel));
+                y += panel.Height;
             }
             _DriveAnalyserGroups = analyserGroups;
         }
@@ -396,30 +421,24 @@ namespace SDCardTester
             }
         }
         /// <summary>
-        /// Do mapy <see cref="VisualMapPanel"/> vloží prvky pocházející ze skupin z analyzeru
+        /// Do mapy <see cref="VisualMapPanel"/> vloží prvky pocházející ze skupin z analyzeru z <paramref name="driveAnalyser"/> : <see cref="DriveAnalyser.FileGroups"/>
         /// </summary>
         /// <param name="driveAnalyser"></param>
-        private void VisualPanelFillData(DriveAnalyser driveAnalyser)
-        { 
-            var items = new List<TestControl.Item>();
-            var groups = driveAnalyser.FileGroups;
-            if (groups != null)
-                items.AddRange(groups.Select(g => new TestControl.Item(g.TotalLength, g.Color, null, g)));
-
-            this.VisualMapPanel.Items = items;
-            this.VisualMapPanel.Refresh();
+        private void VisualMapPanelFillData(DriveAnalyser driveAnalyser)
+        {
+            VisualMapPanelFillData(driveAnalyser.FileGroups);
         }
         /// <summary>
         /// Volá se po aktivaci daného (nebo žádného) prvku - pohybem myší nad mapou.
-        /// Vstupní prvek je <see cref="TestControl.Item"/> = prvek, který byl vložen do vizuální mapy. 
-        /// Tento prvek byl vytvořen v metodě <see cref="VisualPanelFillData(DriveAnalyser)"/>, 
-        /// a ve své property <see cref="TestControl.Item.Data"/> by měl obsahovat grupu z analyzeru <see cref="DriveAnalyser.FileGroup"/>.
+        /// Vstupní prvek je <see cref="LinearMapControl.Item"/> = prvek, který byl vložen do vizuální mapy. 
+        /// Tento prvek byl vytvořen v metodě <see cref="VisualMapPanelFillData(DriveAnalyser)"/>, 
+        /// a ve své property <see cref="LinearMapControl.Item.Data"/> by měl obsahovat grupu z analyzeru <see cref="DriveAnalyser.FileGroup"/>.
         /// Tutéž grupu najdeme v panelu <see cref="ResultsInfoPanel"/> = tam se zobrazují jednotlivé skupiny souborů a jejich sumární hodnota, a tam bych rád zvýraznil grupu, která je aktivní v mapě.
         /// Grupu najdu v prvku v poli <see cref="_DriveAnalyserGroups"/>, kde je umístěna v Item1. 
         /// Tam pak jako párovou Item2 najdu instanci vizuálního controlu <see cref="DriveAnalyseGroupControl"/>.
         /// </summary>
         /// <param name="activeItem"></param>
-        private void AnalyseActiveItemChanged(TestControl.Item activeItem)
+        private void AnalyseActiveItemChanged(LinearMapControl.Item activeItem)
         {
             var activeGroup = activeItem?.Data as DriveAnalyser.FileGroup;
             var lastActivePanel = _DriveAnalyserGroups?.FirstOrDefault(t => t.Item2.IsActive)?.Item2;
@@ -513,7 +532,7 @@ namespace SDCardTester
             if (_DriveTester is null) return;
 
             if (this.InvokeRequired)
-                this.BeginInvoke(new Action(DriveTesterRefresh));
+                this.Invoke(new Action(DriveTesterRefresh));
             else
             {
                 var driveTester = _DriveTester;
@@ -525,13 +544,34 @@ namespace SDCardTester
             }
         }
         /// <summary>
-        /// Do prvků v panelu informací <see cref="ResultsInfoPanel"/> vygeneruje prvky <see cref="DriveTestPhaseControl"/> pro zobrazování dat skupin z analyzeru
+        /// Do prvků v panelu informací <see cref="ResultsInfoPanel"/> vygeneruje prvky <see cref="DriveTestTimePhaseControl"/> pro zobrazování dat skupin z analyzeru
         /// </summary>
         /// <param name="driveAnalyser"></param>
         private void TestInfoPanelPrepare(DriveTester driveTester)
         {
-        
+            var testPhases = new Dictionary<DriveTester.TestPhase, DriveTestTimePhaseControl>();
 
+            int x = 3;
+            int y = 3;
+            int w = ResultsInfoPanel.ClientRectangle.Width - 6;
+            int h = DriveTestTimePhaseControl.OptimalHeight;
+
+            addPhase(DriveTester.TestPhase.SaveShortFile);
+            addPhase(DriveTester.TestPhase.SaveLongFile);
+            addPhase(DriveTester.TestPhase.ReadShortFile);
+            addPhase(DriveTester.TestPhase.ReadLongFile);
+
+            _DriveTesterPhases = testPhases;
+
+            // Zařadí control pro danou fázi
+            void addPhase(DriveTester.TestPhase phase)
+            {
+                DriveTestTimePhaseControl panel = new DriveTestTimePhaseControl();
+                panel.Bounds = new Rectangle(x, y, w, h);
+                ResultsInfoPanel.Controls.Add(panel);
+                testPhases.Add(phase, panel);
+                y += panel.Height;
+            }
         }
         /// <summary>
         /// Do prvků v panelu informací <see cref="ResultsInfoPanel"/> aktualizuje hodnoty v controlech <see cref="DriveAnalyseGroupControl"/> z dat skupin z analyzeru
@@ -539,15 +579,19 @@ namespace SDCardTester
         /// <param name="driveAnalyser"></param>
         private void ResultsInfoPanelFillData(DriveTester driveTester)
         {
-            //var analyserGroups = _DriveAnalyserGroups;
-            //if (analyserGroups is null || analyserGroups.Count == 0) return;
-            //long totalSize = analyserGroups.Sum(g => g.Item1.TotalLength);
-            //foreach (var analyserGroup in analyserGroups)
-            //{
-            //    long currentSize = analyserGroup.Item1.TotalLength;
-            //    analyserGroup.Item2.GroupRatio = (totalSize > 0L ? (double)currentSize / (double)totalSize : 0d);
-            //    analyserGroup.Item2.Refresh();
-            //}
+            var testPhases = _DriveTesterPhases;
+            if (testPhases != null && driveTester != null)
+            {
+                var currentPhase = driveTester.TimeInfoCurrentPhase;
+                testPhases[DriveTester.TestPhase.SaveShortFile].TimeInfo = driveTester.TimeInfoSaveShort;
+                testPhases[DriveTester.TestPhase.SaveShortFile].CurrentActivePhase = currentPhase;
+                testPhases[DriveTester.TestPhase.SaveLongFile].TimeInfo = driveTester.TimeInfoSaveLong;
+                testPhases[DriveTester.TestPhase.SaveLongFile].CurrentActivePhase = currentPhase;
+                testPhases[DriveTester.TestPhase.ReadShortFile].TimeInfo = driveTester.TimeInfoReadShort;
+                testPhases[DriveTester.TestPhase.ReadShortFile].CurrentActivePhase = currentPhase;
+                testPhases[DriveTester.TestPhase.ReadLongFile].TimeInfo = driveTester.TimeInfoReadLong;
+                testPhases[DriveTester.TestPhase.ReadLongFile].CurrentActivePhase = currentPhase;
+            }
         }
         /// <summary>
         /// Do mapy <see cref="VisualMapPanel"/> vloží prvky pocházející ze skupin z testeru
@@ -555,22 +599,45 @@ namespace SDCardTester
         /// <param name="driveAnalyser"></param>
         private void VisualPanelFillData(DriveTester driveTester)
         {
-            //var items = new List<TestControl.Item>();
-            //var groups = driveAnalyser.FileGroups;
-            //if (groups != null)
-            //    items.AddRange(groups.Select(g => new TestControl.Item(g.TotalLength, g.Color, null, g)));
-
-            //this.VisualMapPanel.Items = items;
-            //this.VisualMapPanel.Refresh();
+            VisualMapPanelFillBasicData(driveTester.Drive);
         }
         /// <summary>
         /// Instance testeru
         /// </summary>
         private DriveTester _DriveTester;
+        private Dictionary<DriveTester.TestPhase, DriveTestTimePhaseControl> _DriveTesterPhases;
         #endregion
     }
+    /// <summary>
+    /// Společný předek pro třídy obsahující výsledky testu a analýzy
+    /// </summary>
     public class DriveResultControl : Control
-    { }
+    {
+        public DriveResultControl()
+        {
+            this.SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.Opaque | ControlStyles.OptimizedDoubleBuffer | ControlStyles.ResizeRedraw | ControlStyles.UserPaint, true);
+            this.SetStyle(ControlStyles.ContainerControl | ControlStyles.Selectable | ControlStyles.SupportsTransparentBackColor, false);
+            InitControls();
+        }
+        protected virtual void InitControls()
+        {
+            this.Size = new Size(293, CurrentOptimalHeight);
+        }
+        /// <summary>
+        /// Zdejší optimální výška
+        /// </summary>
+        protected virtual int CurrentOptimalHeight { get { return 28; } }
+        /// <summary>
+        /// Refresh - umí sám přejít do GUI threadu
+        /// </summary>
+        public override void Refresh()
+        {
+            if (this.InvokeRequired)
+                this.Invoke(new Action(base.Refresh));
+            else
+                base.Refresh();
+        }
+    }
     public class TextDataInfo
     {
         public override string ToString()

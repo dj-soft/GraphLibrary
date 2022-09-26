@@ -56,7 +56,7 @@
     </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="TestControl.cs">
+    <Compile Include="LinearMapControl.cs">
       <SubType>Component</SubType>
     </Compile>
     <EmbeddedResource Include="MainForm.resx">

@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.ComponentModel;
 
-namespace SDCardTester
+namespace DjSoftSDCardTester
 {
     /// <summary>
     /// Analyzer stavu disku
@@ -102,6 +102,13 @@ namespace SDCardTester
                     new FileGroup(++order, "Nezpracováno", Skin.UsedSpaceColor, "*")
                 };
             }
+            /// <summary>
+            /// Privátní konstruktor
+            /// </summary>
+            /// <param name="order"></param>
+            /// <param name="name"></param>
+            /// <param name="color"></param>
+            /// <param name="extensions"></param>
             private FileGroup(int order, string name, Color color, string extensions)
             {
                 this.Order = order;
@@ -110,6 +117,23 @@ namespace SDCardTester
                 this.Extensions = extensions.ToLower().Split(" ".ToCharArray(), StringSplitOptions.RemoveEmptyEntries);
                 this.FilesCount = 0;
                 this.TotalLength = 0L;
+            }
+            /// <summary>
+            /// Privátní konstruktor
+            /// </summary>
+            /// <param name="order"></param>
+            /// <param name="name"></param>
+            /// <param name="color"></param>
+            /// <param name="filesCount"></param>
+            /// <param name="totalLength"></param>
+            public FileGroup(int order, string name, Color color, int filesCount, long totalLength)
+            {
+                this.Order = order;
+                this.Name = name;
+                this.Color = color;
+                this.Extensions = new string[0];
+                this.FilesCount = filesCount;
+                this.TotalLength = totalLength;
             }
             public override string ToString()
             {
@@ -219,6 +243,9 @@ namespace SDCardTester
             string IFileGroup.MissingExtensionsText { get { return MissingExtensionsText; } }
             long IFileGroup.TotalLength { get { return TotalLength; } set { TotalLength = value; } }
         }
+        /// <summary>
+        /// Interface pro interní přístup na data grupy
+        /// </summary>
         protected interface IFileGroup
         {
             void Reset();
@@ -226,6 +253,44 @@ namespace SDCardTester
             void AddMissingExtension(string extension, long length);
             string MissingExtensionsText { get; }
             long TotalLength { get; set; }
+        }
+        #endregion
+        #region Základní zmapování obsahu souboru a převod na FileGroup
+        /// <summary>
+        /// Vrátí pole základních informací o využití prostoru daného disku.
+        /// </summary>
+        /// <param name="drive"></param>
+        /// <param name="totalSize"></param>
+        /// <returns></returns>
+        public static DriveAnalyser.FileGroup[] GetFileGroupsForDrive(System.IO.DriveInfo drive, out long totalSize)
+        {
+            totalSize = 0L;
+            List<DriveAnalyser.FileGroup> fileGroups = new List<FileGroup>();
+
+            if (drive != null)
+            {
+                totalSize = drive.TotalSize;
+                if (totalSize < 0L) totalSize = 0L;
+
+                long usedSize = totalSize - drive.TotalFreeSpace;
+                if (usedSize < 0L) usedSize = 0L;
+                long otherSize = drive.TotalFreeSpace - drive.AvailableFreeSpace;
+                if (otherSize < 0L) otherSize = 0L;
+                long freeSize = drive.TotalSize - usedSize - otherSize;
+                if (freeSize < 0L) freeSize = 0L;
+
+                long testSize = DriveTester.GetTestFiles(drive).Select(f => f.Length).Sum();
+                if (testSize < 0L) testSize = 0L;
+                if (testSize > 0L) usedSize -= testSize;
+                if (usedSize < 0L) usedSize = 0L;
+
+                int order = 0;
+                if (usedSize > 0L) fileGroups.Add(new FileGroup(++order, "Obsazeno", Skin.UsedSpaceColor, 0, usedSize));
+                if (testSize > 0L) fileGroups.Add(new FileGroup(++order, "Testovací", Skin.TestFilesGroupColor, 0, testSize));
+                if (otherSize > 0L) fileGroups.Add(new FileGroup(++order, "Ostatní", Skin.OtherSpaceColor, 0, otherSize));
+            }
+
+            return fileGroups.ToArray();
         }
         #endregion
         #region Běh analýzy
@@ -386,15 +451,9 @@ namespace SDCardTester
             this.GroupColor = color;
         }
         public DriveAnalyseGroupControl()
+            : base()
         {
-            this.SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.Opaque | ControlStyles.OptimizedDoubleBuffer | ControlStyles.ResizeRedraw | ControlStyles.UserPaint, true);
-            this.SetStyle(ControlStyles.ContainerControl | ControlStyles.Selectable | ControlStyles.SupportsTransparentBackColor, false);
-            InitControls();
             this.GroupRatio = 0f;
-        }
-        protected void InitControls()
-        {
-            this.Size = new Size(293, OptimalHeight);
         }
         protected override void OnPaint(PaintEventArgs e)
         {
@@ -443,27 +502,23 @@ namespace SDCardTester
             if (disposeFont)
                 font.Dispose();
         }
-        /// <summary>
-        /// Zajistí Refresh zobrazení. 
-        /// Lze volat z Working threadů.
-        /// </summary>
-        public override void Refresh()
-        {
-            if (this.InvokeRequired)
-                this.BeginInvoke(new Action(base.Refresh));
-            else
-                base.Refresh();
-        }
-        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-        public static int OptimalHeight { get { return 25; } }
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public string GroupText { get; set; }
+        /// <summary>
+        /// Barva podkladu
+        /// </summary>
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public Color GroupColor { get; set; }
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public double GroupRatio { get; set; }
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public bool IsActive { get; set; }
+        protected override int CurrentOptimalHeight { get { return OptimalHeight; } }
+        /// <summary>
+        /// Optimální výška
+        /// </summary>
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+        public static int OptimalHeight { get { return 27; } }
     }
     #endregion
 }

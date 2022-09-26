@@ -5,8 +5,9 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.ComponentModel;
+using System.Drawing;
 
-namespace SDCardTester
+namespace DjSoftSDCardTester
 {
     /// <summary>
     /// Tester zápisu a čtení na disk
@@ -105,7 +106,7 @@ namespace SDCardTester
         /// <param name="currentLength"></param>
         /// <param name="startTime"></param>
         /// <param name="currentTime"></param>
-        protected void CallTestStep(bool force = false, long? currentLength = null, long? startTime = null, long? currentTime = null)
+        protected void CallTestStep(bool force = false, long? currentLength = null, long? startTime = null, long? currentTime = null, int? asyncOK = null, int? asyncSlow = null)
         {
             var nowTime = DateTime.Now;
             var lastTime = LastStepTime;
@@ -119,24 +120,24 @@ namespace SDCardTester
                 TimeInfoReadShort = TimeInfoReadShortDone;
                 TimeInfoReadLong = TimeInfoReadLongDone;
 
-                if (currentLength.HasValue && startTime.HasValue && currentTime.HasValue)
-                {   // Máme k dispozici "rozpracovaná data":
+                if (currentLength.HasValue && startTime.HasValue && currentTime.HasValue && asyncOK.HasValue && asyncSlow.HasValue)
+                {   // Máme k dispozici "rozpracovaná data" => přičteme je k hodnotám *Done a uložíme do public properties:
                     TestPhase testPhase = this.TimeInfoCurrentPhase;
                     decimal elapsedTime = this.GetSeconds(startTime.Value, currentTime.Value);
                     // Do odpovídající public property vložím součet hodnoty Done + rozpracované hodnoty daného režimu:
                     switch (testPhase)
                     {
                         case TestPhase.SaveShortFile:
-                            TimeInfoSaveShort = new FileTimeInfo(TimeInfoSaveShortDone, 0, currentLength.Value, elapsedTime);
+                            TimeInfoSaveShort = new FileTimeInfo(TimeInfoSaveShortDone, 0, currentLength.Value, elapsedTime, asyncOK.Value, asyncSlow.Value);
                             break;
                         case TestPhase.SaveLongFile:
-                            TimeInfoSaveLong = new FileTimeInfo(TimeInfoSaveLongDone, 0, currentLength.Value, elapsedTime);
+                            TimeInfoSaveLong = new FileTimeInfo(TimeInfoSaveLongDone, 0, currentLength.Value, elapsedTime, asyncOK.Value, asyncSlow.Value);
                             break;
                         case TestPhase.ReadShortFile:
-                            TimeInfoReadShort = new FileTimeInfo(TimeInfoReadShortDone, 0, currentLength.Value, elapsedTime);
+                            TimeInfoReadShort = new FileTimeInfo(TimeInfoReadShortDone, 0, currentLength.Value, elapsedTime, asyncOK.Value, asyncSlow.Value);
                             break;
                         case TestPhase.ReadLongFile:
-                            TimeInfoReadLong = new FileTimeInfo(TimeInfoReadLongDone, 0, currentLength.Value, elapsedTime);
+                            TimeInfoReadLong = new FileTimeInfo(TimeInfoReadLongDone, 0, currentLength.Value, elapsedTime, asyncOK.Value, asyncSlow.Value);
                             break;
                     }
                 }
@@ -166,14 +167,45 @@ namespace SDCardTester
             TimeInfoReadShortDone = new FileTimeInfo(TestPhase.ReadShortFile);
             TimeInfoReadLongDone = new FileTimeInfo(TestPhase.ReadLongFile);
         }
+        /// <summary>
+        /// Aktuálně běžící fáze testu
+        /// </summary>
         public TestPhase TimeInfoCurrentPhase { get; private set; }
+        /// <summary>
+        /// Informace o přenosech typu Save, souborů typu Short.
+        /// </summary>
         public FileTimeInfo TimeInfoSaveShort { get; private set; }
+        /// <summary>
+        /// Informace o přenosech typu Save, souborů typu Long.
+        /// </summary>
         public FileTimeInfo TimeInfoSaveLong { get; private set; }
+        /// <summary>
+        /// Informace o přenosech typu Read, souborů typu Short.
+        /// </summary>
         public FileTimeInfo TimeInfoReadShort { get; private set; }
+        /// <summary>
+        /// Informace o přenosech typu Read, souborů typu Long.
+        /// </summary>
         public FileTimeInfo TimeInfoReadLong { get; private set; }
+        /// <summary>
+        /// Informace o přenosech typu Save, souborů typu Short, které jsou již dokončeny.
+        /// K nim se přičte informace o aktuálně probíhajícím přenosu a výsledek se vloží do <see cref="TimeInfoSaveShort"/> = aktuální žhavá hodnota k zobrazení.
+        /// </summary>
         protected FileTimeInfo TimeInfoSaveShortDone { get; private set; }
+        /// <summary>
+        /// Informace o přenosech typu Save, souborů typu Long, které jsou již dokončeny.
+        /// K nim se přičte informace o aktuálně probíhajícím přenosu a výsledek se vloží do <see cref="TimeInfoSaveShort"/> = aktuální žhavá hodnota k zobrazení.
+        /// </summary>
         protected FileTimeInfo TimeInfoSaveLongDone { get; private set; }
+        /// <summary>
+        /// Informace o přenosech typu Read, souborů typu Short, které jsou již dokončeny.
+        /// K nim se přičte informace o aktuálně probíhajícím přenosu a výsledek se vloží do <see cref="TimeInfoSaveShort"/> = aktuální žhavá hodnota k zobrazení.
+        /// </summary>
         protected FileTimeInfo TimeInfoReadShortDone { get; private set; }
+        /// <summary>
+        /// Informace o přenosech typu Read, souborů typu Long, které jsou již dokončeny.
+        /// K nim se přičte informace o aktuálně probíhajícím přenosu a výsledek se vloží do <see cref="TimeInfoSaveShort"/> = aktuální žhavá hodnota k zobrazení.
+        /// </summary>
         protected FileTimeInfo TimeInfoReadLongDone { get; private set; }
         #endregion
         #region Vlastní test zápisu
@@ -192,14 +224,14 @@ namespace SDCardTester
             // Nejprve vepíšeme 512 souborů o velikosti 4096 B = 2 MB (2 097 152 B);
             // Zbývajících 3584 souborů bude mít velikost (celková velikost disku / 3584) zarovnáno na 4KB bloky, pro 8TB disk tedy velikost = 2 454 265 856 = 2.5 GB
             long totalSize = _Drive.TotalSize;
-            long longFilesLength = totalSize / LongFilesCount;                           // Délka velkého souboru tak, aby jich v jednom adresáři na prázdném disku bylo celkem max 4096 souborů
+            long longFilesLength = totalSize / LongFilesMaxCount;                           // Délka velkého souboru tak, aby jich v jednom adresáři na prázdném disku bylo celkem max 4096 souborů
             longFilesLength = (longFilesLength / ShortFilesLength) * ShortFilesLength;   // Zarovnáno na 4KB bloky
             long longFilesMinLength = LongFilesMinLength;
             if (longFilesLength < longFilesMinLength) longFilesLength = longFilesMinLength;        // Velké soubory by neměly být menší než 16 MB, aby bylo možno měřit rychlost zápisu i čtení, když někdy je deklarováno 80 MB/sec
 
-            TimeInfoCurrentPhase = TestPhase.SaveShortFile;
-            CallTestStep(true);
             int fileNumber = GetNextFileNumber(testDir);
+            TimeInfoCurrentPhase = (IsShortFile(fileNumber) ? TestPhase.SaveShortFile : TestPhase.SaveLongFile);
+            CallTestStep(true);
             this.RestartStopwatch();
             try
             {
@@ -207,19 +239,18 @@ namespace SDCardTester
                 {
                     if (IsShortFile(fileNumber))
                     {
-                        TimeInfoCurrentPhase = TestPhase.SaveShortFile;
-                        var timeInfoSaveShort = RunTestSaveOneFile(testDir, fileNumber, ShortFilesLength);
+                        var timeInfoSaveShort = RunTestSaveOneFile(testDir, fileNumber, out string fileName, ShortFilesLength, TestPhase.SaveShortFile);
                         TimeInfoSaveShortDone.Add(timeInfoSaveShort);
                     }
                     else
                     {
                         if (!CanWriteFile(longFilesLength)) break;
-                        TimeInfoCurrentPhase = TestPhase.SaveLongFile;
-                        var timeInfoSaveLong = RunTestSaveOneFile(testDir, fileNumber, longFilesLength);
-                        TimeInfoSaveShortDone.Add(timeInfoSaveLong);
+                        var timeInfoSaveLong = RunTestSaveOneFile(testDir, fileNumber, out string fileName, longFilesLength, TestPhase.SaveLongFile);
+                        TimeInfoSaveLongDone.Add(timeInfoSaveLong);
                     }
                     fileNumber++;
                 }
+                TimeInfoCurrentPhase = TestPhase.None;
             }
             catch (Exception exc) { }
             CallTestStep(true);
@@ -229,24 +260,36 @@ namespace SDCardTester
         /// </summary>
         /// <param name="testDir"></param>
         /// <param name="fileNumber"></param>
+        /// <param name="fileName">Out jméno souboru pro případný test čtení</param>
         /// <param name="targetLength"></param>
+        /// <param name="phase">Fáze, určuje zápis Short/Long souboru, bude vepsána do <see cref="TimeInfoCurrentPhase"/></param>
         /// <returns></returns>
-        protected FileTimeInfo RunTestSaveOneFile(string testDir, int fileNumber, long targetLength)
+        protected FileTimeInfo RunTestSaveOneFile(string testDir, int fileNumber, out string fileName, long targetLength, TestPhase phase)
         {
+            fileName = null;
             if (TestStopping) return null;
 
-            string fileName = GetFileName(testDir, fileNumber);
-            int bufferIndex = 0;
+            string saveFileName = GetFileName(testDir, fileNumber);
             if (TestStopping) return null;
+            fileName = saveFileName;
 
+            TimeInfoCurrentPhase = phase;
+            return RunTestSaveOneFileWriteAsync(testDir, fileNumber, fileName, targetLength, phase);
+        }
+
+        protected FileTimeInfo RunTestSaveOneFileWriteAsync(string testDir, int fileNumber, string fileName, long targetLength, TestPhase phase)
+        {
             long startTime = this.CurrentTime;
             long currentLength = 0L;
-            int asyncOk = 0;
+            int asyncOK = 0;
             int asyncSlow = 0;
             decimal asyncTimeOk = 0m;
+            int bufferIndex = 0;
+            int bufferLength = 0;
             using (System.IO.FileStream fst = new System.IO.FileStream(fileName, System.IO.FileMode.Create, System.IO.FileAccess.Write))
             {
-                var data = GetData(fileNumber, bufferIndex);
+                bufferLength = GetBufferLength(phase, currentLength, targetLength);
+                var data = GetData(fileNumber, bufferIndex, bufferLength);
                 bool doWrite = true;
                 while (doWrite && !TestStopping)
                 {
@@ -257,8 +300,10 @@ namespace SDCardTester
                         currentLength += (long)oneLength;
                         doWrite = currentLength < targetLength;
                         if (doWrite)
-                            data = GetData(fileNumber, ++bufferIndex);         // A zatímco se do souboru v jiném threadu zapisuje, my si zde připravujeme data do dalšího kola zápisu.
-
+                        {
+                            bufferLength = GetBufferLength(phase, currentLength, targetLength);
+                            data = GetData(fileNumber, ++bufferIndex, bufferLength);         // A zatímco se do souboru v jiném threadu zapisuje, my si zde připravujeme data do dalšího kola zápisu.
+                        }
                         if (task.IsCompleted)
                         {   // Problém: jsme pomalí! Než jsme si stihli připravit data (data = GetData()), tak se předchozí buffer stihl zapsat na cílový disk.
                             asyncSlow++;
@@ -266,23 +311,94 @@ namespace SDCardTester
                         else
                         {   // Sem bychom měli dojít vždy = značí to, že data pro příští buffer jsme připravili včas, a zápis souboru ještě nedoběhl = stíháme data generovat rychleji, než se zapisují...
                             long waitStart = this.CurrentTime;                 // Pro zajímavost: jak dlouho čekáme?
-                            asyncOk++;
+                            asyncOK++;
                             task.Wait();                                       // Počkáme na dokončení zápisu bufferu do souboru...
                             long waitDone = this.CurrentTime;
-                            decimal waitTime = this.GetSeconds(waitStart, waitDone);     // Sekundy čekání na Write jednoho bufferu.  Sem bychom měli dojít vždy.
+                            decimal waitTime = this.GetSeconds(waitStart, waitDone);     // Sekundy čekání na dokončení Write jednoho bufferu.  Sem bychom měli dojít vždy.
                             asyncTimeOk += waitTime;
                         }
                     }
+
                     var currentTime = this.CurrentTime;
-                    CallTestStep(false, currentLength, startTime, currentTime);
+                    CallTestStep(false, currentLength, startTime, currentTime, asyncOK, asyncSlow);
                 }
                 fst.Flush();
                 fst.Close();
             }
 
             decimal elapsedTime = this.GetSeconds(startTime);
-            return new FileTimeInfo(this.TimeInfoCurrentPhase, 1, currentLength, elapsedTime);
+            return new FileTimeInfo(phase, 1, currentLength, elapsedTime, asyncOK, asyncSlow);
         }
+        protected FileTimeInfo RunTestSaveOneFileBeginWrite(string testDir, int fileNumber, string fileName, long targetLength, TestPhase phase)
+        {
+            long startTime = this.CurrentTime;
+            long currentLength = 0L;
+            int asyncOK = 0;
+            int asyncSlow = 0;
+            decimal asyncTimeOk = 0m;
+            int bufferIndex = 0;
+            int bufferLength = 0;
+            using (System.IO.FileStream fst = new System.IO.FileStream(fileName, System.IO.FileMode.Create, System.IO.FileAccess.Write))
+            {
+                bufferLength = GetBufferLength(phase, currentLength, targetLength);
+                var data = GetData(fileNumber, bufferIndex, bufferLength);
+                bool doWrite = true;
+                while (doWrite && !TestStopping)
+                {
+                    var buffer = data;           // Nezbytnost!!! : protože 'buffer' odchází do FileStreamu k zápisu, a současně (protože .WriteAsync) se do jiné proměnné 'data' připravuje nový obsah pro další cyklus
+                    int oneLength = buffer.Length;
+
+                    var iAsync = fst.BeginWrite(buffer, 0, oneLength, null, null);
+                    currentLength += (long)oneLength;
+                    doWrite = currentLength < targetLength;
+                    if (doWrite)
+                    {
+                        bufferLength = GetBufferLength(phase, currentLength, targetLength);
+                        data = GetData(fileNumber, ++bufferIndex, bufferLength);         // A zatímco se do souboru v jiném threadu zapisuje, my si zde připravujeme data do dalšího kola zápisu.
+                    }
+
+                    if (iAsync.IsCompleted)
+                    {   // Problém: jsme pomalí! Než jsme si stihli připravit data (data = GetData()), tak se předchozí buffer stihl zapsat na cílový disk.
+                        asyncSlow++;
+                    }
+                    else
+                    {   // Sem bychom měli dojít vždy = značí to, že data pro příští buffer jsme připravili včas, a zápis souboru ještě nedoběhl = stíháme data generovat rychleji, než se zapisují...
+                        asyncOK++;
+                        iAsync.AsyncWaitHandle.WaitOne(1000);
+                    }
+
+                    var currentTime = this.CurrentTime;
+                    CallTestStep(false, currentLength, startTime, currentTime, asyncOK, asyncSlow);
+                }
+                fst.Flush();
+                fst.Close();
+            }
+
+            decimal elapsedTime = this.GetSeconds(startTime);
+            return new FileTimeInfo(phase, 1, currentLength, elapsedTime, asyncOK, asyncSlow);
+        }
+        protected FileTimeInfo RunTestSaveOneFileBinaryStream(string testDir, int fileNumber, string fileName, long targetLength, TestPhase phase)
+        {
+            long startTime = this.CurrentTime;
+            int asyncOK = 0;
+            int asyncSlow = 0;
+            int bufferIndex = 0;
+            int bufferLength = 0;
+            long currentLength = 0L;
+            bufferLength = GetBufferLength(phase, currentLength, targetLength);
+            var data = GetData(fileNumber, bufferIndex, bufferLength);
+            
+            using (var memoryStream = new System.IO.MemoryStream(data))
+            using (var fileStream = new System.IO.FileStream(fileName, System.IO.FileMode.CreateNew, System.IO.FileAccess.Write))
+            {
+                memoryStream.CopyToAsync(fileStream);
+                asyncOK++;
+            }
+
+            decimal elapsedTime = this.GetSeconds(startTime);
+            return new FileTimeInfo(phase, 1, currentLength, elapsedTime, asyncOK, asyncSlow);
+        }
+
         /// <summary>
         /// Mohu zapsat soubor dané délky? Máme na disku dost místa?
         /// </summary>
@@ -361,19 +477,59 @@ namespace SDCardTester
         /// </summary>
         protected decimal Frequency;
         #endregion
+        #region Vyhledání testovacích souborů
+        /// <summary>
+        /// Na daném disku vyhledá testovací soubory (podle jména adresáře a jména souborů) a vrátí jejich pole.
+        /// Pokud nic neexistuje, vrátí prázdné pole.
+        /// </summary>
+        /// <param name="drive"></param>
+        /// <returns></returns>
+        public static System.IO.FileInfo[] GetTestFiles(System.IO.DriveInfo drive)
+        {
+            System.IO.FileInfo[] files = null;
+            if (drive != null)
+            {
+                string dirName = System.IO.Path.Combine(drive.RootDirectory.FullName, TestDirectory);
+                var dirInfo = new System.IO.DirectoryInfo(dirName);
+                if (dirInfo.Exists)
+                {
+                    string searchPattern = FileNamePrefix + "?????" + FileNameExtension;
+                    var testFiles = dirInfo.GetFiles(searchPattern);
+                    files = testFiles.Where(f => IsTestFileName(f.FullName)).ToArray();
+                }
+            }
+            if (files is null) files = new System.IO.FileInfo[0];
+            return files.ToArray();
+        }
+        #endregion
         #region Generátor dat, tvorba adresáře, tvorba a detekce názvu souborů a jejich čísla
         /// <summary>
-        /// Vygeneruje blok dat do daného čísla souboru (počínaje 1) do daného bloku (počínaje 0), v délce <see cref="BufferLength"/>.
+        /// Určí délku bufferu pro další blok zápisu
+        /// </summary>
+        /// <param name="phase"></param>
+        /// <param name="currentLength"></param>
+        /// <param name="targetLength"></param>
+        /// <returns></returns>
+        private int GetBufferLength(TestPhase phase, long currentLength, long targetLength)
+        {
+            int optimalLength = ((phase == TestPhase.SaveShortFile || phase == TestPhase.ReadShortFile) ? ShortBufferLength : LongBufferLength);
+            long remainingLength = targetLength - currentLength;
+            if (remainingLength > 0L && remainingLength < (long)optimalLength)
+                optimalLength = (int)remainingLength;
+            return optimalLength;
+        }
+        /// <summary>
+        /// Vygeneruje blok dat do daného čísla souboru (počínaje 1) do daného bloku (počínaje 0), v délce <see cref="ShortBufferLength"/>.
         /// </summary>
         /// <param name="fileNumber"></param>
         /// <param name="bufferIndex"></param>
         /// <returns></returns>
-        protected byte[] GetData(int fileNumber, int bufferIndex)
+        protected byte[] GetData(int fileNumber, int bufferIndex, int bufferLength)
         {
-            byte[] buffer = new byte[BufferLength];
+            byte[] buffer = new byte[bufferLength];
             int sample = (15 * fileNumber + 7 * bufferIndex) % 256;
             int step = ((fileNumber % 5) + 1) * ((bufferIndex % 3) + 1);
-            for (int i = 0; i < BufferLength; i++)
+            for (int i = 0; i < bufferLength; i++)
             {
                 buffer[i] = (byte)sample;
                 sample = (sample + step) % 256;
@@ -406,7 +562,7 @@ namespace SDCardTester
         /// </summary>
         /// <param name="testDir"></param>
         /// <returns></returns>
-        protected int GetNextFileNumber(string testDir)
+        protected static int GetNextFileNumber(string testDir)
         {
             int lastNumber = 0;
             var files = System.IO.Directory.GetFiles(testDir, "*.*");
@@ -424,7 +580,7 @@ namespace SDCardTester
         /// </summary>
         /// <param name="fileName"></param>
         /// <returns></returns>
-        protected int GetFileNumber(string fileName)
+        protected static int GetFileNumber(string fileName)
         {
             IsTestFileName(fileName, out var number);
             return number;
@@ -435,7 +591,7 @@ namespace SDCardTester
         /// <param name="testDir"></param>
         /// <param name="number"></param>
         /// <returns></returns>
-        protected string GetFileName(string testDir, int number)
+        protected static string GetFileName(string testDir, int number)
         {
             string name = FileNamePrefix + number.ToString("00000") + FileNameExtension;
             return System.IO.Path.Combine(testDir, name);
@@ -445,7 +601,7 @@ namespace SDCardTester
         /// </summary>
         /// <param name="fileName"></param>
         /// <returns></returns>
-        protected bool IsTestFileName(string fileName)
+        protected static bool IsTestFileName(string fileName)
         {
             return IsTestFileName(fileName, out var _);
         }
@@ -455,7 +611,7 @@ namespace SDCardTester
         /// <param name="fileName"></param>
         /// <param name="fileNumber"></param>
         /// <returns></returns>
-        protected bool IsTestFileName(string fileName, out int fileNumber)
+        protected static bool IsTestFileName(string fileName, out int fileNumber)
         {
             if (!String.IsNullOrEmpty(fileName))
             {
@@ -475,16 +631,17 @@ namespace SDCardTester
         /// </summary>
         /// <param name="number"></param>
         /// <returns></returns>
-        protected bool IsShortFile(int number) { return (number <= ShortFilesCount); }
+        protected static bool IsShortFile(int number) { return (number <= ShortFilesCount); }
         protected const string TestDirectory = "_TestDir.1968";
         protected const string FileNamePrefix = "test~";
         protected const string FileNameExtension = ".tmp";
         protected const long ShortFilesLength = 4096L;
         protected const int ShortFilesCount = 512;
-        protected const int LongFilesCount = 3584;
+        protected const int LongFilesMaxCount = 3584;
         protected const long LongFileReserve = 32L * 1024L * 1024L;
         protected const long LongFilesMinLength = 16L * 1024L * 1024L;
-        protected const int BufferLength = 4096;
+        protected const int ShortBufferLength = 4096;
+        protected const int LongBufferLength = 1024 * 1024;
         #endregion
         #region SubClass
         /// <summary>
@@ -494,40 +651,48 @@ namespace SDCardTester
         {
             public FileTimeInfo(TestPhase testPhase)
             {
-                TestPhase = testPhase;
+                Phase = testPhase;
                 FileCount = 0;
                 TotalLength = 0L;
-                TimeTotal = 0m;
+                TimeTotalSec = 0m;
+                AsyncOK = 0;
+                AsyncSlow = 0;
             }
-            public FileTimeInfo(TestPhase testPhase, int fileCount, long totalLength, decimal timeTotal)
+            public FileTimeInfo(TestPhase testPhase, int fileCount, long totalLength, decimal timeTotalSec, int asyncOK, int asyncSlow)
             {
-                TestPhase = testPhase;
+                Phase = testPhase;
                 FileCount = fileCount;
                 TotalLength = totalLength;
-                TimeTotal = timeTotal;
+                TimeTotalSec = timeTotalSec;
+                AsyncOK = asyncOK;
+                AsyncSlow = asyncSlow;
             }
             public FileTimeInfo(FileTimeInfo a, FileTimeInfo b)
             {
-                TestPhase = a.TestPhase;
+                Phase = a.Phase;
                 FileCount = a.FileCount + b.FileCount;
                 TotalLength = a.TotalLength + b.TotalLength;
-                TimeTotal = a.TimeTotal + b.TimeTotal;
+                TimeTotalSec = a.TimeTotalSec + b.TimeTotalSec;
+                AsyncOK = a.AsyncOK + b.AsyncOK;
+                AsyncSlow = a.AsyncSlow + b.AsyncSlow;
             }
-            public FileTimeInfo(FileTimeInfo a, int fileCount, long totalLength, decimal timeTotal)
+            public FileTimeInfo(FileTimeInfo a, int fileCount, long totalLength, decimal timeTotalSec, int asyncOK, int asyncSlow)
             {
-                TestPhase = a.TestPhase;
+                Phase = a.Phase;
                 FileCount = a.FileCount + fileCount;
                 TotalLength = a.TotalLength + totalLength;
-                TimeTotal = a.TimeTotal + timeTotal;
+                TimeTotalSec = a.TimeTotalSec + timeTotalSec;
+                AsyncOK = a.AsyncOK + asyncOK;
+                AsyncSlow = a.AsyncSlow + asyncSlow;
             }
             public override string ToString()
             {
-                return $"Phase: {TestPhase}; Count: {FileCount}; Length: {TotalLength}; Time: {TimeTotal}";
+                return $"Phase: {Phase}; Count: {FileCount}; Length: {TotalLength}; Time: {TimeTotalSec}";
             }
             /// <summary>
             /// Testovací fáze = typ testu
             /// </summary>
-            public TestPhase TestPhase { get; private set; }
+            public TestPhase Phase { get; private set; }
             /// <summary>
             /// Celkový počet souborů
             /// </summary>
@@ -537,9 +702,21 @@ namespace SDCardTester
             /// </summary>
             public long TotalLength { get; private set; }
             /// <summary>
-            /// Celkový čas
+            /// Celkový čas v sekundách
             /// </summary>
-            public decimal TimeTotal { get; private set; }
+            public decimal TimeTotalSec { get; private set; }
+            /// <summary>
+            /// Počet asynchronních přístupu s časem OK
+            /// </summary>
+            public int AsyncOK { get; private set; }
+            /// <summary>
+            /// Počet asynchronních přístupu s časem Slow
+            /// </summary>
+            public int AsyncSlow { get; private set; }
+            /// <summary>
+            /// Počet asynchronních přístupu celkem
+            /// </summary>
+            public int AsyncCount { get { return AsyncOK + AsyncSlow; } }
             /// <summary>
             /// Do this instance přidá data z dodané instance
             /// </summary>
@@ -550,7 +727,9 @@ namespace SDCardTester
                 {
                     this.FileCount += add.FileCount;
                     this.TotalLength += add.TotalLength;
-                    this.TimeTotal += add.TimeTotal;
+                    this.TimeTotalSec += add.TimeTotalSec;
+                    this.AsyncOK += add.AsyncOK;
+                    this.AsyncSlow += add.AsyncSlow;
                 }
             }
         }
@@ -567,7 +746,200 @@ namespace SDCardTester
         }
         #endregion
     }
+    /// <summary>
+    /// Vizuální control zobrazující data z <see cref="DriveTester.FileTimeInfo"/>
+    /// </summary>
+    public class DriveTestTimePhaseControl : DriveResultControl
+    {
+        public DriveTestTimePhaseControl()
+            : base()
+        {
+        }
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            Rectangle clientBounds = this.ClientRectangle;
+            Rectangle outerBounds = new Rectangle(clientBounds.X + 1, clientBounds.Y + 1, clientBounds.Width - 2, clientBounds.Height - 2);
+            Rectangle innerBounds = new Rectangle(outerBounds.X + 2, outerBounds.Y + 2, outerBounds.Width - 4, outerBounds.Height - 4);
+            this.PaintBackground(e, clientBounds, outerBounds, innerBounds);
+            this.PaintRatio(e, clientBounds, outerBounds, innerBounds);
+            this.PaintText(e, clientBounds, outerBounds, innerBounds);
+        }
+        private void PaintBackground(PaintEventArgs e, Rectangle clientBounds, Rectangle outerBounds, Rectangle innerBounds)
+        {
+            Painter.PaintRectangle(e.Graphics, this.BackColor, clientBounds);            // Šedá barva okolo
+            Painter.PaintRectangle(e.Graphics, this.BackgroundColor, outerBounds);       // Barevný rámeček bez 3D efektu
+        }
+        /// <summary>
+        /// Vykreslí poměr chybných Async kroků (=počet případů, kdy algoritmus je pomalejší než zápis na disk)
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="clientBounds"></param>
+        /// <param name="outerBounds"></param>
+        /// <param name="innerBounds"></param>
+        private void PaintRatio(PaintEventArgs e, Rectangle clientBounds, Rectangle outerBounds, Rectangle innerBounds)
+        {
+            decimal asyncRatio = this.AsyncRatio;
+            if (asyncRatio <= 0m) return;
 
-    public class DriveTestPhaseControl : DriveResultControl
-    { }
+            decimal widthRatio = (asyncRatio < 0.1m ? (10m * asyncRatio) : 1m);
+            int widthPixel = (int)(Math.Round((widthRatio * innerBounds.Width), 0));
+            if (widthPixel < 5) widthPixel = 5;
+            Rectangle ratioBounds = new Rectangle(innerBounds.X, innerBounds.Bottom - 3, widthPixel, 5);
+            Painter.PaintBar3D(e.Graphics, Skin.TestAsyncErrorColor, ratioBounds);
+        }
+        /// <summary>
+        /// Vykreslí texty
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="clientBounds"></param>
+        /// <param name="outerBounds"></param>
+        /// <param name="innerBounds"></param>
+        private void PaintText(PaintEventArgs e, Rectangle clientBounds, Rectangle outerBounds, Rectangle innerBounds)
+        {
+            var font = this.Font;
+            bool disposeFont = false;
+            if (this.IsActive)
+            {
+                font = new Font(font, FontStyle.Bold);
+                disposeFont = true;
+            }
+            Painter.PaintText(e.Graphics, font, this.TitleText, this.ForeColor, innerBounds, ContentAlignment.MiddleLeft);
+            Painter.PaintText(e.Graphics, font, this.TimeText, this.ForeColor, innerBounds, ContentAlignment.MiddleRight);
+
+            if (disposeFont)
+                font.Dispose();
+        }
+        /// <summary>
+        /// Fáze tohoto času
+        /// </summary>
+        private DriveTester.TestPhase TimePhase { get { return (_TimeInfo?.Phase ?? DriveTester.TestPhase.None); } }
+        /// <summary>
+        /// Poměr chybných Async proti celkovému počtu Async v rozmezí 0 - 1
+        /// </summary>
+        private decimal AsyncRatio
+        {
+            get
+            {
+                decimal ratio = 0m;
+                var timeInfo = this._TimeInfo;
+                if (timeInfo != null && timeInfo.AsyncCount > 0)
+                {
+                    ratio = (decimal)timeInfo.AsyncSlow / (decimal)timeInfo.AsyncCount;
+                    ratio = (ratio < 0m ? 0m : (ratio < 1m ? ratio : 1m));
+                }
+                return ratio;
+            }
+        }
+        private string TitleText
+        {
+            get
+            {
+                switch (TimePhase)
+                {
+                    case DriveTester.TestPhase.None: return "?";
+                    case DriveTester.TestPhase.SaveShortFile: return "Zápis krátkých souborů";
+                    case DriveTester.TestPhase.SaveLongFile: return "Zápis dlouhých souborů";
+                    case DriveTester.TestPhase.ReadShortFile: return "Čtení krátkých souborů";
+                    case DriveTester.TestPhase.ReadLongFile: return "Čtení dlouhých souborů";
+                }
+                return "?";
+            }
+        }
+        private string TimeText
+        {
+            get
+            {
+                decimal value = 0m;
+                string text = "";
+                var timeInfo = this._TimeInfo;
+                if (timeInfo != null)
+                {
+                    switch (TimePhase)
+                    {
+                        case DriveTester.TestPhase.SaveShortFile:
+                            value = timeInfo.FileCount;
+                            text = "file/sec";
+                            break;
+                        case DriveTester.TestPhase.SaveLongFile:
+                            value = ((decimal)timeInfo.TotalLength) / 1000000m;
+                            text = "MB/sec";
+                            break;
+                        case DriveTester.TestPhase.ReadShortFile:
+                            value = timeInfo.FileCount;
+                            text = "file/sec";
+                            break;
+                        case DriveTester.TestPhase.ReadLongFile:
+                            value = ((decimal)timeInfo.TotalLength) / 1000000m;
+                            text = "MB/sec";
+                            break;
+                    }
+                    decimal seconds = timeInfo.TimeTotalSec;
+                    if (value > 0m &&  text.Length > 0 && seconds > 0m)
+                    {
+                        value = value / seconds;
+                        value = Math.Round(value, 3);
+                        text = value.ToString() + " " + text;
+                    }
+                }
+                return text;
+            }
+        }
+        private Color BackgroundColor
+        {
+            get
+            {
+                switch (TimePhase)
+                {
+                    case DriveTester.TestPhase.SaveShortFile: return Skin.TestPhaseSaveShortFileBackColor;
+                    case DriveTester.TestPhase.SaveLongFile: return Skin.TestPhaseSaveLongFileBackColor;
+                    case DriveTester.TestPhase.ReadShortFile: return Skin.TestPhaseReadShortFileBackColor;
+                    case DriveTester.TestPhase.ReadLongFile: return Skin.TestPhaseReadLongFileBackColor;
+                }
+                return this.BackColor;
+            }
+        }
+     
+        /// <summary>
+        /// Info o čase.
+        /// Po setování hodnoty se automaticky vyvolá Refresh.
+        /// </summary>
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+        public DriveTester.FileTimeInfo TimeInfo { get { return _TimeInfo; } set { _TimeInfo = value; this.Refresh(); } } private DriveTester.FileTimeInfo _TimeInfo;
+        /// <summary>
+        /// Info o aktuální fázi testu. To nemusí být zdejší fáze.
+        /// Podle ní se určuje, zda zdejší čas <see cref="TimeInfo"/> (jeho fáze <see cref="DriveTester.FileTimeInfo.Phase"/>) je ta aktivní.
+        /// Po setování takové hodnoty fáze, která změní hodnotu v <see cref="IsActive"/>, se automaticky vyvolá Refresh.
+        /// </summary>
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+        public DriveTester.TestPhase CurrentActivePhase 
+        { 
+            get { return _CurrentActivePhase; } 
+            set 
+            {
+                if (value != _CurrentActivePhase)
+                {
+                    bool oldActive = IsActive;
+                    _CurrentActivePhase = value;
+                    bool newActive = IsActive;
+                    if (oldActive != newActive)
+                        this.Refresh();
+                }
+            } 
+        }
+        private DriveTester.TestPhase _CurrentActivePhase;
+        /// <summary>
+        /// Info o tom, že fáze zdejšího času je právě ta aktivní
+        /// </summary>
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+        public bool IsActive { get { return (_TimeInfo != null && _TimeInfo.Phase == _CurrentActivePhase); } }
+        /// <summary>
+        /// Optimální výška
+        /// </summary>
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+        protected override int CurrentOptimalHeight { get { return OptimalHeight; } }
+        /// <summary>
+        /// Optimální výška
+        /// </summary>
+        public static int OptimalHeight {  get { return 35; } }
+    }
 }

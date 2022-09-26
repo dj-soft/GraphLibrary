@@ -1,5 +1,5 @@
 ﻿
-namespace SDCardTester
+namespace DjSoftSDCardTester
 {
     partial class MainForm
     {
@@ -54,7 +54,7 @@ namespace SDCardTester
             this.TestReadButton = new System.Windows.Forms.Button();
             this.StopPanel = new System.Windows.Forms.Panel();
             this.StopButton = new System.Windows.Forms.Button();
-            this.VisualMapPanel = new SDCardTester.TestControl();
+            this.VisualMapPanel = new DjSoftSDCardTester.LinearMapControl();
             this.ResultsInfoPanel = new System.Windows.Forms.Panel();
             this.UserPanel.SuspendLayout();
             this.DrivesPanel.SuspendLayout();
@@ -123,7 +123,7 @@ namespace SDCardTester
             // 
             this.RefreshButton.FlatAppearance.BorderSize = 0;
             this.RefreshButton.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.RefreshButton.Image = global::SDCardTester.Properties.Resources.view_refresh;
+            this.RefreshButton.Image = global::DjSoftSDCardTester.Properties.Resources.view_refresh;
             this.RefreshButton.Location = new System.Drawing.Point(199, 49);
             this.RefreshButton.Name = "RefreshButton";
             this.RefreshButton.Size = new System.Drawing.Size(40, 32);
@@ -294,7 +294,7 @@ namespace SDCardTester
             // AnalyseContentButton
             // 
             this.AnalyseContentButton.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(238)));
-            this.AnalyseContentButton.Image = global::SDCardTester.Properties.Resources.office_chart_pie;
+            this.AnalyseContentButton.Image = global::DjSoftSDCardTester.Properties.Resources.office_chart_pie;
             this.AnalyseContentButton.Location = new System.Drawing.Point(55, 3);
             this.AnalyseContentButton.Name = "AnalyseContentButton";
             this.AnalyseContentButton.Size = new System.Drawing.Size(176, 50);
@@ -308,7 +308,7 @@ namespace SDCardTester
             // TestSaveButton
             // 
             this.TestSaveButton.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(238)));
-            this.TestSaveButton.Image = global::SDCardTester.Properties.Resources.media_floppy_3_5_mount_2;
+            this.TestSaveButton.Image = global::DjSoftSDCardTester.Properties.Resources.media_floppy_3_5_mount_2;
             this.TestSaveButton.Location = new System.Drawing.Point(55, 59);
             this.TestSaveButton.Name = "TestSaveButton";
             this.TestSaveButton.Size = new System.Drawing.Size(176, 50);
@@ -322,7 +322,7 @@ namespace SDCardTester
             // TestReadButton
             // 
             this.TestReadButton.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(238)));
-            this.TestReadButton.Image = global::SDCardTester.Properties.Resources.document_revert_4;
+            this.TestReadButton.Image = global::DjSoftSDCardTester.Properties.Resources.document_revert_4;
             this.TestReadButton.Location = new System.Drawing.Point(55, 115);
             this.TestReadButton.Name = "TestReadButton";
             this.TestReadButton.Size = new System.Drawing.Size(176, 50);
@@ -345,7 +345,7 @@ namespace SDCardTester
             // StopButton
             // 
             this.StopButton.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(238)));
-            this.StopButton.Image = global::SDCardTester.Properties.Resources.road_sign_us_stop;
+            this.StopButton.Image = global::DjSoftSDCardTester.Properties.Resources.road_sign_us_stop;
             this.StopButton.Location = new System.Drawing.Point(55, 3);
             this.StopButton.Name = "StopButton";
             this.StopButton.Size = new System.Drawing.Size(176, 50);
@@ -397,7 +397,7 @@ namespace SDCardTester
 
         private System.Windows.Forms.Panel UserPanel;
         private System.Windows.Forms.ComboBox DriveCombo;
-        private SDCardTester.TestControl VisualMapPanel;
+        private DjSoftSDCardTester.LinearMapControl VisualMapPanel;
         private System.Windows.Forms.Label DriveLabel;
         private System.Windows.Forms.CheckBox OnlyRemovableCheck;
         private System.Windows.Forms.TextBox DriveTypeText;
