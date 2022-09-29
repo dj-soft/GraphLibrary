@@ -223,7 +223,7 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Podle tohoto režimu bude po změně času odeslán command <see cref="GuiRequest.COMMAND_TimeChange"/>.
         /// Servisní funkce může reagovat = donačte další data, a v <see cref="GuiResponse"/> předá nové řádky a nové prvky grafů pro nový časový interval.
         /// Plugin je zařadí do svých stávajících vizuálních dat a zobrazí je.<br/>
-        /// Plugin odesílá tuto akci okamžitě po kždé sebemenší změně na časové ose, pokud <see cref="TimeChangeSendDelay"/> je 0 (nebo záporné).
+        /// Plugin odesílá tuto akci okamžitě po každé sebemenší změně na časové ose, pokud <see cref="TimeChangeSendDelay"/> je 0 (nebo záporné).
         /// Pokud je v <see cref="TimeChangeSendDelay"/> kladná hodnota, pak se informace o změně odešle na server až poté, kdy od poslední interaktivní změny uběhl daný čas.
         /// </summary>
         public TimeChangeSendMode TimeChangeSend { get; set; }
@@ -4170,7 +4170,7 @@ namespace Noris.LCS.Base.WorkScheduler
     #endregion
     #region GuiToolbarPanel : Celý Toolbar
     /// <summary>
-    /// GuiToolbarPanel : Celý Toolbar, obsahuje položky v seznamu <see cref="Items"/> 
+    /// GuiToolbarPanel : Celý Toolbar, obsahuje položky v seznamu <see cref="Items"/>  pro základní nabídku funkcí, a definici Ribbonu <see cref="RibbonPages"/> pro definici menu v Nephrite
     /// </summary>
     public sealed class GuiToolbarPanel : GuiBase
     {
@@ -4188,13 +4188,33 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public bool ToolbarVisible { get; set; }
         /// <summary>
+        /// Používat systémový Ribbon.
+        /// Pak budou prvky Ribbonu hledány a načítány z <see cref="RibbonPages"/> (jednotlivé stránky Ribbonu, jejich grupy, jejich prvky), a WorkScheduler control nebude ve své ploše vykreslovat žádné menu, pouze data.
+        /// Pokud bude <see cref="RibbonPages"/> prázdné, a přitom <see cref="UseSystemRibbon"/> bude true, pak se plugin pokusí vytvořit definici Ribbonu z položek nalezených v <see cref="Items"/> (usnadnění přechodu Green =&gt; Nephrite).
+        /// <para/>
+        /// Lze nastavit na true jen pro klienta Nephrite. Pokud bude nastaveno true pro klienta, který Ribbon nepodporuje (tj. klient Green), pak dojde k chybě.
+        /// </summary>
+        public bool UseSystemRibbon { get; set; }
+        /// <summary>
         /// Které systémové položky zobrazovat v Toolbaru?
         /// </summary>
         public ToolbarSystemItem ToolbarShowSystemItems { get; set; }
         /// <summary>
-        /// Všechny položky obsažené v Toolbaru
+        /// Všechny položky obsažené v Toolbaru.
+        /// Pokud je spuštěno na klientu Nephrite a bude používán Ribbon <see cref="UseSystemRibbon"/>, pak se prvky menu (Ribbonu) očekávají prioritně v <see cref="RibbonPages"/>.
+        /// Pokud ale <see cref="RibbonPages"/> bude prázdné, a v této property <see cref="Items"/> budou nějaké prvky, použijí se tyto prvky do základní stránky Ribbonu = bez nutnosti přeprogramovat definici pluginu mezi Green a Nephrite.
         /// </summary>
         public List<GuiToolbarItem> Items { get; set; }
+        /// <summary>
+        /// Definice stránek Ribbonu pro klienta Nephrite.
+        /// Vyhodnocuje se pouze na klientu Nephrite a pouze když <see cref="UseSystemRibbon"/> bude true, jindy se ignoruje.
+        /// <para/>
+        /// Pokud chce autor vytvořit základní stránku Ribbonu, která se "přidá" do základní stránky Ribbonu "Domů", pak nechť ponechá prázdné její jméno "Name" i titulek "Title".<br/>
+        /// Pokud autor chce definovat další speciální stránku Ribbonu, nic mu v tom nebrání, nechť ji do tohoto pole přidá s explicitním pojmenováním.
+        /// <para/>
+        /// Do stránky je nutno přidat grupu (nebo více) a do nich pak konkrétní Itemy.
+        /// </summary>
+        public List<GuiRibbonPage> RibbonPages { get; set; }
         /// <summary>
         /// Přidá další prvek do this seznamu
         /// </summary>
@@ -4211,6 +4231,16 @@ namespace Noris.LCS.Base.WorkScheduler
         /// <param name="items"></param>
         public void AddRange(IEnumerable<GuiToolbarItem> items) { this.Items.AddRange(items); }
         /// <summary>
+        /// Přidá další stránku Ribbonu do <see cref="RibbonPages"/>
+        /// </summary>
+        /// <param name="page"></param>
+        public void Add(GuiRibbonPage page)
+        {
+            if (this.RibbonPages == null)
+                this.RibbonPages = new List<GuiRibbonPage>();
+            this.RibbonPages.Add(page);
+        }
+        /// <summary>
         /// Počet prvků v kolekci
         /// </summary>
         public int Count { get { return this.Items.Count; } }
@@ -4224,14 +4254,14 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Potomek zde vrací soupis svých Child prvků
         /// </summary>
         [PersistingEnabled(false)]
-        protected override IEnumerable<IGuiItem> Childs { get { return this.Items; } }
+        protected override IEnumerable<IGuiItem> Childs { get { return Union(this.Items, this.RibbonPages); } }
     }
     #endregion
     #region GuiToolbarItem : Položka zobrazovaná v Toolbaru
     /// <summary>
     /// GuiToolbarItem : Položka zobrazovaná v Toolbaru
     /// </summary>
-    public sealed class GuiToolbarItem : GuiTextItem
+    public class GuiToolbarItem : GuiTextItem
     {
         /// <summary>
         /// Konstruktor
@@ -4366,7 +4396,7 @@ namespace Noris.LCS.Base.WorkScheduler
         public string ActionTargetNames { get; set; }
         /// <summary>
         /// Vlastnosti pro TrackBar. 
-        /// POužije se jen tehdy, když <see cref="ItemType"/> == <see cref="FunctionGlobalItemType.TrackBar"/>
+        /// Použije se jen tehdy, když <see cref="ItemType"/> == <see cref="FunctionGlobalItemType.TrackBar"/>
         /// Výchozí hodnota je null.
         /// </summary>
         public GuiTrackBarSettings TrackBarSettings { get; set; }
@@ -4433,6 +4463,115 @@ namespace Noris.LCS.Base.WorkScheduler
         /// Aktivace této funkce NEBUDE volat funkci aplikačního serveru
         /// </summary>
         SuppressCallAppHost = 0x1000000000000000        // Nastaven bit 60
+    }
+    #endregion
+    #region GuiRibbonPage + GuiRibbonGroup + GuiRibbonItem
+    /// <summary>
+    /// Jedna stránka Ribbonu
+    /// </summary>
+    public class GuiRibbonPage : GuiTextItem
+    {
+        /// <summary>
+        /// Grupy obsažené v této stránce
+        /// </summary>
+        public List<GuiRibbonGroup> Groups { get; set; }
+        /// <summary>
+        /// Přidá další grupu do this stránky Ribbonu
+        /// </summary>
+        /// <param name="group"></param>
+        public void AddGroup(GuiRibbonGroup group)
+        {
+            if (this.Groups == null)
+                this.Groups = new List<GuiRibbonGroup>();
+            this.Groups.Add(group);
+        }
+    }
+    /// <summary>
+    /// Jedna grupa Ribbonu
+    /// </summary>
+    public class GuiRibbonGroup : GuiTextItem
+    {
+        /// <summary>
+        /// Prvky obsažené v této grupě
+        /// </summary>
+        public List<GuiRibbonItem> Items { get; set; }
+        /// <summary>
+        /// Přidá další prvek do this grupy Ribbonu
+        /// </summary>
+        /// <param name="item"></param>
+        public void AddItem(GuiRibbonItem item)
+        {
+            if (this.Items == null)
+                this.Items = new List<GuiRibbonItem>();
+            this.Items.Add(item);
+        }
+    }
+    /// <summary>
+    /// Jeden prvek (tlačítko) Ribbonu
+    /// </summary>
+    public class GuiRibbonItem : GuiToolbarItem
+    {
+        /// <summary>
+        /// Styl zobrazení tohoto prvku
+        /// </summary>
+        public GuiRibbonItemStyles? RibbonStyle { get; set; }
+        /// <summary>
+        /// Název nebo binární obsah obrázku pro stav Disabled
+        /// </summary>
+        public GuiImage DisabledImage { get; set; }
+        /// <summary>
+        /// Zobrazit v Search menu?
+        /// </summary>
+        public bool? VisibleInSearchMenu { get; set; }
+        /// <summary>
+        /// Přidané texty, podle kterých může být prvek vyhledán v Search menu. Texty jsou oddělené čárkou (comma-separated).
+        /// </summary>
+        public string SearchTags { get; set; }
+        /// <summary>
+        /// SubPrvky obsažené v tomto prvku = položky menu atd
+        /// </summary>
+        public List<GuiRibbonItem> SubItems { get; set; }
+        /// <summary>
+        /// Přidá další podřízený prvek do this prvku Ribbonu
+        /// </summary>
+        /// <param name="item"></param>
+        public void AddSubItem(GuiRibbonItem item)
+        {
+            if (this.SubItems == null)
+                this.SubItems = new List<GuiRibbonItem>();
+            this.SubItems.Add(item);
+        }
+    }
+    /// <summary>
+    /// Styl zobrazení prvku Ribbonu (velikost, text).
+    /// Lists the options that specify the bar item's possible states within a Ribbon Control.
+    /// </summary>
+    [Flags]
+    public enum GuiRibbonItemStyles
+    {
+        /// <summary>
+        /// If active, an item's possible states with a Ribbon Control are determined based on the item's settings. 
+        /// For example, if the item is associated with a small image and isn't associated with a large image, 
+        /// its possible states within the Ribbon Control are DevExpress.XtraBars.Ribbon.RibbonItemStyles.SmallWithoutText 
+        /// and DevExpress.XtraBars.Ribbon.RibbonItemStyles.SmallWithText.
+        /// </summary>
+        Default = 0,
+        /// <summary>
+        /// If active, a bar item can be displayed as a large bar item.
+        /// </summary>
+        Large = 1,
+        /// <summary>
+        /// If active, an item can be displayed like a smalL bar item with its caption.
+        /// </summary>
+        SmallWithText = 2,
+        /// <summary>
+        /// If active, an item can be displayed like a smalL bar item without its caption.
+        /// </summary>
+        SmallWithoutText = 4,
+        /// <summary>
+        /// If active, enables all other options.
+        /// </summary>
+        All = 7
     }
     #endregion
     #region GuiContextMenuSet : Všechny položky všech Kontextových menu

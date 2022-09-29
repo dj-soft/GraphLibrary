@@ -1197,6 +1197,7 @@ namespace Noris.LCS.Base.WorkScheduler
                 case "System.Drawing.RectangleF": return StringToRectangleF(text);
                 case "System.Drawing.Size": return StringToSize(text);
                 case "System.Drawing.SizeF": return StringToSizeF(text);
+                case "System.String": return text;
             }
             return null;
         }

@@ -24,26 +24,42 @@ namespace Asol.Tools.WorkScheduler.Scheduler
     {
         #region Konstrukce a privátní proměnné
         /// <summary>
+        /// Protože implementuji IFunctionProvider, stává se ze mě IPlugin.
+        /// A jádro systému si vytváří slovník všech pluginů - takže si vygeneruje 
+        /// pro každý typ pluginu jednu instanci, aby z ní mohl číst její pluginové vlastnosti.
+        /// Instance generuje pomocí <see cref="System.Activator"/> a vyžaduje k tomu bezparametrický konstruktor.
+        /// Zde jej implementujeme, ale nic v něm neděláme.
+        /// </summary>
+        public MainData() { }
+        /// <summary>
         /// Konstruktor pro konkrétního hostitele
         /// </summary>
         /// <param name="host"></param>
-        public MainData(IAppHost host) : this(host, null) { }
+        public MainData(IAppHost host) : this(host, null, true) { }
         /// <summary>
         /// Konstruktor pro konkrétního hostitele a číslo Session
         /// </summary>
         /// <param name="host"></param>
         /// <param name="sessionId"></param>
-        public MainData(IAppHost host, int? sessionId)
+        public MainData(IAppHost host, int? sessionId) : this(host, sessionId, true) { }
+        /// <summary>
+        /// Konstruktor pro konkrétního hostitele a číslo Session
+        /// </summary>
+        /// <param name="host"></param>
+        /// <param name="sessionId"></param>
+        /// <param name="useToolBar">Vygenerovat vlastní toolbar? V Nephrite může být false, pak si Connector musí převzít definici toolbaru/ribbonu z dat, a taky po stisku tlačítka musí volat metody pro provedení zvolené akce, typicky <see cref="RunToolBarItemClick(GuiToolbarItem)"/> a pod.</param>
+        public MainData(IAppHost host, int? sessionId, bool useToolBar)
         {
             this._DataState = DataStateType.Initialising;
             this._AppHost = host;
             this._HasHost = (host != null);
             this._HasStyles = (host != null && host.HasStyles);
             this._SessionId = sessionId;
+            this._UseToolBar = useToolBar;
             this.Init();
 
             this._DataState = DataStateType.PrepareConfig;
-            using (App.Trace.Scope(TracePriority.Priority2_Lowest,  "SchedulerConfig", ".ctor(null)", ""))
+            using (App.Trace.Scope(TracePriority.Priority2_Lowest, "SchedulerConfig", ".ctor(null)", ""))
                 this._Config = new SchedulerConfig(null);
 
             this._DataState = DataStateType.Initialised;
@@ -65,19 +81,16 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         private int? _SessionId;
         /// <summary>
+        /// Máme generovat vizuální ToolBar?
+        /// Pokud je false, pak funkci Toolbaru přebírá hostitel = generuje Ribbon.
+        /// </summary>
+        private bool _UseToolBar;
+        /// <summary>
         /// Pořadové číslo requestu
         /// </summary>
         private int _RequestId;
         private GuiData _GuiData;
         PluginActivity IPlugin.Activity { get { return PluginActivity.Standard; } }
-        /// <summary>
-        /// Protože implementuji IFunctionProvider, stává se ze mě IPlugin.
-        /// A jádro systému si vytváří slovník všech pluginů - takže si vygeneruje 
-        /// pro každý typ pluginu jednu instanci, aby z ní mohl číst její pluginové vlastnosti.
-        /// Instance generuje pomocí <see cref="System.Activator"/> a vyžaduje k tomu bezparametrický konstruktor.
-        /// Zde jej implementujeme, ale nic v něm neděláme.
-        /// </summary>
-        public MainData() { }
         /// <summary>
         /// Inicializace
         /// </summary>
@@ -401,17 +414,64 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         #endregion
         #region Toolbar
         /// <summary>
+        /// Vyvolá hostitel, který převzal roli Toolbaru (pomocí Ribbonu) v situaci, kdy uživatel kliknul na konkrétní prvek Ribbonu, typu Systémová akce
+        /// </summary>
+        /// <param name="systemAction"></param>
+        public void RunToolBarItemClick(ToolbarSystemItem systemAction) { _ToolBarItemRunSystemAction(systemAction); }
+        /// <summary>
+        /// Vyvolá hostitel, který převzal roli Toolbaru (pomocí Ribbonu) v situaci, kdy uživatel kliknul na konkrétní prvek Ribbonu, typu Aplikační button
+        /// </summary>
+        /// <param name="guiToolbarItem"></param>
+        public void RunToolBarItemClick(GuiToolbarItem guiToolbarItem) { _ToolBarItemRunApplicationAction(guiToolbarItem, null); }
+        /// <summary>
+        /// Vyvolá hostitel, který převzal roli Toolbaru (pomocí Ribbonu) v situaci, kdy uživatel změnil stav Checked na konkrétním prvku Ribbonu, typu Systémová akce
+        /// </summary>
+        /// <param name="systemAction"></param>
+        /// <param name="isChecked"></param>
+        public void RunToolBarSelectedChange(ToolbarSystemItem systemAction, bool isChecked) { _ToolBarItemSelectedChangeSystem(systemAction, isChecked); }
+        /// <summary>
+        /// Vyvolá hostitel, který převzal roli Toolbaru (pomocí Ribbonu) v situaci, kdy uživatel změnil stav Checked na konkrétním prvku Ribbonu, typu Aplikační button
+        /// </summary>
+        /// <param name="guiToolbarItem"></param>
+        public void RunToolBarSelectedChange(GuiToolbarItem guiToolbarItem) { _ToolBarItemSelectedChangeApplication(guiToolbarItem); }
+        /// <summary>
+        /// Vyvolá hostitel, který převzal roli Toolbaru (pomocí Ribbonu) v situaci, kdy chce uložit nastavení configu GUI
+        /// </summary>
+        public void RunToolBarSaveToConfig() { this._SaveMainControlToConfig(); }
+        /// <summary>
         /// Načte položky do Toolbaru z dodaných dat Gui
         /// </summary>
         /// <param name="guiToolbarPanel"></param>
         private void _LoadGuiToolbar(GuiToolbarPanel guiToolbarPanel)
         {
-            this._GuiToolbarPanel = guiToolbarPanel;
+            this._GuiToolBarPanel = guiToolbarPanel;
         }
         /// <summary>
         /// Data o ToolBaru z Gui
         /// </summary>
-        private GuiToolbarPanel _GuiToolbarPanel;
+        private GuiToolbarPanel _GuiToolBarPanel;
+        /// <summary>
+        /// Všechny položky v Toolbaru / Ribbonu.
+        /// Pochází buď z <see cref="GuiToolbarPanel.RibbonPages"/>, pokud není null a je povoleno v <see cref="GuiToolbarPanel.UseSystemRibbon"/>;
+        /// anebo z <see cref="GuiToolbarPanel.Items"/>.
+        /// Anebo je null.
+        /// </summary>
+        private GuiToolbarItem[] _GuiToolBarItems
+        {
+            get
+            {
+                var panel = _GuiToolBarPanel;
+                if (panel is null) return null;
+                if (panel.UseSystemRibbon && panel.RibbonPages != null)
+                    return panel.RibbonPages
+                        .Where(p => p.Groups != null).SelectMany(p => p.Groups)
+                        .Where(g => g.Items != null).SelectMany(g => g.Items)
+                        .ToArray();
+                if (panel.Items != null)
+                    return panel.Items.ToArray();
+                return null;
+            }
+        }
         /// <summary>
         /// Grupa v ToolBaru, obsahující systémové položky pro časovou osu
         /// </summary>
@@ -421,20 +481,38 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         private FunctionGlobalGroup _ToolbarSystemSettingsGroup;
         /// <summary>
-        /// Z dat v <see cref="_GuiToolbarPanel"/> naplní toolbar
+        /// Z dat v <see cref="_GuiToolBarPanel"/> naplní toolbar
         /// </summary>
         private void _FillMainControlToolbar()
         {
             using (App.Trace.Scope(TracePriority.Priority3_BellowNormal, "MainData", "FillMainControlToolbar", ""))
             {
+                this._MainControl.ToolBarItemClicked -= _ToolBarItemClicked;
+                this._MainControl.ToolBarItemSelectedChange -= _ToolBarItemSelectedChange;
+                this._MainControl.ToolBarStatusChanged -= _ToolBarStatusChanged;
+
                 this._ToolBarGuiItems = new List<ToolBarItem>();
                 this._MainControl.ClearToolBar();
-                this._MainControl.ToolBarVisible = this._GuiToolbarPanel.ToolbarVisible;
-                this._FillMainControlToolbarFromSystem();
-                this._FillMainControlToolbarFromGui();
-                this._MainControl.ToolBarItemClicked += _ToolBarItemClicked;
-                this._MainControl.ToolBarItemSelectedChange += _ToolBarItemSelectedChange;
-                this._MainControl.ToolBarStatusChanged += _ToolBarStatusChanged;
+                if (this._UseToolBar)
+                {
+                    this._MainControl.ToolBarVisible = this._GuiToolBarPanel.ToolbarVisible;
+                    this._FillMainControlToolbarFromSystem();
+                    this._FillMainControlToolbarFromGui();
+                    this._MainControl.ToolBarItemClicked += _ToolBarItemClicked;
+                    this._MainControl.ToolBarItemSelectedChange += _ToolBarItemSelectedChange;
+                    this._MainControl.ToolBarStatusChanged += _ToolBarStatusChanged;
+                }
+                else
+                {   // Tohle typicky znamená, že funkci Toolbaru převzal externí Ribbon:
+                    this._MainControl.ToolBarVisible = false;
+                    // Převzít prvky, které mají akci MousePaint:
+                    var guiToolBarItems = this._GuiToolBarItems;
+                    if (guiToolBarItems != null)
+                    {
+                        foreach (var guiToolBarItem in guiToolBarItems)
+                            this._MousePaintAddToolBarItem(guiToolBarItem, null);
+                    }
+                }
             }
         }
         /// <summary>
@@ -442,7 +520,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         private void _FillMainControlToolbarFromSystem()
         {
-            if (!this._GuiToolbarPanel.ToolbarVisible) return;
+            if (!this._GuiToolBarPanel.ToolbarVisible) return;
             // Systémové položky Toolbaru jsou položky třídy FunctionGlobalItem, nemají v sobě instanci GuiToolbarItem.
 
             this._ToolbarSystemTimeAxisGroup = new FunctionGlobalGroup() { Title = "ČASOVÁ OSA", ToolTipTitle = "Posuny časové osy, změna měřítka", Order = "A1" };
@@ -531,14 +609,14 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         private void _FillMainControlToolbarFromGui()
         {
-            if (!this._GuiToolbarPanel.ToolbarVisible) return;
-            if (this._GuiToolbarPanel.Items == null) return;
+            if (!this._GuiToolBarPanel.ToolbarVisible) return;
+            if (this._GuiToolBarPanel.Items == null) return;
             // Aplikační položky Toolbaru jsou položky třídy ToolBarItem, mají v sobě instanci GuiToolbarItem:
 
             // Nejprve sestavíme jednotlivé grupy pro prvky, podle názvu grup kam chtějí tyto prvky jít:
             Dictionary<string, FunctionGlobalGroup> toolBarGroups = new Dictionary<string, FunctionGlobalGroup>();
             string defaultGroupName = "FUNKCE";
-            foreach (GuiToolbarItem guiToolBarItem in this._GuiToolbarPanel.Items)
+            foreach (GuiToolbarItem guiToolBarItem in this._GuiToolBarPanel.Items)
             {
                 if (guiToolBarItem == null) continue;
 
@@ -552,7 +630,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
                 {
                     group.Items.Add(item);
                     this._ToolBarGuiItems.Add(item);
-                    this._MousePaintAddToolBar(item);
+                    this._MousePaintAddToolBarItem(guiToolBarItem, item);
                     this._AddControl(guiToolBarItem.FullName, item);
                 }
             }
@@ -560,20 +638,6 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             // Výsledky (jednotlivé grupy, kde každá obsahuje sadu prvků = buttonů) vložím do předaného pole:
             if (toolBarGroups.Count > 0)
                 this._MainControl.AddToolBarGroups(toolBarGroups.Values);
-        }
-        /// <summary>
-        /// Obsluha události ItemSelectedChange na ToolBaru
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="args"></param>
-        private void _ToolBarItemSelectedChange(object sender, FunctionItemEventArgs args)
-        {
-            GuiToolbarItem guiToolbarItem = _GetGuiToolBarItem(args);
-            if (guiToolbarItem != null)
-                this._ToolBarItemSelectedChangeApplication(guiToolbarItem);
-            else
-                this._ToolBarItemSelectedChangeSystem(args.Item);
-            this._MousePaintToolBarSelectedChange(args.Item as ToolBarItem);
         }
         /// <summary>
         /// Obsluha události ItemClick na ToolBaru
@@ -584,9 +648,22 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         {
             GuiToolbarItem guiToolbarItem = _GetGuiToolBarItem(args);
             if (guiToolbarItem != null)
-                this._ToolBarItemClickApplication(args.Item, guiToolbarItem);
-            else
-                this._ToolBarItemClickSystem(args.Item);
+                _ToolBarItemRunApplicationAction(guiToolbarItem, args.Item);
+            else if (args.Item?.UserData is ToolbarSystemItem action)           // V UserData je uložena hodnota ToolbarSystemItem, odpovídající konkrétní funkcionalitě = systémová akce
+                _ToolBarItemRunSystemAction(action);
+        }
+        /// <summary>
+        /// Obsluha události ItemSelectedChange na ToolBaru
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="args"></param>
+        private void _ToolBarItemSelectedChange(object sender, FunctionItemEventArgs args)
+        {
+            GuiToolbarItem guiToolbarItem = _GetGuiToolBarItem(args);
+            if (guiToolbarItem != null)
+                _ToolBarItemSelectedChangeApplication(guiToolbarItem);
+            else if (args.Item?.UserData is ToolbarSystemItem action)           // V UserData je uložena hodnota ToolbarSystemItem, odpovídající konkrétní funkcionalitě = systémová akce
+                _ToolBarItemSelectedChangeSystem(action, args.Item.IsChecked);
         }
         /// <summary>
         /// Obsluha události StatusChanged na ToolBaru (něco bylo změněno, něco co by mělo být uchováno v konfiguraci)
@@ -605,43 +682,45 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         private void _ToolBarItemSelectedChangeApplication(GuiToolbarItem guiToolbarItem)
         {
             /* Tuto akci zatím do aplikační funkce NEPŘEDÁVÁME. Neřešíme tedy ani její Response. */
+
+            // Můžeme řešit její vliv na MousePaint:
+            this._MousePaintToolBarSelectedChange(guiToolbarItem);
         }
         /// <summary>
         /// Obsluha události ItemClick na Aplikační položce ToolBaru
         /// </summary>
-        /// <param name="toolBarItem">Vizuální položka ToolBaru</param>
         /// <param name="guiToolbarItem">Datová (GUI) položka ToolBaru</param>
-        private void _ToolBarItemClickApplication(FunctionItem toolBarItem, GuiToolbarItem guiToolbarItem)
+        /// <param name="toolBarItem">Aktuální prvek z GUI, převezme se jeho hodnota <see cref="FunctionItem.IsChecked"/>. Může být null, pak platí hodnota z dodaného <see cref="GuiToolbarItem.IsChecked"/>.</param>
+        private void _ToolBarItemRunApplicationAction(GuiToolbarItem guiToolbarItem, FunctionItem toolBarItem)
         {
-            bool callAppHost = this._ToolBarItemClickApplicationRunGuiActions(toolBarItem, guiToolbarItem);
+            bool callAppHost = this._ToolBarItemRunApplicationActionInternal(guiToolbarItem);
             if (callAppHost)
-                this._ToolBarItemClickApplicationCallAppHost(toolBarItem, guiToolbarItem);
+                this._ToolBarItemRunApplicationActionAppHost(guiToolbarItem, toolBarItem);
         }
         /// <summary>
         /// Metoda detekuje GUI akce, které jsou předepsané v tlačítku Toolbaru <see cref="GuiToolbarItem.GuiActions"/>, a provede je.
         /// Vrací true, pokud má být volána servisní funkci v AppHost (tj. když toto volání NENÍ potlačeno příznakem <see cref="GuiActionType.SuppressCallAppHost"/>).
         /// </summary>
-        /// <param name="toolBarItem"></param>
-        /// <param name="guiToolbarItem"></param>
+        /// <param name="guiToolbarItem">Datová (GUI) položka ToolBaru</param>
         /// <returns></returns>
-        private bool _ToolBarItemClickApplicationRunGuiActions(FunctionItem toolBarItem, GuiToolbarItem guiToolbarItem)
+        private bool _ToolBarItemRunApplicationActionInternal(GuiToolbarItem guiToolbarItem)
         {
             if (guiToolbarItem == null ||!guiToolbarItem.GuiActions.HasValue) return true;    // Žádná akce = žádné potlačení, vracím true
             GuiActionType guiActions = guiToolbarItem.GuiActions.Value;
-            this.RunGuiInteractions(toolBarItem, guiToolbarItem, guiActions);
+            this.RunGuiInteractions(guiToolbarItem, guiActions);
             bool suppressCallAppHost = guiActions.HasFlag(GuiActionType.SuppressCallAppHost);
             return !suppressCallAppHost;
         }
         /// <summary>
         /// Metoda zavolá servisní funkci v AppHost, s commandem <see cref="GuiRequest.COMMAND_ToolbarClick"/>, a předá tam button, na nějž bylo kliknuto
         /// </summary>
-        /// <param name="toolBarItem"></param>
-        /// <param name="guiToolbarItem"></param>
-        private void _ToolBarItemClickApplicationCallAppHost(FunctionItem toolBarItem, GuiToolbarItem guiToolbarItem)
+        /// <param name="guiToolbarItem">Datová (GUI) položka ToolBaru</param>
+        /// <param name="toolBarItem">Aktuální prvek z GUI, převezme se jeho hodnota <see cref="FunctionItem.IsChecked"/>. Může být null, pak platí hodnota z dodaného <see cref="GuiToolbarItem.IsChecked"/>.</param>
+        private void _ToolBarItemRunApplicationActionAppHost(GuiToolbarItem guiToolbarItem, FunctionItem toolBarItem = null)
         {
             GuiRequest request = new GuiRequest();
             request.Command = GuiRequest.COMMAND_ToolbarClick;
-            guiToolbarItem.IsChecked = toolBarItem.IsChecked;        // Přenesu příznak "Označen" (je to nutné?)
+            if (toolBarItem != null) guiToolbarItem.IsChecked = toolBarItem.IsChecked;        // Přenesu příznak "Označen" (je to nutné?)
             request.ToolbarItem = guiToolbarItem;
             this._CallAppHostFunction(request, this._ToolBarItemClickApplicationResponse, guiToolbarItem.BlockGuiTime, guiToolbarItem.BlockGuiMessage);
         }
@@ -656,19 +735,20 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <summary>
         /// Obsluha události ItemSelectedChange na Systémové položce ToolBaru
         /// </summary>
-        /// <param name="item"></param>
-        private void _ToolBarItemSelectedChangeSystem(FunctionItem item)
+        /// <param name="action">Systémová akce</param>
+        /// <param name="isSelected">Hodnota IsSelected (=IsChecked)</param>
+        private void _ToolBarItemSelectedChangeSystem(ToolbarSystemItem action, bool isSelected)
         {
-            this._TimeAxisToolBarSelected(item);
+            this._TimeAxisToolBarSelected(action, isSelected);
         }
         /// <summary>
-        /// Obsluha události ItemClick na Systémové položce ToolBaru
+        /// Provede danou systémovou akci
         /// </summary>
-        /// <param name="item"></param>
-        private void _ToolBarItemClickSystem(FunctionItem item)
+        /// <param name="action"></param>
+        private void _ToolBarItemRunSystemAction(ToolbarSystemItem action)
         {
-            this._TimeAxisToolBarClick(item);
-            this._SystemSettingsToolBarClick(item);
+            this._TimeAxisToolBarAction(action);
+            this._SystemSettingsToolBarAction(action);
         }
         /// <summary>
         /// Metoda vrátí instanci <see cref="GuiToolbarItem"/> pro položku toolbaru z dodaného argumentu.
@@ -706,7 +786,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         private List<ToolBarItem> _ToolBarGuiItems;
         /// <summary>
-        /// ContextFunctionItem : adapter mezi <see cref="GuiToolbarItem"/>, a položkou kontextového menu <see cref="FunctionGlobalItem"/>.
+        /// ToolBarItem : adapter mezi <see cref="GuiToolbarItem"/>, a položkou menu <see cref="FunctionGlobalItem"/>.
         /// </summary>
         protected class ToolBarItem : FunctionGlobalItem
         {
@@ -1076,10 +1156,9 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <summary>
         /// Metoda detekuje interakce požadované v dodaném prvku toolbaru, a provede je.
         /// </summary>
-        /// <param name="toolBarItem">Vizuální prvek Toolbaru</param>
         /// <param name="guiToolbarItem">Datový prvek Toolbaru</param>
         /// <param name="guiActions">Akce</param>
-        internal void RunGuiInteractions(FunctionItem toolBarItem, GuiToolbarItem guiToolbarItem, GuiActionType guiActions)
+        internal void RunGuiInteractions(GuiToolbarItem guiToolbarItem, GuiActionType guiActions)
         {
             bool callRefresh = false;
 
@@ -1374,7 +1453,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         private void _TimeAxisToolBarInit()
         {
-            ToolbarSystemItem items = (ToolbarSystemItem)(this._GuiToolbarPanel.ToolbarShowSystemItems & ToolbarSystemItem.TimeAxisAll);
+            ToolbarSystemItem items = (ToolbarSystemItem)(this._GuiToolBarPanel.ToolbarShowSystemItems & ToolbarSystemItem.TimeAxisAll);
             if (items == ToolbarSystemItem.None) return;
 
             // Oddělovač, pokud v grupě už jsou položky:
@@ -1408,33 +1487,17 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Metoda zjistí, zda akce se týká časové osy, a pokud ano pak ji vyřeší.
         /// Pokud se akce nijak netýká časové osy, pak nic neprovádí (není tedy problém ji zavolat).
         /// </summary>
-        /// <param name="item"></param>
-        private void _TimeAxisToolBarSelected(FunctionItem item)
+        /// <param name="action">Systémová akce</param>
+        /// <param name="isSelected">Hodnota IsSelected (=IsChecked)</param>
+        private void _TimeAxisToolBarSelected(ToolbarSystemItem action, bool isSelected)
         {
-            /*
-            if (!item.IsSelected) return;        // Sem chodí obě události: jak pro objekt, jehož IsSelected je nyní false, tak i pro objekt s IsSelected true.
-            if (!(item.UserData is ToolbarSystemItem)) return;               // V UserData je uložena hodnota ToolbarSystemItem, odpovídající konkrétní funkcionalitě.
-            this._TimeAxisToolBarAction((ToolbarSystemItem)item.UserData);
-            */
-        }
-        /// <summary>
-        /// Metoda se volá po akci Click na systémové položce ToolBaru. 
-        /// Metoda zjistí, zda akce se týká časové osy, a pokud ano pak ji vyřeší.
-        /// Pokud se akce nijak netýká časové osy, pak nic neprovádí (není tedy problém ji zavolat).
-        /// </summary>
-        /// <param name="item"></param>
-        private void _TimeAxisToolBarClick(FunctionItem item)
-        {
-            if (!(item.UserData is ToolbarSystemItem)) return;               // V UserData je uložena hodnota ToolbarSystemItem, odpovídající konkrétní funkcionalitě.
-            this._TimeAxisToolBarAction(item, (ToolbarSystemItem)item.UserData);
         }
         /// <summary>
         /// Metoda provede požadovanou akci s časovou osou.
         /// Pokud se akce netýká časové osy, nic nedělá.
         /// </summary>
-        /// <param name="item"></param>
         /// <param name="action"></param>
-        private void _TimeAxisToolBarAction(FunctionItem item, ToolbarSystemItem action)
+        private void _TimeAxisToolBarAction(ToolbarSystemItem action)
         {
             action = (ToolbarSystemItem)(action & ToolbarSystemItem.TimeAxisAll);
             if (action == ToolbarSystemItem.None) return;
@@ -1824,7 +1887,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         {
             // Pokud v definici (ToolbarShowSystemItems) je uvedena hodnota (MoveItemAll | GuiEditAll), 
             //  pak NEBUDOU zobrazovány jednotlivé buttony, ale místo nich se zobrazí velký button CONFIG:
-            ToolbarSystemItem currentItems = this._GuiToolbarPanel.ToolbarShowSystemItems;
+            ToolbarSystemItem currentItems = this._GuiToolBarPanel.ToolbarShowSystemItems;
             ToolbarSystemItem items = (ToolbarSystemItem)(currentItems & ToolbarSystemItem.SystemSettingsAll);
             if (items == ToolbarSystemItem.None) return;
 
@@ -1837,22 +1900,10 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             this._ToolbarSystemSettingsGroup.AddSeparator(this, true);
         }
         /// <summary>
-        /// Metoda se volá po akci Click na systémové položce ToolBaru. 
-        /// Metoda zjistí, zda akce se týká konfigurace, a pokud ano pak ji vyřeší.
-        /// Pokud se akce nijak netýká konfigurace, pak nic neprovádí (není tedy problém ji zavolat).
-        /// </summary>
-        /// <param name="item"></param>
-        private void _SystemSettingsToolBarClick(FunctionItem item)
-        {
-            if (!(item.UserData is ToolbarSystemItem)) return;               // V UserData je uložena hodnota ToolbarSystemItem, odpovídající konkrétní funkcionalitě.
-            this._SystemSettingsToolBarAction(item, (ToolbarSystemItem)item.UserData);
-        }
-        /// <summary>
         /// Po kliknutí na systémovou ikonu Toolbaru, řeší akce typu Config
         /// </summary>
-        /// <param name="item"></param>
         /// <param name="action"></param>
-        private void _SystemSettingsToolBarAction(FunctionItem item, ToolbarSystemItem action)
+        private void _SystemSettingsToolBarAction(ToolbarSystemItem action)
         {
             action = (ToolbarSystemItem)(action & ToolbarSystemItem.SystemSettingsAll);
             if (action == ToolbarSystemItem.None) return;
@@ -3039,45 +3090,32 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <summary>
         /// Zaeviduje si prvek toolbaru, pokud má vztah k aktivitě MousePaint (=kreslení myší).
         /// </summary>
-        /// <param name="item"></param>
-        private void _MousePaintAddToolBar(ToolBarItem item)
+        /// <param name="guiToolbarItem">Definice, nesmí být null</param>
+        /// <param name="toolItem">Fyzický prvek, smí být null</param>
+        private void _MousePaintAddToolBarItem(GuiToolbarItem guiToolbarItem, ToolBarItem toolItem)
         {
-            GuiActionType mousePaintActions = _MousePaintToolBarGetAction(item);
+            GuiActionType mousePaintActions = _MousePaintToolBarGetAction(guiToolbarItem);
             if (mousePaintActions == GuiActionType.None) return;
 
             // Daný prvek toolbaru má vliv na akci MousePaint, zaevidujeme si jej:
-            if (this._MousePaintToolBarItems == null) this._MousePaintToolBarItems = new List<Tuple<ToolBarItem, GuiActionType>>();
-            this._MousePaintToolBarItems.Add(new Tuple<ToolBarItem, GuiActionType>(item, mousePaintActions));
+            if (this._MousePaintToolBarItems == null) this._MousePaintToolBarItems = new List<Tuple<GuiToolbarItem, GuiActionType, ToolBarItem>>();
+            this._MousePaintToolBarItems.Add(new Tuple<GuiToolbarItem, GuiActionType, ToolBarItem>(guiToolbarItem, mousePaintActions, toolItem));
 
             // Do prvku nastavíme jeho požadované chování, pokud to aplikační kód nezvládl (tj. přepíšeme některé definice):
-            item.GuiToolbarItem.IsCheckable = true;                  // Prvek musí pracovat v režimu CheckBoxu
-            item.GuiToolbarItem.IsChecked = false;                   // Výchozí stav je NonChecked
-            item.GuiToolbarItem.StoreValueToConfig = false;          // Hodnota se nepersistuje
+            guiToolbarItem.IsCheckable = true;                       // Prvek musí pracovat v režimu CheckBoxu
+            guiToolbarItem.IsChecked = false;                        // Výchozí stav je NonChecked
+            guiToolbarItem.StoreValueToConfig = false;               // Hodnota se nepersistuje
         }
         /// <summary>
         /// Na daném prvku Toolbaru došlo ke změně stavu IsChecked. Pokud má prvek vliv na aktivitu MousePaint, pak aplikace reaguje zde.
         /// </summary>
-        /// <param name="item"></param>
-        private void _MousePaintToolBarSelectedChange(ToolBarItem item)
+        /// <param name="guiToolbarItem"></param>
+        private void _MousePaintToolBarSelectedChange(GuiToolbarItem guiToolbarItem)
         {
             if (this._MousePaintToolBarItems == null) return;        // Žádný prvek ToolBaru není evidován jako EnableMousePaint*
-            GuiActionType mousePaintActions = _MousePaintToolBarGetAction(item);
-            if (mousePaintActions == GuiActionType.None) return;     // Tento konkrétní prvek ToolBaru nemá akci EnableMousePaint*
-
-            bool isChecked = item.IsChecked;
-
-            // Pokud prvek ToolBaru byl právě nyní "označen" (=nastaven jeho stav IsChecked), pak musím všechny ostatní "konkurenční" prvky odznačit:
-            if (isChecked)
-            {
-                this._MousePaintToolBarItems
-                    .Where(t => !Object.ReferenceEquals(t.Item1, item))
-                    .ForEachItem(t => t.Item1.IsChecked = false);
-            }
-
-            // Nyní nastavíme příznaky kreslení podle prvku toolbaru (jeho akce a jeho stav):
-            this._MousePaintLinkLineActive = (isChecked && ((mousePaintActions & GuiActionType.EnableMousePaintLinkLine) != 0));
-            this._MousePaintRectangleActive = (isChecked && !this._MousePaintLinkLineActive && ((mousePaintActions & GuiActionType.EnableMousePaintRectangle) != 0));
-            this._MainControl.MousePaintEnabled = (this._MousePaintLinkLineActive || this._MousePaintRectangleActive);
+            GuiActionType mousePaintAction = _MousePaintToolBarGetAction(guiToolbarItem);
+            bool isActive = guiToolbarItem?.IsChecked ?? false;
+            _MousePaintSetActiveTool(mousePaintAction, isActive, false);
         }
         /// <summary>
         /// Obsahuje true, pokud je aktivní režim MousePaint:LinkLine
@@ -3086,16 +3124,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         public bool MousePaintLinkLineActive
         {
             get { return this._MousePaintLinkLineActive; }
-            set
-            {
-                if (value) return;          // Tuto property není možno nastavit z aplikačního kódu na true
-                this._MousePaintToolBarItems
-                    .Where(t => t.Item1.IsChecked)
-                    .ForEachItem(t => t.Item1.IsChecked = false);
-                this._MousePaintLinkLineActive = false;
-                this._MainControl.MousePaintEnabled = false;
-                this._MainControl.RefreshToolBar(ToolBarRefreshMode.RefreshControl);
-            }
+            set { _MousePaintSetActiveTool(GuiActionType.EnableMousePaintLinkLine, value, true); }
         }
         /// <summary>
         /// Obsahuje true, pokud je aktivní režim MousePaint:Rectangle
@@ -3104,35 +3133,62 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         public bool MousePaintRectangleActive
         {
             get { return this._MousePaintRectangleActive; }
-            set
-            {
-                if (value) return;          // Tuto property není možno nastavit z aplikačního kódu na true
-                this._MousePaintToolBarItems
-                    .Where(t => t.Item1.IsChecked)
-                    .ForEachItem(t => t.Item1.IsChecked = false);
-                this._MousePaintRectangleActive = false;
-                this._MainControl.MousePaintEnabled = false;
-                this._MainControl.RefreshToolBar(ToolBarRefreshMode.RefreshControl);
-            }
+            set { _MousePaintSetActiveTool(GuiActionType.EnableMousePaintRectangle, value, true); }
         }
+        /// <summary>
+        /// Nastaví aktivní režim kreslení MousePaint.
+        /// </summary>
+        /// <param name="mousePaintAction"></param>
+        /// <param name="isActive"></param>
+        /// <param name="refreshToolBar"></param>
+        private void _MousePaintSetActiveTool(GuiActionType mousePaintAction, bool isActive, bool refreshToolBar)
+        {
+            // Do každého z prvků, které mají vliv na MousePaint, nastavím jeho IsChecked = (pokud má být aktivován, pak true pro prvek odpovídající dané akci, jinak false:
+            this._MousePaintToolBarItems.ForEachItem(t => t.Item1.IsChecked = (isActive ? (_MousePaintToolBarGetAction(t.Item2) == mousePaintAction) : false));
+
+            // Nyní nastavíme příznaky kreslení podle prvku toolbaru (jeho akce a jeho stav):
+            this._MousePaintLinkLineActive = (isActive && mousePaintAction.HasFlag(GuiActionType.EnableMousePaintLinkLine));
+            this._MousePaintRectangleActive = (isActive && !this._MousePaintLinkLineActive && mousePaintAction.HasFlag(GuiActionType.EnableMousePaintRectangle));
+            this._MainControl.MousePaintEnabled = (this._MousePaintLinkLineActive || this._MousePaintRectangleActive);
+
+            if (refreshToolBar) this._MainControl.RefreshToolBar(ToolBarRefreshMode.RefreshControl);
+        }
+        /// <summary>
+        /// Je aktivní MousePaint typu Kreslení linky?
+        /// </summary>
         private bool _MousePaintLinkLineActive;
+        /// <summary>
+        /// Je aktivní MousePaint typu Kreslení Rectangle?
+        /// </summary>
         private bool _MousePaintRectangleActive;
         /// <summary>
         /// Metoda vrátí akce typu EnableMousePaint* z daného prvku Toolbaru
         /// </summary>
-        /// <param name="item"></param>
+        /// <param name="guiToolbarItem"></param>
         /// <returns></returns>
-        private GuiActionType _MousePaintToolBarGetAction(ToolBarItem item)
+        private GuiActionType _MousePaintToolBarGetAction(GuiToolbarItem guiToolbarItem)
         {
-            GuiActionType? action = item?.GuiToolbarItem?.GuiActions;
+            GuiActionType? action = guiToolbarItem?.GuiActions;
             if (!action.HasValue) return GuiActionType.None;
-            GuiActionType mousePaintActions = action.Value & (GuiActionType.EnableMousePaintLinkLine | GuiActionType.EnableMousePaintRectangle);
-            return mousePaintActions;
+            return _MousePaintToolBarGetAction(action);
         }
         /// <summary>
-        /// Prvky ToolBaru, které mají nějakou akci EnableMousePaint* (Item1 = prvek GUI, Item2 = akce)
+        /// Metoda vrátí akce typu EnableMousePaint* z daného prvku Toolbaru
         /// </summary>
-        private List<Tuple<ToolBarItem, GuiActionType>> _MousePaintToolBarItems;
+        /// <param name="action"></param>
+        /// <returns></returns>
+        private GuiActionType _MousePaintToolBarGetAction(GuiActionType? action)
+        {
+            if (!action.HasValue) return GuiActionType.None;
+            return (action.Value & (GuiActionType.EnableMousePaintLinkLine | GuiActionType.EnableMousePaintRectangle));
+        }
+        /// <summary>
+        /// Prvky ToolBaru, které mají nějakou akci EnableMousePaint*
+        /// Item1 = definice GUI;
+        /// Item2 = fyzický prvek GUI (může být null, když Toolbar je řešen externě v Ribbonu);
+        /// Item3 = akce
+        /// </summary>
+        private List<Tuple<GuiToolbarItem, GuiActionType, ToolBarItem>> _MousePaintToolBarItems;
         /// <summary>
         /// Inicializace subsystému interaktivního kreslení.
         /// Volá se po úplném vytvoření a naplnění controlu podle dat z <see cref="GuiData"/>.
