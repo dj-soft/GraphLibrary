@@ -173,6 +173,23 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Stav objektu z hlediska jeho inicializace a ukončování
         /// </summary>
         public DataStateType DataState { get { return this._DataState; } } private DataStateType _DataState = DataStateType.None;
+        /// <summary>
+        /// Metoda vrátí jméno ikony používané v systému klienta (pro Ribbon), anebo vytvoří nativní Image pro ikonu do out <paramref name="nativeImage"/>.
+        /// <para/>
+        /// Pokud v dodaném objektu je uveden přímo Image (v <see cref="GuiImage.Image"/>) anebo je dodán jeho obsah jako byte[] (v <see cref="GuiImage.ImageContent"/>),
+        /// pak je <see cref="Image"/> vložen do out <paramref name="nativeImage"/> a vrácen je null.<br/>
+        /// Pokud v <see cref="GuiImage.ImageFile"/> je předán název interní ikony WorkScheduleru (typicky <see cref="Noris.LCS.Base.WorkScheduler.Resources.Images.Actions.AddressBookNew2Png"/>),
+        /// pak je z interního Resource vytvořen <see cref="Image"/> a ten je vložen do out <paramref name="nativeImage"/> a vrácen je null.<br/>
+        /// Jinak je v out <paramref name="nativeImage"/> null, a je vrácen název ikony <see cref="GuiImage.ImageFile"/>, a je na volajícím, aby daný název našel ve svých zdrojích.
+        /// </summary>
+        /// <param name="guiImage"></param>
+        /// <param name="nativeImage"></param>
+        /// <returns></returns>
+        public string GetClientImageName(GuiImage guiImage, out Image nativeImage)
+        {
+            nativeImage = App.ResourcesApp.GetImage(guiImage);
+            return (nativeImage is null ? guiImage?.ImageFile : null);
+        }
         #endregion
         #region Vytváření controlu, jeho vložení do Formu
         /// <summary>
@@ -462,7 +479,8 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             {
                 var panel = _GuiToolBarPanel;
                 if (panel is null) return null;
-                if (panel.UseSystemRibbon && panel.RibbonPages != null)
+                bool? useSystemRibbon = panel.UseSystemRibbon;
+                if ((!useSystemRibbon.HasValue || (useSystemRibbon.HasValue && useSystemRibbon.Value)) && panel.RibbonPages != null)
                     return panel.RibbonPages
                         .Where(p => p.Groups != null).SelectMany(p => p.Groups)
                         .Where(g => g.Items != null).SelectMany(g => g.Items)

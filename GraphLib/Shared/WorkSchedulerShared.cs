@@ -4188,13 +4188,15 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public bool ToolbarVisible { get; set; }
         /// <summary>
-        /// Používat systémový Ribbon.
-        /// Pak budou prvky Ribbonu hledány a načítány z <see cref="RibbonPages"/> (jednotlivé stránky Ribbonu, jejich grupy, jejich prvky), a WorkScheduler control nebude ve své ploše vykreslovat žádné menu, pouze data.
+        /// Používat systémový Ribbon? <br/>
+        /// Default null = podle cílového systému; anebo konkrétní hodnota = explicitní požadavek
+        /// <para/>
+        /// Hodnota true = Pak budou prvky Ribbonu hledány a načítány z <see cref="RibbonPages"/> (jednotlivé stránky Ribbonu, jejich grupy, jejich prvky), a WorkScheduler control nebude ve své ploše vykreslovat žádné menu, pouze data.
         /// Pokud bude <see cref="RibbonPages"/> prázdné, a přitom <see cref="UseSystemRibbon"/> bude true, pak se plugin pokusí vytvořit definici Ribbonu z položek nalezených v <see cref="Items"/> (usnadnění přechodu Green =&gt; Nephrite).
         /// <para/>
         /// Lze nastavit na true jen pro klienta Nephrite. Pokud bude nastaveno true pro klienta, který Ribbon nepodporuje (tj. klient Green), pak dojde k chybě.
         /// </summary>
-        public bool UseSystemRibbon { get; set; }
+        public bool? UseSystemRibbon { get; set; }
         /// <summary>
         /// Které systémové položky zobrazovat v Toolbaru?
         /// </summary>
@@ -4491,6 +4493,10 @@ namespace Noris.LCS.Base.WorkScheduler
     /// </summary>
     public class GuiRibbonGroup : GuiTextItem
     {
+        /// <summary>
+        /// Zobrazovat tlačítko grupy?
+        /// </summary>
+        public bool? GroupButtonVisible { get; set; }
         /// <summary>
         /// Prvky obsažené v této grupě
         /// </summary>
