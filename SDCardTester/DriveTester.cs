@@ -242,12 +242,18 @@ namespace DjSoft.Tools.SDCardTester
                     {
                         var timeInfoSaveShort = RunTestSaveOneFile(testDir, fileNumber, out string fileName, ShortFilesLength, TestPhase.SaveShortFile);
                         TimeInfoSaveShortDone.Add(timeInfoSaveShort);
+
+                        var timeInfoReadShort = RunTestReadOneFile(fileName, TestPhase.ReadShortFile, fileNumber);
+                        TimeInfoReadShortDone.Add(timeInfoReadShort);
                     }
                     else
                     {
                         if (!CanWriteFile(longFilesLength)) break;
                         var timeInfoSaveLong = RunTestSaveOneFile(testDir, fileNumber, out string fileName, longFilesLength, TestPhase.SaveLongFile);
                         TimeInfoSaveLongDone.Add(timeInfoSaveLong);
+
+                        var timeInfoReadLong = RunTestReadOneFile(fileName, TestPhase.ReadLongFile, fileNumber);
+                        TimeInfoReadLongDone.Add(timeInfoReadLong);
                     }
                     fileNumber++;
                 }
@@ -290,11 +296,11 @@ namespace DjSoft.Tools.SDCardTester
             using (System.IO.FileStream fst = new System.IO.FileStream(fileName, System.IO.FileMode.Create, System.IO.FileAccess.Write))
             {
                 bufferLength = GetBufferLength(phase, currentLength, targetLength);
-                var data = GetData(fileNumber, bufferIndex, bufferLength);
+                var writeData = GetData(fileNumber, bufferIndex, bufferLength);
                 bool doWrite = true;
                 while (doWrite && !TestStopping)
                 {
-                    var buffer = data;           // Nezbytnost!!! : protože 'buffer' odchází do FileStreamu k zápisu, a současně (protože .WriteAsync) se do jiné proměnné 'data' připravuje nový obsah pro další cyklus
+                    var buffer = writeData;           // Nezbytnost!!! : protože 'buffer' odchází do FileStreamu k zápisu, a současně (protože .WriteAsync) se do jiné proměnné 'data' připravuje nový obsah pro další cyklus
                     int oneLength = buffer.Length;
                     using (var task = fst.WriteAsync(buffer, 0, oneLength))    // Zde asynchronně začíná zápis dat do souboru
                     {
@@ -303,7 +309,7 @@ namespace DjSoft.Tools.SDCardTester
                         if (doWrite)
                         {
                             bufferLength = GetBufferLength(phase, currentLength, targetLength);
-                            data = GetData(fileNumber, ++bufferIndex, bufferLength);         // A zatímco se do souboru v jiném threadu zapisuje, my si zde připravujeme data do dalšího kola zápisu.
+                            writeData = GetData(fileNumber, ++bufferIndex, bufferLength);         // A zatímco se do souboru v jiném threadu zapisuje, my si zde připravujeme data do dalšího kola zápisu.
                         }
                         if (task.IsCompleted)
                         {   // Problém: jsme pomalí! Než jsme si stihli připravit data (data = GetData()), tak se předchozí buffer stihl zapsat na cílový disk.
@@ -430,6 +436,51 @@ namespace DjSoft.Tools.SDCardTester
         /// Provést test čtení
         /// </summary>
         protected bool DoTestRead;
+
+
+
+        private FileTimeInfo RunTestReadOneFile(string fileName, TestPhase phase, int fileNumber)
+        {
+            if (TestStopping) return null;
+
+            TimeInfoCurrentPhase = phase;
+            return RunTestReadOneFileWriteAsync(fileName, phase, fileNumber);
+        }
+        private FileTimeInfo RunTestReadOneFileWriteAsync(string fileName, TestPhase phase, int fileNumber)
+        {
+            var fileInfo = new System.IO.FileInfo(fileName);
+            if (!fileInfo.Exists) return null;
+            long totalLength = fileInfo.Length;
+            long currentLength = 0L;
+            int bufferIndex = 0;
+
+            using (System.IO.FileStream fst = new System.IO.FileStream(fileName, System.IO.FileMode.Open, System.IO.FileAccess.Read))
+            {
+                bool doWrite = true;
+                while (doWrite && !TestStopping)
+                {
+                    doWrite = (fst.Position < totalLength);
+                    if (!doWrite) break;
+
+                    int bufferLength = GetBufferLength(phase, currentLength, totalLength);
+                    if (bufferLength == 0) break;
+
+                    var readData = new byte[bufferLength];
+                    using (var task = fst.ReadAsync(readData, 0, bufferLength))
+                    {   // Začalo načítání dat; než doběhne tak si připravím porovnávací buffer:
+                        var expectedData = GetData(fileNumber, bufferIndex++, bufferLength);
+                        if (!task.IsCompleted)
+                            task.Wait();
+                        var readLength = task.Result;
+                        currentLength += readLength;
+                        int q = 1;
+                    }
+                }
+            }
+
+            return new FileTimeInfo(phase);
+        }
+
         #endregion
         #region Obsah disku
         /// <summary>
