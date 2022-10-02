@@ -8,7 +8,7 @@ using System.Drawing.Drawing2D;
 using System.Windows.Forms;
 using System.ComponentModel;
 
-namespace DjSoftSDCardTester
+namespace DjSoft.Tools.SDCardTester
 {
     public class LinearMapControl : Control
     {

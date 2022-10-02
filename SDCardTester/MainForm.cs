@@ -8,7 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
-namespace DjSoftSDCardTester
+namespace DjSoft.Tools.SDCardTester
 {
     public partial class MainForm : Form
     {
@@ -36,14 +36,14 @@ namespace DjSoftSDCardTester
         {
             this.DriveCombo.SelectedIndexChanged += DriveCombo_SelectedIndexChanged;
             this.OnlyRemovableCheck.CheckedChanged += OnlyRemovableCheck_CheckedChanged;
-            this.VisualMapPanel.ActiveItemChanged += VisualPanel_ActiveItemChanged;
+            this.LinearMapControl.ActiveItemChanged += VisualPanel_ActiveItemChanged;
         }
         private void VisualPanel_ActiveItemChanged(object sender, EventArgs e)
         {
             switch (CurrentDataPanelState)
             {
                 case ActionState.AnalyseContent:
-                    AnalyseActiveItemChanged(this.VisualMapPanel.ActiveItem);
+                    AnalyseActiveItemChanged(this.LinearMapControl.ActiveItem);
                     break;
                 default:
                     break;
@@ -113,7 +113,7 @@ namespace DjSoftSDCardTester
 
                 if (withDataPanel)
                 {
-                    PropertiesPanel.Visible = (state == ActionState.Dialog);
+                    DriveInfoPanel.Visible = (state == ActionState.Dialog);
                     ResultsInfoPanel.Visible = (state == ActionState.AnalyseContent || state == ActionState.TestSave || state == ActionState.TestRead);
                     CurrentDataPanelState = state;
                 }
@@ -223,23 +223,10 @@ namespace DjSoftSDCardTester
         private void ShowProperties()
         {
             var selectedDrive = SelectedDrive;
-
             if (selectedDrive != null) selectedDrive = new System.IO.DriveInfo(selectedDrive.Name);     // = refresh
 
-            this.DriveNameText.Text = selectedDrive?.Name ?? "";
-            this.DriveTypeText.Text = selectedDrive?.DriveType.ToString() ?? "";
-            this.DriveVolumeText.Text = selectedDrive?.VolumeLabel ?? "";
-            this.DriveCapacityText.Text = getCapacityText(selectedDrive?.TotalSize);
-            this.DriveFreeText.Text = getCapacityText(selectedDrive?.TotalFreeSpace);
-            this.DriveAvailableText.Text = getCapacityText(selectedDrive?.AvailableFreeSpace);
-
+            this.DriveInfoPanel.ShowProperties(selectedDrive);
             VisualMapPanelFillBasicData(selectedDrive);
-
-            string getCapacityText(long? capacity)
-            {
-                if (!capacity.HasValue) return "";
-                return capacity.Value.ToString("### ### ### ### ##0");
-            }
         }
         /// <summary>
         /// Inicializace vizuálního controlu
@@ -249,16 +236,16 @@ namespace DjSoftSDCardTester
             Skin.Palette = Skin.PaletteType.Light;
         }
         /// <summary>
-        /// Do mapy <see cref="VisualMapPanel"/> načte a vepíše základní informace o daném disku <paramref name="drive"/> (velikost, obsazenost, testovací data).
+        /// Do mapy <see cref="LinearMapControl"/> načte a vepíše základní informace o daném disku <paramref name="drive"/> (velikost, obsazenost, testovací data).
         /// </summary>
         /// <param name="drive"></param>
         private void VisualMapPanelFillBasicData(System.IO.DriveInfo drive)
         {
-            var fileGroups = DriveAnalyser.GetFileGroupsForDrive(drive, out long totalSize);
+            var fileGroups = DriveAnalyser.GetFileGroupsForDrive(drive, false, out long totalSize);
             VisualMapPanelFillData(fileGroups, totalSize);
         }
         /// <summary>
-        /// Do mapy <see cref="VisualMapPanel"/> vloží prvky popisující stav obsazení disku podle dodaných <see cref="DriveAnalyser.FileGroup"/>.
+        /// Do mapy <see cref="LinearMapControl"/> vloží prvky popisující stav obsazení disku podle dodaných <see cref="DriveAnalyser.FileGroup"/>.
         /// </summary>
         /// <param name="fileGroups"></param>
         private void VisualMapPanelFillData(IEnumerable<DriveAnalyser.FileGroup> fileGroups, long? totalSize = null)
@@ -270,20 +257,20 @@ namespace DjSoftSDCardTester
             if (totalSize.HasValue)
                 VisualMapPanelSetupHeight(totalSize.Value, false);
 
-            this.VisualMapPanel.Items = items;
-            this.VisualMapPanel.Refresh();
+            this.LinearMapControl.Items = items;
+            this.LinearMapControl.Refresh();
         }
         /// <summary>
-        /// Do mapy <see cref="VisualMapPanel"/> vloží prvky popisující stav obsazení disku podle dodaných <see cref="DriveAnalyser.FileGroup"/>.
+        /// Do mapy <see cref="LinearMapControl"/> vloží prvky popisující stav obsazení disku podle dodaných <see cref="DriveAnalyser.FileGroup"/>.
         /// </summary>
         /// <param name="fileGroups"></param>
         private void VisualMapPanelSetupHeight(long totalSize, bool refresh)
         {
-            this.VisualMapPanel.LineHeight = GetLineHeight(totalSize);
-            this.VisualMapPanel.TotalLength = totalSize;
+            this.LinearMapControl.LineHeight = GetLineHeight(totalSize);
+            this.LinearMapControl.TotalLength = totalSize;
 
             if (refresh)
-                this.VisualMapPanel.Refresh();
+                this.LinearMapControl.Refresh();
         }
         /// <summary>
         /// Vrátí výšku jedné vizuální linky pro danou velikost disku: menší disk = vyšší linky, velký disk = malé linky (víc se tam toho vejde)
@@ -421,7 +408,7 @@ namespace DjSoftSDCardTester
             }
         }
         /// <summary>
-        /// Do mapy <see cref="VisualMapPanel"/> vloží prvky pocházející ze skupin z analyzeru z <paramref name="driveAnalyser"/> : <see cref="DriveAnalyser.FileGroups"/>
+        /// Do mapy <see cref="LinearMapControl"/> vloží prvky pocházející ze skupin z analyzeru z <paramref name="driveAnalyser"/> : <see cref="DriveAnalyser.FileGroups"/>
         /// </summary>
         /// <param name="driveAnalyser"></param>
         private void VisualMapPanelFillData(DriveAnalyser driveAnalyser)
@@ -594,12 +581,14 @@ namespace DjSoftSDCardTester
             }
         }
         /// <summary>
-        /// Do mapy <see cref="VisualMapPanel"/> vloží prvky pocházející ze skupin z testeru
+        /// Do mapy <see cref="LinearMapControl"/> vloží prvky pocházející ze skupin z testeru
         /// </summary>
         /// <param name="driveAnalyser"></param>
         private void VisualPanelFillData(DriveTester driveTester)
         {
-            VisualMapPanelFillBasicData(driveTester.Drive);
+            var fileGroups = driveTester.FileGroups;
+            var totalSize = driveTester.TotalSize;
+            VisualMapPanelFillData(fileGroups, totalSize);
         }
         /// <summary>
         /// Instance testeru

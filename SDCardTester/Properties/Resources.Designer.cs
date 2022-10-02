@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace DjSoftSDCardTester.Properties {
+namespace DjSoft.Tools.SDCardTester.Properties {
     using System;
     
     

@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.ComponentModel;
 
-namespace DjSoftSDCardTester
+namespace DjSoft.Tools.SDCardTester
 {
     /// <summary>
     /// Analyzer stavu disku
@@ -126,7 +126,7 @@ namespace DjSoftSDCardTester
             /// <param name="color"></param>
             /// <param name="filesCount"></param>
             /// <param name="totalLength"></param>
-            public FileGroup(int order, string name, Color color, int filesCount, long totalLength)
+            public FileGroup(int order, string name, Color color, int filesCount, long totalLength, string code = null)
             {
                 this.Order = order;
                 this.Name = name;
@@ -134,6 +134,7 @@ namespace DjSoftSDCardTester
                 this.Extensions = new string[0];
                 this.FilesCount = filesCount;
                 this.TotalLength = totalLength;
+                this.Code = code;
             }
             public override string ToString()
             {
@@ -142,6 +143,13 @@ namespace DjSoftSDCardTester
                 return $"Group: {Name}; Files: {filesCount}; TotalLength: {totalLength}";
             }
             public int Order { get; private set; }
+            /// <summary>
+            /// Kód
+            /// </summary>
+            public string Code { get; private set; }
+            /// <summary>
+            /// Uživatelské jméno
+            /// </summary>
             public string Name { get; private set; }
             public Color Color { get; private set; }
             public string[] Extensions { get; private set; }
@@ -241,17 +249,21 @@ namespace DjSoftSDCardTester
                 _MissingExtensions[extension] = _MissingExtensions[extension] + length;
             }
             string IFileGroup.MissingExtensionsText { get { return MissingExtensionsText; } }
+            int IFileGroup.FilesCount { get { return FilesCount; } set { FilesCount = value; } }
             long IFileGroup.TotalLength { get { return TotalLength; } set { TotalLength = value; } }
+
+            public const string CODE_TEST = "TEST";
         }
         /// <summary>
         /// Interface pro interní přístup na data grupy
         /// </summary>
-        protected interface IFileGroup
+        public interface IFileGroup
         {
             void Reset();
             void Add(int filesCount, long totalLength);
             void AddMissingExtension(string extension, long length);
             string MissingExtensionsText { get; }
+            int FilesCount { get; set; }
             long TotalLength { get; set; }
         }
         #endregion
@@ -262,7 +274,7 @@ namespace DjSoftSDCardTester
         /// <param name="drive"></param>
         /// <param name="totalSize"></param>
         /// <returns></returns>
-        public static DriveAnalyser.FileGroup[] GetFileGroupsForDrive(System.IO.DriveInfo drive, out long totalSize)
+        public static DriveAnalyser.FileGroup[] GetFileGroupsForDrive(System.IO.DriveInfo drive, bool forceTestGroup, out long totalSize)
         {
             totalSize = 0L;
             List<DriveAnalyser.FileGroup> fileGroups = new List<FileGroup>();
@@ -286,7 +298,7 @@ namespace DjSoftSDCardTester
 
                 int order = 0;
                 if (usedSize > 0L) fileGroups.Add(new FileGroup(++order, "Obsazeno", Skin.UsedSpaceColor, 0, usedSize));
-                if (testSize > 0L) fileGroups.Add(new FileGroup(++order, "Testovací", Skin.TestFilesGroupColor, 0, testSize));
+                if (testSize > 0L || forceTestGroup) fileGroups.Add(new FileGroup(++order, "Testovací", Skin.TestFilesGroupColor, 0, testSize, FileGroup.CODE_TEST));
                 if (otherSize > 0L) fileGroups.Add(new FileGroup(++order, "Ostatní", Skin.OtherSpaceColor, 0, otherSize));
             }
 

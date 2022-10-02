@@ -7,7 +7,7 @@ using System.Windows.Forms;
 using System.ComponentModel;
 using System.Drawing;
 
-namespace DjSoftSDCardTester
+namespace DjSoft.Tools.SDCardTester
 {
     /// <summary>
     /// Tester zápisu a čtení na disk
@@ -91,6 +91,7 @@ namespace DjSoftSDCardTester
             LastStepTime = null;
             string testDir = null;
             RunInfoClear();
+            PrepareFileGroups();
             if (DoTestSave) RunTestSave(ref testDir);
             if (DoTestRead) RunTestRead(ref testDir);
             CallTestDone();
@@ -141,7 +142,7 @@ namespace DjSoftSDCardTester
                             break;
                     }
                 }
-
+                RefreshFileGroups();
                 TestStep?.Invoke(this, EventArgs.Empty);
                 LastStepTime = nowTime;
             }
@@ -429,6 +430,45 @@ namespace DjSoftSDCardTester
         /// Provést test čtení
         /// </summary>
         protected bool DoTestRead;
+        #endregion
+        #region Obsah disku
+        /// <summary>
+        /// Připraví základní informace o obsahu aktuálního disku
+        /// </summary>
+        private void PrepareFileGroups()
+        {
+            var drive = _Drive;
+            FileGroups = DriveAnalyser.GetFileGroupsForDrive(drive, true, out long totalSize);
+            TotalSize = totalSize;
+            TestFileGroup = FileGroups.First(g => g.Code == DriveAnalyser.FileGroup.CODE_TEST);
+            TestFileInitCount = TestFileGroup.FilesCount;
+            TestFileInitLength = TestFileGroup.TotalLength;
+        }
+        /// <summary>
+        /// Aktualizuje hodnoty v testovací grupě <see cref="TestFileGroup"/>: vloží do grupy její Init hodnoty 
+        /// a přičte k tomu hodnoty z <see cref="TimeInfoSaveShort"/> + <see cref="TimeInfoSaveLong"/>.
+        /// </summary>
+        private void RefreshFileGroups()
+        {
+            TestFileGroup.FilesCount = TestFileInitCount + TimeInfoSaveShort.FileCount + TimeInfoSaveLong.FileCount;
+            TestFileGroup.TotalLength = TestFileInitLength + TimeInfoSaveShort.TotalLength + TimeInfoSaveLong.TotalLength;
+        }
+        /// <summary>
+        /// Obsah disku, základní složení.
+        /// Při zapisování testovacích dat na disk v rámci testu je navyšována hodnota v grupě testovacích dat.
+        /// </summary>
+        public DriveAnalyser.FileGroup[] FileGroups { get; private set; }
+        /// <summary>
+        /// Velikost disku
+        /// </summary>
+        public long TotalSize { get; private set; }
+        /// <summary>
+        /// Data popisující testovací grupu (<see cref="DriveAnalyser.FileGroup"/>) v rámci testovaného disku.
+        /// V procesu zápisu bude do této grupy navyšována hodnota obsazeného prostoru.
+        /// </summary>
+        private DriveAnalyser.IFileGroup TestFileGroup { get; set; }
+        private int TestFileInitCount { get; set; }
+        private long TestFileInitLength { get; set; }
         #endregion
         #region Přesná časomíra
         /// <summary>
