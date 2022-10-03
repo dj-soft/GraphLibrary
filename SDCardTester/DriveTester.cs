@@ -92,6 +92,7 @@ namespace DjSoft.Tools.SDCardTester
             string testDir = null;
             RunInfoClear();
             PrepareFileGroups();
+            this.RestartStopwatch();
             if (DoTestSave) RunTestSave(ref testDir);
             if (DoTestRead) RunTestRead(ref testDir);
             CallTestDone();
@@ -241,7 +242,6 @@ namespace DjSoft.Tools.SDCardTester
             CurrentWorkingPhase = (IsShortFile(fileNumber) ? TestPhase.SaveShortFile : TestPhase.SaveLongFile);
             CurrentTestPhase = CurrentWorkingPhase;
             CallTestStep(true);
-            this.RestartStopwatch();
             try
             {
                 while (!TestStopping)
@@ -436,14 +436,47 @@ namespace DjSoft.Tools.SDCardTester
             if (testDir is null) testDir = GetTestDirectory(true);
             if (testDir is null) return;
 
+            try
+            {
+                System.IO.DirectoryInfo dirInfo = new System.IO.DirectoryInfo(testDir);
+                if (!dirInfo.Exists) return;
+                var testFiles = dirInfo.GetFiles("*.*", System.IO.SearchOption.TopDirectoryOnly);
+                if (testFiles.Length == 0) return;
+                var fileNames = testFiles.Select(fi => fi.FullName).ToList();
+                fileNames.Sort();
+
+                foreach (var fileName in fileNames)
+                {
+                    if (TestStopping) break;
+
+                    int fileNumber = GetFileNumber(fileName);
+                    if (IsShortFile(fileNumber))
+                    {
+                        var timeInfoReadShort = RunTestReadOneFile(fileName, fileNumber, TestPhase.ReadShortFile, TestPhase.ReadShortFile);
+                        TimeInfoReadShortDone.Add(timeInfoReadShort);
+                    }
+                    else
+                    {
+                        var timeInfoReadLong = RunTestReadOneFile(fileName, fileNumber, TestPhase.ReadLongFile, TestPhase.ReadLongFile);
+                        TimeInfoReadLongDone.Add(timeInfoReadLong);
+                    }
+                }
+            }
+            catch (Exception exc) { }
+            CallTestStep(true);
         }
         /// <summary>
         /// Provést test čtení
         /// </summary>
         protected bool DoTestRead;
-
-
-
+        /// <summary>
+        /// Provede test čtení daného souboru
+        /// </summary>
+        /// <param name="fileName"></param>
+        /// <param name="fileNumber"></param>
+        /// <param name="workingPhase"></param>
+        /// <param name="testPhase"></param>
+        /// <returns></returns>
         private FileTimeInfo RunTestReadOneFile(string fileName, int fileNumber, TestPhase workingPhase, TestPhase testPhase)
         {
             if (TestStopping) return null;
