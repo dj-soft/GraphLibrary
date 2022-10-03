@@ -26,10 +26,14 @@ namespace TestDevExpress
                 Noris.Clients.Win.Components.AsolDX.DxComponent.LogActive = true;         // I při spuštění v režimu Run, to kvůli TimeLogům
 
                 Noris.Clients.Win.Components.AsolDX.DxComponent.UhdPaintEnabled = (uhdPaint != null && uhdPaint == "True");
- 
+
                 var moon10 = Noris.Clients.Win.Components.AsolDX.DxComponent.CreateBitmapImage("Images/Moon10.png");
 
-                Noris.Clients.Win.Components.AsolDX.DxComponent.ApplicationStart(typeof(TestDevExpress.Forms.MainForm), moon10);
+                bool isImages = Noris.Clients.Win.Components.AsolDX.DxComponent.ApplicationArguments.Any(a => a.IndexOf("images", StringComparison.InvariantCultureIgnoreCase) >= 0);
+                if (isImages)
+                    Noris.Clients.Win.Components.AsolDX.DxComponent.ApplicationStart(typeof(TestDevExpress.Forms.ImagePickerForm), moon10);
+                else
+                    Noris.Clients.Win.Components.AsolDX.DxComponent.ApplicationStart(typeof(TestDevExpress.Forms.MainForm), moon10);
                 // Noris.Clients.Win.Components.AsolDX.DxComponent.ApplicationStart(typeof(TestDevExpress.Forms.MainAppForm), moon10);
                 
             }
@@ -38,7 +42,6 @@ namespace TestDevExpress
                 Noris.Clients.Win.Components.AsolDX.DxComponent.Done();
             }
         }
-
         private static object TryRun(Delegate d)
         {
             d.DynamicInvoke();

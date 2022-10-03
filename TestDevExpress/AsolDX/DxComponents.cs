@@ -100,6 +100,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             _Rand = new Random();
             _AppFile = Application.ExecutablePath;
+            _AppArguments = Environment.GetCommandLineArgs();
+            _IsTerminalServer = System.Windows.Forms.SystemInformation.TerminalServerSession;
         }
         /// <summary>
         /// Náhoda
@@ -109,6 +111,14 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Main soubor aplikace (adresář/jméno.exe)
         /// </summary>
         private string _AppFile;
+        /// <summary>
+        /// Obsahuje true pokud jsme aktuálně na terminal serveru.
+        /// </summary>
+        private bool _IsTerminalServer;
+        /// <summary>
+        /// Argumenty spuštění aplikace
+        /// </summary>
+        private string[] _AppArguments;
         /// <summary>
         /// Inicializace subsystému: pojmenuje CurrentThread, registruje a povoluje DevEpxress skiny, nastavuje animace a výchozí skin
         /// </summary>
@@ -228,9 +238,20 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public static string ApplicationPath { get { return System.IO.Path.GetDirectoryName(Instance._AppFile); } }
         /// <summary>
+        /// Argumenty aplikace.
+        /// An array of string where each element contains a command-line argument. 
+        /// The first element is the executable file name, and the following zero or more elements contain the remaining command-line arguments.
+        /// </summary>
+        public static string[] ApplicationArguments { get { return Instance._AppArguments; } }
+        /// <summary>
         /// Obsahuje true jen tehdy, když je aplikace v režimu ladění s debuggerem VisualStudia
         /// </summary>
         public static bool IsDebuggerActive { get { return System.Diagnostics.Debugger.IsAttached; } }
+        /// <summary>
+        /// Obsahuje true pokud jsme aktuálně na terminal serveru.
+        /// Pak je vhodnější omezit grafické lahůdky, protože se musí přenášet po síti na klienta.
+        /// </summary>
+        public static bool IsTerminalServer { get { return Instance._IsTerminalServer; } }
         /// <summary>
         /// Hlavní okno aplikace, pokud byla aplikace spuštěna pomocí <see cref="ApplicationStart(Type, Image)"/>
         /// </summary>

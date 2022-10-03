@@ -103,7 +103,8 @@ namespace TestDevExpress.Forms
         {
             this.components = new System.ComponentModel.Container();
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(800, 450);
+            this.StartPosition = WF.FormStartPosition.CenterScreen;
+            this.ClientSize = new System.Drawing.Size(400, 920);
             this.Text = "DevExpress Resources";
         }
         #endregion
