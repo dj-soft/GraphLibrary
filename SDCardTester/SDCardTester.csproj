@@ -6,12 +6,13 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{5026744B-2023-4D5B-A2F9-1B066B06273A}</ProjectGuid>
     <OutputType>WinExe</OutputType>
-    <RootNamespace>SDCardTester</RootNamespace>
-    <AssemblyName>SDCardTester</AssemblyName>
-    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
+    <RootNamespace>DjSoft.Tools.SDCardTester</RootNamespace>
+    <AssemblyName>Djs.SDCardTester</AssemblyName>
+    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <Deterministic>true</Deterministic>
+    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -51,6 +52,7 @@
       <SubType>Component</SubType>
     </Compile>
     <Compile Include="DriveTester.cs" />
+    <Compile Include="DriveWorker.cs" />
     <Compile Include="MainForm.cs">
       <SubType>Form</SubType>
     </Compile>

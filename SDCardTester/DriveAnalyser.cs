@@ -12,18 +12,21 @@ namespace DjSoft.Tools.SDCardTester
     /// <summary>
     /// Analyzer stavu disku
     /// </summary>
-    public class DriveAnalyser
+    public class DriveAnalyser : DriveWorker
     {
         #region Konstrukce a základní data
         /// <summary>
-        /// Konstruktor
+        /// Inicializace dat v rámci konstruktoru
         /// </summary>
-        /// <param name="drive"></param>
-        public DriveAnalyser()
+        protected override void InitData()
         {
             this.InitGroups();
-            this.AnalyseStepTime = TimeSpan.FromMilliseconds(300d);
         }
+        #endregion
+        #region Grupy podle typu obsahu
+        /// <summary>
+        /// Inicializace skupin
+        /// </summary>
         private void InitGroups()
         {
             _FileGroups = FileGroup.GetGroups();
@@ -38,11 +41,6 @@ namespace DjSoft.Tools.SDCardTester
         protected FileGroup[] _FileGroups;
         protected IFileGroup _GroupOther;
         protected IFileGroup _GroupRemaining;
-        protected System.IO.DriveInfo _Drive;
-        /// <summary>
-        /// Drive pro analýzu
-        /// </summary>
-        public System.IO.DriveInfo Drive { get { return _Drive; } }
         /// <summary>
         /// Aktuální stav skupin souborů.
         /// </summary>
@@ -64,18 +62,6 @@ namespace DjSoft.Tools.SDCardTester
         /// Aktuální stav skupin souborů, typovaný na interní interface
         /// </summary>
         protected IFileGroup[] IFileGroups { get { return _FileGroups; } }
-        /// <summary>
-        /// Časový interval, po jehož uplynutí se může opakovaně volat událost <see cref="AnalyseStep"/>.
-        /// </summary>
-        public TimeSpan AnalyseStepTime { get; set; }
-        /// <summary>
-        /// Událost vyvolaná po změně hodnot v <see cref="FileGroup"/>, mezi dvěma událostmi bude čas nejméně <see cref="AnalyseStepTime"/> i kdyby změny nastaly častěji.
-        /// </summary>
-        public event EventHandler AnalyseStep;
-        /// <summary>
-        /// Událost vyvolaná po jakémkoli doběhnutí analýzy, i po chybách.
-        /// </summary>
-        public event EventHandler AnalyseDone;
         /// <summary>
         /// Jedna skupina souborů. Má více přípon, ale všechny přípony reprezentují jeden druh souborů.
         /// Skupina určuje pořadí ve vizualizaci a barvu, sumarizuje počet a velikost souborů.
@@ -310,36 +296,16 @@ namespace DjSoft.Tools.SDCardTester
         /// Požádá o provedení analýzy daného disku
         /// </summary>
         /// <param name="drive"></param>
-        public void BeginAnalyse(System.IO.DriveInfo drive)
+        /// <param name="doRead"></param>
+        /// <param name="doSave"></param>
+        public void Start(System.IO.DriveInfo drive)
         {
-            if (drive != null && drive.IsReady && !AnalyseRunning)
-                StartAnalyse(drive);
-            else
-                CallAnalyseDone();
-        }
-        /// <summary>
-        /// Požádá o zastavení běhu analýzy
-        /// </summary>
-        public void StopAnalyse()
-        {
-            if (AnalyseRunning)
-                AnalyseStopping = true;
-        }
-        /// <summary>
-        /// Zahájení analýzy, zde v threadu volajícího
-        /// </summary>
-        /// <param name="drive"></param>
-        protected void StartAnalyse(System.IO.DriveInfo drive)
-        { 
-            AnalyseRunning = true;
-            AnalyseStopping = false;
-            _Drive = drive;
-            Task.Factory.StartNew(RunAnalyse);
+            StartAction(drive);
         }
         /// <summary>
         /// Zahájení analýzy, zde již v threadu Working
         /// </summary>
-        protected void RunAnalyse()
+        protected override void Run()
         {
             LastStepTime = null;
 
@@ -347,23 +313,23 @@ namespace DjSoft.Tools.SDCardTester
             this.AnalyseDirectoriesDone = 0;
             this.AnalyseDirectoriesQueue = 0;
 
-            var root = _Drive;
+            var root = Drive;
             _GroupRemaining.TotalLength = (root.TotalSize - root.TotalFreeSpace);
-            CallAnalyseStep(1, true);
+            CallTestStep(true, 1);
 
             var nextDirs = new Stack<System.IO.DirectoryInfo>();
             processDirectory(root.RootDirectory);
-            CallAnalyseStep(nextDirs.Count);
-            while (nextDirs.Count > 0 && !AnalyseStopping)
+            CallTestStep(false, nextDirs.Count);
+            while (nextDirs.Count > 0 && !Stopping)
             {
                 processDirectory(nextDirs.Pop());
-                CallAnalyseStep(nextDirs.Count);
+                CallTestStep(false, nextDirs.Count);
             }
-            CallAnalyseStep(nextDirs.Count, true);
+            CallTestStep(true, nextDirs.Count);
 
             string missingExtensionsText = _GroupOther.MissingExtensionsText;
             string codeText = this.CodeText;
-            CallAnalyseDone();
+            CallWorkingDone();
 
             // Zpracuje jeden adresář:
             // načte jeho subdirs a files, a roztřídí: subdirs přidá do zásobníku práce nextDirs, files zařadí do patřičné skupiny podle jeho přípony
@@ -404,41 +370,17 @@ namespace DjSoft.Tools.SDCardTester
             }
         }
         /// <summary>
-        /// Čas posledního hlášení změny
+        /// Vyvolá událost <see cref="DriveWorker.WorkingStep"/>, pokud je odpovídající čas
         /// </summary>
-        protected DateTime? LastStepTime;
-        /// <summary>
-        /// Vyvolá událost <see cref="AnalyseStep"/>, pokud je odpovídající čas
-        /// </summary>
-        /// <param name="queueCount"></param>
         /// <param name="force"></param>
-        protected void CallAnalyseStep(int queueCount, bool force = false)
+        /// <param name="queueCount"></param>
+        protected void CallTestStep(bool force, int queueCount)
         {
-            var nowTime = DateTime.Now;
-            var lastTime = LastStepTime;
-            var stepTime = AnalyseStepTime;
-            if (force || !lastTime.HasValue || stepTime.TotalMilliseconds <= 0d || (lastTime.HasValue && ((TimeSpan)(nowTime - lastTime.Value) >= stepTime)))
-            {
-                AnalyseDirectoriesQueue = queueCount;
-                AnalyseStep?.Invoke(this, EventArgs.Empty);
-                LastStepTime = nowTime;
-            }
+            if (!CanCallWorkingStep(force)) return;
+
+            AnalyseDirectoriesQueue = queueCount;
+            CallWorkingStep();
         }
-        /// <summary>
-        /// Vyvolá událost <see cref="AnalyseDone"/>
-        /// </summary>
-        protected void CallAnalyseDone()
-        {
-            AnalyseDone?.Invoke(this, EventArgs.Empty);
-        }
-        /// <summary>
-        /// Analýza právě běží?
-        /// </summary>
-        public bool AnalyseRunning { get; private set; }
-        /// <summary>
-        /// Je vydán požadavek na zastavení analýzy
-        /// </summary>
-        public bool AnalyseStopping { get; private set; }
         /// <summary>
         /// Počet adresářů již analyzovaných
         /// </summary>

@@ -314,10 +314,10 @@ namespace DjSoft.Tools.SDCardTester
 
             DriveAnalyser driveAnalyser = new DriveAnalyser();
             AnalyseInfoPanelPrepare(driveAnalyser);
-            driveAnalyser.AnalyseStep += DriveAnalyser_AnalyseStep;
-            driveAnalyser.AnalyseDone += DriveAnalyser_AnalyseDone;
+            driveAnalyser.WorkingStep += DriveAnalyser_AnalyseStep;
+            driveAnalyser.WorkingDone += DriveAnalyser_AnalyseDone;
             _DriveAnalyser = driveAnalyser;
-            driveAnalyser.BeginAnalyse(this.SelectedDrive);
+            driveAnalyser.Start(this.SelectedDrive);
         }
         /// <summary>
         /// Požadavek na zastavení analýzy
@@ -325,7 +325,7 @@ namespace DjSoft.Tools.SDCardTester
         private void StopDriveAnalyse()
         {
             if (_DriveAnalyser != null)
-                _DriveAnalyser?.StopAnalyse();
+                _DriveAnalyser?.Stop();
             else
                 ShowControls(ActionState.Dialog, false);
         }
@@ -476,10 +476,10 @@ namespace DjSoft.Tools.SDCardTester
 
             DriveTester driveTester = new DriveTester();
             TestInfoPanelPrepare(driveTester);
-            driveTester.TestStep += DriveTester_TestStep;
-            driveTester.TestDone += DriveTester_TestDone;
+            driveTester.WorkingStep += DriveTester_TestStep;
+            driveTester.WorkingDone += DriveTester_TestDone;
             _DriveTester = driveTester;
-            driveTester.BeginTest(this.SelectedDrive, doSave, doRead);
+            driveTester.Start(this.SelectedDrive, doSave, doRead);
         }
         /// <summary>
         /// Požadavek na zastavení testu
@@ -487,7 +487,7 @@ namespace DjSoft.Tools.SDCardTester
         private void StopDriveTest()
         {
             if (_DriveTester != null)
-                _DriveTester?.StopTest();
+                _DriveTester?.Stop();
             else
                 ShowControls(ActionState.Dialog, false);
         }
@@ -519,7 +519,7 @@ namespace DjSoft.Tools.SDCardTester
             if (_DriveTester is null) return;
 
             if (this.InvokeRequired)
-                this.Invoke(new Action(DriveTesterRefresh));
+                this.BeginInvoke(new Action(DriveTesterRefresh));
             else
             {
                 var driveTester = _DriveTester;

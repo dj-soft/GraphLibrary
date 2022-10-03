@@ -12,7 +12,7 @@ namespace DjSoft.Tools.SDCardTester
     /// <summary>
     /// Tester zápisu a čtení na disk
     /// </summary>
-    public class DriveTester
+    public class DriveTester : DriveWorker
     {
         #region Konstrukce a public rozhraní
         /// <summary>
@@ -22,71 +22,22 @@ namespace DjSoft.Tools.SDCardTester
         {
             InitStopwatch();
         }
-        protected System.IO.DriveInfo _Drive;
         /// <summary>
         /// Požádá o provedení testu zápisu a čtení daného disku
         /// </summary>
         /// <param name="drive"></param>
         /// <param name="doRead"></param>
         /// <param name="doSave"></param>
-        public void BeginTest(System.IO.DriveInfo drive, bool doSave, bool doRead)
+        public void Start(System.IO.DriveInfo drive, bool doSave, bool doRead)
         {
-            if (drive != null && drive.IsReady && !TestRunning)
-                StartTest(drive, doSave, doRead);
-            else
-                CallTestDone();
+            StartAction(drive, () => { DoTestSave = doSave; DoTestRead = doRead; });
         }
-        /// <summary>
-        /// Požádá o zastavení běhu testu
-        /// </summary>
-        public void StopTest()
-        {
-            if (TestRunning)
-                TestStopping = true;
-        }
-        /// <summary>
-        /// Drive pro analýzu
-        /// </summary>
-        public System.IO.DriveInfo Drive { get { return _Drive; } }
-        /// <summary>
-        /// Test právě běží?
-        /// </summary>
-        public bool TestRunning { get; private set; }
-        /// <summary>
-        /// Je vydán požadavek na zastavení testu
-        /// </summary>
-        public bool TestStopping { get; private set; }
-        /// <summary>
-        /// Časový interval, po jehož uplynutí se může opakovaně volat událost <see cref="TestStep"/>.
-        /// </summary>
-        public TimeSpan TestStepTime { get; set; }
-        /// <summary>
-        /// Událost vyvolaná po změně hodnot v <see cref="FileGroup"/>, mezi dvěma událostmi bude čas nejméně <see cref="TestStepTime"/> i kdyby změny nastaly častěji.
-        /// </summary>
-        public event EventHandler TestStep;
-        /// <summary>
-        /// Událost vyvolaná po jakémkoli doběhnutí testu, i po chybách.
-        /// </summary>
-        public event EventHandler TestDone;
         #endregion
         #region Privátní řízení běhu
         /// <summary>
-        /// Zahájení testu, zde v threadu volajícího
-        /// </summary>
-        /// <param name="drive"></param>
-        protected void StartTest(System.IO.DriveInfo drive, bool doSave, bool doRead)
-        {
-            TestRunning = true;
-            TestStopping = false;
-            _Drive = drive;
-            DoTestSave = doSave;
-            DoTestRead = doRead;
-            Task.Factory.StartNew(RunTest);
-        }
-        /// <summary>
         /// Zahájení testu, zde již v threadu Working
         /// </summary>
-        protected void RunTest()
+        protected override void Run()
         {
             LastStepTime = null;
             string testDir = null;
@@ -95,12 +46,8 @@ namespace DjSoft.Tools.SDCardTester
             this.RestartStopwatch();
             if (DoTestSave) RunTestSave(ref testDir);
             if (DoTestRead) RunTestRead(ref testDir);
-            CallTestDone();
+            CallWorkingDone();
         }
-        /// <summary>
-        /// Čas posledního hlášení změny
-        /// </summary>
-        protected DateTime? LastStepTime;
         /// <summary>
         /// Vyvolá událost <see cref="TestStep"/>, pokud je odpovídající čas
         /// </summary>
@@ -109,52 +56,39 @@ namespace DjSoft.Tools.SDCardTester
         /// <param name="startTime"></param>
         /// <param name="currentTime"></param>
         /// <param name="errorCount"></param>
-        protected void CallTestStep(bool force = false, long? currentLength = null, long? startTime = null, long? currentTime = null, int? errorCount = null)
+        protected void CallTestStep(bool force, long? currentLength = null, long? startTime = null, long? currentTime = null, int? errorCount = null)
         {
-            var nowTime = DateTime.Now;
-            var lastTime = LastStepTime;
-            var stepTime = TestStepTime;
-            if (force || !lastTime.HasValue || stepTime.TotalMilliseconds <= 0d || (lastTime.HasValue && ((TimeSpan)(nowTime - lastTime.Value) >= stepTime)))
-            {   // Je čas na volání eventu:
+            if (!CanCallWorkingStep(force)) return;
 
-                // Do public properites dáme informace o hotových průchodech:
-                TimeInfoSaveShort = TimeInfoSaveShortDone;
-                TimeInfoSaveLong = TimeInfoSaveLongDone;
-                TimeInfoReadShort = TimeInfoReadShortDone;
-                TimeInfoReadLong = TimeInfoReadLongDone;
+            // Do public properites dáme informace o hotových průchodech:
+            TimeInfoSaveShort = TimeInfoSaveShortDone;
+            TimeInfoSaveLong = TimeInfoSaveLongDone;
+            TimeInfoReadShort = TimeInfoReadShortDone;
+            TimeInfoReadLong = TimeInfoReadLongDone;
 
-                if (currentLength.HasValue && startTime.HasValue && currentTime.HasValue && errorCount.HasValue)
-                {   // Máme k dispozici "rozpracovaná data" => přičteme je k hodnotám *Done a uložíme do public properties:
-                    TestPhase workingPhase = this.CurrentWorkingPhase;
-                    decimal elapsedTime = this.GetSeconds(startTime.Value, currentTime.Value);
-                    // Do odpovídající public property vložím součet hodnoty Done + rozpracované hodnoty daného režimu:
-                    switch (workingPhase)
-                    {
-                        case TestPhase.SaveShortFile:
-                            TimeInfoSaveShort = new FileTimeInfo(TimeInfoSaveShortDone, 0, currentLength.Value, elapsedTime, errorCount.Value);
-                            break;
-                        case TestPhase.SaveLongFile:
-                            TimeInfoSaveLong = new FileTimeInfo(TimeInfoSaveLongDone, 0, currentLength.Value, elapsedTime, errorCount.Value);
-                            break;
-                        case TestPhase.ReadShortFile:
-                            TimeInfoReadShort = new FileTimeInfo(TimeInfoReadShortDone, 0, currentLength.Value, elapsedTime, errorCount.Value);
-                            break;
-                        case TestPhase.ReadLongFile:
-                            TimeInfoReadLong = new FileTimeInfo(TimeInfoReadLongDone, 0, currentLength.Value, elapsedTime, errorCount.Value);
-                            break;
-                    }
+            if (currentLength.HasValue && startTime.HasValue && currentTime.HasValue && errorCount.HasValue)
+            {   // Máme k dispozici "rozpracovaná data" => přičteme je k hodnotám *Done a uložíme do public properties:
+                TestPhase workingPhase = this.CurrentWorkingPhase;
+                decimal elapsedTime = this.GetSeconds(startTime.Value, currentTime.Value);
+                // Do odpovídající public property vložím součet hodnoty Done + rozpracované hodnoty daného režimu:
+                switch (workingPhase)
+                {
+                    case TestPhase.SaveShortFile:
+                        TimeInfoSaveShort = new FileTimeInfo(TimeInfoSaveShortDone, 0, currentLength.Value, elapsedTime, errorCount.Value);
+                        break;
+                    case TestPhase.SaveLongFile:
+                        TimeInfoSaveLong = new FileTimeInfo(TimeInfoSaveLongDone, 0, currentLength.Value, elapsedTime, errorCount.Value);
+                        break;
+                    case TestPhase.ReadShortFile:
+                        TimeInfoReadShort = new FileTimeInfo(TimeInfoReadShortDone, 0, currentLength.Value, elapsedTime, errorCount.Value);
+                        break;
+                    case TestPhase.ReadLongFile:
+                        TimeInfoReadLong = new FileTimeInfo(TimeInfoReadLongDone, 0, currentLength.Value, elapsedTime, errorCount.Value);
+                        break;
                 }
-                RefreshFileGroups();
-                TestStep?.Invoke(this, EventArgs.Empty);
-                LastStepTime = nowTime;
             }
-        }
-        /// <summary>
-        /// Vyvolá událost <see cref="TestDone"/>
-        /// </summary>
-        protected void CallTestDone()
-        {
-            TestDone?.Invoke(this, EventArgs.Empty);
+            RefreshFileGroups();
+            CallWorkingStep();
         }
         /// <summary>
         /// Vynuluje data o výsledných časech
@@ -223,7 +157,7 @@ namespace DjSoft.Tools.SDCardTester
         /// </summary>
         protected void RunTestSave(ref string testDir)
         {
-            if (TestStopping) return;
+            if (Stopping) return;
             if (!CanWriteFile(0L)) return;                                               // Pokud nemám na disku ani rezervu volného místa...
 
             if (testDir is null) testDir = GetTestDirectory(true);
@@ -232,7 +166,7 @@ namespace DjSoft.Tools.SDCardTester
             // Na otestování disku 8TB při využití jednoho adresáře připouštíme nejvýše 4096 souborů;
             // Nejprve vepíšeme 512 souborů o velikosti 4096 B = 2 MB (2 097 152 B);
             // Zbývajících 3584 souborů bude mít velikost (celková velikost disku / 3584) zarovnáno na 4KB bloky, pro 8TB disk tedy velikost = 2 454 265 856 = 2.5 GB
-            long totalSize = _Drive.TotalSize;
+            long totalSize = Drive.TotalSize;
             long longFilesLength = totalSize / LongFilesMaxCount;                        // Délka velkého souboru tak, aby jich v jednom adresáři na prázdném disku bylo celkem max 4096 souborů
             longFilesLength = (longFilesLength / ShortFilesLength) * ShortFilesLength;   // Zarovnáno na 4KB bloky
             long longFilesMinLength = LongFilesMinLength;
@@ -244,7 +178,7 @@ namespace DjSoft.Tools.SDCardTester
             CallTestStep(true);
             try
             {
-                while (!TestStopping)
+                while (!Stopping)
                 {
                     if (IsShortFile(fileNumber))
                     {
@@ -282,10 +216,10 @@ namespace DjSoft.Tools.SDCardTester
         protected FileTimeInfo RunTestSaveOneFile(string testDir, int fileNumber, out string fileName, long targetLength, TestPhase workingPhase, TestPhase testPhase)
         {
             fileName = null;
-            if (TestStopping) return null;
+            if (Stopping) return null;
 
             string saveFileName = GetFileName(testDir, fileNumber);
-            if (TestStopping) return null;
+            if (Stopping) return null;
             fileName = saveFileName;
 
             CurrentWorkingPhase = workingPhase;
@@ -304,7 +238,7 @@ namespace DjSoft.Tools.SDCardTester
                 int bufferLength = GetBufferLength(workingPhase, currentLength, targetLength);
                 var nextData = CreateTestData(fileNumber, bufferIndex, bufferLength);
                 bool doWrite = true;
-                while (doWrite && !TestStopping)
+                while (doWrite && !Stopping)
                 {
                     var currentData = nextData;            // Nezbytnost!!! : protože 'buffer' odchází do FileStreamu k zápisu, a současně (protože .WriteAsync) se do jiné proměnné 'data' připravuje nový obsah pro další cyklus
                     int oneLength = currentData.Length;
@@ -341,7 +275,7 @@ namespace DjSoft.Tools.SDCardTester
                 int bufferLength = GetBufferLength(phase, currentLength, targetLength);
                 var nextData = CreateTestData(fileNumber, bufferIndex, bufferLength);
                 bool doWrite = true;
-                while (doWrite && !TestStopping)
+                while (doWrite && !Stopping)
                 {
                     var buffer = nextData;           // Nezbytnost!!! : protože 'buffer' odchází do FileStreamu k zápisu, a současně (protože .WriteAsync) se do jiné proměnné 'data' připravuje nový obsah pro další cyklus
                     int oneLength = buffer.Length;
@@ -403,7 +337,7 @@ namespace DjSoft.Tools.SDCardTester
         protected bool CanWriteFile(long requestedLength, out long acceptedLength)
         {
             acceptedLength = 0L;
-            System.IO.DriveInfo driveInfo = new System.IO.DriveInfo(_Drive.Name);        // Refresh
+            System.IO.DriveInfo driveInfo = new System.IO.DriveInfo(Drive.Name);         // Refresh
             long available = driveInfo.AvailableFreeSpace;
             long reserve = driveInfo.TotalSize / 200L;                                   // Rezerva = 0.5% místa na disku, která má zbýt po zápisu testovacího souboru
             long smallest = ShortFilesLength;
@@ -432,7 +366,7 @@ namespace DjSoft.Tools.SDCardTester
         /// </summary>
         protected void RunTestRead(ref string testDir)
         {
-            if (TestStopping) return;
+            if (Stopping) return;
             if (testDir is null) testDir = GetTestDirectory(true);
             if (testDir is null) return;
 
@@ -447,7 +381,7 @@ namespace DjSoft.Tools.SDCardTester
 
                 foreach (var fileName in fileNames)
                 {
-                    if (TestStopping) break;
+                    if (Stopping) break;
 
                     int fileNumber = GetFileNumber(fileName);
                     if (IsShortFile(fileNumber))
@@ -479,7 +413,7 @@ namespace DjSoft.Tools.SDCardTester
         /// <returns></returns>
         private FileTimeInfo RunTestReadOneFile(string fileName, int fileNumber, TestPhase workingPhase, TestPhase testPhase)
         {
-            if (TestStopping) return null;
+            if (Stopping) return null;
 
             CurrentWorkingPhase = workingPhase;
             CurrentTestPhase = testPhase;
@@ -508,7 +442,7 @@ namespace DjSoft.Tools.SDCardTester
                 // Read: buffer s daty je "pozadu" za fyzickou prací se souborem (na rozdíl od metody pro Save)
                 byte[] prevData = null;
                 bool doRead = true;
-                while (doRead && !TestStopping)
+                while (doRead && !Stopping)
                 {
                     doRead = (fst.Position < totalLength);
                     if (!doRead) break;
@@ -549,7 +483,7 @@ namespace DjSoft.Tools.SDCardTester
         /// </summary>
         private void PrepareFileGroups()
         {
-            var drive = _Drive;
+            var drive = Drive;
             FileGroups = DriveAnalyser.GetFileGroupsForDrive(drive, true, out long totalSize);
             TotalSize = totalSize;
             TestFileGroup = FileGroups.First(g => g.Code == DriveAnalyser.FileGroup.CODE_TEST);
@@ -581,53 +515,6 @@ namespace DjSoft.Tools.SDCardTester
         private DriveAnalyser.IFileGroup TestFileGroup { get; set; }
         private int TestFileInitCount { get; set; }
         private long TestFileInitLength { get; set; }
-        #endregion
-        #region Přesná časomíra
-        /// <summary>
-        /// Inicializuje časomíru
-        /// </summary>
-        protected void InitStopwatch()
-        {
-            Stopwatch = new System.Diagnostics.Stopwatch();
-            Frequency = (decimal)System.Diagnostics.Stopwatch.Frequency;
-        }
-        /// <summary>
-        /// Nuluje a nastartuje časomíru
-        /// </summary>
-        /// <returns></returns>
-        protected long RestartStopwatch()
-        {
-            Stopwatch.Restart();
-            return Stopwatch.ElapsedTicks;
-        }
-        /// <summary>
-        /// Aktuální čas (ticky), použije se jako parametr do metody <see cref="GetSeconds(long)"/> na konci měřeného cyklu
-        /// </summary>
-        protected long CurrentTime { get { return Stopwatch.ElapsedTicks; } }
-        /// <summary>
-        /// Vrátí počet sekund od daného počátečního času. Bez parametru = od restartu časovače = <see cref="RestartStopwatch"/>.
-        /// </summary>
-        /// <param name="startTime"></param>
-        /// <returns></returns>
-        protected decimal GetSeconds(long startTime = 0L) { return GetSeconds(startTime, CurrentTime); }
-        /// <summary>
-        /// Vrátí počet sekund od daného počátečního do daného koncového času.
-        /// </summary>
-        /// <param name="startTime"></param>
-        /// <returns></returns>
-        protected decimal GetSeconds(long startTime, long stopTime)
-        {
-            decimal elapsedTime = (decimal)(stopTime - startTime);
-            return elapsedTime / Frequency;
-        }
-        /// <summary>
-        /// Časovač
-        /// </summary>
-        protected System.Diagnostics.Stopwatch Stopwatch;
-        /// <summary>
-        /// Frekvence časovače = počet ticků / sekunda
-        /// </summary>
-        protected decimal Frequency;
         #endregion
         #region Vyhledání testovacích souborů
         /// <summary>
@@ -726,7 +613,7 @@ namespace DjSoft.Tools.SDCardTester
         /// <returns></returns>
         protected string GetTestDirectory(bool canCreate)
         {
-            string dirName = System.IO.Path.Combine(this._Drive.RootDirectory.FullName, TestDirectory);
+            string dirName = System.IO.Path.Combine(this.Drive.RootDirectory.FullName, TestDirectory);
             var dirInfo = new System.IO.DirectoryInfo(dirName);
             try
             {
