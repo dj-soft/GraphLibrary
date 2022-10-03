@@ -107,7 +107,8 @@ namespace DjSoft.Tools.SDCardTester
         /// <param name="currentLength"></param>
         /// <param name="startTime"></param>
         /// <param name="currentTime"></param>
-        protected void CallTestStep(bool force = false, long? currentLength = null, long? startTime = null, long? currentTime = null, int? asyncOK = null, int? asyncSlow = null)
+        /// <param name="errorCount"></param>
+        protected void CallTestStep(bool force = false, long? currentLength = null, long? startTime = null, long? currentTime = null, int? errorCount = null)
         {
             var nowTime = DateTime.Now;
             var lastTime = LastStepTime;
@@ -121,24 +122,24 @@ namespace DjSoft.Tools.SDCardTester
                 TimeInfoReadShort = TimeInfoReadShortDone;
                 TimeInfoReadLong = TimeInfoReadLongDone;
 
-                if (currentLength.HasValue && startTime.HasValue && currentTime.HasValue && asyncOK.HasValue && asyncSlow.HasValue)
+                if (currentLength.HasValue && startTime.HasValue && currentTime.HasValue && errorCount.HasValue)
                 {   // Máme k dispozici "rozpracovaná data" => přičteme je k hodnotám *Done a uložíme do public properties:
-                    TestPhase testPhase = this.TimeInfoCurrentPhase;
+                    TestPhase workingPhase = this.CurrentWorkingPhase;
                     decimal elapsedTime = this.GetSeconds(startTime.Value, currentTime.Value);
                     // Do odpovídající public property vložím součet hodnoty Done + rozpracované hodnoty daného režimu:
-                    switch (testPhase)
+                    switch (workingPhase)
                     {
                         case TestPhase.SaveShortFile:
-                            TimeInfoSaveShort = new FileTimeInfo(TimeInfoSaveShortDone, 0, currentLength.Value, elapsedTime, asyncOK.Value, asyncSlow.Value);
+                            TimeInfoSaveShort = new FileTimeInfo(TimeInfoSaveShortDone, 0, currentLength.Value, elapsedTime, errorCount.Value);
                             break;
                         case TestPhase.SaveLongFile:
-                            TimeInfoSaveLong = new FileTimeInfo(TimeInfoSaveLongDone, 0, currentLength.Value, elapsedTime, asyncOK.Value, asyncSlow.Value);
+                            TimeInfoSaveLong = new FileTimeInfo(TimeInfoSaveLongDone, 0, currentLength.Value, elapsedTime, errorCount.Value);
                             break;
                         case TestPhase.ReadShortFile:
-                            TimeInfoReadShort = new FileTimeInfo(TimeInfoReadShortDone, 0, currentLength.Value, elapsedTime, asyncOK.Value, asyncSlow.Value);
+                            TimeInfoReadShort = new FileTimeInfo(TimeInfoReadShortDone, 0, currentLength.Value, elapsedTime, errorCount.Value);
                             break;
                         case TestPhase.ReadLongFile:
-                            TimeInfoReadLong = new FileTimeInfo(TimeInfoReadLongDone, 0, currentLength.Value, elapsedTime, asyncOK.Value, asyncSlow.Value);
+                            TimeInfoReadLong = new FileTimeInfo(TimeInfoReadLongDone, 0, currentLength.Value, elapsedTime, errorCount.Value);
                             break;
                     }
                 }
@@ -169,9 +170,15 @@ namespace DjSoft.Tools.SDCardTester
             TimeInfoReadLongDone = new FileTimeInfo(TestPhase.ReadLongFile);
         }
         /// <summary>
-        /// Aktuálně běžící fáze testu
+        /// Aktuálně prováděný typ test. 
+        /// Zde je fáze skutečně probíhající aktivity. Tato hodnota určuje sadu výsledků, které se právě aktualizují.
         /// </summary>
-        public TestPhase TimeInfoCurrentPhase { get; private set; }
+        public TestPhase CurrentWorkingPhase { get; private set; }
+        /// <summary>
+        /// Aktuálně běžící fáze testu. 
+        /// Zde je uváděno Save i v době, kdy se provádí kontrolní Read. Tato hodnota má být zvýrazněna v okně informací.
+        /// </summary>
+        public TestPhase CurrentTestPhase { get; private set; }
         /// <summary>
         /// Informace o přenosech typu Save, souborů typu Short.
         /// </summary>
@@ -225,13 +232,14 @@ namespace DjSoft.Tools.SDCardTester
             // Nejprve vepíšeme 512 souborů o velikosti 4096 B = 2 MB (2 097 152 B);
             // Zbývajících 3584 souborů bude mít velikost (celková velikost disku / 3584) zarovnáno na 4KB bloky, pro 8TB disk tedy velikost = 2 454 265 856 = 2.5 GB
             long totalSize = _Drive.TotalSize;
-            long longFilesLength = totalSize / LongFilesMaxCount;                           // Délka velkého souboru tak, aby jich v jednom adresáři na prázdném disku bylo celkem max 4096 souborů
+            long longFilesLength = totalSize / LongFilesMaxCount;                        // Délka velkého souboru tak, aby jich v jednom adresáři na prázdném disku bylo celkem max 4096 souborů
             longFilesLength = (longFilesLength / ShortFilesLength) * ShortFilesLength;   // Zarovnáno na 4KB bloky
             long longFilesMinLength = LongFilesMinLength;
             if (longFilesLength < longFilesMinLength) longFilesLength = longFilesMinLength;        // Velké soubory by neměly být menší než 16 MB, aby bylo možno měřit rychlost zápisu i čtení, když někdy je deklarováno 80 MB/sec
 
             int fileNumber = GetNextFileNumber(testDir);
-            TimeInfoCurrentPhase = (IsShortFile(fileNumber) ? TestPhase.SaveShortFile : TestPhase.SaveLongFile);
+            CurrentWorkingPhase = (IsShortFile(fileNumber) ? TestPhase.SaveShortFile : TestPhase.SaveLongFile);
+            CurrentTestPhase = CurrentWorkingPhase;
             CallTestStep(true);
             this.RestartStopwatch();
             try
@@ -240,24 +248,24 @@ namespace DjSoft.Tools.SDCardTester
                 {
                     if (IsShortFile(fileNumber))
                     {
-                        var timeInfoSaveShort = RunTestSaveOneFile(testDir, fileNumber, out string fileName, ShortFilesLength, TestPhase.SaveShortFile);
+                        var timeInfoSaveShort = RunTestSaveOneFile(testDir, fileNumber, out string fileName, ShortFilesLength, TestPhase.SaveShortFile, TestPhase.SaveShortFile);
                         TimeInfoSaveShortDone.Add(timeInfoSaveShort);
 
-                        var timeInfoReadShort = RunTestReadOneFile(fileName, TestPhase.ReadShortFile, fileNumber);
+                        var timeInfoReadShort = RunTestReadOneFile(fileName, fileNumber, TestPhase.ReadShortFile, TestPhase.SaveShortFile);
                         TimeInfoReadShortDone.Add(timeInfoReadShort);
                     }
                     else
                     {
-                        if (!CanWriteFile(longFilesLength)) break;
-                        var timeInfoSaveLong = RunTestSaveOneFile(testDir, fileNumber, out string fileName, longFilesLength, TestPhase.SaveLongFile);
+                        if (!CanWriteFile(longFilesLength, out long acceptedLength)) break;
+                        var timeInfoSaveLong = RunTestSaveOneFile(testDir, fileNumber, out string fileName, acceptedLength, TestPhase.SaveLongFile, TestPhase.SaveLongFile);
                         TimeInfoSaveLongDone.Add(timeInfoSaveLong);
 
-                        var timeInfoReadLong = RunTestReadOneFile(fileName, TestPhase.ReadLongFile, fileNumber);
+                        var timeInfoReadLong = RunTestReadOneFile(fileName, fileNumber, TestPhase.ReadLongFile, TestPhase.SaveLongFile);
                         TimeInfoReadLongDone.Add(timeInfoReadLong);
                     }
                     fileNumber++;
                 }
-                TimeInfoCurrentPhase = TestPhase.None;
+                CurrentWorkingPhase = TestPhase.None;
             }
             catch (Exception exc) { }
             CallTestStep(true);
@@ -269,9 +277,9 @@ namespace DjSoft.Tools.SDCardTester
         /// <param name="fileNumber"></param>
         /// <param name="fileName">Out jméno souboru pro případný test čtení</param>
         /// <param name="targetLength"></param>
-        /// <param name="phase">Fáze, určuje zápis Short/Long souboru, bude vepsána do <see cref="TimeInfoCurrentPhase"/></param>
+        /// <param name="workingPhase">Fáze, určuje zápis Short/Long souboru, bude vepsána do <see cref="CurrentWorkingPhase"/></param>
         /// <returns></returns>
-        protected FileTimeInfo RunTestSaveOneFile(string testDir, int fileNumber, out string fileName, long targetLength, TestPhase phase)
+        protected FileTimeInfo RunTestSaveOneFile(string testDir, int fileNumber, out string fileName, long targetLength, TestPhase workingPhase, TestPhase testPhase)
         {
             fileName = null;
             if (TestStopping) return null;
@@ -280,132 +288,104 @@ namespace DjSoft.Tools.SDCardTester
             if (TestStopping) return null;
             fileName = saveFileName;
 
-            TimeInfoCurrentPhase = phase;
-            return RunTestSaveOneFileWriteAsync(testDir, fileNumber, fileName, targetLength, phase);
+            CurrentWorkingPhase = workingPhase;
+            CurrentTestPhase = testPhase;
+            return RunTestSaveOneFileWriteAsync(testDir, fileNumber, fileName, targetLength, workingPhase);
         }
 
-        protected FileTimeInfo RunTestSaveOneFileWriteAsync(string testDir, int fileNumber, string fileName, long targetLength, TestPhase phase)
+        protected FileTimeInfo RunTestSaveOneFileWriteAsync(string testDir, int fileNumber, string fileName, long targetLength, TestPhase workingPhase)
         {
             long startTime = this.CurrentTime;
             long currentLength = 0L;
-            int asyncOK = 0;
-            int asyncSlow = 0;
-            decimal asyncTimeOk = 0m;
             int bufferIndex = 0;
-            int bufferLength = 0;
             using (System.IO.FileStream fst = new System.IO.FileStream(fileName, System.IO.FileMode.Create, System.IO.FileAccess.Write))
             {
-                bufferLength = GetBufferLength(phase, currentLength, targetLength);
-                var writeData = GetData(fileNumber, bufferIndex, bufferLength);
+                // Save: buffer s daty je "v předstihu" před fyzickou prací se souborem (na rozdíl od metody pro Read)
+                int bufferLength = GetBufferLength(workingPhase, currentLength, targetLength);
+                var nextData = CreateTestData(fileNumber, bufferIndex, bufferLength);
                 bool doWrite = true;
                 while (doWrite && !TestStopping)
                 {
-                    var buffer = writeData;           // Nezbytnost!!! : protože 'buffer' odchází do FileStreamu k zápisu, a současně (protože .WriteAsync) se do jiné proměnné 'data' připravuje nový obsah pro další cyklus
-                    int oneLength = buffer.Length;
-                    using (var task = fst.WriteAsync(buffer, 0, oneLength))    // Zde asynchronně začíná zápis dat do souboru
+                    var currentData = nextData;            // Nezbytnost!!! : protože 'buffer' odchází do FileStreamu k zápisu, a současně (protože .WriteAsync) se do jiné proměnné 'data' připravuje nový obsah pro další cyklus
+                    int oneLength = currentData.Length;
+                    using (var task = fst.WriteAsync(currentData, 0, oneLength))    // Zde asynchronně začíná zápis dat do souboru
                     {
                         currentLength += (long)oneLength;
-                        doWrite = currentLength < targetLength;
+                        doWrite = currentLength < targetLength;                     // Ještě budeme připravovat další data?
                         if (doWrite)
                         {
-                            bufferLength = GetBufferLength(phase, currentLength, targetLength);
-                            writeData = GetData(fileNumber, ++bufferIndex, bufferLength);         // A zatímco se do souboru v jiném threadu zapisuje, my si zde připravujeme data do dalšího kola zápisu.
+                            bufferLength = GetBufferLength(workingPhase, currentLength, targetLength);
+                            nextData = CreateTestData(fileNumber, ++bufferIndex, bufferLength);         // A zatímco se do souboru v jiném threadu zapisuje, my si zde připravujeme data do dalšího kola zápisu.
                         }
-                        if (task.IsCompleted)
-                        {   // Problém: jsme pomalí! Než jsme si stihli připravit data (data = GetData()), tak se předchozí buffer stihl zapsat na cílový disk.
-                            asyncSlow++;
-                        }
-                        else
-                        {   // Sem bychom měli dojít vždy = značí to, že data pro příští buffer jsme připravili včas, a zápis souboru ještě nedoběhl = stíháme data generovat rychleji, než se zapisují...
-                            long waitStart = this.CurrentTime;                 // Pro zajímavost: jak dlouho čekáme?
-                            asyncOK++;
-                            task.Wait();                                       // Počkáme na dokončení zápisu bufferu do souboru...
-                            long waitDone = this.CurrentTime;
-                            decimal waitTime = this.GetSeconds(waitStart, waitDone);     // Sekundy čekání na dokončení Write jednoho bufferu.  Sem bychom měli dojít vždy.
-                            asyncTimeOk += waitTime;
-                        }
+                        if (!task.IsCompleted)
+                            task.Wait();                   // Počkáme na dokončení zápisu bufferu do souboru...
                     }
 
                     var currentTime = this.CurrentTime;
-                    CallTestStep(false, currentLength, startTime, currentTime, asyncOK, asyncSlow);
+                    CallTestStep(false, currentLength, startTime, currentTime, 0);
                 }
                 fst.Flush();
                 fst.Close();
             }
 
             decimal elapsedTime = this.GetSeconds(startTime);
-            return new FileTimeInfo(phase, 1, currentLength, elapsedTime, asyncOK, asyncSlow);
+            return new FileTimeInfo(workingPhase, 1, currentLength, elapsedTime, 0);
         }
         protected FileTimeInfo RunTestSaveOneFileBeginWrite(string testDir, int fileNumber, string fileName, long targetLength, TestPhase phase)
         {
             long startTime = this.CurrentTime;
             long currentLength = 0L;
-            int asyncOK = 0;
-            int asyncSlow = 0;
-            decimal asyncTimeOk = 0m;
             int bufferIndex = 0;
-            int bufferLength = 0;
             using (System.IO.FileStream fst = new System.IO.FileStream(fileName, System.IO.FileMode.Create, System.IO.FileAccess.Write))
             {
-                bufferLength = GetBufferLength(phase, currentLength, targetLength);
-                var data = GetData(fileNumber, bufferIndex, bufferLength);
+                int bufferLength = GetBufferLength(phase, currentLength, targetLength);
+                var nextData = CreateTestData(fileNumber, bufferIndex, bufferLength);
                 bool doWrite = true;
                 while (doWrite && !TestStopping)
                 {
-                    var buffer = data;           // Nezbytnost!!! : protože 'buffer' odchází do FileStreamu k zápisu, a současně (protože .WriteAsync) se do jiné proměnné 'data' připravuje nový obsah pro další cyklus
+                    var buffer = nextData;           // Nezbytnost!!! : protože 'buffer' odchází do FileStreamu k zápisu, a současně (protože .WriteAsync) se do jiné proměnné 'data' připravuje nový obsah pro další cyklus
                     int oneLength = buffer.Length;
 
                     var iAsync = fst.BeginWrite(buffer, 0, oneLength, null, null);
                     currentLength += (long)oneLength;
-                    doWrite = currentLength < targetLength;
+                    doWrite = currentLength < targetLength;          // Ještě budeme připravovat další data?
                     if (doWrite)
                     {
                         bufferLength = GetBufferLength(phase, currentLength, targetLength);
-                        data = GetData(fileNumber, ++bufferIndex, bufferLength);         // A zatímco se do souboru v jiném threadu zapisuje, my si zde připravujeme data do dalšího kola zápisu.
+                        nextData = CreateTestData(fileNumber, ++bufferIndex, bufferLength);         // A zatímco se do souboru v jiném threadu zapisuje, my si zde připravujeme data do dalšího kola zápisu.
                     }
 
-                    if (iAsync.IsCompleted)
-                    {   // Problém: jsme pomalí! Než jsme si stihli připravit data (data = GetData()), tak se předchozí buffer stihl zapsat na cílový disk.
-                        asyncSlow++;
-                    }
-                    else
-                    {   // Sem bychom měli dojít vždy = značí to, že data pro příští buffer jsme připravili včas, a zápis souboru ještě nedoběhl = stíháme data generovat rychleji, než se zapisují...
-                        asyncOK++;
-                        iAsync.AsyncWaitHandle.WaitOne(1000);
-                    }
+                    if (!iAsync.IsCompleted)
+                        iAsync.AsyncWaitHandle.WaitOne(1000);        // Počkáme na dokončení zápisu bufferu do souboru...
 
                     var currentTime = this.CurrentTime;
-                    CallTestStep(false, currentLength, startTime, currentTime, asyncOK, asyncSlow);
+                    CallTestStep(false, currentLength, startTime, currentTime, 0);
                 }
                 fst.Flush();
                 fst.Close();
             }
 
             decimal elapsedTime = this.GetSeconds(startTime);
-            return new FileTimeInfo(phase, 1, currentLength, elapsedTime, asyncOK, asyncSlow);
+            return new FileTimeInfo(phase, 1, currentLength, elapsedTime, 0);
         }
         protected FileTimeInfo RunTestSaveOneFileBinaryStream(string testDir, int fileNumber, string fileName, long targetLength, TestPhase phase)
         {
             long startTime = this.CurrentTime;
-            int asyncOK = 0;
-            int asyncSlow = 0;
             int bufferIndex = 0;
-            int bufferLength = 0;
             long currentLength = 0L;
-            bufferLength = GetBufferLength(phase, currentLength, targetLength);
-            var data = GetData(fileNumber, bufferIndex, bufferLength);
+            
+            int bufferLength = GetBufferLength(phase, currentLength, targetLength);
+            var data = CreateTestData(fileNumber, bufferIndex, bufferLength);
             
             using (var memoryStream = new System.IO.MemoryStream(data))
             using (var fileStream = new System.IO.FileStream(fileName, System.IO.FileMode.CreateNew, System.IO.FileAccess.Write))
             {
                 memoryStream.CopyToAsync(fileStream);
-                asyncOK++;
             }
 
             decimal elapsedTime = this.GetSeconds(startTime);
-            return new FileTimeInfo(phase, 1, currentLength, elapsedTime, asyncOK, asyncSlow);
+            return new FileTimeInfo(phase, 1, currentLength, elapsedTime, 0);
         }
-
         /// <summary>
         /// Mohu zapsat soubor dané délky? Máme na disku dost místa?
         /// </summary>
@@ -413,8 +393,33 @@ namespace DjSoft.Tools.SDCardTester
         /// <returns></returns>
         protected bool CanWriteFile(long fileLength)
         {
+            return CanWriteFile(fileLength, out var _);
+        }
+        /// <summary>
+        /// Mohu zapsat soubor dané délky? Máme na disku dost místa?
+        /// </summary>
+        /// <param name="requestedLength"></param>
+        /// <returns></returns>
+        protected bool CanWriteFile(long requestedLength, out long acceptedLength)
+        {
+            acceptedLength = 0L;
             System.IO.DriveInfo driveInfo = new System.IO.DriveInfo(_Drive.Name);        // Refresh
-            return (driveInfo.AvailableFreeSpace >= (fileLength + LongFileReserve));     // Vrátím true, když volného místa je víc než (velikost souboru plus rezerva)
+            long available = driveInfo.AvailableFreeSpace;
+            long reserve = driveInfo.TotalSize / 200L;                                   // Rezerva = 0.5% místa na disku, která má zbýt po zápisu testovacího souboru
+            long smallest = ShortFilesLength;
+            if (available <= (reserve + smallest)) return false;                         // Nevejde se ani ten nejmenší soubor
+            if (available <= (reserve + requestedLength))
+            {   // Požadovaná velikost se sice nevejde, ale ten nejmenší se vejde => vyplníme tedy dostupný prostor tak, aby zbyla jen rezerva:
+                long availableLength = ((available - reserve) / smallest) * smallest;
+                if (availableLength < smallest)
+                    return false;
+                acceptedLength = availableLength;
+            }
+            else
+            {   // Požadovaný soubor se vejde celý = v požadované délce:
+                acceptedLength = requestedLength;
+            }
+            return (requestedLength == 0L || acceptedLength > 0L);
         }
         /// <summary>
         /// Provést test zápisu
@@ -439,48 +444,71 @@ namespace DjSoft.Tools.SDCardTester
 
 
 
-        private FileTimeInfo RunTestReadOneFile(string fileName, TestPhase phase, int fileNumber)
+        private FileTimeInfo RunTestReadOneFile(string fileName, int fileNumber, TestPhase workingPhase, TestPhase testPhase)
         {
             if (TestStopping) return null;
 
-            TimeInfoCurrentPhase = phase;
-            return RunTestReadOneFileWriteAsync(fileName, phase, fileNumber);
+            CurrentWorkingPhase = workingPhase;
+            CurrentTestPhase = testPhase;
+            return RunTestReadOneFileWriteAsync(fileName, workingPhase, fileNumber);
         }
-        private FileTimeInfo RunTestReadOneFileWriteAsync(string fileName, TestPhase phase, int fileNumber)
+        /// <summary>
+        /// Provede test čtení jednoho daného souboru
+        /// </summary>
+        /// <param name="fileName"></param>
+        /// <param name="workingPhase"></param>
+        /// <param name="fileNumber"></param>
+        /// <returns></returns>
+        private FileTimeInfo RunTestReadOneFileWriteAsync(string fileName, TestPhase workingPhase, int fileNumber)
         {
             var fileInfo = new System.IO.FileInfo(fileName);
             if (!fileInfo.Exists) return null;
             long totalLength = fileInfo.Length;
+
+            long startTime = this.CurrentTime;
             long currentLength = 0L;
-            int bufferIndex = 0;
+            int bufferIndex = -1;
+            int totalErrors = 0;
 
             using (System.IO.FileStream fst = new System.IO.FileStream(fileName, System.IO.FileMode.Open, System.IO.FileAccess.Read))
             {
-                bool doWrite = true;
-                while (doWrite && !TestStopping)
+                // Read: buffer s daty je "pozadu" za fyzickou prací se souborem (na rozdíl od metody pro Save)
+                byte[] prevData = null;
+                bool doRead = true;
+                while (doRead && !TestStopping)
                 {
-                    doWrite = (fst.Position < totalLength);
-                    if (!doWrite) break;
+                    doRead = (fst.Position < totalLength);
+                    if (!doRead) break;
 
-                    int bufferLength = GetBufferLength(phase, currentLength, totalLength);
+                    int bufferLength = GetBufferLength(workingPhase, currentLength, totalLength);
                     if (bufferLength == 0) break;
 
                     var readData = new byte[bufferLength];
                     using (var task = fst.ReadAsync(readData, 0, bufferLength))
-                    {   // Začalo načítání dat; než doběhne tak si připravím porovnávací buffer:
-                        var expectedData = GetData(fileNumber, bufferIndex++, bufferLength);
+                    {   // Začalo načítání dat ze souboru; a než doběhne, tak v tomto threadu mám chvilku čas: provedu porovnání předchozích načtených dat (prevData) s očekávanými daty pro daný soubor a index:
+                        totalErrors += VerifyTestData(prevData, fileNumber, bufferIndex);
+
+                        // Počkáme na doběhnutí načtení dat:
                         if (!task.IsCompleted)
                             task.Wait();
-                        var readLength = task.Result;
-                        currentLength += readLength;
-                        int q = 1;
+
+                        // Nyní načtená data přesuneme do prevData, ale nyní je nebudeme ověřovat...
+                        currentLength += task.Result;
+                        prevData = readData;
+                        bufferIndex++;
                     }
+
+                    var currentTime = this.CurrentTime;
+                    CallTestStep(false, currentLength, startTime, currentTime, totalErrors);
                 }
+                // Prověříme poslední načtený buffer:
+                totalErrors += VerifyTestData(prevData, fileNumber, bufferIndex);
+                fst.Close();
             }
 
-            return new FileTimeInfo(phase);
+            decimal elapsedTime = this.GetSeconds(startTime);
+            return new FileTimeInfo(workingPhase, 1, currentLength, elapsedTime, totalErrors);
         }
-
         #endregion
         #region Obsah disku
         /// <summary>
@@ -595,16 +623,16 @@ namespace DjSoft.Tools.SDCardTester
         #endregion
         #region Generátor dat, tvorba adresáře, tvorba a detekce názvu souborů a jejich čísla
         /// <summary>
-        /// Určí délku bufferu pro další blok zápisu
+        /// Určí velikost bufferu pro další blok zápisu nebo čtení.
         /// </summary>
         /// <param name="phase"></param>
         /// <param name="currentLength"></param>
-        /// <param name="targetLength"></param>
+        /// <param name="totalLength"></param>
         /// <returns></returns>
-        private int GetBufferLength(TestPhase phase, long currentLength, long targetLength)
+        private int GetBufferLength(TestPhase phase, long currentLength, long totalLength)
         {
             int optimalLength = ((phase == TestPhase.SaveShortFile || phase == TestPhase.ReadShortFile) ? ShortBufferLength : LongBufferLength);
-            long remainingLength = targetLength - currentLength;
+            long remainingLength = totalLength - currentLength;
             if (remainingLength > 0L && remainingLength < (long)optimalLength)
                 optimalLength = (int)remainingLength;
             return optimalLength;
@@ -615,17 +643,48 @@ namespace DjSoft.Tools.SDCardTester
         /// <param name="fileNumber"></param>
         /// <param name="bufferIndex"></param>
         /// <returns></returns>
-        protected byte[] GetData(int fileNumber, int bufferIndex, int bufferLength)
+        protected byte[] CreateTestData(int fileNumber, int bufferIndex, int bufferLength)
         {
             byte[] buffer = new byte[bufferLength];
+            _ProcessTestData(buffer, fileNumber, bufferIndex, true, out var _);
+            return buffer;
+        }
+        /// <summary>
+        /// Prověří, zda data dodaná v bufferu <paramref name="buffer"/> jsou korektní pro daný soubor (číslo <paramref name="fileNumber"/> a pro blok bufferu <paramref name="bufferIndex"/>).
+        /// </summary>
+        /// <param name="buffer"></param>
+        /// <param name="fileNumber"></param>
+        /// <param name="bufferIndex"></param>
+        /// <returns></returns>
+        protected int VerifyTestData(byte[] buffer, int fileNumber, int bufferIndex)
+        {
+            if (buffer is null || bufferIndex < 0) return 0;
+            _ProcessTestData(buffer, fileNumber, bufferIndex, false, out int errorCount);
+            return errorCount;
+        }
+        /// <summary>
+        /// Zpracuje data jednoho bufferu: buď je vypočítá a naplní do dodaného bufferu; anebo je vypočítá a porovná s obsahem bufferu a určí počet neshod do <paramref name="errorCount"/>.
+        /// </summary>
+        /// <param name="buffer"></param>
+        /// <param name="fileNumber"></param>
+        /// <param name="bufferIndex"></param>
+        /// <param name="isWrite"></param>
+        /// <param name="errorCount"></param>
+        private void _ProcessTestData(byte[] buffer, int fileNumber, int bufferIndex, bool isWrite, out int errorCount)
+        {
+            errorCount = 0;
+            int bufferLength = buffer.Length;
             int sample = (15 * fileNumber + 7 * bufferIndex) % 256;
             int step = ((fileNumber % 5) + 1) * ((bufferIndex % 3) + 1);
             for (int i = 0; i < bufferLength; i++)
             {
-                buffer[i] = (byte)sample;
+                byte value = (byte)sample;
+                if (isWrite)
+                    buffer[i] = value;
+                else if (buffer[i] != value)
+                    errorCount++;
                 sample = (sample + step) % 256;
             }
-            return buffer;
         }
         /// <summary>
         /// Vrátí název testovacího adresáře
@@ -746,17 +805,15 @@ namespace DjSoft.Tools.SDCardTester
                 FileCount = 0;
                 TotalLength = 0L;
                 TimeTotalSec = 0m;
-                AsyncOK = 0;
-                AsyncSlow = 0;
+                ErrorCount = 0;
             }
-            public FileTimeInfo(TestPhase testPhase, int fileCount, long totalLength, decimal timeTotalSec, int asyncOK, int asyncSlow)
+            public FileTimeInfo(TestPhase testPhase, int fileCount, long totalLength, decimal timeTotalSec, int errorCount)
             {
                 Phase = testPhase;
                 FileCount = fileCount;
                 TotalLength = totalLength;
                 TimeTotalSec = timeTotalSec;
-                AsyncOK = asyncOK;
-                AsyncSlow = asyncSlow;
+                ErrorCount = errorCount;
             }
             public FileTimeInfo(FileTimeInfo a, FileTimeInfo b)
             {
@@ -764,21 +821,19 @@ namespace DjSoft.Tools.SDCardTester
                 FileCount = a.FileCount + b.FileCount;
                 TotalLength = a.TotalLength + b.TotalLength;
                 TimeTotalSec = a.TimeTotalSec + b.TimeTotalSec;
-                AsyncOK = a.AsyncOK + b.AsyncOK;
-                AsyncSlow = a.AsyncSlow + b.AsyncSlow;
+                ErrorCount = a.ErrorCount + b.ErrorCount;
             }
-            public FileTimeInfo(FileTimeInfo a, int fileCount, long totalLength, decimal timeTotalSec, int asyncOK, int asyncSlow)
+            public FileTimeInfo(FileTimeInfo a, int fileCount, long totalLength, decimal timeTotalSec, int errorCount)
             {
                 Phase = a.Phase;
                 FileCount = a.FileCount + fileCount;
                 TotalLength = a.TotalLength + totalLength;
                 TimeTotalSec = a.TimeTotalSec + timeTotalSec;
-                AsyncOK = a.AsyncOK + asyncOK;
-                AsyncSlow = a.AsyncSlow + asyncSlow;
+                ErrorCount = a.ErrorCount + errorCount;
             }
             public override string ToString()
             {
-                return $"Phase: {Phase}; Count: {FileCount}; Length: {TotalLength}; Time: {TimeTotalSec}";
+                return $"Phase: {Phase}; Count: {FileCount}; Length: {TotalLength}; Time: {TimeTotalSec}; ErrorCount: {ErrorCount}";
             }
             /// <summary>
             /// Testovací fáze = typ testu
@@ -797,17 +852,9 @@ namespace DjSoft.Tools.SDCardTester
             /// </summary>
             public decimal TimeTotalSec { get; private set; }
             /// <summary>
-            /// Počet asynchronních přístupu s časem OK
+            /// Počet chyb nalezených v dané akci
             /// </summary>
-            public int AsyncOK { get; private set; }
-            /// <summary>
-            /// Počet asynchronních přístupu s časem Slow
-            /// </summary>
-            public int AsyncSlow { get; private set; }
-            /// <summary>
-            /// Počet asynchronních přístupu celkem
-            /// </summary>
-            public int AsyncCount { get { return AsyncOK + AsyncSlow; } }
+            public int ErrorCount { get; private set; }
             /// <summary>
             /// Do this instance přidá data z dodané instance
             /// </summary>
@@ -819,8 +866,7 @@ namespace DjSoft.Tools.SDCardTester
                     this.FileCount += add.FileCount;
                     this.TotalLength += add.TotalLength;
                     this.TimeTotalSec += add.TimeTotalSec;
-                    this.AsyncOK += add.AsyncOK;
-                    this.AsyncSlow += add.AsyncSlow;
+                    this.ErrorCount += add.ErrorCount;
                 }
             }
         }
@@ -837,6 +883,7 @@ namespace DjSoft.Tools.SDCardTester
         }
         #endregion
     }
+    #region class DriveTestTimePhaseControl : zobrazovací control pro výsledky jednoho druhu testu
     /// <summary>
     /// Vizuální control zobrazující data z <see cref="DriveTester.FileTimeInfo"/>
     /// </summary>
@@ -852,7 +899,7 @@ namespace DjSoft.Tools.SDCardTester
             Rectangle outerBounds = new Rectangle(clientBounds.X + 1, clientBounds.Y + 1, clientBounds.Width - 2, clientBounds.Height - 2);
             Rectangle innerBounds = new Rectangle(outerBounds.X + 2, outerBounds.Y + 2, outerBounds.Width - 4, outerBounds.Height - 4);
             this.PaintBackground(e, clientBounds, outerBounds, innerBounds);
-            this.PaintRatio(e, clientBounds, outerBounds, innerBounds);
+            this.PaintErrors(e, clientBounds, outerBounds, innerBounds);
             this.PaintText(e, clientBounds, outerBounds, innerBounds);
         }
         private void PaintBackground(PaintEventArgs e, Rectangle clientBounds, Rectangle outerBounds, Rectangle innerBounds)
@@ -861,22 +908,17 @@ namespace DjSoft.Tools.SDCardTester
             Painter.PaintRectangle(e.Graphics, this.BackgroundColor, outerBounds);       // Barevný rámeček bez 3D efektu
         }
         /// <summary>
-        /// Vykreslí poměr chybných Async kroků (=počet případů, kdy algoritmus je pomalejší než zápis na disk)
+        /// Vykreslí informace o počtu chyb
         /// </summary>
         /// <param name="e"></param>
         /// <param name="clientBounds"></param>
         /// <param name="outerBounds"></param>
         /// <param name="innerBounds"></param>
-        private void PaintRatio(PaintEventArgs e, Rectangle clientBounds, Rectangle outerBounds, Rectangle innerBounds)
+        private void PaintErrors(PaintEventArgs e, Rectangle clientBounds, Rectangle outerBounds, Rectangle innerBounds)
         {
-            decimal asyncRatio = this.AsyncRatio;
-            if (asyncRatio <= 0m) return;
-
-            decimal widthRatio = (asyncRatio < 0.1m ? (10m * asyncRatio) : 1m);
-            int widthPixel = (int)(Math.Round((widthRatio * innerBounds.Width), 0));
-            if (widthPixel < 5) widthPixel = 5;
-            Rectangle ratioBounds = new Rectangle(innerBounds.X, innerBounds.Bottom - 3, widthPixel, 5);
-            Painter.PaintBar3D(e.Graphics, Skin.TestAsyncErrorColor, ratioBounds);
+            Rectangle resultBounds = new Rectangle(innerBounds.X, innerBounds.Bottom - ResultAreaHeight, innerBounds.Width, ResultAreaHeight);
+            Painter.PaintRectangle(e.Graphics, this.ResultBackgroundColor, resultBounds);
+            Painter.PaintText(e.Graphics, this.Font, this.ResultInfoText, this.ForeColor, resultBounds, ContentAlignment.MiddleCenter);
         }
         /// <summary>
         /// Vykreslí texty
@@ -894,33 +936,24 @@ namespace DjSoft.Tools.SDCardTester
                 font = new Font(font, FontStyle.Bold);
                 disposeFont = true;
             }
-            Painter.PaintText(e.Graphics, font, this.TitleText, this.ForeColor, innerBounds, ContentAlignment.MiddleLeft);
-            Painter.PaintText(e.Graphics, font, this.TimeText, this.ForeColor, innerBounds, ContentAlignment.MiddleRight);
+            Rectangle textBounds = new Rectangle(innerBounds.X, innerBounds.Y, innerBounds.Width, innerBounds.Height - ResultAreaHeight);
+            Painter.PaintText(e.Graphics, font, this.TitleText, this.ForeColor, textBounds, ContentAlignment.MiddleLeft);
+            Painter.PaintText(e.Graphics, font, this.TimeText, this.ForeColor, textBounds, ContentAlignment.MiddleRight);
 
             if (disposeFont)
                 font.Dispose();
         }
         /// <summary>
+        /// Výška dolní oblasti, kde se zobrazuje barva a počet chyb
+        /// </summary>
+        private int ResultAreaHeight { get { return 24; } }
+        /// <summary>
         /// Fáze tohoto času
         /// </summary>
         private DriveTester.TestPhase TimePhase { get { return (_TimeInfo?.Phase ?? DriveTester.TestPhase.None); } }
         /// <summary>
-        /// Poměr chybných Async proti celkovému počtu Async v rozmezí 0 - 1
+        /// Text titulku (druh testu)
         /// </summary>
-        private decimal AsyncRatio
-        {
-            get
-            {
-                decimal ratio = 0m;
-                var timeInfo = this._TimeInfo;
-                if (timeInfo != null && timeInfo.AsyncCount > 0)
-                {
-                    ratio = (decimal)timeInfo.AsyncSlow / (decimal)timeInfo.AsyncCount;
-                    ratio = (ratio < 0m ? 0m : (ratio < 1m ? ratio : 1m));
-                }
-                return ratio;
-            }
-        }
         private string TitleText
         {
             get
@@ -936,6 +969,9 @@ namespace DjSoft.Tools.SDCardTester
                 return "?";
             }
         }
+        /// <summary>
+        /// Text času (podle druhu textu)
+        /// </summary>
         private string TimeText
         {
             get
@@ -975,6 +1011,9 @@ namespace DjSoft.Tools.SDCardTester
                 return text;
             }
         }
+        /// <summary>
+        /// Barva pozadí podle typu testu
+        /// </summary>
         private Color BackgroundColor
         {
             get
@@ -989,7 +1028,46 @@ namespace DjSoft.Tools.SDCardTester
                 return this.BackColor;
             }
         }
-     
+        /// <summary>
+        /// Barva pozadí oblasti s výsledky
+        /// </summary>
+        private Color ResultBackgroundColor
+        {
+            get
+            {
+                int errorsCount = this.TimeInfo?.ErrorCount ?? -1;
+                if (errorsCount < 0) return Skin.TestResultUndefinedBackColor;
+                if (errorsCount == 0) return Skin.TestResultCorrectBackColor;
+                if (errorsCount == 1) return Skin.TestResultErrorBackColor;
+                return Skin.TestResultMoreErrorsBackColor;
+            }
+        }
+        /// <summary>
+        /// Text informace o výsledcích
+        /// </summary>
+        private string ResultInfoText
+        {
+            get
+            {
+                int errorsCount = this.TimeInfo?.ErrorCount ?? -1;
+                if (errorsCount < 0) return "???";
+                if (errorsCount == 0) return "O.K.";
+                if (errorsCount == 1) return "Chyba !";
+                if (errorsCount < 5) return $"{errorsCount} chyby !!";
+                return $"{errorsCount} chyb !!!";
+            }
+        }
+        /// <summary>
+        /// Vepíše dodané hodnoty do <see cref="TimeInfo"/> a do <see cref="CurrentTestPhase"/> a provede <see cref="DriveResultControl.Refresh()"/>
+        /// </summary>
+        /// <param name="timeInfo"></param>
+        /// <param name="currentTestPhase"></param>
+        public void StoreInfo(DriveTester.FileTimeInfo timeInfo, DriveTester.TestPhase currentTestPhase)
+        {
+            _TimeInfo = timeInfo;
+            _CurrentTestPhase = currentTestPhase;
+            this.Refresh();
+        }
         /// <summary>
         /// Info o čase.
         /// Po setování hodnoty se automaticky vyvolá Refresh.
@@ -1002,27 +1080,27 @@ namespace DjSoft.Tools.SDCardTester
         /// Po setování takové hodnoty fáze, která změní hodnotu v <see cref="IsActive"/>, se automaticky vyvolá Refresh.
         /// </summary>
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-        public DriveTester.TestPhase CurrentActivePhase 
+        public DriveTester.TestPhase CurrentTestPhase
         { 
-            get { return _CurrentActivePhase; } 
+            get { return _CurrentTestPhase; } 
             set 
             {
-                if (value != _CurrentActivePhase)
+                if (value != _CurrentTestPhase)
                 {
                     bool oldActive = IsActive;
-                    _CurrentActivePhase = value;
+                    _CurrentTestPhase = value;
                     bool newActive = IsActive;
                     if (oldActive != newActive)
                         this.Refresh();
                 }
             } 
         }
-        private DriveTester.TestPhase _CurrentActivePhase;
+        private DriveTester.TestPhase _CurrentTestPhase;
         /// <summary>
         /// Info o tom, že fáze zdejšího času je právě ta aktivní
         /// </summary>
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-        public bool IsActive { get { return (_TimeInfo != null && _TimeInfo.Phase == _CurrentActivePhase); } }
+        public bool IsActive { get { return (_TimeInfo != null && _TimeInfo.Phase == _CurrentTestPhase); } }
         /// <summary>
         /// Optimální výška
         /// </summary>
@@ -1031,6 +1109,7 @@ namespace DjSoft.Tools.SDCardTester
         /// <summary>
         /// Optimální výška
         /// </summary>
-        public static int OptimalHeight {  get { return 35; } }
+        public static int OptimalHeight {  get { return 48; } }
     }
+    #endregion
 }

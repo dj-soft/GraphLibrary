@@ -544,8 +544,8 @@ namespace DjSoft.Tools.SDCardTester
             int h = DriveTestTimePhaseControl.OptimalHeight;
 
             addPhase(DriveTester.TestPhase.SaveShortFile);
-            addPhase(DriveTester.TestPhase.SaveLongFile);
             addPhase(DriveTester.TestPhase.ReadShortFile);
+            addPhase(DriveTester.TestPhase.SaveLongFile);
             addPhase(DriveTester.TestPhase.ReadLongFile);
 
             _DriveTesterPhases = testPhases;
@@ -569,15 +569,11 @@ namespace DjSoft.Tools.SDCardTester
             var testPhases = _DriveTesterPhases;
             if (testPhases != null && driveTester != null)
             {
-                var currentPhase = driveTester.TimeInfoCurrentPhase;
-                testPhases[DriveTester.TestPhase.SaveShortFile].TimeInfo = driveTester.TimeInfoSaveShort;
-                testPhases[DriveTester.TestPhase.SaveShortFile].CurrentActivePhase = currentPhase;
-                testPhases[DriveTester.TestPhase.SaveLongFile].TimeInfo = driveTester.TimeInfoSaveLong;
-                testPhases[DriveTester.TestPhase.SaveLongFile].CurrentActivePhase = currentPhase;
-                testPhases[DriveTester.TestPhase.ReadShortFile].TimeInfo = driveTester.TimeInfoReadShort;
-                testPhases[DriveTester.TestPhase.ReadShortFile].CurrentActivePhase = currentPhase;
-                testPhases[DriveTester.TestPhase.ReadLongFile].TimeInfo = driveTester.TimeInfoReadLong;
-                testPhases[DriveTester.TestPhase.ReadLongFile].CurrentActivePhase = currentPhase;
+                var testPhase = driveTester.CurrentTestPhase;
+                testPhases[DriveTester.TestPhase.SaveShortFile].StoreInfo(driveTester.TimeInfoSaveShort, testPhase);
+                testPhases[DriveTester.TestPhase.SaveLongFile].StoreInfo(driveTester.TimeInfoSaveLong, testPhase);
+                testPhases[DriveTester.TestPhase.ReadShortFile].StoreInfo(driveTester.TimeInfoReadShort, testPhase);
+                testPhases[DriveTester.TestPhase.ReadLongFile].StoreInfo(driveTester.TimeInfoReadLong, testPhase);
             }
         }
         /// <summary>

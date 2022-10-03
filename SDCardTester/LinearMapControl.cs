@@ -438,7 +438,12 @@ namespace DjSoft.Tools.SDCardTester
         public static Color TestPhaseSaveLongFileBackColor { get { return Instance._TestPhaseSaveLongFileBackColor; } set { Instance._TestPhaseSaveLongFileBackColor = value; } }
         public static Color TestPhaseReadShortFileBackColor { get { return Instance._TestPhaseReadShortFileBackColor; } set { Instance._TestPhaseReadShortFileBackColor = value; } }
         public static Color TestPhaseReadLongFileBackColor { get { return Instance._TestPhaseReadLongFileBackColor; } set { Instance._TestPhaseReadLongFileBackColor = value; } }
+
         public static Color TestAsyncErrorColor { get { return Instance._TestAsyncErrorColor; } set { Instance._TestAsyncErrorColor = value; } }
+        public static Color TestResultUndefinedBackColor { get { return Instance._TestResultUndefinedBackColor; } set { Instance._TestResultUndefinedBackColor = value; } }
+        public static Color TestResultCorrectBackColor { get { return Instance._TestResultCorrectBackColor; } set { Instance._TestResultCorrectBackColor = value; } }
+        public static Color TestResultErrorBackColor { get { return Instance._TestResultErrorBackColor; } set { Instance._TestResultErrorBackColor = value; } }
+        public static Color TestResultMoreErrorsBackColor { get { return Instance._TestResultMoreErrorsBackColor; } set { Instance._TestResultMoreErrorsBackColor = value; } }
 
         /// <summary>
         /// Typ palety
@@ -489,6 +494,10 @@ namespace DjSoft.Tools.SDCardTester
         private Color _TestPhaseReadShortFileBackColor;
         private Color _TestPhaseReadLongFileBackColor;
         private Color _TestAsyncErrorColor;
+        private Color _TestResultUndefinedBackColor;
+        private Color _TestResultCorrectBackColor;
+        private Color _TestResultErrorBackColor;
+        private Color _TestResultMoreErrorsBackColor;
 
         #endregion
         #region Přednastavené palety
@@ -523,6 +532,11 @@ namespace DjSoft.Tools.SDCardTester
                     _TestPhaseReadShortFileBackColor = Color.FromArgb(190, 190, 255);
                     _TestPhaseReadLongFileBackColor = Color.FromArgb(220, 220, 255);
                     _TestAsyncErrorColor = Color.FromArgb(192, 64, 64);
+                    _TestResultUndefinedBackColor = Color.FromArgb(216, 216, 216);
+                    _TestResultCorrectBackColor = Color.FromArgb(192, 255, 192);
+                    _TestResultErrorBackColor = Color.FromArgb(255, 216, 216);
+                    _TestResultMoreErrorsBackColor = Color.FromArgb(255, 160, 160);
+
                     _Palette = palette;
                     break;
                 case PaletteType.Pastel:
@@ -543,6 +557,10 @@ namespace DjSoft.Tools.SDCardTester
                     _TestPhaseReadShortFileBackColor = Color.FromArgb(190, 190, 255);
                     _TestPhaseReadLongFileBackColor = Color.FromArgb(220, 220, 255);
                     _TestAsyncErrorColor = Color.FromArgb(192, 64, 64);
+                    _TestResultUndefinedBackColor = Color.FromArgb(216, 216, 216);
+                    _TestResultCorrectBackColor = Color.FromArgb(192, 255, 192);
+                    _TestResultErrorBackColor = Color.FromArgb(255, 216, 216);
+                    _TestResultMoreErrorsBackColor = Color.FromArgb(255, 160, 160);
                     _Palette = palette;
                     break;
                 case PaletteType.Dark:
@@ -563,6 +581,10 @@ namespace DjSoft.Tools.SDCardTester
                     _TestPhaseReadShortFileBackColor = Color.FromArgb(190, 190, 255);
                     _TestPhaseReadLongFileBackColor = Color.FromArgb(220, 220, 255);
                     _TestAsyncErrorColor = Color.FromArgb(192, 64, 64);
+                    _TestResultUndefinedBackColor = Color.FromArgb(216, 216, 216);
+                    _TestResultCorrectBackColor = Color.FromArgb(192, 255, 192);
+                    _TestResultErrorBackColor = Color.FromArgb(255, 216, 216);
+                    _TestResultMoreErrorsBackColor = Color.FromArgb(255, 160, 160);
                     _Palette = palette;
                     break;
             }
