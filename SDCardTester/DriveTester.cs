@@ -489,6 +489,7 @@ namespace DjSoft.Tools.SDCardTester
             TestFileGroup = FileGroups.First(g => g.Code == DriveAnalyser.FileGroup.CODE_TEST);
             TestFileInitCount = TestFileGroup.FilesCount;
             TestFileInitLength = TestFileGroup.TotalLength;
+            ProcessFileGroup = FileGroups.First(g => g.Code == DriveAnalyser.FileGroup.CODE_PROCESS);
         }
         /// <summary>
         /// Aktualizuje hodnoty v testovací grupě <see cref="TestFileGroup"/>: vloží do grupy její Init hodnoty 
@@ -515,6 +516,11 @@ namespace DjSoft.Tools.SDCardTester
         private DriveAnalyser.IFileGroup TestFileGroup { get; set; }
         private int TestFileInitCount { get; set; }
         private long TestFileInitLength { get; set; }
+        /// <summary>
+        /// Data, popisující procesovanou grupu (<see cref="DriveAnalyser.FileGroup"/>) v rámci testovaného disku.
+        /// V procesu zápisu bude do této grupy navyšována hodnota obsazeného prostoru.
+        /// </summary>
+        private DriveAnalyser.IFileGroup ProcessFileGroup { get; set; }
         #endregion
         #region Vyhledání testovacích souborů
         /// <summary>
@@ -807,7 +813,7 @@ namespace DjSoft.Tools.SDCardTester
     /// <summary>
     /// Vizuální control zobrazující data z <see cref="DriveTester.FileTimeInfo"/>
     /// </summary>
-    public class DriveTestTimePhaseControl : DriveResultControl
+    public class DriveTestTimePhaseControl : WorkingResultControl
     {
         public DriveTestTimePhaseControl()
             : base()
@@ -978,7 +984,7 @@ namespace DjSoft.Tools.SDCardTester
             }
         }
         /// <summary>
-        /// Vepíše dodané hodnoty do <see cref="TimeInfo"/> a do <see cref="CurrentTestPhase"/> a provede <see cref="DriveResultControl.Refresh()"/>
+        /// Vepíše dodané hodnoty do <see cref="TimeInfo"/> a do <see cref="CurrentTestPhase"/> a provede <see cref="WorkingResultControl.Refresh()"/>
         /// </summary>
         /// <param name="timeInfo"></param>
         /// <param name="currentTestPhase"></param>

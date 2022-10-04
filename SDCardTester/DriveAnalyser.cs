@@ -239,6 +239,7 @@ namespace DjSoft.Tools.SDCardTester
             long IFileGroup.TotalLength { get { return TotalLength; } set { TotalLength = value; } }
 
             public const string CODE_TEST = "TEST";
+            public const string CODE_PROCESS = "PROCESS";
         }
         /// <summary>
         /// Interface pro interní přístup na data grupy
@@ -277,14 +278,17 @@ namespace DjSoft.Tools.SDCardTester
                 long freeSize = drive.TotalSize - usedSize - otherSize;
                 if (freeSize < 0L) freeSize = 0L;
 
-                long testSize = DriveTester.GetTestFiles(drive).Select(f => f.Length).Sum();
+                var testFiles = DriveTester.GetTestFiles(drive);
+                int testCount = testFiles.Length;
+                long testSize = testFiles.Select(f => f.Length).Sum();
                 if (testSize < 0L) testSize = 0L;
                 if (testSize > 0L) usedSize -= testSize;
                 if (usedSize < 0L) usedSize = 0L;
 
                 int order = 0;
                 if (usedSize > 0L) fileGroups.Add(new FileGroup(++order, "Obsazeno", Skin.UsedSpaceColor, 0, usedSize));
-                if (testSize > 0L || forceTestGroup) fileGroups.Add(new FileGroup(++order, "Testovací", Skin.TestFilesGroupColor, 0, testSize, FileGroup.CODE_TEST));
+                if (testSize > 0L || forceTestGroup) fileGroups.Add(new FileGroup(++order, "Testovací", Skin.TestFilesExistingGroupColor, testCount, testSize, FileGroup.CODE_TEST));
+                if (forceTestGroup) fileGroups.Add(new FileGroup(++order, "Zpracované", Skin.TestFilesProcessingGroupColor, 0, 0L, FileGroup.CODE_PROCESS));
                 if (otherSize > 0L) fileGroups.Add(new FileGroup(++order, "Ostatní", Skin.OtherSpaceColor, 0, otherSize));
             }
 
@@ -396,7 +400,7 @@ namespace DjSoft.Tools.SDCardTester
     /// <summary>
     /// Vizuální control pro orientační zobrazení obsahu jedné grupy v přehledném panelu
     /// </summary>
-    public class DriveAnalyseGroupControl : DriveResultControl
+    public class DriveAnalyseGroupControl : WorkingResultControl
     {
         public DriveAnalyseGroupControl(string name, Color color)
             : this()

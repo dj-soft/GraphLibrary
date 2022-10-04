@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Drawing;
+using System.Windows.Forms;
 
 namespace DjSoft.Tools.SDCardTester
 {
@@ -162,4 +164,50 @@ namespace DjSoft.Tools.SDCardTester
         protected decimal Frequency;
         #endregion
     }
+    #region class TextDataInfo
+    /// <summary>
+    /// Třída obsahující textový popisek a libovolná data
+    /// </summary>
+    public class TextDataInfo
+    {
+        public override string ToString()
+        {
+            return this.Text;
+        }
+        public string Text { get; set; }
+        public object Data { get; set; }
+    }
+    #endregion
+    #region class DriveResultControl
+    /// <summary>
+    /// Společný předek pro třídy obsahující výsledky testu a analýzy
+    /// </summary>
+    public class WorkingResultControl : Control
+    {
+        public WorkingResultControl()
+        {
+            this.SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.Opaque | ControlStyles.OptimizedDoubleBuffer | ControlStyles.ResizeRedraw | ControlStyles.UserPaint, true);
+            this.SetStyle(ControlStyles.ContainerControl | ControlStyles.Selectable | ControlStyles.SupportsTransparentBackColor, false);
+            InitControls();
+        }
+        protected virtual void InitControls()
+        {
+            this.Size = new Size(293, CurrentOptimalHeight);
+        }
+        /// <summary>
+        /// Zdejší optimální výška
+        /// </summary>
+        protected virtual int CurrentOptimalHeight { get { return 28; } }
+        /// <summary>
+        /// Refresh - umí sám přejít do GUI threadu
+        /// </summary>
+        public override void Refresh()
+        {
+            if (this.InvokeRequired)
+                this.Invoke(new Action(base.Refresh));
+            else
+                base.Refresh();
+        }
+    }
+    #endregion
 }

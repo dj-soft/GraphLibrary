@@ -432,7 +432,8 @@ namespace DjSoft.Tools.SDCardTester
         public static Color DevelopmentGroupColor { get { return Instance._DevelopmentGroupColor; } set { Instance._DevelopmentGroupColor = value; } }
         public static Color ArchiveGroupColor { get { return Instance._ArchiveGroupColor; } set { Instance._ArchiveGroupColor = value; } }
 
-        public static Color TestFilesGroupColor { get { return Instance._TestFilesGroupColor; } set { Instance._TestFilesGroupColor = value; } }
+        public static Color TestFilesExistingGroupColor { get { return Instance._TestFilesExistingGroupColor; } set { Instance._TestFilesExistingGroupColor = value; } }
+        public static Color TestFilesProcessingGroupColor { get { return Instance._TestFilesProcessingGroupColor; } set { Instance._TestFilesProcessingGroupColor = value; } }
 
         public static Color TestPhaseSaveShortFileBackColor { get { return Instance._TestPhaseSaveShortFileBackColor; } set { Instance._TestPhaseSaveShortFileBackColor = value; } }
         public static Color TestPhaseSaveLongFileBackColor { get { return Instance._TestPhaseSaveLongFileBackColor; } set { Instance._TestPhaseSaveLongFileBackColor = value; } }
@@ -488,7 +489,8 @@ namespace DjSoft.Tools.SDCardTester
         private Color _ApplicationGroupColor;
         private Color _DevelopmentGroupColor;
         private Color _ArchiveGroupColor;
-        private Color _TestFilesGroupColor;
+        private Color _TestFilesExistingGroupColor;
+        private Color _TestFilesProcessingGroupColor;
         private Color _TestPhaseSaveShortFileBackColor;
         private Color _TestPhaseSaveLongFileBackColor;
         private Color _TestPhaseReadShortFileBackColor;
@@ -526,7 +528,8 @@ namespace DjSoft.Tools.SDCardTester
                     _ApplicationGroupColor = Color.FromArgb(141, 239, 239);
                     _DevelopmentGroupColor = Color.FromArgb(153, 196, 239);
                     _ArchiveGroupColor = Color.FromArgb(212, 239, 129);
-                    _TestFilesGroupColor = Color.FromArgb(212, 160, 190);
+                    _TestFilesExistingGroupColor = Color.FromArgb(226, 160, 232);
+                    _TestFilesProcessingGroupColor = Color.FromArgb(200, 140, 210);
                     _TestPhaseSaveShortFileBackColor = Color.FromArgb(255, 190, 190);
                     _TestPhaseSaveLongFileBackColor = Color.FromArgb(255, 220, 220);
                     _TestPhaseReadShortFileBackColor = Color.FromArgb(190, 190, 255);
@@ -551,7 +554,8 @@ namespace DjSoft.Tools.SDCardTester
                     _ApplicationGroupColor = Color.FromArgb(0xCEDAFF);
                     _DevelopmentGroupColor = Color.FromArgb(0xCEFFFF);
                     _ArchiveGroupColor = Color.FromArgb(0xFFF2CE);
-                    _TestFilesGroupColor = Color.FromArgb(212, 160, 190);
+                    _TestFilesExistingGroupColor = Color.FromArgb(226, 160, 232);
+                    _TestFilesProcessingGroupColor = Color.FromArgb(200, 140, 210);
                     _TestPhaseSaveShortFileBackColor = Color.FromArgb(255, 190, 190);
                     _TestPhaseSaveLongFileBackColor = Color.FromArgb(255, 220, 220);
                     _TestPhaseReadShortFileBackColor = Color.FromArgb(190, 190, 255);
@@ -575,7 +579,8 @@ namespace DjSoft.Tools.SDCardTester
                     _ApplicationGroupColor = Color.FromArgb(0xCEDAFF);
                     _DevelopmentGroupColor = Color.FromArgb(0xCEFFFF);
                     _ArchiveGroupColor = Color.FromArgb(0xFFF2CE);
-                    _TestFilesGroupColor = Color.FromArgb(212, 160, 190);
+                    _TestFilesExistingGroupColor = Color.FromArgb(226, 160, 232);
+                    _TestFilesProcessingGroupColor = Color.FromArgb(200, 140, 210);
                     _TestPhaseSaveShortFileBackColor = Color.FromArgb(255, 190, 190);
                     _TestPhaseSaveLongFileBackColor = Color.FromArgb(255, 220, 220);
                     _TestPhaseReadShortFileBackColor = Color.FromArgb(190, 190, 255);

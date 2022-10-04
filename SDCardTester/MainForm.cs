@@ -142,14 +142,14 @@ namespace DjSoft.Tools.SDCardTester
             TestRead
         }
         /// <summary>
-        /// Smaže prvky <see cref="DriveResultControl"/> z panelu informací <see cref="ResultsInfoPanel"/>
+        /// Smaže prvky <see cref="WorkingResultControl"/> z panelu informací <see cref="ResultsInfoPanel"/>
         /// </summary>
         private void ResultsInfoPanelClear()
         {
             for (int i = ResultsInfoPanel.Controls.Count - 1; i >= 0; i--)
             {
                 var control = ResultsInfoPanel.Controls[i];
-                if (control is DriveResultControl)
+                if (control is WorkingResultControl)
                 {
                     ResultsInfoPanel.Controls.RemoveAt(i);
                     control.Dispose();
@@ -592,44 +592,5 @@ namespace DjSoft.Tools.SDCardTester
         private DriveTester _DriveTester;
         private Dictionary<DriveTester.TestPhase, DriveTestTimePhaseControl> _DriveTesterPhases;
         #endregion
-    }
-    /// <summary>
-    /// Společný předek pro třídy obsahující výsledky testu a analýzy
-    /// </summary>
-    public class DriveResultControl : Control
-    {
-        public DriveResultControl()
-        {
-            this.SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.Opaque | ControlStyles.OptimizedDoubleBuffer | ControlStyles.ResizeRedraw | ControlStyles.UserPaint, true);
-            this.SetStyle(ControlStyles.ContainerControl | ControlStyles.Selectable | ControlStyles.SupportsTransparentBackColor, false);
-            InitControls();
-        }
-        protected virtual void InitControls()
-        {
-            this.Size = new Size(293, CurrentOptimalHeight);
-        }
-        /// <summary>
-        /// Zdejší optimální výška
-        /// </summary>
-        protected virtual int CurrentOptimalHeight { get { return 28; } }
-        /// <summary>
-        /// Refresh - umí sám přejít do GUI threadu
-        /// </summary>
-        public override void Refresh()
-        {
-            if (this.InvokeRequired)
-                this.Invoke(new Action(base.Refresh));
-            else
-                base.Refresh();
-        }
-    }
-    public class TextDataInfo
-    {
-        public override string ToString()
-        {
-            return this.Text;
-        }
-        public string Text { get; set; }
-        public object Data { get; set; }
     }
 }
