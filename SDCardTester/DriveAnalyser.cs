@@ -23,242 +23,13 @@ namespace DjSoft.Tools.SDCardTester
             this.InitGroups();
         }
         #endregion
-        #region Grupy podle typu obsahu
-        /// <summary>
-        /// Inicializace skupin
-        /// </summary>
-        private void InitGroups()
-        {
-            _FileGroups = FileGroup.GetGroups();
-            _FileGroupDict = new Dictionary<string, IFileGroup>();
-            foreach (var fileGroup in _FileGroups)
-                foreach (var extension in fileGroup.Extensions)
-                    _FileGroupDict.Add("." + extension, fileGroup);
-            _GroupOther = _FileGroupDict[".?"];
-            _GroupRemaining = _FileGroupDict[".*"];
-        }
-        protected Dictionary<string, IFileGroup> _FileGroupDict;
-        protected FileGroup[] _FileGroups;
-        protected IFileGroup _GroupOther;
-        protected IFileGroup _GroupRemaining;
-        /// <summary>
-        /// Aktuální stav skupin souborů.
-        /// </summary>
-        public FileGroup[] FileGroups { get { return _FileGroups; } }
-        /// <summary>
-        /// Text, obsahující název + přípony všech skupin
-        /// </summary>
-        public string CodeText 
-        { 
-            get 
-            {
-                StringBuilder sb = new StringBuilder();
-                foreach (var group in this._FileGroups)
-                    sb.AppendLine(group.CodeText);
-                return sb.ToString();
-            }
-        }
-        /// <summary>
-        /// Aktuální stav skupin souborů, typovaný na interní interface
-        /// </summary>
-        protected IFileGroup[] IFileGroups { get { return _FileGroups; } }
-        /// <summary>
-        /// Jedna skupina souborů. Má více přípon, ale všechny přípony reprezentují jeden druh souborů.
-        /// Skupina určuje pořadí ve vizualizaci a barvu, sumarizuje počet a velikost souborů.
-        /// </summary>
-        public class FileGroup : IFileGroup
-        {
-            /// <summary>
-            /// Vrátí sadu skupin
-            /// </summary>
-            /// <returns></returns>
-            public static FileGroup[] GetGroups()
-            {
-                int order = 0;
-                return new FileGroup[]
-                {
-                    new FileGroup(++order, "Obrázky", Skin.PictureGroupColor, "bimp bmp cdr cdx cgi cpt eml gif ico img jpe jpeg jpg pcx pdn png raw svg tif tiff"),
-                    new FileGroup(++order, "Filmy", Skin.MovieGroupColor, "3gp avi flv m4v mkv mp2 mp4 mpeg mpg mx4 swf ts ts1 ts2 wmv"),
-                    new FileGroup(++order, "Audio", Skin.AudioGroupColor, "m3u mp3 mpc wav wma"),
-                    new FileGroup(++order, "Dokumenty", Skin.DocumentsGroupColor, "aspx bak css csv doc docx htm html chm map mht ods odt pdf pps ppsx ppt pptx ppx rtf txt wml xhtml xml"),
-                    new FileGroup(++order, "Aplikace", Skin.ApplicationGroupColor, "api apl ashx asp asx bar bat bin binary cache cmd com conf config dll drv exe fon hlp ide info ini ion iso java lnk log msi ocx pdb php rdp reg sys theme tmp ttf url user vdi vhd webinfo webm whtt"),
-                    new FileGroup(++order, "Programování", Skin.DevelopmentGroupColor, "as bas build cfg cfgs cs csproj db frt frx hegi heli js json jsonp key lng lock lst nupkg pas pbd pbl pbt pbw pfx prjx ps res resx rss sln snk sql sqlite srd srt suo vb vbproj vbs vcxproj vsix vxd x64 xaml xls xlsx xsd xsl xslt"),
-                    new FileGroup(++order, "Archivy", Skin.ArchiveGroupColor, "7z arj ar0 ar1 ar2 ar3 ar4 ar5 ar6 ar7 ar8 cab dat gz jar pack rar zip"),
-                    new FileGroup(++order, "Ostatní", Skin.OtherSpaceColor, "?"),
-                    new FileGroup(++order, "Nezpracováno", Skin.UsedSpaceColor, "*")
-                };
-            }
-            /// <summary>
-            /// Privátní konstruktor
-            /// </summary>
-            /// <param name="order"></param>
-            /// <param name="name"></param>
-            /// <param name="color"></param>
-            /// <param name="extensions"></param>
-            private FileGroup(int order, string name, Color color, string extensions)
-            {
-                this.Order = order;
-                this.Name = name;
-                this.Color = color;
-                this.Extensions = extensions.ToLower().Split(" ".ToCharArray(), StringSplitOptions.RemoveEmptyEntries);
-                this.FilesCount = 0;
-                this.TotalLength = 0L;
-            }
-            /// <summary>
-            /// Privátní konstruktor
-            /// </summary>
-            /// <param name="order"></param>
-            /// <param name="name"></param>
-            /// <param name="color"></param>
-            /// <param name="filesCount"></param>
-            /// <param name="totalLength"></param>
-            public FileGroup(int order, string name, Color color, int filesCount, long totalLength, string code = null)
-            {
-                this.Order = order;
-                this.Name = name;
-                this.Color = color;
-                this.Extensions = new string[0];
-                this.FilesCount = filesCount;
-                this.TotalLength = totalLength;
-                this.Code = code;
-            }
-            public override string ToString()
-            {
-                string filesCount = FilesCount.ToString("### ### ### ##0").Trim();
-                string totalLength = TotalLength.ToString("### ### ### ### ##0").Trim();
-                return $"Group: {Name}; Files: {filesCount}; TotalLength: {totalLength}";
-            }
-            public int Order { get; private set; }
-            /// <summary>
-            /// Kód
-            /// </summary>
-            public string Code { get; private set; }
-            /// <summary>
-            /// Uživatelské jméno
-            /// </summary>
-            public string Name { get; private set; }
-            public Color Color { get; private set; }
-            public string[] Extensions { get; private set; }
-            /// <summary>
-            /// Zdejší přípony jako jeden string, seřazené podle abecedy, oddělené mezerou
-            /// </summary>
-            public string ExtensionsText
-            {
-                get
-                {
-                    var extensions = Extensions.ToList();
-                    extensions.Sort();
-                    StringBuilder sb = new StringBuilder();
-                    foreach (var extension in extensions)
-                    {
-                        if (extension.Length > 0 && extension.Length < 8)
-                            sb.Append(" " + extension);
-                    }
-                    return (sb.Length == 0 ? "" : sb.ToString().Substring(1));
-                }
-            }
-            /// <summary>
-            /// Text, obsahující název + přípony
-            /// </summary>
-            public string CodeText { get { return $"\"{Name}\" : \"{ExtensionsText}\""; } }
-            /// <summary>
-            /// Nalezené chybějící přípony, které reprezentují 90% prostoru chybějících přípon
-            /// </summary>
-            public string[] MissingExtensions 
-            { 
-                get 
-                {
-                    if (_MissingExtensions is null || _MissingExtensions.Count == 0) return new string[0];
-
-                    var extensions = _MissingExtensions.ToList();              // KeyValuePairs (přípona, její sumární velikost souborů)
-                    extensions.Sort((a, b) => b.Value.CompareTo(a.Value));     // ORDER BY Value DESC;
-                    long sumLength = extensions.Sum(kvp => kvp.Value);         // SUM(Length)
-                    long maxLength = sumLength * 9L / 10L;                     // 90% celkové délky
-                    sumLength = 0L;
-                    List<string> result = new List<string>();
-                    foreach (var kvp in extensions)
-                    {
-                        if (sumLength >= maxLength) break;
-
-                        string extension = kvp.Key;
-                        if (extension.Length > 1 && extension[0] == '.') extension = extension.Substring(1);
-                        result.Add(extension);
-                        sumLength += kvp.Value;
-                    }
-                    result.Sort();
-                    return result.ToArray();
-                }
-            }
-            /// <summary>
-            /// Nalezené chybějící přípony jako jeden string
-            /// </summary>
-            public string MissingExtensionsText
-            {
-                get
-                {
-                    var extensions = MissingExtensions;
-                    StringBuilder sb = new StringBuilder();
-                    foreach (var extension in extensions)
-                    {
-                        if (extension.Length > 0 && extension.Length < 8)
-                            sb.Append(" " + extension);
-                    }
-                    return (sb.Length == 0 ? "" : sb.ToString().Substring(1));
-                }
-            }
-            private Dictionary<string, long> _MissingExtensions;
-            /// <summary>
-            /// Počet souborů v této grupě nalezených
-            /// </summary>
-            public int FilesCount { get; private set; }
-            /// <summary>
-            /// Celková délka souborů v této grupě
-            /// </summary>
-            public long TotalLength { get; private set; }
-
-            void IFileGroup.Reset()
-            {
-                FilesCount = 0;
-                TotalLength = 0L;
-            }
-            void IFileGroup.Add(int filesCount, long totalLength)
-            {
-                FilesCount += filesCount;
-                TotalLength += totalLength;
-            }
-            void IFileGroup.AddMissingExtension(string extension, long length)
-            {
-                if (_MissingExtensions is null) _MissingExtensions = new Dictionary<string, long>();
-                if (String.IsNullOrEmpty(extension)) return;
-                if (!_MissingExtensions.ContainsKey(extension))
-                    _MissingExtensions.Add(extension, 0L);
-                _MissingExtensions[extension] = _MissingExtensions[extension] + length;
-            }
-            string IFileGroup.MissingExtensionsText { get { return MissingExtensionsText; } }
-            int IFileGroup.FilesCount { get { return FilesCount; } set { FilesCount = value; } }
-            long IFileGroup.TotalLength { get { return TotalLength; } set { TotalLength = value; } }
-
-            public const string CODE_TEST = "TEST";
-            public const string CODE_PROCESS = "PROCESS";
-        }
-        /// <summary>
-        /// Interface pro interní přístup na data grupy
-        /// </summary>
-        public interface IFileGroup
-        {
-            void Reset();
-            void Add(int filesCount, long totalLength);
-            void AddMissingExtension(string extension, long length);
-            string MissingExtensionsText { get; }
-            int FilesCount { get; set; }
-            long TotalLength { get; set; }
-        }
-        #endregion
         #region Základní zmapování obsahu souboru a převod na FileGroup
         /// <summary>
         /// Vrátí pole základních informací o využití prostoru daného disku.
         /// </summary>
         /// <param name="drive"></param>
+        /// <param name="forceTestGroup">Povinně vložit tři grupy, s kódy: { <see cref="FileGroup.CODE_TEST_READ"/>, <see cref="FileGroup.CODE_TEST_FILE"/>, <see cref="FileGroup.CODE_TEST_SAVE"/> },
+        /// v tomto pořadí. Grupy lze pak používat pro znázornění postupu zápisu i čtení, modifikací jejich hodnoty <see cref="IFileGroup.SizeTotalDelta"/>.</param>
         /// <param name="totalSize"></param>
         /// <returns></returns>
         public static DriveAnalyser.FileGroup[] GetFileGroupsForDrive(System.IO.DriveInfo drive, bool forceTestGroup, out long totalSize)
@@ -287,8 +58,9 @@ namespace DjSoft.Tools.SDCardTester
 
                 int order = 0;
                 if (usedSize > 0L) fileGroups.Add(new FileGroup(++order, "Obsazeno", Skin.UsedSpaceColor, 0, usedSize));
-                if (testSize > 0L || forceTestGroup) fileGroups.Add(new FileGroup(++order, "Testovací", Skin.TestFilesExistingGroupColor, testCount, testSize, FileGroup.CODE_TEST));
-                if (forceTestGroup) fileGroups.Add(new FileGroup(++order, "Zpracované", Skin.TestFilesProcessingGroupColor, 0, 0L, FileGroup.CODE_PROCESS));
+                if (forceTestGroup) fileGroups.Add(new FileGroup(++order, "Přečtené", Skin.TestFilesProcessingReadGroupColor, 0, 0L, FileGroup.CODE_TEST_READ));
+                if (testSize > 0L || forceTestGroup) fileGroups.Add(new FileGroup(++order, "Testovací", Skin.TestFilesExistingGroupColor, testCount, testSize, FileGroup.CODE_TEST_FILE));
+                if (forceTestGroup) fileGroups.Add(new FileGroup(++order, "Zapsané", Skin.TestFilesProcessingSaveGroupColor, 0, 0L, FileGroup.CODE_TEST_SAVE));
                 if (otherSize > 0L) fileGroups.Add(new FileGroup(++order, "Ostatní", Skin.OtherSpaceColor, 0, otherSize));
             }
 
@@ -318,7 +90,7 @@ namespace DjSoft.Tools.SDCardTester
             this.AnalyseDirectoriesQueue = 0;
 
             var root = Drive;
-            _GroupRemaining.TotalLength = (root.TotalSize - root.TotalFreeSpace);
+            _GroupRemaining.SizeTotalBase = (root.TotalSize - root.TotalFreeSpace);
             CallTestStep(true, 1);
 
             var nextDirs = new Stack<System.IO.DirectoryInfo>();
@@ -368,9 +140,9 @@ namespace DjSoft.Tools.SDCardTester
                 }
                 group.Add(1, file.Length);
 
-                var remainingTotal = _GroupRemaining.TotalLength - file.Length;
+                var remainingTotal = _GroupRemaining.SizeTotalBase - file.Length;
                 if (remainingTotal < 0L) remainingTotal = 0L;
-                _GroupRemaining.TotalLength = remainingTotal;
+                _GroupRemaining.SizeTotalBase = remainingTotal;
             }
         }
         /// <summary>
@@ -394,6 +166,292 @@ namespace DjSoft.Tools.SDCardTester
         /// Toto není celkový počet dosud nezpracovaných adresářů, ale jen těch, o kterých už víme a čekají.
         /// </summary>
         public int AnalyseDirectoriesQueue { get; private set; }
+        #endregion
+        #region Grupy podle typu obsahu
+        /// <summary>
+        /// Inicializace skupin
+        /// </summary>
+        private void InitGroups()
+        {
+            _FileGroups = FileGroup.GetGroups();
+            _FileGroupDict = new Dictionary<string, IFileGroup>();
+            foreach (var fileGroup in _FileGroups)
+                foreach (var extension in fileGroup.Extensions)
+                    _FileGroupDict.Add("." + extension, fileGroup);
+            _GroupOther = _FileGroupDict[".?"];
+            _GroupRemaining = _FileGroupDict[".*"];
+        }
+        protected Dictionary<string, IFileGroup> _FileGroupDict;
+        protected FileGroup[] _FileGroups;
+        protected IFileGroup _GroupOther;
+        protected IFileGroup _GroupRemaining;
+        /// <summary>
+        /// Aktuální stav skupin souborů.
+        /// </summary>
+        public FileGroup[] FileGroups { get { return _FileGroups; } }
+        /// <summary>
+        /// Text, obsahující název + přípony všech skupin
+        /// </summary>
+        public string CodeText
+        {
+            get
+            {
+                StringBuilder sb = new StringBuilder();
+                foreach (var group in this._FileGroups)
+                    sb.AppendLine(group.CodeText);
+                return sb.ToString();
+            }
+        }
+        /// <summary>
+        /// Aktuální stav skupin souborů, typovaný na interní interface
+        /// </summary>
+        protected IFileGroup[] IFileGroups { get { return _FileGroups; } }
+        #endregion
+        #region class FileGroup : jedna grupa
+        /// <summary>
+        /// Jedna skupina souborů. Má více přípon, ale všechny přípony reprezentují jeden druh souborů.
+        /// Skupina určuje pořadí ve vizualizaci a barvu, sumarizuje počet a velikost souborů.
+        /// </summary>
+        public class FileGroup : IFileGroup
+        {
+            /// <summary>
+            /// Vrátí sadu skupin
+            /// </summary>
+            /// <returns></returns>
+            public static FileGroup[] GetGroups()
+            {
+                int order = 0;
+                return new FileGroup[]
+                {
+                    new FileGroup(++order, "Obrázky", Skin.PictureGroupColor, "bimp bmp cdr cdx cgi cpt eml gif ico img jpe jpeg jpg pcx pdn png raw svg tif tiff"),
+                    new FileGroup(++order, "Filmy", Skin.MovieGroupColor, "3gp avi flv m4v mkv mp2 mp4 mpeg mpg mx4 swf ts ts1 ts2 wmv"),
+                    new FileGroup(++order, "Audio", Skin.AudioGroupColor, "m3u mp3 mpc wav wma"),
+                    new FileGroup(++order, "Dokumenty", Skin.DocumentsGroupColor, "aspx bak css csv doc docx htm html chm map mht ods odt pdf pps ppsx ppt pptx ppx rtf txt wml xhtml xml"),
+                    new FileGroup(++order, "Aplikace", Skin.ApplicationGroupColor, "api apl ashx asp asx bar bat bin binary cache cmd com conf config dll drv exe fon hlp ide info ini ion iso java lnk log msi ocx pdb php rdp reg sys theme tmp ttf url user vdi vhd webinfo webm whtt"),
+                    new FileGroup(++order, "Programování", Skin.DevelopmentGroupColor, "as bas build cfg cfgs cs csproj db frt frx hegi heli js json jsonp key lng lock lst nupkg pas pbd pbl pbt pbw pfx prjx ps res resx rss sln snk sql sqlite srd srt suo vb vbproj vbs vcxproj vsix vxd x64 xaml xls xlsx xsd xsl xslt"),
+                    new FileGroup(++order, "Archivy", Skin.ArchiveGroupColor, "7z arj ar0 ar1 ar2 ar3 ar4 ar5 ar6 ar7 ar8 cab dat gz jar pack rar zip"),
+                    new FileGroup(++order, "Ostatní", Skin.OtherSpaceColor, "?"),
+                    new FileGroup(++order, "Nezpracováno", Skin.UsedSpaceColor, "*")
+                };
+            }
+            /// <summary>
+            /// Privátní konstruktor
+            /// </summary>
+            /// <param name="order"></param>
+            /// <param name="name"></param>
+            /// <param name="color"></param>
+            /// <param name="extensions"></param>
+            private FileGroup(int order, string name, Color color, string extensions)
+            {
+                this.Order = order;
+                this.Name = name;
+                this.Color = color;
+                this.Extensions = extensions.ToLower().Split(" ".ToCharArray(), StringSplitOptions.RemoveEmptyEntries);
+                this.FilesCountBase = 0;
+                this.SizeTotalBase = 0L;
+                this.FilesCountDelta = 0;
+                this.SizeTotalDelta = 0L;
+            }
+            /// <summary>
+            /// Privátní konstruktor
+            /// </summary>
+            /// <param name="order"></param>
+            /// <param name="name"></param>
+            /// <param name="color"></param>
+            /// <param name="filesCount"></param>
+            /// <param name="totalLength"></param>
+            public FileGroup(int order, string name, Color color, int filesCount, long totalLength, string code = null)
+            {
+                this.Order = order;
+                this.Name = name;
+                this.Color = color;
+                this.Extensions = new string[0];
+                this.FilesCountBase = filesCount;
+                this.SizeTotalBase = totalLength;
+                this.FilesCountDelta = 0;
+                this.SizeTotalDelta = 0L;
+                this.Code = code;
+            }
+            /// <summary>
+            /// Vizualizace
+            /// </summary>
+            /// <returns></returns>
+            public override string ToString()
+            {
+                string filesCount = FilesCount.ToString("### ### ### ##0").Trim();
+                string totalLength = SizeTotal.ToString("### ### ### ### ##0").Trim();
+                return $"Group: {Name}; Files: {filesCount}; TotalLength: {totalLength}";
+            }
+            /// <summary>
+            /// Pořadí grupy v grafice
+            /// </summary>
+            public int Order { get; private set; }
+            /// <summary>
+            /// Kód
+            /// </summary>
+            public string Code { get; private set; }
+            /// <summary>
+            /// Uživatelské jméno
+            /// </summary>
+            public string Name { get; private set; }
+            /// <summary>
+            /// Barva grupy
+            /// </summary>
+            public Color Color { get; private set; }
+            /// <summary>
+            /// Přípony souborů v grupě
+            /// </summary>
+            public string[] Extensions { get; private set; }
+            /// <summary>
+            /// Zdejší přípony jako jeden string, seřazené podle abecedy, oddělené mezerou
+            /// </summary>
+            public string ExtensionsText
+            {
+                get
+                {
+                    var extensions = Extensions.ToList();
+                    extensions.Sort();
+                    StringBuilder sb = new StringBuilder();
+                    foreach (var extension in extensions)
+                    {
+                        if (extension.Length > 0 && extension.Length < 8)
+                            sb.Append(" " + extension);
+                    }
+                    return (sb.Length == 0 ? "" : sb.ToString().Substring(1));
+                }
+            }
+            /// <summary>
+            /// Text, obsahující název + přípony
+            /// </summary>
+            public string CodeText { get { return $"\"{Name}\" : \"{ExtensionsText}\""; } }
+            /// <summary>
+            /// Nalezené chybějící přípony, které reprezentují 90% prostoru chybějících přípon
+            /// </summary>
+            public string[] MissingExtensions
+            {
+                get
+                {
+                    if (_MissingExtensions is null || _MissingExtensions.Count == 0) return new string[0];
+
+                    var extensions = _MissingExtensions.ToList();              // KeyValuePairs (přípona, její sumární velikost souborů)
+                    extensions.Sort((a, b) => b.Value.CompareTo(a.Value));     // ORDER BY Value DESC;
+                    long sumLength = extensions.Sum(kvp => kvp.Value);         // SUM(Length)
+                    long maxLength = sumLength * 9L / 10L;                     // 90% celkové délky
+                    sumLength = 0L;
+                    List<string> result = new List<string>();
+                    foreach (var kvp in extensions)
+                    {
+                        if (sumLength >= maxLength) break;
+
+                        string extension = kvp.Key;
+                        if (extension.Length > 1 && extension[0] == '.') extension = extension.Substring(1);
+                        result.Add(extension);
+                        sumLength += kvp.Value;
+                    }
+                    result.Sort();
+                    return result.ToArray();
+                }
+            }
+            /// <summary>
+            /// Nalezené chybějící přípony jako jeden string
+            /// </summary>
+            public string MissingExtensionsText
+            {
+                get
+                {
+                    var extensions = MissingExtensions;
+                    StringBuilder sb = new StringBuilder();
+                    foreach (var extension in extensions)
+                    {
+                        if (extension.Length > 0 && extension.Length < 8)
+                            sb.Append(" " + extension);
+                    }
+                    return (sb.Length == 0 ? "" : sb.ToString().Substring(1));
+                }
+            }
+            private Dictionary<string, long> _MissingExtensions;
+            /// <summary>
+            /// Počet souborů v této grupě nalezených, počáteční hodnota
+            /// </summary>
+            protected int FilesCountBase { get; private set; }
+            /// <summary>
+            /// Celková délka souborů v této grupě, počáteční hodnota
+            /// </summary>
+            protected long SizeTotalBase { get; private set; }
+            /// <summary>
+            /// Počet souborů v této grupě nalezených, přídavek k hodnotě <see cref="FilesCountBase"/>
+            /// </summary>
+            protected int FilesCountDelta { get; private set; }
+            /// <summary>
+            /// Celková délka souborů v této grupě, přídavek k hodnotě <see cref="SizeTotalBase"/>
+            /// </summary>
+            protected long SizeTotalDelta { get; private set; }
+            /// <summary>
+            /// Počet souborů v této grupě nalezených, aktuální hodnota
+            /// </summary>
+            public int FilesCount { get { return FilesCountBase + FilesCountDelta; } }
+            /// <summary>
+            /// Celková délka souborů v této grupě, aktuální hodnota
+            /// </summary>
+            public long SizeTotal { get { return SizeTotalBase + SizeTotalDelta; } }
+
+            void IFileGroup.Reset()
+            {
+                FilesCountBase = 0;
+                SizeTotalBase = 0L;
+                FilesCountDelta = 0;
+                SizeTotalDelta = 0L;
+            }
+            void IFileGroup.Add(int filesCount, long totalLength)
+            {
+                FilesCountBase += filesCount;
+                SizeTotalBase += totalLength;
+            }
+            void IFileGroup.AddMissingExtension(string extension, long length)
+            {
+                if (_MissingExtensions is null) _MissingExtensions = new Dictionary<string, long>();
+                if (String.IsNullOrEmpty(extension)) return;
+                if (!_MissingExtensions.ContainsKey(extension))
+                    _MissingExtensions.Add(extension, 0L);
+                _MissingExtensions[extension] = _MissingExtensions[extension] + length;
+            }
+            string IFileGroup.MissingExtensionsText { get { return MissingExtensionsText; } }
+            int IFileGroup.FilesCountBase { get { return FilesCountBase; } set { FilesCountBase = value; } }
+            long IFileGroup.SizeTotalBase { get { return SizeTotalBase; } set { SizeTotalBase = value; } }
+            int IFileGroup.FilesCountDelta { get { return FilesCountDelta; } set { FilesCountDelta = value; } }
+            long IFileGroup.SizeTotalDelta { get { return SizeTotalDelta; } set { SizeTotalDelta = value; } }
+            int IFileGroup.FilesCount { get { return FilesCount; } }
+            long IFileGroup.TotalLength { get { return SizeTotal; } }
+
+            /// <summary>
+            /// Kód skupiny testovacích souborů, které jsou aktuálně načítány
+            /// </summary>
+            public const string CODE_TEST_READ = "TEST_READ";
+            /// <summary>
+            /// Kód skupiny testovacích souborů, které jsou přítomny na disku
+            /// </summary>
+            public const string CODE_TEST_FILE = "TEST_FILE";
+            /// <summary>
+            /// Kód skupiny testovacích souborů, které jsou aktuálně zapisovány
+            /// </summary>
+            public const string CODE_TEST_SAVE = "TEST_SAVE";
+        }
+        /// <summary>
+        /// Interface pro interní přístup na data grupy
+        /// </summary>
+        public interface IFileGroup
+        {
+            void Reset();
+            void Add(int filesCount, long totalLength);
+            void AddMissingExtension(string extension, long length);
+            string MissingExtensionsText { get; }
+            int FilesCountBase { get; set; }
+            long SizeTotalBase { get; set; }
+            int FilesCountDelta { get; set; }
+            long SizeTotalDelta { get; set; }
+            int FilesCount { get; }
+            long TotalLength { get; }
+        }
         #endregion
     }
     #region Vizuální control pro orientační zobrazení obsahu jedné grupy v přehledném panelu

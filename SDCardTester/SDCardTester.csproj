@@ -53,6 +53,7 @@
     </Compile>
     <Compile Include="DriveTester.cs" />
     <Compile Include="DriveWorker.cs" />
+    <Compile Include="Helpers.cs" />
     <Compile Include="MainForm.cs">
       <SubType>Form</SubType>
     </Compile>

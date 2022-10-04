@@ -252,7 +252,7 @@ namespace DjSoft.Tools.SDCardTester
         {
             var items = new List<LinearMapControl.Item>();
             if (fileGroups != null)
-                items.AddRange(fileGroups.Select(g => new LinearMapControl.Item(g.TotalLength, g.Color, null, g)));
+                items.AddRange(fileGroups.Select(g => new LinearMapControl.Item(g.SizeTotal, g.Color, null, g)));
 
             if (totalSize.HasValue)
                 VisualMapPanelSetupHeight(totalSize.Value, false);
@@ -399,10 +399,10 @@ namespace DjSoft.Tools.SDCardTester
         {
             var analyserGroups = _DriveAnalyserGroups;
             if (analyserGroups is null || analyserGroups.Count == 0) return;
-            long totalSize = analyserGroups.Sum(g => g.Item1.TotalLength);
+            long totalSize = analyserGroups.Sum(g => g.Item1.SizeTotal);
             foreach (var analyserGroup in analyserGroups)
             {
-                long currentSize = analyserGroup.Item1.TotalLength;
+                long currentSize = analyserGroup.Item1.SizeTotal;
                 analyserGroup.Item2.GroupRatio = (totalSize > 0L ? (double)currentSize / (double)totalSize : 0d);
                 analyserGroup.Item2.Refresh();
             }

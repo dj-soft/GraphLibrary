@@ -485,20 +485,29 @@ namespace DjSoft.Tools.SDCardTester
         {
             var drive = Drive;
             FileGroups = DriveAnalyser.GetFileGroupsForDrive(drive, true, out long totalSize);
+            TestReadGroup = FileGroups.First(g => g.Code == DriveAnalyser.FileGroup.CODE_TEST_READ);
+            TestFileGroup = FileGroups.First(g => g.Code == DriveAnalyser.FileGroup.CODE_TEST_FILE);
+            TestSaveGroup = FileGroups.First(g => g.Code == DriveAnalyser.FileGroup.CODE_TEST_SAVE);
             TotalSize = totalSize;
-            TestFileGroup = FileGroups.First(g => g.Code == DriveAnalyser.FileGroup.CODE_TEST);
-            TestFileInitCount = TestFileGroup.FilesCount;
-            TestFileInitLength = TestFileGroup.TotalLength;
-            ProcessFileGroup = FileGroups.First(g => g.Code == DriveAnalyser.FileGroup.CODE_PROCESS);
         }
         /// <summary>
-        /// Aktualizuje hodnoty v testovací grupě <see cref="TestFileGroup"/>: vloží do grupy její Init hodnoty 
-        /// a přičte k tomu hodnoty z <see cref="TimeInfoSaveShort"/> + <see cref="TimeInfoSaveLong"/>.
+        /// Aktualizuje hodnoty v testovacích grupách <see cref="TestReadGroup"/>, <see cref="TestFileGroup"/>, <see cref="TestSaveGroup"/>
+        /// podle aktuálního stavu čtení a zápisu.
         /// </summary>
         private void RefreshFileGroups()
         {
-            TestFileGroup.FilesCount = TestFileInitCount + TimeInfoSaveShort.FileCount + TimeInfoSaveLong.FileCount;
-            TestFileGroup.TotalLength = TestFileInitLength + TimeInfoSaveShort.TotalLength + TimeInfoSaveLong.TotalLength;
+            bool doRead = DoTestRead;
+            bool doSave = DoTestSave;
+            int readCount = (doRead ? TimeInfoReadShort.FileCount + TimeInfoReadLong.FileCount : 0);
+            long readSize = (doRead ? TimeInfoReadShort.SizeTotal + TimeInfoReadLong.SizeTotal : 0L);
+            int saveCount = (doSave ? TimeInfoSaveShort.FileCount + TimeInfoSaveLong.FileCount : 0);
+            long saveSize = (doSave ? TimeInfoSaveShort.SizeTotal + TimeInfoSaveLong.SizeTotal : 0L);
+            TestReadGroup.FilesCountDelta = readCount;
+            TestReadGroup.SizeTotalDelta = readSize;
+            TestFileGroup.FilesCountDelta = -readCount;
+            TestFileGroup.SizeTotalDelta = -readSize;
+            TestSaveGroup.FilesCountDelta = saveCount;
+            TestSaveGroup.SizeTotalDelta = saveSize;
         }
         /// <summary>
         /// Obsah disku, základní složení.
@@ -510,17 +519,23 @@ namespace DjSoft.Tools.SDCardTester
         /// </summary>
         public long TotalSize { get; private set; }
         /// <summary>
-        /// Data popisující testovací grupu (<see cref="DriveAnalyser.FileGroup"/>) v rámci testovaného disku.
-        /// V procesu zápisu bude do této grupy navyšována hodnota obsazeného prostoru.
+        /// Data popisující testovací grupu (<see cref="DriveAnalyser.FileGroup"/>) v rámci testovaného disku pro soubory, které budou pouze čteny.
+        /// V procesu čtení bude do této grupy navyšována hodnota zpracovaného prostoru.
+        /// </summary>
+        private DriveAnalyser.IFileGroup TestReadGroup { get; set; }
+        /// <summary>
+        /// Data popisující testovací grupu (<see cref="DriveAnalyser.FileGroup"/>) v rámci testovaného disku pro soubory, které na disku existovaly na začátku testu.
+        /// V procesu čtení bude do této grupy snižována hodnota zpracovaného prostoru.
+        /// V procesu zápisu se tato grupa nebude měnit.
         /// </summary>
         private DriveAnalyser.IFileGroup TestFileGroup { get; set; }
-        private int TestFileInitCount { get; set; }
-        private long TestFileInitLength { get; set; }
         /// <summary>
         /// Data, popisující procesovanou grupu (<see cref="DriveAnalyser.FileGroup"/>) v rámci testovaného disku.
         /// V procesu zápisu bude do této grupy navyšována hodnota obsazeného prostoru.
         /// </summary>
-        private DriveAnalyser.IFileGroup ProcessFileGroup { get; set; }
+        private DriveAnalyser.IFileGroup TestSaveGroup { get; set; }
+        // private int TestFileInitCount { get; set; }
+        // private long TestFileInitLength { get; set; }
         #endregion
         #region Vyhledání testovacích souborů
         /// <summary>
@@ -729,7 +744,7 @@ namespace DjSoft.Tools.SDCardTester
             {
                 Phase = testPhase;
                 FileCount = 0;
-                TotalLength = 0L;
+                SizeTotal = 0L;
                 TimeTotalSec = 0m;
                 ErrorCount = 0;
             }
@@ -737,7 +752,7 @@ namespace DjSoft.Tools.SDCardTester
             {
                 Phase = testPhase;
                 FileCount = fileCount;
-                TotalLength = totalLength;
+                SizeTotal = totalLength;
                 TimeTotalSec = timeTotalSec;
                 ErrorCount = errorCount;
             }
@@ -745,7 +760,7 @@ namespace DjSoft.Tools.SDCardTester
             {
                 Phase = a.Phase;
                 FileCount = a.FileCount + b.FileCount;
-                TotalLength = a.TotalLength + b.TotalLength;
+                SizeTotal = a.SizeTotal + b.SizeTotal;
                 TimeTotalSec = a.TimeTotalSec + b.TimeTotalSec;
                 ErrorCount = a.ErrorCount + b.ErrorCount;
             }
@@ -753,13 +768,13 @@ namespace DjSoft.Tools.SDCardTester
             {
                 Phase = a.Phase;
                 FileCount = a.FileCount + fileCount;
-                TotalLength = a.TotalLength + totalLength;
+                SizeTotal = a.SizeTotal + totalLength;
                 TimeTotalSec = a.TimeTotalSec + timeTotalSec;
                 ErrorCount = a.ErrorCount + errorCount;
             }
             public override string ToString()
             {
-                return $"Phase: {Phase}; Count: {FileCount}; Length: {TotalLength}; Time: {TimeTotalSec}; ErrorCount: {ErrorCount}";
+                return $"Phase: {Phase}; Count: {FileCount}; Length: {SizeTotal}; Time: {TimeTotalSec}; ErrorCount: {ErrorCount}";
             }
             /// <summary>
             /// Testovací fáze = typ testu
@@ -772,7 +787,7 @@ namespace DjSoft.Tools.SDCardTester
             /// <summary>
             /// Celková délka
             /// </summary>
-            public long TotalLength { get; private set; }
+            public long SizeTotal { get; private set; }
             /// <summary>
             /// Celkový čas v sekundách
             /// </summary>
@@ -790,7 +805,7 @@ namespace DjSoft.Tools.SDCardTester
                 if (add != null)
                 {
                     this.FileCount += add.FileCount;
-                    this.TotalLength += add.TotalLength;
+                    this.SizeTotal += add.SizeTotal;
                     this.TimeTotalSec += add.TimeTotalSec;
                     this.ErrorCount += add.ErrorCount;
                 }
@@ -914,7 +929,7 @@ namespace DjSoft.Tools.SDCardTester
                             text = "file/sec";
                             break;
                         case DriveTester.TestPhase.SaveLongFile:
-                            value = ((decimal)timeInfo.TotalLength) / 1000000m;
+                            value = ((decimal)timeInfo.SizeTotal) / 1000000m;
                             text = "MB/sec";
                             break;
                         case DriveTester.TestPhase.ReadShortFile:
@@ -922,7 +937,7 @@ namespace DjSoft.Tools.SDCardTester
                             text = "file/sec";
                             break;
                         case DriveTester.TestPhase.ReadLongFile:
-                            value = ((decimal)timeInfo.TotalLength) / 1000000m;
+                            value = ((decimal)timeInfo.SizeTotal) / 1000000m;
                             text = "MB/sec";
                             break;
                     }
