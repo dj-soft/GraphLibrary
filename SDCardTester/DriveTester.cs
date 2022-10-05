@@ -185,7 +185,7 @@ namespace DjSoft.Tools.SDCardTester
                         var timeInfoSaveShort = RunTestSaveOneFile(testDir, fileNumber, out string fileName, ShortFilesLength, TestPhase.SaveShortFile, TestPhase.SaveShortFile);
                         TimeInfoSaveShortDone.Add(timeInfoSaveShort);
 
-                        var timeInfoReadShort = RunTestReadOneFile(fileName, fileNumber, TestPhase.ReadShortFile, TestPhase.SaveShortFile);
+                        var timeInfoReadShort = RunTestReadOneFile(fileName, fileNumber, TestPhase.ReadShortFile, TestPhase.SaveShortFile, true);
                         TimeInfoReadShortDone.Add(timeInfoReadShort);
                     }
                     else
@@ -194,7 +194,7 @@ namespace DjSoft.Tools.SDCardTester
                         var timeInfoSaveLong = RunTestSaveOneFile(testDir, fileNumber, out string fileName, acceptedLength, TestPhase.SaveLongFile, TestPhase.SaveLongFile);
                         TimeInfoSaveLongDone.Add(timeInfoSaveLong);
 
-                        var timeInfoReadLong = RunTestReadOneFile(fileName, fileNumber, TestPhase.ReadLongFile, TestPhase.SaveLongFile);
+                        var timeInfoReadLong = RunTestReadOneFile(fileName, fileNumber, TestPhase.ReadLongFile, TestPhase.SaveLongFile, true);
                         TimeInfoReadLongDone.Add(timeInfoReadLong);
                     }
                     fileNumber++;
@@ -367,36 +367,32 @@ namespace DjSoft.Tools.SDCardTester
         protected void RunTestRead(ref string testDir)
         {
             if (Stopping) return;
-            if (testDir is null) testDir = GetTestDirectory(true);
+            if (testDir is null) testDir = GetTestDirectory(false);
             if (testDir is null) return;
 
             try
             {
-                System.IO.DirectoryInfo dirInfo = new System.IO.DirectoryInfo(testDir);
-                if (!dirInfo.Exists) return;
-                var testFiles = dirInfo.GetFiles("*.*", System.IO.SearchOption.TopDirectoryOnly);
+                var testFiles = GetTestFiles(this.Drive, null);
                 if (testFiles.Length == 0) return;
-                var fileNames = testFiles.Select(fi => fi.FullName).ToList();
-                fileNames.Sort();
 
-                foreach (var fileName in fileNames)
+                foreach (var fileName in testFiles.Select(fi => fi.FullName))
                 {
                     if (Stopping) break;
 
                     int fileNumber = GetFileNumber(fileName);
                     if (IsShortFile(fileNumber))
                     {
-                        var timeInfoReadShort = RunTestReadOneFile(fileName, fileNumber, TestPhase.ReadShortFile, TestPhase.ReadShortFile);
+                        var timeInfoReadShort = RunTestReadOneFile(fileName, fileNumber, TestPhase.ReadShortFile, TestPhase.ReadShortFile, true);
                         TimeInfoReadShortDone.Add(timeInfoReadShort);
                     }
                     else
                     {
-                        var timeInfoReadLong = RunTestReadOneFile(fileName, fileNumber, TestPhase.ReadLongFile, TestPhase.ReadLongFile);
+                        var timeInfoReadLong = RunTestReadOneFile(fileName, fileNumber, TestPhase.ReadLongFile, TestPhase.ReadLongFile, true);
                         TimeInfoReadLongDone.Add(timeInfoReadLong);
                     }
                 }
             }
-            catch (Exception exc) { }
+            catch { }
             CallTestStep(true);
         }
         /// <summary>
@@ -411,13 +407,16 @@ namespace DjSoft.Tools.SDCardTester
         /// <param name="workingPhase"></param>
         /// <param name="testPhase"></param>
         /// <returns></returns>
-        private FileTimeInfo RunTestReadOneFile(string fileName, int fileNumber, TestPhase workingPhase, TestPhase testPhase)
+        private FileTimeInfo RunTestReadOneFile(string fileName, int fileNumber, TestPhase workingPhase, TestPhase testPhase, bool renameOnError)
         {
             if (Stopping) return null;
 
             CurrentWorkingPhase = workingPhase;
             CurrentTestPhase = testPhase;
-            return RunTestReadOneFileWriteAsync(fileName, workingPhase, fileNumber);
+            var fileInfo = RunTestReadOneFileWriteAsync(fileName, workingPhase, fileNumber);
+            if (fileInfo.ErrorCount > 0 && renameOnError)
+                RenameFileOnError(ref fileName);
+            return fileInfo;
         }
         /// <summary>
         /// Provede test čtení jednoho daného souboru
@@ -475,6 +474,25 @@ namespace DjSoft.Tools.SDCardTester
 
             decimal elapsedTime = this.GetSeconds(startTime);
             return new FileTimeInfo(workingPhase, 1, currentLength, elapsedTime, totalErrors);
+        }
+        /// <summary>
+        /// Přejmenuje daný soubor - změní mu příponu na chybovou <see cref="FileNameErrorExtension"/>
+        /// </summary>
+        /// <param name="fileName"></param>
+        private void RenameFileOnError(ref string fileName)
+        {
+            var fileType = GetTestFileType(fileName);
+            if (fileType == TestFileType.TestFile)
+            {   // Přejmenovávat na Error budu jen dobré soubory (protože i chybné soubory testujeme):
+                string oldFile = fileName;
+                string newFile = System.IO.Path.ChangeExtension(fileName, FileNameErrorExtension);
+                try
+                {
+                    System.IO.File.Move(oldFile, newFile);
+                    fileName = newFile;
+                }
+                catch { }
+            }
         }
         #endregion
         #region Obsah disku
@@ -540,26 +558,35 @@ namespace DjSoft.Tools.SDCardTester
         #region Vyhledání testovacích souborů
         /// <summary>
         /// Na daném disku vyhledá testovací soubory (podle jména adresáře a jména souborů) a vrátí jejich pole.
-        /// Pokud nic neexistuje, vrátí prázdné pole.
+        /// Pokud tam nic neexistuje, vrátí prázdné pole. Pokud není zadán drive, vrátí prázdné pole.
         /// </summary>
         /// <param name="drive"></param>
+        /// <param name="fileTypes">Požadovaný druh testovacích souborů, nebo null = všechny testovací soubory</param>
         /// <returns></returns>
-        public static System.IO.FileInfo[] GetTestFiles(System.IO.DriveInfo drive)
+        public static System.IO.FileInfo[] GetTestFiles(System.IO.DriveInfo drive, TestFileType? fileTypes)
         {
-            System.IO.FileInfo[] files = null;
+            System.IO.FileInfo[] result = null;
             if (drive != null)
             {
                 string dirName = System.IO.Path.Combine(drive.RootDirectory.FullName, TestDirectory);
                 var dirInfo = new System.IO.DirectoryInfo(dirName);
                 if (dirInfo.Exists)
                 {
-                    string searchPattern = FileNamePrefix + "?????" + FileNameExtension;
-                    var testFiles = dirInfo.GetFiles(searchPattern);
-                    files = testFiles.Where(f => IsTestFileName(f.FullName)).ToArray();
+                    string searchPattern = FileNameMask;                 // FileNamePrefix + "?????" + FileNameExtensionsMask;
+                    var allFiles = dirInfo.GetFiles(searchPattern);
+                    List<System.IO.FileInfo> testFiles;
+                    if (fileTypes.HasValue && fileTypes.Value == TestFileType.TestFile)
+                        testFiles = allFiles.Where(f => GetTestFileType(f.FullName) == TestFileType.TestFile).ToList();
+                    else if (fileTypes.HasValue && fileTypes.Value == TestFileType.TestFileError)
+                        testFiles = allFiles.Where(f => GetTestFileType(f.FullName) == TestFileType.TestFileError).ToList();
+                    else
+                        testFiles = allFiles.Where(f => IsTestFile(f.FullName)).ToList();
+                    testFiles.Sort((a, b) => String.Compare(a.Name, b.Name, StringComparison.CurrentCultureIgnoreCase));
+                    result = testFiles.ToArray();
                 }
             }
-            if (files is null) files = new System.IO.FileInfo[0];
-            return files.ToArray();
+            if (result is null) result = new System.IO.FileInfo[0];
+            return result;
         }
         #endregion
         #region Generátor dat, tvorba adresáře, tvorba a detekce názvu souborů a jejich čísla
@@ -673,7 +700,7 @@ namespace DjSoft.Tools.SDCardTester
         /// <returns></returns>
         protected static int GetFileNumber(string fileName)
         {
-            IsTestFileName(fileName, out var number);
+            GetTestFileType(fileName, out var number);
             return number;
         }
         /// <summary>
@@ -688,13 +715,24 @@ namespace DjSoft.Tools.SDCardTester
             return System.IO.Path.Combine(testDir, name);
         }
         /// <summary>
-        /// Vrátí true, pokud daný název souboru je jménem testovacího souboru
+        /// Vrátí true, pokud daný název souboru je jménem testovacího souboru (platný i s chybami)
         /// </summary>
         /// <param name="fileName"></param>
         /// <returns></returns>
-        protected static bool IsTestFileName(string fileName)
+        protected static bool IsTestFile(string fileName)
         {
-            return IsTestFileName(fileName, out var _);
+            var fileType = GetTestFileType(fileName, out var _);
+            return (fileType == TestFileType.TestFile || fileType == TestFileType.TestFileError);
+        }
+        /// <summary>
+        /// Vrátí typ souboru podle jeho názvu a přípony
+        /// </summary>
+        /// <param name="fileName"></param>
+        /// <param name="fileNumber"></param>
+        /// <returns></returns>
+        protected static TestFileType GetTestFileType(string fileName)
+        {
+            return GetTestFileType(fileName, out var _);
         }
         /// <summary>
         /// Vrátí true, pokud daný název souboru je jménem testovacího souboru
@@ -702,20 +740,27 @@ namespace DjSoft.Tools.SDCardTester
         /// <param name="fileName"></param>
         /// <param name="fileNumber"></param>
         /// <returns></returns>
-        protected static bool IsTestFileName(string fileName, out int fileNumber)
+        protected static TestFileType GetTestFileType(string fileName, out int fileNumber)
         {
+            fileNumber = -1;
+            TestFileType result = TestFileType.None;
             if (!String.IsNullOrEmpty(fileName))
             {
                 var name = System.IO.Path.GetFileNameWithoutExtension(fileName).ToLower();
-                var extn = System.IO.Path.GetExtension(fileName).ToLower();
-                if (name.StartsWith(FileNamePrefix) && name.Length == 10 && extn == FileNameExtension && Int32.TryParse(name.Substring(5, 5), out int number) && number > 0)
+                var extn = System.IO.Path.GetExtension(fileName);
+                bool isTest = String.Equals(extn, FileNameExtension, StringComparison.InvariantCultureIgnoreCase);
+                bool isTestError = String.Equals(extn, FileNameErrorExtension, StringComparison.InvariantCultureIgnoreCase);
+                if (name.StartsWith(FileNamePrefix) && name.Length == 10 && (isTest || isTestError) && Int32.TryParse(name.Substring(5, 5), out int number) && number > 0)
                 {
                     fileNumber = number;
-                    return true;
+                    result = (isTestError ? TestFileType.TestFileError : TestFileType.TestFile);
+                }
+                else
+                {
+                    result = TestFileType.TestFileError;
                 }
             }
-            fileNumber = -1;
-            return true;
+            return result;
         }
         /// <summary>
         /// Vrátí true, pokud soubor s daným číslem bude "krátký"
@@ -723,9 +768,34 @@ namespace DjSoft.Tools.SDCardTester
         /// <param name="number"></param>
         /// <returns></returns>
         protected static bool IsShortFile(int number) { return (number <= ShortFilesCount); }
+        /// <summary>
+        /// Typ testovacího souboru
+        /// </summary>
+        public enum TestFileType
+        {
+            /// <summary>
+            /// Není to soubor (prázdné jméno)
+            /// </summary>
+            None = 0,
+            /// <summary>
+            /// Jde o standardní testovací soubor
+            /// </summary>
+            TestFile,
+            /// <summary>
+            /// Jde o testovací soubor s detekovanou chybou obsahu
+            /// </summary>
+            TestFileError,
+            /// <summary>
+            /// Nejde o testovací soubor = je to jakýkoli jiný soubor
+            /// </summary>
+            OtherFile
+        }
         protected const string TestDirectory = "_TestDir.1968";
         protected const string FileNamePrefix = "test~";
+        protected const string FileNameMask = FileNamePrefix + "?????.tmp*";
+        protected const string FileNameExtensionsMask = ".tmp*";
         protected const string FileNameExtension = ".tmp";
+        protected const string FileNameErrorExtension = ".tmpError";
         protected const long ShortFilesLength = 4096L;
         protected const int ShortFilesCount = 512;
         protected const int LongFilesMaxCount = 3584;

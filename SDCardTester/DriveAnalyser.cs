@@ -49,7 +49,7 @@ namespace DjSoft.Tools.SDCardTester
                 long freeSize = drive.TotalSize - usedSize - otherSize;
                 if (freeSize < 0L) freeSize = 0L;
 
-                var testFiles = DriveTester.GetTestFiles(drive);
+                var testFiles = DriveTester.GetTestFiles(drive, null);
                 int testCount = testFiles.Length;
                 long testSize = testFiles.Select(f => f.Length).Sum();
                 if (testSize < 0L) testSize = 0L;

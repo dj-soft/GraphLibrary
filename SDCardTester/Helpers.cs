@@ -126,7 +126,7 @@ namespace DjSoft.Tools.SDCardTester
                     _ApplicationGroupColor = Color.FromArgb(141, 239, 239);
                     _DevelopmentGroupColor = Color.FromArgb(153, 196, 239);
                     _ArchiveGroupColor = Color.FromArgb(212, 239, 129);
-                    _TestFilesProcessingReadGroupColor = Color.FromArgb(196, 232, 204);
+                    _TestFilesProcessingReadGroupColor = Color.FromArgb(180, 215, 195);
                     _TestFilesExistingGroupColor = Color.FromArgb(226, 160, 232);
                     _TestFilesProcessingSaveGroupColor = Color.FromArgb(200, 140, 210);
                     _TestPhaseSaveShortFileBackColor = Color.FromArgb(255, 190, 190);
