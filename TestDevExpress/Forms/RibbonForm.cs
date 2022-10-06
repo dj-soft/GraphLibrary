@@ -811,7 +811,7 @@ namespace TestDevExpress.Forms
             if (iRibbonItem.ItemType == RibbonItemType.Menu) return;
 
             var ribbonButton = iRibbonItem.RibbonItem?.Target as DevExpress.XtraBars.BarButtonItem;
-            if (ribbonButton != null)
+            if (ribbonButton != null && false)
             {
                 ribbonButton.ButtonStyle = DevExpress.XtraBars.BarButtonStyle.Check;
                 bool isChecked = !(iRibbonItem.Checked ?? false);
@@ -1000,11 +1000,12 @@ namespace TestDevExpress.Forms
         {
             bool containsRadioGroup = false;
             int remainingRadioCount = 0;
+            string buttonGroupName = null;
             bool forceFirstInGroup = false;
             int ic = Rand.Next(itemCountMin, itemCountMax + 1);
             for (int i = 0; i < ic; i++)
             {
-                DataRibbonItem item = _GetItem(group.GroupId, ref containsRadioGroup, ref remainingRadioCount, ref forceFirstInGroup, ref qatItems);
+                DataRibbonItem item = _GetItem(group.GroupId, ref containsRadioGroup, ref remainingRadioCount, ref buttonGroupName, ref forceFirstInGroup, ref qatItems);
                 group.Items.Add(item);
                 item.ParentGroup = group;
                 ApplyToolTip(item);
@@ -1125,9 +1126,10 @@ namespace TestDevExpress.Forms
         {
             bool containsRadioGroup = false;
             int remainingRadioCount = 0;
+            string buttonGroupName = null;
             bool forceFirstInGroup = false;
             string qatItems = null;
-            DataRibbonItem item = _GetItem(null, ref containsRadioGroup, ref remainingRadioCount, ref forceFirstInGroup, ref qatItems);
+            DataRibbonItem item = _GetItem(null, ref containsRadioGroup, ref remainingRadioCount, ref buttonGroupName, ref forceFirstInGroup, ref qatItems);
             ApplyToolTip(item);
             return item;
         }
@@ -1174,6 +1176,7 @@ namespace TestDevExpress.Forms
                 else
                 {   // CheckButton Radio:
                     item.ItemType = RibbonItemType.CheckButton;
+                    item.RibbonStyle = RibbonItemStyles.Large;
                     item.CheckButtonRadioGroupName = buttonGroupName;
                     remainingRadioCount++;                                // Záporné počitadlo => nahoru k nule
                 }
@@ -1181,7 +1184,7 @@ namespace TestDevExpress.Forms
                 if (remainingRadioCount == 0) forceFirstInGroup = true;   // Dokončili jsme stanovený počet RadioButtonů: příští prvek bude ForceFirst!
             }
             else
-            {   // Vytváříme první prvek
+            {   // Vytváříme první prvek:
                 RibbonItemType itemType = GetRandomItemType();
                 if (itemType == RibbonItemType.RadioItem && containsRadioGroup) 
                     itemType = RibbonItemType.CheckBoxStandard;           // V jedné grupě Ribbonu bude nanejvýše jedna RadioButton grupa
@@ -1204,6 +1207,7 @@ namespace TestDevExpress.Forms
                     containsRadioGroup = true;                            // RibbonGroup již obsahuje RadioGrupu, víc RadioSkupin tam dávat už nebudu
                     buttonGroupName = Random.GetWord(true);
                     item.Checked = true;
+                    item.RibbonStyle = RibbonItemStyles.Large;
                     item.CheckButtonRadioGroupName = buttonGroupName;
                 }
 
