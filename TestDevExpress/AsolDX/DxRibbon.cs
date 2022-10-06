@@ -3289,6 +3289,12 @@ namespace Noris.Clients.Win.Components.AsolDX
                     barItem = new DevExpress.XtraBars.SkinPaletteRibbonGalleryBarItem();
                     this.Items.Add(barItem);
                     break;
+                case RibbonItemType.CheckButton:
+                    count++;
+                    BarButtonItem checkButton = Items.CreateButton(iRibbonItem.Text);
+                    checkButton.ButtonStyle = BarButtonStyle.Check;
+                    barItem = checkButton;
+                    break;
                 case RibbonItemType.Button:
                 default:
                     count++;
@@ -9117,6 +9123,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public new RibbonItemType ItemType { get; set; }
         /// <summary>
+        /// Jméno grupy, v jejímž rámci se buttony typu <see cref="RibbonItemType.CheckButton"/> přetahují o stav <see cref="ITextItem.Checked"/>.
+        /// Pokud je zde prázdný string, pak buttony typu <see cref="RibbonItemType.CheckButton"/> fungují jako samostatný CheckBox.
+        /// </summary>
+        public string CheckButtonRadioGroupName { get; set; }
+        /// <summary>
         /// Styl zobrazení prvku
         /// </summary>
         public virtual RibbonItemStyles RibbonStyle { get; set; }
@@ -9337,6 +9348,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         new RibbonItemType ItemType { get; }
         /// <summary>
+        /// Jméno grupy, v jejímž rámci se buttony typu <see cref="RibbonItemType.CheckButton"/> přetahují o stav <see cref="ITextItem.Checked"/>.
+        /// Pokud je zde prázdný string, pak buttony typu <see cref="RibbonItemType.CheckButton"/> fungují jako samostatný CheckBox.
+        /// </summary>
+        string CheckButtonRadioGroupName { get; }
+        /// <summary>
         /// Styl zobrazení prvku
         /// </summary>
         RibbonItemStyles RibbonStyle { get; }
@@ -9486,11 +9502,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         Large = 1,
         /// <summary>
-        /// If active, an item can be displayed like a smalL bar item with its caption.
+        /// If active, an item can be displayed like a small bar item with its caption.
         /// </summary>
         SmallWithText = 2,
         /// <summary>
-        /// If active, an item can be displayed like a smalL bar item without its caption.
+        /// If active, an item can be displayed like a small bar item without its caption.
         /// </summary>
         SmallWithoutText = 4,
         /// <summary>
@@ -9537,6 +9553,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Tlačítko
         /// </summary>
         Button,
+        /// <summary>
+        /// Button bez CheckBoxu, ale s možností jeho zvýraznění ve stylu "Button je stále zamáčknutý".<br/>
+        /// Využívá tedy hodnotu v <see cref="ITextItem.Checked"/>.<br/>
+        /// Pokud prvek Ribbonu <see cref="IRibbonItem"/> má tento typ prvku, a současně má určenou Radiogrupu <see cref="IRibbonItem.CheckButtonRadioGroupName"/>, pak se toto označování chová jako RadioButton (prvky se vzájemně přetahují o stav .
+        /// </summary>
+        CheckButton,
         /// <summary>
         /// Skupina tlačítek ???
         /// </summary>

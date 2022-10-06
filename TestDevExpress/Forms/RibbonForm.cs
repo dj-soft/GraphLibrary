@@ -810,20 +810,32 @@ namespace TestDevExpress.Forms
 
             if (iRibbonItem.ItemType == RibbonItemType.Menu) return;
 
-            Noris.Clients.Win.Components.DialogArgs dialogArgs = new Noris.Clients.Win.Components.DialogArgs();
-            dialogArgs.Title = "Ribbon Item Click";
-            dialogArgs.MessageTextContainsHtml = true;
-            
-            string messageText = $"Uživatel kliknul na prvek <b>{iRibbonItem.ItemType}</b>, s textem <b>{iRibbonItem.Text}</b>, z Ribbonu <b>{this.Ribbon.DebugName}</b>\r\n";
-            if (iRibbonItem.ParentGroup?.ParentPage?.Category != null) messageText += $"Kategorie: <b>{iRibbonItem.ParentGroup.ParentPage.Category.CategoryText}</b>;\r\n";
-            if (iRibbonItem.ParentGroup?.ParentPage != null) messageText += $"Stránka: <b>{iRibbonItem.ParentGroup.ParentPage.PageText}</b>;\r\n";
-            if (iRibbonItem.ParentGroup != null) messageText += $"Skupina <b>{iRibbonItem.ParentGroup.GroupText}</b>;\r\n";
-            messageText += $"ImageName <b>{iRibbonItem.ImageName}</b>;  ";
-            dialogArgs.MessageText = messageText.Trim();
+            var ribbonButton = iRibbonItem.RibbonItem?.Target as DevExpress.XtraBars.BarButtonItem;
+            if (ribbonButton != null)
+            {
+                ribbonButton.ButtonStyle = DevExpress.XtraBars.BarButtonStyle.Check;
+                bool isChecked = !(iRibbonItem.Checked ?? false);
+                ribbonButton.Down = isChecked;
+                iRibbonItem.Checked = isChecked;
+            }
 
-            dialogArgs.PrepareButtons(System.Windows.Forms.MessageBoxButtons.OK);
-            dialogArgs.Owner = this.FindForm();
-            Noris.Clients.Win.Components.DialogForm.ShowDialog(dialogArgs);
+            if (System.Windows.Forms.Control.ModifierKeys == System.Windows.Forms.Keys.Control)
+            {
+                Noris.Clients.Win.Components.DialogArgs dialogArgs = new Noris.Clients.Win.Components.DialogArgs();
+                dialogArgs.Title = "Ribbon Item Click";
+                dialogArgs.MessageTextContainsHtml = true;
+
+                string messageText = $"Uživatel kliknul na prvek <b>{iRibbonItem.ItemType}</b>, s textem <b>{iRibbonItem.Text}</b>, z Ribbonu <b>{this.Ribbon.DebugName}</b>\r\n";
+                if (iRibbonItem.ParentGroup?.ParentPage?.Category != null) messageText += $"Kategorie: <b>{iRibbonItem.ParentGroup.ParentPage.Category.CategoryText}</b>;\r\n";
+                if (iRibbonItem.ParentGroup?.ParentPage != null) messageText += $"Stránka: <b>{iRibbonItem.ParentGroup.ParentPage.PageText}</b>;\r\n";
+                if (iRibbonItem.ParentGroup != null) messageText += $"Skupina <b>{iRibbonItem.ParentGroup.GroupText}</b>;\r\n";
+                messageText += $"ImageName <b>{iRibbonItem.ImageName}</b>;  ";
+                dialogArgs.MessageText = messageText.Trim();
+
+                dialogArgs.PrepareButtons(System.Windows.Forms.MessageBoxButtons.OK);
+                dialogArgs.Owner = this.FindForm();
+                Noris.Clients.Win.Components.DialogForm.ShowDialog(dialogArgs);
+            }
         }
         private void _Ribbon_QATItemKeysChanged(object sender, EventArgs e)
         {
@@ -1124,12 +1136,13 @@ namespace TestDevExpress.Forms
         /// Další parametry řídí tvorbu RadioGrupy.
         /// </summary>
         /// <param name="groupId"></param>
-        /// <param name="containsRadioGroup"></param>
-        /// <param name="remainingRadioCount"></param>
-        /// <param name="forceFirstInGroup"></param>
+        /// <param name="containsRadioGroup">Obsahuje false na začátku DxGroup, nastaví se na true při prvním prvku RadioGrupy, pokud je true pak další grupa už nezačne.</param>
+        /// <param name="remainingRadioCount">Počet dalších buttonů, které máme přidat do RadioGrupy. Na počátku je 0, při zahájení RadioGrupy je nastaveno na číslo, pokud na vstupu není 0, pak se generují zbývající prvky RadioGrupy.</param>
+        /// <param name="buttonGroupName">Jméno grupy</param>
+        /// <param name="forceFirstInGroup">Vytvořený prvek má být první po separátoru</param>
         /// <param name="qatItems"></param>
         /// <returns></returns>
-        private static DataRibbonItem _GetItem(string groupId, ref bool containsRadioGroup, ref int remainingRadioCount, ref bool forceFirstInGroup, ref string qatItems)
+        private static DataRibbonItem _GetItem(string groupId, ref bool containsRadioGroup, ref int remainingRadioCount, ref string buttonGroupName, ref bool forceFirstInGroup, ref string qatItems)
         {
             string itemId = "Item" + (++_RibbonItemId);
             string itemText = Random.GetWord(true);
@@ -1148,30 +1161,50 @@ namespace TestDevExpress.Forms
                 ToolTipIcon = "help_hint_48_"
             };
 
-            if (remainingRadioCount > 0)
-            {   // Pokračujeme v přípravě skupiny RadioButtonů:
-                item.ItemType = RibbonItemType.RadioItem;
-                item.RibbonStyle = RibbonItemStyles.SmallWithText;
+            // Pokračujeme v přípravě skupiny RadioButtonů / CheckButtonRadio:
+            if (remainingRadioCount != 0)
+            {
+                if (remainingRadioCount > 0)
+                {   // Standardní RadioItem:
+                    item.ItemType = RibbonItemType.RadioItem;
+                    item.RibbonStyle = RibbonItemStyles.SmallWithText;
+                    addToQat = false;                                     // RadioButtony nedávám do Toolbaru
+                    remainingRadioCount--;
+                }
+                else
+                {   // CheckButton Radio:
+                    item.ItemType = RibbonItemType.CheckButton;
+                    item.CheckButtonRadioGroupName = buttonGroupName;
+                    remainingRadioCount++;                                // Záporné počitadlo => nahoru k nule
+                }
                 isFirst = false;
-                addToQat = false;                                         // RadioButtony nedávám do Toolbaru
-                remainingRadioCount--;
-                if (remainingRadioCount == 0) forceFirstInGroup = true;   // Dokončili jsme počet RadioButtonů: příští prvek bude ForceFirst!
+                if (remainingRadioCount == 0) forceFirstInGroup = true;   // Dokončili jsme stanovený počet RadioButtonů: příští prvek bude ForceFirst!
             }
             else
-            {
+            {   // Vytváříme první prvek
                 RibbonItemType itemType = GetRandomItemType();
                 if (itemType == RibbonItemType.RadioItem && containsRadioGroup) 
                     itemType = RibbonItemType.CheckBoxStandard;           // V jedné grupě Ribbonu bude nanejvýše jedna RadioButton grupa
 
                 item.ItemType = itemType;
 
-                if (itemType == RibbonItemType.RadioItem)                 // Zde začíná RadioButton grupa
-                {
+                if (itemType == RibbonItemType.RadioItem)
+                {   // Zde začíná RadioButton grupa
                     isFirst = true;                                       // První RadioItem si zahajuje svoji sub-grupu
                     addToQat = false;                                     // RadioButtony nedávám do Toolbaru
                     item.RibbonStyle = RibbonItemStyles.SmallWithText;    // RadioItem je vždy Small
                     remainingRadioCount = Rand.Next(3, 6);                // RadioItemů do jedné grupy dám 3 - 5 za sebou
                     containsRadioGroup = true;                            // RibbonGroup již obsahuje RadioGrupu, víc RadioSkupin tam dávat už nebudu
+                }
+                if (itemType == RibbonItemType.CheckButton && !containsRadioGroup && Random.IsTrue(50))
+                {   // zde začne CheckButton Radio:
+                    isFirst = true;                                       // První RadioItem si zahajuje svoji sub-grupu
+                    addToQat = false;                                     // RadioButtony nedávám do Toolbaru
+                    remainingRadioCount = -Rand.Next(3, 6);               // RadioItemů do jedné grupy dám 3 - 5 za sebou;    Záporné číslo = CheckButton grupa
+                    containsRadioGroup = true;                            // RibbonGroup již obsahuje RadioGrupu, víc RadioSkupin tam dávat už nebudu
+                    buttonGroupName = Random.GetWord(true);
+                    item.Checked = true;
+                    item.CheckButtonRadioGroupName = buttonGroupName;
                 }
 
                 if (Random.IsTrue(15))                                    // 15% prvků nemá Image
@@ -1304,10 +1337,10 @@ namespace TestDevExpress.Forms
             int rand = Rand.Next(100);
             if (rand < 45) return RibbonItemType.Button;
             if (rand < 50) return RibbonItemType.CheckBoxStandard;
-            if (rand < 55) return RibbonItemType.CheckBoxToggle;
+            if (rand < 55) return RibbonItemType.CheckButton;
             if (rand < 60) return RibbonItemType.RadioItem;
             // if (rand < 85) return RibbonItemType.ButtonGroup;         nějak se mi nelíbí
-            if (rand < 65) return RibbonItemType.InRibbonGallery;
+            if (rand < 70) return RibbonItemType.InRibbonGallery;
             if (rand < 85) return RibbonItemType.SplitButton;
             if (rand < 100) return RibbonItemType.Menu;
             return RibbonItemType.Button;
