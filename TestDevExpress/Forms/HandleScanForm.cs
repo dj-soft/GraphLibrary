@@ -392,7 +392,6 @@ namespace TestDevExpress.Forms
         Shortcut? IMenuItem.Shortcut { get { return null; } }
         string IMenuItem.HotKey { get { return null; } }
         IEnumerable<IMenuItem> IMenuItem.SubItems { get { return null; } }
-        Action<IMenuItem> IMenuItem.ClickAction { get { return null; } }
         string ITextItem.ItemId { get { return ProcessId.ToString(); } }
         string ITextItem.Text { get { return Text; } }
         int ITextItem.ItemOrder { get; set; }
@@ -411,6 +410,8 @@ namespace TestDevExpress.Forms
         string IToolTipItem.ToolTipText { get { return Text; } }
         string IToolTipItem.ToolTipTitle { get { return null; } }
         string IToolTipItem.ToolTipIcon { get { return ToolTip; } }
+        Action<IMenuItem> IMenuItem.ClickAction { get { return null; } }
+        Action<IMenuItem> IMenuItem.CheckAction { get { return null; } }
         #endregion
     }
     #endregion

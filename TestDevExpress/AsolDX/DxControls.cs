@@ -5037,12 +5037,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public virtual List<IMenuItem> SubItems { get; set; }
         /// <summary>
-        /// Explicitně daná akce po aktivaci této položky menu
-        /// </summary>
-        [XS.PersistingEnabled(false)]
-        public Action<IMenuItem> ClickAction { get; set; }
-
-        /// <summary>
         /// V deklaraci interface je IEnumerable...
         /// </summary>
         IEnumerable<IMenuItem> IMenuItem.SubItems { get { return this.SubItems; } }
@@ -5050,6 +5044,17 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Titulek ToolTipu (pokud není zadán explicitně) se přebírá z textu prvku
         /// </summary>
         string IToolTipItem.ToolTipTitle { get { return ToolTipTitle ?? Text; } }
+        /// <summary>
+        /// Explicitně daná akce po aktivaci této položky menu
+        /// </summary>
+        [XS.PersistingEnabled(false)]
+        public Action<IMenuItem> ClickAction { get; set; }
+        /// <summary>
+        /// Explicitně daná akce po změně hodnoty <see cref="ITextItem.Checked"/> této položky menu.
+        /// V době volání této akce už je hodnota změněna. Volající garantuje, že skutečně došlo ke změně.
+        /// </summary>
+        [XS.PersistingEnabled(false)]
+        public Action<IMenuItem> CheckAction { get; }
     }
     /// <summary>
     /// Definice prvku umístěného v Ribbonu nebo podpoložka prvku Ribbonu (položka menu / split ribbonu atd)
@@ -5088,6 +5093,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Explicitně daná akce po aktivaci této položky menu
         /// </summary>
         Action<IMenuItem> ClickAction { get; }
+        /// <summary>
+        /// Explicitně daná akce po změně hodnoty <see cref="ITextItem.Checked"/> této položky menu.
+        /// V době volání této akce už je hodnota změněna. Volající garantuje, že skutečně došlo ke změně.
+        /// </summary>
+        Action<IMenuItem> CheckAction { get; }
     }
     /// <summary>
     /// Definice prvku umístěného jako stránka v záložkovníku

@@ -3141,7 +3141,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         /// <summary>
         /// Do nově dodaného datového <see cref="IRibbonItem"/> vloží existující data o vizuálním prvku Ribbonu z dodaného balíčku informací <see cref="BarItemTagInfo"/>.
-        /// Provádí se v procesu Refreshe, když do Ribobnu dorazí nová definice prvku <see cref="IRibbonItem"/>, a je třeba do ní vepsat reálné vazby na prvky/grupy v Ribbonu.
+        /// Provádí se v procesu Refreshe, když do Ribbonu dorazí nová definice prvku <see cref="IRibbonItem"/>, a je třeba do ní vepsat reálné vazby na prvky/grupy v Ribbonu.
         /// </summary>
         /// <param name="sourceItemInfo"></param>
         /// <param name="barItem"></param>
@@ -3293,6 +3293,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                     count++;
                     BarButtonItem checkButton = Items.CreateButton(iRibbonItem.Text);
                     checkButton.ButtonStyle = BarButtonStyle.Check;
+                    checkButton.Down = (iRibbonItem.Checked ?? false);
                     barItem = checkButton;
                     break;
                 case RibbonItemType.Button:
@@ -3355,16 +3356,20 @@ namespace Noris.Clients.Win.Components.AsolDX
             barItem.SearchTags = iRibbonItem.SearchTags;
             FillBarItemHotKey(barItem, iRibbonItem, level, withReset);
 
+            // Specifické styly:
             if (barItem is DevExpress.XtraBars.BarCheckItem checkItem)
-            {   // Do CheckBoxu vepisujeme víc vlastností:
-                checkItem.CheckBoxVisibility = DevExpress.XtraBars.CheckBoxVisibility.BeforeText;
+            {   // Do CheckBoxu + RadioButtonu vepisujeme víc vlastností:
+                checkItem.CheckBoxVisibility = CheckBoxVisibility.BeforeText;
                 checkItem.CheckStyle =
-                    (iRibbonItem.ItemType == RibbonItemType.RadioItem ? DevExpress.XtraBars.BarCheckStyles.Radio :
-                    (iRibbonItem.ItemType == RibbonItemType.CheckBoxToggle ? DevExpress.XtraBars.BarCheckStyles.Standard :
-                     DevExpress.XtraBars.BarCheckStyles.Standard));
+                    (iRibbonItem.ItemType == RibbonItemType.RadioItem ? BarCheckStyles.Radio :
+                    (iRibbonItem.ItemType == RibbonItemType.CheckBoxToggle ? BarCheckStyles.Standard : BarCheckStyles.Standard));
                 checkItem.Checked = iRibbonItem.Checked ?? false;
             }
-
+            if (barItem is BarBaseButtonItem barButton)
+            {   // CheckButton:
+                barButton.ButtonStyle = (iRibbonItem.ItemType == RibbonItemType.CheckButton ? BarButtonStyle.Check : BarButtonStyle.Default);
+                barButton.Down = (iRibbonItem.ItemType == RibbonItemType.CheckButton && iRibbonItem.Checked.HasValue && iRibbonItem.Checked.Value);
+            }
             if (barItem is DxBarCheckBoxToggle dxCheckBoxToggle)
             {
                 dxCheckBoxToggle.CheckedSilent = iRibbonItem.Checked;
@@ -3548,6 +3553,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 case RibbonItemType.SkinSetDropDown: return null;
                 case RibbonItemType.SkinPaletteDropDown: return null;
                 case RibbonItemType.SkinPaletteGallery: return null;
+                case RibbonItemType.CheckButton: return null;
                 case RibbonItemType.Button:
                 default:
                     return RibbonItemType.Button;
@@ -5926,7 +5932,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void InitEvents()
         {
             ApplicationButtonClick += RibbonControl_ApplicationButtonClick;
-            ItemClick += RibbonControl_ItemClick;
+            ItemClick += _RibbonControl_ItemClick;
             PageCategoryClick += RibbonControl_PageCategoryClick;
             PageGroupCaptionButtonClick += RibbonControl_PageGroupCaptionButtonClick;
         }
@@ -6036,56 +6042,122 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void RibbonControl_ItemClick(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
+        private void _RibbonControl_ItemClick(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
         {
             // poznámka: tady nemusím řešit přechod z Ribbonu "kde se kliklo" do Ribbonu "kde byl prvek definován", tady to už interně vyřešil DevExpress!
             // Tady jsem v té instanci Ribbonu, která deklarovala BarItem a navázala do něj svůj Click eventhandler...
             if (_TryGetIRibbonItem(e.Item, out IRibbonItem iRibbonItem))
             {
-                // Z vizuálního objektu BarCheckItem si opíšu jeho Checked do datového objektu:
-                if (e.Item is DevExpress.XtraBars.BarCheckItem checkItem)
-                    iRibbonItem.Checked = checkItem.Checked;
-
-                if (iRibbonItem.ItemType == RibbonItemType.CheckButton)
-                    _RibbonCheckButtonItemClick(iRibbonItem);
-
+                _RibbonItemTestCheckChanges(e.Item, iRibbonItem);
                 _RibbonItemClick(iRibbonItem);
             }
         }
-
-        private void _RibbonCheckButtonItemClick(IRibbonItem iRibbonItem)
+        /// <summary>
+        /// Tato metoda řeší změnu hodnoty <see cref="ITextItem.Checked"/> na daném prvku Ribbonu poté, kdy na něj uživatel klikl.
+        /// Řeší tedy CheckBoxy, RadioButtony a CheckButtony obou režimů.
+        /// U obou typů RadioButtonů řeší zhasnutí okolních (=ne-kliknutých) RadioButtonů v jejich grupě.
+        /// <para/>
+        /// Volá event <see cref="RibbonItemCheck"/> a související pro každý prvek, jemuž je změněna hodnota Checked.
+        /// </summary>
+        /// <param name="barItem"></param>
+        /// <param name="iRibbonItem"></param>
+        private void _RibbonItemTestCheckChanges(BarItem barItem, IRibbonItem iRibbonItem)
         {
-            var groupName = iRibbonItem.CheckButtonRadioGroupName;
+            // Z vizuálního objektu BarCheckItem si opíšu jeho Checked do datového objektu:
+            if (barItem is BarCheckItem checkItem)
+            {   // CheckBox i RadioButton (jde o stejný prvek, pouze s jiným stylem zobrazení):
+                _RibbonCheckBoxItemClick(checkItem, iRibbonItem);
+            }
+            else if (iRibbonItem.ItemType == RibbonItemType.CheckButton && barItem is BarBaseButtonItem barButton)
+            {   // BarButton v obou režimech:
+                _RibbonCheckButtonItemClick(barButton, iRibbonItem);
+            }
+        }
+        /// <summary>
+        /// Vyřeší stavy BarCheckItem po kliknutí na něj. 
+        /// Zpracuje režim CheckBox (samostaný CheckButton) i RadioButton (skupinový CheckButton).
+        /// </summary>
+        /// <param name="checkButton"></param>
+        /// <param name="iRibbonItem"></param>
+        private void _RibbonCheckBoxItemClick(BarCheckItem checkButton, IRibbonItem iRibbonItem)
+        {
+            var groupName = iRibbonItem.RadioButtonGroupName;
             if (String.IsNullOrEmpty(groupName))
-            {   // Není daná grupa CheckButtonRadioGroupName? Jde o obyčejný CheckBox:
-                setChecked(iRibbonItem, !(iRibbonItem.Checked ?? false));
+            {   // Není daná grupa RadioButtonGroupName? Jde o obyčejný CheckBox:
+                _RibbonItemSetChecked(iRibbonItem, !(iRibbonItem.Checked ?? false), true, false, null, true, checkButton);
             }
             else
             {   // Máme řešit Radio grupu:
                 var groupItems = iRibbonItem.ParentGroup?.Items;
-                groupItems.ForEachExec(i => { if (!String.IsNullOrEmpty(i.CheckButtonRadioGroupName) && i.CheckButtonRadioGroupName == groupName) setCheckedActive(i, iRibbonItem); });
-                // setChecked(iRibbonItem, true);
+                groupItems.ForEachExec(i => { if (!String.IsNullOrEmpty(i.RadioButtonGroupName) && i.RadioButtonGroupName == groupName) setCheckedActive(i, iRibbonItem); });
             }
 
             // Do daného prvku i do jeho vizuálního buttonu vloží hodnotu Checked / Down: true pokud jsou dodané prvky ReferenceEquals / false pokud jsou odlišné:
             void setCheckedActive(IRibbonItem iItem, IRibbonItem iActiveItem)
             {
                 bool isChecked = Object.ReferenceEquals(iItem, iActiveItem);
-                setChecked(iItem, isChecked);
-            }
-
-            // Do daného prvku i do jeho vizuálního buttonu vloží danou hodnotu Checked / Down:
-            void setChecked(IRibbonItem iItem, bool isCheck)
-            {
-                var button = iItem.RibbonItem?.Target as BarButtonItem;
-                if (button != null)
-                {
-                    if (button.ButtonStyle != BarButtonStyle.Check) button.ButtonStyle = BarButtonStyle.Check;
-                    iItem.Checked = isCheck;
-                    button.Down = isCheck;
-                }
+                _RibbonItemSetChecked(iItem, isChecked, true, false, null, true, null);
             }
         }
+        /// <summary>
+        /// Vyřeší stavy CheckButtonu po kliknutí na něj. 
+        /// Zpracuje režim CheckBox (samostaný CheckButton) i RadioButton (skupinový CheckButton).
+        /// </summary>
+        /// <param name="barButton"></param>
+        /// <param name="iRibbonItem"></param>
+        private void _RibbonCheckButtonItemClick(BarBaseButtonItem barButton, IRibbonItem iRibbonItem)
+        {
+            var groupName = iRibbonItem.RadioButtonGroupName;
+            if (String.IsNullOrEmpty(groupName))
+            {   // Není daná grupa RadioButtonGroupName? Jde o obyčejný CheckBox:
+                _RibbonItemSetChecked(iRibbonItem, !(iRibbonItem.Checked ?? false), true, true, barButton, false, null);
+            }
+            else
+            {   // Máme řešit Radio grupu:
+                var groupItems = iRibbonItem.ParentGroup?.Items;
+                groupItems.ForEachExec(i => { if (!String.IsNullOrEmpty(i.RadioButtonGroupName) && i.RadioButtonGroupName == groupName) setCheckedActive(i, iRibbonItem); });
+            }
+
+            // Do daného prvku i do jeho vizuálního buttonu vloží hodnotu Checked / Down: true pokud jsou dodané prvky ReferenceEquals / false pokud jsou odlišné:
+            void setCheckedActive(IRibbonItem iItem, IRibbonItem iActiveItem)
+            {
+                bool isChecked = Object.ReferenceEquals(iItem, iActiveItem);
+                _RibbonItemSetChecked(iItem, isChecked, true, true, null, false, null);
+            }
+        }
+        /// <summary>
+        /// Do daného datového prvku <paramref name="iRibbonItem"/> vloží danou hodnotu Checked <paramref name="isChecked"/>.
+        /// Pokud je požadováno nastavení hodnoty <see cref="BarBaseButtonItem.Down"/> pro odpovídajcí vizuální prvek, provede to 
+        /// (může být předán button v parametru <paramref name="barButton"/>, anebo bude vyhledán v <see cref="IRibbonItem.RibbonItem"/>).
+        /// Pokud došlo ke změně hodnoty IsChecked v <paramref name="iRibbonItem"/> a pokud je požadováno v <paramref name="callEvent"/>, 
+        /// vyvolá se událost <see cref="RibbonItemCheck"/> a související.
+        /// </summary>
+        /// <param name="iRibbonItem"></param>
+        /// <param name="isChecked"></param>
+        /// <param name="callEvent"></param>
+        /// <param name="setDownState"></param>
+        /// <param name="barButton"></param>
+        /// <param name="setChecked"></param>
+        /// <param name="checkButton"></param>
+        private void _RibbonItemSetChecked(IRibbonItem iRibbonItem, bool isChecked, bool callEvent, bool setDownState, BarBaseButtonItem barButton, bool setChecked, BarCheckItem checkButton)
+        {
+            bool oldChecked = (iRibbonItem.Checked ?? false);
+            bool isChanged = (isChecked != oldChecked);
+            iRibbonItem.Checked = isChecked;
+            if (setDownState)
+            {
+                if (barButton is null) barButton = iRibbonItem.RibbonItem?.Target as BarButtonItem;
+                if (barButton != null) barButton.Down = isChecked;             // Nativní eventu DownChanged nehlídáme, tak mi nevadí že proběhne.
+            }
+            if (setChecked)
+            {
+                if (checkButton is null) checkButton = iRibbonItem.RibbonItem?.Target as BarCheckItem;
+                if (checkButton != null) checkButton.Checked = isChecked;      // Nativní eventu CheckedChanged nehlídáme, tak mi nevadí že proběhne.
+            }
+            if (callEvent && isChanged)
+                _RibbonItemCheck(iRibbonItem);
+        }
+
         /// <summary>
         /// Provede akci odpovídající kliknutí na prvek Ribbonu, na vstupu jsou data prvku
         /// </summary>
@@ -6112,6 +6184,37 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Událost volaná po kliknutí na prvek Ribbonu
         /// </summary>
         public event EventHandler<TEventArgs<IRibbonItem>> RibbonItemClick;
+
+        /// <summary>
+        /// Provede akci odpovídající změně hodnoty <see cref="ITextItem.Checked"/> tohoto prvku Ribbonu.
+        /// V době volání této akce už je hodnota změněna. Volající garantuje, že skutečně došlo ke změně.
+        /// </summary>
+        /// <param name="iRibbonItem"></param>
+        internal void RaiseRibbonItemCheck(IRibbonItem iRibbonItem) { _RibbonItemCheck(iRibbonItem); }
+        /// <summary>
+        /// Vyvolá reakce na změnu hodnoty <see cref="ITextItem.Checked"/> tohoto prvku Ribbonu.
+        /// V době volání této akce už je hodnota změněna. Volající garantuje, že skutečně došlo ke změně.
+        /// event <see cref="RibbonItemCheck"/>.
+        /// </summary>
+        /// <param name="iRibbonItem"></param>
+        private void _RibbonItemCheck(IRibbonItem iRibbonItem)
+        {
+            iRibbonItem?.ClickAction?.Invoke(iRibbonItem);
+            var args = new TEventArgs<IRibbonItem>(iRibbonItem);
+            OnRibbonItemCheck(args);
+            RibbonItemCheck?.Invoke(this, args);
+        }
+        /// <summary>
+        /// Proběhne po změně hodnoty <see cref="ITextItem.Checked"/> tohoto prvku Ribbonu.
+        /// V době volání této akce už je hodnota změněna. Volající garantuje, že skutečně došlo ke změně.
+        /// </summary>
+        /// <param name="args"></param>
+        protected virtual void OnRibbonItemCheck(TEventArgs<IRibbonItem> args) { }
+        /// <summary>
+        /// Událost volaná po změně hodnoty <see cref="ITextItem.Checked"/> tohoto prvku Ribbonu.
+        /// V době volání této akce už je hodnota změněna. Volající garantuje, že skutečně došlo ke změně.
+        /// </summary>
+        public event EventHandler<TEventArgs<IRibbonItem>> RibbonItemCheck;
 
         /// <summary>
         /// V rámci dané kategorie se pokusí najít odpovídající definici kategorie <see cref="IRibbonCategory"/> v některém tagu.
@@ -9162,10 +9265,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public new RibbonItemType ItemType { get; set; }
         /// <summary>
-        /// Jméno grupy, v jejímž rámci se buttony typu <see cref="RibbonItemType.CheckButton"/> přetahují o stav <see cref="ITextItem.Checked"/>.
+        /// Jméno grupy, v jejímž rámci se buttony typu <see cref="RibbonItemType.RadioItem"/> a <see cref="RibbonItemType.CheckButton"/> přetahují o stav <see cref="ITextItem.Checked"/>.
         /// Pokud je zde prázdný string, pak buttony typu <see cref="RibbonItemType.CheckButton"/> fungují jako samostatný CheckBox.
         /// </summary>
-        public string CheckButtonRadioGroupName { get; set; }
+        public string RadioButtonGroupName { get; set; }
         /// <summary>
         /// Styl zobrazení prvku
         /// </summary>
@@ -9387,10 +9490,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         new RibbonItemType ItemType { get; }
         /// <summary>
-        /// Jméno grupy, v jejímž rámci se buttony typu <see cref="RibbonItemType.CheckButton"/> přetahují o stav <see cref="ITextItem.Checked"/>.
+        /// Jméno grupy, v jejímž rámci se buttony typu <see cref="RibbonItemType.RadioItem"/> a <see cref="RibbonItemType.CheckButton"/> přetahují o stav <see cref="ITextItem.Checked"/>.
         /// Pokud je zde prázdný string, pak buttony typu <see cref="RibbonItemType.CheckButton"/> fungují jako samostatný CheckBox.
         /// </summary>
-        string CheckButtonRadioGroupName { get; }
+        string RadioButtonGroupName { get; }
         /// <summary>
         /// Styl zobrazení prvku
         /// </summary>
@@ -9595,7 +9698,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Button bez CheckBoxu, ale s možností jeho zvýraznění ve stylu "Button je stále zamáčknutý".<br/>
         /// Využívá tedy hodnotu v <see cref="ITextItem.Checked"/>.<br/>
-        /// Pokud prvek Ribbonu <see cref="IRibbonItem"/> má tento typ prvku, a současně má určenou Radiogrupu <see cref="IRibbonItem.CheckButtonRadioGroupName"/>, pak se toto označování chová jako RadioButton (prvky se vzájemně přetahují o stav .
+        /// Pokud prvek Ribbonu <see cref="IRibbonItem"/> má tento typ prvku, a současně má určenou Radiogrupu <see cref="IRibbonItem.RadioButtonGroupName"/>, pak se toto označování chová jako RadioButton (prvky se vzájemně přetahují o stav .
         /// </summary>
         CheckButton,
         /// <summary>
@@ -9617,7 +9720,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         CheckBoxToggle,
         /// <summary>
-        /// Prvek RadioGrupy
+        /// Prvek RadioGrupy.
+        /// Měl by mít vyplněný název skupiny v <see cref="IRibbonItem.RadioButtonGroupName"/>, Ribbon dokáže sám přepínat aktivitu 1:N v rámci této skupiny.
         /// </summary>
         RadioItem,
         /// <summary>

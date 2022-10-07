@@ -1169,35 +1169,44 @@ namespace TestDevExpress.Forms
                 if (remainingRadioCount > 0)
                 {   // Standardní RadioItem:
                     item.ItemType = RibbonItemType.RadioItem;
-                    item.RibbonStyle = RibbonItemStyles.SmallWithText;
+                    item.RibbonStyle = RibbonItemStyles.SmallWithText;    // RadioItem je vždy Small
+                    item.RadioButtonGroupName = buttonGroupName;
                     addToQat = false;                                     // RadioButtony nedávám do Toolbaru
                     remainingRadioCount--;
                 }
                 else
                 {   // CheckButton Radio:
                     item.ItemType = RibbonItemType.CheckButton;
-                    item.RibbonStyle = RibbonItemStyles.Large;
-                    item.CheckButtonRadioGroupName = buttonGroupName;
+                    item.RibbonStyle = RibbonItemStyles.Large;            // CheckButton grupa je vždy velká
+                    item.RadioButtonGroupName = buttonGroupName;
                     remainingRadioCount++;                                // Záporné počitadlo => nahoru k nule
                 }
                 isFirst = false;
                 if (remainingRadioCount == 0) forceFirstInGroup = true;   // Dokončili jsme stanovený počet RadioButtonů: příští prvek bude ForceFirst!
             }
             else
-            {   // Vytváříme první prvek:
+            {   // Vytváříme první prvek (jakýkoli, i první prvek grupy):
                 RibbonItemType itemType = GetRandomItemType();
                 if (itemType == RibbonItemType.RadioItem && containsRadioGroup) 
                     itemType = RibbonItemType.CheckBoxStandard;           // V jedné grupě Ribbonu bude nanejvýše jedna RadioButton grupa
 
                 item.ItemType = itemType;
+                if (itemType == RibbonItemType.CheckBoxStandard || itemType == RibbonItemType.RadioItem || itemType == RibbonItemType.CheckButton)
+                    item.Checked = Random.IsTrue(30);                     // 30% CheckBoxů je zaškrtnutých
+
+                if (Random.IsTrue(30))                                    // 30% všech prvků je Small
+                    item.RibbonStyle = RibbonItemStyles.SmallWithText;
 
                 if (itemType == RibbonItemType.RadioItem)
                 {   // Zde začíná RadioButton grupa
                     isFirst = true;                                       // První RadioItem si zahajuje svoji sub-grupu
                     addToQat = false;                                     // RadioButtony nedávám do Toolbaru
-                    item.RibbonStyle = RibbonItemStyles.SmallWithText;    // RadioItem je vždy Small
                     remainingRadioCount = Rand.Next(3, 6);                // RadioItemů do jedné grupy dám 3 - 5 za sebou
                     containsRadioGroup = true;                            // RibbonGroup již obsahuje RadioGrupu, víc RadioSkupin tam dávat už nebudu
+                    buttonGroupName = Random.GetWord(true);
+                    item.Checked = true;
+                    item.RibbonStyle = RibbonItemStyles.SmallWithText;    // RadioItem je vždy Small
+                    item.RadioButtonGroupName = buttonGroupName;
                 }
                 if (itemType == RibbonItemType.CheckButton && !containsRadioGroup && Random.IsTrue(50))
                 {   // zde začne CheckButton Radio:
@@ -1207,23 +1216,14 @@ namespace TestDevExpress.Forms
                     containsRadioGroup = true;                            // RibbonGroup již obsahuje RadioGrupu, víc RadioSkupin tam dávat už nebudu
                     buttonGroupName = Random.GetWord(true);
                     item.Checked = true;
-                    item.RibbonStyle = RibbonItemStyles.Large;
-                    item.CheckButtonRadioGroupName = buttonGroupName;
+                    item.RibbonStyle = RibbonItemStyles.Large;            // CheckButton grupa je vždy velká
+                    item.RadioButtonGroupName = buttonGroupName;
                 }
 
                 if (Random.IsTrue(15))                                    // 15% prvků nemá Image
                     item.ImageName = null;
 
-                if (item.ItemType == RibbonItemType.CheckBoxStandard || item.ItemType == RibbonItemType.RadioItem)
-                {
-                    item.Checked = Random.IsTrue(30);                     // 30% CheckBoxů je zaškrtnutých
-                }
-
-                if (Random.IsTrue(30))                                    // 30% všech prvků je Small
-                {
-                    item.RibbonStyle = RibbonItemStyles.SmallWithText;
-                }
-
+              
                 if (NeedSubItem(itemType))
                     item.SubItems = CreateSubItems(item, itemType, 4, 15);
             }
