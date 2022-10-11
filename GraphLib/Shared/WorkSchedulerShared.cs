@@ -180,6 +180,7 @@ namespace Noris.LCS.Base.WorkScheduler
             this.PluginFormTitle = "WorkScheduler plugin";
             this.PluginFormBorder = PluginFormBorderStyle.SizableToolWindow;
             this.PluginFormIsMaximized = true;
+            this.CloseWindowOnEscape = null;
             this.TotalTimeRange = TotalTimeRangeDefault;
             this.InitialTimeRange = InitialTimeRangeDefault;
             this.TimeChangeSend = TimeChangeSendMode.None;
@@ -198,9 +199,20 @@ namespace Noris.LCS.Base.WorkScheduler
         public PluginFormBorderStyle PluginFormBorder { get; set; }
         /// <summary>
         /// Plugin bude při otevření maximalizován.
-        /// Výchozí hodnota = true
+        /// Výchozí hodnota = true.
+        /// Na klientu Nephrite hodnota true zajistí zadokování okna pluginu mezi ostatní tabované dokumenty.
         /// </summary>
         public bool PluginFormIsMaximized { get; set; }
+        /// <summary>
+        /// Režim otevírání okna pluginu. Akceptuje se pouze na klientu Nephrite. 
+        /// Pokud bude null nebo Default, použije se hodnota <see cref="PluginFormIsMaximized"/>.
+        /// </summary>
+        public GuiPluginFormOpenMode? MainWindowMode { get; set; }
+        /// <summary>
+        /// Je možno zavírat okno pluginu klávesou Escape?<br/>
+        /// Lze definovat explicitně true / false, anebo nechat default null, pak pro Nephrite bude chápáno jako true.
+        /// </summary>
+        public bool? CloseWindowOnEscape { get; set; }
         /// <summary>
         /// Celkový dostupný časový interval. Časy mimo interval nebude možno zobrazit.
         /// Výchozí hodnota: -1 rok až +5 roků
@@ -319,6 +331,28 @@ namespace Noris.LCS.Base.WorkScheduler
                 return new GuiTimeRange(begin.AddHours(-add), end.AddHours(add));
             }
         }
+    }
+    /// <summary>
+    /// Režim otevírání okna pluginu
+    /// </summary>
+    public enum GuiPluginFormOpenMode
+    {
+        /// <summary>
+        /// Defaultní režim, okno bude otevřeno podle jiných zadaných hodnot
+        /// </summary>
+        Default = 0,
+        /// <summary>
+        /// Okno bude přidáno do DocumentManagera v Nephrite a bude otevřeno jako Tabované
+        /// </summary>
+        Tabbed,
+        /// <summary>
+        /// Okno bude přidáno do DocumentManagera v Nephrite a bude otevřeno jako Plovoucí
+        /// </summary>
+        Floating,
+        /// <summary>
+        /// Okno NEBUDE přidáno do DocumentManagera v Nephrite a bude otevřeno jako samostatné
+        /// </summary>
+        Isolated
     }
     /// <summary>
     /// Druh reakce na DoubleClick
@@ -1625,6 +1659,7 @@ namespace Noris.LCS.Base.WorkScheduler
             this.BrowseColumnType = WorkScheduler.BrowseColumnType.DataColumn;
             this.IsVisible = true;
             this.Width = 100;
+            this.WidthMin = 75;
         }
         /// <summary>
         /// Vizualizace
@@ -1689,6 +1724,10 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public int Width { get; set; }
         /// <summary>
+        /// Šířka sloupce v přehledu - minimální, pod ní nesmí klesnout
+        /// </summary>
+        public int? WidthMin { get; set; }
+        /// <summary>
         /// Hodnota <see cref="System.Data.DataColumn.DefaultValue"/>
         /// </summary>
         public object ColumnDefaultValue { get; set; }
@@ -1713,7 +1752,6 @@ namespace Noris.LCS.Base.WorkScheduler
         /// false pro sloupce "systémové", které se nikdy nezobrazují.
         /// </summary>
         public bool ColumnIsForUser { get { return (this.BrowseColumnType == BrowseColumnType.DataColumn); } }
-
         /// <summary>
         /// V této property je uloženo číslo třídy celé tabulky.
         /// Je to z historických důvodů, kdy Green generuje přehledovou šablonu do DataTable, a některá data dává do prvního sloupce.
@@ -1737,13 +1775,13 @@ namespace Noris.LCS.Base.WorkScheduler
         /// POkud je vztah netypový, pak je zde asi číslo Obecného subjektu.
         /// </summary>
         public int? RelationClassId { get; set; }
-
         /// <summary>
         /// Explicitně definovaný styl pro tento sloupec. Pokud bude zadán, použije se tento a nebude se hledat styl dle jména <see cref="StyleName"/>.
         /// </summary>
-        public GuiVisualStyle Style { get; set; }        /// <summary>
-                                                         /// Název stylu pro tento sloupec. Odkazuje se na <see cref="GuiDataTable.VisualStyles"/>, na jméno prvku <see cref="GuiVisualStyle"/>.Name
-                                                         /// </summary>
+        public GuiVisualStyle Style { get; set; }
+        /// <summary>
+        /// Název stylu pro tento sloupec. Odkazuje se na <see cref="GuiDataTable.VisualStyles"/>, na jméno prvku <see cref="GuiVisualStyle"/>.Name
+        /// </summary>
         public string StyleName { get; set; }
         #endregion
         #region Vytvoření instance GuiDataColumn z System.Data.DataColumn
@@ -1788,6 +1826,7 @@ namespace Noris.LCS.Base.WorkScheduler
             guiColumn.Alignment = ContentAlignment.MiddleLeft;                           // Není odkud brát?
             guiColumn.IsVisible = GetPropertyValue(dataColumn, "IsVisible", true);
             guiColumn.Width = GetPropertyValue(dataColumn, "Width", 0);
+            guiColumn.WidthMin = guiColumn.Width * 3 / 4;
             guiColumn.ColumnDefaultValue = dataColumn.DefaultValue;
             guiColumn.ColumnReadOnly = dataColumn.ReadOnly;
             guiColumn.AllowRowFilter = GetPropertyValue(dataColumn, "AllowRowFilter", true);
@@ -4181,7 +4220,9 @@ namespace Noris.LCS.Base.WorkScheduler
         {
             this.ToolbarVisible = true;
             this.ToolbarShowSystemItems = ToolbarSystemItem.TimeAxisZoomDWWM | ToolbarSystemItem.TimeAxisGoAll;
+            this.ToolbarSystemItems = new Dictionary<ToolbarSystemItem, GuiTextItem>();
             this.Items = new List<GuiToolbarItem>();
+            this.RibbonPages = new List<GuiRibbonPage>();
         }
         /// <summary>
         /// Zobrazovat toolbar?
@@ -4202,7 +4243,24 @@ namespace Noris.LCS.Base.WorkScheduler
         /// </summary>
         public ToolbarSystemItem ToolbarShowSystemItems { get; set; }
         /// <summary>
+        /// Pokud má toolbar použít defaultní ikony pro systémové akce (tedy když nejsou deklarované explicitní v <see cref="ToolbarSystemItems"/>), 
+        /// pak (true) máme dát přednost vektorovým ikonám.
+        /// </summary>
+        public bool? ToolbarSystemIconsSvg { get; set; }
+        /// <summary>
+        /// Systémové akce. 
+        /// Klíč Dictionary určuje akci, Value popisuje text tlačítka, tooltip a ikonu.
+        /// Výchozí hodnota je prázdná Dictionary.
+        /// <para/>
+        /// Pokud bude některé akce uvedena v <see cref="ToolbarShowSystemItems"/> a zde nebude mít odpovídající popis, použije se defaultní.
+        /// Pokud bude některá akce definována zde a přitom nebude v <see cref="ToolbarShowSystemItems"/>, pak se do Ribbonu dostane odsud.
+        /// Stačí ji tedy plně deklarovat zde.
+        /// </summary>
+        public Dictionary<ToolbarSystemItem, GuiTextItem> ToolbarSystemItems { get; set; }
+        /// <summary>
         /// Všechny položky obsažené v Toolbaru.
+        /// Výchozí hodnota je prázdné pole.
+        /// <para/>
         /// Pokud je spuštěno na klientu Nephrite a bude používán Ribbon <see cref="UseSystemRibbon"/>, pak se prvky menu (Ribbonu) očekávají prioritně v <see cref="RibbonPages"/>.
         /// Pokud ale <see cref="RibbonPages"/> bude prázdné, a v této property <see cref="Items"/> budou nějaké prvky, použijí se tyto prvky do základní stránky Ribbonu = bez nutnosti přeprogramovat definici pluginu mezi Green a Nephrite.
         /// </summary>
@@ -4210,6 +4268,7 @@ namespace Noris.LCS.Base.WorkScheduler
         /// <summary>
         /// Definice stránek Ribbonu pro klienta Nephrite.
         /// Vyhodnocuje se pouze na klientu Nephrite a pouze když <see cref="UseSystemRibbon"/> bude true, jindy se ignoruje.
+        /// Výchozí hodnota je prázdné pole.
         /// <para/>
         /// Pokud chce autor vytvořit základní stránku Ribbonu, která se "přidá" do základní stránky Ribbonu "Domů", pak nechť ponechá prázdné její jméno "Name" i titulek "Title".<br/>
         /// Pokud autor chce definovat další speciální stránku Ribbonu, nic mu v tom nebrání, nechť ji do tohoto pole přidá s explicitním pojmenováním.

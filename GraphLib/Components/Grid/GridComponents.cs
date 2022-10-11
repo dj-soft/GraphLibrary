@@ -1918,7 +1918,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grids
             base.AfterStateChangedMouseEnter(e);
             this.TreeViewResetData();
             this.Repaint();
-            this.OwnerITable.CellMouseEnter(e, this.OwnerCell);
+            this.OwnerITable?.CellMouseEnter(e, this.OwnerCell);
         }
         /// <summary>
         /// Myš odešla z této buňky
@@ -1927,7 +1927,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grids
         protected override void AfterStateChangedMouseLeave(GInteractiveChangeStateArgs e)
         {
             base.AfterStateChangedMouseLeave(e);
-            this.OwnerITable.CellMouseLeave(e, this.OwnerCell);
+            this.OwnerITable?.CellMouseLeave(e, this.OwnerCell);
         }
         /// <summary>
         /// Uživatel klikl do této buňky
@@ -1937,7 +1937,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grids
         {
             base.AfterStateChangedLeftClick(e);
             this.TreeViewLeftClick(e);
-            this.OwnerITable.CellClick(e, this.OwnerCell);
+            this.OwnerITable?.CellClick(e, this.OwnerCell);
         }
         /// <summary>
         /// Uživatel dal DoubleClick
@@ -1946,7 +1946,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grids
         protected override void AfterStateChangedLeftDoubleClick(GInteractiveChangeStateArgs e)
         {
             base.AfterStateChangedLeftDoubleClick(e);
-            this.OwnerITable.CellDoubleClick(e, this.OwnerCell);
+            this.OwnerITable?.CellDoubleClick(e, this.OwnerCell);
         }
         /// <summary>
         /// Uživatel dal LongClick
@@ -1955,7 +1955,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grids
         protected override void AfterStateChangedLeftLongClick(GInteractiveChangeStateArgs e)
         {
             base.AfterStateChangedLeftLongClick(e);
-            this.OwnerITable.CellLongClick(e, this.OwnerCell);
+            this.OwnerITable?.CellLongClick(e, this.OwnerCell);
         }
         /// <summary>
         /// Uživatel dal RightClick
@@ -1964,7 +1964,7 @@ namespace Asol.Tools.WorkScheduler.Components.Grids
         protected override void AfterStateChangedRightClick(GInteractiveChangeStateArgs e)
         {
             base.AfterStateChangedRightClick(e);
-            this.OwnerITable.CellRightClick(e, this.OwnerCell);
+            this.OwnerITable?.CellRightClick(e, this.OwnerCell);
         }
         /// <summary>
         /// Metoda je volána v události MouseEnter, a jejím úkolem je přpravit data pro ToolTip.

@@ -464,6 +464,8 @@ namespace Asol.Tools.WorkScheduler.Components
             }
             try
             {
+                this._RunOnDrawBefore();
+
                 this.DrawInProgress = true;
 
                 LayeredPaintEventArgs e = new LayeredPaintEventArgs(this._GraphicLayers, drawLayers, userData);
@@ -479,26 +481,62 @@ namespace Asol.Tools.WorkScheduler.Components
             this._RunOnDrawAfter();
         }
         /// <summary>
-        /// Vyvolá se po každém vykreslení
+        /// Vyvolá se před každým vykreslením
         /// </summary>
-        private void _RunOnDrawAfter()
+        private void _RunOnDrawBefore()
         {
-            if (!this._IsAtLeastOnceDrawed)
+            if (!this._IsDoneFirstDrawBefore)
             {
                 var form = this.FindForm();
                 if (form != null && form.Visible)
                 {
-                    this._IsAtLeastOnceDrawed = true;
+                    this._IsDoneFirstDrawBefore = true;
+                    this.OnFirstDrawBefore();
+                    this.FirstDrawBefore?.Invoke(this, EventArgs.Empty);
+                }
+            }
+        }
+        /// <summary>
+        /// Vyvolá se po každém vykreslení
+        /// </summary>
+        private void _RunOnDrawAfter()
+        {
+            if (!this._IsDoneFirstDrawAfter)
+            {
+                var form = this.FindForm();
+                if (form != null && form.Visible)
+                {
+                    this._IsDoneFirstDrawAfter = true;
                     this.OnFirstDrawAfter();
+                    this.FirstDrawAfter?.Invoke(this, EventArgs.Empty);
                 }
             }
             this.OnDrawAfter();
         }
-        private bool _IsAtLeastOnceDrawed = false;
+        /// <summary>
+        /// Obsahuje true po prvním reálném vykreslení, před provedením metody <see cref="OnFirstDrawBefore"/>
+        /// </summary>
+        private bool _IsDoneFirstDrawBefore = false;
+        /// <summary>
+        /// Obsahuje true po prvním reálném vykreslení, před provedením metody <see cref="OnFirstDrawAfter"/>
+        /// </summary>
+        private bool _IsDoneFirstDrawAfter = false;
+        /// <summary>
+        /// Metoda je volána POUZE PŘED PRVNÍM vykreslení obsahu
+        /// </summary>
+        protected virtual void OnFirstDrawBefore() { }
+        /// <summary>
+        /// Je voláno POUZE PŘED PRVNÍM vykreslení obsahu
+        /// </summary>
+        public event EventHandler FirstDrawBefore;
         /// <summary>
         /// Metoda je volána POUZE PO PRVNÍM vykreslení obsahu
         /// </summary>
         protected virtual void OnFirstDrawAfter() { }
+        /// <summary>
+        /// Je voláno POUZE PO PRVNÍM vykreslení obsahu
+        /// </summary>
+        public event EventHandler FirstDrawAfter;
         /// <summary>
         /// Metoda je volána po každém vykreslení obsahu
         /// </summary>
@@ -513,7 +551,7 @@ namespace Asol.Tools.WorkScheduler.Components
             sourceLaeyr.RenderTo(targetGraphics);
         }
         /// <summary>
-        /// Příznak, že skutečně může proběhnout kreslení
+        /// Příznak, že skutečně může proběhnout kreslení - z hlediska příznaků v controlu <see cref="CanDraw"/> a <see cref="IsReadyToDraw"/> a <see cref="DrawInProgress"/>
         /// </summary>
         protected bool ReallyCanDraw { get { return (this.CanDraw && this.IsReadyToDraw && !this.DrawInProgress); } }
         /// <summary>

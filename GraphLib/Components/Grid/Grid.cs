@@ -403,40 +403,64 @@ namespace Asol.Tools.WorkScheduler.Components
         {
             get
             {
-                GridColumn[] columns = this.AllColumns;
-                if (columns == null || columns.Length == 0) return null;
-                StringBuilder sb = new StringBuilder();
-                foreach (var column in columns)
-                {
-                    string name = column.MasterColumn.ColumnName;
-                    if (String.IsNullOrEmpty(name)) continue;
-                    if (sb.Length > 0) sb.Append(";");
-                    sb.Append($"{name}:{column.ColumnOrder}:{column.ColumnWidth}:{(column.IsVisible ? "1" : "0")}");
-                }
-                return sb.ToString();
+                return _GetColumnLayout();
             }
             set
             {
                 if (String.IsNullOrEmpty(value)) return;
-                GridColumn[] columns = this.AllColumns;
-                if (columns == null || columns.Length == 0) return;
-                Dictionary<string, GridColumn> colDict = columns
-                    .Where(c => !String.IsNullOrEmpty(c.MasterColumn.ColumnName))
-                    .GetDictionary(c => c.MasterColumn.ColumnName, true);
-
-                var table = value.ToTable(";", ":", true, true);
-                foreach (var row in table)
-                {
-                    if (row.Length < 3) continue;
-                    GridColumn column;
-                    string name = row[0];
-                    if (String.IsNullOrEmpty(name) || !colDict.TryGetValue(name, out column)) continue;
-                    column.ColumnOrder = _ToInt(row[1]);
-                    column.ColumnWidth = _ToInt(row[2]);
-                    if (row.Length >= 4 && (row[3] == "1" || row[3] == "0"))
-                        column.IsVisible = (row[3] == "1");
-                }
+                var oldLayout = _GetColumnLayout();
+                if (String.Equals(oldLayout, value)) return;
+                SetColumnLayout(value);
             }
+        }
+        /// <summary>
+        /// Vrací aktuální layout sloupců
+        /// </summary>
+        /// <returns></returns>
+        private string _GetColumnLayout()
+        {
+            GridColumn[] columns = this.AllColumns;
+            if (columns == null || columns.Length == 0) return null;
+            StringBuilder sb = new StringBuilder();
+            foreach (var column in columns)
+            {
+                string name = column.MasterColumn.ColumnName;
+                if (String.IsNullOrEmpty(name)) continue;
+                if (sb.Length > 0) sb.Append(";");
+                sb.Append($"{name}:{column.ColumnOrder}:{column.ColumnWidth}:{(column.IsVisible ? "1" : "0")}");
+            }
+            return sb.ToString();
+        }
+        /// <summary>
+        /// Vloží dodaný layout sloupců
+        /// </summary>
+        /// <param name="layout"></param>
+        internal void SetColumnLayout(string layout)
+        {
+            if (String.IsNullOrEmpty(layout)) return;
+
+            GridColumn[] columns = this.AllColumns;
+            if (columns == null || columns.Length == 0) return;
+
+            Dictionary<string, GridColumn> colDict = columns
+                .Where(c => !String.IsNullOrEmpty(c.MasterColumn.ColumnName))
+                .GetDictionary(c => c.MasterColumn.ColumnName, true);
+
+            var table = layout.ToTable(";", ":", true, true);
+            foreach (var row in table)
+            {
+                if (row.Length < 3) continue;
+                GridColumn column;
+                string name = row[0];
+                if (String.IsNullOrEmpty(name) || !colDict.TryGetValue(name, out column)) continue;
+                column.ColumnOrder = _ToInt(row[1]);
+                column.ColumnWidth = _ToInt(row[2]);
+                if (row.Length >= 4 && (row[3] == "1" || row[3] == "0"))
+                    column.IsVisible = (row[3] == "1");
+            }
+            this.Invalidate(InvalidateItem.GridColumnsScroll);
+            this.RefreshColumns(false);
+            this.Refresh();
         }
         /// <summary>
         /// Vrací Int32 hodnotu z daného stringu

@@ -3464,7 +3464,8 @@ namespace Asol.Tools.WorkScheduler.Data
             column.ColumnContent = GetColumnContent(guiColumn);                 // Obsah sloupce
             column.FormatString = GetFormatString(guiColumn.Format);            // Formátovací string z Norisu, musí se převést na .NET
             column.IsVisible = guiColumn.IsVisible;                             // Je viditelný
-            column.Width = GetWidth(guiColumn.Width);                           // Na vstupu je šířka Noris, v této metodě to lze upravit
+            column.Width = GetWidth(guiColumn.Width);                           // Na vstupu je šířka Noris, v této metodě GetWidth() to lze upravit
+            column.WidthMininum = GetWidth(guiColumn.WidthMin);
             column.RecordClassNumber = GetClassNumber(guiColumn);
             column.RelatedRecordColumnName = guiColumn.RelationRecordIdColumnName;
             column.Style = guiColumn.Style;
@@ -3517,6 +3518,7 @@ namespace Asol.Tools.WorkScheduler.Data
             column.IsVisible = extendedInfo.IsVisible;                                // Je viditelný
             if (!String.IsNullOrEmpty(extendedInfo.Label)) column.Title = extendedInfo.Label;      // Jen pokud je vyplněno
             column.Width = GetWidth(extendedInfo.Width);                              // Na vstupu je šířka Noris, v této metodě to lze upravit
+            column.WidthMininum = GetWidth(extendedInfo.Width * 3 / 4);
             column.RecordClassNumber = GetClassNumber(extendedInfo);
             column.RelatedRecordColumnName = extendedInfo.RelationRecordColumnName;
 
@@ -3614,9 +3616,9 @@ namespace Asol.Tools.WorkScheduler.Data
         /// </summary>
         /// <param name="greenWidth"></param>
         /// <returns></returns>
-        protected static int? GetWidth(int greenWidth)
+        protected static int? GetWidth(int? greenWidth)
         {
-            return 1 * greenWidth;
+            return (greenWidth.HasValue ? (1 * greenWidth) : (int?)null);
         }
         /// <summary>
         /// Vrací číslo třídy pro daný sloupec, pokud je zadaná
@@ -3844,8 +3846,8 @@ namespace Asol.Tools.WorkScheduler.Data
                 if (this._ChildList == null)
                 {
                     this._ChildList = new List<Row>();
-                    if (this._StaticChildDict != null && this._StaticChildDict.Count > 0)
-                        this._ChildList.AddRange(this._StaticChildDict.Values);
+                    if (this._StaticChildList != null && this._StaticChildList.Count > 0)
+                        this._ChildList.AddRange(this._StaticChildList);
                     if (this._DynamicChildList != null && this._DynamicChildList.Count > 0)
                         this._ChildList.AddRange(this._DynamicChildList);
                 }
@@ -3859,7 +3861,7 @@ namespace Asol.Tools.WorkScheduler.Data
         {
             get
             {
-                return ((this._StaticChildDict != null && this._StaticChildDict.Count > 0) ||
+                return ((this._StaticChildList != null && this._StaticChildList.Count > 0) ||
                        (this._DynamicChildList != null && this._DynamicChildList.Count > 0));
             }
         }
@@ -3883,9 +3885,9 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <param name="row"></param>
         internal void AddStaticChild(Row row)
         {
-            if (this._StaticChildDict == null)
-                this._StaticChildDict = new Dictionary<int, Row>();
-            this._StaticChildDict.AddRefresh(row.RowId, row);
+            if (this._StaticChildList == null) this._StaticChildList = new List<Row>();
+            if (this._StaticChildList.Count == 0 || !this._StaticChildList.Any(r => r.RowId == row.RowId))
+                this._StaticChildList.Add(row);
             row.TreeNode.CurrentParentNode = this;
             this._ChildsInvalidate();
         }
@@ -3895,9 +3897,9 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <param name="row"></param>
         internal void RemoveStaticChild(Row row)
         {
-            if (this._StaticChildDict != null && this._StaticChildDict.ContainsKey(row.RowId))
+            if (this._StaticChildList != null)
             {
-                this._StaticChildDict.Remove(row.RowId);
+                this._StaticChildList.RemoveAll(r => r.RowId == row.RowId);
                 row.TreeNode.CurrentParentNode = null;
                 this._ChildsInvalidate();
             }
@@ -3908,8 +3910,7 @@ namespace Asol.Tools.WorkScheduler.Data
         /// <param name="row"></param>
         internal void AddDynamicChild(Row row)
         {
-            if (this._DynamicChildList == null)
-                this._DynamicChildList = new List<Row>();
+            if (this._DynamicChildList == null) this._DynamicChildList = new List<Row>();
             if (this._DynamicChildList.Count == 0 || !this._DynamicChildList.Any(r => Object.ReferenceEquals(r, row)))
             {
                 this._DynamicChildList.Add(row);
@@ -3965,10 +3966,14 @@ namespace Asol.Tools.WorkScheduler.Data
         /// </summary>
         private List<Row> _DynamicChildList;
         /// <summary>
-        /// Dictionary obsahující statické Child řádky; null když není žádný.
-        /// Statické Childs mohou pocházet pouze ze stejné tabulky jako Parent, proto lze použít Dictionary podle RowId (=v rámci jedné tabulky je unikátní).
+        /// List obsahující statické Child řádky; null když není žádný.
+        /// <para/>
+        /// Statické Childs mohou pocházet pouze ze stejné tabulky jako Parent, šlo by použít Dictionary podle RowId (=v rámci jedné tabulky je unikátní).<br/>
+        /// Je tady ale problém (DAJ 2022-10-05): Dictionary při odebrání položky, která je v Dictionary.Values na pozici např. 2 ze 4, a následném přidání toho samého klíče "na konec Dictionary"
+        /// bude mít tuto položku opět ve Values na pozici 2 ze 4, a nikoli 4 ze 4 (jako List), takže nectí pořadí řádků !!!
+        /// Proto přecházím na List, ve kterém se ručně vyhledává podle klíče RowId.
         /// </summary>
-        private Dictionary<int, Row> _StaticChildDict;
+        private List<Row> _StaticChildList;
         #endregion
         #region Expand, ExpandWithParents, Collapse
         /// <summary>

@@ -95,9 +95,9 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             if (this.IsSuppressedEvent) return;
             this._PanelLayout.LeftSplitterValue = this._LeftPanelSplitter.Value;
             e.CorrectValue = this._PanelLayout.LeftSplitterValue;
+            this.CalculateLayout();
             if (e.IsChangeValue)
                 this.ConfigSaveDeffered();
-            this.CalculateLayout();
         }
         /// <summary>
         /// Po změně pozice splitteru Right
@@ -109,9 +109,9 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             if (this.IsSuppressedEvent) return;
             this._PanelLayout.RightSplitterValue = this._RightPanelSplitter.Value;
             e.CorrectValue = this._PanelLayout.RightSplitterValue;
+            this.CalculateLayout();
             if (e.IsChangeValue)
                 this.ConfigSaveDeffered();
-            this.CalculateLayout();
         }
         /// <summary>
         /// Po změně pozice splitteru Bottom
@@ -123,9 +123,9 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             if (this.IsSuppressedEvent) return;
             this._PanelLayout.BottomSplitterValue = this._BottomPanelSplitter.Value;
             e.CorrectValue = this._PanelLayout.BottomSplitterValue;
+            this.CalculateLayout();
             if (e.IsChangeValue)
                 this.ConfigSaveDeffered();
-            this.CalculateLayout();
         }
         /// <summary>
         /// Po změně IsCollapsed na některém z panelů
@@ -134,8 +134,10 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="e"></param>
         private void _TabContainers_IsCollapsedChanged(object sender, GPropertyChangeArgs<bool> e)
         {
+            // this._PanelLayout.LeftSplit qqq
             this.CalculateLayout();
             this.Repaint();
+            this.ConfigSaveDeffered();
         }
         /// <summary>
         /// Vypočte souřadnice pro všechny své controly
@@ -150,6 +152,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
 
             using (this.SuppressEvents())
             {
+                // Převezmu hodnoty z bočních panelů (počet jejich tabulek, jejich stav IsCollapsed) a vložím je do _PanelLayout, který z nich počítá vnitřní souřadnice prvků:
                 this._PanelLayout.CurrentLeftPanelFixedSize = this._LeftPanelFixedSize;
                 this._PanelLayout.CurrentRightPanelFixedSize = this._RightPanelFixedSize;
                 this._PanelLayout.CurrentBottomPanelFixedSize = this._BottomPanelFixedSize;
@@ -310,6 +313,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         protected void ConfigSaveDeffered()
         {
+            if (!this.MainData.ConfigActive) return;
             SchedulerConfig config = this.Config;
             if (config == null) return;
             config.Save(TimeSpan.FromSeconds(30d));
@@ -341,16 +345,33 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             this.ConnectGridEvents();
         }
         /// <summary>
+        /// Aplikuje data z Configu do this panelu
+        /// </summary>
+        internal void ApplyConfig()
+        {
+            GuiPage guiPage = this._GuiPage;
+            if (guiPage is null) return;
+
+            using (App.Trace.Scope(TracePriority.Priority2_Lowest, "SchedulerPanel", "AplyConfig", ""))
+            {
+                this.ConnectConfigLayout(guiPage);
+            }
+        }
+        /// <summary>
         /// Napojí zdejší Layout do/z Configu, protože tak se bude ukládat a načítat rozložení stránky.
-        /// Je vyvoláno na konci načítání dat.
+        /// Je vyvoláno na konci načítání dat, po prvním zobrazení controlu, po aktivaco Configu.
+        /// POkud MainControl nemá aktivní Config, pak tato metoda nic nedělá.
         /// </summary>
         /// <param name="guiPage"></param>
         protected void ConnectConfigLayout(GuiPage guiPage)
         {
+            bool isConfigActive = (this.MainControl?.ConfigActive ?? false);
+            if (!isConfigActive) return;
+
             SchedulerConfig config = this.Config;
             if (config == null) return;
 
-            // Máme načtená data z GUI, zkusíme najít SchedulerPanelLayout našeho jména v Configu, aneo tam náš přidáme:
+            // Máme načtená data z GUI, zkusíme najít SchedulerPanelLayout našeho jména v Configu, anebo tam náš přidáme:
             string name = guiPage.Name;
             if (String.IsNullOrEmpty(name)) name = guiPage.Title;
             SchedulerPanelLayout panelLayout = config.UserConfigSearch<SchedulerPanelLayout>(l => String.Equals(l.Name, name)).FirstOrDefault();
@@ -358,6 +379,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             {   // Máme data nalezená z konfigurace => použijeme je:
                 panelLayout.CurrentControlSize = this.ClientSize;
                 this._PanelLayout = panelLayout;
+                // Podle konfigurace nastavíme velikosti bočních panelů:
                 this.CalculateLayout();
             }
             else
@@ -468,7 +490,8 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="gGrid"></param>
         private void _SaveGridLayout(GGrid gGrid)
         {
-            if (gGrid != null && !String.IsNullOrEmpty(gGrid.Name))
+            bool isConfigActive = (this.MainControl?.ConfigActive ?? false);
+            if (isConfigActive && gGrid != null && !String.IsNullOrEmpty(gGrid.Name))
             {
                 this._PanelLayout.GridColumns[gGrid.Name] = gGrid.ColumnLayout;
                 this.ConfigSaveDeffered();
@@ -508,7 +531,6 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         private List<GGrid> _GGridList;
         private const string _GRID_MAIN_NAME = "MainGrid";
         #endregion
-        
         #region Společné textové tabulky
         /// <summary>
         /// Načte textová data (texty nebo tooltipy) z dodaných GUI tabulek do datových tabulek do this.

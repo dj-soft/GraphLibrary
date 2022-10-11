@@ -47,7 +47,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         /// <param name="host"></param>
         /// <param name="sessionId"></param>
-        /// <param name="useToolBar">Vygenerovat vlastní toolbar? V Nephrite může být false, pak si Connector musí převzít definici toolbaru/ribbonu z dat, a taky po stisku tlačítka musí volat metody pro provedení zvolené akce, typicky <see cref="RunToolBarItemClick(GuiToolbarItem)"/> a pod.</param>
+        /// <param name="useToolBar">Vygenerovat vlastní toolbar? V Nephrite může být false, pak si Connector musí převzít definici toolbaru/ribbonu z dat, a taky po stisku tlačítka musí volat metody pro provedení zvolené akce, typicky <see cref="RunRibbonItemClick(GuiToolbarItem)"/> a pod.</param>
         public MainData(IAppHost host, int? sessionId, bool useToolBar)
         {
             this._DataState = DataStateType.Initialising;
@@ -125,19 +125,35 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Control rovnou vloží do dodaného Formu.
         /// Nastaví vlastnosti dodaného Formu podle dat v <see cref="GuiData.Properties"/>.
         /// </summary>
+        /// <param name="mainForm">Cílový formulář</param>
         /// <returns></returns>
         public System.Windows.Forms.Control CreateControlToForm(WinForms.Form mainForm)
         {
+            return CreateControlToForm(mainForm, null);
+        }
+        /// <summary>
+        /// Vytvoří a vrátí new WinForm control, obsahující kompletní strukturu pro zobrazení dodaných dat.
+        /// Control rovnou vloží do dodaného Formu.
+        /// Nastaví vlastnosti dodaného Formu podle dat v <see cref="GuiData.Properties"/>.
+        /// </summary>
+        /// <param name="mainForm">Cílový formulář</param>
+        /// <param name="targetControl">Control (nějaký panel), do něhož má být přidán control WorkScheduleru</param>
+        /// <returns></returns>
+        public System.Windows.Forms.Control CreateControlToForm(WinForms.Form mainForm, WinForms.Control targetControl)
+        {
             using (App.Trace.Scope(TracePriority.Priority3_BellowNormal, "MainData", "ApplyPropertiesToForm", ""))
-                this._ApplyPropertiesToForm(mainForm);     // Nastavíme vlastnosti formu podle GuiProperties
+                this._ApplyPropertiesToForm(mainForm);               // Nastavíme vlastnosti formu podle GuiProperties
 
             this._CreateMainControl();
 
-            mainForm.Controls.Add(this._MainControl);      // Control MainControl vložíme do formu
-            this._MainControl.Dock = WinForms.DockStyle.Fill;       // Control MainControl roztáhneme na maximum
+            if (targetControl != null)
+                targetControl.Controls.Add(this._MainControl);       // Control MainControl vložíme do dodaného target panelu
+            else
+                mainForm.Controls.Add(this._MainControl);            // Control MainControl prostě vložíme do formu
+            this._MainControl.Dock = WinForms.DockStyle.Fill;        // Control MainControl roztáhneme na maximum
 
             this._DataState = DataStateType.Prepared;
-            return this._MainControl;                      // hotovo!
+            return this._MainControl;                                // hotovo!
         }
         /// <summary>
         /// Vytvoří a vrátí new WinForm control, obsahující kompletní strukturu pro zobrazení dodaných dat
@@ -202,6 +218,8 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             mainForm.FormBorderStyle = _ConvertBorderStyle(guiProperties.PluginFormBorder);
             mainForm.WindowState = _ConvertWindowState(guiProperties.PluginFormIsMaximized);
             mainForm.Text = guiProperties.PluginFormTitle;
+            mainForm.FormClosing -= _MainFormClosing;
+            mainForm.FormClosed -= _MainFormClosed;
             mainForm.FormClosing += _MainFormClosing;
             mainForm.FormClosed += _MainFormClosed;
         }
@@ -261,6 +279,15 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         {
             App.TryRun(this._FillMainControlToolbar);
             App.TryRun(this._FillMainControlPagesFromGui);
+            this._MainControl.FirstDrawBefore += _MainControl_FirstDrawBefore;   // Až tehdy budeme načítat konfiguraci   _FillMainControlFromConfig()
+        }
+        /// <summary>
+        /// Proběhne před prvním vykreslením = zajistí načtení a promítnutí konfigurace, nyní již jsou známy rozměry okna
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _MainControl_FirstDrawBefore(object sender, EventArgs e)
+        {
             App.TryRun(this._FillMainControlFromConfig);
         }
         /// <summary>
@@ -270,6 +297,15 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         private void _AddMainControlEventHandlers()
         {
             this._InteractiveMousePaintInit();
+        }
+        /// <summary>
+        /// Zajistí provedení refreshe vizuálního controlu
+        /// </summary>
+        /// <param name="refresh"></param>
+        private void _RefreshControl(bool refresh = true)
+        {
+            if (refresh && _MainControl != null)
+                _MainControl.Refresh(true);
         }
         /// <summary>
         /// Reference na hlavní GUI control, který je vytvořen v metodě <see cref="CreateControlToForm(WinForms.Form)"/>
@@ -429,32 +465,38 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             this.ProcessGuiResponse(response.GuiResponse);
         }
         #endregion
-        #region Toolbar
+        #region Toolbar / Ribbon
+        /// <summary>
+        /// Máme generovat vizuální ToolBar?
+        /// Pokud je false, pak funkci Toolbaru přebírá hostitel = generuje Ribbon.
+        /// </summary>
+        private bool UseToolBar { get { return _UseToolBar; } }
         /// <summary>
         /// Vyvolá hostitel, který převzal roli Toolbaru (pomocí Ribbonu) v situaci, kdy uživatel kliknul na konkrétní prvek Ribbonu, typu Systémová akce
         /// </summary>
         /// <param name="systemAction"></param>
-        public void RunToolBarItemClick(ToolbarSystemItem systemAction) { _ToolBarItemRunSystemAction(systemAction); }
+        public void RunRibbonItemClick(ToolbarSystemItem systemAction) { _ToolBarItemRunSystemAction(systemAction, true); }
         /// <summary>
         /// Vyvolá hostitel, který převzal roli Toolbaru (pomocí Ribbonu) v situaci, kdy uživatel kliknul na konkrétní prvek Ribbonu, typu Aplikační button
         /// </summary>
         /// <param name="guiToolbarItem"></param>
-        public void RunToolBarItemClick(GuiToolbarItem guiToolbarItem) { _ToolBarItemRunApplicationAction(guiToolbarItem, null); }
+        public void RunRibbonItemClick(GuiToolbarItem guiToolbarItem) { _ToolBarItemRunApplicationAction(guiToolbarItem, null, true); }
         /// <summary>
         /// Vyvolá hostitel, který převzal roli Toolbaru (pomocí Ribbonu) v situaci, kdy uživatel změnil stav Checked na konkrétním prvku Ribbonu, typu Systémová akce
         /// </summary>
         /// <param name="systemAction"></param>
         /// <param name="isChecked"></param>
-        public void RunToolBarSelectedChange(ToolbarSystemItem systemAction, bool isChecked) { _ToolBarItemSelectedChangeSystem(systemAction, isChecked); }
+        public void RunRibbonSelectedChange(ToolbarSystemItem systemAction, bool isChecked) { _ToolBarItemSelectedChangeSystem(systemAction, isChecked, true); }
         /// <summary>
         /// Vyvolá hostitel, který převzal roli Toolbaru (pomocí Ribbonu) v situaci, kdy uživatel změnil stav Checked na konkrétním prvku Ribbonu, typu Aplikační button
         /// </summary>
         /// <param name="guiToolbarItem"></param>
-        public void RunToolBarSelectedChange(GuiToolbarItem guiToolbarItem) { _ToolBarItemSelectedChangeApplication(guiToolbarItem); }
+        public void RunRibbonSelectedChange(GuiToolbarItem guiToolbarItem) { _ToolBarItemSelectedChangeApplication(guiToolbarItem, true); }
         /// <summary>
         /// Vyvolá hostitel, který převzal roli Toolbaru (pomocí Ribbonu) v situaci, kdy chce uložit nastavení configu GUI
         /// </summary>
-        public void RunToolBarSaveToConfig() { this._SaveMainControlToConfig(); }
+        /// <param name="ribbonStatus"></param>
+        public void RunRibbonPresetStatusSaveToConfig(string ribbonStatus) { this._SaveToolBarValuesToConfig(ribbonStatus); }
         /// <summary>
         /// Načte položky do Toolbaru z dodaných dat Gui
         /// </summary>
@@ -666,9 +708,9 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         {
             GuiToolbarItem guiToolbarItem = _GetGuiToolBarItem(args);
             if (guiToolbarItem != null)
-                _ToolBarItemRunApplicationAction(guiToolbarItem, args.Item);
+                _ToolBarItemRunApplicationAction(guiToolbarItem, args.Item, false);
             else if (args.Item?.UserData is ToolbarSystemItem action)           // V UserData je uložena hodnota ToolbarSystemItem, odpovídající konkrétní funkcionalitě = systémová akce
-                _ToolBarItemRunSystemAction(action);
+                _ToolBarItemRunSystemAction(action, false);
         }
         /// <summary>
         /// Obsluha události ItemSelectedChange na ToolBaru
@@ -679,9 +721,9 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         {
             GuiToolbarItem guiToolbarItem = _GetGuiToolBarItem(args);
             if (guiToolbarItem != null)
-                _ToolBarItemSelectedChangeApplication(guiToolbarItem);
+                _ToolBarItemSelectedChangeApplication(guiToolbarItem, false);
             else if (args.Item?.UserData is ToolbarSystemItem action)           // V UserData je uložena hodnota ToolbarSystemItem, odpovídající konkrétní funkcionalitě = systémová akce
-                _ToolBarItemSelectedChangeSystem(action, args.Item.IsChecked);
+                _ToolBarItemSelectedChangeSystem(action, args.Item.IsChecked, false);
         }
         /// <summary>
         /// Obsluha události StatusChanged na ToolBaru (něco bylo změněno, něco co by mělo být uchováno v konfiguraci)
@@ -690,30 +732,34 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="e"></param>
         private void _ToolBarStatusChanged(object sender, GPropertyEventArgs<string> e)
         {
-            this._SaveMainControlToConfig(e.Value);
+            this._SaveToolBarValuesToConfig(e.Value);
         }
         /// <summary>
         /// Obsluha události ItemSelectedChange na Aplikační položce ToolBaru.
         /// Tuto akci zatím do aplikační funkce NEPŘEDÁVÁME. Neřešíme tedy ani její Response.
         /// </summary>
         /// <param name="guiToolbarItem"></param>
-        private void _ToolBarItemSelectedChangeApplication(GuiToolbarItem guiToolbarItem)
+        /// <param name="refresh"></param>
+        private void _ToolBarItemSelectedChangeApplication(GuiToolbarItem guiToolbarItem, bool refresh)
         {
             /* Tuto akci zatím do aplikační funkce NEPŘEDÁVÁME. Neřešíme tedy ani její Response. */
 
             // Můžeme řešit její vliv na MousePaint:
             this._MousePaintToolBarSelectedChange(guiToolbarItem);
+            this._RefreshControl(refresh);
         }
         /// <summary>
         /// Obsluha události ItemClick na Aplikační položce ToolBaru
         /// </summary>
         /// <param name="guiToolbarItem">Datová (GUI) položka ToolBaru</param>
         /// <param name="toolBarItem">Aktuální prvek z GUI, převezme se jeho hodnota <see cref="FunctionItem.IsChecked"/>. Může být null, pak platí hodnota z dodaného <see cref="GuiToolbarItem.IsChecked"/>.</param>
-        private void _ToolBarItemRunApplicationAction(GuiToolbarItem guiToolbarItem, FunctionItem toolBarItem)
+        /// <param name="refresh"></param>
+        private void _ToolBarItemRunApplicationAction(GuiToolbarItem guiToolbarItem, FunctionItem toolBarItem, bool refresh)
         {
             bool callAppHost = this._ToolBarItemRunApplicationActionInternal(guiToolbarItem);
             if (callAppHost)
                 this._ToolBarItemRunApplicationActionAppHost(guiToolbarItem, toolBarItem);
+            this._RefreshControl(refresh);
         }
         /// <summary>
         /// Metoda detekuje GUI akce, které jsou předepsané v tlačítku Toolbaru <see cref="GuiToolbarItem.GuiActions"/>, a provede je.
@@ -755,18 +801,22 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         /// <param name="action">Systémová akce</param>
         /// <param name="isSelected">Hodnota IsSelected (=IsChecked)</param>
-        private void _ToolBarItemSelectedChangeSystem(ToolbarSystemItem action, bool isSelected)
+        /// <param name="refresh"></param>
+        private void _ToolBarItemSelectedChangeSystem(ToolbarSystemItem action, bool isSelected, bool refresh)
         {
             this._TimeAxisToolBarSelected(action, isSelected);
+            this._RefreshControl(refresh);
         }
         /// <summary>
         /// Provede danou systémovou akci
         /// </summary>
         /// <param name="action"></param>
-        private void _ToolBarItemRunSystemAction(ToolbarSystemItem action)
+        /// <param name="refresh"></param>
+        private void _ToolBarItemRunSystemAction(ToolbarSystemItem action, bool refresh)
         {
             this._TimeAxisToolBarAction(action);
             this._SystemSettingsToolBarAction(action);
+            this._RefreshControl(refresh);
         }
         /// <summary>
         /// Metoda vrátí instanci <see cref="GuiToolbarItem"/> pro položku toolbaru z dodaného argumentu.
@@ -787,6 +837,20 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <param name="toolbarItems"></param>
         private void _ToolBarRefreshFromResponse(IEnumerable<GuiToolbarItem> toolbarItems)
         {
+            if (this._UseToolBar)
+                _ToolBarNativeRefreshFromResponse(toolbarItems);
+            else
+            {
+                OnRibbonRefreshFromResponse(toolbarItems);
+                RibbonRefreshFromResponse?.Invoke(this, new GPropertyEventArgs<IEnumerable<GuiToolbarItem>>(toolbarItems));
+            }
+        }
+        /// <summary>
+        /// Metoda najde a aktualizuje položky Toolbaru z dat v dodaném soupisu.
+        /// </summary>
+        /// <param name="toolbarItems"></param>
+        private void _ToolBarNativeRefreshFromResponse(IEnumerable<GuiToolbarItem> toolbarItems)
+        {
             if (toolbarItems == null) return;
             ToolBarRefreshMode refreshMode = ToolBarRefreshMode.None;
             foreach (GuiToolbarItem guiToolbarItem in toolbarItems)
@@ -803,6 +867,49 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// při prvotním načítání a tvorbě celého controlu.
         /// </summary>
         private List<ToolBarItem> _ToolBarGuiItems;
+        /// <summary>
+        /// Volá se po změně (tedy po prvotním načtení) konfigurace ToolBaru.
+        /// Odešle tuto hodnotu do nativního Toolbaru, anebo vyvolá událost pro Ribbon.
+        /// </summary>
+        /// <param name="toolbarStatus"></param>
+        private void _CallToolBarPresetStatusChanged(string toolbarStatus)
+        {
+            try
+            {
+                _ToolbarLoadConfigInProgress = true;                           // Odtud nebudeme reagovat na změny v Toolbaru / Configu v metodě pro ukládání změn do Configu
+                if (this.UseToolBar)
+                    this._MainControl.ToolBarCurrentStatus = toolbarStatus;    // Tady může dojít ke změně aktuální časové osy
+                else
+                {
+                    OnRibbonPresetStatusChanged(toolbarStatus);
+                    RibbonPresetStatusChanged?.Invoke(this, new GPropertyEventArgs<string>(toolbarStatus));
+                }
+            }
+            finally
+            {
+                _ToolbarLoadConfigInProgress = false;
+            }
+        }
+        /// <summary>
+        /// Po změně (po načtení) konfigurační hodnoty toolbaru
+        /// </summary>
+        /// <param name="presetStatus"></param>
+        protected virtual void OnRibbonPresetStatusChanged(string presetStatus) { }
+        /// <summary>
+        /// Po změně (po načtení) konfigurační hodnoty toolbaru. Je vyvoláno na začátku života, před prvním zobrazením, z Configu je nalezen string odpovídající nastavení Toolbaru = Ribbonu.
+        /// Je voláno pouze když se používá externí Ribbon, nikoli interní Toolbar.
+        /// Ribbon si má nastavit Checked u těch prvků, pro které si to sám uložil v metodě <see cref="RunRibbonPresetStatusSaveToConfig(string)"/>
+        /// </summary>
+        public event Components.GPropertyEventHandler<string> RibbonPresetStatusChanged;
+        /// <summary>
+        /// Po změně rozhraní ribbonu z aplikačního kódu
+        /// </summary>
+        /// <param name="toolbarItems"></param>
+        protected virtual void OnRibbonRefreshFromResponse(IEnumerable<GuiToolbarItem> toolbarItems) { }
+        /// <summary>
+        /// Po změně rozhraní ribbonu z aplikačního kódu
+        /// </summary>
+        public event Components.GPropertyEventHandler<IEnumerable<GuiToolbarItem>> RibbonRefreshFromResponse;
         /// <summary>
         /// ToolBarItem : adapter mezi <see cref="GuiToolbarItem"/>, a položkou menu <see cref="FunctionGlobalItem"/>.
         /// </summary>
@@ -1081,8 +1188,12 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// </summary>
         public SchedulerConfig Config { get { return this._Config; } }
         /// <summary>
+        /// Konfigurace je aktivní = po zobrazení okna
+        /// </summary>
+        public bool ConfigActive {  get { return (this._MainControl?.ConfigActive ?? false); } set { if (this._MainControl != null) this._MainControl.ConfigActive = value; } }
+        /// <summary>
         /// Načte z configu hodnoty odpovídající uživatelskému stavu GUI a promítne je do něj.
-        /// Tedy, jak si uživatel naposledy uspořádal GUI (a jak bylo uloženo v metodě <see cref="_SaveMainControlToConfig(string)"/>), 
+        /// Tedy, jak si uživatel naposledy uspořádal GUI (a jak bylo uloženo v metodě <see cref="_SaveToolBarValuesToConfig(string)"/>), 
         /// tak se GUI nyní po spuštění uspořádá.
         /// Tato metoda neřeší vnitřní rozložení jednotlivých panelů s daty, to si řeší panely samy ve své režii, viz metoda: <see cref="SchedulerPanel.ConnectConfigLayout(GuiPage)"/>
         /// </summary>
@@ -1095,11 +1206,11 @@ namespace Asol.Tools.WorkScheduler.Scheduler
 
                 SchedulerConfigUserPair toolBarStatusPair = config.UserConfigSearch<SchedulerConfigUserPair>(p => p.Key == _CONFIG_TOOLBAR_STATUS).FirstOrDefault();
                 if (toolBarStatusPair != null && toolBarStatusPair.Value != null && toolBarStatusPair.Value is string)
-                    this._MainControl.ToolBarCurrentStatus = toolBarStatusPair.Value as string;     // Tady může dojít ke změně aktuální časové osy
+                    _CallToolBarPresetStatusChanged(toolBarStatusPair.Value as string);
 
                 this._PrepareDefaultTimeZoom();  // Tady může dojít ke změně aktuální časové osy
-
                 this._ApplyInitialTimeRange();
+                this._MainControl.ConfigActive = true;
             }
         }
         /// <summary>
@@ -1138,30 +1249,29 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             }
         }
         /// <summary>
-        /// Metoda uloží do Configu údaje o uživatelském stavu GUI, volá se po každé jeho změně.
+        /// Metoda uloží do Configu údaje o dodaném nastavení Toolbaru, volá se po každé jeho změně.
         /// Metoda posbírá nejrůznější data z Main controlu a vepíše je do Configu. 
         /// Tato data budou při příštím spuštění Pluginu načtena z Configu a promítnuta do GUI v metodě <see cref="_FillMainControlFromConfig()"/>.
         /// </summary>
-        private void _SaveMainControlToConfig()
+        /// <param name="toolbarStatus"></param>
+        private void _SaveToolBarValuesToConfig(string toolbarStatus)
         {
-            string currentStatus = this._MainControl.ToolBarCurrentStatus;
-            this._SaveMainControlToConfig(currentStatus);
-        }
-        /// <summary>
-        /// Metoda uloží do Configu údaje o uživatelském stavu GUI, volá se po každé jeho změně.
-        /// Metoda posbírá nejrůznější data z Main controlu a vepíše je do Configu. 
-        /// Tato data budou při příštím spuštění Pluginu načtena z Configu a promítnuta do GUI v metodě <see cref="_FillMainControlFromConfig()"/>.
-        /// </summary>
-        private void _SaveMainControlToConfig(string currentStatus)
-        {
+            if (_ToolbarLoadConfigInProgress) return;
+
             SchedulerConfig config = this.Config;
             if (config == null) return;
 
-            SchedulerConfigUserPair toolBarStatusPair = new SchedulerConfigUserPair(_CONFIG_TOOLBAR_STATUS, currentStatus);
+            SchedulerConfigUserPair toolBarStatusPair = new SchedulerConfigUserPair(_CONFIG_TOOLBAR_STATUS, toolbarStatus);
             config.UserConfigStore<SchedulerConfigUserPair>(toolBarStatusPair, p => p.Key == toolBarStatusPair.Key);
             
             config.Save();
         }
+        /// <summary>
+        /// Obsahuje true v době, kdy se do Toolbaru / Ribbonu plní hodnoty z Configu.
+        /// V té době nebude reagovat na změny v Toolbaru / Ribbonu v metodě <see cref="_SaveToolBarValuesToConfig(string)"/> a nebudeme je ukládat do Configu,
+        /// protože to je nesmysl.
+        /// </summary>
+        private bool _ToolbarLoadConfigInProgress;
         private const string _CONFIG_MAIN_CONTROL = "ConfigMainControl";
         private const string _CONFIG_TOOLBAR_STATUS = "ConfigToolBarStatus";
         private const string _CONFIG_TIMEAXIS_VALUE = "ConfigTimeAxisValue";
@@ -1700,8 +1810,16 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <returns></returns>
         private static TimeRange _TimeAxisGetNewTimeGoPrev(TimeRange currentTime, ToolbarSystemItem zoom)
         {
-            DateTime date = currentTime.Begin.Value;
-            return _TimeAxisGetNewTime(null, date, zoom, ToolbarSystemItem.None);
+            if (zoom == ToolbarSystemItem.None) zoom = _TimeAxisGetZoomFrom(currentTime);
+            if (zoom != ToolbarSystemItem.None)
+            {   // Explicitní časové měřítko:
+                DateTime date = currentTime.Begin.Value;
+                return _TimeAxisGetNewTime(null, date, zoom, ToolbarSystemItem.None);
+            }
+            else
+            {   // Časové měřítko odvozené od současného intervalu:
+                return TimeRange.CreateFromSizeEnd(currentTime.Size.Value, currentTime.Begin.Value);
+            }
         }
         /// <summary>
         /// Vrátí nový časový interval pro časovou osu pro současný interval a požadavek <see cref="ToolbarSystemItem.TimeAxisGoHome"/>
@@ -1712,7 +1830,17 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         private static TimeRange _TimeAxisGetNewTimeGoHome(TimeRange currentTime, ToolbarSystemItem zoom)
         {
             DateTime date = DateTime.Now;
-            return _TimeAxisGetNewTime(null, date, zoom, ToolbarSystemItem.None);
+            if (zoom == ToolbarSystemItem.None) zoom = _TimeAxisGetZoomFrom(currentTime);
+            if (zoom != ToolbarSystemItem.None)
+            {   // Explicitní časové měřítko:
+                return _TimeAxisGetNewTime(null, date, zoom, ToolbarSystemItem.None);
+            }
+            else
+            {   // Časové měřítko odvozené od současného intervalu:
+                TimeSpan time = currentTime.Size.Value;
+                DateTime begin = date - TimeSpan.FromSeconds(time.TotalSeconds / 2d);
+                return TimeRange.CreateFromBeginSize(begin, time);
+            }
         }
         /// <summary>
         /// Vrátí nový časový interval pro časovou osu pro současný interval a požadavek <see cref="ToolbarSystemItem.TimeAxisGoNext"/>
@@ -1722,14 +1850,45 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// <returns></returns>
         private static TimeRange _TimeAxisGetNewTimeGoNext(TimeRange currentTime, ToolbarSystemItem zoom)
         {
-            DateTime date = currentTime.End.Value;
-            // Specialitky: pokud je zoom = WorkWeek, pak nemůžu jít GoNext tak, abych jako Date bral prostý čas End stávajícího intervalu.
-            //  Proč? Protože pátek. Konec pracovního týdne je pátek (respektive currentTime.End je sobota brzy ráno),
-            //          a z tohoto datumu se jako nový počátek odvodí zase to naše pondělí :-).
-            //        A ani termín Begin.AddDays(7) není OK, protože Begin má typicky hodnotu Neděle pozdě večer (to vše kvůli _TimeAxisEnlargeRatio).
-            if (zoom == ToolbarSystemItem.TimeAxisZoomWorkWeek)
-                date = currentTime.Center.Value.AddDays(7);
-            return _TimeAxisGetNewTime(null, date, zoom, ToolbarSystemItem.None);
+            if (zoom == ToolbarSystemItem.None) zoom = _TimeAxisGetZoomFrom(currentTime);
+            if (zoom != ToolbarSystemItem.None)
+            {   // Explicitní časové měřítko:
+                DateTime date = currentTime.End.Value;
+                // Specialitky: pokud je zoom = WorkWeek, pak nemůžu jít GoNext tak, abych jako Date bral prostý čas End stávajícího intervalu.
+                //  Proč? Protože pátek. Konec pracovního týdne je pátek (respektive currentTime.End je sobota brzy ráno),
+                //          a z tohoto datumu se jako nový počátek odvodí zase to naše pondělí :-).
+                //        A ani termín Begin.AddDays(7) není OK, protože Begin má typicky hodnotu Neděle pozdě večer (to vše kvůli _TimeAxisEnlargeRatio).
+                if (zoom == ToolbarSystemItem.TimeAxisZoomWorkWeek)
+                    date = currentTime.Center.Value.AddDays(7);
+                return _TimeAxisGetNewTime(null, date, zoom, ToolbarSystemItem.None);
+            }
+            else
+            {   // Časové měřítko odvozené od současného intervalu:
+                return TimeRange.CreateFromBeginSize(currentTime.End.Value, currentTime.Size.Value);
+            }
+        }
+        /// <summary>
+        /// Určí zoom časové osy podle její aktuální hodnoty
+        /// </summary>
+        /// <param name="currentTime"></param>
+        /// <returns></returns>
+        private static ToolbarSystemItem _TimeAxisGetZoomFrom(TimeRange currentTime)
+        {
+            if (currentTime is null || !currentTime.Size.HasValue) return ToolbarSystemItem.None;
+            TimeSpan time = currentTime.Size.Value;
+            double hours = time.TotalHours;
+            if (hours < 1.5d) return ToolbarSystemItem.TimeAxisZoomHour;
+            if (hours < 14d) return ToolbarSystemItem.TimeAxisZoomHalfDay;
+            if (hours < 26) return ToolbarSystemItem.TimeAxisZoomOneDay;
+            double days = time.TotalDays;
+            if (days < 6d) return ToolbarSystemItem.TimeAxisZoomWorkWeek;
+            if (days < 8d) return ToolbarSystemItem.TimeAxisZoomWholeWeek;
+            if (days < 12d) return ToolbarSystemItem.TimeAxisZoomDayDecade;
+            if (days < 40d) return ToolbarSystemItem.TimeAxisZoomMonth;
+            if (days < 120d) return ToolbarSystemItem.TimeAxisZoomQuarter;
+            if (days < 210d) return ToolbarSystemItem.TimeAxisZoomHalfYear;
+            if (days < 400d) return ToolbarSystemItem.TimeAxisZoomWholeYear;
+            return ToolbarSystemItem.None;
         }
         /// <summary>
         /// Poměr zvětšení časového intervalu nad rámec matematicky přesného výpočtu

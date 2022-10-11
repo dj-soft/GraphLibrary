@@ -77,7 +77,7 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             }
         }
         #endregion
-        #region Po prvním vykreslení
+        #region Před a Po prvním vykreslení
         /// <summary>
         /// Metoda je volána POUZE PO PRVNÍM vykreslení obsahu
         /// </summary>
@@ -186,6 +186,29 @@ namespace Asol.Tools.WorkScheduler.Scheduler
         /// Obsahuje data <see cref="GuiPage"/> aktuální viditelné stránky s daty.
         /// </summary>
         public GuiPage ActiveGuiPage { get { return this.ActiveDataPanel?.GuiPage; } }
+        /// <summary>
+        /// Obsahuje true, pokud je možno ukládat a akceptovat data z Configu. Na true se nastaví při prvním zobrazení. Před tím nejsou jisté rozměry controlu.
+        /// </summary>
+        public bool ConfigActive
+        {
+            get { return _ConfigActive; }
+            set
+            {
+                bool isActivated = (!_ConfigActive && value);
+                _ConfigActive = value;
+                if (isActivated)
+                    this._ConfigActivated();
+            }
+        }
+        /// <summary>
+        /// Právě byl aktivován Config. nyní je vhodné načíst a aplikovat jeho hodnoty do Layoutu.
+        /// </summary>
+        private void _ConfigActivated()
+        {
+            this.CalculateLayout();
+            this._SchedulerPanelApplyConfig();
+        }
+        private bool _ConfigActive;
         /// <summary>
         /// Data aktivní stránky. Může být null.
         /// </summary>
@@ -343,6 +366,17 @@ namespace Asol.Tools.WorkScheduler.Scheduler
             this.AddItem(this._TabContainer);
 
             this._DataPanelsList = new List<MainDataPanel>();
+        }
+        /// <summary>
+        /// Aplikuje Config do všech panelů
+        /// </summary>
+        private void _SchedulerPanelApplyConfig()
+        {
+            foreach (var tabPage in this._TabContainer.TabItems)
+            {
+                if (tabPage.DataControl is SchedulerPanel schedulerPanel)
+                    schedulerPanel.ApplyConfig();
+            }
         }
         /// <summary>
         /// Metoda přidá jednu stránku s daty podle dat dodaných v parametru
