@@ -88,7 +88,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Aktuální počet controlů
         /// </summary>
-        public int ControlCount { get { return _Controls.Count; } }
+        public int ControlCount { get { return _Controls?.Count ?? 0; } }
         /// <summary>
         /// Je povoleno přemístění prvků pomocí Drag And Drop
         /// </summary>
@@ -97,53 +97,43 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Povinně zobrazit titulek v panelu i když je panel jen jeden a nemá definován svůj standardní titulek?
         /// Výchozí = false
         /// </summary>
-        public bool TitleCompulsory { get { return _TitleCompulsory; } set { _TitleCompulsory = value; this.RunInGui(_RefreshControls); } }
-        private bool _TitleCompulsory;
+        public bool TitleCompulsory { get { return _TitleCompulsory; } set { _TitleCompulsory = value; this.RunInGui(_RefreshControls); } } private bool _TitleCompulsory;
         /// <summary>
         /// Viditelnost buttonů Dock
         /// </summary>
-        public ControlVisibility DockButtonVisibility { get { return _DockButtonVisibility; } set { _DockButtonVisibility = value; this.RunInGui(_RefreshControls); } }
-        private ControlVisibility _DockButtonVisibility;
+        public ControlVisibility DockButtonVisibility { get { return _DockButtonVisibility; } set { _DockButtonVisibility = value; this.RunInGui(_RefreshControls); } } private ControlVisibility _DockButtonVisibility;
         /// <summary>
         /// Viditelnost buttonu Close
         /// </summary>
-        public ControlVisibility CloseButtonVisibility { get { return _CloseButtonVisibility; } set { _CloseButtonVisibility = value; this.RunInGui(_RefreshControls); } }
-        private ControlVisibility _CloseButtonVisibility;
+        public ControlVisibility CloseButtonVisibility { get { return _CloseButtonVisibility; } set { _CloseButtonVisibility = value; this.RunInGui(_RefreshControls); } } private ControlVisibility _CloseButtonVisibility;
         /// <summary>
         /// Jaké buttony budou zobrazeny na prázdných panelech
         /// </summary>
-        public EmptyPanelVisibleButtons EmptyPanelButtons { get { return _EmptyPanelButtons; } set { _EmptyPanelButtons = value; this.RunInGui(_RefreshControls); } }
-        private EmptyPanelVisibleButtons _EmptyPanelButtons;
+        public EmptyPanelVisibleButtons EmptyPanelButtons { get { return _EmptyPanelButtons; } set { _EmptyPanelButtons = value; this.RunInGui(_RefreshControls); } } private EmptyPanelVisibleButtons _EmptyPanelButtons;
         /// <summary>
         /// Tooltip na buttonu DockLeft
         /// </summary>
-        public string DockButtonLeftToolTip { get { return _DockButtonLeftToolTip; } set { _DockButtonLeftToolTip = value; this.RunInGui(_RefreshControls); } }
-        private string _DockButtonLeftToolTip;
+        public string DockButtonLeftToolTip { get { return _DockButtonLeftToolTip; } set { _DockButtonLeftToolTip = value; this.RunInGui(_RefreshControls); } } private string _DockButtonLeftToolTip;
         /// <summary>
         /// Tooltip na buttonu DockTop
         /// </summary>
-        public string DockButtonTopToolTip { get { return _DockButtonTopToolTip; } set { _DockButtonTopToolTip = value; this.RunInGui(_RefreshControls); } }
-        private string _DockButtonTopToolTip;
+        public string DockButtonTopToolTip { get { return _DockButtonTopToolTip; } set { _DockButtonTopToolTip = value; this.RunInGui(_RefreshControls); } } private string _DockButtonTopToolTip;
         /// <summary>
         /// Tooltip na buttonu DockBottom
         /// </summary>
-        public string DockButtonBottomToolTip { get { return _DockButtonBottomToolTip; } set { _DockButtonBottomToolTip = value; this.RunInGui(_RefreshControls); } }
-        private string _DockButtonBottomToolTip;
+        public string DockButtonBottomToolTip { get { return _DockButtonBottomToolTip; } set { _DockButtonBottomToolTip = value; this.RunInGui(_RefreshControls); } } private string _DockButtonBottomToolTip;
         /// <summary>
         /// Tooltip na buttonu DockRight
         /// </summary>
-        public string DockButtonRightToolTip { get { return _DockButtonRightToolTip; } set { _DockButtonRightToolTip = value; this.RunInGui(_RefreshControls); } }
-        private string _DockButtonRightToolTip;
+        public string DockButtonRightToolTip { get { return _DockButtonRightToolTip; } set { _DockButtonRightToolTip = value; this.RunInGui(_RefreshControls); } } private string _DockButtonRightToolTip;
         /// <summary>
         /// Tooltip na buttonu Close
         /// </summary>
-        public string CloseButtonToolTip { get { return _CloseButtonToolTip; } set { _CloseButtonToolTip = value; this.RunInGui(_RefreshControls); } }
-        private string _CloseButtonToolTip;
+        public string CloseButtonToolTip { get { return _CloseButtonToolTip; } set { _CloseButtonToolTip = value; this.RunInGui(_RefreshControls); } } private string _CloseButtonToolTip;
         /// <summary>
         /// Používat SVG ikony (true) / PNG ikony (false): default = true
         /// </summary>
-        public bool UseSvgIcons { get { return _UseSvgIcons; } set { _UseSvgIcons = value; this.RunInGui(_RefreshControls); } }
-        private bool _UseSvgIcons;
+        public bool UseSvgIcons { get { return _UseSvgIcons; } set { _UseSvgIcons = value; this.RunInGui(_RefreshControls); } } private bool _UseSvgIcons;
         /// <summary>
         /// Povolení pro zobrazování kontextového menu na Splitteru (pro změnu orientace Horizontální - Vertikální).
         /// Default = false.
