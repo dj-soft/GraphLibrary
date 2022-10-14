@@ -5307,7 +5307,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         public virtual DevExpress.Utils.Svg.SvgImage SvgImage { get; set; }
         /// <summary>
         /// Jméno běžné ikony.
-        /// Pro prvek typu CheckBox tato ikona reprezentuje stav, kdy <see cref="Checked"/> = NULL.
+        /// Pro prvek typu <see cref="RibbonItemType.CheckBoxToggle"/> a <see cref="RibbonItemType.CheckButton"/> tato ikona reprezentuje stav, kdy <see cref="Checked"/> = NULL.
         /// </summary>
         public virtual string ImageName { get; set; }
         /// <summary>

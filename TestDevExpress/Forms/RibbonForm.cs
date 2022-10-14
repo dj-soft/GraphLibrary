@@ -336,12 +336,14 @@ namespace TestDevExpress.Forms
             _TestControlGroup = new DataRibbonGroup() { GroupText = "OVLÁDÁNÍ TESTU" };
             _TestControlGroup.Items.Add(new DataRibbonItem() { ItemId = "TestAdd", Text = "Přidat", ToolTipText = "Do testovací grupy přidá tlačítko", ImageName = "devav/actions/add.svg", ClickAction = _RibbonTestActionAdd });
             _TestControlGroup.Items.Add(new DataRibbonItem() { ItemId = "TestRemove", Text = "Odebrat", ToolTipText = "Z testovací grupy odebere tlačítko", ImageName = "devav/actions/remove.svg", ClickAction = _RibbonTestActionRemove });
-            bool hideEmpty = false;
+            bool? hideEmpty = null;
             _TestControlGroup.Items.Add(new DataRibbonItem() { ItemId = "TestAutoHide", Text = "Skrýt prázdnou", ToolTipText = "Pokud bude aktivováno, pak prázdná grupa bude skryta.",
-                ItemType = RibbonItemType.CheckButton, ImageNameChecked = _ImageVisibilityHide, ImageNameUnChecked = _ImageVisibilityShow, Checked = hideEmpty, ClickAction = _RibbonTestActionAutoHide });
+                ItemType = RibbonItemType.CheckButton, ImageName = _ImageVisibilityNull, ImageNameChecked = _ImageVisibilityHide, ImageNameUnChecked = _ImageVisibilityShow,
+                Checked = hideEmpty, ClickAction = _RibbonTestActionAutoHide
+            });
             testPage.Groups.Add(_TestControlGroup);
 
-            _TestSampleGroup = new DataRibbonGroup() { GroupText = "TESTOVACÍ GRUPA", HideEmptyGroup = hideEmpty };
+            _TestSampleGroup = new DataRibbonGroup() { GroupText = "TESTOVACÍ GRUPA", HideEmptyGroup = hideEmpty ?? false };
             _RibbonTestActionAddMore(_TestSampleGroup, Random.Rand.Next(3));
             testPage.Groups.Add(_TestSampleGroup);
 
@@ -370,7 +372,9 @@ namespace TestDevExpress.Forms
             DataRibbonGroup sampleGroup = _TestSampleGroup;
             sampleGroup.HideEmptyGroup = hideEmpty;
             this.DxRibbon.RefreshGroup(sampleGroup);
+
         }
+        private static string _ImageVisibilityNull { get { return "images/xaf/templatesv2images/state_itemvisibility_show.svg"; } }
         private static string _ImageVisibilityShow { get { return "svgimages/xaf/state_itemvisibility_show.svg"; } }
         private static string _ImageVisibilityHide { get { return "svgimages/xaf/state_itemvisibility_hide.svg"; } }
         private void _RibbonTestActionTest(IMenuItem item)

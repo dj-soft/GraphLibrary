@@ -3446,9 +3446,12 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             // Náhradní ikonky (pro nezadané nebo neexistující ImageName) budeme generovat jen pro level = 0 = Ribbon, a ne pro Menu!
             string caption = (isRootItem ? iRibbonItem.Text : null);
-            bool isChecked = (iRibbonItem.Checked ?? false);
-            // Zvolíme obrázek podle zadání:
-            string imageName = (isChecked ? _GetDefinedImage(iRibbonItem.ImageNameChecked, iRibbonItem.ImageName) : _GetDefinedImage(iRibbonItem.ImageNameUnChecked, iRibbonItem.ImageName));
+
+            // Zvolíme aktuálně platný obrázek - podle hodnoty iRibbonItem.Checked a pro zadáné obrázky:
+            string imageName = (!iRibbonItem.Checked.HasValue ? iRibbonItem.ImageName :                                                                        // Pro hodnotu NULL
+                   ((iRibbonItem.Checked.HasValue && !iRibbonItem.Checked.Value) ? _GetDefinedImage(iRibbonItem.ImageNameUnChecked, iRibbonItem.ImageName) :   // pro False
+                   ((iRibbonItem.Checked.HasValue && iRibbonItem.Checked.Value) ? _GetDefinedImage(iRibbonItem.ImageNameChecked, iRibbonItem.ImageName) :      // pro True
+                   null)));
             DxComponent.ApplyImage(barButton.ImageOptions, imageName, iRibbonItem.Image, sizeType, caption: caption, prepareDisabledImage: iRibbonItem.PrepareDisabledImage);
         }
         /// <summary>
@@ -7767,10 +7770,37 @@ namespace Noris.Clients.Win.Components.AsolDX
                                (iRibbonGroup.LayoutType == RibbonGroupItemsLayout.ThreeRows ? RibbonPageGroupItemsLayout.ThreeRows :
                                 RibbonPageGroupItemsLayout.Default))));
             DxComponent.ApplyImage(this.ImageOptions, iRibbonGroup.GroupImageName, null, DxRibbonControl.RibbonImageSize);
+            _ReLinkItemsToNewGroup(this.GroupData, iRibbonGroup);
             this.GroupData = iRibbonGroup;
             this.Tag = iRibbonGroup;
             iRibbonGroup.RibbonGroup = this;
             RefreshGroupVisibility();
+        }
+        /// <summary>
+        /// Do všech prvků typu <see cref="IRibbonItem"/>, které jsou umístěny v dodané starší grupě <paramref name="oldDataGroup"/> 
+        /// vepíše jako jejich <see cref="IRibbonItem.ParentGroup"/> novou grupu dodanou v <paramref name="newDataGroup"/>.
+        /// Provede to i pro subitemy těchto itemů, rekurzivně.
+        /// Lze použít i pro odvázání Parent grupy, to když je jako <paramref name="newDataGroup"/> předáno null.
+        /// </summary>
+        /// <param name="oldDataGroup"></param>
+        /// <param name="newDataGroup"></param>
+        private void _ReLinkItemsToNewGroup(IRibbonGroup oldDataGroup, IRibbonGroup newDataGroup)
+        {
+            if (oldDataGroup is null || oldDataGroup.Items is null) return;                             // Není dána původní grupa: není co procházet.
+            if (newDataGroup != null && Object.ReferenceEquals(oldDataGroup, newDataGroup)) return;     // Původní a nová grupa je tatáž: není důvod převazovat referenci.
+            var itemss = new Queue<IEnumerable<IRibbonItem>>();
+            itemss.Enqueue(oldDataGroup.Items);
+            while (itemss.Count > 0)
+            {
+                var items = itemss.Dequeue();
+                if (items is null) continue;
+                foreach (var item in items)
+                {
+                    item.ParentGroup = newDataGroup;
+                    if (item.SubItems != null)
+                        itemss.Enqueue(item.SubItems);
+                }
+            }
         }
         /// <summary>
         /// Znovu aplikuje Image ze svého objektu <see cref="GroupData"/>
@@ -7843,7 +7873,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Aktualizuje nastavení viditelnosti grupy podle počtu prvků a nastavení.
         /// </summary>
-        internal void RefreshGroupVisibility()
+        public void RefreshGroupVisibility()
         {
             bool visible = this._VisibleData;
             if (visible && _HideEmptyGroup && this.ItemLinks.Count == 0) visible = false;
@@ -9427,7 +9457,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         int PageOrder { get; set; }
         /// <summary>
-        /// Pořadí stránky v rámci mergování, vkládá se do RibbonPage
+        /// Pořadí stránky v rámci mergování, vkládá se do RibbonPage.
+        /// Pokud při refreshi nechceme měnit hodnotu, zadejme -1.
         /// </summary>
         int MergeOrder { get; }
         /// <summary>
@@ -9511,7 +9542,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         int GroupOrder { get; set; }
         /// <summary>
-        /// Pořadí grupy v rámci mergování, vkládá se do RibbonGroup
+        /// Pořadí grupy v rámci mergování, vkládá se do RibbonGroup.
+        /// Pokud při refreshi nechceme měnit hodnotu, zadejme -1.
         /// </summary>
         int MergeOrder { get; }
         /// <summary>
