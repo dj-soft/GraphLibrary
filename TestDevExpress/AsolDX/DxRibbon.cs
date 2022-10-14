@@ -3397,15 +3397,68 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="iRibbonItem"></param>
         /// <param name="level">0 pro Ribbonitem, 1 a vyšší pro prvky v menu</param>
         /// <param name="withReset"></param>
-        protected void FillBarItemImage(DevExpress.XtraBars.BarItem barItem, IRibbonItem iRibbonItem, int level, bool withReset = false)
+        protected void FillBarItemImage(BarItem barItem, IRibbonItem iRibbonItem, int level, bool withReset = false)
         {
-            if (barItem is DxBarCheckBoxToggle) return;              // DxCheckBoxToggle si řídí Image sám
+            if (barItem is DxBarCheckBoxToggle) return;                        // DxCheckBoxToggle si řídí Image sám
 
-            // Velikost obrázku: pro Level = 0 (vlastní prvky v Ribbonu) ve stylu Large nebo Default dáme obrázky Large, jinak dáme Small (pro malé prvky Ribbonu a pro položky menu, ty mají Level 1 a vyšší):
-            bool isLargeIcon = (level == 0 && (iRibbonItem.RibbonStyle.HasFlag(RibbonItemStyles.Large) || iRibbonItem.RibbonStyle == RibbonItemStyles.Default));
+            if ((iRibbonItem.ItemType == RibbonItemType.CheckButton || iRibbonItem.ItemType == RibbonItemType.CheckBoxStandard || iRibbonItem.ItemType == RibbonItemType.RadioItem) && barItem is BarBaseButtonItem barButton)
+                RibbonItemSetImageByChecked(iRibbonItem, barButton, level);    // S možností volby podle Checked
+            else
+                RibbonItemSetImageStandard(iRibbonItem, barItem, level);
+        }
+        /// <summary>
+        /// Připraví do prvku Ribbonu obrázek (ikonu) podle aktuálního stavu a dodané definice, pro standardní button
+        /// </summary>
+        /// <param name="iRibbonItem"></param>
+        /// <param name="barItem"></param>
+        /// <param name="level"></param>
+        protected void RibbonItemSetImageStandard(IRibbonItem iRibbonItem, BarItem barItem, int? level = null)
+        {
+            // Určíme, zda prvek je přímo v Ribbonu nebo až jako subpoložka:
+            //  Hodnota level se předává v procesu prvotní tvorby, pak Root prvek má level == 0;
+            //  Pokud hodnota level není předána, pak jsme volání z obsluhy kliknutí na prvek, a tam se spolehneme na hodnotu IRibbonItem.ParentItem.
+            bool isRootItem = (level.HasValue ? (level.Value == 0) : (iRibbonItem.ParentItem is null));
+
+            // Velikost obrázku: pro RootItem (vlastní prvky v Ribbonu) ve stylu Large nebo Default dáme obrázky Large, jinak dáme Small (pro malé prvky Ribbonu a pro položky menu, ty mají Level 1 a vyšší):
+            bool isLargeIcon = (isRootItem && (iRibbonItem.RibbonStyle.HasFlag(RibbonItemStyles.Large) || iRibbonItem.RibbonStyle == RibbonItemStyles.Default));
             ResourceImageSizeType sizeType = (isLargeIcon ? ResourceImageSizeType.Large : ResourceImageSizeType.Small);
-            string caption = (level == 0 ? iRibbonItem.Text : null);                     // Náhradní ikonky (pro nezadané nebo neexistující ImageName) budeme generovat jen pro level = 0 = Ribbon, a ne pro Menu!
+
+            // Náhradní ikonky (pro nezadané nebo neexistující ImageName) budeme generovat jen pro level = 0 = Ribbon, a ne pro Menu!
+            string caption = (isRootItem ? iRibbonItem.Text : null);
             DxComponent.ApplyImage(barItem.ImageOptions, iRibbonItem.ImageName, iRibbonItem.Image, sizeType, caption: caption, prepareDisabledImage: iRibbonItem.PrepareDisabledImage);
+        }
+        /// <summary>
+        /// Připraví do prvku Ribbonu obrázek (ikonu) podle aktuálního stavu a dodané definice, pro button typu CheckButton nebo CheckBox
+        /// </summary>
+        /// <param name="iRibbonItem"></param>
+        /// <param name="barButton"></param>
+        /// <param name="level"></param>
+        protected void RibbonItemSetImageByChecked(IRibbonItem iRibbonItem, BarBaseButtonItem barButton, int? level = null)
+        {
+            // Určíme, zda prvek je přímo v Ribbonu nebo až jako subpoložka:
+            //  Hodnota level se předává v procesu prvotní tvorby, pak Root prvek má level == 0;
+            //  Pokud hodnota level není předána, pak jsme volání z obsluhy kliknutí na prvek, a tam se spolehneme na hodnotu IRibbonItem.ParentItem.
+            bool isRootItem = (level.HasValue ? (level.Value == 0) : (iRibbonItem.ParentItem is null));
+
+            // Velikost obrázku: pro RootItem (vlastní prvky v Ribbonu) ve stylu Large nebo Default dáme obrázky Large, jinak dáme Small (pro malé prvky Ribbonu a pro položky menu, ty mají Level 1 a vyšší):
+            bool isLargeIcon = (isRootItem && (iRibbonItem.RibbonStyle.HasFlag(RibbonItemStyles.Large) || iRibbonItem.RibbonStyle == RibbonItemStyles.Default));
+            ResourceImageSizeType sizeType = (isLargeIcon ? ResourceImageSizeType.Large : ResourceImageSizeType.Small);
+
+            // Náhradní ikonky (pro nezadané nebo neexistující ImageName) budeme generovat jen pro level = 0 = Ribbon, a ne pro Menu!
+            string caption = (isRootItem ? iRibbonItem.Text : null);
+            bool isChecked = (iRibbonItem.Checked ?? false);
+            // Zvolíme obrázek podle zadání:
+            string imageName = (isChecked ? _GetDefinedImage(iRibbonItem.ImageNameChecked, iRibbonItem.ImageName) : _GetDefinedImage(iRibbonItem.ImageNameUnChecked, iRibbonItem.ImageName));
+            DxComponent.ApplyImage(barButton.ImageOptions, imageName, iRibbonItem.Image, sizeType, caption: caption, prepareDisabledImage: iRibbonItem.PrepareDisabledImage);
+        }
+        /// <summary>
+        /// Vrátí první neprázdný obrázek
+        /// </summary>
+        /// <param name="images"></param>
+        /// <returns></returns>
+        private static string _GetDefinedImage(params string[] images)
+        {
+            return images.FirstOrDefault(i => !String.IsNullOrEmpty(i));
         }
         /// <summary>
         /// Do daného prvku Ribbonu vepíše vše pro jeho HotKey
@@ -3417,18 +3470,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         protected void FillBarItemHotKey(DevExpress.XtraBars.BarItem barItem, IRibbonItem iRibbonItem, int level, bool withReset = false)
         {
             if (iRibbonItem.HotKeys.HasValue)
-            {
                 barItem.ItemShortcut = new DevExpress.XtraBars.BarShortcut(iRibbonItem.HotKeys.Value);
-            }
             else if (iRibbonItem.Shortcut.HasValue)
-            {
                 barItem.ItemShortcut = new DevExpress.XtraBars.BarShortcut(iRibbonItem.Shortcut.Value);
-            }
-            else if (!string.IsNullOrEmpty(iRibbonItem.HotKey))
-            {
-                if (!(barItem is DevExpress.XtraBars.BarSubItem))
-                    barItem.ItemShortcut = new DevExpress.XtraBars.BarShortcut(SystemAdapter.GetShortcutKeys(iRibbonItem.HotKey));
-            }
+            else if (!string.IsNullOrEmpty(iRibbonItem.HotKey) && !(barItem is DevExpress.XtraBars.BarSubItem))
+                barItem.ItemShortcut = new DevExpress.XtraBars.BarShortcut(SystemAdapter.GetShortcutKeys(iRibbonItem.HotKey));
         }
         /// <summary>
         /// Vrátí Buttony pro dané SubItemy
@@ -6147,12 +6193,20 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (setDownState)
             {
                 if (barButton is null) barButton = iRibbonItem.RibbonItem?.Target as BarButtonItem;
-                if (barButton != null) barButton.Down = isChecked;             // Nativní eventu DownChanged nehlídáme, tak mi nevadí že proběhne.
+                if (barButton != null)
+                {
+                    barButton.Down = isChecked;                      // Nativní eventu DownChanged nehlídáme, tak mi nevadí že proběhne.
+                    RibbonItemSetImageByChecked(iRibbonItem, barButton);
+                }
             }
             if (setChecked)
             {
                 if (checkButton is null) checkButton = iRibbonItem.RibbonItem?.Target as BarCheckItem;
-                if (checkButton != null) checkButton.Checked = isChecked;      // Nativní eventu CheckedChanged nehlídáme, tak mi nevadí že proběhne.
+                if (checkButton != null)
+                {
+                    checkButton.Checked = isChecked;                 // Nativní eventu CheckedChanged nehlídáme, tak mi nevadí že proběhne.
+                    RibbonItemSetImageByChecked(iRibbonItem, checkButton);
+                }
             }
             if (callEvent && isChanged)
                 _RibbonItemCheck(iRibbonItem);
@@ -7689,6 +7743,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         protected void Init()
         {
             State = DevExpress.XtraBars.Ribbon.RibbonPageGroupState.Auto;
+            this.ItemLinks.CollectionChanged += ItemLinks_CollectionChanged;
         }
         /// <summary>
         /// Aktualizuje svoje vlastnosti z dodané definice.
@@ -7700,7 +7755,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             if (withId) this.Name = iRibbonGroup.GroupId;
             this.Text = iRibbonGroup.GroupText;
-            this.Visible = iRibbonGroup.Visible;
             if (iRibbonGroup.MergeOrder > 0) this.MergeOrder = iRibbonGroup.MergeOrder;             // Záporné číslo IRibbonGroup.MergeOrder říká: neměnit hodnotu, pokud grupa existuje. Důvod: při Refreshi existující grupy nechceme měnit její pozici.
             this.CaptionButtonVisible = (iRibbonGroup.GroupButtonVisible ? DefaultBoolean.True : DefaultBoolean.False);
             this.AllowTextClipping = iRibbonGroup.AllowTextClipping;
@@ -7716,6 +7770,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.GroupData = iRibbonGroup;
             this.Tag = iRibbonGroup;
             iRibbonGroup.RibbonGroup = this;
+            RefreshGroupVisibility();
         }
         /// <summary>
         /// Znovu aplikuje Image ze svého objektu <see cref="GroupData"/>
@@ -7766,6 +7821,33 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             var ownerRibbonItems = this.OwnerDxRibbon.Items;
             itemsToDelete.ForEach(i => ownerRibbonItems.Remove(i));
+        }
+        /// <summary>
+        /// Požadavek (true) na skrývání grupy, která neobsahuje žádné prvky.<br/>
+        /// Default = false: pokud bude dodána prázdná grupa, bude zobrazena.
+        /// </summary>
+        private bool _HideEmptyGroup { get { return (GroupData?.HideEmptyGroup ?? false); } }
+        /// <summary>
+        /// Viditelnost grupy podle nastavení dat <see cref="IRibbonGroup.Visible"/>, default = true
+        /// </summary>
+        private bool _VisibleData { get { return (GroupData?.Visible ?? true); } }
+        /// <summary>
+        /// Po změně prvků zobrazených v této grupě se vyvolá tato metoda, a zajistí nastavení viditelnosti grupy podle počtu prvků a nastavení.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void ItemLinks_CollectionChanged(object sender, System.ComponentModel.CollectionChangeEventArgs e)
+        {
+            RefreshGroupVisibility();
+        }
+        /// <summary>
+        /// Aktualizuje nastavení viditelnosti grupy podle počtu prvků a nastavení.
+        /// </summary>
+        internal void RefreshGroupVisibility()
+        {
+            bool visible = this._VisibleData;
+            if (visible && _HideEmptyGroup && this.ItemLinks.Count == 0) visible = false;
+            this.Visible = visible;
         }
     }
     /// <summary>
@@ -9090,6 +9172,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         IEnumerable<IRibbonItem> IRibbonGroup.Items { get { return this.Items; } }
         /// <summary>
+        /// Požadavek (true) na skrývání grupy, která neobsahuje žádné prvky.<br/>
+        /// Default = false: pokud bude dodána prázdná grupa, bude zobrazena.
+        /// </summary>
+        public bool HideEmptyGroup { get; set; }
+        /// <summary>
         /// Sem bude umístěna fyzická <see cref="DxRibbonGroup"/> po jejím vytvoření.
         /// </summary>
         [XS.PersistingEnabled(false)]
@@ -9459,6 +9546,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Soupis prvků grupy (tlačítka, menu, checkboxy, galerie)
         /// </summary>
         IEnumerable<IRibbonItem> Items { get; }
+        /// <summary>
+        /// Požadavek (true) na skrývání grupy, která neobsahuje žádné prvky.<br/>
+        /// Default = false: pokud bude dodána prázdná grupa, bude zobrazena.
+        /// </summary>
+        bool HideEmptyGroup { get; }
         /// <summary>
         /// Sem bude umístěna fyzická <see cref="DxRibbonGroup"/> po jejím vytvoření.
         /// </summary>

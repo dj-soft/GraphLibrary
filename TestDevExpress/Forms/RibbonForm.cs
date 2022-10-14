@@ -161,26 +161,28 @@ namespace TestDevExpress.Forms
             string imgInfo = "svgimages/xaf/action_aboutinfo.svg";
 
             List<DataRibbonPage> pages = new List<DataRibbonPage>();
-            DataRibbonPage page;
+            DataRibbonPage homePage;
             DataRibbonGroup group;
 
-            page = new DataRibbonPage() { PageId = "DX", PageText = "ZÁKLADNÍ", MergeOrder = 1, PageOrder = 1 };
-            pages.Add(page);
+            homePage = new DataRibbonPage() { PageId = "DX", PageText = "ZÁKLADNÍ", MergeOrder = 1, PageOrder = 1 };
+            pages.Add(homePage);
             group = DxRibbonControl.CreateSkinIGroup("DESIGN", addUhdSupport: true) as DataRibbonGroup;
             group.Items.Add(ImagePickerForm.CreateRibbonButton());
-            page.Groups.Add(group);
+            homePage.Groups.Add(group);
 
             group = new DataRibbonGroup() { GroupId = "params", GroupText = "RIBBON TEST" };
-            page.Groups.Add(group);
+            homePage.Groups.Add(group);
             group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Test.UseLazyInit", Text = "Use Lazy Init", ToolTipText = "Zaškrtnuto: používat opožděné plnění stránek Ribbonu (=až bude potřeba)\r\nNezaškrtnuto: fyzicky naplní celý Ribbon okamžitě, delší čas přípravy okna", ItemType = RibbonItemType.CheckBoxToggle, Checked = UseLazyLoad, RibbonStyle = RibbonItemStyles.Large });
             group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Test.LogClear", Text = "Clear log", ToolTipText = "Smaže obsah logu vpravo", ImageName = imgLogClear, RibbonStyle = RibbonItemStyles.Large });
             group.Items.Add(new DataRibbonItem() { ItemId = "Dx.ShowTextInQat", Text = "Show Text in QAT", ToolTipText = "Aktivuje / Deaktivuje text u prvků QAT", ItemType = RibbonItemType.CheckBoxStandard, Checked = this.ShowTextInQAT, RibbonStyle = RibbonItemStyles.Large });
 
-            page = new DataRibbonPage() { PageId = "HELP", PageText = "Nápověda", MergeOrder = 9999, PageOrder = 9999 };
-            pages.Add(page);
+            DataRibbonPage helpPage = new DataRibbonPage() { PageId = "HELP", PageText = "Nápověda", MergeOrder = 9999, PageOrder = 9999 };
+            pages.Add(helpPage);
             group = new DataRibbonGroup() { GroupId = "help", GroupText = "NÁPOVĚDA" };
-            page.Groups.Add(group);
-            group.Items.Add(new DataRibbonItem() { ItemId = "Help.Help.Show", Text = "Nápovědda", ToolTipText = "Zobrazí okno s nápovědou", ImageName = imgInfo });
+            helpPage.Groups.Add(group);
+            group.Items.Add(new DataRibbonItem() { ItemId = "Help.Help.Show", Text = "Nápověda", ToolTipText = "Zobrazí okno s nápovědou", ImageName = imgInfo });
+
+            _RibbonTestsInit(pages, homePage);
 
             this.DxRibbon.Clear();
             this.DxRibbon.AddPages(pages);
@@ -248,6 +250,168 @@ namespace TestDevExpress.Forms
             // V tomto pořadí budou StatusItemy viditelné (tady je zatím jen jeden):
             this.DxStatusBar.ItemLinks.Add(this._StatusItemTitle);
         }
+        #endregion
+        #region Řízené testy Ribbonu
+        /// <summary>
+        /// Do Ribbonu přidá definici pro testovací prvky
+        /// </summary>
+        /// <param name="pages"></param>
+        /// <param name="homePage"></param>
+        private void _RibbonTestsInit(List<DataRibbonPage> pages, DataRibbonPage homePage)
+        {
+            DataRibbonPage testPage = new DataRibbonPage() { PageId = "GroupTests", PageText = "Test AutoHide grupy", MergeOrder = 200, PageOrder = 200 };
+            pages.Add(testPage);
+            _TestSampleImages = new string[]
+{
+    "svgimages/spreadsheet/create%20rotated%20bar%20chart.svg",
+    "svgimages/spreadsheet/createarea3dchart.svg",
+    "svgimages/spreadsheet/createareachart.svg",
+    "svgimages/spreadsheet/createbar3dchart.svg",
+    "svgimages/spreadsheet/createbarchart.svg",
+    "svgimages/spreadsheet/createbubble3dchart.svg",
+    "svgimages/spreadsheet/createbubblechart.svg",
+    "svgimages/spreadsheet/createconebar3dchart.svg",
+    "svgimages/spreadsheet/createconefullstackedbar3dchart.svg",
+    "svgimages/spreadsheet/createconemanhattanbarchart.svg",
+    "svgimages/spreadsheet/createconestackedbar3dchart.svg",
+    "svgimages/spreadsheet/createcylinderbar3dchart.svg",
+    "svgimages/spreadsheet/createcylinderfullstackedbar3dchart.svg",
+    "svgimages/spreadsheet/createcylindermanhattanbarchart.svg",
+    "svgimages/spreadsheet/createcylinderstackedbar3dchart.svg",
+    "svgimages/spreadsheet/createdoughnutchart.svg",
+    "svgimages/spreadsheet/createexplodeddoughnutchart.svg",
+    "svgimages/spreadsheet/createexplodedpie3dchart.svg",
+    "svgimages/spreadsheet/createexplodedpiechart.svg",
+    "svgimages/spreadsheet/createfromselection.svg",
+    "svgimages/spreadsheet/createfullstackedarea3dchart.svg",
+    "svgimages/spreadsheet/createfullstackedareachart.svg",
+    "svgimages/spreadsheet/createfullstackedbar3dchart.svg",
+    "svgimages/spreadsheet/createfullstackedbarchart.svg",
+    "svgimages/spreadsheet/createfullstackedlinechart.svg",
+    "svgimages/spreadsheet/createfullstackedlinechartnomarkers.svg",
+    "svgimages/spreadsheet/createline3dchart.svg",
+    "svgimages/spreadsheet/createlinechart.svg",
+    "svgimages/spreadsheet/createlinechartnomarkers.svg",
+    "svgimages/spreadsheet/createmanhattanbarchart.svg",
+    "svgimages/spreadsheet/createpie3dchart.svg",
+    "svgimages/spreadsheet/createpiechart.svg",
+    "svgimages/spreadsheet/createpyramidbar3dchart.svg",
+    "svgimages/spreadsheet/createpyramidfullstackedbar3dchart.svg",
+    "svgimages/spreadsheet/createpyramidmanhattanbarchart.svg",
+    "svgimages/spreadsheet/createpyramidstackedbar3dchart.svg",
+    "svgimages/spreadsheet/createradarlinechart.svg",
+    "svgimages/spreadsheet/createradarlinechartfilled.svg",
+    "svgimages/spreadsheet/createradarlinechartnomarkers.svg",
+    "svgimages/spreadsheet/createrotatedbar3dchart.svg",
+    "svgimages/spreadsheet/createrotatedconebar3dchart.svg",
+    "svgimages/spreadsheet/createrotatedcylinderbar3dchart.svg",
+    "svgimages/spreadsheet/createrotatedfullstackedbar3dchart.svg",
+    "svgimages/spreadsheet/createrotatedfullstackedbarchart.svg",
+    "svgimages/spreadsheet/createrotatedfullstackedconebar3dchart.svg",
+    "svgimages/spreadsheet/createrotatedfullstackedcylinderbar3dchart.svg",
+    "svgimages/spreadsheet/createrotatedfullstackedpyramidbar3dchart.svg",
+    "svgimages/spreadsheet/createrotatedpyramidbar3dchart.svg",
+    "svgimages/spreadsheet/createrotatedstackedbar3dchart.svg",
+    "svgimages/spreadsheet/createrotatedstackedbarchart.svg",
+    "svgimages/spreadsheet/createrotatedstackedconebar3dchart.svg",
+    "svgimages/spreadsheet/createrotatedstackedcylinderbar3dchart.svg",
+    "svgimages/spreadsheet/createrotatedstackedpyramidbar3dchart.svg",
+    "svgimages/spreadsheet/createscatterchartlines.svg",
+    "svgimages/spreadsheet/createscatterchartlinesandmarkers.svg",
+    "svgimages/spreadsheet/createscatterchartsmoothlines.svg",
+    "svgimages/spreadsheet/createscatterchartsmoothlinesandmarkers.svg",
+    "svgimages/spreadsheet/createstackedarea3dchart.svg",
+    "svgimages/spreadsheet/createstackedareachart.svg",
+    "svgimages/spreadsheet/createstackedbar3dchart.svg",
+    "svgimages/spreadsheet/createstackedbarchart.svg",
+    "svgimages/spreadsheet/createstackedlinechart.svg",
+    "svgimages/spreadsheet/createstackedlinechartnomarkers.svg",
+    "svgimages/spreadsheet/createstockcharthighlowclose.svg",
+    "svgimages/spreadsheet/createstockchartopenhighlowclose.svg",
+    "svgimages/spreadsheet/createstockchartvolumehighlowclose.svg",
+    "svgimages/spreadsheet/createstockchartvolumeopenhighlowclose.svg"
+};
+            _TestItemId = 0;
+
+            _TestControlGroup = new DataRibbonGroup() { GroupText = "OVLÁDÁNÍ TESTU" };
+            _TestControlGroup.Items.Add(new DataRibbonItem() { ItemId = "TestAdd", Text = "Přidat", ToolTipText = "Do testovací grupy přidá tlačítko", ImageName = "devav/actions/add.svg", ClickAction = _RibbonTestActionAdd });
+            _TestControlGroup.Items.Add(new DataRibbonItem() { ItemId = "TestRemove", Text = "Odebrat", ToolTipText = "Z testovací grupy odebere tlačítko", ImageName = "devav/actions/remove.svg", ClickAction = _RibbonTestActionRemove });
+            bool hideEmpty = false;
+            _TestControlGroup.Items.Add(new DataRibbonItem() { ItemId = "TestAutoHide", Text = "Skrýt prázdnou", ToolTipText = "Pokud bude aktivováno, pak prázdná grupa bude skryta.",
+                ItemType = RibbonItemType.CheckButton, ImageNameChecked = _ImageVisibilityHide, ImageNameUnChecked = _ImageVisibilityShow, Checked = hideEmpty, ClickAction = _RibbonTestActionAutoHide });
+            testPage.Groups.Add(_TestControlGroup);
+
+            _TestSampleGroup = new DataRibbonGroup() { GroupText = "TESTOVACÍ GRUPA", HideEmptyGroup = hideEmpty };
+            _RibbonTestActionAddMore(_TestSampleGroup, Random.Rand.Next(3));
+            testPage.Groups.Add(_TestSampleGroup);
+
+            _TestControlAfterGroup = new DataRibbonGroup() { GroupText = "NÁSLEDUJÍCÍ GRUPA" };
+            _TestControlAfterGroup.Items.Add(new DataRibbonItem() { ItemId = "After1", Text = "Tlačítko 1", ToolTipText = "Toto je zbytečné tlačítko", ImageName = "devav/arrows/left2.svg" });
+            _TestControlAfterGroup.Items.Add(new DataRibbonItem() { ItemId = "After2", Text = "Tlačítko 2", ToolTipText = "Toto je zbytečné tlačítko", ImageName = "devav/arrows/left.svg" });
+            _TestControlAfterGroup.Items.Add(new DataRibbonItem() { ItemId = "After3", Text = "Tlačítko 3", ToolTipText = "Toto je zbytečné tlačítko", ImageName = "devav/arrows/forward.svg" });
+            _TestControlAfterGroup.Items.Add(new DataRibbonItem() { ItemId = "After4", Text = "Tlačítko 4", ToolTipText = "Toto je zbytečné tlačítko", ImageName = "devav/arrows/right2.svg" });
+            _TestControlAfterGroup.Items.Add(new DataRibbonItem() { ItemId = "After5", Text = "Tlačítko 5", ToolTipText = "Toto je zbytečné tlačítko", ImageName = "devav/arrows/right.svg" });
+            testPage.Groups.Add(_TestControlAfterGroup);
+        }
+        private void _RibbonTestActionAdd(IMenuItem item)
+        {
+            DataRibbonGroup sampleGroup = _TestSampleGroup;
+            _RibbonTestActionAddOne(sampleGroup);
+            this.DxRibbon.RefreshGroup(sampleGroup);
+        }
+        private void _RibbonTestActionRemove(IMenuItem item)
+        {
+            _RibbonTestActionRemoveOne(null);
+        }
+        private void _RibbonTestActionAutoHide(IMenuItem item)
+        {
+            bool isChecked = item.Checked ?? false;
+            bool hideEmpty = isChecked;
+            DataRibbonGroup sampleGroup = _TestSampleGroup;
+            sampleGroup.HideEmptyGroup = hideEmpty;
+            this.DxRibbon.RefreshGroup(sampleGroup);
+        }
+        private static string _ImageVisibilityShow { get { return "svgimages/xaf/state_itemvisibility_show.svg"; } }
+        private static string _ImageVisibilityHide { get { return "svgimages/xaf/state_itemvisibility_hide.svg"; } }
+        private void _RibbonTestActionTest(IMenuItem item)
+        {
+            _RibbonTestActionRemoveOne(item);
+        }
+        private void _RibbonTestActionAddMore(DataRibbonGroup sampleGroup, int count)
+        {
+            for (int i = 0; i < count; i++)
+                _RibbonTestActionAddOne(sampleGroup);
+        }
+        private void _RibbonTestActionAddOne(DataRibbonGroup sampleGroup)
+        {
+            int count = sampleGroup.Items.Count;
+            int id = ++_TestItemId;
+            var image = Random.GetItem(_TestSampleImages);
+            var item = new DataRibbonItem() { ItemId = "Test" + id.ToString(), Text = "Akce " + id.ToString(), ToolTipText = "Toto je testovací tlačítko.\r\nKdyž na něj klikneš, tlačítko se z grupy vyhodí.", ImageName = image, ClickAction = _RibbonTestActionTest };
+            sampleGroup.Items.Add(item);
+        }
+        private void _RibbonTestActionRemoveOne(IMenuItem item)
+        {
+            DataRibbonGroup sampleGroup = _TestSampleGroup;
+            int count = sampleGroup.Items.Count;
+            if (count > 0)
+            {
+                int index = (item != null ? sampleGroup.Items.FindIndex(i => Object.ReferenceEquals(i, item)) : Random.Rand.Next(count));
+                if (index >= 0)
+                {
+                    sampleGroup.Items.RemoveAt(index);
+                    sampleGroup.ChangeMode = ContentChangeMode.ReFill;
+                    this.DxRibbon.RefreshGroup(sampleGroup);
+                }
+            }
+        }
+
+        private DataRibbonGroup _TestControlGroup;
+        private DataRibbonGroup _TestSampleGroup;
+        private DataRibbonGroup _TestControlAfterGroup;
+        private int _TestItemId;
+        private string[] _TestSampleImages;
+
         #endregion
         #region Logování
         private void DxComponent_LogTextChanged(object sender, EventArgs e)

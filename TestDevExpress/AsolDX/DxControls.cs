@@ -5311,11 +5311,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public virtual string ImageName { get; set; }
         /// <summary>
-        /// Jméno ikony pro stav UnChecked u typu <see cref="RibbonItemType.CheckBoxToggle"/>
+        /// Jméno ikony pro stav UnChecked u typu <see cref="RibbonItemType.CheckBoxToggle"/> a <see cref="RibbonItemType.CheckButton"/>.
+        /// Pokud je prázdné, pak se pro stav UnChecked použije <see cref="ImageName"/>.
         /// </summary>
         public virtual string ImageNameUnChecked { get; set; }
         /// <summary>
-        /// Jméno ikony pro stav Checked u typu <see cref="RibbonItemType.CheckBoxToggle"/>
+        /// Jméno ikony pro stav Checked u typu <see cref="RibbonItemType.CheckBoxToggle"/> a <see cref="RibbonItemType.CheckButton"/>.
+        /// Pokud je prázdné, pak se pro stav Checked použije <see cref="ImageName"/>.
         /// </summary>
         public virtual string ImageNameChecked { get; set; }
         /// <summary>
