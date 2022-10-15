@@ -324,9 +324,7 @@ namespace TestDevExpress.Forms
             group.Items.Add(ImagePickerForm.CreateRibbonButton());
             page.Groups.Add(group);
 
-
             AddFunctionsGroup(page);
-            if (group != null) page.Groups.Add(group);
 
             page = CreateRibbonSvgImagesPage();
             if (page != null) pages.Add(page);

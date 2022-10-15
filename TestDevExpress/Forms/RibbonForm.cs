@@ -332,18 +332,19 @@ namespace TestDevExpress.Forms
     "svgimages/spreadsheet/createstockchartvolumeopenhighlowclose.svg"
 };
             _TestItemId = 0;
+            _TestSampleHideEmptyGroup = false;
 
             _TestControlGroup = new DataRibbonGroup() { GroupText = "OVLÁDÁNÍ TESTU" };
             _TestControlGroup.Items.Add(new DataRibbonItem() { ItemId = "TestAdd", Text = "Přidat", ToolTipText = "Do testovací grupy přidá tlačítko", ImageName = "devav/actions/add.svg", ClickAction = _RibbonTestActionAdd });
             _TestControlGroup.Items.Add(new DataRibbonItem() { ItemId = "TestRemove", Text = "Odebrat", ToolTipText = "Z testovací grupy odebere tlačítko", ImageName = "devav/actions/remove.svg", ClickAction = _RibbonTestActionRemove });
-            bool? hideEmpty = null;
+            _TestControlGroup.Items.Add(new DataRibbonItem() { ItemId = "TestExchange", Text = "Vyměnit", ToolTipText = "Pošle nová data pro testovací grupu", ImageName = "svgimages/xaf/action_refresh.svg", ClickAction = _RibbonTestActionExchange });
             _TestControlGroup.Items.Add(new DataRibbonItem() { ItemId = "TestAutoHide", Text = "Skrýt prázdnou", ToolTipText = "Pokud bude aktivováno, pak prázdná grupa bude skryta.",
                 ItemType = RibbonItemType.CheckButton, ImageName = _ImageVisibilityNull, ImageNameChecked = _ImageVisibilityHide, ImageNameUnChecked = _ImageVisibilityShow,
-                Checked = hideEmpty, ClickAction = _RibbonTestActionAutoHide
+                Checked = null, ClickAction = _RibbonTestActionAutoHide
             });
             testPage.Groups.Add(_TestControlGroup);
 
-            _TestSampleGroup = new DataRibbonGroup() { GroupText = "TESTOVACÍ GRUPA", HideEmptyGroup = hideEmpty ?? false };
+            _TestSampleGroup = _RibbonTestCreateSampleGroup();
             _RibbonTestActionAddMore(_TestSampleGroup, Random.Rand.Next(3));
             testPage.Groups.Add(_TestSampleGroup);
 
@@ -365,18 +366,31 @@ namespace TestDevExpress.Forms
         {
             _RibbonTestActionRemoveOne(null);
         }
+        private void _RibbonTestActionExchange(IMenuItem item)
+        {
+            int count = _TestSampleGroup.Items.Count;
+            DataRibbonGroup sampleGroup = _RibbonTestCreateSampleGroup();
+            _RibbonTestActionAddMore(sampleGroup, count);
+            sampleGroup.ChangeMode = ContentChangeMode.ReFill;
+            this.DxRibbon.RefreshGroup(sampleGroup);
+            _TestSampleGroup = sampleGroup;
+        }
         private void _RibbonTestActionAutoHide(IMenuItem item)
         {
             bool isChecked = item.Checked ?? false;
-            bool hideEmpty = isChecked;
+            _TestSampleHideEmptyGroup = isChecked;
             DataRibbonGroup sampleGroup = _TestSampleGroup;
-            sampleGroup.HideEmptyGroup = hideEmpty;
+            sampleGroup.HideEmptyGroup = _TestSampleHideEmptyGroup;
             this.DxRibbon.RefreshGroup(sampleGroup);
-
         }
         private static string _ImageVisibilityNull { get { return "images/xaf/templatesv2images/state_itemvisibility_show.svg"; } }
         private static string _ImageVisibilityShow { get { return "svgimages/xaf/state_itemvisibility_show.svg"; } }
         private static string _ImageVisibilityHide { get { return "svgimages/xaf/state_itemvisibility_hide.svg"; } }
+        private DataRibbonGroup _RibbonTestCreateSampleGroup()
+        {
+            var sampleGroup = new DataRibbonGroup() { GroupId = "TestSampleGroup", GroupText = "TESTOVACÍ GRUPA", HideEmptyGroup = _TestSampleHideEmptyGroup };
+            return sampleGroup;
+        }
         private void _RibbonTestActionTest(IMenuItem item)
         {
             _RibbonTestActionRemoveOne(item);
@@ -393,6 +407,7 @@ namespace TestDevExpress.Forms
             var image = Random.GetItem(_TestSampleImages);
             var item = new DataRibbonItem() { ItemId = "Test" + id.ToString(), Text = "Akce " + id.ToString(), ToolTipText = "Toto je testovací tlačítko.\r\nKdyž na něj klikneš, tlačítko se z grupy vyhodí.", ImageName = image, ClickAction = _RibbonTestActionTest };
             sampleGroup.Items.Add(item);
+            sampleGroup.ChangeMode = ContentChangeMode.Add;
         }
         private void _RibbonTestActionRemoveOne(IMenuItem item)
         {
@@ -409,7 +424,7 @@ namespace TestDevExpress.Forms
                 }
             }
         }
-
+        private bool _TestSampleHideEmptyGroup;
         private DataRibbonGroup _TestControlGroup;
         private DataRibbonGroup _TestSampleGroup;
         private DataRibbonGroup _TestControlAfterGroup;

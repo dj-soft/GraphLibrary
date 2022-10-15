@@ -1185,16 +1185,34 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Najde grupu Ribbonu <see cref="IRibbonGroup"/>, do které patří daný prvek ribbonu.
         /// Pozor, prvek může existovat v Ribbonu standardně (viditelný) anebo může být Added = připravený pro OnDemand doplnění, ale i v tom případě chceme najít reálnou deklaraci grupy, do které bude prvek patřit!
         /// </summary>
-        /// <param name="iRibbonItem"></param>
+        /// <param name="iItemData"></param>
         /// <returns></returns>
-        private IRibbonGroup SearchForParentGroupForItem(IRibbonItem iRibbonItem)
+        private IRibbonGroup SearchForParentGroupForItem(IRibbonItem iItemData)
         {
-            if (iRibbonItem is null || iRibbonItem.ParentGroup is null) return null;               // Pokud prvek není anebo nemá definici grupy, nelze ji najít.
+            if (iItemData is null || iItemData.ParentGroup is null) return null;               // Pokud prvek není anebo nemá definici grupy, nelze ji najít.
 
-            // Musíme najít reálnou grupu použitou v Ribbonu - podle jejího ID:
-            string groupId = iRibbonItem.ParentGroup.GroupId;
-            if (!this.AllGroups.TryGetFirst(g => g.GroupData.GroupId == groupId, out var dxGroup)) return null;
-            return dxGroup.GroupData;
+            // Musíme najít reálnou grupu použitou v Ribbonu - podle jejího ID a ID stránky:
+            string groupId = iItemData.ParentGroup.GroupId;
+            string pageId = iItemData.ParentGroup.ParentPage?.PageId;
+            if (_TryGetGroupData(pageId, groupId, out var iGroupData)) return iGroupData;
+            return null;
+        }
+        /// <summary>
+        /// Zkusí najít data grupy pro danou stránku.
+        /// </summary>
+        /// <param name="pageId"></param>
+        /// <param name="groupId"></param>
+        /// <param name="iGroupData"></param>
+        /// <returns></returns>
+        private bool _TryGetGroupData(string pageId, string groupId, out IRibbonGroup iGroupData)
+        {
+            if (this.AllGroups.TryGetFirst(g => (g.GroupId == groupId && (pageId == null || g.PageId == pageId)), out var dxGroup))
+            {
+                iGroupData = dxGroup.DataGroupLast;
+                return true;
+            }
+            iGroupData = null;
+            return false;
         }
         /// <summary>
         /// Vrací standardní titulek grupy pro daný prvek v menu QuickSearch
@@ -5371,11 +5389,11 @@ namespace Noris.Clients.Win.Components.AsolDX
                     iRibbonGroup = iGroup;
                     return true;
                 }
-                if ((tag is DxRibbonGroup ribbonGroup) && (ribbonGroup.Tag is IRibbonGroup iiGroup))
+                if (tag is DxRibbonGroup dxGroup)
                 {
-                    key = GetValidQATKey(iiGroup.GroupId);
+                    key = GetValidQATKey(dxGroup.GroupId);
                     iRibbonItem = null;
-                    iRibbonGroup = iiGroup;
+                    iRibbonGroup = dxGroup.DataGroupLast;
                     return true;
                 }
             }
@@ -6130,22 +6148,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="iRibbonItem"></param>
         private void _RibbonCheckBoxItemClick(BarCheckItem checkButton, IRibbonItem iRibbonItem)
         {
-            var groupName = iRibbonItem.RadioButtonGroupName;
-            if (String.IsNullOrEmpty(groupName))
+            if (String.IsNullOrEmpty(iRibbonItem.RadioButtonGroupName))
             {   // Není daná grupa RadioButtonGroupName? Jde o obyčejný CheckBox:
                 _RibbonItemSetChecked(iRibbonItem, !(iRibbonItem.Checked ?? false), true, false, null, true, checkButton);
             }
             else
             {   // Máme řešit Radio grupu:
-                var groupItems = iRibbonItem.ParentGroup?.Items;
-                groupItems.ForEachExec(i => { if (!String.IsNullOrEmpty(i.RadioButtonGroupName) && i.RadioButtonGroupName == groupName) setCheckedActive(i, iRibbonItem); });
-            }
-
-            // Do daného prvku i do jeho vizuálního buttonu vloží hodnotu Checked / Down: true pokud jsou dodané prvky ReferenceEquals / false pokud jsou odlišné:
-            void setCheckedActive(IRibbonItem iItem, IRibbonItem iActiveItem)
-            {
-                bool isChecked = Object.ReferenceEquals(iItem, iActiveItem);
-                _RibbonItemSetChecked(iItem, isChecked, true, false, null, true, null);
+                _RibbonRadioButtonItemClick(iRibbonItem, true, false, true);
             }
         }
         /// <summary>
@@ -6156,23 +6165,38 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="iRibbonItem"></param>
         private void _RibbonCheckButtonItemClick(BarBaseButtonItem barButton, IRibbonItem iRibbonItem)
         {
-            var groupName = iRibbonItem.RadioButtonGroupName;
-            if (String.IsNullOrEmpty(groupName))
+            if (String.IsNullOrEmpty(iRibbonItem.RadioButtonGroupName))
             {   // Není daná grupa RadioButtonGroupName? Jde o obyčejný CheckBox:
                 _RibbonItemSetChecked(iRibbonItem, !(iRibbonItem.Checked ?? false), true, true, barButton, false, null);
             }
             else
             {   // Máme řešit Radio grupu:
-                var groupItems = iRibbonItem.ParentGroup?.Items;
-                groupItems.ForEachExec(i => { if (!String.IsNullOrEmpty(i.RadioButtonGroupName) && i.RadioButtonGroupName == groupName) setCheckedActive(i, iRibbonItem); });
+                _RibbonRadioButtonItemClick(iRibbonItem, true, true, false);
             }
+        }
+        /// <summary>
+        /// Metoda najde všechny prvky jedné Radiogrupy (se shodným <see cref="IRibbonItem.RadioButtonGroupName"/> jako má dodaný prvek <paramref name="iRibbonItem"/>),
+        /// a pro všechny prvky této grupy jiné než dodaný <paramref name="iRibbonItem"/> nastaví jejich Checked = false,
+        /// a poté pro dodaný prvek nastaví jeho Checked = true.
+        /// <para/>
+        /// Podle požadavku volá event změny pro každý dotčený prvek, a nastaví do vizuálního prvku stav down a Checked.
+        /// </summary>
+        /// <param name="iRibbonItem"></param>
+        /// <param name="callEvent"></param>
+        /// <param name="setDownState"></param>
+        /// <param name="setChecked"></param>
+        private void _RibbonRadioButtonItemClick(IRibbonItem iRibbonItem, bool callEvent, bool setDownState, bool setChecked)
+        {
+            // Získáme všechny prvky té skupiny RadioButtonGroupName, na jejíhož člena se kliklo:
+            var groupName = iRibbonItem.RadioButtonGroupName;
+            var groupItems = iRibbonItem.ParentGroup?.Items.Where(i => (!String.IsNullOrEmpty(i.RadioButtonGroupName) && i.RadioButtonGroupName == groupName)).ToArray();
+            if (groupItems is null || groupItems.Length == 0) return;
 
-            // Do daného prvku i do jeho vizuálního buttonu vloží hodnotu Checked / Down: true pokud jsou dodané prvky ReferenceEquals / false pokud jsou odlišné:
-            void setCheckedActive(IRibbonItem iItem, IRibbonItem iActiveItem)
-            {
-                bool isChecked = Object.ReferenceEquals(iItem, iActiveItem);
-                _RibbonItemSetChecked(iItem, isChecked, true, true, null, false, null);
-            }
+            // Nejprve nastavím všechny ostatní prvky (nikoli ten aktivní) na Checked = false:
+            groupItems.Where(i => !Object.ReferenceEquals(i, iRibbonItem)).ForEachExec(i => _RibbonItemSetChecked(i, false, callEvent, setDownState, null, setChecked, null));
+
+            // A až poté nastavím ten jeden aktivní na Checked = true:
+            _RibbonItemSetChecked(iRibbonItem, true, callEvent, setDownState, null, setChecked, null);
         }
         /// <summary>
         /// Do daného datového prvku <paramref name="iRibbonItem"/> vloží danou hodnotu Checked <paramref name="isChecked"/>.
@@ -6319,7 +6343,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             definingRibbon = null;
             if (group == null) return false;
             _TryGetDxRibbon(group, out definingRibbon);
-            if (group.Tag is IRibbonGroup iRibbonItem) { iRibbonGroup = iRibbonItem; return true; }
+            if (group is DxRibbonGroup dxGroup) { iRibbonGroup = dxGroup.DataGroupLast; return true; }       // Čistá cesta
+            if (group.Tag is IRibbonGroup iDataGroup) { iRibbonGroup = iDataGroup; return true; }            // Nouzová cesta
             if (_TryGetIRibbonItem(group.ItemLinks, out var iMenuItem)) { iRibbonGroup = iMenuItem.ParentGroup; return (iRibbonGroup != null); }
             return false;
         }
@@ -6364,12 +6389,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             iRibbonGroup = null;
             if (pages == null) return false;
-            var found = pages.SelectMany(p => p.Groups)
-                             .Select(g => g.Tag)
-                             .OfType<IRibbonGroup>()
-                             .FirstOrDefault();
-            if (found == null) return false;
-            iRibbonGroup = found;
+            var groups = pages.SelectMany(p => p.Groups).ToArray();
+            var iDataGroup = groups.OfType<DxRibbonGroup>().FirstOrDefault()?.DataGroupLast;                 // Čistá cesta
+            if (iDataGroup is null)
+                iDataGroup = groups.Select(g => g.Tag).OfType<IRibbonGroup>().FirstOrDefault();              // Nouzová cesta
+            if (iDataGroup is null) return false;
+            iRibbonGroup = iDataGroup;
             return true;
         }
         /// <summary>
@@ -7424,6 +7449,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         protected void Init(DxRibbonControl ribbon)
         {
             this.LazyLoadInfo = null;
+            this.__PageId = null;
         }
         /// <summary>
         /// Aktualizuje svoje vlastnosti z dodané definice
@@ -7433,6 +7459,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         public void Fill(IRibbonPage iRibbonPage, bool withId = false)
         {
             if (withId) this.Name = iRibbonPage.PageId;
+            if (this.__PageId is null) this.__PageId = iRibbonPage.PageId;
             this.Text = iRibbonPage.PageText;
             if (iRibbonPage.MergeOrder > 0) this.MergeOrder = iRibbonPage.MergeOrder;          // Záporné číslo iRibbonPage.MergeOrder říká: neměnit hodnotu, pokud stránka existuje. Důvod: při Refreshi existující stránky nechceme měnit její pozici.
             this.Visible = iRibbonPage.Visible;
@@ -7459,6 +7486,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Vlastník Ribbon přetypovaný na <see cref="IDxRibbonInternal"/>
         /// </summary>
         protected IDxRibbonInternal IOwnerDxRibbon { get { return OwnerDxRibbon; } }
+        /// <summary>
+        /// ID této stránky.
+        /// </summary>
+        public string PageId { get { return __PageId; } } private string __PageId;
         /// <summary>
         /// Data definující stránku a její obsah
         /// </summary>
@@ -7725,7 +7756,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="iRibbonGroup"></param>
         /// <param name="groups"></param>
-        public DxRibbonGroup(IRibbonGroup iRibbonGroup, RibbonPageGroupCollection groups) : base() 
+        public DxRibbonGroup(IRibbonGroup iRibbonGroup, RibbonPageGroupCollection groups) : base()
         {
             if (groups != null) groups.Add(this);
             Init();
@@ -7746,6 +7777,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         protected void Init()
         {
             State = DevExpress.XtraBars.Ribbon.RibbonPageGroupState.Auto;
+            __GroupId = null;
+            __HideEmptyGroup = false;
+            __GroupVisible = true;
+            __GroupDataList = new List<IRibbonGroup>();
             this.ItemLinks.CollectionChanged += ItemLinks_CollectionChanged;
         }
         /// <summary>
@@ -7757,8 +7792,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         public void Fill(IRibbonGroup iRibbonGroup, bool withId = false)
         {
             if (withId) this.Name = iRibbonGroup.GroupId;
+            if (this.__GroupId is null) this.__GroupId = iRibbonGroup.GroupId;           // První vložení dat grupy nasetuje její ID, to pak zůstává neměnné.
             this.Text = iRibbonGroup.GroupText;
-            if (iRibbonGroup.MergeOrder > 0) this.MergeOrder = iRibbonGroup.MergeOrder;             // Záporné číslo IRibbonGroup.MergeOrder říká: neměnit hodnotu, pokud grupa existuje. Důvod: při Refreshi existující grupy nechceme měnit její pozici.
+            if (iRibbonGroup.MergeOrder > 0) this.MergeOrder = iRibbonGroup.MergeOrder;  // Záporné číslo IRibbonGroup.MergeOrder říká: neměnit hodnotu, pokud grupa existuje. Důvod: při Refreshi existující grupy nechceme měnit její pozici.
             this.CaptionButtonVisible = (iRibbonGroup.GroupButtonVisible ? DefaultBoolean.True : DefaultBoolean.False);
             this.AllowTextClipping = iRibbonGroup.AllowTextClipping;
             this.State = (iRibbonGroup.GroupState == RibbonGroupState.Expanded ? RibbonPageGroupState.Expanded :
@@ -7769,10 +7805,11 @@ namespace Noris.Clients.Win.Components.AsolDX
                                (iRibbonGroup.LayoutType == RibbonGroupItemsLayout.TwoRows ? RibbonPageGroupItemsLayout.TwoRows :
                                (iRibbonGroup.LayoutType == RibbonGroupItemsLayout.ThreeRows ? RibbonPageGroupItemsLayout.ThreeRows :
                                 RibbonPageGroupItemsLayout.Default))));
+            this.HideEmptyGroup = iRibbonGroup.HideEmptyGroup;
+            this.GroupVisible = iRibbonGroup.Visible;
             DxComponent.ApplyImage(this.ImageOptions, iRibbonGroup.GroupImageName, null, DxRibbonControl.RibbonImageSize);
-            _ReLinkItemsToNewGroup(this.GroupData, iRibbonGroup);
-            this.GroupData = iRibbonGroup;
-            this.Tag = iRibbonGroup;
+            this.__GroupDataList.Add(iRibbonGroup);
+            this.Tag = iRibbonGroup;                       // Nouzové úložiště pro mergované grupy, kdy při mergování se přenáší Tag
             iRibbonGroup.RibbonGroup = this;
             RefreshGroupVisibility();
         }
@@ -7788,26 +7825,28 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             if (oldDataGroup is null || oldDataGroup.Items is null) return;                             // Není dána původní grupa: není co procházet.
             if (newDataGroup != null && Object.ReferenceEquals(oldDataGroup, newDataGroup)) return;     // Původní a nová grupa je tatáž: není důvod převazovat referenci.
-            var itemss = new Queue<IEnumerable<IRibbonItem>>();
-            itemss.Enqueue(oldDataGroup.Items);
-            while (itemss.Count > 0)
+            var itemsQueue = new Queue<IEnumerable<IRibbonItem>>();
+            itemsQueue.Enqueue(oldDataGroup.Items);
+            while (itemsQueue.Count > 0)
             {
-                var items = itemss.Dequeue();
+                var items = itemsQueue.Dequeue();
                 if (items is null) continue;
                 foreach (var item in items)
                 {
-                    item.ParentGroup = newDataGroup;
+                    // Převážu parent grupu jen tehdy, když dosavadní item.ParentGroup ukazuje na starou oldDataGroup grupu:
+                    if (item.ParentGroup is null || Object.ReferenceEquals(item.ParentGroup, oldDataGroup))
+                        item.ParentGroup = newDataGroup;
                     if (item.SubItems != null)
-                        itemss.Enqueue(item.SubItems);
+                        itemsQueue.Enqueue(item.SubItems);
                 }
             }
         }
         /// <summary>
-        /// Znovu aplikuje Image ze svého objektu <see cref="GroupData"/>
+        /// Znovu aplikuje Image ze svého objektu <see cref="DataGroups"/>
         /// </summary>
         public void ReApplyImage()
         {
-            IRibbonGroup iRibbonGroup = this.GroupData;
+            IRibbonGroup iRibbonGroup = this.DataGroupLast;
             if (iRibbonGroup != null)
                 DxComponent.ApplyImage(this.ImageOptions, iRibbonGroup.GroupImageName, null, DxRibbonControl.RibbonImageSize);
         }
@@ -7816,10 +7855,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public void Reset()
         {
-            IRibbonGroup iRibbonGroup = this.GroupData;
-            this.GroupData = null;
+            __GroupDataList.ForEachExec(d => d.RibbonGroup = null);
+            __GroupDataList.Clear();
             this.Tag = null;
-            if (iRibbonGroup != null) iRibbonGroup.RibbonGroup = null;
         }
         /// <summary>
         /// Vlastník Ribbon typu <see cref="DxRibbonControl"/>
@@ -7830,9 +7868,29 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         internal DxRibbonPage OwnerDxPage { get { return this.Page as DxRibbonPage; } }
         /// <summary>
-        /// Data definující grupu a její obsah
+        /// ID stránky, kam patří této grupa. Za jejího života se nemění, je společné pro všechny deklarace v <see cref="DataGroups"/>.
         /// </summary>
-        internal IRibbonGroup GroupData { get; private set; }
+        public string PageId { get { return OwnerDxPage?.PageId; } }
+        /// <summary>
+        /// ID této grupy. Za jejího života se nemění, je společné pro všechny deklarace v <see cref="DataGroups"/>.
+        /// </summary>
+        public string GroupId { get { return __GroupId; } } private string __GroupId;
+        /// <summary>
+        /// Posledně přidaná definice grupy = zdroj nejčerstvějších dat grupy. 
+        /// Nemusí obsahovat všechny Itemy, jejich kompletní souhrn je v jednotlivých definicích grupách <see cref="DataGroups"/>, sumárně v <see cref="DataItems"/>
+        /// </summary>
+        public IRibbonGroup DataGroupLast { get { var count = __GroupDataList.Count; return (count > 0 ? __GroupDataList[count - 1] : null); } }
+        /// <summary>
+        /// Data definující grupu a její obsah.
+        /// Protože dovolujeme, aby více definic grup mělo shodné ID <see cref="IRibbonGroup.GroupId"/>, a povolujeme prvky z těchto grup přidávat v režimu Add,
+        /// pak dojde k tomu, že máme v jedné vizuální grupě data (viditelné prvky) z vícero definic.
+        /// Teprve až vložíme definici grupy v režimu Reload, pak budou staré definice zahozeny a bude přítomna jen jedna definice.
+        /// </summary>
+        internal IRibbonGroup[] DataGroups { get { return __GroupDataList.ToArray(); } } private List<IRibbonGroup> __GroupDataList;
+        /// <summary>
+        /// Data všech Itemů v této vizuální grupě. Je zde souhrn <see cref="IRibbonGroup.Items"/> ze všech aktuálních <see cref="DataGroups"/>.
+        /// </summary>
+        internal IRibbonItem[] DataItems { get { return DataGroups.SelectMany(g =>g.Items).ToArray(); } }
         /// <summary>
         /// Smaže obsah this grupy.
         /// Neprovádí <see cref="Reset()"/>.
@@ -7851,16 +7909,20 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             var ownerRibbonItems = this.OwnerDxRibbon.Items;
             itemsToDelete.ForEach(i => ownerRibbonItems.Remove(i));
+
+            // Odebrat definice:
+            __GroupDataList.ForEachExec(d => d.RibbonGroup = null);
+            __GroupDataList.Clear();
         }
         /// <summary>
         /// Požadavek (true) na skrývání grupy, která neobsahuje žádné prvky.<br/>
         /// Default = false: pokud bude dodána prázdná grupa, bude zobrazena.
         /// </summary>
-        private bool _HideEmptyGroup { get { return (GroupData?.HideEmptyGroup ?? false); } }
+        public bool HideEmptyGroup { get { return __HideEmptyGroup; } set { __HideEmptyGroup = value; RefreshGroupVisibility(); } } private bool __HideEmptyGroup;
         /// <summary>
         /// Viditelnost grupy podle nastavení dat <see cref="IRibbonGroup.Visible"/>, default = true
         /// </summary>
-        private bool _VisibleData { get { return (GroupData?.Visible ?? true); } }
+        public bool GroupVisible { get { return __GroupVisible; } set { __GroupVisible = value; RefreshGroupVisibility(); } } private bool __GroupVisible;
         /// <summary>
         /// Po změně prvků zobrazených v této grupě se vyvolá tato metoda, a zajistí nastavení viditelnosti grupy podle počtu prvků a nastavení.
         /// </summary>
@@ -7875,8 +7937,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public void RefreshGroupVisibility()
         {
-            bool visible = this._VisibleData;
-            if (visible && _HideEmptyGroup && this.ItemLinks.Count == 0) visible = false;
+            bool visible = this.GroupVisible;
+            if (visible && HideEmptyGroup && this.ItemLinks.Count == 0) visible = false;
             this.Visible = visible;
         }
     }
@@ -9371,7 +9433,24 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Parent prvku = <see cref="IRibbonGroup"/>
         /// </summary>
         [XS.PersistingEnabled(false)]
-        public virtual IRibbonGroup ParentGroup { get; set; }
+        public virtual IRibbonGroup ParentGroup 
+        {
+            get { return __ParentGroup; }
+            set
+            {
+                var oldGroup = __ParentGroup;
+                var newGroup = value;
+                if (oldGroup != null && newGroup != null && !Object.ReferenceEquals(oldGroup, newGroup))
+                {
+
+                }
+                __ParentGroup = value;
+            }
+        }
+        private IRibbonGroup __ParentGroup;
+
+
+
         /// <summary>
         /// Parent prvku = jiný prvek <see cref="IRibbonItem"/>
         /// </summary>
