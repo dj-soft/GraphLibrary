@@ -348,12 +348,14 @@ namespace TestDevExpress.Forms
             _RibbonTestActionAddMore(_TestSampleGroup, Random.Rand.Next(3));
             testPage.Groups.Add(_TestSampleGroup);
 
+            string radioGroup1 = "Směr odchodu";
+            string radioGroup2 = "Směr úprku";
             _TestControlAfterGroup = new DataRibbonGroup() { GroupText = "NÁSLEDUJÍCÍ GRUPA" };
-            _TestControlAfterGroup.Items.Add(new DataRibbonItem() { ItemId = "After1", Text = "Tlačítko 1", ToolTipText = "Toto je zbytečné tlačítko", ImageName = "devav/arrows/left2.svg" });
-            _TestControlAfterGroup.Items.Add(new DataRibbonItem() { ItemId = "After2", Text = "Tlačítko 2", ToolTipText = "Toto je zbytečné tlačítko", ImageName = "devav/arrows/left.svg" });
-            _TestControlAfterGroup.Items.Add(new DataRibbonItem() { ItemId = "After3", Text = "Tlačítko 3", ToolTipText = "Toto je zbytečné tlačítko", ImageName = "devav/arrows/forward.svg" });
-            _TestControlAfterGroup.Items.Add(new DataRibbonItem() { ItemId = "After4", Text = "Tlačítko 4", ToolTipText = "Toto je zbytečné tlačítko", ImageName = "devav/arrows/right2.svg" });
-            _TestControlAfterGroup.Items.Add(new DataRibbonItem() { ItemId = "After5", Text = "Tlačítko 5", ToolTipText = "Toto je zbytečné tlačítko", ImageName = "devav/arrows/right.svg" });
+            _TestControlAfterGroup.Items.Add(new DataRibbonItem() { ItemId = "After1", Text = "Tlačítko 1", ToolTipText = "Toto je zbytečné tlačítko", ItemType = RibbonItemType.CheckButton, RadioButtonGroupName = radioGroup2, ImageName = "devav/arrows/left2.svg" });
+            _TestControlAfterGroup.Items.Add(new DataRibbonItem() { ItemId = "After2", Text = "Tlačítko 2", ToolTipText = "Toto je zbytečné tlačítko", ItemType = RibbonItemType.CheckButton, RadioButtonGroupName = radioGroup1, ImageName = "devav/arrows/left.svg" });
+            _TestControlAfterGroup.Items.Add(new DataRibbonItem() { ItemId = "After3", Text = "Tlačítko 3", ToolTipText = "Toto je zbytečné tlačítko", ItemType = RibbonItemType.CheckButton, RadioButtonGroupName = radioGroup1, Checked = true, ImageName = "devav/arrows/forward.svg" });
+            _TestControlAfterGroup.Items.Add(new DataRibbonItem() { ItemId = "After4", Text = "Tlačítko 4", ToolTipText = "Toto je zbytečné tlačítko", ItemType = RibbonItemType.CheckButton, RadioButtonGroupName = radioGroup1, ImageName = "devav/arrows/right2.svg" });
+            _TestControlAfterGroup.Items.Add(new DataRibbonItem() { ItemId = "After5", Text = "Tlačítko 5", ToolTipText = "Toto je zbytečné tlačítko", ItemType = RibbonItemType.CheckButton, RadioButtonGroupName = radioGroup2, ImageName = "devav/arrows/right.svg" });
             testPage.Groups.Add(_TestControlAfterGroup);
         }
         private void _RibbonTestActionAdd(IMenuItem item)
