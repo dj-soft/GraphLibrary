@@ -358,6 +358,7 @@ namespace TestDevExpress.Forms
             _TestControlAfterGroup.Items.Add(new DataRibbonItem() { ItemId = "After5", Text = "Tlačítko 5", ToolTipText = "Toto je zbytečné tlačítko", ItemType = RibbonItemType.CheckButton, RadioButtonGroupName = radioGroup2, ImageName = "devav/arrows/right.svg" });
             testPage.Groups.Add(_TestControlAfterGroup);
         }
+        #region Testy viditelnosti grupy podle obsahu tlačítek, testy refreshe obsahu grupy
         private void _RibbonTestActionAdd(IMenuItem item)
         {
             DataRibbonGroup sampleGroup = _TestSampleGroup;
@@ -432,7 +433,7 @@ namespace TestDevExpress.Forms
         private DataRibbonGroup _TestControlAfterGroup;
         private int _TestItemId;
         private string[] _TestSampleImages;
-
+        #endregion
         #endregion
         #region Logování
         private void DxComponent_LogTextChanged(object sender, EventArgs e)
