@@ -2314,6 +2314,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 iRibbonItem.ParentGroup = iRibbonGroup;
                 _AddBarItem(iRibbonItem, dxGroup, currentMode, ref count);
             }
+            dxGroup.RefreshGroupVisibility();
         }
         /// <summary>
         /// Metoda přidá daný prvek do dané grupy
@@ -7934,13 +7935,22 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         /// <summary>
         /// Aktualizuje nastavení viditelnosti grupy podle počtu prvků a nastavení.
+        /// Je nutno volat i po změně Visibility na prvcích, to grupa sama nedokáže hlídat.
         /// </summary>
         public void RefreshGroupVisibility()
         {
             bool visible = this.GroupVisible;
-            if (visible && HideEmptyGroup && this.ItemLinks.Count == 0) visible = false;
+            if (visible && HideEmptyGroup && !this._HasVisibleItems) visible = false;
             this.Visible = visible;
         }
+        /// <summary>
+        /// Obsahuje pole prvků v této skupině, které jsou právě nyní viditelné
+        /// </summary>
+        private bool _HasVisibleItems { get { return this._VisibleItems.Length > 0; } }
+        /// <summary>
+        /// Obsahuje pole prvků v této skupině, které jsou právě nyní viditelné
+        /// </summary>
+        private BarItem[] _VisibleItems { get { return this.ItemLinks.Select(l => l.Item).Where(l => l.Visibility != BarItemVisibility.Never).ToArray(); } }
     }
     /// <summary>
     /// Třída, která pomáhá řešit opožděné načítání a tvorbu prvků v Ribbonu.
