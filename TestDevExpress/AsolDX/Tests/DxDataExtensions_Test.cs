@@ -64,4 +64,35 @@ namespace Noris.Clients.Win.Components.Tests
             }
         }
     }
+
+    /// <summary>
+    /// Testy
+    /// </summary>
+    [TestClass]
+    public class CompressorTest
+    {
+        /// <summary>
+        /// Test Align()
+        /// </summary>
+        [TestMethod]
+        public void TestCompress()
+        {
+            string text = @"SQL Server APPLY operator has two variants; CROSS APPLY and OUTER APPLY
+
+    The CROSS APPLY operator returns only those rows from the left table expression (in its final output) if it matches with the right table expression. In other words, the right table expression returns rows for the left table expression match only.
+    The OUTER APPLY operator returns all the rows from the left table expression irrespective of its match with the right table expression. For those rows for which there are no corresponding matches in the right table expression, it contains NULL values in columns of the right table expression.
+    So you might conclude, the CROSS APPLY is equivalent to an INNER JOIN (or to be more precise its like a CROSS JOIN with a correlated sub-query) with an implicit join condition of 1=1 whereas the OUTER APPLY is equivalent to a LEFT OUTER JOIN.
+
+You might be wondering if the same can be achieved with a regular JOIN clause, so why and when do you use the APPLY operator? Although the same can be achieved with a normal JOIN, the need of APPLY arises if you have a table-valued expression on the right part and in some cases the use of the APPLY operator boosts performance of your query. Let me explain with some examples.";
+            byte[] data = Encoding.UTF8.GetBytes(text);
+            var zip = Noris.Clients.Win.Components.AsolDX.Compressor.Compress(data);
+
+            var unzip = Noris.Clients.Win.Components.AsolDX.Compressor.DeCompress(zip);
+            string result = Encoding.UTF8.GetString(unzip);
+
+            if (text != result)
+                Assert.Fail("Unzip != Zip");
+        }
+    }
+
 }

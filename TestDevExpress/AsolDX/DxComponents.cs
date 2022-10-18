@@ -5597,6 +5597,37 @@ namespace Noris.Clients.Win.Components.AsolDX
         #endregion
     }
     #endregion
+    #region class Compressor
+    public static class Compressor
+    {
+        public static byte[] Compress(byte[] data)
+        {
+            byte[] zip;
+            using (var memoryStreamData = new System.IO.MemoryStream(data))
+            using (var memoryStreamZip = new System.IO.MemoryStream())
+            using (var gZipStream = new System.IO.Compression.GZipStream(memoryStreamZip,  System.IO.Compression.CompressionMode.Compress))
+            {
+                memoryStreamData.CopyTo(gZipStream);
+                gZipStream.Close();
+                zip = memoryStreamZip.ToArray();
+            }
+            return zip;
+        }
+        public static byte[] DeCompress(byte[] zip)
+        {
+            byte[] data;
+            using (var memoryStreamZip = new System.IO.MemoryStream(zip))
+            using (var memoryStreamData = new System.IO.MemoryStream())
+            using (var gZipStream = new System.IO.Compression.GZipStream(memoryStreamZip, System.IO.Compression.CompressionMode.Decompress))
+            {
+                gZipStream.CopyTo(memoryStreamData);
+                gZipStream.Close();
+                data = memoryStreamData.ToArray();
+            }
+            return data;
+        }
+    }
+    #endregion
     #region class Algebra
     /// <summary>
     /// Algebraické třídy, rovnice
