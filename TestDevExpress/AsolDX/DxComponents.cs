@@ -3672,22 +3672,22 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Vloží do Clipboardu daný text
         /// </summary>
-        /// <param name="text"></param>
+        /// <param name="text">Uživatelská data. Pokud bude null, nebudou se vkládat. Jejich formát je <see cref="DataFormats.Text"/>.</param>
         public static void ClipboardInsert(string text) { Instance._ClipboardInsert(null, text, DataFormats.Text); }
         /// <summary>
         /// Vloží do Clipboardu daná aplikační data a další běžně zpracovatelný údaj, typicky jde o prostý text (může to být i RTF nebo HTML text, obrázek, atd)
         /// </summary>
         /// <param name="appDataId">Identifikátor zdroje konkrétních dat, dovoluje cílovému objektu řídit, zda tato data bude/nebude akceptovat</param>
         /// <param name="appData">Vlastní aplikační data</param>
-        /// <param name="windowsData">Uživatelská data pro Windows (typicky text)</param>
-        /// <param name="windowsFormat">Formát uživatelských dat, default = TXT</param>
+        /// <param name="windowsData">Uživatelská data. Pokud bude null, nebudou se vkládat. Jejich formát určuje <paramref name="windowsFormat"/>, default je <see cref="DataFormats.Text"/>.</param>
+        /// <param name="windowsFormat">Formát dat v <paramref name="windowsData"/></param>
         public static void ClipboardInsert(string appDataId, object appData, object windowsData, string windowsFormat = null) { Instance._ClipboardInsert(new DataExchangeContainer(appDataId, appData), windowsData, windowsFormat); }
         /// <summary>
         /// Vloží do Clipboardu daná aplikační data a další běžně zpracovatelný údaj, typicky jde o prostý text (může to být i RTF nebo HTML text, obrázek, atd)
         /// </summary>
-        /// <param name="appDataContainer"></param>
-        /// <param name="windowsData"></param>
-        /// <param name="windowsFormat"></param>
+        /// <param name="appDataContainer">Komunikační data, která mohou být načtena a strojově zpracována touto nebo i jinou aplikací</param>
+        /// <param name="windowsData">Uživatelská data. Pokud bude null, nebudou se vkládat. Jejich formát určuje <paramref name="windowsFormat"/>, default je <see cref="DataFormats.Text"/>.</param>
+        /// <param name="windowsFormat">Formát dat v <paramref name="windowsData"/></param>
         public static void ClipboardInsert(DataExchangeContainer appDataContainer, object windowsData, string windowsFormat = null) { Instance._ClipboardInsert(appDataContainer, windowsData, windowsFormat); }
         /// <summary>
         /// Zkusí z Clipboardu vytáhnout aplikační data ve standardním containeru <see cref="DataExchangeContainer"/>, vrací true = data jsou k dispozici
@@ -3716,9 +3716,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Vloží data do Clipboardu
         /// </summary>
-        /// <param name="appDataContainer"></param>
-        /// <param name="windowsData"></param>
-        /// <param name="windowsFormat"></param>
+        /// <param name="appDataContainer">Komunikační data, která mohou být načtena a strojově zpracována touto nebo i jinou aplikací</param>
+        /// <param name="windowsData">Uživatelská data. Pokud bude null, nebudou se vkládat. Jejich formát určuje <paramref name="windowsFormat"/>, default je <see cref="DataFormats.Text"/>.</param>
+        /// <param name="windowsFormat">Formát dat v <paramref name="windowsData"/></param>
         private void _ClipboardInsert(DataExchangeContainer appDataContainer, object windowsData, string windowsFormat)
         {
             // Do Clipboardu vložím instanci WinForms:DataObject, která v sobě může najednou obsahovat více formátů dat

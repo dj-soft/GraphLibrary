@@ -372,13 +372,7 @@ namespace Noris.Clients.Win.Components
                 sb.AppendLine(buttonsText.Trim());
                 sb.AppendLine(buttonsLine.Trim());
 
-                try
-                {
-                    System.Windows.Forms.Clipboard.Clear();
-                    System.Windows.Forms.Clipboard.SetText(sb.ToString());
-                    if (showCopyOk) ShowStatus2(copyOk);
-                }
-                catch { }
+                DxComponent.ClipboardInsert(sb.ToString());
             }
             else
             {   // Image
