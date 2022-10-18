@@ -5598,34 +5598,124 @@ namespace Noris.Clients.Win.Components.AsolDX
     }
     #endregion
     #region class Compressor
+    /// <summary>
+    /// Podpora pro jednoduchou komprimaci dat
+    /// </summary>
     public static class Compressor
     {
-        public static byte[] Compress(byte[] data)
+        /// <summary>
+        /// Metoda zajistí komprimaci dat dodaných jako pole byte do výstupního komprimovaného pole.
+        /// Kompresní poměr u hustého textu je cca 45%, u HTML kódu je cca 20%.
+        /// Rychlost je cca 10-15 KB textu / 1 milisec, u velkých textů a volby Fast je rychlost cca 50 KB textu / 1 milisec.
+        /// Binární data (JPEG, PNG, DOCX) jsem neměřil.
+        /// </summary>
+        /// <param name="data">Čitelná data</param>
+        /// <param name="mode">Režim komprimace. 
+        /// U velkých dat má režim Fast opravdu smysl (250KB zrychlí z 25ms na 5ms).
+        /// Rozdíl ve velikosti mezi Zip a Deflate i mezi Fast a Optimal u textu není nijak výrazný (Ratio se mění o 7%).</param>
+        /// <returns></returns>
+        public static byte[] Compress(byte[] data, CompressionMode mode = CompressionMode.Default)
         {
+            if (data is null) return null;
+            if (data.Length == 0) return new byte[0];
+
             byte[] zip;
-            using (var memoryStreamData = new System.IO.MemoryStream(data))
-            using (var memoryStreamZip = new System.IO.MemoryStream())
-            using (var gZipStream = new System.IO.Compression.GZipStream(memoryStreamZip,  System.IO.Compression.CompressionMode.Compress))
+            System.IO.Compression.CompressionLevel level;
+            using (var inputData = new System.IO.MemoryStream(data)) // Vstupní "čitelná data"
+            using (var outputZip = new System.IO.MemoryStream())     // Výstupní komprimovaná data
             {
-                memoryStreamData.CopyTo(gZipStream);
-                gZipStream.Close();
-                zip = memoryStreamZip.ToArray();
+                switch (mode)
+                {
+                    case CompressionMode.DeflateOptimal:
+                    case CompressionMode.DeflateFast:
+                        level = (mode == CompressionMode.DeflateFast ? System.IO.Compression.CompressionLevel.Fastest : System.IO.Compression.CompressionLevel.Optimal);
+                        using (var deflator= new System.IO.Compression.DeflateStream(outputZip, level))
+                        {
+                            inputData.CopyTo(deflator);              // Vstupní data natlačím do kompresoru
+                            deflator.Close();                        // Z kompresoru vymačkám to, co tam zůstalo rozpracované
+                        }
+                        break;
+
+                    case CompressionMode.ZipStreamOptimal:
+                    case CompressionMode.ZipStreamFast:
+                    case CompressionMode.Default:
+                    default:
+                        level = (mode == CompressionMode.ZipStreamFast ? System.IO.Compression.CompressionLevel.Fastest : System.IO.Compression.CompressionLevel.Optimal);
+                        using (var compressor = new System.IO.Compression.GZipStream(outputZip, level))
+                        {
+                            inputData.CopyTo(compressor);            // Vstupní data natlačím do kompresoru
+                            compressor.Close();                      // Z kompresoru vymačkám to, co tam zůstalo rozpracované
+                        }
+                        break;
+                }
+                zip = outputZip.ToArray();                           // Z komprimovaného streamu získám buffer a je to
             }
             return zip;
         }
-        public static byte[] DeCompress(byte[] zip)
+        /// <summary>
+        /// Metoda zajistí dekomprimaci dat dodaných jako pole byte do výstupního čitelného pole.
+        /// </summary>
+        /// <param name="zip">Komprimovaná data</param>
+        /// <param name="mode">Explicitně daný režim, Nezadávejte nic (nebo Default) když nevíte, čím bylo komprimováno; použije se autodetekce.</param>
+        /// <returns></returns>
+        public static byte[] DeCompress(byte[] zip, CompressionMode mode = CompressionMode.Default)
         {
+            if (zip is null) return null;
+            if (zip.Length == 0) return new byte[0];
+            if (mode == CompressionMode.Default) mode = _AutodetectCompressionMode(zip);
+
             byte[] data;
-            using (var memoryStreamZip = new System.IO.MemoryStream(zip))
-            using (var memoryStreamData = new System.IO.MemoryStream())
-            using (var gZipStream = new System.IO.Compression.GZipStream(memoryStreamZip, System.IO.Compression.CompressionMode.Decompress))
+            using (var inputZip = new System.IO.MemoryStream(zip))   // Vstupní komprimovaná data
+            using (var outputData = new System.IO.MemoryStream())    // Výstupní "čitelná data"
             {
-                gZipStream.CopyTo(memoryStreamData);
-                gZipStream.Close();
-                data = memoryStreamData.ToArray();
+                switch (mode)
+                {
+                    case CompressionMode.DeflateOptimal:
+                    case CompressionMode.DeflateFast:
+                        using (var compressor = new System.IO.Compression.DeflateStream(inputZip, System.IO.Compression.CompressionMode.Decompress))
+                        {
+                            compressor.CopyTo(outputData);             // Kompresor je napojený na vstupní ZIP data, dekomprimujeme je do výstupního čitelého streamu
+                            compressor.Close();                        // Z kompresoru vymačkám to, co tam zůstalo rozpracované
+                        }
+                        break;
+                    case CompressionMode.ZipStreamOptimal:
+                    case CompressionMode.ZipStreamFast:
+                    default:
+                        using (var compressor = new System.IO.Compression.GZipStream(inputZip, System.IO.Compression.CompressionMode.Decompress))
+                        {
+                            compressor.CopyTo(outputData);             // Kompresor je napojený na vstupní ZIP data, dekomprimujeme je do výstupního čitelého streamu
+                            compressor.Close();                        // Z kompresoru vymačkám to, co tam zůstalo rozpracované
+                        }
+                        break;
+                }
+                data = outputData.ToArray();               // Přečtu čitelná data do bufferu a je to
             }
             return data;
         }
+        /// <summary>
+        /// Metoda se pokusí určit režim komprimace dat podle jejich obsahu. Analyzuje úvodní 4 znaky, a pokud odpovídají signatuře ZIP, vrátí ZIP; jinak Deflate.
+        /// </summary>
+        /// <param name="zip"></param>
+        /// <returns></returns>
+        private static CompressionMode _AutodetectCompressionMode(byte[] zip)
+        {
+            if (zip is null || zip.Length < 4) return CompressionMode.ZipStreamOptimal;
+
+            // Signatura ZIP má formát: 1F-8B-08-00-00-00-00-00-xx-xx-...
+            if (zip[0] == 0x1F && zip[1] == 0x8B && zip[2] == 0x08 && zip[3] == 0x00) return CompressionMode.ZipStreamOptimal;
+            return CompressionMode.DeflateOptimal;
+        }
+    }
+    /// <summary>
+    /// Režim komprimace
+    /// </summary>
+    public enum CompressionMode
+    {
+        Default = 0,
+        ZipStreamOptimal,
+        ZipStreamFast,
+        DeflateOptimal,
+        DeflateFast
     }
     #endregion
     #region class Algebra

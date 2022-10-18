@@ -7815,34 +7815,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             RefreshGroupVisibility();
         }
         /// <summary>
-        /// Do všech prvků typu <see cref="IRibbonItem"/>, které jsou umístěny v dodané starší grupě <paramref name="oldDataGroup"/> 
-        /// vepíše jako jejich <see cref="IRibbonItem.ParentGroup"/> novou grupu dodanou v <paramref name="newDataGroup"/>.
-        /// Provede to i pro subitemy těchto itemů, rekurzivně.
-        /// Lze použít i pro odvázání Parent grupy, to když je jako <paramref name="newDataGroup"/> předáno null.
-        /// </summary>
-        /// <param name="oldDataGroup"></param>
-        /// <param name="newDataGroup"></param>
-        private void _ReLinkItemsToNewGroup(IRibbonGroup oldDataGroup, IRibbonGroup newDataGroup)
-        {
-            if (oldDataGroup is null || oldDataGroup.Items is null) return;                             // Není dána původní grupa: není co procházet.
-            if (newDataGroup != null && Object.ReferenceEquals(oldDataGroup, newDataGroup)) return;     // Původní a nová grupa je tatáž: není důvod převazovat referenci.
-            var itemsQueue = new Queue<IEnumerable<IRibbonItem>>();
-            itemsQueue.Enqueue(oldDataGroup.Items);
-            while (itemsQueue.Count > 0)
-            {
-                var items = itemsQueue.Dequeue();
-                if (items is null) continue;
-                foreach (var item in items)
-                {
-                    // Převážu parent grupu jen tehdy, když dosavadní item.ParentGroup ukazuje na starou oldDataGroup grupu:
-                    if (item.ParentGroup is null || Object.ReferenceEquals(item.ParentGroup, oldDataGroup))
-                        item.ParentGroup = newDataGroup;
-                    if (item.SubItems != null)
-                        itemsQueue.Enqueue(item.SubItems);
-                }
-            }
-        }
-        /// <summary>
         /// Znovu aplikuje Image ze svého objektu <see cref="DataGroups"/>
         /// </summary>
         public void ReApplyImage()
@@ -9446,21 +9418,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         public virtual IRibbonGroup ParentGroup 
         {
             get { return __ParentGroup; }
-            set
-            {
-                var oldGroup = __ParentGroup;
-                var newGroup = value;
-                if (oldGroup != null && newGroup != null && !Object.ReferenceEquals(oldGroup, newGroup))
-                {
-
-                }
-                __ParentGroup = value;
-            }
+            set { __ParentGroup = value; }
         }
         private IRibbonGroup __ParentGroup;
-
-
-
         /// <summary>
         /// Parent prvku = jiný prvek <see cref="IRibbonItem"/>
         /// </summary>
