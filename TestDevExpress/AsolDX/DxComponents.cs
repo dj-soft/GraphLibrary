@@ -5605,6 +5605,42 @@ namespace Noris.Clients.Win.Components.AsolDX
     {
         /// <summary>
         /// Metoda zajistí komprimaci dat dodaných jako pole byte do výstupního komprimovaného pole.
+        /// </summary>
+        /// <param name="data">Čitelná data</param>
+        /// <returns></returns>
+        public static byte[] Compress(byte[] data)
+        {
+            byte[] zip;
+            using (var inputData = new System.IO.MemoryStream(data)) // Vstupní "čitelná data"
+            using (var outputZip = new System.IO.MemoryStream())     // Výstupní komprimovaná data
+            using (var compressor = new System.IO.Compression.GZipStream(outputZip, System.IO.Compression.CompressionMode.Compress))
+            {
+                inputData.CopyTo(compressor);                        // Vstupní data natlačím do kompresoru
+                compressor.Close();                                  // Z kompresoru vymačkám to, co tam zůstalo rozpracované
+                zip = outputZip.ToArray();                           // Z komprimovaného streamu získám buffer a je to
+            }
+            return zip;
+        }
+        /// <summary>
+        ///  Metoda zajistí dekomprimaci dat dodaných jako pole byte do výstupního čitelného pole.
+        /// </summary>
+        /// <param name="zip">Komprimovaná data</param>
+        /// <returns></returns>
+        public static byte[] DeCompress(byte[] zip)
+        {
+            byte[] data;
+            using (var inputZip = new System.IO.MemoryStream(zip))   // Vstupní komprimovaná data
+            using (var outputData = new System.IO.MemoryStream())    // Výstupní "čitelná data"
+            using (var compressor = new System.IO.Compression.GZipStream(inputZip, System.IO.Compression.CompressionMode.Decompress))
+            {
+                compressor.CopyTo(outputData);                       // Kompresor je napojený na vstupní ZIP data, dekomprimujeme je do výstupního čitelého streamu
+                compressor.Close();                                  // Z kompresoru vymačkám to, co tam zůstalo rozpracované
+                data = outputData.ToArray();                         // Přečtu čitelná data do bufferu a je to
+            }
+            return data;
+        }
+        /// <summary>
+        /// Metoda zajistí komprimaci dat dodaných jako pole byte do výstupního komprimovaného pole.
         /// Kompresní poměr u hustého textu je cca 45%, u HTML kódu je cca 20%.
         /// Rychlost je cca 10-15 KB textu / 1 milisec, u velkých textů a volby Fast je rychlost cca 50 KB textu / 1 milisec.
         /// Binární data (JPEG, PNG, DOCX) jsem neměřil.
@@ -5614,7 +5650,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// U velkých dat má režim Fast opravdu smysl (250KB zrychlí z 25ms na 5ms).
         /// Rozdíl ve velikosti mezi Zip a Deflate i mezi Fast a Optimal u textu není nijak výrazný (Ratio se mění o 7%).</param>
         /// <returns></returns>
-        public static byte[] Compress(byte[] data, CompressionMode mode = CompressionMode.Default)
+        public static byte[] Compress(byte[] data, CompressionMode mode)  //  = CompressionMode.Default
         {
             if (data is null) return null;
             if (data.Length == 0) return new byte[0];
@@ -5629,7 +5665,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                     case CompressionMode.DeflateOptimal:
                     case CompressionMode.DeflateFast:
                         level = (mode == CompressionMode.DeflateFast ? System.IO.Compression.CompressionLevel.Fastest : System.IO.Compression.CompressionLevel.Optimal);
-                        using (var deflator= new System.IO.Compression.DeflateStream(outputZip, level))
+                        using (var deflator = new System.IO.Compression.DeflateStream(outputZip, level))
                         {
                             inputData.CopyTo(deflator);              // Vstupní data natlačím do kompresoru
                             deflator.Close();                        // Z kompresoru vymačkám to, co tam zůstalo rozpracované
@@ -5658,7 +5694,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="zip">Komprimovaná data</param>
         /// <param name="mode">Explicitně daný režim, Nezadávejte nic (nebo Default) když nevíte, čím bylo komprimováno; použije se autodetekce.</param>
         /// <returns></returns>
-        public static byte[] DeCompress(byte[] zip, CompressionMode mode = CompressionMode.Default)
+        public static byte[] DeCompress(byte[] zip, CompressionMode mode)  //  = CompressionMode.Default
         {
             if (zip is null) return null;
             if (zip.Length == 0) return new byte[0];
@@ -5672,10 +5708,10 @@ namespace Noris.Clients.Win.Components.AsolDX
                 {
                     case CompressionMode.DeflateOptimal:
                     case CompressionMode.DeflateFast:
-                        using (var compressor = new System.IO.Compression.DeflateStream(inputZip, System.IO.Compression.CompressionMode.Decompress))
+                        using (var deflator = new System.IO.Compression.DeflateStream(inputZip, System.IO.Compression.CompressionMode.Decompress))
                         {
-                            compressor.CopyTo(outputData);             // Kompresor je napojený na vstupní ZIP data, dekomprimujeme je do výstupního čitelého streamu
-                            compressor.Close();                        // Z kompresoru vymačkám to, co tam zůstalo rozpracované
+                            deflator.CopyTo(outputData);             // Kompresor je napojený na vstupní ZIP data, dekomprimujeme je do výstupního čitelého streamu
+                            deflator.Close();                        // Z kompresoru vymačkám to, co tam zůstalo rozpracované
                         }
                         break;
                     case CompressionMode.ZipStreamOptimal:
@@ -5683,12 +5719,12 @@ namespace Noris.Clients.Win.Components.AsolDX
                     default:
                         using (var compressor = new System.IO.Compression.GZipStream(inputZip, System.IO.Compression.CompressionMode.Decompress))
                         {
-                            compressor.CopyTo(outputData);             // Kompresor je napojený na vstupní ZIP data, dekomprimujeme je do výstupního čitelého streamu
-                            compressor.Close();                        // Z kompresoru vymačkám to, co tam zůstalo rozpracované
+                            compressor.CopyTo(outputData);           // Kompresor je napojený na vstupní ZIP data, dekomprimujeme je do výstupního čitelého streamu
+                            compressor.Close();                      // Z kompresoru vymačkám to, co tam zůstalo rozpracované
                         }
                         break;
                 }
-                data = outputData.ToArray();               // Přečtu čitelná data do bufferu a je to
+                data = outputData.ToArray();                         // Přečtu čitelná data do bufferu a je to
             }
             return data;
         }
