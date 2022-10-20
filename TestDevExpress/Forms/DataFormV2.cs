@@ -118,11 +118,23 @@ namespace TestDevExpress.Forms
 
             string imageTest = "svgimages/xaf/actiongroup_easytestrecorder.svg";
             group = new DataRibbonGroup() { GroupText = "VZORKY" };
+            string radioGroupName = "SamplesGroup";
             page.Groups.Add(group);
-            group.Items.Add(new DataRibbonItem() { ItemId = "CreateSample1", Text = "Ukázka 1", ImageName = imageTest, Tag = "Sample1", Enabled = true });
-            group.Items.Add(new DataRibbonItem() { ItemId = "CreateSample2", Text = "Ukázka 2", ImageName = imageTest, Tag = "Sample2", Enabled = true });
-            group.Items.Add(new DataRibbonItem() { ItemId = "CreateSample3", Text = "Ukázka 3", ImageName = imageTest, Tag = "Sample3", Enabled = true });
-            group.Items.Add(new DataRibbonItem() { ItemId = "CreateSample4", Text = "Ukázka 4", ImageName = imageTest, Tag = "Sample4", Enabled = true });
+            group.Items.Add(new DataRibbonItem() { ItemId = "CreateSample1", Text = "Ukázka 1", ImageName = imageTest, Tag = "Sample1", ItemType = RibbonItemType.CheckButton, RadioButtonGroupName = radioGroupName });
+            group.Items.Add(new DataRibbonItem() { ItemId = "CreateSample2", Text = "Ukázka 2", ImageName = imageTest, Tag = "Sample2", ItemType = RibbonItemType.CheckButton, RadioButtonGroupName = radioGroupName });
+            group.Items.Add(new DataRibbonItem() { ItemId = "CreateSample3", Text = "Ukázka 3", ImageName = imageTest, Tag = "Sample3", ItemType = RibbonItemType.CheckButton, RadioButtonGroupName = radioGroupName });
+            group.Items.Add(new DataRibbonItem() { ItemId = "CreateSample4", Text = "Ukázka 4", ImageName = imageTest, Tag = "Sample4", ItemType = RibbonItemType.CheckButton, RadioButtonGroupName = radioGroupName });
+
+            string formTest1 = "svgimages/spreadsheet/showoutlineformpivottable.svg";
+            string formTest2 = "svgimages/spreadsheet/showtabularformpivottable.svg";
+            string formTest3 = "svgimages/diagramicons/format/format1.svg";
+            string formTest4 = "svgimages/spreadsheet/showcompactformpivottable.svg";
+
+
+            group.Items.Add(new DataRibbonItem() { ItemId = "CreateSample101", Text = "Formulář 1", ImageName = formTest2, Tag = "Formulář 1", ItemType = RibbonItemType.CheckButton, RadioButtonGroupName = radioGroupName, ItemIsFirstInGroup = true });
+            group.Items.Add(new DataRibbonItem() { ItemId = "CreateSample102", Text = "Formulář 2", ImageName = formTest1, Tag = "Formulář 2", ItemType = RibbonItemType.CheckButton, RadioButtonGroupName = radioGroupName });
+            group.Items.Add(new DataRibbonItem() { ItemId = "CreateSample103", Text = "Formulář 3", ImageName = formTest1, Tag = "Formulář 3", ItemType = RibbonItemType.CheckButton, RadioButtonGroupName = radioGroupName });
+            group.Items.Add(new DataRibbonItem() { ItemId = "CreateSample104", Text = "Formulář 4", ImageName = formTest1, Tag = "Formulář 4", ItemType = RibbonItemType.CheckButton, RadioButtonGroupName = radioGroupName });
 
             /*
             string imageTestRefresh = "svgimages/spreadsheet/refreshpivottable.svg";
@@ -202,6 +214,18 @@ namespace TestDevExpress.Forms
                     break;
                 case "CreateSample4":
                     _AddDataFormSample(40);
+                    break;
+                case "CreateSample101":
+                    _AddDataFormSample(101);
+                    break;
+                case "CreateSample102":
+                    _AddDataFormSample(102);
+                    break;
+                case "CreateSample103":
+                    _AddDataFormSample(103);
+                    break;
+                case "CreateSample104":
+                    _AddDataFormSample(104);
                     break;
                 default:
                     DxComponent.LogClear();
@@ -319,11 +343,13 @@ namespace TestDevExpress.Forms
         }
         private void _AddDataFormSample(int sampleId)
         {
-            if (!Noris.Clients.Win.Components.AsolDX.DataForm.DxDataFormSamples.AllowedSampled(sampleId)) return;
+            if (!TestDevExpress.Components.DxDataFormSamples.AllowedSampled(sampleId)) return;
 
 
-            string[] texts = Random.GetSentencesArray(1, 3, 160, 320, false);
-            string[] tooltips = Random.GetSentencesArray(7, 16, 300, 500, true);
+            string[] texts = Randomizer.GetSentencesArray(1, 3, 160, 320, false);
+            string[] tooltips = Randomizer.GetSentencesArray(7, 16, 300, 500, true);
+
+            _RemoveDataForms();
 
             long startTime = DxComponent.LogTimeCurrent;
             _DxShowTimeStart = DateTime.Now;               // Určení času End a času Elapsed proběhne v DxDataForm_GotFocus
@@ -343,9 +369,9 @@ namespace TestDevExpress.Forms
             }
 
             startTime = DxComponent.LogTimeCurrent;
-            dataForm.Pages = Noris.Clients.Win.Components.AsolDX.DataForm.DxDataFormSamples.CreateSampleDefinition(sampleId, texts, tooltips);
+            dataForm.Form = TestDevExpress.Components.DxDataFormSamples.CreateSampleDefinition(sampleId, texts, tooltips);
             int rowCount = (sampleId == 40 ? 200 : 1);
-            dataForm.Data.Source = this.CreateDataSource(rowCount, dataForm.Pages);
+            dataForm.Data.Source = this.CreateDataSource(rowCount, dataForm.Form);
             _DxTestPanel.Controls.Add(dataForm);
 
             _DoLayoutAnyDataForm();
@@ -376,9 +402,9 @@ namespace TestDevExpress.Forms
             _DxShowTimeStart = DateTime.Now;               // Určení času End a času Elapsed proběhne v DxDataForm_GotFocus
             _DxShowTimeSpan = null;
             DxDataForm dataForm = new DxDataForm();
-            string[] texts = Random.GetSentencesArray(1, 3, 120, 240, false);
-            string[] tooltips = Random.GetSentencesArray(7, 16, 120, 240, true);
-            dataForm.Pages = Noris.Clients.Win.Components.AsolDX.DataForm.DxDataFormSamples.CreateSampleDefinition(10, texts, tooltips);
+            string[] texts = Randomizer.GetSentencesArray(1, 3, 120, 240, false);
+            string[] tooltips = Randomizer.GetSentencesArray(7, 16, 120, 240, true);
+            dataForm.Form = TestDevExpress.Components.DxDataFormSamples.CreateSampleDefinition(10, texts, tooltips);
             dataForm.GotFocus += DxDataForm_GotFocus;
 
             _DxDataFormV2 = dataForm;
@@ -443,13 +469,17 @@ namespace TestDevExpress.Forms
         /// Metoda vytvoří datovou tabulku s daty pro daný layout
         /// </summary>
         /// <param name="rowCount"></param>
-        /// <param name="pages"></param>
+        /// <param name="form"></param>
         /// <returns></returns>
-        private object CreateDataSource(int rowCount, IEnumerable<IDataFormPage> pages)
+        private object CreateDataSource(int rowCount, Noris.Clients.Win.Components.AsolDX.DataForm.IDataForm form)
         {
             System.Data.DataTable dataTable = new System.Data.DataTable();
 
-            var items = pages.SelectMany(p => p.Groups).SelectMany(g => g.Items).OfType<DataFormColumn>().ToArray();
+            var items = form.Pages
+                        .SelectMany(p => p.Groups)
+                        .SelectMany(g => g.Items)
+                        .OfType<Noris.Clients.Win.Components.AsolDX.DataForm.DataFormColumn>()
+                        .ToArray();
             int c = 0;
             foreach (var item in items)
             {
@@ -464,7 +494,7 @@ namespace TestDevExpress.Forms
             {
                 object[] cells = new object[columnCount];
                 for (int columnIndex = 0; columnIndex < columnCount; columnIndex++)
-                    cells[columnIndex] = Random.GetSentence(1, 4);
+                    cells[columnIndex] = Randomizer.GetSentence(1, 4);
                 dataTable.Rows.Add(cells);
             }
 

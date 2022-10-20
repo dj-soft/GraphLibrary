@@ -12,7 +12,7 @@ namespace TestDevExpress
     /// <summary>
     /// Generátor náhodných textů
     /// </summary>
-    public class Random
+    public class Randomizer
     {
         #region Náhodné slovo, věta, odstavec
         /// <summary>

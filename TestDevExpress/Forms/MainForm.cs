@@ -1880,9 +1880,9 @@ namespace TestDevExpress.Forms
                 pages.Add(new DataPageItem()
                 {
                     ItemId = "Id" + index.ToString(),
-                    Text = (index + 1).ToString() + ". " + Random.GetWord(true) + (closeButtonVisible ? " ×" : ""),
-                    ToolTipText = Random.GetSentences(1, 8, 1, 6),
-                    ImageName = Random.GetItem(_XtraTabImages),
+                    Text = (index + 1).ToString() + ". " + Randomizer.GetWord(true) + (closeButtonVisible ? " ×" : ""),
+                    ToolTipText = Randomizer.GetSentences(1, 8, 1, 6),
+                    ImageName = Randomizer.GetItem(_XtraTabImages),
                     CloseButtonVisible = closeButtonVisible
                 });
                 index++;
@@ -1914,9 +1914,9 @@ namespace TestDevExpress.Forms
         private void _TabHeaders_SelectedIPageChanging(object sender, TEventCancelArgs<IPageItem> e)
         {
             string suffix = "";
-            if (Random.IsTrue(60))
+            if (Randomizer.IsTrue(60))
             {
-                if (Random.IsTrue(30))
+                if (Randomizer.IsTrue(30))
                 {
                     suffix = ";   Cancelled!";
                 }
@@ -1944,7 +1944,7 @@ namespace TestDevExpress.Forms
         private void TabHeader_IPageClosing(object sender, TEventCancelArgs<IPageItem> e)
         {
             string suffix = "";
-            if (Random.IsTrue(60))
+            if (Randomizer.IsTrue(60))
             {
                 suffix = ";   Cancelled";
                 e.Cancel = true;
@@ -2857,28 +2857,28 @@ namespace TestDevExpress.Forms
         {
             public AnimationPoint(Rectangle bounds)
             {
-                int w = Random.Rand.Next(16, 64);
-                int h = Random.Rand.Next(16, 64);
-                int x = Random.Rand.Next(8, bounds.Width - w - 8);
-                int y = Random.Rand.Next(8, bounds.Height - h - 8);
+                int w = Randomizer.Rand.Next(16, 64);
+                int h = Randomizer.Rand.Next(16, 64);
+                int x = Randomizer.Rand.Next(8, bounds.Width - w - 8);
+                int y = Randomizer.Rand.Next(8, bounds.Height - h - 8);
                 Bounds = new Rectangle(x, y, w, h);
 
-                int r = Random.Rand.Next(32, 224);
-                int g = Random.Rand.Next(32, 224);
-                int b = Random.Rand.Next(32, 224);
+                int r = Randomizer.Rand.Next(32, 224);
+                int g = Randomizer.Rand.Next(32, 224);
+                int b = Randomizer.Rand.Next(32, 224);
                 Color = Color.FromArgb(r, g, b);
             }
             public AnimationPoint(Rectangle bounds, Point center)
             {
-                int w = Random.Rand.Next(16, 64);
-                int h = Random.Rand.Next(16, 64);
+                int w = Randomizer.Rand.Next(16, 64);
+                int h = Randomizer.Rand.Next(16, 64);
                 int x = center.X - (w / 2);
                 int y = center.Y - (h / 2);
                 Bounds = new Rectangle(x, y, w, h);
 
-                int r = Random.Rand.Next(32, 224);
-                int g = Random.Rand.Next(32, 224);
-                int b = Random.Rand.Next(32, 224);
+                int r = Randomizer.Rand.Next(32, 224);
+                int g = Randomizer.Rand.Next(32, 224);
+                int b = Randomizer.Rand.Next(32, 224);
                 Color = Color.FromArgb(r, g, b);
             }
             public Rectangle Bounds;
@@ -3047,10 +3047,10 @@ namespace TestDevExpress.Forms
         private void _MsgShowDialogOKClick(object sender, EventArgs args)
         {
             NWC.DialogArgs dialogArgs = new NWC.DialogArgs();
-            dialogArgs.Title = "Dialog [OK]; " + Random.GetSentences(3, 7, 4, 6);
+            dialogArgs.Title = "Dialog [OK]; " + Randomizer.GetSentences(3, 7, 4, 6);
             dialogArgs.SystemIcon = NWC.DialogSystemIcon.Information;
             dialogArgs.PrepareButtons(DialogResult.OK);
-            dialogArgs.MessageText = Random.GetSentences(4, 8, 3, 12);
+            dialogArgs.MessageText = Randomizer.GetSentences(4, 8, 3, 12);
 
             DialogForm(dialogArgs);
         }
@@ -3113,7 +3113,7 @@ namespace TestDevExpress.Forms
             dialogArgs.Title = "Dialog Yes/No";
             dialogArgs.StatusBarVisible = true;
             dialogArgs.SystemIcon = NWC.DialogSystemIcon.Question;
-            dialogArgs.MessageText = "Přejete si další chod k obědu?" + Environment.NewLine + Random.GetSentences(4, 8, 3, 12);
+            dialogArgs.MessageText = "Přejete si další chod k obědu?" + Environment.NewLine + Randomizer.GetSentences(4, 8, 3, 12);
             dialogArgs.PrepareButtons(DialogResult.Yes, DialogResult.No);
             dialogArgs.IconFile = "Quest";
             dialogArgs.Buttons[0].ImageFile = "Yes";
@@ -3128,7 +3128,7 @@ namespace TestDevExpress.Forms
             dialogArgs.Title = "Dialog Yes/No / Right";
             dialogArgs.StatusBarVisible = true;
             dialogArgs.SystemIcon = NWC.DialogSystemIcon.Question;
-            dialogArgs.MessageText = "Přejete si další chod k obědu?" + Environment.NewLine + Random.GetSentences(4, 8, 3, 12);
+            dialogArgs.MessageText = "Přejete si další chod k obědu?" + Environment.NewLine + Randomizer.GetSentences(4, 8, 3, 12);
             dialogArgs.MessageHorizontalAlignment = AlignContentToSide.End;
             dialogArgs.MessageVerticalAlignment = AlignContentToSide.Center;
             dialogArgs.PrepareButtons(DialogResult.Yes, DialogResult.No);
@@ -3144,7 +3144,7 @@ namespace TestDevExpress.Forms
             dialogArgs.Title = "Dialog Abort/Retry/Ignore";
             dialogArgs.StatusBarVisible = true;
             dialogArgs.SystemIcon = NWC.DialogSystemIcon.Error;
-            dialogArgs.MessageText = "Došlo k chybě. Můžete zrušit celou akci, nebo zopakovat pokus, anebo tuto chybu ignorovat a pokračovat dál..." + Environment.NewLine + Random.GetSentences(4, 8, 3, 12);
+            dialogArgs.MessageText = "Došlo k chybě. Můžete zrušit celou akci, nebo zopakovat pokus, anebo tuto chybu ignorovat a pokračovat dál..." + Environment.NewLine + Randomizer.GetSentences(4, 8, 3, 12);
             dialogArgs.PrepareButtons(DialogResult.Abort, DialogResult.Retry, DialogResult.Ignore);
             dialogArgs.Buttons[2].IsInitialButton = true;
             dialogArgs.StatusBarCtrlCVisible = true;
@@ -3157,7 +3157,7 @@ namespace TestDevExpress.Forms
             dialogArgs.Title = "Dialog Abort/Retry/Ignore / RightRight";
             dialogArgs.StatusBarVisible = true;
             dialogArgs.SystemIcon = NWC.DialogSystemIcon.Exclamation;
-            dialogArgs.MessageText = "Došlo k chybě. Můžete zrušit celou akci, nebo zopakovat pokus, anebo tuto chybu ignorovat a pokračovat dál..." + Environment.NewLine + Random.GetSentences(4, 9, 8, 20);
+            dialogArgs.MessageText = "Došlo k chybě. Můžete zrušit celou akci, nebo zopakovat pokus, anebo tuto chybu ignorovat a pokračovat dál..." + Environment.NewLine + Randomizer.GetSentences(4, 9, 8, 20);
             dialogArgs.MessageHorizontalAlignment = AlignContentToSide.End;
             dialogArgs.MessageVerticalAlignment = AlignContentToSide.End;
             dialogArgs.PrepareButtons(DialogResult.Abort, DialogResult.Retry, DialogResult.Ignore);
@@ -3173,7 +3173,7 @@ namespace TestDevExpress.Forms
             dialogArgs.Title = "Dialog Abort/Retry/Ignore / TopRight";
             dialogArgs.StatusBarVisible = true;
             dialogArgs.SystemIcon = NWC.DialogSystemIcon.Hand;
-            dialogArgs.MessageText = "Došlo k chybě. Můžete zrušit celou akci, nebo zopakovat pokus, anebo tuto chybu ignorovat a pokračovat dál..." + Environment.NewLine + Random.GetSentences(4, 9, 8, 20);
+            dialogArgs.MessageText = "Došlo k chybě. Můžete zrušit celou akci, nebo zopakovat pokus, anebo tuto chybu ignorovat a pokračovat dál..." + Environment.NewLine + Randomizer.GetSentences(4, 9, 8, 20);
             dialogArgs.PrepareButtons(DialogResult.Abort, DialogResult.Retry, DialogResult.Ignore);
             dialogArgs.ButtonPanelDock = DockStyle.Right;
             dialogArgs.ButtonsAlignment = AlignContentToSide.Begin;
@@ -3212,7 +3212,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
             dialogArgs.Title = "Dialog [OK] ExtraLong";
             dialogArgs.StatusBarVisible = true;
             dialogArgs.SystemIcon = NWC.DialogSystemIcon.Information;
-            dialogArgs.MessageText = Random.Text_TaborSvatych;
+            dialogArgs.MessageText = Randomizer.Text_TaborSvatych;
             dialogArgs.PrepareButtons(DialogResult.OK, DialogResult.No);
             dialogArgs.ButtonsAlignment = AlignContentToSide.Center;
             dialogArgs.ButtonHeight = 26;
@@ -3423,8 +3423,8 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
         private void _MsgOpenShowForm(string subTitle, bool topMost, bool asModal)
         {
             Rectangle bounds = GetRandomRectangle();
-            string caption = Random.GetSentence(2, 5) + subTitle;
-            string text = Random.GetSentences(4, 8, 3, 12);
+            string caption = Randomizer.GetSentence(2, 5) + subTitle;
+            string text = Randomizer.GetSentences(4, 8, 3, 12);
             DevExpress.XtraEditors.XtraForm form = new DevExpress.XtraEditors.XtraForm() { Bounds = bounds, Text = caption, TopMost = topMost, ShowInTaskbar = topMost };
             Label label = new Label() { Text = text, Name = "Label", AutoSize = false, Bounds = new Rectangle(12, 9, bounds.Width - 28, bounds.Height - 30), Font = SystemFonts.DialogFont };
             form.Controls.Add(label);
@@ -3569,7 +3569,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
             List<Tuple<string, int>> tokens = new List<Tuple<string, int>>();
             for (int n = 0; n < count; n++)
             {
-                string text = Random.GetSentence(1, 4, false);
+                string text = Randomizer.GetSentence(1, 4, false);
                 tokens.Add(new Tuple<string, int>(text, n));
             }
             return tokens;
@@ -3609,7 +3609,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
             List<DevExpress.XtraEditors.TokenEditToken> tokens = new List<DevExpress.XtraEditors.TokenEditToken>();
             for (int n = 0; n < count; n++)
             {
-                string text = Random.GetSentence(1, 4, false);
+                string text = Randomizer.GetSentence(1, 4, false);
                 tokens.Add(new DevExpress.XtraEditors.TokenEditToken(text, n));
             }
             return tokens;
@@ -3847,7 +3847,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
         }
         private void CreateTreeViewComponents()
         {
-            bool useSvg = (Random.IsTrue(40));
+            bool useSvg = (Randomizer.IsTrue(40));
             _TreeListImageType = (useSvg ? ResourceContentType.Vector : ResourceContentType.Bitmap);
 
             _TreeListImageType = ResourceContentType.Vector;
@@ -4049,7 +4049,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
             }
 
             // Vytvoříme ChildNodes a zobrazíme je:
-            bool empty = (Random.Rand.Next(10) > 7);
+            bool empty = (Randomizer.Rand.Next(10) > 7);
             var nodes = _CreateSampleChilds(parentNodeId, ItemCountType.Standard);       // A pak vyrobíme Child nody
             _AddLogLine($"Načtena data: {nodes.Count} prvků.");
             _TreeList.AddLazyLoadNodes(parentNodeId, nodes);            //  a pošleme je do TreeView.
@@ -4192,12 +4192,12 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
             int rootCount = GetItemCount(countType, false);
             for (int r = 0; r < rootCount; r++)
             {
-                bool isLazy = (Random.Rand.Next(10) >= 5);
-                bool addChilds = !isLazy && (Random.Rand.Next(10) >= 3);
-                bool isExpanded = (addChilds && (Random.Rand.Next(10) >= 2));
+                bool isLazy = (Randomizer.Rand.Next(10) >= 5);
+                bool addChilds = !isLazy && (Randomizer.Rand.Next(10) >= 3);
+                bool isExpanded = (addChilds && (Randomizer.Rand.Next(10) >= 2));
 
                 string rootKey = "R." + (++_InternalNodeId).ToString();
-                string text = Random.GetSentence(2, 5) + (isLazy ? " ..." : "");
+                string text = Randomizer.GetSentence(2, 5) + (isLazy ? " ..." : "");
                 FontStyle fontStyleDelta = FontStyle.Bold;
                 DataTreeListNode rootNode = new DataTreeListNode(rootKey, null, text, nodeType: NodeItemType.DefaultText, expanded: isExpanded, lazyExpandable: isLazy, fontStyleDelta: fontStyleDelta);
                 // Node v první úrovni: LazyLoad má MainClick = RunEvent, a naplněný node má MainClick = Expand/Collapse:
@@ -4217,8 +4217,8 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
             var newPosition = _NewNodePosition;
             int childCount = GetItemCount(countType, true);
             int lastIndex = childCount - 1;
-            bool addEditable = canAddEditable && (Random.Rand.Next(20) >= 8);
-            bool addShowNext = canAddShowNext && (childCount < 25 && (Random.Rand.Next(20) >= 4));
+            bool addEditable = canAddEditable && (Randomizer.Rand.Next(20) >= 8);
+            bool addShowNext = canAddShowNext && (childCount < 25 && (Randomizer.Rand.Next(20) >= 4));
             if (addEditable) childCount++;
             for (int c = 0; c < childCount; c++)
             {
@@ -4257,10 +4257,10 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
                     childNode.ImageDynamicDefault = "move_task_down_16";
                     break;
                 case NodeItemType.DefaultText:
-                    text = Random.GetSentence(2, 5);
+                    text = Randomizer.GetSentence(2, 5);
                     childNode = new DataTreeListNode(childKey, parentKey, text, nodeType: nodeType, canEdit: true, canDelete: true);
                     childNode.CanCheck = true;
-                    childNode.Checked = (Random.Rand.Next(20) > 16);
+                    childNode.Checked = (Randomizer.Rand.Next(20) > 16);
                     _FillNode(childNode);
                     break;
             }
@@ -4279,15 +4279,15 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
                 node.ImageName = this.GetRandomBallImageName();
 
             node.ToolTipTitle = null; // RandomText.GetRandomSentence(2, 5);
-            node.ToolTipText = Random.GetSentence(10, 50);
+            node.ToolTipText = Randomizer.GetSentence(10, 50);
         }
         private int GetItemCount(ItemCountType countType, bool forChilds)
         {
             switch (countType)
             {
                 case ItemCountType.Empty: return 0;
-                case ItemCountType.Standard: return (forChilds ? Random.Rand.Next(1, 12) : Random.Rand.Next(10, 30));
-                case ItemCountType.Big: return (forChilds ? Random.Rand.Next(40, 120) : Random.Rand.Next(120, 400));
+                case ItemCountType.Standard: return (forChilds ? Randomizer.Rand.Next(1, 12) : Randomizer.Rand.Next(10, 30));
+                case ItemCountType.Big: return (forChilds ? Randomizer.Rand.Next(40, 120) : Randomizer.Rand.Next(120, 400));
             }
             return 0;
         }
@@ -4342,7 +4342,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
             _DragDropCTree.TransparentBackground = true;
 
             var nodes = _CreateSampleTreeNodes();
-            nodes.ForEachExec(n => { if (Random.IsTrue(5)) n.Selected = true; });
+            nodes.ForEachExec(n => { if (Randomizer.IsTrue(5)) n.Selected = true; });
             _DragDropCTree.AddNodes(nodes);
             
             _DragDropCTree.ShowContextMenu += _DragDropATree_ShowContextMenu;
@@ -4415,8 +4415,8 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
             List<IMenuItem> items = new List<IMenuItem>();
             for (int i = 0; i < count; i++)
             {
-                string text = Random.GetSentence(3, 6, false);
-                string toolTip = Random.GetSentences(2, 8, 1, 5);
+                string text = Randomizer.GetSentence(3, 6, false);
+                string toolTip = Randomizer.GetSentences(2, 8, 1, 5);
                 string image = this.GetRandomSysSvgName(fileTypes, chartTypes);
                 DataMenuItem item = new DataMenuItem() { Text = $"[{i}]. {text}", ToolTipTitle = text, ToolTipText = toolTip, ImageName = image };
                 items.Add(item);
@@ -4574,7 +4574,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
         }
         private int GetRandomInt(int min, int max)
         {
-            return Random.Rand.Next(min, max);
+            return Randomizer.Rand.Next(min, max);
         }
         private Size GetRandomSize()
         {
@@ -4603,7 +4603,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
         /// <returns></returns>
         private string GetRandomSvgImageName()
         {
-            return Random.GetItem(_SysSvgImages);
+            return Randomizer.GetItem(_SysSvgImages);
         }
         private string GetRandomSysSvgName(bool fileTypes = true, bool chartTypes = true)
         {
@@ -4703,16 +4703,16 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
                 });
             }
 
-            return (names.Count > 0 ? Random.GetItem<string>(names) : null);
+            return (names.Count > 0 ? Randomizer.GetItem<string>(names) : null);
         }
         private string GetRandomApplicationSvgName()
         {
             if (_ApplicationSvgNames == null)
             {
                 var names = DxComponent.GetResourceNames(".svg", true, false);
-                _ApplicationSvgNames = Random.GetItems(200, names);
+                _ApplicationSvgNames = Randomizer.GetItems(200, names);
             }
-            return Random.GetItem(_ApplicationSvgNames);
+            return Randomizer.GetItem(_ApplicationSvgNames);
         }
         string[] _ApplicationSvgNames = null;
         #endregion

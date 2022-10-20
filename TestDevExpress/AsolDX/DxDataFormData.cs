@@ -12,11 +12,58 @@ using System.Drawing;
 
 using SWF = System.Windows.Forms;
 
-namespace Noris.Clients.Win.Components.AsolDX
+namespace Noris.Clients.Win.Components.AsolDX.DataForm
 {
+    #region DataForm + interface
+    /// <summary>
+    /// Data definující jeden celý Dataform
+    /// </summary>
+    public class DataForm : IDataForm
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public DataForm()
+        {
+            Pages = new List<IDataFormPage>();
+        }
+        /// <summary>
+        /// ID dataformu
+        /// </summary>
+        public virtual string FormId { get; set; }
+        /// <summary>
+        /// Styl pozadí tohoto dataformu
+        /// </summary>
+        public virtual IDataFormBackgroundAppearance BackgroundAppearance { get; set; }
+        /// <summary>
+        /// Jednotlivé stránky dataformu
+        /// </summary>
+        public virtual List<IDataFormPage> Pages { get; set; }
+        /// <summary>prvek interface</summary>
+        IEnumerable<IDataFormPage> IDataForm.Pages { get { return this.Pages; } }
+    }
+    /// <summary>
+    /// Data definující jeden celý Dataform
+    /// </summary>
+    public interface IDataForm
+    {
+        /// <summary>
+        /// ID dataformu
+        /// </summary>
+        string FormId { get; }
+        /// <summary>
+        /// Styl pozadí tohoto dataformu
+        /// </summary>
+        IDataFormBackgroundAppearance BackgroundAppearance { get; }
+        /// <summary>
+        /// Jednotlivé stránky dataformu
+        /// </summary>
+        IEnumerable<IDataFormPage> Pages { get; }
+    }
+    #endregion
     #region DataFormPage + interface
     /// <summary>
-    /// Data definující jednu stránku v DataFormu
+    /// Data definující jednu stránku (záložku) v DataFormu
     /// </summary>
     public class DataFormPage : IDataFormPage
     {
@@ -57,10 +104,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public virtual bool AllowMerge { get; set; }
         /// <summary>
-        /// Jednotlivé prvky grupy
+        /// Styl pozadí této stránky
+        /// </summary>
+        public virtual IDataFormBackgroundAppearance BackgroundAppearance { get; set; }
+        /// <summary>
+        /// Jednotlivé grupy na záložce
         /// </summary>
         public virtual List<IDataFormGroup> Groups { get; set; }
-
         /// <summary>
         /// Text ToolTipu
         /// </summary>
@@ -74,10 +124,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public virtual string ToolTipIcon { get; set; }
         string IToolTipItem.ToolTipTitle { get { return ToolTipTitle ?? PageText; } }
+        /// <summary>prvek interface</summary>
         IEnumerable<IDataFormGroup> IDataFormPage.Groups { get { return Groups; } }
     }
     /// <summary>
-    /// Předpis požadovaných vlastností pro jednu stránku v rámci DataFormu
+    /// Předpis požadovaných vlastností pro jednu stránku (záložku) v rámci DataFormu
     /// </summary>
     public interface IDataFormPage : IToolTipItem
     {
@@ -111,7 +162,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         bool AllowMerge { get; }
         /// <summary>
-        /// Jednotlivé prvky grupy
+        /// Styl pozadí této stránky
+        /// </summary>
+        IDataFormBackgroundAppearance BackgroundAppearance { get; }
+        /// <summary>
+        /// Jednotlivé grupy na záložce
         /// </summary>
         IEnumerable<IDataFormGroup> Groups { get; }
     }
@@ -222,6 +277,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public virtual DatFormGroupLayoutMode LayoutMode { get; set; }
         /// <summary>
+        /// Styl pozadí této grupy
+        /// </summary>
+        public virtual IDataFormBackgroundAppearance BackgroundAppearance { get; set; }
+        /// <summary>
         /// Vzhled prvku - kalíšek, barvy, modifikace fontu
         /// </summary>
         public virtual IDataFormColumnAppearance Appearance { get; set; }
@@ -244,6 +303,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         public virtual string ToolTipIcon { get; set; }
 
         string IToolTipItem.ToolTipTitle { get { return ToolTipTitle ?? GroupText; } }
+        /// <summary>prvek interface</summary>
         IEnumerable<IDataFormColumn> IDataFormGroup.Items { get { return Items; } }
     }
     /// <summary>
@@ -341,7 +401,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         DatFormGroupLayoutMode LayoutMode { get; }
         /// <summary>
-        /// Vzhled prvku - kalíšek, barvy, modifikace fontu
+        /// Styl pozadí této grupy
+        /// </summary>
+        IDataFormBackgroundAppearance BackgroundAppearance { get; }
+        /// <summary>
+        /// Vzhled prvku - kalíšek, barvy, modifikace fontu. 
+        /// Určuje vzhled titulkového textu.
         /// </summary>
         IDataFormColumnAppearance Appearance { get; }
         /// <summary>
@@ -603,6 +668,11 @@ namespace Noris.Clients.Win.Components.AsolDX
     public class DataFormColumnAppearance : IDataFormColumnAppearance
     {
         /// <summary>
+        /// Název stylu (=kalíšek ve smyslu Nephrite).
+        /// Pokud je zadán, pak je použit jako druhý zdroj hodnot (prvním zdrojem jsou jednotlivé property tohoto objektu).
+        /// </summary>
+        public virtual string StyleName { get; set; }
+        /// <summary>
         /// Změna velikosti písma
         /// </summary>
         public virtual int? FontSizeDelta { get; set; }
@@ -641,6 +711,11 @@ namespace Noris.Clients.Win.Components.AsolDX
     public interface IDataFormColumnAppearance
     {
         /// <summary>
+        /// Název stylu (=kalíšek ve smyslu Nephrite).
+        /// Pokud je zadán, pak je použit jako druhý zdroj hodnot (prvním zdrojem jsou jednotlivé property tohoto objektu).
+        /// </summary>
+        string StyleName { get; }
+        /// <summary>
         /// Změna velikosti písma
         /// </summary>
         int? FontSizeDelta { get; }
@@ -678,6 +753,11 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// </summary>
     public class DataFormBackgroundAppearance : IDataFormBackgroundAppearance
     {
+        /// <summary>
+        /// Název stylu (=kalíšek ve smyslu Nephrite).
+        /// Pokud je zadán, pak je použit jako druhý zdroj hodnot (prvním zdrojem jsou jednotlivé property tohoto objektu).
+        /// </summary>
+        public virtual string StyleName { get; set; }
         /// <summary>
         /// Směr gradientu
         /// </summary>
@@ -724,6 +804,11 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// </summary>
     public interface IDataFormBackgroundAppearance
     {
+        /// <summary>
+        /// Název stylu (=kalíšek ve smyslu Nephrite).
+        /// Pokud je zadán, pak je použit jako druhý zdroj hodnot (prvním zdrojem jsou jednotlivé property tohoto objektu).
+        /// </summary>
+        string StyleName { get; }
         /// <summary>
         /// Směr gradientu
         /// </summary>

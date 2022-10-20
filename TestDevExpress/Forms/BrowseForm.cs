@@ -86,40 +86,40 @@ namespace TestDevExpress.Forms
                 case "Dx.Test.Add10":
                     TargetRowCount = 10;
                     HasAllRows = false;
-                    FillBrowse(10, Random.WordBookType.TriMuziNaToulkach);
+                    FillBrowse(10, Randomizer.WordBookType.TriMuziNaToulkach);
                     break;
                 case "Dx.Test.Add50":
                     TargetRowCount = 50;
                     HasAllRows = false;
-                    FillBrowse(20, Random.WordBookType.TriMuziNaToulkach);
+                    FillBrowse(20, Randomizer.WordBookType.TriMuziNaToulkach);
                     break;
                 case "Dx.Test.Add100":
                     TargetRowCount = 100;
                     HasAllRows = false;
-                    FillBrowse(20, Random.WordBookType.TriMuziNaToulkach);
+                    FillBrowse(20, Randomizer.WordBookType.TriMuziNaToulkach);
                     break;
                 case "Dx.Test.Add500":
                     TargetRowCount = 500;
                     HasAllRows = false;
-                    FillBrowse(50, Random.WordBookType.TriMuziNaToulkach);
+                    FillBrowse(50, Randomizer.WordBookType.TriMuziNaToulkach);
                     break;
                 case "Dx.Test.Add1k":
                     TargetRowCount = 1000;
                     HasAllRows = false;
-                    FillBrowse(200, Random.WordBookType.TriMuziNaToulkach);
+                    FillBrowse(200, Randomizer.WordBookType.TriMuziNaToulkach);
                     break;
                 case "Dx.Test.Add10k":
                     TargetRowCount = 10000;
                     HasAllRows = false;
-                    FillBrowse(200, Random.WordBookType.TriMuziNaToulkach);
+                    FillBrowse(200, Randomizer.WordBookType.TriMuziNaToulkach);
                     break;
                 case "Dx.Test.Add100k":
                     TargetRowCount = 100000;
                     HasAllRows = false;
-                    FillBrowse(200, Random.WordBookType.TaborSvatych);
+                    FillBrowse(200, Randomizer.WordBookType.TaborSvatych);
                     break;
                 case "Dx.Test.Add500k":
-                    FillBrowse(500000, Random.WordBookType.CampOfSaints);
+                    FillBrowse(500000, Randomizer.WordBookType.CampOfSaints);
                     break;
                 case "Dx.Test.BestFit":
                     BestFitBrowse();
@@ -345,7 +345,7 @@ namespace TestDevExpress.Forms
         /// </summary>
         /// <param name="rowCount"></param>
         /// <param name="wordBookType"></param>
-        private void FillBrowse(int rowCount, Random.WordBookType wordBookType = Random.WordBookType.TriMuziNaToulkach)
+        private void FillBrowse(int rowCount, Randomizer.WordBookType wordBookType = Randomizer.WordBookType.TriMuziNaToulkach)
         {
             if (rowCount <= 0)
             {
@@ -427,10 +427,10 @@ namespace TestDevExpress.Forms
             if (currCount >= 20)
             {
                 deleteCount = (currCount <= 60 ? currCount / 10 : currCount / 15);       // currCount je dozajista 20 a více. Pokud je do 60, pak deleteCount je 2 až 6; pro větší je 4 a více (1/15 = 6.66%)
-                deleteCount = Random.Rand.Next(1, deleteCount);                          // deleteCount je 1 až 10% počtu pro malé seznamy, nebo 1 až 6.66% pro velké...
+                deleteCount = Randomizer.Rand.Next(1, deleteCount);                          // deleteCount je 1 až 10% počtu pro malé seznamy, nebo 1 až 6.66% pro velké...
                 for (int i = 0; i < deleteCount; i++)
                 {
-                    int index = Random.Rand.Next(0, currCount);                          // Index řádku k vymazání
+                    int index = Randomizer.Rand.Next(0, currCount);                          // Index řádku k vymazání
                     if (!changes.ContainsKey(index))                                     // Když index ještě není použit, přidáme jej; Value NULL = odebrat
                         changes.Add(index, null);
                     else
@@ -442,10 +442,10 @@ namespace TestDevExpress.Forms
             if (currCount >= 20)
             {
                 modifyCount = (currCount <= 60 ? currCount / 10 : currCount / 15);       // currCount je dozajista 20 a více. Pokud je do 60, pak modifyCount je 2 až 6; pro větší je 4 a více (1/15 = 6.66%)
-                modifyCount = Random.Rand.Next(1, modifyCount);                          // modifyCount je 1 až 10% počtu pro malé seznamy, nebo 1 až 6.66% pro velké...
+                modifyCount = Randomizer.Rand.Next(1, modifyCount);                          // modifyCount je 1 až 10% počtu pro malé seznamy, nebo 1 až 6.66% pro velké...
                 for (int i = 0; i < modifyCount; i++)
                 {
-                    int index = Random.Rand.Next(0, currCount);                          // Index řádku k modifikování
+                    int index = Randomizer.Rand.Next(0, currCount);                          // Index řádku k modifikování
                     if (!changes.ContainsKey(index))                                     // Když index ještě není použit, přidáme jej; Value dostane ID = (index + 1)
                         changes.Add(index, _CreateDataRow(index + 1));
                     else
@@ -531,7 +531,7 @@ namespace TestDevExpress.Forms
         /// <param name="rowCount"></param>
         /// <param name="wordBookType"></param>
         /// <returns></returns>
-        private string AddDataRows(int rowCount, Random.WordBookType wordBookType = Random.WordBookType.TriMuziNaToulkach)
+        private string AddDataRows(int rowCount, Randomizer.WordBookType wordBookType = Randomizer.WordBookType.TriMuziNaToulkach)
         {
             var timeStart = DxComponent.LogTimeCurrent;
             var rows = _CreateDataRows(rowCount, wordBookType);
@@ -581,12 +581,12 @@ namespace TestDevExpress.Forms
         /// <param name="rowCount"></param>
         /// <param name="wordBookType"></param>
         /// <returns></returns>
-        private List<object[]> _CreateDataRows(int rowCount, Random.WordBookType wordBookType = Random.WordBookType.TriMuziNaToulkach)
+        private List<object[]> _CreateDataRows(int rowCount, Randomizer.WordBookType wordBookType = Randomizer.WordBookType.TriMuziNaToulkach)
         {
             List<object[]> rows = new List<object[]>();
 
-            var currWords = Random.ActiveWordBook;
-            Random.ActiveWordBook = wordBookType;
+            var currWords = Randomizer.ActiveWordBook;
+            Randomizer.ActiveWordBook = wordBookType;
 
             int? targetRowCount = this.TargetRowCount;
             int currCount = _DataSource.Rows.Count;
@@ -601,7 +601,7 @@ namespace TestDevExpress.Forms
                 rows.Add(_CreateNewDataRow());
             }
 
-            Random.ActiveWordBook = currWords;
+            Randomizer.ActiveWordBook = currWords;
 
             return rows;
         }
@@ -612,21 +612,21 @@ namespace TestDevExpress.Forms
         }
         private object[] _CreateDataRow(int rowId)
         {
-            string refer = "DL:" + Random.Rand.Next(100000, 1000000).ToString();
-            string nazev = Random.GetSentence(1, 3, false);
-            string category = Random.GetItem(Categories);
+            string refer = "DL:" + Randomizer.Rand.Next(100000, 1000000).ToString();
+            string nazev = Randomizer.GetSentence(1, 3, false);
+            string category = Randomizer.GetItem(Categories);
 
-            string status = Random.GetItem(Statuses);
-            if (Random.IsTrue(5)) status = null;                     // Testujeme i hodnotu NULL
-            else if (Random.IsTrue(4)) status = "X";                 // Testujeme i hodnotu mimo CodeTable
+            string status = Randomizer.GetItem(Statuses);
+            if (Randomizer.IsTrue(5)) status = null;                     // Testujeme i hodnotu NULL
+            else if (Randomizer.IsTrue(4)) status = "X";                 // Testujeme i hodnotu mimo CodeTable
             
-            DateTime dateInp = DateFirst.AddDays(Random.Rand.Next(0, 730));
-            DateTime dateOut = dateInp.AddDays(Random.Rand.Next(7, 90));
+            DateTime dateInp = DateFirst.AddDays(Randomizer.Rand.Next(0, 730));
+            DateTime dateOut = dateInp.AddDays(Randomizer.Rand.Next(7, 90));
             string period = dateInp.Year.ToString() + "-" + dateInp.Month.ToString("00");
-            decimal qty = (decimal)(Random.Rand.Next(10, 1000)) / 10m;
-            decimal price1 = (decimal)(Random.Rand.Next(10, 10000)) / 10m;
+            decimal qty = (decimal)(Randomizer.Rand.Next(10, 1000)) / 10m;
+            decimal price1 = (decimal)(Randomizer.Rand.Next(10, 10000)) / 10m;
             decimal priceT = qty * price1;
-            string note = Random.GetSentence(5, 9, true);
+            string note = Randomizer.GetSentence(5, 9, true);
 
             object[] row = new object[] { rowId, refer, nazev, category, status, status, period, dateInp, dateOut, qty, price1, priceT, note };
             return row;
@@ -726,7 +726,7 @@ namespace TestDevExpress.Forms
                     FillBrowse(0);
                     break;
                 case "Dx.Test.Add1k":
-                    FillBrowse(1000, Random.WordBookType.TriMuziNaToulkach);
+                    FillBrowse(1000, Randomizer.WordBookType.TriMuziNaToulkach);
                     break;
                 case "Dx.Test.BestFit":
                     BestFitBrowse();
@@ -798,7 +798,7 @@ namespace TestDevExpress.Forms
             var timeAdd = DxComponent.LogGetTimeElapsed(timeStart, DxComponent.LogTokenTimeSec);
 
             // Specify a data source:
-            string dataLog = FillData(rowCount, Random.WordBookType.TriMuziNaToulkach);
+            string dataLog = FillData(rowCount, Randomizer.WordBookType.TriMuziNaToulkach);
 
             timeStart = DxComponent.LogTimeCurrent;
             var view = grid.AvailableViews["GridView"].CreateView(grid) as DevExpress.XtraGrid.Views.Grid.GridView;
@@ -856,7 +856,7 @@ namespace TestDevExpress.Forms
         /// </summary>
         /// <param name="rowCount"></param>
         /// <param name="wordBookType"></param>
-        private void FillBrowse(int rowCount, Random.WordBookType wordBookType = Random.WordBookType.TriMuziNaToulkach)
+        private void FillBrowse(int rowCount, Randomizer.WordBookType wordBookType = Randomizer.WordBookType.TriMuziNaToulkach)
         {
             string dataLog = FillData(rowCount, wordBookType);
             StatusText = dataLog;
@@ -877,7 +877,7 @@ namespace TestDevExpress.Forms
         /// <param name="rowCount"></param>
         /// <param name="wordBookType"></param>
         /// <returns></returns>
-        private string FillData(int rowCount, Random.WordBookType wordBookType = Random.WordBookType.TriMuziNaToulkach)
+        private string FillData(int rowCount, Randomizer.WordBookType wordBookType = Randomizer.WordBookType.TriMuziNaToulkach)
         {
             return "";
 
@@ -902,10 +902,10 @@ namespace TestDevExpress.Forms
         /// <param name="rowCount"></param>
         /// <param name="wordBookType"></param>
         /// <returns></returns>
-        private System.Data.DataTable _CreateGridDataTable(int rowCount, Random.WordBookType wordBookType = Random.WordBookType.TriMuziNaToulkach)
+        private System.Data.DataTable _CreateGridDataTable(int rowCount, Randomizer.WordBookType wordBookType = Randomizer.WordBookType.TriMuziNaToulkach)
         {
-            var currWords = Random.ActiveWordBook;
-            Random.ActiveWordBook = wordBookType;
+            var currWords = Randomizer.ActiveWordBook;
+            Randomizer.ActiveWordBook = wordBookType;
 
             System.Data.DataTable table = new System.Data.DataTable();
 
@@ -930,7 +930,7 @@ namespace TestDevExpress.Forms
                 table.Rows.Add(cells);
             }
 
-            Random.ActiveWordBook = currWords;
+            Randomizer.ActiveWordBook = currWords;
 
             return table;
         }
@@ -943,16 +943,16 @@ namespace TestDevExpress.Forms
         }
         private object[] _CreateGridTableCells(int id, string[] categories, DateTime dateBase)
         {
-            string refer = "DL:" + Random.Rand.Next(100000, 1000000).ToString();
-            string nazev = Random.GetSentence(1, 3, false);
-            string category = Random.GetItem(categories);
-            DateTime dateInp = dateBase.AddDays(Random.Rand.Next(0, 730));
-            DateTime dateOut = dateInp.AddDays(Random.Rand.Next(7, 90));
+            string refer = "DL:" + Randomizer.Rand.Next(100000, 1000000).ToString();
+            string nazev = Randomizer.GetSentence(1, 3, false);
+            string category = Randomizer.GetItem(categories);
+            DateTime dateInp = dateBase.AddDays(Randomizer.Rand.Next(0, 730));
+            DateTime dateOut = dateInp.AddDays(Randomizer.Rand.Next(7, 90));
             string period = dateInp.Year.ToString() + "-" + dateInp.Month.ToString("00");
-            decimal qty = (decimal)(Random.Rand.Next(10, 1000)) / 10m;
-            decimal price1 = (decimal)(Random.Rand.Next(10, 10000)) / 10m;
+            decimal qty = (decimal)(Randomizer.Rand.Next(10, 1000)) / 10m;
+            decimal price1 = (decimal)(Randomizer.Rand.Next(10, 10000)) / 10m;
             decimal priceT = qty * price1;
-            string note = Random.GetSentence(5, 9, true);
+            string note = Randomizer.GetSentence(5, 9, true);
             return new object[] { id, refer, nazev, category, period, dateInp, dateOut, qty, price1, priceT, note };
         }
         #endregion

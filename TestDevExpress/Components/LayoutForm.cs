@@ -53,7 +53,7 @@ namespace TestDevExpress.Components
             _SetLayout5Button = DxComponent.CreateDxSimpleButton(980, 6, 150, 37, _FunctionPanel, "Set Void Layout", _SetLayout5ButtonClick, toolTipText: "Vloží fixní layout obsahující i prázdné panely");
 
             var resourcesSvg = DxComponent.GetResourceNames(".svg", true, false);
-            _ImageNames = Random.GetItems(36, resourcesSvg);
+            _ImageNames = Randomizer.GetItems(36, resourcesSvg);
 
             Rectangle monitorBounds = System.Windows.Forms.Screen.PrimaryScreen.WorkingArea;
             Rectangle formBounds = new Rectangle(monitorBounds.X + monitorBounds.Width * 1 / 10, monitorBounds.Y + monitorBounds.Height * 1 / 10, monitorBounds.Width * 8 / 10, monitorBounds.Height * 8 / 10);
@@ -278,26 +278,26 @@ namespace TestDevExpress.Components
             int count = layoutsItem.Length;
             if (count > 0)
             {
-                DxLayoutItemInfo layoutItem = Random.GetItem(layoutsItem);
+                DxLayoutItemInfo layoutItem = Randomizer.GetItem(layoutsItem);
                 if (layoutItem != null)
                 {
                     if (layoutItem.UserControl is LayoutTestPanel testPanel)
                     {
-                        if (Random.IsTrue(70))
+                        if (Randomizer.IsTrue(70))
                         {   // 70% prvků bude mít náhodný textový suffix:
                             string title = testPanel.TitleTextBasic;
-                            string appendix = Random.GetSentence(2, 5, false);
+                            string appendix = Randomizer.GetSentence(2, 5, false);
                             title = title + " (" + appendix + ")";
                             testPanel.TitleText = title;              // Set => Event => DxLayout eventhandler
                         }
 
-                        if (Random.IsTrue(20))
+                        if (Randomizer.IsTrue(20))
                         {   // 20% prvků bude mít náhodně změněnou ikonu:
                             testPanel.TitleImageName = _GetIconName();
                         }
                     }
 
-                    this._Timer.Interval = Random.Rand.Next(700, 3200);
+                    this._Timer.Interval = Randomizer.Rand.Next(700, 3200);
                 }
             }
 
@@ -313,22 +313,22 @@ namespace TestDevExpress.Components
         {
             testPanel.TitleImageName = _GetIconName();
 
-            if (Random.IsTrue(40))
+            if (Randomizer.IsTrue(40))
             {   // 40% prvků bude mít podtržení:
                 Color lineColor = Color.FromArgb(255, 255, 32);
-                if (Random.IsTrue(20))
+                if (Randomizer.IsTrue(20))
                     // 20% z nich bude mít náhodnou barvu podtržení:
-                    lineColor = Random.GetColor(48, 160);
+                    lineColor = Randomizer.GetColor(48, 160);
                 testPanel.LineColor = Color.FromArgb(160, lineColor);
                 testPanel.LineColorEnd = Color.FromArgb(12, lineColor);
                 testPanel.LineWidth = 4;
             }
 
-            if (Random.IsTrue(40))
+            if (Randomizer.IsTrue(40))
             {   // 40% prvků bude mít BackColor:
-                Color backColor = Random.GetColor(64, 256);
+                Color backColor = Randomizer.GetColor(64, 256);
                 testPanel.TitleBackColor = Color.FromArgb(160, backColor);
-                if (Random.IsTrue(40))
+                if (Randomizer.IsTrue(40))
                     // 40% z nich bude mít fadeout:
                     testPanel.TitleBackColorEnd = Color.FromArgb(0, backColor);
             }
@@ -336,7 +336,7 @@ namespace TestDevExpress.Components
 
         private string _GetIconName()
         {
-            return Random.GetItem(_ImageNames);
+            return Randomizer.GetItem(_ImageNames);
         }
         /// <summary>
         /// Chtěl bych zavřít formulář
@@ -490,7 +490,7 @@ namespace TestDevExpress.Components
             _AddLeftButton = CreateDxButton("Otevřít další VLEVO", LayoutPosition.Left);
             _AddTopButton = CreateDxButton("Otevřít další NAHOŘE", LayoutPosition.Top);
 
-            this.BackColorUser = Random.GetColor(64, 256, 64);
+            this.BackColorUser = Randomizer.GetColor(64, 256, 64);
 
             MouseActivityInit();
         }

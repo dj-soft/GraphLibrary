@@ -156,7 +156,7 @@ namespace TestDevExpress.Forms
         private BarItem CreateItem(int groupIndex, int itemIndex)
         {
             string suffix = (this.Ribbon.Items.Count + 1).ToString();
-            string svgImage = Random.GetItem(SvgImages);
+            string svgImage = Randomizer.GetItem(SvgImages);
             string text = "Button " + suffix;
             int it = (groupIndex % 5);
             switch (it)
@@ -260,7 +260,7 @@ namespace TestDevExpress.Forms
                 for (int i = 0; i < itemCount; i++)
                 {
                     text = "Button " + (++_ItemCount).ToString();
-                    string svgImage = Random.GetItem(SvgImages);
+                    string svgImage = Randomizer.GetItem(SvgImages);
                     BarItem item = this.Ribbon.Items.CreateButton(text);
                     item.RibbonStyle = DevExpress.XtraBars.Ribbon.RibbonItemStyles.Large;
                     item.ImageOptions.SvgImage = DxComponent.CreateVectorImage(svgImage);
@@ -393,7 +393,7 @@ namespace TestDevExpress.Forms
         {
             string suffix = (++_ItemCount).ToString();
             string text = $"Item {suffix}";
-            string svgImage = Random.GetItem(SvgImages);
+            string svgImage = Randomizer.GetItem(SvgImages);
             int it = groupIndex % 5;
             switch (it)
             {

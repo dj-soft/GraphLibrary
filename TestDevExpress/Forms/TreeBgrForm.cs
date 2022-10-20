@@ -85,26 +85,26 @@ namespace TestDevExpress.Forms
         private void AddTreeNodes(List<ITreeListNode> treeNodes, int level, string parentNodeId)
         {
             if (level > 3) return;
-            int nodesCount = Random.Rand.Next((12 - 3 * level), (35 - 10 * level));           // Počet nodů v této úrovni: Level 0 (=Root) má rozsah { 12 - 35 }; Level 3 (=poslední) má rozsah { 3 - 5 }
-            int subNodesRatio = Random.Rand.Next((50 / (level + 5)), (100 / (level + 3)));    // Procento pravděpodobnosti, že Node bude mít svoje SubNodes (Level 0: 10-33; Level 1: 8-25 Level 3: 6-11)
+            int nodesCount = Randomizer.Rand.Next((12 - 3 * level), (35 - 10 * level));           // Počet nodů v této úrovni: Level 0 (=Root) má rozsah { 12 - 35 }; Level 3 (=poslední) má rozsah { 3 - 5 }
+            int subNodesRatio = Randomizer.Rand.Next((50 / (level + 5)), (100 / (level + 3)));    // Procento pravděpodobnosti, že Node bude mít svoje SubNodes (Level 0: 10-33; Level 1: 8-25 Level 3: 6-11)
             for (int i = 0; i < nodesCount; i++)
             {
                 string nodeId = $"id{((treeNodes.Count + 1000000).ToString())}";
                 ITreeListNode treeNode = CreateOneNode(level, nodeId, parentNodeId);
                 treeNodes.Add(treeNode);
 
-                if (Random.IsTrue(subNodesRatio))
+                if (Randomizer.IsTrue(subNodesRatio))
                     AddTreeNodes(treeNodes, level + 1, treeNode.ItemId);
             }
         }
         private ITreeListNode CreateOneNode(int level, string nodeId, string parentNodeId)
         {
-            string text = Random.GetSentence(2, 5);
+            string text = Randomizer.GetSentence(2, 5);
             string title = text;
-            string tool = Random.GetSentences(5, 9, 2, 6);
-            string image = Random.GetItem(_Images);
+            string tool = Randomizer.GetSentences(5, 9, 2, 6);
+            string image = Randomizer.GetItem(_Images);
             NodeItemType nodeType = NodeItemType.DefaultText;
-            bool expanded = Random.IsTrue(20);
+            bool expanded = Randomizer.IsTrue(20);
 
             DataTreeListNode node = new DataTreeListNode(nodeId, parentNodeId, text, nodeType, false, false, expanded, false, image, image, image, title, tool);
             node.Tag = text;
@@ -136,9 +136,9 @@ namespace TestDevExpress.Forms
         /// </summary>
         private void PrepareImages()
         {
-            bool isSvg = Random.IsTrue(40);
+            bool isSvg = Randomizer.IsTrue(40);
             var names = DxComponent.GetResourceNames(isSvg ? ".svg" : ".png", true, false);
-            _Images = Random.GetItems(200, names);
+            _Images = Randomizer.GetItems(200, names);
             _TreeList.NodeImageType = (isSvg ? ResourceContentType.Vector : ResourceContentType.Bitmap);
         }
         private List<ITreeListNode> _TreeNodes;
@@ -189,13 +189,13 @@ namespace TestDevExpress.Forms
         {
             if (iNode is DataTreeListNode node)
             {
-                string image = Random.GetItem(_Images);
+                string image = Randomizer.GetItem(_Images);
                 node.Text = (node.Tag as string) + suffix;
                 node.ImageName = image;
                 node.ImageDynamicDefault = image;
                 node.ImageDynamicSelected = image;
 
-                int delay = Random.Rand.Next(10, 150);
+                int delay = Randomizer.Rand.Next(10, 150);
                 System.Threading.Thread.Sleep(delay);
                 
                 ApplyTreeNodes(true, true);

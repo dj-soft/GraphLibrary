@@ -148,7 +148,7 @@ namespace TestDevExpress.Forms
             {
                 if (group.Items.Count >= count) break;
                 string name = System.IO.Path.GetFileNameWithoutExtension(resource.Replace("/", "\\"));
-                bool enabled = Random.IsTrue(75);
+                bool enabled = Randomizer.IsTrue(75);
                 var button = new DataRibbonItem() 
                 { 
                     ItemId = name + (enabled ? "+" : "-"), 

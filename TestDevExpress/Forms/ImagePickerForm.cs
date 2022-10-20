@@ -152,7 +152,7 @@ namespace TestDevExpress.Forms
         /// </summary>
         private void InitForm()
         {
-            string name = Random.GetItem(new string[]
+            string name = Randomizer.GetItem(new string[]
             {
                 "pic_0/win/dashboard/poznamkovy_blok",
                 "«devav/actions/printexcludeevaluations.svg»«devav/actions/add.svg<60.60.60.60>»",

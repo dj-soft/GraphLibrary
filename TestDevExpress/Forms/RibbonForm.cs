@@ -347,7 +347,7 @@ namespace TestDevExpress.Forms
             testPage.Groups.Add(_TestControlGroup);
 
             _TestSampleGroup = _RibbonTestCreateSampleGroup();
-            _RibbonTestActionAddMore(_TestSampleGroup, Random.Rand.Next(3));
+            _RibbonTestActionAddMore(_TestSampleGroup, Randomizer.Rand.Next(3));
             testPage.Groups.Add(_TestSampleGroup);
 
             string radioGroup1 = "Směr odchodu";
@@ -424,7 +424,7 @@ namespace TestDevExpress.Forms
         {
             int count = sampleGroup.Items.Count;
             int id = ++_TestItemId;
-            var image = Random.GetItem(_TestSampleImages);
+            var image = Randomizer.GetItem(_TestSampleImages);
             var item = new DataRibbonItem() { ItemId = "Test" + id.ToString(), Text = "Akce " + id.ToString(), ToolTipText = "Toto je testovací tlačítko.\r\nKdyž na něj klikneš, tlačítko se z grupy vyhodí.", ImageName = image, ClickAction = _RibbonTestClickTestItem };
             sampleGroup.Items.Add(item);
             sampleGroup.ChangeMode = ContentChangeMode.Add;
@@ -442,7 +442,7 @@ namespace TestDevExpress.Forms
                     case TestActionType.RemoveRandom:
                     case TestActionType.HideRandom:
                         // Remove i Hide se týká jen těch viditelných prvků:
-                        var hideItem = Random.GetItem(sampleGroup.Items.Where(i => i.Visible).ToArray());
+                        var hideItem = Randomizer.GetItem(sampleGroup.Items.Where(i => i.Visible).ToArray());
                         if (hideItem != null)
                             index = sampleGroup.Items.FindIndex(i => Object.ReferenceEquals(i, hideItem));
                         break;
@@ -1004,7 +1004,7 @@ namespace TestDevExpress.Forms
 
             IRibbonItem iRibbonItem = args[0] as IRibbonItem;
             DataRibbonItem ribbonItem = DataRibbonItem.CreateClone(iRibbonItem);
-            ribbonItem.Text = Random.GetSentence(2);
+            ribbonItem.Text = Randomizer.GetSentence(2);
             ribbonItem.SubItems = DxRibbonSample.CreateSubItems(ribbonItem, ribbonItem.ItemType, 8, 15, 1);
             ribbonItem.SubItemsContentMode = RibbonContentMode.Static;
             DxRibbonSample.ApplyToolTip(ribbonItem);
@@ -1341,7 +1341,7 @@ namespace TestDevExpress.Forms
             string groupText = GroupNames[gi];
             string groupImageName = GetRandomImageName();
             bool groupButtonVisible = (groupText == "Rozšířené" || groupText == "Údržba" || groupText == "Oblíbené" || groupText == "Systém" || groupText == "Systém");
-            bool groupCollapsed = (Random.IsTrue(10));
+            bool groupCollapsed = (Randomizer.IsTrue(10));
 
             return new DataRibbonGroup()
             {
@@ -1381,11 +1381,11 @@ namespace TestDevExpress.Forms
         private static DataRibbonItem _GetItem(string groupId, ref bool containsRadioGroup, ref int remainingRadioCount, ref string buttonGroupName, ref bool forceFirstInGroup, ref string qatItems)
         {
             string itemId = "Item" + (++_RibbonItemId);
-            string itemText = Random.GetWord(true);
+            string itemText = Randomizer.GetWord(true);
             string itemImageName = GetRandomImageName();
             bool isFirst = (remainingRadioCount == 0 ? (forceFirstInGroup || (Rand.Next(10) < 3)) : false);          // Pokud nyní připravuji Radio, pak nedávám IsFirst !
-            bool isEnabled = Random.IsTrue(80);                           // 80% prvků má Enabled = true
-            bool addToQat = Random.IsTrue(10);                            // 10% prvků jde do QAT
+            bool isEnabled = Randomizer.IsTrue(80);                           // 80% prvků má Enabled = true
+            bool addToQat = Randomizer.IsTrue(10);                            // 10% prvků jde do QAT
 
             DataRibbonItem item = new DataRibbonItem()
             {
@@ -1426,9 +1426,9 @@ namespace TestDevExpress.Forms
 
                 item.ItemType = itemType;
                 if (itemType == RibbonItemType.CheckBoxStandard || itemType == RibbonItemType.RadioItem || itemType == RibbonItemType.CheckButton)
-                    item.Checked = Random.IsTrue(30);                     // 30% CheckBoxů je zaškrtnutých
+                    item.Checked = Randomizer.IsTrue(30);                     // 30% CheckBoxů je zaškrtnutých
 
-                if (Random.IsTrue(30))                                    // 30% všech prvků je Small
+                if (Randomizer.IsTrue(30))                                    // 30% všech prvků je Small
                     item.RibbonStyle = RibbonItemStyles.SmallWithText;
 
                 if (itemType == RibbonItemType.RadioItem)
@@ -1437,24 +1437,24 @@ namespace TestDevExpress.Forms
                     addToQat = false;                                     // RadioButtony nedávám do Toolbaru
                     remainingRadioCount = Rand.Next(3, 6);                // RadioItemů do jedné grupy dám 3 - 5 za sebou
                     containsRadioGroup = true;                            // RibbonGroup již obsahuje RadioGrupu, víc RadioSkupin tam dávat už nebudu
-                    buttonGroupName = Random.GetWord(true);
+                    buttonGroupName = Randomizer.GetWord(true);
                     item.Checked = true;
                     item.RibbonStyle = RibbonItemStyles.SmallWithText;    // RadioItem je vždy Small
                     item.RadioButtonGroupName = buttonGroupName;
                 }
-                if (itemType == RibbonItemType.CheckButton && !containsRadioGroup && Random.IsTrue(50))
+                if (itemType == RibbonItemType.CheckButton && !containsRadioGroup && Randomizer.IsTrue(50))
                 {   // zde začne CheckButton Radio:
                     isFirst = true;                                       // První RadioItem si zahajuje svoji sub-grupu
                     addToQat = false;                                     // RadioButtony nedávám do Toolbaru
                     remainingRadioCount = -Rand.Next(3, 6);               // RadioItemů do jedné grupy dám 3 - 5 za sebou;    Záporné číslo = CheckButton grupa
                     containsRadioGroup = true;                            // RibbonGroup již obsahuje RadioGrupu, víc RadioSkupin tam dávat už nebudu
-                    buttonGroupName = Random.GetWord(true);
+                    buttonGroupName = Randomizer.GetWord(true);
                     item.Checked = true;
                     item.RibbonStyle = RibbonItemStyles.Large;            // CheckButton grupa je vždy velká
                     item.RadioButtonGroupName = buttonGroupName;
                 }
 
-                if (Random.IsTrue(15))                                    // 15% prvků nemá Image
+                if (Randomizer.IsTrue(15))                                    // 15% prvků nemá Image
                     item.ImageName = null;
 
               
@@ -1470,7 +1470,7 @@ namespace TestDevExpress.Forms
                 qatItems += item.ItemId + "\t";
             else if (Rand.Next(100) < 8)
                 // Občas do klíče QAT zařadíme nesmysl = ID prvku, který není součástí GUI. Tento prvek v evidenci Ribbonu musí vydržet přes všechny změny:
-                qatItems += Random.GetWord(true) + "\t";
+                qatItems += Randomizer.GetWord(true) + "\t";
 
             return item;
         }
@@ -1500,10 +1500,10 @@ namespace TestDevExpress.Forms
             for (int i = 0; i < sc; i++)
             {
                 string itemId = "Item" + (++_RibbonItemId);
-                string itemText = Random.GetWord(true);
+                string itemText = Randomizer.GetWord(true);
                 string itemImage = GetRandomImageName(33);
-                string toolTip = Random.GetSentence(Rand.Next(5, 16));
-                string toolTipTitle = Random.GetSentence(Rand.Next(1, 3));
+                string toolTip = Randomizer.GetSentence(Rand.Next(5, 16));
+                string toolTipTitle = Randomizer.GetSentence(Rand.Next(1, 3));
                 bool isFirst = (Rand.Next(10) < 3);
 
                 DataRibbonItem subItem = new DataRibbonItem()
@@ -1564,7 +1564,7 @@ namespace TestDevExpress.Forms
                 }
             }
             item.ToolTipTitle = $"{itemText} ({itemType}) [{ribbonName}.{pageText}.{groupText}]";
-            item.ToolTipText = Random.GetSentence(Rand.Next(5, 16));
+            item.ToolTipText = Randomizer.GetSentence(Rand.Next(5, 16));
         }
         /// <summary>
         /// Vrátí náhodný typ prvku v Ribbonu
@@ -1619,9 +1619,9 @@ namespace TestDevExpress.Forms
         {
             if ((randomEmpty > 0) && (Rand.Next(100) < randomEmpty)) return null;
             int rnd = Rand.Next(100);
-            if (rnd < 34) return Random.GetItem(DxSvgResourceImages);
-            if (rnd < 67) return Random.GetItem(DxPngApplicationImages);
-            return Random.GetItem(DxSvgApplicationImages);
+            if (rnd < 34) return Randomizer.GetItem(DxSvgResourceImages);
+            if (rnd < 67) return Randomizer.GetItem(DxPngApplicationImages);
+            return Randomizer.GetItem(DxSvgApplicationImages);
         }
         /// <summary>
         /// Konstantní pole se jmény stránek
