@@ -379,6 +379,12 @@ namespace TestDevExpress.Components
             group1.Items.Add(new DataFormColumnCheckBox() { ColumnId = "adresa_ingb", ColumnType = DataFormColumnType.CheckBox, DesignBounds = new Rectangle(238, 234, 100, 20), Text = "Člen UK" });
 
             group1.Items.Add(new DataFormColumnImageText() { ColumnId = "adresa_note", ColumnType = DataFormColumnType.EditBox, DesignBounds = new Rectangle(350, 40, 400, 224) });
+
+            group1.Items.Add(new DataFormColumnImageText() { ColumnId = "filename_inp_label", ColumnType = DataFormColumnType.Label, DesignBounds = new Rectangle(12, 270, 250, 18), Text = "Zadejte vstupní soubor:" });
+            group1.Items.Add(new DataFormColumnTextBoxButton() { ColumnId = "filename_inp", ColumnType = DataFormColumnType.TextBoxButton, DesignBounds = new Rectangle(8, 292, 332, 20), ButtonKind = DataFormButtonKind.Ellipsis, ButtonsVisibleAllways = false });
+            group1.Items.Add(new DataFormColumnImageText() { ColumnId = "filename_out_label", ColumnType = DataFormColumnType.Label, DesignBounds = new Rectangle(354, 270, 250, 18), Text = "Zadejte výstupní soubor:" });
+            group1.Items.Add(new DataFormColumnTextBoxButton() { ColumnId = "filename_out", ColumnType = DataFormColumnType.TextBoxButton, DesignBounds = new Rectangle(350, 292, 400, 20), ButtonKind = DataFormButtonKind.Ellipsis, ButtonsVisibleAllways = false });
+
         }
         #endregion
     }

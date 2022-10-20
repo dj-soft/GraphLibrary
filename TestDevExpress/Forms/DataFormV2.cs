@@ -68,9 +68,7 @@ namespace TestDevExpress.Forms
             DxComponent.LogTextChanged += DxComponent_LogTextChanged;
             _LogContainChanges = true;
 
-
-            //_DxDataFormV2 = new DxDataFormV2() { Dock = System.Windows.Forms.DockStyle.Fill };
-            //this.DxMainPanel.Controls.Add(_DxDataFormV2);
+            _ShowLog();
         }
         private void _DxMainPanel_SizeChanged(object sender, EventArgs e)
         {
@@ -91,7 +89,7 @@ namespace TestDevExpress.Forms
         #region Ribbon - obsah a rozcestník
         protected override void DxRibbonPrepare()
         {
-            _DxShowLog = true;
+            _IsLogVisible = false;
 
             // string imageAdd = "svgimages/icon%20builder/actions_addcircled.svg";
 
@@ -113,7 +111,7 @@ namespace TestDevExpress.Forms
             group.Items.Add(new DataRibbonItem() { ItemId = "StatusRefresh", Text = "Refresh Status", ToolTipText = "Znovu načíst údaje o spotřebě systémových zdrojů do statusbaru", ImageName = imageStatusRefresh });
             group.Items.Add(new DataRibbonItem() { ItemId = "DataFormRemove", Text = "Remove DataForm", ToolTipText = "Zahodit DataForm a uvolnit jeho zdroje", ImageName = imageDataFormRemove });
             group.Items.Add(new DataRibbonItem() { ItemId = "LogClear", Text = "Clear Log", ToolTipText = "Smaže obsah logu vpravo", ImageName = imageLogClear, RibbonStyle = RibbonItemStyles.Large });
-            group.Items.Add(new DataRibbonItem() { ItemId = "LogVisible", Text = "Show Log", ToolTipText = "Zobrazit log v pravé části hlavního okna.\r\nPOZOR: pokud je log stále zobrazený, pak veškeré logované změny jsou zatíženy časem refreshe textu Logu. \r\n Je vhodnější log zavřít, provést testy, a pak log otevřít a přečíst.", ItemType = RibbonItemType.CheckBoxToggle, Checked = _DxShowLog, RibbonStyle = RibbonItemStyles.Large });
+            group.Items.Add(new DataRibbonItem() { ItemId = "LogVisible", Text = "Show Log", ToolTipText = "Zobrazit log v pravé části hlavního okna.\r\nPOZOR: pokud je log stále zobrazený, pak veškeré logované změny jsou zatíženy časem refreshe textu Logu. \r\n Je vhodnější log zavřít, provést testy, a pak log otevřít a přečíst.", ItemType = RibbonItemType.CheckButton, Checked = _IsLogVisible, RibbonStyle = RibbonItemStyles.Large });
 
 
             string imageTest = "svgimages/xaf/actiongroup_easytestrecorder.svg";
@@ -174,10 +172,8 @@ namespace TestDevExpress.Forms
                     DxComponent.LogClear();
                     break;
                 case "LogVisible":
-                    _DxShowLog = (e.Item.Checked ?? false);
-                    _DxMainSplit.CollapsePanel = DevExpress.XtraEditors.SplitCollapsePanel.Panel2;
-                    _DxMainSplit.Collapsed = !_DxShowLog;
-                    _RefreshLog();
+                    _IsLogVisible = (e.Item.Checked ?? false);
+                    _ShowLog();
                     break;
                 //case "Refresh1":
                 //    _TestPerformance(1, true);
@@ -516,9 +512,24 @@ namespace TestDevExpress.Forms
         {
             GC.Collect(0, GCCollectionMode.Forced);
         }
+        private void _ShowLog()
+        {
+            _ShowLog(_IsLogVisible);
+        }
+        private void _ShowLog(bool isLogVisible)
+        {
+            _IsLogVisible = isLogVisible;
+            if (_DxMainSplit != null)
+            {
+                _DxMainSplit.CollapsePanel = DevExpress.XtraEditors.SplitCollapsePanel.Panel2;
+                _DxMainSplit.Collapsed = !isLogVisible;
+                if (isLogVisible)
+                    _RefreshLog();
+            }
+        }
         private void _RefreshLog()
         {
-            if (_DxShowLog)
+            if (_IsLogVisible)
             {
                 var logText = DxComponent.LogText;
                 if (logText != null)
@@ -532,7 +543,7 @@ namespace TestDevExpress.Forms
             RefreshStatusCurrent();
             _LogContainChanges = false;
         }
-        private bool _DxShowLog;
+        private bool _IsLogVisible;
         bool _LogContainChanges;
         #endregion
     }
