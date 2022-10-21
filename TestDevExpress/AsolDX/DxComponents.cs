@@ -3625,6 +3625,12 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
             return default;
         }
+        /// <summary>
+        /// Vrátí definici daného stylu
+        /// </summary>
+        /// <param name="styleName"></param>
+        /// <returns></returns>
+        public static StyleInfo GetStyleInfo(string styleName) { return SystemAdapter.GetStyleInfo(styleName); }
         #endregion
         #region Static helpers
         /// <summary>
@@ -4972,6 +4978,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         public static string GetMessage(MsgCode messageCode, params object[] parameters) { return Current.GetMessage(messageCode, parameters); }
         /// <summary>
+        /// Vrátí definici daného stylu
+        /// </summary>
+        /// <param name="styleName"></param>
+        /// <returns></returns>
+        public static StyleInfo GetStyleInfo(string styleName) { return Current.GetStyleInfo(styleName); }
+        /// <summary>
         /// Obsahuje true, pokud jsou preferovány vektorové ikony
         /// </summary>
         public static bool IsPreferredVectorImage { get { return Current.IsPreferredVectorImage; } }
@@ -5058,6 +5070,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="parameters"></param>
         /// <returns></returns>
         string GetMessage(MsgCode messageCode, params object[] parameters);
+        /// <summary>
+        /// Vrátí definici daného stylu
+        /// </summary>
+        /// <param name="styleName"></param>
+        /// <returns></returns>
+        StyleInfo GetStyleInfo(string styleName);
         /// <summary>
         /// Obsahuje true, pokud na klientu máme preferovat Vektorové ikony.
         /// </summary>
@@ -5161,7 +5179,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>Medium (typicky 24 x 24)</summary>
         Medium = 2,
         /// <summary>Large (typicky 32 x 32)</summary>
-        Large = 3
+        Large = 3,
+        /// <summary>Originální velikost, pouze pro získání bitmapy - nikoli pro ImageListy.</summary>
+        Original
     }
     /// <summary>
     /// Druh obsahu resource
@@ -5235,7 +5255,7 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// <summary>
     /// Level zápisu do Trace
     /// </summary>
-    internal enum TraceLevel
+    public enum TraceLevel
     {
         /// <summary>
         /// Neurčeno
@@ -5257,6 +5277,62 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Systémová chyba
         /// </summary>
         SysError
+    }
+    /// <summary>
+    /// Definice vizuálního stylu daná názvem (kalíšek)
+    /// </summary>
+    public class StyleInfo
+    {
+        /// <summary>
+        /// Jméno stylu
+        /// </summary>
+        public string Name { get; private set; }
+        /// <summary>
+        /// Určeno pro tmavý skin
+        /// </summary>
+        public bool IsForDarkTheme { get; private set; }
+
+        /// <summary>
+        /// FontStyle: AttrBold + AttrUnderline + AttrItalic
+        /// </summary>
+        public FontStyle? AttributeFontStyle { get; private set; }
+        /// <summary>
+        /// String: AttrFontFamily 
+        /// </summary>
+        public string AttributeFontFamily { get; private set; }
+        /// <summary>
+        /// Float: AttrFontSize
+        /// </summary>
+        public float? AttributeFontSize { get; private set; }
+        /// <summary>
+        /// Barva pozadí controlu (AttrBgColor / AttrBgColorDark)
+        /// </summary>
+        public Color? AttributeBgColor { get; private set; }
+        /// <summary>
+        /// Barva písma controlu (AttrColor / AttrColorDark)
+        /// </summary>
+        public Color? AttributeColor { get; private set; }
+
+        /// <summary>
+        /// FontStyle: LabelBold + LabelUnderline + LabelItalic
+        /// </summary>
+        public FontStyle? LabelFontStyle { get; private set; }
+        /// <summary>
+        /// String: LabelFontFamily 
+        /// </summary>
+        public string LabelFontFamily { get; private set; }
+        /// <summary>
+        /// Float: LabelFontSize
+        /// </summary>
+        public float? LabelFontSize { get; private set; }
+        /// <summary>
+        /// Barva pozadí labelu (LabelBgColor / LabelBgColorDark)
+        /// </summary>
+        public Color? LabelBgColor { get; private set; }
+        /// <summary>
+        /// Barva písma labelu (LabelColor / LabelColorDark)
+        /// </summary>
+        public Color? LabelColor { get; private set; }
     }
     #endregion
     #endregion

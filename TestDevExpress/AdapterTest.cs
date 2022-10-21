@@ -24,16 +24,15 @@ namespace Noris.Clients.Win.Components.AsolDX
         event EventHandler ISystemAdapter.InteractiveZoomChanged { add { } remove { } }
         decimal ISystemAdapter.ZoomRatio { get { return 1.0m; } }
         string ISystemAdapter.GetMessage(MsgCode messageCode, params object[] parameters) { return AdapterSupport.GetMessage(messageCode, parameters); }
+        StyleInfo ISystemAdapter.GetStyleInfo(string styleName) { return AdapterSupport.GetStyleInfo(styleName); }
         bool ISystemAdapter.IsPreferredVectorImage { get { return true; } }
         ResourceImageSizeType ISystemAdapter.ImageSizeStandard { get { return ResourceImageSizeType.Medium; } }
         IEnumerable<IResourceItem> ISystemAdapter.GetResources() { return DataResources.GetResources(); }
         string ISystemAdapter.GetResourceItemKey(string name) { return DataResources.GetItemKey(name); }
         string ISystemAdapter.GetResourcePackKey(string name, out ResourceImageSizeType sizeType, out ResourceContentType contentType) { return DataResources.GetPackKey(name, out sizeType, out contentType); }
         byte[] ISystemAdapter.GetResourceContent(IResourceItem resourceItem) { return DataResources.GetResourceContent(resourceItem); }
-
         bool ISystemAdapter.CanRenderSvgImages { get { return false; } }
         Image ISystemAdapter.RenderSvgImage(SvgImage svgImage, Size size, ISvgPaletteProvider svgPalette) { return null; }
-
         System.ComponentModel.ISynchronizeInvoke ISystemAdapter.Host { get { return DxComponent.MainForm ?? WinForm.Form.ActiveForm; } }
         WinForm.Shortcut ISystemAdapter.GetShortcutKeys(string shortCut) { return WinForm.Shortcut.None; }
         void ISystemAdapter.TraceText(TraceLevel level, Type type, string method, string keyword, params object[] arguments) { }
@@ -196,6 +195,39 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Cache pro již lokalizované hlášky
         /// </summary>
         private static Dictionary<MsgCode, string> _Messages = null;
+        /// <summary>
+        /// Vrátí definici daného stylu
+        /// </summary>
+        /// <param name="styleName"></param>
+        /// <returns></returns>
+        public static StyleInfo GetStyleInfo(string styleName) 
+        {
+            if (_Styles is null) return null;
+            var key = _GetStyleKey(styleName, DxComponent.IsDarkTheme);
+            if (key == null) return null;
+            _Styles.TryGetValue(key, out var styleInfo);
+            return styleInfo;
+        }
+        /// <summary>
+        /// Přidá definici stylu, pro testovací účely
+        /// </summary>
+        /// <param name="styleInfo"></param>
+        public static void AddStyleInfo(StyleInfo styleInfo)
+        {
+            var key = _GetStyleKey(styleInfo.Name, styleInfo.IsForDarkTheme);
+            if (key == null) return;
+            if (_Styles is null) _Styles = new Dictionary<string, StyleInfo>();
+            if (_Styles.ContainsKey(key))
+                _Styles[key] = styleInfo;
+            else
+                _Styles.Add(key, styleInfo);
+        }
+        private static string _GetStyleKey(string styleName, bool isDark)
+        {
+            if (styleName is null) return null;
+            return styleName + (isDark ? "~D" : "~L");
+        }
+        private static Dictionary<string, StyleInfo> _Styles;
     }
     #endregion
     #region class DataResources
@@ -213,8 +245,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             List<IResourceItem> resourceList = new List<IResourceItem>();
             AddResourcesFromResourcesBin(resourceList);
-            if (resourceList.Count == 0)   // || String.Equals(DxComponent.ApplicationName, "TestDevExpress.exe", StringComparison.InvariantCultureIgnoreCase))
-                AddResourcesFromSingleFiles(resourceList);
+            if (resourceList.Count == 0)
+                AddResourcesFromSingleFiles(resourceList);           // Náhradní cesta když se nenajde soubor "ServerResources.bin"
+            AddResourcesFromTestFiles(resourceList);                 // Testovací obrázky pro TestDevExpress samples
             return resourceList;
         }
         #endregion
@@ -399,11 +432,20 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Do daného seznamu načte jednotlivé zdroje z podadresářů aplikace.
         /// </summary>
         /// <returns></returns>
+        private static void AddResourcesFromTestFiles(List<IResourceItem> resourceList)
+        {
+            string resourcePath = DxComponent.ApplicationPath;
+            LoadFromFilesInDirectory(resourcePath, 1, "ImagesTest", resourceList);
+        }
+        /// <summary>
+        /// Do daného seznamu načte jednotlivé zdroje z podadresářů aplikace.
+        /// </summary>
+        /// <returns></returns>
         private static void AddResourcesFromSingleFiles(List<IResourceItem> resourceList)
         {
             string resourcePath = DxComponent.ApplicationPath;
-            LoadFromFilesInDirectory(resourcePath, 0, "Resources", resourceList);
             LoadFromFilesInDirectory(resourcePath, 1, "Images", resourceList);
+            LoadFromFilesInDirectory(resourcePath, 0, "Resources", resourceList);
             LoadFromFilesInDirectory(resourcePath, 1, "pic", resourceList);
             LoadFromFilesInDirectory(resourcePath, 1, "pic-0", resourceList);
         }

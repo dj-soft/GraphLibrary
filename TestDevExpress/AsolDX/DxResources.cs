@@ -102,6 +102,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                     s = 16;
                     break;
                 case ResourceImageSizeType.Large:
+                case ResourceImageSizeType.Original:
                     s = 32;
                     break;
                 default:
@@ -1413,14 +1414,17 @@ namespace Noris.Clients.Win.Components.AsolDX
         private Image _GetBitmapImage(ResourceArgs args)
         {
             var imageInfo = _GetBitmapImageListItem(args);
-            return ((imageInfo == null || imageInfo.Item1 == null || imageInfo.Item2 < 0) ? null : imageInfo.Item1.Images[imageInfo.Item2]);
+            if (imageInfo == null || imageInfo.Item1 == null || imageInfo.Item2 < 0) return null;
+            if (args.CurrentSizeType == ResourceImageSizeType.Original && imageInfo.Item3.ContainsOriginalImages && imageInfo.Item3.OriginalImageDict.TryGetValue(imageInfo.Item4, out var foundImage))
+                return foundImage;
+            return imageInfo.Item1.Images[imageInfo.Item2];
         }
         /// <summary>
         /// Metoda vyhledá, zda daný obrázek existuje
         /// </summary>
         /// <param name="args"></param>
         /// <returns></returns>
-        private Tuple<ImageList, int> _GetBitmapImageListItem(ResourceArgs args)
+        private Tuple<ImageList, int, DxBmpImageList, string> _GetBitmapImageListItem(ResourceArgs args)
         {
             bool hasName = args.HasImageName;
             string captionKey = DxComponent.GetCaptionForIcon(args.Caption);
@@ -1444,7 +1448,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                     index = dxImageList.IndexOfKey(key);
                 }
             }
-            return (index >= 0 ? new Tuple<ImageList, int>(dxImageList.ImageList, index) : null);
+            return (index >= 0 ? new Tuple<ImageList, int, DxBmpImageList, string>(dxImageList.ImageList, index, dxImageList, key) : null);
         }
         /// <summary>
         /// Dictionary ImageListů - pro každou velikost <see cref="ResourceImageSizeType"/> je jedna instance
@@ -2617,7 +2621,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         internal static byte[] ConvertSvgImageToPalette(byte[] content, DxSvgImagePaletteType paletteType, string imageName = null, Size? targetSize = null)
         { return Instance.__SvgImageModifier.Convert(content, paletteType, imageName, targetSize); }
         #endregion
-        #region class Args
+        #region class ResourceArgs
         /// <summary>
         /// Třída, obsahující argumenty předávané mezi metodami pro práci se zdroji v <see cref="DxComponent"/>.
         /// </summary>
@@ -3482,6 +3486,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             this.SizeType = sizeType;
             this.ImageList = new ImageList();
+            if (ContainsOriginalImages)
+                this.OriginalImageDict = new Dictionary<string, Image>();
             this._ExtendedDict = new Dictionary<string, ImageInfo>();
             DxComponent.RegisterListener(this);
         }
@@ -3497,6 +3503,12 @@ namespace Noris.Clients.Win.Components.AsolDX
             DxComponent.UnregisterListener(this);
             this._ExtendedDict?.Clear();
             this._ExtendedDict = null;
+            if (ContainsOriginalImages)
+            {
+                this.OriginalImageDict?.Values.ForEachExec(i => i?.Dispose());
+                this.OriginalImageDict?.Clear();
+                this.OriginalImageDict = null;
+            }
             this.ImageList?.Dispose();
             this.ImageList = null;
         }
@@ -3518,6 +3530,14 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// ImageList
         /// </summary>
         public ImageList ImageList { get; private set; }
+        /// <summary>
+        /// Obsahuje true, když pro aktuální velikost používáme i <see cref="OriginalImageDict"/>
+        /// </summary>
+        public bool ContainsOriginalImages { get { return (this.SizeType == ResourceImageSizeType.Original); } }
+        /// <summary>
+        /// Dictionary originálních obrázků, pouze pro velikost <see cref="SizeType"/> == <see cref="ResourceImageSizeType.Original"/>
+        /// </summary>
+        public Dictionary<string, Image> OriginalImageDict { get; private set; }
         /// <summary>
         /// Obsahuje prvek?
         /// </summary>
@@ -3557,6 +3577,8 @@ namespace Noris.Clients.Win.Components.AsolDX
                 if (image is null) return -1;
 
                 this.ImageList.Images.Add(key, image);
+                if (ContainsOriginalImages)
+                    this.OriginalImageDict.Store(key, image);
             }
             return this.IndexOfKey(key);
         }
@@ -3578,7 +3600,11 @@ namespace Noris.Clients.Win.Components.AsolDX
                 Image image = creator(key);
                 if (image is null) return null;
                 this.ImageList.Images.Add(key, image);
+                if (ContainsOriginalImages)
+                    this.OriginalImageDict.Store(key, image);
             }
+            if (this.SizeType == ResourceImageSizeType.Original && this.OriginalImageDict.TryGetValue(key, out var foundImage)) 
+                return foundImage;
             return this.ImageList.Images[key];
         }
         /// <summary>
@@ -3599,6 +3625,8 @@ namespace Noris.Clients.Win.Components.AsolDX
                     _ExtendedDict.Add(key, new ImageInfo(key, imageName, exactName, this.SizeType, optimalSvgSize, caption));
             }
             this.ImageList.Images.Add(key, image);
+            if (ContainsOriginalImages)
+                this.OriginalImageDict.Store(key, image);
         }
         /// <summary>
         /// Dictionary prvků, pro které bude možno vytvořit new Image po změně skinu Light / Dark

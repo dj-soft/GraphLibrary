@@ -43,31 +43,31 @@ namespace TestDevExpress.Components
             {
                 case 10:
                     pages.Add(CreateSamplePage(10, texts, tooltips, 60, "Základní stránka", "Obsahuje běžné informace",
-                        0, 2, true, 28, 5, 6, new int[] { 140, 260, 40, 300, 120 }));
+                        0, 28, true, 24, 4, 12, 5, 6, new int[] { 140, 260, 40, 300, 120 }));
                     break;
                 case 20:
                     pages.Add(CreateSamplePage(20, texts, tooltips, 2000, "Základní stránka", "Obsahuje běžné informace",
-                        0, 2, true, 28, 2, 2, new int[] { 80, 150, 80, 60, 100, 120, 160, 40, 120, 180, 80, 40, 60, 250 }));
+                        0, 28, true, 24, 2, 4, 2, 2, new int[] { 80, 150, 80, 60, 100, 120, 160, 40, 120, 180, 80, 40, 60, 250 }));
                     pages.Add(CreateSamplePage(21, texts, tooltips, 120, "Doplňková stránka", "Obsahuje další málo používané informace",
-                        0, 2, true, 28, 2, 2, new int[] { 250, 250, 60, 250, 250, 60, 250 }));
+                        0, 28, true, 24, 2, 32, 2, 2, new int[] { 250, 250, 60, 250, 250, 60, 250 }));
                     break;
                 case 30:
                     pages.Add(CreateSamplePage(30, texts, tooltips, 500, "Základní stránka", "Obsahuje běžné informace",
-                        0, 24, true, 28, 6, 10, new int[] { 250, 250, 60, 250, 250, 60, 250 }));
+                        0, 28, true, 0, 0, 7, 6, 10, new int[] { 250, 250, 60, 250, 250, 60, 250 }));
                     pages.Add(CreateSamplePage(31, texts, tooltips, 70, "Sklady", null,
-                        1, 24, false, 26, 4, 4, new int[] { 100, 75, 120, 100 }));
+                        1, 26, false, 0, 0, 16, 4, 4, new int[] { 100, 75, 120, 100 }));
                     pages.Add(CreateSamplePage(32, texts, tooltips, 15, "Faktury", null,
-                        1, 24, false, 26, 1, 1, new int[] { 70, 70, 70, 70 }));
+                        1, 26, false, 0, 0, 12, 1, 1, new int[] { 70, 70, 70, 70 }));
                     pages.Add(CreateSamplePage(33, texts, tooltips, 25, "Zaúčtování", null,
-                        1, 24, false, 26, 6, 10, new int[] { 400, 125, 75, 100 }));
+                        1, 26, false, 0, 0, 8, 6, 10, new int[] { 400, 125, 75, 100 }));
                     pages.Add(CreateSamplePage(34, texts, tooltips, 480, "Výrobní čísla fixní zalomení", null,
-                        3, 24, true, 26, 5, 5, new int[] { 100, 100, 70 }));
+                        3, 26, true, 0, 0, 5, 5, 5, new int[] { 100, 100, 70 }));
                     pages.Add(CreateSamplePage(35, texts, tooltips, 480, "Výrobní čísla automatické zalomení", null,
-                        3, 24, true, 26, 5, 5, new int[] { 100, 100, 70 }));
+                        3, 26, true, 0, 0, 5, 5, 5, new int[] { 100, 100, 70 }));
                     break;
                 case 40:
                     pages.Add(CreateSamplePage(40, texts, tooltips, 1, "Základní stránka", "Obsahuje běžné informace",
-                        0, 0, false, 0, 5, 1, new int[] { 140, 260, 40, 300, 120, 80, 120, 80, 80, 80, 80, 250, 40, 250, 40, 250, 40, 250, 40, 250, 40 }));
+                        0, 0, false, 0, 0, 1, 5, 1, new int[] { 140, 260, 40, 300, 120, 80, 120, 80, 80, 80, 80, 250, 40, 250, 40, 250, 40, 250, 40, 250, 40 }));
                     break;
 
 
@@ -93,13 +93,15 @@ namespace TestDevExpress.Components
         /// <param name="borderSize"></param>
         /// <param name="headerHeight"></param>
         /// <param name="addGroupTitle"></param>
-        /// <param name="beginY"></param>
+        /// <param name="lineY"></param>
+        /// <param name="lineH"></param>
+        /// <param name="groupRows">Počet řádků v jedné grupě</param>
         /// <param name="spaceX"></param>
         /// <param name="spaceY"></param>
         /// <param name="widths"></param>
         /// <returns></returns>
         private static DataFormPage CreateSamplePage(int sampleId, string[] texts, string[] tooltips, int rowCount, string pageText, string pageToolTip,
-            int borderSize, int headerHeight, bool addGroupTitle, int beginY, int spaceX, int spaceY, int[] widths)
+            int borderSize, int headerHeight, bool addGroupTitle, int lineY, int lineH, int groupRows, int spaceX, int spaceY, int[] widths)
         {
             var random = _Random;
 
@@ -134,6 +136,14 @@ namespace TestDevExpress.Components
                 OnMouseBackColor = Color.FromArgb(255, 64, 64, 224),
                 OnMouseBackColorEnd = Color.FromArgb(4, 96, 96, 255),
             };
+            DataFormBackgroundAppearance lineAppearance = new DataFormBackgroundAppearance()
+            {
+                GradientStyle = GradientStyleType.ToRight,
+                BackColor = Color.FromArgb(128, 128, 64, 224),
+                BackColorEnd = Color.FromArgb(4, 140, 96, 255),
+                OnMouseBackColor = Color.FromArgb(255, 128, 64, 224),
+                OnMouseBackColorEnd = Color.FromArgb(4, 140, 96, 255),
+            };
             DataFormColumnAppearance titleAppearance = new DataFormColumnAppearance()
             {
                 FontSizeDelta = 2,
@@ -157,18 +167,18 @@ namespace TestDevExpress.Components
             int py = ((sampleId == 40) ? 0 : 12);
             for (int r = 0; r < count; r++)
             {
-                if ((r % 10) == 0)
+                if ((r % groupRows) == 0)
                     group = null;
 
                 if (group == null)
                 {
-                    y = 1 + borderSize;
+                    y = 0;
 
                     group = new DataFormGroup();
+                    group.DesignBorderRange = new Int32Range(1, 1 + borderSize);
+                    group.BorderAppearance = borderAppearance;
                     group.DesignPadding = new Padding(px, py, px, py);
-                    group.DesignHeaderHeight = headerHeight;
-                    if (headerHeight > 0)
-                        group.HeaderAppearance = (headerHeight == 2 ? headerAppearance2 : headerAppearance1);
+
                     if (sampleId == 34)
                     {   // Výrobní čísla - úzká pro force layout break
                         if ((page.Groups.Count % 20) == 0)
@@ -185,32 +195,34 @@ namespace TestDevExpress.Components
                     {
                         y = 0;
                     }
-                    group.DesignBorderRange = new Int32Range(1, 1 + borderSize);
-                    group.BorderAppearance = borderAppearance;
 
+                    if (headerHeight > 0)
+                    {
+                        var groupTitle = new DataFormGroupTitle()
+                        {   // Základ = výška a pozadí
+                            DesignTitleHeight = headerHeight,
+                            BackgroundAppearance = (headerHeight == 2 ? headerAppearance2 : headerAppearance1)
+                        };
+
+                        if (addGroupTitle)
+                        {   // Text
+                            groupTitle.TitleAppearance = titleAppearance;
+                            groupTitle.TitleText = "Skupina " + page.Groups.Count.ToString();
+                            groupTitle.TitleAlignment = ContentAlignment.MiddleLeft;
+                            groupTitle.DesignTitlePadding = new Padding(px, py, px, py);
+                        }
+
+                        if (lineH > 0)
+                        {   // Linka pod textem
+                            groupTitle.DesignLineRange = new Int32Range(lineY, lineY + lineH);
+                            groupTitle.LineAppearance = lineAppearance;
+                        }
+                        group.GroupTitle = groupTitle;
+                    }
                     page.Groups.Add(group);
-
-                    int contentY = y + headerHeight;
-                    if (addGroupTitle)
-                    {
-                        bool isThinLine = (headerHeight < 10);
-                        int titleY = (isThinLine ? y + headerHeight + 3 : y + 1);
-                        // titleY - py ... ?  Každý běžný prvek bude odsunut o Padding, ale titulek posouvat o Padding nechci, takže jej 'předsunu':
-                        DataFormColumnImageText title = new DataFormColumnImageText() { ColumnType = DataFormColumnType.Label, DesignBounds = new Rectangle(60, titleY - py, 150, 20) };
-                        title.Text = "Skupina " + page.Groups.Count.ToString();
-                        title.Appearance = titleAppearance;
-                        group.Items.Add(title);
-                        y += (isThinLine ? titleY + 20 : y + headerHeight + 2);
-                        if (y < contentY)
-                            y = contentY;
-                    }
-                    else
-                    {
-                        y = contentY;
-                    }
                 }
 
-                // První prvek v řádku je Label:
+                // První prvek v každém řádku je Label:
                 int x = 10;
                 text = $"Atributy {(r + 1)}:";
                 DataFormColumnImageText lbl = new DataFormColumnImageText() { ColumnType = DataFormColumnType.Label, Text = text, DesignBounds = new Rectangle(x, y, 75, 18) };
@@ -357,7 +369,26 @@ namespace TestDevExpress.Components
             DataFormPage page1 = new DataFormPage() { PageId = "f101a", PageText = "Základní data" };
             pages.Add(page1);
 
-            DataFormGroup group1 = new DataFormGroup() { GroupId = "Adresa", GroupText = "Adresa", DesignHeaderHeight = 30, CollapseMode = DataFormGroupCollapseMode.AllowCollapseAllways,  };
+            DataFormGroup group1 = new DataFormGroup() { GroupId = "Adresa", CollapseMode = DataFormGroupCollapseMode.AllowCollapseAllways, DesignPadding = new Padding(6) };
+            group1.GroupTitle = new DataFormGroupTitle() 
+            { 
+                DesignTitleHeight = 30, TitleText = "Adresa", 
+                TitleAppearance = new DataFormColumnAppearance() { FontStyleBold = true, FontSizeDelta = 1 }, 
+                BackgroundAppearance = new DataFormBackgroundAppearance() 
+                { BackColor = Color.FromArgb(160, 190, 240, 160), BackColorEnd = Color.FromArgb(16, 190, 240, 160), GradientStyle = GradientStyleType.ToRight },
+                DesignTitlePadding = new Padding(18, 2, 18, 2), 
+                DesignLineRange = new Int32Range(26, 28), 
+                LineAppearance = new DataFormBackgroundAppearance() 
+                { BackColor = Color.FromArgb(255, 40, 120, 40) }
+            };
+            group1.BackgroundAppearance = new DataFormBackgroundAppearance()
+            { 
+                BackColor = Color.FromArgb(192, 192, 216, 255), BackColorEnd = Color.FromArgb(192, 220, 240, 255), GradientStyle = GradientStyleType.ToRight,
+                BackImageName = @"ImagesTest\BackCorners\Corner00011.png", BackImageAlignment = BackImageAlignmentMode.Fill
+            };
+            group1.DesignBorderRange = new Int32Range(3, 5);
+            group1.BorderAppearance = new DataFormBackgroundAppearance() { BackColor = Color.FromArgb(192, 64, 64, 64), BackColorEnd = Color.FromArgb(16, 64, 64, 64), GradientStyle = GradientStyleType.Downward };
+
             page1.Groups.Add(group1);
 
             group1.Items.Add(new DataFormColumnImageText() { ColumnId = "adresa_ulice_label", ColumnType = DataFormColumnType.Label, DesignBounds = new Rectangle(12, 18, 100, 18), Text = "Ulice" });

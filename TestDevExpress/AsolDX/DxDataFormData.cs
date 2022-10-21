@@ -137,7 +137,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         string PageId { get; }
         /// <summary>
-        /// Název obrázku stránky
+        /// Název obrázku stránky. Zobrazuje se jako ikona v oušku stránky před textem.
         /// </summary>
         string PageImageName { get; }
         /// <summary>
@@ -192,23 +192,16 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         public virtual string GroupId { get; set; }
         /// <summary>
-        /// Název obrázku grupy
+        /// Titulek grupy, pokud bude null pak grupa nemá titulek
         /// </summary>
-        public virtual string GroupImageName { get; set; }
-        /// <summary>
-        /// Titulek grupy
-        /// </summary>
-        public virtual string GroupText { get; set; }
+        public virtual IDataFormGroupTitle GroupTitle { get; set; }
         /// <summary>
         /// Explicitně definovaná šířka grupy (designová hodnota: Zoom 100% a 96DPI).
         /// Může být null, pak se určí podle souhrnu rozměrů <see cref="Items"/> plus <see cref="DesignPadding"/>.
         /// <para/>
         /// Designer tedy může určit explicitně jen šířku grupy (nastaví hodnotu do <see cref="DesignWidth"/>), 
         /// a ponechá výšku grupy <see cref="DesignHeight"/> = null, 
-        /// pak systém určí designovou výšku jako součet rozměru obsahu plus svislé okraje <see cref="DesignPadding"/>.
-        /// <para/>
-        /// Pokud grupa má implementovat titulek, pak titulek bude jednou z položek grupy, typu <see cref="DataFormColumnType.Label"/>, včetně zadané velikosti a vzhledu.
-        /// Pokud součástí grupy má být podtitulek a/nebo linka, musí být i to uvedeno v Items.
+        /// pak systém určí designovou šířku jako součet rozměru obsahu plus vodorovné okraje <see cref="DesignPadding"/> + border <see cref="DesignBorderRange"/>.
         /// </summary>
         public virtual int? DesignWidth { get; set; }
         /// <summary>
@@ -217,10 +210,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <para/>
         /// Designer tedy může určit explicitně jen šířku grupy (nastaví hodnotu do <see cref="DesignWidth"/>), 
         /// a ponechá výšku grupy <see cref="DesignHeight"/> = null, 
-        /// pak systém určí designovou výšku jako součet rozměru obsahu plus svislé okraje <see cref="DesignPadding"/>.
-        /// <para/>
-        /// Pokud grupa má implementovat titulek, pak titulek bude jednou z položek grupy, typu <see cref="DataFormColumnType.Label"/>, včetně zadané velikosti a vzhledu.
-        /// Pokud součástí grupy má být podtitulek a/nebo linka, musí být i to uvedeno v Items.
+        /// pak systém určí designovou výšku jako součet rozměru obsahu plus svislé okraje <see cref="DesignPadding"/> + border <see cref="DesignBorderRange"/>.
         /// </summary>
         public virtual int? DesignHeight { get; set; }
         /// <summary>
@@ -232,32 +222,49 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         public virtual SWF.Padding DesignPadding { get; set; }
         /// <summary>
         /// Rozsah orámování grupy.
-        /// Grupa má své vnější souřadnice, dané <see cref="DesignWidth"/> a <see cref="DesignHeight"/>.
-        /// Vnitřní prvky mohou být odsazené o <see cref="DesignPadding"/>. V rámci tohoto Paddingu může být vykreslen Border grupy.
-        /// Border pak začíná např. zleva (tj. svislá linie) na souřadnici X = <see cref="DesignBorderRange"/>.Begin a končí na souřadnici X = <see cref="DesignBorderRange"/>.End.
-        /// Jinými slovy, Border se nachází uvnitř grupy, od vnějšího okraje grupy je odsazen vždy o <see cref="DesignBorderRange"/>.Begin, a síla linky je <see cref="DesignBorderRange"/>.Size.
-        /// Při použití tohoto Border dbejme o to, aby <see cref="DesignPadding"/> byl větší než Border, jinak by prvky <see cref="Items"/> mohly překrývat Border.
+        /// Grupa má své vnější souřadnice, dané velikostí <see cref="DesignWidth"/> a <see cref="DesignHeight"/>.
+        /// Uvnitř tohoto prostoru se nachází Border, a uvnitř Borderu je potom Padding. Uvnitř Paddingu je prostor pro prvky <see cref="Items"/>, v tomto prostoru jsou zadávané souřadnice prvků.
         /// <para/>
-        /// Border je vykreslen jednoduchou barvou <see cref="BorderAppearance"/>. Ta může pracovat s Alpha kanálem (průhlednost). Pokud <see cref="BorderAppearance"/> je null, nebude se kreslit.
-        /// Border pak může sloužit pro určení odsazení titulkového prostoru.
+        /// <u>Konkrétněji o souřadném systému:</u><br/>
+        /// Mějme grupu s celkovou designovou šířkou 500px.<br/>
+        /// Mějme deklaraci <see cref="DesignBorderRange"/> : { Begin = 4, Size = 2 };<br/>
+        /// Mějme hodnotu <see cref="DesignPadding"/> : { All = 3 };<br/>
+        /// Pak tedy zleva v prostoru grupy budou nejdříve 4px prázdné (<see cref="DesignBorderRange"/>.Begin);<br/>
+        /// Následovat budou 2px vykresleného Borderu (<see cref="DesignBorderRange"/>.Size);<br/>
+        /// Pak budou 3px volného prostoru (<see cref="DesignPadding"/>.Left);<br/>
+        /// Celkem tedy levý okraj = (4 + 2 + 3) = 9px;<br/>
+        /// A pokud některý Item má souřadnici X = 0, pak bude reálně umístěn na souřadnici v grupě X = 9.
         /// <para/>
-        /// Titulkový prostor grupy se nachází uvnitř Borderu.
+        /// Border je vykreslen jednoduchou barvou <see cref="BorderAppearance"/>. 
+        /// Ta může pracovat s Alpha kanálem (průhlednost). Pokud <see cref="BorderAppearance"/> je null, nebude se kreslit.
+        /// <para/>
+        /// Titulkový prostor grupy <see cref="GroupTitle"/> se nachází uvnitř Borderu, jeho text je odsazen o <see cref="DesignPadding"/> od Borderu.
         /// <para/>
         /// Pokud <see cref="DesignBorderRange"/> je null, bere se jako { 0, 0 }.
         /// </summary>
         public virtual Int32Range DesignBorderRange { get; set; }
         /// <summary>
-        /// Způsob barev a stylu orámování okraje
+        /// Okraje uvnitř grupy.
+        /// Hodnota <see cref="SWF.Padding.Left"/> a <see cref="SWF.Padding.Top"/> určují posun souřadného systému prvků <see cref="Items"/> oproti počátku grupy.
+        /// Hodnoty <see cref="SWF.Padding.Right"/> a <see cref="SWF.Padding.Bottom"/> se použijí tehdy, když velikost grupy není dána explicitně 
+        /// a bude se dopočítávat podle souhrnu rozměrů <see cref="Items"/>, pak se k nejkrajnější souřadnici prvku přičte pravý a dolní Padding.
+        /// <para/>
+        /// <u>Konkrétněji o souřadném systému:</u><br/>
+        /// Mějme grupu s celkovou designovou šířkou 500px.<br/>
+        /// Mějme deklaraci <see cref="DesignBorderRange"/> : { Begin = 4, Size = 2 };<br/>
+        /// Mějme hodnotu <see cref="DesignPadding"/> : { All = 3 };<br/>
+        /// Pak tedy zleva v prostoru grupy budou nejdříve 4px prázdné (<see cref="DesignBorderRange"/>.Begin);<br/>
+        /// Následovat budou 2px vykresleného Borderu (<see cref="DesignBorderRange"/>.Size);<br/>
+        /// Pak budou 3px volného prostoru (<see cref="DesignPadding"/>.Left);<br/>
+        /// Celkem tedy levý okraj = (4 + 2 + 3) = 9px;<br/>
+        /// A pokud některý Item má souřadnici X = 0, pak bude reálně umístěn na souřadnici v grupě X = 9.
+        /// <para/>
+        /// Border je vykreslen jednoduchou barvou <see cref="BorderAppearance"/>. 
+        /// Ta může pracovat s Alpha kanálem (průhlednost). Pokud <see cref="BorderAppearance"/> je null, nebude se kreslit.
+        /// <para/>
+        /// Titulkový prostor grupy <see cref="GroupTitle"/> se nachází uvnitř Borderu, jeho text je odsazen o <see cref="DesignPadding"/> od Borderu.
         /// </summary>
         public virtual IDataFormBackgroundAppearance BorderAppearance { get; set; }
-        /// <summary>
-        /// Výška záhlaví (v designových pixelech)
-        /// </summary>
-        public virtual int? DesignHeaderHeight { get; set; }
-        /// <summary>
-        /// Způsob barev a stylu záhlaví (prostor nahoře uvnitř borderu, s výškou <see cref="DesignHeaderHeight"/>
-        /// </summary>
-        public virtual IDataFormBackgroundAppearance HeaderAppearance { get; set; }
         /// <summary>
         /// Řídí viditelnost grupy
         /// </summary>
@@ -281,14 +288,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         public virtual IDataFormBackgroundAppearance BackgroundAppearance { get; set; }
         /// <summary>
-        /// Vzhled prvku - kalíšek, barvy, modifikace fontu
-        /// </summary>
-        public virtual IDataFormColumnAppearance Appearance { get; set; }
-        /// <summary>
         /// Jednotlivé prvky grupy
         /// </summary>
         public virtual List<IDataFormColumn> Items { get; set; }
-
         /// <summary>
         /// Text ToolTipu
         /// </summary>
@@ -302,7 +304,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         public virtual string ToolTipIcon { get; set; }
 
-        string IToolTipItem.ToolTipTitle { get { return ToolTipTitle ?? GroupText; } }
         /// <summary>prvek interface</summary>
         IEnumerable<IDataFormColumn> IDataFormGroup.Items { get { return Items; } }
     }
@@ -316,13 +317,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         string GroupId { get; }
         /// <summary>
-        /// Název obrázku grupy
+        /// Titulek grupy, pokud bude null pak grupa nemá titulek
         /// </summary>
-        string GroupImageName { get; }
-        /// <summary>
-        /// Titulek grupy
-        /// </summary>
-        string GroupText { get; }
+        IDataFormGroupTitle GroupTitle { get; }
         /// <summary>
         /// Explicitně definovaná šířka grupy (designová hodnota: Zoom 100% a 96DPI).
         /// Může být null, pak se určí podle souhrnu rozměrů <see cref="Items"/> plus <see cref="DesignPadding"/>.
@@ -348,40 +345,54 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         int? DesignHeight { get; }
         /// <summary>
-        /// Okraje uvnitř grupy.
-        /// Hodnota <see cref="SWF.Padding.Left"/> a <see cref="SWF.Padding.Top"/> určují posun souřadného systému prvků <see cref="Items"/> oproti počátku grupy.
-        /// Hodnoty <see cref="SWF.Padding.Right"/> a <see cref="SWF.Padding.Bottom"/> se použijí tehdy, když velikost grupy není dána explicitně 
-        /// a bude se dopočítávat podle souhrnu rozměrů <see cref="Items"/>, pak se k nejkrajnější souřadnici prvku přičte pravý a dolní Padding.
-        /// </summary>
-        SWF.Padding DesignPadding { get; }
-        /// <summary>
         /// Rozsah orámování grupy.
-        /// Grupa má své vnější souřadnice, dané <see cref="DesignWidth"/> a <see cref="DesignHeight"/>.
-        /// Vnitřní prvky mohou být odsazené o <see cref="DesignPadding"/>. V rámci tohoto Paddingu může být vykreslen Border grupy.
-        /// Border pak začíná např. zleva (tj. svislá linie) na souřadnici X = <see cref="DesignBorderRange"/>.Begin a končí na souřadnici X = <see cref="DesignBorderRange"/>.End.
-        /// Jinými slovy, Border se nachází uvnitř grupy, od vnějšího okraje grupy je odsazen vždy o <see cref="DesignBorderRange"/>.Begin, a síla linky je <see cref="DesignBorderRange"/>.Size.
-        /// Při použití tohoto Border dbejme o to, aby <see cref="DesignPadding"/> byl větší než Border, jinak by prvky <see cref="Items"/> mohly překrývat Border.
+        /// Grupa má své vnější souřadnice, dané velikostí <see cref="DesignWidth"/> a <see cref="DesignHeight"/>.
+        /// Uvnitř tohoto prostoru se nachází Border, a uvnitř Borderu je potom Padding. Uvnitř Paddingu je prostor pro prvky <see cref="Items"/>, v tomto prostoru jsou zadávané souřadnice prvků.
         /// <para/>
-        /// Border je vykreslen jednoduchou barvou <see cref="BorderAppearance"/>. Ta může pracovat s Alpha kanálem (průhlednost). Pokud <see cref="BorderAppearance"/> je null, nebude se kreslit.
-        /// Border pak může sloužit pro určení odsazení titulkového prostoru.
+        /// <u>Konkrétněji o souřadném systému:</u><br/>
+        /// Mějme grupu s celkovou designovou šířkou 500px.<br/>
+        /// Mějme deklaraci <see cref="DesignBorderRange"/> : { Begin = 4, Size = 2 };<br/>
+        /// Mějme hodnotu <see cref="DesignPadding"/> : { All = 3 };<br/>
+        /// Pak tedy zleva v prostoru grupy budou nejdříve 4px prázdné (<see cref="DesignBorderRange"/>.Begin);<br/>
+        /// Následovat budou 2px vykresleného Borderu (<see cref="DesignBorderRange"/>.Size);<br/>
+        /// Pak budou 3px volného prostoru (<see cref="DesignPadding"/>.Left);<br/>
+        /// Celkem tedy levý okraj = (4 + 2 + 3) = 9px;<br/>
+        /// A pokud některý Item má souřadnici X = 0, pak bude reálně umístěn na souřadnici v grupě X = 9.
         /// <para/>
-        /// Titulkový prostor grupy se nachází uvnitř Borderu.
+        /// Border je vykreslen jednoduchou barvou <see cref="BorderAppearance"/>. 
+        /// Ta může pracovat s Alpha kanálem (průhlednost). Pokud <see cref="BorderAppearance"/> je null, nebude se kreslit.
+        /// <para/>
+        /// Titulkový prostor grupy <see cref="GroupTitle"/> se nachází uvnitř Borderu, jeho text je odsazen o <see cref="DesignPadding"/> od Borderu.
         /// <para/>
         /// Pokud <see cref="DesignBorderRange"/> je null, bere se jako { 0, 0 }.
         /// </summary>
         Int32Range DesignBorderRange { get; }
         /// <summary>
+        /// Okraje uvnitř grupy.
+        /// Hodnota <see cref="SWF.Padding.Left"/> a <see cref="SWF.Padding.Top"/> určují posun souřadného systému prvků <see cref="Items"/> oproti počátku grupy.
+        /// Hodnoty <see cref="SWF.Padding.Right"/> a <see cref="SWF.Padding.Bottom"/> se použijí tehdy, když velikost grupy není dána explicitně 
+        /// a bude se dopočítávat podle souhrnu rozměrů <see cref="Items"/>, pak se k nejkrajnější souřadnici prvku přičte pravý a dolní Padding.
+        /// <para/>
+        /// <u>Konkrétněji o souřadném systému:</u><br/>
+        /// Mějme grupu s celkovou designovou šířkou 500px.<br/>
+        /// Mějme deklaraci <see cref="DesignBorderRange"/> : { Begin = 4, Size = 2 };<br/>
+        /// Mějme hodnotu <see cref="DesignPadding"/> : { All = 3 };<br/>
+        /// Pak tedy zleva v prostoru grupy budou nejdříve 4px prázdné (<see cref="DesignBorderRange"/>.Begin);<br/>
+        /// Následovat budou 2px vykresleného Borderu (<see cref="DesignBorderRange"/>.Size);<br/>
+        /// Pak budou 3px volného prostoru (<see cref="DesignPadding"/>.Left);<br/>
+        /// Celkem tedy levý okraj = (4 + 2 + 3) = 9px;<br/>
+        /// A pokud některý Item má souřadnici X = 0, pak bude reálně umístěn na souřadnici v grupě X = 9.
+        /// <para/>
+        /// Border je vykreslen jednoduchou barvou <see cref="BorderAppearance"/>. 
+        /// Ta může pracovat s Alpha kanálem (průhlednost). Pokud <see cref="BorderAppearance"/> je null, nebude se kreslit.
+        /// <para/>
+        /// Titulkový prostor grupy <see cref="GroupTitle"/> se nachází uvnitř Borderu, jeho text je odsazen o <see cref="DesignPadding"/> od Borderu.
+        /// </summary>
+        SWF.Padding DesignPadding { get; }
+        /// <summary>
         /// Způsob barev a stylu orámování okraje
         /// </summary>
         IDataFormBackgroundAppearance BorderAppearance { get; }
-        /// <summary>
-        /// Výška záhlaví (v designových pixelech)
-        /// </summary>
-        int? DesignHeaderHeight { get; }
-        /// <summary>
-        /// Způsob barev a stylu záhlaví (prostor nahoře uvnitř borderu, s výškou <see cref="DesignHeaderHeight"/>
-        /// </summary>
-        IDataFormBackgroundAppearance HeaderAppearance { get; }
         /// <summary>
         /// Řídí viditelnost grupy
         /// </summary>
@@ -405,17 +416,114 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         IDataFormBackgroundAppearance BackgroundAppearance { get; }
         /// <summary>
-        /// Vzhled prvku - kalíšek, barvy, modifikace fontu. 
-        /// Určuje vzhled titulkového textu.
-        /// </summary>
-        IDataFormColumnAppearance Appearance { get; }
-        /// <summary>
         /// Jednotlivé prvky grupy
         /// </summary>
         IEnumerable<IDataFormColumn> Items { get; }
     }
+    /// <summary>
+    /// Deklarace titulku grupy
+    /// </summary>
+    public class DataFormGroupTitle : IDataFormGroupTitle
+    {
+        /// <summary>
+        /// Titulek grupy
+        /// </summary>
+        public virtual string TitleText { get; set; }
+        /// <summary>
+        /// Okraje použité pro zarovnání textu titulku uvnitř grupy.
+        /// </summary>
+        public virtual SWF.Padding DesignTitlePadding { get; set; }
+        /// <summary>
+        /// Umístění textu <see cref="TitleText"/> v prostoru záhlaví. 
+        /// Prostor je standardně zmenšen o Padding deklarovaný v <see cref="IDataFormGroup.DesignPadding"/>, tak je možno zajistit, že text titulku se nebude dotýkat okraje grupy.
+        /// </summary>
+        public virtual ContentAlignment TitleAlignment { get; set; }
+        /// <summary>
+        /// Výška záhlaví (v designových pixelech). Záhlaví je umístěno na vnitřním horním okraji grupy po celé její šířce.
+        /// Uvnitř této výšky může být zobrazena linka, její pozice je definována v 
+        /// Teprve pod touto výškou začíná prostor pro Columny.
+        /// </summary>
+        public virtual int? DesignTitleHeight { get; set; }
+        /// <summary>
+        /// Souřadnice prostoru barevné linky na ose Y, která reprezentuje podtržení nebo podbarvení titulku.
+        /// Hodnota <b>Begin</b> reprezentuje souřadnici Y, kde linka začíná, měřeno od počátku titulku nahoře, 
+        /// hodnota <b>Size</b> reprezentuje výšku linky.
+        /// Pokud je zde null, pak se linka nevykresluje.
+        /// Může zde být rozsah 0 až <see cref="DesignTitleHeight"/>, pak je podkreslen celý prostor titulku.
+        /// </summary>
+        public virtual Int32Range DesignLineRange { get; set; }
+        /// <summary>
+        /// Řídí viditelnost titulku grupy
+        /// </summary>
+        public virtual bool IsVisible { get; set; }
+        /// <summary>
+        /// Vzhled písma titulku - kalíšek, barvy, modifikace fontu. 
+        /// Určuje vzhled titulkového textu.
+        /// </summary>
+        public virtual IDataFormColumnAppearance TitleAppearance { get; set; }
+        /// <summary>
+        /// Způsob barev a stylu pozadí titulkového řádku. Pozadí pokrývá celou výšku <see cref="DesignTitleHeight"/>.
+        /// Teprve na toto pozadí je vykreslena linka v souřadnicích <see cref="DesignLineRange"/> se vzhledem <see cref="LineAppearance"/>.
+        /// </summary>
+        public virtual IDataFormBackgroundAppearance BackgroundAppearance { get; set; }
+        /// <summary>
+        /// Způsob barev a stylu linky titulkového řádku (prostor je umístěn ve svislých souřadnicích <see cref="DesignLineRange"/>.
+        /// </summary>
+        public virtual IDataFormBackgroundAppearance LineAppearance { get; set; }
+    }
+    /// <summary>
+    /// Deklarace titulku grupy
+    /// </summary>
+    public interface IDataFormGroupTitle
+    {
+        /// <summary>
+        /// Titulek grupy
+        /// </summary>
+        string TitleText { get; }
+        /// <summary>
+        /// Okraje použité pro zarovnání textu titulku uvnitř grupy.
+        /// </summary>
+        SWF.Padding DesignTitlePadding { get; }
+        /// <summary>
+        /// Umístění textu <see cref="TitleText"/> v prostoru záhlaví. 
+        /// Prostor je standardně zmenšen o Padding deklarovaný v <see cref="IDataFormGroup.DesignPadding"/>, tak je možno zajistit, že text titulku se nebude dotýkat okraje grupy.
+        /// </summary>
+        ContentAlignment TitleAlignment { get; }
+        /// <summary>
+        /// Výška záhlaví (v designových pixelech). Záhlaví je umístěno na vnitřním horním okraji grupy po celé její šířce.
+        /// Uvnitř této výšky může být zobrazena linka, její pozice je definována v 
+        /// Teprve pod touto výškou začíná prostor pro Columny.
+        /// </summary>
+        int? DesignTitleHeight { get; }
+        /// <summary>
+        /// Souřadnice prostoru barevné linky na ose Y, která reprezentuje podtržení nebo podbarvení titulku.
+        /// Hodnota <b>Begin</b> reprezentuje souřadnici Y, kde linka začíná, měřeno od počátku titulku nahoře, 
+        /// hodnota <b>Size</b> reprezentuje výšku linky.
+        /// Pokud je zde null, pak se linka nevykresluje.
+        /// Může zde být rozsah 0 až <see cref="DesignTitleHeight"/>, pak je podkreslen celý prostor titulku.
+        /// </summary>
+        Int32Range DesignLineRange { get; }
+        /// <summary>
+        /// Řídí viditelnost titulku grupy
+        /// </summary>
+        bool IsVisible { get; }
+        /// <summary>
+        /// Vzhled písma titulku - kalíšek, barvy, modifikace fontu. 
+        /// Určuje vzhled titulkového textu.
+        /// </summary>
+        IDataFormColumnAppearance TitleAppearance { get; }
+        /// <summary>
+        /// Způsob barev a stylu pozadí titulkového řádku. Pozadí pokrývá celou výšku <see cref="DesignTitleHeight"/>.
+        /// Teprve na toto pozadí je vykreslena linka v souřadnicích <see cref="DesignLineRange"/> se vzhledem <see cref="LineAppearance"/>.
+        /// </summary>
+        IDataFormBackgroundAppearance BackgroundAppearance { get; }
+        /// <summary>
+        /// Způsob barev a stylu linky titulkového řádku (prostor je umístěn ve svislých souřadnicích <see cref="DesignLineRange"/>.
+        /// </summary>
+        IDataFormBackgroundAppearance LineAppearance { get; }
+    }
     #endregion
-    #region DataFormColumn + interface
+    #region DataFormColumn + interface (různé třídy pro různé typy)
     /// <summary>
     /// Data definující jeden prvek v DataFormu, který má Text a Ikonu a zaškrtávací hodnotu (CheckBox, CheckButton)
     /// </summary>
@@ -514,7 +622,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         public virtual string Text { get; set; }
         string IToolTipItem.ToolTipTitle { get { return ToolTipTitle ?? Text; } }
-
     }
     /// <summary>
     /// Předpis požadovaných vlastností pro jeden prvek v rámci DataFormu, který má Text a Ikonu
@@ -606,7 +713,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Vzhled prvku - kalíšek, barvy, modifikace fontu
         /// </summary>
         public virtual IDataFormColumnAppearance Appearance { get; set; }
-
         /// <summary>
         /// Text ToolTipu
         /// </summary>
@@ -759,6 +865,14 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         public virtual string StyleName { get; set; }
         /// <summary>
+        /// Název obrázku použitého na pozadí
+        /// </summary>
+        public virtual string BackImageName { get; set; }
+        /// <summary>
+        /// Umístění obrázku použitého na pozadí
+        /// </summary>
+        public virtual BackImageAlignmentMode BackImageAlignment { get; set; }
+        /// <summary>
         /// Směr gradientu
         /// </summary>
         public virtual GradientStyleType? GradientStyle { get; set; }
@@ -769,11 +883,24 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         public virtual Color? BackColor { get; set; }
         /// <summary>
+        /// Barva pozadí plná (její název kalíšku), nebo (pokud je definovaná párová barva End) barva počáteční v Gradientu.
+        /// <para/>
+        /// Barva v neaktivním stavu.
+        /// </summary>
+        public virtual string BackColorName { get; set; }
+        /// <summary>
         /// Barva koncová v Gradientu. Pokud není zadaná barva počáteční (bez suffixu End) pak se barva End ignoruje.
         /// <para/>
         /// Barva v neaktivním stavu.
         /// </summary>
         public virtual Color? BackColorEnd { get; set; }
+        /// <summary>
+        /// Barva koncová v Gradientu (její název kalíšku). 
+        /// Pokud není zadaná barva počáteční (bez suffixu End) pak se barva End ignoruje.
+        /// <para/>
+        /// Barva v neaktivním stavu.
+        /// </summary>
+        public virtual string BackColorEndName { get; set; }
         /// <summary>
         /// Barva pozadí plná, nebo (pokud je definovaná párová barva End) barva počáteční v Gradientu.
         /// <para/>
@@ -781,11 +908,24 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         public virtual Color? OnMouseBackColor { get; set; }
         /// <summary>
+        /// Barva pozadí plná (její název kalíšku), nebo (pokud je definovaná párová barva End) barva počáteční v Gradientu.
+        /// <para/>
+        /// Barva v situaci, kdy na prvku je myš.
+        /// </summary>
+        public virtual string OnMouseBackColorName { get; set; }
+        /// <summary>
         /// Barva koncová v Gradientu. Pokud není zadaná barva počáteční (bez suffixu End) pak se barva End ignoruje.
         /// <para/>
         /// Barva v situaci, kdy na prvku je myš.
         /// </summary>
         public virtual Color? OnMouseBackColorEnd { get; set; }
+        /// <summary>
+        /// Barva koncová v Gradientu (její název kalíšku).
+        /// Pokud není zadaná barva počáteční (bez suffixu End) pak se barva End ignoruje.
+        /// <para/>
+        /// Barva v situaci, kdy na prvku je myš.
+        /// </summary>
+        public virtual string OnMouseBackColorEndName { get; set; }
         /// <summary>
         /// Barva pozadí plná, nebo (pokud je definovaná párová barva End) barva počáteční v Gradientu.
         /// <para/>
@@ -793,11 +933,25 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         public virtual Color? FocusedBackColor { get; set; }
         /// <summary>
+        /// Barva pozadí plná (její název kalíšku), nebo (pokud je definovaná párová barva End) barva počáteční v Gradientu.
+        /// <para/>
+        /// Barva v situaci, kdy v prvku je focus.
+        /// </summary>
+        public virtual string FocusedBackColorName { get; set; }
+        /// <summary>
         /// Barva koncová v Gradientu. Pokud není zadaná barva počáteční (bez suffixu End) pak se barva End ignoruje.
         /// <para/>
         /// Barva v situaci, kdy v prvku je focus.
         /// </summary>
         public virtual Color? FocusedBackColorEnd { get; set; }
+        /// <summary>
+        /// Barva koncová v Gradientu (její název kalíšku).
+        /// Pokud není zadaná barva počáteční (bez suffixu End) pak se barva End ignoruje.
+        /// <para/>
+        /// Barva v situaci, kdy v prvku je focus.
+        /// </summary>
+        public virtual string FocusedBackColorEndName { get; set; }
+
     }
     /// <summary>
     /// Definice vzhledu pozadí
@@ -810,6 +964,14 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         string StyleName { get; }
         /// <summary>
+        /// Název obrázku použitého na pozadí
+        /// </summary>
+        string BackImageName { get; }
+        /// <summary>
+        /// Umístění obrázku použitého na pozadí
+        /// </summary>
+        BackImageAlignmentMode BackImageAlignment { get; }
+        /// <summary>
         /// Směr gradientu
         /// </summary>
         GradientStyleType? GradientStyle { get; }
@@ -820,11 +982,24 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         Color? BackColor { get; }
         /// <summary>
+        /// Barva pozadí plná (její název kalíšku), nebo (pokud je definovaná párová barva End) barva počáteční v Gradientu.
+        /// <para/>
+        /// Barva v neaktivním stavu.
+        /// </summary>
+        string BackColorName { get; }
+        /// <summary>
         /// Barva koncová v Gradientu. Pokud není zadaná barva počáteční (bez suffixu End) pak se barva End ignoruje.
         /// <para/>
         /// Barva v neaktivním stavu.
         /// </summary>
         Color? BackColorEnd { get; }
+        /// <summary>
+        /// Barva koncová v Gradientu (její název kalíšku). 
+        /// Pokud není zadaná barva počáteční (bez suffixu End) pak se barva End ignoruje.
+        /// <para/>
+        /// Barva v neaktivním stavu.
+        /// </summary>
+        string BackColorEndName { get; }
         /// <summary>
         /// Barva pozadí plná, nebo (pokud je definovaná párová barva End) barva počáteční v Gradientu.
         /// <para/>
@@ -832,11 +1007,24 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         Color? OnMouseBackColor { get; }
         /// <summary>
+        /// Barva pozadí plná (její název kalíšku), nebo (pokud je definovaná párová barva End) barva počáteční v Gradientu.
+        /// <para/>
+        /// Barva v situaci, kdy na prvku je myš.
+        /// </summary>
+        string OnMouseBackColorName { get; }
+        /// <summary>
         /// Barva koncová v Gradientu. Pokud není zadaná barva počáteční (bez suffixu End) pak se barva End ignoruje.
         /// <para/>
         /// Barva v situaci, kdy na prvku je myš.
         /// </summary>
         Color? OnMouseBackColorEnd { get; }
+        /// <summary>
+        /// Barva koncová v Gradientu (její název kalíšku).
+        /// Pokud není zadaná barva počáteční (bez suffixu End) pak se barva End ignoruje.
+        /// <para/>
+        /// Barva v situaci, kdy na prvku je myš.
+        /// </summary>
+        string OnMouseBackColorEndName { get; }
         /// <summary>
         /// Barva pozadí plná, nebo (pokud je definovaná párová barva End) barva počáteční v Gradientu.
         /// <para/>
@@ -844,11 +1032,82 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         Color? FocusedBackColor { get; }
         /// <summary>
+        /// Barva pozadí plná (její název kalíšku), nebo (pokud je definovaná párová barva End) barva počáteční v Gradientu.
+        /// <para/>
+        /// Barva v situaci, kdy v prvku je focus.
+        /// </summary>
+        string FocusedBackColorName { get; }
+        /// <summary>
         /// Barva koncová v Gradientu. Pokud není zadaná barva počáteční (bez suffixu End) pak se barva End ignoruje.
         /// <para/>
         /// Barva v situaci, kdy v prvku je focus.
         /// </summary>
         Color? FocusedBackColorEnd { get; }
+        /// <summary>
+        /// Barva koncová v Gradientu (její název kalíšku).
+        /// Pokud není zadaná barva počáteční (bez suffixu End) pak se barva End ignoruje.
+        /// <para/>
+        /// Barva v situaci, kdy v prvku je focus.
+        /// </summary>
+        string FocusedBackColorEndName { get; }
+    }
+    /// <summary>
+    /// Kam vykreslit obrázek pozadí
+    /// </summary>
+    public enum BackImageAlignmentMode
+    {
+        /// <summary>
+        /// Nebude kreslen i když bude zadán
+        /// </summary>
+        None = 0,
+        /// <summary>
+        /// Celé pozadí bude obrázkem vydlážděno, pozor na výkonové problémy
+        /// </summary>
+        Tile,
+        /// <summary>
+        /// Celé pozadí bude obrázkem vyplněno bez ohledu na AspectRatio (bude zkreslen poměr stran), pozor na malý obrázek ve velké ploše
+        /// </summary>
+        Fill,
+        /// <summary>
+        /// Pozadí bude obrázkem vyplněno s ohledem na AspectRatio (bez zkreslení poměru stran), pozor na malý obrázek ve velké ploše
+        /// </summary>
+        Enlarge,
+        /// <summary>
+        /// Nahoře vlevo
+        /// </summary>
+        TopLeft,
+        /// <summary>
+        /// Nahoře, vodorovně uprostřed
+        /// </summary>
+        TopCenter,
+        /// <summary>
+        /// Nahoře vpravo
+        /// </summary>
+        TopRight,
+        /// <summary>
+        /// Levý okraj, svisle uprostřed
+        /// </summary>
+        LeftCenter,
+        /// <summary>
+        /// Uprostřed beze změny měřítka
+        /// </summary>
+        Center,
+        /// <summary>
+        /// Pravý okraj, svisle uprostřed
+        /// </summary>
+        RightCenter,
+        /// <summary>
+        /// Dole vlevo
+        /// </summary>
+        BottomLeft,
+        /// <summary>
+        /// Dole, vodorovně uprostřed
+        /// </summary>
+        BottomCenter,
+        /// <summary>
+        /// Dole vpravo
+        /// </summary>
+        BottomRight
     }
     #endregion
     #region Enumy
