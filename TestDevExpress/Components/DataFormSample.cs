@@ -369,25 +369,30 @@ namespace TestDevExpress.Components
             DataFormPage page1 = new DataFormPage() { PageId = "f101a", PageText = "Základní data" };
             pages.Add(page1);
 
-            DataFormGroup group1 = new DataFormGroup() { GroupId = "Adresa", CollapseMode = DataFormGroupCollapseMode.AllowCollapseAllways, DesignPadding = new Padding(6) };
+            DataFormGroup group1 = new DataFormGroup()
+            {
+                GroupId = "Adresa", CollapseMode = DataFormGroupCollapseMode.AllowCollapseAllways, DesignPadding = new Padding(6),
+                DesignHeight = 420
+            };
             group1.GroupTitle = new DataFormGroupTitle() 
             { 
                 DesignTitleHeight = 30, TitleText = "Adresa", 
                 TitleAppearance = new DataFormColumnAppearance() { FontStyleBold = true, FontSizeDelta = 1 }, 
                 BackgroundAppearance = new DataFormBackgroundAppearance() 
-                { BackColor = Color.FromArgb(160, 190, 240, 160), BackColorEnd = Color.FromArgb(16, 190, 240, 160), GradientStyle = GradientStyleType.ToRight },
+                { BackColor = Color.FromArgb(160, 190, 240, 160), BackColorEnd = Color.FromArgb(0, 190, 240, 160), GradientStyle = GradientStyleType.DownRight },
                 DesignTitlePadding = new Padding(18, 2, 18, 2), 
-                DesignLineRange = new Int32Range(26, 28), 
+                DesignLineRange = new Int32Range(29, 30), 
                 LineAppearance = new DataFormBackgroundAppearance() 
-                { BackColor = Color.FromArgb(255, 40, 120, 40) }
+                { BackColor = Color.FromArgb(255, 90, 200, 80), BackColorEnd = Color.FromArgb(32, 90, 200, 80), GradientStyle = GradientStyleType.ToRight }
             };
             group1.BackgroundAppearance = new DataFormBackgroundAppearance()
             { 
-                BackColor = Color.FromArgb(192, 192, 216, 255), BackColorEnd = Color.FromArgb(192, 220, 240, 255), GradientStyle = GradientStyleType.ToRight,
-                BackImageName = @"ImagesTest\BackCorners\Corner00011.png", BackImageAlignment = BackImageAlignmentMode.Fill
+                BackColor = Color.FromArgb(64, 192, 216, 255), BackColorEnd = Color.FromArgb(32, 220, 240, 255), GradientStyle = GradientStyleType.ToRight,
+                BackImageName = @"ImagesTest\BackCorners\Corner00010tr2.png", BackImageFill = ImageFillMode.Resize, BackImageAlignment = ContentAlignment.TopRight
             };
-            group1.DesignBorderRange = new Int32Range(3, 5);
-            group1.BorderAppearance = new DataFormBackgroundAppearance() { BackColor = Color.FromArgb(192, 64, 64, 64), BackColorEnd = Color.FromArgb(16, 64, 64, 64), GradientStyle = GradientStyleType.Downward };
+            group1.DesignBorderRange = new Int32Range(3, 4);
+            group1.BorderAppearance = new DataFormBackgroundAppearance()
+            { BackColor = Color.FromArgb(192, 64, 64, 64), BackColorEnd = Color.FromArgb(0, 64, 64, 64), GradientStyle = GradientStyleType.None };
 
             page1.Groups.Add(group1);
 

@@ -1333,7 +1333,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             Size realSize = size;
             if (cropSize)
-                realSize = realSize.ShrinkTo(bounds.Size, false);
+                realSize = realSize.ShrinkTo(bounds.Size, true);
             return realSize.AlignTo(bounds, alignment);
         }
         /// <summary>
@@ -1365,7 +1365,9 @@ namespace Noris.Clients.Win.Components.AsolDX
             return size.AlignTo(bounds, alignment);
         }
         /// <summary>
-        /// Zarovná prostor dané velikosti do daného hostitele v daném zarovnání
+        /// Zarovná prostor dané velikosti do daného hostitele v daném zarovnání.
+        /// Pokud je třeba zajistit zmenšení this prostoru tak, aby se do hostitele vešel, zvolte metodu <see cref="AlignTo(Size, Rectangle, ContentAlignment, bool)"/> s parametrem crop = true.
+        /// Malé prostory nebudou zvětšovány.
         /// </summary>
         /// <param name="size"></param>
         /// <param name="bounds"></param>
@@ -1702,6 +1704,46 @@ namespace Noris.Clients.Win.Components.AsolDX
             // A dál pokračuji algoritmem pro zarovnání vypočítané Zoomované velikosti:
             SizeF sizeZoom = new SizeF(zoom * sizeW, zoom * sizeH);
             return sizeZoom.AlignTo(bounds, alignment);
+        }
+        #endregion
+        #region Size: FitTo
+        /// <summary>
+        /// Umístí this velikost (typicky jde o velikost obrázku) do daného cílového prostoru <paramref name="target"/> tak, aby cílový prostor byl vyplněn (na výšku nebo na šířku), 
+        /// aby this velikost přitom byla upravena proporcionálně, a aby byla umístěna podle daného požadavku <paramref name="alignment"/>.
+        /// <para/>
+        /// Pokud vstupní velikost nebo cílová velikost má šířku nebo výšku 0 nebo zápornou, vrací se <see cref="Rectangle.Empty"/>.
+        /// </summary>
+        /// <param name="size">Velikost, kterou chceme umístit. Typicky jde o velikost obrázku.</param>
+        /// <param name="target">Cílový prostor</param>
+        /// <param name="alignment">Styl zarovnání</param>
+        /// <returns>Souřadnice podle požadavku</returns>
+        public static Rectangle FitTo(this Size size, Rectangle target, ContentAlignment alignment)
+        {
+            var targetBounds = FitTo((SizeF)size, (RectangleF)target, alignment);
+            return Rectangle.Round(targetBounds);
+        }
+        /// <summary>
+        /// Umístí this velikost (typicky jde o velikost obrázku) do daného cílového prostoru <paramref name="target"/> tak, aby cílový prostor byl vyplněn (na výšku nebo na šířku), 
+        /// aby this velikost přitom byla upravena proporcionálně, a aby byla umístěna podle daného požadavku <paramref name="alignment"/>.
+        /// <para/>
+        /// Pokud vstupní velikost nebo cílová velikost má šířku nebo výšku 0 nebo zápornou, vrací se <see cref="Rectangle.Empty"/>.
+        /// </summary>
+        /// <param name="size">Velikost, kterou chceme umístit. Typicky jde o velikost obrázku.</param>
+        /// <param name="target">Cílový prostor</param>
+        /// <param name="alignment">Styl zarovnání</param>
+        /// <returns>Souřadnice podle požadavku</returns>
+        public static RectangleF FitTo(this SizeF size, RectangleF target, ContentAlignment alignment)
+        {
+            if (size.Width <= 0 || size.Height <= 0 || target.Width <= 0 || target.Height <= 0) return Rectangle.Empty;
+
+            var sizeRatio = size.Width / size.Height;                // Poměr šířky/výšky vstupní velikosti: větší číslo = širší a nižší prostor
+            var targetRatio = target.Width / target.Height;          //  dtto pro cílový prostor
+            SizeF targetSize = ((sizeRatio < targetRatio) ?          // Pokud vstupní velikost má poměr Š/V menší než cílový prostor, je tedy "užší" než cíl => a směrodatná bude výška cílového prostoru:
+                new SizeF(target.Height * sizeRatio, target.Height) :
+                new SizeF(target.Width, target.Width / sizeRatio));
+
+            RectangleF targetBounds = targetSize.AlignTo(target, alignment);
+            return targetBounds;
         }
         #endregion
         #region Rectangle: FromPoints, FromDim, FromCenter, End, GetVisualRange, GetSide, GetPoint

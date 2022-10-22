@@ -111,7 +111,7 @@ namespace TestDevExpress.Forms
             group.Items.Add(new DataRibbonItem() { ItemId = "StatusRefresh", Text = "Refresh Status", ToolTipText = "Znovu načíst údaje o spotřebě systémových zdrojů do statusbaru", ImageName = imageStatusRefresh });
             group.Items.Add(new DataRibbonItem() { ItemId = "DataFormRemove", Text = "Remove DataForm", ToolTipText = "Zahodit DataForm a uvolnit jeho zdroje", ImageName = imageDataFormRemove });
             group.Items.Add(new DataRibbonItem() { ItemId = "LogClear", Text = "Clear Log", ToolTipText = "Smaže obsah logu vpravo", ImageName = imageLogClear, RibbonStyle = RibbonItemStyles.Large });
-            group.Items.Add(new DataRibbonItem() { ItemId = "LogVisible", Text = "Show Log", ToolTipText = "Zobrazit log v pravé části hlavního okna.\r\nPOZOR: pokud je log stále zobrazený, pak veškeré logované změny jsou zatíženy časem refreshe textu Logu. \r\n Je vhodnější log zavřít, provést testy, a pak log otevřít a přečíst.", ItemType = RibbonItemType.CheckButton, Checked = _IsLogVisible, RibbonStyle = RibbonItemStyles.Large });
+            group.Items.Add(new DataRibbonItem() { ItemId = "LogVisible", Text = "Show Log", ToolTipText = "Zobrazit log v pravé části hlavního okna.\r\nPOZOR: pokud je log stále zobrazený, pak veškeré logované změny jsou zatíženy časem refreshe textu Logu. \r\n Je vhodnější log zavřít, provést testy, a pak log otevřít a přečíst.", ItemType = RibbonItemType.CheckButton, Checked = _IsLogVisible, RibbonStyle = RibbonItemStyles.Large, ImageName = "devav/layout/datapanel.svg" });
 
 
             string imageTest = "svgimages/xaf/actiongroup_easytestrecorder.svg";

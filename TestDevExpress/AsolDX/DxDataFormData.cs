@@ -869,9 +869,14 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         public virtual string BackImageName { get; set; }
         /// <summary>
+        /// Režim vyplnění obrázku na pozadí.
+        /// Použije se spolu s <see cref="BackImageAlignment"/>.
+        /// </summary>
+        public virtual ImageFillMode BackImageFill { get; set; }
+        /// <summary>
         /// Umístění obrázku použitého na pozadí
         /// </summary>
-        public virtual BackImageAlignmentMode BackImageAlignment { get; set; }
+        public virtual ContentAlignment BackImageAlignment { get; set; }
         /// <summary>
         /// Směr gradientu
         /// </summary>
@@ -968,9 +973,15 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         string BackImageName { get; }
         /// <summary>
-        /// Umístění obrázku použitého na pozadí
+        /// Režim vyplnění obrázku na pozadí.
+        /// Použije se spolu s <see cref="BackImageAlignment"/>.
         /// </summary>
-        BackImageAlignmentMode BackImageAlignment { get; }
+        ImageFillMode BackImageFill { get; }
+        /// <summary>
+        /// Umístění obrázku použitého na pozadí.
+        /// Použije se spolu s <see cref="BackImageFill"/>.
+        /// </summary>
+        ContentAlignment BackImageAlignment { get; }
         /// <summary>
         /// Směr gradientu
         /// </summary>
@@ -1050,64 +1061,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Barva v situaci, kdy v prvku je focus.
         /// </summary>
         string FocusedBackColorEndName { get; }
-    }
-    /// <summary>
-    /// Kam vykreslit obrázek pozadí
-    /// </summary>
-    public enum BackImageAlignmentMode
-    {
-        /// <summary>
-        /// Nebude kreslen i když bude zadán
-        /// </summary>
-        None = 0,
-        /// <summary>
-        /// Celé pozadí bude obrázkem vydlážděno, pozor na výkonové problémy
-        /// </summary>
-        Tile,
-        /// <summary>
-        /// Celé pozadí bude obrázkem vyplněno bez ohledu na AspectRatio (bude zkreslen poměr stran), pozor na malý obrázek ve velké ploše
-        /// </summary>
-        Fill,
-        /// <summary>
-        /// Pozadí bude obrázkem vyplněno s ohledem na AspectRatio (bez zkreslení poměru stran), pozor na malý obrázek ve velké ploše
-        /// </summary>
-        Enlarge,
-        /// <summary>
-        /// Nahoře vlevo
-        /// </summary>
-        TopLeft,
-        /// <summary>
-        /// Nahoře, vodorovně uprostřed
-        /// </summary>
-        TopCenter,
-        /// <summary>
-        /// Nahoře vpravo
-        /// </summary>
-        TopRight,
-        /// <summary>
-        /// Levý okraj, svisle uprostřed
-        /// </summary>
-        LeftCenter,
-        /// <summary>
-        /// Uprostřed beze změny měřítka
-        /// </summary>
-        Center,
-        /// <summary>
-        /// Pravý okraj, svisle uprostřed
-        /// </summary>
-        RightCenter,
-        /// <summary>
-        /// Dole vlevo
-        /// </summary>
-        BottomLeft,
-        /// <summary>
-        /// Dole, vodorovně uprostřed
-        /// </summary>
-        BottomCenter,
-        /// <summary>
-        /// Dole vpravo
-        /// </summary>
-        BottomRight
     }
     #endregion
     #region Enumy

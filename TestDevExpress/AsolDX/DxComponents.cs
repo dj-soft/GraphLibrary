@@ -2872,6 +2872,15 @@ namespace Noris.Clients.Win.Components.AsolDX
                 case GradientStyleType.ToRight:
                     bounds = bounds.Enlarge(1, 0, 1, 0);             // Problém .NET a WinForm...
                     return new LinearGradientBrush(bounds, color1.Value, color2.Value, LinearGradientMode.Horizontal);
+
+                case GradientStyleType.UpLeft:
+                    return new LinearGradientBrush(bounds.GetPoint(ContentAlignment.BottomRight).Value, bounds.GetPoint(ContentAlignment.TopLeft).Value, color1.Value, color2.Value);
+                case GradientStyleType.UpRight:
+                    return new LinearGradientBrush(bounds.GetPoint(ContentAlignment.BottomLeft).Value, bounds.GetPoint(ContentAlignment.TopRight).Value, color1.Value, color2.Value);
+                case GradientStyleType.DownRight:
+                    return new LinearGradientBrush(bounds.GetPoint(ContentAlignment.TopLeft).Value, bounds.GetPoint(ContentAlignment.BottomRight).Value, color1.Value, color2.Value);
+                case GradientStyleType.DownLeft:
+                    return new LinearGradientBrush(bounds.GetPoint(ContentAlignment.TopRight).Value, bounds.GetPoint(ContentAlignment.BottomLeft).Value, color1.Value, color2.Value);
             }
             return new SolidBrush(color1.Value);
         }
@@ -2893,6 +2902,69 @@ namespace Noris.Clients.Win.Components.AsolDX
                 case RectangleSide.Right:
                 case RectangleSide.MiddleRight: return GradientStyleType.ToRight;
                 default: return GradientStyleType.None;
+            }
+        }
+        /// <summary>
+        /// Metoda vykreslí do dané grafiky daný obrázek do cílového prostoru, v daném režimu a zarovnání.
+        /// </summary>
+        /// <param name="graphics"></param>
+        /// <param name="imageName"></param>
+        /// <param name="bounds"></param>
+        /// <param name="fillMode"></param>
+        /// <param name="alignment"></param>
+        public static void PaintImage(Graphics graphics, string imageName, Rectangle bounds, ImageFillMode fillMode, ContentAlignment alignment)
+        {
+            if (String.IsNullOrEmpty(imageName) || fillMode == ImageFillMode.None) return;
+            var image = DxComponent.GetBitmapImage(imageName, ResourceImageSizeType.Original);
+            PaintImage(graphics, image, bounds, fillMode, alignment);
+        }
+        /// <summary>
+        /// Metoda vykreslí do dané grafiky daný obrázek do cílového prostoru, v daném režimu a zarovnání.
+        /// </summary>
+        /// <param name="graphics"></param>
+        /// <param name="image"></param>
+        /// <param name="bounds"></param>
+        /// <param name="fillMode"></param>
+        /// <param name="alignment"></param>
+        public static void PaintImage(Graphics graphics, Image image, Rectangle bounds, ImageFillMode fillMode, ContentAlignment alignment)
+        {
+            if (image is null || fillMode == ImageFillMode.None) return;
+            var clip = graphics.Clip;
+            try
+            {
+                var imageSize = image.Size;
+                Rectangle imageBounds;
+                graphics.SetClip(bounds, CombineMode.Intersect);
+                switch (fillMode)
+                {
+                    case ImageFillMode.Clip:
+                        imageBounds = imageSize.AlignTo(bounds, alignment, false);
+                        graphics.DrawImageUnscaledAndClipped(image, imageBounds);
+                        break;
+                    case ImageFillMode.Shrink:
+                        bool isBigger = (imageSize.Width > bounds.Width || imageSize.Height > bounds.Height);
+                        imageBounds = (isBigger ? imageSize.FitTo(bounds, alignment) : imageSize.AlignTo(bounds, alignment));
+                        graphics.DrawImage(image, imageBounds);
+                        break;
+                    case ImageFillMode.Resize:
+                        imageBounds = imageSize.FitTo(bounds, alignment);
+                        graphics.DrawImage(image, imageBounds);
+                        break;
+                    case ImageFillMode.Fill:
+                        imageBounds = bounds;
+                        graphics.DrawImage(image, imageBounds);
+                        break;
+                    case ImageFillMode.Tile:
+
+
+
+                        break;
+                }
+            }
+            catch (Exception) { }
+            finally
+            {
+                graphics.Clip = clip;
             }
         }
         /// <summary>
@@ -6498,6 +6570,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         User
     }
+    #endregion
+    #region Obecné enumy
     /// <summary>
     /// Směr gradientu
     /// </summary>
@@ -6522,7 +6596,23 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Doleva
         /// </summary>
-        ToLeft
+        ToLeft,
+        /// <summary>
+        /// Nahoru doleva 45° nebo podle rozměrů obdélníku
+        /// </summary>
+        UpLeft,
+        /// <summary>
+        /// Nahoru doprava 45° nebo podle rozměrů obdélníku
+        /// </summary>
+        UpRight,
+        /// <summary>
+        /// Dolů doprava 45° nebo podle rozměrů obdélníku
+        /// </summary>
+        DownRight,
+        /// <summary>
+        /// Dolů doleva 45° nebo podle rozměrů obdélníku
+        /// </summary>
+        DownLeft
     }
     /// <summary>
     /// 3D efekt gradientu
@@ -6541,6 +6631,36 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Vně (světlá je vlevo/nahoře, tmavá je vpravo/dole)
         /// </summary>
         Outward
+    }
+    /// <summary>
+    /// Režim práce s obrázkem při jeho vkládání do cílového prostoru
+    /// </summary>
+    public enum ImageFillMode
+    {
+        /// <summary>
+        /// Nekreslit, jako by nebyl obrázek zadán
+        /// </summary>
+        None,
+        /// <summary>
+        /// Velikost neupravovat, nechat 1:1, umístit a oříznout
+        /// </summary>
+        Clip,
+        /// <summary>
+        /// Pokud je obrázek větší než cíl, pak jej zmenšit, ale pokud je menší pak nezvětšovat
+        /// </summary>
+        Shrink,
+        /// <summary>
+        /// Velikost obrázku přizpůsobit cíli (zmenšit nebo zvětšit), ale zachovat poměr stran
+        /// </summary>
+        Resize,
+        /// <summary>
+        /// Obrázek deformovat do rozměrů cílového prostoru tak, aby byl v obou směrech vyplněn na 100%
+        /// </summary>
+        Fill,
+        /// <summary>
+        /// Obrázek ponechat v původní velikosti, umístit v levém horním rohu a opakovat jako dlaždice po celé ploše
+        /// </summary>
+        Tile
     }
     #endregion
     #region class Convertor : Knihovna statických konverzních metod mezi simple typy a stringem

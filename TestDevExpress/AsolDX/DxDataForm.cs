@@ -561,11 +561,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Vykreslí pozadí obsahu
         /// </summary>
         /// <param name="e"></param>
-        /// <param name="appearance"></param>
         /// <param name="bounds"></param>
+        /// <param name="appearance"></param>
         /// <param name="onMouse"></param>
         /// <param name="hasFocus"></param>
-        internal static void PaintBackground(DxBufferedGraphicPaintArgs e, Rectangle? bounds, IDataFormBackgroundAppearance appearance, bool onMouse, bool hasFocus)
+        /// <param name="withImage"></param>
+        internal static void PaintBackground(DxBufferedGraphicPaintArgs e, Rectangle? bounds, IDataFormBackgroundAppearance appearance, bool onMouse, bool hasFocus, bool withImage)
         {
             if (appearance is null || !bounds.HasValue) return;
 
@@ -579,72 +580,19 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
 
             // Image:
-            var imageName = appearance.BackImageName;
-            if (imageName != null)
-                PaintBackgroundImage(e, bounds.Value, imageName, appearance.BackImageAlignment);
-
+            if (withImage)
+                DxComponent.PaintImage(e.Graphics, appearance.BackImageName, bounds.Value, appearance.BackImageFill, appearance.BackImageAlignment);
         }
         /// <summary>
-        /// Vykreslí danou ikonu do daného prostoru v daném zarovnání
+        /// Vykreslí pozadí obsahu
         /// </summary>
         /// <param name="e"></param>
         /// <param name="bounds"></param>
-        /// <param name="imageName"></param>
-        /// <param name="alignment"></param>
-        internal static void PaintBackgroundImage(DxBufferedGraphicPaintArgs e, Rectangle bounds, string imageName, BackImageAlignmentMode alignment)
+        /// <param name="appearance"></param>
+        internal static void PaintImage(DxBufferedGraphicPaintArgs e, Rectangle? bounds, IDataFormBackgroundAppearance appearance)
         {
-            if (!String.IsNullOrEmpty(imageName))
-            {
-                var image = DxComponent.GetBitmapImage(imageName, ResourceImageSizeType.Original);
-                PaintBackgroundImage(e, bounds, image, alignment);
-            }
-        }
-        /// <summary>
-        /// Vykreslí danou ikonu do daného prostoru v daném zarovnání
-        /// </summary>
-        /// <param name="e"></param>
-        /// <param name="bounds"></param>
-        /// <param name="image"></param>
-        /// <param name="alignment"></param>
-        internal static void PaintBackgroundImage(DxBufferedGraphicPaintArgs e, Rectangle bounds, Image image, BackImageAlignmentMode alignment)
-        {
-            if (image is null) return;
-            var size = image.Size;
-            Rectangle imageBounds;
-            var position = _ConvertAlignment(alignment);
-            if (position.HasValue)
-            {
-                imageBounds = size.AlignTo(bounds, position.Value);
-                e.Graphics.DrawImageUnscaledAndClipped(image, imageBounds);
-            }
-            else
-            {
-                switch (alignment)
-                {
-                    case BackImageAlignmentMode.Enlarge:
-                    case BackImageAlignmentMode.Fill:
-                        imageBounds = bounds;
-                        // var imga = new System.Drawing.Imaging.ImageAttributes();
-                        e.Graphics.DrawImage(image, imageBounds);
-                        break;
-                }
-            }
-        }
-        private static ContentAlignment? _ConvertAlignment(BackImageAlignmentMode alignment)
-        {
-            switch (alignment)
-            {
-                case BackImageAlignmentMode.TopLeft: return ContentAlignment.TopLeft;
-                case BackImageAlignmentMode.TopCenter: return ContentAlignment.TopCenter;
-                case BackImageAlignmentMode.TopRight: return ContentAlignment.TopRight;
-                case BackImageAlignmentMode.LeftCenter: return ContentAlignment.MiddleLeft;
-                case BackImageAlignmentMode.Center: return ContentAlignment.MiddleCenter;
-                case BackImageAlignmentMode.RightCenter: return ContentAlignment.MiddleRight;
-                case BackImageAlignmentMode.BottomLeft: return ContentAlignment.BottomLeft;
-                case BackImageAlignmentMode.BottomCenter: return ContentAlignment.BottomCenter;
-                case BackImageAlignmentMode.BottomRight: return ContentAlignment.BottomRight;
-            }
-            return null;
+            if (appearance is null || !bounds.HasValue) return;
+            DxComponent.PaintImage(e.Graphics, appearance.BackImageName, bounds.Value, appearance.BackImageFill, appearance.BackImageAlignment);
         }
         /// <summary>
         /// Vykreslí rámeček v daném prostoru s danou šířkou v daném vzhledu
@@ -3528,6 +3476,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 // Opíšu si sadu výsledků z Coordinates, protože tam jsou "vypočítávané", a my je chceme mít permanentní:
                 this.__CurrentGroupSize = __CurrentCoordinates.Size;
                 this.__CurrentBorderBounds = __CurrentCoordinates.VisibleBorder ? __CurrentCoordinates.BorderOuterBounds : null;
+                this.__CurrentBorderSizes = __CurrentCoordinates.BorderRange?.Size;
+                this.__CurrentGroupBackground = __CurrentCoordinates.GroupBackground;
                 this.__CurrentTitleBackground = __CurrentCoordinates.HasTitle ? __CurrentCoordinates.TitleBackground : null;
                 this.__CurrentTitleTextBounds = __CurrentCoordinates.HasTitle ? __CurrentCoordinates.TitleTextBounds : null;
                 this.__CurrentTitleLineBounds = __CurrentCoordinates.VisibleLine ? __CurrentCoordinates.TitleLineBounds : null;
@@ -3547,14 +3497,46 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Hodnoty v <see cref="__CurrentCoordinates"/> jsou platné?
         /// </summary>
         private bool __CurrentCoordinatesValid;
-
+        /// <summary>
+        /// Souřadnice borderu. Šířka borderu je <see cref="__CurrentBorderSizes"/>.
+        /// Tato hodnota není autovalidována.
+        /// </summary>
         private Rectangle? __CurrentBorderBounds;
+        /// <summary>
+        /// Šířka borderu. Souřadnice borderu je <see cref="__CurrentBorderBounds"/>.
+        /// Tato hodnota není autovalidována.
+        /// </summary>
+        private int? __CurrentBorderSizes;
+        /// <summary>
+        /// Souřadnice celého pozadí (titulek + content).
+        /// Tato hodnota není autovalidována.
+        /// </summary>
+        private Rectangle? __CurrentGroupBackground;
+        /// <summary>
+        /// Souřadnice pozadí titulku.
+        /// Tato hodnota není autovalidována.
+        /// </summary>
         private Rectangle? __CurrentTitleBackground;
+        /// <summary>
+        /// Souřadnice textu titulku = zmenšeno o Padding od <see cref="__CurrentTitleBackground"/>.
+        /// Tato hodnota není autovalidována.
+        /// </summary>
         private Rectangle? __CurrentTitleTextBounds;
+        /// <summary>
+        /// Souřadnice linky podtržení titulku.
+        /// Tato hodnota není autovalidována.
+        /// </summary>
         private Rectangle? __CurrentTitleLineBounds;
+        /// <summary>
+        /// Souřadnice pozadí contentu (prvky).
+        /// Tato hodnota není autovalidována.
+        /// </summary>
         private Rectangle? __CurrentContentBackground;
+        /// <summary>
+        /// Souřadnice prvků = zmenšeno o Padding od <see cref="__CurrentContentBackground"/>.
+        /// Tato hodnota není autovalidována.
+        /// </summary>
         private Rectangle? __CurrentContentBounds;
-
         /// <summary>
         /// Metoda vrátí aktuální viditelnou souřadnici daného Current prostoru.
         /// Na vstupu je souřadnice v koordinátech grupy, na výstupu je v koordinátech controlu.
@@ -3631,8 +3613,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             if (!this.VisibleGroupBounds.HasValue) return;
             _CheckCurrentBounds();
             _PaintBorder(e, onMouse, hasFocus);
-            _PaintHeader(e, onMouse, hasFocus);
-            _PaintContentBackground(e, onMouse, hasFocus);
+            _PaintBackgrounds(e, onMouse, hasFocus);
         }
         /// <summary>
         /// Vykreslí border
@@ -3654,32 +3635,28 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             DxDataForm.PaintFrame(e, _GetVisibleBounds(bounds), sizes, appearance, onMouse, hasFocus);
         }
         /// <summary>
-        /// Vykreslí Header
+        /// Vykreslí všechna pozadí ve správném pořadí
         /// </summary>
         /// <param name="e"></param>
         /// <param name="onMouse"></param>
         /// <param name="hasFocus"></param>
-        private void _PaintHeader(DxBufferedGraphicPaintArgs e, bool onMouse, bool hasFocus)
+        private void _PaintBackgrounds(DxBufferedGraphicPaintArgs e, bool onMouse, bool hasFocus)
         {
             var groupTitle = _IGroup.GroupTitle;
-            if (groupTitle != null)
-            {
-                DxDataForm.PaintBackground(e, _GetVisibleBounds(__CurrentTitleBackground), groupTitle.BackgroundAppearance, onMouse, hasFocus);     // Podkladová barva pozadí
-                DxDataForm.PaintBackground(e, _GetVisibleBounds(__CurrentTitleLineBounds), groupTitle.LineAppearance, onMouse, hasFocus);           // Linka, pod textem
-                DxDataForm.PaintText(e, _GetVisibleBounds(__CurrentTitleTextBounds), groupTitle.TitleAppearance, groupTitle.TitleText);             // Text
-            }
+            bool hasTitle = (groupTitle != null);
+            if (hasTitle)
+                DxDataForm.PaintBackground(e, _GetVisibleBounds(__CurrentTitleBackground), groupTitle.BackgroundAppearance, onMouse, hasFocus, false);     // Pozadí pod titulkem
+
+            DxDataForm.PaintBackground(e, _GetVisibleBounds(__CurrentContentBackground), _IGroup.BackgroundAppearance, onMouse, hasFocus, false);          // Pozadí pod obsahem
+            DxDataForm.PaintImage(e, _GetVisibleBounds(__CurrentGroupBackground), _IGroup.BackgroundAppearance);                                           // Obrázek na pozadí celé grupy
+
+            if (hasTitle)
+                DxDataForm.PaintBackground(e, _GetVisibleBounds(__CurrentTitleLineBounds), groupTitle.LineAppearance, onMouse, hasFocus, false);           // Linka, pod textem
+
+            if (hasTitle)
+                DxDataForm.PaintText(e, _GetVisibleBounds(__CurrentTitleTextBounds), groupTitle.TitleAppearance, groupTitle.TitleText);                    // Text titulku
         }
-        /// <summary>
-        /// Vykreslí pozadí obsahu
-        /// </summary>
-        /// <param name="e"></param>
-        /// <param name="onMouse"></param>
-        /// <param name="hasFocus"></param>
-        private void _PaintContentBackground(DxBufferedGraphicPaintArgs e, bool onMouse, bool hasFocus)
-        {
-            DxDataForm.PaintBackground(e, _GetVisibleBounds(__CurrentContentBackground), _IGroup.BackgroundAppearance, onMouse, hasFocus);
-        }
-  
+
         #endregion
         #region class Coordinates : souřadnice různých míst v grupě
         /// <summary>

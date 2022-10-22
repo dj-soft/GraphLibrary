@@ -7082,11 +7082,15 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (addSkinButton) iGroup.Items.Add(new DataRibbonItem() { ItemId = "_SYS__DevExpress_SkinSetDropDown", ItemType = RibbonItemType.SkinSetDropDown });
             if (addPaletteButton) iGroup.Items.Add(new DataRibbonItem() { ItemId = "_SYS__DevExpress_SkinPaletteDropDown", ItemType = RibbonItemType.SkinPaletteDropDown });
             if (addPaletteGallery) iGroup.Items.Add(new DataRibbonItem() { ItemId = "_SYS__DevExpress_SkinPaletteGallery", ItemType = RibbonItemType.SkinPaletteGallery });
-            if (addUhdSupport) iGroup.Items.Add(new DataRibbonItem() 
-            { 
-                ItemId = "_SYS__DevExpress_UhdSupportCheckBox", Text = "UHD Paint", ToolTipText = "Zapíná podporu pro Full vykreslování na UHD monitoru",
-                ItemType = RibbonItemType.CheckBoxToggle, 
-                Checked = DxComponent.UhdPaintEnabled, ClickAction = SetUhdPaint 
+            if (addUhdSupport) iGroup.Items.Add(new DataRibbonItem()
+            {
+                ItemId = "_SYS__DevExpress_UhdSupportCheckBox",
+                Text = "UHD Paint",
+                ToolTipText = "Zapíná podporu pro Full vykreslování na UHD monitoru",
+                ItemType = RibbonItemType.CheckButton,
+                ImageName = "svgimages/xaf/action_view_chart.svg",
+                Checked = DxComponent.UhdPaintEnabled,
+                ClickAction = SetUhdPaint
             });
 
             return iGroup;
