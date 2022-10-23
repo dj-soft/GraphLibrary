@@ -372,14 +372,17 @@ namespace TestDevExpress.Components
             DataFormGroup group1 = new DataFormGroup()
             {
                 GroupId = "Adresa", CollapseMode = DataFormGroupCollapseMode.AllowCollapseAllways, DesignPadding = new Padding(6),
-                DesignHeight = 420, DesignWidth = 920
+                DesignHeight = 420, DesignWidth = 900
             };
             group1.GroupTitle = new DataFormGroupTitle() 
             { 
                 DesignTitleHeight = 30, TitleText = "Adresa", 
                 TitleAppearance = new DataFormColumnAppearance() { FontStyleBold = true, FontSizeDelta = 1 }, 
                 BackgroundAppearance = new DataFormBackgroundAppearance() 
-                { BackColor = Color.FromArgb(160, 190, 240, 160), BackColorEnd = Color.FromArgb(0, 190, 240, 160), GradientStyle = GradientStyleType.DownRight },
+                { 
+                    BackColor = Color.FromArgb(160, 190, 240, 160), BackColorEnd = Color.FromArgb(0, 190, 240, 160), 
+                    OnMouseBackColor = Color.FromArgb(220, 190, 240, 160), OnMouseBackColorEnd = Color.FromArgb(64, 190, 240, 160),
+                    GradientStyle = GradientStyleType.DownRight },
                 DesignTitlePadding = new Padding(18, 2, 18, 2), 
                 DesignLineRange = new Int32Range(29, 30), 
                 LineAppearance = new DataFormBackgroundAppearance() 
@@ -401,8 +404,8 @@ namespace TestDevExpress.Components
             group1.Items.Add(new DataFormColumnImageText() { ColumnId = "adresa_cislopop", ColumnType = DataFormColumnType.TextBox, DesignBounds = new Rectangle(212, 40, 120, 20), Indicators = DataFormColumnIndicatorType.CorrectAllwaysBold });
 
             group1.Items.Add(new DataFormColumnImageText() { ColumnId = "adresa_mesto_label", ColumnType = DataFormColumnType.Label, DesignBounds = new Rectangle(12, 66, 100, 18), Text = "Město" });
-            group1.Items.Add(new DataFormColumnImageText() { ColumnId = "adresa_psc", ColumnType = DataFormColumnType.TextBox, DesignBounds = new Rectangle(8, 88, 60, 20), Indicators = DataFormColumnIndicatorType.MouseOverThin | DataFormColumnIndicatorType.WithFocusBold });
-            group1.Items.Add(new DataFormColumnImageText() { ColumnId = "adresa_mesto", ColumnType = DataFormColumnType.TextBox, DesignBounds = new Rectangle(72, 88, 260, 20) });
+            group1.Items.Add(new DataFormColumnImageText() { ColumnId = "adresa_psc", ColumnType = DataFormColumnType.TextBox, DesignBounds = new Rectangle(8, 88, 60, 20), Indicators = DataFormColumnIndicatorType.RequiredAllwaysThin | DataFormColumnIndicatorType.MouseOverThin | DataFormColumnIndicatorType.WithFocusBold });
+            group1.Items.Add(new DataFormColumnImageText() { ColumnId = "adresa_mesto", ColumnType = DataFormColumnType.TextBox, DesignBounds = new Rectangle(72, 88, 260, 20), Indicators = DataFormColumnIndicatorType.RequiredAllwaysThin | DataFormColumnIndicatorType.MouseOverThin | DataFormColumnIndicatorType.WithFocusBold });
 
             group1.Items.Add(new DataFormColumnImageText() { ColumnId = "adresa_zeme_label", ColumnType = DataFormColumnType.Label, DesignBounds = new Rectangle(12, 114, 100, 18), Text = "Stát" });
             group1.Items.Add(new DataFormColumnImageText() { ColumnId = "adresa_zeme_refer", ColumnType = DataFormColumnType.TextBox, DesignBounds = new Rectangle(8, 136, 80, 20) });
@@ -427,7 +430,7 @@ namespace TestDevExpress.Components
                 GroupId = "Kontaktní osoba",
                 CollapseMode = DataFormGroupCollapseMode.AllowCollapseAllways,
                 DesignPadding = new Padding(6),
-                DesignWidth = 920
+                DesignWidth = 900
             };
             group2.GroupTitle = new DataFormGroupTitle()
             {
@@ -435,7 +438,13 @@ namespace TestDevExpress.Components
                 TitleText = "Kontaktní osoba",
                 TitleAppearance = new DataFormColumnAppearance() { FontStyleBold = true, FontSizeDelta = 1 },
                 BackgroundAppearance = new DataFormBackgroundAppearance()
-                { BackColor = Color.FromArgb(160, 190, 240, 160), BackColorEnd = Color.FromArgb(0, 190, 240, 160), GradientStyle = GradientStyleType.DownRight },
+                {
+                    BackColor = Color.FromArgb(160, 190, 240, 160),
+                    BackColorEnd = Color.FromArgb(0, 190, 240, 160),
+                    OnMouseBackColor = Color.FromArgb(220, 190, 240, 160),
+                    OnMouseBackColorEnd = Color.FromArgb(64, 190, 240, 160),
+                    GradientStyle = GradientStyleType.DownRight
+                },
                 DesignTitlePadding = new Padding(18, 2, 18, 2),
                 DesignLineRange = new Int32Range(29, 30),
                 LineAppearance = new DataFormBackgroundAppearance()
@@ -461,6 +470,32 @@ namespace TestDevExpress.Components
             group2.Items.Add(new DataFormColumnImageText() { ColumnId = "jmeno_prijmeni", ColumnType = DataFormColumnType.TextBox, DesignBounds = new Rectangle(132, 40, 300, 20), Indicators = DataFormColumnIndicatorType.CorrectOnDemandThin | DataFormColumnIndicatorType.MouseOverThin | DataFormColumnIndicatorType.WithFocusBold });
             group2.Items.Add(new DataFormColumnImageText() { ColumnId = "jmeno_titul", ColumnType = DataFormColumnType.TextBox, DesignBounds = new Rectangle(436, 40, 150, 20), Indicators = DataFormColumnIndicatorType.CorrectOnDemandThin | DataFormColumnIndicatorType.MouseOverThin | DataFormColumnIndicatorType.WithFocusBold });
 
+
+
+
+
+            DataFormGroup group3 = new DataFormGroup()
+            {
+                GroupId = "Podnikání",
+                CollapseMode = DataFormGroupCollapseMode.AllowCollapseAllways,
+                DesignPadding = new Padding(6),
+                DesignWidth = 900
+            };
+            group3.GroupTitle = new DataFormGroupTitle()
+            {
+                DesignTitleHeight = 2,
+                DesignLineRange = new Int32Range(1, 2),
+                LineAppearance = new DataFormBackgroundAppearance()
+                { BackColor = Color.FromArgb(255, 90, 200, 80), BackColorEnd = Color.FromArgb(32, 90, 200, 80), GradientStyle = GradientStyleType.ToRight }
+            };
+            group3.DesignBorderRange = new Int32Range(4, 4);
+            group3.BorderAppearance = new DataFormBackgroundAppearance()
+            { BackColor = Color.FromArgb(192, 64, 64, 64), BackColorEnd = Color.FromArgb(0, 64, 64, 64), GradientStyle = GradientStyleType.None };
+
+            page1.Groups.Add(group3);
+
+            group3.Items.Add(new DataFormColumnImageText() { ColumnId = "podnikani_label", ColumnType = DataFormColumnType.Label, DesignBounds = new Rectangle(12, 4, 250, 18), Text = "Předměty podnikání...:" });
+            group3.Items.Add(new DataFormColumnImageText() { ColumnId = "podnikani", ColumnType = DataFormColumnType.EditBox, DesignBounds = new Rectangle(0, 26, 886, 80), Indicators = DataFormColumnIndicatorType.CorrectOnDemandThin | DataFormColumnIndicatorType.MouseOverThin | DataFormColumnIndicatorType.WithFocusBold });
 
         }
         #endregion

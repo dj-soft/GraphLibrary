@@ -1064,6 +1064,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             CorrectIndicatorColor = Color.LightGreen;
             WarningIndicatorColor = Color.Orange;
             ErrorIndicatorColor = Color.DarkRed;
+            RequiredIndicatorColor = Color.BlueViolet;
         }
         /// <summary>
         /// Barva indikátoru OnMouse
@@ -1085,6 +1086,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Barva indikátoru Error
         /// </summary>
         public Color ErrorIndicatorColor { get; set; }
+        /// <summary>
+        /// Barva indikátoru Required
+        /// </summary>
+        public Color RequiredIndicatorColor { get; set; }
     }
     #endregion
 }
@@ -2595,7 +2600,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
 
             Color? statusColor = null;
             if (item.IItem.IndicatorColor.HasValue)
-            {
+            {   // Zadání barvy IndicatorColor potlačí všechny ostatní příznaky indikátorů:
                 if (IsIndicatorActive(indicators, itemIndicatorsVisible, DataFormColumnIndicatorType.IndicatorColorAllwaysBold, DataFormColumnIndicatorType.IndicatorColorOnDemandBold, DataFormColumnIndicatorType.IndicatorColorAllwaysThin, DataFormColumnIndicatorType.IndicatorColorOnDemandThin, ref isBold))
                     statusColor = item.IItem.IndicatorColor.Value;
             }
@@ -2607,6 +2612,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                     statusColor = appearance.WarningIndicatorColor;
                 else if (IsIndicatorActive(indicators, itemIndicatorsVisible, DataFormColumnIndicatorType.CorrectAllwaysBold, DataFormColumnIndicatorType.CorrectOnDemandBold, DataFormColumnIndicatorType.CorrectAllwaysThin, DataFormColumnIndicatorType.CorrectOnDemandThin, ref isBold))
                     statusColor = appearance.CorrectIndicatorColor;
+                else if (IsIndicatorActive(indicators, itemIndicatorsVisible, DataFormColumnIndicatorType.RequiredAllwaysBold, DataFormColumnIndicatorType.RequiredOnDemandBold, DataFormColumnIndicatorType.RequiredAllwaysThin, DataFormColumnIndicatorType.RequiredOnDemandThin, ref isBold))
+                    statusColor = appearance.RequiredIndicatorColor;
             }
 
             bool hasFocus = focusColor.HasValue;
@@ -2642,7 +2649,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 return true;
             return false;
         }
-
         /// <summary>
         /// Zajistí vykreslení slabého orámování (prozáření okrajů) pro daný prostor (prvek) danou barvou.
         /// </summary>
@@ -3333,7 +3339,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         {
             __DataPage = dataPage;
             __IGroup = iGroup;
-            __Items = DxDataFormColumn.CreateList(this, iGroup?.Items);
+            __Items = DxDataFormColumn.CreateList(this, false, iGroup?.Items);
             _CalculateAutoSize();
             InvalidateBounds();
         }
@@ -3381,6 +3387,12 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         #endregion
         #region Souřadnice designové (velikost a souřadnice počátku Items)
         /// <summary>
+        /// Prostor, ve kterém je vykreslen text titulku a případné další prvky.
+        /// Je umístěn v <see cref="Coordinates.TitleBackground"/> a je oproti němu zmenšen o <see cref="Coordinates.TitlePadding"/> dovnitř.
+        /// Je relativní v rámci this grupy.
+        /// </summary>
+        internal Rectangle DesignTitleBounds { get { return __DesignTitleBounds; } } private Rectangle __DesignTitleBounds;
+        /// <summary>
         /// Souřadnice a velikost prostoru v rámci grupy, ve kterém jsou zobrazeny jednotlivé Items = <see cref="DxDataFormColumn.DesignBounds"/>.
         /// Hodnota je relativní k this grupě a je v designových pixelech bez Zoomu.
         /// </summary>
@@ -3419,6 +3431,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
 
             // Uložíme souřadnice jako celek a také načteme ContentBounds (=výsledek výpočtu) a uložíme do trvalé proměnné (kvůli rychlosti).
             __DesignCoordinates = coordinates;
+            __DesignTitleBounds = coordinates.TitleBounds;
             __DesignContentBounds = coordinates.ContentBounds;
         }
         /// <summary>
@@ -3479,7 +3492,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 this.__CurrentBorderSizes = __CurrentCoordinates.BorderRange?.Size;
                 this.__CurrentGroupBackground = __CurrentCoordinates.GroupBackground;
                 this.__CurrentTitleBackground = __CurrentCoordinates.HasTitle ? __CurrentCoordinates.TitleBackground : null;
-                this.__CurrentTitleTextBounds = __CurrentCoordinates.HasTitle ? __CurrentCoordinates.TitleTextBounds : null;
+                this.__CurrentTitleTextBounds = __CurrentCoordinates.HasTitle ? __CurrentCoordinates.TitleBounds : null;
                 this.__CurrentTitleLineBounds = __CurrentCoordinates.VisibleLine ? __CurrentCoordinates.TitleLineBounds : null;
                 this.__CurrentContentBackground = __CurrentCoordinates.ContentBackground;
                 this.__CurrentContentBounds = __CurrentCoordinates.ContentBounds;
@@ -3885,11 +3898,11 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 }
             }
             /// <summary>
-            /// Prostor, ve kterém je vykreslen text titulku.
-            /// Je umístěn v <see cref="TitleBackground"/> a je zmenšen o <see cref="TitlePadding"/> dovnitř.
+            /// Prostor, ve kterém je vykreslen text titulku a případné další prvky.
+            /// Je umístěn v <see cref="TitleBackground"/> a je oproti němu zmenšen o <see cref="TitlePadding"/> dovnitř.
             /// Je relativní v rámci this grupy.
             /// </summary>
-            public Rectangle TitleTextBounds
+            public Rectangle TitleBounds
             {
                 get
                 {
@@ -4011,9 +4024,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Vytvoří a vrátí List obsahující <see cref="DxDataFormColumn"/>, vytvořený z dodaných instancí <see cref="IDataFormColumn"/>.
         /// </summary>
         /// <param name="dataGroup"></param>
+        /// <param name="isTitleItems">false pro běžné columny v prostoru Content, true pro columny v prostoru Title (=text titulku, ikony, atd)</param>
         /// <param name="iItems"></param>
         /// <returns></returns>
-        public static List<DxDataFormColumn> CreateList(DxDataFormGroup dataGroup, IEnumerable<IDataFormColumn> iItems)
+        public static List<DxDataFormColumn> CreateList(DxDataFormGroup dataGroup, bool isTitleItems, IEnumerable<IDataFormColumn> iItems)
         {
             List<DxDataFormColumn> dataItems = new List<DxDataFormColumn>();
             if (iItems != null)
@@ -4021,8 +4035,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 foreach (IDataFormColumn iItem in iItems)
                 {
                     if (iItem == null) continue;
-                    DxDataFormColumn dataItem = new DxDataFormColumn(dataGroup, iItem);
-                    dataItems.Add(dataItem);
+                    dataItems.Add(new DxDataFormColumn(dataGroup, isTitleItems, iItem));
                 }
             }
             return dataItems;
@@ -4031,39 +4044,44 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Konstruktor
         /// </summary>
         /// <param name="dataGroup"></param>
+        /// <param name="isTitleItem">false pro běžné columny v prostoru Content, true pro columny v prostoru Title (=text titulku, ikony, atd)</param>
         /// <param name="iItem"></param>
-        public DxDataFormColumn(DxDataFormGroup dataGroup, IDataFormColumn iItem)
+        public DxDataFormColumn(DxDataFormGroup dataGroup, bool isTitleItem, IDataFormColumn iItem)
             : base()
         {
-            _DataGroup = dataGroup;
-            _IItem = iItem;
+            __DataGroup = dataGroup;
+            __IItem = iItem;
         }
         /// <summary>Vlastník - <see cref="DxDataFormGroup"/></summary>
-        private DxDataFormGroup _DataGroup;
+        private DxDataFormGroup __DataGroup;
+        /// <summary>Hodnota false = prvek je umístěn v prostoru Content / Hodnota true = prvek je umístěn v prostoru Title</summary>
+        private bool __IsTitleItem;
         /// <summary>Deklarace prvku</summary>
-        private IDataFormColumn _IItem;
+        private IDataFormColumn __IItem;
         /// <summary>
         /// Vlastník - <see cref="DxDataForm"/>
         /// </summary>
-        public DxDataForm DataForm { get { return this._DataGroup?.DataPage?.DataForm; } }
+        public DxDataForm DataForm { get { return this.__DataGroup?.DataPage?.DataForm; } }
         /// <summary>
         /// Vlastník - <see cref="DxDataFormPage"/>
         /// </summary>
-        public DxDataFormPage DataPage { get { return _DataGroup?.DataPage; } }
+        public DxDataFormPage DataPage { get { return __DataGroup?.DataPage; } }
         /// <summary>
         /// Vlastník - <see cref="DxDataFormGroup"/>
         /// </summary>
-        public DxDataFormGroup DataGroup { get { return _DataGroup; } }
+        public DxDataFormGroup DataGroup { get { return __DataGroup; } }
+        /// <summary>Hodnota false = prvek je umístěn v prostoru Content / Hodnota true = prvek je umístěn v prostoru Title</summary>
+        public bool IsTitleItem { get { return __IsTitleItem; } }
         /// <summary>
         /// Deklarace prvku
         /// </summary>
-        public IDataFormColumn IItem { get { return _IItem; } }
+        public IDataFormColumn IItem { get { return __IItem; } }
         #endregion
         #region Data z prvku
         /// <summary>
         /// Typ prvku
         /// </summary>
-        public DataFormColumnType ItemType { get { return _IItem.ColumnType; } }
+        public DataFormColumnType ItemType { get { return __IItem.ColumnType; } }
         /// <summary>
         /// Prvek je viditelný
         /// </summary>
@@ -4081,7 +4099,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <returns></returns>
         public bool TryGetIItem<T>(out T iItem)
         {
-            if (_IItem is T item)
+            if (__IItem is T item)
             {
                 iItem = item;
                 return true;
@@ -4092,13 +4110,13 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         #endregion
         #region Souřadnice designové, aktuální, viditelné
         /// <summary>
-        /// Souřadnice designové, v logických koordinátech (kde bod {0,0} je počátek zdejší grupy, bez posunu ScrollBarem).
+        /// Souřadnice designové, v logických koordinátech (kde bod {0,0} je počátek datového prostoru zdejší grupy, bez posunu ScrollBarem).
         /// Typicky se vztahují k 96 DPI a Zoom 100%.
         /// Hodnota se přebírá z datového prvku <see cref="IItem"/>.
         /// </summary>
         public Rectangle DesignBounds { get { return IItem.DesignBounds; } }
         /// <summary>
-        /// Aktuální logické koordináty - přepočtené z <see cref="DesignBounds"/> na aktuálně platné DPI a Zoom.
+        /// Aktuální viditelné koordináty - přepočtené z <see cref="DesignBounds"/> na aktuálně platné DPI a Zoom.
         /// <para/>
         /// Jde o souřadnici absolutní v rámci <see cref="DxDataFormPanel"/>, tedy nejde o souřadnici relativní vzhledem ke grupě, kam prvek patří; 
         /// tato souřadnice <see cref="CurrentBounds"/> již zahrnuje posun o počátek grupy <see cref="DxDataFormGroup.CurrentGroupOrigin"/>.
@@ -4106,8 +4124,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Tato souřadnice ale není posunuta ScrollBarem (je absolutní).
         /// Posunutá vizuální souřadnice je v <see cref="VisibleBounds"/>.
         /// </summary>
-        public Rectangle CurrentBounds { get { this.CheckCurrentBounds(); return __CurrentBounds.Value; } }
-        private Rectangle? __CurrentBounds;
+        public Rectangle CurrentBounds { get { this.CheckCurrentBounds(); return __CurrentBounds.Value; } } private Rectangle? __CurrentBounds;
         /// <summary>
         /// Aktuální velikost prvku. Lze setovat (nezmění se umístění = <see cref="CurrentBounds"/>.Location).
         /// <para/>
@@ -4121,8 +4138,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             {
                 this.CheckCurrentBounds();
                 __CurrentBounds = new Rectangle(__CurrentBounds.Value.Location, value);
-                if (_VisibleBounds.HasValue)
-                    _VisibleBounds = new Rectangle(_VisibleBounds.Value.Location, value);
+                if (__VisibleBounds.HasValue)
+                    __VisibleBounds = new Rectangle(__VisibleBounds.Value.Location, value);
             }
         }
         /// <summary>
@@ -4131,7 +4148,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         public void InvalidateBounds()
         {
             __CurrentBounds = null;
-            _VisibleBounds = null;
+            __VisibleBounds = null;
         }
         /// <summary>
         /// Zajistí, že souřadnice <see cref="__CurrentBounds"/> budou platné k souřadnicím designovým a k hodnotám aktuálním DPI
@@ -4140,9 +4157,18 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         {
             if (!__CurrentBounds.HasValue)
             {
-                var designBounds = this.DesignBounds.Add(this.DataGroup.DesignContentBounds.Location);       // Posunutí souřadnic o různé okraje grupy (Border, Title, Padding) vlevo a nahoře
-                var currentRelativeBounds = DxComponent.ZoomToGui(designBounds, DataForm.CurrentDpi);        // Přepočet pomocí Zoomu a DPI
-                __CurrentBounds = currentRelativeBounds.Add(this.DataGroup.CurrentGroupOrigin);              // Posunutí o reálný počátek parent grupy
+                if (!__IsTitleItem)
+                {   // Běžný prvek v rámci prostoru Content:
+                    var designBounds = this.DesignBounds.Add(this.DataGroup.DesignContentBounds.Location);       // Posunutí souřadnic o různé okraje grupy (Border, Title, Padding) vlevo a nahoře
+                    var currentRelativeBounds = DxComponent.ZoomToGui(designBounds, DataForm.CurrentDpi);        // Přepočet pomocí Zoomu a DPI
+                    __CurrentBounds = currentRelativeBounds.Add(this.DataGroup.CurrentGroupOrigin);              // Posunutí o reálný počátek parent grupy
+                }
+                else
+                {   // Titulkový prvek v rámci prostoru Title:
+                    var designBounds = this.DesignBounds.Add(this.DataGroup.DesignTitleBounds.Location);         // Posunutí souřadnic o různé okraje grupy (Border, TitlePadding) vlevo a nahoře
+                    var currentRelativeBounds = DxComponent.ZoomToGui(designBounds, DataForm.CurrentDpi);        // Přepočet pomocí Zoomu a DPI
+                    __CurrentBounds = currentRelativeBounds.Add(this.DataGroup.CurrentGroupOrigin);              // Posunutí o reálný počátek parent grupy
+                }
             }
         }
         /// <summary>
@@ -4151,7 +4177,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Může být null, pak prvek není zobrazen. Null je i po invalidaci <see cref="InvalidateBounds()"/>.
         /// Tuto hodnotu ukládá řídící třída v procesu kreslení jako reálné souřadnice, kam byl prvek vykreslen.
         /// </summary>
-        public Rectangle? VisibleBounds { get { return _VisibleBounds; } set { _VisibleBounds = value; } } private Rectangle? _VisibleBounds;
+        public Rectangle? VisibleBounds { get { return __VisibleBounds; } set { __VisibleBounds = value; } } private Rectangle? __VisibleBounds;
         /// <summary>
         /// Vrátí true, pokud this prvek se nachází v rámci dané virtuální souřadnice.
         /// Tedy pokud souřadnice <see cref="CurrentBounds"/> se alespoň zčásti nacházejí uvnitř souřadného prostoru dle parametru <paramref name="virtualBounds"/>.

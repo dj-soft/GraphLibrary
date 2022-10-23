@@ -759,6 +759,11 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <para/>
         /// Pokud bude zadána barva <see cref="IndicatorColor"/>, ale nebude zadána patřičná předvolba v <see cref="Indicators"/>, pak se zadaná barva neuplatní,
         /// ale neuplatní se ani ostatní předvolby v <see cref="Indicators"/>!
+        /// <para/>
+        /// Pokud chceme tedy prvek orámovat explicitně danou barvou, pak naplníme tuto barvu do <see cref="IndicatorColor"/>, 
+        /// a do <see cref="Indicators"/> dáme například hodnotu <see cref="DataFormColumnIndicatorType.IndicatorColorAllwaysThin"/> = daná barva bude svítit stále, v tenké formě.
+        /// V tom případě ale nemusíme už vkládat jiné hodnoty indikátoru (např. <see cref="DataFormColumnIndicatorType.WarningAllwaysBold"/>, 
+        /// protože když je daná barva <see cref="IndicatorColor"/>, pak se jiné indikátory neuplatní.
         /// </summary>
         Color? IndicatorColor { get; }
         /// <summary>
@@ -1186,25 +1191,47 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         ErrorAllwaysBold = 0x8000,
 
         /// <summary>
+        /// Prvek bude orámován barvou <see cref="DxDataFormAppearance.ErrorIndicatorColor"/>, orámování tenké, 
+        /// pouze pokud bude hodnota <see cref="DxDataForm.ItemIndicatorsVisible"/> = true
+        /// </summary>
+        RequiredOnDemandThin = 0x00010000,
+        /// <summary>
+        /// Prvek bude orámován barvou <see cref="DxDataFormAppearance.ErrorIndicatorColor"/>, orámování silné, 
+        /// pouze pokud bude hodnota <see cref="DxDataForm.ItemIndicatorsVisible"/> = true
+        /// </summary>
+        RequiredOnDemandBold = 0x00020000,
+        /// <summary>
+        /// Prvek bude orámován barvou <see cref="DxDataFormAppearance.ErrorIndicatorColor"/>, orámování tenké, 
+        /// bez ohledu na hodnotu <see cref="DxDataForm.ItemIndicatorsVisible"/>
+        /// </summary>
+        RequiredAllwaysThin = 0x00040000,
+        /// <summary>
+        /// Prvek bude orámován barvou <see cref="DxDataFormAppearance.ErrorIndicatorColor"/>, orámování silné, 
+        /// bez ohledu na hodnotu <see cref="DxDataForm.ItemIndicatorsVisible"/>
+        /// </summary>
+        RequiredAllwaysBold = 0x00080000,
+
+
+        /// <summary>
         /// Prvek bude orámován barvou <see cref="IDataFormColumn.IndicatorColor"/>, orámování tenké, 
         /// pouze pokud bude hodnota <see cref="DxDataForm.ItemIndicatorsVisible"/> = true
         /// </summary>
-        IndicatorColorOnDemandThin = 0x10000,
+        IndicatorColorOnDemandThin = 0x00100000,
         /// <summary>
         /// Prvek bude orámován barvou <see cref="IDataFormColumn.IndicatorColor"/>, orámování silné, 
         /// pouze pokud bude hodnota <see cref="DxDataForm.ItemIndicatorsVisible"/> = true
         /// </summary>
-        IndicatorColorOnDemandBold = 0x20000,
+        IndicatorColorOnDemandBold = 0x00200000,
         /// <summary>
         /// Prvek bude orámován barvou <see cref="IDataFormColumn.IndicatorColor"/>, orámování tenké, 
         /// bez ohledu na hodnotu <see cref="DxDataForm.ItemIndicatorsVisible"/>
         /// </summary>
-        IndicatorColorAllwaysThin = 0x40000,
+        IndicatorColorAllwaysThin = 0x00400000,
         /// <summary>
         /// Prvek bude orámován barvou <see cref="IDataFormColumn.IndicatorColor"/>, orámování silné, 
         /// bez ohledu na hodnotu <see cref="DxDataForm.ItemIndicatorsVisible"/>
         /// </summary>
-        IndicatorColorAllwaysBold = 0x80000
+        IndicatorColorAllwaysBold = 0x00800000
     }
     /// <summary>
     /// Druh prvku v DataFormu
