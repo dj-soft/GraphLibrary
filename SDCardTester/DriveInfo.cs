@@ -9,6 +9,9 @@ using System.IO;
 
 namespace DjSoft.Tools.SDCardTester
 {
+    /// <summary>
+    /// Vizuální control zobrazující informace o disku
+    /// </summary>
     public class DriveInfoPanel : Panel
     {
         public DriveInfoPanel()
@@ -26,6 +29,8 @@ namespace DjSoft.Tools.SDCardTester
             this.DriveNameText = createTextBox(176, HorizontalAlignment.Left);
             this.DriveTypeLabel = createLabel(70, "Typ disku:");
             this.DriveTypeText = createTextBox(176, HorizontalAlignment.Left);
+            this.DriveFormatLabel = createLabel(70, "Formát disku:");
+            this.DriveFormatText = createTextBox(176, HorizontalAlignment.Left);
             this.DriveVolumeLabel = createLabel(107, "Přidělený název:");
             this.DriveVolumeText = createTextBox(176, HorizontalAlignment.Left);
             this.DriveCapacityLabel = createLabel(154, "Celková kapacita [Byte]:");
@@ -35,7 +40,8 @@ namespace DjSoft.Tools.SDCardTester
             this.DriveAvailableLabel = createLabel(162, "Dostupná kapacita [Byte]:");
             this.DriveAvailableText = createTextBox(176, HorizontalAlignment.Right);
 
-            this.Size = new System.Drawing.Size(243, 299);
+            this.Size = new Size(243, y + 6);
+            this.MinimumSize = this.Size;
 
             this.ResumeLayout(false);
             this.PerformLayout();
@@ -75,6 +81,8 @@ namespace DjSoft.Tools.SDCardTester
         private TextBox DriveNameText;
         private Label DriveTypeLabel;
         private TextBox DriveTypeText;
+        private Label DriveFormatLabel;
+        private TextBox DriveFormatText;
         private Label DriveVolumeLabel;
         private TextBox DriveVolumeText;
         private Label DriveCapacityLabel;
@@ -91,6 +99,7 @@ namespace DjSoft.Tools.SDCardTester
         {
             this.DriveNameText.Text = selectedDrive?.Name ?? "";
             this.DriveTypeText.Text = selectedDrive?.DriveType.ToString() ?? "";
+            this.DriveFormatText.Text = selectedDrive?.DriveFormat.ToString() ?? "";
             this.DriveVolumeText.Text = selectedDrive?.VolumeLabel ?? "";
             this.DriveCapacityText.Text = getCapacityText(selectedDrive?.TotalSize);
             this.DriveFreeText.Text = getCapacityText(selectedDrive?.TotalFreeSpace);

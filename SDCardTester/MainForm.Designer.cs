@@ -29,24 +29,24 @@ namespace DjSoft.Tools.SDCardTester
         /// </summary>
         private void InitializeComponent()
         {
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainForm));
             this.UserPanel = new System.Windows.Forms.Panel();
             this.DrivesPanel = new System.Windows.Forms.Panel();
             this.DriveCombo = new System.Windows.Forms.ComboBox();
             this.DriveLabel = new System.Windows.Forms.Label();
             this.OnlyRemovableCheck = new System.Windows.Forms.CheckBox();
             this.RefreshButton = new System.Windows.Forms.Button();
-            this.DriveInfoPanel = new DriveInfoPanel();
+            this.DriveInfoPanel = new DjSoft.Tools.SDCardTester.DriveInfoPanel();
             this.CommandsPanel = new System.Windows.Forms.Panel();
             this.AnalyseContentButton = new System.Windows.Forms.Button();
             this.TestSaveButton = new System.Windows.Forms.Button();
             this.TestReadButton = new System.Windows.Forms.Button();
             this.StopPanel = new System.Windows.Forms.Panel();
             this.StopButton = new System.Windows.Forms.Button();
-            this.LinearMapControl = new DjSoft.Tools.SDCardTester.LinearMapControl();
             this.ResultsInfoPanel = new System.Windows.Forms.Panel();
+            this.LinearMapControl = new DjSoft.Tools.SDCardTester.LinearMapControl();
             this.UserPanel.SuspendLayout();
             this.DrivesPanel.SuspendLayout();
-            this.DriveInfoPanel.SuspendLayout();
             this.CommandsPanel.SuspendLayout();
             this.StopPanel.SuspendLayout();
             this.SuspendLayout();
@@ -61,7 +61,7 @@ namespace DjSoft.Tools.SDCardTester
             this.UserPanel.Dock = System.Windows.Forms.DockStyle.Left;
             this.UserPanel.Location = new System.Drawing.Point(0, 0);
             this.UserPanel.Name = "UserPanel";
-            this.UserPanel.Size = new System.Drawing.Size(251, 600);
+            this.UserPanel.Size = new System.Drawing.Size(251, 609);
             this.UserPanel.TabIndex = 0;
             // 
             // DrivesPanel
@@ -123,10 +123,10 @@ namespace DjSoft.Tools.SDCardTester
             // DriveInfoPanel
             // 
             this.DriveInfoPanel.Location = new System.Drawing.Point(3, 93);
+            this.DriveInfoPanel.MinimumSize = new System.Drawing.Size(243, 341);
             this.DriveInfoPanel.Name = "DriveInfoPanel";
-            this.DriveInfoPanel.Size = new System.Drawing.Size(243, 299);
+            this.DriveInfoPanel.Size = new System.Drawing.Size(243, 341);
             this.DriveInfoPanel.TabIndex = 20;
-           
             // 
             // CommandsPanel
             // 
@@ -134,7 +134,7 @@ namespace DjSoft.Tools.SDCardTester
             this.CommandsPanel.Controls.Add(this.AnalyseContentButton);
             this.CommandsPanel.Controls.Add(this.TestSaveButton);
             this.CommandsPanel.Controls.Add(this.TestReadButton);
-            this.CommandsPanel.Location = new System.Drawing.Point(3, 427);
+            this.CommandsPanel.Location = new System.Drawing.Point(3, 436);
             this.CommandsPanel.Name = "CommandsPanel";
             this.CommandsPanel.Size = new System.Drawing.Size(243, 170);
             this.CommandsPanel.TabIndex = 21;
@@ -185,7 +185,7 @@ namespace DjSoft.Tools.SDCardTester
             // 
             this.StopPanel.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
             this.StopPanel.Controls.Add(this.StopButton);
-            this.StopPanel.Location = new System.Drawing.Point(3, 539);
+            this.StopPanel.Location = new System.Drawing.Point(3, 548);
             this.StopPanel.Name = "StopPanel";
             this.StopPanel.Size = new System.Drawing.Size(243, 58);
             this.StopPanel.TabIndex = 22;
@@ -204,37 +204,36 @@ namespace DjSoft.Tools.SDCardTester
             this.StopButton.UseVisualStyleBackColor = true;
             this.StopButton.Click += new System.EventHandler(this.StopButton_Click);
             // 
-            // VisualPanel
+            // ResultsInfoPanel
+            // 
+            this.ResultsInfoPanel.Location = new System.Drawing.Point(3, 93);
+            this.ResultsInfoPanel.Name = "ResultsInfoPanel";
+            this.ResultsInfoPanel.Size = new System.Drawing.Size(243, 428);
+            this.ResultsInfoPanel.TabIndex = 23;
+            // 
+            // LinearMapControl
             // 
             this.LinearMapControl.BackColor = System.Drawing.Color.Snow;
             this.LinearMapControl.Dock = System.Windows.Forms.DockStyle.Fill;
             this.LinearMapControl.Location = new System.Drawing.Point(251, 0);
             this.LinearMapControl.Name = "LinearMapControl";
-            this.LinearMapControl.Size = new System.Drawing.Size(764, 600);
+            this.LinearMapControl.Size = new System.Drawing.Size(764, 609);
             this.LinearMapControl.TabIndex = 1;
-            // 
-            // AnalyseInfoPanel
-            // 
-            this.ResultsInfoPanel.Location = new System.Drawing.Point(3, 93);
-            this.ResultsInfoPanel.Name = "AnalyseInfoPanel";
-            this.ResultsInfoPanel.Size = new System.Drawing.Size(243, 428);
-            this.ResultsInfoPanel.TabIndex = 23;
             // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(1015, 600);
+            this.ClientSize = new System.Drawing.Size(1015, 609);
             this.Controls.Add(this.LinearMapControl);
             this.Controls.Add(this.UserPanel);
-            this.MinimumSize = new System.Drawing.Size(819, 617);
+            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
+            this.MinimumSize = new System.Drawing.Size(819, 648);
             this.Name = "MainForm";
             this.Text = "SD Card tester";
             this.UserPanel.ResumeLayout(false);
             this.DrivesPanel.ResumeLayout(false);
             this.DrivesPanel.PerformLayout();
-            this.DriveInfoPanel.ResumeLayout(false);
-            this.DriveInfoPanel.PerformLayout();
             this.CommandsPanel.ResumeLayout(false);
             this.StopPanel.ResumeLayout(false);
             this.ResumeLayout(false);

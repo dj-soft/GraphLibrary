@@ -413,7 +413,10 @@ namespace DjSoft.Tools.SDCardTester
 
             CurrentWorkingPhase = workingPhase;
             CurrentTestPhase = testPhase;
-            var fileInfo = RunTestReadOneFileWriteAsync(fileName, workingPhase, fileNumber);
+
+            var fileInfo = RunTestReadOneFileWriteAsync(fileName, workingPhase, fileNumber);       // První čtení
+            if (fileInfo.ErrorCount > 0)
+                fileInfo = RunTestReadOneFileWriteAsync(fileName, workingPhase, fileNumber);       // Po chybě dáme druhé čtení
             if (fileInfo.ErrorCount > 0 && renameOnError)
                 RenameFileOnError(ref fileName);
             return fileInfo;
@@ -435,7 +438,6 @@ namespace DjSoft.Tools.SDCardTester
             long currentLength = 0L;
             int bufferIndex = -1;
             int totalErrors = 0;
-
             using (System.IO.FileStream fst = new System.IO.FileStream(fileName, System.IO.FileMode.Open, System.IO.FileAccess.Read))
             {
                 // Read: buffer s daty je "pozadu" za fyzickou prací se souborem (na rozdíl od metody pro Save)
