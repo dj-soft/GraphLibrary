@@ -2874,12 +2874,16 @@ namespace Noris.Clients.Win.Components.AsolDX
                     return new LinearGradientBrush(bounds, color1.Value, color2.Value, LinearGradientMode.Horizontal);
 
                 case GradientStyleType.UpLeft:
+                    bounds = bounds.Enlarge(1, 1, 1, 1);             // Problém .NET a WinForm...
                     return new LinearGradientBrush(bounds.GetPoint(ContentAlignment.BottomRight).Value, bounds.GetPoint(ContentAlignment.TopLeft).Value, color1.Value, color2.Value);
                 case GradientStyleType.UpRight:
+                    bounds = bounds.Enlarge(1, 1, 1, 1);             // Problém .NET a WinForm...
                     return new LinearGradientBrush(bounds.GetPoint(ContentAlignment.BottomLeft).Value, bounds.GetPoint(ContentAlignment.TopRight).Value, color1.Value, color2.Value);
                 case GradientStyleType.DownRight:
+                    bounds = bounds.Enlarge(1, 1, 1, 1);             // Problém .NET a WinForm...
                     return new LinearGradientBrush(bounds.GetPoint(ContentAlignment.TopLeft).Value, bounds.GetPoint(ContentAlignment.BottomRight).Value, color1.Value, color2.Value);
                 case GradientStyleType.DownLeft:
+                    bounds = bounds.Enlarge(1, 1, 1, 1);             // Problém .NET a WinForm...
                     return new LinearGradientBrush(bounds.GetPoint(ContentAlignment.TopRight).Value, bounds.GetPoint(ContentAlignment.BottomLeft).Value, color1.Value, color2.Value);
             }
             return new SolidBrush(color1.Value);

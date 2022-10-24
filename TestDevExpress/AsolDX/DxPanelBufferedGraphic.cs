@@ -97,7 +97,9 @@ namespace Noris.Clients.Win.Components.AsolDX
                 OnPaintLayers(e.Graphics, e.ClipRectangle, contentIsChanged);
             }
             catch (Exception exc)
-            {
+            {   // Po chybě vypíšeme danou chybu do controlu:
+                base.OnPaint(e);                                             // Tady se do grafiky z vrstvy _NativeBackgroundLayer (která zatím obsahuje pouze barvu pozadí) vykreslí celý motiv pozadí (=obrázky skinu)
+                OnPaintException(e, exc);
                 DxComponent.LogAddLine($"DxPanelBufferedGraphic.OnPaint() error: {exc.Message}");
             }
             finally
@@ -106,6 +108,68 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
             if (LogActive && OnPaintStartTime.HasValue) DxComponent.LogAddLineTime($"DxBufferedGraphic.Paint(); TotalTime: {DxComponent.LogTokenTimeMilisec}", OnPaintStartTime.Value);
             OnPaintStartTime = null;
+        }
+        /// <summary>
+        /// Pokud při kreslení narazíme na chybu, tak ji vypíšeme do controlu:
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="exc"></param>
+        protected virtual void OnPaintException(PaintEventArgs e, Exception exc)
+        {
+            try
+            {
+                float x = 12;
+                float y = 10;
+                var textBrush = DxComponent.PaintGetSolidBrush(this.ForeColor);
+                bool isOnEnd = false;
+                var fontPrototype = SystemFonts.CaptionFont;
+                using (var titleFont = new Font(fontPrototype.FontFamily, fontPrototype.Size + 2f, FontStyle.Bold))
+                using (var lineFont = new Font(fontPrototype.FontFamily, fontPrototype.Size + 0f, FontStyle.Italic))
+                {
+                    e.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.HighQuality;
+                    e.Graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAlias;
+                    e.Graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
+
+                    float dyt = titleFont.Height;
+                    float dys = lineFont.Height;
+                    float maxY = this.ClientSize.Height - dyt;
+                    if (exc != null)
+                    {
+                        var ex = exc;
+                        while (ex != null && !isOnEnd)
+                        {
+                            drawString(ex.Message, true);
+                            if (isOnEnd) break;
+                            var stackTrace = ex.StackTrace;
+                            if (!String.IsNullOrEmpty(stackTrace))
+                            {
+                                var lines = stackTrace.Split("\r\n".ToCharArray(), StringSplitOptions.RemoveEmptyEntries);
+                                foreach (var line in lines)
+                                {
+                                    drawString(line, false);
+                                    if (isOnEnd) break;
+                                }
+                            }
+                            if (isOnEnd) break;
+                            ex = ex.InnerException;
+                            y += 10f;
+                        }
+                    }
+                    else
+                    {
+                        drawString("Any error occured, but is not specified...", true);
+                    }
+
+                    // Vypíše text
+                    void drawString(string text, bool asTitle)
+                    {
+                        e.Graphics.DrawString(text, (asTitle ? titleFont : lineFont), textBrush, (asTitle ? x : x + 14f), y);
+                        y += (asTitle ? dyt : dys);
+                        if (y >= maxY) isOnEnd = true;
+                    }
+                }
+            }
+            catch { }
         }
         /// <summary>
         /// Obsahuje true v okamžiku, kdy probíhá proces vykreslování.

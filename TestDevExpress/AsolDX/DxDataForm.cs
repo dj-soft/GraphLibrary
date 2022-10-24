@@ -3339,7 +3339,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         {
             __DataPage = dataPage;
             __IGroup = iGroup;
-            __Items = DxDataFormColumn.CreateList(this, false, iGroup?.Items);
+            __Items = new List<DxDataFormColumn>();
+            DxDataFormColumn.AddToList(this, true, iGroup?.GroupHeader?.HeaderItems, __Items);
+            DxDataFormColumn.AddToList(this, false, iGroup?.Items, __Items);
             _CalculateAutoSize();
             InvalidateBounds();
         }
@@ -3388,7 +3390,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         #region Souřadnice designové (velikost a souřadnice počátku Items)
         /// <summary>
         /// Prostor, ve kterém je vykreslen text titulku a případné další prvky.
-        /// Je umístěn v <see cref="Coordinates.TitleBackground"/> a je oproti němu zmenšen o <see cref="Coordinates.TitlePadding"/> dovnitř.
+        /// Je umístěn v <see cref="Coordinates.HeaderBackgroundBounds"/> a je oproti němu zmenšen o <see cref="Coordinates.HeaderPadding"/> dovnitř.
         /// Je relativní v rámci this grupy.
         /// </summary>
         internal Rectangle DesignTitleBounds { get { return __DesignTitleBounds; } } private Rectangle __DesignTitleBounds;
@@ -3407,11 +3409,11 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             // Získám definici souřadnic v grupě:
             var iGroup = _IGroup;
             var coordinates = new Coordinates() { BorderRange = iGroup.DesignBorderRange, Padding = iGroup.DesignPadding };
-            var groupTitle = iGroup.GroupTitle;
-            if (groupTitle != null && groupTitle.DesignTitleHeight.HasValue && groupTitle.DesignTitleHeight.Value > 0)
+            var groupTitle = iGroup.GroupHeader;
+            if (groupTitle != null && groupTitle.DesignHeaderHeight.HasValue && groupTitle.DesignHeaderHeight.Value > 0)
             {
-                coordinates.TitleHeight = groupTitle.DesignTitleHeight.Value;
-                coordinates.TitlePadding = groupTitle.DesignTitlePadding;
+                coordinates.HeaderHeight = groupTitle.DesignHeaderHeight.Value;
+                coordinates.HeaderPadding = groupTitle.DesignTitlePadding;
                 coordinates.LineRange = groupTitle.DesignLineRange;
             }
 
@@ -3490,11 +3492,11 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 this.__CurrentGroupSize = __CurrentCoordinates.Size;
                 this.__CurrentBorderBounds = __CurrentCoordinates.VisibleBorder ? __CurrentCoordinates.BorderOuterBounds : null;
                 this.__CurrentBorderSizes = __CurrentCoordinates.BorderRange?.Size;
-                this.__CurrentGroupBackground = __CurrentCoordinates.GroupBackground;
-                this.__CurrentTitleBackground = __CurrentCoordinates.HasTitle ? __CurrentCoordinates.TitleBackground : null;
-                this.__CurrentTitleTextBounds = __CurrentCoordinates.HasTitle ? __CurrentCoordinates.TitleBounds : null;
+                this.__CurrentGroupBackground = __CurrentCoordinates.GroupBackgroundBounds;
+                this.__CurrentTitleBackground = __CurrentCoordinates.HasHeader ? __CurrentCoordinates.HeaderBackgroundBounds : null;
+                this.__CurrentTitleTextBounds = __CurrentCoordinates.HasHeader ? __CurrentCoordinates.TitleBounds : null;
                 this.__CurrentTitleLineBounds = __CurrentCoordinates.VisibleLine ? __CurrentCoordinates.TitleLineBounds : null;
-                this.__CurrentContentBackground = __CurrentCoordinates.ContentBackground;
+                this.__CurrentContentBackground = __CurrentCoordinates.ContentBackgroundBounds;
                 this.__CurrentContentBounds = __CurrentCoordinates.ContentBounds;
 
                 // Naše hodnota souřadnice (this.__CurrentGroupOrigin) je dána externě, musím ji zachovat, vložím ji do __CurrentCoordinates.Location:
@@ -3590,30 +3592,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             return (IsVisible && VisibleGroupBounds.HasValue && VisibleGroupBounds.Value.Contains(point));
         }
         #endregion
-
-
-
-
-
-        /// <summary>
-        /// Rozsah orámování grupy. Designová hodnota.
-        /// <para/>
-        /// Titulkový prostor grupy se nachází uvnitř Borderu.
-        /// <para/>
-        /// Pokud <see cref="_DesignBorderRange"/> je null, bere se jako { 0, 0 }.
-        /// </summary>
-        private Int32Range _DesignBorderRange { get { return _IGroup.DesignBorderRange; } }
-        /// <summary>
-        /// Způsob barev a stylu orámování okraje
-        /// </summary>
-        private IDataFormBackgroundAppearance _BorderAppearance { get { return _IGroup.BorderAppearance; } }
-        /// <summary>
-        /// Způsob barev a stylu záhlaví (prostor nahoře uvnitř borderu)
-        /// </summary>
-        private IDataFormBackgroundAppearance _HeaderAppearance { get { return _IGroup.GroupTitle?.BackgroundAppearance; } }
-
-
-
         #region Kreslení grupy (Border, Background, Title)
         /// <summary>
         /// Metoda vykreslí grupu
@@ -3655,21 +3633,19 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="hasFocus"></param>
         private void _PaintBackgrounds(DxBufferedGraphicPaintArgs e, bool onMouse, bool hasFocus)
         {
-            var groupTitle = _IGroup.GroupTitle;
+            var groupTitle = _IGroup.GroupHeader;
             bool hasTitle = (groupTitle != null);
             if (hasTitle)
                 DxDataForm.PaintBackground(e, _GetVisibleBounds(__CurrentTitleBackground), groupTitle.BackgroundAppearance, onMouse, hasFocus, false);     // Pozadí pod titulkem
 
             DxDataForm.PaintBackground(e, _GetVisibleBounds(__CurrentContentBackground), _IGroup.BackgroundAppearance, onMouse, hasFocus, false);          // Pozadí pod obsahem
+
+            if (hasTitle)
+                DxDataForm.PaintBackground(e, _GetVisibleBounds(__CurrentTitleLineBounds), groupTitle.LineAppearance, onMouse, hasFocus, false);           // Linka, nad obrázkem, pod texty
+
             DxDataForm.PaintImage(e, _GetVisibleBounds(__CurrentGroupBackground), _IGroup.BackgroundAppearance);                                           // Obrázek na pozadí celé grupy
 
-            if (hasTitle)
-                DxDataForm.PaintBackground(e, _GetVisibleBounds(__CurrentTitleLineBounds), groupTitle.LineAppearance, onMouse, hasFocus, false);           // Linka, pod textem
-
-            if (hasTitle)
-                DxDataForm.PaintText(e, _GetVisibleBounds(__CurrentTitleTextBounds), groupTitle.TitleAppearance, groupTitle.TitleText);                    // Text titulku
         }
-
         #endregion
         #region class Coordinates : souřadnice různých míst v grupě
         /// <summary>
@@ -3704,7 +3680,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             /// Jde o všechny pixely typu Border, Padding, TitleHeight.
             /// Tato velikost se má přidat k velikosti Content.Summary, aby byla vypočtena nejmenší potřebná velikost grupy.
             /// <para/>
-            /// Tuto hodnotu je možno číst po zadání <see cref="BorderRange"/>, <see cref="Padding"/>, <see cref="TitleHeight"/>.
+            /// Tuto hodnotu je možno číst po zadání <see cref="BorderRange"/>, <see cref="Padding"/>, <see cref="HeaderHeight"/>.
             /// </summary>
             public Size SizeOverhead
             {
@@ -3713,7 +3689,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                     int bs = 2 * _BorderEnd;
                     int pw = __PaddingLeft + __PaddingRight;
                     int ph = __PaddingTop + __PaddingBottom;
-                    var th = TitleHeight;
+                    var th = HeaderHeight;
                     return new Size(bs + pw, bs + ph + th);
                 }
             }
@@ -3804,11 +3780,11 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 }
             }
             /// <summary>
-            /// Souřadnice pozadí celé grupy, je přímo uvnitř Borderu (tzn. v rámci tohoto <see cref="GroupBackground"/> se nachází i <see cref="Padding"/>)
-            /// V tomto prostoru se nahoře nachází <see cref="TitleBackground"/> a dole <see cref="ContentBackground"/>.
+            /// Souřadnice pozadí celé grupy, je přímo uvnitř Borderu (tzn. v rámci tohoto <see cref="GroupBackgroundBounds"/> se nachází i <see cref="Padding"/>)
+            /// V tomto prostoru se nahoře nachází <see cref="HeaderBackgroundBounds"/> a dole <see cref="ContentBackgroundBounds"/>.
             /// Relativně k this grupě.
             /// </summary>
-            public Rectangle GroupBackground
+            public Rectangle GroupBackgroundBounds
             {
                 get
                 {
@@ -3817,118 +3793,118 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 }
             }
             #endregion
-            #region Title
+            #region Header
             /// <summary>
             /// Máme titulek?
             /// </summary>
-            public bool HasTitle { get { return (__TitleHeight > 0); } }
+            public bool HasHeader { get { return (__HeaderHeight > 0); } }
             /// <summary>
             /// Výška prostoru pro titulek. Nikdy není záporná, hodnota 0 = není titulek.
             /// </summary>
-            public int TitleHeight
+            public int HeaderHeight
             {
-                get { return __TitleHeight; }
-                set { __TitleHeight = (value < 0 ? 0 : value); }
+                get { return __HeaderHeight; }
+                set { __HeaderHeight = (value < 0 ? 0 : value); }
             }
-            private int __TitleHeight;
+            private int __HeaderHeight;
             /// <summary>
             /// Vnitřní okraje mezi vnitřkem Borderu a začátkem Inner prostoru pro prvky.
             /// Záporné hodnoty jsou nahrazeny 0.
             /// </summary>
-            public Padding TitlePadding
+            public Padding HeaderPadding
             {
-                get { return new Padding(__TitlePaddingLeft, __TitlePaddingTop, __TitlePaddingRight, __TitlePaddingBottom); }
+                get { return new Padding(__HeaderPaddingLeft, __HeaderPaddingTop, __HeaderPaddingRight, __HeaderPaddingBottom); }
                 set
                 {
-                    __TitlePaddingLeft = (value.Left > 0 ? value.Left : 0);
-                    __TitlePaddingTop = (value.Top > 0 ? value.Top : 0);
-                    __TitlePaddingRight = (value.Right > 0 ? value.Right : 0);
-                    __TitlePaddingBottom = (value.Bottom > 0 ? value.Bottom : 0);
+                    __HeaderPaddingLeft = (value.Left > 0 ? value.Left : 0);
+                    __HeaderPaddingTop = (value.Top > 0 ? value.Top : 0);
+                    __HeaderPaddingRight = (value.Right > 0 ? value.Right : 0);
+                    __HeaderPaddingBottom = (value.Bottom > 0 ? value.Bottom : 0);
                 }
             }
-            private int __TitlePaddingLeft;
-            private int __TitlePaddingTop;
-            private int __TitlePaddingRight;
-            private int __TitlePaddingBottom;
+            private int __HeaderPaddingLeft;
+            private int __HeaderPaddingTop;
+            private int __HeaderPaddingRight;
+            private int __HeaderPaddingBottom;
             /// <summary>
             /// Je viditelná linka v oblasti titulku?
             /// </summary>
-            public bool VisibleLine { get { return HasTitle && (_LineEnd > _LineBegin); } }
+            public bool VisibleLine { get { return HasHeader && (_LineYEnd > _LineYBegin); } }
             /// <summary>
             /// Umístění linky v oblasti titulku, měřeno od horního okraje titulku, bez <see cref="Padding"/>.
-            /// Pozor, relativně k <see cref="TitleBackground"/>.
+            /// Pozor, relativně k <see cref="HeaderBackgroundBounds"/>.
             /// Pokud linka není viditelná, je zde null.
             /// </summary>
             public Int32Range LineRange
             {
-                get { return (VisibleLine ? new Int32Range(_LineBegin, _LineEnd) : null); }
+                get { return (VisibleLine ? new Int32Range(_LineYBegin, _LineYEnd) : null); }
                 set
                 {
-                    __LineBegin = (value?.Begin ?? 0);
-                    __LineEnd = (value?.End ?? 0);
+                    __LineYBegin = (value?.Begin ?? 0);
+                    __LineYEnd = (value?.End ?? 0);
                 }
             }
             /// <summary>
-            /// Počátek (Top) linky titulku, zarovnaný do rozmezí 0 až <see cref="TitleHeight"/> včetně.
-            /// Pozor, hodnota je relativně k <see cref="TitleBackground"/>.
+            /// Počátek (Top) linky titulku, zarovnaný do rozmezí 0 až <see cref="HeaderHeight"/> včetně.
+            /// Pozor, hodnota je relativně k <see cref="HeaderBackgroundBounds"/>.
             /// </summary>
-            private int _LineBegin { get { int h = this.__TitleHeight; int b = __LineBegin; return (b > h ? h : (b < 0 ? 0 : b)); } }
+            private int _LineYBegin { get { int h = this.__HeaderHeight; int b = __LineYBegin; return (b > h ? h : (b < 0 ? 0 : b)); } }
             /// <summary>
-            /// Konec (Bottom) linky titulku, zarovnaný do rozmezí <see cref="_LineBegin"/> až <see cref="TitleHeight"/> včetně.
-            /// Pozor, hodnota je relativně k <see cref="TitleBackground"/>.
+            /// Konec (Bottom) linky titulku, zarovnaný do rozmezí <see cref="_LineYBegin"/> až <see cref="HeaderHeight"/> včetně.
+            /// Pozor, hodnota je relativně k <see cref="HeaderBackgroundBounds"/>.
             /// </summary>
-            private int _LineEnd { get { int h = this.__TitleHeight; int b = _LineBegin; int e = __LineEnd; return (e > h ? h : (e < b ? b : e)); } }
-            private int __LineBegin;
-            private int __LineEnd;
+            private int _LineYEnd { get { int h = this.__HeaderHeight; int b = _LineYBegin; int e = __LineYEnd; return (e > h ? h : (e < b ? b : e)); } }
+            private int __LineYBegin;
+            private int __LineYEnd;
             /// <summary>
             /// Souřadnice pozadí titulku. 
-            /// Nachází se přesně uvnitř <see cref="GroupBackground"/>, a má výšku <see cref="TitleHeight"/>.
+            /// Nachází se přesně uvnitř <see cref="GroupBackgroundBounds"/>, a má výšku <see cref="HeaderHeight"/>.
             /// Je relativní v rámci this grupy.
             /// <para/>
             /// Tento prostor má být vybarven barvou pozadí a případně obsahuje obrázek pozadí ve vhodném zarovnání.
             /// </summary>
-            public Rectangle TitleBackground
+            public Rectangle HeaderBackgroundBounds
             {
                 get
                 {
-                    if (!HasTitle) return Rectangle.Empty;
-                    var bounds = GroupBackground;
-                    var height = TitleHeight;
+                    if (!HasHeader) return Rectangle.Empty;
+                    var bounds = GroupBackgroundBounds;
+                    var height = HeaderHeight;
                     return new Rectangle(bounds.X, bounds.Y, bounds.Width, height);
                 }
             }
             /// <summary>
             /// Prostor, ve kterém je vykreslen text titulku a případné další prvky.
-            /// Je umístěn v <see cref="TitleBackground"/> a je oproti němu zmenšen o <see cref="TitlePadding"/> dovnitř.
+            /// Je umístěn v <see cref="HeaderBackgroundBounds"/> a je oproti němu zmenšen o <see cref="HeaderPadding"/> dovnitř.
             /// Je relativní v rámci this grupy.
             /// </summary>
             public Rectangle TitleBounds
             {
                 get
                 {
-                    if (!HasTitle) return Rectangle.Empty;
-                    var bounds = TitleBackground;
-                    int pl = __TitlePaddingLeft;
-                    int pt = __TitlePaddingTop;
-                    int pw = pl + __TitlePaddingRight;
-                    int ph = pt + __TitlePaddingBottom;
+                    if (!HasHeader) return Rectangle.Empty;
+                    var bounds = HeaderBackgroundBounds;
+                    int pl = __HeaderPaddingLeft;
+                    int pt = __HeaderPaddingTop;
+                    int pw = pl + __HeaderPaddingRight;
+                    int ph = pt + __HeaderPaddingBottom;
                     return new Rectangle(bounds.X + pl, bounds.Y + pt, bounds.Width - pw, bounds.Height - ph);
                 }
             }
             /// <summary>
             /// Prostor, ve kterém je vykreslena linka titulku. Může být Empty.
-            /// Obecně je umístěn v <see cref="TitleBackground"/>.
-            /// Ve směru X je od okrajů odsazen o Padding, ve směru Y nikoliv, ale je umístěn na pixelech <see cref="LineRange"/> vůči souřadnici <see cref="TitleBackground"/>.Y
+            /// Obecně je umístěn v <see cref="HeaderBackgroundBounds"/>.
+            /// Ve směru X je od okrajů odsazen o Padding, ve směru Y nikoliv, ale je umístěn na pixelech <see cref="LineRange"/> vůči souřadnici <see cref="HeaderBackgroundBounds"/>.Y
             /// Je relativní v rámci this grupy.
             /// </summary>
             public Rectangle TitleLineBounds
             {
                 get
                 {
-                    if (!HasTitle || !VisibleLine) return Rectangle.Empty;
-                    var bounds = TitleBackground;
-                    int lb = _LineBegin;
-                    int le = _LineEnd;
+                    if (!HasHeader || !VisibleLine) return Rectangle.Empty;
+                    var bounds = HeaderBackgroundBounds;
+                    int lb = _LineYBegin;
+                    int le = _LineYEnd;
                     if (le < lb) return Rectangle.Empty;
                     int pl = __PaddingLeft;
                     int pw = pl + __PaddingRight;
@@ -3939,24 +3915,24 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             #region Content a Collapsed
             /// <summary>
             /// Souřadnice pozadí vlastního obsahu pod titulkem.
-            /// Nachází se přesně uvnitř <see cref="GroupBackground"/>, nahoře je zmenšený o prostor titulku a má souřadnici Y = <see cref="TitleHeight"/>.
+            /// Nachází se přesně uvnitř <see cref="GroupBackgroundBounds"/>, nahoře je zmenšený o prostor titulku a má souřadnici Y = <see cref="HeaderHeight"/>.
             /// Je relativní v rámci this grupy.
             /// <para/>
             /// Tento prostor má být vybarven barvou pozadí a případně obsahuje obrázek pozadí ve vhodném zarovnání.
             /// </summary>
-            public Rectangle ContentBackground
+            public Rectangle ContentBackgroundBounds
             {
                 get
                 {
-                    var bounds = GroupBackground;
-                    var dy = (HasTitle ? TitleHeight : 0);
+                    var bounds = GroupBackgroundBounds;
+                    var dy = (HasHeader ? HeaderHeight : 0);
                     var height = bounds.Height - dy;
                     return new Rectangle(bounds.X, bounds.Y + dy, bounds.Width, height);
                 }
             }
             /// <summary>
             /// Souřadnice vlastního obsahu = jednotlivé prvky grupy.
-            /// Nachází se přesně uvnitř <see cref="ContentBackground"/>, a je zmenšen o <see cref="Padding"/> dovnitř.
+            /// Nachází se přesně uvnitř <see cref="ContentBackgroundBounds"/>, a je zmenšen o <see cref="Padding"/> dovnitř.
             /// Je relativní v rámci this grupy.
             /// <para/>
             /// Relativně v tomto prostoru se nachází jednotlivé prvky grupy.
@@ -3965,7 +3941,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             {
                 get
                 {
-                    var bounds = ContentBackground;
+                    var bounds = ContentBackgroundBounds;
                     int pl = __PaddingLeft;
                     int pt = __PaddingTop;
                     int pw = pl + __PaddingRight;
@@ -3983,19 +3959,19 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             /// <param name="currentDpi"></param>
             internal void ZoomToGui(Coordinates designCoordinates, int currentDpi)
             {
+                this.__HeaderHeight = zoomToGui(designCoordinates.__HeaderHeight);
                 this.__BorderBegin = zoomToGui(designCoordinates.__BorderBegin);
                 this.__BorderEnd = zoomToGui(designCoordinates.__BorderEnd);
+                this.__HeaderPaddingLeft = zoomToGui(designCoordinates.__HeaderPaddingLeft);
+                this.__HeaderPaddingTop = zoomToGui(designCoordinates.__HeaderPaddingTop);
+                this.__HeaderPaddingRight = zoomToGui(designCoordinates.__HeaderPaddingRight);
+                this.__HeaderPaddingBottom = zoomToGui(designCoordinates.__HeaderPaddingBottom);
+                this.__LineYBegin = zoomToGui(designCoordinates.__LineYBegin);
+                this.__LineYEnd = zoomToGui(designCoordinates.__LineYEnd);
                 this.__PaddingLeft = zoomToGui(designCoordinates.__PaddingLeft);
                 this.__PaddingTop = zoomToGui(designCoordinates.__PaddingTop);
                 this.__PaddingRight = zoomToGui(designCoordinates.__PaddingRight);
                 this.__PaddingBottom = zoomToGui(designCoordinates.__PaddingBottom);
-                this.__TitleHeight = zoomToGui(designCoordinates.__TitleHeight);
-                this.__TitlePaddingLeft = zoomToGui(designCoordinates.__TitlePaddingLeft);
-                this.__TitlePaddingTop = zoomToGui(designCoordinates.__TitlePaddingTop);
-                this.__TitlePaddingRight = zoomToGui(designCoordinates.__TitlePaddingRight);
-                this.__TitlePaddingBottom = zoomToGui(designCoordinates.__TitlePaddingBottom);
-                this.__LineBegin = zoomToGui(designCoordinates.__LineBegin);
-                this.__LineEnd = zoomToGui(designCoordinates.__LineEnd);
 
                 this.__Location = DxComponent.ZoomToGui(designCoordinates.__Location, currentDpi);
                 this.__Size = DxComponent.ZoomToGui(designCoordinates.__Size, currentDpi);
@@ -4021,7 +3997,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
     {
         #region Konstruktor, vlastník, prvky
         /// <summary>
-        /// Vytvoří a vrátí List obsahující <see cref="DxDataFormColumn"/>, vytvořený z dodaných instancí <see cref="IDataFormColumn"/>.
+        /// Vytvoří a vrátí List obsahující <see cref="DxDataFormColumn"/>, vytvořené z dodaných instancí <see cref="IDataFormColumn"/>.
         /// </summary>
         /// <param name="dataGroup"></param>
         /// <param name="isTitleItems">false pro běžné columny v prostoru Content, true pro columny v prostoru Title (=text titulku, ikony, atd)</param>
@@ -4029,16 +4005,28 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <returns></returns>
         public static List<DxDataFormColumn> CreateList(DxDataFormGroup dataGroup, bool isTitleItems, IEnumerable<IDataFormColumn> iItems)
         {
-            List<DxDataFormColumn> dataItems = new List<DxDataFormColumn>();
+            List<DxDataFormColumn> dxItems = new List<DxDataFormColumn>();
+            AddToList(dataGroup, isTitleItems, iItems, dxItems);
+            return dxItems;
+        }
+        /// <summary>
+        /// Naplní do dodaného Listu prvky <see cref="DxDataFormColumn"/> vytvořené z dodaných instancí <see cref="IDataFormColumn"/>.
+        /// </summary>
+        /// <param name="dataGroup"></param>
+        /// <param name="isTitleItems">false pro běžné columny v prostoru Content, true pro columny v prostoru Title (=text titulku, ikony, atd)</param>
+        /// <param name="iItems"></param>
+        /// <param name="dxItems"></param>
+        /// <returns></returns>
+        public static void AddToList(DxDataFormGroup dataGroup, bool isTitleItems, IEnumerable<IDataFormColumn> iItems, List<DxDataFormColumn> dxItems)
+        {
             if (iItems != null)
             {
                 foreach (IDataFormColumn iItem in iItems)
                 {
                     if (iItem == null) continue;
-                    dataItems.Add(new DxDataFormColumn(dataGroup, isTitleItems, iItem));
+                    dxItems.Add(new DxDataFormColumn(dataGroup, isTitleItems, iItem));
                 }
             }
-            return dataItems;
         }
         /// <summary>
         /// Konstruktor
@@ -4050,6 +4038,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             : base()
         {
             __DataGroup = dataGroup;
+            __IsTitleItem = isTitleItem;
             __IItem = iItem;
         }
         /// <summary>Vlastník - <see cref="DxDataFormGroup"/></summary>

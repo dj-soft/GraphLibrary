@@ -192,9 +192,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         public virtual string GroupId { get; set; }
         /// <summary>
-        /// Titulek grupy, pokud bude null pak grupa nemá titulek
+        /// Záhlaví grupy, pokud bude null pak grupa nemá záhlaví a obsahuje pouze prvky.
         /// </summary>
-        public virtual IDataFormGroupTitle GroupTitle { get; set; }
+        public virtual IDataFormGroupHeader GroupHeader { get; set; }
         /// <summary>
         /// Explicitně definovaná šířka grupy (designová hodnota: Zoom 100% a 96DPI).
         /// Může být null, pak se určí podle souhrnu rozměrů <see cref="Items"/> plus <see cref="DesignPadding"/>.
@@ -238,7 +238,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Border je vykreslen jednoduchou barvou <see cref="BorderAppearance"/>. 
         /// Ta může pracovat s Alpha kanálem (průhlednost). Pokud <see cref="BorderAppearance"/> je null, nebude se kreslit.
         /// <para/>
-        /// Titulkový prostor grupy <see cref="GroupTitle"/> se nachází uvnitř Borderu, jeho text je odsazen o <see cref="DesignPadding"/> od Borderu.
+        /// Titulkový prostor grupy <see cref="GroupHeader"/> se nachází uvnitř Borderu, jeho text je odsazen o <see cref="DesignPadding"/> od Borderu.
         /// <para/>
         /// Pokud <see cref="DesignBorderRange"/> je null, bere se jako { 0, 0 }.
         /// </summary>
@@ -262,7 +262,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Border je vykreslen jednoduchou barvou <see cref="BorderAppearance"/>. 
         /// Ta může pracovat s Alpha kanálem (průhlednost). Pokud <see cref="BorderAppearance"/> je null, nebude se kreslit.
         /// <para/>
-        /// Titulkový prostor grupy <see cref="GroupTitle"/> se nachází uvnitř Borderu, jeho text je odsazen o <see cref="DesignPadding"/> od Borderu.
+        /// Titulkový prostor grupy <see cref="GroupHeader"/> se nachází uvnitř Borderu, jeho text je odsazen o <see cref="DesignPadding"/> od Borderu.
         /// </summary>
         public virtual IDataFormBackgroundAppearance BorderAppearance { get; set; }
         /// <summary>
@@ -303,6 +303,17 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Ikona ToolTipu
         /// </summary>
         public virtual string ToolTipIcon { get; set; }
+        /// <summary>
+        /// Vytvoří a vrátí klon sebe sama = obsahuje shodné hodnoty
+        /// </summary>
+        /// <returns></returns>
+        public virtual IDataFormGroup CreateClone()
+        {
+            var clone = this.MemberwiseClone() as DataFormGroup;
+            clone.GroupHeader = this.GroupHeader?.CreateClone();
+            clone.Items = new List<IDataFormColumn>();
+            return clone;
+        }
 
         /// <summary>prvek interface</summary>
         IEnumerable<IDataFormColumn> IDataFormGroup.Items { get { return Items; } }
@@ -317,9 +328,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         string GroupId { get; }
         /// <summary>
-        /// Titulek grupy, pokud bude null pak grupa nemá titulek
+        /// Záhlaví grupy, pokud bude null pak grupa nemá záhlaví a obsahuje pouze prvky.
         /// </summary>
-        IDataFormGroupTitle GroupTitle { get; }
+        IDataFormGroupHeader GroupHeader { get; }
         /// <summary>
         /// Explicitně definovaná šířka grupy (designová hodnota: Zoom 100% a 96DPI).
         /// Může být null, pak se určí podle souhrnu rozměrů <see cref="Items"/> plus <see cref="DesignPadding"/>.
@@ -362,7 +373,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Border je vykreslen jednoduchou barvou <see cref="BorderAppearance"/>. 
         /// Ta může pracovat s Alpha kanálem (průhlednost). Pokud <see cref="BorderAppearance"/> je null, nebude se kreslit.
         /// <para/>
-        /// Titulkový prostor grupy <see cref="GroupTitle"/> se nachází uvnitř Borderu, jeho text je odsazen o <see cref="DesignPadding"/> od Borderu.
+        /// Titulkový prostor grupy <see cref="GroupHeader"/> se nachází uvnitř Borderu, jeho text je odsazen o <see cref="DesignPadding"/> od Borderu.
         /// <para/>
         /// Pokud <see cref="DesignBorderRange"/> je null, bere se jako { 0, 0 }.
         /// </summary>
@@ -386,7 +397,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Border je vykreslen jednoduchou barvou <see cref="BorderAppearance"/>. 
         /// Ta může pracovat s Alpha kanálem (průhlednost). Pokud <see cref="BorderAppearance"/> je null, nebude se kreslit.
         /// <para/>
-        /// Titulkový prostor grupy <see cref="GroupTitle"/> se nachází uvnitř Borderu, jeho text je odsazen o <see cref="DesignPadding"/> od Borderu.
+        /// Titulkový prostor grupy <see cref="GroupHeader"/> se nachází uvnitř Borderu, jeho text je odsazen o <see cref="DesignPadding"/> od Borderu.
         /// </summary>
         SWF.Padding DesignPadding { get; }
         /// <summary>
@@ -419,108 +430,117 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Jednotlivé prvky grupy
         /// </summary>
         IEnumerable<IDataFormColumn> Items { get; }
+        /// <summary>
+        /// Vytvoří a vrátí klon sebe sama = obsahuje shodné hodnoty
+        /// </summary>
+        /// <returns></returns>
+        IDataFormGroup CreateClone();
     }
     /// <summary>
-    /// Deklarace titulku grupy
+    /// Deklarace záhlaví grupy
     /// </summary>
-    public class DataFormGroupTitle : IDataFormGroupTitle
+    public class DataFormGroupHeader : IDataFormGroupHeader
     {
         /// <summary>
-        /// Titulek grupy
+        /// Konstruktor
         /// </summary>
-        public virtual string TitleText { get; set; }
-        /// <summary>
-        /// Okraje použité pro zarovnání textu titulku uvnitř grupy.
-        /// </summary>
-        public virtual SWF.Padding DesignTitlePadding { get; set; }
-        /// <summary>
-        /// Umístění textu <see cref="TitleText"/> v prostoru záhlaví. 
-        /// Prostor je standardně zmenšen o Padding deklarovaný v <see cref="IDataFormGroup.DesignPadding"/>, tak je možno zajistit, že text titulku se nebude dotýkat okraje grupy.
-        /// </summary>
-        public virtual ContentAlignment TitleAlignment { get; set; }
+        public DataFormGroupHeader()
+        {
+            HeaderItems = new List<IDataFormColumn>();
+        }
         /// <summary>
         /// Výška záhlaví (v designových pixelech). Záhlaví je umístěno na vnitřním horním okraji grupy po celé její šířce.
-        /// Uvnitř této výšky může být zobrazena linka, její pozice je definována v 
+        /// Uvnitř této výšky může být zobrazena linka, její pozice je definována v <see cref="DesignLineRange"/>;
+        /// ta může být kdekoliv v rámci této výšky, v ose Y nezohledňuje okraje <see cref="DesignTitlePadding"/>.
         /// Teprve pod touto výškou začíná prostor pro Columny.
         /// </summary>
-        public virtual int? DesignTitleHeight { get; set; }
+        public virtual int? DesignHeaderHeight { get; set; }
         /// <summary>
-        /// Souřadnice prostoru barevné linky na ose Y, která reprezentuje podtržení nebo podbarvení titulku.
-        /// Hodnota <b>Begin</b> reprezentuje souřadnici Y, kde linka začíná, měřeno od počátku titulku nahoře, 
-        /// hodnota <b>Size</b> reprezentuje výšku linky.
-        /// Pokud je zde null, pak se linka nevykresluje.
-        /// Může zde být rozsah 0 až <see cref="DesignTitleHeight"/>, pak je podkreslen celý prostor titulku.
-        /// </summary>
-        public virtual Int32Range DesignLineRange { get; set; }
-        /// <summary>
-        /// Řídí viditelnost titulku grupy
-        /// </summary>
-        public virtual bool IsVisible { get; set; }
-        /// <summary>
-        /// Vzhled písma titulku - kalíšek, barvy, modifikace fontu. 
-        /// Určuje vzhled titulkového textu.
-        /// </summary>
-        public virtual IDataFormColumnAppearance TitleAppearance { get; set; }
-        /// <summary>
-        /// Způsob barev a stylu pozadí titulkového řádku. Pozadí pokrývá celou výšku <see cref="DesignTitleHeight"/>.
+        /// Zadání barev a stylu pozadí titulkového řádku. Pozadí pokrývá celou výšku <see cref="DesignHeaderHeight"/>.
         /// Teprve na toto pozadí je vykreslena linka v souřadnicích <see cref="DesignLineRange"/> se vzhledem <see cref="LineAppearance"/>.
         /// </summary>
         public virtual IDataFormBackgroundAppearance BackgroundAppearance { get; set; }
         /// <summary>
-        /// Způsob barev a stylu linky titulkového řádku (prostor je umístěn ve svislých souřadnicích <see cref="DesignLineRange"/>.
+        /// Okraje použité pro určení prostoru prvků záhlaví. Okraje tedy zmenšují prostor daný pro záhlaví, a v tomto zmenšeném prostoru se nachází prvky <see cref="HeaderItems"/>.
         /// </summary>
-        public virtual IDataFormBackgroundAppearance LineAppearance { get; set; }
-    }
-    /// <summary>
-    /// Deklarace titulku grupy
-    /// </summary>
-    public interface IDataFormGroupTitle
-    {
-        /// <summary>
-        /// Titulek grupy
-        /// </summary>
-        string TitleText { get; }
-        /// <summary>
-        /// Okraje použité pro zarovnání textu titulku uvnitř grupy.
-        /// </summary>
-        SWF.Padding DesignTitlePadding { get; }
-        /// <summary>
-        /// Umístění textu <see cref="TitleText"/> v prostoru záhlaví. 
-        /// Prostor je standardně zmenšen o Padding deklarovaný v <see cref="IDataFormGroup.DesignPadding"/>, tak je možno zajistit, že text titulku se nebude dotýkat okraje grupy.
-        /// </summary>
-        ContentAlignment TitleAlignment { get; }
-        /// <summary>
-        /// Výška záhlaví (v designových pixelech). Záhlaví je umístěno na vnitřním horním okraji grupy po celé její šířce.
-        /// Uvnitř této výšky může být zobrazena linka, její pozice je definována v 
-        /// Teprve pod touto výškou začíná prostor pro Columny.
-        /// </summary>
-        int? DesignTitleHeight { get; }
+        public virtual SWF.Padding DesignTitlePadding { get; set; }
         /// <summary>
         /// Souřadnice prostoru barevné linky na ose Y, která reprezentuje podtržení nebo podbarvení titulku.
-        /// Hodnota <b>Begin</b> reprezentuje souřadnici Y, kde linka začíná, měřeno od počátku titulku nahoře, 
+        /// Hodnota <b>Begin</b> reprezentuje souřadnici Y, kde linka začíná, měřeno úplně od počátku titulku nahoře, 
         /// hodnota <b>Size</b> reprezentuje výšku linky.
         /// Pokud je zde null, pak se linka nevykresluje.
-        /// Může zde být rozsah 0 až <see cref="DesignTitleHeight"/>, pak je podkreslen celý prostor titulku.
+        /// Může zde být rozsah 0 až <see cref="DesignHeaderHeight"/>, pak je podkreslen celý prostor titulku.
+        /// Zdejší hodnota ignoruje okraje <see cref="DesignTitlePadding"/>.
         /// </summary>
-        Int32Range DesignLineRange { get; }
+        public virtual Int32Range DesignLineRange { get; set; }
         /// <summary>
-        /// Řídí viditelnost titulku grupy
+        /// Zadání barev a stylu linky titulkového řádku (prostor je umístěn ve svislých souřadnicích <see cref="DesignLineRange"/>.
         /// </summary>
-        bool IsVisible { get; }
+        public virtual IDataFormBackgroundAppearance LineAppearance { get; set; }
         /// <summary>
-        /// Vzhled písma titulku - kalíšek, barvy, modifikace fontu. 
-        /// Určuje vzhled titulkového textu.
+        /// Jednotlivé prvky titulku. 
+        /// Typicky je zde text titulku, mohou zde být obrázky anebo další tlačítka.
+        /// Souřadnice prvku jsou v rámci prostoru pro titulek, což je výška <see cref="DesignHeaderHeight"/>
         /// </summary>
-        IDataFormColumnAppearance TitleAppearance { get; }
+        public virtual List<IDataFormColumn> HeaderItems { get; set; }
         /// <summary>
-        /// Způsob barev a stylu pozadí titulkového řádku. Pozadí pokrývá celou výšku <see cref="DesignTitleHeight"/>.
+        /// Vytvoří a vrátí klon sebe sama = obsahuje shodné hodnoty
+        /// </summary>
+        /// <returns></returns>
+        public virtual IDataFormGroupHeader CreateClone()
+        {
+            var clone = this.MemberwiseClone() as DataFormGroupHeader;
+            clone.HeaderItems = new List<IDataFormColumn>();
+            return clone;
+        }
+        /// <summary>Prvek interface</summary>
+        IEnumerable<IDataFormColumn> IDataFormGroupHeader.HeaderItems { get { return HeaderItems; } }
+    }
+    /// <summary>
+    /// Deklarace záhlaví grupy
+    /// </summary>
+    public interface IDataFormGroupHeader
+    {
+        /// <summary>
+        /// Výška záhlaví (v designových pixelech). Záhlaví je umístěno na vnitřním horním okraji grupy po celé její šířce.
+        /// Uvnitř této výšky může být zobrazena linka, její pozice je definována v <see cref="DesignLineRange"/>;
+        /// ta může být kdekoliv v rámci této výšky, v ose Y nezohledňuje okraje <see cref="DesignTitlePadding"/>.
+        /// Teprve pod touto výškou začíná prostor pro Columny.
+        /// </summary>
+        int? DesignHeaderHeight { get; }
+        /// <summary>
+        /// Zadání barev a stylu pozadí titulkového řádku. Pozadí pokrývá celou výšku <see cref="DesignHeaderHeight"/>.
         /// Teprve na toto pozadí je vykreslena linka v souřadnicích <see cref="DesignLineRange"/> se vzhledem <see cref="LineAppearance"/>.
         /// </summary>
         IDataFormBackgroundAppearance BackgroundAppearance { get; }
         /// <summary>
-        /// Způsob barev a stylu linky titulkového řádku (prostor je umístěn ve svislých souřadnicích <see cref="DesignLineRange"/>.
+        /// Okraje použité pro určení prostoru prvků záhlaví. Okraje tedy zmenšují prostor daný pro záhlaví, a v tomto zmenšeném prostoru se nachází prvky <see cref="HeaderItems"/>.
+        /// </summary>
+        SWF.Padding DesignTitlePadding { get; }
+        /// <summary>
+        /// Souřadnice prostoru barevné linky na ose Y, která reprezentuje podtržení nebo podbarvení titulku.
+        /// Hodnota <b>Begin</b> reprezentuje souřadnici Y, kde linka začíná, měřeno úplně od počátku titulku nahoře, 
+        /// hodnota <b>Size</b> reprezentuje výšku linky.
+        /// Pokud je zde null, pak se linka nevykresluje.
+        /// Může zde být rozsah 0 až <see cref="DesignHeaderHeight"/>, pak je podkreslen celý prostor titulku.
+        /// Zdejší hodnota ignoruje okraje <see cref="DesignTitlePadding"/>.
+        /// </summary>
+        Int32Range DesignLineRange { get; }
+        /// <summary>
+        /// Zadání barev a stylu linky titulkového řádku (prostor je umístěn ve svislých souřadnicích <see cref="DesignLineRange"/>.
         /// </summary>
         IDataFormBackgroundAppearance LineAppearance { get; }
+        /// <summary>
+        /// Jednotlivé prvky titulku. 
+        /// Typicky je zde text titulku, mohou zde být obrázky anebo další tlačítka.
+        /// Souřadnice prvku jsou v rámci prostoru pro titulek, což je výška <see cref="DesignHeaderHeight"/>
+        /// </summary>
+        IEnumerable<IDataFormColumn> HeaderItems { get; }
+        /// <summary>
+        /// Vytvoří a vrátí klon sebe sama = obsahuje shodné hodnoty
+        /// </summary>
+        /// <returns></returns>
+        IDataFormGroupHeader CreateClone();
     }
     #endregion
     #region DataFormColumn + interface (různé třídy pro různé typy)
@@ -614,13 +634,17 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
     public class DataFormColumnImageText : DataFormColumn, IDataFormColumnImageText
     {
         /// <summary>
-        /// Jméno ikony
+        /// Jméno ikony. Pokud je uvedena, vykreslí se typicky těsně před textem.
         /// </summary>
         public virtual string ImageName { get; set; }
         /// <summary>
         /// Text
         /// </summary>
         public virtual string Text { get; set; }
+        /// <summary>
+        /// Zarovnání obsahu v rámci daných souřadnic
+        /// </summary>
+        public virtual ContentAlignment Alignment { get; set; }
         string IToolTipItem.ToolTipTitle { get { return ToolTipTitle ?? Text; } }
     }
     /// <summary>
@@ -629,13 +653,17 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
     public interface IDataFormColumnImageText : IDataFormColumn
     {
         /// <summary>
-        /// Jméno ikony
+        /// Jméno ikony. Pokud je uvedena, vykreslí se typicky těsně před textem.
         /// </summary>
         string ImageName { get; }
         /// <summary>
         /// Text
         /// </summary>
         string Text { get; }
+        /// <summary>
+        /// Zarovnání obsahu v rámci daných souřadnic
+        /// </summary>
+        ContentAlignment Alignment { get; }
     }
     /// <summary>
     /// Data definující jeden prvek v DataFormu
@@ -737,7 +765,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         string ColumnId { get; }
         /// <summary>
-        /// Typ prvku
+        /// Typ prvku.
+        /// Různé typy prvků mají implemenovat odpovídající konkrétní rozhraní, viz konkrétní typ prvku.
         /// </summary>
         DataFormColumnType ColumnType { get; }
         /// <summary>
@@ -815,6 +844,14 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Změna barvy popředí = písma
         /// </summary>
         public virtual Color? ForeColor { get; set; }
+        /// <summary>
+        /// Vytvoří a vrátí klon sebe sama = obsahuje shodné hodnoty
+        /// </summary>
+        /// <returns></returns>
+        public virtual IDataFormColumnAppearance CreateClone()
+        {
+            return this.MemberwiseClone() as IDataFormColumnAppearance;
+        }
     }
     /// <summary>
     /// Modifikace vzhledu prvku
@@ -858,6 +895,11 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Změna barvy popředí = písma
         /// </summary>
         Color? ForeColor { get; }
+        /// <summary>
+        /// Vytvoří a vrátí klon sebe sama = obsahuje shodné hodnoty
+        /// </summary>
+        /// <returns></returns>
+        IDataFormColumnAppearance CreateClone();
     }
     /// <summary>
     /// Definice vzhledu pozadí
@@ -961,7 +1003,14 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Barva v situaci, kdy v prvku je focus.
         /// </summary>
         public virtual string FocusedBackColorEndName { get; set; }
-
+        /// <summary>
+        /// Vytvoří a vrátí klon sebe sama = obsahuje shodné hodnoty
+        /// </summary>
+        /// <returns></returns>
+        public virtual IDataFormBackgroundAppearance CreateClone()
+        {
+            return this.MemberwiseClone() as IDataFormBackgroundAppearance;
+        }
     }
     /// <summary>
     /// Definice vzhledu pozadí
@@ -1066,6 +1115,11 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Barva v situaci, kdy v prvku je focus.
         /// </summary>
         string FocusedBackColorEndName { get; }
+        /// <summary>
+        /// Vytvoří a vrátí klon sebe sama = obsahuje shodné hodnoty
+        /// </summary>
+        /// <returns></returns>
+        IDataFormBackgroundAppearance CreateClone();
     }
     #endregion
     #region Enumy

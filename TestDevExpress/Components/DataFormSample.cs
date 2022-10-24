@@ -72,7 +72,10 @@ namespace TestDevExpress.Components
 
 
                 case 101:
-                    AddSamplePage101(pages);
+                case 102:
+                case 103:
+                case 104:
+                    AddSamplePage10x(sampleId, pages);
                     break;
             }
 
@@ -112,6 +115,7 @@ namespace TestDevExpress.Components
 
             DataFormGroup group = null;
 
+            #region Appearances
             DataFormBackgroundAppearance borderAppearance = new DataFormBackgroundAppearance()
             {
                 GradientStyle = GradientStyleType.Downward,
@@ -146,7 +150,7 @@ namespace TestDevExpress.Components
             };
             DataFormColumnAppearance titleAppearance = new DataFormColumnAppearance()
             {
-                FontSizeDelta = 2,
+                FontSizeDelta = 1,
                 FontStyleBold = true,
                 ContentAlignment = ContentAlignment.MiddleLeft
             };
@@ -154,12 +158,14 @@ namespace TestDevExpress.Components
             {
                 ContentAlignment = ContentAlignment.MiddleRight
             };
+            #endregion
 
             int textsCount = texts.Length;
             int tooltipsCount = tooltips.Length;
 
             string text, tooltip;
             int count = rowCount;
+            int groupId = 0;
             int y = 0;
             int maxX = 0;
             int q;
@@ -174,10 +180,12 @@ namespace TestDevExpress.Components
                 {
                     y = 0;
 
+                    groupId++;
                     group = new DataFormGroup();
                     group.DesignBorderRange = new Int32Range(1, 1 + borderSize);
                     group.BorderAppearance = borderAppearance;
                     group.DesignPadding = new Padding(px, py, px, py);
+                    group.GroupId = "Group" + groupId.ToString();
 
                     if (sampleId == 34)
                     {   // Výrobní čísla - úzká pro force layout break
@@ -198,18 +206,16 @@ namespace TestDevExpress.Components
 
                     if (headerHeight > 0)
                     {
-                        var groupTitle = new DataFormGroupTitle()
+                        var groupTitle = new DataFormGroupHeader()
                         {   // Základ = výška a pozadí
-                            DesignTitleHeight = headerHeight,
+                            DesignHeaderHeight = headerHeight,
                             BackgroundAppearance = (headerHeight == 2 ? headerAppearance2 : headerAppearance1)
                         };
 
                         if (addGroupTitle)
                         {   // Text
-                            groupTitle.TitleAppearance = titleAppearance;
-                            groupTitle.TitleText = "Skupina " + page.Groups.Count.ToString();
-                            groupTitle.TitleAlignment = ContentAlignment.MiddleLeft;
-                            groupTitle.DesignTitlePadding = new Padding(px, py, px, py);
+                            groupTitle.DesignTitlePadding = new Padding(px, 2, px, 2);
+                            groupTitle.HeaderItems.Add(new DataFormColumnImageText() { ColumnType = DataFormColumnType.Label, ColumnId = "GroupTitleId" + groupId.ToString(), Text = "Skupina " + page.Groups.Count.ToString(), DesignBounds = new Rectangle(12, 0, 180, 18), Alignment = ContentAlignment.MiddleLeft, Appearance = titleAppearance });
                         }
 
                         if (lineH > 0)
@@ -217,7 +223,7 @@ namespace TestDevExpress.Components
                             groupTitle.DesignLineRange = new Int32Range(lineY, lineY + lineH);
                             groupTitle.LineAppearance = lineAppearance;
                         }
-                        group.GroupTitle = groupTitle;
+                        group.GroupHeader = groupTitle;
                     }
                     page.Groups.Add(group);
                 }
@@ -364,40 +370,103 @@ namespace TestDevExpress.Components
         }
         #endregion
         #region Reálnější vzorky
-        private static void AddSamplePage101(List<IDataFormPage> pages)
+        private static void AddSamplePage10x(int sampleId, List<IDataFormPage> pages)
         {
             DataFormPage page1 = new DataFormPage() { PageId = "f101a", PageText = "Základní data" };
             pages.Add(page1);
 
+            #region Predefinice:
+            var width = 900;
+            var borderRange = new Int32Range(3, 4);
+            var borderAppearance = new DataFormBackgroundAppearance()
+            {
+                GradientStyle = GradientStyleType.DownRight,
+                BackColor = Color.FromArgb(192, 64, 64, 64),
+                BackColorEnd = Color.FromArgb(32, 64, 64, 64)
+            };
+            var designPadding = new Padding(6);
+            var headerAppearance = new DataFormBackgroundAppearance()
+            {
+                BackColor = Color.FromArgb(160, 190, 240, 160),
+                BackColorEnd = Color.FromArgb(0, 190, 240, 160),
+                OnMouseBackColor = Color.FromArgb(220, 190, 240, 160),
+                OnMouseBackColorEnd = Color.FromArgb(64, 190, 240, 160),
+                GradientStyle = GradientStyleType.DownRight
+            };
+            var groupHeader = new DataFormGroupHeader()
+            {
+                DesignHeaderHeight = 30,
+                BackgroundAppearance = headerAppearance,
+                DesignTitlePadding = new Padding(18, 2, 18, 2),
+                DesignLineRange = new Int32Range(29, 30),
+                LineAppearance = new DataFormBackgroundAppearance()
+                {
+                    GradientStyle = GradientStyleType.ToRight,
+                    BackColor = Color.FromArgb(255, 90, 200, 80), BackColorEnd = Color.FromArgb(32, 90, 200, 80)
+                }
+            };
+            var groupBgrAppearance = new DataFormBackgroundAppearance()
+            {
+                BackColor = Color.FromArgb(64, 192, 216, 255),
+                BackColorEnd = Color.FromArgb(32, 220, 240, 255),
+                GradientStyle = GradientStyleType.ToRight,
+            };
+            var titleTextAppearance = new DataFormColumnAppearance() { FontStyleBold = true, FontSizeDelta = 1 };
+            #endregion
+            #region Modifikace dle sampleId
+            switch (sampleId)
+            {
+                case 101:
+                    width = 900;
+                    headerAppearance.OnMouseBackColor = Color.FromArgb(220, 190, 240, 160);
+                    headerAppearance.OnMouseBackColorEnd = Color.FromArgb(64, 190, 240, 160);
+                    headerAppearance.GradientStyle = GradientStyleType.DownRight;
+                    break;
+                case 102:
+                    width = 800;
+                    headerAppearance.OnMouseBackColor = Color.FromArgb(220, 120, 240, 140);
+                    headerAppearance.OnMouseBackColorEnd = Color.FromArgb(64, 120, 240, 140);
+                    headerAppearance.GradientStyle = GradientStyleType.Downward;
+                    break;
+                case 103:
+                    width = 900;
+                    borderRange = new Int32Range(0, 0);
+                    designPadding = new Padding(2, 2, 2, 6);
+                    headerAppearance.OnMouseBackColor = Color.FromArgb(220, 190, 240, 160);
+                    headerAppearance.OnMouseBackColorEnd = Color.FromArgb(64, 190, 240, 160);
+                    headerAppearance.GradientStyle = GradientStyleType.DownRight;
+                    break;
+                case 104:
+                    width = 760;
+                    borderRange = new Int32Range(0, 0);
+                    designPadding = new Padding(2, 2, 2, 6);
+                    headerAppearance.OnMouseBackColor = Color.FromArgb(220, 120, 240, 140);
+                    headerAppearance.OnMouseBackColorEnd = Color.FromArgb(64, 120, 240, 140);
+                    headerAppearance.GradientStyle = GradientStyleType.Downward;
+                    break;
+            }
+            #endregion
+            #region Grupa 1
+
             DataFormGroup group1 = new DataFormGroup()
             {
-                GroupId = "Adresa", CollapseMode = DataFormGroupCollapseMode.AllowCollapseAllways, DesignPadding = new Padding(6),
-                DesignHeight = 420, DesignWidth = 900
+                GroupId = "Adresa",
+                CollapseMode = DataFormGroupCollapseMode.AllowCollapseAllways,
+                DesignPadding = designPadding,
+                DesignHeight = 420,
+                DesignWidth = width,
+                DesignBorderRange = borderRange,
+                BorderAppearance = borderAppearance
             };
-            group1.GroupTitle = new DataFormGroupTitle() 
-            { 
-                DesignTitleHeight = 30, TitleText = "Adresa", 
-                TitleAppearance = new DataFormColumnAppearance() { FontStyleBold = true, FontSizeDelta = 1 }, 
-                BackgroundAppearance = new DataFormBackgroundAppearance() 
-                { 
-                    BackColor = Color.FromArgb(160, 190, 240, 160), BackColorEnd = Color.FromArgb(0, 190, 240, 160), 
-                    OnMouseBackColor = Color.FromArgb(220, 190, 240, 160), OnMouseBackColorEnd = Color.FromArgb(64, 190, 240, 160),
-                    GradientStyle = GradientStyleType.DownRight },
-                DesignTitlePadding = new Padding(18, 2, 18, 2), 
-                DesignLineRange = new Int32Range(29, 30), 
-                LineAppearance = new DataFormBackgroundAppearance() 
-                { BackColor = Color.FromArgb(255, 90, 200, 80), BackColorEnd = Color.FromArgb(32, 90, 200, 80), GradientStyle = GradientStyleType.ToRight }
-            };
-            group1.BackgroundAppearance = new DataFormBackgroundAppearance()
-            { 
-                BackColor = Color.FromArgb(64, 192, 216, 255), BackColorEnd = Color.FromArgb(32, 220, 240, 255), GradientStyle = GradientStyleType.ToRight,
-                BackImageName = @"ImagesTest\BackCorners\Corner00028m.png", BackImageFill = ImageFillMode.Resize, BackImageAlignment = ContentAlignment.MiddleRight
-            };
-            group1.DesignBorderRange = new Int32Range(3, 4);
-            group1.BorderAppearance = new DataFormBackgroundAppearance()
-            { BackColor = Color.FromArgb(192, 64, 64, 64), BackColorEnd = Color.FromArgb(0, 64, 64, 64), GradientStyle = GradientStyleType.None };
+            var group1BgrAppearance = groupBgrAppearance.CreateClone() as DataFormBackgroundAppearance;
+            group1BgrAppearance.BackImageName = @"ImagesTest\BackCorners\Corner00028m.png";
+            group1BgrAppearance.BackImageFill = ImageFillMode.Resize;
+            group1BgrAppearance.BackImageAlignment = ContentAlignment.MiddleRight;
+            group1.BackgroundAppearance = group1BgrAppearance;
 
-            page1.Groups.Add(group1);
+            var group1Header = groupHeader.CreateClone() as DataFormGroupHeader;
+            group1Header.HeaderItems.Add(new DataFormColumnImageText() { ColumnType = DataFormColumnType.Label, ColumnId = "adresa_header", Text = "Adresa", DesignBounds = new Rectangle(0, 4, 250, 20), Alignment = ContentAlignment.MiddleLeft, Appearance = titleTextAppearance });
+            group1.GroupHeader = group1Header;
 
             group1.Items.Add(new DataFormColumnImageText() { ColumnId = "adresa_ulice_label", ColumnType = DataFormColumnType.Label, DesignBounds = new Rectangle(12, 18, 100, 18), Text = "Ulice" });
             group1.Items.Add(new DataFormColumnImageText() { ColumnId = "adresa_ulice", ColumnType = DataFormColumnType.TextBox, DesignBounds = new Rectangle(8, 40, 200, 20), Indicators = DataFormColumnIndicatorType.CorrectOnDemandThin | DataFormColumnIndicatorType.MouseOverThin | DataFormColumnIndicatorType.WithFocusBold });
@@ -424,79 +493,96 @@ namespace TestDevExpress.Components
             group1.Items.Add(new DataFormColumnImageText() { ColumnId = "filename_out_label", ColumnType = DataFormColumnType.Label, DesignBounds = new Rectangle(354, 270, 250, 18), Text = "Zadejte výstupní soubor:" });
             group1.Items.Add(new DataFormColumnTextBoxButton() { ColumnId = "filename_out", ColumnType = DataFormColumnType.TextBoxButton, DesignBounds = new Rectangle(350, 292, 400, 20), ButtonKind = DataFormButtonKind.Ellipsis, ButtonsVisibleAllways = false });
 
+            page1.Groups.Add(group1);
+
+            #endregion
+            #region Grupa 2
 
             DataFormGroup group2 = new DataFormGroup()
             {
                 GroupId = "Kontaktní osoba",
                 CollapseMode = DataFormGroupCollapseMode.AllowCollapseAllways,
-                DesignPadding = new Padding(6),
-                DesignWidth = 900
+                DesignPadding = designPadding,
+                DesignWidth = width,
+                DesignBorderRange = borderRange,
+                BorderAppearance = borderAppearance
             };
-            group2.GroupTitle = new DataFormGroupTitle()
-            {
-                DesignTitleHeight = 30,
-                TitleText = "Kontaktní osoba",
-                TitleAppearance = new DataFormColumnAppearance() { FontStyleBold = true, FontSizeDelta = 1 },
-                BackgroundAppearance = new DataFormBackgroundAppearance()
-                {
-                    BackColor = Color.FromArgb(160, 190, 240, 160),
-                    BackColorEnd = Color.FromArgb(0, 190, 240, 160),
-                    OnMouseBackColor = Color.FromArgb(220, 190, 240, 160),
-                    OnMouseBackColorEnd = Color.FromArgb(64, 190, 240, 160),
-                    GradientStyle = GradientStyleType.DownRight
-                },
-                DesignTitlePadding = new Padding(18, 2, 18, 2),
-                DesignLineRange = new Int32Range(29, 30),
-                LineAppearance = new DataFormBackgroundAppearance()
-                { BackColor = Color.FromArgb(255, 90, 200, 80), BackColorEnd = Color.FromArgb(32, 90, 200, 80), GradientStyle = GradientStyleType.ToRight }
-            };
-            group2.BackgroundAppearance = new DataFormBackgroundAppearance()
-            {
-                BackColor = Color.FromArgb(64, 192, 216, 192),
-                BackColorEnd = Color.FromArgb(16, 220, 240, 220),
-                GradientStyle = GradientStyleType.ToRight,
-                BackImageName = @"ImagesTest\BackCorners\Corner00010tr2.png",
-                BackImageFill = ImageFillMode.Resize,
-                BackImageAlignment = ContentAlignment.TopRight
-            };
-            group2.DesignBorderRange = new Int32Range(3, 4);
-            group2.BorderAppearance = new DataFormBackgroundAppearance()
-            { BackColor = Color.FromArgb(192, 64, 64, 64), BackColorEnd = Color.FromArgb(0, 64, 64, 64), GradientStyle = GradientStyleType.None };
+            var group2BgrAppearance = groupBgrAppearance.CreateClone() as DataFormBackgroundAppearance;
+            group2BgrAppearance.BackImageName = @"ImagesTest\BackCorners\Corner00010tr2.png";
+            group2BgrAppearance.BackImageFill = ImageFillMode.Resize;
+            group2BgrAppearance.BackImageAlignment = ContentAlignment.TopRight;
+            group2.BackgroundAppearance = group2BgrAppearance;
 
-            page1.Groups.Add(group2);
-
+            var group2Header = groupHeader.CreateClone() as DataFormGroupHeader;
+            group2Header.HeaderItems.Add(new DataFormColumnImageText() { ColumnType = DataFormColumnType.Label, ColumnId = "jmeno_header", Text = "Kontaktní osoba", DesignBounds = new Rectangle(0, 4, 250, 20), Alignment = ContentAlignment.MiddleLeft, Appearance = titleTextAppearance });
+            group2.GroupHeader = group2Header;
+            
             group2.Items.Add(new DataFormColumnImageText() { ColumnId = "jmeno_label", ColumnType = DataFormColumnType.Label, DesignBounds = new Rectangle(12, 18, 250, 18), Text = "Jméno a příjmení kontaktní osoby, tituly...:" });
             group2.Items.Add(new DataFormColumnImageText() { ColumnId = "jmeno_jmeno", ColumnType = DataFormColumnType.TextBox, DesignBounds = new Rectangle(8, 40, 120, 20), Indicators = DataFormColumnIndicatorType.CorrectOnDemandThin | DataFormColumnIndicatorType.MouseOverThin | DataFormColumnIndicatorType.WithFocusBold });
             group2.Items.Add(new DataFormColumnImageText() { ColumnId = "jmeno_prijmeni", ColumnType = DataFormColumnType.TextBox, DesignBounds = new Rectangle(132, 40, 300, 20), Indicators = DataFormColumnIndicatorType.CorrectOnDemandThin | DataFormColumnIndicatorType.MouseOverThin | DataFormColumnIndicatorType.WithFocusBold });
             group2.Items.Add(new DataFormColumnImageText() { ColumnId = "jmeno_titul", ColumnType = DataFormColumnType.TextBox, DesignBounds = new Rectangle(436, 40, 150, 20), Indicators = DataFormColumnIndicatorType.CorrectOnDemandThin | DataFormColumnIndicatorType.MouseOverThin | DataFormColumnIndicatorType.WithFocusBold });
 
+            page1.Groups.Add(group2);
 
-
-
+            #endregion
+            #region Grupa 3
 
             DataFormGroup group3 = new DataFormGroup()
             {
                 GroupId = "Podnikání",
                 CollapseMode = DataFormGroupCollapseMode.AllowCollapseAllways,
-                DesignPadding = new Padding(6),
-                DesignWidth = 900
+                DesignPadding = designPadding,
+                DesignWidth = width,
+                DesignBorderRange = borderRange,
+                BorderAppearance = borderAppearance
             };
-            group3.GroupTitle = new DataFormGroupTitle()
-            {
-                DesignTitleHeight = 2,
-                DesignLineRange = new Int32Range(1, 2),
-                LineAppearance = new DataFormBackgroundAppearance()
-                { BackColor = Color.FromArgb(255, 90, 200, 80), BackColorEnd = Color.FromArgb(32, 90, 200, 80), GradientStyle = GradientStyleType.ToRight }
-            };
-            group3.DesignBorderRange = new Int32Range(4, 4);
-            group3.BorderAppearance = new DataFormBackgroundAppearance()
-            { BackColor = Color.FromArgb(192, 64, 64, 64), BackColorEnd = Color.FromArgb(0, 64, 64, 64), GradientStyle = GradientStyleType.None };
+            var group3BgrAppearance = groupBgrAppearance.CreateClone() as DataFormBackgroundAppearance;
+            group3BgrAppearance.BackImageName = null;
+            group3BgrAppearance.BackImageFill = ImageFillMode.Resize;
+            group3BgrAppearance.BackImageAlignment = ContentAlignment.TopRight;
+            group3.BackgroundAppearance = group3BgrAppearance;
+
+            var group3Header = groupHeader.CreateClone() as DataFormGroupHeader;
+            group3Header.HeaderItems.Add(new DataFormColumnImageText() { ColumnType = DataFormColumnType.Label, ColumnId = "podnikani_header", Text = "Způsob podnikání", DesignBounds = new Rectangle(0, 4, 250, 20), Alignment = ContentAlignment.MiddleLeft, Appearance = titleTextAppearance });
+            group3.GroupHeader = group3Header;
+
+            group3.Items.Add(new DataFormColumnImageText() { ColumnId = "podnikani_label", ColumnType = DataFormColumnType.Label, DesignBounds = new Rectangle(12, 14, 250, 18), Text = "Předměty podnikání...:" });
+            group3.Items.Add(new DataFormColumnImageText() { ColumnId = "podnikani_button", ColumnType = DataFormColumnType.Button, DesignBounds = new Rectangle(width - 200, 11, 180, 24), Text = "Ověřit v ISIN" });
+            group3.Items.Add(new DataFormColumnImageText() { ColumnId = "podnikani", ColumnType = DataFormColumnType.EditBox, DesignBounds = new Rectangle(0, 36, width - 20, 80), Indicators = DataFormColumnIndicatorType.CorrectOnDemandThin | DataFormColumnIndicatorType.MouseOverThin | DataFormColumnIndicatorType.WithFocusBold });
 
             page1.Groups.Add(group3);
 
-            group3.Items.Add(new DataFormColumnImageText() { ColumnId = "podnikani_label", ColumnType = DataFormColumnType.Label, DesignBounds = new Rectangle(12, 4, 250, 18), Text = "Předměty podnikání...:" });
-            group3.Items.Add(new DataFormColumnImageText() { ColumnId = "podnikani", ColumnType = DataFormColumnType.EditBox, DesignBounds = new Rectangle(0, 26, 886, 80), Indicators = DataFormColumnIndicatorType.CorrectOnDemandThin | DataFormColumnIndicatorType.MouseOverThin | DataFormColumnIndicatorType.WithFocusBold });
-
+            #endregion
+            #region Modifikace dle sampleId
+            switch (sampleId)
+            {
+                case 101:
+                    group1BgrAppearance.BackImageName = @"ImagesTest\BackCorners\Corner00028m.png";
+                    group1BgrAppearance.BackImageFill = ImageFillMode.Resize;
+                    group1BgrAppearance.BackImageAlignment = ContentAlignment.MiddleRight;
+                    break;
+                case 102:
+                    group1BgrAppearance.BackImageName = @"ImagesTest\BackCorners\Corner00032b.png";
+                    group1BgrAppearance.BackImageFill = ImageFillMode.Resize;
+                    group1BgrAppearance.BackImageAlignment = ContentAlignment.BottomCenter;
+                    break;
+                case 103:
+                    group1BgrAppearance.BackImageName = @"ImagesTest\BackCorners\Corner00028m.png";
+                    group1BgrAppearance.BackImageFill = ImageFillMode.Resize;
+                    group1BgrAppearance.BackImageAlignment = ContentAlignment.MiddleRight;
+                    group3BgrAppearance.BackImageName = "images/miscellaneous/windows_32x32.png";
+                    group3BgrAppearance.BackImageFill = ImageFillMode.Shrink;
+                    group3BgrAppearance.BackImageAlignment = ContentAlignment.TopRight;
+                    break;
+                case 104:
+                    group1BgrAppearance.BackImageName = null;
+                    group2BgrAppearance.BackImageName = null;
+                    group3BgrAppearance.BackImageName = "images/miscellaneous/windows_32x32.png";
+                    group3BgrAppearance.BackImageFill = ImageFillMode.Shrink;
+                    group3BgrAppearance.BackImageAlignment = ContentAlignment.TopRight;
+                    break;
+            }
+            #endregion
         }
         #endregion
     }
