@@ -16,12 +16,30 @@ namespace DjSoft.Tools.SDCardTester
         public MainForm()
         {
             InitializeComponent();
+            InitializeProgress();
             InitContent();
             VisualMapPanelInit();
             ShowProperties();
             InitEvents();
             ShowControls(ActionState.Dialog, true);
         }
+        private void InitializeProgress()
+        {
+            __TaskProgress = new TaskProgress(this);
+            __TaskProgress.ProgressMaximum = 500;
+            /*  Použití je jednoduché:
+            var rand = new Random();
+            var next = rand.Next(30);
+            __TaskProgress.ProgressState = (next < 10 ? ThumbnailProgressState.Normal : next < 20 ? ThumbnailProgressState.Error : ThumbnailProgressState.Paused);
+            __TaskProgress.ProgressValue = rand.Next(0, 100);
+            */
+        }
+        protected override void WndProc(ref Message m)
+        {
+            __TaskProgress.FormWndProc(ref m);
+            base.WndProc(ref m);
+        }
+        private TaskProgress __TaskProgress;
         private void InitContent()
         {
             this.OnlyRemovableCheck.Checked = true;
@@ -121,6 +139,9 @@ namespace DjSoft.Tools.SDCardTester
                 CommandsPanel.Visible = (state == ActionState.Dialog);
                 StopPanel.Visible = (state == ActionState.AnalyseContent || state == ActionState.TestSave || state == ActionState.TestRead);
                 CurrentState = state;
+
+                bool isTest = (state == ActionState.TestSave || state == ActionState.TestRead);
+                __TaskProgress.ProgressState = (isTest ? ThumbnailProgressState.Normal : ThumbnailProgressState.NoProgress);
             }
         }
         /// <summary>
@@ -574,6 +595,9 @@ namespace DjSoft.Tools.SDCardTester
                 testPhases[DriveTester.TestPhase.SaveLongFile].StoreInfo(driveTester.TimeInfoSaveLong, testPhase);
                 testPhases[DriveTester.TestPhase.ReadShortFile].StoreInfo(driveTester.TimeInfoReadShort, testPhase);
                 testPhases[DriveTester.TestPhase.ReadLongFile].StoreInfo(driveTester.TimeInfoReadLong, testPhase);
+                int value = (int)Math.Round(driveTester.ProgressRatio * (decimal)__TaskProgress.ProgressMaximum, 0);
+                if (value == 0 && driveTester.ProgressRatio > 0m) value = 1;
+                __TaskProgress.ProgressValue = value;
             }
         }
         /// <summary>

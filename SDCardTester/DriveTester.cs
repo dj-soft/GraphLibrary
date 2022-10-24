@@ -56,7 +56,7 @@ namespace DjSoft.Tools.SDCardTester
         /// <param name="startTime"></param>
         /// <param name="currentTime"></param>
         /// <param name="errorCount"></param>
-        protected void CallTestStep(bool force, long? currentLength = null, long? startTime = null, long? currentTime = null, int? errorCount = null)
+        protected void CallTestStep(bool force, long? currentLength = null, long? startTime = null, long? currentTime = null, int? errorCount = null, bool? addSizeProcessed = false)
         {
             if (!CanCallWorkingStep(force)) return;
 
@@ -65,6 +65,7 @@ namespace DjSoft.Tools.SDCardTester
             TimeInfoSaveLong = TimeInfoSaveLongDone;
             TimeInfoReadShort = TimeInfoReadShortDone;
             TimeInfoReadLong = TimeInfoReadLongDone;
+            TestSizeProcessed = TestSizeProcessedDone;
 
             if (currentLength.HasValue && startTime.HasValue && currentTime.HasValue && errorCount.HasValue)
             {   // Máme k dispozici "rozpracovaná data" => přičteme je k hodnotám *Done a uložíme do public properties:
@@ -86,6 +87,8 @@ namespace DjSoft.Tools.SDCardTester
                         TimeInfoReadLong = new FileTimeInfo(TimeInfoReadLongDone, 0, currentLength.Value, elapsedTime, errorCount.Value);
                         break;
                 }
+                if (addSizeProcessed.HasValue && addSizeProcessed.Value)
+                    TestSizeProcessed += currentLength.Value;
             }
             RefreshFileGroups();
             CallWorkingStep();
@@ -150,6 +153,26 @@ namespace DjSoft.Tools.SDCardTester
         /// K nim se přičte informace o aktuálně probíhajícím přenosu a výsledek se vloží do <see cref="TimeInfoSaveShort"/> = aktuální žhavá hodnota k zobrazení.
         /// </summary>
         protected FileTimeInfo TimeInfoReadLongDone { get; private set; }
+        /// <summary>
+        /// Stav progresu v rozsahu 0 - 1
+        /// </summary>
+        public decimal ProgressRatio
+        {
+            get
+            {
+                if (TestSizeTotal <= 0L) return 0;
+
+                decimal sizeTotal = (decimal)TestSizeTotal;
+                decimal sizeProcessed = (decimal)TestSizeProcessed;
+                decimal ratio = sizeProcessed / sizeTotal;
+                ratio = (ratio < 0m ? 0m : (ratio > 100m ? 100m : ratio));
+                return ratio;
+            }
+        }
+        protected long TestSizeTotal { get; set; }
+        protected long TestSizeProcessed { get; set; }
+        protected long TestSizeProcessedDone { get; set; }
+
         #endregion
         #region Vlastní test zápisu
         /// <summary>
@@ -167,6 +190,9 @@ namespace DjSoft.Tools.SDCardTester
             // Nejprve vepíšeme 512 souborů o velikosti 4096 B = 2 MB (2 097 152 B);
             // Zbývajících 3584 souborů bude mít velikost (celková velikost disku / 3584) zarovnáno na 4KB bloky, pro 8TB disk tedy velikost = 2 454 265 856 = 2.5 GB
             long totalSize = Drive.TotalSize;
+            this.TestSizeTotal = Drive.AvailableFreeSpace;
+            this.TestSizeProcessed = 0L;
+            this.TestSizeProcessedDone = 0L;
             long longFilesLength = totalSize / LongFilesMaxCount;                        // Délka velkého souboru tak, aby jich v jednom adresáři na prázdném disku bylo celkem max 4096 souborů
             longFilesLength = (longFilesLength / ShortFilesLength) * ShortFilesLength;   // Zarovnáno na 4KB bloky
             long longFilesMinLength = LongFilesMinLength;
@@ -184,6 +210,7 @@ namespace DjSoft.Tools.SDCardTester
                     {
                         var timeInfoSaveShort = RunTestSaveOneFile(testDir, fileNumber, out string fileName, ShortFilesLength, TestPhase.SaveShortFile, TestPhase.SaveShortFile);
                         TimeInfoSaveShortDone.Add(timeInfoSaveShort);
+                        TestSizeProcessedDone += timeInfoSaveShort.SizeTotal;
 
                         var timeInfoReadShort = RunTestReadOneFile(fileName, fileNumber, TestPhase.ReadShortFile, TestPhase.SaveShortFile, true);
                         TimeInfoReadShortDone.Add(timeInfoReadShort);
@@ -193,6 +220,7 @@ namespace DjSoft.Tools.SDCardTester
                         if (!CanWriteFile(longFilesLength, out long acceptedLength)) break;
                         var timeInfoSaveLong = RunTestSaveOneFile(testDir, fileNumber, out string fileName, acceptedLength, TestPhase.SaveLongFile, TestPhase.SaveLongFile);
                         TimeInfoSaveLongDone.Add(timeInfoSaveLong);
+                        TestSizeProcessedDone += timeInfoSaveLong.SizeTotal;
 
                         var timeInfoReadLong = RunTestReadOneFile(fileName, fileNumber, TestPhase.ReadLongFile, TestPhase.SaveLongFile, true);
                         TimeInfoReadLongDone.Add(timeInfoReadLong);
@@ -256,7 +284,7 @@ namespace DjSoft.Tools.SDCardTester
                     }
 
                     var currentTime = this.CurrentTime;
-                    CallTestStep(false, currentLength, startTime, currentTime, 0);
+                    CallTestStep(false, currentLength, startTime, currentTime, 0, true);
                 }
                 fst.Flush();
                 fst.Close();
@@ -375,10 +403,15 @@ namespace DjSoft.Tools.SDCardTester
                 var testFiles = GetTestFiles(this.Drive, null);
                 if (testFiles.Length == 0) return;
 
-                foreach (var fileName in testFiles.Select(fi => fi.FullName))
+                this.TestSizeTotal = testFiles.Select(fi => fi.Length).Sum();
+                this.TestSizeProcessed = 0L;
+                this.TestSizeProcessedDone = 0L;
+
+                foreach (var testFile in testFiles)
                 {
                     if (Stopping) break;
 
+                    var fileName = testFile.FullName;
                     int fileNumber = GetFileNumber(fileName);
                     if (IsShortFile(fileNumber))
                     {
@@ -390,6 +423,7 @@ namespace DjSoft.Tools.SDCardTester
                         var timeInfoReadLong = RunTestReadOneFile(fileName, fileNumber, TestPhase.ReadLongFile, TestPhase.ReadLongFile, true);
                         TimeInfoReadLongDone.Add(timeInfoReadLong);
                     }
+                    TestSizeProcessedDone += testFile.Length;
                 }
             }
             catch { }
@@ -438,6 +472,7 @@ namespace DjSoft.Tools.SDCardTester
             long currentLength = 0L;
             int bufferIndex = -1;
             int totalErrors = 0;
+            bool addSizeProcessed = (workingPhase == CurrentTestPhase);
             using (System.IO.FileStream fst = new System.IO.FileStream(fileName, System.IO.FileMode.Open, System.IO.FileAccess.Read))
             {
                 // Read: buffer s daty je "pozadu" za fyzickou prací se souborem (na rozdíl od metody pro Save)
@@ -467,7 +502,7 @@ namespace DjSoft.Tools.SDCardTester
                     }
 
                     var currentTime = this.CurrentTime;
-                    CallTestStep(false, currentLength, startTime, currentTime, totalErrors);
+                    CallTestStep(false, currentLength, startTime, currentTime, totalErrors, addSizeProcessed);
                 }
                 // Prověříme poslední načtený buffer:
                 totalErrors += VerifyTestData(prevData, fileNumber, bufferIndex);
