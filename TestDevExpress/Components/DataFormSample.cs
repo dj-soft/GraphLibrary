@@ -215,7 +215,7 @@ namespace TestDevExpress.Components
                         if (addGroupTitle)
                         {   // Text
                             groupTitle.DesignTitlePadding = new Padding(px, 2, px, 2);
-                            groupTitle.HeaderItems.Add(new DataFormColumnImageText() { ColumnType = DataFormColumnType.Label, ColumnId = "GroupTitleId" + groupId.ToString(), Text = "Skupina " + page.Groups.Count.ToString(), DesignBounds = new Rectangle(12, 0, 180, 18), Alignment = ContentAlignment.MiddleLeft, Appearance = titleAppearance });
+                            groupTitle.HeaderItems.Add(new DataFormColumnImageText() { ColumnType = DataFormColumnType.Label, ColumnId = "GroupTitleId" + groupId.ToString(), Text = "Skupina " + groupId.ToString(), DesignBounds = new Rectangle(12, 0, 180, 18), Alignment = ContentAlignment.MiddleLeft, Appearance = titleAppearance });
                         }
 
                         if (lineH > 0)
