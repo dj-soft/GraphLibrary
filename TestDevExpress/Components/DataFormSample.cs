@@ -470,21 +470,22 @@ namespace TestDevExpress.Components
 
             group1.Items.Add(new DataFormColumnImageText() { ColumnId = "adresa_ulice_label", ColumnType = DataFormColumnType.Label, DesignBounds = new Rectangle(12, 18, 100, 18), Text = "Ulice" });
             group1.Items.Add(new DataFormColumnImageText() { ColumnId = "adresa_ulice", ColumnType = DataFormColumnType.TextBox, DesignBounds = new Rectangle(8, 40, 200, 20), Indicators = DataFormColumnIndicatorType.CorrectOnDemandThin | DataFormColumnIndicatorType.MouseOverThin | DataFormColumnIndicatorType.WithFocusBold });
-            group1.Items.Add(new DataFormColumnImageText() { ColumnId = "adresa_cislopop", ColumnType = DataFormColumnType.TextBox, DesignBounds = new Rectangle(212, 40, 120, 20), Indicators = DataFormColumnIndicatorType.CorrectAllwaysBold });
+            group1.Items.Add(new DataFormColumnImageText() { ColumnId = "adresa_cislopop", ColumnType = DataFormColumnType.TextBox, DesignBounds = new Rectangle(212, 40, 128, 20), Indicators = DataFormColumnIndicatorType.CorrectAllwaysBold });
 
             group1.Items.Add(new DataFormColumnImageText() { ColumnId = "adresa_mesto_label", ColumnType = DataFormColumnType.Label, DesignBounds = new Rectangle(12, 66, 100, 18), Text = "Město" });
             group1.Items.Add(new DataFormColumnImageText() { ColumnId = "adresa_psc", ColumnType = DataFormColumnType.TextBox, DesignBounds = new Rectangle(8, 88, 60, 20), Indicators = DataFormColumnIndicatorType.RequiredAllwaysThin | DataFormColumnIndicatorType.MouseOverThin | DataFormColumnIndicatorType.WithFocusBold });
-            group1.Items.Add(new DataFormColumnImageText() { ColumnId = "adresa_mesto", ColumnType = DataFormColumnType.TextBox, DesignBounds = new Rectangle(72, 88, 260, 20), Indicators = DataFormColumnIndicatorType.RequiredAllwaysThin | DataFormColumnIndicatorType.MouseOverThin | DataFormColumnIndicatorType.WithFocusBold });
+            group1.Items.Add(new DataFormColumnImageText() { ColumnId = "adresa_mesto", ColumnType = DataFormColumnType.TextBox, DesignBounds = new Rectangle(72, 88, 268, 20), Indicators = DataFormColumnIndicatorType.RequiredAllwaysThin | DataFormColumnIndicatorType.MouseOverThin | DataFormColumnIndicatorType.WithFocusBold });
 
             group1.Items.Add(new DataFormColumnImageText() { ColumnId = "adresa_zeme_label", ColumnType = DataFormColumnType.Label, DesignBounds = new Rectangle(12, 114, 100, 18), Text = "Stát" });
             group1.Items.Add(new DataFormColumnImageText() { ColumnId = "adresa_zeme_refer", ColumnType = DataFormColumnType.TextBox, DesignBounds = new Rectangle(8, 136, 80, 20) });
-            group1.Items.Add(new DataFormColumnImageText() { ColumnId = "adresa_zeme_nazev", ColumnType = DataFormColumnType.TextBox, DesignBounds = new Rectangle(92, 136, 240, 20) });
+            group1.Items.Add(new DataFormColumnImageText() { ColumnId = "adresa_zeme_nazev", ColumnType = DataFormColumnType.TextBox, DesignBounds = new Rectangle(92, 136, 190, 20) });
+            group1.Items.Add(new DataFormColumnImageText() { ColumnId = "adresa_zeme_nazev", ColumnType = DataFormColumnType.TextBox, DesignBounds = new Rectangle(284, 136, 56, 20) });
 
             group1.Items.Add(new DataFormColumnImageText() { ColumnId = "adresa_note_label", ColumnType = DataFormColumnType.Label, DesignBounds = new Rectangle(12, 162, 100, 18), Text = "Poznámka" });
             group1.Items.Add(new DataFormColumnImageText() { ColumnId = "adresa_note", ColumnType = DataFormColumnType.EditBox, DesignBounds = new Rectangle(8, 184, 220, 80) });
-            group1.Items.Add(new DataFormColumnCheckBox() { ColumnId = "adresa_ineu", ColumnType = DataFormColumnType.CheckBox, DesignBounds = new Rectangle(238, 190, 100, 20), Text = "Rezident EU" });
-            group1.Items.Add(new DataFormColumnCheckBox() { ColumnId = "adresa_inemu", ColumnType = DataFormColumnType.CheckBox, DesignBounds = new Rectangle(256, 212, 100, 20), Text = "Platí €" });
-            group1.Items.Add(new DataFormColumnCheckBox() { ColumnId = "adresa_ingb", ColumnType = DataFormColumnType.CheckBox, DesignBounds = new Rectangle(238, 234, 100, 20), Text = "Člen UK" });
+            group1.Items.Add(new DataFormColumnCheckBox() { ColumnId = "adresa_ineu", ColumnType = DataFormColumnType.CheckBox, DesignBounds = new Rectangle(238, 190, 102, 20), Text = "Rezident EU" });
+            group1.Items.Add(new DataFormColumnCheckBox() { ColumnId = "adresa_inemu", ColumnType = DataFormColumnType.CheckBox, DesignBounds = new Rectangle(256, 212, 84, 20), Text = "Platí €" });
+            group1.Items.Add(new DataFormColumnCheckBox() { ColumnId = "adresa_ingb", ColumnType = DataFormColumnType.CheckBox, DesignBounds = new Rectangle(238, 234, 102, 20), Text = "Člen UK" });
 
             group1.Items.Add(new DataFormColumnImageText() { ColumnId = "adresa_note", ColumnType = DataFormColumnType.EditBox, DesignBounds = new Rectangle(350, 40, 400, 224) });
 
@@ -565,6 +566,8 @@ namespace TestDevExpress.Components
                     group1BgrAppearance.BackImageName = @"ImagesTest\BackCorners\Corner00032b.png";
                     group1BgrAppearance.BackImageFill = ImageFillMode.Resize;
                     group1BgrAppearance.BackImageAlignment = ContentAlignment.BottomCenter;
+                    group2BgrAppearance.BackColor = Color.FromArgb(192, 255, 192, 255);
+                    group2BgrAppearance.BackColorEnd = Color.FromArgb(64, 255, 192, 255);
                     break;
                 case 103:
                     group1BgrAppearance.BackImageName = @"ImagesTest\BackCorners\Corner00028m.png";
@@ -578,6 +581,8 @@ namespace TestDevExpress.Components
                     group1BgrAppearance.BackImageName = null;
                     group2BgrAppearance.BackImageName = null;
                     group3BgrAppearance.BackImageName = "images/miscellaneous/windows_32x32.png";
+                    group2BgrAppearance.BackColor = Color.FromArgb(192, 255, 192, 255);
+                    group2BgrAppearance.BackColorEnd = Color.FromArgb(64, 255, 192, 255);
                     group3BgrAppearance.BackImageFill = ImageFillMode.Shrink;
                     group3BgrAppearance.BackImageAlignment = ContentAlignment.TopRight;
                     break;
