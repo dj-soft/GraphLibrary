@@ -1580,21 +1580,23 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
     /// Toto rozčlenění povoluje a řídí <see cref="DxDataFormPanel"/> jako fyzický Parent těchto částí, pokyny k rozdělení dostává od hlavního <see cref="DxDataForm"/>.
     /// K interaktivní změně dává uživateli k dispozici vhodné Splittery.
     /// Rozdělení provádí uživatel pomocí "tahacího" tlačítka vpravo nahoře a následného zobrazení splitteru.
-    /// Dostupnost Scrollbarů v jednotlivých částech v rámci <see cref="DxDataFormPanel"/> řídí <see cref="DxDataFormPanel"/>; 
-    /// scrollbary jsou dostupné vždy v té krajní části v daném směru = vpravo svislý a dole vodorovný.
-    /// Synchronizaci sousedních částí, které nemají svůj vlastní odpovídající scrollbar, zajišťuje <see cref="DxDataFormPanel"/>.
-    /// Podkladový ScrollPanel <see cref="DxScrollableContent"/> dovoluje nastavit okraje kolem scrollovaného obsahu, 
-    /// tyto okraje jsou využívány pro zobrazení "fixních" částí (vše okolo Rows) = ColumnHeader, RowFilter, SummaryRow, RowHeader.
+    /// Dostupnost Splitterů v jednotlivých částech v rámci <see cref="DxDataFormPanel"/> řídí <see cref="DxDataFormPanel"/>; 
+    /// Splittery jsou dostupné vždy v té krajní části v daném směru = vlevo svislý a nahoře vodorovný.
     /// <para/>
-    /// Typicky Master Dataform (nazývaný v Greenu "FreeForm") má pouze jednu část, která nezobrazuje ani ColumnHeaders ani RowHeaders, a ani nenabízí rozdělovací Splittery.
-    /// DataForm používaný pro položky (nazývaný v Greenu "EditBrowse") toto rozčlenění umožňuje.
-    /// Výhledový BrowseGrid rovněž.
+    /// Posouvání obsahu řídí Scrollbary, které nabízí vždy ta poslední <see cref="DxDataFormPart"/> v daném směru: svislý Scrollbar zobrazuje jen nejpravější část, 
+    /// vodorovný Scrollbar zobrazuje jen nejspodnější část.
+    /// Synchronizaci sousedních částí, které nemají svůj vlastní odpovídající Scrollbar, zajišťuje <see cref="DxDataFormPanel"/>.
     /// <para/>
-    /// Každá jedna skupina se nazývá Part = <see cref="DxDataFormPart"/>, a skládá se z částí: RowHeader, ColumnHeader, RowFilter, Rows, SummaryRows a Footer.
+    /// Každá jedna skupina <see cref="DxDataFormPart"/>, a skládá se z částí: RowHeader, ColumnHeader, RowFilter, Rows, SummaryRows a Footer.
     /// Tyto části jsou jednotlivě volitelné - odlišně pro první skupinu, pro vnitřní skupiny a pro skupinu poslední.
     /// Části Header, RowFilter jsou fixní k hornímu okraji a nescrollují;
     /// Části Rows, SummaryRows scrollují uprostřed;
     /// Část Footer je fixní k dolnímu okraji a nescrolluje.
+    /// Podkladový ScrollPanel <see cref="DxScrollableContent"/> dovoluje nastavit libovolné okraje kolem scrollovaného obsahu <see cref="DxScrollableContent.ContentVisualPadding"/>, 
+    /// tyto okraje jsou využívány pro zobrazení "fixních" částí (vše okolo Rows) = ColumnHeader, RowFilter, SummaryRow, RowHeader.
+    /// <para/>
+    /// Typicky Master Dataform (nazývaný v Greenu "FreeForm") má pouze jednu jedinou část <see cref="DxDataFormPart"/>, která nezobrazuje ani ColumnHeaders ani RowHeaders ani SummaryRow, a ani nenabízí rozdělovací Splittery.
+    /// DataForm používaný pro položky (nazývaný v Greenu "EditBrowse") toto rozčlenění umožňuje.
     /// </summary>
     internal class DxDataFormPart : DxScrollableContent
     {
@@ -1658,15 +1660,15 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         #endregion
         #region ContentPanel
         /// <summary>
-        /// Inicializuje panel <see cref="_ContentPanel"/>
+        /// Inicializuje panel <see cref="__ContentPanel"/>
         /// </summary>
         private void InitializeContentPanel()
         {
-            this._ContentPanel = new DxPanelBufferedGraphic() { Visible = true, BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder };
-            this._ContentPanel.LogActive = this.LogActive;
-            this._ContentPanel.Layers = BufferedLayers;                        // Tady můžu přidat další vrstvy, když budu chtít kreslit 'pod' anebo 'nad' hlavní prvky
-            this._ContentPanel.PaintLayer += _ContentPanel_PaintLayer;         // A tady bych pak musel reagovat na kreslení přidaných vrstev...
-            this.ContentControl = this._ContentPanel;
+            this.__ContentPanel = new DxPanelBufferedGraphic() { Visible = true, BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder };
+            this.__ContentPanel.LogActive = this.LogActive;
+            this.__ContentPanel.Layers = BufferedLayers;                        // Tady můžu přidat další vrstvy, když budu chtít kreslit 'pod' anebo 'nad' hlavní prvky
+            this.__ContentPanel.PaintLayer += _ContentPanel_PaintLayer;         // A tady bych pak musel reagovat na kreslení přidaných vrstev...
+            this.ContentControl = this.__ContentPanel;
 
             // TEST ONLY
             this.VScrollBarIndicators.AddIndicator(new Int32Range(50, 100), ScrollBarIndicatorType.BigCenter, Color.DarkRed);
@@ -1681,23 +1683,23 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             this.HScrollBarIndicators.Effect3DRatio = 0.75f;
         }
         /// <summary>
-        /// Disposuje panel <see cref="_ContentPanel"/>
+        /// Disposuje panel <see cref="__ContentPanel"/>
         /// </summary>
         private void DisposeContentPanel()
         {
             this.ContentControl = null;
-            if (this._ContentPanel != null)
+            if (this.__ContentPanel != null)
             {
-                this._ContentPanel.PaintLayer -= _ContentPanel_PaintLayer;
-                this._ContentPanel.Dispose();
-                this._ContentPanel = null;
+                this.__ContentPanel.PaintLayer -= _ContentPanel_PaintLayer;
+                this.__ContentPanel.Dispose();
+                this.__ContentPanel = null;
             }
         }
         /// <summary>
         /// Panel, ve kterém se vykresluje i hostuje obsah DataFormu. Panel je <see cref="DxPanelBufferedGraphic"/>, 
         /// ale z hlediska <see cref="DxDataForm"/> nemá žádnou funkcionalitu, ta je soustředěna do <see cref="DxDataFormPanel"/>.
         /// </summary>
-        private DxPanelBufferedGraphic _ContentPanel;
+        private DxPanelBufferedGraphic __ContentPanel;
         #endregion
         #region Grupy a jejich Items, viditelné grupy a viditelné itemy
         /// <summary>
@@ -1711,7 +1713,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         private void InitializeGroups()
         {
-            _VisibleItems = new List<DxDataFormColumn>();
+            __VisibleItems = new List<DxDataFormColumn>();
         }
         /// <summary>
         /// Metoda vrátí grupy, které se aktuálně mají zobrazovat.
@@ -1767,8 +1769,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         {
             var groups = Groups;
             Rectangle virtualBounds = this.ContentVirtualBounds;
-            this._VisibleGroups = groups?.Where(g => g.IsVisibleInVirtualBounds(virtualBounds)).ToList();
-            this._VisibleItems = this._VisibleGroups?.SelectMany(g => g.Items).Where(i => i.IsVisibleInVirtualBounds(virtualBounds)).ToList();
+            this.__VisibleGroups = groups?.Where(g => g.IsVisibleInVirtualBounds(virtualBounds)).ToList();
+            this.__VisibleItems = this.__VisibleGroups?.SelectMany(g => g.Items).Where(i => i.IsVisibleInVirtualBounds(virtualBounds)).ToList();
         }
         /// <summary>
         /// Zahodí všechny položky o grupách a prvcích z this instance
@@ -1780,25 +1782,25 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 _Groups.Clear();
                 _Groups = null;
             }
-            if (_VisibleGroups != null)
+            if (__VisibleGroups != null)
             {
-                _VisibleGroups.Clear();
-                _VisibleGroups = null;
+                __VisibleGroups.Clear();
+                __VisibleGroups = null;
             }
-            if (_VisibleItems != null)
+            if (__VisibleItems != null)
             {
-                _VisibleItems.Clear();
-                _VisibleItems = null;
+                __VisibleItems.Clear();
+                __VisibleItems = null;
             }
         }
         /// <summary>
         /// Počet aktuálně viditelných prvků
         /// </summary>
-        internal int? VisibleCellsCount { get { return _VisibleItems?.Count; } }
+        internal int? VisibleCellsCount { get { return __VisibleItems?.Count; } }
 
         private List<DxDataFormGroup> _Groups;
-        private List<DxDataFormGroup> _VisibleGroups;
-        private List<DxDataFormColumn> _VisibleItems;
+        private List<DxDataFormGroup> __VisibleGroups;
+        private List<DxDataFormColumn> __VisibleItems;
         private Size _GroupsTotalSize;
         #endregion
         #region Řádky DxDataFormRow
@@ -1815,7 +1817,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             var totalSize = innerSize.Add(0, 0);
             _RowsTotalSize = totalSize;
         }
-
         /// <summary>
         /// Připraví souhrn viditelných řádků
         /// </summary>
@@ -1943,12 +1944,12 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         #region Myš - Move, Down
         private void InitializeInteractivityMouse()
         {
-            this._CurrentOnMouseItem = null;
-            this._CurrentOnMouseControlSet = null;
-            this._CurrentOnMouseControl = null;
-            this._ContentPanel.MouseLeave += _ContentPanel_MouseLeave;
-            this._ContentPanel.MouseMove += _ContentPanel_MouseMove;
-            this._ContentPanel.MouseDown += _ContentPanel_MouseDown;
+            this.__CurrentOnMouseItem = null;
+            this.__CurrentOnMouseControlSet = null;
+            this.__CurrentOnMouseControl = null;
+            this.__ContentPanel.MouseLeave += _ContentPanel_MouseLeave;
+            this.__ContentPanel.MouseMove += _ContentPanel_MouseMove;
+            this.__ContentPanel.MouseDown += _ContentPanel_MouseDown;
         }
         /// <summary>
         /// Myš nás opustila
@@ -1959,10 +1960,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         {
             Point absoluteLocation = MousePosition;
             Point location = this.PointToClient(absoluteLocation);
-            if (!this._ContentPanel.Bounds.Contains(location))
+            if (!this.__ContentPanel.Bounds.Contains(location))
                 DetectMouseChangeForPoint(null);
             else
-                DetectMouseChangeForPoint(this._ContentPanel.PointToClient(absoluteLocation));
+                DetectMouseChangeForPoint(this.__ContentPanel.PointToClient(absoluteLocation));
         }
         /// <summary>
         /// Myš se pohybuje po Content panelu
@@ -1990,34 +1991,34 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         private void DetectMouseChangeForCurrentPoint()
         {
             Point absoluteLocation = Control.MousePosition;
-            Point relativeLocation = _ContentPanel.PointToClient(absoluteLocation);
+            Point relativeLocation = __ContentPanel.PointToClient(absoluteLocation);
             DetectMouseChangeForPoint(relativeLocation);
         }
         /// <summary>
         /// Vyhledá prvek nacházející se pod danou souřadnicí myši a zajistí pro prvky <see cref="MouseLeaveItem(bool)"/> a <see cref="MouseEnterItem(DxDataFormColumn)"/>.
         /// </summary>
-        /// <param name="location">Souřadnice myši relativně k controlu <see cref="_ContentPanel"/> = reálný parent prvků</param>
+        /// <param name="location">Souřadnice myši relativně k controlu <see cref="__ContentPanel"/> = reálný parent prvků</param>
         private void DetectMouseChangeForPoint(Point? location)
         {
             DxBufferedLayer invalidateLayers = DxBufferedLayer.None;
             DetectMouseChangeGroupForPoint(location, ref invalidateLayers);
             DetectMouseChangeItemForPoint(location, ref invalidateLayers);
             if (invalidateLayers != DxBufferedLayer.None)
-                this._ContentPanel.InvalidateLayers(invalidateLayers);
+                this.__ContentPanel.InvalidateLayers(invalidateLayers);
         }
         /// <summary>
-        /// Detekuje aktuální grupu pod danou souřadnicí, detekuje změny (Leave a Enter) a udržuje v proměnné <see cref="_CurrentOnMouseGroup"/> aktuální grupu na dané souřadnici
+        /// Detekuje aktuální grupu pod danou souřadnicí, detekuje změny (Leave a Enter) a udržuje v proměnné <see cref="__CurrentOnMouseGroup"/> aktuální grupu na dané souřadnici
         /// </summary>
         /// <param name="location"></param>
         /// <param name="invalidateLayers"></param>
         private void DetectMouseChangeGroupForPoint(Point? location, ref DxBufferedLayer invalidateLayers)
         {
-            if (_VisibleGroups == null) return;
+            if (__VisibleGroups == null) return;
 
-            DxDataFormGroup oldGroup = _CurrentOnMouseGroup;
+            DxDataFormGroup oldGroup = __CurrentOnMouseGroup;
             DxDataFormGroup newGroup = null;
             bool oldExists = (oldGroup != null);
-            bool newExists = location.HasValue && _VisibleGroups.TryGetLast(i => i.IsVisibleOnPoint(location.Value), out newGroup);
+            bool newExists = location.HasValue && __VisibleGroups.TryGetLast(i => i.IsVisibleOnPoint(location.Value), out newGroup);
 
             bool isMouseLeave = (oldExists && (!newExists || (newExists && !Object.ReferenceEquals(oldGroup, newGroup))));
             if (isMouseLeave)
@@ -2036,32 +2037,32 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="group"></param>
         private void MouseEnterGroup(DxDataFormGroup group)
         {
-            _CurrentOnMouseGroup = group;
+            __CurrentOnMouseGroup = group;
         }
         /// <summary>
         /// Je voláno při opuštění myši z aktuální grupy.
         /// </summary>
         private void MouseLeaveGroup()
         {
-            _CurrentOnMouseGroup = null;
+            __CurrentOnMouseGroup = null;
         }
         /// <summary>
         /// Grupa aktuálně se nacházející pod myší
         /// </summary>
-        private DxDataFormGroup _CurrentOnMouseGroup;
+        private DxDataFormGroup __CurrentOnMouseGroup;
         /// <summary>
-        /// Detekuje aktuální prvek pod danou souřadnicí, detekuje změny (Leave a Enter) a udržuje v proměnné <see cref="_CurrentOnMouseItem"/> aktuální prvek na dané souřadnici
+        /// Detekuje aktuální prvek pod danou souřadnicí, detekuje změny (Leave a Enter) a udržuje v proměnné <see cref="__CurrentOnMouseItem"/> aktuální prvek na dané souřadnici
         /// </summary>
         /// <param name="location"></param>
         /// <param name="invalidateLayers"></param>
         private void DetectMouseChangeItemForPoint(Point? location, ref DxBufferedLayer invalidateLayers)
         {
-            if (_VisibleItems == null) return;
+            if (__VisibleItems == null) return;
 
-            DxDataFormColumn oldItem = _CurrentOnMouseItem;
+            DxDataFormColumn oldItem = __CurrentOnMouseItem;
             DxDataFormColumn newItem = null;
             bool oldExists = (oldItem != null);
-            bool newExists = location.HasValue && _VisibleItems.TryGetLast(i => i.IsVisibleOnPoint(location.Value), out newItem);
+            bool newExists = location.HasValue && __VisibleItems.TryGetLast(i => i.IsVisibleOnPoint(location.Value), out newItem);
 
             bool isMouseLeave = (oldExists && (!newExists || (newExists && !Object.ReferenceEquals(oldItem, newItem))));
             if (isMouseLeave)
@@ -2082,10 +2083,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         {
             if (item.VisibleBounds.HasValue)
             {
-                _CurrentOnMouseItem = item;
-                _CurrentOnMouseControlSet = DataForm.GetControlSet(item);
-                _CurrentOnMouseControl = _CurrentOnMouseControlSet.GetControlForMouse(item, this._ContentPanel);
-                if (!_ContentPanel.IsPaintLayersInProgress)
+                __CurrentOnMouseItem = item;
+                __CurrentOnMouseControlSet = DataForm.GetControlSet(item);
+                __CurrentOnMouseControl = __CurrentOnMouseControlSet.GetControlForMouse(item, this.__ContentPanel);
+                if (!__ContentPanel.IsPaintLayersInProgress)
                 {   // V době, kdy probíhá proces Paint, NEBUDU provádět ScrollToBounds:
                     //  Ono k tomu v reálu nedochází - Scroll standardně proběhne při KeyEnter (anebo ruční ScrollBar). To jen při testu provádím MouseMove => ScrollToBounds!
                     bool isScrolled = false;     // this.ScrollToBounds(item.CurrentBounds, null, true);
@@ -2098,7 +2099,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         private void MouseLeaveItem(bool refresh = false)
         {
-            var oldControl = _CurrentOnMouseControl;
+            var oldControl = __CurrentOnMouseControl;
             if (oldControl != null)
             {
                 oldControl.Visible = false;
@@ -2109,9 +2110,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 if (refresh)
                     oldControl.Refresh();
             }
-            _CurrentOnMouseItem = null;
-            _CurrentOnMouseControlSet = null;
-            _CurrentOnMouseControl = null;
+            __CurrentOnMouseItem = null;
+            __CurrentOnMouseControlSet = null;
+            __CurrentOnMouseControl = null;
         }
         /// <summary>
         /// Prvek, nacházející se nyní pod myší
@@ -2120,15 +2121,15 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Datový prvek, nacházející se nyní pod myší
         /// </summary>
-        private DxDataFormColumn _CurrentOnMouseItem;
+        private DxDataFormColumn __CurrentOnMouseItem;
         /// <summary>
         /// Datový set popisující control, nacházející se nyní pod myší
         /// </summary>
-        private DxDataFormControlSet _CurrentOnMouseControlSet;
+        private DxDataFormControlSet __CurrentOnMouseControlSet;
         /// <summary>
         /// Vizuální control, nacházející se nyní pod myší
         /// </summary>
-        private System.Windows.Forms.Control _CurrentOnMouseControl;
+        private System.Windows.Forms.Control __CurrentOnMouseControl;
         #endregion
         #endregion
         #region Refresh
@@ -2329,7 +2330,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
 
             var layers = this._RefreshLayers;
             if (layers != DxBufferedLayer.None)
-                this._ContentPanel.InvalidateLayers(layers);
+                this.__ContentPanel.InvalidateLayers(layers);
             this._RefreshLayers = DxBufferedLayer.None;
         }
         /// <summary>
@@ -2418,8 +2419,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
 
             // _VisibleGroups.ForEachExec(g => PaintGroupStandard(g, visibleOrigin, e));
 
-            var mouseControl = _CurrentOnMouseControl;
-            var mouseItem = _CurrentOnMouseItem;
+            var mouseControl = __CurrentOnMouseControl;
+            var mouseItem = __CurrentOnMouseItem;
             if (mouseControl != null && mouseItem != null)
             {
                 var indicators = mouseItem.IItem.Indicators;
@@ -2467,14 +2468,14 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             {
                 _PaintingItems = true;
                 Point visibleOrigin = this.ContentVirtualLocation;
-                _VisibleGroups.ForEachExec(g => PaintGroupStandard(g, visibleOrigin, e));
-                _VisibleItems.ForEachExec(i => PaintItemStandard(i, visibleOrigin, e));
+                __VisibleGroups.ForEachExec(g => PaintGroupStandard(g, visibleOrigin, e));
+                __VisibleItems.ForEachExec(i => PaintItemStandard(i, visibleOrigin, e));
             }
             finally
             {
                 _PaintingItems = false;
             }
-            DxComponent.LogAddLineTime($"DxDataForm Paint Standard() Items: {_VisibleItems?.Count}; Time: {DxComponent.LogTokenTimeMilisec}", startTime);
+            DxComponent.LogAddLineTime($"DxDataForm Paint Standard() Items: {__VisibleItems?.Count}; Time: {DxComponent.LogTokenTimeMilisec}", startTime);
         }
         /// <summary>
         /// Provede vykreslení jedné dané grupy
@@ -2487,8 +2488,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             var bounds = group.CurrentGroupBounds;
             Point location = bounds.Location.Sub(visibleOrigin);
             group.VisibleGroupBounds = new Rectangle(location, bounds.Size);
-
-            bool onMouse = Object.ReferenceEquals(group, _CurrentOnMouseGroup);
+            bool onMouse = Object.ReferenceEquals(group, __CurrentOnMouseGroup);
             group.PaintGroup(e, onMouse, false);
         }
         /// <summary>
@@ -2557,8 +2557,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         {
             bool isPainted = false;
 
-            var mouseControl = _CurrentOnMouseControl;
-            var mouseItem = _CurrentOnMouseItem;
+            var mouseControl = __CurrentOnMouseControl;
+            var mouseItem = __CurrentOnMouseItem;
             if (mouseControl != null && mouseItem != null)
             {
                 var indicators = mouseItem.IItem.Indicators;
@@ -4281,9 +4281,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         public void Dispose()
         {
-            DisposeControl(ref _ControlDraw, DxDataFormControlUseMode.Draw);
-            DisposeControl(ref _ControlMouse, DxDataFormControlUseMode.Mouse);
-            DisposeControl(ref _ControlFocus, DxDataFormControlUseMode.Focus);
+            DisposeControl(ref __ControlDraw, DxDataFormControlUseMode.Draw);
+            DisposeControl(ref __ControlMouse, DxDataFormControlUseMode.Mouse);
+            DisposeControl(ref __ControlFocus, DxDataFormControlUseMode.Focus);
 
             _CreateControlFunction = null;
             _FillControlAction = null;
@@ -4745,10 +4745,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         internal Control GetControlForDraw(DxDataFormColumn item)
         {
             CheckNonDisposed();
-            if (_ControlDraw == null)
-                _ControlDraw = _CreateControl(DxDataFormControlUseMode.Draw);
-            _FillControl(item, _ControlDraw, DxDataFormControlUseMode.Draw, null);
-            return _ControlDraw;
+            if (__ControlDraw == null)
+                __ControlDraw = _CreateControl(DxDataFormControlUseMode.Draw);
+            _FillControl(item, __ControlDraw, DxDataFormControlUseMode.Draw, null);
+            return __ControlDraw;
         }
         /// <summary>
         /// Vrátí control pro daný prvek a režim Mouse
@@ -4759,10 +4759,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         internal Control GetControlForMouse(DxDataFormColumn item, Control parent)
         {
             CheckNonDisposed();
-            if (_ControlMouse == null)
-                _ControlMouse = _CreateControl(DxDataFormControlUseMode.Mouse);
-            _FillControl(item, _ControlMouse, DxDataFormControlUseMode.Mouse, parent);
-            return _ControlMouse;
+            if (__ControlMouse == null)
+                __ControlMouse = _CreateControl(DxDataFormControlUseMode.Mouse);
+            _FillControl(item, __ControlMouse, DxDataFormControlUseMode.Mouse, parent);
+            return __ControlMouse;
         }
         /// <summary>
         /// Vrátí control pro daný prvek a režim Focus
@@ -4773,10 +4773,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         internal Control GetControlForFocus(DxDataFormColumn item, Control parent)
         {
             CheckNonDisposed();
-            if (_ControlFocus == null)
-                _ControlFocus = _CreateControl(DxDataFormControlUseMode.Focus);
-            _FillControl(item, _ControlFocus, DxDataFormControlUseMode.Focus, parent);
-            return _ControlFocus;
+            if (__ControlFocus == null)
+                __ControlFocus = _CreateControl(DxDataFormControlUseMode.Focus);
+            _FillControl(item, __ControlFocus, DxDataFormControlUseMode.Focus, parent);
+            return __ControlFocus;
         }
         /// <summary>
         /// Metoda vrátí stringový klíč do ImageCache pro konkrétní prvek.
@@ -4843,9 +4843,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             control.Dispose();
             control = null;
         }
-        private Control _ControlDraw;
-        private Control _ControlMouse;
-        private Control _ControlFocus;
+        private Control __ControlDraw;
+        private Control __ControlMouse;
+        private Control __ControlFocus;
         #endregion
     }
     /// <summary>

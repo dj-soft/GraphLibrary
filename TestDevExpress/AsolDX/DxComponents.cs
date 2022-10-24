@@ -531,8 +531,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             _DefaultButtonXSpace = 6;
             _DefaultButtonYSpace = 6;
 
-            _Zoom = 1m;
-            _DesignDpi = 96;
+            __Zoom = 1m;
+            __DesignDpi = 96;
             _RecalcZoomDpi();
 
             _DefaultBarManager = new DevExpress.XtraBars.BarManager();
@@ -948,7 +948,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private void _InitZoom()
         {
-            _Zoom = 1m;
+            __Zoom = 1m;
             SystemAdapter.InteractiveZoomChanged += Host_InteractiveZoomChanged;
             _ReloadZoom();
         }
@@ -967,68 +967,68 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="value"></param>
         /// <returns></returns>
-        internal static int ZoomToGui(int value) { decimal zoom = Instance._Zoom; return _ZoomToGui(value, zoom); }
+        internal static int ZoomToGui(int value) { decimal zoom = Instance.__Zoom; return _ZoomToGui(value, zoom); }
         /// <summary>
         /// Vrátí danou designovou hodnotu přepočtenou dle aktuálního Zoomu do vizuální hodnoty
         /// </summary>
         /// <param name="value">Designová hodnota (96DPI, 100%)</param>
         /// <param name="targetDpi">Cílové DPI. Typicky se má použít hodnota <see cref="DxPanelControl.CurrentDpi"/> (nebo <see cref="DxStdForm.CurrentDpi"/>)</param>
         /// <returns></returns>
-        internal static int ZoomToGui(int value, int targetDpi) { decimal zoomDpi = Instance._ZoomDpi; return _ZoomDpiToGui(value, zoomDpi, targetDpi); }
+        internal static int ZoomToGui(int value, int targetDpi) { decimal zoomDpi = Instance.__ZoomDpi; return _ZoomDpiToGui(value, zoomDpi, targetDpi); }
         /// <summary>
         /// Vrátí danou designovou hodnotu přepočtenou dle aktuálního Zoomu do vizuální hodnoty
         /// </summary>
         /// <param name="value"></param>
         /// <param name="targetDpi">Cílové DPI. Typicky se má použít hodnota <see cref="DxPanelControl.CurrentDpi"/> (nebo <see cref="DxStdForm.CurrentDpi"/>)</param>
         /// <returns></returns>
-        internal static float ZoomToGui(float value, int targetDpi) { decimal zoomDpi = Instance._ZoomDpi; return _ZoomDpiToGui(value, zoomDpi, targetDpi); }
+        internal static float ZoomToGui(float value, int targetDpi) { decimal zoomDpi = Instance.__ZoomDpi; return _ZoomDpiToGui(value, zoomDpi, targetDpi); }
         /// <summary>
         /// Vrátí danou designovou hodnotu přepočtenou dle aktuálního Zoomu do vizuální hodnoty
         /// </summary>
         /// <param name="value">Designová hodnota (96DPI, 100%)</param>
         /// <param name="targetDpi">Cílové DPI. Typicky se má použít hodnota <see cref="DxPanelControl.CurrentDpi"/> (nebo <see cref="DxStdForm.CurrentDpi"/>)</param>
         /// <returns></returns>
-        internal static Int32Range ZoomToGui(Int32Range value, int targetDpi) { if (value == null) return null; decimal zoomDpi = Instance._ZoomDpi; return new Int32Range(_ZoomDpiToGui(value.Begin, zoomDpi, targetDpi), _ZoomDpiToGui(value.End, zoomDpi, targetDpi)); }
+        internal static Int32Range ZoomToGui(Int32Range value, int targetDpi) { if (value == null) return null; decimal zoomDpi = Instance.__ZoomDpi; return new Int32Range(_ZoomDpiToGui(value.Begin, zoomDpi, targetDpi), _ZoomDpiToGui(value.End, zoomDpi, targetDpi)); }
 
         /// <summary>
         /// Vrátí danou designovou hodnotu přepočtenou dle aktuálního Zoomu do vizuální hodnoty
         /// </summary>
         /// <param name="value"></param>
         /// <returns></returns>
-        internal static Point ZoomToGui(Point value) { decimal zoom = Instance._Zoom; return new Point(_ZoomToGui(value.X, zoom), _ZoomToGui(value.Y, zoom)); }
+        internal static Point ZoomToGui(Point value) { decimal zoom = Instance.__Zoom; return new Point(_ZoomToGui(value.X, zoom), _ZoomToGui(value.Y, zoom)); }
         /// <summary>
         /// Vrátí danou designovou hodnotu přepočtenou dle aktuálního Zoomu do vizuální hodnoty
         /// </summary>
         /// <param name="value"></param>
         /// <returns></returns>
-        internal static Point? ZoomToGui(Point? value) { if (!value.HasValue) return null; decimal zoom = Instance._Zoom; var v = value.Value; return new Point(_ZoomToGui(v.X, zoom), _ZoomToGui(v.Y, zoom)); }
+        internal static Point? ZoomToGui(Point? value) { if (!value.HasValue) return null; decimal zoom = Instance.__Zoom; var v = value.Value; return new Point(_ZoomToGui(v.X, zoom), _ZoomToGui(v.Y, zoom)); }
         /// <summary>
         /// Vrátí danou designovou hodnotu přepočtenou dle aktuálního Zoomu do vizuální hodnoty
         /// </summary>
         /// <param name="value">Designová hodnota (96DPI, 100%)</param>
         /// <param name="targetDpi">Cílové DPI. Typicky se má použít hodnota <see cref="DxPanelControl.CurrentDpi"/> (nebo <see cref="DxStdForm.CurrentDpi"/>)</param>
         /// <returns></returns>
-        internal static Point ZoomToGui(Point value, int targetDpi) { decimal zoomDpi = Instance._ZoomDpi; return new Point(_ZoomDpiToGui(value.X, zoomDpi, targetDpi), _ZoomDpiToGui(value.Y, zoomDpi, targetDpi)); }
+        internal static Point ZoomToGui(Point value, int targetDpi) { decimal zoomDpi = Instance.__ZoomDpi; return new Point(_ZoomDpiToGui(value.X, zoomDpi, targetDpi), _ZoomDpiToGui(value.Y, zoomDpi, targetDpi)); }
 
         /// <summary>
         /// Vrátí danou designovou hodnotu přepočtenou dle aktuálního Zoomu do vizuální hodnoty
         /// </summary>
         /// <param name="value"></param>
         /// <returns></returns>
-        internal static Size ZoomToGui(Size value) { decimal zoom = Instance._Zoom; return new Size(_ZoomToGui(value.Width, zoom), _ZoomToGui(value.Height, zoom)); }
+        internal static Size ZoomToGui(Size value) { decimal zoom = Instance.__Zoom; return new Size(_ZoomToGui(value.Width, zoom), _ZoomToGui(value.Height, zoom)); }
         /// <summary>
         /// Vrátí danou designovou hodnotu přepočtenou dle aktuálního Zoomu do vizuální hodnoty
         /// </summary>
         /// <param name="value"></param>
         /// <returns></returns>
-        internal static Size? ZoomToGui(Size? value) { if (!value.HasValue) return null; decimal zoom = Instance._Zoom; var v = value.Value; return new Size(_ZoomToGui(v.Width, zoom), _ZoomToGui(v.Height, zoom)); }
+        internal static Size? ZoomToGui(Size? value) { if (!value.HasValue) return null; decimal zoom = Instance.__Zoom; var v = value.Value; return new Size(_ZoomToGui(v.Width, zoom), _ZoomToGui(v.Height, zoom)); }
         /// <summary>
         /// Vrátí danou designovou hodnotu přepočtenou dle aktuálního Zoomu do vizuální hodnoty
         /// </summary>
         /// <param name="value">Designová hodnota (96DPI, 100%)</param>
         /// <param name="targetDpi">Cílové DPI. Typicky se má použít hodnota <see cref="DxPanelControl.CurrentDpi"/> (nebo <see cref="DxStdForm.CurrentDpi"/>)</param>
         /// <returns></returns>
-        internal static Size ZoomToGui(Size value, int targetDpi) { decimal zoomDpi = Instance._ZoomDpi; return new Size(_ZoomDpiToGui(value.Width, zoomDpi, targetDpi), _ZoomDpiToGui(value.Height, zoomDpi, targetDpi)); }
+        internal static Size ZoomToGui(Size value, int targetDpi) { decimal zoomDpi = Instance.__ZoomDpi; return new Size(_ZoomDpiToGui(value.Width, zoomDpi, targetDpi), _ZoomDpiToGui(value.Height, zoomDpi, targetDpi)); }
 
         /// <summary>
         /// Vrátí danou designovou hodnotu přepočtenou dle aktuálního Zoomu do vizuální hodnoty.
@@ -1039,7 +1039,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="value"></param>
         /// <returns></returns>
-        internal static Rectangle ZoomToGui(Rectangle value) { decimal zoom = Instance._Zoom; return Rectangle.FromLTRB(_ZoomToGui(value.Left, zoom), _ZoomToGui(value.Top, zoom), _ZoomToGui(value.Right, zoom), _ZoomToGui(value.Bottom, zoom)); }
+        internal static Rectangle ZoomToGui(Rectangle value) { decimal zoom = Instance.__Zoom; return Rectangle.FromLTRB(_ZoomToGui(value.Left, zoom), _ZoomToGui(value.Top, zoom), _ZoomToGui(value.Right, zoom), _ZoomToGui(value.Bottom, zoom)); }
         /// <summary>
         /// Vrátí danou designovou hodnotu přepočtenou dle aktuálního Zoomu do vizuální hodnoty.
         /// <para/>
@@ -1049,7 +1049,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="value"></param>
         /// <returns></returns>
-        internal static Rectangle? ZoomToGui(Rectangle? value) { if (!value.HasValue) return null; decimal zoom = Instance._Zoom; var v = value.Value; return Rectangle.FromLTRB(_ZoomToGui(v.Left, zoom), _ZoomToGui(v.Top, zoom), _ZoomToGui(v.Right, zoom), _ZoomToGui(v.Bottom, zoom)); }
+        internal static Rectangle? ZoomToGui(Rectangle? value) { if (!value.HasValue) return null; decimal zoom = Instance.__Zoom; var v = value.Value; return Rectangle.FromLTRB(_ZoomToGui(v.Left, zoom), _ZoomToGui(v.Top, zoom), _ZoomToGui(v.Right, zoom), _ZoomToGui(v.Bottom, zoom)); }
         /// <summary>
         /// Vrátí danou designovou hodnotu přepočtenou dle aktuálního Zoomu do vizuální hodnoty.
         /// <para/>
@@ -1060,27 +1060,27 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="value">Designová hodnota (96DPI, 100%)</param>
         /// <param name="targetDpi">Cílové DPI. Typicky se má použít hodnota <see cref="DxPanelControl.CurrentDpi"/> (nebo <see cref="DxStdForm.CurrentDpi"/>)</param>
         /// <returns></returns>
-        internal static Rectangle ZoomToGui(Rectangle value, int targetDpi) { decimal zoomDpi = Instance._ZoomDpi; return Rectangle.FromLTRB(_ZoomDpiToGui(value.Left, zoomDpi, targetDpi), _ZoomDpiToGui(value.Top, zoomDpi, targetDpi), _ZoomDpiToGui(value.Right, zoomDpi, targetDpi), _ZoomDpiToGui(value.Bottom, zoomDpi, targetDpi)); }
+        internal static Rectangle ZoomToGui(Rectangle value, int targetDpi) { decimal zoomDpi = Instance.__ZoomDpi; return Rectangle.FromLTRB(_ZoomDpiToGui(value.Left, zoomDpi, targetDpi), _ZoomDpiToGui(value.Top, zoomDpi, targetDpi), _ZoomDpiToGui(value.Right, zoomDpi, targetDpi), _ZoomDpiToGui(value.Bottom, zoomDpi, targetDpi)); }
 
         /// <summary>
         /// Vrátí danou designovou hodnotu přepočtenou dle aktuálního Zoomu do vizuální hodnoty
         /// </summary>
         /// <param name="value"></param>
         /// <returns></returns>
-        internal static Padding ZoomToGui(Padding value) { decimal zoom = Instance._Zoom; return new Padding(_ZoomToGui(value.Left, zoom), _ZoomToGui(value.Top, zoom), _ZoomToGui(value.Right, zoom), _ZoomToGui(value.Bottom, zoom)); }
+        internal static Padding ZoomToGui(Padding value) { decimal zoom = Instance.__Zoom; return new Padding(_ZoomToGui(value.Left, zoom), _ZoomToGui(value.Top, zoom), _ZoomToGui(value.Right, zoom), _ZoomToGui(value.Bottom, zoom)); }
         /// <summary>
         /// Vrátí danou designovou hodnotu přepočtenou dle aktuálního Zoomu do vizuální hodnoty
         /// </summary>
         /// <param name="value"></param>
         /// <returns></returns>
-        internal static Padding? ZoomToGui(Padding? value) { if (!value.HasValue) return null; decimal zoom = Instance._Zoom; var v = value.Value; return new Padding(_ZoomToGui(v.Left, zoom), _ZoomToGui(v.Top, zoom), _ZoomToGui(v.Right, zoom), _ZoomToGui(v.Bottom, zoom)); }
+        internal static Padding? ZoomToGui(Padding? value) { if (!value.HasValue) return null; decimal zoom = Instance.__Zoom; var v = value.Value; return new Padding(_ZoomToGui(v.Left, zoom), _ZoomToGui(v.Top, zoom), _ZoomToGui(v.Right, zoom), _ZoomToGui(v.Bottom, zoom)); }
         /// <summary>
         /// Vrátí danou designovou hodnotu přepočtenou dle aktuálního Zoomu do vizuální hodnoty
         /// </summary>
         /// <param name="value">Designová hodnota (96DPI, 100%)</param>
         /// <param name="targetDpi">Cílové DPI. Typicky se má použít hodnota <see cref="DxPanelControl.CurrentDpi"/> (nebo <see cref="DxStdForm.CurrentDpi"/>)</param>
         /// <returns></returns>
-        internal static Padding ZoomToGui(Padding value, int targetDpi) { decimal zoomDpi = Instance._ZoomDpi; return new Padding(_ZoomDpiToGui(value.Left, zoomDpi, targetDpi), _ZoomDpiToGui(value.Top, zoomDpi, targetDpi), _ZoomDpiToGui(value.Right, zoomDpi, targetDpi), _ZoomDpiToGui(value.Bottom, zoomDpi, targetDpi)); }
+        internal static Padding ZoomToGui(Padding value, int targetDpi) { decimal zoomDpi = Instance.__ZoomDpi; return new Padding(_ZoomDpiToGui(value.Left, zoomDpi, targetDpi), _ZoomDpiToGui(value.Top, zoomDpi, targetDpi), _ZoomDpiToGui(value.Right, zoomDpi, targetDpi), _ZoomDpiToGui(value.Bottom, zoomDpi, targetDpi)); }
 
         /// <summary>
         /// Vrátí daný font přepočtený dle aktuálního Zoomu do vizuální hodnoty
@@ -1091,10 +1091,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         internal static Font ZoomToGui(Font value, int targetDpi)
         {
             var instance = Instance;
-            decimal zoomDpi = instance._ZoomDpi;
-            float emSize = _ZoomDpiToGui(value.Size, Instance._ZoomDpi, targetDpi);
+            decimal zoomDpi = instance.__ZoomDpi;
+            float emSize = _ZoomDpiToGui(value.Size, Instance.__ZoomDpi, targetDpi);
             return instance._GetFont(null, value.FontFamily, null, emSize, value.Style);
         }
+
         /// <summary>
         /// Vrátí danou designovou hodnotu přepočtenou dle daného Zoomu do vizuální hodnoty
         /// </summary>
@@ -1127,19 +1128,20 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         private static decimal _ZoomDpiToGui(decimal value, decimal zoomDpi, decimal targetDpi) { return (value * zoomDpi * targetDpi); }
         /// <summary>
-        /// Aktuální hodnota Zoomu
+        /// Aktuální hodnota Zoomu. Defaultní hodnota = 1.00, což odpovídá 100%.
         /// </summary>
-        internal static decimal Zoom { get { return Instance._Zoom; } }
+        internal static decimal Zoom { get { return Instance.__Zoom; } }
         /// <summary>
         /// Hodnota DPI, ke které se vztahují velikosti prvků zadávané jako DesignBounds.
         /// Reálná velikost prvků se pak konvertuje na cílové DPI monitoru.
+        /// Defaultní hodnota je 96 DPI, povolený rozsah je 72 až 600 DPI.
         /// </summary>
-        public static int DesignDpi { get { return Instance._DesignDpi; } set { Instance._SetDesignDpi(value); } }
+        public static int DesignDpi { get { return Instance.__DesignDpi; } set { Instance._SetDesignDpi(value); } }
 
         /// <summary>
-        /// Aktuální hodnota Zoomu a SourceDpi
+        /// Aktuální hodnota (<see cref="Zoom"/> / <see cref="DesignDpi"/>), slouží k rychlému přepočtu Design souřadnic na cílové souřadnice v aktuálním Zoomu a TargetDPI.
         /// </summary>
-        internal static decimal ZoomDpi { get { return Instance._Zoom; } }
+        internal static decimal ZoomDpi { get { return Instance.__ZoomDpi; } }
         /// <summary>
         /// Reload hodnoty Zoomu
         /// </summary>
@@ -1149,7 +1151,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private void _ReloadZoom()
         {
-            _Zoom = SystemAdapter.ZoomRatio;
+            __Zoom = SystemAdapter.ZoomRatio;
             _RecalcZoomDpi();
         }
         /// <summary>
@@ -1158,7 +1160,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="designDpi"></param>
         private void _SetDesignDpi(int designDpi)
         {
-            _DesignDpi = (designDpi < 72 ? 72 : (designDpi > 600 ? 600 : designDpi));
+            __DesignDpi = (designDpi < 72 ? 72 : (designDpi > 600 ? 600 : designDpi));
             _RecalcZoomDpi();
         }
         private void _RecalcZoomDpi()
@@ -1168,11 +1170,22 @@ namespace Noris.Clients.Win.Components.AsolDX
             // na cílovou Current hodnotu (int):
             // Current = (Design * _ZoomDpi * TargetDpi)
 
-            _ZoomDpi = _Zoom / (decimal)_DesignDpi;
+            __ZoomDpi = __Zoom / (decimal)__DesignDpi;
         }
-        private decimal _Zoom;
-        private int _DesignDpi;
-        private decimal _ZoomDpi;
+        /// <summary>
+        /// Aktuální hodnota Zoomu. Defaultní hodnota = 1.00, což odpovídá 100%.
+        /// </summary>
+        private decimal __Zoom;
+        /// <summary>
+        /// Hodnota DPI, ke které se vztahují velikosti prvků zadávané jako DesignBounds.
+        /// Reálná velikost prvků se pak konvertuje na cílové DPI monitoru.
+        /// Defaultní hodnota je 96 DPI, povolený rozsah je 72 až 600 DPI.
+        /// </summary>
+        private int __DesignDpi;
+        /// <summary>
+        /// Aktuální hodnota (<see cref="Zoom"/> / <see cref="DesignDpi"/>), slouží k rychlému přepočtu Design souřadnic na cílové souřadnice v aktuálním Zoomu a TargetDPI.
+        /// </summary>
+        private decimal __ZoomDpi;
         #endregion
         #region FontCache
         /// <summary>
