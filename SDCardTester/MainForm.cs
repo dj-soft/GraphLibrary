@@ -595,9 +595,13 @@ namespace DjSoft.Tools.SDCardTester
                 testPhases[DriveTester.TestPhase.SaveLongFile].StoreInfo(driveTester.TimeInfoSaveLong, testPhase);
                 testPhases[DriveTester.TestPhase.ReadShortFile].StoreInfo(driveTester.TimeInfoReadShort, testPhase);
                 testPhases[DriveTester.TestPhase.ReadLongFile].StoreInfo(driveTester.TimeInfoReadLong, testPhase);
+
                 int value = (int)Math.Round(driveTester.ProgressRatio * (decimal)__TaskProgress.ProgressMaximum, 0);
                 if (value == 0 && driveTester.ProgressRatio > 0m) value = 1;
                 __TaskProgress.ProgressValue = value;
+
+                bool hasError = (driveTester.TimeInfoSaveShort.ErrorCount > 0 || driveTester.TimeInfoSaveLong.ErrorCount > 0 || driveTester.TimeInfoReadShort.ErrorCount > 0 || driveTester.TimeInfoReadLong.ErrorCount > 0);
+                __TaskProgress.ProgressState = (!hasError ? ThumbnailProgressState.Normal : ThumbnailProgressState.Error);
             }
         }
         /// <summary>

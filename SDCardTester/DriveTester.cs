@@ -413,17 +413,20 @@ namespace DjSoft.Tools.SDCardTester
 
                     var fileName = testFile.FullName;
                     int fileNumber = GetFileNumber(fileName);
-                    if (IsShortFile(fileNumber))
+                    if (fileNumber > 0)
                     {
-                        var timeInfoReadShort = RunTestReadOneFile(fileName, fileNumber, TestPhase.ReadShortFile, TestPhase.ReadShortFile, true);
-                        TimeInfoReadShortDone.Add(timeInfoReadShort);
+                        if (IsShortFile(fileNumber))
+                        {
+                            var timeInfoReadShort = RunTestReadOneFile(fileName, fileNumber, TestPhase.ReadShortFile, TestPhase.ReadShortFile, true);
+                            TimeInfoReadShortDone.Add(timeInfoReadShort);
+                        }
+                        else
+                        {
+                            var timeInfoReadLong = RunTestReadOneFile(fileName, fileNumber, TestPhase.ReadLongFile, TestPhase.ReadLongFile, true);
+                            TimeInfoReadLongDone.Add(timeInfoReadLong);
+                        }
+                        TestSizeProcessedDone += testFile.Length;
                     }
-                    else
-                    {
-                        var timeInfoReadLong = RunTestReadOneFile(fileName, fileNumber, TestPhase.ReadLongFile, TestPhase.ReadLongFile, true);
-                        TimeInfoReadLongDone.Add(timeInfoReadLong);
-                    }
-                    TestSizeProcessedDone += testFile.Length;
                 }
             }
             catch { }
