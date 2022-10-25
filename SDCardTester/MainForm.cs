@@ -33,6 +33,8 @@ namespace DjSoft.Tools.SDCardTester
             __TaskProgress.ProgressState = (next < 10 ? ThumbnailProgressState.Normal : next < 20 ? ThumbnailProgressState.Error : ThumbnailProgressState.Paused);
             __TaskProgress.ProgressValue = rand.Next(0, 100);
             */
+            this.__AppTitleTextStandard = this.Text;
+            this.__AppTitleTextCurrent = null;
         }
         protected override void WndProc(ref Message m)
         {
@@ -142,6 +144,8 @@ namespace DjSoft.Tools.SDCardTester
 
                 bool isTest = (state == ActionState.TestSave || state == ActionState.TestRead);
                 __TaskProgress.ProgressState = (isTest ? ThumbnailProgressState.Normal : ThumbnailProgressState.NoProgress);
+                if (!isTest)
+                    this.AppTitleTextCurrent = this.__AppTitleTextStandard;
             }
         }
         /// <summary>
@@ -596,14 +600,49 @@ namespace DjSoft.Tools.SDCardTester
                 testPhases[DriveTester.TestPhase.ReadShortFile].StoreInfo(driveTester.TimeInfoReadShort, testPhase);
                 testPhases[DriveTester.TestPhase.ReadLongFile].StoreInfo(driveTester.TimeInfoReadLong, testPhase);
 
-                int value = (int)Math.Round(driveTester.ProgressRatio * (decimal)__TaskProgress.ProgressMaximum, 0);
+                decimal progressRatio = driveTester.ProgressRatio;
+
+                int value = (int)Math.Round(progressRatio * (decimal)__TaskProgress.ProgressMaximum, 0);
                 if (value == 0 && driveTester.ProgressRatio > 0m) value = 1;
                 __TaskProgress.ProgressValue = value;
 
                 bool hasError = (driveTester.TimeInfoSaveShort.ErrorCount > 0 || driveTester.TimeInfoSaveLong.ErrorCount > 0 || driveTester.TimeInfoReadShort.ErrorCount > 0 || driveTester.TimeInfoReadLong.ErrorCount > 0);
                 __TaskProgress.ProgressState = (!hasError ? ThumbnailProgressState.Normal : ThumbnailProgressState.Error);
+
+                // Titulek aplikace = "SD Card tester H: 58%"
+                string drive = driveTester.Drive.Name.Substring(0, 1).ToUpper();
+                string appName = (testPhase == DriveTester.TestPhase.SaveShortFile || testPhase == DriveTester.TestPhase.SaveLongFile ? "SD Card Write" :
+                                (testPhase == DriveTester.TestPhase.ReadShortFile || testPhase == DriveTester.TestPhase.ReadLongFile ? "SD Card Read" : ""));
+                string percent = ((int)Math.Round(100m * progressRatio, 0)).ToString();
+                string title = $"{appName} {drive}: {percent}%";
+
+                this.AppTitleTextCurrent = title;
             }
         }
+        /// <summary>
+        /// Titulek okna bez suffixu = titulek aplikace
+        /// </summary>
+        private string __AppTitleTextStandard;
+        /// <summary>
+        /// Titulek okna aktuální, napojený na aktuální Text = fyzický titulek okna.
+        /// Pokud bude opakovaně setována stejná hodnota, detekuje se to podle fieldu <see cref="__AppTitleTextCurrent"/> a nebude se do property Text nic vkládat.
+        /// </summary>
+        private string AppTitleTextCurrent
+        {
+            get { return __AppTitleTextCurrent; }
+            set
+            {
+                if (!String.IsNullOrEmpty(value))
+                {   // Pouze neprázdný string:
+                    if (!String.Equals(value, __AppTitleTextCurrent))
+                    {   // Pouze změněný string:
+                        __AppTitleTextCurrent = value;
+                        this.Text = value;
+                    }
+                }
+            }
+        }
+        private string __AppTitleTextCurrent;
         /// <summary>
         /// Do mapy <see cref="LinearMapControl"/> vloží prvky pocházející ze skupin z testeru
         /// </summary>

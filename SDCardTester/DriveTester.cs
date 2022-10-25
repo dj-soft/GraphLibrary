@@ -190,7 +190,7 @@ namespace DjSoft.Tools.SDCardTester
             // Nejprve vepíšeme 512 souborů o velikosti 4096 B = 2 MB (2 097 152 B);
             // Zbývajících 3584 souborů bude mít velikost (celková velikost disku / 3584) zarovnáno na 4KB bloky, pro 8TB disk tedy velikost = 2 454 265 856 = 2.5 GB
             long totalSize = Drive.TotalSize;
-            this.TestSizeTotal = Drive.AvailableFreeSpace;
+            this.TestSizeTotal = Drive.AvailableFreeSpace - GetReserveSpace(Drive.TotalSize);
             this.TestSizeProcessed = 0L;
             this.TestSizeProcessedDone = 0L;
             long longFilesLength = totalSize / LongFilesMaxCount;                        // Délka velkého souboru tak, aby jich v jednom adresáři na prázdném disku bylo celkem max 4096 souborů
@@ -254,7 +254,6 @@ namespace DjSoft.Tools.SDCardTester
             CurrentTestPhase = testPhase;
             return RunTestSaveOneFileWriteAsync(testDir, fileNumber, fileName, targetLength, workingPhase);
         }
-
         protected FileTimeInfo RunTestSaveOneFileWriteAsync(string testDir, int fileNumber, string fileName, long targetLength, TestPhase workingPhase)
         {
             long startTime = this.CurrentTime;
@@ -367,7 +366,7 @@ namespace DjSoft.Tools.SDCardTester
             acceptedLength = 0L;
             System.IO.DriveInfo driveInfo = new System.IO.DriveInfo(Drive.Name);         // Refresh
             long available = driveInfo.AvailableFreeSpace;
-            long reserve = driveInfo.TotalSize / 200L;                                   // Rezerva = 0.5% místa na disku, která má zbýt po zápisu testovacího souboru
+            long reserve = GetReserveSpace(driveInfo.TotalSize);
             long smallest = ShortFilesLength;
             if (available <= (reserve + smallest)) return false;                         // Nevejde se ani ten nejmenší soubor
             if (available <= (reserve + requestedLength))
@@ -382,6 +381,17 @@ namespace DjSoft.Tools.SDCardTester
                 acceptedLength = requestedLength;
             }
             return (requestedLength == 0L || acceptedLength > 0L);
+        }
+        /// <summary>
+        /// Metoda vrátí počet byte, které mají zůstat na disku dané celkové velikosti nepoužité jako rezerva.
+        /// </summary>
+        /// <param name="totalSize"></param>
+        /// <returns></returns>
+        protected long GetReserveSpace(long totalSize)
+        {
+            long reserve = totalSize / 200L;                                             // Rezerva = 0.5% místa na disku, která má zbýt po zápisu testovacího souboru
+            reserve = (reserve < ReserveMin ? ReserveMin : (reserve > ReserveMax ? ReserveMax : reserve));
+            return reserve;
         }
         /// <summary>
         /// Provést test zápisu
@@ -836,13 +846,19 @@ namespace DjSoft.Tools.SDCardTester
         protected const string FileNameExtensionsMask = ".tmp*";
         protected const string FileNameExtension = ".tmp";
         protected const string FileNameErrorExtension = ".tmpError";
-        protected const long ShortFilesLength = 4096L;
+        protected const long ShortFilesLength = 4 * KB;
         protected const int ShortFilesCount = 512;
         protected const int LongFilesMaxCount = 3584;
-        protected const long LongFileReserve = 32L * 1024L * 1024L;
-        protected const long LongFilesMinLength = 16L * 1024L * 1024L;
-        protected const int ShortBufferLength = 4096;
-        protected const int LongBufferLength = 1024 * 1024;
+        protected const long LongFileReserve = 32L * MB;
+        protected const long LongFilesMinLength = 16L * MB;
+        protected const int ShortBufferLength = 4 * KBi;
+        protected const int LongBufferLength = 1 * MBi;
+        protected const long ReserveMin = 10L * MB;
+        protected const long ReserveMax = 80L * MB;
+        protected const long KB = 1024L;
+        protected const long MB = KB * KB;
+        protected const int KBi = 1024;
+        protected const int MBi = KBi * KBi;
         #endregion
         #region SubClass
         /// <summary>
