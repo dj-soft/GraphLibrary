@@ -570,12 +570,20 @@ namespace TestDevExpress.Components
                     group2BgrAppearance.BackColorEnd = Color.FromArgb(64, 255, 192, 255);
                     break;
                 case 103:
-                    group1BgrAppearance.BackImageName = @"ImagesTest\BackCorners\Corner00028m.png";
-                    group1BgrAppearance.BackImageFill = ImageFillMode.Resize;
-                    group1BgrAppearance.BackImageAlignment = ContentAlignment.MiddleRight;
+                    group1BgrAppearance.BackImageName = @"ImagesTest\BackCorners\Corn02BR.png";            // Corner00028m
+                    group1BgrAppearance.BackImageFill = ImageFillMode.Shrink;
+                    group1BgrAppearance.BackImageAlignment = ContentAlignment.BottomRight;                 // MiddleRight
                     group3BgrAppearance.BackImageName = "images/miscellaneous/windows_32x32.png";
                     group3BgrAppearance.BackImageFill = ImageFillMode.Shrink;
                     group3BgrAppearance.BackImageAlignment = ContentAlignment.TopRight;
+                    break;
+
+                    //group1BgrAppearance.BackImageName = @"ImagesTest\BackCorners\Corn02BR.png";            // Corner00028m
+                    //group1BgrAppearance.BackImageFill = ImageFillMode.Shrink;
+                    //group1BgrAppearance.BackImageAlignment = ContentAlignment.BottomRight;                 // MiddleRight
+                    //group3BgrAppearance.BackImageName = "images/miscellaneous/windows_32x32.png";
+                    //group3BgrAppearance.BackImageFill = ImageFillMode.Shrink;
+                    //group3BgrAppearance.BackImageAlignment = ContentAlignment.TopRight;
                     break;
                 case 104:
                     group1BgrAppearance.BackImageName = null;
