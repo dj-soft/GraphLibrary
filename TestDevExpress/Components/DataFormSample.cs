@@ -429,7 +429,7 @@ namespace TestDevExpress.Components
                     headerAppearance.GradientStyle = GradientStyleType.Downward;
                     break;
                 case 103:
-                    width = 900;
+                    width = 790;
                     borderRange = new Int32Range(0, 0);
                     designPadding = new Padding(2, 2, 2, 6);
                     headerAppearance.OnMouseBackColor = Color.FromArgb(220, 190, 240, 160);
@@ -547,9 +547,10 @@ namespace TestDevExpress.Components
             group3Header.HeaderItems.Add(new DataFormColumnImageText() { ColumnType = DataFormColumnType.Label, ColumnId = "podnikani_header", Text = "Způsob podnikání", DesignBounds = new Rectangle(0, 4, 250, 20), Alignment = ContentAlignment.MiddleLeft, Appearance = titleTextAppearance });
             group3.GroupHeader = group3Header;
 
+            int right = width - designPadding.Horizontal - 2 * borderRange.End;
             group3.Items.Add(new DataFormColumnImageText() { ColumnId = "podnikani_label", ColumnType = DataFormColumnType.Label, DesignBounds = new Rectangle(12, 14, 250, 18), Text = "Předměty podnikání...:" });
-            group3.Items.Add(new DataFormColumnImageText() { ColumnId = "podnikani_button", ColumnType = DataFormColumnType.Button, DesignBounds = new Rectangle(width - 200, 11, 180, 24), Text = "Ověřit v ISIN" });
-            group3.Items.Add(new DataFormColumnImageText() { ColumnId = "podnikani", ColumnType = DataFormColumnType.EditBox, DesignBounds = new Rectangle(0, 36, width - 20, 80), Indicators = DataFormColumnIndicatorType.CorrectOnDemandThin | DataFormColumnIndicatorType.MouseOverThin | DataFormColumnIndicatorType.WithFocusBold });
+            group3.Items.Add(new DataFormColumnImageText() { ColumnId = "podnikani_button", ColumnType = DataFormColumnType.Button, DesignBounds = new Rectangle(right - 200, 11, 200, 24), Text = "Ověřit v ISIN" });
+            group3.Items.Add(new DataFormColumnImageText() { ColumnId = "podnikani", ColumnType = DataFormColumnType.EditBox, DesignBounds = new Rectangle(0, 36, right, 80), Indicators = DataFormColumnIndicatorType.CorrectOnDemandThin | DataFormColumnIndicatorType.MouseOverThin | DataFormColumnIndicatorType.WithFocusBold });
 
             page1.Groups.Add(group3);
 
@@ -570,20 +571,16 @@ namespace TestDevExpress.Components
                     group2BgrAppearance.BackColorEnd = Color.FromArgb(64, 255, 192, 255);
                     break;
                 case 103:
-                    group1BgrAppearance.BackImageName = @"ImagesTest\BackCorners\Corn02BR.png";            // Corner00028m
-                    group1BgrAppearance.BackImageFill = ImageFillMode.Shrink;
-                    group1BgrAppearance.BackImageAlignment = ContentAlignment.BottomRight;                 // MiddleRight
-                    group3BgrAppearance.BackImageName = "images/miscellaneous/windows_32x32.png";
-                    group3BgrAppearance.BackImageFill = ImageFillMode.Shrink;
+                    group1.DesignHeight = 370;
+                    group1BgrAppearance.BackImageName = @"ImagesTest\BackCorners\Corn04BR.png";
+                    group1BgrAppearance.BackImageFill = ImageFillMode.Clip;
+                    group1BgrAppearance.BackImageAlignment = ContentAlignment.BottomRight;
+                    group2BgrAppearance.BackImageName = @"ImagesTest\BackCorners\Corn04TR.png";
+                    group2BgrAppearance.BackImageFill = ImageFillMode.Clip;
+                    group2BgrAppearance.BackImageAlignment = ContentAlignment.TopRight;
+                    group3BgrAppearance.BackImageName = @"ImagesTest\BackCorners\Corn04TR.png";
+                    group3BgrAppearance.BackImageFill = ImageFillMode.Clip;
                     group3BgrAppearance.BackImageAlignment = ContentAlignment.TopRight;
-                    break;
-
-                    //group1BgrAppearance.BackImageName = @"ImagesTest\BackCorners\Corn02BR.png";            // Corner00028m
-                    //group1BgrAppearance.BackImageFill = ImageFillMode.Shrink;
-                    //group1BgrAppearance.BackImageAlignment = ContentAlignment.BottomRight;                 // MiddleRight
-                    //group3BgrAppearance.BackImageName = "images/miscellaneous/windows_32x32.png";
-                    //group3BgrAppearance.BackImageFill = ImageFillMode.Shrink;
-                    //group3BgrAppearance.BackImageAlignment = ContentAlignment.TopRight;
                     break;
                 case 104:
                     group1BgrAppearance.BackImageName = null;

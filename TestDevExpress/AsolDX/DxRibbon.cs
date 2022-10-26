@@ -3384,10 +3384,10 @@ namespace Noris.Clients.Win.Components.AsolDX
                     (iRibbonItem.ItemType == RibbonItemType.CheckBoxToggle ? BarCheckStyles.Standard : BarCheckStyles.Standard));
                 checkItem.Checked = iRibbonItem.Checked ?? false;
             }
-            if (barItem is BarBaseButtonItem barButton)
+            if (barItem is BarBaseButtonItem barButton && iRibbonItem.ItemType == RibbonItemType.CheckButton)
             {   // CheckButton:
-                barButton.ButtonStyle = (iRibbonItem.ItemType == RibbonItemType.CheckButton ? BarButtonStyle.Check : BarButtonStyle.Default);
-                barButton.Down = (iRibbonItem.ItemType == RibbonItemType.CheckButton && iRibbonItem.Checked.HasValue && iRibbonItem.Checked.Value);
+                barButton.ButtonStyle = BarButtonStyle.Check;
+                barButton.Down = (iRibbonItem.Checked.HasValue && iRibbonItem.Checked.Value);
             }
             if (barItem is DxBarCheckBoxToggle dxCheckBoxToggle)
             {
@@ -3398,9 +3398,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
 
             barItem.PaintStyle = Convert(iRibbonItem.ItemPaintStyle);
-            // if (iRibbonItem.RibbonStyle != RibbonItemStyles.Default)
-            //      barItem.RibbonStyle = Convert(iRibbonItem.RibbonStyle);
             barItem.RibbonStyle = (iRibbonItem.RibbonStyle == RibbonItemStyles.Default ? DevExpress.XtraBars.Ribbon.RibbonItemStyles.All : Convert(iRibbonItem.RibbonStyle));
+            if (iRibbonItem.FontStyle.HasValue) FillBarItemFontStyle(barItem, iRibbonItem.FontStyle.Value, level, withReset);
 
             FillBarItemImage(barItem, iRibbonItem, level, withReset);          // Image můžu řešit až po vložení velikosti, protože Image se řídí i podle velikosti prvku 
 
@@ -3409,6 +3408,22 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             RefreshBarItemTag(barItem, iRibbonItem);
         }
+        /// <summary>
+        /// Nastaví dodaný styl písma do daného prvku, do jeho odpovídající Appearance, do všech stavů
+        /// </summary>
+        /// <param name="barItem"></param>
+        /// <param name="fontStyle"></param>
+        /// <param name="level"></param>
+        /// <param name="withReset"></param>
+        protected void FillBarItemFontStyle(BarItem barItem, System.Drawing.FontStyle fontStyle, int level, bool withReset = false)
+        {
+            var appearance = ((level == 0) ? barItem.ItemAppearance : barItem.ItemInMenuAppearance);
+            appearance.Normal.FontStyleDelta = fontStyle;
+            appearance.Hovered.FontStyleDelta = fontStyle;
+            appearance.Pressed.FontStyleDelta = fontStyle;
+            appearance.Disabled.FontStyleDelta = fontStyle;
+        }
+
         /// <summary>
         /// Do daného prvku Ribbonu vepíše vše pro jeho Image
         /// </summary>
@@ -3471,6 +3486,15 @@ namespace Noris.Clients.Win.Components.AsolDX
                    ((iRibbonItem.Checked.HasValue && !iRibbonItem.Checked.Value) ? _GetDefinedImage(iRibbonItem.ImageNameUnChecked, iRibbonItem.ImageName) :   // pro False
                    ((iRibbonItem.Checked.HasValue && iRibbonItem.Checked.Value) ? _GetDefinedImage(iRibbonItem.ImageNameChecked, iRibbonItem.ImageName) :      // pro True
                    null)));
+            var image = iRibbonItem.Image;
+
+            // Pozor, pro DevExpress platí:
+            // Máme-li prvek na SubPoložoce v menu, a prvek je Checked, pak nesmí mít Image - protože DevExpress nezobrazuje vedle sebe Image a CheckIcon, ale zobrazí prioritně Image a tím skryje CheckIcon:
+            if (!isRootItem && iRibbonItem.Checked.HasValue && iRibbonItem.Checked.Value)
+            {
+                imageName = null;
+                image = null;
+            }
             DxComponent.ApplyImage(barButton.ImageOptions, imageName, iRibbonItem.Image, sizeType, caption: caption, prepareDisabledImage: iRibbonItem.PrepareDisabledImage);
         }
         /// <summary>

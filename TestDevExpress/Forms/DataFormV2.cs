@@ -114,43 +114,44 @@ namespace TestDevExpress.Forms
             group.Items.Add(new DataRibbonItem() { ItemId = "LogVisible", Text = "Show Log", ToolTipText = "Zobrazit log v pravé části hlavního okna.\r\nPOZOR: pokud je log stále zobrazený, pak veškeré logované změny jsou zatíženy časem refreshe textu Logu. \r\n Je vhodnější log zavřít, provést testy, a pak log otevřít a přečíst.", ItemType = RibbonItemType.CheckButton, Checked = _IsLogVisible, RibbonStyle = RibbonItemStyles.Large, ImageName = "devav/layout/datapanel.svg" });
 
 
-            string imageTest = "svgimages/xaf/actiongroup_easytestrecorder.svg";
-            group = new DataRibbonGroup() { GroupText = "VZORKY" };
+            var groupSamples = new DataRibbonGroup() { GroupText = "VZORKY" };
             string radioGroupName = "SamplesGroup";
-            page.Groups.Add(group);
-            group.Items.Add(new DataRibbonItem() { ItemId = "CreateSample1", Text = "Ukázka 1", ImageName = imageTest, Tag = "Sample1", ItemType = RibbonItemType.CheckButton, RadioButtonGroupName = radioGroupName });
-            group.Items.Add(new DataRibbonItem() { ItemId = "CreateSample2", Text = "Ukázka 2", ImageName = imageTest, Tag = "Sample2", ItemType = RibbonItemType.CheckButton, RadioButtonGroupName = radioGroupName });
-            group.Items.Add(new DataRibbonItem() { ItemId = "CreateSample3", Text = "Ukázka 3", ImageName = imageTest, Tag = "Sample3", ItemType = RibbonItemType.CheckButton, RadioButtonGroupName = radioGroupName });
-            group.Items.Add(new DataRibbonItem() { ItemId = "CreateSample4", Text = "Ukázka 4", ImageName = imageTest, Tag = "Sample4", ItemType = RibbonItemType.CheckButton, RadioButtonGroupName = radioGroupName });
+            page.Groups.Add(groupSamples);
+            string imageTest1 = "svgimages/xaf/actiongroup_easytestrecorder.svg";
+            string imageTest2 = "svgimages/spreadsheet/showoutlineformpivottable.svg";
+            string imageTest3 = "svgimages/spreadsheet/showtabularformpivottable.svg";
+            addSampleButton(10, "Mřížka 1", imageTest1);
+            addSampleButton(20, "Mřížka 2", imageTest1);
+            addSampleButton(30, "Mřížka 3", imageTest1);
+            addSampleButton(40, "Mřížka 4", imageTest1);
 
-            string formTest1 = "svgimages/spreadsheet/showoutlineformpivottable.svg";
-            string formTest2 = "svgimages/spreadsheet/showtabularformpivottable.svg";
-            string formTest3 = "svgimages/diagramicons/format/format1.svg";
-            string formTest4 = "svgimages/spreadsheet/showcompactformpivottable.svg";
+            addSampleButton(101, "Design 1", imageTest2, true);
+            addSampleButton(102, "Design 2", imageTest2);
+            addSampleButton(103, "Design 3", imageTest2);
+            addSampleButton(104, "Design 4", imageTest2);
 
-
-            group.Items.Add(new DataRibbonItem() { ItemId = "CreateSample101", Text = "Formulář 1", ImageName = formTest2, Tag = "Formulář 1", ItemType = RibbonItemType.CheckButton, RadioButtonGroupName = radioGroupName, ItemIsFirstInGroup = true });
-            group.Items.Add(new DataRibbonItem() { ItemId = "CreateSample102", Text = "Formulář 2", ImageName = formTest1, Tag = "Formulář 2", ItemType = RibbonItemType.CheckButton, RadioButtonGroupName = radioGroupName });
-            group.Items.Add(new DataRibbonItem() { ItemId = "CreateSample103", Text = "Formulář 3", ImageName = formTest1, Tag = "Formulář 3", ItemType = RibbonItemType.CheckButton, RadioButtonGroupName = radioGroupName });
-            group.Items.Add(new DataRibbonItem() { ItemId = "CreateSample104", Text = "Formulář 4", ImageName = formTest1, Tag = "Formulář 4", ItemType = RibbonItemType.CheckButton, RadioButtonGroupName = radioGroupName });
-
-            /*
-            string imageTestRefresh = "svgimages/spreadsheet/refreshpivottable.svg";
-            string imageTestRepaint = "svgimages/dashboards/striped.svg";
-            group = new DataRibbonGroup() { GroupText = "TESTY VÝKONU" };
-            page.Groups.Add(group);
-            group.Items.Add(new DataRibbonItem() { ItemId = "Refresh1", Text = "Refresh 1", ToolTipText = "Provede kompletní refresh standardní", Image = imageTestRefresh });
-            group.Items.Add(new DataRibbonItem() { ItemId = "Refresh10", Text = "Refresh 10", ToolTipText = "Provede kompletní refresh pro 10x obsah", Image = imageTestRefresh });
-            group.Items.Add(new DataRibbonItem() { ItemId = "Refresh2000", Text = "Refresh  2000", ToolTipText = "Provede kompletní refresh pro 2000x obsah", Image = imageTestRefresh });
-            group.Items.Add(new DataRibbonItem() { ItemId = "Repaint1", Text = "Repaint 1", ToolTipText = "Provede pouze repaint standardní", Image = imageTestRepaint });
-            group.Items.Add(new DataRibbonItem() { ItemId = "Repaint10", Text = "Repaint 10", ToolTipText = "Provede pouze repaint pro 10x obsah", Image = imageTestRepaint });
-            group.Items.Add(new DataRibbonItem() { ItemId = "Repaint2000", Text = "Repaint 2000", ToolTipText = "Provede pouze repaint pro 2000x obsah", Image = imageTestRepaint });
-            */
+            addSampleButton(201, "Controly 1", imageTest3, true);
+            addSampleButton(202, "Controly 2", imageTest3);
+            addSampleButton(203, "Controly 3", imageTest3);
+            addSampleButton(204, "Controly 4", imageTest3);
 
             this.DxRibbon.Clear();
             this.DxRibbon.AddPages(pages);
 
             this.DxRibbon.RibbonItemClick += _DxRibbonControl_RibbonItemClick;
+
+            void addSampleButton(int sampleId, string text, string imageName, bool isFirstInGroup = false)
+            {
+                groupSamples.Items.Add(new DataRibbonItem() 
+                {
+                    ItemId = "CreateSample" + sampleId.ToString(),
+                    Text = text,
+                    ImageName = imageName,
+                    ItemType = RibbonItemType.CheckButton,
+                    RadioButtonGroupName = radioGroupName,
+                    ItemIsFirstInGroup = isFirstInGroup
+                });
+            }
         }
         /// <summary>
         /// Kliknutí na Ribbon
@@ -159,7 +160,12 @@ namespace TestDevExpress.Forms
         /// <param name="e"></param>
         private void _DxRibbonControl_RibbonItemClick(object sender, TEventArgs<IRibbonItem> e)
         {
-            switch (e.Item.ItemId)
+            var itemId = e.Item.ItemId;
+            int sampleId = 0;
+            if (itemId.StartsWith("CreateSample") && Int32.TryParse(itemId.Substring(12), out sampleId) && sampleId > 0)
+                itemId = "CreateSample";
+
+            switch (itemId)
             {
                 case "StatusRefresh":
                     GCCollect();
@@ -175,60 +181,8 @@ namespace TestDevExpress.Forms
                     _IsLogVisible = (e.Item.Checked ?? false);
                     _ShowLog();
                     break;
-                //case "Refresh1":
-                //    _TestPerformance(1, true);
-                //    break;
-                //case "Refresh10":
-                //    _TestPerformance(10, true);
-                //    break;
-                //case "Refresh100":
-                //    _TestPerformance(100, true);
-                //    break;
-                //case "Refresh2000":
-                //    _TestPerformance(2000, true);
-                //    break;
-                //case "Repaint1":
-                //    _TestPerformance(1, false);
-                //    break;
-                //case "Repaint10":
-                //    _TestPerformance(10, false);
-                //    break;
-                //case "Repaint100":
-                //    _TestPerformance(100, false);
-                //    break;
-                //case "Repaint2000":
-                //    _TestPerformance(2000, false);
-                //    break;
-                case "CreateSample1":
-                    _AddDataFormSample(10);
-                    break;
-                case "CreateSample2":
-                    _AddDataFormSample(20);
-                    break;
-                case "CreateSample3":
-                    _AddDataFormSample(30);
-                    break;
-                case "CreateSample4":
-                    _AddDataFormSample(40);
-                    break;
-                case "CreateSample101":
-                    _AddDataFormSample(101);
-                    break;
-                case "CreateSample102":
-                    _AddDataFormSample(102);
-                    break;
-                case "CreateSample103":
-                    _AddDataFormSample(103);
-                    break;
-                case "CreateSample104":
-                    _AddDataFormSample(104);
-                    break;
-                default:
-                    DxComponent.LogClear();
-                    if (e.Item.Tag is DxDataFormTestDefinition sampleData)
-                        this._AddDataFormSampleData(sampleData);
-                    else if (e.Item.Tag is string sampleName)
-                        this._AddDataFormSampleName(sampleName);
+                case "CreateSample":
+                    _AddDataFormSample(sampleId);
                     break;
             }
         }
@@ -329,14 +283,7 @@ namespace TestDevExpress.Forms
         private DevExpress.XtraBars.BarStaticItem _StatusItemCurrent;
         #endregion
         #region DxDataFormV2
-        private void _AddDataFormSampleData(DxDataFormTestDefinition sampleData)
-        {
-            _RemoveDataForms();
-
-            _DxShowTimeStart = DateTime.Now;               // Určení času End a času Elapsed proběhne v DxDataForm_GotFocus
-
-            RefreshStatusCurrent();
-        }
+       
         private void _AddDataFormSample(int sampleId)
         {
             if (!TestDevExpress.Components.DxDataFormSamples.AllowedSampled(sampleId)) return;
@@ -379,43 +326,6 @@ namespace TestDevExpress.Forms
             DxComponent.LogAddLineTime($"AddItems: Items.Count: {count}; Time: {DxComponent.LogTokenTimeMilisec}", startTime);
 
             _FocusInButton.Focus();
-        }
-        private void _AddDataFormSampleName(string sampleName)
-        {
-            int sampleId = 0;
-            if (sampleName != null && sampleName.Length > 6 && sampleName.StartsWith("Sample"))
-                Int32.TryParse(sampleName.Substring(6), out sampleId);
-            if (sampleId <= 0) return;
-
-            var sampleStartTime = DxComponent.LogTimeCurrent;
-            var sampleItems = DxDataFormTest.CreateSample(sampleId);
-            if (sampleItems == null) return;
-            int count = sampleItems.Count();
-            DxComponent.LogAddLineTime($"CreateSample: Items.Count: {count}; Time: {DxComponent.LogTokenTimeMilisec}", sampleStartTime);
-
-            _RemoveDataForms();
-
-            _DxShowTimeStart = DateTime.Now;               // Určení času End a času Elapsed proběhne v DxDataForm_GotFocus
-            _DxShowTimeSpan = null;
-            DxDataForm dataForm = new DxDataForm();
-            string[] texts = Randomizer.GetSentencesArray(1, 3, 120, 240, false);
-            string[] tooltips = Randomizer.GetSentencesArray(7, 16, 120, 240, true);
-            dataForm.Form = TestDevExpress.Components.DxDataFormSamples.CreateSampleDefinition(10, texts, tooltips);
-            dataForm.GotFocus += DxDataForm_GotFocus;
-
-            _DxDataFormV2 = dataForm;
-            _DoLayoutAnyDataForm();
-
-            var addStartTime = DxComponent.LogTimeCurrent;
-            // dataForm.AddItems(sampleItems);
-            DxComponent.LogAddLineTime($"AddItems: Items.Count: {count}; Time: {DxComponent.LogTokenTimeMilisec}", sampleStartTime);
-
-            _DxTestPanel.Controls.Add(dataForm);
-
-            _DoLayoutAnyDataForm();
-            dataForm.Focus();
-
-            RefreshStatusCurrent();
         }
         private void _RemoveDataForms()
         {

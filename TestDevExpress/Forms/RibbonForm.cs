@@ -259,6 +259,17 @@ namespace TestDevExpress.Forms
         /// <param name="homePage"></param>
         private void _RibbonTestsInit(List<DataRibbonPage> pages, DataRibbonPage homePage)
         {
+            _RibbonAutoHideGroupInit(pages, homePage);
+            _RibbonSpecificTestsInit(pages, homePage);
+        }
+        #region Testy viditelnosti grupy podle obsahu tlačítek, testy refreshe obsahu grupy
+        /// <summary>
+        /// Do Ribbonu přidá definici pro testovací prvky
+        /// </summary>
+        /// <param name="pages"></param>
+        /// <param name="homePage"></param>
+        private void _RibbonAutoHideGroupInit(List<DataRibbonPage> pages, DataRibbonPage homePage)
+        {
             DataRibbonPage testPage = new DataRibbonPage() { PageId = "GroupTests", PageText = "Test AutoHide grupy", MergeOrder = 200, PageOrder = 200 };
             pages.Add(testPage);
             _TestSampleImages = new string[]
@@ -360,7 +371,6 @@ namespace TestDevExpress.Forms
             _TestControlAfterGroup.Items.Add(new DataRibbonItem() { ItemId = "After5", Text = "Tlačítko 5", ToolTipText = "Toto je zbytečné tlačítko", ItemType = RibbonItemType.CheckButton, RadioButtonGroupName = radioGroup2, ImageName = "devav/arrows/right.svg" });
             testPage.Groups.Add(_TestControlAfterGroup);
         }
-        #region Testy viditelnosti grupy podle obsahu tlačítek, testy refreshe obsahu grupy
         private void _RibbonTestActionAdd(IMenuItem item)
         {
             DataRibbonGroup sampleGroup = _TestSampleGroup;
@@ -481,6 +491,77 @@ namespace TestDevExpress.Forms
         private DataRibbonGroup _TestControlAfterGroup;
         private int _TestItemId;
         private string[] _TestSampleImages;
+        #endregion
+        #region Testy specifického chování
+        /// <summary>
+        /// Do Ribbonu přidá definici pro specifické testy
+        /// </summary>
+        /// <param name="pages"></param>
+        /// <param name="homePage"></param>
+        private void _RibbonSpecificTestsInit(List<DataRibbonPage> pages, DataRibbonPage homePage)
+        {
+            _TestSpecificGroup = new DataRibbonGroup() { GroupText = "TESTOVACÍ PRVKY", HideEmptyGroup = false };
+            _TestSpecificImages = new string[]
+            {
+    "images/actions/squeeze_16x16.png",
+    "images/actions/stretch_16x16.png",
+    "images/alignment/alignhorizontalbottom_16x16.png",
+    "images/alignment/alignhorizontalbottom2_16x16.png",
+    "images/alignment/alignhorizontalcenter_16x16.png",
+    "images/alignment/alignhorizontalcenter2_16x16.png",
+    "images/alignment/alignhorizontaltop_16x16.png",
+    "images/alignment/alignhorizontaltop2_16x16.png",
+    "images/alignment/alignverticalcenter_16x16.png",
+    "images/alignment/alignverticalcenter2_16x16.png",
+    "images/alignment/alignverticalleft_16x16.png",
+    "images/alignment/alignverticalleft2_16x16.png",
+    "images/alignment/alignverticalright_16x16.png",
+    "images/alignment/alignverticalright2_16x16.png",
+    "images/alignment/mergeacross_16x16.png",
+    "images/alignment/mergecells_16x16.png",
+    "images/alignment/mergecenter_16x16.png",
+    "images/alignment/unmergecells_16x16.png"
+            };
+
+            homePage.Groups.Add(_TestSpecificGroup);
+            DataRibbonItem testItem = new DataRibbonItem()
+            {
+                ItemId = "MenuWithCheckedItems",
+                Text ="Nabídka šablon",
+                ImageName = "images/richedit/differentoddevenpages_32x32.png",
+                ItemType = RibbonItemType.Menu,
+                RibbonStyle = RibbonItemStyles.Large,
+                ToolTipTitle = "Menu se šablonami",
+                ToolTipText = "Zobrazí menu, kde některé položky budou Checked",
+                SubItems = new List<IRibbonItem>()
+            };
+            addSubItem();
+            addSubItem(true);
+            addSubItem(false, true, true);
+            addSubItem();
+            addSubItem(true);
+            addSubItem(false, true);
+            addSubItem(false, true, true);
+            _TestSpecificGroup.Items.Add(testItem);
+
+            void addSubItem(bool isFirst = false, bool isChecked = false, bool isBold = false)
+            {
+                string text = Randomizer.GetSentence(2, 4, false) + (isChecked ? " (aktivní)" : "");
+                var subItem = new DataRibbonItem()
+                {
+                    ItemId = "TemplateSubItem" + testItem.SubItems.Count.ToString(),
+                    ItemType = RibbonItemType.CheckBoxStandard,
+                    Text = text,
+                    ImageName = Randomizer.GetItem(_TestSpecificImages),
+                    Checked = isChecked,
+                    ItemIsFirstInGroup = isFirst,
+                    FontStyle = (isBold ? (System.Drawing.FontStyle?)System.Drawing.FontStyle.Bold : null)
+                };
+                testItem.SubItems.Add(subItem);
+            }
+        }
+        private DataRibbonGroup _TestSpecificGroup;
+        private string[] _TestSpecificImages;
         #endregion
         #endregion
         #region Logování
