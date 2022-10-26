@@ -3384,7 +3384,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                     (iRibbonItem.ItemType == RibbonItemType.CheckBoxToggle ? BarCheckStyles.Standard : BarCheckStyles.Standard));
                 checkItem.Checked = iRibbonItem.Checked ?? false;
             }
-            if (barItem is BarBaseButtonItem barButton && iRibbonItem.ItemType == RibbonItemType.CheckButton)
+            if (iRibbonItem.ItemType == RibbonItemType.CheckButton && barItem is BarBaseButtonItem barButton)
             {   // CheckButton:
                 barButton.ButtonStyle = BarButtonStyle.Check;
                 barButton.Down = (iRibbonItem.Checked.HasValue && iRibbonItem.Checked.Value);
