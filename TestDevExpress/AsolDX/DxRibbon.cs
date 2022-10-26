@@ -3423,7 +3423,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             appearance.Pressed.FontStyleDelta = fontStyle;
             appearance.Disabled.FontStyleDelta = fontStyle;
         }
-
         /// <summary>
         /// Do daného prvku Ribbonu vepíše vše pro jeho Image
         /// </summary>

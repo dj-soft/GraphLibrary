@@ -3490,12 +3490,12 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
 
                 // Opíšu si sadu výsledků z Coordinates, protože tam jsou "vypočítávané", a my je chceme mít permanentní:
                 this.__CurrentGroupSize = __CurrentCoordinates.Size;
-                this.__CurrentBorderBounds = __CurrentCoordinates.VisibleBorder ? __CurrentCoordinates.BorderOuterBounds : null;
+                this.__CurrentBorderBounds = __CurrentCoordinates.VisibleBorder ? (Rectangle?)__CurrentCoordinates.BorderOuterBounds : null;
                 this.__CurrentBorderSizes = __CurrentCoordinates.BorderRange?.Size;
                 this.__CurrentGroupBackground = __CurrentCoordinates.GroupBackgroundBounds;
-                this.__CurrentTitleBackground = __CurrentCoordinates.HasHeader ? __CurrentCoordinates.HeaderBackgroundBounds : null;
-                this.__CurrentTitleTextBounds = __CurrentCoordinates.HasHeader ? __CurrentCoordinates.TitleBounds : null;
-                this.__CurrentTitleLineBounds = __CurrentCoordinates.VisibleLine ? __CurrentCoordinates.TitleLineBounds : null;
+                this.__CurrentTitleBackground = __CurrentCoordinates.HasHeader ? (Rectangle?)__CurrentCoordinates.HeaderBackgroundBounds : null;
+                this.__CurrentTitleTextBounds = __CurrentCoordinates.HasHeader ? (Rectangle?)__CurrentCoordinates.TitleBounds : null;
+                this.__CurrentTitleLineBounds = __CurrentCoordinates.VisibleLine ? (Rectangle?)__CurrentCoordinates.TitleLineBounds : null;
                 this.__CurrentContentBackground = __CurrentCoordinates.ContentBackgroundBounds;
                 this.__CurrentContentBounds = __CurrentCoordinates.ContentBounds;
 

@@ -5373,6 +5373,40 @@ namespace Noris.Clients.Win.Components.AsolDX
     public class StyleInfo
     {
         /// <summary>
+        /// Konstruktor s daty
+        /// </summary>
+        /// <param name="name"></param>
+        /// <param name="isForDarkTheme"></param>
+        /// <param name="attributeFontStyle"></param>
+        /// <param name="attributeFontFamily"></param>
+        /// <param name="attributeFontSize"></param>
+        /// <param name="attributeBgColor"></param>
+        /// <param name="attributeColor"></param>
+        /// <param name="labelFontStyle"></param>
+        /// <param name="labelFontFamily"></param>
+        /// <param name="labelFontSize"></param>
+        /// <param name="labelBgColor"></param>
+        /// <param name="labelColor"></param>
+        public StyleInfo(string name, bool isForDarkTheme, 
+            FontStyle? attributeFontStyle, string attributeFontFamily, float? attributeFontSize, Color? attributeBgColor, Color? attributeColor,
+            FontStyle? labelFontStyle, string labelFontFamily, float? labelFontSize, Color? labelBgColor, Color? labelColor)
+        {
+            Name = name;
+            IsForDarkTheme = isForDarkTheme;
+
+            AttributeFontStyle = attributeFontStyle;
+            AttributeFontFamily = attributeFontFamily;
+            AttributeFontSize = attributeFontSize;
+            AttributeBgColor = attributeBgColor;
+            AttributeColor = attributeColor;
+
+            LabelFontStyle = labelFontStyle;
+            LabelFontFamily = labelFontFamily;
+            LabelFontSize = labelFontSize;
+            LabelBgColor = labelBgColor;
+            LabelColor = labelColor;
+        }
+        /// <summary>
         /// Jméno stylu
         /// </summary>
         public string Name { get; private set; }
