@@ -305,17 +305,32 @@ namespace DjSoft.Tools.SDCardTester
             return new RectangleF(sx, sy, sw, sh);
         }
         /// <summary>
+        /// Vrátí Pen. Je k dispozici ihned, ale nesmí se Disposovat.
+        /// </summary>
+        /// <param name="color"></param>
+        /// <param name="width"></param>
+        /// <returns></returns>
+        public static Pen GetPen(Color color, float width = 1f)
+        {
+            width = (width < 0.2f ? 0.2f : (width > 12f ? 12f : width));
+            if (__Pen is null) __Pen = new Pen(Color.Black);
+            if (__Pen.Color != color) __Pen.Color = color;
+            if (__Pen.Width != width) __Pen.Width = width;
+            return __Pen;
+        }
+        private static Pen __Pen;
+        /// <summary>
         /// Vrátí SolidBrush. Je k dispozici ihned, ale nesmí se Disposovat.
         /// </summary>
         /// <param name="color"></param>
         /// <returns></returns>
         public static Brush GetSolidBrush(Color color)
         {
-            if (_SolidBrush is null) _SolidBrush = new SolidBrush(Color.White);
-            _SolidBrush.Color = color;
-            return _SolidBrush;
+            if (__SolidBrush is null) __SolidBrush = new SolidBrush(Color.White);
+            if (__SolidBrush.Color != color) __SolidBrush.Color = color;
+            return __SolidBrush;
         }
-        private static SolidBrush _SolidBrush;
+        private static SolidBrush __SolidBrush;
         /// <summary>
         /// Vrátí 3D Brush. Je vyroben na zakázku a musí se Disposovat.
         /// </summary>
