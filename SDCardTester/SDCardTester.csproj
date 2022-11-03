@@ -68,6 +68,9 @@
     <Compile Include="LinearMapControl.cs">
       <SubType>Component</SubType>
     </Compile>
+    <Compile Include="RunPauseStop.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="TaskProgress.cs" />
     <EmbeddedResource Include="MainForm.resx">
       <DependentUpon>MainForm.cs</DependentUpon>
@@ -121,6 +124,10 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="media-flash-smartmedia_mount.ico" />
+    <None Include="pic\media-playback-stop-2.png" />
+    <None Include="pic\media-playback-start-2.png" />
+    <None Include="pic\media-playback-pause-2.png" />
+    <None Include="pic\dialog-ok-apply-2-16.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

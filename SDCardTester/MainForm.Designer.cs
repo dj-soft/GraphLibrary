@@ -41,14 +41,13 @@ namespace DjSoft.Tools.SDCardTester
             this.AnalyseContentButton = new System.Windows.Forms.Button();
             this.TestSaveButton = new System.Windows.Forms.Button();
             this.TestReadButton = new System.Windows.Forms.Button();
-            this.StopPanel = new System.Windows.Forms.Panel();
-            this.StopButton = new System.Windows.Forms.Button();
+            this.RunPauseStopPanel = new RunPauseStop();
             this.ResultsInfoPanel = new System.Windows.Forms.Panel();
             this.LinearMapControl = new DjSoft.Tools.SDCardTester.LinearMapControl();
             this.UserPanel.SuspendLayout();
             this.DrivesPanel.SuspendLayout();
             this.CommandsPanel.SuspendLayout();
-            this.StopPanel.SuspendLayout();
+            this.RunPauseStopPanel.SuspendLayout();
             this.SuspendLayout();
             // 
             // UserPanel
@@ -56,7 +55,7 @@ namespace DjSoft.Tools.SDCardTester
             this.UserPanel.Controls.Add(this.DrivesPanel);
             this.UserPanel.Controls.Add(this.DriveInfoPanel);
             this.UserPanel.Controls.Add(this.CommandsPanel);
-            this.UserPanel.Controls.Add(this.StopPanel);
+            this.UserPanel.Controls.Add(this.RunPauseStopPanel);
             this.UserPanel.Controls.Add(this.ResultsInfoPanel);
             this.UserPanel.Dock = System.Windows.Forms.DockStyle.Left;
             this.UserPanel.Location = new System.Drawing.Point(0, 0);
@@ -130,7 +129,6 @@ namespace DjSoft.Tools.SDCardTester
             // 
             // CommandsPanel
             // 
-            this.CommandsPanel.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
             this.CommandsPanel.Controls.Add(this.AnalyseContentButton);
             this.CommandsPanel.Controls.Add(this.TestSaveButton);
             this.CommandsPanel.Controls.Add(this.TestReadButton);
@@ -181,28 +179,15 @@ namespace DjSoft.Tools.SDCardTester
             this.TestReadButton.UseVisualStyleBackColor = true;
             this.TestReadButton.Click += new System.EventHandler(this.TestReadButton_Click);
             // 
-            // StopPanel
+            // RunPauseStopPanel
             // 
-            this.StopPanel.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.StopPanel.Controls.Add(this.StopButton);
-            this.StopPanel.Location = new System.Drawing.Point(3, 548);
-            this.StopPanel.Name = "StopPanel";
-            this.StopPanel.Size = new System.Drawing.Size(243, 58);
-            this.StopPanel.TabIndex = 22;
-            // 
-            // StopButton
-            // 
-            this.StopButton.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(238)));
-            this.StopButton.Image = global::DjSoft.Tools.SDCardTester.Properties.Resources.road_sign_us_stop;
-            this.StopButton.Location = new System.Drawing.Point(55, 3);
-            this.StopButton.Name = "StopButton";
-            this.StopButton.Size = new System.Drawing.Size(176, 50);
-            this.StopButton.TabIndex = 19;
-            this.StopButton.Text = "Stop";
-            this.StopButton.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
-            this.StopButton.TextImageRelation = System.Windows.Forms.TextImageRelation.ImageBeforeText;
-            this.StopButton.UseVisualStyleBackColor = true;
-            this.StopButton.Click += new System.EventHandler(this.StopButton_Click);
+            this.RunPauseStopPanel.Location = new System.Drawing.Point(3, 548);
+            this.RunPauseStopPanel.Name = "RunPauseStopPanel";
+            this.RunPauseStopPanel.Size = new System.Drawing.Size(243, 40);
+            this.RunPauseStopPanel.TabIndex = 22;
+            this.RunPauseStopPanel.StateChanged += new System.EventHandler(this.RunPauseStopPanel_StateChanged);
+            this.RunPauseStopPanel.ButtonHeight = 30;
+            this.RunPauseStopPanel.ButtonAlignment = System.Drawing.ContentAlignment.BottomRight;
             // 
             // ResultsInfoPanel
             // 
@@ -235,7 +220,7 @@ namespace DjSoft.Tools.SDCardTester
             this.DrivesPanel.ResumeLayout(false);
             this.DrivesPanel.PerformLayout();
             this.CommandsPanel.ResumeLayout(false);
-            this.StopPanel.ResumeLayout(false);
+            this.RunPauseStopPanel.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }
@@ -254,8 +239,7 @@ namespace DjSoft.Tools.SDCardTester
         private DjSoft.Tools.SDCardTester.DriveInfoPanel DriveInfoPanel;
         private System.Windows.Forms.Panel CommandsPanel;
         private System.Windows.Forms.Panel DrivesPanel;
-        private System.Windows.Forms.Panel StopPanel;
-        private System.Windows.Forms.Button StopButton;
+        private DjSoft.Tools.SDCardTester.RunPauseStop RunPauseStopPanel;
         private System.Windows.Forms.Panel ResultsInfoPanel;
     }
 }

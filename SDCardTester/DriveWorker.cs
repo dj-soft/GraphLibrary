@@ -20,6 +20,7 @@ namespace DjSoft.Tools.SDCardTester
         public DriveWorker()
         {
             InitStopwatch();
+            InitState();
             InitData();
         }
         /// <summary>
@@ -37,8 +38,7 @@ namespace DjSoft.Tools.SDCardTester
             {
                 action?.Invoke();
 
-                Working = true;
-                Stopping = false;
+                __State = RunState.Run;
                 Drive = drive;
                 Task.Factory.StartNew(Run);
             }
@@ -48,29 +48,90 @@ namespace DjSoft.Tools.SDCardTester
             }
         }
         /// <summary>
+        /// Inicializace stavu
+        /// </summary>
+        protected void InitState()
+        {
+            __State = RunState.None;
+            __Signal = new System.Threading.AutoResetEvent(false);
+        }
+        /// <summary>
         /// Zde je spuštěna výkonná část akce, ve Working threadu
         /// </summary>
         protected abstract void Run();
         /// <summary>
         /// Požádá o zastavení běhu testu
         /// </summary>
-        public void Stop()
+        public void ChangeState(RunState state)
         {
-            if (Working)
-                Stopping = true;
+            this.State = state;
         }
         /// <summary>
         /// Zpracovávaný disk
         /// </summary>
         public System.IO.DriveInfo Drive { get; protected set; }
         /// <summary>
-        /// Pracovní fáze právě běží?
+        /// Stav běhu
         /// </summary>
-        public bool Working { get; protected set; }
+        public RunState State 
+        {
+            get { return __State; }
+            set 
+            {
+                var oldValue = __State;
+                var newValue = value;
+                if ((oldValue == RunState.None && (newValue == RunState.Run || newValue == RunState.Pause || newValue == RunState.Stop)) ||
+                    (oldValue == RunState.Run && (newValue == RunState.Pause || newValue == RunState.Stop)) ||
+                    (oldValue == RunState.Pause && (newValue == RunState.Run || newValue == RunState.Stop)) ||
+                    (oldValue == RunState.Stop && (newValue == RunState.None)))
+                {
+                    __State = value;
+                    __Signal.Set();
+                }
+            }
+        }
         /// <summary>
-        /// Je vydán požadavek na zastavení práce
+        /// Úložiště stavu
         /// </summary>
-        public bool Stopping { get; protected set; }
+        private RunState __State;
+        /// <summary>
+        /// Signál pro čekající thread, viz property <see cref="Stopping"/>
+        /// </summary>
+        private System.Threading.AutoResetEvent __Signal;
+        /// <summary>
+        /// Pracovní fáze právě běží?
+        /// Tedy jsme ve stavu Run / Pause / Stop, ale ne None
+        /// </summary>
+        public bool Working 
+        {
+            get 
+            {
+                var state = __State;
+                return (state == RunState.Run || state == RunState.Pause || state == RunState.Stop);
+            }
+        }
+        /// <summary>
+        /// Tuto hodnotu testuje pracující vlákno.<br/>
+        /// Pokud jsme ve stavu <see cref="State"/> == <see cref="RunState.Run"/>, pak property vrací false = nejsme zastaveni, a pracovní algoritmus pokračuje.<br/>
+        /// Pokud jsme ve stavu <see cref="State"/> == <see cref="RunState.Stop"/>, pak tato property vrací true = jsme zastaveni, a pracovní algoritmus skončí.<br/>
+        /// Pokud jsme ve stavu <see cref="State"/> == <see cref="RunState.Pause"/>, pak tato property nic nevrací a čeká, až bude stav Run nebo Stop.
+        /// </summary>
+        public bool Stopping 
+        {
+            get
+            {
+                this.Stopwatch.Stop();           // Pozastaví měření času. Pokud budeme v pauze, nepoběží časomíra = zkreslení rychlosti přenisu.
+                var state = __State;
+                while (true)
+                {
+                    state = __State;
+                    if (state == RunState.Run || state == RunState.Stop || state == RunState.None) break;
+                    __Signal.WaitOne(100);
+                }
+                this.Stopwatch.Start();          // Rozběhneme měření času, protože vracíme řízení.
+                return (state == RunState.Stop || state == RunState.None);
+            }
+        }
         /// <summary>
         /// Časový interval, po jehož uplynutí se může opakovaně volat událost <see cref="WorkingStep"/>.
         /// </summary>

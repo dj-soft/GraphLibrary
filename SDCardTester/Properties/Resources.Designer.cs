@@ -63,6 +63,16 @@ namespace DjSoft.Tools.SDCardTester.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap dialog_ok_apply_2_16 {
+            get {
+                object obj = ResourceManager.GetObject("dialog_ok_apply_2_16", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap disksearch {
             get {
                 object obj = ResourceManager.GetObject("disksearch", resourceCulture);
@@ -86,6 +96,36 @@ namespace DjSoft.Tools.SDCardTester.Properties {
         internal static System.Drawing.Bitmap media_floppy_3_5_mount_2 {
             get {
                 object obj = ResourceManager.GetObject("media-floppy-3.5_mount-2", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap media_playback_pause_2 {
+            get {
+                object obj = ResourceManager.GetObject("media_playback_pause_2", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap media_playback_start_2 {
+            get {
+                object obj = ResourceManager.GetObject("media_playback_start_2", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap media_playback_stop_2 {
+            get {
+                object obj = ResourceManager.GetObject("media_playback_stop_2", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }

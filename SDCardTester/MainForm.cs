@@ -57,6 +57,43 @@ namespace DjSoft.Tools.SDCardTester
             this.DriveCombo.SelectedIndexChanged += DriveCombo_SelectedIndexChanged;
             this.OnlyRemovableCheck.CheckedChanged += OnlyRemovableCheck_CheckedChanged;
             this.LinearMapControl.ActiveItemChanged += VisualPanel_ActiveItemChanged;
+            this.ClientSizeChanged += _ClientSizeChanged;
+            this.DoLayout();
+        }
+
+        private void _ClientSizeChanged(object sender, EventArgs e)
+        {
+            this.DoLayout();
+        }
+        private void DoLayout()
+        {
+            if (this.UserPanel is null || this.DrivesPanel is null || this.DriveInfoPanel is null || this.ResultsInfoPanel is null || this.CommandsPanel is null || this.RunPauseStopPanel is null) return;
+
+            // Layout se týká pouze levého panelu: this.UserPanel
+            // Obsahuje prvky: DrivesPanel, DriveInfoPanel, CommandsPanel, RunPauseStopPanel, ResultsInfoPanel
+            var clientSize = this.UserPanel.ClientSize;
+            int width = clientSize.Width - 6;
+            int height = clientSize.Height - 6;
+            int mx = 3;
+            int my = 3;
+            int x = mx;
+            int y = my;
+            int bottom = height - my;
+            int commandHeight = this.CommandsPanel.Height;
+            int commandY = bottom - commandHeight;
+
+            this.DrivesPanel.Bounds = new Rectangle(x, y, width, 86);
+            y = this.DrivesPanel.Bounds.Bottom + 3;
+
+            int centerHeight = commandY - y - my;
+            this.DriveInfoPanel.Bounds = new Rectangle(x, y, width, centerHeight);
+            this.ResultsInfoPanel.Bounds = new Rectangle(x, y, width, centerHeight);
+
+            this.CommandsPanel.Bounds = new Rectangle(x, commandY, width, commandHeight);
+
+            int runPauseStopHeight = this.RunPauseStopPanel.Bounds.Height;
+            int runPauseStopY = bottom - runPauseStopHeight;
+            this.RunPauseStopPanel.Bounds = new Rectangle(x, runPauseStopY, width, runPauseStopHeight);
         }
         private void VisualPanel_ActiveItemChanged(object sender, EventArgs e)
         {
@@ -98,16 +135,17 @@ namespace DjSoft.Tools.SDCardTester
             RunDriveTestRead();
             ShowControls(ActionState.TestRead, true);
         }
-        private void StopButton_Click(object sender, EventArgs e)
+        private void RunPauseStopPanel_StateChanged(object sender, EventArgs e)
         {
+            var state = this.RunPauseStopPanel.State;
             switch (CurrentState)
             {
                 case ActionState.AnalyseContent:
-                    StopDriveAnalyse();
+                    RunPauseStopDriveAnalyse(state);
                     break;
                 case ActionState.TestSave:
                 case ActionState.TestRead:
-                    StopDriveTest();
+                    RunPauseStopDriveTest(state);
                     break;
                 default:
                     ShowControls(ActionState.Dialog, false);
@@ -127,6 +165,9 @@ namespace DjSoft.Tools.SDCardTester
                 this.BeginInvoke(new Action<ActionState, bool>(ShowControls), state, withDataPanel);
             else
             {
+                bool currentWorking = (CurrentState == ActionState.AnalyseContent || CurrentState == ActionState.TestSave || CurrentState == ActionState.TestRead);
+                bool nextWorking = (state == ActionState.AnalyseContent || state == ActionState.TestSave || state == ActionState.TestRead);
+
                 DriveCombo.Enabled = (state == ActionState.Dialog);
                 OnlyRemovableCheck.Visible = (state == ActionState.Dialog);
                 RefreshButton.Visible = (state == ActionState.Dialog);
@@ -139,13 +180,17 @@ namespace DjSoft.Tools.SDCardTester
                 }
 
                 CommandsPanel.Visible = (state == ActionState.Dialog);
-                StopPanel.Visible = (state == ActionState.AnalyseContent || state == ActionState.TestSave || state == ActionState.TestRead);
-                CurrentState = state;
+                RunPauseStopPanel.Visible = nextWorking;
+                if (!currentWorking && nextWorking)
+                    RunPauseStopPanel.State = RunState.Run;
 
-                bool isTest = (state == ActionState.TestSave || state == ActionState.TestRead);
-                __TaskProgress.ProgressState = (isTest ? ThumbnailProgressState.Normal : ThumbnailProgressState.NoProgress);
-                if (!isTest)
+                bool currentIsTest = (CurrentState == ActionState.AnalyseContent || CurrentState == ActionState.TestSave || CurrentState == ActionState.TestRead);
+                bool nextIsTest = (state == ActionState.TestSave || state == ActionState.TestRead);
+                __TaskProgress.ProgressState = (nextIsTest ? ThumbnailProgressState.Normal : ThumbnailProgressState.NoProgress);   // Tam se hlídá změna interně!
+                if (currentIsTest && !nextIsTest)
                     this.AppTitleTextCurrent = this.__AppTitleTextStandard;
+
+                CurrentState = state;
             }
         }
         /// <summary>
@@ -347,10 +392,10 @@ namespace DjSoft.Tools.SDCardTester
         /// <summary>
         /// Požadavek na zastavení analýzy
         /// </summary>
-        private void StopDriveAnalyse()
+        private void RunPauseStopDriveAnalyse(RunState state)
         {
             if (_DriveAnalyser != null)
-                _DriveAnalyser?.Stop();
+                _DriveAnalyser?.ChangeState(state);
             else
                 ShowControls(ActionState.Dialog, false);
         }
@@ -509,10 +554,10 @@ namespace DjSoft.Tools.SDCardTester
         /// <summary>
         /// Požadavek na zastavení testu
         /// </summary>
-        private void StopDriveTest()
+        private void RunPauseStopDriveTest(RunState state)
         {
             if (_DriveTester != null)
-                _DriveTester?.Stop();
+                _DriveTester?.ChangeState(state);
             else
                 ShowControls(ActionState.Dialog, false);
         }
