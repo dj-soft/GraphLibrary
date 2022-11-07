@@ -4705,15 +4705,12 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Může být pro tento typ controlu použit pro režim Draw (vykreslení prvku bez myši) použit Painter namísto vlastního Controlu?
         /// </summary>
-        internal bool CanPaintByPainter { get { return _CanPaintByPainter; } }
-        private bool _CanPaintByPainter;
+        internal bool CanPaintByPainter { get { return _CanPaintByPainter; } } private bool _CanPaintByPainter;
         /// <summary>
         /// Může být pro tento typ controlu použit pro režim Draw (vykreslení prvku bez myši) Control pro vytvoření statického Image?
         /// </summary>
-        internal bool CanPaintByImage { get { return _CanPaintByImage; } }
-        private bool _CanPaintByImage;
-        internal bool CanPaintByControl { get { return _CanPaintByControl; } }
-        private bool _CanPaintByControl;
+        internal bool CanPaintByImage { get { return _CanPaintByImage; } } private bool _CanPaintByImage;
+        internal bool CanPaintByControl { get { return _CanPaintByControl; } } private bool _CanPaintByControl;
         /// <summary>
         /// Může být pro tento typ controlu vytvářena instance pro režim Mouse a Focus ?
         /// </summary>
