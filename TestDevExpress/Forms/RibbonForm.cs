@@ -540,19 +540,20 @@ namespace TestDevExpress.Forms
             addSubItem(false, true, true);
             addSubItem();
             addSubItem(true);
-            addSubItem(false, true);
-            addSubItem(false, true, true);
+            addSubItem();
+            addSubItem();
             _TestSpecificGroup.Items.Add(testItem);
 
             void addSubItem(bool isFirst = false, bool isChecked = false, bool isBold = false)
             {
-                string text = Randomizer.GetSentence(2, 4, false) + (isChecked ? " (aktivní)" : "");
+                string text = Randomizer.GetSentence(2, 4, false); // + (isChecked ? " (aktivní)" : "");
+                string imageName = null;  //  Randomizer.GetItem(_TestSpecificImages),
                 var subItem = new DataRibbonItem()
                 {
                     ItemId = "TemplateSubItem" + testItem.SubItems.Count.ToString(),
                     ItemType = RibbonItemType.CheckBoxStandard,
                     Text = text,
-                    ImageName = Randomizer.GetItem(_TestSpecificImages),
+                    ImageName = imageName,
                     Checked = isChecked,
                     ItemIsFirstInGroup = isFirst,
                     FontStyle = (isBold ? (System.Drawing.FontStyle?)System.Drawing.FontStyle.Bold : null)
