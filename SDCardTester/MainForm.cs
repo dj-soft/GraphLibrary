@@ -651,7 +651,7 @@ namespace DjSoft.Tools.SDCardTester
                 if (value == 0 && driveTester.ProgressRatio > 0m) value = 1;
                 __TaskProgress.ProgressValue = value;
 
-                bool hasError = (driveTester.TimeInfoSaveShort.ErrorCount > 0 || driveTester.TimeInfoSaveLong.ErrorCount > 0 || driveTester.TimeInfoReadShort.ErrorCount > 0 || driveTester.TimeInfoReadLong.ErrorCount > 0);
+                bool hasError = (driveTester.TimeInfoSaveShort.ErrorBytes > 0 || driveTester.TimeInfoSaveLong.ErrorBytes > 0 || driveTester.TimeInfoReadShort.ErrorBytes > 0 || driveTester.TimeInfoReadLong.ErrorBytes > 0);
                 __TaskProgress.ProgressState = (!hasError ? ThumbnailProgressState.Normal : ThumbnailProgressState.Error);
 
                 // Titulek aplikace = "SD Card tester H: 58%"
