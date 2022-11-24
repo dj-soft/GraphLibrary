@@ -479,6 +479,25 @@ namespace Noris.Clients.Win.Components.AsolDX
             public List<TItem> Items;
         }
         #endregion
+        #region Range
+        /// <summary>
+        /// Metoda vrátí List obsahující prvky viditelné v daném rozsahu.
+        /// </summary>
+        /// <typeparam name="TItem"></typeparam>
+        /// <param name="array"></param>
+        /// <param name="visibleSelector"></param>
+        /// <param name="visibleRange"></param>
+        /// <returns></returns>
+        public static List<TItem> GetVisibleItems<TItem>(this IEnumerable<TItem> array, Func<TItem, Int32Range> visibleSelector, Int32Range visibleRange)
+        {
+            if (array is null || visibleSelector is null) return null;                             // Nepředané hodnoty mají důsledek null
+            if (visibleRange is null || visibleRange.Size <= 0) return new List<TItem>();          // Prázdné viditelné okno vrátí prázdný List, ale ne null = to je přípustný stav
+            List<TItem> result = array
+                .Where(i => Int32Range.HasIntersect(visibleSelector(i), visibleRange))
+                .ToList();
+            return result;
+        }
+        #endregion
         #region Dictionary
         /// <summary>
         /// Do this Dictionary přidá nebo aktualizuje záznam pro daný klíč.

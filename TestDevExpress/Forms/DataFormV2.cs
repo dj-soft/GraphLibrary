@@ -288,7 +288,6 @@ namespace TestDevExpress.Forms
         {
             if (!TestDevExpress.Components.DxDataFormSamples.AllowedSampled(sampleId)) return;
 
-
             string[] texts = Randomizer.GetSentencesArray(1, 3, 160, 320, false);
             string[] tooltips = Randomizer.GetSentencesArray(7, 16, 300, 500, true);
 
@@ -322,7 +321,7 @@ namespace TestDevExpress.Forms
 
             RefreshStatusCurrent();
 
-            int count = dataForm.ItemsCount;
+            int count = 0; // dataForm.ItemsCount;
             DxComponent.LogAddLineTime($"AddItems: Items.Count: {count}; Time: {DxComponent.LogTokenTimeMilisec}", startTime);
 
             _FocusInButton.Focus();

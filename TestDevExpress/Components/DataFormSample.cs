@@ -24,7 +24,9 @@ namespace TestDevExpress.Components
         /// <returns></returns>
         public static bool AllowedSampled(int sampleId)
         {
-            return (sampleId == 10 || sampleId == 20 || sampleId == 30 || sampleId == 40 || sampleId == 101 || sampleId == 102 || sampleId == 103 || sampleId == 104);
+            return (sampleId == 10 || sampleId == 20 || sampleId == 30 || sampleId == 40 || 
+                   sampleId == 101 || sampleId == 102 || sampleId == 103 || sampleId == 104 ||
+                   sampleId == 201 || sampleId == 202 || sampleId == 203 || sampleId == 204);
         }
         /// <summary>
         /// Vytvoří a vrátí data pro definici DataFormu
@@ -69,13 +71,17 @@ namespace TestDevExpress.Components
                     pages.Add(CreateSamplePage(40, texts, tooltips, 1, "Základní stránka", "Obsahuje běžné informace",
                         0, 0, false, 0, 0, 1, 5, 1, new int[] { 140, 260, 40, 300, 120, 80, 120, 80, 80, 80, 80, 250, 40, 250, 40, 250, 40, 250, 40, 250, 40 }));
                     break;
-
-
                 case 101:
                 case 102:
                 case 103:
                 case 104:
                     AddSamplePage10x(sampleId, pages);
+                    break;
+                case 201:
+                case 202:
+                case 203:
+                case 204:
+                    AddSamplePage20x(sampleId, pages);
                     break;
             }
 
@@ -591,6 +597,78 @@ namespace TestDevExpress.Components
                     group3BgrAppearance.BackImageFill = ImageFillMode.Shrink;
                     group3BgrAppearance.BackImageAlignment = ContentAlignment.TopRight;
                     break;
+            }
+            #endregion
+        }
+
+        private static void AddSamplePage20x(int sampleId, List<IDataFormPage> pages)
+        {
+            DataFormPage page1 = new DataFormPage() { PageId = "f101a", PageText = "Základní data" };
+            pages.Add(page1);
+
+            #region Predefinice
+            var width = 900;
+            var borderRange = new Int32Range(3, 4);
+            var borderAppearance = new DataFormBackgroundAppearance()
+            {
+                GradientStyle = GradientStyleType.DownRight,
+                BackColor = Color.FromArgb(192, 64, 64, 64),
+                BackColorEnd = Color.FromArgb(32, 64, 64, 64)
+            };
+            var designPadding = new Padding(6);
+            var headerAppearance = new DataFormBackgroundAppearance()
+            {
+                BackColor = Color.FromArgb(160, 190, 240, 160),
+                BackColorEnd = Color.FromArgb(0, 190, 240, 160),
+                OnMouseBackColor = Color.FromArgb(220, 190, 240, 160),
+                OnMouseBackColorEnd = Color.FromArgb(64, 190, 240, 160),
+                GradientStyle = GradientStyleType.DownRight
+            };
+            var groupHeader = new DataFormGroupHeader()
+            {
+                DesignHeaderHeight = 30,
+                BackgroundAppearance = headerAppearance,
+                DesignTitlePadding = new Padding(18, 2, 18, 2),
+                DesignLineRange = new Int32Range(29, 30),
+                LineAppearance = new DataFormBackgroundAppearance()
+                {
+                    GradientStyle = GradientStyleType.ToRight,
+                    BackColor = Color.FromArgb(255, 90, 200, 80),
+                    BackColorEnd = Color.FromArgb(32, 90, 200, 80)
+                }
+            };
+            var groupBgrAppearance = new DataFormBackgroundAppearance()
+            {
+                BackColor = Color.FromArgb(64, 192, 216, 255),
+                BackColorEnd = Color.FromArgb(32, 220, 240, 255),
+                GradientStyle = GradientStyleType.ToRight,
+            };
+            var titleTextAppearance = new DataFormColumnAppearance() { FontStyleBold = true, FontSizeDelta = 1 };
+            #endregion
+            #region Sample 201
+            if (sampleId == 201)
+            {
+                DataFormGroup group1 = new DataFormGroup()
+                {
+                    GroupId = "Labely",
+                    CollapseMode = DataFormGroupCollapseMode.AllowCollapseAllways,
+                    DesignPadding = designPadding,
+                    DesignHeight = 420,
+                    DesignWidth = width,
+                    DesignBorderRange = borderRange,
+                    BorderAppearance = borderAppearance
+                };
+                var group1BgrAppearance = groupBgrAppearance.CreateClone() as DataFormBackgroundAppearance;
+                group1BgrAppearance.BackImageName = @"ImagesTest\BackCorners\Corner00028m.png";
+                group1BgrAppearance.BackImageFill = ImageFillMode.Resize;
+                group1BgrAppearance.BackImageAlignment = ContentAlignment.MiddleRight;
+                group1.BackgroundAppearance = group1BgrAppearance;
+
+                group1.Items.Add(new DataFormColumnImageText() { ColumnId = "adresa_ulice_label", ColumnType = DataFormColumnType.Label, DesignBounds = new Rectangle(12, 18, 100, 18), Text = "Ulice" });
+                group1.Items.Add(new DataFormColumnImageText() { ColumnId = "adresa_mesto_label", ColumnType = DataFormColumnType.Label, DesignBounds = new Rectangle(12, 66, 100, 18), Text = "Město" });
+                group1.Items.Add(new DataFormColumnImageText() { ColumnId = "adresa_zeme_label", ColumnType = DataFormColumnType.Label, DesignBounds = new Rectangle(12, 114, 100, 18), Text = "Stát" });
+
+                page1.Groups.Add(group1);
             }
             #endregion
         }

@@ -285,8 +285,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public Size ContentTotalSize { get { return _ContentTotalSize; } set { _ContentTotalSize = value; DoLayoutContent(); } }
         /// <summary>
-        /// Aktuální viditelné souřadnice virtuálního obsahu. 
-        /// Počáteční bod je dán ScrollBary, velikost je dána fyzickou velikostí this panelu (mínus prostor ScrollBarů).
+        /// Aktuální viditelné souřadnice virtuálního obsahu.
+        /// Tento prostor si lze jednoduše představit jako "malou osvětlenou část" z celkové "virtuální" plochy - dostupné v tomto panelu.
+        /// Máme-li celkovou velikost prostoru <see cref="ContentTotalSize"/> = { W=500, H=20000 }, pak nelze najednou zobrazit oněch 20000 pixelů výšky.
+        /// Aktuálně bude zobrazeno pouze malé množství z jeho výšky, zbytek bude dostupný pomocí svislého Scrollbaru.
+        /// Pokud tedy <see cref="ContentVirtualBounds"/> bude { X=0, Y=400, W=500, H=400 }, pak zobrazujeme prostor odrolovaný o jednu obrazovku dolů (výška "prostoru kukátka" = 400px).
+        /// <para/>
+        /// Počáteční bod je dán ScrollBary, velikost je dána fyzickou velikostí this panelu mínus prostor ScrollBarů.
         /// <para/>
         /// Tuto hodnotu není možno změnit, je odvozena od fyzické velikosti celého controlu, zmenšené o případné ScrollBary, a pozice je dána hodnotou ScrollBarů.
         /// Setovat lze <see cref="ContentVirtualLocation"/>.

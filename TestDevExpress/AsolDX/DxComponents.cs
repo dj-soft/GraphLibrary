@@ -6493,6 +6493,162 @@ namespace Noris.Clients.Win.Components.AsolDX
         public object UserData { get; set; }
     }
     #endregion
+    #region class BitStorage32 a BitStorage64 : úložiště Boolean hodnot
+    /// <summary>
+    /// Úložiště až 32 hodnot typu Boolean.
+    /// použití:
+    /// <code>
+    /// var bs32 = new BitStorage32();
+    /// bs32[4] = true;
+    /// bs32[5] = false;
+    /// if (bs32[4]) 
+    /// { /* hodnota bitu 4 je true */ }
+    /// </code>
+    /// </summary>
+    public class BitStorage32
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public BitStorage32()
+        {
+            __Bits = 0U;
+        }
+        private UInt32 __Bits;
+        /// <summary>
+        /// Vizualizace hodnoty
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return this.__Bits.ToString("X8");
+        }
+        /// <summary>
+        /// Hodnota daného bitu. Index smí mít hodnotu 0 až 31.
+        /// </summary>
+        /// <param name="index"></param>
+        /// <returns></returns>
+        public bool this[byte index]
+        {
+            get
+            {
+                return ((__Bits & _Get1(index)) != 0);
+            }
+            set
+            {
+                if (value)
+                    __Bits |= _Get1(index);
+                else
+                    __Bits &= _Get0(index);
+            }
+        }
+        /// <summary>
+        /// Metoda vrátí masku obsahující bit s hodnotou 1 na daném indexu, ostatní bity mají hodnotu 0.
+        /// Pro vstup <paramref name="index"/> = 0 vrací 0x0001 = 0b0000 0000 0000 0001;
+        /// Pro vstup <paramref name="index"/> = 5 vrací 0x0020 = 0b0000 0000 0010 0000;
+        /// Pro vstup <paramref name="index"/> = 7 vrací 0x0080 = 0b0000 0000 1000 0000;
+        /// </summary>
+        /// <param name="index"></param>
+        /// <returns></returns>
+        private static UInt32 _Get1(byte index)
+        {
+            if (index >= 32) throw new ArgumentException($"BitStorage32 error: index value {index} is out of range 0 ÷ 31.");
+            UInt32 mask = (1U << index);
+            return mask;
+        }
+        /// <summary>
+        /// Metoda vrátí masku obsahující bit s hodnotou 0 na daném indexu, ostatní bity mají hodnotu 1.
+        /// Pro vstup <paramref name="index"/> = 0 vrací 0xFFFE = 0b1111 1111 1111 1111;
+        /// Pro vstup <paramref name="index"/> = 5 vrací 0xFFDF = 0b1111 1111 1101 1111;
+        /// Pro vstup <paramref name="index"/> = 7 vrací 0xFF7F = 0b1111 1111 0111 1111;
+        /// </summary>
+        /// <param name="index"></param>
+        /// <returns></returns>
+        private static UInt32 _Get0(byte index)
+        {
+            if (index >= 32) throw new ArgumentException($"BitStorage32 error: index value {index} is out of range 0 ÷ 31.");
+            UInt32 mask = UInt32.MaxValue ^ (1U << index);
+            return mask;
+        }
+    }
+    /// <summary>
+    /// Úložiště až 32 hodnot typu Boolean.
+    /// použití:
+    /// <code>
+    /// var bs64 = new BitStorage64();
+    /// bs64[54] = true;
+    /// bs64[55] = false;
+    /// if (bs64[54]) 
+    /// { /* hodnota bitu 54 je true */ }
+    /// </code>
+    /// </summary>
+    public class BitStorage64
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public BitStorage64()
+        {
+            __Bits = 0UL;
+        }
+        private UInt64 __Bits;
+        /// <summary>
+        /// Vizualizace hodnoty
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return this.__Bits.ToString("X16");
+        }
+        /// <summary>
+        /// Hodnota daného bitu. Index smí mít hodnotu 0 až 31.
+        /// </summary>
+        /// <param name="index"></param>
+        /// <returns></returns>
+        public bool this[byte index]
+        {
+            get
+            {
+                return ((__Bits & _Get1(index)) != 0);
+            }
+            set
+            {
+                if (value)
+                    __Bits |= _Get1(index);
+                else
+                    __Bits &= _Get0(index);
+            }
+        }
+        /// <summary>
+        /// Metoda vrátí masku obsahující bit s hodnotou 1 na daném indexu, ostatní bity mají hodnotu 0.
+        /// Pro vstup <paramref name="index"/> = 0 vrací 0x0001 = 0b0000 0000 0000 0001;
+        /// Pro vstup <paramref name="index"/> = 5 vrací 0x0020 = 0b0000 0000 0010 0000;
+        /// Pro vstup <paramref name="index"/> = 7 vrací 0x0080 = 0b0000 0000 1000 0000;
+        /// </summary>
+        /// <param name="index"></param>
+        /// <returns></returns>
+        private static UInt64 _Get1(byte index)
+        {
+            if (index >= 64) throw new ArgumentException($"BitStorage64 error: index value {index} is out of range 0 ÷ 63.");
+            UInt64 mask = (1UL << index);
+            return mask;
+        }
+        /// <summary>
+        /// Metoda vrátí masku obsahující bit s hodnotou 0 na daném indexu, ostatní bity mají hodnotu 1.
+        /// Pro vstup <paramref name="index"/> = 0 vrací 0xFFFE = 0b1111 1111 1111 1111;
+        /// Pro vstup <paramref name="index"/> = 5 vrací 0xFFDF = 0b1111 1111 1101 1111;
+        /// Pro vstup <paramref name="index"/> = 7 vrací 0xFF7F = 0b1111 1111 0111 1111;
+        /// </summary>
+        /// <param name="index"></param>
+        /// <returns></returns>
+        private static UInt64 _Get0(byte index)
+        {
+            if (index >= 64) throw new ArgumentException($"BitStorage64 error: index value {index} is out of range 0 ÷ 63.");
+            UInt64 mask = UInt64.MaxValue ^ (1UL << index);
+            return mask;
+        }
+    }
+    #endregion
     #region class RegexSupport : Třída pro podporu konverze Wildcard patternu na "Regex"
     /// <summary>
     /// Třída pro podporu konverze Wildcard patternu na <see cref="Regex"/>

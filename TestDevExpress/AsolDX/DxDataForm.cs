@@ -25,13 +25,13 @@ using DevExpress.XtraRichEdit.Model.History;
 
     [B]  Zobrazení dat v DataFormu
     ==============================
-   I. Nejjednodušší varianta je zobrazení jedné stránky (=bez záložek) s jednou částí (DxDataFormPart), bez záhlaví, filtrů a sumárních řádků
-       Tato varianta je typická pro zobrazení jednoduchých instancí a oken
-       I tato varianta může zobrazovat více než jeden řádek s daty
-  II. Druhou variantou je zobrazení s více záložkami, pak záložky nikdy nemají více částí (DxDataFormPart) ani záhlaví, filtry atd
-       Tato varianta je typická pro zobrazení instancí a složitých DynamicPage
- III. Třetí variantou je zobrazení jedné stránky (=bez záložek) s jednou nebo více částmi (DxDataFormPart), s možností zobrazovat záhlaví, filtry atd
-       Tato varianta je typická pro zobrazení a editaci položek / řádků v přehledové šabloně
+   I. Nejjednodušší varianta je zobrazení jedné stránky (=bez záložek) s jednou částí (DxDataFormPart), bez záhlaví, filtrů a sumárních řádků;
+       Tato varianta je typická pro zobrazení jednoduchých instancí a oken;
+       I tato varianta může zobrazovat více než jeden řádek s daty.
+  II. Druhou variantou je zobrazení s více záložkami, pak záložky nikdy nemají více částí (DxDataFormPart) ani záhlaví, filtry atd;
+       Tato varianta je typická pro zobrazení Master části instancí a složitých DynamicPage.
+ III. Třetí variantou je zobrazení volitelně bez záložek nebo s více záložkami, s jednou nebo více částmi (DxDataFormPart), s možností zobrazovat záhlaví, filtry atd;
+       Tato varianta je typická pro zobrazení a editaci položek / řádků v přehledové šabloně.
 
     [C]  Konstrukce instancí v DataFormu
     ====================================
@@ -39,10 +39,10 @@ using DevExpress.XtraRichEdit.Model.History;
       a) Vždy v sobě hostuje data = DxDataFormData
       b) Vždy v sobě drží jednu jedinou instanci třídy DxDataFormPanel = zobrazovač dat, viz dále
       c) Pokud DxDataForm zobrazuje jen jednu stránku, pak nemá záložkovník, ale přímo v sobě hostuje a zobrazuje (jako svůj Control) panel DxDataFormPanel
-      d) Pokud DxDataForm zobrazuje více záložek, pak má (jako svůj Control) záložkovník (=standardní DxTabPane), ale má stále jen jednu instanci panelu DxDataFormPanel,
+      d) Pokud DxDataForm zobrazuje více záložek, pak (jako vrcholový Control) v sobě hostuje záložkovník (=standardní DxTabPane), ale má stále jen jednu instanci panelu DxDataFormPanel,
            a tuto instanci DxDataFormPanel vždy umísťuje do aktuálně zobrazené záložky; 
-           v procesu přepínání záložek do tohoto panelu vkládá definici skupin a sloupců pro tuto záložku, 
-           a vkládá do něj i odpovídající status jeho záložky (stav, v jakém byl naposledy tento panel, když zobrazoval tuto záložku) = pozice scrollbarů atd.
+           v procesu přepínání záložek do tohoto panelu vkládá definici skupin DxDataFormGroup (grupa obsahuje jednotlivé DxDataFormColumn) pro tuto záložku, 
+           a vkládá do něj i odpovídající status jeho záložky (stav, v jakém byl naposledy tento panel, když zobrazoval tuto záložku) = pozice splitterů, scrollbarů atd.
 
    2. Vysvětlení rozdílu mezi Stránkou: DxDataFormPage a Záložkou: DxDataFormTab
       a) Stránka DxDataFormPage je daná deklarací layoutu DataFormu, odpovídá prvku TAB který má daný LABEL
@@ -52,14 +52,15 @@ using DevExpress.XtraRichEdit.Model.History;
 
    3. Zobrazení dat konkrétní stránky (celého DataFormu nebo jedné záložky) tedy zajišťuje panel DxDataFormPanel
       a) Ten má v sobě deklaraci layoutu (definice: Grupy DxDataFormGroup a v nich sloupce DxDataFormColumn)
-           Pokud celý DataForm má vícero záložek, pak panel DxDataFormPanel obsahuje ve své deklaraci layoutu jen podmnožinu týkající se aktuální záložky
+           Pokud celý DataForm má vícero záložek, pak panel DxDataFormPanel obsahuje ve své deklaraci layoutu jen podmnožinu skupin DxDataFormGroup týkající se aktuální záložky
       b) DxDataFormPanel za určitých podmínek dovoluje vytvářet Splitted Parts = například zobrazí v levé části několik sloupců, 
            vpravo od nich svislý Splitter, a za Splitterem pak tytéž řádky, ale odscrollované sloupce doprava...
            Obdobně lze Splitnout řádky vodorovně: v horní části mít několik řádků, a v dolní části scrollovat celým přehledem...
       c) Tedy: panel DxDataFormPanel sám nezobrazuje řádky a sloupce a data, ale dává prostor jednotlivým částem typu DxDataFormPart, 
            aby v určité části panelu DxDataFormPanel zobrazily svoje data (řádky, sloupce, záhlaví, filtr, atd).
-      d) Panel DxDataFormPanel tedy řídí tvorbu, přemístění a zánik částí, pomocí scrollbarů.
-      e) Dále tento panel řídí synchronizaci souřadnic mezi sousedními částmi DxDataFormPart = tak, aby levá i pravá část vedle sebe zobrazovaly shodné řádky.
+      d) Panel DxDataFormPanel tedy řídí tvorbu, přemístění a zánik částí, pomocí splitterů.
+      e) Dále tento panel řídí synchronizaci souřadnic mezi sousedními částmi DxDataFormPart = tak, aby levá i pravá část vedle sebe zobrazovaly shodné řádky,
+           a horní a dolní část zobrazovaly shodné sloupce.
 
    4. Vlastní zobrazení dat tedy provádí každá jedna část DxDataFormPart.
       a) DxDataFormPart je tedy hlavní zobrazovač vlastních dat DataFormu = na něm se zobrazují labely, textboxy atd
@@ -97,7 +98,7 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// <summary>
     /// DataForm
     /// </summary>
-    public class DxDataForm : DxPanelControl
+    public class DxDataForm : DxPanelControl, IDxDataFormWorking
     {
         #region Konstruktor a jednoduché property
         /// <summary>
@@ -108,6 +109,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             InitializeUserControls();
             InitializeImageCache();
             InitializeData();
+            InitializeGroups();
+            InitializeAppearance();
         }
         /// <summary>
         /// Dispose panelu
@@ -131,13 +134,211 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private void InitializeData()
         {
-            _Data = new DxDataFormData(this);
+            __RowSets = new Dictionary<int, DxDataFormRowSet>();
+            __Data = new DxDataFormData(this);
         }
         /// <summary>
         /// Vlastní data zobrazená v dataformu
         /// </summary>
-        internal DxDataFormData Data { get { return _Data; } }
-        private DxDataFormData _Data;
+        internal DxDataFormData Data { get { return __Data; } }
+        private DxDataFormData __Data;
+        #endregion
+        #region Sady řádků
+        /// <summary>
+        /// Vrátí pole řádků, které jsou (anebo mohou být) zobrazováno v <see cref="DxDataFormPart"/> dle daného ID.
+        /// Tyto řádky jsou sdíleny všemi sousedními částmi vlevo i vpravo a jsou společně scrollovány, a mají tedy společné souřadnice Y.
+        /// <para/>
+        /// Jde tedy o všechny řádky, nejen ty aktuálně viditelné. 
+        /// Z tohoto pole se pak vybírají řádky, které jsou aktuálně zobrazeny: po změně viditelné oblasti se znovu vyhledají a uloží.
+        /// <para/>
+        /// Řádkový filtr: zde jsou vráceny jen ty řádky, které vyhovují řádkovému filtru! Pokud tedy datový zdroj obsahuje 500 řádků, a řádkovému filtru vyhovuje jen 60, pak je zde oněch 60!
+        /// Aktuální control z oněch 60 může zobrazovat (scrollovat) např. jen 24 řádků, ale k dispozici je těch 60.
+        /// <para/>
+        /// Pokud jsou přítomny části nad a pod (vodorovné splittery), pak ty mohou zobrazovat fyzicky jiné řádky = jinak zafiltrované, jinak setříděné, v jiné vizuální pozici (jinak odscrollované).
+        /// </summary>
+        internal List<DxDataFormRow> GetRows(DxDataFormPartId partId)
+        {
+            return _GetRowSet(partId.PartYId).RowsVisible;
+        }
+        /// <summary>
+        /// Vrátí velikost prostoru všech řádků = na výšku i na šířku
+        /// </summary>
+        /// <param name="partId"></param>
+        /// <returns></returns>
+        internal Size GetRowsTotalSize(DxDataFormPartId partId)
+        {
+            return _GetRowSet(partId.PartYId).RowsTotalSize;
+        }
+        /// <summary>
+        /// Najde / vytvoří a vrátí RowSet daného ID
+        /// </summary>
+        /// <param name="setId"></param>
+        /// <returns></returns>
+        private DxDataFormRowSet _GetRowSet(int setId)
+        {
+            if (!__RowSets.TryGetValue(setId, out var rowSet))
+                __RowSets.Add(setId, rowSet = new DxDataFormRowSet(this, setId));
+            return rowSet;
+        }
+        /// <summary>
+        /// Zajistí znovuvytvoření všech řádků pro všechny sady řádků,
+        /// aktuálně přítomné v <see cref="__RowSets"/>
+        /// </summary>
+        private void _ReloadAllRows()
+        {
+            lock (__RowSets)
+            {
+                foreach (var rowSet in __RowSets.Values)
+                    rowSet.ReloadRows();
+            }
+        }
+        private Dictionary<int, DxDataFormRowSet> __RowSets;
+        private class DxDataFormRowSet : IDisposable
+        {
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="dataForm"></param>
+            /// <param name="setId"></param>
+            public DxDataFormRowSet(DxDataForm dataForm, int setId)
+            {
+                this.__DataForm = dataForm;
+                this.ReloadRows();
+            }
+            public void Dispose()
+            {
+                this.__SetId = -1;
+                this.__Rows = null;
+                this.__Filter = null;
+                this.__Sorter = null;
+                this.__DataForm = null;
+            }
+            /// <summary>
+            /// Reference na <see cref="DxDataForm"/>
+            /// </summary>
+            public DxDataForm DataForm { get { return __DataForm; } } private DxDataForm __DataForm;
+            /// <summary>
+            /// Vlastní data zobrazená v dataformu
+            /// </summary>
+            private DxDataFormData Data { get { return this.DataForm.Data; } }
+            /// <summary>
+            /// ID sady řádků
+            /// </summary>
+            public int SetId { get { return __SetId; } } private int __SetId;
+            /// <summary>
+            /// Sada řádků = všechny z datového zdroje, v jejich původním třídění dle datového zdroje.
+            /// </summary>
+            public List<DxDataFormRow> Rows { get { return __Rows; } } private List<DxDataFormRow> __Rows;
+            /// <summary>
+            /// Sada dostupných řádků = vyhovující aktuálnímu filtru <see cref="Filter"/>, setříděné sorterem <see cref="Sorter"/>.
+            /// </summary>
+            public List<DxDataFormRow> RowsVisible { get { return __RowsVisible; } } private List<DxDataFormRow> __RowsVisible;
+            /// <summary>
+            /// Velikost prostoru všech řádků = na výšku i na šířku
+            /// </summary>
+            public Size RowsTotalSize { get { return __RowsTotalSize; } } private Size __RowsTotalSize;
+            /// <summary>
+            /// Aktuální sumární velikost sady grup v pixelech.
+            /// Je vypočtena pro aktuální grupy <see cref="CurrentGroupDefinitions"/> po jejich setování a slouží pro vizuální práci s controly.
+            /// </summary>
+            public Size CurrentGroupsSize { get { return this.DataForm.CurrentGroupsSize; } }
+            /// <summary>
+            /// Výška jednoho řádku. 
+            /// Je vypočtena po vložení definice vzhledu <see cref="CurrentGroupDefinitions"/> jako největší hodnota Bottom ze všech souřadnic grup.
+            /// K výšce je přičtena hodnota mezery mezi řádky.
+            /// Zdejší hodnota tedy reprezentuje výšku každého řádku <see cref="DxDataFormRow"/> v aktuálním dataformu/záložce.
+            /// </summary>
+            public int CurrentRowHeight { get { return this.DataForm.CurrentRowHeight; } }
+            /// <summary>
+            /// Filtr řádků.
+            /// Setování filtru provede kompletní přepočet vizuálních dat řádků: filtrace, třídění, vizuální pozice:
+            /// <see cref="DxDataFormRow.IsVisibleFilter"/>; <see cref="DxDataFormRow.VisualIndex"/>; <see cref="DxDataFormRow.TotalYPosition"/>; 
+            /// </summary>
+            public Func<DxDataFormRow, bool> Filter 
+            {
+                get { return __Filter; }
+                set
+                {
+                    __Filter = value;
+                    _FilterRows();
+                    _SortRows();
+                    _SetVisualPositions();
+                    _RecalcSize();
+                }
+            }
+            private Func<DxDataFormRow, bool> __Filter;
+            /// <summary>
+            /// Třídění řádků.
+            /// Setování třídění provede kompletní přepočet vizuálních dat řádků: třídění, vizuální pozice:
+            /// <see cref="DxDataFormRow.IsVisibleFilter"/>; <see cref="DxDataFormRow.VisualIndex"/>; <see cref="DxDataFormRow.TotalYPosition"/>; 
+            /// </summary>
+            public Func<DxDataFormRow, DxDataFormRow, int> Sorter
+            {
+                get { return __Sorter; }
+                set
+                {
+                    __Sorter = value;
+                    _SortRows();
+                    _SetVisualPositions();
+                }
+            }
+            private Func<DxDataFormRow, DxDataFormRow, int> __Sorter;
+            /// <summary>
+            /// Přenačte všechna aktuální data z datového zdroje, aplikuje filtr a třídění a přepočte vizuální hodnoty řádků.
+            /// </summary>
+            public void ReloadRows()
+            {
+                _ReloadRows();
+                _FilterRows();
+                _SortRows();
+                _SetVisualPositions();
+                _RecalcSize();
+            }
+            public void ReloadSize()
+            {
+                _SetVisualPositions();
+                _RecalcSize();
+            }
+            private void _ReloadRows()
+            {
+                var dataForm = this.DataForm;
+                var setId = this.SetId;
+                int rowIndex = 0;
+                __Rows = this.Data.RowsId.Select(rowId => new DxDataFormRow(dataForm, setId, rowId, rowIndex++)).ToList();
+            }
+
+            private void _FilterRows()
+            {
+                var filter = this.Filter;
+                if (filter != null)
+                    __Rows.ForEachExec(row => { row.IsVisibleFilter = filter(row); });
+                else
+                    __Rows.ForEachExec(row => { row.IsVisibleFilter = true; });
+                __RowsVisible = __Rows.Where(row => row.IsVisibleFilter).ToList();
+            }
+
+            private void _SortRows()
+            {
+                var sorter = this.Sorter;
+                if (sorter != null)
+                    __RowsVisible.Sort((a, b) => sorter(a, b));
+                else
+                    __RowsVisible.Sort((a, b) => a.RowIndex.CompareTo(b.RowIndex));
+            }
+
+            private void _SetVisualPositions()
+            {
+                DxDataFormRow.SetVisualPositions(__RowsVisible);
+            }
+
+            private void _RecalcSize()
+            {
+                var totalWidth = this.CurrentGroupsSize.Width;
+                var rows = this.__RowsVisible;
+                int totalHeight = (rows.Count > 0 ? rows[rows.Count - 1].TotalYPosition.End : 0);
+                __RowsTotalSize = new Size(totalWidth, totalHeight);
+            }
+        }
         #endregion
         #region Zobrazované prvky = definice dataformu = stránky, odvození záložek, a vlastní data
         /// <summary>
@@ -311,9 +512,10 @@ namespace Noris.Clients.Win.Components.AsolDX
             _DataFormTabPane.RemoveControlFromParent(this, true);          // Pokud máme jako náš Child control přítomný TabPane, odebereme jej
             _DataFormPanel.AddControlToParent(this, true);                 // Zajistíme, že DataFormPanel bude přítomný jako náš přímý Child control
 
-            _DataFormPanel.Groups = _DataFormTabs.FirstOrDefault()?.Groups;
             _DataFormPanel.State = null;
             _DataFormPanel.Visible = true;
+
+            CurrentGroupDefinitions = _DataFormTabs.FirstOrDefault()?.Groups;
         }
         /// <summary>
         /// Zajistí správnou aktivaci controlů pro záložek pro více stránek DataFormu.
@@ -343,7 +545,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Data jednotlivých záložek.
         /// Jedna záložka může obsahovat jednu nebo více stránek <see cref="DxDataFormPage"/>.
-        /// Pokud záložka obsahuje více stránek, pak další stránky už mají vypočtené souřadnice skupin <see cref="DxDataFormGroup.CurrentGroupBounds"/> správně (a tedy i jejich prvky mají správné souřadnice).
+        /// Pokud záložka obsahuje více stránek, pak další stránky už mají správně vypočtené souřadnice skupin <see cref="DxDataFormGroupDefinition.CurrentGroupBounds"/> 
+        /// (a tedy i jejich prvky mají správné souřadnice).
         /// <para/>
         /// Toto pole je vytvořeno v metodě <see cref="CreateDataTabs"/>.
         /// </summary>
@@ -401,18 +604,16 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
             if (TryGetFormTab(e.Page, out var newTabPage, out var newFormTab))
             {
-                _DataFormPanel.Groups = newFormTab.Groups;
-                _DataFormPanel.State = newFormTab.State;
-
                 _DataFormPanel.AddControlToParent(newTabPage);       // Zajistíme, že DataFormPanel bude přítomný jako Child control v nové stránce
+                _DataFormPanel.State = newFormTab.State;
                 _DataFormPanel.Visible = true;
 
-                _DataFormPanel.Refresh();
+                CurrentGroupDefinitions = newFormTab.Groups;
             }
             else
             {
-                _DataFormPanel.Groups = null;
                 _DataFormPanel.State = null;
+                CurrentGroupDefinitions = null;
             }
         }
         /// <summary>
@@ -436,7 +637,86 @@ namespace Noris.Clients.Win.Components.AsolDX
         private DxTabPane _DataFormTabPane;
         #endregion
         #endregion
-        #region Služby pro controly se vztahem do DxDataFormPanel
+        #region CurrentGroups = definice vzhledu aktuálního DataFormu (layout), mění se při přepínání záložek
+        /// <summary>
+        /// Inicializuje pole <see cref="CurrentGroupDefinitions"/> a související
+        /// </summary>
+        private void InitializeGroups()
+        {
+            __CurrentGroups = new List<DxDataFormGroupDefinition>();
+            __CurrentRowHeight = 0;
+            __DynamicGroupHeight = false;
+        }
+        /// <summary>
+        /// Aktuálně zobrazované grupy, obsahující definice jednotlivých columnů <see cref="DxDataFormItem"/>.
+        /// Obsahuje definice skupin, které jsou na aktuální záložce viditelné. 
+        /// Pokud tedy existuje <see cref="DxDataForm"/>, který se skládá z více stránek, pak tento <see cref="DxDataForm"/> 
+        /// tyto stránky rozmístil na jednotlivé záložky <see cref="DxDataFormTab"/> 
+        /// (na jedné záložce je typicky jedna stránka, ale pokud by záložka byla dostatečně veliká, může shrnout data z více stránek).
+        /// </summary>
+        internal List<DxDataFormGroupDefinition> CurrentGroupDefinitions { get { return __CurrentGroups; } private set { _SetGroups(value); } }
+        /// <summary>
+        /// Aktuální sumární velikost sady grup v pixelech.
+        /// Je vypočtena pro aktuální grupy <see cref="CurrentGroupDefinitions"/> po jejich setování a slouží pro vizuální práci s controly.
+        /// </summary>
+        internal Size CurrentGroupsSize { get { return __CurrentGroupsSize; } }
+        /// <summary>
+        /// Výška jednoho řádku. 
+        /// Je vypočtena po vložení definice vzhledu <see cref="CurrentGroupDefinitions"/> jako největší hodnota Bottom ze všech souřadnic grup.
+        /// K výšce je přičtena hodnota mezery mezi řádky.
+        /// Zdejší hodnota tedy reprezentuje výšku každého řádku <see cref="DxDataFormRow"/> v aktuálním dataformu/záložce.
+        /// </summary>
+        public int CurrentRowHeight { get { return __CurrentRowHeight; } }
+        /// <summary>
+        /// Dynamická výška grup = může se měnit pro různé řádky?
+        /// Zatím NE, znamenalo by to náročnější výpočty. Všechny řádky budou stejně vysoké.
+        /// </summary>
+        public bool DynamicGroupHeight { get { return __DynamicGroupHeight; } }
+        /// <summary>
+        /// Vloží do sebe dané grupy a zajistí minimální potřebné refreshe
+        /// </summary>
+        /// <param name="groups"></param>
+        private void _SetGroups(List<DxDataFormGroupDefinition> groups)
+        {
+            __CurrentGroups.Clear();
+            __CurrentRowHeight = 0;
+            if (groups != null && groups.Count > 0)
+                __CurrentGroups.AddRange(groups);
+            _RecalcCurrentGroupsSize();
+            Refresh(RefreshParts.All);
+        }
+        /// <summary>
+        /// Provede přepočet hodnot
+        /// <see cref="CurrentGroupsSize"/> a <see cref="CurrentRowHeight"/> (pro aktuální definici layoutu <see cref="CurrentGroupDefinitions"/> a mezeru mezi řádky <see cref="DxDataForm.RowHeightSpace"/>)
+        /// </summary>
+        private void _RecalcCurrentGroupsSize()
+        {
+            int maxX = 0; 
+            int maxY = 0;
+            var groups = CurrentGroupDefinitions;
+            if (groups != null && groups.Count > 0)
+                groups.Select(g => g.CurrentGroupBounds).ForEachExec(
+                    b =>
+                    {
+                        if (maxX < b.Right) maxX = b.Right;
+                        if (maxY < b.Bottom) maxY = b.Bottom;
+
+                    });
+            __CurrentGroupsSize = new Size(maxX, maxY);
+            __CurrentRowHeight = maxY + RowHeightSpace;
+        }
+        /// <summary>Pole skupin, které aktuálně zobrazujeme</summary>
+        private List<DxDataFormGroupDefinition> __CurrentGroups;
+        /// <summary>Velikost grupy = Max (Right, Bottom), bez mezer</summary>
+        private Size __CurrentGroupsSize;
+        /// <summary> Výška řádku = souhrn Groups + mezera </summary>
+        private int __CurrentRowHeight;
+        /// <summary>
+        /// Dynamická výška grup = může se měnit pro různé řádky
+        /// </summary>
+        private bool __DynamicGroupHeight;
+        #endregion
+        #region Služby pro controly se vztahem do DxDataFormPanel - vizuální, grafické (Brush, Paint, atd)
         /// <summary>
         /// Daný control přidá do panelu na pozadí (control jen pro kreslení) anebo na popředí (control pro interakci).
         /// </summary>
@@ -451,10 +731,15 @@ namespace Noris.Clients.Win.Components.AsolDX
                 control.AddControlToParent(parent);
         }
         /// <summary>
-        /// Provede refresh panelu
+        /// Provede refresh DataFormu
         /// </summary>
         /// <param name="refreshParts"></param>
-        internal void Refresh(RefreshParts refreshParts) { _DataFormPanel?.Refresh(refreshParts); }
+        internal void Refresh(RefreshParts refreshParts) 
+        {
+            if (refreshParts.HasFlag(RefreshParts.ReloadAllRows)) this._ReloadAllRows();
+
+            _DataFormPanel?.Refresh(refreshParts);
+        }
         /// <summary>
         /// Aktuální velikost viditelného prostoru pro DataForm, když by v něm nebyly ScrollBary
         /// </summary>
@@ -463,14 +748,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Aktuální velikost viditelného prostoru pro DataForm, po odečtení aktuálně zobrazených ScrollBarů (pokud jsou zobrazeny)
         /// </summary>
         internal Size VisibleContentSize { get { return (this._DataFormPanel?.VisibleContentSize ?? Size.Empty); } }
-        /// <summary>
-        /// Počet celkem deklarovaných prvků
-        /// </summary>
-        internal int ItemsCount { get { return _DataFormPages.Select(p => p.ItemsCount).Sum(); } }
-        /// <summary>
-        /// Počet aktuálně viditelných prvků
-        /// </summary>
-        internal int VisibleCellsCount { get { return _DataFormPanel?.VisibleCellsCount ?? 0; } }
         /// <summary>
         /// Metoda vrátí Brush odpovídající požadavku. Může vrátit null.
         /// </summary>
@@ -632,7 +909,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             var textBounds = size.AlignTo(bounds.Value, appearance.ContentAlignment ?? ContentAlignment.MiddleLeft);
             e.Graphics.DrawString(text, font, Brushes.Black, textBounds);
         }
-
         /// <summary>
         /// Vrátí barvu explicitně dodanou <paramref name="color"/>, 
         /// anebo vyhledá styl daného jména <paramref name="styleName"/> a z něj načte a vrátí barvu daného typu <paramref name="source"/>.
@@ -688,18 +964,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="item"></param>
         /// <returns></returns>
-        internal DxDataFormControlSet GetControlSet(DxDataFormColumn item)
+        internal DxDataFormControlSet GetControlSet(DxDataFormItem item)
         {
-            var dataFormControls = _ControlsSets;
-
-            DxDataFormControlSet controlSet;
             DataFormColumnType itemType = item.ItemType;
-            if (!dataFormControls.TryGetValue(itemType, out controlSet))
-            {
-                controlSet = new DxDataFormControlSet(this, itemType);
-                dataFormControls.Add(itemType, controlSet);
-            }
-            return controlSet;
+            return _ControlsSets.Get(itemType, () => new DxDataFormControlSet(this, itemType), true);
         }
         /// <summary>
         /// Vrátí control pro daný prvek a režim použití
@@ -708,11 +976,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="mode"></param>
         /// <param name="parent">Parent, do něhož má být control umístěn. Pokud režim <paramref name="mode"/> je <see cref="DxDataFormControlUseMode.Draw"/>, pak parent smí být null.</param>
         /// <returns></returns>
-        internal Control GetControl(DxDataFormColumn item, DxDataFormControlUseMode mode, Control parent)
+        internal Control GetControl(DxDataFormItem item, DxDataFormControlUseMode mode, Control parent)
         {
             DxDataFormControlSet controlSet = GetControlSet(item);
-            Control drawControl = controlSet.GetControlForMode(item, mode, parent);
-            return drawControl;
+            return controlSet.GetControlForMode(item, mode, parent);
         }
         /// <summary>
         /// Sdílený objekt ToolTipu do všech controlů
@@ -776,7 +1043,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="item"></param>
         /// <param name="graphics"></param>
         /// <returns></returns>
-        internal Image CreateImage(DxDataFormColumn item, Graphics graphics)
+        internal Image CreateImage(DxDataFormItem item, Graphics graphics)
         {
             if (ImageCache == null) ImageCache = new Dictionary<string, ImageCacheItem>();
 
@@ -816,7 +1083,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="item"></param>
         /// <param name="graphics"></param>
         /// <returns></returns>
-        private Image CreateBitmapForItem(DxDataFormColumn item, Graphics graphics)
+        private Image CreateBitmapForItem(DxDataFormItem item, Graphics graphics)
         {
             /*   Časomíra:
 
@@ -1034,19 +1301,53 @@ namespace Noris.Clients.Win.Components.AsolDX
         #endregion
         #region Appearance
         /// <summary>
+        /// Inicializace proměnných definujících vzhled
+        /// </summary>
+        private void InitializeAppearance()
+        {
+            __DataFormAppearance = new DxDataFormAppearance();
+            __ItemIndicatorsVisible = false;
+            __RowHeightSpace = 1;
+        }
+        /// <summary>
         /// Vzhled. Autoinicializační property. Nikdy není null. Setování null nastaví defaultní vzhled.
         /// </summary>
         public DxDataFormAppearance DataFormAppearance 
         { 
-            get { if (_DataFormAppearance == null) _DataFormAppearance = new DxDataFormAppearance(); return _DataFormAppearance; }
-            set { _DataFormAppearance = value; }
+            get { if (__DataFormAppearance == null) __DataFormAppearance = new DxDataFormAppearance(); return __DataFormAppearance; }
+            set { __DataFormAppearance = value; }
         }
-        private DxDataFormAppearance _DataFormAppearance;
+        private DxDataFormAppearance __DataFormAppearance;
         /// <summary>
         /// Aktivace barevných indikátoru "OnDemand"
         /// </summary>
-        public bool ItemIndicatorsVisible { get; set; }
+        public bool ItemIndicatorsVisible 
+        {
+            get { return __ItemIndicatorsVisible; } 
+            set
+            { 
+                __ItemIndicatorsVisible = value;
+                this.Refresh(RefreshParts.InvalidateControl);
+            }
+        }
+        private bool __ItemIndicatorsVisible;
+        /// <summary>
+        /// Výška mezery mezi řádky
+        /// </summary>
+        public int RowHeightSpace 
+        { 
+            get { return __RowHeightSpace; } 
+            set 
+            {
+                __RowHeightSpace = (value < 0 ? 0 : (value > 10 ? 10 : value));
+                this.Refresh(RefreshParts.All);
+            }
+        }
+        private int __RowHeightSpace;
         #endregion
+    }
+    internal interface IDxDataFormWorking
+    {
     }
     #region class DxDataFormAppearance
     /// <summary>
@@ -1096,6 +1397,7 @@ namespace Noris.Clients.Win.Components.AsolDX
 
 namespace Noris.Clients.Win.Components.AsolDX.DataForm
 {
+    // Zobrazovaná data:
     #region class DxDataFormData : Data, která budou zobrazena v dataformu (ve formě DataTable, Array, List, Record)
     /// <summary>
     /// Data, která budou zobrazena v dataformu (ve formě DataTable, Array, List, Record)
@@ -1109,17 +1411,18 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="dataForm"></param>
         public DxDataFormData(DxDataForm dataForm)
         {
-            _DataForm = dataForm;
-            _Source = null;
-            _CurrentSourceType = SourceType.None;
+            __DataForm = dataForm;
+            _SetSourceNull();
         }
         /// <summary>Vlastník - <see cref="DxDataForm"/></summary>
-        private DxDataForm _DataForm;
+        private DxDataForm __DataForm;
+        /// <summary>Vlastník - <see cref="DxDataForm"/> přetypovaný na <see cref="IDxDataFormWorking"/>, pro interní přístup</summary>
+        private IDxDataFormWorking IDataForm { get { return __DataForm as IDxDataFormWorking; } }
         /// <summary>
         /// Datový zdroj.
         /// Může to být <see cref="System.Data.DataTable"/>, nebo 
         /// </summary>
-        public object Source { get { return _Source; } set { _SetSource(value); } }
+        public object Source { get { return __Source; } set { _SetSource(value); } }
         /// <summary>
         /// Vloží zdroj, detekuje jeho druh, provede typovou inicializaci
         /// </summary>
@@ -1128,48 +1431,93 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         {
             if (source == null) _SetSourceNull();
             else if (source is System.Data.DataTable dataTable) _SetSourceDataTable(dataTable);
-            else if (source is Array array) _SetSourceArray(array);
             else if (source is IList<object> list) _SetSourceList(list);
+            else throw new ArgumentException($"Unsupported Data.Source for DataForm, type: '{source.GetType().Name}'.");
 
-            _DataForm.Refresh(RefreshParts.RecalculateContentTotalSize | RefreshParts.InvalidateControl);
+            __DataForm.Refresh(RefreshParts.ReloadAllRows | RefreshParts.ReloadVisibleRows | RefreshParts.RecalculateContentTotalSize | RefreshParts.InvalidateControl);
         }
         /// <summary>
         /// Nullování zdroje (odpojení)
         /// </summary>
         private void _SetSourceNull()
         {
-            _Source = null;
-            _SourceDataTable = null;
-            _SourceArray = null;
-            _SourceList = null;
-            _SourceRecord = null;
-            _CurrentSourceType = SourceType.None;
+            __Source = null;
+            __SourceDataTable = null;
+            __SourceList = null;
+            __SourceRecord = null;
+            __CurrentSourceType = SourceType.None;
         }
         /// <summary>
         /// Obecný zdroj dat, netypová reference
         /// </summary>
-        private object _Source;
+        private object __Source;
+        /// <summary>
+        /// Index sloupců.
+        /// Klíčem je jméno sloupce v té formě, v jaké jej deklaruje datový zdroj.
+        /// Value je odpovídající interní informace zdroje, používá ji pouze konkrétní zdroj.
+        /// </summary>
+        private Dictionary<string, object> __Columns;
+        /// <summary>
+        /// Index sloupců.
+        /// Klíčem je nativní pořadí sloupce, v jaké jej deklaruje datový zdroj.
+        /// Value je odpovídající interní informace zdroje, používá ji pouze konkrétní zdroj.
+        /// </summary>
+        private Dictionary<int, object> __ColumnIndexes;
+        /// <summary>
+        /// Index řádků. 
+        /// Klíčem je unikátní RowID.
+        /// Value je odpovídající interní informace zdroje, používá ji pouze konkrétní zdroj.
+        /// </summary>
+        private Dictionary<int, object> __Rows;
         /// <summary>
         /// Aktuální typ dat
         /// </summary>
-        private SourceType _CurrentSourceType;
+        private SourceType __CurrentSourceType;
         /// <summary>
         /// Typ datového zdroje
         /// </summary>
-        private enum SourceType { None, DataTable, Array, List, Record }
+        private enum SourceType { None, DataTable, List, Record }
         #endregion
         #region Public přístup - nezávislý na typu dat
+        /// <summary>
+        /// Počet řádků s daty.
+        /// </summary>
+        public int RowsCount { get { return ((__CurrentSourceType != SourceType.None && __Rows != null) ? __Rows.Count : 0); } }
+        /// <summary>
+        /// ID všech řádků s daty. Může být null.
+        /// Hodnota ID je daná zdrojem, pro <see cref="SourceType.DataTable"/> je to index řádku.
+        /// </summary>
+        public int[] RowsId { get { return ((__CurrentSourceType != SourceType.None  && __Rows != null) ? __Rows.Keys.ToArray() : null); } }
+        /// <summary>
+        /// Jména všech sloupců s daty. Může být null.
+        /// </summary>
+        public string[] ColumnNames { get { return ((__CurrentSourceType != SourceType.None && __Columns != null) ? __Columns.Keys.ToArray() : null); } }
+        /// <summary>
+        /// Přístup k datům buňky (řádek x sloupec)
+        /// </summary>
+        /// <param name="rowId"></param>
+        /// <param name="columnName"></param>
+        /// <returns></returns>
+        public object this[int rowId, string columnName]
+        {
+            get { return _GetValue(rowId, columnName); }
+            set { _SetValue(rowId, columnName, value); }
+        }
+
+        private object _GetValue(int rowId, string columnName) { return null; }
+        private void _SetValue(int rowId, string columnName, object value) { }
+
+
         /// <summary>
         /// Počet řádků s daty. Pokud nejsou vložena data, vrací 0.
         /// </summary>
         /// <param name="partId">Identifikátor části. Různé části mohou mít různé řádkové filtry, a pak mají různé počty řádků.</param>
         internal int GetRowCount(DxDataFormPartId partId)
         {
-            switch (_CurrentSourceType)
+            switch (__CurrentSourceType)
             {
                 case SourceType.None: return 0;
                 case SourceType.DataTable: return _GetRowCountDataTable(partId);
-                case SourceType.Array: return _GetRowCountArray(partId);
                 case SourceType.List: return _GetRowCountList(partId);
                 case SourceType.Record: return _GetRowCountRecord(partId);
             }
@@ -1183,11 +1531,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <returns></returns>
         public string GetText(int rowIndex, IDataFormColumn column)
         {
-            switch (_CurrentSourceType)
+            switch (__CurrentSourceType)
             {
                 case SourceType.None: return null;
                 case SourceType.DataTable: return _GetTextDataTable(rowIndex, column);
-                case SourceType.Array: return _GetTextArray(rowIndex, column);
                 case SourceType.List: return _GetTextList(rowIndex, column);
                 case SourceType.Record: return _GetTextRecord(rowIndex, column);
             }
@@ -1211,11 +1558,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             // Pokud by neexistovalo setřídění řádků, a pokud by RowId byly kontinuálně od 0 nahoru, pak by věc byla jednoduchá
             //  = vrátilo by se pole obsahující posloupnost čísel { rowIndexFirst, rowIndexFirst+1, ..., rowIndexLast }.
             // Ale svět není jednoduchý, RowId mohou obsahovat čísla záznamů / položek (objekty), takže musíme dovnitř:
-            switch (_CurrentSourceType)
+            switch (__CurrentSourceType)
             {
                 case SourceType.None: return null;
                 case SourceType.DataTable: return _GetVisibleRowsIdDataTable(rowIndexFirst, rowCount);
-                case SourceType.Array: return _GetVisibleRowsIdArray(rowIndexFirst, rowCount);
                 case SourceType.List: return _GetVisibleRowsIdList(rowIndexFirst, rowCount);
                 case SourceType.Record: return _GetVisibleRowsIdRecord(rowIndexFirst, rowCount);
             }
@@ -1230,15 +1576,15 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         private void _SetSourceDataTable(System.Data.DataTable dataTable)
         {
             _SetSourceNull();
-            _Source = dataTable;
-            _SourceDataTable = dataTable;
-            _CurrentSourceType = SourceType.DataTable;
+            __Source = dataTable;
+            __SourceDataTable = dataTable;
+            __CurrentSourceType = SourceType.DataTable;
         }
         /// <summary>
         /// Vrátí počet řádků DataTable
         /// </summary>
         /// <returns></returns>
-        private int _GetRowCountDataTable(DxDataFormPartId partId) { return (_SourceDataTable?.Rows.Count ?? 0); }
+        private int _GetRowCountDataTable(DxDataFormPartId partId) { return (__SourceDataTable?.Rows.Count ?? 0); }
         /// <summary>
         /// Vrátí text prvku ze zdroje typu DataTable
         /// </summary>
@@ -1266,49 +1612,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Datový zdroj typu DataTable
         /// </summary>
-        private System.Data.DataTable _SourceDataTable;
-        #endregion
-        #region Práce s konkrétním typem - Array
-        /// <summary>
-        /// Vloží datový zdroj typu Array
-        /// </summary>
-        /// <param name="array"></param>
-        private void _SetSourceArray(Array array)
-        {
-            _SetSourceNull();
-            _Source = array;
-            _SourceArray = array;
-            _CurrentSourceType = SourceType.Array;
-        }
-        /// <summary>
-        /// Vrátí počet řádků Array
-        /// </summary>
-        /// <returns></returns>
-        private int _GetRowCountArray(DxDataFormPartId partId) { return (_SourceArray?.Length ?? 0); }
-        /// <summary>
-        /// Vrátí text prvku ze zdroje typu Array
-        /// </summary>
-        /// <param name="rowIndex"></param>
-        /// <param name="column"></param>
-        /// <returns></returns>
-        private string _GetTextArray(int rowIndex, IDataFormColumn column)
-        {
-            return null;
-        }
-        /// <summary>
-        /// Vrátí pole obsahující RowId pro řádky, které mají být zobrazeny na daných vizuálních pozicích, pro Array
-        /// </summary>
-        /// <param name="rowIndexFirst"></param>
-        /// <param name="rowCount"></param>
-        /// <returns></returns>
-        private int[] _GetVisibleRowsIdArray(int rowIndexFirst, int rowCount)
-        {
-            return null;
-        }
-        /// <summary>
-        /// Datový zdroj typu Array
-        /// </summary>
-        private Array _SourceArray;
+        private System.Data.DataTable __SourceDataTable;
         #endregion
         #region Práce s konkrétním typem - List
         /// <summary>
@@ -1318,15 +1622,15 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         private void _SetSourceList(IList<object> list)
         {
             _SetSourceNull();
-            _Source = list;
-            _SourceList = list;
-            _CurrentSourceType = SourceType.List;
+            __Source = list;
+            __SourceList = list;
+            __CurrentSourceType = SourceType.List;
         }
         /// <summary>
         /// Vrátí počet řádků List
         /// </summary>
         /// <returns></returns>
-        private int _GetRowCountList(DxDataFormPartId partId) { return (_SourceList?.Count ?? 0); }
+        private int _GetRowCountList(DxDataFormPartId partId) { return (__SourceList?.Count ?? 0); }
         /// <summary>
         /// Vrátí text prvku ze zdroje typu List
         /// </summary>
@@ -1350,14 +1654,14 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Datový zdroj typu List
         /// </summary>
-        private IList<object> _SourceList;
+        private IList<object> __SourceList;
         #endregion
         #region Práce s konkrétním typem - Record
         /// <summary>
         /// Vrátí počet řádků Record
         /// </summary>
         /// <returns></returns>
-        private int _GetRowCountRecord(DxDataFormPartId partId) { return (_SourceArray?.Length ?? 0); }
+        private int _GetRowCountRecord(DxDataFormPartId partId) { return 0; }
         /// <summary>
         /// Vrátí text prvku ze zdroje typu Record
         /// </summary>
@@ -1381,1563 +1685,12 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Datový zdroj typu Record
         /// </summary>
-        private object _SourceRecord;
+        private object __SourceRecord;
         #endregion
     }
     #endregion
-    #region class DxDataFormPanel : Jeden panel dataformu: reprezentuje základní panel, hostuje v sobě dva ScrollBary a ContentPanel
-    /// <summary>
-    /// Jeden panel dataformu: reprezentuje základní panel zobrazující jednu plochu s daty.
-    /// Je umístěn buď přímo v <see cref="DxDataForm"/>, pak jde o DataForm bez záložek;
-    /// anebo je umístěn na stránce záložkovníku <see cref="DxTabPane"/>, pak jde o vícezáložkový DataForm.
-    /// Tuto volbu řídí <see cref="DxDataForm"/>. 
-    /// <para/>
-    /// Jeden panel <see cref="DxDataFormPanel"/> v sobě hostuje přinejmenším jeden nebo více částí <see cref="DxDataFormPart"/>.
-    /// Každá jedna část <see cref="DxDataFormPart"/> v sobě zobrazuje fyzická data, může mít / nemusí mít ScrollBary a Headery.
-    /// Tyto části mohou být vzájemně spřažené (jeden svislý Scrollbar zobrazený úplně vpravo může ovládat více částí umístěných vedle sebe = vlevo).
-    /// Přidávání a odebírání částí řídí <see cref="DxDataFormPanel"/>, stejně tak mezi ně vkládá ScrollBary a řídí jejich velikost.
-    /// <para/>
-    /// Panel <see cref="DxDataFormPanel"/> je zobrazován v <see cref="DxDataForm"/> buď v celé jeho ploše (to když DataForm obsahuje jen jednu stránku),
-    /// anebo je v <see cref="DxDataForm"/> zobrazen záložkovník <see cref="DxTabPane"/>, a v každé záložce je zobrazován zdejší panel <see cref="DxDataFormPanel"/>,
-    /// obsahuje pak jen grupy jedné konkrétní stránky.
-    /// Toto řídí třída <see cref="DxDataForm"/> podle dodaných stránek a podle dynamického layoutu.
-    /// </summary>
-    internal class DxDataFormPanel : DxPanelControl
-    {
-        #region Konstruktor a vztah na DxDataForm
-        /// <summary>
-        /// Konstruktor
-        /// </summary>
-        /// <param name="dataForm"></param>
-        public DxDataFormPanel(DxDataForm dataForm)
-        {
-            _DataForm = dataForm;
 
-            this.DoubleBuffered = true;
-            this.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.Style3D;
-
-            InitializeParts();
-            InitializeGroups();
-        }
-        /// <summary>
-        /// Dispose panelu
-        /// </summary>
-        /// <param name="disposing"></param>
-        protected override void Dispose(bool disposing)
-        {
-            DisposeGroups();
-            DisposeParts();
-
-            base.Dispose(disposing);
-
-            _DataForm = null;
-        }
-        /// <summary>Vlastník - <see cref="DxDataForm"/>, ale nemusí to být Parent!</summary>
-        private DxDataForm _DataForm;
-        /// <summary>
-        /// Vlastník - <see cref="DxDataForm"/>
-        /// </summary>
-        public DxDataForm DataForm { get { return this._DataForm; } }
-        /// <summary>
-        /// Refresh celého panelu v daném režimu
-        /// </summary>
-        public void Refresh(RefreshParts refreshParts)
-        {
-            base.Refresh();
-            this._Parts.ForEachExec(p => p.Refresh(refreshParts));
-        }
-        /// <summary>
-        /// Refresh celého panelu
-        /// </summary>
-        public override void Refresh()
-        {
-            this.Refresh(RefreshParts.InvalidateControl);
-        }
-        #endregion
-        #region Public vlastnosti
-        /// <summary>
-        /// Aktuální velikost viditelného prostoru pro DataForm, po odečtení prostoru pro ScrollBary (bez ohledu na jejich aktuální viditelnost)
-        /// </summary>
-        internal Size VisibleContentSize 
-        {
-            get 
-            {
-                Size size = this.ClientSize;
-                int hScrollSize = _RootPart.DefaultHorizontalScrollBarHeight;
-                int vScrollSize = _RootPart.DefaultVerticalScrollBarWidth;
-                return new Size(size.Width - vScrollSize, size.Height - hScrollSize);
-            }
-        }
-        /// <summary>
-        /// Stav panelu - pozice scrollbarů atd. 
-        /// Podporuje přepínání záložek - vizuálně jiný obsah, ale promítaný prostřednictvím jedné instance <see cref="DxDataFormPanel"/>.
-        /// Při čtení bude vrácen objekt obsahující aktuální stav.
-        /// Při zápisu budou hodnoty z vkládaného objektu aplikovány do panelu
-        /// </summary>
-        internal DxDataFormState State
-        {
-            get
-            {
-#warning TODO musí být navázáno na pole _Parts!
-                if (_State == null)
-                    _State = new DxDataFormState();
-                return _State;
-            }
-            set
-            {
-                _State = value;
-            }
-        }
-        private DxDataFormState _State;
-        #endregion
-        #region Parts - jednotlivé části DataFormu (splitterem oddělené bloky řádků nebo sloupců), výchozí je jedna část přes celý prostor panelu
-        /// <summary>
-        /// Inicializace jednotlivých částí DataFormu 
-        /// </summary>
-        private void InitializeParts()
-        {
-            _Parts = new List<DxDataFormPart>();
-            AddPart(0, 0);
-        }
-        /// <summary>
-        /// Dispose jednotlivých částí DataFormu 
-        /// </summary>
-        private void DisposeParts()
-        { }
-        private void AddPart(int partXId, int partYId)
-        {
-            DxDataFormPartId partId = new DxDataFormPartId(partXId, partYId);
-            _RootPart = new DxDataFormPart(this, partId);
-            _Parts.Add(_RootPart);
-            _RootPart.Dock = ((_Parts.Count == 1) ? DockStyle.Fill : DockStyle.None);
-            this.Controls.Add(_RootPart);
-        }
-        /// <summary>
-        /// Pole jednotlivých částí
-        /// </summary>
-        private DxDataFormPart[] Parts { get { return _Parts.ToArray(); } }
-        /// <summary>
-        /// Kořenový Part, existuje vždy
-        /// </summary>
-        private DxDataFormPart _RootPart;
-        /// <summary>Pole jednotlivých částí</summary>
-        private List<DxDataFormPart> _Parts;
-        #endregion
-        #region Grupy a jejich Columns, jejich vkládání do prvků DxDataFormPart
-        /// <summary>
-        /// Zobrazované grupy a jejich prvky.
-        /// Po vložení této definice neproběhne automaticky refresh controlu, je tedy vhodné následně volat <see cref="Refresh()"/>.
-        /// </summary>
-        public List<DxDataFormGroup> Groups { get { return _Groups; } set { _SetGroups(value); } }
-        /// <summary>
-        /// Inicializuje pole prvků
-        /// </summary>
-        private void InitializeGroups()
-        {
-            _Groups = new List<DxDataFormGroup>();
-        }
-        /// <summary>
-        /// Vloží do sebe dané grupy a zajistí minimální potřebné refreshe
-        /// </summary>
-        /// <param name="groups"></param>
-        private void _SetGroups(List<DxDataFormGroup> groups)
-        {
-            DisposeGroups();
-            if (groups != null)
-                _Groups = groups.ToList();
-
-            Refresh(RefreshParts.AfterItemsChangedSilent);
-        }
-        
-        /// <summary>
-        /// Zahodí všechny položky o grupách a prvcích z this instance
-        /// </summary>
-        private void DisposeGroups()
-        {
-            if (_Groups != null)
-            {
-                _Groups.Clear();
-                _Groups = null;
-            }
-        }
-        /// <summary>
-        /// Počet aktuálně viditelných prvků ve všech částech dohromady
-        /// </summary>
-        internal int? VisibleCellsCount { get { return _Parts.Select(p => p.VisibleCellsCount).Sum(); } }
-        /// <summary>
-        /// Pole skupin, které v tomto panelu zobrazujeme v jeho jednotlivých částech <see cref="DxDataFormGroup"/>
-        /// </summary>
-        private List<DxDataFormGroup> _Groups;
-        #endregion
-    }
-    #endregion
-    #region class DxDataFormPart : Jedna oddělená a samostatná skupina řádků a sloupců v rámci DataFormu
-    /// <summary>
-    /// <see cref="DxDataFormPart"/> : Jedna oddělená a samostatná skupina řádků/sloupců v rámci panelu DataFormu <see cref="DxDataFormPanel"/>.
-    /// Prostor DataFormu (přesněji <see cref="DxDataFormPanel"/>) může být rozdělen na více sousedících částí = <see cref="DxDataFormPart"/>,
-    /// které zobrazují tatáž data, ale jsou nascrollovaná na jiná místa, nebo mohou mít odlišné filtry a zobrazovat tedy jiné podmnožiny řádků.
-    /// <para/>
-    /// Toto rozčlenění povoluje a řídí <see cref="DxDataFormPanel"/> jako fyzický Parent těchto částí, pokyny k rozdělení dostává od hlavního <see cref="DxDataForm"/>.
-    /// K interaktivní změně dává uživateli k dispozici vhodné Splittery.
-    /// Rozdělení provádí uživatel pomocí "tahacího" tlačítka vpravo nahoře a následného zobrazení splitteru.
-    /// Dostupnost Splitterů v jednotlivých částech v rámci <see cref="DxDataFormPanel"/> řídí <see cref="DxDataFormPanel"/>; 
-    /// Splittery jsou dostupné vždy v té krajní části v daném směru = vlevo svislý a nahoře vodorovný.
-    /// <para/>
-    /// Posouvání obsahu řídí Scrollbary, které nabízí vždy ta poslední <see cref="DxDataFormPart"/> v daném směru: svislý Scrollbar zobrazuje jen nejpravější část, 
-    /// vodorovný Scrollbar zobrazuje jen nejspodnější část.
-    /// Synchronizaci sousedních částí, které nemají svůj vlastní odpovídající Scrollbar, zajišťuje <see cref="DxDataFormPanel"/>.
-    /// <para/>
-    /// Každá jedna skupina <see cref="DxDataFormPart"/>, a skládá se z částí: RowHeader, ColumnHeader, RowFilter, Rows, SummaryRows a Footer.
-    /// Tyto části jsou jednotlivě volitelné - odlišně pro první skupinu, pro vnitřní skupiny a pro skupinu poslední.
-    /// Části Header, RowFilter jsou fixní k hornímu okraji a nescrollují;
-    /// Části Rows, SummaryRows scrollují uprostřed;
-    /// Část Footer je fixní k dolnímu okraji a nescrolluje.
-    /// Podkladový ScrollPanel <see cref="DxScrollableContent"/> dovoluje nastavit libovolné okraje kolem scrollovaného obsahu <see cref="DxScrollableContent.ContentVisualPadding"/>, 
-    /// tyto okraje jsou využívány pro zobrazení "fixních" částí (vše okolo Rows) = ColumnHeader, RowFilter, SummaryRow, RowHeader.
-    /// <para/>
-    /// Typicky Master Dataform (nazývaný v Greenu "FreeForm") má pouze jednu jedinou část <see cref="DxDataFormPart"/>, která nezobrazuje ani ColumnHeaders ani RowHeaders ani SummaryRow, a ani nenabízí rozdělovací Splittery.
-    /// DataForm používaný pro položky (nazývaný v Greenu "EditBrowse") toto rozčlenění umožňuje.
-    /// </summary>
-    internal class DxDataFormPart : DxScrollableContent
-    {
-        #region Konstruktor, vlastník, prvky, identifikátory
-        /// <summary>
-        /// Konstruktor
-        /// </summary>
-        /// <param name="dataPanel"></param>
-        /// <param name="partId"></param>
-        public DxDataFormPart(DxDataFormPanel dataPanel, DxDataFormPartId partId)
-        {
-            _DataPanel = dataPanel;
-            _PartId = partId ?? new DxDataFormPartId();
-
-            this.DoubleBuffered = true;
-            this.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder;
-
-            InitializeContentPanel();
-            InitializeGroups();
-            InitializePaint();
-            InitializeInteractivity();
-        }
-        /// <summary>
-        /// Dispose Part
-        /// </summary>
-        /// <param name="disposing"></param>
-        protected override void Dispose(bool disposing)
-        {
-            DisposeGroups();
-            DisposeContentPanel();
-
-            base.Dispose(disposing);
-
-            _DataPanel = null;
-        }
-        /// <summary>Vlastník - <see cref="DxDataFormPanel"/></summary>
-        private DxDataFormPanel _DataPanel;
-        /// <summary>ID this části</summary>
-        private DxDataFormPartId _PartId;
-        /// <summary>
-        /// Vlastník - <see cref="DxDataFormPanel"/>
-        /// </summary>
-        public DxDataFormPanel DataPanel { get { return this._DataPanel; } }
-        /// <summary>
-        /// Vlastník - <see cref="DxDataForm"/>
-        /// </summary>
-        public DxDataForm DataForm { get { return this._DataPanel.DataForm; } }
-        /// <summary>
-        /// Vzhled. Autoinicializační property. Nikdy není null. Setování null nastaví defaultní vzhled.
-        /// </summary>
-        public DxDataFormAppearance DataFormAppearance { get { return DataForm.DataFormAppearance; } }
-        /// <summary>
-        /// Vlastní data zobrazená v dataformu
-        /// </summary>
-        public DxDataFormData Data { get { return DataForm.Data; } }
-        /// <summary>
-        /// Identifikátor this části.
-        /// S tímto ID se pak dotazuje parentů (dataformu a jeho dat) na řádky, sloupce atd.
-        /// </summary>
-        public DxDataFormPartId PartId { get { return _PartId; } }
-        #endregion
-        #region ContentPanel
-        /// <summary>
-        /// Inicializuje panel <see cref="__ContentPanel"/>
-        /// </summary>
-        private void InitializeContentPanel()
-        {
-            this.__ContentPanel = new DxPanelBufferedGraphic() { Visible = true, BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder };
-            this.__ContentPanel.LogActive = this.LogActive;
-            this.__ContentPanel.Layers = BufferedLayers;                        // Tady můžu přidat další vrstvy, když budu chtít kreslit 'pod' anebo 'nad' hlavní prvky
-            this.__ContentPanel.PaintLayer += _ContentPanel_PaintLayer;         // A tady bych pak musel reagovat na kreslení přidaných vrstev...
-            this.ContentControl = this.__ContentPanel;
-
-            // TEST ONLY
-            this.VScrollBarIndicators.AddIndicator(new Int32Range(50, 100), ScrollBarIndicatorType.BigCenter, Color.DarkRed);
-            this.VScrollBarIndicators.AddIndicator(new Int32Range(500, 720), ScrollBarIndicatorType.FullSize | ScrollBarIndicatorType.OutsideGradientEffect, Color.DarkRed);
-            this.VScrollBarIndicators.AddIndicator(new Int32Range(850, 1200), ScrollBarIndicatorType.ThirdNear, Color.DarkBlue);
-            this.VScrollBarIndicators.AddIndicator(new Int32Range(1100, 1500), ScrollBarIndicatorType.HalfFar, Color.DarkGreen);
-
-            for (int i = 20; i < 2000; i += 100)
-                this.HScrollBarIndicators.AddIndicator(new Int32Range(i, i + 70), ScrollBarIndicatorType.FullSize | ScrollBarIndicatorType.InnerGradientEffect, Color.Red);
-            this.HScrollBarIndicators.ColorAlphaArea = 160;
-            this.HScrollBarIndicators.ColorAlphaThumb = 80;
-            this.HScrollBarIndicators.Effect3DRatio = 0.75f;
-        }
-        /// <summary>
-        /// Disposuje panel <see cref="__ContentPanel"/>
-        /// </summary>
-        private void DisposeContentPanel()
-        {
-            this.ContentControl = null;
-            if (this.__ContentPanel != null)
-            {
-                this.__ContentPanel.PaintLayer -= _ContentPanel_PaintLayer;
-                this.__ContentPanel.Dispose();
-                this.__ContentPanel = null;
-            }
-        }
-        /// <summary>
-        /// Panel, ve kterém se vykresluje i hostuje obsah DataFormu. Panel je <see cref="DxPanelBufferedGraphic"/>, 
-        /// ale z hlediska <see cref="DxDataForm"/> nemá žádnou funkcionalitu, ta je soustředěna do <see cref="DxDataFormPanel"/>.
-        /// </summary>
-        private DxPanelBufferedGraphic __ContentPanel;
-        #endregion
-        #region Grupy a jejich Items, viditelné grupy a viditelné itemy
-        /// <summary>
-        /// Zobrazované grupy a jejich prvky.
-        /// Po vložení této definice neproběhne automaticky refresh controlu, je tedy vhodné následně volat <see cref="Refresh(RefreshParts)"/> 
-        /// a předat v parametru požadavek <see cref="RefreshParts.InvalidateControl"/>.
-        /// </summary>
-        public List<DxDataFormGroup> Groups { get { return _GetGroups(); } set { _SetGroups(value); } }
-        /// <summary>
-        /// Inicializuje pole prvků
-        /// </summary>
-        private void InitializeGroups()
-        {
-            __VisibleItems = new List<DxDataFormColumn>();
-        }
-        /// <summary>
-        /// Metoda vrátí grupy, které se aktuálně mají zobrazovat.
-        /// Jsou to bud grupy zdejší, tedy explicitně zadané, anebo grupy společné pro celý panel <see cref="DxDataFormPanel.Groups"/>.
-        /// </summary>
-        /// <returns></returns>
-        private List<DxDataFormGroup> _GetGroups()
-        {
-            return _Groups ?? _DataPanel.Groups;
-        }
-        /// <summary>
-        /// Vloží do sebe dané grupy a zajistí minimální potřebné refreshe
-        /// </summary>
-        /// <param name="groups"></param>
-        private void _SetGroups(List<DxDataFormGroup> groups)
-        {
-            DisposeGroups();
-            if (groups != null)
-                _Groups = groups.ToList();
-            Refresh(RefreshParts.AfterItemsChangedSilent);
-        }
-        /// <summary>
-        /// Metoda projde aktuální grupy a vypočítá velikost prostoru, do kterého se vejde souhrn jejich aktuálních souřadnic.
-        /// Jde tedy o velikost potřebnou pro jeden řádek dat.
-        /// Velikost je uložena do <see cref="_GroupsTotalSize"/>.
-        /// </summary>
-        /// <returns></returns>
-        private void _CalculateGroupsTotalCurrentSize()
-        {
-            _GroupsTotalSize = Size.Empty;
-            var groups = Groups;
-            if (groups == null) return;
-            Rectangle bounds = groups.Select(g => g.CurrentGroupBounds).SummaryVisibleRectangle() ?? Rectangle.Empty;
-            _GroupsTotalSize = new Size(bounds.Right, bounds.Bottom);
-        }
-        /// <summary>
-        /// Invaliduje aktuální rozměry všech grup v this objektu.
-        /// Volá se typicky po změně zoomu nebo DPI.
-        /// </summary>
-        /// <returns></returns>
-        private void _InvalidatGroupsCurrentBounds()
-        {
-            var groups = Groups;
-            groups?.ForEachExec(g => g.InvalidateBounds());
-
-            _LastCalcZoom = DxComponent.Zoom;
-            _LastCalcDeviceDpi = this.CurrentDpi;
-        }
-        /// <summary>
-        /// Připraví souhrn viditelných grup a prvků
-        /// </summary>
-        private void _PrepareVisibleGroupsItems()
-        {
-            var groups = Groups;
-            Rectangle virtualBounds = this.ContentVirtualBounds;
-            this.__VisibleGroups = groups?.Where(g => g.IsVisibleInVirtualBounds(virtualBounds)).ToList();
-            this.__VisibleItems = this.__VisibleGroups?.SelectMany(g => g.Items).Where(i => i.IsVisibleInVirtualBounds(virtualBounds)).ToList();
-        }
-        /// <summary>
-        /// Zahodí všechny položky o grupách a prvcích z this instance
-        /// </summary>
-        private void DisposeGroups()
-        {
-            if (_Groups != null)
-            {
-                _Groups.Clear();
-                _Groups = null;
-            }
-            if (__VisibleGroups != null)
-            {
-                __VisibleGroups.Clear();
-                __VisibleGroups = null;
-            }
-            if (__VisibleItems != null)
-            {
-                __VisibleItems.Clear();
-                __VisibleItems = null;
-            }
-        }
-        /// <summary>
-        /// Počet aktuálně viditelných prvků
-        /// </summary>
-        internal int? VisibleCellsCount { get { return __VisibleItems?.Count; } }
-
-        private List<DxDataFormGroup> _Groups;
-        private List<DxDataFormGroup> __VisibleGroups;
-        private List<DxDataFormColumn> __VisibleItems;
-        private Size _GroupsTotalSize;
-        #endregion
-        #region Řádky DxDataFormRow
-        /// <summary>
-        /// Metoda vypočítá velikost prostoru, do kterého se vejde souhrn všech řádků, 
-        /// když pro každý jeden řádek bude třeba prostor <see cref="_GroupsTotalSize"/>.
-        /// Jde tedy o velikost potřebnou pro celou tabulku dat.
-        /// Velikost je uložena do <see cref="_GroupsTotalSize"/>.
-        /// </summary>
-        /// <returns></returns>
-        private void _CalculateRowsTotalCurrentSize()
-        {
-            var innerSize = new Size(_GroupsTotalSize.Width, _RowCount * _RowHeight);
-            var totalSize = innerSize.Add(0, 0);
-            _RowsTotalSize = totalSize;
-        }
-        /// <summary>
-        /// Připraví souhrn viditelných řádků
-        /// </summary>
-        private void _PrepareVisibleRows()
-        {
-            Rectangle virtualBounds = this.ContentVirtualBounds;               // Rozměr se vztahuje k celé ploše datové tabulky = všechny řádky od počátku prvního do konce posledního
-            int rowCount = _RowCount;
-            int rowHeight = _RowHeight;
-
-            int rowLast = rowCount - 1;
-            int rowVisibleFirst = (virtualBounds.Y / rowHeight).Align(0, rowLast);
-            int rowVisibleLast = (virtualBounds.Bottom / rowHeight).Align(0, rowLast);
-
-            _PrepareVisibleRows(rowVisibleFirst, (rowVisibleLast - rowVisibleFirst + 1));
-
-            int visualBegin = (rowVisibleFirst * rowHeight) - virtualBounds.Y;
-            _VisibleRows.ForEachExec(r => r.ApplyVisualPosition(ref visualBegin, rowHeight));
-        }
-        /// <summary>
-        /// Zajistí, že pole <see cref="_VisibleRows"/> bude obsahovat ty řádky, které mají být viditelné, počínaje danou pozici, v daném počtu.
-        /// Pole po ukončení této metody nebude null, může být prázdné.
-        /// </summary>
-        /// <param name="rowVisibleFirst"></param>
-        /// <param name="rowVisibleCount"></param>
-        private void _PrepareVisibleRows(int rowVisibleFirst, int rowVisibleCount)
-        {
-            // Zkratka: pokud máme platné pole, a máme v něm přinejmenším požadovaný počet prvků, a na první pozici pole je požadovaný řádek, pak nic není třeba řešit:
-            List<DxDataFormRow> oldVisibleRows = _VisibleRows;
-            if (oldVisibleRows != null && oldVisibleRows.Count == rowVisibleCount && (rowVisibleCount == 0 || (oldVisibleRows.Count > 0 && oldVisibleRows[0].RowIndex == rowVisibleFirst))) return;
-
-            // Získám pole, obsahující RowId těch řádků, které mají být vidět na dané pozici (rowFirst) ++další, v daném počtu (rowCount):
-            int[] visibleRowsId = Data.GetVisibleRowsId(this.PartId, rowVisibleFirst, rowVisibleCount);
-
-            // Nejprve dosavadní řádky (pokud nejsou null): označím si v nich (hodnotou VisibleRow) ty řádky, které mají RowId odpovídající těm řádkům, které budou viditelné i nadále:
-            //  - totiž, při posunu pole o několik málo picelů nám sice proběhne tato metoda, ale většina dosud viditelných řádků bude viditelná poté,
-            //  a není třeba při každém miniposunu zahazovat kupu dat a generovat je znovu!
-            Dictionary<int, DxDataFormRow> oldVisibleRowsDict = null;
-            if (oldVisibleRows != null)
-            {
-                var rowsIdDict = visibleRowsId.CreateDictionary(i => i, true);
-                oldVisibleRows.ForEachExec(r => r.VisibleRow = rowsIdDict.ContainsKey(r.RowId));  // Stávající objekty: Visible bude (true když mají být vidět i nyní, false pro ty instance, které se mohou zahodit)
-                oldVisibleRowsDict = oldVisibleRows.CreateDictionary(r => r.RowId);
-            }
-
-            // Vytvořím nové pole, v tom pořadí, jaké bylo vráceno z Data.GetVisibleRowsId(), a postupně do něj vložím instance pro odpovídající řádek:
-            List<DxDataFormRow> newVisibleRows = new List<DxDataFormRow>();
-            int rowIndex = rowVisibleFirst;
-            foreach (var visibleRowId in visibleRowsId)
-            {
-                DxDataFormRow visibleRow = null;
-                if (oldVisibleRowsDict != null && oldVisibleRowsDict.TryGetValue(visibleRowId, out visibleRow))
-                {   // Najdeme náš starý řádek pro shodné RowId?
-                }
-                else if (oldVisibleRows != null && oldVisibleRows.TryGetFirst(r => !r.VisibleRow, out visibleRow))
-                {   // Najdeme nějaký cizí starý řádek, který nebude zapotřebí - tedy pro cizí nepotřebné RowId?
-                    visibleRow.AssignRowId(visibleRowId);
-                }
-                else
-                {   // Nemáme žadný starý řádek - ani náš, ani cizí : musíme si vygenerovat new instanci:
-                    visibleRow = new DxDataFormRow(this, DxDataFormRowType.RowData, visibleRowId);
-                }
-                visibleRow.VisibleRow = true;
-                visibleRow.RowIndex = rowIndex++;
-                newVisibleRows.Add(visibleRow);
-            }
-
-            // Pokud máme nějaké staré řádky, které nebyly použité, zahodíme je:
-            if (oldVisibleRows != null)
-                oldVisibleRows.Where(r => !r.VisibleRow).ForEachExec(r => r.Dispose());
-
-            _VisibleRows = newVisibleRows;
-        }
-        /// <summary>
-        /// Pole řádků, které jsou aktuálně ve viditelné oblasti. 
-        /// Toto pole je udržováno v metodě <see cref="_PrepareVisibleRows(int, int)"/>.
-        /// Obsahuje viditelné řádky, jejich RowId a vizuální pozici...
-        /// </summary>
-        private List<DxDataFormRow> _VisibleRows;
-        /// <summary>
-        /// Počet celkem zobrazovaných řádků, v rozmezí 0 až 2G
-        /// </summary>
-        private int _RowCount { get { int rowCount = Data.GetRowCount(this.PartId); return (rowCount < 0 ? 0 : rowCount); } }
-        /// <summary>
-        /// Výška jednoho řádku = výška všech grup <see cref="_GroupsTotalSize"/>.Height s přidáním mezery <see cref="_RowHeightSpace"/>
-        /// </summary>
-        private int _RowHeight { get { return _GroupsTotalSize.Height + _RowHeightSpace; } }
-        /// <summary>
-        /// Přídavek k výšce jednoho řádku
-        /// </summary>
-        private int _RowHeightSpace { get { return 1; } }
-        /// <summary>
-        /// Velikost prostoru pro všechny řádky
-        /// </summary>
-        private Size _RowsTotalSize;
-        #endregion
-        #region Buňky DxDataFormCell
-
-        #endregion
-        #region Řízení zobrazení jednotlivých částí
-
-        #endregion
-        #region Interaktivita
-        private void InitializeInteractivity()
-        {
-            _CurrentFocusedItem = null;
-            InitializeInteractivityKeyboard();
-            InitializeInteractivityMouse();
-        }
-        #region Keyboard a Focus
-        private void InitializeInteractivityKeyboard()
-        {
-            this._CurrentFocusedItem = null;
-
-            Control parent = this;
-            // parent = this._ContentPanel;        // Pokud chci buttony vidět abych viděl přechody focusu...
-            _FocusInButton = DxComponent.CreateDxSimpleButton(142, 5, 140, 25, parent, " Focus in...", tabStop: true);
-            _FocusInButton.TabIndex = 0;
-            _FocusOutButton = DxComponent.CreateDxSimpleButton(352, 5, 140, 25, parent, "... focus out.", tabStop: true);
-            _FocusOutButton.TabIndex = 29;
-        }
-        private DxSimpleButton _FocusInButton;
-        private DxSimpleButton _FocusOutButton;
-        private DxDataFormColumn _CurrentFocusedItem;
-        #endregion
-        #region Myš - Move, Down
-        private void InitializeInteractivityMouse()
-        {
-            this.__CurrentOnMouseItem = null;
-            this.__CurrentOnMouseControlSet = null;
-            this.__CurrentOnMouseControl = null;
-            this.__ContentPanel.MouseLeave += _ContentPanel_MouseLeave;
-            this.__ContentPanel.MouseMove += _ContentPanel_MouseMove;
-            this.__ContentPanel.MouseDown += _ContentPanel_MouseDown;
-        }
-        /// <summary>
-        /// Myš nás opustila
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void _ContentPanel_MouseLeave(object sender, EventArgs e)
-        {
-            Point absoluteLocation = MousePosition;
-            Point location = this.PointToClient(absoluteLocation);
-            if (!this.__ContentPanel.Bounds.Contains(location))
-                DetectMouseChangeForPoint(null);
-            else
-                DetectMouseChangeForPoint(this.__ContentPanel.PointToClient(absoluteLocation));
-        }
-        /// <summary>
-        /// Myš se pohybuje po Content panelu
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void _ContentPanel_MouseMove(object sender, MouseEventArgs e)
-        {
-            if (e.Button == MouseButtons.None)
-                DetectMouseChangeForPoint(e.Location);
-        }
-        /// <summary>
-        /// Myš klikla v Content panelu = nejspíš bychom měli zařídit přípravu prvku a předání focusu ondoň
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void _ContentPanel_MouseDown(object sender, MouseEventArgs e)
-        {
-            // toto je nonsens, protože když pod myší existuje prvek, pak MouseDown přejde ondoň nativně, a nikoli z _ContentPanel_MouseDown.
-            // Sem se dostanu jen tehdy, když myš klikne na panelu _ContentPanel v místě, kde není žádný prvek.
-        }
-        /// <summary>
-        /// Vyhledá prvek nacházející se pod aktuální souřadnicí myši a zajistí pro prvky <see cref="MouseLeaveItem(bool)"/> a <see cref="MouseEnterItem(DxDataFormColumn)"/>.
-        /// </summary>
-        private void DetectMouseChangeForCurrentPoint()
-        {
-            Point absoluteLocation = Control.MousePosition;
-            Point relativeLocation = __ContentPanel.PointToClient(absoluteLocation);
-            DetectMouseChangeForPoint(relativeLocation);
-        }
-        /// <summary>
-        /// Vyhledá prvek nacházející se pod danou souřadnicí myši a zajistí pro prvky <see cref="MouseLeaveItem(bool)"/> a <see cref="MouseEnterItem(DxDataFormColumn)"/>.
-        /// </summary>
-        /// <param name="location">Souřadnice myši relativně k controlu <see cref="__ContentPanel"/> = reálný parent prvků</param>
-        private void DetectMouseChangeForPoint(Point? location)
-        {
-            DxBufferedLayer invalidateLayers = DxBufferedLayer.None;
-            DetectMouseChangeGroupForPoint(location, ref invalidateLayers);
-            DetectMouseChangeItemForPoint(location, ref invalidateLayers);
-            if (invalidateLayers != DxBufferedLayer.None)
-                this.__ContentPanel.InvalidateLayers(invalidateLayers);
-        }
-        /// <summary>
-        /// Detekuje aktuální grupu pod danou souřadnicí, detekuje změny (Leave a Enter) a udržuje v proměnné <see cref="__CurrentOnMouseGroup"/> aktuální grupu na dané souřadnici
-        /// </summary>
-        /// <param name="location"></param>
-        /// <param name="invalidateLayers"></param>
-        private void DetectMouseChangeGroupForPoint(Point? location, ref DxBufferedLayer invalidateLayers)
-        {
-            if (__VisibleGroups == null) return;
-
-            DxDataFormGroup oldGroup = __CurrentOnMouseGroup;
-            DxDataFormGroup newGroup = null;
-            bool oldExists = (oldGroup != null);
-            bool newExists = location.HasValue && __VisibleGroups.TryGetLast(i => i.IsVisibleOnPoint(location.Value), out newGroup);
-
-            bool isMouseLeave = (oldExists && (!newExists || (newExists && !Object.ReferenceEquals(oldGroup, newGroup))));
-            if (isMouseLeave)
-                MouseLeaveGroup();
-
-            bool isMouseEnter = (newExists && (!oldExists || (oldExists && !Object.ReferenceEquals(oldGroup, newGroup))));
-            if (isMouseEnter)
-                MouseEnterGroup(newGroup);
-
-            if (isMouseLeave || isMouseEnter)
-                invalidateLayers |= DxBufferedLayer.MainLayer;
-        }
-        /// <summary>
-        /// Je voláno při příchodu myši na danou grupu.
-        /// </summary>
-        /// <param name="group"></param>
-        private void MouseEnterGroup(DxDataFormGroup group)
-        {
-            __CurrentOnMouseGroup = group;
-        }
-        /// <summary>
-        /// Je voláno při opuštění myši z aktuální grupy.
-        /// </summary>
-        private void MouseLeaveGroup()
-        {
-            __CurrentOnMouseGroup = null;
-        }
-        /// <summary>
-        /// Grupa aktuálně se nacházející pod myší
-        /// </summary>
-        private DxDataFormGroup __CurrentOnMouseGroup;
-        /// <summary>
-        /// Detekuje aktuální prvek pod danou souřadnicí, detekuje změny (Leave a Enter) a udržuje v proměnné <see cref="__CurrentOnMouseItem"/> aktuální prvek na dané souřadnici
-        /// </summary>
-        /// <param name="location"></param>
-        /// <param name="invalidateLayers"></param>
-        private void DetectMouseChangeItemForPoint(Point? location, ref DxBufferedLayer invalidateLayers)
-        {
-            if (__VisibleItems == null) return;
-
-            DxDataFormColumn oldItem = __CurrentOnMouseItem;
-            DxDataFormColumn newItem = null;
-            bool oldExists = (oldItem != null);
-            bool newExists = location.HasValue && __VisibleItems.TryGetLast(i => i.IsVisibleOnPoint(location.Value), out newItem);
-
-            bool isMouseLeave = (oldExists && (!newExists || (newExists && !Object.ReferenceEquals(oldItem, newItem))));
-            if (isMouseLeave)
-                MouseLeaveItem();
-
-            bool isMouseEnter = (newExists && (!oldExists || (oldExists && !Object.ReferenceEquals(oldItem, newItem))));
-            if (isMouseEnter)
-                MouseEnterItem(newItem);
-
-            if (isMouseLeave || isMouseEnter)
-                invalidateLayers |= DxBufferedLayer.Overlay;
-        }
-        /// <summary>
-        /// Je voláno při příchodu myši na daný prvek.
-        /// </summary>
-        /// <param name="item"></param>
-        private void MouseEnterItem(DxDataFormColumn item)
-        {
-            if (item.VisibleBounds.HasValue)
-            {
-                __CurrentOnMouseItem = item;
-                __CurrentOnMouseControlSet = DataForm.GetControlSet(item);
-                __CurrentOnMouseControl = __CurrentOnMouseControlSet.GetControlForMouse(item, this.__ContentPanel);
-                if (!__ContentPanel.IsPaintLayersInProgress)
-                {   // V době, kdy probíhá proces Paint, NEBUDU provádět ScrollToBounds:
-                    //  Ono k tomu v reálu nedochází - Scroll standardně proběhne při KeyEnter (anebo ruční ScrollBar). To jen při testu provádím MouseMove => ScrollToBounds!
-                    bool isScrolled = false;     // this.ScrollToBounds(item.CurrentBounds, null, true);
-                    if (isScrolled) Refresh(RefreshParts.AfterScroll);
-                }
-            }
-        }
-        /// <summary>
-        /// Je voláno při opuštění myši z aktuálního prvku.
-        /// </summary>
-        private void MouseLeaveItem(bool refresh = false)
-        {
-            var oldControl = __CurrentOnMouseControl;
-            if (oldControl != null)
-            {
-                oldControl.Visible = false;
-                oldControl.Location = new Point(0, -20 - oldControl.Height);
-                oldControl.Enabled = false;
-                if (oldControl is BaseControl baseControl)
-                    baseControl.SuperTip = null;
-                if (refresh)
-                    oldControl.Refresh();
-            }
-            __CurrentOnMouseItem = null;
-            __CurrentOnMouseControlSet = null;
-            __CurrentOnMouseControl = null;
-        }
-        /// <summary>
-        /// Prvek, nacházející se nyní pod myší
-        /// </summary>
-        private ControlOneInfo _CurrentItemOnMouseItem;
-        /// <summary>
-        /// Datový prvek, nacházející se nyní pod myší
-        /// </summary>
-        private DxDataFormColumn __CurrentOnMouseItem;
-        /// <summary>
-        /// Datový set popisující control, nacházející se nyní pod myší
-        /// </summary>
-        private DxDataFormControlSet __CurrentOnMouseControlSet;
-        /// <summary>
-        /// Vizuální control, nacházející se nyní pod myší
-        /// </summary>
-        private System.Windows.Forms.Control __CurrentOnMouseControl;
-        #endregion
-        #endregion
-        #region Refresh
-        /// <summary>
-        /// Provede refresh prvku
-        /// </summary>
-        public override void Refresh()
-        {
-            this.RunInGui(() => _RefreshInGui(RefreshParts.Default | RefreshParts.RefreshControl, UsedLayers));
-        }
-        /// <summary>
-        /// Provede refresh daných částí
-        /// </summary>
-        /// <param name="refreshParts"></param>
-        public void Refresh(RefreshParts refreshParts)
-        {
-            this.RunInGui(() => _RefreshInGui(refreshParts, UsedLayers));
-        }
-        /// <summary>
-        /// Provede refresh daných částí a vrstev
-        /// </summary>
-        /// <param name="refreshParts"></param>
-        /// <param name="layers"></param>
-        public void Refresh(RefreshParts refreshParts, DxBufferedLayer layers)
-        {
-            this.RunInGui(() => _RefreshInGui(refreshParts, layers));
-        }
-        /// <summary>
-        /// Refresh prováděný v GUI threadu
-        /// </summary>
-        /// <param name="refreshParts"></param>
-        /// <param name="layers"></param>
-        private void _RefreshInGui(RefreshParts refreshParts, DxBufferedLayer layers)
-        {
-            // Protože jsme v GUI threadu, nemusím řešit zamykání hodnot - nikdy nebudou dvě vlákna přistupovat k jednomu objektu současně!
-            // Spíše musíme vyřešit to, že některá část procesu Refresh způsobí požadavek na Refresh jiné části, což ale může být nějaká část před i za aktuální částí.
-
-            // Zaeviduji si úkoly ke zpracování:
-            _RefreshPartCurrentBounds |= refreshParts.HasFlag(RefreshParts.InvalidateCurrentBounds);
-            _RefreshPartContentTotalSize |= refreshParts.HasFlag(RefreshParts.RecalculateContentTotalSize);
-            _RefreshPartVisibleItems |= refreshParts.HasFlag(RefreshParts.ReloadVisibleItems);
-            _RefreshPartNativeControlsLocation |= refreshParts.HasFlag(RefreshParts.NativeControlsLocation);
-            _RefreshPartCache |= refreshParts.HasFlag(RefreshParts.InvalidateCache);
-            _RefreshPartInvalidateControl |= refreshParts.HasFlag(RefreshParts.InvalidateControl);
-            _RefreshPartRefreshControl |= refreshParts.HasFlag(RefreshParts.RefreshControl);
-            _RefreshLayers |= layers;
-
-            // Pokud právě nyní probíhá Refresh, nebudu jej provádět rekurzivně, ale nechám dřívější iteraci doběhnout a zpracovat nově požadované úkoly:
-            if (_RefreshInProgress) return;
-
-            // Nemusím řešit zámky, jsem vždy v jednom GUI threadu a nemusím tedy mít obavy z mezivláknové změny hodnot!
-            _RefreshInProgress = true;
-            try
-            {
-                while (true)
-                {
-                    // Autodetekce dalších požadavků:
-                    _RefreshPartsAutoDetect();
-
-                    // Pokud nebude co dělat, skončíme:
-                    bool doAny = _RefreshPartCurrentBounds || _RefreshPartContentTotalSize || _RefreshPartVisibleItems || _RefreshPartNativeControlsLocation ||
-                                 _RefreshPartCache || _RefreshPartInvalidateControl || _RefreshPartRefreshControl;
-                    if (!doAny) return;
-
-                    // Provedeme požadované akce; každá akce nejprve shodí svůj příznak (a teoreticky může nahodit jiný příznak):
-                    if (_RefreshPartCurrentBounds) _DoRefreshPartCurrentBounds();
-                    if (_RefreshPartContentTotalSize) _DoRefreshPartContentTotalSize();
-                    if (_RefreshPartVisibleItems) _DoRefreshPartVisibleItems();
-                    if (_RefreshPartNativeControlsLocation) _DoRefreshPartNativeControlsLocation();
-                    if (_RefreshPartCache) _DoRefreshPartCache();
-                    if (_RefreshPartInvalidateControl) _DoRefreshPartInvalidateControl();
-                    if (_RefreshPartRefreshControl) _DoRefreshPartRefreshControl();
-                }
-            }
-            catch (Exception exc)
-            {
-                DxComponent.LogAddException(exc);
-            }
-            finally
-            {
-                _RefreshInProgress = false;
-            }
-        }
-        /// <summary>
-        /// Refresh právě probíhá
-        /// </summary>
-        public bool IsRefreshInProgress { get { return _RefreshInProgress; } }
-        /// <summary>
-        /// Refresh právě probíhá
-        /// </summary>
-        private bool _RefreshInProgress;
-        /// <summary>
-        /// Zajistit přepočet CurrentBounds v prvcích (=provést InvalidateBounds) = provádí se po změně Zoomu a/nebo DPI
-        /// </summary>
-        private bool _RefreshPartCurrentBounds;
-        /// <summary>
-        /// Přepočítat celkovou velikost obsahu
-        /// </summary>
-        private bool _RefreshPartContentTotalSize;
-        /// <summary>
-        /// Určit aktuálně viditelné prvky
-        /// </summary>
-        private bool _RefreshPartVisibleItems;
-        /// <summary>
-        /// Vyřešit souřadnice nativních controlů, nacházejících se v Content panelu
-        /// </summary>
-        private bool _RefreshPartNativeControlsLocation;
-        /// <summary>
-        /// Resetovat cache předvykreslených controlů
-        /// </summary>
-        private bool _RefreshPartCache;
-        /// <summary>
-        /// Znovuvykreslit grafiku
-        /// </summary>
-        private bool _RefreshPartInvalidateControl;
-        /// <summary>
-        /// Explicitně vyvolat i metodu <see cref="Control.Refresh()"/>
-        /// </summary>
-        private bool _RefreshPartRefreshControl;
-        /// <summary>
-        /// Invalidovat tyto vrstvy v rámci _RefreshPartInvalidateControl
-        /// </summary>
-        private DxBufferedLayer _RefreshLayers;
-        /// <summary>
-        /// Detekuje automatické požadavky na Refresh
-        /// </summary>
-        private void _RefreshPartsAutoDetect()
-        {
-            if (!_RefreshPartCurrentBounds)
-            {
-                decimal currentZoom = DxComponent.Zoom;
-                int currentDpi = this.CurrentDpi;
-                if (_LastCalcZoom != currentZoom || _LastCalcDeviceDpi != currentDpi)
-                    _RefreshPartCurrentBounds = true;
-            }
-        }
-        /// <summary>
-        /// Provede akci Refresh, <see cref="RefreshParts.InvalidateCurrentBounds"/>
-        /// </summary>
-        private void _DoRefreshPartCurrentBounds()
-        {
-            _RefreshPartCurrentBounds = false;
-
-            _InvalidatGroupsCurrentBounds();
-        }
-        /// <summary>
-        /// Provede akci Refresh, <see cref="RefreshParts.RecalculateContentTotalSize"/>
-        /// </summary>
-        private void _DoRefreshPartContentTotalSize()
-        {
-            _RefreshPartContentTotalSize = false;
-
-            _CalculateGroupsTotalCurrentSize();
-            _CalculateRowsTotalCurrentSize();
-
-            ContentTotalSize = _RowsTotalSize;
-        }
-        /// <summary>
-        /// Provede akci Refresh, <see cref="RefreshParts.ReloadVisibleItems"/>
-        /// </summary>
-        private void _DoRefreshPartVisibleItems()
-        {
-            _RefreshPartVisibleItems = false;
-
-            // Připravím soupis aktuálně viditelných prvků:
-            _PrepareVisibleRows();
-            _PrepareVisibleGroupsItems();
-        }
-        /// <summary>
-        /// Provede akci Refresh, <see cref="RefreshParts.NativeControlsLocation"/>
-        /// </summary>
-        private void _DoRefreshPartNativeControlsLocation()
-        {
-            _RefreshPartNativeControlsLocation = false;
-
-            // Po změně viditelných prvků je třeba provést MouseLeave = prvek pod myší už není ten, co býval:
-            this.MouseLeaveItem(true);
-
-            // A zajistit, že po vykreslení prvků bude aktivován prvek, který se nachází pod myší:
-            // Až po vykreslení proto, že proces vykreslení určí aktuální viditelné souřadnice prvků!
-            this._AfterPaintSearchOnMouseItem = true;
-        }
-        /// <summary>
-        /// Provede akci Refresh, <see cref="RefreshParts.InvalidateCache"/>
-        /// </summary>
-        private void _DoRefreshPartCache()
-        {
-            _RefreshPartCache = false;
-
-            DataForm.ImageCacheInvalidate();
-        }
-        /// <summary>
-        /// Provede akci Refresh, <see cref="RefreshParts.InvalidateControl"/>
-        /// </summary>
-        private void _DoRefreshPartInvalidateControl()
-        {
-            _RefreshPartInvalidateControl = false;
-
-            var layers = this._RefreshLayers;
-            if (layers != DxBufferedLayer.None)
-                this.__ContentPanel.InvalidateLayers(layers);
-            this._RefreshLayers = DxBufferedLayer.None;
-        }
-        /// <summary>
-        /// Provede akci Refresh, <see cref="RefreshParts.RefreshControl"/>
-        /// </summary>
-        private void _DoRefreshPartRefreshControl()
-        {
-            _RefreshPartRefreshControl = false;
-
-            base.Refresh();
-        }
-        /// <summary>
-        /// Po změně DPI je třeba provést kompletní refresh (souřadnice, cache, atd)
-        /// </summary>
-        protected override void OnCurrentDpiChanged()
-        {
-            base.OnCurrentDpiChanged();
-            Refresh(RefreshParts.All);
-        }
-        /// <summary>
-        /// Je vyvoláno po změně DPI, po změně Zoomu a po změně skinu. Volá se po přepočtu layoutu.
-        /// Může vést k invalidaci interních dat v <see cref="DxScrollableContent.ContentControl"/>.
-        /// </summary>
-        protected override void OnInvalidateContentAfter()
-        {
-            base.OnInvalidateContentAfter();
-            Refresh(RefreshParts.All);
-        }
-        /// <summary>
-        /// Je voláno pokud dojde ke změně hodnoty <see cref="DxScrollableContent.ContentVirtualBounds"/>, před eventem <see cref="DxScrollableContent.ContentVirtualBoundsChanged"/>
-        /// </summary>
-        protected override void OnContentVirtualBoundsChanged()
-        {
-            base.OnContentVirtualBoundsChanged();
-            State.ContentVirtualLocation = this.ContentVirtualLocation;
-
-            Refresh(RefreshParts.AfterScroll);
-        }
-        /// <summary>
-        /// Systémový Zoom, po který byly posledně přepočteny CurrentBounds
-        /// </summary>
-        private decimal _LastCalcZoom;
-        /// <summary>
-        /// DPI this controlu, po který byly posledně přepočteny CurrentBounds
-        /// </summary>
-        private int _LastCalcDeviceDpi;
-        #endregion
-        #region Vykreslení obsahu panelu
-        /// <summary>
-        /// Inicializace kreslení
-        /// </summary>
-        private void InitializePaint()
-        {
-            _AfterPaintSearchOnMouseItem = false;
-            _PaintingItems = false;
-        }
-        /// <summary>
-        /// ContentPanel chce vykreslit některou vrstvu
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="args"></param>
-        private void _ContentPanel_PaintLayer(object sender, DxBufferedGraphicPaintArgs args)
-        {
-            switch (args.LayerId)
-            {
-                case DxBufferedLayer.AppBackground:
-                    PaintContentAppBackground(args);
-                    break;
-                case DxBufferedLayer.MainLayer:
-                    PaintContentMainLayer(args);
-                    break;
-                case DxBufferedLayer.Overlay:
-                    PaintContentOverlay(args);
-                    break;
-            }
-        }
-        /// <summary>
-        /// Metoda zajistí vykreslení aplikačního pozadí (okraj aktivních prvků)
-        /// </summary>
-        /// <param name="e"></param>
-        private void PaintContentAppBackground(DxBufferedGraphicPaintArgs e)
-        {
-            return;
-
-            bool isPainted = false;
-
-            // _VisibleGroups.ForEachExec(g => PaintGroupStandard(g, visibleOrigin, e));
-
-            var mouseControl = __CurrentOnMouseControl;
-            var mouseItem = __CurrentOnMouseItem;
-            if (mouseControl != null && mouseItem != null)
-            {
-                var indicators = mouseItem.IItem.Indicators;
-                bool isThin = indicators.HasFlag(DataFormColumnIndicatorType.MouseOverThin);
-                bool isBold = indicators.HasFlag(DataFormColumnIndicatorType.MouseOverBold);
-                if (isThin || isBold)
-                {
-                    Color color = DataFormAppearance.OnMouseIndicatorColor;
-                    PaintItemIndicator(e, mouseControl.Bounds, color, isBold, ref isPainted);
-                }
-            }
-
-            //  Specifikum bufferované grafiky:
-            // - pokud do konkrétní vrstvy jednou něco vepíšu, zůstane to tam (až do nějakého většího refreshe).
-            // - pokud v procesu PaintLayer do předaného argumentu do e.Graphics nic nevepíšu, znamená to "beze změny".
-            // - pokud tedy nyní nemám žádný control k vykreslení, ale posledně jsem něco vykreslil, měl bych grafiku smazat:
-            // - k tomu používám e.LayerUserData
-            bool oldPainted = (e.LayerUserData is bool && (bool)e.LayerUserData);
-            if (oldPainted && !isPainted)
-                e.UseBlankGraphics();
-            e.LayerUserData = isPainted;
-        }
-        /// <summary>
-        /// Zajistí hlavní vykreslení obsahu - grupy a prvky
-        /// </summary>
-        /// <param name="e"></param>
-        private void PaintContentMainLayer(DxBufferedGraphicPaintArgs e)
-        {
-            bool afterPaintSearchActiveItem = _AfterPaintSearchOnMouseItem;
-            _AfterPaintSearchOnMouseItem = false;
-            DataForm.ImagePaintStart();
-            OnPaintContentStandard(e);
-            DataForm.ImagePaintDone();
-            if (afterPaintSearchActiveItem)
-                DetectMouseChangeForCurrentPoint();
-        }
-        /// <summary>
-        /// Metoda provede standardní vykreslení grup a prvků
-        /// </summary>
-        /// <param name="e"></param>
-        private void OnPaintContentStandard(DxBufferedGraphicPaintArgs e)
-        {
-            var startTime = DxComponent.LogTimeCurrent;
-            try
-            {
-                _PaintingItems = true;
-                Point visibleOrigin = this.ContentVirtualLocation;
-                __VisibleGroups.ForEachExec(g => PaintGroupStandard(g, visibleOrigin, e));
-                __VisibleItems.ForEachExec(i => PaintItemStandard(i, visibleOrigin, e));
-            }
-            finally
-            {
-                _PaintingItems = false;
-            }
-            DxComponent.LogAddLineTime($"DxDataForm Paint Standard() Items: {__VisibleItems?.Count}; Time: {DxComponent.LogTokenTimeMilisec}", startTime);
-        }
-        /// <summary>
-        /// Provede vykreslení jedné dané grupy
-        /// </summary>
-        /// <param name="group"></param>
-        /// <param name="visibleOrigin"></param>
-        /// <param name="e"></param>
-        private void PaintGroupStandard(DxDataFormGroup group, Point visibleOrigin, DxBufferedGraphicPaintArgs e)
-        {
-            var bounds = group.CurrentGroupBounds;
-            Point location = bounds.Location.Sub(visibleOrigin);
-            group.VisibleGroupBounds = new Rectangle(location, bounds.Size);
-            bool onMouse = Object.ReferenceEquals(group, __CurrentOnMouseGroup);
-            group.PaintGroup(e, onMouse, false);
-        }
-        /// <summary>
-        /// Provede vykreslení jednoho daného prvku
-        /// </summary>
-        /// <param name="item"></param>
-        /// <param name="visibleOrigin"></param>
-        /// <param name="e"></param>
-        private void PaintItemStandard(DxDataFormColumn item, Point visibleOrigin, DxBufferedGraphicPaintArgs e)
-        {
-            var controlSet = DataForm.GetControlSet(item);
-            var bounds = item.CurrentBounds;
-            Point location = bounds.Location.Sub(visibleOrigin);
-            Color? indicatorColor = GetIndicatorColor(item, out bool isBold);
-
-            // Pořadí akcí je mírně zmatené, protože:
-            // 1. Indikátor chci kreslit 'pod' obrázek controlu (Image)
-            // 2. Control ale nemusí vygenerovat obrázek (metoda CreateImage() vrátí null), pak chci vykreslit indikátor i bez existence obrázku
-            // 3. Reálná velikost obrázku (Image) nemusí odpovídat velikosti prostoru (item.CurrentBounds), protože control může mít reálně jinou výšku, než jsme mu nadiktovali my dle designu
-            // 4. Pokud tedy CreateImage vrátí obrázek, pak použijeme jeho rozměry pro vykreslení indikátoru; a pokud obrázek nevrátí, pak indikátor vykreslíme do designem určené velikosti.
-
-            Rectangle? visibleBounds = null;
-            if (controlSet.CanPaintByPainter)
-            {
-                if (item.IItem is IDataFormColumnImageText label)
-                {
-                    Control control = DataForm.GetControl(item, DxDataFormControlUseMode.Draw, null);
-                    if (control is BaseControl baseControl)
-                    {
-                        var appearance = baseControl.GetViewInfo().PaintAppearance;
-                        appearance.Font = DxComponent.ZoomToGui(appearance.Font, this.CurrentDpi);
-                        Size size = item.CurrentBounds.Size;
-                        visibleBounds = new Rectangle(location, size);
-                        appearance.DrawString(e.GraphicsCache, label.Text, visibleBounds.Value);
-                    }
-                }
-            }
-            if (!visibleBounds.HasValue && controlSet.CanPaintByImage)
-            {
-                using (var image = DataForm.CreateImage(item, e.Graphics))
-                {
-                    if (image != null)
-                    {
-                        Size size = image.Size;
-                        visibleBounds = new Rectangle(location, size);
-
-                        if (indicatorColor.HasValue)
-                            PaintItemIndicator(e, visibleBounds.Value, indicatorColor.Value, isBold);
-
-                        e.Graphics.DrawImage(image, location);
-                    }
-                }
-            }
-
-            if (!visibleBounds.HasValue)
-            {   // Když nebyl získán Image pro control, pak velikost prostoru převezmeme dle designu.
-                // Značí to ale, že dosud nebyl vykreslen Indicator, ten se kreslil "pod obrázek" ale "podle jeho velikosti".
-                visibleBounds = new Rectangle(location, bounds.Size);
-                if (indicatorColor.HasValue)
-                    PaintItemIndicator(e, visibleBounds.Value, indicatorColor.Value, isBold);
-            }
-
-            item.VisibleBounds = visibleBounds;
-        }
-        private void PaintContentOverlay(DxBufferedGraphicPaintArgs e)
-        {
-            bool isPainted = false;
-
-            var mouseControl = __CurrentOnMouseControl;
-            var mouseItem = __CurrentOnMouseItem;
-            if (mouseControl != null && mouseItem != null)
-            {
-                var indicators = mouseItem.IItem.Indicators;
-                bool isThin = indicators.HasFlag(DataFormColumnIndicatorType.MouseOverThin);
-                bool isBold = indicators.HasFlag(DataFormColumnIndicatorType.MouseOverBold);
-                if (isThin || isBold)
-                {
-                    Color color = DataFormAppearance.OnMouseIndicatorColor;
-                    PaintItemIndicator(e, mouseControl.Bounds, color, isBold, ref isPainted);
-                }
-            }
-
-            //  Specifikum bufferované grafiky:
-            // - pokud do konkrétní vrstvy jednou něco vepíšu, zůstane to tam (až do nějakého většího refreshe).
-            // - pokud v procesu PaintLayer do předaného argumentu do e.Graphics nic nevepíšu, znamená to "beze změny".
-            // - pokud tedy nyní nemám žádný control k vykreslení, ale posledně jsem něco vykreslil, měl bych grafiku smazat:
-            // - k tomu používám e.LayerUserData
-            bool oldPainted = (e.LayerUserData is bool && (bool)e.LayerUserData);
-            if (oldPainted && !isPainted)
-                e.UseBlankGraphics();
-            e.LayerUserData = isPainted;
-        }
-        /// <summary>
-        /// Metoda vrátí barvu, kterou se má vykreslit indikátor pro daný prvek
-        /// </summary>
-        /// <param name="item"></param>
-        /// <param name="isBold"></param>
-        /// <returns></returns>
-        private Color? GetIndicatorColor(DxDataFormColumn item, out bool isBold)
-        {
-            isBold = false;
-            if (item == null) return null;
-
-            var indicators = item.IItem.Indicators;
-            bool itemIndicatorsVisible = DataForm.ItemIndicatorsVisible;
-            var appearance = DataFormAppearance;
-
-            Color? focusColor = null;             // Pokud prvek má focus, pak zde bude barva orámování focusu
-
-            Color? statusColor = null;
-            if (item.IItem.IndicatorColor.HasValue)
-            {   // Zadání barvy IndicatorColor potlačí všechny ostatní příznaky indikátorů:
-                if (IsIndicatorActive(indicators, itemIndicatorsVisible, DataFormColumnIndicatorType.IndicatorColorAllwaysBold, DataFormColumnIndicatorType.IndicatorColorOnDemandBold, DataFormColumnIndicatorType.IndicatorColorAllwaysThin, DataFormColumnIndicatorType.IndicatorColorOnDemandThin, ref isBold))
-                    statusColor = item.IItem.IndicatorColor.Value;
-            }
-            else
-            {
-                if (IsIndicatorActive(indicators, itemIndicatorsVisible, DataFormColumnIndicatorType.ErrorAllwaysBold, DataFormColumnIndicatorType.ErrorOnDemandBold, DataFormColumnIndicatorType.ErrorAllwaysThin, DataFormColumnIndicatorType.ErrorOnDemandThin, ref isBold))
-                    statusColor = appearance.ErrorIndicatorColor;
-                else if (IsIndicatorActive(indicators, itemIndicatorsVisible, DataFormColumnIndicatorType.WarningAllwaysBold, DataFormColumnIndicatorType.WarningOnDemandBold, DataFormColumnIndicatorType.WarningAllwaysThin, DataFormColumnIndicatorType.WarningOnDemandThin, ref isBold))
-                    statusColor = appearance.WarningIndicatorColor;
-                else if (IsIndicatorActive(indicators, itemIndicatorsVisible, DataFormColumnIndicatorType.CorrectAllwaysBold, DataFormColumnIndicatorType.CorrectOnDemandBold, DataFormColumnIndicatorType.CorrectAllwaysThin, DataFormColumnIndicatorType.CorrectOnDemandThin, ref isBold))
-                    statusColor = appearance.CorrectIndicatorColor;
-                else if (IsIndicatorActive(indicators, itemIndicatorsVisible, DataFormColumnIndicatorType.RequiredAllwaysBold, DataFormColumnIndicatorType.RequiredOnDemandBold, DataFormColumnIndicatorType.RequiredAllwaysThin, DataFormColumnIndicatorType.RequiredOnDemandThin, ref isBold))
-                    statusColor = appearance.RequiredIndicatorColor;
-            }
-
-            bool hasFocus = focusColor.HasValue;
-            bool hasStatus = statusColor.HasValue;
-            // Pokud bych měl souběh obou barev (focus i status), pak výsledná barva bude Morph (70% status + 30% focus)
-            Color? resultColor = ((hasFocus && hasStatus) ? (Color?)statusColor.Value.Morph(focusColor.Value, 0.70f) :
-                                 (hasFocus ? focusColor :
-                                 (hasStatus ? statusColor : (Color?)null)));
-
-            return resultColor;
-        }
-        /// <summary>
-        /// Metoda určí, zda indikátor prvku (<paramref name="indicators"/>) vyhovuje některým zadaným hodnotám a vrátí true pokud ano.
-        /// </summary>
-        /// <param name="indicators"></param>
-        /// <param name="itemIndicatorsVisible"></param>
-        /// <param name="allwaysBold"></param>
-        /// <param name="onDemandBold"></param>
-        /// <param name="alwaysThin"></param>
-        /// <param name="onDemandThin"></param>
-        /// <param name="isBold"></param>
-        /// <returns></returns>
-        private bool IsIndicatorActive(DataFormColumnIndicatorType indicators, bool itemIndicatorsVisible,
-            DataFormColumnIndicatorType allwaysBold, DataFormColumnIndicatorType onDemandBold, DataFormColumnIndicatorType alwaysThin, DataFormColumnIndicatorType onDemandThin,
-            ref bool isBold)
-        {
-            if (indicators.HasFlag(allwaysBold) || (itemIndicatorsVisible && indicators.HasFlag(onDemandBold)))
-            {
-                isBold = true;
-                return true;
-            }
-            if (indicators.HasFlag(alwaysThin) || (itemIndicatorsVisible && indicators.HasFlag(onDemandThin)))
-                return true;
-            return false;
-        }
-        /// <summary>
-        /// Zajistí vykreslení slabého orámování (prozáření okrajů) pro daný prostor (prvek) danou barvou.
-        /// </summary>
-        /// <param name="e"></param>
-        /// <param name="bounds"></param>
-        /// <param name="color"></param>
-        /// <param name="isBold"></param>
-        private void PaintItemIndicator(DxBufferedGraphicPaintArgs e, Rectangle bounds, Color color, bool isBold)
-        {
-            bool isPainted = false;
-            PaintItemIndicator(e, bounds, color, isBold, ref isPainted);
-        }
-        /// <summary>
-        /// Zajistí vykreslení slabého orámování (prozáření okrajů) pro daný prostor (prvek) danou barvou.
-        /// </summary>
-        /// <param name="e"></param>
-        /// <param name="bounds"></param>
-        /// <param name="color"></param>
-        /// <param name="isBold"></param>
-        /// <param name="isPainted"></param>
-        private void PaintItemIndicator(DxBufferedGraphicPaintArgs e, Rectangle bounds, Color color, bool isBold, ref bool isPainted)
-        {
-            // Tohle je vlastnost Drawing světa: pokud control má šířku 100, tak na pixelu 100 už není kreslen on ale to za ním...:
-            bounds.Width--;
-            bounds.Height--;
-
-            // Kontrola získání barvy pozadí:
-            //  var bgc = DxComponent.GetSkinColor(SkinElementColor.Control_PanelBackColor);
-            //  var bgc1 = DxComponent.GetSkinColor(SkinElementColor.CommonSkins_Control);
-            //  if (bgc != bgc1)
-            //  { }
-
-            if (isBold)
-            {
-                e.Graphics.DrawRectangle(DxComponent.PaintGetPen(color, 48), bounds.Enlarge(3));
-                e.Graphics.DrawRectangle(DxComponent.PaintGetPen(color, 106), bounds.Enlarge(2));
-                e.Graphics.DrawRectangle(DxComponent.PaintGetPen(color, 160), bounds.Enlarge(1));
-            }
-            else
-            {
-                e.Graphics.DrawRectangle(DxComponent.PaintGetPen(color, 48), bounds.Enlarge(2));
-                e.Graphics.DrawRectangle(DxComponent.PaintGetPen(color, 80), bounds.Enlarge(1));
-            }
-            isPainted = true;
-        }
-        /// <summary>
-        /// Pole jednotlivých vrstev bufferované grafiky
-        /// </summary>
-        private static DxBufferedLayer[] BufferedLayers { get { return new DxBufferedLayer[] { DxBufferedLayer.AppBackground, DxBufferedLayer.MainLayer, DxBufferedLayer.Overlay }; } }
-        /// <summary>
-        /// Souhrn vrstev použitých v this controlu, používá se při invalidaci všech vrstev
-        /// </summary>
-        private static DxBufferedLayer UsedLayers { get { return DxBufferedLayer.AppBackground | DxBufferedLayer.MainLayer | DxBufferedLayer.Overlay; } }
-        /// <summary>
-        /// Příznak, že po dokončení vykreslení standardní vrstvy máme najít aktivní prvek na aktuální souřadnici myši a případně jej aktivovat.
-        /// Příznak je nastaven po scrollu, protože původní prvek pod myší nám "ujel jinam" a nyní pod myší může být narolovaný jiný aktivní prvek.
-        /// </summary>
-        private bool _AfterPaintSearchOnMouseItem;
-        private bool _PaintingItems = false;
-
-        #endregion
-        #region Fyzické controly - tvorba, správa, vykreslení bitmapy skrze control
-        /// <summary>
-        /// Kompletní informace o jednom prvku: index řádku, deklarace, control set a fyzický control
-        /// </summary>
-        private class ControlOneInfo
-        {
-            /// <summary>
-            /// Řádek
-            /// </summary>
-            public int RowIndex;
-            /// <summary>
-            /// Datový prvek, nacházející se nyní pod myší
-            /// </summary>
-            public DxDataFormColumn Item;
-            /// <summary>
-            /// Datový set popisující control, nacházející se nyní pod myší
-            /// </summary>
-            public DxDataFormControlSet ControlSet;
-            /// <summary>
-            /// Vizuální control, nacházející se nyní pod myší
-            /// </summary>
-            public Control Control;
-        }
-        #endregion
-        #region Stav panelu - umožní uložit aktuální stav do objektu, a v budoucnu tento stav jej restorovat
-        /// <summary>
-        /// Stav panelu - pozice scrollbarů atd. 
-        /// Podporuje přepínání záložek - vizuálně jiný obsah, ale promítaný prostřednictvím jedné instance <see cref="DxDataFormPanel"/>.
-        /// Při čtení bude vrácen objekt obsahující aktuální stav.
-        /// Při zápisu budou hodnoty z vkládaného objektu aplikovány do panelu
-        /// </summary>
-        internal DxDataFormState State
-        {
-            get
-            {
-                if (_State == null)
-                    _State = new DxDataFormState();
-                _FillStateFromPanel();
-                return _State;
-            }
-            set
-            {
-                _State = value;
-                _ApplyStateToPanel();
-            }
-        }
-        /// <summary>Stav panelu - pozice scrollbarů atd. </summary>
-        private DxDataFormState _State;
-        /// <summary>
-        /// Klíčové hodnoty z this panelu uloží do objektu <see cref="_State"/>.
-        /// </summary>
-        private void _FillStateFromPanel()
-        {
-            if (_State == null) return;
-            _State.ContentVirtualLocation = this.ContentVirtualLocation;
-        }
-        /// <summary>
-        /// Z objektu <see cref="_State"/> opíše klíčové hodnoty do this panelu
-        /// </summary>
-        private void _ApplyStateToPanel()
-        {
-            this.ContentVirtualLocation = _State?.ContentVirtualLocation ?? Point.Empty;
-        }
-        #endregion
-    }
-    /// <summary>
-    /// Identifikátor jedné konkrétní části <see cref="DxDataFormPart"/>.
-    /// Hodnoty <see cref="PartXId"/> i <see cref="PartYId"/> lze za běhu měnit, protože instance lze za dobu života přesouvat (přidávat / odebírat) 
-    /// a tím se mění pozice části <see cref="DxDataFormPart"/>.
-    /// </summary>
-    internal class DxDataFormPartId
-    {
-        /// <summary>
-        /// Konstruktor
-        /// </summary>
-        public DxDataFormPartId() { }
-        /// <summary>
-        /// Konstruktor s danými hodnotami
-        /// </summary>
-        /// <param name="partXId"></param>
-        /// <param name="partYId"></param>
-        public DxDataFormPartId(int partXId, int partYId)
-        {
-            PartXId = partXId;
-            PartYId = partYId;
-        }
-        /// <summary>
-        /// Vizualizace
-        /// </summary>
-        /// <returns></returns>
-        public override string ToString()
-        {
-            return $"PartId: X={PartXId}; Y={PartYId}";
-        }
-        /// <summary>
-        /// Identifikátor this části ve směru X = vodorovném = sloupce.
-        /// Výchozí část má ID = 0; pokud se svislým splitterem rozdělí na dvě, pak část vpravo bude mít <see cref="PartXId"/> = 1, atd.
-        /// S tímto ID se pak dotazuje parentů (dataformu a jeho dat) na řádky, sloupce atd.
-        /// </summary>
-        public int PartXId { get; set; }
-        /// <summary>
-        /// Identifikátor this části ve směru Y = vodorovném = řádky.
-        /// Výchozí část má ID = 0; pokud se vodorovným splitterem rozdělí na dvě, pak část dole bude mít <see cref="PartYId"/> = 1, atd.
-        /// S tímto ID se pak dotazuje parentů (dataformu a jeho dat) na řádky, sloupce atd.
-        /// </summary>
-        public int PartYId { get; set; }
-    }
-    #endregion
-    #region class DxDataFormRow : Jeden vizuální řádek v rámci DxDataFormRowBand
-    /// <summary>
-    /// DxDataFormRow : Jeden vizuální řádek v rámci DxDataFormRowBand
-    /// </summary>
-    internal class DxDataFormRow : IDisposable
-    {
-        #region Konstruktor, vlastník, prvky
-        /// <summary>
-        /// Konstruktor
-        /// </summary>
-        /// <param name="rowBand"></param>
-        /// <param name="rowType"></param>
-        /// <param name="rowId"></param>
-        public DxDataFormRow(DxDataFormPart rowBand, DxDataFormRowType rowType, int rowId)
-        {
-            _RowBand = rowBand;
-            _RowType = rowType;
-            _RowId = rowId;
-        }
-        public void Dispose()
-        {
-            _RowBand = null;
-            DisposeCells();
-        }
-        /// <summary>
-        /// Vizualizace
-        /// </summary>
-        /// <returns></returns>
-        public override string ToString()
-        {
-            return $"RowType: {_RowType}; RowIndex: {RowIndex}; RowId: {_RowId}; VisualPositions: {VisualPositions}";
-        }
-        /// <summary>Vlastník - <see cref="DxDataFormPart"/></summary>
-        private DxDataFormPart _RowBand;
-        /// <summary>Typ řádku</summary>
-        private DxDataFormRowType _RowType;
-        /// <summary>ID řádku, odkazuje se do <see cref="DxDataForm"/> pro data</summary>
-        private int _RowId;
-        /// <summary>
-        /// Vlastník - <see cref="DxDataForm"/>
-        /// </summary>
-        public DxDataForm DataForm { get { return this._RowBand.DataForm; } }
-        /// <summary>
-        /// Vlastník - <see cref="DxDataFormPart"/>
-        /// </summary>
-        public DxDataFormPart RowBand { get { return this._RowBand; } }
-        /// <summary>
-        /// Typ řádku
-        /// </summary>
-        public DxDataFormRowType RowType { get { return this._RowType; } }
-        /// <summary>
-        /// ID řádku, odkazuje se do <see cref="DxDataForm"/> pro data
-        /// </summary>
-        public int RowId { get { return this._RowId; } }
-        /// <summary>
-        /// Index viditelného řádku.
-        /// V tomto pořadí jsou řádky zobrazeny.
-        /// V poli řádků musí být tato hodnota kontinuální a vzestupná, počínaje 0.
-        /// Řádky s hodnotou -1 (a jinou zápornou) nebudou zobrazeny.
-        /// </summary>
-        public int RowIndex { get; set; }
-
-        #endregion
-
-        /// <summary>
-        /// Metoda je volána tehdy, když this řádek byl dosud použit pro určitý datový řádek (stávající <see cref="RowId"/>),
-        /// ale pro něj již řádek není potřeba, ale je potřeba pro nový jiný řádek <paramref name="rowId"/>.
-        /// Tento princip šetří režii při uvolnění instance z jednoho řádku a vytváření new instance pro zobrazení jiného řádku tím,
-        /// že starou instanci použije pro jiný řádek.
-        /// </summary>
-        /// <param name="rowId"></param>
-        internal void AssignRowId(int rowId)
-        {
-            _RowId = rowId;
-            // cokoliv dalšího:
-        }
-        /// <summary>
-        /// Zahodí a uvolní buňky
-        /// </summary>
-        private void DisposeCells()
-        { }
-        /// <summary>
-        /// Do this instance vyplní hodnoty do <see cref="VisualPositions"/>, přičemž parametr <paramref name="visualBegin"/> na závěr navýší o <paramref name="visualSize"/>.
-        /// </summary>
-        /// <param name="visualBegin"></param>
-        /// <param name="visualSize"></param>
-        public void ApplyVisualPosition(ref int visualBegin, int visualSize)
-        {
-            int visualEnd = visualBegin + visualSize;
-            _VisualPositions = new Int32Range(visualBegin, visualEnd);
-            visualBegin = visualEnd;
-        }
-        /// <summary>
-        /// Řádek je viditelný?
-        /// </summary>
-        public bool VisibleRow { get { return _VisibleRow; } set { _VisibleRow = value; } }
-        private bool _VisibleRow;
-
-        /// <summary>
-        /// Umístění na ose Y; reálné pixely v rámci celého Bandu; nastavuje se pouze pro řádky 
-        /// typu <see cref="DxDataFormRowType.RowData"/> a <see cref="DxDataFormRowType.RowSummary"/> = ty jsou pohyblivé podle ScrollBaru.
-        /// 
-        /// </summary>
-        public Int32Range CurrentPositions { get { return _CurrentPositions; } set { _CurrentPositions = value; } }
-        private Int32Range _CurrentPositions;
-        /// <summary>
-        /// Umístění na ose Y; vizuální pixely v rámci celého Bandu - u typu řádku <see cref="DxDataFormRowType.RowHeader"/>,
-        /// <see cref="DxDataFormRowType.RowFilter"/> a <see cref="DxDataFormRowType.RowFooter"/> jsou permanentní (tyto řádky jsou nepohyblivé),
-        /// u řádků typu řádku <see cref="DxDataFormRowType.RowData"/> a <see cref="DxDataFormRowType.RowSummary"/> jsou pohyblivé podle ScrollBaru.
-        /// </summary>
-        public Int32Range VisualPositions { get { return _VisualPositions; } set { _VisualPositions = value; } }
-        private Int32Range _VisualPositions;
-    }
-    #endregion
-    #region class DxDataFormCell : Jedna vizuální buňka v rámci DataFormu, průnik řádku a sloupce
-    internal class DxDataFormCell
-    {
-
-    }
-    #endregion
+    // Definice vzhledu:
     #region class DxDataFormTab : Data jedné viditelné záložky. Záložka může shrnovat grupy z více stránek, pokud to layout umožní a potřebuje
     /// <summary>
     /// Data jedné viditelné záložky. Záložka může shrnovat grupy z více stránek, pokud to layout umožní a potřebuje.
@@ -2992,7 +1745,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Zobrazované grupy a jejich prvky. Jde o souhrn skupin z přítomných stránek.
         /// </summary>
-        public List<DxDataFormGroup> Groups { get { return Pages.SelectMany(p => p.Groups).ToList(); } }
+        public List<DxDataFormGroupDefinition> Groups { get { return Pages.SelectMany(p => p.Groups).ToList(); } }
         #endregion
         #region Stav záložky, umožní panelu shrnout svůj stav a uložit jej do záložky, a následně ze záložky jej promítnout do živého stavu
         /// <summary>
@@ -3112,29 +1865,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         #endregion
     }
     #endregion
-    #region class DxDataFormState : Stav DataFormu, slouží pro persistenci stavu při přepínání záložek
-    /// <summary>
-    /// Stav DataFormu, slouží pro persistenci stavu při přepínání záložek.
-    /// Obsahuje pozice ScrollBarů (reálně obsahuje <see cref="ContentVirtualLocation"/>) a objekt s focusem.
-    /// <para/>
-    /// Má význam víceméně u záložkových DataFormů, aby při přepínání záložek byla konkrétní záložka zobrazena v tom stavu, v jakém byla opuštěna.
-    /// </summary>
-    internal class DxDataFormState
-    {
-        /// <summary>
-        /// Posun obsahu daný pozicí ScrollBarů
-        /// </summary>
-        public Point ContentVirtualLocation { get; set; }
-        /// <summary>
-        /// Vrací klon objektu
-        /// </summary>
-        /// <returns></returns>
-        public DxDataFormState Clone()
-        {
-            return (DxDataFormState)this.MemberwiseClone();
-        }
-    }
-    #endregion
     #region class DxDataFormPage : Třída reprezentující jednu designem definovanou stránku v dataformu.
     /// <summary>
     /// Třída reprezentující jednu designem definovanou stránku v dataformu.
@@ -3173,14 +1903,14 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         {
             _DataForm = dataForm;
             _IPage = iPage;
-            _Groups = DxDataFormGroup.CreateList(this, iPage?.Groups);
+            _Groups = DxDataFormGroupDefinition.CreateList(this, iPage?.Groups);
         }
         /// <summary>Vlastník - <see cref="DxDataForm"/></summary>
         private DxDataForm _DataForm;
         /// <summary>Deklarace stránky</summary>
         private IDataFormPage _IPage;
         /// <summary>Grupy</summary>
-        private List<DxDataFormGroup> _Groups;
+        private List<DxDataFormGroupDefinition> _Groups;
         /// <summary>
         /// Vlastník - <see cref="DxDataForm"/>
         /// </summary>
@@ -3192,7 +1922,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Pole skupin na této stránce
         /// </summary>
-        public IList<DxDataFormGroup> Groups { get { return _Groups; } }
+        public IList<DxDataFormGroupDefinition> Groups { get { return _Groups; } }
         /// <summary>
         /// Stránka je na aktivní záložce? 
         /// Po iniciaci se přebírá do GUI, následně udržuje GUI.
@@ -3256,7 +1986,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             int right = 0;
             int bottom = 0;
             bool containForceBreak = false;
-            bool containAllowBreak  = false;
+            bool containAllowBreak = false;
             foreach (var dataGroup in Groups)
             {
                 if (dataGroup.LayoutForceBreakToNewColumn)
@@ -3270,7 +2000,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 }
                 else if (dataGroup.LayoutAllowBreakToNewColumn && !containAllowBreak)
                     // Zapamatujeme si, že je možno provést AllowBreak:
-                    containAllowBreak  = true;
+                    containAllowBreak = true;
 
                 dataGroup.CurrentGroupOrigin = new Point(x, y);                // Tady se invaliduje CurrentGroupBounds
                 var groupBounds = dataGroup.CurrentGroupBounds;                // Tady dojde k vyhodnocení souřadnice CurrentGroupOrigin a k přepočtu DesignSize na CurrentSize.
@@ -3287,7 +2017,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             _CurrentPageBounds = null;                                         // Nápočet se provede až on-demand
         }
         /// <summary>
-        /// Obsahuje součet souřadnic <see cref="DxDataFormGroup.CurrentGroupBounds"/> ze zdejších skupin
+        /// Obsahuje součet souřadnic <see cref="DxDataFormGroupDefinition.CurrentGroupBounds"/> ze zdejších skupin
         /// </summary>
         internal Rectangle CurrentPageBounds { get { CheckCurrentBounds(); return _CurrentPageBounds.Value; } }
         private Rectangle? _CurrentPageBounds;
@@ -3302,29 +2032,28 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         #endregion
     }
     #endregion
-    #region class DxDataFormGroup : Třída reprezentující jednu grupu na stránce
+    #region class DxDataFormGroupDefinition : Třída obsahující definic jedné grupy, slouží jako vzor pro tvorbu DxDataFormGroup
     /// <summary>
-    /// Třída reprezentující jednu grupu na stránce.
-    /// Grupa obsahuje prvky.
+    /// <see cref="DxDataFormGroupDefinition"/> : Třída obsahující definic jedné grupy, slouží jako vzor pro tvorbu DxDataFormGroup
     /// </summary>
-    internal class DxDataFormGroup
+    internal class DxDataFormGroupDefinition
     {
         #region Konstruktor, vlastník, prvky
         /// <summary>
-        /// Vytvoří a vrátí List obsahující <see cref="DxDataFormGroup"/>, vytvořený z dodaných instancí <see cref="IDataFormGroup"/>.
+        /// Vytvoří a vrátí List obsahující <see cref="DxDataFormGroupDefinition"/>, vytvořený z dodaných instancí <see cref="IDataFormGroup"/>.
         /// </summary>
         /// <param name="dataPage"></param>
         /// <param name="iGroups"></param>
         /// <returns></returns>
-        public static List<DxDataFormGroup> CreateList(DxDataFormPage dataPage, IEnumerable<IDataFormGroup> iGroups)
+        public static List<DxDataFormGroupDefinition> CreateList(DxDataFormPage dataPage, IEnumerable<IDataFormGroup> iGroups)
         {
-            List<DxDataFormGroup> dataGroups = new List<DxDataFormGroup>();
+            List<DxDataFormGroupDefinition> dataGroups = new List<DxDataFormGroupDefinition>();
             if (iGroups != null)
             {
                 foreach (IDataFormGroup iGroup in iGroups)
                 {
                     if (iGroup == null) continue;
-                    var dataGroup = new DxDataFormGroup(dataPage, iGroup);
+                    var dataGroup = new DxDataFormGroupDefinition(dataPage, iGroup);
                     dataGroups.Add(dataGroup);
                 }
             }
@@ -3335,13 +2064,13 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         /// <param name="dataPage"></param>
         /// <param name="iGroup"></param>
-        public DxDataFormGroup(DxDataFormPage dataPage, IDataFormGroup iGroup)
+        public DxDataFormGroupDefinition(DxDataFormPage dataPage, IDataFormGroup iGroup)
         {
             __DataPage = dataPage;
             __IGroup = iGroup;
-            __Items = new List<DxDataFormColumn>();
-            DxDataFormColumn.AddToList(this, true, iGroup?.GroupHeader?.HeaderItems, __Items);
-            DxDataFormColumn.AddToList(this, false, iGroup?.Items, __Items);
+            __Items = new List<DxDataFormItem>();
+            DxDataFormItem.AddToList(this, true, iGroup?.GroupHeader?.HeaderItems, __Items);
+            DxDataFormItem.AddToList(this, false, iGroup?.Items, __Items);
             _CalculateAutoSize();
             InvalidateBounds();
         }
@@ -3350,7 +2079,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>Deklarace grupy</summary>
         private IDataFormGroup __IGroup;
         /// <summary>Prvky</summary>
-        private List<DxDataFormColumn> __Items;
+        private List<DxDataFormItem> __Items;
         /// <summary>
         /// Vlastník - <see cref="DxDataForm"/>
         /// </summary>
@@ -3366,7 +2095,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Jednotlivé prvky grupy
         /// </summary>
-        public IList<DxDataFormColumn> Items { get { return __Items; } }
+        public IList<DxDataFormItem> Items { get { return __Items; } }
         /// <summary>
         /// Počet celkem deklarovaných prvků
         /// </summary>
@@ -3393,12 +2122,14 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Je umístěn v <see cref="Coordinates.HeaderBackgroundBounds"/> a je oproti němu zmenšen o <see cref="Coordinates.HeaderPadding"/> dovnitř.
         /// Je relativní v rámci this grupy.
         /// </summary>
-        internal Rectangle DesignTitleBounds { get { return __DesignTitleBounds; } } private Rectangle __DesignTitleBounds;
+        internal Rectangle DesignTitleBounds { get { return __DesignTitleBounds; } }
+        private Rectangle __DesignTitleBounds;
         /// <summary>
-        /// Souřadnice a velikost prostoru v rámci grupy, ve kterém jsou zobrazeny jednotlivé Items = <see cref="DxDataFormColumn.DesignBounds"/>.
+        /// Souřadnice a velikost prostoru v rámci grupy, ve kterém jsou zobrazeny jednotlivé Items = <see cref="DxDataFormItem.DesignBounds"/>.
         /// Hodnota je relativní k this grupě a je v designových pixelech bez Zoomu.
         /// </summary>
-        internal Rectangle DesignContentBounds { get { return __DesignContentBounds; } } private Rectangle __DesignContentBounds;
+        internal Rectangle DesignContentBounds { get { return __DesignContentBounds; } }
+        private Rectangle __DesignContentBounds;
         /// <summary>
         /// Zajistí provedení výpočtu automatické velikosti grupy.
         /// Reaguje na <see cref="IDataFormGroup.DesignPadding"/>, čte prvky <see cref="Items"/> 
@@ -3450,11 +2181,13 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Po setování této souřadnice proběhne invalidace souřadnic Current i Visible, i jednotlivých prvků.
         /// Následně jsou tyto souřadnice on-demand přepočteny.
         /// </summary>
-        public Point CurrentGroupOrigin { get { return __CurrentGroupOrigin; } set { __CurrentGroupOrigin = value; InvalidateBounds(); } } private Point __CurrentGroupOrigin;
+        public Point CurrentGroupOrigin { get { return __CurrentGroupOrigin; } set { __CurrentGroupOrigin = value; InvalidateBounds(); } }
+        private Point __CurrentGroupOrigin;
         /// <summary>
         /// Reálná velikost grupy v aktuálním Zoomu.
         /// </summary>
-        public Size CurrentGroupSize { get { this._CheckCurrentBounds(); return __CurrentGroupSize; } } private Size __CurrentGroupSize;
+        public Size CurrentGroupSize { get { this._CheckCurrentBounds(); return __CurrentGroupSize; } }
+        private Size __CurrentGroupSize;
         /// <summary>
         /// Aktuální reálná absolutní (=v koordinátech vizuálního controlu včetně Zoomu!) souřadnice této grupy. 
         /// Souřadnice je daná počátkem <see cref="CurrentGroupOrigin"/>, který musí setovat koordinátor stránky, 
@@ -3570,7 +2303,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Může být null, pak prvek není zobrazen. Null je i po invalidaci <see cref="InvalidateBounds()"/>.
         /// Tuto hodnotu sem ukládá řídící třída v procesu kreslení jako reálné souřadnice, kam byl prvek vykreslen.
         /// </summary>
-        public Rectangle? VisibleGroupBounds { get { return __VisibleGroupBounds; } set { __VisibleGroupBounds = value; } } private Rectangle? __VisibleGroupBounds;
+        public Rectangle? VisibleGroupBounds { get { return __VisibleGroupBounds; } set { __VisibleGroupBounds = value; } }
+        private Rectangle? __VisibleGroupBounds;
         /// <summary>
         /// Vrátí true, pokud this prvek se nachází v rámci dané virtuální souřadnice.
         /// Tedy pokud souřadnice <see cref="CurrentGroupBounds"/> se alespoň zčásti nacházejí uvnitř souřadného prostoru dle parametru <paramref name="virtualBounds"/>.
@@ -3658,11 +2392,13 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             /// <summary>
             /// Souřadnice grupy zvenku = v prostoru Parent controlu
             /// </summary>
-            public Point Location { get { return __Location; } set { __Location = value; } } private Point __Location;
+            public Point Location { get { return __Location; } set { __Location = value; } }
+            private Point __Location;
             /// <summary>
             /// Velikost grupy celková
             /// </summary>
-            public Size Size { get { return __Size; } set { __Size = value; } } private Size __Size;
+            public Size Size { get { return __Size; } set { __Size = value; } }
+            private Size __Size;
             /// <summary>
             /// Kompletní vnější souřadnice této grupy relativně k parent controlu
             /// </summary>
@@ -3727,7 +2463,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             /// Pixel, na kterém začíná Border. Nikdy není záporný.
             /// Prostor mezi začátkem grupy a tímto borderem si grupa nevykresluje, prosvítá tam parent Control.
             /// </summary>
-            private int _BorderBegin 
+            private int _BorderBegin
             {
                 get { return __BorderBegin; }
                 set { __BorderBegin = (value < 0 ? 0 : value); }
@@ -3757,7 +2493,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 {
                     __PaddingLeft = (value.Left > 0 ? value.Left : 0);
                     __PaddingTop = (value.Top > 0 ? value.Top : 0);
-                    __PaddingRight = (value.Right> 0 ? value.Right : 0);
+                    __PaddingRight = (value.Right > 0 ? value.Right : 0);
                     __PaddingBottom = (value.Bottom > 0 ? value.Bottom : 0);
                 }
             }
@@ -3993,38 +2729,38 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
     /// S ohledem na rozmístění prvků v rámci <see cref="DxDataForm"/> nejde o "sloupec prvků pod sebou" 
     /// ale o definici jednoho viditelného prvku, který se může opakovat pro jednotlivé řádky.
     /// </summary>
-    internal class DxDataFormColumn
+    internal class DxDataFormItem
     {
         #region Konstruktor, vlastník, prvky
         /// <summary>
-        /// Vytvoří a vrátí List obsahující <see cref="DxDataFormColumn"/>, vytvořené z dodaných instancí <see cref="IDataFormColumn"/>.
+        /// Vytvoří a vrátí List obsahující <see cref="DxDataFormItem"/>, vytvořené z dodaných instancí <see cref="IDataFormColumn"/>.
         /// </summary>
         /// <param name="dataGroup"></param>
         /// <param name="isTitleItems">false pro běžné columny v prostoru Content, true pro columny v prostoru Title (=text titulku, ikony, atd)</param>
         /// <param name="iItems"></param>
         /// <returns></returns>
-        public static List<DxDataFormColumn> CreateList(DxDataFormGroup dataGroup, bool isTitleItems, IEnumerable<IDataFormColumn> iItems)
+        public static List<DxDataFormItem> CreateList(DxDataFormGroupDefinition dataGroup, bool isTitleItems, IEnumerable<IDataFormColumn> iItems)
         {
-            List<DxDataFormColumn> dxItems = new List<DxDataFormColumn>();
+            List<DxDataFormItem> dxItems = new List<DxDataFormItem>();
             AddToList(dataGroup, isTitleItems, iItems, dxItems);
             return dxItems;
         }
         /// <summary>
-        /// Naplní do dodaného Listu prvky <see cref="DxDataFormColumn"/> vytvořené z dodaných instancí <see cref="IDataFormColumn"/>.
+        /// Naplní do dodaného Listu prvky <see cref="DxDataFormItem"/> vytvořené z dodaných instancí <see cref="IDataFormColumn"/>.
         /// </summary>
         /// <param name="dataGroup"></param>
         /// <param name="isTitleItems">false pro běžné columny v prostoru Content, true pro columny v prostoru Title (=text titulku, ikony, atd)</param>
         /// <param name="iItems"></param>
         /// <param name="dxItems"></param>
         /// <returns></returns>
-        public static void AddToList(DxDataFormGroup dataGroup, bool isTitleItems, IEnumerable<IDataFormColumn> iItems, List<DxDataFormColumn> dxItems)
+        public static void AddToList(DxDataFormGroup dataGroup, bool isTitleItems, IEnumerable<IDataFormColumn> iItems, List<DxDataFormItem> dxItems)
         {
             if (iItems != null)
             {
                 foreach (IDataFormColumn iItem in iItems)
                 {
                     if (iItem == null) continue;
-                    dxItems.Add(new DxDataFormColumn(dataGroup, isTitleItems, iItem));
+                    dxItems.Add(new DxDataFormItem(dataGroup, isTitleItems, iItem));
                 }
             }
         }
@@ -4034,7 +2770,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="dataGroup"></param>
         /// <param name="isTitleItem">false pro běžné columny v prostoru Content, true pro columny v prostoru Title (=text titulku, ikony, atd)</param>
         /// <param name="iItem"></param>
-        public DxDataFormColumn(DxDataFormGroup dataGroup, bool isTitleItem, IDataFormColumn iItem)
+        public DxDataFormItem(DxDataFormGroup dataGroup, bool isTitleItem, IDataFormColumn iItem)
             : base()
         {
             __DataGroup = dataGroup;
@@ -4113,7 +2849,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Tato souřadnice ale není posunuta ScrollBarem (je absolutní).
         /// Posunutá vizuální souřadnice je v <see cref="VisibleBounds"/>.
         /// </summary>
-        public Rectangle CurrentBounds { get { this.CheckCurrentBounds(); return __CurrentBounds.Value; } } private Rectangle? __CurrentBounds;
+        public Rectangle CurrentBounds { get { this.CheckCurrentBounds(); return __CurrentBounds.Value; } }
+        private Rectangle? __CurrentBounds;
         /// <summary>
         /// Aktuální velikost prvku. Lze setovat (nezmění se umístění = <see cref="CurrentBounds"/>.Location).
         /// <para/>
@@ -4166,7 +2903,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Může být null, pak prvek není zobrazen. Null je i po invalidaci <see cref="InvalidateBounds()"/>.
         /// Tuto hodnotu ukládá řídící třída v procesu kreslení jako reálné souřadnice, kam byl prvek vykreslen.
         /// </summary>
-        public Rectangle? VisibleBounds { get { return __VisibleBounds; } set { __VisibleBounds = value; } } private Rectangle? __VisibleBounds;
+        public Rectangle? VisibleBounds { get { return __VisibleBounds; } set { __VisibleBounds = value; } }
+        private Rectangle? __VisibleBounds;
         /// <summary>
         /// Vrátí true, pokud this prvek se nachází v rámci dané virtuální souřadnice.
         /// Tedy pokud souřadnice <see cref="CurrentBounds"/> se alespoň zčásti nacházejí uvnitř souřadného prostoru dle parametru <paramref name="virtualBounds"/>.
@@ -4192,6 +2930,2200 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         #endregion
     }
     #endregion
+
+    // Provozní vizuální prvky:
+    #region class DxDataFormPanel : Jeden panel dataformu: reprezentuje celý panel zobrazující plochu se všemi daty = jedna nebo více částí "DxDataFormPart"
+    /// <summary>
+    /// Jeden panel dataformu: reprezentuje celý panel zobrazující plochu se všemi daty = jedna nebo více částí <see cref="DxDataFormPart"/>.
+    /// Je umístěn buď přímo v <see cref="DxDataForm"/> v celé jeho ploše (to když DataForm obsahuje jen jednu stránku, pak jde o DataForm bez záložek);
+    /// anebo je umístěn na určité stránce záložkovníku <see cref="DxTabPane"/>, pak jde o vícezáložkový DataForm.
+    /// Tuto volbu řídí <see cref="DxDataForm"/> podle dodaných stránek a podle dynamického layoutu.
+    /// <para/>
+    /// Panel <see cref="DxDataFormPanel"/> v sobě obsahuje definici skupin <see cref="DxDataFormGroupDefinition"/> v property <see cref="Groups"/>, která určuje layout prvků dataformu.
+    /// <para/>
+    /// Jeden panel <see cref="DxDataFormPanel"/> v sobě hostuje přinejmenším jednu nebo více částí <see cref="DxDataFormPart"/>.
+    /// Každá jedna část <see cref="DxDataFormPart"/> v sobě zobrazuje fyzická data, může mít / nemusí mít ScrollBary a Headery.
+    /// Tyto části mohou být vzájemně spřažené (jeden svislý Scrollbar zobrazený úplně vpravo může ovládat více částí umístěných vedle sebe = vlevo).
+    /// Přidávání a odebírání částí řídí <see cref="DxDataFormPanel"/>, stejně tak mezi ně vkládá Splittery a řídí jejich velikost.
+    /// </summary>
+    internal class DxDataFormPanel : DxPanelControl
+    {
+        #region Konstruktor a vztah na DxDataForm
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="dataForm"></param>
+        public DxDataFormPanel(DxDataForm dataForm)
+        {
+            _DataForm = dataForm;
+
+            this.DoubleBuffered = true;
+            this.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.Style3D;
+
+            InitializeParts();
+        }
+        /// <summary>
+        /// Dispose panelu
+        /// </summary>
+        /// <param name="disposing"></param>
+        protected override void Dispose(bool disposing)
+        {
+            DisposeParts();
+            base.Dispose(disposing);
+            _DataForm = null;
+        }
+        /// <summary>Vlastník - <see cref="DxDataForm"/>, ale nemusí to být Parent!</summary>
+        private DxDataForm _DataForm;
+        /// <summary>
+        /// Vlastník - <see cref="DxDataForm"/>
+        /// </summary>
+        public DxDataForm DataForm { get { return this._DataForm; } }
+        /// <summary>
+        /// Refresh celého panelu v daném režimu
+        /// </summary>
+        public void Refresh(RefreshParts refreshParts)
+        {
+            this._Parts.ForEachExec(p => p.Refresh(refreshParts));
+
+            if (refreshParts.HasFlag(RefreshParts.RefreshControl))
+                base.Refresh();
+        }
+        /// <summary>
+        /// Refresh celého panelu
+        /// </summary>
+        public override void Refresh()
+        {
+            this.Refresh(RefreshParts.InvalidateControl);
+        }
+        #endregion
+        #region Public vlastnosti
+        /// <summary>
+        /// Aktuální velikost viditelného prostoru pro DataForm, po odečtení prostoru pro ScrollBary (bez ohledu na jejich aktuální viditelnost)
+        /// </summary>
+        internal Size VisibleContentSize 
+        {
+            get 
+            {
+                Size size = this.ClientSize;
+                int hScrollSize = _RootPart.DefaultHorizontalScrollBarHeight;
+                int vScrollSize = _RootPart.DefaultVerticalScrollBarWidth;
+                return new Size(size.Width - vScrollSize, size.Height - hScrollSize);
+            }
+        }
+        /// <summary>
+        /// Stav panelu - pozice scrollbarů atd. 
+        /// Podporuje přepínání záložek - vizuálně jiný obsah, ale promítaný prostřednictvím jedné instance <see cref="DxDataFormPanel"/>.
+        /// Při čtení bude vrácen objekt obsahující aktuální stav.
+        /// Při zápisu budou hodnoty z vkládaného objektu aplikovány do panelu
+        /// </summary>
+        internal DxDataFormState State
+        {
+            get
+            {
+#warning TODO musí být navázáno na pole _Parts!
+                if (_State == null)
+                    _State = new DxDataFormState();
+                return _State;
+            }
+            set
+            {
+                _State = value;
+            }
+        }
+        private DxDataFormState _State;
+        #endregion
+        #region Groups = definice vzhledu aktuálního DataFormu (layout)
+    
+        #endregion
+        #region Parts = jednotlivé části DataFormu (splitterem oddělené bloky řádků nebo sloupců), výchozí je jedna část přes celý prostor panelu
+        /// <summary>
+        /// Inicializace jednotlivých částí DataFormu 
+        /// </summary>
+        private void InitializeParts()
+        {
+            _Parts = new List<DxDataFormPart>();
+            AddPart(0, 0);
+        }
+        /// <summary>
+        /// Dispose jednotlivých částí DataFormu 
+        /// </summary>
+        private void DisposeParts()
+        { }
+        private void AddPart(int partXId, int partYId)
+        {
+            DxDataFormPartId partId = new DxDataFormPartId(partXId, partYId);
+            _RootPart = new DxDataFormPart(this, partId);
+            _Parts.Add(_RootPart);
+            _RootPart.Dock = ((_Parts.Count == 1) ? DockStyle.Fill : DockStyle.None);
+            this.Controls.Add(_RootPart);
+        }
+        /// <summary>
+        /// Pole jednotlivých částí
+        /// </summary>
+        private DxDataFormPart[] Parts { get { return _Parts.ToArray(); } }
+        /// <summary>
+        /// Kořenový Part, existuje vždy
+        /// </summary>
+        private DxDataFormPart _RootPart;
+        /// <summary>Pole jednotlivých částí</summary>
+        private List<DxDataFormPart> _Parts;
+        #endregion
+    }
+    #region class DxDataFormState : Stav DataFormu, slouží pro persistenci stavu při přepínání záložek
+    /// <summary>
+    /// Stav DataFormu, slouží pro persistenci stavu při přepínání záložek.
+    /// Obsahuje pozice ScrollBarů (reálně obsahuje <see cref="ContentVirtualLocation"/>) a objekt s focusem.
+    /// <para/>
+    /// Má význam víceméně u záložkových DataFormů, aby při přepínání záložek byla konkrétní záložka zobrazena v tom stavu, v jakém byla opuštěna.
+    /// </summary>
+    internal class DxDataFormState
+    {
+        /// <summary>
+        /// Posun obsahu daný pozicí ScrollBarů
+        /// </summary>
+        public Point ContentVirtualLocation { get; set; }
+        /// <summary>
+        /// Vrací klon objektu
+        /// </summary>
+        /// <returns></returns>
+        public DxDataFormState Clone()
+        {
+            return (DxDataFormState)this.MemberwiseClone();
+        }
+    }
+    #endregion
+    #endregion
+    #region class DxDataFormPart : Jedna oddělená a samostatná skupina řádků a sloupců v rámci DataFormu = vizuální Control
+    /// <summary>
+    /// <see cref="DxDataFormPart"/> : Jedna oddělená a samostatná skupina řádků/sloupců v rámci panelu DataFormu <see cref="DxDataFormPanel"/>.
+    /// Toto je primární zobrazovací vizuální Control!
+    /// <para/>
+    /// Prostor DataFormu (přesněji <see cref="DxDataFormPanel"/>) může být rozdělen na více sousedících částí = <see cref="DxDataFormPart"/>,
+    /// které zobrazují tatáž data, ale jsou nascrollovaná na jiná místa, nebo mohou mít odlišné filtry a zobrazovat tedy jiné podmnožiny řádků.
+    /// <para/>
+    /// Toto rozčlenění povoluje a řídí <see cref="DxDataFormPanel"/> jako fyzický Parent těchto částí, pokyny k rozdělení dostává od hlavního <see cref="DxDataForm"/>.
+    /// K interaktivní změně dává uživateli k dispozici vhodné Splittery.
+    /// Rozdělení provádí uživatel pomocí "tahacího" tlačítka vpravo nahoře a následného zobrazení splitteru.
+    /// Dostupnost Splitterů v jednotlivých částech v rámci <see cref="DxDataFormPanel"/> řídí <see cref="DxDataFormPanel"/>; 
+    /// Splittery jsou dostupné vždy v té krajní části v daném směru = vlevo svislý a nahoře vodorovný.
+    /// <para/>
+    /// Posouvání obsahu řídí Scrollbary, které nabízí vždy ta poslední <see cref="DxDataFormPart"/> v daném směru: svislý Scrollbar zobrazuje jen nejpravější část, 
+    /// vodorovný Scrollbar zobrazuje jen nejspodnější část.
+    /// Synchronizaci sousedních částí, které nemají svůj vlastní odpovídající Scrollbar, zajišťuje <see cref="DxDataFormPanel"/>.
+    /// <para/>
+    /// Každá jedna skupina <see cref="DxDataFormPart"/>, a skládá se z částí: RowHeader, ColumnHeader, RowFilter, Rows, SummaryRows a Footer.
+    /// Tyto části jsou jednotlivě volitelné - odlišně pro první skupinu, pro vnitřní skupiny a pro skupinu poslední.
+    /// Části Header, RowFilter jsou fixní k hornímu okraji a nescrollují;
+    /// Části Rows, SummaryRows scrollují uprostřed;
+    /// Část Footer je fixní k dolnímu okraji a nescrolluje.
+    /// Podkladový ScrollPanel <see cref="DxScrollableContent"/> dovoluje nastavit libovolné okraje kolem scrollovaného obsahu <see cref="DxScrollableContent.ContentVisualPadding"/>, 
+    /// tyto okraje jsou využívány pro zobrazení "fixních" částí (vše okolo Rows) = ColumnHeader, RowFilter, SummaryRow, RowHeader.
+    /// <para/>
+    /// Typicky Master Dataform (nazývaný v Greenu "FreeForm") má pouze jednu jedinou část <see cref="DxDataFormPart"/>, která nezobrazuje ani ColumnHeaders ani RowHeaders ani SummaryRow, a ani nenabízí rozdělovací Splittery.
+    /// DataForm používaný pro položky (nazývaný v Greenu "EditBrowse") toto rozčlenění umožňuje.
+    /// </summary>
+    internal class DxDataFormPart : DxScrollableContent
+    {
+        #region Konstruktor, vlastník, prvky, identifikátory
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="dataPanel"></param>
+        /// <param name="partId"></param>
+        public DxDataFormPart(DxDataFormPanel dataPanel, DxDataFormPartId partId)
+        {
+            _DataPanel = dataPanel;
+            _PartId = partId ?? new DxDataFormPartId();
+
+            this.DoubleBuffered = true;
+            this.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder;
+
+            InitializeContentPanel();
+            InitializeRows();
+            InitializeGroups();
+            InitializePaint();
+            InitializeInteractivity();
+        }
+        /// <summary>
+        /// Dispose Part
+        /// </summary>
+        /// <param name="disposing"></param>
+        protected override void Dispose(bool disposing)
+        {
+            DisposeData();
+            DisposeContentPanel();
+
+            base.Dispose(disposing);
+
+            _DataPanel = null;
+        }
+        /// <summary>Vlastník - <see cref="DxDataFormPanel"/></summary>
+        private DxDataFormPanel _DataPanel;
+        /// <summary>ID this části</summary>
+        private DxDataFormPartId _PartId;
+        /// <summary>
+        /// Vlastník - <see cref="DxDataFormPanel"/>
+        /// </summary>
+        private DxDataFormPanel DataPanel { get { return this._DataPanel; } }
+        /// <summary>
+        /// Vlastník - <see cref="DxDataForm"/>
+        /// </summary>
+        private DxDataForm DataForm { get { return this._DataPanel.DataForm; } }
+        /// <summary>
+        /// Vzhled. Autoinicializační property. Nikdy není null. Setování null nastaví defaultní vzhled.
+        /// </summary>
+        private DxDataFormAppearance DataFormAppearance { get { return DataForm.DataFormAppearance; } }
+        /// <summary>
+        /// Vlastní data zobrazená v dataformu
+        /// </summary>
+        private DxDataFormData Data { get { return DataForm.Data; } }
+        /// <summary>
+        /// Identifikátor this části.
+        /// S tímto ID se pak dotazuje parentů (dataformu a jeho dat) na řádky, sloupce atd.
+        /// </summary>
+        public DxDataFormPartId PartId { get { return _PartId; } }
+        /// <summary>
+        /// Aktuálně zobrazované grupy, obsahující definice jednotlivých columnů <see cref="DxDataFormItem"/>.
+        /// Obsahuje definice skupin, které jsou na aktuální záložce viditelné. 
+        /// Pokud tedy existuje <see cref="DxDataForm"/>, který se skládá z více stránek, pak tento <see cref="DxDataForm"/> 
+        /// tyto stránky rozmístil na jednotlivé záložky <see cref="DxDataFormTab"/> 
+        /// (na jedné záložce je typicky jedna stránka, ale pokud by záložka byla dostatečně veliká, může shrnout data z více stránek).
+        /// </summary>
+        private List<DxDataFormGroupDefinition> CurrentGroups { get { return this.DataForm.CurrentGroupDefinitions; } }
+        /// <summary>
+        /// Aktuální sumární velikost sady grup v pixelech.
+        /// Je vypočtena pro aktuální grupy <see cref="CurrentGroups"/> po jejich setování a slouží pro vizuální práci s controly.
+        /// </summary>
+        private Size CurrentGroupsSize { get { return this.DataForm.CurrentGroupsSize; } }
+        /// <summary>
+        /// Aktuální sumární velikost sady grup v pixelech.
+        /// Je vypočtena pro aktuální grupy <see cref="CurrentGroups"/> po jejich setování a slouží pro vizuální práci s controly.
+        /// </summary>
+        private Size CurrentRowsTotalSize { get { return this.DataForm.GetRowsTotalSize(this.PartId); } }
+        /// <summary>
+        /// Výška jednoho řádku. 
+        /// Je vypočtena po vložení definice vzhledu <see cref="CurrentGroups"/> jako největší hodnota Bottom ze všech souřadnic grup.
+        /// K výšce je přičtena hodnota mezery mezi řádky.
+        /// Zdejší hodnota tedy reprezentuje výšku každého řádku <see cref="DxDataFormRow"/> v aktuálním dataformu/záložce.
+        /// </summary>
+        private int CurrentRowHeight { get { return this.DataForm.CurrentRowHeight; } }
+        #endregion
+        #region ContentPanel: vizuální panel obsahující vlastní data a controly, nachází se uvnitř this (DxScrollableContent) a jeho obsah je řízeně Scrollován
+        /// <summary>
+        /// Inicializuje panel <see cref="__ContentPanel"/>
+        /// </summary>
+        private void InitializeContentPanel()
+        {
+            this.__ContentPanel = new DxPanelBufferedGraphic() { Visible = true, BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder };
+            this.__ContentPanel.LogActive = this.LogActive;
+            this.__ContentPanel.Layers = BufferedLayers;                        // Tady můžu přidat další vrstvy, když budu chtít kreslit 'pod' anebo 'nad' hlavní prvky
+            this.__ContentPanel.PaintLayer += _ContentPanel_PaintLayer;         // A tady bych pak musel reagovat na kreslení přidaných vrstev...
+            this.ContentControl = this.__ContentPanel;
+
+            /*    TEST ONLY  :
+            this.VScrollBarIndicators.AddIndicator(new Int32Range(50, 100), ScrollBarIndicatorType.BigCenter, Color.DarkRed);
+            this.VScrollBarIndicators.AddIndicator(new Int32Range(500, 720), ScrollBarIndicatorType.FullSize | ScrollBarIndicatorType.OutsideGradientEffect, Color.DarkRed);
+            this.VScrollBarIndicators.AddIndicator(new Int32Range(850, 1200), ScrollBarIndicatorType.ThirdNear, Color.DarkBlue);
+            this.VScrollBarIndicators.AddIndicator(new Int32Range(1100, 1500), ScrollBarIndicatorType.HalfFar, Color.DarkGreen);
+
+            for (int i = 20; i < 2000; i += 100)
+                this.HScrollBarIndicators.AddIndicator(new Int32Range(i, i + 70), ScrollBarIndicatorType.FullSize | ScrollBarIndicatorType.InnerGradientEffect, Color.Red);
+            this.HScrollBarIndicators.ColorAlphaArea = 160;
+            this.HScrollBarIndicators.ColorAlphaThumb = 80;
+            this.HScrollBarIndicators.Effect3DRatio = 0.75f;
+            */
+        }
+        /// <summary>
+        /// Disposuje panel <see cref="__ContentPanel"/>
+        /// </summary>
+        private void DisposeContentPanel()
+        {
+            this.ContentControl = null;
+            if (this.__ContentPanel != null)
+            {
+                this.__ContentPanel.PaintLayer -= _ContentPanel_PaintLayer;
+                this.__ContentPanel.Dispose();
+                this.__ContentPanel = null;
+            }
+        }
+        /// <summary>
+        /// Panel, ve kterém se vykresluje i hostuje obsah DataFormu. Panel je <see cref="DxPanelBufferedGraphic"/>, 
+        /// ale z hlediska <see cref="DxDataForm"/> nemá žádnou funkcionalitu, ta je soustředěna do <see cref="DxDataFormPanel"/>.
+        /// </summary>
+        private DxPanelBufferedGraphic __ContentPanel;
+        #endregion
+        #region Řádky DxDataFormRow, grupy DxDataFormGroup
+        /// <summary>
+        /// Inicializace pole řádků
+        /// </summary>
+        private void InitializeRows()
+        {
+            DxDataFormGroup
+            // Zatím netřeba; řádky se v Part necachují, čteme je z DataFormu...
+        }
+        /// <summary>
+        /// Obsahuje pole řádků, které jsou (anebo mohou být) zobrazovány v aktuálním <see cref="DxDataFormPart"/> - vyhovují aktuálnímu filtru a mají nastavené třídění. 
+        /// Mají správnou hodnotu vizuální pozice a indexu <see cref="DxDataFormRow.VisualIndex"/> a <see cref="DxDataFormRow.TotalYPosition"/>.
+        /// Tyto řádky jsou sdíleny všemi sousedními částmi vlevo i vpravo a jsou společně scrollovány, a mají tedy společné souřadnice Y.
+        /// <para/>
+        /// Jde tedy o všechny řádky, nejen ty aktuálně zobrazené. Z tohoto pole se pak vybírají řádky, které jsou aktuálně zobrazeny: po změně viditelné oblasti se znovu vyhledají a uloží.
+        /// Pokud je aktivní řádkový filtr, pak tyto řádky mu vyhovují (nevyhovující zde nejsou).
+        /// <para/>
+        /// Pokud jsou přítomny části nad a pod (vodorovné splittery), pak ty mohou zobrazovat fyzicky jiné řádky = jinak zafiltrované, jinak setříděné, v jiné vizuální pozici (jinak odscrollované).
+        /// </summary>
+        private List<DxDataFormRow> _Rows { get { return this.DataForm.GetRows(this.PartId); } }
+        /// <summary>
+        /// Pole řádků, které jsou aktuálně ve viditelné oblasti. 
+        /// Toto pole je udržováno v metodě <see cref="_PrepareVisibleRows()"/>.
+        /// </summary>
+        private List<DxDataFormRow> _RowsVisible;
+        /// <summary>
+        /// Připraví souhrn aktuálně viditelných řádků.
+        /// Volá se po změně viditelné souřadnice <see cref="DxScrollableContent.ContentVirtualBounds"/> nebo po změně filtru / třídění řádků = z metody 
+        /// </summary>
+        private void _PrepareVisibleRows()
+        {
+            Rectangle virtualBounds = this.ContentVirtualBounds;               // Rozměr se vztahuje k celé ploše datové tabulky = všechny řádky od počátku prvního do konce posledního
+            Int32Range visibleYPosition = new Int32Range(virtualBounds.Y, virtualBounds.Bottom);
+            _RowsVisible = _Rows.GetVisibleItems(r => r.TotalYPosition, visibleYPosition);
+        }
+        #endregion
+        #region 
+        /// <summary>
+        /// Zobrazované grupy a jejich prvky.
+        /// Po vložení této definice neproběhne automaticky refresh controlu, je tedy vhodné následně volat <see cref="Refresh(RefreshParts)"/> 
+        /// a předat v parametru požadavek <see cref="RefreshParts.InvalidateControl"/>.
+        /// </summary>
+        public List<DxDataFormGroupDefinition> Groups { get { return this.DataForm.CurrentGroupDefinitions; } }
+        /// <summary>
+        /// Inicializuje pole prvků
+        /// </summary>
+        private void InitializeGroups()
+        {
+            __VisibleItems = new List<DxDataFormItem>();
+        }
+        /// <summary>
+        /// Invaliduje aktuální rozměry všech grup v this objektu.
+        /// Volá se typicky po změně zoomu nebo DPI.
+        /// </summary>
+        /// <returns></returns>
+        private void _InvalidatGroupsCurrentBounds()
+        {
+            var groups = Groups;
+            groups?.ForEachExec(g => g.InvalidateBounds());
+
+            _LastCalcZoom = DxComponent.Zoom;
+            _LastCalcDeviceDpi = this.CurrentDpi;
+        }
+        /// <summary>
+        /// Připraví souhrn viditelných grup a prvků
+        /// </summary>
+        private void _PrepareVisibleGroupsItems()
+        {
+            var groups = Groups;
+            Rectangle virtualBounds = this.ContentVirtualBounds;
+            this.__VisibleGroups = groups?.Where(g => g.IsVisibleInVirtualBounds(virtualBounds)).ToList();
+            this.__VisibleItems = this.__VisibleGroups?.SelectMany(g => g.Items).Where(i => i.IsVisibleInVirtualBounds(virtualBounds)).ToList();
+        }
+        /// <summary>
+        /// Zahodí všechny položky o grupách a prvcích z this instance
+        /// </summary>
+        private void DisposeData()
+        {
+            if (__VisibleGroups != null)
+            {
+                __VisibleGroups.Clear();
+                __VisibleGroups = null;
+            }
+            if (__VisibleItems != null)
+            {
+                __VisibleItems.Clear();
+                __VisibleItems = null;
+            }
+        }
+
+        private List<DxDataFormGroupDefinition> __VisibleGroups;
+        private List<DxDataFormItem> __VisibleItems;
+        #endregion
+        #region Buňky DxDataFormCell
+
+        #endregion
+        #region Řízení zobrazení jednotlivých částí
+
+        #endregion
+        #region Interaktivita
+        private void InitializeInteractivity()
+        {
+            _CurrentFocusedItem = null;
+            InitializeInteractivityKeyboard();
+            InitializeInteractivityMouse();
+        }
+        #region Keyboard a Focus
+        private void InitializeInteractivityKeyboard()
+        {
+            this._CurrentFocusedItem = null;
+
+            Control parent = this;
+            // parent = this._ContentPanel;        // Pokud chci buttony vidět abych viděl přechody focusu...
+            _FocusInButton = DxComponent.CreateDxSimpleButton(142, 5, 140, 25, parent, " Focus in...", tabStop: true);
+            _FocusInButton.TabIndex = 0;
+            _FocusOutButton = DxComponent.CreateDxSimpleButton(352, 5, 140, 25, parent, "... focus out.", tabStop: true);
+            _FocusOutButton.TabIndex = 29;
+        }
+        private DxSimpleButton _FocusInButton;
+        private DxSimpleButton _FocusOutButton;
+        private DxDataFormItem _CurrentFocusedItem;
+        #endregion
+        #region Myš - Move, Down
+        private void InitializeInteractivityMouse()
+        {
+            this.__CurrentOnMouseItem = null;
+            this.__CurrentOnMouseControlSet = null;
+            this.__CurrentOnMouseControl = null;
+            this.__ContentPanel.MouseLeave += _ContentPanel_MouseLeave;
+            this.__ContentPanel.MouseMove += _ContentPanel_MouseMove;
+            this.__ContentPanel.MouseDown += _ContentPanel_MouseDown;
+        }
+        /// <summary>
+        /// Myš nás opustila
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _ContentPanel_MouseLeave(object sender, EventArgs e)
+        {
+            Point absoluteLocation = MousePosition;
+            Point location = this.PointToClient(absoluteLocation);
+            if (!this.__ContentPanel.Bounds.Contains(location))
+                DetectMouseChangeForPoint(null);
+            else
+                DetectMouseChangeForPoint(this.__ContentPanel.PointToClient(absoluteLocation));
+        }
+        /// <summary>
+        /// Myš se pohybuje po Content panelu
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _ContentPanel_MouseMove(object sender, MouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.None)
+                DetectMouseChangeForPoint(e.Location);
+        }
+        /// <summary>
+        /// Myš klikla v Content panelu = nejspíš bychom měli zařídit přípravu prvku a předání focusu ondoň
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _ContentPanel_MouseDown(object sender, MouseEventArgs e)
+        {
+            // toto je nonsens, protože když pod myší existuje prvek, pak MouseDown přejde ondoň nativně, a nikoli z _ContentPanel_MouseDown.
+            // Sem se dostanu jen tehdy, když myš klikne na panelu _ContentPanel v místě, kde není žádný prvek.
+        }
+        /// <summary>
+        /// Vyhledá prvek nacházející se pod aktuální souřadnicí myši a zajistí pro prvky <see cref="MouseLeaveItem(bool)"/> a <see cref="MouseEnterItem(DxDataFormItem)"/>.
+        /// </summary>
+        private void DetectMouseChangeForCurrentPoint()
+        {
+            Point absoluteLocation = Control.MousePosition;
+            Point relativeLocation = __ContentPanel.PointToClient(absoluteLocation);
+            DetectMouseChangeForPoint(relativeLocation);
+        }
+        /// <summary>
+        /// Vyhledá prvek nacházející se pod danou souřadnicí myši a zajistí pro prvky <see cref="MouseLeaveItem(bool)"/> a <see cref="MouseEnterItem(DxDataFormItem)"/>.
+        /// </summary>
+        /// <param name="location">Souřadnice myši relativně k controlu <see cref="__ContentPanel"/> = reálný parent prvků</param>
+        private void DetectMouseChangeForPoint(Point? location)
+        {
+            DxBufferedLayer invalidateLayers = DxBufferedLayer.None;
+            DetectMouseChangeGroupForPoint(location, ref invalidateLayers);
+            DetectMouseChangeItemForPoint(location, ref invalidateLayers);
+            if (invalidateLayers != DxBufferedLayer.None)
+                this.__ContentPanel.InvalidateLayers(invalidateLayers);
+        }
+        /// <summary>
+        /// Detekuje aktuální grupu pod danou souřadnicí, detekuje změny (Leave a Enter) a udržuje v proměnné <see cref="__CurrentOnMouseGroup"/> aktuální grupu na dané souřadnici
+        /// </summary>
+        /// <param name="location"></param>
+        /// <param name="invalidateLayers"></param>
+        private void DetectMouseChangeGroupForPoint(Point? location, ref DxBufferedLayer invalidateLayers)
+        {
+            if (__VisibleGroups == null) return;
+
+            DxDataFormGroupDefinition oldGroup = __CurrentOnMouseGroup;
+            DxDataFormGroupDefinition newGroup = null;
+            bool oldExists = (oldGroup != null);
+            bool newExists = location.HasValue && __VisibleGroups.TryGetLast(i => i.IsVisibleOnPoint(location.Value), out newGroup);
+
+            bool isMouseLeave = (oldExists && (!newExists || (newExists && !Object.ReferenceEquals(oldGroup, newGroup))));
+            if (isMouseLeave)
+                MouseLeaveGroup();
+
+            bool isMouseEnter = (newExists && (!oldExists || (oldExists && !Object.ReferenceEquals(oldGroup, newGroup))));
+            if (isMouseEnter)
+                MouseEnterGroup(newGroup);
+
+            if (isMouseLeave || isMouseEnter)
+                invalidateLayers |= DxBufferedLayer.MainLayer;
+        }
+        /// <summary>
+        /// Je voláno při příchodu myši na danou grupu.
+        /// </summary>
+        /// <param name="group"></param>
+        private void MouseEnterGroup(DxDataFormGroupDefinition group)
+        {
+            __CurrentOnMouseGroup = group;
+        }
+        /// <summary>
+        /// Je voláno při opuštění myši z aktuální grupy.
+        /// </summary>
+        private void MouseLeaveGroup()
+        {
+            __CurrentOnMouseGroup = null;
+        }
+        /// <summary>
+        /// Grupa aktuálně se nacházející pod myší
+        /// </summary>
+        private DxDataFormGroupDefinition __CurrentOnMouseGroup;
+        /// <summary>
+        /// Detekuje aktuální prvek pod danou souřadnicí, detekuje změny (Leave a Enter) a udržuje v proměnné <see cref="__CurrentOnMouseItem"/> aktuální prvek na dané souřadnici
+        /// </summary>
+        /// <param name="location"></param>
+        /// <param name="invalidateLayers"></param>
+        private void DetectMouseChangeItemForPoint(Point? location, ref DxBufferedLayer invalidateLayers)
+        {
+            if (__VisibleItems == null) return;
+
+            DxDataFormItem oldItem = __CurrentOnMouseItem;
+            DxDataFormItem newItem = null;
+            bool oldExists = (oldItem != null);
+            bool newExists = location.HasValue && __VisibleItems.TryGetLast(i => i.IsVisibleOnPoint(location.Value), out newItem);
+
+            bool isMouseLeave = (oldExists && (!newExists || (newExists && !Object.ReferenceEquals(oldItem, newItem))));
+            if (isMouseLeave)
+                MouseLeaveItem();
+
+            bool isMouseEnter = (newExists && (!oldExists || (oldExists && !Object.ReferenceEquals(oldItem, newItem))));
+            if (isMouseEnter)
+                MouseEnterItem(newItem);
+
+            if (isMouseLeave || isMouseEnter)
+                invalidateLayers |= DxBufferedLayer.Overlay;
+        }
+        /// <summary>
+        /// Je voláno při příchodu myši na daný prvek.
+        /// </summary>
+        /// <param name="item"></param>
+        private void MouseEnterItem(DxDataFormItem item)
+        {
+            if (item.VisibleBounds.HasValue)
+            {
+                __CurrentOnMouseItem = item;
+                __CurrentOnMouseControlSet = DataForm.GetControlSet(item);
+                __CurrentOnMouseControl = __CurrentOnMouseControlSet.GetControlForMouse(item, this.__ContentPanel);
+                if (!__ContentPanel.IsPaintLayersInProgress)
+                {   // V době, kdy probíhá proces Paint, NEBUDU provádět ScrollToBounds:
+                    //  Ono k tomu v reálu nedochází - Scroll standardně proběhne při KeyEnter (anebo ruční ScrollBar). To jen při testu provádím MouseMove => ScrollToBounds!
+                    bool isScrolled = false;     // this.ScrollToBounds(item.CurrentBounds, null, true);
+                    if (isScrolled) Refresh(RefreshParts.AfterScroll);
+                }
+            }
+        }
+        /// <summary>
+        /// Je voláno při opuštění myši z aktuálního prvku.
+        /// </summary>
+        private void MouseLeaveItem(bool refresh = false)
+        {
+            var oldControl = __CurrentOnMouseControl;
+            if (oldControl != null)
+            {
+                oldControl.Visible = false;
+                oldControl.Location = new Point(0, -20 - oldControl.Height);
+                oldControl.Enabled = false;
+                if (oldControl is BaseControl baseControl)
+                    baseControl.SuperTip = null;
+                if (refresh)
+                    oldControl.Refresh();
+            }
+            __CurrentOnMouseItem = null;
+            __CurrentOnMouseControlSet = null;
+            __CurrentOnMouseControl = null;
+        }
+        /// <summary>
+        /// Prvek, nacházející se nyní pod myší
+        /// </summary>
+        private ControlOneInfo _CurrentItemOnMouseItem;
+        /// <summary>
+        /// Datový prvek, nacházející se nyní pod myší
+        /// </summary>
+        private DxDataFormItem __CurrentOnMouseItem;
+        /// <summary>
+        /// Datový set popisující control, nacházející se nyní pod myší
+        /// </summary>
+        private DxDataFormControlSet __CurrentOnMouseControlSet;
+        /// <summary>
+        /// Vizuální control, nacházející se nyní pod myší
+        /// </summary>
+        private System.Windows.Forms.Control __CurrentOnMouseControl;
+        #endregion
+        #endregion
+        #region Refresh
+        /// <summary>
+        /// Provede refresh prvku
+        /// </summary>
+        public override void Refresh()
+        {
+            this.RunInGui(() => _RefreshInGui(RefreshParts.Default | RefreshParts.RefreshControl, UsedLayers));
+        }
+        /// <summary>
+        /// Provede refresh daných částí
+        /// </summary>
+        /// <param name="refreshParts"></param>
+        public void Refresh(RefreshParts refreshParts)
+        {
+            this.RunInGui(() => _RefreshInGui(refreshParts, UsedLayers));
+        }
+        /// <summary>
+        /// Provede refresh daných částí a vrstev
+        /// </summary>
+        /// <param name="refreshParts"></param>
+        /// <param name="layers"></param>
+        public void Refresh(RefreshParts refreshParts, DxBufferedLayer layers)
+        {
+            this.RunInGui(() => _RefreshInGui(refreshParts, layers));
+        }
+        /// <summary>
+        /// Refresh prováděný v GUI threadu
+        /// </summary>
+        /// <param name="refreshParts"></param>
+        /// <param name="layers"></param>
+        private void _RefreshInGui(RefreshParts refreshParts, DxBufferedLayer layers)
+        {
+            // Protože jsme v GUI threadu, nemusím řešit zamykání hodnot - nikdy nebudou dvě vlákna přistupovat k jednomu objektu současně!
+            // Spíše musíme vyřešit to, že některá část procesu Refresh způsobí požadavek na Refresh jiné části, což ale může být nějaká část před i za aktuální částí.
+
+            // Zaeviduji si úkoly ke zpracování:
+            _RefreshPartCurrentBounds |= refreshParts.HasFlag(RefreshParts.InvalidateCurrentBounds);
+            _RefreshPartContentTotalSize |= refreshParts.HasFlag(RefreshParts.RecalculateContentTotalSize);
+            _RefreshPartVisibleItems |= refreshParts.HasFlag(RefreshParts.ReloadVisibleCells);
+            _RefreshPartNativeControlsLocation |= refreshParts.HasFlag(RefreshParts.NativeControlsLocation);
+            _RefreshPartCache |= refreshParts.HasFlag(RefreshParts.InvalidateCache);
+            _RefreshPartInvalidateControl |= refreshParts.HasFlag(RefreshParts.InvalidateControl);
+            _RefreshPartRefreshControl |= refreshParts.HasFlag(RefreshParts.RefreshControl);
+            _RefreshLayers |= layers;
+
+            // Pokud právě nyní probíhá Refresh, nebudu jej provádět rekurzivně, ale nechám dřívější iteraci doběhnout a zpracovat nově požadované úkoly:
+            if (_RefreshInProgress) return;
+
+            // Nemusím řešit zámky, jsem vždy v jednom GUI threadu a nemusím tedy mít obavy z mezivláknové změny hodnot!
+            _RefreshInProgress = true;
+            try
+            {
+                while (true)
+                {
+                    // Autodetekce dalších požadavků:
+                    _RefreshPartsAutoDetect();
+
+                    // Pokud nebude co dělat, skončíme:
+                    bool doAny = _RefreshPartCurrentBounds || _RefreshPartContentTotalSize || _RefreshPartVisibleItems || _RefreshPartNativeControlsLocation ||
+                                 _RefreshPartCache || _RefreshPartInvalidateControl || _RefreshPartRefreshControl;
+                    if (!doAny) return;
+
+                    // Provedeme požadované akce; každá akce nejprve shodí svůj příznak (a teoreticky může nahodit jiný příznak):
+                    if (_RefreshPartCurrentBounds) _DoRefreshPartCurrentBounds();
+                    if (_RefreshPartContentTotalSize) _DoRefreshPartContentTotalSize();
+                    if (_RefreshPartVisibleItems) _DoRefreshPartVisibleItems();
+                    if (_RefreshPartNativeControlsLocation) _DoRefreshPartNativeControlsLocation();
+                    if (_RefreshPartCache) _DoRefreshPartCache();
+                    if (_RefreshPartInvalidateControl) _DoRefreshPartInvalidateControl();
+                    if (_RefreshPartRefreshControl) _DoRefreshPartRefreshControl();
+                }
+            }
+            catch (Exception exc)
+            {
+                DxComponent.LogAddException(exc);
+            }
+            finally
+            {
+                _RefreshInProgress = false;
+            }
+        }
+        /// <summary>
+        /// Refresh právě probíhá
+        /// </summary>
+        public bool IsRefreshInProgress { get { return _RefreshInProgress; } }
+        /// <summary>
+        /// Refresh právě probíhá
+        /// </summary>
+        private bool _RefreshInProgress { get { return _BitStorage[0]; } set { _BitStorage[0] = value; } }
+        /// <summary>
+        /// Zajistit přepočet CurrentBounds v prvcích (=provést InvalidateBounds) = provádí se po změně Zoomu a/nebo DPI
+        /// </summary>
+        private bool _RefreshPartCurrentBounds { get { return _BitStorage[1]; } set { _BitStorage[1] = value; } }
+        /// <summary>
+        /// Přepočítat celkovou velikost obsahu
+        /// </summary>
+        private bool _RefreshPartContentTotalSize { get { return _BitStorage[2]; } set { _BitStorage[2] = value; } }
+        /// <summary>
+        /// Určit aktuálně viditelné prvky
+        /// </summary>
+        private bool _RefreshPartVisibleItems { get { return _BitStorage[3]; } set { _BitStorage[3] = value; } }
+        /// <summary>
+        /// Vyřešit souřadnice nativních controlů, nacházejících se v Content panelu
+        /// </summary>
+        private bool _RefreshPartNativeControlsLocation { get { return _BitStorage[4]; } set { _BitStorage[4] = value; } }
+        /// <summary>
+        /// Resetovat cache předvykreslených controlů
+        /// </summary>
+        private bool _RefreshPartCache { get { return _BitStorage[5]; } set { _BitStorage[5] = value; } }
+        /// <summary>
+        /// Znovuvykreslit grafiku
+        /// </summary>
+        private bool _RefreshPartInvalidateControl { get { return _BitStorage[6]; } set { _BitStorage[6] = value; } }
+        /// <summary>
+        /// Explicitně vyvolat i metodu <see cref="Control.Refresh()"/>
+        /// </summary>
+        private bool _RefreshPartRefreshControl { get { return _BitStorage[7]; } set { _BitStorage[7] = value; } }
+        /// <summary>
+        /// Úložiště boolean hodnot
+        /// </summary>
+        private BitStorage32 _BitStorage { get { if (__BitStorage is null) __BitStorage = new BitStorage32(); return __BitStorage; } } private BitStorage32 __BitStorage;
+        /// <summary>
+        /// Invalidovat tyto vrstvy v rámci _RefreshPartInvalidateControl
+        /// </summary>
+        private DxBufferedLayer _RefreshLayers;
+        /// <summary>
+        /// Detekuje automatické požadavky na Refresh
+        /// </summary>
+        private void _RefreshPartsAutoDetect()
+        {
+            if (!_RefreshPartCurrentBounds)
+            {
+                decimal currentZoom = DxComponent.Zoom;
+                int currentDpi = this.CurrentDpi;
+                if (_LastCalcZoom != currentZoom || _LastCalcDeviceDpi != currentDpi)
+                    _RefreshPartCurrentBounds = true;
+            }
+        }
+        /// <summary>
+        /// Provede akci Refresh, <see cref="RefreshParts.InvalidateCurrentBounds"/>
+        /// </summary>
+        private void _DoRefreshPartCurrentBounds()
+        {
+            _RefreshPartCurrentBounds = false;
+
+            _InvalidatGroupsCurrentBounds();
+        }
+        /// <summary>
+        /// Provede akci Refresh, <see cref="RefreshParts.RecalculateContentTotalSize"/>
+        /// </summary>
+        private void _DoRefreshPartContentTotalSize()
+        {
+            _RefreshPartContentTotalSize = false;
+
+            ContentTotalSize = this.CurrentRowsTotalSize;
+        }
+        /// <summary>
+        /// Provede akci Refresh, <see cref="RefreshParts.ReloadVisibleCells"/>
+        /// </summary>
+        private void _DoRefreshPartVisibleItems()
+        {
+            _RefreshPartVisibleItems = false;
+
+            // Připravím soupis aktuálně viditelných řádků a prvků:
+            _PrepareVisibleRows();
+            _PrepareVisibleItems();
+            _PrepareVisibleGroupsItems();
+        }
+        /// <summary>
+        /// Provede akci Refresh, <see cref="RefreshParts.NativeControlsLocation"/>
+        /// </summary>
+        private void _DoRefreshPartNativeControlsLocation()
+        {
+            _RefreshPartNativeControlsLocation = false;
+
+            // Po změně viditelných prvků je třeba provést MouseLeave = prvek pod myší už není ten, co býval:
+            this.MouseLeaveItem(true);
+
+            // A zajistit, že po vykreslení prvků bude aktivován prvek, který se nachází pod myší:
+            // Až po vykreslení proto, že proces vykreslení určí aktuální viditelné souřadnice prvků!
+            this._AfterPaintSearchOnMouseItem = true;
+        }
+        /// <summary>
+        /// Provede akci Refresh, <see cref="RefreshParts.InvalidateCache"/>
+        /// </summary>
+        private void _DoRefreshPartCache()
+        {
+            _RefreshPartCache = false;
+
+            DataForm.ImageCacheInvalidate();
+        }
+        /// <summary>
+        /// Provede akci Refresh, <see cref="RefreshParts.InvalidateControl"/>
+        /// </summary>
+        private void _DoRefreshPartInvalidateControl()
+        {
+            _RefreshPartInvalidateControl = false;
+
+            var layers = this._RefreshLayers;
+            if (layers != DxBufferedLayer.None)
+                this.__ContentPanel.InvalidateLayers(layers);
+            this._RefreshLayers = DxBufferedLayer.None;
+        }
+        /// <summary>
+        /// Provede akci Refresh, <see cref="RefreshParts.RefreshControl"/>
+        /// </summary>
+        private void _DoRefreshPartRefreshControl()
+        {
+            _RefreshPartRefreshControl = false;
+
+            base.Refresh();
+        }
+        /// <summary>
+        /// Po změně DPI je třeba provést kompletní refresh (souřadnice, cache, atd)
+        /// </summary>
+        protected override void OnCurrentDpiChanged()
+        {
+            base.OnCurrentDpiChanged();
+            Refresh(RefreshParts.All);
+        }
+        /// <summary>
+        /// Je vyvoláno po změně DPI, po změně Zoomu a po změně skinu. Volá se po přepočtu layoutu.
+        /// Může vést k invalidaci interních dat v <see cref="DxScrollableContent.ContentControl"/>.
+        /// </summary>
+        protected override void OnInvalidateContentAfter()
+        {
+            base.OnInvalidateContentAfter();
+            Refresh(RefreshParts.All);
+        }
+        /// <summary>
+        /// Je voláno pokud dojde ke změně hodnoty <see cref="DxScrollableContent.ContentVirtualBounds"/>, před eventem <see cref="DxScrollableContent.ContentVirtualBoundsChanged"/>
+        /// </summary>
+        protected override void OnContentVirtualBoundsChanged()
+        {
+            base.OnContentVirtualBoundsChanged();
+            State.ContentVirtualLocation = this.ContentVirtualLocation;
+
+            Refresh(RefreshParts.AfterScroll);
+        }
+        /// <summary>
+        /// Systémový Zoom, po který byly posledně přepočteny CurrentBounds
+        /// </summary>
+        private decimal _LastCalcZoom;
+        /// <summary>
+        /// DPI this controlu, po který byly posledně přepočteny CurrentBounds
+        /// </summary>
+        private int _LastCalcDeviceDpi;
+        #endregion
+        #region Vykreslení obsahu panelu
+        /// <summary>
+        /// Inicializace kreslení
+        /// </summary>
+        private void InitializePaint()
+        {
+            _AfterPaintSearchOnMouseItem = false;
+            _PaintingItems = false;
+        }
+        /// <summary>
+        /// ContentPanel chce vykreslit některou vrstvu
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="args"></param>
+        private void _ContentPanel_PaintLayer(object sender, DxBufferedGraphicPaintArgs args)
+        {
+            switch (args.LayerId)
+            {
+                case DxBufferedLayer.AppBackground:
+                    PaintContentAppBackground(args);
+                    break;
+                case DxBufferedLayer.MainLayer:
+                    PaintContentMainLayer(args);
+                    break;
+                case DxBufferedLayer.Overlay:
+                    PaintContentOverlay(args);
+                    break;
+            }
+        }
+        /// <summary>
+        /// Metoda zajistí vykreslení aplikačního pozadí (okraj aktivních prvků)
+        /// </summary>
+        /// <param name="e"></param>
+        private void PaintContentAppBackground(DxBufferedGraphicPaintArgs e)
+        {
+            return;
+
+            bool isPainted = false;
+
+            // _VisibleGroups.ForEachExec(g => PaintGroupStandard(g, visibleOrigin, e));
+
+            var mouseControl = __CurrentOnMouseControl;
+            var mouseItem = __CurrentOnMouseItem;
+            if (mouseControl != null && mouseItem != null)
+            {
+                var indicators = mouseItem.IItem.Indicators;
+                bool isThin = indicators.HasFlag(DataFormColumnIndicatorType.MouseOverThin);
+                bool isBold = indicators.HasFlag(DataFormColumnIndicatorType.MouseOverBold);
+                if (isThin || isBold)
+                {
+                    Color color = DataFormAppearance.OnMouseIndicatorColor;
+                    PaintItemIndicator(e, mouseControl.Bounds, color, isBold, ref isPainted);
+                }
+            }
+
+            //  Specifikum bufferované grafiky:
+            // - pokud do konkrétní vrstvy jednou něco vepíšu, zůstane to tam (až do nějakého většího refreshe).
+            // - pokud v procesu PaintLayer do předaného argumentu do e.Graphics nic nevepíšu, znamená to "beze změny".
+            // - pokud tedy nyní nemám žádný control k vykreslení, ale posledně jsem něco vykreslil, měl bych grafiku smazat:
+            // - k tomu používám e.LayerUserData
+            bool oldPainted = (e.LayerUserData is bool && (bool)e.LayerUserData);
+            if (oldPainted && !isPainted)
+                e.UseBlankGraphics();
+            e.LayerUserData = isPainted;
+        }
+        /// <summary>
+        /// Zajistí hlavní vykreslení obsahu - grupy a prvky
+        /// </summary>
+        /// <param name="e"></param>
+        private void PaintContentMainLayer(DxBufferedGraphicPaintArgs e)
+        {
+            bool afterPaintSearchActiveItem = _AfterPaintSearchOnMouseItem;
+            _AfterPaintSearchOnMouseItem = false;
+            DataForm.ImagePaintStart();
+            OnPaintContentStandard(e);
+            DataForm.ImagePaintDone();
+            if (afterPaintSearchActiveItem)
+                DetectMouseChangeForCurrentPoint();
+        }
+        /// <summary>
+        /// Metoda provede standardní vykreslení grup a prvků
+        /// </summary>
+        /// <param name="e"></param>
+        private void OnPaintContentStandard(DxBufferedGraphicPaintArgs e)
+        {
+            var startTime = DxComponent.LogTimeCurrent;
+            try
+            {
+                _PaintingItems = true;
+                Point visibleOrigin = this.ContentVirtualLocation;
+                __VisibleGroups.ForEachExec(g => PaintGroupStandard(g, visibleOrigin, e));
+                __VisibleItems.ForEachExec(i => PaintItemStandard(i, visibleOrigin, e));
+            }
+            finally
+            {
+                _PaintingItems = false;
+            }
+            DxComponent.LogAddLineTime($"DxDataForm Paint Standard() Items: {__VisibleItems?.Count}; Time: {DxComponent.LogTokenTimeMilisec}", startTime);
+        }
+        /// <summary>
+        /// Provede vykreslení jedné dané grupy
+        /// </summary>
+        /// <param name="group"></param>
+        /// <param name="visibleOrigin"></param>
+        /// <param name="e"></param>
+        private void PaintGroupStandard(DxDataFormGroupDefinition group, Point visibleOrigin, DxBufferedGraphicPaintArgs e)
+        {
+            var bounds = group.CurrentGroupBounds;
+            Point location = bounds.Location.Sub(visibleOrigin);
+            group.VisibleGroupBounds = new Rectangle(location, bounds.Size);
+            bool onMouse = Object.ReferenceEquals(group, __CurrentOnMouseGroup);
+            group.PaintGroup(e, onMouse, false);
+        }
+        /// <summary>
+        /// Provede vykreslení jednoho daného prvku
+        /// </summary>
+        /// <param name="item"></param>
+        /// <param name="visibleOrigin"></param>
+        /// <param name="e"></param>
+        private void PaintItemStandard(DxDataFormItem item, Point visibleOrigin, DxBufferedGraphicPaintArgs e)
+        {
+            var controlSet = DataForm.GetControlSet(item);
+            var bounds = item.CurrentBounds;
+            Point location = bounds.Location.Sub(visibleOrigin);
+            Color? indicatorColor = GetIndicatorColor(item, out bool isBold);
+
+            // Pořadí akcí je mírně zmatené, protože:
+            // 1. Indikátor chci kreslit 'pod' obrázek controlu (Image)
+            // 2. Control ale nemusí vygenerovat obrázek (metoda CreateImage() vrátí null), pak chci vykreslit indikátor i bez existence obrázku
+            // 3. Reálná velikost obrázku (Image) nemusí odpovídat velikosti prostoru (item.CurrentBounds), protože control může mít reálně jinou výšku, než jsme mu nadiktovali my dle designu
+            // 4. Pokud tedy CreateImage vrátí obrázek, pak použijeme jeho rozměry pro vykreslení indikátoru; a pokud obrázek nevrátí, pak indikátor vykreslíme do designem určené velikosti.
+
+            Rectangle? visibleBounds = null;
+            if (controlSet.CanPaintByPainter)
+            {
+                if (item.IItem is IDataFormColumnImageText label)
+                {
+                    Control control = DataForm.GetControl(item, DxDataFormControlUseMode.Draw, null);
+                    if (control is BaseControl baseControl)
+                    {
+                        var appearance = baseControl.GetViewInfo().PaintAppearance;
+                        appearance.Font = DxComponent.ZoomToGui(appearance.Font, this.CurrentDpi);
+                        Size size = item.CurrentBounds.Size;
+                        visibleBounds = new Rectangle(location, size);
+                        appearance.DrawString(e.GraphicsCache, label.Text, visibleBounds.Value);
+                    }
+                }
+            }
+            if (!visibleBounds.HasValue && controlSet.CanPaintByImage)
+            {
+                using (var image = DataForm.CreateImage(item, e.Graphics))
+                {
+                    if (image != null)
+                    {
+                        Size size = image.Size;
+                        visibleBounds = new Rectangle(location, size);
+
+                        if (indicatorColor.HasValue)
+                            PaintItemIndicator(e, visibleBounds.Value, indicatorColor.Value, isBold);
+
+                        e.Graphics.DrawImage(image, location);
+                    }
+                }
+            }
+
+            if (!visibleBounds.HasValue)
+            {   // Když nebyl získán Image pro control, pak velikost prostoru převezmeme dle designu.
+                // Značí to ale, že dosud nebyl vykreslen Indicator, ten se kreslil "pod obrázek" ale "podle jeho velikosti".
+                visibleBounds = new Rectangle(location, bounds.Size);
+                if (indicatorColor.HasValue)
+                    PaintItemIndicator(e, visibleBounds.Value, indicatorColor.Value, isBold);
+            }
+
+            item.VisibleBounds = visibleBounds;
+        }
+        private void PaintContentOverlay(DxBufferedGraphicPaintArgs e)
+        {
+            bool isPainted = false;
+
+            var mouseControl = __CurrentOnMouseControl;
+            var mouseItem = __CurrentOnMouseItem;
+            if (mouseControl != null && mouseItem != null)
+            {
+                var indicators = mouseItem.IItem.Indicators;
+                bool isThin = indicators.HasFlag(DataFormColumnIndicatorType.MouseOverThin);
+                bool isBold = indicators.HasFlag(DataFormColumnIndicatorType.MouseOverBold);
+                if (isThin || isBold)
+                {
+                    Color color = DataFormAppearance.OnMouseIndicatorColor;
+                    PaintItemIndicator(e, mouseControl.Bounds, color, isBold, ref isPainted);
+                }
+            }
+
+            //  Specifikum bufferované grafiky:
+            // - pokud do konkrétní vrstvy jednou něco vepíšu, zůstane to tam (až do nějakého většího refreshe).
+            // - pokud v procesu PaintLayer do předaného argumentu do e.Graphics nic nevepíšu, znamená to "beze změny".
+            // - pokud tedy nyní nemám žádný control k vykreslení, ale posledně jsem něco vykreslil, měl bych grafiku smazat:
+            // - k tomu používám e.LayerUserData
+            bool oldPainted = (e.LayerUserData is bool && (bool)e.LayerUserData);
+            if (oldPainted && !isPainted)
+                e.UseBlankGraphics();
+            e.LayerUserData = isPainted;
+        }
+        /// <summary>
+        /// Metoda vrátí barvu, kterou se má vykreslit indikátor pro daný prvek
+        /// </summary>
+        /// <param name="item"></param>
+        /// <param name="isBold"></param>
+        /// <returns></returns>
+        private Color? GetIndicatorColor(DxDataFormItem item, out bool isBold)
+        {
+            isBold = false;
+            if (item == null) return null;
+
+            var indicators = item.IItem.Indicators;
+            bool itemIndicatorsVisible = DataForm.ItemIndicatorsVisible;
+            var appearance = DataFormAppearance;
+
+            Color? focusColor = null;             // Pokud prvek má focus, pak zde bude barva orámování focusu
+
+            Color? statusColor = null;
+            if (item.IItem.IndicatorColor.HasValue)
+            {   // Zadání barvy IndicatorColor potlačí všechny ostatní příznaky indikátorů:
+                if (IsIndicatorActive(indicators, itemIndicatorsVisible, DataFormColumnIndicatorType.IndicatorColorAllwaysBold, DataFormColumnIndicatorType.IndicatorColorOnDemandBold, DataFormColumnIndicatorType.IndicatorColorAllwaysThin, DataFormColumnIndicatorType.IndicatorColorOnDemandThin, ref isBold))
+                    statusColor = item.IItem.IndicatorColor.Value;
+            }
+            else
+            {
+                if (IsIndicatorActive(indicators, itemIndicatorsVisible, DataFormColumnIndicatorType.ErrorAllwaysBold, DataFormColumnIndicatorType.ErrorOnDemandBold, DataFormColumnIndicatorType.ErrorAllwaysThin, DataFormColumnIndicatorType.ErrorOnDemandThin, ref isBold))
+                    statusColor = appearance.ErrorIndicatorColor;
+                else if (IsIndicatorActive(indicators, itemIndicatorsVisible, DataFormColumnIndicatorType.WarningAllwaysBold, DataFormColumnIndicatorType.WarningOnDemandBold, DataFormColumnIndicatorType.WarningAllwaysThin, DataFormColumnIndicatorType.WarningOnDemandThin, ref isBold))
+                    statusColor = appearance.WarningIndicatorColor;
+                else if (IsIndicatorActive(indicators, itemIndicatorsVisible, DataFormColumnIndicatorType.CorrectAllwaysBold, DataFormColumnIndicatorType.CorrectOnDemandBold, DataFormColumnIndicatorType.CorrectAllwaysThin, DataFormColumnIndicatorType.CorrectOnDemandThin, ref isBold))
+                    statusColor = appearance.CorrectIndicatorColor;
+                else if (IsIndicatorActive(indicators, itemIndicatorsVisible, DataFormColumnIndicatorType.RequiredAllwaysBold, DataFormColumnIndicatorType.RequiredOnDemandBold, DataFormColumnIndicatorType.RequiredAllwaysThin, DataFormColumnIndicatorType.RequiredOnDemandThin, ref isBold))
+                    statusColor = appearance.RequiredIndicatorColor;
+            }
+
+            bool hasFocus = focusColor.HasValue;
+            bool hasStatus = statusColor.HasValue;
+            // Pokud bych měl souběh obou barev (focus i status), pak výsledná barva bude Morph (70% status + 30% focus)
+            Color? resultColor = ((hasFocus && hasStatus) ? (Color?)statusColor.Value.Morph(focusColor.Value, 0.70f) :
+                                 (hasFocus ? focusColor :
+                                 (hasStatus ? statusColor : (Color?)null)));
+
+            return resultColor;
+        }
+        /// <summary>
+        /// Metoda určí, zda indikátor prvku (<paramref name="indicators"/>) vyhovuje některým zadaným hodnotám a vrátí true pokud ano.
+        /// </summary>
+        /// <param name="indicators"></param>
+        /// <param name="itemIndicatorsVisible"></param>
+        /// <param name="allwaysBold"></param>
+        /// <param name="onDemandBold"></param>
+        /// <param name="alwaysThin"></param>
+        /// <param name="onDemandThin"></param>
+        /// <param name="isBold"></param>
+        /// <returns></returns>
+        private bool IsIndicatorActive(DataFormColumnIndicatorType indicators, bool itemIndicatorsVisible,
+            DataFormColumnIndicatorType allwaysBold, DataFormColumnIndicatorType onDemandBold, DataFormColumnIndicatorType alwaysThin, DataFormColumnIndicatorType onDemandThin,
+            ref bool isBold)
+        {
+            if (indicators.HasFlag(allwaysBold) || (itemIndicatorsVisible && indicators.HasFlag(onDemandBold)))
+            {
+                isBold = true;
+                return true;
+            }
+            if (indicators.HasFlag(alwaysThin) || (itemIndicatorsVisible && indicators.HasFlag(onDemandThin)))
+                return true;
+            return false;
+        }
+        /// <summary>
+        /// Zajistí vykreslení slabého orámování (prozáření okrajů) pro daný prostor (prvek) danou barvou.
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="bounds"></param>
+        /// <param name="color"></param>
+        /// <param name="isBold"></param>
+        private void PaintItemIndicator(DxBufferedGraphicPaintArgs e, Rectangle bounds, Color color, bool isBold)
+        {
+            bool isPainted = false;
+            PaintItemIndicator(e, bounds, color, isBold, ref isPainted);
+        }
+        /// <summary>
+        /// Zajistí vykreslení slabého orámování (prozáření okrajů) pro daný prostor (prvek) danou barvou.
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="bounds"></param>
+        /// <param name="color"></param>
+        /// <param name="isBold"></param>
+        /// <param name="isPainted"></param>
+        private void PaintItemIndicator(DxBufferedGraphicPaintArgs e, Rectangle bounds, Color color, bool isBold, ref bool isPainted)
+        {
+            // Tohle je vlastnost Drawing světa: pokud control má šířku 100, tak na pixelu 100 už není kreslen on ale to za ním...:
+            bounds.Width--;
+            bounds.Height--;
+
+            // Kontrola získání barvy pozadí:
+            //  var bgc = DxComponent.GetSkinColor(SkinElementColor.Control_PanelBackColor);
+            //  var bgc1 = DxComponent.GetSkinColor(SkinElementColor.CommonSkins_Control);
+            //  if (bgc != bgc1)
+            //  { }
+
+            if (isBold)
+            {
+                e.Graphics.DrawRectangle(DxComponent.PaintGetPen(color, 48), bounds.Enlarge(3));
+                e.Graphics.DrawRectangle(DxComponent.PaintGetPen(color, 106), bounds.Enlarge(2));
+                e.Graphics.DrawRectangle(DxComponent.PaintGetPen(color, 160), bounds.Enlarge(1));
+            }
+            else
+            {
+                e.Graphics.DrawRectangle(DxComponent.PaintGetPen(color, 48), bounds.Enlarge(2));
+                e.Graphics.DrawRectangle(DxComponent.PaintGetPen(color, 80), bounds.Enlarge(1));
+            }
+            isPainted = true;
+        }
+        /// <summary>
+        /// Pole jednotlivých vrstev bufferované grafiky
+        /// </summary>
+        private static DxBufferedLayer[] BufferedLayers { get { return new DxBufferedLayer[] { DxBufferedLayer.AppBackground, DxBufferedLayer.MainLayer, DxBufferedLayer.Overlay }; } }
+        /// <summary>
+        /// Souhrn vrstev použitých v this controlu, používá se při invalidaci všech vrstev
+        /// </summary>
+        private static DxBufferedLayer UsedLayers { get { return DxBufferedLayer.AppBackground | DxBufferedLayer.MainLayer | DxBufferedLayer.Overlay; } }
+        /// <summary>
+        /// Příznak, že po dokončení vykreslení standardní vrstvy máme najít aktivní prvek na aktuální souřadnici myši a případně jej aktivovat.
+        /// Příznak je nastaven po scrollu, protože původní prvek pod myší nám "ujel jinam" a nyní pod myší může být narolovaný jiný aktivní prvek.
+        /// </summary>
+        private bool _AfterPaintSearchOnMouseItem;
+        private bool _PaintingItems = false;
+
+        #endregion
+        #region Fyzické controly - tvorba, správa, vykreslení bitmapy skrze control
+        /// <summary>
+        /// Kompletní informace o jednom prvku: index řádku, deklarace, control set a fyzický control
+        /// </summary>
+        private class ControlOneInfo
+        {
+            /// <summary>
+            /// Řádek
+            /// </summary>
+            public int RowIndex;
+            /// <summary>
+            /// Datový prvek, nacházející se nyní pod myší
+            /// </summary>
+            public DxDataFormItem Item;
+            /// <summary>
+            /// Datový set popisující control, nacházející se nyní pod myší
+            /// </summary>
+            public DxDataFormControlSet ControlSet;
+            /// <summary>
+            /// Vizuální control, nacházející se nyní pod myší
+            /// </summary>
+            public Control Control;
+        }
+        #endregion
+        #region Stav panelu - umožní uložit aktuální stav do objektu, a v budoucnu tento stav jej restorovat
+        /// <summary>
+        /// Stav panelu - pozice scrollbarů atd. 
+        /// Podporuje přepínání záložek - vizuálně jiný obsah, ale promítaný prostřednictvím jedné instance <see cref="DxDataFormPanel"/>.
+        /// Při čtení bude vrácen objekt obsahující aktuální stav.
+        /// Při zápisu budou hodnoty z vkládaného objektu aplikovány do panelu
+        /// </summary>
+        internal DxDataFormState State
+        {
+            get
+            {
+                if (_State == null)
+                    _State = new DxDataFormState();
+                _FillStateFromPanel();
+                return _State;
+            }
+            set
+            {
+                _State = value;
+                _ApplyStateToPanel();
+            }
+        }
+        /// <summary>Stav panelu - pozice scrollbarů atd. </summary>
+        private DxDataFormState _State;
+        /// <summary>
+        /// Klíčové hodnoty z this panelu uloží do objektu <see cref="_State"/>.
+        /// </summary>
+        private void _FillStateFromPanel()
+        {
+            if (_State == null) return;
+            _State.ContentVirtualLocation = this.ContentVirtualLocation;
+        }
+        /// <summary>
+        /// Z objektu <see cref="_State"/> opíše klíčové hodnoty do this panelu
+        /// </summary>
+        private void _ApplyStateToPanel()
+        {
+            this.ContentVirtualLocation = _State?.ContentVirtualLocation ?? Point.Empty;
+        }
+        #endregion
+    }
+    /// <summary>
+    /// Identifikátor jedné konkrétní části <see cref="DxDataFormPart"/>.
+    /// Hodnoty <see cref="PartXId"/> i <see cref="PartYId"/> lze za běhu měnit, protože instance lze za dobu života přesouvat (přidávat / odebírat) 
+    /// a tím se mění pozice části <see cref="DxDataFormPart"/>.
+    /// </summary>
+    internal class DxDataFormPartId
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public DxDataFormPartId() { }
+        /// <summary>
+        /// Konstruktor s danými hodnotami
+        /// </summary>
+        /// <param name="partXId"></param>
+        /// <param name="partYId"></param>
+        public DxDataFormPartId(int partXId, int partYId)
+        {
+            PartXId = partXId;
+            PartYId = partYId;
+        }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return $"PartId: X={PartXId}; Y={PartYId}";
+        }
+        /// <summary>
+        /// Identifikátor this části ve směru X = vodorovném = sloupce.
+        /// Výchozí část má ID = 0; pokud se svislým splitterem rozdělí na dvě, pak část vpravo bude mít <see cref="PartXId"/> = 1, atd.
+        /// S tímto ID se pak dotazuje parentů (dataformu a jeho dat) na řádky, sloupce atd.
+        /// </summary>
+        public int PartXId { get; set; }
+        /// <summary>
+        /// Identifikátor this části ve směru Y = vodorovném = řádky.
+        /// Výchozí část má ID = 0; pokud se vodorovným splitterem rozdělí na dvě, pak část dole bude mít <see cref="PartYId"/> = 1, atd.
+        /// S tímto ID se pak dotazuje parentů (dataformu a jeho dat) na řádky, sloupce atd.
+        /// </summary>
+        public int PartYId { get; set; }
+    }
+    #endregion
+    #region class DxDataFormRow : Jeden vizuální řádek v rámci DxDataFormRowBand
+    /// <summary>
+    /// DxDataFormRow : Jeden vizuální řádek v rámci DxDataFormRowBand
+    /// </summary>
+    internal class DxDataFormRow : IDisposable
+    {
+        #region Konstruktor, vlastník, prvky
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="dataForm">Majitel</param>
+        /// <param name="partY">Oblast řádků</param>
+        /// <param name="rowId">ID řádku</param>
+        /// <param name="rowIndex">Index řádku ve zdroji</param>
+        public DxDataFormRow(DxDataForm dataForm, int partY, int rowId, int rowIndex)
+        {
+            __DataForm = dataForm;
+            __RowType = DxDataFormRowType.RowData;
+            __RowId = rowId;
+            __RowIndex = rowIndex;
+            __TotalYPosition = new Int32Range();
+        }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="dataForm">Majitel</param>
+        /// <param name="partY">Oblast řádků</param>
+        /// <param name="rowType">Typ řádku</param>
+        public DxDataFormRow(DxDataForm dataForm, int partY, DxDataFormRowType rowType)
+        {
+            __DataForm = dataForm;
+            __RowType = rowType;
+            __RowId = -1;
+            __TotalYPosition = new Int32Range();
+        }
+        /// <summary>
+        /// Dispose
+        /// </summary>
+        public void Dispose()
+        {
+            __DataForm = null;
+            __RowType = DxDataFormRowType.None;
+            __RowId = -1;
+            __TotalYPosition = null;
+        }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return $"RowType: {__RowType}; RowIndex: {RowIndex}; RowId: {__RowId}; VisualPositions: {TotalYPosition}";
+        }
+        /// <summary>Vlastník - <see cref="DxDataFormPart"/></summary>
+        private DxDataForm __DataForm;
+        /// <summary>Typ řádku</summary>
+        private DxDataFormRowType __RowType;
+        /// <summary>ID řádku, odkazuje se do <see cref="DxDataForm"/> pro data</summary>
+        private int __RowId;
+        /// <summary>Pořadový index řádku, počínaje 0</summary>
+        private int __RowIndex;
+        /// <summary>Vizuální index řádku: 0 a kladné pro viditelné řádky, -1 pro neviditelné</summary>
+        private int __VisualIndex;
+        /// <summary>
+        /// Vlastník - <see cref="DxDataForm"/>
+        /// </summary>
+        public DxDataForm DataForm { get { return this.__DataForm; } }
+        /// <summary>
+        /// Typ řádku
+        /// </summary>
+        public DxDataFormRowType RowType { get { return this.__RowType; } }
+        /// <summary>
+        /// Aktuální výška tohoto řádku. Výchozí stav je, že řádek přebírá tuto výšku z <see cref="DxDataForm.CurrentRowHeight"/>.
+        /// Hodnotu lze setovat: pokud je setována not null, pak bude akceptována; pokud je setována null, pak se začne opět přebírat z <see cref="DxDataForm.CurrentRowHeight"/>.
+        /// Hodnota musí obsahovat i výšku oddělovače mezi řádky.
+        /// </summary>
+        public int CurrentRowHeight 
+        {
+            get { return (__CurrentRowHeight ?? this.DataForm.CurrentRowHeight); }
+            set { __CurrentRowHeight = value; }
+        }
+        private int? __CurrentRowHeight;
+        /// <summary>
+        /// ID řádku, odkazuje se do <see cref="DxDataForm"/> pro data
+        /// </summary>
+        public int RowId { get { return this.__RowId; } }
+        /// <summary>
+        /// Pořadový index řádku v datovém zdroji, počínaje 0.
+        /// </summary>
+        public int RowIndex { get { return this.__RowIndex; } }
+        /// <summary>
+        /// Prvek je viditelný vlivem filtru?
+        /// Lze setovat.
+        /// Pokud je false, pak hodnota <see cref="VisualIndex"/> je -1 a <see cref="TotalYPosition"/> je null!
+        /// </summary>
+        public bool IsVisibleFilter { get; set; }
+        /// <summary>
+        /// Vizuální index řádku při zobrazení podle aktuálního filtru a třídění, počínaje 0.
+        /// V tomto pořadí jsou řádky zobrazeny.
+        /// V poli řádků musí být tato hodnota kontinuální a vzestupná, počínaje 0.
+        /// Datové řádky s hodnotou -1 (a jinou zápornou) nebudou zobrazeny = nevyhovují filtru.
+        /// </summary>
+        public int VisualIndex { get { return (IsVisibleFilter ? this.__VisualIndex : -1); } }
+        /// <summary>
+        /// Umístění na ose Y; vizuální pixely v rámci celého Bandu - u typu řádku <see cref="DxDataFormRowType.RowHeader"/>,
+        /// <see cref="DxDataFormRowType.RowFilter"/> a <see cref="DxDataFormRowType.RowFooter"/> jsou permanentní (tyto řádky jsou nepohyblivé při pohybu ScrollBaru),
+        /// u řádků typu řádku <see cref="DxDataFormRowType.RowData"/> a <see cref="DxDataFormRowType.RowSummary"/> jsou pohyblivé podle ScrollBaru.
+        /// <para/>
+        /// Úplně první řádek má tedy souřadnici Y = 0, úplně poslední řádek může mít souřadnici Y třeba 150 000 pixelů = hluboko dole. V tomto rámci se scrolluje.
+        /// <para/>
+        /// Řádek který nevyhovuje filtru (má <see cref="IsVisibleFilter"/> = false) zde má null! 
+        /// S takovým řádkem se nemá vizuálně počítat.
+        /// </summary>
+        public Int32Range TotalYPosition { get { return (IsVisibleFilter ? __TotalYPosition : null); } } private Int32Range __TotalYPosition;
+        /// <summary>
+        /// Řádek se aktuálně nachází ve viditelné oblasti = je z něj zobrazen přinejmenším jeden pixel?
+        /// </summary>
+        public bool IsInVisibleArea { get { return __IsInVisibleArea; } set { __IsInVisibleArea = value; } } private bool __IsInVisibleArea;
+        /// <summary>
+        /// Umístění na ose Y; reálné pixely v rámci celého Bandu; nastavuje se pouze pro řádky 
+        /// typu <see cref="DxDataFormRowType.RowData"/> a <see cref="DxDataFormRowType.RowSummary"/> = ty jsou pohyblivé podle ScrollBaru.
+        /// 
+        /// </summary>
+        public Int32Range CurrentPositions { get { return __CurrentPositions; } } private Int32Range __CurrentPositions;
+
+        #endregion
+        /// <summary>
+        /// Metoda do všech řádků dané kolekce naplní jejich hodnoty <see cref="VisualIndex"/> a <see cref="TotalYPosition"/>,
+        /// podle hodnoty <see cref="IsVisibleFilter"/> a <see cref="CurrentRowHeight"/>.
+        /// </summary>
+        /// <param name="rows"></param>
+        internal static void SetVisualPositions(IEnumerable<DxDataFormRow> rows)
+        {
+            if (rows is null) return;
+            int visualIndex = 0;
+            int visualBegin = 0;
+            foreach (var row in rows)
+            {
+                if (row.IsVisibleFilter)
+                {
+                    row.__VisualIndex = visualIndex++;
+                    int visualHeight = row.CurrentRowHeight;
+                    int visualEnd = visualBegin + visualHeight;
+                    row.__TotalYPosition.Store(visualBegin, visualEnd);
+                    visualBegin = visualEnd;
+                }
+                else
+                {
+                    row.__VisualIndex = -1;
+                }
+            }
+        }
+
+
+
+
+        public List<DxDataFormGroupDefinition> Groups { get { return this.__DataForm.CurrentGroupDefinitions; } }
+
+
+        /// <summary>
+        /// Zahodí a uvolní buňky
+        /// </summary>
+        private void DisposeCells()
+        { }
+
+
+    }
+    #endregion
+    #region class DxDataFormCell : Jedna vizuální buňka v rámci DataFormu, průnik řádku a sloupce
+    /// <summary>
+    /// <see cref="DxDataFormCell"/> : Jedna vizuální buňka v rámci DataFormu, průnik řádku a sloupce.
+    /// Musí být v maximální míře lehká: rychle vytvořitelná, s minimální spotřebou paměti.
+    /// </summary>
+    internal class DxDataFormCell
+    {
+
+    }
+    #endregion
+    #region class DxDataFormGroup : Třída zobrazující jednu konkrétní grupu, zobrazenou na konkrétním řádku na stránce
+    /// <summary>
+    /// <see cref="DxDataFormGroup"/> : Třída zobrazující jednu konkrétní grupu, zobrazenou na konkrétním řádku na stránce.
+    /// Grupa obsahuje prvky <see cref="DxDataFormItem"/>.
+    /// </summary>
+    internal class DxDataFormGroup
+    {
+        #region Konstruktor, vlastník, prvky
+        /// <summary>
+        /// Vytvoří a vrátí List obsahující <see cref="DxDataFormGroupDefinition"/>, vytvořený z dodaných instancí <see cref="IDataFormGroup"/>.
+        /// </summary>
+        /// <param name="dataPage"></param>
+        /// <param name="iGroups"></param>
+        /// <returns></returns>
+        public static List<DxDataFormGroup> CreateList(DxDataFormPage dataPage, IEnumerable<IDataFormGroup> iGroups)
+        {
+            List<DxDataFormGroup> dataGroups = new List<DxDataFormGroup>();
+            if (iGroups != null)
+            {
+                foreach (IDataFormGroup iGroup in iGroups)
+                {
+                    if (iGroup == null) continue;
+                    var dataGroup = new DxDataFormGroup(dataPage, iGroup);
+                    dataGroups.Add(dataGroup);
+                }
+            }
+            return dataGroups;
+        }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="dataPage"></param>
+        /// <param name="iGroup"></param>
+        public DxDataFormGroup(DxDataFormPage dataPage, IDataFormGroup iGroup)
+        {
+            __DataPage = dataPage;
+            __IGroup = iGroup;
+            __Items = new List<DxDataFormItem>();
+            DxDataFormItem.AddToList(this, true, iGroup?.GroupHeader?.HeaderItems, __Items);
+            DxDataFormItem.AddToList(this, false, iGroup?.Items, __Items);
+            _CalculateAutoSize();
+            InvalidateBounds();
+        }
+        /// <summary>Vlastník - <see cref="DxDataFormPage"/></summary>
+        private DxDataFormPage __DataPage;
+        /// <summary>Deklarace grupy</summary>
+        private IDataFormGroup __IGroup;
+        /// <summary>Prvky</summary>
+        private List<DxDataFormItem> __Items;
+        /// <summary>
+        /// Vlastník - <see cref="DxDataForm"/>
+        /// </summary>
+        public DxDataForm DataForm { get { return this.__DataPage?.DataForm; } }
+        /// <summary>
+        /// Vlastník - <see cref="DxDataFormPage"/>
+        /// </summary>
+        public DxDataFormPage DataPage { get { return __DataPage; } }
+        /// <summary>
+        /// Deklarace grupy
+        /// </summary>
+        private IDataFormGroup _IGroup { get { return __IGroup; } }
+        /// <summary>
+        /// Jednotlivé prvky grupy
+        /// </summary>
+        public IList<DxDataFormItem> Items { get { return __Items; } }
+        /// <summary>
+        /// Počet celkem deklarovaných prvků
+        /// </summary>
+        internal int ItemsCount { get { return __Items.Count; } }
+        /// <summary>
+        /// Viditelnost grupy
+        /// </summary>
+        public bool IsVisible { get { return _IGroup.IsVisible; } }
+        #endregion
+        #region Data o grupě
+        /// <summary>
+        /// Řízení layoutu: na této grupě je povoleno zalomení sloupce = tato grupa může být v případě potřeby umístěna jako první do dalšího sloupce
+        /// </summary>
+        internal bool LayoutAllowBreakToNewColumn { get { return (_IGroup.LayoutMode.HasFlag(DatFormGroupLayoutMode.AllowBreakToNewColumn)); } }
+        /// <summary>
+        /// Řízení layoutu: na této grupě je povinné zalomení sloupce = tato grupa má být umístěna jako první do dalšího sloupce
+        /// </summary>
+        internal bool LayoutForceBreakToNewColumn { get { return (_IGroup.LayoutMode.HasFlag(DatFormGroupLayoutMode.ForceBreakToNewColumn)); } }
+
+        #endregion
+        #region Souřadnice designové (velikost a souřadnice počátku Items)
+        /// <summary>
+        /// Prostor, ve kterém je vykreslen text titulku a případné další prvky.
+        /// Je umístěn v <see cref="Coordinates.HeaderBackgroundBounds"/> a je oproti němu zmenšen o <see cref="Coordinates.HeaderPadding"/> dovnitř.
+        /// Je relativní v rámci this grupy.
+        /// </summary>
+        internal Rectangle DesignTitleBounds { get { return __DesignTitleBounds; } }
+        private Rectangle __DesignTitleBounds;
+        /// <summary>
+        /// Souřadnice a velikost prostoru v rámci grupy, ve kterém jsou zobrazeny jednotlivé Items = <see cref="DxDataFormItem.DesignBounds"/>.
+        /// Hodnota je relativní k this grupě a je v designových pixelech bez Zoomu.
+        /// </summary>
+        internal Rectangle DesignContentBounds { get { return __DesignContentBounds; } }
+        private Rectangle __DesignContentBounds;
+        /// <summary>
+        /// Zajistí provedení výpočtu automatické velikosti grupy.
+        /// Reaguje na <see cref="IDataFormGroup.DesignPadding"/>, čte prvky <see cref="Items"/> 
+        /// a určuje hodnoty do <see cref="DesignContentBounds"/>
+        /// </summary>
+        private void _CalculateAutoSize()
+        {
+            // Získám definici souřadnic v grupě:
+            var iGroup = _IGroup;
+            var coordinates = new Coordinates() { BorderRange = iGroup.DesignBorderRange, Padding = iGroup.DesignPadding };
+            var groupTitle = iGroup.GroupHeader;
+            if (groupTitle != null && groupTitle.DesignHeaderHeight.HasValue && groupTitle.DesignHeaderHeight.Value > 0)
+            {
+                coordinates.HeaderHeight = groupTitle.DesignHeaderHeight.Value;
+                coordinates.HeaderPadding = groupTitle.DesignTitlePadding;
+                coordinates.LineRange = groupTitle.DesignLineRange;
+            }
+
+            // Určím velikost grupy:
+            var designWidth = iGroup.DesignWidth;
+            var designHeight = iGroup.DesignHeight;
+            if (!(designWidth.HasValue && designHeight.HasValue))
+            {   // Některá z hodnot (DesignWidth nebo DesignHeight) není zadaná, musíme ji dopočítat podle aktuálních prvků:
+                var sizeOverheads = coordinates.SizeOverhead;
+                var itemSummaryBounds = this.Items.Select(i => i.DesignBounds).SummaryVisibleRectangle() ?? Rectangle.Empty;
+                if (!designWidth.HasValue)
+                    designWidth = itemSummaryBounds.Right + sizeOverheads.Width;
+                if (!designHeight.HasValue)
+                    designHeight = itemSummaryBounds.Bottom + sizeOverheads.Height;
+            }
+            coordinates.Size = new Size(designWidth.Value, designHeight.Value);
+
+            // Uložíme souřadnice jako celek a také načteme ContentBounds (=výsledek výpočtu) a uložíme do trvalé proměnné (kvůli rychlosti).
+            __DesignCoordinates = coordinates;
+            __DesignTitleBounds = coordinates.TitleBounds;
+            __DesignContentBounds = coordinates.ContentBounds;
+        }
+        /// <summary>
+        /// Souřadný systém v Design hodnotách (bez Zoomu)
+        /// </summary>
+        private Coordinates __DesignCoordinates;
+        #endregion
+        #region Souřadnice aktuální, viditelné
+        /// <summary>
+        /// Na této souřadnici (reálné) v rámci grupy začíná souřadnice 0/0 jejich prvků.
+        /// Tuto hodnotu určuje správce DataFormu při tvorbě layoutu (Statický i dynamický laoyut).
+        /// Tvorba layoutu probíhá po každé změně rozměru DataFormu i změně Zoomu a DPI.
+        /// <para/>
+        /// Po setování této souřadnice proběhne invalidace souřadnic Current i Visible, i jednotlivých prvků.
+        /// Následně jsou tyto souřadnice on-demand přepočteny.
+        /// </summary>
+        public Point CurrentGroupOrigin { get { return __CurrentGroupOrigin; } set { __CurrentGroupOrigin = value; InvalidateBounds(); } }
+        private Point __CurrentGroupOrigin;
+        /// <summary>
+        /// Reálná velikost grupy v aktuálním Zoomu.
+        /// </summary>
+        public Size CurrentGroupSize { get { this._CheckCurrentBounds(); return __CurrentGroupSize; } }
+        private Size __CurrentGroupSize;
+        /// <summary>
+        /// Aktuální reálná absolutní (=v koordinátech vizuálního controlu včetně Zoomu!) souřadnice této grupy. 
+        /// Souřadnice je daná počátkem <see cref="CurrentGroupOrigin"/>, který musí setovat koordinátor stránky, 
+        /// a velikostí grupy <see cref="CurrentGroupSize"/>, která vychází z deklarace grupy <see cref="IDataFormGroup.DesignWidth"/> a <see cref="IDataFormGroup.DesignHeight"/>, a je přepočtena Zoomem a DPI.
+        /// <para/>
+        /// Tato souřadnice ale není posunuta ScrollBarem (je absolutní).
+        /// Posunutá vizuální souřadnice je v <see cref="VisibleGroupBounds"/>.
+        /// </summary>
+        public Rectangle CurrentGroupBounds { get { this._CheckCurrentBounds(); return new Rectangle(__CurrentGroupOrigin, __CurrentGroupSize); } }
+        /// <summary>
+        /// Invaliduje souřadnice <see cref="CurrentGroupSize"/>, <see cref="CurrentGroupBounds"/> a <see cref="VisibleGroupBounds"/>.
+        /// Invaliduje i svoje Items.
+        /// Invalidují se souřadnice typu Current a Visible. 
+        /// Tyto souřadnice budou on-demand přepočteny ze souřadnic typu Design, podle aktuálních hodnot Zoom a DPI.
+        /// </summary>
+        public void InvalidateBounds()
+        {
+            __CurrentCoordinatesValid = false;
+            __Items.ForEachExec(i => i.InvalidateBounds());
+        }
+        /// <summary>
+        /// Zajistí, že souřadnice <see cref="__CurrentGroupSize"/> a budou platné k souřadnicím designovým a k hodnotám aktuálním DPI
+        /// </summary>
+        /// <param name="force"></param>
+        private void _CheckCurrentBounds(bool force = false)
+        {
+            if (force || !__CurrentCoordinatesValid || __CurrentCoordinates is null)
+            {
+                if (__CurrentCoordinates is null) __CurrentCoordinates = new Coordinates();
+                __CurrentCoordinatesValid = true;
+
+                __CurrentCoordinates.ZoomToGui(__DesignCoordinates, DataForm.CurrentDpi);
+
+                // Opíšu si sadu výsledků z Coordinates, protože tam jsou "vypočítávané", a my je chceme mít permanentní:
+                this.__CurrentGroupSize = __CurrentCoordinates.Size;
+                this.__CurrentBorderBounds = __CurrentCoordinates.VisibleBorder ? (Rectangle?)__CurrentCoordinates.BorderOuterBounds : null;
+                this.__CurrentBorderSizes = __CurrentCoordinates.BorderRange?.Size;
+                this.__CurrentGroupBackground = __CurrentCoordinates.GroupBackgroundBounds;
+                this.__CurrentTitleBackground = __CurrentCoordinates.HasHeader ? (Rectangle?)__CurrentCoordinates.HeaderBackgroundBounds : null;
+                this.__CurrentTitleTextBounds = __CurrentCoordinates.HasHeader ? (Rectangle?)__CurrentCoordinates.TitleBounds : null;
+                this.__CurrentTitleLineBounds = __CurrentCoordinates.VisibleLine ? (Rectangle?)__CurrentCoordinates.TitleLineBounds : null;
+                this.__CurrentContentBackground = __CurrentCoordinates.ContentBackgroundBounds;
+                this.__CurrentContentBounds = __CurrentCoordinates.ContentBounds;
+
+                // Naše hodnota souřadnice (this.__CurrentGroupOrigin) je dána externě, musím ji zachovat, vložím ji do __CurrentCoordinates.Location:
+                __CurrentCoordinates.Location = this.__CurrentGroupOrigin;
+
+            }
+        }
+        /// <summary>
+        /// Souřadný systém v Current hodnotách (s aplikovaným Zoomem)
+        /// </summary>
+        private Coordinates __CurrentCoordinates;
+        /// <summary>
+        /// Hodnoty v <see cref="__CurrentCoordinates"/> jsou platné?
+        /// </summary>
+        private bool __CurrentCoordinatesValid;
+        /// <summary>
+        /// Souřadnice borderu. Šířka borderu je <see cref="__CurrentBorderSizes"/>.
+        /// Tato hodnota není autovalidována.
+        /// </summary>
+        private Rectangle? __CurrentBorderBounds;
+        /// <summary>
+        /// Šířka borderu. Souřadnice borderu je <see cref="__CurrentBorderBounds"/>.
+        /// Tato hodnota není autovalidována.
+        /// </summary>
+        private int? __CurrentBorderSizes;
+        /// <summary>
+        /// Souřadnice celého pozadí (titulek + content).
+        /// Tato hodnota není autovalidována.
+        /// </summary>
+        private Rectangle? __CurrentGroupBackground;
+        /// <summary>
+        /// Souřadnice pozadí titulku.
+        /// Tato hodnota není autovalidována.
+        /// </summary>
+        private Rectangle? __CurrentTitleBackground;
+        /// <summary>
+        /// Souřadnice textu titulku = zmenšeno o Padding od <see cref="__CurrentTitleBackground"/>.
+        /// Tato hodnota není autovalidována.
+        /// </summary>
+        private Rectangle? __CurrentTitleTextBounds;
+        /// <summary>
+        /// Souřadnice linky podtržení titulku.
+        /// Tato hodnota není autovalidována.
+        /// </summary>
+        private Rectangle? __CurrentTitleLineBounds;
+        /// <summary>
+        /// Souřadnice pozadí contentu (prvky).
+        /// Tato hodnota není autovalidována.
+        /// </summary>
+        private Rectangle? __CurrentContentBackground;
+        /// <summary>
+        /// Souřadnice prvků = zmenšeno o Padding od <see cref="__CurrentContentBackground"/>.
+        /// Tato hodnota není autovalidována.
+        /// </summary>
+        private Rectangle? __CurrentContentBounds;
+        /// <summary>
+        /// Metoda vrátí aktuální viditelnou souřadnici daného Current prostoru.
+        /// Na vstupu je souřadnice v koordinátech grupy, na výstupu je v koordinátech controlu.
+        /// </summary>
+        /// <param name="currentBounds"></param>
+        /// <returns></returns>
+        private Rectangle? _GetVisibleBounds(Rectangle? currentBounds)
+        {
+            var visibleGroupBounds = __VisibleGroupBounds;
+            if (visibleGroupBounds.HasValue && currentBounds.HasValue) return currentBounds.Value.Add(visibleGroupBounds.Value.Location);
+            return null;
+        }
+        /// <summary>
+        /// Fyzické pixelové souřadnice této grupy na vizuálním controlu, kde se nyní tento prvek nachází.
+        /// Jde o vizuální souřadnice v koordinátech controlu, odpovídají např. pohybu myši.
+        /// Může být null, pak prvek není zobrazen. Null je i po invalidaci <see cref="InvalidateBounds()"/>.
+        /// Tuto hodnotu sem ukládá řídící třída v procesu kreslení jako reálné souřadnice, kam byl prvek vykreslen.
+        /// </summary>
+        public Rectangle? VisibleGroupBounds { get { return __VisibleGroupBounds; } set { __VisibleGroupBounds = value; } }
+        private Rectangle? __VisibleGroupBounds;
+        /// <summary>
+        /// Vrátí true, pokud this prvek se nachází v rámci dané virtuální souřadnice.
+        /// Tedy pokud souřadnice <see cref="CurrentGroupBounds"/> se alespoň zčásti nacházejí uvnitř souřadného prostoru dle parametru <paramref name="virtualBounds"/>.
+        /// </summary>
+        /// <param name="virtualBounds"></param>
+        /// <returns></returns>
+        public bool IsVisibleInVirtualBounds(Rectangle virtualBounds)
+        {
+            return (IsVisible && virtualBounds.Contains(CurrentGroupBounds, true));
+        }
+        /// <summary>
+        /// Vrátí true, pokud this grupa má nastaveny viditelné souřadnice v <see cref="VisibleGroupBounds"/> 
+        /// a pokud daný bod (souřadný systém shodný s <see cref="VisibleGroupBounds"/>) se nachází v prostoru this grupy
+        /// </summary>
+        /// <param name="point"></param>
+        /// <returns></returns>
+        public bool IsVisibleOnPoint(Point point)
+        {
+            return (IsVisible && VisibleGroupBounds.HasValue && VisibleGroupBounds.Value.Contains(point));
+        }
+        #endregion
+        #region Kreslení grupy (Border, Background, Title)
+        /// <summary>
+        /// Metoda vykreslí grupu
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="onMouse"></param>
+        /// <param name="hasFocus"></param>
+        internal void PaintGroup(DxBufferedGraphicPaintArgs e, bool onMouse, bool hasFocus)
+        {
+            if (!this.VisibleGroupBounds.HasValue) return;
+            _CheckCurrentBounds();
+            _PaintBorder(e, onMouse, hasFocus);
+            _PaintBackgrounds(e, onMouse, hasFocus);
+        }
+        /// <summary>
+        /// Vykreslí border
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="onMouse"></param>
+        /// <param name="hasFocus"></param>
+        private void _PaintBorder(DxBufferedGraphicPaintArgs e, bool onMouse, bool hasFocus)
+        {
+            var appearance = _IGroup.BorderAppearance;
+            if (appearance == null) return;
+
+            var bounds = __CurrentBorderBounds;
+            if (!bounds.HasValue) return;
+
+            int sizes = __CurrentCoordinates.BorderRange?.Size ?? 0;
+            if (sizes <= 0) return;
+
+            DxDataForm.PaintFrame(e, _GetVisibleBounds(bounds), sizes, appearance, onMouse, hasFocus);
+        }
+        /// <summary>
+        /// Vykreslí všechna pozadí ve správném pořadí
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="onMouse"></param>
+        /// <param name="hasFocus"></param>
+        private void _PaintBackgrounds(DxBufferedGraphicPaintArgs e, bool onMouse, bool hasFocus)
+        {
+            var groupTitle = _IGroup.GroupHeader;
+            bool hasTitle = (groupTitle != null);
+            if (hasTitle)
+                DxDataForm.PaintBackground(e, _GetVisibleBounds(__CurrentTitleBackground), groupTitle.BackgroundAppearance, onMouse, hasFocus, false);     // Pozadí pod titulkem
+
+            DxDataForm.PaintBackground(e, _GetVisibleBounds(__CurrentContentBackground), _IGroup.BackgroundAppearance, onMouse, hasFocus, false);          // Pozadí pod obsahem
+
+            if (hasTitle)
+                DxDataForm.PaintBackground(e, _GetVisibleBounds(__CurrentTitleLineBounds), groupTitle.LineAppearance, onMouse, hasFocus, false);           // Linka, nad obrázkem, pod texty
+
+            DxDataForm.PaintImage(e, _GetVisibleBounds(__CurrentGroupBackground), _IGroup.BackgroundAppearance);                                           // Obrázek na pozadí celé grupy
+
+        }
+        #endregion
+        #region class Coordinates : souřadnice různých míst v grupě
+        /// <summary>
+        /// Souřadný systém uvnitř grupy, určuje umístění borderu, titulkového prostoru a prostoru pro obsah,
+        /// včetně linky v titulku a včetně zachování Padding.
+        /// </summary>
+        private class Coordinates
+        {
+            #region Vnější souřadnice a suma režie
+            /// <summary>
+            /// Souřadnice grupy zvenku = v prostoru Parent controlu
+            /// </summary>
+            public Point Location { get { return __Location; } set { __Location = value; } }
+            private Point __Location;
+            /// <summary>
+            /// Velikost grupy celková
+            /// </summary>
+            public Size Size { get { return __Size; } set { __Size = value; } }
+            private Size __Size;
+            /// <summary>
+            /// Kompletní vnější souřadnice této grupy relativně k parent controlu
+            /// </summary>
+            public Rectangle Bounds
+            {
+                get { return new Rectangle(Location, Size); }
+                set
+                {
+                    Location = value.Location;
+                    Size = value.Size;
+                }
+            }
+            /// <summary>
+            /// Velikost režie okolo prostoru Content.
+            /// Jde o všechny pixely typu Border, Padding, TitleHeight.
+            /// Tato velikost se má přidat k velikosti Content.Summary, aby byla vypočtena nejmenší potřebná velikost grupy.
+            /// <para/>
+            /// Tuto hodnotu je možno číst po zadání <see cref="BorderRange"/>, <see cref="Padding"/>, <see cref="HeaderHeight"/>.
+            /// </summary>
+            public Size SizeOverhead
+            {
+                get
+                {
+                    int bs = 2 * _BorderEnd;
+                    int pw = __PaddingLeft + __PaddingRight;
+                    int ph = __PaddingTop + __PaddingBottom;
+                    var th = HeaderHeight;
+                    return new Size(bs + pw, bs + ph + th);
+                }
+            }
+            /*   JAK JE TO SE SOUŘADNÝM SYSTÉMEM:
+
+                1. Grupa deklaruje svoji vnější designovou velikost = IDataFormGroup.DesignWidth a IDataFormGroup.DesignHeight; ale deklarovat to nemusí;
+                2. V rámci tohoto prostoru se nachází i Border a Padding (v tomto pořadí), přičemž Padding je uvnitř Borderu
+                3. Je na autorovi designu, aby se vnitřní prvky Items svými souřadnicemi vešly do prostoru grupy zmenšenému o Border a Padding.
+                4. Grupy jsou skládány pod sebe = grupa 2 má svůj počátek Y přesně pod koncem grupy 1 = na jeho Bottom; na stejné souřadnici X, počínaje bodem { 0, 0 }.
+                5. Veškeré souřadnice na vstupu jsou Designové = vztahují se k zoomu 100% a monitoru 96DPI. Reálné souřadnice přepočítává DataForm.
+
+            */
+            #endregion
+            #region Border a Padding
+            /// <summary>
+            /// Bude se kreslit Border? To je tehdy, když <see cref="BorderRange"/> má kladnou velikost.
+            /// Nicméně i když se Border nekreslí, akceptuje se jeho hodnota <see cref="BorderRange"/>.Begin, o kterou se zmenšuje vnější prostor.
+            /// Prostor mezi začátkem grupy (<see cref="Bounds"/>) a začátkem Borderu se nijak nevykresluje, a má tedy barvu a vzhled parent controlu.
+            /// </summary>
+            public bool VisibleBorder { get { return (__BorderEnd > __BorderBegin); } }
+            /// <summary>
+            /// Umístění a velikost Borderu, měřeno od samotného okraje grupy směrem dovnitř, bez <see cref="Padding"/>.
+            /// Pokud border není viditelný, je zde null.
+            /// </summary>
+            public Int32Range BorderRange
+            {
+                get { return (VisibleBorder ? new Int32Range(__BorderBegin, __BorderEnd) : null); }
+                set
+                {
+                    _BorderBegin = (value?.Begin ?? 0);
+                    _BorderEnd = (value?.End ?? 0);
+                }
+            }
+            /// <summary>
+            /// Pixel, na kterém začíná Border. Nikdy není záporný.
+            /// Prostor mezi začátkem grupy a tímto borderem si grupa nevykresluje, prosvítá tam parent Control.
+            /// </summary>
+            private int _BorderBegin
+            {
+                get { return __BorderBegin; }
+                set { __BorderBegin = (value < 0 ? 0 : value); }
+            }
+            private int __BorderBegin;
+            /// <summary>
+            /// Pixel, na kterém (ve směru dovnitř grupy) končí Border. Nikdy není menší než <see cref="_BorderBegin"/>.
+            /// </summary>
+            private int _BorderEnd
+            {
+                get { return (__BorderEnd < __BorderBegin ? __BorderBegin : __BorderEnd); }
+                set { __BorderEnd = (value < 0 ? 0 : value); }
+            }
+            private int __BorderEnd;
+            /// <summary>
+            /// Šířka linky borderu v pixelech. Pokud je nula, border se fyzicky nekreslí. Nikdy není záporná.
+            /// </summary>
+            private int _BorderThick { get { return _BorderEnd - _BorderBegin; } }
+            /// <summary>
+            /// Vnitřní okraje mezi vnitřkem Borderu a začátkem Inner prostoru pro prvky.
+            /// Záporné hodnoty jsou nahrazeny 0.
+            /// </summary>
+            public Padding Padding
+            {
+                get { return new Padding(__PaddingLeft, __PaddingTop, __PaddingRight, __PaddingBottom); }
+                set
+                {
+                    __PaddingLeft = (value.Left > 0 ? value.Left : 0);
+                    __PaddingTop = (value.Top > 0 ? value.Top : 0);
+                    __PaddingRight = (value.Right > 0 ? value.Right : 0);
+                    __PaddingBottom = (value.Bottom > 0 ? value.Bottom : 0);
+                }
+            }
+            private int __PaddingLeft;
+            private int __PaddingTop;
+            private int __PaddingRight;
+            private int __PaddingBottom;
+            /// <summary>
+            /// Souřadnice vnějšího Borderu, může být Empty když <see cref="VisibleBorder"/> je false.
+            /// Je relativní v rámci grupy.
+            /// Je umístěn v prostoru <see cref="Bounds"/> s odstupem <see cref="_BorderBegin"/> od všech čtyř stran.
+            /// </summary>
+            public Rectangle BorderOuterBounds
+            {
+                get
+                {
+                    if (!VisibleBorder) return Rectangle.Empty;
+                    int bb = _BorderBegin;
+                    return new Rectangle(bb, bb, Size.Width - 2 * bb, Size.Height - 2 * bb);
+                }
+            }
+            /// <summary>
+            /// Souřadnice pozadí celé grupy, je přímo uvnitř Borderu (tzn. v rámci tohoto <see cref="GroupBackgroundBounds"/> se nachází i <see cref="Padding"/>)
+            /// V tomto prostoru se nahoře nachází <see cref="HeaderBackgroundBounds"/> a dole <see cref="ContentBackgroundBounds"/>.
+            /// Relativně k this grupě.
+            /// </summary>
+            public Rectangle GroupBackgroundBounds
+            {
+                get
+                {
+                    int bb = _BorderEnd;
+                    return new Rectangle(bb, bb, Size.Width - 2 * bb, Size.Height - 2 * bb);
+                }
+            }
+            #endregion
+            #region Header
+            /// <summary>
+            /// Máme titulek?
+            /// </summary>
+            public bool HasHeader { get { return (__HeaderHeight > 0); } }
+            /// <summary>
+            /// Výška prostoru pro titulek. Nikdy není záporná, hodnota 0 = není titulek.
+            /// </summary>
+            public int HeaderHeight
+            {
+                get { return __HeaderHeight; }
+                set { __HeaderHeight = (value < 0 ? 0 : value); }
+            }
+            private int __HeaderHeight;
+            /// <summary>
+            /// Vnitřní okraje mezi vnitřkem Borderu a začátkem Inner prostoru pro prvky.
+            /// Záporné hodnoty jsou nahrazeny 0.
+            /// </summary>
+            public Padding HeaderPadding
+            {
+                get { return new Padding(__HeaderPaddingLeft, __HeaderPaddingTop, __HeaderPaddingRight, __HeaderPaddingBottom); }
+                set
+                {
+                    __HeaderPaddingLeft = (value.Left > 0 ? value.Left : 0);
+                    __HeaderPaddingTop = (value.Top > 0 ? value.Top : 0);
+                    __HeaderPaddingRight = (value.Right > 0 ? value.Right : 0);
+                    __HeaderPaddingBottom = (value.Bottom > 0 ? value.Bottom : 0);
+                }
+            }
+            private int __HeaderPaddingLeft;
+            private int __HeaderPaddingTop;
+            private int __HeaderPaddingRight;
+            private int __HeaderPaddingBottom;
+            /// <summary>
+            /// Je viditelná linka v oblasti titulku?
+            /// </summary>
+            public bool VisibleLine { get { return HasHeader && (_LineYEnd > _LineYBegin); } }
+            /// <summary>
+            /// Umístění linky v oblasti titulku, měřeno od horního okraje titulku, bez <see cref="Padding"/>.
+            /// Pozor, relativně k <see cref="HeaderBackgroundBounds"/>.
+            /// Pokud linka není viditelná, je zde null.
+            /// </summary>
+            public Int32Range LineRange
+            {
+                get { return (VisibleLine ? new Int32Range(_LineYBegin, _LineYEnd) : null); }
+                set
+                {
+                    __LineYBegin = (value?.Begin ?? 0);
+                    __LineYEnd = (value?.End ?? 0);
+                }
+            }
+            /// <summary>
+            /// Počátek (Top) linky titulku, zarovnaný do rozmezí 0 až <see cref="HeaderHeight"/> včetně.
+            /// Pozor, hodnota je relativně k <see cref="HeaderBackgroundBounds"/>.
+            /// </summary>
+            private int _LineYBegin { get { int h = this.__HeaderHeight; int b = __LineYBegin; return (b > h ? h : (b < 0 ? 0 : b)); } }
+            /// <summary>
+            /// Konec (Bottom) linky titulku, zarovnaný do rozmezí <see cref="_LineYBegin"/> až <see cref="HeaderHeight"/> včetně.
+            /// Pozor, hodnota je relativně k <see cref="HeaderBackgroundBounds"/>.
+            /// </summary>
+            private int _LineYEnd { get { int h = this.__HeaderHeight; int b = _LineYBegin; int e = __LineYEnd; return (e > h ? h : (e < b ? b : e)); } }
+            private int __LineYBegin;
+            private int __LineYEnd;
+            /// <summary>
+            /// Souřadnice pozadí titulku. 
+            /// Nachází se přesně uvnitř <see cref="GroupBackgroundBounds"/>, a má výšku <see cref="HeaderHeight"/>.
+            /// Je relativní v rámci this grupy.
+            /// <para/>
+            /// Tento prostor má být vybarven barvou pozadí a případně obsahuje obrázek pozadí ve vhodném zarovnání.
+            /// </summary>
+            public Rectangle HeaderBackgroundBounds
+            {
+                get
+                {
+                    if (!HasHeader) return Rectangle.Empty;
+                    var bounds = GroupBackgroundBounds;
+                    var height = HeaderHeight;
+                    return new Rectangle(bounds.X, bounds.Y, bounds.Width, height);
+                }
+            }
+            /// <summary>
+            /// Prostor, ve kterém je vykreslen text titulku a případné další prvky.
+            /// Je umístěn v <see cref="HeaderBackgroundBounds"/> a je oproti němu zmenšen o <see cref="HeaderPadding"/> dovnitř.
+            /// Je relativní v rámci this grupy.
+            /// </summary>
+            public Rectangle TitleBounds
+            {
+                get
+                {
+                    if (!HasHeader) return Rectangle.Empty;
+                    var bounds = HeaderBackgroundBounds;
+                    int pl = __HeaderPaddingLeft;
+                    int pt = __HeaderPaddingTop;
+                    int pw = pl + __HeaderPaddingRight;
+                    int ph = pt + __HeaderPaddingBottom;
+                    return new Rectangle(bounds.X + pl, bounds.Y + pt, bounds.Width - pw, bounds.Height - ph);
+                }
+            }
+            /// <summary>
+            /// Prostor, ve kterém je vykreslena linka titulku. Může být Empty.
+            /// Obecně je umístěn v <see cref="HeaderBackgroundBounds"/>.
+            /// Ve směru X je od okrajů odsazen o Padding, ve směru Y nikoliv, ale je umístěn na pixelech <see cref="LineRange"/> vůči souřadnici <see cref="HeaderBackgroundBounds"/>.Y
+            /// Je relativní v rámci this grupy.
+            /// </summary>
+            public Rectangle TitleLineBounds
+            {
+                get
+                {
+                    if (!HasHeader || !VisibleLine) return Rectangle.Empty;
+                    var bounds = HeaderBackgroundBounds;
+                    int lb = _LineYBegin;
+                    int le = _LineYEnd;
+                    if (le < lb) return Rectangle.Empty;
+                    int pl = __PaddingLeft;
+                    int pw = pl + __PaddingRight;
+                    return new Rectangle(bounds.X + pl, bounds.Y + lb, bounds.Width - pw, le - lb);
+                }
+            }
+            #endregion
+            #region Content a Collapsed
+            /// <summary>
+            /// Souřadnice pozadí vlastního obsahu pod titulkem.
+            /// Nachází se přesně uvnitř <see cref="GroupBackgroundBounds"/>, nahoře je zmenšený o prostor titulku a má souřadnici Y = <see cref="HeaderHeight"/>.
+            /// Je relativní v rámci this grupy.
+            /// <para/>
+            /// Tento prostor má být vybarven barvou pozadí a případně obsahuje obrázek pozadí ve vhodném zarovnání.
+            /// </summary>
+            public Rectangle ContentBackgroundBounds
+            {
+                get
+                {
+                    var bounds = GroupBackgroundBounds;
+                    var dy = (HasHeader ? HeaderHeight : 0);
+                    var height = bounds.Height - dy;
+                    return new Rectangle(bounds.X, bounds.Y + dy, bounds.Width, height);
+                }
+            }
+            /// <summary>
+            /// Souřadnice vlastního obsahu = jednotlivé prvky grupy.
+            /// Nachází se přesně uvnitř <see cref="ContentBackgroundBounds"/>, a je zmenšen o <see cref="Padding"/> dovnitř.
+            /// Je relativní v rámci this grupy.
+            /// <para/>
+            /// Relativně v tomto prostoru se nachází jednotlivé prvky grupy.
+            /// </summary>
+            public Rectangle ContentBounds
+            {
+                get
+                {
+                    var bounds = ContentBackgroundBounds;
+                    int pl = __PaddingLeft;
+                    int pt = __PaddingTop;
+                    int pw = pl + __PaddingRight;
+                    int ph = pt + __PaddingBottom;
+                    return new Rectangle(bounds.X + pl, bounds.Y + pt, bounds.Width - pw, bounds.Height - ph);
+                }
+            }
+            #endregion
+            #region Zoomování
+            /// <summary>
+            /// Vypočítá svoje vnitřní hodnoty na aktuální, podle dodaných hodnot designových a podle daného DPI.
+            /// Přepočte i hodnoty <see cref="Location"/> a <see cref="Size"/>, tedy i <see cref="Bounds"/>.
+            /// </summary>
+            /// <param name="designCoordinates"></param>
+            /// <param name="currentDpi"></param>
+            internal void ZoomToGui(Coordinates designCoordinates, int currentDpi)
+            {
+                this.__HeaderHeight = zoomToGui(designCoordinates.__HeaderHeight);
+                this.__BorderBegin = zoomToGui(designCoordinates.__BorderBegin);
+                this.__BorderEnd = zoomToGui(designCoordinates.__BorderEnd);
+                this.__HeaderPaddingLeft = zoomToGui(designCoordinates.__HeaderPaddingLeft);
+                this.__HeaderPaddingTop = zoomToGui(designCoordinates.__HeaderPaddingTop);
+                this.__HeaderPaddingRight = zoomToGui(designCoordinates.__HeaderPaddingRight);
+                this.__HeaderPaddingBottom = zoomToGui(designCoordinates.__HeaderPaddingBottom);
+                this.__LineYBegin = zoomToGui(designCoordinates.__LineYBegin);
+                this.__LineYEnd = zoomToGui(designCoordinates.__LineYEnd);
+                this.__PaddingLeft = zoomToGui(designCoordinates.__PaddingLeft);
+                this.__PaddingTop = zoomToGui(designCoordinates.__PaddingTop);
+                this.__PaddingRight = zoomToGui(designCoordinates.__PaddingRight);
+                this.__PaddingBottom = zoomToGui(designCoordinates.__PaddingBottom);
+
+                this.__Location = DxComponent.ZoomToGui(designCoordinates.__Location, currentDpi);
+                this.__Size = DxComponent.ZoomToGui(designCoordinates.__Size, currentDpi);
+
+                int zoomToGui(int designValue)
+                {
+                    return (designValue != 0 ? DxComponent.ZoomToGui(designValue, currentDpi) : 0);
+                }
+            }
+            #endregion
+        }
+        #endregion
+    }
+    #endregion
+
+    // Jednotlivé Controly
     #region class DxDataFormControlSet : správce několika vizuálních controlů jednoho druhu, jejich tvorba, a příprava k použití
     /// <summary>
     /// Instance třídy, která obhospodařuje jeden typ <see cref="DataFormColumnType"/> vizuálního controlu, 
@@ -4207,12 +5139,17 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="itemType"></param>
         public DxDataFormControlSet(DxDataForm dataForm, DataFormColumnType itemType)
         {
-            _DataForm = dataForm;
-            _ItemType = itemType;
+            __DataForm = dataForm;
+            __ItemType = itemType;
+            __UseControlForDraw = true;
+            __UseControlForMouse = true;
+            __UseControlForFocus = true;
+            
             _CanPaintByPainter = false;
             _CanPaintByImage = true;
             _CanPaintByControl = false;
             _CanCreateControl = true;
+
             switch (itemType)
             {
                 case DataFormColumnType.Label:
@@ -4220,6 +5157,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                     _GetKeyFunction = _LabelGetKey;
                     _FillControlAction = _LabelFill;
                     _ReadControlAction = _LabelRead;
+                    __UseControlForDraw = false;
+                    __UseControlForMouse = false;
+                    __UseControlForFocus = false;
+
                     _CanPaintByPainter = true;
                     _CanCreateControl = false;
                     break;
@@ -4299,61 +5240,61 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             if (_Disposed) throw new InvalidOperationException($"Nelze pracovat s objektem 'ControlSetInfo', protože je zrušen.");
         }
         /// <summary>Vlastník - <see cref="DxDataForm"/></summary>
-        private DxDataForm _DataForm;
-        private DataFormColumnType _ItemType;
+        private DxDataForm __DataForm;
+        private DataFormColumnType __ItemType;
         private Func<Control> _CreateControlFunction;
-        private Func<DxDataFormColumn, string> _GetKeyFunction;
-        private Action<DxDataFormColumn, Control, DxDataFormControlUseMode> _FillControlAction;
-        private Action<DxDataFormColumn, Control> _ReadControlAction;
+        private Func<DxDataFormItem, string> _GetKeyFunction;
+        private Action<DxDataFormItem, Control, DxDataFormControlUseMode> _FillControlAction;
+        private Action<DxDataFormItem, Control> _ReadControlAction;
         private bool _Disposed;
         #endregion
         #region Label
         private Control _LabelCreate() { return new DxLabelControl() { AutoSizeMode = LabelAutoSizeMode.None }; }
-        private string _LabelGetKey(DxDataFormColumn item)
+        private string _LabelGetKey(DxDataFormItem item)
         {
             string key = GetStandardKeyForItem(item);
             return key;
         }
-        private void _LabelFill(DxDataFormColumn item, Control control, DxDataFormControlUseMode mode)
+        private void _LabelFill(DxDataFormItem item, Control control, DxDataFormControlUseMode mode)
         {
             if (!(control is DxLabelControl label)) throw new InvalidOperationException($"Nelze naplnit data do objektu typu {control.GetType().Name}, je očekáván objekt typu {typeof(DxLabelControl).Name}.");
             CommonFill(item, label, mode, _LabelFillNext);
         }
-        private void _LabelFillNext(DxDataFormColumn item, DxLabelControl label, DxDataFormControlUseMode mode)
+        private void _LabelFillNext(DxDataFormItem item, DxLabelControl label, DxDataFormControlUseMode mode)
         {
             //label.LineStyle = System.Drawing.Drawing2D.DashStyle.Solid;
             //label.LineOrientation = LabelLineOrientation.Horizontal;
             //label.LineColor = Color.Violet;
             //label.LineVisible = true;
         }
-        private void _LabelRead(DxDataFormColumn item, Control control)
+        private void _LabelRead(DxDataFormItem item, Control control)
         { }
         #endregion
         #region TextBox
         private Control _TextBoxCreate() { return new DxTextEdit(); }
-        private string _TextBoxGetKey(DxDataFormColumn item)
+        private string _TextBoxGetKey(DxDataFormItem item)
         {
             string key = GetStandardKeyForItem(item);
             return key;
         }
-        private void _TextBoxFill(DxDataFormColumn item, Control control, DxDataFormControlUseMode mode)
+        private void _TextBoxFill(DxDataFormItem item, Control control, DxDataFormControlUseMode mode)
         {
             if (!(control is DxTextEdit textEdit)) throw new InvalidOperationException($"Nelze naplnit data do objektu typu {control.GetType().Name}, je očekáván objekt typu {typeof(DxTextEdit).Name}.");
             CommonFill(item, textEdit, mode);
             textEdit.DeselectAll();
             textEdit.SelectionStart = 0;
         }
-        private void _TextBoxRead(DxDataFormColumn item, Control control)
+        private void _TextBoxRead(DxDataFormItem item, Control control)
         { }
         #endregion
         #region TextBoxButton
         private Control _TextBoxButtonCreate() { return new DxButtonEdit(); }
-        private string _TextBoxButtonGetKey(DxDataFormColumn item)
+        private string _TextBoxButtonGetKey(DxDataFormItem item)
         {
             string key = GetStandardKeyForItem(item, _TextBoxButtonGetKeySpec);
             return key;
         }
-        private string _TextBoxButtonGetKeySpec(DxDataFormColumn item)
+        private string _TextBoxButtonGetKeySpec(DxDataFormItem item)
         {
             if (!item.TryGetIItem<IDataFormColumnTextBoxButton>(out var iItem)) return "";
             string key =
@@ -4362,14 +5303,14 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 (((int)iItem.ButtonKind) + 20).ToString();
             return key;
         }
-        private void _TextBoxButtonFill(DxDataFormColumn item, Control control, DxDataFormControlUseMode mode)
+        private void _TextBoxButtonFill(DxDataFormItem item, Control control, DxDataFormControlUseMode mode)
         {
             if (!(control is DxButtonEdit buttonEdit)) throw new InvalidOperationException($"Nelze naplnit data do objektu typu {control.GetType().Name}, je očekáván objekt typu {typeof(DxButtonEdit).Name}.");
             CommonFill(item, buttonEdit, mode, _TextBoxButtonFillSpec);
             //  textEdit.DeselectAll();
             buttonEdit.SelectionStart = 0;
         }
-        private void _TextBoxButtonFillSpec(DxDataFormColumn item, DxButtonEdit buttonEdit, DxDataFormControlUseMode mode)
+        private void _TextBoxButtonFillSpec(DxDataFormItem item, DxButtonEdit buttonEdit, DxDataFormControlUseMode mode)
         {
             buttonEdit.SelectionStart = 0;
             buttonEdit.SelectionLength = 0;
@@ -4383,7 +5324,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 buttonEdit.ButtonsStyle = (iItem.ButtonAs3D ? DevExpress.XtraEditors.Controls.BorderStyles.Style3D : DevExpress.XtraEditors.Controls.BorderStyles.HotFlat); // HotFlat je nejlepší; ujde i Style3D; i UltraFlat;     testováno Default; Flat; NoBorder; Office2003; Simple; 
             }
         }
-        private void _TextBoxButtonRead(DxDataFormColumn item, Control control)
+        private void _TextBoxButtonRead(DxDataFormItem item, Control control)
         { }
         /// <summary>
         /// Vrací DevExpress hodnotu typu <see cref="DevExpress.XtraEditors.Controls.ButtonPredefines"/>
@@ -4400,85 +5341,85 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         #endregion
         #region EditBox
         private Control _EditBoxCreate() { return new DxMemoEdit(); }
-        private string _EditBoxGetKey(DxDataFormColumn item)
+        private string _EditBoxGetKey(DxDataFormItem item)
         {
             string key = GetStandardKeyForItem(item);
             return key;
         }
-        private void _EditBoxFill(DxDataFormColumn item, Control control, DxDataFormControlUseMode mode)
+        private void _EditBoxFill(DxDataFormItem item, Control control, DxDataFormControlUseMode mode)
         {
             if (!(control is DxMemoEdit memoEdit)) throw new InvalidOperationException($"Nelze naplnit data do objektu typu {control.GetType().Name}, je očekáván objekt typu {typeof(DxMemoEdit).Name}.");
             CommonFill(item, memoEdit, mode);
             memoEdit.DeselectAll();
             memoEdit.SelectionStart = 0;
         }
-        private void _EditBoxRead(DxDataFormColumn item, Control control)
+        private void _EditBoxRead(DxDataFormItem item, Control control)
         { }
         #endregion
         // SpinnerBox
         #region CheckBox
         private Control _CheckBoxCreate() { return new DxCheckEdit(); }
-        private string _CheckBoxGetKey(DxDataFormColumn item)
+        private string _CheckBoxGetKey(DxDataFormItem item)
         {
             string key = GetStandardKeyForItem(item);
             return key;
         }
-        private void _CheckBoxFill(DxDataFormColumn item, Control control, DxDataFormControlUseMode mode)
+        private void _CheckBoxFill(DxDataFormItem item, Control control, DxDataFormControlUseMode mode)
         {
             if (!(control is DxCheckEdit checkEdit)) throw new InvalidOperationException($"Nelze naplnit data do objektu typu {control.GetType().Name}, je očekáván objekt typu {typeof(DxCheckEdit).Name}.");
             CommonFill(item, checkEdit, mode);
         }
-        private void _CheckBoxRead(DxDataFormColumn item, Control control)
+        private void _CheckBoxRead(DxDataFormItem item, Control control)
         { }
         #endregion
         // BreadCrumb
         #region ComboBoxList
         private Control _ComboBoxListCreate() { return new DxTextEdit(); }
-        private string _ComboBoxListGetKey(DxDataFormColumn item)
+        private string _ComboBoxListGetKey(DxDataFormItem item)
         {
             string key = GetStandardKeyForItem(item);
             return key;
         }
-        private void _ComboBoxListFill(DxDataFormColumn item, Control control, DxDataFormControlUseMode mode)
+        private void _ComboBoxListFill(DxDataFormItem item, Control control, DxDataFormControlUseMode mode)
         {
             if (!(control is DxTextEdit textEdit)) throw new InvalidOperationException($"Nelze naplnit data do objektu typu {control.GetType().Name}, je očekáván objekt typu {typeof(DxTextEdit).Name}.");
             //  CommonFill(item, textEdit, mode);
             //  textEdit.DeselectAll();
             textEdit.SelectionStart = 0;
         }
-        private void _ComboBoxListRead(DxDataFormColumn item, Control control)
+        private void _ComboBoxListRead(DxDataFormItem item, Control control)
         { }
         #endregion
         #region ComboBoxEdit
         private Control _ComboBoxEditCreate() { return new DxTextEdit(); }
-        private string _ComboBoxEditGetKey(DxDataFormColumn item)
+        private string _ComboBoxEditGetKey(DxDataFormItem item)
         {
             string key = GetStandardKeyForItem(item);
             return key;
         }
-        private void _ComboBoxEditFill(DxDataFormColumn item, Control control, DxDataFormControlUseMode mode)
+        private void _ComboBoxEditFill(DxDataFormItem item, Control control, DxDataFormControlUseMode mode)
         {
             if (!(control is DxTextEdit textEdit)) throw new InvalidOperationException($"Nelze naplnit data do objektu typu {control.GetType().Name}, je očekáván objekt typu {typeof(DxTextEdit).Name}.");
             //  CommonFill(item, textEdit, mode);
             //  textEdit.DeselectAll();
             textEdit.SelectionStart = 0;
         }
-        private void _ComboBoxEditRead(DxDataFormColumn item, Control control)
+        private void _ComboBoxEditRead(DxDataFormItem item, Control control)
         { }
         #endregion
         #region TokenEdit
         private Control _TokenEditCreate() { return new DxTokenEdit(); }
-        private string _TokenEditGetKey(DxDataFormColumn item)
+        private string _TokenEditGetKey(DxDataFormItem item)
         {
             string key = GetStandardKeyForItem(item);
             return key;
         }
-        private void _TokenEditFill(DxDataFormColumn item, Control control, DxDataFormControlUseMode mode)
+        private void _TokenEditFill(DxDataFormItem item, Control control, DxDataFormControlUseMode mode)
         {
             if (!(control is DxTokenEdit tokenEdit)) throw new InvalidOperationException($"Nelze naplnit data do objektu typu {control.GetType().Name}, je očekáván objekt typu {typeof(DxTokenEdit).Name}.");
             CommonFill(item, tokenEdit, mode, _TokenEditFillSpec);
         }
-        private void _TokenEditFillSpec(DxDataFormColumn item, DxTokenEdit tokenEdit, DxDataFormControlUseMode mode)
+        private void _TokenEditFillSpec(DxDataFormItem item, DxTokenEdit tokenEdit, DxDataFormControlUseMode mode)
         {
             bool fullFill = (mode == DxDataFormControlUseMode.Mouse || mode == DxDataFormControlUseMode.Focus);
             if (fullFill && item.TryGetIItem(out IDataFormColumnMenuText iItemMenuText))
@@ -4489,7 +5430,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 // tokenEdit.EditValue = tokenEdit.Properties.Tokens[0].Value;
                 tokenEdit.EditValue = tokenEdit.Properties.Tokens[0].Value.ToString() + ", " + tokenEdit.Properties.Tokens[1].Value.ToString();
         }
-        private void _TokenEditRead(DxDataFormColumn item, Control control)
+        private void _TokenEditRead(DxDataFormItem item, Control control)
         { }
         #endregion
         // ListView
@@ -4497,17 +5438,17 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         // RadioButtonBox
         #region Button
         private Control _ButtonCreate() { return new DxSimpleButton(); }
-        private string _ButtonGetKey(DxDataFormColumn item)
+        private string _ButtonGetKey(DxDataFormItem item)
         {
             string key = GetStandardKeyForItem(item);
             return key;
         }
-        private void _ButtonFill(DxDataFormColumn item, Control control, DxDataFormControlUseMode mode)
+        private void _ButtonFill(DxDataFormItem item, Control control, DxDataFormControlUseMode mode)
         {
             if (!(control is DxSimpleButton button)) throw new InvalidOperationException($"Nelze naplnit data do objektu typu {control.GetType().Name}, je očekáván objekt typu {typeof(DxSimpleButton).Name}.");
             CommonFill(item, button, mode);
         }
-        private void _ButtonRead(DxDataFormColumn item, Control control)
+        private void _ButtonRead(DxDataFormItem item, Control control)
         { }
         #endregion
         // CheckButton
@@ -4520,7 +5461,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="item"></param>
         /// <param name="specKeygenerator"></param>
         /// <returns></returns>
-        private static string GetStandardKeyForItem(DxDataFormColumn item, Func<DxDataFormColumn, string> specKeygenerator = null)
+        private static string GetStandardKeyForItem(DxDataFormItem item, Func<DxDataFormItem, string> specKeygenerator = null)
         {
             var size = item.CurrentBounds.Size;
             string text = "";
@@ -4570,7 +5511,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="control"></param>
         /// <param name="mode"></param>
         /// <param name="specificFillMethod"></param>
-        private void CommonFill<T>(DxDataFormColumn item, T control, DxDataFormControlUseMode mode, Action<DxDataFormColumn, T, DxDataFormControlUseMode> specificFillMethod = null) where T : BaseControl
+        private void CommonFill<T>(DxDataFormItem item, T control, DxDataFormControlUseMode mode, Action<DxDataFormItem, T, DxDataFormControlUseMode> specificFillMethod = null) where T : BaseControl
         {
             // Určím fyzické umístění controlu: pro Draw je dávám na konstantní souřadnici 4/4 (Draw controly se nacházejí na spodním panelu a nejsou vidět):
             bool isDraw = (mode == DxDataFormControlUseMode.Draw || !item.VisibleBounds.HasValue);
@@ -4688,10 +5629,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="item"></param>
         /// <param name="mode"></param>
         /// <returns></returns>
-        private DxSuperToolTip GetSuperTip(DxDataFormColumn item, DxDataFormControlUseMode mode)
+        private DxSuperToolTip GetSuperTip(DxDataFormItem item, DxDataFormControlUseMode mode)
         {
             if (mode != DxDataFormControlUseMode.Mouse) return null;
-            var superTip = _DataForm.DxSuperToolTip;
+            var superTip = __DataForm.DxSuperToolTip;
             superTip.LoadValues(item.IItem);
             if (!superTip.IsValid) return null;
             return superTip;
@@ -4701,7 +5642,30 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Typ prvku, který je popsán touto sadou
         /// </summary>
-        internal DataFormColumnType ItemType { get { return _ItemType; } }
+        internal DataFormColumnType ItemType { get { return __ItemType; } }
+        /// <summary>
+        /// Má být pro tento typ controlu pro <u>režim Draw</u> vytvořen fyzický Control?
+        /// Pokud ano, pak bude control vytvořen, naplněn, umístěn do Parenta, vykreslen, Image zachycen a následně používán při kreslení Parenta.
+        /// Pokud nemá být vytvořen fyzický Control pro zobrazení prvku, pak existuje metoda, která do dané cílové grafiky vykreslí obraz controlu přímo, 
+        /// při akceptování všech jeho vlastností.
+        /// </summary>
+        internal bool UseControlForDraw { get { return __UseControlForDraw; } } private bool __UseControlForDraw;
+        /// <summary>
+        /// Má být pro tento typ controlu pro <u>režim OnMouse</u> vytvořen fyzický Control?
+        /// Pokud ano, pak bude control vytvořen, naplněn, umístěn do Parenta na správné místo a bude fyzicky používán pokud nad jeho prostorem bude myš.
+        /// Toto chování zajistí "živý vzhled" controlu = vizuální reakci na pohyb myši, a ToolTip.
+        /// Pokud nemá být vytvořen fyzický Control pro zobrazení prvku, pak existuje metoda, která do dané cílové grafiky vykreslí obraz controlu přímo, 
+        /// při akceptování všech jeho vlastností.
+        /// </summary>
+        internal bool UseControlForMouse { get { return __UseControlForMouse; } } private bool __UseControlForMouse;
+        /// <summary>
+        /// Má být pro tento typ controlu pro <u>režim Focus</u> vytvořen fyzický Control?
+        /// Pokud ano, pak bude control vytvořen, naplněn, umístěn do Parenta na správné místo a bude do něj předán Focus, control sám si bude řešit uživatelskou interakci.
+        /// Pokud nemá být vytvořen fyzický Control pro statické kreslení prvku, pak existuje metoda, která do dané cílové grafiky vykreslí obraz controlu přímo, 
+        /// při akceptování všech jeho vlastností.
+        /// </summary>
+        internal bool UseControlForFocus { get { return __UseControlForFocus; } } private bool __UseControlForFocus;
+
         /// <summary>
         /// Může být pro tento typ controlu použit pro režim Draw (vykreslení prvku bez myši) použit Painter namísto vlastního Controlu?
         /// </summary>
@@ -4724,7 +5688,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="mode"></param>
         /// <param name="parent">Parent, do něhož má být control umístěn. Pokud režim <paramref name="mode"/> je <see cref="DxDataFormControlUseMode.Draw"/>, pak parent smí být null.</param>
         /// <returns></returns>
-        internal Control GetControlForMode(DxDataFormColumn item, DxDataFormControlUseMode mode, Control parent)
+        internal Control GetControlForMode(DxDataFormItem item, DxDataFormControlUseMode mode, Control parent)
         {
             switch (mode)
             {
@@ -4739,8 +5703,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         /// <param name="item"></param>
         /// <returns></returns>
-        internal Control GetControlForDraw(DxDataFormColumn item)
+        internal Control GetControlForDraw(DxDataFormItem item)
         {
+            if (!__UseControlForDraw) return null;
             CheckNonDisposed();
             if (__ControlDraw == null)
                 __ControlDraw = _CreateControl(DxDataFormControlUseMode.Draw);
@@ -4753,8 +5718,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="item"></param>
         /// <param name="parent">Parent, do něhož má být control umístěn</param>
         /// <returns></returns>
-        internal Control GetControlForMouse(DxDataFormColumn item, Control parent)
+        internal Control GetControlForMouse(DxDataFormItem item, Control parent)
         {
+            if (!__UseControlForMouse) return null;
             CheckNonDisposed();
             if (__ControlMouse == null)
                 __ControlMouse = _CreateControl(DxDataFormControlUseMode.Mouse);
@@ -4767,8 +5733,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="item"></param>
         /// <param name="parent">Parent, do něhož má být control umístěn</param>
         /// <returns></returns>
-        internal Control GetControlForFocus(DxDataFormColumn item, Control parent)
+        internal Control GetControlForFocus(DxDataFormItem item, Control parent)
         {
+            if (!__UseControlForFocus) return null;
             CheckNonDisposed();
             if (__ControlFocus == null)
                 __ControlFocus = _CreateControl(DxDataFormControlUseMode.Focus);
@@ -4782,7 +5749,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         /// <param name="item"></param>
         /// <returns></returns>
-        internal string GetKeyToCache(DxDataFormColumn item)
+        internal string GetKeyToCache(DxDataFormItem item)
         {
             CheckNonDisposed();
             string key = _GetKeyFunction?.Invoke(item);
@@ -4809,10 +5776,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="control"></param>
         /// <param name="mode"></param>
         /// <param name="parent">Parent, do něhož má být control umístěn. Pokud režim <paramref name="mode"/> je <see cref="DxDataFormControlUseMode.Draw"/>, pak parent smí být null.</param>
-        private void _FillControl(DxDataFormColumn item, Control control, DxDataFormControlUseMode mode, Control parent)
+        private void _FillControl(DxDataFormItem item, Control control, DxDataFormControlUseMode mode, Control parent)
         {
             _FillControlAction(item, control, mode);
-            _DataForm.AddControl(control, (mode == DxDataFormControlUseMode.Draw ? null : parent));
+            __DataForm.AddControl(control, (mode == DxDataFormControlUseMode.Draw ? null : parent));
             control.TabIndex = 10;
 
             //// source.SetBounds(bounds);                  // Nastavím správné umístění, to kvůli obrázkům na pozadí panelu (různé skiny!), aby obrázky odpovídaly aktuální pozici...
@@ -4897,44 +5864,66 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         RecalculateContentTotalSize = 0x0002,
         /// <summary>
-        /// Určit aktuálně viditelné prvky
+        /// Znovu načíst všechny řádky = po změně zdroje dat
         /// </summary>
-        ReloadVisibleItems = 0x0004,
+        ReloadAllRows = 0x0100,
+        /// <summary>
+        /// Určit aktuálně viditelné řádky
+        /// </summary>
+        ReloadVisibleRows = 0x0200,
+        /// <summary>
+        /// Určit aktuálně viditelné grupy
+        /// </summary>
+        ReloadVisibleGroups = 0x0400,
+        /// <summary>
+        /// Určit aktuálně viditelné buňky
+        /// </summary>
+        ReloadVisibleCells = 0x0800,
         /// <summary>
         /// Resetovat cache předvykreslených controlů
         /// </summary>
-        InvalidateCache = 0x0010,
+        InvalidateCache = 0x1000,
         /// <summary>
         /// Vyřešit souřadnice nativních controlů, nacházejících se v Content panelu
         /// </summary>
-        NativeControlsLocation = 0x0040,
+        NativeControlsLocation = 0x2000,
         /// <summary>
         /// Znovuvykreslit grafiku
         /// </summary>
-        InvalidateControl = 0x0100,
+        InvalidateControl = 0x4000,
         /// <summary>
         /// Explicitně vyvolat i metodu <see cref="Control.Refresh()"/>
         /// </summary>
-        RefreshControl = 0x0200,
+        RefreshControl = 0x8000,
 
         /// <summary>
-        /// Po změně prvků (přidání, odebrání, změna hodnot) (<see cref="RecalculateContentTotalSize"/> + <see cref="ReloadVisibleItems"/>).
+        /// Po změně řádků (<see cref="RecalculateContentTotalSize"/> + <see cref="ReloadVisibleCells"/>).
         /// Tato hodnota je Silent = neobsahuje <see cref="InvalidateControl"/>.
         /// </summary>
-        AfterItemsChangedSilent = RecalculateContentTotalSize | ReloadVisibleItems | NativeControlsLocation,
+        AfterRowsChangedSilent = RecalculateContentTotalSize | ReloadVisibleRows | ReloadVisibleGroups | ReloadVisibleCells | NativeControlsLocation,
         /// <summary>
-        /// Po změně prvků (přidání, odebrání, změna hodnot) (<see cref="RecalculateContentTotalSize"/> + <see cref="ReloadVisibleItems"/> + <see cref="InvalidateControl"/>).
+        /// Po změně řádků nebo prvků (přidání, odebrání, změna hodnot) (<see cref="RecalculateContentTotalSize"/> + <see cref="ReloadVisibleCells"/>).
+        /// Tato hodnota je Silent = neobsahuje <see cref="InvalidateControl"/>.
+        /// </summary>
+        AfterGroupsChangedSilent = RecalculateContentTotalSize | ReloadVisibleCells | NativeControlsLocation,
+        /// <summary>
+        /// Po změně prvků (přidání, odebrání, změna hodnot) (<see cref="RecalculateContentTotalSize"/> + <see cref="ReloadVisibleCells"/>).
+        /// Tato hodnota je Silent = neobsahuje <see cref="InvalidateControl"/>.
+        /// </summary>
+        AfterCellsChangedSilent = RecalculateContentTotalSize | ReloadVisibleCells | NativeControlsLocation,
+        /// <summary>
+        /// Po změně prvků (přidání, odebrání, změna hodnot) (<see cref="RecalculateContentTotalSize"/> + <see cref="ReloadVisibleCells"/> + <see cref="InvalidateControl"/>).
         /// Tato hodnota není Silent = obsahuje i invalidaci <see cref="InvalidateControl"/> = překreslení controlu.
         /// <para/>
         /// Toto je standardní refresh.
         /// </summary>
-        AfterItemsChanged = RecalculateContentTotalSize | ReloadVisibleItems | NativeControlsLocation | InvalidateControl,
+        AfterItemsChanged = RecalculateContentTotalSize | ReloadVisibleCells | NativeControlsLocation | InvalidateControl,
         /// <summary>
-        /// Po scrollování (<see cref="ReloadVisibleItems"/> + <see cref="InvalidateControl"/>)
+        /// Po scrollování (<see cref="ReloadVisibleCells"/> + <see cref="InvalidateControl"/>)
         /// </summary>
-        AfterScroll = ReloadVisibleItems | NativeControlsLocation | InvalidateControl,
+        AfterScroll = ReloadVisibleCells | NativeControlsLocation | InvalidateControl,
         /// <summary>
-        /// Po změně prvků (přidání, odebrání, změna hodnot) (<see cref="RecalculateContentTotalSize"/> + <see cref="ReloadVisibleItems"/> + <see cref="InvalidateControl"/>).
+        /// Po změně prvků (přidání, odebrání, změna hodnot) (<see cref="RecalculateContentTotalSize"/> + <see cref="ReloadVisibleCells"/> + <see cref="InvalidateControl"/>).
         /// <para/>
         /// Toto je standardní refresh.
         /// </summary>
@@ -4942,7 +5931,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Všechny akce, včetně invalidace cache (brutální refresh)
         /// </summary>
-        All = RecalculateContentTotalSize | ReloadVisibleItems | NativeControlsLocation | InvalidateCache | InvalidateControl
+        All = RecalculateContentTotalSize | ReloadVisibleRows | ReloadVisibleGroups | ReloadVisibleCells | NativeControlsLocation | InvalidateCache | InvalidateControl
     }
     #endregion
 }

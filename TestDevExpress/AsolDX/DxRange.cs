@@ -21,9 +21,20 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Konstruktor
         /// </summary>
-        /// <param name="begin"></param>
-        /// <param name="end"></param>
-        public DecimalRange(Decimal begin, Decimal end) : base(begin, end) { }
+        /// <param name="begin">Počátek intervalu</param>
+        /// <param name="end">Konec intervalu</param>
+        public DecimalRange(Decimal begin, Decimal end) : base(begin, end, false) { }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="begin">Počátek intervalu</param>
+        /// <param name="end">Konec intervalu</param>
+        /// <param name="isVariable">true pokud ve vytvořené instanci má být možno měnit hodnoty, false (default) = ReadOnly</param>
+        public DecimalRange(Decimal begin, Decimal end, bool isVariable) : base(begin, end, isVariable) { }
+        /// <summary>
+        /// Konstruktor: vytvoří proměnnou instanci
+        /// </summary>
+        public DecimalRange() : base(0m, 0m, true) { }
         /// <summary>
         /// Vrátí new instanci vytvořenou klonováním this instance
         /// </summary>
@@ -47,8 +58,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Vrátí new instanci shodné třídy
         /// </summary>
+        /// <param name="begin">Počátek intervalu</param>
+        /// <param name="end">Konec intervalu</param>
+        /// <param name="isVariable">true pokud ve vytvořené instanci má být možno měnit hodnoty, false (default) = ReadOnly</param>
         /// <returns></returns>
-        protected override AnyRange<Decimal, Decimal> CreateNew(Decimal begin, Decimal end) { return new DecimalRange(begin, end); }
+        protected override AnyRange<Decimal, Decimal> CreateNew(Decimal begin, Decimal end, bool isVariable) { return new DecimalRange(begin, end, isVariable); }
         /// <summary>
         /// Vrátí délku prostoru od <paramref name="begin"/> do <paramref name="end"/>, 
         /// vrací tedy výsledek operace (<paramref name="end"/> - <paramref name="begin"/>)
@@ -57,6 +71,33 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="end">Hodnota konce</param>
         /// <returns></returns>
         protected override Decimal Distance(Decimal begin, Decimal end) { return end - begin; }
+        /// <summary>
+        /// Vratí souhrn dvou intervalů = od toho nižšího Begin do toho vyššího End.
+        /// </summary>
+        /// <param name="value1"></param>
+        /// <param name="value2"></param>
+        /// <returns></returns>
+        public static DecimalRange Union(DecimalRange value1, DecimalRange value2)
+        {
+            var b = (value1.Begin < value2.Begin ? value1.Begin : value2.Begin);
+            var e = (value1.End > value2.End ? value1.End : value2.End);
+            bool isVariable = value1.IsVariable && value2.IsVariable;
+            return new DecimalRange(b, e, isVariable);
+        }
+        /// <summary>
+        /// Vrátí průsečík dvou intervalů. Pokud jej nelze najít, vrátí null. Pokud je průsečík nulový (Begin = End), vrátí takový objekt.
+        /// </summary>
+        /// <param name="value1"></param>
+        /// <param name="value2"></param>
+        /// <returns></returns>
+        public static DecimalRange Intersect(DecimalRange value1, DecimalRange value2)
+        {
+            var b = (value1.Begin > value2.Begin ? value1.Begin : value2.Begin);
+            var e = (value1.End < value2.End ? value1.End : value2.End);
+            if (b > e) return null;
+            bool isVariable = value1.IsVariable && value2.IsVariable;
+            return new DecimalRange(b, e, isVariable);
+        }
     }
     #endregion
     #region class Int32Range : Rozsah hodnot { Begin - Size - End } : Int32, Int32
@@ -71,12 +112,23 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="begin"></param>
         /// <param name="end"></param>
-        public Int32Range(int begin, int end) : base(begin, end) { }
+        public Int32Range(int begin, int end) : base(begin, end, false) { }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="begin">Počátek intervalu</param>
+        /// <param name="end">Konec intervalu</param>
+        /// <param name="isVariable">true pokud ve vytvořené instanci má být možno měnit hodnoty, false (default) = ReadOnly</param>
+        public Int32Range(int begin, int end, bool isVariable) : base(begin, end, isVariable) { }
+        /// <summary>
+        /// Konstruktor: vytvoří proměnnou instanci
+        /// </summary>
+        public Int32Range() : base(0, 0, true) { }
         /// <summary>
         /// Vrátí new instanci vytvořenou klonováním this instance
         /// </summary>
         /// <returns></returns>
-        public Int32Range Clone() { return new Int32Range(Begin, End); }
+        public Int32Range Clone() { return new Int32Range(Begin, End, IsVariable); }
         /// <summary>
         /// Porovná dvě hodnoty a vrátí jejich pozici na ose.
         /// Vrací -1 pokud <paramref name="a"/> je menší než <paramref name="b"/>;
@@ -91,12 +143,15 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Vrátí klon this instance
         /// </summary>
         /// <returns></returns>
-        protected override AnyRange<int, int> CreateClone() { return new Int32Range(Begin, End); }
+        protected override AnyRange<int, int> CreateClone() { return new Int32Range(Begin, End, IsVariable); }
         /// <summary>
         /// Vrátí new instanci shodné třídy
         /// </summary>
+        /// <param name="begin">Počátek intervalu</param>
+        /// <param name="end">Konec intervalu</param>
+        /// <param name="isVariable">true pokud ve vytvořené instanci má být možno měnit hodnoty, false (default) = ReadOnly</param>
         /// <returns></returns>
-        protected override AnyRange<int, int> CreateNew(int begin, int end) { return new Int32Range(begin, end); }
+        protected override AnyRange<int, int> CreateNew(int begin, int end, bool isVariable) { return new Int32Range(begin, end, isVariable); }
         /// <summary>
         /// Vrátí délku prostoru od <paramref name="begin"/> do <paramref name="end"/>, 
         /// vrací tedy výsledek operace (<paramref name="end"/> - <paramref name="begin"/>)
@@ -113,9 +168,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         public static Int32Range Union(Int32Range value1, Int32Range value2)
         {
-            int b = (value1.Begin < value2.Begin ? value1.Begin : value2.Begin);
-            int e = (value1.End > value2.End ? value1.End : value2.End);
-            return new Int32Range(b, e);
+            var b = (value1.Begin < value2.Begin ? value1.Begin : value2.Begin);
+            var e = (value1.End > value2.End ? value1.End : value2.End);
+            bool isVariable = value1.IsVariable && value2.IsVariable;
+            return new Int32Range(b, e, isVariable);
         }
         /// <summary>
         /// Vrátí průsečík dvou intervalů. Pokud jej nelze najít, vrátí null. Pokud je průsečík nulový (Begin = End), vrátí takový objekt.
@@ -125,10 +181,25 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         public static Int32Range Intersect(Int32Range value1, Int32Range value2)
         {
-            int b = (value1.Begin > value2.Begin ? value1.Begin : value2.Begin);
-            int e = (value1.End < value2.End ? value1.End : value2.End);
+            if (value1 is null || value2 is null) return null;
+            var b = (value1.Begin > value2.Begin ? value1.Begin : value2.Begin);
+            var e = (value1.End < value2.End ? value1.End : value2.End);
             if (b > e) return null;
-            return new Int32Range(b, e);
+            bool isVariable = value1.IsVariable && value2.IsVariable;
+            return new Int32Range(b, e, isVariable);
+        }
+        /// <summary>
+        /// Metoda vrátí true, pokud dané dvě hodnoty mají průsečík kladné velikosti.
+        /// </summary>
+        /// <param name="value1"></param>
+        /// <param name="value2"></param>
+        /// <returns></returns>
+        public static bool HasIntersect(Int32Range value1, Int32Range value2)
+        {
+            if (value1 is null || value2 is null) return false;
+            var b = (value1.Begin > value2.Begin ? value1.Begin : value2.Begin);
+            var e = (value1.End < value2.End ? value1.End : value2.End);
+            return (b < e);
         }
     }
     #endregion
@@ -142,14 +213,25 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Konstruktor
         /// </summary>
-        /// <param name="begin"></param>
-        /// <param name="end"></param>
-        public TimeRange(DateTime begin, DateTime end) : base(begin, end) { }
+        /// <param name="begin">Počátek intervalu</param>
+        /// <param name="end">Konec intervalu</param>
+        public TimeRange(DateTime begin, DateTime end) : base(begin, end, false) { }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="begin">Počátek intervalu</param>
+        /// <param name="end">Konec intervalu</param>
+        /// <param name="isVariable">true pokud ve vytvořené instanci má být možno měnit hodnoty, false (default) = ReadOnly</param>
+        public TimeRange(DateTime begin, DateTime end, bool isVariable) : base(begin, end, isVariable) { }
+        /// <summary>
+        /// Konstruktor: vytvoří proměnnou instanci
+        /// </summary>
+        public TimeRange() : base(DateTime.MinValue, DateTime.MinValue, true) { }
         /// <summary>
         /// Vrátí new instanci vytvořenou klonováním this instance
         /// </summary>
         /// <returns></returns>
-        public TimeRange Clone() { return new TimeRange(Begin, End); }
+        public TimeRange Clone() { return new TimeRange(Begin, End, IsVariable); }
         /// <summary>
         /// Porovná dvě hodnoty a vrátí jejich pozici na ose.
         /// Vrací -1 pokud <paramref name="a"/> je menší než <paramref name="b"/>;
@@ -164,12 +246,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Vrátí klon this instance
         /// </summary>
         /// <returns></returns>
-        protected override AnyRange<DateTime, TimeSpan> CreateClone() { return new TimeRange(Begin, End); }
+        protected override AnyRange<DateTime, TimeSpan> CreateClone() { return new TimeRange(Begin, End, IsVariable); }
         /// <summary>
         /// Vrátí new instanci shodné třídy
         /// </summary>
         /// <returns></returns>
-        protected override AnyRange<DateTime, TimeSpan> CreateNew(DateTime begin, DateTime end) { return new TimeRange(begin, end); }
+        protected override AnyRange<DateTime, TimeSpan> CreateNew(DateTime begin, DateTime end, bool isVariable) { return new TimeRange(begin, end, isVariable); }
         /// <summary>
         /// Vrátí délku prostoru od <paramref name="begin"/> do <paramref name="end"/>, 
         /// vrací tedy výsledek operace (<paramref name="end"/> - <paramref name="begin"/>)
@@ -178,6 +260,33 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="end">Hodnota konce</param>
         /// <returns></returns>
         protected override TimeSpan Distance(DateTime begin, DateTime end) { return end - begin; }
+        /// <summary>
+        /// Vratí souhrn dvou intervalů = od toho nižšího Begin do toho vyššího End.
+        /// </summary>
+        /// <param name="value1"></param>
+        /// <param name="value2"></param>
+        /// <returns></returns>
+        public static TimeRange Union(TimeRange value1, TimeRange value2)
+        {
+            var b = (value1.Begin < value2.Begin ? value1.Begin : value2.Begin);
+            var e = (value1.End > value2.End ? value1.End : value2.End);
+            bool isVariable = value1.IsVariable && value2.IsVariable;
+            return new TimeRange(b, e, isVariable);
+        }
+        /// <summary>
+        /// Vrátí průsečík dvou intervalů. Pokud jej nelze najít, vrátí null. Pokud je průsečík nulový (Begin = End), vrátí takový objekt.
+        /// </summary>
+        /// <param name="value1"></param>
+        /// <param name="value2"></param>
+        /// <returns></returns>
+        public static TimeRange Intersect(TimeRange value1, TimeRange value2)
+        {
+            var b = (value1.Begin > value2.Begin ? value1.Begin : value2.Begin);
+            var e = (value1.End < value2.End ? value1.End : value2.End);
+            if (b > e) return null;
+            bool isVariable = value1.IsVariable && value2.IsVariable;
+            return new TimeRange(b, e, isVariable);
+        }
     }
     #endregion
     #region class AnyRange : abstract class, Rozsah hodnot { Begin - Size - End }
@@ -191,9 +300,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Konstruktor
         /// </summary>
-        /// <param name="begin"></param>
-        /// <param name="end"></param>
-        public AnyRange(TEdge begin, TEdge end) { _Begin = begin; _End = end; _Size = Distance(begin, end); }
+        /// <param name="begin">Počátek intervalu</param>
+        /// <param name="end">Konec intervalu</param>
+        /// <param name="isVariable">true pokud ve vytvořené instanci má být možno měnit hodnoty, false (default) = ReadOnly</param>
+        public AnyRange(TEdge begin, TEdge end, bool isVariable) { __Begin = begin; __End = end; __Size = Distance(begin, end); __IsVariable = isVariable; }
         /// <summary>
         /// Vizualizace
         /// </summary>
@@ -209,18 +319,36 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Počátek rozsahu (včetně)
         /// </summary>
-        public TEdge Begin { get { return _Begin; } }
-        TEdge _Begin;
+        public TEdge Begin { get { return __Begin; } set { CheckVariable("Begin"); __Begin = value; __Size = Distance(__Begin, __End); } } TEdge __Begin;
         /// <summary>
         /// Konec rozsahu (mimo)
         /// </summary>
-        public TEdge End { get { return _End; } }
-        TEdge _End;
+        public TEdge End { get { return __End; } set { CheckVariable("End"); __End = value; __Size = Distance(__Begin, __End); } } TEdge __End;
+        /// <summary>
+        /// Vloží obě hodnoty <paramref name="begin"/> i <paramref name="end"/> najednou.
+        /// Instance musí být proměnná (<see cref="IsVariable"/>), jinak dojde k chybě.
+        /// </summary>
+        /// <param name="begin"></param>
+        /// <param name="end"></param>
+        public void Store(TEdge begin, TEdge end) { CheckVariable("Store"); __Begin = begin; __End = end; __Size = Distance(begin, end); }
         /// <summary>
         /// Délka rozsahu
         /// </summary>
-        public TSize Size { get { return _Size; } }
-        TSize _Size;
+        public TSize Size { get { return __Size; } } TSize __Size;
+        /// <summary>
+        /// Obsahuje true, pokud lze změnit, nebo false (default) pokud instance je od vytvoření neměnná
+        /// </summary>
+        public bool IsVariable { get { return __IsVariable; } } bool __IsVariable;
+        /// <summary>
+        /// Pokud this instance je Variable (<see cref="IsVariable"/> je true), pak je vše OK.
+        /// Pokud není, dojde k chybě. Do chybové hlášky se vloží dodané jméno property <paramref name="propertyName"/> a jméno aktuálního typu (=potomek).
+        /// </summary>
+        /// <param name="propertyName"></param>
+        protected void CheckVariable(string propertyName)
+        {
+            if (IsVariable) return;
+            throw new FieldAccessException($"AnyRange can not set value to '{propertyName}', instance {this.GetType().Name} is not Variable.");
+        }
         /// <summary>
         /// Obsahuje true u hodnot, kdy <see cref="End"/> je větší než <see cref="Begin"/>, tedy <see cref="Size"/> je kladné
         /// </summary>
@@ -268,8 +396,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Vrátí new instanci shodné třídy
         /// </summary>
+        /// <param name="begin">Počátek intervalu</param>
+        /// <param name="end">Konec intervalu</param>
+        /// <param name="isVariable">true pokud ve vytvořené instanci má být možno měnit hodnoty, false (default) = ReadOnly</param>
         /// <returns></returns>
-        protected abstract AnyRange<TEdge, TSize> CreateNew(TEdge begin, TEdge end);
+        protected abstract AnyRange<TEdge, TSize> CreateNew(TEdge begin, TEdge end, bool isVariable);
         /// <summary>
         /// Vrátí menší z daných hodnot
         /// </summary>
@@ -374,8 +505,9 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             TEdge resultBegin = a.Max(a.Begin, b.Begin);
             TEdge resultEnd = a.Min(a.End, b.End);
+            bool isVariable = a.IsVariable && b.IsVariable;
             int resultCompare = a.Compare(resultEnd, resultBegin);
-            return (resultCompare < 0 ? null : a.CreateNew(resultBegin, resultEnd));
+            return (resultCompare < 0 ? null : a.CreateNew(resultBegin, resultEnd, isVariable));
         }
         /// <summary>
         /// Sčítání dvou intervalů = výsledkem je souhrn (=od menšího Begin po větší End)
@@ -393,7 +525,8 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             TEdge resultBegin = a.Min(a.Begin, b.Begin);
             TEdge resultEnd = a.Max(a.End, b.End);
-            return a.CreateNew(resultBegin, resultEnd);
+            bool isVariable = a.IsVariable && b.IsVariable;
+            return a.CreateNew(resultBegin, resultEnd, isVariable);
         }
         #endregion
     }

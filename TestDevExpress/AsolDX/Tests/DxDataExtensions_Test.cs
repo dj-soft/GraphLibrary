@@ -63,6 +63,72 @@ namespace Noris.Clients.Win.Components.Tests
                 Assert.AreEqual(align, max);
             }
         }
+
+        /// <summary>
+        /// Test DataExtensions.GetVisibleItems()
+        /// </summary>
+        [TestMethod]
+        public void TestVisibleRange()
+        {
+            var data = new List<DataRangeTestInfo>();
+            int id = 0;
+            data.Add(new DataRangeTestInfo() { Text = "Prvek " + (id++).ToString(), VisibleRange = new Int32Range(0, 15) });
+            data.Add(new DataRangeTestInfo() { Text = "Prvek " + (id++).ToString(), VisibleRange = new Int32Range(15, 45) });
+            data.Add(new DataRangeTestInfo() { Text = "Prvek " + (id++).ToString(), VisibleRange = new Int32Range(45, 80) });
+            data.Add(new DataRangeTestInfo() { Text = "Prvek " + (id++).ToString(), VisibleRange = new Int32Range(80, 120) });
+            data.Add(new DataRangeTestInfo() { Text = "Prvek " + (id++).ToString(), VisibleRange = new Int32Range(120, 140) });
+            data.Add(new DataRangeTestInfo() { Text = "Prvek " + (id++).ToString(), VisibleRange = new Int32Range(140, 160) });
+            data.Add(new DataRangeTestInfo() { Text = "Prvek " + (id++).ToString(), VisibleRange = new Int32Range(160, 180) });
+            data.Add(new DataRangeTestInfo() { Text = "Prvek " + (id++).ToString(), VisibleRange = new Int32Range(180, 240) });
+            data.Add(new DataRangeTestInfo() { Text = "Prvek " + (id++).ToString(), VisibleRange = new Int32Range(240, 290) });
+            data.Add(new DataRangeTestInfo() { Text = "Prvek " + (id++).ToString(), VisibleRange = new Int32Range(290, 360) });
+
+            // Testy mezních situací:
+            List<DataRangeTestInfo> result;
+
+            result = data.GetVisibleItems(null, null);
+            if (result is not null) Assert.Fail("Výsledek nemá být null");
+
+            result = data.GetVisibleItems(d => d.VisibleRange, null);
+            if (result is null) Assert.Fail("Výsledek nemá být null");
+            if (result.Count != 0) Assert.Fail($"Výsledek má být prázdný, ale není.");
+
+            // Testy číselné správnosti:
+            testOne(80, 180, 4, 80, 180);
+            testOne(81, 179, 4, 80, 180);
+            testOne(79, 181, 6, 45, 240);
+            testOne(79, 179, 5, 45, 180);
+            testOne(81, 181, 5, 80, 240);
+
+            testOne(5, 6, 1, 0, 15);
+            testOne(5, 5, 0, 0, 0);
+            testOne(360, 400, 0, 0, 0);
+            testOne(-10, 400, 10, 0, 360);
+            testOne(240, 240, 0, 0, 0);
+
+            void testOne(int begin, int end, int count, int first, int last)
+            {
+                var visualRange = new Int32Range(begin, end);
+                var result = data.GetVisibleItems(d => d.VisibleRange, visualRange);
+                if (result is null) Assert.Fail("Výsledek nemá být null");
+                int resultCount = result.Count;
+                if (resultCount != count) Assert.Fail($"Výsledek má počet prvků {resultCount}, má být {count}");
+                if (count == 0) return;
+                int resultFirst = result[0].VisibleRange.Begin;
+                if (resultCount != count) Assert.Fail($"Výsledek má v prvním prvku Begin {resultFirst}, má být {first}");
+                int resultLast = result[resultCount - 1].VisibleRange.End;
+                if (resultCount != count) Assert.Fail($"Výsledek má v posledním prvku End {resultLast}, má být {last}");
+            }
+        }
+        internal class DataRangeTestInfo
+        {
+            public override string ToString()
+            {
+                return $"{Text} : {VisibleRange}";
+            }
+            public Int32Range VisibleRange;
+            public string Text;
+        }
     }
 
     /// <summary>
