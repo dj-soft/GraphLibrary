@@ -311,9 +311,9 @@ namespace TestDevExpress.Forms
             }
 
             startTime = DxComponent.LogTimeCurrent;
-            dataForm.Form = TestDevExpress.Components.DxDataFormSamples.CreateSampleDefinition(sampleId, texts, tooltips);
+            dataForm.IForm = TestDevExpress.Components.DxDataFormSamples.CreateSampleDefinition(sampleId, texts, tooltips);
             int rowCount = (sampleId == 40 ? 200 : 1);
-            dataForm.Data.Source = this.CreateDataSource(rowCount, dataForm.Form);
+            dataForm.Data.Source = this.CreateDataSource(rowCount, dataForm.IForm);
             _DxTestPanel.Controls.Add(dataForm);
 
             _DoLayoutAnyDataForm();

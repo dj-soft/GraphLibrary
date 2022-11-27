@@ -109,7 +109,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             InitializeUserControls();
             InitializeImageCache();
             InitializeData();
-            InitializeGroups();
+            InitializeTabDef();
             InitializeAppearance();
         }
         /// <summary>
@@ -120,7 +120,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             DisposeImageCache();
             DisposeUserControls();
-            DisposeVisualPanels();
+            _DisposeVisualPanels();
             base.Dispose(disposing);
         }
         /// <summary>
@@ -345,8 +345,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Definice formuláře.
         /// Dokud nebude vložena definice vzhledu, bude prvek prázdný.
         /// </summary>
-        public IDataForm Form { get { return __Form; } set { _SetForm(value); } }
-        private IDataForm __Form;
+        public IDataForm IForm { get { return __IForm; } set { _SetForm(value); } }
+        private IDataForm __IForm;
         /// <summary>
         /// Vlastní data
         /// </summary>
@@ -358,68 +358,67 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="form"></param>
         private void _SetForm(IDataForm form)
         {
-            __Form = form;
-            CreateDataPages(form);
-            CreateDataTabs();
-            ActivateVisualPanels();
-            ActivatePage();
+            _CreateDataPages(form);
+            _PrepareLayoutAndTabs();
+            _ActivateVisualPanels();
+            _ActivatePage();
         }
         /// <summary>
         /// Z dodané definice formuláře <see cref="IDataForm"/> vytvoří zdejší datové struktury: 
-        /// naplní pole <see cref="_DataFormPages"/>, nic dalšího nedělá.
+        /// naplní pole <see cref="__DataFormPages"/>, nic dalšího nedělá.
         /// </summary>
         /// <param name="form"></param>
-        private void CreateDataPages(IDataForm form)
+        private void _CreateDataPages(IDataForm form)
         {
-            _DataFormPages = DxDataFormPage.CreateList(this, form?.Pages);
+            __IForm = form;
+            __DataFormPages = DxDataFormPageDef.CreateList(this, form?.Pages);
         }
         /// <summary>
-        /// Určí souřadnice skupin na jednotlivých stránkách.
+        /// Určí fyzické souřadnice skupin <see cref="DxDataFormGroupDef"/> na jednotlivých stránkách <see cref="DxDataFormPageDef"/>.
+        /// Výsledkem jsou určené relativní souřadnice skupin.
         /// Mohl by dělat i dynamický layout, v budoucnu...
-        /// Výstupem je struktura záložek v <see cref="_DataFormTabs"/>. Jedna záložka obsahuje 1 nebo více stránek. 
+        /// Výstupem je struktura záložek v <see cref="__DataFormTabs"/>. Jedna záložka obsahuje 1 nebo více stránek. 
         /// </summary>
-        private void CreateDataTabs()
+        private void _PrepareLayoutAndTabs()
         {
-            if (_DataFormPages == null) return;
+            if (__DataFormPages == null) return;
 
             // Začněme základním layoutem v jednotlivých Pages (tam může dojít k přelévání grup zdola nahoru doprava):
-            foreach (var dataPage in _DataFormPages)
-                dataPage.PrepareGroupLayout();
+            foreach (var dataPage in __DataFormPages)
+                dataPage.RecalculateChildLayout(false);
 
             // V dalším kroku můžeme spojit některé stránky do větší kombinované stránky, pokud je v nich místo:
-            if (_DataFormPages.Any(p => p.AllowMerge))
-            {
-            }
+            // if (__DataFormPages.Any(p => p.AllowMerge)) { }
 
             // Finalizace:
-            _DataFormTabs = new List<DxDataFormTab>();
+            __DataFormTabs = new List<DxDataFormTabDef>();
             int pageIndex = 0;
-            foreach (var dataPage in _DataFormPages)
+            foreach (var dataPage in __DataFormPages)
             {
-                DxDataFormTab dataTab = new DxDataFormTab(this, "TabPage" + (pageIndex++).ToString());
+                DxDataFormTabDef dataTab = new DxDataFormTabDef(this, "TabPage" + (pageIndex++).ToString());
                 dataTab.Add(dataPage);
-                _DataFormTabs.Add(dataTab);
+                __DataFormTabs.Add(dataTab);
             }
         }
         /// <summary>
         /// Metoda invaliduje všechny souřadnice na stránkách, které jsou závislé na Zoomu a na DPI.
-        /// Metoda sama neprovádí další přepočty layoutu ani tvorbu záložek, to je úkolem metody <see cref="CreateDataTabs"/>.
+        /// Metoda sama neprovádí další přepočty layoutu ani tvorbu záložek, to je úkolem metody <see cref="_PrepareLayoutAndTabs"/>.
         /// </summary>
         private void InvalidateCurrentBounds()
         {
-            _DataFormPages?.ForEachExec(p => p.InvalidateBounds());
+            __DataFormPages?.ForEachExec(p => p.InvalidateBounds());
         }
         /// <summary>
-        /// Metoda zajistí, že ve všech definicích stránek v <see cref="_DataFormPages"/> budou správně určeny souřadnice skupin, 
-        /// a budou z nich vytvořeny data pro záložky do <see cref="_DataFormTabs"/>.
+        /// Metoda zajistí, že ve všech definicích stránek v <see cref="__DataFormPages"/> budou správně určeny souřadnice skupin, 
+        /// a budou z nich vytvořeny data pro záložky do <see cref="__DataFormTabs"/>.
         /// Následně budou připraveny vizuální controly a do nich naplněny patřičné grupy pro zobrazení.
         /// </summary>
         private void PrepareDataTabs()
         {
-            if (_DataFormTabs == null) return;
-            ActivateVisualPanels();
+            if (__DataFormTabs == null) return;
+            _ActivateVisualPanels();
         }
-        private void ActivatePage(string pageId = null)
+        private void _ActivatePage(string pageId = null)
         {
         }
         /// <summary>
@@ -429,7 +428,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         protected override void OnSizeChanged(EventArgs e)
         {
             base.OnSizeChanged(e);
-            CreateDataTabs();
+            _PrepareLayoutAndTabs();
         }
         /// <summary>
         /// Tento háček je vyvolán po jakékoli akci, která může vést k přepočtu vnitřních velikostí controlů.
@@ -443,55 +442,57 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             base.OnContentSizeChanged();
             InvalidateCurrentBounds();
-            CreateDataTabs();
+            _PrepareLayoutAndTabs();
         }
         /// <summary>
-        /// Metoda zkusí najít navigační stránku (typově přesnou) a její data záložky <see cref="DxDataFormTab"/>
+        /// Metoda zkusí najít navigační stránku (typově přesnou) a její data záložky <see cref="DxDataFormTabDef"/>
         /// pro vstupní obecnou stránku.
         /// </summary>
         /// <param name="page"></param>
         /// <param name="tabPage"></param>
         /// <param name="formTab"></param>
         /// <returns></returns>
-        private bool TryGetFormTab(DevExpress.XtraBars.Navigation.INavigationPageBase page, out DevExpress.XtraBars.Navigation.TabNavigationPage tabPage, out DxDataFormTab formTab)
+        private bool _TryGetFormTab(DevExpress.XtraBars.Navigation.INavigationPageBase page, out DevExpress.XtraBars.Navigation.TabNavigationPage tabPage, out DxDataFormTabDef formTab)
         {
             tabPage = null;
             formTab = null;
             if (!(page is DevExpress.XtraBars.Navigation.TabNavigationPage tp)) return false;
             tabPage = tp;
             var tabName = tabPage.Name;
-            return TryGetFormTab(tabName, out formTab);
+            return _TryGetFormTab(tabName, out formTab);
         }
         /// <summary>
-        /// Metoda zkusí najít data záložky <see cref="DxDataFormTab"/>
+        /// Metoda zkusí najít data záložky <see cref="DxDataFormTabDef"/>
         /// pro daný název záložky.
         /// </summary>
         /// <param name="tabName"></param>
         /// <param name="formTab"></param>
         /// <returns></returns>
-        private bool TryGetFormTab(string tabName, out DxDataFormTab formTab)
+        private bool _TryGetFormTab(string tabName, out DxDataFormTabDef formTab)
         {
             formTab = null;
             if (String.IsNullOrEmpty(tabName)) return false;
-            return _DataFormTabs.TryGetFirst(t => String.Equals(t.TabName, tabName), out formTab);
+            return __DataFormTabs.TryGetFirst(t => String.Equals(t.TabName, tabName), out formTab);
         }
         /// <summary>
-        /// Data jednotlivých stránek
+        /// Data definic pro jednotlivé vstupní stránky.
+        /// Jedna stránka je definovaná designerem, jedna i více stránek se může nacházet na jedné záložce <see cref="DxDataFormTabDef"/>,
+        /// tyto stránky jsou evidovány v <see cref="__DataFormTabs"/>.
         /// </summary>
-        private List<DxDataFormPage> _DataFormPages;
+        private List<DxDataFormPageDef> __DataFormPages;
         #endregion
         #region Práce s controly DxDataFormPanel (jednoduchý DataForm) a / nebo TabPane (záložky)
         /// <summary>
         /// Aktivuje patřičný control pro zobrazení DataFormu.
         /// </summary>
-        private void ActivateVisualPanels()
+        private void _ActivateVisualPanels()
         {
             int count = _DataFormTabsCount;
             if (count == 0)
                 _DeactivateVisualPanels();
-            if (count == 1)
+            else if (count == 1)
                 _ActivateSinglePanel();
-            else if(count > 1)
+            else if (count > 1)
                 _ActivateTabPane();
         }
         /// <summary>
@@ -515,7 +516,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             _DataFormPanel.State = null;
             _DataFormPanel.Visible = true;
 
-            CurrentGroupDefinitions = _DataFormTabs.FirstOrDefault()?.Groups;
+            CurrentTabDef = __DataFormTabs.FirstOrDefault();
         }
         /// <summary>
         /// Zajistí správnou aktivaci controlů pro záložek pro více stránek DataFormu.
@@ -533,7 +534,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Dispose vizuálních controlů
         /// </summary>
-        private void DisposeVisualPanels()
+        private void _DisposeVisualPanels()
         {
             _DisposeDataFormPanel();
             _DisposeDataFormTabPane();
@@ -541,17 +542,17 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Aktuální počet podkladů pro záložky = počet prvků v poli <see cref="_DataFormTabsCount"/>
         /// </summary>
-        private int _DataFormTabsCount { get { return (_DataFormTabs?.Count ?? 0); } }
+        private int _DataFormTabsCount { get { return (__DataFormTabs?.Count ?? 0); } }
         /// <summary>
         /// Data jednotlivých záložek.
-        /// Jedna záložka může obsahovat jednu nebo více stránek <see cref="DxDataFormPage"/>.
-        /// Pokud záložka obsahuje více stránek, pak další stránky už mají správně vypočtené souřadnice skupin <see cref="DxDataFormGroupDefinition.CurrentGroupBounds"/> 
+        /// Jedna záložka může obsahovat jednu nebo více stránek <see cref="DxDataFormPageDef"/>.
+        /// Pokud záložka obsahuje více stránek, pak další stránky už mají správně vypočtené souřadnice skupin <see cref="DxDataFormGroupDef.CurrentGroupBounds"/> 
         /// (a tedy i jejich prvky mají správné souřadnice).
         /// <para/>
-        /// Toto pole je vytvořeno v metodě <see cref="CreateDataTabs"/>.
+        /// Toto pole je vytvořeno v metodě <see cref="_PrepareLayoutAndTabs"/>.
         /// </summary>
-        private List<DxDataFormTab> _DataFormTabs;
-        #region DxDataFormPanel
+        private List<DxDataFormTabDef> __DataFormTabs;
+        #region DxDataFormPanel = hlavní vizuální zobrazovač (hostuje jednotlivé splitované DxDataFormPart-s, přinejmenším jeden)
         /// <summary>
         /// Vytvoří vlastní panel DataForm
         /// </summary>
@@ -576,7 +577,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private DxDataFormPanel _DataFormPanel;
         #endregion
-        #region DxTabPane
+        #region DxTabPane - fyzický záložkovník (horní záložky = jednotlivé vizuální stránky na DataFormu)
         /// <summary>
         /// Vytvoří vlastní záložkovník TabPane
         /// </summary>
@@ -589,39 +590,49 @@ namespace Noris.Clients.Win.Components.AsolDX
             tabPane.SelectedPageChanging += TabPane_SelectedPageChanging;
             _DataFormTabPane = tabPane;
         }
+        /// <summary>
+        /// Začíná změna záložky TabPane. Tady ji lze stornovat.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void TabPane_SelectedPageChanging(object sender, DevExpress.XtraBars.Navigation.SelectedPageChangingEventArgs e)
         {
         }
+        /// <summary>
+        /// Proběhla změna záložky TabPane. Tady ji už nelze stornovat, tady na ni musíme reagovat.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void TabPane_SelectedPageChanged(object sender, DevExpress.XtraBars.Navigation.SelectedPageChangedEventArgs e)
         {
             if (e.Page == null) return;
 
             _PrepareDataFormPanel();
 
-            if (TryGetFormTab(e.OldPage, out var oldTabPage, out var oldFormTab))
+            if (_TryGetFormTab(e.OldPage, out var oldTabPage, out var oldFormTab))
             {
                 oldFormTab.State = _DataFormPanel.State.Clone();
             }
-            if (TryGetFormTab(e.Page, out var newTabPage, out var newFormTab))
+            if (_TryGetFormTab(e.Page, out var newTabPage, out var newFormTab))
             {
                 _DataFormPanel.AddControlToParent(newTabPage);       // Zajistíme, že DataFormPanel bude přítomný jako Child control v nové stránce
                 _DataFormPanel.State = newFormTab.State;
                 _DataFormPanel.Visible = true;
 
-                CurrentGroupDefinitions = newFormTab.Groups;
+                CurrentTabDef = newFormTab;
             }
             else
             {
                 _DataFormPanel.State = null;
-                CurrentGroupDefinitions = null;
+                CurrentTabDef = newFormTab;
             }
         }
         /// <summary>
-        /// Do vlastního záložkovníku TabPane vygeneruje fyzické stránky podle obsahu v <see cref="_DataFormTabs"/>.
+        /// Do vlastního záložkovníku TabPane vygeneruje fyzické stránky podle obsahu v <see cref="__DataFormTabs"/>.
         /// </summary>
         private void _PrepareDataFormTabPages()
         {
-            _DataFormTabPane.SetPages(_DataFormTabs, null, true, true);
+            _DataFormTabPane.SetPages(__DataFormTabs, null, true, true);
         }
         /// <summary>
         /// Disposuje vlastní záložkovník TabPane
@@ -637,13 +648,57 @@ namespace Noris.Clients.Win.Components.AsolDX
         private DxTabPane _DataFormTabPane;
         #endregion
         #endregion
+        #region CurrentTabDef = definice obsahu a vzhledu aktuálně viditelné záložky
+        /// <summary>
+        /// Inicializuje pole <see cref="CurrentTabDef"/> a související objekty
+        /// </summary>
+        private void InitializeTabDef()
+        {
+            __CurrentGroups = new List<DxDataFormGroupDef>();
+            __CurrentRowHeight = 0;
+            __DynamicGroupHeight = false;
+        }
+        /// <summary>
+        /// Definice aktuálně zobrazené záložky = deklarace obsažených stránek, skupin a prvků.
+        /// Pokud má DataForm více záložek, pak je zde definice právě té viditelné.
+        /// Podle této definice se odvozují definice pro jednotlivé řádky.
+        /// </summary>
+        internal DxDataFormTabDef CurrentTabDef { get { return __CurrentTabDef; } private set { _SetCurrentTabDef(value); } } private DxDataFormTabDef __CurrentTabDef;
+        /// <summary>
+        /// Vloží do sebe dané grupy a zajistí minimální potřebné refreshe
+        /// </summary>
+        /// <param name="tabDef"></param>
+        private void _SetCurrentTabDef(DxDataFormTabDef tabDef)
+        {
+            __CurrentTabDef = tabDef;
+            __CurrentGroups = DxDataFormGroupDef.CreateList( new List<DxDataFormGroupDef>();
+            __CurrentGroups.Clear();
+            __CurrentRowHeight = 0;
+            if (groups != null && groups.Count > 0)
+                __CurrentGroups.AddRange(groups);
+            _RecalcCurrentGroupsSize();
+            Refresh(RefreshParts.All);
+        }
+        /// <summary>
+        /// Aktuální sumární velikost layoutu (=suma souřadnic Groups) v pixelech. Obsahuje přičtené okraje kolem dataformu.
+        /// Na této úrovni (<see cref="DxDataForm"/>) jsou podmínečně viditelné / neviditelné (závislé na datech z konkrétního řádku) prvky brány za viditelné.
+        /// </summary>
+        internal Size CurrentTabSize { get { return __CurrentTabSize; } }private Size __CurrentTabSize;
+        /// <summary>
+        /// Výška jednoho řádku v aktuálním defaultním layoutu. Reálná výška (s využitím DynamicInvisible a FlowLayout) může být menší...
+        /// Je vypočtena po vložení definice vzhledu do <see cref="CurrentTabDef"/> jako výška Tabu plus mezera mezi řádky.
+        /// Na této úrovni (<see cref="DxDataForm"/>) jsou podmínečně viditelné / neviditelné (závislé na datech z konkrétního řádku) prvky brány za viditelné.
+        /// </summary>
+        public int CurrentRowHeight { get { return __CurrentRowHeight; } } private int __CurrentRowHeight;
+        #endregion
+
         #region CurrentGroups = definice vzhledu aktuálního DataFormu (layout), mění se při přepínání záložek
         /// <summary>
         /// Inicializuje pole <see cref="CurrentGroupDefinitions"/> a související
         /// </summary>
         private void InitializeGroups()
         {
-            __CurrentGroups = new List<DxDataFormGroupDefinition>();
+            __CurrentGroups = new List<DxDataFormGroupDef>();
             __CurrentRowHeight = 0;
             __DynamicGroupHeight = false;
         }
@@ -651,22 +706,15 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Aktuálně zobrazované grupy, obsahující definice jednotlivých columnů <see cref="DxDataFormItem"/>.
         /// Obsahuje definice skupin, které jsou na aktuální záložce viditelné. 
         /// Pokud tedy existuje <see cref="DxDataForm"/>, který se skládá z více stránek, pak tento <see cref="DxDataForm"/> 
-        /// tyto stránky rozmístil na jednotlivé záložky <see cref="DxDataFormTab"/> 
+        /// tyto stránky rozmístil na jednotlivé záložky <see cref="DxDataFormTabDef"/> 
         /// (na jedné záložce je typicky jedna stránka, ale pokud by záložka byla dostatečně veliká, může shrnout data z více stránek).
         /// </summary>
-        internal List<DxDataFormGroupDefinition> CurrentGroupDefinitions { get { return __CurrentGroups; } private set { _SetGroups(value); } }
+        internal List<DxDataFormGroupDef> qqqCurrentGroupDefinitions { get { return __CurrentGroups; } private set { _SetGroups(value); } }
         /// <summary>
         /// Aktuální sumární velikost sady grup v pixelech.
         /// Je vypočtena pro aktuální grupy <see cref="CurrentGroupDefinitions"/> po jejich setování a slouží pro vizuální práci s controly.
         /// </summary>
         internal Size CurrentGroupsSize { get { return __CurrentGroupsSize; } }
-        /// <summary>
-        /// Výška jednoho řádku. 
-        /// Je vypočtena po vložení definice vzhledu <see cref="CurrentGroupDefinitions"/> jako největší hodnota Bottom ze všech souřadnic grup.
-        /// K výšce je přičtena hodnota mezery mezi řádky.
-        /// Zdejší hodnota tedy reprezentuje výšku každého řádku <see cref="DxDataFormRow"/> v aktuálním dataformu/záložce.
-        /// </summary>
-        public int CurrentRowHeight { get { return __CurrentRowHeight; } }
         /// <summary>
         /// Dynamická výška grup = může se měnit pro různé řádky?
         /// Zatím NE, znamenalo by to náročnější výpočty. Všechny řádky budou stejně vysoké.
@@ -676,7 +724,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Vloží do sebe dané grupy a zajistí minimální potřebné refreshe
         /// </summary>
         /// <param name="groups"></param>
-        private void _SetGroups(List<DxDataFormGroupDefinition> groups)
+        private void _SetGroups(List<DxDataFormGroupDef> groups)
         {
             __CurrentGroups.Clear();
             __CurrentRowHeight = 0;
@@ -706,11 +754,9 @@ namespace Noris.Clients.Win.Components.AsolDX
             __CurrentRowHeight = maxY + RowHeightSpace;
         }
         /// <summary>Pole skupin, které aktuálně zobrazujeme</summary>
-        private List<DxDataFormGroupDefinition> __CurrentGroups;
+        private List<DxDataFormGroupDef> __CurrentGroups;
         /// <summary>Velikost grupy = Max (Right, Bottom), bez mezer</summary>
         private Size __CurrentGroupsSize;
-        /// <summary> Výška řádku = souhrn Groups + mezera </summary>
-        private int __CurrentRowHeight;
         /// <summary>
         /// Dynamická výška grup = může se měnit pro různé řádky
         /// </summary>
@@ -1691,11 +1737,11 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
     #endregion
 
     // Definice vzhledu:
-    #region class DxDataFormTab : Data jedné viditelné záložky. Záložka může shrnovat grupy z více stránek, pokud to layout umožní a potřebuje
+    #region class DxDataFormTabDef : Data jedné viditelné záložky. Záložka může shrnovat grupy z více stránek, pokud to layout umožní a potřebuje
     /// <summary>
-    /// Data jedné viditelné záložky. Záložka může shrnovat grupy z více stránek, pokud to layout umožní a potřebuje.
+    /// <see cref="DxDataFormTabDef"/> : Data jedné viditelné záložky. Záložka může shrnovat grupy z více stránek, pokud to layout umožní a potřebuje.
     /// </summary>
-    internal class DxDataFormTab : IPageItem
+    internal class DxDataFormTabDef : DxLayoutItem, IPageItem
     {
         #region Konstruktor, vlastník, prvky
         /// <summary>
@@ -1703,49 +1749,58 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         /// <param name="dataForm"></param>
         /// <param name="tabName"></param>
-        public DxDataFormTab(DxDataForm dataForm, string tabName)
+        public DxDataFormTabDef(DxDataForm dataForm, string tabName)
         {
-            _DataForm = dataForm;
-            _TabName = tabName;
-            _Pages = new List<DxDataFormPage>();
+            __DataForm = dataForm;
+            __TabName = tabName;
+            __Pages = new List<DxDataFormPageDef>();
         }
         /// <summary>Vlastník - <see cref="DxDataForm"/></summary>
-        private DxDataForm _DataForm;
+        private DxDataForm __DataForm;
         /// <summary>Jednoznačné jméno záložky, pro spárování TabPane.Page a dat</summary>
-        private string _TabName;
-        private List<DxDataFormPage> _Pages;
-        public void Add(DxDataFormPage dataPage)
+        private string __TabName;
+        /// <summary>Zde může být reference na konkrétní řádek, na kterém se aktuálně promítá obsah zdejšího objektu. 
+        /// Může zde být null, pak this instance je permanentní výchozí definice, uložená v DataFormu.</summary>
+        private DxDataFormRow __Row;
+        /// <summary>Obsažené stránky</summary>
+        private List<DxDataFormPageDef> __Pages;
+        /// <summary>
+        /// Na this záložku přidá další danou stránku. Metoda je součástí tvorby layoutu.
+        /// </summary>
+        /// <param name="dataPage"></param>
+        public void Add(DxDataFormPageDef dataPage)
         {
-            _Pages.Add(dataPage);
+            __Pages.Add(dataPage);
+            dataPage.DataTab = this;
         }
         /// <summary>
         /// Vlastník - <see cref="DxDataForm"/>
         /// </summary>
-        public DxDataForm DataForm { get { return _DataForm; } }
+        public DxDataForm DataForm { get { return __DataForm; } }
         /// <summary>
         /// Jednoznačné jméno záložky, pro spárování TabPane.Page a dat
         /// </summary>
-        public string TabName { get { return _TabName; } }
+        public string TabName { get { return __TabName; } }
         #endregion
         #region Data ze stránek a z jejich skupin
         /// <summary>
         /// Stránky na této záložce
         /// </summary>
-        public List<DxDataFormPage> Pages { get { return _Pages; } }
+        public List<DxDataFormPageDef> Pages { get { return __Pages; } }
         /// <summary>
-        /// První nenulový <see cref="DxDataFormPage.PageImageName"/>
+        /// První nenulový <see cref="DxDataFormPageDef.PageImageName"/>
         /// </summary>
         public string ImageName { get { return Pages.Select(p => p.PageImageName).Where(i => i != null).FirstOrDefault(); } }
         /// <summary>
         /// Titulek záložky = <see cref="IDataFormPage.PageText"/>, případně sloučený z více stránek
         /// </summary>
-        public string TabText { get { return Pages.Select(p => p.PageText).ToOneString(" + "); } }
-        public string TabToolTipTitle { get { return Pages.Select(p => p.ToolTipTitle).ToOneString(); } }
+        public string TabText { get { return Pages.Select(p => p.PageText).ToOneString(", "); } }
+        public string TabToolTipTitle { get { return Pages.Select(p => p.ToolTipTitle).ToOneString("; "); } }
         public string TabToolTipText { get { return Pages.Select(p => p.ToolTipText).ToOneString(); } }
         /// <summary>
         /// Zobrazované grupy a jejich prvky. Jde o souhrn skupin z přítomných stránek.
         /// </summary>
-        public List<DxDataFormGroupDefinition> Groups { get { return Pages.SelectMany(p => p.Groups).ToList(); } }
+        public List<DxDataFormGroupDef> Groups { get { return Pages.SelectMany(p => p.Groups).ToList(); } }
         #endregion
         #region Stav záložky, umožní panelu shrnout svůj stav a uložit jej do záložky, a následně ze záložky jej promítnout do živého stavu
         /// <summary>
@@ -1755,16 +1810,16 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         {
             get
             {
-                if (_State == null)
-                    _State = new DxDataFormState();
-                return _State;
+                if (__State == null)
+                    __State = new DxDataFormState();
+                return __State;
             }
             set
             {
-                _State = value;
+                __State = value;
             }
         }
-        private DxDataFormState _State;
+        private DxDataFormState __State;
         #endregion
         #region IPageItem
         /// <summary>
@@ -1865,31 +1920,33 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         #endregion
     }
     #endregion
-    #region class DxDataFormPage : Třída reprezentující jednu designem definovanou stránku v dataformu.
+    #region class DxDataFormPageDef : Třída reprezentující jednu designem definovanou stránku v dataformu. Jedna nebo více Page může být v jednom Tabu
     /// <summary>
-    /// Třída reprezentující jednu designem definovanou stránku v dataformu.
-    /// V dynamickém layoutu může jedna fyzická vizuální záložka obsahovat více designových stránek vedle sebe.
-    /// Stránka obsahuje deklarované grupy. Stránka neobsahuje svoje souřadnice, stránka není vizuální element. To je až grupa.
+    /// <see cref="DxDataFormPageDef"/> : Třída reprezentující jednu designem definovanou stránku v dataformu.
+    /// Odpovídá jedné definici stránky <see cref="IDataFormPage"/>.
+    /// <para/>
+    /// V dynamickém layoutu může jedna fyzická vizuální záložka (odpovídající <see cref="DxDataFormTabDef"/>) obsahovat více designových stránek <see cref="DxDataFormPageDef"/> vedle sebe.
+    /// Stránka uvnitř sebe obsahuje deklarované grupy <see cref="DxDataFormGroupDef"/>.
+    /// Stránka neobsahuje svoje souřadnice, stránka není vizuální element. To je až grupa.
     /// </summary>
-    internal class DxDataFormPage
+    internal class DxDataFormPageDef : DxLayoutItem
     {
         #region Konstruktor, vlastník, prvky
         /// <summary>
-        /// Vytvoří a vrátí List obsahující <see cref="DxDataFormPage"/>, vytvořený z dodaných instancí <see cref="IDataFormPage"/>.
+        /// Vytvoří a vrátí List obsahující <see cref="DxDataFormPageDef"/>, vytvořený z dodaných instancí <see cref="IDataFormPage"/>.
         /// </summary>
         /// <param name="dataForm"></param>
         /// <param name="iPages"></param>
         /// <returns></returns>
-        public static List<DxDataFormPage> CreateList(DxDataForm dataForm, IEnumerable<IDataFormPage> iPages)
+        public static List<DxDataFormPageDef> CreateList(DxDataForm dataForm, IEnumerable<IDataFormPage> iPages)
         {
-            List<DxDataFormPage> dataPages = new List<DxDataFormPage>();
+            List<DxDataFormPageDef> dataPages = new List<DxDataFormPageDef>();
             if (iPages != null)
             {
-                foreach (IDataFormPage iPage in iPages)
+                foreach (var iPage in iPages)
                 {
-                    if (iPage == null) continue;
-                    DxDataFormPage dataPage = new DxDataFormPage(dataForm, iPage);
-                    dataPages.Add(dataPage);
+                    if (iPage != null)
+                        dataPages.Add(new DxDataFormPageDef(dataForm, iPage));
                 }
             }
             return dataPages;
@@ -1899,65 +1956,88 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         /// <param name="dataForm"></param>
         /// <param name="iPage"></param>
-        public DxDataFormPage(DxDataForm dataForm, IDataFormPage iPage)
+        public DxDataFormPageDef(DxDataForm dataForm, IDataFormPage iPage)
         {
-            _DataForm = dataForm;
-            _IPage = iPage;
-            _Groups = DxDataFormGroupDefinition.CreateList(this, iPage?.Groups);
+            __DataForm = dataForm;
+            __IPage = iPage;
+            __Groups = DxDataFormGroupDef.CreateList(this, iPage.Groups);
         }
-        /// <summary>Vlastník - <see cref="DxDataForm"/></summary>
-        private DxDataForm _DataForm;
-        /// <summary>Deklarace stránky</summary>
-        private IDataFormPage _IPage;
+        /// <summary>Významový vlastník - <see cref="DxDataForm"/></summary>
+        private DxDataForm __DataForm;
+        /// <summary>Vizuální vlastník - <see cref="DxDataFormTabDef"/></summary>
+        private DxDataFormTabDef __DataTab;
+        /// <summary>Deklarace této stránky</summary>
+        private IDataFormPage __IPage;
         /// <summary>Grupy</summary>
-        private List<DxDataFormGroupDefinition> _Groups;
+        private List<DxDataFormGroupDef> __Groups;
         /// <summary>
-        /// Vlastník - <see cref="DxDataForm"/>
+        /// Významový vlastník - <see cref="DxDataForm"/>
         /// </summary>
-        public DxDataForm DataForm { get { return _DataForm; } }
+        internal DxDataForm DataForm { get { return __DataForm; } }
         /// <summary>
-        /// Deklarace stránky
+        /// Vizuální vlastník - <see cref="DxDataFormTabDef"/>.
+        /// Každá stránka <see cref="DxDataFormPageDef"/> je z hlediska layoutu umístěna v záložce <see cref="DxDataFormTabDef"/>.
+        /// Jedna záložka <see cref="DxDataFormTabDef"/> může v sobě hostovat 1 až +Nnn stránek <see cref="DxDataFormPageDef"/> (=sloučený layout stránek).
+        /// Jedna záložka <see cref="DxDataFormTabDef"/> je fyzicky zobrazována v Dataformu buď přímo, nebo na odpovídající záložce.
+        /// <para/>
+        /// Aktuálně se "sloučený layout stránek" nepoužívá, takže jedna záložka <see cref="DxDataFormTabDef"/> v sobě hostovuje vždy právě jednu stránek <see cref="DxDataFormPageDef"/>.
         /// </summary>
-        public IDataFormPage IPage { get { return _IPage; } }
+        internal DxDataFormTabDef DataTab 
+        {
+            get { return __DataTab; }
+            set
+            {   // Setování vyvolá rekalkulaci (invalidaci) hodnot AbsolutePoint:
+                this.__DataTab = value;
+                this.RecalcAbsolutePoint();
+            }
+        }
         /// <summary>
-        /// Pole skupin na této stránce
+        /// Deklarace dat celého formuláře
         /// </summary>
-        public IList<DxDataFormGroupDefinition> Groups { get { return _Groups; } }
+        internal IDataForm IForm { get { return __DataForm.IForm; } }
+        /// <summary>
+        /// Deklarace stránky této stránky
+        /// </summary>
+        internal IDataFormPage IPage { get { return __IPage; } }
+        /// <summary>
+        /// Pole fyzických skupin na této stránce
+        /// </summary>
+        internal IList<DxDataFormGroupDef> Groups { get { return __Groups; } }
         /// <summary>
         /// Stránka je na aktivní záložce? 
         /// Po iniciaci se přebírá do GUI, následně udržuje GUI.
         /// V jeden okamžik může být aktivních více stránek najednou, pokud je více stránek <see cref="IDataFormPage"/> mergováno do jedné záložky.
         /// </summary>
-        public bool Active { get; set; }
+        internal bool IsActive { get { return __IsActive; } set { __IsActive = value; } } private bool __IsActive;
         #endregion
         #region Data o stránce
         /// <summary>
         /// ID stránky
         /// </summary>
-        public string PageId { get { return IPage.PageId; } }
+        internal string PageId { get { return IPage.PageId; } }
         /// <summary>
         /// Titulek stránky
         /// </summary>
-        public string PageText { get { return IPage.PageText; } }
+        internal string PageText { get { return IPage.PageText; } }
         /// <summary>
         /// Obsahuje true, pokud obsah této stránky je povoleno mergovat do předchozí stránky, pokud je dostatek prostoru.
         /// Stránky budou mergovány do vedle sebe stojících sloupců, každý bude mít nadpis své původní stránky.
         /// <para/>
         /// Aby byly stránky mergovány, musí mít tento příznak obě (nebo všechny).
         /// </summary>
-        public bool AllowMerge { get { return IPage.AllowMerge; } }
+        internal bool AllowMerge { get { return IPage.AllowMerge; } }
         /// <summary>
         /// Titulek ToolTipu. Pokud nebude naplněn, vezme se text prvku.
         /// </summary>
-        public string ToolTipTitle { get { return IPage.ToolTipTitle; } }
+        internal string ToolTipTitle { get { return IPage.ToolTipTitle; } }
         /// <summary>
         /// Text ToolTipu
         /// </summary>
-        public string ToolTipText { get { return IPage.ToolTipText; } }
+        internal string ToolTipText { get { return IPage.ToolTipText; } }
         /// <summary>
         /// Název obrázku stránky
         /// </summary>
-        public string PageImageName { get { return IPage.PageImageName; } }
+        internal string PageImageName { get { return IPage.PageImageName; } }
         /// <summary>
         /// Počet celkem deklarovaných prvků
         /// </summary>
@@ -1972,15 +2052,16 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         internal void InvalidateBounds()
         {
             _CurrentPageBounds = null;
-            _Groups.ForEachExec(g => g.InvalidateBounds());
+            __Groups.ForEachExec(g => g.InvalidateBounds());
         }
         /// <summary>
-        /// Metoda určí souřadnice všech skupin na této stránce, podle definovaných pravidel na grupě.
-        /// Výchozí layout je sekvenční pod sebou, podle pravidel v grupě může docházet k zalomení na nový sloupec stránky na povinné grupě anebo tam kde je to vhodné.
+        /// Stránka zajistí přepočet Layoutu pro svoje grupy a následně i svůj layout. Určí tedy velikosti a souřadnice grup, a svoji velikost.
         /// </summary>
-        internal void PrepareGroupLayout()
+        /// <param name="callHandler">Požadavek aby po změně velikosti byl volán handler <see cref="DxLayoutItem.OnRecalculateSizeChanged"/></param>
+        internal override void RecalculateChildLayout(bool callHandler)
         {
-            Size pageVisibleSize = _DataForm.VisibleContentSize;               // Prostor k dispozici
+            base.RecalculateChildLayout(callHandler);
+            Size pageVisibleSize = DataForm.VisibleContentSize;                // Prostor k dispozici
             int x = 0;
             int y = 0;
             int right = 0;
@@ -1989,6 +2070,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             bool containAllowBreak = false;
             foreach (var dataGroup in Groups)
             {
+                if (dataGroup is null) continue;
+
+                dataGroup.RecalculateChildLayout(false);
+
                 if (dataGroup.LayoutForceBreakToNewColumn)
                 {   // Požadavek na Force Break:
                     containForceBreak = true;
@@ -2017,7 +2102,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             _CurrentPageBounds = null;                                         // Nápočet se provede až on-demand
         }
         /// <summary>
-        /// Obsahuje součet souřadnic <see cref="DxDataFormGroupDefinition.CurrentGroupBounds"/> ze zdejších skupin
+        /// Obsahuje součet souřadnic <see cref="DxDataFormGroupDef.CurrentGroupBounds"/> ze zdejších skupin
         /// </summary>
         internal Rectangle CurrentPageBounds { get { CheckCurrentBounds(); return _CurrentPageBounds.Value; } }
         private Rectangle? _CurrentPageBounds;
@@ -2034,27 +2119,26 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
     #endregion
     #region class DxDataFormGroupDefinition : Třída obsahující definic jedné grupy, slouží jako vzor pro tvorbu DxDataFormGroup
     /// <summary>
-    /// <see cref="DxDataFormGroupDefinition"/> : Třída obsahující definic jedné grupy, slouží jako vzor pro tvorbu DxDataFormGroup
+    /// <see cref="DxDataFormGroupDef"/> : Třída obsahující definic jedné grupy, slouží jako vzor pro tvorbu DxDataFormGroup
     /// </summary>
-    internal class DxDataFormGroupDefinition
+    internal class DxDataFormGroupDef : DxLayoutItem
     {
         #region Konstruktor, vlastník, prvky
         /// <summary>
-        /// Vytvoří a vrátí List obsahující <see cref="DxDataFormGroupDefinition"/>, vytvořený z dodaných instancí <see cref="IDataFormGroup"/>.
+        /// Vytvoří a vrátí List obsahující <see cref="DxDataFormGroupDef"/>, vytvořený z dodaných instancí <see cref="IDataFormGroup"/>.
         /// </summary>
         /// <param name="dataPage"></param>
         /// <param name="iGroups"></param>
         /// <returns></returns>
-        public static List<DxDataFormGroupDefinition> CreateList(DxDataFormPage dataPage, IEnumerable<IDataFormGroup> iGroups)
+        public static List<DxDataFormGroupDef> CreateList(DxDataFormPageDef dataPage, IEnumerable<IDataFormGroup> iGroups)
         {
-            List<DxDataFormGroupDefinition> dataGroups = new List<DxDataFormGroupDefinition>();
+            List<DxDataFormGroupDef> dataGroups = new List<DxDataFormGroupDef>();
             if (iGroups != null)
             {
                 foreach (IDataFormGroup iGroup in iGroups)
                 {
-                    if (iGroup == null) continue;
-                    var dataGroup = new DxDataFormGroupDefinition(dataPage, iGroup);
-                    dataGroups.Add(dataGroup);
+                    if (iGroup == null)
+                        dataGroups.Add(new DxDataFormGroupDef(dataPage, iGroup));
                 }
             }
             return dataGroups;
@@ -2063,8 +2147,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Konstruktor
         /// </summary>
         /// <param name="dataPage"></param>
+        /// <param name="iPage"></param>
         /// <param name="iGroup"></param>
-        public DxDataFormGroupDefinition(DxDataFormPage dataPage, IDataFormGroup iGroup)
+        public DxDataFormGroupDef(DxDataFormPageDef dataPage, IDataFormGroup iGroup)
         {
             __DataPage = dataPage;
             __IGroup = iGroup;
@@ -2074,28 +2159,36 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             _CalculateAutoSize();
             InvalidateBounds();
         }
-        /// <summary>Vlastník - <see cref="DxDataFormPage"/></summary>
-        private DxDataFormPage __DataPage;
-        /// <summary>Deklarace grupy</summary>
+        /// <summary>Vlastník - <see cref="DxDataFormPageDef"/></summary>
+        private DxDataFormPageDef __DataPage;
+        /// <summary>Deklarace této grupy</summary>
         private IDataFormGroup __IGroup;
-        /// <summary>Prvky</summary>
+        /// <summary>Prvky v této grupě</summary>
         private List<DxDataFormItem> __Items;
         /// <summary>
         /// Vlastník - <see cref="DxDataForm"/>
         /// </summary>
-        public DxDataForm DataForm { get { return this.__DataPage?.DataForm; } }
+        internal DxDataForm DataForm { get { return this.__DataPage?.DataForm; } }
         /// <summary>
-        /// Vlastník - <see cref="DxDataFormPage"/>
+        /// Vlastník - <see cref="DxDataFormPageDef"/>
         /// </summary>
-        public DxDataFormPage DataPage { get { return __DataPage; } }
+        internal DxDataFormPageDef DataPage { get { return __DataPage; } }
+        /// <summary>
+        /// Deklarace parenta stránky = form
+        /// </summary>
+        internal IDataForm IForm { get { return DataForm?.IForm; } }
+        /// <summary>
+        /// Deklarace parenta grupy = stránka
+        /// </summary>
+        internal IDataFormPage IPage { get { return __DataPage?.IPage; } }
         /// <summary>
         /// Deklarace grupy
         /// </summary>
-        private IDataFormGroup _IGroup { get { return __IGroup; } }
+        internal IDataFormGroup IGroup { get { return __IGroup; } }
         /// <summary>
         /// Jednotlivé prvky grupy
         /// </summary>
-        public IList<DxDataFormItem> Items { get { return __Items; } }
+        internal IList<DxDataFormItem> Items { get { return __Items; } }
         /// <summary>
         /// Počet celkem deklarovaných prvků
         /// </summary>
@@ -2103,17 +2196,17 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Viditelnost grupy
         /// </summary>
-        public bool IsVisible { get { return _IGroup.IsVisible; } }
+        internal bool IsVisible { get { return IGroup.IsVisible; } }
         #endregion
         #region Data o grupě
         /// <summary>
         /// Řízení layoutu: na této grupě je povoleno zalomení sloupce = tato grupa může být v případě potřeby umístěna jako první do dalšího sloupce
         /// </summary>
-        internal bool LayoutAllowBreakToNewColumn { get { return (_IGroup.LayoutMode.HasFlag(DatFormGroupLayoutMode.AllowBreakToNewColumn)); } }
+        internal bool LayoutAllowBreakToNewColumn { get { return (IGroup.LayoutMode.HasFlag(DatFormGroupLayoutMode.AllowBreakToNewColumn)); } }
         /// <summary>
         /// Řízení layoutu: na této grupě je povinné zalomení sloupce = tato grupa má být umístěna jako první do dalšího sloupce
         /// </summary>
-        internal bool LayoutForceBreakToNewColumn { get { return (_IGroup.LayoutMode.HasFlag(DatFormGroupLayoutMode.ForceBreakToNewColumn)); } }
+        internal bool LayoutForceBreakToNewColumn { get { return (IGroup.LayoutMode.HasFlag(DatFormGroupLayoutMode.ForceBreakToNewColumn)); } }
 
         #endregion
         #region Souřadnice designové (velikost a souřadnice počátku Items)
@@ -2138,7 +2231,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         private void _CalculateAutoSize()
         {
             // Získám definici souřadnic v grupě:
-            var iGroup = _IGroup;
+            var iGroup = IGroup;
             var coordinates = new Coordinates() { BorderRange = iGroup.DesignBorderRange, Padding = iGroup.DesignPadding };
             var groupTitle = iGroup.GroupHeader;
             if (groupTitle != null && groupTitle.DesignHeaderHeight.HasValue && groupTitle.DesignHeaderHeight.Value > 0)
@@ -2348,7 +2441,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="hasFocus"></param>
         private void _PaintBorder(DxBufferedGraphicPaintArgs e, bool onMouse, bool hasFocus)
         {
-            var appearance = _IGroup.BorderAppearance;
+            var appearance = IGroup.BorderAppearance;
             if (appearance == null) return;
 
             var bounds = __CurrentBorderBounds;
@@ -2367,17 +2460,17 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="hasFocus"></param>
         private void _PaintBackgrounds(DxBufferedGraphicPaintArgs e, bool onMouse, bool hasFocus)
         {
-            var groupTitle = _IGroup.GroupHeader;
+            var groupTitle = IGroup.GroupHeader;
             bool hasTitle = (groupTitle != null);
             if (hasTitle)
                 DxDataForm.PaintBackground(e, _GetVisibleBounds(__CurrentTitleBackground), groupTitle.BackgroundAppearance, onMouse, hasFocus, false);     // Pozadí pod titulkem
 
-            DxDataForm.PaintBackground(e, _GetVisibleBounds(__CurrentContentBackground), _IGroup.BackgroundAppearance, onMouse, hasFocus, false);          // Pozadí pod obsahem
+            DxDataForm.PaintBackground(e, _GetVisibleBounds(__CurrentContentBackground), IGroup.BackgroundAppearance, onMouse, hasFocus, false);          // Pozadí pod obsahem
 
             if (hasTitle)
                 DxDataForm.PaintBackground(e, _GetVisibleBounds(__CurrentTitleLineBounds), groupTitle.LineAppearance, onMouse, hasFocus, false);           // Linka, nad obrázkem, pod texty
 
-            DxDataForm.PaintImage(e, _GetVisibleBounds(__CurrentGroupBackground), _IGroup.BackgroundAppearance);                                           // Obrázek na pozadí celé grupy
+            DxDataForm.PaintImage(e, _GetVisibleBounds(__CurrentGroupBackground), IGroup.BackgroundAppearance);                                           // Obrázek na pozadí celé grupy
 
         }
         #endregion
@@ -2739,7 +2832,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="isTitleItems">false pro běžné columny v prostoru Content, true pro columny v prostoru Title (=text titulku, ikony, atd)</param>
         /// <param name="iItems"></param>
         /// <returns></returns>
-        public static List<DxDataFormItem> CreateList(DxDataFormGroupDefinition dataGroup, bool isTitleItems, IEnumerable<IDataFormColumn> iItems)
+        public static List<DxDataFormItem> CreateList(DxDataFormGroupDef dataGroup, bool isTitleItems, IEnumerable<IDataFormColumn> iItems)
         {
             List<DxDataFormItem> dxItems = new List<DxDataFormItem>();
             AddToList(dataGroup, isTitleItems, iItems, dxItems);
@@ -2753,7 +2846,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="iItems"></param>
         /// <param name="dxItems"></param>
         /// <returns></returns>
-        public static void AddToList(DxDataFormGroup dataGroup, bool isTitleItems, IEnumerable<IDataFormColumn> iItems, List<DxDataFormItem> dxItems)
+        public static void AddToList(DxDataFormGroupDef dataGroup, bool isTitleItems, IEnumerable<IDataFormColumn> iItems, List<DxDataFormItem> dxItems)
         {
             if (iItems != null)
             {
@@ -2770,15 +2863,15 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="dataGroup"></param>
         /// <param name="isTitleItem">false pro běžné columny v prostoru Content, true pro columny v prostoru Title (=text titulku, ikony, atd)</param>
         /// <param name="iItem"></param>
-        public DxDataFormItem(DxDataFormGroup dataGroup, bool isTitleItem, IDataFormColumn iItem)
+        public DxDataFormItem(DxDataFormGroupDef dataGroup, bool isTitleItem, IDataFormColumn iItem)
             : base()
         {
             __DataGroup = dataGroup;
             __IsTitleItem = isTitleItem;
             __IItem = iItem;
         }
-        /// <summary>Vlastník - <see cref="DxDataFormGroup"/></summary>
-        private DxDataFormGroup __DataGroup;
+        /// <summary>Vlastník - <see cref="DxDataFormGroupDef"/></summary>
+        private DxDataFormGroupDef __DataGroup;
         /// <summary>Hodnota false = prvek je umístěn v prostoru Content / Hodnota true = prvek je umístěn v prostoru Title</summary>
         private bool __IsTitleItem;
         /// <summary>Deklarace prvku</summary>
@@ -2788,13 +2881,13 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         public DxDataForm DataForm { get { return this.__DataGroup?.DataPage?.DataForm; } }
         /// <summary>
-        /// Vlastník - <see cref="DxDataFormPage"/>
+        /// Vlastník - <see cref="DxDataFormPageDef"/>
         /// </summary>
-        public DxDataFormPage DataPage { get { return __DataGroup?.DataPage; } }
+        public DxDataFormPageDef DataPage { get { return __DataGroup?.DataPage; } }
         /// <summary>
         /// Vlastník - <see cref="DxDataFormGroup"/>
         /// </summary>
-        public DxDataFormGroup DataGroup { get { return __DataGroup; } }
+        public DxDataFormGroupDef DataGroup { get { return __DataGroup; } }
         /// <summary>Hodnota false = prvek je umístěn v prostoru Content / Hodnota true = prvek je umístěn v prostoru Title</summary>
         public bool IsTitleItem { get { return __IsTitleItem; } }
         /// <summary>
@@ -2931,7 +3024,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
     }
     #endregion
 
-    // Provozní vizuální prvky:
+    // Provozní vizuální prvky, které se reálně účastní zobrazování:
     #region class DxDataFormPanel : Jeden panel dataformu: reprezentuje celý panel zobrazující plochu se všemi daty = jedna nebo více částí "DxDataFormPart"
     /// <summary>
     /// Jeden panel dataformu: reprezentuje celý panel zobrazující plochu se všemi daty = jedna nebo více částí <see cref="DxDataFormPart"/>.
@@ -2939,7 +3032,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
     /// anebo je umístěn na určité stránce záložkovníku <see cref="DxTabPane"/>, pak jde o vícezáložkový DataForm.
     /// Tuto volbu řídí <see cref="DxDataForm"/> podle dodaných stránek a podle dynamického layoutu.
     /// <para/>
-    /// Panel <see cref="DxDataFormPanel"/> v sobě obsahuje definici skupin <see cref="DxDataFormGroupDefinition"/> v property <see cref="Groups"/>, která určuje layout prvků dataformu.
+    /// Panel <see cref="DxDataFormPanel"/> v sobě obsahuje definici skupin <see cref="DxDataFormGroupDef"/> v property <see cref="Groups"/>, která určuje layout prvků dataformu.
     /// <para/>
     /// Jeden panel <see cref="DxDataFormPanel"/> v sobě hostuje přinejmenším jednu nebo více částí <see cref="DxDataFormPart"/>.
     /// Každá jedna část <see cref="DxDataFormPart"/> v sobě zobrazuje fyzická data, může mít / nemusí mít ScrollBary a Headery.
@@ -3186,10 +3279,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Aktuálně zobrazované grupy, obsahující definice jednotlivých columnů <see cref="DxDataFormItem"/>.
         /// Obsahuje definice skupin, které jsou na aktuální záložce viditelné. 
         /// Pokud tedy existuje <see cref="DxDataForm"/>, který se skládá z více stránek, pak tento <see cref="DxDataForm"/> 
-        /// tyto stránky rozmístil na jednotlivé záložky <see cref="DxDataFormTab"/> 
+        /// tyto stránky rozmístil na jednotlivé záložky <see cref="DxDataFormTabDef"/> 
         /// (na jedné záložce je typicky jedna stránka, ale pokud by záložka byla dostatečně veliká, může shrnout data z více stránek).
         /// </summary>
-        private List<DxDataFormGroupDefinition> CurrentGroups { get { return this.DataForm.CurrentGroupDefinitions; } }
+        private List<DxDataFormGroupDef> CurrentGroups { get { return this.DataForm.CurrentGroupDefinitions; } }
         /// <summary>
         /// Aktuální sumární velikost sady grup v pixelech.
         /// Je vypočtena pro aktuální grupy <see cref="CurrentGroups"/> po jejich setování a slouží pro vizuální práci s controly.
@@ -3258,8 +3351,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         private void InitializeRows()
         {
-            DxDataFormGroup
-            // Zatím netřeba; řádky se v Part necachují, čteme je z DataFormu...
+            // Zatím netřeba; řádky se v Part necachují, čteme je z DataFormu ...
         }
         /// <summary>
         /// Obsahuje pole řádků, které jsou (anebo mohou být) zobrazovány v aktuálním <see cref="DxDataFormPart"/> - vyhovují aktuálnímu filtru a mají nastavené třídění. 
@@ -3294,7 +3386,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Po vložení této definice neproběhne automaticky refresh controlu, je tedy vhodné následně volat <see cref="Refresh(RefreshParts)"/> 
         /// a předat v parametru požadavek <see cref="RefreshParts.InvalidateControl"/>.
         /// </summary>
-        public List<DxDataFormGroupDefinition> Groups { get { return this.DataForm.CurrentGroupDefinitions; } }
+        public List<DxDataFormGroupDef> Groups { get { return this.DataForm.CurrentGroupDefinitions; } }
         /// <summary>
         /// Inicializuje pole prvků
         /// </summary>
@@ -3342,7 +3434,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             }
         }
 
-        private List<DxDataFormGroupDefinition> __VisibleGroups;
+        private List<DxDataFormGroupDef> __VisibleGroups;
         private List<DxDataFormItem> __VisibleItems;
         #endregion
         #region Buňky DxDataFormCell
@@ -3448,8 +3540,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         {
             if (__VisibleGroups == null) return;
 
-            DxDataFormGroupDefinition oldGroup = __CurrentOnMouseGroup;
-            DxDataFormGroupDefinition newGroup = null;
+            DxDataFormGroupDef oldGroup = __CurrentOnMouseGroup;
+            DxDataFormGroupDef newGroup = null;
             bool oldExists = (oldGroup != null);
             bool newExists = location.HasValue && __VisibleGroups.TryGetLast(i => i.IsVisibleOnPoint(location.Value), out newGroup);
 
@@ -3468,7 +3560,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Je voláno při příchodu myši na danou grupu.
         /// </summary>
         /// <param name="group"></param>
-        private void MouseEnterGroup(DxDataFormGroupDefinition group)
+        private void MouseEnterGroup(DxDataFormGroupDef group)
         {
             __CurrentOnMouseGroup = group;
         }
@@ -3482,7 +3574,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Grupa aktuálně se nacházející pod myší
         /// </summary>
-        private DxDataFormGroupDefinition __CurrentOnMouseGroup;
+        private DxDataFormGroupDef __CurrentOnMouseGroup;
         /// <summary>
         /// Detekuje aktuální prvek pod danou souřadnicí, detekuje změny (Leave a Enter) a udržuje v proměnné <see cref="__CurrentOnMouseItem"/> aktuální prvek na dané souřadnici
         /// </summary>
@@ -3918,7 +4010,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="group"></param>
         /// <param name="visibleOrigin"></param>
         /// <param name="e"></param>
-        private void PaintGroupStandard(DxDataFormGroupDefinition group, Point visibleOrigin, DxBufferedGraphicPaintArgs e)
+        private void PaintGroupStandard(DxDataFormGroupDef group, Point visibleOrigin, DxBufferedGraphicPaintArgs e)
         {
             var bounds = group.CurrentGroupBounds;
             Point location = bounds.Location.Sub(visibleOrigin);
@@ -4253,6 +4345,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         public int PartYId { get; set; }
     }
     #endregion
+
     #region class DxDataFormRow : Jeden vizuální řádek v rámci DxDataFormRowBand
     /// <summary>
     /// DxDataFormRow : Jeden vizuální řádek v rámci DxDataFormRowBand
@@ -4409,7 +4502,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
 
 
 
-        public List<DxDataFormGroupDefinition> Groups { get { return this.__DataForm.CurrentGroupDefinitions; } }
+        public List<DxDataFormGroupDef> Groups { get { return this.__DataForm.CurrentGroupDefinitions; } }
 
 
         /// <summary>
@@ -4421,16 +4514,190 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
 
     }
     #endregion
-    #region class DxDataFormCell : Jedna vizuální buňka v rámci DataFormu, průnik řádku a sloupce
-    /// <summary>
-    /// <see cref="DxDataFormCell"/> : Jedna vizuální buňka v rámci DataFormu, průnik řádku a sloupce.
-    /// Musí být v maximální míře lehká: rychle vytvořitelná, s minimální spotřebou paměti.
-    /// </summary>
-    internal class DxDataFormCell
-    {
 
+
+    #region class DxLayoutItem : třída řešící svoje souřadnice v prostoru svého parenta
+    /// <summary>
+    /// Bázová třída pro třídy, které reprezentují nějaký layout = mají svoji vlastní souřadnici designovou, z ní odvozenou
+    /// </summary>
+    internal class DxLayoutItem : IDxLayoutItem
+    {
+        /// <summary>
+        /// Designová pozice prvku v rámci parenta.
+        /// Hodnota je v designových pixelech = 100% Zoom a 96 DPI.
+        /// <para/>
+        /// Po setování této property je vhodné zavolat (na nejvyšší úrovni) metodu <see cref="ResetCurrentLayout"/>.
+        /// Neprovádí se automaticky, aby v procesu inicializace neprobíhala příliš často.
+        /// </summary>
+        public virtual Point DesignLocation { get; set; }
+        /// <summary>
+        /// Designová velikost prvku.
+        /// Hodnota je v designových pixelech = 100% Zoom a 96 DPI.
+        /// <para/>
+        /// Po setování této property je vhodné zavolat (na nejvyšší úrovni) metodu <see cref="ResetCurrentLayout"/>.
+        /// Neprovádí se automaticky, aby v procesu inicializace neprobíhala příliš často.
+        /// </summary>
+        public virtual Size DesignSize { get; set; }
+        /// <summary>
+        /// Instance parenta, v němž jsme umístěni. Jeho souřadnice <see cref="CurrentAbsolutePoint"/> je základnou pro naši souřadnici <see cref="CurrentAbsolutePoint"/>.
+        /// <para/>
+        /// Po setování této property je vhodné zavolat (na nejvyšší úrovni) metodu <see cref="ResetAbsolutePoint"/>.
+        /// Neprovádí se automaticky, aby v procesu inicializace neprobíhala příliš často.
+        /// </summary>
+        public virtual IDxLayoutItem LayoutParent { get; set; }
+        /// <summary>
+        /// Aktuální hodnota DPI z controlu, na němž je layout umístěn.
+        /// <para/>
+        /// Bázová třída v této property vrací DPI ze svého parenta, a pokud jej nemá, pak vrací výchozí designovou hodnotu <see cref="DxComponent.DesignDpi"/>.
+        /// Root instance layoutu tedy má tuto property overridovat a vrátit hodnotu ze svého controlu, aby se vracela reálná hodnota!
+        /// Ne-root třídy mohou nechat defaultní chování.
+        /// </summary>
+        protected virtual int CurrentDPI { get { return LayoutParent?.CurrentDPI ?? DxComponent.DesignDpi; } }
+        int IDxLayoutItem.CurrentDPI { get { return this.CurrentDPI; } }
+        /// <summary>
+        /// Souřadnice, kde tento prvek má svůj vnější počátek v rámci svého parenta = lokální souřadice.
+        /// Hodnota je v aktuálních pixelech (nikoli designové pixely) = je už přepočtena Zoomem a DPI.
+        /// </summary>
+        public virtual Point CurrentLocalPoint 
+        { 
+            get
+            {
+                if (!__CurrentLocalPoint.HasValue) RecalcCurrentBounds();
+                return __CurrentLocalPoint.Value;
+            }
+        }
+        /// <summary>
+        /// Cachovaná hodnota <see cref="CurrentLocalPoint"/>. 
+        /// Po inicializaci a po resetu <see cref="ResetCurrentLayout"/> je null, nejbližší čtení <see cref="CurrentLocalPoint"/> tuto hodnotu vypočte z <see cref="DesignLocation"/>.
+        /// </summary>
+        private Point? __CurrentLocalPoint;
+        /// <summary>
+        /// Aktuální velikost prvku.
+        /// Hodnota je v aktuálních pixelech (nikoli designové pixely) = přepočteno Zoomem a DPI.
+        /// </summary>
+        public virtual Size CurrentSize
+        {
+            get
+            {
+                if (!__CurrentSize.HasValue) RecalcCurrentBounds();
+                return __CurrentSize.Value;
+            }
+        }
+        /// <summary>
+        /// Cachovaná hodnota <see cref="CurrentSize"/>. 
+        /// Po inicializaci a po resetu <see cref="ResetCurrentLayout"/> je null, nejbližší čtení <see cref="CurrentSize"/> tuto hodnotu vypočte z <see cref="DesignSize"/>.
+        /// </summary>
+        private Size? __CurrentSize;
+        /// <summary>
+        /// Přepočte souřadnice <see cref="CurrentLocalPoint"/> a <see cref="CurrentSize"/> z hodnot <see cref="DesignLocation"/> a <see cref="DesignSize"/>.
+        /// Počítá je najednou, hlavně kvůli korektnímu zarovnání souřadnice Right a Bottom (aby Zoom nerozhazoval toto zarovnání) (a taky kvůli výkonu).
+        /// </summary>
+        protected virtual void RecalcCurrentBounds()
+        {
+            var designBounds = new Rectangle(DesignLocation, DesignSize);
+            var currentBounds = DxComponent.ZoomToGui(designBounds, CurrentDPI);
+            __CurrentLocalPoint = currentBounds.Location;
+            __CurrentSize = currentBounds.Size;
+        }
+        /// <summary>
+        /// Souřadnice, kde tento prvek má svůj vnější počátek v absolutních pixelech = v rámci nejvyššího hostitele, počínaje <see cref="LayoutParent"/>.
+        /// Hodnota je v aktuálních pixelech (nikoli designové pixely) = přepočteno Zoomem a DPI.
+        /// </summary>
+        public virtual Point CurrentAbsolutePoint 
+        {
+            get 
+            {
+                if (!__CurrentAbsolutePoint.HasValue) RecalcAbsolutePoint();
+                return __CurrentAbsolutePoint.Value;
+            }
+        }
+        /// <summary>
+        /// Přepočte souřadnici <see cref="CurrentAbsolutePoint"/> ze své souřadnice <see cref="CurrentLocalPoint"/> 
+        /// a z parenta <see cref="LayoutParent"/> (pokud jej má) = z jeho souřadnice <see cref="CurrentAbsolutePoint"/>.
+        /// </summary>
+        protected virtual void RecalcAbsolutePoint()
+        {
+            var localPoint = this.CurrentLocalPoint;
+            var parent = this.LayoutParent;
+            __CurrentAbsolutePoint = (parent != null ? new Point(parent.CurrentAbsolutePoint.X + localPoint.X, parent.CurrentAbsolutePoint.Y + localPoint.Y) : localPoint);
+        }
+        /// <summary>
+        /// Cachovaná hodnota <see cref="CurrentAbsolutePoint"/>.
+        /// Po inicializaci a po <see cref="ResetAbsolutePoint"/> je null, nejbližší čtení <see cref="CurrentAbsolutePoint"/> ji znovu dopočte.
+        /// </summary>
+        private Point? __CurrentAbsolutePoint;
+        /// <summary>
+        /// Provede reset souřadnic tohoto prvku <see cref="CurrentAbsolutePoint"/> = provádí se vždy po změně pozice prvku = po jeho přemístění.
+        /// Současně se provede stejný reset všech zdejších prvků <see cref="LayoutChilds"/>.
+        /// </summary>
+        public virtual void ResetAbsolutePoint()
+        {
+            __CurrentAbsolutePoint = null;
+            LayoutChilds?.ForEach(c => c.ResetAbsolutePoint());
+        }
+        /// <summary>
+        /// Provede reset souřadnic tohoto prvku <see cref="CurrentLocalPoint"/> a <see cref="CurrentSize"/> = provádí se vždy po změně Zoomu anebo DPI.
+        /// Současně se provede stejný reset všech zdejších prvků <see cref="LayoutChilds"/>.
+        /// </summary>
+        public virtual void ResetCurrentLayout()
+        {
+            __CurrentLocalPoint = null;
+            __CurrentSize = null;
+            LayoutChilds?.ForEach(c => c.ResetCurrentLayout());
+        }
+        /// <summary>
+        /// Moje Childs. Tyto prvky jsou resetovány jako závislé vždy po resetu this instance.
+        /// Může být null.
+        /// </summary>
+        protected virtual IEnumerable<IDxLayoutItem> LayoutChilds { get { return null; } }
+        /// <summary>
+        /// Metoda je určena pro potomky, kteří zde projdou svoje Child prvky, a určí jejich velikosti, pozice 
+        /// a určí celkovou velikost this prvku, pokud je dynamicky závislý na svém obsahu.
+        /// Tato metoda může reagovat na aktuální hodnoty v datech a pro některé svoje prvky může nastavit Invisible, a dynamicky změnit svou velikost.
+        /// Pokud změní this prvek svoji sumární velikost, pak vyvolá svoji metodu 
+        /// </summary>
+        /// <param name="callHandler">Požadavek aby po změně velikosti byl volán handler <see cref="DxLayoutItem.OnRecalculateSizeChanged"/></param>
+        internal virtual void RecalculateChildLayout(bool callHandler) { }
+        /// <summary>
+        /// Je voláno poté, kdy prvek v rámci rekalkulace layoutu změnil svoji velikost.
+        /// </summary>
+        protected virtual void OnRecalculateSizeChanged() { }
+    }
+    /// <summary>
+    /// Předpis pro prvky layoutu
+    /// </summary>
+    internal interface IDxLayoutItem
+    {
+        /// <summary>
+        /// Instance parenta, v němž jsme umístěni. Jeho souřadnice <see cref="CurrentAbsolutePoint"/> je základnou pro naši souřadnici <see cref="CurrentAbsolutePoint"/>.
+        /// <para/>
+        /// Po setování této property je vhodné zavolat (na nejvyšší úrovni) metodu <see cref="ResetAbsolutePoint"/>.
+        /// Neprovádí se automaticky, aby v procesu inicializace neprobíhala příliš často.
+        /// </summary>
+        IDxLayoutItem LayoutParent { get; }
+        /// <summary>
+        /// Aktuální hodnota DPI z controlu, na němž je layout umístěn.
+        /// </summary>
+        int CurrentDPI { get; }
+        /// <summary>
+        /// Souřadnice, kde tento prvek má svůj vnější počátek v absolutních pixelech = v rámci nejvyššího hostitele, počínaje <see cref="LayoutParent"/>.
+        /// Hodnota je v aktuálních pixelech (nikoli designové pixely) = přepočteno Zoomem a DPI.
+        /// </summary>
+        Point CurrentAbsolutePoint { get; }
+        /// <summary>
+        /// Provede reset souřadnic tohoto prvku <see cref="CurrentAbsolutePoint"/> = provádí se vždy po změně pozice prvku = po jeho přemístění.
+        /// Současně se provede stejný reset všech zdejších prvků Childs, pokud je má.
+        /// </summary>
+        void ResetAbsolutePoint();
+        /// <summary>
+        /// Provede reset lokálních souřadnic tohoto prvku = provádí se vždy po změně Zoomu anebo DPI.
+        /// Současně se provede stejný reset všech zdejších prvků Childs, pokud je má.
+        /// </summary>
+        void ResetCurrentLayout();
     }
     #endregion
+
+    // ???
     #region class DxDataFormGroup : Třída zobrazující jednu konkrétní grupu, zobrazenou na konkrétním řádku na stránce
     /// <summary>
     /// <see cref="DxDataFormGroup"/> : Třída zobrazující jednu konkrétní grupu, zobrazenou na konkrétním řádku na stránce.
@@ -4440,12 +4707,12 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
     {
         #region Konstruktor, vlastník, prvky
         /// <summary>
-        /// Vytvoří a vrátí List obsahující <see cref="DxDataFormGroupDefinition"/>, vytvořený z dodaných instancí <see cref="IDataFormGroup"/>.
+        /// Vytvoří a vrátí List obsahující <see cref="DxDataFormGroupDef"/>, vytvořený z dodaných instancí <see cref="IDataFormGroup"/>.
         /// </summary>
         /// <param name="dataPage"></param>
         /// <param name="iGroups"></param>
         /// <returns></returns>
-        public static List<DxDataFormGroup> CreateList(DxDataFormPage dataPage, IEnumerable<IDataFormGroup> iGroups)
+        public static List<DxDataFormGroup> CreateList(DxDataFormPageDef dataPage, IEnumerable<IDataFormGroup> iGroups)
         {
             List<DxDataFormGroup> dataGroups = new List<DxDataFormGroup>();
             if (iGroups != null)
@@ -4464,7 +4731,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         /// <param name="dataPage"></param>
         /// <param name="iGroup"></param>
-        public DxDataFormGroup(DxDataFormPage dataPage, IDataFormGroup iGroup)
+        public DxDataFormGroup(DxDataFormPageDef dataPage, IDataFormGroup iGroup)
         {
             __DataPage = dataPage;
             __IGroup = iGroup;
@@ -4474,8 +4741,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             _CalculateAutoSize();
             InvalidateBounds();
         }
-        /// <summary>Vlastník - <see cref="DxDataFormPage"/></summary>
-        private DxDataFormPage __DataPage;
+        /// <summary>Vlastník - <see cref="DxDataFormPageDef"/></summary>
+        private DxDataFormPageDef __DataPage;
         /// <summary>Deklarace grupy</summary>
         private IDataFormGroup __IGroup;
         /// <summary>Prvky</summary>
@@ -4485,9 +4752,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         public DxDataForm DataForm { get { return this.__DataPage?.DataForm; } }
         /// <summary>
-        /// Vlastník - <see cref="DxDataFormPage"/>
+        /// Vlastník - <see cref="DxDataFormPageDef"/>
         /// </summary>
-        public DxDataFormPage DataPage { get { return __DataPage; } }
+        public DxDataFormPageDef DataPage { get { return __DataPage; } }
         /// <summary>
         /// Deklarace grupy
         /// </summary>
@@ -5120,6 +5387,16 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             #endregion
         }
         #endregion
+    }
+    #endregion
+    #region class DxDataFormCell : Jedna vizuální buňka v rámci DataFormu, průnik řádku a sloupce
+    /// <summary>
+    /// <see cref="DxDataFormCell"/> : Jedna vizuální buňka v rámci DataFormu, průnik řádku a sloupce.
+    /// Musí být v maximální míře lehká: rychle vytvořitelná, s minimální spotřebou paměti.
+    /// </summary>
+    internal class DxDataFormCell
+    {
+
     }
     #endregion
 
