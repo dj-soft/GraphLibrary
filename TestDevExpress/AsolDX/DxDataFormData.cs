@@ -91,6 +91,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         public virtual SWF.Padding DesignPadding { get; set; }
         /// <summary>
+        /// Mezery mezi grupami v automatickém layoutu: mezera ve směru X = <see cref="Size.Width"/>, mezera ve směru Y = <see cref="Size.Height"/>.
+        /// </summary>
+        public virtual Size DesignSpacing { get; set; }
+        /// <summary>
         /// Stránka je aktivní? 
         /// Po iniciaci se přebírá do GUI, následně udržuje GUI.
         /// V jeden okamžik může být aktivních více stránek najednou, pokud je více stránek <see cref="IDataFormPage"/> mergováno do jedné záložky.
@@ -148,6 +152,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Vnitřní okraje mezi okrajem stránky a souřadnicí grupy uvnitř
         /// </summary>
         SWF.Padding DesignPadding { get; }
+        /// <summary>
+        /// Mezery mezi grupami v automatickém layoutu: mezera ve směru X = <see cref="Size.Width"/>, mezera ve směru Y = <see cref="Size.Height"/>.
+        /// </summary>
+        Size DesignSpacing { get; }
         /// <summary>
         /// Stránka je aktivní? 
         /// Po iniciaci se přebírá do GUI, následně udržuje GUI.
