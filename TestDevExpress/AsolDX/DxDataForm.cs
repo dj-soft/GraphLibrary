@@ -450,7 +450,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private void InitializeTabDef()
         {
-            __CurrentGroups = new List<DxDataFormGroupDef>();
+            __ActiveDxPage = null;
             __DynamicGroupHeight = false;
         }
         /// <summary>
@@ -498,64 +498,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private void InitializeGroups()
         {
-            __CurrentGroups = new List<DxDataFormGroupDef>();
-            __ActivePageRowHeight = 0;
             __DynamicGroupHeight = false;
         }
-        /// <summary>
-        /// Aktuálně zobrazované grupy, obsahující definice jednotlivých columnů <see cref="DxDataFormItem"/>.
-        /// Obsahuje definice skupin, které jsou na aktuální stránce viditelné. 
-        /// Pokud tedy existuje <see cref="DxDataForm"/>, který se skládá z více stránek, pak tento <see cref="DxDataForm"/> 
-        /// tyto stránky rozmístil na jednotlivé záložky <see cref="DxDataFormPageDef"/>.
-        /// </summary>
-        internal List<DxDataFormGroupDef> qqqCurrentGroupDefinitions { get { return __CurrentGroups; } private set { _SetGroups(value); } }
-        /// <summary>
-        /// Aktuální sumární velikost sady grup v pixelech.
-        /// Je vypočtena pro aktuální grupy <see cref="CurrentGroupDefinitions"/> po jejich setování a slouží pro vizuální práci s controly.
-        /// </summary>
-        internal Size CurrentGroupsSize { get { return __CurrentGroupsSize; } }
-        /// <summary>
-        /// Dynamická výška grup = může se měnit pro různé řádky?
-        /// Zatím NE, znamenalo by to náročnější výpočty. Všechny řádky budou stejně vysoké.
-        /// </summary>
-        public bool DynamicGroupHeight { get { return __DynamicGroupHeight; } }
-        /// <summary>
-        /// Vloží do sebe dané grupy a zajistí minimální potřebné refreshe
-        /// </summary>
-        /// <param name="groups"></param>
-        private void _SetGroups(List<DxDataFormGroupDef> groups)
-        {
-            __CurrentGroups.Clear();
-            __ActivePageRowHeight = 0;
-            if (groups != null && groups.Count > 0)
-                __CurrentGroups.AddRange(groups);
-            _RecalcCurrentGroupsSize();
-            Refresh(RefreshParts.All);
-        }
-        /// <summary>
-        /// Provede přepočet hodnot
-        /// <see cref="CurrentGroupsSize"/> a <see cref="ActivePageRowHeight"/> (pro aktuální definici layoutu <see cref="CurrentGroupDefinitions"/> a mezeru mezi řádky <see cref="DxDataForm.RowHeightSpace"/>)
-        /// </summary>
-        private void _RecalcCurrentGroupsSize()
-        {
-            int maxX = 0; 
-            int maxY = 0;
-            var groups = CurrentGroupDefinitions;
-            if (groups != null && groups.Count > 0)
-                groups.Select(g => g.CurrentGroupBounds).ForEachExec(
-                    b =>
-                    {
-                        if (maxX < b.Right) maxX = b.Right;
-                        if (maxY < b.Bottom) maxY = b.Bottom;
-
-                    });
-            __CurrentGroupsSize = new Size(maxX, maxY);
-            __ActivePageRowHeight = maxY + RowHeightSpace;
-        }
-        /// <summary>Pole skupin, které aktuálně zobrazujeme</summary>
-        private List<DxDataFormGroupDef> __CurrentGroups;
-        /// <summary>Velikost grupy = Max (Right, Bottom), bez mezer</summary>
-        private Size __CurrentGroupsSize;
         /// <summary>
         /// Dynamická výška grup = může se měnit pro různé řádky
         /// </summary>
@@ -1590,6 +1534,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Konkrétní vlastník - řádek <see cref="DxDataFormRow"/>.
         /// Stránka může být umístěna buď pouze v Dataformu, pak jde o <u>Definiční stránku</u> (obecnou),
         /// anebo může být stránka umístěna na konkrétním řádku, pak jde o konkrétní prvek layoutu řádku.
+        /// Stránka umístěná na konkrétním řádku může řešit viditelnost jednotlivých prvků podle konkrétních dat na řádku a podle toho řídit svůj vzhled.
         /// </summary>
         internal DxDataFormRow DxRow
         {
@@ -1652,25 +1597,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         internal int ItemsCount { get { return Groups.Select(g => g.ItemsCount).Sum(); } }
         #endregion
-        #region DynamicGroupLayout
-        /// <summary>
-        /// Obsahuje true, pokud tato stránka má nějaké grupy, které povolují dynamický layout = mohou být jinak rozmístěny na široké stránce.
-        /// pokud ano, pak po změně velikosti DataFormu je vhodné vyvolat <see cref="RecalculateDynamicGroupLayout()"/>.
-        /// </summary>
-        internal bool HasDynamicGroupLayout
-        {
-            get
-            {
-                if (!__HasDynamicGroupLayout.HasValue)
-                    this.RecalculateCurrentLayout(false);
-                return __HasDynamicGroupLayout ?? false;
-            }
-        }
-        internal void RecalculateDynamicGroupLayout()
-        { }
-        private bool? __HasDynamicGroupLayout;
-        #endregion
-        #region Souřadnice a další služby
+        #region Souřadnice a layout
         /// <summary>
         /// Prvek má přepočítat svůj layout, poté kdy proběhl přepočet layoutu jeho Child prvků.
         /// Tato metoda je volána z metody <see cref="DxLayoutItem.RecalculateLayout(bool)"/> po přepočtech Child prvků.
@@ -1682,25 +1609,26 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         {
             // Child prvky (= grupy) byly právě přepočítány, mají určenou svoji velikost = je odvozena z velikosti jejich obsahu.
             // Nyní určím pozici těchto skupin a návazně pak i naši velikost.
-            _SetGroupsLocation(DataForm.VisibleContentSize, out Size pageSize);
+            _SetGroupsStaticLocation(out Size staticPageSize, out bool hasDynamicGroupLayout);
 
             this.CurrentLocalPoint = new Point(0, 0);
-            this.CurrentSize = pageSize;
+            this.CurrentStaticSize = staticPageSize;
+            this.CurrentSize = staticPageSize;
+            this.HasDynamicGroupLayout = hasDynamicGroupLayout;
 
-            if (HasDynamicGroupLayout)
-                RecalculateDynamicGroupLayout();
+            this.RecalculateDynamicGroupLayout();
         }
         /// <summary>
         /// Metoda určí souřadnice pro všechny svoje skupiny, s optimálním rozmístěním do daného prostoru.
         /// Na výstupu dává velikost stránky = sumární velikost skupin + <see cref="IDataFormPage.DesignPadding"/>.
         /// </summary>
-        /// <param name="contentSize"></param>
-        /// <param name="pageSize"></param>
-        private void _SetGroupsLocation(Size contentSize, out Size pageSize)
+        /// <param name="staticPageSize"></param>
+        /// <param name="hasDynamicGroupLayout"></param>
+        private void _SetGroupsStaticLocation(out Size staticPageSize, out bool hasDynamicGroupLayout)
         {
             var currentPadding = DxComponent.ZoomToGui(IPage.DesignPadding, this.CurrentDPI);
             var currentSpacing = DxComponent.ZoomToGui(IPage.DesignSpacing, this.CurrentDPI);
-            bool hasDynamicGroupLayout = false;
+            hasDynamicGroupLayout = false;
 
             int beginX = currentPadding.Left;
             int beginY = currentPadding.Top;
@@ -1748,14 +1676,17 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 hasDynamicGroupLayout = true;
             }
 
-            // Máme dynamický layoutu u nějaké grupy?
-            __HasDynamicGroupLayout = hasDynamicGroupLayout;
-
             // K souřadnicím maxRight a maxBottom přidáme odpovídající Padding a vygenerujeme PageSize:
             maxRight += currentPadding.Right;
             maxBottom += currentPadding.Bottom;
-            pageSize = new Size(maxRight, maxBottom);
+            staticPageSize = new Size(maxRight, maxBottom);
         }
+        /// <summary>
+        /// Souhrnná velikost stránky ve statickém layoutu = jedna grupa pod druhou / nebo s pouze povinným zalomením vedle sebe.
+        /// V aktuálních (nikoli designových) pixelech.
+        /// Pokud stránka nemá dynamický layout (<see cref="HasDynamicGroupLayout"/> je false), pak toto je i aktuální velikost stránky <see cref="DxLayoutItem.CurrentSize"/>.
+        /// </summary>
+        internal Size CurrentStaticSize { get { return __CurrentStaticSize; } private set { __CurrentStaticSize = value; } } private Size __CurrentStaticSize;
         /// <summary>
         /// Výška jednoho řádku v aktuálním layoutu = reálná výška všech grup včetně <see cref="IDataFormPage.DesignPadding"/> + mezera <see cref="DxDataForm.RowHeightSpace"/>.
         /// </summary>
@@ -1764,6 +1695,39 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Child prvky v layoutu stránky jsou Grupy
         /// </summary>
         protected override IEnumerable<IDxLayoutItem> LayoutChilds { get { return Groups; } }
+        #endregion
+        #region DynamicGroupLayout
+        /// <summary>
+        /// Obsahuje true, pokud tato stránka má nějaké grupy, které povolují dynamický layout = mohou být jinak rozmístěny v závislosti na aktuální šířce stránky.
+        /// Pokud ano, pak po změně velikosti DataFormu je třeba vyvolat <see cref="RecalculateDynamicGroupLayout()"/>.
+        /// </summary>
+        internal bool HasDynamicGroupLayout
+        {
+            get
+            {
+                if (!__HasDynamicGroupLayout.HasValue)
+                    this.RecalculateCurrentLayout(false);
+                return __HasDynamicGroupLayout ?? false;
+            }
+            private set { __HasDynamicGroupLayout = value; }
+        }
+        private bool? __HasDynamicGroupLayout;
+        /// <summary>
+        /// Provede přepočet dynamického layoutu grup na stránce s ohledem na aktuální velikost DataFormu.
+        /// Pokud je aktuální hodnota <see cref="HasDynamicGroupLayout"/> = false, tato metoda nic neprovede a rovnou skončí.
+        /// </summary>
+        internal void RecalculateDynamicGroupLayout()
+        {
+            if (!this.HasDynamicGroupLayout) return;
+
+            Size contentSize = DataForm.VisibleContentSize;
+            Size staticSize = this.CurrentStaticSize;
+            // Rozmístit grupy se statickou velikostí staticSize do prostoru contentSize s dynamickým zalomením:
+            foreach (var dxGroup in Groups)
+            { }
+            // Uložit přepočtenou velikost do CurrentSize:
+            // this.CurrentSize = 
+        }
         #endregion
         #region Stav stránky, umožní panelu shrnout svůj stav a uložit jej do záložky, a následně ze záložky jej promítnout do živého stavu
         /// <summary>
@@ -1974,20 +1938,107 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         internal bool LayoutForceBreakToNewColumn { get { return (IGroup.LayoutMode.HasFlag(DatFormGroupLayoutMode.ForceBreakToNewColumn)); } }
 
         #endregion
-        #region Souřadnice designové (velikost a souřadnice prostoru Title a Items v designových hodnotách)
+        #region Souřadnice a layout
         /// <summary>
-        /// Prostor, ve kterém je vykreslen text titulku a případné další prvky.
-        /// Je umístěn v <see cref="Coordinates.HeaderBackgroundBounds"/> a je oproti němu zmenšen o <see cref="Coordinates.HeaderPadding"/> dovnitř.
+        /// Přepočet souřadic prvků a velikosti a koordinátů grupy.
+        /// </summary>
+        /// <param name="callHandler"></param>
+        public override void RecalculateLayout(bool callHandler)
+        {
+            this.PrepareGroupCoordinates();
+            base.RecalculateLayout(callHandler);
+            this.FinaliseGroupCoordinates();
+        }
+        /// <summary>
+        /// Metoda připraví základní koordináty grupy pro její záhlaví a obsah, aby byl určen počátek (Origin) pro prvky.
+        /// Tato metoda zatím neřeší celkovou velikost grupy, protože ta bude dána až po dopočítání souřadnic prvků.
+        /// Tedy setuje hodnoty do <see cref="CurrentHeaderLocation"/> a <see cref="CurrentContentLocation"/>.
+        /// </summary>
+        protected void PrepareGroupCoordinates()
+        {
+            var iGroup = IGroup;
+
+            // a) Koordináty designové, první část určující Header = záhlaví:
+            var designCds = _DesignCoordinates;
+            designCds.BorderRange = iGroup.DesignBorderRange;
+            designCds.Padding = iGroup.DesignPadding;
+            var groupTitle = iGroup.GroupHeader;
+            if (groupTitle != null && groupTitle.DesignHeaderHeight.HasValue && groupTitle.DesignHeaderHeight.Value > 0)
+            {
+                designCds.HeaderHeight = groupTitle.DesignHeaderHeight.Value;
+                designCds.HeaderPadding = groupTitle.DesignTitlePadding;
+                designCds.LineRange = groupTitle.DesignLineRange;
+            }
+
+            // b) Koordináty aktuální, Zoomuji z Designových:
+            var currentCds = _CurrentCoordinates;
+            currentCds.ZoomToGui(designCds, DataForm.CurrentDpi);
+
+            // c) Uložíme si základní hodnoty = počátky oblasti Header a Items:
+            //   => z těchto souřadnic si budou jednotlivé prvky počítat svoje souřadnice CurrentLocalPoint = relativní k grupě
+            CurrentHeaderLocation = currentCds.TitleBounds.Location;
+            CurrentContentLocation = currentCds.ContentBounds.Location;
+        }
+        /// <summary>
+        /// Metoda dopočítá finální koordináty grupy a její velikost po dopočtení souřadnic prvků.
+        /// </summary>
+        protected void FinaliseGroupCoordinates()
+        {
+            
+        }
+        /// <summary>
+        /// Souřadný systém v Design hodnotách (bez Zoomu)
+        /// </summary>
+        private Coordinates _DesignCoordinates { get { if (__DesignCoordinates is null) __DesignCoordinates = new Coordinates(); return __DesignCoordinates; } } private Coordinates __DesignCoordinates;
+        /// <summary>
+        /// Souřadný systém v Current hodnotách (včetně Zoomu a DPI)
+        /// </summary>
+        private Coordinates _CurrentCoordinates { get { if (__CurrentCoordinates is null) __CurrentCoordinates = new Coordinates(); return __CurrentCoordinates; } } private Coordinates __CurrentCoordinates;
+        /// <summary>
+        /// Current Souřadnice počátku prvků v oblasti Header (aktuální pixely včetně Zoomu a DPI).
+        /// Souřadnice je relativní k <see cref="DxLayoutItem.CurrentLocalPoint"/>: pokud je zde tedy { 3, 3 } 
+        /// a grupa jako celek má <see cref="DxLayoutItem.CurrentLocalPoint"/> = { 0, 150 },
+        /// pak počátek jejího prostoru Header je na souřadnici { 3, 153 }.
+        /// Tato hodnota se přičítá k souřadnici konkrétního prvku umístěného v Header, a určuje tak jeho CurrentLocation.
+        /// </summary>
+        public Point CurrentHeaderLocation { get { return __CurrentHeaderLocation; } private set { __CurrentHeaderLocation = value; } } private Point __CurrentHeaderLocation;
+        /// <summary>
+        /// Current Souřadnice počátku prvků v oblasti Content (aktuální pixely včetně Zoomu a DPI).
+        /// Souřadnice je relativní k <see cref="DxLayoutItem.CurrentLocalPoint"/>: pokud je zde tedy { 12, 60 } 
+        /// a grupa jako celek má <see cref="DxLayoutItem.CurrentLocalPoint"/> = { 0, 150 },
+        /// pak počátek jejího prostoru Content je na souřadnici { 12, 210 }.
+        /// Tato hodnota se přičítá k souřadnici konkrétního prvku umístěného v Content, a určuje tak jeho CurrentLocation.
+        /// </summary>
+        public Point CurrentContentLocation { get { return __CurrentContentLocation; } private set { __CurrentContentLocation = value; } } private Point __CurrentContentLocation;
+
+        public override Size CurrentSize { get => base.CurrentSize; set => base.CurrentSize = value; }
+        public override Point CurrentLocalPoint { get => base.CurrentLocalPoint; set => base.CurrentLocalPoint = value; }
+
+
+
+
+
+
+
+
+        /// <summary>
+        /// Celý prostor pozadí oblasti Header. 
+        /// Vykresluje se style Header.
+        /// Uvnitř tohoto prostoru se nachází <see cref="CurrentHeaderBounds"/>.
+        /// </summary>
+        internal Rectangle CurrentHeaderBackground { get { return __CurrentHeaderBackground; } set { __CurrentHeaderBackground = value; } } private Rectangle __CurrentHeaderBackground;
+        
+        /// <summary>
+        /// Prostor, ve kterém je vykreslen text titulku a případné další prvky typu Header.
+        /// Je umístěn v <see cref="CurrentHeaderBackground"/> a je oproti němu zmenšen o HeaderPadding dovnitř.
         /// Je relativní v rámci this grupy.
         /// </summary>
-        internal Rectangle DesignTitleBounds { get { return __DesignTitleBounds; } }
-        private Rectangle __DesignTitleBounds;
+        internal Rectangle CurrentHeaderBounds { get { return __CurrentHeaderBounds; } set { __CurrentHeaderBounds = value; } } private Rectangle __CurrentHeaderBounds;
         /// <summary>
         /// Souřadnice a velikost prostoru v rámci grupy, ve kterém jsou zobrazeny jednotlivé Items = <see cref="DxDataFormItem.DesignBounds"/>.
         /// Hodnota je relativní k this grupě a je v designových pixelech bez Zoomu.
         /// </summary>
-        internal Rectangle DesignContentBounds { get { return __DesignContentBounds; } }
-        private Rectangle __DesignContentBounds;
+        internal Rectangle CurrentContentBounds { get { return __CurrentContentBounds; } set { __CurrentContentBounds = value; } } private Rectangle __CurrentContentBounds;
         /// <summary>
         /// Zajistí provedení výpočtu automatické velikosti grupy.
         /// Reaguje na <see cref="IDataFormGroup.DesignPadding"/>, čte prvky <see cref="Items"/> 
@@ -2025,10 +2076,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             __DesignTitleBounds = coordinates.TitleBounds;
             __DesignContentBounds = coordinates.ContentBounds;
         }
-        /// <summary>
-        /// Souřadný systém v Design hodnotách (bez Zoomu)
-        /// </summary>
-        private Coordinates __DesignCoordinates;
+        
         #endregion
         #region Souřadnice aktuální, viditelné
         /// <summary>
@@ -2095,10 +2143,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
 
             }
         }
-        /// <summary>
-        /// Souřadný systém v Current hodnotách (s aplikovaným Zoomem)
-        /// </summary>
-        private Coordinates __CurrentCoordinates;
         /// <summary>
         /// Hodnoty v <see cref="__CurrentCoordinates"/> jsou platné?
         /// </summary>
@@ -4555,6 +4599,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Souřadnice, kde tento prvek má svůj vnější počátek v rámci svého parenta = lokální souřadice.
         /// Hodnota je v aktuálních pixelech (nikoli designové pixely) = je už přepočtena Zoomem a DPI.
+        /// <para/>
+        /// Tuto hodnotu do prvku může vkládat jeho Parent, pokud ten si rozmísťuje svoje Child prvky,
+        /// nebo ji může setovat prvek sám, pokud má danou fixní pozici.
         /// </summary>
         public virtual Point CurrentLocalPoint 
         { 
@@ -4698,10 +4745,13 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         }
         /// <summary>
         /// Aktuální layout tohoto prvku je platný?
+        /// Potomek může setovat. Má setovat true v metodě <see cref="DxLayoutItem.RecalculateLayout(bool)"/>, pokud nevolá base metodu.
         /// </summary>
-        public bool IsValidLayout { get { return __IsValidLayout; } } private bool __IsValidLayout;
+        public bool IsValidLayout { get { return __IsValidLayout; } protected set { __IsValidLayout = value; } } private bool __IsValidLayout;
         /// <summary>
-        /// Metoda zajistí přepočet layoutu (rozložení prvků) v Child prvcích a následně i v this prvku. Budou určeny aktuální souřadnice.
+        /// Metoda zajistí přepočet layoutu (rozložení prvků) v Child prvcích = vyvolá v jejich instanci tuto metodu (předá jim hodnotu parametru <paramref name="callHandler"/> = false), 
+        /// a následně vyvolá v this prvku metodu <see cref="DxLayoutItem.RecalculateCurrentLayout(bool)"/>.
+        /// Budou určeny aktuální souřadnice.
         /// Pokud je na vstupu <paramref name="callHandler"/> = true a tento prvek změní svoji velikost, pak vyvolá svoji metodu <see cref="DxLayoutItem.OnRecalculateSizeChanged()"/>.
         /// <para/>
         /// Metoda je volána zvenku při požadavku na přepočet layoutu = uspořádání vnitřních prvků (jejich viditelnost, velikost, pozice) jednak pro Child prvky, a následně i pro this prvek.
@@ -4713,6 +4763,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// a pak vyvolá zdejší <see cref="DxLayoutItem.RecalculateCurrentLayout(bool)"/>;<br/>
         /// poté nastaví this . <see cref="DxLayoutItem.IsValidLayout"/> = true;<br/>
         /// a skončí.
+        /// <para/>
+        /// Pokud potomek řeší layout jinak, nemusí volat bázovou metodu, ale musí nastavit <see cref="DxLayoutItem.IsValidLayout"/> = true;
         /// </summary>
         /// <param name="callHandler">Požadavek aby po změně velikosti byl volán handler <see cref="DxLayoutItem.OnRecalculateSizeChanged"/></param>
         public virtual void RecalculateLayout(bool callHandler) 
