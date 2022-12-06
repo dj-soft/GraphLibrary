@@ -451,7 +451,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void InitializeTabDef()
         {
             __CurrentGroups = new List<DxDataFormGroupDef>();
-            __ActivePageRowHeight = 0;
             __DynamicGroupHeight = false;
         }
         /// <summary>
@@ -459,26 +458,27 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Pokud má DataForm více stránek (vizuálních záložek), pak je zde definice právě té aktivní = viditelné.
         /// Podle této definice se odvozují definice pro jednotlivé řádky.
         /// </summary>
-        internal DxDataFormPageDef ActiveDxPage { get { return __ActiveDxPage; } private set { _SetActiveDxPage(value); } } private DxDataFormPageDef __ActiveDxPage;
+        internal DxDataFormPageDef ActiveDxPage { get { return __ActiveDxPage; } private set { _SetActiveDxPage(value, RefreshParts.All); } } private DxDataFormPageDef __ActiveDxPage;
+        /// <summary>
+        /// Aktuální velikost prvku.
+        /// Hodnota je v aktuálních pixelech (nikoli designové pixely) = přepočteno Zoomem a DPI.
+        /// </summary>
+        internal Size ActiveDxPageCurrentSize { get { return __ActiveDxPage?.CurrentSize ?? Size.Empty; } }
+        /// <summary>
+        /// Výška jednoho řádku v aktuálním layoutu = reálná výška všech grup včetně <see cref="IDataFormPage.DesignPadding"/> + mezera <see cref="DxDataForm.RowHeightSpace"/>.
+        /// </summary>
+        internal int ActiveDxPageCurrentRowHeight { get { return __ActiveDxPage?.CurrentRowHeight ?? 0; } }
         /// <summary>
         /// Nastaví jako Aktivní stránku tu dodanou, a zajistí minimální potřebné refreshe
         /// </summary>
         /// <param name="activeDxPage"></param>
-        private void _SetActiveDxPage(DxDataFormPageDef activeDxPage)
+        /// <param name="refreshParts"></param>
+        private void _SetActiveDxPage(DxDataFormPageDef activeDxPage, RefreshParts refreshParts = RefreshParts.None)
         {
             activeDxPage.CheckValidLayout();
             __ActiveDxPage = activeDxPage;
-
-
-
-
-            __CurrentGroups = DxDataFormGroupDef.CreateList( new List<DxDataFormGroupDef>();
-            __CurrentGroups.Clear();
-            __ActivePageRowHeight = 0;
-            if (groups != null && groups.Count > 0)
-                __CurrentGroups.AddRange(groups);
-            _RecalcCurrentGroupsSize();
-            Refresh(RefreshParts.All);
+            if (refreshParts != RefreshParts.None)
+                Refresh(refreshParts);
         }
         /// <summary>
         /// Metoda je volána po změně velikosti DataFormu, umožní definici stránky reagovat dynamickým přeskupením svého obsahu.
@@ -486,7 +486,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private void _CheckPageDynamicLayout()
         {
-
+            var activeDxPage = this.ActiveDxPage;
+            if (activeDxPage != null && activeDxPage.HasDynamicGroupLayout)
+                activeDxPage.RecalculateDynamicGroupLayout();
         }
         #endregion
 
@@ -1650,6 +1652,24 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         internal int ItemsCount { get { return Groups.Select(g => g.ItemsCount).Sum(); } }
         #endregion
+        #region DynamicGroupLayout
+        /// <summary>
+        /// Obsahuje true, pokud tato stránka má nějaké grupy, které povolují dynamický layout = mohou být jinak rozmístěny na široké stránce.
+        /// pokud ano, pak po změně velikosti DataFormu je vhodné vyvolat <see cref="RecalculateDynamicGroupLayout()"/>.
+        /// </summary>
+        internal bool HasDynamicGroupLayout
+        {
+            get
+            {
+                if (!__HasDynamicGroupLayout.HasValue)
+                    this.RecalculateCurrentLayout(false);
+                return __HasDynamicGroupLayout ?? false;
+            }
+        }
+        internal void RecalculateDynamicGroupLayout()
+        { }
+        private bool? __HasDynamicGroupLayout;
+        #endregion
         #region Souřadnice a další služby
         /// <summary>
         /// Prvek má přepočítat svůj layout, poté kdy proběhl přepočet layoutu jeho Child prvků.
@@ -1666,6 +1686,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
 
             this.CurrentLocalPoint = new Point(0, 0);
             this.CurrentSize = pageSize;
+
+            if (HasDynamicGroupLayout)
+                RecalculateDynamicGroupLayout();
         }
         /// <summary>
         /// Metoda určí souřadnice pro všechny svoje skupiny, s optimálním rozmístěním do daného prostoru.
@@ -1677,6 +1700,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         {
             var currentPadding = DxComponent.ZoomToGui(IPage.DesignPadding, this.CurrentDPI);
             var currentSpacing = DxComponent.ZoomToGui(IPage.DesignSpacing, this.CurrentDPI);
+            bool hasDynamicGroupLayout = false;
 
             int beginX = currentPadding.Left;
             int beginY = currentPadding.Top;
@@ -1719,10 +1743,13 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 groupY = groupBottom;
             }
 
-            if (containAllowBreak && !containForceBreak && maxRight > contentSize.Width)
+            if (containAllowBreak && !containForceBreak) //  && maxRight > contentSize.Width)
             {   // Dynamické zalomení na této stránce je možné (máme alespoň jednu grupu, která to povoluje) a nemáme povinné zalomení a nynější obsah je větší než aktuální prostor:
-
+                hasDynamicGroupLayout = true;
             }
+
+            // Máme dynamický layoutu u nějaké grupy?
+            __HasDynamicGroupLayout = hasDynamicGroupLayout;
 
             // K souřadnicím maxRight a maxBottom přidáme odpovídající Padding a vygenerujeme PageSize:
             maxRight += currentPadding.Right;
@@ -1730,7 +1757,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             pageSize = new Size(maxRight, maxBottom);
         }
         /// <summary>
-        /// Výška jednoho řádku v aktuálním layoutu = výška všech grup včetně <see cref="IDataFormPage.DesignPadding"/> + mezera <see cref="DxDataForm.RowHeightSpace"/>.
+        /// Výška jednoho řádku v aktuálním layoutu = reálná výška všech grup včetně <see cref="IDataFormPage.DesignPadding"/> + mezera <see cref="DxDataForm.RowHeightSpace"/>.
         /// </summary>
         public int CurrentRowHeight { get { return this.CurrentSize.Height + this.DataForm.RowHeightSpace; } }
         /// <summary>
