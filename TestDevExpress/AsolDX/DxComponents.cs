@@ -985,6 +985,26 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Vrátí danou designovou hodnotu přepočtenou dle aktuálního Zoomu do vizuální hodnoty
         /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        internal static int? ZoomToGui(int? value) { if (value.HasValue) { decimal zoom = Instance.__Zoom; return _ZoomToGui(value.Value, zoom); } return null; }
+        /// <summary>
+        /// Vrátí danou designovou hodnotu přepočtenou dle aktuálního Zoomu do vizuální hodnoty
+        /// </summary>
+        /// <param name="value">Designová hodnota (96DPI, 100%)</param>
+        /// <param name="targetDpi">Cílové DPI. Typicky se má použít hodnota <see cref="DxPanelControl.CurrentDpi"/> (nebo <see cref="DxStdForm.CurrentDpi"/>)</param>
+        /// <returns></returns>
+        internal static int? ZoomToGui(int? value, int targetDpi) { if (value.HasValue) { decimal zoomDpi = Instance.__ZoomDpi; return _ZoomDpiToGui(value.Value, zoomDpi, targetDpi); } return null; }
+        /// <summary>
+        /// Vrátí danou designovou hodnotu přepočtenou dle aktuálního Zoomu do vizuální hodnoty
+        /// </summary>
+        /// <param name="value"></param>
+        /// <param name="targetDpi">Cílové DPI. Typicky se má použít hodnota <see cref="DxPanelControl.CurrentDpi"/> (nebo <see cref="DxStdForm.CurrentDpi"/>)</param>
+        /// <returns></returns>
+        internal static float? ZoomToGui(float? value, int targetDpi) { if (value.HasValue) { decimal zoomDpi = Instance.__ZoomDpi; return _ZoomDpiToGui(value.Value, zoomDpi, targetDpi); } return null; }
+        /// <summary>
+        /// Vrátí danou designovou hodnotu přepočtenou dle aktuálního Zoomu do vizuální hodnoty
+        /// </summary>
         /// <param name="value">Designová hodnota (96DPI, 100%)</param>
         /// <param name="targetDpi">Cílové DPI. Typicky se má použít hodnota <see cref="DxPanelControl.CurrentDpi"/> (nebo <see cref="DxStdForm.CurrentDpi"/>)</param>
         /// <returns></returns>

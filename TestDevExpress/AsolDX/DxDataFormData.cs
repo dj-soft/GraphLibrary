@@ -349,6 +349,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <para/>
         /// Pokud grupa má implementovat titulek, pak titulek bude jednou z položek grupy, typu <see cref="DataFormColumnType.Label"/>, včetně zadané velikosti a vzhledu.
         /// Pokud součástí grupy má být podtitulek a/nebo linka, musí být i to uvedeno v Items.
+        /// <para/>
+        /// Zde uvedená šířka je vnější = včetně Borderu a Padding; obsah (Content) je v prostoru o (Border + Padding) menší!
         /// </summary>
         int? DesignWidth { get; }
         /// <summary>
@@ -361,6 +363,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <para/>
         /// Pokud grupa má implementovat titulek, pak titulek bude jednou z položek grupy, typu <see cref="DataFormColumnType.Label"/>, včetně zadané velikosti a vzhledu.
         /// Pokud součástí grupy má být podtitulek a/nebo linka, musí být i to uvedeno v Items.
+        /// <para/>
+        /// Zde uvedená výška je vnější = včetně Borderu a Padding a titulku; obsah (Content) je v prostoru o (Border + Padding + Titulek) menší!
         /// </summary>
         int? DesignHeight { get; }
         /// <summary>

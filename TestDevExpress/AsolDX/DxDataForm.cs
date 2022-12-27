@@ -80,6 +80,26 @@ using DevExpress.XtraRichEdit.Model.History;
            Tímto způsobem vytvoří prostor nahoře pro ColumnHeader + RowFilter, dole pro SummaryRow a vlevo pro RowHeader;
            tyto prvky tedy vykresluje přímo do plochy DxDataFormPart, kdežto scrollovaný obsah řádků vykresluje do DxScrollableContent.ContentControl
 
+
+    [D]  Souřadnicové systémy
+    =========================
+   1. Nativní    = pixely na fyzickém Controlu, kde 0/0 je první viditelný pixel vlevo nahoře
+   2. Absolutní  = souřadnice na datovém prvku, kde 0/0 je první pixel vlevo nahoře na prvním řádku, prvním sloupci
+                   Následující řádek má svůj Y počátek na konci Y předešlého řádku (řádek 0:Bottom = řádek 1:Top)
+                   Tyto souřadnice se nemění (pokud nedojde ke změně dat řádků = filtr, přetřídění);
+   3. Virtuální  = souřadnice daná Scrollováním a aktuální velikostí viditelného prostoru = "Kukátko" na Absolutní souřadnice
+
+   Příklad:
+     Mějme tedy vizuální control s velikostí W=800 a H=600;
+     Mějme k tomu datový prvek, který určil šířku W=1200 a výšku jednoho řádku RH=400, a počet řádků RN=20, pak Absolutní velikost  W=1200 a H=8000
+     ScrollControl tedy dovoluje scrollovat v obou směrech X i Y, určuje tak "Virtuální okno"
+     Virtuální (odscrollované) okno tedy bude např. X=100, Y=1200, W=800, H=600;
+     Najdeme tedy řádky, které jsou viditelné na souřadnici Y: 1200 + 600 
+      (při výšce řádku 400 mají řádky souřadnice: [0]: 0-400; [1]: 400-800; [2]: 800-1200; [3]: 1200-1600; [4]: 1600-2000; [5]: 2000-2400; ...)
+      Určíme tedy viditelné řádky: [3]: 1200-1600; [4]: 1600-2000;
+
+
+
 */
 #endregion
 
@@ -672,6 +692,29 @@ namespace Noris.Clients.Win.Components.AsolDX
         internal static void PaintFrame(DxBufferedGraphicPaintArgs e, Rectangle? bounds, int? sizes, IDataFormBackgroundAppearance appearance, bool onMouse, bool hasFocus)
         {
             if (!bounds.HasValue || !sizes.HasValue || sizes.Value <= 0 || appearance is null) return;
+            using (var brush = CreateBrushForAppearance(bounds.Value, appearance, onMouse, hasFocus))
+            {
+                if (brush != null)
+                {
+                    using (var path = CreateGraphicsFrame(bounds.Value, sizes.Value))
+                    {
+                        e.Graphics.FillPath(brush, path);
+                    }
+                }
+            }
+        }
+        /// <summary>
+        /// Vykreslí rámeček v daném prostoru s danou šířkou v daném vzhledu
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="bounds"></param>
+        /// <param name="sizes"></param>
+        /// <param name="appearance"></param>
+        /// <param name="onMouse"></param>
+        /// <param name="hasFocus"></param>
+        internal static void PaintFrame(DxBufferedGraphicPaintArgs e, Rectangle? bounds, Padding? sizes, IDataFormBackgroundAppearance appearance, bool onMouse, bool hasFocus)
+        {
+            if (!bounds.HasValue || !sizes.HasValue || appearance is null) return;
             using (var brush = CreateBrushForAppearance(bounds.Value, appearance, onMouse, hasFocus))
             {
                 if (brush != null)
@@ -1692,6 +1735,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         public int CurrentRowHeight { get { return this.CurrentSize.Height + this.DataForm.RowHeightSpace; } }
         /// <summary>
+        /// Fyzické DPI, přebírá se z controlu <see cref="DataForm"/>
+        /// </summary>
+        protected override int CurrentDPI { get { return this.DataForm.CurrentDpi; } }
+        /// <summary>
         /// Child prvky v layoutu stránky jsou Grupy
         /// </summary>
         protected override IEnumerable<IDxLayoutItem> LayoutChilds { get { return Groups; } }
@@ -1846,9 +1893,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         #endregion
     }
     #endregion
-    #region class DxDataFormGroupDef : Třída reprezentující jednu designem definovanou grup.
+    #region class DxDataFormGroupDef : Třída reprezentující jednu designem definovanou grupu.
     /// <summary>
-    /// <see cref="DxDataFormGroupDef"/> : Třída obsahující definic jedné grupy, slouží jako vzor pro tvorbu DxDataFormGroup
+    /// <see cref="DxDataFormGroupDef"/> : Třída obsahující jednu designem definovanou grupu. Obsahuje oblasti Header, Content a odpovídající prvky.
+    /// Zajišťuje vykreslení podkladu grupy.
     /// </summary>
     internal class DxDataFormGroupDef : DxLayoutItem
     {
@@ -1876,17 +1924,15 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Konstruktor
         /// </summary>
         /// <param name="dataPage"></param>
-        /// <param name="iPage"></param>
         /// <param name="iGroup"></param>
         public DxDataFormGroupDef(DxDataFormPageDef dataPage, IDataFormGroup iGroup)
         {
             __DataPage = dataPage;
             __IGroup = iGroup;
-            __Items = new List<DxDataFormItem>();
-            DxDataFormItem.AddToList(this, true, iGroup?.GroupHeader?.HeaderItems, __Items);
-            DxDataFormItem.AddToList(this, false, iGroup?.Items, __Items);
-            _CalculateAutoSize();
-            InvalidateBounds();
+            var items = new List<DxDataFormItem>();
+            DxDataFormItem.AddToList(this, true, iGroup?.GroupHeader?.HeaderItems, items);
+            DxDataFormItem.AddToList(this, false, iGroup?.Items, items);
+            __Items = items;
         }
         /// <summary>Vlastník - <see cref="DxDataFormPageDef"/></summary>
         private DxDataFormPageDef __DataPage;
@@ -1902,6 +1948,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Vlastník - <see cref="DxDataFormPageDef"/>
         /// </summary>
         internal DxDataFormPageDef DataPage { get { return __DataPage; } }
+        /// <summary>
+        /// Aktuálně platná hodnota DeviceDpi
+        /// </summary>
+        internal int CurrentDpi { get { return DataForm.CurrentDpi; } }
         /// <summary>
         /// Deklarace parenta stránky = form
         /// </summary>
@@ -1936,9 +1986,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Řízení layoutu: na této grupě je povinné zalomení sloupce = tato grupa má být umístěna jako první do dalšího sloupce
         /// </summary>
         internal bool LayoutForceBreakToNewColumn { get { return (IGroup.LayoutMode.HasFlag(DatFormGroupLayoutMode.ForceBreakToNewColumn)); } }
-
         #endregion
-        #region Souřadnice a layout
+        #region Layout a Souřadnice
         /// <summary>
         /// Přepočet souřadic prvků a velikosti a koordinátů grupy.
         /// </summary>
@@ -1950,282 +1999,287 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             this.FinaliseGroupCoordinates();
         }
         /// <summary>
-        /// Metoda připraví základní koordináty grupy pro její záhlaví a obsah, aby byl určen počátek (Origin) pro prvky.
+        /// Metoda připraví základní koordináty grupy pro její záhlaví a obsah, aby byl určen počátek (Origin) pro prvky typu Header i Content.
         /// Tato metoda zatím neřeší celkovou velikost grupy, protože ta bude dána až po dopočítání souřadnic prvků.
-        /// Tedy setuje hodnoty do <see cref="CurrentHeaderLocation"/> a <see cref="CurrentContentLocation"/>.
+        /// Tedy setuje aktuální (Zoomované) hodnoty do <see cref="CurrentHeaderLocation"/> a <see cref="CurrentContentLocation"/>.
+        /// <para/>
+        /// Po této metodě může následovat příprava souřadnic jednotlivých prvků, a poté pak zdejší metoda <see cref="FinaliseGroupCoordinates()"/>.
         /// </summary>
         protected void PrepareGroupCoordinates()
         {
-            var iGroup = IGroup;
-
             // a) Koordináty designové, první část určující Header = záhlaví:
             var designCds = _DesignCoordinates;
-            designCds.BorderRange = iGroup.DesignBorderRange;
-            designCds.Padding = iGroup.DesignPadding;
-            var groupTitle = iGroup.GroupHeader;
-            if (groupTitle != null && groupTitle.DesignHeaderHeight.HasValue && groupTitle.DesignHeaderHeight.Value > 0)
-            {
-                designCds.HeaderHeight = groupTitle.DesignHeaderHeight.Value;
-                designCds.HeaderPadding = groupTitle.DesignTitlePadding;
-                designCds.LineRange = groupTitle.DesignLineRange;
-            }
 
-            // b) Koordináty aktuální, Zoomuji z Designových:
+            // b) Koordináty aktuální, Zoomuji je z Designových:
             var currentCds = _CurrentCoordinates;
-            currentCds.ZoomToGui(designCds, DataForm.CurrentDpi);
+            currentCds.ZoomToGui(designCds, CurrentDpi);
 
-            // c) Uložíme si základní hodnoty = počátky oblasti Header a Items:
-            //   => z těchto souřadnic si budou jednotlivé prvky počítat svoje souřadnice CurrentLocalPoint = relativní k grupě
-            CurrentHeaderLocation = currentCds.TitleBounds.Location;
-            CurrentContentLocation = currentCds.ContentBounds.Location;
+            // c) Uložíme si základní Current hodnoty = obsahují počátek oblasti Header a Items:
+            //   => z těchto souřadnic si budou jednotlivé prvky (v metodě base.RecalculateLayout(callHandler))
+            //      určovat svoje souřadnice CurrentLocalPoint = relativní k grupě
+            _ReloadCurrentLocations();
         }
         /// <summary>
-        /// Metoda dopočítá finální koordináty grupy a její velikost po dopočtení souřadnic prvků.
+        /// Metoda dopočítá finální velikost grupy po dopočtení souřadnic prvků.
+        /// Metoda tedy běží po určení souřadnic jednotlivých prvků grupy, a podle nich určí dynamickou velikost zdejšího prostoru Content 
+        /// (=ta je dána prostorem prvků) a tedy výslednou velikost grupy.
         /// </summary>
         protected void FinaliseGroupCoordinates()
         {
-            
+            // Vypočteme velikost grupy podle obsahu:
+            _CalculateCurrentSizeFromItems();
+
+            // Uložíme si aktuální výsledné souřadnice:
+            _ReloadCurrentBounds();
         }
         /// <summary>
-        /// Souřadný systém v Design hodnotách (bez Zoomu)
+        /// Vypočítá aktuální pixelovou velikost grupy podle zadaných designových hodnot <see cref="IDataFormGroup.DesignWidth"/> a <see cref="IDataFormGroup.DesignHeight"/>,
+        /// a pokud některý z rozměrů není zadán, pak jej dopočítá podle aktuálních souřadnic prvků v Header + Content, plus zadané okraje (Border, Padding, HeaderHeight).
         /// </summary>
-        private Coordinates _DesignCoordinates { get { if (__DesignCoordinates is null) __DesignCoordinates = new Coordinates(); return __DesignCoordinates; } } private Coordinates __DesignCoordinates;
+        private void _CalculateCurrentSizeFromItems()
+        {
+            var iGroup = IGroup;
+            var currentDpi = CurrentDpi;
+            var currentWidth = DxComponent.ZoomToGui(iGroup.DesignWidth, currentDpi);
+            var currentHeight = DxComponent.ZoomToGui(iGroup.DesignHeight, currentDpi);
+            var currentCds = _CurrentCoordinates;
+            if (!currentWidth.HasValue || !currentWidth.HasValue)
+            {   // Některý z rozměrů (nebo oba) bude určen velikostí obsahu:
+                var sumTitleBounds = this.Items.Where(i => i.IsHeaderItem).Select(i => i.CurrentBounds).SummaryVisibleRectangle();
+                var sumContentBounds = this.Items.Where(i => i.IsContentItem).Select(i => i.CurrentBounds).SummaryVisibleRectangle();
+                var titlePadding = currentCds.HeaderTotalPadding;
+                var contentPadding = currentCds.ContentTotalPadding;
+                if (!currentWidth.HasValue || currentWidth.Value < 0)
+                {   // Definice grupy neobsahuje explicitní šířku = určíme ji podle obsahu (Header ? Content):
+                    int width = 0;
+                    if (sumTitleBounds.HasValue)
+                    {
+                        int widthHeader = sumTitleBounds.Value.Width + titlePadding.Horizontal;
+                        if (width < widthHeader) width = widthHeader;
+                    }
+                    else if (width < titlePadding.Horizontal) 
+                        width = titlePadding.Horizontal;
+
+                    if (sumContentBounds.HasValue)
+                    {
+                        int widthContent = sumContentBounds.Value.Width + contentPadding.Horizontal;
+                        if (width < widthContent) width = widthContent;
+                    }
+                    else if (width < contentPadding.Horizontal)
+                        width = contentPadding.Horizontal;
+
+                    currentWidth = width;
+                }
+                if (!currentHeight.HasValue || currentHeight.Value < 0)
+                {   // Definice grupy neobsahuje explicitní výšku = určíme ji podle obsahu (Content + fixní Header):
+                    int height = 0;
+                    if (sumContentBounds.HasValue)
+                    {
+                        int heightContent = sumContentBounds.Value.Height + contentPadding.Vertical;
+                        if (height < heightContent) height = heightContent;
+                    }
+                    else if (height < contentPadding.Vertical)
+                        height = contentPadding.Vertical;
+
+                    currentHeight = height;
+                }
+            }
+            currentCds.Size = new Size(currentWidth.Value, currentHeight.Value);
+        }
         /// <summary>
-        /// Souřadný systém v Current hodnotách (včetně Zoomu a DPI)
+        /// Souřadný systém v Design hodnotách (bez Zoomu).
+        /// Vždy obsahuje platnou hodnotu = není null a základní obsahuje data z <see cref="IGroup"/>.
+        /// Nenapočítává ale souřadnice z podřízených prvků, obsahuje pouze Border, Padding, a údaje z GroupHeader. 
+        /// Tato property nezajišťuje tedy souřadnice Content = ignoruje hodnoty <see cref="IDataFormGroup.DesignWidth"/> a <see cref="IDataFormGroup.DesignHeight"/>.
         /// </summary>
-        private Coordinates _CurrentCoordinates { get { if (__CurrentCoordinates is null) __CurrentCoordinates = new Coordinates(); return __CurrentCoordinates; } } private Coordinates __CurrentCoordinates;
+        private Coordinates _DesignCoordinates
+        {
+            get 
+            {
+                if (__DesignCoordinates is null) __DesignCoordinates = new Coordinates();
+                if (!__DesignCoordinatesValid) __DesignCoordinatesValid = _DesignCoordinatesReload(__DesignCoordinates);
+                return __DesignCoordinates; 
+            }
+        }
         /// <summary>
-        /// Current Souřadnice počátku prvků v oblasti Header (aktuální pixely včetně Zoomu a DPI).
-        /// Souřadnice je relativní k <see cref="DxLayoutItem.CurrentLocalPoint"/>: pokud je zde tedy { 3, 3 } 
-        /// a grupa jako celek má <see cref="DxLayoutItem.CurrentLocalPoint"/> = { 0, 150 },
-        /// pak počátek jejího prostoru Header je na souřadnici { 3, 153 }.
-        /// Tato hodnota se přičítá k souřadnici konkrétního prvku umístěného v Header, a určuje tak jeho CurrentLocation.
+        /// Do předané instance designových koordinátů naplní základní statická data z definice grupy.
+        /// Nenačítají se hodnoty <see cref="IDataFormGroup.DesignWidth"/> a <see cref="IDataFormGroup.DesignHeight"/>.
+        /// </summary>
+        /// <param name="designCds"></param>
+        private bool _DesignCoordinatesReload(Coordinates designCds)
+        {
+            var iGroup = IGroup;
+            designCds.BorderRange = iGroup.DesignBorderRange;
+            designCds.ContentPadding = iGroup.DesignPadding;
+            var groupHeader = iGroup.GroupHeader;
+            if (groupHeader != null && groupHeader.DesignHeaderHeight.HasValue && groupHeader.DesignHeaderHeight.Value > 0)
+            {
+                designCds.HeaderHeight = groupHeader.DesignHeaderHeight.Value;
+                designCds.HeaderPadding = groupHeader.DesignTitlePadding;
+                designCds.LineYRange = groupHeader.DesignLineRange;
+            }
+            return true;
+        }
+        /// <summary>
+        /// Souřadný systém v Design hodnotách (bez Zoomu).
+        /// </summary>
+        private Coordinates __DesignCoordinates;
+        /// <summary>
+        /// Platnost dat v <see cref="__DesignCoordinates"/>
+        /// </summary>
+        private bool __DesignCoordinatesValid;
+        /// <summary>
+        /// Souřadný systém v Current hodnotách (včetně Zoomu a DPI).
+        /// Není null.
+        /// </summary>
+        private Coordinates _CurrentCoordinates
+        {
+            get 
+            {
+                if (__CurrentCoordinates is null) __CurrentCoordinates = new Coordinates(); 
+                return __CurrentCoordinates; 
+            }
+        }
+        private Coordinates __CurrentCoordinates;
+        /// <summary>
+        /// Uloží si aktuální výsledné pozice základních oblastí (z vypočítávaných properties z <see cref="_CurrentCoordinates"/> do jednoduchých privátních fields proměnných).
+        /// Z těchto souřadnic si budou jednotlivé prvky (v metodě base.RecalculateLayout(callHandler)) určovat svoje souřadnice CurrentLocalPoint = relativní k grupě.
+        /// </summary>
+        private void _ReloadCurrentLocations()
+        {
+            var currentCds = _CurrentCoordinates;
+            CurrentHeaderLocation = currentCds.HeaderBounds.Location;
+            CurrentContentLocation = currentCds.ContentBounds.Location;
+        }
+        /// <summary>
+        /// Uloží si aktuální výsledné souřadnice (z vypočítávaných properties z <see cref="_CurrentCoordinates"/> do jednoduchých privátních fields proměnných).
+        /// Volá se po přepočtech a po změně Minimised.
+        /// </summary>
+        private void _ReloadCurrentBounds()
+        {
+            var currentCds = _CurrentCoordinates;
+
+            this.CurrentGroupSize = currentCds.Size;
+            this.CurrentBorderExists = currentCds.HasBorder;
+            this.CurrentBorderOuterBounds = currentCds.BorderOuterBounds;
+            this.CurrentBorderSizes = currentCds.BorderSizes;
+            this.CurrentGroupBackgroundBounds = currentCds.GroupBackgroundBounds;
+            this.CurrentHeaderExists = currentCds.HasHeader;
+            this.CurrentHeaderBackgroundBounds = currentCds.HeaderBackgroundBounds;
+            this.CurrentHeaderBounds = currentCds.HeaderBounds;
+            this.CurrentLineExists = currentCds.HasLine;
+            this.CurrentLineBounds = currentCds.LineBounds;
+            this.CurrentContentExists = currentCds.HasContent;
+            this.CurrentContentBackgroundBounds = currentCds.ContentBackgroundBounds;
+            this.CurrentContentBounds = currentCds.ContentBounds;
+        }
+        #endregion
+        #region Souřadnice aktuální, viditelné, pixelové;  testy viditelnosti
+        /// <summary>
+        /// Current souřadnice počátku prvků v oblasti Header (aktuální pixely včetně Zoomu a DPI).
+        /// <para/>
+        /// Je relativní v rámci this grupy (bod 0/0 je na počátku this grupy).
         /// </summary>
         public Point CurrentHeaderLocation { get { return __CurrentHeaderLocation; } private set { __CurrentHeaderLocation = value; } } private Point __CurrentHeaderLocation;
         /// <summary>
-        /// Current Souřadnice počátku prvků v oblasti Content (aktuální pixely včetně Zoomu a DPI).
-        /// Souřadnice je relativní k <see cref="DxLayoutItem.CurrentLocalPoint"/>: pokud je zde tedy { 12, 60 } 
-        /// a grupa jako celek má <see cref="DxLayoutItem.CurrentLocalPoint"/> = { 0, 150 },
-        /// pak počátek jejího prostoru Content je na souřadnici { 12, 210 }.
-        /// Tato hodnota se přičítá k souřadnici konkrétního prvku umístěného v Content, a určuje tak jeho CurrentLocation.
+        /// Current souřadnice počátku prvků v oblasti Content (aktuální pixely včetně Zoomu a DPI).
+        /// <para/>
+        /// Je relativní v rámci this grupy (bod 0/0 je na počátku this grupy).
         /// </summary>
         public Point CurrentContentLocation { get { return __CurrentContentLocation; } private set { __CurrentContentLocation = value; } } private Point __CurrentContentLocation;
-
-        public override Size CurrentSize { get => base.CurrentSize; set => base.CurrentSize = value; }
+        /// <summary>
+        /// Aktuální velikost prvku.
+        /// Hodnota je v aktuálních pixelech (nikoli designové pixely) = přepočteno Zoomem a DPI.
+        /// </summary>
+        public override Size CurrentSize { get { return __CurrentGroupSize; } set { /* Velikost se setuje jinde */ } }
+        /// <summary>
+        /// Aktuální velikost prvku. Lze setovat.
+        /// </summary>
+        protected Size CurrentGroupSize { get { return __CurrentGroupSize; } set { __CurrentGroupSize = value; } } private Size __CurrentGroupSize;
+        /// <summary>
+        /// Souřadnice, kde tento prvek (grupa) má svůj vnější počátek v rámci svého parenta = lokální souřadice.
+        /// Hodnota je v aktuálních pixelech (nikoli designové pixely) = je už přepočtena Zoomem a DPI.
+        /// <para/>
+        /// Tuto hodnotu do prvku může vkládat jeho Parent, pokud ten si rozmísťuje svoje Child prvky,
+        /// nebo ji může setovat prvek sám, pokud má danou fixní pozici.
+        /// </summary>
         public override Point CurrentLocalPoint { get => base.CurrentLocalPoint; set => base.CurrentLocalPoint = value; }
-
-
-
-
-
-
-
-
+        /// <summary>
+        /// Existuje Border?
+        /// </summary>
+        protected bool CurrentBorderExists { get { return __CurrentBorderExists; } private set { __CurrentBorderExists = value; } } private bool __CurrentBorderExists;
+        /// <summary>
+        /// Vnější souřadnice Border.
+        /// <para/>
+        /// Je relativní v rámci this grupy (bod 0/0 je na počátku this grupy).
+        /// </summary>
+        protected Rectangle CurrentBorderOuterBounds { get { return __CurrentBorderOuterBounds; } private set { __CurrentBorderOuterBounds = value; } } private Rectangle __CurrentBorderOuterBounds;
+        /// <summary>
+        /// Šířky rámečku Border.
+        /// </summary>
+        protected Padding CurrentBorderSizes { get { return __CurrentBorderSizes; } private set { __CurrentBorderSizes = value; } } private Padding __CurrentBorderSizes;
+        /// <summary>
+        /// Celý prostor pozadí grupy (Header + Content), leží přesně uvnitř Borderu.
+        /// <para/>
+        /// Je relativní v rámci this grupy (bod 0/0 je na počátku this grupy).
+        /// </summary>
+        protected Rectangle CurrentGroupBackgroundBounds { get { return __CurrentBackgroundBounds; } private set { __CurrentBackgroundBounds = value; } } private Rectangle __CurrentBackgroundBounds;
+        /// <summary>
+        /// Existuje Header?
+        /// </summary>
+        protected bool CurrentHeaderExists { get { return __CurrentHeaderExists; } private set { __CurrentHeaderExists = value; } } private bool __CurrentHeaderExists;
         /// <summary>
         /// Celý prostor pozadí oblasti Header. 
-        /// Vykresluje se style Header.
+        /// Vykresluje se stylem Header.
         /// Uvnitř tohoto prostoru se nachází <see cref="CurrentHeaderBounds"/>.
+        /// <para/>
+        /// Je relativní v rámci this grupy (bod 0/0 je na počátku this grupy).
         /// </summary>
-        internal Rectangle CurrentHeaderBackground { get { return __CurrentHeaderBackground; } set { __CurrentHeaderBackground = value; } } private Rectangle __CurrentHeaderBackground;
-        
+        protected Rectangle CurrentHeaderBackgroundBounds { get { return __CurrentHeaderBackgroundBounds; } private set { __CurrentHeaderBackgroundBounds = value; } } private Rectangle __CurrentHeaderBackgroundBounds;
         /// <summary>
         /// Prostor, ve kterém je vykreslen text titulku a případné další prvky typu Header.
-        /// Je umístěn v <see cref="CurrentHeaderBackground"/> a je oproti němu zmenšen o HeaderPadding dovnitř.
-        /// Je relativní v rámci this grupy.
-        /// </summary>
-        internal Rectangle CurrentHeaderBounds { get { return __CurrentHeaderBounds; } set { __CurrentHeaderBounds = value; } } private Rectangle __CurrentHeaderBounds;
-        /// <summary>
-        /// Souřadnice a velikost prostoru v rámci grupy, ve kterém jsou zobrazeny jednotlivé Items = <see cref="DxDataFormItem.DesignBounds"/>.
-        /// Hodnota je relativní k this grupě a je v designových pixelech bez Zoomu.
-        /// </summary>
-        internal Rectangle CurrentContentBounds { get { return __CurrentContentBounds; } set { __CurrentContentBounds = value; } } private Rectangle __CurrentContentBounds;
-        /// <summary>
-        /// Zajistí provedení výpočtu automatické velikosti grupy.
-        /// Reaguje na <see cref="IDataFormGroup.DesignPadding"/>, čte prvky <see cref="Items"/> 
-        /// a určuje hodnoty do <see cref="DesignContentBounds"/>
-        /// </summary>
-        private void _CalculateAutoSize()
-        {
-            // Získám definici souřadnic v grupě:
-            var iGroup = IGroup;
-            var coordinates = new Coordinates() { BorderRange = iGroup.DesignBorderRange, Padding = iGroup.DesignPadding };
-            var groupTitle = iGroup.GroupHeader;
-            if (groupTitle != null && groupTitle.DesignHeaderHeight.HasValue && groupTitle.DesignHeaderHeight.Value > 0)
-            {
-                coordinates.HeaderHeight = groupTitle.DesignHeaderHeight.Value;
-                coordinates.HeaderPadding = groupTitle.DesignTitlePadding;
-                coordinates.LineRange = groupTitle.DesignLineRange;
-            }
-
-            // Určím velikost grupy:
-            var designWidth = iGroup.DesignWidth;
-            var designHeight = iGroup.DesignHeight;
-            if (!(designWidth.HasValue && designHeight.HasValue))
-            {   // Některá z hodnot (DesignWidth nebo DesignHeight) není zadaná, musíme ji dopočítat podle aktuálních prvků:
-                var sizeOverheads = coordinates.SizeOverhead;
-                var itemSummaryBounds = this.Items.Select(i => i.DesignBounds).SummaryVisibleRectangle() ?? Rectangle.Empty;
-                if (!designWidth.HasValue)
-                    designWidth = itemSummaryBounds.Right + sizeOverheads.Width;
-                if (!designHeight.HasValue)
-                    designHeight = itemSummaryBounds.Bottom + sizeOverheads.Height;
-            }
-            coordinates.Size = new Size(designWidth.Value, designHeight.Value);
-
-            // Uložíme souřadnice jako celek a také načteme ContentBounds (=výsledek výpočtu) a uložíme do trvalé proměnné (kvůli rychlosti).
-            __DesignCoordinates = coordinates;
-            __DesignTitleBounds = coordinates.TitleBounds;
-            __DesignContentBounds = coordinates.ContentBounds;
-        }
-        
-        #endregion
-        #region Souřadnice aktuální, viditelné
-        /// <summary>
-        /// Na této souřadnici (reálné) v rámci grupy začíná souřadnice 0/0 jejich prvků.
-        /// Tuto hodnotu určuje správce DataFormu při tvorbě layoutu (Statický i dynamický laoyut).
-        /// Tvorba layoutu probíhá po každé změně rozměru DataFormu i změně Zoomu a DPI.
+        /// Je umístěn v <see cref="CurrentHeaderBackgroundBounds"/> a je oproti němu zmenšen o HeaderPadding dovnitř.
         /// <para/>
-        /// Po setování této souřadnice proběhne invalidace souřadnic Current i Visible, i jednotlivých prvků.
-        /// Následně jsou tyto souřadnice on-demand přepočteny.
+        /// Je relativní v rámci this grupy (bod 0/0 je na počátku this grupy).
         /// </summary>
-        public Point xxxCurrentGroupOrigin { get { return __CurrentGroupOrigin; } set { __CurrentGroupOrigin = value; InvalidateBounds(); } }
-        private Point __CurrentGroupOrigin;
+        protected Rectangle CurrentHeaderBounds { get { return __CurrentHeaderBounds; } private set { __CurrentHeaderBounds = value; } } private Rectangle __CurrentHeaderBounds;
         /// <summary>
-        /// Reálná velikost grupy v aktuálním Zoomu.
+        /// Existuje Line?
         /// </summary>
-        public Size xxxCurrentGroupSize { get { this._CheckCurrentBounds(); return __CurrentGroupSize; } }
-        private Size __CurrentGroupSize;
+        protected bool CurrentLineExists { get { return __CurrentLineExists; } private set { __CurrentLineExists = value; } } private bool __CurrentLineExists;
         /// <summary>
-        /// Aktuální reálná absolutní (=v koordinátech vizuálního controlu včetně Zoomu!) souřadnice této grupy. 
-        /// Souřadnice je daná počátkem <see cref="CurrentGroupOrigin"/>, který musí setovat koordinátor stránky, 
-        /// a velikostí grupy <see cref="CurrentGroupSize"/>, která vychází z deklarace grupy <see cref="IDataFormGroup.DesignWidth"/> a <see cref="IDataFormGroup.DesignHeight"/>, a je přepočtena Zoomem a DPI.
+        /// Souřadnice Line.
         /// <para/>
-        /// Tato souřadnice ale není posunuta ScrollBarem (je absolutní).
-        /// Posunutá vizuální souřadnice je v <see cref="VisibleGroupBounds"/>.
+        /// Je relativní v rámci this grupy (bod 0/0 je na počátku this grupy).
         /// </summary>
-        public Rectangle xxxCurrentGroupBounds { get { this._CheckCurrentBounds(); return new Rectangle(__CurrentGroupOrigin, __CurrentGroupSize); } }
+        protected Rectangle CurrentLineBounds { get { return __CurrentLineBounds; } private set { __CurrentLineBounds = value; } } private Rectangle __CurrentLineBounds;
         /// <summary>
-        /// Invaliduje souřadnice <see cref="CurrentGroupSize"/>, <see cref="CurrentGroupBounds"/> a <see cref="VisibleGroupBounds"/>.
-        /// Invaliduje i svoje Items.
-        /// Invalidují se souřadnice typu Current a Visible. 
-        /// Tyto souřadnice budou on-demand přepočteny ze souřadnic typu Design, podle aktuálních hodnot Zoom a DPI.
+        /// Existuje Content? false když je Minimised
         /// </summary>
-        public void InvalidateBounds()
-        {
-            __CurrentCoordinatesValid = false;
-            __Items.ForEachExec(i => i.InvalidateBounds());
-        }
+        protected bool CurrentContentExists { get { return __CurrentContentExists; } private set { __CurrentContentExists = value; } } private bool __CurrentContentExists;
         /// <summary>
-        /// Zajistí, že souřadnice <see cref="__CurrentGroupSize"/> a budou platné k souřadnicím designovým a k hodnotám aktuálním DPI
+        /// Celý prostor pozadí oblasti Content. 
+        /// Vykresluje se stylem Content.
+        /// Uvnitř tohoto prostoru se nachází <see cref="CurrentHeaderBounds"/>.
+        /// <para/>
+        /// Je relativní v rámci this grupy (bod 0/0 je na počátku this grupy).
         /// </summary>
-        /// <param name="force"></param>
-        private void _CheckCurrentBounds(bool force = false)
-        {
-            if (force || !__CurrentCoordinatesValid || __CurrentCoordinates is null)
-            {
-                if (__CurrentCoordinates is null) __CurrentCoordinates = new Coordinates();
-                __CurrentCoordinatesValid = true;
-
-                __CurrentCoordinates.ZoomToGui(__DesignCoordinates, DataForm.CurrentDpi);
-
-                // Opíšu si sadu výsledků z Coordinates, protože tam jsou "vypočítávané", a my je chceme mít permanentní:
-                this.__CurrentGroupSize = __CurrentCoordinates.Size;
-                this.__CurrentBorderBounds = __CurrentCoordinates.VisibleBorder ? (Rectangle?)__CurrentCoordinates.BorderOuterBounds : null;
-                this.__CurrentBorderSizes = __CurrentCoordinates.BorderRange?.Size;
-                this.__CurrentGroupBackground = __CurrentCoordinates.GroupBackgroundBounds;
-                this.__CurrentTitleBackground = __CurrentCoordinates.HasHeader ? (Rectangle?)__CurrentCoordinates.HeaderBackgroundBounds : null;
-                this.__CurrentTitleTextBounds = __CurrentCoordinates.HasHeader ? (Rectangle?)__CurrentCoordinates.TitleBounds : null;
-                this.__CurrentTitleLineBounds = __CurrentCoordinates.VisibleLine ? (Rectangle?)__CurrentCoordinates.TitleLineBounds : null;
-                this.__CurrentContentBackground = __CurrentCoordinates.ContentBackgroundBounds;
-                this.__CurrentContentBounds = __CurrentCoordinates.ContentBounds;
-
-                // Naše hodnota souřadnice (this.__CurrentGroupOrigin) je dána externě, musím ji zachovat, vložím ji do __CurrentCoordinates.Location:
-                __CurrentCoordinates.Location = this.__CurrentGroupOrigin;
-
-            }
-        }
+        protected Rectangle CurrentContentBackgroundBounds { get { return __CurrentContentBackgroundBounds; } private set { __CurrentContentBackgroundBounds = value; } } private Rectangle __CurrentContentBackgroundBounds;
         /// <summary>
-        /// Hodnoty v <see cref="__CurrentCoordinates"/> jsou platné?
+        /// Souřadnice a velikost prostoru v rámci grupy, ve kterém jsou zobrazeny jednotlivé Items = <see cref="DxDataFormItem"/>.
+        /// <para/>
+        /// Je relativní v rámci this grupy (bod 0/0 je na počátku this grupy).
         /// </summary>
-        private bool __CurrentCoordinatesValid;
+        internal Rectangle CurrentContentBounds { get { return __CurrentContentBounds; } private set { __CurrentContentBounds = value; } } private Rectangle __CurrentContentBounds;
         /// <summary>
-        /// Souřadnice borderu. Šířka borderu je <see cref="__CurrentBorderSizes"/>.
-        /// Tato hodnota není autovalidována.
+        /// Vrátí true, pokud daný absolutní bod se nachází v this grupě.
+        /// Využije k tomu souřadnici <see cref="AbsoluteGroupBackgroundBounds"/> = prostor uvnitř borderu.
         /// </summary>
-        private Rectangle? __CurrentBorderBounds;
-        /// <summary>
-        /// Šířka borderu. Souřadnice borderu je <see cref="__CurrentBorderBounds"/>.
-        /// Tato hodnota není autovalidována.
-        /// </summary>
-        private int? __CurrentBorderSizes;
-        /// <summary>
-        /// Souřadnice celého pozadí (titulek + content).
-        /// Tato hodnota není autovalidována.
-        /// </summary>
-        private Rectangle? __CurrentGroupBackground;
-        /// <summary>
-        /// Souřadnice pozadí titulku.
-        /// Tato hodnota není autovalidována.
-        /// </summary>
-        private Rectangle? __CurrentTitleBackground;
-        /// <summary>
-        /// Souřadnice textu titulku = zmenšeno o Padding od <see cref="__CurrentTitleBackground"/>.
-        /// Tato hodnota není autovalidována.
-        /// </summary>
-        private Rectangle? __CurrentTitleTextBounds;
-        /// <summary>
-        /// Souřadnice linky podtržení titulku.
-        /// Tato hodnota není autovalidována.
-        /// </summary>
-        private Rectangle? __CurrentTitleLineBounds;
-        /// <summary>
-        /// Souřadnice pozadí contentu (prvky).
-        /// Tato hodnota není autovalidována.
-        /// </summary>
-        private Rectangle? __CurrentContentBackground;
-        /// <summary>
-        /// Souřadnice prvků = zmenšeno o Padding od <see cref="__CurrentContentBackground"/>.
-        /// Tato hodnota není autovalidována.
-        /// </summary>
-        private Rectangle? __CurrentContentBounds;
-        /// <summary>
-        /// Metoda vrátí aktuální viditelnou souřadnici daného Current prostoru.
-        /// Na vstupu je souřadnice v koordinátech grupy, na výstupu je v koordinátech controlu.
-        /// </summary>
-        /// <param name="currentBounds"></param>
+        /// <param name="absolutePoint"></param>
         /// <returns></returns>
-        private Rectangle? _GetVisibleBounds(Rectangle? currentBounds)
+        public bool IsVisibleOnPoint(Point absolutePoint)
         {
-            var visibleGroupBounds = __VisibleGroupBounds;
-            if (visibleGroupBounds.HasValue && currentBounds.HasValue) return currentBounds.Value.Add(visibleGroupBounds.Value.Location);
-            return null;
-        }
-        /// <summary>
-        /// Fyzické pixelové souřadnice této grupy na vizuálním controlu, kde se nyní tento prvek nachází.
-        /// Jde o vizuální souřadnice v koordinátech controlu, odpovídají např. pohybu myši.
-        /// Může být null, pak prvek není zobrazen. Null je i po invalidaci <see cref="InvalidateBounds()"/>.
-        /// Tuto hodnotu sem ukládá řídící třída v procesu kreslení jako reálné souřadnice, kam byl prvek vykreslen.
-        /// </summary>
-        public Rectangle? VisibleGroupBounds { get { return __VisibleGroupBounds; } set { __VisibleGroupBounds = value; } }
-        private Rectangle? __VisibleGroupBounds;
-        /// <summary>
-        /// Vrátí true, pokud this prvek se nachází v rámci dané virtuální souřadnice.
-        /// Tedy pokud souřadnice <see cref="CurrentGroupBounds"/> se alespoň zčásti nacházejí uvnitř souřadného prostoru dle parametru <paramref name="virtualBounds"/>.
-        /// </summary>
-        /// <param name="virtualBounds"></param>
-        /// <returns></returns>
-        public bool IsVisibleInVirtualBounds(Rectangle virtualBounds)
-        {
-            return (IsVisible && virtualBounds.Contains(CurrentGroupBounds, true));
-        }
-        /// <summary>
-        /// Vrátí true, pokud this grupa má nastaveny viditelné souřadnice v <see cref="VisibleGroupBounds"/> 
-        /// a pokud daný bod (souřadný systém shodný s <see cref="VisibleGroupBounds"/>) se nachází v prostoru this grupy
-        /// </summary>
-        /// <param name="point"></param>
-        /// <returns></returns>
-        public bool IsVisibleOnPoint(Point point)
-        {
-            return (IsVisible && VisibleGroupBounds.HasValue && VisibleGroupBounds.Value.Contains(point));
+            return (IsVisible && AbsoluteGroupBackgroundBounds.Contains(absolutePoint));
         }
         #endregion
         #region Kreslení grupy (Border, Background, Title)
@@ -2237,8 +2291,6 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="hasFocus"></param>
         internal void PaintGroup(DxBufferedGraphicPaintArgs e, bool onMouse, bool hasFocus)
         {
-            if (!this.VisibleGroupBounds.HasValue) return;
-            _CheckCurrentBounds();
             _PaintBorder(e, onMouse, hasFocus);
             _PaintBackgrounds(e, onMouse, hasFocus);
         }
@@ -2250,16 +2302,12 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="hasFocus"></param>
         private void _PaintBorder(DxBufferedGraphicPaintArgs e, bool onMouse, bool hasFocus)
         {
+            if (!this.CurrentBorderExists) return;
+
             var appearance = IGroup.BorderAppearance;
             if (appearance == null) return;
 
-            var bounds = __CurrentBorderBounds;
-            if (!bounds.HasValue) return;
-
-            int sizes = __CurrentCoordinates.BorderRange?.Size ?? 0;
-            if (sizes <= 0) return;
-
-            DxDataForm.PaintFrame(e, _GetVisibleBounds(bounds), sizes, appearance, onMouse, hasFocus);
+            DxDataForm.PaintFrame(e, AbsoluteBorderOuterBounds, CurrentBorderSizes, appearance, onMouse, hasFocus);
         }
         /// <summary>
         /// Vykreslí všechna pozadí ve správném pořadí
@@ -2269,24 +2317,44 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="hasFocus"></param>
         private void _PaintBackgrounds(DxBufferedGraphicPaintArgs e, bool onMouse, bool hasFocus)
         {
-            var groupTitle = IGroup.GroupHeader;
-            bool hasTitle = (groupTitle != null);
-            if (hasTitle)
-                DxDataForm.PaintBackground(e, _GetVisibleBounds(__CurrentTitleBackground), groupTitle.BackgroundAppearance, onMouse, hasFocus, false);     // Pozadí pod titulkem
+            var iGroup = IGroup;
+            if (CurrentHeaderExists)
+                DxDataForm.PaintBackground(e, AbsoluteHeaderBackgroundBounds, iGroup.GroupHeader?.BackgroundAppearance, onMouse, hasFocus, false);   // Pozadí pod titulkem
 
-            DxDataForm.PaintBackground(e, _GetVisibleBounds(__CurrentContentBackground), IGroup.BackgroundAppearance, onMouse, hasFocus, false);          // Pozadí pod obsahem
+            if (CurrentContentExists)
+                DxDataForm.PaintBackground(e, AbsoluteContentBackgroundBounds, iGroup.BackgroundAppearance, onMouse, hasFocus, false);               // Pozadí pod obsahem
 
-            if (hasTitle)
-                DxDataForm.PaintBackground(e, _GetVisibleBounds(__CurrentTitleLineBounds), groupTitle.LineAppearance, onMouse, hasFocus, false);           // Linka, nad obrázkem, pod texty
+            if (CurrentLineExists)
+                DxDataForm.PaintBackground(e, AbsoluteLineBounds, iGroup.GroupHeader?.LineAppearance, onMouse, hasFocus, false);                     // Linka, nad obrázkem, pod texty
 
-            DxDataForm.PaintImage(e, _GetVisibleBounds(__CurrentGroupBackground), IGroup.BackgroundAppearance);                                           // Obrázek na pozadí celé grupy
-
+            DxDataForm.PaintImage(e, AbsoluteGroupBackgroundBounds, iGroup.BackgroundAppearance);                                                    // Obrázek na pozadí celé grupy
         }
+        /// <summary>
+        /// Absolutní souřadnice Border, vnější
+        /// </summary>
+        protected Rectangle AbsoluteBorderOuterBounds { get { return this.GetAbsoluteBounds(CurrentBorderOuterBounds); } }
+        /// <summary>
+        /// Absolutní souřadnice pozadí celé grupy (Header + Content)
+        /// </summary>
+        protected Rectangle AbsoluteGroupBackgroundBounds { get { return this.GetAbsoluteBounds(CurrentGroupBackgroundBounds); } }
+        /// <summary>
+        /// Absolutní souřadnice pozadí pod Header
+        /// </summary>
+        protected Rectangle AbsoluteHeaderBackgroundBounds{ get { return this.GetAbsoluteBounds(CurrentHeaderBackgroundBounds); } }
+        /// <summary>
+        /// Absolutní souřadnice Line
+        /// </summary>
+        protected Rectangle AbsoluteLineBounds{ get { return this.GetAbsoluteBounds(CurrentLineBounds); } }
+        /// <summary>
+        /// Absolutní souřadnice pozadí pod Content
+        /// </summary>
+        protected Rectangle AbsoluteContentBackgroundBounds{ get { return this.GetAbsoluteBounds(CurrentContentBackgroundBounds); } }
         #endregion
         #region class Coordinates : souřadnice různých míst v grupě
         /// <summary>
-        /// Souřadný systém uvnitř grupy, určuje umístění borderu, titulkového prostoru a prostoru pro obsah,
-        /// včetně linky v titulku a včetně zachování Padding.
+        /// Souřadný systém uvnitř grupy.
+        /// Určuje souřadnice borderu, titulkového prostoru a prostoru pro obsah;
+        /// včetně linky v titulku - se zachováním Paddingu.
         /// </summary>
         private class Coordinates
         {
@@ -2318,15 +2386,15 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             /// Jde o všechny pixely typu Border, Padding, TitleHeight.
             /// Tato velikost se má přidat k velikosti Content.Summary, aby byla vypočtena nejmenší potřebná velikost grupy.
             /// <para/>
-            /// Tuto hodnotu je možno číst po zadání <see cref="BorderRange"/>, <see cref="Padding"/>, <see cref="HeaderHeight"/>.
+            /// Tuto hodnotu je možno číst po zadání <see cref="BorderRange"/>, <see cref="ContentPadding"/>, <see cref="HeaderHeight"/>.
             /// </summary>
             public Size SizeOverhead
             {
                 get
                 {
                     int bs = 2 * _BorderEnd;
-                    int pw = __PaddingLeft + __PaddingRight;
-                    int ph = __PaddingTop + __PaddingBottom;
+                    int pw = __ContentPaddingLeft + __ContentPaddingRight;
+                    int ph = __ContentPaddingTop + __ContentPaddingBottom;
                     var th = HeaderHeight;
                     return new Size(bs + pw, bs + ph + th);
                 }
@@ -2341,20 +2409,20 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
 
             */
             #endregion
-            #region Border a Padding
+            #region Border, BorderOuterBounds, GroupBackgroundBounds
             /// <summary>
             /// Bude se kreslit Border? To je tehdy, když <see cref="BorderRange"/> má kladnou velikost.
             /// Nicméně i když se Border nekreslí, akceptuje se jeho hodnota <see cref="BorderRange"/>.Begin, o kterou se zmenšuje vnější prostor.
             /// Prostor mezi začátkem grupy (<see cref="Bounds"/>) a začátkem Borderu se nijak nevykresluje, a má tedy barvu a vzhled parent controlu.
             /// </summary>
-            public bool VisibleBorder { get { return (__BorderEnd > __BorderBegin); } }
+            public bool HasBorder { get { return (__BorderEnd > __BorderBegin); } }
             /// <summary>
-            /// Umístění a velikost Borderu, měřeno od samotného okraje grupy směrem dovnitř, bez <see cref="Padding"/>.
+            /// Umístění a velikost Borderu, měřeno od samotného okraje grupy směrem dovnitř, bez <see cref="ContentPadding"/>.
             /// Pokud border není viditelný, je zde null.
             /// </summary>
             public Int32Range BorderRange
             {
-                get { return (VisibleBorder ? new Int32Range(__BorderBegin, __BorderEnd) : null); }
+                get { return (HasBorder ? new Int32Range(__BorderBegin, __BorderEnd) : null); }
                 set
                 {
                     _BorderBegin = (value?.Begin ?? 0);
@@ -2385,26 +2453,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             /// </summary>
             private int _BorderThick { get { return _BorderEnd - _BorderBegin; } }
             /// <summary>
-            /// Vnitřní okraje mezi vnitřkem Borderu a začátkem Inner prostoru pro prvky.
-            /// Záporné hodnoty jsou nahrazeny 0.
-            /// </summary>
-            public Padding Padding
-            {
-                get { return new Padding(__PaddingLeft, __PaddingTop, __PaddingRight, __PaddingBottom); }
-                set
-                {
-                    __PaddingLeft = (value.Left > 0 ? value.Left : 0);
-                    __PaddingTop = (value.Top > 0 ? value.Top : 0);
-                    __PaddingRight = (value.Right > 0 ? value.Right : 0);
-                    __PaddingBottom = (value.Bottom > 0 ? value.Bottom : 0);
-                }
-            }
-            private int __PaddingLeft;
-            private int __PaddingTop;
-            private int __PaddingRight;
-            private int __PaddingBottom;
-            /// <summary>
-            /// Souřadnice vnějšího Borderu, může být Empty když <see cref="VisibleBorder"/> je false.
+            /// Souřadnice vnějšího Borderu, může být Empty když <see cref="HasBorder"/> je false.
             /// Je relativní v rámci grupy.
             /// Je umístěn v prostoru <see cref="Bounds"/> s odstupem <see cref="_BorderBegin"/> od všech čtyř stran.
             /// </summary>
@@ -2412,13 +2461,25 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             {
                 get
                 {
-                    if (!VisibleBorder) return Rectangle.Empty;
+                    if (!HasBorder) return Rectangle.Empty;
                     int bb = _BorderBegin;
                     return new Rectangle(bb, bb, Size.Width - 2 * bb, Size.Height - 2 * bb);
                 }
             }
             /// <summary>
-            /// Souřadnice pozadí celé grupy, je přímo uvnitř Borderu (tzn. v rámci tohoto <see cref="GroupBackgroundBounds"/> se nachází i <see cref="Padding"/>)
+            /// Šířky rámečku Border.
+            /// </summary>
+            public Padding BorderSizes 
+            { 
+                get 
+                {
+                    if (!HasBorder) return Padding.Empty;
+                    int bt = _BorderThick;
+                    return new Padding(bt);
+                }
+            }
+            /// <summary>
+            /// Souřadnice pozadí celé grupy, je přímo uvnitř Borderu (tzn. v rámci tohoto <see cref="GroupBackgroundBounds"/> se nachází i <see cref="ContentPadding"/>)
             /// V tomto prostoru se nahoře nachází <see cref="HeaderBackgroundBounds"/> a dole <see cref="ContentBackgroundBounds"/>.
             /// Relativně k this grupě.
             /// </summary>
@@ -2437,7 +2498,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             /// </summary>
             public bool HasHeader { get { return (__HeaderHeight > 0); } }
             /// <summary>
-            /// Výška prostoru pro titulek. Nikdy není záporná, hodnota 0 = není titulek.
+            /// Výška prostoru pro titulek. 
+            /// Nikdy není záporná, hodnota 0 = není titulek (pak <see cref="HasHeader"/> je false).
+            /// Uvnitř této výšky se nachází okraje <see cref="HeaderPadding"/> a v nich pak <see cref="HeaderBounds"/> = prostor pro obsah záhlaví.
+            /// Uvnitř této výšky se rovněž nachází linka <see cref="LineBounds"/>.
             /// </summary>
             public int HeaderHeight
             {
@@ -2451,7 +2515,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             /// </summary>
             public Padding HeaderPadding
             {
-                get { return new Padding(__HeaderPaddingLeft, __HeaderPaddingTop, __HeaderPaddingRight, __HeaderPaddingBottom); }
+                get { return (HasHeader ? new Padding(__HeaderPaddingLeft, __HeaderPaddingTop, __HeaderPaddingRight, __HeaderPaddingBottom) : Padding.Empty); }
                 set
                 {
                     __HeaderPaddingLeft = (value.Left > 0 ? value.Left : 0);
@@ -2465,17 +2529,71 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             private int __HeaderPaddingRight;
             private int __HeaderPaddingBottom;
             /// <summary>
-            /// Je viditelná linka v oblasti titulku?
+            /// Úplně okraje mezi vnějším obrysem grupy a vnitřním prostorem Header = obsahuje <see cref="BorderRange"/> + <see cref="HeaderPadding"/>.
+            /// Pokud neexistuje Header (<see cref="HasHeader"/> je false), pak je zde <see cref="Padding.Empty"/>.
+            /// Ve směru Y neobsahuje nic ve smyslu Content.
             /// </summary>
-            public bool VisibleLine { get { return HasHeader && (_LineYEnd > _LineYBegin); } }
+            public Padding HeaderTotalPadding
+            {
+                get
+                {
+                    if (!HasHeader) return Padding.Empty;
+
+                    int b = _BorderEnd;
+                    return new Padding(b + __HeaderPaddingLeft, b + __HeaderPaddingTop, b + __HeaderPaddingRight, b + __HeaderPaddingBottom);
+                }
+            }
             /// <summary>
-            /// Umístění linky v oblasti titulku, měřeno od horního okraje titulku, bez <see cref="Padding"/>.
+            /// Souřadnice pozadí titulku. 
+            /// Nachází se přesně uvnitř <see cref="GroupBackgroundBounds"/>, a má výšku <see cref="HeaderHeight"/>.
+            /// Je relativní v rámci this grupy.
+            /// <para/>
+            /// Tento prostor má být vybarven barvou pozadí a případně obsahuje obrázek pozadí ve vhodném zarovnání.
+            /// Pak je obrázek zarovnán přesně k Borderu.
+            /// </summary>
+            public Rectangle HeaderBackgroundBounds
+            {
+                get
+                {
+                    if (!HasHeader) return Rectangle.Empty;
+                    var bounds = GroupBackgroundBounds;
+                    var height = HeaderHeight;
+                    return new Rectangle(bounds.X, bounds.Y, bounds.Width, height);
+                }
+            }
+            /// <summary>
+            /// Prostor, ve kterém jsou umístěny prvky Headeru = texty, labely, buttony.
+            /// Je umístěn v <see cref="HeaderBackgroundBounds"/> a je oproti němu zmenšen o <see cref="HeaderPadding"/> dovnitř.
+            /// Je relativní v rámci this grupy.
+            /// </summary>
+            public Rectangle HeaderBounds
+            {
+                get
+                {
+                    if (!HasHeader) return Rectangle.Empty;
+                    var bounds = HeaderBackgroundBounds;
+                    int pl = __HeaderPaddingLeft;
+                    int pt = __HeaderPaddingTop;
+                    int pw = pl + __HeaderPaddingRight;
+                    int ph = pt + __HeaderPaddingBottom;
+                    return new Rectangle(bounds.X + pl, bounds.Y + pt, bounds.Width - pw, bounds.Height - ph);
+                }
+            }
+            #endregion
+            #region Line
+            /// <summary>
+            /// Je viditelná linka v oblasti titulku?
+            /// Obsahuje true, pokud existuje záhlaví, a jsou zadány souřadnice linky, a nejsme <see cref="IsMinimised"/>
+            /// </summary>
+            public bool HasLine { get { return HasHeader && (_LineYEnd > _LineYBegin) && !IsMinimised; } }
+            /// <summary>
+            /// Umístění linky v oblasti titulku, měřeno od horního okraje titulku, bez <see cref="ContentPadding"/>.
             /// Pozor, relativně k <see cref="HeaderBackgroundBounds"/>.
             /// Pokud linka není viditelná, je zde null.
             /// </summary>
-            public Int32Range LineRange
+            public Int32Range LineYRange
             {
-                get { return (VisibleLine ? new Int32Range(_LineYBegin, _LineYEnd) : null); }
+                get { return (HasLine ? new Int32Range(_LineYBegin, _LineYEnd) : null); }
                 set
                 {
                     __LineYBegin = (value?.Begin ?? 0);
@@ -2495,68 +2613,38 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             private int __LineYBegin;
             private int __LineYEnd;
             /// <summary>
-            /// Souřadnice pozadí titulku. 
-            /// Nachází se přesně uvnitř <see cref="GroupBackgroundBounds"/>, a má výšku <see cref="HeaderHeight"/>.
-            /// Je relativní v rámci this grupy.
-            /// <para/>
-            /// Tento prostor má být vybarven barvou pozadí a případně obsahuje obrázek pozadí ve vhodném zarovnání.
-            /// </summary>
-            public Rectangle HeaderBackgroundBounds
-            {
-                get
-                {
-                    if (!HasHeader) return Rectangle.Empty;
-                    var bounds = GroupBackgroundBounds;
-                    var height = HeaderHeight;
-                    return new Rectangle(bounds.X, bounds.Y, bounds.Width, height);
-                }
-            }
-            /// <summary>
-            /// Prostor, ve kterém je vykreslen text titulku a případné další prvky.
-            /// Je umístěn v <see cref="HeaderBackgroundBounds"/> a je oproti němu zmenšen o <see cref="HeaderPadding"/> dovnitř.
-            /// Je relativní v rámci this grupy.
-            /// </summary>
-            public Rectangle TitleBounds
-            {
-                get
-                {
-                    if (!HasHeader) return Rectangle.Empty;
-                    var bounds = HeaderBackgroundBounds;
-                    int pl = __HeaderPaddingLeft;
-                    int pt = __HeaderPaddingTop;
-                    int pw = pl + __HeaderPaddingRight;
-                    int ph = pt + __HeaderPaddingBottom;
-                    return new Rectangle(bounds.X + pl, bounds.Y + pt, bounds.Width - pw, bounds.Height - ph);
-                }
-            }
-            /// <summary>
             /// Prostor, ve kterém je vykreslena linka titulku. Může být Empty.
             /// Obecně je umístěn v <see cref="HeaderBackgroundBounds"/>.
-            /// Ve směru X je od okrajů odsazen o Padding, ve směru Y nikoliv, ale je umístěn na pixelech <see cref="LineRange"/> vůči souřadnici <see cref="HeaderBackgroundBounds"/>.Y
+            /// Ve směru X je od okrajů odsazen o Padding, ve směru Y nikoliv, ale je umístěn na pixelech <see cref="LineYRange"/> vůči souřadnici <see cref="HeaderBackgroundBounds"/>.Y
             /// Je relativní v rámci this grupy.
             /// </summary>
-            public Rectangle TitleLineBounds
+            public Rectangle LineBounds
             {
                 get
                 {
-                    if (!HasHeader || !VisibleLine) return Rectangle.Empty;
+                    if (!HasHeader || !HasLine) return Rectangle.Empty;
                     var bounds = HeaderBackgroundBounds;
                     int lb = _LineYBegin;
                     int le = _LineYEnd;
                     if (le < lb) return Rectangle.Empty;
-                    int pl = __PaddingLeft;
-                    int pw = pl + __PaddingRight;
+                    int pl = __ContentPaddingLeft;
+                    int pw = pl + __ContentPaddingRight;
                     return new Rectangle(bounds.X + pl, bounds.Y + lb, bounds.Width - pw, le - lb);
                 }
             }
             #endregion
-            #region Content a Collapsed
+            #region Content
+            /// <summary>
+            /// Obsahuje true, pokud se má zobrazovat Content = nejsme <see cref="IsMinimised"/>
+            /// </summary>
+            public bool HasContent { get { return !IsMinimised; } }
             /// <summary>
             /// Souřadnice pozadí vlastního obsahu pod titulkem.
             /// Nachází se přesně uvnitř <see cref="GroupBackgroundBounds"/>, nahoře je zmenšený o prostor titulku a má souřadnici Y = <see cref="HeaderHeight"/>.
             /// Je relativní v rámci this grupy.
             /// <para/>
             /// Tento prostor má být vybarven barvou pozadí a případně obsahuje obrázek pozadí ve vhodném zarovnání.
+            /// Uvnitř tohoto prostoru se nachází <see cref="ContentPadding"/>, a v něm pak <see cref="ContentBounds"/>.
             /// </summary>
             public Rectangle ContentBackgroundBounds
             {
@@ -2569,8 +2657,41 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 }
             }
             /// <summary>
+            /// Vnitřní okraje mezi vnitřkem Borderu a začátkem reálného prostoru Content pro prvky <see cref="ContentBounds"/>.
+            /// Záporné hodnoty jsou nahrazeny 0.
+            /// </summary>
+            public Padding ContentPadding
+            {
+                get { return new Padding(__ContentPaddingLeft, __ContentPaddingTop, __ContentPaddingRight, __ContentPaddingBottom); }
+                set
+                {
+                    __ContentPaddingLeft = (value.Left > 0 ? value.Left : 0);
+                    __ContentPaddingTop = (value.Top > 0 ? value.Top : 0);
+                    __ContentPaddingRight = (value.Right > 0 ? value.Right : 0);
+                    __ContentPaddingBottom = (value.Bottom > 0 ? value.Bottom : 0);
+                }
+            }
+            private int __ContentPaddingLeft;
+            private int __ContentPaddingTop;
+            private int __ContentPaddingRight;
+            private int __ContentPaddingBottom;
+            /// <summary>
+            /// Úplné okraje mezi vnějším obrysem grupy a vnitřním prostorem Content = obsahuje <see cref="BorderRange"/> + <see cref="HeaderPadding"/>.
+            /// Pozor: Ve směru Y obsahuje i kompletní prostor pro Header = <see cref="HeaderHeight"/>, pokud je definován.
+            /// Lze tedy z požadovaného vnitřního prostoru pro Content po přičtení tohoto <see cref="ContentTotalPadding"/> určit vnější rozměr grupy.
+            /// </summary>
+            public Padding ContentTotalPadding
+            {
+                get 
+                {
+                    int b = _BorderEnd;
+                    var dy = (HasHeader ? HeaderHeight : 0);
+                    return new Padding(b + __ContentPaddingLeft, b + dy + __ContentPaddingTop, b + __ContentPaddingRight, b + __ContentPaddingBottom);
+                }
+            }
+            /// <summary>
             /// Souřadnice vlastního obsahu = jednotlivé prvky grupy.
-            /// Nachází se přesně uvnitř <see cref="ContentBackgroundBounds"/>, a je zmenšen o <see cref="Padding"/> dovnitř.
+            /// Nachází se přesně uvnitř <see cref="ContentBackgroundBounds"/>, a je zmenšen o <see cref="ContentPadding"/> dovnitř.
             /// Je relativní v rámci this grupy.
             /// <para/>
             /// Relativně v tomto prostoru se nachází jednotlivé prvky grupy.
@@ -2580,39 +2701,64 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
                 get
                 {
                     var bounds = ContentBackgroundBounds;
-                    int pl = __PaddingLeft;
-                    int pt = __PaddingTop;
-                    int pw = pl + __PaddingRight;
-                    int ph = pt + __PaddingBottom;
+                    int pl = __ContentPaddingLeft;
+                    int pt = __ContentPaddingTop;
+                    int pw = pl + __ContentPaddingRight;
+                    int ph = pt + __ContentPaddingBottom;
                     return new Rectangle(bounds.X + pl, bounds.Y + pt, bounds.Width - pw, bounds.Height - ph);
                 }
             }
+            #endregion
+            #region Minimized
+            /// <summary>
+            /// Lze řídit, zda grupa může být Minimized.
+            /// Pokud je zde true, pak grupa zobrazuje odpovídající tlačítko a reaguje na hodnotu <see cref="IsMinimised"/>.
+            /// </summary>
+            public bool EnableMinimise
+            {
+                get { return __EnableMinimise; }
+                set { __EnableMinimise = value; }
+            }
+            private bool __EnableMinimise;
+            /// <summary>
+            /// Lze řídit, zda je/není grupa Minimized.
+            /// Pokud je Minimized, pak grupa navenek zobrazuje jen Header, a nikoli Line a Content.
+            /// Pokud je false (výchozí stav), pak je grupa standardní.
+            /// Setovat <see cref="IsMinimised"/> = true má význam pouze u grupy, která má povoleno <see cref="EnableMinimise"/> = true.
+            /// Setování hodnoty změní odpovídající hodnoty v this instanci, ale samo o sobě nevyvolá změnu vzhledu - je třeba zavolat vhodný Refresh.
+            /// </summary>
+            public bool IsMinimised
+            {
+                get { return __EnableMinimise && __IsMinimised; }
+                set { __IsMinimised = value; }
+            }
+            private bool __IsMinimised;
             #endregion
             #region Zoomování
             /// <summary>
             /// Vypočítá svoje vnitřní hodnoty na aktuální, podle dodaných hodnot designových a podle daného DPI.
             /// Přepočte i hodnoty <see cref="Location"/> a <see cref="Size"/>, tedy i <see cref="Bounds"/>.
             /// </summary>
-            /// <param name="designCoordinates"></param>
+            /// <param name="sourceDesignCoordinates"></param>
             /// <param name="currentDpi"></param>
-            internal void ZoomToGui(Coordinates designCoordinates, int currentDpi)
+            internal void ZoomToGui(Coordinates sourceDesignCoordinates, int currentDpi)
             {
-                this.__HeaderHeight = zoomToGui(designCoordinates.__HeaderHeight);
-                this.__BorderBegin = zoomToGui(designCoordinates.__BorderBegin);
-                this.__BorderEnd = zoomToGui(designCoordinates.__BorderEnd);
-                this.__HeaderPaddingLeft = zoomToGui(designCoordinates.__HeaderPaddingLeft);
-                this.__HeaderPaddingTop = zoomToGui(designCoordinates.__HeaderPaddingTop);
-                this.__HeaderPaddingRight = zoomToGui(designCoordinates.__HeaderPaddingRight);
-                this.__HeaderPaddingBottom = zoomToGui(designCoordinates.__HeaderPaddingBottom);
-                this.__LineYBegin = zoomToGui(designCoordinates.__LineYBegin);
-                this.__LineYEnd = zoomToGui(designCoordinates.__LineYEnd);
-                this.__PaddingLeft = zoomToGui(designCoordinates.__PaddingLeft);
-                this.__PaddingTop = zoomToGui(designCoordinates.__PaddingTop);
-                this.__PaddingRight = zoomToGui(designCoordinates.__PaddingRight);
-                this.__PaddingBottom = zoomToGui(designCoordinates.__PaddingBottom);
+                this.__HeaderHeight = zoomToGui(sourceDesignCoordinates.__HeaderHeight);
+                this.__BorderBegin = zoomToGui(sourceDesignCoordinates.__BorderBegin);
+                this.__BorderEnd = zoomToGui(sourceDesignCoordinates.__BorderEnd);
+                this.__HeaderPaddingLeft = zoomToGui(sourceDesignCoordinates.__HeaderPaddingLeft);
+                this.__HeaderPaddingTop = zoomToGui(sourceDesignCoordinates.__HeaderPaddingTop);
+                this.__HeaderPaddingRight = zoomToGui(sourceDesignCoordinates.__HeaderPaddingRight);
+                this.__HeaderPaddingBottom = zoomToGui(sourceDesignCoordinates.__HeaderPaddingBottom);
+                this.__LineYBegin = zoomToGui(sourceDesignCoordinates.__LineYBegin);
+                this.__LineYEnd = zoomToGui(sourceDesignCoordinates.__LineYEnd);
+                this.__ContentPaddingLeft = zoomToGui(sourceDesignCoordinates.__ContentPaddingLeft);
+                this.__ContentPaddingTop = zoomToGui(sourceDesignCoordinates.__ContentPaddingTop);
+                this.__ContentPaddingRight = zoomToGui(sourceDesignCoordinates.__ContentPaddingRight);
+                this.__ContentPaddingBottom = zoomToGui(sourceDesignCoordinates.__ContentPaddingBottom);
 
-                this.__Location = DxComponent.ZoomToGui(designCoordinates.__Location, currentDpi);
-                this.__Size = DxComponent.ZoomToGui(designCoordinates.__Size, currentDpi);
+                this.__Location = DxComponent.ZoomToGui(sourceDesignCoordinates.__Location, currentDpi);
+                this.__Size = DxComponent.ZoomToGui(sourceDesignCoordinates.__Size, currentDpi);
 
                 int zoomToGui(int designValue)
                 {
@@ -2631,38 +2777,38 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
     /// S ohledem na rozmístění prvků v rámci <see cref="DxDataForm"/> nejde o "sloupec prvků pod sebou" 
     /// ale o definici jednoho viditelného prvku, který se může opakovat pro jednotlivé řádky.
     /// </summary>
-    internal class DxDataFormItem
+    internal class DxDataFormItem : DxLayoutItem
     {
         #region Konstruktor, vlastník, prvky
         /// <summary>
         /// Vytvoří a vrátí List obsahující <see cref="DxDataFormItem"/>, vytvořené z dodaných instancí <see cref="IDataFormColumn"/>.
         /// </summary>
         /// <param name="dataGroup"></param>
-        /// <param name="isTitleItems">false pro běžné columny v prostoru Content, true pro columny v prostoru Title (=text titulku, ikony, atd)</param>
+        /// <param name="isHeaderItems">false pro běžné columny v prostoru Content, true pro columny v prostoru Header (=text titulku, ikony, atd)</param>
         /// <param name="iItems"></param>
         /// <returns></returns>
-        public static List<DxDataFormItem> CreateList(DxDataFormGroupDef dataGroup, bool isTitleItems, IEnumerable<IDataFormColumn> iItems)
+        public static List<DxDataFormItem> CreateList(DxDataFormGroupDef dataGroup, bool isHeaderItems, IEnumerable<IDataFormColumn> iItems)
         {
             List<DxDataFormItem> dxItems = new List<DxDataFormItem>();
-            AddToList(dataGroup, isTitleItems, iItems, dxItems);
+            AddToList(dataGroup, isHeaderItems, iItems, dxItems);
             return dxItems;
         }
         /// <summary>
         /// Naplní do dodaného Listu prvky <see cref="DxDataFormItem"/> vytvořené z dodaných instancí <see cref="IDataFormColumn"/>.
         /// </summary>
         /// <param name="dataGroup"></param>
-        /// <param name="isTitleItems">false pro běžné columny v prostoru Content, true pro columny v prostoru Title (=text titulku, ikony, atd)</param>
+        /// <param name="isHeaderItems">false pro běžné columny v prostoru Content, true pro columny v prostoru Header (=text titulku, ikony, atd)</param>
         /// <param name="iItems"></param>
         /// <param name="dxItems"></param>
         /// <returns></returns>
-        public static void AddToList(DxDataFormGroupDef dataGroup, bool isTitleItems, IEnumerable<IDataFormColumn> iItems, List<DxDataFormItem> dxItems)
+        public static void AddToList(DxDataFormGroupDef dataGroup, bool isHeaderItems, IEnumerable<IDataFormColumn> iItems, List<DxDataFormItem> dxItems)
         {
             if (iItems != null)
             {
                 foreach (IDataFormColumn iItem in iItems)
                 {
                     if (iItem == null) continue;
-                    dxItems.Add(new DxDataFormItem(dataGroup, isTitleItems, iItem));
+                    dxItems.Add(new DxDataFormItem(dataGroup, isHeaderItems, iItem));
                 }
             }
         }
@@ -2676,13 +2822,13 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             : base()
         {
             __DataGroup = dataGroup;
-            __IsTitleItem = isTitleItem;
+            __IsHeaderItem = isTitleItem;
             __IItem = iItem;
         }
         /// <summary>Vlastník - <see cref="DxDataFormGroupDef"/></summary>
         private DxDataFormGroupDef __DataGroup;
         /// <summary>Hodnota false = prvek je umístěn v prostoru Content / Hodnota true = prvek je umístěn v prostoru Title</summary>
-        private bool __IsTitleItem;
+        private bool __IsHeaderItem;
         /// <summary>Deklarace prvku</summary>
         private IDataFormColumn __IItem;
         /// <summary>
@@ -2697,10 +2843,12 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Vlastník - <see cref="DxDataFormGroup"/>
         /// </summary>
         public DxDataFormGroupDef DataGroup { get { return __DataGroup; } }
-        /// <summary>Hodnota false = prvek je umístěn v prostoru Content / Hodnota true = prvek je umístěn v prostoru Title</summary>
-        public bool IsTitleItem { get { return __IsTitleItem; } }
+        /// <summary>Hodnota true = prvek je umístěn v prostoru Header / false = jinde (nejspíš <see cref="IsContentItem"/>)</summary>
+        public bool IsHeaderItem { get { return __IsHeaderItem; } }
+        /// <summary>Hodnota true = prvek je umístěn v prostoru Content / false = jinde (nejspíš <see cref="IsHeaderItem"/>)</summary>
+        public bool IsContentItem { get { return !__IsHeaderItem; } }
         /// <summary>
-        /// Deklarace prvku
+        /// Deklarace vlastností prvku = od designera
         /// </summary>
         public IDataFormColumn IItem { get { return __IItem; } }
         #endregion
@@ -2710,9 +2858,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         public DataFormColumnType ItemType { get { return __IItem.ColumnType; } }
         /// <summary>
-        /// Prvek je viditelný
+        /// Viditelnost prvku, pochází z <see cref="IDataFormColumn.IsVisible"/>
         /// </summary>
-        public bool IsVisible { get { return IItem.IsVisible; } }
+        public override bool IsVisible { get { return IItem.IsVisible; } set { } }
         /// <summary>
         /// Řízení barevných indikátorů u prvku
         /// </summary>
@@ -2735,78 +2883,37 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             return false;
         }
         #endregion
-        #region Souřadnice designové, aktuální, viditelné
+        #region Souřadnice prvku Current
         /// <summary>
-        /// Souřadnice designové, v logických koordinátech (kde bod {0,0} je počátek datového prostoru zdejší grupy, bez posunu ScrollBarem).
-        /// Typicky se vztahují k 96 DPI a Zoom 100%.
-        /// Hodnota se přebírá z datového prvku <see cref="IItem"/>.
+        /// Metoda určí zdejší aktuální souřadnici a velikost, podle dat v definici prvku a podle definice souřadnic v grupě
         /// </summary>
-        public Rectangle DesignBounds { get { return IItem.DesignBounds; } }
-        /// <summary>
-        /// Aktuální viditelné koordináty - přepočtené z <see cref="DesignBounds"/> na aktuálně platné DPI a Zoom.
-        /// <para/>
-        /// Jde o souřadnici absolutní v rámci <see cref="DxDataFormPanel"/>, tedy nejde o souřadnici relativní vzhledem ke grupě, kam prvek patří; 
-        /// tato souřadnice <see cref="CurrentBounds"/> již zahrnuje posun o počátek grupy <see cref="DxDataFormGroup.CurrentGroupOrigin"/>.
-        /// <para/>
-        /// Tato souřadnice ale není posunuta ScrollBarem (je absolutní).
-        /// Posunutá vizuální souřadnice je v <see cref="VisibleBounds"/>.
-        /// </summary>
-        public Rectangle CurrentBounds { get { this.CheckCurrentBounds(); return __CurrentBounds.Value; } }
-        private Rectangle? __CurrentBounds;
-        /// <summary>
-        /// Aktuální velikost prvku. Lze setovat (nezmění se umístění = <see cref="CurrentBounds"/>.Location).
-        /// <para/>
-        /// Setujme opatrně a jen v případě nutné potřeby, typicky tehdy, když konkrétní vizuální control nechce akceptovat předepsanou velikost (např. výška textboxu v jiném než očekávaném fontu).
-        /// Vložená hodnota zde zůstane (a bude obsažena i v <see cref="CurrentBounds"/>) do doby invalidace = než se změní Zoom nebo Skin aplikace.
-        /// </summary>
-        public Size CurrentSize
+        /// <param name="callHandler"></param>
+        protected override void RecalculateCurrentLayout(bool callHandler)
         {
-            get { this.CheckCurrentBounds(); return __CurrentBounds.Value.Size; }
-            set
-            {
-                this.CheckCurrentBounds();
-                __CurrentBounds = new Rectangle(__CurrentBounds.Value.Location, value);
-                if (__VisibleBounds.HasValue)
-                    __VisibleBounds = new Rectangle(__VisibleBounds.Value.Location, value);
-            }
+            var group = this.DataGroup;
+            var currentBounds = DxComponent.ZoomToGui(this.IItem.DesignBounds, this.CurrentDPI);                       // Souřadnice dané designem
+            var originPoint = (IsHeaderItem ? group.CurrentHeaderLocation : group.CurrentContentLocation);             // Výchozí bod (počátek oblasti) v rámci grupy
+            this.CurrentBounds = currentBounds.Add(originPoint);
         }
         /// <summary>
-        /// Invaliduje souřadnice <see cref="CurrentBounds"/> a <see cref="VisibleBounds"/>.
+        /// Souřadnice this prvku v prostoru parenta = grupy. 
+        /// Tyto souřadnice již zahrnují typ prvku (<see cref="IsHeaderItem"/> nebo <see cref="IsContentItem"/>)
+        /// a jsou tedy umístěny do tomu odpovídajícího prostoru v grupě.
+        /// Jde o souřadnice pixelové (přepočítané Zoomem a DPI).
         /// </summary>
-        public void InvalidateBounds()
-        {
-            __CurrentBounds = null;
-            __VisibleBounds = null;
+        public Rectangle CurrentBounds 
+        { 
+            get { return new Rectangle(CurrentLocalPoint, CurrentSize); } 
+            set { CurrentLocalPoint = value.Location; CurrentSize = value.Size; }
         }
-        /// <summary>
-        /// Zajistí, že souřadnice <see cref="__CurrentBounds"/> budou platné k souřadnicím designovým a k hodnotám aktuálním DPI
-        /// </summary>
-        private void CheckCurrentBounds()
-        {
-            if (!__CurrentBounds.HasValue)
-            {
-                if (!__IsTitleItem)
-                {   // Běžný prvek v rámci prostoru Content:
-                    var designBounds = this.DesignBounds.Add(this.DataGroup.DesignContentBounds.Location);       // Posunutí souřadnic o různé okraje grupy (Border, Title, Padding) vlevo a nahoře
-                    var currentRelativeBounds = DxComponent.ZoomToGui(designBounds, DataForm.CurrentDpi);        // Přepočet pomocí Zoomu a DPI
-                    __CurrentBounds = currentRelativeBounds.Add(this.DataGroup.CurrentGroupOrigin);              // Posunutí o reálný počátek parent grupy
-                }
-                else
-                {   // Titulkový prvek v rámci prostoru Title:
-                    var designBounds = this.DesignBounds.Add(this.DataGroup.DesignTitleBounds.Location);         // Posunutí souřadnic o různé okraje grupy (Border, TitlePadding) vlevo a nahoře
-                    var currentRelativeBounds = DxComponent.ZoomToGui(designBounds, DataForm.CurrentDpi);        // Přepočet pomocí Zoomu a DPI
-                    __CurrentBounds = currentRelativeBounds.Add(this.DataGroup.CurrentGroupOrigin);              // Posunutí o reálný počátek parent grupy
-                }
-            }
-        }
+
         /// <summary>
         /// Fyzické pixelové souřadnice tohoto prvku na vizuálním controlu, kde se nyní tento prvek nachází.
         /// Jde o vizuální souřadnice v koordinátech controlu, odpovídají např. pohybu myši.
         /// Může být null, pak prvek není zobrazen. Null je i po invalidaci <see cref="InvalidateBounds()"/>.
         /// Tuto hodnotu ukládá řídící třída v procesu kreslení jako reálné souřadnice, kam byl prvek vykreslen.
         /// </summary>
-        public Rectangle? VisibleBounds { get { return __VisibleBounds; } set { __VisibleBounds = value; } }
-        private Rectangle? __VisibleBounds;
+        public Rectangle? VisibleBounds { get { return __VisibleBounds; } set { __VisibleBounds = value; } } private Rectangle? __VisibleBounds;
         /// <summary>
         /// Vrátí true, pokud this prvek se nachází v rámci dané virtuální souřadnice.
         /// Tedy pokud souřadnice <see cref="CurrentBounds"/> se alespoň zčásti nacházejí uvnitř souřadného prostoru dle parametru <paramref name="virtualBounds"/>.
@@ -4714,6 +4821,25 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             LayoutChilds?.ForEach(c => c.ResetAbsolutePoint());
         }
         /// <summary>
+        /// Souřadnice tohoto prvku v absolutních pixelech = v rámci nejvyššího hostitele, počínaje <see cref="LayoutParent"/>.
+        /// Hodnota je v aktuálních pixelech (nikoli designové pixely) = přepočteno Zoomem a DPI.
+        /// </summary>
+        public virtual Rectangle CurrentAbsoluteBounds { get { return new Rectangle(CurrentAbsolutePoint, CurrentSize); } }
+        /// <summary>
+        /// Metoda vrátí absolutní pozici (v rámci Controlu) pro dodanou souřadnici typu Current = relativní k this instanci.
+        /// Pokud tedy this instance má někde ve svém prostoru vykreslit (nebo umístit) cokoliv na svoji Current souřadnici { 10, 5, 100, 20 }, pak bod { 10, 5 } se vztahuje k jejímu počátku.
+        /// Prvek jako takový je ale umístěn v rámci hierarchie Parentů na konkrétní absolutní souřadnici v Root controlu, 
+        /// a tato absolutní souřadnice <see cref="CurrentAbsolutePoint"/> = např { 240, 380 }, pak zdejší metoda vrátí dodanou souřadnici posunutou o aktuální <see cref="CurrentAbsolutePoint"/>,
+        /// výstupem tedy bude { (240+10), (380+5), 100,20 }.
+        /// </summary>
+        /// <param name="currentBounds"></param>
+        /// <returns></returns>
+        protected virtual Rectangle GetAbsoluteBounds(Rectangle currentBounds)
+        {
+            var origin = this.CurrentAbsolutePoint;
+            return currentBounds.Add(origin);
+        }
+        /// <summary>
         /// Provede reset souřadnic tohoto prvku <see cref="DxLayoutItem.CurrentLocalPoint"/> a <see cref="DxLayoutItem.CurrentSize"/> = provádí se vždy po změně Zoomu anebo DPI.
         /// Současně se provede stejný reset všech zdejších prvků <see cref="DxLayoutItem.LayoutChilds"/>.
         /// </summary>
@@ -4835,697 +4961,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
     #endregion
 
     // ???
-    #region class DxDataFormGroup : Třída zobrazující jednu konkrétní grupu, zobrazenou na konkrétním řádku na stránce
-    /// <summary>
-    /// <see cref="DxDataFormGroup"/> : Třída zobrazující jednu konkrétní grupu, zobrazenou na konkrétním řádku na stránce.
-    /// Grupa obsahuje prvky <see cref="DxDataFormItem"/>.
-    /// </summary>
-    internal class DxDataFormGroup
-    {
-        #region Konstruktor, vlastník, prvky
-        /// <summary>
-        /// Vytvoří a vrátí List obsahující <see cref="DxDataFormGroupDef"/>, vytvořený z dodaných instancí <see cref="IDataFormGroup"/>.
-        /// </summary>
-        /// <param name="dataPage"></param>
-        /// <param name="iGroups"></param>
-        /// <returns></returns>
-        public static List<DxDataFormGroup> CreateList(DxDataFormPageDef dataPage, IEnumerable<IDataFormGroup> iGroups)
-        {
-            List<DxDataFormGroup> dataGroups = new List<DxDataFormGroup>();
-            if (iGroups != null)
-            {
-                foreach (IDataFormGroup iGroup in iGroups)
-                {
-                    if (iGroup == null) continue;
-                    var dataGroup = new DxDataFormGroup(dataPage, iGroup);
-                    dataGroups.Add(dataGroup);
-                }
-            }
-            return dataGroups;
-        }
-        /// <summary>
-        /// Konstruktor
-        /// </summary>
-        /// <param name="dataPage"></param>
-        /// <param name="iGroup"></param>
-        public DxDataFormGroup(DxDataFormPageDef dataPage, IDataFormGroup iGroup)
-        {
-            __DataPage = dataPage;
-            __IGroup = iGroup;
-            __Items = new List<DxDataFormItem>();
-            DxDataFormItem.AddToList(this, true, iGroup?.GroupHeader?.HeaderItems, __Items);
-            DxDataFormItem.AddToList(this, false, iGroup?.Items, __Items);
-            _CalculateAutoSize();
-            InvalidateBounds();
-        }
-        /// <summary>Vlastník - <see cref="DxDataFormPageDef"/></summary>
-        private DxDataFormPageDef __DataPage;
-        /// <summary>Deklarace grupy</summary>
-        private IDataFormGroup __IGroup;
-        /// <summary>Prvky</summary>
-        private List<DxDataFormItem> __Items;
-        /// <summary>
-        /// Vlastník - <see cref="DxDataForm"/>
-        /// </summary>
-        public DxDataForm DataForm { get { return this.__DataPage?.DataForm; } }
-        /// <summary>
-        /// Vlastník - <see cref="DxDataFormPageDef"/>
-        /// </summary>
-        public DxDataFormPageDef DataPage { get { return __DataPage; } }
-        /// <summary>
-        /// Deklarace grupy
-        /// </summary>
-        private IDataFormGroup _IGroup { get { return __IGroup; } }
-        /// <summary>
-        /// Jednotlivé prvky grupy
-        /// </summary>
-        public IList<DxDataFormItem> Items { get { return __Items; } }
-        /// <summary>
-        /// Počet celkem deklarovaných prvků
-        /// </summary>
-        internal int ItemsCount { get { return __Items.Count; } }
-        /// <summary>
-        /// Viditelnost grupy
-        /// </summary>
-        public bool IsVisible { get { return _IGroup.IsVisible; } }
-        #endregion
-        #region Data o grupě
-        /// <summary>
-        /// Řízení layoutu: na této grupě je povoleno zalomení sloupce = tato grupa může být v případě potřeby umístěna jako první do dalšího sloupce
-        /// </summary>
-        internal bool LayoutAllowBreakToNewColumn { get { return (_IGroup.LayoutMode.HasFlag(DatFormGroupLayoutMode.AllowBreakToNewColumn)); } }
-        /// <summary>
-        /// Řízení layoutu: na této grupě je povinné zalomení sloupce = tato grupa má být umístěna jako první do dalšího sloupce
-        /// </summary>
-        internal bool LayoutForceBreakToNewColumn { get { return (_IGroup.LayoutMode.HasFlag(DatFormGroupLayoutMode.ForceBreakToNewColumn)); } }
-
-        #endregion
-        #region Souřadnice designové (velikost a souřadnice počátku Items)
-        /// <summary>
-        /// Prostor, ve kterém je vykreslen text titulku a případné další prvky.
-        /// Je umístěn v <see cref="Coordinates.HeaderBackgroundBounds"/> a je oproti němu zmenšen o <see cref="Coordinates.HeaderPadding"/> dovnitř.
-        /// Je relativní v rámci this grupy.
-        /// </summary>
-        internal Rectangle DesignTitleBounds { get { return __DesignTitleBounds; } }
-        private Rectangle __DesignTitleBounds;
-        /// <summary>
-        /// Souřadnice a velikost prostoru v rámci grupy, ve kterém jsou zobrazeny jednotlivé Items = <see cref="DxDataFormItem.DesignBounds"/>.
-        /// Hodnota je relativní k this grupě a je v designových pixelech bez Zoomu.
-        /// </summary>
-        internal Rectangle DesignContentBounds { get { return __DesignContentBounds; } }
-        private Rectangle __DesignContentBounds;
-        /// <summary>
-        /// Zajistí provedení výpočtu automatické velikosti grupy.
-        /// Reaguje na <see cref="IDataFormGroup.DesignPadding"/>, čte prvky <see cref="Items"/> 
-        /// a určuje hodnoty do <see cref="DesignContentBounds"/>
-        /// </summary>
-        private void _CalculateAutoSize()
-        {
-            // Získám definici souřadnic v grupě:
-            var iGroup = _IGroup;
-            var coordinates = new Coordinates() { BorderRange = iGroup.DesignBorderRange, Padding = iGroup.DesignPadding };
-            var groupTitle = iGroup.GroupHeader;
-            if (groupTitle != null && groupTitle.DesignHeaderHeight.HasValue && groupTitle.DesignHeaderHeight.Value > 0)
-            {
-                coordinates.HeaderHeight = groupTitle.DesignHeaderHeight.Value;
-                coordinates.HeaderPadding = groupTitle.DesignTitlePadding;
-                coordinates.LineRange = groupTitle.DesignLineRange;
-            }
-
-            // Určím velikost grupy:
-            var designWidth = iGroup.DesignWidth;
-            var designHeight = iGroup.DesignHeight;
-            if (!(designWidth.HasValue && designHeight.HasValue))
-            {   // Některá z hodnot (DesignWidth nebo DesignHeight) není zadaná, musíme ji dopočítat podle aktuálních prvků:
-                var sizeOverheads = coordinates.SizeOverhead;
-                var itemSummaryBounds = this.Items.Select(i => i.DesignBounds).SummaryVisibleRectangle() ?? Rectangle.Empty;
-                if (!designWidth.HasValue)
-                    designWidth = itemSummaryBounds.Right + sizeOverheads.Width;
-                if (!designHeight.HasValue)
-                    designHeight = itemSummaryBounds.Bottom + sizeOverheads.Height;
-            }
-            coordinates.Size = new Size(designWidth.Value, designHeight.Value);
-
-            // Uložíme souřadnice jako celek a také načteme ContentBounds (=výsledek výpočtu) a uložíme do trvalé proměnné (kvůli rychlosti).
-            __DesignCoordinates = coordinates;
-            __DesignTitleBounds = coordinates.TitleBounds;
-            __DesignContentBounds = coordinates.ContentBounds;
-        }
-        /// <summary>
-        /// Souřadný systém v Design hodnotách (bez Zoomu)
-        /// </summary>
-        private Coordinates __DesignCoordinates;
-        #endregion
-        #region Souřadnice aktuální, viditelné
-        /// <summary>
-        /// Na této souřadnici (reálné) v rámci grupy začíná souřadnice 0/0 jejich prvků.
-        /// Tuto hodnotu určuje správce DataFormu při tvorbě layoutu (Statický i dynamický laoyut).
-        /// Tvorba layoutu probíhá po každé změně rozměru DataFormu i změně Zoomu a DPI.
-        /// <para/>
-        /// Po setování této souřadnice proběhne invalidace souřadnic Current i Visible, i jednotlivých prvků.
-        /// Následně jsou tyto souřadnice on-demand přepočteny.
-        /// </summary>
-        public Point CurrentGroupOrigin { get { return __CurrentGroupOrigin; } set { __CurrentGroupOrigin = value; InvalidateBounds(); } }
-        private Point __CurrentGroupOrigin;
-        /// <summary>
-        /// Reálná velikost grupy v aktuálním Zoomu.
-        /// </summary>
-        public Size CurrentGroupSize { get { this._CheckCurrentBounds(); return __CurrentGroupSize; } }
-        private Size __CurrentGroupSize;
-        /// <summary>
-        /// Aktuální reálná absolutní (=v koordinátech vizuálního controlu včetně Zoomu!) souřadnice této grupy. 
-        /// Souřadnice je daná počátkem <see cref="CurrentGroupOrigin"/>, který musí setovat koordinátor stránky, 
-        /// a velikostí grupy <see cref="CurrentGroupSize"/>, která vychází z deklarace grupy <see cref="IDataFormGroup.DesignWidth"/> a <see cref="IDataFormGroup.DesignHeight"/>, a je přepočtena Zoomem a DPI.
-        /// <para/>
-        /// Tato souřadnice ale není posunuta ScrollBarem (je absolutní).
-        /// Posunutá vizuální souřadnice je v <see cref="VisibleGroupBounds"/>.
-        /// </summary>
-        public Rectangle CurrentGroupBounds { get { this._CheckCurrentBounds(); return new Rectangle(__CurrentGroupOrigin, __CurrentGroupSize); } }
-        /// <summary>
-        /// Invaliduje souřadnice <see cref="CurrentGroupSize"/>, <see cref="CurrentGroupBounds"/> a <see cref="VisibleGroupBounds"/>.
-        /// Invaliduje i svoje Items.
-        /// Invalidují se souřadnice typu Current a Visible. 
-        /// Tyto souřadnice budou on-demand přepočteny ze souřadnic typu Design, podle aktuálních hodnot Zoom a DPI.
-        /// </summary>
-        public void InvalidateBounds()
-        {
-            __CurrentCoordinatesValid = false;
-            __Items.ForEachExec(i => i.InvalidateBounds());
-        }
-        /// <summary>
-        /// Zajistí, že souřadnice <see cref="__CurrentGroupSize"/> a budou platné k souřadnicím designovým a k hodnotám aktuálním DPI
-        /// </summary>
-        /// <param name="force"></param>
-        private void _CheckCurrentBounds(bool force = false)
-        {
-            if (force || !__CurrentCoordinatesValid || __CurrentCoordinates is null)
-            {
-                if (__CurrentCoordinates is null) __CurrentCoordinates = new Coordinates();
-                __CurrentCoordinatesValid = true;
-
-                __CurrentCoordinates.ZoomToGui(__DesignCoordinates, DataForm.CurrentDpi);
-
-                // Opíšu si sadu výsledků z Coordinates, protože tam jsou "vypočítávané", a my je chceme mít permanentní:
-                this.__CurrentGroupSize = __CurrentCoordinates.Size;
-                this.__CurrentBorderBounds = __CurrentCoordinates.VisibleBorder ? (Rectangle?)__CurrentCoordinates.BorderOuterBounds : null;
-                this.__CurrentBorderSizes = __CurrentCoordinates.BorderRange?.Size;
-                this.__CurrentGroupBackground = __CurrentCoordinates.GroupBackgroundBounds;
-                this.__CurrentTitleBackground = __CurrentCoordinates.HasHeader ? (Rectangle?)__CurrentCoordinates.HeaderBackgroundBounds : null;
-                this.__CurrentTitleTextBounds = __CurrentCoordinates.HasHeader ? (Rectangle?)__CurrentCoordinates.TitleBounds : null;
-                this.__CurrentTitleLineBounds = __CurrentCoordinates.VisibleLine ? (Rectangle?)__CurrentCoordinates.TitleLineBounds : null;
-                this.__CurrentContentBackground = __CurrentCoordinates.ContentBackgroundBounds;
-                this.__CurrentContentBounds = __CurrentCoordinates.ContentBounds;
-
-                // Naše hodnota souřadnice (this.__CurrentGroupOrigin) je dána externě, musím ji zachovat, vložím ji do __CurrentCoordinates.Location:
-                __CurrentCoordinates.Location = this.__CurrentGroupOrigin;
-
-            }
-        }
-        /// <summary>
-        /// Souřadný systém v Current hodnotách (s aplikovaným Zoomem)
-        /// </summary>
-        private Coordinates __CurrentCoordinates;
-        /// <summary>
-        /// Hodnoty v <see cref="__CurrentCoordinates"/> jsou platné?
-        /// </summary>
-        private bool __CurrentCoordinatesValid;
-        /// <summary>
-        /// Souřadnice borderu. Šířka borderu je <see cref="__CurrentBorderSizes"/>.
-        /// Tato hodnota není autovalidována.
-        /// </summary>
-        private Rectangle? __CurrentBorderBounds;
-        /// <summary>
-        /// Šířka borderu. Souřadnice borderu je <see cref="__CurrentBorderBounds"/>.
-        /// Tato hodnota není autovalidována.
-        /// </summary>
-        private int? __CurrentBorderSizes;
-        /// <summary>
-        /// Souřadnice celého pozadí (titulek + content).
-        /// Tato hodnota není autovalidována.
-        /// </summary>
-        private Rectangle? __CurrentGroupBackground;
-        /// <summary>
-        /// Souřadnice pozadí titulku.
-        /// Tato hodnota není autovalidována.
-        /// </summary>
-        private Rectangle? __CurrentTitleBackground;
-        /// <summary>
-        /// Souřadnice textu titulku = zmenšeno o Padding od <see cref="__CurrentTitleBackground"/>.
-        /// Tato hodnota není autovalidována.
-        /// </summary>
-        private Rectangle? __CurrentTitleTextBounds;
-        /// <summary>
-        /// Souřadnice linky podtržení titulku.
-        /// Tato hodnota není autovalidována.
-        /// </summary>
-        private Rectangle? __CurrentTitleLineBounds;
-        /// <summary>
-        /// Souřadnice pozadí contentu (prvky).
-        /// Tato hodnota není autovalidována.
-        /// </summary>
-        private Rectangle? __CurrentContentBackground;
-        /// <summary>
-        /// Souřadnice prvků = zmenšeno o Padding od <see cref="__CurrentContentBackground"/>.
-        /// Tato hodnota není autovalidována.
-        /// </summary>
-        private Rectangle? __CurrentContentBounds;
-        /// <summary>
-        /// Metoda vrátí aktuální viditelnou souřadnici daného Current prostoru.
-        /// Na vstupu je souřadnice v koordinátech grupy, na výstupu je v koordinátech controlu.
-        /// </summary>
-        /// <param name="currentBounds"></param>
-        /// <returns></returns>
-        private Rectangle? _GetVisibleBounds(Rectangle? currentBounds)
-        {
-            var visibleGroupBounds = __VisibleGroupBounds;
-            if (visibleGroupBounds.HasValue && currentBounds.HasValue) return currentBounds.Value.Add(visibleGroupBounds.Value.Location);
-            return null;
-        }
-        /// <summary>
-        /// Fyzické pixelové souřadnice této grupy na vizuálním controlu, kde se nyní tento prvek nachází.
-        /// Jde o vizuální souřadnice v koordinátech controlu, odpovídají např. pohybu myši.
-        /// Může být null, pak prvek není zobrazen. Null je i po invalidaci <see cref="InvalidateBounds()"/>.
-        /// Tuto hodnotu sem ukládá řídící třída v procesu kreslení jako reálné souřadnice, kam byl prvek vykreslen.
-        /// </summary>
-        public Rectangle? VisibleGroupBounds { get { return __VisibleGroupBounds; } set { __VisibleGroupBounds = value; } }
-        private Rectangle? __VisibleGroupBounds;
-        /// <summary>
-        /// Vrátí true, pokud this prvek se nachází v rámci dané virtuální souřadnice.
-        /// Tedy pokud souřadnice <see cref="CurrentGroupBounds"/> se alespoň zčásti nacházejí uvnitř souřadného prostoru dle parametru <paramref name="virtualBounds"/>.
-        /// </summary>
-        /// <param name="virtualBounds"></param>
-        /// <returns></returns>
-        public bool IsVisibleInVirtualBounds(Rectangle virtualBounds)
-        {
-            return (IsVisible && virtualBounds.Contains(CurrentGroupBounds, true));
-        }
-        /// <summary>
-        /// Vrátí true, pokud this grupa má nastaveny viditelné souřadnice v <see cref="VisibleGroupBounds"/> 
-        /// a pokud daný bod (souřadný systém shodný s <see cref="VisibleGroupBounds"/>) se nachází v prostoru this grupy
-        /// </summary>
-        /// <param name="point"></param>
-        /// <returns></returns>
-        public bool IsVisibleOnPoint(Point point)
-        {
-            return (IsVisible && VisibleGroupBounds.HasValue && VisibleGroupBounds.Value.Contains(point));
-        }
-        #endregion
-        #region Kreslení grupy (Border, Background, Title)
-        /// <summary>
-        /// Metoda vykreslí grupu
-        /// </summary>
-        /// <param name="e"></param>
-        /// <param name="onMouse"></param>
-        /// <param name="hasFocus"></param>
-        internal void PaintGroup(DxBufferedGraphicPaintArgs e, bool onMouse, bool hasFocus)
-        {
-            if (!this.VisibleGroupBounds.HasValue) return;
-            _CheckCurrentBounds();
-            _PaintBorder(e, onMouse, hasFocus);
-            _PaintBackgrounds(e, onMouse, hasFocus);
-        }
-        /// <summary>
-        /// Vykreslí border
-        /// </summary>
-        /// <param name="e"></param>
-        /// <param name="onMouse"></param>
-        /// <param name="hasFocus"></param>
-        private void _PaintBorder(DxBufferedGraphicPaintArgs e, bool onMouse, bool hasFocus)
-        {
-            var appearance = _IGroup.BorderAppearance;
-            if (appearance == null) return;
-
-            var bounds = __CurrentBorderBounds;
-            if (!bounds.HasValue) return;
-
-            int sizes = __CurrentCoordinates.BorderRange?.Size ?? 0;
-            if (sizes <= 0) return;
-
-            DxDataForm.PaintFrame(e, _GetVisibleBounds(bounds), sizes, appearance, onMouse, hasFocus);
-        }
-        /// <summary>
-        /// Vykreslí všechna pozadí ve správném pořadí
-        /// </summary>
-        /// <param name="e"></param>
-        /// <param name="onMouse"></param>
-        /// <param name="hasFocus"></param>
-        private void _PaintBackgrounds(DxBufferedGraphicPaintArgs e, bool onMouse, bool hasFocus)
-        {
-            var groupTitle = _IGroup.GroupHeader;
-            bool hasTitle = (groupTitle != null);
-            if (hasTitle)
-                DxDataForm.PaintBackground(e, _GetVisibleBounds(__CurrentTitleBackground), groupTitle.BackgroundAppearance, onMouse, hasFocus, false);     // Pozadí pod titulkem
-
-            DxDataForm.PaintBackground(e, _GetVisibleBounds(__CurrentContentBackground), _IGroup.BackgroundAppearance, onMouse, hasFocus, false);          // Pozadí pod obsahem
-
-            if (hasTitle)
-                DxDataForm.PaintBackground(e, _GetVisibleBounds(__CurrentTitleLineBounds), groupTitle.LineAppearance, onMouse, hasFocus, false);           // Linka, nad obrázkem, pod texty
-
-            DxDataForm.PaintImage(e, _GetVisibleBounds(__CurrentGroupBackground), _IGroup.BackgroundAppearance);                                           // Obrázek na pozadí celé grupy
-
-        }
-        #endregion
-        #region class Coordinates : souřadnice různých míst v grupě
-        /// <summary>
-        /// Souřadný systém uvnitř grupy, určuje umístění borderu, titulkového prostoru a prostoru pro obsah,
-        /// včetně linky v titulku a včetně zachování Padding.
-        /// </summary>
-        private class Coordinates
-        {
-            #region Vnější souřadnice a suma režie
-            /// <summary>
-            /// Souřadnice grupy zvenku = v prostoru Parent controlu
-            /// </summary>
-            public Point Location { get { return __Location; } set { __Location = value; } }
-            private Point __Location;
-            /// <summary>
-            /// Velikost grupy celková
-            /// </summary>
-            public Size Size { get { return __Size; } set { __Size = value; } }
-            private Size __Size;
-            /// <summary>
-            /// Kompletní vnější souřadnice této grupy relativně k parent controlu
-            /// </summary>
-            public Rectangle Bounds
-            {
-                get { return new Rectangle(Location, Size); }
-                set
-                {
-                    Location = value.Location;
-                    Size = value.Size;
-                }
-            }
-            /// <summary>
-            /// Velikost režie okolo prostoru Content.
-            /// Jde o všechny pixely typu Border, Padding, TitleHeight.
-            /// Tato velikost se má přidat k velikosti Content.Summary, aby byla vypočtena nejmenší potřebná velikost grupy.
-            /// <para/>
-            /// Tuto hodnotu je možno číst po zadání <see cref="BorderRange"/>, <see cref="Padding"/>, <see cref="HeaderHeight"/>.
-            /// </summary>
-            public Size SizeOverhead
-            {
-                get
-                {
-                    int bs = 2 * _BorderEnd;
-                    int pw = __PaddingLeft + __PaddingRight;
-                    int ph = __PaddingTop + __PaddingBottom;
-                    var th = HeaderHeight;
-                    return new Size(bs + pw, bs + ph + th);
-                }
-            }
-            /*   JAK JE TO SE SOUŘADNÝM SYSTÉMEM:
-
-                1. Grupa deklaruje svoji vnější designovou velikost = IDataFormGroup.DesignWidth a IDataFormGroup.DesignHeight; ale deklarovat to nemusí;
-                2. V rámci tohoto prostoru se nachází i Border a Padding (v tomto pořadí), přičemž Padding je uvnitř Borderu
-                3. Je na autorovi designu, aby se vnitřní prvky Items svými souřadnicemi vešly do prostoru grupy zmenšenému o Border a Padding.
-                4. Grupy jsou skládány pod sebe = grupa 2 má svůj počátek Y přesně pod koncem grupy 1 = na jeho Bottom; na stejné souřadnici X, počínaje bodem { 0, 0 }.
-                5. Veškeré souřadnice na vstupu jsou Designové = vztahují se k zoomu 100% a monitoru 96DPI. Reálné souřadnice přepočítává DataForm.
-
-            */
-            #endregion
-            #region Border a Padding
-            /// <summary>
-            /// Bude se kreslit Border? To je tehdy, když <see cref="BorderRange"/> má kladnou velikost.
-            /// Nicméně i když se Border nekreslí, akceptuje se jeho hodnota <see cref="BorderRange"/>.Begin, o kterou se zmenšuje vnější prostor.
-            /// Prostor mezi začátkem grupy (<see cref="Bounds"/>) a začátkem Borderu se nijak nevykresluje, a má tedy barvu a vzhled parent controlu.
-            /// </summary>
-            public bool VisibleBorder { get { return (__BorderEnd > __BorderBegin); } }
-            /// <summary>
-            /// Umístění a velikost Borderu, měřeno od samotného okraje grupy směrem dovnitř, bez <see cref="Padding"/>.
-            /// Pokud border není viditelný, je zde null.
-            /// </summary>
-            public Int32Range BorderRange
-            {
-                get { return (VisibleBorder ? new Int32Range(__BorderBegin, __BorderEnd) : null); }
-                set
-                {
-                    _BorderBegin = (value?.Begin ?? 0);
-                    _BorderEnd = (value?.End ?? 0);
-                }
-            }
-            /// <summary>
-            /// Pixel, na kterém začíná Border. Nikdy není záporný.
-            /// Prostor mezi začátkem grupy a tímto borderem si grupa nevykresluje, prosvítá tam parent Control.
-            /// </summary>
-            private int _BorderBegin
-            {
-                get { return __BorderBegin; }
-                set { __BorderBegin = (value < 0 ? 0 : value); }
-            }
-            private int __BorderBegin;
-            /// <summary>
-            /// Pixel, na kterém (ve směru dovnitř grupy) končí Border. Nikdy není menší než <see cref="_BorderBegin"/>.
-            /// </summary>
-            private int _BorderEnd
-            {
-                get { return (__BorderEnd < __BorderBegin ? __BorderBegin : __BorderEnd); }
-                set { __BorderEnd = (value < 0 ? 0 : value); }
-            }
-            private int __BorderEnd;
-            /// <summary>
-            /// Šířka linky borderu v pixelech. Pokud je nula, border se fyzicky nekreslí. Nikdy není záporná.
-            /// </summary>
-            private int _BorderThick { get { return _BorderEnd - _BorderBegin; } }
-            /// <summary>
-            /// Vnitřní okraje mezi vnitřkem Borderu a začátkem Inner prostoru pro prvky.
-            /// Záporné hodnoty jsou nahrazeny 0.
-            /// </summary>
-            public Padding Padding
-            {
-                get { return new Padding(__PaddingLeft, __PaddingTop, __PaddingRight, __PaddingBottom); }
-                set
-                {
-                    __PaddingLeft = (value.Left > 0 ? value.Left : 0);
-                    __PaddingTop = (value.Top > 0 ? value.Top : 0);
-                    __PaddingRight = (value.Right > 0 ? value.Right : 0);
-                    __PaddingBottom = (value.Bottom > 0 ? value.Bottom : 0);
-                }
-            }
-            private int __PaddingLeft;
-            private int __PaddingTop;
-            private int __PaddingRight;
-            private int __PaddingBottom;
-            /// <summary>
-            /// Souřadnice vnějšího Borderu, může být Empty když <see cref="VisibleBorder"/> je false.
-            /// Je relativní v rámci grupy.
-            /// Je umístěn v prostoru <see cref="Bounds"/> s odstupem <see cref="_BorderBegin"/> od všech čtyř stran.
-            /// </summary>
-            public Rectangle BorderOuterBounds
-            {
-                get
-                {
-                    if (!VisibleBorder) return Rectangle.Empty;
-                    int bb = _BorderBegin;
-                    return new Rectangle(bb, bb, Size.Width - 2 * bb, Size.Height - 2 * bb);
-                }
-            }
-            /// <summary>
-            /// Souřadnice pozadí celé grupy, je přímo uvnitř Borderu (tzn. v rámci tohoto <see cref="GroupBackgroundBounds"/> se nachází i <see cref="Padding"/>)
-            /// V tomto prostoru se nahoře nachází <see cref="HeaderBackgroundBounds"/> a dole <see cref="ContentBackgroundBounds"/>.
-            /// Relativně k this grupě.
-            /// </summary>
-            public Rectangle GroupBackgroundBounds
-            {
-                get
-                {
-                    int bb = _BorderEnd;
-                    return new Rectangle(bb, bb, Size.Width - 2 * bb, Size.Height - 2 * bb);
-                }
-            }
-            #endregion
-            #region Header
-            /// <summary>
-            /// Máme titulek?
-            /// </summary>
-            public bool HasHeader { get { return (__HeaderHeight > 0); } }
-            /// <summary>
-            /// Výška prostoru pro titulek. Nikdy není záporná, hodnota 0 = není titulek.
-            /// </summary>
-            public int HeaderHeight
-            {
-                get { return __HeaderHeight; }
-                set { __HeaderHeight = (value < 0 ? 0 : value); }
-            }
-            private int __HeaderHeight;
-            /// <summary>
-            /// Vnitřní okraje mezi vnitřkem Borderu a začátkem Inner prostoru pro prvky.
-            /// Záporné hodnoty jsou nahrazeny 0.
-            /// </summary>
-            public Padding HeaderPadding
-            {
-                get { return new Padding(__HeaderPaddingLeft, __HeaderPaddingTop, __HeaderPaddingRight, __HeaderPaddingBottom); }
-                set
-                {
-                    __HeaderPaddingLeft = (value.Left > 0 ? value.Left : 0);
-                    __HeaderPaddingTop = (value.Top > 0 ? value.Top : 0);
-                    __HeaderPaddingRight = (value.Right > 0 ? value.Right : 0);
-                    __HeaderPaddingBottom = (value.Bottom > 0 ? value.Bottom : 0);
-                }
-            }
-            private int __HeaderPaddingLeft;
-            private int __HeaderPaddingTop;
-            private int __HeaderPaddingRight;
-            private int __HeaderPaddingBottom;
-            /// <summary>
-            /// Je viditelná linka v oblasti titulku?
-            /// </summary>
-            public bool VisibleLine { get { return HasHeader && (_LineYEnd > _LineYBegin); } }
-            /// <summary>
-            /// Umístění linky v oblasti titulku, měřeno od horního okraje titulku, bez <see cref="Padding"/>.
-            /// Pozor, relativně k <see cref="HeaderBackgroundBounds"/>.
-            /// Pokud linka není viditelná, je zde null.
-            /// </summary>
-            public Int32Range LineRange
-            {
-                get { return (VisibleLine ? new Int32Range(_LineYBegin, _LineYEnd) : null); }
-                set
-                {
-                    __LineYBegin = (value?.Begin ?? 0);
-                    __LineYEnd = (value?.End ?? 0);
-                }
-            }
-            /// <summary>
-            /// Počátek (Top) linky titulku, zarovnaný do rozmezí 0 až <see cref="HeaderHeight"/> včetně.
-            /// Pozor, hodnota je relativně k <see cref="HeaderBackgroundBounds"/>.
-            /// </summary>
-            private int _LineYBegin { get { int h = this.__HeaderHeight; int b = __LineYBegin; return (b > h ? h : (b < 0 ? 0 : b)); } }
-            /// <summary>
-            /// Konec (Bottom) linky titulku, zarovnaný do rozmezí <see cref="_LineYBegin"/> až <see cref="HeaderHeight"/> včetně.
-            /// Pozor, hodnota je relativně k <see cref="HeaderBackgroundBounds"/>.
-            /// </summary>
-            private int _LineYEnd { get { int h = this.__HeaderHeight; int b = _LineYBegin; int e = __LineYEnd; return (e > h ? h : (e < b ? b : e)); } }
-            private int __LineYBegin;
-            private int __LineYEnd;
-            /// <summary>
-            /// Souřadnice pozadí titulku. 
-            /// Nachází se přesně uvnitř <see cref="GroupBackgroundBounds"/>, a má výšku <see cref="HeaderHeight"/>.
-            /// Je relativní v rámci this grupy.
-            /// <para/>
-            /// Tento prostor má být vybarven barvou pozadí a případně obsahuje obrázek pozadí ve vhodném zarovnání.
-            /// </summary>
-            public Rectangle HeaderBackgroundBounds
-            {
-                get
-                {
-                    if (!HasHeader) return Rectangle.Empty;
-                    var bounds = GroupBackgroundBounds;
-                    var height = HeaderHeight;
-                    return new Rectangle(bounds.X, bounds.Y, bounds.Width, height);
-                }
-            }
-            /// <summary>
-            /// Prostor, ve kterém je vykreslen text titulku a případné další prvky.
-            /// Je umístěn v <see cref="HeaderBackgroundBounds"/> a je oproti němu zmenšen o <see cref="HeaderPadding"/> dovnitř.
-            /// Je relativní v rámci this grupy.
-            /// </summary>
-            public Rectangle TitleBounds
-            {
-                get
-                {
-                    if (!HasHeader) return Rectangle.Empty;
-                    var bounds = HeaderBackgroundBounds;
-                    int pl = __HeaderPaddingLeft;
-                    int pt = __HeaderPaddingTop;
-                    int pw = pl + __HeaderPaddingRight;
-                    int ph = pt + __HeaderPaddingBottom;
-                    return new Rectangle(bounds.X + pl, bounds.Y + pt, bounds.Width - pw, bounds.Height - ph);
-                }
-            }
-            /// <summary>
-            /// Prostor, ve kterém je vykreslena linka titulku. Může být Empty.
-            /// Obecně je umístěn v <see cref="HeaderBackgroundBounds"/>.
-            /// Ve směru X je od okrajů odsazen o Padding, ve směru Y nikoliv, ale je umístěn na pixelech <see cref="LineRange"/> vůči souřadnici <see cref="HeaderBackgroundBounds"/>.Y
-            /// Je relativní v rámci this grupy.
-            /// </summary>
-            public Rectangle TitleLineBounds
-            {
-                get
-                {
-                    if (!HasHeader || !VisibleLine) return Rectangle.Empty;
-                    var bounds = HeaderBackgroundBounds;
-                    int lb = _LineYBegin;
-                    int le = _LineYEnd;
-                    if (le < lb) return Rectangle.Empty;
-                    int pl = __PaddingLeft;
-                    int pw = pl + __PaddingRight;
-                    return new Rectangle(bounds.X + pl, bounds.Y + lb, bounds.Width - pw, le - lb);
-                }
-            }
-            #endregion
-            #region Content a Collapsed
-            /// <summary>
-            /// Souřadnice pozadí vlastního obsahu pod titulkem.
-            /// Nachází se přesně uvnitř <see cref="GroupBackgroundBounds"/>, nahoře je zmenšený o prostor titulku a má souřadnici Y = <see cref="HeaderHeight"/>.
-            /// Je relativní v rámci this grupy.
-            /// <para/>
-            /// Tento prostor má být vybarven barvou pozadí a případně obsahuje obrázek pozadí ve vhodném zarovnání.
-            /// </summary>
-            public Rectangle ContentBackgroundBounds
-            {
-                get
-                {
-                    var bounds = GroupBackgroundBounds;
-                    var dy = (HasHeader ? HeaderHeight : 0);
-                    var height = bounds.Height - dy;
-                    return new Rectangle(bounds.X, bounds.Y + dy, bounds.Width, height);
-                }
-            }
-            /// <summary>
-            /// Souřadnice vlastního obsahu = jednotlivé prvky grupy.
-            /// Nachází se přesně uvnitř <see cref="ContentBackgroundBounds"/>, a je zmenšen o <see cref="Padding"/> dovnitř.
-            /// Je relativní v rámci this grupy.
-            /// <para/>
-            /// Relativně v tomto prostoru se nachází jednotlivé prvky grupy.
-            /// </summary>
-            public Rectangle ContentBounds
-            {
-                get
-                {
-                    var bounds = ContentBackgroundBounds;
-                    int pl = __PaddingLeft;
-                    int pt = __PaddingTop;
-                    int pw = pl + __PaddingRight;
-                    int ph = pt + __PaddingBottom;
-                    return new Rectangle(bounds.X + pl, bounds.Y + pt, bounds.Width - pw, bounds.Height - ph);
-                }
-            }
-            #endregion
-            #region Zoomování
-            /// <summary>
-            /// Vypočítá svoje vnitřní hodnoty na aktuální, podle dodaných hodnot designových a podle daného DPI.
-            /// Přepočte i hodnoty <see cref="Location"/> a <see cref="Size"/>, tedy i <see cref="Bounds"/>.
-            /// </summary>
-            /// <param name="designCoordinates"></param>
-            /// <param name="currentDpi"></param>
-            internal void ZoomToGui(Coordinates designCoordinates, int currentDpi)
-            {
-                this.__HeaderHeight = zoomToGui(designCoordinates.__HeaderHeight);
-                this.__BorderBegin = zoomToGui(designCoordinates.__BorderBegin);
-                this.__BorderEnd = zoomToGui(designCoordinates.__BorderEnd);
-                this.__HeaderPaddingLeft = zoomToGui(designCoordinates.__HeaderPaddingLeft);
-                this.__HeaderPaddingTop = zoomToGui(designCoordinates.__HeaderPaddingTop);
-                this.__HeaderPaddingRight = zoomToGui(designCoordinates.__HeaderPaddingRight);
-                this.__HeaderPaddingBottom = zoomToGui(designCoordinates.__HeaderPaddingBottom);
-                this.__LineYBegin = zoomToGui(designCoordinates.__LineYBegin);
-                this.__LineYEnd = zoomToGui(designCoordinates.__LineYEnd);
-                this.__PaddingLeft = zoomToGui(designCoordinates.__PaddingLeft);
-                this.__PaddingTop = zoomToGui(designCoordinates.__PaddingTop);
-                this.__PaddingRight = zoomToGui(designCoordinates.__PaddingRight);
-                this.__PaddingBottom = zoomToGui(designCoordinates.__PaddingBottom);
-
-                this.__Location = DxComponent.ZoomToGui(designCoordinates.__Location, currentDpi);
-                this.__Size = DxComponent.ZoomToGui(designCoordinates.__Size, currentDpi);
-
-                int zoomToGui(int designValue)
-                {
-                    return (designValue != 0 ? DxComponent.ZoomToGui(designValue, currentDpi) : 0);
-                }
-            }
-            #endregion
-        }
-        #endregion
-    }
-    #endregion
+    
     #region class DxDataFormCell : Jedna vizuální buňka v rámci DataFormu, průnik řádku a sloupce
     /// <summary>
     /// <see cref="DxDataFormCell"/> : Jedna vizuální buňka v rámci DataFormu, průnik řádku a sloupce.
