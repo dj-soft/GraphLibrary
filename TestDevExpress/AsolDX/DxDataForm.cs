@@ -84,19 +84,24 @@ using DevExpress.XtraRichEdit.Model.History;
     [D]  Souřadnicové systémy
     =========================
    1. Nativní    = pixely na fyzickém Controlu, kde 0/0 je první viditelný pixel vlevo nahoře
-   2. Absolutní  = souřadnice na datovém prvku, kde 0/0 je první pixel vlevo nahoře na prvním řádku, prvním sloupci
+   2. Absolutní  = souřadnice celková na datovém prvku, kde 0/0 je první pixel vlevo nahoře na prvním řádku, prvním sloupci
                    Následující řádek má svůj Y počátek na konci Y předešlého řádku (řádek 0:Bottom = řádek 1:Top)
                    Tyto souřadnice se nemění (pokud nedojde ke změně dat řádků = filtr, přetřídění);
    3. Virtuální  = souřadnice daná Scrollováním a aktuální velikostí viditelného prostoru = "Kukátko" na Absolutní souřadnice
+   4. Current    = souřadnice v rámci nejbližšího Parenta, například pozice řádku v parent Part, nebo pozice Grupy v parent řádku, 
+                   nebo pozice prvku Item v rámci Grupy
+   5. Vizuální   = souřadnice prvku přepočítaná do Nativní souřadnice na Controlu ... Vizuální  ==  Nativní !
 
    Příklad:
      Mějme tedy vizuální control s velikostí W=800 a H=600;
      Mějme k tomu datový prvek, který určil šířku W=1200 a výšku jednoho řádku RH=400, a počet řádků RN=20, pak Absolutní velikost  W=1200 a H=8000
      ScrollControl tedy dovoluje scrollovat v obou směrech X i Y, určuje tak "Virtuální okno"
-     Virtuální (odscrollované) okno tedy bude např. X=100, Y=1200, W=800, H=600;
-     Najdeme tedy řádky, které jsou viditelné na souřadnici Y: 1200 + 600 
-      (při výšce řádku 400 mají řádky souřadnice: [0]: 0-400; [1]: 400-800; [2]: 800-1200; [3]: 1200-1600; [4]: 1600-2000; [5]: 2000-2400; ...)
-      Určíme tedy viditelné řádky: [3]: 1200-1600; [4]: 1600-2000;
+     Virtuální (odscrollované) okno tedy bude např. X=100, Y=1250, W=800, H=600;
+     Najdeme tedy řádky, které jsou viditelné na souřadnici Y: 1250 + 600 = 1250-1850
+      (při výšce řádku 400 mají první řádky tyto souřadnice Y: [0]: 0-400; [1]: 400-800; [2]: 800-1200; [3]: 1200-1600; [4]: 1600-2000; [5]: 2000-2400; ...)
+      Vyhledáme tedy viditelné řádky s Absolutními souřadnicemi Y : [3]: 1200-1600; [4]: 1600-2000;
+     Řádek [3] má absolutní souřadnici Y 1200-1600, virtuální okno má souřadnice Y 1250-1850; 
+     Řádek [3] na sobě nese grupy, jejichž Current souřadnice jsou: [0]: 0-120; [1]: 120-180; [2]: 180-400;
 
 
 
