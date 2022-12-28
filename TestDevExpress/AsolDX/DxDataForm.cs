@@ -126,7 +126,12 @@ using DevExpress.XtraRichEdit.Model.History;
       c) řádek vykreslí svoji grafiku (možná jen linku, nebo záhlaví řádku);
       d) řádek prochází grupy, a to buď svoje vlastní nebo ze společné definice (viz níže), 
           předává jim požadavek na vykreslení a svoji vizuální souřadnici počátku a viditelnou oblast, a data svého řádku;
-      e) grupa určí svoji vizuální oblast, a pokud je z ní něco vidět, pak vykreslí sebe a své prvky
+      e) grupa určí svoji vizuální oblast, a pokud je z ní něco vidět, pak vykreslí sebe a své prvky;
+   7. Grupy v řádku:
+      a) pokud budou mít všechny řádky stejnou velikost všech prvků a grup a jejich pozice, tak mohou používat společnou definici grup = pochází z DxDataFormPage
+      b) pokud ale některé grupy budou řídit svoji velikost + pozici individuálně podle obsahu řádku (budou se tedy lišit řádek od řádku), 
+         pak odlišné řádky musí mít svoji definici grup uloženou lokálně, s vlastním layoutem grup a prvků;
+      c) 
 
 
 
