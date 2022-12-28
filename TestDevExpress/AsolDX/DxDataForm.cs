@@ -90,18 +90,44 @@ using DevExpress.XtraRichEdit.Model.History;
    3. Virtuální  = souřadnice daná Scrollováním a aktuální velikostí viditelného prostoru = "Kukátko" na Absolutní souřadnice
    4. Current    = souřadnice v rámci nejbližšího Parenta, například pozice řádku v parent Part, nebo pozice Grupy v parent řádku, 
                    nebo pozice prvku Item v rámci Grupy
-   5. Vizuální   = souřadnice prvku přepočítaná do Nativní souřadnice na Controlu ... Vizuální  ==  Nativní !
+   5. Vizuální   = souřadnice prvku přepočítaná do Nativní souřadnice na Controlu. Tedy Vizuální  ==  Nativní !
+                   Jde tedy o Absolutní souřadnici prvku, upravenou pomocí Virtuálního okna.
 
    Příklad:
-     Mějme tedy vizuální control s velikostí W=800 a H=600;
-     Mějme k tomu datový prvek, který určil šířku W=1200 a výšku jednoho řádku RH=400, a počet řádků RN=20, pak Absolutní velikost  W=1200 a H=8000
-     ScrollControl tedy dovoluje scrollovat v obou směrech X i Y, určuje tak "Virtuální okno"
+   --------
+     Mějme tedy vizuální control se zobrazovanou fyzickou velikostí W=800 a H=600, s možností scrollování obsahu;
+     Mějme k tomu datový prvek, který určil svoji šířku W=1200 a výšku jednoho řádku RH=400, a počet řádků RN=20, pak Absolutní velikost zobrazovaných dat: W=1200 a H=8000
+     ScrollControl tedy dovoluje scrollovat v obou směrech X i Y, určuje tak zobrazované "Virtuální okno"
      Virtuální (odscrollované) okno tedy bude např. X=100, Y=1250, W=800, H=600;
-     Najdeme tedy řádky, které jsou viditelné na souřadnici Y: 1250 + 600 = 1250-1850
-      (při výšce řádku 400 mají první řádky tyto souřadnice Y: [0]: 0-400; [1]: 400-800; [2]: 800-1200; [3]: 1200-1600; [4]: 1600-2000; [5]: 2000-2400; ...)
-      Vyhledáme tedy viditelné řádky s Absolutními souřadnicemi Y : [3]: 1200-1600; [4]: 1600-2000;
-     Řádek [3] má absolutní souřadnici Y 1200-1600, virtuální okno má souřadnice Y 1250-1850; 
-     Řádek [3] na sobě nese grupy, jejichž Current souřadnice jsou: [0]: 0-120; [1]: 120-180; [2]: 180-400;
+     Najděme tedy řádky, které jsou aktuálně viditelné na virtuální souřadnici Y: 1250 + 600 = 1250÷1850
+      (při výšce řádku 400 mají první řádky tyto souřadnice Y: [0]: 0÷400; [1]: 400÷800; [2]: 800÷1200; [3]: 1200÷1600; [4]: 1600÷2000; [5]: 2000÷2400; ...)
+      Vyhledáme tedy viditelné řádky s Absolutními souřadnicemi Y v zobrazované oblasti 1250÷1850: [3]: 1200÷1600; [4]: 1600÷2000;
+     Řádek [3] má absolutní souřadnici Y 1200÷1600, virtuální okno má souřadnice Y 1250÷1850;
+     Řádek [3] na sobě nese grupy, jejichž Current souřadnice (=relativně k řádku) jsou například: [0]: 0÷120; [1]: 120÷180; [2]: 180÷400;
+     Pak tedy grupa [1] v řádku [3]:
+        - má Current souřadnice Y: 120÷180;
+        - odpovídající Absolute souřadnice je Current + 1200 (to je Absolutní souřadnice Y řádku [3]), tedy grupa [1] má Absolute Y = 1320÷1380;
+        - V rámci Virtuálního okna, jehož Y: 1250÷1850 pak bude Vizuální souřadnice grupy [1] v řádku [3]: (Absolute - 1250) = 70÷130 = pixely v Controlu, kam bude grupa reálně kreslena.
+
+
+    [E]  Oblast řádků (Splitter) / Řádek / Grupy prvků / Prvky
+    ==========================================================
+   1. Máme pole řádků, které si udržují svoji Absolutní souřadnici Y, a jejich souřadnice X = 0 (jde o řádky pod sebou umístěné);
+       Jeden řádek reprezentuje instance DxDataFormRow;
+       Pole všech po sobě jdoucích řádků je uloženo v instanci DxDataFormRowSet;
+   2. Pokud DataForm provede Split = vytvoří novou oblast pro zobrazování řádků (dvě oblasti nad sebou, kde každá oblast zobrazuje jiné řádky), 
+       pak je vytvořena nová instance sady DxDataFormRowSet pro novou oblast PartY;
+   3. Jednotlivé oblasti mohou mít jiné filtry řádků i jiné třídění = jinou množinu řádků, v nichž si DxDataFormRowSet udržuje pořadí a absolutní souřadnici Y;
+   4. Každá tato oblast má svůj svislý Scrollbar, proto má každá oblast svoje vlastní Virtuální okno (scrollovaná pozice a výška);
+   5. Každá tato oblast je zobrazována v samostatném Controlu DxDataFormPart (: DxScrollableContent)
+   6. Vykreslení Controlu tedy probíhá tak, že:
+      a) jsou nalezeny viditelné řádky (provede se 1x po změně Virtuálního okna, tedy po Scrollu a po Resize; a po změně sady řádků);
+      b) vyvolá se metoda pro kreslení řádku;
+      c) řádek vykreslí svoji grafiku (možná jen linku, nebo záhlaví řádku);
+      d) řádek prochází grupy, a to buď svoje vlastní nebo ze společné definice (viz níže), 
+          předává jim požadavek na vykreslení a svoji vizuální souřadnici počátku a viditelnou oblast, a data svého řádku;
+      e) grupa určí svoji vizuální oblast, a pokud je z ní něco vidět, pak vykreslí sebe a své prvky
+
 
 
 
@@ -241,7 +267,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void _CreateDataPages(IDataForm iForm)
         {
             __IForm = iForm;
-            __DataFormPages = DxDataFormPageDef.CreateList(this, iForm?.Pages);
+            __DataFormPages = DxDataFormPage.CreateList(this, iForm?.Pages);
         }
         /// <summary>
         /// Metoda invaliduje všechny souřadnice na stránkách, které jsou závislé na Zoomu a na DPI.
@@ -276,14 +302,14 @@ namespace Noris.Clients.Win.Components.AsolDX
             InvalidateCurrentBounds();
         }
         /// <summary>
-        /// Metoda zkusí najít navigační stránku (typově přesnou) a její data stránky <see cref="DxDataFormPageDef"/>
+        /// Metoda zkusí najít navigační stránku (typově přesnou) a její data stránky <see cref="DxDataFormPage"/>
         /// pro vstupní obecnou stránku záložky.
         /// </summary>
         /// <param name="page"></param>
         /// <param name="tabPage"></param>
         /// <param name="dxPage"></param>
         /// <returns></returns>
-        private bool _TryGetFormTab(DevExpress.XtraBars.Navigation.INavigationPageBase page, out DevExpress.XtraBars.Navigation.TabNavigationPage tabPage, out DxDataFormPageDef dxPage)
+        private bool _TryGetFormTab(DevExpress.XtraBars.Navigation.INavigationPageBase page, out DevExpress.XtraBars.Navigation.TabNavigationPage tabPage, out DxDataFormPage dxPage)
         {
             tabPage = null;
             dxPage = null;
@@ -293,13 +319,13 @@ namespace Noris.Clients.Win.Components.AsolDX
             return _TryGetFormPage(tabName, out dxPage);
         }
         /// <summary>
-        /// Metoda zkusí najít data stránky <see cref="DxDataFormPageDef"/>
+        /// Metoda zkusí najít data stránky <see cref="DxDataFormPage"/>
         /// pro dané ID stránky.
         /// </summary>
         /// <param name="pageId"></param>
         /// <param name="dxPage"></param>
         /// <returns></returns>
-        private bool _TryGetFormPage(string pageId, out DxDataFormPageDef dxPage)
+        private bool _TryGetFormPage(string pageId, out DxDataFormPage dxPage)
         {
             dxPage = null;
             if (String.IsNullOrEmpty(pageId)) return false;
@@ -313,7 +339,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Data definic pro jednotlivé vstupní stránky.
         /// Jedna stránka je definovaná designerem, a je umístěna na jedné záložce <see cref=" DevExpress.XtraBars.Navigation.TabNavigationPage"/> nebo v celém prostoru <see cref="DxDataForm"/>.
         /// </summary>
-        private List<DxDataFormPageDef> __DataFormPages;
+        private List<DxDataFormPage> __DataFormPages;
         #region Práce s controly DxDataFormPanel (jednoduchý DataForm) a / nebo TabPane (záložky)
         /// <summary>
         /// Aktivuje patřičný control pro zobrazení DataFormu.
@@ -483,7 +509,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Pokud má DataForm více stránek (vizuálních záložek), pak je zde definice právě té aktivní = viditelné.
         /// Podle této definice se odvozují definice pro jednotlivé řádky.
         /// </summary>
-        internal DxDataFormPageDef ActiveDxPage { get { return __ActiveDxPage; } private set { _SetActiveDxPage(value, RefreshParts.All); } } private DxDataFormPageDef __ActiveDxPage;
+        internal DxDataFormPage ActiveDxPage { get { return __ActiveDxPage; } private set { _SetActiveDxPage(value, RefreshParts.All); } } private DxDataFormPage __ActiveDxPage;
         /// <summary>
         /// Aktuální velikost prvku.
         /// Hodnota je v aktuálních pixelech (nikoli designové pixely) = přepočteno Zoomem a DPI.
@@ -498,7 +524,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="activeDxPage"></param>
         /// <param name="refreshParts"></param>
-        private void _SetActiveDxPage(DxDataFormPageDef activeDxPage, RefreshParts refreshParts = RefreshParts.None)
+        private void _SetActiveDxPage(DxDataFormPage activeDxPage, RefreshParts refreshParts = RefreshParts.None)
         {
             activeDxPage.CheckValidLayout();
             __ActiveDxPage = activeDxPage;
@@ -1528,29 +1554,29 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
     #endregion
 
     // Definice vzhledu:
-    #region class DxDataFormPageDef : Třída reprezentující jednu designem definovanou stránku v dataformu. Jedna Page je umístěna na jedné záložce.
+    #region class DxDataFormPage : Třída reprezentující jednu designem definovanou stránku v dataformu. Jedna Page je umístěna na jedné záložce.
     /// <summary>
-    /// <see cref="DxDataFormPageDef"/> : Třída reprezentující jednu designem definovanou stránku v dataformu.
+    /// <see cref="DxDataFormPage"/> : Třída reprezentující jednu designem definovanou stránku v dataformu.
     /// Odpovídá tedy jedné definici stránky <see cref="IDataFormPage"/>.
     /// </summary>
-    internal class DxDataFormPageDef : DxLayoutItem, IPageItem
+    internal class DxDataFormPage : DxLayoutItem, IPageItem
     {
         #region Konstruktor, vlastník, prvky
         /// <summary>
-        /// Vytvoří a vrátí List obsahující <see cref="DxDataFormPageDef"/>, vytvořený z dodaných instancí <see cref="IDataFormPage"/>.
+        /// Vytvoří a vrátí List obsahující <see cref="DxDataFormPage"/>, vytvořený z dodaných instancí <see cref="IDataFormPage"/>.
         /// </summary>
         /// <param name="dataForm"></param>
         /// <param name="iPages"></param>
         /// <returns></returns>
-        public static List<DxDataFormPageDef> CreateList(DxDataForm dataForm, IEnumerable<IDataFormPage> iPages)
+        public static List<DxDataFormPage> CreateList(DxDataForm dataForm, IEnumerable<IDataFormPage> iPages)
         {
-            List<DxDataFormPageDef> dataPages = new List<DxDataFormPageDef>();
+            List<DxDataFormPage> dataPages = new List<DxDataFormPage>();
             if (iPages != null)
             {
                 foreach (var iPage in iPages)
                 {
                     if (iPage != null)
-                        dataPages.Add(new DxDataFormPageDef(dataForm, iPage));
+                        dataPages.Add(new DxDataFormPage(dataForm, iPage));
                 }
             }
             return dataPages;
@@ -1560,11 +1586,11 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         /// <param name="dataForm"></param>
         /// <param name="iPage"></param>
-        public DxDataFormPageDef(DxDataForm dataForm, IDataFormPage iPage)
+        public DxDataFormPage(DxDataForm dataForm, IDataFormPage iPage)
         {
             __DataForm = dataForm;
             __IPage = iPage;
-            __Groups = DxDataFormGroupDef.CreateList(this, iPage.Groups);
+            __Groups = DxDataFormGroup.CreateList(this, iPage.Groups);
         }
         /// <summary>Designový a datový vlastník - <see cref="DxDataForm"/></summary>
         private DxDataForm __DataForm;
@@ -1573,7 +1599,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>Deklarace této stránky</summary>
         private IDataFormPage __IPage;
         /// <summary>Grupy</summary>
-        private List<DxDataFormGroupDef> __Groups;
+        private List<DxDataFormGroup> __Groups;
         /// <summary>
         /// Významový vlastník - <see cref="DxDataForm"/>
         /// </summary>
@@ -1604,7 +1630,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Pole fyzických skupin na této stránce
         /// </summary>
-        internal IList<DxDataFormGroupDef> Groups { get { return __Groups; } }
+        internal IList<DxDataFormGroup> Groups { get { return __Groups; } }
         /// <summary>
         /// Stránka je na aktivní záložce? 
         /// Po iniciaci se přebírá do GUI, následně udržuje GUI.
@@ -1898,29 +1924,29 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         #endregion
     }
     #endregion
-    #region class DxDataFormGroupDef : Třída reprezentující jednu designem definovanou grupu.
+    #region class DxDataFormGroup : Třída reprezentující jednu designem definovanou grupu.
     /// <summary>
-    /// <see cref="DxDataFormGroupDef"/> : Třída obsahující jednu designem definovanou grupu. Obsahuje oblasti Header, Content a odpovídající prvky.
+    /// <see cref="DxDataFormGroup"/> : Třída obsahující jednu designem definovanou grupu. Obsahuje oblasti Header, Content a odpovídající prvky.
     /// Zajišťuje vykreslení podkladu grupy.
     /// </summary>
-    internal class DxDataFormGroupDef : DxLayoutItem
+    internal class DxDataFormGroup : DxLayoutItem
     {
         #region Konstruktor, vlastník, prvky
         /// <summary>
-        /// Vytvoří a vrátí List obsahující <see cref="DxDataFormGroupDef"/>, vytvořený z dodaných instancí <see cref="IDataFormGroup"/>.
+        /// Vytvoří a vrátí List obsahující <see cref="DxDataFormGroup"/>, vytvořený z dodaných instancí <see cref="IDataFormGroup"/>.
         /// </summary>
         /// <param name="dataPage"></param>
         /// <param name="iGroups"></param>
         /// <returns></returns>
-        public static List<DxDataFormGroupDef> CreateList(DxDataFormPageDef dataPage, IEnumerable<IDataFormGroup> iGroups)
+        public static List<DxDataFormGroup> CreateList(DxDataFormPage dataPage, IEnumerable<IDataFormGroup> iGroups)
         {
-            List<DxDataFormGroupDef> dataGroups = new List<DxDataFormGroupDef>();
+            List<DxDataFormGroup> dataGroups = new List<DxDataFormGroup>();
             if (iGroups != null)
             {
                 foreach (IDataFormGroup iGroup in iGroups)
                 {
                     if (iGroup == null)
-                        dataGroups.Add(new DxDataFormGroupDef(dataPage, iGroup));
+                        dataGroups.Add(new DxDataFormGroup(dataPage, iGroup));
                 }
             }
             return dataGroups;
@@ -1930,7 +1956,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         /// <param name="dataPage"></param>
         /// <param name="iGroup"></param>
-        public DxDataFormGroupDef(DxDataFormPageDef dataPage, IDataFormGroup iGroup)
+        public DxDataFormGroup(DxDataFormPage dataPage, IDataFormGroup iGroup)
         {
             __DataPage = dataPage;
             __IGroup = iGroup;
@@ -1939,8 +1965,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             DxDataFormItem.AddToList(this, false, iGroup?.Items, items);
             __Items = items;
         }
-        /// <summary>Vlastník - <see cref="DxDataFormPageDef"/></summary>
-        private DxDataFormPageDef __DataPage;
+        /// <summary>Vlastník - <see cref="DxDataFormPage"/></summary>
+        private DxDataFormPage __DataPage;
         /// <summary>Deklarace této grupy</summary>
         private IDataFormGroup __IGroup;
         /// <summary>Prvky v této grupě</summary>
@@ -1950,9 +1976,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         internal DxDataForm DataForm { get { return this.__DataPage?.DataForm; } }
         /// <summary>
-        /// Vlastník - <see cref="DxDataFormPageDef"/>
+        /// Vlastník - <see cref="DxDataFormPage"/>
         /// </summary>
-        internal DxDataFormPageDef DataPage { get { return __DataPage; } }
+        internal DxDataFormPage DataPage { get { return __DataPage; } }
         /// <summary>
         /// Aktuálně platná hodnota DeviceDpi
         /// </summary>
@@ -2792,7 +2818,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="isHeaderItems">false pro běžné columny v prostoru Content, true pro columny v prostoru Header (=text titulku, ikony, atd)</param>
         /// <param name="iItems"></param>
         /// <returns></returns>
-        public static List<DxDataFormItem> CreateList(DxDataFormGroupDef dataGroup, bool isHeaderItems, IEnumerable<IDataFormColumn> iItems)
+        public static List<DxDataFormItem> CreateList(DxDataFormGroup dataGroup, bool isHeaderItems, IEnumerable<IDataFormColumn> iItems)
         {
             List<DxDataFormItem> dxItems = new List<DxDataFormItem>();
             AddToList(dataGroup, isHeaderItems, iItems, dxItems);
@@ -2806,7 +2832,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="iItems"></param>
         /// <param name="dxItems"></param>
         /// <returns></returns>
-        public static void AddToList(DxDataFormGroupDef dataGroup, bool isHeaderItems, IEnumerable<IDataFormColumn> iItems, List<DxDataFormItem> dxItems)
+        public static void AddToList(DxDataFormGroup dataGroup, bool isHeaderItems, IEnumerable<IDataFormColumn> iItems, List<DxDataFormItem> dxItems)
         {
             if (iItems != null)
             {
@@ -2823,15 +2849,15 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="dataGroup"></param>
         /// <param name="isTitleItem">false pro běžné columny v prostoru Content, true pro columny v prostoru Title (=text titulku, ikony, atd)</param>
         /// <param name="iItem"></param>
-        public DxDataFormItem(DxDataFormGroupDef dataGroup, bool isTitleItem, IDataFormColumn iItem)
+        public DxDataFormItem(DxDataFormGroup dataGroup, bool isTitleItem, IDataFormColumn iItem)
             : base()
         {
             __DataGroup = dataGroup;
             __IsHeaderItem = isTitleItem;
             __IItem = iItem;
         }
-        /// <summary>Vlastník - <see cref="DxDataFormGroupDef"/></summary>
-        private DxDataFormGroupDef __DataGroup;
+        /// <summary>Vlastník - <see cref="DxDataFormGroup"/></summary>
+        private DxDataFormGroup __DataGroup;
         /// <summary>Hodnota false = prvek je umístěn v prostoru Content / Hodnota true = prvek je umístěn v prostoru Title</summary>
         private bool __IsHeaderItem;
         /// <summary>Deklarace prvku</summary>
@@ -2841,13 +2867,13 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         public DxDataForm DataForm { get { return this.__DataGroup?.DataPage?.DataForm; } }
         /// <summary>
-        /// Vlastník - <see cref="DxDataFormPageDef"/>
+        /// Vlastník - <see cref="DxDataFormPage"/>
         /// </summary>
-        public DxDataFormPageDef DataPage { get { return __DataGroup?.DataPage; } }
+        public DxDataFormPage DataPage { get { return __DataGroup?.DataPage; } }
         /// <summary>
         /// Vlastník - <see cref="DxDataFormGroup"/>
         /// </summary>
-        public DxDataFormGroupDef DataGroup { get { return __DataGroup; } }
+        public DxDataFormGroup DataGroup { get { return __DataGroup; } }
         /// <summary>Hodnota true = prvek je umístěn v prostoru Header / false = jinde (nejspíš <see cref="IsContentItem"/>)</summary>
         public bool IsHeaderItem { get { return __IsHeaderItem; } }
         /// <summary>Hodnota true = prvek je umístěn v prostoru Content / false = jinde (nejspíš <see cref="IsHeaderItem"/>)</summary>
@@ -2953,7 +2979,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
     /// anebo je umístěn na určité stránce záložkovníku <see cref="DxTabPane"/>, pak jde o vícezáložkový DataForm.
     /// Tuto volbu řídí <see cref="DxDataForm"/> podle dodaných stránek a podle dynamického layoutu.
     /// <para/>
-    /// Panel <see cref="DxDataFormPanel"/> v sobě obsahuje definici skupin <see cref="DxDataFormGroupDef"/> v property <see cref="Groups"/>, která určuje layout prvků dataformu.
+    /// Panel <see cref="DxDataFormPanel"/> v sobě obsahuje definici skupin <see cref="DxDataFormGroup"/> v property <see cref="Groups"/>, která určuje layout prvků dataformu.
     /// <para/>
     /// Jeden panel <see cref="DxDataFormPanel"/> v sobě hostuje přinejmenším jednu nebo více částí <see cref="DxDataFormPart"/>.
     /// Každá jedna část <see cref="DxDataFormPart"/> v sobě zobrazuje fyzická data, může mít / nemusí mít ScrollBary a Headery.
@@ -3198,9 +3224,9 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         public DxDataFormPartId PartId { get { return _PartId; } }
         /// <summary>
         /// Aktuálně zobrazované grupy, obsahující definice jednotlivých prvků <see cref="DxDataFormItem"/>.
-        /// Grupy jsou získány z viditelných řádků, z jejich instancí stránek <see cref="DxDataFormPageDef"/>.
+        /// Grupy jsou získány z viditelných řádků, z jejich instancí stránek <see cref="DxDataFormPage"/>.
         /// </summary>
-        private List<DxDataFormGroupDef> CurrentGroups { get { return this.DataForm.CurrentGroupDefinitions; } }
+        private List<DxDataFormGroup> CurrentGroups { get { return this.DataForm.CurrentGroupDefinitions; } }
         /// <summary>
         /// Aktuální sumární velikost sady grup v pixelech.
         /// Je vypočtena pro aktuální grupy <see cref="CurrentGroups"/> po jejich setování a slouží pro vizuální práci s controly.
@@ -3304,7 +3330,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Po vložení této definice neproběhne automaticky refresh controlu, je tedy vhodné následně volat <see cref="Refresh(RefreshParts)"/> 
         /// a předat v parametru požadavek <see cref="RefreshParts.InvalidateControl"/>.
         /// </summary>
-        public List<DxDataFormGroupDef> Groups { get { return this.DataForm.CurrentGroupDefinitions; } }
+        public List<DxDataFormGroup> Groups { get { return this.DataForm.CurrentGroupDefinitions; } }
         /// <summary>
         /// Inicializuje pole prvků
         /// </summary>
@@ -3352,7 +3378,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
             }
         }
 
-        private List<DxDataFormGroupDef> __VisibleGroups;
+        private List<DxDataFormGroup> __VisibleGroups;
         private List<DxDataFormItem> __VisibleItems;
         #endregion
         #region Buňky DxDataFormCell
@@ -3458,8 +3484,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         {
             if (__VisibleGroups == null) return;
 
-            DxDataFormGroupDef oldGroup = __CurrentOnMouseGroup;
-            DxDataFormGroupDef newGroup = null;
+            DxDataFormGroup oldGroup = __CurrentOnMouseGroup;
+            DxDataFormGroup newGroup = null;
             bool oldExists = (oldGroup != null);
             bool newExists = location.HasValue && __VisibleGroups.TryGetLast(i => i.IsVisibleOnPoint(location.Value), out newGroup);
 
@@ -3478,7 +3504,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Je voláno při příchodu myši na danou grupu.
         /// </summary>
         /// <param name="group"></param>
-        private void MouseEnterGroup(DxDataFormGroupDef group)
+        private void MouseEnterGroup(DxDataFormGroup group)
         {
             __CurrentOnMouseGroup = group;
         }
@@ -3492,7 +3518,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <summary>
         /// Grupa aktuálně se nacházející pod myší
         /// </summary>
-        private DxDataFormGroupDef __CurrentOnMouseGroup;
+        private DxDataFormGroup __CurrentOnMouseGroup;
         /// <summary>
         /// Detekuje aktuální prvek pod danou souřadnicí, detekuje změny (Leave a Enter) a udržuje v proměnné <see cref="__CurrentOnMouseItem"/> aktuální prvek na dané souřadnici
         /// </summary>
@@ -3928,7 +3954,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="group"></param>
         /// <param name="visibleOrigin"></param>
         /// <param name="e"></param>
-        private void PaintGroupStandard(DxDataFormGroupDef group, Point visibleOrigin, DxBufferedGraphicPaintArgs e)
+        private void PaintGroupStandard(DxDataFormGroup group, Point visibleOrigin, DxBufferedGraphicPaintArgs e)
         {
             var bounds = group.CurrentGroupBounds;
             Point location = bounds.Location.Sub(visibleOrigin);
@@ -4264,7 +4290,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
     }
     #endregion
 
-    #region DxDataFormRowSet : Sada řádků
+    #region class DxDataFormRowSet : Sada řádků
     /// <summary>
     /// Sada řádků: v této třídě jsou uloženy datové řádky s aplikovaným řádkovým filtrem a tříděním.
     /// Třída v sobě tedy ukládá jeden seznam řádků (obsahující aktuální podmnožinu ze všech řádků), plus objekt filtru a sorteru.
@@ -4628,7 +4654,7 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
 
 
 
-        public List<DxDataFormGroupDef> Groups { get { return this.__DataForm.CurrentGroupDefinitions; } }
+        public List<DxDataFormGroup> Groups { get { return this.__DataForm.CurrentGroupDefinitions; } }
 
 
         /// <summary>
