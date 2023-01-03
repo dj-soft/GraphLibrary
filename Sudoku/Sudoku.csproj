@@ -53,7 +53,9 @@
     <Compile Include="Components\GameControl.cs">
       <SubType>Component</SubType>
     </Compile>
+    <Compile Include="Components\LayeredGraphicBase.cs" />
     <Compile Include="Data\Game.cs" />
+    <Compile Include="Data\StopwatchExt.cs" />
     <Compile Include="Forms\MainForm.cs">
       <SubType>Form</SubType>
     </Compile>

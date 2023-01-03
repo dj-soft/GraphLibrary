@@ -20,13 +20,17 @@ namespace DjSoft.Games.Sudoku.Components
         /// </summary>
         /// <param name="owner">Control, který bude invalidován po provedení změn</param>
         /// <param name="fps">Frames per second = počet ticků za sekundu. Default = 25, přípustná hodnota 1 až 100.</param>
-        public Animator(System.Windows.Forms.Control owner = null, int? fps = null)
+        public Animator(Control owner = null, int? fps = null)
         {
             if (owner != null) this.__Owner = new WeakReference<System.Windows.Forms.Control>(owner);
             this.__Fps = (fps.HasValue ? (fps.Value < 1 ? 1 : (fps.Value > 100 ? 100 : fps.Value)) : 40);
             this.__Motion = new List<Motion>();
             this._TimerStart();
         }
+        /// <summary>
+        /// WeakReference na Owner Control
+        /// </summary>
+        private WeakReference<System.Windows.Forms.Control> __Owner;
         /// <summary>
         /// Obsahuje true, pokud máme Ownera
         /// </summary>
@@ -41,7 +45,7 @@ namespace DjSoft.Games.Sudoku.Components
         /// <summary>
         /// Obsahuje Owner control
         /// </summary>
-        private System.Windows.Forms.Control _Owner
+        private Control _Owner
         {
             get 
             {
@@ -63,7 +67,6 @@ namespace DjSoft.Games.Sudoku.Components
                 owner.Invalidate();
             }
         }
-        private WeakReference<System.Windows.Forms.Control> __Owner;
         /// <summary>
         /// Metoda zajistí, že dodaná akce <paramref name="action"/> bude volána v GUI threadu ownera <see cref="_Owner"/>.
         /// Pokud Owner neexistuje, anebo nepotřebuje provést invokaci, pak bude akce spuštěna přímo v tomto threadu.
