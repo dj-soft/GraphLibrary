@@ -8,12 +8,16 @@ using System.Windows.Forms;
 
 namespace DjSoft.Games.Sudoku.Components
 {
-    internal class GameControl : Control
+    public class GameControl : AnimatedControl
     {
         public GameControl()
         {
-            __Animator = new Animator(this);
+            this.Animator.AddMotion(100, Animator.TimeMode.Cycling, 0d, _AnimeBgr, Color.LightBlue, Color.DarkBlue, null);
         }
-        private Animator __Animator;
+        private void _AnimeBgr(Animator.Motion motion)
+        {
+            if (motion.IsCurrentValueChanged)
+                this.BackColor = (Color)motion.CurrentValue;
+        }
     }
 }
