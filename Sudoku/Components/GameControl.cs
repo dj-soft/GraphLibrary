@@ -10,5 +10,10 @@ namespace DjSoft.Games.Sudoku.Components
 {
     internal class GameControl : Control
     {
+        public GameControl()
+        {
+            __Animator = new Animator(this);
+        }
+        private Animator __Animator;
     }
 }
