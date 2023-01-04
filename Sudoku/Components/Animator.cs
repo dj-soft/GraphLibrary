@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -17,12 +18,15 @@ namespace DjSoft.Games.Sudoku.Components
         #region Konstruktor, Owner, FPS, Timer
         /// <summary>
         /// Konstruktor, pro daný control. Smí být null.
+        /// Pozor, animátor je vytvořen ve stavu <see cref="Running"/> = false, proto aby mohl být bezpečně naplněn a připravena okolní infrastruktura. 
+        /// Až poté je vhodné animátor spustit nastavením <see cref="Running"/> = true.
         /// </summary>
         /// <param name="owner">Control, který bude invalidován po provedení změn</param>
         /// <param name="fps">Frames per second = počet ticků za sekundu. Default = 25, přípustná hodnota 1 až 100.</param>
-        public Animator(Control owner = null, int? fps = null)
+        public Animator(Control owner = null, double? fps = null)
         {
             if (owner != null) this.__Owner = new WeakReference<System.Windows.Forms.Control>(owner);
+            this.__Running = false;
             this.__Fps = (fps.HasValue ? (fps.Value < 1 ? 1 : (fps.Value > 100 ? 100 : fps.Value)) : 40);
             this.__Motion = new List<Motion>();
             this._TimerStart();
@@ -83,19 +87,25 @@ namespace DjSoft.Games.Sudoku.Components
         }
         /// <summary>
         /// Frames per second = počet ticků za sekundu.
+        /// Lze setovat hodnotu v rozsahu 1 - 100. Setování se uplatní okamžitě. Nová hodnota ovlivní "rychlost animace" již zadaných Motions.
         /// </summary>
-        public int Fps { get { return __Fps; } } private readonly int __Fps;
+        public double Fps { get { return __Fps; } set { this.__Fps = (value < 1d ? 1d : (value > 100d ? 100d : value)); } } private double __Fps;
+        /// <summary>
+        /// Animace běží? Nastavením false bude pozastavena (freeze), nastavením true se rozběhne.
+        /// </summary>
+        public bool Running { get { return __Running; } set { this.__Running = value; } } private bool __Running;
         /// <summary>
         /// Spustí časovou smyčku animace.
         /// Volá se v Main (GUI) threadu, nastartuje separátní thread na pozadí a tato metoda ihned poté skončí.
         /// </summary>
         private void _TimerStart()
         {
-            this.__StopWatch = new System.Diagnostics.Stopwatch();
+            this.__StopWatch = new Data.StopwatchExt();
+            this.__WinMMTimer = new WinMMTimer();
 
             this.__TimerThread = new Thread(_TimerLoop);
             this.__TimerThread.IsBackground = true;
-            this.__TimerThread.Priority = ThreadPriority.BelowNormal;
+            this.__TimerThread.Priority = ThreadPriority.Normal;
             this.__TimerThread.Name = "AnimatorTimer";
             this.__TimerThread.Start();
         }
@@ -106,19 +116,58 @@ namespace DjSoft.Games.Sudoku.Components
         {
             __StopWatch.Start();
             __AnimatorTimerStop = false;
-            while (true)
+            try
             {
-                if (__AnimatorTimerStop) break;
-                int sleepTimeMiliseconds = (1000 / __Fps);
-                if (__Motion.Count > 0)
-                {   // Naprostou většinu času bude počet akcí = 0, takže by bylo zbytečné provádět invokaci GUI threadu...
-                    __StopWatch.Restart();
-                    _RunInGui(_OneTick);
+                long tick = 0L;
+                StringBuilder sbLog = new StringBuilder();
+                sbLog.AppendLine($"Tick\tTime [ms]\tCycle [ms]\tAction [ms]\tWait [ms]\tDoSleep\tSleep\tWake\tDream");
+                while (true)
+                {
                     if (__AnimatorTimerStop) break;
-                    sleepTimeMiliseconds -= (int)__StopWatch.ElapsedMilliseconds;
+
+                    double currMs = __StopWatch.ElapsedMilisecs;         // Aktuální čas
+                    double cycleMs = (1000d / __Fps);                    // Délka celého cyklu, odpovídající FPS
+                    double endMs = currMs + cycleMs;                     // Čas na konci cyklu
+                    double actionMs = 0d;
+                    double waitMs = cycleMs;
+                    tick++;
+                    if (__Running && __Motion.Count > 0)
+                    {   // Pokud neběžíme, neřešíme nic.
+                        // A naprostou většinu času bude počet akcí = 0, takže by bylo zbytečné provádět invokaci GUI threadu...
+                        _RunInGui(_OneTick);
+                        if (__AnimatorTimerStop) break;
+
+                        double beginMs = __StopWatch.ElapsedMilisecs;    // Nynější čas
+                        actionMs = beginMs - currMs;                     // Čas vlastní akce
+                        waitMs = endMs - beginMs;                        // Zbývající čas k čekání
+                    }
+
+                    bool doWait = waitMs > 2d;
+
+                    double sleepMs = __StopWatch.ElapsedMilisecs;        // Aktuální čas před ulehnutím
+                    if (doWait)
+                        __WinMMTimer.Wait((uint)waitMs);                 // Počkáme si
+                    double wakeMs = __StopWatch.ElapsedMilisecs;         // Aktuální čas po vyspinkání
+                    double dreamMs = wakeMs - sleepMs;                   // Takhle dlouho jsme spinkali
+
+                    sbLog.AppendLine($"{tick}\t{currMs:F3}\t{cycleMs:F3}\t{actionMs:F3}\t{waitMs:F3}\t{(doWait ? "1" : "0")}\t{sleepMs:F3}\t{wakeMs:F3}\t{dreamMs:F3}");
+
+                    if ((tick % 100) == 0)
+                    {
+                        string log = sbLog.ToString();
+                        //_RunInGui(() =>
+                        //{
+                        //    System.Windows.Forms.MessageBox.Show("Máme data");
+                        //    System.Windows.Forms.Clipboard.Clear();
+                        //    System.Windows.Forms.Clipboard.SetText(log);
+                        //});
+                        sbLog.Clear();
+                    }
                 }
-                if (sleepTimeMiliseconds > 0)
-                    Thread.Sleep(sleepTimeMiliseconds);
+            }
+            finally
+            {
+                this.__WinMMTimer.Dispose();
             }
         }
         /// <summary>
@@ -128,7 +177,11 @@ namespace DjSoft.Games.Sudoku.Components
         /// <summary>
         /// Přesný časovač pro měření režijního času ticku, pro určení přesného času Sleep mezi dvěma Ticky tak, aby byl dodržen <see cref="Fps"/>
         /// </summary>
-        private System.Diagnostics.Stopwatch __StopWatch;
+        private Data.StopwatchExt __StopWatch;
+        /// <summary>
+        /// Přesný časovač čekání
+        /// </summary>
+        private WinMMTimer __WinMMTimer;
         /// <summary>
         /// Příznak, že časová smyčka animátoru má být zastavena.
         /// Výchozí hodnota je false.
@@ -138,7 +191,18 @@ namespace DjSoft.Games.Sudoku.Components
         #endregion
         #region Správa animačních akcí
         /// <summary>
-        /// Konstruktor
+        /// Vloží další definici animace, tato animace nemá vlastní hodnotu, pouze zajišťuje v pravidelném cyklu vyvolání cílové metody.
+        /// </summary>
+        /// <param name="action">Akce volaná v každém kroku</param>
+        /// <param name="userData">Libovolná data aplikace</param>
+        public void AddMotion(Action<Motion> action, object userData)
+        {
+            Motion motion = new Motion(action, userData);
+            lock (__Motion)
+                __Motion.Add(motion);
+        }
+        /// <summary>
+        /// Vloží další definici animace
         /// </summary>
         /// <param name="stepCount">Počet kroků na celý cyklus. Animátor provede <see cref="Fps"/> kroků za jednu sekundu, default 25. Čas jednoho cyklu animace v sekundách je tedy <paramref name="stepCount"/> / <see cref="Fps"/>.</param>
         /// <param name="timeMode"></param>
@@ -150,6 +214,54 @@ namespace DjSoft.Games.Sudoku.Components
         public void AddMotion(int? stepCount, TimeMode timeMode, double timeZoom, Action<Motion> action, object startValue, object endValue, object userData)
         {
             Motion motion = new Motion(stepCount, timeMode, timeZoom, action, startValue, endValue, userData);
+            lock (__Motion)
+                __Motion.Add(motion);
+        }
+        /// <summary>
+        /// Vloží další definici animace
+        /// </summary>
+        /// <param name="stepCount">Počet kroků na celý cyklus. Animátor provede <see cref="Fps"/> kroků za jednu sekundu, default 25. Čas jednoho cyklu animace v sekundách je tedy <paramref name="stepCount"/> / <see cref="Fps"/>.</param>
+        /// <param name="stepCurrent">Výchozí pozice</param>
+        /// <param name="timeMode"></param>
+        /// <param name="timeZoom"></param>
+        /// <param name="action">Akce volaná v každém kroku</param>
+        /// <param name="startValue">Počáteční hodnota</param>
+        /// <param name="endValue">Koncová hodnota</param>
+        /// <param name="userData">Libovolná data aplikace</param>
+        public void AddMotion(int? stepCount, int? stepCurrent, TimeMode timeMode, double timeZoom, Action<Motion> action, object startValue, object endValue, object userData)
+        {
+            Motion motion = new Motion(stepCount, stepCurrent, timeMode, timeZoom, action, startValue, endValue, userData);
+            lock (__Motion)
+                __Motion.Add(motion);
+        }
+        /// <summary>
+        /// Vloží další definici animace
+        /// </summary>
+        /// <param name="stepCount">Počet kroků na celý cyklus. Animátor provede <see cref="Fps"/> kroků za jednu sekundu, default 25. Čas jednoho cyklu animace v sekundách je tedy <paramref name="stepCount"/> / <see cref="Fps"/>.</param>
+        /// <param name="timeMode"></param>
+        /// <param name="timeZoom"></param>
+        /// <param name="action">Akce volaná v každém kroku</param>
+        /// <param name="valueSet"></param>
+        /// <param name="userData">Libovolná data aplikace</param>
+        public void AddMotion(int? stepCount, TimeMode timeMode, double timeZoom, Action<Motion> action, AnimatedValueSet valueSet, object userData)
+        {
+            Motion motion = new Motion(stepCount, timeMode, timeZoom, action, valueSet, userData);
+            lock (__Motion)
+                __Motion.Add(motion);
+        }
+        /// <summary>
+        /// Vloží další definici animace
+        /// </summary>
+        /// <param name="stepCount">Počet kroků na celý cyklus. Animátor provede <see cref="Fps"/> kroků za jednu sekundu, default 25. Čas jednoho cyklu animace v sekundách je tedy <paramref name="stepCount"/> / <see cref="Fps"/>.</param>
+        /// <param name="stepCurrent">Výchozí pozice</param>
+        /// <param name="timeMode"></param>
+        /// <param name="timeZoom"></param>
+        /// <param name="action">Akce volaná v každém kroku</param>
+        /// <param name="valueSet"></param>
+        /// <param name="userData">Libovolná data aplikace</param>
+        public void AddMotion(int? stepCount, int? stepCurrent, TimeMode timeMode, double timeZoom, Action<Motion> action, AnimatedValueSet valueSet, object userData)
+        {
+            Motion motion = new Motion(stepCount, stepCurrent, timeMode, timeZoom, action, valueSet, userData);
             lock (__Motion)
                 __Motion.Add(motion);
         }
@@ -218,10 +330,10 @@ namespace DjSoft.Games.Sudoku.Components
             /// <param name="userData"></param>
             public Motion(int? stepCount, TimeMode timeMode, double timeZoom, Action<Motion> action, object startValue, object endValue, object userData)
             {
-                CheckValues(startValue, endValue, out ValueType valueType);
+                CheckValues(startValue, endValue, out AnimatedValueType valueType);
 
-                __StepIndex = 0;
                 __StepCount = (stepCount.HasValue && stepCount.Value > 0 ? stepCount.Value : -1);
+                __StepIndex = 0;
                 __TimeMode = timeMode;
                 __TimeCoeff = GetZoomCoefficient(timeZoom);
                 __Action = action;
@@ -232,13 +344,87 @@ namespace DjSoft.Games.Sudoku.Components
                 __UserData = userData;
             }
             /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="stepCount"></param>
+            /// <param name="timeMode"></param>
+            /// <param name="timeZoom">Zoom času, v rozmezí -10 až +10</param>
+            /// <param name="action"></param>
+            /// <param name="startValue"></param>
+            /// <param name="endValue"></param>
+            /// <param name="userData"></param>
+            public Motion(int? stepCount, int? stepCurrent, TimeMode timeMode, double timeZoom, Action<Motion> action, object startValue, object endValue, object userData)
+            {
+                CheckValues(startValue, endValue, out AnimatedValueType valueType);
+
+                __StepCount = (stepCount.HasValue && stepCount.Value > 0 ? stepCount.Value : -1);
+                __StepIndex = (stepCurrent.HasValue ? _GetAlignedValue(stepCurrent.Value, 0, __StepCount) : 0);
+                __TimeMode = timeMode;
+                __TimeCoeff = GetZoomCoefficient(timeZoom);
+                __Action = action;
+                __ValueType = valueType;
+                __StartValue = startValue;
+                __EndValue = endValue;
+                __CurrentValue = startValue;
+                __UserData = userData;
+            }
+            /// <summary>
+            /// Vloží další definici animace
+            /// </summary>
+            /// <param name="stepCount">Počet kroků na celý cyklus. Animátor provede <see cref="Fps"/> kroků za jednu sekundu, default 25. Čas jednoho cyklu animace v sekundách je tedy <paramref name="stepCount"/> / <see cref="Fps"/>.</param>
+            /// <param name="timeMode"></param>
+            /// <param name="timeZoom"></param>
+            /// <param name="action">Akce volaná v každém kroku</param>
+            /// <param name="valueSet"></param>
+            /// <param name="userData">Libovolná data aplikace</param>
+            public Motion(int? stepCount, TimeMode timeMode, double timeZoom, Action<Motion> action, AnimatedValueSet valueSet, object userData)
+            {
+                __StepCount = (stepCount.HasValue && stepCount.Value > 0 ? stepCount.Value : -1);
+                __StepIndex = 0;
+                __TimeMode = timeMode;
+                __TimeCoeff = GetZoomCoefficient(timeZoom);
+                __Action = action;
+                __ValueType = valueSet.ValueType;
+                __ValueSet = valueSet;
+                __CurrentValue = valueSet.GetValueAtPosition(0d);
+                __UserData = userData;
+            }
+            /// <summary>
+            /// Vloží další definici animace
+            /// </summary>
+            /// <param name="stepCount">Počet kroků na celý cyklus. Animátor provede <see cref="Fps"/> kroků za jednu sekundu, default 25. Čas jednoho cyklu animace v sekundách je tedy <paramref name="stepCount"/> / <see cref="Fps"/>.</param>
+            /// <param name="timeMode"></param>
+            /// <param name="timeZoom"></param>
+            /// <param name="action">Akce volaná v každém kroku</param>
+            /// <param name="valueSet"></param>
+            /// <param name="userData">Libovolná data aplikace</param>
+            public Motion(int? stepCount, int? stepCurrent, TimeMode timeMode, double timeZoom, Action<Motion> action, AnimatedValueSet valueSet, object userData)
+            {
+                __StepCount = (stepCount.HasValue && stepCount.Value > 0 ? stepCount.Value : -1);
+                __StepIndex = (stepCurrent.HasValue ? _GetAlignedValue(stepCurrent.Value, 0, __StepCount) : 0);
+                __TimeMode = timeMode;
+                __TimeCoeff = GetZoomCoefficient(timeZoom);
+                __Action = action;
+                __ValueType = valueSet.ValueType;
+                __ValueSet = valueSet;
+                __CurrentValue = valueSet.GetValueAtPosition(0d);
+                __UserData = userData;
+            }
+            private static int _GetAlignedValue(int value, int min, int max)
+            {
+                if (max <= min) return min;
+                if (value < min) return min;
+                if (value > max) return max;
+                return value;
+            }
+            /// <summary>
             /// Volaná akce
             /// </summary>
             private Action<Motion> __Action;
             /// <summary>
             /// Typ hodnoty
             /// </summary>
-            private ValueType __ValueType;
+            private AnimatedValueType __ValueType;
             /// <summary>
             /// Dynamika pohybu
             /// </summary>
@@ -263,6 +449,10 @@ namespace DjSoft.Games.Sudoku.Components
             /// Cílová hodnota
             /// </summary>
             public object EndValue { get { return __EndValue; } } private object __EndValue;
+            /// <summary>
+            /// Sada hodnot
+            /// </summary>
+            public AnimatedValueSet ValueSet { get { return __ValueSet; } } private AnimatedValueSet __ValueSet;
             /// <summary>
             /// Aktuální hodnota
             /// </summary>
@@ -323,7 +513,7 @@ namespace DjSoft.Games.Sudoku.Components
             {
                 int step = __StepIndex + 1;
                 double currentRatio = GetCurrentRatio(step, __StepCount, __TimeMode, __TimeCoeff);
-                object currentValue = GetCurrentValue(__StartValue, __EndValue, currentRatio, __ValueType);
+                object currentValue = GetCurrentValue(__ValueSet, __StartValue, __EndValue, currentRatio, __ValueType);
                 bool isChanged = !IsEqualValues(__CurrentValue, currentValue, __ValueType);
                 __CurrentValue = currentValue;
                 __CurrentRatio = currentRatio;
@@ -401,54 +591,9 @@ namespace DjSoft.Games.Sudoku.Components
         /// </summary>
         /// <param name="startValue"></param>
         /// <param name="endValue"></param>
-        protected static void CheckValues(object startValue, object endValue, out ValueType valueType)
+        protected static void CheckValues(object startValue, object endValue, out AnimatedValueType valueType)
         {
-            valueType = ValueType.None;
-
-            // Null?
-            bool sn = (startValue is null);
-            bool en = (endValue is null);
-            if (sn && en) return;
-            if (sn || en) throw new ArgumentNullException($"Hodnoty 'startValue' a 'endValue' předávané do 'Animator' musí být obě zadané, nebo obě nezadané. Aktuálně 'startValue': {(sn ? "NULL" : "zadáno")}, a 'endValue': {(en ? "NULL" : "zadáno")}.");
-
-            // Type?
-            var st = startValue.GetType();
-            var et = endValue.GetType();
-            if (st != et) throw new ArgumentException($"Hodnoty 'startValue' a 'endValue' předávané do 'Animator' musí být obě stejného typu. Aktuálně 'startValue': {st.Name}, a 'endValue': {et.Name}.");
-
-            // Podporované typy:
-            string typeName = st.FullName;
-            switch (typeName)
-            {
-                case "System.Int16":
-                    valueType = ValueType.Int16;
-                    break;
-                case "System.Int32":
-                    valueType = ValueType.Int32;
-                    break;
-                case "System.Int64":
-                    valueType = ValueType.Int64;
-                    break;
-                case "System.Single":
-                    valueType = ValueType.Single;
-                    break;
-                case "System.Double":
-                    valueType = ValueType.Double;
-                    break;
-                case "System.Decimal":
-                    valueType = ValueType.Decimal;
-                    break;
-                case "System.Drawing.Point":
-                    valueType = ValueType.Point;
-                    break;
-                case "System.Drawing.Size":
-                    valueType = ValueType.Size;
-                    break;
-                case "System.Drawing.Color":
-                    valueType = ValueType.Color;
-                    break;
-            }
-            if (valueType == ValueType.None) throw new ArgumentException($"Hodnoty 'startValue' a 'endValue' musí být jen určitých typů. Aktuální typ '{typeName}' není podporován, není připravena metoda pro interpolaci hodnoty.");
+            ValueSupport.CheckValues(startValue, endValue, out valueType);
         }
         #region Práce s hodnotami: GetCurrentValue, IsEqualValues
         /// <summary>
@@ -459,82 +604,10 @@ namespace DjSoft.Games.Sudoku.Components
         /// <param name="currentRatio"></param>
         /// <param name="valueType"></param>
         /// <returns></returns>
-        protected static object GetCurrentValue(object startValue, object endValue, double currentRatio, ValueType valueType)
+        protected static object GetCurrentValue(AnimatedValueSet valueSet, object startValue, object endValue, double currentRatio, AnimatedValueType valueType)
         {
-            switch (valueType)
-            {
-                case ValueType.Int16: return _GetCurrentValueInt16((Int16)startValue, (Int16)endValue, currentRatio);
-                case ValueType.Int32: return _GetCurrentValueInt32((Int32)startValue, (Int32)endValue, currentRatio);
-                case ValueType.Int64: return _GetCurrentValueInt64((Int64)startValue, (Int64)endValue, currentRatio);
-                case ValueType.Single: return _GetCurrentValueSingle((Single)startValue, (Single)endValue, currentRatio);
-                case ValueType.Double: return _GetCurrentValueDouble((Double)startValue, (Double)endValue, currentRatio);
-                case ValueType.Decimal: return _GetCurrentValueDecimal((Decimal)startValue, (Decimal)endValue, currentRatio);
-                case ValueType.Point: return _GetCurrentValuePoint((Point)startValue, (Point)endValue, currentRatio);
-                case ValueType.Size: return _GetCurrentValueSize((Size)startValue, (Size)endValue, currentRatio);
-                case ValueType.Color: return _GetCurrentValueColor((Color)startValue, (Color)endValue, currentRatio);
-            }
-            throw new ArgumentException($"Nelze provést výpočet CurrentValue pro typ hodnoty 'valueType' = '{valueType}'.");
-        }
-        private static Byte _GetCurrentValueByte(Byte startValue, Byte endValue, double currentRatio)
-        {
-            var diffValue = (int)(Math.Round(currentRatio * (int)(endValue - startValue), 0));
-            var resultValue = startValue + diffValue;
-            if (resultValue < 0) return (Byte)0;
-            if (resultValue > 255) return (Byte)255;
-            return (Byte)resultValue;
-        }
-        private static Int16 _GetCurrentValueInt16(Int16 startValue, Int16 endValue, double currentRatio)
-        {
-            var diffValue = (Int16)(Math.Round(currentRatio * (double)(endValue - startValue), 0));
-            var resultValue = startValue + diffValue;
-            if (resultValue < Int16.MinValue) return Int16.MinValue;
-            if (resultValue > Int16.MaxValue) return Int16.MaxValue;
-            return (Int16)resultValue;
-        }
-        private static Int32 _GetCurrentValueInt32(Int32 startValue, Int32 endValue, double currentRatio)
-        {
-            var diffValue = (Int32)(Math.Round(currentRatio * (double)(endValue - startValue), 0));
-            return startValue + diffValue;
-        }
-        private static Int64 _GetCurrentValueInt64(Int64 startValue, Int64 endValue, double currentRatio)
-        {
-            var diffValue = (Int64)(Math.Round(currentRatio * (double)(endValue - startValue), 0));
-            return startValue + diffValue;
-        }
-        private static Single _GetCurrentValueSingle(Single startValue, Single endValue, double currentRatio)
-        {
-            var diffValue = (Single)(Math.Round(currentRatio * (double)(endValue - startValue), 0));
-            return startValue + diffValue;
-        }
-        private static Double _GetCurrentValueDouble(Double startValue, Double endValue, double currentRatio)
-        {
-            var diffValue = (Double)(Math.Round(currentRatio * (double)(endValue - startValue), 0));
-            return startValue + diffValue;
-        }
-        private static Decimal _GetCurrentValueDecimal(Decimal startValue, Decimal endValue, double currentRatio)
-        {
-            var diffValue = (Decimal)(Math.Round((Decimal)currentRatio * (Decimal)(endValue - startValue), 0));
-            return startValue + diffValue;
-        }
-        private static Point _GetCurrentValuePoint(Point startValue, Point endValue, double currentRatio)
-        {
-            int x = _GetCurrentValueInt32(startValue.X, endValue.X, currentRatio);
-            int y = _GetCurrentValueInt32(startValue.Y, endValue.Y, currentRatio);
-            return new Point(x, y);
-        }
-        private static Size _GetCurrentValueSize(Size startValue, Size endValue, double currentRatio)
-        {
-            int width = _GetCurrentValueInt32(startValue.Width, endValue.Width, currentRatio);
-            int height = _GetCurrentValueInt32(startValue.Height, endValue.Height, currentRatio);
-            return new Size(width, height);
-        }
-        private static Color _GetCurrentValueColor(Color startValue, Color endValue, double currentRatio)
-        {
-            byte a = _GetCurrentValueByte(startValue.A, endValue.A, currentRatio);
-            byte r = _GetCurrentValueByte(startValue.R, endValue.R, currentRatio);
-            byte g = _GetCurrentValueByte(startValue.G, endValue.G, currentRatio);
-            byte b = _GetCurrentValueByte(startValue.B, endValue.B, currentRatio);
-            return Color.FromArgb(a, r, g, b);
+            if (valueSet != null) return valueSet.GetValueAtPosition(currentRatio);
+            return ValueSupport.MorphValue(valueType, startValue, currentRatio, endValue);
         }
         /// <summary>
         /// Vrátí true, pokud dvě dodané hodnoty jsou shodné.
@@ -543,44 +616,21 @@ namespace DjSoft.Games.Sudoku.Components
         /// <param name="newValue"></param>
         /// <param name="valueType"></param>
         /// <returns></returns>
-        protected static bool IsEqualValues(object oldValue, object newValue, ValueType valueType) // object oldValue, object newValue
+        protected static bool IsEqualValues(object oldValue, object newValue, AnimatedValueType valueType)
         {
             switch (valueType)
             {
-                case ValueType.Int16: return ((Int16)oldValue == (Int16)newValue);
-                case ValueType.Int32: return ((Int32)oldValue == (Int32)newValue);
-                case ValueType.Int64: return ((Int64)oldValue == (Int64)newValue);
-                case ValueType.Single: return ((Single)oldValue == (Single)newValue);
-                case ValueType.Double: return ((Double)oldValue == (Double)newValue);
-                case ValueType.Decimal: return ((Decimal)oldValue == (Decimal)newValue);
-                case ValueType.Point: return ((Point)oldValue == (Point)newValue);
-                case ValueType.Size: return ((Size)oldValue == (Size)newValue);
-                case ValueType.Color: return _IsEqualValues((Color)oldValue, (Color)newValue);
+                case AnimatedValueType.Int16: return ((Int16)oldValue == (Int16)newValue);
+                case AnimatedValueType.Int32: return ((Int32)oldValue == (Int32)newValue);
+                case AnimatedValueType.Int64: return ((Int64)oldValue == (Int64)newValue);
+                case AnimatedValueType.Single: return ((Single)oldValue == (Single)newValue);
+                case AnimatedValueType.Double: return ((Double)oldValue == (Double)newValue);
+                case AnimatedValueType.Decimal: return ((Decimal)oldValue == (Decimal)newValue);
+                case AnimatedValueType.Point: return ((Point)oldValue == (Point)newValue);
+                case AnimatedValueType.Size: return ((Size)oldValue == (Size)newValue);
+                case AnimatedValueType.Color: return ValueSupport.IsEqualColors((Color)oldValue, (Color)newValue);
             }
             throw new ArgumentException($"Nelze provést výpočet vyhodnocení IsEqualValues pro typ hodnoty 'valueType' = '{valueType}'.");
-        }
-        private static bool _IsEqualValues(Color oldValue, Color newValue)
-        {
-            return (oldValue.A == newValue.A &&
-                    oldValue.R == newValue.R &&
-                    oldValue.G == newValue.G &&
-                    oldValue.B == newValue.B);
-        }
-        /// <summary>
-        /// Typ hodnoty
-        /// </summary>
-        protected enum ValueType
-        {
-            None,
-            Int16,
-            Int32,
-            Int64,
-            Single,
-            Double,
-            Decimal,
-            Point,
-            Size,
-            Color
         }
         #endregion
         #region Vyhodnocení pozice na časové ose
@@ -736,4 +786,578 @@ namespace DjSoft.Games.Sudoku.Components
         #endregion
         #endregion
     }
+    #region class AnimatedValueSet : Sada hodnot na lineární ose
+    /// <summary>
+    /// Sada hodnot na lineární ose
+    /// </summary>
+    public class AnimatedValueSet
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public AnimatedValueSet()
+        {
+            __ValueType = null;
+            __Dictionary = new Dictionary<double, ValuePair>();
+            _ResetValues();
+        }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return $"ValueType: {ValueType}; ValueCount: {Count}";
+        }
+        private AnimatedValueType? __ValueType;
+        private ValuePair[] __Values;
+        private Dictionary<double, ValuePair> __Dictionary;
+        /// <summary>
+        /// Typ hodnot zde evidovaných. Pokud není žádná, je zde <see cref="AnimatedValueType.None"/>.
+        /// </summary>
+        public AnimatedValueType ValueType { get { return this.__ValueType ?? AnimatedValueType.None; } }
+        /// <summary>
+        /// Počet hodnot
+        /// </summary>
+        public int Count { get { return __Dictionary.Count; } }
+        /// <summary>
+        /// Pozice prvního prvku
+        /// </summary>
+        public double StartPosition { get { _CheckValues(); return __StartPosition.Value; } }
+        private double? __StartPosition;
+        /// <summary>
+        /// Pozice posledního prvku
+        /// </summary>
+        public double EndPosition { get { _CheckValues(); return __EndPosition.Value; } }
+        private double? __EndPosition;
+        /// <summary>
+        /// Najde a vrátí hodnotu na dané relativní pozici (tj. vstupní hodnota má typicky rozsah 0 ÷ 1, který se interpoluje do rozsahu zdejších hodnot).
+        /// Provádí interpolaci mezi hodnotami na explicitních pozicích. Řeší pozice před <see cref="StartPosition"/> a za <see cref="EndPosition"/>.
+        /// </summary>
+        /// <param name="positionRelative"></param>
+        /// <returns></returns>
+        public object GetValueAtPosition(double positionRelative)
+        {
+            var values = this.Values;
+            if (values.Length == 0) return null;                     // Nejsou zadána data
+
+            ValuePair pairBefore = null;
+            ValuePair pairAfter = null;
+            foreach (var pair in values)
+            {
+                if (pair.PositionRelative == positionRelative) return pair.Value;    // Exaktní shoda hledané pozice s některým prvkem: nebudeme hledat další, a nebudeme ani interpolovat...
+                if (pair.PositionRelative > positionRelative)
+                {   // Nalezený pár je na vyšší pozici = je to pár "za hledanou pozicí":
+                    pairAfter = pair;
+                    break;
+                }
+                // Nalezený pár je na nižší pozici = je to poslední pár "před hledanou pozicí":
+                pairBefore = pair;
+            }
+            if (pairBefore is null) return pairAfter.Value;          // pairAfter je první ze zadaných hodnot, a hledaná pozice je před ním = nebude interpolace...
+            if (pairAfter is null) return pairBefore.Value;          // Žádný pár není na vyšší pozici než je hledaná hodnota = všechny páry jsou nižší (poslední z nižších je pairBefore) = nebude interpolace...
+
+            // Máme tedy páry před a po (na jejich pozicích), určíme tedy relativní pozici (morphRatio) a poté interpolovanou hodnotu na této pozici:
+            double morphRatio = ((positionRelative - pairBefore.PositionRelative) / (pairAfter.PositionRelative - pairBefore.PositionRelative));
+            return ValueSupport.MorphValue(this.ValueType, pairBefore.Value, morphRatio, pairAfter.Value);
+        }
+        /// <summary>
+        /// Vyprázdní set
+        /// </summary>
+        public void Clear()
+        {
+            __ValueType = null;
+            __Values = null;
+            __Dictionary.Clear();
+        }
+        /// <summary>
+        /// Přidá další pozici a hodnotu na pozici.
+        /// Hodnota <paramref name="value"/> musí být některého z podporovaných typů <see cref="AnimatedValueType"/>, všechny hodnoty v jednom setu musí být stejného typu, viz <see cref="ValueType"/>.
+        /// </summary>
+        /// <param name="position"></param>
+        /// <param name="value"></param>
+        public void Add(double position, object value)
+        {
+            if (value is null) 
+                throw new ArgumentException($"Třída 'AnimatedValueSet' nedokáže zpracovat hodnotu NULL.");
+
+            var valueType = ValueSupport.GetValueType(value);
+            if (valueType == AnimatedValueType.Other) 
+                throw new ArgumentException($"Třída 'AnimatedValueSet' nedokáže zpracovat hodnotu typu '{value.GetType().Name}'.");
+            if (__ValueType.HasValue && __ValueType.Value != valueType)
+                throw new ArgumentException($"Třída 'AnimatedValueSet' nedokáže zpracovat hodnoty různých typů: dosavadní typ='{this.__ValueType.Value}', přidávaná hodnota je typu {valueType}.");
+
+            if (__Dictionary.ContainsKey(position))
+                throw new ArgumentException($"Třída 'AnimatedValueSet' nemůže evidovat pro jednu pozici ({position}) více než jednu hodnotu, nyní je přidávána duplicitní hodnota pro již existující pozici.");
+
+            if (!__ValueType.HasValue)
+                __ValueType = valueType;
+            __Dictionary.Add(position, new ValuePair(position, value));
+
+            _ResetValues();
+        }
+        /// <summary>
+        /// Setříděné pole hodnot
+        /// </summary>
+        protected ValuePair[] Values { get { _CheckValues(); return __Values; } }
+        /// <summary>
+        /// Resetuje analyzované hodnoty
+        /// </summary>
+        private void _ResetValues()
+        {
+            __Values = null;
+            __StartPosition = null;
+            __EndPosition = null;
+
+        }
+        /// <summary>
+        /// Zajistí platnost analyzovaných hodnot
+        /// </summary>
+        private void _CheckValues()
+        {
+            bool isValid = (__Values != null && __Values.Length == __Dictionary.Count && __StartPosition.HasValue && __EndPosition.HasValue);
+            if (isValid) return;
+
+            List<ValuePair> values = __Dictionary.Values.ToList();
+            values.Sort((a, b) => a.Position.CompareTo(b.Position));
+
+            double startPosition = 0d;
+            double endPosition = 0d;
+            if (values.Count > 0)
+            {
+                startPosition = values[0].Position;
+                endPosition = values[values.Count - 1].Position;
+                double length = endPosition - startPosition;
+                foreach (var value in values)
+                    value.PositionRelative = (value.Position - startPosition) / length;
+            }
+
+            __Values = values.ToArray();
+            __StartPosition = startPosition;
+            __EndPosition = endPosition;
+        }
+        /// <summary>
+        /// Třída pro uložení pozice a hodnoty
+        /// </summary>
+        protected class ValuePair
+        {
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="position"></param>
+            /// <param name="value"></param>
+            public ValuePair(double position, object value)
+            {
+                this.Position = position;
+                this.Value = value;
+            }
+            /// <summary>
+            /// Vizualizace
+            /// </summary>
+            /// <returns></returns>
+            public override string ToString()
+            {
+                return $"Position: {Position}; Value: {Value}";
+            }
+            /// <summary>
+            /// Pozice této hodnoty, daná aplikací
+            /// </summary>
+            public double Position { get; private set; }
+            /// <summary>
+            /// Pozice této hodnoty, v rozsahu 0-1
+            /// </summary>
+            public double PositionRelative { get; set; }
+            /// <summary>
+            /// Hodnota
+            /// </summary>
+            public object Value { get; private set; }
+        }
+    }
+    #endregion
+    #region class ValueSupport : Podpůrné metody pro hodnoty
+    /// <summary>
+    /// Podpůrné metody pro hodnoty
+    /// </summary>
+    public static class ValueSupport
+    {
+        #region Get
+        /// <summary>
+        /// Metoda prověří, zda dodané hodnoty jsou přípustné hodnoty do animátoru.
+        /// Pokud ne, dojde k chybě.
+        /// Pokud ano, bude do out <paramref name="valueType"/> vložen typ hodnoty.
+        /// </summary>
+        /// <param name="startValue"></param>
+        /// <param name="endValue"></param>
+        /// <param name="valueType"></param>
+        public static void CheckValues(object startValue, object endValue, out AnimatedValueType valueType)
+        {
+            valueType = AnimatedValueType.None;
+
+            // Typ hodnot?
+            AnimatedValueType svt = ValueSupport.GetValueType(startValue);
+            AnimatedValueType evt = ValueSupport.GetValueType(endValue);
+
+            // Nesmí být Null:
+            if (svt == AnimatedValueType.Null || evt == AnimatedValueType.Null)
+                throw new ArgumentException($"Hodnoty 'startValue' a 'endValue' nesmí být null.");
+
+            // Musí být shodné:
+            if (svt != evt)
+                throw new ArgumentException($"Hodnoty 'startValue' a 'endValue' musí být obě stejného typu. Aktuálně 'startValue': {startValue.GetType().Name}, a 'endValue': {endValue.GetType().Name}.");
+
+            // Nesmí být Other:
+            if (svt == AnimatedValueType.Other)
+                throw new ArgumentException($"Hodnoty 'startValue' a 'endValue' musí být jen určitých typů. Aktuální typ '{startValue.GetType().Name}' není podporován, není připravena metoda pro interpolaci hodnoty.");
+
+            valueType = svt;
+        }
+        /// <summary>
+        /// Vrátí enumerační typ hodnoty, pod kterým je podporována v třídě <see cref="ValueSupport"/>
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        public static AnimatedValueType GetValueType(object value)
+        {
+            if (value is null) return AnimatedValueType.Null;
+
+            // Podporované typy:
+            string typeName = value.GetType().FullName;
+            switch (typeName)
+            {
+                case "System.Int16": return AnimatedValueType.Int16;
+                case "System.Int32": return AnimatedValueType.Int32;
+                case "System.Int64": return AnimatedValueType.Int64;
+                case "System.Single": return AnimatedValueType.Single;
+                case "System.Double": return AnimatedValueType.Double;
+                case "System.Decimal": return AnimatedValueType.Decimal;
+                case "System.DateTime": return AnimatedValueType.DateTime;
+                case "System.Drawing.Point": return AnimatedValueType.Point;
+                case "System.Drawing.Size": return AnimatedValueType.Size;
+                case "System.Drawing.Color": return AnimatedValueType.Color;
+            }
+            return AnimatedValueType.Other;
+        }
+        #endregion
+        #region IsEqual
+        public static bool IsEqualColors(Color oldValue, Color newValue)
+        {
+            return (oldValue.A == newValue.A &&
+                    oldValue.R == newValue.R &&
+                    oldValue.G == newValue.G &&
+                    oldValue.B == newValue.B);
+        }
+        #endregion
+        #region Morph
+        /// <summary>
+        /// Metoda vrátí hodnotu daného typu na dané pozici mezi hodnotami Start a End.
+        /// </summary>
+        /// <param name="startValue"></param>
+        /// <param name="morphRatio"></param>
+        /// <param name="endValue"></param>
+        /// <returns></returns>
+        public static object MorphValue(object startValue, double morphRatio, object endValue)
+        {
+            ValueSupport.CheckValues(startValue, endValue, out AnimatedValueType valueType);
+            return MorphValue(valueType, startValue, morphRatio, endValue);
+        }
+        /// <summary>
+        /// Metoda vrátí hodnotu daného typu na dané pozici mezi hodnotami Start a End.
+        /// </summary>
+        /// <param name="valueType"></param>
+        /// <param name="startValue"></param>
+        /// <param name="morphRatio"></param>
+        /// <param name="endValue"></param>
+        /// <returns></returns>
+        public static object MorphValue(AnimatedValueType valueType, object startValue, double morphRatio, object endValue)
+        {
+            switch (valueType)
+            {
+                case AnimatedValueType.Int16: return ValueSupport.MorphValueInt16((Int16)startValue, morphRatio, (Int16)endValue);
+                case AnimatedValueType.Int32: return ValueSupport.MorphValueInt32((Int32)startValue, morphRatio, (Int32)endValue);
+                case AnimatedValueType.Int64: return ValueSupport.MorphValueInt64((Int64)startValue, morphRatio, (Int64)endValue);
+                case AnimatedValueType.Single: return ValueSupport.MorphValueSingle((Single)startValue, morphRatio, (Single)endValue);
+                case AnimatedValueType.Double: return ValueSupport.MorphValueDouble((Double)startValue, morphRatio, (Double)endValue);
+                case AnimatedValueType.Decimal: return ValueSupport.MorphValueDecimal((Decimal)startValue, morphRatio, (Decimal)endValue);
+                case AnimatedValueType.DateTime: return ValueSupport.MorphValueDateTime((DateTime)startValue, morphRatio, (DateTime)endValue);
+                case AnimatedValueType.Point: return ValueSupport.MorphValuePoint((Point)startValue, morphRatio, (Point)endValue);
+                case AnimatedValueType.Size: return ValueSupport.MorphValueSize((Size)startValue, morphRatio, (Size)endValue);
+                case AnimatedValueType.Color: return ValueSupport.MorphValueColor((Color)startValue, morphRatio, (Color)endValue);
+            }
+            throw new ArgumentException($"Nelze provést výpočet MorphValue pro typ hodnoty 'valueType' = '{valueType}'.");
+        }
+        public static Byte MorphValueByte(Byte startValue, double morphRatio, Byte endValue)
+        {
+            var diffValue = (int)(Math.Round(morphRatio * (int)(endValue - startValue), 0));
+            var resultValue = startValue + diffValue;
+            if (resultValue < 0) return (Byte)0;
+            if (resultValue > 255) return (Byte)255;
+            return (Byte)resultValue;
+        }
+        public static Int16 MorphValueInt16(Int16 startValue, double morphRatio, Int16 endValue)
+        {
+            var diffValue = (Int16)(Math.Round(morphRatio * (double)(endValue - startValue), 0));
+            var resultValue = startValue + diffValue;
+            if (resultValue < Int16.MinValue) return Int16.MinValue;
+            if (resultValue > Int16.MaxValue) return Int16.MaxValue;
+            return (Int16)resultValue;
+        }
+        public static Int32 MorphValueInt32(Int32 startValue, double morphRatio, Int32 endValue)
+        {
+            var diffValue = (Int32)(Math.Round(morphRatio * (double)(endValue - startValue), 0));
+            return startValue + diffValue;
+        }
+        public static Int64 MorphValueInt64(Int64 startValue, double morphRatio, Int64 endValue)
+        {
+            var diffValue = (Int64)(Math.Round(morphRatio * (double)(endValue - startValue), 0));
+            return startValue + diffValue;
+        }
+        public static Single MorphValueSingle(Single startValue, double morphRatio, Single endValue)
+        {
+            var diffValue = (Single)(Math.Round(morphRatio * (double)(endValue - startValue), 0));
+            return startValue + diffValue;
+        }
+        public static Double MorphValueDouble(Double startValue, double morphRatio, Double endValue)
+        {
+            var diffValue = (Double)(Math.Round(morphRatio * (double)(endValue - startValue), 0));
+            return startValue + diffValue;
+        }
+        public static Decimal MorphValueDecimal(Decimal startValue, double morphRatio, Decimal endValue)
+        {
+            var diffValue = (Decimal)(Math.Round((Decimal)morphRatio * (Decimal)(endValue - startValue), 0));
+            return startValue + diffValue;
+        }
+        public static DateTime MorphValueDateTime(DateTime startValue, double morphRatio, DateTime endValue)
+        {
+            TimeSpan diffValue = TimeSpan.FromSeconds(morphRatio * ((TimeSpan)(endValue - startValue)).TotalSeconds);
+            return startValue + diffValue;
+        }
+        public static Point MorphValuePoint(Point startValue, double morphRatio, Point endValue)
+        {
+            int x = MorphValueInt32(startValue.X, morphRatio, endValue.X);
+            int y = MorphValueInt32(startValue.Y, morphRatio, endValue.Y);
+            return new Point(x, y);
+        }
+        public static Size MorphValueSize(Size startValue, double morphRatio, Size endValue)
+        {
+            int width = MorphValueInt32(startValue.Width, morphRatio, endValue.Width);
+            int height = MorphValueInt32(startValue.Height, morphRatio, endValue.Height);
+            return new Size(width, height);
+        }
+        public static Color MorphValueColor(Color startValue, double morphRatio, Color endValue)
+        {
+            byte a = MorphValueByte(startValue.A, morphRatio, endValue.A);
+            byte r = MorphValueByte(startValue.R, morphRatio, endValue.R);
+            byte g = MorphValueByte(startValue.G, morphRatio, endValue.G);
+            byte b = MorphValueByte(startValue.B, morphRatio, endValue.B);
+            return Color.FromArgb(a, r, g, b);
+        }
+        #endregion
+    }
+    #endregion
+    #region class WinMMTimer : Timer založený na 'Winmm.dll' TimeEvents
+    /// <summary>
+    /// Timer založený na 'Winmm.dll' TimeEvents.
+    /// Je podstatně přesnější než <see cref="System.Threading.Thread.Sleep(int)"/> (tam je časové okno 15 milisekund a nejistý výsledek).
+    /// A nesežere celý výkon jádra CPU pro aktuální Thread.
+    /// Tedy je to nenáročný a přesný Timer.
+    /// </summary>
+    public class WinMMTimer : IDisposable
+    {
+        #region Private a DllImport, Dispose, proměnné
+        //Lib API declarations
+        [DllImport("Winmm.dll", CharSet = CharSet.Auto)]
+        static extern uint timeSetEvent(uint uDelay, uint uResolution, TimerCallback lpTimeProc, UIntPtr dwUser, uint fuEvent);
+
+        [DllImport("Winmm.dll", CharSet = CharSet.Auto)]
+        static extern uint timeKillEvent(uint uTimerID);
+
+        [DllImport("Winmm.dll", CharSet = CharSet.Auto)]
+        static extern uint timeGetTime();
+
+        [DllImport("Winmm.dll", CharSet = CharSet.Auto)]
+        static extern uint timeBeginPeriod(uint uPeriod);
+
+        [DllImport("Winmm.dll", CharSet = CharSet.Auto)]
+        static extern uint timeEndPeriod(uint uPeriod);
+
+        [Flags]
+        enum fuEvent : uint
+        {
+            TIME_ONESHOT = 0,      //Event occurs once, after uDelay milliseconds.
+            TIME_PERIODIC = 1,
+            TIME_CALLBACK_FUNCTION = 0x0000,  /* callback is function */
+            TIME_CALLBACK_EVENT_SET = 0x0010, /* callback is event - use SetEvent */
+            TIME_CALLBACK_EVENT_PULSE = 0x0020  /* callback is event - use PulseEvent */
+        }
+
+        delegate void TimerCallback(uint uTimerID, uint uMsg, UIntPtr dwUser, UIntPtr dw1, UIntPtr dw2);
+        /// <summary>
+        /// Metoda 
+        /// </summary>
+        /// <param name="uTimerID"></param>
+        /// <param name="uMsg"></param>
+        /// <param name="dwUser"></param>
+        /// <param name="dw1"></param>
+        /// <param name="dw2"></param>
+        void _CallbackMethod(uint uTimerID, uint uMsg, UIntPtr dwUser, UIntPtr dw1, UIntPtr dw2)
+        {
+            //Callback from the MMTimer API that fires the Timer event. Note we are in a different thread here
+            OnTimer();
+            Timer?.Invoke(this, EventArgs.Empty);
+            if (__AutoResetSetSignal)
+            {   // Spolupráce s metodou Wait:
+                __AutoResetSetSignal = false;
+                __AutoResetEvent.Set();
+            }
+        }
+
+        private bool __Disposed = false;
+
+        public void Dispose()
+        {
+            _Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        private void _Dispose(bool disposing)
+        {
+            if (!this.__Disposed)
+            {
+                if (disposing)
+                {
+                    Stop();
+                }
+            }
+            __Disposed = true;
+        }
+        /// <summary>
+        /// Semafor pro metodu <see cref="Wait(uint)"/>
+        /// </summary>
+        private System.Threading.AutoResetEvent __AutoResetEvent;
+        /// <summary>
+        /// Příznak vyžadující aktivaci signálu <see cref="__AutoResetEvent"/> po dosažení timeru
+        /// </summary>
+        private bool __AutoResetSetSignal;
+
+        ~WinMMTimer()
+        {
+            _Dispose(false);
+        }
+        /// <summary>
+        /// The current timer instance ID
+        /// </summary>
+        uint __TimerId = 0;
+        /// <summary>
+        /// The callback used by the the API
+        /// </summary>
+        TimerCallback __CallbackDelegate;
+        #endregion
+        #region Public
+        /// <summary>
+        /// Konstruktor.
+        /// <para/>
+        /// Timer lze použít těmito způsoby:<br/>
+        /// 1. Vytvořit instanci; Zaregistrovat svůj eventhandler do eventu <see cref="Timer"/>; Nastartovat běh Timeru voláním <see cref="Start(uint, bool)"/>: 
+        /// v patřičném čase bude vyvolána daná událost;<br/>
+        /// 2. Vytvořit instanci; Zavolat instanční metodu <see cref="Wait(uint)"/> (tam se počká daný čas); Pokračovat v práci; = pro opakované použití<br/>
+        /// 3. Nevytvářet instanci; Zavolat statickou metodu <see cref="Sleep(uint)"/> (tam se počká daný čas); Pokračovat v práci; = pro jednorázové použití<br/>
+        /// </summary>
+        public WinMMTimer()
+        {
+            //Initialize the API callback
+            __CallbackDelegate = _CallbackMethod;
+            __AutoResetEvent = new AutoResetEvent(false);
+        }
+        /// <summary>
+        /// Událost volaná po dosažení timeru
+        /// </summary>
+        public event EventHandler Timer;
+        /// <summary>
+        /// Proběhnutí časovače
+        /// </summary>
+        /// <param name="e"></param>
+        protected virtual void OnTimer() { }
+        /// <summary>
+        /// Start a timer instance. Pokud nyní nějaký běží, bude zastaven!
+        /// </summary>
+        /// <param name="ms">Timer interval in milliseconds</param>
+        /// <param name="repeat">If true sets a repetitive event, otherwise sets a one-shot</param>
+        public void Start(uint ms, bool repeat)
+        {
+            //Kill any existing timer
+            Stop();
+
+            //Set the timer type flags
+            fuEvent f = fuEvent.TIME_CALLBACK_FUNCTION | (repeat ? fuEvent.TIME_PERIODIC : fuEvent.TIME_ONESHOT);
+
+            lock (this)
+            {
+                __TimerId = timeSetEvent(ms, 0, __CallbackDelegate, UIntPtr.Zero, (uint)f);
+                if (__TimerId == 0)
+                    throw new Exception("timeSetEvent error");
+            }
+        }
+        /// <summary>
+        /// Stop the current timer instance (if any)
+        /// </summary>
+        public void Stop()
+        {
+            lock (this)
+            {
+                if (__TimerId != 0)
+                {
+                    timeKillEvent(__TimerId);
+                    __TimerId = 0;
+                }
+            }
+        }
+        /// <summary>
+        /// Metoda zde počká přesně daný čas a poté vrátí řízení.
+        /// Čas je reprezentován dostatečně přesně (jednotky milisekund) a metoda nezatěžuje CPU.
+        /// </summary>
+        /// <param name="ms"></param>
+        public void Wait(uint ms)
+        {
+            Stop();
+            __AutoResetEvent.Reset();
+            __AutoResetSetSignal = true;
+            Start(ms, false);
+            __AutoResetEvent.WaitOne((int)(2 * ms));
+        }
+        /// <summary>
+        /// Metoda zde počká přesně daný čas a poté vrátí řízení.
+        /// Čas je reprezentován dostatečně přesně (jednotky milisekund) a metoda nezatěžuje CPU.
+        /// </summary>
+        /// <param name="ms"></param>
+        public static void Sleep(uint ms)
+        {
+            using (var timer = new WinMMTimer())
+            {
+                timer.Wait(ms);
+            }
+        }
+        #endregion
+    }
+    #endregion
+    #region Enumy
+    /// <summary>
+    /// Typ hodnoty
+    /// </summary>
+    public enum AnimatedValueType
+    {
+        None,
+        Null,
+        Other,
+        Int16,
+        Int32,
+        Int64,
+        Single,
+        Double,
+        Decimal,
+        DateTime,
+        Point,
+        Size,
+        Color
+    }
+    #endregion
 }
