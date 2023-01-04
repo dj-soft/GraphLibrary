@@ -9,10 +9,15 @@ using System.Drawing.Drawing2D;
 
 namespace DjSoft.Games.Sudoku.Components
 {
+    /// <summary>
+    /// Sestava více vrstev bufferů grafiky.
+    /// Konkrétně řízené vrstvy pro cílené využití (<see cref="BackgroundLayer"/>, <see cref="StandardLayer"/>, <see cref="OverlayLayer"/>, <see cref="ToolTipLayer"/>).
+    /// </summary>
     public class LayeredGraphicStandard : LayeredGraphicBase
     {
         /// <summary>
-        /// Konstruktor
+        /// Konstruktor.
+        /// Převezme referenci na owner control, zaháčkuje do něj svoje eventy, a při jeho Dispose (event Disposed) si provede svůj vlastní Dispose.
         /// </summary>
         /// <param name="owner"></param>
         public LayeredGraphicStandard(Control owner)
@@ -25,6 +30,7 @@ namespace DjSoft.Games.Sudoku.Components
         public bool UseLayeredGraphic { get { return (__UseBackgroundLayer || __UseStandardLayer || __UseOverlayLayer || __UseToolTipLayer); } }
         /// <summary>
         /// Obsahuje true, pokud se používá <see cref="BackgroundLayer"/>. Výchozí je false.
+        /// Je vhodné používat vrstvu pro Background, kde bude podkladová barva, protože se urychlí zahájení kreslení.
         /// </summary>
         public bool UseBackgroundLayer { get { return __UseBackgroundLayer; } set { __UseBackgroundLayer = value; _RecalcLayers(); } } private bool __UseBackgroundLayer;
         /// <summary>
@@ -94,11 +100,12 @@ namespace DjSoft.Games.Sudoku.Components
     /// Tato instance není <see cref="IDisposable"/>, ale hlídá si Dispose svého Ownera (=Control, v němž je umístěna), 
     /// a v jeho události Disposed je tato instance korektně uvolněna z paměti.
     /// </summary>
-    public class LayeredGraphicBase
+    public class LayeredGraphicBase : ILayeredGraphicBaseWorking
     {
         #region Konstruktor, Owner, Events
         /// <summary>
-        /// Konstruktor
+        /// Konstruktor.
+        /// Převezme referenci na owner control, zaháčkuje do něj svoje eventy, a při jeho Dispose (event Disposed) si provede svůj vlastní Dispose.
         /// </summary>
         /// <param name="owner"></param>
         /// <param name="layerCount"></param>
@@ -296,9 +303,22 @@ namespace DjSoft.Games.Sudoku.Components
         /// <summary>Velikost, pro kterou byly vytvářeny vrstvy v <see cref="__Layers"/></summary>
         private Size __LayersSize;
         /// <summary>
+        /// Vrátí pole aktuálně přítomných vrstev, pokud mezi nimi je daná vrstva.
+        /// Většinou vrátí běžné pole vrstev. Ale pokud je toto pole v dané chvíli nevalidní, pak vrátí null a negeneruje nové validní pole.
+        /// Stejně tak pokud v mezidobí (od vytvoření dodané vrstvy do volání této metody) došlo ke změně pole, a dodaná vrstva už mezi novými vrstvami fyzicky není, pak vrací null.
+        /// </summary>
+        LayeredGraphicBase.GraphicLayer[] ILayeredGraphicBaseWorking.GetLayers(LayeredGraphicBase.GraphicLayer layer)
+        {
+            var layers = __Layers;
+            var isValid = IsValidLayers;
+            if (layer is null || !isValid || layer.Index < 0 || layer.Index >= layers.Length) return null;
+            var testLayer = layers[layer.Index];
+            if (!Object.ReferenceEquals(layer, testLayer)) return null;
+            return layers;
+        }
+        /// <summary>
         /// Obsahuje (vyhledá a vrátí) položku <see cref="GraphicLayer"/> ze zdejších vrstev, která má (<see cref="GraphicLayer.ContainData"/> == true),
         /// a je na nejvyšším indexu.
-        /// Pokud dodané pole je null nebo neobsahuje žádnou položku, vrací se null.
         /// Pokud žádná položka v poli nemá (<see cref="GraphicLayer.ContainData"/> == true), vrací se položka na indexu [0].
         /// </summary>
         public GraphicLayer CurrentLayer
@@ -314,6 +334,21 @@ namespace DjSoft.Games.Sudoku.Components
                     if (index == 0 || graphicLayers[index].ContainData) return graphicLayers[index];
                 }
                 return graphicLayers[0];   // Jen pro compiler. Reálně sem kód nikdy nedojde (poslední smyčka "for ..." se provádí pro (index == 0).
+            }
+        }
+        /// <summary>
+        /// Kopíruje obsah vrstvy (sourceLayer) do vrstvy (targetLayer).
+        /// Pokud některá vrstva (sourceLayer nebo targetLayer) je null, nekopíruje se nic.
+        /// Pokud zdrojová vrstva má index rovný nebo vyšší jako cílová vrstva, nekopíruje se nic (kopíroval by se obraz z vyšší vrstvy do nižší, to je logický nesmysl).
+        /// </summary>
+        /// <param name="sourceLayer">Vrstva obsahující zdrojový obraz</param>
+        /// <param name="targetLayer">Vrstva obsahující cílový obraz</param>
+        public static void CopyContentOfLayer(GraphicLayer sourceLayer, GraphicLayer targetLayer)
+        {
+            if (sourceLayer != null && targetLayer != null && sourceLayer.Index < targetLayer.Index)
+            {
+                sourceLayer.RenderTo(targetLayer.Graphics);
+                targetLayer.ContainData = false;           // Target vrstva sice obsahuje platná data ve smyslu že jsou zobrazitelná, ale v tuto chvíli jsou shodná se zdrojem a nemají nic navíc.
             }
         }
         #endregion
@@ -358,6 +393,15 @@ namespace DjSoft.Games.Sudoku.Components
             private BufferedGraphicsContext __GraphicsContext;
             /// <summary>Obsah bufferované grafiky</summary>
             private BufferedGraphics __GraphicsData;
+            /// <summary>
+            /// Obsahuje pole platných vrstev pro aktuální velikost Controlu a aktuální počet vrstev, jehož jednou z vrstev jsme my (na našem indexu <see cref="__Index"/>).
+            /// Jde tedy o naše rodné bratry/sestry. Pokud v mezidobí došlo k invalidaci, a naše rodina vrstev je již zrušena, pak je zde null.
+            /// </summary>
+            private GraphicLayer[] _Layers { get { return ((ILayeredGraphicBaseWorking)__Owner).GetLayers(this); } }
+            /// <summary>
+            /// Barva pozadí Controlu vlastníka
+            /// </summary>
+            private Color OwnerBackColor { get { return __Owner?.Owner?.BackColor ?? Control.DefaultBackColor; } }
             #endregion
             #region Privátní tvorba grafiky, IDisposable
             /// <summary>
@@ -408,10 +452,26 @@ namespace DjSoft.Games.Sudoku.Components
             /// <summary>
             /// Aplikační příznak: tato vrstva obsahuje platná data?
             /// Výchozí je false.
+            /// <para/>
             /// Aplikace nastavuje na true v situaci, kdy si aplikační kód vyzvedl zdejší grafiku (bude do ní kreslit).
-            /// Aplikace nastavuje na false v situaci, kdy tato vrstva je na vyšším indexu, než je vrstva aktuálně vykreslovaná.
+            /// Nastavení true do této property projde všechny vyšší vrstvy (=vrstvy nad touto vrstvou) a do jejich <see cref="ContainData"/> vloží false.
+            /// Tím se zajistí, že vyšší vrstvy budou muset být překresleny (pokud mají být použity) anebo nebudou brány jako platné (pokud se do nich kreslit nebude).
+            /// <para/>
+            /// Nastavit na false z aplikační logiky je možné, tím bude obsah této vrstvy skryt. 
+            /// Nastavení false rovněž nastaví false do všech vyšších vrstev, protože v nich je nejspíš zanesen obraz z této vrstvy.
             /// </summary>
-            public bool ContainData { get { return this.__ContainData; } set { this.__ContainData = value; } }
+            public bool ContainData { get { return this.__ContainData; } set { this.__ContainData = value; this._InvalidateUpLayers(); } }
+            /// <summary>
+            /// Invaliduje data ve všech vyšších vrstvách nad vrstvou this.
+            /// Metoda projde všechny vrstvy nad touto vrstvou (<see cref="__Index"/> + 1, a vyšší), a do jejich <see cref="__ContainData"/> vloží false.
+            /// </summary>
+            private void _InvalidateUpLayers()
+            {
+                var layers = _Layers;
+                if (layers is null) return;
+                for (int l = this.__Index + 1; l < layers.Length; l++)
+                    layers[l].__ContainData = false;       // false setujeme do '__ContainData'. Pokud bych setoval false do 'ContainData', rozjel bych rekurzi.
+            }
             /// <summary>
             /// Rozměr vrstvy.
             /// </summary>
@@ -419,22 +479,63 @@ namespace DjSoft.Games.Sudoku.Components
             /// <summary>
             /// Objekt Graphics, který dovoluje kreslit motivy do této vrstvy
             /// </summary>
-            public Graphics LayerGraphics { get { return this.__GraphicsData.Graphics; } }
+            public Graphics Graphics { get { return this.__GraphicsData.Graphics; } }
             /// <summary>
-            /// Kopíruje obsah vrstvy (sourceLayer) to vrstvy (targetLayer).
-            /// Pokud některá vrstva (sourceLayer nebo targetLayer) je null, nekopíruje se nic.
-            /// Pokud zdrojová vrstva má index rovný nebo vyšší jako cílová vrstva, nekopíruje se nic.
+            /// Zde je k dispozici nejbližší nižší vrstva, která obsahuje data.
+            /// Tedy toto je vrstva, která obsahuje podkladový obraz pro naši vrstvu.
+            /// Může zde být null.
             /// </summary>
-            /// <param name="sourceLayer">Vrstva obsahující zdrojový obraz</param>
-            /// <param name="targetLayer">Vrstva obsahující cílový obraz</param>
-            public static void CopyContentOfLayer(GraphicLayer sourceLayer, GraphicLayer targetLayer)
+            protected GraphicLayer SubLayerWithData
             {
-                if (sourceLayer != null && targetLayer != null && sourceLayer.__Index < targetLayer.__Index)
-                    sourceLayer.RenderTo(targetLayer.LayerGraphics);
+                get
+                {
+                    int index = __Index;
+                    if (index > 0)
+                    {   // Pokud já jsem vyší vrstva než [0], pak mohu mít SubLayer:
+                        var layers = _Layers;
+                        if (layers != null)
+                        {   // Pokud máme seznam našich platných vrstev:
+                            for (int i = index - 1; i >= 0; i--)
+                            {   // Prohledám vrstvy počínaje od nejbližší nižší, směrem dolů, a vrátím první vrstvu s daty:
+                                if (layers[i].ContainData) return layers[i];
+                            }
+                        }
+                    }
+                    return null;
+                }
             }
             /// <summary>
-            /// Vykreslí svůj obsah do dané cílové Graphics, typicky při kopírování obsahu mezi vrstvami, 
-            /// a při kreslení Controlu (skládají se jednotlivé vrstvy).
+            /// Metoda vloží do this vrstvy obsah z grafiky nejbližší nižší vrstvy, která obshauje data (<jejíž <see cref="ContainData"/> je true).
+            /// Volá se před zahájením kreslení z aplikačního kódu do this vrstvy.
+            /// <para/>
+            /// Tato metoda vepíše do this vrstvy <see cref="ContainData"/> = false (a tím i do vyšších vrstev) - pokud do ní byla vložena data z podkladové vrstvy.
+            /// Aplikační kód, když provede kreslení do this vrstvy, má do ní vepsat <see cref="ContainData"/> = true.
+            /// <para/>
+            /// Pokud nebyla nalezena podkladová vrstva, a je povoleno <paramref name="clearWhenVoid"/>, vrstva je tedy naplněna barvou pozadí,
+            /// pak do ní bude vepsáno <see cref="ContainData"/> = true : vrstva sama o sobě obsahuje platná data (barvu pozadí).
+            /// </summary>
+            /// <param name="clearWhenVoid">Pokud tato vrstva nemá žádnou podkladovou vrstvu, má být do ní vepsána barva pozadí controlu?</param>
+            public void PrepareFromSubLayer(bool clearWhenVoid = false)
+            {
+                var subLayerWithData = this.SubLayerWithData;
+                if (subLayerWithData != null)
+                    CopyContentOfLayer(subLayerWithData, this);
+                else if (clearWhenVoid)
+                    this.ClearLayer(this.OwnerBackColor);
+            }
+            /// <summary>
+            /// Do this grafiky nalije dodanou barvu.
+            /// </summary>
+            /// <param name="color"></param>
+            public void ClearLayer(Color color)
+            {
+                this.__GraphicsData.Graphics.Clear(color);
+                this.ContainData = true;                   // Prázdná vrstva obsahuje data = podkladovou barvu.
+            }
+            /// <summary>
+            /// Vykreslí svůj obsah do dané cílové Graphics.
+            /// Provádí se jednak při přenášení obsahu grafiky z dolních vrstev (nižší <see cref="Index"/>) do vyšších vrstev,
+            /// a také při vykreslení finálního obsahu nejvyšší vrstvy do nativní Graphics Controlu.
             /// </summary>
             /// <param name="targetGraphics"></param>
             public void RenderTo(Graphics targetGraphics)
@@ -446,5 +547,41 @@ namespace DjSoft.Games.Sudoku.Components
             #endregion
         }
         #endregion
+    }
+    /// <summary>
+    /// Argument pro kreslení do vrstvy
+    /// </summary>
+    public class LayeredPaintEventArgs : PaintEventArgs
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="graphics"></param>
+        /// <param name="clipRect"></param>
+        public LayeredPaintEventArgs(Graphics graphics, Rectangle clipRect)
+            : base(graphics, clipRect)
+        {
+            __IsGraphicsUsed = false;
+        }
+        /// <summary>
+        /// Gets the graphics used to paint.
+        /// </summary>
+        public new Graphics Graphics { get { __IsGraphicsUsed = true;  return base.Graphics; } }
+        /// <summary>
+        /// Byla použita grafika <see cref="Graphics"/>?
+        /// </summary>
+        public bool IsGraphicsUsed { get { return __IsGraphicsUsed; } } private bool __IsGraphicsUsed;
+    }
+    /// <summary>
+    /// Interface pro interní přístup do <see cref="LayeredGraphicBase"/>
+    /// </summary>
+    internal interface ILayeredGraphicBaseWorking
+    {
+        /// <summary>
+        /// Vrátí pole aktuálně přítomných vrstev, pokud mezi nimi je daná vrstva.
+        /// Většinou vrátí běžné pole vrstev, ale pokud je v dané chvíli nevalidní, pak vrátí null a negeneruje nové validní pole.
+        /// Stejně tak pokud v mezidobí (od vytvořeníá vrstvy do volání této metody) došlo ke změně pole, a dodaná vrstva už mezi novými vrstvami není, pak vrací null.
+        /// </summary>
+        LayeredGraphicBase.GraphicLayer[] GetLayers(LayeredGraphicBase.GraphicLayer layer);
     }
 }
