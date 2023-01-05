@@ -17,7 +17,7 @@ namespace DjSoft.Games.Sudoku.Components
 
             Random rand = new Random();
 
-            _BgrAnimator = new BackColorAnimator(this);
+            _BgrAnimator = new BackColorHSVAnimator(this, Color.FromArgb(200, 200, 250));
             _BgrAnimator.InitAnimation(5000, this.Animator, rand);
 
             _Snake1 = new SnakeItem(this, Color.FromArgb(255, 90, 6, 16), 30);
@@ -27,7 +27,7 @@ namespace DjSoft.Games.Sudoku.Components
             _Snake3 = new SnakeItem(this, Color.FromArgb(255, 6, 6, 70), 55);
             _Snake3.InitAnimation(528, 372, this.Animator, rand);
         }
-            private BackColorAnimator _BgrAnimator;
+        private BackColorHSVAnimator _BgrAnimator;
         private SnakeItem _Snake1;
         private SnakeItem _Snake2;
         private SnakeItem _Snake3;
@@ -39,17 +39,60 @@ namespace DjSoft.Games.Sudoku.Components
             _Snake3.Paint(e);
         }
     }
-    #region class BackColorAnimator : Animátor barvy BackColor
+    #region class BackColorHSVAnimator : Animátor barvy BackColor HSV
     /// <summary>
     /// Animátor barvy BackColor
     /// </summary>
-    public class BackColorAnimator
+    public class BackColorHSVAnimator
     {
         /// <summary>
         /// Konstruktur
         /// </summary>
         /// <param name="owner"></param>
-        public BackColorAnimator(AnimatedControl owner)
+        public BackColorHSVAnimator(AnimatedControl owner, Color baseColor)
+        {
+            __Owner = owner;
+            __ColorHSV = ColorHSV.FromColor(baseColor);
+            __ColorHue = __ColorHSV.Hue;
+            owner.BackColor = __ColorHSV.Color;
+        }
+        /// <summary>
+        /// Nastartuje animaci
+        /// </summary>
+        /// <param name="cycle"></param>
+        /// <param name="animator"></param>
+        /// <param name="rand"></param>
+        public void InitAnimation(int cycle, Animator animator, Random rand = null)
+        {
+            animator.AddMotion(cycle, Animator.TimeMode.Linear, 0d, _AnimeBgr, 0d, 360d, null);
+        }
+        
+        private void _AnimeBgr(Animator.Motion motion)
+        {
+            double hueDelta = (double)motion.CurrentValue;
+            double hueCurrent = (__ColorHue + hueDelta) % 360d;
+            __ColorHSV.Hue = hueCurrent;
+            Color backColorNew = __ColorHSV.Color;
+            Color backColorOld = __Owner.BackColor;
+            if (!ValueSupport.IsEqualColors(backColorOld, backColorNew))
+                __Owner.BackColor = backColorNew;
+        }
+        private AnimatedControl __Owner;
+        private ColorHSV __ColorHSV;
+        private double __ColorHue;
+    }
+    #endregion
+    #region class BackColorRGBAnimator : Animátor barvy BackColor RGB
+    /// <summary>
+    /// Animátor barvy BackColor
+    /// </summary>
+    public class BackColorRGBAnimator
+    {
+        /// <summary>
+        /// Konstruktur
+        /// </summary>
+        /// <param name="owner"></param>
+        public BackColorRGBAnimator(AnimatedControl owner)
         {
             __Owner = owner;
             _BgrValueSet = CreateBgrColorSet(out var backColor);

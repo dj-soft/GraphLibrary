@@ -33,7 +33,7 @@ namespace DjSoft.Games.Sudoku.Components
             __Animator = new Animator(this);
             __StopwatchExt = new Data.StopwatchExt(true);
             __LayeredGraphics = new LayeredGraphicStandard(this);
-            __IsActiveDiagnostic = AppService.IsDiagnosticActive;
+            __IsActiveDiagnostic = false; // AppService.IsDiagnosticActive;
             __DiagnosticData = new CycleBuffer<DiagnosticItem>(2);
         }
         /// <summary>
@@ -423,7 +423,6 @@ namespace DjSoft.Games.Sudoku.Components
             public double BackgroundTime { get; set; }
             public double StandardTime { get; set; }
         }
-
         #endregion
         #endregion
     }
