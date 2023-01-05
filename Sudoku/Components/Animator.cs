@@ -662,6 +662,7 @@ namespace DjSoft.Games.Sudoku.Components
         }
         #endregion
         #region Animační support
+        #region Práce s hodnotami: CheckValues, GetCurrentValue, IsEqualValues
         /// <summary>
         /// Metoda prověří, zda dodané hodnoty jsou přípustné hodnoty do animátoru.
         /// Pokud ne, dojde k chybě.
@@ -673,7 +674,6 @@ namespace DjSoft.Games.Sudoku.Components
         {
             ValueSupport.CheckValues(startValue, endValue, out valueType);
         }
-        #region Práce s hodnotami: GetCurrentValue, IsEqualValues
         /// <summary>
         /// Metoda vrátí "Current" hodnotu pro danou hodnotu Start a End a dané Ratio.
         /// </summary>

@@ -63,6 +63,11 @@ namespace DjSoft.Games.Sudoku
             this.ShowInTaskbar = false;
             _Game = new Components.GameControl() { Bounds = new Rectangle(50, 20, 500, 500),Dock = DockStyle.Fill, BackColor = Color.LightSkyBlue };
             this.Controls.Add(_Game);
+
+            DjSoft.Games.Sudoku.Data.Game game = DjSoft.Games.Sudoku.Data.Game.CreateGame();
+            var text = game.Text;
+
+
         }
         Components.GameControl _Game;
     }
