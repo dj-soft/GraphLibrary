@@ -48,7 +48,7 @@ namespace DjSoft.Games.Sudoku.Data
 
             bool isDiagnosticActive = System.Diagnostics.Debugger.IsAttached;
             if (!isDiagnosticActive)
-                isDiagnosticActive = (__CurrentUserName == "david.janacek");
+                isDiagnosticActive = (__CurrentUserName == "david.janacek" || __CurrentUserName == "David");
             __IsDiagnosticActive = isDiagnosticActive;
 
 

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -12,82 +13,70 @@ namespace DjSoft.Games.Sudoku.Data
     /// Cyklický buffer je podoben frontě Queue s exaktně daným maximálním počtem prvků. Po přidání 
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public class CycleBuffer<T>
+    public class CycleBuffer<T> : IEnumerable<T>, IEnumerable, ICollection, IReadOnlyCollection<T>
     {
         /// <summary>
         /// Konstruktor pro danou kapacitu.
-        /// 
         /// </summary>
         /// <param name="capacity"></param>
         public CycleBuffer(int capacity)
+            : base()
         {
             if (capacity <= 0) throw new ArgumentException("'CycleBuffer' akceptuje jako kapacitu pouze kladné číslo.");
             if (capacity > MaxLength) throw new ArgumentException($"'CycleBuffer' neakceptuje počet prvků {capacity}, maximum je {MaxLength }.");
-            __Array = new T[capacity];
-            __Capacity = 0;
-            _Clear(false);
+            __Queue = new Queue<T>();
+            __Capacity = capacity;
+        }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return $"CycleBuffer<{typeof(T).FullName}>: Capacity: {__Capacity}; Count: {Count}";
         }
         /// <summary>
         /// Maximální počet prvků
         /// </summary>
         public static int MaxLength { get { return 1000000; } }
-        private readonly T[] __Array;
+        private Queue<T> __Queue;
         private readonly int __Capacity;
-        private int __Pointer;
-        private int __Last;
         /// <summary>
         /// Přidá daný prvek, bude na pozici [0]
         /// </summary>
         /// <param name="item"></param>
         public void Add(T item)
         {
-            lock(__Array)
-            {
-                var pointer = __Pointer + 1;
-
-                if (pointer >= __Capacity) 
-                    pointer = 0;
-                else if (pointer > __Last) 
-                    __Last = pointer;
-
-                __Pointer = pointer;
-                __Array[pointer] = item;
-            }
+            while (__Queue.Count >= __Capacity)
+                __Queue.Dequeue();
+            __Queue.Enqueue(item);
         }
+        /// <summary>
+        /// Počet prvků
+        /// </summary>
+        public int Count { get { return __Queue.Count; } }
         /// <summary>
         /// Vyprázdní buffer
         /// </summary>
-        public void Clear()
-        {
-            _Clear(true);
-        }
+        public void Clear() { __Queue.Clear(); }
         /// <summary>
-        /// Vyprázdní buffer a volitelně naplní default
+        /// Prvek na daném indexu
         /// </summary>
-        private void _Clear(bool reset)
-        {
-            if (reset)
-            {
-                T empty = default(T);
-                for (int i = 0; i < __Last; i++)
-                    __Array[i] = empty;
-            }
-
-            __Pointer = -1;
-            __Last = -1;
-        }
-
-        public T this[int index]
-        {
-            get
-            { }
-        }
-        public T[] Items
-        {
-            get
-            {
-
-            }
-        }
+        /// <param name="index"></param>
+        /// <returns></returns>
+        public T this[int index] { get { return Items[index]; } }
+        /// <summary>
+        /// Všechny prvky
+        /// </summary>
+        public T[] Items { get { return __Queue.ToArray(); } }
+        #region Implementace interface
+        IEnumerator<T> IEnumerable<T>.GetEnumerator() { return ((IEnumerable<T>)this.__Queue).GetEnumerator(); }
+        IEnumerator IEnumerable.GetEnumerator() { return ((IEnumerable)this.__Queue).GetEnumerator(); }
+        void ICollection.CopyTo(Array array, int index) { ((ICollection)this.__Queue).CopyTo(array, index); }
+        int ICollection.Count { get { return this.Count; } }
+        object ICollection.SyncRoot { get { return ((ICollection)this.__Queue).SyncRoot; } }
+        bool ICollection.IsSynchronized { get { return ((ICollection)this.__Queue).IsSynchronized; } }
+        int IReadOnlyCollection<T>.Count { get { return this.Count; } }
+        #endregion
     }
 }

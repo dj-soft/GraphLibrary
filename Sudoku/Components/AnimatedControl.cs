@@ -19,14 +19,22 @@ namespace DjSoft.Games.Sudoku.Components
         {
             SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint | ControlStyles.ResizeRedraw | ControlStyles.OptimizedDoubleBuffer | ControlStyles.Selectable, true);
 
-            SetStyle(ControlStyles.OptimizedDoubleBuffer, false);
-            this.DoubleBuffered = false;
+            SetStyle(ControlStyles.OptimizedDoubleBuffer, true);
+            this.DoubleBuffered = true;
+
+            /*    OptimizedDoubleBuffer     DoubleBuffered     TestPaint milisec
+             *           false                  false               4,50
+             *           true                   false               5,20
+             *           false                  true                5,40
+             *           true                   true                    
+            */
 
             __IsPainted = false;
             __Animator = new Animator(this);
             __StopwatchExt = new Data.StopwatchExt(true);
             __LayeredGraphics = new LayeredGraphicStandard(this);
             __IsActiveDiagnostic = AppService.IsDiagnosticActive;
+            __DiagnosticData = new CycleBuffer<DiagnosticItem>(2);
         }
         /// <summary>
         /// Dispose
@@ -346,9 +354,11 @@ namespace DjSoft.Games.Sudoku.Components
         /// <param name="args"></param>
         private void _ShowPaintTime(PaintEventArgs args)
         {
-            var bgrTime = StopwatchExt.GetMilisecsRound(__PaintBackgroundStart, __PaintBackgroundEnd, 3);
-            var stdTime = StopwatchExt.GetMilisecsRound(__PaintStandardStart, __PaintStandardEnd, 3);
-            string info = $"BgrCount: {__PaintBackgroundCount}; BgrTime: {bgrTime:F3} milisec; StdCount: {__PaintStandardCount}; StdTime: {stdTime:F3} milisec";
+            var backgroundTime = StopwatchExt.GetMilisecsRound(__PaintBackgroundStart, __PaintBackgroundEnd, 3);
+            var standardTime = StopwatchExt.GetMilisecsRound(__PaintStandardStart, __PaintStandardEnd, 3);
+            __DiagnosticData.Add(new DiagnosticItem(backgroundTime, standardTime));
+            DiagnosticItem averageTime = DiagnosticItem.CreateAverage(__DiagnosticData.Items);
+            string info = $"BgrCount: {__PaintBackgroundCount}; BgrTime: {averageTime.BackgroundTime:F3} milisec; StdCount: {__PaintStandardCount}; StdTime: {averageTime.StandardTime:F3} milisec";
             var textSize = args.Graphics.MeasureString(info, SystemFonts.StatusFont);
             var ctrlSize = this.ClientSize;
             var textPoint = new PointF(12f, ctrlSize.Height - textSize.Height - 2f);
@@ -365,6 +375,55 @@ namespace DjSoft.Games.Sudoku.Components
         long __PaintStandardStart;
         long __PaintStandardEnd;
         bool __IsActiveDiagnostic;
+        CycleBuffer<DiagnosticItem> __DiagnosticData;
+        private class DiagnosticItem
+        {
+            public DiagnosticItem(double backgroundTime, double standardTime)
+            {
+                BackgroundTime = backgroundTime;
+                StandardTime = standardTime;
+            }
+            private DiagnosticItem()
+            {
+                BackgroundTime = 0d;
+                StandardTime = 0d;
+            }
+            /// <summary>
+            /// Vizualizace
+            /// </summary>
+            /// <returns></returns>
+            public override string ToString()
+            {
+                return $"BackgroundTime: {BackgroundTime:F3} ms; StandardTime: {StandardTime:F3} ms";
+            }
+            public static DiagnosticItem CreateAverage(IEnumerable<DiagnosticItem> items)
+            {
+                var summary = new DiagnosticItem();
+                int count = 0;
+                foreach (var item in items)
+                {
+                    summary.Add(item);
+                    count++;
+                }
+                if (count > 0)
+                    summary.Divide(count);
+
+                return summary;
+            }
+            private void Add(DiagnosticItem item)
+            {
+                BackgroundTime += item.BackgroundTime;
+                StandardTime += item.StandardTime;
+            }
+            private void Divide(int divider)
+            {
+                BackgroundTime /= (double)divider;
+                StandardTime /= (double)divider;
+            }
+            public double BackgroundTime { get; set; }
+            public double StandardTime { get; set; }
+        }
+
         #endregion
         #endregion
     }
