@@ -551,22 +551,44 @@ namespace DjSoft.Games.Sudoku.Components
     /// <summary>
     /// Argument pro kreslení do vrstvy
     /// </summary>
-    public class LayeredPaintEventArgs : PaintEventArgs
+    public class LayeredPaintEventArgs : EventArgs, IDisposable
     {
         /// <summary>
         /// Konstruktor
         /// </summary>
         /// <param name="graphics"></param>
         /// <param name="clipRect"></param>
-        public LayeredPaintEventArgs(Graphics graphics, Rectangle clipRect)
-            : base(graphics, clipRect)
+        public LayeredPaintEventArgs(PaintEventArgs args)
         {
+            __Graphics = args.Graphics;
+            __ClipRectangle = args.ClipRectangle;
             __IsGraphicsUsed = false;
         }
         /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="graphics"></param>
+        /// <param name="clipRect"></param>
+        public LayeredPaintEventArgs(Graphics graphics, Rectangle clipRectangle)
+        {
+            __Graphics = graphics;
+            __ClipRectangle = clipRectangle;
+            __IsGraphicsUsed = false;
+        }
+        void IDisposable.Dispose()
+        {
+            __Graphics = null;
+        }
+        private Graphics __Graphics;
+        private Rectangle __ClipRectangle;
+        /// <summary>
         /// Gets the graphics used to paint.
         /// </summary>
-        public new Graphics Graphics { get { __IsGraphicsUsed = true;  return base.Graphics; } }
+        public Graphics Graphics { get { __IsGraphicsUsed = true;  return this.__Graphics; } }
+        /// <summary>
+        /// Gets the graphics used to paint.
+        /// </summary>
+        public Rectangle ClipRectangle { get { __IsGraphicsUsed = true; return this.__ClipRectangle; } }
         /// <summary>
         /// Byla použita grafika <see cref="Graphics"/>?
         /// </summary>

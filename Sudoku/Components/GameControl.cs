@@ -70,7 +70,7 @@ namespace DjSoft.Games.Sudoku.Components
         private AnimeSnake _Snake2;
         private AnimeSnake _Snake3;
 
-        protected override void DoPaintStandard(PaintEventArgs e)
+        protected override void DoPaintStandard(LayeredPaintEventArgs e)
         {
             _Snake1.Paint(e);
             _Snake2.Paint(e);
@@ -132,7 +132,7 @@ namespace DjSoft.Games.Sudoku.Components
                 __Owner.LayerStandardValid = false;
             }
         }
-        public void Paint(PaintEventArgs e)
+        public void Paint(LayeredPaintEventArgs e)
         {
             SizeF size = __Owner.ClientSize;
             float sizeW = size.Width - 10f;

@@ -126,24 +126,26 @@ namespace DjSoft.Games.Sudoku.Components
         /// Potomek může přepsat a vykreslit i další 
         /// </summary>
         /// <param name="args"></param>
-        protected virtual void DoPaintBackground(PaintEventArgs args)
+        protected virtual void DoPaintBackground(LayeredPaintEventArgs args)
         {
             args.Graphics.Clear(this.BackColor);
         }
-        protected virtual void DoPaintStandard(PaintEventArgs args) { }
-        protected virtual void DoPaintOverlay(PaintEventArgs args) { }
-        protected virtual void DoPaintToolTip(PaintEventArgs args) { }
+        protected virtual void DoPaintStandard(LayeredPaintEventArgs args) { }
+        protected virtual void DoPaintOverlay(LayeredPaintEventArgs args) { }
+        protected virtual void DoPaintToolTip(LayeredPaintEventArgs args) { }
 
         #region Kreslení nativní
         private void RunPaintBackgroundNative(PaintEventArgs args)
         {
             __PaintBackgroundCount++;
-            DoPaintBackground(args);
+            using (LayeredPaintEventArgs largs = new LayeredPaintEventArgs(args))
+                DoPaintBackground(largs);
         }
         private void RunPaintStandardNative(PaintEventArgs args)
         {
             __PaintStandardCount++;
-            DoPaintStandard(args);
+            using (LayeredPaintEventArgs largs = new LayeredPaintEventArgs(args))
+                DoPaintStandard(largs);
         }
         #endregion
         #region Kreslení s využitím vrstev
@@ -155,9 +157,11 @@ namespace DjSoft.Games.Sudoku.Components
                 if (!layer.ContainData || !LayerBackgroundValid)
                 {
                     __PaintBackgroundCount++;
-                    LayeredPaintEventArgs largs = new LayeredPaintEventArgs(layer.Graphics, args.ClipRectangle);
-                    DoPaintBackground(largs);
-                    layer.ContainData = largs.IsGraphicsUsed;
+                    using (LayeredPaintEventArgs largs = new LayeredPaintEventArgs(layer.Graphics, args.ClipRectangle))
+                    {
+                        DoPaintBackground(largs);
+                        layer.ContainData = largs.IsGraphicsUsed;
+                    }
                 }
                 LayerBackgroundValid = true;
             }
@@ -171,9 +175,11 @@ namespace DjSoft.Games.Sudoku.Components
                 {
                     __PaintStandardCount++;
                     layer.PrepareFromSubLayer();
-                    LayeredPaintEventArgs largs = new LayeredPaintEventArgs(layer.Graphics, args.ClipRectangle);
-                    DoPaintStandard(largs);
-                    layer.ContainData = largs.IsGraphicsUsed;
+                    using (LayeredPaintEventArgs largs = new LayeredPaintEventArgs(layer.Graphics, args.ClipRectangle))
+                    {
+                        DoPaintStandard(largs);
+                        layer.ContainData = largs.IsGraphicsUsed;
+                    }
                 }
                 LayerStandardValid = true;
             }
@@ -184,9 +190,11 @@ namespace DjSoft.Games.Sudoku.Components
                 if (!layer.ContainData || !LayerOverlayValid)
                 {
                     layer.PrepareFromSubLayer();
-                    LayeredPaintEventArgs largs = new LayeredPaintEventArgs(layer.Graphics, args.ClipRectangle);
-                    DoPaintOverlay(largs);
-                    layer.ContainData = largs.IsGraphicsUsed;
+                    using (LayeredPaintEventArgs largs = new LayeredPaintEventArgs(layer.Graphics, args.ClipRectangle))
+                    {
+                        DoPaintOverlay(largs);
+                        layer.ContainData = largs.IsGraphicsUsed;
+                    }
                 }
                 LayerOverlayValid = true;
             }
@@ -197,9 +205,11 @@ namespace DjSoft.Games.Sudoku.Components
                 if (!layer.ContainData || !LayerToolTipValid)
                 {
                     layer.PrepareFromSubLayer();
-                    LayeredPaintEventArgs largs = new LayeredPaintEventArgs(layer.Graphics, args.ClipRectangle);
-                    DoPaintToolTip(largs);
-                    layer.ContainData = largs.IsGraphicsUsed;
+                    using (LayeredPaintEventArgs largs = new LayeredPaintEventArgs(layer.Graphics, args.ClipRectangle))
+                    {
+                        DoPaintToolTip(largs);
+                        layer.ContainData = largs.IsGraphicsUsed;
+                    }
                 }
                 LayerToolTipValid = true;
             }
