@@ -6,10 +6,17 @@ using System.Threading.Tasks;
 
 namespace DjSoft.Games.Sudoku.Data
 {
+    /// <summary>
+    /// Cyklický buffer s danou maximální kapacitou.
+    /// <para/>
+    /// Cyklický buffer je podoben frontě Queue s exaktně daným maximálním počtem prvků. Po přidání 
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
     public class CycleBuffer<T>
     {
         /// <summary>
-        /// Konstruktor pro danou kapacitu
+        /// Konstruktor pro danou kapacitu.
+        /// 
         /// </summary>
         /// <param name="capacity"></param>
         public CycleBuffer(int capacity)
