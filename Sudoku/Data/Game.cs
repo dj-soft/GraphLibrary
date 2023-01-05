@@ -11,6 +11,9 @@ namespace DjSoft.Games.Sudoku.Data
     /// </summary>
     internal class Game
     {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
         public Game()
         {
             __Cells = new Cell[9, 9];
@@ -96,15 +99,51 @@ namespace DjSoft.Games.Sudoku.Data
         private void _InitGroups()
         {
         }
-
         #region Text samples
-
+        /// <summary>
+        /// Vytvoří new <see cref="Game"/>, volitelně pro dodaná data vzorku
+        /// </summary>
+        /// <param name="sample"></param>
+        /// <returns></returns>
         public static Game CreateGame(string sample = null)
         {
             Game game = new Game();
             if (sample is null) sample = _GetSample();
             game.Import(sample);
             return game;
+        }
+        /// <summary>
+        /// Obsahuje definiční data aktuální hry, pouze fixní (zadané výchozí) hodnoty
+        /// </summary>
+        public string DataFixed { get { return _GetData(true); } }
+        /// <summary>
+        /// Obsahuje definiční data aktuální hry, aktuální (zadané výchozí + uživatelem doplněné) hodnoty
+        /// </summary>
+        public string DataCurrent { get { return _GetData(false); } }
+        /// <summary>
+        /// Vrátí definiční data aktuální hry
+        /// </summary>
+        /// <param name="onlyFixed"></param>
+        /// <returns></returns>
+        private string _GetData(bool onlyFixed)
+        {
+            StringBuilder sb = new StringBuilder();
+
+            for (int row = 0; row < 9; row++)
+            {
+                sb.Append(":");
+                for (int col = 0; col < 9; col++)
+                {
+                    bool isFixed = __Cells[row, col].IsFixedValue;
+                    int value = __Cells[row, col].Value;
+                    bool storeValue = (value > 0 && (!onlyFixed || (onlyFixed && isFixed)));
+                    string text = (storeValue ? value.ToString().Substring(0, 1) : ".");
+                    sb.Append(text);
+                }
+                sb.Append(":");
+            }
+
+            return sb.ToString();
         }
         /// <summary>
         /// Importuje dodaná data.
@@ -135,6 +174,10 @@ namespace DjSoft.Games.Sudoku.Data
                 for (int col = 0; col < 9; col++)
                     __Cells[row, col].SetFixedValue(values[index++]);
         }
+        /// <summary>
+        /// Vrať sample k testování
+        /// </summary>
+        /// <returns></returns>
         private static string _GetSample()
         {
             int count = 4;
@@ -145,8 +188,10 @@ namespace DjSoft.Games.Sudoku.Data
                 case 01: return ":159......::...571...::..2...85.::5..8.2..9::963......::.....516.::6...5.2.8::.48.26...::....4..93:";
                 case 02: return ":8.4....2.::....794..::6..94....::..9...7.4::7..19.8..::.8...2..9::.4..7..3.::.3......1::..68.3...:";
                 case 03: return ":...5....2::27.9.4...::..3.6.15.::.6..48...::.3....248::4.1.2..9.::3..47....::..6....84::1....65..:";
+                    // Až zadáš další samply, nezapomeň nahoře upravit count !!!  Jinak se nové samply nikdy neuplatní.
                 case 99: return ":.........::.........::.........::.........::.........::.........::.........::.........::.........:";
             }
+            // Defaultní:
             return ":.6..8...2::2.54....8::....6.37.::1...94.3.::.8.7.32..::9...1..57::.29...7..::..13.65..::3....9..4:";
             // https://sudokukingdom.com/
         }

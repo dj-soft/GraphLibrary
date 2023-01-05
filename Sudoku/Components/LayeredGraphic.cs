@@ -317,7 +317,7 @@ namespace DjSoft.Games.Sudoku.Components
             return layers;
         }
         /// <summary>
-        /// Obsahuje (vyhledá a vrátí) položku <see cref="GraphicLayer"/> ze zdejších vrstev, která má (<see cref="GraphicLayer.ContainData"/> == true),
+        /// Obsahuje (vyhledá a vrátí) položku <see cref="GraphicLayer"/> ze zdejších vrstev, která má (<see cref="GraphicLayer.IsActive"/> == true and <see cref="GraphicLayer.ContainData"/> == true ),
         /// a je na nejvyšším indexu.
         /// Pokud žádná položka v poli nemá (<see cref="GraphicLayer.ContainData"/> == true), vrací se položka na indexu [0].
         /// </summary>
@@ -331,7 +331,7 @@ namespace DjSoft.Games.Sudoku.Components
                 if (count == 0) return null;
                 for (int index = count - 1; index >= 0; index--)
                 {
-                    if (index == 0 || graphicLayers[index].ContainData) return graphicLayers[index];
+                    if (index == 0 || (graphicLayers[index].IsActive && graphicLayers[index].ContainData)) return graphicLayers[index];
                 }
                 return graphicLayers[0];   // Jen pro compiler. Reálně sem kód nikdy nedojde (poslední smyčka "for ..." se provádí pro (index == 0).
             }
@@ -371,6 +371,7 @@ namespace DjSoft.Games.Sudoku.Components
                 this.__Size = size;
                 this.__Index = index;
                 this.__ContainData = false;
+                this.__IsActive = true;
                 this._CreateLayer();
             }
             /// <summary>
@@ -389,6 +390,8 @@ namespace DjSoft.Games.Sudoku.Components
             private int __Index;
             /// <summary>Obsahuje nějaká data?</summary>
             private bool __ContainData;
+            /// <summary>Vrstva je aktivní?</summary>
+            private bool __IsActive;
             /// <summary>Řídící mechanismus pro bufferovanou grafiku</summary>
             private BufferedGraphicsContext __GraphicsContext;
             /// <summary>Obsah bufferované grafiky</summary>
@@ -462,6 +465,15 @@ namespace DjSoft.Games.Sudoku.Components
             /// </summary>
             public bool ContainData { get { return this.__ContainData; } set { this.__ContainData = value; this._InvalidateUpLayers(); } }
             /// <summary>
+            /// Aplikační příznak: tato vrstva je aktvní?
+            /// Výchozí je true.
+            /// <para/>
+            /// Aplikace může dočasně některé vrstvy deaktivovat (nastaví <see cref="IsActive"/> = false), když do nich nemá co vykreslit: typicky Overlay nebo ToolTip.
+            /// Pak algoritmus kreslení tyto vrstvy zcela přeskakuje a ušetří čas (kopírování obsahu nižší vrstvy do vyšší).<br/>
+            /// Setování jakékoli hodnoty do této property nastaví <see cref="ContainData"/> = false, ale jen do této vrstvy = nikoli do vrstev vyšších (jako to dělá setování do <see cref="ContainData"/>).
+            /// </summary>
+            public bool IsActive { get { return this.__IsActive; } set { this.__IsActive = value; this.__ContainData = false; } }
+            /// <summary>
             /// Invaliduje data ve všech vyšších vrstvách nad vrstvou this.
             /// Metoda projde všechny vrstvy nad touto vrstvou (<see cref="__Index"/> + 1, a vyšší), a do jejich <see cref="__ContainData"/> vloží false.
             /// </summary>
@@ -496,8 +508,8 @@ namespace DjSoft.Games.Sudoku.Components
                         if (layers != null)
                         {   // Pokud máme seznam našich platných vrstev:
                             for (int i = index - 1; i >= 0; i--)
-                            {   // Prohledám vrstvy počínaje od nejbližší nižší, směrem dolů, a vrátím první vrstvu s daty:
-                                if (layers[i].ContainData) return layers[i];
+                            {   // Prohledám vrstvy počínaje od nejbližší nižší, směrem dolů, a vrátím první aktivní vrstvu s daty:
+                                if (layers[i].IsActive && layers[i].ContainData) return layers[i];
                             }
                         }
                     }

@@ -18,12 +18,20 @@ namespace DjSoft.Games.Sudoku.Components
         public AnimatedControl()
         {
             SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint | ControlStyles.ResizeRedraw | ControlStyles.OptimizedDoubleBuffer | ControlStyles.Selectable, true);
+
+            SetStyle(ControlStyles.OptimizedDoubleBuffer, false);
+            this.DoubleBuffered = false;
+
             __IsPainted = false;
             __Animator = new Animator(this);
             __StopwatchExt = new Data.StopwatchExt(true);
             __LayeredGraphics = new LayeredGraphicStandard(this);
             __IsActiveDiagnostic = AppService.IsDiagnosticActive;
         }
+        /// <summary>
+        /// Dispose
+        /// </summary>
+        /// <param name="disposing"></param>
         protected override void Dispose(bool disposing)
         {
             __Animator.AnimatorTimerStop = true;
@@ -41,6 +49,66 @@ namespace DjSoft.Games.Sudoku.Components
         /// metodou <see cref="Data.StopwatchExt.GetMilisecs(long)"/>
         /// </summary>
         public Data.StopwatchExt StopwatchExt { get { return __StopwatchExt; } } private Data.StopwatchExt __StopwatchExt;
+        #endregion
+        #region Podpora pro potomky - řízení použitosti a aktivity a platnosti jednotlivých vrstev
+        /// <summary>
+        /// Obsahuje true, pokud se používá vrstva Background. Výchozí je false.
+        /// Je vhodné používat vrstvu pro Background, kde bude podkladová barva, protože se urychlí zahájení kreslení.
+        /// </summary>
+        protected bool UseBackgroundLayer { get { return this.LayeredGraphics.UseBackgroundLayer; } set { this.LayeredGraphics.UseBackgroundLayer = value; } }
+        /// <summary>
+        /// Obsahuje true, pokud se používá vrstva Standard. Výchozí je false.
+        /// Tato vrstva typicky obsahuje základní motiv.
+        /// </summary>
+        protected bool UseStandardLayer { get { return this.LayeredGraphics.UseStandardLayer; } set { this.LayeredGraphics.UseStandardLayer = value; } }
+        /// <summary>
+        /// Obsahuje true, pokud se v rámci controlu někdy používá vrstva Overlay. Výchozí je false.
+        /// Tato vrstva typicky obsahuje překryv základního motiv = něco, co se pohybuje nad základním obrazcem.
+        /// Vrstva Overlay může být deaktivována hodnotou <see cref="LayerOverlayActive"/>.
+        /// </summary>
+        protected bool UseOverlayLayer { get { return this.LayeredGraphics.UseOverlayLayer; } set { this.LayeredGraphics.UseOverlayLayer = value; } }
+         /// <summary>
+        /// Obsahuje true, pokud se v rámci controlu někdy používá vrstva ToolTip. Výchozí je false.
+        /// Tato vrstva typicky obsahuje "okno" nad celým motivem (ToolTip), zobrazený ještě nad Overlayem.
+        /// Vrstva Tooltip může být deaktivována hodnotou <see cref="LayerToolTipActive"/>.
+        /// </summary>
+        protected bool UseToolTipLayer { get { return this.LayeredGraphics.UseToolTipLayer; } set { this.LayeredGraphics.UseToolTipLayer = value; } }
+        /// <summary>
+        /// Platnost dat vykreslených do vrstvy Background. Běžně se o hodnotu stará třída <see cref="AnimatedControl"/>.
+        /// Pokud aplikační kód chce znovu vykreslit motiv na vrstvě Background, pak stačí nastavit sem false. 
+        /// Následující kreslení (po Invalidaci) zajistí vyvolání metody <see cref="AnimatedControl.DoPaintBackground(PaintEventArgs)"/> s vhodnou vrstvou.
+        /// </summary>
+        public virtual bool LayerBackgroundValid { get; set; }
+        /// <summary>
+        /// Platnost dat vykreslených do vrstvy Standard.
+        /// Pokud aplikační kód chce znovu vykreslit motiv na vrstvě Standard, pak stačí nastavit sem false. 
+        /// Následující kreslení (po Invalidaci) zajistí vyvolání metody <see cref="AnimatedControl.DoPaintStandard(PaintEventArgs)"/> s vhodnou vrstvou.
+        /// </summary>
+        public virtual bool LayerStandardValid { get; set; }
+        /// <summary>
+        /// Aktuální stav vrstvy Overlay - má být aktuálně nějak řešena?
+        /// Pokud control nemá nic, co by v této vrstvě vykresloval, pak sem nastaví false a ušetří se čas.
+        /// Pokud control bude nějaký Overlay kreslit, dá sem true a pak řídí hodnotu <see cref="LayerOverlayValid"/>: nastaví tam false po změnách dat, které je potřeba zobrazit.
+        /// </summary>
+        public virtual bool LayerOverlayActive { get; set; }
+        /// <summary>
+        /// Platnost dat vykreslených do vrstvy Overlay.
+        /// Pokud aplikační kód chce znovu vykreslit motiv na vrstvě Overlay, pak stačí nastavit sem false. 
+        /// Následující kreslení (po Invalidaci) zajistí vyvolání metody <see cref="AnimatedControl.DoPaintOverlay(PaintEventArgs)"/> s vhodnou vrstvou.
+        /// </summary>
+        public virtual bool LayerOverlayValid { get; set; }
+        /// <summary>
+        /// Aktuální stav vrstvy ToolTip - má být aktuálně nějak řešena?
+        /// Pokud control nemá nic, co by v této vrstvě vykresloval, pak sem nastaví false a ušetří se čas.
+        /// Pokud control bude nějaký ToolTip kreslit, dá sem true a pak řídí hodnotu <see cref="LayerToolTipValid"/>: nastaví tam false po změnách dat, které je potřeba zobrazit.
+        /// </summary>
+        public virtual bool LayerToolTipActive { get; set; }
+        /// <summary>
+        /// Platnost dat vykreslených do vrstvy ToolTip.
+        /// Pokud aplikační kód chce znovu vykreslit motiv na vrstvě ToolTip, pak stačí nastavit sem false. 
+        /// Následující kreslení (po Invalidaci) zajistí vyvolání metody <see cref="AnimatedControl.DoPaintToolTip(PaintEventArgs)"/> s vhodnou vrstvou.
+        /// </summary>
+        public virtual bool LayerToolTipValid { get; set; }
         #endregion
         #region Podpora pro Paint obecná
         /// <summary>
@@ -97,9 +165,9 @@ namespace DjSoft.Games.Sudoku.Components
             if (isActiveDiagnostic) { __PaintBackgroundStart = StopwatchExt.ElapsedTicks; }
 
             if (!this.LayeredGraphics.UseLayeredGraphic)
-                this.RunPaintBackgroundNative(args);
+                this._RunPaintBackgroundNative(args);
             else
-                this.RunPaintBackgroundLayered(args);
+                this._RunPaintBackgroundLayered(args);
 
             if (isActiveDiagnostic) { __PaintBackgroundEnd = StopwatchExt.ElapsedTicks; }
         }
@@ -115,34 +183,53 @@ namespace DjSoft.Games.Sudoku.Components
             if (isActiveDiagnostic) { __PaintStandardStart = StopwatchExt.ElapsedTicks; }
 
             if (!this.LayeredGraphics.UseLayeredGraphic)
-                this.RunPaintStandardNative(args);
+                this._RunPaintStandardNative(args);
             else
-                this.RunPaintStandardLayered(args);
+                this._RunPaintStandardLayered(args);
         
             if (isActiveDiagnostic) { __PaintStandardEnd = StopwatchExt.ElapsedTicks; _ShowPaintTime(args); }
         }
         /// <summary>
         /// Zde bude vykresleno pozadí controlu.
-        /// Bázová metoda vyplní dodanou grafiku barvou pozadí.
-        /// Potomek může přepsat a vykreslit i další 
+        /// Bázová metoda vyplní dodanou grafiku aktuální barvou pozadí.
+        /// Potomek může tuto metodu přepsat a vykreslit v ní i další motivy, které se nebudou téměř nikdy měnit = ušetří se časy repaintu standardní vrstvy!
         /// </summary>
         /// <param name="args"></param>
         protected virtual void DoPaintBackground(LayeredPaintEventArgs args)
         {
             args.Graphics.Clear(this.BackColor);
         }
+        /// <summary>
+        /// Zde potomek vykreslí obsah standardní vrstvy.
+        /// </summary>
+        /// <param name="args"></param>
         protected virtual void DoPaintStandard(LayeredPaintEventArgs args) { }
+        /// <summary>
+        /// Zde potomek vykreslí obsah vrstvy Overlay.
+        /// </summary>
+        /// <param name="args"></param>
         protected virtual void DoPaintOverlay(LayeredPaintEventArgs args) { }
+        /// <summary>
+        /// Zde potomek vykreslí obsah vrstvy ToolTip.
+        /// </summary>
+        /// <param name="args"></param>
         protected virtual void DoPaintToolTip(LayeredPaintEventArgs args) { }
-
         #region Kreslení nativní
-        private void RunPaintBackgroundNative(PaintEventArgs args)
+        /// <summary>
+        /// Obsluha kreslení Background bez využití vrstev
+        /// </summary>
+        /// <param name="args"></param>
+        private void _RunPaintBackgroundNative(PaintEventArgs args)
         {
             __PaintBackgroundCount++;
             using (LayeredPaintEventArgs largs = new LayeredPaintEventArgs(args))
                 DoPaintBackground(largs);
         }
-        private void RunPaintStandardNative(PaintEventArgs args)
+        /// <summary>
+        /// Obsluha kreslení obsahu bez využití vrstev
+        /// </summary>
+        /// <param name="args"></param>
+        private void _RunPaintStandardNative(PaintEventArgs args)
         {
             __PaintStandardCount++;
             using (LayeredPaintEventArgs largs = new LayeredPaintEventArgs(args))
@@ -150,7 +237,11 @@ namespace DjSoft.Games.Sudoku.Components
         }
         #endregion
         #region Kreslení s využitím vrstev
-        private void RunPaintBackgroundLayered(PaintEventArgs args)
+        /// <summary>
+        /// Obsluha kreslení Background s využitím vrstev
+        /// </summary>
+        /// <param name="args"></param>
+        private void _RunPaintBackgroundLayered(PaintEventArgs args)
         {
             if (this.LayeredGraphics.UseBackgroundLayer)
             {
@@ -167,7 +258,11 @@ namespace DjSoft.Games.Sudoku.Components
                 LayerBackgroundValid = true;
             }
         }
-        private void RunPaintStandardLayered(PaintEventArgs args)
+        /// <summary>
+        /// Obsluha kreslení obsahu s využitím vrstev
+        /// </summary>
+        /// <param name="args"></param>
+        private void _RunPaintStandardLayered(PaintEventArgs args)
         {
             if (this.LayeredGraphics.UseStandardLayer)
             {
@@ -188,31 +283,41 @@ namespace DjSoft.Games.Sudoku.Components
             if (this.LayeredGraphics.UseOverlayLayer)
             {
                 var layer = this.LayeredGraphics.OverlayLayer;
-                if (!layer.ContainData || !LayerOverlayValid)
-                {
-                    layer.PrepareFromSubLayer();
-                    using (LayeredPaintEventArgs largs = new LayeredPaintEventArgs(layer.Graphics, args.ClipRectangle))
+                bool isActive = LayerOverlayActive;
+                layer.IsActive = isActive;
+                if (isActive)
+                {   // Vrstva Overlay může být deaktivována!
+                    if (!layer.ContainData || !LayerOverlayValid)
                     {
-                        DoPaintOverlay(largs);
-                        layer.ContainData = largs.IsGraphicsUsed;
+                        layer.PrepareFromSubLayer();
+                        using (LayeredPaintEventArgs largs = new LayeredPaintEventArgs(layer.Graphics, args.ClipRectangle))
+                        {
+                            DoPaintOverlay(largs);
+                            layer.ContainData = largs.IsGraphicsUsed;
+                        }
                     }
+                    LayerOverlayValid = true;
                 }
-                LayerOverlayValid = true;
             }
 
             if (this.LayeredGraphics.UseToolTipLayer)
             {
                 var layer = this.LayeredGraphics.ToolTipLayer;
-                if (!layer.ContainData || !LayerToolTipValid)
-                {
-                    layer.PrepareFromSubLayer();
-                    using (LayeredPaintEventArgs largs = new LayeredPaintEventArgs(layer.Graphics, args.ClipRectangle))
+                bool isActive = LayerOverlayActive;
+                layer.IsActive = isActive;
+                if (isActive)
+                {   // Vrstva ToolTip může být deaktivována!
+                    if (!layer.ContainData || !LayerToolTipValid)
                     {
-                        DoPaintToolTip(largs);
-                        layer.ContainData = largs.IsGraphicsUsed;
+                        layer.PrepareFromSubLayer();
+                        using (LayeredPaintEventArgs largs = new LayeredPaintEventArgs(layer.Graphics, args.ClipRectangle))
+                        {
+                            DoPaintToolTip(largs);
+                            layer.ContainData = largs.IsGraphicsUsed;
+                        }
                     }
+                    LayerToolTipValid = true;
                 }
-                LayerToolTipValid = true;
             }
 
             var topLayer = this.LayeredGraphics.CurrentLayer;
@@ -220,31 +325,8 @@ namespace DjSoft.Games.Sudoku.Components
                 topLayer.RenderTo(args.Graphics);
         }
         /// <summary>
-        /// Platnost dat vykreslených do vrstvy Background. Běžně se o hodnotu stará třída <see cref="AnimatedControl"/>.
-        /// Pokud aplikační kód chce znovu vykreslit motiv na vrstvě Background, pak stačí nastavit sem false. 
-        /// Následující kreslení (po Invalidaci) zajistí vyvolání metody <see cref="AnimatedControl.DoPaintBackground(PaintEventArgs)"/> s vhodnou vrstvou.
-        /// </summary>
-        public virtual bool LayerBackgroundValid { get; set; }
-        /// <summary>
-        /// Platnost dat vykreslených do vrstvy Standard.
-        /// Pokud aplikační kód chce znovu vykreslit motiv na vrstvě Standard, pak stačí nastavit sem false. 
-        /// Následující kreslení (po Invalidaci) zajistí vyvolání metody <see cref="AnimatedControl.DoPaintStandard(PaintEventArgs)"/> s vhodnou vrstvou.
-        /// </summary>
-        public virtual bool LayerStandardValid { get; set; }
-        /// <summary>
-        /// Platnost dat vykreslených do vrstvy Overlay.
-        /// Pokud aplikační kód chce znovu vykreslit motiv na vrstvě Overlay, pak stačí nastavit sem false. 
-        /// Následující kreslení (po Invalidaci) zajistí vyvolání metody <see cref="AnimatedControl.DoPaintOverlay(PaintEventArgs)"/> s vhodnou vrstvou.
-        /// </summary>
-        public virtual bool LayerOverlayValid { get; set; }
-        /// <summary>
-        /// Platnost dat vykreslených do vrstvy ToolTip.
-        /// Pokud aplikační kód chce znovu vykreslit motiv na vrstvě ToolTip, pak stačí nastavit sem false. 
-        /// Následující kreslení (po Invalidaci) zajistí vyvolání metody <see cref="AnimatedControl.DoPaintToolTip(PaintEventArgs)"/> s vhodnou vrstvou.
-        /// </summary>
-        public virtual bool LayerToolTipValid { get; set; }
-        /// <summary>
-        /// Gets or sets the background color for the control.
+        /// Barva pozadí Controlu.
+        /// Setování nové (odlišné) barvy nastaví do <see cref="AnimatedControl.LayerBackgroundValid"/> false, tím vyžádá repaint vrstvy Background.
         /// </summary>
         public override Color BackColor 
         {

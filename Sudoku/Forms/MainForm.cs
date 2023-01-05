@@ -60,8 +60,8 @@ namespace DjSoft.Games.Sudoku
         #endregion
         private void InitializeSudoku()
         {
-            this.ShowInTaskbar = false;
-            _Game = new Components.GameControl() { Bounds = new Rectangle(50, 20, 500, 500),Dock = DockStyle.Fill, BackColor = Color.LightSkyBlue };
+            this.ShowInTaskbar = true;
+            _Game = new Components.SnakeControl() { Bounds = new Rectangle(50, 20, 500, 500),Dock = DockStyle.Fill, BackColor = Color.LightSkyBlue };
             this.Controls.Add(_Game);
 
             DjSoft.Games.Sudoku.Data.Game game = DjSoft.Games.Sudoku.Data.Game.CreateGame();
@@ -69,6 +69,6 @@ namespace DjSoft.Games.Sudoku
 
 
         }
-        Components.GameControl _Game;
+        Components.AnimatedControl _Game;
     }
 }
