@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Drawing;
 using System.Windows.Forms;
+using DjSoft.Games.Sudoku.Data;
 
 namespace DjSoft.Games.Sudoku.Components
 {
@@ -21,7 +22,7 @@ namespace DjSoft.Games.Sudoku.Components
             __Animator = new Animator(this);
             __StopwatchExt = new Data.StopwatchExt(true);
             __LayeredGraphics = new LayeredGraphicStandard(this);
-            __IsActiveDiagnostic = System.Diagnostics.Debugger.IsAttached;
+            __IsActiveDiagnostic = AppService.IsDiagnosticActive;
         }
         protected override void Dispose(bool disposing)
         {

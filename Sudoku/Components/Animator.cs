@@ -21,16 +21,21 @@ namespace DjSoft.Games.Sudoku.Components
         /// Pozor, animátor je vytvořen ve stavu <see cref="Running"/> = false, proto aby mohl být bezpečně naplněn a připravena okolní infrastruktura. 
         /// Až poté je vhodné animátor spustit nastavením <see cref="Running"/> = true.
         /// </summary>
-        /// <param name="owner">Control, který bude invalidován po provedení změn</param>
-        /// <param name="fps">Frames per second = počet ticků za sekundu. Default = 25, přípustná hodnota 1 až 100.</param>
-        public Animator(Control owner = null, double? fps = null)
+        /// <param name="owner">Control, který bude invalidován po provedení změn a bude používán pro invokaci v každém Ticku</param>
+        /// <param name="fps">Frames per second = počet ticků za sekundu. Default = <see cref="DefaultFps"/> = 50, přípustná hodnota 1 až 100.</param>
+        /// <param name="running">Možnost vytvoření animátoru s tímto stavem <see cref="Running"/>, default = false = neběží, je třeba spustit ručně</param>
+        public Animator(Control owner = null, double? fps = null, bool running = false)
         {
             if (owner != null) this.__Owner = new WeakReference<System.Windows.Forms.Control>(owner);
-            this.__Running = false;
-            this.__Fps = (fps.HasValue ? (fps.Value < 1 ? 1 : (fps.Value > 100 ? 100 : fps.Value)) : 40);
+            this.__Running = running;
+            this.__Fps = (fps.HasValue ? (fps.Value < 1 ? 1 : (fps.Value > 100 ? 100 : fps.Value)) : DefaultFps);
             this.__Motion = new List<Motion>();
             this._TimerStart();
         }
+        /// <summary>
+        /// Defaultní FPS
+        /// </summary>
+        public static int DefaultFps { get { return 50; } }
         /// <summary>
         /// WeakReference na Owner Control
         /// </summary>
@@ -57,6 +62,144 @@ namespace DjSoft.Games.Sudoku.Components
                 if (wr is null || !wr.TryGetTarget(out var owner)) return null;
                 return owner;
             }
+        }
+        /// <summary>
+        /// Frames per second = počet ticků za sekundu.
+        /// Lze setovat hodnotu v rozsahu 1 - 100. Setování se uplatní okamžitě. Nová hodnota ovlivní "rychlost animace" již zadaných Motions.
+        /// </summary>
+        public double Fps { get { return __Fps; } set { this.__Fps = (value < 1d ? 1d : (value > 100d ? 100d : value)); } } private double __Fps;
+        /// <summary>
+        /// Animace běží? Nastavením false bude pozastavena (freeze), nastavením true se rozběhne.
+        /// </summary>
+        public bool Running { get { return __Running; } set { this.__Running = value; } } private bool __Running;
+        #endregion
+        #region Vlákno na pozadí = časovač a řízení
+        /// <summary>
+        /// Spustí časovou smyčku animace.
+        /// Volá se v Main (GUI) threadu, nastartuje separátní thread na pozadí a tato metoda ihned poté skončí.
+        /// </summary>
+        private void _TimerStart()
+        {
+            this.__StopWatch = new Data.StopwatchExt();
+            this.__WinMMTimer = new WinMMTimer();
+
+            this.__TimerThread = new Thread(_TimerLoop);
+            this.__TimerThread.IsBackground = true;
+            this.__TimerThread.Priority = ThreadPriority.Normal;
+            this.__TimerThread.Name = "AnimatorTimer";
+            this.__TimerThread.Start();
+        }
+        /// <summary>
+        /// Metoda, která reprezentuje celý životní cyklus threadu na pozadí = časovač animačních akcí
+        /// </summary>
+        private void _TimerLoop()
+        {
+            __StopWatch.Start();
+            __AnimatorTimerStop = false;
+            try
+            {
+                long tick = 0L;
+                bool isDiagnosticActive = Data.AppService.IsDiagnosticActive;
+                StringBuilder sbLog = null;
+                if (isDiagnosticActive)
+                {
+                    sbLog = new StringBuilder();
+                    sbLog.AppendLine($"Tick\tTime [ms]\tCycle [ms]\tAction [ms]\tWait [ms]\tDoSleep\tSleep\tWake\tDream");
+                }
+
+                while (true)
+                {
+                    if (__AnimatorTimerStop) break;
+
+                    double currMs = __StopWatch.ElapsedMilisecs;         // Aktuální čas
+                    double cycleMs = (1000d / __Fps);                    // Délka celého cyklu, odpovídající FPS
+                    double endMs = currMs + cycleMs;                     // Čas na konci cyklu
+                    double actionMs = 0d;
+                    double waitMs = cycleMs;
+                    if (isDiagnosticActive) tick++;
+                    if (__Running && __Motion.Count > 0)
+                    {   // Pokud neběžíme, neřešíme nic.
+                        // A naprostou většinu času bude počet akcí = 0, takže by bylo zbytečné provádět invokaci GUI threadu...
+                        _RunInGui(_OneTick);
+                        if (__AnimatorTimerStop) break;
+
+                        double beginMs = __StopWatch.ElapsedMilisecs;    // Nynější čas
+                        actionMs = beginMs - currMs;                     // Čas vlastní akce
+                        waitMs = endMs - beginMs;                        // Zbývající čas k čekání
+                    }
+
+                    bool doWait = waitMs > 2d;
+
+                    double sleepMs = __StopWatch.ElapsedMilisecs;        // Aktuální čas před ulehnutím
+                    if (doWait)
+                        __WinMMTimer.Wait((uint)waitMs);                 // Počkáme si
+                    double wakeMs = __StopWatch.ElapsedMilisecs;         // Aktuální čas po vyspinkání
+                    double dreamMs = wakeMs - sleepMs;                   // Takhle dlouho jsme spinkali
+
+                    if (isDiagnosticActive)
+                    {
+                        sbLog.AppendLine($"{tick}\t{currMs:F3}\t{cycleMs:F3}\t{actionMs:F3}\t{waitMs:F3}\t{(doWait ? "1" : "0")}\t{sleepMs:F3}\t{wakeMs:F3}\t{dreamMs:F3}");
+
+                        if ((tick % 100) == 0)
+                        {
+                            string log = sbLog.ToString();
+                            // Vložit log do Clipboardu, ale tady jsme v threadu Background!
+                            //_RunInGui(() =>
+                            //{
+                            //    System.Windows.Forms.MessageBox.Show("Máme data");
+                            //    System.Windows.Forms.Clipboard.Clear();
+                            //    System.Windows.Forms.Clipboard.SetText(log);
+                            //});
+                            sbLog.Clear();
+                        }
+                    }
+                }
+            }
+            finally
+            {
+                this.__WinMMTimer.Dispose();
+            }
+        }
+        /// <summary>
+        /// Provede jeden animační krok = všechny platné akce <see cref="Motion"/> plus finální Repaint ownera.
+        /// Tato metoda je vyvolána v threadu GUI (pokud máme k dispozici Owner control).
+        /// </summary>
+        private void _OneTick()
+        {
+            Motion[] motions = _GetValidMotions();
+            if (motions is null) return;
+
+            // Provedeme DoTick pro platné Motions:
+            bool hasChanges = false;
+            if (motions.Length > 0)
+            {
+                foreach (var motion in motions)
+                    ((IMotionWorking)motion).DoTick(ref hasChanges);
+            }
+
+            // Pokud v průběhu DoTick došlo k nějakým změnám, vyvoláme překreslení Ownera (jsme v GUI threadu):
+            if (hasChanges)
+                _RepaintOwner();
+        }
+        /// <summary>
+        /// Metoda vrátí pole obsahující platné <see cref="Motion"/> = existující a ne-ukončené. 
+        /// Ty, které jsou Ukončené (<see cref="Motion.IsDone"/> = true), z trvalého seznamu <see cref="__Motion"/> vyhodí (a do výstupu se nedostanou)!
+        /// Všechno provádí pod lockem.
+        /// Metoda může vrátit null, když po vyčištění nejsou žádné platné <see cref="Motion"/>.
+        /// </summary>
+        /// <returns></returns>
+        private Motion[] _GetValidMotions()
+        {
+            if (__Motion is null || __Motion.Count == 0) return null;
+
+            Motion[] motions = null;
+            lock (__Motion)
+            {
+                __Motion.RemoveAll(m => m.IsDone);
+                if (__Motion.Count > 0)
+                    motions = __Motion.ToArray();
+            }
+            return motions;
         }
         /// <summary>
         /// Zajistí vyvolání metody pro překreslení Ownera. Volá se po dokončení jednoho Ticku, při kterém došlo ke změnám v animaci.
@@ -86,91 +229,6 @@ namespace DjSoft.Games.Sudoku.Components
                 action();
         }
         /// <summary>
-        /// Frames per second = počet ticků za sekundu.
-        /// Lze setovat hodnotu v rozsahu 1 - 100. Setování se uplatní okamžitě. Nová hodnota ovlivní "rychlost animace" již zadaných Motions.
-        /// </summary>
-        public double Fps { get { return __Fps; } set { this.__Fps = (value < 1d ? 1d : (value > 100d ? 100d : value)); } } private double __Fps;
-        /// <summary>
-        /// Animace běží? Nastavením false bude pozastavena (freeze), nastavením true se rozběhne.
-        /// </summary>
-        public bool Running { get { return __Running; } set { this.__Running = value; } } private bool __Running;
-        /// <summary>
-        /// Spustí časovou smyčku animace.
-        /// Volá se v Main (GUI) threadu, nastartuje separátní thread na pozadí a tato metoda ihned poté skončí.
-        /// </summary>
-        private void _TimerStart()
-        {
-            this.__StopWatch = new Data.StopwatchExt();
-            this.__WinMMTimer = new WinMMTimer();
-
-            this.__TimerThread = new Thread(_TimerLoop);
-            this.__TimerThread.IsBackground = true;
-            this.__TimerThread.Priority = ThreadPriority.Normal;
-            this.__TimerThread.Name = "AnimatorTimer";
-            this.__TimerThread.Start();
-        }
-        /// <summary>
-        /// Metoda, která reprezentuje celý životní cyklus threadu na pozadí = časovač animačních akcí
-        /// </summary>
-        private void _TimerLoop()
-        {
-            __StopWatch.Start();
-            __AnimatorTimerStop = false;
-            try
-            {
-                long tick = 0L;
-                StringBuilder sbLog = new StringBuilder();
-                sbLog.AppendLine($"Tick\tTime [ms]\tCycle [ms]\tAction [ms]\tWait [ms]\tDoSleep\tSleep\tWake\tDream");
-                while (true)
-                {
-                    if (__AnimatorTimerStop) break;
-
-                    double currMs = __StopWatch.ElapsedMilisecs;         // Aktuální čas
-                    double cycleMs = (1000d / __Fps);                    // Délka celého cyklu, odpovídající FPS
-                    double endMs = currMs + cycleMs;                     // Čas na konci cyklu
-                    double actionMs = 0d;
-                    double waitMs = cycleMs;
-                    tick++;
-                    if (__Running && __Motion.Count > 0)
-                    {   // Pokud neběžíme, neřešíme nic.
-                        // A naprostou většinu času bude počet akcí = 0, takže by bylo zbytečné provádět invokaci GUI threadu...
-                        _RunInGui(_OneTick);
-                        if (__AnimatorTimerStop) break;
-
-                        double beginMs = __StopWatch.ElapsedMilisecs;    // Nynější čas
-                        actionMs = beginMs - currMs;                     // Čas vlastní akce
-                        waitMs = endMs - beginMs;                        // Zbývající čas k čekání
-                    }
-
-                    bool doWait = waitMs > 2d;
-
-                    double sleepMs = __StopWatch.ElapsedMilisecs;        // Aktuální čas před ulehnutím
-                    if (doWait)
-                        __WinMMTimer.Wait((uint)waitMs);                 // Počkáme si
-                    double wakeMs = __StopWatch.ElapsedMilisecs;         // Aktuální čas po vyspinkání
-                    double dreamMs = wakeMs - sleepMs;                   // Takhle dlouho jsme spinkali
-
-                    sbLog.AppendLine($"{tick}\t{currMs:F3}\t{cycleMs:F3}\t{actionMs:F3}\t{waitMs:F3}\t{(doWait ? "1" : "0")}\t{sleepMs:F3}\t{wakeMs:F3}\t{dreamMs:F3}");
-
-                    if ((tick % 100) == 0)
-                    {
-                        string log = sbLog.ToString();
-                        //_RunInGui(() =>
-                        //{
-                        //    System.Windows.Forms.MessageBox.Show("Máme data");
-                        //    System.Windows.Forms.Clipboard.Clear();
-                        //    System.Windows.Forms.Clipboard.SetText(log);
-                        //});
-                        sbLog.Clear();
-                    }
-                }
-            }
-            finally
-            {
-                this.__WinMMTimer.Dispose();
-            }
-        }
-        /// <summary>
         /// Thread běžící na pozadí
         /// </summary>
         private Thread __TimerThread;
@@ -191,15 +249,18 @@ namespace DjSoft.Games.Sudoku.Components
         #endregion
         #region Správa animačních akcí
         /// <summary>
-        /// Vloží další definici animace, tato animace nemá vlastní hodnotu, pouze zajišťuje v pravidelném cyklu vyvolání cílové metody.
+        /// Vloží další definici animace.
+        /// Tato animace nemá omezený čas, skončí až aplikace nastaví <see cref="Motion.IsDone"/> = true.
+        /// Nemá vlastní hodnotu (Value), pouze zajišťuje v pravidelném cyklu vyvolání cílové metody Action.
         /// </summary>
         /// <param name="action">Akce volaná v každém kroku</param>
         /// <param name="userData">Libovolná data aplikace</param>
-        public void AddMotion(Action<Motion> action, object userData)
+        public Motion AddMotion(Action<Motion> action, object userData)
         {
             Motion motion = new Motion(action, userData);
             lock (__Motion)
                 __Motion.Add(motion);
+            return motion;
         }
         /// <summary>
         /// Vloží další definici animace
@@ -211,11 +272,12 @@ namespace DjSoft.Games.Sudoku.Components
         /// <param name="startValue">Počáteční hodnota</param>
         /// <param name="endValue">Koncová hodnota</param>
         /// <param name="userData">Libovolná data aplikace</param>
-        public void AddMotion(int? stepCount, TimeMode timeMode, double timeZoom, Action<Motion> action, object startValue, object endValue, object userData)
+        public Motion AddMotion(int? stepCount, TimeMode timeMode, double timeZoom, Action<Motion> action, object startValue, object endValue, object userData)
         {
             Motion motion = new Motion(stepCount, timeMode, timeZoom, action, startValue, endValue, userData);
             lock (__Motion)
                 __Motion.Add(motion);
+            return motion;
         }
         /// <summary>
         /// Vloží další definici animace
@@ -228,11 +290,12 @@ namespace DjSoft.Games.Sudoku.Components
         /// <param name="startValue">Počáteční hodnota</param>
         /// <param name="endValue">Koncová hodnota</param>
         /// <param name="userData">Libovolná data aplikace</param>
-        public void AddMotion(int? stepCount, int? stepCurrent, TimeMode timeMode, double timeZoom, Action<Motion> action, object startValue, object endValue, object userData)
+        public Motion AddMotion(int? stepCount, int? stepCurrent, TimeMode timeMode, double timeZoom, Action<Motion> action, object startValue, object endValue, object userData)
         {
             Motion motion = new Motion(stepCount, stepCurrent, timeMode, timeZoom, action, startValue, endValue, userData);
             lock (__Motion)
                 __Motion.Add(motion);
+            return motion;
         }
         /// <summary>
         /// Vloží další definici animace
@@ -243,11 +306,12 @@ namespace DjSoft.Games.Sudoku.Components
         /// <param name="action">Akce volaná v každém kroku</param>
         /// <param name="valueSet"></param>
         /// <param name="userData">Libovolná data aplikace</param>
-        public void AddMotion(int? stepCount, TimeMode timeMode, double timeZoom, Action<Motion> action, AnimatedValueSet valueSet, object userData)
+        public Motion AddMotion(int? stepCount, TimeMode timeMode, double timeZoom, Action<Motion> action, AnimatedValueSet valueSet, object userData)
         {
             Motion motion = new Motion(stepCount, timeMode, timeZoom, action, valueSet, userData);
             lock (__Motion)
                 __Motion.Add(motion);
+            return motion;
         }
         /// <summary>
         /// Vloží další definici animace
@@ -259,37 +323,12 @@ namespace DjSoft.Games.Sudoku.Components
         /// <param name="action">Akce volaná v každém kroku</param>
         /// <param name="valueSet"></param>
         /// <param name="userData">Libovolná data aplikace</param>
-        public void AddMotion(int? stepCount, int? stepCurrent, TimeMode timeMode, double timeZoom, Action<Motion> action, AnimatedValueSet valueSet, object userData)
+        public Motion AddMotion(int? stepCount, int? stepCurrent, TimeMode timeMode, double timeZoom, Action<Motion> action, AnimatedValueSet valueSet, object userData)
         {
             Motion motion = new Motion(stepCount, stepCurrent, timeMode, timeZoom, action, valueSet, userData);
             lock (__Motion)
                 __Motion.Add(motion);
-        }
-        /// <summary>
-        /// Provede jeden animační krok = všechny platné akce plus Repaint ownera
-        /// </summary>
-        private void _OneTick()
-        {
-            Motion[] motions = null;
-            lock (__Motion)
-                motions = __Motion.ToArray();
-
-            bool hasChanges = false;
-            if (motions.Length > 0)
-            {
-                foreach (var motion in motions)
-                    ((IMotionWorking)motion).DoTick(ref hasChanges);
-
-                if (motions.Any(m => m.IsDone))
-                {
-                    lock (__Motion)
-                        __Motion.RemoveAll(m => m.IsDone);
-                }
-            }
-
-            // Pokud máme nějaké změny, promítneme je vizuálně do Ownera:
-            if (hasChanges)
-                _RepaintOwner();
+            return motion;
         }
         private List<Motion> __Motion;
         #endregion
@@ -311,6 +350,7 @@ namespace DjSoft.Games.Sudoku.Components
                 __StepIndex = 0;
                 __StepCount = -1;
                 __TimeMode = TimeMode.Linear;
+                __TimeModeIsCycling = true;
                 __TimeCoeff = 1d;
                 __Action = action;
                 __StartValue = null;
@@ -335,6 +375,7 @@ namespace DjSoft.Games.Sudoku.Components
                 __StepCount = (stepCount.HasValue && stepCount.Value > 0 ? stepCount.Value : -1);
                 __StepIndex = 0;
                 __TimeMode = timeMode;
+                __TimeModeIsCycling = _IsTimeModeCycling(timeMode, stepCount);
                 __TimeCoeff = GetZoomCoefficient(timeZoom);
                 __Action = action;
                 __ValueType = valueType;
@@ -360,6 +401,7 @@ namespace DjSoft.Games.Sudoku.Components
                 __StepCount = (stepCount.HasValue && stepCount.Value > 0 ? stepCount.Value : -1);
                 __StepIndex = (stepCurrent.HasValue ? _GetAlignedValue(stepCurrent.Value, 0, __StepCount) : 0);
                 __TimeMode = timeMode;
+                __TimeModeIsCycling = _IsTimeModeCycling(timeMode, stepCount);
                 __TimeCoeff = GetZoomCoefficient(timeZoom);
                 __Action = action;
                 __ValueType = valueType;
@@ -382,6 +424,7 @@ namespace DjSoft.Games.Sudoku.Components
                 __StepCount = (stepCount.HasValue && stepCount.Value > 0 ? stepCount.Value : -1);
                 __StepIndex = 0;
                 __TimeMode = timeMode;
+                __TimeModeIsCycling = _IsTimeModeCycling(timeMode, stepCount);
                 __TimeCoeff = GetZoomCoefficient(timeZoom);
                 __Action = action;
                 __ValueType = valueSet.ValueType;
@@ -403,6 +446,7 @@ namespace DjSoft.Games.Sudoku.Components
                 __StepCount = (stepCount.HasValue && stepCount.Value > 0 ? stepCount.Value : -1);
                 __StepIndex = (stepCurrent.HasValue ? _GetAlignedValue(stepCurrent.Value, 0, __StepCount) : 0);
                 __TimeMode = timeMode;
+                __TimeModeIsCycling = _IsTimeModeCycling(timeMode, stepCount);
                 __TimeCoeff = GetZoomCoefficient(timeZoom);
                 __Action = action;
                 __ValueType = valueSet.ValueType;
@@ -410,6 +454,23 @@ namespace DjSoft.Games.Sudoku.Components
                 __CurrentValue = valueSet.GetValueAtPosition(0d);
                 __UserData = userData;
             }
+            /// <summary>
+            /// Vrátí true, pokud režim času je nekonečný
+            /// </summary>
+            /// <param name="timeMode"></param>
+            /// <returns></returns>
+            private static bool _IsTimeModeCycling(TimeMode timeMode, int? stepCount)
+            {
+                if (!stepCount.HasValue || stepCount.Value <= 0) return true;
+                return (timeMode == TimeMode.Cycling);
+            }
+            /// <summary>
+            /// Vrátí hodnotu zarovnanou do daných mezí
+            /// </summary>
+            /// <param name="value"></param>
+            /// <param name="min"></param>
+            /// <param name="max"></param>
+            /// <returns></returns>
             private static int _GetAlignedValue(int value, int min, int max)
             {
                 if (max <= min) return min;
@@ -429,6 +490,10 @@ namespace DjSoft.Games.Sudoku.Components
             /// Dynamika pohybu
             /// </summary>
             private TimeMode __TimeMode;
+            /// <summary>
+            /// Dynamika pohybu je nekonečná = po dokončení jednoho cyklu ihned začíná další
+            /// </summary>
+            private bool __TimeModeIsCycling;
             /// <summary>
             /// Koeficient Zoomu dynamiky
             /// </summary>
@@ -473,10 +538,16 @@ namespace DjSoft.Games.Sudoku.Components
             /// </summary>
             public bool IsCurrentValueChanged { get { return __IsCurrentValueChanged; } set { __IsCurrentValueChanged = value; } } private bool __IsCurrentValueChanged;
             /// <summary>
-            /// Pokud po provedení akce je zde true, pak tato animační akce končí a je vyřazena ze seznamu akcí.
+            /// Pokud po provedení akce (nebo kdykoli jindy) je zde true, pak tato animační akce končí a je vyřazena ze seznamu akcí.
             /// Aplikační kód může nastavit v kterémkoli kroku.
-            /// Animační jádro <see cref="Animator"/> nastaví tuto proměnnou na true před vyvoláním posledního kroku, podle toho může uživatelský kód detekovat, že jde o poslední = finální krok.
+            /// <para/>
+            /// Animační jádro <see cref="Animator"/> nastaví tuto proměnnou na true před vyvoláním posledního kroku, podle toho může uživatelský kód v rámci animační akce detekovat, že jde o poslední = finální krok.
             /// Aplikační kód může hodnotu vrátit na false, a pak tato akce bude volána i v příštím cyklu.
+            /// <para/>
+            /// Aplikační kód si může uschovat instanci <see cref="Motion"/> (ta je výstupem metod <see cref="Animator.AddMotion(Action{Motion}, object)"/>), 
+            /// a kdykoliv (asynchronně, z libovolného threadu) může do této uschované instance nastavit <see cref="IsDone"/> = true.
+            /// Animátor pak takové animace vyřadí ze seznamu před zahájením příštího animačního kroku.
+            /// Pokud ale již byl zahájen animační krok a <see cref="IsDone"/> bylo false, pak se jeden krok akce této <see cref="Motion"/> ještě může provést.
             /// </summary>
             public bool IsDone { get { return __IsDone; } set { __IsDone = value; } } private bool __IsDone;
             #endregion
@@ -501,8 +572,11 @@ namespace DjSoft.Games.Sudoku.Components
             private void _DoOneTick()
             {
                 __IsCurrentValueChanged = true;
-                __IsDone = false;
-                _DoAction();
+                if (!__IsDone)
+                {   // Aplikační kód mohl nastavit IsDone na true i v mezidobí po zahájení kroku (tedy tato akce Motion se dostala do seznamu akcí k provedení),
+                    // ale před vlastním provedením akce tohoto konkrétního Motion - vyhodnotíme tedy IsDone těsně před akcí:
+                    _DoAction();
+                }
             }
             /// <summary>
             /// Provede jeden krok animace v situaci, kdy je dán cílový počet kroků.
@@ -518,11 +592,15 @@ namespace DjSoft.Games.Sudoku.Components
                 __CurrentValue = currentValue;
                 __CurrentRatio = currentRatio;
                 __IsCurrentValueChanged = isChanged;
-                __IsDone = (__TimeMode != TimeMode.Cycling && step >= __StepCount);
-                _DoAction();
+                if (!__IsDone)
+                {   // Aplikační kód mohl nastavit IsDone na true i v mezidobí po zahájení kroku (tedy tato akce Motion se dostala do seznamu akcí k provedení),
+                    // ale před vlastním provedením akce tohoto konkrétního Motion - vyhodnotíme tedy IsDone těsně před akcí:
+                    __IsDone = (__TimeMode != TimeMode.Cycling && step >= __StepCount);
+                    _DoAction();
+                }
 
-                // Cyklický pohyb, který nebyl aplikací ukončen, a aktuální krok (step) by vedl ke konci cyklu: nastavíme Index = -1, a navazující metoda jej inkrementuje na 0:
-                if (__TimeMode == TimeMode.Cycling && !__IsDone && step >= __StepCount)
+                // Cyklický pohyb, který nebyl aplikací explicitně ukončen, a aktuální krok (step) by vedl ke konci cyklu: nastavíme Index = -1, a navazující metoda jej inkrementuje na 0:
+                if (__TimeModeIsCycling && !__IsDone && step >= __StepCount)
                     __StepIndex = -1;
             }
             /// <summary>

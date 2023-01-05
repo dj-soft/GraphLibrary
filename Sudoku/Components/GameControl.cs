@@ -17,7 +17,6 @@ namespace DjSoft.Games.Sudoku.Components
 
             var bgrSet = CreateBgrColorSet(out var backColor);
             this.BackColor = backColor;
-            this.Animator.Fps = 60;
             this.Animator.AddMotion(500, Animator.TimeMode.Cycling, 0d, _AnimeBgr, bgrSet, null);
             _AnimeBgrTick = 0;
             _AnimeBgrTime = 0d;
