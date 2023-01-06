@@ -9,7 +9,7 @@ namespace DjSoft.Games.Sudoku.Data
     /// <summary>
     /// Celá hra
     /// </summary>
-    internal class SudokuGame
+    public class SudokuGame
     {
         /// <summary>
         /// Konstruktor
@@ -200,7 +200,7 @@ namespace DjSoft.Games.Sudoku.Data
     /// <summary>
     /// Jedna skupina buněk = jedna řada nebo sloupec nebo čtverec
     /// </summary>
-    internal class Group
+    public class Group
     {
         /// <summary>
         /// Konstruktor
@@ -217,7 +217,7 @@ namespace DjSoft.Games.Sudoku.Data
     /// <summary>
     /// Jedna buňka
     /// </summary>
-    internal class Cell
+    public class Cell
     {
         /// <summary>
         /// Konstruktor

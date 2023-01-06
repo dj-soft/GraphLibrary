@@ -8,6 +8,9 @@ using System.Windows.Forms;
 
 namespace DjSoft.Games.Sudoku.Components
 {
+    /// <summary>
+    /// Control pro zobrazení Sudoku
+    /// </summary>
     public class SudokuControl : AnimatedControl
     {
         public SudokuControl()
@@ -15,28 +18,39 @@ namespace DjSoft.Games.Sudoku.Components
             this.UseBackgroundLayer = true;
             this.UseStandardLayer = true;
 
-            _InitCoordinates();
-            _InitTheme();
             _InitGame();
+            _InitTheme();
+            _InitCoordinates();
+            _InitInteractivity();
         }
 
-        #region Hra
+        #region Fyzická interaktivita od uživatele do controlu a do hry
+        private void _InitInteractivity()
+        {
+            this.MouseMove += _MouseMove;
+            this.MouseDown += _MouseDown;
+            this.MouseUp += _MouseUp;
+        }
+        private void _MouseMove(object sender, MouseEventArgs e)
+        {
+        }
+        private void _MouseDown(object sender, MouseEventArgs e)
+        {
+        }
+        private void _MouseUp(object sender, MouseEventArgs e)
+        {
+        }
+        #endregion
+        #region Hra = datová instance a interakce s ní
         private void _InitGame()
         {
-
+            __SudokuGame = new Data.SudokuGame();
+            __Configuration = SudokuConfiguration.Default;
         }
-
+        private Data.SudokuGame __SudokuGame;
+        private SudokuConfiguration __Configuration;
         #endregion
-        #region Kreslení
-        protected override void DoPaintBackground(LayeredPaintEventArgs args)
-        {
-            base.DoPaintBackground(args, Theme.BackColor);
-        }
-        protected override void DoPaintStandard(LayeredPaintEventArgs args)
-        {
-        }
-        #endregion
-        #region Vizuální kabát
+        #region Vizuální kabát = Theme
         private void _InitTheme()
         {
             Theme = SudokuSkinTheme.LightGray;
@@ -47,8 +61,8 @@ namespace DjSoft.Games.Sudoku.Components
         #region Mapa prostoru = kde co je, v závislosti na velikosti controlu
         private void _InitCoordinates()
         {
-            __Coordinates = new SudokuCoordinates();
-            this.ClientSizeChanged += _ClientSizeChanged;
+            __Coordinates = new SudokuCoordinates(__SudokuGame);
+            ClientSizeChanged += _ClientSizeChanged;
             _RefreshCoordinates();
         }
         /// <summary>
@@ -64,24 +78,121 @@ namespace DjSoft.Games.Sudoku.Components
         {
             if (__Coordinates != null && Theme != null)
                 __Coordinates.ResizeTo(this.ClientSize, Theme);
+            LayerBackgroundValid = false;
+            LayerStandardValid = false;
         }
         private SudokuCoordinates __Coordinates;
         #endregion
+        #region Kreslení = Paint do vrstev
+        protected override void DoPaintBackground(LayeredPaintEventArgs args)
+        {
+            base.DoPaintBackground(args, Theme.BackColor);
+        }
+        protected override void DoPaintStandard(LayeredPaintEventArgs args)
+        {
+            var theme = Theme;
+            var coords = __Coordinates;
+            args.Graphics.FillRectangle(_Brush(theme.GameBackColor), coords.GameBounds);
+            args.Graphics.FillRectangle(_Brush(theme.ControlBackColor), coords.ControlBounds);
+        }
+        private SolidBrush _Brush(Color color)
+        {
+            if (__SolidBrush is null) __SolidBrush = new SolidBrush(color);
+            else __SolidBrush.Color = color;
+            return __SolidBrush;
+        }
+        private SolidBrush __SolidBrush;
+        #endregion
     }
+    #region class SudokuCoordinates : Souřadnice prvků v Sudoku
     /// <summary>
     /// Souřadnice prvků v Sudoku
     /// </summary>
     public class SudokuCoordinates
     {
-        public SudokuCoordinates()
-        { }
+        public SudokuCoordinates(Data.SudokuGame sudokuGame = null)
+        {
+            __Items = new List<SudokuItem>();
+            _SetSudokuGame(sudokuGame);
+
+        }
+        public Data.SudokuGame SudokuGame { get { return __SudokuGame; } set { _SetSudokuGame(value); } } private Data.SudokuGame __SudokuGame;
+        private void _SetSudokuGame(Data.SudokuGame sudokuGame)
+        {
+            __SudokuGame = sudokuGame;
+        }
+        private List<SudokuItem> __Items;
         /// <summary>
         /// Po změně rozměru controlu se upraví souřadnice v <see cref="SudokuCoordinates"/>;
         /// </summary>
         /// <param name="size"></param>
         public void ResizeTo(Size size, SudokuSkinTheme theme)
-        { }
+        {
+            if (size.Width < 50 || size.Height < 70) return;
+            _SetBasicBounds(size);
+        
+        }
+        /// <summary>
+        /// Rozmístí souřadnice <see cref="GameBounds"/> a <see cref="ControlBounds"/> do daného prostoru. 
+        /// Následující metody už umísťují své prvky do těchto souřadnic.
+        /// </summary>
+        /// <param name="size"></param>
+        private void _SetBasicBounds(SizeF size)
+        {
+            float gameRatio = 0.80f;                       // Horních 80% obsazuje hra Sudoku
+            float gameBorder = 6f;                         // Prázdný okraj okolo Sudoku
+            float controlBorder = 6f;                      // Prázdný okraj okolo Controls
+            float controlRatio = 5f;                       // Počet prvků v Controls = poměr Šířka / Výška
+
+            float w = size.Width;
+            float h = size.Height;
+            float yb = gameRatio * h;                      // Nahoře bude hra Sudoku
+            float bh = h - yb;                             // Dole bude prostor Controls
+
+            float gw = w - gameBorder - gameBorder;
+            float gh = yb - gameBorder - gameBorder;
+            float gs = (gw < gh ? gw : gh);
+            float gx = (w - gs) / 2f;
+            float gy = (yb - gs) / 2f;
+            GameBounds = new RectangleF(gx, gy, gs, gs);
+
+            float cw = (w - controlBorder - controlBorder) / controlRatio;
+            float ch = h - yb - controlBorder;
+            float cs = (cw < ch ? cw : ch);
+            float cx = (w - (controlRatio * cs)) / 2f;
+            float cy = yb + ((bh - cs) / 2f);
+            ControlBounds = new RectangleF(cx, cy, controlRatio * cs, cs);
+        }
+
+        public RectangleF GameBounds { get; private set; }
+        public RectangleF ControlBounds { get; private set; }
+        public IReadOnlyList<SudokuItem> Items { get { return __Items; } }
     }
+    #endregion
+    #region class SudokuConfiguration : Konfigurace chování Sudoku
+    /// <summary>
+    /// Konfigurace chování Sudoku
+    /// </summary>
+    public class SudokuConfiguration
+    {
+        /// <summary>
+        /// Výchozí chování dle DJsoft
+        /// </summary>
+        public static SudokuConfiguration Default
+        {
+            get
+            {
+                SudokuConfiguration cfg = new SudokuConfiguration();
+
+                return cfg;
+            }
+        }
+        private SudokuConfiguration()
+        {
+        }
+
+    }
+    #endregion
     #region class SudokuSkinTheme : Vizuální schemata pro Sudoku
     /// <summary>
     /// Vizuální schemata pro Sudoku
@@ -97,25 +208,122 @@ namespace DjSoft.Games.Sudoku.Components
             get
             {
                 SudokuSkinTheme scs = new SudokuSkinTheme();
-                scs.BackColor = Color.FromArgb(255, 240, 240, 250);
+                scs.BackColor = Color.FromArgb(255, 240, 240, 245);
+                scs.GameBackColor = Color.FromArgb(255, 245, 245, 250);
+
                 scs.InnerLineColor = Color.FromArgb(255, 160, 160, 160);
                 scs.InnerLineSize = 1f;
                 scs.OuterLineColor = Color.FromArgb(255, 100, 100, 100);
                 scs.OuterLineSize = 3f;
+
+                scs.EmptyCellBackColor = Color.FromArgb(255, 245, 245, 250);
+                scs.EmptyCellMouseOnBackColor = Color.FromArgb(255, 250, 250, 180);
+                scs.EmptyCellInActiveGrouBackColor = Color.FromArgb(255, 250, 250, 220);
+
+                scs.FixedCellBackColor = Color.FromArgb(255, 220, 220, 230);
+                scs.FixedCellMouseOnBackColor = Color.FromArgb(255, 220, 220, 230);
+                scs.FixedCellInActiveGrouBackColor = Color.FromArgb(255, 240, 240, 210);
+                scs.FixedCellTextColor = Color.FromArgb(255, 0, 0, 0);
+
+                scs.ControlBackColor = Color.FromArgb(255, 235, 235, 245);
                 return scs;
             }
         }
+        /// <summary>
+        /// Konstruktor je privátní. Instance se generují z konkrétních static properties pro konkrétní témata...
+        /// </summary>
         private SudokuSkinTheme() { }
         #endregion
         #region Jednotlivé barvy
         public Color BackColor { get; private set; }
+        public Color GameBackColor { get; private set; }
+
         public Color InnerLineColor { get; private set; }
         public float InnerLineSize { get; private set; }
         public Color OuterLineColor { get; private set; }
         public float OuterLineSize { get; private set; }
 
-        #endregion
+        public Color EmptyCellBackColor { get; private set; }
+        public Color EmptyCellMouseOnBackColor { get; private set; }
+        public Color EmptyCellInActiveGrouBackColor { get; private set; }
 
+        public Color FixedCellBackColor { get; private set; }
+        public Color FixedCellMouseOnBackColor { get; private set; }
+        public Color FixedCellInActiveGrouBackColor { get; private set; }
+        public Color FixedCellTextColor { get; private set; }
+
+        public Color ControlBackColor { get; private set; }
+
+        #endregion
+    }
+    #endregion
+    #region  class SudokuItem : Jednotlivý prvek GUI Sudoku (fixed, game, config)
+    /// <summary>
+    /// Jednotlivý prvek GUI Sudoku (fixed, game, config)
+    /// </summary>
+    public class SudokuItem
+    {
+        public SudokuItem(string itemId, SudokuItemType itemType)
+        {
+            __ItemId = itemId;
+            __ItemType = itemType;
+        }
+
+        public string ItemId { get { return __ItemId; } } private readonly string __ItemId;
+        public SudokuItemType ItemType { get { return __ItemType; } } private readonly SudokuItemType __ItemType;
+        public RectangleF Bounds { get; set; }
+        public bool IsBackground { get; set; }
+        public bool IsInteractive { get; set; }
+        public bool IsVisible { get; set; }
+    }
+    [Flags]
+    public enum SudokuItemType : int
+    {
+        None = 0,
+        /// <summary>
+        /// Patří do Sudoku
+        /// </summary>
+        PartSudoku = 0x0001,
+        /// <summary>
+        /// Patří do Controls
+        /// </summary>
+        PartControl = 0x0002,
+        /// <summary>
+        /// Prostor celého pozadí
+        /// </summary>
+        PartBackgroundArea = 0x0008,
+        /// <summary>
+        /// Vnější linka
+        /// </summary>
+        PartOuterLine = 0x0010,
+        /// <summary>
+        /// Vnitřní linka
+        /// </summary>
+        PartInnerLine = 0x0020,
+        /// <summary>
+        /// Vodorovná linka
+        /// </summary>
+        PartHorizontalLine = 0x0040,
+        /// <summary>
+        /// Svislá linka
+        /// </summary>
+        PartVerticalLine = 0x0080,
+        /// <summary>
+        /// Jedna buňka
+        /// </summary>
+        PartCell = 0x0100,
+        /// <summary>
+        /// Jedna sub-buňka (1/9 v buňce)
+        /// </summary>
+        PartSubCell = 0x0200,
+        /// <summary>
+        /// Label v controlech
+        /// </summary>
+        PartLabel = 0x00010000,
+        /// <summary>
+        /// Button v controlech
+        /// </summary>
+        PartButton = 0x00020000
     }
     #endregion
 }

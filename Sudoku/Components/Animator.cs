@@ -26,41 +26,70 @@ namespace DjSoft.Games.Sudoku.Components
         /// <param name="running">Možnost vytvoření animátoru s tímto stavem <see cref="Running"/>, default = false = neběží, je třeba spustit ručně</param>
         public Animator(Control owner = null, double? fps = null, bool running = false)
         {
-            if (owner != null) this.__Owner = new WeakReference<System.Windows.Forms.Control>(owner);
+            this.__WithOwner = (owner != null);
+            this.__Owner = (this.__WithOwner ? new WeakReference<System.Windows.Forms.Control>(owner) : null);
+            if (this.__WithOwner) owner.Disposed += _OwnerDisposed;
             this.__Running = running;
             this.__Fps = (fps.HasValue ? (fps.Value < 1 ? 1 : (fps.Value > 100 ? 100 : fps.Value)) : DefaultFps);
             this.__Motion = new List<Motion>();
             this._TimerStart();
         }
         /// <summary>
+        /// Owner control byl disposován...
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _OwnerDisposed(object sender, EventArgs e)
+        {
+            this.__Owner = null;
+            this.__OwnerDisposed = true;
+            this.__AnimatorTimerStop = true;
+        }
+        /// <summary>
         /// Defaultní FPS
         /// </summary>
         public static int DefaultFps { get { return 50; } }
+        /// <summary>
+        /// Obsahuje true, pokud animátor má být závislý na životě Owner controlu, false když byl vytvořen bez něj
+        /// </summary>
+        private bool __WithOwner;
         /// <summary>
         /// WeakReference na Owner Control
         /// </summary>
         private WeakReference<System.Windows.Forms.Control> __Owner;
         /// <summary>
-        /// Obsahuje true, pokud máme Ownera
+        /// Owner byl již disposován
         /// </summary>
-        private bool _HasOwner
-        {
-            get
-            {
-                var wr = __Owner;
-                return (wr != null && wr.TryGetTarget(out var _));
-            }
-        }
+        private bool __OwnerDisposed;
         /// <summary>
-        /// Obsahuje Owner control
+        /// Obsahuje Owner control, pokud ještě existuje.
+        /// Pozor, Owner může být Disposed. Pro živou práci je třeba použít <see cref="_LiveOwner"/>.
+        /// Pokud je v <see cref="__WithOwner"/> hodnota false, pak animátor jede nezávisle na Owner controlu.
         /// </summary>
         private Control _Owner
         {
             get 
             {
-                var wr = __Owner;
-                if (wr is null || !wr.TryGetTarget(out var owner)) return null;
-                return owner;
+                if (this.__WithOwner)
+                {
+                    var wr = __Owner;
+                    if (wr != null && wr.TryGetTarget(out var owner)) return owner;
+                }
+                return null;
+            }
+        }
+        /// <summary>
+        /// Obsahuje Owner control, pokud ještě existuje a pokud je naživu.
+        /// Pokud je v <see cref="__WithOwner"/> hodnota false, pak animátor jede nezávisle na Owner controlu.
+        /// </summary>
+        private Control _LiveOwner
+        {
+            get
+            {
+                var owner = _Owner;
+                if (owner != null && !__OwnerDisposed && !owner.Disposing && !owner.IsDisposed)
+                    return owner;
+                return null;
             }
         }
         /// <summary>
@@ -110,6 +139,8 @@ namespace DjSoft.Games.Sudoku.Components
                 while (true)
                 {
                     if (__AnimatorTimerStop) break;
+
+                    if (__WithOwner && __OwnerDisposed) break;           // Owner byl ukončen
 
                     double currMs = __StopWatch.ElapsedMilisecs;         // Aktuální čas
                     double cycleMs = (1000d / __Fps);                    // Délka celého cyklu, odpovídající FPS
@@ -208,10 +239,11 @@ namespace DjSoft.Games.Sudoku.Components
         /// </summary>
         private void _RepaintOwner()
         {
-            var wr = __Owner;
-            if (!__AnimatorTimerStop && wr != null && wr.TryGetTarget(out var owner))
+            if (!__AnimatorTimerStop && __WithOwner && !__OwnerDisposed)
             {
-                owner.Invalidate();
+                var owner = _LiveOwner;
+                if (owner != null)
+                    owner.Invalidate();
             }
         }
         /// <summary>
@@ -222,11 +254,28 @@ namespace DjSoft.Games.Sudoku.Components
         /// <param name="action"></param>
         private void _RunInGui(System.Action action)
         {
-            var owner = _Owner;
-            if (owner != null && owner.InvokeRequired)
-                owner.Invoke(action);
+            if (__WithOwner)
+            {   // S Ownerem: 
+                if (!__OwnerDisposed)
+                {
+                    var owner = _LiveOwner;
+                    if (owner != null)
+                    {
+                        try
+                        {
+                            if (owner.InvokeRequired)
+                                owner.Invoke(action);
+                            else
+                                action();
+                        }
+                        catch { }
+                    }
+                }
+            }
             else
+            {   // Bez Ownera:
                 action();
+            }
         }
         /// <summary>
         /// Thread běžící na pozadí

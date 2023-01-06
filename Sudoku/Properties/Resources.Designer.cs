@@ -63,6 +63,456 @@ namespace DjSoft.Games.Sudoku.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap Aqua01 {
+            get {
+                object obj = ResourceManager.GetObject("Aqua01", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap Aqua02 {
+            get {
+                object obj = ResourceManager.GetObject("Aqua02", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap Aqua03 {
+            get {
+                object obj = ResourceManager.GetObject("Aqua03", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap Aqua04 {
+            get {
+                object obj = ResourceManager.GetObject("Aqua04", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap Aqua05 {
+            get {
+                object obj = ResourceManager.GetObject("Aqua05", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap Aqua06 {
+            get {
+                object obj = ResourceManager.GetObject("Aqua06", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap Aqua07 {
+            get {
+                object obj = ResourceManager.GetObject("Aqua07", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap Aqua08 {
+            get {
+                object obj = ResourceManager.GetObject("Aqua08", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap Aqua09 {
+            get {
+                object obj = ResourceManager.GetObject("Aqua09", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap Aqua10 {
+            get {
+                object obj = ResourceManager.GetObject("Aqua10", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap Aqua11 {
+            get {
+                object obj = ResourceManager.GetObject("Aqua11", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap Aqua12 {
+            get {
+                object obj = ResourceManager.GetObject("Aqua12", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap Aqua41 {
+            get {
+                object obj = ResourceManager.GetObject("Aqua41", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap Aqua42 {
+            get {
+                object obj = ResourceManager.GetObject("Aqua42", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap Aqua43 {
+            get {
+                object obj = ResourceManager.GetObject("Aqua43", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap Aqua44 {
+            get {
+                object obj = ResourceManager.GetObject("Aqua44", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap Aqua45 {
+            get {
+                object obj = ResourceManager.GetObject("Aqua45", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap Aqua46 {
+            get {
+                object obj = ResourceManager.GetObject("Aqua46", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap Aqua47 {
+            get {
+                object obj = ResourceManager.GetObject("Aqua47", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap Aqua48 {
+            get {
+                object obj = ResourceManager.GetObject("Aqua48", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap Aqua49 {
+            get {
+                object obj = ResourceManager.GetObject("Aqua49", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap Gloss_PNGAxialis_IconWorkshop {
+            get {
+                object obj = ResourceManager.GetObject("Gloss_PNGAxialis_IconWorkshop", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap Gloss_PNGCDRWin {
+            get {
+                object obj = ResourceManager.GetObject("Gloss_PNGCDRWin", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap Gloss_PNGChange_User {
+            get {
+                object obj = ResourceManager.GetObject("Gloss_PNGChange_User", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap Gloss_PNGClock {
+            get {
+                object obj = ResourceManager.GetObject("Gloss_PNGClock", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap Gloss_PNGCPU_Usage {
+            get {
+                object obj = ResourceManager.GetObject("Gloss_PNGCPU_Usage", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap Gloss_PNGDVD2AVI {
+            get {
+                object obj = ResourceManager.GetObject("Gloss_PNGDVD2AVI", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap Gloss_PNGKKMenu_Audio {
+            get {
+                object obj = ResourceManager.GetObject("Gloss_PNGKKMenu_Audio", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap Gloss_PNGKKMenu_Office {
+            get {
+                object obj = ResourceManager.GetObject("Gloss_PNGKKMenu_Office", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap Gloss_PNGKKMenu_Windows {
+            get {
+                object obj = ResourceManager.GetObject("Gloss_PNGKKMenu_Windows", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap Gloss_PNGLogof_Logon {
+            get {
+                object obj = ResourceManager.GetObject("Gloss_PNGLogof_Logon", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap Gloss_PNGMacromedia_Authorware {
+            get {
+                object obj = ResourceManager.GetObject("Gloss_PNGMacromedia_Authorware", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap Gloss_PNGMacromedia_ColdFusion_MX {
+            get {
+                object obj = ResourceManager.GetObject("Gloss_PNGMacromedia_ColdFusion_MX", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap Gloss_PNGMacromedia_Contribute {
+            get {
+                object obj = ResourceManager.GetObject("Gloss_PNGMacromedia_Contribute", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap Gloss_PNGMacromedia_Director_MX {
+            get {
+                object obj = ResourceManager.GetObject("Gloss_PNGMacromedia_Director_MX", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap Gloss_PNGMacromedia_Dreamweaver_MX {
+            get {
+                object obj = ResourceManager.GetObject("Gloss_PNGMacromedia_Dreamweaver_MX", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap Gloss_PNGMacromedia_Extension_Manager {
+            get {
+                object obj = ResourceManager.GetObject("Gloss_PNGMacromedia_Extension_Manager", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap Gloss_PNGMacromedia_Flash_MX {
+            get {
+                object obj = ResourceManager.GetObject("Gloss_PNGMacromedia_Flash_MX", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap Gloss_PNGMacromedia_Homesite {
+            get {
+                object obj = ResourceManager.GetObject("Gloss_PNGMacromedia_Homesite", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap Gloss_PNGMacromedia_JRun_MX {
+            get {
+                object obj = ResourceManager.GetObject("Gloss_PNGMacromedia_JRun_MX", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap Gloss_PNGMacromedia_Shockwave {
+            get {
+                object obj = ResourceManager.GetObject("Gloss_PNGMacromedia_Shockwave", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap Gloss_PNGMicrosoft_Visual_Studio_C__ {
+            get {
+                object obj = ResourceManager.GetObject("Gloss_PNGMicrosoft_Visual_Studio_C__", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap Gloss_PNGMicrosoft_Windows_System_Manager {
+            get {
+                object obj = ResourceManager.GetObject("Gloss_PNGMicrosoft_Windows_System_Manager", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap Gloss_PNGMoby_Dock {
+            get {
+                object obj = ResourceManager.GetObject("Gloss_PNGMoby_Dock", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap Gloss_PNGRestart {
+            get {
+                object obj = ResourceManager.GetObject("Gloss_PNGRestart", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap Gloss_PNGShutdown_Quit_Dock {
             get {
                 object obj = ResourceManager.GetObject("Gloss_PNGShutdown_Quit_Dock", resourceCulture);
@@ -83,9 +533,29 @@ namespace DjSoft.Games.Sudoku.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap Gloss_PNGStardock_CursorXP {
+            get {
+                object obj = ResourceManager.GetObject("Gloss_PNGStardock_CursorXP", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap Gloss_PNGSyncronize__Universal_ {
             get {
                 object obj = ResourceManager.GetObject("Gloss_PNGSyncronize__Universal_", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap Gloss_PNGWinRar {
+            get {
+                object obj = ResourceManager.GetObject("Gloss_PNGWinRar", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }

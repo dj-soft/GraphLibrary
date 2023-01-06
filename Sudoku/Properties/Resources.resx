@@ -118,14 +118,155 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <assembly alias="System.Windows.Forms" name="System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" />
+  <data name="Aqua01" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\64px\Aqua01.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Aqua02" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\64px\Aqua02.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Aqua03" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\64px\Aqua03.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Aqua04" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\64px\Aqua04.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Aqua05" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\64px\Aqua05.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Aqua06" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\64px\Aqua06.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Aqua07" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\64px\Aqua07.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Aqua08" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\64px\Aqua08.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Aqua09" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\64px\Aqua09.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Aqua10" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\64px\Aqua10.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Aqua11" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\64px\Aqua11.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Aqua12" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\64px\Aqua12.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Aqua41" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\64px\Aqua41.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Aqua42" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\64px\Aqua42.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Aqua43" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\64px\Aqua43.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Aqua44" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\64px\Aqua44.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Aqua45" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\64px\Aqua45.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Aqua46" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\64px\Aqua46.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Aqua47" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\64px\Aqua47.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Aqua48" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\64px\Aqua48.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Aqua49" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\64px\Aqua49.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Gloss_PNGAxialis_IconWorkshop" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\64px\Gloss PNGAxialis_IconWorkshop.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Gloss_PNGCDRWin" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\64px\Gloss PNGCDRWin.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Gloss_PNGChange_User" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\64px\Gloss PNGChange_User.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Gloss_PNGClock" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\64px\Gloss PNGClock.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Gloss_PNGCPU_Usage" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\64px\Gloss PNGCPU_Usage.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Gloss_PNGDVD2AVI" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\64px\Gloss PNGDVD2AVI.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Gloss_PNGKKMenu_Audio" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\64px\Gloss PNGKKMenu_Audio.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Gloss_PNGKKMenu_Office" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\64px\Gloss PNGKKMenu_Office.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Gloss_PNGKKMenu_Windows" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\64px\Gloss PNGKKMenu_Windows.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Gloss_PNGLogof_Logon" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\64px\Gloss PNGLogof_Logon.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Gloss_PNGMacromedia_Authorware" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\64px\Gloss PNGMacromedia_Authorware.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Gloss_PNGMacromedia_ColdFusion_MX" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\64px\Gloss PNGMacromedia_ColdFusion_MX.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Gloss_PNGMacromedia_Contribute" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\64px\Gloss PNGMacromedia_Contribute.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Gloss_PNGMacromedia_Director_MX" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\64px\Gloss PNGMacromedia_Director_MX.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Gloss_PNGMacromedia_Dreamweaver_MX" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\64px\Gloss PNGMacromedia_Dreamweaver_MX.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Gloss_PNGMacromedia_Extension_Manager" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\64px\Gloss PNGMacromedia_Extension_Manager.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Gloss_PNGMacromedia_Flash_MX" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\64px\Gloss PNGMacromedia_Flash_MX.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Gloss_PNGMacromedia_Homesite" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\64px\Gloss PNGMacromedia_Homesite.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Gloss_PNGMacromedia_JRun_MX" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\64px\Gloss PNGMacromedia_JRun_MX.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Gloss_PNGMacromedia_Shockwave" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\64px\Gloss PNGMacromedia_Shockwave.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Gloss_PNGMicrosoft_Visual_Studio_C__" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\64px\Gloss PNGMicrosoft_Visual_Studio_C++.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Gloss_PNGMicrosoft_Windows_System_Manager" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\64px\Gloss PNGMicrosoft_Windows_System_Manager.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Gloss_PNGMoby_Dock" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\64px\Gloss PNGMoby_Dock.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Gloss_PNGRestart" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\64px\Gloss PNGRestart.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
   <data name="Gloss_PNGShutdown_Quit_Dock" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Pic\64px\Gloss PNGShutdown_Quit_Dock.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
   <data name="Gloss_PNGStandby" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Pic\64px\Gloss PNGStandby.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
+  <data name="Gloss_PNGStardock_CursorXP" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\64px\Gloss PNGStardock_CursorXP.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
   <data name="Gloss_PNGSyncronize__Universal_" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Pic\64px\Gloss PNGSyncronize (Universal).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Gloss_PNGWinRar" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\64px\Gloss PNGWinRar.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
   <data name="macromedia_luiscds_aria_enterprise128" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Pic\64px\macromedia_luiscds aria_enterprise128.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>

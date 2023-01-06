@@ -254,5 +254,146 @@
   <ItemGroup>
     <None Include="Pic\64px\Gloss PNGSyncronize %28Universal%29.png" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="Pic\64px\Aqua01.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pic\64px\Aqua02.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pic\64px\Aqua03.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pic\64px\Aqua04.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pic\64px\Aqua05.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pic\64px\Aqua06.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pic\64px\Aqua07.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pic\64px\Aqua08.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pic\64px\Aqua09.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pic\64px\Aqua10.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pic\64px\Aqua11.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pic\64px\Aqua12.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pic\64px\Aqua41.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pic\64px\Aqua42.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pic\64px\Aqua43.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pic\64px\Aqua44.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pic\64px\Aqua45.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pic\64px\Aqua46.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pic\64px\Aqua47.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pic\64px\Aqua48.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pic\64px\Aqua49.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pic\64px\Gloss PNGAxialis_IconWorkshop.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pic\64px\Gloss PNGCDRWin.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pic\64px\Gloss PNGClock.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pic\64px\Gloss PNGCPU_Usage.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pic\64px\Gloss PNGDVD2AVI.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pic\64px\Gloss PNGChange_User.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pic\64px\Gloss PNGKKMenu_Audio.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pic\64px\Gloss PNGKKMenu_Office.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pic\64px\Gloss PNGKKMenu_Windows.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pic\64px\Gloss PNGLogof_Logon.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pic\64px\Gloss PNGMacromedia_Authorware.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pic\64px\Gloss PNGMacromedia_ColdFusion_MX.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pic\64px\Gloss PNGMacromedia_Contribute.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pic\64px\Gloss PNGMacromedia_Director_MX.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pic\64px\Gloss PNGMacromedia_Dreamweaver_MX.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pic\64px\Gloss PNGMacromedia_Extension_Manager.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pic\64px\Gloss PNGMacromedia_Flash_MX.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pic\64px\Gloss PNGMacromedia_Homesite.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pic\64px\Gloss PNGMacromedia_JRun_MX.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pic\64px\Gloss PNGMacromedia_Shockwave.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pic\64px\Gloss PNGMicrosoft_Visual_Studio_C++.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pic\64px\Gloss PNGMicrosoft_Windows_System_Manager.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pic\64px\Gloss PNGMoby_Dock.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pic\64px\Gloss PNGRestart.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pic\64px\Gloss PNGStardock_CursorXP.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pic\64px\Gloss PNGWinRar.png" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
