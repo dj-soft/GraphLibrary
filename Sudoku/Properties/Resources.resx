@@ -46,7 +46,7 @@
     
     mimetype: application/x-microsoft.net.object.binary.base64
     value   : The object must be serialized with 
-            : System.Serialization.Formatters.Binary.BinaryFormatter
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
             : and then encoded with base64 encoding.
     
     mimetype: application/x-microsoft.net.object.soap.base64
@@ -60,6 +60,7 @@
             : and then encoded with base64 encoding.
     -->
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
     <xsd:element name="root" msdata:IsDataSet="true">
       <xsd:complexType>
         <xsd:choice maxOccurs="unbounded">
@@ -68,9 +69,10 @@
               <xsd:sequence>
                 <xsd:element name="value" type="xsd:string" minOccurs="0" />
               </xsd:sequence>
-              <xsd:attribute name="name" type="xsd:string" />
+              <xsd:attribute name="name" use="required" type="xsd:string" />
               <xsd:attribute name="type" type="xsd:string" />
               <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
             </xsd:complexType>
           </xsd:element>
           <xsd:element name="assembly">
@@ -85,9 +87,10 @@
                 <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
                 <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
               </xsd:sequence>
-              <xsd:attribute name="name" type="xsd:string" msdata:Ordinal="1" />
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
               <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
               <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
             </xsd:complexType>
           </xsd:element>
           <xsd:element name="resheader">
@@ -109,9 +112,172 @@
     <value>2.0</value>
   </resheader>
   <resheader name="reader">
-    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <resheader name="writer">
-    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <assembly alias="System.Windows.Forms" name="System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" />
+  <data name="Gloss_PNGShutdown_Quit_Dock" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\64px\Gloss PNGShutdown_Quit_Dock.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Gloss_PNGStandby" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\64px\Gloss PNGStandby.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Gloss_PNGSyncronize__Universal_" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\64px\Gloss PNGSyncronize (Universal).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="macromedia_luiscds_aria_enterprise128" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\64px\macromedia_luiscds aria_enterprise128.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="macromedia_luiscds_authorware128" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\64px\macromedia_luiscds authorware128.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="macromedia_luiscds_authorware128x128" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\64px\macromedia_luiscds authorware128x128.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="macromedia_luiscds_breeze128x128" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\64px\macromedia_luiscds breeze128x128.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="macromedia_luiscds_breeze_document64x64" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\64px\macromedia_luiscds breeze_document64x64.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="macromedia_luiscds_central128" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\64px\macromedia_luiscds central128.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="macromedia_luiscds_central2004_look128" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\64px\macromedia_luiscds central2004_look128.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="macromedia_luiscds_coldfusion_mx128x128" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\64px\macromedia_luiscds coldfusion_mx128x128.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="macromedia_luiscds_coldfusion_mx_doc64x64" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\64px\macromedia_luiscds coldfusion_mx_doc64x64.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="macromedia_luiscds_coldfusion_new128x128" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\64px\macromedia_luiscds coldfusion_new128x128.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="macromedia_luiscds_coldfusion_new_doc64x64" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\64px\macromedia_luiscds coldfusion_new_doc64x64.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="macromedia_luiscds_contribute128x128" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\64px\macromedia_luiscds contribute128x128.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="macromedia_luiscds_contribute2004_look128" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\64px\macromedia_luiscds contribute2004_look128.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="macromedia_luiscds_course_builder128x128" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\64px\macromedia_luiscds course_builder128x128.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="macromedia_luiscds_director128x128" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\64px\macromedia_luiscds director128x128.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="macromedia_luiscds_director8_128" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\64px\macromedia_luiscds director8_128.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="macromedia_luiscds_dreamweaver2004_128" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\64px\macromedia_luiscds dreamweaver2004_128.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="macromedia_luiscds_dreamweaver_ultra_128" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\64px\macromedia_luiscds dreamweaver_ultra_128.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="macromedia_luiscds_dream_weaver128x128" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\64px\macromedia_luiscds dream_weaver128x128.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="macromedia_luiscds_dream_weaver4_128x128" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\64px\macromedia_luiscds dream_weaver4_128x128.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="macromedia_luiscds_dream_weaver_doc64x64" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\64px\macromedia_luiscds dream_weaver_doc64x64.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="macromedia_luiscds_dream_weaver_ultradev128x12" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\64px\macromedia_luiscds dream_weaver_ultradev128x12.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="macromedia_luiscds_extension_manager128x128" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\64px\macromedia_luiscds extension_manager128x128.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="macromedia_luiscds_fireworks128x128" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\64px\macromedia_luiscds fireworks128x128.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="macromedia_luiscds_fireworks2004_128" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\64px\macromedia_luiscds fireworks2004_128.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="macromedia_luiscds_fireworks4_128x128" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\64px\macromedia_luiscds fireworks4_128x128.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="macromedia_luiscds_fireworks4_yellow128x128" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\64px\macromedia_luiscds fireworks4_yellow128x128.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="macromedia_luiscds_fireworks_doc64x64" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\64px\macromedia_luiscds fireworks_doc64x64.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="macromedia_luiscds_flash2004_128" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\64px\macromedia_luiscds flash2004_128.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="macromedia_luiscds_flash5_128x128" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\64px\macromedia_luiscds flash5_128x128.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="macromedia_luiscds_flash_communication_server9" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\64px\macromedia_luiscds flash_communication_server9.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="macromedia_luiscds_flash_enebled128" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\64px\macromedia_luiscds flash_enebled128.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="macromedia_luiscds_flash_metalic128x128" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\64px\macromedia_luiscds flash_metalic128x128.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="macromedia_luiscds_flash_metalic_doc64x64" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\64px\macromedia_luiscds flash_metalic_doc64x64.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="macromedia_luiscds_flash_red128x128" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\64px\macromedia_luiscds flash_red128x128.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="macromedia_luiscds_flash_red_document64x64" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\64px\macromedia_luiscds flash_red_document64x64.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="macromedia_luiscds_flash_red_document_fla64x64" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\64px\macromedia_luiscds flash_red_document_fla64x64.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="macromedia_luiscds_flash_remoting128" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\64px\macromedia_luiscds flash_remoting128.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="macromedia_luiscds_flex128" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\64px\macromedia_luiscds flex128.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="macromedia_luiscds_freehand10_128x128" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\64px\macromedia_luiscds freehand10_128x128.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="macromedia_luiscds_freehand10_doc64x64" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\64px\macromedia_luiscds freehand10_doc64x64.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="macromedia_luiscds_freehand_128x128" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\64px\macromedia_luiscds freehand_128x128.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="macromedia_luiscds_freehand_doc64x64" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\64px\macromedia_luiscds freehand_doc64x64.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="macromedia_luiscds_generator128x128" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\64px\macromedia_luiscds generator128x128.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="macromedia_luiscds_homesite128x128" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\64px\macromedia_luiscds homesite128x128.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="macromedia_luiscds_jrun128x128" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\64px\macromedia_luiscds jrun128x128.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="macromedia_luiscds_like_minds128" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\64px\macromedia_luiscds like_minds128.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="macromedia_luiscds_macromedia128x128" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\64px\macromedia_luiscds macromedia128x128.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="macromedia_luiscds_shockwave128x128" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\64px\macromedia_luiscds shockwave128x128.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="macromedia_luiscds_studioMX1_128" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\64px\macromedia_luiscds studioMX1_128.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="macromedia_luiscds_studioMX2_128" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\64px\macromedia_luiscds studioMX2_128.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
 </root>

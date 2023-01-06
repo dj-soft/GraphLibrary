@@ -301,7 +301,7 @@ namespace DjSoft.Games.Sudoku.Components
         {
             SizeF size = __Owner.ClientSize;
             float sizeW = size.Width - 10f;
-            float sizeH = size.Height - 30f;
+            float sizeH = size.Height - 10f;
             Color startColor = __Color;
             Color backColor = __Owner.BackColor;
             Color endColor = Color.FromArgb(16, backColor.R, backColor.G, backColor.B);

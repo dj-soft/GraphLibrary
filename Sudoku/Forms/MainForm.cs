@@ -15,8 +15,79 @@ namespace DjSoft.Games.Sudoku
         public MainForm()
         {
             InitializeComponent();
-            InitializeSudoku();
+            InitializeMenuContent();
         }
+        #region Menu, Buttons, Content
+        private void InitializeMenuContent()
+        {
+            __ContentPanel = new Panel() { Dock = DockStyle.Fill };
+            Controls.Add(__ContentPanel);
+
+            __MenuPanel = new Panel() { Height = 76, Dock = DockStyle.Top };
+            Controls.Add(__MenuPanel);
+
+            int x = 1;
+            __SnakeButton = _CreateMenuButton(ref x, "Snake", DjSoft.Games.Sudoku.Properties.Resources.macromedia_luiscds_dreamweaver2004_128, _SnakeClick);
+
+
+            x += 50;
+            __ClearButton = _CreateMenuButton(ref x, "Clear", DjSoft.Games.Sudoku.Properties.Resources.Gloss_PNGShutdown_Quit_Dock, _ClearClick);
+            _ContentClear();
+        }
+        private Button _CreateMenuButton(ref int x, string text, Image image, EventHandler click)
+        {
+            var button = new Button() { Bounds = new Rectangle(x, 1, 170, 74), Image = image, Text = text, TextImageRelation = TextImageRelation.ImageBeforeText, ImageAlign = ContentAlignment.MiddleCenter, Padding = new Padding(0), Margin = new Padding(0) };
+            button.FlatStyle = FlatStyle.Flat;
+            button.FlatAppearance.BorderSize = 1;
+            button.FlatAppearance.BorderColor = Color.DarkGray;
+
+            button.Click += click;
+            __MenuPanel.Controls.Add(button);
+            x += button.Width + 1;
+            return button;
+        }
+        private void _ClearClick(object sender, EventArgs args)
+        {
+            if (_HasContent)
+                _ContentClear();
+            else
+                this.Close();
+        }
+        Panel __MenuPanel;
+        Panel __ContentPanel;
+        Button __ClearButton;
+        private bool _HasContent;
+        private void _ContentClear()
+        {
+            __ContentPanel.Controls.Clear();
+            _SnakeRemove();
+            __ClearButton.Image = DjSoft.Games.Sudoku.Properties.Resources.Gloss_PNGShutdown_Quit_Dock;
+            __ClearButton.Text = "Exit";
+            _HasContent = false;
+        }
+        private void _AddContent(Control control)
+        {
+            __ContentPanel.Controls.Add(__SnakeControl);
+            __ClearButton.Image = DjSoft.Games.Sudoku.Properties.Resources.Gloss_PNGStandby;
+            __ClearButton.Text = "Clear";
+            _HasContent = true;
+        }
+        #endregion
+        #region Snake
+        private void _SnakeClick(object sender, EventArgs args)
+        {
+            _ContentClear();
+            __SnakeControl = new Components.SnakeControl() { Dock = DockStyle.Fill };
+            _AddContent(__SnakeControl);
+        }
+        private void _SnakeRemove()
+        {
+            __SnakeControl?.Dispose();
+            __SnakeControl = null;
+        }
+        Button __SnakeButton;
+        Components.SnakeControl __SnakeControl;
+        #endregion
         #region Windows Form Designer generated code
         /// <summary>
         /// Required designer variable.
@@ -58,17 +129,5 @@ namespace DjSoft.Games.Sudoku
         }
 
         #endregion
-        private void InitializeSudoku()
-        {
-            this.ShowInTaskbar = true;
-            _Game = new Components.SnakeControl() { Bounds = new Rectangle(50, 20, 500, 500),Dock = DockStyle.Fill, BackColor = Color.LightSkyBlue };
-            this.Controls.Add(_Game);
-
-            DjSoft.Games.Sudoku.Data.Game game = DjSoft.Games.Sudoku.Data.Game.CreateGame();
-            var text = game.Text;
-
-
-        }
-        Components.AnimatedControl _Game;
     }
 }

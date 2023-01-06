@@ -92,6 +92,167 @@
   <ItemGroup>
     <None Include="App.config" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <None Include="Pic\64px\macromedia_luiscds aria_enterprise128.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pic\64px\macromedia_luiscds authorware128.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pic\64px\macromedia_luiscds authorware128x128.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pic\64px\macromedia_luiscds breeze_document64x64.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pic\64px\macromedia_luiscds breeze128x128.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pic\64px\macromedia_luiscds central128.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pic\64px\macromedia_luiscds central2004_look128.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pic\64px\macromedia_luiscds coldfusion_mx_doc64x64.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pic\64px\macromedia_luiscds coldfusion_mx128x128.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pic\64px\macromedia_luiscds coldfusion_new_doc64x64.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pic\64px\macromedia_luiscds coldfusion_new128x128.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pic\64px\macromedia_luiscds contribute128x128.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pic\64px\macromedia_luiscds contribute2004_look128.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pic\64px\macromedia_luiscds course_builder128x128.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pic\64px\macromedia_luiscds director8_128.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pic\64px\macromedia_luiscds director128x128.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pic\64px\macromedia_luiscds dream_weaver_doc64x64.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pic\64px\macromedia_luiscds dream_weaver_ultradev128x12.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pic\64px\macromedia_luiscds dream_weaver4_128x128.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pic\64px\macromedia_luiscds dream_weaver128x128.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pic\64px\macromedia_luiscds dreamweaver_ultra_128.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pic\64px\macromedia_luiscds dreamweaver2004_128.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pic\64px\macromedia_luiscds extension_manager128x128.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pic\64px\macromedia_luiscds fireworks_doc64x64.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pic\64px\macromedia_luiscds fireworks4_128x128.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pic\64px\macromedia_luiscds fireworks4_yellow128x128.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pic\64px\macromedia_luiscds fireworks128x128.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pic\64px\macromedia_luiscds fireworks2004_128.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pic\64px\macromedia_luiscds flash_communication_server9.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pic\64px\macromedia_luiscds flash_enebled128.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pic\64px\macromedia_luiscds flash_metalic_doc64x64.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pic\64px\macromedia_luiscds flash_metalic128x128.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pic\64px\macromedia_luiscds flash_red_document_fla64x64.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pic\64px\macromedia_luiscds flash_red_document64x64.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pic\64px\macromedia_luiscds flash_red128x128.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pic\64px\macromedia_luiscds flash_remoting128.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pic\64px\macromedia_luiscds flash5_128x128.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pic\64px\macromedia_luiscds flash2004_128.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pic\64px\macromedia_luiscds flex128.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pic\64px\macromedia_luiscds freehand_128x128.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pic\64px\macromedia_luiscds freehand_doc64x64.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pic\64px\macromedia_luiscds freehand10_128x128.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pic\64px\macromedia_luiscds freehand10_doc64x64.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pic\64px\macromedia_luiscds generator128x128.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pic\64px\macromedia_luiscds homesite128x128.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pic\64px\macromedia_luiscds jrun128x128.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pic\64px\macromedia_luiscds like_minds128.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pic\64px\macromedia_luiscds macromedia128x128.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pic\64px\macromedia_luiscds shockwave128x128.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pic\64px\macromedia_luiscds studioMX1_128.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pic\64px\macromedia_luiscds studioMX2_128.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pic\64px\Gloss PNGShutdown_Quit_Dock.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pic\64px\Gloss PNGStandby.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pic\64px\Gloss PNGSyncronize %28Universal%29.png" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

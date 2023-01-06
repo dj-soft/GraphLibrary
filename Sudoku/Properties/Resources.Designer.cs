@@ -59,5 +59,545 @@ namespace DjSoft.Games.Sudoku.Properties {
                 resourceCulture = value;
             }
         }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap Gloss_PNGShutdown_Quit_Dock {
+            get {
+                object obj = ResourceManager.GetObject("Gloss_PNGShutdown_Quit_Dock", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap Gloss_PNGStandby {
+            get {
+                object obj = ResourceManager.GetObject("Gloss_PNGStandby", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap Gloss_PNGSyncronize__Universal_ {
+            get {
+                object obj = ResourceManager.GetObject("Gloss_PNGSyncronize__Universal_", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap macromedia_luiscds_aria_enterprise128 {
+            get {
+                object obj = ResourceManager.GetObject("macromedia_luiscds_aria_enterprise128", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap macromedia_luiscds_authorware128 {
+            get {
+                object obj = ResourceManager.GetObject("macromedia_luiscds_authorware128", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap macromedia_luiscds_authorware128x128 {
+            get {
+                object obj = ResourceManager.GetObject("macromedia_luiscds_authorware128x128", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap macromedia_luiscds_breeze_document64x64 {
+            get {
+                object obj = ResourceManager.GetObject("macromedia_luiscds_breeze_document64x64", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap macromedia_luiscds_breeze128x128 {
+            get {
+                object obj = ResourceManager.GetObject("macromedia_luiscds_breeze128x128", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap macromedia_luiscds_central128 {
+            get {
+                object obj = ResourceManager.GetObject("macromedia_luiscds_central128", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap macromedia_luiscds_central2004_look128 {
+            get {
+                object obj = ResourceManager.GetObject("macromedia_luiscds_central2004_look128", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap macromedia_luiscds_coldfusion_mx_doc64x64 {
+            get {
+                object obj = ResourceManager.GetObject("macromedia_luiscds_coldfusion_mx_doc64x64", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap macromedia_luiscds_coldfusion_mx128x128 {
+            get {
+                object obj = ResourceManager.GetObject("macromedia_luiscds_coldfusion_mx128x128", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap macromedia_luiscds_coldfusion_new_doc64x64 {
+            get {
+                object obj = ResourceManager.GetObject("macromedia_luiscds_coldfusion_new_doc64x64", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap macromedia_luiscds_coldfusion_new128x128 {
+            get {
+                object obj = ResourceManager.GetObject("macromedia_luiscds_coldfusion_new128x128", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap macromedia_luiscds_contribute128x128 {
+            get {
+                object obj = ResourceManager.GetObject("macromedia_luiscds_contribute128x128", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap macromedia_luiscds_contribute2004_look128 {
+            get {
+                object obj = ResourceManager.GetObject("macromedia_luiscds_contribute2004_look128", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap macromedia_luiscds_course_builder128x128 {
+            get {
+                object obj = ResourceManager.GetObject("macromedia_luiscds_course_builder128x128", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap macromedia_luiscds_director128x128 {
+            get {
+                object obj = ResourceManager.GetObject("macromedia_luiscds_director128x128", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap macromedia_luiscds_director8_128 {
+            get {
+                object obj = ResourceManager.GetObject("macromedia_luiscds_director8_128", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap macromedia_luiscds_dream_weaver_doc64x64 {
+            get {
+                object obj = ResourceManager.GetObject("macromedia_luiscds_dream_weaver_doc64x64", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap macromedia_luiscds_dream_weaver_ultradev128x12 {
+            get {
+                object obj = ResourceManager.GetObject("macromedia_luiscds_dream_weaver_ultradev128x12", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap macromedia_luiscds_dream_weaver128x128 {
+            get {
+                object obj = ResourceManager.GetObject("macromedia_luiscds_dream_weaver128x128", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap macromedia_luiscds_dream_weaver4_128x128 {
+            get {
+                object obj = ResourceManager.GetObject("macromedia_luiscds_dream_weaver4_128x128", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap macromedia_luiscds_dreamweaver_ultra_128 {
+            get {
+                object obj = ResourceManager.GetObject("macromedia_luiscds_dreamweaver_ultra_128", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap macromedia_luiscds_dreamweaver2004_128 {
+            get {
+                object obj = ResourceManager.GetObject("macromedia_luiscds_dreamweaver2004_128", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap macromedia_luiscds_extension_manager128x128 {
+            get {
+                object obj = ResourceManager.GetObject("macromedia_luiscds_extension_manager128x128", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap macromedia_luiscds_fireworks_doc64x64 {
+            get {
+                object obj = ResourceManager.GetObject("macromedia_luiscds_fireworks_doc64x64", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap macromedia_luiscds_fireworks128x128 {
+            get {
+                object obj = ResourceManager.GetObject("macromedia_luiscds_fireworks128x128", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap macromedia_luiscds_fireworks2004_128 {
+            get {
+                object obj = ResourceManager.GetObject("macromedia_luiscds_fireworks2004_128", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap macromedia_luiscds_fireworks4_128x128 {
+            get {
+                object obj = ResourceManager.GetObject("macromedia_luiscds_fireworks4_128x128", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap macromedia_luiscds_fireworks4_yellow128x128 {
+            get {
+                object obj = ResourceManager.GetObject("macromedia_luiscds_fireworks4_yellow128x128", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap macromedia_luiscds_flash_communication_server9 {
+            get {
+                object obj = ResourceManager.GetObject("macromedia_luiscds_flash_communication_server9", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap macromedia_luiscds_flash_enebled128 {
+            get {
+                object obj = ResourceManager.GetObject("macromedia_luiscds_flash_enebled128", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap macromedia_luiscds_flash_metalic_doc64x64 {
+            get {
+                object obj = ResourceManager.GetObject("macromedia_luiscds_flash_metalic_doc64x64", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap macromedia_luiscds_flash_metalic128x128 {
+            get {
+                object obj = ResourceManager.GetObject("macromedia_luiscds_flash_metalic128x128", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap macromedia_luiscds_flash_red_document_fla64x64 {
+            get {
+                object obj = ResourceManager.GetObject("macromedia_luiscds_flash_red_document_fla64x64", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap macromedia_luiscds_flash_red_document64x64 {
+            get {
+                object obj = ResourceManager.GetObject("macromedia_luiscds_flash_red_document64x64", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap macromedia_luiscds_flash_red128x128 {
+            get {
+                object obj = ResourceManager.GetObject("macromedia_luiscds_flash_red128x128", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap macromedia_luiscds_flash_remoting128 {
+            get {
+                object obj = ResourceManager.GetObject("macromedia_luiscds_flash_remoting128", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap macromedia_luiscds_flash2004_128 {
+            get {
+                object obj = ResourceManager.GetObject("macromedia_luiscds_flash2004_128", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap macromedia_luiscds_flash5_128x128 {
+            get {
+                object obj = ResourceManager.GetObject("macromedia_luiscds_flash5_128x128", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap macromedia_luiscds_flex128 {
+            get {
+                object obj = ResourceManager.GetObject("macromedia_luiscds_flex128", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap macromedia_luiscds_freehand_128x128 {
+            get {
+                object obj = ResourceManager.GetObject("macromedia_luiscds_freehand_128x128", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap macromedia_luiscds_freehand_doc64x64 {
+            get {
+                object obj = ResourceManager.GetObject("macromedia_luiscds_freehand_doc64x64", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap macromedia_luiscds_freehand10_128x128 {
+            get {
+                object obj = ResourceManager.GetObject("macromedia_luiscds_freehand10_128x128", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap macromedia_luiscds_freehand10_doc64x64 {
+            get {
+                object obj = ResourceManager.GetObject("macromedia_luiscds_freehand10_doc64x64", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap macromedia_luiscds_generator128x128 {
+            get {
+                object obj = ResourceManager.GetObject("macromedia_luiscds_generator128x128", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap macromedia_luiscds_homesite128x128 {
+            get {
+                object obj = ResourceManager.GetObject("macromedia_luiscds_homesite128x128", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap macromedia_luiscds_jrun128x128 {
+            get {
+                object obj = ResourceManager.GetObject("macromedia_luiscds_jrun128x128", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap macromedia_luiscds_like_minds128 {
+            get {
+                object obj = ResourceManager.GetObject("macromedia_luiscds_like_minds128", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap macromedia_luiscds_macromedia128x128 {
+            get {
+                object obj = ResourceManager.GetObject("macromedia_luiscds_macromedia128x128", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap macromedia_luiscds_shockwave128x128 {
+            get {
+                object obj = ResourceManager.GetObject("macromedia_luiscds_shockwave128x128", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap macromedia_luiscds_studioMX1_128 {
+            get {
+                object obj = ResourceManager.GetObject("macromedia_luiscds_studioMX1_128", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap macromedia_luiscds_studioMX2_128 {
+            get {
+                object obj = ResourceManager.GetObject("macromedia_luiscds_studioMX2_128", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
     }
 }
