@@ -462,7 +462,7 @@ namespace DjSoft.Games.Sudoku.Components
             private static bool _IsTimeModeCycling(TimeMode timeMode, int? stepCount)
             {
                 if (!stepCount.HasValue || stepCount.Value <= 0) return true;
-                return (timeMode == TimeMode.Cycling);
+                return (timeMode == TimeMode.SinusCycling || timeMode == TimeMode.LinearCycling);
             }
             /// <summary>
             /// Vrátí hodnotu zarovnanou do daných mezí
@@ -589,18 +589,20 @@ namespace DjSoft.Games.Sudoku.Components
                 double currentRatio = GetCurrentRatio(step, __StepCount, __TimeMode, __TimeCoeff);
                 object currentValue = GetCurrentValue(__ValueSet, __StartValue, __EndValue, currentRatio, __ValueType);
                 bool isChanged = !IsEqualValues(__CurrentValue, currentValue, __ValueType);
+                bool isLastStep = step >= __StepCount;
                 __CurrentValue = currentValue;
                 __CurrentRatio = currentRatio;
                 __IsCurrentValueChanged = isChanged;
                 if (!__IsDone)
                 {   // Aplikační kód mohl nastavit IsDone na true i v mezidobí po zahájení kroku (tedy tato akce Motion se dostala do seznamu akcí k provedení),
                     // ale před vlastním provedením akce tohoto konkrétního Motion - vyhodnotíme tedy IsDone těsně před akcí:
-                    __IsDone = (__TimeMode != TimeMode.Cycling && step >= __StepCount);
+                    __IsDone = (!__TimeModeIsCycling && isLastStep);
                     _DoAction();
                 }
 
-                // Cyklický pohyb, který nebyl aplikací explicitně ukončen, a aktuální krok (step) by vedl ke konci cyklu: nastavíme Index = -1, a navazující metoda jej inkrementuje na 0:
-                if (__TimeModeIsCycling && !__IsDone && step >= __StepCount)
+                // Cyklický pohyb, který nebyl aplikací explicitně ukončen, a aktuální krok (step) by vedl ke konci cyklu:
+                //  nastavíme Index = -1, a navazující část metody IMotionWorking.DoTick jej inkrementuje = na 0:
+                if (__TimeModeIsCycling && !__IsDone && isLastStep)
                     __StepIndex = -1;
             }
             /// <summary>
@@ -652,13 +654,22 @@ namespace DjSoft.Games.Sudoku.Components
             /// </summary>
             SlowStartSlowEnd,
             /// <summary>
-            /// Cyklický pohyb (sinusový) = tento režim je bez konce!
+            /// Cyklický pohyb lineární = tento režim je bez konce!
             /// Délka jednoho celého cyklu je dána počtem kroků.
-            /// Začíná se na hodnotě StartValue, v půlce cyklu dojde hodnota k EndValue a na konci cyklu se vrací ke StartValue.
+            /// Začíná se na hodnotě StartValue a lineárně se interpoluje k EndValue na konci cyklu. 
+            /// Tam se provede skoková změna hodnoty na StartValue a následuje další cyklus. 
+            /// Křivka je tedy zubatá: šikmo nahoru po dobu celého cyklu, a pak kolmo dolů ke StartValue.
+            /// </summary>
+            LinearCycling,
+            /// <summary>
+            /// Cyklický pohyb sinusový = tento režim je bez konce!
+            /// Délka jednoho celého cyklu je dána počtem kroků.
+            /// Začíná se na hodnotě StartValue, sinusovkou stoupá k EndValue kam dojde v půlce cyklu, a poté sinusovkou se vrací ke StartValue na konci cyklu.
+            /// Pak následuje další a další stejný cyklus.
             /// <para/>
             /// Tento režim ignoruje parametr TimeZoom.
             /// </summary>
-            Cycling
+            SinusCycling
         }
         #endregion
         #region Animační support
@@ -730,7 +741,8 @@ namespace DjSoft.Games.Sudoku.Components
                 case TimeMode.SlowStartFastEnd: return _GetCurrentRatioSlowStartFastEnd(step, count, timeCoefficient);
                 case TimeMode.FastStartSlowEnd: return _GetCurrentRatioFastStartSlowEnd(step, count, timeCoefficient);
                 case TimeMode.SlowStartSlowEnd: return _GetCurrentRatioSlowStartSlowEnd(step, count, timeCoefficient);
-                case TimeMode.Cycling: return _GetCurrentRatioCycling(step, count, timeCoefficient);
+                case TimeMode.LinearCycling: return _GetCurrentRatioLinear(step, count, timeCoefficient);
+                case TimeMode.SinusCycling: return _GetCurrentRatioCycling(step, count, timeCoefficient);
             }
             throw new ArgumentException($"Nelze určit pozici na časové ose pro režim 'TimeMode' = '{timeMode}'");
         }
@@ -790,7 +802,7 @@ namespace DjSoft.Games.Sudoku.Components
             return ratio;
         }
         /// <summary>
-        /// Vrací ratio v režimu <see cref="TimeMode.Cycling"/>
+        /// Vrací ratio v režimu <see cref="TimeMode.SinusCycling"/>
         /// </summary>
         /// <param name="step"></param>
         /// <param name="count"></param>
@@ -1191,17 +1203,17 @@ namespace DjSoft.Games.Sudoku.Components
         }
         public static Single MorphValueSingle(Single startValue, double morphRatio, Single endValue)
         {
-            var diffValue = (Single)(Math.Round(morphRatio * (double)(endValue - startValue), 0));
+            var diffValue = (Single)(morphRatio * (double)(endValue - startValue));
             return startValue + diffValue;
         }
         public static Double MorphValueDouble(Double startValue, double morphRatio, Double endValue)
         {
-            var diffValue = (Double)(Math.Round(morphRatio * (double)(endValue - startValue), 0));
+            var diffValue = (Double)(morphRatio * (double)(endValue - startValue));
             return startValue + diffValue;
         }
         public static Decimal MorphValueDecimal(Decimal startValue, double morphRatio, Decimal endValue)
         {
-            var diffValue = (Decimal)(Math.Round((Decimal)morphRatio * (Decimal)(endValue - startValue), 0));
+            var diffValue = (Decimal)morphRatio * (endValue - startValue);
             return startValue + diffValue;
         }
         public static DateTime MorphValueDateTime(DateTime startValue, double morphRatio, DateTime endValue)
@@ -1231,6 +1243,8 @@ namespace DjSoft.Games.Sudoku.Components
         }
         #endregion
     }
+    #endregion
+    #region struct ColorHSV : Barva v režimu HSV
     /// <summary>
     /// Barva v režimu HSV
     /// </summary>
@@ -1252,6 +1266,14 @@ namespace DjSoft.Games.Sudoku.Components
         /// Světlost v rozsahu 0.00 ÷ 1.00
         /// </summary>
         public double Value { get; set; }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return $"ColorHSV: [Alpha:{Alpha:F3}; Hue:{Hue:F1}°; Saturation:{Saturation:F3}; Value:{Value:F3}; ]";
+        }
         /// <summary>
         /// Systémová barva
         /// </summary>

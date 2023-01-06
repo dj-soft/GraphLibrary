@@ -17,8 +17,8 @@ namespace DjSoft.Games.Sudoku.Components
 
             Random rand = new Random();
 
-            _BgrAnimator = new BackColorHSVAnimator(this, Color.FromArgb(200, 200, 250));
-            _BgrAnimator.InitAnimation(5000, this.Animator, rand);
+            _BgrAnimator = new BackColorHSVAnimator(this, Color.FromArgb(100, 200, 250));
+            _BgrAnimator.InitAnimation(500, this.Animator, rand);
 
             _Snake1 = new SnakeItem(this, Color.FromArgb(255, 90, 6, 16), 30);
             _Snake1.InitAnimation(352, 218, this.Animator, rand);
@@ -32,16 +32,22 @@ namespace DjSoft.Games.Sudoku.Components
         private SnakeItem _Snake2;
         private SnakeItem _Snake3;
 
-        protected override void DoPaintStandard(LayeredPaintEventArgs e)
+        protected override void DoPaintBackground(LayeredPaintEventArgs args)
         {
-            _Snake1.Paint(e);
-            _Snake2.Paint(e);
-            _Snake3.Paint(e);
+            _BgrAnimator.Paint(args);
+        }
+        protected override void DoPaintStandard(LayeredPaintEventArgs args)
+        {
+            _Snake1.Paint(args);
+            _Snake2.Paint(args);
+            _Snake3.Paint(args);
         }
     }
     #region class BackColorHSVAnimator : Animátor barvy BackColor HSV
     /// <summary>
-    /// Animátor barvy BackColor
+    /// Animátor barvy BackColor.
+    /// Pracuje s jednou instancí barvy <see cref="ColorHSV"/>, ve které se animuje složka <see cref="ColorHSV.Hue"/> = odstín.
+    /// Tím se plynule mění barva přes celé barevné spektrum, se zachování sytosti <see cref="ColorHSV.Saturation"/> a světlosti <see cref="ColorHSV.Value"/>.
     /// </summary>
     public class BackColorHSVAnimator
     {
@@ -64,9 +70,18 @@ namespace DjSoft.Games.Sudoku.Components
         /// <param name="rand"></param>
         public void InitAnimation(int cycle, Animator animator, Random rand = null)
         {
-            animator.AddMotion(cycle, Animator.TimeMode.Linear, 0d, _AnimeBgr, 0d, 360d, null);
+            int start = 0;
+            if (rand != null)
+            {
+                cycle = (int)((0.95d + (0.1d * rand.NextDouble())) * (double)cycle);
+                start = (int)(rand.NextDouble() * (double)cycle);
+            }
+            animator.AddMotion(cycle, start, Animator.TimeMode.LinearCycling, 0d, _AnimeBgr, 0d, 360d, null);
         }
-        
+        /// <summary>
+        /// Jeden animační krok
+        /// </summary>
+        /// <param name="motion"></param>
         private void _AnimeBgr(Animator.Motion motion)
         {
             double hueDelta = (double)motion.CurrentValue;
@@ -77,6 +92,24 @@ namespace DjSoft.Games.Sudoku.Components
             if (!ValueSupport.IsEqualColors(backColorOld, backColorNew))
                 __Owner.BackColor = backColorNew;
         }
+        /// <summary>
+        /// Vykreslí pozadí
+        /// </summary>
+        /// <param name="e"></param>
+        public void Paint(LayeredPaintEventArgs e)
+        {
+            double shift = 15d;
+            ColorHSV colorHSV = __ColorHSV;
+            Color color1 = colorHSV.Color;
+            colorHSV.Hue -= shift;
+            Color color2 = colorHSV.Color;
+            Rectangle bounds = this.__Owner.ClientRectangle;
+            Point point1 = new Point(0, 0);
+            // Point point2 = new Point(0, bounds.Height);
+            Point point2 = new Point(bounds.Width, 0);
+            using (var brush = new System.Drawing.Drawing2D.LinearGradientBrush(point1, point2, color1, color2))
+                e.Graphics.FillRectangle(brush, bounds);
+        }
         private AnimatedControl __Owner;
         private ColorHSV __ColorHSV;
         private double __ColorHue;
@@ -84,7 +117,9 @@ namespace DjSoft.Games.Sudoku.Components
     #endregion
     #region class BackColorRGBAnimator : Animátor barvy BackColor RGB
     /// <summary>
-    /// Animátor barvy BackColor
+    /// Animátor barvy BackColor.
+    /// Pracuje se sadou barev RGB v sadě <see cref="AnimatedValueSet"/> = sekvence hodnot (barva) na číselné ose, 
+    /// přes kterou probíhá animace a interpolace hodnot.
     /// </summary>
     public class BackColorRGBAnimator
     {
@@ -110,7 +145,13 @@ namespace DjSoft.Games.Sudoku.Components
         /// <param name="rand"></param>
         public void InitAnimation(int cycle, Animator animator, Random rand = null)
         {
-            animator.AddMotion(cycle, Animator.TimeMode.Cycling, 0d, _AnimeBgr, _BgrValueSet, null);
+            int start = 0;
+            if (rand != null)
+            {
+                cycle = (int)((0.95d + (0.1d * rand.NextDouble())) * (double)cycle);
+                start = (int)(rand.NextDouble() * (double)cycle);
+            }
+            animator.AddMotion(cycle, start, Animator.TimeMode.SinusCycling, 0d, _AnimeBgr, _BgrValueSet, null);
         }
         /// <summary>
         /// Vytvoří a vrátí sadu barev k animaci
@@ -154,6 +195,14 @@ namespace DjSoft.Games.Sudoku.Components
                 }
             }
         }
+        /// <summary>
+        /// Vykreslí pozadí
+        /// </summary>
+        /// <param name="e"></param>
+        public void Paint(LayeredPaintEventArgs e)
+        {
+
+        }
         private AnimatedControl __Owner;
         private AnimatedValueSet _BgrValueSet;
         private bool __IsDiagnosticActive;
@@ -194,13 +243,13 @@ namespace DjSoft.Games.Sudoku.Components
             int startY = 0;
             if (rand != null)
             {
-                cycleX = (int)((0.95d + (0.1d * rand.NextDouble())) * (double)cycleX);
-                cycleY = (int)((0.95d + (0.1d * rand.NextDouble())) * (double)cycleY);
+                cycleX = (int)((0.90d + (0.2d * rand.NextDouble())) * (double)cycleX);
+                cycleY = (int)((0.90d + (0.2d * rand.NextDouble())) * (double)cycleY);
                 startX = (int)(rand.NextDouble() * (double)cycleX);
                 startY = (int)(rand.NextDouble() * (double)cycleY);
             }
-            animator.AddMotion(cycleX, startX, Animator.TimeMode.Cycling, 0d, _AnimePointX, 0f, 5000f, null);
-            animator.AddMotion(cycleY, startY, Animator.TimeMode.Cycling, 0d, _AnimePointY, 0f, 5000f, null);
+            animator.AddMotion(cycleX, startX, Animator.TimeMode.SinusCycling, 0d, _AnimePointX, 0f, 5000f, null);
+            animator.AddMotion(cycleY, startY, Animator.TimeMode.SinusCycling, 0d, _AnimePointY, 0f, 5000f, null);
         }
         private AnimatedControl __Owner;
         private Color __Color;
