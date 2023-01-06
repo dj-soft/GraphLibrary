@@ -13,6 +13,7 @@ namespace DjSoft.Games.Sudoku.Components
     /// </summary>
     public class SudokuControl : AnimatedControl
     {
+        #region Konstruktor a řízení inicializace
         public SudokuControl()
         {
             this.UseBackgroundLayer = true;
@@ -22,8 +23,67 @@ namespace DjSoft.Games.Sudoku.Components
             _InitTheme();
             _InitCoordinates();
             _InitInteractivity();
-        }
 
+            __ComponentsReady = true;
+            _LinkComponents();
+        }
+        private void _LinkComponents()
+        {
+            if (__ComponentsReady)
+            {
+                using (__Coordinates.SuspendCoordinates())
+                {
+                    __Coordinates.Theme = Theme;
+                    __Coordinates.Configuration = Configuration;
+                    __Coordinates.SudokuGame = SudokuGame;
+                }
+                _RefreshCoordinates();
+            }
+        }
+        private bool __ComponentsReady = false;
+        #endregion
+        #region Hra = datová instance a interakce s ní, a konfigurace
+        private void _InitGame()
+        {
+            __SudokuGame = new Data.SudokuGame();
+            __Configuration = SudokuConfiguration.Default;
+        }
+        public Data.SudokuGame SudokuGame { get { return __SudokuGame; } set { __SudokuGame = value; _LinkComponents(); } } private Data.SudokuGame __SudokuGame;
+        public SudokuConfiguration Configuration { get { return __Configuration; } set { __Configuration = value; _LinkComponents(); } } private SudokuConfiguration __Configuration;
+        #endregion
+        #region Vizuální kabát = Theme
+        private void _InitTheme()
+        {
+            Theme = SudokuSkinTheme.LightGray;
+        }
+        public SudokuSkinTheme Theme { get { return __Theme; } set { __Theme = value; _LinkComponents(); } } private SudokuSkinTheme __Theme;
+        #endregion
+        #region Mapa prostoru = kde co je, v závislosti na velikosti controlu
+        private void _InitCoordinates()
+        {
+            __Coordinates = new SudokuCoordinates();
+            ClientSizeChanged += _ClientSizeChanged;
+        }
+        /// <summary>
+        /// Po změně rozměru controlu se upraví souřadnice v <see cref="SudokuCoordinates"/>;
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _ClientSizeChanged(object sender, EventArgs e)
+        {
+            _RefreshCoordinates();
+        }
+        private void _RefreshCoordinates()
+        {
+            if (__Coordinates != null)
+            {
+                __Coordinates.ResizeTo(this.ClientSize);
+                LayerBackgroundValid = false;
+                LayerStandardValid = false;
+            }
+        }
+        private SudokuCoordinates __Coordinates;
+        #endregion
         #region Fyzická interaktivita od uživatele do controlu a do hry
         private void _InitInteractivity()
         {
@@ -40,48 +100,6 @@ namespace DjSoft.Games.Sudoku.Components
         private void _MouseUp(object sender, MouseEventArgs e)
         {
         }
-        #endregion
-        #region Hra = datová instance a interakce s ní
-        private void _InitGame()
-        {
-            __SudokuGame = new Data.SudokuGame();
-            __Configuration = SudokuConfiguration.Default;
-        }
-        private Data.SudokuGame __SudokuGame;
-        private SudokuConfiguration __Configuration;
-        #endregion
-        #region Vizuální kabát = Theme
-        private void _InitTheme()
-        {
-            Theme = SudokuSkinTheme.LightGray;
-        }
-        public SudokuSkinTheme Theme { get { return __Theme; } set { __Theme = value; _RefreshCoordinates(); } }
-        private SudokuSkinTheme __Theme;
-        #endregion
-        #region Mapa prostoru = kde co je, v závislosti na velikosti controlu
-        private void _InitCoordinates()
-        {
-            __Coordinates = new SudokuCoordinates(__SudokuGame);
-            ClientSizeChanged += _ClientSizeChanged;
-            _RefreshCoordinates();
-        }
-        /// <summary>
-        /// Po změně rozměru controlu se upraví souřadnice v <see cref="SudokuCoordinates"/>;
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void _ClientSizeChanged(object sender, EventArgs e)
-        {
-            _RefreshCoordinates();
-        }
-        private void _RefreshCoordinates()
-        {
-            if (__Coordinates != null && Theme != null)
-                __Coordinates.ResizeTo(this.ClientSize, Theme);
-            LayerBackgroundValid = false;
-            LayerStandardValid = false;
-        }
-        private SudokuCoordinates __Coordinates;
         #endregion
         #region Kreslení = Paint do vrstev
         protected override void DoPaintBackground(LayeredPaintEventArgs args)
@@ -110,27 +128,88 @@ namespace DjSoft.Games.Sudoku.Components
     /// </summary>
     public class SudokuCoordinates
     {
+        /// <summary>
+        /// Konstruktor a public data
+        /// </summary>
+        /// <param name="sudokuGame"></param>
         public SudokuCoordinates(Data.SudokuGame sudokuGame = null)
         {
             __Items = new List<SudokuItem>();
             _SetSudokuGame(sudokuGame);
-
         }
+        /// <summary>
+        /// Vizuální a interaktivní prvky
+        /// </summary>
+        public IReadOnlyList<SudokuItem> Items { get { return __Items; } }
+        /// <summary>Vizuální a interaktivní prvky</summary>
+        private List<SudokuItem> __Items;
+        /// <summary>
+        /// Aktuální hra
+        /// </summary>
         public Data.SudokuGame SudokuGame { get { return __SudokuGame; } set { _SetSudokuGame(value); } } private Data.SudokuGame __SudokuGame;
+        /// <summary>
+        /// Vloží dodanou hru.
+        /// </summary>
+        /// <param name="sudokuGame"></param>
         private void _SetSudokuGame(Data.SudokuGame sudokuGame)
         {
             __SudokuGame = sudokuGame;
+            __SudokuGameIsChanged = true;
+            if (!__IsSuspended)
+                _LinkSudokuGame();
         }
-        private List<SudokuItem> __Items;
+        /// <summary>
+        /// Konfigurace. Ovlivňuje vzhled i chování.
+        /// </summary>
+        public SudokuConfiguration Configuration { get { return __Configuration; } set { __Configuration = value; _RecalcBounds(); } } private SudokuConfiguration __Configuration;
+        /// <summary>
+        /// Vizuální skin
+        /// </summary>
+        public SudokuSkinTheme Theme { get { return __Theme; } set { __Theme = value; _RecalcBounds(); } } private SudokuSkinTheme __Theme;
+        /// <summary>
+        /// Velikost controlu, pro kterou byly naposledy počítány souřadnice
+        /// </summary>
+        public SizeF ControlSize { get { return __ControlSize; } set { __ControlSize = value; _RecalcBounds(); } } private SizeF __ControlSize;
         /// <summary>
         /// Po změně rozměru controlu se upraví souřadnice v <see cref="SudokuCoordinates"/>;
         /// </summary>
         /// <param name="size"></param>
-        public void ResizeTo(Size size, SudokuSkinTheme theme)
+        public void ResizeTo(Size size)
         {
-            if (size.Width < 50 || size.Height < 70) return;
+            __ControlSize = size;
+            _SetAllBounds();
+        }
+        /// <summary>
+        /// Pokusí se vyvolat přepočet souřadnic, pokud aktuálně není Suspend
+        /// </summary>
+        private void _RecalcBounds()
+        {
+            __SudokuBoundsChanged = true;
+            if (!__IsSuspended)
+                _SetAllBounds();
+        }
+
+
+        #region Napojení na hru
+        private void _LinkSudokuGame()
+        {
+            __SudokuGameIsChanged = false;
+        }
+        /// <summary>Obsahuje true po změně objektu v <see cref="__SudokuGame"/>, řeší se v <see cref="_ResumeCoordinates"/></summary>
+        private bool __SudokuGameIsChanged;
+        #endregion
+        #region Souřadnice a jejich výpočet
+        /// <summary>
+        /// Vypočte všechny souřadnice, podle aktuálního rozměru.
+        /// </summary>
+        private void _SetAllBounds()
+        {
+            __SudokuBoundsChanged = false;
+
+            SizeF size = this.ControlSize;
+            if (size.Width < 50f || size.Height < 70f) return;
+
             _SetBasicBounds(size);
-        
         }
         /// <summary>
         /// Rozmístí souřadnice <see cref="GameBounds"/> a <see cref="ControlBounds"/> do daného prostoru. 
@@ -166,7 +245,70 @@ namespace DjSoft.Games.Sudoku.Components
 
         public RectangleF GameBounds { get; private set; }
         public RectangleF ControlBounds { get; private set; }
-        public IReadOnlyList<SudokuItem> Items { get { return __Items; } }
+
+        /// <summary>Obsahuje true po změně objektů, které mají vliv na souřadnice, řeší se v <see cref="_ResumeCoordinates"/></summary>
+        private bool __SudokuBoundsChanged;
+        #endregion
+        #region Suspend / Resume coordinates
+        /// <summary>
+        /// Pozastaví akce v <see cref="SudokuCoordinates"/>, které jsou běžně vyvolány po setování hodnot do <see cref="SudokuGame"/>, <see cref="Configuration"/>,
+        /// <see cref="Theme"/> a <see cref="ControlBounds"/>. Pokud nyní dojde k jejich setování, akce neproběhnou, ale proběhnou až na konci usingu při Dispose vráceného objektu.
+        /// </summary>
+        /// <returns></returns>
+        public IDisposable SuspendCoordinates()
+        {
+            return new SuspendCoordinatesToken(this);
+        }
+        /// <summary>
+        /// IDisposable instance zajišťující Suspend (v konstruktoru) + Resume (v Dispose).
+        /// </summary>
+        private class SuspendCoordinatesToken : IDisposable
+        {
+            /// <summary>
+            /// Konstuktor: do předaného ownera nastaví Suspend = true (předtím si zapamatuje výchozí hodnotu).
+            /// V Dispose ji do ownera vrátí.
+            /// </summary>
+            /// <param name="owner"></param>
+            public SuspendCoordinatesToken(SudokuCoordinates owner)
+            {
+                __Owner = owner;
+                __PreviousIsSuspended = owner.__IsSuspended;
+                owner.__IsSuspended = true;
+            }
+            /// <summary>
+            /// Owner = vlastník tohoto Suspend bloku
+            /// </summary>
+            private SudokuCoordinates __Owner;
+            /// <summary>
+            /// Originální hodnota Suspend z Ownera
+            /// </summary>
+            private bool __PreviousIsSuspended;
+            /// <summary>
+            /// Dispose vrátí <see cref="__PreviousIsSuspended"/> do Suspendu Ownera. Vyvolá <see cref="_ResumeCoordinates"/> v Owneru. Pak zahodí referenci na něj.
+            /// </summary>
+            public void Dispose()
+            {
+                __Owner.__IsSuspended = __PreviousIsSuspended;
+                __Owner._ResumeCoordinates();
+                __Owner = null;
+            }
+        }
+        /// <summary>
+        /// Provede akce, které by měly být provedeny, ale reálně byly suspendovány
+        /// </summary>
+        private void _ResumeCoordinates()
+        {
+            if (__SudokuGameIsChanged)
+                _LinkSudokuGame();
+            if (__SudokuBoundsChanged)
+                _SetAllBounds();
+        }
+        /// <summary>
+        /// Aktuálně jsou pozastaveny akce <see cref="_LinkSudokuGame()"/> a <see cref="_SetAllBounds()"/>?
+        /// </summary>
+        private bool __IsSuspended;
+        #endregion
+
     }
     #endregion
     #region class SudokuConfiguration : Konfigurace chování Sudoku

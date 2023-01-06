@@ -63,6 +63,16 @@ namespace DjSoft.Games.Sudoku.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap Aqua00 {
+            get {
+                object obj = ResourceManager.GetObject("Aqua00", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap Aqua01 {
             get {
                 object obj = ResourceManager.GetObject("Aqua01", resourceCulture);

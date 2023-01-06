@@ -395,5 +395,8 @@
   <ItemGroup>
     <None Include="Pic\64px\Gloss PNGWinRar.png" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="Pic\64px\Aqua00.png" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
