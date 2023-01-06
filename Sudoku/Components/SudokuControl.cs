@@ -353,18 +353,22 @@ namespace DjSoft.Games.Sudoku.Components
                 scs.BackColor = Color.FromArgb(255, 240, 240, 245);
                 scs.GameBackColor = Color.FromArgb(255, 245, 245, 250);
 
-                scs.InnerLineColor = Color.FromArgb(255, 160, 160, 160);
-                scs.InnerLineSize = 1f;
                 scs.OuterLineColor = Color.FromArgb(255, 100, 100, 100);
                 scs.OuterLineSize = 3f;
+                scs.GroupLineColor = Color.FromArgb(255, 160, 160, 160);
+                scs.GroupLineSize = 2f;
+                scs.CellLineColor = Color.FromArgb(255, 160, 160, 160);
+                scs.CellLineSize = 1f;
+
+                scs.CellMargin = 2f;
 
                 scs.EmptyCellBackColor = Color.FromArgb(255, 245, 245, 250);
                 scs.EmptyCellMouseOnBackColor = Color.FromArgb(255, 250, 250, 180);
-                scs.EmptyCellInActiveGrouBackColor = Color.FromArgb(255, 250, 250, 220);
+                scs.EmptyCellInActiveGroupBackColor = Color.FromArgb(255, 250, 250, 220);
 
                 scs.FixedCellBackColor = Color.FromArgb(255, 220, 220, 230);
                 scs.FixedCellMouseOnBackColor = Color.FromArgb(255, 220, 220, 230);
-                scs.FixedCellInActiveGrouBackColor = Color.FromArgb(255, 240, 240, 210);
+                scs.FixedCellInActiveGroupBackColor = Color.FromArgb(255, 240, 240, 210);
                 scs.FixedCellTextColor = Color.FromArgb(255, 0, 0, 0);
 
                 scs.ControlBackColor = Color.FromArgb(255, 235, 235, 245);
@@ -377,29 +381,88 @@ namespace DjSoft.Games.Sudoku.Components
         private SudokuSkinTheme() { }
         #endregion
         #region Jednotlivé barvy
+        /// <summary>
+        /// Základní barva pozadí celého panelu = mimo hru a Controls
+        /// </summary>
         public Color BackColor { get; private set; }
+        /// <summary>
+        /// Základní barva pozadí pod vlastní hrou (z ní bude vykukovat jen prázdný prostor <see cref="CellMargin"/>, 
+        /// a případně bude prosvítat pod poloprůhlednými prvky. Kterákoli barva může mít Alpha kanál menší než 255.
+        /// </summary>
         public Color GameBackColor { get; private set; }
 
-        public Color InnerLineColor { get; private set; }
-        public float InnerLineSize { get; private set; }
+        /// <summary>
+        /// Barva linky okolo celé plochy (9x9)
+        /// </summary>
         public Color OuterLineColor { get; private set; }
+        /// <summary>
+        /// Šířka linky okolo celé plochy (9x9)
+        /// </summary>
         public float OuterLineSize { get; private set; }
+        /// <summary>
+        /// Barva linky okolo jednotlivé grupy (3x3)
+        /// </summary>
+        public Color GroupLineColor { get; private set; }
+        /// <summary>
+        /// Šířka linky okolo jednotlivé grupy (3x3)
+        /// </summary>
+        public float GroupLineSize { get; private set; }
+        /// <summary>
+        /// Barva linky okolo jednotlivé buňky
+        /// </summary>
+        public Color CellLineColor { get; private set; }
+        /// <summary>
+        /// Šířka linky okolo jednotlivé buňky
+        /// </summary>
+        public float CellLineSize { get; private set; }
+        /// <summary>
+        /// Okraj okolo jedné buňky k nejbližší lince
+        /// </summary>
+        public float CellMargin { get; private set; }
+
+        /// <summary>
+        /// Barva pozadí grupy A (1.1 + 1.3 + 2.2 + 3.1 + 3.3)
+        /// </summary>
+        public Color GroupABackColor { get; private set; }
+        /// <summary>
+        /// Barva pozadí grupy B (1.2 + 2.1 + 2.3 + 3.2)
+        /// </summary>
+        public Color GroupBBackColor { get; private set; }
 
         public Color EmptyCellBackColor { get; private set; }
         public Color EmptyCellMouseOnBackColor { get; private set; }
-        public Color EmptyCellInActiveGrouBackColor { get; private set; }
+        public Color EmptyCellInActiveGroupBackColor { get; private set; }
 
         public Color FixedCellBackColor { get; private set; }
         public Color FixedCellMouseOnBackColor { get; private set; }
-        public Color FixedCellInActiveGrouBackColor { get; private set; }
+        public Color FixedCellInActiveGroupBackColor { get; private set; }
         public Color FixedCellTextColor { get; private set; }
 
         public Color ControlBackColor { get; private set; }
 
         #endregion
+        #region Získání hodnoty pro daný typ prvku
+        public Color GetBackColor(SudokuItemType itemType)
+        {
+            if (itemType.HasFlag(SudokuItemType.PartSudoku))
+            {
+                // Následující prvky mají jen jednu barvu = nereagují na interaktivní stav:
+                if (itemType.HasFlag(SudokuItemType.PartBackgroundArea)) return this.GameBackColor;
+                if (itemType.HasFlag(SudokuItemType.PartOuterLine)) return this.OuterLineColor;
+                if (itemType.HasFlag(SudokuItemType.PartGroupLine)) return this.GroupLineColor;
+                if (itemType.HasFlag(SudokuItemType.PartCellLine)) return this.CellLineColor;
+
+            }
+
+            if (itemType.HasFlag(SudokuItemType.PartControl))
+            { }
+
+            return this.BackColor;
+        }
+        #endregion
     }
     #endregion
-    #region  class SudokuItem : Jednotlivý prvek GUI Sudoku (fixed, game, config)
+    #region class SudokuItem : Jednotlivý prvek GUI Sudoku (fixed, game, config)
     /// <summary>
     /// Jednotlivý prvek GUI Sudoku (fixed, game, config)
     /// </summary>
@@ -417,7 +480,11 @@ namespace DjSoft.Games.Sudoku.Components
         public bool IsBackground { get; set; }
         public bool IsInteractive { get; set; }
         public bool IsVisible { get; set; }
+
+        private static string _GetItemId()
     }
+    #endregion
+    #region enumy SudokuItemType, SudokuItemState
     [Flags]
     public enum SudokuItemType : int
     {
@@ -439,25 +506,33 @@ namespace DjSoft.Games.Sudoku.Components
         /// </summary>
         PartOuterLine = 0x0010,
         /// <summary>
-        /// Vnitřní linka
+        /// Vnitřní linka mezi grupami (3x3)
         /// </summary>
-        PartInnerLine = 0x0020,
+        PartGroupLine = 0x0020,
+        /// <summary>
+        /// Vnitřní linka mezi buňkami (1x1)
+        /// </summary>
+        PartCellLine = 0x0040,
         /// <summary>
         /// Vodorovná linka
         /// </summary>
-        PartHorizontalLine = 0x0040,
+        PartHorizontalLine = 0x0100,
         /// <summary>
         /// Svislá linka
         /// </summary>
-        PartVerticalLine = 0x0080,
+        PartVerticalLine = 0x0200,
+        /// <summary>
+        /// Jedna grupa 3x3
+        /// </summary>
+        PartGroup = 0x1000,
         /// <summary>
         /// Jedna buňka
         /// </summary>
-        PartCell = 0x0100,
+        PartCell = 0x2000,
         /// <summary>
         /// Jedna sub-buňka (1/9 v buňce)
         /// </summary>
-        PartSubCell = 0x0200,
+        PartSubCell = 0x4000,
         /// <summary>
         /// Label v controlech
         /// </summary>
@@ -466,6 +541,17 @@ namespace DjSoft.Games.Sudoku.Components
         /// Button v controlech
         /// </summary>
         PartButton = 0x00020000
+    }
+    public enum SudokuItemState
+    {
+        None,
+        Empty,
+        Fixed,
+        WithTips,
+        Filled,
+        Error
+
+
     }
     #endregion
 }
