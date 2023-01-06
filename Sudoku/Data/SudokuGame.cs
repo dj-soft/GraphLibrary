@@ -9,12 +9,12 @@ namespace DjSoft.Games.Sudoku.Data
     /// <summary>
     /// Celá hra
     /// </summary>
-    internal class Game
+    internal class SudokuGame
     {
         /// <summary>
         /// Konstruktor
         /// </summary>
-        public Game()
+        public SudokuGame()
         {
             __Cells = new Cell[9, 9];
             __Groups = new Group[27];
@@ -101,13 +101,13 @@ namespace DjSoft.Games.Sudoku.Data
         }
         #region Text samples
         /// <summary>
-        /// Vytvoří new <see cref="Game"/>, volitelně pro dodaná data vzorku
+        /// Vytvoří new <see cref="SudokuGame"/>, volitelně pro dodaná data vzorku
         /// </summary>
         /// <param name="sample"></param>
         /// <returns></returns>
-        public static Game CreateGame(string sample = null)
+        public static SudokuGame CreateGame(string sample = null)
         {
-            Game game = new Game();
+            SudokuGame game = new SudokuGame();
             if (sample is null) sample = _GetSample();
             game.Import(sample);
             return game;

@@ -17,17 +17,9 @@ namespace DjSoft.Games.Sudoku.Components
         /// </summary>
         public AnimatedControl()
         {
-            SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint | ControlStyles.ResizeRedraw | ControlStyles.OptimizedDoubleBuffer | ControlStyles.Selectable, true);
-
-            SetStyle(ControlStyles.OptimizedDoubleBuffer, true);
+            SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint | ControlStyles.ResizeRedraw | ControlStyles.OptimizedDoubleBuffer, true);
+            SetStyle(ControlStyles.Selectable, this.IsSelectable);
             this.DoubleBuffered = true;
-
-            /*    OptimizedDoubleBuffer     DoubleBuffered     TestPaint milisec
-             *           false                  false               4,50
-             *           true                   false               5,20
-             *           false                  true                5,40
-             *           true                   true                    
-            */
 
             __IsPainted = false;
             __Animator = new Animator(this);
@@ -57,6 +49,24 @@ namespace DjSoft.Games.Sudoku.Components
         /// metodou <see cref="Data.StopwatchExt.GetMilisecs(long)"/>
         /// </summary>
         public Data.StopwatchExt StopwatchExt { get { return __StopwatchExt; } } private Data.StopwatchExt __StopwatchExt;
+        #endregion
+        #region Podpora pro potomky obecná
+        /// <summary>
+        /// Control může dostat Focus? Bázová třída má false, potomek může overridovat, anebo v průběhu života nastavit.
+        /// </summary>
+        protected virtual bool IsSelectable
+        {
+            get
+            {
+                return __IsSelectable;
+            }
+            set
+            {
+                __IsSelectable = value;
+                SetStyle(ControlStyles.Selectable, value);
+            }
+        }
+        private bool __IsSelectable;
         #endregion
         #region Podpora pro potomky - řízení použitosti a aktivity a platnosti jednotlivých vrstev
         /// <summary>
@@ -206,6 +216,14 @@ namespace DjSoft.Games.Sudoku.Components
         protected virtual void DoPaintBackground(LayeredPaintEventArgs args)
         {
             args.Graphics.Clear(this.BackColor);
+        }
+        /// <summary>
+        /// Zde bude vykresleno pozadí controlu.
+        /// </summary>
+        /// <param name="args"></param>
+        protected void DoPaintBackground(LayeredPaintEventArgs args, Color backColor)
+        {
+            args.Graphics.Clear(backColor);
         }
         /// <summary>
         /// Zde potomek vykreslí obsah standardní vrstvy.

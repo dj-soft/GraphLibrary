@@ -50,7 +50,7 @@
       <SubType>Component</SubType>
     </Compile>
     <Compile Include="Components\Animator.cs" />
-    <Compile Include="Components\GameControl.cs">
+    <Compile Include="Components\SudokuControl.cs">
       <SubType>Component</SubType>
     </Compile>
     <Compile Include="Components\LayeredGraphic.cs" />
@@ -59,7 +59,7 @@
     </Compile>
     <Compile Include="Data\AppService.cs" />
     <Compile Include="Data\CycleBuffer.cs" />
-    <Compile Include="Data\Game.cs" />
+    <Compile Include="Data\SudokuGame.cs" />
     <Compile Include="Data\StopwatchExt.cs" />
     <Compile Include="Forms\MainForm.cs">
       <SubType>Form</SubType>
