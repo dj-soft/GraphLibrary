@@ -482,6 +482,9 @@ namespace DjSoft.Games.Sudoku.Components
         public bool IsVisible { get; set; }
 
         private static string _GetItemId()
+        {
+            return null;
+        }
     }
     #endregion
     #region enumy SudokuItemType, SudokuItemState
