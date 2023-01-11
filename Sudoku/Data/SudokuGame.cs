@@ -88,9 +88,9 @@ namespace DjSoft.Games.Sudoku.Data
         /// </summary>
         private void _InitCells()
         {
-            for (int row = 0; row < 9; row++)
-                for (int col = 0; col < 9; col++)
-                    __Cells[row, col] = new Cell(row, col);
+            for (ushort row = 0; row < 9; row++)
+                for (ushort col = 0; col < 9; col++)
+                    __Cells[row, col] = new Cell(this, row, col);
             _InitGroups();
         }
         /// <summary>
@@ -99,6 +99,20 @@ namespace DjSoft.Games.Sudoku.Data
         private void _InitGroups()
         {
         }
+        /// <summary>
+        /// Vrátí adresu čtvercové grupy obsahující danou buňku
+        /// </summary>
+        /// <param name="cellPosition"></param>
+        /// <returns></returns>
+        internal Position GetGroupPosition(Position cellPosition)
+        {
+            return new Position(((UInt16)(cellPosition.Row / 3)), ((UInt16)(cellPosition.Col / 3)));
+        }
+        #region Vyhodnocování
+        internal bool IsValidCell(Cell cell)
+        { }
+
+        #endregion
         #region Text samples
         /// <summary>
         /// Vytvoří new <see cref="SudokuGame"/>, volitelně pro dodaná data vzorku
@@ -134,7 +148,8 @@ namespace DjSoft.Games.Sudoku.Data
                 sb.Append(":");
                 for (int col = 0; col < 9; col++)
                 {
-                    bool isFixed = __Cells[row, col].IsFixedValue;
+                    var state = __Cells[row, col].State;
+                    bool isFixed = (state == CellState.Fixed);
                     int value = __Cells[row, col].Value;
                     bool storeValue = (value > 0 && (!onlyFixed || (onlyFixed && isFixed)));
                     string text = (storeValue ? value.ToString().Substring(0, 1) : ".");
@@ -224,12 +239,32 @@ namespace DjSoft.Games.Sudoku.Data
         /// </summary>
         /// <param name="row"></param>
         /// <param name="col"></param>
-        public Cell(int row, int col)
+        public Cell(SudokuGame game, UInt16 row, UInt16 col)
         {
-            __Row = row;
-            __Col = col;
+            __Game = game;
+            __CellPosition = new Position(row, col);
+            __GroupPosition = game.GetGroupPosition(__CellPosition);
             __Value = 0;
         }
+        private SudokuGame __Game;
+        private Position __CellPosition;
+        private Position __GroupPosition;
+        /// <summary>
+        /// Pozice buňky
+        /// </summary>
+        public Position CellPosition { get { return __CellPosition; } }
+        /// <summary>
+        /// Pozice čtvercové grupy
+        /// </summary>
+        public Position GroupPosition { get { return __GroupPosition; } }
+        /// <summary>
+        /// Číslo řádku 0-8
+        /// </summary>
+        public int Row { get { return __CellPosition.Row; } }
+        /// <summary>
+        /// Číslo sloupce 0-8
+        /// </summary>
+        public int Col { get { return __CellPosition.Col; } }
         /// <summary>
         /// Vizualizace
         /// </summary>
@@ -248,14 +283,6 @@ namespace DjSoft.Games.Sudoku.Data
         /// </summary>
         public string TextChar { get { return ((__Value > 0 && __Value <= 9) ? __Value.ToString() : " "); } }
         /// <summary>
-        /// Číslo řádku 0-8
-        /// </summary>
-        public int Row { get { return __Row; } } private int __Row;
-        /// <summary>
-        /// Číslo sloupce 0-8
-        /// </summary>
-        public int Col { get { return __Col; } } private int __Col;
-        /// <summary>
         /// Aktuální hodnota buňky, nebo 0 když není jistá.
         /// </summary>
         public int Value 
@@ -269,9 +296,23 @@ namespace DjSoft.Games.Sudoku.Data
             }
         } private int __Value;
         /// <summary>
+        /// Stav buňky
+        /// </summary>
+        public CellState State
+        {
+            get
+            {
+                if (__IsFixedValue) return CellState.Fixed;
+                if (__Value > 0) return (__Game.IsValidCell(this) ? CellState.Filled : CellState.Error);
+
+
+                return CellState.Empty;
+            }
+        }
+        /// <summary>
         /// Hodnota této buňky je Fixní = daná do startu?
         /// </summary>
-        public bool IsFixedValue { get { return __IsFixedValue; } } private bool __IsFixedValue;
+        private bool __IsFixedValue;
         /// <summary>
         /// Vloží dodanou hodnotu jako fixní = zadanou
         /// </summary>
@@ -281,5 +322,58 @@ namespace DjSoft.Games.Sudoku.Data
             __Value = value;
             __IsFixedValue = (value > 0);
         }
+    }
+    public class Position
+    {
+        public Position(UInt16 row, UInt16 col)
+        {
+            __Position = ((row & 0x00FF) | ((col & 0x00FF) << 8));
+        }
+        private readonly Int32 __Position;
+        public UInt16 Row { get { return (UInt16)(__Position & 0x00FF); } }
+        public UInt16 Col { get { return (UInt16)((__Position & 0xFF00) >> 8); } }
+        public override string ToString()
+        {
+            return $"Row: {Row}; Col: {Col}";
+        }
+        public override bool Equals(object obj)
+        {
+            if (obj is Position position) return position.__Position == this.__Position;
+            return false;
+        }
+        public override int GetHashCode()
+        {
+            return __Position.GetHashCode();
+        }
+    }
+    /// <summary>
+    /// Stav buňky Sudoku
+    /// </summary>
+    public enum CellState
+    {
+        /// <summary>
+        /// Neuvedeno
+        /// </summary>
+        None,
+        /// <summary>
+        /// Prázdná
+        /// </summary>
+        Empty,
+        /// <summary>
+        /// Vyplněná fixně
+        /// </summary>
+        Fixed,
+        /// <summary>
+        /// Obsahuje nějaké tipy
+        /// </summary>
+        WithTips,
+        /// <summary>
+        /// Vyplněná uživatelem
+        /// </summary>
+        Filled,
+        /// <summary>
+        /// Vyplněná s chybou
+        /// </summary>
+        Error
     }
 }

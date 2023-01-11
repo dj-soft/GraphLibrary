@@ -545,16 +545,5 @@ namespace DjSoft.Games.Sudoku.Components
         /// </summary>
         PartButton = 0x00020000
     }
-    public enum SudokuItemState
-    {
-        None,
-        Empty,
-        Fixed,
-        WithTips,
-        Filled,
-        Error
-
-
-    }
     #endregion
 }
