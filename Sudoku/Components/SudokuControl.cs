@@ -54,7 +54,7 @@ namespace DjSoft.Games.Sudoku.Components
         #region Vizuální kabát = Theme
         private void _InitTheme()
         {
-            Theme = SudokuSkinTheme.LightGray;
+            Theme = SudokuSkinTheme.Default;
         }
         public SudokuSkinTheme Theme { get { return __Theme; } set { __Theme = value; _LinkComponents(); } } private SudokuSkinTheme __Theme;
         #endregion
@@ -192,12 +192,19 @@ namespace DjSoft.Games.Sudoku.Components
         /// </summary>
         public IReadOnlyList<SudokuItem> Items { get { return __Items; } }
         /// <summary>
-        /// Vytvoří pole prvků a naplní jej, jedenkrát v konstrktoru
+        /// Vytvoří pole prvků a naplní jej, jedenkrát v konstruktoru
         /// </summary>
         private void _CreateSudokuItems()
         {
             __Items = new List<SudokuItem>();
-
+            _AddSudokuGameItems();
+            _AddSudokuControlItems();
+        }
+        /// <summary>
+        /// Do pole prvků vloží prvky typu Game
+        /// </summary>
+        private void _AddSudokuGameItems()
+        {
             // Vygeneruje definice pro všechny linky, ve správném pořadí odspodu:
             addLines(1, SudokuItemType.PartCellLine);
             addLines(2, SudokuItemType.PartCellLine);
@@ -213,28 +220,37 @@ namespace DjSoft.Games.Sudoku.Components
             // Vygeneruje definice pro všechny grupy:
             for (int row = 0; row < 3; row++)
                 for (int col = 0; col < 3; col++)
-                    addItem(row, col, SudokuItemType.SudokuGroup);
+                    addItem(row, col, SudokuItemType.GameGroup);
 
             // Vygeneruje definice pro všechny buňky včetně SubValue:
             for (int row = 0; row < 9; row++)
                 for (int col = 0; col < 9; col++)
                 {
-                    addItem(row, col, SudokuItemType.SudokuCell);
+                    addItem(row, col, SudokuItemType.GameCell);
                     for (int sub = 1; sub <= 9; sub++)
-                        addItem(row, col, SudokuItemType.SudokuSubCell, sub);
+                        addItem(row, col, SudokuItemType.GameSubCell, sub);
                 }
 
+            // Přidá prvky (PartHorizontalLine a PartVerticalLine) pro linku na dané pozici a daného typu
             void addLines(int pos, SudokuItemType lineType)
             {
-                addItem(pos, 0, SudokuItemType.PartSudoku | lineType | SudokuItemType.PartHorizontalLine);
-                addItem(0, pos, SudokuItemType.PartSudoku | lineType | SudokuItemType.PartVerticalLine);
+                addItem(pos, 0, SudokuItemType.PartGame | lineType | SudokuItemType.PartHorizontalLine);
+                addItem(0, pos, SudokuItemType.PartGame | lineType | SudokuItemType.PartVerticalLine);
             }
 
+            // Přidá prvek na dané souřadnici, daného typu a subValue
             void addItem(int row, int col, SudokuItemType itemType, int? itemSubValue = null)
             {
                 SudokuItem item = new SudokuItem(this.__Owner, new Data.Position((UInt16)row, (UInt16)col), itemType, itemSubValue);
                 __Items.Add(item);
             }
+        }
+        /// <summary>
+        /// Do pole prvků vloží prvky typu Menu
+        /// </summary>
+        private void _AddSudokuControlItems()
+        {
+
         }
         /// <summary>Vizuální a interaktivní prvky</summary>
         private List<SudokuItem> __Items;
@@ -255,13 +271,14 @@ namespace DjSoft.Games.Sudoku.Components
         {
             __SudokuBoundsChanged = false;
 
-            var theme = this.Theme;
+            var theme = this.Theme ?? SudokuSkinTheme.Default;
             string oldThemeSizeHash = __ThemeSizeHashCurrent;
-            string newThemeSizeHash = theme?.SizeHash;
+            string newThemeSizeHash = theme.SizeHash;
             if (!String.Equals(newThemeSizeHash, oldThemeSizeHash))
             {
                 _SetRelativeBounds(theme);
                 __ThemeSizeHashCurrent = newThemeSizeHash;
+                __ControlSizeHashCurrent = null;           // Zajistí přepočet souřadnic Absolute
             }
 
             SizeF size = this.ControlSize;
@@ -275,6 +292,12 @@ namespace DjSoft.Games.Sudoku.Components
                 __ControlSizeHashCurrent = newControlSizeHash;
             }
         }
+        /// <summary>Obsahuje hash získaný z Theme <see cref="SudokuSkinTheme.SizeHash"/>, pro který je aktuálně spočítaný relativní souřadný systém</summary>
+        private string __ThemeSizeHashCurrent;
+        /// <summary>Obsahuje hash získaný z <see cref="ControlSize"/> controlu, pro který je aktuálně spočítaný absolutní souřadný systém</summary>
+        private string __ControlSizeHashCurrent;
+        /// <summary>Obsahuje true po změně objektů, které mají vliv na souřadnice, řeší se v <see cref="_ResumeCoordinates"/></summary>
+        private bool __SudokuBoundsChanged;
         #region Relativní souřadnice hry: podle hodnot v Theme vypočte relativní souřadnice a vloží je do všech prvků
         /// <summary>
         /// Metoda určí kompletní relativní souřadnice všech prvků
@@ -282,8 +305,34 @@ namespace DjSoft.Games.Sudoku.Components
         /// <param name="theme"></param>
         private void _SetRelativeBounds(SudokuSkinTheme theme)
         {
-            // Rozpočet velikostí
-            __ControlSizeHashCurrent = null;
+            // Rozpočet velikostí vychází z hodnot v theme:
+            var sizes = theme.RelativeSizes;
+            var cellPositions = theme.CellSizePositions;
+            var subSizes = theme.RelativeSubSizes;
+
+            foreach (var item in this.__Items)
+                item.BoundsRelative = getRelativeBounds(item);
+
+            RectangleF getRelativeBounds(SudokuItem item)
+            {
+                var itemType = item.ItemType;
+                if (itemType.HasFlag(SudokuItemType.PartCell))
+                    getRelativeBoundsCell(item, null);
+                if (itemType.HasFlag(SudokuItemType.PartSubCell))
+                    getRelativeBoundsCell(item, item.ItemSubValue);
+
+                return RectangleF.Empty;
+            }
+            RectangleF getRelativeBoundsCell(SudokuItem item, int? subValue)
+            {
+                var row = item.ItemPosition.Row;
+                var col = item.ItemPosition.Col;
+                var cx = sizes[cellPositions[col]];
+                var cy = sizes[cellPositions[row]];
+                RectangleF cellBounds = new RectangleF(cx.Item1, cy.Item1, cx.Item2, cy.Item2);
+
+                return cellBounds;
+            }
         }
         #endregion
         #region Absolutní souřadnice: rozdělení prostoru na Game / Control, a následné přepočty relativních souřadnic do těchto souřadnic absolutních
@@ -334,12 +383,6 @@ namespace DjSoft.Games.Sudoku.Components
         public RectangleF GameBounds { get; private set; }
         public RectangleF ControlBounds { get; private set; }
         #endregion
-        /// <summary>Obsahuje hash získaný z Theme <see cref="SudokuSkinTheme.SizeHash"/>, pro který je aktuálně spočítaný relativní souřadný systém</summary>
-        private string __ThemeSizeHashCurrent;
-        /// <summary>Obsahuje hash získaný z <see cref="ControlSize"/> controlu, pro který je aktuálně spočítaný absolutní souřadný systém</summary>
-        private string __ControlSizeHashCurrent;
-        /// <summary>Obsahuje true po změně objektů, které mají vliv na souřadnice, řeší se v <see cref="_ResumeCoordinates"/></summary>
-        private bool __SudokuBoundsChanged;
         #endregion
         #region Suspend / Resume coordinates
         /// <summary>
@@ -435,6 +478,10 @@ namespace DjSoft.Games.Sudoku.Components
     {
         #region Tvorba jedotlivých schemat
         /// <summary>
+        /// Defaultní schema
+        /// </summary>
+        public static SudokuSkinTheme Default { get { return LightGray; } }
+        /// <summary>
         /// Obsahuje schema v základní barvě světle šedé
         /// </summary>
         public static SudokuSkinTheme LightGray
@@ -470,7 +517,10 @@ namespace DjSoft.Games.Sudoku.Components
         /// <summary>
         /// Konstruktor je privátní. Instance se generují z konkrétních static properties pro konkrétní témata...
         /// </summary>
-        private SudokuSkinTheme() { }
+        private SudokuSkinTheme()
+        {
+            this.CellSize = 90f;
+        }
         #endregion
         #region Jednotlivé barvy a rozměry
         /// <summary>
@@ -488,7 +538,8 @@ namespace DjSoft.Games.Sudoku.Components
         /// </summary>
         public Color OuterLineColor { get; private set; }
         /// <summary>
-        /// Šířka linky okolo celé plochy (9x9); uvádí se relativně k buňce o velikosti 90 x 90
+        /// Šířka linky okolo celé plochy (9x9);
+        /// uvádí se relativně k velikosti buňky <see cref="CellSize"/>, což je defaultně 90.
         /// </summary>
         public float OuterLineSize { get; private set; }
         /// <summary>
@@ -496,7 +547,8 @@ namespace DjSoft.Games.Sudoku.Components
         /// </summary>
         public Color GroupLineColor { get; private set; }
         /// <summary>
-        /// Šířka linky okolo jednotlivé grupy (3x3); uvádí se relativně k buňce o velikosti 90 x 90
+        /// Šířka linky okolo jednotlivé grupy (3x3);
+        /// uvádí se relativně k velikosti buňky <see cref="CellSize"/>, což je defaultně 90.
         /// </summary>
         public float GroupLineSize { get; private set; }
         /// <summary>
@@ -504,13 +556,18 @@ namespace DjSoft.Games.Sudoku.Components
         /// </summary>
         public Color CellLineColor { get; private set; }
         /// <summary>
-        /// Šířka linky okolo jednotlivé buňky; uvádí se relativně k buňce o velikosti 90 x 90
+        /// Šířka linky okolo jednotlivé buňky;
+        /// uvádí se relativně k velikosti buňky <see cref="CellSize"/>, což je defaultně 90.
         /// </summary>
         public float CellLineSize { get; private set; }
         /// <summary>
-        /// Okraj okolo jedné buňky k nejbližší lince; uvádí se relativně k buňce o velikosti 90 x 90
+        /// Okraj okolo jedné buňky k nejbližší lince; uvádí se relativně k velikosti buňky <see cref="CellSize"/>, což je defaultně 90
         /// </summary>
         public float CellMargin { get; private set; }
+        /// <summary>
+        /// Velikost jedné buňky. Hodnota je 90 proto, aby bylo možno dělit na 3x3 SubCell.
+        /// </summary>
+        public float CellSize { get; private set; }
 
         /// <summary>
         /// Barva pozadí grupy A (1.1 + 1.3 + 2.2 + 3.1 + 3.3)
@@ -539,9 +596,138 @@ namespace DjSoft.Games.Sudoku.Components
         public string SizeHash { get { return $"{OuterLineSize:F1}|{GroupLineSize:F1}|{CellLineSize:F1}|{CellMargin:F1}"; } }
         #endregion
         #region Získání hodnoty pro daný typ prvku
+        /// <summary>
+        /// Souřadnice jednotlivých prvků, shodné pro osu X i Y.
+        /// Každý prvek tohoto pole obsahuje Tuple obsahující Item1 = počátek a Item2 = velikost.
+        /// Pořadí prvků je logické a fixní: 
+        /// [00] = OuterLine; 
+        /// [01] = Group0; 
+        /// [02] = Cell0;  
+        /// [03] = CellLine;  
+        /// [04] = Cell1;  
+        /// [05] = CellLine;  
+        /// [06] = Cell2;  
+        /// [07] = GroupLine; 
+        /// [08] = Group1;  
+        /// [09] = Cell3;  
+        /// [10] = CellLine;  
+        /// [11] = Cell4;  
+        /// [12] = CellLine;  
+        /// [13] = Cell5;  
+        /// [14] = GroupLine; 
+        /// [15] = Group2;  
+        /// [16] = Cell6;  
+        /// [17] = CellLine;  
+        /// [18] = Cell7;  
+        /// [19] = CellLine;  
+        /// [20] = Cell8;  
+        /// [21] = GroupLine;
+        /// OuterLine; 
+        /// </summary>
+        public Tuple<float, float>[] RelativeSizes
+        {
+            get
+            {
+                List<Tuple<float, float>> result = new List<Tuple<float, float>>();
+
+                var ol = OuterLineSize;
+                var gl = GroupLineSize;
+                var cl = CellLineSize;
+                var cm = CellMargin;
+                var cs = CellSize;
+                var gs = 6f * cm + 3f * cs + 2f * cl;
+                float position = 0f;
+
+                add(ref position, ol, ol);                 // [00] = OuterLine 0
+
+                add(ref position, gs, cm);                 // [01] = Grupa 0 navazuje hned na OuterLine a zahrnuje 3 buňky + 2x3 margins + 2x InnerLine, ale position se posune jen o 1 margin
+                add(ref position, cs, cs + cm);            // [02] = Cell 0 + 1x margin za ní
+                add(ref position, cl, cl + cm);            // [03] = CellLine 0-1, + 1x margin za ní
+                add(ref position, cs, cs + cm);            // [04] = Cell 1 + 1x margin za ní
+                add(ref position, cl, cl + cm);            // [05] = CellLine 1-2, + 1x margin za ní
+                add(ref position, cs, cs + cm);            // [06] = Cell 2 + 1x margin za ní
+
+                add(ref position, gl, gl);                 // [07] = GroupLine 2-3, bez posunu navíc
+
+                add(ref position, gs, cm);                 // [08] = Grupa 1 navazuje hned na GroupLine a zahrnuje 3 buňky + 2x3 margins + 2x InnerLine, ale position se posune jen o 1 margin
+                add(ref position, cs, cs + cm);            // [09] = Cell 3 + 1x margin za ní
+                add(ref position, cl, cl + cm);            // [10] = CellLine 3-4, + 1x margin za ní
+                add(ref position, cs, cs + cm);            // [11] = Cell 4 + 1x margin za ní
+                add(ref position, cl, cl + cm);            // [12] = CellLine 4-5, + 1x margin za ní
+                add(ref position, cs, cs + cm);            // [13] = Cell 5 + 1x margin za ní
+
+                add(ref position, gl, gl);                 // [14] = GroupLine 5-6, bez posunu navíc
+
+                add(ref position, gs, cm);                 // [15] = Grupa 2 navazuje hned na OuterLine a zahrnuje 3 buňky + 2x3 margins + 2x InnerLine, ale position se posune jen o 1 margin
+                add(ref position, cs, cs + cm);            // [16] = Cell 6 + 1x margin za ní
+                add(ref position, cl, cl + cm);            // [17] = CellLine 6-7, + 1x margin za ní
+                add(ref position, cs, cs + cm);            // [18] = Cell 7 + 1x margin za ní
+                add(ref position, cl, cl + cm);            // [19] = CellLine 7-8, + 1x margin za ní
+                add(ref position, cs, cs + cm);            // [20] = Cell 8 + 1x margin za ní
+
+                add(ref position, ol, ol);                 // [21] = OuterLine 1
+
+                return result.ToArray();
+
+                // Do pole 'result' přidá nový prvek, kde Item1 = ref 'p' a Item2 = 'size', a poté k 'p' přičte 'shift'.
+                void add(ref float p, float size, float shift)
+                {
+                    result.Add(new Tuple<float, float>(p, size));
+                    p += shift;
+                }
+            }
+        }
+        /// <summary>
+        /// Obsahuje indexy buněk pole <see cref="RelativeSizes"/>, na kterých se nachází buňky Cell[0] ÷ Cell[8]. Pole tedy má 9 prvků.
+        /// Tedy: souřadnice buňky v řádku 3 najdeme v <see cref="RelativeSizes"/> na indexu <see cref="CellSizePositions"/>[3].
+        /// </summary>
+        public int[] CellSizePositions
+        {
+            get
+            {
+                List<int> result = new List<int>();
+                result.Add(02);
+                result.Add(04);
+                result.Add(06);
+                result.Add(09);
+                result.Add(11);
+                result.Add(13);
+                result.Add(16);
+                result.Add(18);
+                result.Add(20);
+                return result.ToArray();
+            }
+        }
+        /// <summary>
+        /// Relativní souřadnice jednotlivých SubCells
+        /// </summary>
+        public Tuple<float, float>[] RelativeSubSizes
+        {
+            get
+            {
+                List<Tuple<float, float>> result = new List<Tuple<float, float>>();
+
+                var cs = CellSize;
+                var ss = cs / 3f;
+                float position = 0f;
+
+                add(ref position, ss, ss);                 // [00] = SubCell 0
+                add(ref position, ss, ss);                 // [00] = SubCell 1
+                add(ref position, ss, ss);                 // [00] = SubCell 2
+
+                return result.ToArray();
+
+                // Do pole 'result' přidá nový prvek, kde Item1 = ref 'p' a Item2 = 'size', a poté k 'p' přičte 'shift'.
+                void add(ref float p, float size, float shift)
+                {
+                    result.Add(new Tuple<float, float>(p, size));
+                    p += shift;
+                }
+            }
+        }
         public Color GetBackColor(SudokuItemType itemType)
         {
-            if (itemType.HasFlag(SudokuItemType.PartSudoku))
+            if (itemType.HasFlag(SudokuItemType.PartGame))
             {
                 // Následující prvky mají jen jednu barvu = nereagují na interaktivní stav:
                 if (itemType.HasFlag(SudokuItemType.PartBackgroundArea)) return this.GameBackColor;
@@ -551,7 +737,7 @@ namespace DjSoft.Games.Sudoku.Components
 
             }
 
-            if (itemType.HasFlag(SudokuItemType.PartControl))
+            if (itemType.HasFlag(SudokuItemType.PartMenu))
             { }
 
             return this.BackColor;
@@ -618,11 +804,11 @@ namespace DjSoft.Games.Sudoku.Components
         /// <summary>
         /// Patří do Sudoku
         /// </summary>
-        PartSudoku = 0x0001,
+        PartGame = 0x0001,
         /// <summary>
         /// Patří do Controls
         /// </summary>
-        PartControl = 0x0002,
+        PartMenu = 0x0002,
         /// <summary>
         /// Prostor celého pozadí
         /// </summary>
@@ -668,15 +854,15 @@ namespace DjSoft.Games.Sudoku.Components
         /// </summary>
         PartButton = 0x00020000,
 
-        SudokuOuterHorizontalLine = PartSudoku | PartHorizontalLine | PartOuterLine,
-        SudokuOuterVerticalLine = PartSudoku | PartVerticalLine | PartOuterLine,
-        SudokuGroupHorizontalLine = PartSudoku | PartHorizontalLine | PartGroupLine,
-        SudokuGroupVerticalLine = PartSudoku | PartVerticalLine | PartGroupLine,
-        SudokuCellHorizontalLine = PartSudoku | PartHorizontalLine | PartCellLine,
-        SudokuCellVerticalLine = PartSudoku | PartVerticalLine | PartCellLine,
-        SudokuGroup = PartSudoku | PartGroup,
-        SudokuCell = PartSudoku | PartCell,
-        SudokuSubCell = PartSudoku | PartSubCell
+        GameOuterHorizontalLine = PartGame | PartHorizontalLine | PartOuterLine,
+        GameOuterVerticalLine = PartGame | PartVerticalLine | PartOuterLine,
+        GameGroupHorizontalLine = PartGame | PartHorizontalLine | PartGroupLine,
+        GameuGroupVerticalLine = PartGame | PartVerticalLine | PartGroupLine,
+        GameCellHorizontalLine = PartGame | PartHorizontalLine | PartCellLine,
+        GameCellVerticalLine = PartGame | PartVerticalLine | PartCellLine,
+        GameGroup = PartGame | PartGroup,
+        GameCell = PartGame | PartCell,
+        GameSubCell = PartGame | PartSubCell
 
     }
     #endregion
