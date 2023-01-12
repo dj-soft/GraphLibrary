@@ -61,7 +61,7 @@ namespace DjSoft.Games.Sudoku.Components
         #region Mapa prostoru = kde co je, v závislosti na velikosti controlu
         private void _InitCoordinates()
         {
-            __Coordinates = new SudokuCoordinates();
+            __Coordinates = new SudokuCoordinates(this);
             ClientSizeChanged += _ClientSizeChanged;
         }
         /// <summary>
@@ -132,17 +132,15 @@ namespace DjSoft.Games.Sudoku.Components
         /// Konstruktor a public data
         /// </summary>
         /// <param name="sudokuGame"></param>
-        public SudokuCoordinates(Data.SudokuGame sudokuGame = null)
+        public SudokuCoordinates(SudokuControl owner)
         {
-            __Items = new List<SudokuItem>();
-            _SetSudokuGame(sudokuGame);
+            __Owner = owner;
+            _CreateSudokuItems();
         }
         /// <summary>
-        /// Vizuální a interaktivní prvky
+        /// Owner control
         /// </summary>
-        public IReadOnlyList<SudokuItem> Items { get { return __Items; } }
-        /// <summary>Vizuální a interaktivní prvky</summary>
-        private List<SudokuItem> __Items;
+        private SudokuControl __Owner;
         /// <summary>
         /// Aktuální hra
         /// </summary>
@@ -188,8 +186,59 @@ namespace DjSoft.Games.Sudoku.Components
             if (!__IsSuspended)
                 _SetAllBounds();
         }
+        #region Prvky SudokuItem - jejich prvotní vytvoření
+        /// <summary>
+        /// Vizuální a interaktivní prvky
+        /// </summary>
+        public IReadOnlyList<SudokuItem> Items { get { return __Items; } }
+        /// <summary>
+        /// Vytvoří pole prvků a naplní jej, jedenkrát v konstrktoru
+        /// </summary>
+        private void _CreateSudokuItems()
+        {
+            __Items = new List<SudokuItem>();
 
+            // Vygeneruje definice pro všechny linky, ve správném pořadí odspodu:
+            addLines(1, SudokuItemType.PartCellLine);
+            addLines(2, SudokuItemType.PartCellLine);
+            addLines(4, SudokuItemType.PartCellLine);
+            addLines(5, SudokuItemType.PartCellLine);
+            addLines(7, SudokuItemType.PartCellLine);
+            addLines(8, SudokuItemType.PartCellLine);
+            addLines(3, SudokuItemType.PartGroupLine);
+            addLines(6, SudokuItemType.PartGroupLine);
+            addLines(0, SudokuItemType.PartOuterLine);
+            addLines(9, SudokuItemType.PartOuterLine);
 
+            // Vygeneruje definice pro všechny grupy:
+            for (int row = 0; row < 3; row++)
+                for (int col = 0; col < 3; col++)
+                    addItem(row, col, SudokuItemType.SudokuGroup);
+
+            // Vygeneruje definice pro všechny buňky včetně SubValue:
+            for (int row = 0; row < 9; row++)
+                for (int col = 0; col < 9; col++)
+                {
+                    addItem(row, col, SudokuItemType.SudokuCell);
+                    for (int sub = 1; sub <= 9; sub++)
+                        addItem(row, col, SudokuItemType.SudokuSubCell, sub);
+                }
+
+            void addLines(int pos, SudokuItemType lineType)
+            {
+                addItem(pos, 0, SudokuItemType.PartSudoku | lineType | SudokuItemType.PartHorizontalLine);
+                addItem(0, pos, SudokuItemType.PartSudoku | lineType | SudokuItemType.PartVerticalLine);
+            }
+
+            void addItem(int row, int col, SudokuItemType itemType, int? itemSubValue = null)
+            {
+                SudokuItem item = new SudokuItem(this.__Owner, new Data.Position((UInt16)row, (UInt16)col), itemType, itemSubValue);
+                __Items.Add(item);
+            }
+        }
+        /// <summary>Vizuální a interaktivní prvky</summary>
+        private List<SudokuItem> __Items;
+        #endregion
         #region Napojení na hru
         private void _LinkSudokuGame()
         {
@@ -206,10 +255,47 @@ namespace DjSoft.Games.Sudoku.Components
         {
             __SudokuBoundsChanged = false;
 
+            var theme = this.Theme;
+            string oldThemeSizeHash = __ThemeSizeHashCurrent;
+            string newThemeSizeHash = theme?.SizeHash;
+            if (!String.Equals(newThemeSizeHash, oldThemeSizeHash))
+            {
+                _SetRelativeBounds(theme);
+                __ThemeSizeHashCurrent = newThemeSizeHash;
+            }
+
             SizeF size = this.ControlSize;
             if (size.Width < 50f || size.Height < 70f) return;
 
+            string oldControlSizeHash = __ControlSizeHashCurrent;
+            string newControlSizeHash = $"{size.Width}|{size.Height}";
+            if (!String.Equals(oldControlSizeHash, newControlSizeHash))
+            {
+                _SetAbsoluteBounds(size);
+                __ControlSizeHashCurrent = newControlSizeHash;
+            }
+        }
+        #region Relativní souřadnice hry: podle hodnot v Theme vypočte relativní souřadnice a vloží je do všech prvků
+        /// <summary>
+        /// Metoda určí kompletní relativní souřadnice všech prvků
+        /// </summary>
+        /// <param name="theme"></param>
+        private void _SetRelativeBounds(SudokuSkinTheme theme)
+        {
+            // Rozpočet velikostí
+            __ControlSizeHashCurrent = null;
+        }
+        #endregion
+        #region Absolutní souřadnice: rozdělení prostoru na Game / Control, a následné přepočty relativních souřadnic do těchto souřadnic absolutních
+        /// <summary>
+        /// Určí absolutní souřadnice segmentů Game a Control, a poté do nich přepočte relativní souřadnice prvků
+        /// </summary>
+        /// <param name="size"></param>
+        private void _SetAbsoluteBounds(SizeF size)
+        {
             _SetBasicBounds(size);
+            _SetAbsoluteGameBounds();
+            _SetAbsoluteControlBounds();
         }
         /// <summary>
         /// Rozmístí souřadnice <see cref="GameBounds"/> a <see cref="ControlBounds"/> do daného prostoru. 
@@ -242,10 +328,16 @@ namespace DjSoft.Games.Sudoku.Components
             float cy = yb + ((bh - cs) / 2f);
             ControlBounds = new RectangleF(cx, cy, controlRatio * cs, cs);
         }
+        private void _SetAbsoluteGameBounds() { }
+        private void _SetAbsoluteControlBounds() { }
 
         public RectangleF GameBounds { get; private set; }
         public RectangleF ControlBounds { get; private set; }
-
+        #endregion
+        /// <summary>Obsahuje hash získaný z Theme <see cref="SudokuSkinTheme.SizeHash"/>, pro který je aktuálně spočítaný relativní souřadný systém</summary>
+        private string __ThemeSizeHashCurrent;
+        /// <summary>Obsahuje hash získaný z <see cref="ControlSize"/> controlu, pro který je aktuálně spočítaný absolutní souřadný systém</summary>
+        private string __ControlSizeHashCurrent;
         /// <summary>Obsahuje true po změně objektů, které mají vliv na souřadnice, řeší se v <see cref="_ResumeCoordinates"/></summary>
         private bool __SudokuBoundsChanged;
         #endregion
@@ -380,7 +472,7 @@ namespace DjSoft.Games.Sudoku.Components
         /// </summary>
         private SudokuSkinTheme() { }
         #endregion
-        #region Jednotlivé barvy
+        #region Jednotlivé barvy a rozměry
         /// <summary>
         /// Základní barva pozadí celého panelu = mimo hru a Controls
         /// </summary>
@@ -396,7 +488,7 @@ namespace DjSoft.Games.Sudoku.Components
         /// </summary>
         public Color OuterLineColor { get; private set; }
         /// <summary>
-        /// Šířka linky okolo celé plochy (9x9)
+        /// Šířka linky okolo celé plochy (9x9); uvádí se relativně k buňce o velikosti 90 x 90
         /// </summary>
         public float OuterLineSize { get; private set; }
         /// <summary>
@@ -404,7 +496,7 @@ namespace DjSoft.Games.Sudoku.Components
         /// </summary>
         public Color GroupLineColor { get; private set; }
         /// <summary>
-        /// Šířka linky okolo jednotlivé grupy (3x3)
+        /// Šířka linky okolo jednotlivé grupy (3x3); uvádí se relativně k buňce o velikosti 90 x 90
         /// </summary>
         public float GroupLineSize { get; private set; }
         /// <summary>
@@ -412,11 +504,11 @@ namespace DjSoft.Games.Sudoku.Components
         /// </summary>
         public Color CellLineColor { get; private set; }
         /// <summary>
-        /// Šířka linky okolo jednotlivé buňky
+        /// Šířka linky okolo jednotlivé buňky; uvádí se relativně k buňce o velikosti 90 x 90
         /// </summary>
         public float CellLineSize { get; private set; }
         /// <summary>
-        /// Okraj okolo jedné buňky k nejbližší lince
+        /// Okraj okolo jedné buňky k nejbližší lince; uvádí se relativně k buňce o velikosti 90 x 90
         /// </summary>
         public float CellMargin { get; private set; }
 
@@ -440,6 +532,11 @@ namespace DjSoft.Games.Sudoku.Components
 
         public Color ControlBackColor { get; private set; }
 
+        /// <summary>
+        /// Obsahuje string, který zahrnuje všechny rozměrové hodnoty (šířky linek a mezer).
+        /// Zajistí že po změně těchto hodnot (změna Theme) dojde k přepočtu relativního souřadného systému.
+        /// </summary>
+        public string SizeHash { get { return $"{OuterLineSize:F1}|{GroupLineSize:F1}|{CellLineSize:F1}|{CellMargin:F1}"; } }
         #endregion
         #region Získání hodnoty pro daný typ prvku
         public Color GetBackColor(SudokuItemType itemType)
@@ -468,26 +565,52 @@ namespace DjSoft.Games.Sudoku.Components
     /// </summary>
     public class SudokuItem
     {
-        public SudokuItem(string itemId, SudokuItemType itemType)
+        public SudokuItem(SudokuControl owner, Data.Position itemPosition, SudokuItemType itemType, int? itemSubValue)
         {
-            __ItemId = itemId;
+            __Owner = owner;
+            __ItemPosition = itemPosition;
             __ItemType = itemType;
+            __ItemSubValue = itemSubValue;
         }
-
-        public string ItemId { get { return __ItemId; } } private readonly string __ItemId;
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            string text = $"ItemType: {ItemType}; Position: {ItemPosition};";
+            if (ItemSubValue.HasValue) text += $" SubValue: {ItemSubValue}";
+            return text;
+        }
+        private readonly SudokuControl __Owner;
+        /// <summary>
+        /// Typ prvku
+        /// </summary>
         public SudokuItemType ItemType { get { return __ItemType; } } private readonly SudokuItemType __ItemType;
-        public RectangleF Bounds { get; set; }
+        /// <summary>
+        /// Pozice prvku = adresa (buňky, grupy, linie)
+        /// </summary>
+        public Data.Position ItemPosition { get { return __ItemPosition; } } private readonly Data.Position __ItemPosition;
+        /// <summary>
+        /// Hodnota SubValue = hint
+        /// </summary>
+        public int? ItemSubValue { get { return __ItemSubValue; } } private readonly int? __ItemSubValue;
+        /// <summary>
+        /// Pozice relativní v rastru, kde jedna buňka má rozměr 100 x 100.
+        /// Je vypočtena po změně rozměrových hodnot v <see cref="SudokuSkinTheme"/>.
+        /// Nemění se po změně rozměrů ani po změnách barvy.
+        /// </summary>
+        public RectangleF BoundsRelative { get; set; }
+        /// <summary>
+        /// Pozice absolutní koordinátu controlu
+        /// </summary>
+        public RectangleF BoundsAbsolute { get; set; }
         public bool IsBackground { get; set; }
         public bool IsInteractive { get; set; }
         public bool IsVisible { get; set; }
-
-        private static string _GetItemId()
-        {
-            return null;
-        }
     }
     #endregion
-    #region enumy SudokuItemType, SudokuItemState
+    #region enumy SudokuItemType
     [Flags]
     public enum SudokuItemType : int
     {
@@ -543,7 +666,18 @@ namespace DjSoft.Games.Sudoku.Components
         /// <summary>
         /// Button v controlech
         /// </summary>
-        PartButton = 0x00020000
+        PartButton = 0x00020000,
+
+        SudokuOuterHorizontalLine = PartSudoku | PartHorizontalLine | PartOuterLine,
+        SudokuOuterVerticalLine = PartSudoku | PartVerticalLine | PartOuterLine,
+        SudokuGroupHorizontalLine = PartSudoku | PartHorizontalLine | PartGroupLine,
+        SudokuGroupVerticalLine = PartSudoku | PartVerticalLine | PartGroupLine,
+        SudokuCellHorizontalLine = PartSudoku | PartHorizontalLine | PartCellLine,
+        SudokuCellVerticalLine = PartSudoku | PartVerticalLine | PartCellLine,
+        SudokuGroup = PartSudoku | PartGroup,
+        SudokuCell = PartSudoku | PartCell,
+        SudokuSubCell = PartSudoku | PartSubCell
+
     }
     #endregion
 }

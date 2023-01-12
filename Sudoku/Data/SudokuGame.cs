@@ -16,8 +16,8 @@ namespace DjSoft.Games.Sudoku.Data
         /// </summary>
         public SudokuGame()
         {
-            __Cells = new Cell[9, 9];
-            __Groups = new Group[27];
+            __Cells = new Dictionary<Position, Cell>();
+            __Groups = new Dictionary<Position, Group>();
             __Rand = new Random();
             _InitCells();
         }
@@ -60,7 +60,7 @@ namespace DjSoft.Games.Sudoku.Data
                     sb.Append(column1);
                     for (int col = 0; col < 9; col++)
                     {
-                        sb.Append(cells[row, col].TextValue);
+                        sb.Append(this[row, col].TextValue);
                         sb.Append((col == 2 || col == 5) ? column2 : column1);
                     }
                     sb.AppendLine();
@@ -74,11 +74,18 @@ namespace DjSoft.Games.Sudoku.Data
         /// Buňky = mapa plochy.
         /// První index = řádek Row 0-8; Druhý index = sloupec Col 0-8;
         /// </summary>
-        public Cell[,] Cells { get { return __Cells; } } private Cell[,] __Cells;
+        public Dictionary<Position, Cell> Cells { get { return __Cells; } } private Dictionary<Position, Cell> __Cells;
+        /// <summary>
+        /// Buňka na dané adrese
+        /// </summary>
+        /// <param name="row"></param>
+        /// <param name="col"></param>
+        /// <returns></returns>
+        public Cell this[int row, int col] { get { return __Cells[new Position((UInt16)row, (UInt16)col)]; } }
         /// <summary>
         /// Grupy (řádky, sloupce, čtverce).
         /// </summary>
-        public Group[] Groups { get { return __Groups; } } private Group[] __Groups;
+        public Dictionary<Position, Group> Groups { get { return __Groups; } } private Dictionary<Position, Group> __Groups;
         /// <summary>
         /// Random
         /// </summary>
@@ -90,7 +97,10 @@ namespace DjSoft.Games.Sudoku.Data
         {
             for (ushort row = 0; row < 9; row++)
                 for (ushort col = 0; col < 9; col++)
-                    __Cells[row, col] = new Cell(this, row, col);
+                {
+                    var cell = new Cell(this, row, col);
+                    __Cells.Add(cell.CellPosition, cell);
+                }
             _InitGroups();
         }
         /// <summary>
@@ -110,7 +120,9 @@ namespace DjSoft.Games.Sudoku.Data
         }
         #region Vyhodnocování
         internal bool IsValidCell(Cell cell)
-        { }
+        {
+            return true;
+        }
 
         #endregion
         #region Text samples
@@ -148,9 +160,10 @@ namespace DjSoft.Games.Sudoku.Data
                 sb.Append(":");
                 for (int col = 0; col < 9; col++)
                 {
-                    var state = __Cells[row, col].State;
+                    var cell = this[row, col];
+                    var state = cell.State;
                     bool isFixed = (state == CellState.Fixed);
-                    int value = __Cells[row, col].Value;
+                    int value = cell.Value;
                     bool storeValue = (value > 0 && (!onlyFixed || (onlyFixed && isFixed)));
                     string text = (storeValue ? value.ToString().Substring(0, 1) : ".");
                     sb.Append(text);
@@ -187,7 +200,7 @@ namespace DjSoft.Games.Sudoku.Data
             int index = 0;
             for (int row = 0; row < 9; row++)
                 for (int col = 0; col < 9; col++)
-                    __Cells[row, col].SetFixedValue(values[index++]);
+                    this[row, col].SetFixedValue(values[index++]);
         }
         /// <summary>
         /// Vrať sample k testování
