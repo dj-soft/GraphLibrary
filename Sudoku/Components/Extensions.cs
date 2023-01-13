@@ -1,0 +1,98 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Drawing;
+
+namespace DjSoft.Games.Animated
+{
+    public static class Extensions
+    {
+        #region Point, Size, Rectangle
+        /// <summary>
+        /// Vrátí this rectangle posunutý o dodané hodnoty
+        /// </summary>
+        /// <param name="bounds"></param>
+        /// <param name="shiftByX"></param>
+        /// <param name="shiftByY"></param>
+        /// <returns></returns>
+        public static Rectangle ShiftBy(this Rectangle bounds, int shiftByX, int shiftByY)
+        {
+            return new Rectangle(bounds.X + shiftByX, bounds.Y + shiftByY, bounds.Width, bounds.Height);
+        }
+        /// <summary>
+        /// Vrátí this rectangle posunutý o dodané hodnoty
+        /// </summary>
+        /// <param name="bounds"></param>
+        /// <param name="shiftByX"></param>
+        /// <param name="shiftByY"></param>
+        /// <returns></returns>
+        public static RectangleF ShiftBy(this RectangleF bounds, float shiftByX, float shiftByY)
+        {
+            return new RectangleF(bounds.X + shiftByX, bounds.Y + shiftByY, bounds.Width, bounds.Height);
+        }
+        /// <summary>
+        /// Vrátí this rectangle posunutý o dodané hodnoty
+        /// </summary>
+        /// <param name="bounds"></param>
+        /// <param name="shiftBy"></param>
+        /// <returns></returns>
+        public static Rectangle ShiftBy(this Rectangle bounds, Point shiftBy)
+        {
+            return new Rectangle(bounds.X + shiftBy.X, bounds.Y + shiftBy.Y, bounds.Width, bounds.Height);
+        }
+        /// <summary>
+        /// Vrátí this rectangle posunutý o dodané hodnoty
+        /// </summary>
+        /// <param name="bounds"></param>
+        /// <param name="shiftBy"></param>
+        /// <returns></returns>
+        public static RectangleF ShiftBy(this RectangleF bounds, PointF shiftBy)
+        {
+            return new RectangleF(bounds.X + shiftBy.X, bounds.Y + shiftBy.Y, bounds.Width, bounds.Height);
+        }
+        /// <summary>
+        /// Vrátí this rectangle posunutý o dodané hodnoty
+        /// </summary>
+        /// <param name="bounds"></param>
+        /// <param name="shiftBy"></param>
+        /// <returns></returns>
+        public static Rectangle ShiftBy(this Rectangle bounds, Size shiftBy)
+        {
+            return new Rectangle(bounds.X + shiftBy.Width, bounds.Y + shiftBy.Height, bounds.Width, bounds.Height);
+        }
+        /// <summary>
+        /// Vrátí this rectangle posunutý o dodané hodnoty
+        /// </summary>
+        /// <param name="bounds"></param>
+        /// <param name="shiftBy"></param>
+        /// <returns></returns>
+        public static RectangleF ShiftBy(this RectangleF bounds, SizeF shiftBy)
+        {
+            return new RectangleF(bounds.X + shiftBy.Width, bounds.Y + shiftBy.Height, bounds.Width, bounds.Height);
+        }
+
+        /// <summary>
+        /// Vrátí this rectangle vynásobený 've všech hodnotách) daným Zoomem
+        /// </summary>
+        /// <param name="bounds"></param>
+        /// <param name="zoom"></param>
+        /// <returns></returns>
+        public static Rectangle Zoom(this Rectangle bounds, float zoom)
+        {
+            return Rectangle.Round(Zoom((RectangleF)bounds, zoom));
+        }
+        /// <summary>
+        /// Vrátí this rectangle vynásobený 've všech hodnotách) daným Zoomem
+        /// </summary>
+        /// <param name="bounds"></param>
+        /// <param name="zoom"></param>
+        /// <returns></returns>
+        public static RectangleF Zoom(this RectangleF bounds, float zoom)
+        {
+            return new RectangleF(zoom * bounds.X, zoom * bounds.Y, zoom * bounds.Width, zoom * bounds.Height);
+        }
+        #endregion
+    }
+}

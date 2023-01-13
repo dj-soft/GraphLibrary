@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace DjSoft.Games.Sudoku.Data
+namespace DjSoft.Games.Animated.Data
 {
     /// <summary>
     /// Přesná časomíra s možností milisekund na více desetinných míst

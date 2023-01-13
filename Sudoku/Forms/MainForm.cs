@@ -8,7 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
-namespace DjSoft.Games.Sudoku
+namespace DjSoft.Games.Animated
 {
     public partial class MainForm : Form
     {
@@ -24,7 +24,6 @@ namespace DjSoft.Games.Sudoku
             Controls.Add(__ContentPanel);
 
             __MenuPanel = new Panel() { Height = 78, Dock = DockStyle.Top };
-            __MenuPanel.ClientSizeChanged += _MenuSizeChanged;
             Controls.Add(__MenuPanel);
 
             int x = 1;
@@ -34,6 +33,9 @@ namespace DjSoft.Games.Sudoku
 
             _ContentClear();
             _DoLayout();
+
+            __MenuPanel.ClientSizeChanged += _MenuSizeChanged;
+            this.ClientSizeChanged += _MenuSizeChanged;
         }
         private void _MenuSizeChanged(object sender, EventArgs e)
         {
@@ -74,7 +76,7 @@ namespace DjSoft.Games.Sudoku
         private void _AddContent(Control control)
         {
             __ContentPanel.Controls.Add(control);
-            __ClearButton.Image = DjSoft.Games.Sudoku.Properties.Resources.Gloss_PNGStandby;
+            __ClearButton.Image = DjSoft.Games.Animated.Properties.Resources.Gloss_PNGStandby;
             __ClearButton.Text = "Clear";
             _HasContent = true;
         }
@@ -94,7 +96,7 @@ namespace DjSoft.Games.Sudoku
         private void _ClearCreateButton(ref int x)
         {
             x += 50;
-            __ClearButton = _CreateMenuButton(ref x, "Clear", DjSoft.Games.Sudoku.Properties.Resources.Gloss_PNGShutdown_Quit_Dock, _ClearClick);
+            __ClearButton = _CreateMenuButton(ref x, "Clear", DjSoft.Games.Animated.Properties.Resources.Gloss_PNGShutdown_Quit_Dock, _ClearClick);
         }
         private void _ClearClick(object sender, EventArgs args)
         {
@@ -109,7 +111,7 @@ namespace DjSoft.Games.Sudoku
             __ContentPanel.Controls.Clear();
             _SnakeRemove();
             _SudokuRemove();
-            __ClearButton.Image = DjSoft.Games.Sudoku.Properties.Resources.Gloss_PNGShutdown_Quit_Dock;
+            __ClearButton.Image = DjSoft.Games.Animated.Properties.Resources.Gloss_PNGShutdown_Quit_Dock;
             __ClearButton.Text = "Exit";
             _HasContent = false;
         }
@@ -118,13 +120,13 @@ namespace DjSoft.Games.Sudoku
         #region Snake
         private void _SnakeCreateButton(ref int x)
         {
-            __SnakeButton = _CreateMenuButton(ref x, "Snake", DjSoft.Games.Sudoku.Properties.Resources.macromedia_luiscds_dreamweaver2004_128, _SnakeClick);
+            __SnakeButton = _CreateMenuButton(ref x, "Snake", DjSoft.Games.Animated.Properties.Resources.macromedia_luiscds_dreamweaver2004_128, _SnakeClick);
         }
         private void _SnakeClick(object sender, EventArgs args)
         {
             _ContentClear();
             _HighlightButton(__SnakeButton);
-            __SnakeControl = new Components.SnakeControl() { Dock = DockStyle.Fill };
+            __SnakeControl = new Snake.SnakeControl() { Dock = DockStyle.Fill };
             _AddContent(__SnakeControl);
         }
         private void _SnakeRemove()
@@ -133,18 +135,18 @@ namespace DjSoft.Games.Sudoku
             __SnakeControl = null;
         }
         Button __SnakeButton;
-        Components.SnakeControl __SnakeControl;
+        Snake.SnakeControl __SnakeControl;
         #endregion
         #region Sudoku
         private void _SudokuCreateButton(ref int x)
         {
-            __SudokuButton = _CreateMenuButton(ref x, "Sudoku", DjSoft.Games.Sudoku.Properties.Resources.macromedia_luiscds_course_builder128x128, _SudokuClick);
+            __SudokuButton = _CreateMenuButton(ref x, "Sudoku", DjSoft.Games.Animated.Properties.Resources.macromedia_luiscds_course_builder128x128, _SudokuClick);
         }
         private void _SudokuClick(object sender, EventArgs args)
         {
             _ContentClear();
             _HighlightButton(__SudokuButton);
-            __SudokuControl = new Components.SudokuControl() { Dock = DockStyle.Fill };
+            __SudokuControl = new Sudoku.SudokuControl() { Dock = DockStyle.Fill };
             _AddContent(__SudokuControl);
         }
         private void _SudokuRemove()
@@ -153,7 +155,7 @@ namespace DjSoft.Games.Sudoku
             __SudokuControl = null;
         }
         Button __SudokuButton;
-        Components.SudokuControl __SudokuControl;
+        Sudoku.SudokuControl __SudokuControl;
         #endregion
         #region Windows Form Designer generated code
         /// <summary>

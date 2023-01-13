@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace DjSoft.Games.Sudoku.Properties {
+namespace DjSoft.Games.Animated.Properties {
     using System;
     
     

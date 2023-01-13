@@ -7,7 +7,7 @@ using System.Windows.Forms;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 
-namespace DjSoft.Games.Sudoku.Components
+namespace DjSoft.Games.Animated.Components
 {
     /// <summary>
     /// Sestava více vrstev bufferů grafiky.

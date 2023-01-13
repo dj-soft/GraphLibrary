@@ -8,7 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
-namespace DjSoft.Games.Sudoku.Components
+namespace DjSoft.Games.Animated.Components
 {
     /// <summary>
     /// Třída, poskytující služby pro animaci = změnu vlastností v čase.
@@ -128,7 +128,7 @@ namespace DjSoft.Games.Sudoku.Components
             try
             {
                 long tick = 0L;
-                bool isDiagnosticActive = Data.AppService.IsDiagnosticActive;
+                bool isDiagnosticActive = AppService.IsDiagnosticActive;
                 StringBuilder sbLog = null;
                 if (isDiagnosticActive)
                 {

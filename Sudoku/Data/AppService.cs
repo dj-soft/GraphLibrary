@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace DjSoft.Games.Sudoku.Data
+namespace DjSoft.Games.Animated
 {
     public class AppService
     {

@@ -5,8 +5,9 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Drawing;
 using System.Windows.Forms;
+using DjSoft.Games.Animated.Components;
 
-namespace DjSoft.Games.Sudoku.Components
+namespace DjSoft.Games.Animated.Sudoku
 {
     /// <summary>
     /// Control pro zobrazení Sudoku
@@ -45,10 +46,10 @@ namespace DjSoft.Games.Sudoku.Components
         #region Hra = datová instance a interakce s ní, a konfigurace
         private void _InitGame()
         {
-            __SudokuGame = new Data.SudokuGame();
+            __SudokuGame = new SudokuGame();
             __Configuration = SudokuConfiguration.Default;
         }
-        public Data.SudokuGame SudokuGame { get { return __SudokuGame; } set { __SudokuGame = value; _LinkComponents(); } } private Data.SudokuGame __SudokuGame;
+        public SudokuGame SudokuGame { get { return __SudokuGame; } set { __SudokuGame = value; _LinkComponents(); } } private SudokuGame __SudokuGame;
         public SudokuConfiguration Configuration { get { return __Configuration; } set { __Configuration = value; _LinkComponents(); } } private SudokuConfiguration __Configuration;
         #endregion
         #region Vizuální kabát = Theme
@@ -105,14 +106,25 @@ namespace DjSoft.Games.Sudoku.Components
         protected override void DoPaintBackground(LayeredPaintEventArgs args)
         {
             base.DoPaintBackground(args, Theme.BackColor);
+
+            args.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+            var theme = Theme;
+            var coords = __Coordinates;
+            args.Graphics.FillRectangle(_Brush(theme.GameBackColor), coords.GameBounds);
+            var brush = _Brush(Color.Lime);
+            foreach (var item in this.__Coordinates.BackgroundItems)
+                args.Graphics.FillRectangle(brush, item.BoundsAbsolute);
+
         }
         protected override void DoPaintStandard(LayeredPaintEventArgs args)
         {
             var theme = Theme;
             var coords = __Coordinates;
-            args.Graphics.FillRectangle(_Brush(theme.GameBackColor), coords.GameBounds);
             args.Graphics.FillRectangle(_Brush(theme.ControlBackColor), coords.ControlBounds);
         }
+
+
+
         private SolidBrush _Brush(Color color)
         {
             if (__SolidBrush is null) __SolidBrush = new SolidBrush(color);
@@ -144,12 +156,12 @@ namespace DjSoft.Games.Sudoku.Components
         /// <summary>
         /// Aktuální hra
         /// </summary>
-        public Data.SudokuGame SudokuGame { get { return __SudokuGame; } set { _SetSudokuGame(value); } } private Data.SudokuGame __SudokuGame;
+        public SudokuGame SudokuGame { get { return __SudokuGame; } set { _SetSudokuGame(value); } } private SudokuGame __SudokuGame;
         /// <summary>
         /// Vloží dodanou hru.
         /// </summary>
         /// <param name="sudokuGame"></param>
-        private void _SetSudokuGame(Data.SudokuGame sudokuGame)
+        private void _SetSudokuGame(SudokuGame sudokuGame)
         {
             __SudokuGame = sudokuGame;
             __SudokuGameIsChanged = true;
@@ -186,17 +198,36 @@ namespace DjSoft.Games.Sudoku.Components
             if (!__IsSuspended)
                 _SetAllBounds();
         }
+        /// <summary>
+        /// Zajistí překreslení daných vrstev
+        /// </summary>
+        /// <param name="repaintBackgroundLayer"></param>
+        /// <param name="repaintStardardLayer"></param>
+        /// <param name="repaintOverlayLayer"></param>
+        private void _RepaintOwner(bool repaintBackgroundLayer, bool repaintStardardLayer, bool repaintOverlayLayer = false)
+        {
+            if (repaintBackgroundLayer) __Owner.LayerBackgroundValid = false;
+            if (repaintStardardLayer) __Owner.LayerBackgroundValid = false;
+            if (repaintOverlayLayer) __Owner.LayerOverlayValid = false;
+        }
         #region Prvky SudokuItem - jejich prvotní vytvoření
         /// <summary>
-        /// Vizuální a interaktivní prvky
+        /// Interaktivní prvky - obsahuje pouze Root prvky, které mají navazující prvky ve svém poli Childs, a které mohou být interaktivní (prvky hry a controly)
         /// </summary>
-        public IReadOnlyList<SudokuItem> Items { get { return __Items; } }
+        public IReadOnlyList<SudokuItem> InteractiveItems { get { return __InteractiveItems; } }
+        /// <summary>
+        /// Prvky kreslené na pozadí - pole prvků kreslených na pozadí, nemají vnitřní Childs, jejich vzhled se interaktivně nijak často nemění (rámečky)
+        /// </summary>
+        public IReadOnlyList<SudokuItem> BackgroundItems { get { return __BackgroundItems; } }
         /// <summary>
         /// Vytvoří pole prvků a naplní jej, jedenkrát v konstruktoru
         /// </summary>
         private void _CreateSudokuItems()
         {
-            __Items = new List<SudokuItem>();
+            __InteractiveItems = new List<SudokuItem>();
+            __BackgroundItems = new List<SudokuItem>();
+            __AllItems = new List<SudokuItem>();
+
             _AddSudokuGameItems();
             _AddSudokuControlItems();
         }
@@ -217,32 +248,28 @@ namespace DjSoft.Games.Sudoku.Components
             addLines(0, SudokuItemType.PartOuterLine);
             addLines(9, SudokuItemType.PartOuterLine);
 
-            // Vygeneruje definice pro všechny grupy:
-            for (int row = 0; row < 3; row++)
-                for (int col = 0; col < 3; col++)
-                    addItem(row, col, SudokuItemType.GameGroup);
-
-            // Vygeneruje definice pro všechny buňky včetně SubValue:
-            for (int row = 0; row < 9; row++)
-                for (int col = 0; col < 9; col++)
+            // Vygeneruje definice pro všechny grupy + cell + subCell, hierarchicky:
+            for (int gRow = 0; gRow < 3; gRow++)
+                for (int gCol = 0; gCol < 3; gCol++)
                 {
-                    addItem(row, col, SudokuItemType.GameCell);
-                    for (int sub = 1; sub <= 9; sub++)
-                        addItem(row, col, SudokuItemType.GameSubCell, sub);
+                    var group = _AddOneItem(gRow, gCol, SudokuItemType.GameGroup, false);                        // Group nemá parenta = je Root
+                    // Buňky jedné grupy (3x3):
+                    for (int cr = 0; cr < 3; cr++)
+                        for (int cc = 0; cc < 3; cc++)
+                        {
+                            int cRow = 3 * gRow + cr;
+                            int cCol = 3 * gCol + cc;
+                            var cell = _AddOneItem(cRow, cCol, SudokuItemType.GameCell, false, null, group);     // Cell se ukládá do parenta = Group
+                            for (int sub = 1; sub <= 9; sub++)
+                                _AddOneItem(cRow, cCol, SudokuItemType.GameSubCell, false, sub, cell);           // SubCell se ukládá do parenta = Cell
+                        }
                 }
 
             // Přidá prvky (PartHorizontalLine a PartVerticalLine) pro linku na dané pozici a daného typu
             void addLines(int pos, SudokuItemType lineType)
             {
-                addItem(pos, 0, SudokuItemType.PartGame | lineType | SudokuItemType.PartHorizontalLine);
-                addItem(0, pos, SudokuItemType.PartGame | lineType | SudokuItemType.PartVerticalLine);
-            }
-
-            // Přidá prvek na dané souřadnici, daného typu a subValue
-            void addItem(int row, int col, SudokuItemType itemType, int? itemSubValue = null)
-            {
-                SudokuItem item = new SudokuItem(this.__Owner, new Data.Position((UInt16)row, (UInt16)col), itemType, itemSubValue);
-                __Items.Add(item);
+                _AddOneItem(pos, 0, SudokuItemType.PartGame | lineType | SudokuItemType.PartHorizontalLine, true);
+                _AddOneItem(0, pos, SudokuItemType.PartGame | lineType | SudokuItemType.PartVerticalLine, true);
             }
         }
         /// <summary>
@@ -252,8 +279,41 @@ namespace DjSoft.Games.Sudoku.Components
         {
 
         }
-        /// <summary>Vizuální a interaktivní prvky</summary>
-        private List<SudokuItem> __Items;
+        /// <summary>
+        /// Přidá prvek na dané pozici, daného typu a subValue
+        /// </summary>
+        /// <param name="row"></param>
+        /// <param name="col"></param>
+        /// <param name="itemType"></param>
+        /// <param name="isBackground"></param>
+        /// <param name="itemSubValue"></param>
+        /// <param name="parent"></param>
+        /// <returns></returns>
+        private SudokuItem _AddOneItem(int row, int col, SudokuItemType itemType, bool isBackground, int? itemSubValue = null, SudokuItem parent = null)
+        {
+            SudokuItem item = new SudokuItem(this.__Owner, new Position((UInt16)row, (UInt16)col), itemType, itemSubValue);
+
+            if (parent is null)
+            {   // Prvek nemá parenta, musím jej dát do Background nebo Interactive:
+                if (isBackground)
+                    __BackgroundItems.Add(item);
+                else
+                    __InteractiveItems.Add(item);
+            }
+            else
+                parent.AddChild(item);
+
+            // Všechny prvky vložím do __AllItems, pro jejich jednoduché procházení při výpočtu souřadnic:
+            __AllItems.Add(item);
+
+            return item;
+        }
+        /// <summary>Interaktivní prvky - obsahuje pouze Root prvky, které mají navazující prvky ve svém poli Childs, a které mohou být interaktivní (prvky hry a controly)</summary>
+        private List<SudokuItem> __InteractiveItems;
+        /// <summary>Prvky kreslené na pozadí - pole prvků kreslených na pozadí, nemají vnitřní Childs, jejich vzhled se interaktivně nijak často nemění (rámečky)</summary>
+        private List<SudokuItem> __BackgroundItems;
+        /// <summary>Lineární pole obsahující všechny prvky (<see cref="__InteractiveItems"/> + všechy jejich Child prvky) + <see cref="__BackgroundItems"/>, v jedné úrovni, aby nebylo nutno procházet rekurzivně</summary>
+        private List<SudokuItem> __AllItems;
         #endregion
         #region Napojení na hru
         private void _LinkSudokuGame()
@@ -294,6 +354,10 @@ namespace DjSoft.Games.Sudoku.Components
         }
         /// <summary>Obsahuje hash získaný z Theme <see cref="SudokuSkinTheme.SizeHash"/>, pro který je aktuálně spočítaný relativní souřadný systém</summary>
         private string __ThemeSizeHashCurrent;
+        /// <summary>
+        /// Velikost hry v relativnísh souřadnicích = do tohoto prostoru jsou umístěny prvky Items a jejich <see cref="SudokuItem.BoundsRelative"/>.
+        /// </summary>
+        private SizeF __RelativeGameSize;
         /// <summary>Obsahuje hash získaný z <see cref="ControlSize"/> controlu, pro který je aktuálně spočítaný absolutní souřadný systém</summary>
         private string __ControlSizeHashCurrent;
         /// <summary>Obsahuje true po změně objektů, které mají vliv na souřadnice, řeší se v <see cref="_ResumeCoordinates"/></summary>
@@ -307,31 +371,78 @@ namespace DjSoft.Games.Sudoku.Components
         {
             // Rozpočet velikostí vychází z hodnot v theme:
             var sizes = theme.RelativeSizes;
-            var cellPositions = theme.CellSizePositions;
-            var subSizes = theme.RelativeSubSizes;
+            var groupIndexes = theme.GroupSizeIndexes;
+            var cellIndexes = theme.CellSizeIndexes;
+            var lineIndexes = theme.LineSizeIndexes;
+            var subCellBounds = theme.RelativeSubCellBounds;
 
-            foreach (var item in this.__Items)
-                item.BoundsRelative = getRelativeBounds(item);
+            foreach (var i in this.__AllItems)
+                setRelativeBoundsItem(i);
 
-            RectangleF getRelativeBounds(SudokuItem item)
+            // Uložíme si souřadnici posledního bodu pole velikostí (Begin + Size) jako relativní velikost hry:
+            var last = sizes[sizes.Length - 1];
+            float size = last.Item1 + last.Item2;
+            __RelativeGameSize = new SizeF(size, size);
+
+            void setRelativeBoundsItem(SudokuItem item)
             {
                 var itemType = item.ItemType;
-                if (itemType.HasFlag(SudokuItemType.PartCell))
-                    getRelativeBoundsCell(item, null);
-                if (itemType.HasFlag(SudokuItemType.PartSubCell))
-                    getRelativeBoundsCell(item, item.ItemSubValue);
-
-                return RectangleF.Empty;
+                if (itemType.HasFlag(SudokuItemType.PartHorizontalLine))
+                    setRelativeBoundsHLine(item);
+                else if (itemType.HasFlag(SudokuItemType.PartVerticalLine))
+                    setRelativeBoundsVLine(item);
+                else if (itemType.HasFlag(SudokuItemType.PartGroup))
+                    setRelativeBoundsGroup(item);
+                else if (itemType.HasFlag(SudokuItemType.PartCell))
+                    setRelativeBoundsCell(item, null);
+                else if (itemType.HasFlag(SudokuItemType.PartSubCell))
+                    setRelativeBoundsCell(item, item.ItemSubValue);
             }
-            RectangleF getRelativeBoundsCell(SudokuItem item, int? subValue)
+            void setRelativeBoundsHLine(SudokuItem item)
+            {   // Horizontální = vodorovná linka:
+                var begin = sizes[lineIndexes[0]];         // Na této souřadnici VLEVO začínají všechny linky (vnější na začátku, vnitřní na konci)
+                var end = sizes[lineIndexes[9]];           // Na této souřadnici VPRAVO končí všechny linky   (vnější na konci, vnitřní na začátku)
+                var idx = item.ItemPosition.Row;           // Index řádky
+                var line = sizes[lineIndexes[idx]];        // Pozice řádky, ve směru Y
+                bool isOuter = item.ItemType.HasFlag(SudokuItemType.PartOuterLine);
+                var boundsRelative = (isOuter ?
+                    new RectangleF(begin.Item1, line.Item1, end.Item1 + end.Item2, line.Item2) :
+                    new RectangleF(begin.Item1 + begin.Item2, line.Item1, end.Item1 - (begin.Item1 + begin.Item2), line.Item2));
+                item.BoundsRelative = boundsRelative;
+            }
+            void setRelativeBoundsVLine(SudokuItem item)
+            {   // Vertikální = svislá linka:
+                var begin = sizes[lineIndexes[0]];         // Na této souřadnici NAHOŘE začínají všechny linky (vnější na začátku, vnitřní na konci)
+                var end = sizes[lineIndexes[9]];           // Na této souřadnici DOLE končí všechny linky      (vnější na konci, vnitřní na začátku)
+                var idx = item.ItemPosition.Col;           // Index sloupce
+                var line = sizes[lineIndexes[idx]];        // Pozice sloupce, ve směru X
+                bool isOuter = item.ItemType.HasFlag(SudokuItemType.PartOuterLine);
+                var boundsRelative = (isOuter ?
+                    new RectangleF(line.Item1, begin.Item1, line.Item2, end.Item1 + end.Item2) :
+                    new RectangleF(line.Item1, begin.Item1 + begin.Item2, line.Item2, end.Item1 - (begin.Item1 + begin.Item2)));
+                item.BoundsRelative = boundsRelative;
+            }
+            void setRelativeBoundsGroup(SudokuItem item)
             {
                 var row = item.ItemPosition.Row;
                 var col = item.ItemPosition.Col;
-                var cx = sizes[cellPositions[col]];
-                var cy = sizes[cellPositions[row]];
-                RectangleF cellBounds = new RectangleF(cx.Item1, cy.Item1, cx.Item2, cy.Item2);
+                var cx = sizes[groupIndexes[col]];
+                var cy = sizes[groupIndexes[row]];
+                var boundsRelative = new RectangleF(cx.Item1, cy.Item1, cx.Item2, cy.Item2);
+                item.BoundsRelative = boundsRelative;
+            }
+            void setRelativeBoundsCell(SudokuItem item, int? subValue)
+            {
+                var row = item.ItemPosition.Row;
+                var col = item.ItemPosition.Col;
+                var cx = sizes[cellIndexes[col]];          // col obsahuje číslo sloupce 0-8; pole cellIndexes obsahuje 9 prvků, kde odpovídající prvek obsahuje index do pole sizes, ...
+                var cy = sizes[cellIndexes[row]];          // row stejně tak :                   ... kde jsou konkrétní souřadnice daného prvku (Cell daného čísla)
+                var boundsRelative = new RectangleF(cx.Item1, cy.Item1, cx.Item2, cy.Item2);      // Relativní souřadnice
 
-                return cellBounds;
+                if (subValue.HasValue)
+                    boundsRelative = subCellBounds[subValue.Value - 1].ShiftBy(boundsRelative.Location);
+
+                item.BoundsRelative = boundsRelative;
             }
         }
         #endregion
@@ -345,6 +456,7 @@ namespace DjSoft.Games.Sudoku.Components
             _SetBasicBounds(size);
             _SetAbsoluteGameBounds();
             _SetAbsoluteControlBounds();
+            _RepaintOwner(true, true);
         }
         /// <summary>
         /// Rozmístí souřadnice <see cref="GameBounds"/> a <see cref="ControlBounds"/> do daného prostoru. 
@@ -377,10 +489,33 @@ namespace DjSoft.Games.Sudoku.Components
             float cy = yb + ((bh - cs) / 2f);
             ControlBounds = new RectangleF(cx, cy, controlRatio * cs, cs);
         }
-        private void _SetAbsoluteGameBounds() { }
-        private void _SetAbsoluteControlBounds() { }
+        /// <summary>
+        /// Umístí všechny controly patřící k Game do fyzického prostoru = nastaví jejich <see cref="SudokuItem.BoundsAbsolute"/>
+        /// </summary>
+        private void _SetAbsoluteGameBounds()
+        {
+            var virtualSize = this.__RelativeGameSize.Width;
+            if (virtualSize <= 10f) return;
+            var targetBounds = this.GameBounds;
+            var origin = (PointF)targetBounds.Location;
+            var zoom = (float)targetBounds.Width / virtualSize;
 
+            foreach (var i in this.__AllItems.Where(i => i.ItemType.HasFlag(SudokuItemType.PartGame)))
+                setAbsoluteBoundsItem(i);
+
+            void setAbsoluteBoundsItem(SudokuItem item)
+            {
+                item.BoundsAbsolute = item.BoundsRelative.Zoom(zoom).ShiftBy(origin);
+            }
+        }
+        private void _SetAbsoluteControlBounds() { }
+        /// <summary>
+        /// Prostor, kde je kreslena Game. Jeho šířka == výška = vždy jde o čtverec.
+        /// </summary>
         public RectangleF GameBounds { get; private set; }
+        /// <summary>
+        /// Prostor kde jsou kresleny Controls
+        /// </summary>
         public RectangleF ControlBounds { get; private set; }
         #endregion
         #endregion
@@ -678,10 +813,27 @@ namespace DjSoft.Games.Sudoku.Components
             }
         }
         /// <summary>
-        /// Obsahuje indexy buněk pole <see cref="RelativeSizes"/>, na kterých se nachází buňky Cell[0] ÷ Cell[8]. Pole tedy má 9 prvků.
-        /// Tedy: souřadnice buňky v řádku 3 najdeme v <see cref="RelativeSizes"/> na indexu <see cref="CellSizePositions"/>[3].
+        /// Obsahuje indexy buněk pole <see cref="RelativeSizes"/>, na kterých se nachází grupy Group[0] ÷ Group[2]. 
+        /// Pole tedy má 3 prvky a slouží jako ukazatel do pole <see cref="RelativeSizes"/>.
+        /// Tedy: souřadnice grupy 1 najdeme v <see cref="RelativeSizes"/> na indexu <see cref="GroupSizeIndexes"/>[1].
         /// </summary>
-        public int[] CellSizePositions
+        public int[] GroupSizeIndexes
+        {
+            get
+            {
+                List<int> result = new List<int>();
+                result.Add(01);
+                result.Add(08);
+                result.Add(15);
+                return result.ToArray();
+            }
+        }
+        /// <summary>
+        /// Obsahuje indexy buněk pole <see cref="RelativeSizes"/>, na kterých se nachází buňky Cell[0] ÷ Cell[8].
+        /// Pole tedy má 9 prvků a slouží jako ukazatel do pole <see cref="RelativeSizes"/>.
+        /// Tedy: souřadnice buňky v řádku 3 najdeme v <see cref="RelativeSizes"/> na indexu <see cref="CellSizeIndexes"/>[3].
+        /// </summary>
+        public int[] CellSizeIndexes
         {
             get
             {
@@ -699,32 +851,57 @@ namespace DjSoft.Games.Sudoku.Components
             }
         }
         /// <summary>
-        /// Relativní souřadnice jednotlivých SubCells
+        /// Obsahuje indexy buněk pole <see cref="RelativeSizes"/>, na kterých se nachází souřadnice linek v pořadí Outer - Cell - Cell - Group - Cell - Cell - Group - Cell - Cell - Outer.
+        /// Pole tedy má 10 prvků a slouží jako ukazatel do pole <see cref="RelativeSizes"/>.
+        /// Tedy: souřadnice linky mezi grupou 1 a 2 v <see cref="RelativeSizes"/> na indexu <see cref="LineSizeIndexes"/>[6].
         /// </summary>
-        public Tuple<float, float>[] RelativeSubSizes
+        public int[] LineSizeIndexes
         {
             get
             {
-                List<Tuple<float, float>> result = new List<Tuple<float, float>>();
-
-                var cs = CellSize;
-                var ss = cs / 3f;
-                float position = 0f;
-
-                add(ref position, ss, ss);                 // [00] = SubCell 0
-                add(ref position, ss, ss);                 // [00] = SubCell 1
-                add(ref position, ss, ss);                 // [00] = SubCell 2
-
+                List<int> result = new List<int>();
+                result.Add(00);                  // Outer
+                result.Add(03);                  // Cell
+                result.Add(05);                  // Cell
+                result.Add(07);                  // Group
+                result.Add(10);                  // Cell
+                result.Add(12);                  // Cell
+                result.Add(14);                  // Group
+                result.Add(17);                  // Cell
+                result.Add(19);                  // Cell
+                result.Add(21);                  // Outer
+                return result.ToArray();
+            }
+        }
+        /// <summary>
+        /// Relativní souřadnice jednotlivých SubCells.
+        /// Pole má 9 prvků na indexech 0-8, pro hodnotu SubValue 1-9.
+        /// Hodnota je relativní souřadnice SubCell v rámci Cell, je třeba ji tedy do konkrétní SubCell přemístit o počátek konkrétní buňky.
+        /// </summary>
+        public RectangleF[] RelativeSubCellBounds
+        {
+            get
+            {
+                List<RectangleF> result = new List<RectangleF>();
+                var subSize = CellSize / 3f;
+                addResult(0f, 0f);               // Pozice hodnoty 1
+                addResult(1f, 0f);               // Pozice hodnoty 2
+                addResult(2f, 0f);               // Pozice hodnoty 3
+                addResult(0f, 1f);               // Pozice hodnoty 4
+                addResult(1f, 1f);               // Pozice hodnoty 5
+                addResult(2f, 1f);               // Pozice hodnoty 6
+                addResult(0f, 2f);               // Pozice hodnoty 7
+                addResult(1f, 2f);               // Pozice hodnoty 8
+                addResult(2f, 2f);               // Pozice hodnoty 9
                 return result.ToArray();
 
-                // Do pole 'result' přidá nový prvek, kde Item1 = ref 'p' a Item2 = 'size', a poté k 'p' přičte 'shift'.
-                void add(ref float p, float size, float shift)
+                void addResult(float rx, float ry)
                 {
-                    result.Add(new Tuple<float, float>(p, size));
-                    p += shift;
+                    result.Add(new RectangleF(rx * subSize, ry * subSize, subSize, subSize));
                 }
             }
         }
+
         public Color GetBackColor(SudokuItemType itemType)
         {
             if (itemType.HasFlag(SudokuItemType.PartGame))
@@ -751,7 +928,14 @@ namespace DjSoft.Games.Sudoku.Components
     /// </summary>
     public class SudokuItem
     {
-        public SudokuItem(SudokuControl owner, Data.Position itemPosition, SudokuItemType itemType, int? itemSubValue)
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="owner"></param>
+        /// <param name="itemPosition"></param>
+        /// <param name="itemType"></param>
+        /// <param name="itemSubValue"></param>
+        public SudokuItem(SudokuControl owner, Position itemPosition, SudokuItemType itemType, int? itemSubValue)
         {
             __Owner = owner;
             __ItemPosition = itemPosition;
@@ -764,8 +948,10 @@ namespace DjSoft.Games.Sudoku.Components
         /// <returns></returns>
         public override string ToString()
         {
-            string text = $"ItemType: {ItemType}; Position: {ItemPosition};";
-            if (ItemSubValue.HasValue) text += $" SubValue: {ItemSubValue}";
+            string text = $"ItemType: {ItemType}; Position: {ItemPosition}";
+            if (ItemSubValue.HasValue) text += $"; SubValue: {ItemSubValue}";
+            if (HasChilds) text += $"; Childs: {__Childs.Count}";
+            text += $"; BoundsRelative: {BoundsRelative}";
             return text;
         }
         private readonly SudokuControl __Owner;
@@ -776,11 +962,40 @@ namespace DjSoft.Games.Sudoku.Components
         /// <summary>
         /// Pozice prvku = adresa (buňky, grupy, linie)
         /// </summary>
-        public Data.Position ItemPosition { get { return __ItemPosition; } } private readonly Data.Position __ItemPosition;
+        public Position ItemPosition { get { return __ItemPosition; } } private readonly Position __ItemPosition;
         /// <summary>
         /// Hodnota SubValue = hint
         /// </summary>
         public int? ItemSubValue { get { return __ItemSubValue; } } private readonly int? __ItemSubValue;
+        /// <summary>
+        /// Prvky, nacházející se uvnitř prostoru this prvku.
+        /// Jde tedy výhradně o řetěz: Grupa -- Cell -- SubCell.
+        /// Prvky se přidávají metodou <see cref="AddChild(SudokuItem)"/>.
+        /// Dokud nebude přidán první Child, je zde null. Lze testovat existenci Child v property <see cref="HasChilds"/>.
+        /// <para/>
+        /// <u>Zásadní upozornění:</u><br/>
+        /// <list type="bullet">
+        /// <item>Souřadnice Child prvku <see cref="BoundsRelative"/> i <see cref="BoundsAbsolute"/> jsou v koordinátech controlu, nikoli parenta. <br/>
+        /// Protože se hledá i kreslí v souřadnicích Controlu.</item>
+        /// <item>Child prvek neobsahuje referenci na Parent prvek.<br/>
+        /// Protože ji k ničemu nepotřebuje.</item>
+        /// </list>
+        /// </summary>
+        public SudokuItem[] Childs { get { return __Childs?.ToArray(); } } private List<SudokuItem> __Childs;
+        /// <summary>
+        /// Obsahuje true, pokud this prvek má nejméně jedno <see cref="Childs"/>
+        /// </summary>
+        public bool HasChilds { get { return (__Childs != null && __Childs.Count > 0); } }
+        /// <summary>
+        /// Přidá daný prvek
+        /// </summary>
+        /// <param name="child"></param>
+        public void AddChild(SudokuItem child)
+        {
+            if (child is null) return;
+            if (__Childs is null) __Childs = new List<SudokuItem>();
+            __Childs.Add(child);
+        }
         /// <summary>
         /// Pozice relativní v rastru, kde jedna buňka má rozměr 100 x 100.
         /// Je vypočtena po změně rozměrových hodnot v <see cref="SudokuSkinTheme"/>.

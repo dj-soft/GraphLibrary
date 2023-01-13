@@ -5,8 +5,9 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Drawing;
 using System.Windows.Forms;
+using DjSoft.Games.Animated.Components;
 
-namespace DjSoft.Games.Sudoku.Components
+namespace DjSoft.Games.Animated.Snake
 {
     public class SnakeControl : AnimatedControl
     {
@@ -131,7 +132,7 @@ namespace DjSoft.Games.Sudoku.Components
         {
             __Owner = owner;
             _BgrValueSet = CreateBgrColorSet(out var backColor);
-            __IsDiagnosticActive = Data.AppService.IsDiagnosticActive;
+            __IsDiagnosticActive = AppService.IsDiagnosticActive;
             _AnimeBgrTick = 0;
             _AnimeBgrTime = 0d;
             _AnimeBgrLog = "";
