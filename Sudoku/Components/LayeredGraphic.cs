@@ -589,6 +589,7 @@ namespace DjSoft.Games.Animated.Components
         }
         void IDisposable.Dispose()
         {
+            _DisposeTools();
             __Graphics = null;
         }
         private Graphics __Graphics;
@@ -605,6 +606,49 @@ namespace DjSoft.Games.Animated.Components
         /// Byla použita grafika <see cref="Graphics"/>?
         /// </summary>
         public bool IsGraphicsUsed { get { return __IsGraphicsUsed; } } private bool __IsGraphicsUsed;
+
+        #region Příruční nářadí
+        /// <summary>
+        /// Vrátí příruční pero
+        /// </summary>
+        /// <param name="color"></param>
+        /// <param name="width"></param>
+        /// <returns></returns>
+        public Pen GetPen(Color color, float? width = null)
+        {
+            if (__Pen is null)
+                __Pen = new Pen(color);
+            else
+                __Pen.Color = color;
+            __Pen.Width = (width ?? 1f);
+            return __Pen;
+        }
+        /// <summary>
+        /// Vrátí příruční štětec
+        /// </summary>
+        /// <param name="color"></param>
+        /// <returns></returns>
+        public SolidBrush GetBrush(Color color)
+        {
+            if (__SolidBrush is null)
+                __SolidBrush = new SolidBrush(color);
+            else
+                __SolidBrush.Color = color;
+            return __SolidBrush;
+        }
+        private Pen __Pen;
+        private SolidBrush __SolidBrush;
+        /// <summary>
+        /// Disposuje nářadí
+        /// </summary>
+        private void _DisposeTools()
+        {
+            __Pen?.Dispose();
+            __Pen = null;
+            __SolidBrush?.Dispose();
+            __SolidBrush = null;
+        }
+        #endregion
     }
     /// <summary>
     /// Interface pro interní přístup do <see cref="LayeredGraphicBase"/>

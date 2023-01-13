@@ -57,9 +57,19 @@ namespace DjSoft.Games.Animated.Sudoku
         {
             Theme = SudokuSkinTheme.Default;
         }
+        /// <summary>
+        /// Skin / Theme
+        /// </summary>
         public SudokuSkinTheme Theme { get { return __Theme; } set { __Theme = value; _LinkComponents(); } } private SudokuSkinTheme __Theme;
         #endregion
         #region Mapa prostoru = kde co je, v závislosti na velikosti controlu
+        /// <summary>
+        /// Sada všech prvků a jejich souřadnic
+        /// </summary>
+        public SudokuCoordinates Coordinates { get { return __Coordinates; } }
+        /// <summary>
+        /// Inicializace <see cref="Coordinates"/>
+        /// </summary>
         private void _InitCoordinates()
         {
             __Coordinates = new SudokuCoordinates(this);
@@ -108,18 +118,14 @@ namespace DjSoft.Games.Animated.Sudoku
             base.DoPaintBackground(args, Theme.BackColor);
 
             args.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+
             var theme = Theme;
             var coords = __Coordinates;
 
             // Game Background:
-            args.Graphics.FillRectangle(_Brush(theme.GameBackColor), coords.GameBounds);
-            var brush = _Brush(Color.Lime);
-            foreach (var item in this.__Coordinates.BackgroundItems)
-                args.Graphics.FillRectangle(brush, item.BoundsAbsolute);
-
-            // Control Background:
-            args.Graphics.FillRectangle(_Brush(theme.ControlBackColor), coords.ControlBounds);
-
+            coords.PaintBackground(args);
+            foreach (var item in coords.BackgroundItems)
+                item.PaintItem(args);
 
         }
         protected override void DoPaintStandard(LayeredPaintEventArgs args)
@@ -128,13 +134,7 @@ namespace DjSoft.Games.Animated.Sudoku
             var coords = __Coordinates;
 
             foreach (var item in this.__Coordinates.StandardItems)
-            {
-                var itemType = item.ItemType;
-                if (itemType.HasFlag(SudokuItemType.PartGroup))
-                    args.Graphics.FillRectangle(_Brush(Color.FromArgb(255, 212, 212, 230)), item.BoundsAbsolute);
-                if (itemType.HasFlag(SudokuItemType.PartCell))
-                    args.Graphics.FillRectangle(_Brush(Color.FromArgb(255, 240, 240, 255)), item.BoundsAbsolute);
-            }
+                item.PaintItem(args);
         }
 
         private SolidBrush _Brush(Color color)
@@ -152,6 +152,7 @@ namespace DjSoft.Games.Animated.Sudoku
     /// </summary>
     public class SudokuCoordinates
     {
+        #region Konstruktor a základní vlastnosti a chování
         /// <summary>
         /// Konstruktor a public data
         /// </summary>
@@ -222,6 +223,15 @@ namespace DjSoft.Games.Animated.Sudoku
             if (repaintStardardLayer) __Owner.LayerBackgroundValid = false;
             if (repaintOverlayLayer) __Owner.LayerOverlayValid = false;
         }
+        #endregion
+        #region Napojení na hru
+        private void _LinkSudokuGame()
+        {
+            __SudokuGameIsChanged = false;
+        }
+        /// <summary>Obsahuje true po změně objektu v <see cref="__SudokuGame"/>, řeší se v <see cref="_ResumeCoordinates"/></summary>
+        private bool __SudokuGameIsChanged;
+        #endregion
         #region Prvky SudokuItem - jejich prvotní vytvoření
         /// <summary>
         /// Prvky kreslené na pozadí - pole prvků kreslených na pozadí, nemají vnitřní Childs, jejich vzhled se interaktivně nijak často nemění (rámečky)
@@ -251,7 +261,7 @@ namespace DjSoft.Games.Animated.Sudoku
         /// <summary>
         /// Do pole prvků vloží prvky typu Game
         /// </summary>
-        private void _AddSudokuGameItems()
+        private void _AddSudokuGameItemsV1()
         {
             // Vygeneruje definice pro všechny linky, ve správném pořadí odspodu:
             addLines(1, SudokuItemType.PartCellLine);
@@ -280,6 +290,44 @@ namespace DjSoft.Games.Animated.Sudoku
                             for (int sub = 1; sub <= 9; sub++)
                                 _AddOneItem(cRow, cCol, SudokuItemType.GameSubCell, false, sub, cell);           // SubCell se ukládá do parenta = Cell
                         }
+                }
+
+            // Přidá prvky (PartHorizontalLine a PartVerticalLine) pro linku na dané pozici a daného typu
+            void addLines(int pos, SudokuItemType lineType)
+            {
+                _AddOneItem(pos, 0, SudokuItemType.PartGame | lineType | SudokuItemType.PartHorizontalLine, true);
+                _AddOneItem(0, pos, SudokuItemType.PartGame | lineType | SudokuItemType.PartVerticalLine, true);
+            }
+        }
+        /// <summary>
+        /// Do pole prvků vloží prvky typu Game
+        /// </summary>
+        private void _AddSudokuGameItems()
+        {
+            // Grupy dáme pod linky:
+            for (int gRow = 0; gRow < 3; gRow++)
+                for (int gCol = 0; gCol < 3; gCol++)
+                    _AddOneItem(gRow, gCol, SudokuItemType.GameGroup, true);           // Group na pozadí
+
+            // Vygeneruje definice pro všechny linky, ve správném pořadí odspodu, ale nad pozadí Groups:
+            addLines(1, SudokuItemType.PartCellLine);
+            addLines(2, SudokuItemType.PartCellLine);
+            addLines(4, SudokuItemType.PartCellLine);
+            addLines(5, SudokuItemType.PartCellLine);
+            addLines(7, SudokuItemType.PartCellLine);
+            addLines(8, SudokuItemType.PartCellLine);
+            addLines(3, SudokuItemType.PartGroupLine);
+            addLines(6, SudokuItemType.PartGroupLine);
+            addLines(0, SudokuItemType.PartOuterLine);
+            addLines(9, SudokuItemType.PartOuterLine);
+
+            // Vygeneruje definice pro všechny Cell + subCell, hierarchicky:
+            for (int cRow = 0; cRow < 9; cRow++)
+                for (int cCol = 0; cCol < 9; cCol++)
+                {
+                    var cell = _AddOneItem(cRow, cCol, SudokuItemType.GameCell, false, null, null);      // Cell je interaktvní a je Root
+                    for (int sub = 1; sub <= 9; sub++)
+                        _AddOneItem(cRow, cCol, SudokuItemType.GameSubCell, false, sub, cell);           // SubCell se ukládá do parenta = Cell
                 }
 
             // Přidá prvky (PartHorizontalLine a PartVerticalLine) pro linku na dané pozici a daného typu
@@ -340,14 +388,6 @@ namespace DjSoft.Games.Animated.Sudoku
         private List<SudokuItem> __InteractiveItems;
         /// <summary>Lineární pole obsahující všechny prvky (<see cref="__InteractiveItems"/> + všechy jejich Child prvky) + <see cref="__BackgroundItems"/>, v jedné úrovni, aby nebylo nutno procházet rekurzivně</summary>
         private List<SudokuItem> __AllItems;
-        #endregion
-        #region Napojení na hru
-        private void _LinkSudokuGame()
-        {
-            __SudokuGameIsChanged = false;
-        }
-        /// <summary>Obsahuje true po změně objektu v <see cref="__SudokuGame"/>, řeší se v <see cref="_ResumeCoordinates"/></summary>
-        private bool __SudokuGameIsChanged;
         #endregion
         #region Souřadnice a jejich výpočet
         /// <summary>
@@ -604,7 +644,18 @@ namespace DjSoft.Games.Animated.Sudoku
         /// </summary>
         private bool __IsSuspended;
         #endregion
-
+        #region Kreslení
+        /// <summary>
+        /// Vykreslí pozadí = pouze základní plochy pro Game a Control, nikoli prvky
+        /// </summary>
+        /// <param name="args"></param>
+        public void PaintBackground(LayeredPaintEventArgs args)
+        {
+            var theme = Theme;
+            args.Graphics.FillRectangle(args.GetBrush(theme.GameBackColor), this.GameBounds);
+            args.Graphics.FillRectangle(args.GetBrush(theme.ControlBackColor), this.ControlBounds);
+        }
+        #endregion
     }
     #endregion
     #region class SudokuConfiguration : Konfigurace chování Sudoku
@@ -659,10 +710,12 @@ namespace DjSoft.Games.Animated.Sudoku
                 scs.GroupLineSize = 4f;
                 scs.CellLineColor = Color.FromArgb(255, 160, 160, 160);
                 scs.CellLineSize = 2f;
-
                 scs.CellMargin = 4f;
 
-                scs.EmptyCellBackColor = Color.FromArgb(255, 245, 245, 250);
+                scs.GroupABackColor = Color.FromArgb(255, 235, 235, 245);
+                scs.GroupBBackColor = Color.FromArgb(255, 245, 230, 245);
+
+                scs.EmptyCellBackColor = Color.FromArgb(0, 245, 245, 250);
                 scs.EmptyCellMouseOnBackColor = Color.FromArgb(255, 250, 250, 180);
                 scs.EmptyCellInActiveGroupBackColor = Color.FromArgb(255, 250, 250, 220);
 
@@ -928,8 +981,9 @@ namespace DjSoft.Games.Animated.Sudoku
             }
         }
 
-        public Color GetBackColor(SudokuItemType itemType)
+        public Color GetBackColor(SudokuItem item)
         {
+            SudokuItemType itemType = item.ItemType;
             if (itemType.HasFlag(SudokuItemType.PartGame))
             {
                 // Následující prvky mají jen jednu barvu = nereagují na interaktivní stav:
@@ -937,6 +991,21 @@ namespace DjSoft.Games.Animated.Sudoku
                 if (itemType.HasFlag(SudokuItemType.PartOuterLine)) return this.OuterLineColor;
                 if (itemType.HasFlag(SudokuItemType.PartGroupLine)) return this.GroupLineColor;
                 if (itemType.HasFlag(SudokuItemType.PartCellLine)) return this.CellLineColor;
+
+                if (itemType.HasFlag(SudokuItemType.PartGroup))
+                {
+                    int mod = (item.ItemPosition.Row + item.ItemPosition.Col) % 2;          // 1 nebo 0, střídavě
+                    return (mod == 0 ? this.GroupABackColor : this.GroupBBackColor);
+                }
+
+                if (itemType.HasFlag(SudokuItemType.PartCell))
+                {
+                    return this.EmptyCellBackColor;
+                }
+                if (itemType.HasFlag(SudokuItemType.PartSubCell))
+                {
+                    return Color.FromArgb(0, 0, 0, 0);
+                }
 
             }
 
@@ -981,6 +1050,14 @@ namespace DjSoft.Games.Animated.Sudoku
             return text;
         }
         private readonly SudokuControl __Owner;
+        /// <summary>
+        /// Skin / Theme
+        /// </summary>
+        public SudokuSkinTheme Theme { get { return __Owner.Theme; } }
+        /// <summary>
+        /// Sada všech prvků a jejich souřadnic
+        /// </summary>
+        public SudokuCoordinates Coordinates { get { return __Owner.Coordinates; } }
         /// <summary>
         /// Typ prvku
         /// </summary>
@@ -1035,6 +1112,21 @@ namespace DjSoft.Games.Animated.Sudoku
         public bool IsBackground { get; set; }
         public bool IsInteractive { get; set; }
         public bool IsVisible { get; set; }
+
+        #region Kreslení
+        /// <summary>
+        /// Vykreslí prvek
+        /// </summary>
+        /// <param name="args"></param>
+        public void PaintItem(LayeredPaintEventArgs args)
+        {
+            var theme = Theme;
+            var color = theme.GetBackColor(this);
+            if (color.A > 0)
+                args.Graphics.FillRectangle(args.GetBrush(color), this.BoundsAbsolute);
+        }
+        #endregion
+
     }
     #endregion
     #region enumy SudokuItemType
