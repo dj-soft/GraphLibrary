@@ -51,6 +51,7 @@
     </Compile>
     <Compile Include="Components\Animator.cs" />
     <Compile Include="Components\Extensions.cs" />
+    <Compile Include="Data\ValueSupport.cs" />
     <Compile Include="Sudoku\SudokuControl.cs">
       <SubType>Component</SubType>
     </Compile>

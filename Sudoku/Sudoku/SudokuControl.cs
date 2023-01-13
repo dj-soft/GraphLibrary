@@ -110,20 +110,32 @@ namespace DjSoft.Games.Animated.Sudoku
             args.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
             var theme = Theme;
             var coords = __Coordinates;
+
+            // Game Background:
             args.Graphics.FillRectangle(_Brush(theme.GameBackColor), coords.GameBounds);
             var brush = _Brush(Color.Lime);
             foreach (var item in this.__Coordinates.BackgroundItems)
                 args.Graphics.FillRectangle(brush, item.BoundsAbsolute);
+
+            // Control Background:
+            args.Graphics.FillRectangle(_Brush(theme.ControlBackColor), coords.ControlBounds);
+
 
         }
         protected override void DoPaintStandard(LayeredPaintEventArgs args)
         {
             var theme = Theme;
             var coords = __Coordinates;
-            args.Graphics.FillRectangle(_Brush(theme.ControlBackColor), coords.ControlBounds);
+
+            foreach (var item in this.__Coordinates.StandardItems)
+            {
+                var itemType = item.ItemType;
+                if (itemType.HasFlag(SudokuItemType.PartGroup))
+                    args.Graphics.FillRectangle(_Brush(Color.FromArgb(255, 212, 212, 230)), item.BoundsAbsolute);
+                if (itemType.HasFlag(SudokuItemType.PartCell))
+                    args.Graphics.FillRectangle(_Brush(Color.FromArgb(255, 240, 240, 255)), item.BoundsAbsolute);
+            }
         }
-
-
 
         private SolidBrush _Brush(Color color)
         {
@@ -212,20 +224,25 @@ namespace DjSoft.Games.Animated.Sudoku
         }
         #region Prvky SudokuItem - jejich prvotní vytvoření
         /// <summary>
-        /// Interaktivní prvky - obsahuje pouze Root prvky, které mají navazující prvky ve svém poli Childs, a které mohou být interaktivní (prvky hry a controly)
-        /// </summary>
-        public IReadOnlyList<SudokuItem> InteractiveItems { get { return __InteractiveItems; } }
-        /// <summary>
         /// Prvky kreslené na pozadí - pole prvků kreslených na pozadí, nemají vnitřní Childs, jejich vzhled se interaktivně nijak často nemění (rámečky)
         /// </summary>
         public IReadOnlyList<SudokuItem> BackgroundItems { get { return __BackgroundItems; } }
+        /// <summary>
+        /// Prvky kreslené na standardní vrstvu - lineární pole pro snadné kreslení, netřeba procházet rekurzivně Childs
+        /// </summary>
+        public IReadOnlyList<SudokuItem> StandardItems { get { return __StandardItems; } }
+        /// <summary>
+        /// Interaktivní prvky - obsahuje pouze Root prvky, které mají navazující prvky ve svém poli Childs, a které mohou být interaktivní (prvky hry a controly)
+        /// </summary>
+        public IReadOnlyList<SudokuItem> InteractiveItems { get { return __InteractiveItems; } }
         /// <summary>
         /// Vytvoří pole prvků a naplní jej, jedenkrát v konstruktoru
         /// </summary>
         private void _CreateSudokuItems()
         {
-            __InteractiveItems = new List<SudokuItem>();
             __BackgroundItems = new List<SudokuItem>();
+            __StandardItems = new List<SudokuItem>();
+            __InteractiveItems = new List<SudokuItem>();
             __AllItems = new List<SudokuItem>();
 
             _AddSudokuGameItems();
@@ -293,25 +310,34 @@ namespace DjSoft.Games.Animated.Sudoku
         {
             SudokuItem item = new SudokuItem(this.__Owner, new Position((UInt16)row, (UInt16)col), itemType, itemSubValue);
 
-            if (parent is null)
-            {   // Prvek nemá parenta, musím jej dát do Background nebo Interactive:
-                if (isBackground)
-                    __BackgroundItems.Add(item);
-                else
-                    __InteractiveItems.Add(item);
-            }
-            else
-                parent.AddChild(item);
-
             // Všechny prvky vložím do __AllItems, pro jejich jednoduché procházení při výpočtu souřadnic:
             __AllItems.Add(item);
 
+            // Tříděno podle vrstvy = pro kreslení:
+            if (isBackground)
+                __BackgroundItems.Add(item);
+            else
+                __StandardItems.Add(item);
+
+            // Zařadit do interaktivní hierarchie:
+            if (parent is null)
+            {   // Prvek nemá parenta => patří do Interactive:
+                if (!isBackground)
+                    __InteractiveItems.Add(item);
+            }
+            else
+            {   // Child do Parenta:
+                parent.AddChild(item);
+            }
+
             return item;
         }
-        /// <summary>Interaktivní prvky - obsahuje pouze Root prvky, které mají navazující prvky ve svém poli Childs, a které mohou být interaktivní (prvky hry a controly)</summary>
-        private List<SudokuItem> __InteractiveItems;
         /// <summary>Prvky kreslené na pozadí - pole prvků kreslených na pozadí, nemají vnitřní Childs, jejich vzhled se interaktivně nijak často nemění (rámečky)</summary>
         private List<SudokuItem> __BackgroundItems;
+        /// <summary>Prvky kreslené na vrstvu Standard, lineární pole všech prvků, zde jsou přítomny i Child prvky = není třeba procházet Child prvky rekurzivně.</summary>
+        private List<SudokuItem> __StandardItems;
+        /// <summary>Interaktivní prvky - obsahuje pouze Root prvky, které mají navazující prvky ve svém poli Childs, a které mohou být interaktivní (prvky hry a controly)</summary>
+        private List<SudokuItem> __InteractiveItems;
         /// <summary>Lineární pole obsahující všechny prvky (<see cref="__InteractiveItems"/> + všechy jejich Child prvky) + <see cref="__BackgroundItems"/>, v jedné úrovni, aby nebylo nutno procházet rekurzivně</summary>
         private List<SudokuItem> __AllItems;
         #endregion
@@ -628,13 +654,13 @@ namespace DjSoft.Games.Animated.Sudoku
                 scs.GameBackColor = Color.FromArgb(255, 245, 245, 250);
 
                 scs.OuterLineColor = Color.FromArgb(255, 100, 100, 100);
-                scs.OuterLineSize = 3f;
+                scs.OuterLineSize = 6f;
                 scs.GroupLineColor = Color.FromArgb(255, 160, 160, 160);
-                scs.GroupLineSize = 2f;
+                scs.GroupLineSize = 4f;
                 scs.CellLineColor = Color.FromArgb(255, 160, 160, 160);
-                scs.CellLineSize = 1f;
+                scs.CellLineSize = 2f;
 
-                scs.CellMargin = 2f;
+                scs.CellMargin = 4f;
 
                 scs.EmptyCellBackColor = Color.FromArgb(255, 245, 245, 250);
                 scs.EmptyCellMouseOnBackColor = Color.FromArgb(255, 250, 250, 180);

@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.Drawing;
 using System.Windows.Forms;
 using DjSoft.Games.Animated.Data;
+using DjSoft.Games.Sudoku.Data;
 
 namespace DjSoft.Games.Animated.Components
 {

@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.Drawing;
 using System.Windows.Forms;
 using DjSoft.Games.Animated.Components;
+using DjSoft.Games.Sudoku.Data;
 
 namespace DjSoft.Games.Animated.Snake
 {
@@ -131,11 +132,11 @@ namespace DjSoft.Games.Animated.Snake
         public BackColorRGBAnimator(AnimatedControl owner)
         {
             __Owner = owner;
-            _BgrValueSet = CreateBgrColorSet(out var backColor);
+            __BgrValueSet = CreateBgrColorSet(out var backColor);
             __IsDiagnosticActive = AppService.IsDiagnosticActive;
-            _AnimeBgrTick = 0;
-            _AnimeBgrTime = 0d;
-            _AnimeBgrLog = "";
+            __AnimeBgrTick = 0;
+            __AnimeBgrTime = 0d;
+            __AnimeBgrLog = "";
             owner.BackColor = backColor;
         }
         /// <summary>
@@ -152,7 +153,7 @@ namespace DjSoft.Games.Animated.Snake
                 cycle = (int)((0.95d + (0.1d * rand.NextDouble())) * (double)cycle);
                 start = (int)(rand.NextDouble() * (double)cycle);
             }
-            animator.AddMotion(cycle, start, Animator.TimeMode.SinusCycling, 0d, _AnimeBgr, _BgrValueSet, null);
+            animator.AddMotion(cycle, start, Animator.TimeMode.SinusCycling, 0d, _AnimeBgr, __BgrValueSet, null);
         }
         /// <summary>
         /// Vytvoří a vrátí sadu barev k animaci
@@ -182,17 +183,17 @@ namespace DjSoft.Games.Animated.Snake
 
             if (__IsDiagnosticActive)
             {
-                _AnimeBgrTick++;
+                __AnimeBgrTick++;
                 var time = __Owner.StopwatchExt.ElapsedMilisecs;
-                var delay = time - _AnimeBgrTime;
-                if (String.IsNullOrEmpty(_AnimeBgrLog))
-                    _AnimeBgrLog = "Tick\tTime\tDelay\tIsChanged\tA\tR\tG\tB\r\n";
-                _AnimeBgrLog += $"{_AnimeBgrTick}\t{__Owner.StopwatchExt.ElapsedMilisecs:F3}\t{delay:F3}\t{(motion.IsCurrentValueChanged ? "1" : "0")}\t{color.A}\t{color.R}\t{color.G}\t{color.B}\r\n";
-                _AnimeBgrTime = time;
-                if (motion.IsDone || ((_AnimeBgrTick % 200) == 0))
+                var delay = time - __AnimeBgrTime;
+                if (String.IsNullOrEmpty(__AnimeBgrLog))
+                    __AnimeBgrLog = "Tick\tTime\tDelay\tIsChanged\tA\tR\tG\tB\r\n";
+                __AnimeBgrLog += $"{__AnimeBgrTick}\t{__Owner.StopwatchExt.ElapsedMilisecs:F3}\t{delay:F3}\t{(motion.IsCurrentValueChanged ? "1" : "0")}\t{color.A}\t{color.R}\t{color.G}\t{color.B}\r\n";
+                __AnimeBgrTime = time;
+                if (motion.IsDone || ((__AnimeBgrTick % 200) == 0))
                 {
-                    var text = _AnimeBgrLog;
-                    _AnimeBgrLog = "";
+                    var text = __AnimeBgrLog;
+                    __AnimeBgrLog = "";
                 }
             }
         }
@@ -205,11 +206,11 @@ namespace DjSoft.Games.Animated.Snake
 
         }
         private AnimatedControl __Owner;
-        private AnimatedValueSet _BgrValueSet;
+        private AnimatedValueSet __BgrValueSet;
         private bool __IsDiagnosticActive;
-        private int _AnimeBgrTick;
-        private double _AnimeBgrTime;
-        private string _AnimeBgrLog;
+        private int __AnimeBgrTick;
+        private double __AnimeBgrTime;
+        private string __AnimeBgrLog;
     }
     #endregion
     #region class SnakeItem : Jeden pohybující se had
@@ -255,8 +256,8 @@ namespace DjSoft.Games.Animated.Snake
         private AnimatedControl __Owner;
         private Color __Color;
         private SolidBrush __Brush;
-        private float? _PointX = null;
-        private float? _PointY = null;
+        private float? __PointX = null;
+        private float? __PointY = null;
         private PointF?[] __Points;
         /// <summary>
         /// Animace bodu X
@@ -264,8 +265,8 @@ namespace DjSoft.Games.Animated.Snake
         /// <param name="motion"></param>
         private void _AnimePointX(Animator.Motion motion)
         {
-            if (!this._PointX.HasValue || motion.IsCurrentValueChanged)
-                this._PointX = (float)motion.CurrentValue;
+            if (!this.__PointX.HasValue || motion.IsCurrentValueChanged)
+                this.__PointX = (float)motion.CurrentValue;
         }
         /// <summary>
         /// Animace bodu Y
@@ -273,8 +274,8 @@ namespace DjSoft.Games.Animated.Snake
         /// <param name="motion"></param>
         private void _AnimePointY(Animator.Motion motion)
         {
-            if (!this._PointY.HasValue || motion.IsCurrentValueChanged)
-                this._PointY = (float)motion.CurrentValue;
+            if (!this.__PointY.HasValue || motion.IsCurrentValueChanged)
+                this.__PointY = (float)motion.CurrentValue;
             AddPoint();
         }
         /// <summary>
@@ -282,9 +283,9 @@ namespace DjSoft.Games.Animated.Snake
         /// </summary>
         protected void AddPoint()
         {
-            if (_PointX.HasValue && _PointY.HasValue)
+            if (__PointX.HasValue && __PointY.HasValue)
             {
-                PointF? point = new PointF(_PointX.Value, _PointY.Value);
+                PointF? point = new PointF(__PointX.Value, __PointY.Value);
                 for (int i = 0; i < __Points.Length; i++)
                 {
                     var shift = __Points[i];
