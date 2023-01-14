@@ -83,6 +83,12 @@ namespace DjSoft.Games.Animated.Sudoku
         /// <returns></returns>
         public Cell this[int row, int col] { get { return __Cells[new Position((UInt16)row, (UInt16)col)]; } }
         /// <summary>
+        /// Buňka na dané adrese
+        /// </summary>
+        /// <param name="position"></param>
+        /// <returns></returns>
+        public Cell this[Position position] { get { return __Cells[position]; } }
+        /// <summary>
         /// Grupy (řádky, sloupce, čtverce).
         /// </summary>
         public Dictionary<Position, Group> Groups { get { return __Groups; } } private Dictionary<Position, Group> __Groups;
@@ -134,9 +140,17 @@ namespace DjSoft.Games.Animated.Sudoku
         public static SudokuGame CreateGame(string sample = null)
         {
             SudokuGame game = new SudokuGame();
-            if (sample is null) sample = _GetSample();
+            if (sample is null) sample = _CreateSample();
             game.Import(sample);
             return game;
+        }
+        /// <summary>
+        /// Vytvoří textový sample pro novou hru
+        /// </summary>
+        /// <returns></returns>
+        public static string CreateSample()
+        {
+            return _CreateSample();
         }
         /// <summary>
         /// Obsahuje definiční data aktuální hry, pouze fixní (zadané výchozí) hodnoty
@@ -206,9 +220,9 @@ namespace DjSoft.Games.Animated.Sudoku
         /// Vrať sample k testování
         /// </summary>
         /// <returns></returns>
-        private static string _GetSample()
+        private static string _CreateSample()
         {
-            int count = 4;
+            int count = 8;
             int id = DateTime.Now.Millisecond % count;
             switch (id)
             {
@@ -216,7 +230,11 @@ namespace DjSoft.Games.Animated.Sudoku
                 case 01: return ":159......::...571...::..2...85.::5..8.2..9::963......::.....516.::6...5.2.8::.48.26...::....4..93:";
                 case 02: return ":8.4....2.::....794..::6..94....::..9...7.4::7..19.8..::.8...2..9::.4..7..3.::.3......1::..68.3...:";
                 case 03: return ":...5....2::27.9.4...::..3.6.15.::.6..48...::.3....248::4.1.2..9.::3..47....::..6....84::1....65..:";
-                    // Až zadáš další samply, nezapomeň nahoře upravit count !!!  Jinak se nové samply nikdy neuplatní.
+                case 04: return ":.6....472::5..427...::..41....5::69.8.4...::.153...8.::....7.6.9::.....584.::4...91..7::.57...3..:";
+                case 05: return ":..72....8::..2.1..3.::1.......2::.5..9....::6.9..4...::...3..916::.9...2.71::76...5...::..8.6.3..:";
+                case 06: return ":5......36::.3.716..2::.67..31..::....7.4.3::1.5....2.::7..86....::972......::4..6..35.::.....1.7.:";
+                case 07: return ":7...9.3..::.49..56..::...3.8.92::..71..9..::4....2.7.::.6..3..84::1...5...3::.2.4.3...::..3...42.:";
+                // Až zadáš další samply, nezapomeň nahoře upravit count !!!  Jinak se nové samply nikdy neuplatní.
                 case 99: return ":.........::.........::.........::.........::.........::.........::.........::.........::.........:";
             }
             // Defaultní:

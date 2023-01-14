@@ -27,6 +27,13 @@ namespace DjSoft.Games.Animated.Sudoku
 
             __ComponentsReady = true;
             _LinkComponents();
+
+            _FillRandomGame();
+        }
+        protected override void Dispose(bool disposing)
+        {
+            base.Dispose(disposing);
+            ((IDisposable)__Coordinates)?.Dispose();
         }
         private void _LinkComponents()
         {
@@ -36,7 +43,7 @@ namespace DjSoft.Games.Animated.Sudoku
                 {
                     __Coordinates.Theme = Theme;
                     __Coordinates.Configuration = Configuration;
-                    __Coordinates.SudokuGame = SudokuGame;
+                    __Coordinates.Game = Game;
                 }
                 _RefreshCoordinates();
             }
@@ -46,10 +53,14 @@ namespace DjSoft.Games.Animated.Sudoku
         #region Hra = datová instance a interakce s ní, a konfigurace
         private void _InitGame()
         {
-            __SudokuGame = new SudokuGame();
+            __Game = new SudokuGame();
             __Configuration = SudokuConfiguration.Default;
         }
-        public SudokuGame SudokuGame { get { return __SudokuGame; } set { __SudokuGame = value; _LinkComponents(); } } private SudokuGame __SudokuGame;
+        private void _FillRandomGame()
+        {
+            __Game.Import(SudokuGame.CreateSample());
+        }
+        public SudokuGame Game { get { return __Game; } set { __Game = value; _LinkComponents(); } } private SudokuGame __Game;
         public SudokuConfiguration Configuration { get { return __Configuration; } set { __Configuration = value; _LinkComponents(); } } private SudokuConfiguration __Configuration;
         #endregion
         #region Vizuální kabát = Theme
@@ -117,9 +128,8 @@ namespace DjSoft.Games.Animated.Sudoku
         {
             base.DoPaintBackground(args, Theme.BackColor);
 
-            args.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+            PrepareGraphicsMode(args);
 
-            var theme = Theme;
             var coords = __Coordinates;
 
             // Game Background:
@@ -130,27 +140,25 @@ namespace DjSoft.Games.Animated.Sudoku
         }
         protected override void DoPaintStandard(LayeredPaintEventArgs args)
         {
-            var theme = Theme;
-            var coords = __Coordinates;
+            PrepareGraphicsMode(args);
 
-            foreach (var item in this.__Coordinates.StandardItems)
+            var coords = __Coordinates;
+            foreach (var item in coords.StandardItems)
                 item.PaintItem(args);
         }
-
-        private SolidBrush _Brush(Color color)
+        protected virtual void PrepareGraphicsMode(LayeredPaintEventArgs args)
         {
-            if (__SolidBrush is null) __SolidBrush = new SolidBrush(color);
-            else __SolidBrush.Color = color;
-            return __SolidBrush;
+            args.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+            args.Graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAlias;
+
         }
-        private SolidBrush __SolidBrush;
         #endregion
     }
     #region class SudokuCoordinates : Souřadnice prvků v Sudoku
     /// <summary>
     /// Souřadnice prvků v Sudoku
     /// </summary>
-    public class SudokuCoordinates
+    public class SudokuCoordinates : IDisposable
     {
         #region Konstruktor a základní vlastnosti a chování
         /// <summary>
@@ -162,6 +170,10 @@ namespace DjSoft.Games.Animated.Sudoku
             __Owner = owner;
             _CreateSudokuItems();
         }
+        void IDisposable.Dispose()
+        {
+            _DisposeFonts();
+        }
         /// <summary>
         /// Owner control
         /// </summary>
@@ -169,14 +181,14 @@ namespace DjSoft.Games.Animated.Sudoku
         /// <summary>
         /// Aktuální hra
         /// </summary>
-        public SudokuGame SudokuGame { get { return __SudokuGame; } set { _SetSudokuGame(value); } } private SudokuGame __SudokuGame;
+        public SudokuGame Game { get { return __Game; } set { _SetSudokuGame(value); } } private SudokuGame __Game;
         /// <summary>
         /// Vloží dodanou hru.
         /// </summary>
         /// <param name="sudokuGame"></param>
         private void _SetSudokuGame(SudokuGame sudokuGame)
         {
-            __SudokuGame = sudokuGame;
+            __Game = sudokuGame;
             __SudokuGameIsChanged = true;
             if (!__IsSuspended)
                 _LinkSudokuGame();
@@ -229,7 +241,7 @@ namespace DjSoft.Games.Animated.Sudoku
         {
             __SudokuGameIsChanged = false;
         }
-        /// <summary>Obsahuje true po změně objektu v <see cref="__SudokuGame"/>, řeší se v <see cref="_ResumeCoordinates"/></summary>
+        /// <summary>Obsahuje true po změně objektu v <see cref="__Game"/>, řeší se v <see cref="_ResumeCoordinates"/></summary>
         private bool __SudokuGameIsChanged;
         #endregion
         #region Prvky SudokuItem - jejich prvotní vytvoření
@@ -421,9 +433,17 @@ namespace DjSoft.Games.Animated.Sudoku
         /// <summary>Obsahuje hash získaný z Theme <see cref="SudokuSkinTheme.SizeHash"/>, pro který je aktuálně spočítaný relativní souřadný systém</summary>
         private string __ThemeSizeHashCurrent;
         /// <summary>
-        /// Velikost hry v relativnísh souřadnicích = do tohoto prostoru jsou umístěny prvky Items a jejich <see cref="SudokuItem.BoundsRelative"/>.
+        /// Velikost hry v relativních souřadnicích = do tohoto prostoru jsou umístěny prvky Items a jejich <see cref="SudokuItem.BoundsRelative"/>.
         /// </summary>
         private SizeF __RelativeGameSize;
+        /// <summary>
+        /// Velikost jedné buňky v relativních souřadnicích
+        /// </summary>
+        private SizeF __RelativeCellSize;
+        /// <summary>
+        /// Velikost jedné buňky v absolutních souřadnicích = pixely
+        /// </summary>
+        private SizeF __AbsoluteCellSize;
         /// <summary>Obsahuje hash získaný z <see cref="ControlSize"/> controlu, pro který je aktuálně spočítaný absolutní souřadný systém</summary>
         private string __ControlSizeHashCurrent;
         /// <summary>Obsahuje true po změně objektů, které mají vliv na souřadnice, řeší se v <see cref="_ResumeCoordinates"/></summary>
@@ -447,8 +467,10 @@ namespace DjSoft.Games.Animated.Sudoku
 
             // Uložíme si souřadnici posledního bodu pole velikostí (Begin + Size) jako relativní velikost hry:
             var last = sizes[sizes.Length - 1];
-            float size = last.Item1 + last.Item2;
-            __RelativeGameSize = new SizeF(size, size);
+            float gameSize = last.Item1 + last.Item2;
+            __RelativeGameSize = new SizeF(gameSize, gameSize);
+            float cellSize = theme.CellSize;
+            __RelativeCellSize = new SizeF(cellSize, cellSize);
 
             void setRelativeBoundsItem(SudokuItem item)
             {
@@ -522,6 +544,7 @@ namespace DjSoft.Games.Animated.Sudoku
             _SetBasicBounds(size);
             _SetAbsoluteGameBounds();
             _SetAbsoluteControlBounds();
+            _PrepareFonts();
             _RepaintOwner(true, true);
         }
         /// <summary>
@@ -569,6 +592,8 @@ namespace DjSoft.Games.Animated.Sudoku
             foreach (var i in this.__AllItems.Where(i => i.ItemType.HasFlag(SudokuItemType.PartGame)))
                 setAbsoluteBoundsItem(i);
 
+            __AbsoluteCellSize = __RelativeCellSize.Zoom(zoom);
+
             void setAbsoluteBoundsItem(SudokuItem item)
             {
                 item.BoundsAbsolute = item.BoundsRelative.Zoom(zoom).ShiftBy(origin);
@@ -585,9 +610,72 @@ namespace DjSoft.Games.Animated.Sudoku
         public RectangleF ControlBounds { get; private set; }
         #endregion
         #endregion
+        #region Fonty písma
+        /// <summary>
+        /// Existují platné fonty pro buňku?
+        /// </summary>
+        public bool HasValidFonts { get { return __HasValidCellFonts; } }
+        /// <summary>
+        /// Existují platné fonty pro sub-buňku?
+        /// </summary>
+        public bool HasValidSubCellFonts { get { return __HasValidSubCellFonts; } }
+        /// <summary>
+        /// Font pro buňku s fixní hodnotou
+        /// </summary>
+        public Font CellFixedFont { get { return (__HasValidCellFonts ? __CellFixedFont : null); } }
+        /// <summary>
+        /// Font pro buňku s nefixní zadanou hodnotou
+        /// </summary>
+        public Font CellFilledFont { get { return (__HasValidCellFonts ? __CellFilledFont : null); } }
+        /// <summary>
+        /// Font pro sub-buňku hodnotou
+        /// </summary>
+        public Font SubCellFont { get { return (__HasValidSubCellFonts ? __SubCellFont : null); } }
+        /// <summary>
+        /// Připraví fonty pro aktuální velikost buňky <see cref="__AbsoluteCellSize"/>
+        /// </summary>
+        private void _PrepareFonts()
+        {
+            __HasValidCellFonts = false;
+            __HasValidSubCellFonts = false;
+            var height = __AbsoluteCellSize.Height;
+
+            var emSize = (float)(Math.Round(0.48f * height, 1));
+            if (emSize < 6.5f) return;                  // Jsme moc malinký...
+
+            if (emSize != __FontCellEmSize || __CellFixedFont is null || __CellFilledFont is null || __SubCellFont is null)
+            {
+                _DisposeFonts();
+                __CellFixedFont = new Font(FontFamily.GenericSansSerif, emSize, FontStyle.Bold);
+                __CellFilledFont = new Font(FontFamily.GenericSansSerif, emSize, FontStyle.Regular);
+                var emSubSize = emSize / 3f;
+                if (emSubSize >= 6f)
+                    __SubCellFont = new Font(FontFamily.GenericSansSerif, emSubSize, FontStyle.Regular);
+                __FontCellEmSize = emSize;
+            }
+            __HasValidCellFonts = true;
+            __HasValidSubCellFonts = (__SubCellFont != null);
+        }
+        private void _DisposeFonts()
+        {
+            __HasValidCellFonts = false;
+            __CellFixedFont?.Dispose();
+            __CellFixedFont = null;
+            __CellFilledFont?.Dispose();
+            __CellFilledFont = null;
+            __SubCellFont?.Dispose();
+            __SubCellFont = null;
+        }
+        private Font __CellFixedFont;
+        private Font __CellFilledFont;
+        private Font __SubCellFont;
+        private float __FontCellEmSize;
+        private bool __HasValidCellFonts;
+        private bool __HasValidSubCellFonts;
+        #endregion
         #region Suspend / Resume coordinates
         /// <summary>
-        /// Pozastaví akce v <see cref="SudokuCoordinates"/>, které jsou běžně vyvolány po setování hodnot do <see cref="SudokuGame"/>, <see cref="Configuration"/>,
+        /// Pozastaví akce v <see cref="SudokuCoordinates"/>, které jsou běžně vyvolány po setování hodnot do <see cref="Game"/>, <see cref="Configuration"/>,
         /// <see cref="Theme"/> a <see cref="ControlBounds"/>. Pokud nyní dojde k jejich setování, akce neproběhnou, ale proběhnou až na konci usingu při Dispose vráceného objektu.
         /// </summary>
         /// <returns></returns>
@@ -712,8 +800,8 @@ namespace DjSoft.Games.Animated.Sudoku
                 scs.CellLineSize = 2f;
                 scs.CellMargin = 4f;
 
-                scs.GroupABackColor = Color.FromArgb(255, 235, 235, 245);
-                scs.GroupBBackColor = Color.FromArgb(255, 245, 230, 245);
+                scs.GroupABackColor = Color.FromArgb(255, 235, 230, 235);
+                scs.GroupBBackColor = Color.FromArgb(255, 240, 240, 245);
 
                 scs.EmptyCellBackColor = Color.FromArgb(0, 245, 245, 250);
                 scs.EmptyCellMouseOnBackColor = Color.FromArgb(255, 250, 250, 180);
@@ -734,6 +822,11 @@ namespace DjSoft.Games.Animated.Sudoku
         private SudokuSkinTheme()
         {
             this.CellSize = 90f;
+            this.GroupsInRowCount = 3;
+            this.GroupsInColCount = 3;
+            this.CellsInGroupRowCount = 3;
+            this.CellsInGroupColCount = 3;
+
         }
         #endregion
         #region Jednotlivé barvy a rozměry
@@ -809,7 +902,33 @@ namespace DjSoft.Games.Animated.Sudoku
         /// </summary>
         public string SizeHash { get { return $"{OuterLineSize:F1}|{GroupLineSize:F1}|{CellLineSize:F1}|{CellMargin:F1}"; } }
         #endregion
-        #region Získání hodnoty pro daný typ prvku
+        #region Počet buněk a skupin v řadách a sloupcích - zatím nepoužíváme !!!   ( jedeme konstantně (3 x 3)  x  (3 x 3)  =  9 x 9 )
+        /// <summary>
+        /// Počet skupin vedle sebe = v jednom řádku (ve směru X), typicky 3
+        /// </summary>
+        public int GroupsInRowCount { get; private set; }
+        /// <summary>
+        /// Počet skupin pod sebou = v jednom sloupci (ve směru Y), typicky 3
+        /// </summary>
+        public int GroupsInColCount { get; private set; }
+        /// <summary>
+        /// Počet buněk v jedné grupě v řádku (ve směru X), typicky 3
+        /// </summary>
+        public int CellsInGroupRowCount { get; private set; }
+        /// <summary>
+        /// Počet buněk v jedné grupě v sloupci (ve směru Y), typicky 3
+        /// </summary>
+        public int CellsInGroupColCount { get; private set; }
+        /// <summary>
+        /// Počet buněk v jednom řádku celkem (ve směru X) = (<see cref="GroupsInRowCount"/> * <see cref="CellsInGroupRowCount"/>), typicky 9
+        /// </summary>
+        public int CellsInRowCount { get { return (GroupsInRowCount * CellsInGroupRowCount); } }
+        /// <summary>
+        /// Počet buněk v jednom sloupci celkem (ve směru Y) = (<see cref="GroupsInColCount"/> * <see cref="CellsInGroupColCount"/>), typicky 9
+        /// </summary>
+        public int CellsInColCount { get { return (GroupsInColCount * CellsInGroupColCount); } }
+        #endregion
+        #region Souřadný systém v relativních = designových hodnotách
         /// <summary>
         /// Souřadnice jednotlivých prvků, shodné pro osu X i Y.
         /// Každý prvek tohoto pole obsahuje Tuple obsahující Item1 = počátek a Item2 = velikost.
@@ -980,7 +1099,8 @@ namespace DjSoft.Games.Animated.Sudoku
                 }
             }
         }
-
+        #endregion
+        #region Získání hodnoty pro daný typ prvku
         public Color GetBackColor(SudokuItem item)
         {
             SudokuItemType itemType = item.ItemType;
@@ -1055,6 +1175,10 @@ namespace DjSoft.Games.Animated.Sudoku
         /// </summary>
         public SudokuSkinTheme Theme { get { return __Owner.Theme; } }
         /// <summary>
+        /// Data hry
+        /// </summary>
+        public SudokuGame Game { get { return __Owner.Game; } }
+        /// <summary>
         /// Sada všech prvků a jejich souřadnic
         /// </summary>
         public SudokuCoordinates Coordinates { get { return __Owner.Coordinates; } }
@@ -1120,10 +1244,71 @@ namespace DjSoft.Games.Animated.Sudoku
         /// <param name="args"></param>
         public void PaintItem(LayeredPaintEventArgs args)
         {
+            var itemType = this.ItemType;
+            if (itemType.HasFlag(SudokuItemType.PartGroup))
+                PaintItemGroup(args);
+            else if (itemType.HasFlag(SudokuItemType.PartCell))
+                PaintItemCell(args);
+            else if (itemType.HasFlag(SudokuItemType.PartSubCell))
+                PaintItemSubCell(args);
+            else
+                PaintItemOther(args);
+        }
+        protected virtual void PaintItemGroup(LayeredPaintEventArgs args)
+        {
             var theme = Theme;
             var color = theme.GetBackColor(this);
             if (color.A > 0)
                 args.Graphics.FillRectangle(args.GetBrush(color), this.BoundsAbsolute);
+        }
+        protected virtual void PaintItemCell(LayeredPaintEventArgs args)
+        {
+            var theme = Theme;
+            var color = theme.GetBackColor(this);
+            if (color.A > 0)
+                args.Graphics.FillRectangle(args.GetBrush(color), this.BoundsAbsolute);
+
+            var cell = this.Game[this.ItemPosition];
+            if (cell.Value > 0)
+            {
+                var bounds = this.BoundsAbsolute.ShiftBy(0f, 1f);
+                var image = GetImageForValue(cell.Value);
+                if (image != null) args.Graphics.DrawImage(image, bounds);
+                DrawString(args, cell.Value.ToString(), this.Coordinates.CellFixedFont, bounds);
+            }
+        }
+        protected virtual void PaintItemSubCell(LayeredPaintEventArgs args)
+        { }
+        protected virtual void PaintItemOther(LayeredPaintEventArgs args)
+        {
+            var theme = Theme;
+            var color = theme.GetBackColor(this);
+            if (color.A > 0)
+                args.Graphics.FillRectangle(args.GetBrush(color), this.BoundsAbsolute);
+        }
+        protected Image GetImageForValue(int value)
+        {
+            switch (value)
+            {
+                case 1: return Properties.Resources.Aqua41;
+                case 2: return Properties.Resources.Aqua42;
+                case 3: return Properties.Resources.Aqua43;
+                case 4: return Properties.Resources.Aqua44;
+                case 5: return Properties.Resources.Aqua45;
+                case 6: return Properties.Resources.Aqua46;
+                case 7: return Properties.Resources.Aqua47;
+                case 8: return Properties.Resources.Aqua48;
+                case 9: return Properties.Resources.Aqua49;
+            }
+            return null;
+        }
+        protected virtual void DrawString(LayeredPaintEventArgs args, string text, Font font, RectangleF bounds)
+        {
+            if (font is null || String.IsNullOrEmpty(text)) return;
+            var textSize = args.Graphics.MeasureString(text, font);
+            var textBounds = textSize.AlignTo(bounds, ContentAlignment.MiddleCenter);
+
+            args.Graphics.DrawString(text, this.Coordinates.CellFixedFont, args.GetBrush(Color.Black), textBounds.Location);
         }
         #endregion
 
