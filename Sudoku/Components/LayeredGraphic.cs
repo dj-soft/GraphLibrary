@@ -565,6 +565,7 @@ namespace DjSoft.Games.Animated.Components
     /// </summary>
     public class LayeredPaintEventArgs : EventArgs, IDisposable
     {
+        #region Základní vlastnosti
         /// <summary>
         /// Konstruktor
         /// </summary>
@@ -574,6 +575,7 @@ namespace DjSoft.Games.Animated.Components
         {
             __Graphics = args.Graphics;
             __ClipRectangle = args.ClipRectangle;
+            __Layer = LayerType.Native;
             __IsGraphicsUsed = false;
         }
         /// <summary>
@@ -581,10 +583,11 @@ namespace DjSoft.Games.Animated.Components
         /// </summary>
         /// <param name="graphics"></param>
         /// <param name="clipRect"></param>
-        public LayeredPaintEventArgs(Graphics graphics, Rectangle clipRectangle)
+        public LayeredPaintEventArgs(Graphics graphics, Rectangle clipRectangle, LayerType layer)
         {
             __Graphics = graphics;
             __ClipRectangle = clipRectangle;
+            __Layer = layer;
             __IsGraphicsUsed = false;
         }
         void IDisposable.Dispose()
@@ -594,6 +597,7 @@ namespace DjSoft.Games.Animated.Components
         }
         private Graphics __Graphics;
         private Rectangle __ClipRectangle;
+        private LayerType __Layer;
         /// <summary>
         /// Gets the graphics used to paint.
         /// </summary>
@@ -606,7 +610,11 @@ namespace DjSoft.Games.Animated.Components
         /// Byla použita grafika <see cref="Graphics"/>?
         /// </summary>
         public bool IsGraphicsUsed { get { return __IsGraphicsUsed; } } private bool __IsGraphicsUsed;
-
+        /// <summary>
+        /// ID vrstvy.
+        /// </summary>
+        public LayerType Layer { get { return __Layer; } }
+        #endregion
         #region Příruční nářadí
         /// <summary>
         /// Vrátí příruční pero
@@ -649,6 +657,18 @@ namespace DjSoft.Games.Animated.Components
             __SolidBrush = null;
         }
         #endregion
+    }
+    /// <summary>
+    /// Typ vrstvy
+    /// </summary>
+    public enum LayerType
+    {
+        None,
+        Native,
+        Background,
+        Standard,
+        Overlay,
+        ToolTip
     }
     /// <summary>
     /// Interface pro interní přístup do <see cref="LayeredGraphicBase"/>

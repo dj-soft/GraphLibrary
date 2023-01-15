@@ -352,7 +352,7 @@ namespace DjSoft.Games.Animated.Components
                 if (!layer.ContainData || !_LayerBackgroundValid)
                 {
                     __PaintBackgroundCount++;
-                    using (LayeredPaintEventArgs largs = new LayeredPaintEventArgs(layer.Graphics, args.ClipRectangle))
+                    using (LayeredPaintEventArgs largs = new LayeredPaintEventArgs(layer.Graphics, args.ClipRectangle, LayerType.Background))
                     {
                         DoPaintBackground(largs);
                         layer.ContainData = largs.IsGraphicsUsed;
@@ -374,7 +374,7 @@ namespace DjSoft.Games.Animated.Components
                 {
                     __PaintStandardCount++;
                     layer.PrepareFromSubLayer();
-                    using (LayeredPaintEventArgs largs = new LayeredPaintEventArgs(layer.Graphics, args.ClipRectangle))
+                    using (LayeredPaintEventArgs largs = new LayeredPaintEventArgs(layer.Graphics, args.ClipRectangle, LayerType.Standard))
                     {
                         DoPaintStandard(largs);
                         layer.ContainData = largs.IsGraphicsUsed;
@@ -393,7 +393,7 @@ namespace DjSoft.Games.Animated.Components
                     if (!layer.ContainData || !_LayerOverlayValid)
                     {
                         layer.PrepareFromSubLayer();
-                        using (LayeredPaintEventArgs largs = new LayeredPaintEventArgs(layer.Graphics, args.ClipRectangle))
+                        using (LayeredPaintEventArgs largs = new LayeredPaintEventArgs(layer.Graphics, args.ClipRectangle, LayerType.Overlay))
                         {
                             DoPaintOverlay(largs);
                             layer.ContainData = largs.IsGraphicsUsed;
@@ -413,7 +413,7 @@ namespace DjSoft.Games.Animated.Components
                     if (!layer.ContainData || !_LayerToolTipValid)
                     {
                         layer.PrepareFromSubLayer();
-                        using (LayeredPaintEventArgs largs = new LayeredPaintEventArgs(layer.Graphics, args.ClipRectangle))
+                        using (LayeredPaintEventArgs largs = new LayeredPaintEventArgs(layer.Graphics, args.ClipRectangle, LayerType.ToolTip))
                         {
                             DoPaintToolTip(largs);
                             layer.ContainData = largs.IsGraphicsUsed;

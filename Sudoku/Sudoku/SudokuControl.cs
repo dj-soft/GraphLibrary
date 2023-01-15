@@ -19,6 +19,7 @@ namespace DjSoft.Games.Animated.Sudoku
         {
             this.UseBackgroundLayer = true;
             this.UseStandardLayer = true;
+            this.UseOverlayLayer = true;
 
             _InitGame();
             _InitTheme();
@@ -115,6 +116,8 @@ namespace DjSoft.Games.Animated.Sudoku
         }
         private void _MouseMove(object sender, MouseEventArgs e)
         {
+            if (e.Button == MouseButtons.None)
+                _MouseMoveNone(e.Location);
         }
         private void _MouseDown(object sender, MouseEventArgs e)
         {
@@ -122,8 +125,50 @@ namespace DjSoft.Games.Animated.Sudoku
         private void _MouseUp(object sender, MouseEventArgs e)
         {
         }
+        private void _MouseMoveNone(Point location)
+        {
+            __ItemsOnMouse = _GetItemsOnPoint(location, true);
+        }
+        private SudokuItem[] _GetItemsOnPoint(PointF mousePoint, bool callMouseChangeToItems)
+        {
+            // Najdu aktuální prvky na dané pozici:
+            List<SudokuItem> mouseItems = new List<SudokuItem>();
+            foreach (var item in __Coordinates.InteractiveItems)
+                item.ScanItemsOnPoint(mousePoint, mouseItems);
+
+            // Zavolám změny myši, pokud je to požadováno:
+            if (callMouseChangeToItems)
+            {
+                var pairs = __ItemsOnMouse.GetPairs(mouseItems, useReferenceEquals: true);
+                foreach (var pair in pairs)
+                {
+                    if (pair.HasItem1 && !pair.HasItem2)
+                        pair.Item1.MouseState = InteractiveMouseState.MouseLeave;
+                    else if (!pair.HasItem1 && pair.HasItem2)
+                        pair.Item2.MouseState = InteractiveMouseState.MouseEnter;
+                }
+            }
+
+            return mouseItems.ToArray();
+        }
+        /// <summary>
+        /// Prvky pod myší, aktuálně
+        /// </summary>
+        private SudokuItem[] __ItemsOnMouse;
         #endregion
         #region Kreslení = Paint do vrstev
+        /// <summary>
+        /// Zajistí překreslení daných vrstev. Jde tedy o vznesení požadavku na RePaint, nikoli o jeho provádění!
+        /// </summary>
+        /// <param name="repaintBackgroundLayer"></param>
+        /// <param name="repaintStardardLayer"></param>
+        /// <param name="repaintOverlayLayer"></param>
+        public void Repaint(bool repaintBackgroundLayer, bool repaintStardardLayer, bool repaintOverlayLayer = false)
+        {
+            if (repaintBackgroundLayer) this.LayerBackgroundValid = false;
+            if (repaintStardardLayer) this.LayerBackgroundValid = false;
+            if (repaintOverlayLayer) this.LayerOverlayValid = false;
+        }
         protected override void DoPaintBackground(LayeredPaintEventArgs args)
         {
             base.DoPaintBackground(args, Theme.BackColor);
@@ -139,6 +184,14 @@ namespace DjSoft.Games.Animated.Sudoku
 
         }
         protected override void DoPaintStandard(LayeredPaintEventArgs args)
+        {
+            PrepareGraphicsMode(args);
+
+            var coords = __Coordinates;
+            foreach (var item in coords.StandardItems)
+                item.PaintItem(args);
+        }
+        protected override void DoPaintOverlay(LayeredPaintEventArgs args)
         {
             PrepareGraphicsMode(args);
 
@@ -222,18 +275,6 @@ namespace DjSoft.Games.Animated.Sudoku
             __SudokuBoundsChanged = true;
             if (!__IsSuspended)
                 _SetAllBounds();
-        }
-        /// <summary>
-        /// Zajistí překreslení daných vrstev
-        /// </summary>
-        /// <param name="repaintBackgroundLayer"></param>
-        /// <param name="repaintStardardLayer"></param>
-        /// <param name="repaintOverlayLayer"></param>
-        private void _RepaintOwner(bool repaintBackgroundLayer, bool repaintStardardLayer, bool repaintOverlayLayer = false)
-        {
-            if (repaintBackgroundLayer) __Owner.LayerBackgroundValid = false;
-            if (repaintStardardLayer) __Owner.LayerBackgroundValid = false;
-            if (repaintOverlayLayer) __Owner.LayerOverlayValid = false;
         }
         #endregion
         #region Napojení na hru
@@ -734,6 +775,16 @@ namespace DjSoft.Games.Animated.Sudoku
         #endregion
         #region Kreslení
         /// <summary>
+        /// Zajistí překreslení daných vrstev. Jde tedy o vznesení požadavku na RePaint, nikoli o jeho provádění!
+        /// </summary>
+        /// <param name="repaintBackgroundLayer"></param>
+        /// <param name="repaintStardardLayer"></param>
+        /// <param name="repaintOverlayLayer"></param>
+        private void _RepaintOwner(bool repaintBackgroundLayer, bool repaintStardardLayer, bool repaintOverlayLayer = false)
+        {
+            __Owner.Repaint(repaintBackgroundLayer, repaintStardardLayer, repaintOverlayLayer);
+        }
+        /// <summary>
         /// Vykreslí pozadí = pouze základní plochy pro Game a Control, nikoli prvky
         /// </summary>
         /// <param name="args"></param>
@@ -812,6 +863,16 @@ namespace DjSoft.Games.Animated.Sudoku
                 scs.FixedCellInActiveGroupBackColor = Color.FromArgb(255, 240, 240, 210);
                 scs.FixedCellTextColor = Color.FromArgb(255, 0, 0, 0);
 
+                scs.ValueImages[0] = Properties.Resources.Aqua41;
+                scs.ValueImages[1] = Properties.Resources.Aqua42;
+                scs.ValueImages[2] = Properties.Resources.Aqua43;
+                scs.ValueImages[3] = Properties.Resources.Aqua44;
+                scs.ValueImages[4] = Properties.Resources.Aqua45;
+                scs.ValueImages[5] = Properties.Resources.Aqua46;
+                scs.ValueImages[6] = Properties.Resources.Aqua47;
+                scs.ValueImages[7] = Properties.Resources.Aqua48;
+                scs.ValueImages[8] = Properties.Resources.Aqua49;
+
                 scs.ControlBackColor = Color.FromArgb(255, 235, 235, 245);
                 return scs;
             }
@@ -826,7 +887,7 @@ namespace DjSoft.Games.Animated.Sudoku
             this.GroupsInColCount = 3;
             this.CellsInGroupRowCount = 3;
             this.CellsInGroupColCount = 3;
-
+            this.ValueImages = new Image[9];
         }
         #endregion
         #region Jednotlivé barvy a rozměry
@@ -893,6 +954,12 @@ namespace DjSoft.Games.Animated.Sudoku
         public Color FixedCellMouseOnBackColor { get; private set; }
         public Color FixedCellInActiveGroupBackColor { get; private set; }
         public Color FixedCellTextColor { get; private set; }
+
+        /// <summary>
+        /// Images [0] ÷ [8] odpovídající hodnotám [1] ÷ [9] : 9 prvků, kde prvek [0] představuje Background image pro buňku s hodnotou 1, atd.
+        /// Pole má tedy 9 prvků, ale je možné že obsahují NULL.
+        /// </summary>
+        public Image[] ValueImages { get; private set; }
 
         public Color ControlBackColor { get; private set; }
 
@@ -1173,15 +1240,19 @@ namespace DjSoft.Games.Animated.Sudoku
         /// <summary>
         /// Skin / Theme
         /// </summary>
-        public SudokuSkinTheme Theme { get { return __Owner.Theme; } }
+        protected SudokuSkinTheme Theme { get { return __Owner.Theme; } }
         /// <summary>
         /// Data hry
         /// </summary>
-        public SudokuGame Game { get { return __Owner.Game; } }
+        protected SudokuGame Game { get { return __Owner.Game; } }
         /// <summary>
         /// Sada všech prvků a jejich souřadnic
         /// </summary>
-        public SudokuCoordinates Coordinates { get { return __Owner.Coordinates; } }
+        protected SudokuCoordinates Coordinates { get { return __Owner.Coordinates; } }
+        /// <summary>
+        /// Animátor
+        /// </summary>
+        protected Animator Animator { get { return __Owner.Animator; } }
         /// <summary>
         /// Typ prvku
         /// </summary>
@@ -1233,11 +1304,145 @@ namespace DjSoft.Games.Animated.Sudoku
         /// Pozice absolutní koordinátu controlu
         /// </summary>
         public RectangleF BoundsAbsolute { get; set; }
-        public bool IsBackground { get; set; }
-        public bool IsInteractive { get; set; }
+        /// <summary>
+        /// Data buňky, pokud this prvek odpovídá buňce
+        /// </summary>
+        protected Cell Cell 
+        {
+            get
+            {
+                if (this.ItemType.HasFlag(SudokuItemType.PartCell) || this.ItemType.HasFlag(SudokuItemType.GameSubCell)) return this.Game[this.ItemPosition];
+                return null;
+            }
+        }
+
         public bool IsVisible { get; set; }
 
+        #region Interaktivita
+        /// <summary>
+        /// Do dodaného soupisu přidá sebe a své Childs, pokud jejich souřadnice obsahuje daný bod (myši).
+        /// Pokud bod leží ve zdejších souřadnicích <see cref="BoundsAbsolute"/>, přidá se a tutéž metopdu spustí pro svoje Childs.
+        /// </summary>
+        /// <param name="mousePoint"></param>
+        /// <param name="mouseItems"></param>
+        internal void ScanItemsOnPoint(PointF mousePoint, List<SudokuItem> mouseItems)
+        {
+            if (!IsInteractive) return;
+            if (!BoundsAbsolute.Contains(mousePoint)) return;
+
+            mouseItems.Add(this);
+
+            if (!this.HasChilds) return;
+            foreach (var child in this.__Childs)
+                child.ScanItemsOnPoint(mousePoint, mouseItems);
+        }
+        protected virtual bool IsInteractive
+        {
+            get
+            {
+                var itemType = this.ItemType;
+                if (itemType.HasFlag(SudokuItemType.PartCell)) return true;
+                if (itemType.HasFlag(SudokuItemType.PartSubCell)) return false;
+                if (itemType.HasFlag(SudokuItemType.PartButton)) return true;
+                return false;
+            }
+        }
+        public InteractiveMouseState MouseState
+        {
+            get { return __MouseState; }
+            set { _SetMouseState(value); }
+        }
+        private void _SetMouseState(InteractiveMouseState mouseState)
+        {
+            lock (this)
+            {
+                if (mouseState != __MouseState)
+                {
+                    if (mouseState == InteractiveMouseState.MouseEnter)
+                        _MouseEnterAnimationStart(ref mouseState);
+                    else if (mouseState == InteractiveMouseState.MouseLeave)
+                        _MouseLeaveAnimationStart(ref mouseState);
+                    __MouseState = mouseState;
+                    this._RepaintOwner(false, true, false);
+                 }
+            }
+        }
+        private InteractiveMouseState _MouseState { get { return __MouseState; } set { __MouseState = value; } }
+        private InteractiveMouseState __MouseState = InteractiveMouseState.None;
+        /// <summary>
+        /// Má být zobrazen obrázek na pozadí?
+        /// </summary>
+        protected bool IsVisibleValueImage
+        {
+            get
+            {
+                var mouseState = this.MouseState;
+                return (mouseState == InteractiveMouseState.MouseEnter ||
+                        mouseState == InteractiveMouseState.MouseEnterAnimating ||
+                        mouseState == InteractiveMouseState.MouseOn ||
+                        mouseState == InteractiveMouseState.MouseLeftDown ||
+                        mouseState == InteractiveMouseState.MouseRightDown);
+                  // || mouseState == InteractiveMouseState.MouseLeaveAnimating);
+            }
+        }
+        #endregion
+        #region Animace
+        private void _MouseEnterAnimationStart(ref InteractiveMouseState mouseState)
+        {
+            this.Animator.AddMotion(15, Animator.TimeMode.FastStartSlowEnd, 0d, _MouseEnterAnimationStep, 0f, 100f, null);
+            mouseState = InteractiveMouseState.MouseEnterAnimating;
+        }
+        private void _MouseEnterAnimationStep(Animator.Motion motion)
+        {
+            bool isDone = motion.IsDone;
+            __OverlayRatio = (isDone ? 100f : (float)motion.CurrentValue);
+            if (isDone) _MouseState = InteractiveMouseState.MouseOn;
+            _RepaintOverlay(isDone);
+        }
+
+        private void _MouseLeaveAnimationStart(ref InteractiveMouseState mouseState)
+        {
+            this.Animator.AddMotion(15, Animator.TimeMode.FastStartSlowEnd, 0d, _MouseLeaveAnimationStep, 100f, 0f, null);
+            mouseState = InteractiveMouseState.MouseLeaveAnimating;
+        }
+        private void _MouseLeaveAnimationStep(Animator.Motion motion)
+        {
+            bool isDone = motion.IsDone;
+            __OverlayRatio = (isDone ? 0f : (float)motion.CurrentValue);
+            if (isDone) _MouseState = InteractiveMouseState.MouseOff;
+            _RepaintOverlay(isDone);
+        }
+        private void _RepaintOverlay(bool isDone)
+        {
+            bool isOverlay = (__OverlayRatio > 0f);
+            __Owner.LayerOverlayActive = true;
+            _RepaintOwner(false, isDone, !isDone);
+        }
+        private void _PaintOverlayAnimation(LayeredPaintEventArgs args)
+        {
+            var ratio = __OverlayRatio;
+            if (ratio > 0f)
+            {
+                byte alpha = (byte)(160f * ratio / 100f);
+                Color color = Color.FromArgb(alpha, 255, 255, 180);
+                args.Graphics.FillRectangle(args.GetBrush(color), this.BoundsAbsolute);
+                PaintItemCellContent(args);
+
+            }
+        }
+        private float __OverlayRatio;
+        #endregion
         #region Kreslení
+        /// <summary>
+        /// Zajistí překreslení daných vrstev. Jde tedy o vznesení požadavku na RePaint, nikoli o jeho provádění!
+        /// </summary>
+        /// <param name="repaintBackgroundLayer"></param>
+        /// <param name="repaintStardardLayer"></param>
+        /// <param name="repaintOverlayLayer"></param>
+        private void _RepaintOwner(bool repaintBackgroundLayer, bool repaintStardardLayer, bool repaintOverlayLayer = false)
+        {
+            __Owner.Repaint(repaintBackgroundLayer, repaintStardardLayer, repaintOverlayLayer);
+        }
         /// <summary>
         /// Vykreslí prvek
         /// </summary>
@@ -1245,6 +1450,10 @@ namespace DjSoft.Games.Animated.Sudoku
         public void PaintItem(LayeredPaintEventArgs args)
         {
             var itemType = this.ItemType;
+            if (itemType.HasFlag(SudokuItemType.PartHorizontalLine))
+                PaintItemHorizontalLine(args);
+            if (itemType.HasFlag(SudokuItemType.PartVerticalLine))
+                PaintItemVerticalLine(args);
             if (itemType.HasFlag(SudokuItemType.PartGroup))
                 PaintItemGroup(args);
             else if (itemType.HasFlag(SudokuItemType.PartCell))
@@ -1254,8 +1463,46 @@ namespace DjSoft.Games.Animated.Sudoku
             else
                 PaintItemOther(args);
         }
+        protected virtual void PaintItemHorizontalLine(LayeredPaintEventArgs args)
+        {
+            if (args.Layer != LayerType.Background) return;
+
+            var bounds = this.BoundsAbsolute;
+            float h = bounds.Height;
+            if (h < 2f)
+            {
+                var color = Theme.GetBackColor(this);
+                var y = bounds.Y + h / 2f;
+                var pen = args.GetPen(color, h);
+                args.Graphics.DrawLine(pen, bounds.X, y, bounds.Right, y);
+            }
+            else
+            {
+                PaintItemOther(args);
+            }
+        }
+        protected virtual void PaintItemVerticalLine(LayeredPaintEventArgs args)
+        {
+            if (args.Layer != LayerType.Background) return;
+
+            var bounds = this.BoundsAbsolute;
+            float w = bounds.Width;
+            if (w < 2f)
+            {
+                var color = Theme.GetBackColor(this);
+                var x = bounds.Y + w / 2f;
+                var pen = args.GetPen(color, w);
+                args.Graphics.DrawLine(pen, x, bounds.Y, x, bounds.Bottom);
+            }
+            else
+            {
+                PaintItemOther(args);
+            }
+        }
         protected virtual void PaintItemGroup(LayeredPaintEventArgs args)
         {
+            if (args.Layer != LayerType.Background) return;
+
             var theme = Theme;
             var color = theme.GetBackColor(this);
             if (color.A > 0)
@@ -1263,19 +1510,39 @@ namespace DjSoft.Games.Animated.Sudoku
         }
         protected virtual void PaintItemCell(LayeredPaintEventArgs args)
         {
+            switch (args.Layer)
+            {
+                case LayerType.Standard:
+                    PaintItemCellStandard(args);
+                    break;
+                case LayerType.Overlay:
+                    PaintItemCellOverlay(args);
+                    break;
+            }
+        }
+        protected virtual void PaintItemCellStandard(LayeredPaintEventArgs args)
+        {
             var theme = Theme;
             var color = theme.GetBackColor(this);
             if (color.A > 0)
                 args.Graphics.FillRectangle(args.GetBrush(color), this.BoundsAbsolute);
 
-            var cell = this.Game[this.ItemPosition];
+            PaintItemCellContent(args);
+        }
+        protected virtual void PaintItemCellContent(LayeredPaintEventArgs args)
+        {
+            var cell = Cell;
             if (cell.Value > 0)
             {
                 var bounds = this.BoundsAbsolute.ShiftBy(0f, 1f);
-                var image = GetImageForValue(cell.Value);
+                var image = GetImageForCell(cell);
                 if (image != null) args.Graphics.DrawImage(image, bounds);
                 DrawString(args, cell.Value.ToString(), this.Coordinates.CellFixedFont, bounds);
             }
+        }
+        protected virtual void PaintItemCellOverlay(LayeredPaintEventArgs args)
+        {
+            _PaintOverlayAnimation(args);
         }
         protected virtual void PaintItemSubCell(LayeredPaintEventArgs args)
         { }
@@ -1286,20 +1553,10 @@ namespace DjSoft.Games.Animated.Sudoku
             if (color.A > 0)
                 args.Graphics.FillRectangle(args.GetBrush(color), this.BoundsAbsolute);
         }
-        protected Image GetImageForValue(int value)
+        protected Image GetImageForCell(Cell cell)
         {
-            switch (value)
-            {
-                case 1: return Properties.Resources.Aqua41;
-                case 2: return Properties.Resources.Aqua42;
-                case 3: return Properties.Resources.Aqua43;
-                case 4: return Properties.Resources.Aqua44;
-                case 5: return Properties.Resources.Aqua45;
-                case 6: return Properties.Resources.Aqua46;
-                case 7: return Properties.Resources.Aqua47;
-                case 8: return Properties.Resources.Aqua48;
-                case 9: return Properties.Resources.Aqua49;
-            }
+            int value = cell.Value;
+            if (value >= 1 && value <= 9 && IsVisibleValueImage) return Theme.ValueImages[value - 1];
             return null;
         }
         protected virtual void DrawString(LayeredPaintEventArgs args, string text, Font font, RectangleF bounds)
@@ -1311,10 +1568,12 @@ namespace DjSoft.Games.Animated.Sudoku
             args.Graphics.DrawString(text, this.Coordinates.CellFixedFont, args.GetBrush(Color.Black), textBounds.Location);
         }
         #endregion
-
     }
     #endregion
-    #region enumy SudokuItemType
+    #region enumy SudokuItemType, InteractiveMouseState
+    /// <summary>
+    /// Typ prvku
+    /// </summary>
     [Flags]
     public enum SudokuItemType : int
     {
@@ -1381,6 +1640,22 @@ namespace DjSoft.Games.Animated.Sudoku
         GameGroup = PartGame | PartGroup,
         GameCell = PartGame | PartCell,
         GameSubCell = PartGame | PartSubCell
+
+    }
+    /// <summary>
+    /// Stav interaktivity
+    /// </summary>
+    public enum InteractiveMouseState
+    {
+        None,
+        MouseEnter,
+        MouseEnterAnimating,
+        MouseOn,
+        MouseLeftDown,
+        MouseRightDown,
+        MouseLeave,
+        MouseLeaveAnimating,
+        MouseOff,
 
     }
     #endregion

@@ -182,5 +182,96 @@ namespace DjSoft.Games.Animated
             return new RectangleF(bounds.X + x, bounds.Y + y, w, h);
         }
         #endregion
+        #region IEnumerable
+        public static DataPair<T>[] GetPairs<T>(this IEnumerable<T> items1, IEnumerable<T> items2, Func<T, T, bool> comparer = null, bool useReferenceEquals = false)
+        {
+            List<DataPair<T>> result = new List<DataPair<T>>();
+            bool hasComparer = (comparer != null);
+
+            if (items1 != null)
+            {   // Item1
+                foreach (var item1 in items1)
+                {   // Každý prvek 1
+                    if (!result.Any(p => isEquals(p.Item1, item1)))
+                    {   // Pokud dosud tentýž prvek není v result.Item1, tak přidáme new DataPair a dáme do Item1 nalezený prvek:
+                        // Tedy v result.Item1 bude vstupní prvek jen 1x, i kdyby na vstupu byl opakovaně:
+                        var pair = new DataPair<T>() { Item1 = item1 };
+                        result.Add(pair);
+                    }
+                }
+            }
+
+            if (items2 != null)
+            {   // Item2
+                foreach (var item2 in items2)
+                {   // Každý prvek 2
+                    if (TryFindFirst(result, p => isEquals(p.Item1, item2), out var foundPair))
+                    {   // Pro prvek 2 jsem našel Pair, kde tento prvek je na pozici 1 = máme úplný pár:
+                        // Prvek do pozice Item2 dám jen tehdy, když tam dosud žádný není (nepodporujeme "Výměnu manželek" v již kompletním páru):
+                        if (!foundPair.HasItem2) foundPair.Item2 = item2;
+                    }
+                    else
+                    {   // Prvek Item2 jsme na straně Item1 nenašli.
+                        // Pokud jej nenajdeme ani na straně Item2 (tam by mohl být jako Single pár z dřívějšího výskytu), tak jej na stranu Item2 přidáme:
+                        if (!result.Any(p => isEquals(p.Item2, item2)))
+                        {   // Pokud dosud tentýž prvek není v result.Item1, tak přidáme new DataPair a dáme do Item1 nalezený prvek:
+                            var pair = new DataPair<T>() { Item2 = item2 };
+                            result.Add(pair);
+                        }
+                    }
+                }
+            }
+
+            return result.ToArray();
+
+            bool isEquals(T item1, T item2)
+            {
+                if (hasComparer) return (comparer(item1, item2));
+                if (useReferenceEquals) return Object.ReferenceEquals(item1, item2); 
+                return Object.Equals(item1, item2);
+            }
+        }
+
+        public static bool TryFindFirst<T>(this IEnumerable<T> items, Func<T, bool> filter, out T found)
+        {
+            if (!(items is null))
+            {
+                bool hasFilter = (filter != null);
+                foreach (var i in items)
+                {
+                    if (!hasFilter || filter(i))
+                    {
+                        found = i;
+                        return true;
+                    }
+                }
+            }
+            found = default(T);
+            return false;
+        }
+        #endregion
+    }
+    /// <summary>
+    /// Pár dvou údajů shodného typu
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    public class DataPair<T>
+    {
+        /// <summary>
+        /// Prvek 1. Pokud není setován, pak <see cref="HasItem1"/> je false, po setování jakékoli hodnoty je <see cref="HasItem1"/> = true.
+        /// </summary>
+        public T Item1 { get { return __Item1; } set { __Item1 = value; __HasItem1 = true; } } private T __Item1;
+        /// <summary>
+        /// Obsahuje true pokud byla setována nějaká hodnota do <see cref="Item1"/>, i kdyby null.
+        /// </summary>
+        public bool HasItem1 { get { return __HasItem1; } } private bool __HasItem1 = false;
+        /// <summary>
+        /// Prvek 2. Pokud není setován, pak <see cref="HasItem2"/> je false, po setování jakékoli hodnoty je <see cref="HasItem2"/> = true.
+        /// </summary>
+        public T Item2 { get { return __Item2; } set { __Item2 = value; __HasItem2 = true; } } private T __Item2;
+        /// <summary>
+        /// Obsahuje true pokud byla setována nějaká hodnota do <see cref="Item2"/>, i kdyby null.
+        /// </summary>
+        public bool HasItem2 { get { return __HasItem2; } } private bool __HasItem2 = false;
     }
 }
