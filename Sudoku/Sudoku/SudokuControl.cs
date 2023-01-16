@@ -1389,28 +1389,42 @@ namespace DjSoft.Games.Animated.Sudoku
         #region Animace
         private void _MouseEnterAnimationStart(ref InteractiveMouseState mouseState)
         {
-            this.Animator.AddMotion(15, Animator.TimeMode.FastStartSlowEnd, 0d, _MouseEnterAnimationStep, 0f, 100f, null);
+            this.Animator.AddMotion(20, Animator.TimeMode.FastStartSlowEnd, 0d, _MouseEnterAnimationStep, 0f, 100f, null);
             mouseState = InteractiveMouseState.MouseEnterAnimating;
         }
         private void _MouseEnterAnimationStep(Animator.Motion motion)
         {
-            bool isDone = motion.IsDone;
-            __OverlayRatio = (isDone ? 100f : (float)motion.CurrentValue);
-            if (isDone) _MouseState = InteractiveMouseState.MouseOn;
-            _RepaintOverlay(isDone);
+            if (__MouseState != InteractiveMouseState.MouseEnterAnimating)
+            {   // Pokud z nějakého důvodu už nejsme ve stavu MouseEnterAnimating, pak tento animační pohyb ukončíme:
+                motion.IsDone = true;
+            }
+            else
+            {
+                bool isDone = motion.IsDone;
+                __OverlayRatio = (isDone ? 100f : (float)motion.CurrentValue);
+                if (isDone) _MouseState = InteractiveMouseState.MouseOn;
+                _RepaintOverlay(isDone);
+            }
         }
 
         private void _MouseLeaveAnimationStart(ref InteractiveMouseState mouseState)
         {
-            this.Animator.AddMotion(15, Animator.TimeMode.FastStartSlowEnd, 0d, _MouseLeaveAnimationStep, 100f, 0f, null);
+            this.Animator.AddMotion(45, Animator.TimeMode.FastStartSlowEnd, 0d, _MouseLeaveAnimationStep, 100f, 0f, null);
             mouseState = InteractiveMouseState.MouseLeaveAnimating;
         }
         private void _MouseLeaveAnimationStep(Animator.Motion motion)
         {
-            bool isDone = motion.IsDone;
-            __OverlayRatio = (isDone ? 0f : (float)motion.CurrentValue);
-            if (isDone) _MouseState = InteractiveMouseState.MouseOff;
-            _RepaintOverlay(isDone);
+            if (__MouseState != InteractiveMouseState.MouseLeaveAnimating)
+            {   // Pokud z nějakého důvodu už nejsme ve stavu MouseLeaveAnimating, pak tento animační pohyb ukončíme:
+                motion.IsDone = true;
+            }
+            else
+            {
+                bool isDone = motion.IsDone;
+                __OverlayRatio = (isDone ? 0f : (float)motion.CurrentValue);
+                if (isDone) _MouseState = InteractiveMouseState.MouseOff;
+                _RepaintOverlay(isDone);
+            }
         }
         private void _RepaintOverlay(bool isDone)
         {
