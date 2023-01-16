@@ -314,47 +314,6 @@ namespace DjSoft.Games.Animated.Sudoku
         /// <summary>
         /// Do pole prvků vloží prvky typu Game
         /// </summary>
-        private void _AddSudokuGameItemsV1()
-        {
-            // Vygeneruje definice pro všechny linky, ve správném pořadí odspodu:
-            addLines(1, SudokuItemType.PartCellLine);
-            addLines(2, SudokuItemType.PartCellLine);
-            addLines(4, SudokuItemType.PartCellLine);
-            addLines(5, SudokuItemType.PartCellLine);
-            addLines(7, SudokuItemType.PartCellLine);
-            addLines(8, SudokuItemType.PartCellLine);
-            addLines(3, SudokuItemType.PartGroupLine);
-            addLines(6, SudokuItemType.PartGroupLine);
-            addLines(0, SudokuItemType.PartOuterLine);
-            addLines(9, SudokuItemType.PartOuterLine);
-
-            // Vygeneruje definice pro všechny grupy + cell + subCell, hierarchicky:
-            for (int gRow = 0; gRow < 3; gRow++)
-                for (int gCol = 0; gCol < 3; gCol++)
-                {
-                    var group = _AddOneItem(gRow, gCol, SudokuItemType.GameGroup, false);                        // Group nemá parenta = je Root
-                    // Buňky jedné grupy (3x3):
-                    for (int cr = 0; cr < 3; cr++)
-                        for (int cc = 0; cc < 3; cc++)
-                        {
-                            int cRow = 3 * gRow + cr;
-                            int cCol = 3 * gCol + cc;
-                            var cell = _AddOneItem(cRow, cCol, SudokuItemType.GameCell, false, null, group);     // Cell se ukládá do parenta = Group
-                            for (int sub = 1; sub <= 9; sub++)
-                                _AddOneItem(cRow, cCol, SudokuItemType.GameSubCell, false, sub, cell);           // SubCell se ukládá do parenta = Cell
-                        }
-                }
-
-            // Přidá prvky (PartHorizontalLine a PartVerticalLine) pro linku na dané pozici a daného typu
-            void addLines(int pos, SudokuItemType lineType)
-            {
-                _AddOneItem(pos, 0, SudokuItemType.PartGame | lineType | SudokuItemType.PartHorizontalLine, true);
-                _AddOneItem(0, pos, SudokuItemType.PartGame | lineType | SudokuItemType.PartVerticalLine, true);
-            }
-        }
-        /// <summary>
-        /// Do pole prvků vloží prvky typu Game
-        /// </summary>
         private void _AddSudokuGameItems()
         {
             // Grupy dáme pod linky:
@@ -395,7 +354,8 @@ namespace DjSoft.Games.Animated.Sudoku
         /// </summary>
         private void _AddSudokuControlItems()
         {
-
+            for (int v = 1; v <= 9; v++)
+                _AddOneButton(SudokuItemType.PartMenu | SudokuItemType.PartButton, $"Value{v}", true, v);
         }
         /// <summary>
         /// Přidá prvek na dané pozici, daného typu a subValue
@@ -409,8 +369,32 @@ namespace DjSoft.Games.Animated.Sudoku
         /// <returns></returns>
         private SudokuItem _AddOneItem(int row, int col, SudokuItemType itemType, bool isBackground, int? itemSubValue = null, SudokuItem parent = null)
         {
-            SudokuItem item = new SudokuItem(this.__Owner, new Position((UInt16)row, (UInt16)col), itemType, itemSubValue);
-
+            Position position = new Position((UInt16)row, (UInt16)col);
+            SudokuItem item = new SudokuItem(this.__Owner, itemType, position, itemSubValue);
+            return _AddOneItem(item, isBackground, parent);
+        }
+        /// <summary>
+        /// Přidá prvek na dané pozici, daného typu a subValue
+        /// </summary>
+        /// <param name="itemType"></param>
+        /// <param name="controlId"></param>
+        /// <param name="visible"></param>
+        /// <param name="itemSubValue"></param>
+        /// <returns></returns>
+        private SudokuItem _AddOneButton(SudokuItemType itemType, string controlId, bool visible = true, int? itemSubValue = null)
+        {
+            SudokuItem item = new SudokuItem(this.__Owner, itemType, controlId, itemSubValue);
+            return _AddOneItem(item, false, null);
+        }
+        /// <summary>
+        /// Přidá daný prvek do evidence
+        /// </summary>
+        /// <param name="item"></param>
+        /// <param name="isBackground"></param>
+        /// <param name="parent"></param>
+        /// <returns></returns>
+        private SudokuItem _AddOneItem(SudokuItem item, bool isBackground, SudokuItem parent = null)
+        {
             // Všechny prvky vložím do __AllItems, pro jejich jednoduché procházení při výpočtu souřadnic:
             __AllItems.Add(item);
 
@@ -482,6 +466,10 @@ namespace DjSoft.Games.Animated.Sudoku
         /// </summary>
         private SizeF __RelativeCellSize;
         /// <summary>
+        /// Relativní velikost Menu, na tuto velikost je kalkulvána hodnota <see cref="SudokuItem.BoundsRelative"/>
+        /// </summary>
+        private SizeF __RelativeMenuSize;
+        /// <summary>
         /// Velikost jedné buňky v absolutních souřadnicích = pixely
         /// </summary>
         private SizeF __AbsoluteCellSize;
@@ -502,6 +490,7 @@ namespace DjSoft.Games.Animated.Sudoku
             var cellIndexes = theme.CellSizeIndexes;
             var lineIndexes = theme.LineSizeIndexes;
             var subCellBounds = theme.RelativeSubCellBounds;
+            var menuSize = new SizeF(400f, 100f);
 
             foreach (var i in this.__AllItems)
                 setRelativeBoundsItem(i);
@@ -512,6 +501,7 @@ namespace DjSoft.Games.Animated.Sudoku
             __RelativeGameSize = new SizeF(gameSize, gameSize);
             float cellSize = theme.CellSize;
             __RelativeCellSize = new SizeF(cellSize, cellSize);
+            __RelativeMenuSize = menuSize;
 
             void setRelativeBoundsItem(SudokuItem item)
             {
@@ -526,6 +516,8 @@ namespace DjSoft.Games.Animated.Sudoku
                     setRelativeBoundsCell(item, null);
                 else if (itemType.HasFlag(SudokuItemType.PartSubCell))
                     setRelativeBoundsCell(item, item.ItemSubValue);
+                else if (itemType.HasFlag(SudokuItemType.PartButton))
+                    setRelativeBoundsButton(item);
             }
             void setRelativeBoundsHLine(SudokuItem item)
             {   // Horizontální = vodorovná linka:
@@ -573,6 +565,19 @@ namespace DjSoft.Games.Animated.Sudoku
 
                 item.BoundsRelative = boundsRelative;
             }
+            // Určuje relativní souřadnici prvku Button
+            void setRelativeBoundsButton(SudokuItem item)
+            {
+                if (item.ControlId.StartsWith("Value") || item.ItemSubValue.HasValue && item.ItemSubValue.Value > 0)
+                {   // Tlačítko pro hodnotu 1-9:
+                    float v = (float)(item.ItemSubValue.Value - 1);
+                    float w = (menuSize.Width / 9f);
+                    float x = v * w;
+                    float y = 0f;
+                    float h = (0.55f * menuSize.Height);
+                    item.BoundsRelative = new RectangleF(x, y, w, h);
+                }
+            }
         }
         #endregion
         #region Absolutní souřadnice: rozdělení prostoru na Game / Control, a následné přepočty relativních souřadnic do těchto souřadnic absolutních
@@ -583,13 +588,12 @@ namespace DjSoft.Games.Animated.Sudoku
         private void _SetAbsoluteBounds(SizeF size)
         {
             _SetBasicBounds(size);
-            _SetAbsoluteGameBounds();
-            _SetAbsoluteControlBounds();
+            _SetAbsoluteItemBounds();
             _PrepareFonts();
             _RepaintOwner(true, true);
         }
         /// <summary>
-        /// Rozmístí souřadnice <see cref="GameBounds"/> a <see cref="ControlBounds"/> do daného prostoru. 
+        /// Rozmístí souřadnice <see cref="GameBounds"/> a <see cref="MenuBounds"/> do daného prostoru. 
         /// Následující metody už umísťují své prvky do těchto souřadnic.
         /// </summary>
         /// <param name="size"></param>
@@ -617,38 +621,56 @@ namespace DjSoft.Games.Animated.Sudoku
             float cs = (cw < ch ? cw : ch);
             float cx = (w - (controlRatio * cs)) / 2f;
             float cy = yb + ((bh - cs) / 2f);
-            ControlBounds = new RectangleF(cx, cy, controlRatio * cs, cs);
+            MenuBounds = new RectangleF(cx, cy, controlRatio * cs, cs);
         }
         /// <summary>
-        /// Umístí všechny controly patřící k Game do fyzického prostoru = nastaví jejich <see cref="SudokuItem.BoundsAbsolute"/>
+        /// Umístí všechny prvky patřící k Game i Menu do fyzického prostoru = nastaví jejich <see cref="SudokuItem.BoundsAbsolute"/> podle jejich <see cref="SudokuItem.BoundsRelative"/> tak,
+        /// aby se správně umístily do <see cref="GameBounds"/>.
         /// </summary>
-        private void _SetAbsoluteGameBounds()
+        private void _SetAbsoluteItemBounds()
         {
-            var virtualSize = this.__RelativeGameSize.Width;
-            if (virtualSize <= 10f) return;
-            var targetBounds = this.GameBounds;
-            var origin = (PointF)targetBounds.Location;
-            var zoom = (float)targetBounds.Width / virtualSize;
+            // Přepočty pro prvky Game:
+            var relativeGameSize = this.__RelativeGameSize;
+            if (relativeGameSize.Width <= 90f) return;
+            var gameBounds = this.GameBounds;
+            var gameOrigin = (PointF)gameBounds.Location;
+            var gameZoom = (float)gameBounds.Width / relativeGameSize.Width;
+            __AbsoluteCellSize = __RelativeCellSize.Zoom(gameZoom);
 
-            foreach (var i in this.__AllItems.Where(i => i.ItemType.HasFlag(SudokuItemType.PartGame)))
-                setAbsoluteBoundsItem(i);
+            // Přepočty pro prvky Menu:
+            var relativeMenuSize = this.__RelativeMenuSize;
+            if (relativeMenuSize.Height <= 20f) return;
+            var menuBounds = this.MenuBounds;
+            var menuOrigin = (PointF)menuBounds.Location;
+            var menuZoomX = (float)gameBounds.Width / relativeGameSize.Width;
+            var menuZoomY = (float)gameBounds.Height / relativeGameSize.Height;
 
-            __AbsoluteCellSize = __RelativeCellSize.Zoom(zoom);
-
-            void setAbsoluteBoundsItem(SudokuItem item)
+            // Všechny prvky:
+            foreach (var i in this.__AllItems)
             {
-                item.BoundsAbsolute = item.BoundsRelative.Zoom(zoom).ShiftBy(origin);
+                if (i.ItemType.HasFlag(SudokuItemType.PartGame))
+                    setAbsoluteGameBoundsItem(i);
+                else if (i.ItemType.HasFlag(SudokuItemType.PartButton))
+                    setAbsoluteMenuBoundsItem(i);
+            }
+
+            void setAbsoluteGameBoundsItem(SudokuItem item)
+            {
+                item.BoundsAbsolute = item.BoundsRelative.Zoom(gameZoom).ShiftBy(gameOrigin);
+            }
+            void setAbsoluteMenuBoundsItem(SudokuItem item)
+            {
+                item.BoundsAbsolute = item.BoundsRelative.Zoom(menuZoomX, menuZoomY).ShiftBy(menuOrigin);
             }
         }
-        private void _SetAbsoluteControlBounds() { }
         /// <summary>
         /// Prostor, kde je kreslena Game. Jeho šířka == výška = vždy jde o čtverec.
         /// </summary>
         public RectangleF GameBounds { get; private set; }
         /// <summary>
-        /// Prostor kde jsou kresleny Controls
+        /// Prostor kde je kresleno Menu
         /// </summary>
-        public RectangleF ControlBounds { get; private set; }
+        public RectangleF MenuBounds { get; private set; }
         #endregion
         #endregion
         #region Fonty písma
@@ -717,7 +739,7 @@ namespace DjSoft.Games.Animated.Sudoku
         #region Suspend / Resume coordinates
         /// <summary>
         /// Pozastaví akce v <see cref="SudokuCoordinates"/>, které jsou běžně vyvolány po setování hodnot do <see cref="Game"/>, <see cref="Configuration"/>,
-        /// <see cref="Theme"/> a <see cref="ControlBounds"/>. Pokud nyní dojde k jejich setování, akce neproběhnou, ale proběhnou až na konci usingu při Dispose vráceného objektu.
+        /// <see cref="Theme"/> a <see cref="MenuBounds"/>. Pokud nyní dojde k jejich setování, akce neproběhnou, ale proběhnou až na konci usingu při Dispose vráceného objektu.
         /// </summary>
         /// <returns></returns>
         public IDisposable SuspendCoordinates()
@@ -792,7 +814,7 @@ namespace DjSoft.Games.Animated.Sudoku
         {
             var theme = Theme;
             args.Graphics.FillRectangle(args.GetBrush(theme.GameBackColor), this.GameBounds);
-            args.Graphics.FillRectangle(args.GetBrush(theme.ControlBackColor), this.ControlBounds);
+            args.Graphics.FillRectangle(args.GetBrush(theme.ControlBackColor), this.MenuBounds);
         }
         #endregion
     }
@@ -1210,18 +1232,32 @@ namespace DjSoft.Games.Animated.Sudoku
     /// </summary>
     public class SudokuItem
     {
+        #region Konstruktor a public data
         /// <summary>
         /// Konstruktor
         /// </summary>
         /// <param name="owner"></param>
-        /// <param name="itemPosition"></param>
         /// <param name="itemType"></param>
+        /// <param name="itemPosition"></param>
         /// <param name="itemSubValue"></param>
-        public SudokuItem(SudokuControl owner, Position itemPosition, SudokuItemType itemType, int? itemSubValue)
+        public SudokuItem(SudokuControl owner, SudokuItemType itemType, Position itemPosition, int? itemSubValue)
         {
             __Owner = owner;
-            __ItemPosition = itemPosition;
             __ItemType = itemType;
+            __ItemPosition = itemPosition;
+            __ItemSubValue = itemSubValue;
+        }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="owner"></param>
+        /// <param name="itemType"></param>
+        /// <param name="controlId"></param>
+        public SudokuItem(SudokuControl owner, SudokuItemType itemType, string controlId, int? itemSubValue)
+        {
+            __Owner = owner;
+            __ItemType = itemType;
+            __ControlId = controlId;
             __ItemSubValue = itemSubValue;
         }
         /// <summary>
@@ -1265,6 +1301,10 @@ namespace DjSoft.Games.Animated.Sudoku
         /// Hodnota SubValue = hint
         /// </summary>
         public int? ItemSubValue { get { return __ItemSubValue; } } private readonly int? __ItemSubValue;
+        /// <summary>
+        /// ID controlu, uvádí se pouze u Controlů (buttony)
+        /// </summary>
+        public string ControlId { get { return __ControlId; } } private string __ControlId;
         /// <summary>
         /// Prvky, nacházející se uvnitř prostoru this prvku.
         /// Jde tedy výhradně o řetěz: Grupa -- Cell -- SubCell.
@@ -1318,6 +1358,7 @@ namespace DjSoft.Games.Animated.Sudoku
 
         public bool IsVisible { get; set; }
 
+        #endregion
         #region Interaktivita
         /// <summary>
         /// Do dodaného soupisu přidá sebe a své Childs, pokud jejich souřadnice obsahuje daný bod (myši).
@@ -1387,11 +1428,20 @@ namespace DjSoft.Games.Animated.Sudoku
         }
         #endregion
         #region Animace
+        /// <summary>
+        /// Zahájí animaci akce MouseEnter
+        /// </summary>
+        /// <param name="mouseState"></param>
         private void _MouseEnterAnimationStart(ref InteractiveMouseState mouseState)
         {
-            this.Animator.AddMotion(20, Animator.TimeMode.FastStartSlowEnd, 0d, _MouseEnterAnimationStep, 0f, 100f, null);
+            _CurrentAnimationDone();
+            __CurrentAnimation = this.Animator.AddMotion(12, Animator.TimeMode.FastStartSlowEnd, 0d, _MouseEnterAnimationStep, __MouseOnOverlayOpacity, 100f, null);
             mouseState = InteractiveMouseState.MouseEnterAnimating;
         }
+        /// <summary>
+        /// Provede jeden krok animace MouseEnter
+        /// </summary>
+        /// <param name="motion"></param>
         private void _MouseEnterAnimationStep(Animator.Motion motion)
         {
             if (__MouseState != InteractiveMouseState.MouseEnterAnimating)
@@ -1401,17 +1451,26 @@ namespace DjSoft.Games.Animated.Sudoku
             else
             {
                 bool isDone = motion.IsDone;
-                __OverlayRatio = (isDone ? 100f : (float)motion.CurrentValue);
+                __MouseOnOverlayOpacity = (isDone ? 100f : (float)motion.CurrentValue);
                 if (isDone) _MouseState = InteractiveMouseState.MouseOn;
                 _RepaintOverlay(isDone);
             }
+            if (motion.IsDone) __CurrentAnimation = null;
         }
-
+        /// <summary>
+        /// Zahájí animaci akce MouseLeave
+        /// </summary>
+        /// <param name="mouseState"></param>
         private void _MouseLeaveAnimationStart(ref InteractiveMouseState mouseState)
         {
-            this.Animator.AddMotion(45, Animator.TimeMode.FastStartSlowEnd, 0d, _MouseLeaveAnimationStep, 100f, 0f, null);
+            _CurrentAnimationDone();
+            __CurrentAnimation = this.Animator.AddMotion(45, Animator.TimeMode.FastStartSlowEnd, 0d, _MouseLeaveAnimationStep, __MouseOnOverlayOpacity, 0f, null);
             mouseState = InteractiveMouseState.MouseLeaveAnimating;
         }
+        /// <summary>
+        /// Provede jeden krok animace MouseLeave
+        /// </summary>
+        /// <param name="motion"></param>
         private void _MouseLeaveAnimationStep(Animator.Motion motion)
         {
             if (__MouseState != InteractiveMouseState.MouseLeaveAnimating)
@@ -1421,20 +1480,21 @@ namespace DjSoft.Games.Animated.Sudoku
             else
             {
                 bool isDone = motion.IsDone;
-                __OverlayRatio = (isDone ? 0f : (float)motion.CurrentValue);
+                __MouseOnOverlayOpacity = (isDone ? 0f : (float)motion.CurrentValue);
                 if (isDone) _MouseState = InteractiveMouseState.MouseOff;
                 _RepaintOverlay(isDone);
             }
+            if (motion.IsDone) __CurrentAnimation = null;
         }
         private void _RepaintOverlay(bool isDone)
         {
-            bool isOverlay = (__OverlayRatio > 0f);
+            bool isOverlay = (__MouseOnOverlayOpacity > 0f);
             __Owner.LayerOverlayActive = true;
             _RepaintOwner(false, isDone, !isDone);
         }
         private void _PaintOverlayAnimation(LayeredPaintEventArgs args)
         {
-            var ratio = __OverlayRatio;
+            var ratio = __MouseOnOverlayOpacity;
             if (ratio > 0f)
             {
                 byte alpha = (byte)(160f * ratio / 100f);
@@ -1444,7 +1504,28 @@ namespace DjSoft.Games.Animated.Sudoku
 
             }
         }
-        private float __OverlayRatio;
+        /// <summary>
+        /// Viditelnost barvy MouseOn ve vrstvě Overlay pro this buňku.
+        /// Hodnota 0 = barva MouseOn není zobrazena, hodnoty 1-99 = postupná animace (probíhající) do plného zobrazení barvy, hodnota 100 = plně viditelná barva.
+        /// Upozornění: barva sama smí mít Alha kanál menší než 255, pak i při plně viditelné barvě smí být částečně průhledná.
+        /// </summary>
+        private float __MouseOnOverlayOpacity;
+        /// <summary>
+        /// Pokud aktuálně běží nějaká animace, pak ji ukončí.
+        /// </summary>
+        private void _CurrentAnimationDone()
+        {
+            var motion = __CurrentAnimation;
+            if (motion != null)
+            {
+                motion.IsDone = true;
+                __CurrentAnimation = null;
+            }
+        }
+        /// <summary>
+        /// Aktuálně probíhající animace. Jedna buňka má vždy aktivní nejvýše jednu animaci.
+        /// </summary>
+        private Animator.Motion __CurrentAnimation;
         #endregion
         #region Kreslení
         /// <summary>
@@ -1474,6 +1555,8 @@ namespace DjSoft.Games.Animated.Sudoku
                 PaintItemCell(args);
             else if (itemType.HasFlag(SudokuItemType.PartSubCell))
                 PaintItemSubCell(args);
+            else if (itemType.HasFlag(SudokuItemType.PartButton))
+                PaintItemButton(args);
             else
                 PaintItemOther(args);
         }
@@ -1504,7 +1587,7 @@ namespace DjSoft.Games.Animated.Sudoku
             if (w < 2f)
             {
                 var color = Theme.GetBackColor(this);
-                var x = bounds.Y + w / 2f;
+                var x = bounds.X + w / 2f;
                 var pen = args.GetPen(color, w);
                 args.Graphics.DrawLine(pen, x, bounds.Y, x, bounds.Bottom);
             }
@@ -1560,6 +1643,13 @@ namespace DjSoft.Games.Animated.Sudoku
         }
         protected virtual void PaintItemSubCell(LayeredPaintEventArgs args)
         { }
+        protected virtual void PaintItemButton(LayeredPaintEventArgs args)
+        {
+            var theme = Theme;
+            var color = theme.GetBackColor(this);
+            if (color.A > 0)
+                args.Graphics.FillRectangle(args.GetBrush(color), this.BoundsAbsolute);
+        }
         protected virtual void PaintItemOther(LayeredPaintEventArgs args)
         {
             var theme = Theme;
