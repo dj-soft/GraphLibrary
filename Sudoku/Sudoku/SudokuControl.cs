@@ -355,7 +355,15 @@ namespace DjSoft.Games.Animated.Sudoku
         private void _AddSudokuControlItems()
         {
             for (int v = 1; v <= 9; v++)
-                _AddOneButton(SudokuItemType.PartMenu | SudokuItemType.PartButton, $"Value{v}", true, v);
+                _AddOneButton(SudokuItemType.PartMenu | SudokuItemType.PartButton, SudokuButtonType.Value, true, v);
+
+            _AddOneButton(SudokuItemType.PartMenu | SudokuItemType.PartButton, SudokuButtonType.ResetGame, true);
+            _AddOneButton(SudokuItemType.PartMenu | SudokuItemType.PartButton, SudokuButtonType.NewGame, true);
+            _AddOneButton(SudokuItemType.PartMenu | SudokuItemType.PartButton, SudokuButtonType.Hint, true);
+            _AddOneButton(SudokuItemType.PartMenu | SudokuItemType.PartButton, SudokuButtonType.NewGameLight, false);
+            _AddOneButton(SudokuItemType.PartMenu | SudokuItemType.PartButton, SudokuButtonType.NewGameMedium, false);
+            _AddOneButton(SudokuItemType.PartMenu | SudokuItemType.PartButton, SudokuButtonType.NewGameHard, false);
+            _AddOneButton(SudokuItemType.PartMenu | SudokuItemType.PartButton, SudokuButtonType.Back, false);
         }
         /// <summary>
         /// Přidá prvek na dané pozici, daného typu a subValue
@@ -377,13 +385,13 @@ namespace DjSoft.Games.Animated.Sudoku
         /// Přidá prvek na dané pozici, daného typu a subValue
         /// </summary>
         /// <param name="itemType"></param>
-        /// <param name="controlId"></param>
+        /// <param name="buttonType"></param>
         /// <param name="visible"></param>
         /// <param name="itemSubValue"></param>
         /// <returns></returns>
-        private SudokuItem _AddOneButton(SudokuItemType itemType, string controlId, bool visible = true, int? itemSubValue = null)
+        private SudokuItem _AddOneButton(SudokuItemType itemType, SudokuButtonType buttonType, bool visible = true, int? itemSubValue = null)
         {
-            SudokuItem item = new SudokuItem(this.__Owner, itemType, controlId, itemSubValue);
+            SudokuItem item = new SudokuItem(this.__Owner, itemType, buttonType, itemSubValue);
             return _AddOneItem(item, false, null);
         }
         /// <summary>
@@ -568,13 +576,13 @@ namespace DjSoft.Games.Animated.Sudoku
             // Určuje relativní souřadnici prvku Button
             void setRelativeBoundsButton(SudokuItem item)
             {
-                if (item.ControlId.StartsWith("Value") || item.ItemSubValue.HasValue && item.ItemSubValue.Value > 0)
+                if (item.ButtonType == SudokuButtonType.Value && item.ItemSubValue.HasValue && item.ItemSubValue.Value > 0)
                 {   // Tlačítko pro hodnotu 1-9:
                     float v = (float)(item.ItemSubValue.Value - 1);
                     float w = (menuSize.Width / 9f);
                     float x = v * w;
                     float y = 0f;
-                    float h = (0.55f * menuSize.Height);
+                    float h = (0.45f * menuSize.Height);
                     item.BoundsRelative = new RectangleF(x, y, w, h);
                 }
             }
@@ -642,8 +650,8 @@ namespace DjSoft.Games.Animated.Sudoku
             if (relativeMenuSize.Height <= 20f) return;
             var menuBounds = this.MenuBounds;
             var menuOrigin = (PointF)menuBounds.Location;
-            var menuZoomX = (float)gameBounds.Width / relativeGameSize.Width;
-            var menuZoomY = (float)gameBounds.Height / relativeGameSize.Height;
+            var menuZoomX = (float)menuBounds.Width / relativeMenuSize.Width;
+            var menuZoomY = (float)menuBounds.Height / relativeMenuSize.Height;
 
             // Všechny prvky:
             foreach (var i in this.__AllItems)
@@ -1216,10 +1224,17 @@ namespace DjSoft.Games.Animated.Sudoku
                     return Color.FromArgb(0, 0, 0, 0);
                 }
 
+
+
             }
 
             if (itemType.HasFlag(SudokuItemType.PartMenu))
-            { }
+            {
+                if (itemType.HasFlag(SudokuItemType.PartButton))
+                {
+                    return Color.LightCoral;
+                }
+            }
 
             return this.BackColor;
         }
@@ -1252,12 +1267,12 @@ namespace DjSoft.Games.Animated.Sudoku
         /// </summary>
         /// <param name="owner"></param>
         /// <param name="itemType"></param>
-        /// <param name="controlId"></param>
-        public SudokuItem(SudokuControl owner, SudokuItemType itemType, string controlId, int? itemSubValue)
+        /// <param name="buttonType"></param>
+        public SudokuItem(SudokuControl owner, SudokuItemType itemType, SudokuButtonType buttonType, int? itemSubValue)
         {
             __Owner = owner;
             __ItemType = itemType;
-            __ControlId = controlId;
+            __ButtonType = buttonType;
             __ItemSubValue = itemSubValue;
         }
         /// <summary>
@@ -1302,9 +1317,9 @@ namespace DjSoft.Games.Animated.Sudoku
         /// </summary>
         public int? ItemSubValue { get { return __ItemSubValue; } } private readonly int? __ItemSubValue;
         /// <summary>
-        /// ID controlu, uvádí se pouze u Controlů (buttony)
+        /// Typ buttonu, uvádí se pouze u Controlů (buttony)
         /// </summary>
-        public string ControlId { get { return __ControlId; } } private string __ControlId;
+        public SudokuButtonType ButtonType { get { return __ButtonType; } } private SudokuButtonType __ButtonType;
         /// <summary>
         /// Prvky, nacházející se uvnitř prostoru this prvku.
         /// Jde tedy výhradně o řetěz: Grupa -- Cell -- SubCell.
@@ -1649,6 +1664,11 @@ namespace DjSoft.Games.Animated.Sudoku
             var color = theme.GetBackColor(this);
             if (color.A > 0)
                 args.Graphics.FillRectangle(args.GetBrush(color), this.BoundsAbsolute);
+            if (this.ItemSubValue.HasValue)
+            {
+
+            }
+
         }
         protected virtual void PaintItemOther(LayeredPaintEventArgs args)
         {
@@ -1745,6 +1765,48 @@ namespace DjSoft.Games.Animated.Sudoku
         GameCell = PartGame | PartCell,
         GameSubCell = PartGame | PartSubCell
 
+    }
+    /// <summary>
+    /// Typyp buttonů
+    /// </summary>
+    public enum SudokuButtonType
+    {
+        /// <summary>
+        /// Není button
+        /// </summary>
+        None,
+        /// <summary>
+        /// Button pro konkrétní hodnotu, která je v <see cref="SudokuItem.ItemSubValue"/>
+        /// </summary>
+        Value,
+        /// <summary>
+        /// Reset hry = zpátky na fixní hodnoty
+        /// </summary>
+        ResetGame,
+        /// <summary>
+        /// Nová hra, rozsvítí 3 možnosti + Back
+        /// </summary>
+        NewGame,
+        /// <summary>
+        /// Dej mi tip
+        /// </summary>
+        Hint,
+        /// <summary>
+        /// Nová hra lehká
+        /// </summary>
+        NewGameLight,
+        /// <summary>
+        /// Nová hra střední
+        /// </summary>
+        NewGameMedium,
+        /// <summary>
+        /// Nová hra těžká
+        /// </summary>
+        NewGameHard,
+        /// <summary>
+        /// Zpátky
+        /// </summary>
+        Back
     }
     /// <summary>
     /// Stav interaktivity
