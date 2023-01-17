@@ -903,6 +903,15 @@ namespace DjSoft.Games.Animated.Sudoku
                 scs.ValueImages[7] = Properties.Resources.Aqua48;
                 scs.ValueImages[8] = Properties.Resources.Aqua49;
 
+
+                scs.ButtonImages.Add(SudokuButtonType.ResetGame, Properties.Resources.actualiser);
+                scs.ButtonImages.Add(SudokuButtonType.NewGame, Properties.Resources.sudoku3);
+                scs.ButtonImages.Add(SudokuButtonType.Hint, Properties.Resources.Jarovka_0);
+                scs.ButtonImages.Add(SudokuButtonType.NewGameLight, Properties.Resources.sudoku6);
+                scs.ButtonImages.Add(SudokuButtonType.NewGameMedium, Properties.Resources.sudoku4);
+                scs.ButtonImages.Add(SudokuButtonType.NewGameHard, Properties.Resources.sudoku2);
+                scs.ButtonImages.Add(SudokuButtonType.Back, Properties.Resources.ArrowLeft2);
+               
                 scs.ControlBackColor = Color.FromArgb(255, 235, 235, 245);
                 return scs;
             }
@@ -918,6 +927,7 @@ namespace DjSoft.Games.Animated.Sudoku
             this.CellsInGroupRowCount = 3;
             this.CellsInGroupColCount = 3;
             this.ValueImages = new Image[9];
+            this.ButtonImages = new Dictionary<SudokuButtonType, Image>();
         }
         #endregion
         #region Jednotlivé barvy a rozměry
@@ -990,6 +1000,10 @@ namespace DjSoft.Games.Animated.Sudoku
         /// Pole má tedy 9 prvků, ale je možné že obsahují NULL.
         /// </summary>
         public Image[] ValueImages { get; private set; }
+        /// <summary>
+        /// Images pro jednotlivé Buttony
+        /// </summary>
+        public Dictionary<SudokuButtonType, Image> ButtonImages { get; private set; }
 
         public Color ControlBackColor { get; private set; }
 
@@ -1662,8 +1676,14 @@ namespace DjSoft.Games.Animated.Sudoku
         {
             var theme = Theme;
             var color = theme.GetBackColor(this);
+            var bounds = this.BoundsAbsolute;
+            bounds = bounds.ZoomCenter(0.9f);
             if (color.A > 0)
-                args.Graphics.FillRectangle(args.GetBrush(color), this.BoundsAbsolute);
+                args.Graphics.FillRectangle(args.GetBrush(color), bounds);
+            var image = GetImageForButton();
+
+            if (image != null) args.Graphics.DrawImage(image, bounds);
+
             if (this.ItemSubValue.HasValue)
             {
 
@@ -1683,6 +1703,13 @@ namespace DjSoft.Games.Animated.Sudoku
             if (value >= 1 && value <= 9 && IsVisibleValueImage) return Theme.ValueImages[value - 1];
             return null;
         }
+        protected Image GetImageForButton()
+        {
+            var buttonType = this.ButtonType;
+            if (buttonType == SudokuButtonType.Value && this.ItemSubValue.HasValue) return Theme.ValueImages[this.ItemSubValue.Value - 1];
+            if (Theme.ButtonImages.TryGetValue(buttonType, out var image)) return image;
+            return null;
+        }
         protected virtual void DrawString(LayeredPaintEventArgs args, string text, Font font, RectangleF bounds)
         {
             if (font is null || String.IsNullOrEmpty(text)) return;
@@ -1694,7 +1721,7 @@ namespace DjSoft.Games.Animated.Sudoku
         #endregion
     }
     #endregion
-    #region enumy SudokuItemType, InteractiveMouseState
+    #region enumy SudokuItemType, SudokuButtonType, InteractiveMouseState
     /// <summary>
     /// Typ prvku
     /// </summary>

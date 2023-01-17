@@ -199,6 +199,28 @@ namespace DjSoft.Games.Animated
             return new RectangleF(zoomX * bounds.X, zoomY * bounds.Y, zoomX * bounds.Width, zoomY * bounds.Height);
         }
         /// <summary>
+        /// Vrátí new <see cref="RectangleF"/>, vytvořený okolo středu dodaného <see cref="RectangleF"/>, s velikostí upravenou Zoomem z původní velikosti.
+        /// </summary>
+        /// <param name="bounds"></param>
+        /// <param name="zoom"></param>
+        /// <returns></returns>
+        public static RectangleF ZoomCenter(this RectangleF bounds, float zoom)
+        {
+            var center = bounds.GetCenter();
+            var size = bounds.Size.Zoom(zoom);
+            return center.GetBoundsFromCenter(size);
+        }
+        public static PointF GetCenter(this RectangleF bounds)
+        {
+            return new PointF(bounds.X + bounds.Width / 2f, bounds.Y + bounds.Height / 2f);
+        }
+        public static RectangleF GetBoundsFromCenter(this PointF center, SizeF size)
+        {
+            PointF location = new PointF(center.X - size.Width / 2f, center.Y - size.Height / 2f);
+            return new RectangleF(location, size);
+        }
+
+        /// <summary>
         /// Vrátí this velikost zarovanou do daného prostoru s daným <paramref name="alignment"/>.
         /// Pokud <paramref name="shrinkToFit"/> je true, pak danou velikost nejprve zmenší na velikost prostoru (v každé souřadnici zvlášť, bez zachování poměru stran).
         /// </summary>
@@ -356,6 +378,7 @@ namespace DjSoft.Games.Animated
         }
         #endregion
     }
+    #region class DataPair
     /// <summary>
     /// Pár dvou údajů shodného typu
     /// </summary>
@@ -389,4 +412,5 @@ namespace DjSoft.Games.Animated
         /// </summary>
         public bool HasItem2 { get { return __HasItem2; } } private bool __HasItem2 = false;
     }
+    #endregion
 }
