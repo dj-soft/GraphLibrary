@@ -205,6 +205,15 @@ namespace DjSoft.Games.Animated.Sudoku
             args.Graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAlias;
 
         }
+
+        internal void PaintBack(LayeredPaintEventArgs args, RectangleF bounds, SudokuSkinTheme.BackProperties backProperties)
+        {
+            if (backProperties is null) return;
+            if (backProperties.Image != null)
+                args.Graphics.DrawImage(backProperties.Image, bounds);
+            if (backProperties.Color.HasValue && backProperties.Color.Value.A > 0)
+                args.Graphics.FillRectangle(args.GetBrush(backProperties.Color.Value), bounds);
+        }
         #endregion
     }
     #region class SudokuCoordinates : Souřadnice prvků v Sudoku
@@ -355,15 +364,15 @@ namespace DjSoft.Games.Animated.Sudoku
         private void _AddSudokuControlItems()
         {
             for (int v = 1; v <= 9; v++)
-                _AddOneButton(SudokuItemType.PartMenu | SudokuItemType.PartButton, SudokuButtonType.Value, true, v);
+                _AddOneButton(SudokuItemType.PartMenu | SudokuItemType.PartButton, SudokuButtonType.Value, v.ToString(), true, v);
 
-            _AddOneButton(SudokuItemType.PartMenu | SudokuItemType.PartButton, SudokuButtonType.ResetGame, true);
-            _AddOneButton(SudokuItemType.PartMenu | SudokuItemType.PartButton, SudokuButtonType.NewGame, true);
-            _AddOneButton(SudokuItemType.PartMenu | SudokuItemType.PartButton, SudokuButtonType.Hint, true);
-            _AddOneButton(SudokuItemType.PartMenu | SudokuItemType.PartButton, SudokuButtonType.NewGameLight, false);
-            _AddOneButton(SudokuItemType.PartMenu | SudokuItemType.PartButton, SudokuButtonType.NewGameMedium, false);
-            _AddOneButton(SudokuItemType.PartMenu | SudokuItemType.PartButton, SudokuButtonType.NewGameHard, false);
-            _AddOneButton(SudokuItemType.PartMenu | SudokuItemType.PartButton, SudokuButtonType.Back, false);
+            _AddOneButton(SudokuItemType.PartMenu | SudokuItemType.PartButton, SudokuButtonType.ResetGame, "", true);
+            _AddOneButton(SudokuItemType.PartMenu | SudokuItemType.PartButton, SudokuButtonType.NewGame, "", true);
+            _AddOneButton(SudokuItemType.PartMenu | SudokuItemType.PartButton, SudokuButtonType.Hint, "", true);
+            _AddOneButton(SudokuItemType.PartMenu | SudokuItemType.PartButton, SudokuButtonType.NewGameLight, "", false);
+            _AddOneButton(SudokuItemType.PartMenu | SudokuItemType.PartButton, SudokuButtonType.NewGameMedium, "", false);
+            _AddOneButton(SudokuItemType.PartMenu | SudokuItemType.PartButton, SudokuButtonType.NewGameHard, "", false);
+            _AddOneButton(SudokuItemType.PartMenu | SudokuItemType.PartButton, SudokuButtonType.Back, "", false);
         }
         /// <summary>
         /// Přidá prvek na dané pozici, daného typu a subValue
@@ -389,9 +398,9 @@ namespace DjSoft.Games.Animated.Sudoku
         /// <param name="visible"></param>
         /// <param name="itemSubValue"></param>
         /// <returns></returns>
-        private SudokuItem _AddOneButton(SudokuItemType itemType, SudokuButtonType buttonType, bool visible = true, int? itemSubValue = null)
+        private SudokuItem _AddOneButton(SudokuItemType itemType, SudokuButtonType buttonType, string buttonText, bool visible = true, int? itemSubValue = null)
         {
-            SudokuItem item = new SudokuItem(this.__Owner, itemType, buttonType, itemSubValue);
+            SudokuItem item = new SudokuItem(this.__Owner, itemType, buttonType, buttonText, itemSubValue);
             return _AddOneItem(item, false, null);
         }
         /// <summary>
@@ -714,11 +723,14 @@ namespace DjSoft.Games.Animated.Sudoku
             var emSize = (float)(Math.Round(0.48f * height, 1));
             if (emSize < 6.5f) return;                  // Jsme moc malinký...
 
+            var theme = this.Theme;
+            var fixedFontStyle = theme?.FixedCellLook.FontStyle ?? FontStyle.Bold;
+            var filledFontStyle = theme?.FilledCellLook.FontStyle ?? FontStyle.Regular;
             if (emSize != __FontCellEmSize || __CellFixedFont is null || __CellFilledFont is null || __SubCellFont is null)
             {
                 _DisposeFonts();
-                __CellFixedFont = new Font(FontFamily.GenericSansSerif, emSize, FontStyle.Bold);
-                __CellFilledFont = new Font(FontFamily.GenericSansSerif, emSize, FontStyle.Regular);
+                __CellFixedFont = new Font(FontFamily.GenericSansSerif, emSize, fixedFontStyle);
+                __CellFilledFont = new Font(FontFamily.GenericSansSerif, emSize, filledFontStyle);
                 var emSubSize = emSize / 3f;
                 if (emSubSize >= 6f)
                     __SubCellFont = new Font(FontFamily.GenericSansSerif, emSubSize, FontStyle.Regular);
@@ -821,8 +833,8 @@ namespace DjSoft.Games.Animated.Sudoku
         public void PaintBackground(LayeredPaintEventArgs args)
         {
             var theme = Theme;
-            args.Graphics.FillRectangle(args.GetBrush(theme.GameBackColor), this.GameBounds);
-            args.Graphics.FillRectangle(args.GetBrush(theme.ControlBackColor), this.MenuBounds);
+            __Owner.PaintBack(args, this.GameBounds, theme.GameBackLook);
+            __Owner.PaintBack(args, this.MenuBounds, theme.MenuBackLook);
         }
         #endregion
     }
@@ -871,27 +883,33 @@ namespace DjSoft.Games.Animated.Sudoku
             {
                 SudokuSkinTheme scs = new SudokuSkinTheme();
                 scs.BackColor = Color.FromArgb(255, 240, 240, 245);
-                scs.GameBackColor = Color.FromArgb(255, 245, 245, 250);
+                scs.GameBackLook.Color = Color.FromArgb(255, 245, 245, 250);
+                scs.MenuBackLook.Color = Color.FromArgb(255, 235, 235, 245);
 
-                scs.OuterLineColor = Color.FromArgb(255, 100, 100, 100);
-                scs.OuterLineSize = 6f;
-                scs.GroupLineColor = Color.FromArgb(255, 160, 160, 160);
-                scs.GroupLineSize = 4f;
-                scs.CellLineColor = Color.FromArgb(255, 160, 160, 160);
-                scs.CellLineSize = 2f;
+                scs.OuterLineLook.Color = Color.FromArgb(255, 100, 100, 100);
+                scs.OuterLineLook.Width = 6f;
+                scs.GroupLineLook.Color = Color.FromArgb(255, 160, 160, 160);
+                scs.GroupLineLook.Width = 4f;
+                scs.CellLineLook.Color = Color.FromArgb(255, 160, 160, 160);
+                scs.CellLineLook.Width = 2f;
+
                 scs.CellMargin = 4f;
 
-                scs.GroupABackColor = Color.FromArgb(255, 235, 230, 235);
-                scs.GroupBBackColor = Color.FromArgb(255, 240, 240, 245);
+                scs.GroupABackLook.Color = Color.FromArgb(255, 235, 230, 235);
+                scs.GroupBBackLook.Color = Color.FromArgb(255, 240, 240, 245);
 
-                scs.EmptyCellBackColor = Color.FromArgb(0, 245, 245, 250);
-                scs.EmptyCellMouseOnBackColor = Color.FromArgb(255, 250, 250, 180);
-                scs.EmptyCellInActiveGroupBackColor = Color.FromArgb(255, 250, 250, 220);
+                scs.EmptyCellLook.Color = Color.FromArgb(0, 245, 245, 250);
+                scs.EmptyCellLook.ColorMouseOn = Color.FromArgb(255, 250, 250, 180);
 
-                scs.FixedCellBackColor = Color.FromArgb(255, 220, 220, 230);
-                scs.FixedCellMouseOnBackColor = Color.FromArgb(255, 220, 220, 230);
-                scs.FixedCellInActiveGroupBackColor = Color.FromArgb(255, 240, 240, 210);
-                scs.FixedCellTextColor = Color.FromArgb(255, 0, 0, 0);
+                scs.FixedCellLook.Color = Color.FromArgb(255, 220, 220, 230);
+                scs.FixedCellLook.ColorMouseOn = Color.FromArgb(255, 220, 220, 230);
+                scs.FixedCellLook.TextColor = Color.FromArgb(255, 0, 0, 0);
+                scs.FixedCellLook.FontStyle = FontStyle.Bold;
+
+                scs.FilledCellLook.Color = Color.FromArgb(255, 220, 220, 230);
+                scs.FilledCellLook.ColorMouseOn = Color.FromArgb(255, 220, 220, 230);
+                scs.FilledCellLook.TextColor = Color.FromArgb(255, 0, 0, 0);
+                scs.FilledCellLook.FontStyle = FontStyle.Regular;
 
                 scs.ValueImages[0] = Properties.Resources.Aqua41;
                 scs.ValueImages[1] = Properties.Resources.Aqua42;
@@ -912,7 +930,6 @@ namespace DjSoft.Games.Animated.Sudoku
                 scs.ButtonImages.Add(SudokuButtonType.NewGameHard, Properties.Resources.sudoku2);
                 scs.ButtonImages.Add(SudokuButtonType.Back, Properties.Resources.ArrowLeft2);
                
-                scs.ControlBackColor = Color.FromArgb(255, 235, 235, 245);
                 return scs;
             }
         }
@@ -926,6 +943,16 @@ namespace DjSoft.Games.Animated.Sudoku
             this.GroupsInColCount = 3;
             this.CellsInGroupRowCount = 3;
             this.CellsInGroupColCount = 3;
+            this.GameBackLook = new BackProperties();
+            this.MenuBackLook = new BackProperties();
+            this.GroupABackLook = new BackProperties();
+            this.GroupBBackLook = new BackProperties();
+            this.OuterLineLook = new LineProperties();
+            this.GroupLineLook = new LineProperties();
+            this.CellLineLook = new LineProperties();
+            this.EmptyCellLook = new InteractiveProperties();
+            this.FixedCellLook = new InteractiveProperties();
+            this.FilledCellLook = new InteractiveProperties();
             this.ValueImages = new Image[9];
             this.ButtonImages = new Dictionary<SudokuButtonType, Image>();
         }
@@ -939,35 +966,34 @@ namespace DjSoft.Games.Animated.Sudoku
         /// Základní barva pozadí pod vlastní hrou (z ní bude vykukovat jen prázdný prostor <see cref="CellMargin"/>, 
         /// a případně bude prosvítat pod poloprůhlednými prvky. Kterákoli barva může mít Alpha kanál menší než 255.
         /// </summary>
-        public Color GameBackColor { get; private set; }
+        public BackProperties GameBackLook { get; private set; }
+        /// <summary>
+        /// Pozadí pod Menu
+        /// </summary>
+        public BackProperties MenuBackLook { get; private set; }
 
         /// <summary>
-        /// Barva linky okolo celé plochy (9x9)
+        /// Barva pozadí grupy A (1.1 + 1.3 + 2.2 + 3.1 + 3.3)
         /// </summary>
-        public Color OuterLineColor { get; private set; }
+        public BackProperties GroupABackLook { get; private set; }
         /// <summary>
-        /// Šířka linky okolo celé plochy (9x9);
+        /// Barva pozadí grupy B (1.2 + 2.1 + 2.3 + 3.2)
+        /// </summary>
+        public BackProperties GroupBBackLook { get; private set; }
+
+        /// <summary>
+        /// Barva a šířka linky okolo celé plochy (9x9)
+        /// </summary>
+        public LineProperties OuterLineLook { get; private set; }
+        /// <summary>
+        /// Šířka a šířka linky okolo celé plochy (9x9);
         /// uvádí se relativně k velikosti buňky <see cref="CellSize"/>, což je defaultně 90.
         /// </summary>
-        public float OuterLineSize { get; private set; }
+        public LineProperties GroupLineLook { get; private set; }
         /// <summary>
-        /// Barva linky okolo jednotlivé grupy (3x3)
+        /// Barva a šířka linky okolo jednotlivé buňky
         /// </summary>
-        public Color GroupLineColor { get; private set; }
-        /// <summary>
-        /// Šířka linky okolo jednotlivé grupy (3x3);
-        /// uvádí se relativně k velikosti buňky <see cref="CellSize"/>, což je defaultně 90.
-        /// </summary>
-        public float GroupLineSize { get; private set; }
-        /// <summary>
-        /// Barva linky okolo jednotlivé buňky
-        /// </summary>
-        public Color CellLineColor { get; private set; }
-        /// <summary>
-        /// Šířka linky okolo jednotlivé buňky;
-        /// uvádí se relativně k velikosti buňky <see cref="CellSize"/>, což je defaultně 90.
-        /// </summary>
-        public float CellLineSize { get; private set; }
+        public LineProperties CellLineLook { get; private set; }
         /// <summary>
         /// Okraj okolo jedné buňky k nejbližší lince; uvádí se relativně k velikosti buňky <see cref="CellSize"/>, což je defaultně 90
         /// </summary>
@@ -977,23 +1003,9 @@ namespace DjSoft.Games.Animated.Sudoku
         /// </summary>
         public float CellSize { get; private set; }
 
-        /// <summary>
-        /// Barva pozadí grupy A (1.1 + 1.3 + 2.2 + 3.1 + 3.3)
-        /// </summary>
-        public Color GroupABackColor { get; private set; }
-        /// <summary>
-        /// Barva pozadí grupy B (1.2 + 2.1 + 2.3 + 3.2)
-        /// </summary>
-        public Color GroupBBackColor { get; private set; }
-
-        public Color EmptyCellBackColor { get; private set; }
-        public Color EmptyCellMouseOnBackColor { get; private set; }
-        public Color EmptyCellInActiveGroupBackColor { get; private set; }
-
-        public Color FixedCellBackColor { get; private set; }
-        public Color FixedCellMouseOnBackColor { get; private set; }
-        public Color FixedCellInActiveGroupBackColor { get; private set; }
-        public Color FixedCellTextColor { get; private set; }
+        public InteractiveProperties EmptyCellLook { get; private set; }
+        public InteractiveProperties FixedCellLook { get; private set; }
+        public InteractiveProperties FilledCellLook { get; private set; }
 
         /// <summary>
         /// Images [0] ÷ [8] odpovídající hodnotám [1] ÷ [9] : 9 prvků, kde prvek [0] představuje Background image pro buňku s hodnotou 1, atd.
@@ -1005,13 +1017,12 @@ namespace DjSoft.Games.Animated.Sudoku
         /// </summary>
         public Dictionary<SudokuButtonType, Image> ButtonImages { get; private set; }
 
-        public Color ControlBackColor { get; private set; }
 
         /// <summary>
         /// Obsahuje string, který zahrnuje všechny rozměrové hodnoty (šířky linek a mezer).
         /// Zajistí že po změně těchto hodnot (změna Theme) dojde k přepočtu relativního souřadného systému.
         /// </summary>
-        public string SizeHash { get { return $"{OuterLineSize:F1}|{GroupLineSize:F1}|{CellLineSize:F1}|{CellMargin:F1}"; } }
+        public string SizeHash { get { return $"{OuterLineLook.Width:F1}|{GroupLineLook.Width:F1}|{CellLineLook.Width:F1}|{CellMargin:F1}|{CellSize:F1}"; } }
         #endregion
         #region Počet buněk a skupin v řadách a sloupcích - zatím nepoužíváme !!!   ( jedeme konstantně (3 x 3)  x  (3 x 3)  =  9 x 9 )
         /// <summary>
@@ -1212,7 +1223,7 @@ namespace DjSoft.Games.Animated.Sudoku
         }
         #endregion
         #region Získání hodnoty pro daný typ prvku
-        public Color GetBackColor(SudokuItem item)
+        public Color? GetBackColor(SudokuItem item)
         {
             SudokuItemType itemType = item.ItemType;
             if (itemType.HasFlag(SudokuItemType.PartGame))
@@ -1253,6 +1264,38 @@ namespace DjSoft.Games.Animated.Sudoku
             return this.BackColor;
         }
         #endregion
+        #region SubClasses
+        /// <summary>
+        /// Grafické vlastnosti linky prvku (vnější, mezi grupami, mezi prvky)
+        /// </summary>
+        public class LineProperties
+        {
+            public Color? Color { get; set; }
+            public float Width { get; set; }
+        }
+        /// <summary>
+        /// Grafické vlastnosti pozadí prvku (hra, group, cell), neaktivní prvek
+        /// </summary>
+        public class BackProperties
+        {
+            public Image Image { get; set; }
+            public Color? Color { get; set; }
+        }
+        /// <summary>
+        /// Grafické vlastnosti pozadí prvku (hra, group, cell), interaktivní prvek
+        /// </summary>
+        public class InteractiveProperties : BackProperties
+        {
+            public Color? ColorDisabled { get; set; }
+            public Color? ColorMouseOn { get; set; }
+            public Color? ColorMouseDown { get; set; }
+            public Color? ColorError { get; set; }
+            public Color? TextColor { get; set; }
+            public FontStyle FontStyle { get; set; }
+        }
+
+
+        #endregion
     }
     #endregion
     #region class SudokuItem : Jednotlivý prvek GUI Sudoku (fixed, game, config)
@@ -1282,11 +1325,12 @@ namespace DjSoft.Games.Animated.Sudoku
         /// <param name="owner"></param>
         /// <param name="itemType"></param>
         /// <param name="buttonType"></param>
-        public SudokuItem(SudokuControl owner, SudokuItemType itemType, SudokuButtonType buttonType, int? itemSubValue)
+        public SudokuItem(SudokuControl owner, SudokuItemType itemType, SudokuButtonType buttonType, string buttonText, int? itemSubValue)
         {
             __Owner = owner;
             __ItemType = itemType;
             __ButtonType = buttonType;
+            __ButtonText = buttonText;
             __ItemSubValue = itemSubValue;
         }
         /// <summary>
@@ -1334,6 +1378,10 @@ namespace DjSoft.Games.Animated.Sudoku
         /// Typ buttonu, uvádí se pouze u Controlů (buttony)
         /// </summary>
         public SudokuButtonType ButtonType { get { return __ButtonType; } } private SudokuButtonType __ButtonType;
+        /// <summary>
+        /// Text buttonu
+        /// </summary>
+        public string ButtonText { get { return __ButtonText; } } private string __ButtonText;
         /// <summary>
         /// Prvky, nacházející se uvnitř prostoru this prvku.
         /// Jde tedy výhradně o řetěz: Grupa -- Cell -- SubCell.
@@ -1663,7 +1711,7 @@ namespace DjSoft.Games.Animated.Sudoku
                 var bounds = this.BoundsAbsolute.ShiftBy(0f, 1f);
                 var image = GetImageForCell(cell);
                 if (image != null) args.Graphics.DrawImage(image, bounds);
-                DrawString(args, cell.Value.ToString(), this.Coordinates.CellFixedFont, bounds);
+                DrawString(args, cell.Value.ToString(), this.Coordinates.CellFixedFont, bounds, ContentAlignment.MiddleCenter);
             }
         }
         protected virtual void PaintItemCellOverlay(LayeredPaintEventArgs args)
@@ -1677,18 +1725,17 @@ namespace DjSoft.Games.Animated.Sudoku
             var theme = Theme;
             var color = theme.GetBackColor(this);
             var bounds = this.BoundsAbsolute;
-            bounds = bounds.ZoomCenter(0.9f);
-            if (color.A > 0)
-                args.Graphics.FillRectangle(args.GetBrush(color), bounds);
-            var image = GetImageForButton();
 
+            bounds = bounds.ZoomCenter(0.9f);
+            if (color.A > 0 && false)
+                args.Graphics.FillRectangle(args.GetBrush(color), bounds);
+            
+            var image = GetImageForButton();
             if (image != null) args.Graphics.DrawImage(image, bounds);
 
-            if (this.ItemSubValue.HasValue)
-            {
-
-            }
-
+            var text = this.ButtonText;
+            if (!String.IsNullOrEmpty(text))
+                DrawString(args, text, this.Coordinates.CellFixedFont, bounds, ContentAlignment.MiddleCenter);
         }
         protected virtual void PaintItemOther(LayeredPaintEventArgs args)
         {
@@ -1710,11 +1757,11 @@ namespace DjSoft.Games.Animated.Sudoku
             if (Theme.ButtonImages.TryGetValue(buttonType, out var image)) return image;
             return null;
         }
-        protected virtual void DrawString(LayeredPaintEventArgs args, string text, Font font, RectangleF bounds)
+        protected virtual void DrawString(LayeredPaintEventArgs args, string text, Font font, RectangleF bounds, ContentAlignment alignment)
         {
             if (font is null || String.IsNullOrEmpty(text)) return;
             var textSize = args.Graphics.MeasureString(text, font);
-            var textBounds = textSize.AlignTo(bounds, ContentAlignment.MiddleCenter);
+            var textBounds = textSize.AlignTo(bounds, alignment);
 
             args.Graphics.DrawString(text, this.Coordinates.CellFixedFont, args.GetBrush(Color.Black), textBounds.Location);
         }
