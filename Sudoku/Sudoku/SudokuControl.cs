@@ -953,6 +953,8 @@ namespace DjSoft.Games.Animated.Sudoku
             this.EmptyCellLook = new InteractiveProperties();
             this.FixedCellLook = new InteractiveProperties();
             this.FilledCellLook = new InteractiveProperties();
+            this.ErrorCellLook = new InteractiveProperties();
+            this.ButtonLook = new InteractiveProperties();
             this.ValueImages = new Image[9];
             this.ButtonImages = new Dictionary<SudokuButtonType, Image>();
         }
@@ -1006,6 +1008,9 @@ namespace DjSoft.Games.Animated.Sudoku
         public InteractiveProperties EmptyCellLook { get; private set; }
         public InteractiveProperties FixedCellLook { get; private set; }
         public InteractiveProperties FilledCellLook { get; private set; }
+        public InteractiveProperties ErrorCellLook { get; private set; }
+
+        public InteractiveProperties ButtonLook { get; private set; }
 
         /// <summary>
         /// Images [0] ÷ [8] odpovídající hodnotám [1] ÷ [9] : 9 prvků, kde prvek [0] představuje Background image pro buňku s hodnotou 1, atd.
@@ -1085,9 +1090,9 @@ namespace DjSoft.Games.Animated.Sudoku
             {
                 List<Tuple<float, float>> result = new List<Tuple<float, float>>();
 
-                var ol = OuterLineSize;
-                var gl = GroupLineSize;
-                var cl = CellLineSize;
+                var ol = OuterLineLook.Width;
+                var gl = GroupLineLook.Width;
+                var cl = CellLineLook.Width;
                 var cm = CellMargin;
                 var cs = CellSize;
                 var gs = 6f * cm + 3f * cs + 2f * cl;
@@ -1223,45 +1228,65 @@ namespace DjSoft.Games.Animated.Sudoku
         }
         #endregion
         #region Získání hodnoty pro daný typ prvku
-        public Color? GetBackColor(SudokuItem item)
+        public BackProperties GetBackInfo(SudokuItem item)
         {
             SudokuItemType itemType = item.ItemType;
             if (itemType.HasFlag(SudokuItemType.PartGame))
             {
                 // Následující prvky mají jen jednu barvu = nereagují na interaktivní stav:
-                if (itemType.HasFlag(SudokuItemType.PartBackgroundArea)) return this.GameBackColor;
-                if (itemType.HasFlag(SudokuItemType.PartOuterLine)) return this.OuterLineColor;
-                if (itemType.HasFlag(SudokuItemType.PartGroupLine)) return this.GroupLineColor;
-                if (itemType.HasFlag(SudokuItemType.PartCellLine)) return this.CellLineColor;
+                if (itemType.HasFlag(SudokuItemType.PartBackgroundArea)) return this.GameBackLook;
+                if (itemType.HasFlag(SudokuItemType.PartOuterLine)) return new BackProperties(this.OuterLineLook);
+                if (itemType.HasFlag(SudokuItemType.PartGroupLine)) return new BackProperties(this.GroupLineLook);
+                if (itemType.HasFlag(SudokuItemType.PartCellLine)) return new BackProperties(this.OuterLineLook);
 
                 if (itemType.HasFlag(SudokuItemType.PartGroup))
                 {
                     int mod = (item.ItemPosition.Row + item.ItemPosition.Col) % 2;          // 1 nebo 0, střídavě
-                    return (mod == 0 ? this.GroupABackColor : this.GroupBBackColor);
+                    var groupLook = (mod == 0 ? this.GroupABackLook : this.GroupBBackLook);
+                    return groupLook;
                 }
 
                 if (itemType.HasFlag(SudokuItemType.PartCell))
-                {
-                    return this.EmptyCellBackColor;
+                {   // Buňka má různé styly podle jejího vyplnění:
+                    var cellLook = GetCellLook(item);
+                    return new BackProperties(cellLook, item.MouseState);
                 }
+
                 if (itemType.HasFlag(SudokuItemType.PartSubCell))
                 {
-                    return Color.FromArgb(0, 0, 0, 0);
+                    return null;
                 }
-
-
-
             }
 
             if (itemType.HasFlag(SudokuItemType.PartMenu))
             {
                 if (itemType.HasFlag(SudokuItemType.PartButton))
                 {
-                    return Color.LightCoral;
+                    var buttonLook = this.ButtonLook;
+                    return new BackProperties(buttonLook, item.MouseState);
                 }
             }
 
-            return this.BackColor;
+            return new BackProperties(null, this.BackColor);
+        }
+        /// <summary>
+        /// Vrátí vzhled buňky <see cref="InteractiveProperties"/> pro buňku v daném prvku, podle jejího stavu <see cref="Cell.State"/>
+        /// </summary>
+        /// <param name="item"></param>
+        /// <returns></returns>
+        private InteractiveProperties GetCellLook(SudokuItem item)
+        {
+            var cell = item.Cell;
+            if (cell is null) return this.EmptyCellLook;
+            switch (cell.State)
+            {
+                case CellState.Empty: return this.EmptyCellLook;
+                case CellState.WithTips: return this.EmptyCellLook;
+                case CellState.Fixed: return this.FixedCellLook;
+                case CellState.Filled: return this.FilledCellLook;
+                case CellState.Error: return this.ErrorCellLook;
+                default: return this.EmptyCellLook;
+            }
         }
         #endregion
         #region SubClasses
@@ -1270,7 +1295,13 @@ namespace DjSoft.Games.Animated.Sudoku
         /// </summary>
         public class LineProperties
         {
+            /// <summary>
+            /// Barva linky
+            /// </summary>
             public Color? Color { get; set; }
+            /// <summary>
+            /// Šířka linky - relativní vůči ostatním prvkům v layoutu
+            /// </summary>
             public float Width { get; set; }
         }
         /// <summary>
@@ -1278,7 +1309,41 @@ namespace DjSoft.Games.Animated.Sudoku
         /// </summary>
         public class BackProperties
         {
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            public BackProperties() { }
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            public BackProperties(Image image, Color? color)
+            {
+                this.Image = image;
+                this.Color = color;
+            }
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            public BackProperties(LineProperties lineProperties)
+            {
+                this.Image = null;
+                this.Color = lineProperties.Color;
+            }
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            public BackProperties(InteractiveProperties interactiveProperties, InteractiveMouseState mouseState)
+            {
+                this.Image = interactiveProperties.Image;
+                this.Color = interactiveProperties.GetColorByMouseState(mouseState);
+            }
+            /// <summary>
+            /// Obrázek na pozadí
+            /// </summary>
             public Image Image { get; set; }
+            /// <summary>
+            /// Barva pozadí, neaktivní
+            /// </summary>
             public Color? Color { get; set; }
         }
         /// <summary>
@@ -1286,15 +1351,49 @@ namespace DjSoft.Games.Animated.Sudoku
         /// </summary>
         public class InteractiveProperties : BackProperties
         {
+            /// <summary>
+            /// Barva pozadí pokud je prvek Disabled
+            /// </summary>
             public Color? ColorDisabled { get; set; }
+            /// <summary>
+            /// Barva pozadí pokud je prvek pod myší
+            /// </summary>
             public Color? ColorMouseOn { get; set; }
+            /// <summary>
+            /// Barva pozadí pokud je prvek se stisknutou myší
+            /// </summary>
             public Color? ColorMouseDown { get; set; }
-            public Color? ColorError { get; set; }
+            /// <summary>
+            /// Barva písma
+            /// </summary>
             public Color? TextColor { get; set; }
+            /// <summary>
+            /// Styl písma
+            /// </summary>
             public FontStyle FontStyle { get; set; }
+
+            /// <summary>
+            /// Vrátí barvu z this <see cref="InteractiveProperties"/> pro daný stav myši
+            /// </summary>
+            /// <param name="mouseState"></param>
+            /// <returns></returns>
+            public Color? GetColorByMouseState(InteractiveMouseState mouseState)
+            {
+                switch (mouseState)
+                {
+                    case InteractiveMouseState.None: return this.Color;
+                    case InteractiveMouseState.MouseEnter: return this.ColorMouseOn;
+                    case InteractiveMouseState.MouseEnterAnimating: return this.ColorMouseOn;
+                    case InteractiveMouseState.MouseOn: return this.ColorMouseOn;
+                    case InteractiveMouseState.MouseLeftDown: return this.ColorMouseDown;
+                    case InteractiveMouseState.MouseRightDown: return this.ColorMouseDown;
+                    case InteractiveMouseState.MouseLeave: return this.Color;
+                    case InteractiveMouseState.MouseLeaveAnimating: return this.Color;
+                    case InteractiveMouseState.MouseOff: return this.Color;
+                    default: return this.Color;
+                }
+            }
         }
-
-
         #endregion
     }
     #endregion
@@ -1424,7 +1523,7 @@ namespace DjSoft.Games.Animated.Sudoku
         /// <summary>
         /// Data buňky, pokud this prvek odpovídá buňce
         /// </summary>
-        protected Cell Cell 
+        public Cell Cell 
         {
             get
             {
@@ -1645,10 +1744,13 @@ namespace DjSoft.Games.Animated.Sudoku
             float h = bounds.Height;
             if (h < 2f)
             {
-                var color = Theme.GetBackColor(this);
-                var y = bounds.Y + h / 2f;
-                var pen = args.GetPen(color, h);
-                args.Graphics.DrawLine(pen, bounds.X, y, bounds.Right, y);
+                var colorInfo = Theme.GetBackInfo(this);
+                if (colorInfo != null && colorInfo.Color.HasValue)
+                {
+                    var y = bounds.Y + h / 2f;
+                    var pen = args.GetPen(colorInfo.Color.Value, h);
+                    args.Graphics.DrawLine(pen, bounds.X, y, bounds.Right, y);
+                }
             }
             else
             {
@@ -1663,10 +1765,13 @@ namespace DjSoft.Games.Animated.Sudoku
             float w = bounds.Width;
             if (w < 2f)
             {
-                var color = Theme.GetBackColor(this);
-                var x = bounds.X + w / 2f;
-                var pen = args.GetPen(color, w);
-                args.Graphics.DrawLine(pen, x, bounds.Y, x, bounds.Bottom);
+                var colorInfo = Theme.GetBackInfo(this);
+                if (colorInfo != null && colorInfo.Color.HasValue)
+                {
+                    var x = bounds.X + w / 2f;
+                    var pen = args.GetPen(colorInfo.Color.Value, w);
+                    args.Graphics.DrawLine(pen, x, bounds.Y, x, bounds.Bottom);
+                }
             }
             else
             {
@@ -1678,9 +1783,8 @@ namespace DjSoft.Games.Animated.Sudoku
             if (args.Layer != LayerType.Background) return;
 
             var theme = Theme;
-            var color = theme.GetBackColor(this);
-            if (color.A > 0)
-                args.Graphics.FillRectangle(args.GetBrush(color), this.BoundsAbsolute);
+            var colorInfo = theme.GetBackInfo(this);
+            this.PaintBackground(args, colorInfo);
         }
         protected virtual void PaintItemCell(LayeredPaintEventArgs args)
         {
@@ -1697,10 +1801,8 @@ namespace DjSoft.Games.Animated.Sudoku
         protected virtual void PaintItemCellStandard(LayeredPaintEventArgs args)
         {
             var theme = Theme;
-            var color = theme.GetBackColor(this);
-            if (color.A > 0)
-                args.Graphics.FillRectangle(args.GetBrush(color), this.BoundsAbsolute);
-
+            var colorInfo = theme.GetBackInfo(this);
+            this.PaintBackground(args, colorInfo);
             PaintItemCellContent(args);
         }
         protected virtual void PaintItemCellContent(LayeredPaintEventArgs args)
@@ -1723,12 +1825,12 @@ namespace DjSoft.Games.Animated.Sudoku
         protected virtual void PaintItemButton(LayeredPaintEventArgs args)
         {
             var theme = Theme;
-            var color = theme.GetBackColor(this);
+            var colorInfo = theme.GetBackInfo(this);
             var bounds = this.BoundsAbsolute;
 
             bounds = bounds.ZoomCenter(0.9f);
-            if (color.A > 0 && false)
-                args.Graphics.FillRectangle(args.GetBrush(color), bounds);
+            if (false)
+                this.PaintBackground(args, colorInfo, bounds);
             
             var image = GetImageForButton();
             if (image != null) args.Graphics.DrawImage(image, bounds);
@@ -1740,9 +1842,8 @@ namespace DjSoft.Games.Animated.Sudoku
         protected virtual void PaintItemOther(LayeredPaintEventArgs args)
         {
             var theme = Theme;
-            var color = theme.GetBackColor(this);
-            if (color.A > 0)
-                args.Graphics.FillRectangle(args.GetBrush(color), this.BoundsAbsolute);
+            var colorInfo = theme.GetBackInfo(this);
+            this.PaintBackground(args, colorInfo);
         }
         protected Image GetImageForCell(Cell cell)
         {
@@ -1765,6 +1866,20 @@ namespace DjSoft.Games.Animated.Sudoku
 
             args.Graphics.DrawString(text, this.Coordinates.CellFixedFont, args.GetBrush(Color.Black), textBounds.Location);
         }
+
+        protected void PaintBackground(LayeredPaintEventArgs args, SudokuSkinTheme.BackProperties colorInfo, RectangleF? explicitBounds = null)
+        {
+            if (colorInfo != null)
+            {
+                RectangleF bounds = explicitBounds ?? this.BoundsAbsolute;
+                if (colorInfo.Image != null)
+                    args.Graphics.DrawImage(colorInfo.Image, bounds);
+                else if (colorInfo.Color.HasValue && colorInfo.Color.Value.A > 0)
+                    args.Graphics.FillRectangle(args.GetBrush(colorInfo.Color.Value), bounds);
+            }
+        }
+
+
         #endregion
     }
     #endregion
@@ -1895,7 +2010,7 @@ namespace DjSoft.Games.Animated.Sudoku
         MouseRightDown,
         MouseLeave,
         MouseLeaveAnimating,
-        MouseOff,
+        MouseOff
 
     }
     #endregion
