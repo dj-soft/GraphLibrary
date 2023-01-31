@@ -3231,12 +3231,14 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Aktuálně zobrazované grupy, obsahující definice jednotlivých prvků <see cref="DxDataFormItem"/>.
         /// Grupy jsou získány z viditelných řádků, z jejich instancí stránek <see cref="DxDataFormPage"/>.
         /// </summary>
-        private List<DxDataFormGroup> CurrentGroups { get { return this.DataForm.CurrentGroupDefinitions; } }
+#warning TODO !!!
+        private List<DxDataFormGroup> CurrentGroups { get { return null /* this.DataForm.CurrentGroupDefinitions */; } }
         /// <summary>
         /// Aktuální sumární velikost sady grup v pixelech.
         /// Je vypočtena pro aktuální grupy <see cref="CurrentGroups"/> po jejich setování a slouží pro vizuální práci s controly.
         /// </summary>
-        private Size CurrentGroupsSize { get { return this.DataForm.CurrentGroupsSize; } }
+#warning TODO !!!
+        private Size CurrentGroupsSize { get { return Size.Empty /* this.DataForm.CurrentGroupsSize */; } }
         /// <summary>
         /// Aktuální sumární velikost sady grup v pixelech.
         /// Je vypočtena pro aktuální grupy <see cref="CurrentGroups"/> po jejich setování a slouží pro vizuální práci s controly.
@@ -3248,7 +3250,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// K výšce je přičtena hodnota mezery mezi řádky.
         /// Zdejší hodnota tedy reprezentuje výšku každého řádku <see cref="DxDataFormRow"/> v aktuálním dataformu/záložce.
         /// </summary>
-        private int CurrentRowHeight { get { return this.DataForm.ActivePageRowHeight; } }
+#warning TODO !!!
+        private int CurrentRowHeight { get { return 0  /* this.DataForm.ActivePageRowHeight */ ; } }
         #endregion
         #region ContentPanel: vizuální panel obsahující vlastní data a controly, nachází se uvnitř this (DxScrollableContent) a jeho obsah je řízeně Scrollován
         /// <summary>
@@ -3335,7 +3338,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Po vložení této definice neproběhne automaticky refresh controlu, je tedy vhodné následně volat <see cref="Refresh(RefreshParts)"/> 
         /// a předat v parametru požadavek <see cref="RefreshParts.InvalidateControl"/>.
         /// </summary>
-        public List<DxDataFormGroup> Groups { get { return this.DataForm.CurrentGroupDefinitions; } }
+#warning TODO !!!
+        public List<DxDataFormGroup> Groups { get { return null  /*  this.DataForm.CurrentGroupDefinitions  */ ; } }
         /// <summary>
         /// Inicializuje pole prvků
         /// </summary>
@@ -3351,7 +3355,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         private void _InvalidatGroupsCurrentBounds()
         {
             var groups = Groups;
-            groups?.ForEachExec(g => g.InvalidateBounds());
+#warning TODO !!!
+            groups?.ForEachExec(g => /* g.InvalidateBounds()  */ { });
 
             _LastCalcZoom = DxComponent.Zoom;
             _LastCalcDeviceDpi = this.CurrentDpi;
@@ -3363,7 +3368,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         {
             var groups = Groups;
             Rectangle virtualBounds = this.ContentVirtualBounds;
-            this.__VisibleGroups = groups?.Where(g => g.IsVisibleInVirtualBounds(virtualBounds)).ToList();
+#warning TODO !!!
+            this.__VisibleGroups = groups?.Where(g => true    /* g.IsVisibleInVirtualBounds(virtualBounds) */ ).ToList();
             this.__VisibleItems = this.__VisibleGroups?.SelectMany(g => g.Items).Where(i => i.IsVisibleInVirtualBounds(virtualBounds)).ToList();
         }
         /// <summary>
@@ -3771,7 +3777,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
 
             // Připravím soupis aktuálně viditelných řádků a prvků:
             _PrepareVisibleRows();
-            _PrepareVisibleItems();
+#warning TODO !!!
+            /*   _PrepareVisibleItems();   */
             _PrepareVisibleGroupsItems();
         }
         /// <summary>
@@ -3961,11 +3968,14 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// <param name="e"></param>
         private void PaintGroupStandard(DxDataFormGroup group, Point visibleOrigin, DxBufferedGraphicPaintArgs e)
         {
+#warning TODO !!!
+            /*
             var bounds = group.CurrentGroupBounds;
             Point location = bounds.Location.Sub(visibleOrigin);
             group.VisibleGroupBounds = new Rectangle(location, bounds.Size);
             bool onMouse = Object.ReferenceEquals(group, __CurrentOnMouseGroup);
             group.PaintGroup(e, onMouse, false);
+            */
         }
         /// <summary>
         /// Provede vykreslení jednoho daného prvku
@@ -4354,14 +4364,16 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// Aktuální sumární velikost sady grup v pixelech.
         /// Je vypočtena pro aktuální grupy <see cref="CurrentGroupDefinitions"/> po jejich setování a slouží pro vizuální práci s controly.
         /// </summary>
-        public Size CurrentGroupsSize { get { return this.DataForm.CurrentGroupsSize; } }
+#warning TODO !!!        
+        public Size CurrentGroupsSize { get { return Size.Empty   /*  this.DataForm.CurrentGroupsSize  */ ; } }
         /// <summary>
         /// Výška jednoho řádku. 
         /// Je vypočtena po vložení definice vzhledu <see cref="CurrentGroupDefinitions"/> jako největší hodnota Bottom ze všech souřadnic grup.
         /// K výšce je přičtena hodnota mezery mezi řádky.
         /// Zdejší hodnota tedy reprezentuje výšku každého řádku <see cref="DxDataFormRow"/> v aktuálním dataformu/záložce.
         /// </summary>
-        public int CurrentRowHeight { get { return this.DataForm.ActivePageRowHeight; } }
+#warning TODO !!!        
+        public int CurrentRowHeight { get { return 0  /*   this.DataForm.ActivePageRowHeight  */; } }
         /// <summary>
         /// Filtr řádků.
         /// Setování filtru provede kompletní přepočet vizuálních dat řádků: filtrace, třídění, vizuální pozice:
@@ -4547,7 +4559,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         public int CurrentRowHeight 
         {
-            get { return (__CurrentRowHeight ?? this.DataForm.ActivePageRowHeight); }
+#warning TODO !!!        
+            get { return (__CurrentRowHeight ??   0  /*  this.DataForm.ActivePageRowHeight   */ ); }
             set { __CurrentRowHeight = value; }
         }
         private int? __CurrentRowHeight;
@@ -4659,7 +4672,8 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
 
 
 
-        public List<DxDataFormGroup> Groups { get { return this.__DataForm.CurrentGroupDefinitions; } }
+#warning TODO !!!        
+        public List<DxDataFormGroup> Groups { get { return null  /*  this.__DataForm.CurrentGroupDefinitions  */ ; } }
 
 
         /// <summary>

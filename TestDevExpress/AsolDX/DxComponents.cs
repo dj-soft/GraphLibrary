@@ -726,35 +726,14 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Defaultní ToolTipController pro obecné použití
         /// </summary>
-        public static ToolTipController DefaultToolTipController { get { return Instance._DefaultToolTipController; } }
+        public static DxToolTipController DefaultToolTipController { get { return Instance._DefaultToolTipController; } }
         /// <summary>
         /// Vytvoří a vrátí new instanci ToolTipController, standardně deklarovanou
         /// </summary>
         /// <returns></returns>
-        public static ToolTipController CreateNewToolTipController()
+        public static DxToolTipController CreateNewToolTipController()
         {
-            var ttc = new ToolTipController()
-            {
-                Active = true,
-                InitialDelay = 400,
-                AutoPopDelay = 10000,
-                ReshowDelay = 1000,
-                KeepWhileHovered = true,
-                Rounded = true,
-                RoundRadius = 20,
-                ShowShadow = true,
-                ToolTipAnchor = DevExpress.Utils.ToolTipAnchor.Object,
-                ToolTipLocation = DevExpress.Utils.ToolTipLocation.RightBottom,
-                ToolTipStyle = DevExpress.Utils.ToolTipStyle.Windows7,
-                ToolTipType = DevExpress.Utils.ToolTipType.SuperTip,       // Standard   Flyout   SuperTip;
-                IconSize = DevExpress.Utils.ToolTipIconSize.Large,
-                CloseOnClick = DevExpress.Utils.DefaultBoolean.True,
-                ShowBeak = true
-            };
-
-            ttc.Appearance.GradientMode = System.Drawing.Drawing2D.LinearGradientMode.Horizontal;
-
-            return ttc;
+            return new DxToolTipController();
         }
         /// <summary>
         /// Převede string obsahující písmena B,I,U,S na odpovídající <see cref="FontStyle"/>.
@@ -809,7 +788,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         private int _DefaultButtonXSpace;
         private int _DefaultButtonYSpace;
         private DevExpress.XtraBars.BarManager _DefaultBarManager;
-        private ToolTipController _DefaultToolTipController;
+        private DxToolTipController _DefaultToolTipController;
         #region Rozmístění prvků typu ControlItemLayoutInfo do daného vnitřního prostoru
         /// <summary>
         /// Určí rozmístění prvků typu ControlItemLayoutInfo do daného vnitřního prostoru.
@@ -2376,6 +2355,43 @@ namespace Noris.Clients.Win.Components.AsolDX
         public static SuperToolTip CreateDxSuperTip(IToolTipItem toolTipItem)
         {
             return DxSuperToolTip.CreateDxSuperTip(toolTipItem);
+        }
+        /// <summary>
+        /// Vytvoří a vrátí instanci <see cref="ToolTipControlInfo"/>, která se používá jako ToolTip pro TreeList a GridList.
+        /// </summary>
+        /// <param name="title">Titulek ToolTipu = výraznější písmo</param>
+        /// <param name="text">Text ToolTipu = větší informace, může obsahovat HTML</param>
+        /// <param name="defaultTitle">Defaultní titulek, když <paramref name="title"/> je prázdné</param>
+        /// <param name="toolTipIcon">Typ ikony, NULL = žádná</param>
+        /// <param name="allowHtmlText">Povolit HTML kódy v textu</param>
+        /// <returns></returns>
+        public static DevExpress.Utils.ToolTipControlInfo CreateDxToolTipControlInfo(string title, string text, string defaultTitle = null, string toolTipIcon = null, bool allowHtmlText = false)
+        {
+            return CreateDxToolTipControlInfo(title, text, null, null, defaultTitle, toolTipIcon, allowHtmlText);
+        }
+        /// <summary>
+        /// Vytvoří a vrátí instanci <see cref="ToolTipControlInfo"/>, která se používá jako ToolTip pro TreeList a GridList.
+        /// </summary>
+        /// <param name="title">Titulek ToolTipu = výraznější písmo</param>
+        /// <param name="text">Text ToolTipu = větší informace, může obsahovat HTML</param>
+        /// <param name="control">Objekt umístěný do ToolTip controlleru jako Object</param>
+        /// <param name="target">Objekt umístěný do ToolTip controlleru jako Info, typicky <see cref="DevExpress.XtraTreeList.ViewInfo.TreeListCellToolTipInfo"/> atd</param>
+        /// <param name="defaultTitle">Defaultní titulek, když <paramref name="title"/> je prázdné</param>
+        /// <param name="toolTipIcon">Typ ikony, NULL = žádná</param>
+        /// <param name="allowHtmlText">Povolit HTML kódy v textu</param>
+        /// <returns></returns>
+        public static DevExpress.Utils.ToolTipControlInfo CreateDxToolTipControlInfo(string title, string text, object control, object target, string defaultTitle = null, string toolTipIcon = null, bool allowHtmlText = false)
+        {
+            var dxSuperTip = CreateDxSuperTip(title, text, defaultTitle, toolTipIcon);
+            if (dxSuperTip is null) return null;
+
+            var ttci = new DevExpress.Utils.ToolTipControlInfo(target, "");
+            ttci.Object = control;
+            ttci.ToolTipType = ToolTipType.SuperTip;
+            ttci.SuperTip = dxSuperTip;
+            dxSuperTip.TextContainsHtml = allowHtmlText;
+
+            return ttci;
         }
         #endregion
         #region Pozice okna
@@ -4696,10 +4712,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         [DefaultMessageText("Příliš mnoho výsledků")]
         RibbonSearchMenuGroupTooManyMatchesCaption,
         /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
-        [DefaultMessageText("Upřesněte zadání")]
+        [DefaultMessageText("Upřesněte hledaný text")]
         RibbonSearchMenuItemTooManyMatchesCaption,
         /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
-        [DefaultMessageText("Nenalezeny žádné shody")]
+        [DefaultMessageText("Žádný výsledek")]
+        RibbonSearchMenuGroupNoMatchesCaption,
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
+        [DefaultMessageText("Upřesněte hledaný text")]
         RibbonSearchMenuItemNoMatchesCaption,
 
         /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>

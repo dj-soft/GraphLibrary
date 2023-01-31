@@ -2671,6 +2671,88 @@ namespace Noris.Clients.Win.Components.AsolDX
         #endregion
     }
     #endregion
+    #region DxToolTipController
+    /// <summary>
+    /// ToolTipController s přidanou hodnotou
+    /// </summary>
+    public class DxToolTipController : ToolTipController
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public DxToolTipController()
+            : base()
+        {
+            _Initialize();
+        }
+        /// <summary>
+        /// Defaultní nastavení
+        /// </summary>
+        private void _Initialize()
+        {
+            Active = true;
+            InitialDelay = 400;
+            AutoPopDelay = 10000;
+            ReshowDelay = 1000;
+            KeepWhileHovered = true;
+            Rounded = true;
+            RoundRadius = 20;
+            ShowShadow = true;
+            ToolTipAnchor = DevExpress.Utils.ToolTipAnchor.Object;
+            ToolTipLocation = DevExpress.Utils.ToolTipLocation.RightBottom;
+            ToolTipStyle = DevExpress.Utils.ToolTipStyle.Windows7;
+            ToolTipType = DevExpress.Utils.ToolTipType.SuperTip;       // Standard   Flyout   SuperTip;
+            IconSize = DevExpress.Utils.ToolTipIconSize.Large;
+            CloseOnClick = DevExpress.Utils.DefaultBoolean.True;
+            ShowBeak = true;
+            CloseOnClick = DefaultBoolean.True;
+
+            Appearance.GradientMode = System.Drawing.Drawing2D.LinearGradientMode.Horizontal;
+        }
+        /// <summary>
+        /// Před zobrazením
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void OnBeforeShow(ToolTipControllerShowEventArgs e)
+        {
+            base.OnBeforeShow(e);
+            this.IsVisible = true;
+        }
+        /// <summary>
+        /// Před zhasnutím
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        protected override void OnFormDeactivate(object sender, EventArgs e)
+        {
+            base.OnFormDeactivate(sender, e);
+            this.IsVisible = false;
+        }
+        /// <summary>
+        /// Je aktuálně tooltip zobrazen?
+        /// </summary>
+        public bool IsVisible { get; private set; }
+        /// <summary>
+        /// Skryje okno tooltipu, pokud je právě viditelné...
+        /// </summary>
+        /// <param name="force"></param>
+        /// <returns></returns>
+        public void HideHint(bool force)
+        {
+            if (this.Active && (force || this.IsVisible))
+            {
+                base.HideHint();
+            }
+        }
+        public void ShowHintCurrent(ToolTipControlInfo ttci)
+        {
+            if (this.IsVisible)
+                base.ToolWindow.Hide();  //  HideHint();
+            this.ShowHint(ttci);
+            base.ToolWindow.Show();
+        }
+    }
+    #endregion
     #region DxSuperToolTip
     /// <summary>
     /// SuperToolTip s přímým přístupem do standardních textů v ToolTipu
@@ -2683,19 +2765,120 @@ namespace Noris.Clients.Win.Components.AsolDX
         public DxSuperToolTip() 
             : base()
         {
-            _TitleItem = this.Items.AddTitle("");
-            _TitleItem.ImageOptions.Images = DxComponent.GetBitmapImageList(ResourceImageSizeType.Large);
-            _TitleItem.ImageOptions.ImageToTextDistance = 12;
+            __TitleText = null;
+            __TitleAllowHtml = false;
+            __TitleIcon = null;
+            __TitleItem = null;
 
-            _SeparatorItem = this.Items.AddSeparator();
+            __SeparatorItem = null;
 
-            _TextItem = this.Items.Add("");
+            __TextText = null;
+            __TextAllowHtml = false;
+            __TextItem = null;
 
-            AcceptTitleOnlyAsValid = false;
+            __AcceptTitleOnlyAsValid = false;
         }
-        private ToolTipTitleItem _TitleItem;
-        private ToolTipSeparatorItem _SeparatorItem;
-        private ToolTipItem _TextItem;
+        /// <summary>
+        /// Dispose
+        /// </summary>
+        public override void Dispose()
+        {
+            _CreateComponents(false, false, false);
+            base.Dispose();
+        }
+        private string __TitleText;
+        private bool __TitleAllowHtml;
+        private string __TitleIcon;
+        private ToolTipTitleItem __TitleItem;
+
+        private ToolTipSeparatorItem __SeparatorItem;
+
+        private string __TextText;
+        private bool __TextAllowHtml;
+        private ToolTipItem __TextItem;
+
+        private bool __AcceptTitleOnlyAsValid;
+        /// <summary>
+        /// Hodnoty z proměnných vepíše do objektu SuperTip = vytvoří/zruš/nastaví itemy.
+        /// </summary>
+        private void _RefreshContent()
+        {
+            bool needTitleText = (!String.IsNullOrEmpty(__TitleText));
+            bool needTitleIcon = (!String.IsNullOrEmpty(__TitleIcon));
+            bool needTitle = (needTitleText || needTitleIcon);
+            bool needText = (!String.IsNullOrEmpty(__TextText));
+            bool needSeparator = (needTitle && needText);
+
+            bool hasTitle = (__TitleItem != null);
+            bool hasSeparator = (__SeparatorItem != null);
+            bool hasText = (__TextItem != null);
+
+            bool isCreated = (needTitle == hasTitle && needSeparator == hasSeparator && needText == hasText);
+            if (!isCreated)
+                _CreateComponents(needTitle, needSeparator, needText);
+
+            if (needTitleText)
+            {
+                __TitleItem.Text = __TitleText;
+                __TitleItem.AllowHtmlText = DxComponent.Convert(__TitleAllowHtml);
+            }
+
+            if (needTitleIcon)
+            {
+                if (__TitleItem.ImageOptions.Images is null) __TitleItem.ImageOptions.Images = DxComponent.GetBitmapImageList(ResourceImageSizeType.Large);
+                __TitleItem.ImageOptions.ImageToTextDistance = 12;
+                __TitleItem.ImageOptions.ImageIndex = DxComponent.GetBitmapImageIndex(__TitleIcon, ResourceImageSizeType.Large);
+            }
+
+            if (needText)
+            {
+                __TextItem.Text = __TextText;
+                __TextItem.AllowHtmlText = DxComponent.Convert(__TextAllowHtml);
+            }
+        }
+        /// <summary>
+        /// Vytvoří požadované komponenty
+        /// </summary>
+        /// <param name="createTitle"></param>
+        /// <param name="createSeparator"></param>
+        /// <param name="createText"></param>
+        private void _CreateComponents(bool createTitle, bool createSeparator, bool createText)
+        {
+            this.__TitleItem?.Dispose();
+            this.__TitleItem = null;
+            this.__SeparatorItem?.Dispose();
+            this.__SeparatorItem = null;
+            this.__TextItem?.Dispose();
+            this.__TextItem = null;
+
+            this.Items.Clear();
+
+            if (createTitle) this.__TitleItem = this.Items.AddTitle("");
+            if (createSeparator) this.__SeparatorItem = this.Items.AddSeparator();
+            if (createText) this.__TextItem = this.Items.Add("");
+        }
+
+        /// <summary>
+        /// Text titulku
+        /// </summary>
+        public string Title { get { return __TitleText; } set { __TitleText = value; _RefreshContent(); } }
+        /// <summary>
+        /// Titulek může obsahovat HTML kódy
+        /// </summary>
+        public bool TitleContainsHtml { get { return __TitleAllowHtml; } set { __TitleAllowHtml = value; _RefreshContent(); } }
+        /// <summary>
+        /// Jméno ikony
+        /// </summary>
+        public string IconName { get { return __TitleIcon; } set { __TitleIcon = value; _RefreshContent(); } }
+        /// <summary>
+        /// Text tooltipu
+        /// </summary>
+        public string Text { get { return __TextText; } set { __TextText = value; _RefreshContent(); } }
+        /// <summary>
+        /// Text tooltipu může obsahovat HTML kódy
+        /// </summary>
+        public bool TextContainsHtml { get { return __TextAllowHtml; } set { __TextAllowHtml = value; _RefreshContent(); } }
+
         /// <summary>
         /// Řídí určení hodnoty <see cref="IsValid"/> (= ToolTip je platný) :
         /// <para/>
@@ -2707,33 +2890,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <para/>
         /// Výchozí je false = pro platný ToolTip je třeba zadat jeho <see cref="Text"/>, nestačí zadat pouze <see cref="Title"/>.
         /// </summary>
-        public bool AcceptTitleOnlyAsValid { get; set; }
-        /// <summary>
-        /// Text titulku
-        /// </summary>
-        public string Title { get { return _TitleItem.Text; } set { _TitleItem.Text = value; } }
-        /// <summary>
-        /// Titulek může obsahovat HTML kódy
-        /// </summary>
-        public bool? TitleContainsHtml { get { return DxComponent.Convert(_TitleItem.AllowHtmlText); } set { _TitleItem.AllowHtmlText = DxComponent.Convert(value); } }
-        /// <summary>
-        /// Jméno ikony
-        /// </summary>
-        public string IconName { get { return _IconName; } set { _SetIconName(value); } }
-        private void _SetIconName(string iconName)
-        {
-            _IconName = iconName;
-            _TitleItem.ImageOptions.ImageIndex =  DxComponent.GetBitmapImageIndex(iconName, ResourceImageSizeType.Large);
-        }
-        private string _IconName;
-        /// <summary>
-        /// Text tooltipu
-        /// </summary>
-        public string Text { get { return _TextItem.Text; } set { _TextItem.Text = value; } }
-        /// <summary>
-        /// Text tooltipu může obsahovat HTML kódy
-        /// </summary>
-        public bool? TextContainsHtml { get { return DxComponent.Convert(_TextItem.AllowHtmlText); } set { _TextItem.AllowHtmlText = DxComponent.Convert(value); } }
+        public bool AcceptTitleOnlyAsValid { get { return __AcceptTitleOnlyAsValid; } set { __AcceptTitleOnlyAsValid = value; } }
         /// <summary>
         /// Obsahuje true v případě, že ToolTip má text alespoň v titulku <see cref="Title"/> anebo v textu <see cref="Text"/>, pak má význam aby byl zobrazen.
         /// Pokud texty nemá, neměl by být zobrazován.
@@ -2753,11 +2910,14 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public void ClearValues()
         {
-            Title = "";
-            TitleContainsHtml = null;
-            IconName = null;
-            Text = "";
-            TextContainsHtml = null;
+            __TitleText = null;
+            __TitleAllowHtml = false;
+            __TitleIcon = null;
+            
+            __TextText = null;
+            __TextAllowHtml = false;
+
+            _RefreshContent();
         }
         /// <summary>
         /// Naplní do sebe hodnoty z dané definice
@@ -2794,11 +2954,14 @@ namespace Noris.Clients.Win.Components.AsolDX
                 ClearValues();
             else
             {
-                Title = (title ?? defaultTitle);
-                TitleContainsHtml = null;
-                IconName = toolTipIcon;
-                Text = text;
-                TextContainsHtml = null;
+                __TitleText = (title ?? defaultTitle);
+                __TitleAllowHtml = false;
+                __TitleIcon = toolTipIcon;
+
+                __TextText = text;
+                __TextAllowHtml = false;
+
+                _RefreshContent();
             }
         }
         /// <summary>
@@ -2834,12 +2997,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             if (String.IsNullOrEmpty(title) && String.IsNullOrEmpty(text) && String.IsNullOrEmpty(defaultTitle)) return null;
 
-            var superTip = new DxSuperToolTip()
-            {
-                Title = (title ?? defaultTitle),
-                IconName = toolTipIcon,
-                Text = text
-            };
+            var superTip = new DxSuperToolTip();
+            superTip.LoadValues(title, text, defaultTitle, toolTipIcon);
 
             return superTip;
         }
