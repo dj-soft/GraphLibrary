@@ -210,10 +210,21 @@ namespace DjSoft.Games.Animated
             var size = bounds.Size.Zoom(zoom);
             return center.GetBoundsFromCenter(size);
         }
+        /// <summary>
+        /// Vrací souřadnici středu daného prostoru
+        /// </summary>
+        /// <param name="bounds"></param>
+        /// <returns></returns>
         public static PointF GetCenter(this RectangleF bounds)
         {
             return new PointF(bounds.X + bounds.Width / 2f, bounds.Y + bounds.Height / 2f);
         }
+        /// <summary>
+        /// Vrací souřadnici prostoru <see cref="RectangleF"/>, vytvořenou z dodaného středu okolo něhož umístí dodanou velikost
+        /// </summary>
+        /// <param name="center"></param>
+        /// <param name="size"></param>
+        /// <returns></returns>
         public static RectangleF GetBoundsFromCenter(this PointF center, SizeF size)
         {
             PointF location = new PointF(center.X - size.Width / 2f, center.Y - size.Height / 2f);
@@ -227,21 +238,48 @@ namespace DjSoft.Games.Animated
         /// <param name="size"></param>
         /// <param name="bounds"></param>
         /// <param name="alignment"></param>
-        /// <param name="shrinkToFit"></param>
+        /// <param name="shrinkMode"></param>
         /// <returns></returns>
-        public static RectangleF AlignTo(this SizeF size, RectangleF bounds, ContentAlignment alignment, bool shrinkToFit = false)
+        public static RectangleF AlignTo(this SizeF size, RectangleF bounds, ContentAlignment alignment, ShrinkSizeMode shrinkMode = ShrinkSizeMode.None)
         {
             float x = 0f;
             float y = 0f;
             float w = size.Width;
             float h = size.Height;
-            if (shrinkToFit)
+
+            float bx = bounds.X;
+            float by = bounds.Y;
+            float bw = bounds.Width;
+            float bh = bounds.Height;
+
+            switch (shrinkMode)
             {
-                if (w > bounds.Width) w = bounds.Width;
-                if (h > bounds.Height) h = bounds.Height;
+                case ShrinkSizeMode.ShrinkWithPreserveRatio:
+                    if (bw > 0f && bh > 0f)
+                    {   // Cílový prostor je reálný:
+                        float rw = bw / w;                 // Poměr zmenšení šířky
+                        float rh = bh / h;                 // Poměr zmenšení výšky
+                        float r = (rw < rh ? rw : rh);     // Ten menší poměr
+                        if (r < 1f)
+                        {   // Změna velikosti cílového prostoru bude pro obě osy stejným poměrem, a provede se pouze pokud bude menší než 1:
+                            w = r * w;
+                            h = r * h;
+                        }
+                    }
+                    else
+                    {   // Cílový prostor je nulový:
+                        w = 0f;
+                        h = 0f;
+                    }
+                    break;
+                case ShrinkSizeMode.ShrinkToFit:
+                    if (w > bw) w = bw;
+                    if (h > bh) h = bh;
+                    break;
             }
-            float dw = bounds.Width - w;
-            float dh = bounds.Height - h;
+
+            float dw = bw - w;
+            float dh = bh - h;
             switch (alignment)
             {
                 case ContentAlignment.TopLeft:
@@ -275,7 +313,7 @@ namespace DjSoft.Games.Animated
                     y = dh;
                     break;
             }
-            return new RectangleF(bounds.X + x, bounds.Y + y, w, h);
+            return new RectangleF(bx + x, by + y, w, h);
         }
         #endregion
         #region IEnumerable
@@ -411,6 +449,26 @@ namespace DjSoft.Games.Animated
         /// Obsahuje true pokud byla setována nějaká hodnota do <see cref="Item2"/>, i kdyby null.
         /// </summary>
         public bool HasItem2 { get { return __HasItem2; } } private bool __HasItem2 = false;
+    }
+    #endregion
+    #region Obecné enumy
+    /// <summary>
+    /// Režim zmenšení velikosti objektu do cílového prostoru
+    /// </summary>
+    public enum ShrinkSizeMode
+    {
+        /// <summary>
+        /// Nezmenšovat = objektu bude přesahovat
+        /// </summary>
+        None,
+        /// <summary>
+        /// Zmenšit tak, aby se objekt vešel, a zachovat jeho poměr stran
+        /// </summary>
+        ShrinkWithPreserveRatio,
+        /// <summary>
+        /// Zmenšit rozměr Width nebo Height nezávisle
+        /// </summary>
+        ShrinkToFit
     }
     #endregion
 }

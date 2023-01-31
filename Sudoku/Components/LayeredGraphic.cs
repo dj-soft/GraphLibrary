@@ -616,6 +616,46 @@ namespace DjSoft.Games.Animated.Components
         public LayerType Layer { get { return __Layer; } }
         #endregion
         #region Příruční nářadí
+        public void PrepareGraphicsFor(GraphicsTargetType target)
+        {
+            var graphics = this.Graphics;
+            switch (target)
+            {
+                case GraphicsTargetType.Rectangles:
+                    graphics.CompositingMode = CompositingMode.SourceOver;
+                    graphics.InterpolationMode = InterpolationMode.NearestNeighbor;
+                    graphics.PixelOffsetMode = PixelOffsetMode.None;
+                    graphics.SmoothingMode = SmoothingMode.None;
+                    graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.SystemDefault;
+                    graphics.CompositingQuality = CompositingQuality.HighSpeed;
+                    break;
+                case GraphicsTargetType.Splines:
+                    graphics.CompositingMode = CompositingMode.SourceOver;
+                    graphics.InterpolationMode = InterpolationMode.HighQualityBilinear;
+                    graphics.PixelOffsetMode = PixelOffsetMode.HighQuality;
+                    graphics.SmoothingMode = SmoothingMode.AntiAlias;
+                    graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAlias;
+                    graphics.CompositingQuality = CompositingQuality.HighQuality;
+                    break;
+                case GraphicsTargetType.Text:
+                    graphics.CompositingMode = CompositingMode.SourceOver;
+                    graphics.InterpolationMode = InterpolationMode.HighQualityBicubic;
+                    graphics.PixelOffsetMode = PixelOffsetMode.HighQuality;
+                    graphics.SmoothingMode = SmoothingMode.AntiAlias;
+                    graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAlias;
+                    graphics.CompositingQuality = CompositingQuality.HighQuality;
+                    break;
+                case GraphicsTargetType.Images:
+                    graphics.CompositingMode = CompositingMode.SourceOver;
+                    graphics.InterpolationMode = InterpolationMode.HighQualityBilinear;
+                    graphics.PixelOffsetMode = PixelOffsetMode.HighQuality;
+                    graphics.SmoothingMode = SmoothingMode.AntiAlias;
+                    graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAlias;
+                    graphics.CompositingQuality = CompositingQuality.HighQuality;
+                    break;
+            }
+
+        }
         /// <summary>
         /// Vrátí příruční pero
         /// </summary>
@@ -669,6 +709,17 @@ namespace DjSoft.Games.Animated.Components
         Standard,
         Overlay,
         ToolTip
+    }
+    /// <summary>
+    /// Cílové objekty kreslení grafiky
+    /// </summary>
+    public enum GraphicsTargetType
+    {
+        None,
+        Rectangles,
+        Splines,
+        Text,
+        Images
     }
     /// <summary>
     /// Interface pro interní přístup do <see cref="LayeredGraphicBase"/>

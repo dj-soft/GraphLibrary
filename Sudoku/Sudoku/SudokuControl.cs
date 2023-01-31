@@ -712,16 +712,21 @@ namespace DjSoft.Games.Animated.Sudoku
         /// </summary>
         public Font SubCellFont { get { return (__HasValidSubCellFonts ? __SubCellFont : null); } }
         /// <summary>
+        /// Font pro buttony
+        /// </summary>
+        public Font ButtonFont { get { return (__HasValidButtonFonts ? __ButtonFont : null); } }
+        /// <summary>
         /// Připraví fonty pro aktuální velikost buňky <see cref="__AbsoluteCellSize"/>
         /// </summary>
         private void _PrepareFonts()
         {
             __HasValidCellFonts = false;
             __HasValidSubCellFonts = false;
+            __HasValidButtonFonts = false;
             var height = __AbsoluteCellSize.Height;
 
-            var emSize = (float)(Math.Round(0.48f * height, 1));
-            if (emSize < 6.5f) return;                  // Jsme moc malinký...
+            var emSize = (float)(Math.Round(0.48f * height, 1));     // Optimální konstanta mezi prostorem pro buňku a velikostí fontu
+            if (emSize < 6.5f) return;                               // Jsme moc malinký...
 
             var theme = this.Theme;
             var fixedFontStyle = theme?.FixedCellLook.FontStyle ?? FontStyle.Bold;
@@ -731,6 +736,10 @@ namespace DjSoft.Games.Animated.Sudoku
                 _DisposeFonts();
                 __CellFixedFont = new Font(FontFamily.GenericSansSerif, emSize, fixedFontStyle);
                 __CellFilledFont = new Font(FontFamily.GenericSansSerif, emSize, filledFontStyle);
+
+                var emButtonSize = emSize;
+                __ButtonFont = new Font(FontFamily.GenericSansSerif, emButtonSize, filledFontStyle);
+
                 var emSubSize = emSize / 3f;
                 if (emSubSize >= 6f)
                     __SubCellFont = new Font(FontFamily.GenericSansSerif, emSubSize, FontStyle.Regular);
@@ -738,6 +747,7 @@ namespace DjSoft.Games.Animated.Sudoku
             }
             __HasValidCellFonts = true;
             __HasValidSubCellFonts = (__SubCellFont != null);
+            __HasValidButtonFonts = true;
         }
         private void _DisposeFonts()
         {
@@ -746,15 +756,23 @@ namespace DjSoft.Games.Animated.Sudoku
             __CellFixedFont = null;
             __CellFilledFont?.Dispose();
             __CellFilledFont = null;
+
+            __HasValidSubCellFonts = false;
             __SubCellFont?.Dispose();
             __SubCellFont = null;
+
+            __HasValidButtonFonts = false;
+            __ButtonFont?.Dispose();
+            __ButtonFont = null;
         }
         private Font __CellFixedFont;
         private Font __CellFilledFont;
         private Font __SubCellFont;
+        private Font __ButtonFont;
         private float __FontCellEmSize;
         private bool __HasValidCellFonts;
         private bool __HasValidSubCellFonts;
+        private bool __HasValidButtonFonts;
         #endregion
         #region Suspend / Resume coordinates
         /// <summary>
@@ -882,6 +900,7 @@ namespace DjSoft.Games.Animated.Sudoku
             get
             {
                 SudokuSkinTheme scs = new SudokuSkinTheme();
+
                 scs.BackColor = Color.FromArgb(255, 240, 240, 245);
                 scs.GameBackLook.Color = Color.FromArgb(255, 245, 245, 250);
                 scs.MenuBackLook.Color = Color.FromArgb(255, 235, 235, 245);
@@ -911,6 +930,11 @@ namespace DjSoft.Games.Animated.Sudoku
                 scs.FilledCellLook.TextColor = Color.FromArgb(255, 0, 0, 0);
                 scs.FilledCellLook.FontStyle = FontStyle.Regular;
 
+                scs.ButtonLook.Color = Color.FromArgb(255, 220, 220, 230);
+                scs.ButtonLook.ColorMouseOn = Color.FromArgb(255, 220, 220, 230);
+                scs.ButtonLook.TextColor = Color.FromArgb(255, 0, 0, 0);
+                scs.ButtonLook.FontStyle = FontStyle.Regular;
+
                 scs.ValueImages[0] = Properties.Resources.Aqua41;
                 scs.ValueImages[1] = Properties.Resources.Aqua42;
                 scs.ValueImages[2] = Properties.Resources.Aqua43;
@@ -920,7 +944,6 @@ namespace DjSoft.Games.Animated.Sudoku
                 scs.ValueImages[6] = Properties.Resources.Aqua47;
                 scs.ValueImages[7] = Properties.Resources.Aqua48;
                 scs.ValueImages[8] = Properties.Resources.Aqua49;
-
 
                 scs.ButtonImages.Add(SudokuButtonType.ResetGame, Properties.Resources.actualiser);
                 scs.ButtonImages.Add(SudokuButtonType.NewGame, Properties.Resources.sudoku3);
@@ -1268,6 +1291,32 @@ namespace DjSoft.Games.Animated.Sudoku
             }
 
             return new BackProperties(null, this.BackColor);
+        }
+        public InteractiveProperties GetTextInfo(SudokuItem item)
+        {
+            SudokuItemType itemType = item.ItemType;
+            if (itemType.HasFlag(SudokuItemType.PartGame))
+            {
+                if (itemType.HasFlag(SudokuItemType.PartCell))
+                {   // Buňka má různé styly podle jejího vyplnění:
+                    return GetCellLook(item);
+                }
+
+                if (itemType.HasFlag(SudokuItemType.PartSubCell))
+                {
+                    return GetCellLook(item);
+                }
+            }
+
+            if (itemType.HasFlag(SudokuItemType.PartMenu))
+            {
+                if (itemType.HasFlag(SudokuItemType.PartButton))
+                {
+                    return this.ButtonLook;
+                }
+            }
+
+            return null;
         }
         /// <summary>
         /// Vrátí vzhled buňky <see cref="InteractiveProperties"/> pro buňku v daném prvku, podle jejího stavu <see cref="Cell.State"/>
@@ -1749,6 +1798,7 @@ namespace DjSoft.Games.Animated.Sudoku
                 {
                     var y = bounds.Y + h / 2f;
                     var pen = args.GetPen(colorInfo.Color.Value, h);
+                    args.PrepareGraphicsFor(GraphicsTargetType.Splines);
                     args.Graphics.DrawLine(pen, bounds.X, y, bounds.Right, y);
                 }
             }
@@ -1770,6 +1820,7 @@ namespace DjSoft.Games.Animated.Sudoku
                 {
                     var x = bounds.X + w / 2f;
                     var pen = args.GetPen(colorInfo.Color.Value, w);
+                    args.PrepareGraphicsFor(GraphicsTargetType.Splines);
                     args.Graphics.DrawLine(pen, x, bounds.Y, x, bounds.Bottom);
                 }
             }
@@ -1802,7 +1853,7 @@ namespace DjSoft.Games.Animated.Sudoku
         {
             var theme = Theme;
             var colorInfo = theme.GetBackInfo(this);
-            this.PaintBackground(args, colorInfo);
+            PaintBackground(args, colorInfo);
             PaintItemCellContent(args);
         }
         protected virtual void PaintItemCellContent(LayeredPaintEventArgs args)
@@ -1812,8 +1863,11 @@ namespace DjSoft.Games.Animated.Sudoku
             {
                 var bounds = this.BoundsAbsolute.ShiftBy(0f, 1f);
                 var image = GetImageForCell(cell);
-                if (image != null) args.Graphics.DrawImage(image, bounds);
-                DrawString(args, cell.Value.ToString(), this.Coordinates.CellFixedFont, bounds, ContentAlignment.MiddleCenter);
+                PaintIcon(args, image, ContentAlignment.MiddleCenter, null, null, new PointF(0f, 1f));
+
+                string text = cell.Value.ToString();
+                var textInfo = Theme.GetTextInfo(this);
+                DrawString(args, text, this.Coordinates.ButtonFont, textInfo?.TextColor, bounds, ContentAlignment.MiddleCenter, new PointF(1f, 0f));
             }
         }
         protected virtual void PaintItemCellOverlay(LayeredPaintEventArgs args)
@@ -1833,11 +1887,14 @@ namespace DjSoft.Games.Animated.Sudoku
                 this.PaintBackground(args, colorInfo, bounds);
             
             var image = GetImageForButton();
-            if (image != null) args.Graphics.DrawImage(image, bounds);
+            PaintIcon(args, image, ContentAlignment.MiddleCenter, null, 0.95f);
 
             var text = this.ButtonText;
             if (!String.IsNullOrEmpty(text))
-                DrawString(args, text, this.Coordinates.CellFixedFont, bounds, ContentAlignment.MiddleCenter);
+            {
+                var textInfo = theme.GetTextInfo(this);
+                DrawString(args, text, this.Coordinates.CellFixedFont, textInfo?.TextColor, bounds, ContentAlignment.MiddleCenter, new PointF(1f, 0f));
+            }
         }
         protected virtual void PaintItemOther(LayeredPaintEventArgs args)
         {
@@ -1858,25 +1915,65 @@ namespace DjSoft.Games.Animated.Sudoku
             if (Theme.ButtonImages.TryGetValue(buttonType, out var image)) return image;
             return null;
         }
-        protected virtual void DrawString(LayeredPaintEventArgs args, string text, Font font, RectangleF bounds, ContentAlignment alignment)
-        {
-            if (font is null || String.IsNullOrEmpty(text)) return;
-            var textSize = args.Graphics.MeasureString(text, font);
-            var textBounds = textSize.AlignTo(bounds, alignment);
-
-            args.Graphics.DrawString(text, this.Coordinates.CellFixedFont, args.GetBrush(Color.Black), textBounds.Location);
-        }
-
+        /// <summary>
+        /// Vykreslí pozadí: Image nebo Color, do daného prostoru nebo do <see cref="BoundsAbsolute"/>.
+        /// </summary>
+        /// <param name="args"></param>
+        /// <param name="colorInfo"></param>
+        /// <param name="explicitBounds"></param>
         protected void PaintBackground(LayeredPaintEventArgs args, SudokuSkinTheme.BackProperties colorInfo, RectangleF? explicitBounds = null)
         {
             if (colorInfo != null)
             {
                 RectangleF bounds = explicitBounds ?? this.BoundsAbsolute;
                 if (colorInfo.Image != null)
+                {
+                    args.PrepareGraphicsFor(GraphicsTargetType.Images);
                     args.Graphics.DrawImage(colorInfo.Image, bounds);
+                }
                 else if (colorInfo.Color.HasValue && colorInfo.Color.Value.A > 0)
+                {
+                    args.PrepareGraphicsFor(GraphicsTargetType.Rectangles);
                     args.Graphics.FillRectangle(args.GetBrush(colorInfo.Color.Value), bounds);
+                }
             }
+        }
+        /// <summary>
+        /// Vykreslí danou ikonu do daného prostoru
+        /// </summary>
+        /// <param name="args"></param>
+        /// <param name="image"></param>
+        /// <param name="alignment"></param>
+        /// <param name="explicitBounds"></param>
+        /// <param name="sizeRatio"></param>
+        protected void PaintIcon(LayeredPaintEventArgs args, Image image, ContentAlignment alignment, RectangleF? explicitBounds = null, float? sizeRatio = null, PointF? offset = null)
+        {
+            if (image is null) return;
+            SizeF imageSize = image.Size;
+            RectangleF bounds = explicitBounds ?? this.BoundsAbsolute;
+            if (sizeRatio.HasValue) bounds = bounds.ZoomCenter(sizeRatio.Value);
+            RectangleF imageBounds = imageSize.AlignTo(bounds, alignment, ShrinkSizeMode.ShrinkWithPreserveRatio);
+            if (offset.HasValue) imageBounds = imageBounds.ShiftBy(offset.Value);
+            args.PrepareGraphicsFor(GraphicsTargetType.Images);
+            args.Graphics.DrawImage(image, imageBounds);
+        }
+        /// <summary>
+        /// Vykreslí text do daného prostoru s daným zarovnáním.
+        /// </summary>
+        /// <param name="args"></param>
+        /// <param name="text"></param>
+        /// <param name="font"></param>
+        /// <param name="color"></param>
+        /// <param name="bounds"></param>
+        /// <param name="alignment"></param>
+        protected virtual void DrawString(LayeredPaintEventArgs args, string text, Font font, Color? color, RectangleF bounds, ContentAlignment alignment, PointF? offset = null)
+        {
+            if (font is null || String.IsNullOrEmpty(text) || !color.HasValue) return;
+            args.PrepareGraphicsFor(GraphicsTargetType.Text);
+            var textSize = args.Graphics.MeasureString(text, font);
+            var textBounds = textSize.AlignTo(bounds, alignment);
+            if (offset.HasValue) textBounds = textBounds.ShiftBy(offset.Value);
+            args.Graphics.DrawString(text, font, args.GetBrush(color.Value), textBounds.Location);
         }
 
 
