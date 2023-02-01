@@ -16,6 +16,8 @@ using DevExpress.Utils;
 using DevExpress.XtraTreeList.Nodes;
 using System.Diagnostics;
 using DevExpress.Utils.Svg;
+using DevExpress.XtraTreeList;
+using DevExpress.Diagram.Core.Layout.Native;
 
 namespace Noris.Clients.Win.Components.AsolDX
 {
@@ -410,6 +412,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             _TreeListNative.NodeCheckedChange += _TreeListNative_NodeCheckedChange;
             _TreeListNative.NodesDelete += _TreeListNative_NodesDelete;
             _TreeListNative.LazyLoadChilds += _TreeListNative_LazyLoadChilds;
+            _TreeListNative.ToolTipChanged += _TreeListNative_ToolTipChanged;
         }
         private void _TreeListNative_NodeKeyDown(object sender, DxTreeListNodeKeyArgs args) { this.OnNodeKeyDown(args); this.NodeKeyDown?.Invoke(this, args); }
         private void _TreeListNative_NodeFocusedChanged(object sender, DxTreeListNodeArgs args) { this.OnNodeFocusedChanged(args); this.NodeFocusedChanged?.Invoke(this, args); }
@@ -425,6 +428,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void _TreeListNative_NodeCheckedChange(object sender, DxTreeListNodeArgs args) { this.OnNodeCheckedChange(args); this.NodeCheckedChange?.Invoke(this, args); }
         private void _TreeListNative_NodesDelete(object sender, DxTreeListNodesArgs args) { this.OnNodesDelete(args); this.NodesDelete?.Invoke(this, args); }
         private void _TreeListNative_LazyLoadChilds(object sender, DxTreeListNodeArgs args) { this.OnLazyLoadChilds(args); this.LazyLoadChilds?.Invoke(this, args); }
+        private void _TreeListNative_ToolTipChanged(object sender, DxToolTipArgs args) { this.OnToolTipChanged(args); this.ToolTipChanged?.Invoke(this, args); }
 
         /// <summary>
         /// TreeList má KeyUp na určitém Node.
@@ -554,6 +558,15 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// TreeList rozbaluje node, který má nastaveno načítání ze serveru : <see cref="ITreeListNode.LazyExpandable"/> je true.
         /// </summary>
         public event DxTreeListNodeHandler LazyLoadChilds;
+        /// <summary>
+        /// ToolTip v TreeListu má událost
+        /// </summary>
+        /// <param name="args"></param>
+        protected virtual void OnToolTipChanged(DxToolTipArgs args) { }
+        /// <summary>
+        /// ToolTip v TreeListu má událost
+        /// </summary>
+        public event DxToolTipHandler ToolTipChanged;
         #endregion
     }
     #endregion
@@ -562,7 +575,7 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// <see cref="DxTreeListNative"/> : potomek <see cref="DevExpress.XtraTreeList.TreeList"/> s podporou pro použití v Greenu.
     /// Nemá se používat přímo, má se používat <see cref="DxTreeList"/>.
     /// </summary>
-    public class DxTreeListNative : DevExpress.XtraTreeList.TreeList, IListenerStyleChanged, IDxDragDropControl
+    public class DxTreeListNative : DevExpress.XtraTreeList.TreeList, IListenerStyleChanged, IDxDragDropControl, IDxToolTipDynamicClient
     {
         #region Konstruktor a inicializace, privátní proměnné
         /// <summary>
@@ -642,9 +655,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.OptionsBehavior.AllowPixelScrolling = DevExpress.Utils.DefaultBoolean.False;                // Běžně nezapínat, ale na DirectX to chodí!   Nezapínej to, DevExpress mají (v 20.1.6.0) problém s vykreslováním!
 
             // Tooltip:
-            this.DxToolTipController = DxComponent.CreateNewToolTipController();
-            this.DxToolTipController.ToolTipAnchor = ToolTipAnchor.Cursor;
-            this.DxToolTipController.GetActiveObjectInfo += ToolTipController_GetActiveObjectInfo;
+            _ToolTipInit();
 
             // Eventy pro podporu TreeList (vykreslení nodu, atd):
             this.NodeCellStyle += _OnNodeCellStyle;
@@ -670,8 +681,9 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.AfterCollapse += _OnAfterCollapse;
             this.LostFocus += _LostFocus;
             this.MouseMove += _MouseMove;
+            this.MouseHover += _MouseHover;
             this.MouseLeave += _MouseLeave;
-
+            
             // Preset:
             this.LazyLoadNodeText = "...";
             this.LazyLoadNodeImageName = null;
@@ -865,6 +877,18 @@ namespace Noris.Clients.Win.Components.AsolDX
         #endregion
         #region ToolTipy pro nodes, HasMouse a IsFocused
         /// <summary>
+        /// Inicializace ToolTipu, voláno z konstruktoru
+        /// </summary>
+        private void _ToolTipInit()
+        {
+            this.ToolTipAllowHtmlText = false;
+            this.DxToolTipController = DxComponent.CreateNewToolTipController();
+            this.DxToolTipController.ToolTipAnchor = ToolTipAnchor.Cursor;
+            this.DxToolTipController.AddClient(this);      // Protože this třída implementuje IDxToolTipDynamicClient, bude volána metoda IDxToolTipDynamicClient.PrepareSuperTipForPoint()
+            //      this.DxToolTipController.GetActiveObjectInfo += _ToolTipGetActiveObjectInfo;
+            this.DxToolTipController.ToolTipChanged += _ToolTipChanged;        // Má význam jen pro Debug, nemusí být řešeno
+        }
+        /// <summary>
         /// ToolTipy mohou obsahovat SimpleHtml tagy?
         /// </summary>
         public bool ToolTipAllowHtmlText { get; set; }
@@ -877,33 +901,94 @@ namespace Noris.Clients.Win.Components.AsolDX
             set { __DxToolTipController = value; this.ToolTipController = value; }
         }
         private DxToolTipController __DxToolTipController;
+        /// <summary>
+        /// Zde control určí, jaký ToolTip má být pro danou pozici myši zobrazen
+        /// </summary>
+        /// <param name="args"></param>
+        void IDxToolTipDynamicClient.PrepareSuperTipForPoint(Noris.Clients.Win.Components.AsolDX.DxToolTipDynamicPrepareArgs args)
+        {
+            var hit = _GetNodeHit(args.MouseLocation);
+            if (hit.IsInImagesOrCell)
+            {
+                // Pokud myš nyní ukazuje na ten samý Node, pro který už máme ToolTip vytvořen, pak nebudeme ToolTip připravovat:
+                bool isSameAsLast = (args.DxSuperTip != null && Object.ReferenceEquals(args.DxSuperTip.ClientData, hit.NodeInfo));
+                if (!isSameAsLast)
+                {   // Připravíme data pro ToolTip:
+                    args.DxSuperTip = DxComponent.CreateDxSuperTip(hit.NodeInfo);        // Vytvořím new data ToolTipu
+                    args.DxSuperTip.ClientData = hit.NodeInfo;                           // Přibalím si do nich náš Node abych příště detekoval, zda jsme/nejsme na tom samém
+                    args.ToolTipChange = DxToolTipChangeType.NewToolTip;                 // Zajistím rozsvícení okna ToolTipu
+                }
+                else
+                {
+                    args.ToolTipChange = DxToolTipChangeType.SameAsLastToolTip;          // Není třeba nic dělat, nechme svítit stávající ToolTip
+                }
+            }
+            else
+            {   // Myš je mimo nody:
+                args.ToolTipChange = DxToolTipChangeType.NoToolTip;                      // Pokud ToolTip svítí, zhasneme jej
+            }
+        }
+
+
+
             
         /// <summary>
         /// Připraví ToolTip pro aktuální Node
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void ToolTipController_GetActiveObjectInfo(object sender, ToolTipControllerGetActiveObjectInfoEventArgs e)
+        private void _ToolTipGetActiveObjectInfo(object sender, ToolTipControllerGetActiveObjectInfoEventArgs e)
         {
             if (e.SelectedControl is DevExpress.XtraTreeList.TreeList tree && Object.ReferenceEquals(tree, this) && (this.HasMouse || this.IsFocused))
             {   // Jen když pod myší jsme my jakožto TreeList, a když my máme myš nebo focus
-                //   (někdy se DevExpress ToolTip aktivuje i mimo myš a focus, viz IOU 000010080463)
+                //   (někdy se DevExpress ToolTip aktivuje i mimo myš a focus)
+                bool reShow = false;
+                bool hasNode = false;
                 var hit = _GetNodeHit(e.ControlMousePosition);
                 if (hit.IsInImagesOrCell)
                 {
                     var nodeInfo = hit.NodeInfo;
                     if (nodeInfo != null && (!String.IsNullOrEmpty(nodeInfo.ToolTipTitle) || !String.IsNullOrEmpty(nodeInfo.ToolTipText)))
                     {
-                        object cellInfo = new DevExpress.XtraTreeList.ViewInfo.TreeListCellToolTipInfo(hit.Node, hit.Column, null);
-                        e.Info = DxComponent.CreateDxToolTipControlInfo(nodeInfo.ToolTipTitle, nodeInfo.ToolTipText, this, cellInfo, nodeInfo.Text, allowHtmlText: this.ToolTipAllowHtmlText);
-                        if (!Object.ReferenceEquals(hit.Node, __ToolTipNode))
-                        {
+                        hasNode = true;
+                        bool hasOldInfo = (__ToolTipInfo != null);
+                        bool needNewInfo = (!hasOldInfo || !Object.ReferenceEquals(hit.Node, __ToolTipNode));
+
+                        if (needNewInfo)
+                        {   // Musíme udělat nové informace pro nový Node:
+                            object cellInfo = new DevExpress.XtraTreeList.ViewInfo.TreeListCellToolTipInfo(hit.Node, hit.Column, nodeInfo.Text);
+                            var ttipInfo = DxComponent.CreateDxToolTipControlInfo(nodeInfo.ToolTipTitle, nodeInfo.ToolTipText, this, cellInfo, nodeInfo.Text, allowHtmlText: this.ToolTipAllowHtmlText);
+                            e.SelectedObject = hit.Node;
+                            e.Info = ttipInfo;
+
                             __ToolTipNode = hit.Node;
-                            if (this.DxToolTipController.IsVisible)
-                                this.DxToolTipController.ShowHintCurrent(e.Info);
+                            __ToolTipInfo = ttipInfo;
+
+                            //if (hasOldInfo)
+                              //  this.DxToolTipController.UpdateSuperTip(this, ttipInfo.SuperTip);
+                        }
+                        else
+                        {
+                            // RaiseToolTipChanged(new DxToolTipArgs($"ToolTip.GetActiveObjectInfo() detect same node as last: {nodeInfo.Text}"));
+                            e.Info = __ToolTipInfo;
                         }
                     }
                 }
+
+                if (!hasNode)
+                {
+                    __ToolTipNode = null;
+                    __ToolTipInfo = null;
+                }
+
+                if (reShow)
+                {
+                    // this.DxToolTipController.HideTip();
+                    // var args = this.DxToolTipController.CreateShowArgs();
+                    // this.DxToolTipController.ShowTip(this, __ToolTipInfo.SuperTip);
+                    // this.DxToolTipController.ResetAutoPopupDelay();
+                }
+
             }
         }
         /// <summary>
@@ -911,13 +996,17 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private TreeListNode __ToolTipNode;
         /// <summary>
+        /// Info, který byl odeslán do ToolTipu k zobrazení pro node <see cref="__ToolTipNode"/>.
+        /// </summary>
+        private ToolTipControlInfo __ToolTipInfo;
+        /// <summary>
         /// Skrýt Tooltip, pokud je rozsvícen pro jiný node, než nad kterým se aktuálně pohybuje myš.
         /// Pokud je předána souřadnice NULL, pak skryje tooltip vždy.
         /// </summary>
         /// <param name="mousePoint"></param>
-        private void _HideToolTipOnNodeChange(Point? mousePoint)
+        private void qqq_HideToolTipOnNodeChange(Point? mousePoint)
         {
-            if (!this.DxToolTipController.IsVisible) return;
+            // if (!this.DxToolTipController.IsVisible) return;
 
             bool hide = true;
             if (mousePoint.HasValue)
@@ -937,17 +1026,74 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 // this.DxToolTipController.Active = false;
                 // this.DxToolTipController.HideHint();
-                __ToolTipNode = null;
+                // __ToolTipNode = null;
                 // this.DxToolTipController.
                 // this.DxToolTipController.Active = true;
             }
         }
+
+
+        private void yy_ToolTipMouseMove(MouseEventArgs e)
+        {
+            if (!_TipShowTime.HasValue || (_TipShowTime.HasValue && ((TimeSpan)(DateTime.Now - _TipShowTime.Value)).TotalMilliseconds > 500d))
+            {
+                this.DxToolTipController.HideHint();
+
+                _HoverCount++;
+                DxSuperToolTip superTip = DxComponent.CreateDxSuperTip("MouseMove ToolTip", $"Nápověda ke kroku číslo {_HoverCount}");
+             //   this.DxToolTipController.ShowDxSuperTip(superTip);
+                // this.DxToolTipController.ShowHint($"Nápověda číslo {_HoverCount}");
+                RaiseToolTipChanged($"_ToolTipMouseHover : show Hint, Count={_HoverCount}");
+                _ToolTipVisible = true;
+                _TipShowTime = DateTime.Now;
+            }
+        }
+        private void yy_ToolTipMouseHover()
+        {
+        }
+
+        private void xx_ToolTipMouseMove(MouseEventArgs e)
+        {
+            if (_ToolTipVisible && _TipShowTime.HasValue && ((TimeSpan)(DateTime.Now - _TipShowTime.Value)).TotalMilliseconds > 200d)
+            {
+                _ToolTipVisible = false;
+                this.DxToolTipController.HideHint();
+                RaiseToolTipChanged($"_ToolTipMouseMove : hide Hint, Count={_HoverCount}");
+                _TipShowTime = null;
+            }
+        }
+        private void xx_ToolTipMouseHover()
+        {
+            _HoverCount++;
+            this.DxToolTipController.ShowHint($"Nápověda číslo {_HoverCount}");
+            RaiseToolTipChanged($"_ToolTipMouseHover : show Hint, Count={_HoverCount}");
+            _ToolTipVisible = true;
+            _TipShowTime = DateTime.Now;
+        }
+        private int _HoverCount;
+        private bool _ToolTipVisible;
+        private DateTime? _TipShowTime; 
         /// <summary>
         /// Po odchodu z TreeListu zhasni ToolTip
         /// </summary>
-        private void _ToolTipHide(bool force)
+        private void _ToolTipHide(bool force, string textInfo)
         {
-            this.DxToolTipController?.HideHint(force);
+            __ToolTipNode = null;
+            __ToolTipInfo = null;
+
+         //   this.DxToolTipController.UpdateSuperTip(this, null);
+            RaiseToolTipChanged($"TreeList.ToolTipHide(Force={force}, Info={textInfo})");
+            // this.DxToolTipController?.HideHint(force);
+        }
+        /// <summary>
+        /// V controlleru ToolTipu došlo k události, pošli ji do našeho eventu
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="args"></param>
+        /// <exception cref="NotImplementedException"></exception>
+        private void _ToolTipChanged(object sender, DxToolTipArgs args)
+        {
+            RaiseToolTipChanged(args);
         }
         #region HasMouse
         /// <summary>
@@ -1041,7 +1187,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.IsFocused = false;
         }
         #endregion
-
         #endregion
         #region Řízení specifického vykreslení TreeNodu podle jeho nastavení: font, barvy, checkbox, atd
         /// <summary>
@@ -1447,7 +1592,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void _OnMouseClick(object sender, MouseEventArgs e)
         {
             var hit = _GetNodeHit(e.Location);
-            this._ToolTipHide(true);
+            this._ToolTipHide(true, "OnMouseClick");
             if (hit.IsInImages)
             {
                 ITreeListNode nodeInfo = this.FocusedNodeInfo;
@@ -1476,7 +1621,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void _OnPopupMenuShowing(object sender, DevExpress.XtraTreeList.PopupMenuShowingEventArgs e)
         {
             e.Allow = false;
-            this._ToolTipHide(true);
+            this._ToolTipHide(true, "OnPopupMenuShowing");
 
             var hitInfo = this._GetNodeHit(e.HitInfo);
             var treeNode = hitInfo.Node;
@@ -1497,7 +1642,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             var hit = _GetNodeHit();
             ITreeListNode nodeInfo = this.FocusedNodeInfo;
-            this._ToolTipHide(true);
+            this._ToolTipHide(true, "OnDoubleClick");
             if (nodeInfo != null)
             {
                 if (_IsMainActionRunEvent(nodeInfo, hit.IsInCell))
@@ -1555,7 +1700,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="e"></param>
         private void _OnEditorDoubleClick(object sender, EventArgs e)
         {
-            this._ToolTipHide(true);
+            this._ToolTipHide(true, "OnEditorDoubleClick");
             ITreeListNode nodeInfo = this.FocusedNodeInfo;
             if (nodeInfo != null)
             {
@@ -1603,7 +1748,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="e"></param>
         private void _MouseMove(object sender, MouseEventArgs e)
         {
-            this._HideToolTipOnNodeChange(e.Location);
+            // this._ToolTipMouseMove(e);
+            // this._HideToolTipOnNodeChange(e.Location);
+        }
+
+        private void _MouseHover(object sender, EventArgs e)
+        {
+            // this._ToolTipMouseHover();
         }
         /// <summary>
         /// Po odchodu myši z TreeListu zhasni ToolTip
@@ -1612,7 +1763,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="e"></param>
         private void _MouseLeave(object sender, EventArgs e)
         {
-            this._ToolTipHide(true);
+            this._ToolTipHide(true, "MouseLeave");
         }
         /// <summary>
         /// Po odchodu focusu z TreeListu zhasni ToolTip
@@ -1621,7 +1772,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="e"></param>
         private void _LostFocus(object sender, EventArgs e)
         {
-            this._ToolTipHide(true);
+            this._ToolTipHide(true, "LostFocus");
         }
         /// <summary>
         /// Vrátí true pokud se po hlavní akci má provést RunEvent odpovídající aktuální aktivitě
@@ -3705,6 +3856,33 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// TreeList rozbaluje node, který má nastaveno načítání ze serveru : <see cref="ITreeListNode.LazyExpandable"/> je true.
         /// </summary>
         public event DxTreeListNodeHandler LazyLoadChilds;
+
+        /// <summary>
+        /// Vyvolá metodu <see cref="OnToolTipEvent(DxToolTipArgs)"/> a event <see cref="ToolTipChanged"/>
+        /// </summary>
+        /// <param name="eventName"></param>
+        private void RaiseToolTipChanged(string eventName)
+        {
+            RaiseToolTipChanged(new DxToolTipArgs(eventName));
+        }
+        /// <summary>
+        /// Vyvolá metodu <see cref="OnToolTipEvent(DxToolTipArgs)"/> a event <see cref="ToolTipChanged"/>
+        /// </summary>
+        /// <param name="args"></param>
+        private void RaiseToolTipChanged(DxToolTipArgs args)
+        {
+            OnToolTipEvent(args);
+            ToolTipChanged?.Invoke(this, args);
+        }
+        /// <summary>
+        /// ToolTip v TreeListu má událost
+        /// </summary>
+        /// <param name="args"></param>
+        protected virtual void OnToolTipEvent(DxToolTipArgs args) { }
+        /// <summary>
+        /// ToolTip v TreeListu má událost
+        /// </summary>
+        public event DxToolTipHandler ToolTipChanged;
 
         /// <summary>
         /// Tichý režim = bez eventů.

@@ -20,7 +20,6 @@ using DevExpress.Utils;
 
 using Noris.WS.DataContracts.Desktop.Data;
 using System.Runtime.CompilerServices;
-using DevExpress.DataAccess.Native.Sql;
 
 namespace Noris.Clients.Win.Components.AsolDX
 {

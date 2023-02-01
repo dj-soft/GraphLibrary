@@ -3837,13 +3837,19 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
         #region TreeView
         private void InitTreeView()
         {
-            AddNewPage("TreeList", PrepareTreeView);
+            AddNewPage("TreeList", PrepareTreeView, ActivateTreeView);
         }
         private DxPanelControl _PanelTreeView;
         private void PrepareTreeView(DxPanelControl panel)
         {
             _PanelTreeView = panel;
             CreateTreeViewComponents();
+        }
+        private void ActivateTreeView()
+        {
+            _TreeListLog = _TreeListLogInit;
+            _TreeListLogId = _TreeListLogIdInit;
+            _TreeListShowLogText();
         }
         private void CreateTreeViewComponents()
         {
@@ -3950,20 +3956,27 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
             _TreeList.NodeCheckedChange += _TreeList_AnyAction;
             _TreeList.NodesDelete += _TreeList_NodesDelete;
             _TreeList.LazyLoadChilds += _TreeList_LazyLoadChilds;
+            _TreeList.ToolTipChanged += _TreeList_ToolTipChanged;
+            _TreeList.MouseLeave += _TreeList_MouseLeave;
 
             int y = 0;
             _TreeListMemoEdit = DxComponent.CreateDxMemoEdit(0, ref y, 100, 100, this._SplitContainer.Panel2, readOnly: true);
             _TreeListMemoEdit.Dock = DockStyle.Fill;
-            _LogId = 0;
-            _Log = "";
+            _TreeListMemoEdit.MouseEnter += _TreeListMemoEdit_MouseEnter;
+            _TreeListLogId = 0;
+            _TreeListLog = "";
 
             string line = "Počet nodů: " + nodes.Count.ToString();
-            _AddLogLine(line);
+            _TreeListAddLogLine(line);
             line = "Tvorba nodů: " + ((TimeSpan)(t1 - t0)).TotalMilliseconds.ToString("##0.000") + " ms";
-            _AddLogLine(line);
+            _TreeListAddLogLine(line);
             line = "Plnění do TreeView: " + ((TimeSpan)(t2 - t1)).TotalMilliseconds.ToString("##0.000") + " ms";
-            _AddLogLine(line);
+            _TreeListAddLogLine(line);
+
+            _TreeListLogInit = _TreeListLog;
+            _TreeListLogIdInit = _TreeListLogId;
         }
+
         private static Keys[] _CreateHotKeys()
         {
             Keys[] keys = new Keys[]
@@ -3984,23 +3997,23 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
         }
         private void _TreeList_FilterBoxKeyEnter(object sender, EventArgs e)
         {
-            _AddLogLine($"RowFilter: 'Enter' pressed");
+            _TreeListAddLogLine($"RowFilter: 'Enter' pressed");
         }
         private void _TreeList_FilterBoxChanged(object sender, DxFilterBoxChangeArgs args)
         {
             var filter = this._TreeList.FilterBoxValue;
-            _AddLogLine($"RowFilter: Change: {args.EventSource}; Operator: {args.FilterValue.FilterOperator?.ItemId}, Text: \"{args.FilterValue.FilterText}\"");
+            _TreeListAddLogLine($"RowFilter: Change: {args.EventSource}; Operator: {args.FilterValue.FilterOperator?.ItemId}, Text: \"{args.FilterValue.FilterText}\"");
         }
         private void _TreeMultiCheckBoxChanged(object sender, EventArgs e)
         {
             if (_TreeList == null) return;
             bool multiSelectEnabled = _TreeMultiCheckBox.Checked;
             _TreeList.MultiSelectEnabled = multiSelectEnabled;
-            _AddLogLine($"MultiSelectEnabled: {multiSelectEnabled}");
+            _TreeListAddLogLine($"MultiSelectEnabled: {multiSelectEnabled}");
         }
         private void _TreeList_NodeKeyDown(object sender, DxTreeListNodeKeyArgs args)
         {
-            _AddLogLine($"KeyUp: Node: {args.Node?.Text}; KeyCode: '{args.KeyArgs.KeyCode}'; KeyData: '{args.KeyArgs.KeyData}'; Modifiers: {args.KeyArgs.Modifiers}");
+            _TreeListAddLogLine($"KeyUp: Node: {args.Node?.Text}; KeyCode: '{args.KeyArgs.KeyCode}'; KeyData: '{args.KeyArgs.KeyData}'; Modifiers: {args.KeyArgs.Modifiers}");
         }
         private void _TreeList_AnyAction(object sender, DxTreeListNodeArgs args)
         {
@@ -4016,11 +4029,11 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
             string selectedNodes = "";
             _TreeList.SelectedNodes.ForEachExec(n => { count++; selectedNodes += "; '" + n.ToString() + "'"; });
             if (selectedNodes.Length > 0) selectedNodes = selectedNodes.Substring(2);
-            _AddLogLine($"SelectedNodesChanged: Selected {count} Nodes: {selectedNodes}");
+            _TreeListAddLogLine($"SelectedNodesChanged: Selected {count} Nodes: {selectedNodes}");
         }
         private void _TreeList_ShowContextMenu(object sender, DxTreeListNodeContextMenuArgs args)
         {
-            _AddLogLine($"ShowContextMenu: Node: {args.Node} Part: {args.HitInfo.PartType}");
+            _TreeListAddLogLine($"ShowContextMenu: Node: {args.Node} Part: {args.HitInfo.PartType}");
             if (args.Node != null)
                 _ShowContextMenu(Control.MousePosition);
         }
@@ -4032,7 +4045,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
         private void _LoadChildNodesFromServerBgr(DxTreeListNodeArgs args)
         {
             string parentNodeId = args.Node.ItemId;
-            _AddLogLine($"Načítám data pro node '{parentNodeId}'...");
+            _TreeListAddLogLine($"Načítám data pro node '{parentNodeId}'...");
 
             System.Threading.Thread.Sleep(720);                      // Něco jako uděláme...
 
@@ -4051,7 +4064,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
             // Vytvoříme ChildNodes a zobrazíme je:
             bool empty = (Randomizer.Rand.Next(10) > 7);
             var nodes = _CreateSampleChilds(parentNodeId, ItemCountType.Standard);       // A pak vyrobíme Child nody
-            _AddLogLine($"Načtena data: {nodes.Count} prvků.");
+            _TreeListAddLogLine($"Načtena data: {nodes.Count} prvků.");
             _TreeList.AddLazyLoadNodes(parentNodeId, nodes);            //  a pošleme je do TreeView.
         }
         private void _TreeList_NodeEdited(object sender, DxTreeListNodeArgs args)
@@ -4066,7 +4079,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
             string parentNodeId = nodeInfo.ParentNodeFullId;
             string oldValue = nodeInfo.Text;
             string newValue = (args.EditedValue is string text ? text : "");
-            _AddLogLine($"Změna textu pro node '{nodeId}': '{oldValue}' => '{newValue}'");
+            _TreeListAddLogLine($"Změna textu pro node '{nodeId}': '{oldValue}' => '{newValue}'");
 
             System.Threading.Thread.Sleep(720);                      // Něco jako uděláme...
 
@@ -4162,25 +4175,53 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
 
             _TreeList.RemoveNodes(removeNodeKeys);
         }
+        private void _TreeList_MouseLeave(object sender, EventArgs e)
+        {
+            if (_TreeListPending)
+                _TreeListAddLogLine("TreeList.MouseLeave");
+        }
+        private void _TreeListMemoEdit_MouseEnter(object sender, EventArgs e)
+        {
+            if (_TreeListPending)
+                _TreeListShowLogText();
+        }
+        private void _TreeList_ToolTipChanged(object sender, DxToolTipArgs args)
+        {
+            string line = "ToolTip: " + args.EventName;
+            _TreeListAddLogLine(line, true);           // ToolTip nebudu dávat do GUI Textu - zhasínáí to okno ToolTipu!
+        }
         private void _AddTreeNodeLog(string actionName, DxTreeListNodeArgs args, bool showValue = false)
         {
             string value = (showValue ? ", Value: " + (args.EditedValue == null ? "NULL" : "'" + args.EditedValue.ToString() + "'") : "");
-            _AddLogLine($"{actionName}: Node: {args.Node}{value}");
+            _TreeListAddLogLine($"{actionName}: Node: {args.Node}{value}");
         }
         private void _AddTreeNodeLog(string actionName, DxTreeListNodesArgs args)
         {
             string nodes = args.Nodes.ToOneString("; ");
-            _AddLogLine($"{actionName}: Nodes: {nodes}");
+            _TreeListAddLogLine($"{actionName}: Nodes: {nodes}");
         }
-        private void _AddLogLine(string line)
+        private void _TreeListAddLogLine(string line, bool skipGUI = false)
         {
-            if (this.InvokeRequired) { this.Invoke(new Action<string>(_AddLogLine), line); return; }
-
-            int id = ++_LogId;
-            string log = id.ToString() + ". " + line + Environment.NewLine + _Log;
-            _Log = log;
-            _TreeListMemoEdit.Text = log;
+            int id = ++_TreeListLogId;
+            var now = DateTime.Now;
+            bool isLong = (_TreeListLogTime.HasValue && ((TimeSpan)(now - _TreeListLogTime.Value)).TotalMilliseconds > 750d);
+            string log = id.ToString() + ". " + line + Environment.NewLine + (isLong ? Environment.NewLine : "") + _TreeListLog;
+            _TreeListLog = log;
+            _TreeListLogTime = now;
+            if (skipGUI) _TreeListPending = true;
+            else _TreeListShowLogText();
         }
+        private void _TreeListShowLogText()
+        {
+            if (this.InvokeRequired)
+                this.Invoke(new Action(_TreeListShowLogText));
+            else
+            {
+                _TreeListMemoEdit.Text = _TreeListLog;
+                _TreeListPending = false;
+            }
+        }
+        DateTime? _TreeListLogTime;
         int _InternalNodeId;
         private List<DataTreeListNode> _CreateSampleTreeNodes(ItemCountType countType = ItemCountType.Standard)
         {
@@ -4296,8 +4337,11 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
         DxCheckEdit _TreeMultiCheckBox;
         DxTreeList _TreeList;
         DxMemoEdit _TreeListMemoEdit;
-        string _Log;
-        int _LogId;
+        string _TreeListLog;
+        int _TreeListLogId;
+        string _TreeListLogInit;
+        int _TreeListLogIdInit;
+        bool _TreeListPending;
         NewNodePositionType _NewNodePosition;
         private enum NewNodePositionType { None, First, Last }
         private ResourceContentType _TreeListImageType;

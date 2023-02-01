@@ -15,6 +15,7 @@ using NCC = Noris.Clients.Controllers;
 using DXN = DevExpress.XtraBars.Navigation;
 using Noris.Clients.Win.Components;
 using Noris.Clients.Win.Components.AsolDX;
+using DevExpress.Utils.Drawing;
 
 namespace TestDevExpress
 {
@@ -1031,10 +1032,10 @@ namespace TestDevExpress
         /// <summary>
         /// Tady si DevExpress počítá velikosti svých elementů
         /// </summary>
-        /// <param name="e"></param>
-        protected override void CalcViewInfo(WinForm.PaintEventArgs e)
+        /// <param name="cache"></param>
+        protected override void CalcViewInfo(GraphicsCache cache)
         {
-            base.CalcViewInfo(e);
+            base.CalcViewInfo(cache);
             this._HeadersSizeDetectChange();
         }
         /// <summary>
@@ -1573,10 +1574,10 @@ namespace TestDevExpress
         /// <summary>
         /// Tady si DevExpress počítá velikosti svých elementů
         /// </summary>
-        /// <param name="e"></param>
-        protected override void CalcViewInfo(WinForm.PaintEventArgs e)
+        /// <param name="cache"></param>
+        protected override void CalcViewInfo(GraphicsCache cache)
         {
-            base.CalcViewInfo(e);
+            base.CalcViewInfo(cache);
             this._HeadersSizeDetectChange();
         }
         /// <summary>

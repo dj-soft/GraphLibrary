@@ -116,7 +116,7 @@ namespace Noris.Clients.Win.Components
         /// Lze odebrat časovač cyklický, typu "volej mě každých 100 milisekund".
         /// </summary>
         /// <param name="id"></param>
-        public static void Remove(Guid id)
+        public static void Remove(Guid? id)
         {
             Timer._RemoveItem(id);
         }
@@ -314,15 +314,18 @@ namespace Noris.Clients.Win.Components
         /// Ze seznamu odebere budík dle daného ID.
         /// </summary>
         /// <param name="guid"></param>
-        private void _RemoveItem(Guid guid)
+        private void _RemoveItem(Guid? guid)
         {
-            lock (_Items)
+            if (guid.HasValue)
             {
-                if (_Items.TryGetValue(guid, out var watchItem))
+                lock (_Items)
                 {
-                    watchItem.Disable();
-                    _Items.Remove(guid);
-                    watchItem.Owner = null;
+                    if (_Items.TryGetValue(guid.Value, out var watchItem))
+                    {
+                        watchItem.Disable();
+                        _Items.Remove(guid.Value);
+                        watchItem.Owner = null;
+                    }
                 }
             }
         }

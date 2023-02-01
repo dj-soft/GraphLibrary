@@ -2343,7 +2343,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="textItem"></param>
         /// <returns></returns>
-        public static SuperToolTip CreateDxSuperTip(IMenuItem textItem)
+        public static DxSuperToolTip CreateDxSuperTip(IMenuItem textItem)
         {
             return DxSuperToolTip.CreateDxSuperTip(textItem);
         }
@@ -2352,7 +2352,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="toolTipItem"></param>
         /// <returns></returns>
-        public static SuperToolTip CreateDxSuperTip(IToolTipItem toolTipItem)
+        public static DxSuperToolTip CreateDxSuperTip(IToolTipItem toolTipItem)
         {
             return DxSuperToolTip.CreateDxSuperTip(toolTipItem);
         }
@@ -2382,16 +2382,79 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         public static DevExpress.Utils.ToolTipControlInfo CreateDxToolTipControlInfo(string title, string text, object control, object target, string defaultTitle = null, string toolTipIcon = null, bool allowHtmlText = false)
         {
-            var dxSuperTip = CreateDxSuperTip(title, text, defaultTitle, toolTipIcon);
-            if (dxSuperTip is null) return null;
+            if (!PrepareToolTipTexts(title, text, defaultTitle, out string toolTipTitle, out string toolTipText)) return null;
 
-            var ttci = new DevExpress.Utils.ToolTipControlInfo(target, "");
-            ttci.Object = control;
-            ttci.ToolTipType = ToolTipType.SuperTip;
-            ttci.SuperTip = dxSuperTip;
-            dxSuperTip.TextContainsHtml = allowHtmlText;
+            DevExpress.Utils.ToolTipControlInfo ttci = null;
+
+            // Následující nastavení generuje ToolTip shodný s jinými částmi systému = standardní SuperTip (Titulek + Oddělovač + Text):
+            ToolTipType toolTipType = ToolTipType.SuperTip;
+            bool superTipExplicit = true;
+
+            switch (toolTipType)
+            {
+                case ToolTipType.SuperTip:
+                    if (superTipExplicit)
+                    {
+                        var dxSuperTip = CreateDxSuperTip(toolTipTitle, toolTipText, toolTipIcon: toolTipIcon);
+                        if (dxSuperTip != null)
+                        {
+                            dxSuperTip.TextContainsHtml = allowHtmlText;
+                            ttci = new DevExpress.Utils.ToolTipControlInfo(target, "");
+                            ttci.Object = control;
+                            ttci.ToolTipType = ToolTipType.SuperTip;
+                            ttci.SuperTip = dxSuperTip;
+                        }
+                    }
+                    else
+                    {
+                        ttci = new DevExpress.Utils.ToolTipControlInfo(target, "");
+                        ttci.Object = control;
+                        ttci.ToolTipType = ToolTipType.SuperTip;
+                        ttci.Title = toolTipTitle;
+                        ttci.Text = toolTipText;
+                    }
+                    break;
+
+                case ToolTipType.Standard:
+                case ToolTipType.Default:
+                case ToolTipType.Flyout:
+                    ttci = new DevExpress.Utils.ToolTipControlInfo(target, "");
+                    ttci.Object = control;
+                    ttci.ToolTipType = toolTipType;
+                    ttci.Title = toolTipTitle;
+                    ttci.Text = toolTipText;
+                    ttci.AllowHtmlText = DxComponent.ConvertBool(allowHtmlText);
+                    break;
+            }
 
             return ttci;
+        }
+        /// <summary>
+        /// Metoda ze vstupních dat vybere Titulek a Text pro ToolTip a vrátí true = máme data pro jeho zobrazení.
+        /// Zde se tedy určuje, co bude zobrazeno a zda vůbec.
+        /// <para/>
+        /// Pokud není naplněn <paramref name="title"/> ani <paramref name="text"/>, pak se ToolTip nebude generovat = vrací se false.<br/>
+        /// Pokud je naplněn <paramref name="text"/> ale není <paramref name="title"/>, pak se jako titulek použije <paramref name="defaultTitle"/> a vrátí se true.<br/>
+        /// Pokud je naplněn <paramref name="title"/> a není dán <paramref name="text"/>, pak bude ToolTip bez textu (titulek stačí) a vrátí se true.
+        /// </summary>
+        /// <param name="title"></param>
+        /// <param name="text"></param>
+        /// <param name="defaultTitle"></param>
+        /// <param name="toolTipTitle">Výstup titulku ToolTipu. Pokud nemá být, je zde null.</param>
+        /// <param name="toolTipText">Výstup textu ToolTipu. Pokud nemá být, je zde null.</param>
+        /// <returns></returns>
+        public static bool PrepareToolTipTexts(string title, string text, string defaultTitle, out string toolTipTitle, out string toolTipText)
+        {
+            toolTipTitle = null;
+            toolTipText = null;
+            bool isTitle = !String.IsNullOrEmpty(title);
+            bool isText = !String.IsNullOrEmpty(text);
+            bool isDefaultTitle = !String.IsNullOrEmpty(defaultTitle);
+            if (!isTitle && !isText) return false;                       // Pokud není Title ani Text, pak Default Title sám o sobě neznamená existenci ToolTipu.
+
+            toolTipTitle = (isTitle ? title : (isDefaultTitle ? defaultTitle : null));
+            toolTipText = (isText ? text : null);
+            return true;
         }
         #endregion
         #region Pozice okna
@@ -3768,7 +3831,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="value"></param>
         /// <returns></returns>
-        public static DefaultBoolean Convert(bool? value)
+        public static DefaultBoolean ConvertBool(bool? value)
         {
             return (value.HasValue ? (value.Value ? DefaultBoolean.True : DefaultBoolean.False) : DefaultBoolean.Default);
         }
@@ -3777,7 +3840,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="value"></param>
         /// <returns></returns>
-        public static bool? Convert(DefaultBoolean value)
+        public static bool? ConvertBool(DefaultBoolean value)
         {
             return (value == DefaultBoolean.True ? (bool?)true :
                    (value == DefaultBoolean.False ? (bool?)false : (bool?)null));
