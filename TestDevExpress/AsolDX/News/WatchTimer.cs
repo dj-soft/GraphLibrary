@@ -8,7 +8,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Noris.Clients.Win.Components.AsolDX;
 
 namespace Noris.Clients.Win.Components
 {
@@ -129,7 +128,7 @@ namespace Noris.Clients.Win.Components
         /// Lze odebrat časovač cyklický, typu "volej mě každých 100 milisekund".
         /// </summary>
         /// <param name="timerId"></param>
-        public static void Remove(ref Guid? timerId)
+        public static void RemoveRef(ref Guid? timerId)
         {
             if (timerId.HasValue)
             {
@@ -215,12 +214,24 @@ namespace Noris.Clients.Win.Components
             this._AppExit = false;
             this._Semaphore = new System.Threading.AutoResetEvent(false);
             System.Windows.Forms.Application.ApplicationExit += Application_ApplicationExit;
+            ApplicationState.StateChanged += ApplicationState_StateChanged;
             this._Thread = new System.Threading.Thread(_ThreadRun)
             {
                 Name = "WatchTimer",
                 IsBackground = true
             };
             this._Thread.Start();
+        }
+        /// <summary>
+        /// Po změně stavu aplikace do stavu Konec může být ukončen WatchTimer
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void ApplicationState_StateChanged(object sender, EventArgs e)
+        {
+            var appState = ApplicationState.State;
+            if (appState == ApplicationStateType.DesktopClosed || appState == ApplicationStateType.ApplicationEnded)
+                _ThreadExit();
         }
         /// <summary>
         /// Eventhandler události <see cref="System.Windows.Forms.Application.ApplicationExit"/>.
@@ -230,7 +241,15 @@ namespace Noris.Clients.Win.Components
         /// <param name="e"></param>
         private void Application_ApplicationExit(object sender, EventArgs e)
         {
+            _ThreadExit();
+        }
+        /// <summary>
+        /// Zajistí ukončení threadu WatchTimer
+        /// </summary>
+        private void _ThreadExit()
+        {
             this._AppExit = true;
+            this._RemoveAllItems();
             this._Semaphore.Set();
         }
         /// <summary>
@@ -257,6 +276,7 @@ namespace Noris.Clients.Win.Components
             WatchItem[] items = this._LockedItems;         // Beru všechny prvky, abych mohl najít deaktivované a ty pak vyhodit ze seznamu
             foreach (WatchItem item in items)
             {
+                if (this._AppExit) break;
                 if (item.IsActive && item.NeedRun)
                     item.Run();
                 if (!item.IsActive)
@@ -329,21 +349,37 @@ namespace Noris.Clients.Win.Components
             this._Semaphore.Set();               // Rozsvítíme semafor, probudíme výkonný thread, ten si prověří zda má něco dělat a hlavně si nastaví vhodný interval na spánek
         }
         /// <summary>
+        /// Ze seznamu odebere všechny budíky.
+        /// </summary>
+        private void _RemoveAllItems()
+        {
+            lock (_Items)
+            {
+                foreach (var watchItem in _Items.Values)
+                {
+                    watchItem.Disable();
+                    watchItem.Dispose();
+                }
+
+                _Items.Clear();
+            }
+        }
+        /// <summary>
         /// Ze seznamu odebere budík dle daného ID.
         /// </summary>
         /// <param name="guid"></param>
         private void _RemoveItem(Guid? guid)
         {
-            if (guid.HasValue)
+            if (!guid.HasValue) return;
+
+            lock (_Items)
             {
-                lock (_Items)
+                if (_Items.TryGetValue(guid.Value, out var watchItem))
                 {
-                    if (_Items.TryGetValue(guid.Value, out var watchItem))
-                    {
-                        watchItem.Disable();
-                        _Items.Remove(guid.Value);
-                        watchItem.Owner = null;
-                    }
+                    watchItem.Disable();
+                    watchItem.Dispose();
+                    _Items.Remove(guid.Value);
+                    watchItem.Owner = null;
                 }
             }
         }
@@ -358,6 +394,7 @@ namespace Noris.Clients.Win.Components
                 if (_Items.ContainsKey(watchItem.Guid))
                 {
                     watchItem.Disable();
+                    watchItem.Dispose();
                     _Items.Remove(watchItem.Guid);
                     watchItem.Owner = null;
                 }
@@ -368,7 +405,7 @@ namespace Noris.Clients.Win.Components
         /// <summary>
         /// WatchItem : jeden časovač
         /// </summary>
-        private class WatchItem
+        private class WatchItem : IDisposable
         {
             #region Konstrukce, statická data (proměnné)
             /// <summary>
@@ -416,6 +453,21 @@ namespace Noris.Clients.Win.Components
                 this._TargetTime = targetTime;
                 this._WatchType = WatchItemType.TargetTime;
                 this._SynchronizeUI = synchronizeUI;
+            }
+            /// <summary>
+            /// Dispose
+            /// </summary>
+            public void Dispose()
+            {
+                this._Action = null;
+                this._ActionParam = null;
+                this._Param = null;
+                this._Miliseconds = null;
+                this._ActiveTime = null;
+                this._TargetTime = null;
+                this._WatchType = WatchItemType.None;
+                this._SynchronizeUI = false;
+                this.Owner = null;
             }
             /// <summary>
             /// Vygeneruje nový <see cref="Guid"/>. Smí se volat pouze před zařazením do kolekce (Dictionary).
@@ -499,7 +551,7 @@ namespace Noris.Clients.Win.Components
             /// </summary>
             private object _Param;
             /// <summary>
-            /// Volat v synchronizovaném threadu, pomocí invokace do GUI threadu
+            /// Volat v synchronizovaném threadu, pomocí <see cref="UiSynchronizationHelper.Invoke{TSender, TArgument}(TSender, TArgument, Action{TSender, TArgument}, Action)"/>
             /// </summary>
             private bool _SynchronizeUI;
             /// <summary>
@@ -687,8 +739,13 @@ namespace Noris.Clients.Win.Components
             /// </summary>
             private void _RunAction()
             {
-                if (this._SynchronizeUI)
-                    DxComponent.MainForm.RunInGui(_RunActionThread);
+                // DAJ 0070184 po zavření aplikace už nic nedělej:
+                var appState = ApplicationState.State;
+                if (appState == ApplicationStateType.DesktopClosed || appState == ApplicationStateType.ApplicationEnded)
+                    return;
+
+                if (this._SynchronizeUI && ComponentConnector.Host.InvokeRequired)
+                    ComponentConnector.Host.Invoke(new Action(this._RunActionThread));
                 else
                     this._RunActionThread();
             }

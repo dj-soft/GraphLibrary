@@ -15,9 +15,6 @@ using System.Drawing;
 using DevExpress.Utils;
 using DevExpress.XtraTreeList.Nodes;
 using System.Diagnostics;
-using DevExpress.Utils.Svg;
-using DevExpress.XtraTreeList;
-using DevExpress.Diagram.Core.Layout.Native;
 
 namespace Noris.Clients.Win.Components.AsolDX
 {
@@ -878,8 +875,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void _ToolTipInit()
         {
             this.ToolTipAllowHtmlText = null;
-            this.DxToolTipController = DxComponent.CreateNewToolTipController();
-            this.DxToolTipController.ToolTipAnchor = ToolTipAnchor.Cursor;
+            this.DxToolTipController = DxComponent.CreateNewToolTipController(ToolTipAnchor.Cursor);
             this.DxToolTipController.AddClient(this);      // Protože this třída implementuje IDxToolTipDynamicClient, bude volána metoda IDxToolTipDynamicClient.PrepareSuperTipForPoint()
             this.DxToolTipController.ToolTipChanged += _ToolTipChanged;        // Má význam jen pro Debug, nemusí být řešeno
         }

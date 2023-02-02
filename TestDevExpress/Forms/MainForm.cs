@@ -3837,7 +3837,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
         #region TreeView
         private void InitTreeView()
         {
-            AddNewPage("TreeList", PrepareTreeView, ActivateTreeView);
+            AddNewPage("TreeList", PrepareTreeView, ActivateTreeView, pageToolTip: "Tato záložka zobrazí <b>TreeView</b><br>a demonstruje tak ToolTipy a celé chování TreeListu <u>včetně událostí</u>.");
         }
         private DxPanelControl _PanelTreeView;
         private void PrepareTreeView(DxPanelControl panel)

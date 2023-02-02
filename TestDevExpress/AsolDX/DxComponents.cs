@@ -730,10 +730,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Vytvoří a vrátí new instanci ToolTipController, standardně deklarovanou
         /// </summary>
+        /// <param name="toolTipAnchor">Ukotvení ToolTipu se odvozuje od ...</param>
+        /// <param name="toolTipLocation">Pozice ToolTipu je ... od ukotvení</param>
         /// <returns></returns>
-        public static DxToolTipController CreateNewToolTipController()
+        public static DxToolTipController CreateNewToolTipController(ToolTipAnchor toolTipAnchor = ToolTipAnchor.Object, ToolTipLocation toolTipLocation = ToolTipLocation.RightBottom)
         {
-            return new DxToolTipController();
+            return new DxToolTipController(toolTipAnchor, toolTipLocation);
         }
         /// <summary>
         /// Převede string obsahující písmena B,I,U,S na odpovídající <see cref="FontStyle"/>.
@@ -3864,6 +3866,28 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <returns></returns>
         public static string CreateGuid() { return Guid.NewGuid().ToString(); }
+        /// <summary>
+        /// Vrátí <see cref="DefaultBoolean"/> z hodnoty nullable <see cref="Boolean"/>.
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        [Obsolete("Lepší bude metoda DxComponent.ConvertBool() se stejným významem", false)]
+        public static DefaultBoolean Convert(bool? value)
+        {
+            return (value.HasValue ? (value.Value ? DefaultBoolean.True : DefaultBoolean.False) : DefaultBoolean.Default);
+        }
+        /// <summary>
+        /// Vrátí nullable <see cref="Boolean"/> z hodnoty <see cref="DefaultBoolean"/>.
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        [Obsolete("Lepší bude metoda DxComponent.ConvertBool() se stejným významem", false)]
+        public static bool? Convert(DefaultBoolean value)
+        {
+            return (value == DefaultBoolean.True ? (bool?)true :
+                   (value == DefaultBoolean.False ? (bool?)false : (bool?)null));
+        }
+
         /// <summary>
         /// Vrátí <see cref="DefaultBoolean"/> z hodnoty nullable <see cref="Boolean"/>.
         /// </summary>

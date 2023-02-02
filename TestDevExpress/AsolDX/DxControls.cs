@@ -2681,29 +2681,34 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Konstruktor
         /// </summary>
-        public DxToolTipController()
+        /// <param name="toolTipAnchor">Ukotvení ToolTipu se odvozuje od ...</param>
+        /// <param name="toolTipLocation">Pozice ToolTipu je ... od ukotvení</param>
+        public DxToolTipController(ToolTipAnchor toolTipAnchor = ToolTipAnchor.Object, ToolTipLocation toolTipLocation = ToolTipLocation.RightBottom)
             : base()
         {
-            _Initialize();
+            SetDefaultSettings(toolTipAnchor, toolTipLocation);
         }
         /// <summary>
         /// Defaultní nastavení
         /// </summary>
-        private void _Initialize()
+        /// <param name="toolTipAnchor">Ukotvení ToolTipu se odvozuje od ...</param>
+        /// <param name="toolTipLocation">Pozice ToolTipu je ... od ukotvení</param>
+        private void SetDefaultSettings(ToolTipAnchor toolTipAnchor = ToolTipAnchor.Object, ToolTipLocation toolTipLocation = ToolTipLocation.RightBottom)
         {
             Active = true;
-            InitialDelay = 2000;
-            ReshowDelay = 300;
+            InitialDelay = 1700;
+            ReshowDelay = 600;
             AutoPopDelay = 10000;
             AutoHideAdaptive = true;
             KeepWhileHovered = false;
             Rounded = true;
             RoundRadius = 20;
             ShowShadow = true;
-            ToolTipAnchor = DevExpress.Utils.ToolTipAnchor.Object;
-            ToolTipLocation = DevExpress.Utils.ToolTipLocation.RightBottom;
+            ToolTipAnchor = toolTipAnchor;
+            ToolTipLocation = toolTipLocation;
             ToolTipStyle = DevExpress.Utils.ToolTipStyle.Windows7;
             ToolTipType = DevExpress.Utils.ToolTipType.SuperTip;          // Standard   Flyout   SuperTip;
+            ToolTipIndent = 20;
             IconSize = DevExpress.Utils.ToolTipIconSize.Large;
             CloseOnClick = DevExpress.Utils.DefaultBoolean.True;
             ShowBeak = true;                                              // Callout beaks are not supported for SuperToolTip objects.
@@ -2779,6 +2784,18 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Pokud je true, pak <see cref="AutoHideMiliseconds"/> je dolní hodnota pro texty do 120 znaků, pro texty delší je čas navyšován podle délky textu a ž na 5-ti násobek tohoto času.
         /// </summary>
         public bool AutoHideAdaptive { get; set; }
+        /// <summary>
+        /// Vzdálenost mezi ukazatelem myši a ToolTipem v pixelech. Výchozí je 20. Platné hodnoty jsou 0 - 64 px.
+        /// </summary>
+        public int ToolTipIndent
+        {
+            get { return __ToolTipIndent; }
+            set
+            {
+                __ToolTipIndent = (value < 0 ? 0 : (value > 64 ? 64 : value));
+            }
+        }
+        private int __ToolTipIndent;
         #endregion
         #region Clients - klientské Controly: evidence, eventhandlery, vyhledání, předání ke konkrétní práci, dispose
         /// <summary>
@@ -3222,12 +3239,14 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (superTip is null) return;
 
             var args = new ToolTipControllerShowEventArgs();
-            args.SuperTip = superTip;
-            args.Show = true;
-            args.ToolTipAnchor = ToolTipAnchor.Cursor;
             args.ToolTipType = ToolTipType.SuperTip;
-            args.ToolTipLocation = ToolTipLocation.BottomRight;
-            args.ToolTipIndent = 12;
+            args.SuperTip = superTip;
+            args.ToolTipAnchor = this.ToolTipAnchor;
+            args.ToolTipLocation = this.ToolTipLocation;
+            args.ToolTipIndent = this.ToolTipIndent;
+            args.Show = true;
+            args.ShowBeak = this.ShowBeak;
+
             this.ShowHint(args);
 
             __IsHintShown = true;
@@ -3241,8 +3260,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="reset"></param>
         private void _HideTip(bool reset)
         {
-            WatchTimer.Remove(ref __HoverTimerGuid);
-            WatchTimer.Remove(ref __HideTimerGuid);
+            WatchTimer.RemoveRef(ref __HoverTimerGuid);
+            WatchTimer.RemoveRef(ref __HideTimerGuid);
             if (reset)
             {
                 if (__ActiveClientInfo != null) __ActiveClientInfo.Reset();
@@ -3322,7 +3341,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private void _AutoHideToolTip()
         {
-            WatchTimer.Remove(ref __HideTimerGuid);
+            WatchTimer.RemoveRef(ref __HideTimerGuid);
             _HideTip(false);           // false = bez resetu => budeme si pamatovat, nad kterým prvekm stojím. Pak se pro ten prvek neprovede reaktivace ToolTipu, protože z klienta přijde ChangeType = SameAsLast, a to tooltip nerozsvítíme...
         }
         /// <summary>
@@ -6261,11 +6280,18 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         [XS.PersistingEnabled(false)]
         public object Tag { get; set; }
-
         /// <summary>
-        /// Titulek ToolTipu (pokud není zadán explicitně) se přebírá z textu prvku
+        /// Titulek okna ToolTip (může obsahovat Text, když to dává smysl)
         /// </summary>
-        string IToolTipItem.ToolTipTitle { get { return ToolTipTitle ?? Text; } }
+        string IToolTipItem.ToolTipTitle 
+        {
+            get 
+            {
+                if (!String.IsNullOrEmpty(ToolTipTitle)) return ToolTipTitle;  // Explicitně zadaný titulek je jasný
+                if (!String.IsNullOrEmpty(ToolTipText)) return Text;           // Toť oříšek... : Pokud je specifikován 'ToolTipText' (tedy budeme zobrazovat nějaký rozšiřující text), pak jako Titulek použijeme základní Text prvku (button, záhlaví stránky, atd)
+                return null;                                                   // Ale když uživatel nezadal ani explicitní titulek, ani text ToolTipu, tak samotný náhradní Titulek nemá smysl.
+            }
+        }
     }
     /// <summary>
     /// Definice jednoduchého prvku, který nese ID, text, ikony, tooltip a Tag
