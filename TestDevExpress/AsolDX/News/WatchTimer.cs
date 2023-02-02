@@ -744,8 +744,8 @@ namespace Noris.Clients.Win.Components
                 if (appState == ApplicationStateType.DesktopClosed || appState == ApplicationStateType.ApplicationEnded)
                     return;
 
-                if (this._SynchronizeUI && ComponentConnector.Host.InvokeRequired)
-                    ComponentConnector.Host.Invoke(new Action(this._RunActionThread));
+                if (this._SynchronizeUI)
+                    ApplicationState.RunInGuiThread(_RunActionThread, true);
                 else
                     this._RunActionThread();
             }

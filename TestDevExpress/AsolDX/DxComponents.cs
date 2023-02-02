@@ -139,7 +139,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             DevExpress.Skins.SkinManager.EnableMdiFormSkins();
             DevExpress.XtraEditors.WindowsFormsSettings.AnimationMode = DevExpress.XtraEditors.AnimationMode.EnableAll;
             DevExpress.XtraEditors.WindowsFormsSettings.AllowHoverAnimation = DevExpress.Utils.DefaultBoolean.True;
-            DevExpress.LookAndFeel.UserLookAndFeel.Default.SkinName = "iMaginary";
         }
         /// <summary>
         /// Je voláno při ukončení aplikace

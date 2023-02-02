@@ -42,6 +42,8 @@ namespace TestDevExpress.Forms
         /// </summary>
         public MainForm()
         {
+            ApplicationState.DesktopForm = this;              // ApplicationState si ukládá WeakReferenci, a sám si hlídá eventy o změně stavu okna.
+
             DxComponent.SplashUpdate(rightFooter: "Příprava...");
 
             InitializeComponent();
@@ -83,6 +85,13 @@ namespace TestDevExpress.Forms
         private void MainForm_Disposed(object sender, EventArgs e)
         {
             DxComponent.LogTextChanged -= DxComponent_LogTextChanged;
+
+            // DAJ 0070458: tohle běžně nastavuje eventhandler WDesktop.Closed, odchycený v ApplicationState (tam je WDesktop zaháčkový už z jeho konstruktoru).
+            // Ale při Automatickém ukončení klienta se vyvolá rovnou WDesktop.Dispose() - aby se obešla celá logika řádného ukončení klienta (ukládání změn v oknech).
+            //  Viz: WinForms.Host\Windows\WUserSessionTimeout.cs  =>  private void _FinalCountDown()
+            // Aby byl stav aplikace řádně evidován, nastavíme nyní stav Closed, a v base.Dispose() proběhne event Disposed, který v ApplicationState ukončí evidenci WDesktopu:
+            //  Pokud probíhá normální konec klienta, pak následující řádek nic nezkazí, protože aplikační stav už nyní je Closed.
+            Noris.Clients.Win.Components.ApplicationState.DesktopFormState = ApplicationFormStateType.Closed;
         }
         protected override void OnFirstShownAfter()
         {
@@ -389,7 +398,8 @@ namespace TestDevExpress.Forms
 
             group = new DataRibbonGroup() { GroupText = "BROWSE" };
             group.Items.Add(CreateRibbonFunction("BrowseStd", "Browse Standard", "svgimages/dashboards/grid.svg", "Otevře okno pro testování standardního Browse", _TestDxBrowseStandardForm_Click));
-            // group.Items.Add(CreateRibbonFunction("BrowseVir", "Browse Virtual", "svgimages/dashboards/grid.svg", "Otevře okno pro testování Browse s virtuálním zdrojem dat", _TestDxBrowseVirtualForm_Click));
+            group.Items.Add(CreateRibbonFunction("BrowseVir", "Browse Virtual", "svgimages/dashboards/grid.svg", "Otevře okno pro testování Browse s virtuálním zdrojem dat", _TestDxBrowseVirtualForm_Click));
+            group.Items.Add(CreateRibbonFunction("Browse", "Browse", "svgimages/dashboards/grid.svg", "Otevře okno pro testování Browse", _TestDxBrowseForm_Click));
             page.Groups.Add(group);
 
             group = new DataRibbonGroup() { GroupText = "STYLY" };
@@ -816,6 +826,14 @@ namespace TestDevExpress.Forms
         private void _TestDxBrowseVirtualForm_Click(IMenuItem menuItem)
         {
             using (var dxBrowseForm = new DxBrowseVirtualForm())
+            {
+                dxBrowseForm.WindowState = FormWindowState.Maximized;
+                dxBrowseForm.ShowDialog();
+            }
+        }
+        private void _TestDxBrowseForm_Click(IMenuItem menuItem)
+        {
+            using (var dxBrowseForm = new DxBrowseForm())
             {
                 dxBrowseForm.WindowState = FormWindowState.Maximized;
                 dxBrowseForm.ShowDialog();

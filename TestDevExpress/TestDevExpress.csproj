@@ -170,6 +170,9 @@
     </Compile>
     <Compile Include="AsolDX\DxDragDrop.cs" />
     <Compile Include="AsolDX\DxDrawingExtensions.cs" />
+    <Compile Include="AsolDX\DxGrid.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="AsolDX\DxListBox.cs">
       <SubType>Component</SubType>
     </Compile>
@@ -189,6 +192,7 @@
       <SubType>Component</SubType>
     </Compile>
     <Compile Include="AsolDX\DxWinReg.cs" />
+    <Compile Include="AsolDX\News\AppState.cs" />
     <Compile Include="AsolDX\News\DxControlsNew.cs">
       <SubType>Component</SubType>
     </Compile>
@@ -239,9 +243,6 @@
     </Compile>
     <Compile Include="Components\Randomizer.cs" />
     <Compile Include="Components\ThreadManager.cs" />
-    <Compile Include="Forms\BrowseForm.cs">
-      <SubType>Form</SubType>
-    </Compile>
     <Compile Include="Forms\DataFormV1.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -249,6 +250,15 @@
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="Forms\DiagramControlForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\DxBrowseForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\DxBrowseForm.Designer.cs">
+      <DependentUpon>DxBrowseForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\DxBrowseStandardForm.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="Forms\GraphForm.cs">
