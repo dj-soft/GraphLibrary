@@ -116,17 +116,22 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         public virtual List<IDataFormGroup> Groups { get; set; }
         /// <summary>
-        /// Text ToolTipu
+        /// Ikona ToolTipu
         /// </summary>
-        public virtual string ToolTipText { get; set; }
+        public virtual string ToolTipIcon { get; set; }
         /// <summary>
         /// Titulek ToolTipu. Pokud nebude naplněn, vezme se text prvku.
         /// </summary>
         public virtual string ToolTipTitle { get; set; }
         /// <summary>
-        /// Ikona ToolTipu
+        /// Text ToolTipu
         /// </summary>
-        public virtual string ToolTipIcon { get; set; }
+        public virtual string ToolTipText { get; set; }
+        /// <summary>
+        /// Povoluje se HTML?
+        /// </summary>
+        public virtual bool? ToolTipAllowHtml { get; set; }
+
         string IToolTipItem.ToolTipTitle { get { return ToolTipTitle ?? PageText; } }
         /// <summary>prvek interface</summary>
         IEnumerable<IDataFormGroup> IDataFormPage.Groups { get { return Groups; } }
@@ -300,17 +305,21 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         public virtual List<IDataFormColumn> Items { get; set; }
         /// <summary>
-        /// Text ToolTipu
+        /// Ikona ToolTipu
         /// </summary>
-        public virtual string ToolTipText { get; set; }
+        public virtual string ToolTipIcon { get; set; }
         /// <summary>
         /// Titulek ToolTipu. Pokud nebude naplněn, vezme se text prvku.
         /// </summary>
         public virtual string ToolTipTitle { get; set; }
         /// <summary>
-        /// Ikona ToolTipu
+        /// Text ToolTipu
         /// </summary>
-        public virtual string ToolTipIcon { get; set; }
+        public virtual string ToolTipText { get; set; }
+        /// <summary>
+        /// Povoluje se HTML?
+        /// </summary>
+        public virtual bool? ToolTipAllowHtml { get; set; }
         /// <summary>
         /// Vytvoří a vrátí klon sebe sama = obsahuje shodné hodnoty
         /// </summary>
@@ -754,17 +763,21 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         public virtual IDataFormColumnAppearance Appearance { get; set; }
         /// <summary>
-        /// Text ToolTipu
+        /// Ikona ToolTipu
         /// </summary>
-        public virtual string ToolTipText { get; set; }
+        public virtual string ToolTipIcon { get; set; }
         /// <summary>
         /// Titulek ToolTipu. Pokud nebude naplněn, vezme se text prvku.
         /// </summary>
         public virtual string ToolTipTitle { get; set; }
         /// <summary>
-        /// Ikona ToolTipu
+        /// Text ToolTipu
         /// </summary>
-        public virtual string ToolTipIcon { get; set; }
+        public virtual string ToolTipText { get; set; }
+        /// <summary>
+        /// Povoluje se HTML?
+        /// </summary>
+        public virtual bool? ToolTipAllowHtml { get; set; }
         #endregion
     }
     /// <summary>

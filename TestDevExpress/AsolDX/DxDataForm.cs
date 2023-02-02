@@ -1915,17 +1915,21 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         object ITextItem.Tag { get { return null; } }
         /// <summary>
-        /// Text ToolTipu
+        /// Ikona ToolTipu
         /// </summary>
-        string IToolTipItem.ToolTipText { get { return this.ToolTipText; } }
+        string IToolTipItem.ToolTipIcon { get { return null; } }
         /// <summary>
         /// Titulek ToolTipu. Pokud nebude naplněn, vezme se text prvku.
         /// </summary>
         string IToolTipItem.ToolTipTitle { get { return this.ToolTipTitle; } }
         /// <summary>
-        /// Ikona ToolTipu
+        /// Text ToolTipu
         /// </summary>
-        string IToolTipItem.ToolTipIcon { get { return null; } }
+        string IToolTipItem.ToolTipText { get { return this.ToolTipText; } }
+        /// <summary>
+        /// Povoluje se HTML?
+        /// </summary>
+        bool? IToolTipItem.ToolTipAllowHtml { get { return null; } }
         #endregion
     }
     #endregion

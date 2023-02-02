@@ -2398,7 +2398,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                         var dxSuperTip = CreateDxSuperTip(toolTipTitle, toolTipText, toolTipIcon: toolTipIcon);
                         if (dxSuperTip != null)
                         {
-                            dxSuperTip.TextContainsHtml = allowHtmlText;
+                            dxSuperTip.ToolTipAllowHtmlText = allowHtmlText;
                             ttci = new DevExpress.Utils.ToolTipControlInfo(target, "");
                             ttci.Object = control;
                             ttci.ToolTipType = ToolTipType.SuperTip;
@@ -3321,6 +3321,44 @@ namespace Noris.Clients.Win.Components.AsolDX
                 args.PrepareButtons(buttons, defaultButton);
             }
             DialogForm.ShowDialog(args);
+        }
+        /// <summary>
+        /// Vrátí true, má být akceptováno HTML formátování v daném textu / false pokud ne.<br/>
+        /// Pokud je předán parametr <paramref name="allowHtml"/> s dodanou hodnotou true nebo false, pak se vrací tato hodnota - bez zkoumání obsahu textu.
+        /// Pokud <paramref name="allowHtml"/> je null : provede se autodetect Light-HTML kódů podle obsahu textu.
+        /// Výstupem je true / false. 
+        /// Konverzi do DevExpress hodnoty typu <see cref="DefaultBoolean"/> provádí metoda <see cref="DxComponent.ConvertBool(bool?)"/>.
+        /// (Light-HTML kódy viz DevExpress: https://docs.devexpress.com/WindowsForms/4874/common-features/html-text-formatting).
+        /// </summary>
+        /// <param name="text"></param>
+        /// <param name="allowHtml"></param>
+        /// <returns></returns>
+        public static bool AllowHtmlText(string text, bool? allowHtml = null)
+        {
+            if (allowHtml.HasValue) return allowHtml.Value;
+
+            if (String.IsNullOrEmpty(text)) return false;
+
+            string test = text.Trim().ToLower();
+            if (test.Contains("<b>") && test.Contains("</b>")) return true;
+            if (test.Contains("<i>") && test.Contains("</i>")) return true;
+            if (test.Contains("<s>") && test.Contains("</s>")) return true;
+            if (test.Contains("<u>") && test.Contains("</u>")) return true;
+
+            if (test.Contains("<sub>") && test.Contains("</sub>")) return true;
+            if (test.Contains("<sup>") && test.Contains("</sup>")) return true;
+
+            if (test.Contains("<size") && test.Contains("</size>")) return true;
+            if (test.Contains("<font") && test.Contains("</font>")) return true;
+            if (test.Contains("<backcolor") && test.Contains("</backcolor>")) return true;
+            if (test.Contains("<color") && test.Contains("</color>")) return true;
+
+            if (test.Contains("<p") && test.Contains("</p>")) return true;
+            if (test.Contains("<p>") || test.Contains("<br>")) return true;
+
+            if (test.Contains("<href") && test.Contains(">")) return true;
+
+            return false;
         }
         #endregion
         #region SystemSounds

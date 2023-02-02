@@ -407,9 +407,10 @@ namespace TestDevExpress.Forms
         string ITextItem.ImageNameChecked { get { return null; } }
         BarItemPaintStyle ITextItem.ItemPaintStyle { get { return BarItemPaintStyle.CaptionGlyph; } }
         object ITextItem.Tag { get { return null; } }
-        string IToolTipItem.ToolTipText { get { return Text; } }
-        string IToolTipItem.ToolTipTitle { get { return null; } }
-        string IToolTipItem.ToolTipIcon { get { return ToolTip; } }
+        string IToolTipItem.ToolTipTitle { get { return Text; } }
+        string IToolTipItem.ToolTipIcon { get { return null; } }
+        string IToolTipItem.ToolTipText { get { return ToolTip; } }
+        bool? IToolTipItem.ToolTipAllowHtml { get { return null; } }
         Action<IMenuItem> IMenuItem.ClickAction { get { return null; } }
         Action<IMenuItem> IMenuItem.CheckAction { get { return null; } }
         #endregion

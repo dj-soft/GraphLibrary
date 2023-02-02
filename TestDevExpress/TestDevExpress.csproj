@@ -39,21 +39,20 @@
     <ApplicationIcon>TestDevExpress.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="DevExpress.BonusSkins.v22.2, Version=22.2.3.0, Culture=neutral, PublicKeyToken=b88d1754d700e49a, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
+    <Reference Include="DevExpress.BonusSkins.v22.2">
       <HintPath>..\..\DevExpressDll\DX22.2\DevExpress.BonusSkins.v22.2.dll</HintPath>
     </Reference>
     <Reference Include="DevExpress.Charts.v22.2.Core">
       <HintPath>..\..\DevExpressDll\DX22.2\DevExpress.Charts.v22.2.Core.dll</HintPath>
     </Reference>
-    <Reference Include="DevExpress.Data.Desktop.v22.2, Version=22.2.3.0, Culture=neutral, PublicKeyToken=b88d1754d700e49a, processorArchitecture=MSIL">
+    <Reference Include="DevExpress.Data.Desktop.v22.2">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\DevExpressDll\DX22.2\DevExpress.Data.Desktop.v22.2.dll</HintPath>
     </Reference>
     <Reference Include="DevExpress.Data.v22.2">
       <HintPath>..\..\DevExpressDll\DX22.2\DevExpress.Data.v22.2.dll</HintPath>
     </Reference>
-    <Reference Include="DevExpress.Diagram.v22.2.Core, Version=22.2.3.0, Culture=neutral, PublicKeyToken=b88d1754d700e49a, processorArchitecture=MSIL">
+    <Reference Include="DevExpress.Diagram.v22.2.Core">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\DevExpressDll\DX22.2\DevExpress.Diagram.v22.2.Core.dll</HintPath>
     </Reference>
@@ -66,7 +65,7 @@
     <Reference Include="DevExpress.Images.v22.2">
       <HintPath>..\..\DevExpressDll\DX22.2\DevExpress.Images.v22.2.dll</HintPath>
     </Reference>
-    <Reference Include="DevExpress.Office.v22.2.Core, Version=22.2.3.0, Culture=neutral, PublicKeyToken=b88d1754d700e49a, processorArchitecture=MSIL">
+    <Reference Include="DevExpress.Office.v22.2.Core">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\DevExpressDll\DX22.2\DevExpress.Office.v22.2.Core.dll</HintPath>
     </Reference>
@@ -144,7 +143,6 @@
     </Reference>
     <Reference Include="Microsoft.VisualStudio.QualityTools.Common, Version=16.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
     <Reference Include="Microsoft.VisualStudio.QualityTools.ExecutionCommon, Version=16.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
-    <Reference Include="Microsoft.VisualStudio.QualityTools.LoadTestFramework, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
     <Reference Include="Microsoft.VisualStudio.QualityTools.UnitTestFramework, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
     <Reference Include="System" />
     <Reference Include="System.Core" />

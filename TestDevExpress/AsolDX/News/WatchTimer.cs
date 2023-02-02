@@ -121,6 +121,24 @@ namespace Noris.Clients.Win.Components
             Timer._RemoveItem(id);
         }
         /// <summary>
+        /// Odebere časovač dle jeho <see cref="Guid"/>. Pokud na vstupu není null, pak je tam null uloženo.
+        /// ID časovače je vráceno ze všech metod, které časovač přidávají.
+        /// Pokud byl přidán časovač typu "jedno volání" (např. metodou <see cref="CallMeAfter(Action, int, bool, Guid?)"/>, 
+        /// pak není třeba jej odebírat po jeho proběhnutí - časovač je odebrán automaticky.
+        /// Takový časovač je ale možno odebrat před jeho aktivací - pak k aktivaci nedojde.
+        /// Lze odebrat časovač cyklický, typu "volej mě každých 100 milisekund".
+        /// </summary>
+        /// <param name="timerId"></param>
+        public static void Remove(ref Guid? timerId)
+        {
+            if (timerId.HasValue)
+            {
+                Guid id = timerId.Value;
+                timerId = null;
+                Timer._RemoveItem(id);
+            }
+        }
+        /// <summary>
         /// Přesnost časového rozlišení v milisekundách.
         /// Vysoká přesnost = nízké milisekundy vedou k vyšší zátěži systému.
         /// Výchozí přesnost = 20ms.

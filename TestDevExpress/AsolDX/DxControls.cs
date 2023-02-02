@@ -2677,7 +2677,7 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// </summary>
     public class DxToolTipController : ToolTipController
     {
-        #region Konstruktor + Dispose
+        #region Konstruktor + Default Setting + Dispose
         /// <summary>
         /// Konstruktor
         /// </summary>
@@ -2692,9 +2692,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void _Initialize()
         {
             Active = true;
-            InitialDelay = 400;
+            InitialDelay = 2000;
+            ReshowDelay = 300;
             AutoPopDelay = 10000;
-            ReshowDelay = 1000;
+            AutoHideAdaptive = true;
             KeepWhileHovered = false;
             Rounded = true;
             RoundRadius = 20;
@@ -2725,9 +2726,14 @@ namespace Noris.Clients.Win.Components.AsolDX
         #region Public
         /// <summary>
         /// Počet milisekund mezi zastavením myši a rozsvícením ToolTipu.
-        /// 0 = zobrazit ihned = stále
+        /// Platí pro první tooltip po najetí myši na celý Control. 
+        /// Pokud se pohybujeme nad jedním Controlem a měníme Tooltipy (pro různé prvky na jednom Controlu) = poté, kdy už byl první ToolTip rozsvícen a zhasnut,
+        /// pak pro druhý a další ToolTipy platí čas <see cref="HoverNextMiliseconds"/>.<br/>
+        /// 0 = zobrazit ihned = stále.<br/>
+        /// Má rozsah 0 až 1 minuta.<br/>
+        /// Odpovídá <see cref="ToolTipController.InitialDelay"/>.
         /// </summary>
-        public int HoverMiliseconds
+        public int HoverFirstMiliseconds
         {
             get
             {
@@ -2736,6 +2742,43 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
             set { InitialDelay = value; }
         }
+        /// <summary>
+        /// Počet milisekund mezi zastavením myši a rozsvícením ToolTipu.
+        /// Platí pro druhý a další ToolTip od dalšího prvku v rámci stejného Controlu = pokud se myš drží nad jedním Controlem. Jakmile z Controlu odejde a poté se na něj vrátí, platí interval <see cref="HoverFirstMiliseconds"/>.<br/>
+        /// 0 = zobrazit ihned = stále.<br/>
+        /// Má rozsah 0 až 1 minuta.<br/>
+        /// Odpovídá <see cref="ToolTipController.InitialDelay"/>.
+        /// </summary>
+        public int HoverNextMiliseconds
+        {
+            get
+            {
+                var ms = ReshowDelay;
+                return (ms < 0 ? 0 : (ms > 60000 ? 60000 : ms));
+            }
+            set { ReshowDelay = value; }
+        }
+        /// <summary>
+        /// Počet milisekund mezi rozsvícením ToolTipu a jeho automatickým zhasnutím.
+        /// 0 = nezhasínat nikdy.<br/>
+        /// Má rozsah 0 až 10 minut.<br/>
+        /// Odpovídá <see cref="ToolTipController.AutoPopDelay"/>.
+        /// </summary>
+        public int AutoHideMiliseconds
+        {
+            get
+            {
+                var ms = AutoPopDelay;
+                return (ms < 0 ? 0 : (ms > 600000 ? 600000 : ms));
+            }
+            set { AutoPopDelay = value; }
+        }
+        /// <summary>
+        /// Čas zobrazení ToolTipu <see cref="AutoHideMiliseconds"/> má být upraven podle délky textu ToolTipu.<br/>
+        /// Pokud je false, pak čas <see cref="AutoHideMiliseconds"/> je použit jako konstanta vždy.<br/>
+        /// Pokud je true, pak <see cref="AutoHideMiliseconds"/> je dolní hodnota pro texty do 120 znaků, pro texty delší je čas navyšován podle délky textu a ž na 5-ti násobek tohoto času.
+        /// </summary>
+        public bool AutoHideAdaptive { get; set; }
         #endregion
         #region Clients - klientské Controly: evidence, eventhandlery, vyhledání, předání ke konkrétní práci, dispose
         /// <summary>
@@ -2757,6 +2800,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="client"></param>
         private void _AttachClient(Control client)
         {
+            _DetachClient(client);
+            client.MouseEnter += _Client_MouseEnter;
             client.MouseMove += _Client_MouseMove;
             client.MouseLeave += _Client_MouseLeave;
             client.MouseDown += _Client_MouseDown;
@@ -2769,11 +2814,21 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="client"></param>
         private void _DetachClient(Control client)
         {
+            client.MouseEnter -= _Client_MouseEnter;
             client.MouseMove -= _Client_MouseMove;
             client.MouseLeave -= _Client_MouseLeave;
             client.MouseDown -= _Client_MouseDown;
             client.Leave -= _Client_Leave;
             client.Disposed -= _Client_Disposed;
+        }
+        /// <summary>
+        /// Event MouseEnter z any Controlu
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _Client_MouseEnter(object sender, EventArgs e)
+        {
+            _ResetHoverInterval();
         }
         /// <summary>
         /// Event MouseMove z any Controlu
@@ -2947,6 +3002,10 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// </summary>
             public DxSuperToolTip LastSuperTip { get; set; }
             /// <summary>
+            /// Posledně použitý argument <see cref="DxToolTipDynamicPrepareArgs"/> pro tohoto klienta, po <see cref="Reset"/> je null
+            /// </summary>
+            protected DxToolTipDynamicPrepareArgs LastPrepareArgs { get; set; }
+            /// <summary>
             /// Vyvolá danou akci v GUI threadu aktuálního controlu <see cref="Client"/>
             /// </summary>
             /// <param name="action"></param>
@@ -2958,37 +3017,69 @@ namespace Noris.Clients.Win.Components.AsolDX
                 else action();
             }
             /// <summary>
-            /// Zkusí získat SuperTip z Controlu, podle jeho typu.
+            /// Zkusí získat SuperTip z Controlu, podle jeho typu.<br/>
+            /// Metoda vrací:<br/>
+            /// true = máme něco s ToolTipem udělat? Rozsvítit nebo zhasnout: podle obsahu out <paramref name="superTip"/>;<br/>
+            /// false = nemáme nic dělat, ani zhasínat ani rozsvěcet.
             /// </summary>
-            /// <param name="superTip"></param>
+            /// <param name="isMouseHover">Jsme voláni po zastavení myši (když chceme rozsvítit ToolTip) = true / nebo za pohybu, když ToolTip svítí (když bychom jej měli zhasnout nebo vyměnit) = false</param>
+            /// <param name="isTipVisible">Vstup: ToolTip aktuálně svítí a myš se pohybuje? Má vliv na vyhodnocení</param>
+            /// <param name="superTip">Výstup ToolTipu, má význam pouze pokud výstupní hodnota je true: pokud je <paramref name="superTip"/> == null, pak máme zhasnout; pokud není null, pak se má rozsvítit. Pokud by byl shodný jako dosud, pak výstupem je false.</param>
             /// <returns></returns>
-            /// <exception cref="NotImplementedException"></exception>
-            internal bool TryGetSuperTip(out DxSuperToolTip superTip)
+            internal DxToolTipChangeType TryGetSuperTip(bool isMouseHover, bool isTipVisible, out DxSuperToolTip superTip)
             {
                 superTip = null;
                 if (this.HasIDynamicClient)
                 {
-                    DxToolTipDynamicPrepareArgs args = new DxToolTipDynamicPrepareArgs(this.MouseLocation, this.LastSuperTip);
+                    DxToolTipDynamicPrepareArgs args = this.LastPrepareArgs;
+                    if (args is null) args = new DxToolTipDynamicPrepareArgs();          // args používám opakovaně, jen ho naplním aktuálními daty
+                    args.MouseLocation = this.MouseLocation;
+                    args.IsMouseHover = isMouseHover;
+                    args.IsTipVisible = isTipVisible;
+                    args.DxSuperTip = this.LastSuperTip;
+                    args.ToolTipChange = (this.LastSuperTip is null ? DxToolTipChangeType.NoToolTip : DxToolTipChangeType.SameAsLastToolTip);
+
                     this.IDynamicClient.PrepareSuperTipForPoint(args);
-                    this.LastSuperTip = args.DxSuperTip;             // Uložím si data pro příští volání
-                    switch (args.ToolTipChange)
-                    {
-                        case DxToolTipChangeType.NewToolTip:
-                            superTip = args.DxSuperTip;
-                            return true;
-                        case DxToolTipChangeType.SameAsLastToolTip:
-                            superTip = null;
-                            return true;
-                        case DxToolTipChangeType.NoToolTip:
-                            return false;
-                    }
+                    this.LastSuperTip = args.DxSuperTip;                                 // Uložím si data pro příští volání, nulovat se budou při resetu
+                    this.LastPrepareArgs = args;
+
+                    superTip = args.DxSuperTip;
+                    return args.ToolTipChange;
                 }
+
                 if (this.HasIClient)
                 {
-                    superTip = this.IClient?.SuperTip;
-                    return true;
+                    // Výměna a uložení nového globálního ToolTipu ze statického klienta:
+                    var oldSuperTip = this.LastSuperTip;
+                    var newSuperTip = this.IClient?.SuperTip;
+                    superTip = newSuperTip;
+                    this.LastSuperTip = newSuperTip;
+
+                    // Druh změny:
+                    bool oldExists = (oldSuperTip != null);
+                    bool newExists = (newSuperTip != null);
+                    if (oldExists && newExists)
+                    {
+                        if (DxSuperToolTip.IsEqualContent(oldSuperTip, newSuperTip)) 
+                            return DxToolTipChangeType.SameAsLastToolTip;
+                        return DxToolTipChangeType.NewToolTip;
+                    }
+                    if (oldExists && !newExists)
+                        return DxToolTipChangeType.NoToolTip;
+                    if (!oldExists && newExists)
+                        return DxToolTipChangeType.NewToolTip;
+                    return DxToolTipChangeType.None;
                 }
-                return false;
+
+                return DxToolTipChangeType.None;
+            }
+            /// <summary>
+            /// Je voláno při zhasínání ToolTipu, ať už jsou důvody jakékoli
+            /// </summary>
+            internal void Reset()
+            { 
+                LastSuperTip = null;
+                LastPrepareArgs = null;
             }
         }
         #endregion
@@ -3001,82 +3092,127 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="e"></param>
         private void _ClientMouseMoveNone(ClientInfo clientInfo, MouseEventArgs e)
         {
-            _ClientMouseMoveCheckChange(clientInfo, e);
+            _ClientMouseMoveDetectClientChange(clientInfo, e);
             if (!__IsHintShown)
-                _ClientMouseMoveWaitShow(clientInfo, e);
+                _ClientMouseMoveWaitShow();
             else
-                _ClientMouseMoveWaitHide(clientInfo, e);
+                _ClientMouseMoveWaitHide();
         }
-        private void _ClientMouseMoveCheckChange(ClientInfo clientInfo, MouseEventArgs e)
+        /// <summary>
+        /// Kontroluje aktuálního klienta: pokud nějakého máme uloženého odminule, nyní je jiný, a svítí nám ToolTip, tak jej zhasnu.
+        /// Atuálního klienta si uložím a vložím do něj pozici myši.
+        /// </summary>
+        /// <param name="clientInfo"></param>
+        /// <param name="e"></param>
+        private void _ClientMouseMoveDetectClientChange(ClientInfo clientInfo, MouseEventArgs e)
         {
             // Pokud se myš pohybuje nad jiným Controlem než dříve, musíme starý tooltip zhasnout a zahodit:
             if (__ActiveClientInfo != null && !Object.ReferenceEquals(__ActiveClientInfo, clientInfo))
             {
                 _HideTip(true);
+                _ResetHoverInterval();
             }
-            // Uložíme aktuálního klienta a do něj pozici myši:
+
+            // Uložíme si aktuálního klienta a do něj pozici myši:
             __ActiveClientInfo = clientInfo;
             __ActiveClientInfo.MouseLocation = e.Location;
         }
         /// <summary>
-        /// ToolTip nesvítí a nad klientem se pohybuje myš: čekáme na její zastavcení a pak zajistíme rozsvícení:
+        /// ToolTip nesvítí a nad klientem se pohybuje myš: čekáme na její zastavení (podle <see cref="HoverCurrentMiliseconds"/>) a pak zajistíme rozsvícení:
         /// </summary>
-        /// <param name="clientInfo"></param>
-        /// <param name="e"></param>
-        private void _ClientMouseMoveWaitShow(ClientInfo clientInfo, MouseEventArgs e)
+        private void _ClientMouseMoveWaitShow()
         {
-            var hoverMiliseconds = HoverMiliseconds;
+            var hoverMiliseconds = HoverCurrentMiliseconds;
             if (hoverMiliseconds > 1)
                 // Máme TooTip rozsvítit až po nějaké době od zastavení myši:
                 // Toto volání Timeru (s předaným Guid __HoverTimerGuid) zajistí, že budeme zavoláni (metoda _ClientActivateTip) až po zadané době od posledního "načasování budíka".
                 // Průběžné pohyby myši v kratším čase provedou "přenastavení toho samého budíka" na nový čas:
-                __HoverTimerGuid = WatchTimer.CallMeAfter(_ClientActivateTip, hoverMiliseconds, false, __HoverTimerGuid);
+                __HoverTimerGuid = WatchTimer.CallMeAfter(_ClientMouseHoverTimerShowTip, hoverMiliseconds, false, __HoverTimerGuid);
             else
                 // 0 = máme dát ToolTip ihned?
-                _ClientActivateTipGui();                   // Aktuálně jsme v eventu MouseMove, tedy v GUI threadu...
-        }
-        private void _ClientMouseMoveWaitHide(ClientInfo clientInfo, MouseEventArgs e)
-        {
-            qqq;
+                _ClientMouseHoverShowTip();                   // Aktuálně jsme v eventu MouseMove, tedy v GUI threadu...
         }
         /// <summary>
-        /// Zkus aktivovat ToolTip, uplynul čas čekání od posledního pohybu myši <see cref="HoverMiliseconds"/>, 
+        /// Zkus aktivovat ToolTip, uplynul čas čekání od posledního pohybu myši <see cref="HoverCurrentMiliseconds"/>, 
         /// a nyní jsme volání z threadu na pozadí z třídy <see cref="WatchTimer"/>.
         /// </summary>
-        private void _ClientActivateTip()
+        private void _ClientMouseHoverTimerShowTip()
         {
             __HoverTimerGuid = null;
-            __ActiveClientInfo?.InvokeGui(_ClientActivateTipGui);
+            __ActiveClientInfo?.InvokeGui(_ClientMouseHoverShowTip);
         }
         /// <summary>
-        /// Zkus aktivovat ToolTip, uplynul čas čekání od posledního pohybu myši <see cref="HoverMiliseconds"/> a jsme invokování do GUI threadu,
+        /// Zkus aktivovat ToolTip, uplynul čas čekání od posledního pohybu myši <see cref="HoverCurrentMiliseconds"/> a jsme invokování do GUI threadu,
         /// anebo se má ToolTip rozsvítit okamžitě.
         /// </summary>
-        private void _ClientActivateTipGui()
+        private void _ClientMouseHoverShowTip()
         {
             var clientInfo = __ActiveClientInfo;
             if (clientInfo is null) return;
-            bool hasTip = clientInfo.TryGetSuperTip(out DxSuperToolTip superTip);
-            if (hasTip) { _ShowDxSuperTip(superTip); }
-            else { _HideTip(false); }
+            var changeType = clientInfo.TryGetSuperTip(true, __IsHintShown, out DxSuperToolTip superTip);
+            switch (changeType)
+            {   // Myš se zastavila, možná rozsvítíme ToolTip?
+                case DxToolTipChangeType.NewToolTip:
+                    _ShowDxSuperTip(superTip);
+                    break;
+                case DxToolTipChangeType.SameAsLastToolTip:
+                    break;
+                case DxToolTipChangeType.NoToolTip:
+                    _HideTip(false);
+                    break;
+            }
         }
+        /// <summary>
+        /// ToolTip svítí a pohybujeme se nad klientem (=máme event MouseMove).
+        /// Zhasneme ToolTip? Nebo jej vyměníme? Nebo jej necháme beze změny?
+        /// </summary>
+        private void _ClientMouseMoveWaitHide()
+        {
+            var clientInfo = __ActiveClientInfo;
+            if (clientInfo is null) return;
+            var changeType = clientInfo.TryGetSuperTip(false, __IsHintShown, out DxSuperToolTip superTip);
+            switch (changeType)
+            {   // ToolTip svítí, možná jej necháme, anebo jej zhasneme?
+                case DxToolTipChangeType.NewToolTip:
+                    _HideTip(true);                        // Skrýt ToolTip včetně resetu = zapomenout na aktuální pozici a prvek a tooltip, abychom po zhasnutí a po konci pohybu myši detekovali NewToolTip a nikoli SameAsLastToolTip...
+                    _ClientMouseMoveWaitShow();            // Tady jsme v eventu MouseMove: nastartujeme HoverTimer a po jeho uplynutí vyhodnotíme od nuly pozici myši a prvek na této pozici.
+                    break;
+                case DxToolTipChangeType.SameAsLastToolTip:
+                    break;
+                case DxToolTipChangeType.NoToolTip:
+                    _HideTip(true);
+                    _ClientMouseMoveWaitShow();            // Tady jsme v eventu MouseMove, tak se sluší nastartovat HoverTimer
+                    break;
+            }
+        }
+
         private void _ClientMouseDown(ClientInfo clientInfo, MouseEventArgs e)
         {
             _HideTip(false);
+            _ResetHoverInterval();
         }
         private void _ClientMouseLeave(ClientInfo clientInfo, EventArgs e)
         {
             _HideTip(true);
+            _ResetHoverInterval();
         }
         private void _ClientLeave(ClientInfo clientInfo, EventArgs e)
         {
             _HideTip(true);
+            _ResetHoverInterval();
         }
         private Point? __LastMouseLocation;
         private ClientInfo __ActiveClientInfo;
         private Guid? __HoverTimerGuid;
         #endregion
         #region Fyzický ToolTip
+        /// <summary>
+        /// Skrýt ToolTip
+        /// </summary>
+        public void HideTip()
+        {
+            _HideTip(true);
+        }
         /// <summary>
         /// Zobrazit ToolTip
         /// </summary>
@@ -3095,6 +3231,9 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.ShowHint(args);
 
             __IsHintShown = true;
+            __ActiveClientInfoHasShowAnyToolTip = true;
+
+            _StartHideTimer(superTip);
         }
         /// <summary>
         /// Skrýt ToolTip, 
@@ -3102,22 +3241,94 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="reset"></param>
         private void _HideTip(bool reset)
         {
-            WatchTimer.Remove(__HoverTimerGuid);
-            __HoverTimerGuid = null;
+            WatchTimer.Remove(ref __HoverTimerGuid);
+            WatchTimer.Remove(ref __HideTimerGuid);
             if (reset)
             {
-                if (__ActiveClientInfo != null) __ActiveClientInfo.LastSuperTip = null;
+                if (__ActiveClientInfo != null) __ActiveClientInfo.Reset();
                  __ActiveClientInfo = null;
                 __LastMouseLocation = null;
             }
-            this.HideHint();
-            __IsHintShown = false;
+            if (__IsHintShown)
+            {
+                this.HideHint();
+                __IsHintShown = false;
+            }
         }
         /// <summary>
         /// ToolTip byl zobrazen?
         /// </summary>
-        public bool IsHintShown { get { return __IsHintShown; } }
-        private bool __IsHintShown;
+        public bool IsHintShown { get { return __IsHintShown; } } private bool __IsHintShown;
+        /// <summary>
+        /// Počet milisekund, za které se rozsvítí ToolTip od zastavení myši, v aktuálním stavu.
+        /// Obsahuje <see cref="HoverFirstMiliseconds"/> nebo <see cref="HoverNextMiliseconds"/>, podle toho, zda pro aktuální Control (Client) už byl / nebyl rozsvícen ToolTip.
+        /// </summary>
+        protected int HoverCurrentMiliseconds { get { return (!__ActiveClientInfoHasShowAnyToolTip ? HoverFirstMiliseconds : HoverNextMiliseconds); } }
+        /// <summary>
+        /// Resetuje příznak prvního / následujícího ToolTipu, provádí se tehdy, když chceme mít příští interval <see cref="HoverCurrentMiliseconds"/> jako počáteční = <see cref="HoverFirstMiliseconds"/>.
+        /// </summary>
+        private void _ResetHoverInterval()
+        {
+            __ActiveClientInfoHasShowAnyToolTip = false;
+        }
+        /// <summary>
+        /// Příznak, že aktuální klient neměl (false) / měl (true) už zobrazen nějaký ToolTip.
+        /// Nastaví se na true v <see cref="_ShowDxSuperTip(DxSuperToolTip)"/> a zůstává true i po zhasnutí ToolTipu,
+        /// nuluje se na false při opuštění klienta (nebo MouseDown) v metodě <see cref="_ResetHoverInterval"/>,
+        /// používá se v <see cref="HoverCurrentMiliseconds"/> pro určení času pro aktuální interval čekání na MouseHover, 
+        /// tam se zvolí buď <see cref="HoverFirstMiliseconds"/> nebo <see cref="HoverNextMiliseconds"/>.
+        /// </summary>
+        private bool __ActiveClientInfoHasShowAnyToolTip;
+        /// <summary>
+        /// Nastartuj časovač pro automatické skrytí ToolTipu
+        /// </summary>
+        private void _StartHideTimer(DxSuperToolTip superTip)
+        {
+            var autoHideMiliseconds = this.AutoHideMiliseconds;
+            if (autoHideMiliseconds <= 0) return;
+
+            if (AutoHideAdaptive)
+                _ModifyAutoHideAdaptive(ref autoHideMiliseconds, superTip);
+
+            __HideTimerGuid = WatchTimer.CallMeAfter(_AutoHideToolTipTimer, autoHideMiliseconds, false, __HideTimerGuid);
+        }
+        /// <summary>
+        /// Upraví čas <paramref name="autoHideMiliseconds"/> podle délky textu v dodaném ToolTipu
+        /// </summary>
+        /// <param name="autoHideMiliseconds"></param>
+        /// <param name="superTip"></param>
+        private void _ModifyAutoHideAdaptive(ref int autoHideMiliseconds, DxSuperToolTip superTip)
+        {
+            if (superTip is null) return;
+            int textLength = (superTip.Text ?? "").Trim().Length;
+            if (textLength <= 120) return;
+            float ratio = ((float)textLength / 120f);
+            if (ratio > 5f) ratio = 5f;
+            autoHideMiliseconds = (int)(ratio * (float)autoHideMiliseconds);
+        }
+        /// <summary>
+        /// Uplynul patřičný čas pro schování ToolTipu
+        /// </summary>
+        private void _AutoHideToolTipTimer()
+        {
+            var clienInfo = __ActiveClientInfo;
+            if (clienInfo != null)
+                clienInfo.InvokeGui(_AutoHideToolTip);
+            else
+                _AutoHideToolTip();
+        }
+        /// <summary>
+        /// Provede automatické schování ToolTipu po čase daním Timerem <see cref="AutoHideMiliseconds"/>.
+        /// </summary>
+        private void _AutoHideToolTip()
+        {
+            WatchTimer.Remove(ref __HideTimerGuid);
+            _HideTip(false);           // false = bez resetu => budeme si pamatovat, nad kterým prvekm stojím. Pak se pro ten prvek neprovede reaktivace ToolTipu, protože z klienta přijde ChangeType = SameAsLast, a to tooltip nerozsvítíme...
+        }
+        /// <summary>
+        /// ID Timeru, který řídí časové skrytí ToolTipu
+        /// </summary>
+        private Guid? __HideTimerGuid;
         #endregion
         #region Eventy Tooltipu
         /// <summary>
@@ -3142,155 +3353,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public event DxToolTipHandler ToolTipChanged;
         #endregion
-
-
-        /*
-        protected override void OnGetActiveObjectInfo(ToolTipControllerGetActiveObjectInfoEventArgs e)
-        {
-            base.OnGetActiveObjectInfo(e);
-            var info = e.Info;
-            if (info != null)
-                this._RaiseToolTipChanged($"OnGetActiveObjectInfo(Title={info.Title}; Text={info.Text}); SuperTip={info.SuperTip?.ToString()}); IsWindowVisible={IsWindowVisible}");
-        }
-        protected override void UpdateSuperTip(ToolTipControllerShowEventArgs eShow)
-        {
-            base.UpdateSuperTip(eShow);
-            var info = eShow;
-            this._RaiseToolTipChanged($"UpdateSuperTip(Title={info.Title}; ToolTip={info.ToolTip}); SuperTip={info.SuperTip?.ToString()}); IsWindowVisible={IsWindowVisible}");
-        }
-        /// <summary>
-        /// Před zobrazením
-        /// </summary>
-        /// <param name="e"></param>
-        protected override void OnBeforeShow(ToolTipControllerShowEventArgs e)
-        {
-            base.OnBeforeShow(e);
-            this.IsVisible = true;
-            var info = e;
-            this._RaiseToolTipChanged($"OnBeforeShow(Title={info.Title}; ToolTip={info.ToolTip}); SuperTip={info.SuperTip?.ToString()}); IsWindowVisible={IsWindowVisible}");
-        }
-        /// <summary>
-        /// Před zhasnutím
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        protected override void OnFormDeactivate(object sender, EventArgs e)
-        {
-            base.OnFormDeactivate(sender, e);
-            this.IsVisible = false;
-            this._RaiseToolTipChanged($"OnFormDeactivate(); IsWindowVisible={IsWindowVisible}");
-        }
-        /// <summary>
-        /// Je aktuálně tooltip zobrazen?
-        /// </summary>
-        public bool IsVisible { get; private set; }
-        /// <summary>
-        /// Je aktuálně tooltip zobrazen?
-        /// </summary>
-        public bool IsWindowVisible { get { return this.ToolWindow?.Visible ?? false; } }
-        /// <summary>
-        /// Skryje okno tooltipu, pokud je právě viditelné...
-        /// </summary>
-        /// <param name="force"></param>
-        /// <returns></returns>
-        public void HideHint(bool force)
-        {
-            this._RaiseToolTipChanged($"HideHint(force={force}); IsWindowVisible={IsWindowVisible}");
-            if (this.Active && (force || this.IsVisible))
-            {
-                base.HideHint();
-            }
-        }
-        public void ShowHintCurrent(ToolTipControlInfo ttci)
-        {
-            if (this.IsVisible)
-            {
-                this._RaiseToolTipChanged($"ToolWindow.Hide(); IsWindowVisible={IsWindowVisible}");
-                base.ToolWindow.Hide();  //  HideHint();
-            }
-            this._RaiseToolTipChanged($"ShowHintCurrent(); IsWindowVisible={IsWindowVisible}");
-            this.ShowHint(ttci);
-            base.ToolWindow.Show();
-        }
-        */
-
-
-        /*   POZOR: tady je hodně nebezpečných a křehkých věcí...
-
-        Například taková hezká property:
-        public bool IsToolWindowVisible { get { return this.ToolWindow?.Visible ?? false; } }
-
-        Její čtení v okamžiku eventu ToolTip.GetActiveObjectInfo způsobí, že se rozsvítí černé okno v místě ToolTipu. 
-           Asi se v nevhodný čas ukradne Handle okna...
-
-        */
-
-
-        // Smaž toto:
-        /*
-        public void HideTip()
-        {
-            __IsShown = false;
-            this.HideHint();
-        }
-        public void ShowTip(Control control, SuperToolTip superTip)
-        {
-            this.SetSuperTip(control, superTip);
-            this.ShowSuperTipCore();
-        }
-        public void UpdateSuperTip(Control control, SuperToolTip superTip)
-        {
-            if (superTip != null)
-            {
-                var target = this.CurrentSuperTip as DxSuperToolTip;
-                if (target != null)
-                    DxSuperToolTip.Synchronize(superTip as DxSuperToolTip, target);
-                else
-                    this.SetSuperTip(control, superTip);
-            }
-        }
-        /// <summary>
-        /// Tooltip byl zobrazen?
-        /// Obsahuje true už v době, kdy se volá handler GetActiveObjectInfo.
-        /// </summary>
-        public bool IsToolTipVisible { get { return __IsShown; } }
-        protected override void OnBeforeShow(ToolTipControllerShowEventArgs e)
-        {
-            base.OnBeforeShow(e);
-            __IsShown = true;
-        }
-        protected override void OnFormDeactivate(object sender, EventArgs e)
-        {
-            base.OnFormDeactivate(sender, e);
-            __IsShown = false;
-        }
-        bool __IsShown;
-
-
-        public void ShowDxSuperTip(DxSuperToolTip superTip)
-        {
-            _ShowDxSuperTip(superTip);
-        }
-
-
-        protected override void UpdateSuperTip(ToolTipControllerShowEventArgs eShow)
-        {
-            base.UpdateSuperTip(eShow);
-            _RaiseToolTipChanged($"UpdateSuperTip, Text: {eShow.ToolTip}");
-        }
-
-        protected override void ShowHintCore(ToolTipControllerShowEventArgs eShow)
-        {
-            base.ShowHintCore(eShow);
-            _RaiseToolTipChanged($"ShowHintCore, Text: {eShow.ToolTip}");
-        }
-
-        protected override void ShowSuperTipCore()
-        {
-            base.ShowSuperTipCore();
-            _RaiseToolTipChanged($"ShowSuperTipCore");
-        }
-        */
     }
     /// <summary>
     /// Data o události v ToolTipu
@@ -3345,6 +3407,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Konstruktor
         /// </summary>
+        public DxToolTipDynamicPrepareArgs()
+        {
+            ToolTipChange = DxToolTipChangeType.None;
+        }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
         /// <param name="mouseLocation"></param>
         /// <param name="dxSuperTip"></param>
         public DxToolTipDynamicPrepareArgs(Point mouseLocation, DxSuperToolTip dxSuperTip)
@@ -3356,7 +3425,15 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Aktuální souřadnice myši v kordinátech kontrolu, pochází z eventu MouseMove.
         /// </summary>
-        public Point MouseLocation { get; private set; }
+        public Point MouseLocation { get; set; }
+        /// <summary>
+        /// Jsme voláni po zastavení myši na prvku (Hover = true) anebo při jejím pohybu (false)
+        /// </summary>
+        public bool IsMouseHover { get; set; }
+        /// <summary>
+        /// ToolTip je nyní viditelný?
+        /// </summary>
+        public bool IsTipVisible { get; set; }
         /// <summary>
         /// SuperTip: na vstupu je ten, který byl vygenerován nebo odsouhlasen posledně, 
         /// na výstupu z metody <see cref="IDxToolTipDynamicClient.PrepareSuperTipForPoint(DxToolTipDynamicPrepareArgs)"/> může být nově připravený.
@@ -3373,20 +3450,20 @@ namespace Noris.Clients.Win.Components.AsolDX
     public enum DxToolTipChangeType
     {
         /// <summary>
-        /// Neurčeno
+        /// Neurčeno... Neřešit ToolTip
         /// </summary>
         None,
         /// <summary>
-        /// Pro danou pozici nemá být tooltip, zhasni dosavadní pokud je zobrazen
+        /// Pro danou pozici nemá být tooltip, zhasni dosavadní pokud je zobrazen.
         /// </summary>
         NoToolTip,
         /// <summary>
         /// Pro danou pozici je tooltip nový, jiný než dosud.
-        /// V tomto případě se aplikuje zhasnutí a čekání po patřičnou dobu, než se zobrazí nový ToolTip
+        /// V tomto případě se aplikuje zhasnutí a čekání po patřičnou dobu, než se zobrazí nový ToolTip.
         /// </summary>
         NewToolTip,
         /// <summary>
-        /// Pro danou pozici je stále stejný tooltip jako minule, nech jej svítit
+        /// Pro danou pozici je stále stejný tooltip jako minule, nech jej svítit.
         /// </summary>
         SameAsLastToolTip
     }
@@ -3406,14 +3483,13 @@ namespace Noris.Clients.Win.Components.AsolDX
             : base()
         {
             __TitleText = null;
-            __TitleAllowHtml = false;
             __TitleIcon = null;
             __TitleItem = null;
 
             __SeparatorItem = null;
 
             __TextText = null;
-            __TextAllowHtml = false;
+            __ToolTipAllowHtmlText = null;
             __TextItem = null;
 
             __AcceptTitleOnlyAsValid = false;
@@ -3426,7 +3502,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         public static DxSuperToolTip CreateDxSuperTip(IToolTipItem toolTipItem)
         {
             if (toolTipItem == null) return null;
-            return CreateDxSuperTip(toolTipItem.ToolTipTitle, toolTipItem.ToolTipText, toolTipIcon: toolTipItem.ToolTipIcon);
+            return CreateDxSuperTip(toolTipItem.ToolTipTitle, toolTipItem.ToolTipText, null, toolTipItem.ToolTipIcon, toolTipItem.ToolTipAllowHtml);
         }
         /// <summary>
         /// Vytvoří a vrátí SuperTooltip
@@ -3436,7 +3512,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         public static DxSuperToolTip CreateDxSuperTip(ITextItem textItem)
         {
             if (textItem == null) return null;
-            return CreateDxSuperTip(textItem.ToolTipTitle, textItem.ToolTipText, textItem.Text, textItem.ToolTipIcon);
+            return CreateDxSuperTip(textItem.ToolTipTitle, textItem.ToolTipText, textItem.Text, textItem.ToolTipIcon, textItem.ToolTipAllowHtml);
         }
         /// <summary>
         /// Vytvoří a vrátí standardní SuperToolTip pro daný titulek a text.
@@ -3446,13 +3522,14 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="text"></param>
         /// <param name="defaultTitle"></param>
         /// <param name="toolTipIcon"></param>
+        /// <param name="toolTipAllowHtml"></param>
         /// <returns></returns>
-        public static DxSuperToolTip CreateDxSuperTip(string title, string text, string defaultTitle = null, string toolTipIcon = null)
+        public static DxSuperToolTip CreateDxSuperTip(string title, string text, string defaultTitle = null, string toolTipIcon = null, bool? toolTipAllowHtml = null)
         {
             if (!DxComponent.PrepareToolTipTexts(title, text, defaultTitle, out string toolTipTitle, out string toolTipText)) return null;
 
             var superTip = new DxSuperToolTip();
-            superTip.LoadValues(toolTipTitle, toolTipText, toolTipIcon);
+            superTip.LoadValues(toolTipTitle, toolTipText, toolTipIcon, toolTipAllowHtml);
 
             return superTip;
         }
@@ -3465,10 +3542,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             if (source is null || target is null) return;
             target.__TitleText = source.__TitleText;
-            target.__TitleAllowHtml = source.__TitleAllowHtml;
             target.__TitleIcon = source.__TitleIcon;
             target.__TextText = source.__TextText;
-            target.__TextAllowHtml = source.__TextAllowHtml;
+            target.__ToolTipAllowHtmlText = source.__ToolTipAllowHtmlText;
             target._RefreshContent();
         }
         /// <summary>
@@ -3488,14 +3564,13 @@ namespace Noris.Clients.Win.Components.AsolDX
             base.Dispose();
         }
         private string __TitleText;
-        private bool __TitleAllowHtml;
         private string __TitleIcon;
         private ToolTipTitleItem __TitleItem;
 
         private ToolTipSeparatorItem __SeparatorItem;
 
         private string __TextText;
-        private bool __TextAllowHtml;
+        private bool? __ToolTipAllowHtmlText;
         private ToolTipItem __TextItem;
 
         private bool __AcceptTitleOnlyAsValid;
@@ -3521,7 +3596,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (needTitleText)
             {
                 __TitleItem.Text = __TitleText;
-                __TitleItem.AllowHtmlText = DxComponent.ConvertBool(__TitleAllowHtml);
             }
 
             if (needTitleIcon)
@@ -3534,7 +3608,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (needText)
             {
                 __TextItem.Text = __TextText;
-                __TextItem.AllowHtmlText = DxComponent.ConvertBool(__TextAllowHtml);
+                __TextItem.AllowHtmlText = DxComponent.ConvertBool(DxComponent.AllowHtmlText(__TextText, __ToolTipAllowHtmlText));
             }
         }
         /// <summary>
@@ -3564,10 +3638,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public string Title { get { return __TitleText; } set { __TitleText = value; _RefreshContent(); } }
         /// <summary>
-        /// Titulek může obsahovat HTML kódy
-        /// </summary>
-        public bool TitleContainsHtml { get { return __TitleAllowHtml; } set { __TitleAllowHtml = value; _RefreshContent(); } }
-        /// <summary>
         /// Jméno ikony
         /// </summary>
         public string IconName { get { return __TitleIcon; } set { __TitleIcon = value; _RefreshContent(); } }
@@ -3578,7 +3648,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Text tooltipu může obsahovat HTML kódy
         /// </summary>
-        public bool TextContainsHtml { get { return __TextAllowHtml; } set { __TextAllowHtml = value; _RefreshContent(); } }
+        public bool? ToolTipAllowHtmlText { get { return __ToolTipAllowHtmlText; } set { __ToolTipAllowHtmlText = value; _RefreshContent(); } }
         /// <summary>
         /// Libovolná data klienta, typicky objekt pod myší.
         /// Instance je udržována v Controlleru.
@@ -3612,16 +3682,32 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
         }
         /// <summary>
+        /// Vrátí true, pokud dva dodané objekty mají shodná data (tedy true i kdyby to byly dvě různé instance)
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
+        public static bool IsEqualContent(DxSuperToolTip a, DxSuperToolTip b)
+        {
+            bool an = a is null;
+            bool bn = b is null;
+            if (an && bn) return true;           // Oba jsou NULL
+            if (an || bn) return false;          // Jen jeden je NULL
+            return (String.Equals(a.__TitleText, b.__TitleText)
+                 && String.Equals(a.__TitleIcon, b.__TitleIcon)
+                 && String.Equals(a.__TextText, b.__TextText)
+                 && (a.__ToolTipAllowHtmlText == b.__ToolTipAllowHtmlText));
+        }
+        /// <summary>
         /// Nuluje svůj obsah
         /// </summary>
         public void ClearValues()
         {
             __TitleText = null;
-            __TitleAllowHtml = false;
             __TitleIcon = null;
             
             __TextText = null;
-            __TextAllowHtml = false;
+            __ToolTipAllowHtmlText = null;
 
             _RefreshContent();
         }
@@ -3634,7 +3720,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (toolTipItem == null)
                 ClearValues();
             else
-                LoadValues(toolTipItem.ToolTipTitle, toolTipItem.ToolTipText, toolTipIcon: toolTipItem.ToolTipIcon);
+                LoadValues(toolTipItem.ToolTipTitle, toolTipItem.ToolTipText, toolTipItem.ToolTipIcon, toolTipItem.ToolTipAllowHtml);
         }
         /// <summary>
         /// Naplní do sebe hodnoty z dané definice
@@ -3647,7 +3733,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             else
             {
                 DxComponent.PrepareToolTipTexts(textItem.ToolTipTitle, textItem.ToolTipText, textItem.Text, out string toolTipTitle, out string toolTipText);
-                LoadValues(toolTipTitle, toolTipText, textItem.ToolTipIcon);
+                LoadValues(toolTipTitle, toolTipText, textItem.ToolTipIcon, textItem.ToolTipAllowHtml);
             }
         }
         /// <summary>
@@ -3656,18 +3742,18 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="toolTipTitle"></param>
         /// <param name="toolTipText"></param>
         /// <param name="toolTipIcon"></param>
-        public void LoadValues(string toolTipTitle, string toolTipText, string toolTipIcon = null)
+        /// <param name="toolTipAllowHtml"></param>
+        public void LoadValues(string toolTipTitle, string toolTipText, string toolTipIcon = null, bool? toolTipAllowHtml = null)
         {
             if (String.IsNullOrEmpty(toolTipTitle) && String.IsNullOrEmpty(toolTipText))
                 ClearValues();
             else
             {
                 __TitleText = toolTipTitle;
-                __TitleAllowHtml = false;
                 __TitleIcon = toolTipIcon;
 
                 __TextText = toolTipText;
-                __TextAllowHtml = false;
+                __ToolTipAllowHtmlText = toolTipAllowHtml;
 
                 _RefreshContent();
             }
@@ -6053,9 +6139,10 @@ namespace Noris.Clients.Win.Components.AsolDX
             ImageNameUnChecked = source.ImageNameUnChecked;
             ImageNameChecked = source.ImageNameChecked;
             ItemPaintStyle = source.ItemPaintStyle;
-            ToolTipText = source.ToolTipText;
-            ToolTipTitle = source.ToolTipTitle;
             ToolTipIcon = source.ToolTipIcon;
+            ToolTipTitle = source.ToolTipTitle;
+            ToolTipText = source.ToolTipText;
+            ToolTipAllowHtml = source.ToolTipAllowHtml;
             Tag = source.Tag;
         }
         /// <summary>
@@ -6154,17 +6241,21 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public virtual BarItemPaintStyle ItemPaintStyle { get; set; }
         /// <summary>
-        /// Text ToolTipu
+        /// Ikona ToolTipu
         /// </summary>
-        public virtual string ToolTipText { get; set; }
+        public virtual string ToolTipIcon { get; set; }
         /// <summary>
         /// Titulek ToolTipu. Pokud nebude naplněn, vezme se <see cref="Text"/>.
         /// </summary>
         public virtual string ToolTipTitle { get; set; }
         /// <summary>
-        /// Ikona ToolTipu
+        /// Text ToolTipu
         /// </summary>
-        public virtual string ToolTipIcon { get; set; }
+        public virtual string ToolTipText { get; set; }
+        /// <summary>
+        /// Text ToolTipu smí obsahovat HTML? Hodnota null = AutoDetect
+        /// </summary>
+        public virtual bool? ToolTipAllowHtml { get; set; }
         /// <summary>
         /// Libovolná data aplikace
         /// </summary>
@@ -6254,17 +6345,21 @@ namespace Noris.Clients.Win.Components.AsolDX
     public interface IToolTipItem
     {
         /// <summary>
-        /// Text ToolTipu
+        /// Ikona ToolTipu
         /// </summary>
-        string ToolTipText { get; }
+        string ToolTipIcon { get; }
         /// <summary>
         /// Titulek ToolTipu. Pokud nebude naplněn, vezme se text prvku.
         /// </summary>
         string ToolTipTitle { get; }
         /// <summary>
-        /// Ikona ToolTipu
+        /// Text ToolTipu
         /// </summary>
-        string ToolTipIcon { get; }
+        string ToolTipText { get; }
+        /// <summary>
+        /// Text ToolTipu smí obsahovat HTML? Hodnota null = AutoDetect
+        /// </summary>
+        bool? ToolTipAllowHtml { get; }
     }
     /// <summary>
     /// Interface
