@@ -63,12 +63,15 @@ namespace TestDevExpress
             public StyleChangedToConfigListener()
             {
                 this.ConfigSkinName = Noris.Clients.Win.Components.AsolDX.DxComponent.Settings.GetRawValue("UserSettings", "UsedSkinName");
+                this.ConfigPaletteName = Noris.Clients.Win.Components.AsolDX.DxComponent.Settings.GetRawValue("UserSettings", "UsedPaletteName");
             }
             public void ActivateConfigStyle()
             {
-                this.ConfigSkinName = Noris.Clients.Win.Components.AsolDX.DxComponent.Settings.GetRawValue("UserSettings", "UsedSkinName");
                 string skinName = ConfigSkinName ?? "Seven Classic";
+                string paletteName = ConfigPaletteName;
+                DevExpress.LookAndFeel.UserLookAndFeel.Default.SetSkinStyle() https://supportcenter.devexpress.com/ticket/details/t827424/save-and-restore-svg-palette-name
                 DevExpress.LookAndFeel.UserLookAndFeel.Default.SkinName = skinName;
+                DevExpress.LookAndFeel.UserLookAndFeel.Default.ActiveSvgPaletteName
             }
             public void ActivateListener()
             {
@@ -77,16 +80,23 @@ namespace TestDevExpress
             void IListenerStyleChanged.StyleChanged()
             {
                 var skinName = DevExpress.LookAndFeel.UserLookAndFeel.Default.SkinName;
-                if (!String.Equals(skinName, ConfigSkinName))
+                var paletteName = DevExpress.LookAndFeel.UserLookAndFeel.Default.ActiveSvgPaletteName;
+                if (!String.Equals(skinName, ConfigSkinName) || !String.Equals(paletteName, ConfigPaletteName))
                 {
                     Noris.Clients.Win.Components.AsolDX.DxComponent.Settings.SetRawValue("UserSettings", "UsedSkinName", skinName);
+                    Noris.Clients.Win.Components.AsolDX.DxComponent.Settings.SetRawValue("UserSettings", "UsedPaletteName", paletteName);
                     ConfigSkinName = skinName;
+                    ConfigPaletteName = paletteName;
                 }
             }
             /// <summary>
             /// Jméno skinu v konfiguraci
             /// </summary>
             public string ConfigSkinName { get; private set; }
+            /// <summary>
+            /// Jméno SVG palety v konfiguraci
+            /// </summary>
+            public string ConfigPaletteName { get; private set; }
         }
     }
 }
