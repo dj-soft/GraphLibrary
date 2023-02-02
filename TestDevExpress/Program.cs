@@ -69,9 +69,21 @@ namespace TestDevExpress
             {
                 string skinName = ConfigSkinName ?? "Seven Classic";
                 string paletteName = ConfigPaletteName;
-                DevExpress.LookAndFeel.UserLookAndFeel.Default.SetSkinStyle() https://supportcenter.devexpress.com/ticket/details/t827424/save-and-restore-svg-palette-name
+                ActivateStyle(skinName, paletteName);
+            }
+            public void ActivateStyle(string skinName, string paletteName)
+            {
                 DevExpress.LookAndFeel.UserLookAndFeel.Default.SkinName = skinName;
-                DevExpress.LookAndFeel.UserLookAndFeel.Default.ActiveSvgPaletteName
+                if (!String.IsNullOrEmpty(paletteName))
+                {   // https://supportcenter.devexpress.com/ticket/details/t827424/save-and-restore-svg-palette-name
+                    var skin = DevExpress.Skins.CommonSkins.GetSkin(DevExpress.LookAndFeel.UserLookAndFeel.Default);
+                    if (skin.CustomSvgPalettes.Count > 0)
+                    {
+                        var palette = skin.CustomSvgPalettes[paletteName];               // Když není nalezena, vrátí se null, nikoli Exception
+                        if (palette != null)
+                            skin.SvgPalettes[DevExpress.Skins.Skin.DefaultSkinPaletteName].SetCustomPalette(palette);
+                    }
+                }
             }
             public void ActivateListener()
             {

@@ -397,8 +397,8 @@ namespace TestDevExpress.Forms
             page.Groups.Add(group);
 
             group = new DataRibbonGroup() { GroupText = "BROWSE" };
-            group.Items.Add(CreateRibbonFunction("BrowseStd", "Browse Standard", "svgimages/dashboards/grid.svg", "Otevře okno pro testování standardního Browse", _TestDxBrowseStandardForm_Click));
-            group.Items.Add(CreateRibbonFunction("BrowseVir", "Browse Virtual", "svgimages/dashboards/grid.svg", "Otevře okno pro testování Browse s virtuálním zdrojem dat", _TestDxBrowseVirtualForm_Click));
+            group.Items.Add(CreateRibbonFunction("BrowseStd", "Browse Standard", "svgimages/richedit/selecttablerow.svg", "Otevře okno pro testování standardního Browse", _TestDxBrowseStandardForm_Click));
+            // group.Items.Add(CreateRibbonFunction("BrowseVir", "Browse Virtual", "svgimages/dashboards/grid.svg", "Otevře okno pro testování Browse s virtuálním zdrojem dat", _TestDxBrowseVirtualForm_Click));
             group.Items.Add(CreateRibbonFunction("Browse", "Browse", "svgimages/dashboards/grid.svg", "Otevře okno pro testování Browse", _TestDxBrowseForm_Click));
             page.Groups.Add(group);
 
@@ -3855,7 +3855,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
         #region TreeView
         private void InitTreeView()
         {
-            AddNewPage("TreeList", PrepareTreeView, ActivateTreeView, pageToolTip: "Tato záložka zobrazí <b>TreeView</b><br>a demonstruje tak ToolTipy a celé chování TreeListu <u>včetně událostí</u>.");
+            AddNewPage("TreeList", PrepareTreeView, ActivateTreeView, pageToolTip: "Tato záložka zobrazí <b>TreeView</b>,\r\na demonstruje tak <br>ToolTipy a celé chování TreeListu - <u>včetně událostí</u>.");
         }
         private DxPanelControl _PanelTreeView;
         private void PrepareTreeView(DxPanelControl panel)
