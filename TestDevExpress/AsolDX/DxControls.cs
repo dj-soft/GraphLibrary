@@ -2737,7 +2737,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             set { InitialDelay = value; }
         }
         #endregion
-        #region Clients - evidence, eventhandlery, vyhledání, předání ke konkrétní práci, dispose
+        #region Clients - klientské Controly: evidence, eventhandlery, vyhledání, předání ke konkrétní práci, dispose
         /// <summary>
         /// Přidá klienta.
         /// Pokud klient implementuje <see cref="IDxToolTipClient"/>, 
@@ -2993,15 +2993,51 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         #endregion
         #region Client ToolTip: nalezení klienta, určení jeho konkrétního jeho ToolTipu
+        /// <summary>
+        /// Myš se pohybuje bez stisknutého tlačítka nad daným klientem.
+        /// Můžeme čekat na její zastavení a rozsvítit Tooltip, nebo jej rozsvěcet okamžitě; anebo když ToolTip svítí, tak jej zhasnout...
+        /// </summary>
+        /// <param name="clientInfo"></param>
+        /// <param name="e"></param>
         private void _ClientMouseMoveNone(ClientInfo clientInfo, MouseEventArgs e)
         {
+            _ClientMouseMoveCheckChange(clientInfo, e);
+            if (!__IsHintShown)
+                _ClientMouseMoveWaitShow(clientInfo, e);
+            else
+                _ClientMouseMoveWaitHide(clientInfo, e);
+        }
+        private void _ClientMouseMoveCheckChange(ClientInfo clientInfo, MouseEventArgs e)
+        {
+            // Pokud se myš pohybuje nad jiným Controlem než dříve, musíme starý tooltip zhasnout a zahodit:
+            if (__ActiveClientInfo != null && !Object.ReferenceEquals(__ActiveClientInfo, clientInfo))
+            {
+                _HideTip(true);
+            }
+            // Uložíme aktuálního klienta a do něj pozici myši:
             __ActiveClientInfo = clientInfo;
             __ActiveClientInfo.MouseLocation = e.Location;
+        }
+        /// <summary>
+        /// ToolTip nesvítí a nad klientem se pohybuje myš: čekáme na její zastavcení a pak zajistíme rozsvícení:
+        /// </summary>
+        /// <param name="clientInfo"></param>
+        /// <param name="e"></param>
+        private void _ClientMouseMoveWaitShow(ClientInfo clientInfo, MouseEventArgs e)
+        {
             var hoverMiliseconds = HoverMiliseconds;
-            if (hoverMiliseconds > 0)
+            if (hoverMiliseconds > 1)
+                // Máme TooTip rozsvítit až po nějaké době od zastavení myši:
+                // Toto volání Timeru (s předaným Guid __HoverTimerGuid) zajistí, že budeme zavoláni (metoda _ClientActivateTip) až po zadané době od posledního "načasování budíka".
+                // Průběžné pohyby myši v kratším čase provedou "přenastavení toho samého budíka" na nový čas:
                 __HoverTimerGuid = WatchTimer.CallMeAfter(_ClientActivateTip, hoverMiliseconds, false, __HoverTimerGuid);
             else
+                // 0 = máme dát ToolTip ihned?
                 _ClientActivateTipGui();                   // Aktuálně jsme v eventu MouseMove, tedy v GUI threadu...
+        }
+        private void _ClientMouseMoveWaitHide(ClientInfo clientInfo, MouseEventArgs e)
+        {
+            qqq;
         }
         /// <summary>
         /// Zkus aktivovat ToolTip, uplynul čas čekání od posledního pohybu myši <see cref="HoverMiliseconds"/>, 
@@ -3070,7 +3106,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             __HoverTimerGuid = null;
             if (reset)
             {
-                __ActiveClientInfo = null;
+                if (__ActiveClientInfo != null) __ActiveClientInfo.LastSuperTip = null;
+                 __ActiveClientInfo = null;
                 __LastMouseLocation = null;
             }
             this.HideHint();
