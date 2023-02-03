@@ -905,9 +905,13 @@ namespace Noris.Clients.Win.Components.AsolDX
                 bool isSameAsLast = (args.DxSuperTip != null && Object.ReferenceEquals(args.DxSuperTip.ClientData, hit.NodeInfo));
                 if (!isSameAsLast)
                 {   // Připravíme data pro ToolTip:
-                    args.DxSuperTip = DxComponent.CreateDxSuperTip(hit.NodeInfo);        // Vytvořím new data ToolTipu
-                    if (ToolTipAllowHtmlText.HasValue) args.DxSuperTip.ToolTipAllowHtmlText = ToolTipAllowHtmlText;
-                    args.DxSuperTip.ClientData = hit.NodeInfo;                           // Přibalím si do nich náš Node abych příště detekoval, zda jsme/nejsme na tom samém
+                    var dxSuperTip = DxComponent.CreateDxSuperTip(hit.NodeInfo);        // Vytvořím new data ToolTipu
+                    if (dxSuperTip != null)
+                    {
+                        if (ToolTipAllowHtmlText.HasValue) dxSuperTip.ToolTipAllowHtmlText = ToolTipAllowHtmlText;
+                        dxSuperTip.ClientData = hit.NodeInfo;                           // Přibalím si do nich náš Node abych příště detekoval, zda jsme/nejsme na tom samém
+                    }
+                    args.DxSuperTip = dxSuperTip;
                     args.ToolTipChange = DxToolTipChangeType.NewToolTip;                 // Zajistím rozsvícení okna ToolTipu
                 }
                 else

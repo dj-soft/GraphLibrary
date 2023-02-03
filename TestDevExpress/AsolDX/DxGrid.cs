@@ -115,6 +115,7 @@ namespace Noris.Clients.Win.Components.AsolDX
 
     public class DxGridView : DevExpress.XtraGrid.Views.Grid.GridView
     {
+
         /// <summary>
         /// Povolení interního mechanismu řádkového filtru v GridView
         /// </summary>
@@ -125,10 +126,17 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>CZ: Je aktivni nejaka bunka v radkovem filtru</summary>
         public bool IsFilterRowCellActive { get { return this.IsFilterRow(this.ActualActiveRow); } }
 
+        private bool _checkBoxRowSelect;
+        public bool CheckBoxRowSelect { get => _checkBoxRowSelect; set { _checkBoxRowSelect = value; SetGridMultiSelectMode(); } }
+
         private string _LastFilterRowCell { get; set; } = String.Empty;
 
         private bool _RowFilterVisible { get { return this.OptionsView.ShowAutoFilterRow; } /*set;*/ }
 
+        /// <summary>
+        /// Slouží pro uložení informací o sloupcích, kterými byla provedena inicializace View
+        /// </summary>
+        private IEnumerable<IGridViewColumn> _GridViewColumns { get; set; }
 
 
         public DxGridView() : this(null) { }
@@ -145,8 +153,17 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void InitProperties()
         {
             OptionsSelection.MultiSelect = true;                                  // chceme multi select rows
-            //OptionsSelection.MultiSelectMode = DevExpress.XtraGrid.Views.Grid.GridMultiSelectMode.RowSelect;     // mód označování v režimu multiselect=true (RowSelect,CellSelect,CheckBoxRowSelect)
-            OptionsSelection.MultiSelectMode = DevExpress.XtraGrid.Views.Grid.GridMultiSelectMode.CheckBoxRowSelect;     // mód označování v režimu multiselect=true (RowSelect,CellSelect,CheckBoxRowSelect)
+            SetGridMultiSelectMode();
+            //if (CheckBoxRowSelect)
+            //{
+            //    OptionsSelection.MultiSelectMode = DevExpress.XtraGrid.Views.Grid.GridMultiSelectMode.CheckBoxRowSelect;     // mód označování v režimu multiselect=true (RowSelect,CellSelect,CheckBoxRowSelect)
+            //}
+            //else
+            //{
+            //    OptionsSelection.MultiSelectMode = DevExpress.XtraGrid.Views.Grid.GridMultiSelectMode.RowSelect;     // mód označování v režimu multiselect=true (RowSelect,CellSelect,CheckBoxRowSelect)
+            //}
+
+
             OptionsSelection.EnableAppearanceFocusedCell = false;   //zakáz selectu cell, ale pouze barva, ohraničení zůstává
 
             OptionsBehavior.Editable = false;   //readonly, necheceme editaci
@@ -164,6 +181,18 @@ namespace Noris.Clients.Win.Components.AsolDX
 
         }
 
+        private void SetGridMultiSelectMode()
+        {
+            if (CheckBoxRowSelect)
+            {
+                OptionsSelection.MultiSelectMode = DevExpress.XtraGrid.Views.Grid.GridMultiSelectMode.CheckBoxRowSelect;     // mód označování v režimu multiselect=true (RowSelect,CellSelect,CheckBoxRowSelect)
+            }
+            else
+            {
+                OptionsSelection.MultiSelectMode = DevExpress.XtraGrid.Views.Grid.GridMultiSelectMode.RowSelect;     // mód označování v režimu multiselect=true (RowSelect,CellSelect,CheckBoxRowSelect)
+            }
+        }
+
         private void RegisterEventsHandlers()
         {
             this.FilterPopupExcelCustomizeTemplate += _OnFilterPopupExcelCustomizeTemplate;
@@ -176,7 +205,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.FocusedRowChanged += _OnFocusedRowChanged;
             this.FocusedColumnChanged += _OnFocusedColumnChanged;
 
-
             // sorting events
             this.StartSorting += _OnStartSorting;   //zatím nepoužívám
             this.CustomColumnSort += _OnCustomColumnSort;
@@ -184,6 +212,30 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             this.KeyDown += _OnKeyDown;
             this.KeyPress += _OnKeyPress;
+
+            this.CustomRowCellEdit += _OnCustomRowCellEdit;
+        }
+
+        private void _OnCustomRowCellEdit(object sender, CustomRowCellEditEventArgs e)
+        {
+            //tohle dá stejný Edit do řádkového filtru jako je v cell
+            //if (e.RowHandle == DevExpress.XtraGrid.GridControl.AutoFilterRowHandle)
+            //    e.RepositoryItem = e.Column.ColumnEdit;
+
+            if (e.RowHandle == DevExpress.XtraGrid.GridControl.AutoFilterRowHandle)
+            {
+                //Tady se snažím vytvořit nový pro řádkový filtr, protože pokud byl ReposotoryItem typu RepositoryItemImageComboBox a byla zobrazena jen ikonka bez textu, tak se ve filtru nezobrazoval text s ikonkou...
+                var gvColumn = _GridViewColumns.FirstOrDefault(x => x.FieldName == e.Column.FieldName);
+                if (gvColumn != null)
+                {
+                    var repositoryItem = CreateRepositoryItem(gvColumn, true);
+                    if (repositoryItem != null)
+                    {
+                        this.GridControl.RepositoryItems.Add(repositoryItem);
+                        e.RepositoryItem = repositoryItem;
+                    }
+                }
+            }
         }
 
         protected override void Dispose(bool disposing)
@@ -207,7 +259,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.FocusedRowChanged -= _OnFocusedRowChanged;
             this.FocusedColumnChanged -= _OnFocusedColumnChanged;
 
-
             // sorting events
             this.StartSorting -= _OnStartSorting;   //zatím nepoužívám
             this.CustomColumnSort -= _OnCustomColumnSort;
@@ -215,6 +266,9 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             this.KeyDown -= _OnKeyDown;
             this.KeyPress -= _OnKeyPress;
+
+            this.CustomRowCellEdit -= _OnCustomRowCellEdit;
+
         }
 
         private void _OnKeyPress(object sender, KeyPressEventArgs e)
@@ -290,7 +344,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 string colCaption = info.Column == null ? "N/A" : info.Column.GetCaption();
                 //MessageBox.Show(string.Format("DoubleClick on row: {0}, column: {1}.", info.RowHandle, colCaption));
-                if (!view.IsRowSelected(info.RowHandle))
+
+                if (!CheckBoxRowSelect && !view.IsRowSelected(info.RowHandle))  //v případě chceckBoxu nedělat. Pokud bude použit check box, tak budeme využívat aktivní řádek místo selectovaného.
                 {
                     //nastvává v kombinaci ctrl+doubleClick
                     //Chci mít vždy selectovaný řádek nad kterým provádím doubleClick -> prvně se vyvolá _OnSelectionChanged -> server má nastaveny selectovavaný řádek
@@ -575,15 +630,14 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="gridViewColumns"></param>
         public void InitColumns(IEnumerable<IGridViewColumn> gridViewColumns)
         {
+            _GridViewColumns = gridViewColumns;
             this.Columns.Clear();
-            foreach (var vc in gridViewColumns)
+            foreach (var vc in _GridViewColumns)
             {
                 int index = this.Columns.Add(CreateGridColumn(vc));
                 InitColumnAfterAdd(index, vc);
             }
         }
-
-
 
         /// <summary>
         /// Tvorba GridColumn na základě našich dat z <see cref="IGridViewColumn"/>
@@ -614,34 +668,131 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             gc.SortMode = ColumnSortMode.Custom;    //Custom sorting ->vyvolá se eventa CustomColumnSort kde mohu "vypnout" řazení
 
-            //gc.FilterMode = ColumnFilterMode.DisplayText; Tohle umožní dát do filtrovacího řádku jakýkoliv text a validovat/formátovat si ho budu sám v OnCustomRowFilter. J
+            gc.FilterMode = ColumnFilterMode.DisplayText; //Tohle umožní dát do filtrovacího řádku jakýkoliv text a validovat / formátovat si ho budu sám v OnCustomRowFilter. J
 
-            if (gridViewColumn.CodeTable?.Count > 0)
+            var repositoryItem = CreateRepositoryItem(gridViewColumn, false);
+            if (repositoryItem != null)
             {
-                //TODO pozor codeTable nemusí mít vždy u všech položek vyplněno imageName!
-                ImageCollection imageCollection = new ImageCollection();                   // potřebujeme kolekci ikon
-                RepositoryItemImageComboBox repItemImageCombo = new RepositoryItemImageComboBox();          // vytvoříme objekt typu RepositoryItemImageComboBox
-                repItemImageCombo.AutoHeight = false;
+                this.GridControl.RepositoryItems.Add(repositoryItem);
+                gc.ColumnEdit = repositoryItem;
+            }
 
-                int i = 0;
-                foreach (var code in gridViewColumn.CodeTable)
-                {
-                    DxApplicationResourceLibrary.TryGetResource(code.ImageName, false, out var resourceItem);
-                    imageCollection.AddImage(resourceItem.CreateBmpImage());
-
-                    repItemImageCombo.Items.Add(new DevExpress.XtraEditors.Controls.ImageComboBoxItem(code.DisplayText, code.Value, i));
-                    i++;
-                }
-                repItemImageCombo.SmallImages = imageCollection;
-                repItemImageCombo.LargeImages = imageCollection;
-                repItemImageCombo.GlyphAlignment = HorzAlignment.Near;
-
-                this.GridControl.RepositoryItems.Add(repItemImageCombo);
-                gc.ColumnEdit = repItemImageCombo;
+            //format; takto to je i v pivotGrid.
+            if (gridViewColumn.ColumnType == typeof(System.String))
+            {
+                gc.DisplayFormat.FormatType = DevExpress.Utils.FormatType.Custom;
+                gc.DisplayFormat.FormatString = "{0}"; // string nejde sčítat
+            }
+            else if (gridViewColumn.ColumnType == typeof(System.DateTime))
+            {
+                gc.DisplayFormat.FormatType = DevExpress.Utils.FormatType.DateTime;
+                gc.DisplayFormat.FormatString = gridViewColumn.FormatString; //"MMM/d/yyyy hh:mm tt";
+            }
+            else if (gridViewColumn.ColumnType == typeof(System.Decimal))
+            {
+                gc.DisplayFormat.FormatType = DevExpress.Utils.FormatType.Numeric;
+                gc.DisplayFormat.FormatString = gridViewColumn.FormatString; //"n"; //https://documentation.devexpress.com/#WindowsForms/CustomDocument2141
             }
 
             return gc;
         }
+
+        private RepositoryItem CreateRepositoryItem(IGridViewColumn gridViewColumn, bool useForRowFilter = false)
+        {
+            if (gridViewColumn.CodeTable?.Count > 0)
+            {
+                //if (gridViewColumn.CodeTable.Count(x => !String.IsNullOrEmpty(x.ImageName)) > 0)
+                if (gridViewColumn.EditStyleViewMode == EditStyleViewMode.Icon || gridViewColumn.EditStyleViewMode == EditStyleViewMode.IconText)
+                {
+                    RepositoryItemImageComboBox repItemImageCombo = new RepositoryItemImageComboBox();          // vytvoříme objekt typu RepositoryItemImageComboBox
+                    ResourceContentType resourceType = ResourceContentType.None;
+                    repItemImageCombo.AutoHeight = false;
+
+                    //resourceType určíme podle prvního item s image
+                    var firstImageCodeTableItem = gridViewColumn.CodeTable.FirstOrDefault(x => !string.IsNullOrEmpty(x.ImageName));
+                    if (firstImageCodeTableItem.ImageName != null)
+                    {
+                        if (DxComponent.TryGetApplicationResource(firstImageCodeTableItem.ImageName, out var resourceItem))
+                        {
+                            resourceType = resourceItem.ContentType;
+                        }
+                    }
+                    repItemImageCombo.SmallImages = _GetImageList(resourceType, ResourceImageSizeType.Small);
+                    repItemImageCombo.GlyphAlignment = gridViewColumn.EditStyleViewMode == EditStyleViewMode.IconText ? HorzAlignment.Near : HorzAlignment.Center;
+
+                    repItemImageCombo.TextEditStyle = DevExpress.XtraEditors.Controls.TextEditStyles.Standard;
+                    repItemImageCombo.ReadOnly = false;
+
+                    foreach (var code in gridViewColumn.CodeTable)
+                    {
+                        //vytváření items
+                        string displayText = gridViewColumn.EditStyleViewMode == EditStyleViewMode.IconText || useForRowFilter ? code.DisplayText : "";
+                        //string value = useForRowFilter ? code.DisplayText : code.ImageName;   //v cell je místo value posílán imageName! Tady to s DAJ pokusíme změnit.
+                        string value = code.DisplayText;
+                        int index = _GetImageIndex(code.ImageName, ResourceImageSizeType.Small, resourceType, -1);
+                        var imageComboBoxItem = new DevExpress.XtraEditors.Controls.ImageComboBoxItem(displayText, value, index);
+                        repItemImageCombo.Items.Add(imageComboBoxItem);
+                    }
+
+                    return repItemImageCombo;
+                }
+                else
+                {
+                    //Text
+                    //editační styl bez ikonek
+                    RepositoryItemComboBox repItemCombo = new RepositoryItemComboBox();          // vytvoříme objekt typu RepositoryItemComboBox
+                    int i = 0;
+                    foreach (var code in gridViewColumn.CodeTable)
+                    {
+                        var a = new DevExpress.XtraEditors.Controls.ComboBoxItem(code.DisplayText);
+
+                        repItemCombo.Items.Add(a);
+                        i++;
+                    }
+                    return repItemCombo;
+                }
+            }
+            else
+            {
+                return null;
+            }
+        }
+
+        private static object _GetImageList(ResourceContentType resourceContentType, ResourceImageSizeType resourceImageSizeType)
+        {
+            switch (resourceContentType)
+            {
+                case ResourceContentType.Bitmap:
+                    return DxComponent.GetBitmapImageList(resourceImageSizeType);
+                case ResourceContentType.Vector:
+                    return DxComponent.GetVectorImageList(resourceImageSizeType);
+                default:
+                    return null;
+            }
+        }
+
+        private int _GetImageIndex(string imageName, ResourceImageSizeType resourceImageSizeType, ResourceContentType resourceContentType, int defaultValue)
+        {
+            int index = -1;
+            //if (!String.IsNullOrEmpty(imageName) && _PrepareImageListFor(imageName))
+            if (!String.IsNullOrEmpty(imageName))
+            {
+                switch (resourceContentType)
+                {
+                    case ResourceContentType.Bitmap:
+                        index = DxComponent.GetBitmapImageIndex(imageName, resourceImageSizeType);
+                        break;
+                    case ResourceContentType.Vector:
+                        index = DxComponent.GetVectorImageIndex(imageName, resourceImageSizeType);
+                        break;
+                }
+            }
+            if (index < 0 && defaultValue >= 0) index = defaultValue;
+            return index;
+        }
+
+
+
 
         /// <summary>
         /// Některé vlastnosti GridColumn nejdou nastavit v rámci <see cref="CreateGridColumn(IGridViewColumn)"/>. Je třeba je nastavit až po přidání do kolekce.
@@ -654,6 +805,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             //Header settings
             gc.AppearanceHeader.TextOptions.HAlignment = gridViewColumn.HeaderAlignment;
             gc.AppearanceHeader.FontStyleDelta = gridViewColumn.HeaderFontStyle;
+            gc.AppearanceCell.TextOptions.HAlignment = gridViewColumn.CellAlignment;
+            gc.AppearanceCell.FontStyleDelta = gridViewColumn.CellFontStyle;
         }
         internal void SetFocusToFilterRow(string lastFilterRowCell)
         {
@@ -812,12 +965,15 @@ namespace Noris.Clients.Win.Components.AsolDX
         public virtual System.Drawing.StringAlignment IconAligment { get; set; }
         public virtual HorzAlignment HeaderAlignment { get; set; }
         public virtual System.Drawing.FontStyle HeaderFontStyle { get; set; }
-        public virtual string HeaderToolTip { get; }
+        public virtual HorzAlignment CellAlignment { get; set; }
+        public virtual System.Drawing.FontStyle CellFontStyle { get; set; }
         public virtual int Width { get; set; }
 
         public virtual bool IsSystemColumn { get; set; }
 
         public List<(string DisplayText, string Value, string ImageName)> CodeTable { get; set; }
+        public EditStyleViewMode EditStyleViewMode { get; set; }
+        public string FormatString { get; set; }
 
     }
     public interface IGridViewColumn
@@ -855,6 +1011,17 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// FontStyle pro header
         /// </summary>
         System.Drawing.FontStyle HeaderFontStyle { get; }
+
+        /// <summary>
+        /// Zarovnání textu v column
+        /// </summary>
+        HorzAlignment CellAlignment { get; }
+
+        /// <summary>
+        /// FontStyle pro column
+        /// </summary>
+        System.Drawing.FontStyle CellFontStyle { get; }
+
         /// <summary>
         /// Šírka sloupce v px
         /// </summary>
@@ -868,6 +1035,15 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Display text, value, image name
         /// </summary>
         List<(string DisplayText, string Value, string ImageName)> CodeTable { get; }
+        /// <summary>
+        /// Styl zobrazení editačního stylu. 
+        /// </summary>
+        EditStyleViewMode EditStyleViewMode { get; }
+
+        /// <summary>
+        /// Display format string
+        /// </summary>
+        string FormatString { get; }
 
     }
 
@@ -997,7 +1173,22 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// <param name="args"></param>
     public delegate void DxGridKeyDownHandler(object sender, KeyEventArgs args);
 
-
+    public enum EditStyleViewMode
+    {
+        //
+        // Summary:
+        //     Edit style view as only text. This is Default value. Compatible with old HELIOS
+        //     Green versions.
+        Text = 0,
+        //
+        // Summary:
+        //     Edit style view as icon.
+        Icon = 1,
+        //
+        // Summary:
+        //     Edit style view as icon and text.
+        IconText = 2
+    }
 
     #endregion
 

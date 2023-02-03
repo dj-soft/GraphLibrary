@@ -26,9 +26,7 @@ namespace TestDevExpress
                 // Noris.Clients.Win.Components.AsolDX.DxComponent.Settings.ConfigFileName = @"c:\ProgramData\Asseco Solutions\NorisWin32Clients\Settings.bin";
 
                 // Nastavíme Config skin a budeme sledovat změny aktivního skinu a ukládat jej do configu:
-                StyleChangedToConfigListener styleListener = new StyleChangedToConfigListener();
-                styleListener.ActivateConfigStyle();
-                styleListener.ActivateListener();
+                var styleListener = new SkinConfigStyle();
 
                 string uhdPaint = Noris.Clients.Win.Components.AsolDX.DxComponent.Settings.GetRawValue("Components", "UhdPaintEnabled");
                 Noris.Clients.Win.Components.AsolDX.DxComponent.LogActive = true;         // I při spuštění v režimu Run, to kvůli TimeLogům
@@ -58,57 +56,18 @@ namespace TestDevExpress
             return null;
         }
 
-        private class StyleChangedToConfigListener : IListenerStyleChanged
-        { 
-            public StyleChangedToConfigListener()
-            {
-                this.ConfigSkinName = Noris.Clients.Win.Components.AsolDX.DxComponent.Settings.GetRawValue("UserSettings", "UsedSkinName");
-                this.ConfigPaletteName = Noris.Clients.Win.Components.AsolDX.DxComponent.Settings.GetRawValue("UserSettings", "UsedPaletteName");
+        private class SkinConfigStyle : DxStyleToConfigListener
+        {
+            public override string SkinName
+            { 
+                get { return Noris.Clients.Win.Components.AsolDX.DxComponent.Settings.GetRawValue("UserSettings", "UsedSkinName"); }
+                set { Noris.Clients.Win.Components.AsolDX.DxComponent.Settings.SetRawValue("UserSettings", "UsedSkinName", value); }
             }
-            public void ActivateConfigStyle()
+            public override string PaletteName
             {
-                string skinName = ConfigSkinName ?? "Seven Classic";
-                string paletteName = ConfigPaletteName;
-                ActivateStyle(skinName, paletteName);
+                get { return Noris.Clients.Win.Components.AsolDX.DxComponent.Settings.GetRawValue("UserSettings", "UsedPaletteName"); }
+                set { Noris.Clients.Win.Components.AsolDX.DxComponent.Settings.SetRawValue("UserSettings", "UsedPaletteName", value); }
             }
-            public void ActivateStyle(string skinName, string paletteName)
-            {
-                DevExpress.LookAndFeel.UserLookAndFeel.Default.SkinName = skinName;
-                if (!String.IsNullOrEmpty(paletteName))
-                {   // https://supportcenter.devexpress.com/ticket/details/t827424/save-and-restore-svg-palette-name
-                    var skin = DevExpress.Skins.CommonSkins.GetSkin(DevExpress.LookAndFeel.UserLookAndFeel.Default);
-                    if (skin.CustomSvgPalettes.Count > 0)
-                    {
-                        var palette = skin.CustomSvgPalettes[paletteName];               // Když není nalezena, vrátí se null, nikoli Exception
-                        if (palette != null)
-                            skin.SvgPalettes[DevExpress.Skins.Skin.DefaultSkinPaletteName].SetCustomPalette(palette);
-                    }
-                }
-            }
-            public void ActivateListener()
-            {
-                Noris.Clients.Win.Components.AsolDX.DxComponent.RegisterListener(this);
-            }
-            void IListenerStyleChanged.StyleChanged()
-            {
-                var skinName = DevExpress.LookAndFeel.UserLookAndFeel.Default.SkinName;
-                var paletteName = DevExpress.LookAndFeel.UserLookAndFeel.Default.ActiveSvgPaletteName;
-                if (!String.Equals(skinName, ConfigSkinName) || !String.Equals(paletteName, ConfigPaletteName))
-                {
-                    Noris.Clients.Win.Components.AsolDX.DxComponent.Settings.SetRawValue("UserSettings", "UsedSkinName", skinName);
-                    Noris.Clients.Win.Components.AsolDX.DxComponent.Settings.SetRawValue("UserSettings", "UsedPaletteName", paletteName);
-                    ConfigSkinName = skinName;
-                    ConfigPaletteName = paletteName;
-                }
-            }
-            /// <summary>
-            /// Jméno skinu v konfiguraci
-            /// </summary>
-            public string ConfigSkinName { get; private set; }
-            /// <summary>
-            /// Jméno SVG palety v konfiguraci
-            /// </summary>
-            public string ConfigPaletteName { get; private set; }
         }
     }
 }

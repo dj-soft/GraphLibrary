@@ -38,6 +38,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             InitSearchItem();
             DxComponent.RegisterListener(this);
             DxQuickAccessToolbar.ConfigValueChanged += _DxQATItemKeysChanged;
+            IsActive = true;
         }
         /// <summary>
         /// Dispose
@@ -121,7 +122,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             ToolTipController = DxComponent.DefaultToolTipController;
 
             Margin = new System.Windows.Forms.Padding(2);
-            MdiMergeStyle = DevExpress.XtraBars.Ribbon.RibbonMdiMergeStyle.Always;
+            MdiMergeStyle = DefaultMdiMergeStyleForms;
+            // this.ShouldMergeActivate
 
             AllowMinimizeRibbon = false;    // Povolit minimalizaci Ribbonu? Pak ale nejde vrátit :-(
             AllowCustomization = false;     // Hodnota true povoluje (na pravé myši) otevřít okno Customizace Ribbonu, a to v Greenu nepodporujeme
@@ -180,17 +182,30 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             if (forDesktop)
             {   // pro Desktop
-                MdiMergeStyle = RibbonMdiMergeStyle.Always;
+                MdiMergeStyle = DefaultMdiMergeStyleDesktop;
                 ShowSearchItem = true;
                 ShowApplicationButton = DevExpress.Utils.DefaultBoolean.True;
             }
             else
             {   // pro ChildWindow
-                MdiMergeStyle = RibbonMdiMergeStyle.Always;
+                MdiMergeStyle = DefaultMdiMergeStyleForms;
                 ShowSearchItem = true;
                 ShowApplicationButton = DevExpress.Utils.DefaultBoolean.False;
             }
         }
+        /// <summary>
+        /// Obsahuje true, pokud mergování ribbonu v MDI oknech je nastaveno Always = automaticky jej řeší MDI DocumentManager;
+        /// false když má být řešeno explicitně v rámci aktivace / deaktivace oken
+        /// </summary>
+        public static bool IsAutomaticMdiRibbonMerge { get { return false; } }
+        /// <summary>
+        /// Režim mergování MDI Ribbonu pro Desktop
+        /// </summary>
+        protected static RibbonMdiMergeStyle DefaultMdiMergeStyleDesktop { get { return (IsAutomaticMdiRibbonMerge ? RibbonMdiMergeStyle.Always : RibbonMdiMergeStyle.Never); } }
+        /// <summary>
+        /// Režim mergování MDI Ribbonu pro Forms
+        /// </summary>
+        protected static RibbonMdiMergeStyle DefaultMdiMergeStyleForms { get { return (IsAutomaticMdiRibbonMerge ? RibbonMdiMergeStyle.Always : RibbonMdiMergeStyle.Never); } }
         /// <summary>
         /// Inicializuje interní data
         /// </summary>
@@ -277,6 +292,14 @@ namespace Noris.Clients.Win.Components.AsolDX
                 return ownerControl.Disposing || ownerControl.IsDisposed;
             }
         }
+        /// <summary>
+        /// Je tento Ribbon aktivní?
+        /// Výchozí hodnota (nastavená na konci konstruktoru) je true.
+        /// Pokud je false, pak se neprovádí eventy Ribbonu (ItemClick, GroupClick).
+        /// Setování hodnoty do <see cref="IsActive"/> ji setuje pouze do this instance, nikdy ne do Child mergovaných Ribbonů.
+        /// Čtení hodnoty ji vyhodnocuje pouze z this instance.
+        /// </summary>
+        public bool IsActive { get; set; }
         /// <summary>
         /// Jsou aktivní zápisy do logu? Default = false
         /// </summary>
@@ -846,6 +869,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 {
                     if (IsSearchItemNotFound(link, localizedCaption, out BarStaticItem notFoundItem))
                     {   // Prvek "Nenalezeny odpovídající položky":
+                        notFoundItem.Caption = localizedCaption;               // DAJ 0072010: Do prvku vložím náš lokalizovaný překlad namísto DevExpress lokalizace...
                         SearchItemNotFoundRibbonItem = notFoundItem;
                         break;
                     }
@@ -880,8 +904,9 @@ namespace Noris.Clients.Win.Components.AsolDX
                 // Zoufalství v jazyce anglickém:
                 if (!result) result = (staticItem.Caption == "No matches found");
 
-                // Šílené zoufalství v jazyce českém:
+                // Šílené zoufalství v jazyce českém poprvé a podruhé:
                 if (!result) result = (staticItem.Caption == "Nenalezeny žádné shody");
+                if (!result) result = (staticItem.Caption == "Upřesněte hledaný text");
 
                 // Nalezeno? Označkujme:
                 if (result)
@@ -1273,7 +1298,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                     notFoundItem = SearchItemNotFoundLocalItem;
                 }
             }
-            string groupCaption = SearchMenuGroupGeneralCaption;
+            string groupCaption = SearchMenuGroupNoMatchesFoundCaption;
             finalItems.FoundItems.Add("", new SearchMenuItem("", null, groupCaption, null, null, notFoundItem));
         }
         /// <summary>
@@ -1297,7 +1322,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private string SearchMenuItemTooManyMatchesFoundCaption { get { return DxComponent.Localize(MsgCode.RibbonSearchMenuItemTooManyMatchesCaption); } }
         /// <summary>
-        /// Obsahuje lokalizovaný text prvku v SearchMenu "Nenalezeny žádné shody"
+        /// Obsahuje lokalizovaný text grupy (=nadpis) v SearchMenu pro NotFound: "Žádný výsledek"
+        /// </summary>
+        private string SearchMenuGroupNoMatchesFoundCaption { get { return DxComponent.Localize(MsgCode.RibbonSearchMenuGroupNoMatchesCaption); } }
+        /// <summary>
+        /// Obsahuje lokalizovaný text prvku (=položka) v SearchMenu pro NotFound: "Upřesněte hledaný text"
         /// </summary>
         private string SearchMenuItemNoMatchesFoundCaption { get { return DxComponent.Localize(MsgCode.RibbonSearchMenuItemNoMatchesCaption); } }
         /// <summary>
@@ -6076,9 +6105,12 @@ namespace Noris.Clients.Win.Components.AsolDX
                 ownerDxRibbon._RibbonPageCategoryClick(iRibbonCategory);  //  ... kde byla grupa definována = tam je navázaný patřičný eventhandler!
             else
             {
-                var args = new TEventArgs<IRibbonCategory>(iRibbonCategory);
-                OnRibbonPageCategoryClick(args);
-                RibbonPageCategoryClick?.Invoke(this, args);
+                if (this.IsActive)
+                {
+                    var args = new TEventArgs<IRibbonCategory>(iRibbonCategory);
+                    OnRibbonPageCategoryClick(args);
+                    RibbonPageCategoryClick?.Invoke(this, args);
+                }
             }
         }
         /// <summary>
@@ -6113,9 +6145,12 @@ namespace Noris.Clients.Win.Components.AsolDX
                 ownerDxRibbon._RibbonGroupButtonClick(iRibbonGroup);      //  ... kde byla grupa definována = tam je navázaný patřičný eventhandler!
             else
             {
-                var args = new TEventArgs<IRibbonGroup>(iRibbonGroup);
-                OnRibbonGroupButtonClick(args);
-                RibbonGroupButtonClick?.Invoke(this, args);
+                if (this.IsActive)
+                {
+                    var args = new TEventArgs<IRibbonGroup>(iRibbonGroup);
+                    OnRibbonGroupButtonClick(args);
+                    RibbonGroupButtonClick?.Invoke(this, args);
+                }
             }
         }
         /// <summary>
@@ -6135,6 +6170,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="e"></param>
         private void _RibbonControl_ItemClick(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
         {
+            if (!this.IsActive) return;
+
             // poznámka: tady nemusím řešit přechod z Ribbonu "kde se kliklo" do Ribbonu "kde byl prvek definován", tady to už interně vyřešil DevExpress!
             // Tady jsem v té instanci Ribbonu, která deklarovala BarItem a navázala do něj svůj Click eventhandler...
             if (_TryGetIRibbonItem(e.Item, out IRibbonItem iRibbonItem))
@@ -6154,6 +6191,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="iRibbonItem"></param>
         private void _RibbonItemTestCheckChanges(BarItem barItem, IRibbonItem iRibbonItem)
         {
+            if (!this.IsActive) return;
+
             // Z vizuálního objektu BarCheckItem si opíšu jeho Checked do datového objektu:
             if (barItem is BarCheckItem checkItem)
             {   // CheckBox i RadioButton (jde o stejný prvek, pouze s jiným stylem zobrazení):
@@ -6275,6 +6314,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="iRibbonItem"></param>
         private void _RibbonItemClick(IRibbonItem iRibbonItem)
         {
+            if (!this.IsActive) return;
+
             iRibbonItem?.ClickAction?.Invoke(iRibbonItem);
             var args = new TEventArgs<IRibbonItem>(iRibbonItem);
             OnRibbonItemClick(args);
@@ -6774,6 +6815,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 SetModifiedState(true, true);
                 CurrentModifiedState = true;
                 DxComponent.TryRun(() => base.MergeRibbon(childRibbon));
+                _SetVisibleOnModifyManualRibbonOnMdiForm(childDxRibbon, true);
                 this.MergedChildRibbon = childRibbon;
                 _CurrentMergeState = MergeState.None;
                 CustomizationPopupMenuRefreshHandlers();
@@ -7034,6 +7076,7 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             _CurrentMergeState = MergeState.UnMergeChild;
             DxComponent.TryRun(() => base.UnMergeRibbon());
+            _SetVisibleOnModifyManualRibbonOnMdiForm(childDxRibbon, false);
             _CurrentMergeState = MergeState.None;
             CustomizationPopupMenuRefreshHandlers();
 
@@ -7053,6 +7096,16 @@ namespace Noris.Clients.Win.Components.AsolDX
                 this.ActivateLastActivePage();
 
             if (LogActive) DxComponent.LogAddLineTime($"UnMergeRibbon from Parent: {this.DebugName}; Time: {DxComponent.LogTokenTimeMilisec}", startTime);
+        }
+        /// <summary>
+        /// Metoda do daného Ribbonu (- pokud je umístěn na Formuláři, který je MDI Child, a Ribbon je v režimu ManualMdiMerge) vepíše danou Visible.
+        /// </summary>
+        /// <param name="dxRibbon"></param>
+        /// <param name="visible"></param>
+        private static void _SetVisibleOnModifyManualRibbonOnMdiForm(DxRibbonControl dxRibbon, bool visible)
+        {
+            if (dxRibbon != null && !IsAutomaticMdiRibbonMerge && dxRibbon.OwnerControl is Form form && form.IsMdiChild && dxRibbon.CurrentModifiedState)
+                dxRibbon.Visible = visible;
         }
         /// <summary>
         /// Aktuální stav mergování this Ribbonu
@@ -7523,7 +7576,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public IRibbonPage PageData { get; private set; }
         /// <summary>
-        /// ID poslední aktivace této stránky. Při aktivaci stránky se volá metoda <see cref="OnActivate(bool)"/>.
+        /// ID poslední aktivace této stránky. Při aktivaci stránky se volá metoda <see cref="OnActivate()"/>.
         /// Slouží k určení stránky, která má být aktivní.
         /// </summary>
         public int ActivateTimeStamp { get; private set; }

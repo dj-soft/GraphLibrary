@@ -6625,6 +6625,159 @@ namespace Noris.Clients.Win.Components.AsolDX
         public object Data { get; set; }
     }
     #endregion
+    #region class DxStyleToConfigListener : spojovací prvek mezi stylem (skin + paleta) z DevExpress a (abstract) konfigurací
+    /// <summary>
+    /// <see cref="DxStyleToConfigListener"/> : spojovací prvek mezi stylem (skin + paleta) z DevExpress a (abstract) konfigurací.
+    /// <para/>
+    /// Potomek musí implementovat dvě property: <see cref="SkinName"/> a <see cref="PaletteName"/>, a nasměrovat je na svoji konfiguraci.
+    /// Zdejší třída pak zajišťuje jejich napojení na GUI DevExpress.
+    /// </summary>
+    public abstract class DxStyleToConfigListener : IListenerStyleChanged
+    {
+        /// <summary>
+        /// Konstruktor s provedením automatické inicializace.
+        /// Tedy v rámci konstruktoru jsou načteny hodnoty z konfigurace as aplikovány do GUI.
+        /// </summary>
+        public DxStyleToConfigListener()
+            : this(true)
+        { }
+        /// <summary>
+        /// Konstruktor s možností automatické inicializace (<paramref name="withInitialize"/> = true).
+        /// Pokud v době konstruktoru je již funkční konfigurace, může se předat true a bude rovnou nastaven i skin.
+        /// Pokud není konfigurace k dispozici, předá se false a explicitně se pak vyvolá metoda <see cref="ActivateConfigStyle"/>.
+        /// </summary>
+        /// <param name="withInitialize">Požadavek true na provedení inicializace</param>
+        public DxStyleToConfigListener(bool withInitialize)
+        {
+            __IsInitialized = false;
+            __IsSupressEvent = false;
+            __LastSkinName = null;
+            __LastPaletteName = null;
+
+            if (withInitialize)
+                ActivateConfigStyle();
+            Noris.Clients.Win.Components.AsolDX.DxComponent.RegisterListener(this);
+        }
+        /// <summary>
+        /// Nastaví se na true po inicializaci. Dokud je false, nebudeme řešit změny skinu.
+        /// </summary>
+        private bool __IsInitialized;
+        /// <summary>
+        /// Pokud obsahuje true, pak nebudeme reagovat na změny skinu v <see cref="IListenerStyleChanged.StyleChanged()"/> = provádíme je my sami!
+        /// </summary>
+        private bool __IsSupressEvent;
+        /// <summary>
+        /// Posledně uložený / načtený název skinu, pro detekci reálné změny v GUI.
+        /// GUI občas pošle událost <see cref="IListenerStyleChanged.StyleChanged()"/> i když k reálné změně nedochází.
+        /// </summary>
+        private string __LastSkinName;
+        /// <summary>
+        /// Posledně uložený / načtený název palety, pro detekci reálné změny v GUI.
+        /// GUI občas pošle událost <see cref="IListenerStyleChanged.StyleChanged()"/> i když k reálné změně nedochází.
+        /// </summary>
+        private string __LastPaletteName;
+
+        /// <summary>
+        /// Jméno Skinu.
+        /// Potomek má v metodě 'get' přečíst hodnotu ze své konfigurace a vrátit ji, a v metodě 'set' má předanou hodnotu do své konfigurace vepsat.
+        /// <para/>
+        /// Setování hodnoty nezmění GUI. Změnu GUI provede metoda <see cref="ActivateConfigStyle"/>, která si načítá hodnoty <see cref="SkinName"/> a <see cref="PaletteName"/>.
+        /// </summary>
+        public abstract string SkinName { get; set; }
+        /// <summary>
+        /// Jméno palety.
+        /// Potomek má v metodě 'get' přečíst hodnotu ze své konfigurace a vrátit ji, a v metodě 'set' má předanou hodnotu do své konfigurace vepsat.
+        /// <para/>
+        /// Setování hodnoty nezmění GUI. Změnu GUI provede metoda <see cref="ActivateConfigStyle"/>, která si načítá hodnoty <see cref="SkinName"/> a <see cref="PaletteName"/>.
+        /// </summary>
+        public abstract string PaletteName { get; set; }
+        /// <summary>
+        /// Aktivuje v GUI rozhraní skin daný <see cref="SkinName"/> a <see cref="PaletteName"/>.
+        /// </summary>
+        public void ActivateConfigStyle()
+        {
+            __IsInitialized = true;
+
+            string skinName = SkinName;
+            string paletteName = PaletteName;
+            _ActivateStyle(skinName, paletteName, false);
+            __LastSkinName = skinName;
+            __LastPaletteName = paletteName;
+        }
+        /// <summary>
+        /// Aktivuje v GUI rozhraní explicitně daný Skin.
+        /// Uloží jej i do konfigurace (do properties <see cref="SkinName"/> a <see cref="PaletteName"/>), jako by jej vybral uživatel.
+        /// </summary>
+        /// <param name="skinName"></param>
+        /// <param name="paletteName"></param>
+        public void ActivateStyle(string skinName, string paletteName)
+        {
+            _ActivateStyle(skinName, paletteName, true);
+        }
+        /// <summary>
+        /// Aktivuje v GUI rozhraní explicitně daný Skin.
+        /// Podle hodnoty <paramref name="storeToConfig"/> jej uloží i do konfigurace (do properties <see cref="SkinName"/> a <see cref="PaletteName"/>), jako by jej vybral uživatel.
+        /// </summary>
+        /// <param name="skinName"></param>
+        /// <param name="paletteName"></param>
+        /// <param name="storeToConfig"></param>
+        private void _ActivateStyle(string skinName, string paletteName, bool storeToConfig)
+        {
+            bool isActivated = false;
+            try
+            {
+                __IsSupressEvent = true;
+
+                DevExpress.LookAndFeel.UserLookAndFeel.Default.SkinName = skinName;
+                if (!String.IsNullOrEmpty(paletteName))
+                {   // https://supportcenter.devexpress.com/ticket/details/t827424/save-and-restore-svg-palette-name
+                    var skin = DevExpress.Skins.CommonSkins.GetSkin(DevExpress.LookAndFeel.UserLookAndFeel.Default);
+                    if (skin.CustomSvgPalettes.Count > 0)
+                    {
+                        var palette = skin.CustomSvgPalettes[paletteName];               // Když není nalezena, vrátí se null, nikoli Exception
+                        if (palette != null)
+                            skin.SvgPalettes[DevExpress.Skins.Skin.DefaultSkinPaletteName].SetCustomPalette(palette);
+                    }
+                }
+
+                isActivated = true;
+            }
+            catch { /* Pokud by na vstupu byly nepřijatelné hodnoty, neshodím kvůli tomu aplikaci... */ }
+            finally
+            {
+                __IsSupressEvent = false;
+            }
+
+            if (storeToConfig && isActivated)
+                _StoreToConfig(skinName, paletteName);
+        }
+        /// <summary>
+        /// Uloží jméno skinu a palety do konfigurace = do <see cref="SkinName"/> a <see cref="PaletteName"/>.
+        /// </summary>
+        /// <param name="skinName"></param>
+        /// <param name="paletteName"></param>
+        private void _StoreToConfig(string skinName, string paletteName)
+        {
+            SkinName = skinName;
+            PaletteName = paletteName;
+            __LastSkinName = skinName;
+            __LastPaletteName = paletteName;
+        }
+        /// <summary>
+        /// Po změně skinu / palety v GUI
+        /// </summary>
+        void IListenerStyleChanged.StyleChanged()
+        {
+            if (__IsInitialized && !__IsSupressEvent)
+            {
+                string skinName = DevExpress.LookAndFeel.UserLookAndFeel.Default.SkinName;
+                string paletteName = DevExpress.LookAndFeel.UserLookAndFeel.Default.ActiveSvgPaletteName;
+                if (!String.Equals(skinName, __LastSkinName) || !String.Equals(paletteName, __LastPaletteName))
+                    _StoreToConfig(skinName, paletteName);
+            }
+        }
+    }
+    #endregion
     #region class ActionScope : Jednoduchý scope, který provede při vytvoření akci OnBegin, a při Dispose akci OnEnd
     /// <summary>
     /// <see cref="ActionScope"/> : Jednoduchý scope, který provede při vytvoření akci OnBegin, a při Dispose akci OnEnd.
