@@ -7523,7 +7523,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public IRibbonPage PageData { get; private set; }
         /// <summary>
-        /// ID poslední aktivace této stránky. Při aktivaci stránky se volá metoda <see cref="OnActivate()"/>.
+        /// ID poslední aktivace této stránky. Při aktivaci stránky se volá metoda <see cref="OnActivate(bool)"/>.
         /// Slouží k určení stránky, která má být aktivní.
         /// </summary>
         public int ActivateTimeStamp { get; private set; }

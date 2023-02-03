@@ -67,10 +67,21 @@ namespace Noris.Clients.Win.Components.AsolDX
         private bool __HighlightNonTranslated;
         #endregion
         #region Public static property: Language, Enabled
-
+        /// <summary>
+        /// Lokalizace je povolena?
+        /// </summary>
         public static bool Enabled { get { return Instance._Enabled; } set { Instance._Enabled = value; } }
+        /// <summary>
+        /// Máme registrovat stringy k lokalizaci?
+        /// </summary>
         public static bool RegisterLocalizingStrings { get { return Instance.__RegisterLocalizingStrings; } set { Instance.__RegisterLocalizingStrings = value; } }
+        /// <summary>
+        /// Máme vysvítit nelokalizované stringy?
+        /// </summary>
         public static bool HighlightNonTranslated { get { return Instance.__HighlightNonTranslated; } set { Instance.__HighlightNonTranslated = value; } }
+        /// <summary>
+        /// Jazyk
+        /// </summary>
         public static string Language { get { return Instance.__Language; } set { Instance.__Language = value; } }
         #endregion
         #region Private: aktivace / deaktivace, tvorba typových lokalizerů
@@ -250,7 +261,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         #endregion
         #region Střádání a tvorba překladů
-
+        /// <summary>
+        /// Vrať lokalizovaný string
+        /// </summary>
+        /// <param name="localizerType"></param>
+        /// <param name="idCode"></param>
+        /// <param name="defString"></param>
+        /// <returns></returns>
         protected string GetLocalizedString(string localizerType, string idCode, string defString)
         {
             string localized = null;
@@ -272,7 +289,11 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             return localized;
         }
-
+        /// <summary>
+        /// Přidá typ lokalizeru a jeho data
+        /// </summary>
+        /// <param name="localizerType"></param>
+        /// <param name="items"></param>
         protected void AddLocalizingDefStrings(string localizerType, IEnumerable<Tuple<string, string>> items)
         {
             Dictionary<string, TranslateInfo> localizerItems;
@@ -381,10 +402,11 @@ namespace Noris.Clients.Win.Components.AsolDX
 
                     continue;
 
-                    object target = property.GetValue(null);  // Static property
-                    System.Reflection.MethodInfo mi = target.GetType().GetMethod("CreateXmlDocument");
-                    object result = mi.Invoke(target, null);
-                    XtraLocalizer xtraLocalizer = target as XtraLocalizer;
+                    // Static CreateXmlDocument() :
+                    //object target = property.GetValue(null);  // Static property
+                    //System.Reflection.MethodInfo mi = target.GetType().GetMethod("CreateXmlDocument");
+                    //object result = mi.Invoke(target, null);
+                    //XtraLocalizer xtraLocalizer = target as XtraLocalizer;
                 }
             }
 
@@ -427,7 +449,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 return System.Reflection.Assembly.LoadFrom(asmFile);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 return null;
             }
@@ -466,9 +488,16 @@ namespace Noris.Clients.Win.Components.AsolDX
             DevExpress.XtraCharts.Designer.Localization.ChartDesignerLocalizer.Active = LocalizerChartDesigner.Localizer;
             DevExpress.XtraCharts.Designer.Localization.ChartDesignerResLocalizer.Active = LocalizerChartDesignerRes.Localizer;
             */
+
+
+
+
             // Pokus:
 
+            /*
             IDxLocalizerInternal owner = this;
+            */
+
 
             /*   OK :
             DevExpress.XtraEditors.Controls.Localizer.Active = GetLocalizer(DevExpress.XtraEditors.Controls.Localizer.Active, current => new DxLocalizerOne<DevExpress.XtraEditors.Controls.StringId>(owner, current));
@@ -494,7 +523,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             */
 
 
-
+            /*
             // From assembly: DevExpress.Data.v20.1.dll
             DevExpress.Data.Localization.CommonLocalizer.Active = GetLocalizer(DevExpress.Data.Localization.CommonLocalizer.Active, current => new DxLocalizerOne<DevExpress.Data.Localization.CommonStringId>(owner, current));
             DevExpress.Data.Utils.ProcessStartConfirmationLocalizer.Active = GetLocalizer(DevExpress.Data.Utils.ProcessStartConfirmationLocalizer.Active, current => new DxLocalizerOne<DevExpress.Data.Utils.ProcessStartConfirmationStringId>(owner, current));
@@ -600,6 +629,8 @@ namespace Noris.Clients.Win.Components.AsolDX
 
 
             __Enabled = true;
+
+            */
         }
 
         #endregion
@@ -641,21 +672,42 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         IDxLocalizerInternal _Owner;
         XtraLocalizer<T> _SysLocalizer;
+        /// <summary>
+        /// Jazyk
+        /// </summary>
         public override string Language { get { return DxLocalizer.Language; } }
+        /// <summary>
+        /// Typ
+        /// </summary>
         public string LocalizerType { get; private set; }
+        /// <summary>
+        /// Vrať lokalizer pro typ
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
         public override string GetLocalizedString(T id)
         {
             string idCode = id.ToString();
             string defString = (_SysLocalizer != null ? _SysLocalizer.GetLocalizedString(id) : idCode);
             return _Owner.GetLocalizedString(LocalizerType, idCode, defString);
         }
+        /// <summary>
+        /// Vrátí this jako lokalizer
+        /// </summary>
+        /// <returns></returns>
         public override XtraLocalizer<T> CreateResXLocalizer()
         {
             return this;
         }
+        /// <summary>
+        /// Vytvoří tabulku všech
+        /// </summary>
         protected override void PopulateStringTable()
         {
         }
+        /// <summary>
+        /// Vytvoří tabulku všech
+        /// </summary>
         protected override void CreateStringTable()
         {
             if (_SysLocalizer != null)
@@ -663,6 +715,9 @@ namespace Noris.Clients.Win.Components.AsolDX
                 var xml = _SysLocalizer.CreateXmlDocument();
             }
         }
+        /// <summary>
+        /// Scanuje
+        /// </summary>
         protected void _ScanThisLocalization()
         {
             if (_SysLocalizer == null || _Owner == null) return;

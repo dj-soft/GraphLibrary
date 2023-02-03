@@ -665,7 +665,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                     imageOptions.Image = null;
                 }
             }
-            catch (Exception exc) { /* Někdy může dojít k chybě uvnitř DevExpress. I jejich vývojáři jsou jen lidé... */ }
+            catch (Exception) { /* Někdy může dojít k chybě uvnitř DevExpress. I jejich vývojáři jsou jen lidé... */ }
 
             // Malá služba nakonec:
             if (args.SmallButton && imageOptions is SimpleButtonImageOptions buttonImageOptions)
@@ -1272,7 +1272,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         { return Instance._GetPreferredImageIndex(new ResourceArgs(imageName, exactName, sizeType, optimalSvgSize, caption: caption, disabled: disabled)); }
         /// <summary>
         /// Vrátí index pro daný obrázek do odpovídajícího ImageListu.
-        /// Pokud není k dispozici požadovaný obrázek, a je dodán <paramref name="caption"/>, je vygenerován náhradní obrázek v požadované velikosti.
+        /// Pokud není k dispozici požadovaný obrázek, a je dodán v <paramref name="args"/>, je vygenerován náhradní obrázek v požadované velikosti.
         /// </summary>
         /// <param name="args"></param>
         /// <returns></returns>
@@ -1521,7 +1521,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Najde a vrátí index ID pro dodaný vektorový obrázek z ImageArray.
         /// </summary>
         /// <param name="svgImageArray">Kombinovaná ikona</param>
-        /// <param name="sizeType">Cílový typ velikosti; každá velikost má svoji kolekci (viz <see cref="GetVectorImageList(ResourceImageSizeType)"/>)</param>
+        /// <param name="args">Informace o obrázku, obsahuje cílový typ velikosti; každá velikost má svoji kolekci (viz <see cref="GetVectorImageList(ResourceImageSizeType)"/>)</param>
         /// <returns></returns>
         private int _GetVectorImageIndex(SvgImageArrayInfo svgImageArray, ResourceArgs args)
         {

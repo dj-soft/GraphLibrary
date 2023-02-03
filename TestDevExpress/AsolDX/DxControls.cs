@@ -783,7 +783,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         /// <summary>
         /// Zde formulář umožňuje potomkovi, aby odněkud načetl pozici a stav okna pro obnovení uložené pozice při otevírání okna, a zde ji vrátil.
-        /// Pro uložení pozice okna po interaktivní změně je určena metoda <see cref="DxRibbonForm.OnFormPositionSave(string, bool)"/>.
+        /// Pro uložení pozice okna po interaktivní změně je určena metoda <see cref="DxRibbonBaseForm.FormPositionRestore()"/>.
         /// <para/>
         /// Tato virtual metoda je volaná z konstruktoru - proto nemá smysl, aby existoval párový eventhandler - není kdy ho zaregistrovat (a po provedení konstruktoru je pozdě).
         /// </summary>
@@ -793,7 +793,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Zde formulář oznamuje potomkovi, že změnil svoji velikost a pozici, a potomek si ji může uložit do své konfigurace. Současně se potomkovi sděluje parametrem <paramref name="isFinal"/>,
         /// zda určená pozice je průběžná (při jakékoli změně za života formuláře), anebo již finální (při ukončování formuláře).
         /// </summary>
-        /// <param name="position">Pozice okna, tak jak ji následně očekává metoda <see cref="DxRibbonForm.OnFormPositionLoad"/></param>
+        /// <param name="position">Pozice okna, tak jak ji následně očekává metoda <see cref="DxRibbonBaseForm.FormPositionOnChange(bool)"/></param>
         /// <param name="isFinal">Pozice je finální? false = při každé změně / true = při zavírání formuláře</param>
         protected virtual void OnFormPositionSave(string position, bool isFinal) { }
         /// <summary>
@@ -985,14 +985,14 @@ namespace Noris.Clients.Win.Components.AsolDX
         protected abstract void DxMainContentCreate();
         /// <summary>
         /// Provede přípravu obsahu Ribbonu.
-        /// Pozor: Bázová třída <see cref="DxRibbonForm"/> pouze nastaví <see cref="DxRibbonForm.DxRibbon"/>.Visible = false; nic jiného neprovádí !!!
+        /// Pozor: Bázová třída <see cref="DxRibbonForm"/> pouze nastaví <see cref="DxRibbonBaseForm.DxRibbon"/>.Visible = false; nic jiného neprovádí !!!
         /// To proto, když by potomek nijak s Ribbonem nepracoval, pak nebude Ribbon zobrazen.
         /// U této metody tedy není vhodné volat base metodu, anebo je třeba po jejím volání nastavit viditelnost Ribbonu na true.
         /// </summary>
         protected virtual void DxRibbonPrepare() { this._DxRibbon.Visible = false; }
         /// <summary>
         /// Provede přípravu obsahu StatusBaru.
-        /// Pozor: Bázová třída <see cref="DxRibbonForm"/> nastaví <see cref="DxRibbonForm.DxStatusBar"/>.Visible = false; nic jiného neprovádí !!!
+        /// Pozor: Bázová třída <see cref="DxRibbonForm"/> nastaví <see cref="DxRibbonBaseForm.DxStatusBar"/>.Visible = false; nic jiného neprovádí !!!
         /// To proto, když by potomek nijak se StatusBarem nepracoval, pak nebude StatusBar zobrazen.
         /// U této metody tedy není vhodné volat base metodu, anebo je třeba po jejím volání nastavit viditelnost StatusBaru na true.
         /// </summary>
@@ -2047,8 +2047,14 @@ namespace Noris.Clients.Win.Components.AsolDX
     }
     #endregion
     #region DxRichEditControl
+    /// <summary>
+    /// DxRichEditControl
+    /// </summary>
     public class DxRichEditControl : DevExpress.XtraRichEdit.RichEditControl
     {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
         public DxRichEditControl()
         {
             this.ActiveViewType = DevExpress.XtraRichEdit.RichEditViewType.Simple;
@@ -3218,7 +3224,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             _HideTip(true);
             _ResetHoverInterval();
         }
-        private Point? __LastMouseLocation;
         private ClientInfo __ActiveClientInfo;
         private Guid? __HoverTimerGuid;
         #endregion
@@ -3266,7 +3271,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 if (__ActiveClientInfo != null) __ActiveClientInfo.Reset();
                  __ActiveClientInfo = null;
-                __LastMouseLocation = null;
             }
             if (__IsHintShown)
             {
@@ -4762,20 +4766,60 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Stavy myši
         /// </summary>
-        protected enum MouseState { None, Over, Down, Drag }
+        protected enum MouseState
+        {
+            /// <summary>
+            /// Neurčeno
+            /// </summary>
+            None, 
+            /// <summary>
+            /// Myš je nad prvkem
+            /// </summary>
+            Over, 
+            /// <summary>
+            /// Myš je dole ale nepohybuje se
+            /// </summary>
+            Down, 
+            /// <summary>
+            /// Myš je dole a posunuje prvek
+            /// </summary>
+            Drag 
+        }
         /// <summary>
         /// Stavy prvku
         /// </summary>
-        protected enum SplitterState { Enabled, Disabled, Hot, Down, Drag }
+        protected enum SplitterState
+        {
+            /// <summary>
+            /// Enabled
+            /// </summary>
+            Enabled,
+            /// <summary>
+            /// Disabled
+            /// </summary>
+            Disabled, 
+            /// <summary>
+            /// Hot
+            /// </summary>
+            Hot, 
+            /// <summary>
+            /// MouseDown
+            /// </summary>
+            Down, 
+            /// <summary>
+            /// Drag
+            /// </summary>
+            Drag 
+        }
         #endregion
         #region Public properties - funkcionalita Splitteru (hodnota, orientace, šířka)
         /// <summary>
         /// Aktuální pozice splitteru = hodnota středového pixelu na ose X nebo Y, podle orientace.
-        /// Setování této hodnoty VYVOLÁ event <see cref="SplitPositionChanged"/> a zajistí úpravu souřadnic navázaných objektů podle režimu <see cref="ActivityMode"/>.
+        /// Setování této hodnoty VYVOLÁ event <see cref="SplitPositionChanged"/> a zajistí úpravu souřadnic navázaných objektů podle režimu 'ActivityMode'.
         /// </summary>
         public int SplitPosition { get { return (int)Math.Round(_SplitPosition, 0); } set { SetValidSplitPosition(value, actions: SetActions.Default); } }
         /// <summary>
-        /// Pozice splitteru uložená jako Double, slouží pro přesné výpočty pozic při <see cref="AnchorType"/> == <see cref="SplitterAnchorType.Relative"/>,
+        /// Pozice splitteru uložená jako Double, slouží pro přesné výpočty pozic při 'AnchorType' == <see cref="SplitterAnchorType.Relative"/>,
         /// kdy potřebujeme mít pozici i na desetinná místa.
         /// <para/>
         /// Interaktivní přesouvání vkládá vždy integer číslo, public hodnota <see cref="SplitPosition"/> je čtena jako Math.Round(<see cref="SplitPosition"/>, 0).
@@ -5426,7 +5470,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Pole Child controlů mého Parenta = "moji sourozenci včetně mě".
         /// Pokud ještě nemám parenta, pak toto pole obsahuje jen jeden prvek a to jsem já.
-        /// Pokud má vrácené pole více prvků, pak někde v něm budu i já = <see cref="CurrentParent"/> :-).
+        /// Pokud má vrácené pole více prvků, pak někde v něm budu i já = 'CurrentParent' :-).
         /// <para/>
         /// Index na pozici [0] je úplně nahoře nade všemi, postupně jsou prvky směrem dolů...
         /// Pozici aktuální prvku 

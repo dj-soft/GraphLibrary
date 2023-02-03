@@ -3416,7 +3416,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Uživatel chce zobrazit kontextové menu
         /// </summary>
-        public event DxTreeListNodeContextMenuHandler ShowContextMenu;
+        public new event DxTreeListNodeContextMenuHandler ShowContextMenu;
 
         /// <summary>
         /// Vyvolá metodu <see cref="OnNodeIconClick(DxTreeListNodeArgs)"/> a event <see cref="NodeIconClick"/>

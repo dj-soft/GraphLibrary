@@ -536,6 +536,9 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// Sent to an application when the IME changes composition status as a result of a keystroke. A window receives this message through its WindowProc function.
             /// </summary>
             public const int IME_COMPOSITION = 0x010F;
+            /// <summary>
+            /// IME_KEYLAST
+            /// </summary>
             public const int IME_KEYLAST = 0x010F;
             /// <summary>
             /// The WM_INITDIALOG message is sent to the dialog box procedure immediately before a dialog box is displayed. Dialog box procedures typically use this message to initialize controls and carry out any other initialization tasks that affect the appearance of the dialog box.
@@ -862,7 +865,13 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// The WM_WTSSESSION_CHANGE message notifies applications of changes in session state.
             /// </summary>
             public const int WTSSESSION_CHANGE = 0x02B1;
+            /// <summary>
+            /// TABLET_FIRST
+            /// </summary>
             public const int TABLET_FIRST = 0x02c0;
+            /// <summary>
+            /// TABLET_LAST
+            /// </summary>
             public const int TABLET_LAST = 0x02df;
             /// <summary>
             /// An application sends a WM_CUT message to an edit control or combo box to delete (cut) the current selection, if any, in the edit control and copy the deleted text to the clipboard in CF_TEXT format.
@@ -981,11 +990,29 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// Sent to request extended title bar information. A window receives this message through its WindowProc function.
             /// </summary>
             public const int GETTITLEBARINFOEX = 0x033F;
+            /// <summary>
+            /// HANDHELDFIRST
+            /// </summary>
             public const int HANDHELDFIRST = 0x0358;
+            /// <summary>
+            /// HANDHELDLAST
+            /// </summary>
             public const int HANDHELDLAST = 0x035F;
+            /// <summary>
+            /// AFXFIRST
+            /// </summary>
             public const int AFXFIRST = 0x0360;
+            /// <summary>
+            /// AFXLAST
+            /// </summary>
             public const int AFXLAST = 0x037F;
+            /// <summary>
+            /// PENWINFIRST
+            /// </summary>
             public const int PENWINFIRST = 0x0380;
+            /// <summary>
+            /// PENWINLAST
+            /// </summary>
             public const int PENWINLAST = 0x038F;
             /// <summary>
             /// The WM_APP constant is used by applications to help define private messages, usually of the form WM_APP+X, where X is an integer value.

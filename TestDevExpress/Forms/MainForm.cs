@@ -78,6 +78,8 @@ namespace TestDevExpress.Forms
 
             this.ApplyStyle();
 
+            _NotifyMessageInit();
+
             ActivatePage(8, true);
             // ActivatePage(10, true);
 
@@ -293,6 +295,61 @@ namespace TestDevExpress.Forms
         /// Aktuálně aktivní control pro zobrazení dat logu, aktivuje konkrétní stránka
         /// </summary>
         protected DxMemoEdit CurrentLogControl;
+        #endregion
+        #region WinApi Messages - zpřístupnění
+        private void _NotifyMessageInit()
+        {
+            this.MessageTrackActive = WinApiMessageSourceType.None;
+        }
+        protected override void OnNotifyMessage(Message m)
+        {
+            _TrackMessage(WinApiMessageSourceType.OnNotifyMessage, m);
+            base.OnNotifyMessage(m);
+        }
+        protected override void WndProc(ref Message msg)
+        {
+            _TrackMessage(WinApiMessageSourceType.WndProc, msg);
+            base.WndProc(ref msg);
+        }
+        public override bool PreProcessMessage(ref Message msg)
+        {
+            _TrackMessage(WinApiMessageSourceType.PreProcessMessage, msg);
+            return base.PreProcessMessage(ref msg);
+        }
+        protected override bool ProcessKeyMessage(ref Message m)
+        {
+            _TrackMessage(WinApiMessageSourceType.ProcessKeyMessage, m);
+            return base.ProcessKeyMessage(ref m);
+        }
+        private void _TrackMessage(WinApiMessageSourceType source, Message message)
+        {
+            if (MessageTrackActive != WinApiMessageSourceType.None && MessageTrackActive.HasFlag(source) && WinApiMessageReceivedHandler != null)
+                WinApiMessageReceivedHandler(this, new WinApiMessageArgs(source, message));
+        }
+        public WinApiMessageSourceType MessageTrackActive { get; set; }
+        public event WinApiMessageHandler WinApiMessageReceivedHandler;
+        public delegate void WinApiMessageHandler(object sender, WinApiMessageArgs args);
+        public class WinApiMessageArgs : EventArgs
+        {
+            public WinApiMessageArgs(WinApiMessageSourceType source, Message message)
+            {
+                Source = source;
+                Message = message;
+            }
+            public WinApiMessageSourceType Source { get; private set; }
+            public Message Message { get; private set; }
+        }
+        [Flags]
+        public enum WinApiMessageSourceType
+        {
+            None = 0,
+            OnNotifyMessage = 0x01,
+            PreProcessMessage = 0x02,
+            ProcessKeyMessage = 0x04,
+            WndProc = 0x08,
+
+            All = OnNotifyMessage | PreProcessMessage | ProcessKeyMessage | WndProc
+        }
         #endregion
         #region BarManager a Ribbon
         private void InitBarManager()
@@ -2944,7 +3001,6 @@ namespace TestDevExpress.Forms
             _PanelChildResizeSetPosition();
             _PanelResize.SizeChanged += _PanelResize_SizeChanged;
         }
-     
         private void _PanelResize_SizeChanged(object sender, EventArgs e)
         {
             _PanelChildResizeSetPosition();

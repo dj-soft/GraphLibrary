@@ -261,6 +261,11 @@ namespace Noris.Clients.Win.Components.AsolDX
 
         #endregion
         #region Otevírání Child okna v okně aplikace
+        /// <summary>
+        /// Otevři okno v prostředí aplikace
+        /// </summary>
+        /// <param name="form"></param>
+        /// <param name="showFloating"></param>
         public static void ShowChildForm(Form form, bool showFloating)
         {
             var mainAppForm = MainAppForm;

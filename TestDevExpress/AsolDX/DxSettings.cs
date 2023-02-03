@@ -431,7 +431,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                     Directory.CreateDirectory(path);
                 File.WriteAllText(configFileName, text, Encoding.UTF8);
             }
-            catch (Exception exc) { }
+            catch (Exception) { }
             finally
             {
                 _SetFileWatchers(configFileName);

@@ -1008,7 +1008,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             return xmlPaths;
         }
         /// <summary>
-        /// Vrátí paths ve tvaru X, s daným okrajem <paramref name="de"/>, s danou šířkou <paramref name="d1"/> a <paramref name="d2"/>.
+        /// Vrátí paths ve tvaru X, v daných souřadnicích <paramref name="coordinates"/>.
         /// </summary>
         /// <param name="coordinates">Fyzické souřadnice</param>
         /// <param name="subSize">Okraj ikony, číslo v rozsahu 0-4 včetně</param>

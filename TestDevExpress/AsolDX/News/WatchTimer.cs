@@ -551,7 +551,7 @@ namespace Noris.Clients.Win.Components
             /// </summary>
             private object _Param;
             /// <summary>
-            /// Volat v synchronizovaném threadu, pomocí <see cref="UiSynchronizationHelper.Invoke{TSender, TArgument}(TSender, TArgument, Action{TSender, TArgument}, Action)"/>
+            /// Volat v synchronizovaném threadu, pomocí <see cref="ApplicationState.RunInGuiThread(Action, bool, System.Windows.Forms.Control)"/>
             /// </summary>
             private bool _SynchronizeUI;
             /// <summary>

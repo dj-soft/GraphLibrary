@@ -700,22 +700,38 @@ namespace TestDevExpress
             };
             _TextInfo.SizeChanged += _TextInfo_SizeChanged;
             _TextInfo.Resize += _TextInfo_Resize;
+
+            _FormWMICheck = new CheckBox() { Name = "FormWMICheck", Text = "Log WinForm Messages", CheckAlign = ContentAlignment.MiddleLeft, Checked = false, FlatStyle = FlatStyle.Flat, Appearance = Appearance.Normal };
+
             _ResetButton = new Button()
             {
                 Name = "ResetButton",
                 Text = "Reset"
             };
+            _FormWMICheck.CheckedChanged += _FormWMICheck_CheckedChanged;
             _ResetButton.SizeChanged += _ResetButton_SizeChanged;
             _ResetButton.Resize += _ResetButton_Resize;
             _ResetButton.Click += _ResetButton_Click;
+
+            _LogTitle = "Log událostí (Button resetuje tento log):" + Environment.NewLine + "Pořadí - Čas - Delta mikrosekund - Text" + Environment.NewLine + Environment.NewLine;
+            _LogContent = "";
+            _StopWatch = new System.Diagnostics.Stopwatch();
+            _Frequency = System.Diagnostics.Stopwatch.Frequency;
+
             this.SizeChanged += PanelResize_SizeChanged;
             this.Resize += PanelResize_Resize;
             this.Controls.Add(_TextInfo);
+            this.Controls.Add(_FormWMICheck);
             this.Controls.Add(_ResetButton);
             this.SetTextInfoPosition();
             this.ResetLog();
             AddLog($"Initialized values: PanelResize.Bounds: {RectangleToString(Bounds)}, TextInfo.Bounds: {RectangleToString(_TextInfo.Bounds)}, ResetButton.Bounds: {RectangleToString(_ResetButton.Bounds)}");
             OldSize = this.Size;
+        }
+        protected override void Dispose(bool disposing)
+        {
+            _TrackFormDeactivate();
+            base.Dispose(disposing);
         }
         private void PanelResize_SizeChanged(object sender, EventArgs e)
         {
@@ -746,24 +762,63 @@ namespace TestDevExpress
             this.ResetLog();
         }
         private TextBox _TextInfo;
+        private CheckBox _FormWMICheck;
         private Button _ResetButton;
+        private System.Diagnostics.Stopwatch _StopWatch;
+        private double _Frequency;
+        /// <summary>
+        /// Poslední logovaný čas v mikrosekundách
+        /// </summary>
+        private long _LastMicrosecs;
+        /// <summary>
+        /// Aktuální čas <see cref="_StopWatch"/> vyjádřený v mikrosekundách = od posledního resetu
+        /// </summary>
+        private long _CurrentMicrosecs
+        {
+            get
+            {
+                double currentTick = _StopWatch.ElapsedTicks;
+                double currentMicrosecs = currentTick * 1000000d / _Frequency;
+                return (long)currentMicrosecs;
+            }
+        }
         #endregion
         #region Práce s textem
         protected void ResetLog()
         {
-            CurrentText = "Log událostí (RightClick resetuje tento log):" + Environment.NewLine;
             LogIndex = 0;
             LogLastTime = DateTime.Now;
+
+            _LogContent = "";
+            _ShowLog();
+
+            _StopWatch.Restart();
+            _LastMicrosecs = _CurrentMicrosecs;
         }
         protected void AddLog(string text)
         {
             if (text == null || text.Length == 0) return;
+            var currMicro = _CurrentMicrosecs;
+            var lastMicro = _LastMicrosecs;
+            var deltaMicro = currMicro - lastMicro;
+
             DateTime now = DateTime.Now;
             TimeSpan delay = now - LogLastTime;
-            if (delay.TotalMilliseconds > 200d) CurrentText = CurrentText + Environment.NewLine;          // Časová mezera více než 200ms = nový odstavec
+            bool addEmptyLine = (delay.TotalMilliseconds > 200d);             // Časová mezera více než 200ms = nový odstavec
             string time = now.ToString("HH:mm:ss.fff");
-            CurrentText = CurrentText + (++LogIndex) + ". " + time + "  " + text + Environment.NewLine;
-            LogLastTime = now;
+            string line = (++LogIndex) + ". " + time + "  " + deltaMicro.ToString() + "  " + text + Environment.NewLine;
+            _LogContent = line + (addEmptyLine ? Environment.NewLine : "") + _LogContent;
+            _ShowLog();
+
+            LogLastTime = DateTime.Now;
+
+            _LastMicrosecs = _CurrentMicrosecs;
+        }
+        private string _LogTitle;
+        private string _LogContent;
+        private void _ShowLog()
+        {
+            _TextInfo.Text = _LogTitle + _LogContent;
         }
         protected int LogIndex;
         protected DateTime LogLastTime;
@@ -948,20 +1003,29 @@ namespace TestDevExpress
 
             AddLog($"SetTextInfoPosition() into bounds: {RectangleToString(bounds)} ...");
 
-            bool visible = (bounds.Width > 120 && bounds.Height > 30);
+            bool visible = (bounds.Width > 200 && bounds.Height > 100);
             if (visible)
             {
-                Rectangle textBounds = new Rectangle(bounds.X, bounds.Y, bounds.Width - 90, bounds.Height);
+                int cw = 100;
+                Rectangle textBounds = new Rectangle(bounds.X, bounds.Y, bounds.Width - cw, bounds.Height);
                 if (_TextInfo.Bounds != textBounds) _TextInfo.Bounds = textBounds;
-                Rectangle buttonBounds = new Rectangle(bounds.Right - 85, bounds.Bottom - 30, 80, 30);
+
+                int cx = bounds.Right - cw + 5;
+                int bw = cw;
+                Rectangle checkBoxBounds = new Rectangle(cx, bounds.Bottom - 80, bw, 40);
+                if (_FormWMICheck.Bounds != checkBoxBounds) _FormWMICheck.Bounds = checkBoxBounds;
+
+                Rectangle buttonBounds = new Rectangle(cx, bounds.Bottom - 30, bw, 30);
                 if (_ResetButton.Bounds != buttonBounds) _ResetButton.Bounds = buttonBounds;
 
                 if (!_TextInfo.Visible) _TextInfo.Visible = true;
+                if (!_FormWMICheck.Visible) _FormWMICheck.Visible = true;
                 if (!_ResetButton.Visible) _ResetButton.Visible = true;
             }
             else
             {
                 if (_TextInfo.Visible) _TextInfo.Visible = false;
+                if (_FormWMICheck.Visible) _FormWMICheck.Visible = false;
                 if (_ResetButton.Visible) _ResetButton.Visible = false;
             }
             System.Threading.Thread.Sleep(10);
@@ -970,6 +1034,40 @@ namespace TestDevExpress
         protected static string SizeToString(Size size) { return $"W:{size.Width},H:{size.Height}"; }
         protected static string RectangleToString(Rectangle bounds) { return $"X:{bounds.X},Y:{bounds.Y},W:{bounds.Width},H:{bounds.Height}"; }
         private Size OldSize;
+        #endregion
+        #region AppForm WinMsg Log
+
+        private void _FormWMICheck_CheckedChanged(object sender, EventArgs e)
+        {
+            bool track = this._FormWMICheck.Checked;
+            if (track == _TrackFormActive) return;
+            if (track)
+                _TrackFormActivate();
+            else
+                _TrackFormDeactivate();
+        }
+        private void _TrackFormActivate()
+        {
+            var appForm = this.FindForm() as TestDevExpress.Forms.MainForm;
+            if (appForm is null) return;
+            appForm.MessageTrackActive = Forms.MainForm.WinApiMessageSourceType.All;
+            appForm.WinApiMessageReceivedHandler += AppForm_WinApiMessageReceivedHandler;
+        }
+        private void _TrackFormDeactivate()
+        {
+            var appForm = this.FindForm() as TestDevExpress.Forms.MainForm;
+            if (appForm is null) return;
+            appForm.MessageTrackActive = Forms.MainForm.WinApiMessageSourceType.None;
+            appForm.WinApiMessageReceivedHandler -= AppForm_WinApiMessageReceivedHandler;
+        }
+
+        private void AppForm_WinApiMessageReceivedHandler(object sender, Forms.MainForm.WinApiMessageArgs args)
+        {
+            string text = args.Source.ToString() + " : " + DxComponent.GetWinMessage(args.Message, true);
+            AddLog(text);
+        }
+        private bool _TrackFormActive = false;
+
         #endregion
         #region ZJIŠTĚNÉ VÝSLEDKY = OPSANÝ LOG + KOMENTÁŘE
         /*   OPSANÝ LOG = UDÁLOSTI PŘI JEDNÉ ZMĚNĚ ROZMĚRŮ

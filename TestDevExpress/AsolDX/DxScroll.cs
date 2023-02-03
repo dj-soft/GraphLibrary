@@ -200,6 +200,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         public override bool LogActive { get { return base.LogActive; } set { base.LogActive = value; if (_ContentControl != null && _ContentControl is DxPanelControl dxPanel) dxPanel.LogActive = value; } }
         #endregion
         #region Splittery
+        /// <summary>
+        /// Splitter je povolen?
+        /// </summary>
         public bool VSplitterEnabled { get { return _VSplitterEnabled; } set { _SetVSplitterEnabled(value); } }
         private bool _VSplitterEnabled;
         private DevExpress.XtraEditors.SplitterControl _VSplitter;
