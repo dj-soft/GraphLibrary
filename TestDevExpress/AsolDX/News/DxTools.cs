@@ -71,6 +71,7 @@ namespace TestDevExpress.AsolDX.News
         /// <item>Najde v něm konstantní hodnoty, a ty převede na částice kategorie <u>DbParameter</u>;</item>
         /// <item>Ostatní části textu převede na částice kategorie <u>Text</u>;</item>
         /// </list>
+        /// </summary>
         /// <param name="clsExpression">Text podmínky v jazyce "DevExpress : Criteria Language Syntax"</param>
         /// <returns>Částice výrazu</returns>
         internal static ExpressionPart[] ConvertToMsSqlParts(string clsExpression)
@@ -370,7 +371,6 @@ namespace TestDevExpress.AsolDX.News
         #endregion
         #region Konverze upraveného filtru do MS SQL a jeho rozdělení do částic (s pomocí vygenerovaných tokenů)
 
-
         private static void DoConvertMsSql(DevExpress.Data.Filtering.CriteriaOperator filter, WorkContext context)
         {
             // Vytvořím string obsahující SQL podmínku, z dodaného filtru. Ten má na místech sloupců a konstantních hodnot tokeny přítomné v contextu.
@@ -407,7 +407,10 @@ namespace TestDevExpress.AsolDX.News
             /// <summary>
             /// Konstruktor
             /// </summary>
-            /// <param name="columnFormatter">Převodní funkce pro jména sloupců z výrazu (vyhledává aliasy atd).</param>
+            /// <param name="workType"></param>
+            /// <param name="clsExpression"></param>
+            /// <param name="columnFilter"></param>
+            /// <param name="columnRename"></param>
             public WorkContext(WorkType workType, string clsExpression, Func<string, bool> columnFilter, Func<string, string> columnRename)
             {
                 WorkType = workType;
@@ -558,6 +561,9 @@ namespace TestDevExpress.AsolDX.News
             /// Je zajištěno, že takový token ještě neexistuje v <see cref="Tokens"/> a ani se nevyskytuje v <see cref="ClsExpression"/>.
             /// </summary>
             /// <param name="prefix"></param>
+            /// <param name="target"></param>
+            /// <param name="columnName"></param>
+            /// <param name="value"></param>
             /// <returns></returns>
             private string CreateNewToken(string prefix, TextPartCategory target, string columnName, object value)
             {
@@ -718,16 +724,14 @@ namespace TestDevExpress.AsolDX.News
         /// <summary>
         /// Konstruktor
         /// </summary>
-        /// <param name="category"></param>
-        /// <param name="name"></param>
-        /// <param name="value"></param>
-        internal ExpressionPartArgument(string argumenName, ParsedItem parsedItem)
-            : base(TextPartCategory.ValueArgument, argumenName, null)
+        /// <param name="argumentName"></param>
+        /// <param name="parsedItem"></param>
+        internal ExpressionPartArgument(string argumentName, ParsedItem parsedItem)
+            : base(TextPartCategory.ValueArgument, argumentName, null)
         {
             ParsedItem = parsedItem;
         }
         #region ParsedItem a informace z něj vytěžené
-
         /// <summary>
         /// Vlastní definice argumentu. Obsahuje 
         /// </summary>
@@ -738,9 +742,8 @@ namespace TestDevExpress.AsolDX.News
         /// Aktuální hodnota. 
         /// Pokud není od uživatele vyplněna, nebo uživatel řekl 'Přeskočit', nebo aplikační kód vložil NULL, pak je čtena jako null.
         /// <para/>
-        /// Pokud je typu <see cref="String"/>, pak výsledná hodnota je opatřena <see cref="StringValuePrefix"/> a <see cref="StringValuePostfix"/>.
+        /// Pokud je typu <see cref="String"/>, pak výsledná hodnota je opatřena <see cref="ExpressionPartValue.StringValuePrefix"/> a <see cref="ExpressionPartValue.StringValuePostfix"/>.
         /// Pokud je dynamická, je vyhodnocena nyní.
-        /// Pokud je <see cref="IsRange"/>, zde je z rozsahu vybrána konkrétní hodnota <see cref="ValuePosition"/>.
         /// <para/>
         /// Hodnota by měla být čtena pokud možno co nejblíže k aplikaci výsledného SQL SELECTU, protože hodnota může obsahovat údaje platné v době čtení.
         /// Jinými slovy, hodnota může obsahovat aktuální datum a čas; a pokud vrácený údaj bude dlouhodobě skladován, bude ztrácet na aktuálnosti.
@@ -789,9 +792,8 @@ namespace TestDevExpress.AsolDX.News
         /// <summary>
         /// Konstruktor
         /// </summary>
-        /// <param name="category"></param>
-        /// <param name="name"></param>
-        /// <param name="value"></param>
+        /// <param name="variableName"></param>
+        /// <param name="parsedItem"></param>
         internal ExpressionPartVariable(string variableName, ParsedItem parsedItem)
             : base(TextPartCategory.ValueVariable, variableName, null)
         {
@@ -803,9 +805,8 @@ namespace TestDevExpress.AsolDX.News
         public ParsedItem ParsedItem { get; private set; }
         /// <summary>
         /// Aktuální hodnota.
-        /// Pokud je typu <see cref="String"/>, pak výsledná hodnota je opatřena <see cref="StringValuePrefix"/> a <see cref="StringValuePostfix"/>.
+        /// Pokud je typu <see cref="String"/>, pak výsledná hodnota je opatřena <see cref="ExpressionPartValue.StringValuePrefix"/> a <see cref="ExpressionPartValue.StringValuePostfix"/>.
         /// Pokud je dynamická, je vyhodnocena nyní.
-        /// Pokud je <see cref="IsRange"/>, zde je z rozsahu vybrána konkrétní hodnota <see cref="ValuePosition"/>.
         /// </summary>
         protected override object CurrentValue
         {
@@ -873,7 +874,6 @@ namespace TestDevExpress.AsolDX.News
         /// Aktuální hodnota.
         /// Pokud je typu <see cref="String"/>, pak výsledná hodnota je opatřena <see cref="StringValuePrefix"/> a <see cref="StringValuePostfix"/>.
         /// Pokud je dynamická, je vyhodnocena nyní.
-        /// Pokud je <see cref="IsRange"/>, zde je z rozsahu vybrána konkrétní hodnota <see cref="ValuePosition"/>.
         /// <para/>
         /// Hodnota by měla být čtena pokud možno co nejblíže k aplikaci výsledného SQL SELECTU, protože hodnota může obsahovat údaje platné v době čtení.
         /// Jinými slovy, hodnota může obsahovat aktuální datum a čas; a pokud vrácený údaj bude dlouhodobě skladován, bude ztrácet na aktuálnosti.
@@ -885,8 +885,6 @@ namespace TestDevExpress.AsolDX.News
                 var value = Value;
                 if (IsDynamic)
                     value = GetDynamicValue(value);
-                //if (IsRange)
-                //    value = GetRangeValue(value);
                 if (value is string text)
                     value = GetPrefixedStringValue(text);
                 return value;
@@ -944,7 +942,6 @@ namespace TestDevExpress.AsolDX.News
         #region DbParameter
         /// <summary>
         /// Obsahuje true, pokud tato instance umožňuje pracovat s DB parametrem.
-        /// Bázová třída <see cref=""/>
         /// </summary>
         public bool EnableDbParameters { get { return true; } set { } }
         /// <summary>
@@ -956,7 +953,7 @@ namespace TestDevExpress.AsolDX.News
         ///  v takovém případě je do SQL výrazu (tj. do <see cref="ResultText"/>) vkládána napřímo, formátovaná do SQL notace<br/>
         /// 2. Hodnotu lze vytvořit se jménem parametru, nebo do <see cref="ParamName"/> jméno parametru vložit;<br/>
         /// a. Pak do výstupního SQL výrazu (tj. do <see cref="ResultText"/>) je vloženo jméno parametru s @;<br/>
-        /// b. V tom případě je nutno vyzvednout instanci <see cref="Srv.DbParameter"/> a přidat ji do pole ostatních parametrů a použít v rámci SQL SELECTU
+        /// b. V tom případě je nutno vyzvednout instanci <see cref="DbParameter"/> a přidat ji do pole ostatních parametrů a použít v rámci SQL SELECTU
         /// </summary>
         public virtual string ParamName { get { return _ParamName; } set { _ParamName = GetParamName(value); } }
         private string _ParamName;
@@ -1081,6 +1078,9 @@ namespace TestDevExpress.AsolDX.News
         }
         #endregion
         #region Dynamic Value (klíčové slovo, název časového období, ...)
+        /// <summary>
+        /// Typ dat
+        /// </summary>
         protected ExpressionValueDataType DataType { get; set; }
         /// <summary>
         /// Metoda vrací dynamicky určenou hodnotu
@@ -1112,10 +1112,6 @@ namespace TestDevExpress.AsolDX.News
             //}
             return value;
         }
-        /// <summary>
-        /// Určení zdroje dynamické hodnoty, záleží na datovém typu hodnoty
-        /// </summary>
-        private object _DynamicKey;
         /// <summary>
         /// Hodnota je dynamická = je nutno ji vyhodnotit až v okamžiku potřeby
         /// </summary>
@@ -1155,7 +1151,7 @@ namespace TestDevExpress.AsolDX.News
         public string ColumnSource { get; set; }
         /// <summary>
         /// Výsledný text výrazu, v notaci SQL.
-        /// Výstupní text = <see cref="CurrentText"/> (pokud není null), nebo <see cref="OriginalText"/> (výchozí stav).
+        /// Výstupní text = <see cref="ColumnSource"/> (pokud není null), nebo <see cref="Column"/> (výchozí stav).
         /// </summary>
         public override string ResultText { get { return ColumnSource ?? Column; } }
         /// <summary>
@@ -1242,8 +1238,8 @@ namespace TestDevExpress.AsolDX.News
         /// <summary>
         /// Vrátí část textu obsahující konstantní hodnotu
         /// </summary>
-        /// <param name="category"></param>
-        /// <param name="column"></param>
+        /// <param name="name"></param>
+        /// <param name="value"></param>
         /// <returns></returns>
         public static ExpressionPart CreatePartValueConstant(string name, object value)
         {
@@ -1415,31 +1411,79 @@ namespace TestDevExpress.AsolDX.News
     #endregion
 
     // náhražky pro překlad
+    /// <summary>
+    /// Typ hodnoty
+    /// </summary>
     public enum ExpressionValueDataType
     {
+        /// <summary>
+        /// None
+        /// </summary>
         None,
+        /// <summary>
+        /// Boolean
+        /// </summary>
         Boolean,
+        /// <summary>
+        /// Integer
+        /// </summary>
         Integer,
+        /// <summary>
+        /// Decimal
+        /// </summary>
         Decimal,
+        /// <summary>
+        /// Relation
+        /// </summary>
         Relation,
+        /// <summary>
+        /// Date
+        /// </summary>
         Date,
 
     }
-
+    /// <summary>
+    /// ParsedItem
+    /// </summary>
     public class ParsedItem
     { }
+    /// <summary>
+    /// DbParameter
+    /// </summary>
     public class DbParameter
     {
+        /// <summary>
+        /// DbParameter
+        /// </summary>
+        /// <param name="paramName"></param>
+        /// <param name="value"></param>
         public DbParameter(string paramName, object value)
         {
             this.Name = paramName;
             this.Value = value;
         }
+        /// <summary>
+        /// Name
+        /// </summary>
         public string Name { get; set; }
+        /// <summary>
+        /// Value
+        /// </summary>
         public object Value { get; set; }
     }
-    public static class Extensions
+    /// <summary>
+    /// NrsExtensions
+    /// </summary>
+    public static class NrsExtensions
     {
+        /// <summary>
+        /// Najdi první
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="items"></param>
+        /// <param name="found"></param>
+        /// <param name="filter"></param>
+        /// <returns></returns>
         public static bool TryFindFirst<T>(this IEnumerable<T> items, out T found, Func<T, bool> filter) where T : class
         {
             found = items.FirstOrDefault(filter);

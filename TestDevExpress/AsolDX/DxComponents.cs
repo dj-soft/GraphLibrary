@@ -1483,6 +1483,16 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         #endregion
         #region Factory metody pro jednořádkovou tvorbu běžných komponent
+        /// <summary>
+        /// Vytvoří a vrátí DxPanelControl s danými parametry
+        /// </summary>
+        /// <param name="parent"></param>
+        /// <param name="dock"></param>
+        /// <param name="borderStyles"></param>
+        /// <param name="width"></param>
+        /// <param name="height"></param>
+        /// <param name="visible"></param>
+        /// <returns></returns>
         public static DxPanelControl CreateDxPanel(Control parent = null,
             DockStyle? dock = null, DevExpress.XtraEditors.Controls.BorderStyles? borderStyles = null,
             int? width = null, int? height = null,
@@ -1499,6 +1509,19 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (visible.HasValue) panel.Visible = visible.Value;
             return panel;
         }
+        /// <summary>
+        /// Vytvoří a vrátí DxSplitContainerControl s danými parametry
+        /// </summary>
+        /// <param name="parent"></param>
+        /// <param name="splitterPositionChanged"></param>
+        /// <param name="dock"></param>
+        /// <param name="splitLineOrientation"></param>
+        /// <param name="fixedPanel"></param>
+        /// <param name="splitPosition"></param>
+        /// <param name="panelVisibility"></param>
+        /// <param name="showSplitGlyph"></param>
+        /// <param name="borderStyles"></param>
+        /// <returns></returns>
         public static DxSplitContainerControl CreateDxSplitContainer(Control parent = null, EventHandler splitterPositionChanged = null, DockStyle? dock = null,
             Orientation splitLineOrientation = Orientation.Horizontal, DevExpress.XtraEditors.SplitFixedPanel? fixedPanel = null,
             int? splitPosition = null, DevExpress.XtraEditors.SplitPanelVisibility? panelVisibility = null,
@@ -1519,6 +1542,21 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             return container;
         }
+        /// <summary>
+        /// Vytvoří a vrátí DxLabelControl s danými parametry
+        /// </summary>
+        /// <param name="x"></param>
+        /// <param name="y"></param>
+        /// <param name="w"></param>
+        /// <param name="parent"></param>
+        /// <param name="text"></param>
+        /// <param name="styleType"></param>
+        /// <param name="wordWrap"></param>
+        /// <param name="autoSizeMode"></param>
+        /// <param name="hAlignment"></param>
+        /// <param name="visible"></param>
+        /// <param name="useLabelTextOffset"></param>
+        /// <returns></returns>
         public static DxLabelControl CreateDxLabel(int x, int y, int w, Control parent, string text,
             LabelStyleType? styleType = null, DevExpress.Utils.WordWrap? wordWrap = null, DevExpress.XtraEditors.LabelAutoSizeMode? autoSizeMode = null, DevExpress.Utils.HorzAlignment? hAlignment = null,
             bool? visible = null, bool useLabelTextOffset = false)
@@ -1527,6 +1565,22 @@ namespace Noris.Clients.Win.Components.AsolDX
                 styleType, wordWrap, autoSizeMode, hAlignment,
                 visible, useLabelTextOffset, false);
         }
+        /// <summary>
+        /// Vytvoří a vrátí DxLabelControl s danými parametry
+        /// </summary>
+        /// <param name="x"></param>
+        /// <param name="y"></param>
+        /// <param name="w"></param>
+        /// <param name="parent"></param>
+        /// <param name="text"></param>
+        /// <param name="styleType"></param>
+        /// <param name="wordWrap"></param>
+        /// <param name="autoSizeMode"></param>
+        /// <param name="hAlignment"></param>
+        /// <param name="visible"></param>
+        /// <param name="useLabelTextOffset"></param>
+        /// <param name="shiftY"></param>
+        /// <returns></returns>
         public static DxLabelControl CreateDxLabel(int x, ref int y, int w, Control parent, string text,
             LabelStyleType? styleType = null, DevExpress.Utils.WordWrap? wordWrap = null, DevExpress.XtraEditors.LabelAutoSizeMode? autoSizeMode = null, DevExpress.Utils.HorzAlignment? hAlignment = null,
             bool? visible = null, bool useLabelTextOffset = false, bool shiftY = false)
@@ -1549,6 +1603,23 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             return label;
         }
+        /// <summary>
+        /// Vytvoří a vrátí DxTextEdit s danými parametry
+        /// </summary>
+        /// <param name="x"></param>
+        /// <param name="y"></param>
+        /// <param name="w"></param>
+        /// <param name="parent"></param>
+        /// <param name="textChanged"></param>
+        /// <param name="maskType"></param>
+        /// <param name="editMask"></param>
+        /// <param name="useMaskAsDisplayFormat"></param>
+        /// <param name="toolTipTitle"></param>
+        /// <param name="toolTipText"></param>
+        /// <param name="visible"></param>
+        /// <param name="readOnly"></param>
+        /// <param name="tabStop"></param>
+        /// <returns></returns>
         public static DxTextEdit CreateDxTextEdit(int x, int y, int w, Control parent, EventHandler textChanged = null,
             DevExpress.XtraEditors.Mask.MaskType? maskType = null, string editMask = null, bool? useMaskAsDisplayFormat = null,
             string toolTipTitle = null, string toolTipText = null,
@@ -1559,6 +1630,24 @@ namespace Noris.Clients.Win.Components.AsolDX
                 toolTipTitle, toolTipText,
                 visible, readOnly, tabStop, false);
         }
+        /// <summary>
+        /// Vytvoří a vrátí DxTextEdit s danými parametry
+        /// </summary>
+        /// <param name="x"></param>
+        /// <param name="y"></param>
+        /// <param name="w"></param>
+        /// <param name="parent"></param>
+        /// <param name="textChanged"></param>
+        /// <param name="maskType"></param>
+        /// <param name="editMask"></param>
+        /// <param name="useMaskAsDisplayFormat"></param>
+        /// <param name="toolTipTitle"></param>
+        /// <param name="toolTipText"></param>
+        /// <param name="visible"></param>
+        /// <param name="readOnly"></param>
+        /// <param name="tabStop"></param>
+        /// <param name="shiftY"></param>
+        /// <returns></returns>
         public static DxTextEdit CreateDxTextEdit(int x, ref int y, int w, Control parent, EventHandler textChanged = null,
             DevExpress.XtraEditors.Mask.MaskType? maskType = null, string editMask = null, bool? useMaskAsDisplayFormat = null,
             string toolTipTitle = null, string toolTipText = null,
@@ -1583,6 +1672,20 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (shiftY) y = y + textEdit.Height + inst._DetailYSpaceText;
             return textEdit;
         }
+        /// <summary>
+        /// Vytvoří a vrátí DxMemoEdit s danými parametry
+        /// </summary>
+        /// <param name="parent"></param>
+        /// <param name="dock"></param>
+        /// <param name="width"></param>
+        /// <param name="height"></param>
+        /// <param name="textChanged"></param>
+        /// <param name="toolTipTitle"></param>
+        /// <param name="toolTipText"></param>
+        /// <param name="visible"></param>
+        /// <param name="readOnly"></param>
+        /// <param name="tabStop"></param>
+        /// <returns></returns>
         public static DxMemoEdit CreateDxMemoEdit(Control parent = null, DockStyle? dock = null, int? width = null, int? height = null, EventHandler textChanged = null,
             string toolTipTitle = null, string toolTipText = null,
             bool? visible = null, bool? readOnly = null, bool? tabStop = null)
@@ -1597,6 +1700,21 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (dock.HasValue) memoEdit.Dock = dock.Value;
             return memoEdit;
         }
+        /// <summary>
+        /// Vytvoří a vrátí DxMemoEdit s danými parametry
+        /// </summary>
+        /// <param name="x"></param>
+        /// <param name="y"></param>
+        /// <param name="w"></param>
+        /// <param name="h"></param>
+        /// <param name="parent"></param>
+        /// <param name="textChanged"></param>
+        /// <param name="toolTipTitle"></param>
+        /// <param name="toolTipText"></param>
+        /// <param name="visible"></param>
+        /// <param name="readOnly"></param>
+        /// <param name="tabStop"></param>
+        /// <returns></returns>
         public static DxMemoEdit CreateDxMemoEdit(int x, int y, int w, int h, Control parent, EventHandler textChanged = null,
             string toolTipTitle = null, string toolTipText = null,
             bool? visible = null, bool? readOnly = null, bool? tabStop = null)
@@ -1605,6 +1723,22 @@ namespace Noris.Clients.Win.Components.AsolDX
                 toolTipTitle, toolTipText,
                 visible, readOnly, tabStop, false);
         }
+        /// <summary>
+        /// Vytvoří a vrátí DxMemoEdit s danými parametry
+        /// </summary>
+        /// <param name="x"></param>
+        /// <param name="y"></param>
+        /// <param name="w"></param>
+        /// <param name="h"></param>
+        /// <param name="parent"></param>
+        /// <param name="textChanged"></param>
+        /// <param name="toolTipTitle"></param>
+        /// <param name="toolTipText"></param>
+        /// <param name="visible"></param>
+        /// <param name="readOnly"></param>
+        /// <param name="tabStop"></param>
+        /// <param name="shiftY"></param>
+        /// <returns></returns>
         public static DxMemoEdit CreateDxMemoEdit(int x, ref int y, int w, int h, Control parent, EventHandler textChanged = null,
             string toolTipTitle = null, string toolTipText = null,
             bool? visible = null, bool? readOnly = null, bool? tabStop = null, bool shiftY = false)
@@ -1625,6 +1759,21 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             return memoEdit;
         }
+        /// <summary>
+        /// Vytvoří a vrátí DxImageComboBoxEdit s danými parametry
+        /// </summary>
+        /// <param name="x"></param>
+        /// <param name="y"></param>
+        /// <param name="w"></param>
+        /// <param name="parent"></param>
+        /// <param name="selectedIndexChanged"></param>
+        /// <param name="itemsTabbed"></param>
+        /// <param name="toolTipTitle"></param>
+        /// <param name="toolTipText"></param>
+        /// <param name="visible"></param>
+        /// <param name="readOnly"></param>
+        /// <param name="tabStop"></param>
+        /// <returns></returns>
         public static DxImageComboBoxEdit CreateDxImageComboBox(int x, int y, int w, Control parent, EventHandler selectedIndexChanged = null, string itemsTabbed = null,
             string toolTipTitle = null, string toolTipText = null,
             bool? visible = null, bool? readOnly = null, bool? tabStop = null)
@@ -1633,6 +1782,22 @@ namespace Noris.Clients.Win.Components.AsolDX
                 toolTipTitle, toolTipText,
                 visible, readOnly, tabStop, false);
         }
+        /// <summary>
+        /// Vytvoří a vrátí DxImageComboBoxEdit s danými parametry
+        /// </summary>
+        /// <param name="x"></param>
+        /// <param name="y"></param>
+        /// <param name="w"></param>
+        /// <param name="parent"></param>
+        /// <param name="selectedIndexChanged"></param>
+        /// <param name="itemsTabbed"></param>
+        /// <param name="toolTipTitle"></param>
+        /// <param name="toolTipText"></param>
+        /// <param name="visible"></param>
+        /// <param name="readOnly"></param>
+        /// <param name="tabStop"></param>
+        /// <param name="shiftY"></param>
+        /// <returns></returns>
         public static DxImageComboBoxEdit CreateDxImageComboBox(int x, ref int y, int w, Control parent, EventHandler selectedIndexChanged = null, string itemsTabbed = null,
             string toolTipTitle = null, string toolTipText = null,
             bool? visible = null, bool? readOnly = null, bool? tabStop = null, bool shiftY = false)
@@ -1659,6 +1824,25 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (shiftY) y = y + comboBox.Height + inst._DetailYSpaceText;
             return comboBox;
         }
+        /// <summary>
+        /// Vytvoří a vrátí DxSpinEdit s danými parametry
+        /// </summary>
+        /// <param name="x"></param>
+        /// <param name="y"></param>
+        /// <param name="w"></param>
+        /// <param name="parent"></param>
+        /// <param name="valueChanged"></param>
+        /// <param name="minValue"></param>
+        /// <param name="maxValue"></param>
+        /// <param name="increment"></param>
+        /// <param name="mask"></param>
+        /// <param name="spinStyles"></param>
+        /// <param name="toolTipTitle"></param>
+        /// <param name="toolTipText"></param>
+        /// <param name="visible"></param>
+        /// <param name="readOnly"></param>
+        /// <param name="tabStop"></param>
+        /// <returns></returns>
         public static DxSpinEdit CreateDxSpinEdit(int x, int y, int w, Control parent, EventHandler valueChanged = null,
             decimal? minValue = null, decimal? maxValue = null, decimal? increment = null, string mask = null, DevExpress.XtraEditors.Controls.SpinStyles? spinStyles = null,
             string toolTipTitle = null, string toolTipText = null,
@@ -1669,6 +1853,26 @@ namespace Noris.Clients.Win.Components.AsolDX
                 toolTipTitle, toolTipText,
                 visible, readOnly, tabStop, false);
         }
+        /// <summary>
+        /// Vytvoří a vrátí DxSpinEdit s danými parametry
+        /// </summary>
+        /// <param name="x"></param>
+        /// <param name="y"></param>
+        /// <param name="w"></param>
+        /// <param name="parent"></param>
+        /// <param name="valueChanged"></param>
+        /// <param name="minValue"></param>
+        /// <param name="maxValue"></param>
+        /// <param name="increment"></param>
+        /// <param name="mask"></param>
+        /// <param name="spinStyles"></param>
+        /// <param name="toolTipTitle"></param>
+        /// <param name="toolTipText"></param>
+        /// <param name="visible"></param>
+        /// <param name="readOnly"></param>
+        /// <param name="tabStop"></param>
+        /// <param name="shiftY"></param>
+        /// <returns></returns>
         public static DxSpinEdit CreateDxSpinEdit(int x, ref int y, int w, Control parent, EventHandler valueChanged = null,
             decimal? minValue = null, decimal? maxValue = null, decimal? increment = null, string mask = null, DevExpress.XtraEditors.Controls.SpinStyles? spinStyles = null,
             string toolTipTitle = null, string toolTipText = null,
@@ -1701,6 +1905,24 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (shiftY) y = y + spinEdit.Height + inst._DetailYSpaceText;
             return spinEdit;
         }
+        /// <summary>
+        /// Vytvoří a vrátí DxCheckEdit s danými parametry
+        /// </summary>
+        /// <param name="x"></param>
+        /// <param name="y"></param>
+        /// <param name="w"></param>
+        /// <param name="parent"></param>
+        /// <param name="text"></param>
+        /// <param name="checkedChanged"></param>
+        /// <param name="checkBoxStyle"></param>
+        /// <param name="borderStyles"></param>
+        /// <param name="hAlignment"></param>
+        /// <param name="toolTipTitle"></param>
+        /// <param name="toolTipText"></param>
+        /// <param name="visible"></param>
+        /// <param name="readOnly"></param>
+        /// <param name="tabStop"></param>
+        /// <returns></returns>
         public static DxCheckEdit CreateDxCheckEdit(int x, int y, int w, Control parent, string text, EventHandler checkedChanged = null,
             DevExpress.XtraEditors.Controls.CheckBoxStyle? checkBoxStyle = null, DevExpress.XtraEditors.Controls.BorderStyles? borderStyles = null, HorzAlignment? hAlignment = null,
             string toolTipTitle = null, string toolTipText = null,
@@ -1711,6 +1933,25 @@ namespace Noris.Clients.Win.Components.AsolDX
                 toolTipTitle, toolTipText,
                 visible, readOnly, tabStop, false);
         }
+        /// <summary>
+        /// Vytvoří a vrátí DxCheckEdit s danými parametry
+        /// </summary>
+        /// <param name="x"></param>
+        /// <param name="y"></param>
+        /// <param name="w"></param>
+        /// <param name="parent"></param>
+        /// <param name="text"></param>
+        /// <param name="checkedChanged"></param>
+        /// <param name="checkBoxStyle"></param>
+        /// <param name="borderStyles"></param>
+        /// <param name="hAlignment"></param>
+        /// <param name="toolTipTitle"></param>
+        /// <param name="toolTipText"></param>
+        /// <param name="visible"></param>
+        /// <param name="readOnly"></param>
+        /// <param name="tabStop"></param>
+        /// <param name="shiftY"></param>
+        /// <returns></returns>
         public static DxCheckEdit CreateDxCheckEdit(int x, ref int y, int w, Control parent, string text, EventHandler checkedChanged = null,
             DevExpress.XtraEditors.Controls.CheckBoxStyle? checkBoxStyle = null, DevExpress.XtraEditors.Controls.BorderStyles? borderStyles = null, HorzAlignment? hAlignment = null,
             string toolTipTitle = null, string toolTipText = null,
@@ -1742,6 +1983,25 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             return checkEdit;
         }
+        /// <summary>
+        /// Vytvoří a vrátí DxListBoxControl s danými parametry
+        /// </summary>
+        /// <param name="dock"></param>
+        /// <param name="width"></param>
+        /// <param name="height"></param>
+        /// <param name="parent"></param>
+        /// <param name="selectedIndexChanged"></param>
+        /// <param name="multiColumn"></param>
+        /// <param name="selectionMode"></param>
+        /// <param name="itemHeight"></param>
+        /// <param name="itemHeightPadding"></param>
+        /// <param name="enabledKeyActions"></param>
+        /// <param name="dragDropActions"></param>
+        /// <param name="toolTipTitle"></param>
+        /// <param name="toolTipText"></param>
+        /// <param name="visible"></param>
+        /// <param name="tabStop"></param>
+        /// <returns></returns>
         public static DxListBoxControl CreateDxListBox(DockStyle? dock = null, int? width = null, int? height = null, Control parent = null, EventHandler selectedIndexChanged = null,
             bool? multiColumn = null, SelectionMode? selectionMode = null, int? itemHeight = null, int? itemHeightPadding = null,
             KeyActionType? enabledKeyActions = null, DxDragDropActionType? dragDropActions = null,
@@ -1757,6 +2017,27 @@ namespace Noris.Clients.Win.Components.AsolDX
                 toolTipTitle, toolTipText,
                 dock, visible, tabStop, false);
         }
+        /// <summary>
+        /// Vytvoří a vrátí DxListBoxControl s danými parametry
+        /// </summary>
+        /// <param name="x"></param>
+        /// <param name="y"></param>
+        /// <param name="w"></param>
+        /// <param name="h"></param>
+        /// <param name="parent"></param>
+        /// <param name="selectedIndexChanged"></param>
+        /// <param name="multiColumn"></param>
+        /// <param name="selectionMode"></param>
+        /// <param name="itemHeight"></param>
+        /// <param name="itemHeightPadding"></param>
+        /// <param name="enabledKeyActions"></param>
+        /// <param name="dragDropActions"></param>
+        /// <param name="toolTipTitle"></param>
+        /// <param name="toolTipText"></param>
+        /// <param name="dock"></param>
+        /// <param name="visible"></param>
+        /// <param name="tabStop"></param>
+        /// <returns></returns>
         public static DxListBoxControl CreateDxListBox(int x, int y, int w, int h, Control parent = null, EventHandler selectedIndexChanged = null,
             bool? multiColumn = null, SelectionMode? selectionMode = null, int? itemHeight = null, int? itemHeightPadding = null,
             KeyActionType? enabledKeyActions = null, DxDragDropActionType? dragDropActions = null,
@@ -1769,6 +2050,28 @@ namespace Noris.Clients.Win.Components.AsolDX
                 toolTipTitle, toolTipText,
                 dock, visible, tabStop, false);
         }
+        /// <summary>
+        /// Vytvoří a vrátí DxListBoxControl s danými parametry
+        /// </summary>
+        /// <param name="x"></param>
+        /// <param name="y"></param>
+        /// <param name="w"></param>
+        /// <param name="h"></param>
+        /// <param name="parent"></param>
+        /// <param name="selectedIndexChanged"></param>
+        /// <param name="multiColumn"></param>
+        /// <param name="selectionMode"></param>
+        /// <param name="itemHeight"></param>
+        /// <param name="itemHeightPadding"></param>
+        /// <param name="enabledKeyActions"></param>
+        /// <param name="dragDropActions"></param>
+        /// <param name="toolTipTitle"></param>
+        /// <param name="toolTipText"></param>
+        /// <param name="dock"></param>
+        /// <param name="visible"></param>
+        /// <param name="tabStop"></param>
+        /// <param name="shiftY"></param>
+        /// <returns></returns>
         public static DxListBoxControl CreateDxListBox(int x, ref int y, int w, int h, Control parent = null, EventHandler selectedIndexChanged = null,
             bool? multiColumn = null, SelectionMode? selectionMode = null, int? itemHeight = null, int? itemHeightPadding = null,
             KeyActionType? enabledKeyActions = null, DxDragDropActionType? dragDropActions = null,
@@ -1799,6 +2102,27 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             return listBox;
         }
+        /// <summary>
+        /// Vytvoří a vrátí DxCheckButton s danými parametry
+        /// </summary>
+        /// <param name="x"></param>
+        /// <param name="y"></param>
+        /// <param name="w"></param>
+        /// <param name="h"></param>
+        /// <param name="parent"></param>
+        /// <param name="text"></param>
+        /// <param name="click"></param>
+        /// <param name="paintStyles"></param>
+        /// <param name="isChecked"></param>
+        /// <param name="image"></param>
+        /// <param name="resourceName"></param>
+        /// <param name="toolTipTitle"></param>
+        /// <param name="toolTipText"></param>
+        /// <param name="visible"></param>
+        /// <param name="enabled"></param>
+        /// <param name="tabStop"></param>
+        /// <param name="hotKey"></param>
+        /// <returns></returns>
         public static DxCheckButton CreateDxCheckButton(int x, int y, int w, int h, Control parent, string text, EventHandler click = null,
             DevExpress.XtraEditors.Controls.PaintStyles? paintStyles = null,
             bool isChecked = false,
@@ -1813,6 +2137,28 @@ namespace Noris.Clients.Win.Components.AsolDX
                 toolTipTitle, toolTipText,
                 visible, enabled, tabStop, hotKey, false);
         }
+        /// <summary>
+        /// Vytvoří a vrátí DxCheckButton s danými parametry
+        /// </summary>
+        /// <param name="x"></param>
+        /// <param name="y"></param>
+        /// <param name="w"></param>
+        /// <param name="h"></param>
+        /// <param name="parent"></param>
+        /// <param name="text"></param>
+        /// <param name="click"></param>
+        /// <param name="paintStyles"></param>
+        /// <param name="isChecked"></param>
+        /// <param name="image"></param>
+        /// <param name="resourceName"></param>
+        /// <param name="toolTipTitle"></param>
+        /// <param name="toolTipText"></param>
+        /// <param name="visible"></param>
+        /// <param name="enabled"></param>
+        /// <param name="tabStop"></param>
+        /// <param name="hotKey"></param>
+        /// <param name="shiftY"></param>
+        /// <returns></returns>
         public static DxCheckButton CreateDxCheckButton(int x, ref int y, int w, int h, Control parent, string text, EventHandler click = null,
             DevExpress.XtraEditors.Controls.PaintStyles? paintStyles = null,
             bool isChecked = false,
@@ -1846,6 +2192,16 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             return checkButton;
         }
+        /// <summary>
+        /// Vytvoří a vrátí DxSimpleButton s danými parametry
+        /// </summary>
+        /// <param name="x"></param>
+        /// <param name="y"></param>
+        /// <param name="w"></param>
+        /// <param name="h"></param>
+        /// <param name="parent"></param>
+        /// <param name="iButton"></param>
+        /// <returns></returns>
         public static DxSimpleButton CreateDxSimpleButton(int x, int y, int w, int h, Control parent, IMenuItem iButton)
         {
             if (iButton is null) return null;
@@ -1870,6 +2226,26 @@ namespace Noris.Clients.Win.Components.AsolDX
                     iMenuItem.ClickAction(iMenuItem);
             }
         }
+        /// <summary>
+        /// Vytvoří a vrátí DxSimpleButton s danými parametry
+        /// </summary>
+        /// <param name="x"></param>
+        /// <param name="y"></param>
+        /// <param name="w"></param>
+        /// <param name="h"></param>
+        /// <param name="parent"></param>
+        /// <param name="text"></param>
+        /// <param name="click"></param>
+        /// <param name="paintStyles"></param>
+        /// <param name="image"></param>
+        /// <param name="resourceName"></param>
+        /// <param name="toolTipTitle"></param>
+        /// <param name="toolTipText"></param>
+        /// <param name="visible"></param>
+        /// <param name="enabled"></param>
+        /// <param name="tabStop"></param>
+        /// <param name="hotKey"></param>
+        /// <returns></returns>
         public static DxSimpleButton CreateDxSimpleButton(int x, int y, int w, int h, Control parent, string text, EventHandler click = null,
             DevExpress.XtraEditors.Controls.PaintStyles? paintStyles = null,
             Image image = null, string resourceName = null,
@@ -1882,6 +2258,27 @@ namespace Noris.Clients.Win.Components.AsolDX
                 toolTipTitle, toolTipText,
                 visible, enabled, tabStop, hotKey, false);
         }
+        /// <summary>
+        /// Vytvoří a vrátí DxSimpleButton s danými parametry
+        /// </summary>
+        /// <param name="x"></param>
+        /// <param name="y"></param>
+        /// <param name="w"></param>
+        /// <param name="h"></param>
+        /// <param name="parent"></param>
+        /// <param name="text"></param>
+        /// <param name="click"></param>
+        /// <param name="paintStyles"></param>
+        /// <param name="image"></param>
+        /// <param name="resourceName"></param>
+        /// <param name="toolTipTitle"></param>
+        /// <param name="toolTipText"></param>
+        /// <param name="visible"></param>
+        /// <param name="enabled"></param>
+        /// <param name="tabStop"></param>
+        /// <param name="hotKey"></param>
+        /// <param name="shiftY"></param>
+        /// <returns></returns>
         public static DxSimpleButton CreateDxSimpleButton(int x, ref int y, int w, int h, Control parent, string text, EventHandler click = null,
             DevExpress.XtraEditors.Controls.PaintStyles? paintStyles = null,
             Image image = null, string resourceName = null,
@@ -1913,6 +2310,28 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             return simpleButton;
         }
+        /// <summary>
+        /// Vytvoří a vrátí DxSimpleButton s danými parametry
+        /// </summary>
+        /// <param name="x"></param>
+        /// <param name="y"></param>
+        /// <param name="w"></param>
+        /// <param name="h"></param>
+        /// <param name="parent"></param>
+        /// <param name="click"></param>
+        /// <param name="image"></param>
+        /// <param name="resourceName"></param>
+        /// <param name="hotImage"></param>
+        /// <param name="hotResourceName"></param>
+        /// <param name="toolTipTitle"></param>
+        /// <param name="toolTipText"></param>
+        /// <param name="visible"></param>
+        /// <param name="enabled"></param>
+        /// <param name="tabStop"></param>
+        /// <param name="hotKey"></param>
+        /// <param name="allowFocus"></param>
+        /// <param name="tag"></param>
+        /// <returns></returns>
         public static DxSimpleButton CreateDxMiniButton(int x, int y, int w, int h, Control parent, EventHandler click = null,
             Image image = null, string resourceName = null,
             Image hotImage = null, string hotResourceName = null,
@@ -1946,6 +2365,12 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             return miniButton;
         }
+        /// <summary>
+        /// Vytvoří a vrátí DxRibbonStatusBar s danými parametry
+        /// </summary>
+        /// <param name="parent"></param>
+        /// <param name="dock"></param>
+        /// <returns></returns>
         public static DxRibbonStatusBar CreateDxStatusBar(Control parent, DockStyle? dock = null)
         {
             DxRibbonStatusBar statusBar = new DxRibbonStatusBar();
@@ -1954,6 +2379,15 @@ namespace Noris.Clients.Win.Components.AsolDX
                 parent.Controls.Add(statusBar);
             return statusBar;
         }
+        /// <summary>
+        /// Vytvoří a vrátí DxBarStaticItem s danými parametry
+        /// </summary>
+        /// <param name="statusBar"></param>
+        /// <param name="text"></param>
+        /// <param name="autoSize"></param>
+        /// <param name="visible"></param>
+        /// <param name="fontSizeDelta"></param>
+        /// <returns></returns>
         public static DxBarStaticItem CreateDxStatusLabel(DevExpress.XtraBars.Ribbon.RibbonStatusBar statusBar = null, string text = null, DevExpress.XtraBars.BarStaticItemSize? autoSize = null,
             bool? visible = null, int? fontSizeDelta = null)
         {
@@ -1967,6 +2401,19 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             return statusLabel;
         }
+        /// <summary>
+        /// Vytvoří a vrátí DxBarButtonItem s danými parametry
+        /// </summary>
+        /// <param name="statusBar"></param>
+        /// <param name="text"></param>
+        /// <param name="width"></param>
+        /// <param name="height"></param>
+        /// <param name="toolTipTitle"></param>
+        /// <param name="toolTipText"></param>
+        /// <param name="visible"></param>
+        /// <param name="fontSizeDelta"></param>
+        /// <param name="clickHandler"></param>
+        /// <returns></returns>
         public static DxBarButtonItem CreateDxStatusButton(DevExpress.XtraBars.Ribbon.RibbonStatusBar statusBar = null, string text = null,
             int? width = null, int? height = null,
             string toolTipTitle = null, string toolTipText = null,
@@ -1989,6 +2436,19 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             return button;
         }
+        /// <summary>
+        /// Vytvoří a vrátí DxBarCheckItem s danými parametry
+        /// </summary>
+        /// <param name="statusBar"></param>
+        /// <param name="text"></param>
+        /// <param name="width"></param>
+        /// <param name="height"></param>
+        /// <param name="toolTipTitle"></param>
+        /// <param name="toolTipText"></param>
+        /// <param name="visible"></param>
+        /// <param name="fontSizeDelta"></param>
+        /// <param name="clickHandler"></param>
+        /// <returns></returns>
         public static DxBarCheckItem CreateDxStatusCheckButton(DevExpress.XtraBars.Ribbon.RibbonStatusBar statusBar = null, string text = null,
             int? width = null, int? height = null,
             string toolTipTitle = null, string toolTipText = null,
@@ -2011,6 +2471,29 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             return checkButton;
         }
+        /// <summary>
+        /// Vytvoří a vrátí DxDropDownButton s danými parametry
+        /// </summary>
+        /// <param name="x"></param>
+        /// <param name="y"></param>
+        /// <param name="w"></param>
+        /// <param name="h"></param>
+        /// <param name="parent"></param>
+        /// <param name="text"></param>
+        /// <param name="click"></param>
+        /// <param name="itemClick"></param>
+        /// <param name="dropDownControl"></param>
+        /// <param name="subItemsText"></param>
+        /// <param name="subItems"></param>
+        /// <param name="paintStyles"></param>
+        /// <param name="image"></param>
+        /// <param name="resourceName"></param>
+        /// <param name="toolTipTitle"></param>
+        /// <param name="toolTipText"></param>
+        /// <param name="visible"></param>
+        /// <param name="enabled"></param>
+        /// <param name="tabStop"></param>
+        /// <returns></returns>
         public static DxDropDownButton CreateDxDropDownButton(int x, int y, int w, int h, Control parent, string text,
             EventHandler click = null, EventHandler<TEventArgs<IMenuItem>> itemClick = null,
             DevExpress.Utils.Menu.IDXDropDownControl dropDownControl = null, string subItemsText = null, IEnumerable<IMenuItem> subItems = null,
@@ -2027,6 +2510,30 @@ namespace Noris.Clients.Win.Components.AsolDX
                 toolTipTitle, toolTipText,
                 visible, enabled, tabStop, false);
         }
+        /// <summary>
+        /// Vytvoří a vrátí DxDropDownButton s danými parametry
+        /// </summary>
+        /// <param name="x"></param>
+        /// <param name="y"></param>
+        /// <param name="w"></param>
+        /// <param name="h"></param>
+        /// <param name="parent"></param>
+        /// <param name="text"></param>
+        /// <param name="click"></param>
+        /// <param name="itemClick"></param>
+        /// <param name="dropDownControl"></param>
+        /// <param name="subItemsText"></param>
+        /// <param name="subItems"></param>
+        /// <param name="paintStyles"></param>
+        /// <param name="image"></param>
+        /// <param name="resourceName"></param>
+        /// <param name="toolTipTitle"></param>
+        /// <param name="toolTipText"></param>
+        /// <param name="visible"></param>
+        /// <param name="enabled"></param>
+        /// <param name="tabStop"></param>
+        /// <param name="shiftY"></param>
+        /// <returns></returns>
         public static DxDropDownButton CreateDxDropDownButton(int x, ref int y, int w, int h, Control parent, string text,
             EventHandler click = null, EventHandler<TEventArgs<IMenuItem>> itemClick = null,
             DevExpress.Utils.Menu.IDXDropDownControl dropDownControl = null, string subItemsText = null, IEnumerable<IMenuItem> subItems = null,
@@ -2061,6 +2568,14 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             return dropDownButton;
         }
+        /// <summary>
+        /// Vytvoří a vrátí IDXDropDownControl s danými parametry
+        /// </summary>
+        /// <param name="dropDownControl"></param>
+        /// <param name="subItemsText"></param>
+        /// <param name="subItems"></param>
+        /// <param name="itemClick"></param>
+        /// <returns></returns>
         public static DevExpress.Utils.Menu.IDXDropDownControl CreateDxDropDownControl(
             DevExpress.Utils.Menu.IDXDropDownControl dropDownControl = null, string subItemsText = null, IEnumerable<IMenuItem> subItems = null,
             EventHandler<TEventArgs<IMenuItem>> itemClick = null)
@@ -2077,7 +2592,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             return popupMenu;
         }
         /// <summary>
-        /// Metoda vytvoří a vrátí PopupMenu pro dané položky [s daným titulkem, daného typu].
+        /// Metoda vytvoří a vrátí DXPopupMenu pro dané položky [s daným titulkem, daného typu].
         /// Je možno předat odkaz na metodu, která bude volána po kliknutí na položku menu. Tato metoda dostane argument, jehož Item je položka menu, na kterou se kliklo.
         /// </summary>
         /// <param name="menuItems"></param>
@@ -2190,6 +2705,11 @@ namespace Noris.Clients.Win.Components.AsolDX
                 itemClick(sender, new TEventArgs<IMenuItem>(iMenuItem));
             }
         }
+        /// <summary>
+        /// Vytvoří a vrátí PopupMenu s danými parametry
+        /// </summary>
+        /// <param name="menuItems"></param>
+        /// <returns></returns>
         public static DevExpress.XtraBars.PopupMenu CreateXBPopupMenu(IEnumerable<IMenuItem> menuItems)
         {
             // Má řadu nectostí, například: nezhasne když kliknu mimo
@@ -6109,10 +6629,25 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// </summary>
     public enum CompressionMode
     {
+        /// <summary>
+        /// Default
+        /// </summary>
         Default = 0,
+        /// <summary>
+        /// ZipStreamOptimal
+        /// </summary>
         ZipStreamOptimal,
+        /// <summary>
+        /// ZipStreamFast
+        /// </summary>
         ZipStreamFast,
+        /// <summary>
+        /// DeflateOptimal
+        /// </summary>
         DeflateOptimal,
+        /// <summary>
+        /// DeflateFast
+        /// </summary>
         DeflateFast
     }
     #endregion
