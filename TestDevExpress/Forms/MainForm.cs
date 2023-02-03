@@ -3912,6 +3912,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
         private void InitTreeView()
         {
             AddNewPage("TreeList", PrepareTreeView, ActivateTreeView, pageToolTip: "Tato záložka zobrazí <b>TreeView</b>,\r\na demonstruje tak <br>ToolTipy a celé chování TreeListu - <u>včetně událostí</u>.");
+            _TreeListCreateNodesData();
         }
         private DxPanelControl _PanelTreeView;
         private void PrepareTreeView(DxPanelControl panel)
@@ -3927,12 +3928,6 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
         }
         private void CreateTreeViewComponents()
         {
-            bool useSvg = (Randomizer.IsTrue(40));
-            _TreeListImageType = (useSvg ? ResourceContentType.Vector : ResourceContentType.Bitmap);
-
-            _TreeListImageType = ResourceContentType.Vector;
-
-            _NewNodePosition = NewNodePositionType.First;
             CreateImageList();
             CreateTreeView();
         }
@@ -4007,8 +4002,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
             _SplitContainer.Panel1.Controls.Add(_TreeList);               // Musí být dřív než se začne pracovat s daty!!!
             _SplitContainer.Panel1.Controls.Add(_TreeMultiCheckBox);      // 
 
-            DateTime t0 = DateTime.Now;
-            var nodes = _CreateSampleTreeNodes(ItemCountType.Big);
+            var nodes = _TreeListGetPreparedNodeData();                   // Nody by měly být připraveny na pozadí, viz metoda _TreeListCreateNodesData() => _TreeListCreateNodesDataBgr()
             DateTime t1 = DateTime.Now;
             _TreeList.AddNodes(nodes);
             DateTime t2 = DateTime.Now;
@@ -4042,7 +4036,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
 
             string line = "Počet nodů: " + nodes.Count.ToString();
             _TreeListAddLogLine(line);
-            line = "Tvorba nodů: " + ((TimeSpan)(t1 - t0)).TotalMilliseconds.ToString("##0.000") + " ms";
+            line = "Tvorba nodů: " + _TreeListCreateNodeTime.Value.TotalMilliseconds.ToString("##0.000") + " ms";
             _TreeListAddLogLine(line);
             line = "Plnění do TreeView: " + ((TimeSpan)(t2 - t1)).TotalMilliseconds.ToString("##0.000") + " ms";
             _TreeListAddLogLine(line);
@@ -4050,7 +4044,6 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
             _TreeListLogInit = _TreeListLog;
             _TreeListLogIdInit = _TreeListLogId;
         }
-
         private static Keys[] _CreateHotKeys()
         {
             Keys[] keys = new Keys[]
@@ -4262,7 +4255,8 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
         private void _TreeList_ToolTipChanged(object sender, DxToolTipArgs args)
         {
             string line = "ToolTip: " + args.EventName;
-            _TreeListAddLogLine(line, true);           // ToolTip nebudu dávat do GUI Textu - zhasínáí to okno ToolTipu!
+            bool skipGUI = (line.Contains("IsFASTMotion"));             // ToolTip obsahující IsFASTMotion nebudu dávat do GUI Textu - to jsou rychlé eventy:
+            _TreeListAddLogLine(line, skipGUI);
         }
         private void _AddTreeNodeLog(string actionName, DxTreeListNodeArgs args, bool showValue = false)
         {
@@ -4297,6 +4291,56 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
         }
         DateTime? _TreeListLogTime;
         int _InternalNodeId;
+
+
+        DxSplitContainerControl _SplitContainer;
+        DxCheckEdit _TreeMultiCheckBox;
+        DxTreeList _TreeList;
+        DxMemoEdit _TreeListMemoEdit;
+        string _TreeListLog;
+        int _TreeListLogId;
+        string _TreeListLogInit;
+        int _TreeListLogIdInit;
+        bool _TreeListPending;
+        NewNodePositionType _NewNodePosition;
+        private enum NewNodePositionType { None, First, Last }
+        private ResourceContentType _TreeListImageType;
+        #region Předpříprava nodů do TreeListu
+        private void _TreeListCreateNodesData()
+        {
+            bool useSvg = (Randomizer.IsTrue(40));
+            _TreeListImageType = (useSvg ? ResourceContentType.Vector : ResourceContentType.Bitmap);
+            _TreeListImageType = ResourceContentType.Vector;
+            _NewNodePosition = NewNodePositionType.First;
+
+            _TreeListNodeData = null;
+            _TreeListCreateNodeTime = null;
+
+            ThreadManager.AddAction(_TreeListCreateNodesDataBgr);
+        }
+        private void _TreeListCreateNodesDataBgr()
+        {
+            DateTime t0 = DateTime.Now;
+            var nodes = _CreateSampleTreeNodes(ItemCountType.Big);
+            DateTime t1 = DateTime.Now;
+
+            _TreeListNodeData = nodes;
+            _TreeListCreateNodeTime = t1 - t0;
+        }
+        /// <summary>
+        /// GUI chce dostat vygenerovaný soupis Nodes. Ten se měl vygenerovat v threadu na pozadí = v mezičase od inicializace Formu do přepnutí na záložku "TreeList".
+        /// Pokud by tam někdo přepnul tak rychle že ještě není vygenerováno, tato metoda na to počká.
+        /// </summary>
+        /// <returns></returns>
+        private List<DataTreeListNode> _TreeListGetPreparedNodeData()
+        {
+            DateTime waitEnd = DateTime.Now.AddSeconds(30d);         // I kdyby sem někdo přišel hned, tak počkáme do 30 sekund. Tvorba nodů trvá nejvýše 4 sekundy.
+            while (!_TreeListCreateNodeTime.HasValue && (DateTime.Now <= waitEnd))      // Po vygenerování se nejprve setuje _TreeListNodeData, a poté _TreeListCreateNodeTime.
+                System.Threading.Thread.Sleep(50);
+            return _TreeListNodeData;
+        }
+        private List<DataTreeListNode> _TreeListNodeData;
+        private TimeSpan? _TreeListCreateNodeTime;
         private List<DataTreeListNode> _CreateSampleTreeNodes(ItemCountType countType = ItemCountType.Standard)
         {
             if (_TreeListImageType == ResourceContentType.None)
@@ -4402,23 +4446,12 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
             {
                 case ItemCountType.Empty: return 0;
                 case ItemCountType.Standard: return (forChilds ? Randomizer.Rand.Next(1, 12) : Randomizer.Rand.Next(10, 30));
-                case ItemCountType.Big: return (forChilds ? Randomizer.Rand.Next(40, 120) : Randomizer.Rand.Next(120, 400));
+                case ItemCountType.Big: return (forChilds ? Randomizer.Rand.Next(20, 40) : Randomizer.Rand.Next(60, 120));
             }
             return 0;
         }
         private enum ItemCountType { Empty, Standard, Big }
-        DxSplitContainerControl _SplitContainer;
-        DxCheckEdit _TreeMultiCheckBox;
-        DxTreeList _TreeList;
-        DxMemoEdit _TreeListMemoEdit;
-        string _TreeListLog;
-        int _TreeListLogId;
-        string _TreeListLogInit;
-        int _TreeListLogIdInit;
-        bool _TreeListPending;
-        NewNodePositionType _NewNodePosition;
-        private enum NewNodePositionType { None, First, Last }
-        private ResourceContentType _TreeListImageType;
+        #endregion
         #endregion
         #region DragDrop
         private void InitDragDrop()

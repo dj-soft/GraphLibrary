@@ -877,7 +877,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.ToolTipAllowHtmlText = null;
             this.DxToolTipController = DxComponent.CreateNewToolTipController(ToolTipAnchor.Cursor);
             this.DxToolTipController.AddClient(this);      // Protože this třída implementuje IDxToolTipDynamicClient, bude volána metoda IDxToolTipDynamicClient.PrepareSuperTipForPoint()
-            this.DxToolTipController.ToolTipChanged += _ToolTipChanged;        // Má význam jen pro Debug, nemusí být řešeno
+            this.DxToolTipController.ToolTipDebugTextChanged += _ToolTipDebugTextChanged;        // Má význam jen pro Debug, nemusí být řešeno
         }
         /// <summary>
         /// ToolTipy mohou obsahovat SimpleHtml tagy? Null = default
@@ -923,7 +923,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             {   // Myš je mimo nody:
                 args.ToolTipChange = DxToolTipChangeType.NoToolTip;                      // Pokud ToolTip svítí, zhasneme jej
             }
-            RaiseToolTipChanged($"TreeList.PrepareSuperTipForPoint(ToolTipChange={args.ToolTipChange}, ToolTip={args.DxSuperTip?.ToString()})");
+            _RaiseToolTipDebugTextChanged($"TreeList.PrepareSuperTipForPoint(ToolTipChange={args.ToolTipChange}, ToolTip={args.DxSuperTip?.ToString()})");
         }
         /// <summary>
         /// Explicitně skrýt ToolTip
@@ -932,7 +932,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void _ToolTipHide(string message)
         {
             this.DxToolTipController.HideTip();
-            RaiseToolTipChanged($"TreeList.HideToolTip({message})");
+            _RaiseToolTipDebugTextChanged($"TreeList.HideToolTip({message})");
         }
         /// <summary>
         /// V controlleru ToolTipu došlo k události, pošli ji do našeho eventu
@@ -940,9 +940,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="sender"></param>
         /// <param name="args"></param>
         /// <exception cref="NotImplementedException"></exception>
-        private void _ToolTipChanged(object sender, DxToolTipArgs args)
+        private void _ToolTipDebugTextChanged(object sender, DxToolTipArgs args)
         {
-            RaiseToolTipChanged(args);
+            _RaiseToolTipDebugTextChanged(args);
         }
         #region HasMouse
         /// <summary>
@@ -3676,18 +3676,24 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Vyvolá metodu <see cref="OnToolTipEvent(DxToolTipArgs)"/> a event <see cref="ToolTipChanged"/>
         /// </summary>
         /// <param name="eventName"></param>
-        private void RaiseToolTipChanged(string eventName)
+        private void _RaiseToolTipDebugTextChanged(string eventName)
         {
-            RaiseToolTipChanged(new DxToolTipArgs(eventName));
+            if (DxComponent.IsDebuggerActive)
+            {
+                _RaiseToolTipDebugTextChanged(new DxToolTipArgs(eventName));
+            }
         }
         /// <summary>
         /// Vyvolá metodu <see cref="OnToolTipEvent(DxToolTipArgs)"/> a event <see cref="ToolTipChanged"/>
         /// </summary>
         /// <param name="args"></param>
-        private void RaiseToolTipChanged(DxToolTipArgs args)
+        private void _RaiseToolTipDebugTextChanged(DxToolTipArgs args)
         {
-            OnToolTipEvent(args);
-            ToolTipChanged?.Invoke(this, args);
+            if (DxComponent.IsDebuggerActive)
+            {
+                OnToolTipEvent(args);
+                ToolTipChanged?.Invoke(this, args);
+            }
         }
         /// <summary>
         /// ToolTip v TreeListu má událost

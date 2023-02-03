@@ -2692,7 +2692,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         public DxToolTipController(ToolTipAnchor toolTipAnchor = ToolTipAnchor.Object, ToolTipLocation toolTipLocation = ToolTipLocation.RightBottom)
             : base()
         {
+            _InitializeStopWatch();
             SetDefaultSettings(toolTipAnchor, toolTipLocation);
+            _InitializeEvents();
         }
         /// <summary>
         /// Defaultní nastavení
@@ -2702,9 +2704,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void SetDefaultSettings(ToolTipAnchor toolTipAnchor = ToolTipAnchor.Object, ToolTipLocation toolTipLocation = ToolTipLocation.RightBottom)
         {
             Active = true;
-            InitialDelay = 1700;
-            ReshowDelay = 600;
+            InitialDelay = 1000;
+            ReshowDelay = 500;
             AutoPopDelay = 10000;
+            SlowMouseMovePps = DEFAULT_SILENT_PIXEL_PER_SECONDS;
             AutoHideAdaptive = true;
             KeepWhileHovered = false;
             Rounded = true;
@@ -2791,6 +2794,19 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public bool AutoHideAdaptive { get; set; }
         /// <summary>
+        /// Rychlost myši v pixelech za sekundu, pod kterou se myš považuje za "stojící" a umožní tak rozsvícení ToolTipu i při pomalém pohybu.
+        /// Výchozí hodnota je 120 px/sec. Lze nastavit hodnotu 20 - 10000.
+        /// Menší hodnota = myš musí skoro stát aby se rozsvítil ToolTip.
+        /// Větší hodnota = ToolTip se rozsvítí i za pohybu.
+        /// </summary>
+        public double SlowMouseMovePps
+        {
+            get { return __SlowMouseMovePps; }
+            set { __SlowMouseMovePps = (value < 20d ? 20d : (value > 10000d ? 10000d : value)); }
+        }
+        private double __SlowMouseMovePps;
+
+        /// <summary>
         /// Vzdálenost mezi ukazatelem myši a ToolTipem v pixelech. Výchozí je 20. Platné hodnoty jsou 0 - 64 px.
         /// </summary>
         public int ToolTipIndent
@@ -2802,6 +2818,24 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
         }
         private int __ToolTipIndent;
+        #endregion
+        #region Eventy ToolTipu
+        private void _InitializeEvents()
+        {
+            this.BeforeShow += _BeforeShow;
+        }
+        /// <summary>
+        /// Před zobrazením ToolTipu
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _BeforeShow(object sender, ToolTipControllerShowEventArgs e)
+        {
+            if (__ActiveClientInfo != null && (__ActiveClientInfo.HasIClient || __ActiveClientInfo.HasIDynamicClient))
+                // Pokud se aktuálně pohybuji nad klientem, který poskytuje specifický ToolTip, pak defaultní Tooltip zruším:
+                //  => případ DxGridu, který do ToolTipu posílá titulek ColumnHeaderu, když se mu nevejde zobrazit v celé šíři sloupce:
+                e.ToolTip = "";
+        }
         #endregion
         #region Clients - klientské Controly: evidence, eventhandlery, vyhledání, předání ke konkrétní práci, dispose
         /// <summary>
@@ -3017,9 +3051,17 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// </summary>
             public IDxToolTipClient IClient { get; private set; }
             /// <summary>
-            /// Souřadnice myši
+            /// Souřadnice myši aktuální
             /// </summary>
             public Point MouseLocation { get; set; }
+            /// <summary>
+            /// Souřadnice myši minulá, pro detekci malého pohybu
+            /// </summary>
+            public Point? LastMouseLocation { get; set; }
+            /// <summary>
+            /// Čas souřadnice <see cref="LastMouseLocation"/>, pro detekci malého pohybu
+            /// </summary>
+            public long? LastMouseLocationTime { get; set; }
             /// <summary>
             /// Posledně získaný SuperTip z tohoto klienta
             /// </summary>
@@ -3103,6 +3145,15 @@ namespace Noris.Clients.Win.Components.AsolDX
             { 
                 LastSuperTip = null;
                 LastPrepareArgs = null;
+                ResetLastPoint();
+            }
+            /// <summary>
+            /// Nuluje poslední pozici myši
+            /// </summary>
+            internal void ResetLastPoint()
+            {
+                LastMouseLocation = null;
+                LastMouseLocationTime = null;
             }
         }
         #endregion
@@ -3146,6 +3197,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void _ClientMouseMoveWaitShow()
         {
             var hoverMiliseconds = HoverCurrentMiliseconds;
+
+            // Pokud nám běží časovač __HoverTimerGuid, a známe poslední pozici a čas myši, a nynější pozice a čas odpovídá malé rychlosti pohybu myši,
+            //  a pokud čas 'hoverMiliseconds' je kladný, tak nebudeme resetovat Timer = jako by se myš nepohnula, ale stála na místě...:
+            if (hoverMiliseconds > 1 && __HoverTimerGuid.HasValue && _ClientMouseMoveIsSlow()) return;
+
             if (hoverMiliseconds > 1)
                 // Máme TooTip rozsvítit až po nějaké době od zastavení myši:
                 // Toto volání Timeru (s předaným Guid __HoverTimerGuid) zajistí, že budeme zavoláni (metoda _ClientActivateTip) až po zadané době od posledního "načasování budíka".
@@ -3207,6 +3263,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                     _ClientMouseMoveWaitShow();            // Tady jsme v eventu MouseMove, tak se sluší nastartovat HoverTimer
                     break;
             }
+            clientInfo.ResetLastPoint();
         }
 
         private void _ClientMouseDown(ClientInfo clientInfo, MouseEventArgs e)
@@ -3226,6 +3283,63 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         private ClientInfo __ActiveClientInfo;
         private Guid? __HoverTimerGuid;
+        /// <summary>
+        /// Metoda vrátí true, pokud nynější pozice myši v aktuálním klientu se neliší příliš mnoho od předchozí pozice v tomtéž klientu.
+        /// Pokud vrátí true, je to stejné jako by myš stála na místě. Pokud vrátí false, pohybuje se docela rychle.
+        /// Metoda si udržuje časoprostorové povědomí v properties klienta <see cref="ClientInfo.LastMouseLocation"/> a <see cref="ClientInfo.LastMouseLocationTime"/>.
+        /// </summary>
+        /// <returns></returns>
+        private bool _ClientMouseMoveIsSlow()
+        {
+            var clientInfo = __ActiveClientInfo;
+            if (clientInfo is null) return false;
+
+            // Najdeme předchozí časoprostorové souřadnice, a načteme i aktuální:
+            var lastPoint = clientInfo.LastMouseLocation;
+            var lastTime = clientInfo.LastMouseLocationTime;
+            var currentPoint = clientInfo.MouseLocation;
+            var currentTime = __StopWatch.ElapsedTicks;
+            // Aktuální uložíme do předchozích (nulují se až v ClientInfo.ResetLastPoint()):
+            clientInfo.LastMouseLocation = currentPoint;
+            clientInfo.LastMouseLocationTime = currentTime;
+
+            // Nemáme předešlé souřadnice => nemůže sejednat o malý pohyb (jde asi o první událost MouseMove):
+            if (!(lastPoint.HasValue && lastTime.HasValue)) return false;
+
+            // Kolik pixelů za sekundu máme pohybu:
+            int dx = lastPoint.Value.X - currentPoint.X;
+            if (dx < 0) dx = -dx;
+            int dy = lastPoint.Value.Y - currentPoint.Y;
+            if (dy < 0) dy = -dy;
+            double pixelDistance = (dx > dy ? dx : dy);                        // Kladná hodnota rozdílu souřadnic, ta větší ze směru X | Y;
+            double seconds = ((double)(currentTime - lastTime.Value)) / __StopWatchFrequency;    // Čas v sekundách mezi minulým a současným měřením polohy myši
+            if (pixelDistance <= 0d || seconds <= 0d) return true;             // Pokud jsme nedetekovali pohyb nebo čas, je to jako by se myš nepohnula.
+
+            double pixelPerSeconds = pixelDistance / seconds;
+            bool isSlowMotion = (pixelPerSeconds <= SlowMouseMovePps);
+
+            if (isSlowMotion)
+                _RaiseToolTipDebugTextChanged($"Is..slow..motion: {pixelPerSeconds:F3} pixel/seconds    <=   {SlowMouseMovePps}");
+            else
+                _RaiseToolTipDebugTextChanged($"IsFASTMotion: {pixelPerSeconds:F3} pixel/seconds    >   {SlowMouseMovePps}");
+            
+            return isSlowMotion;
+        }
+        /// <summary>
+        /// Počet pixelů za sekundu v pohybu myši, který se ještě považuje za pomalý pohyb a neresetuje časovač odloženého startu ToolTipu, výchozí hodnota.
+        /// </summary>
+        private const double DEFAULT_SILENT_PIXEL_PER_SECONDS = 600d;
+        /// <summary>
+        /// Provede inicializaci hodin reálného času pro měření rychlosti pohybu myši
+        /// </summary>
+        private void _InitializeStopWatch()
+        {
+            __StopWatchFrequency = Stopwatch.Frequency;
+            __StopWatch = new Stopwatch();
+            __StopWatch.Start();
+        }
+        private System.Diagnostics.Stopwatch __StopWatch;
+        private double __StopWatchFrequency;
         #endregion
         #region Fyzický ToolTip
         /// <summary>
@@ -3355,26 +3469,29 @@ namespace Noris.Clients.Win.Components.AsolDX
         #endregion
         #region Eventy Tooltipu
         /// <summary>
-        /// Vyvolej události <see cref="ToolTipChanged"/>;
+        /// Vyvolej události <see cref="ToolTipDebugTextChanged"/>;
         /// </summary>
         /// <param name="eventName"></param>
-        private void _RaiseToolTipChanged(string eventName)
+        private void _RaiseToolTipDebugTextChanged(string eventName)
         {
-            DxToolTipArgs args = new DxToolTipArgs(eventName);
-            OnToolTipEvent(args);
-            ToolTipChanged?.Invoke(this, args);
+            if (DxComponent.IsDebuggerActive)
+            {
+                DxToolTipArgs args = new DxToolTipArgs(eventName);
+                OnToolTipDebugTextChanged(args);
+                ToolTipDebugTextChanged?.Invoke(this, args);
+            }
         }
         /// <summary>
         /// ToolTip má událost.
         /// Používá se pouze pro výpisy debugovacích informací do logu společného s klientským controlem. Běžně netřeba.
         /// </summary>
         /// <param name="args"></param>
-        protected virtual void OnToolTipEvent(DxToolTipArgs args) { }
+        protected virtual void OnToolTipDebugTextChanged(DxToolTipArgs args) { }
         /// <summary>
         /// ToolTip má událost.
         /// Používá se pouze pro výpisy debugovacích informací do logu společného s klientským controlem. Běžně netřeba.
         /// </summary>
-        public event DxToolTipHandler ToolTipChanged;
+        public event DxToolTipHandler ToolTipDebugTextChanged;
         #endregion
     }
     /// <summary>
