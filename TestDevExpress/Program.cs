@@ -25,6 +25,8 @@ namespace TestDevExpress
 
                 // Noris.Clients.Win.Components.AsolDX.DxComponent.Settings.ConfigFileName = @"c:\ProgramData\Asseco Solutions\NorisWin32Clients\Settings.bin";
 
+                var td = Noris.Clients.Win.Components.AsolDX.DxComponent.TempDirectoryName;
+
                 // Nastavíme Config skin a budeme sledovat změny aktivního skinu a ukládat jej do configu:
                 var styleListener = new SkinConfigStyle();
 

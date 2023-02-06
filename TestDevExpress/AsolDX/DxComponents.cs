@@ -159,6 +159,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void _Done()
         {
             this._DoneAppEvents();
+            this._TempDirectoryDone();
             this._DisposeFontCache();
             this._ResetControlColors();
         }
@@ -3023,6 +3024,88 @@ namespace Noris.Clients.Win.Components.AsolDX
                 return true;
             }
             return false;
+        }
+        #endregion
+        #region Temp Directory
+        /// <summary>
+        /// Aplikace zde najde fullname adresáře Temp, v podobě: "C:\User\Jméno\...\".
+        /// Před prvním použitím se určí, otestuje Write a Delete, případně se použije jiný.
+        /// Pokud je dostupný, sustí se v threadu na pozadí jeho úklid a ihned se vrátí jeho jméno.
+        /// Úklid se provádí i na konci běhu klienta, pokud neproběhl zde.
+        /// </summary>
+        public static string TempDirectoryName { get { return Instance._TempDirectoryName; } }
+        /// <summary>
+        /// Aplikace zde najde fullname adresáře Temp, v podobě: "C:\User\Jméno\...\".
+        /// </summary>
+        private string _TempDirectoryName
+        {
+            get
+            {
+                if (__TempDirectoryName is null)
+                    __TempDirectoryName = _TempDirectoryPrepare();
+                return __TempDirectoryName;
+            }
+        }
+        /// <summary>
+        /// Temp adresář
+        /// </summary>
+        private string __TempDirectoryName;
+        /// <summary>
+        /// Stav Temp adresáře
+        /// </summary>
+        private TempDirectoryState __TempDirectoryState = TempDirectoryState.None;
+        /// <summary>
+        /// Určí, otestuje a vrátí Temp adresář
+        /// </summary>
+        /// <returns></returns>
+        private string _TempDirectoryPrepare()
+        {
+            string directoryName = null;
+            directoryName = System.IO.Path.GetTempPath();                                                          // C:\Users\David\AppData\Local\Temp\        // Dosavadní Temp
+            directoryName = System.Environment.GetEnvironmentVariable("TEMP");                                     // C:\Users\David\AppData\Local\Temp
+            directoryName = System.Environment.GetEnvironmentVariable("TMP");                                      // C:\Users\David\AppData\Local\Temp
+            directoryName = System.Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);           // C:\Users\David\AppData\Roaming
+            directoryName = System.Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);      // C:\Users\David\AppData\Local              // Cílový prostor
+            directoryName = System.Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);     // C:\ProgramData
+            directoryName = System.Environment.GetFolderPath(Environment.SpecialFolder.Personal);                  // C:\Users\David\Documents
+            directoryName = System.Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);               // C:\Users\David
+
+
+            // V prostředí EZÚ se tyto soubory uloží do podadresáře v umístění %APPDATA%\Local\Temp a Adobe Reader si je pak otevírá tamodtud.
+            // Problém je v tom, že pokud je zapnuté chráněné zobrazení pro soubory z potenciálně nebezpečných míst,
+            // počítá to mezi taková nebezpečná místa i adresář TEMP a Reader pak u PDFek omezuje funkce (viz přiložený screenshot).
+
+            // Klient aktuálně poskytuje serveru informaci o tom, kde se nachází jeho adresář Temporary.
+            // Tam vrací onen „% APPDATA %\Local\Temp“
+            // b)	Můžeme se dohodnout, že budeme vracet ten jiný, zmíněný „% APPDATA %\Local\Helios“.
+            return directoryName;
+        }
+        private string _TestTempDirectory(string directoryName)
+        {
+            return directoryName;
+        }
+        /// <summary>
+        /// Volá se při ukončení aplikace. Má za úkol uklidit v Temp adresáři, pokud úklid neproběhl před prvním použitím.
+        /// </summary>
+        /// <returns></returns>
+        private void _TempDirectoryDone()
+        {
+            if (!(__TempDirectoryName is null)) return;              // Pokud Temp adresář 
+        }
+        /// <summary>
+        /// Stav přípravy / určení / úklidu Temp adresáře.
+        /// </summary>
+        private enum TempDirectoryState
+        {
+            /// <summary>
+            /// Dosud neurčen, po startu systému
+            /// </summary>
+            None,
+            Searching,
+            FoundTempApplication,
+            FoundTempSystem,
+
+
         }
         #endregion
         #region TryRun
