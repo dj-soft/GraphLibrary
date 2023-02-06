@@ -3061,14 +3061,14 @@ namespace Noris.Clients.Win.Components.AsolDX
         private string _TempDirectoryPrepare()
         {
             string directoryName = null;
-            directoryName = System.IO.Path.GetTempPath();                                                          // C:\Users\David\AppData\Local\Temp\        // Dosavadní Temp
-            directoryName = System.Environment.GetEnvironmentVariable("TEMP");                                     // C:\Users\David\AppData\Local\Temp
-            directoryName = System.Environment.GetEnvironmentVariable("TMP");                                      // C:\Users\David\AppData\Local\Temp
-            directoryName = System.Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);           // C:\Users\David\AppData\Roaming
-            directoryName = System.Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);      // C:\Users\David\AppData\Local              // Cílový prostor
-            directoryName = System.Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);     // C:\ProgramData
-            directoryName = System.Environment.GetFolderPath(Environment.SpecialFolder.Personal);                  // C:\Users\David\Documents
-            directoryName = System.Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);               // C:\Users\David
+            directoryName = System.IO.Path.GetTempPath();                                                          // C:\Users\David\AppData\Local\Temp\        C:\Users\david.janacek\AppData\Local\Temp\
+            directoryName = System.Environment.GetEnvironmentVariable("TEMP");                                     // C:\Users\David\AppData\Local\Temp         C:\Users\DAVID~1.JAN\AppData\Local\Temp                      // Dosavadní Temp
+            directoryName = System.Environment.GetEnvironmentVariable("TMP");                                      // C:\Users\David\AppData\Local\Temp         C:\Users\DAVID~1.JAN\AppData\Local\Temp
+            directoryName = System.Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);           // C:\Users\David\AppData\Roaming            C:\Users\david.janacek\AppData\Roaming
+            directoryName = System.Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);      // C:\Users\David\AppData\Local              C:\Users\david.janacek\AppData\Local                     // Cílový prostor
+            directoryName = System.Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);     // C:\ProgramData                            C:\ProgramData
+            directoryName = System.Environment.GetFolderPath(Environment.SpecialFolder.Personal);                  // C:\Users\David\Documents                  C:\Users\david.janacek\Documents
+            directoryName = System.Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);               // C:\Users\David                            C:\Users\david.janacek
 
 
             // V prostředí EZÚ se tyto soubory uloží do podadresáře v umístění %APPDATA%\Local\Temp a Adobe Reader si je pak otevírá tamodtud.
