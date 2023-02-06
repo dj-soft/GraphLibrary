@@ -3041,9 +3041,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             get
             {
-                if (__TempDirectoryName is null)
-                    __TempDirectoryName = _TempDirectoryPrepare();
-                return __TempDirectoryName;
+                string directoryName = __TempDirectoryName;          // Tato zajímavá konstrukce ušetří duplicitní kontrolu existence adresáře tehdy, ...
+                if (directoryName is null) _TempDirectoryPrepare();
+                else __TempDirectoryExists(directoryName);           //   ... když při prvním čtení je připravován (_TempDirectoryPrepare), protože přitom je adresář testován a je zajištěna jeho existence.
+                return __TempDirectoryName;                          // Nemohu vracet directoryName, to může být prázdné, a přitom metoda _TempDirectoryPrepare() jméno vytvořila.
             }
         }
         /// <summary>
@@ -3051,38 +3052,149 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private string __TempDirectoryName;
         /// <summary>
-        /// Stav Temp adresáře
+        /// Aplikace zde zadává suffix Temp adresáře.
         /// </summary>
-        private TempDirectoryState __TempDirectoryState = TempDirectoryState.None;
+        public static string TempDirectorySuffix { get { return Instance._TempDirectorySuffix; } set { Instance._TempDirectorySuffix = value; } }
         /// <summary>
-        /// Určí, otestuje a vrátí Temp adresář
+        /// Aplikace zde zadává suffix Temp adresáře.
+        /// </summary>
+        private string _TempDirectorySuffix
+        {
+            get { return __TempDirectorySuffix; }
+            set 
+            {
+                if (!String.Equals(value, __TempDirectorySuffix))
+                {
+                    __TempDirectorySuffix = value;
+                    __TempDirectoryReset();
+                }
+            }
+        }
+        /// <summary>
+        /// Temp adresář
+        /// </summary>
+        private string __TempDirectorySuffix;
+        /// <summary>
+        /// Zámek přípravy Temp adresáře
+        /// </summary>
+        private object __TempDirectoryLock = new object();
+        /// <summary>
+        /// Určí, otestuje a vrátí Temp adresář.
         /// </summary>
         /// <returns></returns>
-        private string _TempDirectoryPrepare()
+        private void _TempDirectoryPrepare()
+        {
+            // Pokud by přišly dva požadavky na _TempDirectoryPrepare() ze dvou různých threadů při startu aplikace,
+            //  pak nechci provádět hledání a předběžný úklid ze dvou threadů najednou => druhý počká, až první dokončí:
+            lock (__TempDirectoryLock)
+            {
+                if (__TempDirectoryName is null)
+                    _TempDirectorySearch();
+            }
+        }
+        /// <summary>
+        /// Fyzicky určí jméno Temp adresáře.
+        /// </summary>
+        private void _TempDirectorySearch()
         {
             string directoryName = null;
-            directoryName = System.IO.Path.GetTempPath();                                                          // C:\Users\David\AppData\Local\Temp\        C:\Users\david.janacek\AppData\Local\Temp\
-            directoryName = System.Environment.GetEnvironmentVariable("TEMP");                                     // C:\Users\David\AppData\Local\Temp         C:\Users\DAVID~1.JAN\AppData\Local\Temp                      // Dosavadní Temp
-            directoryName = System.Environment.GetEnvironmentVariable("TMP");                                      // C:\Users\David\AppData\Local\Temp         C:\Users\DAVID~1.JAN\AppData\Local\Temp
-            directoryName = System.Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);           // C:\Users\David\AppData\Roaming            C:\Users\david.janacek\AppData\Roaming
-            directoryName = System.Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);      // C:\Users\David\AppData\Local              C:\Users\david.janacek\AppData\Local                     // Cílový prostor
-            directoryName = System.Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);     // C:\ProgramData                            C:\ProgramData
-            directoryName = System.Environment.GetFolderPath(Environment.SpecialFolder.Personal);                  // C:\Users\David\Documents                  C:\Users\david.janacek\Documents
-            directoryName = System.Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);               // C:\Users\David                            C:\Users\david.janacek
+            
+            string suffix = _TempDirectorySuffix;
+            if (directoryName is null) directoryName = _TempDirectoryTest(System.Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), suffix);     // C:\Users\David\AppData\Local              C:\Users\david.janacek\AppData\Local                     // Cílový prostor
+            if (directoryName is null) directoryName = _TempDirectoryTest(System.Environment.GetEnvironmentVariable("TEMP"), suffix);         // C:\Users\David\AppData\Local\Temp         C:\Users\DAVID~1.JAN\AppData\Local\Temp                      // Dosavadní Temp
+            if (directoryName is null) directoryName = _TempDirectoryTest(System.Environment.GetEnvironmentVariable("TMP"), suffix);          // C:\Users\David\AppData\Local\Temp         C:\Users\DAVID~1.JAN\AppData\Local\Temp
+            if (directoryName is null) directoryName = _TempDirectoryTest(System.IO.Path.GetTempPath(), suffix);                              // C:\Users\David\AppData\Local\Temp\        C:\Users\david.janacek\AppData\Local\Temp\
 
+            if (directoryName is null)
+            {   // Za stavu nouze zkusím bez suffixu?
+                suffix = null;
+                if (directoryName is null) directoryName = _TempDirectoryTest(System.Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), suffix);
+                if (directoryName is null) directoryName = _TempDirectoryTest(System.Environment.GetEnvironmentVariable("TEMP"), suffix);
+                if (directoryName is null) directoryName = _TempDirectoryTest(System.Environment.GetEnvironmentVariable("TMP"), suffix);
+                if (directoryName is null) directoryName = _TempDirectoryTest(System.IO.Path.GetTempPath(), suffix);
+            }
+
+            if (!(directoryName is null))
+                _ = _TempDirectoryCleanAsync(directoryName);
+
+            __TempDirectoryName = directoryName;
+
+
+            /* Další SpecialFolders:
+
+            System.Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);           // C:\Users\David\AppData\Roaming            C:\Users\david.janacek\AppData\Roaming
+            System.Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);     // C:\ProgramData                            C:\ProgramData
+            System.Environment.GetFolderPath(Environment.SpecialFolder.Personal);                  // C:\Users\David\Documents                  C:\Users\david.janacek\Documents
+            System.Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);               // C:\Users\David                            C:\Users\david.janacek
+
+            */
 
             // V prostředí EZÚ se tyto soubory uloží do podadresáře v umístění %APPDATA%\Local\Temp a Adobe Reader si je pak otevírá tamodtud.
             // Problém je v tom, že pokud je zapnuté chráněné zobrazení pro soubory z potenciálně nebezpečných míst,
             // počítá to mezi taková nebezpečná místa i adresář TEMP a Reader pak u PDFek omezuje funkce (viz přiložený screenshot).
 
-            // Klient aktuálně poskytuje serveru informaci o tom, kde se nachází jeho adresář Temporary.
-            // Tam vrací onen „% APPDATA %\Local\Temp“
-            // b)	Můžeme se dohodnout, že budeme vracet ten jiný, zmíněný „% APPDATA %\Local\Helios“.
+            // a) Klient aktuálně poskytuje serveru informaci o tom, kde se nachází jeho adresář Temporary.
+            //      Tam vrací onen "%APPDATA%\Local\Temp"
+            // b) Můžeme se dohodnout, že budeme vracet ten jiný, zmíněný "%APPDATA%\Local\Helios".
+        }
+        /// <summary>
+        /// Otestuje, zda daný adresář není prázdný, volitelně k němu přidá suffix <see cref="_TempDirectorySuffix"/>, a otestuje jej a vrátí výsledné jméno.
+        /// Může vrátit null, pak adresář nelze používat.
+        /// Nemělo by dojít k chybě.
+        /// Vrácený adresář nemá na konci lomítko.
+        /// </summary>
+        /// <param name="directoryName"></param>
+        /// <param name="suffix"></param>
+        /// <returns></returns>
+        private string _TempDirectoryTest(string directoryName, string suffix)
+        {
+            if (String.IsNullOrEmpty(directoryName)) return null;
+            directoryName = directoryName.Trim();
+            while (directoryName.Length > 1 && directoryName.EndsWith("\\")) directoryName = directoryName.Substring(0, directoryName.Length - 1);
+
+            if (!String.IsNullOrEmpty(suffix))
+                directoryName = System.IO.Path.Combine(directoryName, suffix);
+
+            try
+            {   // Vytvořím adresář, pokud neexistuje. Pokud dojde k chybě, odchytím ji a vrátím null => daný adresář nelze použít, nemáme na něj právo...
+                if (!System.IO.Directory.Exists(directoryName))
+                    System.IO.Directory.CreateDirectory(directoryName);
+
+                // Do vytvořeného adresáře zkusím zapsat (a poté smazat) soubor, abych měl jistotu, že jej mohu používat:
+                string name = "~t" + (new Random()).Next(100000000, 1000000000).ToString() + DateTime.Now.ToString("mmssfff") + ".tmp";
+                string testFileName = System.IO.Path.Combine(directoryName, name);
+                if (System.IO.File.Exists(testFileName))
+                    System.IO.File.Delete(testFileName);
+                System.IO.File.WriteAllText(testFileName, "Helios");
+
+                // Pokud testovací soubor existuje, je to OK; pokud ale neexistuje, pak adresář nemohu používat:
+                if (System.IO.File.Exists(testFileName))
+                    System.IO.File.Delete(testFileName);
+                else
+                    directoryName = null;
+            }
+            catch 
+            {   // Chyba znamená, že adresář nebudeme používat:
+                directoryName = null;
+            }
+
             return directoryName;
         }
-        private string _TestTempDirectory(string directoryName)
+        /// <summary>
+        /// Zajistí, že daný adresář (pokud není prázdný) bude existovat (pokud neexistuje, vytvoří jej)
+        /// </summary>
+        /// <param name="directoryName"></param>
+        private void __TempDirectoryExists(string directoryName)
         {
-            return directoryName;
+            if (!String.IsNullOrEmpty(directoryName) && !System.IO.Directory.Exists(directoryName))
+                System.IO.Directory.CreateDirectory(directoryName);
+        }
+        /// <summary>
+        /// Resetuje aktuální Temp adresář, ale ne jeho Suffix.
+        /// </summary>
+        private void __TempDirectoryReset()
+        {
+            __TempDirectoryName = null;
         }
         /// <summary>
         /// Volá se při ukončení aplikace. Má za úkol uklidit v Temp adresáři, pokud úklid neproběhl před prvním použitím.
@@ -3090,22 +3202,51 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         private void _TempDirectoryDone()
         {
-            if (!(__TempDirectoryName is null)) return;              // Pokud Temp adresář 
+            string directoryName = __TempDirectoryName;
+            if (directoryName != null)
+                _ = _TempDirectoryCleanAsync(directoryName);
         }
         /// <summary>
-        /// Stav přípravy / určení / úklidu Temp adresáře.
+        /// Uklidí zastaralé soubory v daném Temp adresáři.
         /// </summary>
-        private enum TempDirectoryState
+        /// <param name="tempDirectoryName"></param>
+        private async Task _TempDirectoryCleanAsync(string tempDirectoryName)
         {
-            /// <summary>
-            /// Dosud neurčen, po startu systému
-            /// </summary>
-            None,
-            Searching,
-            FoundTempApplication,
-            FoundTempSystem,
+            if (String.IsNullOrEmpty(tempDirectoryName)) return;
 
+            var task = Task.Factory.StartNew(() => _TempDirectoryCleanSync(tempDirectoryName));
+            await task;
+            return;
+        }
+        /// <summary>
+        /// Úklid daného Temp adresáře na pozadí
+        /// </summary>
+        /// <param name="tempDirectoryName"></param>
+        private void _TempDirectoryCleanSync(string tempDirectoryName)
+        {
+            if (String.IsNullOrEmpty(tempDirectoryName)) return;
+            if (tempDirectoryName.IndexOf(@"\AppData\Local", StringComparison.InvariantCultureIgnoreCase) < 0) return;   // Bezpečností pojistka, abych nesmazal nějaký jiný adresář...
 
+            System.IO.DirectoryInfo dirInfo = new System.IO.DirectoryInfo(tempDirectoryName);
+            if (!dirInfo.Exists) return;
+            double days = 31d;
+            var now = DateTime.UtcNow;
+            var fsInfos = dirInfo.GetFileSystemInfos("*.*", System.IO.SearchOption.TopDirectoryOnly);
+            foreach (var fsInfo in fsInfos)
+            {
+                var time = now - fsInfo.LastWriteTimeUtc;
+                if (time.Days < days) continue;
+                _TempDirectoryCleanOne(fsInfo);
+            }
+        }
+        /// <summary>
+        /// Smaže jeden prvek z adresáře
+        /// </summary>
+        /// <param name="fsInfo"></param>
+        private void _TempDirectoryCleanOne(System.IO.FileSystemInfo fsInfo)
+        {
+            try { fsInfo.Delete(); }
+            catch { }
         }
         #endregion
         #region TryRun
