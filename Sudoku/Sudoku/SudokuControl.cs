@@ -1973,7 +1973,7 @@ namespace DjSoft.Games.Animated.Sudoku
             var textSize = args.Graphics.MeasureString(text, font);
             var textBounds = textSize.AlignTo(bounds, alignment);
             if (offset.HasValue) textBounds = textBounds.ShiftBy(offset.Value);
-            args.Graphics.DrawString(text, font, args.GetBrush(color.Value), textBounds.Location);
+            args.Graphics.DrawString(text, font, args.GetBrush(color.Value), textBounds.Location); //
         }
 
 
