@@ -20,11 +20,11 @@ namespace TestDevExpress
             try
             {
                 Noris.Clients.Win.Components.AsolDX.DxComponent.Init();
-                Noris.Clients.Win.Components.AsolDX.DxComponent.Settings.CompanyName = "DJsoft";
+                Noris.Clients.Win.Components.AsolDX.DxComponent.Settings.CompanyName = "Asseco Solutions";
                 Noris.Clients.Win.Components.AsolDX.DxComponent.Settings.ApplicationName = "TestDevExpress";
 
                 // Noris.Clients.Win.Components.AsolDX.DxComponent.Settings.ConfigFileName = @"c:\ProgramData\Asseco Solutions\NorisWin32Clients\Settings.bin";
-                Noris.Clients.Win.Components.AsolDX.DxComponent.TempDirectorySuffix = "TestDevExpress\\AsolDX";
+                Noris.Clients.Win.Components.AsolDX.DxComponent.TempDirectorySuffix = "Asseco Solutions\\TestDevExpress\\Temp";
                 var td = Noris.Clients.Win.Components.AsolDX.DxComponent.TempDirectoryName;
 
                 // Nastavíme Config skin a budeme sledovat změny aktivního skinu a ukládat jej do configu:

@@ -3098,47 +3098,30 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void _TempDirectorySearch()
         {
             string directoryName = null;
-            
+
+            // Temp adresář, typicky "C:\Users\david.janacek\AppData\Local" + "Asseco Solutions\Aplikace\Temp"
             string suffix = _TempDirectorySuffix;
-            if (directoryName is null) directoryName = _TempDirectoryTest(System.Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), suffix);     // C:\Users\David\AppData\Local              C:\Users\david.janacek\AppData\Local                     // Cílový prostor
-            if (directoryName is null) directoryName = _TempDirectoryTest(System.Environment.GetEnvironmentVariable("TEMP"), suffix);         // C:\Users\David\AppData\Local\Temp         C:\Users\DAVID~1.JAN\AppData\Local\Temp                      // Dosavadní Temp
-            if (directoryName is null) directoryName = _TempDirectoryTest(System.Environment.GetEnvironmentVariable("TMP"), suffix);          // C:\Users\David\AppData\Local\Temp         C:\Users\DAVID~1.JAN\AppData\Local\Temp
-            if (directoryName is null) directoryName = _TempDirectoryTest(System.IO.Path.GetTempPath(), suffix);                              // C:\Users\David\AppData\Local\Temp\        C:\Users\david.janacek\AppData\Local\Temp\
+            if (!String.IsNullOrEmpty(suffix)) searchForTempDirectoryOne(suffix);
 
-            if (directoryName is null)
-            {   // Za stavu nouze zkusím bez suffixu?
-                suffix = null;
-                if (directoryName is null) directoryName = _TempDirectoryTest(System.Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), suffix);
-                if (directoryName is null) directoryName = _TempDirectoryTest(System.Environment.GetEnvironmentVariable("TEMP"), suffix);
-                if (directoryName is null) directoryName = _TempDirectoryTest(System.Environment.GetEnvironmentVariable("TMP"), suffix);
-                if (directoryName is null) directoryName = _TempDirectoryTest(System.IO.Path.GetTempPath(), suffix);
-            }
+            // Za stavu nouze zkusím bez suffixu?
+            if (directoryName is null) searchForTempDirectoryOne(null);
 
-            if (!(directoryName is null))
-                _ = _TempDirectoryCleanAsync(directoryName);
+            // Prvotní úklid adresáře bude asynchronní:
+            if (!(directoryName is null)) _ = _TempDirectoryCleanAsync(directoryName);
 
             __TempDirectoryName = directoryName;
 
-
-            /* Další SpecialFolders:
-
-            System.Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);           // C:\Users\David\AppData\Roaming            C:\Users\david.janacek\AppData\Roaming
-            System.Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);     // C:\ProgramData                            C:\ProgramData
-            System.Environment.GetFolderPath(Environment.SpecialFolder.Personal);                  // C:\Users\David\Documents                  C:\Users\david.janacek\Documents
-            System.Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);               // C:\Users\David                            C:\Users\david.janacek
-
-            */
-
-            // V prostředí EZÚ se tyto soubory uloží do podadresáře v umístění %APPDATA%\Local\Temp a Adobe Reader si je pak otevírá tamodtud.
-            // Problém je v tom, že pokud je zapnuté chráněné zobrazení pro soubory z potenciálně nebezpečných míst,
-            // počítá to mezi taková nebezpečná místa i adresář TEMP a Reader pak u PDFek omezuje funkce (viz přiložený screenshot).
-
-            // a) Klient aktuálně poskytuje serveru informaci o tom, kde se nachází jeho adresář Temporary.
-            //      Tam vrací onen "%APPDATA%\Local\Temp"
-            // b) Můžeme se dohodnout, že budeme vracet ten jiný, zmíněný "%APPDATA%\Local\Helios".
+            // Vyhledá Temp adresář se zadaným suffixem:
+            void searchForTempDirectoryOne(string suffix)
+            {
+                if (directoryName is null) directoryName = _TempDirectoryTest(System.Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), suffix);     // C:\Users\David\AppData\Local              C:\Users\david.janacek\AppData\Local                     // Cílový prostor
+                if (directoryName is null) directoryName = _TempDirectoryTest(System.Environment.GetEnvironmentVariable("TEMP"), suffix);         // C:\Users\David\AppData\Local\Temp         C:\Users\DAVID~1.JAN\AppData\Local\Temp                      // Dosavadní Temp
+                if (directoryName is null) directoryName = _TempDirectoryTest(System.Environment.GetEnvironmentVariable("TMP"), suffix);          // C:\Users\David\AppData\Local\Temp         C:\Users\DAVID~1.JAN\AppData\Local\Temp
+                if (directoryName is null) directoryName = _TempDirectoryTest(System.IO.Path.GetTempPath(), suffix);                              // C:\Users\David\AppData\Local\Temp\        C:\Users\david.janacek\AppData\Local\Temp\
+            }
         }
         /// <summary>
-        /// Otestuje, zda daný adresář není prázdný, volitelně k němu přidá suffix <see cref="_TempDirectorySuffix"/>, a otestuje jej a vrátí výsledné jméno.
+        /// Otestuje, zda daný adresář <paramref name="directoryName"/> není prázdný, volitelně k němu přidá dodaný suffix <paramref name="suffix"/> a otestuje jej a vrátí výsledné jméno.
         /// Může vrátit null, pak adresář nelze používat.
         /// Nemělo by dojít k chybě.
         /// Vrácený adresář nemá na konci lomítko.
@@ -3149,6 +3132,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         private string _TempDirectoryTest(string directoryName, string suffix)
         {
             if (String.IsNullOrEmpty(directoryName)) return null;
+
             directoryName = directoryName.Trim();
             while (directoryName.Length > 1 && directoryName.EndsWith("\\")) directoryName = directoryName.Substring(0, directoryName.Length - 1);
 
@@ -3173,7 +3157,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 else
                     directoryName = null;
             }
-            catch 
+            catch
             {   // Chyba znamená, že adresář nebudeme používat:
                 directoryName = null;
             }
@@ -3230,23 +3214,59 @@ namespace Noris.Clients.Win.Components.AsolDX
             System.IO.DirectoryInfo dirInfo = new System.IO.DirectoryInfo(tempDirectoryName);
             if (!dirInfo.Exists) return;
             double days = 31d;
-            var now = DateTime.UtcNow;
+            var dateDelete = DateTime.UtcNow.AddDays(-days);
+            _TempDirectoryDirectoryCleanOne(dirInfo, dateDelete, false);
+        }
+        /// <summary>
+        /// Smaže prvky (soubory a podadresáře) z daného adresáře, pokud je smazat lze.
+        /// Pokud je požadováno <paramref name="include"/> a adresář je na konci prázdný, pak smaže i sebe.
+        /// </summary>
+        /// <param name="dirInfo"></param>
+        /// <param name="dateDelete">Smazat soubory, jejicž datum (LastWriteTimeUtc) je menší než toto datum</param>
+        /// <param name="include"></param>
+        private static void _TempDirectoryDirectoryCleanOne(System.IO.DirectoryInfo dirInfo, DateTime dateDelete, bool include)
+        {
+            if (dirInfo is null || !dirInfo.Exists) return;
+
             var fsInfos = dirInfo.GetFileSystemInfos("*.*", System.IO.SearchOption.TopDirectoryOnly);
             foreach (var fsInfo in fsInfos)
             {
-                var time = now - fsInfo.LastWriteTimeUtc;
-                if (time.Days < days) continue;
-                _TempDirectoryCleanOne(fsInfo);
+                if (fsInfo.Attributes.HasFlag(System.IO.FileAttributes.Directory))
+                {   // Adresář => rekurzivně:
+                    _TempDirectoryDirectoryCleanOne(fsInfo as System.IO.DirectoryInfo, dateDelete, true);
+                }
+                else
+                {   // Soubor => podle data smazat:
+                    if (fsInfo.LastWriteTimeUtc < dateDelete)
+                        _TempDirectoryCleanDeleteOne(fsInfo);
+                }
+            }
+
+            if (include)
+            {   // Včetně adresáře, pokud je prázdný:
+                dirInfo.Refresh();
+                fsInfos = dirInfo.GetFileSystemInfos("*.*", System.IO.SearchOption.TopDirectoryOnly);
+                if (fsInfos.Length == 0)
+                    _TempDirectoryCleanDeleteOne(dirInfo);
             }
         }
         /// <summary>
         /// Smaže jeden prvek z adresáře
         /// </summary>
         /// <param name="fsInfo"></param>
-        private void _TempDirectoryCleanOne(System.IO.FileSystemInfo fsInfo)
+        private static void _TempDirectoryCleanDeleteOne(System.IO.FileSystemInfo fsInfo)
         {
-            try { fsInfo.Delete(); }
-            catch { }
+            try
+            {
+                if (fsInfo != null)
+                {
+                    if (fsInfo.Attributes.HasFlag(System.IO.FileAttributes.ReadOnly) || fsInfo.Attributes.HasFlag(System.IO.FileAttributes.Hidden))
+                        fsInfo.Attributes = System.IO.FileAttributes.Normal;
+                    fsInfo.Delete();
+                }
+            }
+            catch (Exception)
+            { }
         }
         #endregion
         #region TryRun
