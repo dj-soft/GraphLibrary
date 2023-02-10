@@ -72,6 +72,70 @@ namespace DjSoft.Games.Animated
         {
             return new RectangleF(bounds.X + shiftBy.Width, bounds.Y + shiftBy.Height, bounds.Width, bounds.Height);
         }
+
+        /// <summary>
+        /// Vrátí this rectangle posunutý o dodané hodnoty
+        /// </summary>
+        /// <param name="point"></param>
+        /// <param name="shiftByX"></param>
+        /// <param name="shiftByY"></param>
+        /// <returns></returns>
+        public static Point ShiftBy(this Point point, int shiftByX, int shiftByY)
+        {
+            return new Point(point.X + shiftByX, point.Y + shiftByY);
+        }
+        /// <summary>
+        /// Vrátí this rectangle posunutý o dodané hodnoty
+        /// </summary>
+        /// <param name="point"></param>
+        /// <param name="shiftByX"></param>
+        /// <param name="shiftByY"></param>
+        /// <returns></returns>
+        public static PointF ShiftBy(this PointF point, float shiftByX, float shiftByY)
+        {
+            return new PointF(point.X + shiftByX, point.Y + shiftByY);
+        }
+        /// <summary>
+        /// Vrátí this rectangle posunutý o dodané hodnoty
+        /// </summary>
+        /// <param name="point"></param>
+        /// <param name="shiftBy"></param>
+        /// <returns></returns>
+        public static Point ShiftBy(this Point point, Point shiftBy)
+        {
+            return new Point(point.X + shiftBy.X, point.Y + shiftBy.Y);
+        }
+        /// <summary>
+        /// Vrátí this rectangle posunutý o dodané hodnoty
+        /// </summary>
+        /// <param name="point"></param>
+        /// <param name="shiftBy"></param>
+        /// <returns></returns>
+        public static PointF ShiftBy(this PointF point, PointF shiftBy)
+        {
+            return new PointF(point.X + shiftBy.X, point.Y + shiftBy.Y);
+        }
+        /// <summary>
+        /// Vrátí this rectangle posunutý o dodané hodnoty
+        /// </summary>
+        /// <param name="point"></param>
+        /// <param name="shiftBy"></param>
+        /// <returns></returns>
+        public static Point ShiftBy(this Point point, Size shiftBy)
+        {
+            return new Point(point.X + shiftBy.Width, point.Y + shiftBy.Height);
+        }
+        /// <summary>
+        /// Vrátí this rectangle posunutý o dodané hodnoty
+        /// </summary>
+        /// <param name="point"></param>
+        /// <param name="shiftBy"></param>
+        /// <returns></returns>
+        public static PointF ShiftBy(this PointF point, SizeF shiftBy)
+        {
+            return new PointF(point.X + shiftBy.Width, point.Y + shiftBy.Height);
+        }
+
         /// <summary>
         /// Vrátí this point vynásobený (ve všech hodnotách) daným Zoomem
         /// </summary>
@@ -198,6 +262,7 @@ namespace DjSoft.Games.Animated
         {
             return new RectangleF(zoomX * bounds.X, zoomY * bounds.Y, zoomX * bounds.Width, zoomY * bounds.Height);
         }
+
         /// <summary>
         /// Vrátí new <see cref="RectangleF"/>, vytvořený okolo středu dodaného <see cref="RectangleF"/>, s velikostí upravenou Zoomem z původní velikosti.
         /// </summary>
@@ -229,6 +294,18 @@ namespace DjSoft.Games.Animated
         {
             PointF location = new PointF(center.X - size.Width / 2f, center.Y - size.Height / 2f);
             return new RectangleF(location, size);
+        }
+        /// <summary>
+        /// Vrací souřadnici prostoru <see cref="RectangleF"/>, vytvořenou z dodaného středu okolo něhož umístí dodanou velikost
+        /// </summary>
+        /// <param name="center"></param>
+        /// <param name="width"></param>
+        /// <param name="height"></param>
+        /// <returns></returns>
+        public static RectangleF GetBoundsFromCenter(this PointF center, float width, float height)
+        {
+            PointF location = new PointF(center.X - width / 2f, center.Y - height / 2f);
+            return new RectangleF(location.X, location.Y, width, height);
         }
 
         /// <summary>

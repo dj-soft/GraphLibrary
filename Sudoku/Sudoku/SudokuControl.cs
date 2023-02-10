@@ -5,6 +5,8 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Drawing;
 using System.Windows.Forms;
+
+using DjSoft.Games.Animated;
 using DjSoft.Games.Animated.Components;
 
 namespace DjSoft.Games.Animated.Sudoku

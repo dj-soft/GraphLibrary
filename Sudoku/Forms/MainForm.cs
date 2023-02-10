@@ -29,6 +29,7 @@ namespace DjSoft.Games.Animated
             int x = 1;
             _SnakeCreateButton(ref x);
             _SudokuCreateButton(ref x);
+            _SpinnerCreateButton(ref x);
             _ClearCreateButton(ref x);
 
             _ContentClear();
@@ -111,6 +112,7 @@ namespace DjSoft.Games.Animated
             __ContentPanel.Controls.Clear();
             _SnakeRemove();
             _SudokuRemove();
+            _SpinnerRemove();
             __ClearButton.Image = DjSoft.Games.Animated.Properties.Resources.Gloss_PNGShutdown_Quit_Dock;
             __ClearButton.Text = "Exit";
             _HasContent = false;
@@ -156,6 +158,26 @@ namespace DjSoft.Games.Animated
         }
         Button __SudokuButton;
         Sudoku.SudokuControl __SudokuControl;
+        #endregion
+        #region Spinner
+        private void _SpinnerCreateButton(ref int x)
+        {
+            __SpinnerButton = _CreateMenuButton(ref x, "Spinner", DjSoft.Games.Animated.Properties.Resources.macromedia_luiscds_flash5_128x128, _SpinnerClick);
+        }
+        private void _SpinnerClick(object sender, EventArgs args)
+        {
+            _ContentClear();
+            _HighlightButton(__SpinnerButton);
+            __SpinnerControl = new Gadgets.SpinnerControl() { Dock = DockStyle.Fill };
+            _AddContent(__SpinnerControl);
+        }
+        private void _SpinnerRemove()
+        {
+            __SpinnerControl?.Dispose();
+            __SpinnerControl = null;
+        }
+        Button __SpinnerButton;
+        Gadgets.SpinnerControl __SpinnerControl;
         #endregion
         #region Windows Form Designer generated code
         /// <summary>
