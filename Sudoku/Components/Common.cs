@@ -22,6 +22,7 @@ namespace DjSoft.Games.Animated.Components
         /// <param name="owner"></param>
         public BackColorHSVAnimator(AnimatedControl owner, Color baseColor)
         {
+            __Active = true;
             __Owner = owner;
             __ColorHSV = ColorHSV.FromColor(baseColor);
             __ColorHue = __ColorHSV.Hue;
@@ -44,18 +45,31 @@ namespace DjSoft.Games.Animated.Components
             animator.AddMotion(cycle, start, Animator.TimeMode.LinearCycling, 0d, _AnimeBgr, 0d, 360d, null);
         }
         /// <summary>
+        /// Animace je aktivní?
+        /// </summary>
+        public bool Active { get { return __Active; } set { __Active = value; } } private bool __Active;
+        /// <summary>
+        /// Barva pozadí
+        /// </summary>
+        public Color CurrentColor { get { return __CurrentColor; } set { __CurrentColor = value; __Owner.BackColor = value; } } private Color __CurrentColor;
+        /// <summary>
         /// Jeden animační krok
         /// </summary>
         /// <param name="motion"></param>
         private void _AnimeBgr(Animator.Motion motion)
         {
+            if (!Active) return;
+
             double hueDelta = (double)motion.CurrentValue;
             double hueCurrent = (__ColorHue + hueDelta) % 360d;
             __ColorHSV.Hue = hueCurrent;
             Color backColorNew = __ColorHSV.Color;
             Color backColorOld = __Owner.BackColor;
             if (!ValueSupport.IsEqualColors(backColorOld, backColorNew))
+            {
+                __CurrentColor = backColorNew;
                 __Owner.BackColor = backColorNew;
+            }
         }
         /// <summary>
         /// Vykreslí pozadí
@@ -63,17 +77,24 @@ namespace DjSoft.Games.Animated.Components
         /// <param name="e"></param>
         public void Paint(LayeredPaintEventArgs e)
         {
-            double shift = 15d;
-            ColorHSV colorHSV = __ColorHSV;
-            Color color1 = colorHSV.Color;
-            colorHSV.Hue -= shift;
-            Color color2 = colorHSV.Color;
             Rectangle bounds = this.__Owner.ClientRectangle;
-            Point point1 = new Point(0, 0);
-            // Point point2 = new Point(0, bounds.Height);
-            Point point2 = new Point(bounds.Width, 0);
-            using (var brush = new System.Drawing.Drawing2D.LinearGradientBrush(point1, point2, color1, color2))
-                e.Graphics.FillRectangle(brush, bounds);
+            if (Active)
+            {
+                double shift = 15d;
+                ColorHSV colorHSV = __ColorHSV;
+                Color color1 = colorHSV.Color;
+                colorHSV.Hue -= shift;
+                Color color2 = colorHSV.Color;
+                Point point1 = new Point(0, 0);
+                // Point point2 = new Point(0, bounds.Height);
+                Point point2 = new Point(bounds.Width, 0);
+                using (var brush = new System.Drawing.Drawing2D.LinearGradientBrush(point1, point2, color1, color2))
+                    e.Graphics.FillRectangle(brush, bounds);
+            }
+            else
+            {
+                e.Graphics.FillRectangle(e.GetBrush(this.CurrentColor), bounds);
+            }
         }
         private AnimatedControl __Owner;
         private ColorHSV __ColorHSV;
