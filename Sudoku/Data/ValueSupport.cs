@@ -303,7 +303,18 @@ namespace DjSoft.Games.Sudoku.Data
             colorHSV.Color = color;
             return colorHSV;
         }
-
+        public static ColorHSV FromArgb(int alpha, int red, int green, int blue)
+        {
+            ColorHSV colorHSV = new ColorHSV();
+            colorHSV.Color = Color.FromArgb(alpha, red, green, blue);
+            return colorHSV;
+        }
+        public static ColorHSV FromArgb(int red, int green, int blue)
+        {
+            ColorHSV colorHSV = new ColorHSV();
+            colorHSV.Color = Color.FromArgb(red, green, blue);
+            return colorHSV;
+        }
 
         public static Color ColorFromHSV(double hue, double saturation, double value)
         {

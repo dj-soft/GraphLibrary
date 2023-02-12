@@ -297,6 +297,21 @@ namespace DjSoft.Games.Animated.Components
         /// </summary>
         public bool AnimatorTimerStop { get { return __AnimatorTimerStop; } set { __AnimatorTimerStop |= value; } } private bool __AnimatorTimerStop;
         #endregion
+        #region Časové služby
+        /// <summary>
+        /// Vrátí aktuální čas v počtu Ticků, viz navazující metoda 
+        /// </summary>
+        public long CurrentTick { get { return this.__StopWatch.ElapsedTicks; } }
+        /// <summary>
+        /// Vrátí čas uplynulý od daného startu (získáno v <see cref="CurrentTick"/> do teď, v milisekundách
+        /// </summary>
+        /// <param name="startTick"></param>
+        /// <returns></returns>
+        public double GetElapsedMiliSeconds(long startTick)
+        {
+            return __StopWatch.GetMilisecs(startTick);
+        }
+        #endregion
         #region Správa animačních akcí
         /// <summary>
         /// Vloží další definici animace.
@@ -307,7 +322,7 @@ namespace DjSoft.Games.Animated.Components
         /// <param name="userData">Libovolná data aplikace</param>
         public Motion AddMotion(Action<Motion> action, object userData)
         {
-            Motion motion = new Motion(action, userData);
+            Motion motion = new Motion(this, action, userData);
             lock (__Motion)
                 __Motion.Add(motion);
             return motion;
@@ -324,7 +339,7 @@ namespace DjSoft.Games.Animated.Components
         /// <param name="userData">Libovolná data aplikace</param>
         public Motion AddMotion(int? stepCount, TimeMode timeMode, double timeZoom, Action<Motion> action, object startValue, object endValue, object userData)
         {
-            Motion motion = new Motion(stepCount, timeMode, timeZoom, action, startValue, endValue, userData);
+            Motion motion = new Motion(this, stepCount, timeMode, timeZoom, action, startValue, endValue, userData);
             lock (__Motion)
                 __Motion.Add(motion);
             return motion;
@@ -342,7 +357,7 @@ namespace DjSoft.Games.Animated.Components
         /// <param name="userData">Libovolná data aplikace</param>
         public Motion AddMotion(int? stepCount, int? stepCurrent, TimeMode timeMode, double timeZoom, Action<Motion> action, object startValue, object endValue, object userData)
         {
-            Motion motion = new Motion(stepCount, stepCurrent, timeMode, timeZoom, action, startValue, endValue, userData);
+            Motion motion = new Motion(this, stepCount, stepCurrent, timeMode, timeZoom, action, startValue, endValue, userData);
             lock (__Motion)
                 __Motion.Add(motion);
             return motion;
@@ -358,7 +373,7 @@ namespace DjSoft.Games.Animated.Components
         /// <param name="userData">Libovolná data aplikace</param>
         public Motion AddMotion(int? stepCount, TimeMode timeMode, double timeZoom, Action<Motion> action, AnimatedValueSet valueSet, object userData)
         {
-            Motion motion = new Motion(stepCount, timeMode, timeZoom, action, valueSet, userData);
+            Motion motion = new Motion(this, stepCount, timeMode, timeZoom, action, valueSet, userData);
             lock (__Motion)
                 __Motion.Add(motion);
             return motion;
@@ -375,7 +390,7 @@ namespace DjSoft.Games.Animated.Components
         /// <param name="userData">Libovolná data aplikace</param>
         public Motion AddMotion(int? stepCount, int? stepCurrent, TimeMode timeMode, double timeZoom, Action<Motion> action, AnimatedValueSet valueSet, object userData)
         {
-            Motion motion = new Motion(stepCount, stepCurrent, timeMode, timeZoom, action, valueSet, userData);
+            Motion motion = new Motion(this, stepCount, stepCurrent, timeMode, timeZoom, action, valueSet, userData);
             lock (__Motion)
                 __Motion.Add(motion);
             return motion;
@@ -393,10 +408,12 @@ namespace DjSoft.Games.Animated.Components
             /// <summary>
             /// Konstruktor
             /// </summary>
+            /// <param name="owner">Vlastník = Animátor</param>
             /// <param name="action"></param>
             /// <param name="userData"></param>
-            public Motion(Action<Motion> action, object userData)
+            public Motion(Animator owner, Action<Motion> action, object userData)
             {
+                __Owner = owner;
                 __StepIndex = 0;
                 __StepCount = -1;
                 __TimeMode = TimeMode.Linear;
@@ -411,6 +428,7 @@ namespace DjSoft.Games.Animated.Components
             /// <summary>
             /// Konstruktor
             /// </summary>
+            /// <param name="owner">Vlastník = Animátor</param>
             /// <param name="stepCount"></param>
             /// <param name="timeMode"></param>
             /// <param name="timeZoom">Zoom času, v rozmezí -10 až +10</param>
@@ -418,10 +436,11 @@ namespace DjSoft.Games.Animated.Components
             /// <param name="startValue"></param>
             /// <param name="endValue"></param>
             /// <param name="userData"></param>
-            public Motion(int? stepCount, TimeMode timeMode, double timeZoom, Action<Motion> action, object startValue, object endValue, object userData)
+            public Motion(Animator owner, int? stepCount, TimeMode timeMode, double timeZoom, Action<Motion> action, object startValue, object endValue, object userData)
             {
                 ValueSupport.CheckValues(startValue, endValue, out SupportedValueType valueType);
 
+                __Owner = owner;
                 __StepCount = (stepCount.HasValue && stepCount.Value > 0 ? stepCount.Value : -1);
                 __StepIndex = 0;
                 __TimeMode = timeMode;
@@ -437,6 +456,7 @@ namespace DjSoft.Games.Animated.Components
             /// <summary>
             /// Konstruktor
             /// </summary>
+            /// <param name="owner">Vlastník = Animátor</param>
             /// <param name="stepCount"></param>
             /// <param name="timeMode"></param>
             /// <param name="timeZoom">Zoom času, v rozmezí -10 až +10</param>
@@ -444,10 +464,11 @@ namespace DjSoft.Games.Animated.Components
             /// <param name="startValue"></param>
             /// <param name="endValue"></param>
             /// <param name="userData"></param>
-            public Motion(int? stepCount, int? stepCurrent, TimeMode timeMode, double timeZoom, Action<Motion> action, object startValue, object endValue, object userData)
+            public Motion(Animator owner, int? stepCount, int? stepCurrent, TimeMode timeMode, double timeZoom, Action<Motion> action, object startValue, object endValue, object userData)
             {
                 ValueSupport.CheckValues(startValue, endValue, out SupportedValueType valueType);
 
+                __Owner = owner;
                 __StepCount = (stepCount.HasValue && stepCount.Value > 0 ? stepCount.Value : -1);
                 __StepIndex = (stepCurrent.HasValue ? _GetAlignedValue(stepCurrent.Value, 0, __StepCount) : 0);
                 __TimeMode = timeMode;
@@ -463,14 +484,16 @@ namespace DjSoft.Games.Animated.Components
             /// <summary>
             /// Vloží další definici animace
             /// </summary>
+            /// <param name="owner">Vlastník = Animátor</param>
             /// <param name="stepCount">Počet kroků na celý cyklus. Animátor provede <see cref="Fps"/> kroků za jednu sekundu, default 25. Čas jednoho cyklu animace v sekundách je tedy <paramref name="stepCount"/> / <see cref="Fps"/>.</param>
             /// <param name="timeMode"></param>
             /// <param name="timeZoom"></param>
             /// <param name="action">Akce volaná v každém kroku</param>
             /// <param name="valueSet"></param>
             /// <param name="userData">Libovolná data aplikace</param>
-            public Motion(int? stepCount, TimeMode timeMode, double timeZoom, Action<Motion> action, AnimatedValueSet valueSet, object userData)
+            public Motion(Animator owner, int? stepCount, TimeMode timeMode, double timeZoom, Action<Motion> action, AnimatedValueSet valueSet, object userData)
             {
+                __Owner = owner;
                 __StepCount = (stepCount.HasValue && stepCount.Value > 0 ? stepCount.Value : -1);
                 __StepIndex = 0;
                 __TimeMode = timeMode;
@@ -485,14 +508,16 @@ namespace DjSoft.Games.Animated.Components
             /// <summary>
             /// Vloží další definici animace
             /// </summary>
+            /// <param name="owner">Vlastník = Animátor</param>
             /// <param name="stepCount">Počet kroků na celý cyklus. Animátor provede <see cref="Fps"/> kroků za jednu sekundu, default 25. Čas jednoho cyklu animace v sekundách je tedy <paramref name="stepCount"/> / <see cref="Fps"/>.</param>
             /// <param name="timeMode"></param>
             /// <param name="timeZoom"></param>
             /// <param name="action">Akce volaná v každém kroku</param>
             /// <param name="valueSet"></param>
             /// <param name="userData">Libovolná data aplikace</param>
-            public Motion(int? stepCount, int? stepCurrent, TimeMode timeMode, double timeZoom, Action<Motion> action, AnimatedValueSet valueSet, object userData)
+            public Motion(Animator owner, int? stepCount, int? stepCurrent, TimeMode timeMode, double timeZoom, Action<Motion> action, AnimatedValueSet valueSet, object userData)
             {
+                __Owner = owner;
                 __StepCount = (stepCount.HasValue && stepCount.Value > 0 ? stepCount.Value : -1);
                 __StepIndex = (stepCurrent.HasValue ? _GetAlignedValue(stepCurrent.Value, 0, __StepCount) : 0);
                 __TimeMode = timeMode;
@@ -528,6 +553,7 @@ namespace DjSoft.Games.Animated.Components
                 if (value > max) return max;
                 return value;
             }
+            private Animator __Owner;
             /// <summary>
             /// Volaná akce
             /// </summary>
@@ -548,6 +574,15 @@ namespace DjSoft.Games.Animated.Components
             /// Koeficient Zoomu dynamiky
             /// </summary>
             private double __TimeCoeff;
+            /// <summary>
+            /// Animátor
+            /// </summary>
+            public Animator Animator { get { return __Owner; } }
+            /// <summary>
+            /// Frames per second = počet ticků za sekundu.
+            /// Zde nelze setovat.
+            /// </summary>
+            public double Fps { get { return __Owner.Fps; } }
             /// <summary>
             /// Pořadové číslo kroku. Při prvním volání aplikační akce je zde hodnota 0. Při posledním volání je zde hodnota == (<see cref="StepCount"/> - 1).
             /// </summary>
