@@ -25,8 +25,8 @@ namespace DjSoft.Games.Animated.Gadgets
 
             __SpinnerItem = new SpinnerItem(this);
             __SpinnerItem.LineCount = 6;
-            __SpinnerItem.Tempo = 0.60f;
-            __SpinnerItem.SpinnerDots = true;
+            __SpinnerItem.Tempo = 0.80f;
+            __SpinnerItem.Variation = SpinnerVariationType.DotsSharp;
             __SpinnerItem.LinesColor = Color.FromArgb(64, 32, 32, 32);
             __SpinnerItem.PointColor = ColorHSV.FromArgb(216, 16, 128, 16);
             __SpinnerItem.PointColorRotate = true;
@@ -92,22 +92,48 @@ namespace DjSoft.Games.Animated.Gadgets
             foreach (var line in __Lines)
                 line.Paint(args, spinnerBounds, __CurrentAngle);
         }
+        /// <summary>
+        /// Vykreslí podklad pod obrazcem, podle aktuální varianty
+        /// </summary>
+        /// <param name="args"></param>
+        /// <param name="bounds"></param>
         protected void PaintSpinnerBase(LayeredPaintEventArgs args, RectangleF bounds)
         {
-            if (this.SpinnerDots)
-                PaintSpinnerBaseDots(args, bounds);
-            else
-                PaintSpinnerBaseCircle(args, bounds);
+            switch (this.Variation)
+            {
+                case SpinnerVariationType.Circle:
+                    PaintSpinnerBaseCircle(args, bounds);
+                    break;
+                case SpinnerVariationType.DotsSoft:
+                case SpinnerVariationType.DotsSharp:
+                    PaintSpinnerBaseDots(args, bounds);
+                    break;
+            }
         }
-        protected void PaintSpinnerBaseDots(LayeredPaintEventArgs args, RectangleF bounds)
-        {
-        }
+        /// <summary>
+        /// Vykreslí podklad pod obrazcem, pro <see cref="SpinnerVariationType.Circle"/>
+        /// </summary>
+        /// <param name="args"></param>
+        /// <param name="bounds"></param>
         protected void PaintSpinnerBaseCircle(LayeredPaintEventArgs args, RectangleF bounds)
         {
             args.Graphics.FillEllipse(args.GetBrush(Color.FromArgb(64, Color.Wheat)), bounds);
             args.Graphics.DrawEllipse(args.GetPen(Color.FromArgb(64, Color.Gray), 2f), bounds);
         }
-
+        /// <summary>
+        /// Vykreslí podklad pod obrazcem, pro <see cref="SpinnerVariationType.DotsSoft"/> a <see cref="SpinnerVariationType.DotsSharp"/>
+        /// </summary>
+        /// <param name="args"></param>
+        /// <param name="bounds"></param>
+        protected void PaintSpinnerBaseDots(LayeredPaintEventArgs args, RectangleF bounds)
+        {
+            PointF center = bounds.GetCenter();
+            float dx = bounds.Width / 16f;
+            float dy = bounds.Height / 16f;
+            var brush = args.GetBrush(Color.FromArgb(80, Color.LightGreen));
+            args.Graphics.FillRectangle(brush, new RectangleF(center.X - dx / 2f, center.Y - 2f, dx, 4f));
+            args.Graphics.FillRectangle(brush, new RectangleF(center.X - 2f, center.Y - dy / 2f, 4f, dy));
+        }
         /// <summary>
         /// Vlastník
         /// </summary>
@@ -203,7 +229,7 @@ namespace DjSoft.Games.Animated.Gadgets
         /// <summary>
         /// Varianta obrazce
         /// </summary>
-        public bool SpinnerDots { get; set; }
+        public SpinnerVariationType Variation { get; set; }
         /// <summary>
         /// Jedna linka Spinneru
         /// </summary>
@@ -242,12 +268,78 @@ namespace DjSoft.Games.Animated.Gadgets
             /// <param name="currentAngle">Aktuální úhel v rozsahu 0 - 360°;</param>
             public void Paint(LayeredPaintEventArgs args, RectangleF spinnerBounds, double currentAngle)
             {
-                if (__Owner.SpinnerDots)
-                    PaintDots(args, spinnerBounds, currentAngle);
-                else
-                    PaintCircle(args, spinnerBounds, currentAngle);
+                switch (__Owner.Variation)
+                {
+                    case SpinnerVariationType.Circle:
+                        PaintCircle(args, spinnerBounds, currentAngle);
+                        break;
+                    case SpinnerVariationType.DotsSoft:
+                        PaintDotsSoft(args, spinnerBounds, currentAngle);
+                        break;
+                    case SpinnerVariationType.DotsSharp:
+                        PaintDotsSharp(args, spinnerBounds, currentAngle);
+                        break;
+                }
             }
-            private void PaintDots(LayeredPaintEventArgs args, RectangleF spinnerBounds, double currentAngle)
+
+            #region Kreslení Circle
+            /// <summary>
+            /// Vykreslí prvky pro variantu <see cref="SpinnerVariationType.Circle"/>
+            /// </summary>
+            /// <param name="args"></param>
+            /// <param name="spinnerBounds"></param>
+            /// <param name="currentAngle"></param>
+            private void PaintCircle(LayeredPaintEventArgs args, RectangleF spinnerBounds, double currentAngle)
+            {
+                CalculatePointsCircle(spinnerBounds, currentAngle, out PointF begin, out PointF end, out PointF current);
+
+                var lineColor = __Owner.LinesColor;
+                if (lineColor.HasValue)
+                    args.Graphics.DrawLine(args.GetPen(lineColor.Value, 1f), begin, end);
+
+                float pointSize = 0.03f * (spinnerBounds.Width < spinnerBounds.Height ? spinnerBounds.Width : spinnerBounds.Height);
+                var pointBounds = current.GetBoundsFromCenter(pointSize, pointSize);
+                var pointColorHsv = __Owner.PointColor;
+                if (__Owner.PointColorRotate)
+                    pointColorHsv.Hue += this.Phase;       // pointColorHsv je struct, takže změna Hue v lokální proměnné se nepromítá do __Owner.PointColor !!!
+                args.Graphics.FillEllipse(args.GetBrush(pointColorHsv.Color), pointBounds);
+            }
+            /// <summary>
+            /// Vypočítá potřebné souřadnice pro variantu <see cref="SpinnerVariationType.Circle"/>
+            /// </summary>
+            /// <param name="spinnerBounds"></param>
+            /// <param name="currentAngle">Aktuální úhel v rozsahu 0 - 360°;</param>
+            /// <param name="begin"></param>
+            /// <param name="end"></param>
+            /// <param name="current"></param>
+            private void CalculatePointsCircle(RectangleF spinnerBounds, double currentAngle, out PointF begin, out PointF end, out PointF current)
+            {
+                var center = spinnerBounds.GetCenter();
+                var sizeX = spinnerBounds.Width / 2f;
+                var sizeY = spinnerBounds.Height / 2f;
+                var dx = _AngleX * sizeX;
+                var dy = _AngleY * sizeY;
+                begin = center.ShiftBy(-dx, -dy);
+                end = center.ShiftBy(dx, dy);
+
+                // animatedValue je aktuální úhel v rozsahu 0 - 360°;
+                // Phase je konstantní posun tohoto úhlu v rozsahu 0 - 180°;
+                // Určím sinus výsledného úhlu:
+                double rad = GetRad(currentAngle + Phase);
+                float sin = (float)Math.Sin(rad);
+                var cx = dx * sin;
+                var cy = dy * sin;
+                current = center.ShiftBy(cx, cy);
+            }
+            #endregion
+            #region Kreslení DotsSoft
+            /// <summary>
+            /// Vykreslí prvky pro variantu <see cref="SpinnerVariationType.DotsSoft"/>
+            /// </summary>
+            /// <param name="args"></param>
+            /// <param name="spinnerBounds"></param>
+            /// <param name="currentAngle"></param>
+            private void PaintDotsSoft(LayeredPaintEventArgs args, RectangleF spinnerBounds, double currentAngle)
             {
                 float pointSize = 0.01f * (spinnerBounds.Width < spinnerBounds.Height ? spinnerBounds.Width : spinnerBounds.Height);
                 RectangleF pointBounds;
@@ -257,18 +349,101 @@ namespace DjSoft.Games.Animated.Gadgets
                 
                 currentAngle = 360f - currentAngle;
 
-                CalculateDotsPoint1(spinnerBounds, currentAngle, 1f, out point, out alpha);
+                CalculatePointDotsSoft(spinnerBounds, currentAngle, 1f, out point, out alpha);
                 pointBounds = point.GetBoundsFromCenter(pointSize, pointSize);
                 pointColorHsv.Alpha = alpha;
                 args.Graphics.FillEllipse(args.GetBrush(pointColorHsv.Color), pointBounds);
 
-                CalculateDotsPoint1(spinnerBounds, currentAngle, -1f, out point, out alpha);
+                CalculatePointDotsSoft(spinnerBounds, currentAngle, -1f, out point, out alpha);
                 pointBounds = point.GetBoundsFromCenter(pointSize, pointSize);
                 pointColorHsv.Alpha = alpha;
                 args.Graphics.FillEllipse(args.GetBrush(pointColorHsv.Color), pointBounds);
 
             }
-            private void CalculateDotsPoint1(RectangleF spinnerBounds, double currentAngle, float side, out PointF point, out float alpha)
+            /// <summary>
+            /// Vypočítá potřebné souřadnice pro variantu <see cref="SpinnerVariationType.DotsSoft"/>
+            /// </summary>
+            /// <param name="spinnerBounds"></param>
+            /// <param name="currentAngle">Aktuální úhel v rozsahu 0 - 360°;</param>
+            /// <param name="begin"></param>
+            /// <param name="end"></param>
+            /// <param name="current"></param>
+            private void CalculatePointDotsSoft(RectangleF spinnerBounds, double currentAngle, float side, out PointF point, out float alpha)
+            {
+                var center = spinnerBounds.GetCenter();
+                var sizeX = spinnerBounds.Width / 2f;
+                var sizeY = spinnerBounds.Height / 2f;
+                var dx = _AngleX * sizeX;
+                var dy = _AngleY * sizeY;
+
+                // Pozice bodu je dána koeficientem ratio = 0.50 (tečky jsou okolo středu prostoru, nikoli na obvodu):
+                float ratio = 0.20f;
+                var cx = side * ratio * dx;
+                var cy = side * ratio * dy;
+                point = center.ShiftBy(cx, cy);
+
+                // Určujeme hodnotu alpha = poměr viditelnosti naší tečky.
+                alpha = 1f;
+                // "Naše tečky" jsou dvě: jedna na úhlu "Angle" a druhá na úhlu "Angle + 180°" (protože Angle je v rozsahu 0-180).
+                // Viditelnost (alpha) je běžně == 1.0f, ale když přes náš úhel přechází animovaný 'currentAngle', pak naše viditelnost klesá k 0 (sinusovkou od 1 k 0 a pak zase k 1).
+                // Pokles je v rozsahu úhlů tak, aby plynule přecházel mezi sousedními úhly, tedy __Owner.LineAngle.
+                double thisAngle = this.Angle + (side < 0f ? 180d : 0d);            // Náš úhel (základní, nebo komplementární +180°)
+                double nearbyRatio = 1.5d;                                          // Rozšíření reálného úhlu mezi dvěmi sousedními liniemi = přesah vlivu animovaného úhlu na sousední linie
+                double lineAngle = nearbyRatio * __Owner.LineAngle;                 // Úhel mezi dvěma sousedními liniemi rozšířený koeficientem
+                double angle1 = thisAngle - 0.5d * lineAngle;                       // Úhel, od kterého začíná stmívání viditelnosti naší tečky
+                double angle2 = angle1 + lineAngle;                                 // Úhel, do kterého trvá stmívání viditelnosti naší tečky
+                if (currentAngle < angle1 || currentAngle >= angle2) return;        // Pokud animační úhel je mimo "stmívací rozsah", pak je naše tečka běžně viditelná a končíme s alpha = 1
+
+                // Naše tečka se bude sinusově stmívat podle pozice aktuálního 'currentAngle' v prostoru našeho úhlu 'thisAngle' +/- okolní část směrem k sousedním liniím:
+                double angleDif = Math.PI * (currentAngle - angle1) / lineAngle;    // Hodnota 0 až Pi odpovídající pozici currentAngle vůči intervalu (angle1 .. angle2)
+                double sin = Math.Sin(angleDif);                                    // Hodnota 0 až 1 odpovídající "setmění"
+
+                // Naše tečka se bude sinusově stmívat podle pozice aktuálního 'currentAngle' v prostoru našeho úhlu 'thisAngle' +/- okolní část směrem k sousedním liniím:
+                alpha = 1f - (float)sin;
+            }
+            #endregion
+            #region Kreslení DotsSharp
+            /// <summary>
+            /// Vykreslí prvky pro variantu <see cref="SpinnerVariationType.DotsSharp"/>
+            /// </summary>
+            /// <param name="args"></param>
+            /// <param name="spinnerBounds"></param>
+            /// <param name="currentAngle"></param>
+            private void PaintDotsSharp(LayeredPaintEventArgs args, RectangleF spinnerBounds, double currentAngle)
+            {
+                float pointSize = 0.01f * (spinnerBounds.Width < spinnerBounds.Height ? spinnerBounds.Width : spinnerBounds.Height);
+                RectangleF pointBounds;
+                var pointColorHsv = __Owner.PointColor;
+                PointF point;
+                float alpha;
+
+                currentAngle = 360f - currentAngle;
+
+                CalculatePointDotsSharp(spinnerBounds, currentAngle, 1f, out point, out alpha);
+                if (alpha > 0f)
+                {
+                    pointBounds = point.GetBoundsFromCenter(pointSize, pointSize);
+                    pointColorHsv.Alpha = alpha;
+                    args.Graphics.FillEllipse(args.GetBrush(pointColorHsv.Color), pointBounds);
+                }
+
+                CalculatePointDotsSharp(spinnerBounds, currentAngle, -1f, out point, out alpha);
+                if (alpha > 0f)
+                {
+                    pointBounds = point.GetBoundsFromCenter(pointSize, pointSize);
+                    pointColorHsv.Alpha = alpha;
+                    args.Graphics.FillEllipse(args.GetBrush(pointColorHsv.Color), pointBounds);
+                }
+            }
+            /// <summary>
+            /// Vypočítá potřebné souřadnice pro variantu <see cref="SpinnerVariationType.DotsSharp"/>
+            /// </summary>
+            /// <param name="spinnerBounds"></param>
+            /// <param name="currentAngle">Aktuální úhel v rozsahu 0 - 360°;</param>
+            /// <param name="begin"></param>
+            /// <param name="end"></param>
+            /// <param name="current"></param>
+            private void CalculatePointDotsSharp(RectangleF spinnerBounds, double currentAngle, float side, out PointF point, out float alpha)
             {
                 var center = spinnerBounds.GetCenter();
                 var sizeX = spinnerBounds.Width / 2f;
@@ -293,53 +468,15 @@ namespace DjSoft.Games.Animated.Gadgets
                 double angle2 = angle1 + lineAngle;                                 // Úhel, do kterého trvá stmívání viditelnosti
                 if (currentAngle < angle1 || currentAngle >= angle2) return;        // Naše tečka je běžně viditelná
 
-                // Naše tečka se bude sinusově stmívat podle úhlu:
+                // Naše tečka se bude ostře stmívat podle úhlu:
                 double angleDif = Math.PI * (currentAngle - angle1) / lineAngle;    // Hodnota 0 až Pi odpovídající pozici currentAngle vůči intervalu (angle1 .. angle2)
                 double sin = Math.Sin(angleDif);                                    // Hodnota 0 až 1 odpovídající "setmění"
-                alpha = 1f - (float)sin;
-            }
-            private void PaintCircle(LayeredPaintEventArgs args, RectangleF spinnerBounds, double currentAngle)
-            { 
-                CalculateCirclePoints(spinnerBounds, currentAngle, out PointF begin, out PointF end, out PointF current);
 
-                var lineColor = __Owner.LinesColor;
-                if (lineColor.HasValue)
-                    args.Graphics.DrawLine(args.GetPen(lineColor.Value, 1f), begin, end);
-
-                float pointSize = 0.03f * (spinnerBounds.Width < spinnerBounds.Height ? spinnerBounds.Width : spinnerBounds.Height);
-                var pointBounds = current.GetBoundsFromCenter(pointSize, pointSize);
-                var pointColorHsv = __Owner.PointColor;
-                if (__Owner.PointColorRotate)
-                    pointColorHsv.Hue += this.Phase;       // pointColorHsv je struct, takže změna Hue v lokální proměnné se nepromítá do __Owner.PointColor !!!
-                args.Graphics.FillEllipse(args.GetBrush(pointColorHsv.Color), pointBounds);
+                // Hodnota alpha je 1f (=plná viditelnost) při úhlu kde sin() < 0.4; jakmile úhle vrátí sin větší, pak alpha je 0f (zcela skryté):
+                alpha = (sin < 0.4d ? 1f : 0f);
             }
-            /// <summary>
-            /// Vypočítá potřebné souřadnice
-            /// </summary>
-            /// <param name="spinnerBounds"></param>
-            /// <param name="currentAngle">Aktuální úhel v rozsahu 0 - 360°;</param>
-            /// <param name="begin"></param>
-            /// <param name="end"></param>
-            /// <param name="current"></param>
-            private void CalculateCirclePoints(RectangleF spinnerBounds, double currentAngle, out PointF begin, out PointF end, out PointF current)
-            {
-                var center = spinnerBounds.GetCenter();
-                var sizeX = spinnerBounds.Width / 2f;
-                var sizeY = spinnerBounds.Height / 2f;
-                var dx = _AngleX * sizeX;
-                var dy = _AngleY * sizeY;
-                begin = center.ShiftBy(-dx, -dy);
-                end = center.ShiftBy(dx, dy);
+            #endregion
 
-                // animatedValue je aktuální úhel v rozsahu 0 - 360°;
-                // Phase je konstantní posun tohoto úhlu v rozsahu 0 - 180°;
-                // Určím sinus výsledného úhlu:
-                double rad = GetRad(currentAngle + Phase);
-                float sin = (float)Math.Sin(rad);
-                var cx = dx * sin;
-                var cy = dy * sin;
-                current = center.ShiftBy(cx, cy);
-            }
             /// <summary>
             /// Vrací radiány (0 - 2*Pi) ze stupňů (0 - 360°)
             /// </summary>
@@ -350,5 +487,15 @@ namespace DjSoft.Games.Animated.Gadgets
                 return degree * 2d * Math.PI / 360d;
             }
         }
+    }
+    /// <summary>
+    /// Varianty Spinneru
+    /// </summary>
+    public enum SpinnerVariationType
+    {
+        None,
+        Circle,
+        DotsSoft,
+        DotsSharp
     }
 }
