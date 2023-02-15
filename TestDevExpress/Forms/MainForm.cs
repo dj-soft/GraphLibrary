@@ -1462,13 +1462,13 @@ namespace TestDevExpress.Forms
             panel.Controls.Add(panel1);
             DxComponent.CreateDxSimpleButton(3, 3, 200, 45, panel1, "XB.PopupMenu", PopupPageXBPopupClick);
             DxComponent.CreateDxSimpleButton(3, 54, 200, 45, panel1, "XB.RadialMenu", PopupPageXBRadialClick);
-            DxComponent.CreateDxSimpleButton(3, 105, 200, 45, panel1, "DM.Menu", PopupPageDMMenuClick);
+            DxComponent.CreateDxSimpleButton(3, 105, 200, 45, panel1, "DM.Menu", PopupPageDXPopupMenuClick);
             DxComponent.CreateDxSimpleButton(3, 156, 200, 45, panel1, "Win.ToolStripMenu", PopupPageWinMenuClick);
         }
         #region XB.PopupMenu
         private void PopupPageXBPopupClick(object sender, EventArgs e)
         {
-            XB.PopupMenu pm = new XB.PopupMenu();
+            XB.PopupMenu pm = new XB.PopupMenu(_BarManager);
             // pm.MenuCaption = "Kontextové menu";    Používám BarHeaderItem !
             // pm.ShowCaption = true;
             //pm.ShowNavigationHeader = DevExpress.Utils.DefaultBoolean.True;
@@ -1482,7 +1482,13 @@ namespace TestDevExpress.Forms
             pm.Name = "menu";
 
             XB.BarHeaderItem bh1 = new XB.BarHeaderItem() { Caption = "Základní" };
+            bh1.OptionsMultiColumn.ItemDisplayMode = DM.MultiColumnItemDisplayMode.Image;
+            bh1.OptionsMultiColumn.ColumnCount = 6;
+            bh1.OptionsMultiColumn.ImageHorizontalAlignment = DevExpress.Utils.Drawing.ItemHorizontalAlignment.Left;
+            bh1.OptionsMultiColumn.ImageVerticalAlignment = DevExpress.Utils.Drawing.ItemVerticalAlignment.Top;
+
             pm.AddItem(bh1);
+            pm.AddItem(CreateContainerItem());
             pm.AddItem(new XB.BarButtonItem(_BarManager, "První") { Hint = "Hint k položce", Glyph = DxComponent.CreateBitmapImage("Images/Actions24/db_add(24).png") });
             pm.AddItem(new XB.BarButtonItem(_BarManager, "Druhý") { ButtonStyle = XB.BarButtonStyle.Check, Glyph = DxComponent.CreateBitmapImage("Images/Actions24/dialog-close(24).png"), PaintStyle = XB.BarItemPaintStyle.Caption });
 
@@ -1545,6 +1551,69 @@ namespace TestDevExpress.Forms
             _BarManager.SetPopupContextMenu(this, pm);
             pm.ShowPopup(_BarManager, Control.MousePosition);
 
+        }
+        private XB.BarItem CreateContainerItem()
+        {
+            var container = new XB.BarButtonGroup();
+            container.RibbonStyle = XR.RibbonItemStyles.Large;
+            container.PaintStyle = XB.BarItemPaintStyle.CaptionInMenu;
+
+            container.MultiColumn = DevExpress.Utils.DefaultBoolean.True;
+            container.OptionsMultiColumn.ColumnCount = 6;
+            container.OptionsMultiColumn.ImageHorizontalAlignment = DevExpress.Utils.Drawing.ItemHorizontalAlignment.Left;
+            container.OptionsMultiColumn.ItemDisplayMode = DM.MultiColumnItemDisplayMode.Image;
+            container.OptionsMultiColumn.UseMaxItemWidth = DevExpress.Utils.DefaultBoolean.False;
+
+            string[] resources = new string[]
+            {
+    "images/chart/bubble3d_32x32.png",
+    "images/chart/clusteredbar_32x32.png",
+    "images/chart/clusteredbar3d_32x32.png",
+    "images/chart/clusteredcolumn_32x32.png",
+    "images/chart/clusteredcone_32x32.png",
+    "images/chart/clusteredcylinder_32x32.png",
+    "images/chart/clusteredhorizontalcone_32x32.png"
+            };
+
+            var b1a = new XB.BarButtonItem(_BarManager, "B1a");
+            b1a.Glyph = DxComponent.GetBitmapImage(resources[0], ResourceImageSizeType.Large);
+            b1a.ButtonStyle = XB.BarButtonStyle.Default;
+            b1a.PaintStyle = XB.BarItemPaintStyle.CaptionInMenu;
+            b1a.RibbonStyle = XR.RibbonItemStyles.Large;
+            container.ItemLinks.Add(b1a);
+
+            var b1b = new XB.BarButtonItem(_BarManager, "B1b");
+            b1b.Glyph = DxComponent.GetBitmapImage(resources[1], ResourceImageSizeType.Large);
+            b1b.ButtonStyle = XB.BarButtonStyle.Default;
+            b1b.PaintStyle = XB.BarItemPaintStyle.CaptionInMenu;
+            b1b.RibbonStyle = XR.RibbonItemStyles.Large;
+            container.ItemLinks.Add(b1b);
+           
+            return container;
+        }
+        private XB.BarItem CreateContainerItem1()
+        {
+            var container = new XB.BarLinkContainerExItem();
+
+            container.ItemLinks.Add(new XB.BarButtonItem(_BarManager, "B1a"));
+            container.ItemLinks.Add(new XB.BarButtonItem(_BarManager, "B1b"));
+            container.RibbonStyle = XR.RibbonItemStyles.SmallWithText;
+
+
+            return container;
+        }
+        private XB.RibbonGalleryBarItem CreateGalleryBarItem()
+        {
+            var gallery = new XB.RibbonGalleryBarItem();
+            gallery.Gallery.Images = DxComponent.GetVectorImageList(ResourceImageSizeType.Large);
+            gallery.Gallery.ShowItemImage = true;
+            gallery.ImageIndex = DxComponent.GetVectorImageIndex("svgimages/dashboards/editcolors.svg", ResourceImageSizeType.Large);
+
+            var galGroup = new XR.GalleryItemGroup();
+            galGroup.Caption = "Gallery Group";
+            galGroup.Items.Add(new XR.GalleryItem(DxComponent.GetBitmapImage("images/richedit/differentoddevenpages_32x32.png", ResourceImageSizeType.Large), "IT1", "Descr"));
+            gallery.Gallery.Groups.Add(galGroup);
+            return gallery;
         }
         /// <summary>
         /// Tudy to chodí při každém rozbalení SubMenu
@@ -1673,31 +1742,243 @@ namespace TestDevExpress.Forms
         }
         #endregion
         #region DXMenu
-        private void PopupPageDMMenuClick(object sender, EventArgs e)
+        private void PopupPageDXPopupMenuClick(object sender, EventArgs e)
         {
-            _ShowContextMenu(MousePosition);
+            _ShowDXPopupMenu(MousePosition);
         }
-        private void _ShowContextMenu(Point mousePosition)
+        private void _ShowDXPopupMenu(Point mousePosition)
         {
             DM.DXPopupMenu popup = new DM.DXPopupMenu(this);
-            popup.Items.Add(new DM.DXMenuHeaderItem() { Caption = "Header" });
-            popup.Items.Add(new DM.DXMenuItem("MenuItem 1"));
-            popup.Items.Add(new DM.DXMenuItem("MenuItem 2") { BeginGroup = true });
-            popup.Items.Add(new DM.DXMenuItem("MenuItem 3") { Enabled = false });
-            popup.Items.Add(new DM.DXMenuItem("MenuItem 4"));
+            /*
+            popup.MenuViewType = DM.MenuViewType.Menu;
+            popup.OptionsMultiColumn.ColumnCount = 4;
+            popup.OptionsMultiColumn.ImageHorizontalAlignment = DevExpress.Utils.Drawing.ItemHorizontalAlignment.Left;
+            popup.OptionsMultiColumn.ImageVerticalAlignment = DevExpress.Utils.Drawing.ItemVerticalAlignment.Top;
+            */
 
-            popup.Items.Add(new DM.DXMenuHeaderItem() { Caption = "Header 2" });
+            /*
+
+            https://docs.devexpress.com/WindowsForms/DevExpress.Utils.Menu.DXPopupMenu.MultiColumn
+            https://docs.devexpress.com/WindowsForms/DevExpress.XtraBars.BarHeaderItem.MultiColumn
+
+            */
+
+            var header1 = new DM.DXMenuHeaderItem() { Caption = "Rychlé funkce" };
+            header1.MultiColumn = DevExpress.Utils.DefaultBoolean.True;
+            header1.OptionsMultiColumn.ColumnCount = 8;
+            header1.OptionsMultiColumn.ImageHorizontalAlignment = DevExpress.Utils.Drawing.ItemHorizontalAlignment.Center;
+            header1.OptionsMultiColumn.ImageVerticalAlignment = DevExpress.Utils.Drawing.ItemVerticalAlignment.Top;
+            header1.OptionsMultiColumn.ItemDisplayMode = DM.MultiColumnItemDisplayMode.Image;
+
+            popup.Items.Add(header1);
+
+            string[] resources32 = new string[]
+{
+    "images/chart/3dclusteredcolumn_32x32.png",
+    "images/chart/3dcolumn_32x32.png",
+    "images/chart/3dcylinder_32x32.png",
+    "images/chart/3dfullstackedarea_32x32.png",
+    "images/chart/3dline_32x32.png",
+    "images/chart/3dstackedarea_32x32.png",
+    "images/chart/addchartpane_32x32.png",
+    "images/chart/area_32x32.png",
+    "images/chart/area2_32x32.png",
+    "images/chart/area3_32x32.png",
+    "images/chart/area3d_32x32.png",
+    "images/chart/bar_32x32.png",
+    "images/chart/bar2_32x32.png",
+    "images/chart/barofpie_32x32.png",
+    "images/chart/bubble_32x32.png",
+    "images/chart/bubble2_32x32.png",
+    "images/chart/bubble3d_32x32.png",
+    "images/chart/clusteredbar_32x32.png",
+    "images/chart/clusteredbar3d_32x32.png",
+    "images/chart/clusteredcolumn_32x32.png",
+    "images/chart/clusteredcone_32x32.png",
+    "images/chart/clusteredcylinder_32x32.png",
+    "images/chart/clusteredhorizontalcone_32x32.png",
+    "images/chart/clusteredhorizontalcylinder_32x32.png",
+    "images/chart/clusteredhorizontalpyramid_32x32.png",
+    "images/chart/clusteredpyramid_32x32.png",
+    "images/chart/colorlegend_32x32.png",
+    "images/chart/column_32x32.png",
+    "images/chart/column2_32x32.png",
+    "images/chart/cone_32x32.png",
+    "images/chart/doughnut_32x32.png",
+    "images/chart/drilldown_32x32.png",
+    "images/chart/drilldownonarguments_chart_32x32.png",
+    "images/chart/drilldownonarguments_pie_32x32.png",
+    "images/chart/drilldownonseries_chart_32x32.png",
+    "images/chart/drilldownonseries_pie_32x32.png",
+    "images/chart/explodeddoughnut_32x32.png",
+    "images/chart/explodedpie_32x32.png",
+    "images/chart/explodedpie3d_32x32.png",
+    "images/chart/filledradarwithoutmarkers_32x32.png",
+    "images/chart/fullstackedarea_32x32.png",
+    "images/chart/fullstackedarea2_32x32.png",
+    "images/chart/fullstackedbar_32x32.png",
+    "images/chart/fullstackedbar2_32x32.png",
+    "images/chart/fullstackedbar3d_32x32.png",
+    "images/chart/fullstackedcolumn_32x32.png",
+    "images/chart/fullstackedcolumn3d_32x32.png",
+    "images/chart/fullstackedcone_32x32.png",
+    "images/chart/fullstackedcylinder_32x32.png",
+    "images/chart/fullstackedhorizontalcone_32x32.png",
+    "images/chart/fullstackedhorizontalcylinder_32x32.png",
+    "images/chart/fullstackedhorizontalpyramid_32x32.png",
+    "images/chart/fullstackedline_32x32.png",
+    "images/chart/fullstackedlinewithmarkers_32x32.png",
+    "images/chart/fullstackedlinewithoutmarkers_32x32.png",
+    "images/chart/fullstackedpyramid_32x32.png",
+    "images/chart/fullstackedsplinearea_32x32.png",
+    "images/chart/heatmapchart_32x32.png",
+    "images/chart/highlowclose_32x32.png",
+    "images/chart/highlowclose2_32x32.png",
+    "images/chart/horizontalaxisbillions_32x32.png",
+    "images/chart/horizontalaxisdefault_32x32.png",
+    "images/chart/horizontalaxislefttoright_32x32.png",
+    "images/chart/horizontalaxislogscale_32x32.png",
+    "images/chart/horizontalaxismillions_32x32.png",
+    "images/chart/horizontalaxisnone_32x32.png",
+    "images/chart/horizontalaxisrighttoleft_32x32.png",
+    "images/chart/horizontalaxisthousands_32x32.png",
+    "images/chart/horizontalaxistitle_32x32.png",
+    "images/chart/horizontalaxistitle_none_32x32.png",
+    "images/chart/horizontalaxistopdown_32x32.png",
+    "images/chart/horizontalaxiswithoutlabeling_32x32.png",
+    "images/chart/changechartlegendalignment_32x32.png",
+    "images/chart/changechartseriestype_32x32.png",
+    "images/chart/chart_32x32.png",
+    "images/chart/chartchangelayout_32x32.png",
+    "images/chart/chartchangestyle_32x32.png",
+    "images/chart/chartshowcaptions_32x32.png",
+    "images/chart/chartsrotate_32x32.png",
+    "images/chart/chartsshowlegend_32x32.png",
+    "images/chart/charttitlesabovechart_32x32.png",
+    "images/chart/charttitlescenteredoverlaytitle_32x32.png",
+    "images/chart/charttitlesnone_32x32.png",
+    "images/chart/chartxaxissettings_32x32.png",
+    "images/chart/chartyaxissettings_32x32.png",
+    "images/chart/chartyaxissettings2_32x32.png",
+    "images/chart/kpi_32x32.png",
+    "images/chart/labelsabove_32x32.png",
+    "images/chart/labelsbelow_32x32.png",
+    "images/chart/labelscenter_32x32.png",
+    "images/chart/labelsinsidebase_32x32.png",
+    "images/chart/labelsinsidecenter_32x32.png",
+    "images/chart/labelsinsideend_32x32.png",
+    "images/chart/labelsleft_32x32.png",
+    "images/chart/labelsnone_32x32.png",
+    "images/chart/labelsnone2_32x32.png",
+    "images/chart/labelsoutsideend_32x32.png",
+    "images/chart/labelsright_32x32.png",
+    "images/chart/legendbottom_32x32.png",
+    "images/chart/legendleft_32x32.png",
+    "images/chart/legendleftoverlay_32x32.png",
+    "images/chart/legendnone_32x32.png",
+    "images/chart/legendright_32x32.png",
+    "images/chart/legendrightoverlay_32x32.png",
+    "images/chart/legendtop_32x32.png",
+    "images/chart/line_32x32.png",
+    "images/chart/line2_32x32.png",
+    "images/chart/linewithmarkers_32x32.png",
+    "images/chart/linewithoutmarkers_32x32.png",
+    "images/chart/openhighlowclosecandlestick_32x32.png",
+    "images/chart/openhighlowclosecandlestick2_32x32.png",
+    "images/chart/openhighlowclosestock_32x32.png",
+    "images/chart/othercharts_32x32.png",
+    "images/chart/pie_32x32.png",
+    "images/chart/pie2_32x32.png",
+    "images/chart/pie3_32x32.png",
+    "images/chart/pie3d_32x32.png",
+    "images/chart/pielabelsdatalabels_32x32.png",
+    "images/chart/pielabelstooltips_32x32.png",
+    "images/chart/pieofpie_32x32.png",
+    "images/chart/piestyledonut_32x32.png",
+    "images/chart/piestylepie_32x32.png",
+    "images/chart/point_32x32.png",
+    "images/chart/previewchart_32x32.png",
+    "images/chart/pyramid_32x32.png",
+    "images/chart/radarwithmarkers_32x32.png",
+    "images/chart/radarwithoutmarkers_32x32.png",
+    "images/chart/rangearea_32x32.png",
+    "images/chart/rangebar_32x32.png",
+    "images/chart/sankeydiagram_32x32.png",
+    "images/chart/scatter_32x32.png",
+    "images/chart/scatterwithonlymarkers_32x32.png",
+    "images/chart/scatterwithsmoothlines_32x32.png",
+    "images/chart/scatterwithsmoothlinesandmarkers_32x32.png",
+    "images/chart/scatterwithstraightlines_32x32.png",
+    "images/chart/scatterwithstraightlinesandmarkersx23_32x32.png",
+    "images/chart/sidebysiderangebar_32x32.png",
+    "images/chart/spline_32x32.png",
+    "images/chart/splinearea_32x32.png",
+    "images/chart/stackedarea_32x32.png",
+    "images/chart/stackedarea2_32x32.png",
+    "images/chart/stackedbar_32x32.png",
+    "images/chart/stackedbar2_32x32.png",
+    "images/chart/stackedbar3d_32x32.png",
+    "images/chart/stackedcolumn_32x32.png",
+    "images/chart/stackedcolumn3d_32x32.png",
+    "images/chart/stackedcone_32x32.png",
+    "images/chart/stackedcylinder_32x32.png",
+    "images/chart/stackedhorizontalcone_32x32.png",
+    "images/chart/stackedhorizontalcylinder_32x32.png",
+    "images/chart/stackedhorizontalpyramid_32x32.png",
+    "images/chart/stackedline_32x32.png",
+    "images/chart/stackedlinewithmarkers_32x32.png",
+    "images/chart/stackedlinewithoutmarkers_32x32.png",
+    "images/chart/stackedpyramid_32x32.png",
+    "images/chart/stackedsplinearea_32x32.png",
+    "images/chart/steparea_32x32.png",
+    "images/chart/stepline_32x32.png"
+};
+
+            for (int c = 0; c < 8; c++)
+                popup.Items.Add(createDxMenuItem(true, false, ResourceImageSizeType.Large));
+
+
+            popup.Items.Add(new DM.DXMenuHeaderItem() { Caption = "Další sada operací" });
+
+            int count = Randomizer.Rand.Next(3, 12);
+            for (int c = 0; c < count; c++)
+                popup.Items.Add(createDxMenuItem(true, true, ResourceImageSizeType.Small));
+
             popup.Items.Add(new DM.DXMenuCheckItem("CheckItem 5") { Checked = true });
 
-            var mc6 = new DM.DXSubMenuItem("DXSubMenuItem");
-            mc6.Items.Add(new DM.DXMenuItem("SubItem 1"));
-            mc6.Items.Add(new DM.DXMenuItem("SubItem 2"));
-            mc6.Items.Add(new DM.DXMenuItem("SubItem 3"));
-            mc6.Items.Add(new DM.DXMenuItem("SubItem 4"));
+            var mc6 = new DM.DXSubMenuItem("Sub menu připravené...");
+            int count6 = Randomizer.Rand.Next(3, 12);
+            for (int c = 0; c < count6; c++)
+                mc6.Items.Add(createDxMenuItem(true, true, ResourceImageSizeType.Small));
             popup.Items.Add(mc6);
 
             Point point = this.PointToClient(mousePosition);
             popup.ShowPopup(this, point);
+
+
+            DM.DXMenuItem createDxMenuItem(bool withImage, bool withCaption, ResourceImageSizeType imageSize, Action<DM.DXMenuItem> modifier = null)
+            {
+                string caption = (withCaption ? Randomizer.GetSentence(1, 4) : "");
+
+                Image image = null;
+                if (withImage)
+                {
+                    string resource = Randomizer.GetItem(resources32);
+                    if (imageSize == ResourceImageSizeType.Small)
+                        resource = resource.Replace("32x32", "16x16");
+                    image = DxComponent.GetBitmapImage(resource, imageSize);
+                }
+
+                var menuItem = new DM.DXMenuItem(caption, null, image);
+
+                string tipTitle = Randomizer.GetSentence(3, 6);
+                string tipText = Randomizer.GetSentences(3, 6, 1, 6);
+                menuItem.SuperTip = DxComponent.CreateDxSuperTip(tipTitle, tipText);
+
+                modifier?.Invoke(menuItem);
+
+                return menuItem;
+            }
         }
         #endregion
         #region WinForm menu
@@ -4102,7 +4383,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
         {
             _TreeListAddLogLine($"ShowContextMenu: Node: {args.Node} Part: {args.HitInfo.PartType}");
             if (args.Node != null)
-                _ShowContextMenu(Control.MousePosition);
+                _ShowDXPopupMenu(Control.MousePosition);
         }
         private void _TreeList_LazyLoadChilds(object sender, DxTreeListNodeArgs args)
         {
