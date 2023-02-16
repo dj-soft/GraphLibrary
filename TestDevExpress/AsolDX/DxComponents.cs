@@ -3100,8 +3100,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             string directoryName = null;
 
             // Temp adresář, typicky "C:\Users\david.janacek\AppData\Local" + "Asseco Solutions\Aplikace\Temp"
-            string suffix = _TempDirectorySuffix;
-            if (!String.IsNullOrEmpty(suffix)) searchForTempDirectoryOne(suffix);
+            string addSuffix = _TempDirectorySuffix;
+            if (!String.IsNullOrEmpty(addSuffix)) searchForTempDirectoryOne(addSuffix);
 
             // Za stavu nouze zkusím bez suffixu?
             if (directoryName is null) searchForTempDirectoryOne(null);
@@ -5852,17 +5852,27 @@ namespace Noris.Clients.Win.Components.AsolDX
 
         /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Ctrl+Y")]
-        DxKeyActionUndoTitle,//                                                                    // PŘIDAT !!!
+        DxKeyActionUndoTitle,                                                                      // PŘIDAT !!!
         /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("O krok zpět v editaci")]
-        DxKeyActionUndoText,//                                                                     // PŘIDAT !!!
+        DxKeyActionUndoText,                                                                       // PŘIDAT !!!
         /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Ctrl+Z")]
-        DxKeyActionRedoTitle,//                                                                    // PŘIDAT !!!
+        DxKeyActionRedoTitle,                                                                      // PŘIDAT !!!
         /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("O krok vpřed. Znovu provede krok editace, který byl zrušen krokem zpět")]
-        DxKeyActionRedoText//                                                                      // PŘIDAT !!!
+        DxKeyActionRedoText,                                                                       // PŘIDAT !!!
 
+
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
+        [DefaultMessageText("Vytvořte nový graf...")]
+        DxChartEditorTitleWizard,
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
+        [DefaultMessageText("Upravte graf...")]
+        DxChartEditorTitleDesigner,
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
+        [DefaultMessageText("V tuto chvíli nelze editovat graf, dosud není načten nebo není definován.")]
+        DxChartEditorNotPrepared
 
         // Nové kódy přidej do Messages.xml v klientu!!!     Do AdapterTest.cs není nutno, tam se načítá hodnota atributu DefaultMessageText() !
     }

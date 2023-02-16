@@ -455,7 +455,6 @@ namespace TestDevExpress.Forms
 
             group = new DataRibbonGroup() { GroupText = "BROWSE" };
             group.Items.Add(CreateRibbonFunction("BrowseStd", "Browse Standard", "svgimages/richedit/selecttablerow.svg", "Otevře okno pro testování standardního Browse", _TestDxBrowseStandardForm_Click));
-            // group.Items.Add(CreateRibbonFunction("BrowseVir", "Browse Virtual", "svgimages/dashboards/grid.svg", "Otevře okno pro testování Browse s virtuálním zdrojem dat", _TestDxBrowseVirtualForm_Click));
             group.Items.Add(CreateRibbonFunction("Browse", "Browse", "svgimages/dashboards/grid.svg", "Otevře okno pro testování Browse", _TestDxBrowseForm_Click));
             page.Groups.Add(group);
 
@@ -565,7 +564,7 @@ namespace TestDevExpress.Forms
             if (System.IO.Directory.Exists(path))
                 files = System.IO.Directory.GetFiles(path, "*.wav").ToList();
 
-            if (files.Count == 0)
+            if (files is null || files.Count == 0)
             {
                 DataRibbonItem item = new DataRibbonItem()
                 {
@@ -875,14 +874,6 @@ namespace TestDevExpress.Forms
         private void _TestDxBrowseStandardForm_Click(IMenuItem menuItem)
         {
             using (var dxBrowseForm = new DxBrowseStandardForm())
-            {
-                dxBrowseForm.WindowState = FormWindowState.Maximized;
-                dxBrowseForm.ShowDialog();
-            }
-        }
-        private void _TestDxBrowseVirtualForm_Click(IMenuItem menuItem)
-        {
-            using (var dxBrowseForm = new DxBrowseVirtualForm())
             {
                 dxBrowseForm.WindowState = FormWindowState.Maximized;
                 dxBrowseForm.ShowDialog();

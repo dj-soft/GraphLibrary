@@ -66,6 +66,10 @@ namespace TestDevExpress.Forms
             group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Test.HideSplit", Text = "Odebrat rozdělení", ToolTipText = "Zruší rozdělení gridu", ItemType = RibbonItemType.Button, ImageName = resourceHideSplit, RibbonStyle = RibbonItemStyles.Large });
             group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Test.ApplyRowFilter", Text = "Aplikovat řádkový filtr", ToolTipText = "Aplikuje testovací řádkový filtr", ItemType = RibbonItemType.Button, ImageName = resourceApplyRowFilter, RibbonStyle = RibbonItemStyles.Large });
             group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Test.EnableRowFilterCore", Text = "Použít interní filtrování", ToolTipText = "Použit interní filtrovací mechanismu gridu", ItemType = RibbonItemType.CheckBoxToggle, Checked = DxComponent.UhdPaintEnabled, ClickAction = SetRowFilterCoreEnabled });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Test.EnableColumnSortCore", Text = "Použít interní řazení", ToolTipText = "Použit interní řadícího mechanismu gridu", ItemType = RibbonItemType.CheckBoxToggle, Checked = true, ClickAction = SetColumnSortCoreEnabled });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Test.CheckBoxRowSelect", Text = "CheckBox row select", ToolTipText = "Použít checkBox pro select řádků", ItemType = RibbonItemType.CheckBoxToggle, Checked = DxComponent.UhdPaintEnabled, ClickAction = SetCheckBoxRowSelect });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Test.AlignGroupSummaryInGroupRow", Text = "Group summary in group row", ToolTipText = "Typ zobrazení sumy v groupě", ItemType = RibbonItemType.CheckBoxStandard, ClickAction = SetAlignGroupSummaryInGroupRow });
+
 
             this.DxRibbon.Clear();
             this.DxRibbon.AddPages(pages);
@@ -83,7 +87,7 @@ namespace TestDevExpress.Forms
                     FillBrowse(1000, Randomizer.WordBookType.TriMuziNaToulkach);
                     break;
                 case "Dx.Test.Add10k":
-                    FillBrowse(10000, Randomizer.WordBookType.TriMuziNaToulkach);
+                    FillBrowse(10000, Randomizer.WordBookType.TriMuziNaToulkach, true);
                     break;
                 case "Dx.Test.Add100k":
                     FillBrowse(100000, Randomizer.WordBookType.TaborSvatych);
@@ -116,6 +120,20 @@ namespace TestDevExpress.Forms
         {
             _View.RowFilterCoreEnabled = (menuItem?.Checked ?? false);
             ApplyRowFilter();
+        }
+
+        private void SetColumnSortCoreEnabled(IMenuItem menuItem)
+        {
+            _View.ColumnSortCoreEnabled = (menuItem?.Checked ?? false);
+        }
+        private void SetCheckBoxRowSelect(IMenuItem menuItem)
+        {
+            _View.CheckBoxRowSelect = (menuItem?.Checked ?? false);
+        }
+
+        private void SetAlignGroupSummaryInGroupRow(IMenuItem menuItem)
+        {
+            _View.AlignGroupSummaryInGroupRow = (menuItem?.Checked ?? false);
         }
 
         /// <summary>
@@ -224,7 +242,12 @@ namespace TestDevExpress.Forms
             view.OptionsFind.AlwaysVisible = false;
             view.OptionsView.ShowFilterPanelMode = DevExpress.XtraGrid.Views.Base.ShowFilterPanelMode.Never;
 
-            view.InitColumns(CreateGridViewColumnData());
+            view.OptionsScrollAnnotations.ShowSelectedRows = DevExpress.Utils.DefaultBoolean.True;  // Anotace . https://docs.devexpress.com/WindowsForms/120556/controls-and-libraries/data-grid/scrolling/scrollbar-annotations
+
+            var gvColumnData = CreateGridViewColumnData();
+            view.InitColumns(gvColumnData);
+            InitColumnsSummary(gvColumnData);
+
 
             RegisterViewEvents();
 
@@ -249,13 +272,39 @@ namespace TestDevExpress.Forms
             view.ViewCaption = "Testovací data";
             view.ViewCaptionHeight = 30;
 
-
-
+            _View.ColumnSortCoreEnabled = true;
         }
 
         private void RegisterViewEvents()
         {
             _View.FilterRowChanged += _View_FilterRowChanged;
+            _View.DxDoubleClick += _View_DxDoubleClick;
+            _View.DxKeyDown += _View_DxKeyDown;
+        }
+
+        private void _View_DxKeyDown(object sender, KeyEventArgs e)
+        {
+            // ENTER in Data region
+            if (!e.Handled && !e.Alt && !e.Control && !e.Shift
+                && e.KeyCode == System.Windows.Forms.Keys.Enter && !this._View.IsFilterRowCellActive)
+            {
+                //OnEnter - call server
+                MessageBox.Show("KeyDown Enter");
+            }
+        }
+
+        private void _View_DxDoubleClick(object sender, DxGridDoubleClickEventArgs args)
+        {
+            bool modifierKeyCtrl = System.Windows.Forms.Control.ModifierKeys == System.Windows.Forms.Keys.Control;
+            bool modifierKeyAlt = System.Windows.Forms.Control.ModifierKeys == System.Windows.Forms.Keys.Alt;
+            bool modifierKeyShift = System.Windows.Forms.Control.ModifierKeys == System.Windows.Forms.Keys.Shift;
+            StringBuilder strBld = new StringBuilder();
+            strBld.AppendLine($"DoubleClicked");
+            strBld.AppendLine($"RowId: {args.RowId} ColumnName: {args.ColumnName}");
+            strBld.AppendLine($"Control key: {modifierKeyCtrl}");
+            strBld.AppendLine($"Alt key: {modifierKeyAlt}");
+            strBld.AppendLine($"Shift key: {modifierKeyShift}");
+            MessageBox.Show(strBld.ToString());
         }
 
         private void _View_FilterRowChanged(object sender, DxGridFilterRowChangeEventArgs e)
@@ -270,6 +319,7 @@ namespace TestDevExpress.Forms
             _BrowseDataColumns.Add(new System.Data.DataColumn() { ColumnName = "refer", Caption = "Reference", DataType = typeof(string) });
             _BrowseDataColumns.Add(new System.Data.DataColumn() { ColumnName = "nazev", Caption = "Název", DataType = typeof(string) });
             _BrowseDataColumns.Add(new System.Data.DataColumn() { ColumnName = "category", Caption = "Kategorie", DataType = typeof(string) });
+
             _BrowseDataColumns.Add(new System.Data.DataColumn() { ColumnName = "period", Caption = "Období", DataType = typeof(string) });
             _BrowseDataColumns.Add(new System.Data.DataColumn() { ColumnName = "date_inp", Caption = "Datum vstupu", DataType = typeof(DateTime) });
             _BrowseDataColumns.Add(new System.Data.DataColumn() { ColumnName = "date_out", Caption = "Datum výstupu", DataType = typeof(DateTime) });
@@ -286,7 +336,30 @@ namespace TestDevExpress.Forms
                 _BrowseDataColumns.Add(new System.Data.DataColumn() { ColumnName = "extranote", Caption = "Extra poznámka", DataType = typeof(string) });
                 _BrowseDataColumns.Add(new System.Data.DataColumn() { ColumnName = "date_sell", Caption = "Datum prodeje", DataType = typeof(DateTime) });
             }
+            _BrowseDataColumns.Add(new System.Data.DataColumn() { ColumnName = "category_img", Caption = "KategorieImg", DataType = typeof(string) });
 
+
+        }
+
+        /// <summary>
+        /// Jen pro počáteční testování summary. Než bude udělaná podpora v DXGrid
+        /// </summary>
+        /// <param name="gvColumnData"></param>
+        private void InitColumnsSummary(List<GridViewColumnData> gvColumnData)
+        {
+            foreach (var item in gvColumnData)
+            {
+                if (TypeHelper.IsNumeric(item.ColumnType))
+                {
+                    DevExpress.XtraGrid.GridGroupSummaryItem sumItem = new DevExpress.XtraGrid.GridGroupSummaryItem()
+                    {
+                        FieldName = item.FieldName,
+                        SummaryType = DevExpress.Data.SummaryItemType.Sum,
+                        ShowInGroupColumnFooter = _View.Columns[item.FieldName]
+                    };
+                    _View.GroupSummary.Add(sumItem);
+                }
+            }
         }
 
         /// <summary>
@@ -294,9 +367,9 @@ namespace TestDevExpress.Forms
         /// </summary>
         /// <param name="rowCount"></param>
         /// <param name="wordBookType"></param>
-        private void FillBrowse(int rowCount, Randomizer.WordBookType wordBookType = Randomizer.WordBookType.TriMuziNaToulkach)
+        private void FillBrowse(int rowCount, Randomizer.WordBookType wordBookType = Randomizer.WordBookType.TriMuziNaToulkach, bool addToDatasource = false)
         {
-            string dataLog = FillData(rowCount, wordBookType);
+            string dataLog = FillData(rowCount, wordBookType, addToDatasource);
             StatusText = dataLog;
         }
         /// <summary>
@@ -315,14 +388,38 @@ namespace TestDevExpress.Forms
         /// <param name="rowCount"></param>
         /// <param name="wordBookType"></param>
         /// <returns></returns>
-        private string FillData(int rowCount, Randomizer.WordBookType wordBookType = Randomizer.WordBookType.TriMuziNaToulkach)
+        private string FillData(int rowCount, Randomizer.WordBookType wordBookType = Randomizer.WordBookType.TriMuziNaToulkach, bool addToDatasource = false)
         {
             var timeStart = DxComponent.LogTimeCurrent;
             var data = _CreateGridDataTable(rowCount, wordBookType);
             var timeCreateData = DxComponent.LogGetTimeElapsed(timeStart, DxComponent.LogTokenTimeSec);
 
             timeStart = DxComponent.LogTimeCurrent;
-            _Grid.DataSource = data;
+            if (addToDatasource)
+            {
+                //TODO Experimentální s přídavkem...
+                var dt = _Grid.DataSource as DataTable;
+                if (dt != null)
+                {
+                    int i = 0;
+                    foreach (var column in dt.Columns)
+                    {
+                        data.Columns[i].DataType = column.GetType();
+                        i++;
+                    }
+
+                    //dt.NewRow
+                    foreach (var item in data.Rows)
+                    {
+                        dt.Rows.Add(item);
+                    }
+
+                }
+            }
+            else
+            {
+                _Grid.DataSource = data;
+            }
             var timeSetData = DxComponent.LogGetTimeElapsed(timeStart, DxComponent.LogTokenTimeSec);
 
             string logText = $"Generování DataTable[{rowCount}]: {timeCreateData} sec;     Vložení DataTable do Gridu: {timeSetData} sec;     ";
@@ -365,11 +462,11 @@ namespace TestDevExpress.Forms
 
                 if (_DataSourceIndex == 1)
                 {
-                    table.Rows.Add(id, refer, nazev, category, period, dateInp, dateOut, qty, price1, priceT, dateSell, note);
+                    table.Rows.Add(id, refer, nazev, category, period, dateInp, dateOut, qty, price1, priceT, dateSell, note, category);
                 }
                 else if (_DataSourceIndex == 2)
                 {
-                    table.Rows.Add(id, refer, nazev, category, period, dateInp, dateOut, qty, price1, priceT, note, dateSell);
+                    table.Rows.Add(id, refer, nazev, category, period, dateInp, dateOut, qty, price1, priceT, note, dateSell, category);
                 }
             }
 
@@ -391,7 +488,8 @@ namespace TestDevExpress.Forms
             }
 
             result[2].AllowSort = false;
-            result[2].ToolTip = "Vypnuto řazení";
+            result[2].ToolTipTitle = "Vypnuto řazení";
+            result[2].ToolTipText = "Dlouhý text...";
 
             //result[3].AllowFilter = false;
             //result[3].ToolTip = "Vypnuto Filtrování";
@@ -399,28 +497,57 @@ namespace TestDevExpress.Forms
             result[4].IconName = "svgimages/icon%20builder/actions_fullscreen.svg";
             //result[4].IconName = "pic_0/bar_s/aktivni-plocha-16x16.png";
             result[4].IconAligment = StringAlignment.Far;
-            result[4].ToolTip = "Ikonka";
+            result[4].ToolTipTitle = "Ikonka";
 
             result[5].Width = 200;
-            result[5].ToolTip = "200px široký sloupec";
+            result[5].ToolTipTitle = "200px široký sloupec";
             result[5].HeaderFontStyle = (System.Drawing.FontStyle)DxComponent.ConvertFontStyle(true, true, true, true);
             result[5].HeaderAlignment = DevExpress.Utils.HorzAlignment.Far;
 
 
 
-            var a = result[3];
-            a.CodeTable.Add(("Nakup", "NÁKUP", "pic_0/bar_s/aktivni-plocha-16x16.png"));
-            a.CodeTable.Add(("Prodej", "PRODEJ", "pic_0/bar_s/aktivni-plocha-16x16.png"));
-            a.CodeTable.Add(("Sklad", "SKLAD", "pic_0/bar_s/databasedisconnected-16x16.png"));
-            a.CodeTable.Add(("Tuzemsko", "TUZEMSKO", "pic_0/bar_s/aktivni-plocha-16x16.png"));
-            a.CodeTable.Add(("Export", "EXPORT", "pic_0/bar_s/aktivni-plocha-16x16.png"));
-            a.CodeTable.Add(("Import", "IMPORT", "pic_0/bar_s/aktivni-plocha-16x16.png"));
+            var categoryColumn = result[3];
+
+            categoryColumn.CodeTable.Add(("Nákup", "NÁKUP", ""));
+            categoryColumn.CodeTable.Add(("Prodej", "PRODEJ", ""));
+            categoryColumn.CodeTable.Add(("Sklad", "SKLAD", ""));
+            categoryColumn.CodeTable.Add(("Tuzemsko", "TUZEMSKO", ""));
+            categoryColumn.CodeTable.Add(("Export", "EXPORT", ""));
+            categoryColumn.CodeTable.Add(("Import", "IMPORT", ""));
+
+
             //a.CodeTable.Add(("Nakup", "NAKUP", "svgimages/icon%20builder/actions_fullscreen.svg"));
             //a.CodeTable.Add(("Prodej", "PRODEJ", "svgimages/icon%20builder/actions_fullscreen.svg"));
             //a.CodeTable.Add(("Sklad", "SKLAD", "svgimages/icon%20builder/actions_fullscreen.svg"));
             //a.CodeTable.Add(("Tuzemsko", "TUZEMSKO", "svgimages/icon%20builder/actions_fullscreen.svg"));
             //a.CodeTable.Add(("Export", "EXPORT", "svgimages/icon%20builder/actions_fullscreen.svg"));
             //a.CodeTable.Add(("Import", "IMPORT", "svgimages/icon%20builder/actions_fullscreen.svg"));
+
+            //var categoryImgColumn = result.FirstOrDefault(x => x.FieldName == "category_img");
+            //categoryImgColumn.EditStyleViewMode = EditStyleViewMode.Icon;
+
+            //categoryImgColumn.CodeTable.Add(("Nákup", "NÁKUP", "pic_0/bar_s/aktivni-plocha-16x16.png"));
+            //categoryImgColumn.CodeTable.Add(("Prodej", "PRODEJ", "pic_0/bar_s/aktivni-plocha-16x16.png"));
+            //categoryImgColumn.CodeTable.Add(("Sklad", "SKLAD", "pic_0/bar_s/databasedisconnected-16x16.png"));
+            //categoryImgColumn.CodeTable.Add(("Tuzemsko", "TUZEMSKO", "pic_0/bar_s/aktivni-plocha-16x16.png"));
+            //categoryImgColumn.CodeTable.Add(("Export", "EXPORT", "pic_0/bar_s/aktivni-plocha-16x16.png"));
+            //categoryImgColumn.CodeTable.Add(("Import", "IMPORT", "pic_0/bar_s/aktivni-plocha-16x16.png"));
+
+            var categoryImgColumn = result.FirstOrDefault(x => x.FieldName == "category_img");
+            categoryImgColumn.EditStyleViewMode = EditStyleViewMode.Icon;
+
+            categoryImgColumn.CodeTable.Add(("NÁKUP", "NÁKUP", "pic_0/bar_s/aktivni-plocha-16x16.png"));
+            categoryImgColumn.CodeTable.Add(("PRODEJ", "PRODEJ", "pic_0/bar_s/aktivni-plocha-16x16.png"));
+            categoryImgColumn.CodeTable.Add(("SKLAD", "SKLAD", "pic_0/bar_s/databasedisconnected-16x16.png"));
+            categoryImgColumn.CodeTable.Add(("TUZEMSKO", "TUZEMSKO", "pic_0/bar_s/aktivni-plocha-16x16.png"));
+            categoryImgColumn.CodeTable.Add(("EXPORT", "EXPORT", "pic_0/bar_s/aktivni-plocha-16x16.png"));
+            categoryImgColumn.CodeTable.Add(("IMPORT", "IMPORT", "pic_0/bar_s/aktivni-plocha-16x16.png"));
+
+            //categoryImgColumn.CodeTable.Add(("NÁKUP", "NÁKUP", ""));
+            //categoryImgColumn.CodeTable.Add(("PRODEJ", "PRODEJ", ""));
+
+
+
 
 
             //result[6].Visible = false;    // jen v ctoru (private set)

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -59,11 +60,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
     }
 
-    public class DxGridControl : GridControl
+    public class DxGridControl : GridControl//, IDxToolTipDynamicClient
     {
         public DxGridControl()
         {
             RegisterEventsHandlers();
+            //_ToolTipInit();
         }
 
         /// <summary>
@@ -89,6 +91,43 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void RegisterEventsHandlers()
         {
             this.EditorKeyDown += _OnEditorKeyDown;
+            this.Paint += _OnPaintEx;
+
+        }
+
+        private void _OnPaintEx(object sender, PaintEventArgs e)
+        {
+            //Malování ohraničení akivního (focusovaného) řádku
+            GridControl grid = sender as GridControl;
+            GridView view = grid.FocusedView as GridView;
+            if (view == null) return;
+            DevExpress.XtraGrid.Views.Grid.ViewInfo.GridViewInfo viewInfo = view.GetViewInfo() as DevExpress.XtraGrid.Views.Grid.ViewInfo.GridViewInfo;
+            DevExpress.XtraGrid.Views.Grid.ViewInfo.GridRowInfo rowInfo = viewInfo.GetGridRowInfo(view.FocusedRowHandle);
+            if (rowInfo == null)
+                return;
+            Rectangle r = Rectangle.Empty;
+            r = rowInfo.DataBounds;
+            Console.WriteLine(r.ToString());
+            if (r != Rectangle.Empty)
+            {
+                r.Height += 3;
+                r.Width -= 2;
+                r.Y -=2;
+
+                //r.Height -= 2;
+                //r.Width -= 2;
+
+                var highlight = DxComponent.GetSkinColor(SkinElementColor.CommonSkins_Highlight);
+                Pen pen = Pens.Green;
+
+                if (highlight != null)
+                {
+                    pen = new Pen(highlight.Value);
+                    pen.Width = 2;
+                }
+                e.Graphics.DrawRectangle(pen, r);
+            }
+            grid.Invalidate();  //překleslení gridu. Když to tu nebylo a chtěl jsem rámeček z venku řádku, tak zůstávali "duchové" pře skoku na další řádek https://supportcenter.devexpress.com/ticket/details/t114511/draw-custom-row-border-for-selected-row
 
         }
 
@@ -104,6 +143,79 @@ namespace Noris.Clients.Win.Components.AsolDX
             e.Handled = true;
         }
 
+        #region ToolTipy pro nodes, HasMouse a IsFocused
+        ///// <summary>
+        ///// Inicializace ToolTipu, voláno z konstruktoru
+        ///// </summary>
+        //private void _ToolTipInit()
+        //{
+        //    this.ToolTipAllowHtmlText = null;
+        //    this.DxToolTipController = DxComponent.CreateNewToolTipController(ToolTipAnchor.Cursor);
+        //    this.DxToolTipController.AddClient(this);      // Protože this třída implementuje IDxToolTipDynamicClient, bude volána metoda IDxToolTipDynamicClient.PrepareSuperTipForPoint()
+        //    this.DxToolTipController.BeforeShow += DxToolTipController_BeforeShow;
+
+        //}
+
+        //private void DxToolTipController_BeforeShow(object sender, ToolTipControllerShowEventArgs e)
+        //{
+        //    e.ToolTip = "";
+        //}
+
+        ///// <summary>
+        ///// ToolTipy mohou obsahovat SimpleHtml tagy? Null = default
+        ///// </summary>
+        //public bool? ToolTipAllowHtmlText { get; set; }
+        ///// <summary>
+        ///// Controller ToolTipu
+        ///// </summary>
+        //public DxToolTipController DxToolTipController
+        //{
+        //    get { return __DxToolTipController; }
+        //    private set { __DxToolTipController = value; this.ToolTipController = value; }
+        //}
+        //private DxToolTipController __DxToolTipController;
+        ///// <summary>
+        ///// Zde control určí, jaký ToolTip má být pro danou pozici myši zobrazen
+        ///// </summary>
+        ///// <param name="args"></param>
+        //void IDxToolTipDynamicClient.PrepareSuperTipForPoint(Noris.Clients.Win.Components.AsolDX.DxToolTipDynamicPrepareArgs args)
+        //{
+        //    if (this.FocusedView is DxGridView view)
+        //    {
+        //        DevExpress.XtraGrid.Views.Grid.ViewInfo.GridHitInfo hitInfo = view.CalcHitInfo(args.MouseLocation);
+        //        //tooltip pro column header
+        //        if (hitInfo.InColumnPanel)
+        //        {
+        //            var column = view.GridViewColumns.FirstOrDefault(x => x.FieldName == hitInfo.Column?.FieldName);
+        //            if (column != null)
+        //            {
+        //                // Pokud myš nyní ukazuje na ten samý Node, pro který už máme ToolTip vytvořen, pak nebudeme ToolTip připravovat:
+        //                bool isSameAsLast = (args.DxSuperTip != null && Object.ReferenceEquals(args.DxSuperTip.ClientData, column));
+        //                if (!isSameAsLast)
+        //                {   // Připravíme data pro ToolTip:
+        //                    var dxSuperTip = DxComponent.CreateDxSuperTip(column);        // Vytvořím new data ToolTipu
+        //                    if (dxSuperTip != null)
+        //                    {
+        //                        if (ToolTipAllowHtmlText.HasValue) dxSuperTip.ToolTipAllowHtmlText = ToolTipAllowHtmlText;
+        //                        dxSuperTip.ClientData = column;                           // Přibalím si do nich náš Node abych příště detekoval, zda jsme/nejsme na tom samém
+        //                    }
+        //                    args.DxSuperTip = dxSuperTip;
+        //                    args.ToolTipChange = DxToolTipChangeType.NewToolTip;                 // Zajistím rozsvícení okna ToolTipu
+        //                }
+        //                else
+        //                {
+        //                    args.ToolTipChange = DxToolTipChangeType.SameAsLastToolTip;          // Není třeba nic dělat, nechme svítit stávající ToolTip
+        //                }
+        //            }
+        //        }
+        //        else
+        //        {   // Myš je mimo nody:
+        //            args.ToolTipChange = DxToolTipChangeType.NoToolTip;                      // Pokud ToolTip svítí, zhasneme jej
+        //        }
+        //    }
+        //}
+        #endregion
+
     }
 
     public class DxGridViewInfoRegistrator : GridInfoRegistrator
@@ -115,11 +227,17 @@ namespace Noris.Clients.Win.Components.AsolDX
 
     public class DxGridView : DevExpress.XtraGrid.Views.Grid.GridView
     {
-
+        #region Properties and members
         /// <summary>
         /// Povolení interního mechanismu řádkového filtru v GridView
         /// </summary>
         public bool RowFilterCoreEnabled { get; set; }
+
+        /// <summary>
+        /// Povolení interního mechanismu řazení
+        /// </summary>
+        public bool ColumnSortCoreEnabled { get; set; }
+
         public int LastActiveRow { get; set; }
         public int ActualActiveRow { get; set; }
 
@@ -127,18 +245,30 @@ namespace Noris.Clients.Win.Components.AsolDX
         public bool IsFilterRowCellActive { get { return this.IsFilterRow(this.ActualActiveRow); } }
 
         private bool _checkBoxRowSelect;
+        /// <summary>
+        /// Povoluje selectování řádků pomocí chceckBoxu
+        /// </summary>
         public bool CheckBoxRowSelect { get => _checkBoxRowSelect; set { _checkBoxRowSelect = value; SetGridMultiSelectMode(); } }
+
+        private bool _alignGroupSummaryInGroupRow;
+        /// <summary>
+        /// Určuje typ zobrazování sumy v group řádcích
+        /// </summary>
+        public bool AlignGroupSummaryInGroupRow { get => _alignGroupSummaryInGroupRow; set { _alignGroupSummaryInGroupRow = value; SetAlignGroupSummaryInGroupRow(); } }
 
         private string _LastFilterRowCell { get; set; } = String.Empty;
 
         private bool _RowFilterVisible { get { return this.OptionsView.ShowAutoFilterRow; } /*set;*/ }
+        #endregion
+
 
         /// <summary>
         /// Slouží pro uložení informací o sloupcích, kterými byla provedena inicializace View
         /// </summary>
-        private IEnumerable<IGridViewColumn> _GridViewColumns { get; set; }
+        internal IEnumerable<IGridViewColumn> _GridViewColumns { get; set; }
 
 
+        #region konstruktory
         public DxGridView() : this(null) { }
 
         public DxGridView(DevExpress.XtraGrid.GridControl grid) : base(grid)
@@ -146,6 +276,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             InitProperties();
             RegisterEventsHandlers();
         }
+        #endregion
 
         /// <summary>
         /// Nastaví defaultní vlastnosti
@@ -154,20 +285,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             OptionsSelection.MultiSelect = true;                                  // chceme multi select rows
             SetGridMultiSelectMode();
-            //if (CheckBoxRowSelect)
-            //{
-            //    OptionsSelection.MultiSelectMode = DevExpress.XtraGrid.Views.Grid.GridMultiSelectMode.CheckBoxRowSelect;     // mód označování v režimu multiselect=true (RowSelect,CellSelect,CheckBoxRowSelect)
-            //}
-            //else
-            //{
-            //    OptionsSelection.MultiSelectMode = DevExpress.XtraGrid.Views.Grid.GridMultiSelectMode.RowSelect;     // mód označování v režimu multiselect=true (RowSelect,CellSelect,CheckBoxRowSelect)
-            //}
-
 
             OptionsSelection.EnableAppearanceFocusedCell = false;   //zakáz selectu cell, ale pouze barva, ohraničení zůstává
 
             OptionsBehavior.Editable = false;   //readonly, necheceme editaci
-            FocusRectStyle = DevExpress.XtraGrid.Views.Grid.DrawFocusRectStyle.RowFocus;
+            FocusRectStyle = DevExpress.XtraGrid.Views.Grid.DrawFocusRectStyle.CellFocus;
 
             //this.OptionsView.HeaderFilterButtonShowMode = DevExpress.XtraEditors.Controls.FilterButtonShowMode.SmartTag;
 
@@ -175,6 +297,19 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             OptionsView.EnableAppearanceEvenRow = true;
 
+            //---Groupování TEST
+            OptionsMenu.ShowGroupSummaryEditorItem = true;
+            OptionsMenu.ShowSummaryItemMode = DefaultBoolean.True;
+            OptionsMenu.EnableFooterMenu = true;
+            OptionsMenu.EnableGroupRowMenu = true;
+
+
+            //this.OptionsBehavior.AlignGroupSummaryInGroupRow = DefaultBoolean.True;
+            SetAlignGroupSummaryInGroupRow();
+
+
+
+            //----
 
 
             RowFilterCoreEnabled = true;
@@ -191,6 +326,10 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 OptionsSelection.MultiSelectMode = DevExpress.XtraGrid.Views.Grid.GridMultiSelectMode.RowSelect;     // mód označování v režimu multiselect=true (RowSelect,CellSelect,CheckBoxRowSelect)
             }
+        }
+        private void SetAlignGroupSummaryInGroupRow()
+        {
+            this.OptionsBehavior.AlignGroupSummaryInGroupRow = DxComponent.Convert(AlignGroupSummaryInGroupRow);
         }
 
         private void RegisterEventsHandlers()
@@ -319,12 +458,15 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="e"></param>
         private void _OnCustomColumnSort(object sender, CustomColumnSortEventArgs e)
         {
-            //zajistí, že se nebude měnit řazení interním mechanismem
-            e.Result = e.ListSourceRowIndex2 - e.ListSourceRowIndex1;
-            e.Result = (e.Result > 0) ? 1 : ((e.Result < 0) ? -1 : 0);
-            if (e.SortOrder == DevExpress.Data.ColumnSortOrder.Ascending)
-                e.Result = -e.Result;
-            e.Handled = true;
+            if (!ColumnSortCoreEnabled)
+            {
+                //zajistí, že se nebude měnit řazení interním mechanismem
+                e.Result = e.ListSourceRowIndex2 - e.ListSourceRowIndex1;
+                e.Result = (e.Result > 0) ? 1 : ((e.Result < 0) ? -1 : 0);
+                if (e.SortOrder == DevExpress.Data.ColumnSortOrder.Ascending)
+                    e.Result = -e.Result;
+                e.Handled = true;
+            }
         }
 
         private void _OnStartSorting(object sender, EventArgs e)
@@ -340,18 +482,31 @@ namespace Noris.Clients.Win.Components.AsolDX
             DevExpress.XtraGrid.Views.Grid.ViewInfo.GridHitInfo info = view.CalcHitInfo(ea.Location);
             //DxGridHitInfo info = (DxGridHitInfo)view.CalcHitInfo(ea.Location);
 
+            bool modifierKeyCtrl = System.Windows.Forms.Control.ModifierKeys == System.Windows.Forms.Keys.Control;
+            bool modifierKeyAlt = System.Windows.Forms.Control.ModifierKeys == System.Windows.Forms.Keys.Alt;
+            bool modifierKeyShift = System.Windows.Forms.Control.ModifierKeys == System.Windows.Forms.Keys.Shift;
             if (info.InRow || info.InRowCell)
             {
                 string colCaption = info.Column == null ? "N/A" : info.Column.GetCaption();
                 //MessageBox.Show(string.Format("DoubleClick on row: {0}, column: {1}.", info.RowHandle, colCaption));
 
-                if (!CheckBoxRowSelect && !view.IsRowSelected(info.RowHandle))  //v případě chceckBoxu nedělat. Pokud bude použit check box, tak budeme využívat aktivní řádek místo selectovaného.
+                if (CheckBoxRowSelect)
                 {
-                    //nastvává v kombinaci ctrl+doubleClick
-                    //Chci mít vždy selectovaný řádek nad kterým provádím doubleClick -> prvně se vyvolá _OnSelectionChanged -> server má nastaveny selectovavaný řádek
-                    view.SelectRow(view.FocusedRowHandle);
+                    if (view.IsRowSelected(info.RowHandle) && modifierKeyCtrl)  //když je použit chceckBox, tak nechci selectovat řádek při ctrl+doubleClick - zpět zruším select řádku. Není to pěkné ale je to zatím jediná možnost
+                    {
+                        view.UnselectRow(info.RowHandle);
+                    }
                 }
-                OnDoubleClick(info.Column?.FieldName ?? null, info.RowHandle);  //Zavoláme public event
+                else
+                {
+                    if (!view.IsRowSelected(info.RowHandle))  //v případě chceckBoxu nedělat. Pokud bude použit check box, tak budeme využívat aktivní řádek místo selectovaného.
+                    {
+                        //nastvává v kombinaci ctrl+doubleClick
+                        //Chci mít vždy selectovaný řádek nad kterým provádím doubleClick -> prvně se vyvolá _OnSelectionChanged -> server má nastaveny selectovavaný řádek
+                        view.SelectRow(view.FocusedRowHandle);
+                    }
+                }
+                OnDoubleClick(info.Column?.FieldName ?? null, info.RowHandle, modifierKeyCtrl, modifierKeyAlt, modifierKeyShift);  //Zavoláme public event
             }
         }
 
@@ -638,6 +793,21 @@ namespace Noris.Clients.Win.Components.AsolDX
                 InitColumnAfterAdd(index, vc);
             }
         }
+        /// <summary>
+        /// Některé vlastnosti GridColumn nejdou nastavit v rámci <see cref="CreateGridColumn(IGridViewColumn)"/>. Je třeba je nastavit až po přidání do kolekce.
+        /// </summary>
+        /// <param name="columnIndex"></param>
+        /// <param name="gridViewColumn"></param>
+        private void InitColumnAfterAdd(int columnIndex, IGridViewColumn gridViewColumn)
+        {
+            var gc = this.Columns[columnIndex];
+            //Header settings
+            gc.AppearanceHeader.TextOptions.HAlignment = gridViewColumn.HeaderAlignment;
+            gc.AppearanceHeader.FontStyleDelta = gridViewColumn.HeaderFontStyle;
+            gc.AppearanceCell.TextOptions.HAlignment = gridViewColumn.CellAlignment;
+            gc.AppearanceCell.FontStyleDelta = gridViewColumn.CellFontStyle;
+        }
+
 
         /// <summary>
         /// Tvorba GridColumn na základě našich dat z <see cref="IGridViewColumn"/>
@@ -649,7 +819,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             var gc = new DevExpress.XtraGrid.Columns.GridColumn()
             {
                 FieldName = gridViewColumn.FieldName, Caption = gridViewColumn.Caption, UnboundDataType = gridViewColumn.ColumnType, VisibleIndex = gridViewColumn.VisibleIndex,
-                Visible = gridViewColumn.Visible, ToolTip = gridViewColumn.ToolTip
+                Visible = gridViewColumn.Visible, ToolTip = ""
             };
             gc.OptionsColumn.AllowSort = DxComponent.Convert(gridViewColumn.AllowSort);
             //povolení filtrování
@@ -693,7 +863,6 @@ namespace Noris.Clients.Win.Components.AsolDX
                 gc.DisplayFormat.FormatType = DevExpress.Utils.FormatType.Numeric;
                 gc.DisplayFormat.FormatString = gridViewColumn.FormatString; //"n"; //https://documentation.devexpress.com/#WindowsForms/CustomDocument2141
             }
-
             return gc;
         }
 
@@ -791,23 +960,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             return index;
         }
 
-
-
-
-        /// <summary>
-        /// Některé vlastnosti GridColumn nejdou nastavit v rámci <see cref="CreateGridColumn(IGridViewColumn)"/>. Je třeba je nastavit až po přidání do kolekce.
-        /// </summary>
-        /// <param name="columnIndex"></param>
-        /// <param name="gridViewColumn"></param>
-        private void InitColumnAfterAdd(int columnIndex, IGridViewColumn gridViewColumn)
-        {
-            var gc = this.Columns[columnIndex];
-            //Header settings
-            gc.AppearanceHeader.TextOptions.HAlignment = gridViewColumn.HeaderAlignment;
-            gc.AppearanceHeader.FontStyleDelta = gridViewColumn.HeaderFontStyle;
-            gc.AppearanceCell.TextOptions.HAlignment = gridViewColumn.CellAlignment;
-            gc.AppearanceCell.FontStyleDelta = gridViewColumn.CellFontStyle;
-        }
         internal void SetFocusToFilterRow(string lastFilterRowCell)
         {
 
@@ -907,9 +1059,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Kliklo se do gridu <see cref="DxDoubleClick"/>
         /// </summary>
         public event DxGridDoubleClickHandler DxDoubleClick;
-        protected virtual void OnDoubleClick(string columnName, int rowId)
+        protected virtual void OnDoubleClick(string columnName, int rowId, bool modifierKeyCtrl = false, bool modifierKeyAlt = false, bool modifierKeyShift = false)
         {
-            if (DxDoubleClick != null) DxDoubleClick(this, new DxGridDoubleClickEventArgs(columnName, rowId));
+            if (DxDoubleClick != null) DxDoubleClick(this, new DxGridDoubleClickEventArgs(columnName, rowId, modifierKeyCtrl, modifierKeyAlt, modifierKeyShift));
         }
 
         public event DxGridFocusedRowChangedHandler DxFocusedRowChanged;
@@ -958,7 +1110,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         public virtual Type ColumnType { get; private set; }
         public virtual bool Visible { get; private set; }
         public virtual int VisibleIndex { get; private set; }
-        public virtual string ToolTip { get; set; }
         public virtual bool AllowSort { get; set; }
         public virtual bool AllowFilter { get; set; }
         public virtual string IconName { get; set; }
@@ -975,15 +1126,22 @@ namespace Noris.Clients.Win.Components.AsolDX
         public EditStyleViewMode EditStyleViewMode { get; set; }
         public string FormatString { get; set; }
 
+        public string ToolTipIcon { get; set; }
+
+        public string ToolTipTitle { get; set; }
+
+        public string ToolTipText { get; set; }
+
+        public bool? ToolTipAllowHtml { get; set; }
+
     }
-    public interface IGridViewColumn
+    public interface IGridViewColumn : IToolTipItem
     {
         string FieldName { get; }
         string Caption { get; }
         Type ColumnType { get; }
         bool Visible { get; }
         int VisibleIndex { get; }
-        string ToolTip { get; }
 
         /// <summary>
         /// Povoluje třídění sloupce
@@ -1044,7 +1202,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Display format string
         /// </summary>
         string FormatString { get; }
-
     }
 
     //public class DxGridHitInfo : DevExpress.XtraGrid.Views.Grid.ViewInfo.GridHitInfo
@@ -1094,10 +1251,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Konstruktor
         /// </summary>
-        public DxGridDoubleClickEventArgs(string columnName, int rowId)
+        public DxGridDoubleClickEventArgs(string columnName, int rowId, bool modifierKeyCtrl = false, bool modifierKeyAlt = false, bool modifierKeyShift = false)
         {
             ColumnName = columnName;
             RowId = rowId;
+            ModifierKeyCtrl = modifierKeyCtrl;
+            ModifierKeyAlt = modifierKeyAlt;
+            ModifierKeyShift = modifierKeyShift;
         }
 
         /// <summary>
@@ -1109,6 +1269,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Id řádku
         /// </summary>
         public int RowId { get; set; }
+        public bool ModifierKeyCtrl { get; private set; }
+        public bool ModifierKeyAlt { get; private set; }
+        public bool ModifierKeyShift { get; private set; }
     }
 
 

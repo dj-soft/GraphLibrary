@@ -5710,19 +5710,63 @@ namespace Noris.Clients.Win.Components.AsolDX
             _SetChartXmlLayoutAndDataSource(xmlLayout, dataSource);
         }
         /// <summary>
-        /// Zajistí editaci grafu pomocí Wizarda DevExpress
+        /// Zobrazí Wizard nebo Designer grafu, podle obsahu definice <see cref="ChartXmlLayout"/>.
+        /// </summary>
+        public void ShowChartWizardOrDesigner()
+        {
+            _ShowChartEditor(EditorType.Auto);
+        }
+        /// <summary>
+        /// Zajistí editaci grafu pomocí Wizarda nebo Designera DevExpress
         /// </summary>
         public void ShowChartWizard()
         {
+            _ShowChartEditor(EditorType.Wizard);
+        }
+        /// <summary>
+        /// Zajistí editaci grafu pomocí Wizarda nebo Designera DevExpress
+        /// </summary>
+        public void ShowChartDesigner()
+        {
+            _ShowChartEditor(EditorType.Designer);
+        }
+        /// <summary>
+        /// Druh editoru
+        /// </summary>
+        private enum EditorType { None, Auto, Wizard, Designer }
+        /// <summary>
+        /// Zajistí editaci grafu pomocí Wizarda nebo Designera DevExpress
+        /// </summary>
+        private void _ShowChartEditor(EditorType editorType)
+        {
             if (!IsChartWorking)
-                throw new InvalidOperationException($"V tuto chvíli nelze editovat graf, dosud není načten nebo není definován.");
+                throw new InvalidOperationException(DxComponent.Localize(MsgCode.DxChartEditorNotPrepared)); // $"V tuto chvíli nelze editovat graf, dosud není načten nebo není definován.");
 
-            bool valid = DxChartDesigner.DesignChart(this, "Upravte graf...", true, false);
+            if (editorType == EditorType.Auto)
+            {   // Automaticky:
+                bool hasDefinition = !String.IsNullOrEmpty(this._ValidChartXmlLayout);             // true, když máme nějakou definici grafu
+                editorType = (hasDefinition ? EditorType.Designer : EditorType.Wizard);
+            }
+            bool acceptDefinition = false;
+            string editorTitle;
+            switch (editorType)
+            {
+                case EditorType.Wizard:
+                    // První editace grafu = Wizard:
+                    editorTitle = DxComponent.Localize(MsgCode.DxChartEditorTitleWizard);          // "Vytvořte nový graf..."
+                    acceptDefinition = DxChartWizard.ShowWizard(this, editorTitle, true, false);
+                    break;
+                case EditorType.Designer:
+                    // Další editace grafu = Designer:
+                    editorTitle = DxComponent.Localize(MsgCode.DxChartEditorTitleDesigner);        // "Upravte graf..."
+                    acceptDefinition = DxChartDesigner.DesignChart(this, editorTitle, true, false);
+                    break;
+            }
 
             // Wizard pracuje nad naším controlem, veškeré změny ve Wizardu provedené se ihned promítají do našeho grafu.
             // Pokud uživatel dal OK, chceme změny uložit i do příště,
             // pokud ale dal Cancel, pak změny chceme zahodit a vracíme se k původnímu layoutu:
-            if (valid)
+            if (acceptDefinition)
             {
                 string newLayout = _GetLayoutFromControl();
                 _ValidChartXmlLayout = newLayout;
@@ -6009,6 +6053,52 @@ namespace Noris.Clients.Win.Components.AsolDX
             chartDesigner.Caption = caption;
             chartDesigner.ShowActualData = showActualData;
             var result = chartDesigner.ShowDialog(topMost);
+            return (result == DialogResult.OK);
+        }
+        /// <summary>
+        /// Desktop okno hlídá klávesu Escape: 
+        /// c:\inetpub\wwwroot\Noris46\Noris\ClientImages\ClientWinForms\WinForms.Host\Windows\WDesktop.cs
+        /// metoda escapeKeyFilter_EscapeKeyDown()
+        /// Když dostane Escape, najde OnTop okno které implementuje IEscapeHandler, a zavolá zdejší metodu.
+        /// My vrátíme true = OK, aby desktop dál ten Escape neřešil, a my se v klidu zavřeme nativním zpracováním klávesy Escape ve WinFormu.
+        /// </summary>
+        /// <returns></returns>
+        public bool HandleEscapeKey()
+        {
+            return true;
+        }
+    }
+    #endregion
+    #region DxChartWizard
+    /// <summary>
+    /// Přímý potomek <see cref="DevExpress.XtraCharts.Wizard.ChartWizard"/> pro editaci definice grafu
+    /// </summary>
+    internal class DxChartWizard : DevExpress.XtraCharts.Wizard.ChartWizard, IEscapeHandler
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="chart"></param>
+        public DxChartWizard(object chart) : base(chart) { }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="chart"></param>
+        /// <param name="designerHost"></param>
+        public DxChartWizard(object chart, System.ComponentModel.Design.IDesignerHost designerHost) : base(chart, designerHost) { }
+        /// <summary>
+        /// Zobrazí Wizard pro daný graf, a vrátí true = OK
+        /// </summary>
+        /// <param name="chart"></param>
+        /// <param name="caption"></param>
+        /// <param name="showActualData"></param>
+        /// <param name="topMost"></param>
+        /// <returns></returns>
+        public static bool ShowWizard(object chart, string caption, bool showActualData, bool topMost)
+        {
+            DxChartWizard chartWizard = new DxChartWizard(chart);
+            chartWizard.Caption = caption;
+            var result = chartWizard.ShowDialog(topMost);
             return (result == DialogResult.OK);
         }
         /// <summary>

@@ -6808,6 +6808,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                     childDxRibbonState = childDxRibbon.CurrentModifiedState;
                     childDxRibbon.MergedIntoParentDxRibbon = this;
                     childDxRibbon._CurrentMergeState = MergeState.MergeToParent;
+                    childDxRibbon.IsActive = this.IsActive;
                     childDxRibbon.SetModifiedState(true, true);
                 }
 
