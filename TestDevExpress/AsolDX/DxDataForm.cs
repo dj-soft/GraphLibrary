@@ -1907,6 +1907,10 @@ namespace Noris.Clients.Win.Components.AsolDX.DataForm
         /// </summary>
         string ITextItem.ImageNameChecked { get { return null; } }
         /// <summary>
+        /// Odvození ikony podle textu
+        /// </summary>
+        ImageFromCaptionType ITextItem.ImageFromCaption { get { return ImageFromCaptionType.Disabled; } }
+        /// <summary>
         /// Styl zobrazení
         /// </summary>
         BarItemPaintStyle ITextItem.ItemPaintStyle { get { return BarItemPaintStyle.Standard; } }

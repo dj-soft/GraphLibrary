@@ -295,7 +295,7 @@ namespace TestDevExpress.Forms
             return summaryList.ToArray();
         }
         #endregion
-        #region Konstktor a základní data
+        #region Konstruktor a základní data
         /// <summary>
         /// Konstruktor
         /// </summary>
@@ -405,6 +405,7 @@ namespace TestDevExpress.Forms
         string ITextItem.ImageName { get { return null; } }
         string ITextItem.ImageNameUnChecked { get { return null; } }
         string ITextItem.ImageNameChecked { get { return null; } }
+        ImageFromCaptionType ITextItem.ImageFromCaption { get { return ImageFromCaptionType.Disabled; } }
         BarItemPaintStyle ITextItem.ItemPaintStyle { get { return BarItemPaintStyle.CaptionGlyph; } }
         object ITextItem.Tag { get { return null; } }
         string IToolTipItem.ToolTipTitle { get { return Text; } }

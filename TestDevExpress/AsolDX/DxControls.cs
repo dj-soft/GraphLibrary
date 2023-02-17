@@ -6376,6 +6376,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             this._ItemId = null;
             this.Visible = true;
             this.Enabled = true;
+            this.ImageFromCaption = ImageFromCaptionType.OnlyForRootMenuLevel;
         }
         /// <summary>
         /// Metoda vytvoří new instanci třídy <see cref="DataMenuItem"/>, které bude obsahovat data z dodané <see cref="IMenuItem"/>.
@@ -6408,6 +6409,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             ImageName = source.ImageName;
             ImageNameUnChecked = source.ImageNameUnChecked;
             ImageNameChecked = source.ImageNameChecked;
+            ImageFromCaption = source.ImageFromCaption;
             ItemPaintStyle = source.ItemPaintStyle;
             ToolTipIcon = source.ToolTipIcon;
             ToolTipTitle = source.ToolTipTitle;
@@ -6506,6 +6508,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Pokud je prázdné, pak se pro stav Checked použije <see cref="ImageName"/>.
         /// </summary>
         public virtual string ImageNameChecked { get; set; }
+        /// <summary>
+        /// Povoluje se vytvoření obrázku podle textu? Používá se v Nephrite pro ikony například vztahů...
+        /// </summary>
+        public virtual ImageFromCaptionType ImageFromCaption { get; set; }
         /// <summary>
         /// Styl zobrazení
         /// </summary>
@@ -6607,6 +6613,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Jméno ikony pro stav Checked u typu <see cref="RibbonItemType.CheckBoxToggle"/>
         /// </summary>
         string ImageNameChecked { get; }
+        /// <summary>
+        /// Povoluje se vytvoření obrázku podle textu? Používá se v Nephrite pro ikony například vztahů...
+        /// </summary>
+        ImageFromCaptionType ImageFromCaption { get; }
         /// <summary>
         /// Styl zobrazení
         /// </summary>
@@ -7111,6 +7121,24 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Na pravé straně, zarovnáno nahoru
         /// </summary>
         LeftSideTop
+    }
+    /// <summary>
+    /// Je povoleno vytvářet ikonu pro prvek, který nemá Image ale jen caption, z výchozích písmen textu?
+    /// </summary>
+    public enum ImageFromCaptionType
+    {
+        /// <summary>
+        /// Nikdy neprovádět
+        /// </summary>
+        Disabled,
+        /// <summary>
+        /// Pouze pro prvky v Root úrovni
+        /// </summary>
+        OnlyForRootMenuLevel,
+        /// <summary>
+        /// Pro všechny prvky povoleno
+        /// </summary>
+        Enabled
     }
     /// <summary>
     /// Vyjádření názvu rohu na objektu Rectangle (Vlevo nahoře, Vpravo nahoře, ...)

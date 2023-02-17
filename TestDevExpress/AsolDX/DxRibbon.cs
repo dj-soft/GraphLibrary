@@ -3316,6 +3316,12 @@ namespace Noris.Clients.Win.Components.AsolDX
                     //DevExpress.XtraBars.BarCheckItem trackBarItem = Items.createtr .CreateCheckItem(iRibbonItem.Text, iRibbonItem.Checked ?? false);
                     //barItem = radioItem;
                     break;
+                case RibbonItemType.ComboListBox:
+                    count++;
+                    BarItem comboItem = CreateComboListBoxItem(iRibbonItem, level, dxGroup);
+                    this.Items.Add(comboItem);
+                    barItem = comboItem;
+                    break;
                 case RibbonItemType.InRibbonGallery:
                     count++;
                     var galleryItem = CreateGalleryItem(iRibbonItem, level, dxGroup);
@@ -3486,7 +3492,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             ResourceImageSizeType sizeType = (isLargeIcon ? ResourceImageSizeType.Large : ResourceImageSizeType.Small);
 
             // Náhradní ikonky (pro nezadané nebo neexistující ImageName) budeme generovat jen pro level = 0 = Ribbon, a ne pro Menu!
-            string caption = (isRootItem ? iRibbonItem.Text : null);
+            bool enableImageFromCaption = (iRibbonItem.ImageFromCaption == ImageFromCaptionType.OnlyForRootMenuLevel ? isRootItem : (iRibbonItem.ImageFromCaption == ImageFromCaptionType.Enabled));
+            string caption = (enableImageFromCaption ? iRibbonItem.Text : null);
             DxComponent.ApplyImage(barItem.ImageOptions, iRibbonItem.ImageName, iRibbonItem.Image, sizeType, caption: caption, prepareDisabledImage: iRibbonItem.PrepareDisabledImage);
         }
         /// <summary>
@@ -3647,6 +3654,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 case RibbonItemType.SkinPaletteDropDown: return null;
                 case RibbonItemType.SkinPaletteGallery: return null;
                 case RibbonItemType.CheckButton: return null;
+                case RibbonItemType.ComboListBox: return RibbonItemType.ComboListBox;
                 case RibbonItemType.Button:
                 default:
                     return RibbonItemType.Button;
@@ -4344,6 +4352,20 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             if (e.Item?.Tag is BarItemTagInfo itemInfo)
                 this.RaiseRibbonItemClick(itemInfo.Data);
+        }
+
+        /// <summary>
+        /// Vytvoří a vrátí prvek Ribbonu, který reprezentuje ComboBox
+        /// </summary>
+        /// <param name="iRibbonItem"></param>
+        /// <param name="level"></param>
+        /// <param name="dxGroup"></param>
+        /// <returns></returns>
+        private BarItem CreateComboListBoxItem(IRibbonItem iRibbonItem, int level, DxRibbonGroup dxGroup)
+        {
+            DxRibbonComboBox dxRibbonCombo = new DxRibbonComboBox();
+            dxRibbonCombo.IRibbonItem = iRibbonItem;
+            return dxRibbonCombo;
         }
 
         /// <summary>
@@ -8426,7 +8448,7 @@ namespace Noris.Clients.Win.Components.AsolDX
     }
     #endregion
     #region TrackBar - TODO
-    
+
     //#warning TrackBar - TODO
 
     //[DevExpress.XtraEditors.Registrator.UserRepositoryItem("RegisterMyTrackBar")]
@@ -8485,7 +8507,7 @@ namespace Noris.Clients.Win.Components.AsolDX
 
     //    public override string EditorTypeName { get { return CustomEditName; } }
 
-      
+
 
     //    public override void Assign(DevExpress.XtraEditors.Repository.RepositoryItem item)
     //    {
@@ -8581,6 +8603,117 @@ namespace Noris.Clients.Win.Components.AsolDX
     //    {
     //    }
     //}
+    #endregion
+    #region DxRibbonComboBox
+    /// <summary>
+    /// Prvek Ribbonu reprezentující ComboBox
+    /// </summary>
+    public class DxRibbonComboBox : BarEditItem
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="manager"></param>
+        public DxRibbonComboBox(BarManager manager) : base(manager)
+        {
+            this._Init();
+        }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public DxRibbonComboBox() : base()
+        {
+            this._Init();
+        }
+        /// <summary>
+        /// Inicializace
+        /// </summary>
+        private void _Init()
+        {
+            var comboBox = new DevExpress.XtraEditors.Repository.RepositoryItemComboBox();
+            comboBox.AutoHeight = false;
+            comboBox.PopupSizeable = true;
+            comboBox.ReadOnly = false;
+            comboBox.AllowDropDownWhenReadOnly = DefaultBoolean.True;
+            comboBox.TextEditStyle = DevExpress.XtraEditors.Controls.TextEditStyles.DisableTextEditor;
+            comboBox.DropDownRows = 12;
+            comboBox.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder;
+            comboBox.ButtonsStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder;
+            comboBox.HighlightedItemStyle = DevExpress.XtraEditors.HighlightStyle.Skinned;
+            comboBox.HotTrackItems = true;
+            // comboBox.BestFitWidth = 250;         // Nefunguje
+
+            comboBox.QueryPopUp += ComboBox_QueryPopUp;
+            comboBox.SelectedValueChanged += _SelectedValueChanged;
+
+            this.Edit = comboBox;
+            this.Width = 250;              // Tohle jediné nastaví šířku cca přesně
+            // this.Size = new Size(250, 25);       // Nefunguje
+            this.__ComboBox = comboBox;
+        }
+
+        private void ComboBox_QueryPopUp(object sender, System.ComponentModel.CancelEventArgs e)
+        {
+            
+        }
+
+        private void _SelectedValueChanged(object sender, EventArgs e)
+        {
+            
+        }
+
+        private DevExpress.XtraEditors.Repository.RepositoryItemComboBox __ComboBox;
+        /// <summary>
+        /// Data, která deklarují obsah tohoto prvku
+        /// </summary>
+        public IRibbonItem IRibbonItem
+        {
+            get { return __IRibbonItem; }
+            set { this._FillFromIRibbonItem(value); }
+        }
+        private IRibbonItem __IRibbonItem;
+        /// <summary>
+        /// Resetuje svůj obsah (Items a Buttons) a odpojí se z aktuálního prvku <see cref="IRibbonItem"/>
+        /// </summary>
+        private void _Reset()
+        {
+            var comboBox = __ComboBox;
+            comboBox.Items.Clear();
+            comboBox.Buttons.Clear();
+            comboBox.Buttons.Add(new DevExpress.XtraEditors.Controls.EditorButton(DevExpress.XtraEditors.Controls.ButtonPredefines.DropDown));
+            comboBox.Buttons.Add(new DevExpress.XtraEditors.Controls.EditorButton(DevExpress.XtraEditors.Controls.ButtonPredefines.Ellipsis) { ToolTip = "Editor", ToolTipAnchor = DevExpress.Utils.ToolTipAnchor.Cursor });
+
+            var iRibbonItem = __IRibbonItem;
+            if (iRibbonItem != null)
+            {
+                iRibbonItem.RibbonItem = null;
+                __IRibbonItem = null;
+            }
+        }
+        private void _FillFromIRibbonItem(IRibbonItem iRibbonItem)
+        {
+            this._Reset();
+
+            if (iRibbonItem != null)
+            {
+                var comboBox = __ComboBox;
+                comboBox.Items.AddRange(iRibbonItem.SubItems.ToArray());
+                if (iRibbonItem.SubItems.TryGetFirst(i => i.Checked.HasValue && i.Checked.Value, out var checkedItem))
+                    this.EditValue = checkedItem;
+
+                this.Caption = iRibbonItem.Text;
+                this.SuperTip = DxComponent.CreateDxSuperTip(iRibbonItem);
+
+                // comboBox.Buttons.Add(new DevExpress.XtraEditors.Controls.EditorButton(DevExpress.XtraEditors.Controls.ButtonPredefines.Ellipsis));
+                // comboBox.Buttons.Add(new DevExpress.XtraEditors.Controls.EditorButton(DevExpress.XtraEditors.Controls.ButtonPredefines.Delete));
+
+                this.SuperTip = DxComponent.CreateDxSuperTip(iRibbonItem);
+                //       this.Size = new Size(iRibbonItem.Size.Width, this.Size.Height);
+                iRibbonItem.RibbonItem = this;
+            }
+            __IRibbonItem = iRibbonItem;
+        }
+    }
     #endregion
     #region DxRibbonStatusBar
     /// <summary>
@@ -9982,6 +10115,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Trackbar, nepoužívat než bude dokončeno
         /// </summary>
         TrackBar,
+        /// <summary>
+        /// ComboListBox
+        /// </summary>
+        ComboListBox,
         /// <summary>
         /// Menu = tlačítko, které se vždy rozbalí
         /// </summary>

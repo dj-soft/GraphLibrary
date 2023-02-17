@@ -392,6 +392,9 @@ namespace TestDevExpress.Forms
 
             AddFunctionsGroup(page);
 
+            page = CreateRibbonSamplePage();
+            if (page != null) pages.Add(page);
+
             page = CreateRibbonSvgImagesPage();
             if (page != null) pages.Add(page);
 
@@ -4984,6 +4987,90 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
         private DxSyntaxEditControl _SyntaxRtfEdit;
         private XR.RibbonControl _SyntaxRtfRibbon;
 
+        #endregion
+        #region RibbonSample
+        private DataRibbonPage CreateRibbonSamplePage()
+        {
+            DataRibbonPage page = new DataRibbonPage() { PageText = "RŮZNÉ" };
+            DataRibbonGroup group = new DataRibbonGroup() { GroupText = "Jednotlivé prvky", GroupButtonVisible = true };
+            page.Groups.Add(group);
+            DataRibbonItem item;
+
+            string[] resources = new string[]
+{
+    "devav/actions/filter.svg",
+    "devav/actions/new.svg",
+    "devav/actions/printincludeevaluations.svg",
+    "devav/actions/printpreview.svg",
+    "devav/print/summary.svg",
+    "svgimages/dashboards/chartstackedline.svg"
+};
+
+            item = new DataRibbonItem() { ItemType = RibbonItemType.Button, RibbonStyle = RibbonItemStyles.Large, Text = "Filtr", ImageName = "devav/actions/filter.svg" };
+            group.Items.Add(item);
+
+
+
+            item = new DataRibbonItem() { ItemType = RibbonItemType.ComboListBox };
+            item.RibbonStyle = RibbonItemStyles.SmallWithText;
+            item.Text = "";
+            item.ImageFromCaption = ImageFromCaptionType.Disabled;
+            item.ImageName = "devav/print/summary.svg";
+            item.ToolTipTitle = "ComboBox";
+            item.ToolTipText = "Měl by nabízet sadu prvků";
+
+            item.SubItems = new List<IRibbonItem>();
+            item.SubItems.Add(new DataRibbonItem() { Text = "První šablona" });
+            item.SubItems.Add(new DataRibbonItem() { Text = "Druhá šablona" });
+            item.SubItems.Add(new DataRibbonItem() { Text = "Třetí šablona" });
+            item.SubItems.Add(new DataRibbonItem() { Text = "Poslední šablona", ItemIsFirstInGroup = true });
+            item.SubItems[0].Checked = true;
+            group.Items.Add(item);
+
+
+
+            item = new DataRibbonItem() { ItemType = RibbonItemType.ComboListBox };
+            item.RibbonStyle = RibbonItemStyles.SmallWithText;
+            item.Text = "";
+            item.ImageFromCaption = ImageFromCaptionType.Disabled;
+            item.ImageName = "devav/actions/filter.svg";
+            item.ToolTipTitle = "ComboBox";
+            item.ToolTipText = "Měl by nabízet sadu prvků";
+
+            item.SubItems = new List<IRibbonItem>();
+            item.SubItems.Add(new DataRibbonItem() { Text = "První filtr" });
+            item.SubItems.Add(new DataRibbonItem() { Text = "Druhý filtr" });
+            item.SubItems.Add(new DataRibbonItem() { Text = "Třetí filtr" });
+            item.SubItems.Add(new DataRibbonItem() { Text = "Poslední filtr", ItemIsFirstInGroup = true });
+            item.SubItems[1].Checked = true;
+            group.Items.Add(item);
+
+
+
+            item = new DataRibbonItem() { ItemType = RibbonItemType.ComboListBox };
+            item.RibbonStyle = RibbonItemStyles.SmallWithText;
+            item.Text = "";
+            item.ImageFromCaption = ImageFromCaptionType.Disabled;
+            item.ImageName = "svgimages/dashboards/chartstackedline.svg";
+            item.ToolTipTitle = "ComboBox";
+            item.ToolTipText = "Měl by nabízet sadu prvků";
+
+            item.SubItems = new List<IRibbonItem>();
+            item.SubItems.Add(new DataRibbonItem() { Text = "První pohled" });
+            item.SubItems.Add(new DataRibbonItem() { Text = "Druhý pohled" });
+            item.SubItems.Add(new DataRibbonItem() { Text = "Třetí pohled" });
+            item.SubItems.Add(new DataRibbonItem() { Text = "Poslední pohled", ItemIsFirstInGroup = true });
+            item.SubItems[2].Checked = true;
+            group.Items.Add(item);
+
+
+
+            item = new DataRibbonItem() { ItemType = RibbonItemType.Button, RibbonStyle = RibbonItemStyles.Large, Text = "Šablona", ImageName = "devav/actions/printpreview.svg" };
+            group.Items.Add(item);
+
+
+            return page;
+        }
         #endregion
         #region Random
         /// <summary>
