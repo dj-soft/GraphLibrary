@@ -5010,58 +5010,65 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
             group.Items.Add(item);
 
 
+            DataRibbonComboItem comboItem;
+            comboItem = new DataRibbonComboItem() { ItemType = RibbonItemType.ComboListBox };
+            comboItem.RibbonStyle = RibbonItemStyles.SmallWithText;
+            comboItem.Text = "";
+            comboItem.ImageFromCaption = ImageFromCaptionType.Disabled;
+            comboItem.ImageName = "devav/print/summary.svg";
+            comboItem.ToolTipTitle = "ComboBox";
+            comboItem.ToolTipText = "Měl by nabízet sadu prvků";
+            comboItem.Buttons = PredefinedButtonType.DropDown | PredefinedButtonType.Ellipsis | PredefinedButtonType.Delete;
+            comboItem.BorderStyle = DxBorderStyle.None;
+            comboItem.Width = 280;
 
-            item = new DataRibbonItem() { ItemType = RibbonItemType.ComboListBox };
-            item.RibbonStyle = RibbonItemStyles.SmallWithText;
-            item.Text = "";
-            item.ImageFromCaption = ImageFromCaptionType.Disabled;
-            item.ImageName = "devav/print/summary.svg";
-            item.ToolTipTitle = "ComboBox";
-            item.ToolTipText = "Měl by nabízet sadu prvků";
-
-            item.SubItems = new List<IRibbonItem>();
-            item.SubItems.Add(new DataRibbonItem() { Text = "První šablona" });
-            item.SubItems.Add(new DataRibbonItem() { Text = "Druhá šablona" });
-            item.SubItems.Add(new DataRibbonItem() { Text = "Třetí šablona" });
-            item.SubItems.Add(new DataRibbonItem() { Text = "Poslední šablona", ItemIsFirstInGroup = true });
-            item.SubItems[0].Checked = true;
-            group.Items.Add(item);
-
-
-
-            item = new DataRibbonItem() { ItemType = RibbonItemType.ComboListBox };
-            item.RibbonStyle = RibbonItemStyles.SmallWithText;
-            item.Text = "";
-            item.ImageFromCaption = ImageFromCaptionType.Disabled;
-            item.ImageName = "devav/actions/filter.svg";
-            item.ToolTipTitle = "ComboBox";
-            item.ToolTipText = "Měl by nabízet sadu prvků";
-
-            item.SubItems = new List<IRibbonItem>();
-            item.SubItems.Add(new DataRibbonItem() { Text = "První filtr" });
-            item.SubItems.Add(new DataRibbonItem() { Text = "Druhý filtr" });
-            item.SubItems.Add(new DataRibbonItem() { Text = "Třetí filtr" });
-            item.SubItems.Add(new DataRibbonItem() { Text = "Poslední filtr", ItemIsFirstInGroup = true });
-            item.SubItems[1].Checked = true;
-            group.Items.Add(item);
+            comboItem.SubItems = new List<IRibbonItem>();
+            comboItem.SubItems.Add(new DataRibbonItem() { Text = "První šablona" });
+            comboItem.SubItems.Add(new DataRibbonItem() { Text = "Druhá šablona" });
+            comboItem.SubItems.Add(new DataRibbonItem() { Text = "Třetí šablona" });
+            comboItem.SubItems.Add(new DataRibbonItem() { Text = "Poslední šablona", ItemIsFirstInGroup = true });
+            comboItem.SubItems[0].Checked = true;
+            group.Items.Add(comboItem);
 
 
 
-            item = new DataRibbonItem() { ItemType = RibbonItemType.ComboListBox };
-            item.RibbonStyle = RibbonItemStyles.SmallWithText;
-            item.Text = "";
-            item.ImageFromCaption = ImageFromCaptionType.Disabled;
-            item.ImageName = "svgimages/dashboards/chartstackedline.svg";
-            item.ToolTipTitle = "ComboBox";
-            item.ToolTipText = "Měl by nabízet sadu prvků";
+            comboItem = new DataRibbonComboItem() { ItemType = RibbonItemType.ComboListBox };
+            comboItem.RibbonStyle = RibbonItemStyles.SmallWithText;
+            comboItem.Text = "";
+            comboItem.ImageFromCaption = ImageFromCaptionType.Disabled;
+            comboItem.ImageName = "devav/actions/filter.svg";
+            comboItem.ToolTipTitle = "ComboBox";
+            comboItem.ToolTipText = "Měl by nabízet sadu prvků";
+            comboItem.Buttons = PredefinedButtonType.DropDown | PredefinedButtonType.Ellipsis | PredefinedButtonType.Ok;
+            comboItem.BorderStyle = DxBorderStyle.HotFlat;
+            comboItem.Width = 280;
 
-            item.SubItems = new List<IRibbonItem>();
-            item.SubItems.Add(new DataRibbonItem() { Text = "První pohled" });
-            item.SubItems.Add(new DataRibbonItem() { Text = "Druhý pohled" });
-            item.SubItems.Add(new DataRibbonItem() { Text = "Třetí pohled" });
-            item.SubItems.Add(new DataRibbonItem() { Text = "Poslední pohled", ItemIsFirstInGroup = true });
-            item.SubItems[2].Checked = true;
-            group.Items.Add(item);
+            comboItem.SubItems = new List<IRibbonItem>();
+            comboItem.SubItems.Add(new DataRibbonItem() { Text = "První filtr" });
+            comboItem.SubItems.Add(new DataRibbonItem() { Text = "Druhý filtr" });
+            comboItem.SubItems.Add(new DataRibbonItem() { Text = "Třetí filtr" });
+            comboItem.SubItems.Add(new DataRibbonItem() { Text = "Poslední filtr", ItemIsFirstInGroup = true });
+            comboItem.SubItems[1].Checked = true;
+            group.Items.Add(comboItem);
+
+
+
+            comboItem = new DataRibbonComboItem() { ItemType = RibbonItemType.ComboListBox };
+            comboItem.RibbonStyle = RibbonItemStyles.SmallWithText;
+            comboItem.Text = "";
+            comboItem.ImageFromCaption = ImageFromCaptionType.Disabled;
+            comboItem.ImageName = "svgimages/dashboards/chartstackedline.svg";
+            comboItem.ToolTipTitle = "ComboBox";
+            comboItem.ToolTipText = "Měl by nabízet sadu prvků";
+            comboItem.Buttons = PredefinedButtonType.DropDown | PredefinedButtonType.Ellipsis | PredefinedButtonType.Plus;
+            comboItem.BorderStyle = DxBorderStyle.Style3D;
+            comboItem.Width = 280;
+
+            comboItem.SubItems = new List<IRibbonItem>();
+            comboItem.SubItems.Add(new DataRibbonItem() { Text = "Načte se po otevření..." });
+            comboItem.SubItemsContentMode = RibbonContentMode.OnDemandLoadOnce;
+            comboItem.SubItems[0].Checked = true;
+            group.Items.Add(comboItem);
 
 
 

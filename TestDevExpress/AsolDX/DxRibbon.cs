@@ -8647,7 +8647,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             comboBox.SelectedValueChanged += _SelectedValueChanged;
 
             this.Edit = comboBox;
-            this.Width = 250;              // Tohle jediné nastaví šířku cca přesně
+            this.Width = 250;                       // Tohle jediné nastaví šířku cca přesně
             // this.Size = new Size(250, 25);       // Nefunguje
             this.__ComboBox = comboBox;
         }
@@ -8664,12 +8664,15 @@ namespace Noris.Clients.Win.Components.AsolDX
 
         private DevExpress.XtraEditors.Repository.RepositoryItemComboBox __ComboBox;
         /// <summary>
-        /// Data, která deklarují obsah tohoto prvku
+        /// Data, která deklarují obsah tohoto prvku.
+        /// Setováním prvku dojde k naplnění specifických položek (Items a Buttons) ComboBoxu.
+        /// Přenačtení těchto dat lze vyvolat i metodou <see cref="Reload()"/>.
+        /// Nicméně tímto plněním se <u>neprovádí běžné setování dat</u> (Caption, Image, SuperTip, Enabled atd), to provádí Ribbon standardně sám - tak jako u jiných BarItems.
         /// </summary>
         public IRibbonItem IRibbonItem
         {
             get { return __IRibbonItem; }
-            set { this._FillFromIRibbonItem(value); }
+            set { this._SetIRibbonItem(value); }
         }
         private IRibbonItem __IRibbonItem;
         /// <summary>
@@ -8677,11 +8680,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private void _Reset()
         {
-            var comboBox = __ComboBox;
-            comboBox.Items.Clear();
-            comboBox.Buttons.Clear();
-            comboBox.Buttons.Add(new DevExpress.XtraEditors.Controls.EditorButton(DevExpress.XtraEditors.Controls.ButtonPredefines.DropDown));
-            comboBox.Buttons.Add(new DevExpress.XtraEditors.Controls.EditorButton(DevExpress.XtraEditors.Controls.ButtonPredefines.Ellipsis) { ToolTip = "Editor", ToolTipAnchor = DevExpress.Utils.ToolTipAnchor.Cursor });
+            _ClearItems();
 
             var iRibbonItem = __IRibbonItem;
             if (iRibbonItem != null)
@@ -8690,28 +8689,149 @@ namespace Noris.Clients.Win.Components.AsolDX
                 __IRibbonItem = null;
             }
         }
-        private void _FillFromIRibbonItem(IRibbonItem iRibbonItem)
+        /// <summary>
+        /// Znovu vytvoří prvky ComboBoxu : Items a Buttons.
+        /// Používá se pro Refresh obsahu.
+        /// Nenaplní běžné hodnoty BarItemu (Caption, Image, SuperTip, Enabled atd), to provádí Ribbon tak jako u jiných BarItems.
+        /// </summary>
+        public void Reload()
         {
-            this._Reset();
+            _ClearItems();
+            _ReloadIRibbonData();
+        }
+        /// <summary>
+        /// Z prvku odebere Items a Buttons, ponechá jen button DropDown
+        /// </summary>
+        private void _ClearItems()
+        {
+            var comboBox = __ComboBox;
 
+            // Items:
+            comboBox.Items.Clear();
+
+            // Buttons: ponechat jen DropDown, anebo pokud by tam nebyl, tak jej přidat:
+            comboBox.Buttons.RemoveWhere(b => b.Kind != DevExpress.XtraEditors.Controls.ButtonPredefines.DropDown);
+            if (comboBox.Buttons.Count == 0)
+                comboBox.Buttons.Add(new DevExpress.XtraEditors.Controls.EditorButton(DevExpress.XtraEditors.Controls.ButtonPredefines.DropDown));
+        }
+        /// <summary>
+        /// Z aktuálně přítomného prvku <see cref="__IRibbonItem"/> z jeho SubItems do this combo naplní Items a Buttons, a nastaví Value podle Checked prvku
+        /// </summary>
+        private void _ReloadIRibbonData()
+        {
+            var comboBox = __ComboBox;
+            IRibbonItem iRibbonItem = __IRibbonItem;
             if (iRibbonItem != null)
             {
-                var comboBox = __ComboBox;
-                comboBox.Items.AddRange(iRibbonItem.SubItems.ToArray());
-                if (iRibbonItem.SubItems.TryGetFirst(i => i.Checked.HasValue && i.Checked.Value, out var checkedItem))
-                    this.EditValue = checkedItem;
+                // Items:
+                if (iRibbonItem.SubItems != null)
+                {
+                    comboBox.Items.AddRange(iRibbonItem.SubItems.ToArray());
 
-                this.Caption = iRibbonItem.Text;
-                this.SuperTip = DxComponent.CreateDxSuperTip(iRibbonItem);
+                    // SelectedItem:
+                    if (iRibbonItem.SubItems.TryGetFirst(i => i.Checked.HasValue && i.Checked.Value, out var checkedItem))
+                        this.EditValue = checkedItem;
+                }
 
-                // comboBox.Buttons.Add(new DevExpress.XtraEditors.Controls.EditorButton(DevExpress.XtraEditors.Controls.ButtonPredefines.Ellipsis));
-                // comboBox.Buttons.Add(new DevExpress.XtraEditors.Controls.EditorButton(DevExpress.XtraEditors.Controls.ButtonPredefines.Delete));
+                if (iRibbonItem is IRibbonComboItem iRibbonCombo)
+                {   // Buttons a další vlastnosti:
+                    var buttons = iRibbonCombo.Buttons;
+                    checkComboButton(comboBox, buttons, PredefinedButtonType.DropDown);
+                    checkComboButton(comboBox, buttons, PredefinedButtonType.Ellipsis);
+                    checkComboButton(comboBox, buttons, PredefinedButtonType.Delete);
+                    checkComboButton(comboBox, buttons, PredefinedButtonType.Clear);
+                    checkComboButton(comboBox, buttons, PredefinedButtonType.Ok);
+                    checkComboButton(comboBox, buttons, PredefinedButtonType.Close);
+                    checkComboButton(comboBox, buttons, PredefinedButtonType.Plus);
+                    checkComboButton(comboBox, buttons, PredefinedButtonType.Minus);
+                    checkComboButton(comboBox, buttons, PredefinedButtonType.Undo);
+                    checkComboButton(comboBox, buttons, PredefinedButtonType.Redo);
+                    checkComboButton(comboBox, buttons, PredefinedButtonType.Search);
 
-                this.SuperTip = DxComponent.CreateDxSuperTip(iRibbonItem);
-                //       this.Size = new Size(iRibbonItem.Size.Width, this.Size.Height);
-                iRibbonItem.RibbonItem = this;
+                    var border = iRibbonCombo.BorderStyle;
+                    switch (border)
+                    {
+                        case DxBorderStyle.None:
+                            comboBox.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder;
+                            comboBox.ButtonsStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder;
+                            comboBox.HighlightedItemStyle = DevExpress.XtraEditors.HighlightStyle.Skinned;
+                            comboBox.HotTrackItems = true;
+                            break;
+                        case DxBorderStyle.HotFlat:
+                            comboBox.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.HotFlat;
+                            comboBox.ButtonsStyle = DevExpress.XtraEditors.Controls.BorderStyles.HotFlat;
+                            comboBox.HighlightedItemStyle = DevExpress.XtraEditors.HighlightStyle.Skinned;
+                            comboBox.HotTrackItems = true;
+                            break;
+                        case DxBorderStyle.Single:
+                            comboBox.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.Simple;
+                            comboBox.ButtonsStyle = DevExpress.XtraEditors.Controls.BorderStyles.Simple;
+                            comboBox.HighlightedItemStyle = DevExpress.XtraEditors.HighlightStyle.Skinned;
+                            comboBox.HotTrackItems = true;
+                            break;
+                        case DxBorderStyle.Style3D:
+                            comboBox.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.Style3D;
+                            comboBox.ButtonsStyle = DevExpress.XtraEditors.Controls.BorderStyles.Style3D;
+                            comboBox.HighlightedItemStyle = DevExpress.XtraEditors.HighlightStyle.Skinned;
+                            comboBox.HotTrackItems = true;
+                            break;
+                    }
+
+                    if (iRibbonCombo.Width.HasValue)
+                        this.Width = iRibbonCombo.Width.Value;       // Tohle jediné nastaví šířku cca přesně
+                }
             }
+
+            // Přidá nebo odebere daný button. na pořadí tedy záleží.
+            void checkComboButton(DevExpress.XtraEditors.Repository.RepositoryItemComboBox combo, PredefinedButtonType buttons, PredefinedButtonType button)
+            {
+                bool needButton = buttons.HasFlag(button);
+
+                var buttonKind = getButtonPredefines(button);
+                bool hasButton = combo.Buttons.Any(b => b.Kind == buttonKind);
+                if (needButton && !hasButton)
+                    comboBox.Buttons.Add(new DevExpress.XtraEditors.Controls.EditorButton(buttonKind));
+                else if (!needButton && hasButton)
+                    comboBox.Buttons.RemoveWhere(b => b.Kind == buttonKind);
+            }
+
+            // Vrátí typ buttonu DX
+            DevExpress.XtraEditors.Controls.ButtonPredefines getButtonPredefines(PredefinedButtonType dxButton)
+            {
+                switch (dxButton)
+                {
+                    case PredefinedButtonType.DropDown: return DevExpress.XtraEditors.Controls.ButtonPredefines.DropDown;
+                    case PredefinedButtonType.Ellipsis: return DevExpress.XtraEditors.Controls.ButtonPredefines.Ellipsis;
+                    case PredefinedButtonType.Delete: return DevExpress.XtraEditors.Controls.ButtonPredefines.Delete;
+                    case PredefinedButtonType.Close: return DevExpress.XtraEditors.Controls.ButtonPredefines.Close;
+                    case PredefinedButtonType.Right: return DevExpress.XtraEditors.Controls.ButtonPredefines.Right;
+                    case PredefinedButtonType.Left: return DevExpress.XtraEditors.Controls.ButtonPredefines.Left;
+                    case PredefinedButtonType.Up: return DevExpress.XtraEditors.Controls.ButtonPredefines.Up;
+                    case PredefinedButtonType.Down: return DevExpress.XtraEditors.Controls.ButtonPredefines.Down;
+                    case PredefinedButtonType.Ok: return DevExpress.XtraEditors.Controls.ButtonPredefines.OK;
+                    case PredefinedButtonType.Plus: return DevExpress.XtraEditors.Controls.ButtonPredefines.Plus;
+                    case PredefinedButtonType.Minus: return DevExpress.XtraEditors.Controls.ButtonPredefines.Minus;
+                    case PredefinedButtonType.Undo: return DevExpress.XtraEditors.Controls.ButtonPredefines.Undo;
+                    case PredefinedButtonType.Redo: return DevExpress.XtraEditors.Controls.ButtonPredefines.Redo;
+                    case PredefinedButtonType.Search: return DevExpress.XtraEditors.Controls.ButtonPredefines.Search;
+                    case PredefinedButtonType.Clear: return DevExpress.XtraEditors.Controls.ButtonPredefines.Clear;
+                }
+                return DevExpress.XtraEditors.Controls.ButtonPredefines.Glyph;
+            }
+        }
+        /// <summary>
+        /// Naplní prvek daty z 
+        /// </summary>
+        /// <param name="iRibbonItem"></param>
+        private void _SetIRibbonItem(IRibbonItem iRibbonItem)
+        {
+            _Reset();
             __IRibbonItem = iRibbonItem;
+            if (iRibbonItem != null)
+            {
+                iRibbonItem.RibbonItem = this;
+                _ReloadIRibbonData();
+            }
         }
     }
     #endregion
@@ -9476,6 +9596,33 @@ namespace Noris.Clients.Win.Components.AsolDX
         public virtual object Tag { get; set; }
     }
     /// <summary>
+    /// Definice prvku typu ComboBox umístěného v Ribbonu
+    /// </summary>
+    public class DataRibbonComboItem : DataRibbonItem, IRibbonComboItem
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public DataRibbonComboItem() : base()
+        {
+            this.ItemType = RibbonItemType.ComboListBox;
+            BorderStyle = DxBorderStyle.None;
+            Buttons = PredefinedButtonType.DropDown;
+        }
+        /// <summary>
+        /// Šířka prvku v pixelech
+        /// </summary>
+        public virtual int? Width { get; set; }
+        /// <summary>
+        /// Typ okraje
+        /// </summary>
+        public virtual DxBorderStyle BorderStyle { get; set; }
+        /// <summary>
+        /// Buttony
+        /// </summary>
+        public virtual PredefinedButtonType Buttons { get; set; }
+    }
+    /// <summary>
     /// Definice prvku umístěného v Ribbonu nebo podpoložka prvku Ribbonu (položka menu / split ribbonu atd) nebo jako prvek ListBoxu nebo ComboBoxu
     /// </summary>
     [DebuggerDisplay("{DebugText}")]
@@ -9856,6 +10003,26 @@ namespace Noris.Clients.Win.Components.AsolDX
         object Tag { get; }
     }
     /// <summary>
+    /// Rozšiřující rozhraní pro prvek ComboBox v Ribbonu.
+    /// Používá se když aplikace chce deklarovat další vlastnosti ComboBoxu.
+    /// Na základní vlastnosti postačuje <see cref="IRibbonItem"/>.
+    /// </summary>
+    public interface IRibbonComboItem : IRibbonItem
+    {
+        /// <summary>
+        /// Šířka prvku v pixelech, null = nenastavovat
+        /// </summary>
+        int? Width { get; }
+        /// <summary>
+        /// Typ okraje
+        /// </summary>
+        DxBorderStyle BorderStyle { get; }
+        /// <summary>
+        /// Buttony
+        /// </summary>
+        PredefinedButtonType Buttons { get; }
+    }
+    /// <summary>
     /// Definice prvku umístěného v Ribbonu nebo podpoložka prvku Ribbonu (položka menu / split ribbonu atd)
     /// </summary>
     public interface IRibbonItem : IMenuItem, IRibbonObject
@@ -9924,6 +10091,65 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         ContentChangeMode ChangeMode { get; }
     }
+    /// <summary>
+    /// Druh Borderu
+    /// </summary>
+    public enum DxBorderStyle
+    {
+        /// <summary>
+        /// Žádný
+        /// </summary>
+        None,
+        /// <summary>
+        /// Žádný, jen pod myší se vykreslí
+        /// </summary>
+        HotFlat,
+        /// <summary>
+        /// Jedna tenká linka
+        /// </summary>
+        Single,
+        /// <summary>
+        /// 3D efekt
+        /// </summary>
+        Style3D
+    }
+    /// <summary>
+    /// Typ buttonu v ComboBoxu.
+    /// Odpovídá zčásti enumu <see cref="DevExpress.XtraEditors.Controls.ButtonPredefines"/>.
+    /// </summary>
+    [Flags]
+    public enum PredefinedButtonType : int
+    {
+        /// <summary>
+        /// Žádný Button
+        /// </summary>
+        None = 0,
+        /// <summary>
+        /// DropDown
+        /// </summary>
+        DropDown = 0x0001,
+        /// <summary>
+        /// TřiTečky
+        /// </summary>
+        Ellipsis = 0x0002,
+        /// <summary>
+        /// Delete křížek, červený
+        /// </summary>
+        Delete = 0x0004,
+        Close = 0x0008,
+        Right = 0x0010,
+        Left = 0x0020,
+        Up = 0x0040,
+        Down = 0x0080,
+        Ok = 0x0100,
+        Plus = 0x0200,
+        Minus = 0x0400,
+        Undo = 0x1000,
+        Redo = 0x2000,
+        Search = 0x4000,
+        Clear = 0x8000
+    }
+
     /// <summary>
     /// Typ stránky
     /// </summary>
