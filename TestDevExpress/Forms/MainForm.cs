@@ -5039,7 +5039,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
             comboItem.ImageName = "devav/actions/filter.svg";
             comboItem.ToolTipTitle = "ComboBox";
             comboItem.ToolTipText = "Měl by nabízet sadu prvků";
-            comboItem.Buttons = PredefinedButtonType.DropDown | PredefinedButtonType.Ellipsis | PredefinedButtonType.Ok;
+            comboItem.Buttons = PredefinedButtonType.DropDown | PredefinedButtonType.Ellipsis | PredefinedButtonType.OK;
             comboItem.BorderStyle = DxBorderStyle.HotFlat;
             comboItem.Width = 280;
 
@@ -5066,9 +5066,14 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
 
             comboItem.SubItems = new List<IRibbonItem>();
             comboItem.SubItems.Add(new DataRibbonItem() { Text = "Načte se po otevření..." });
-            comboItem.SubItemsContentMode = RibbonContentMode.OnDemandLoadOnce;
             comboItem.SubItems[0].Checked = true;
+            comboItem.SubItemsContentMode = RibbonContentMode.OnDemandLoadOnce;
             group.Items.Add(comboItem);
+
+
+            item = new DataRibbonItem() { ItemType = RibbonItemType.Button, RibbonStyle = RibbonItemStyles.Large, Text = "Clear Log", ImageName = "svgimages/spreadsheet/deletecomment.svg" };
+            item.ClickAction = _ClearLog;
+            group.Items.Add(item);
 
 
 
@@ -5077,6 +5082,11 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
 
 
             return page;
+        }
+        private void _ClearLog(IMenuItem item)
+        {
+            DxComponent.LogClear();
+            DxComponent.LogActive = true;
         }
         #endregion
         #region Random

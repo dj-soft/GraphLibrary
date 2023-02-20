@@ -19,36 +19,36 @@ namespace TestDevExpress
             Application.SetCompatibleTextRenderingDefault(false);
             try
             {
-                Noris.Clients.Win.Components.AsolDX.DxComponent.Init();
-                Noris.Clients.Win.Components.AsolDX.DxComponent.Settings.CompanyName = "Asseco Solutions";
-                Noris.Clients.Win.Components.AsolDX.DxComponent.Settings.ApplicationName = "TestDevExpress";
+                DxComponent.Init();
+                DxComponent.Settings.CompanyName = "Asseco Solutions";
+                DxComponent.Settings.ApplicationName = "TestDevExpress";
 
-                // Noris.Clients.Win.Components.AsolDX.DxComponent.Settings.ConfigFileName = @"c:\ProgramData\Asseco Solutions\NorisWin32Clients\Settings.bin";
-                Noris.Clients.Win.Components.AsolDX.DxComponent.TempDirectorySuffix = "Asseco Solutions\\TestDevExpress\\Temp";
-                var td = Noris.Clients.Win.Components.AsolDX.DxComponent.TempDirectoryName;
+                // DxComponent.Settings.ConfigFileName = @"c:\ProgramData\Asseco Solutions\NorisWin32Clients\Settings.bin";
+                DxComponent.TempDirectorySuffix = "Asseco Solutions\\TestDevExpress\\Temp";
+                var td = DxComponent.TempDirectoryName;
 
                 // Nastavíme Config skin a budeme sledovat změny aktivního skinu a ukládat jej do configu:
                 var styleListener = new SkinConfigStyle();
 
-                string uhdPaint = Noris.Clients.Win.Components.AsolDX.DxComponent.Settings.GetRawValue("Components", "UhdPaintEnabled");
-                Noris.Clients.Win.Components.AsolDX.DxComponent.LogActive = true;         // I při spuštění v režimu Run, to kvůli TimeLogům
+                string uhdPaint = DxComponent.Settings.GetRawValue("Components", "UhdPaintEnabled");
+                DxComponent.LogActive = true;         // I při spuštění v režimu Run, to kvůli TimeLogům
 
-                Noris.Clients.Win.Components.AsolDX.DxComponent.UhdPaintEnabled = (uhdPaint != null && uhdPaint == "True");
+                DxComponent.UhdPaintEnabled = (uhdPaint != null && uhdPaint == "True");
 
-                var moon10 = Noris.Clients.Win.Components.AsolDX.DxComponent.CreateBitmapImage("Images/Moon10.png");
+                var moon10 = DxComponent.CreateBitmapImage("Images/Moon10.png");
 
-                bool isImages = Noris.Clients.Win.Components.AsolDX.DxComponent.ApplicationArguments.Any(a => a.IndexOf("images", StringComparison.InvariantCultureIgnoreCase) >= 0);
-                if (isImages)
-                    Noris.Clients.Win.Components.AsolDX.DxComponent.ApplicationStart(typeof(TestDevExpress.Forms.ImagePickerForm), moon10);
-                else
-                    Noris.Clients.Win.Components.AsolDX.DxComponent.ApplicationStart(typeof(TestDevExpress.Forms.MainForm), moon10);
-                // Noris.Clients.Win.Components.AsolDX.DxComponent.ApplicationStart(typeof(TestDevExpress.Forms.MainAppForm), moon10);
+                bool isImages = DxComponent.ApplicationArgumentsContains("images");
+                bool isTabView = DxComponent.ApplicationArgumentsContains("tabview");
+                var appFormType = (isImages ? typeof(TestDevExpress.Forms.ImagePickerForm) :
+                                  (isTabView ? typeof(TestDevExpress.Forms.MainAppForm) :
+                                  typeof(TestDevExpress.Forms.MainForm)));
+                DxComponent.ApplicationStart(appFormType, moon10);
 
-                Noris.Clients.Win.Components.AsolDX.DxComponent.UnregisterListener(styleListener);
+                DxComponent.UnregisterListener(styleListener);
             }
             finally
             {
-                Noris.Clients.Win.Components.AsolDX.DxComponent.Done();
+                DxComponent.Done();
             }
         }
         private static object TryRun(Delegate d)
@@ -62,13 +62,13 @@ namespace TestDevExpress
         {
             public override string SkinName
             { 
-                get { return Noris.Clients.Win.Components.AsolDX.DxComponent.Settings.GetRawValue("UserSettings", "UsedSkinName"); }
-                set { Noris.Clients.Win.Components.AsolDX.DxComponent.Settings.SetRawValue("UserSettings", "UsedSkinName", value); }
+                get { return DxComponent.Settings.GetRawValue("UserSettings", "UsedSkinName"); }
+                set { DxComponent.Settings.SetRawValue("UserSettings", "UsedSkinName", value); }
             }
             public override string PaletteName
             {
-                get { return Noris.Clients.Win.Components.AsolDX.DxComponent.Settings.GetRawValue("UserSettings", "UsedPaletteName"); }
-                set { Noris.Clients.Win.Components.AsolDX.DxComponent.Settings.SetRawValue("UserSettings", "UsedPaletteName", value); }
+                get { return DxComponent.Settings.GetRawValue("UserSettings", "UsedPaletteName"); }
+                set { DxComponent.Settings.SetRawValue("UserSettings", "UsedPaletteName", value); }
             }
         }
     }

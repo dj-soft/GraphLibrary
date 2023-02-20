@@ -200,6 +200,19 @@ namespace Noris.Clients.Win.Components.AsolDX
 
         }
         /// <summary>
+        /// Vrátí true, pokud mezi argumenty je některý s uvedeným textem
+        /// </summary>
+        /// <param name="argumentName"></param>
+        /// <param name="caseSensitive"></param>
+        /// <returns></returns>
+        private bool _AppArgumentsContains(string argumentName, bool caseSensitive = false)
+        {
+            if (String.IsNullOrEmpty(argumentName)) return false;
+            if (this._AppArguments is null || this._AppArguments.Length == 0) return false;
+            var comparison = (caseSensitive ? StringComparison.InvariantCulture : StringComparison.InvariantCultureIgnoreCase);
+            return this._AppArguments.Any(a => a.IndexOf(argumentName, comparison) >= 0);
+        }
+        /// <summary>
         /// Doba trvání startu aplikace od spuštění procesu do prvního okamžiku, kdy je aplikace ready
         /// </summary>
         public static TimeSpan? ApplicationStartUpTime { get { return Instance._ApplicationStartUpTime; } }
@@ -243,6 +256,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// The first element is the executable file name, and the following zero or more elements contain the remaining command-line arguments.
         /// </summary>
         public static string[] ApplicationArguments { get { return Instance._AppArguments; } }
+        /// <summary>
+        /// Vrátí true, pokud mezi argumenty je některý s uvedeným textem
+        /// </summary>
+        /// <param name="argumentName"></param>
+        /// <param name="caseSensitive"></param>
+        /// <returns></returns>
+        public static bool ApplicationArgumentsContains(string argumentName, bool caseSensitive = false) { return Instance._AppArgumentsContains(argumentName, caseSensitive); }
         /// <summary>
         /// Obsahuje true jen tehdy, když je aplikace v režimu ladění s debuggerem VisualStudia
         /// </summary>

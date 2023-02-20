@@ -274,7 +274,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 form.MdiParent = mainAppForm;
                 mainAppForm._TabbedView.AddDocument(form);
                 // mainAppForm._TabbedView.AddDocument(form);
-                // form.Show();
+                form.Show();
             }
             else
             {

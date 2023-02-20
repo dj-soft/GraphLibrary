@@ -4354,6 +4354,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 this.RaiseRibbonItemClick(itemInfo.Data);
         }
 
+        // Combo
         /// <summary>
         /// Vytvoří a vrátí prvek Ribbonu, který reprezentuje ComboBox
         /// </summary>
@@ -4365,7 +4366,17 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             DxRibbonComboBox dxRibbonCombo = new DxRibbonComboBox();
             dxRibbonCombo.IRibbonItem = iRibbonItem;
+            dxRibbonCombo.SelectedDxItemChanged += DxRibbonCombo_SelectedDxItemChanged;
             return dxRibbonCombo;
+        }
+        /// <summary>
+        /// Výběr prvku v ComboBoxu na Ribbonu
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void DxRibbonCombo_SelectedDxItemChanged(object sender, DxRibbonItemClickArgs e)
+        {
+            _RibbonItem_ItemClick(sender, e);
         }
 
         /// <summary>
@@ -6203,6 +6214,23 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
         }
         /// <summary>
+        /// Uživatel kliknul na prvek Ribbonu, který sám určil <see cref="IRibbonItem"/> a předává nám jej
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _RibbonItem_ItemClick(object sender, DxRibbonItemClickArgs e)
+        {
+            if (!this.IsActive) return;
+
+            // poznámka: tady nemusím řešit přechod z Ribbonu "kde se kliklo" do Ribbonu "kde byl prvek definován", tady to už interně vyřešil DevExpress!
+            // Tady jsem v té instanci Ribbonu, která deklarovala BarItem a navázala do něj svůj Click eventhandler...
+            IRibbonItem iRibbonItem = e.Item;
+            if (iRibbonItem != null)
+            {
+                _RibbonItemClick(iRibbonItem);
+            }
+        }
+        /// <summary>
         /// Tato metoda řeší změnu hodnoty <see cref="ITextItem.Checked"/> na daném prvku Ribbonu poté, kdy na něj uživatel klikl.
         /// Řeší tedy CheckBoxy, RadioButtony a CheckButtony obou režimů.
         /// U obou typů RadioButtonů řeší zhasnutí okolních (=ne-kliknutých) RadioButtonů v jejich grupě.
@@ -7331,7 +7359,49 @@ namespace Noris.Clients.Win.Components.AsolDX
         */
         #endregion
     }
-    #region enumy pro Ribbon
+    #region Args a enumy pro Ribbon
+    /// <summary>
+    /// Třída argumentu pro eventy, kde se aktivuje prvek <see cref="IRibbonItem"/> v Ribbonu.
+    /// </summary>
+    public class DxRibbonItemClickArgs : EventArgs
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="item"></param>
+        public DxRibbonItemClickArgs(IRibbonItem item)
+        {
+            this.Item = item;
+        }
+        /// <summary>
+        /// Prvek
+        /// </summary>
+        public IRibbonItem Item { get; private set; }
+    }
+    /// <summary>
+    /// Třída argumentu pro eventy, kde se aktivuje specifický Button v prvku <see cref="IRibbonItem"/> v Ribbonu.
+    /// </summary>
+    public class DxRibbonItemButtonClickArgs : EventArgs
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="item">Prvek, na který bylo kliknuto</param>
+        /// <param name="button">Button, na který bylo kliknuto</param>
+        public DxRibbonItemButtonClickArgs(IRibbonItem item, PredefinedButtonType button)
+        {
+            this.Item = item;
+            this.Button = button;
+        }
+        /// <summary>
+        /// Prvek, na který bylo kliknuto
+        /// </summary>
+        public IRibbonItem Item { get; private set; }
+        /// <summary>
+        /// Button, na který bylo kliknuto
+        /// </summary>
+        public PredefinedButtonType Button { get; private set; }
+    }
     /// <summary>
     /// Režim, v jakém jsou vytvářeny a přidávány fyzické prvky (BarItems) do Ribbonu.
     /// </summary>
@@ -8610,6 +8680,8 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// </summary>
     public class DxRibbonComboBox : BarEditItem
     {
+        #region Public
+
         /// <summary>
         /// Konstruktor
         /// </summary>
@@ -8625,6 +8697,56 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             this._Init();
         }
+        /// <summary>
+        /// Událost volaná po kliknutí na prvku v ComboBoxu. Tato událost se volá i po opakované aktivaci stejného prvku. 
+        /// V takové situaci se nevolá <see cref="SelectedDxItemChanged"/>.
+        /// </summary>
+        public event EventHandler<DxRibbonItemClickArgs> SelectedDxItemActivated;
+        /// <summary>
+        /// Metoda volaná po kliknutí na prvku v ComboBoxu. Tato událost se volá i po opakované aktivaci stejného prvku. 
+        /// V takové situaci se nevolá <see cref="SelectedDxItemChanged"/>.
+        /// </summary>
+        /// <param name="args"></param>
+        protected virtual void OnSelectedDxItemActivated(DxRibbonItemClickArgs args) { }
+        /// <summary>
+        /// Událost volaná po změně aktivního prvku v ComboBoxu
+        /// </summary>
+        public event EventHandler<DxRibbonItemClickArgs> SelectedDxItemChanged;
+        /// <summary>
+        /// Metoda volaná po změně aktivního prvku v ComboBoxu
+        /// </summary>
+        /// <param name="args"></param>
+        protected virtual void OnSelectedDxItemChanged(DxRibbonItemClickArgs args) { }
+        /// <summary>
+        /// Událost volaná po kliknutí na button v ComboBoxu
+        /// </summary>
+        public event EventHandler<DxRibbonItemButtonClickArgs> ComboButtonClick;
+        /// <summary>
+        /// Metoda volaná po kliknutí na button v ComboBoxu
+        /// </summary>
+        /// <param name="args"></param>
+        protected virtual void OnComboButtonClick(DxRibbonItemButtonClickArgs args) { }
+        /// <summary>
+        /// Aktuálně vybraný prvek v ComboBoxu
+        /// </summary>
+        public IRibbonItem SelectedDxItem
+        {
+            get
+            {
+                var selectedItem = this.EditValue;
+                if (selectedItem is IRibbonItem iRibbonItem) return iRibbonItem;
+                return null;
+            }
+            set
+            {
+                object selectedItem = null;
+                if (value != null && this.__ComboBox != null && this.__ComboBox.Items.Count > 0)
+                    selectedItem = this.__ComboBox.Items.OfType<IRibbonItem>().FirstOrDefault(i => Object.ReferenceEquals(i, value));
+                this.EditValue = selectedItem;
+            }
+        }
+        #endregion
+        #region Privátní život - tvorba, vnitřní eventy
         /// <summary>
         /// Inicializace
         /// </summary>
@@ -8643,25 +8765,102 @@ namespace Noris.Clients.Win.Components.AsolDX
             comboBox.HotTrackItems = true;
             // comboBox.BestFitWidth = 250;         // Nefunguje
 
+            this.CausesValidation = true;
             comboBox.QueryPopUp += ComboBox_QueryPopUp;
-            comboBox.SelectedValueChanged += _SelectedValueChanged;
+            comboBox.BeforePopup += ComboBox_BeforePopup;
+            comboBox.BeforeShowMenu += ComboBox_BeforeShowMenu;
+            comboBox.SelectedValueChanged += ComboBox_SelectedValueChanged;
+            comboBox.Validating += ComboBox_Validating;
+            comboBox.Popup += ComboBox_Popup;
+            comboBox.Closed += ComboBox_Closed;
+            comboBox.ButtonPressed += ComboBox_ButtonPressed;
+            comboBox.ButtonClick += ComboBox_ButtonClick;
+            comboBox.Click += ComboBox_Click;
 
+            this.__SilentChange = false;
+            this.__LastSelectedItem = null;
             this.Edit = comboBox;
             this.Width = 250;                       // Tohle jediné nastaví šířku cca přesně
             // this.Size = new Size(250, 25);       // Nefunguje
             this.__ComboBox = comboBox;
         }
 
+        private void ComboBox_BeforeShowMenu(object sender, DevExpress.XtraEditors.Controls.BeforeShowMenuEventArgs e)
+        {
+            DxComponent.LogAddLine($"DxRibbonComboBox.ComboBox_BeforeShowMenu: IsPopupOpen={__IsPopupOpen}; SelectedItem={this.SelectedDxItem}");
+        }
+
+        private void ComboBox_BeforePopup(object sender, EventArgs e)
+        {
+            DxComponent.LogAddLine($"DxRibbonComboBox.ComboBox_BeforePopup: IsPopupOpen={__IsPopupOpen}; SelectedItem={this.SelectedDxItem}");
+        }
+
+        /// <summary>
+        /// Obsahuje true, když se nemá aktivovat událost o změně vybrané hodnoty
+        /// </summary>
+        private bool __SilentChange;
+        /// <summary>
+        /// Obsahuje hodnotu, která byla posledně hlášena jako <see cref="SelectedDxItem"/> v eventu <see cref="SelectedDxItemChanged"/>.
+        /// </summary>
+        private object __LastSelectedItem;
+
+        private void ComboBox_Click(object sender, EventArgs e)
+        {
+            DxComponent.LogAddLine($"DxRibbonComboBox.ComboBox_Click: IsPopupOpen={__IsPopupOpen}; SelectedItem={this.SelectedDxItem}");
+        }
+
+        /// <summary>
+        /// Před otevřením Popup
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void ComboBox_QueryPopUp(object sender, System.ComponentModel.CancelEventArgs e)
         {
-            
+            DxComponent.LogAddLine($"DxRibbonComboBox.ComboBox_Click: IsPopupOpen={__IsPopupOpen}; SelectedItem={this.SelectedDxItem}");
         }
-
-        private void _SelectedValueChanged(object sender, EventArgs e)
+        private void ComboBox_Popup(object sender, EventArgs e)
         {
-            
+            DxComponent.LogAddLine($"DxRibbonComboBox.ComboBox_Popup: IsPopupOpen={__IsPopupOpen}; SelectedItem={this.SelectedDxItem}");
+            __IsPopupOpen = true;
         }
 
+        private void ComboBox_Closed(object sender, DevExpress.XtraEditors.Controls.ClosedEventArgs e)
+        {
+            DxComponent.LogAddLine($"DxRibbonComboBox.ComboBox_Closed: IsPopupOpen={__IsPopupOpen}; SelectedItem={this.SelectedDxItem}");
+            __IsPopupOpen = false;
+        }
+        private bool __IsPopupOpen;
+
+        private void ComboBox_Validating(object sender, System.ComponentModel.CancelEventArgs e)
+        {
+            DxComponent.LogAddLine($"DxRibbonComboBox.ComboBox_Validating: IsPopupOpen={__IsPopupOpen}; SelectedItem={this.SelectedDxItem}");
+        }
+
+        /// <summary>
+        /// Po změně vybrané hodnoty
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void ComboBox_SelectedValueChanged(object sender, EventArgs e)
+        {
+            DxComponent.LogAddLine($"DxRibbonComboBox.ComboBox_SelectedValueChanged: IsPopupOpen={__IsPopupOpen}; SelectedItem={this.SelectedDxItem}");
+            _CheckChangeItem();
+        }
+        private void ComboBox_ButtonPressed(object sender, DevExpress.XtraEditors.Controls.ButtonPressedEventArgs e)
+        {
+            DxComponent.LogAddLine($"DxRibbonComboBox.ComboBox_ButtonPressed: IsPopupOpen={__IsPopupOpen}; SelectedItem={this.SelectedDxItem}; Button={e.Button.Kind}");
+        }
+
+        private void ComboBox_ButtonClick(object sender, DevExpress.XtraEditors.Controls.ButtonPressedEventArgs e)
+        {
+            DxComponent.LogAddLine($"DxRibbonComboBox.ComboBox_ButtonClick: IsPopupOpen={__IsPopupOpen}; SelectedItem={this.SelectedDxItem}; Button={e.Button.Kind}");
+            if (e.Button.Kind != DevExpress.XtraEditors.Controls.ButtonPredefines.DropDown)
+                this._RunComboButtonClick(e.Button.Kind);
+        }
+
+        /// <summary>
+        /// Repository Item ComboBox
+        /// </summary>
         private DevExpress.XtraEditors.Repository.RepositoryItemComboBox __ComboBox;
         /// <summary>
         /// Data, která deklarují obsah tohoto prvku.
@@ -8676,6 +8875,48 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         private IRibbonItem __IRibbonItem;
         /// <summary>
+        /// Znovu vytvoří prvky ComboBoxu : Items a Buttons.
+        /// Používá se pro Refresh obsahu.
+        /// Nenaplní běžné hodnoty BarItemu (Caption, Image, SuperTip, Enabled atd), to provádí Ribbon tak jako u jiných BarItems.
+        /// </summary>
+        public void Reload()
+        {
+            try
+            {
+                __SilentChange = true;
+                _ClearItems();
+                _ReloadIRibbonData();
+            }
+            finally
+            {
+                __SilentChange = false;
+                _CheckChangeItem();
+            }
+        }
+        /// <summary>
+        /// Naplní prvek daty z 
+        /// </summary>
+        /// <param name="iRibbonItem"></param>
+        private void _SetIRibbonItem(IRibbonItem iRibbonItem)
+        {
+            try
+            {
+                __SilentChange = true;
+                _Reset();
+                __IRibbonItem = iRibbonItem;
+                if (iRibbonItem != null)
+                {
+                    iRibbonItem.RibbonItem = this;
+                    _ReloadIRibbonData();
+                }
+            }
+            finally
+            {
+                __SilentChange = false;
+                _CheckChangeItem();
+            }
+        }
+        /// <summary>
         /// Resetuje svůj obsah (Items a Buttons) a odpojí se z aktuálního prvku <see cref="IRibbonItem"/>
         /// </summary>
         private void _Reset()
@@ -8688,16 +8929,6 @@ namespace Noris.Clients.Win.Components.AsolDX
                 iRibbonItem.RibbonItem = null;
                 __IRibbonItem = null;
             }
-        }
-        /// <summary>
-        /// Znovu vytvoří prvky ComboBoxu : Items a Buttons.
-        /// Používá se pro Refresh obsahu.
-        /// Nenaplní běžné hodnoty BarItemu (Caption, Image, SuperTip, Enabled atd), to provádí Ribbon tak jako u jiných BarItems.
-        /// </summary>
-        public void Reload()
-        {
-            _ClearItems();
-            _ReloadIRibbonData();
         }
         /// <summary>
         /// Z prvku odebere Items a Buttons, ponechá jen button DropDown
@@ -8740,7 +8971,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                     checkComboButton(comboBox, buttons, PredefinedButtonType.Ellipsis);
                     checkComboButton(comboBox, buttons, PredefinedButtonType.Delete);
                     checkComboButton(comboBox, buttons, PredefinedButtonType.Clear);
-                    checkComboButton(comboBox, buttons, PredefinedButtonType.Ok);
+                    checkComboButton(comboBox, buttons, PredefinedButtonType.OK);
                     checkComboButton(comboBox, buttons, PredefinedButtonType.Close);
                     checkComboButton(comboBox, buttons, PredefinedButtonType.Plus);
                     checkComboButton(comboBox, buttons, PredefinedButtonType.Minus);
@@ -8787,52 +9018,127 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 bool needButton = buttons.HasFlag(button);
 
-                var buttonKind = getButtonPredefines(button);
+                var buttonKind = _ConvertButtonType(button);
                 bool hasButton = combo.Buttons.Any(b => b.Kind == buttonKind);
                 if (needButton && !hasButton)
                     comboBox.Buttons.Add(new DevExpress.XtraEditors.Controls.EditorButton(buttonKind));
                 else if (!needButton && hasButton)
                     comboBox.Buttons.RemoveWhere(b => b.Kind == buttonKind);
             }
-
-            // Vrátí typ buttonu DX
-            DevExpress.XtraEditors.Controls.ButtonPredefines getButtonPredefines(PredefinedButtonType dxButton)
-            {
-                switch (dxButton)
-                {
-                    case PredefinedButtonType.DropDown: return DevExpress.XtraEditors.Controls.ButtonPredefines.DropDown;
-                    case PredefinedButtonType.Ellipsis: return DevExpress.XtraEditors.Controls.ButtonPredefines.Ellipsis;
-                    case PredefinedButtonType.Delete: return DevExpress.XtraEditors.Controls.ButtonPredefines.Delete;
-                    case PredefinedButtonType.Close: return DevExpress.XtraEditors.Controls.ButtonPredefines.Close;
-                    case PredefinedButtonType.Right: return DevExpress.XtraEditors.Controls.ButtonPredefines.Right;
-                    case PredefinedButtonType.Left: return DevExpress.XtraEditors.Controls.ButtonPredefines.Left;
-                    case PredefinedButtonType.Up: return DevExpress.XtraEditors.Controls.ButtonPredefines.Up;
-                    case PredefinedButtonType.Down: return DevExpress.XtraEditors.Controls.ButtonPredefines.Down;
-                    case PredefinedButtonType.Ok: return DevExpress.XtraEditors.Controls.ButtonPredefines.OK;
-                    case PredefinedButtonType.Plus: return DevExpress.XtraEditors.Controls.ButtonPredefines.Plus;
-                    case PredefinedButtonType.Minus: return DevExpress.XtraEditors.Controls.ButtonPredefines.Minus;
-                    case PredefinedButtonType.Undo: return DevExpress.XtraEditors.Controls.ButtonPredefines.Undo;
-                    case PredefinedButtonType.Redo: return DevExpress.XtraEditors.Controls.ButtonPredefines.Redo;
-                    case PredefinedButtonType.Search: return DevExpress.XtraEditors.Controls.ButtonPredefines.Search;
-                    case PredefinedButtonType.Clear: return DevExpress.XtraEditors.Controls.ButtonPredefines.Clear;
-                }
-                return DevExpress.XtraEditors.Controls.ButtonPredefines.Glyph;
-            }
         }
         /// <summary>
-        /// Naplní prvek daty z 
+        /// Konvertuje typ buttonu <see cref="DevExpress.XtraEditors.Controls.ButtonPredefines"/> na typ <see cref="PredefinedButtonType"/>
         /// </summary>
-        /// <param name="iRibbonItem"></param>
-        private void _SetIRibbonItem(IRibbonItem iRibbonItem)
+        /// <param name="buttonKind"></param>
+        /// <returns></returns>
+        private static PredefinedButtonType _ConvertButtonType(DevExpress.XtraEditors.Controls.ButtonPredefines buttonKind)
         {
-            _Reset();
-            __IRibbonItem = iRibbonItem;
-            if (iRibbonItem != null)
+            switch (buttonKind)
             {
-                iRibbonItem.RibbonItem = this;
-                _ReloadIRibbonData();
+                case DevExpress.XtraEditors.Controls.ButtonPredefines.DropDown: return PredefinedButtonType.DropDown;
+                case DevExpress.XtraEditors.Controls.ButtonPredefines.Ellipsis: return PredefinedButtonType.Ellipsis;
+                case DevExpress.XtraEditors.Controls.ButtonPredefines.Delete: return PredefinedButtonType.Delete;
+                case DevExpress.XtraEditors.Controls.ButtonPredefines.Close: return PredefinedButtonType.Close;
+                case DevExpress.XtraEditors.Controls.ButtonPredefines.Right: return PredefinedButtonType.Right;
+                case DevExpress.XtraEditors.Controls.ButtonPredefines.Left: return PredefinedButtonType.Left;
+                case DevExpress.XtraEditors.Controls.ButtonPredefines.Up: return PredefinedButtonType.Up;
+                case DevExpress.XtraEditors.Controls.ButtonPredefines.Down: return PredefinedButtonType.Down;
+                case DevExpress.XtraEditors.Controls.ButtonPredefines.OK: return PredefinedButtonType.OK;
+                case DevExpress.XtraEditors.Controls.ButtonPredefines.Plus: return PredefinedButtonType.Plus;
+                case DevExpress.XtraEditors.Controls.ButtonPredefines.Minus: return PredefinedButtonType.Minus;
+                case DevExpress.XtraEditors.Controls.ButtonPredefines.Undo: return PredefinedButtonType.Undo;
+                case DevExpress.XtraEditors.Controls.ButtonPredefines.Redo: return PredefinedButtonType.Redo;
+                case DevExpress.XtraEditors.Controls.ButtonPredefines.Search: return PredefinedButtonType.Search;
+                case DevExpress.XtraEditors.Controls.ButtonPredefines.Clear: return PredefinedButtonType.Clear;
             }
+            return PredefinedButtonType.None;
         }
+        /// <summary>
+        /// Konvertuje typ buttonu <see cref="PredefinedButtonType"/> na typ <see cref="DevExpress.XtraEditors.Controls.ButtonPredefines"/>
+        /// </summary>
+        /// <param name="buttonType"></param>
+        /// <returns></returns>
+        private static DevExpress.XtraEditors.Controls.ButtonPredefines _ConvertButtonType(PredefinedButtonType buttonType)
+        {
+            switch (buttonType)
+            {
+                case PredefinedButtonType.DropDown: return DevExpress.XtraEditors.Controls.ButtonPredefines.DropDown;
+                case PredefinedButtonType.Ellipsis: return DevExpress.XtraEditors.Controls.ButtonPredefines.Ellipsis;
+                case PredefinedButtonType.Delete: return DevExpress.XtraEditors.Controls.ButtonPredefines.Delete;
+                case PredefinedButtonType.Close: return DevExpress.XtraEditors.Controls.ButtonPredefines.Close;
+                case PredefinedButtonType.Right: return DevExpress.XtraEditors.Controls.ButtonPredefines.Right;
+                case PredefinedButtonType.Left: return DevExpress.XtraEditors.Controls.ButtonPredefines.Left;
+                case PredefinedButtonType.Up: return DevExpress.XtraEditors.Controls.ButtonPredefines.Up;
+                case PredefinedButtonType.Down: return DevExpress.XtraEditors.Controls.ButtonPredefines.Down;
+                case PredefinedButtonType.OK: return DevExpress.XtraEditors.Controls.ButtonPredefines.OK;
+                case PredefinedButtonType.Plus: return DevExpress.XtraEditors.Controls.ButtonPredefines.Plus;
+                case PredefinedButtonType.Minus: return DevExpress.XtraEditors.Controls.ButtonPredefines.Minus;
+                case PredefinedButtonType.Undo: return DevExpress.XtraEditors.Controls.ButtonPredefines.Undo;
+                case PredefinedButtonType.Redo: return DevExpress.XtraEditors.Controls.ButtonPredefines.Redo;
+                case PredefinedButtonType.Search: return DevExpress.XtraEditors.Controls.ButtonPredefines.Search;
+                case PredefinedButtonType.Clear: return DevExpress.XtraEditors.Controls.ButtonPredefines.Clear;
+            }
+            return DevExpress.XtraEditors.Controls.ButtonPredefines.Glyph;
+        }
+        /// <summary>
+        /// Metoda zajistí vyvolání metody <see cref="OnComboButtonClick(DxRibbonItemButtonClickArgs)"/> a eventu <see cref="ComboButtonClick"/> pro daný typ Buttonu.
+        /// </summary>
+        /// <param name="buttonKind"></param>
+        private void _RunComboButtonClick(DevExpress.XtraEditors.Controls.ButtonPredefines buttonKind)
+        {
+            var args = new DxRibbonItemButtonClickArgs(this.SelectedDxItem, _ConvertButtonType(buttonKind));
+            OnComboButtonClick(args);
+            ComboButtonClick?.Invoke(this, args);
+        }
+        /// <summary>
+        /// Metoda zajistí vyvolání metody <see cref="OnSelectedDxItemActivated(DxRibbonItemClickArgs)"/> a eventu <see cref="SelectedDxItemActivated"/>.
+        /// Tato metoda neřeší stav <see cref="__SilentChange"/>, 
+        /// a danou akci volá i když aktuální vybraný prvek <see cref="SelectedDxItem"/> je stejný jako poslední aktivní <see cref="__LastSelectedItem"/> = nejde o Změnu ale o Aktivaci.
+        /// </summary>
+        private void _RunActivatedItem()
+        {
+            var currItem = this.SelectedDxItem;
+            var args = new DxRibbonItemClickArgs(currItem);
+            this.OnSelectedDxItemActivated(args); ;
+            this.SelectedDxItemActivated?.Invoke(this, args);
+        }
+        /// <summary>
+        /// Metoda zajistí vyvolání metody <see cref="OnSelectedDxItemChanged(DxRibbonItemClickArgs)"/> a eventu <see cref="SelectedDxItemChanged"/>.
+        /// Tato metoda neřeší stav <see cref="__SilentChange"/>, 
+        /// a danou akci volá i když aktuální vybraný prvek <see cref="SelectedDxItem"/> je stejný jako poslední aktivní <see cref="__LastSelectedItem"/> = změnu musí detekovat volající.
+        /// </summary>
+        private void _RunChangeItem()
+        {
+            _RunChangeItem(this.SelectedDxItem);
+        }
+        /// <summary>
+        /// Metoda zajistí vyvolání metody <see cref="OnSelectedDxItemChanged(DxRibbonItemClickArgs)"/> a eventu <see cref="SelectedDxItemChanged"/>.
+        /// Tato metoda neřeší stav <see cref="__SilentChange"/>, 
+        /// a danou akci volá i když aktuální vybraný prvek <see cref="SelectedDxItem"/> je stejný jako poslední aktivní <see cref="__LastSelectedItem"/> = změnu musí detekovat volající.
+        /// </summary>
+        /// <param name="selectedDxItem"></param>
+        private void _RunChangeItem(IRibbonItem selectedDxItem)
+        {
+            this.__LastSelectedItem = selectedDxItem;
+            var args = new DxRibbonItemClickArgs(selectedDxItem);
+            this.OnSelectedDxItemActivated(args); ;
+            this.SelectedDxItemActivated?.Invoke(this, args);
+        }
+        /// <summary>
+        /// Metoda ověří, zda aktuálně vybraná hodnota je jiná než posledně hlášená, a pokud je jiná, ohlásí to.
+        /// Pokud aktuálně máme tichý režim <see cref="__SilentChange"/>, pak nedělá nic.
+        /// </summary>
+        private void _CheckChangeItem()
+        {
+            if (__SilentChange) return;
+
+            var selectedDxItem = this.SelectedDxItem;
+            var lastItem = this.__LastSelectedItem;
+            if (Object.ReferenceEquals(selectedDxItem, lastItem)) return;
+
+            _RunChangeItem(selectedDxItem);
+        }
+        #endregion
     }
     #endregion
     #region DxRibbonStatusBar
@@ -10141,7 +10447,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         Left = 0x0020,
         Up = 0x0040,
         Down = 0x0080,
-        Ok = 0x0100,
+        OK = 0x0100,
         Plus = 0x0200,
         Minus = 0x0400,
         Undo = 0x1000,

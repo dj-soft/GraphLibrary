@@ -8,9 +8,14 @@ using Noris.Clients.Win.Components.AsolDX;
 
 namespace TestDevExpress.Forms
 {
+    /// <summary>
+    /// Hlavní okno aplikace
+    /// </summary>
     public class MainAppForm : Noris.Clients.Win.Components.AsolDX.DxMainAppForm
     {
-
+        /// <summary>
+        /// Příprava Ribbonu
+        /// </summary>
         protected override void DxRibbonPrepare()
         {
             List<DataRibbonPage> pages = new List<DataRibbonPage>();

@@ -641,7 +641,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             bool logMessage = NeedLogMessage(m);
 
-            string suffix = ((m.Msg == DxWin32.WM.WINDOWPOSCHANGING || m.Msg == DxWin32.WM.WINDOWPOSCHANGED) ? "; Bounds: " + Convertor.RectangleToString(Bounds) : "");
+            string suffix = (logMessage ? ((m.Msg == DxWin32.WM.WINDOWPOSCHANGING || m.Msg == DxWin32.WM.WINDOWPOSCHANGED) ? "; Bounds: " + Convertor.RectangleToString(Bounds) : "") : null);
 
             if (logMessage) DxComponent.LogAddMessage(m, this, "Start.", suffix);
             base.OnNotifyMessage(m);
@@ -657,9 +657,17 @@ namespace Noris.Clients.Win.Components.AsolDX
             // Pokud log obecně není aktivní, neloguji žádnou zprávu:
             if (!DxComponent.LogActive) return false;
 
+            // Pokud log pro toto okno není aktivní, neloguji žádnou zprávu:
+            if (!this.LogActive) return false;
+
             // Pro zprávy zde vyjmenované vrátím false, takže se NEBUDOU logovat:
             return (!(m.Msg == DxWin32.WM.STYLECHANGED || m.Msg == DxWin32.WM.STYLECHANGING || m.Msg == DxWin32.WM.NCCALCSIZE || m.Msg == DxWin32.WM.CAPTURECHANGED));
         }
+        /// <summary>
+        /// Obsahuje true, pokud log je aktivní. Default = ne.
+        /// </summary>
+        public bool LogActive { get; set; }
+
         /// <summary>
         /// Při změně umístění
         /// </summary>
