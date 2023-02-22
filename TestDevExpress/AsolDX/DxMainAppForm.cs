@@ -19,6 +19,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public DxMainAppForm() : base() 
         {
+            this.WindowState = FormWindowState.Maximized;
             __MainAppForm = new WeakTarget<DxMainAppForm>(this);
         }
         /// <summary>
@@ -92,16 +93,16 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         protected override void DxMainContentCreate()
         {
-            _DockManager = new DevExpress.XtraBars.Docking.DockManager();
-            ((System.ComponentModel.ISupportInitialize)(_DockManager)).BeginInit();
+            __DockManager = new DevExpress.XtraBars.Docking.DockManager();
+            ((System.ComponentModel.ISupportInitialize)(__DockManager)).BeginInit();
 
-            _DocumentManager = new DevExpress.XtraBars.Docking2010.DocumentManager();
-            ((System.ComponentModel.ISupportInitialize)(_DocumentManager)).BeginInit();
+            __DocumentManager = new DevExpress.XtraBars.Docking2010.DocumentManager();
+            ((System.ComponentModel.ISupportInitialize)(__DocumentManager)).BeginInit();
 
-            _TabbedView = new DevExpress.XtraBars.Docking2010.Views.Tabbed.TabbedView();
-            ((System.ComponentModel.ISupportInitialize)(_TabbedView)).BeginInit();
+            __TabbedView = new DevExpress.XtraBars.Docking2010.Views.Tabbed.TabbedView();
+            ((System.ComponentModel.ISupportInitialize)(__TabbedView)).BeginInit();
 
-            _SplashManager = new DevExpress.XtraSplashScreen.SplashScreenManager(); // (this, typeof(global::Noris.Clients.WinForms.Forms.WaitFormLoadingDesktop), false, false, true);
+            __SplashManager = new DevExpress.XtraSplashScreen.SplashScreenManager(); // (this, typeof(global::Noris.Clients.WinForms.Forms.WaitFormLoadingDesktop), false, false, true);
         }
         /// <summary>
         /// Provede přípravu obsahu hlavního obshau okna. Obsah je již vytvořen a umístěn v okně, Ribbon i StatusBar existují.<br/>
@@ -112,15 +113,19 @@ namespace Noris.Clients.Win.Components.AsolDX
             SetupDocumentManager();
             SetupTabbedView();
             SetupDockManager();
+
+            InitializeFinalControls();
+
+            AddControlToDock(null);
         }
         /// <summary>
         /// Nastavení komponenty DocumentManager
         /// </summary>
         protected virtual void SetupDocumentManager()
         {
-            var docManager = _DocumentManager;
+            var docManager = __DocumentManager;
             docManager.MdiParent = this;
-            docManager.View = _TabbedView;
+            docManager.View = __TabbedView;
             docManager.ShowThumbnailsInTaskBar = DevExpress.Utils.DefaultBoolean.False;
             docManager.SnapMode = DevExpress.Utils.Controls.SnapMode.All;
             docManager.RibbonAndBarsMergeStyle = DevExpress.XtraBars.Docking2010.Views.RibbonAndBarsMergeStyle.WhenNotFloating;
@@ -137,7 +142,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         protected virtual void SetupTabbedView()
         {
-            var tabView = _TabbedView;
+            var tabView = __TabbedView;
             tabView.Style = DevExpress.XtraBars.Docking2010.Views.DockingViewStyle.Classic;
             tabView.EnableFreeLayoutMode = DevExpress.Utils.DefaultBoolean.True;                   // Umožní dát dokování do skupin různě rozmístěných (vodorovně + svisle v sobě)
             tabView.CustomResizeZoneThickness = DefaultResizeZoneThickness;                        // Viditelný splitter mezi dokovanými skupinami
@@ -183,9 +188,17 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         protected virtual void SetupDockManager()
         {
-            var dockMgr = _DockManager;
+            var dockMgr = __DockManager;
             dockMgr.DockingOptions.CustomResizeZoneThickness = DefaultResizeZoneThickness;
             dockMgr.DockingOptions.HidePanelsImmediately = DevExpress.XtraBars.Docking.Helpers.HidePanelsImmediatelyMode.Always;   // Vyjetí pravého panelu až na kliknutí; vyjetí na kliknutí + vypnutí animací
+            dockMgr.DockingOptions.AllowDockToCenter = DevExpress.Utils.DefaultBoolean.False;
+            dockMgr.DockingOptions.FloatOnDblClick = false;
+            dockMgr.DockingOptions.ShowAutoHideButton = true;
+            dockMgr.DockingOptions.ShowCloseButton = false;
+            dockMgr.DockingOptions.ShowMaximizeButton = false;
+            dockMgr.DockingOptions.ShowMinimizeButton = false;
+            dockMgr.DockingOptions.SnapMode = DevExpress.Utils.Controls.SnapMode.OwnerForm;
+
             dockMgr.AutoHiddenPanelShowMode = DevExpress.XtraBars.Docking.AutoHiddenPanelShowMode.MouseClick;
             dockMgr.DockingOptions.AutoHidePanelVerticalTextOrientation = DevExpress.XtraBars.Docking.VerticalTextOrientation.BottomToTop;
             dockMgr.DockingOptions.TabbedPanelVerticalTextOrientation = DevExpress.XtraBars.Docking.VerticalTextOrientation.BottomToTop;
@@ -193,7 +206,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             dockMgr.ClosingPanel += _DockManagerClosingPanel;
             dockMgr.EndSizing += _DockManagerEndSizing;
         }
-
         /// <summary>
         /// Závěrečná fáze inicializace formuláře: 
         /// správné poskládání komponent do sebe navzájem a do Formuláře do jeho Controls, ve správném pořadí.
@@ -206,8 +218,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             // Na pořadí ZÁLEŽÍ!
 
             // DockManager do okna:
-            this._DockManager.Form = this;
-            this._DockManager.TopZIndexControls.AddRange(new string[]
+            this.__DockManager.Form = this;
+            this.__DockManager.TopZIndexControls.AddRange(new string[]
             {
                 "DevExpress.XtraBars.BarDockControl", "DevExpress.XtraBars.StandaloneBarDockControl", "System.Windows.Forms.StatusBar", "System.Windows.Forms.MenuStrip", "System.Windows.Forms.StatusStrip",
                 "DevExpress.XtraBars.Ribbon.RibbonStatusBar", "Noris.Clients.Win.Components.AsolDX.DxRibbonStatusBar",
@@ -216,10 +228,10 @@ namespace Noris.Clients.Win.Components.AsolDX
                 "DevExpress.XtraBars.FluentDesignSystem.FluentDesignFormControl", "DevExpress.XtraBars.ToolbarForm.ToolbarFormControl"
             });
 
-            this._DocumentManager.MdiParent = this;
-            this._DocumentManager.MenuManager = this.DxRibbon;
-            this._DocumentManager.View = this._TabbedView;
-            this._DocumentManager.ViewCollection.AddRange(new DevExpress.XtraBars.Docking2010.Views.BaseView[] { this._TabbedView });
+            this.__DocumentManager.MdiParent = this;
+            this.__DocumentManager.MenuManager = this.DxRibbon;
+            this.__DocumentManager.View = this.__TabbedView;
+            this.__DocumentManager.ViewCollection.AddRange(new DevExpress.XtraBars.Docking2010.Views.BaseView[] { this.__TabbedView });
         }
         /// <summary>
         /// Je voláno na konci konstruktoru třídy <see cref="DxRibbonBaseForm"/>.
@@ -229,20 +241,20 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         protected override void EndInitDxRibbonForm()
         {
-            ((System.ComponentModel.ISupportInitialize)(_TabbedView)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(_DocumentManager)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(_DockManager)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(__TabbedView)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(__DocumentManager)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(__DockManager)).EndInit();
 
             base.EndInitDxRibbonForm();
         }
-        private DevExpress.XtraBars.Docking2010.DocumentManager _DocumentManager;
-        private DevExpress.XtraBars.Docking2010.Views.Tabbed.TabbedView _TabbedView;
-        private DevExpress.XtraBars.Docking.DockManager _DockManager;
-        private DevExpress.XtraSplashScreen.SplashScreenManager _SplashManager;
+        private DevExpress.XtraBars.Docking2010.DocumentManager __DocumentManager;
+        private DevExpress.XtraBars.Docking2010.Views.Tabbed.TabbedView __TabbedView;
+        private DevExpress.XtraBars.Docking.DockManager __DockManager;
+        private DevExpress.XtraSplashScreen.SplashScreenManager __SplashManager;
 
+        private void _DocumentManagerDocumentAdded(object sender, DevExpress.XtraBars.Docking2010.Views.DocumentEventArgs e) { }
         private void _DocumentManagerDocumentActivate(object sender, DevExpress.XtraBars.Docking2010.Views.DocumentEventArgs e) { }
         private void _DocumentManagerViewChanged(object sender, DevExpress.XtraBars.Docking2010.ViewEventArgs e) { }
-        private void _DocumentManagerDocumentAdded(object sender, DevExpress.XtraBars.Docking2010.Views.DocumentEventArgs e) { }
         private void _DocumentManagerDocumentClosing(object sender, DevExpress.XtraBars.Docking2010.Views.DocumentCancelEventArgs e) { }
         private void _DocumentManagerDocumentRemoved(object sender, DevExpress.XtraBars.Docking2010.Views.DocumentEventArgs e) { }
         private void _DocumentManagerBeginFloating(object sender, DevExpress.XtraBars.Docking2010.Views.DocumentCancelEventArgs e) { }
@@ -260,6 +272,34 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void _DockManagerClosingPanel(object sender, DevExpress.XtraBars.Docking.DockPanelCancelEventArgs e) { }
 
         #endregion
+        #region DockManager - služby
+        public void AddControlToDock(Control control)
+        {
+            var rightPanel1 = this.__DockManager.AddPanel(DevExpress.XtraBars.Docking.DockingStyle.Right);
+            // rightPanel1.HideImmediately();
+            rightPanel1.Text = "RightPanel 1";
+            rightPanel1.Visibility = DevExpress.XtraBars.Docking.DockVisibility.Visible;
+            //rightPanel1.Options.ShowAutoHideButton = true;
+            //rightPanel1.Options.AllowDockFill = false;
+            //rightPanel1.Options.AllowFloating = true;
+            //rightPanel1.Tabbed = true;
+            //rightPanel1.TabsPosition = DevExpress.XtraBars.Docking.TabsPosition.Top;
+            rightPanel1.Controls.Add(new Label() { Text = "Label on Right 1" });
+
+            
+            var rightPanel2 = rightPanel1.AddPanel();           // this.__DockManager.AddPanel(DevExpress.XtraBars.Docking.DockingStyle.Right);
+            // rightPanel2.HideImmediately();
+            rightPanel2.Text = "RightPanel 2";
+            rightPanel2.Visibility = DevExpress.XtraBars.Docking.DockVisibility.Visible;
+            //rightPanel2.Options.ShowAutoHideButton = true;
+            //rightPanel2.Options.AllowDockFill = false;
+            //rightPanel2.Options.AllowFloating = true;
+            //rightPanel2.Tabbed = true;
+            //rightPanel2.TabsPosition = DevExpress.XtraBars.Docking.TabsPosition.Top;
+            rightPanel2.Controls.Add(new Label() { Text = "Label on Right 2" });
+
+        }
+        #endregion
         #region Otevírání Child okna v okně aplikace
         /// <summary>
         /// Otevři okno v prostředí aplikace
@@ -272,7 +312,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (mainAppForm != null)
             {
                 form.MdiParent = mainAppForm;
-                mainAppForm._TabbedView.AddDocument(form);
+                mainAppForm.__TabbedView.AddDocument(form);
                 // mainAppForm._TabbedView.AddDocument(form);
                 form.Show();
             }
