@@ -261,6 +261,9 @@
     <Compile Include="Forms\DxBrowseStandardForm.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="Forms\DxBrowseVirtualForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="Forms\GraphForm.cs">
       <SubType>Form</SubType>
     </Compile>

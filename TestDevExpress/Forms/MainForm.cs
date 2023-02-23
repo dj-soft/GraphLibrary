@@ -458,7 +458,8 @@ namespace TestDevExpress.Forms
 
             group = new DataRibbonGroup() { GroupText = "BROWSE" };
             group.Items.Add(CreateRibbonFunction("BrowseStd", "Browse Standard", "svgimages/richedit/selecttablerow.svg", "Otevře okno pro testování standardního Browse", _TestDxBrowseStandardForm_Click));
-            group.Items.Add(CreateRibbonFunction("Browse", "Browse", "svgimages/dashboards/grid.svg", "Otevře okno pro testování Browse", _TestDxBrowseForm_Click));
+            // group.Items.Add(CreateRibbonFunction("BrowseVirt", "Browse Virtual", "svgimages/richedit/selecttablerow.svg", "Otevře okno pro testování virtuálního Browse", _TestDxBrowseVirtualForm_Click));
+            group.Items.Add(CreateRibbonFunction("BrowseNeph", "Browse Nephrite", "svgimages/dashboards/grid.svg", "Otevře okno pro testování Browse Nephrite", _TestDxBrowseForm_Click));
             page.Groups.Add(group);
 
             group = new DataRibbonGroup() { GroupText = "STYLY" };
@@ -877,6 +878,14 @@ namespace TestDevExpress.Forms
         private void _TestDxBrowseStandardForm_Click(IMenuItem menuItem)
         {
             using (var dxBrowseForm = new DxBrowseStandardForm())
+            {
+                dxBrowseForm.WindowState = FormWindowState.Maximized;
+                dxBrowseForm.ShowDialog();
+            }
+        }
+        private void _TestDxBrowseVirtualForm_Click(IMenuItem menuItem)
+        {
+            using (var dxBrowseForm = new DxBrowseVirtualForm())
             {
                 dxBrowseForm.WindowState = FormWindowState.Maximized;
                 dxBrowseForm.ShowDialog();
