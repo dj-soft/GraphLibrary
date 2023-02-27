@@ -479,20 +479,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         public override string ToString() { return this.GetTypeName() + ": '" + (this.Text ?? "NULL") + "'"; }
         /// <summary>
-        /// Je voláno na konci konstruktoru třídy <see cref="DxRibbonBaseForm"/>.
-        /// Typicky je zde ukončen cyklus BeginInit jednoltivých komponent.
-        /// <para/>
-        /// Je povinné volat base metodu, typicky na konci metody override.
-        /// </summary>
-        protected virtual void EndInitDxRibbonForm()
-        {
-            ((System.ComponentModel.ISupportInitialize)(_DxRibbon)).EndInit();
-
-            // Form Layout:
-            this.ResumeLayout(false);
-            this.PerformLayout();
-        }
-        /// <summary>
         /// Při zobrazení okna
         /// </summary>
         /// <param name="e"></param>
@@ -985,6 +971,20 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.DxRibbonPrepare();
             this.DxStatusPrepare();
             this.DxMainContentPrepare();
+        }
+        /// <summary>
+        /// Je voláno na konci konstruktoru třídy <see cref="DxRibbonBaseForm"/>.
+        /// Typicky je zde ukončen cyklus BeginInit jednoltivých komponent.
+        /// <para/>
+        /// Je povinné volat base metodu, typicky na konci metody override.
+        /// </summary>
+        protected virtual void EndInitDxRibbonForm()
+        {
+            ((System.ComponentModel.ISupportInitialize)(_DxRibbon)).EndInit();
+
+            // Form Layout:
+            this.ResumeLayout(false);
+            this.PerformLayout();
         }
         /// <summary>
         /// Provede tvorbu hlavního obsahue okna, podle jeho typu, a jeho přidání do okna včetně zadokování.

@@ -9,7 +9,8 @@ using Noris.Clients.Win.Components.AsolDX;
 namespace TestDevExpress.Forms
 {
     /// <summary>
-    /// Hlavní okno aplikace
+    /// Hlavní okno testovací aplikace - fyzická třída.
+    /// Načítá dostupné formuláře, které chtějí být členem Ribbonu v hlavním okně (podle implementace <see cref="RunFormInfo"/>
     /// </summary>
     public class MainAppForm : Noris.Clients.Win.Components.AsolDX.DxMainAppForm
     {
@@ -49,15 +50,40 @@ namespace TestDevExpress.Forms
                 case "": break;
             }
         }
+
+
+        #region DockManager - služby
+        protected override void InitializeDockPanelsContent()
+        {
+            var logControl = new TestDevExpress.Components.AppLogPanel();
+            this.AddControlToDockPanels(logControl, "Log aplikace", DevExpress.XtraBars.Docking.DockingStyle.Right, DevExpress.XtraBars.Docking.DockVisibility.AutoHide);
+
+            var logControl2 = new TestDevExpress.Components.AppLogPanel();
+            this.AddControlToDockPanels(logControl2, "Doplňkový log", DevExpress.XtraBars.Docking.DockingStyle.Right, DevExpress.XtraBars.Docking.DockVisibility.AutoHide);
+
+            var logControl3 = new TestDevExpress.Components.AppLogPanel();
+            this.AddControlToDockPanels(logControl3, "přídavný log", DevExpress.XtraBars.Docking.DockingStyle.Right, DevExpress.XtraBars.Docking.DockVisibility.AutoHide);
+
+            var logControl4 = new TestDevExpress.Components.AppLogPanel();
+            this.AddControlToDockPanels(logControl4, "Jinopohledový log", DevExpress.XtraBars.Docking.DockingStyle.Left, DevExpress.XtraBars.Docking.DockVisibility.AutoHide);
+        }
+        #endregion
+
     }
     /// <summary>
     /// Definice spouštěcí ikony pro určitý formulář.
     /// <para/>
     /// Pokud určitý formulář chce být spouštěn z tlačítka v ribbonu okna <see cref="MainAppForm"/>, pak nechť si do své definice zařadí:
     /// <code>
-    /// public static RunFormInfo RunFormInfo { get { return new RunFormInfo() { /* zde naplní svoje data pro button */ }; } }
+    /// public static TestDevExpress.Forms.RunFormInfo RunFormInfo { get { return new RunFormInfo() { /* zde naplní svoje data pro button */ }; } }
     /// </code>
     /// Okno aplikace si při spuštění najde tyto formuláře, a sestaví je a do Ribbonu zobrazí jejich tlačítka.
+    /// <para/>
+    /// Proč takhle a ne přes interface? Interface předepisuje instanční property, což by znamenalo při hledání vhodných typů: 
+    /// Vyhledat vhodné typy formulářů implementující nový interface (což jde snadno);
+    /// ale potom vytvořit instanci každého takového formuláře (dost časové náročné, zvlášť u komplexních Formů) 
+    /// jen proto, abych si přečetl jeho instanční property s deklarací buttonu do Ribbonu.<br/>
+    /// Zdejší varianta
     /// </summary>
     public class RunFormInfo
     {

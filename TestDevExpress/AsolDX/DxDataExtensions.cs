@@ -611,6 +611,10 @@ namespace Noris.Clients.Win.Components.AsolDX
             return text;
         }
         #endregion
+        #region Type
+
+
+        #endregion
         #region Align
         /// <summary>
         /// Vrátí danou hodnotu zarovnanou do mezí min, max.

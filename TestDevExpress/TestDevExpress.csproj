@@ -216,6 +216,9 @@
     <Compile Include="AsolDX\DxWin32.cs" />
     <Compile Include="AsolDX\Tests\DxDrawingExtensions_Test.cs" />
     <Compile Include="AsolDX\News\WatchTimer.cs" />
+    <Compile Include="Components\AppLogPanel.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="Components\ChartControl.cs">
       <SubType>Component</SubType>
     </Compile>

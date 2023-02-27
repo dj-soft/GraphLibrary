@@ -8,7 +8,7 @@ using System.Windows.Forms;
 namespace Noris.Clients.Win.Components.AsolDX
 {
     /// <summary>
-    /// Předek hlavního okna aplikace. <br/>
+    /// Předek hlavního okna aplikace.<br/>
     /// Obsahuje Ribbon a Status bar (od svého předka) a obsahuje Dock panel, Tab View a Document manager.
     /// </summary>
     public class DxMainAppForm : DxRibbonBaseForm
@@ -116,7 +116,7 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             InitializeFinalControls();
 
-            AddControlToDock(null);
+            InitializeDockPanelsContent();
         }
         /// <summary>
         /// Nastavení komponenty DocumentManager
@@ -207,6 +207,10 @@ namespace Noris.Clients.Win.Components.AsolDX
             dockMgr.EndSizing += _DockManagerEndSizing;
         }
         /// <summary>
+        /// Vytvoří obsah Dock panelů
+        /// </summary>
+        protected virtual void InitializeDockPanelsContent() { }
+        /// <summary>
         /// Závěrečná fáze inicializace formuláře: 
         /// správné poskládání komponent do sebe navzájem a do Formuláře do jeho Controls, ve správném pořadí.
         /// Ukončení inicializační fáze, EndEnit a ResumeLayout.
@@ -273,32 +277,58 @@ namespace Noris.Clients.Win.Components.AsolDX
 
         #endregion
         #region DockManager - služby
-        public void AddControlToDock(Control control)
+        /// <summary>
+        /// Přidá nový dokovaný panel
+        /// </summary>
+        /// <param name="control"></param>
+        /// <param name="panelTitle"></param>
+        /// <param name="dockStyle"></param>
+        /// <param name="visibility"></param>
+        public void AddControlToDockPanels(Control control, string panelTitle, DevExpress.XtraBars.Docking.DockingStyle dockStyle, DevExpress.XtraBars.Docking.DockVisibility visibility)
         {
-            var rightPanel1 = this.__DockManager.AddPanel(DevExpress.XtraBars.Docking.DockingStyle.Right);
-            // rightPanel1.HideImmediately();
-            rightPanel1.Text = "RightPanel 1";
-            rightPanel1.Visibility = DevExpress.XtraBars.Docking.DockVisibility.Visible;
-            //rightPanel1.Options.ShowAutoHideButton = true;
-            //rightPanel1.Options.AllowDockFill = false;
-            //rightPanel1.Options.AllowFloating = true;
-            //rightPanel1.Tabbed = true;
-            //rightPanel1.TabsPosition = DevExpress.XtraBars.Docking.TabsPosition.Top;
-            rightPanel1.Controls.Add(new Label() { Text = "Label on Right 1" });
+            DevExpress.XtraBars.Docking.DockPanel panel;
 
-            
-            var rightPanel2 = rightPanel1.AddPanel();           // this.__DockManager.AddPanel(DevExpress.XtraBars.Docking.DockingStyle.Right);
-            // rightPanel2.HideImmediately();
-            rightPanel2.Text = "RightPanel 2";
-            rightPanel2.Visibility = DevExpress.XtraBars.Docking.DockVisibility.Visible;
-            //rightPanel2.Options.ShowAutoHideButton = true;
-            //rightPanel2.Options.AllowDockFill = false;
-            //rightPanel2.Options.AllowFloating = true;
-            //rightPanel2.Tabbed = true;
-            //rightPanel2.TabsPosition = DevExpress.XtraBars.Docking.TabsPosition.Top;
-            rightPanel2.Controls.Add(new Label() { Text = "Label on Right 2" });
+            var rootPanel = this.__DockManager.RootPanels.FirstOrDefault(p => p.Dock == dockStyle);
+            if (rootPanel is null)
+            {
+                rootPanel = this.__DockManager.AddPanel(dockStyle);
+                panel = rootPanel;
+            }
+            else
+            {
+                panel = rootPanel.AddPanel();
+            }
 
+            panel.Text = panelTitle;
+            panel.Visibility = DevExpress.XtraBars.Docking.DockVisibility.AutoHide;
+            control.Dock = DockStyle.Fill;
+            panel.Controls.Add(control);
+
+            _Panels.Add(new Tuple<Control, DevExpress.XtraBars.Docking.DockPanel>(control, panel));
         }
+        /// <summary>
+        /// Metoda vrátí panel, v němž je nyní umístěn control který vyhoví dodané podmínce.
+        /// Volající sám může testovat control (testovat jeho typ, jeho Name, jeho Tag...).
+        /// </summary>
+        /// <param name="predicate"></param>
+        /// <returns></returns>
+        public DevExpress.XtraBars.Docking.DockPanel GetDockPanelForControl(Func<Control, bool> predicate)
+        {
+            return _Panels.FirstOrDefault(t => predicate(t.Item1))?.Item2;
+        }
+        /// <summary>
+        /// Seznam zadokovaných controlů a panelů, na nichž jsou dokovány
+        /// </summary>
+        private List<Tuple<Control, DevExpress.XtraBars.Docking.DockPanel>> _Panels
+        {
+            get
+            {
+                if (__Panels is null)
+                    __Panels = new List<Tuple<Control, DevExpress.XtraBars.Docking.DockPanel>>();
+                return __Panels;
+            }
+        }
+        private List<Tuple<Control, DevExpress.XtraBars.Docking.DockPanel>> __Panels;
         #endregion
         #region Otevírání Child okna v okně aplikace
         /// <summary>
