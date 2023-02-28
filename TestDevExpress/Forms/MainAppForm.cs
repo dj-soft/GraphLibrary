@@ -23,7 +23,7 @@ namespace TestDevExpress.Forms
             DataRibbonPage basicPage;
             DataRibbonGroup group;
 
-            basicPage = new DataRibbonPage() { PageId = "DxBasicPage", PageText = "ZÁKLADNÍ" };
+            basicPage = new DataRibbonPage() { PageId = "DxBasicPage", PageText = "Domů", MergeOrder = 1, PageOrder = 1 };
             pages.Add(basicPage);
             group = DxRibbonControl.CreateSkinIGroup("DESIGN", addUhdSupport: true) as DataRibbonGroup;
             group.Items.Add(ImagePickerForm.CreateRibbonButton());
@@ -58,14 +58,14 @@ namespace TestDevExpress.Forms
             var logControl = new TestDevExpress.Components.AppLogPanel();
             this.AddControlToDockPanels(logControl, "Log aplikace", DevExpress.XtraBars.Docking.DockingStyle.Right, DevExpress.XtraBars.Docking.DockVisibility.AutoHide);
 
-            var logControl2 = new TestDevExpress.Components.AppLogPanel();
-            this.AddControlToDockPanels(logControl2, "Doplňkový log", DevExpress.XtraBars.Docking.DockingStyle.Right, DevExpress.XtraBars.Docking.DockVisibility.AutoHide);
+            //var logControl2 = new TestDevExpress.Components.AppLogPanel();
+            //this.AddControlToDockPanels(logControl2, "Doplňkový log", DevExpress.XtraBars.Docking.DockingStyle.Right, DevExpress.XtraBars.Docking.DockVisibility.AutoHide);
 
-            var logControl3 = new TestDevExpress.Components.AppLogPanel();
-            this.AddControlToDockPanels(logControl3, "přídavný log", DevExpress.XtraBars.Docking.DockingStyle.Right, DevExpress.XtraBars.Docking.DockVisibility.AutoHide);
+            //var logControl3 = new TestDevExpress.Components.AppLogPanel();
+            //this.AddControlToDockPanels(logControl3, "přídavný log", DevExpress.XtraBars.Docking.DockingStyle.Right, DevExpress.XtraBars.Docking.DockVisibility.AutoHide);
 
-            var logControl4 = new TestDevExpress.Components.AppLogPanel();
-            this.AddControlToDockPanels(logControl4, "Jinopohledový log", DevExpress.XtraBars.Docking.DockingStyle.Left, DevExpress.XtraBars.Docking.DockVisibility.AutoHide);
+            //var logControl4 = new TestDevExpress.Components.AppLogPanel();
+            //this.AddControlToDockPanels(logControl4, "Jinopohledový log", DevExpress.XtraBars.Docking.DockingStyle.Left, DevExpress.XtraBars.Docking.DockVisibility.AutoHide);
         }
         #endregion
 

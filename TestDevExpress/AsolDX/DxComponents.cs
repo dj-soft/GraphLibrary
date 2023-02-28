@@ -2999,6 +2999,203 @@ namespace Noris.Clients.Win.Components.AsolDX
             return true;
         }
         #endregion
+        #region Tvorba prvků Toolbaru (=Ribbonu), static, bez Ribbonu
+        public static DevExpress.XtraBars.BarItem[] CreateBarItems(IEnumerable<IRibbonItem> ribbonItems)
+        {
+            if (ribbonItems is null) return null;
+            List<DevExpress.XtraBars.BarItem> barItems = new List<DevExpress.XtraBars.BarItem>();
+            foreach (var ribbonItem in ribbonItems)
+            {
+                var barItem = _CreateBarItem(ribbonItem, 0);
+                if (barItem != null) barItems.Add(barItem);
+            }
+            return barItems.ToArray();
+        }
+        public static DevExpress.XtraBars.BarItem CreateBarItem(IRibbonItem ribbonItem)
+        {
+            return _CreateBarItem(ribbonItem, 0);
+        }
+        /// <summary>
+        /// Připraví do prvku Ribbonu obrázek (ikonu) podle aktuálního stavu a dodané definice, pro button typu CheckButton nebo CheckBox
+        /// </summary>
+        /// <param name="ribbonItem"></param>
+        /// <param name="barButton"></param>
+        /// <param name="level"></param>
+        public static void FillBarItemImageChecked(IRibbonItem ribbonItem, DevExpress.XtraBars.BarBaseButtonItem barButton, int? level = null)
+        {
+            _FillBarItemImageChecked(ribbonItem, barButton, level);
+        }
+        private static DevExpress.XtraBars.BarItem _CreateBarItem(IRibbonItem ribbonItem, int level)
+        {
+            if (ribbonItem is null) return null;
+            switch (ribbonItem.ItemType)
+            {
+                case RibbonItemType.Button:
+                    return _CreateBarItemButton(ribbonItem, level);
+                case RibbonItemType.CheckButton:
+                    return _CreateBarItemCheckButton(ribbonItem, level);
+                case RibbonItemType.CheckBoxStandard:
+                    return _CreateBarItemCheckBoxStandard(ribbonItem, level);
+            }
+            return null;
+        }
+        private static DevExpress.XtraBars.BarItem _CreateBarItemButton(IRibbonItem ribbonItem, int level)
+        {
+            var barButton = new DevExpress.XtraBars.BarButtonItem();
+            _FillBarItemProperties(ribbonItem, barButton, level);
+            return barButton;
+        }
+        private static DevExpress.XtraBars.BarItem _CreateBarItemCheckButton(IRibbonItem ribbonItem, int level)
+        {
+            var barButton = new DevExpress.XtraBars.BarButtonItem();
+            _FillBarItemProperties(ribbonItem, barButton, level);
+            barButton.ButtonStyle = DevExpress.XtraBars.BarButtonStyle.Check;
+            barButton.Down = (ribbonItem.Checked.HasValue && ribbonItem.Checked.Value);
+            return barButton;
+        }
+        private static DevExpress.XtraBars.BarItem _CreateBarItemCheckBoxStandard(IRibbonItem ribbonItem, int level)
+        {
+            var barButton = new DevExpress.XtraBars.BarButtonItem();
+            _FillBarItemProperties(ribbonItem, barButton, level);
+            return barButton;
+        }
+
+        private static void _FillBarItemProperties(IRibbonItem ribbonItem, DevExpress.XtraBars.BarItem barItem, int level)
+        {
+            barItem.Caption = ribbonItem.Text ?? "";
+            barItem.Enabled = ribbonItem.Enabled;
+            barItem.Visibility = ribbonItem.Visible ? DevExpress.XtraBars.BarItemVisibility.Always : DevExpress.XtraBars.BarItemVisibility.Never;
+            barItem.VisibleInSearchMenu = ribbonItem.VisibleInSearchMenu;
+            barItem.SearchTags = ribbonItem.SearchTags;
+            barItem.PaintStyle = DxRibbonControl.Convert(ribbonItem.ItemPaintStyle);
+            barItem.RibbonStyle = (ribbonItem.RibbonStyle == RibbonItemStyles.Default ? DevExpress.XtraBars.Ribbon.RibbonItemStyles.All : DxRibbonControl.Convert(ribbonItem.RibbonStyle));
+
+            _FillBarItemFontStyle(ribbonItem, barItem, level);
+            _FillBarItemImage(ribbonItem, barItem, level);          // Image můžu řešit až po vložení velikosti, protože Image se řídí i podle velikosti prvku 
+            _FillBarItemHotKey(ribbonItem, barItem, level);
+
+            barItem.SuperTip = DxComponent.CreateDxSuperTip(ribbonItem);
+
+            // Vzájemné provázání:
+            barItem.Tag = ribbonItem;            // Vizuální prvek zná data
+            ribbonItem.RibbonItem = barItem;     // Datový prvek má Weakreferenci na vizuál
+        }
+        /// <summary>
+        /// Nastaví dodaný styl písma do daného prvku, do jeho odpovídající Appearance, do všech stavů
+        /// </summary>
+        /// <param name="ribbonItem"></param>
+        /// <param name="barItem"></param>
+        /// <param name="level"></param>
+        private static void _FillBarItemFontStyle(IRibbonItem ribbonItem, DevExpress.XtraBars.BarItem barItem, int level)
+        {
+            if (ribbonItem.FontStyle.HasValue)
+            {
+                var fontStyle = ribbonItem.FontStyle.Value;
+                var appearance = ((level == 0) ? barItem.ItemAppearance : barItem.ItemInMenuAppearance);
+                appearance.Normal.FontStyleDelta = fontStyle;
+                appearance.Hovered.FontStyleDelta = fontStyle;
+                appearance.Pressed.FontStyleDelta = fontStyle;
+                appearance.Disabled.FontStyleDelta = fontStyle;
+            }
+        }
+        /// <summary>
+        /// Nastaví dodaný styl písma do daného prvku, do jeho odpovídající Appearance, do všech stavů
+        /// </summary>
+        /// <param name="ribbonItem"></param>
+        /// <param name="barItem"></param>
+        /// <param name="level"></param>
+        private static void _FillBarItemImage(IRibbonItem ribbonItem, DevExpress.XtraBars.BarItem barItem, int level)
+        {
+            var itemType = ribbonItem.ItemType;
+            if ((itemType == RibbonItemType.CheckButton || itemType == RibbonItemType.CheckBoxStandard || itemType == RibbonItemType.RadioItem) && barItem is DevExpress.XtraBars.BarBaseButtonItem barButton)
+                _FillBarItemImageChecked(ribbonItem, barButton, level);    // S možností volby podle Checked
+            else
+                _FillBarItemImageStandard(ribbonItem, barItem, level);
+        }
+        /// <summary>
+        /// Připraví do prvku Ribbonu obrázek (ikonu) podle aktuálního stavu a dodané definice, pro standardní button
+        /// </summary>
+        /// <param name="ribbonItem"></param>
+        /// <param name="barItem"></param>
+        /// <param name="level"></param>
+        private static void _FillBarItemImageStandard(IRibbonItem ribbonItem, DevExpress.XtraBars.BarItem barItem, int? level = null)
+        {
+            // Určíme, zda prvek je přímo v Ribbonu nebo až jako subpoložka:
+            //  Hodnota level se předává v procesu prvotní tvorby, pak Root prvek má level == 0;
+            //  Pokud hodnota level není předána, pak jsme volání z obsluhy kliknutí na prvek, a tam se spolehneme na hodnotu IRibbonItem.ParentItem.
+            bool isRootItem = (level.HasValue ? (level.Value == 0) : (ribbonItem.ParentItem is null));
+
+            // Velikost obrázku: pro RootItem (vlastní prvky v Ribbonu) ve stylu Large nebo Default dáme obrázky Large, jinak dáme Small (pro malé prvky Ribbonu a pro položky menu, ty mají Level 1 a vyšší):
+            bool isLargeIcon = (isRootItem && (ribbonItem.RibbonStyle.HasFlag(RibbonItemStyles.Large) || ribbonItem.RibbonStyle == RibbonItemStyles.Default));
+            ResourceImageSizeType sizeType = (isLargeIcon ? ResourceImageSizeType.Large : ResourceImageSizeType.Small);
+
+            // Náhradní ikonky (pro nezadané nebo neexistující ImageName) budeme generovat jen pro level = 0 = Ribbon, a ne pro Menu!
+            bool enableImageFromCaption = (ribbonItem.ImageFromCaption == ImageFromCaptionType.OnlyForRootMenuLevel ? isRootItem : (ribbonItem.ImageFromCaption == ImageFromCaptionType.Enabled));
+            string caption = (enableImageFromCaption ? ribbonItem.Text : null);
+            DxComponent.ApplyImage(barItem.ImageOptions, ribbonItem.ImageName, ribbonItem.Image, sizeType, caption: caption, prepareDisabledImage: ribbonItem.PrepareDisabledImage);
+        }
+        /// <summary>
+        /// Připraví do prvku Ribbonu obrázek (ikonu) podle aktuálního stavu a dodané definice, pro button typu CheckButton nebo CheckBox
+        /// </summary>
+        /// <param name="ribbonItem"></param>
+        /// <param name="barButton"></param>
+        /// <param name="level"></param>
+        private static void _FillBarItemImageChecked(IRibbonItem ribbonItem, DevExpress.XtraBars.BarBaseButtonItem barButton, int? level = null)
+        {
+            // Určíme, zda prvek je přímo v Ribbonu nebo až jako subpoložka:
+            //  Hodnota level se předává v procesu prvotní tvorby, pak Root prvek má level == 0;
+            //  Pokud hodnota level není předána, pak jsme volání z obsluhy kliknutí na prvek, a tam se spolehneme na hodnotu IRibbonItem.ParentItem.
+            bool isRootItem = (level.HasValue ? (level.Value == 0) : (ribbonItem.ParentItem is null));
+
+            // Velikost obrázku: pro RootItem (vlastní prvky v Ribbonu) ve stylu Large nebo Default dáme obrázky Large, jinak dáme Small (pro malé prvky Ribbonu a pro položky menu, ty mají Level 1 a vyšší):
+            bool isLargeIcon = (isRootItem && (ribbonItem.RibbonStyle.HasFlag(RibbonItemStyles.Large) || ribbonItem.RibbonStyle == RibbonItemStyles.Default));
+            ResourceImageSizeType sizeType = (isLargeIcon ? ResourceImageSizeType.Large : ResourceImageSizeType.Small);
+
+            // Náhradní ikonky (pro nezadané nebo neexistující ImageName) budeme generovat jen pro level = 0 = Ribbon, a ne pro Menu!
+            string caption = (isRootItem ? ribbonItem.Text : null);
+
+            // Zvolíme aktuálně platný obrázek - podle hodnoty iRibbonItem.Checked a pro zadáné obrázky:
+            string imageName = (!ribbonItem.Checked.HasValue ? ribbonItem.ImageName :                                                                     // Pro hodnotu NULL
+                   ((ribbonItem.Checked.HasValue && !ribbonItem.Checked.Value) ? _GetDefinedImage(ribbonItem.ImageNameUnChecked, ribbonItem.ImageName) :  // pro False
+                   ((ribbonItem.Checked.HasValue && ribbonItem.Checked.Value) ? _GetDefinedImage(ribbonItem.ImageNameChecked, ribbonItem.ImageName) :     // pro True
+                   null)));
+            var image = ribbonItem.Image;
+
+            // Pozor, pro DevExpress platí:
+            // Máme-li prvek na SubPoložce v menu, a prvek je Checked, pak nesmí mít Image - protože DevExpress nezobrazuje vedle sebe Image a CheckIcon, ale zobrazí prioritně Image a tím skryje CheckIcon:
+            if (!isRootItem && ribbonItem.Checked.HasValue && ribbonItem.Checked.Value)
+            {
+                imageName = null;
+                image = null;
+            }
+            DxComponent.ApplyImage(barButton.ImageOptions, imageName, ribbonItem.Image, sizeType, caption: caption, prepareDisabledImage: ribbonItem.PrepareDisabledImage);
+        }
+        /// <summary>
+        /// Vrátí první neprázdný obrázek
+        /// </summary>
+        /// <param name="images"></param>
+        /// <returns></returns>
+        private static string _GetDefinedImage(params string[] images)
+        {
+            return images.FirstOrDefault(i => !String.IsNullOrEmpty(i));
+        }
+
+        /// <summary>
+        /// Do daného prvku Ribbonu vepíše vše pro jeho HotKey
+        /// </summary>
+        /// <param name="ribbonItem"></param>
+        /// <param name="barItem"></param>
+        /// <param name="level"></param>
+        private static void _FillBarItemHotKey(IRibbonItem ribbonItem, DevExpress.XtraBars.BarItem barItem, int level)
+        {
+            if (ribbonItem.HotKeys.HasValue)
+                barItem.ItemShortcut = new DevExpress.XtraBars.BarShortcut(ribbonItem.HotKeys.Value);
+            else if (ribbonItem.Shortcut.HasValue)
+                barItem.ItemShortcut = new DevExpress.XtraBars.BarShortcut(ribbonItem.Shortcut.Value);
+            else if (!string.IsNullOrEmpty(ribbonItem.HotKey) && !(barItem is DevExpress.XtraBars.BarSubItem))
+                barItem.ItemShortcut = new DevExpress.XtraBars.BarShortcut(SystemAdapter.GetShortcutKeys(ribbonItem.HotKey));
+        }
+        #endregion
         #region Pozice okna
         /// <summary>
         /// Vrátí pozici daného okna. Následně se okno na tuto pozici může umístit voláním metody <see cref="FormPositionSet(Form, string, bool)"/>.
@@ -3428,9 +3625,9 @@ namespace Noris.Clients.Win.Components.AsolDX
                 {   // Stop:
                     if (_LogWatch != null)
                         _LogWatch.Stop();
-                    if (_LogSB != null)
-                        _LogSB.Clear();
-                    // Instance nechávám existovat, ale klidné a prázdné.
+                    // if (_LogSB != null)
+                    //    _LogSB.Clear();
+                    // Instance nechávám existovat včetně obsahu. Clear obsahu lze řešit explicitně.
                 }
 
                 __LogActive = value;
@@ -3443,8 +3640,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             get
             {
-                if (!_LogActive) return null;
-
                 string text = "";
                 lock (_LogSB)
                     text = _LogSB.ToString();

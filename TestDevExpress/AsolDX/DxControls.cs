@@ -681,7 +681,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (_FormBoundsNormal.HasValue && this.WindowState == FormWindowState.Normal)
             {
                 Rectangle boundsNormal = _FormBoundsNormal.Value;
-                DxComponent.LogAddLine($"PrepareNormalBounds: BoundsNormal={Convertor.RectangleToString(boundsNormal)}");
+                if (this.LogActive) DxComponent.LogAddLine($"PrepareNormalBounds: BoundsNormal={Convertor.RectangleToString(boundsNormal)}");
                 _FormBoundsNormal = null;
                 this.Bounds = boundsNormal;
             }
@@ -692,6 +692,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="prefix"></param>
         private void AddLogPosition(string prefix)
         {
+            if (!this.LogActive) return;
             string line = $"{prefix}WindowState={WindowState}; Bounds={Convertor.RectangleToString(this.Bounds)}; RestoreBounds={Convertor.RectangleToString(this.RestoreBounds)}";
             DxComponent.LogAddLine(line);
         }

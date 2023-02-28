@@ -48,12 +48,12 @@ namespace TestDevExpress.Forms
             DataRibbonPage page;
             DataRibbonGroup group;
 
-            page = new DataRibbonPage() { PageId = "DX", PageText = "ZÁKLADNÍ", MergeOrder = 1, PageOrder = 1 };
+            page = new DataRibbonPage() { PageId = "DxBrowsePage", PageText = "Browse", MergeOrder = 10, PageOrder = 10 };
             pages.Add(page);
 
-            group = DxRibbonControl.CreateSkinIGroup("DESIGN", addUhdSupport: false) as DataRibbonGroup;
-            group.Items.Add(ImagePickerForm.CreateRibbonButton());
-            page.Groups.Add(group);
+            //group = DxRibbonControl.CreateSkinIGroup("DESIGN", addUhdSupport: false) as DataRibbonGroup;
+            //group.Items.Add(ImagePickerForm.CreateRibbonButton());
+            //page.Groups.Add(group);
 
             group = new DataRibbonGroup() { GroupId = "params", GroupText = "BROWSE TEST" };
             page.Groups.Add(group);

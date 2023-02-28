@@ -6791,11 +6791,11 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             // Nyní do sebe mergujeme nově dodaný obsah:
             if (childDxRibbon != null)
-                this._MergeChildRibbon(childDxRibbon, forceSelectChildPage);    // Tady se do Child DxRibbonu vepíše, že jeho MergedIntoParentDxRibbon je this
+                this._MergeChildRibbon(childDxRibbon, forceSelectChildPage);   // Tady se do Child DxRibbonu vepíše, že jeho MergedIntoParentDxRibbon je this
 
             // A pokud já jsem byl původně mergován nahoru, tak se nahoru zase vrátím:
             if (parentRibbon != null)
-                parentRibbon._MergeChildDxRibbon(this, forceSelectChildPage);   // Tady se může rozběhnout rekurze ve zdejší metodě až do instance Top Parenta...
+                parentRibbon._MergeChildDxRibbon(this, forceSelectChildPage);  // Tady se může rozběhnout rekurze ve zdejší metodě až do instance Top Parenta...
         }
         /// <summary>
         /// Provede Mergování daného Child Ribbonu do this (Parent) Ribbonu.
@@ -6810,7 +6810,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="forceSelectChildPage">Povinně selectovat Child SelectedPage v parentu, bez ohledu na hodnotu <see cref="SelectChildActivePageOnMerge"/></param>
         public void MergeChildRibbon(DevExpress.XtraBars.Ribbon.RibbonControl childRibbon, bool? forceSelectChildPage = null)
         {
-            this.ParentOwner.RunInGui(() => _MergeChildRibbon(childRibbon, forceSelectChildPage));
+            if (childRibbon is DxRibbonControl childDxRibbon)
+                this.ParentOwner.RunInGui(() => _MergeChildDxRibbon(childDxRibbon, forceSelectChildPage));
+            else
+                this.ParentOwner.RunInGui(() => _MergeChildRibbon(childRibbon, forceSelectChildPage));
         }
         /// <summary>
         /// Provede Mergování daného Child Ribbonu do this (Parent) Ribbonu.
