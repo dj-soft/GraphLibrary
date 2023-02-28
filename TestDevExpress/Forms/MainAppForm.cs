@@ -36,6 +36,8 @@ namespace TestDevExpress.Forms
             this.DxRibbon.Clear();
             this.DxRibbon.AddPages(pages);
 
+            this.DxRibbon.AllowCustomization = true;
+
             this.DxRibbon.RibbonItemClick += _DxRibbonControl_RibbonItemClick;
         }
         /// <summary>
