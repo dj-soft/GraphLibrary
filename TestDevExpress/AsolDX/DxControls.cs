@@ -5751,9 +5751,9 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (!IsChartWorking)
                 throw new InvalidOperationException(DxComponent.Localize(MsgCode.DxChartEditorNotPrepared)); // $"V tuto chvíli nelze editovat graf, dosud není načten nebo není definován.");
 
+            bool hasDefinition = !String.IsNullOrEmpty(this._ValidChartXmlLayout);                 // true, když máme nějakou definici grafu
             if (editorType == EditorType.Auto)
             {   // Automaticky:
-                bool hasDefinition = !String.IsNullOrEmpty(this._ValidChartXmlLayout);             // true, když máme nějakou definici grafu
                 editorType = (hasDefinition ? EditorType.Designer : EditorType.Wizard);
             }
             bool acceptDefinition = false;
@@ -5762,7 +5762,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 case EditorType.Wizard:
                     // První editace grafu = Wizard:
-                    editorTitle = DxComponent.Localize(MsgCode.DxChartEditorTitleWizard);          // "Vytvořte nový graf..."
+                    var msgCode = (hasDefinition ? MsgCode.DxChartEditorTitleDesigner : MsgCode.DxChartEditorTitleWizard);
+                    editorTitle = DxComponent.Localize(msgCode);                                   // "Vytvořte nový graf..." / "Upravte graf..."
                     acceptDefinition = DxChartWizard.ShowWizard(this, editorTitle, true, false);
                     break;
                 case EditorType.Designer:

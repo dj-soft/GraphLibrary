@@ -556,7 +556,7 @@ namespace TestDevExpress.Forms
         /// <returns></returns>
         private void AddDataRowsBgr(int rowCount)
         {
-            int wait = Randomizer.Rand.Next(250, 1000);
+            int wait = Randomizer.Rand.Next(250, 600);
             System.Threading.Thread.Sleep(wait);                     // Něco jako uděláme...  - doba pro krátké čekání na data ze serveru
             this.RunInGui(() => AddDataRows(rowCount));              // Naplnění dáme do GUI
         }

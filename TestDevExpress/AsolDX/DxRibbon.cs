@@ -538,7 +538,10 @@ namespace Noris.Clients.Win.Components.AsolDX
                 {
                     var page = AllPages.FirstOrDefault(p => GetPageFullId(p) == value);
                     if (page != null)
+                    {   // Dvakrát je lepší:
+                        this.SelectPage(page);
                         this.SelectedPage = page;
+                    }
                 }
             }
         }
@@ -2115,6 +2118,22 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="clearCurrentContent">Smazat stávající obsah Ribbonu, smaže se bez bliknutí</param>
         public void AddPages(IEnumerable<IRibbonPage> iRibbonPages, bool clearCurrentContent = false)
         {
+            AddPages(iRibbonPages, clearCurrentContent, false);
+        }
+        /// <summary>
+        /// Přidá dodané prvky do this ribbonu, zakládá stránky, kategorie, grupy...
+        /// Pokud má být aktivní <see cref="UseLazyContentCreate"/>, musí být nastaveno na true před přidáním prvku.
+        /// <para/>
+        /// Tato metoda si sama dokáže zajistit invokaci GUI threadu.
+        /// Pokud v době volání je aktuální Ribbon mergovaný v parent ribbonech, pak si korektně zajistí re-merge (=promítnutí nového obsahu do parent ribbonu).
+        /// <para/>
+        /// Pokud bude zadán parametr <paramref name="clearCurrentContent"/>, pak dojde k hladké výměně obsahu Ribbonu. Bez blikání.
+        /// </summary>
+        /// <param name="iRibbonPages">Definice obsahu</param>
+        /// <param name="clearCurrentContent">Smazat stávající obsah Ribbonu, smaže se bez bliknutí</param>
+        /// <param name="preserveActivePage">Ponechat současnou Selectedpage i po výměně dat, a to i po <paramref name="clearCurrentContent"/></param>
+        public void AddPages(IEnumerable<IRibbonPage> iRibbonPages, bool clearCurrentContent, bool preserveActivePage)
+        {
             if (iRibbonPages == null) return;
 
             //  Hodnota 'isCalledFromReFill' je důležitá v následujícím scénáři:
@@ -2146,7 +2165,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             CheckLazyContentCurrentPage(isCalledFromReFill);
 
             // Do první stránky (v aktuálním Ribbonu) vepsat, že má být Aktivní:
-            if (isEmptyRibbon || clearCurrentContent) StoreFirstPageAsLastActivePage();
+            if (isEmptyRibbon || (clearCurrentContent && !preserveActivePage)) StoreFirstPageAsLastActivePage();
         }
         /// <summary>
         /// Metoda vrátí seznam těch zdejších stránek, jejichž Name se vyskytují v dodaném seznamu nových prvků.
@@ -3682,6 +3701,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 case RibbonItemType.SkinPaletteDropDown: return null;
                 case RibbonItemType.SkinPaletteGallery: return null;
                 case RibbonItemType.CheckButton: return null;
+                case RibbonItemType.ComboListBox: return RibbonItemType.Menu;
                 case RibbonItemType.Button:
                 default:
                     return RibbonItemType.Button;
@@ -10651,10 +10671,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         TrackBar,
         /// <summary>
-        /// ComboListBox
-        /// </summary>
-        ComboListBox,
-        /// <summary>
         /// Menu = tlačítko, které se vždy rozbalí
         /// </summary>
         Menu,
@@ -10673,7 +10689,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// DevExpress volba palety v formě InRibbon galerie
         /// </summary>
-        SkinPaletteGallery
+        SkinPaletteGallery,
+        /// <summary>
+        /// ComboListBox
+        /// </summary>
+        ComboListBox
     }
     #endregion
 }
