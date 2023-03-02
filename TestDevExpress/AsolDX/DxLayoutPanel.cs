@@ -16,6 +16,7 @@ using DevExpress.Utils;
 
 using WSXmlSerializer = Noris.WS.Parser.XmlSerializer;
 using WSForms = Noris.WS.DataContracts.Desktop.Forms;
+using DevExpress.Utils.Drawing;
 
 namespace Noris.Clients.Win.Components.AsolDX
 {
@@ -3652,7 +3653,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Pokud má hodnotu, pak hodnota A (Alpha) vyjadřuje "průhlednost" barvy pozadí = míru překrytí defaultní barvy (dle skinu) barvou zde deklarovanou.
         /// </summary>
         public virtual Color? TitleBackColorEnd { get; set; }
-
+        /// <summary>
+        /// Kreslit pozadí a linku pomocí DxPaint?
+        /// </summary>
+        public virtual bool UseDxPainter { get; set; }
         /// <summary>
         /// Aktualizuje ikonu titulku. Neřeší pozice (Location, Bounds), to dělá <see cref="DoLayoutTitleIcon(ref int)"/>.
         /// </summary>
@@ -3787,6 +3791,26 @@ namespace Noris.Clients.Win.Components.AsolDX
         protected int AppliedIconSize { get; set; }
         #endregion
         #region Paint Background and Line
+        protected override void OnPaintCore(GraphicsCache cache)
+        {
+            base.OnPaintCore(cache);
+            if (UseDxPainter || true)
+            {
+                Rectangle backBounds = this.ClientRectangle;
+                var hop = new DevExpress.Utils.Drawing.ButtonObjectPainter();
+                // hop.DrawObject(new ObjectInfoArgs(cache, backBounds, ObjectState.Hot));
+
+                var oia = new ObjectInfoArgs(cache, backBounds, ObjectState.Hot);
+                // DevExpress.Utils.Drawing.WindowsXPHeaderObjectPainter.Empty.DrawObject(oia);
+                // DevExpress.Utils.Drawing.HeaderObjectPainter.Empty.DrawObject(oia);
+
+                // DevExpress.Utils.Drawing.Style3DButtonObjectPainter.Empty.DrawObject(oia);
+
+                cache.FillRectangle(Brushes.LightSkyBlue, backBounds);
+
+
+            }
+        }
         /// <summary>
         /// OnPaint
         /// </summary>
@@ -3795,11 +3819,18 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             base.OnPaint(e);
 
-            if (HasPaintBackground(out int margins, out Color backColor, out Color? backColorEnd))
-                PaintBackground(e, margins, backColor, backColorEnd);
+            bool wfPaint = false;
+            if (UseDxPainter)
+            {
+            }
+            else if (wfPaint)
+            {
+                if (HasPaintBackground(out int margins, out Color backColor, out Color? backColorEnd))
+                    PaintBackground(e, margins, backColor, backColorEnd);
 
-            if (HasPaintLine(out int lineWidth, out Color lineColor, out Color? lineColorEnd))
-                PaintLine(e, lineWidth, lineColor, lineColorEnd);
+                if (HasPaintLine(out int lineWidth, out Color lineColor, out Color? lineColorEnd))
+                    PaintLine(e, lineWidth, lineColor, lineColorEnd);
+            }
         }
         /// <summary>
         /// Vrací true, pokud se má kreslit Backgrounds
