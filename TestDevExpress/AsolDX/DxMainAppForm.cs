@@ -203,9 +203,12 @@ namespace Noris.Clients.Win.Components.AsolDX
             dockMgr.DockingOptions.AutoHidePanelVerticalTextOrientation = DevExpress.XtraBars.Docking.VerticalTextOrientation.BottomToTop;
             dockMgr.DockingOptions.TabbedPanelVerticalTextOrientation = DevExpress.XtraBars.Docking.VerticalTextOrientation.BottomToTop;
 
+            dockMgr.RegisterDockPanel += _DockManagerRegisterDockPanel;
             dockMgr.ClosingPanel += _DockManagerClosingPanel;
             dockMgr.EndSizing += _DockManagerEndSizing;
         }
+
+
         /// <summary>
         /// Vytvoří obsah Dock panelů
         /// </summary>
@@ -321,9 +324,18 @@ namespace Noris.Clients.Win.Components.AsolDX
             DxComponent.LogAddLine($"TabbedView.EndDocking({e.Document.Control?.Text})");
         }
 
-
-        private void _DockManagerEndSizing(object sender, DevExpress.XtraBars.Docking.EndSizingEventArgs e) { }
-        private void _DockManagerClosingPanel(object sender, DevExpress.XtraBars.Docking.DockPanelCancelEventArgs e) { }
+        private void _DockManagerRegisterDockPanel(object sender, DevExpress.XtraBars.Docking.DockPanelEventArgs e)
+        {
+            DxComponent.LogAddLine($"DockManager.RegisterDockPanel({e.Panel?.Text})");
+        }
+        private void _DockManagerEndSizing(object sender, DevExpress.XtraBars.Docking.EndSizingEventArgs e) 
+        {
+            DxComponent.LogAddLine($"DockManager.EndSizing({e.Panel?.Text})");
+        }
+        private void _DockManagerClosingPanel(object sender, DevExpress.XtraBars.Docking.DockPanelCancelEventArgs e) 
+        {
+            DxComponent.LogAddLine($"DockManager.ClosingPanel({e.Panel?.Text})");
+        }
 
 
 
