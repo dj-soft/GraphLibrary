@@ -1752,6 +1752,8 @@ namespace TestDevExpress.Forms
         private void _ShowDXPopupMenu(Point mousePosition)
         {
             DM.DXPopupMenu popup = new DM.DXPopupMenu(this);
+            popup.MenuViewType = DM.MenuViewType.Menu;
+
             /*
             popup.MenuViewType = DM.MenuViewType.Menu;
             popup.OptionsMultiColumn.ColumnCount = 4;
@@ -1766,7 +1768,7 @@ namespace TestDevExpress.Forms
 
             */
 
-            var header1 = new DM.DXMenuHeaderItem() { Caption = "Rychlé funkce" };
+            var header1 = new DM.DXMenuHeaderItem() { Caption = "", Visible = true };
             header1.MultiColumn = DevExpress.Utils.DefaultBoolean.True;
             header1.OptionsMultiColumn.ColumnCount = 8;
             header1.OptionsMultiColumn.ImageHorizontalAlignment = DevExpress.Utils.Drawing.ItemHorizontalAlignment.Center;

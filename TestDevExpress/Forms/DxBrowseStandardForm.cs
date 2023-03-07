@@ -35,6 +35,8 @@ namespace TestDevExpress.Forms
         /// </summary>
         protected override void DxRibbonPrepare()
         {
+            this.Text = "Grid: připraveno";
+
             IsVirtualMode = true;
             TargetRowCount = 0;
             _SetCoefficients(0.85m, 1.00m);

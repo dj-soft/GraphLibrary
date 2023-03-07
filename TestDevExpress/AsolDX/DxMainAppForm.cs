@@ -129,14 +129,13 @@ namespace Noris.Clients.Win.Components.AsolDX
             docManager.ShowThumbnailsInTaskBar = DevExpress.Utils.DefaultBoolean.False;
             docManager.SnapMode = DevExpress.Utils.Controls.SnapMode.All;
             docManager.RibbonAndBarsMergeStyle = DevExpress.XtraBars.Docking2010.Views.RibbonAndBarsMergeStyle.WhenNotFloating;
+
             docManager.DocumentActivate += _DocumentManagerDocumentActivate;
             docManager.ViewChanged += _DocumentManagerViewChanged;
-            docManager.View.DocumentAdded += _DocumentManagerDocumentAdded;
-            docManager.View.DocumentClosing += _DocumentManagerDocumentClosing;
-            docManager.View.DocumentRemoved += _DocumentManagerDocumentRemoved;
-            docManager.View.BeginFloating += _DocumentManagerBeginFloating;
-            docManager.View.EndFloating += _DocumentManagerEndFloating;
         }
+
+
+
         /// <summary>
         /// Nastavení komponenty TabbedView
         /// </summary>
@@ -178,10 +177,25 @@ namespace Noris.Clients.Win.Components.AsolDX
             tabView.DocumentGroups.CollectionChanged += _TabbedViewGroupsCollectionChanged;
             tabView.Layout += _TabbedViewLayout;
             tabView.Paint += _TabbedViewPaint;
-            tabView.EndSizing += _TabbedViewEndSizing; ;
+            tabView.EndSizing += _TabbedViewEndSizing;
             tabView.Floating += _TabbedViewFloating;
             tabView.BeginDocking += _TabbedViewBeginDocking;
             tabView.EndDocking += _TabbedViewEndDocking;
+            tabView.DocumentAdded += _TabbedViewDocumentAdded;
+            tabView.BeginFloating += _TabbedViewBeginFloating;
+            tabView.BeginSizing += _TabbedViewBeginSizing;
+            tabView.ControlShown += _TabbedViewControlShown;
+            tabView.DocumentActivated += _TabbedViewDocumentActivated;
+            tabView.DocumentClosed += _TabbedViewDocumentClosed;
+            tabView.DocumentDeactivated += _TabbedViewDocumentDeactivated;
+            tabView.DocumentClosing += _TabbedViewDocumentClosing;
+            tabView.DocumentRemoved += _TabbedViewDocumentRemoved;
+            tabView.EndFloating += _TabbedViewEndFloating;
+            tabView.EmptyDocumentsHostWindow += _TabbedViewEmptyDocumentsHostWindow;
+            tabView.GotFocus += _TabbedViewGotFocus;
+            tabView.LostFocus += _TabbedViewLostFocus;
+            tabView.NextDocument += _TabbedViewNextDocument;
+
         }
         /// <summary>
         /// Inicializace komponenty DockManager
@@ -204,8 +218,23 @@ namespace Noris.Clients.Win.Components.AsolDX
             dockMgr.DockingOptions.TabbedPanelVerticalTextOrientation = DevExpress.XtraBars.Docking.VerticalTextOrientation.BottomToTop;
 
             dockMgr.RegisterDockPanel += _DockManagerRegisterDockPanel;
+            dockMgr.ActiveChildChanged += _DockManagerActiveChildChanged;
+            dockMgr.ActivePanelChanged += _DockManagerActivePanelChanged;
+            dockMgr.ClosedPanel += _DockManagerClosedPanel;
+            dockMgr.Collapsing += _DockManagerCollapsing;
+            dockMgr.Collapsed += _DockManagerCollapsed;
             dockMgr.ClosingPanel += _DockManagerClosingPanel;
+            dockMgr.Docking += _DockManagerDocking;
+            dockMgr.EndDocking += _DockManagerEndDocking;
+            dockMgr.Expanding += _DockManagerExpanding;
+            dockMgr.Expanded += _DockManagerExpanded;
+            dockMgr.StartDocking += _DockManagerStartDocking;
+            dockMgr.StartSizing += _DockManagerStartSizing;
             dockMgr.EndSizing += _DockManagerEndSizing;
+            dockMgr.TabbedChanged += _DockManagerTabbedChanged;
+            dockMgr.TabsPositionChanged += _DockManagerTabsPositionChanged;
+            dockMgr.TabsScrollChanged += _DockManagerTabsScrollChanged;
+            dockMgr.VisibilityChanged += _DockManagerVisibilityChanged;
         }
 
 
@@ -259,37 +288,81 @@ namespace Noris.Clients.Win.Components.AsolDX
         private DevExpress.XtraBars.Docking.DockManager __DockManager;
         private DevExpress.XtraSplashScreen.SplashScreenManager __SplashManager;
 
-        private void _DocumentManagerDocumentAdded(object sender, DevExpress.XtraBars.Docking2010.Views.DocumentEventArgs e)
-        {
-            DxComponent.LogAddLine($"DocumentManager.DocumentAdded({e.Document.Control?.Text})");
-        }
         private void _DocumentManagerDocumentActivate(object sender, DevExpress.XtraBars.Docking2010.Views.DocumentEventArgs e)
         {
             DxComponent.LogAddLine($"DocumentManager.DocumentActivate({e.Document?.Control?.Text})");
-            ActivateRibbonForControl(e.Document?.Control);
+            // ActivateRibbonForControl(e.Document?.Control);
         }
         private void _DocumentManagerViewChanged(object sender, DevExpress.XtraBars.Docking2010.ViewEventArgs e)
         {
             DxComponent.LogAddLine($"DocumentManager.ViewChanged()");
         }
-        private void _DocumentManagerDocumentClosing(object sender, DevExpress.XtraBars.Docking2010.Views.DocumentCancelEventArgs e)
-        {
-            DxComponent.LogAddLine($"DocumentManager.DocumentClosing({e.Document.Control?.Text})");
-        }
-        private void _DocumentManagerDocumentRemoved(object sender, DevExpress.XtraBars.Docking2010.Views.DocumentEventArgs e)
-        {
-            DxComponent.LogAddLine($"DocumentManager.DocumentRemoved({e.Document.Control?.Text})");
-        }
         private void _DocumentManagerBeginFloating(object sender, DevExpress.XtraBars.Docking2010.Views.DocumentCancelEventArgs e)
         {
             DxComponent.LogAddLine($"DocumentManager.BeginFloating({e.Document.Control?.Text})");
         }
-        private void _DocumentManagerEndFloating(object sender, DevExpress.XtraBars.Docking2010.Views.DocumentEventArgs e)
+
+
+
+        private void _TabbedViewDocumentAdded(object sender, DevExpress.XtraBars.Docking2010.Views.DocumentEventArgs e)
         {
-            DxComponent.LogAddLine($"DocumentManager.EndFloating({e.Document.Control?.Text})");
+            DxComponent.LogAddLine($"TabbedView.DocumentAdded({e.Document.Control?.Text})");
         }
-
-
+        private void _TabbedViewDocumentClosing(object sender, DevExpress.XtraBars.Docking2010.Views.DocumentCancelEventArgs e)
+        {
+            DxComponent.LogAddLine($"TabbedView.DocumentClosing({e.Document.Control?.Text})");
+        }
+        private void _TabbedViewDocumentRemoved(object sender, DevExpress.XtraBars.Docking2010.Views.DocumentEventArgs e)
+        {
+            DxComponent.LogAddLine($"TabbedView.DocumentRemoved({e.Document.Control?.Text})");
+        }
+        private void _TabbedViewEndFloating(object sender, DevExpress.XtraBars.Docking2010.Views.DocumentEventArgs e)
+        {
+            DxComponent.LogAddLine($"TabbedView.EndFloating({e.Document.Control?.Text})");
+        }
+        private void _TabbedViewNextDocument(object sender, DevExpress.XtraBars.Docking2010.Views.NextDocumentEventArgs e)
+        {
+            DxComponent.LogAddLine($"TabbedView.NextDocument({e.Document.Control?.Text})");
+        }
+        private void _TabbedViewLostFocus(object sender, EventArgs e)
+        {
+            DxComponent.LogAddLine($"TabbedView.LostFocus()");
+        }
+        private void _TabbedViewGotFocus(object sender, EventArgs e)
+        {
+            DxComponent.LogAddLine($"TabbedView.GotFocus()");
+        }
+        private void _TabbedViewEmptyDocumentsHostWindow(object sender, DevExpress.XtraBars.Docking2010.EmptyDocumentsHostWindowEventArgs e)
+        {
+            DxComponent.LogAddLine($"TabbedView.DocumentsHostWindow({e.Reason})");
+        }
+        private void _TabbedViewDocumentDeactivated(object sender, DevExpress.XtraBars.Docking2010.Views.DocumentEventArgs e)
+        {
+            DxComponent.LogAddLine($"TabbedView.DocumentDeactivated({e.Document.Control?.Text})");
+            DeactivateRibbonForControl(e.Document?.Control);
+        }
+        private void _TabbedViewDocumentClosed(object sender, DevExpress.XtraBars.Docking2010.Views.DocumentEventArgs e)
+        {
+            DxComponent.LogAddLine($"TabbedView.DocumentClosed({e.Document.Control?.Text})");
+        }
+        private void _TabbedViewDocumentActivated(object sender, DevExpress.XtraBars.Docking2010.Views.DocumentEventArgs e)
+        {
+            DxComponent.LogAddLine($"TabbedView.DocumentActivated({e.Document.Control?.Text})");
+            ActivateRibbonForControl(e.Document?.Control);
+        }
+        private void _TabbedViewControlShown(object sender, DevExpress.XtraBars.Docking2010.Views.DeferredControlLoadEventArgs e)
+        {
+            DxComponent.LogAddLine($"TabbedView.ControlShown({e.Document.Control?.Text})");
+        }
+        private void _TabbedViewBeginSizing(object sender, DevExpress.XtraBars.Docking2010.Views.LayoutBeginSizingEventArgs e)
+        {
+            DxComponent.LogAddLine($"TabbedView.BeginSizing()");
+        }
+        private void _TabbedViewBeginFloating(object sender, DevExpress.XtraBars.Docking2010.Views.DocumentCancelEventArgs e)
+        {
+            DxComponent.LogAddLine($"TabbedView.BeginFloating({e.Document.Control?.Text})");
+            BeginFloatingRibbonForControl(e.Document.Control);
+        }
         private void _TabbedViewGroupsCollectionChanged(DevExpress.XtraBars.Docking2010.Base.CollectionChangedEventArgs<DevExpress.XtraBars.Docking2010.Views.Tabbed.DocumentGroup> e)
         {
             DxComponent.LogAddLine($"TabbedView.GroupsCollectionChanged()");
@@ -298,31 +371,27 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             DxComponent.LogAddLine($"TabbedView.Layout()");
         }
-
         private void _TabbedViewPaint(object sender, System.Windows.Forms.PaintEventArgs e)
         {
             // DxComponent.LogAddLine($"TabbedView.GroupsCollectionChanged({e.Document.Control?.Text})");
         }
-
         private void _TabbedViewEndSizing(object sender, DevExpress.XtraBars.Docking2010.Views.LayoutEndSizingEventArgs e)
         {
             DxComponent.LogAddLine($"TabbedView.EndSizing()");
         }
-
         private void _TabbedViewFloating(object sender, DevExpress.XtraBars.Docking2010.Views.DocumentEventArgs e)
         {
             DxComponent.LogAddLine($"TabbedView.Floating({e.Document.Control?.Text})");
         }
-
         private void _TabbedViewBeginDocking(object sender, DevExpress.XtraBars.Docking2010.Views.DocumentCancelEventArgs e)
         {
             DxComponent.LogAddLine($"TabbedView.BeginDocking({e.Document.Control?.Text})");
         }
-
         private void _TabbedViewEndDocking(object sender, DevExpress.XtraBars.Docking2010.Views.DocumentEventArgs e)
         {
             DxComponent.LogAddLine($"TabbedView.EndDocking({e.Document.Control?.Text})");
         }
+
 
         private void _DockManagerRegisterDockPanel(object sender, DevExpress.XtraBars.Docking.DockPanelEventArgs e)
         {
@@ -336,13 +405,99 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             DxComponent.LogAddLine($"DockManager.ClosingPanel({e.Panel?.Text})");
         }
+        private void _DockManagerVisibilityChanged(object sender, DevExpress.XtraBars.Docking.VisibilityChangedEventArgs e)
+        {
+            DxComponent.LogAddLine($"DockManager.VisibilityChanged({e.Panel?.Text})");
+        }
+        private void _DockManagerTabsScrollChanged(object sender, DevExpress.XtraBars.Docking.DockPanelEventArgs e)
+        {
+            DxComponent.LogAddLine($"DockManager.TabsScrollChanged({e.Panel?.Text})");
+        }
+        private void _DockManagerTabsPositionChanged(object sender, DevExpress.XtraBars.Docking.TabsPositionChangedEventArgs e)
+        {
+            DxComponent.LogAddLine($"DockManager.TabsPositionChanged({e.Panel?.Text})");
+        }
+        private void _DockManagerTabbedChanged(object sender, DevExpress.XtraBars.Docking.DockPanelEventArgs e)
+        {
+            DxComponent.LogAddLine($"DockManager.TabbedChanged({e.Panel?.Text})");
+        }
+        private void _DockManagerStartSizing(object sender, DevExpress.XtraBars.Docking.StartSizingEventArgs e)
+        {
+            DxComponent.LogAddLine($"DockManager.StartSizing({e.Panel?.Text})");
+        }
+        private void _DockManagerStartDocking(object sender, DevExpress.XtraBars.Docking.DockPanelCancelEventArgs e)
+        {
+            DxComponent.LogAddLine($"DockManager.StartDocking({e.Panel?.Text})");
+        }
+        private void _DockManagerExpanded(object sender, DevExpress.XtraBars.Docking.DockPanelEventArgs e)
+        {
+            DxComponent.LogAddLine($"DockManager.Expanded({e.Panel?.Text})");
+        }
+        private void _DockManagerExpanding(object sender, DevExpress.XtraBars.Docking.DockPanelCancelEventArgs e)
+        {
+            DxComponent.LogAddLine($"DockManager.Expanding({e.Panel?.Text})");
+        }
+        private void _DockManagerEndDocking(object sender, DevExpress.XtraBars.Docking.EndDockingEventArgs e)
+        {
+            DxComponent.LogAddLine($"DockManager.EndDocking({e.Panel?.Text})");
+        }
+        private void _DockManagerDocking(object sender, DevExpress.XtraBars.Docking.DockingEventArgs e)
+        {
+            DxComponent.LogAddLine($"DockManager.Docking({e.Panel?.Text})");
+        }
+        private void _DockManagerCollapsed(object sender, DevExpress.XtraBars.Docking.DockPanelEventArgs e)
+        {
+            DxComponent.LogAddLine($"DockManager.Collapsed({e.Panel?.Text})");
+        }
+        private void _DockManagerCollapsing(object sender, DevExpress.XtraBars.Docking.DockPanelEventArgs e)
+        {
+            DxComponent.LogAddLine($"DockManager.Collapsing({e.Panel?.Text})");
+        }
+        private void _DockManagerClosedPanel(object sender, DevExpress.XtraBars.Docking.DockPanelEventArgs e)
+        {
+            DxComponent.LogAddLine($"DockManager.ClosedPanel({e.Panel?.Text})");
+        }
+        private void _DockManagerActivePanelChanged(object sender, DevExpress.XtraBars.Docking.ActivePanelChangedEventArgs e)
+        {
+            DxComponent.LogAddLine($"DockManager.ActivePanelChanged({e.Panel?.Text})");
+        }
+        private void _DockManagerActiveChildChanged(object sender, DevExpress.XtraBars.Docking.DockPanelEventArgs e)
+        {
+            DxComponent.LogAddLine($"DockManager.ActiveChildChanged({e.Panel?.Text})");
+        }
+
 
 
 
         private void ActivateRibbonForControl(Control control)
         {
             if (control is DevExpress.XtraBars.Ribbon.RibbonForm ribbonForm && ribbonForm.MdiParent != null)
+            {
                 this.DxRibbon.MergeChildRibbon(ribbonForm.Ribbon);
+                DxComponent.LogAddLine($"Ribbon.Desktop.MergeChildRibbon({ribbonForm?.Text})");
+                ribbonForm.Ribbon.Visible = true;
+                DxComponent.LogAddLine($"Ribbon.TabbedForm[{ribbonForm?.Text}].Visible = true");
+            }
+        }
+        private void BeginFloatingRibbonForControl(Control control)
+        {
+            if (control is DevExpress.XtraBars.Ribbon.RibbonForm ribbonForm)
+            {
+                this.DxRibbon.UnMergeRibbon();
+                DxComponent.LogAddLine($"Ribbon.Desktop.UnMergeRibbon({ribbonForm?.Text})");
+                ribbonForm.Ribbon.Visible = true;
+                DxComponent.LogAddLine($"Ribbon.FloatingForm[{ribbonForm?.Text}].Visible = true");
+            }
+        }
+        private void DeactivateRibbonForControl(Control control)
+        {
+            if (control is DevExpress.XtraBars.Ribbon.RibbonForm ribbonForm && ribbonForm.MdiParent != null)
+            {
+                this.DxRibbon.UnMergeRibbon();
+                DxComponent.LogAddLine($"Ribbon.Desktop.UnMergeRibbon({ribbonForm?.Text})");
+                ribbonForm.Ribbon.Visible = false;
+                DxComponent.LogAddLine($"Ribbon.TabbedForm[{ribbonForm?.Text}].Visible = false");
+            }
         }
         #endregion
         #region DockManager - služby

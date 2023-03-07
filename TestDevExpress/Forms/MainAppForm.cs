@@ -19,6 +19,8 @@ namespace TestDevExpress.Forms
         /// </summary>
         protected override void DxRibbonPrepare()
         {
+            this.Text = $"TesDevExpress [{DxComponent.FrameworkName}]";
+
             List<DataRibbonPage> pages = new List<DataRibbonPage>();
             DataRibbonPage basicPage;
             DataRibbonGroup group;
