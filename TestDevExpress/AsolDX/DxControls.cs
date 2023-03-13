@@ -2923,8 +2923,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="e"></param>
         private void _Client_MouseLeave(object sender, EventArgs e)
         {
-            if (this._TrySearchClient(sender, out var clientInfo))
-                _ClientMouseLeave(clientInfo, e);
+            // if (this._TrySearchClient(sender, out var clientInfo))
+            //     _ClientMouseLeave(clientInfo, e);
+            _ClientMouseLeave();
         }
         /// <summary>
         /// Event Leave z any Controlu
@@ -2933,8 +2934,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="e"></param>
         private void _Client_Leave(object sender, EventArgs e)
         {
-            if (this._TrySearchClient(sender, out var clientInfo))
-                _ClientLeave(clientInfo, e);
+            // if (this._TrySearchClient(sender, out var clientInfo))
+            //    _ClientLeave(clientInfo, e);
+            _ClientLeave();
         }
         /// <summary>
         /// Disposuje evidenci klientů
@@ -3025,6 +3027,16 @@ namespace Noris.Clients.Win.Components.AsolDX
                 IDynamicClient = (HasIDynamicClient ? client as IDxToolTipDynamicClient : null);
                 HasIClient = !HasIDynamicClient && (client is IDxToolTipClient);
                 IClient = (HasIClient ? client as IDxToolTipClient : null);
+            }
+            /// <summary>
+            /// Vizualizace
+            /// </summary>
+            /// <returns></returns>
+            public override string ToString()
+            {
+                string clientType = this.Client?.GetType().Name;
+                string clientText = this.Client?.Text;
+                return $"Client {clientType}: '{clientText}'{(HasIDynamicClient ? "; is IDxToolTipDynamicClient" : "")}{(HasIClient ? "; is IClient" : "")}.";
             }
             /// <summary>
             /// Dispose
@@ -3176,14 +3188,14 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void _ClientMouseMoveNone(ClientInfo clientInfo, MouseEventArgs e)
         {
             _ClientMouseMoveDetectClientChange(clientInfo, e);
-            if (!__IsHintShown)
+            if (!IsHintShown)
                 _ClientMouseMoveWaitShow();
             else
                 _ClientMouseMoveWaitHide();
         }
         /// <summary>
-        /// Kontroluje aktuálního klienta: pokud nějakého máme uloženého odminule, nyní je jiný, a svítí nám ToolTip, tak jej zhasnu.
-        /// Atuálního klienta si uložím a vložím do něj pozici myši.
+        /// Kontroluje aktuálního klienta: pokud nějakého máme uloženého odminule, a nyní je klient pod myší jiný, a svítí nám ToolTip, tak jej zhasnu.
+        /// Aktuálního klienta si uložím (do <see cref="__ActiveClientInfo"/>) a vložím do něj aktuální pozici myši.
         /// </summary>
         /// <param name="clientInfo"></param>
         /// <param name="e"></param>
@@ -3201,7 +3213,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             __ActiveClientInfo.MouseLocation = e.Location;
         }
         /// <summary>
-        /// ToolTip nesvítí a nad klientem se pohybuje myš: čekáme na její zastavení (podle <see cref="HoverCurrentMiliseconds"/>) a pak zajistíme rozsvícení:
+        /// ToolTip nesvítí a nad klientem se pohybuje myš: čekáme na její zastavení nebo zpomalení (podle <see cref="HoverCurrentMiliseconds"/>) 
+        /// a pak zajistíme rozsvícení ToolTipu.
         /// </summary>
         private void _ClientMouseMoveWaitShow()
         {
@@ -3235,8 +3248,15 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private void _ClientMouseHoverShowTip()
         {
+            if (!_CanShowTipOverActiveClient())
+            {
+                _HideTip(true);
+                _RaiseToolTipDebugTextChanged($"ClientMouseHoverShowTip(superTip): cancel - ActiveClient is not valid");
+                return;
+            }
             var clientInfo = __ActiveClientInfo;
             if (clientInfo is null) return;
+
             var changeType = clientInfo.TryGetSuperTip(true, __IsHintShown, out DxSuperToolTip superTip);
             switch (changeType)
             {   // Myš se zastavila, možná rozsvítíme ToolTip?
@@ -3280,15 +3300,17 @@ namespace Noris.Clients.Win.Components.AsolDX
             _HideTip(false);
             _ResetHoverInterval();
         }
-        private void _ClientMouseLeave(ClientInfo clientInfo, EventArgs e)
+        private void _ClientMouseLeave()
         {
-            _HideTip(true);
+            _RaiseToolTipDebugTextChanged($"ClientMouseLeave(): ActiveClient = {__ActiveClientInfo}");
             _ResetHoverInterval();
+            _HideTip(true);
         }
-        private void _ClientLeave(ClientInfo clientInfo, EventArgs e)
+        private void _ClientLeave()
         {
-            _HideTip(true);
+            _RaiseToolTipDebugTextChanged($"ClientLeave(): ActiveClient = {__ActiveClientInfo}");
             _ResetHoverInterval();
+            _HideTip(true);
         }
         private ClientInfo __ActiveClientInfo;
         private Guid? __HoverTimerGuid;
@@ -3364,7 +3386,17 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="superTip"></param>
         private void _ShowDxSuperTip(DxSuperToolTip superTip)
         {
-            if (superTip is null) return;
+            if (superTip is null)
+            {
+                _RaiseToolTipDebugTextChanged($"ShowDxSuperTip(superTip): cancel - superTip is null");
+                return;
+            }
+
+            if (!_CanShowTipOverActiveClient())
+            {
+                _RaiseToolTipDebugTextChanged($"ShowDxSuperTip(superTip): cancel - ActiveClient is not valid");
+                return;
+            }
 
             var args = new ToolTipControllerShowEventArgs();
             args.ToolTipType = ToolTipType.SuperTip;
@@ -3375,6 +3407,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             args.Show = true;
             args.ShowBeak = this.ShowBeak;
 
+            _RaiseToolTipDebugTextChanged($"ShowDxSuperTip(superTip): ShowHint");
             this.ShowHint(args);
 
             __IsHintShown = true;
@@ -3383,7 +3416,19 @@ namespace Noris.Clients.Win.Components.AsolDX
             _StartHideTimer(superTip);
         }
         /// <summary>
-        /// Skrýt ToolTip, 
+        /// Vrátí true, pokud je možno zobrazit klientský Tooltip = máme platnou instanci aktuálního klienta, a myš se nachází v jeho prostoru.
+        /// </summary>
+        /// <returns></returns>
+        private bool _CanShowTipOverActiveClient()
+        {
+            var clientInfo = __ActiveClientInfo;
+            if (clientInfo is null) return false;
+            var mousePoint = Control.MousePosition;
+            var screenBounds = clientInfo.Client.RectangleToScreen(clientInfo.Client.ClientRectangle);
+            return screenBounds.Contains(mousePoint);
+        }
+        /// <summary>
+        /// Skrýt ToolTip, a pokud je dán parametr <paramref name="reset"/> = true, pak proveď i Reset informace o klientu.
         /// </summary>
         /// <param name="reset"></param>
         private void _HideTip(bool reset)
@@ -3391,7 +3436,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             WatchTimer.RemoveRef(ref __HoverTimerGuid);
             WatchTimer.RemoveRef(ref __HideTimerGuid);
             if (reset)
-            {
+            {   // Když myš opouští prostor daného klienta, tak na něj mohu s klidem zapomenout:
                 if (__ActiveClientInfo != null) __ActiveClientInfo.Reset();
                  __ActiveClientInfo = null;
             }
@@ -3402,7 +3447,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
         }
         /// <summary>
-        /// ToolTip byl zobrazen?
+        /// ToolTip byl zobrazen a měl by nyní svítit?
         /// </summary>
         public bool IsHintShown { get { return __IsHintShown; } } private bool __IsHintShown;
         /// <summary>
@@ -5677,6 +5722,364 @@ namespace Noris.Clients.Win.Components.AsolDX
         #endregion
     }
     #endregion
+    #region DxPopupMenu
+    /// <summary>
+    /// <see cref="DxPopupMenu"/> : potomek <see cref="DevExpress.XtraBars.PopupMenu"/>
+    /// </summary>
+    public class DxPopupMenu : DevExpress.XtraBars.PopupMenu
+    {
+        #region Konstruktor, public property
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public DxPopupMenu() : base()
+        {
+            _Initialise();
+        }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="barManager"></param>
+        public DxPopupMenu(DevExpress.XtraBars.BarManager barManager) : base(barManager)
+        {
+            _Initialise();
+        }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="container"></param>
+        public DxPopupMenu(IContainer container) : base(container)
+        {
+            _Initialise();
+        }
+        /// <summary>
+        /// Inicializace
+        /// </summary>
+        private void _Initialise()
+        {
+            DrawMenuSideStrip = DefaultBoolean.True;
+            MenuDrawMode = DevExpress.XtraBars.MenuDrawMode.SmallImagesText;
+        }
+        #endregion
+        #region Static tvorba
+        /// <summary>
+        /// Vytvoří a vrátí <see cref="DxPopupMenu"/> s danými prvky a parametry
+        /// </summary>
+        /// <param name="menuItems">Prvky definující menu</param>
+        /// <param name="menuItemClick">Handler události MenuItemClick</param>
+        /// <param name="onDemandLoad">Handler události OnDemandLoad</param>
+        /// <param name="explicitManager">Explicitně dodaný BarManager</param>
+        /// <returns></returns>
+        public static DxPopupMenu CreateDxPopupMenu(IEnumerable<IMenuItem> menuItems, EventHandler<MenuItemClickArgs> menuItemClick = null, EventHandler < OnDemandLoadArgs > onDemandLoad = null, DevExpress.XtraBars.BarManager explicitManager = null)
+        {
+            var barManager = explicitManager ?? DxComponent.DefaultBarManager;
+            var dxPopupMenu = new DxPopupMenu(barManager);
+            barManager.ShowScreenTipsInMenus = true;
+            DevExpress.XtraBars.BarItem[] barItems = _CreateDxPopupMenuItems(dxPopupMenu, menuItems);
+            dxPopupMenu.AddItems(barItems);
+            if (menuItemClick != null) dxPopupMenu.MenuItemClick += menuItemClick;
+            if (onDemandLoad != null) dxPopupMenu.OnDemandLoad += onDemandLoad;
+            return dxPopupMenu;
+        }
+        /// <summary>
+        /// Z dodané kolekce datových prvků <see cref="IMenuItem"/> vytvoří a vrátí pole vizuálních prvků <see cref="DevExpress.XtraBars.BarItem"/>.
+        /// </summary>
+        /// <param name="dxPopupMenu"></param>
+        /// <param name="menuItems"></param>
+        /// <returns></returns>
+        private static DevExpress.XtraBars.BarItem[] _CreateDxPopupMenuItems(DxPopupMenu dxPopupMenu, IEnumerable<IMenuItem> menuItems)
+        {
+            var barItems = new List<DevExpress.XtraBars.BarItem>();
+            IMenuHeaderItem currentHeaderItem = null;
+            if (menuItems != null)
+            {
+                foreach (var menuItem in menuItems)
+                {
+                    if (menuItem is null) continue;
+
+                    // Různé podtypy prvků menu:
+                    if (menuItem is IMenuHeaderItem headerItem) _AddMenuHeader(dxPopupMenu, barItems, headerItem, ref currentHeaderItem);
+                    else if (menuItem.SubItemsIsOnDemand) _AddMenuOnDemandItem(dxPopupMenu, barItems, menuItem, currentHeaderItem);
+                    else if (menuItem.SubItems != null) _AddMenuSubMenu(dxPopupMenu, barItems, menuItem, currentHeaderItem);
+                    else _AddMenuItem(dxPopupMenu, barItems, menuItem, currentHeaderItem);
+                }
+            }
+            return barItems.ToArray();
+        }
+        private static DevExpress.XtraBars.BarItem[] _CreateDxPopupOnDemandMockItem(DxPopupMenu dxPopupMenu)
+        {
+            var barItems = new List<DevExpress.XtraBars.BarItem>();
+            var stdButton = new DevExpress.XtraBars.BarButtonItem(dxPopupMenu.Manager, "...");
+            barItems.Add(stdButton);
+            return barItems.ToArray();
+        }
+        private static void _AddMenuHeader(DxPopupMenu dxPopupMenu, List<DevExpress.XtraBars.BarItem> barItems, IMenuHeaderItem headerItem, ref IMenuHeaderItem currentHeaderItem)
+        {
+            if (headerItem is null) return;
+
+            bool isHeaderVisible = true;              // Není cesta, jak Header nechat funkční (tj. včetně MultiColumns) a přitom jej nezobrazit...
+            bool isMultiColumn = (headerItem.IsMultiColumn && headerItem.ColumnCount.HasValue && headerItem.ColumnCount.Value > 1);
+            var header = new DxBarHeaderItem();
+            header.Caption = (isHeaderVisible ? headerItem.Text : "");
+            header.IsHidden = !isHeaderVisible;
+            header.RibbonStyle = (headerItem.UseLargeImages ? DevExpress.XtraBars.Ribbon.RibbonItemStyles.Large : DevExpress.XtraBars.Ribbon.RibbonItemStyles.SmallWithText);
+            header.PaintStyle = DevExpress.XtraBars.BarItemPaintStyle.CaptionInMenu;
+            header.ContentHorizontalAlignment = DevExpress.XtraBars.BarItemContentAlignment.Near;
+            header.ImageToTextAlignment = DevExpress.XtraBars.BarItemImageToTextAlignment.BeforeText;
+            // header.Visibility = DevExpress.XtraBars.BarItemVisibility.Never;              // Header není zobrazen, ale buttony pak nejsou řízeny zdejším OptionMultiColumns...
+
+            header.MultiColumn = (isMultiColumn ? DefaultBoolean.True : DefaultBoolean.False);
+            header.OptionsMultiColumn.ColumnCount = (isMultiColumn ? headerItem.ColumnCount.Value : 1);
+            header.OptionsMultiColumn.ImageHorizontalAlignment = DevExpress.Utils.Drawing.ItemHorizontalAlignment.Left;
+            header.OptionsMultiColumn.ImageVerticalAlignment = DevExpress.Utils.Drawing.ItemVerticalAlignment.Top;
+            header.OptionsMultiColumn.LargeImages = (headerItem.UseLargeImages ? DefaultBoolean.True : DefaultBoolean.False);
+            header.OptionsMultiColumn.ItemDisplayMode = DevExpress.Utils.Menu.MultiColumnItemDisplayMode.Default;
+            header.OptionsMultiColumn.ItemDisplayMode = DevExpress.Utils.Menu.MultiColumnItemDisplayMode.Image;
+            header.OptionsMultiColumn.UseMaxItemWidth = DevExpress.Utils.DefaultBoolean.False;
+            barItems.Add(header);
+
+            currentHeaderItem = headerItem;
+        }
+        private static void _AddMenuOnDemandItem(DxPopupMenu dxPopupMenu, List<DevExpress.XtraBars.BarItem> barItems, IMenuItem menuItem, IMenuHeaderItem currentHeaderItem)
+        {
+            var barSubItem = _GetMenuItem(dxPopupMenu, menuItem, currentHeaderItem, true) as DevExpress.XtraBars.BarSubItem;
+            var subItems = (menuItem.SubItems != null && menuItem.SubItems.Any() ?
+                _CreateDxPopupMenuItems(dxPopupMenu, menuItem.SubItems) :
+                _CreateDxPopupOnDemandMockItem(dxPopupMenu));
+            barSubItem.Popup += dxPopupMenu._BarSubItemPopup;
+            barSubItem.AddItems(subItems);
+            barItems.Add(barSubItem);
+        }
+
+        private static void _AddMenuSubMenu(DxPopupMenu dxPopupMenu, List<DevExpress.XtraBars.BarItem> barItems, IMenuItem menuItem, IMenuHeaderItem currentHeaderItem)
+        {
+            var barSubItem = _GetMenuItem(dxPopupMenu, menuItem, currentHeaderItem, true) as DevExpress.XtraBars.BarSubItem;
+            var subItems = _CreateDxPopupMenuItems(dxPopupMenu, menuItem.SubItems);
+            barSubItem.AddItems(subItems);
+            barItems.Add(barSubItem);
+        }
+        private static void _AddMenuItem(DxPopupMenu dxPopupMenu, List<DevExpress.XtraBars.BarItem> barItems, IMenuItem menuItem, IMenuHeaderItem currentHeaderItem)
+        {
+            var barItem = _GetMenuItem(dxPopupMenu, menuItem, currentHeaderItem, false);
+            barItems.Add(barItem);
+        }
+        /// <summary>
+        /// Vytvoří a vrátí prvek <see cref="DevExpress.XtraBars.BarItem"/>.
+        /// </summary>
+        /// <param name="dxPopupMenu"></param>
+        /// <param name="menuItem"></param>
+        /// <param name="currentHeaderItem"></param>
+        /// <param name="createSubItem"></param>
+        /// <returns></returns>
+        private static DevExpress.XtraBars.BarItem _GetMenuItem(DxPopupMenu dxPopupMenu, IMenuItem menuItem, IMenuHeaderItem currentHeaderItem, bool createSubItem)
+        {
+            bool isMultiColumn = (currentHeaderItem != null && currentHeaderItem.IsMultiColumn);
+
+            DevExpress.XtraBars.BarItem barItem = null;
+            bool isSubItem = false;
+            if (createSubItem || (menuItem.SubItems != null && menuItem.SubItems.Any()))
+            {   // Parent od SubMenu:
+                var subItem = new DevExpress.XtraBars.BarSubItem(dxPopupMenu.Manager, menuItem.Text);
+                isSubItem = true;
+                barItem = subItem;
+            }
+            else
+            {   // Jednotkový prvek:
+                switch (menuItem.ItemType)
+                {
+                    case MenuItemType.MenuItem:
+                        var stdButton = new DevExpress.XtraBars.BarButtonItem(dxPopupMenu.Manager, menuItem.Text);
+                        stdButton.ButtonStyle = DevExpress.XtraBars.BarButtonStyle.Default;
+                        barItem = stdButton;
+                        break;
+                    case MenuItemType.DownButton:
+                        var downButton = new DevExpress.XtraBars.BarButtonItem(dxPopupMenu.Manager, menuItem.Text);
+                        downButton.ButtonStyle = DevExpress.XtraBars.BarButtonStyle.Default;
+                        downButton.Down = menuItem.Checked ?? false;
+                        barItem = downButton;
+                        break;
+                    case MenuItemType.CheckBox:
+                        var checkBoxButton = new DevExpress.XtraBars.BarCheckItem(dxPopupMenu.Manager);
+                        checkBoxButton.Caption = menuItem.Text;
+                        checkBoxButton.CheckStyle = DevExpress.XtraBars.BarCheckStyles.Standard;
+                        checkBoxButton.Checked = menuItem.Checked ?? false;
+                        barItem = checkBoxButton;
+                        break;
+                }
+            }
+            if (barItem is null) return null;
+
+            // Společné nastavení:
+            barItem.Name = menuItem.ItemId;
+            barItem.Enabled = menuItem.Enabled;
+            barItem.Visibility = (menuItem.Visible ? DevExpress.XtraBars.BarItemVisibility.Always : DevExpress.XtraBars.BarItemVisibility.Never);
+            if (menuItem.FontStyle.HasValue) barItem.ItemAppearance.Normal.FontStyleDelta = menuItem.FontStyle.Value;
+
+            barItem.PaintStyle = DevExpress.XtraBars.BarItemPaintStyle.Standard;
+            barItem.RibbonStyle = (isMultiColumn ? DevExpress.XtraBars.Ribbon.RibbonItemStyles.Large : DevExpress.XtraBars.Ribbon.RibbonItemStyles.SmallWithText);
+            barItem.AllowGlyphSkinning = DefaultBoolean.False;
+            barItem.Tag = menuItem;
+
+            DxComponent.ApplyImage(barItem.ImageOptions, menuItem.ImageName);
+
+            if (!isSubItem)
+            {
+                barItem.SuperTip = DxComponent.CreateDxSuperTip(menuItem);
+                DxComponent.FillBarItemHotKey(barItem, menuItem);
+                barItem.ItemClick += dxPopupMenu._BarItemClick;
+            }
+
+            return barItem;
+        }
+        /// <summary>
+        /// Po kliknutí na prvek menu
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _BarItemClick(object sender, DevExpress.XtraBars.ItemClickEventArgs e)
+        {
+            if (e.Item.Tag is IMenuItem menuItem)
+                this.RunMenuItemClick(new MenuItemClickArgs(menuItem));
+        }
+        #endregion
+        #region Události
+        /// <summary>
+        /// Událost vyvolaná v okamžiku, kdy potřebujeme donačíst OnDemand položky
+        /// </summary>
+        public event EventHandler<OnDemandLoadArgs> OnDemandLoad;
+        /// <summary>
+        /// Proběhne v okamžiku, kdy potřebujeme donačíst OnDemand položky
+        /// </summary>
+        /// <param name="args"></param>
+        protected virtual void OnOnDemandLoad(OnDemandLoadArgs args)
+        { }
+        /// <summary>
+        /// Zavolá metodu <see cref="OnOnDemandLoad(OnDemandLoadArgs)"/> a handler <see cref="OnDemandLoad"/>
+        /// </summary>
+        /// <param name="args"></param>
+        protected void RunOnDemandLoad(OnDemandLoadArgs args)
+        {
+            OnOnDemandLoad(args);
+            OnDemandLoad?.Invoke(this, args);
+        }
+
+        /// <summary>
+        /// Událost vyvolaná v okamžiku, kdy uživatel klikl na nějaký prvek menu
+        /// </summary>
+        public event EventHandler<MenuItemClickArgs> MenuItemClick;
+        /// <summary>
+        /// Proběhne v okamžiku, kdy uživatel klikl na nějaký prvek menu
+        /// </summary>
+        /// <param name="args"></param>
+        protected virtual void OnMenuItemClick(MenuItemClickArgs args)
+        { }
+        /// <summary>
+        /// Zavolá metodu <see cref="OnMenuItemClick(MenuItemClickArgs)"/> a handler <see cref="MenuItemClick"/>
+        /// </summary>
+        /// <param name="args"></param>
+        protected void RunMenuItemClick(MenuItemClickArgs args)
+        {
+            OnMenuItemClick(args);
+            MenuItemClick?.Invoke(this, args);
+        }
+        #endregion
+        #region OnDemand SubItems support
+        /// <summary>
+        /// Událost, kdy se otevírá SubMenu s režimem OnDemand
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _BarSubItemPopup(object sender, EventArgs e)
+        {
+            if (sender is DevExpress.XtraBars.BarSubItem barSubItem && barSubItem.Tag is IMenuItem menuItem)
+            {
+                if (menuItem.SubItemsIsOnDemand)
+                {
+                    OnDemandLoadArgs args = new OnDemandLoadArgs(this, barSubItem, menuItem);
+                    this.RunOnDemandLoad(args);
+                }
+            }
+        }
+        /// <summary>
+        /// Zajistí zobrazení reálných položek SubItem pro OnDemand menu
+        /// </summary>
+        /// <param name="args"></param>
+        private void _BarSubItemFill(OnDemandLoadArgs args)
+        {
+            if (args.MenuItem.SubItems is null) return;
+            DxComponent.InvokeGuiThread(() =>
+            {
+                var barSubItem = args.BarSubItem;
+                barSubItem.BeginUpdate();
+                barSubItem.ItemLinks.Clear();
+                barSubItem.AddItems(_CreateDxPopupMenuItems(this, args.MenuItem?.SubItems));
+                if (!args.IsDynamic)
+                    barSubItem.Popup -= this._BarSubItemPopup;
+                barSubItem.EndUpdate();
+
+                // 
+                // barSubItem.Refresh();
+                // barSubItem.Reset();
+            }, this.Manager.Form, true);
+        }
+
+        /// <summary>
+        /// Data pro metodu, která načítá SubItem v režimu OnDemand
+        /// </summary>
+        public class OnDemandLoadArgs : EventArgs
+        {
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="dxPopupMenu"></param>
+            /// <param name="barSubItem"></param>
+            /// <param name="menuItem"></param>
+            public OnDemandLoadArgs(DxPopupMenu dxPopupMenu, DevExpress.XtraBars.BarSubItem barSubItem, IMenuItem menuItem)
+            {
+                this.PopupMenu = dxPopupMenu;
+                this.BarSubItem = barSubItem;
+                this.MenuItem = menuItem;
+                this.IsDynamic = false;
+            }
+            /// <summary>
+            /// Fyzické menu, které je rozsvíceno
+            /// </summary>
+            public DxPopupMenu PopupMenu { get; private set; }
+            /// <summary>
+            /// Fyzické submenu, které má být naplněno
+            /// </summary>
+            public DevExpress.XtraBars.BarSubItem BarSubItem { get; private set; }
+            /// <summary>
+            /// Položka definující prvek, jehož SubMenu se načítá
+            /// </summary>
+            public IMenuItem MenuItem { get; set; }
+            /// <summary>
+            /// Menu je plně dynamické = příští otevření má opět vyvolat událost <see cref="OnDemandLoad"/>.
+            /// Default = false = po prvním načtení SubItems se opakovaně neprovádí.
+            /// </summary>
+            public bool IsDynamic { get; set; }
+            /// <summary>
+            /// Jednoduše zajistí vytvoření reálných aktuálních položek SubMenu.
+            /// </summary>
+            public void FillSubMenu()
+            {
+                this.PopupMenu._BarSubItemFill(this);
+            }
+        }
+        #endregion
+    }
+    #region DxBarHeaderItem
+    internal class DxBarHeaderItem : DevExpress.XtraBars.BarHeaderItem
+    {
+        public DxBarHeaderItem()
+        {
+            
+        }
+        
+        public bool IsHidden { get; set; }
+    }
+    #endregion
+    #endregion
     #region DxChartControl
     /// <summary>
     /// Přímý potomek <see cref="DevExpress.XtraCharts.ChartControl"/> pro použití v ASOL.Nephrite
@@ -6125,7 +6528,85 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
     }
     #endregion
-    #region DataMenuItem + DataTextItem, interface IMenuItem + ITextItem + IToolTipItem
+    #region DataMenuHeaderItem + DataMenuItem + DataTextItem, interface IMenuHeaderItem + IMenuItem + ITextItem + IToolTipItem
+    /// <summary>
+    /// Definice prvku umístěného v Ribbonu nebo podpoložka prvku Ribbonu (položka menu / split ribbonu atd) nebo jako prvek ListBoxu nebo ComboBoxu
+    /// </summary>
+    [DebuggerDisplay("{DebugText}")]
+    public class DataMenuHeaderItem : DataMenuItem, IMenuHeaderItem
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public DataMenuHeaderItem() : base() { }
+        /// <summary>
+        /// Metoda vytvoří new instanci třídy <see cref="DataMenuHeaderItem"/>, které bude obsahovat data z dodané <see cref="IMenuHeaderItem"/>.
+        /// </summary>
+        /// <param name="source"></param>
+        /// <param name="modifier"></param>
+        /// <returns></returns>
+        public static DataMenuHeaderItem CreateClone(IMenuHeaderItem source, Action<DataMenuHeaderItem> modifier = null)
+        {
+            if (source == null) return null;
+            DataMenuHeaderItem clone = new DataMenuHeaderItem();
+            clone.FillFrom(source);
+            if (modifier != null) modifier(clone);
+            return clone;
+        }
+        /// <summary>
+        /// Do this instance přenese patřičné hodnoty ze source instance
+        /// </summary>
+        /// <param name="source"></param>
+        protected void FillFrom(IMenuHeaderItem source)
+        {
+            base.FillFrom((IMenuItem)source);
+
+            IsMultiColumn = source.IsMultiColumn;
+            UseLargeImages = source.UseLargeImages;
+            ColumnCount = source.ColumnCount;
+            ItemDisplayMode = source.ItemDisplayMode;
+        }
+        /// <summary>
+        /// Záhlaví definuje skupinu zobrazující více sloupců vedle sebe
+        /// </summary>
+        public virtual bool IsMultiColumn { get; set; }
+        /// <summary>
+        /// Velikost obrázků je Large?
+        /// </summary>
+        public virtual bool UseLargeImages { get; set; }
+        /// <summary>
+        /// Počet sloupců
+        /// </summary>
+        public virtual int? ColumnCount { get; set; }
+        /// <summary>
+        /// Režim zobrazení prvků v této skupině
+        /// </summary>
+        public virtual MenuItemDisplayMode ItemDisplayMode { get; set; }
+    }
+    /// <summary>
+    /// Definice prvku, který reprezentuje Header v menu. Header dovoluje specifikovat vzhled "své" skupiny = položky následující za tímto Headerem.
+    /// Typicky se použije pro skupinu prvků menu se zobrazením MultiColumn.
+    /// Další skupina s jiným nastavením musí být zahájena novou instanci <see cref="IMenuHeaderItem"/>.
+    /// </summary>
+    public interface IMenuHeaderItem : IMenuItem
+    {
+        /// <summary>
+        /// Záhlaví definuje skupinu zobrazující více sloupců vedle sebe
+        /// </summary>
+        bool IsMultiColumn { get; }
+        /// <summary>
+        /// Velikost obrázků je Large?
+        /// </summary>
+        bool UseLargeImages { get; }
+        /// <summary>
+        /// Počet sloupců
+        /// </summary>
+        int? ColumnCount { get; }
+        /// <summary>
+        /// Režim zobrazení prvků v této skupině
+        /// </summary>
+        MenuItemDisplayMode ItemDisplayMode { get; }
+    }
     /// <summary>
     /// Definice prvku umístěného v Ribbonu nebo podpoložka prvku Ribbonu (položka menu / split ribbonu atd) nebo jako prvek ListBoxu nebo ComboBoxu
     /// </summary>
@@ -6135,7 +6616,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Konstruktor
         /// </summary>
-        public DataMenuItem() : base() { }
+        public DataMenuItem() : base() 
+        {
+            this.ItemType = MenuItemType.MenuItem;
+            this.ChangeMode = ContentChangeMode.ReFill;
+            this.SubItems = null;
+
+        }
         /// <summary>
         /// Metoda vytvoří new instanci třídy <see cref="DataMenuItem"/>, které bude obsahovat data z dodané <see cref="IMenuItem"/>.
         /// </summary>
@@ -6227,6 +6714,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public virtual string HotKey { get; set; }
         /// <summary>
+        /// Uživatelsky čitelný text HotKey. Nemusí být naplněn, pak se vytvoří systémový popisek.
+        /// </summary>
+        public virtual string ShortcutText { get; set; }
+        /// <summary>
         /// Subpoložky (definují prvky Menu, DropDown, SplitButton). Mohou být rekurzivně naplněné = vnořená menu.
         /// Výchozí hodnota je null.
         /// </summary>
@@ -6235,6 +6726,19 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// V deklaraci interface je IEnumerable...
         /// </summary>
         IEnumerable<IMenuItem> IMenuItem.SubItems { get { return this.SubItems; } }
+        /// <summary>
+        /// SubPoložky tohoto prvku jsou načítány OnDemand?
+        /// <para/>
+        /// Hodnota true = ano: po rozbalení menu je zobrazen jen zástupný prvek a je vyvolána událost <see cref="DxPopupMenu.OnDemandLoad"/>.
+        /// Obsluha události najde reálné SubItems, vepíše je do prvku, a vyvolá metodu <see cref="DxPopupMenu.OnDemandLoadArgs.FillSubMenu()"/>.
+        /// Položky ze SubItems se zobrazí v podřízeném menu.
+        /// <para/>
+        /// Pokud položky menu mají být refreshovány pokaždé (tzn i pro další a další zobrazení Popup), 
+        /// pak obsluha eventu musí nastavit <see cref="DxPopupMenu.OnDemandLoadArgs.IsDynamic"/> = true.
+        /// <para/>
+        /// Hodnota false (default) = SubMenu je statické.
+        /// </summary>
+        public virtual bool SubItemsIsOnDemand { get; set; }
         /// <summary>
         /// Titulek ToolTipu (pokud není zadán explicitně) se přebírá z textu prvku
         /// </summary>
@@ -6281,9 +6785,26 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         string HotKey { get; }
         /// <summary>
+        /// Uživatelsky čitelný text HotKey. Nemusí být naplněn, pak se vytvoří systémový popisek.
+        /// </summary>
+        string ShortcutText { get; }
+        /// <summary>
         /// Subpoložky (definují prvky Menu, DropDown, SplitButton). Mohou být rekurzivně naplněné = vnořená menu
         /// </summary>
         IEnumerable<IMenuItem> SubItems { get; }
+        /// <summary>
+        /// SubPoložky tohoto prvku jsou načítány OnDemand?
+        /// <para/>
+        /// Hodnota true = ano: po rozbalení menu je zobrazen jen zástupný prvek a je vyvolána událost <see cref="DxPopupMenu.OnDemandLoad"/>.
+        /// Obsluha události najde reálné SubItems, vepíše je do prvku, a vyvolá metodu <see cref="DxPopupMenu.OnDemandLoadArgs.FillSubMenu()"/>.
+        /// Položky ze SubItems se zobrazí v podřízeném menu.
+        /// <para/>
+        /// Pokud položky menu mají být refreshovány pokaždé (tzn i pro další a další zobrazení Popup), 
+        /// pak obsluha eventu musí nastavit <see cref="DxPopupMenu.OnDemandLoadArgs.IsDynamic"/> = true.
+        /// <para/>
+        /// Hodnota false (default) = SubMenu je statické.
+        /// </summary>
+        bool SubItemsIsOnDemand { get; }
         /// <summary>
         /// Explicitně daná akce po aktivaci této položky menu
         /// </summary>
@@ -6293,6 +6814,24 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// V době volání této akce už je hodnota změněna. Volající garantuje, že skutečně došlo ke změně.
         /// </summary>
         Action<IMenuItem> CheckAction { get; }
+    }
+    /// <summary>
+    /// Třída pro handlery, které dostávají prvek Menu, na který bylo kliknuto
+    /// </summary>
+    public class MenuItemClickArgs : EventArgs
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="item">Prvek, na který bylo kliknuto</param>
+        public MenuItemClickArgs(IMenuItem item)
+        {
+            this.Item = item;
+        }
+        /// <summary>
+        /// Prvek, na který bylo kliknuto
+        /// </summary>
+        public IMenuItem Item { get; private set; }
     }
     /// <summary>
     /// Definice prvku umístěného jako stránka v záložkovníku
@@ -6938,9 +7477,17 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         MenuItem,
         /// <summary>
-        /// CheckBox
+        /// CheckBox - má zaškrtávátko
         /// </summary>
-        CheckBox
+        CheckBox,
+        /// <summary>
+        /// DownButton - ve stavu Checked je vykreslen jako zamáčknutý
+        /// </summary>
+        DownButton,
+        /// <summary>
+        /// Záhlaví grupy, pak prvek má implementovat <see cref="IMenuHeaderItem"/>
+        /// </summary>
+        Header
     }
     /// <summary>
     /// Druh změny obsahu aktuálního prvku
@@ -6965,6 +7512,50 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Pokud definice prvku má režim <see cref="Remove"/>, pak případný definovaný obsah prvku nebude použit.
         /// </summary>
         Remove
+    }
+    /// <summary>
+    /// Způsob práce s prvky SubItems (Static / OnDemand)
+    /// </summary>
+    public enum MenuOnDemandLoadMode
+    {
+        /// <summary>
+        /// Prvek obsahuje již ve své definici seznam reálných prvků, není třeba je donačítat On-Demand při aktivaci.
+        /// Pokud prvek má toto nastavení a nemá definované položky, pak je prostě nemá a mít nebude.
+        /// </summary>
+        Static,
+        /// <summary>
+        /// Prvek typicky neobsahuje definici podřízených prvků při inicializaci, ale bude se donačítat ze serveru až při své aktivaci.
+        /// Po jejich načtení bude seznam konstantní (jde o odložené načtení fixního seznamu).
+        /// </summary>
+        OnDemandLoadOnce,
+        /// <summary>
+        /// Prvek neobsahuje definici podřízených prvků při inicializaci, ale bude se při každé aktivaci submenu načítat ze serveru.
+        /// Po jejich načtení bude seznam zobrazen, ale při další aktivaci stránky / prvku bude ze serveru načítán znovu.
+        /// Jde o dynamický soupis prvků.
+        /// </summary>
+        OnDemandLoadEveryTime
+    }
+    /// <summary>
+    /// Režim zobrazení prvku v menu
+    /// </summary>
+    public enum MenuItemDisplayMode
+    {
+        /// <summary>
+        /// Výchozí = podle komponenty a situace
+        /// </summary>
+        Default,
+        /// <summary>
+        /// Pouze ikona
+        /// </summary>
+        Image,
+        /// <summary>
+        /// Pouze text bez ikony
+        /// </summary>
+        Text,
+        /// <summary>
+        /// Ikona plus text
+        /// </summary>
+        Both
     }
     /// <summary>
     /// Styl použitý pro Label

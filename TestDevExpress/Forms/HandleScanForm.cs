@@ -391,7 +391,9 @@ namespace TestDevExpress.Forms
         Keys? IMenuItem.HotKeys { get { return null; } }
         Shortcut? IMenuItem.Shortcut { get { return null; } }
         string IMenuItem.HotKey { get { return null; } }
+        string IMenuItem.ShortcutText { get { return null; } }
         IEnumerable<IMenuItem> IMenuItem.SubItems { get { return null; } }
+        bool IMenuItem.SubItemsIsOnDemand { get { return false; } }
         string ITextItem.ItemId { get { return ProcessId.ToString(); } }
         string ITextItem.Text { get { return Text; } }
         int ITextItem.ItemOrder { get; set; }

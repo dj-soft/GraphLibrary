@@ -26,6 +26,7 @@ using DevExpress.Utils.Svg;
 using DevExpress.Utils.Design;
 using System.Globalization;
 using DevExpress.Utils.Filtering.Internal;
+using static Noris.Clients.Win.Components.AsolDX.DxPopupMenu;
 
 // using BAR = DevExpress.XtraBars;
 // using EDI = DevExpress.XtraEditors;
@@ -277,6 +278,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public static Form MainForm { get { return Instance._MainForm; } }
         /// <summary>
+        /// Zajistí provedení dodané akce v GUI threadu
+        /// </summary>
+        /// <param name="action">Požadovaná akce; null = nic</param>
+        /// <param name="control">Optional Control, který řeší invokaci GUI</param>
+        /// <param name="asyncInvoke">Požadavek true = na asynchronní invokování (BeginInvoke) / false = synchronní (Invoke)</param>
+        public static void InvokeGuiThread(Action action, Control control = null, bool asyncInvoke = false) { Instance._InvokeGuiThread(action, control, asyncInvoke); }
+        /// <summary>
         /// Start aplikace, nepoužívat z Nephrite
         /// </summary>
         /// <param name="mainFormType"></param>
@@ -344,6 +352,30 @@ namespace Noris.Clients.Win.Components.AsolDX
                 form.Close();
             _MainForm = null;
         }
+        /// <summary>
+        /// Zajistí provedení dodané akce v GUI threadu
+        /// </summary>
+        /// <param name="action">Požadovaná akce; null = nic</param>
+        /// <param name="control">Optional Control, který řeší invokaci GUI</param>
+        /// <param name="asyncInvoke">Požadavek true = na asynchronní invokování (BeginInvoke) / false = synchronní (Invoke)</param>
+        private void _InvokeGuiThread(Action action, Control control = null, bool asyncInvoke = false)
+        {
+            if (action is null) return;
+
+            if (control is null) control = _MainForm;
+            if (control != null && control.IsHandleCreated && !control.Disposing && !control.IsDisposed && control.InvokeRequired)
+            {
+                if (asyncInvoke)
+                    control.BeginInvoke(new Action(action));
+                else
+                    control.Invoke(new Action(action));
+            }
+            else
+                action();
+        }
+        /// <summary>
+        /// Aplikace provádí restart
+        /// </summary>
         private bool _ApplicationDoRestart;
         /// <summary>Hlavní okno aplikace, pokud byla aplikace spuštěna pomocí <see cref="ApplicationStart(Type, Image)"/></summary>
         private Form _MainForm;
@@ -2726,40 +2758,21 @@ namespace Noris.Clients.Win.Components.AsolDX
                 itemClick(sender, new TEventArgs<IMenuItem>(iMenuItem));
             }
         }
+        #region DevExpress.XtraBars.PopupMenu : tvorba, řízení OnDemand
         /// <summary>
         /// Vytvoří a vrátí PopupMenu s danými parametry
         /// </summary>
-        /// <param name="menuItems"></param>
+        /// <param name="menuItems">Prvky definující menu</param>
+        /// <param name="menuItemClick">Handler události MenuItemClick</param>
+        /// <param name="onDemandLoad">Handler události OnDemandLoad</param>
+        /// <param name="explicitManager">Explicitně dodaný BarManager</param>
         /// <returns></returns>
-        public static DevExpress.XtraBars.PopupMenu CreateXBPopupMenu(IEnumerable<IMenuItem> menuItems)
+        public static DxPopupMenu CreateXBPopupMenu(IEnumerable<IMenuItem> menuItems, EventHandler<MenuItemClickArgs> menuItemClick = null, EventHandler<OnDemandLoadArgs> onDemandLoad = null, DevExpress.XtraBars.BarManager explicitManager = null)
         {
-            // Má řadu nectostí, například: nezhasne když kliknu mimo
-
-            var barManager = DxComponent.DefaultBarManager;
-            var xbMenu = new DevExpress.XtraBars.PopupMenu(barManager);
-            DevExpress.XtraBars.BarItem[] barItems = CreateXBPopupMenuItems(barManager, menuItems);
-            xbMenu.AddItems(barItems);
-            xbMenu.DrawMenuSideStrip = DefaultBoolean.True;
-            return xbMenu;
+            return DxPopupMenu.CreateDxPopupMenu(menuItems, menuItemClick, onDemandLoad, explicitManager);
         }
-        private static DevExpress.XtraBars.BarItem[] CreateXBPopupMenuItems(DevExpress.XtraBars.BarManager barManager, IEnumerable<IMenuItem> menuItems)
-        {
-            List<DevExpress.XtraBars.BarItem> barItems = new List<DevExpress.XtraBars.BarItem>();
-            if (menuItems != null)
-            {
-                foreach (var menuItem in menuItems)
-                {
-                    DevExpress.XtraBars.BarButtonItem button = new DevExpress.XtraBars.BarButtonItem(barManager, menuItem.Text)
-                    {
-                        Name = menuItem.ItemId,
-                        Hint = menuItem.ToolTipText,
-                        SuperTip = CreateDxSuperTip(menuItem)
-                    };
-                    barItems.Add(button);
-                }
-            }
-            return barItems.ToArray();
-        }
+        #endregion
+        #region Tvorba pole IMenuItem z jednoho stringu
         /// <summary>
         /// Z daného stringu sestaví a vrátí pole <see cref="IMenuItem"/>, z něhož lze např. sestavit SubItems v Ribbonu, nebo DropDownButton.
         /// String má formát: řádky oddělené znakem Alt+Num4; Prvky oddělené znakem Alt+Num7;
@@ -2868,6 +2881,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// jako parametr 'subItemsText'
         /// </summary>
         public static char MenuItemsCodeDisable { get { return '/'; } }
+        #endregion
         /// <summary>
         /// Vytvoří a vrátí standardní SuperToolTip pro daný titulek a text
         /// </summary>
@@ -3025,6 +3039,24 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             _FillBarItemImageChecked(ribbonItem, barButton, level);
         }
+        /// <summary>
+        /// Do daného prvku <see cref="DevExpress.XtraBars.BarItem"/> vepíše vše pro jeho HotKey
+        /// </summary>
+        /// <param name="barItem"></param>
+        /// <param name="menuItem"></param>
+        public static void FillBarItemHotKey(DevExpress.XtraBars.BarItem barItem, IMenuItem menuItem)
+        {
+            if (menuItem.HotKeys.HasValue)
+                barItem.ItemShortcut = new DevExpress.XtraBars.BarShortcut(menuItem.HotKeys.Value);
+            else if (menuItem.Shortcut.HasValue)
+                barItem.ItemShortcut = new DevExpress.XtraBars.BarShortcut(menuItem.Shortcut.Value);
+            else if (!String.IsNullOrEmpty(menuItem.HotKey) && !(barItem is DevExpress.XtraBars.BarSubItem))
+                barItem.ItemShortcut = new DevExpress.XtraBars.BarShortcut(SystemAdapter.GetShortcutKeys(menuItem.HotKey));
+
+            if (!String.IsNullOrEmpty(menuItem.ShortcutText))
+                barItem.ShortcutKeyDisplayString = menuItem.ShortcutText;
+        }
+
         private static DevExpress.XtraBars.BarItem _CreateBarItem(IRibbonItem ribbonItem, int level)
         {
             if (ribbonItem is null) return null;

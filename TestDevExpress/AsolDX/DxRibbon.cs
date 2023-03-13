@@ -3569,12 +3569,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="withReset"></param>
         protected void FillBarItemHotKey(DevExpress.XtraBars.BarItem barItem, IRibbonItem iRibbonItem, int level, bool withReset = false)
         {
-            if (iRibbonItem.HotKeys.HasValue)
-                barItem.ItemShortcut = new DevExpress.XtraBars.BarShortcut(iRibbonItem.HotKeys.Value);
-            else if (iRibbonItem.Shortcut.HasValue)
-                barItem.ItemShortcut = new DevExpress.XtraBars.BarShortcut(iRibbonItem.Shortcut.Value);
-            else if (!string.IsNullOrEmpty(iRibbonItem.HotKey) && !(barItem is DevExpress.XtraBars.BarSubItem))
-                barItem.ItemShortcut = new DevExpress.XtraBars.BarShortcut(SystemAdapter.GetShortcutKeys(iRibbonItem.HotKey));
+            DxComponent.FillBarItemHotKey(barItem, iRibbonItem);
         }
         /// <summary>
         /// Vrátí Buttony pro dané SubItemy

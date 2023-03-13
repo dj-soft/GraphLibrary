@@ -119,82 +119,499 @@ namespace TestDevExpress.Forms
         {
             DxComponent.ClipboardApplicationId = "TestDevExpress";
             this.Text = $"TestDevExpress :: {DxComponent.FrameworkName}";
-
             this._SysSvgImages = new string[]
+              {
+                "svgimages/spreadsheet/100percent.svg",
+                "svgimages/spreadsheet/3arrowscolored.svg",
+                "svgimages/spreadsheet/3arrowsgray.svg",
+                "svgimages/spreadsheet/3flags.svg",
+                "svgimages/spreadsheet/3signs.svg",
+                "svgimages/spreadsheet/3stars.svg",
+                "svgimages/spreadsheet/3symbolscircled.svg",
+                "svgimages/spreadsheet/3symbolsuncircled.svg",
+                "svgimages/spreadsheet/3trafficlights.svg",
+                "svgimages/spreadsheet/3trafficlightsrimmed.svg",
+                "svgimages/spreadsheet/4arrowscolored.svg",
+                "svgimages/spreadsheet/4arrowsgray.svg",
+                "svgimages/spreadsheet/4ratings.svg",
+                "svgimages/spreadsheet/4trafficlights.svg",
+                "svgimages/spreadsheet/5arrowscolored.svg",
+                "svgimages/spreadsheet/5arrowsgray.svg",
+                "svgimages/spreadsheet/5boxes.svg",
+                "svgimages/spreadsheet/5quarters.svg",
+                "svgimages/spreadsheet/5ratings.svg",
+                "svgimages/spreadsheet/above%20average.svg",
+                "svgimages/spreadsheet/accounting.svg",
+                "svgimages/spreadsheet/accountingnumberformat.svg",
+                "svgimages/spreadsheet/adateoccuring.svg",
+                "svgimages/spreadsheet/adddatasource.svg",
+                "svgimages/spreadsheet/alignright.svg",
+                "svgimages/spreadsheet/allborders.svg",
+                "svgimages/spreadsheet/allowuserstoeditranges.svg",
+                "svgimages/spreadsheet/area.svg",
+                "svgimages/spreadsheet/autosum.svg",
+                "svgimages/spreadsheet/bar.svg",
+                "svgimages/spreadsheet/belowaverage.svg",
+                "svgimages/spreadsheet/between.svg",
+                "svgimages/spreadsheet/bluedatabargradient.svg",
+                "svgimages/spreadsheet/bluedatabarsolid.svg",
+                "svgimages/spreadsheet/bluewhiteredcolorscale.svg",
+                "svgimages/spreadsheet/bold.svg",
+                "svgimages/spreadsheet/bottom10items.svg",
+                "svgimages/spreadsheet/bottom10percent.svg",
+                "svgimages/spreadsheet/bottomalign.svg",
+                "svgimages/spreadsheet/bottomborder.svg",
+                "svgimages/spreadsheet/bottomdoubleborder.svg",
+                "svgimages/spreadsheet/bringforward.svg",
+                "svgimages/spreadsheet/bringtofront.svg",
+                "svgimages/spreadsheet/calculatenow.svg",
+                "svgimages/spreadsheet/calculatesheet.svg",
+                "svgimages/spreadsheet/calculationoptions.svg",
+                "svgimages/spreadsheet/circleinvaliddata.svg",
+                "svgimages/spreadsheet/clearall.svg",
+                "svgimages/spreadsheet/clearfilter.svg",
+                "svgimages/spreadsheet/clearformats.svg",
+                "svgimages/spreadsheet/clearhyperlinks.svg",
+                "svgimages/spreadsheet/clearpivottable.svg",
+                "svgimages/spreadsheet/clearrules.svg",
+                "svgimages/spreadsheet/clearvalidationcircles.svg",
+                "svgimages/spreadsheet/collapsefieldpivottable.svg",
+                "svgimages/spreadsheet/collated.svg",
+                "svgimages/spreadsheet/column.svg",
+                "svgimages/spreadsheet/commastyle.svg",
+                "svgimages/spreadsheet/conditionalformatting.svg",
+                "svgimages/spreadsheet/copy.svg",
+                "svgimages/spreadsheet/create%20rotated%20bar%20chart.svg",
+                "svgimages/spreadsheet/createarea3dchart.svg",
+                "svgimages/spreadsheet/createareachart.svg",
+                "svgimages/spreadsheet/createbar3dchart.svg",
+                "svgimages/spreadsheet/createbarchart.svg",
+                "svgimages/spreadsheet/createbubble3dchart.svg",
+                "svgimages/spreadsheet/createbubblechart.svg",
+                "svgimages/spreadsheet/createconebar3dchart.svg",
+                "svgimages/spreadsheet/createconefullstackedbar3dchart.svg",
+                "svgimages/spreadsheet/createconemanhattanbarchart.svg",
+                "svgimages/spreadsheet/createconestackedbar3dchart.svg",
+                "svgimages/spreadsheet/createcylinderbar3dchart.svg",
+                "svgimages/spreadsheet/createcylinderfullstackedbar3dchart.svg",
+                "svgimages/spreadsheet/createcylindermanhattanbarchart.svg",
+                "svgimages/spreadsheet/createcylinderstackedbar3dchart.svg",
+                "svgimages/spreadsheet/createdoughnutchart.svg",
+                "svgimages/spreadsheet/createexplodeddoughnutchart.svg",
+                "svgimages/spreadsheet/createexplodedpie3dchart.svg",
+                "svgimages/spreadsheet/createexplodedpiechart.svg",
+                "svgimages/spreadsheet/createfromselection.svg",
+                "svgimages/spreadsheet/createfullstackedarea3dchart.svg",
+                "svgimages/spreadsheet/createfullstackedareachart.svg",
+                "svgimages/spreadsheet/createfullstackedbar3dchart.svg",
+                "svgimages/spreadsheet/createfullstackedbarchart.svg",
+                "svgimages/spreadsheet/createfullstackedlinechart.svg",
+                "svgimages/spreadsheet/createfullstackedlinechartnomarkers.svg",
+                "svgimages/spreadsheet/createline3dchart.svg",
+                "svgimages/spreadsheet/createlinechart.svg",
+                "svgimages/spreadsheet/createlinechartnomarkers.svg",
+                "svgimages/spreadsheet/createmanhattanbarchart.svg",
+                "svgimages/spreadsheet/createpie3dchart.svg",
+                "svgimages/spreadsheet/createpiechart.svg",
+                "svgimages/spreadsheet/createpyramidbar3dchart.svg",
+                "svgimages/spreadsheet/createpyramidfullstackedbar3dchart.svg",
+                "svgimages/spreadsheet/createpyramidmanhattanbarchart.svg",
+                "svgimages/spreadsheet/createpyramidstackedbar3dchart.svg",
+                "svgimages/spreadsheet/createradarlinechart.svg",
+                "svgimages/spreadsheet/createradarlinechartfilled.svg",
+                "svgimages/spreadsheet/createradarlinechartnomarkers.svg",
+                "svgimages/spreadsheet/createrotatedbar3dchart.svg",
+                "svgimages/spreadsheet/createrotatedconebar3dchart.svg",
+                "svgimages/spreadsheet/createrotatedcylinderbar3dchart.svg",
+                "svgimages/spreadsheet/createrotatedfullstackedbar3dchart.svg",
+                "svgimages/spreadsheet/createrotatedfullstackedbarchart.svg",
+                "svgimages/spreadsheet/createrotatedfullstackedconebar3dchart.svg",
+                "svgimages/spreadsheet/createrotatedfullstackedcylinderbar3dchart.svg",
+                "svgimages/spreadsheet/createrotatedfullstackedpyramidbar3dchart.svg",
+                "svgimages/spreadsheet/createrotatedpyramidbar3dchart.svg",
+                "svgimages/spreadsheet/createrotatedstackedbar3dchart.svg",
+                "svgimages/spreadsheet/createrotatedstackedbarchart.svg",
+                "svgimages/spreadsheet/createrotatedstackedconebar3dchart.svg",
+                "svgimages/spreadsheet/createrotatedstackedcylinderbar3dchart.svg",
+                "svgimages/spreadsheet/createrotatedstackedpyramidbar3dchart.svg",
+                "svgimages/spreadsheet/createscatterchartlines.svg",
+                "svgimages/spreadsheet/createscatterchartlinesandmarkers.svg",
+                "svgimages/spreadsheet/createscatterchartsmoothlines.svg",
+                "svgimages/spreadsheet/createscatterchartsmoothlinesandmarkers.svg",
+                "svgimages/spreadsheet/createstackedarea3dchart.svg",
+                "svgimages/spreadsheet/createstackedareachart.svg",
+                "svgimages/spreadsheet/createstackedbar3dchart.svg",
+                "svgimages/spreadsheet/createstackedbarchart.svg",
+                "svgimages/spreadsheet/createstackedlinechart.svg",
+                "svgimages/spreadsheet/createstackedlinechartnomarkers.svg",
+                "svgimages/spreadsheet/createstockcharthighlowclose.svg",
+                "svgimages/spreadsheet/createstockchartopenhighlowclose.svg",
+                "svgimages/spreadsheet/createstockchartvolumehighlowclose.svg",
+                "svgimages/spreadsheet/createstockchartvolumeopenhighlowclose.svg",
+                "svgimages/spreadsheet/custommargins.svg",
+                "svgimages/spreadsheet/custompapersize.svg",
+                "svgimages/spreadsheet/customscaling.svg",
+                "svgimages/spreadsheet/cut.svg",
+                "svgimages/spreadsheet/datavalidation.svg",
+                "svgimages/spreadsheet/date&time.svg",
+                "svgimages/spreadsheet/decreasedecimal.svg",
+                "svgimages/spreadsheet/definednameuseinformula.svg",
+                "svgimages/spreadsheet/definename.svg",
+                "svgimages/spreadsheet/deletecomment.svg",
+                "svgimages/spreadsheet/document%20properties.svg",
+                "svgimages/spreadsheet/documentorientation.svg",
+                "svgimages/spreadsheet/donotrepeatitemlabelspivottable.svg",
+                "svgimages/spreadsheet/donotshowsubtotalspivottable.svg",
+                "svgimages/spreadsheet/dropandhighlowlines.svg",
+                "svgimages/spreadsheet/droplines.svg",
+                "svgimages/spreadsheet/droplinesnone.svg",
+                "svgimages/spreadsheet/duplicatevalues.svg",
+                "svgimages/spreadsheet/editcomment.svg",
+                "svgimages/spreadsheet/editfilter.svg",
+                "svgimages/spreadsheet/encrypt.svg",
+                "svgimages/spreadsheet/equalto.svg",
+                "svgimages/spreadsheet/errorbars.svg",
+                "svgimages/spreadsheet/errorbarsnone.svg",
+                "svgimages/spreadsheet/errorbarswithpercentage.svg",
+                "svgimages/spreadsheet/errorbarswithstandarddeviation.svg",
+                "svgimages/spreadsheet/expandcollapsebuttonpivottable.svg",
+                "svgimages/spreadsheet/expandfieldpivottable.svg",
+                "svgimages/spreadsheet/fieldheaderspivottable.svg",
+                "svgimages/spreadsheet/fieldlistpanelpivottable.svg",
+                "svgimages/spreadsheet/fieldsettingspivottable.svg",
+                "svgimages/spreadsheet/fillbackground.svg",
+                "svgimages/spreadsheet/filldown.svg",
+                "svgimages/spreadsheet/fillleft.svg",
+                "svgimages/spreadsheet/fillright.svg",
+                "svgimages/spreadsheet/fillup.svg",
+                "svgimages/spreadsheet/financial.svg",
+                "svgimages/spreadsheet/fitallcolumnsonepage.svg",
+                "svgimages/spreadsheet/fitallrowsonepage.svg",
+                "svgimages/spreadsheet/fitsheetonepage.svg",
+                "svgimages/spreadsheet/fontcolor.svg",
+                "svgimages/spreadsheet/format.svg",
+                "svgimages/spreadsheet/formatastable.svg",
+                "svgimages/spreadsheet/formatcells.svg",
+                "svgimages/spreadsheet/fraction.svg",
+                "svgimages/spreadsheet/freezefirstcolumn.svg",
+                "svgimages/spreadsheet/freezepanes.svg",
+                "svgimages/spreadsheet/freezetoprow.svg",
+                "svgimages/spreadsheet/functionscompatibility.svg",
+                "svgimages/spreadsheet/functionsengineering.svg",
+                "svgimages/spreadsheet/functionsinformation.svg",
+                "svgimages/spreadsheet/functionsstatistical.svg",
+                "svgimages/spreadsheet/functionsweb.svg",
+                "svgimages/spreadsheet/general.svg",
+                "svgimages/spreadsheet/grandtotalsoffrowscolumnspivottable.svg",
+                "svgimages/spreadsheet/grandtotalsoncolumnsonlypivottable.svg",
+                "svgimages/spreadsheet/grandtotalsonrowscolumnspivottable.svg",
+                "svgimages/spreadsheet/grandtotalsonrowsonlypivottable.svg",
+                "svgimages/spreadsheet/grandtotalspivottable.svg",
+                "svgimages/spreadsheet/greaterthan.svg",
+                "svgimages/spreadsheet/greendatabargradient.svg",
+                "svgimages/spreadsheet/greendatabarsolid.svg",
+                "svgimages/spreadsheet/greenwhitecolorscale.svg",
+                "svgimages/spreadsheet/greenwhiteredcolorscale.svg",
+                "svgimages/spreadsheet/greenyellowcolorscale.svg",
+                "svgimages/spreadsheet/greenyellowredcolorscale.svg",
+                "svgimages/spreadsheet/group.svg",
+                "svgimages/spreadsheet/groupfooter.svg",
+                "svgimages/spreadsheet/groupheader.svg",
+                "svgimages/spreadsheet/growfont.svg",
+                "svgimages/spreadsheet/hidedetail.svg",
+                "svgimages/spreadsheet/highlightcellsrules.svg",
+                "svgimages/spreadsheet/highlowlines.svg",
+                "svgimages/spreadsheet/horizontalmode.svg",
+                "svgimages/spreadsheet/hyperlink.svg",
+                "svgimages/spreadsheet/changedatasourcepivottable.svg",
+                "svgimages/spreadsheet/chartaxesgroup.svg",
+                "svgimages/spreadsheet/chartaxistitlegroup.svg",
+                "svgimages/spreadsheet/chartaxistitlehorizontal.svg",
+                "svgimages/spreadsheet/chartaxistitlehorizontal_none.svg",
+                "svgimages/spreadsheet/chartaxistitlevertical.svg",
+                "svgimages/spreadsheet/chartaxistitlevertical_horizontaltitle.svg",
+                "svgimages/spreadsheet/chartaxistitlevertical_none.svg",
+                "svgimages/spreadsheet/chartaxistitlevertical_rotatedtitle.svg",
+                "svgimages/spreadsheet/chartaxistitlevertical_verticaltitle.svg",
+                "svgimages/spreadsheet/chartdatalabels_above.svg",
+                "svgimages/spreadsheet/chartdatalabels_below.svg",
+                "svgimages/spreadsheet/chartdatalabels_bestfit.svg",
+                "svgimages/spreadsheet/chartdatalabels_center.svg",
+                "svgimages/spreadsheet/chartdatalabels_insidebase.svg",
+                "svgimages/spreadsheet/chartdatalabels_insideend.svg",
+                "svgimages/spreadsheet/chartdatalabels_left.svg",
+                "svgimages/spreadsheet/chartdatalabels_linecenter.svg",
+                "svgimages/spreadsheet/chartdatalabels_linenone.svg",
+                "svgimages/spreadsheet/chartdatalabels_none.svg",
+                "svgimages/spreadsheet/chartdatalabels_right.svg",
+                "svgimages/spreadsheet/chartdatalabelsgroup.svg",
+                "svgimages/spreadsheet/chartgridlines.svg",
+                "svgimages/spreadsheet/chartgridlineshorizontal_major.svg",
+                "svgimages/spreadsheet/chartgridlineshorizontal_majorminor.svg",
+                "svgimages/spreadsheet/chartgridlineshorizontal_minor.svg",
+                "svgimages/spreadsheet/chartgridlineshorizontal_none.svg",
+                "svgimages/spreadsheet/chartgridlinesvertical_major.svg",
+                "svgimages/spreadsheet/chartgridlinesvertical_majorminor.svg",
+                "svgimages/spreadsheet/chartgridlinesvertical_minor.svg",
+                "svgimages/spreadsheet/chartgridlinesvertical_none.svg",
+                "svgimages/spreadsheet/chartgroupscatter.svg",
+                "svgimages/spreadsheet/charthorizontalaxis_billions.svg",
+                "svgimages/spreadsheet/charthorizontalaxis_default.svg",
+                "svgimages/spreadsheet/charthorizontalaxis_lefttoright.svg",
+                "svgimages/spreadsheet/charthorizontalaxis_logscale.svg",
+                "svgimages/spreadsheet/charthorizontalaxis_millions.svg",
+                "svgimages/spreadsheet/charthorizontalaxis_none.svg",
+                "svgimages/spreadsheet/charthorizontalaxis_righttoleft.svg",
+                "svgimages/spreadsheet/charthorizontalaxis_thousands.svg",
+                "svgimages/spreadsheet/charthorizontalaxis_withoutlabeling.svg",
+                "svgimages/spreadsheet/chartlegend_none.svg",
+                "svgimages/spreadsheet/chartlegend_overlaylegendatleft.svg",
+                "svgimages/spreadsheet/chartlegend_overlaylegendatright.svg",
+                "svgimages/spreadsheet/chartlegend_showlegendatbottom.svg",
+                "svgimages/spreadsheet/chartlegend_showlegendatleft.svg",
+                "svgimages/spreadsheet/chartlegend_showlegendatright.svg",
+                "svgimages/spreadsheet/chartlegend_showlegendattop.svg",
+                "svgimages/spreadsheet/chartlegendgroup.svg",
+                "svgimages/spreadsheet/charttitleabove.svg",
+                "svgimages/spreadsheet/charttitlecenteredoverlay.svg",
+                "svgimages/spreadsheet/charttitlenone.svg",
+                "svgimages/spreadsheet/chartverticalaxis_billions.svg",
+                "svgimages/spreadsheet/chartverticalaxis_bottomtoup.svg",
+                "svgimages/spreadsheet/chartverticalaxis_default.svg",
+                "svgimages/spreadsheet/chartverticalaxis_logscale.svg",
+                "svgimages/spreadsheet/chartverticalaxis_millions.svg",
+                "svgimages/spreadsheet/chartverticalaxis_none.svg",
+                "svgimages/spreadsheet/chartverticalaxis_thousands.svg",
+                "svgimages/spreadsheet/chartverticalaxis_toptodown.svg",
+                "svgimages/spreadsheet/chartverticalaxis_withoutlabeling.svg",
+                "svgimages/spreadsheet/iconsets.svg",
+                "svgimages/spreadsheet/increasedecimal.svg",
+                "svgimages/spreadsheet/indent%20increase.svg",
+                "svgimages/spreadsheet/insertblanklinepivottable.svg",
+                "svgimages/spreadsheet/insertcellscommandgroup.svg",
+                "svgimages/spreadsheet/insertsheet.svg",
+                "svgimages/spreadsheet/insertsheetcolumns.svg",
+                "svgimages/spreadsheet/insertsheetrows.svg",
+                "svgimages/spreadsheet/inserttablecolumnstotheleft.svg",
+                "svgimages/spreadsheet/inserttablecolumnstotheright.svg",
+                "svgimages/spreadsheet/inserttablerowsabove.svg",
+                "svgimages/spreadsheet/inserttablerowsbelow.svg",
+                "svgimages/spreadsheet/landscape.svg",
+                "svgimages/spreadsheet/leftborder.svg",
+                "svgimages/spreadsheet/lessthan.svg",
+                "svgimages/spreadsheet/lightbluedatabargradient.svg",
+                "svgimages/spreadsheet/lightbluedatabarsolid.svg",
+                "svgimages/spreadsheet/line.svg",
+                "svgimages/spreadsheet/linecolor.svg",
+                "svgimages/spreadsheet/linestyle.svg",
+                "svgimages/spreadsheet/link.svg",
+                "svgimages/spreadsheet/logical.svg",
+                "svgimages/spreadsheet/longdate.svg",
+                "svgimages/spreadsheet/lookup&reference.svg",
+                "svgimages/spreadsheet/mailmergepreview.svg",
+                "svgimages/spreadsheet/managedatasource.svg",
+                "svgimages/spreadsheet/managequeries.svg",
+                "svgimages/spreadsheet/managerelations.svg",
+                "svgimages/spreadsheet/managerules.svg",
+                "svgimages/spreadsheet/math&trig.svg",
+                "svgimages/spreadsheet/merge&center.svg",
+                "svgimages/spreadsheet/mergeacross.svg",
+                "svgimages/spreadsheet/mergecells.svg",
+                "svgimages/spreadsheet/middlealign.svg",
+                "svgimages/spreadsheet/more.svg",
+                "svgimages/spreadsheet/movechart.svg",
+                "svgimages/spreadsheet/movechartnewsheet.svg",
+                "svgimages/spreadsheet/movechartobjectin.svg",
+                "svgimages/spreadsheet/movepivottable.svg",
+                "svgimages/spreadsheet/multipledocuments.svg",
+                "svgimages/spreadsheet/multiplesheet.svg",
+                "svgimages/spreadsheet/namemanager.svg",
+                "svgimages/spreadsheet/narrowmargins.svg",
+                "svgimages/spreadsheet/new.svg",
+                "svgimages/spreadsheet/newcomment.svg",
+                "svgimages/spreadsheet/newrule.svg",
+                "svgimages/spreadsheet/noborder.svg",
+                "svgimages/spreadsheet/normalmargins.svg",
+                "svgimages/spreadsheet/normalview.svg",
+                "svgimages/spreadsheet/noscaling.svg",
+                "svgimages/spreadsheet/number.svg",
+                "svgimages/spreadsheet/open.svg",
+                "svgimages/spreadsheet/orientation.svg",
+                "svgimages/spreadsheet/other%20charts.svg",
+                "svgimages/spreadsheet/outsideborder.svg",
+                "svgimages/spreadsheet/pagebreakpreview.svg",
+                "svgimages/spreadsheet/papersize.svg",
+                "svgimages/spreadsheet/pastespecial.svg",
+                "svgimages/spreadsheet/percentstyle.svg",
+                "svgimages/spreadsheet/picture.svg",
+                "svgimages/spreadsheet/pie.svg",
+                "svgimages/spreadsheet/pivottable.svg",
+                "svgimages/spreadsheet/pivottablecalculationsfieldsitemssetsgroup.svg",
+                "svgimages/spreadsheet/pivottablegroupfield.svg",
+                "svgimages/spreadsheet/pivottablegroupselection.svg",
+                "svgimages/spreadsheet/pivottableoptions.svg",
+                "svgimages/spreadsheet/pivottableungroup.svg",
+                "svgimages/spreadsheet/portrait.svg",
+                "svgimages/spreadsheet/print.svg",
+                "svgimages/spreadsheet/printactivesheets.svg",
+                "svgimages/spreadsheet/printarea.svg",
+                "svgimages/spreadsheet/printentireworkbook.svg",
+                "svgimages/spreadsheet/printpreview.svg",
+                "svgimages/spreadsheet/printsheetselection.svg",
+                "svgimages/spreadsheet/printtitles.svg",
+                "svgimages/spreadsheet/protectsheet.svg",
+                "svgimages/spreadsheet/protectworkbook.svg",
+                "svgimages/spreadsheet/purpledatabargradient.svg",
+                "svgimages/spreadsheet/purpledatabarsolid.svg",
+                "svgimages/spreadsheet/quickprint.svg",
+                "svgimages/spreadsheet/reapply.svg",
+                "svgimages/spreadsheet/reddatabargradient.svg",
+                "svgimages/spreadsheet/reddatabarsolid.svg",
+                "svgimages/spreadsheet/redo.svg",
+                "svgimages/spreadsheet/redtoblack.svg",
+                "svgimages/spreadsheet/redwhitebluecolorscale.svg",
+                "svgimages/spreadsheet/redwhitecolorscale.svg",
+                "svgimages/spreadsheet/redwhitegreencolorscale.svg",
+                "svgimages/spreadsheet/redyellowgreencolorscale.svg",
+                "svgimages/spreadsheet/refreshallpivottable.svg",
+                "svgimages/spreadsheet/refreshpivottable.svg",
+                "svgimages/spreadsheet/removeblanklinepivottable.svg",
+                "svgimages/spreadsheet/removecellscommandgroup.svg",
+                "svgimages/spreadsheet/removesheet.svg",
+                "svgimages/spreadsheet/removesheetcolumns.svg",
+                "svgimages/spreadsheet/removesheetrows.svg",
+                "svgimages/spreadsheet/removetablecolumns.svg",
+                "svgimages/spreadsheet/removetablerows.svg",
+                "svgimages/spreadsheet/repeatallitemlabelspivottable.svg",
+                "svgimages/spreadsheet/replace.svg",
+                "svgimages/spreadsheet/reportlayoutpivottable.svg",
+                "svgimages/spreadsheet/resetrange.svg",
+                "svgimages/spreadsheet/rightborder.svg",
+                "svgimages/spreadsheet/scatter.svg",
+                "svgimages/spreadsheet/scientific.svg",
+                "svgimages/spreadsheet/selectdata.svg",
+                "svgimages/spreadsheet/selectdatamember.svg",
+                "svgimages/spreadsheet/selectdatasource.svg",
+                "svgimages/spreadsheet/selectlabelspivottable.svg",
+                "svgimages/spreadsheet/selectpivottable.svg",
+                "svgimages/spreadsheet/selectvaluespivottable.svg",
+                "svgimages/spreadsheet/sendbackward.svg",
+                "svgimages/spreadsheet/sendtoback.svg",
+                "svgimages/spreadsheet/serieslines.svg",
+                "svgimages/spreadsheet/setdetaildatamember.svg",
+                "svgimages/spreadsheet/setdetaillevel.svg",
+                "svgimages/spreadsheet/setdetailrange.svg",
+                "svgimages/spreadsheet/setfooterrange.svg",
+                "svgimages/spreadsheet/setheaderrange.svg",
+                "svgimages/spreadsheet/shortdate.svg",
+                "svgimages/spreadsheet/showallsubtotalsatbottompivottable.svg",
+                "svgimages/spreadsheet/showallsubtotalsattoppivottable.svg",
+                "svgimages/spreadsheet/showcompactformpivottable.svg",
+                "svgimages/spreadsheet/showdetail.svg",
+                "svgimages/spreadsheet/showformulas.svg",
+                "svgimages/spreadsheet/showhidecomments.svg",
+                "svgimages/spreadsheet/showoutlineformpivottable.svg",
+                "svgimages/spreadsheet/showranges.svg",
+                "svgimages/spreadsheet/showtabularformpivottable.svg",
+                "svgimages/spreadsheet/shrinkfont.svg",
+                "svgimages/spreadsheet/singlesheet.svg",
+                "svgimages/spreadsheet/size.svg",
+                "svgimages/spreadsheet/sort&filter.svg",
+                "svgimages/spreadsheet/sortatoz.svg",
+                "svgimages/spreadsheet/sortfields.svg",
+                "svgimages/spreadsheet/sortztoa.svg",
+                "svgimages/spreadsheet/strikeout.svg",
+                "svgimages/spreadsheet/strikeoutdouble.svg",
+                "svgimages/spreadsheet/subtotal.svg",
+                "svgimages/spreadsheet/subtotalspivottable.svg",
+                "svgimages/spreadsheet/switchrowcolumns.svg",
+                "svgimages/spreadsheet/symbol.svg",
+                "svgimages/spreadsheet/table.svg",
+                "svgimages/spreadsheet/tableconverttorange.svg",
+                "svgimages/spreadsheet/text.svg",
+                "svgimages/spreadsheet/text2.svg",
+                "svgimages/spreadsheet/textthatcontains.svg",
+                "svgimages/spreadsheet/thickbottomborder.svg",
+                "svgimages/spreadsheet/thickboxborder.svg",
+                "svgimages/spreadsheet/time.svg",
+                "svgimages/spreadsheet/top10items.svg",
+                "svgimages/spreadsheet/top10percent.svg",
+                "svgimages/spreadsheet/topalign.svg",
+                "svgimages/spreadsheet/topandbottomborder.svg",
+                "svgimages/spreadsheet/topanddoublebottomborder.svg",
+                "svgimages/spreadsheet/topandthickbottomborder.svg",
+                "svgimages/spreadsheet/topborder.svg",
+                "svgimages/spreadsheet/topbottomrules.svg",
+                "svgimages/spreadsheet/uncollated.svg",
+                "svgimages/spreadsheet/underlinedouble.svg",
+                "svgimages/spreadsheet/undo.svg",
+                "svgimages/spreadsheet/unfreezepanes.svg",
+                "svgimages/spreadsheet/ungroup.svg",
+                "svgimages/spreadsheet/unlink.svg",
+                "svgimages/spreadsheet/unmergecells.svg",
+                "svgimages/spreadsheet/updownbars.svg",
+                "svgimages/spreadsheet/updownbarsnone.svg",
+                "svgimages/spreadsheet/verticalmode.svg",
+                "svgimages/spreadsheet/whitegreencolorscale.svg",
+                "svgimages/spreadsheet/whiteredcolorscale.svg",
+                "svgimages/spreadsheet/widemargins.svg",
+                "svgimages/spreadsheet/wraptext.svg",
+                "svgimages/spreadsheet/yellowdatabargradient.svg",
+                "svgimages/spreadsheet/yellowdatabarsolid.svg",
+                "svgimages/spreadsheet/yellowgreencolorscale.svg",
+                "svgimages/spreadsheet/zoom.svg",
+                "svgimages/spreadsheet/zoomout.svg"
+              };
+
+            this._SysHotKeys = new Keys[]
             {
-                "svgimages/chart/chart.svg",
-                "svgimages/chart/charttype_area.svg",
-                "svgimages/chart/charttype_area3d.svg",
-                "svgimages/chart/charttype_area3dstacked.svg",
-                "svgimages/chart/charttype_area3dstacked100.svg",
-                "svgimages/chart/charttype_areastacked.svg",
-                "svgimages/chart/charttype_areastacked100.svg",
-                "svgimages/chart/charttype_areastepstacked.svg",
-                "svgimages/chart/charttype_areastepstacked100.svg",
-                "svgimages/chart/charttype_bar.svg",
-                "svgimages/chart/charttype_bar3d.svg",
-                "svgimages/chart/charttype_bar3dstacked.svg",
-                "svgimages/chart/charttype_bar3dstacked100.svg",
-                "svgimages/chart/charttype_barstacked.svg",
-                "svgimages/chart/charttype_barstacked100.svg",
-                "svgimages/chart/charttype_bubble.svg",
-                "svgimages/chart/charttype_bubble3d.svg",
-                "svgimages/chart/charttype_candlestick.svg",
-                "svgimages/chart/charttype_doughnut.svg",
-                "svgimages/chart/charttype_doughnut3d.svg",
-                "svgimages/chart/charttype_funnel.svg",
-                "svgimages/chart/charttype_funnel3d.svg",
-                "svgimages/chart/charttype_gantt.svg",
-                "svgimages/chart/charttype_line.svg",
-                "svgimages/chart/charttype_line3d.svg",
-                "svgimages/chart/charttype_line3dstacked.svg",
-                "svgimages/chart/charttype_line3dstacked100.svg",
-                "svgimages/chart/charttype_linestacked.svg",
-                "svgimages/chart/charttype_linestacked100.svg",
-                "svgimages/chart/charttype_manhattanbar.svg",
-                "svgimages/chart/charttype_nesteddoughnut.svg",
-                "svgimages/chart/charttype_pie.svg",
-                "svgimages/chart/charttype_pie3d.svg",
-                "svgimages/chart/charttype_point.svg",
-                "svgimages/chart/charttype_point3d.svg",
-                "svgimages/chart/charttype_polararea.svg",
-                "svgimages/chart/charttype_polarline.svg",
-                "svgimages/chart/charttype_polarpoint.svg",
-                "svgimages/chart/charttype_polarrangearea.svg",
-                "svgimages/chart/charttype_radararea.svg",
-                "svgimages/chart/charttype_radarline.svg",
-                "svgimages/chart/charttype_radarpoint.svg",
-                "svgimages/chart/charttype_radarrangearea.svg",
-                "svgimages/chart/charttype_rangearea.svg",
-                "svgimages/chart/charttype_rangearea3d.svg",
-                "svgimages/chart/charttype_rangebar.svg",
-                "svgimages/chart/charttype_scatterline.svg",
-                "svgimages/chart/charttype_scatterpolarline.svg",
-                "svgimages/chart/charttype_scatterradarline.svg",
-                "svgimages/chart/charttype_sidebysidebar3dstacked.svg",
-                "svgimages/chart/charttype_sidebysidebar3dstacked100.svg",
-                "svgimages/chart/charttype_sidebysidebarstacked.svg",
-                "svgimages/chart/charttype_sidebysidebarstacked100.svg",
-                "svgimages/chart/charttype_sidebysidegantt.svg",
-                "svgimages/chart/charttype_sidebysiderangebar.svg",
-                "svgimages/chart/charttype_spline.svg",
-                "svgimages/chart/charttype_spline3d.svg",
-                "svgimages/chart/charttype_splinearea.svg",
-                "svgimages/chart/charttype_splinearea3d.svg",
-                "svgimages/chart/charttype_splinearea3dstacked.svg",
-                "svgimages/chart/charttype_splinearea3dstacked100.svg",
-                "svgimages/chart/charttype_splineareastacked.svg",
-                "svgimages/chart/charttype_splineareastacked100.svg",
-                "svgimages/chart/charttype_steparea.svg",
-                "svgimages/chart/charttype_steparea3d.svg",
-                "svgimages/chart/charttype_stepline.svg",
-                "svgimages/chart/charttype_stepline3d.svg",
-                "svgimages/chart/charttype_stock.svg",
-                "svgimages/chart/charttype_swiftplot.svg"
+                Keys.Control | Keys.A,
+                Keys.Control | Keys.B,
+                Keys.Control | Keys.C,
+                Keys.Control | Keys.D,
+                Keys.Control | Keys.E,
+                Keys.Control | Keys.F,
+                Keys.Control | Keys.G,
+                Keys.Control | Keys.H,
+                Keys.Control | Keys.I,
+                Keys.Control | Keys.J,
+                Keys.Control | Keys.K,
+                Keys.Control | Keys.L,
+                Keys.Control | Keys.M,
+                Keys.Control | Keys.N,
+                Keys.Control | Keys.O,
+                Keys.Control | Keys.P,
+                Keys.Control | Keys.Q,
+                Keys.Control | Keys.R,
+                Keys.Control | Keys.S,
+                Keys.Control | Keys.T,
+                Keys.Control | Keys.U,
+                Keys.Control | Keys.V,
+                Keys.Control | Keys.W,
+                Keys.Control | Keys.X,
+                Keys.Control | Keys.Y,
+                Keys.Control | Keys.Z,
+                Keys.Control | Keys.F1,
+                Keys.Control | Keys.F2,
+                Keys.Control | Keys.F3,
+                Keys.Control | Keys.F4,
+                Keys.Control | Keys.F5,
+                Keys.Control | Keys.F6,
+                Keys.Control | Keys.F7,
+                Keys.Control | Keys.F8,
+                Keys.Control | Keys.F9,
+                Keys.Control | Keys.Home,
+                Keys.Control | Keys.End,
+                Keys.Control | Keys.PageUp,
+                Keys.Control | Keys.PageDown
             };
+
+
+
         }
 
         private string[] _SysSvgImages;
+        private Keys[] _SysHotKeys;
 
         private void TestResources()
         {
@@ -1460,53 +1877,57 @@ namespace TestDevExpress.Forms
         private void PreparePopupPage(DxPanelControl panel)
         {
             _PanelPopupPage = panel;
-            System.Windows.Forms.Panel panel1 = new Panel() { Dock = DockStyle.None, Bounds = new Rectangle(20, 20, 250, 220), BorderStyle = BorderStyle.Fixed3D };
+            System.Windows.Forms.Panel panel1 = new Panel() { Dock = DockStyle.None, Bounds = new Rectangle(20, 20, 250, 280), BorderStyle = BorderStyle.Fixed3D };
             panel1.BackColor = Color.FromArgb(0, 0, 0, 0);
             panel.Controls.Add(panel1);
             DxComponent.CreateDxSimpleButton(3, 3, 200, 45, panel1, "XB.PopupMenu", PopupPageXBPopupClick);
             DxComponent.CreateDxSimpleButton(3, 54, 200, 45, panel1, "XB.RadialMenu", PopupPageXBRadialClick);
             DxComponent.CreateDxSimpleButton(3, 105, 200, 45, panel1, "DM.Menu", PopupPageDXPopupMenuClick);
             DxComponent.CreateDxSimpleButton(3, 156, 200, 45, panel1, "Win.ToolStripMenu", PopupPageWinMenuClick);
+            DxComponent.CreateDxSimpleButton(3, 227, 200, 45, panel1, "AsolDx PopupMenu", PopupPageAsolDxPopupMenuClick);
         }
         #region XB.PopupMenu
         private void PopupPageXBPopupClick(object sender, EventArgs e)
         {
-            XB.PopupMenu pm = new XB.PopupMenu(_BarManager);
+            XB.PopupMenu popup = new XB.PopupMenu(_BarManager);
             // pm.MenuCaption = "Kontextové menu";    Používám BarHeaderItem !
             // pm.ShowCaption = true;
             //pm.ShowNavigationHeader = DevExpress.Utils.DefaultBoolean.True;
             //pm.DrawMenuSideStrip = DevExpress.Utils.DefaultBoolean.True;
             //pm.MenuAppearance.AppearanceMenu.Normal.BackColor = Color.Violet;
             //pm.MenuAppearance.HeaderItemAppearance.BackColor = Color.LightBlue;
+            _BarManager.ShowScreenTipsInMenus = true;
 
-            pm.DrawMenuSideStrip = DevExpress.Utils.DefaultBoolean.True;
-            pm.DrawMenuRightIndent = DevExpress.Utils.DefaultBoolean.True;
-            pm.MenuDrawMode = XB.MenuDrawMode.SmallImagesText;
-            pm.Name = "menu";
+            popup.DrawMenuSideStrip = DevExpress.Utils.DefaultBoolean.True;
+            popup.DrawMenuRightIndent = DevExpress.Utils.DefaultBoolean.True;
+            popup.MenuDrawMode = XB.MenuDrawMode.SmallImagesText;
+            popup.Name = "menu";
+            
+            AddXbPopupBigItems(popup);
 
             XB.BarHeaderItem bh1 = new XB.BarHeaderItem() { Caption = "Základní" };
+            bh1.MultiColumn = DevExpress.Utils.DefaultBoolean.True;
             bh1.OptionsMultiColumn.ItemDisplayMode = DM.MultiColumnItemDisplayMode.Image;
             bh1.OptionsMultiColumn.ColumnCount = 6;
             bh1.OptionsMultiColumn.ImageHorizontalAlignment = DevExpress.Utils.Drawing.ItemHorizontalAlignment.Left;
             bh1.OptionsMultiColumn.ImageVerticalAlignment = DevExpress.Utils.Drawing.ItemVerticalAlignment.Top;
 
-            pm.AddItem(bh1);
-            pm.AddItem(CreateContainerItem());
-            pm.AddItem(new XB.BarButtonItem(_BarManager, "První") { Hint = "Hint k položce", Glyph = DxComponent.CreateBitmapImage("Images/Actions24/db_add(24).png") });
-            pm.AddItem(new XB.BarButtonItem(_BarManager, "Druhý") { ButtonStyle = XB.BarButtonStyle.Check, Glyph = DxComponent.CreateBitmapImage("Images/Actions24/dialog-close(24).png"), PaintStyle = XB.BarItemPaintStyle.Caption });
+            popup.AddItem(bh1);
+            popup.AddItem(new XB.BarButtonItem(_BarManager, "První") { Hint = "Hint k položce", Glyph = DxComponent.CreateBitmapImage("Images/Actions24/db_add(24).png") });
+            popup.AddItem(new XB.BarButtonItem(_BarManager, "Druhý") { ButtonStyle = XB.BarButtonStyle.Check, Glyph = DxComponent.CreateBitmapImage("Images/Actions24/dialog-close(24).png"), PaintStyle = XB.BarItemPaintStyle.Caption });
 
             XB.BarButtonItem bi3 = new XB.BarButtonItem(_BarManager, "Třetí&nbsp;<b>zvýrazněný</b> a <i>kurzivový</i> <u>text</u>");
             bi3.Glyph = DxComponent.CreateBitmapImage("Images/Actions24/arrow-right-double-2(24).png");
             bi3.ShortcutKeyDisplayString = "Ctrl+F3";
             bi3.AllowHtmlText = DevExpress.Utils.DefaultBoolean.True;
-            pm.AddItem(bi3);
+            popup.AddItem(bi3);
             bi3.Links[0].BeginGroup = true;
 
             XB.BarHeaderItem bh2 = new XB.BarHeaderItem() { Caption = "Rozšiřující" };
-            pm.AddItem(bh2);
+            popup.AddItem(bh2);
             XB.BarCheckItem bbs = new XB.BarCheckItem(_BarManager) { Caption = "CheckItem zkouška", Name = "CheckItem", CheckBoxVisibility = XB.CheckBoxVisibility.BeforeText, CheckStyle = XB.BarCheckStyles.Standard };
             bbs.Checked = CheckItemChecked;
-            pm.AddItem(bbs);
+            popup.AddItem(bbs);
 
             XB.BarButtonItem bei = new XB.BarButtonItem(_BarManager, "BarButtonItem with Tip");
             bei.SuperTip = new DevExpress.Utils.SuperToolTip();
@@ -1516,56 +1937,59 @@ namespace TestDevExpress.Forms
             superItem.ImageOptions.Image = DxComponent.CreateBitmapImage("Images/Actions24/call-start(24).png");
 
             bei.ItemAppearance.Normal.BackColor = Color.PaleVioletRed;
-            pm.AddItem(bei);
+            popup.AddItem(bei);
 
             XB.BarButtonGroup bbg = new XB.BarButtonGroup(_BarManager)
             {
                 Caption = "BarButtonGroup",
                 ButtonGroupsLayout = XB.ButtonGroupsLayout.Default,
                 Border = DevExpress.XtraEditors.Controls.BorderStyles.Style3D,
-                MenuCaption = "Caption BarButtonGroup"
+                MenuCaption = "Caption BarButtonGroup",
             };
-            bbg.AddItem(new XB.BarButtonItem(_BarManager, "1/4 in container") { Glyph = DxComponent.CreateBitmapImage("Images/Actions24/distribute-horizontal-x(24).png") });
-            bbg.AddItem(new XB.BarButtonItem(_BarManager, "2/4 in container") { Glyph = DxComponent.CreateBitmapImage("Images/Actions24/distribute-horizontal-left(24).png") });
-            bbg.AddItem(new XB.BarButtonItem(_BarManager, "3/4 in container") { Glyph = DxComponent.CreateBitmapImage("Images/Actions24/distribute-horizontal-right(24).png") });
-            bbg.AddItem(new XB.BarButtonItem(_BarManager, "4/4 in container") { Glyph = DxComponent.CreateBitmapImage("Images/Actions24/distribute-horozontal-page(24).png") });
-            pm.AddItem(bbg);
+            bbg.AddItem(new XB.BarButtonItem(_BarManager, "1/4 in container") { Glyph = DxComponent.CreateBitmapImage("Images/Actions24/distribute-horizontal-x(24).png"), SuperTip = DxComponent.CreateDxSuperTip("1/4 in container", "první ze čtyř v kontejneru") });
+            bbg.AddItem(new XB.BarButtonItem(_BarManager, "2/4 in container") { Glyph = DxComponent.CreateBitmapImage("Images/Actions24/distribute-horizontal-left(24).png"), SuperTip = DxComponent.CreateDxSuperTip("2/4 in container", "druhý ze čtyř v kontejneru") });
+            bbg.AddItem(new XB.BarButtonItem(_BarManager, "3/4 in container") { Glyph = DxComponent.CreateBitmapImage("Images/Actions24/distribute-horizontal-right(24).png"), SuperTip = DxComponent.CreateDxSuperTip("3/4 in container", "třetí ze čtyř v kontejneru") });
+            bbg.AddItem(new XB.BarButtonItem(_BarManager, "4/4 in container") { Glyph = DxComponent.CreateBitmapImage("Images/Actions24/distribute-horozontal-page(24).png"), SuperTip = DxComponent.CreateDxSuperTip("4/4 in container", "poslední ze čtyř v kontejneru") });
+            popup.AddItem(bbg);
 
 
             XB.BarHeaderItem bh3 = new XB.BarHeaderItem() { Caption = "Podřízené funkce on demand..." };
-            pm.AddItem(bh3);
+            popup.AddItem(bh3);
             XB.BarSubItem bsi = new XB.BarSubItem(_BarManager, "BarButtonGroup");
             // bbg.GetItemData += Bbg_GetItemData;                           // Tudy to chodí při každém rozsvícení MainMenu
             bsi.Popup += Bbg_Popup;                                       // Tudy to chodí při každém rozbalení SubMenu
             bsi.ItemAppearance.Normal.ForeColor = Color.Violet;
             bsi.Tag = "RELOAD";
-            pm.AddItem(bsi);
+            popup.AddItem(bsi);
 
             XB.BarHeaderItem bh4 = new XB.BarHeaderItem() { Caption = "Funkce se načítají...", Tag = "Funkce:" };
             bsi.AddItem(bh4);
             // XB.BarButtonItem bf0 = new XB.BarButtonItem(_BarManager, "funkce se načítají...");
             // bbg.AddItem(bf0);
 
-            var links = pm.ItemLinks;
+            var links = popup.ItemLinks;
             links[2].Item.Enabled = false;
             links[7].Item.Caption = "Hlavička se změněným textem";
 
 
-            _BarManager.SetPopupContextMenu(this, pm);
-            pm.ShowPopup(_BarManager, Control.MousePosition);
+            _BarManager.SetPopupContextMenu(this, popup);
+            popup.ShowPopup(_BarManager, Control.MousePosition);
 
         }
-        private XB.BarItem CreateContainerItem()
+        private void AddXbPopupBigItems(XB.PopupMenu popup)
         {
-            var container = new XB.BarButtonGroup();
-            container.RibbonStyle = XR.RibbonItemStyles.Large;
-            container.PaintStyle = XB.BarItemPaintStyle.CaptionInMenu;
+            var header = new XB.BarHeaderItem();
+            header.Caption = "Základní funkce";
+            header.RibbonStyle = XR.RibbonItemStyles.Large;
+            header.PaintStyle = XB.BarItemPaintStyle.CaptionInMenu;
 
-            container.MultiColumn = DevExpress.Utils.DefaultBoolean.True;
-            container.OptionsMultiColumn.ColumnCount = 6;
-            container.OptionsMultiColumn.ImageHorizontalAlignment = DevExpress.Utils.Drawing.ItemHorizontalAlignment.Left;
-            container.OptionsMultiColumn.ItemDisplayMode = DM.MultiColumnItemDisplayMode.Image;
-            container.OptionsMultiColumn.UseMaxItemWidth = DevExpress.Utils.DefaultBoolean.False;
+            header.MultiColumn = DevExpress.Utils.DefaultBoolean.True;
+            header.OptionsMultiColumn.ColumnCount = 6;
+            header.OptionsMultiColumn.ImageHorizontalAlignment = DevExpress.Utils.Drawing.ItemHorizontalAlignment.Left;
+            header.OptionsMultiColumn.ItemDisplayMode = DM.MultiColumnItemDisplayMode.Image;
+            header.OptionsMultiColumn.UseMaxItemWidth = DevExpress.Utils.DefaultBoolean.False;
+            popup.AddItem(header);
+
 
             string[] resources = new string[]
             {
@@ -1583,16 +2007,25 @@ namespace TestDevExpress.Forms
             b1a.ButtonStyle = XB.BarButtonStyle.Default;
             b1a.PaintStyle = XB.BarItemPaintStyle.CaptionInMenu;
             b1a.RibbonStyle = XR.RibbonItemStyles.Large;
-            container.ItemLinks.Add(b1a);
+            b1a.SuperTip = DxComponent.CreateDxSuperTip("Nový záznam", "Kliknutím se otevře nový prázdný formulář");
+            popup.AddItem(b1a);
 
             var b1b = new XB.BarButtonItem(_BarManager, "B1b");
             b1b.Glyph = DxComponent.GetBitmapImage(resources[1], ResourceImageSizeType.Large);
             b1b.ButtonStyle = XB.BarButtonStyle.Default;
             b1b.PaintStyle = XB.BarItemPaintStyle.CaptionInMenu;
             b1b.RibbonStyle = XR.RibbonItemStyles.Large;
-            container.ItemLinks.Add(b1b);
-           
-            return container;
+            b1b.SuperTip = DxComponent.CreateDxSuperTip("Otevřít záznam", "Kliknutím se otevře formulář s vybraným záznamem");
+            popup.AddItem(b1b);
+
+            var b1c = new XB.BarButtonItem(_BarManager, "B1c");
+            b1c.Glyph = DxComponent.GetBitmapImage(resources[2], ResourceImageSizeType.Large);
+            b1c.ButtonStyle = XB.BarButtonStyle.Default;
+            b1c.PaintStyle = XB.BarItemPaintStyle.CaptionInMenu;
+            b1c.RibbonStyle = XR.RibbonItemStyles.Large;
+            b1c.SuperTip = DxComponent.CreateDxSuperTip("Otevřít dokument", "Kliknutím se načte dokument a zobrazí ve Wordu");
+            popup.AddItem(b1c);
+
         }
         private XB.BarItem CreateContainerItem1()
         {
@@ -1777,168 +2210,6 @@ namespace TestDevExpress.Forms
 
             popup.Items.Add(header1);
 
-            string[] resources32 = new string[]
-{
-    "images/chart/3dclusteredcolumn_32x32.png",
-    "images/chart/3dcolumn_32x32.png",
-    "images/chart/3dcylinder_32x32.png",
-    "images/chart/3dfullstackedarea_32x32.png",
-    "images/chart/3dline_32x32.png",
-    "images/chart/3dstackedarea_32x32.png",
-    "images/chart/addchartpane_32x32.png",
-    "images/chart/area_32x32.png",
-    "images/chart/area2_32x32.png",
-    "images/chart/area3_32x32.png",
-    "images/chart/area3d_32x32.png",
-    "images/chart/bar_32x32.png",
-    "images/chart/bar2_32x32.png",
-    "images/chart/barofpie_32x32.png",
-    "images/chart/bubble_32x32.png",
-    "images/chart/bubble2_32x32.png",
-    "images/chart/bubble3d_32x32.png",
-    "images/chart/clusteredbar_32x32.png",
-    "images/chart/clusteredbar3d_32x32.png",
-    "images/chart/clusteredcolumn_32x32.png",
-    "images/chart/clusteredcone_32x32.png",
-    "images/chart/clusteredcylinder_32x32.png",
-    "images/chart/clusteredhorizontalcone_32x32.png",
-    "images/chart/clusteredhorizontalcylinder_32x32.png",
-    "images/chart/clusteredhorizontalpyramid_32x32.png",
-    "images/chart/clusteredpyramid_32x32.png",
-    "images/chart/colorlegend_32x32.png",
-    "images/chart/column_32x32.png",
-    "images/chart/column2_32x32.png",
-    "images/chart/cone_32x32.png",
-    "images/chart/doughnut_32x32.png",
-    "images/chart/drilldown_32x32.png",
-    "images/chart/drilldownonarguments_chart_32x32.png",
-    "images/chart/drilldownonarguments_pie_32x32.png",
-    "images/chart/drilldownonseries_chart_32x32.png",
-    "images/chart/drilldownonseries_pie_32x32.png",
-    "images/chart/explodeddoughnut_32x32.png",
-    "images/chart/explodedpie_32x32.png",
-    "images/chart/explodedpie3d_32x32.png",
-    "images/chart/filledradarwithoutmarkers_32x32.png",
-    "images/chart/fullstackedarea_32x32.png",
-    "images/chart/fullstackedarea2_32x32.png",
-    "images/chart/fullstackedbar_32x32.png",
-    "images/chart/fullstackedbar2_32x32.png",
-    "images/chart/fullstackedbar3d_32x32.png",
-    "images/chart/fullstackedcolumn_32x32.png",
-    "images/chart/fullstackedcolumn3d_32x32.png",
-    "images/chart/fullstackedcone_32x32.png",
-    "images/chart/fullstackedcylinder_32x32.png",
-    "images/chart/fullstackedhorizontalcone_32x32.png",
-    "images/chart/fullstackedhorizontalcylinder_32x32.png",
-    "images/chart/fullstackedhorizontalpyramid_32x32.png",
-    "images/chart/fullstackedline_32x32.png",
-    "images/chart/fullstackedlinewithmarkers_32x32.png",
-    "images/chart/fullstackedlinewithoutmarkers_32x32.png",
-    "images/chart/fullstackedpyramid_32x32.png",
-    "images/chart/fullstackedsplinearea_32x32.png",
-    "images/chart/heatmapchart_32x32.png",
-    "images/chart/highlowclose_32x32.png",
-    "images/chart/highlowclose2_32x32.png",
-    "images/chart/horizontalaxisbillions_32x32.png",
-    "images/chart/horizontalaxisdefault_32x32.png",
-    "images/chart/horizontalaxislefttoright_32x32.png",
-    "images/chart/horizontalaxislogscale_32x32.png",
-    "images/chart/horizontalaxismillions_32x32.png",
-    "images/chart/horizontalaxisnone_32x32.png",
-    "images/chart/horizontalaxisrighttoleft_32x32.png",
-    "images/chart/horizontalaxisthousands_32x32.png",
-    "images/chart/horizontalaxistitle_32x32.png",
-    "images/chart/horizontalaxistitle_none_32x32.png",
-    "images/chart/horizontalaxistopdown_32x32.png",
-    "images/chart/horizontalaxiswithoutlabeling_32x32.png",
-    "images/chart/changechartlegendalignment_32x32.png",
-    "images/chart/changechartseriestype_32x32.png",
-    "images/chart/chart_32x32.png",
-    "images/chart/chartchangelayout_32x32.png",
-    "images/chart/chartchangestyle_32x32.png",
-    "images/chart/chartshowcaptions_32x32.png",
-    "images/chart/chartsrotate_32x32.png",
-    "images/chart/chartsshowlegend_32x32.png",
-    "images/chart/charttitlesabovechart_32x32.png",
-    "images/chart/charttitlescenteredoverlaytitle_32x32.png",
-    "images/chart/charttitlesnone_32x32.png",
-    "images/chart/chartxaxissettings_32x32.png",
-    "images/chart/chartyaxissettings_32x32.png",
-    "images/chart/chartyaxissettings2_32x32.png",
-    "images/chart/kpi_32x32.png",
-    "images/chart/labelsabove_32x32.png",
-    "images/chart/labelsbelow_32x32.png",
-    "images/chart/labelscenter_32x32.png",
-    "images/chart/labelsinsidebase_32x32.png",
-    "images/chart/labelsinsidecenter_32x32.png",
-    "images/chart/labelsinsideend_32x32.png",
-    "images/chart/labelsleft_32x32.png",
-    "images/chart/labelsnone_32x32.png",
-    "images/chart/labelsnone2_32x32.png",
-    "images/chart/labelsoutsideend_32x32.png",
-    "images/chart/labelsright_32x32.png",
-    "images/chart/legendbottom_32x32.png",
-    "images/chart/legendleft_32x32.png",
-    "images/chart/legendleftoverlay_32x32.png",
-    "images/chart/legendnone_32x32.png",
-    "images/chart/legendright_32x32.png",
-    "images/chart/legendrightoverlay_32x32.png",
-    "images/chart/legendtop_32x32.png",
-    "images/chart/line_32x32.png",
-    "images/chart/line2_32x32.png",
-    "images/chart/linewithmarkers_32x32.png",
-    "images/chart/linewithoutmarkers_32x32.png",
-    "images/chart/openhighlowclosecandlestick_32x32.png",
-    "images/chart/openhighlowclosecandlestick2_32x32.png",
-    "images/chart/openhighlowclosestock_32x32.png",
-    "images/chart/othercharts_32x32.png",
-    "images/chart/pie_32x32.png",
-    "images/chart/pie2_32x32.png",
-    "images/chart/pie3_32x32.png",
-    "images/chart/pie3d_32x32.png",
-    "images/chart/pielabelsdatalabels_32x32.png",
-    "images/chart/pielabelstooltips_32x32.png",
-    "images/chart/pieofpie_32x32.png",
-    "images/chart/piestyledonut_32x32.png",
-    "images/chart/piestylepie_32x32.png",
-    "images/chart/point_32x32.png",
-    "images/chart/previewchart_32x32.png",
-    "images/chart/pyramid_32x32.png",
-    "images/chart/radarwithmarkers_32x32.png",
-    "images/chart/radarwithoutmarkers_32x32.png",
-    "images/chart/rangearea_32x32.png",
-    "images/chart/rangebar_32x32.png",
-    "images/chart/sankeydiagram_32x32.png",
-    "images/chart/scatter_32x32.png",
-    "images/chart/scatterwithonlymarkers_32x32.png",
-    "images/chart/scatterwithsmoothlines_32x32.png",
-    "images/chart/scatterwithsmoothlinesandmarkers_32x32.png",
-    "images/chart/scatterwithstraightlines_32x32.png",
-    "images/chart/scatterwithstraightlinesandmarkersx23_32x32.png",
-    "images/chart/sidebysiderangebar_32x32.png",
-    "images/chart/spline_32x32.png",
-    "images/chart/splinearea_32x32.png",
-    "images/chart/stackedarea_32x32.png",
-    "images/chart/stackedarea2_32x32.png",
-    "images/chart/stackedbar_32x32.png",
-    "images/chart/stackedbar2_32x32.png",
-    "images/chart/stackedbar3d_32x32.png",
-    "images/chart/stackedcolumn_32x32.png",
-    "images/chart/stackedcolumn3d_32x32.png",
-    "images/chart/stackedcone_32x32.png",
-    "images/chart/stackedcylinder_32x32.png",
-    "images/chart/stackedhorizontalcone_32x32.png",
-    "images/chart/stackedhorizontalcylinder_32x32.png",
-    "images/chart/stackedhorizontalpyramid_32x32.png",
-    "images/chart/stackedline_32x32.png",
-    "images/chart/stackedlinewithmarkers_32x32.png",
-    "images/chart/stackedlinewithoutmarkers_32x32.png",
-    "images/chart/stackedpyramid_32x32.png",
-    "images/chart/stackedsplinearea_32x32.png",
-    "images/chart/steparea_32x32.png",
-    "images/chart/stepline_32x32.png"
-};
-
             for (int c = 0; c < 8; c++)
                 popup.Items.Add(createDxMenuItem(true, false, ResourceImageSizeType.Large));
 
@@ -1968,7 +2239,7 @@ namespace TestDevExpress.Forms
                 Image image = null;
                 if (withImage)
                 {
-                    string resource = Randomizer.GetItem(resources32);
+                    string resource = Randomizer.GetItem(this._SysSvgImages);
                     if (imageSize == ResourceImageSizeType.Small)
                         resource = resource.Replace("32x32", "16x16");
                     image = DxComponent.GetBitmapImage(resource, imageSize);
@@ -2047,6 +2318,152 @@ namespace TestDevExpress.Forms
         {
             var ic = e.ClickedItem;
         }
+        #endregion
+        #region AsolDx PopupMenu
+        /// <summary>
+        /// Systémové AsolDx PopupMenu
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void PopupPageAsolDxPopupMenuClick(object sender, EventArgs e)
+        {
+            var point = Control.MousePosition;
+
+            // Definice Popup menu:
+            List<IMenuItem> menuItems = new List<IMenuItem>();
+            int cnt;
+
+            // Horní grupa
+            addHeader("Rychlý přístup", true, 8);
+            for (int m = 0; m < 8; m++)
+                addHeaderItem(false);
+
+            // Běžné grupy a položky:
+            cnt = Randomizer.Rand.Next(3, 6);
+            addHeader("Práce se záznamem");
+            for (int m = 0; m < cnt; m++)
+                addItem();
+            addItemSubMenu();
+
+            addHeader("Práce s dokumentem");
+            cnt = Randomizer.Rand.Next(3, 6);
+            for (int m = 0; m < cnt; m++)
+                addItem();
+            addItemSubMenu();
+
+            addHeader("Submenu načítané OnDemand");
+            addOnDemandItem("Nabídka funkcí", "Funkce se načítají...");
+            addOnDemandItem("Úkoly Workflow", "Úkoly se načítají...");
+            addOnDemandItem("Navázané dokumenty", "Dokumenty se načítají...");
+
+            // Vytvoření a zobrazení fyzického menu:
+            var popupMenu = DxComponent.CreateXBPopupMenu(menuItems, _DxPopupMenuClick, _DxPopupMenuOnDemandLoad, _BarManager);
+            popupMenu.ShowPopup(point);
+
+
+
+            void addHeader(string text, bool isMultiColumn = false, int? columnCount = null, MenuItemDisplayMode itemDisplayMode = MenuItemDisplayMode.Default)
+            {
+                DataMenuHeaderItem headerItem = new DataMenuHeaderItem();
+                headerItem.Text = text;
+                headerItem.IsMultiColumn = isMultiColumn;
+                headerItem.UseLargeImages = isMultiColumn;
+                headerItem.ColumnCount = columnCount;
+                headerItem.ItemDisplayMode = itemDisplayMode;
+                menuItems.Add(headerItem);
+            }
+            void addHeaderItem(bool withText)
+            {
+                DataMenuItem item = new DataMenuItem();
+                item.Text = (withText ? Randomizer.GetWord(true) : "");
+                item.ImageName = Randomizer.GetItem(this._SysSvgImages);
+                item.ToolTipTitle = Randomizer.GetSentence(2, 5, false);
+                item.ToolTipText = Randomizer.GetSentences(2, 7, 1, 4);
+                menuItems.Add(item);
+            }
+
+            void addItem()
+            {
+                menuItems.Add(getItem());
+            }
+            void addItemSubMenu()
+            {
+                var item = getItem();
+                item.SubItems = getSubMenu();
+                menuItems.Add(item);
+            }
+            List<IMenuItem> getSubMenu()
+            {
+                var subItems = new List<IMenuItem>();
+                int cnt = Randomizer.Rand.Next(5, 8);
+                for (int i = 0; i < cnt; i++)
+                    subItems.Add(getItem());
+                return subItems;
+            }
+            void addOnDemandItem(string text, string subItemHeaderText)
+            {
+                // OnDemand prvek v menu:
+                DataMenuItem item = new DataMenuItem();
+                item.Text = text;
+                item.ToolTipTitle = item.Text;
+                item.ToolTipText = Randomizer.GetSentences(2, 7, 1, 4);
+                item.SubItemsIsOnDemand = true;
+                menuItems.Add(item);
+
+                // Záhlaví v submenu:
+                if (subItemHeaderText != null)
+                {
+                    DataMenuHeaderItem headerItem = new DataMenuHeaderItem();
+                    headerItem.Text = subItemHeaderText;
+                    item.SubItems = new List<IMenuItem>();
+                    item.SubItems.Add(headerItem);
+                }
+
+                // Reálné menu - ve zdejší metodě mám všechny metody pro tvorbu menu (jsou to lokální metody),
+                // kdežto v eventhandleru _DxPopupMenuOnDemandLoad => _DxPopupMenuOnDemandFill je mít nebudu!!!
+                item.Tag = getSubMenu();
+            }
+            DataMenuItem getItem()
+            {
+                DataMenuItem item = new DataMenuItem();
+                item.Text = Randomizer.GetSentence(2, 5, false);
+                item.ImageName = Randomizer.GetItem(this._SysSvgImages);
+                item.ToolTipTitle = item.Text;
+                item.ToolTipText = Randomizer.GetSentences(2, 7, 1, 4);
+                if (Randomizer.IsTrue(33))
+                    item.HotKeys = Randomizer.GetItem(this._SysHotKeys);
+
+                if (Randomizer.IsTrue(20))
+                    item.FontStyle = FontStyle.Italic;
+                else if (Randomizer.IsTrue(20))
+                    item.FontStyle = FontStyle.Bold;
+
+                return item;
+            }
+        }
+        void _DxPopupMenuOnDemandLoad(object sender, DxPopupMenu.OnDemandLoadArgs args)
+        {
+            // Zavoláme metodu _DxPopupMenuOnDemandFill v threadu na pozadí:
+            Noris.Clients.Win.Components.AsolDX.ThreadManager.AddAction(() => _DxPopupMenuOnDemandFill(args));
+        }
+        private void _DxPopupMenuOnDemandFill(DxPopupMenu.OnDemandLoadArgs args)
+        {
+            int timeout = Randomizer.Rand.Next(100, 1000);
+            System.Threading.Thread.Sleep(timeout);
+
+            if (args.MenuItem is DataMenuItem menuItem)
+            {
+                menuItem.SubItemsIsOnDemand = false;
+                menuItem.SubItems = menuItem.Tag as List<IMenuItem>;         // Do Tagu jsem si je připravil v době tvorby...
+            }
+
+            args.FillSubMenu();
+        }
+        void _DxPopupMenuClick(object sender, MenuItemClickArgs args)
+        {
+            DxComponent.ShowMessageInfo($"Uživatel vybral prvek {args.Item}", "DxPopupMenuClick");
+        }
+
         #endregion
         #endregion
         #region TabHeaders
@@ -4607,7 +5024,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
         private void _TreeListCreateNodesDataBgr()
         {
             DateTime t0 = DateTime.Now;
-            var nodes = _CreateSampleTreeNodes(ItemCountType.Big);
+            var nodes = _CreateSampleTreeNodes(ItemCountType.Standard);    // ItemCountType.Big);
             DateTime t1 = DateTime.Now;
 
             _TreeListNodeData = nodes;
@@ -4731,7 +5148,7 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
             switch (countType)
             {
                 case ItemCountType.Empty: return 0;
-                case ItemCountType.Standard: return (forChilds ? Randomizer.Rand.Next(1, 12) : Randomizer.Rand.Next(10, 30));
+                case ItemCountType.Standard: return (forChilds ? Randomizer.Rand.Next(1, 12) : Randomizer.Rand.Next(5, 15));
                 case ItemCountType.Big: return (forChilds ? Randomizer.Rand.Next(20, 40) : Randomizer.Rand.Next(60, 120));
             }
             return 0;
