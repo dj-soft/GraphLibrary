@@ -869,6 +869,7 @@ namespace TestDevExpress.Forms
             group.Items.Add(CreateRibbonFunction("DiagramControlForm", "Diagram Control", "svgimages/diagramicons/relayoutparts.svg", "Otevře okno pro Diagram Control", _TestDxDiagramControlFormButton_Click));
             group.Items.Add(CreateRibbonFunction("HandleScan", "Handle Scan", "svgimages/spreadsheet/createline3dchart.svg", "Otevře okno pro měření systémových handle běžících procesů", _TestHandleScanFormButton_Click));
             group.Items.Add(CreateRibbonFunction("FormWithTitleButton", "Title Button", "devav/ui/window/window.svg", "Otevře okno, které má v titulkovém řádku přidaný Button", _TestFormWithTitleButton_Click));
+            group.Items.Add(CreateRibbonFunction("CabCabRead", "CabCab Read", "svgimages/actions/up.svg", "Otevře soubor dvojitého CABU a načítá jeho obsah", _TestCabCabReadButton_Click));
 
             AddRibbonSoundsMenu(group);
             AddRibbonWavFilesMenu(group);
@@ -1167,7 +1168,10 @@ namespace TestDevExpress.Forms
                 form.ShowDialog();
             }
         }
+        private void _TestCabCabReadButton_Click(IMenuItem menuItem)
+        {
 
+        }
         private void MainForm_ActivityStateChanged(object sender, TEventValueChangedArgs<WindowActivityState> e)
         {
             var dxRibbonForm = sender as DxRibbonForm;
