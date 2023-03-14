@@ -26,7 +26,6 @@ using DevExpress.Utils.Svg;
 using DevExpress.Utils.Design;
 using System.Globalization;
 using DevExpress.Utils.Filtering.Internal;
-using static Noris.Clients.Win.Components.AsolDX.DxPopupMenu;
 
 // using BAR = DevExpress.XtraBars;
 // using EDI = DevExpress.XtraEditors;
@@ -2765,15 +2764,20 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="menuItems">Prvky definující menu</param>
         /// <param name="menuItemClick">Handler události MenuItemClick</param>
         /// <param name="onDemandLoad">Handler události OnDemandLoad</param>
+        /// <param name="form">Formulář na kterém bude menu zobrazeno</param>
         /// <param name="explicitManager">Explicitně dodaný BarManager</param>
         /// <returns></returns>
-        public static DxPopupMenu CreateXBPopupMenu(IEnumerable<IMenuItem> menuItems, EventHandler<MenuItemClickArgs> menuItemClick = null, EventHandler<OnDemandLoadArgs> onDemandLoad = null, DevExpress.XtraBars.BarManager explicitManager = null)
+        public static DxPopupMenu CreateXBPopupMenu(IEnumerable<IMenuItem> menuItems, EventHandler<MenuItemClickArgs> menuItemClick = null, EventHandler<DxPopupMenu.OnDemandLoadArgs> onDemandLoad = null, System.Windows.Forms.Form form = null, DevExpress.XtraBars.BarManager explicitManager = null)
         {
-            return DxPopupMenu.CreateDxPopupMenu(menuItems, menuItemClick, onDemandLoad, explicitManager);
+            DevExpress.XtraBars.BarManager barManager = explicitManager;
+            if (barManager is null && form != null) barManager = new DevExpress.XtraBars.BarManager() { Form = form };
+            if (barManager is null) barManager = new DevExpress.XtraBars.BarManager();
+
+            return DxPopupMenu.CreateDxPopupMenu(menuItems, menuItemClick, onDemandLoad, barManager);
         }
         #endregion
         #region Tvorba pole IMenuItem z jednoho stringu
-        /// <summary>
+       /// <summary>
         /// Z daného stringu sestaví a vrátí pole <see cref="IMenuItem"/>, z něhož lze např. sestavit SubItems v Ribbonu, nebo DropDownButton.
         /// String má formát: řádky oddělené znakem Alt+Num4; Prvky oddělené znakem Alt+Num7;
         /// Řádky = jednotlivé položky menu
@@ -3014,6 +3018,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         #endregion
         #region Tvorba prvků Toolbaru (=Ribbonu), static, bez Ribbonu
+        /// <summary>
+        /// Vytvoří pole BarItemů
+        /// </summary>
+        /// <param name="ribbonItems"></param>
+        /// <returns></returns>
         public static DevExpress.XtraBars.BarItem[] CreateBarItems(IEnumerable<IRibbonItem> ribbonItems)
         {
             if (ribbonItems is null) return null;
@@ -3025,6 +3034,11 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
             return barItems.ToArray();
         }
+        /// <summary>
+        /// Vytvoří prvek BarItem
+        /// </summary>
+        /// <param name="ribbonItem"></param>
+        /// <returns></returns>
         public static DevExpress.XtraBars.BarItem CreateBarItem(IRibbonItem ribbonItem)
         {
             return _CreateBarItem(ribbonItem, 0);
@@ -6099,16 +6113,16 @@ namespace Noris.Clients.Win.Components.AsolDX
 
         /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Ctrl+Y")]
-        DxKeyActionUndoTitle,                                                                      // PŘIDAT !!!
+        DxKeyActionUndoTitle,
         /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("O krok zpět v editaci")]
-        DxKeyActionUndoText,                                                                       // PŘIDAT !!!
+        DxKeyActionUndoText,
         /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("Ctrl+Z")]
-        DxKeyActionRedoTitle,                                                                      // PŘIDAT !!!
+        DxKeyActionRedoTitle,
         /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("O krok vpřed. Znovu provede krok editace, který byl zrušen krokem zpět")]
-        DxKeyActionRedoText,                                                                       // PŘIDAT !!!
+        DxKeyActionRedoText,
 
 
         /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
@@ -6119,7 +6133,15 @@ namespace Noris.Clients.Win.Components.AsolDX
         DxChartEditorTitleDesigner,
         /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
         [DefaultMessageText("V tuto chvíli nelze editovat graf, dosud není načten nebo není definován.")]
-        DxChartEditorNotPrepared
+        DxChartEditorNotPrepared,
+
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
+        [DefaultMessageText("V seznamu (TreeList) není možno zobrazit ikonu %0, protože je typu %1, ale seznam očekává ikony typu %2.")]
+        TreeListImageTypeMismatch,
+
+        /// <summary>Název a text konkrétní hlášky k lokalizaci</summary>
+        [DefaultMessageText("Systém HELIOS")]
+        ApplicationName
 
         // Nové kódy přidej do Messages.xml v klientu!!!     Do AdapterTest.cs není nutno, tam se načítá hodnota atributu DefaultMessageText() !
     }
@@ -7659,6 +7681,221 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Vlastní data, jejich konkrétní datový typ je dán zdrojem dat
         /// </summary>
         public object Data { get; set; }
+    }
+    #endregion
+    #region class MessageBuffer : střadač zpráv umožňující střádání jednotlivých zpráv a poté hromadné oznámení
+    /// <summary>
+    /// <see cref="MessageBuffer"/> : střadač zpráv umožňující střádání jednotlivých zpráv a poté hromadné oznámení
+    /// </summary>
+    public class MessageBuffer
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="permanentCodes">Permanentní kódy = viz </param>
+        public MessageBuffer(bool permanentCodes = false)
+        {
+            __Items = new List<Item>();
+            __Codes = new Dictionary<string, object>();
+            __PermanentCodes = permanentCodes;
+            __MessagesReady = false;
+        }
+        /// <summary>
+        /// Připraví buffer pro přijímání zpráv. Následovat bude sada volání metody <see cref="Add(string, DxMessageLevel, string)"/> a zakončeno bude metodou <see cref="Show"/>.
+        /// </summary>
+        public void Reset()
+        {
+            this.Reset(false);
+        }
+        /// <summary>
+        /// Připraví buffer pro přijímání zpráv. Následovat bude sada volání metody <see cref="Add(string, DxMessageLevel, string)"/> a zakončeno bude metodou <see cref="Show"/>.
+        /// </summary>
+        /// <param name="withResetCodes">true = resetovat i ohlášené kódy, bez ohledu na nastavení <see cref="PermanentCodes"/></param>
+        public void Reset(bool withResetCodes)
+        {
+            __Items.Clear();
+            if (withResetCodes || !PermanentCodes)
+                __Codes.Clear();
+            __MessagesReady = true;
+        }
+        /// <summary>
+        /// Resetuje pouze ohlášené kódy. Následující přidávání zpráv je bude evidovat od nuly.
+        /// Detaily viz <see cref="PermanentCodes"/>.
+        /// Tato metoda neresetuje buffer zpráv!
+        /// </summary>
+        public void ResetCodes()
+        {
+            __Codes.Clear();
+        }
+        /// <summary>
+        /// Přidá zprávu.<br/>
+        /// Pokud je objekt resetován (<see cref="Reset()"/>), pak je v <see cref="MessagesReady"/> = true a zpráva se přidá do Bufferu.<br/>
+        /// Pokud není resetován, bude zpráva ohlášena okamžitě podle své závažnosti (a nebude přidána do Bufferu).
+        /// </summary>
+        /// <param name="level"></param>
+        /// <param name="message"></param>
+        public void Add(DxMessageLevel level, string message)
+        {
+            Add(null, level, message);
+        }
+        /// <summary>
+        /// Přidá zprávu.<br/>
+        /// Pokud je objekt resetován (<see cref="Reset()"/>), pak je v <see cref="MessagesReady"/> = true a zpráva se přidá do Bufferu.<br/>
+        /// Pokud není resetován, bude zpráva ohlášena okamžitě podle své závažnosti (a nebude přidána do Bufferu).
+        /// <para/>
+        /// Pokud je dán kód <paramref name="code"/> a takový kód již máme v evidenci, opakovaně tuto zprávu nepřidá.
+        /// Netestuje se pak ani <paramref name="level"/> ani obsah <paramref name="message"/>.
+        /// <para/>
+        /// Kódy zpráv jsou resetovány (nulovány) buď v metodě <see cref="Reset()"/> pokud <see cref="PermanentCodes"/> je false;
+        /// nebo v metodě <see cref="Reset(bool)"/> s parametrem true;
+        /// nebo v metodě <see cref="ResetCodes()"/> vždy.
+        /// </summary>
+        /// <param name="code"></param>
+        /// <param name="level"></param>
+        /// <param name="message"></param>
+        public void Add(string code, DxMessageLevel level, string message)
+        {
+            if (__MessagesReady)
+                _AddItem(code, level, message);
+            else
+                _ShowMessage(level, message, null);
+        }
+        /// <summary>
+        /// Zobrazí nastřádané zprávy
+        /// </summary>
+        /// <param name="title"></param>
+        public void Show(string title = null)
+        {
+            if (__MessagesReady && __Items.Count > 0)
+                _ShowMessage(title);
+
+            __Items.Clear();
+            if (!PermanentCodes)
+                __Codes.Clear();
+            __MessagesReady = false;
+        }
+        /// <summary>
+        /// Přidá zprávu do bufferu.
+        /// </summary>
+        /// <param name="code"></param>
+        /// <param name="level"></param>
+        /// <param name="message"></param>
+        private void _AddItem(string code, DxMessageLevel level, string message)
+        {
+            if (!String.IsNullOrEmpty(code))
+            {
+                if (__Codes.ContainsKey(code)) return;
+                __Codes.Add(code, null);
+            }
+            __Items.Add(new Item(level, message));
+        }
+        /// <summary>
+        /// Zajistí zobrazení výsledné bufferované zprávy pro uživatele.
+        /// </summary>
+        private void _ShowMessage(string title)
+        {
+            DxMessageLevel level = DxMessageLevel.None;
+            StringBuilder sb = new StringBuilder();
+            foreach (var item in __Items)
+            {
+                // Střádám Max(Level) a Sum(Message):
+                if (((int)item.Level) > ((int)level)) level = item.Level;
+                sb.AppendLine(item.Message);
+            }
+
+            _ShowMessage(level, sb.ToString(), title);
+        }
+        /// <summary>
+        /// Zobrazí dodanou zprávu
+        /// </summary>
+        private void _ShowMessage(DxMessageLevel level, string message, string title)
+        {
+            if (String.IsNullOrEmpty(message)) return;
+
+            if (String.IsNullOrEmpty(title)) title = DxComponent.Localize(MsgCode.ApplicationName);
+            switch (level)
+            {
+                case DxMessageLevel.None:
+                case DxMessageLevel.Info:
+                    DxComponent.ShowMessageInfo(message, title);
+                    break;
+                case DxMessageLevel.Warning:
+                    DxComponent.ShowMessageWarning(message, title);
+                    break;
+                case DxMessageLevel.UserError:
+                case DxMessageLevel.SystemError:
+                    DxComponent.ShowMessageError(message, title);
+                    break;
+            }
+        }
+        /// <summary>
+        /// Kódy chyb (=hlášení jen unikátních kódů) jsou permanentní?
+        /// <para/>
+        /// true = chybu s jedním kódem ohlásíme pouze jedenkrát za celý život <see cref="MessageBuffer"/>. 
+        /// Vhodné pro přehledovou šablonu.
+        /// U některých komponent (navigační strom) to je celý život klienta, pak by hodnota true znemožnila zobrazit opakované hlášky.
+        /// Je možno volat <see cref="Reset(bool)"/> s hodnotou true = resetují se i kódy bez ohledu na příznak <see cref="PermanentCodes"/>.
+        /// <para/>
+        /// false = zadané kódy chyb jsou po ohlášení resetovány, a pokud se objeví daný kód chyby při příští dávce znovu, budou hlášeny opakovaně.
+        /// Vhodné pro Navigační strom.
+        /// </summary>
+        public bool PermanentCodes { get { return __PermanentCodes; } }
+        /// <summary>
+        /// Systém zpráv je připraven přijímat zprávy a ukládat je? Je nastaveno po <see cref="Reset"/>, na konci musí být volána metoda <see cref="Show()"/>!
+        /// false = každá zpráva bude přímo ohlášena.
+        /// </summary>
+        public bool MessagesReady { get { return __MessagesReady; } }
+        private bool __PermanentCodes;
+        private bool __MessagesReady;
+        private List<Item> __Items;
+        private Dictionary<string, object> __Codes;
+        private class Item
+        {
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="level"></param>
+            /// <param name="message"></param>
+            public Item(DxMessageLevel level, string message)
+            {
+                this.Level = level;
+                this.Message = message;
+            }
+            /// <summary>
+            /// Úroveň informace
+            /// </summary>
+            public DxMessageLevel Level { get; private set; }
+            /// <summary>
+            /// Text zprávy
+            /// </summary>
+            public string Message { get; private set; }
+        }
+    }
+    /// <summary>
+    /// Úroveň závažnosti informace
+    /// </summary>
+    public enum DxMessageLevel : int
+    {
+        /// <summary>
+        /// Neurčeno
+        /// </summary>
+        None = 0,
+        /// <summary>
+        /// Informace, stav je OK
+        /// </summary>
+        Info,
+        /// <summary>
+        /// Varování, něco není OK ale pokračujeme
+        /// </summary>
+        Warning,
+        /// <summary>
+        /// Chyba na straně uživatele (nevyplněný údaj, chybná volba, nepovolená kombinace, atd)
+        /// </summary>
+        UserError,
+        /// <summary>
+        /// Chyba na straně aplikace (nečekaná NULL hodnota, volání metody před inicializací nebo po Dispose, atd)
+        /// </summary>
+        SystemError
     }
     #endregion
     #region class DxStyleToConfigListener : spojovací prvek mezi stylem (skin + paleta) z DevExpress a (abstract) konfigurací

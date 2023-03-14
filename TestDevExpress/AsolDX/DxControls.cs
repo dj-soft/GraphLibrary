@@ -18,6 +18,7 @@ using DevExpress.XtraEditors.ViewInfo;
 
 using XS = Noris.WS.Parser.XmlSerializer;
 using System.ComponentModel;
+using DevExpress.XtraBars.Controls;
 
 namespace Noris.Clients.Win.Components.AsolDX
 {
@@ -5823,12 +5824,14 @@ namespace Noris.Clients.Win.Components.AsolDX
         public static DxPopupMenu CreateDxPopupMenu(IEnumerable<IMenuItem> menuItems, EventHandler<MenuItemClickArgs> menuItemClick = null, EventHandler < OnDemandLoadArgs > onDemandLoad = null, DevExpress.XtraBars.BarManager explicitManager = null)
         {
             var barManager = explicitManager ?? DxComponent.DefaultBarManager;
+            
             var dxPopupMenu = new DxPopupMenu(barManager);
             barManager.ShowScreenTipsInMenus = true;
             DevExpress.XtraBars.BarItem[] barItems = _CreateDxPopupMenuItems(dxPopupMenu, menuItems);
             dxPopupMenu.AddItems(barItems);
             if (menuItemClick != null) dxPopupMenu.MenuItemClick += menuItemClick;
             if (onDemandLoad != null) dxPopupMenu.OnDemandLoad += onDemandLoad;
+
             return dxPopupMenu;
         }
         /// <summary>
@@ -6015,10 +6018,33 @@ namespace Noris.Clients.Win.Components.AsolDX
             {   // Obyčejné prvky, nikoliv Parent od SubMenu:
                 barItem.SuperTip = DxComponent.CreateDxSuperTip(menuItem);
                 DxComponent.FillBarItemHotKey(barItem, menuItem);
+                barItem.AllowRightClickInMenu = false;
                 barItem.ItemClick += dxPopupMenu._BarItemClick;
             }
 
             return barItem;
+        }
+        #endregion
+        #region Události
+        protected override void OnPopup()
+        {
+            base.OnPopup();
+        }
+        protected override PopupMenuBarControl CreatePopupControl(DevExpress.XtraBars.BarManager manager)
+        {
+            var control = base.CreatePopupControl(manager);
+            return control;
+        }
+
+        protected override PopupMenuBarControl CreateSubControl(DevExpress.XtraBars.BarManager manager)
+        {
+            var control = base.CreateSubControl(manager);
+            return control;
+        }
+
+        protected override void OnCloseUp(CustomPopupBarControl prevControl)
+        {
+            base.OnCloseUp(prevControl);
         }
         /// <summary>
         /// Po kliknutí na prvek menu
@@ -6030,8 +6056,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (e.Item.Tag is IMenuItem menuItem)
                 this.RunMenuItemClick(new MenuItemClickArgs(menuItem));
         }
-        #endregion
-        #region Události
         /// <summary>
         /// Událost vyvolaná v okamžiku, kdy potřebujeme donačíst OnDemand položky
         /// </summary>

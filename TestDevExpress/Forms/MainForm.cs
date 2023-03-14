@@ -2393,7 +2393,7 @@ namespace TestDevExpress.Forms
             addOnDemandItem("Navázané dokumenty: 0", null);
 
             // Vytvoření a zobrazení fyzického menu:
-            var popupMenu = DxComponent.CreateXBPopupMenu(menuItems, _DxPopupMenuClick, _DxPopupMenuOnDemandLoad, _BarManager);
+            var popupMenu = DxComponent.CreateXBPopupMenu(menuItems, _DxPopupMenuClick, _DxPopupMenuOnDemandLoad, this);
             popupMenu.ShowPopup(point);
 
 

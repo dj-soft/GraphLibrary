@@ -1723,10 +1723,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             if (this.InvokeRequired) { this.Invoke(new Action<IEnumerable<ITreeListNode>, bool, PreservePropertiesMode>(AddNodes), addNodes, clear, preserveProperties); return; }
 
+            MessagesReset();
             using (LockGui(true))
             {
                 this._RemoveAddNodes(clear, null, addNodes, preserveProperties);
             }
+            MessagesShow();
         }
         /// <summary>
         /// Přidá řadu nodů, které jsou donačteny k danému parentu. Současné nody ponechává. Lze tak přidat například jednu podvětev.
@@ -1742,6 +1744,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             if (this.InvokeRequired) { this.Invoke(new Action<string, IEnumerable<ITreeListNode>>(AddLazyLoadNodes), parentNodeId, addNodes); return; }
 
+            MessagesReset();
             using (LockGui(true))
             {
                 bool isAnySelected = this._RemoveLazyLoadFromParent(parentNodeId);
@@ -1757,6 +1760,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                         this.FocusedNode = parentPair.TreeNode;
                 }
             }
+            MessagesShow();
         }
         /// <summary>
         /// Selectuje daný Node
@@ -1841,10 +1845,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             if (this.InvokeRequired) { this.Invoke(new Action<string>(RemoveNode), removeNodeKey); return; }
 
+            MessagesReset();
             using (LockGui(true))
             {
                 this._RemoveAddNodes(false, new string[] { removeNodeKey }, null, PreservePropertiesMode.None);
             }
+            MessagesShow();
         }
         /// <summary>
         /// Odebere řadu nodů, podle klíče. Na konci provede Refresh.
@@ -1854,10 +1860,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             if (this.InvokeRequired) { this.Invoke(new Action<IEnumerable<string>>(RemoveNodes), removeNodeKeys); return; }
 
+            MessagesReset();
             using (LockGui(true))
             {
                 this._RemoveAddNodes(false, removeNodeKeys, null, PreservePropertiesMode.None);
             }
+            MessagesShow();
         }
         /// <summary>
         /// Přidá řadu nodů. Současné nody ponechává. Lze tak přidat například jednu podvětev. Na konci provede Refresh.
@@ -1869,10 +1877,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             if (this.InvokeRequired) { this.Invoke(new Action<IEnumerable<string>, IEnumerable<ITreeListNode>, PreservePropertiesMode>(RemoveAddNodes), removeNodeKeys, addNodes, preserveProperties); return; }
 
+            MessagesReset();
             using (LockGui(true))
             {
                 this._RemoveAddNodes(false, removeNodeKeys, addNodes, preserveProperties);
             }
+            MessagesShow();
         }
         /// <summary>
         /// Smaže všechny nodes. Na konci provede Refresh.
@@ -1881,10 +1891,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             if (this.InvokeRequired) { this.Invoke(new Action(ClearNodes)); return; }
 
+            MessagesReset();
             using (LockGui(true))
             {
                 _ClearNodes();
             }
+            MessagesShow();
         }
         /// <summary>
         /// Zajistí refresh jednoho daného nodu. 
@@ -1898,10 +1910,12 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             if (this.InvokeRequired) { this.Invoke(new Action<ITreeListNode>(RefreshNode), nodeInfo); return; }
 
+            MessagesReset();
             using (LockGui(true))
             {
                 this._RefreshNode(nodeInfo);
             }
+            MessagesShow();
         }
         /// <summary>
         /// Zajistí refresh daných nodů.
@@ -1913,11 +1927,13 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             if (this.InvokeRequired) { this.Invoke(new Action<IEnumerable<ITreeListNode>>(RefreshNodes), nodes); return; }
 
+            MessagesReset();
             using (LockGui(true))
             {
                 foreach (var nodeInfo in nodes)
                     this._RefreshNode(nodeInfo);
             }
+            MessagesShow();
         }
         /// <summary>
         /// Projde všechny nody tohoto Tree, rekurzivně, a pro každý node vyvolá danou akci.
@@ -1983,6 +1999,50 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             return new Tuple<bool, bool>(isChangedSelect, isChangedCheck);
         }
+        #endregion
+        #region Střadač problémů s ikonkami (v průběhu přidávání) a závěrečný sumární Warning
+        /// <summary>
+        /// Připraví buffer pro přijímání zpráv. Následovat bude sada volání metody <see cref="MessagesAdd(string, DxMessageLevel, string)"/> a zakončeno bude metodou <see cref="MessagesShow"/>.
+        /// </summary>
+        protected void MessagesReset()
+        {
+            MessageBuffer.Reset();
+        }
+        /// <summary>
+        /// Přidá zprávu. 
+        /// Pokud je objekt resetován (<see cref="MessagesReset()"/>), pak ji přidá do Bufferu.
+        /// Pokud není resetován, bude zpráva ohlášena okamžitě podle své závažnosti (a nebude přidána do Bufferu).
+        /// <para/>
+        /// Pokud je dán kód <paramref name="code"/> a takový kód již máme v evidenci, opakovaně tuto zprávu nepřidá.
+        /// Netestuje se pak ani <paramref name="level"/> ani obsah <paramref name="message"/>.
+        /// </summary>
+        /// <param name="level"></param>
+        /// <param name="code"></param>
+        /// <param name="message"></param>
+        protected void MessagesAdd(string code, DxMessageLevel level, string message)
+        {
+            MessageBuffer.Add(code, level, message);
+        }
+        /// <summary>
+        /// Zobrazí nastřádané zprávy
+        /// </summary>
+        protected void MessagesShow()
+        {
+            MessageBuffer.Show();
+        }
+        /// <summary>
+        /// Střadač zpráv
+        /// </summary>
+        protected MessageBuffer MessageBuffer 
+        { 
+            get
+            {
+                if (__MessageBuffer is null)
+                    __MessageBuffer = new MessageBuffer(true);
+                return __MessageBuffer;
+            }
+        }
+        private MessageBuffer __MessageBuffer;
         #endregion
         #region Provádění akce v jednom zámku
         /// <summary>
@@ -3327,17 +3387,15 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (this.AllNodesCount == 0 || _NodeImageType == ResourceContentType.None)
             {   // Dosud není určen typ obrázků, a nyní už typ obrázku víme:
                 _NodeImageType = contentType;
-                _NodeImageTypeMismatchShowed = false;
                 _ImageListApply();
                 return true;
             }
             if (contentType == _NodeImageType) return true;          // Nová ikona (imageName) je stejného druhu, jaký už používáme (_NodeImageType) = to je v pořádku.
 
-            if (!_NodeImageTypeMismatchShowed)
-            {
-                DxComponent.ShowMessageWarning($"DxTreeList NodeImage typ mismatch: Current image type={_NodeImageType}, new image type={contentType}, imageName='{imageName}'.");
-                _NodeImageTypeMismatchShowed = true;
-            }
+            // V seznamu (TreeList) není možno zobrazit ikonu %0, protože je typu %1, ale seznam očekává ikony typu %2.
+            string message = DxComponent.Localize(MsgCode.TreeListImageTypeMismatch, $"'{imageName}'", $"'{contentType}'", $"'{_NodeImageType}'");
+            MessagesAdd(imageName, DxMessageLevel.Warning, message);
+
             return false;
         }
         /// <summary>
@@ -3352,10 +3410,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Velikost ikonek
         /// </summary>
         private ResourceImageSizeType __NodeImageSize;
-        /// <summary>
-        /// Obsahuje true poté, kdy došlo k prvnímu nesouladu typu ikonek, a nesoulad byl hlášen.
-        /// </summary>
-        private bool _NodeImageTypeMismatchShowed;
         #endregion
         #region Public eventy a jejich volání
         /// <summary>
