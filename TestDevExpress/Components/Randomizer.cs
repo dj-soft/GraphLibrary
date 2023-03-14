@@ -198,7 +198,7 @@ Ne že bych si myslel, že Ethelberta nebo paní Harrisová patří k téhle sor
 prostě nemá přehánět - tu si má člověk schovávat jen pro případ potřeby zcela naléhavé.
 „Ne, ne,“ pravil jsem tedy, „na to se musí jít zpříma a mužně. Já řeknu Ethelbertě, že jsem dospěl k závěru, že
 manžel nikdy nepozná pravou cenu štěstí, když se mu těší neustále. Řeknu jí, že se chci naučit vážit si výhod, jichž
-se mi dostává, vážit si jich tak, jak si to zasluhují, a z toho důvodu že se nejméně na tři týdny hodlám nísilím
+se mi dostává, vážit si jich tak, jak si to zasluhují, a z toho důvodu že se nejméně na tři týdny hodlám násilím
 odtrhnout od ní a od dětí. A řeknu jí,“ dodal jsem obraceje se k Harrisovi, „žes to byl ty, kdo mě na mé povinnosti
 v tomto směru upozornil; tobě že vděčíme...“
 Harris tak nějak zbrkle postavil na stůl svou sklenici.

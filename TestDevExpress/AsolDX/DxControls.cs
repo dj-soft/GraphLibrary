@@ -1935,6 +1935,56 @@ namespace Noris.Clients.Win.Components.AsolDX
             set { this.Properties.Buttons[0].Kind = value; }
         }
         /// <summary>
+        /// Jméno obrázku prvního buttonu (na indexu [0]). Lze číst i zapisovat. Setování NULL skryje button.<br/>
+        /// Poznámka: viditelnost buttonů v závislosti na MouseOn nebo Focus řídí property <see cref="ButtonsVisibility"/>.
+        /// <para/>
+        /// Pokud aplikace přidá více buttonů, pak ostatní buttony nejsou setováním ovlivněny.<br/>
+        /// Pokud aplikace přímo změní charakter buttonu [0], může následující čtení jména obrázku <see cref="ButtonImage"/> vrátit nesprávný název (posledně setovaný).
+        /// </summary>
+        public string ButtonImage
+        {
+            get
+            {
+                if (this.Properties.Buttons.Count == 0) return null;
+                if (this.Properties.Buttons[0].Kind != DevExpress.XtraEditors.Controls.ButtonPredefines.Glyph) return null;
+                return __ButtonImage;
+            }
+            set
+            {
+                string imageName = value;
+                bool hasImage = !String.IsNullOrEmpty(imageName);
+
+                // Button:
+                DevExpress.XtraEditors.Controls.EditorButton button = null;
+                if (this.Properties.Buttons.Count == 0)
+                {
+                    if (hasImage)
+                    {
+                        button = new DevExpress.XtraEditors.Controls.EditorButton(DevExpress.XtraEditors.Controls.ButtonPredefines.Glyph);
+                        this.Properties.Buttons.Add(button);
+                    }
+                }
+                else
+                {
+                    button = this.Properties.Buttons[0];
+                }
+
+                if (hasImage)
+                {
+                    button.Kind = DevExpress.XtraEditors.Controls.ButtonPredefines.Glyph;
+                    DxComponent.ApplyImage(button.ImageOptions, imageName, sizeType: ResourceImageSizeType.Small);
+                    button.Visible = true;
+                    __ButtonImage = imageName;
+                }
+                else
+                {
+                    button.Visible = false;
+                    __ButtonImage = null;
+                }
+            }
+        }
+        private string __ButtonImage;
+        /// <summary>
         /// Předdefinovaný styl zobrazení buttonů
         /// </summary>
         public DevExpress.XtraEditors.Controls.BorderStyles ButtonsStyle
@@ -5761,7 +5811,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             MenuDrawMode = DevExpress.XtraBars.MenuDrawMode.SmallImagesText;
         }
         #endregion
-        #region Static tvorba
+        #region Static tvorba prvků menu
         /// <summary>
         /// Vytvoří a vrátí <see cref="DxPopupMenu"/> s danými prvky a parametry
         /// </summary>
@@ -5806,6 +5856,14 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
             return barItems.ToArray();
         }
+        /// <summary>
+        /// Vytvoří a vrátí pole prvků pro OnDemand SubMenu, když nejsou dodány žádné explicitní prvky.
+        /// Výstupní pole bude obsahovat jeden prvek s obyčejným buttonem s textem "...".
+        /// Pokud by nadřízený prvek <see cref="DxBarSubItem"/> neobsahoval žádný prvek (tedy ani trojtečku), 
+        /// pak by DevExpress neměl snahu toto menu otevřít, neproběhne event Popup a neprovede se žádost o donačtení reálných prvků menu <see cref="OnDemandLoad"/>.
+        /// </summary>
+        /// <param name="dxPopupMenu"></param>
+        /// <returns></returns>
         private static DevExpress.XtraBars.BarItem[] _CreateDxPopupOnDemandMockItem(DxPopupMenu dxPopupMenu)
         {
             var barItems = new List<DevExpress.XtraBars.BarItem>();
@@ -5813,6 +5871,14 @@ namespace Noris.Clients.Win.Components.AsolDX
             barItems.Add(stdButton);
             return barItems.ToArray();
         }
+        /// <summary>
+        /// Do pole <paramref name="barItems"/> přidá prvek Header odpovídající dané deklaraci <paramref name="headerItem"/>. Tuto deklaraci umístí do ref parametru <paramref name="currentHeaderItem"/>, 
+        /// protože pro následující prvky reprezentuje deklaraci "jejich" skupiny.
+        /// </summary>
+        /// <param name="dxPopupMenu"></param>
+        /// <param name="barItems"></param>
+        /// <param name="headerItem"></param>
+        /// <param name="currentHeaderItem"></param>
         private static void _AddMenuHeader(DxPopupMenu dxPopupMenu, List<DevExpress.XtraBars.BarItem> barItems, IMenuHeaderItem headerItem, ref IMenuHeaderItem currentHeaderItem)
         {
             if (headerItem is null) return;
@@ -5840,9 +5906,16 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             currentHeaderItem = headerItem;
         }
+        /// <summary>
+        /// Do pole <paramref name="barItems"/> přidá prvek <see cref="DxBarSubItem"/> definující OnDemand SubMenu.
+        /// </summary>
+        /// <param name="dxPopupMenu"></param>
+        /// <param name="barItems"></param>
+        /// <param name="menuItem"></param>
+        /// <param name="currentHeaderItem"></param>
         private static void _AddMenuOnDemandItem(DxPopupMenu dxPopupMenu, List<DevExpress.XtraBars.BarItem> barItems, IMenuItem menuItem, IMenuHeaderItem currentHeaderItem)
         {
-            var barSubItem = _GetMenuItem(dxPopupMenu, menuItem, currentHeaderItem, true) as DevExpress.XtraBars.BarSubItem;
+            var barSubItem = _GetMenuItem(dxPopupMenu, menuItem, currentHeaderItem, true) as DxBarSubItem;
             var subItems = (menuItem.SubItems != null && menuItem.SubItems.Any() ?
                 _CreateDxPopupMenuItems(dxPopupMenu, menuItem.SubItems) :
                 _CreateDxPopupOnDemandMockItem(dxPopupMenu));
@@ -5850,21 +5923,37 @@ namespace Noris.Clients.Win.Components.AsolDX
             barSubItem.AddItems(subItems);
             barItems.Add(barSubItem);
         }
-
+        /// <summary>
+        /// Do pole <paramref name="barItems"/> přidá prvek <see cref="DxBarSubItem"/> definující Static SubMenu a jeho zadané prvky.
+        /// </summary>
+        /// <param name="dxPopupMenu"></param>
+        /// <param name="barItems"></param>
+        /// <param name="menuItem"></param>
+        /// <param name="currentHeaderItem"></param>
         private static void _AddMenuSubMenu(DxPopupMenu dxPopupMenu, List<DevExpress.XtraBars.BarItem> barItems, IMenuItem menuItem, IMenuHeaderItem currentHeaderItem)
         {
-            var barSubItem = _GetMenuItem(dxPopupMenu, menuItem, currentHeaderItem, true) as DevExpress.XtraBars.BarSubItem;
+            var barSubItem = _GetMenuItem(dxPopupMenu, menuItem, currentHeaderItem, true) as DxBarSubItem;
             var subItems = _CreateDxPopupMenuItems(dxPopupMenu, menuItem.SubItems);
             barSubItem.AddItems(subItems);
             barItems.Add(barSubItem);
         }
+        /// <summary>
+        /// Do pole <paramref name="barItems"/> přidá prvek typu <see cref="DevExpress.XtraBars.BarItem"/> podle zadané deklarace.
+        /// Tato metoda neřeší prvky SubMenu, to řeší nadřízená metoda <see cref="_CreateDxPopupMenuItems(DxPopupMenu, IEnumerable{IMenuItem})"/>. 
+        /// </summary>
+        /// <param name="dxPopupMenu"></param>
+        /// <param name="barItems"></param>
+        /// <param name="menuItem"></param>
+        /// <param name="currentHeaderItem"></param>
         private static void _AddMenuItem(DxPopupMenu dxPopupMenu, List<DevExpress.XtraBars.BarItem> barItems, IMenuItem menuItem, IMenuHeaderItem currentHeaderItem)
         {
             var barItem = _GetMenuItem(dxPopupMenu, menuItem, currentHeaderItem, false);
             barItems.Add(barItem);
         }
         /// <summary>
-        /// Vytvoří a vrátí prvek <see cref="DevExpress.XtraBars.BarItem"/>.
+        /// Vytvoří a vrátí prvek typu <see cref="DevExpress.XtraBars.BarItem"/> pro danou deklaraci.
+        /// Pokud v parametru <paramref name="createSubItem"/> je true, vždy vytvoří <see cref="DxBarSubItem"/>.
+        /// Tato metoda neřeší prvky SubMenu, to řeší nadřízená metoda <see cref="_CreateDxPopupMenuItems(DxPopupMenu, IEnumerable{IMenuItem})"/> nebo některá další, tato metoda vytvoří jen Parent prvek.
         /// </summary>
         /// <param name="dxPopupMenu"></param>
         /// <param name="menuItem"></param>
@@ -5879,7 +5968,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             bool isSubItem = false;
             if (createSubItem || (menuItem.SubItems != null && menuItem.SubItems.Any()))
             {   // Parent od SubMenu:
-                var subItem = new DevExpress.XtraBars.BarSubItem(dxPopupMenu.Manager, menuItem.Text);
+                var subItem = new DxBarSubItem(dxPopupMenu.Manager, menuItem.Text);
                 isSubItem = true;
                 barItem = subItem;
             }
@@ -5894,7 +5983,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                         break;
                     case MenuItemType.DownButton:
                         var downButton = new DevExpress.XtraBars.BarButtonItem(dxPopupMenu.Manager, menuItem.Text);
-                        downButton.ButtonStyle = DevExpress.XtraBars.BarButtonStyle.Default;
+                        downButton.ButtonStyle = DevExpress.XtraBars.BarButtonStyle.Check;
                         downButton.Down = menuItem.Checked ?? false;
                         barItem = downButton;
                         break;
@@ -5923,7 +6012,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             DxComponent.ApplyImage(barItem.ImageOptions, menuItem.ImageName);
 
             if (!isSubItem)
-            {
+            {   // Obyčejné prvky, nikoliv Parent od SubMenu:
                 barItem.SuperTip = DxComponent.CreateDxSuperTip(menuItem);
                 DxComponent.FillBarItemHotKey(barItem, menuItem);
                 barItem.ItemClick += dxPopupMenu._BarItemClick;
@@ -5983,7 +6072,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             MenuItemClick?.Invoke(this, args);
         }
         #endregion
-        #region OnDemand SubItems support
+        #region OnDemand SubItems - řízení, donačtení
         /// <summary>
         /// Událost, kdy se otevírá SubMenu s režimem OnDemand
         /// </summary>
@@ -5991,9 +6080,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="e"></param>
         private void _BarSubItemPopup(object sender, EventArgs e)
         {
-            if (sender is DevExpress.XtraBars.BarSubItem barSubItem && barSubItem.Tag is IMenuItem menuItem)
-            {
-                if (menuItem.SubItemsIsOnDemand)
+            if (sender is DxBarSubItem barSubItem)
+            {   // Popup budu řešit jen jedenkrát:
+                barSubItem.Popup -= this._BarSubItemPopup;
+                if (barSubItem.Tag is IMenuItem menuItem && menuItem.SubItemsIsOnDemand)
                 {
                     OnDemandLoadArgs args = new OnDemandLoadArgs(this, barSubItem, menuItem);
                     this.RunOnDemandLoad(args);
@@ -6007,22 +6097,19 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void _BarSubItemFill(OnDemandLoadArgs args)
         {
             if (args.MenuItem.SubItems is null) return;
-            DxComponent.InvokeGuiThread(() =>
-            {
-                var barSubItem = args.BarSubItem;
-                barSubItem.BeginUpdate();
-                barSubItem.ItemLinks.Clear();
-                barSubItem.AddItems(_CreateDxPopupMenuItems(this, args.MenuItem?.SubItems));
-                if (!args.IsDynamic)
-                    barSubItem.Popup -= this._BarSubItemPopup;
-                barSubItem.EndUpdate();
-
-                // 
-                // barSubItem.Refresh();
-                // barSubItem.Reset();
-            }, this.Manager.Form, true);
+            DxComponent.InvokeGuiThread(() => _BarSubItemFillGui(args), this.Manager.Form, true);
         }
-
+        /// <summary>
+        /// Zajistí zobrazení reálných položek SubItem pro OnDemand menu. Volat v GUI threadu.
+        /// </summary>
+        /// <param name="args"></param>
+        private void _BarSubItemFillGui(OnDemandLoadArgs args)
+        {
+            var barSubItem = args.BarSubItem;
+            barSubItem.Items = _CreateDxPopupMenuItems(this, args.MenuItem?.SubItems);
+            if (args.IsDynamic)
+                barSubItem.Popup += this._BarSubItemPopup;
+        }
         /// <summary>
         /// Data pro metodu, která načítá SubItem v režimu OnDemand
         /// </summary>
@@ -6034,7 +6121,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// <param name="dxPopupMenu"></param>
             /// <param name="barSubItem"></param>
             /// <param name="menuItem"></param>
-            public OnDemandLoadArgs(DxPopupMenu dxPopupMenu, DevExpress.XtraBars.BarSubItem barSubItem, IMenuItem menuItem)
+            internal OnDemandLoadArgs(DxPopupMenu dxPopupMenu, DxBarSubItem barSubItem, IMenuItem menuItem)
             {
                 this.PopupMenu = dxPopupMenu;
                 this.BarSubItem = barSubItem;
@@ -6044,11 +6131,11 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// <summary>
             /// Fyzické menu, které je rozsvíceno
             /// </summary>
-            public DxPopupMenu PopupMenu { get; private set; }
+            internal DxPopupMenu PopupMenu { get; private set; }
             /// <summary>
             /// Fyzické submenu, které má být naplněno
             /// </summary>
-            public DevExpress.XtraBars.BarSubItem BarSubItem { get; private set; }
+            internal DxBarSubItem BarSubItem { get; private set; }
             /// <summary>
             /// Položka definující prvek, jehož SubMenu se načítá
             /// </summary>
@@ -6077,6 +6164,76 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         
         public bool IsHidden { get; set; }
+    }
+    #endregion
+    #region DxBarSubItem
+    /// <summary>
+    /// Prvek menu obsahující SubMenu
+    /// </summary>
+    internal class DxBarSubItem : DevExpress.XtraBars.BarSubItem
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public DxBarSubItem() : base()
+        {
+            Initialise();
+        }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="manager"></param>
+        /// <param name="caption"></param>
+        public DxBarSubItem(DevExpress.XtraBars.BarManager manager, string caption) : base(manager, caption)
+        {
+            Initialise();
+        }
+        /// <summary>
+        /// Inicializace
+        /// </summary>
+        private void Initialise()
+        { }
+        public override void PerformClick()
+        {
+            
+            base.PerformClick();
+
+        }
+        /// <summary>
+        /// Prvky menu. Lze setovat = dojde k nahrazení stávajícího obsahu.
+        /// </summary>
+        public DevExpress.XtraBars.BarItem[] Items 
+        {
+            get { return this.ItemLinks.Select(l => l.Item).ToArray(); }
+            set { _SetItems(value); }
+        }
+        /// <summary>
+        /// Setuje prvky menu
+        /// </summary>
+        /// <param name="items"></param>
+        private void _SetItems(DevExpress.XtraBars.BarItem[] items)
+        {
+            var isOpened = this.IsOpened();
+            this.OnCloseUp();
+
+            this.BeginUpdate();
+            this.ItemLinks.Clear();
+            this.EndUpdate();
+            this.Refresh();
+
+            this.BeginUpdate();
+            if (items != null && items.Length > 0)
+                this.AddItems(items);
+            this.EndUpdate();
+            this.Refresh();
+
+            
+            //  Hledal jsem způsob, jak donutit DevExpress komponentu, aby po načtení nových položek menu znovu vypočítala umístění Popup,
+            //  tak aby se zespodu monitoru posunulo kousek nahoru, ale nedaří se:
+            // this.Reset();
+            // this.Refresh();
+            // this.PerformClick();
+        }
     }
     #endregion
     #endregion

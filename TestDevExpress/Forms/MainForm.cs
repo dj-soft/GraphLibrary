@@ -605,12 +605,14 @@ namespace TestDevExpress.Forms
                 Keys.Control | Keys.PageUp,
                 Keys.Control | Keys.PageDown
             };
-
-
-
         }
-
+        /// <summary>
+        /// Pole obrázků typu SVG pro obecné použití
+        /// </summary>
         private string[] _SysSvgImages;
+        /// <summary>
+        /// Pole kláves Ctrl+Něco pro HotKey
+        /// </summary>
         private Keys[] _SysHotKeys;
 
         private void TestResources()
@@ -1885,7 +1887,37 @@ namespace TestDevExpress.Forms
             DxComponent.CreateDxSimpleButton(3, 105, 200, 45, panel1, "DM.Menu", PopupPageDXPopupMenuClick);
             DxComponent.CreateDxSimpleButton(3, 156, 200, 45, panel1, "Win.ToolStripMenu", PopupPageWinMenuClick);
             DxComponent.CreateDxSimpleButton(3, 227, 200, 45, panel1, "AsolDx PopupMenu", PopupPageAsolDxPopupMenuClick);
+
+            // TextBox s tlačítky:
+            var editText = new DxButtonEdit() { Bounds = new Rectangle(300, 20, 250, 20), ButtonImage = @"\pic_0\UI\DynRel\StaticRel" };
+
+            /*
+            // Tlačítko:
+            editText.Properties.Buttons.Clear();
+            var relationButton = new DevExpress.XtraEditors.Controls.EditorButton(DevExpress.XtraEditors.Controls.ButtonPredefines.Glyph);
+            bool isDocument = false;
+            string imageName = isDocument ? @"\pic_0\UI\DynRel\StaticRelExtDoc" : @"\pic_0\UI\DynRel\StaticRel";         // Jméno ikony
+            DxComponent.ApplyImage(relationButton.ImageOptions, imageName, sizeType: ResourceImageSizeType.Small);
+            editText.Properties.Buttons.Add(relationButton);
+            */
+
+            // Eventy:
+            editText.DoubleClick += _EditText_DoubleClick;
+            editText.ButtonClick += _EditText_ButtonClick;
+            
+            editText.Text = "Krabička plechová";
+            panel.Controls.Add(editText);
         }
+
+        private void _EditText_DoubleClick(object sender, EventArgs e)
+        {
+            DxComponent.ShowMessageInfo("Relation text DoubleClick");
+        }
+        private void _EditText_ButtonClick(object sender, DevExpress.XtraEditors.Controls.ButtonPressedEventArgs e)
+        {
+            DxComponent.ShowMessageInfo("Relation text Button Click");
+        }
+
         #region XB.PopupMenu
         private void PopupPageXBPopupClick(object sender, EventArgs e)
         {
@@ -2336,7 +2368,7 @@ namespace TestDevExpress.Forms
             // Horní grupa
             addHeader("Rychlý přístup", true, 8);
             for (int m = 0; m < 8; m++)
-                addHeaderItem(false);
+                addBigItem(false);
 
             // Běžné grupy a položky:
             cnt = Randomizer.Rand.Next(3, 6);
@@ -2354,14 +2386,14 @@ namespace TestDevExpress.Forms
             addHeader("Submenu načítané OnDemand");
             addOnDemandItem("Nabídka funkcí", "Funkce se načítají...");
             addOnDemandItem("Úkoly Workflow", "Úkoly se načítají...");
-            addOnDemandItem("Navázané dokumenty", "Dokumenty se načítají...");
+            addOnDemandItem("Navázané dokumenty: 0", null);
 
             // Vytvoření a zobrazení fyzického menu:
             var popupMenu = DxComponent.CreateXBPopupMenu(menuItems, _DxPopupMenuClick, _DxPopupMenuOnDemandLoad, _BarManager);
             popupMenu.ShowPopup(point);
 
 
-
+            // Přidá do 'menuItems' deklaraci Header
             void addHeader(string text, bool isMultiColumn = false, int? columnCount = null, MenuItemDisplayMode itemDisplayMode = MenuItemDisplayMode.Default)
             {
                 DataMenuHeaderItem headerItem = new DataMenuHeaderItem();
@@ -2372,7 +2404,8 @@ namespace TestDevExpress.Forms
                 headerItem.ItemDisplayMode = itemDisplayMode;
                 menuItems.Add(headerItem);
             }
-            void addHeaderItem(bool withText)
+            // Přidá do 'menuItems' deklaraci Big buttonu (volitelně bez textu)
+            void addBigItem(bool withText)
             {
                 DataMenuItem item = new DataMenuItem();
                 item.Text = (withText ? Randomizer.GetWord(true) : "");
@@ -2381,25 +2414,37 @@ namespace TestDevExpress.Forms
                 item.ToolTipText = Randomizer.GetSentences(2, 7, 1, 4);
                 menuItems.Add(item);
             }
-
+            // Přidá do 'menuItems' obyčejný prvek
             void addItem()
             {
                 menuItems.Add(getItem());
             }
+            // Přidá do 'menuItems' prvek obsahující Static SubMenu
             void addItemSubMenu()
             {
                 var item = getItem();
-                item.SubItems = getSubMenu();
+                item.SubItems = getSubMenu(item.Text);
                 menuItems.Add(item);
             }
-            List<IMenuItem> getSubMenu()
+            // Vrátí prvky do SubMenu
+            List<IMenuItem> getSubMenu(string headerText)
             {
                 var subItems = new List<IMenuItem>();
+
+                if (headerText != null)
+                {   // Titulek SubMenu
+                    DataMenuHeaderItem headerItem = new DataMenuHeaderItem();
+                    headerItem.Text = headerText;
+                    subItems.Add(headerItem);
+                }
+
+                // Prvky SubMenu:
                 int cnt = Randomizer.Rand.Next(5, 8);
                 for (int i = 0; i < cnt; i++)
                     subItems.Add(getItem());
                 return subItems;
             }
+            // Přidá do 'menuItems' prvek obsahující OnDemand SubMenu, volitelně obshaující jeden SubItem s daným textem (subItemHeaderText), null = bez tohoto prvku
             void addOnDemandItem(string text, string subItemHeaderText)
             {
                 // OnDemand prvek v menu:
@@ -2410,7 +2455,7 @@ namespace TestDevExpress.Forms
                 item.SubItemsIsOnDemand = true;
                 menuItems.Add(item);
 
-                // Záhlaví v submenu:
+                // První zástupný prvek do OnDemand submenu:
                 if (subItemHeaderText != null)
                 {
                     DataMenuHeaderItem headerItem = new DataMenuHeaderItem();
@@ -2421,8 +2466,9 @@ namespace TestDevExpress.Forms
 
                 // Reálné menu - ve zdejší metodě mám všechny metody pro tvorbu menu (jsou to lokální metody),
                 // kdežto v eventhandleru _DxPopupMenuOnDemandLoad => _DxPopupMenuOnDemandFill je mít nebudu!!!
-                item.Tag = getSubMenu();
+                item.Tag = getSubMenu(item.Text);
             }
+            // Vygeneruje a vrátí definici prvku menu
             DataMenuItem getItem()
             {
                 DataMenuItem item = new DataMenuItem();
@@ -2437,6 +2483,13 @@ namespace TestDevExpress.Forms
                     item.FontStyle = FontStyle.Italic;
                 else if (Randomizer.IsTrue(20))
                     item.FontStyle = FontStyle.Bold;
+
+                if (Randomizer.IsTrue(20))
+                {
+                    item.ItemType = MenuItemType.DownButton;
+                    item.Checked = true;
+                    item.Text += " [!]";
+                }
 
                 return item;
             }
