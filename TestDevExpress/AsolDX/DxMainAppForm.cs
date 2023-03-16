@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -29,6 +30,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         protected override void Dispose(bool disposing)
         {
             __MainAppForm = null;
+            _TabViewBackImageDispose(__TabbedView);
             base.Dispose(disposing);
         }
         /// <summary>
@@ -130,12 +132,11 @@ namespace Noris.Clients.Win.Components.AsolDX
             docManager.SnapMode = DevExpress.Utils.Controls.SnapMode.All;
             docManager.RibbonAndBarsMergeStyle = DevExpress.XtraBars.Docking2010.Views.RibbonAndBarsMergeStyle.WhenNotFloating;
 
+            var cc = docManager.ClientControl;
+
             docManager.DocumentActivate += _DocumentManagerDocumentActivate;
             docManager.ViewChanged += _DocumentManagerViewChanged;
         }
-
-
-
         /// <summary>
         /// Nastavení komponenty TabbedView
         /// </summary>
@@ -147,6 +148,13 @@ namespace Noris.Clients.Win.Components.AsolDX
             tabView.CustomResizeZoneThickness = DefaultResizeZoneThickness;                        // Viditelný splitter mezi dokovanými skupinami
             tabView.EnableStickySplitters = DevExpress.Utils.DefaultBoolean.True;                  // Splitter mezi dokovanými skupinami se bude přichytávat k okolním splitterům
             tabView.ShowDockGuidesOnPressingShift = DevExpress.Utils.DefaultBoolean.False;         // Při snaze o zadokování Floating formu se zobrazí nápovědná ikona false=bez Shiftu / true = jen po stisknutí Shiftu
+
+            _TabViewBackImageInit(__TabbedView);
+           
+
+            tabView.Controller.Manager.MaxThumbnailCount = 7;
+            tabView.Controller.Manager.ShowThumbnailsInTaskBar = DevExpress.Utils.DefaultBoolean.True;
+
 
             tabView.DocumentProperties.AllowAnimation = true;
             tabView.DocumentProperties.AllowPin = true;
@@ -197,6 +205,13 @@ namespace Noris.Clients.Win.Components.AsolDX
             tabView.NextDocument += _TabbedViewNextDocument;
 
         }
+
+        private void ClientControl_MouseClick(object sender, MouseEventArgs e)
+        {
+            
+        }
+
+
         /// <summary>
         /// Inicializace komponenty DockManager
         /// </summary>
@@ -236,8 +251,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             dockMgr.TabsScrollChanged += _DockManagerTabsScrollChanged;
             dockMgr.VisibilityChanged += _DockManagerVisibilityChanged;
         }
-
-
         /// <summary>
         /// Vytvoří obsah Dock panelů
         /// </summary>
@@ -467,8 +480,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
 
 
-
-
         private void ActivateRibbonForControl(Control control)
         {
             if (control is DevExpress.XtraBars.Ribbon.RibbonForm ribbonForm && ribbonForm.MdiParent != null)
@@ -499,6 +510,86 @@ namespace Noris.Clients.Win.Components.AsolDX
                 DxComponent.LogAddLine($"Ribbon.TabbedForm[{ribbonForm?.Text}].Visible = false");
             }
         }
+        #endregion
+        #region TabView BackImage a MouseClick
+        /// <summary>
+        /// Inicializuje věci pro kreslení obrázku na pozadí TabView
+        /// </summary>
+        /// <param name="tabbedView"></param>
+        private void _TabViewBackImageInit(DevExpress.XtraBars.Docking2010.Views.Tabbed.TabbedView tabbedView)
+        {
+            __TabViewBackImageMap = new DxImageAreaMap();
+            _PrepareImageMap(__TabViewBackImageMap);
+            __TabViewBackImageMap.Click += __TabViewBackImageMap_Click;
+            tabbedView.CustomDrawBackground += _TabViewCustomDrawBackground;
+        }
+        /// <summary>
+        /// Naplní ImageMap daty dle definice
+        /// </summary>
+        /// <param name="imageMap"></param>
+        private void _PrepareImageMap(DxImageAreaMap imageMap)
+        {
+            string imageFile = @"c:\DavidPrac\VsProjects\TestDevExpress\TestDevExpress\ImagesTest\Svg\homer-simpson.svg";
+            imageMap.ContentImage = System.IO.File.ReadAllBytes(imageFile);
+            imageMap.Zoom = 0.40f;
+            imageMap.Position = new PointF(0.04f, 0.96f);
+
+            imageMap.Clear();
+            imageMap.AddArea(new RectangleF(0.05f, 0.05f, 0.80f, 0.20f), @"https://www.helios.eu");
+            imageMap.AddArea(new RectangleF(0.50f, 0.35f, 0.40f, 0.30f), @"https://www.seznam.cz");
+            imageMap.AddArea(new RectangleF(0.05f, 0.60f, 0.40f, 0.20f), @"https://www.idnes.cz");
+            imageMap.AddArea(new RectangleF(0.05f, 0.85f, 0.90f, 0.15f), @"c:\Windows\notepad.exe");
+        }
+        /// <summary>
+        /// Po kliknutí na ImageMap
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void __TabViewBackImageMap_Click(object sender, DxImageAreaMap.AreaClickArgs e)
+        {
+            if (e.UserData is string runCmd && !String.IsNullOrEmpty(runCmd))
+                System.Diagnostics.Process.Start(runCmd);
+        }
+        /// <summary>
+        /// Odpojí zdejší eventhandlery od instance <see cref="__TabViewBackImageMap"/> a poté ji disposuje
+        /// </summary>
+        private void _TabViewBackImageDispose(DevExpress.XtraBars.Docking2010.Views.Tabbed.TabbedView tabbedView)
+        {
+            tabbedView.CustomDrawBackground -= _TabViewCustomDrawBackground;
+            __TabViewBackImageMap.OwnerControl = null;
+            __TabViewBackImageMap.Dispose();
+            __TabViewBackImageMap = null;
+        }
+        /// <summary>
+        /// V události CustomDrawBackground vykreslíme obrázek na pozadí.
+        /// To mimo jiné zajistí napojení Controlu na pozadí do klikací mapy, a do klikací mapy i vloží aktuální souřadnice obrázku, tím se zajistí správné rozmístění klikacích ploch.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _TabViewCustomDrawBackground(object sender, DevExpress.XtraBars.Docking2010.CustomDrawBackgroundEventArgs e)
+        {
+            var imageMap = __TabViewBackImageMap;
+            if (!imageMap.HasImage) return;
+            if (!imageMap.WasStoredControl)
+                imageMap.OwnerControl = this.Controls.OfType<MdiClient>().FirstOrDefault();
+            
+            if (!this.__TabbedView.IsEmpty) return;
+
+            var padding = new Padding(36, 48, 36, 36);               // Vnitřní okraje
+            var bounds = e.Bounds.Sub(padding);                      // Maximální využitelný prostor = 100% velikosti obrázku
+            var imageBounds = imageMap.GetImageBounds(bounds);       // Reálný prostor obrázku (odsud si __TabViewBackImageMap pamatuje podklady pro interaktivitu)
+            if (imageBounds.HasValue)
+            {
+                if (imageMap.HasBmpImage)
+                    e.GraphicsCache.DrawImage(imageMap.BmpImage, imageBounds.Value);
+                else if (imageMap.HasSvgImage)
+                    e.GraphicsCache.DrawSvgImage(imageMap.SvgImage, imageBounds.Value, null);
+            }
+        }
+        /// <summary>
+        /// Instance klikacího obrázku na pozadí TabView
+        /// </summary>
+        private DxImageAreaMap __TabViewBackImageMap;
         #endregion
         #region DockManager - služby
         /// <summary>

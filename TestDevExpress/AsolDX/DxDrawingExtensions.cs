@@ -1288,6 +1288,43 @@ namespace Noris.Clients.Win.Components.AsolDX
             return new SizeF((one.Width < min.Width ? min.Width : (one.Width > max.Width ? max.Width : one.Width)),
                              (one.Height < min.Height ? min.Height : (one.Height > max.Height ? max.Height : one.Height)));
         }
+        /// <summary>
+        /// Upraví velikost this <see cref="SizeF"/> tak, aby se přesně vešla do dané cílové velikosti se zachováním proporcí this velikosti (poměr stran).
+        /// Hodnota this tedy bude zvětšena nebo zmenšena tak, aby přesně vyplnila ten menší rozměr cíle.
+        /// Pokud this nebo <paramref name="targetSize"/> bude mít některý z rozměrů 0 a záporný, vrací se <see cref="SizeF.Empty"/>.
+        /// </summary>
+        /// <param name="currentSize"></param>
+        /// <param name="targetSize"></param>
+        /// <returns></returns>
+        public static SizeF ZoomTo(this SizeF currentSize, SizeF targetSize)
+        {
+            var cw = currentSize.Width;
+            var ch = currentSize.Height;
+            var tw = targetSize.Width;
+            var th = targetSize.Height;
+
+            if (cw <= 0f || ch <= 0f || tw <= 0f || th <= 0f) return SizeF.Empty;
+
+            float currentRatio = cw / ch;
+            float targetRatio = tw / th;
+            
+            if (currentRatio == targetRatio) return targetSize;                // Výjimečná zkratka: poměr stran je shodný, takže Zoomed Size == Target Size
+
+            if (currentRatio > targetRatio)
+            {   // current Size má poměr stran víc na šířku než target Size:
+                // targetWidth bude výsledná Width, a dopočtu finalHeight podle targetWidth a poměru currentRatio:
+                float fw = tw;
+                float fh = fw / currentRatio;
+                return new SizeF(fw, fh);
+            }
+            else
+            {   // current Size má poměr stran víc na výšku než target Size:
+                // targetHeight bude výsledná Height, a dopočtu finalWidth podle targetHeight a poměru currentRatio:
+                float fh = th;
+                float fw = fh * currentRatio;
+                return new SizeF(fw, fh);
+            }
+        }
         #endregion
         #region Size: AlignTo
         /// <summary>

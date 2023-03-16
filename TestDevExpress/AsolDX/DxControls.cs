@@ -12,9 +12,7 @@ using System.Drawing;
 using System.Diagnostics;
 
 using DevExpress.Utils;
-using DevExpress.XtraEditors;
 using DevExpress.Utils.Extensions;
-using DevExpress.XtraEditors.ViewInfo;
 
 using XS = Noris.WS.Parser.XmlSerializer;
 using System.ComponentModel;
@@ -250,8 +248,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Stav aktivity okna. Při změně je volána událost <see cref="ActivityStateChanged"/>.
         /// </summary>
         public WindowActivityState ActivityState
-        { 
-            get { return _ActivityState; } 
+        {
+            get { return _ActivityState; }
             protected set
             {
                 var oldValue = _ActivityState;
@@ -725,8 +723,8 @@ namespace Noris.Clients.Win.Components.AsolDX
                 var normalBounds = formPosition.NormalBounds.FitIntoMonitors(true, false, true);
                 if (!isShown)
                 {
-                  //  if (this.WindowState != FormWindowState.Normal) this.WindowState = FormWindowState.Normal;
-                  //  if (this.Bounds != normalBounds) this.Bounds = normalBounds;
+                    //  if (this.WindowState != FormWindowState.Normal) this.WindowState = FormWindowState.Normal;
+                    //  if (this.Bounds != normalBounds) this.Bounds = normalBounds;
                 }
                 var maximizedBounds = formPosition.MaximizedBounds.FitIntoMonitors(true, false, true);
                 if (this.WindowState != FormWindowState.Maximized) this.WindowState = FormWindowState.Maximized;
@@ -1188,8 +1186,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Gets or sets the panel's border style.
         /// </summary>
-        public new DevExpress.XtraEditors.Controls.BorderStyles BorderStyle 
-        { 
+        public new DevExpress.XtraEditors.Controls.BorderStyles BorderStyle
+        {
             get { return base.BorderStyle; }
             set
             {
@@ -2212,7 +2210,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="tokens"></param>
         /// <param name="clear"></param>
         private void _AddTokens(IEnumerable<IMenuItem> tokens, bool clear)
-        { 
+        {
             var dxTokens = _CreateDxTokens(tokens);
 
             this.Properties.BeginUpdate();
@@ -3071,8 +3069,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// <param name="id"></param>
             /// <param name="client"></param>
             public ClientInfo(int id, Control client)
-            { 
-                Id = id; 
+            {
+                Id = id;
                 Client = client;
                 HasIDynamicClient = (client is IDxToolTipDynamicClient);
                 IDynamicClient = (HasIDynamicClient ? client as IDxToolTipDynamicClient : null);
@@ -3197,7 +3195,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                     bool newExists = (newSuperTip != null);
                     if (oldExists && newExists)
                     {
-                        if (DxSuperToolTip.IsEqualContent(oldSuperTip, newSuperTip)) 
+                        if (DxSuperToolTip.IsEqualContent(oldSuperTip, newSuperTip))
                             return DxToolTipChangeType.SameAsLastToolTip;
                         return DxToolTipChangeType.NewToolTip;
                     }
@@ -3214,7 +3212,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// Je voláno při zhasínání ToolTipu, ať už jsou důvody jakékoli
             /// </summary>
             internal void Reset()
-            { 
+            {
                 LastSuperTip = null;
                 LastPrepareArgs = null;
                 ResetLastPoint();
@@ -3404,7 +3402,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 _RaiseToolTipDebugTextChanged($"Is..slow..motion: {pixelPerSeconds:F3} pixel/seconds    <=   {SlowMouseMovePps}");
             else
                 _RaiseToolTipDebugTextChanged($"IsFASTMotion: {pixelPerSeconds:F3} pixel/seconds    >   {SlowMouseMovePps}");
-            
+
             return isSlowMotion;
         }
         /// <summary>
@@ -3489,7 +3487,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (reset)
             {   // Když myš opouští prostor daného klienta, tak na něj mohu s klidem zapomenout:
                 if (__ActiveClientInfo != null) __ActiveClientInfo.Reset();
-                 __ActiveClientInfo = null;
+                __ActiveClientInfo = null;
             }
             if (__IsHintShown)
             {
@@ -3724,7 +3722,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Konstruktor
         /// </summary>
-        public DxSuperToolTip() 
+        public DxSuperToolTip()
             : base()
         {
             __TitleText = null;
@@ -3950,7 +3948,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             __TitleText = null;
             __TitleIcon = null;
-            
+
             __TextText = null;
             __ToolTipAllowHtmlText = null;
 
@@ -4086,7 +4084,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             _FilterText.KeyUp += _FilterText_KeyUp;
 
             _ListCopyButton = DxComponent.CreateDxMiniButton(230, 0, 20, 20, this, _ListCopyButtonClick,
-                resourceName: ImageName.DxImagePickerClipboarCopy, 
+                resourceName: ImageName.DxImagePickerClipboarCopy,
                 hotResourceName: ImageName.DxImagePickerClipboarCopyHot,
                 toolTipTitle: "Zkopírovat", toolTipText: "Označené řádky v seznamu zdrojů vloží do schránky, jako Ctrl+C.");
             _ListCopyButton.MouseEnter += _AnyControlEnter;
@@ -4306,7 +4304,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                     var selectedItem = selectedItems[i];
                     string resourceName = selectedItem.Item2?.Text;
                     string suffix = (i < rowLast ? "," : "");
-                    sb.AppendLine($"    \"{resourceName}\"{suffix }");
+                    sb.AppendLine($"    \"{resourceName}\"{suffix}");
                 }
                 sb.AppendLine("  };");
                 if (sb.Length > 0)
@@ -4993,19 +4991,19 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// <summary>
             /// Neurčeno
             /// </summary>
-            None, 
+            None,
             /// <summary>
             /// Myš je nad prvkem
             /// </summary>
-            Over, 
+            Over,
             /// <summary>
             /// Myš je dole ale nepohybuje se
             /// </summary>
-            Down, 
+            Down,
             /// <summary>
             /// Myš je dole a posunuje prvek
             /// </summary>
-            Drag 
+            Drag
         }
         /// <summary>
         /// Stavy prvku
@@ -5019,19 +5017,19 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// <summary>
             /// Disabled
             /// </summary>
-            Disabled, 
+            Disabled,
             /// <summary>
             /// Hot
             /// </summary>
-            Hot, 
+            Hot,
             /// <summary>
             /// MouseDown
             /// </summary>
-            Down, 
+            Down,
             /// <summary>
             /// Drag
             /// </summary>
-            Drag 
+            Drag
         }
         #endregion
         #region Public properties - funkcionalita Splitteru (hodnota, orientace, šířka)
@@ -5821,10 +5819,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="onDemandLoad">Handler události OnDemandLoad</param>
         /// <param name="explicitManager">Explicitně dodaný BarManager</param>
         /// <returns></returns>
-        public static DxPopupMenu CreateDxPopupMenu(IEnumerable<IMenuItem> menuItems, EventHandler<MenuItemClickArgs> menuItemClick = null, EventHandler < OnDemandLoadArgs > onDemandLoad = null, DevExpress.XtraBars.BarManager explicitManager = null)
+        public static DxPopupMenu CreateDxPopupMenu(IEnumerable<IMenuItem> menuItems, EventHandler<MenuItemClickArgs> menuItemClick = null, EventHandler<OnDemandLoadArgs> onDemandLoad = null, DevExpress.XtraBars.BarManager explicitManager = null)
         {
             var barManager = explicitManager ?? DxComponent.DefaultBarManager;
-            
+
             var dxPopupMenu = new DxPopupMenu(barManager);
             barManager.ShowScreenTipsInMenus = true;
             DevExpress.XtraBars.BarItem[] barItems = _CreateDxPopupMenuItems(dxPopupMenu, menuItems);
@@ -6184,9 +6182,9 @@ namespace Noris.Clients.Win.Components.AsolDX
     {
         public DxBarHeaderItem()
         {
-            
+
         }
-        
+
         public bool IsHidden { get; set; }
     }
     #endregion
@@ -6219,14 +6217,14 @@ namespace Noris.Clients.Win.Components.AsolDX
         { }
         public override void PerformClick()
         {
-            
+
             base.PerformClick();
 
         }
         /// <summary>
         /// Prvky menu. Lze setovat = dojde k nahrazení stávajícího obsahu.
         /// </summary>
-        public DevExpress.XtraBars.BarItem[] Items 
+        public DevExpress.XtraBars.BarItem[] Items
         {
             get { return this.ItemLinks.Select(l => l.Item).ToArray(); }
             set { _SetItems(value); }
@@ -6251,7 +6249,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.EndUpdate();
             this.Refresh();
 
-            
+
             //  Hledal jsem způsob, jak donutit DevExpress komponentu, aby po načtení nových položek menu znovu vypočítala umístění Popup,
             //  tak aby se zespodu monitoru posunulo kousek nahoru, ale nedaří se:
             // this.Reset();
@@ -6260,6 +6258,598 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
     }
     #endregion
+    #endregion
+    #region DxImageAreaMap
+    /// <summary>
+    /// <see cref="DxImageAreaMap"/> : klikací mapa, obsahuje obrázek a jednotlivé prostory v něm, které jsou různě aktivní.
+    /// </summary>
+    internal class DxImageAreaMap : IDisposable
+    {
+        #region Konstruktor, Dispose, akceptování a reset objektů
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public DxImageAreaMap() 
+        {
+            __AreaItems = new List<Area>();
+            __Zoom = 1f;
+
+        }
+        /// <summary>
+        /// Dispose
+        /// </summary>
+        public void Dispose()
+        {
+            _ResetOwnerControl();
+            _ResetBitmapImage();
+            _ResetContentImage();
+            __SvgImage = null;
+        }
+        private Control __OwnerControl;
+        private byte[] __ContentImage;
+        private Image __BmpImage;
+        private bool? __BitmapImageIsExternal;
+        private DevExpress.Utils.Svg.SvgImage __SvgImage;
+        private float __Zoom;
+        private PointF __Position;
+        private bool __HasImage;
+        /// <summary>
+        /// Naváže se do daného Controlu (naváže zdejší handlery na události Controlu)
+        /// </summary>
+        /// <param name="ownerControl"></param>
+        private void _SetOwnerControl(Control ownerControl)
+        {
+            _ResetOwnerControl();
+            if (ownerControl != null)
+            {
+                ownerControl.MouseMove += _OwnerControl_MouseMove;
+                ownerControl.MouseDown += _OwnerControl_MouseDown;
+                ownerControl.MouseLeave += _OwnerControl_MouseLeave;
+            }
+            __OwnerControl = ownerControl;
+        }
+        /// <summary>
+        /// Odváže zdejší handlery od události stávajícího Controlu a nuluje referenci na něj
+        /// </summary>
+        private void _ResetOwnerControl()
+        {
+            var ownerControl = __OwnerControl;
+            if (ownerControl != null)
+            {
+                ownerControl.MouseMove += _OwnerControl_MouseMove;
+                ownerControl.MouseDown += _OwnerControl_MouseDown;
+                ownerControl.MouseLeave += _OwnerControl_MouseLeave;
+            }
+            __OwnerControl = null;
+        }
+        /// <summary>
+        /// Uloží si dodaný obrázek jako externí
+        /// </summary>
+        /// <param name="bmpImage"></param>
+        private void _SetBitmapImage(Image bmpImage)
+        {
+            _ResetContentImage();
+            __BmpImage = bmpImage;
+            __BitmapImageIsExternal = ((bmpImage != null) ? (bool?)true : null);      // true = Image je externí (tedy pokud je nějaký dodán)
+            _LoadBmpImageSize(bmpImage);
+        }
+        /// <summary>
+        /// Zruší referenci na bitmapu, a pokud byla interní (tj. námi vytvořená), tak ji nejprve Disposuje
+        /// </summary>
+        private void _ResetBitmapImage()
+        {
+            var bitmapImage = __BmpImage;
+            if (bitmapImage != null && __BitmapImageIsExternal.HasValue && !__BitmapImageIsExternal.Value)
+                bitmapImage.Dispose();
+            __BmpImage = null;
+            __BitmapImageIsExternal = null;
+            __HasImage = false;
+        }
+        /// <summary>
+        /// Uloží si bytové pole obsahující obrázek, a zkusí z něj vytvořit vhodný Image.
+        /// </summary>
+        /// <param name="contentImage"></param>
+        private void _SetContentImage(byte[] contentImage)
+        {
+            _ResetContentImage();
+            if (contentImage is null || contentImage.Length < 16) return;
+
+            // Odhadneme, zda jde o SVG (svg začíná znaky:  <?xml  ):
+            bool canBeSvg = (contentImage[0] == '<' &&
+                             contentImage[1] == '?' &&
+                             contentImage[2] == 'x' &&
+                             contentImage[3] == 'm' &&
+                             contentImage[4] == 'l' );
+
+            if (canBeSvg && tryLoadSvg()) return;          // Když to vypadá jako SVG, zkusíme to primárně takhle
+            if (tryLoadBmp()) return;                      // Zkusíme BMP
+            if (!canBeSvg && tryLoadSvg()) return;         // BMP to není, a pokud jsme dosud nezkusili SVG, zkusíme to jako poslední šanci...
+
+            return;
+
+            // Zkusí zpracovat BMP:
+            bool tryLoadBmp()
+            {
+                if (_TryGetBmpImage(contentImage, out var bmpImage))
+                {
+                    __BmpImage = bmpImage;
+                    __BitmapImageIsExternal = false;
+                    _LoadBmpImageSize(bmpImage);
+                    return true;
+                }
+                return false;
+            }
+
+            // Zkusí zpracovat SVG:
+            bool tryLoadSvg()
+            { 
+                if (_TryGetSvgImage(contentImage, out var svgImage))
+                {
+                    __SvgImage = svgImage;
+                    _LoadSvgImageSize(svgImage);
+                    return true;
+                }
+                return false;
+            }
+        }
+        /// <summary>
+        /// Metoda zkusí z dodaného pole byte vytvořit bitmapový obrázek
+        /// </summary>
+        /// <param name="contentImage"></param>
+        /// <param name="bmpImage"></param>
+        /// <returns></returns>
+        private bool _TryGetBmpImage(byte[] contentImage, out Image bmpImage)
+        {
+            bmpImage = null;
+            try
+            {
+                using (var ms = new System.IO.MemoryStream(contentImage))
+                {
+                    bmpImage = Bitmap.FromStream(ms);
+                }
+            }
+            catch
+            {
+                bmpImage = null;
+            }
+            return (bmpImage != null);
+        }
+        /// <summary>
+        /// Metoda zkusí z dodaného pole byte vytvořit vektorový obrázek
+        /// </summary>
+        /// <param name="contentImage"></param>
+        /// <param name="svgImage"></param>
+        /// <returns></returns>
+        private bool _TryGetSvgImage(byte[] contentImage, out DevExpress.Utils.Svg.SvgImage svgImage)
+        {
+            svgImage = null;
+
+            try
+            {
+                using (var ms = new System.IO.MemoryStream(contentImage))
+                {
+                    svgImage = DevExpress.Utils.Svg.SvgImage.FromStream(ms);
+                }
+            }
+            catch
+            {
+                svgImage = null;
+            }
+            return (svgImage != null);
+        }
+        /// <summary>
+        /// Zahodí bytové pole s daty obrázku, zahodí bitmapu i SVG image
+        /// </summary>
+        private void _ResetContentImage()
+        {
+            _ResetBitmapImage();
+            __ContentImage = null;
+            __SvgImage = null;
+            __HasImage = false;
+        }
+        /// <summary>
+        /// Uloží si dodaný SvgImage
+        /// </summary>
+        /// <param name="svgImage"></param>
+        private void _SetSvgImage(DevExpress.Utils.Svg.SvgImage svgImage)
+        {
+            _ResetContentImage();
+            __SvgImage = svgImage;
+            _LoadSvgImageSize(svgImage);
+        }
+        /// <summary>
+        /// Uloží platný Zoom
+        /// </summary>
+        /// <param name="zoom"></param>
+        private void _SetZoom(float zoom)
+        {
+            __Zoom = _AlignRatio(zoom);
+        }
+        /// <summary>
+        /// Uloží platnou pozici
+        /// </summary>
+        /// <param name="position"></param>
+        private void _SetPosition(PointF position)
+        {
+            __Position = new PointF(_AlignRatio(position.X), _AlignRatio(position.Y));
+        }
+        /// <summary>
+        /// Zarovná hodnotu do rozmezí 0-1 včetně
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        private static float _AlignRatio(float value)
+        {
+            return (value < 0f ? 0f : (value > 1f ? 1f : value));
+        }
+        #endregion
+        #region Public rozhraní
+        /// <summary>
+        /// Obsahuje true, pokud reálně máme navázán Control
+        /// </summary>
+        public bool HasOwnerControl { get { return (__OwnerControl != null); } }
+        /// <summary>
+        /// Obsahuje true, pokud byl setován Control (i kdyby bylo setováno null). Je to příznak toho, že se o to volající pokusil.
+        /// </summary>
+        public bool WasStoredControl { get { return (__OwnerControl != null); } }
+        /// <summary>
+        /// Vlastník, na něm se odchytávají události myši tak, aby klikací mapa mohla reagovat a klikat.
+        /// </summary>
+        public Control OwnerControl { get { return __OwnerControl; } set { _SetOwnerControl(value); } }
+        /// <summary>
+        /// Obsahuje true tehdy, když máme připravený obrázek k vykreslení
+        /// </summary>
+        public bool HasImage { get { return __HasImage; } }
+        /// <summary>
+        /// Obsah obrázku jako Bytové pole. Interně se rozpozná, zda jde o Image nebo SvgImage.
+        /// </summary>
+        public byte[] ContentImage { get { return __ContentImage; } set { _SetContentImage(value); } }
+        /// <summary>
+        /// Máme BMP image?
+        /// </summary>
+        public bool HasBmpImage { get { return (__BmpImage != null); } }
+        /// <summary>
+        /// Bitmapový obrázek. 
+        /// Pokud bude setován, pak zdejší třída neprovádí jeho Dispose.
+        /// Může zde být bitmapa vygenerovaná z dat v <see cref="ContentImage"/>.
+        /// </summary>
+        public Image BmpImage { get { return __BmpImage; } set { _SetBitmapImage(value); } }
+        /// <summary>
+        /// Máme SVG image?
+        /// </summary>
+        public bool HasSvgImage { get { return (__SvgImage != null); } }
+        /// <summary>
+        /// Vektorový obrázek.
+        /// Může zde být SvgImage vygenerovaný z dat v <see cref="ContentImage"/>.
+        /// </summary>
+        public DevExpress.Utils.Svg.SvgImage SvgImage { get { return __SvgImage; } set { _SetSvgImage(value); } }
+        /// <summary>
+        /// Měřítko obrázku, default = 1.00 = vyplní celý dostupný prostor.
+        /// Pro obrázek zabírající například 20% plochy vepište hodnotu 0.20f
+        /// </summary>
+        public float Zoom { get { return __Zoom; } set { _SetZoom(value); } }
+        /// <summary>
+        /// Umístění obrázku relativně v ploše. 
+        /// Hodnota X udává pozici na ose X zleva doprava v rozsahu 0.00 - 1.00;
+        /// Hodnota Y udává pozici na ose Y zhora dolů v rozsahu 0.00 - 1.00;
+        /// Například pro umístění úplně vlevo téměř dole vepište hodnotu { 0.00f, 0.90f }
+        /// </summary>
+        public PointF Position { get { return __Position; } set { _SetPosition(value); } }
+
+        /// <summary>
+        /// Smaže deklarace všech prostorů, které byly zadány v <see cref="AddArea(RectangleF, object)"/>
+        /// </summary>
+        public void Clear()
+        {
+            __AreaItems.Clear();
+        }
+        /// <summary>
+        /// Přidá další prostor a jeho identifikátor.
+        /// Souřadnice je dána relativne v hodnotách 0.00 - 1.00, relativně k celému obrázku.
+        /// Pokud bude definováno více oblastí nad jedním místem (tzn. překrývající se na ose Z), pak Aktivní oblast bude ta posledně přidaná pro danou souřadnici.
+        /// Ta bude po kliknutí předána do eventu <see cref="Click"/> v property <see cref="AreaClickArgs.UserData"/>.
+        /// </summary>
+        /// <param name="relativeBounds">Relativní souřadnice v rámci celého obrázku, v rozsahu 0.00 - 1.00 </param>
+        /// <param name="userData">Identifikace prostoru, bude předána v eventu <see cref="Click"/> do handleru, v property <see cref="AreaClickArgs.UserData"/>.</param>
+        public void AddArea(RectangleF relativeBounds, object userData)
+        {
+            __AreaItems.Add(new Area(relativeBounds, userData));
+        }
+        /// <summary>
+        /// Obsahuje true, pokud this mapa má nějaké definované oblasti. Pokud nemá, pak celý prostor obrázku tvoří jednu oblast.
+        /// </summary>
+        public bool HasArea { get { return (__AreaItems.Count > 0); } }
+        /// <summary>
+        /// Metoda vrátí souřadnice pro Image v daném prostoru, s ohledem na měřítko a zarovnání
+        /// </summary>
+        /// <param name="availableBounds"></param>
+        /// <returns></returns>
+        public Rectangle? GetImageBounds(RectangleF availableBounds)
+        {
+            if (!this.HasImage || !this.__ImageSize.HasValue) return null;
+            SizeF fullSize = this.__ImageSize.Value.ZoomTo(availableBounds.Size);
+
+            SizeF zoomSize = fullSize.Multiply(this.__Zoom);
+            float dx = availableBounds.Width - zoomSize.Width;
+            float dy = availableBounds.Height - zoomSize.Height;
+            var position = this.Position;
+            float px = dx * position.X;
+            float py = dy * position.Y;
+            RectangleF imageBounds = new RectangleF(availableBounds.X + px, availableBounds.Y + py, zoomSize.Width, zoomSize.Height);
+            _RecalcAreaCurrentBounds(imageBounds);
+            return Rectangle.Round(imageBounds);
+        }
+        /// <summary>
+        /// Událost, když uživatel klikne v aktivním prostoru
+        /// </summary>
+        public event EventHandler<AreaClickArgs> Click;
+        /// <summary>
+        /// Argument pro událost <see cref="DxImageAreaMap.Click"/>. V property <see cref="UserData"/> je uložena identifikace prostoru.
+        /// </summary>
+        public class AreaClickArgs : EventArgs
+        {
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="userData"></param>
+            public AreaClickArgs(object userData)
+            {
+                this.UserData = userData;
+            }
+            /// <summary>
+            /// Data identifikující cílový prostor, kde uživatel kliknul.
+            /// Data byla zadána v metodě <see cref="DxImageAreaMap.AddArea(RectangleF, object)"/> jako druhý parametr.
+            /// </summary>
+            public object UserData { get; private set; }
+        }
+        #endregion
+        #region Fyzické souřadnice obrázku, odvozené souřadnice klikací mapy
+        /// <summary>
+        /// Uloží si velikost obrázku BMP
+        /// </summary>
+        /// <param name="bmpImage"></param>
+        private void _LoadBmpImageSize(Image bmpImage)
+        {
+            __ImageSize = null;
+            if (bmpImage is null) return;
+            var bmpSize = bmpImage.Size;
+            __ImageSize = new SizeF((float)bmpSize.Width, (float)bmpSize.Height);
+            __HasImage = true;
+        }
+        /// <summary>
+        /// Uloží si velikost obrázku SVG
+        /// </summary>
+        /// <param name="svgImage"></param>
+        private void _LoadSvgImageSize(DevExpress.Utils.Svg.SvgImage svgImage)
+        {
+            __ImageSize = null;
+            if (svgImage is null) return;
+            __ImageSize = new SizeF((float)svgImage.Width, (float)svgImage.Height);
+            __HasImage = true;
+        }
+        /// <summary>
+        /// Uloží si danou pozici obrázku do <see cref="__ImageBounds"/>.
+        /// Určí souřadnice oblastí v klikací mapě.
+        /// </summary>
+        /// <param name="imageBounds"></param>
+        private void _RecalcAreaCurrentBounds(RectangleF imageBounds)
+        {
+            __ImageBounds = Rectangle.Round(imageBounds);
+            if (!HasArea) return;
+            foreach (var area in __AreaItems)
+                area.CalculateCurrentBounds(imageBounds);
+        }
+        /// <summary>
+        /// Velikost obrázku získaná přímo z něj, slouží jako základ pro další výpočty jeho reálné souřadnice
+        /// </summary>
+        private SizeF? __ImageSize;
+        /// <summary>
+        /// Reálná fyzická souřadnice obrázku v koordinátech controlu, v těchto souřadnicích je vykreslen a je aktivní
+        /// </summary>
+        private Rectangle? __ImageBounds;
+        /// <summary>
+        /// Jednotlivé prvky
+        /// </summary>
+        private List<Area> __AreaItems;
+        /// <summary>
+        /// Popis jednoho klikacího prostoru
+        /// </summary>
+        private class Area
+        {
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="relativeBounds"></param>
+            /// <param name="userData"></param>
+            public Area(RectangleF relativeBounds, object userData)
+            {
+                float l = _AlignRatio(relativeBounds.Left);
+                float t = _AlignRatio(relativeBounds.Top);
+                float r = _AlignRatio(relativeBounds.Right);
+                float b = _AlignRatio(relativeBounds.Bottom);
+                this.RelativeBounds = RectangleF.FromLTRB(l, t, r, b);
+                this.UserData = userData;
+                this.CurrentBounds = null;
+            }
+            /// <summary>
+            /// Relativní souřadnice v hodnotách 0.00 - 1.00
+            /// </summary>
+            public RectangleF RelativeBounds { get; private set; }
+            /// <summary>
+            /// Uživatelova informace k danému prostoru, to je jeho věc
+            /// </summary>
+            public object UserData { get; private set; }
+            /// <summary>
+            /// Aktuální souřadnice v pixelech na aktuálním controlu
+            /// </summary>
+            public Rectangle? CurrentBounds { get; private set; }
+            /// <summary>
+            /// Vypočítá <see cref="CurrentBounds"/> podle <see cref="RelativeBounds"/> a aktuálního prostoru obrázku <paramref name="imageBounds"/>.
+            /// </summary>
+            /// <param name="imageBounds"></param>
+            public void CalculateCurrentBounds(RectangleF imageBounds)
+            {
+                float bx = imageBounds.X;
+                float by = imageBounds.Y;
+                float iw = imageBounds.Width;
+                float ih = imageBounds.Height;
+
+                var relBounds = this.RelativeBounds;
+
+                float ax = bx + relBounds.X * iw;
+                float ay = by + (relBounds.Y * ih);
+                float aw = relBounds.Width * iw;
+                float ah = relBounds.Height * ih;
+
+                this.CurrentBounds = Rectangle.Round(new RectangleF(ax, ay, aw, ah));
+            }
+        }
+        #endregion
+        #region Eventhandlery vizuálního controlu
+        /// <summary>
+        /// Handler události MouseMove: řeší změnu kurzoru
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _OwnerControl_MouseMove(object sender, MouseEventArgs e)
+        {
+            Point mouseLocation = e.Location;
+            bool isOnBounds = __ImageBounds.HasValue && __ImageBounds.Value.Contains(mouseLocation);
+            if (this.HasArea)
+                _OwnerControl_MouseMoveArea(isOnBounds, mouseLocation);
+            else
+                _OwnerControl_MouseMoveImage(isOnBounds, mouseLocation);
+            __IsMouseCursorOnImage = isOnBounds;
+        }
+        /// <summary>
+        /// Řešení pohybu myši, máme definované prostory <see cref="__AreaItems"/>
+        /// </summary>
+        /// <param name="isOnBounds"></param>
+        /// <param name="mouseLocation"></param>
+        private void _OwnerControl_MouseMoveArea(bool isOnBounds, Point mouseLocation)
+        {
+            Area oldArea = __OnMouseAreaItem;
+            Area newArea = null;
+            bool oldIsOn = (oldArea != null);
+            bool newIsOn = isOnBounds && _TryGetArea(mouseLocation, out newArea);
+            _TabbedControlImageMouseChange(oldIsOn, newIsOn);
+            __OnMouseAreaItem = newArea;
+        }
+        /// <summary>
+        /// Řešení pohybu myši, nejsou definované prostory <see cref="__AreaItems"/>
+        /// </summary>
+        /// <param name="isOnBounds"></param>
+        /// <param name="mouseLocation"></param>
+        private void _OwnerControl_MouseMoveImage(bool isOnBounds, Point mouseLocation)
+        {
+            bool oldIsOn = __IsMouseCursorOnImage;
+            bool newIsOn = isOnBounds;
+            _TabbedControlImageMouseChange(oldIsOn, newIsOn);
+        }
+        /// <summary>
+        /// Handler události MouseDown: řeší kliknutí na obrázek
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _OwnerControl_MouseDown(object sender, MouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.Left)
+            {
+                Point mouseLocation = e.Location;
+                bool isOnBounds = __ImageBounds.HasValue && __ImageBounds.Value.Contains(mouseLocation);
+                if (this.HasArea)
+                    _OwnerControl_MouseClickArea(isOnBounds, mouseLocation);
+                else
+                    _OwnerControl_MouseClickImage(isOnBounds, mouseLocation);
+            }
+        }
+        /// <summary>
+        /// Řešení kliknutí levé myši, máme definované prostory <see cref="__AreaItems"/>
+        /// </summary>
+        /// <param name="isOnBounds"></param>
+        /// <param name="mouseLocation"></param>
+        private void _OwnerControl_MouseClickArea(bool isOnBounds, Point mouseLocation)
+        {
+            Area newArea = null;
+            bool newIsOn = isOnBounds && _TryGetArea(mouseLocation, out newArea);
+            if (newIsOn)
+                _RunClick(newArea.UserData);
+        }
+        /// <summary>
+        /// Řešení kliknutí levé myši, nejsou definované prostory <see cref="__AreaItems"/>
+        /// </summary>
+        /// <param name="isOnBounds"></param>
+        /// <param name="mouseLocation"></param>
+        private void _OwnerControl_MouseClickImage(bool isOnBounds, Point mouseLocation)
+        {
+            if (isOnBounds)
+                _RunClick(null);
+        }
+        /// <summary>
+        /// Handler události MouseLeave: řeší změnu kurzoru na Default
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _OwnerControl_MouseLeave(object sender, EventArgs e)
+        {
+            _TabbedControlImageMouseLeave();
+        }
+        /// <summary>
+        /// Vstup myši na obrázek: změna stavu
+        /// </summary>
+        private void _TabbedControlImageMouseChange(bool oldIsOn, bool newIsOn)
+        {
+            if (!oldIsOn && newIsOn)
+                _TabbedControlImageMouseEnter();
+            else if (oldIsOn && !newIsOn)
+                _TabbedControlImageMouseLeave();
+        }
+        /// <summary>
+        /// Vstup myši na obrázek: změna kurzoru
+        /// </summary>
+        private void _TabbedControlImageMouseEnter()
+        {
+            if (this.HasOwnerControl)
+                __OwnerControl.Cursor = Cursors.Hand;
+            __IsMouseCursorOnImage = true;
+        }
+        /// <summary>
+        /// Odchod myší z obrázku: default kurzor
+        /// </summary>
+        private void _TabbedControlImageMouseLeave()
+        {
+            if (this.HasOwnerControl)
+                __OwnerControl.Cursor = Cursors.Default;
+            __IsMouseCursorOnImage = false;
+        }
+        /// <summary>
+        /// Zkusí najít poslední prvek v <see cref="__AreaItems"/>, který se nachází na dané souřadnici
+        /// </summary>
+        /// <param name="point"></param>
+        /// <param name="area"></param>
+        /// <returns></returns>
+        private bool _TryGetArea(Point point, out Area area)
+        {
+            return __AreaItems.TryGetLast(a => a.CurrentBounds.HasValue && a.CurrentBounds.Value.Contains(point), out area);
+        }
+        /// <summary>
+        /// Vyvolá událost <see cref="Click"/>
+        /// </summary>
+        /// <param name="userData"></param>
+        private void _RunClick(object userData)
+        {
+            this.Click?.Invoke(this, new AreaClickArgs(userData));
+        }
+        /// <summary>
+        /// Prvek nacházející se pod myší; 
+        /// </summary>
+        private Area __OnMouseAreaItem;
+        /// <summary>
+        /// Myš se nachází nad obrázkem jako celek
+        /// </summary>
+        private bool __IsMouseCursorOnImage;
+        #endregion
+    }
     #endregion
     #region DxChartControl
     /// <summary>

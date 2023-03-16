@@ -5733,7 +5733,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         public static string RibbonSkins_ForeColorInCaptionQuickAccessToolbar2010 { get { return RibbonSkins + "ForeColorInCaptionQuickAccessToolbar2010"; } }
 
         /// <summary>Jméno celého skinu</summary>
-        public static string TabSkins { get { return "TabHeaderTextColorActive"; } }
+        public static string TabSkins { get { return "TabSkins."; } }
         /// <summary>Jméno konkrétní barvy konkrétního skinu</summary>
         public static string TabSkins_TabHeaderTextColorActive { get { return TabSkins + "TabHeaderTextColorActive"; } }
         /// <summary>Jméno konkrétní barvy konkrétního skinu</summary>
@@ -7896,6 +7896,16 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Chyba na straně aplikace (nečekaná NULL hodnota, volání metody před inicializací nebo po Dispose, atd)
         /// </summary>
         SystemError
+    }
+    #endregion
+    #region class UnZipper
+    public class UnZipper
+    {
+        public void UnZip(string file)
+        {
+            // Microsoft.Deployment.Compression.Cab
+//             System.IO.Compression.DeflateStream
+        }
     }
     #endregion
     #region class DxStyleToConfigListener : spojovací prvek mezi stylem (skin + paleta) z DevExpress a (abstract) konfigurací

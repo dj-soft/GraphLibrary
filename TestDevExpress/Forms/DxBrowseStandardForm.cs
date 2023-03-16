@@ -25,9 +25,9 @@ namespace TestDevExpress.Forms
             this.CreateBrowse();
         }
         /// <summary>
-        /// Deklarace tlačítka v <see cref="MainAppForm"/> pro spuštění tohoto formuláře
+        /// Deklarace tlačítka v <see cref="TestDevExpress.Forms.MainAppForm"/> pro spuštění tohoto formuláře
         /// </summary>
-        public static RunFormInfo RunFormInfo { get { return new RunFormInfo() { ButtonText = "Browse", ButtonImage = "svgimages/spreadsheet/chartgridlines.svg" }; } }
+        public static TestDevExpress.Forms.RunFormInfo RunFormInfo { get { return new TestDevExpress.Forms.RunFormInfo() { ButtonText = "Browse", ButtonImage = "svgimages/spreadsheet/chartgridlines.svg" }; } }
         #endregion
         #region Ribbon a StatusBar - obsah a rozcestník
         /// <summary>

@@ -3794,22 +3794,22 @@ namespace Noris.Clients.Win.Components.AsolDX
         protected override void OnPaintCore(GraphicsCache cache)
         {
             base.OnPaintCore(cache);
-            if (UseDxPainter || true)
-            {
-                Rectangle backBounds = this.ClientRectangle;
-                var hop = new DevExpress.Utils.Drawing.ButtonObjectPainter();
-                // hop.DrawObject(new ObjectInfoArgs(cache, backBounds, ObjectState.Hot));
+            //if (UseDxPainter || true)
+            //{
+            //    Rectangle backBounds = this.ClientRectangle;
+            //    var hop = new DevExpress.Utils.Drawing.ButtonObjectPainter();
+            //    // hop.DrawObject(new ObjectInfoArgs(cache, backBounds, ObjectState.Hot));
 
-                var oia = new ObjectInfoArgs(cache, backBounds, ObjectState.Hot);
-                // DevExpress.Utils.Drawing.WindowsXPHeaderObjectPainter.Empty.DrawObject(oia);
-                // DevExpress.Utils.Drawing.HeaderObjectPainter.Empty.DrawObject(oia);
+            //    var oia = new ObjectInfoArgs(cache, backBounds, ObjectState.Hot);
+            //    // DevExpress.Utils.Drawing.WindowsXPHeaderObjectPainter.Empty.DrawObject(oia);
+            //    // DevExpress.Utils.Drawing.HeaderObjectPainter.Empty.DrawObject(oia);
 
-                // DevExpress.Utils.Drawing.Style3DButtonObjectPainter.Empty.DrawObject(oia);
+            //    // DevExpress.Utils.Drawing.Style3DButtonObjectPainter.Empty.DrawObject(oia);
 
-                cache.FillRectangle(Brushes.LightSkyBlue, backBounds);
+            //    cache.FillRectangle(Brushes.LightSkyBlue, backBounds);
 
 
-            }
+            //}
         }
         /// <summary>
         /// OnPaint
@@ -3819,19 +3819,27 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             base.OnPaint(e);
 
-            bool wfPaint = false;
-            if (UseDxPainter)
-            {
-            }
-            else if (wfPaint)
-            {
-                if (HasPaintBackground(out int margins, out Color backColor, out Color? backColorEnd))
+            var tabSkin = DxComponent.GetSkinInfo(SkinElementColor.TabSkins);
+            var navBarSkin = DxComponent.GetSkinInfo("NavBarSkins");
+            var navPaneSkin = DxComponent.GetSkinInfo("NavPaneSkins");
+
+            DevExpress.Skins.SkinElement skel = DevExpress.Skins.SkinManager.GetSkinElement(DevExpress.Skins.SkinProductId.Ribbon, DevExpress.LookAndFeel.UserLookAndFeel.Default, "PopupGalleryGroupCaption");
+            var appd = skel.GetAppearanceDefault();
+
+            //bool wfPaint = true;
+            //if (UseDxPainter)
+            //{
+            //}
+            //else if (wfPaint)
+            //{
+            if (HasPaintBackground(out int margins, out Color backColor, out Color? backColorEnd))
                     PaintBackground(e, margins, backColor, backColorEnd);
 
                 if (HasPaintLine(out int lineWidth, out Color lineColor, out Color? lineColorEnd))
                     PaintLine(e, lineWidth, lineColor, lineColorEnd);
-            }
+            //}
         }
+
         /// <summary>
         /// Vrací true, pokud se má kreslit Backgrounds
         /// </summary>
