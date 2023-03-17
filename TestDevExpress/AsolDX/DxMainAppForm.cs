@@ -529,13 +529,16 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="imageMap"></param>
         private void _PrepareImageMap(DxImageAreaMap imageMap)
         {
-            string imageFile = @"c:\DavidPrac\VsProjects\TestDevExpress\TestDevExpress\ImagesTest\Svg\homer-simpson.svg";
+            string imageFile = @"c:\DavidPrac\VsProjects\TestDevExpress\TestDevExpress\ImagesTest\Image01.png"; // @"c:\DavidPrac\VsProjects\TestDevExpress\TestDevExpress\ImagesTest\Svg\homer-simpson.svg";
+            imageFile = @"Image01.png"; // @"c:\DavidPrac\VsProjects\TestDevExpress\TestDevExpress\ImagesTest\Svg\homer-simpson.svg";
+            if (!System.IO.File.Exists(imageFile)) return;
+
             imageMap.ContentImage = System.IO.File.ReadAllBytes(imageFile);
             imageMap.Zoom = 0.40f;
-            imageMap.RelativePosition = new PointF(0.04f, 0.96f);
+            imageMap.RelativePosition = new PointF(0.98f, 0.98f);
 
             imageMap.ClearActiveArea();
-            imageMap.AddActiveArea(new RectangleF(0.05f, 0.05f, 0.80f, 0.20f), @"https://www.helios.eu", DxCursorType.Hand);
+            imageMap.AddActiveArea(new RectangleF(0.05f, 0.05f, 0.80f, 0.20f), @"https://www.helios.eu", DxCursorType.Cross);
             imageMap.AddActiveArea(new RectangleF(0.50f, 0.35f, 0.40f, 0.30f), @"https://www.seznam.cz", DxCursorType.Hand);
             imageMap.AddActiveArea(new RectangleF(0.05f, 0.60f, 0.40f, 0.30f), @"https://www.idnes.cz", DxCursorType.Hand);
             imageMap.AddActiveArea(new RectangleF(0.00f, 0.80f, 1.00f, 0.25f), @"c:\Windows\notepad.exe", DxCursorType.Help);
@@ -576,7 +579,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (!this.__TabbedView.IsEmpty) return;
 
             var clientBounds = e.Bounds;
-            var innerBounds = Rectangle.FromLTRB(clientBounds.Left + 36, clientBounds.Top + 48, clientBounds.Right - 36, clientBounds.Bottom - 36);
+            var innerBounds = Rectangle.FromLTRB(clientBounds.Left + 12, clientBounds.Top + 48, clientBounds.Right - 12, clientBounds.Bottom - 12);
             imageMap.PaintImageMap(e.GraphicsCache, innerBounds);
         }
         /// <summary>

@@ -6326,6 +6326,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             _ResetOwnerControl();
             if (ownerControl != null)
             {
+                ownerControl.ClientSizeChanged += _OwnerControl_ClientSizeChanged;
                 ownerControl.MouseEnter += _OwnerControl_MouseEnter;
                 ownerControl.MouseMove += _OwnerControl_MouseMove;
                 ownerControl.MouseDown += _OwnerControl_MouseDown;
@@ -6876,6 +6877,16 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Obsahuje true, pokud máme živý Control
         /// </summary>
         protected bool HasLiveOwnerControl { get { var c = this.OwnerControl; return (c != null && c.IsHandleCreated && !c.Disposing && !c.IsDisposed); } }
+        /// <summary>
+        /// Handler události ClientSizeChanged: invaliduje souřadnice. 
+        /// Poté musí přijít nějaké kreslení s aktuálně platnými souřadnicemi, aby se určily zdejší souřadnice a abychom mohli řešit interaktivitu.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _OwnerControl_ClientSizeChanged(object sender, EventArgs e)
+        {
+            __CurrentImageBounds = null;
+        }
         /// <summary>
         /// Handler události MouseEnter: nuluje stavy myši a vyvolá 
         /// </summary>
