@@ -277,6 +277,109 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public static Form MainForm { get { return Instance._MainForm; } }
         /// <summary>
+        /// Do daného Controlu nastaví daný Cursor. Zde se provádí konverze z hodnoty Enum na objekt Cursor, na defaultní systémové kurzory z <see cref="Cursors"/>.
+        /// </summary>
+        /// <param name="control"></param>
+        /// <param name="cursorType"></param>
+        public static void SetCursorToControl(Control control, DxCursorType? cursorType)
+        {
+            if (control != null && control.IsHandleCreated && !control.Disposing && !control.IsDisposed)
+            {
+                if (cursorType.HasValue)
+                {
+                    switch (cursorType.Value)
+                    {
+                        case DxCursorType.Default:
+                            control.Cursor = Cursors.Default;
+                            break;
+                        case DxCursorType.AppStarting:
+                            control.Cursor = Cursors.AppStarting;
+                            break;
+                        case DxCursorType.PanSW:
+                            control.Cursor = Cursors.PanSW;
+                            break;
+                        case DxCursorType.PanSouth:
+                            control.Cursor = Cursors.PanSouth;
+                            break;
+                        case DxCursorType.PanSE:
+                            control.Cursor = Cursors.PanSE;
+                            break;
+                        case DxCursorType.PanNW:
+                            control.Cursor = Cursors.PanNW;
+                            break;
+                        case DxCursorType.PanNorth:
+                            control.Cursor = Cursors.PanNorth;
+                            break;
+                        case DxCursorType.PanNE:
+                            control.Cursor = Cursors.PanNE;
+                            break;
+                        case DxCursorType.PanEast:
+                            control.Cursor = Cursors.PanEast;
+                            break;
+                        case DxCursorType.NoMoveVert:
+                            control.Cursor = Cursors.NoMoveVert;
+                            break;
+                        case DxCursorType.NoMoveHoriz:
+                            control.Cursor = Cursors.NoMoveHoriz;
+                            break;
+                        case DxCursorType.NoMove2D:
+                            control.Cursor = Cursors.NoMove2D;
+                            break;
+                        case DxCursorType.VSplit:
+                            control.Cursor = Cursors.VSplit;
+                            break;
+                        case DxCursorType.HSplit:
+                            control.Cursor = Cursors.HSplit;
+                            break;
+                        case DxCursorType.Help:
+                            control.Cursor = Cursors.Help;
+                            break;
+                        case DxCursorType.WaitCursor:
+                            control.Cursor = Cursors.WaitCursor;
+                            break;
+                        case DxCursorType.UpArrow:
+                            control.Cursor = Cursors.UpArrow;
+                            break;
+                        case DxCursorType.SizeWE:
+                            control.Cursor = Cursors.SizeWE;
+                            break;
+                        case DxCursorType.SizeNWSE:
+                            control.Cursor = Cursors.SizeNWSE;
+                            break;
+                        case DxCursorType.SizeNS:
+                            control.Cursor = Cursors.SizeNS;
+                            break;
+                        case DxCursorType.SizeNESW:
+                            control.Cursor = Cursors.SizeNESW;
+                            break;
+                        case DxCursorType.SizeAll:
+                            control.Cursor = Cursors.SizeAll;
+                            break;
+                        case DxCursorType.No:
+                            control.Cursor = Cursors.No;
+                            break;
+                        case DxCursorType.IBeam:
+                            control.Cursor = Cursors.IBeam;
+                            break;
+                        case DxCursorType.Cross:
+                            control.Cursor = Cursors.Cross;
+                            break;
+                        case DxCursorType.Arrow:
+                            control.Cursor = Cursors.Arrow;
+                            break;
+                        case DxCursorType.PanWest:
+                            control.Cursor = Cursors.PanWest;
+                            break;
+                        case DxCursorType.Hand:
+                            control.Cursor = Cursors.Hand;
+                            break;
+                    }
+                }
+                else
+                    control.Cursor = Cursors.Default;
+            }
+        }
+        /// <summary>
         /// Zajistí provedení dodané akce v GUI threadu
         /// </summary>
         /// <param name="action">Požadovaná akce; null = nic</param>

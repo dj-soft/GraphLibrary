@@ -6291,7 +6291,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         private bool? __BitmapImageIsExternal;
         private DevExpress.Utils.Svg.SvgImage __SvgImage;
         private float __Zoom;
-        private PointF __Position;
+        private PointF __RelativePosition;
         private bool __HasImage;
         /// <summary>
         /// Naváže se do daného Controlu (naváže zdejší handlery na události Controlu)
@@ -6302,6 +6302,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             _ResetOwnerControl();
             if (ownerControl != null)
             {
+                ownerControl.MouseEnter += _OwnerControl_MouseEnter;
                 ownerControl.MouseMove += _OwnerControl_MouseMove;
                 ownerControl.MouseDown += _OwnerControl_MouseDown;
                 ownerControl.MouseLeave += _OwnerControl_MouseLeave;
@@ -6316,9 +6317,10 @@ namespace Noris.Clients.Win.Components.AsolDX
             var ownerControl = __OwnerControl;
             if (ownerControl != null)
             {
-                ownerControl.MouseMove += _OwnerControl_MouseMove;
-                ownerControl.MouseDown += _OwnerControl_MouseDown;
-                ownerControl.MouseLeave += _OwnerControl_MouseLeave;
+                ownerControl.MouseEnter -= _OwnerControl_MouseEnter;
+                ownerControl.MouseMove -= _OwnerControl_MouseMove;
+                ownerControl.MouseDown -= _OwnerControl_MouseDown;
+                ownerControl.MouseLeave -= _OwnerControl_MouseLeave;
             }
             __OwnerControl = null;
         }
@@ -6446,6 +6448,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             __ContentImage = null;
             __SvgImage = null;
             __HasImage = false;
+            _Invalidate();
         }
         /// <summary>
         /// Uloží si dodaný SvgImage
@@ -6464,14 +6467,16 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void _SetZoom(float zoom)
         {
             __Zoom = _AlignRatio(zoom);
+            _Invalidate();
         }
         /// <summary>
-        /// Uloží platnou pozici
+        /// Uloží platnou relativní pozici
         /// </summary>
         /// <param name="position"></param>
-        private void _SetPosition(PointF position)
+        private void _SetRelativePosition(PointF position)
         {
-            __Position = new PointF(_AlignRatio(position.X), _AlignRatio(position.Y));
+            __RelativePosition = new PointF(_AlignRatio(position.X), _AlignRatio(position.Y));
+            _Invalidate();
         }
         /// <summary>
         /// Zarovná hodnotu do rozmezí 0-1 včetně
@@ -6534,14 +6539,30 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Hodnota Y udává pozici na ose Y zhora dolů v rozsahu 0.00 - 1.00;
         /// Například pro umístění úplně vlevo téměř dole vepište hodnotu { 0.00f, 0.90f }
         /// </summary>
-        public PointF Position { get { return __Position; } set { _SetPosition(value); } }
+        public PointF RelativePosition { get { return __RelativePosition; } set { _SetRelativePosition(value); } }
+        /// <summary>
+        /// Reálná fyzická souřadnice obrázku v koordinátech controlu, v těchto souřadnicích je vykreslen a je aktivní
+        /// </summary>
+        public Rectangle? CurrentImageBounds { get { return __CurrentImageBounds; } }
 
         /// <summary>
-        /// Smaže deklarace všech prostorů, které byly zadány v <see cref="AddArea(RectangleF, object)"/>
+        /// Smaže deklarace všech prostorů, které byly zadány v <see cref="AddActiveArea(RectangleF, object, DxCursorType, string, string)"/>
         /// </summary>
-        public void Clear()
+        public void ClearActiveArea()
         {
             __AreaItems.Clear();
+            _Invalidate();
+        }
+        /// <summary>
+        /// Aktivuje celou oblast obrázku jako aktivní.
+        /// Po kliknutí kamkoliv na obrázek bude vyvolán event <see cref="Click"/> a v property <see cref="AreaClickArgs.UserData"/> bude zdejší parametr <paramref name="userData"/>.
+        /// </summary>
+        /// <param name="userData">Identifikace prostoru, bude předána v eventu <see cref="Click"/> do handleru, v property <see cref="AreaClickArgs.UserData"/>.</param>
+        /// <param name="cursorType">Typ kurzoru na oblasti</param>
+        public void AddActiveWhileArea(object userData = null, DxCursorType cursorType = DxCursorType.Default)
+        {
+            __AreaItems.Add(new Area(new RectangleF(0f, 0f, 1f, 1f), userData, cursorType, null, null));
+            _Invalidate();
         }
         /// <summary>
         /// Přidá další prostor a jeho identifikátor.
@@ -6551,36 +6572,41 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="relativeBounds">Relativní souřadnice v rámci celého obrázku, v rozsahu 0.00 - 1.00 </param>
         /// <param name="userData">Identifikace prostoru, bude předána v eventu <see cref="Click"/> do handleru, v property <see cref="AreaClickArgs.UserData"/>.</param>
-        public void AddArea(RectangleF relativeBounds, object userData)
+        /// <param name="cursorType">Typ kurzoru na oblasti</param>
+        /// <param name="toolTipTitle">Titulek tooltipu</param>
+        /// <param name="toolTipText">Text tooltipu</param>
+        public void AddActiveArea(RectangleF relativeBounds, object userData, DxCursorType cursorType = DxCursorType.Hand, string toolTipTitle = null, string toolTipText = null)
         {
-            __AreaItems.Add(new Area(relativeBounds, userData));
+            __AreaItems.Add(new Area(relativeBounds, userData, cursorType, toolTipTitle, toolTipText));
+            _Invalidate();
         }
         /// <summary>
         /// Obsahuje true, pokud this mapa má nějaké definované oblasti. Pokud nemá, pak celý prostor obrázku tvoří jednu oblast.
         /// </summary>
-        public bool HasArea { get { return (__AreaItems.Count > 0); } }
+        public bool HasActiveArea { get { return (__AreaItems.Count > 0); } }
         /// <summary>
-        /// Metoda vrátí souřadnice pro Image v daném prostoru, s ohledem na měřítko a zarovnání
+        /// Metoda vrátí souřadnice pro Image v daném prostoru, s ohledem na měřítko a zarovnání.
+        /// Tuto metodu je nutno volat při každém kreslení controlu v jeho metodě Paint.
+        /// <para/>
+        /// Součástí této metody je i:<br/>
+        /// - Zohlednění měřítka <see cref="Zoom"/> a relativné pozice <see cref="RelativePosition"/>;<br/>
+        /// - Určení souřadnic obrázku v rámci dodaného prostoru;<br/>
+        /// - Kompletní výpočet fyzických souřadnic aktivních prostorů.
         /// </summary>
-        /// <param name="availableBounds"></param>
+        /// <param name="ownerBounds"></param>
         /// <returns></returns>
-        public Rectangle? GetImageBounds(RectangleF availableBounds)
+        public Rectangle? CalculateImageBounds(Rectangle ownerBounds)
         {
             if (!this.HasImage || !this.__ImageSize.HasValue) return null;
-            SizeF fullSize = this.__ImageSize.Value.ZoomTo(availableBounds.Size);
-
-            SizeF zoomSize = fullSize.Multiply(this.__Zoom);
-            float dx = availableBounds.Width - zoomSize.Width;
-            float dy = availableBounds.Height - zoomSize.Height;
-            var position = this.Position;
-            float px = dx * position.X;
-            float py = dy * position.Y;
-            RectangleF imageBounds = new RectangleF(availableBounds.X + px, availableBounds.Y + py, zoomSize.Width, zoomSize.Height);
-            _RecalcAreaCurrentBounds(imageBounds);
-            return Rectangle.Round(imageBounds);
+            _CheckValidityOwnerBounds(ownerBounds);
+            var imageBounds = __CurrentImageBounds;
+            return (imageBounds.HasValue ? (Rectangle?)Rectangle.Round(imageBounds.Value) : null);
         }
         /// <summary>
-        /// Událost, když uživatel klikne v aktivním prostoru
+        /// Událost, když koncový uživatel klikne v aktivním prostoru.
+        /// Pokud volající kód nezadá aktivní prostory (metoda <see cref="AddActiveArea(RectangleF, object, DxCursorType, string, string)"/>),
+        /// pak žádná obast obrázku nebude aktivní a nikdy nebude vyvolána tato událost!
+        /// Není problém zadat jednu aktivní oblast přes celý obrázek
         /// </summary>
         public event EventHandler<AreaClickArgs> Click;
         /// <summary>
@@ -6598,7 +6624,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
             /// <summary>
             /// Data identifikující cílový prostor, kde uživatel kliknul.
-            /// Data byla zadána v metodě <see cref="DxImageAreaMap.AddArea(RectangleF, object)"/> jako druhý parametr.
+            /// Data byla zadána v metodě <see cref="DxImageAreaMap.AddActiveArea(RectangleF, object, DxCursorType, string, string)"/> jako druhý parametr.
             /// </summary>
             public object UserData { get; private set; }
         }
@@ -6610,6 +6636,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="bmpImage"></param>
         private void _LoadBmpImageSize(Image bmpImage)
         {
+            _Invalidate();
             __ImageSize = null;
             if (bmpImage is null) return;
             var bmpSize = bmpImage.Size;
@@ -6622,23 +6649,62 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="svgImage"></param>
         private void _LoadSvgImageSize(DevExpress.Utils.Svg.SvgImage svgImage)
         {
+            _Invalidate();
             __ImageSize = null;
             if (svgImage is null) return;
             __ImageSize = new SizeF((float)svgImage.Width, (float)svgImage.Height);
             __HasImage = true;
         }
         /// <summary>
-        /// Uloží si danou pozici obrázku do <see cref="__ImageBounds"/>.
-        /// Určí souřadnice oblastí v klikací mapě.
+        /// Invaliduje platnost souřadnic.
+        /// Volá se po každé změně zdejších public dat:
+        /// změna obrázku;
+        /// <see cref="Zoom"/> a <see cref="RelativePosition"/>;
+        /// <see cref="AddActiveArea(RectangleF, object, DxCursorType, string, string)"/>,
+        /// <see cref="ClearActiveArea()"/>.
         /// </summary>
-        /// <param name="imageBounds"></param>
-        private void _RecalcAreaCurrentBounds(RectangleF imageBounds)
+        private void _Invalidate()
         {
-            __ImageBounds = Rectangle.Round(imageBounds);
-            if (!HasArea) return;
+            __LastOwnerBounds = null;
+        }
+        /// <summary>
+        /// Metoda zajistí platnost všech souřadnic s ohledem na zadané souřadnice vlastníka, aktuální <see cref="Zoom"/> a <see cref="RelativePosition"/>, 
+        /// a zajistí platnost souřadnic aktivních prostor <see cref="__AreaItems"/>.
+        /// Pokud jsou hodnoty shodné jako posledně, nemusí nic počítat.
+        /// </summary>
+        /// <param name="ownerBounds"></param>
+        private void _CheckValidityOwnerBounds(Rectangle ownerBounds)
+        {
+            var imageSizeF = this.__ImageSize;
+            if (!this.HasImage || !imageSizeF.HasValue) return;
+
+            if (__LastOwnerBounds.HasValue && __LastOwnerBounds.Value == ownerBounds) return;   // Data jsou validní, netřeba je přepočítávat pokaždé.
+
+            Rectangle ownerBoundsF = ownerBounds;                    // Int32 => float
+            SizeF fullSize = imageSizeF.Value.ZoomTo(ownerBoundsF.Size);       // Získám velikost obrázku na 100% v dostupném prostoru, se zachováním poměru stran obrázku
+            SizeF zoomSize = fullSize.Multiply(this.__Zoom);         // Cílová velikost obrázku s požadovaným Zoomem (např. 0.25 = 1/4 celkové dostupné velikosti)
+
+            // Umístím cílovou velikost obrázku na relativní pozici:
+            float dx = ownerBoundsF.Width - zoomSize.Width;          // dx a dy je "volný prostor" kolem obrázku v dané ose, v rámci přiděleného prostoru (Size) v ownerBounds
+            float dy = ownerBoundsF.Height - zoomSize.Height;
+            var position = this.RelativePosition;
+            float px = dx * position.X;                              // px, py: Pixelová pozice X a Y v rámci přiděleného prostoru (Size) v ownerBounds
+            float py = dy * position.Y;
+
+            // Finální souřadnice obrázku jako celku:
+            RectangleF imageBounds = new RectangleF(ownerBoundsF.X + px, ownerBoundsF.Y + py, zoomSize.Width, zoomSize.Height);
+
+            // Určíme souřadnice jednotlivých aktivních prostorů v rámci souřadnic celého obrázku (=klikací mapa):
             foreach (var area in __AreaItems)
                 area.CalculateCurrentBounds(imageBounds);
+
+            __CurrentImageBounds = Rectangle.Round(imageBounds);
         }
+        /// <summary>
+        /// Souřadnice vnějšího prostoru, pro které byly posledně vypočteny souřadnice naše.
+        /// Pokud je null anebo pokud nové souřadnice jsou jiné, je nutno vše přepočítat.
+        /// </summary>
+        private Rectangle? __LastOwnerBounds;
         /// <summary>
         /// Velikost obrázku získaná přímo z něj, slouží jako základ pro další výpočty jeho reálné souřadnice
         /// </summary>
@@ -6646,7 +6712,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Reálná fyzická souřadnice obrázku v koordinátech controlu, v těchto souřadnicích je vykreslen a je aktivní
         /// </summary>
-        private Rectangle? __ImageBounds;
+        private Rectangle? __CurrentImageBounds;
         /// <summary>
         /// Jednotlivé prvky
         /// </summary>
@@ -6659,9 +6725,12 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// <summary>
             /// Konstruktor
             /// </summary>
-            /// <param name="relativeBounds"></param>
-            /// <param name="userData"></param>
-            public Area(RectangleF relativeBounds, object userData)
+            /// <param name="relativeBounds">Relativní souřadnice oblasti v hodnotách 0.00 až 1.00 v obou osách, vztahují se k ploše obrázku</param>
+            /// <param name="userData">Uživatelova data = identifikátor oblasti, nebo cílová akce na oblasti. Předává se do eventu Click.</param>
+            /// <param name="cursorType">Typ kurzoru na oblasti</param>
+            /// <param name="toolTipTitle">Titulek tooltipu</param>
+            /// <param name="toolTipText">Text tooltipu</param>
+            public Area(RectangleF relativeBounds, object userData, DxCursorType cursorType, string toolTipTitle, string toolTipText)
             {
                 float l = _AlignRatio(relativeBounds.Left);
                 float t = _AlignRatio(relativeBounds.Top);
@@ -6669,6 +6738,10 @@ namespace Noris.Clients.Win.Components.AsolDX
                 float b = _AlignRatio(relativeBounds.Bottom);
                 this.RelativeBounds = RectangleF.FromLTRB(l, t, r, b);
                 this.UserData = userData;
+                this.CursorType = cursorType;
+                this.ToolTipTitle = toolTipTitle;
+                this.ToolTipText = toolTipText;
+
                 this.CurrentBounds = null;
             }
             /// <summary>
@@ -6676,18 +6749,30 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// </summary>
             public RectangleF RelativeBounds { get; private set; }
             /// <summary>
-            /// Uživatelova informace k danému prostoru, to je jeho věc
+            /// Uživatelova data = identifikátor oblasti, nebo cílová akce na oblasti. Předává se do eventu Click.
             /// </summary>
             public object UserData { get; private set; }
             /// <summary>
+            /// Typ kurzoru na oblasti
+            /// </summary>
+            public DxCursorType CursorType { get; private set; }
+            /// <summary>
+            /// Titulek tooltipu
+            /// </summary>
+            public string ToolTipTitle { get; private set; }
+            /// <summary>
+            /// Text tooltipu
+            /// </summary>
+            public string ToolTipText { get; private set; }
+            /// <summary>
             /// Aktuální souřadnice v pixelech na aktuálním controlu
             /// </summary>
-            public Rectangle? CurrentBounds { get; private set; }
+            internal Rectangle? CurrentBounds { get; private set; }
             /// <summary>
             /// Vypočítá <see cref="CurrentBounds"/> podle <see cref="RelativeBounds"/> a aktuálního prostoru obrázku <paramref name="imageBounds"/>.
             /// </summary>
             /// <param name="imageBounds"></param>
-            public void CalculateCurrentBounds(RectangleF imageBounds)
+            internal void CalculateCurrentBounds(RectangleF imageBounds)
             {
                 float bx = imageBounds.X;
                 float by = imageBounds.Y;
@@ -6705,7 +6790,31 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
         }
         #endregion
-        #region Eventhandlery vizuálního controlu
+        #region Eventhandlery vizuálního controlu = interaktivita, a její řešení
+        /// <summary>
+        /// Obsahuje true, pokud máme živý Control
+        /// </summary>
+        protected bool HasLiveOwnerControl { get { var c = this.OwnerControl; return (c != null && c.IsHandleCreated && !c.Disposing && !c.IsDisposed); } }
+        /// <summary>
+        /// Handler události MouseEnter: nuluje stavy myši a vyvolá 
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _OwnerControl_MouseEnter(object sender, EventArgs e)
+        {
+            // Tenhle event proběhne, když je aktivovaná aplikace poté, kdy byla aktivní jiná.
+            // A myš může zrovna stát na našem Image a měla by mít aktivní správný kurzor.
+            // Anebo myš před tím stála na našem Image, pak se aktivovala jiná aplikace, pohnula se myš a nyní je jinde.
+            // Prostě potřebujeme nastavit proměnné a kurzor myši podle aktuální pozice...
+            __IsMouseCursorOnImage = false;
+            __OnMouseAreaItem = null;
+
+            if (!this.HasLiveOwnerControl) return;
+
+            // Zajistíme inicializaci stavu myši na obrázku, jako by se zde pohnula:
+            Point mouseLocation = this.OwnerControl.PointToClient(Control.MousePosition);
+            _OwnerControl_MouseMove(mouseLocation);
+        }
         /// <summary>
         /// Handler události MouseMove: řeší změnu kurzoru
         /// </summary>
@@ -6713,38 +6822,60 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="e"></param>
         private void _OwnerControl_MouseMove(object sender, MouseEventArgs e)
         {
-            Point mouseLocation = e.Location;
-            bool isOnBounds = __ImageBounds.HasValue && __ImageBounds.Value.Contains(mouseLocation);
-            if (this.HasArea)
-                _OwnerControl_MouseMoveArea(isOnBounds, mouseLocation);
-            else
-                _OwnerControl_MouseMoveImage(isOnBounds, mouseLocation);
-            __IsMouseCursorOnImage = isOnBounds;
+            _OwnerControl_MouseMove(e.Location);
         }
         /// <summary>
-        /// Řešení pohybu myši, máme definované prostory <see cref="__AreaItems"/>
+        /// Handler události MouseMove: řeší změnu kurzoru
         /// </summary>
-        /// <param name="isOnBounds"></param>
         /// <param name="mouseLocation"></param>
-        private void _OwnerControl_MouseMoveArea(bool isOnBounds, Point mouseLocation)
+        private void _OwnerControl_MouseMove(Point mouseLocation)
         {
-            Area oldArea = __OnMouseAreaItem;
-            Area newArea = null;
-            bool oldIsOn = (oldArea != null);
-            bool newIsOn = isOnBounds && _TryGetArea(mouseLocation, out newArea);
-            _TabbedControlImageMouseChange(oldIsOn, newIsOn);
-            __OnMouseAreaItem = newArea;
-        }
-        /// <summary>
-        /// Řešení pohybu myši, nejsou definované prostory <see cref="__AreaItems"/>
-        /// </summary>
-        /// <param name="isOnBounds"></param>
-        /// <param name="mouseLocation"></param>
-        private void _OwnerControl_MouseMoveImage(bool isOnBounds, Point mouseLocation)
-        {
-            bool oldIsOn = __IsMouseCursorOnImage;
-            bool newIsOn = isOnBounds;
-            _TabbedControlImageMouseChange(oldIsOn, newIsOn);
+            if (!this.HasActiveArea || !this.HasLiveOwnerControl) return;
+
+            bool oldIsOnImage = __IsMouseCursorOnImage;
+            bool newIsOnImage = __CurrentImageBounds.HasValue && __CurrentImageBounds.Value.Contains(mouseLocation);
+            if (newIsOnImage)
+            {   // Nyní jsem na obrázku:
+                // Najdeme aktivní prostor:
+                Area oldArea = __OnMouseAreaItem;
+                bool oldIsOnArea = (oldArea != null);
+                bool newIsOnArea = _TryGetArea(mouseLocation, out Area newArea);
+
+                // Vyřešíme změny aktivního prostoru:
+                if (!oldIsOnArea && newIsOnArea)
+                {   // Vstup odnikud na Area:
+                    activateArea(newArea);
+                }
+                else if (oldIsOnArea && newIsOnArea && !Object.ReferenceEquals(oldArea, newArea))
+                {   // Přestup ze starého Area do jiného nového Area:
+                    activateArea(newArea);
+                }
+                else if (oldIsOnArea && !newIsOnArea)
+                {   // Odchod ze starého Area:
+                    deactivateArea();
+                }
+
+                __IsMouseCursorOnImage = true;
+            }
+            else 
+            {   // Myš je mimo obrázek:
+                if (oldIsOnImage)
+                    _MouseLeaveImage();
+            }
+
+            // Aktivuje daný prostor
+            void activateArea(Area area)
+            {
+                __OnMouseAreaItem = area;
+                _ActivateCursor(area.CursorType);
+            }
+
+            // Deaktivuje prostor
+            void deactivateArea()
+            {
+                __OnMouseAreaItem = null;
+                _ActivateCursor(null);
+            }
         }
         /// <summary>
         /// Handler události MouseDown: řeší kliknutí na obrázek
@@ -6753,37 +6884,14 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="e"></param>
         private void _OwnerControl_MouseDown(object sender, MouseEventArgs e)
         {
-            if (e.Button == MouseButtons.Left)
-            {
-                Point mouseLocation = e.Location;
-                bool isOnBounds = __ImageBounds.HasValue && __ImageBounds.Value.Contains(mouseLocation);
-                if (this.HasArea)
-                    _OwnerControl_MouseClickArea(isOnBounds, mouseLocation);
-                else
-                    _OwnerControl_MouseClickImage(isOnBounds, mouseLocation);
-            }
-        }
-        /// <summary>
-        /// Řešení kliknutí levé myši, máme definované prostory <see cref="__AreaItems"/>
-        /// </summary>
-        /// <param name="isOnBounds"></param>
-        /// <param name="mouseLocation"></param>
-        private void _OwnerControl_MouseClickArea(bool isOnBounds, Point mouseLocation)
-        {
+            if (!this.HasActiveArea || e.Button != MouseButtons.Left) return;
+
+            Point mouseLocation = e.Location;
+            bool isOnBounds = __CurrentImageBounds.HasValue && __CurrentImageBounds.Value.Contains(mouseLocation);
             Area newArea = null;
             bool newIsOn = isOnBounds && _TryGetArea(mouseLocation, out newArea);
             if (newIsOn)
                 _RunClick(newArea.UserData);
-        }
-        /// <summary>
-        /// Řešení kliknutí levé myši, nejsou definované prostory <see cref="__AreaItems"/>
-        /// </summary>
-        /// <param name="isOnBounds"></param>
-        /// <param name="mouseLocation"></param>
-        private void _OwnerControl_MouseClickImage(bool isOnBounds, Point mouseLocation)
-        {
-            if (isOnBounds)
-                _RunClick(null);
         }
         /// <summary>
         /// Handler události MouseLeave: řeší změnu kurzoru na Default
@@ -6792,35 +6900,40 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="e"></param>
         private void _OwnerControl_MouseLeave(object sender, EventArgs e)
         {
-            _TabbedControlImageMouseLeave();
+            _MouseLeaveImage();
         }
-        /// <summary>
-        /// Vstup myši na obrázek: změna stavu
-        /// </summary>
-        private void _TabbedControlImageMouseChange(bool oldIsOn, bool newIsOn)
-        {
-            if (!oldIsOn && newIsOn)
-                _TabbedControlImageMouseEnter();
-            else if (oldIsOn && !newIsOn)
-                _TabbedControlImageMouseLeave();
-        }
+    
         /// <summary>
         /// Vstup myši na obrázek: změna kurzoru
         /// </summary>
         private void _TabbedControlImageMouseEnter()
         {
-            if (this.HasOwnerControl)
+            if (this.HasLiveOwnerControl)
                 __OwnerControl.Cursor = Cursors.Hand;
             __IsMouseCursorOnImage = true;
         }
         /// <summary>
         /// Odchod myší z obrázku: default kurzor
         /// </summary>
-        private void _TabbedControlImageMouseLeave()
+        private void _MouseLeaveImage()
         {
-            if (this.HasOwnerControl)
-                __OwnerControl.Cursor = Cursors.Default;
+            if (this.HasLiveOwnerControl)
+            {
+                if (__OnMouseCursorType.HasValue)
+                    _ActivateCursor(null);
+            }
+            __OnMouseAreaItem = null;
+            __OnMouseCursorType = null;
             __IsMouseCursorOnImage = false;
+        }
+        /// <summary>
+        /// Pro aktuální Control aktivuje daný kurzor
+        /// </summary>
+        /// <param name="cursorType"></param>
+        private void _ActivateCursor(DxCursorType? cursorType)
+        {
+            DxComponent.SetCursorToControl(__OwnerControl, cursorType);
+            __OnMouseCursorType = cursorType;
         }
         /// <summary>
         /// Zkusí najít poslední prvek v <see cref="__AreaItems"/>, který se nachází na dané souřadnici
@@ -6844,6 +6957,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Prvek nacházející se pod myší; 
         /// </summary>
         private Area __OnMouseAreaItem;
+        /// <summary>
+        /// Kurzor aktivovaný právě nyní pro <see cref="OwnerControl"/>, daný aktivním prostorem <see cref="__OnMouseAreaItem"/>.
+        /// null = myš je mimo aktivní prostor.
+        /// </summary>
+        private DxCursorType? __OnMouseCursorType;
         /// <summary>
         /// Myš se nachází nad obrázkem jako celek
         /// </summary>
@@ -8725,6 +8843,126 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Ukončen proces Dispose
         /// </summary>
         Disposed
+    }
+    #endregion
+    #region enum DxCursorType
+    /// <summary>
+    /// Druh kurzoru
+    /// </summary>
+    public enum DxCursorType
+    {
+        /// <summary>
+        /// The System.Windows.Forms.Cursor that represents the default cursor.
+        /// </summary>
+        Default = 0,
+        /// <summary>
+        /// The System.Windows.Forms.Cursor that represents the cursor that appears when an application starts.
+        /// </summary>
+        AppStarting,
+        /// <summary>
+        /// The System.Windows.Forms.Cursor that represents the cursor that appears during wheel operations when the mouse is moving and the window is scrolling horizontally and vertically downward and to the left.
+        /// </summary>
+        PanSW,
+        /// <summary>
+        /// The System.Windows.Forms.Cursor that represents the cursor that appears during wheel operations when the mouse is moving and the window is scrolling vertically in a downward direction.
+        /// </summary>
+        PanSouth,
+        /// <summary>
+        /// The System.Windows.Forms.Cursor that represents the cursor that appears during wheel operations when the mouse is moving and the window is scrolling horizontally and vertically downward and to the right.
+        /// </summary>
+        PanSE,
+        /// <summary>
+        /// The System.Windows.Forms.Cursor that represents the cursor that appears during wheel operations when the mouse is moving and the window is scrolling horizontally and vertically upward and to the left.
+        /// </summary>
+        PanNW,
+        /// <summary>
+        /// The System.Windows.Forms.Cursor that represents the cursor that appears during wheel operations when the mouse is moving and the window is scrolling vertically in an upward direction.
+        /// </summary>
+        PanNorth,
+        /// <summary>
+        /// The System.Windows.Forms.Cursor that represents the cursor that appears during wheel operations when the mouse is moving and the window is scrolling horizontally and vertically upward and to the right.
+        /// </summary>
+        PanNE,
+        /// <summary>
+        /// The System.Windows.Forms.Cursor that represents the cursor that appears during wheel operations when the mouse is moving and the window is scrolling horizontally to the right.
+        /// </summary>
+        PanEast,
+        /// <summary>
+        /// The System.Windows.Forms.Cursor that represents the cursor that appears during wheel operations when the mouse is not moving.
+        /// </summary>
+        NoMoveVert,
+        /// <summary>
+        /// The System.Windows.Forms.Cursor that represents the cursor that appears during wheel operations when the mouse is not moving.
+        /// </summary>
+        NoMoveHoriz,
+        /// <summary>
+        /// The System.Windows.Forms.Cursor that represents the cursor that appears during wheel operations when the mouse is not moving.
+        /// </summary>
+        NoMove2D,
+        /// <summary>
+        /// The System.Windows.Forms.Cursor that represents the cursor that appears when the mouse is positioned over a vertical splitter bar.
+        /// </summary>
+        VSplit,
+        /// <summary>
+        /// The System.Windows.Forms.Cursor that represents the cursor that appears when the mouse is positioned over a horizontal splitter bar.
+        /// </summary>
+        HSplit,
+        /// <summary>
+        /// The System.Windows.Forms.Cursor that represents the Help cursor.
+        /// </summary>
+        Help,
+        /// <summary>
+        /// The System.Windows.Forms.Cursor that represents the wait cursor.
+        /// </summary>
+        WaitCursor,
+        /// <summary>
+        /// The System.Windows.Forms.Cursor that represents the up arrow cursor.
+        /// </summary>
+        UpArrow,
+        /// <summary>
+        /// The System.Windows.Forms.Cursor that represents the two-headed horizontal (west/east) sizing cursor.
+        /// </summary>
+        SizeWE,
+        /// <summary>
+        /// The System.Windows.Forms.Cursor that represents the two-headed diagonal (northwest/southeast) sizing cursor.
+        /// </summary>
+        SizeNWSE,
+        /// <summary>
+        /// The System.Windows.Forms.Cursor that represents the two-headed vertical (north/south) sizing cursor.
+        /// </summary>
+        SizeNS,
+        /// <summary>
+        /// The System.Windows.Forms.Cursor that represents two-headed diagonal (northeast/southwest) sizing cursor.
+        /// </summary>
+        SizeNESW,
+        /// <summary>
+        /// The System.Windows.Forms.Cursor that represents the four-headed sizing cursor.
+        /// </summary>
+        SizeAll,
+        /// <summary>
+        /// The System.Windows.Forms.Cursor that represents the cursor that indicates that a particular region is invalid for the current operation.
+        /// </summary>
+        No,
+        /// <summary>
+        /// The System.Windows.Forms.Cursor that represents the I-beam cursor.
+        /// </summary>
+        IBeam,
+        /// <summary>
+        /// The System.Windows.Forms.Cursor that represents the crosshair cursor.
+        /// </summary>
+        Cross,
+        /// <summary>
+        /// The System.Windows.Forms.Cursor that represents the arrow cursor.
+        /// </summary>
+        Arrow,
+        /// <summary>
+        /// The System.Windows.Forms.Cursor that represents the cursor that appears during wheel operations when the mouse is moving and the window is scrolling horizontally to the left.
+        /// </summary>
+        PanWest,
+        /// <summary>
+        /// The System.Windows.Forms.Cursor that represents the hand cursor.
+        /// </summary>
+        Hand
     }
     #endregion
 }

@@ -532,13 +532,13 @@ namespace Noris.Clients.Win.Components.AsolDX
             string imageFile = @"c:\DavidPrac\VsProjects\TestDevExpress\TestDevExpress\ImagesTest\Svg\homer-simpson.svg";
             imageMap.ContentImage = System.IO.File.ReadAllBytes(imageFile);
             imageMap.Zoom = 0.40f;
-            imageMap.Position = new PointF(0.04f, 0.96f);
+            imageMap.RelativePosition = new PointF(0.04f, 0.96f);
 
-            imageMap.Clear();
-            imageMap.AddArea(new RectangleF(0.05f, 0.05f, 0.80f, 0.20f), @"https://www.helios.eu");
-            imageMap.AddArea(new RectangleF(0.50f, 0.35f, 0.40f, 0.30f), @"https://www.seznam.cz");
-            imageMap.AddArea(new RectangleF(0.05f, 0.60f, 0.40f, 0.20f), @"https://www.idnes.cz");
-            imageMap.AddArea(new RectangleF(0.05f, 0.85f, 0.90f, 0.15f), @"c:\Windows\notepad.exe");
+            imageMap.ClearActiveArea();
+            imageMap.AddActiveArea(new RectangleF(0.05f, 0.05f, 0.80f, 0.20f), @"https://www.helios.eu", DxCursorType.Hand);
+            imageMap.AddActiveArea(new RectangleF(0.50f, 0.35f, 0.40f, 0.30f), @"https://www.seznam.cz", DxCursorType.Hand);
+            imageMap.AddActiveArea(new RectangleF(0.05f, 0.60f, 0.40f, 0.30f), @"https://www.idnes.cz", DxCursorType.Hand);
+            imageMap.AddActiveArea(new RectangleF(0.00f, 0.80f, 1.00f, 0.25f), @"c:\Windows\notepad.exe", DxCursorType.Help);
         }
         /// <summary>
         /// Po kliknutí na ImageMap
@@ -577,7 +577,7 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             var padding = new Padding(36, 48, 36, 36);               // Vnitřní okraje
             var bounds = e.Bounds.Sub(padding);                      // Maximální využitelný prostor = 100% velikosti obrázku
-            var imageBounds = imageMap.GetImageBounds(bounds);       // Reálný prostor obrázku (odsud si __TabViewBackImageMap pamatuje podklady pro interaktivitu)
+            var imageBounds = imageMap.CalculateImageBounds(bounds);       // Reálný prostor obrázku (odsud si __TabViewBackImageMap pamatuje podklady pro interaktivitu)
             if (imageBounds.HasValue)
             {
                 if (imageMap.HasBmpImage)
