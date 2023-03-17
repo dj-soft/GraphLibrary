@@ -511,7 +511,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
         }
         #endregion
-        #region TabView BackImage a MouseClick
+        #region TabView + ImageMap
         /// <summary>
         /// Inicializuje věci pro kreslení obrázku na pozadí TabView
         /// </summary>
