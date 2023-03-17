@@ -575,16 +575,9 @@ namespace Noris.Clients.Win.Components.AsolDX
             
             if (!this.__TabbedView.IsEmpty) return;
 
-            var padding = new Padding(36, 48, 36, 36);               // Vnitřní okraje
-            var bounds = e.Bounds.Sub(padding);                      // Maximální využitelný prostor = 100% velikosti obrázku
-            var imageBounds = imageMap.CalculateImageBounds(bounds);       // Reálný prostor obrázku (odsud si __TabViewBackImageMap pamatuje podklady pro interaktivitu)
-            if (imageBounds.HasValue)
-            {
-                if (imageMap.HasBmpImage)
-                    e.GraphicsCache.DrawImage(imageMap.BmpImage, imageBounds.Value);
-                else if (imageMap.HasSvgImage)
-                    e.GraphicsCache.DrawSvgImage(imageMap.SvgImage, imageBounds.Value, null);
-            }
+            var clientBounds = e.Bounds;
+            var innerBounds = Rectangle.FromLTRB(clientBounds.Left + 36, clientBounds.Top + 48, clientBounds.Right - 36, clientBounds.Bottom - 36);
+            imageMap.PaintImageMap(e.GraphicsCache, innerBounds);
         }
         /// <summary>
         /// Instance klikacího obrázku na pozadí TabView

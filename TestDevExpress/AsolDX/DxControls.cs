@@ -6262,6 +6262,30 @@ namespace Noris.Clients.Win.Components.AsolDX
     #region DxImageAreaMap
     /// <summary>
     /// <see cref="DxImageAreaMap"/> : klikací mapa, obsahuje obrázek a jednotlivé prostory v něm, které jsou různě aktivní.
+    /// <para/>
+    /// Klikací mapa se používá typicky v tomto scénáři:
+    /// <code>
+    /// DxImageAreaMap __ImageMap;
+    /// __ImageMap = new DxImageAreaMap();
+    /// __ImageMap.ContentImage = (bytové pole se zdrojem obrázku);
+    /// __ImageMap.Zoom = 0.40f;                                    // velikost obrázku vůči ploše controlu
+    /// __ImageMap.RelativePosition = new PointF(0.04f, 0.96f);     // relativní umístění obrázku v rámci plochy controlu
+    /// __ImageMap.AddActiveArea(...);                // definice aktivního prostoru, lze jich zadat více
+    ///   nebo
+    /// __ImageMap.AddActiveWholeArea(...);           // zjedodušená aktivace celého prostoru
+    /// __ImageMap.Click += zdejší handler události kliknutí na mapu
+    /// __ImageMap.OwnerControl = ownerControl;       // Napojení na Control, v němž má být mapa aktivní
+    /// ...
+    /// // na konci života formuláře:
+    /// __ImageMap.Dispose()                          
+    /// ...
+    /// // Je nezbytné zajistit vykreslení mapy, tedy do události ownerControl.Paint přidat kód:
+    /// var clientBounds = this.ClientRectangle;       // a uvnitř celého prostoru ownera vyhradíme disponibilní prostor:
+    /// var innerBounds = Rectangle.FromLTRB(clientBounds.Left + 36, clientBounds.Top + 48, clientBounds.Right - 36, clientBounds.Bottom - 36);
+    /// __ImageMap.PaintImageMap(e.GraphicsCache, innerBounds);     // Vykreslí image do patřičného místa v daném prostoru a zapamatuje si aktuální souřadnice aktivních prostor
+    ///    nebo
+    /// __ImageMap.PaintImageMap(e.Graphics, innerBounds);          // Vykreslí image - pouze ale Bitmapu!!! do patřičného místa v daném prostoru a zapamatuje si aktuální souřadnice aktivních prostor
+    /// </code>
     /// </summary>
     internal class DxImageAreaMap : IDisposable
     {
@@ -6273,7 +6297,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             __AreaItems = new List<Area>();
             __Zoom = 1f;
-
+            __RelativePosition = new PointF(0.50f, 0.50f);
         }
         /// <summary>
         /// Dispose
@@ -6529,12 +6553,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public DevExpress.Utils.Svg.SvgImage SvgImage { get { return __SvgImage; } set { _SetSvgImage(value); } }
         /// <summary>
-        /// Měřítko obrázku, default = 1.00 = vyplní celý dostupný prostor.
+        /// Měřítko obrázku. Default = 1.00 = vyplní celý dostupný prostor.
         /// Pro obrázek zabírající například 20% plochy vepište hodnotu 0.20f
         /// </summary>
         public float Zoom { get { return __Zoom; } set { _SetZoom(value); } }
         /// <summary>
-        /// Umístění obrázku relativně v ploše. 
+        /// Umístění obrázku relativně v ploše. Default = { 0.50, 0.50 } = uprostřed.
         /// Hodnota X udává pozici na ose X zleva doprava v rozsahu 0.00 - 1.00;
         /// Hodnota Y udává pozici na ose Y zhora dolů v rozsahu 0.00 - 1.00;
         /// Například pro umístění úplně vlevo téměř dole vepište hodnotu { 0.00f, 0.90f }
@@ -6544,7 +6568,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Reálná fyzická souřadnice obrázku v koordinátech controlu, v těchto souřadnicích je vykreslen a je aktivní
         /// </summary>
         public Rectangle? CurrentImageBounds { get { return __CurrentImageBounds; } }
-
         /// <summary>
         /// Smaže deklarace všech prostorů, které byly zadány v <see cref="AddActiveArea(RectangleF, object, DxCursorType, string, string)"/>
         /// </summary>
@@ -6559,16 +6582,19 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="userData">Identifikace prostoru, bude předána v eventu <see cref="Click"/> do handleru, v property <see cref="AreaClickArgs.UserData"/>.</param>
         /// <param name="cursorType">Typ kurzoru na oblasti</param>
-        public void AddActiveWhileArea(object userData = null, DxCursorType cursorType = DxCursorType.Default)
+        public void AddActiveWholeArea(object userData = null, DxCursorType cursorType = DxCursorType.Default)
         {
             __AreaItems.Add(new Area(new RectangleF(0f, 0f, 1f, 1f), userData, cursorType, null, null));
             _Invalidate();
         }
         /// <summary>
-        /// Přidá další prostor a jeho identifikátor.
+        /// Přidá další aktivní prostor: jeho umístění relativně v obrázku, jeho identifikátor, volitelně kurzor (a do budoucna Tooltip).
         /// Souřadnice je dána relativne v hodnotách 0.00 - 1.00, relativně k celému obrázku.
-        /// Pokud bude definováno více oblastí nad jedním místem (tzn. překrývající se na ose Z), pak Aktivní oblast bude ta posledně přidaná pro danou souřadnici.
-        /// Ta bude po kliknutí předána do eventu <see cref="Click"/> v property <see cref="AreaClickArgs.UserData"/>.
+        /// Pokud bude definováno více oblastí nad jedním místem (tzn. budou se překrývat na ose Z), pak Aktivní oblast pro konkrétní pozici myši bude ta posledně přidaná pro danou souřadnici.
+        /// Ta oblast (resp. její UserData) bude po kliknutí předána do eventu <see cref="Click"/> v property <see cref="AreaClickArgs.UserData"/>.
+        /// <para/>
+        /// Pokud aplikace nepotřebuje vytvářet detailní klikací mapu, ale stačí jí aktivní celý obrázek, může využít zjednodušenou metodu 
+        /// <see cref="AddActiveArea(RectangleF, object, DxCursorType, string, string)"/>, kerá zajistí že celý obrázek bude reprezentovat jednu ucelenou aktivní plochu.
         /// </summary>
         /// <param name="relativeBounds">Relativní souřadnice v rámci celého obrázku, v rozsahu 0.00 - 1.00 </param>
         /// <param name="userData">Identifikace prostoru, bude předána v eventu <see cref="Click"/> do handleru, v property <see cref="AreaClickArgs.UserData"/>.</param>
@@ -6584,6 +6610,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Obsahuje true, pokud this mapa má nějaké definované oblasti. Pokud nemá, pak celý prostor obrázku tvoří jednu oblast.
         /// </summary>
         public bool HasActiveArea { get { return (__AreaItems.Count > 0); } }
+        /// <summary>
+        /// Obsahuje true, pokud klikací mapa má použitelné souřadnice
+        /// </summary>
+        public bool HasValidBounds { get { return __CurrentImageBounds.HasValue; } }
         /// <summary>
         /// Metoda vrátí souřadnice pro Image v daném prostoru, s ohledem na měřítko a zarovnání.
         /// Tuto metodu je nutno volat při každém kreslení controlu v jeho metodě Paint.
@@ -6601,6 +6631,43 @@ namespace Noris.Clients.Win.Components.AsolDX
             _CheckValidityOwnerBounds(ownerBounds);
             var imageBounds = __CurrentImageBounds;
             return (imageBounds.HasValue ? (Rectangle?)Rectangle.Round(imageBounds.Value) : null);
+        }
+        /// <summary>
+        /// Vykreslí do dané grafiky a v rámci daného prostoru svůj obrázek, a uloží si potřebné souřadnice pro interaktivní mapu
+        /// </summary>
+        /// <param name="graphicsCache"></param>
+        /// <param name="ownerBounds"></param>
+        public void PaintImageMap(DevExpress.Utils.Drawing.GraphicsCache graphicsCache, Rectangle ownerBounds)
+        {
+            var imageBounds = this.CalculateImageBounds(ownerBounds);       // Reálný prostor obrázku (odsud si pamatujeme podklady pro interaktivitu)
+            if (imageBounds.HasValue)
+            {
+                if (this.HasBmpImage)
+                    graphicsCache.DrawImage(this.BmpImage, imageBounds.Value);
+                else if (this.HasSvgImage)
+                    graphicsCache.DrawSvgImage(this.SvgImage, imageBounds.Value, null);
+            }
+        }
+        /// <summary>
+        /// Vykreslí do dané grafiky a v rámci daného prostoru svůj obrázek, a uloží si potřebné souřadnice pro interaktivní mapu.
+        /// </summary>
+        /// <param name="graphics"></param>
+        /// <param name="ownerBounds"></param>
+        public void PaintImageMap(System.Drawing.Graphics graphics, Rectangle ownerBounds)
+        {
+            var imageBounds = this.CalculateImageBounds(ownerBounds);       // Reálný prostor obrázku (odsud si pamatujeme podklady pro interaktivitu)
+            if (imageBounds.HasValue)
+            {
+                if (this.HasBmpImage)
+                    graphics.DrawImage(this.BmpImage, imageBounds.Value);
+                else if (this.HasSvgImage)
+                {   // Kterak vykreslíme SvgImage do bitmapové grafiky?   No, převedeme SvgImage na bitmapu, a pak pokračujeme jako s bitmapou :-) :
+                    using (var svgBitmap = DxComponent.RenderSvgImage(this.SvgImage, Size.Round(imageBounds.Value.Size)))
+                    {
+                        graphics.DrawImage(svgBitmap, imageBounds.Value);
+                    }
+                }
+            }
         }
         /// <summary>
         /// Událost, když koncový uživatel klikne v aktivním prostoru.
@@ -6680,9 +6747,23 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             if (__LastOwnerBounds.HasValue && __LastOwnerBounds.Value == ownerBounds) return;   // Data jsou validní, netřeba je přepočítávat pokaždé.
 
+            // Malý prostor => nemůžeme pracovat:
+            if (ownerBounds.Width < 48 || ownerBounds.Height < 48)
+            {
+                __CurrentImageBounds = null;
+                return;
+            }
+
             Rectangle ownerBoundsF = ownerBounds;                    // Int32 => float
             SizeF fullSize = imageSizeF.Value.ZoomTo(ownerBoundsF.Size);       // Získám velikost obrázku na 100% v dostupném prostoru, se zachováním poměru stran obrázku
             SizeF zoomSize = fullSize.Multiply(this.__Zoom);         // Cílová velikost obrázku s požadovaným Zoomem (např. 0.25 = 1/4 celkové dostupné velikosti)
+
+            // Malý prostor => nemůžeme pracovat:
+            if (zoomSize.Width < 32 || zoomSize.Height < 32)
+            {
+                __CurrentImageBounds = null;
+                return;
+            }
 
             // Umístím cílovou velikost obrázku na relativní pozici:
             float dx = ownerBoundsF.Width - zoomSize.Width;          // dx a dy je "volný prostor" kolem obrázku v dané ose, v rámci přiděleného prostoru (Size) v ownerBounds
@@ -6810,6 +6891,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             __OnMouseAreaItem = null;
 
             if (!this.HasLiveOwnerControl) return;
+            if (!this.HasValidBounds) return;
 
             // Zajistíme inicializaci stavu myši na obrázku, jako by se zde pohnula:
             Point mouseLocation = this.OwnerControl.PointToClient(Control.MousePosition);
@@ -6831,6 +6913,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void _OwnerControl_MouseMove(Point mouseLocation)
         {
             if (!this.HasActiveArea || !this.HasLiveOwnerControl) return;
+            if (!this.HasValidBounds) return;
 
             bool oldIsOnImage = __IsMouseCursorOnImage;
             bool newIsOnImage = __CurrentImageBounds.HasValue && __CurrentImageBounds.Value.Contains(mouseLocation);
@@ -6885,6 +6968,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void _OwnerControl_MouseDown(object sender, MouseEventArgs e)
         {
             if (!this.HasActiveArea || e.Button != MouseButtons.Left) return;
+            if (!this.HasValidBounds) return;
 
             Point mouseLocation = e.Location;
             bool isOnBounds = __CurrentImageBounds.HasValue && __CurrentImageBounds.Value.Contains(mouseLocation);
@@ -6901,16 +6985,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void _OwnerControl_MouseLeave(object sender, EventArgs e)
         {
             _MouseLeaveImage();
-        }
-    
-        /// <summary>
-        /// Vstup myši na obrázek: změna kurzoru
-        /// </summary>
-        private void _TabbedControlImageMouseEnter()
-        {
-            if (this.HasLiveOwnerControl)
-                __OwnerControl.Cursor = Cursors.Hand;
-            __IsMouseCursorOnImage = true;
         }
         /// <summary>
         /// Odchod myší z obrázku: default kurzor
