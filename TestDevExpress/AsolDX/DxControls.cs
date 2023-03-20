@@ -6330,6 +6330,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 ownerControl.MouseEnter += _OwnerControl_MouseEnter;
                 ownerControl.MouseMove += _OwnerControl_MouseMove;
                 ownerControl.MouseDown += _OwnerControl_MouseDown;
+                ownerControl.MouseUp += _OwnerControl_MouseUp;
                 ownerControl.MouseLeave += _OwnerControl_MouseLeave;
             }
             __OwnerControl = ownerControl;
@@ -6345,6 +6346,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 ownerControl.MouseEnter -= _OwnerControl_MouseEnter;
                 ownerControl.MouseMove -= _OwnerControl_MouseMove;
                 ownerControl.MouseDown -= _OwnerControl_MouseDown;
+                ownerControl.MouseUp -= _OwnerControl_MouseUp;
                 ownerControl.MouseLeave -= _OwnerControl_MouseLeave;
             }
             __OwnerControl = null;
@@ -6978,16 +6980,53 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="e"></param>
         private void _OwnerControl_MouseDown(object sender, MouseEventArgs e)
         {
+            __MouseDownPoint = null;
+
             if (!this.HasActiveArea || e.Button != MouseButtons.Left) return;
             if (!this.HasValidBounds) return;
 
+            // Nebudeme spouštět Target akci v okamžiku MouseDown, ale až v MouseUp. Je to tak zvykem ve Windows.
+            // A taky proto, že sideEffect po spuštění akce v MouseDown je ohavný:
+            //  Pokud by MouseDown spustila akci => otevře se jiná aplikace (a ta se dostane do popředí),
+            //  a proto zdejší Control už nedostane událost MouseUp, a tak si stále myslí, že je myš dole.
+            //  Když se pak zdejší aplikce zase stane aktivní, tak si pořád myslí, že Mouse je Down (a ona přitom už dávno není),
+            //  a tak aplikace při pohybu myši provádí MouseDrag - a přitom myš není zmáčknutá!
             Point mouseLocation = e.Location;
+            bool isOnBounds = __CurrentImageBounds.HasValue && __CurrentImageBounds.Value.Contains(mouseLocation);
+            Area newArea = null;
+            bool newIsOn = isOnBounds && _TryGetArea(mouseLocation, out newArea);
+            if (newIsOn)
+                __MouseDownPoint = __OwnerControl.PointToScreen(mouseLocation);
+        }
+        /// <summary>
+        /// Handler události MouseUp: řeší kliknutí na obrázek
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _OwnerControl_MouseUp(object sender, MouseEventArgs e)
+        {
+            if (!this.HasActiveArea || e.Button != MouseButtons.Left) return;
+            if (!this.HasValidBounds) return;
+            if (!this.__MouseDownPoint.HasValue) return;
+
+            Point mouseLocation = e.Location;
+
+            // Pokud nynější souřadnice myši je poměrně více vzdálená od souřadnice při MouseDown, pak nejde o Click ale o Drag:
+            Point screenLocation = __OwnerControl.PointToScreen(mouseLocation);
+            Rectangle silentBounds = this.__MouseDownPoint.Value.CreateRectangleFromCenter(8);
+            if (!silentBounds.Contains(screenLocation)) return;
+
+            // Myš se nijak nevzdálila od okamžiku Down do Up, jde tedy o kliknutí:
             bool isOnBounds = __CurrentImageBounds.HasValue && __CurrentImageBounds.Value.Contains(mouseLocation);
             Area newArea = null;
             bool newIsOn = isOnBounds && _TryGetArea(mouseLocation, out newArea);
             if (newIsOn)
                 _RunClick(newArea.UserData);
         }
+        /// <summary>
+        /// Souřadnice typu Screen, kde byl proveden MouseDown s Left Buttonem. Pokud i MouseUp je poblíž, jde o Click a bude se vyhodnocovat.
+        /// </summary>
+        private Point? __MouseDownPoint;
         /// <summary>
         /// Handler události MouseLeave: řeší změnu kurzoru na Default
         /// </summary>
