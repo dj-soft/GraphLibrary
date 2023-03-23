@@ -44,17 +44,9 @@ namespace TestDevExpress.Forms
             // base.DxRibbonPrepare();
 
             List<DataRibbonPage> pages = new List<DataRibbonPage>();
-            DataRibbonPage page;
-            DataRibbonGroup group;
-
-            page = new DataRibbonPage() { PageId = "DX", PageText = "ZÁKLADNÍ" };
+            DataRibbonPage page = this.CreateRibbonHomePage(FormRibbonDesignGroupPart.None);
             pages.Add(page);
-            group = DxRibbonControl.CreateSkinIGroup("DESIGN", addUhdSupport: true) as DataRibbonGroup;
-            group.Items.Add(ImagePickerForm.CreateRibbonButton());
-            page.Groups.Add(group);
-
-            this.DxRibbon.Clear();
-            this.DxRibbon.AddPages(pages);
+            this.DxRibbon.AddPages(pages, true);
 
             _RibbonPages = pages;
         }

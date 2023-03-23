@@ -800,16 +800,10 @@ namespace TestDevExpress.Forms
             DxQuickAccessToolbar.ConfigValueChanged += DxQuickAccessToolbar_ConfigValueChanged;
 
             List<DataRibbonPage> pages = new List<DataRibbonPage>();
-            DataRibbonPage page;
-            DataRibbonGroup group;
 
-            page = new DataRibbonPage() { PageId = "DX", PageText = "ZÁKLADNÍ" };
-            pages.Add(page);
-            group = DxRibbonControl.CreateSkinIGroup("DESIGN", addUhdSupport: true) as DataRibbonGroup;
-            group.Items.Add(ImagePickerForm.CreateRibbonButton());
-            page.Groups.Add(group);
-
+            DataRibbonPage page = this.CreateRibbonHomePage(FormRibbonDesignGroupPart.Default);
             AddFunctionsGroup(page);
+            pages.Add(page);
 
             page = CreateRibbonSamplePage();
             if (page != null) pages.Add(page);
@@ -1073,7 +1067,6 @@ namespace TestDevExpress.Forms
         private void _OpenLayoutFormButton_Click(IMenuItem menuItem)
         {
             LayoutForm form = new LayoutForm(true);
-            form.AddControl(new LayoutTestPanel());        // Vložím první control, ten si pak může přidávat další. První panel nemůže zavřít sám sebe.
             form.Show();
         }
         private void _TestDataForm1ModalButton_Click(IMenuItem menuItem)

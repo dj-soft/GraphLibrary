@@ -7210,38 +7210,69 @@ namespace Noris.Clients.Win.Components.AsolDX
         #endregion
         #region Static helpers
         /// <summary>
-        /// Vytvoří a vrátí logickou Grupu do Ribbonu s obsahem tlačítek pro skiny (tedy definici pro tuto grupu).
-        /// Grupa má ID = <see cref="SkinIGroupId"/>.
+        /// Vytvoří a vrátí logickou Grupu do Ribbonu s obsahem tlačítek pro skiny (tedy definici pro tuto grupu) a další prvky dle požadavků.
+        /// Grupa má ID = <see cref="DesignRibbonGroupId"/>.
+        /// Grupa si svoje tlačítka obsluhuje sama.
         /// </summary>
+        /// <param name="designGroupParts"></param>
         /// <param name="groupText"></param>
-        /// <param name="addSkinButton"></param>
-        /// <param name="addPaletteButton"></param>
-        /// <param name="addPaletteGallery"></param>
-        /// <param name="addUhdSupport"></param>
         /// <returns></returns>
-        public static IRibbonGroup CreateSkinIGroup(string groupText = null, bool addSkinButton = true, bool addPaletteButton = true, bool addPaletteGallery = false, bool addUhdSupport = false)
+        public static IRibbonGroup CreateDesignHomeGroup(FormRibbonDesignGroupPart designGroupParts = FormRibbonDesignGroupPart.Default, string groupText = null)
         {
-            string text = (!String.IsNullOrEmpty(groupText) ? groupText : "Výběr vzhledu");
-            DataRibbonGroup iGroup = new DataRibbonGroup() { GroupId = SkinIGroupId, GroupText = text };
+            if (designGroupParts == FormRibbonDesignGroupPart.None) return null;
 
-            if (addSkinButton) iGroup.Items.Add(new DataRibbonItem() { ItemId = "_SYS__DevExpress_SkinSetDropDown", ItemType = RibbonItemType.SkinSetDropDown });
-            if (addPaletteButton) iGroup.Items.Add(new DataRibbonItem() { ItemId = "_SYS__DevExpress_SkinPaletteDropDown", ItemType = RibbonItemType.SkinPaletteDropDown });
-            if (addPaletteGallery) iGroup.Items.Add(new DataRibbonItem() { ItemId = "_SYS__DevExpress_SkinPaletteGallery", ItemType = RibbonItemType.SkinPaletteGallery });
-            if (addUhdSupport) iGroup.Items.Add(new DataRibbonItem()
-            {
-                ItemId = "_SYS__DevExpress_UhdSupportCheckBox",
-                Text = "UHD Paint",
-                ToolTipText = "Zapíná podporu pro Full vykreslování na UHD monitoru",
-                ItemType = RibbonItemType.CheckButton,
-                ImageName = "svgimages/xaf/action_view_chart.svg",
-                Checked = DxComponent.UhdPaintEnabled,
-                ClickAction = SetUhdPaint
-            });
+            string text = (!String.IsNullOrEmpty(groupText) ? groupText : "Design");
+
+            DataRibbonGroup iGroup = new DataRibbonGroup() { GroupId = DesignRibbonGroupId, GroupText = text };
+
+            if (designGroupParts.HasFlag(FormRibbonDesignGroupPart.SkinButton)) iGroup.Items.Add(new DataRibbonItem() { ItemId = "_SYS__DevExpress_SkinSetDropDown", ItemType = RibbonItemType.SkinSetDropDown });
+            if (designGroupParts.HasFlag(FormRibbonDesignGroupPart.PaletteButton)) iGroup.Items.Add(new DataRibbonItem() { ItemId = "_SYS__DevExpress_SkinPaletteDropDown", ItemType = RibbonItemType.SkinPaletteDropDown });
+            if (designGroupParts.HasFlag(FormRibbonDesignGroupPart.PaletteGallery)) iGroup.Items.Add(new DataRibbonItem() { ItemId = "_SYS__DevExpress_SkinPaletteGallery", ItemType = RibbonItemType.SkinPaletteGallery });
+
+            if (designGroupParts.HasFlag(FormRibbonDesignGroupPart.UhdSupport))
+                iGroup.Items.Add(new DataRibbonItem()
+                {
+                    ItemId = "_SYS__DevExpress_UhdSupportCheckBox",
+                    Text = "UHD Paint",
+                    ToolTipText = "Zapíná podporu pro Full vykreslování na UHD monitoru",
+                    ItemType = RibbonItemType.CheckButton,
+                    ImageName = "svgimages/xaf/action_view_chart.svg",
+                    Checked = DxComponent.UhdPaintEnabled,
+                    ClickAction = _SetUhdPaint
+                });
+
+            if (designGroupParts.HasFlag(FormRibbonDesignGroupPart.ImageGallery))
+                iGroup.Items.Add(new DataRibbonItem()
+                {
+                    ItemId = "_SYS__DevExpress_DxImageGallery",
+                    Text = "DX Images",
+                    ToolTipText = "Otevře okno s nabídkou systémových ikon",
+                    ItemType = RibbonItemType.Button,
+                    RibbonStyle = RibbonItemStyles.Large,
+                    ImageName = "svgimages/icon%20builder/actions_image.svg",
+                    ClickAction = _ShowImages
+                });
+
+            if (designGroupParts.HasFlag(FormRibbonDesignGroupPart.LogActivity))
+                iGroup.Items.Add(new DataRibbonItem()
+                {
+                    ItemId = "_SYS__DevExpress_SetLogActivity",
+                    Text = "Dx Images",
+                    ToolTipText = "Zobrazí nabídku ikon a obrázků DevExpress",
+                    ItemType = RibbonItemType.CheckButton,
+                    ImageName = "svgimages/xaf/action_view_chart.svg",
+                    Checked = DxComponent.LogActive,
+                    ClickAction = _SetLogActivity
+                });
 
             return iGroup;
         }
-        internal const string SkinIGroupId = "_SYS__DevExpress_Design";
-        private static void SetUhdPaint(IMenuItem menuItem)
+        internal const string DesignRibbonGroupId = "_SYS__DevExpress_Design";
+        /// <summary>
+        /// Nastaví UHD paint. Pouze v Testovací aplikaci.
+        /// </summary>
+        /// <param name="menuItem"></param>
+        private static void _SetUhdPaint(IMenuItem menuItem)
         {
 #if Compile_TestDevExpress
             DxComponent.UhdPaintEnabled = (menuItem?.Checked ?? false);
@@ -7249,6 +7280,27 @@ namespace Noris.Clients.Win.Components.AsolDX
             DxComponent.ApplicationRestart();
 #endif
         }
+        /// <summary>
+        /// Zobrazí hgalerii obrázků. Pouze v Testovací aplikaci.
+        /// </summary>
+        /// <param name="menuItem"></param>
+        private static void _ShowImages(IMenuItem menuItem)
+        {
+#if Compile_TestDevExpress
+            TestDevExpress.Forms.ImagePickerForm.ShowForm();
+#endif
+        }
+        /// <summary>
+        /// Aktivuje / deaktivuje LOG. Pouze v Testovací aplikaci.
+        /// </summary>
+        /// <param name="menuItem"></param>
+        private static void _SetLogActivity(IMenuItem menuItem)
+        {
+#if Compile_TestDevExpress
+            DxComponent.LogActive = (menuItem?.Checked ?? false);
+#endif
+        }
+
         /// <summary>
         /// Zajistí nastavení stavu Checked do navázaného prvku a odeslání události do odpovídajícho Ribbonu
         /// </summary>

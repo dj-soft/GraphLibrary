@@ -11,13 +11,40 @@ using Noris.Clients.Win.Components.AsolDX;
 
 namespace TestDevExpress.Components
 {
-    public class LayoutForm : DxStdForm
+    public class LayoutForm : DxRibbonForm
     {
         public LayoutForm() : this(false)
         { }
         public LayoutForm(bool useDevExpress)
         {
             this.Text = $"Test řízení LayoutPanel :: {DxComponent.FrameworkName}";
+
+            var resourcesSvg = DxComponent.GetResourceNames(".svg", true, false);
+            _ImageNames = Randomizer.GetItems(36, resourcesSvg);
+
+            this._Timer = new Timer() { Interval = 1800 };
+            this._Timer.Tick += _Timer_Tick;
+            this._Timer.Enabled = false;
+        }
+        /// <summary>
+        /// Deklarace tlačítka v <see cref="TestDevExpress.Forms.MainAppForm"/> pro spuštění tohoto formuláře
+        /// </summary>
+        public static TestDevExpress.Forms.RunFormInfo RunFormInfo { get { return new TestDevExpress.Forms.RunFormInfo() { ButtonText = "Layout", ButtonImage = "devav/layout/pages.svg", ButtonToolTip = "Otevře okno pro testování layoutu (pod-okna)" }; } }
+        protected override void OnFirstShownBefore()
+        {
+            base.OnFirstShownBefore();
+            //if (_LayoutPanel.ControlCount == 0 && !_RunAddFirstPanel)
+            //{
+            //    _RunAddFirstPanel = true;
+            //    this._AddControlAsPanel(new LayoutTestPanel());        // Vložím první control, ten si pak může přidávat další. První panel nemůže zavřít sám sebe.
+            //}
+        }
+        private bool _RunAddFirstPanel;
+
+        #region MainContent
+        protected override void DxMainContentPrepare()
+        {
+            base.DxMainContentPrepare();
 
             _LayoutPanel = new DxLayoutPanel()
             {
@@ -41,48 +68,156 @@ namespace TestDevExpress.Components
             _LayoutPanel.LayoutPanelChanged += _LayoutPanel_LayoutPanelChanged;
             _LayoutPanel.XmlLayoutChanged += _LayoutPanel_XmlLayoutChanged;
 
-            this.Controls.Add(_LayoutPanel);
+            this.DxMainPanel.Controls.Add(_LayoutPanel);
 
-            _FunctionPanel = DxComponent.CreateDxPanel(this, DockStyle.Top, height: 45);
-            _CopyLayoutButton = DxComponent.CreateDxSimpleButton(10, 6, 150, 37, _FunctionPanel, "Copy XmlLayout", _CopyLayoutButtonClick, toolTipText: "Zkopíruje aktuální XML layout do schránky");
-            _PasteLayoutButton = DxComponent.CreateDxSimpleButton(170, 6, 150, 37, _FunctionPanel, "Paste XmlLayout", _PasteLayoutButtonClick, toolTipText: "Vloží text ze schránky do XML layoutu");
+            this.DoAddNewPanel();
 
-            _SetLayout1Button = DxComponent.CreateDxSimpleButton(340, 6, 150, 37, _FunctionPanel, "Set Layout 1", _SetLayout1ButtonClick, toolTipText: "Vloží fixní layout 1");
-            _SetLayout2Button = DxComponent.CreateDxSimpleButton(500, 6, 150, 37, _FunctionPanel, "Set Layout 2", _SetLayout2ButtonClick, toolTipText: "Vloží fixní layout 2");
-            _SetLayout3Button = DxComponent.CreateDxSimpleButton(660, 6, 150, 37, _FunctionPanel, "Set Layout 3", _SetLayout3ButtonClick, toolTipText: "Vloží fixní layout 3");
-            _SetLayout4Button = DxComponent.CreateDxSimpleButton(820, 6, 150, 37, _FunctionPanel, "Set Layout 4", _SetLayout4ButtonClick, toolTipText: "Vloží fixní layout 4");
-            _SetLayout5Button = DxComponent.CreateDxSimpleButton(980, 6, 150, 37, _FunctionPanel, "Set Void Layout", _SetLayout5ButtonClick, toolTipText: "Vloží fixní layout obsahující i prázdné panely");
+        }
+        #endregion
+        #region Ribbon a StatusBar - obsah a rozcestník
+        /// <summary>
+        /// Připraví obsah Ribbonu
+        /// </summary>
+        protected override void DxRibbonPrepare()
+        {
+            this.Text = "LayoutForm";
 
-            var resourcesSvg = DxComponent.GetResourceNames(".svg", true, false);
-            _ImageNames = Randomizer.GetItems(36, resourcesSvg);
+            List<DataRibbonPage> pages = new List<DataRibbonPage>();
+            DataRibbonPage page;
+            DataRibbonGroup group;
 
-            Rectangle monitorBounds = System.Windows.Forms.Screen.PrimaryScreen.WorkingArea;
-            Rectangle formBounds = new Rectangle(monitorBounds.X + monitorBounds.Width * 1 / 10, monitorBounds.Y + monitorBounds.Height * 1 / 10, monitorBounds.Width * 8 / 10, monitorBounds.Height * 8 / 10);
+            page = this.CreateRibbonHomePage(FormRibbonDesignGroupPart.None);
+            pages.Add(page);
 
-            this.StartPosition = System.Windows.Forms.FormStartPosition.Manual;
-            this.Bounds = formBounds;
+            group = new DataRibbonGroup() { GroupId = "DxLayout", GroupText = "DX Layout" };
+            page.Groups.Add(group);
 
-            this._Timer = new Timer() { Interval = 1800 };
-            this._Timer.Tick += _Timer_Tick;
-            this._Timer.Enabled = false;
+            string dxLayoutCopy = "svgimages/edit/copy.svg";
+            string dxLayoutPaste = "svgimages/edit/paste.svg";
+            string dxLayoutClear = "svgimages/dashboards/edit.svg";
+
+            string dxLayoutSet = "svgimages/richedit/nextfootnote.svg";
+
+            string dxLayoutAdd = "devav/actions/add.svg";
+            string dxLayoutClose = "devav/actions/close.svg";
+
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Layout.Copy", Text = "Copy XmlLayout", ToolTipText = "Zkopíruje aktuální XML layout do schránky", ItemType = RibbonItemType.Button, RadioButtonGroupName = "CountGroup", Checked = true, ImageName = dxLayoutCopy, RibbonStyle = RibbonItemStyles.Large });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Layout.Paste", Text = "Paste XmlLayout", ToolTipText = "Vloží text ze schránky do XML layoutu", ItemType = RibbonItemType.Button, RadioButtonGroupName = "CountGroup", Checked = true, ImageName = dxLayoutPaste, RibbonStyle = RibbonItemStyles.Large });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Layout.Clear", Text = "Clear layout", ToolTipText = "Smaže celý layout", ItemType = RibbonItemType.Button, RadioButtonGroupName = "CountGroup", Checked = true, ImageName = dxLayoutClear, RibbonStyle = RibbonItemStyles.Large });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Layout.Set1", Text = "Set Layout 1", ToolTipText = "Vloží předdefinovaný layout 1", ItemType = RibbonItemType.Button, RadioButtonGroupName = "CountGroup", Checked = true, ImageName = dxLayoutSet, RibbonStyle = RibbonItemStyles.Large, ItemIsFirstInGroup = true });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Layout.Set2", Text = "Set Layout 2", ToolTipText = "Vloží předdefinovaný layout 2", ItemType = RibbonItemType.Button, RadioButtonGroupName = "CountGroup", Checked = true, ImageName = dxLayoutSet, RibbonStyle = RibbonItemStyles.Large });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Layout.Set3", Text = "Set Layout 3", ToolTipText = "Vloží předdefinovaný layout 3", ItemType = RibbonItemType.Button, RadioButtonGroupName = "CountGroup", Checked = true, ImageName = dxLayoutSet, RibbonStyle = RibbonItemStyles.Large });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Layout.Set4", Text = "Set Layout 4", ToolTipText = "Vloží předdefinovaný layout 4", ItemType = RibbonItemType.Button, RadioButtonGroupName = "CountGroup", Checked = true, ImageName = dxLayoutSet, RibbonStyle = RibbonItemStyles.Large });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Layout.Set5", Text = "Set Layout 5", ToolTipText = "Vloží předdefinovaný layout 4", ItemType = RibbonItemType.Button, RadioButtonGroupName = "CountGroup", Checked = true, ImageName = dxLayoutSet, RibbonStyle = RibbonItemStyles.Large });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Layout.Add", Text = "Add Panel", ToolTipText = "Přidá nový panel do výchozí polohy", ItemType = RibbonItemType.Button, RadioButtonGroupName = "CountGroup", Checked = true, ImageName = dxLayoutAdd, RibbonStyle = RibbonItemStyles.Large, ItemIsFirstInGroup = true });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Layout.Close", Text = "Close Panel", ToolTipText = "Zavře aktivní panel", ItemType = RibbonItemType.Button, RadioButtonGroupName = "CountGroup", Checked = true, ImageName = dxLayoutClose, RibbonStyle = RibbonItemStyles.Large});
+
+            this.DxRibbon.AddPages(pages, true);
+
+            this.DxRibbon.RibbonItemClick += _DxRibbonControl_RibbonItemClick;
+        }
+        private void _DxRibbonControl_RibbonItemClick(object sender, TEventArgs<IRibbonItem> e)
+        {
+            switch (e.Item.ItemId)
+            {
+                case "Dx.Layout.Copy":
+                    _DoLayoutCopy();
+                    break;
+                case "Dx.Layout.Paste":
+                    _DoLayoutPaste();
+                    break;
+                case "Dx.Layout.Clear":
+                    _DoLayoutClear();
+                    break;
+                case "Dx.Layout.Set1":
+                    _DoLayoutSet1();
+                    break;
+                case "Dx.Layout.Set2":
+                    _DoLayoutSet2();
+                    break;
+                case "Dx.Layout.Set3":
+                    _DoLayoutSet3();
+                    break;
+                case "Dx.Layout.Set4":
+                    _DoLayoutSet4();
+                    break;
+                case "Dx.Layout.Set5":
+                    _DoLayoutSet5();
+                    break;
+
+                case "Dx.Layout.Add":
+                    DoAddNewPanel();
+                    break;
+                case "Dx.Layout.Close":
+                    DoCloseActivePanel();
+                    break;
+            }
+        }
+        #endregion
+
+        #region Panely v layoutu
+        internal void DoAddNewPanel()
+        {
+            var panel = new LayoutTestPanel();
+            this._AddControlAsPanel(panel);
+        }
+        internal void DoCloseActivePanel()
+        {
+            _LayoutPanel.DoCloseActivePanel();
+        }
+        private void _AddControlAsPanel(WF.Control control)
+        {
+            if (control is LayoutTestPanel testPanel)
+                _PrepareTestPanel(testPanel);
+            _LayoutPanel.AddControl(control);
         }
         /// <summary>
-        /// Deklarace tlačítka v <see cref="TestDevExpress.Forms.MainAppForm"/> pro spuštění tohoto formuláře
+        /// Někdo zavřel poslední panel
         /// </summary>
-        public static TestDevExpress.Forms.RunFormInfo RunFormInfo { get { return new TestDevExpress.Forms.RunFormInfo() { ButtonText = "Layout", ButtonImage = "devav/layout/pages.svg", ButtonToolTip = "Otevře okno pro testování layoutu (pod-okna)" }; } }
-        protected override void OnFirstShownBefore()
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _LayoutPanel_LastControlRemoved(object sender, EventArgs e)
         {
-            base.OnFirstShownBefore();
-            if (_LayoutPanel.ControlCount == 0)
-                this.AddControl(new LayoutTestPanel());        // Vložím první control, ten si pak může přidávat další. První panel nemůže zavřít sám sebe.
+            this.Close();
         }
+        private void _LayoutPanel_UserControlAdd(object sender, TEventArgs<Control> e)
+        {
+            if (e.Item is LayoutTestPanel testPanel)
+                _PrepareTestPanel(testPanel);
+        }
+        private void _PrepareTestPanel(LayoutTestPanel testPanel)
+        {
+            testPanel.TitleImageName = _GetIconName();
+
+            if (Randomizer.IsTrue(40))
+            {   // 40% prvků bude mít podtržení:
+                Color lineColor = Color.FromArgb(255, 255, 32);
+                if (Randomizer.IsTrue(20))
+                    // 20% z nich bude mít náhodnou barvu podtržení:
+                    lineColor = Randomizer.GetColor(48, 160);
+                testPanel.LineColor = Color.FromArgb(160, lineColor);
+                testPanel.LineColorEnd = Color.FromArgb(12, lineColor);
+                testPanel.LineWidth = 4;
+            }
+
+            if (Randomizer.IsTrue(40))
+            {   // 40% prvků bude mít BackColor:
+                Color backColor = Randomizer.GetColor(64, 256);
+                testPanel.TitleBackColor = Color.FromArgb(160, backColor);
+                if (Randomizer.IsTrue(40))
+                    // 40% z nich bude mít fadeout:
+                    testPanel.TitleBackColorEnd = Color.FromArgb(0, backColor);
+            }
+        }
+        #endregion
+
         #region XmlLayout
         private void _LayoutPanel_XmlLayoutChanged(object sender, EventArgs e)
         {
             var xmlLayout = _LayoutPanel.XmlLayout;
             int len = xmlLayout.Length;
         }
-        private void _CopyLayoutButtonClick(object sender, EventArgs e)
+        private void _DoLayoutCopy()
         {
             string text = "";
             var xmlLayout = _LayoutPanel.XmlLayout;
@@ -111,7 +246,7 @@ namespace TestDevExpress.Components
             Clipboard.Clear();
             Clipboard.SetText(text);
         }
-        private void _PasteLayoutButtonClick(object sender, EventArgs e)
+        private void _DoLayoutPaste()
         {
             if (Clipboard.ContainsText(TextDataFormat.Text))
             {
@@ -121,7 +256,11 @@ namespace TestDevExpress.Components
                     _LayoutPanel.XmlLayout = xmlLayoutClip;
             }
         }
-        private void _SetLayout1ButtonClick(object sender, EventArgs e)
+        private void _DoLayoutClear()
+        {
+            _LayoutPanel.XmlLayout = "";
+        }
+        private void _DoLayoutSet1()
         {
             string xmlLayout = @"<?xml version='1.0' encoding='utf-16'?>
 <id-persistent Version='2.00' Created='2021-04-16 23:03:30.992' Creator='David'>
@@ -132,7 +271,7 @@ namespace TestDevExpress.Components
             string areaIds = "C";
             ApplyLayout(xmlLayout, areaIds);
         }
-        private void _SetLayout2ButtonClick(object sender, EventArgs e)
+        private void _DoLayoutSet2()
         {
             string xmlLayout = @"<?xml version='1.0' encoding='utf-16'?>
 <id-persistent Version='2.00' Created='2021-04-16 23:20:20.977' Creator='David'>
@@ -155,7 +294,7 @@ namespace TestDevExpress.Components
             string areaIds = "C/P1; C/P2/P1; C/P2/P2/P1/P1; C/P2/P2/P1/P2; C/P2/P2/P2";
             ApplyLayout(xmlLayout, areaIds);
         }
-        private void _SetLayout3ButtonClick(object sender, EventArgs e)
+        private void _DoLayoutSet3()
         {
             string xmlLayout = @"<?xml version='1.0' encoding='utf-16'?>
 <id-persistent Version='2.00' Created='2021-04-16 23:35:06.115' Creator='David'>
@@ -172,7 +311,7 @@ namespace TestDevExpress.Components
             string areaIds = "C/P1; C/P2/P1; C/P2/P2";
             ApplyLayout(xmlLayout, areaIds);
         }
-        private void _SetLayout4ButtonClick(object sender, EventArgs e)
+        private void _DoLayoutSet4()
         {
             string xmlLayout = @"<?xml version='1.0' encoding='utf-16'?>
 <id-persistent Version='2.00' Created='2021-04-17 18:32:14.095' Creator='David'>
@@ -201,7 +340,7 @@ namespace TestDevExpress.Components
             string areaIds = "C/P1/P1; C/P1/P2/P1; C/P1/P2/P2/P1; C/P1/P2/P2/P2; C/P2/P1; C/P2/P2/P1; C/P2/P2/P2";
             ApplyLayout(xmlLayout, areaIds);
         }
-        private void _SetLayout5ButtonClick(object sender, EventArgs e)
+        private void _DoLayoutSet5()
         {
             string xmlLayout = @"<?xml version='1.0' encoding='utf-16'?>
 <id-persistent Version='2.00' Created='2021-04-17 18:32:14.095' Creator='David'>
@@ -241,7 +380,7 @@ namespace TestDevExpress.Components
                 foreach (string areaId in areasId)
                 {
                     LayoutTestPanel testPanel = new LayoutTestPanel();
-                    PrepareTestPanel(testPanel);
+                    _PrepareTestPanel(testPanel);
                     _LayoutPanel.AddControlToArea(testPanel, areaId.Trim());
                 }
                 _LayoutPanel.DisableAllEvents = false;
@@ -315,35 +454,6 @@ namespace TestDevExpress.Components
             this._Timer.Enabled = true;
         }
 
-        private void _LayoutPanel_UserControlAdd(object sender, TEventArgs<Control> e)
-        {
-            if (e.Item is LayoutTestPanel testPanel)
-                PrepareTestPanel(testPanel);
-        }
-        private void PrepareTestPanel(LayoutTestPanel testPanel)
-        {
-            testPanel.TitleImageName = _GetIconName();
-
-            if (Randomizer.IsTrue(40))
-            {   // 40% prvků bude mít podtržení:
-                Color lineColor = Color.FromArgb(255, 255, 32);
-                if (Randomizer.IsTrue(20))
-                    // 20% z nich bude mít náhodnou barvu podtržení:
-                    lineColor = Randomizer.GetColor(48, 160);
-                testPanel.LineColor = Color.FromArgb(160, lineColor);
-                testPanel.LineColorEnd = Color.FromArgb(12, lineColor);
-                testPanel.LineWidth = 4;
-            }
-
-            if (Randomizer.IsTrue(40))
-            {   // 40% prvků bude mít BackColor:
-                Color backColor = Randomizer.GetColor(64, 256);
-                testPanel.TitleBackColor = Color.FromArgb(160, backColor);
-                if (Randomizer.IsTrue(40))
-                    // 40% z nich bude mít fadeout:
-                    testPanel.TitleBackColorEnd = Color.FromArgb(0, backColor);
-            }
-        }
 
         private string _GetIconName()
         {
@@ -360,36 +470,13 @@ namespace TestDevExpress.Components
             if (this._LayoutPanel.ControlCount > 0)
                 e.Cancel = true;
         }
-        /// <summary>
-        /// Někdo zavřel poslední panel
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void _LayoutPanel_LastControlRemoved(object sender, EventArgs e)
-        {
-            this.Close();
-        }
 
-        public void AddControl(WF.Control control)
-        {
-            if (control is LayoutTestPanel testPanel)
-                PrepareTestPanel(testPanel);
-            _LayoutPanel.AddControl(control);
-        }
         /// <summary>
         /// Panel layoutu
         /// </summary>
         public DxLayoutPanel LayoutPanel { get { return _LayoutPanel; } }
-
         private DxLayoutPanel _LayoutPanel;
-        private DxPanelControl _FunctionPanel;
-        private DxSimpleButton _CopyLayoutButton;
-        private DxSimpleButton _PasteLayoutButton;
-        private DxSimpleButton _SetLayout1Button;
-        private DxSimpleButton _SetLayout2Button;
-        private DxSimpleButton _SetLayout3Button;
-        private DxSimpleButton _SetLayout4Button;
-        private DxSimpleButton _SetLayout5Button;
+
         private string[] _ImageNames;
         private Timer _Timer;
     }
@@ -635,7 +722,7 @@ namespace TestDevExpress.Components
         /// <param name="force"></param>
         private void MouseActivityDetect(bool force = false)
         {
-            if (this.IsDisposed || this.Disposing) return;
+            if (this.IsDisposed || this.Disposing || !this.IsHandleCreated) return;
 
             bool isMouseOnControl = false;
             if (this.Parent != null)

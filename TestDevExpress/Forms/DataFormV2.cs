@@ -97,11 +97,8 @@ namespace TestDevExpress.Forms
             DataRibbonPage page;
             DataRibbonGroup group;
 
-            page = new DataRibbonPage() { PageId = "DX", PageText = "ZÁKLADNÍ" };
+            page = this.CreateRibbonHomePage(FormRibbonDesignGroupPart.Default);
             pages.Add(page);
-            group = DxRibbonControl.CreateSkinIGroup("DESIGN", addUhdSupport: true) as DataRibbonGroup;
-            group.Items.Add(ImagePickerForm.CreateRibbonButton());
-            page.Groups.Add(group);
 
             string imageStatusRefresh = "svgimages/xaf/action_refresh.svg";
             string imageDataFormRemove = "svgimages/spreadsheet/removetablerows.svg";

@@ -22,22 +22,14 @@ namespace TestDevExpress.Forms
             this.Text = $"Test DevExpress [{DxComponent.FrameworkName}]";
 
             List<DataRibbonPage> pages = new List<DataRibbonPage>();
-            DataRibbonPage basicPage;
-            DataRibbonGroup group;
 
-            basicPage = new DataRibbonPage() { PageId = "DxBasicPage", PageText = "Domů", MergeOrder = 1, PageOrder = 1 };
-            pages.Add(basicPage);
-            group = DxRibbonControl.CreateSkinIGroup("DESIGN", addUhdSupport: true) as DataRibbonGroup;
-            group.Items.Add(ImagePickerForm.CreateRibbonButton());
-            basicPage.Groups.Add(group);
+            DataRibbonPage homePage = this.CreateRibbonHomePage(FormRibbonDesignGroupPart.Default);
+            pages.Add(homePage);
 
             var runFormInfos = RunFormInfo.GetForms();
+            RunFormInfo.CreateRibbonPages(runFormInfos, pages, homePage);
 
-            RunFormInfo.CreateRibbonPages(runFormInfos, pages, basicPage);
-
-            this.DxRibbon.Clear();
-            this.DxRibbon.AddPages(pages);
-
+            this.DxRibbon.AddPages(pages, true);
             this.DxRibbon.AllowCustomization = true;
 
             this.DxRibbon.RibbonItemClick += _DxRibbonControl_RibbonItemClick;

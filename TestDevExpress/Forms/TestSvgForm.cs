@@ -29,13 +29,9 @@ namespace TestDevExpress.Forms
 
             List<DataRibbonPage> pages = new List<DataRibbonPage>();
             DataRibbonPage page;
-            DataRibbonGroup group;
 
-            page = new DataRibbonPage() { PageId = "DX", PageText = "ZÁKLADNÍ", MergeOrder = 1, PageOrder = 1 };
+            page = this.CreateRibbonHomePage(FormRibbonDesignGroupPart.Basic);
             pages.Add(page);
-            group = DxRibbonControl.CreateSkinIGroup("DESIGN", addUhdSupport: false) as DataRibbonGroup;
-            group.Items.Add(ImagePickerForm.CreateRibbonButton());
-            page.Groups.Add(group);
 
             AddDevExpGroup(page, 7);
             AddAsolGroup(page, 9);

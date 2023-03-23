@@ -58,16 +58,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         protected override void DxRibbonPrepare()
         {
             List<DataRibbonPage> pages = new List<DataRibbonPage>();
-            DataRibbonPage page;
-            DataRibbonGroup group;
-
-            page = new DataRibbonPage() { PageId = "DX", PageText = "ZÁKLADNÍ" };
-            pages.Add(page);
-            group = DxRibbonControl.CreateSkinIGroup("DESIGN", addUhdSupport: false) as DataRibbonGroup;
-            page.Groups.Add(group);
-
-            this.DxRibbon.Clear();
-            this.DxRibbon.AddPages(pages);
+            pages.Add(this.CreateRibbonHomePage(FormRibbonDesignGroupPart.All));
+            this.DxRibbon.AddPages(pages, true);
 
             this.DxRibbon.RibbonItemClick += _DxRibbonControl_RibbonItemClick;
         }

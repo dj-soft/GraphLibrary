@@ -47,32 +47,17 @@ namespace TestDevExpress.Forms
             this.DxRibbon.LogActive = true;
 
             List<DataRibbonPage> pages = new List<DataRibbonPage>();
-            DataRibbonPage page;
-            DataRibbonGroup group;
 
-            page = new DataRibbonPage() { PageId = "DxBrowsePage", PageText = "Browse", MergeOrder = 10, PageOrder = 10 };
-            pages.Add(page);
+            DataRibbonPage page = this.CreateRibbonHomePage(FormRibbonDesignGroupPart.None);
 
-            //group = DxRibbonControl.CreateSkinIGroup("DESIGN", addUhdSupport: false) as DataRibbonGroup;
-            //group.Items.Add(ImagePickerForm.CreateRibbonButton());
-            //page.Groups.Add(group);
-
-            group = new DataRibbonGroup() { GroupId = "params", GroupText = "BROWSE TEST" };
-            page.Groups.Add(group);
+            DataRibbonGroup group = new DataRibbonGroup() { GroupId = "params", GroupText = "BROWSE TEST" };
             string resourceClear = "svgimages/spreadsheet/removetablerows.svg";
             string resourceVirtual1 = "svgimages/richedit/insertpagebreak.svg";
-           // string resourceVirtual2 = "svgimages/richedit/pagebreak.svg";
             string resourceAddIcon = "svgimages/richedit/addparagraphtotableofcontents.svg";
             string resourceBestFit = "svgimages/richedit/tableautofitwindow.svg";
-            string resourceCoefficients = "svgimages/richedit/tableautofitwindow.svg";
-            string resourceCoefficientB1 = "svgimages/pdf%20viewer/singlepageview.svg";
-            string resourceCoefficientB2 = "svgimages/pdf%20viewer/twopagescrolling.svg";
-            string resourceCoefficientB3 = "svgimages/pdf%20viewer/twopageview.svg";
             string resourceCoefficient1 = "svgimages/richedit/columnsone.svg";
             string resourceCoefficient2 = "svgimages/richedit/columnstwo.svg";
             string resourceCoefficient3 = "svgimages/richedit/columnsthree.svg";
-
-
 
             group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Test.Clear", Text = "Smaž řádky", ToolTipText = "Do Gridu vloží tabulku bez řádků", ItemType = RibbonItemType.CheckButton, RadioButtonGroupName = "CountGroup", Checked = true, ImageName = resourceClear, RibbonStyle = RibbonItemStyles.Large });
             group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Test.Virtual", Text = "Virtuální režim", ToolTipText = "Do Gridu vloží jen několik řádků, další doplňuje podle listování", ItemType = RibbonItemType.CheckButton, Checked = IsVirtualMode, ImageName = resourceVirtual1, RibbonStyle = RibbonItemStyles.Large });
@@ -90,8 +75,10 @@ namespace TestDevExpress.Forms
             group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Test.SetCoeffMid", Text = "Koeficienty MID", ToolTipText = "Nastaví koeficienty přednačítání 0.85 : 1.00", ItemType = RibbonItemType.CheckButton, RadioButtonGroupName = "CoefficientGroup", Checked = true, ImageName = resourceCoefficient2, RibbonStyle = RibbonItemStyles.Large });
             group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Test.SetCoeffMax", Text = "Koeficienty MAX", ToolTipText = "Nastaví koeficienty přednačítání 1.25 : 2.00", ItemType = RibbonItemType.CheckButton, RadioButtonGroupName = "CoefficientGroup", ImageName = resourceCoefficient3, RibbonStyle = RibbonItemStyles.Large });
 
-            this.DxRibbon.Clear();
-            this.DxRibbon.AddPages(pages);
+            page.Groups.Add(group);
+
+            pages.Add(page);
+            this.DxRibbon.AddPages(pages, true);
 
             this.DxRibbon.RibbonItemClick += _DxRibbonControl_RibbonItemClick;
         }
@@ -899,12 +886,7 @@ namespace TestDevExpress.Forms
             DataRibbonPage page;
             DataRibbonGroup group;
 
-            page = new DataRibbonPage() { PageId = "DX", PageText = "ZÁKLADNÍ", MergeOrder = 1, PageOrder = 1 };
-            pages.Add(page);
-
-            group = DxRibbonControl.CreateSkinIGroup("DESIGN", addUhdSupport: false) as DataRibbonGroup;
-            group.Items.Add(ImagePickerForm.CreateRibbonButton());
-            page.Groups.Add(group);
+            page = this.CreateRibbonHomePage(FormRibbonDesignGroupPart.None);
 
             group = new DataRibbonGroup() { GroupId = "params", GroupText = "BROWSE TEST" };
             page.Groups.Add(group);
@@ -920,8 +902,8 @@ namespace TestDevExpress.Forms
             group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Test.BestFit", Text = "Uprav šířky", ToolTipText = "V Gridu upraví šířky sloupců podle jejich obsahu", ItemType = RibbonItemType.Button, ImageName = resourceBestFit, RibbonStyle = RibbonItemStyles.Large });
             group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Test.AlignGroupSummaryInGroupRow", Text = "Group summary in group row", ToolTipText = "Typ zobrazení sumy v groupě", ItemType = RibbonItemType.CheckBoxStandard,RibbonStyle = RibbonItemStyles.Large });
 
-            this.DxRibbon.Clear();
-            this.DxRibbon.AddPages(pages);
+            pages.Add(page);
+            this.DxRibbon.AddPages(pages, true);
 
             this.DxRibbon.RibbonItemClick += _DxRibbonControl_RibbonItemClick;
         }

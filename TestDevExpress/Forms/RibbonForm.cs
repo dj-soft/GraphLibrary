@@ -164,11 +164,8 @@ namespace TestDevExpress.Forms
             DataRibbonPage homePage;
             DataRibbonGroup group;
 
-            homePage = new DataRibbonPage() { PageId = "DX", PageText = "ZÁKLADNÍ", MergeOrder = 1, PageOrder = 1 };
+            homePage = this.CreateRibbonHomePage(FormRibbonDesignGroupPart.None);
             pages.Add(homePage);
-            group = DxRibbonControl.CreateSkinIGroup("DESIGN", addUhdSupport: true) as DataRibbonGroup;
-            group.Items.Add(ImagePickerForm.CreateRibbonButton());
-            homePage.Groups.Add(group);
 
             group = new DataRibbonGroup() { GroupId = "params", GroupText = "RIBBON TEST" };
             homePage.Groups.Add(group);

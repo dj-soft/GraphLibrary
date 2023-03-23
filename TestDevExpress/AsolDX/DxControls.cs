@@ -1011,9 +1011,49 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Zde se typicky vytváří obsah do hlavního panelu.
         /// </summary>
         protected abstract void DxMainContentPrepare();
+        /// <summary>
+        /// Vytvoří a vrátí standardní stránku Home pro Ribbon, volitelně do ní přidá grupu Design s danými prvky (defaultn = None)
+        /// </summary>
+        /// <param name="designGroupParts"></param>
+        /// <returns></returns>
+        protected virtual DataRibbonPage CreateRibbonHomePage(FormRibbonDesignGroupPart designGroupParts = FormRibbonDesignGroupPart.None)
+        {
+            DataRibbonPage homePage = new DataRibbonPage() 
+            {
+                PageId = "DxHomePage", 
+                PageText = "Domů",
+                MergeOrder = 1, 
+                PageOrder = 1
+            };
+
+            if (designGroupParts != FormRibbonDesignGroupPart.None)
+            {
+                var group = DxRibbonControl.CreateDesignHomeGroup(designGroupParts, "Design") as DataRibbonGroup;
+                homePage.Groups.Add(group);
+            }
+            return homePage;
+        }
         private DxRibbonControl _DxRibbon;
         private DxRibbonStatusBar _DxStatusBar;
         #endregion
+    }
+    /// <summary>
+    /// Prvky, které mohou být přidány do grupy Design v ribbon page HomePage
+    /// </summary>
+    [Flags]
+    public enum FormRibbonDesignGroupPart
+    {
+        None = 0,
+        SkinButton = 0x0001,
+        PaletteButton = 0x0002,
+        PaletteGallery = 0x0004,
+        UhdSupport = 0x0010,
+        ImageGallery = 0x0020,
+        LogActivity = 0x0040,
+
+        Basic = SkinButton | PaletteButton | ImageGallery,
+        Default = SkinButton | PaletteButton | UhdSupport | ImageGallery,
+        All = SkinButton | PaletteButton | UhdSupport | ImageGallery | LogActivity,
     }
     /// <summary>
     /// Režim viditelnosti titulkového řádku okna a Ribbonu
