@@ -7300,7 +7300,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             DxComponent.LogActive = (menuItem?.Checked ?? false);
 #endif
         }
-
         /// <summary>
         /// Zajistí nastavení stavu Checked do navázaného prvku a odeslání události do odpovídajícho Ribbonu
         /// </summary>

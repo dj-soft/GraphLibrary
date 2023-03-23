@@ -34,7 +34,6 @@ namespace TestDevExpress.Forms
         /// Deklarace tlačítka v <see cref="MainAppForm"/> pro spuštění tohoto formuláře
         /// </summary>
         public static RunFormInfo RunFormInfo { get { return new RunFormInfo() { ButtonText = "Ribbon", ButtonImage = "svgimages/dashboards/grid.svg", GroupText = "RIBBONY", GroupOrder = 2 }; } }
-
         protected override void OnShown(EventArgs e)
         {
             DxComponent.SplashHide();
@@ -161,17 +160,16 @@ namespace TestDevExpress.Forms
             string imgInfo = "svgimages/xaf/action_aboutinfo.svg";
 
             List<DataRibbonPage> pages = new List<DataRibbonPage>();
-            DataRibbonPage homePage;
             DataRibbonGroup group;
 
-            homePage = this.CreateRibbonHomePage(FormRibbonDesignGroupPart.None);
+            DataRibbonPage homePage = this.CreateRibbonHomePage(FormRibbonDesignGroupPart.None);
             pages.Add(homePage);
 
             group = new DataRibbonGroup() { GroupId = "params", GroupText = "RIBBON TEST" };
             homePage.Groups.Add(group);
-            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Test.UseLazyInit", Text = "Use Lazy Init", ToolTipText = "Zaškrtnuto: používat opožděné plnění stránek Ribbonu (=až bude potřeba)\r\nNezaškrtnuto: fyzicky naplní celý Ribbon okamžitě, delší čas přípravy okna", ItemType = RibbonItemType.CheckBoxToggle, Checked = UseLazyLoad, RibbonStyle = RibbonItemStyles.Large });
-            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Test.LogClear", Text = "Clear log", ToolTipText = "Smaže obsah logu vpravo", ImageName = imgLogClear, RibbonStyle = RibbonItemStyles.Large });
-            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.ShowTextInQat", Text = "Show Text in QAT", ToolTipText = "Aktivuje / Deaktivuje text u prvků QAT", ItemType = RibbonItemType.CheckBoxStandard, Checked = this.ShowTextInQAT, RibbonStyle = RibbonItemStyles.Large });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Test.UseLazyInit", Text = "Use Lazy Init", ToolTipText = "Zaškrtnuto: používat opožděné plnění stránek Ribbonu (=až bude potřeba)\r\nNezaškrtnuto: fyzicky naplní celý Ribbon okamžitě, delší čas přípravy okna", ItemType = RibbonItemType.CheckButton, Checked = UseLazyLoad, RibbonStyle = RibbonItemStyles.Large });
+            // group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Test.LogClear", Text = "Clear log", ToolTipText = "Smaže obsah logu vpravo", ImageName = imgLogClear, RibbonStyle = RibbonItemStyles.Large });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.ShowTextInQat", Text = "Show Text in QAT", ToolTipText = "Aktivuje / Deaktivuje text u prvků QAT", ItemType = RibbonItemType.CheckButton, Checked = this.ShowTextInQAT, RibbonStyle = RibbonItemStyles.Large });
 
             DataRibbonPage helpPage = new DataRibbonPage() { PageId = "HELP", PageText = "Nápověda", MergeOrder = 9999, PageOrder = 9999 };
             pages.Add(helpPage);
