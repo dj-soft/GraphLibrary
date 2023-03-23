@@ -3746,7 +3746,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private void _InitLog()
         {
-            _LogActive = System.Diagnostics.Debugger.IsAttached;
+            bool hasDebugger = System.Diagnostics.Debugger.IsAttached;
+            string userName = (hasDebugger ? System.Environment.UserName?.ToLower() : "");
+            bool isDeveloper = (userName == "david.janacek" || userName == "david");
+            _LogActive = hasDebugger && isDeveloper;
         }
         /// <summary>
         /// Aktivita logu
@@ -4960,9 +4963,18 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (!textColor.HasValue)
                 textColor = _GetSkinColor(SkinElementColor.RibbonSkins + SkinElementColor.SystemColorMenuText);    // = DevExpress.Skins.RibbonSkins.GetSkin(DevExpress.LookAndFeel.UserLookAndFeel.Default.ActiveLookAndFeel).GetSystemColor(SystemColors.MenuText);
 
+            // c) A pokud je barva písmen světlá, pak je skin tmavý:
+            bool djIsDarkSkin = (textColor.HasValue && textColor.Value.GetBrightness() >= 0.5f);
 
-            // A pokud je barva písmen světlá, pak je skin tmavý:
-            return (textColor.HasValue && textColor.Value.GetBrightness() >= 0.5f);
+            // d) DevExpess nabízí přímou funkci v Helperu:
+            bool dxIsDarkSkin = DevExpress.Utils.Frames.FrameHelper.IsDarkSkin(DevExpress.LookAndFeel.UserLookAndFeel.Default);
+
+            if (djIsDarkSkin != dxIsDarkSkin)
+            {
+                // jen pro breakpoint...
+            }
+
+            return djIsDarkSkin;
         }
         private bool? __IsDarkTheme;
         /// <summary>
@@ -4986,6 +4998,31 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="styleName"></param>
         /// <returns></returns>
         public static StyleInfo GetStyleInfo(string styleName) { return SystemAdapter.GetStyleInfo(styleName); }
+        #endregion
+        #region DxSkinColorSet
+        /// <summary>
+        /// Standardizovaný set barev a dalších hodnot aktuálního skinu a palety.
+        /// Po změně skinu/palety je zde (OnDemand) připraven aktuální objekt.
+        /// <para/>
+        /// Vývojář může třídu <see cref="DxSkinColorSet"/> libovolně rozšiřovat a zajistit si svoje načtení hodnot ze skinu, třída je 'partial',
+        /// a načítání dat může zajistit libovolná metoda třídy označená atributem <see cref="InitializerAttribute"/>.
+        /// </summary>
+        public static DxSkinColorSet SkinColorSet { get { return Instance._SkinColorSet; } }
+        /// <summary>Standardizovaný set barev aktuálního skinu a palety</summary>
+        private DxSkinColorSet _SkinColorSet
+        {
+            get
+            {
+                var skinColorSet = __SkinColorSet;
+                if (skinColorSet is null || !skinColorSet.IsCurrent)
+                {
+                    skinColorSet = DxSkinColorSet.CreateCurrent();
+                    __SkinColorSet = skinColorSet;
+                }
+                return skinColorSet;
+            }
+        }
+        private DxSkinColorSet __SkinColorSet;
         #endregion
         #region Static helpers
         /// <summary>
@@ -5523,6 +5560,630 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         #endregion
     }
+    #region class DxSkinColorSet
+    /// <summary>
+    /// Standardizovaný set barev aktuálního skinu a palety.
+    /// Existuje jediná instance, je dostupná přes <see cref="DxComponent.SkinColorSet"/> a je zajištěno, že bude vrácena vždy instance odpovídající aktuálnímu skinu a paletě.
+    /// Po změně skinu/palety je tedy vygenerována a vrácena nová instance.
+    /// <para/>
+    /// Třída je partial, a kdokoliv ji může rozšířit bez toho, aby modifikoval její bázovou část.
+    /// Rozšíření se provádí tak, že se nadeklarují potřebné property (barvy, velikost, obrázky, ...),
+    /// a vytvoří se nová inicializační metoda (instanční, private) pro naplnění těchto dat. Tato metoda musí mít atribut <see cref="InitializerAttribute"/>.
+    /// Konstruktor třídy tyto metody pomocí reflexe najde a postupně je všechny zavolá.
+    /// Výsledkem je plně načtená instance.
+    /// <para/>
+    /// Aplikační kód tedy vždy může získat instanci této třídy a číst hodnotu z libovolných properties, a spolehne se na to, že pochází z aktuálního skinu.
+    /// </summary>
+    public partial class DxSkinColorSet
+    {
+        #region Konstruktor, skin, paleta, aktuálnost, řízení načítání
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        private DxSkinColorSet(DevExpress.Skins.Skin skin, string skinName, string paletteName)
+        {
+            this.Skin = skin;
+            this.SkinName = skinName;
+            this.PaletteName = paletteName;
+            this.SvgColors = new Dictionary<string, Color>();
+            this.ControlColors = new Dictionary<string, Color>();
+        }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return $"{SkinName} {PaletteName}";
+        }
+        /// <summary>
+        /// Instance Skinu
+        /// </summary>
+        public DevExpress.Skins.Skin Skin { get; private set; }
+        /// <summary>
+        /// Jméno skinu
+        /// </summary>
+        public string SkinName { get; private set; }
+        /// <summary>
+        /// Jméno palety
+        /// </summary>
+        public string PaletteName { get; private set; }
+        /// <summary>
+        /// Obsahuje true, pokud zdejší instance je platná pro aktuální skin a paletu.
+        /// </summary>
+        public bool IsCurrent
+        {
+            get
+            {
+                _ReadSkinPalette(out var _, out string skinName, out string paletteName);
+                return String.Equals(SkinName, skinName) && String.Equals(PaletteName, paletteName);
+            }
+        }
+        /// <summary>
+        /// Načte a vrátí aktuální jméno skinu a SVG palety
+        /// </summary>
+        /// <param name="skin"></param>
+        /// <param name="skinName"></param>
+        /// <param name="paletteName"></param>
+        private static void _ReadSkinPalette(out DevExpress.Skins.Skin skin, out string skinName, out string paletteName)
+        {
+            var ulaf = DevExpress.LookAndFeel.UserLookAndFeel.Default;
+            skin = DevExpress.Skins.CommonSkins.GetSkin(ulaf);
+            skinName = (ulaf.ActiveSkinName ?? "").Trim();
+            paletteName = (ulaf.ActiveSvgPaletteName ?? "").Trim();
+        }
+        /// <summary>
+        /// Vytvoří, naplní a vrátí instanci obsahující data aktuálního skinu a palety
+        /// </summary>
+        /// <returns></returns>
+        internal static DxSkinColorSet CreateCurrent()
+        {
+            _ReadSkinPalette(out var skin, out var skinName, out var paletteName);
+            DxSkinColorSet colorSet = new DxSkinColorSet(skin, skinName, paletteName);
+
+            // Zajistíme spuštění všech metod, které mají atribut Initializer:
+            var initializers = colorSet.GetType()
+                .GetMethods(System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic)
+                .Where(m => m.CustomAttributes.Any(a => a.AttributeType == typeof(InitializerAttribute)))
+                .ToList();
+
+            if (initializers.Count > 1) initializers.Sort(compareByPriority);
+
+            foreach (var initializer in initializers)
+                initializer.Invoke(colorSet, null);
+
+            return colorSet;
+
+            int compareByPriority(System.Reflection.MethodInfo a, System.Reflection.MethodInfo b)
+            {
+                int ap = getPriority(a);
+                int bp = getPriority(b);
+                return ap.CompareTo(bp);
+            }
+            int getPriority(System.Reflection.MethodInfo method)
+            {
+                var initializer = method.GetCustomAttributes(typeof(InitializerAttribute), false).FirstOrDefault() as InitializerAttribute;
+                return initializer?.Priority ?? 0;
+            }
+        }
+        #endregion
+        #region Pojmenované barvy
+        public Dictionary<string, Color> SvgColors { get; private set; }
+        private void AddSvgColors(Dictionary<string, Color> svgColors)
+        {
+            _AddColorsTo(this.SvgColors, svgColors);
+        }
+        public Dictionary<string, Color> ControlColors { get; private set; }
+        private void AddControlColors(Dictionary<string, Color> controlColors)
+        {
+            _AddColorsTo(this.ControlColors, controlColors);
+        }
+        private static void _AddColorsTo(Dictionary<string, Color> target, Dictionary<string, Color> source)
+        {
+            if (source is null || source.Count == 0) return;
+            foreach (var pair in source)
+            {
+                if (!target.ContainsKey(pair.Key))
+                    target.Add(pair.Key, pair.Value);
+            }
+        }
+        #endregion
+        #region Support metody
+        /// <summary>
+        /// Vrátí Dictionary obsahující jména barev a přímo barvy z dodané SVG palety.
+        /// </summary>
+        /// <param name="svgPalette"></param>
+        private static Dictionary<string, Color> GetColorsDictionary(SvgPalette svgPalette)
+        {
+            return svgPalette.Colors.CreateDictionary(sc => sc.Name, sc => sc.Value, true);
+        }
+        /// <summary>
+        /// Vrátí Dictionary obsahující jména barev a přímo barvy z dodané Skin palety.
+        /// </summary>
+        /// <param name="skinColors"></param>
+        /// <returns></returns>
+        private static Dictionary<string, Color> GetColorsDictionary(DevExpress.Skins.SkinColors skinColors)
+        {
+            Dictionary<string, Color> dictionary = new Dictionary<string, Color>();
+            var properties = skinColors.GetProperties();
+            foreach (System.Collections.DictionaryEntry property in properties)
+            {
+                if (property.Key is string && property.Value is Color)
+                {
+                    string key = property.Key as string;
+                    Color color = (Color)property.Value;
+                    if (key != null && !dictionary.ContainsKey(key))
+                        dictionary.Add(key, color);
+                }
+            }
+            return dictionary;
+        }
+        /// <summary>
+        /// Vrátí true, pokud dodaná paleta obsahuje všechny zadané názvy barev.
+        /// </summary>
+        /// <param name="svgDict"></param>
+        /// <param name="names"></param>
+        /// <returns></returns>
+        private static bool ContainAllNames(Dictionary<string, Color> svgDict, params string[] names)
+        {
+            if (svgDict is null || svgDict.Count == 0) return false;           // Pokud Dictionary je null nebo prázdná, pak neobsahuje nic
+            if (names.Any(n => !svgDict.ContainsKey(n))) return false;         // Pokud najdu jediné names, které NEEXISTUJE v Dictionary, pak vracím false = neobshauje všechny klíče.
+            return true;
+        }
+        #endregion
+        #region Základní data a jejich načtení
+        /// <summary>
+        /// Z aktuálního skinu a palety načte základní barvy
+        /// </summary>
+        [Initializer(-1)]
+        private void _BasicRead()
+        {
+            var skin = this.Skin;
+
+            var customPalettes = skin.CustomSvgPalettes;
+            if (!String.IsNullOrEmpty(this.PaletteName) && customPalettes.Count > 0)
+            {
+                var customPalette = customPalettes[this.PaletteName];
+                if (customPalette != null)
+                    readFromSvgPalette(customPalette);
+            }
+
+            var svgPalettes = skin.SvgPalettes;
+            var defaultPalette = (svgPalettes.Count > 0 ? svgPalettes["DefaultSkinPalette"] : null);
+            if (defaultPalette != null)
+                readFromSvgPalette(defaultPalette);
+
+            var commonColors = skin.Container.GetSkin(DevExpress.Skins.SkinProductId.Common).Colors;
+            if (commonColors != null)
+                readFromSkinCommonColors(commonColors);
+
+            // Načte barvy Basic z dodané SVG palety; načítá jen hodnoty, dosud nenačtené
+            void readFromSvgPalette(SvgPalette svgPalette)
+            {
+                var svgDict = GetColorsDictionary(svgPalette);
+                AddSvgColors(svgDict);
+
+                // Palety jsou vícero druhů: starší obsahují názvy barev: "Paint", "Paint High", "Paint Shadow", atd...:
+
+                // Následující mapování (tzn. jméno barvy => její použití na Controlech) bylo odvozeno pomocí SkinEditoru pro různé skiny a palety...
+
+                if (ContainAllNames(svgDict, "Accent Paint", "Accent Paint Light", "Accent Brush", "Accent Brush Light", "Key Paint", "Key Brush", "Key Brush Light"))
+                {   // Zvýrazněné barvy varianta A:
+                    this.AccentPaint = applyColor(this.AccentPaint, svgDict, "Accent Paint");
+                    this.LabelForeColorAccent = applyColor(this.LabelForeColorAccent, svgDict, "Accent Paint");
+                    this.EditorBackColorHot = applyColor(this.EditorBackColorHot, svgDict, "Accent Paint Light");
+                    this.EditorForeColorSelected = applyColor(this.EditorForeColorSelected, svgDict, "Accent Brush");
+                    this.AccentBrushLight = applyColor(this.AccentBrushLight, svgDict, "Accent Brush Light");
+                    this.WindowTitleBackColor = applyColor(this.WindowTitleBackColor, svgDict, "Key Paint");
+                    this.WindowTitleForeColor = applyColor(this.WindowTitleForeColor, svgDict, "Key Brush");
+                    this.WindowTitleForeColorDisabled = applyColor(this.WindowTitleForeColorDisabled, svgDict, "Key Brush Light");
+                }
+
+                if (ContainAllNames(svgDict, "Accent Paint", "Accent Paint Dark", "Accent Paint Light", "Accent Paint Lighter", "Accent Brush", "Accent Brush Light"))
+                {   // Zvýrazněné barvy varianta B:
+                    this.AccentPaint = applyColor(this.AccentPaint, svgDict, "Accent Paint");
+                    this.WindowTitleBackColor = applyColor(this.WindowTitleBackColor, svgDict, "Accent Paint");
+                    this.WindowTitleBackColorActive = applyColor(this.WindowTitleBackColorActive, svgDict, "Accent Paint Dark");
+                    this.EditorBackColorSelected = applyColor(this.EditorBackColorSelected, svgDict, "Accent Paint Light");
+                    this.EditorBackColorHot = applyColor(this.EditorBackColorHot, svgDict, "Accent Paint Lighter");
+                    this.WindowTitleForeColor = applyColor(this.WindowTitleForeColor, svgDict, "Accent Brush");
+                    this.WindowTitleForeColorDisabled = applyColor(this.WindowTitleForeColorDisabled, svgDict, "Accent Brush Light");
+                }
+
+                if (ContainAllNames(svgDict, "Paint", "Paint High", "Paint Shadow", "Paint Deep Shadow", "Brush", "Brush Light", "Brush High", "Brush Major", "Brush Minor"))
+                {   // Základní názvy barev klasické:
+                    this.PanelBackColor = applyColor(this.PanelBackColor, svgDict, "Paint");
+                    this.EditorBackColor = applyColor(this.EditorBackColor, svgDict, "Paint High");
+                    this.HeaderFooterBackColor = applyColor(this.HeaderFooterBackColor, svgDict, "Paint Shadow");
+                    this.HeaderFooterSecondBackColor = applyColor(this.HeaderFooterSecondBackColor, svgDict, "Paint Deep Shadow");
+                    this.LabelForeColor = applyColor(this.LabelForeColor, svgDict, "Brush");
+                    this.EditorForeColor = applyColor(this.EditorForeColor, svgDict, "Brush Light");
+                    this.EditorForeColorDisabled = applyColor(this.EditorForeColorDisabled, svgDict, "Brush High");
+                    this.PanelForeColor = applyColor(this.PanelForeColor, svgDict, "Brush High");
+                    this.EditorBorderColor = applyColor(this.EditorBorderColor, svgDict, "Brush Major");
+                    this.EditorGridLineColor = applyColor(this.EditorGridLineColor, svgDict, "Brush Minor");
+                }
+
+                if (ContainAllNames(svgDict, "Background 0", "Edit Background 0", "Background 200", "Foreground 100", "Edit Foreground 100", "Edit Foreground 25", "Line 50", "Line 25"))
+                {   // Základní názvy barev pro moderní skiny:
+                    this.PanelBackColor = applyColor(this.PanelBackColor, svgDict, "Background 0");
+                    this.EditorBackColor = applyColor(this.EditorBackColor, svgDict, "Edit Background 0");
+                    this.HeaderFooterBackColor = applyColor(this.HeaderFooterBackColor, svgDict, "Background 200");
+                    this.LabelForeColor = applyColor(this.LabelForeColor, svgDict, "Foreground 100");
+                    this.EditorForeColor = applyColor(this.EditorForeColor, svgDict, "Edit Foreground 100");
+                    this.EditorForeColorDisabled = applyColor(this.EditorForeColorDisabled, svgDict, "Edit Foreground 25");
+                    this.PanelForeColor = applyColor(this.PanelForeColor, svgDict, "Foreground 100");
+                    this.EditorBorderColor = applyColor(this.EditorBorderColor, svgDict, "Line 50");
+                    this.EditorGridLineColor = applyColor(this.EditorGridLineColor, svgDict, "Line 25");
+                }
+
+                if (ContainAllNames(svgDict, "Primary Background 0", "Secondary Background 0", "Secondary Background -100", "Edit Background -100", "Edit Background -200", "Secondary Foreground 100", "Secondary Foreground 25"))
+                {   // Zvýrazněné názvy barev pro moderní skiny:
+                    this.AccentPaint = applyColor(this.AccentPaint, svgDict, "Primary Background 0");
+                    this.WindowTitleBackColor = applyColor(this.WindowTitleBackColor, svgDict, "Secondary Background 0");
+                    this.WindowTitleBackColorActive = applyColor(this.WindowTitleBackColorActive, svgDict, "Secondary Background -100");
+                    this.EditorBackColorSelected = applyColor(this.EditorBackColorSelected, svgDict, "Edit Background -100");
+                    this.EditorBackColorHot = applyColor(this.EditorBackColorHot, svgDict, "Edit Background -200");
+                    this.WindowTitleForeColor = applyColor(this.WindowTitleForeColor, svgDict, "Secondary Foreground 100");
+                    this.WindowTitleForeColorDisabled = applyColor(this.WindowTitleForeColorDisabled, svgDict, "Secondary Foreground 25");
+                }
+
+                if (ContainAllNames(svgDict, "Red", "Green", "Blue", "Yellow", "Black", "Gray", "White"))
+                {   // Primární barvy modifikované pro skin:
+                    this.BasicColorRed = applyColor(this.BasicColorRed, svgDict, "Red");
+                    this.BasicColorGreen = applyColor(this.BasicColorGreen, svgDict, "Green");
+                    this.BasicColorBlue = applyColor(this.BasicColorBlue, svgDict, "Blue");
+                    this.BasicColorYellow = applyColor(this.BasicColorYellow, svgDict, "Yellow");
+                    this.BasicColorBlack = applyColor(this.BasicColorBlack, svgDict, "Black");
+                    this.BasicColorGray = applyColor(this.BasicColorGray, svgDict, "Gray");
+                    this.BasicColorWhite = applyColor(this.BasicColorWhite, svgDict, "White");
+                }
+            }
+
+            // Načte barvy Basic z dodané sady barev skinu; načítá jen hodnoty, dosud nenačtené
+            void readFromSkinCommonColors(DevExpress.Skins.SkinColors commonColors)
+            {
+                // Vstupní barvy: Key = systémový název barvy (např. "DisabledText"), Value = barva:
+                var commonDict = GetColorsDictionary(commonColors);
+
+                // Pozor: jméno barvy (Color.Name) může mít formu "@SvgColorName",
+                //        pak vepsaná konkrétní barva je bezvýznamná a je třeba získat barvu definovanou pro SVG = ze zdejší Dictionary this.SvgColors !!
+                var svgColors = this.SvgColors;
+                var colorDict = new Dictionary<string, Color>();
+                foreach (var kvp in commonDict)
+                {
+                    string itemName = kvp.Key;                       // Jméno položky, např. "DisabledText"
+                    if (!colorDict.ContainsKey(itemName))
+                    {
+                        Color itemColor = kvp.Value;                 // Barva položky, např. "{Name=@Foreground 25, ARGB=(255, 240, 240, 240)}"
+                        string colorName = itemColor.Name;           // Otestujeme její jméno, např. "@Foreground 25" - v paletě SVG barev:
+                        if (colorName != null && colorName.Length > 2 && colorName[0] == '@' && svgColors.TryGetValue(colorName.Substring(1), out var svgColor))
+                            itemColor = svgColor;                    // Reálná barva pro účely "DisabledText", záskaná z SVG palety pro jméno "Foreground 25": RGB="189; 189; 189"
+                        colorDict.Add(itemName, itemColor);
+                    }
+                }
+
+                // Konkrétní barvy vložíme do zdejší instanční Dictionary:
+                AddControlColors(colorDict);
+
+                // debug barev:
+                //string colors1 = commonDict.Select(i => $"\"{i.Key}\" = {i.Value}").ToOneString();
+                //string colors2 = colorDict.Select(i => $"\"{i.Key}\" = {i.Value}").ToOneString();
+                //string command1 = colorDict.Select(i => $"this.xxxxxxx = applyColor(this.xxxxxxx, colorDict, \"{i.Key}\");").ToOneString();
+                //string command2 = colorDict.Select(i => $"this.Named{i.Key} = applyColor(this.Named{i.Key}, colorDict, \"{i.Key}\");").ToOneString();
+                //string command3 = colorDict.Select(i => $"/// <summary>\r\n/// Pojmenovaná systémová barva '{i.Key}'\r\n/// </summary>\r\npublic Color? Named{i.Key} " + "{ get; private set; }").ToOneString();
+
+                // Namapujeme barvy do našich property:
+                this.LabelForeColor = applyColor(this.LabelForeColor, colorDict, "WindowText");
+                this.EditorForeColorDisabled = applyColor(this.EditorForeColorDisabled, colorDict, "ReadOnly");
+                this.HeaderFooterBackColor = applyColor(this.HeaderFooterBackColor, colorDict, "Info");
+                this.BasicColorGreen = applyColor(this.BasicColorGreen, colorDict, "Success");
+                this.BasicColorRed = applyColor(this.BasicColorRed, colorDict, "Danger");
+                this.PanelBackColor = applyColor(this.PanelBackColor, colorDict, "Control");
+                this.EditorForeColorDisabled = applyColor(this.EditorForeColorDisabled, colorDict, "DisabledText");
+                this.EditorBackColorSelected = applyColor(this.EditorBackColorSelected, colorDict, "Highlight");
+                this.BasicColorBlue = applyColor(this.BasicColorBlue, colorDict, "Question");
+                this.AccentPaint = applyColor(this.AccentPaint, colorDict, "Primary");
+                this.BasicColorYellow = applyColor(this.BasicColorYellow, colorDict, "WarningFill");
+                this.LabelForeColor = applyColor(this.LabelForeColor, colorDict, "InfoText");
+                this.EditorBackColorHot = applyColor(this.EditorBackColorHot, colorDict, "HotTrackedColor");
+                this.EditorForeColorDisabled = applyColor(this.EditorForeColorDisabled, colorDict, "DisabledControl");
+                this.BasicColorGreen = applyColor(this.BasicColorGreen, colorDict, "Information");
+                this.EditorForeColor = applyColor(this.EditorForeColor, colorDict, "HighlightText");
+                this.PanelForeColor = applyColor(this.PanelForeColor, colorDict, "ControlText");
+                this.BasicColorBlue = applyColor(this.BasicColorBlue, colorDict, "QuestionFill");
+                this.BasicColorYellow = applyColor(this.BasicColorYellow, colorDict, "Warning");
+                this.EditorForeColor = applyColor(this.EditorForeColor, colorDict, "InactiveCaptionText");
+                this.EditorBackColor = applyColor(this.EditorBackColor, colorDict, "Window");
+                this.WindowTitleBackColorActive = applyColor(this.WindowTitleBackColorActive, colorDict, "HideSelection");
+                this.HeaderFooterBackColor = applyColor(this.HeaderFooterBackColor, colorDict, "Menu");
+                this.PanelForeColor = applyColor(this.PanelForeColor, colorDict, "MenuText");
+                this.BasicColorRed = applyColor(this.BasicColorRed, colorDict, "Critical");
+
+                // Uložíme pojmenované barvy:
+                this.NamedWindowText = applyColor(this.NamedWindowText, colorDict, "WindowText");
+                this.NamedReadOnly = applyColor(this.NamedReadOnly, colorDict, "ReadOnly");
+                this.NamedInfo = applyColor(this.NamedInfo, colorDict, "Info");
+                this.NamedSuccess = applyColor(this.NamedSuccess, colorDict, "Success");
+                this.NamedHotTrackedForeColor = applyColor(this.NamedHotTrackedForeColor, colorDict, "HotTrackedForeColor");
+                this.NamedDanger = applyColor(this.NamedDanger, colorDict, "Danger");
+                this.NamedControl = applyColor(this.NamedControl, colorDict, "Control");
+                this.NamedDisabledText = applyColor(this.NamedDisabledText, colorDict, "DisabledText");
+                this.NamedHighlight = applyColor(this.NamedHighlight, colorDict, "Highlight");
+                this.NamedQuestion = applyColor(this.NamedQuestion, colorDict, "Question");
+                this.NamedPrimary = applyColor(this.NamedPrimary, colorDict, "Primary");
+                this.NamedHighlightAlternate = applyColor(this.NamedHighlightAlternate, colorDict, "HighlightAlternate");
+                this.NamedWarningFill = applyColor(this.NamedWarningFill, colorDict, "WarningFill");
+                this.NamedInfoText = applyColor(this.NamedInfoText, colorDict, "InfoText");
+                this.NamedHotTrackedColor = applyColor(this.NamedHotTrackedColor, colorDict, "HotTrackedColor");
+                this.NamedDisabledControl = applyColor(this.NamedDisabledControl, colorDict, "DisabledControl");
+                this.NamedInformation = applyColor(this.NamedInformation, colorDict, "Information");
+                this.NamedHighlightText = applyColor(this.NamedHighlightText, colorDict, "HighlightText");
+                this.NamedControlText = applyColor(this.NamedControlText, colorDict, "ControlText");
+                this.NamedQuestionFill = applyColor(this.NamedQuestionFill, colorDict, "QuestionFill");
+                this.NamedWarning = applyColor(this.NamedWarning, colorDict, "Warning");
+                this.NamedInactiveCaptionText = applyColor(this.NamedInactiveCaptionText, colorDict, "InactiveCaptionText");
+                this.NamedWindow = applyColor(this.NamedWindow, colorDict, "Window");
+                this.NamedHideSelection = applyColor(this.NamedHideSelection, colorDict, "HideSelection");
+                this.NamedMenu = applyColor(this.NamedMenu, colorDict, "Menu");
+                this.NamedMenuText = applyColor(this.NamedMenuText, colorDict, "MenuText");
+                this.NamedCritical = applyColor(this.NamedCritical, colorDict, "Critical");
+            }
+
+            // Pokusí se najít barvu. Pokud na vstupu už barva je, vrátí ji a nehledá. Pokud barva na vstupu není, a v Dictionary najde daný klíč, vrátí jeho barvu.
+            Color? applyColor(Color? currentValue, Dictionary<string, Color> colorDict, string name)
+            {
+                if (currentValue.HasValue || name is null) return currentValue;
+                if (colorDict.TryGetValue(name, out var color)) return color;
+                return null;
+            }
+        }
+        /// <summary>
+        /// Barva panelu (Container), pozadí
+        /// </summary>
+        public Color? PanelBackColor { get; private set; }
+        /// <summary>
+        /// Barva editoru (TextEdit), pozadí
+        /// </summary>
+        public Color? EditorBackColor { get; private set; }
+        /// <summary>
+        /// Barva titulku (Header) nebo zápatí (Footer), pozadí
+        /// </summary>
+        public Color? HeaderFooterBackColor { get; private set; }
+        /// <summary>
+        /// Podobná jako <see cref="HeaderFooterBackColor"/>
+        /// </summary>
+        public Color? HeaderFooterSecondBackColor { get; private set; }
+        /// <summary>
+        /// Barva písma použitá na pozadí <see cref="PanelBackColor"/> a <see cref="HeaderFooterBackColor"/>
+        /// </summary>
+        public Color? LabelForeColor { get; private set; }
+        /// <summary>
+        /// Barva písma použitá na editoru (TextEdit, Combo, atd), použitá na pozadí <see cref="EditorBackColor"/>
+        /// </summary>
+        public Color? EditorForeColor { get; private set; }
+        /// <summary>
+        /// Barva písma použitá na Disabled editoru (TextEdit, Combo, atd), použitá na pozadí <see cref="EditorBackColor"/>
+        /// </summary>
+        public Color? EditorForeColorDisabled { get; private set; }
+        /// <summary>
+        /// Barva písma použitá na panelu (Container) i na Title+Footer <see cref="PanelBackColor"/> a <see cref="HeaderFooterBackColor"/>
+        /// </summary>
+        public Color? PanelForeColor { get; private set; }
+        /// <summary>
+        /// Barva borderu editoru
+        /// </summary>
+        public Color? EditorBorderColor { get; private set; }
+        /// <summary>
+        /// Barva linky (mezi řádky / sloupci) uvnitř editoru - GridLines v Gridu atd
+        /// </summary>
+        public Color? EditorGridLineColor { get; private set; }
+
+        /// <summary>
+        /// Barva pozadí editoru ve stavu Hot = pod myší (řádek gridu)
+        /// </summary>
+        public Color? EditorBackColorHot { get; private set; }
+        /// <summary>
+        /// Barva pozadí editoru ve stavu Selected = s kurzorem
+        /// </summary>
+        public Color? EditorBackColorSelected { get; private set; }
+        /// <summary>
+        /// Barva písma  editoru ve stavu Selected = s kurzorem
+        /// </summary>
+        public Color? EditorForeColorSelected { get; private set; }
+        /// <summary>
+        /// Barva zvýraznění, použitá na pozadí header okna, a na zvýrazněné písmo na <see cref="HeaderFooterBackColor"/>
+        /// </summary>
+        public Color? LabelForeColorAccent { get; private set; }
+
+        /// <summary>
+        /// Barva zvýrazněného písma nebo grafiky na pozadí panelu
+        /// </summary>
+        public Color? AccentPaint { get; private set; }
+        /// <summary>
+        /// Barva pozadí titulkového řádku okna
+        /// </summary>
+        public Color? WindowTitleBackColor { get; private set; }
+        /// <summary>
+        /// Barva pozadí stisknutého buttonu v titulkovém řádku okna (tlačítko Minimize)
+        /// </summary>
+        public Color? WindowTitleBackColorActive { get; private set; }
+        /// <summary>
+        /// Barva písma titulkového řádku okna
+        /// </summary>
+        public Color? WindowTitleForeColor { get; private set; }
+        /// <summary>
+        /// Barva písma titulkového řádku okna ve stavu Disabled
+        /// </summary>
+        public Color? WindowTitleForeColorDisabled { get; private set; }
+        /// <summary>
+        /// Barva zvýraznění
+        /// </summary>
+        public Color? AccentBrushLight { get; private set; }
+
+        /// <summary>
+        /// Základní standardní barva Red
+        /// </summary>
+        public Color? BasicColorRed { get; private set; }
+        /// <summary>
+        /// Základní standardní barva Green
+        /// </summary>
+        public Color? BasicColorGreen { get; private set; }
+        /// <summary>
+        /// Základní standardní barva Blue
+        /// </summary>
+        public Color? BasicColorBlue { get; private set; }
+        /// <summary>
+        /// Základní standardní barva Yellow
+        /// </summary>
+        public Color? BasicColorYellow { get; private set; }
+        /// <summary>
+        /// Základní standardní barva Black
+        /// </summary>
+        public Color? BasicColorBlack { get; private set; }
+        /// <summary>
+        /// Základní standardní barva Gray
+        /// </summary>
+        public Color? BasicColorGray { get; private set; }
+        /// <summary>
+        /// Základní standardní barva White
+        /// </summary>
+        public Color? BasicColorWhite { get; private set; }
+
+        /// <summary>
+        /// Pojmenovaná systémová barva 'WindowText'
+        /// </summary>
+        public Color? NamedWindowText { get; private set; }
+        /// <summary>
+        /// Pojmenovaná systémová barva 'ReadOnly'
+        /// </summary>
+        public Color? NamedReadOnly { get; private set; }
+        /// <summary>
+        /// Pojmenovaná systémová barva 'Info'
+        /// </summary>
+        public Color? NamedInfo { get; private set; }
+        /// <summary>
+        /// Pojmenovaná systémová barva 'Success'
+        /// </summary>
+        public Color? NamedSuccess { get; private set; }
+        /// <summary>
+        /// Pojmenovaná systémová barva 'HotTrackedForeColor'
+        /// </summary>
+        public Color? NamedHotTrackedForeColor { get; private set; }
+        /// <summary>
+        /// Pojmenovaná systémová barva 'Danger'
+        /// </summary>
+        public Color? NamedDanger { get; private set; }
+        /// <summary>
+        /// Pojmenovaná systémová barva 'Control'
+        /// </summary>
+        public Color? NamedControl { get; private set; }
+        /// <summary>
+        /// Pojmenovaná systémová barva 'DisabledText'
+        /// </summary>
+        public Color? NamedDisabledText { get; private set; }
+        /// <summary>
+        /// Pojmenovaná systémová barva 'Highlight'
+        /// </summary>
+        public Color? NamedHighlight { get; private set; }
+        /// <summary>
+        /// Pojmenovaná systémová barva 'Question'
+        /// </summary>
+        public Color? NamedQuestion { get; private set; }
+        /// <summary>
+        /// Pojmenovaná systémová barva 'Primary'
+        /// </summary>
+        public Color? NamedPrimary { get; private set; }
+        /// <summary>
+        /// Pojmenovaná systémová barva 'HighlightAlternate'
+        /// </summary>
+        public Color? NamedHighlightAlternate { get; private set; }
+        /// <summary>
+        /// Pojmenovaná systémová barva 'WarningFill'
+        /// </summary>
+        public Color? NamedWarningFill { get; private set; }
+        /// <summary>
+        /// Pojmenovaná systémová barva 'InfoText'
+        /// </summary>
+        public Color? NamedInfoText { get; private set; }
+        /// <summary>
+        /// Pojmenovaná systémová barva 'HotTrackedColor'
+        /// </summary>
+        public Color? NamedHotTrackedColor { get; private set; }
+        /// <summary>
+        /// Pojmenovaná systémová barva 'DisabledControl'
+        /// </summary>
+        public Color? NamedDisabledControl { get; private set; }
+        /// <summary>
+        /// Pojmenovaná systémová barva 'Information'
+        /// </summary>
+        public Color? NamedInformation { get; private set; }
+        /// <summary>
+        /// Pojmenovaná systémová barva 'HighlightText'
+        /// </summary>
+        public Color? NamedHighlightText { get; private set; }
+        /// <summary>
+        /// Pojmenovaná systémová barva 'ControlText'
+        /// </summary>
+        public Color? NamedControlText { get; private set; }
+        /// <summary>
+        /// Pojmenovaná systémová barva 'QuestionFill'
+        /// </summary>
+        public Color? NamedQuestionFill { get; private set; }
+        /// <summary>
+        /// Pojmenovaná systémová barva 'Warning'
+        /// </summary>
+        public Color? NamedWarning { get; private set; }
+        /// <summary>
+        /// Pojmenovaná systémová barva 'InactiveCaptionText'
+        /// </summary>
+        public Color? NamedInactiveCaptionText { get; private set; }
+        /// <summary>
+        /// Pojmenovaná systémová barva 'Window'
+        /// </summary>
+        public Color? NamedWindow { get; private set; }
+        /// <summary>
+        /// Pojmenovaná systémová barva 'HideSelection'
+        /// </summary>
+        public Color? NamedHideSelection { get; private set; }
+        /// <summary>
+        /// Pojmenovaná systémová barva 'Menu'
+        /// </summary>
+        public Color? NamedMenu { get; private set; }
+        /// <summary>
+        /// Pojmenovaná systémová barva 'MenuText'
+        /// </summary>
+        public Color? NamedMenuText { get; private set; }
+        /// <summary>
+        /// Pojmenovaná systémová barva 'Critical'
+        /// </summary>
+        public Color? NamedCritical { get; private set; }
+
+        #endregion
+    }
+    /// <summary>
+    /// Atribut deklarující metodu, která je rozpoznána a vyvolána v procesu generické inicializace třídy.
+    /// Konstruktor třídy najde metody s tímto atributem a vyvolá je.
+    /// Lze zadat pořadí = priorita volání, bude se volat podle priority vzestupně.
+    /// Metoda sama tedy vypadá, jako by ji nikdo nevolal, protože je volána pomocí reflexe.
+    /// </summary>
+    [AttributeUsage(AttributeTargets.Method)]
+    public sealed class InitializerAttribute : Attribute
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public InitializerAttribute() { Priority = 0; }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public InitializerAttribute(int priority) { Priority = priority; }
+        /// <summary>
+        /// Priorita zpracování, metoda s nižším číslem bude volána dříve
+        /// </summary>
+        public int Priority { get; private set; }
+    }
+    #endregion
     #region Enumy
     /// <summary>
     /// Typ systémového zvuku.

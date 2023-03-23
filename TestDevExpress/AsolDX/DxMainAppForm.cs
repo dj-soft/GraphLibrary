@@ -132,8 +132,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             docManager.SnapMode = DevExpress.Utils.Controls.SnapMode.All;
             docManager.RibbonAndBarsMergeStyle = DevExpress.XtraBars.Docking2010.Views.RibbonAndBarsMergeStyle.WhenNotFloating;
 
-            var cc = docManager.ClientControl;
-
             docManager.DocumentActivate += _DocumentManagerDocumentActivate;
             docManager.ViewChanged += _DocumentManagerViewChanged;
         }
@@ -511,7 +509,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
         }
         #endregion
-        #region TabView + ImageMap
+        #region TabView BackImage a MouseClick
         /// <summary>
         /// Inicializuje věci pro kreslení obrázku na pozadí TabView
         /// </summary>
@@ -531,6 +529,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             string imageFile = @"c:\DavidPrac\VsProjects\TestDevExpress\TestDevExpress\ImagesTest\Image01.png"; // @"c:\DavidPrac\VsProjects\TestDevExpress\TestDevExpress\ImagesTest\Svg\homer-simpson.svg";
             imageFile = @"Image01.png"; // @"c:\DavidPrac\VsProjects\TestDevExpress\TestDevExpress\ImagesTest\Svg\homer-simpson.svg";
+            imageFile = @"c:\DavidPrac\VsProjects\TestDevExpress\TestDevExpress\ImagesTest\Svg\homer-simpson.svg";
             if (!System.IO.File.Exists(imageFile)) return;
 
             imageMap.ContentImage = System.IO.File.ReadAllBytes(imageFile);

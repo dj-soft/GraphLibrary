@@ -80,6 +80,36 @@ namespace Noris.Clients.Win.Components.AsolDX
             return result;
         }
         /// <summary>
+        /// Z dodané kolekce vytvoří Dictionary. Umožní ignorovat duplicity klíčů.
+        /// </summary>
+        /// <typeparam name="TItem"></typeparam>
+        /// <typeparam name="TKey"></typeparam>
+        /// <typeparam name="TValue"></typeparam>
+        /// <param name="items">Záznamy</param>
+        /// <param name="keySelector">Funkce, která vybere klíč ze záznamu</param>
+        /// <param name="valueSelector">Funkce, která vybere hodnotu ze záznamu</param>
+        /// <param name="ignoreDuplicity">Pokud je zadáno true, pak duplicitní klíče budou ignorovány, nebudou způsobovat chybu.</param>
+        /// <returns></returns>
+        public static Dictionary<TKey, TValue> CreateDictionary<TItem, TKey, TValue>(this IEnumerable<TItem> items, Func<TItem, TKey> keySelector, Func<TItem, TValue> valueSelector, bool ignoreDuplicity = false)
+        {
+            if (items == null) return null;
+            Dictionary<TKey, TValue> result = new Dictionary<TKey, TValue>();
+            foreach (TItem item in items)
+            {
+                if (item == null) continue;
+                TKey key = keySelector(item);
+                if (key == null) continue;
+                if (result.ContainsKey(key))
+                {
+                    if (ignoreDuplicity) continue;
+                    throw new System.ArgumentException($"An element with the same key [{key}] already exists in the System.Collections.Generic.Dictionary.");
+                }
+                TValue value = valueSelector(item);
+                result.Add(key, value);
+            }
+            return result;
+        }
+        /// <summary>
         /// Pro každý prvek this kolekce provede danou akci
         /// </summary>
         /// <typeparam name="T"></typeparam>

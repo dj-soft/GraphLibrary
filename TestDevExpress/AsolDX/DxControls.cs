@@ -17,6 +17,7 @@ using DevExpress.Utils.Extensions;
 using XS = Noris.WS.Parser.XmlSerializer;
 using System.ComponentModel;
 using DevExpress.XtraBars.Controls;
+using DevExpress.Utils.Drawing;
 
 namespace Noris.Clients.Win.Components.AsolDX
 {
@@ -1136,6 +1137,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             this._LastDpi = DxComponent.DesignDpi;           // ??? anebo   0 ?
             this._PaintedItems = new List<IDxPanelPaintedItem>();
             this.AllowTransparency = true;
+            this.LogActive = DxComponent.LogActive;
             this.SetStyle(ControlStyles.UserPaint | ControlStyles.OptimizedDoubleBuffer | ControlStyles.AllPaintingInWmPaint, true);
             DxComponent.RegisterListener(this);
         }
@@ -1237,13 +1239,16 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
         }
         /// <summary>
-        /// Jsou aktivní zápisy do logu? Default = false
+        /// Jsou aktivní zápisy do logu? Default = <see cref="DxComponent.LogActive"/>
         /// </summary>
         public virtual bool LogActive { get; set; }
         #endregion
-        #region HasMouse
+        #region HasMouse a InteractiveState
         /// <summary>
         /// Panel má na sobě myš?
+        /// Pozor, tato property signalizuje, že myš se nachází přímo na panelu na místě, kde není žádný Child control!
+        /// Pokud na panelu je Child control a myš přejde na tento control, pak myš "odchází" z panelu a zde v <see cref="HasMouse"/> bude false!
+        /// Lze ale testovat property <see cref="IsMouseOnPanel"/>.
         /// </summary>
         public bool HasMouse
         {
@@ -1259,14 +1264,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
         }
         private bool _HasMouse;
-        /// <summary>
-        /// Událost, když přišla nebo odešla myš
-        /// </summary>
-        protected virtual void OnHasMouseChanged() { }
-        /// <summary>
-        /// Událost, když přišla nebo odešla myš
-        /// </summary>
-        public event EventHandler HasMouseChanged;
         /// <summary>
         /// Panel.OnMouseEnter
         /// </summary>
@@ -1284,6 +1281,56 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             base.OnMouseLeave(e);
             this.HasMouse = false;
+        }
+        /// <summary>
+        /// Událost, když přišla nebo odešla myš
+        /// </summary>
+        protected virtual void OnHasMouseChanged() { }
+        /// <summary>
+        /// Událost, když přišla nebo odešla myš
+        /// </summary>
+        public event EventHandler HasMouseChanged;
+        /// <summary>
+        /// Obsahuje true, pokud myš se nachází nad klientským prostorem this panelemu, nebo nad některým z jeho Child prvků.
+        /// Testuje polohu myši a pozici panelu.
+        /// </summary>
+        public bool IsMouseOnPanel
+        {
+            get
+            {
+                var mousePosition = this.PointToClient(Control.MousePosition);
+                return this.ClientRectangle.Contains(mousePosition);
+            }
+        }
+        /// <summary>
+        /// Interaktivní stav tohoto prvku z hlediska Enabled, Mouse, Focus, Selected
+        /// </summary>
+        public virtual DxInteractiveState InteractiveState 
+        {
+            get
+            {
+                if (!this.Enabled) return DxInteractiveState.Disabled;
+                DxInteractiveState state = DxInteractiveState.None;
+                if (IsMouseOnPanel) state |= DxInteractiveState.HasMouse;
+                if (this.Focused) state |= DxInteractiveState.HasFocus;
+                return state;
+            }
+        }
+        /// <summary>
+        /// DevExpress vyjádření interaktivního stavu tohoto panelu, vychází z <see cref="InteractiveState"/>
+        /// </summary>
+        public virtual ObjectState InteractiveObjectState
+        {
+            get
+            {
+                var interactiveState = this.InteractiveState;
+                if (interactiveState.HasFlag(DxInteractiveState.Disabled)) return ObjectState.Disabled;
+
+                ObjectState state = ObjectState.Normal;
+                if (interactiveState.HasFlag(DxInteractiveState.HasMouse)) state |= ObjectState.Hot;
+                if (interactiveState.HasFlag(DxInteractiveState.HasFocus)) state |= ObjectState.Selected;
+                return state;
+            }
         }
         #endregion
         #region Paint
@@ -1504,6 +1551,51 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <returns></returns>
         public override string ToString() { return this.GetTypeName() + ": '" + (this.Text ?? "NULL") + "'"; }
+        #endregion
+        #region HasMouse
+        /// <summary>
+        /// Panel má na sobě myš?
+        /// </summary>
+        public bool HasMouse
+        {
+            get { return _HasMouse; }
+            private set
+            {
+                if (value != _HasMouse)
+                {
+                    _HasMouse = value;
+                    OnHasMouseChanged();
+                    HasMouseChanged?.Invoke(this, EventArgs.Empty);
+                }
+            }
+        }
+        private bool _HasMouse;
+        /// <summary>
+        /// Událost, když přišla nebo odešla myš
+        /// </summary>
+        protected virtual void OnHasMouseChanged() { }
+        /// <summary>
+        /// Událost, když přišla nebo odešla myš
+        /// </summary>
+        public event EventHandler HasMouseChanged;
+        /// <summary>
+        /// Panel.OnMouseEnter
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void OnMouseEnter(EventArgs e)
+        {
+            base.OnMouseEnter(e);
+            this.HasMouse = true;
+        }
+        /// <summary>
+        /// Panel.OnMouseLeave
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void OnMouseLeave(EventArgs e)
+        {
+            base.OnMouseLeave(e);
+            this.HasMouse = false;
+        }
         #endregion
     }
     #endregion
@@ -2141,6 +2233,51 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         public override string ToString() { return this.GetTypeName(); }
         #endregion
+        #region HasMouse
+        /// <summary>
+        /// Panel má na sobě myš?
+        /// </summary>
+        public bool HasMouse
+        {
+            get { return _HasMouse; }
+            private set
+            {
+                if (value != _HasMouse)
+                {
+                    _HasMouse = value;
+                    OnHasMouseChanged();
+                    HasMouseChanged?.Invoke(this, EventArgs.Empty);
+                }
+            }
+        }
+        private bool _HasMouse;
+        /// <summary>
+        /// Událost, když přišla nebo odešla myš
+        /// </summary>
+        protected virtual void OnHasMouseChanged() { }
+        /// <summary>
+        /// Událost, když přišla nebo odešla myš
+        /// </summary>
+        public event EventHandler HasMouseChanged;
+        /// <summary>
+        /// Panel.OnMouseEnter
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void OnMouseEnter(EventArgs e)
+        {
+            base.OnMouseEnter(e);
+            this.HasMouse = true;
+        }
+        /// <summary>
+        /// Panel.OnMouseLeave
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void OnMouseLeave(EventArgs e)
+        {
+            base.OnMouseLeave(e);
+            this.HasMouse = false;
+        }
+        #endregion
         #region ToolTip
         /// <summary>
         /// Nastaví daný text a titulek pro tooltip
@@ -2388,6 +2525,51 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         public override string ToString() { return this.GetTypeName(); }
         #endregion
+        #region HasMouse
+        /// <summary>
+        /// Panel má na sobě myš?
+        /// </summary>
+        public bool HasMouse
+        {
+            get { return _HasMouse; }
+            private set
+            {
+                if (value != _HasMouse)
+                {
+                    _HasMouse = value;
+                    OnHasMouseChanged();
+                    HasMouseChanged?.Invoke(this, EventArgs.Empty);
+                }
+            }
+        }
+        private bool _HasMouse;
+        /// <summary>
+        /// Událost, když přišla nebo odešla myš
+        /// </summary>
+        protected virtual void OnHasMouseChanged() { }
+        /// <summary>
+        /// Událost, když přišla nebo odešla myš
+        /// </summary>
+        public event EventHandler HasMouseChanged;
+        /// <summary>
+        /// Panel.OnMouseEnter
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void OnMouseEnter(EventArgs e)
+        {
+            base.OnMouseEnter(e);
+            this.HasMouse = true;
+        }
+        /// <summary>
+        /// Panel.OnMouseLeave
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void OnMouseLeave(EventArgs e)
+        {
+            base.OnMouseLeave(e);
+            this.HasMouse = false;
+        }
+        #endregion
         #region ToolTip
         /// <summary>
         /// Nastaví daný text a titulek pro tooltip
@@ -2425,6 +2607,51 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <returns></returns>
         public override string ToString() { return this.GetTypeName() + ": '" + (this.Text ?? "NULL") + "'"; }
+        #endregion
+        #region HasMouse
+        /// <summary>
+        /// Panel má na sobě myš?
+        /// </summary>
+        public bool HasMouse
+        {
+            get { return _HasMouse; }
+            private set
+            {
+                if (value != _HasMouse)
+                {
+                    _HasMouse = value;
+                    OnHasMouseChanged();
+                    HasMouseChanged?.Invoke(this, EventArgs.Empty);
+                }
+            }
+        }
+        private bool _HasMouse;
+        /// <summary>
+        /// Událost, když přišla nebo odešla myš
+        /// </summary>
+        protected virtual void OnHasMouseChanged() { }
+        /// <summary>
+        /// Událost, když přišla nebo odešla myš
+        /// </summary>
+        public event EventHandler HasMouseChanged;
+        /// <summary>
+        /// Panel.OnMouseEnter
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void OnMouseEnter(EventArgs e)
+        {
+            base.OnMouseEnter(e);
+            this.HasMouse = true;
+        }
+        /// <summary>
+        /// Panel.OnMouseLeave
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void OnMouseLeave(EventArgs e)
+        {
+            base.OnMouseLeave(e);
+            this.HasMouse = false;
+        }
         #endregion
         #region ToolTip
         /// <summary>
@@ -2473,6 +2700,51 @@ namespace Noris.Clients.Win.Components.AsolDX
         public void PerformClick()
         {
             this.OnClick(EventArgs.Empty);
+        }
+        #endregion
+        #region HasMouse
+        /// <summary>
+        /// Panel má na sobě myš?
+        /// </summary>
+        public bool HasMouse
+        {
+            get { return _HasMouse; }
+            private set
+            {
+                if (value != _HasMouse)
+                {
+                    _HasMouse = value;
+                    OnHasMouseChanged();
+                    HasMouseChanged?.Invoke(this, EventArgs.Empty);
+                }
+            }
+        }
+        private bool _HasMouse;
+        /// <summary>
+        /// Událost, když přišla nebo odešla myš
+        /// </summary>
+        protected virtual void OnHasMouseChanged() { }
+        /// <summary>
+        /// Událost, když přišla nebo odešla myš
+        /// </summary>
+        public event EventHandler HasMouseChanged;
+        /// <summary>
+        /// Panel.OnMouseEnter
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void OnMouseEnter(EventArgs e)
+        {
+            base.OnMouseEnter(e);
+            this.HasMouse = true;
+        }
+        /// <summary>
+        /// Panel.OnMouseLeave
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void OnMouseLeave(EventArgs e)
+        {
+            base.OnMouseLeave(e);
+            this.HasMouse = false;
         }
         #endregion
         #region ToolTip
@@ -2674,6 +2946,51 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         public override string ToString() { return this.GetTypeName(); }
         #endregion
+        #region HasMouse
+        /// <summary>
+        /// Panel má na sobě myš?
+        /// </summary>
+        public bool HasMouse
+        {
+            get { return _HasMouse; }
+            private set
+            {
+                if (value != _HasMouse)
+                {
+                    _HasMouse = value;
+                    OnHasMouseChanged();
+                    HasMouseChanged?.Invoke(this, EventArgs.Empty);
+                }
+            }
+        }
+        private bool _HasMouse;
+        /// <summary>
+        /// Událost, když přišla nebo odešla myš
+        /// </summary>
+        protected virtual void OnHasMouseChanged() { }
+        /// <summary>
+        /// Událost, když přišla nebo odešla myš
+        /// </summary>
+        public event EventHandler HasMouseChanged;
+        /// <summary>
+        /// Panel.OnMouseEnter
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void OnMouseEnter(EventArgs e)
+        {
+            base.OnMouseEnter(e);
+            this.HasMouse = true;
+        }
+        /// <summary>
+        /// Panel.OnMouseLeave
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void OnMouseLeave(EventArgs e)
+        {
+            base.OnMouseLeave(e);
+            this.HasMouse = false;
+        }
+        #endregion
         #region ToolTip
         /// <summary>
         /// Nastaví daný text a titulek pro tooltip
@@ -2715,6 +3032,51 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Klávesa, která aktivuje button
         /// </summary>
         public Keys HotKey { get; set; }
+        #endregion
+        #region HasMouse
+        /// <summary>
+        /// Panel má na sobě myš?
+        /// </summary>
+        public bool HasMouse
+        {
+            get { return _HasMouse; }
+            private set
+            {
+                if (value != _HasMouse)
+                {
+                    _HasMouse = value;
+                    OnHasMouseChanged();
+                    HasMouseChanged?.Invoke(this, EventArgs.Empty);
+                }
+            }
+        }
+        private bool _HasMouse;
+        /// <summary>
+        /// Událost, když přišla nebo odešla myš
+        /// </summary>
+        protected virtual void OnHasMouseChanged() { }
+        /// <summary>
+        /// Událost, když přišla nebo odešla myš
+        /// </summary>
+        public event EventHandler HasMouseChanged;
+        /// <summary>
+        /// Panel.OnMouseEnter
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void OnMouseEnter(EventArgs e)
+        {
+            base.OnMouseEnter(e);
+            this.HasMouse = true;
+        }
+        /// <summary>
+        /// Panel.OnMouseLeave
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void OnMouseLeave(EventArgs e)
+        {
+            base.OnMouseLeave(e);
+            this.HasMouse = false;
+        }
         #endregion
         #region ToolTip
         /// <summary>
@@ -8967,6 +9329,33 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Ukončen proces Dispose
         /// </summary>
         Disposed
+    }
+    /// <summary>
+    /// Stav objektu z hlediska myši a focusu
+    /// </summary>
+    [Flags]
+    public enum DxInteractiveState
+    {
+        /// <summary>
+        /// Žádný specifický stav, prvek je Enabled ale bez myši a bez Focusu, a pokud může být Selected, tak aktuálně není
+        /// </summary>
+        None = 0,
+        /// <summary>
+        /// Myš vstoupila nad prvek = prvek je Hot
+        /// </summary>
+        HasMouse = 0x01,
+        /// <summary>
+        /// Kurzor je v prvku
+        /// </summary>
+        HasFocus = 0x02,
+        /// <summary>
+        /// Prvek je Selectován = nemusí mít Focus, ale mezi ostatními prvky je Aktivní
+        /// </summary>
+        Selected = 0x04,
+        /// <summary>
+        /// Prvek je Disabled
+        /// </summary>
+        Disabled = 0x10
     }
     #endregion
     #region enum DxCursorType

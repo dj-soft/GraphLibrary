@@ -17,6 +17,12 @@ using DevExpress.Utils;
 using WSXmlSerializer = Noris.WS.Parser.XmlSerializer;
 using WSForms = Noris.WS.DataContracts.Desktop.Forms;
 using DevExpress.Utils.Drawing;
+using DevExpress.Skins;
+using static DevExpress.XtraEditors.RoundedSkinPanel;
+using DevExpress.XtraBars.Navigation;
+using DevExpress.XtraBars.Objects;
+using System.Web.Caching;
+using DevExpress.XtraRichEdit.Model;
 
 namespace Noris.Clients.Win.Components.AsolDX
 {
@@ -42,7 +48,9 @@ namespace Noris.Clients.Win.Components.AsolDX
             this._DockButtonBottomToolTip = null;
             this._DockButtonRightToolTip = null;
             this._CloseButtonToolTip = null;
-            this._UseSvgIcons = true;
+            this.__UseSvgIcons = true;
+
+            this.MouseLeave += _MouseLeave;
         }
         /// <summary>
         /// Dispose
@@ -134,7 +142,55 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Používat SVG ikony (true) / PNG ikony (false): default = true
         /// </summary>
-        public bool UseSvgIcons { get { return _UseSvgIcons; } set { _UseSvgIcons = value; this.RunInGui(_RefreshControls); } } private bool _UseSvgIcons;
+        public bool UseSvgIcons { get { return __UseSvgIcons; } set { __UseSvgIcons = value; this.RunInGui(_RefreshControls); } } private bool __UseSvgIcons;
+        /// <summary>
+        /// Kreslit pozadí a linku pomocí DxPaint?
+        /// </summary>
+        public bool UseDxPainter { get { return __UseDxPainter; } set { __UseDxPainter = value; this.RunInGui(_RefreshControls); } } private bool __UseDxPainter;
+
+        /// <summary>
+        /// Šířka linky pod textem v pixelech. Násobí se Zoomem. Pokud je null nebo 0, pak se nekreslí.
+        /// Záporná hodnota: vyjadřuje plnou barvu, udává odstup od horního a dolního okraje titulku.
+        /// Může být extrémně vysoká, pak je barvou podbarven celý titulek.
+        /// Barva je dána v <see cref="LineColor"/> a <see cref="LineColorEnd"/>.
+        /// </summary>
+        public int? LineWidth { get; set; }
+        /// <summary>
+        /// Barva linky pod titulkem.
+        /// Šířka linky je dána v pixelech v <see cref="LineWidth"/>.
+        /// Pokud je null, pak linka se nekreslí.
+        /// Pokud má hodnotu, pak hodnota A (Alpha) vyjadřuje "průhlednost" barvy pozadí = míru překrytí defaultní barvy (dle skinu) barvou zde deklarovanou.
+        /// </summary>
+        public Color? LineColor { get; set; }
+        /// <summary>
+        /// Barva linky pod titulkem na konci (Gradient zleva doprava).
+        /// Pokud je null, pak se nepoužívá gradientní barva.
+        /// Šířka linky je dána v pixelech v <see cref="LineWidth"/>.
+        /// Pokud má hodnotu, pak hodnota A (Alpha) vyjadřuje "průhlednost" barvy pozadí = míru překrytí defaultní barvy (dle skinu) barvou zde deklarovanou.
+        /// </summary>
+        public Color? LineColorEnd { get; set; }
+        /// <summary>
+        /// Okraje mezi TitlePanel a barvou pozadí, default = 0
+        /// </summary>
+        public int? TitleBackMargins { get; set; }
+        /// <summary>
+        /// Barva pozadí titulku.
+        /// Pokud je null, pak titulek má defaultní barvu pozadí podle skinu.
+        /// Pokud má hodnotu, pak hodnota A (Alpha) vyjadřuje "průhlednost" barvy pozadí = míru překrytí defaultní barvy (dle skinu) barvou zde deklarovanou.
+        /// </summary>
+        public Color? TitleBackColor { get; set; }
+        /// <summary>
+        /// Barva pozadí titulku, konec gradientu vpravo, null = SolidColor.
+        /// Pokud je null, pak titulek má defaultní barvu pozadí podle skinu.
+        /// Pokud má hodnotu, pak hodnota A (Alpha) vyjadřuje "průhlednost" barvy pozadí = míru překrytí defaultní barvy (dle skinu) barvou zde deklarovanou.
+        /// </summary>
+        public Color? TitleBackColorEnd { get; set; }
+        /// <summary>
+        /// Barva písma titulku.
+        /// Pokud je null, pak titulek má defaultní barvu písma podle skinu.
+        /// Pokud má hodnotu, pak hodnota A (Alpha) vyjadřuje "průhlednost" barvy textu = míru překrytí defaultní barvy (dle skinu) barvou zde deklarovanou.
+        /// </summary>
+        public Color? TitleTextColor { get; set; }
         /// <summary>
         /// Povolení pro zobrazování kontextového menu na Splitteru (pro změnu orientace Horizontální - Vertikální).
         /// Default = false.
@@ -577,8 +633,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             hostControl.TitleText = titleText;
             hostControl.TitleSubstitute = titleSubstitute;
             hostControl.IsPrimaryPanel = isPrimaryPanel;
-            hostControl.DockButtonClick += ItemPanel_DockButtonClick;
-            hostControl.CloseButtonClick += ItemPanel_CloseButtonClick;
+            hostControl.DockButtonClick += _ItemPanel_DockButtonClick;
+            hostControl.CloseButtonClick += _ItemPanel_CloseButtonClick;
 
             parent.Controls.Add(hostControl);
             hostControl.DockButtonDisabledPosition = hostControl.CurrentDockPosition;    // Až po vložení do parenta, protože podle něj se určuje CurrentDockPosition
@@ -1058,13 +1114,90 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private List<LayoutTileInfo> _Controls;
         #endregion
+        #region Selectovaný a Hot panel
+        /// <summary>
+        /// Vrátí interaktivní stav daného panelu z pohledu celého layoutu
+        /// </summary>
+        /// <param name="panel"></param>
+        /// <returns></returns>
+        internal DxInteractiveState GetPanelInteractiveState(DxLayoutItemPanel panel)
+        {
+            if (panel is null) return DxInteractiveState.Disabled;
+            if (!panel.Enabled) return DxInteractiveState.Disabled;
+
+            bool layoutHasMouse = this.IsMouseOnPanel;
+            bool panelHasMouse = (__LayoutItemPanelWithMouse != null && Object.ReferenceEquals(panel, __LayoutItemPanelWithMouse));
+            bool panelHasFocus = (__LayoutItemPanelWithFocus != null && Object.ReferenceEquals(panel, __LayoutItemPanelWithFocus));
+            DxInteractiveState state = DxInteractiveState.None;
+            if (layoutHasMouse && panelHasMouse) state |= DxInteractiveState.HasMouse;
+            if (panelHasFocus) state |= (DxInteractiveState.HasFocus | DxInteractiveState.Selected);
+            return state;
+        }
+        /// <summary>
+        /// Tuto metodu volá konkrétní panel, když na něj vstoupí myš
+        /// </summary>
+        /// <param name="panel"></param>
+        internal void ChangeInteractiveStatePanelMouse(DxLayoutItemPanel panel)
+        {
+            if (this.LogActive) DxComponent.LogAddLine($"DxLayoutpanel.PanelEnter Mouse: {panel.TitleText}");
+
+            var newPanel = panel;
+            var oldPanel = __LayoutItemPanelWithMouse;
+            __LayoutItemPanelWithMouse = panel;
+
+            // Refresh původního i nového, ale až po výměně v __LayoutItemPanelWithMouse !
+            if (!Object.ReferenceEquals(oldPanel, newPanel))
+            {
+                oldPanel?.RefreshContent();
+                newPanel?.RefreshContent();
+            }
+        }
+        /// <summary>
+        /// Tuto metodu volá konkrétní panel, když na něj vstoupí Focus
+        /// </summary>
+        /// <param name="panel"></param>
+        internal void ChangeInteractiveStatePanelFocus(DxLayoutItemPanel panel)
+        {
+            if (this.LogActive) DxComponent.LogAddLine($"DxLayoutpanel.PanelEnter Focus: {panel.TitleText}");
+
+            var newPanel = panel;
+            var oldPanel = __LayoutItemPanelWithFocus;
+            __LayoutItemPanelWithFocus = panel;
+
+            // Refresh původního i nového, ale až po výměně v __LayoutItemPanelWithFocus  !
+            if (!Object.ReferenceEquals(oldPanel, newPanel))
+            {
+                oldPanel?.RefreshContent();
+                newPanel?.RefreshContent();
+            }
+        }
+        /// <summary>
+        /// Při odchodu z myši z celého panelu
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _MouseLeave(object sender, EventArgs e)
+        {
+            ChangeInteractiveStatePanelMouse(null);
+        }
+        /// <summary>
+        /// Panel, na kterém naposledy byla viděna myš
+        /// </summary>
+        internal DxLayoutItemPanel LayoutItemPanelWithMouse { get { return __LayoutItemPanelWithMouse; } }
+        private DxLayoutItemPanel __LayoutItemPanelWithMouse;
+        /// <summary>
+        /// Panel, na kterém naposledy byl umístěn Focus. Panel zde zůstává i poté, kdy z něj focus odejde.
+        /// </summary>
+        internal DxLayoutItemPanel LayoutItemPanelWithFocus { get { return __LayoutItemPanelWithFocus; } }
+        private DxLayoutItemPanel __LayoutItemPanelWithFocus;
+        #endregion
         #region Obsluha titulkových tlačítek na prvku DxLayoutItemPanel
         /// <summary>
         /// Po kliknutí na DockButton v titulku: změní pozici odpovídajícího prvku layoutu
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void ItemPanel_DockButtonClick(object sender, DxLayoutTitleDockPositionArgs e)
+        private void _ItemPanel_DockButtonClick(object sender, DxLayoutTitleDockPositionArgs e)
         {
             int index = _SearchIndexOfAnyControl(sender as Control);
             if (index >= 0)
@@ -1075,7 +1208,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void ItemPanel_CloseButtonClick(object sender, EventArgs e)
+        private void _ItemPanel_CloseButtonClick(object sender, EventArgs e)
         {
             int index = _SearchIndexOfAnyControl(sender as Control);
             if (index >= 0)
@@ -2594,10 +2727,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="owner"></param>
         protected void Initialize(DxLayoutPanel owner)
         {
-            this.__Owner = owner;
+            this.__LayoutOwner = owner;
             this.Dock = DockStyle.Fill;
 
             this._DockButtonDisabledPosition = LayoutPosition.None;
+
+            this.MouseLeave += _MouseLeave;
         }
         /// <summary>
         /// Uvolnění zdrojů
@@ -2631,13 +2766,13 @@ namespace Noris.Clients.Win.Components.AsolDX
             // Tady nesmí být Dispose, protože tohle je aplikační control, a ten si disposuje ten, kdo ho vytvořil...
             _UserControl = null;
 
-            __Owner = null;
+            __LayoutOwner = null;
         }
         /// <summary>
         /// Vlastník = kompletní layout
         /// </summary>
-        public DxLayoutPanel Owner { get { return __Owner; } }
-        private WeakTarget<DxLayoutPanel> __Owner;
+        public DxLayoutPanel LayoutOwner { get { return __LayoutOwner; } }
+        private WeakTarget<DxLayoutPanel> __LayoutOwner;
         /// <summary>
         /// Aktuální reálná dokovaná pozice, odvozená od hostitelského containeru
         /// </summary>
@@ -2676,6 +2811,14 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
         }
         /// <summary>
+        /// Refreshuje celý obsah i vizuální kabát
+        /// </summary>
+        public void RefreshContent()
+        {
+            if (this._TitleBarExists) this._TitleBar.RefreshControl();
+            this.Refresh();
+        }
+        /// <summary>
         /// Odebere ze sebe UserControl - tak, aby nebyl součástí navazujícího Dispose()
         /// </summary>
         public void ReleaseUserControl()
@@ -2703,12 +2846,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             _TitleText = iLayoutUserControl.TitleText;
             _TitleSubstitute = iLayoutUserControl.TitleSubstitute;
             _TitleImageName = iLayoutUserControl.TitleImageName;
-            _LineWidth = iLayoutUserControl.LineWidth;
-            _LineColor = iLayoutUserControl.LineColor;
-            _LineColorEnd = iLayoutUserControl.LineColorEnd;
-            _TitleBackMargins = iLayoutUserControl.TitleBackMargins;
-            _TitleBackColor = iLayoutUserControl.TitleBackColor;
-            _TitleBackColorEnd = iLayoutUserControl.TitleBackColorEnd;
+
             _RefreshControlGui();
         }
         /// <summary>
@@ -2723,6 +2861,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         public bool IsPrimaryPanel { get { return _IsPrimaryPanel; } set { _IsPrimaryPanel = value; if (HasParent) this.RunInGui(_RefreshControlGui); } }
         private bool _IsPrimaryPanel;
         /// <summary>
+        /// Ikona titulku
+        /// </summary>
+        public string TitleImageName { get { return _TitleImageName; } set { _TitleImageName = value; if (HasParent) this.RunInGui(_RefreshControlGui); } }
+        private string _TitleImageName;
+        /// <summary>
         /// Text do titulku, požadovaný. Může být prázdný. Pak v případě, že Layout zobrazuje pouze jednu stránku, nemusí zobrazovat titulek.
         /// Pokud ale Layout titulek zobrazovat bude, a <see cref="TitleText"/> bude prázdný, použije se <see cref="TitleSubstitute"/>.
         /// </summary>
@@ -2735,71 +2878,28 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public string TitleSubstitute { get { return _TitleSubstitute; } set { _TitleSubstitute = value; if (HasParent) this.RunInGui(_RefreshControlGui); } }
         private string _TitleSubstitute;
+
         /// <summary>
-        /// Ikona titulku
+        /// Interaktivní stav tohoto prvku z hlediska Enabled, Mouse, Focus, Selected
         /// </summary>
-        public string TitleImageName { get { return _TitleImageName; } set { _TitleImageName = value; if (HasParent) this.RunInGui(_RefreshControlGui); } }
-        private string _TitleImageName;
-        /// <summary>
-        /// Šířka linky pod textem v pixelech. Násobí se Zoomem. Pokud je null nebo 0, pak se nekreslí.
-        /// Záporná hodnota: vyjadřuje plnou barvu, udává odstup od horního a dolního okraje titulku.
-        /// Může být extrémně vysoká, pak je barvou podbarven celý titulek.
-        /// Barva je dána v <see cref="LineColor"/> a <see cref="LineColorEnd"/>.
-        /// </summary>
-        public int? LineWidth { get { return _LineWidth; } set { _LineWidth = value; if (HasParent) this.RunInGui(_RefreshControlGui); } }
-        private int? _LineWidth;
-        /// <summary>
-        /// Barva linky pod titulkem.
-        /// Šířka linky je dána v pixelech v <see cref="LineWidth"/>.
-        /// Pokud je null, pak linka se nekreslí.
-        /// Pokud má hodnotu, pak hodnota A (Alpha) vyjadřuje "průhlednost" barvy pozadí = míru překrytí defaultní barvy (dle skinu) barvou zde deklarovanou.
-        /// </summary>
-        public Color? LineColor { get { return _LineColor; } set { _LineColor = value; if (HasParent) this.RunInGui(_RefreshControlGui); } }
-        private Color? _LineColor;
-        /// <summary>
-        /// Barva linky pod titulkem na konci (Gradient zleva doprava).
-        /// Pokud je null, pak se nepoužívá gradientní barva.
-        /// Šířka linky je dána v pixelech v <see cref="LineWidth"/>.
-        /// Pokud má hodnotu, pak hodnota A (Alpha) vyjadřuje "průhlednost" barvy pozadí = míru překrytí defaultní barvy (dle skinu) barvou zde deklarovanou.
-        /// </summary>
-        public Color? LineColorEnd { get { return _LineColorEnd; } set { _LineColorEnd = value; if (HasParent) this.RunInGui(_RefreshControlGui); } }
-        private Color? _LineColorEnd;
-        /// <summary>
-        /// Okraje mezi TitlePanel a barvou pozadí, default = 0
-        /// </summary>
-        public int? TitleBackMargins { get { return _TitleBackMargins; } set { _TitleBackMargins = value; if (HasParent) this.RunInGui(_RefreshControlGui); } }
-        private int? _TitleBackMargins;
-        /// <summary>
-        /// Barva pozadí titulku.
-        /// Pokud je null, pak titulek má defaultní barvu pozadí podle skinu.
-        /// Pokud má hodnotu, pak hodnota A (Alpha) vyjadřuje "průhlednost" barvy pozadí = míru překrytí defaultní barvy (dle skinu) barvou zde deklarovanou.
-        /// </summary>
-        public Color? TitleBackColor { get { return _TitleBackColor; } set { _TitleBackColor = value; if (HasParent) this.RunInGui(_RefreshControlGui); } }
-        private Color? _TitleBackColor;
-        /// <summary>
-        /// Barva pozadí titulku, konec gradientu vpravo, null = SolidColor.
-        /// Pokud je null, pak titulek má defaultní barvu pozadí podle skinu.
-        /// Pokud má hodnotu, pak hodnota A (Alpha) vyjadřuje "průhlednost" barvy pozadí = míru překrytí defaultní barvy (dle skinu) barvou zde deklarovanou.
-        /// </summary>
-        public Color? TitleBackColorEnd { get { return _TitleBackColorEnd; } set { _TitleBackColorEnd = value; if (HasParent) this.RunInGui(_RefreshControlGui); } }
-        private Color? _TitleBackColorEnd;
+        public override DxInteractiveState InteractiveState { get { return this.LayoutOwner.GetPanelInteractiveState(this); } }
         /// <summary>
         /// Viditelnost buttonu Close.
-        /// Lze setovat explicitní hodnotu, anebo hodnotu <see cref="ControlVisibility.ByParent"/> = bude se přebírat z <see cref="Owner"/> (=výchozí stav).
+        /// Lze setovat explicitní hodnotu, anebo hodnotu <see cref="ControlVisibility.ByParent"/> = bude se přebírat z <see cref="LayoutOwner"/> (=výchozí stav).
         /// </summary>
         public ControlVisibility CloseButtonVisibility
         {
-            get { return (_CloseButtonVisibility ?? Owner?.CloseButtonVisibility ?? ControlVisibility.Default); }
+            get { return (_CloseButtonVisibility ?? LayoutOwner?.CloseButtonVisibility ?? ControlVisibility.Default); }
             set { _CloseButtonVisibility = (value == ControlVisibility.ByParent ? (ControlVisibility?)null : (ControlVisibility?)value); }
         }
         private ControlVisibility? _CloseButtonVisibility;
         /// <summary>
         /// Viditelnost buttonů Dock.
-        /// Lze setovat explicitní hodnotu, anebo hodnotu <see cref="ControlVisibility.ByParent"/> = bude se přebírat z <see cref="Owner"/> (=výchozí stav).
+        /// Lze setovat explicitní hodnotu, anebo hodnotu <see cref="ControlVisibility.ByParent"/> = bude se přebírat z <see cref="LayoutOwner"/> (=výchozí stav).
         /// </summary>
         public ControlVisibility DockButtonVisibility
         {
-            get { return (_DockButtonVisibility ?? Owner?.DockButtonVisibility ?? ControlVisibility.Default); }
+            get { return (_DockButtonVisibility ?? LayoutOwner?.DockButtonVisibility ?? ControlVisibility.Default); }
             set { _DockButtonVisibility = (value == ControlVisibility.ByParent ? (ControlVisibility?)null : (ControlVisibility?)value); }
         }
         private ControlVisibility? _DockButtonVisibility;
@@ -2824,8 +2924,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             get
             {
                 if (this.FindForm() == null) return false;
-                if (this.Owner.TitleCompulsory) return true;
-                if (this.Owner.ControlCount > 1) return true;
+                if (this.LayoutOwner.TitleCompulsory) return true;
+                if (this.LayoutOwner.ControlCount > 1) return true;
                 if (!this.TitleBarVisible) return false;
                 if (!String.IsNullOrEmpty(TitleText)) return true;
                 return false;
@@ -2883,8 +2983,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             bool titleBarVisible = NeedTitleBar;
             if (titleBarVisible)
             {   // Pokud má být viditelný:
-                if (_TitleBar == null)
-                    _TitleBarInit();
+                if (!_TitleBarExists)
+                    _TitleBarCreate();
                 _TitleBar.Visible = true;
             }
             else
@@ -2896,14 +2996,19 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Inicializace TitleBaru
         /// </summary>
-        private void _TitleBarInit()
+        private void _TitleBarCreate()
         {
             _TitleBar = new DxLayoutTitlePanel(this);
+            _TitleBar.MouseEnter += _TitleBar_MouseEnter;
             _TitleBar.DockButtonClick += _TitleBar_DockButtonClick;
             _TitleBar.CloseButtonClick += _TitleBar_CloseButtonClick;
 
             _FillPanelControls();
         }
+        /// <summary>
+        /// Obsahuje true, pokud nyní TitleBar existuje
+        /// </summary>
+        private bool _TitleBarExists { get { return (_TitleBar != null); } }
         /// <summary>
         /// Obsahuje true, pokud nyní je TitleBar viditelný
         /// </summary>
@@ -2931,7 +3036,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private DxLayoutTitlePanel _TitleBar;
         #endregion
-        #region UserControl a vkládání controlů (UserControl + _TitleBar) do this.Controls
+        #region UserControl a vkládání controlů (UserControl + _TitleBar) do this.Controls, události (Mouse a Focus) na UserControlu
         /// <summary>
         /// Obsahuje true pokud this panel je prázdný = neobsahuje <see cref="UserControl"/>
         /// </summary>
@@ -2948,6 +3053,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 if (userControl != null)
                 {
                     DxLayoutPanel.RemoveControlFromParent(userControl, this);
+                    _UserControlEventsRemove(userControl);
                     _UserControl = null;
                 }
                 userControl = value;
@@ -2955,6 +3061,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 if (userControl != null)
                 {
                     userControl.Dock = DockStyle.Fill;
+                    _UserControlEventsAdd(userControl);
                     this._FillPanelControls();
                 }
             }
@@ -2977,6 +3084,63 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.ResumeLayout(false);
             this.PerformLayout();
         }
+        /// <summary>
+        /// Zaháčkuje naše eventy do daného UserControlu
+        /// </summary>
+        /// <param name="userControl"></param>
+        private void _UserControlEventsAdd(Control userControl)
+        {
+            userControl.Enter += UserControl_Enter;
+            userControl.Leave += UserControl_Leave;
+            userControl.MouseEnter += UserControl_MouseEnter;
+            userControl.MouseLeave += UserControl_MouseLeave;
+        }
+        /// <summary>
+        /// Odpojí naše eventy z daného UserControlu
+        /// </summary>
+        /// <param name="userControl"></param>
+        private void _UserControlEventsRemove(Control userControl)
+        {
+            userControl.Enter -= UserControl_Enter;
+            userControl.Leave -= UserControl_Leave;
+            userControl.MouseEnter -= UserControl_MouseEnter;
+            userControl.MouseLeave -= UserControl_MouseLeave;
+        }
+        private void _TitleBar_MouseEnter(object sender, EventArgs e)
+        {
+            this.LayoutOwner.ChangeInteractiveStatePanelMouse(this);
+        }
+        private void _MouseLeave(object sender, EventArgs e)
+        {
+            this.LayoutOwner.ChangeInteractiveStatePanelMouse(null);
+        }
+        private void UserControl_MouseEnter(object sender, EventArgs e)
+        {
+            this.LayoutOwner.ChangeInteractiveStatePanelMouse(this);
+        }
+        private void UserControl_MouseLeave(object sender, EventArgs e)
+        {
+        }
+        private void UserControl_Enter(object sender, EventArgs e)
+        {
+            this.LayoutOwner.ChangeInteractiveStatePanelFocus(this);
+        }
+        private void UserControl_Leave(object sender, EventArgs e)
+        {
+        }
+        /// <summary>
+        /// Tuto metodu volá titulkový panel, když má na sobě myš.
+        /// </summary>
+        internal void ChangeInteractiveStatePanelMouse()
+        {
+            if (this.IsMouseOnPanel && !Object.ReferenceEquals(this.LayoutOwner.LayoutItemPanelWithMouse, this))
+                this.LayoutOwner.ChangeInteractiveStatePanelMouse(this);
+        }
+        /// <summary>
+        /// Obsahuje true pokud this panel je aktivní = v rámci Layoutu byl poslední, který měl Focus
+        /// Takový panel může mít jiné chování (typicky nemá titulek, a nemá CloseButton), viz ...
+        /// </summary>
+        internal bool IsActivePanel { get { return Object.ReferenceEquals(this, this.LayoutOwner?.LayoutItemPanelWithFocus); } }
         #endregion
     }
     #endregion
@@ -2984,7 +3148,7 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// <summary>
     /// Titulkový řádek. Obsahuje titulek a několik buttonů (Dock a Close).
     /// </summary>
-    public class DxLayoutTitlePanel : DxDockTitlePanel
+    public class DxLayoutTitlePanel : DxPanelControl
     {
         #region Konstuktor, vnitřní život
         /// <summary>
@@ -2992,7 +3156,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public DxLayoutTitlePanel()
             : base()
-        { }
+        {
+            this._Initialise();
+        }
         /// <summary>
         /// Konstruktor
         /// </summary>
@@ -3000,152 +3166,695 @@ namespace Noris.Clients.Win.Components.AsolDX
         public DxLayoutTitlePanel(DxLayoutItemPanel owner)
             : base()
         {
-            __Owner = owner;
-            RefreshButtons(true);
+            __PanelOwner = owner;
+            this._Initialise();
+        }
+        private void _Initialise()
+        {
+            _CreateControls();
+            _RefreshButtonsImageAndSize(true);
         }
         /// <summary>
         /// Zruší veškerý svůj obsah v procesu Dispose. Volá base.DestroyContent() !!!
         /// </summary>
         protected override void DestroyContent()
         {
+            _DestroyControls();
             base.DestroyContent();
-            __Owner = null;
+            __PanelOwner = null;
         }
+        /// <summary>
+        /// Vlastník panelu = kompletní layout
+        /// </summary>
+        public DxLayoutPanel LayoutOwner { get { return PanelOwner?.LayoutOwner; } }
         /// <summary>
         /// Vlastník titulku = <see cref="DxLayoutItemPanel"/> jednoho UserControlu.
         /// </summary>
-        public DxLayoutItemPanel Owner { get { return __Owner; } }
-        private WeakTarget<DxLayoutItemPanel> __Owner;
-        /// <summary>
-        /// Celý layout panel = všechny controly
-        /// </summary>
-        public DxLayoutPanel LayoutPanel { get { return this.Owner?.Owner; } }
+        public DxLayoutItemPanel PanelOwner { get { return __PanelOwner; } }
+        private WeakTarget<DxLayoutItemPanel> __PanelOwner;
         #endregion
-        #region Data získaná z Ownerů (override bázových hodnot, které jsou jednoduše setované)
+        #region Data získaná z Ownerů
+        /// <summary>
+        /// Viditelnost buttonů Dock.
+        /// Lze setovat explicitní hodnotu, anebo hodnotu <see cref="ControlVisibility.ByParent"/> = bude se přebírat z <see cref="PanelOwner"/> (=výchozí stav).
+        /// </summary>
+        private ControlVisibility DockButtonVisibility { get { return LayoutOwner?.DockButtonVisibility ?? ControlVisibility.Default; } }
+        /// <summary>
+        /// Viditelnost buttonu Close.
+        /// Lze setovat explicitní hodnotu, anebo hodnotu <see cref="ControlVisibility.ByParent"/> = bude se přebírat z <see cref="PanelOwner"/> (=výchozí stav).
+        /// </summary>
+        private ControlVisibility CloseButtonVisibility { get { return LayoutOwner?.CloseButtonVisibility ?? ControlVisibility.Default; } }
+        /// <summary>
+        /// Tooltip na buttonu DockLeft.
+        /// Nemá význam setovat hodnotu, přebírá se z <see cref="LayoutOwner"/>
+        /// </summary>
+        private string DockButtonLeftToolTip { get { return LayoutOwner?.DockButtonLeftToolTip; } }
+        /// <summary>
+        /// Tooltip na buttonu DockTop.
+        /// Nemá význam setovat hodnotu, přebírá se z <see cref="LayoutOwner"/>
+        /// </summary>
+        private string DockButtonTopToolTip { get { return LayoutOwner?.DockButtonTopToolTip; } }
+        /// <summary>
+        /// Tooltip na buttonu DockBottom.
+        /// Nemá význam setovat hodnotu, přebírá se z <see cref="LayoutOwner"/>
+        /// </summary>
+        private string DockButtonBottomToolTip { get { return LayoutOwner?.DockButtonBottomToolTip; } }
+        /// <summary>
+        /// Tooltip na buttonu DockRight.
+        /// Nemá význam setovat hodnotu, přebírá se z <see cref="LayoutOwner"/>
+        /// </summary>
+        private string DockButtonRightToolTip { get { return LayoutOwner?.DockButtonRightToolTip; } }
+        /// <summary>
+        /// Tooltip na buttonu Close.
+        /// Lze setovat explicitní hodnotu, anebo hodnotu NULL = bude se přebírat z <see cref="LayoutOwner"/> (=výchozí stav).
+        /// </summary>
+        private string CloseButtonToolTip { get { return LayoutOwner?.CloseButtonToolTip; } }
         /// <summary>
         /// Mají se použít SVG ikony?
         /// </summary>
-        public override bool UseSvgIcons { get { return (this.LayoutPanel?.UseSvgIcons ?? true); } set { } }
-        /// <summary>
-        /// Obsahuje true pokud this panel je primární = první vytvořený.
-        /// Takový panel může mít jiné chování (typicky nemá titulek, a nemá CloseButton), viz ...
-        /// </summary>
-        public override bool IsPrimaryPanel { get { return Owner?.IsPrimaryPanel ?? false; } set { } }
-        /// <summary>
-        /// Ikona titulku
-        /// </summary>
-        public override string TitleImageName { get { return Owner?.TitleImageName ?? null; } set { } }
-        /// <summary>
-        /// Text titulku
-        /// </summary>
-        public override string TitleText { get { return Owner?.TitleText ?? ""; } set { } }
+        private bool UseSvgIcons { get { return (this.LayoutOwner?.UseSvgIcons ?? true); } }
         /// <summary>
         /// Šířka linky pod textem v pixelech. Násobí se Zoomem. Pokud je null nebo 0, pak se nekreslí.
         /// Záporná hodnota: vyjadřuje plnou barvu, udává odstup od horního a dolního okraje titulku.
         /// Může být extrémně vysoká, pak je barvou podbarven celý titulek.
         /// Barva je dána v <see cref="LineColor"/> a <see cref="LineColorEnd"/>.
         /// </summary>
-        public override int? LineWidth { get { return Owner?.LineWidth; } set { } }
+        private int? LineWidth { get { return LayoutOwner?.LineWidth; } }
         /// <summary>
         /// Barva linky pod titulkem.
         /// Šířka linky je dána v pixelech v <see cref="LineWidth"/>.
         /// Pokud je null, pak linka se nekreslí.
         /// Pokud má hodnotu, pak hodnota A (Alpha) vyjadřuje "průhlednost" barvy pozadí = míru překrytí defaultní barvy (dle skinu) barvou zde deklarovanou.
         /// </summary>
-        public override Color? LineColor { get { return Owner?.LineColor; } set { } }
+        private Color? LineColor { get { return LayoutOwner?.LineColor; } }
         /// <summary>
         /// Barva linky pod titulkem na konci (Gradient zleva doprava).
         /// Pokud je null, pak se nepoužívá gradientní barva.
         /// Šířka linky je dána v pixelech v <see cref="LineWidth"/>.
         /// Pokud má hodnotu, pak hodnota A (Alpha) vyjadřuje "průhlednost" barvy pozadí = míru překrytí defaultní barvy (dle skinu) barvou zde deklarovanou.
         /// </summary>
-        public override Color? LineColorEnd { get { return Owner?.LineColorEnd; } set { } }
+        private Color? LineColorEnd { get { return LayoutOwner?.LineColorEnd; } }
         /// <summary>
         /// Okraje mezi TitlePanel a barvou pozadí, default = 0
         /// </summary>
-        public override int? TitleBackMargins { get { return Owner?.TitleBackMargins; } set { } }
+        private int? TitleBackMargins { get { return LayoutOwner?.TitleBackMargins; } }
         /// <summary>
         /// Barva pozadí titulku.
         /// Pokud je null, pak titulek má defaultní barvu pozadí podle skinu.
         /// Pokud má hodnotu, pak hodnota A (Alpha) vyjadřuje "průhlednost" barvy pozadí = míru překrytí defaultní barvy (dle skinu) barvou zde deklarovanou.
         /// </summary>
-        public override Color? TitleBackColor { get { return Owner?.TitleBackColor; } set { } }
+        private Color? TitleBackColor { get { return LayoutOwner?.TitleBackColor; } }
         /// <summary>
         /// Barva pozadí titulku, konec gradientu vpravo, null = SolidColor.
         /// Pokud je null, pak titulek má defaultní barvu pozadí podle skinu.
         /// Pokud má hodnotu, pak hodnota A (Alpha) vyjadřuje "průhlednost" barvy pozadí = míru překrytí defaultní barvy (dle skinu) barvou zde deklarovanou.
         /// </summary>
-        public override Color? TitleBackColorEnd { get { return Owner?.TitleBackColorEnd; } set { } }
+        private Color? TitleBackColorEnd { get { return LayoutOwner?.TitleBackColorEnd; } }
+        /// <summary>
+        /// Kreslit pozadí a linku pomocí DxPaint?
+        /// </summary>
+        private bool UseDxPainter { get { return LayoutOwner?.UseDxPainter ?? false; } }
         /// <summary>
         /// Je povoleno přemístění titulku pomocí Drag And Drop
         /// </summary>
-        public override bool DragDropEnabled { get { return (LayoutPanel?.DragDropEnabled ?? false); } set { } }
+        private bool DragDropEnabled { get { return (LayoutOwner?.DragDropEnabled ?? false); } }
         /// <summary>
-        /// Viditelnost buttonu Close.
-        /// Lze setovat explicitní hodnotu, anebo hodnotu <see cref="ControlVisibility.ByParent"/> = bude se přebírat z <see cref="Owner"/> (=výchozí stav).
+        /// Obsahuje true pokud this panel je primární = první vytvořený.
+        /// Takový panel může mít jiné chování (typicky nemá titulek, a nemá CloseButton), viz ...
         /// </summary>
-        public override ControlVisibility CloseButtonVisibility
-        {
-            get { return (_CloseButtonVisibility ?? Owner?.CloseButtonVisibility ?? ControlVisibility.Default); }
-            set { _CloseButtonVisibility = (value == ControlVisibility.ByParent ? (ControlVisibility?)null : (ControlVisibility?)value); }
-        }
-        private ControlVisibility? _CloseButtonVisibility;
+        private bool IsPrimaryPanel { get { return PanelOwner?.IsPrimaryPanel ?? false; } }
         /// <summary>
-        /// Tooltip na buttonu Close.
-        /// Lze setovat explicitní hodnotu, anebo hodnotu NULL = bude se přebírat z <see cref="LayoutPanel"/> (=výchozí stav).
+        /// Obsahuje true pokud this panel je aktivní = v rámci Layoutu byl poslední, který měl Focus
+        /// Takový panel může mít jiné chování (typicky nemá titulek, a nemá CloseButton), viz ...
         /// </summary>
-        public override string CloseButtonToolTip
-        {
-            get { return (_CloseButtonToolTip ?? LayoutPanel?.CloseButtonToolTip ?? ""); }
-            set { _CloseButtonToolTip = value; }
-        }
-        private string _CloseButtonToolTip;
+        private bool IsActivePanel { get { return PanelOwner?.IsActivePanel ?? false; } }
         /// <summary>
-        /// Viditelnost buttonů Dock.
-        /// Lze setovat explicitní hodnotu, anebo hodnotu <see cref="ControlVisibility.ByParent"/> = bude se přebírat z <see cref="Owner"/> (=výchozí stav).
+        /// Ikona titulku
         /// </summary>
-        public override ControlVisibility DockButtonVisibility
-        {
-            get { return (_DockButtonVisibility ?? Owner?.DockButtonVisibility ?? ControlVisibility.Default); }
-            set { _DockButtonVisibility = (value == ControlVisibility.ByParent ? (ControlVisibility?)null : (ControlVisibility?)value); }
-        }
-        private ControlVisibility? _DockButtonVisibility;
+        private string TitleImageName { get { return PanelOwner?.TitleImageName ?? null; } }
         /// <summary>
-        /// Tooltip na buttonu DockLeft.
-        /// Nemá význam setovat hodnotu, přebírá se z <see cref="LayoutPanel"/>
+        /// Text titulku
         /// </summary>
-        public override string DockButtonLeftToolTip { get { return LayoutPanel?.DockButtonLeftToolTip; } set { } }
+        private string TitleText { get { return PanelOwner?.TitleText ?? ""; } }
         /// <summary>
-        /// Tooltip na buttonu DockTop.
-        /// Nemá význam setovat hodnotu, přebírá se z <see cref="LayoutPanel"/>
+        /// Záložní titulek, použije se tehdy, když se musí zobrazit titulek a v <see cref="TitleText"/> nic není.
+        /// Titulek se musí zobrazit tehdy, když <see cref="DxLayoutPanel"/> má režim TitleCompulsory = true, 
+        /// anebo pokud <see cref="DxLayoutPanel"/> zobrazuje více než jeden panel (pak to bez titulku není ono).
         /// </summary>
-        public override string DockButtonTopToolTip { get { return LayoutPanel?.DockButtonTopToolTip; } set { } }
+        private string TitleSubstitute { get { return PanelOwner?.TitleSubstitute ?? ""; } }
         /// <summary>
-        /// Tooltip na buttonu DockBottom.
-        /// Nemá význam setovat hodnotu, přebírá se z <see cref="LayoutPanel"/>
+        /// Interaktivní stav Ownera
         /// </summary>
-        public override string DockButtonBottomToolTip { get { return LayoutPanel?.DockButtonBottomToolTip; } set { } }
-        /// <summary>
-        /// Tooltip na buttonu DockRight.
-        /// Nemá význam setovat hodnotu, přebírá se z <see cref="LayoutPanel"/>
-        /// </summary>
-        public override string DockButtonRightToolTip { get { return LayoutPanel?.DockButtonRightToolTip; } set { } }
+        private DxInteractiveState OwnerInteractiveState { get { return PanelOwner?.InteractiveState ?? DxInteractiveState.None; } }
         /// <summary>
         /// Pozice Dock buttonu, který je aktuálně Disabled. To je ten, na jehož straně je nyní panel dokován, a proto by neměl být tento button dostupný.
         /// </summary>
-        public override LayoutPosition DockButtonDisabledPosition
-        {
-            get { return (_DockButtonDisabledPosition ?? Owner?.DockButtonDisabledPosition ?? LayoutPosition.None); }
-            set { _DockButtonDisabledPosition = value; }
-        }
-        private LayoutPosition? _DockButtonDisabledPosition;
+        private LayoutPosition DockButtonDisabledPosition { get { return PanelOwner?.DockButtonDisabledPosition ?? LayoutPosition.None; } }
         /// <summary>
         /// Obsahuje-li true, budou zobrazována dokovací tlačítka podle situace v hlavním panelu, typicky reaguje na počet panelů.
         /// </summary>
-        public override bool DockButtonsEnabled { get { return ((this.LayoutPanel?.ControlCount ?? 0) > 1); } set { } }
+        private bool DockButtonsEnabled { get { return ((this.LayoutOwner?.ControlCount ?? 0) > 1); } set { } }
+        #endregion
+        #region Instance prvků: Ikona, Titulek, Dock buttony, Close button
+        /// <summary>
+        /// Vytvoří Child Controls
+        /// </summary>
+        private void _CreateControls()
+        {
+            _TitlePicture = new DxImageArea() { Bounds = new Rectangle(12, 6, 24, 24), Visible = false };
+            PaintedItems.Add(_TitlePicture);
+
+            _TitleLabel = DxComponent.CreateDxLabel(12, 6, 200, this, "", LabelStyleType.MainTitle, hAlignment: HorzAlignment.Near, autoSizeMode: DevExpress.XtraEditors.LabelAutoSizeMode.Horizontal);
+            _TitleLabel.AutoSizeMode = DevExpress.XtraEditors.LabelAutoSizeMode.None;
+            _TitleLabelRight = 200;
+
+            _DockLeftButton = DxComponent.CreateDxMiniButton(100, 2, 24, 24, this, _ClickDock, visible: false, tag: LayoutPosition.Left);
+            _DockTopButton = DxComponent.CreateDxMiniButton(100, 2, 24, 24, this, _ClickDock, visible: false, tag: LayoutPosition.Top);
+            _DockBottomButton = DxComponent.CreateDxMiniButton(100, 2, 24, 24, this, _ClickDock, visible: false, tag: LayoutPosition.Bottom);
+            _DockRightButton = DxComponent.CreateDxMiniButton(100, 2, 24, 24, this, _ClickDock, visible: false, tag: LayoutPosition.Right);
+            _CloseButton = DxComponent.CreateDxMiniButton(200, 2, 24, 24, this, _ClickClose, visible: false);
+
+            _DockLeftButton.HasMouseChanged += _Child_HasMouseChanged;
+            _DockTopButton.HasMouseChanged += _Child_HasMouseChanged;
+            _DockBottomButton.HasMouseChanged += _Child_HasMouseChanged;
+            _DockRightButton.HasMouseChanged += _Child_HasMouseChanged;
+            _CloseButton.HasMouseChanged += _Child_HasMouseChanged;
+
+            Height = 35;
+            Dock = DockStyle.Top;
+        }
+        /// <summary>
+        /// Zruší veškerý svůj obsah v procesu Dispose. Volá base.DestroyContent() !!!
+        /// </summary>
+        private void _DestroyControls()
+        {
+            DockButtonClick = null;
+            CloseButtonClick = null;
+
+            _DockLeftButton?.Dispose();
+            _DockLeftButton = null;
+            _DockTopButton?.Dispose();
+            _DockTopButton = null;
+            _DockBottomButton?.Dispose();
+            _DockBottomButton = null;
+            _DockRightButton?.Dispose();
+            _DockRightButton = null;
+        }
+        /// <summary>
+        /// Změna Mouse na Child prvku
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _Child_HasMouseChanged(object sender, EventArgs e)
+        {
+            _RefreshButtonVisibility(true);
+        }
+        /// <summary>
+        /// Po změně velikosti vyvolá <see cref="_DoLayout()"/>
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void OnClientSizeChanged(EventArgs e)
+        {
+            base.OnClientSizeChanged(e);
+            _DoLayout();
+        }
+        /// <summary>
+        /// Po změně Skinu vyvolá <see cref="_DoLayout()"/>
+        /// </summary>
+        protected override void OnStyleChanged()
+        {
+            base.OnStyleChanged();
+            _DoLayout();
+        }
+        /// <summary>
+        /// Událost, když přišla nebo odešla myš
+        /// </summary>
+        protected override void OnHasMouseChanged()
+        {
+            base.OnHasMouseChanged();
+            _RefreshButtonVisibility(true);
+        }
+        /// <summary>
+        /// Po kliknutí na tlačítko Dock...
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _ClickDock(object sender, EventArgs e)
+        {
+            if (sender is Control control && control.Tag is LayoutPosition)
+            {
+                LayoutPosition dockPosition = (LayoutPosition)control.Tag;
+                DxLayoutTitleDockPositionArgs args = new DxLayoutTitleDockPositionArgs(dockPosition);
+                OnClickDock(args);
+                DockButtonClick?.Invoke(this, args);
+            }
+        }
+        /// <summary>
+        /// Po kliknutí na tlačítko Dock...
+        /// </summary>
+        /// <param name="args"></param>
+        protected virtual void OnClickDock(DxLayoutTitleDockPositionArgs args) { }
+        /// <summary>
+        /// Uživatel kliknul na button Dock (strana je v argumentu)
+        /// </summary>
+        public event EventHandler<DxLayoutTitleDockPositionArgs> DockButtonClick;
+        /// <summary>
+        /// Po kliknutí na tlačítko Close
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="args"></param>
+        private void _ClickClose(object sender, EventArgs args)
+        {
+            OnClickClose();
+            CloseButtonClick?.Invoke(this, EventArgs.Empty);
+        }
+        /// <summary>
+        /// Po kliknutí na tlačítko Dock...
+        /// </summary>
+        protected virtual void OnClickClose() { }
+        /// <summary>
+        /// Uživatel kliknul na button Close
+        /// </summary>
+        public event EventHandler CloseButtonClick;
+
+        /// <summary>
+        /// Ikona u titulku
+        /// </summary>
+        private DxImageArea _TitlePicture;
+        /// <summary>
+        /// Label titulku
+        /// </summary>
+        private DxLabelControl _TitleLabel;
+        /// <summary>
+        /// Dock button Left
+        /// </summary>
+        private DxSimpleButton _DockLeftButton;
+        /// <summary>
+        /// Dock button Top
+        /// </summary>
+        private DxSimpleButton _DockTopButton;
+        /// <summary>
+        /// Dock button Bottom
+        /// </summary>
+        private DxSimpleButton _DockBottomButton;
+        /// <summary>
+        /// Dock button Right
+        /// </summary>
+        private DxSimpleButton _DockRightButton;
+        /// <summary>
+        /// Close button
+        /// </summary>
+        private DxSimpleButton _CloseButton;
+        #endregion
+        #region Tlačítka a ikony - refresh (velikost, ikony, tooltipy)
+        /// <summary>
+        /// Zajistí přenačtení hodnot z Ownera a jejich promítnutí do this titulku
+        /// </summary>
+        internal void RefreshControl()
+        {
+            this._RefreshTitle();
+            this._RefreshButtonVisibility(false);
+            this._DoLayout();
+        }
+        /// <summary>
+        /// Aktualizuje text titulku, z <see cref="TitleText"/> nebo <see cref="TitleSubstitute"/>.
+        /// </summary>
+        private void _RefreshTitle()
+        {
+            string text = this.TitleText;
+            if (String.IsNullOrEmpty(text))
+                text = this.TitleSubstitute;
+            this._TitleLabel.Text = text;
+
+            this._TitleLabel.Visible = !this.UseDxPainter;
+        }
+        /// <summary>
+        /// Nastaví Visible a Enabled pro buttony podle aktuálního stavu a podle požadavků
+        /// </summary>
+        /// <param name="doLayoutTitle">Po doběhnutí určení viditelnosti vyvolat <see cref="DxTitlePanel.DoLayoutTitleLabel()"/> ?</param>
+        private void _RefreshButtonVisibility(bool doLayoutTitle)
+        {
+            int titleLabelRight = this._EndX;
+            int space = _ButtonSpace;
+            bool hasMouse = IsMouseOnPanel;
+            if (hasMouse) this.PanelOwner.ChangeInteractiveStatePanelMouse();
+
+            // Tlačítko Close:
+            bool isCloseVisible = _GetItemVisibility(CloseButtonVisibility, hasMouse, IsPrimaryPanel);
+            _CloseButton.Visible = isCloseVisible;
+            if (isCloseVisible)
+                titleLabelRight = _CloseButton.Location.X - space;
+
+            // Tlačítka pro dokování budeme zobrazovat pouze tehdy, když hlavní panel zobrazuje více než jeden prvek. Pro méně prvků nemá dokování význam!
+            bool hasMorePanels = this.DockButtonsEnabled;
+            bool isDockVisible = hasMorePanels && _GetItemVisibility(DockButtonVisibility, hasMouse, IsPrimaryPanel);
+            if (isDockVisible)
+            {
+                LayoutPosition dockButtonDisable = DockButtonDisabledPosition;
+                _DockLeftButton.Enabled = (dockButtonDisable != LayoutPosition.Left);
+                _DockTopButton.Enabled = (dockButtonDisable != LayoutPosition.Top);
+                _DockBottomButton.Enabled = (dockButtonDisable != LayoutPosition.Bottom);
+                _DockRightButton.Enabled = (dockButtonDisable != LayoutPosition.Right);
+                titleLabelRight = _DockLeftButton.Location.X - space;
+            }
+            _DockLeftButton.Visible = isDockVisible;
+            _DockTopButton.Visible = isDockVisible;
+            _DockBottomButton.Visible = isDockVisible;
+            _DockRightButton.Visible = isDockVisible;
+
+            // Upravit šířku TitleLabelu:
+            _TitleLabelRight = titleLabelRight;
+            if (doLayoutTitle) _DoLayoutTitleLabel();
+
+            // Změna viditelnosti => Repaint:
+            bool isChange = (isDockVisible != _IsDockButtonsVisible) || (isCloseVisible != _IsCloseButtonsVisible);
+            if (isChange)
+            {
+                _IsDockButtonsVisible = isDockVisible;
+                _IsCloseButtonsVisible = isCloseVisible;
+                // this.Invalidate();
+            }
+        }
+        /// <summary>
+        /// Vrátí true pokud control s daným režimem viditelnosti má být viditelný, při daném stavu myši na controlu
+        /// </summary>
+        /// <param name="controlVisibility"></param>
+        /// <param name="isMouseOnControl"></param>
+        /// <param name="isPrimaryPanel"></param>
+        /// <returns></returns>
+        private bool _GetItemVisibility(ControlVisibility controlVisibility, bool isMouseOnControl, bool isPrimaryPanel)
+        {
+            bool isAlways = (isPrimaryPanel ? controlVisibility.HasFlag(ControlVisibility.OnPrimaryPanelAllways) : controlVisibility.HasFlag(ControlVisibility.OnNonPrimaryPanelAllways));
+            bool isOnMouse = (isPrimaryPanel ? controlVisibility.HasFlag(ControlVisibility.OnPrimaryPanelOnMouse) : controlVisibility.HasFlag(ControlVisibility.OnNonPrimaryPanelOnMouse));
+            return (isAlways || (isOnMouse && isMouseOnControl));
+        }
+        /// <summary>
+        /// Rozmístí vnitřní prvky this panelu. Zajistí i správnou výšku panelu.
+        /// </summary>
+        private void _DoLayout()
+        {
+            int height = getPanelHeight();
+
+            int buttonSize = _ButtonSize;
+            int space = _ButtonSpace;
+            int x = _BeginX;
+            int y = ((height - _ButtonSize) / 2) + 1;
+            int r = this._EndX;
+            bool isPrimaryPanel = IsPrimaryPanel;
+
+            if (this.Height != height)
+            {   // Nastavení jiné výšky než je aktuální vyvolá rekurzivně (přes eventhandler _ClientSizeChanged) this metodu,
+                // v té už nepůjdeme touto větví, ale nastavíme souřadnice buttonů (za else):
+                this.Height = height;
+            }
+            else
+            {   // Výška se nemění = můžeme rozmístit prvky dovnitř panelu:
+                this._RefreshButtonsImageAndSize();
+
+                doLayoutTitleImage();
+                _TitleLabelLeft = x;
+
+                // Buttony zpracujeme v pořadí zprava:
+                doLayoutButtonOne(_CloseButton, CloseButtonVisibility);
+                doLayoutButtonOne(_DockRightButton, DockButtonVisibility);
+                doLayoutButtonOne(_DockBottomButton, DockButtonVisibility);
+                doLayoutButtonOne(_DockTopButton, DockButtonVisibility);
+                doLayoutButtonOne(_DockLeftButton, DockButtonVisibility);
+
+                _TitleLabelRight = r;
+                _DoLayoutTitleLabel();
+            }
+
+            int getPanelHeight()
+            {
+                int height;
+
+                if (_TitleLabel != null)
+                {
+                    int fontHeight = _TitleLabel.StyleController?.Appearance.Font.Height ?? _TitleLabel.Appearance.Font.Height;
+                    if (_TitleLabel.Height != fontHeight)
+                        _TitleLabel.Height = fontHeight;
+                    height = fontHeight + _HeightAdd;
+                }
+                else
+                {
+                    int fontHeight = DxComponent.ZoomToGui(14);
+                    height = fontHeight + _HeightAdd;
+                }
+
+                int buttonSize = _ButtonSize;
+                int minHeight = buttonSize + 4;
+                if (height < minHeight) height = minHeight;
+                return height;
+            }
+
+            void doLayoutTitleImage()
+            {
+                string imageName = TitleImageName;
+                var titlePicture = _TitlePicture;
+                if (!String.IsNullOrEmpty(imageName))
+                {
+                    titlePicture.Bounds = new Rectangle(x, y, buttonSize, buttonSize);
+                    titlePicture.ImageName = imageName;
+                    titlePicture.Visible = true;
+                    x += (buttonSize + space);
+                }
+                else
+                {
+                    titlePicture.Visible = false;
+                }
+            }
+
+            void doLayoutButtonOne(DxSimpleButton button, ControlVisibility visibility)
+            {
+                bool canBeVisible = _GetItemVisibility(visibility, true, isPrimaryPanel) || _GetItemVisibility(visibility, false, isPrimaryPanel);
+                if (canBeVisible)
+                {   // Button může mít nastaveno Visible = true; podle stavu myši:
+                    r -= buttonSize;
+                    button.Location = new Point(r, y);
+                    r -= (2 * space);
+                }
+                else
+                {   // Button bude mít stále Visible = false:
+                    button.Location = new Point(r, y);
+                }
+            }
+        }
+        /// <summary>
+        /// Umístí objekt <see cref="_TitleLabel"/> do patřičných souřadnic.
+        /// </summary>
+        private void _DoLayoutTitleLabel()
+        {
+            int x = _TitleLabelLeft;
+            int w = (_TitleLabelRight - x);
+            int h = _TitleLabel.Height;
+            int y = y = (this.ClientSize.Height - h) / 2;
+            _TitleLabel.Bounds = new Rectangle(x, y, w, h);
+        }
+        /// <summary>
+        /// Aktualizuje vzhled ikon, pokud je to nutné (= pokud došlo ke změně typu ikon anebo velikosti ikon vlivem změny Zoomu).
+        /// Aktualizuje i velikost buttonů a ikon.
+        /// Bázová třída <see cref="DxTitlePanel"/> na závěr nastavuje <see cref="_AppliedSvgIcons"/> = <see cref="UseSvgIcons"/>;
+        /// </summary>
+        private void _RefreshButtonsImageAndSize(bool force = false)
+        {
+            if (!needRefreshButtons()) return;
+
+            int btnSize = _ButtonSize;
+            Size buttonSize = new Size(btnSize, btnSize);
+            int imgSize = btnSize - 4;                          // 4 = okraje mezi buttonem a vnitřním Image
+            Size imageSize = new Size(imgSize, imgSize);
+
+            string[] icons = _CurrentIcons;
+
+            refreshOneButton(_DockLeftButton, icons[0], DockButtonLeftToolTip);
+            refreshOneButton(_DockTopButton, icons[1], DockButtonTopToolTip);
+            refreshOneButton(_DockBottomButton, icons[2], DockButtonBottomToolTip);
+            refreshOneButton(_DockRightButton, icons[3], DockButtonRightToolTip);
+            refreshOneButton(_CloseButton, icons[4], CloseButtonToolTip);
+
+            this._AppliedSvgIcons = UseSvgIcons;
+            this._AppliedIconSize = btnSize;
+
+            bool needRefreshButtons()
+            {
+                return (force || UseSvgIcons != _AppliedSvgIcons || _ButtonSize != _AppliedIconSize);
+            }
+            void refreshOneButton(DxSimpleButton button, string imageName, string toolTip)
+            {
+                button.Size = buttonSize;
+                DxComponent.ApplyImage(button.ImageOptions, imageName, null, ResourceImageSizeType.Medium, imageSize, true);
+                button.SetToolTip(toolTip);
+            }
+        }
+        /// <summary>
+        /// Obsahuje pole ikon pro aktuální typ (SVG / PNG)
+        /// </summary>
+        private string[] _CurrentIcons
+        {
+            get
+            {
+                if (UseSvgIcons)
+                    return new string[] { ImageName.DxLayoutDockLeftSvg, ImageName.DxLayoutDockTopSvg, ImageName.DxLayoutDockBottomSvg, ImageName.DxLayoutDockRightSvg, ImageName.DxLayoutCloseSvg };
+                else
+                    return new string[] { ImageName.DxLayoutDockLeftPng, ImageName.DxLayoutDockTopPng, ImageName.DxLayoutDockBottomPng, ImageName.DxLayoutDockRightPng, ImageName.DxLayoutClosePng };
+            }
+        }
+        /// <summary>
+        /// Nyní jsou použité SVG ikony?
+        /// </summary>
+        private bool _AppliedSvgIcons;
+        /// <summary>
+        /// Velikost ikon aplikovaná. Pomáhá řešit redraw ikon po změně Zoomu.
+        /// </summary>
+        private int _AppliedIconSize;
+        /// <summary>
+        /// Aktuálně jsou viditelné DockButtons
+        /// </summary>
+        private bool _IsDockButtonsVisible;
+        /// <summary>
+        /// Aktuálně je viditelný CloseButton
+        /// </summary>
+        private bool _IsCloseButtonsVisible;
+        /// <summary>
+        /// Pozice Left pro TitleLabel.
+        /// Nastavuje se v metodách, které řídí Layout.
+        /// </summary>
+        private int _TitleLabelLeft;
+        /// <summary>
+        /// Pozice Right pro TitleLabel.
+        /// Nastavuje se v metodách, které řídí Layout a Viditelnost buttonů, obsahuje pozici X nejkrajnějšího buttonu vlevo mínus Space
+        /// </summary>
+        private int _TitleLabelRight;
+        /// <summary>
+        /// Souřadnice X kde začíná TitleIcon nebo TitleText
+        /// Tato hodnota je upravená aktuálním Zoomem.
+        /// </summary>
+        private int _BeginX { get { return DxComponent.ZoomToGui(6); } }
+        /// <summary>
+        /// Souřadnice X, kde končí poslední button vpravo
+        /// </summary>
+        private int _EndX { get { return this.ClientSize.Width - _PanelMargin; } }
+        /// <summary>
+        /// Přídavek Y k výšce Labelu, do výšky celého panelu.
+        /// Tato hodnota je upravená aktuálním Zoomem.
+        /// </summary>
+        private int _HeightAdd { get { return DxComponent.ZoomToGui(12); } }
+        /// <summary>
+        /// Velikost buttonu Close a Dock, vnější. Button je čtvercový.
+        /// Tato hodnota je upravená aktuálním Zoomem.
+        /// </summary>
+        private int _ButtonSize { get { return DxComponent.ZoomToGui(24); } }
+        /// <summary>
+        /// Mezera mezi sousedními buttony. Mezera mezi skupinami je dvojnásobná.
+        /// </summary>
+        private int _ButtonSpace { get { return 3; } }
+        /// <summary>
+        /// Okraje panelu
+        /// </summary>
+        private int _PanelMargin { get { return 3; } }
+        #endregion
+        #region Vykreslení
+        /// <summary>
+        /// Vykreslí pozadí panelu
+        /// </summary>
+        /// <param name="cache"></param>
+        protected override void OnPaintCore(GraphicsCache cache)
+        {
+            if (!this.UseDxPainter)
+                base.OnPaintCore(cache);
+            else
+                _PaintDxPanel(cache);
+        }
+        private void _PaintDxPanel(GraphicsCache cache)
+        {
+            DxSkinColorSet colorSet = DxComponent.SkinColorSet;
+            // _PaintDxBackgroundSkin1(cache, colorSet);
+            // _PaintDxBackgroundSkinHeader(cache, colorSet);
+            _PaintDxBackground(cache, colorSet);
+            _PaintDxTitle(cache, colorSet);
+        }
+        private void _PaintDxBackgroundSkin1(GraphicsCache cache, DxSkinColorSet colorSet)
+        {
+            var panelObjectState = this.PanelOwner.InteractiveObjectState;
+            var skin = DevExpress.Skins.SkinManager.Default.GetSkin(DevExpress.Skins.SkinProductId.Docking);
+            var allElements = skin.GetElements().OfType<SkinElement>().ToArray();
+            SkinElement element = DevExpress.Skins.SkinManager.GetSkinElement(SkinProductId.Docking, DevExpress.LookAndFeel.UserLookAndFeel.Default, "TabHeader");
+            var imageIndex = SkinElementPainter.Default.CalcDefaultImageIndex(element.Image, panelObjectState);
+
+            SkinElementInfo elementInfo = new SkinElementInfo(element, this.ClientRectangle);
+            elementInfo.Cache = cache;
+            elementInfo.BackAppearance = this.Appearance;
+            elementInfo.State = panelObjectState;
+            elementInfo.ImageIndex = imageIndex;
+            elementInfo.UseBorderRight = false;
+
+            __TitleSuffix = $"   [DxState: {this.PanelOwner.InteractiveState}; State: {panelObjectState}; Image: {imageIndex}]";
+
+            DevExpress.LookAndFeel.UserLookAndFeel.Default.ActiveLookAndFeel.Painter.Header.DrawObject(elementInfo);
+
+        }
+        private void _PaintDxBackgroundSkinHeader(GraphicsCache cache, DxSkinColorSet colorSet)
+        {
+            var panelObjectState = this.PanelOwner.InteractiveObjectState;
+            var skin = DevExpress.Skins.SkinManager.Default.GetSkin(DevExpress.Skins.SkinProductId.Docking);
+            var allElements = skin.GetElements().OfType<SkinElement>().ToArray();
+            SkinElement element = DevExpress.Skins.SkinManager.GetSkinElement(SkinProductId.Docking, DevExpress.LookAndFeel.UserLookAndFeel.Default, "TabHeader");
+            var imageIndex = SkinElementPainter.Default.CalcDefaultImageIndex(element.Image, panelObjectState);
+
+            DevExpress.Utils.Drawing.HeaderObjectInfoArgs elementInfo = new DevExpress.Utils.Drawing.HeaderObjectInfoArgs(cache, this.ClientRectangle, this.Appearance);
+            elementInfo.State = panelObjectState;
+            elementInfo.Caption = this.TitleText;
+            elementInfo.CaptionRect = this._TitleLabel.Bounds;
+            elementInfo.HeaderPosition = HeaderPositionKind.Left;
+            elementInfo.IsDrawOnGlass = true;
+            elementInfo.State = panelObjectState;
+
+            __TitleSuffix = $"   [DxState: {this.PanelOwner.InteractiveState}; State: {panelObjectState}; Image: {imageIndex}]";
+
+            DevExpress.Utils.Drawing.HeaderObjectPainter.DrawObject(cache, DevExpress.LookAndFeel.UserLookAndFeel.Default.ActiveLookAndFeel.Painter.Header, elementInfo);
+
+            // DevExpress.LookAndFeel.UserLookAndFeel.Default.ActiveLookAndFeel.Painter.Header.DrawObject(elementInfo);
+            // DevExpress.LookAndFeel.UserLookAndFeel.Default.ActiveLookAndFeel.Painter.ProgressBar.DrawObject()
+        }
+        
+        private void _PaintDxBackground(GraphicsCache cache, DxSkinColorSet colorSet)
+        {
+            base.OnPaintCore(cache);
+            var bounds = this.ClientRectangle;
+            bool isActive = this.IsActivePanel;
+
+            var backColor = (isActive ? colorSet.HeaderFooterBackColor : colorSet.PanelBackColor);
+            if (backColor.HasValue)
+            {
+                cache.FillRectangle(DxComponent.PaintGetSolidBrush(backColor.Value), bounds);
+            }
+
+            var lineColor = (isActive ? colorSet.AccentPaint : null);
+            if (lineColor.HasValue)
+            {
+                var line = new Rectangle(bounds.X + 0, bounds.Y + 1, bounds.Width - 1, 2);
+                cache.FillRectangle(DxComponent.PaintGetSolidBrush(lineColor.Value), line);
+            }
+        }
+        private void _PaintDxTitle(GraphicsCache cache, DxSkinColorSet colorSet)
+        {
+            var label = _TitleLabel;
+            var bounds = label.Bounds;
+            bool isActive = this.IsActivePanel;
+            string text = label.Text + __TitleSuffix;
+            var font = label.StyleController?.Appearance.GetFont() ?? label.Appearance.GetFont();
+            var textColor = (isActive ? colorSet.AccentPaint : colorSet.LabelForeColor);
+            var brush = DxComponent.PaintGetSolidBrush(textColor ?? label.ForeColor);
+            cache.DrawString(text, font, brush, label.Bounds, StringFormat.GenericDefault);
+        }
+        private string __TitleSuffix;
         #endregion
     }
     #endregion
+
+    /*    ke smazání
+
     #region class DxDockTitlePanel : titulkový řádek samotný, s tlačítky Dock a Close, bez vztahu na layout
     /// <summary>
     /// titulkový řádek samotný, s tlačítky Dock a Close, bez vztahu na layout
@@ -3658,6 +4367,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public virtual bool UseDxPainter { get; set; }
         /// <summary>
+        /// Interaktivní stav Ownera
+        /// </summary>
+        public virtual DxInteractiveState OwnerInteractiveState { get; set; }
+        /// <summary>
         /// Aktualizuje ikonu titulku. Neřeší pozice (Location, Bounds), to dělá <see cref="DoLayoutTitleIcon(ref int)"/>.
         /// </summary>
         protected void RefreshTitleIcon()
@@ -3790,10 +4503,98 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         protected int AppliedIconSize { get; set; }
         #endregion
-        #region Paint Background and Line
+        #region Paint: Dx/Native? Background and Line
         protected override void OnPaintCore(GraphicsCache cache)
         {
             base.OnPaintCore(cache);
+
+
+            // DevExpress.XtraBars.Docking.Paint.TabPanelSkinPainter;
+            // DevExpress.XtraBars.Docking.Paint.TabPanelSkinPainter sp = new DevExpress.XtraBars.Docking.Paint.TabPanelSkinPainter(new DevExpress.XtraBars.Docking.Paint.DockElementsSkinPainter(new DevExpress.XtraBars.Styles.SkinBarManagerPaintStyle(new DevExpress.XtraBars.Styles.BarManagerPaintStyleCollection(new DevExpress.XtraBars.BarAndDockingController()))));
+
+            DevExpress.Skins.SkinProductId skinId = DevExpress.Skins.SkinProductId.Common;
+            string elementName = null;
+
+            var dockingSkin = DevExpress.Skins.SkinManager.Default.GetSkin(DevExpress.Skins.SkinProductId.Bars);
+            var elementNames = dockingSkin.GetElements().Cast<DevExpress.Skins.SkinElement>().Select(e => e.ElementName).ToArray();
+
+            // DevExpress.Skins.SkinProductId.Docking:
+            elementName = "DocumentGroupTabPane";     // Nic extra
+            elementName = "TabHeaderHideBar";     // trochu reaguje
+            elementName = "HideBar";     // nic
+            elementName = "HideBarLeft";     // nic
+            elementName = "TabHeaderLine";     // skoro nic
+            elementName = "DockWindowBorder";     // nic
+            elementName = "TabHeaderBackground";     // nic
+            elementName = "DockWindowCaption";     // Titulek DockPanelu
+            elementName = "FloatingWindowCaption";     // Titulek DockPanelu ?
+            elementName = "DockWindowButton";     // fakt Button !
+            elementName = "LightDockWindowCaption";     // zajímavý titulek
+            elementName = "HideBarRight";     // nic
+            elementName = "TabHeader";         // Obyčejný záložkovník
+
+            // this.OwnerInteractiveState
+
+            // DevExpress.Skins.SkinProductId.Bars
+            elementName = "DockWindowButtons";
+
+
+            elementName = "StandaloneDock";
+
+            skinId = SkinProductId.Docking;
+            elementName = "TabHeader";         // Obyčejný záložkovník
+
+            var tabSkinElementHeader = DevExpress.Skins.SkinManager.GetSkinElement(skinId, DevExpress.LookAndFeel.UserLookAndFeel.Default, elementName);
+            SkinElementInfo skinElementInfo = new SkinElementInfo(tabSkinElementHeader, this.ClientRectangle);
+            skinElementInfo.Cache = cache;
+            skinElementInfo.BackAppearance = this.Appearance;
+
+            var imgc = skinElementInfo.Element.Image.ImageCount;
+
+            ObjectState objectState = ObjectState.Normal;
+            int imageIndex = 1;
+            var ownerState = this.OwnerInteractiveState;
+            if (ownerState.HasFlag(DxInteractiveState.HasMouse))
+            {
+                objectState |= ObjectState.Hot;
+                imageIndex += 1;
+            }
+            if (ownerState.HasFlag(DxInteractiveState.HasFocus) || ownerState.HasFlag(DxInteractiveState.Selected))
+            {
+                objectState |= ObjectState.Selected;
+                imageIndex += 2;
+            }
+            else
+            {
+            }
+            skinElementInfo.State = objectState;
+            skinElementInfo.ImageIndex = imageIndex;          //  (skinElementInfo.State == ObjectState.Hot ? 1 : 0) + (isActive ? 2 : 0);
+
+            if (this.LogActive) DxComponent.LogAddLine($"DxTitlePanel.PaintCore(): Panel={TitleText}; OwnerState={ownerState}; DxState={objectState}; ImageIndex={imageIndex}");
+
+            SkinElementPainter.Default.DrawObject(skinElementInfo);
+            SkinElementPainter.Default.DrawSkinImage(skinElementInfo);
+
+            // SkinElementPainter.
+
+
+
+
+
+            //DevExpress.XtraBars.Docking.Paint.TabPanelSkinPainter tpsp =
+            //    new DevExpress.XtraBars.Docking.Paint.TabPanelSkinPainter(
+            //        new DevExpress.XtraBars.Docking.Paint.DockElementsSkinPainter(
+            //            new DevExpress.XtraBars.Styles.SkinBarManagerPaintStyle(
+            //                new DevExpress.XtraBars.Styles.BarManagerPaintStyleCollection(
+            //                    new DevExpress.XtraBars.BarAndDockingController()))));
+            //tpsp.DrawTab(new DevExpress.XtraBars.Docking.Paint.DrawTabArgs(new ))
+
+            //    pa.ButtonsPanelSkinPainter bpsp = new DevExpress.XtraBars.Docking2010.ButtonsPanelSkinPainter(DevExpress.LookAndFeel.UserLookAndFeel.Default);
+
+            //DevExpress.XtraBars.Docking2010.ButtonsPanelSkinPainter bpsp = new DevExpress.XtraBars.Docking2010.ButtonsPanelSkinPainter(DevExpress.LookAndFeel.UserLookAndFeel.Default);
+            //bpsp.DrawObject(new ObjectInfoArgs(cache, this.ClientRectangle, ObjectState.Normal));
+
+
             //if (UseDxPainter || true)
             //{
             //    Rectangle backBounds = this.ClientRectangle;
@@ -3817,22 +4618,69 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="e"></param>
         protected override void OnPaint(PaintEventArgs e)
         {
+
             base.OnPaint(e);
 
-            var tabSkin = DxComponent.GetSkinInfo(SkinElementColor.TabSkins);
-            var navBarSkin = DxComponent.GetSkinInfo("NavBarSkins");
-            var navPaneSkin = DxComponent.GetSkinInfo("NavPaneSkins");
+            return;
 
-            DevExpress.Skins.SkinElement skel = DevExpress.Skins.SkinManager.GetSkinElement(DevExpress.Skins.SkinProductId.Ribbon, DevExpress.LookAndFeel.UserLookAndFeel.Default, "PopupGalleryGroupCaption");
-            var appd = skel.GetAppearanceDefault();
+            var dockingSkin = DevExpress.Skins.SkinManager.Default.GetSkin(DevExpress.Skins.SkinProductId.Docking, DevExpress.LookAndFeel.UserLookAndFeel.Default);
+            var dockingHeader = DevExpress.Skins.SkinManager.GetSkinElement(DevExpress.Skins.SkinProductId.Docking, DevExpress.LookAndFeel.UserLookAndFeel.Default, "TabHeader");
+            var hasImage = dockingHeader.HasImage;
+            if (hasImage)
+            {
+                var img = dockingHeader.GetActualImage();
 
-            //bool wfPaint = true;
-            //if (UseDxPainter)
-            //{
-            //}
-            //else if (wfPaint)
-            //{
-            if (HasPaintBackground(out int margins, out Color backColor, out Color? backColorEnd))
+                //DevExpress.XtraBars.Docking.Paint.TabPanelSkinPainter sp = new DevExpress.XtraBars.Docking.Paint.TabPanelSkinPainter(new DevExpress.XtraBars.Docking.Paint.DockElementsSkinPainter(new DevExpress.XtraBars.Styles.SkinBarManagerPaintStyle(new DevExpress.XtraBars.Styles.BarManagerPaintStyleCollection(new DevExpress.XtraBars.BarAndDockingController()))))
+                //sp.DrawTab(new DevExpress.XtraBars.Docking.Paint.DrawTabArgs())
+                //DevExpress.XtraBars.Docking2010.pai
+                //DevExpress.XtraGrid.Skins.GridSkinElementsPainter
+
+                //DevExpress.Utils.Drawing.SkinHeaderObjectPainter.DrawObject
+
+                //string name = @"c:\DavidPrac\VsProjects\TestDevExpress\Working\SkinImages\TabHeaderImage_" + DevExpress.LookAndFeel.UserLookAndFeel.Default.SkinName + ".png";
+                //if (!System.IO.File.Exists(name))
+                //    img.Save(name);
+
+
+                //var skinImage = dockingHeader.Image;
+
+                //var i0 = skinImage.ImagePartSize;
+
+            }
+
+
+                //         var dockSkin = DxComponent.GetSkinInfo(SkinElementColor.DockingSkins);
+                //         var navBarSkin = DxComponent.GetSkinInfo("NavBarSkins");
+                //         var navPaneSkin = DxComponent.GetSkinInfo("NavPaneSkins");
+
+                //         DevExpress.Skins.SkinElement elRibbon = DevExpress.Skins.SkinManager.GetSkinElement(DevExpress.Skins.SkinProductId.Ribbon, DevExpress.LookAndFeel.UserLookAndFeel.Default, "PopupGalleryGroupCaption");
+                //         var appd = elRibbon.GetAppearanceDefault();
+
+                //         DevExpress.Skins.SkinElement elTab = DevExpress.Skins.SkinManager.GetSkinElement(DevExpress.Skins.SkinProductId.Tab, DevExpress.LookAndFeel.UserLookAndFeel.Default, "TabHeaderButton");
+
+                //         var dockingSkin = DevExpress.Skins.SkinManager.Default.GetSkin(DevExpress.Skins.SkinProductId.NavBar, DevExpress.LookAndFeel.UserLookAndFeel.Default);
+                //         var tabElement = DevExpress.Skins.SkinManager.GetSkinElement(DevExpress.Skins.SkinProductId.NavBar, DevExpress.LookAndFeel.UserLookAndFeel.Default, "GroupHeader"); // "DocumentGroupTabHeader");
+
+                //         var colors = dockingSkin.Colors;
+                //         var cmmSkin = tabElement?.GetCommonSkinFunc();
+                //         var foreColor = tabElement?.GetForeColor(ObjectState.Normal);
+                //         var cmmElements = cmmSkin.GetElements();
+                //         // dockingSkin.
+
+
+
+                //         var commonSkin = DevExpress.Skins.CommonSkins.GetSkin(DevExpress.LookAndFeel.UserLookAndFeel.Default);
+                //         var svgPalette = commonSkin.SvgPalettes[DevExpress.Skins.Skin.DefaultSkinPaletteName] as DevExpress.Utils.Svg.SvgPalette;
+                ////         Color keyPaintColor = svgPalette != null ? svgPalette["Key Paint"]?.Value : Color.Empty;
+
+
+                //bool wfPaint = true;
+                //if (UseDxPainter)
+                //{
+                //}
+                //else if (wfPaint)
+                //{
+                if (HasPaintBackground(out int margins, out Color backColor, out Color? backColorEnd))
                     PaintBackground(e, margins, backColor, backColorEnd);
 
                 if (HasPaintLine(out int lineWidth, out Color lineColor, out Color? lineColorEnd))
@@ -3996,6 +4844,24 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
         }
         /// <summary>
+        /// Refreshuje celý obsah i vizuální kabát
+        /// </summary>
+        public void RefreshContent()
+        {
+            RefreshButtonVisibility(true);
+            RefreshButtons();
+            RefreshTitle();
+            base.Refresh();
+        }
+        /// <summary>
+        /// Nastaví Visible a Enabled pro buttony podle aktuálního stavu a podle požadavků
+        /// </summary>
+        internal void Repaint()
+        {
+            RefreshButtonVisibility(true);
+            Invalidate();
+        }
+        /// <summary>
         /// Nastaví Visible a Enabled pro buttony podle aktuálního stavu a podle požadavků
         /// </summary>
         /// <param name="doLayoutTitle">Po doběhnutí určení viditelnosti vyvolat <see cref="DoLayoutTitleLabel()"/> ?</param>
@@ -4043,132 +4909,132 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
         }
 
-        /*     TODO - nesmazat, doprogramovat - Drag and Drop panelů !!!
+        //    TODO - nesmazat, doprogramovat - Drag and Drop panelů !!!
 
-        /// <summary>
-        /// Init
-        /// </summary>
-        protected void DragAndDropInit()
-        {
-            this.DragAndDropInit(this);
-            this.DragAndDropInit(_TitleLabel);
-            this.DragAndDropReset();
-        }
+        ///// <summary>
+        ///// Init
+        ///// </summary>
+        //protected void DragAndDropInit()
+        //{
+        //    this.DragAndDropInit(this);
+        //    this.DragAndDropInit(_TitleLabel);
+        //    this.DragAndDropReset();
+        //}
 
-        protected void DragAndDropInit(Control control)
-        {
-            control.MouseDown += DragAndDrop_MouseDown;
-            control.MouseMove += DragAndDrop_MouseMove;
-            control.MouseUp += DragAndDrop_MouseUp;
-        }
-        private void DragAndDropReset()
-        {
-            this.DragAndDrop_State = DragAndDrop_StateType.None;
-            this.DragAndDrop_DownLocation = null;
-            this.DragAndDrop_DownArea = null;
-            this.DragAndDrop_VoidSize = SystemInformation.DragSize;
-        }
-        private void DragAndDrop_MouseDown(object sender, MouseEventArgs e)
-        {
-            Point mousePoint = Control.MousePosition;
-            if (e.Button == MouseButtons.Left && DragDropEnabled)
-            {
-                this.DragAndDrop_State = DragAndDrop_StateType.MouseDown;
-                this.DragAndDrop_DownLocation = mousePoint;
-                Size voidSize = this.DragAndDrop_VoidSize;
-                Point voidPoint = new Point(mousePoint.X - voidSize.Width / 2, mousePoint.Y - voidSize.Height / 2);
-                this.DragAndDrop_DownArea = new Rectangle(voidPoint, voidSize);
-            }
-        }
-        private void DragAndDrop_MouseMove(object sender, MouseEventArgs e)
-        {
-            Point mousePoint = Control.MousePosition;
-            switch (this.DragAndDrop_State)
-            {
-                case DragAndDrop_StateType.MouseDown:
-                    if (this.DragAndDrop_DownArea.HasValue && !this.DragAndDrop_DownArea.Value.Contains(mousePoint))
-                    {
-                        this.DragAndDrop_State = DragAndDrop_StateType.MouseMove;
-                        this.DragAndDrop_DownArea = null;
-                        DragAndDrop_Start(mousePoint);
-                        DragAndDrop_Move(mousePoint);
-                    }
-                    break;
-                case DragAndDrop_StateType.MouseMove:
-                    DragAndDrop_Move(mousePoint);
-                    break;
-            }
-        }
-        private void DragAndDrop_MouseUp(object sender, MouseEventArgs e)
-        {
-            Point mousePoint = Control.MousePosition;
-            switch (this.DragAndDrop_State)
-            {
-                case DragAndDrop_StateType.MouseDown:
-                case DragAndDrop_StateType.MouseCancel:
-                    DragAndDrop_End(mousePoint);
-                    break;
-                case DragAndDrop_StateType.MouseMove:
-                    DragAndDrop_Drop(mousePoint);
-                    DragAndDrop_End(mousePoint);
-                    break;
-            }
-        }
-        protected void DragAndDrop_Start(Point mousePoint)
-        {
-            // this.DoDragDrop(this, DragDropEffects.Move);
-        }
+        //protected void DragAndDropInit(Control control)
+        //{
+        //    control.MouseDown += DragAndDrop_MouseDown;
+        //    control.MouseMove += DragAndDrop_MouseMove;
+        //    control.MouseUp += DragAndDrop_MouseUp;
+        //}
+        //private void DragAndDropReset()
+        //{
+        //    this.DragAndDrop_State = DragAndDrop_StateType.None;
+        //    this.DragAndDrop_DownLocation = null;
+        //    this.DragAndDrop_DownArea = null;
+        //    this.DragAndDrop_VoidSize = SystemInformation.DragSize;
+        //}
+        //private void DragAndDrop_MouseDown(object sender, MouseEventArgs e)
+        //{
+        //    Point mousePoint = Control.MousePosition;
+        //    if (e.Button == MouseButtons.Left && DragDropEnabled)
+        //    {
+        //        this.DragAndDrop_State = DragAndDrop_StateType.MouseDown;
+        //        this.DragAndDrop_DownLocation = mousePoint;
+        //        Size voidSize = this.DragAndDrop_VoidSize;
+        //        Point voidPoint = new Point(mousePoint.X - voidSize.Width / 2, mousePoint.Y - voidSize.Height / 2);
+        //        this.DragAndDrop_DownArea = new Rectangle(voidPoint, voidSize);
+        //    }
+        //}
+        //private void DragAndDrop_MouseMove(object sender, MouseEventArgs e)
+        //{
+        //    Point mousePoint = Control.MousePosition;
+        //    switch (this.DragAndDrop_State)
+        //    {
+        //        case DragAndDrop_StateType.MouseDown:
+        //            if (this.DragAndDrop_DownArea.HasValue && !this.DragAndDrop_DownArea.Value.Contains(mousePoint))
+        //            {
+        //                this.DragAndDrop_State = DragAndDrop_StateType.MouseMove;
+        //                this.DragAndDrop_DownArea = null;
+        //                DragAndDrop_Start(mousePoint);
+        //                DragAndDrop_Move(mousePoint);
+        //            }
+        //            break;
+        //        case DragAndDrop_StateType.MouseMove:
+        //            DragAndDrop_Move(mousePoint);
+        //            break;
+        //    }
+        //}
+        //private void DragAndDrop_MouseUp(object sender, MouseEventArgs e)
+        //{
+        //    Point mousePoint = Control.MousePosition;
+        //    switch (this.DragAndDrop_State)
+        //    {
+        //        case DragAndDrop_StateType.MouseDown:
+        //        case DragAndDrop_StateType.MouseCancel:
+        //            DragAndDrop_End(mousePoint);
+        //            break;
+        //        case DragAndDrop_StateType.MouseMove:
+        //            DragAndDrop_Drop(mousePoint);
+        //            DragAndDrop_End(mousePoint);
+        //            break;
+        //    }
+        //}
+        //protected void DragAndDrop_Start(Point mousePoint)
+        //{
+        //    // this.DoDragDrop(this, DragDropEffects.Move);
+        //}
 
-        protected void DragAndDrop_Move(Point mousePoint)
-        {
-        }
-        protected void DragAndDrop_Drop(Point mousePoint)
-        {
+        //protected void DragAndDrop_Move(Point mousePoint)
+        //{
+        //}
+        //protected void DragAndDrop_Drop(Point mousePoint)
+        //{
 
-        }
-        protected void DragAndDrop_End(Point mousePoint)
-        {
-            this.DoDragDrop(this, DragDropEffects.None);
+        //}
+        //protected void DragAndDrop_End(Point mousePoint)
+        //{
+        //    this.DoDragDrop(this, DragDropEffects.None);
 
-            this.DragAndDrop_State = DragAndDrop_StateType.None;
-            this.DragAndDrop_DownLocation = null;
-            this.DragAndDrop_DownArea = null;
-        }
-
-
-        protected override void OnDragDrop(DragEventArgs drgevent)
-        {
-            base.OnDragDrop(drgevent);
-        }
-        protected override void OnQueryContinueDrag(QueryContinueDragEventArgs qcdevent)
-        {
-            base.OnQueryContinueDrag(qcdevent);
-        }
-        protected override void OnDragEnter(DragEventArgs drgevent)
-        {
-            base.OnDragEnter(drgevent);
-        }
-        protected override void OnDragOver(DragEventArgs drgevent)
-        {
-            base.OnDragOver(drgevent);
-        }
-        protected override void OnDragLeave(EventArgs e)
-        {
-            base.OnDragLeave(e);
-        }
-
-        private DragAndDrop_StateType DragAndDrop_State;
-        private Point? DragAndDrop_DownLocation;
-        private Rectangle? DragAndDrop_DownArea;
-        private Size DragAndDrop_VoidSize;
-        private enum DragAndDrop_StateType { None, MouseDown, MouseMove, MouseCancel }
+        //    this.DragAndDrop_State = DragAndDrop_StateType.None;
+        //    this.DragAndDrop_DownLocation = null;
+        //    this.DragAndDrop_DownArea = null;
+        //}
 
 
+        //protected override void OnDragDrop(DragEventArgs drgevent)
+        //{
+        //    base.OnDragDrop(drgevent);
+        //}
+        //protected override void OnQueryContinueDrag(QueryContinueDragEventArgs qcdevent)
+        //{
+        //    base.OnQueryContinueDrag(qcdevent);
+        //}
+        //protected override void OnDragEnter(DragEventArgs drgevent)
+        //{
+        //    base.OnDragEnter(drgevent);
+        //}
+        //protected override void OnDragOver(DragEventArgs drgevent)
+        //{
+        //    base.OnDragOver(drgevent);
+        //}
+        //protected override void OnDragLeave(EventArgs e)
+        //{
+        //    base.OnDragLeave(e);
+        //}
 
-        */
+        //private DragAndDrop_StateType DragAndDrop_State;
+        //private Point? DragAndDrop_DownLocation;
+        //private Rectangle? DragAndDrop_DownArea;
+        //private Size DragAndDrop_VoidSize;
+        //private enum DragAndDrop_StateType { None, MouseDown, MouseMove, MouseCancel }
+
+
         #endregion
     }
     #endregion
+    */
+
     #region Třídy pro eventy, enumy pro zadávání a pro eventy
     /// <summary>
     /// Informace předávaná po změně splitteru (pozice, orientace)
@@ -4408,49 +5274,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Ikonka před textem
         /// </summary>
         string TitleImageName { get; }
-        /// <summary>
-        /// Šířka linky pod textem v pixelech. Násobí se Zoomem. Pokud je null nebo 0, pak se nekreslí.
-        /// Záporná hodnota: vyjadřuje plnou barvu, udává odstup od horního a dolního okraje titulku.
-        /// Může být extrémně vysoká, pak je barvou podbarven celý titulek.
-        /// Barva je dána v <see cref="LineColor"/> a <see cref="LineColorEnd"/>.
-        /// </summary>
-        int? LineWidth { get; }
-        /// <summary>
-        /// Barva linky pod titulkem.
-        /// Šířka linky je dána v pixelech v <see cref="LineWidth"/>.
-        /// Pokud je null, pak linka se nekreslí.
-        /// Pokud má hodnotu, pak hodnota A (Alpha) vyjadřuje "průhlednost" barvy pozadí = míru překrytí defaultní barvy (dle skinu) barvou zde deklarovanou.
-        /// </summary>
-        Color? LineColor { get; }
-        /// <summary>
-        /// Barva linky pod titulkem na konci (Gradient zleva doprava).
-        /// Pokud je null, pak se nepoužívá gradientní barva.
-        /// Šířka linky je dána v pixelech v <see cref="LineWidth"/>.
-        /// Pokud má hodnotu, pak hodnota A (Alpha) vyjadřuje "průhlednost" barvy pozadí = míru překrytí defaultní barvy (dle skinu) barvou zde deklarovanou.
-        /// </summary>
-        Color? LineColorEnd { get; }
-        /// <summary>
-        /// Okraje mezi TitlePanel a barvou pozadí, default = 0
-        /// </summary>
-        int? TitleBackMargins { get; }
-        /// <summary>
-        /// Barva pozadí titulku.
-        /// Pokud je null, pak titulek má defaultní barvu pozadí podle skinu.
-        /// Pokud má hodnotu, pak hodnota A (Alpha) vyjadřuje "průhlednost" barvy pozadí = míru překrytí defaultní barvy (dle skinu) barvou zde deklarovanou.
-        /// </summary>
-        Color? TitleBackColor { get; }
-        /// <summary>
-        /// Barva pozadí titulku, konec gradientu vpravo, null = SolidColor.
-        /// Pokud je null, pak titulek má defaultní barvu pozadí podle skinu.
-        /// Pokud má hodnotu, pak hodnota A (Alpha) vyjadřuje "průhlednost" barvy pozadí = míru překrytí defaultní barvy (dle skinu) barvou zde deklarovanou.
-        /// </summary>
-        Color? TitleBackColorEnd { get; }
-        /// <summary>
-        /// Barva písma titulku.
-        /// Pokud je null, pak titulek má defaultní barvu písma podle skinu.
-        /// Pokud má hodnotu, pak hodnota A (Alpha) vyjadřuje "průhlednost" barvy textu = míru překrytí defaultní barvy (dle skinu) barvou zde deklarovanou.
-        /// </summary>
-        Color? TitleTextColor { get; }
         /// <summary>
         /// Událost volaná po změně jakékoli hodnoty v <see cref="TitleText"/> nebo <see cref="TitleBackColor"/> nebo <see cref="TitleTextColor"/>
         /// </summary>

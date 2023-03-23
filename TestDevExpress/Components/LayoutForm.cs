@@ -32,7 +32,8 @@ namespace TestDevExpress.Components
                 DockButtonBottomToolTip = "Přemístit tento panel dolů",
                 DockButtonRightToolTip = "Přemístit tento panel doprava",
                 CloseButtonToolTip = "Zavřít tento panel",
-                UseSvgIcons = true
+                UseSvgIcons = true,
+                UseDxPainter = true
             };
             _LayoutPanel.UserControlAdd += _LayoutPanel_UserControlAdd;
             _LayoutPanel.LastControlRemoved += _LayoutPanel_LastControlRemoved;
@@ -499,6 +500,8 @@ namespace TestDevExpress.Components
             _AddBottomButton = CreateDxButton("Otevřít další DOLE", LayoutPosition.Bottom);
             _AddLeftButton = CreateDxButton("Otevřít další VLEVO", LayoutPosition.Left);
             _AddTopButton = CreateDxButton("Otevřít další NAHOŘE", LayoutPosition.Top);
+            _TextEdit = new DevExpress.XtraEditors.TextEdit() { Text = this.TitleText, Width = 100 };
+            this.Controls.Add(_TextEdit);
 
             this.BackColorUser = Randomizer.GetColor(64, 256, 64);
 
@@ -547,6 +550,8 @@ namespace TestDevExpress.Components
             _AddBottomButton.Location = new Point(dw / 2, dh - my);            // Vodorovně uprostřed, dole
             _AddLeftButton.Location = new Point(mx, dh / 2);                   // Vlevo, svisle uprostřed
             _AddTopButton.Location = new Point(dw / 2, my);                    // Vodorovně uprostřed, nahoře
+
+            _TextEdit.Location = new Point(dw / 2, dh / 2);
         }
         /// <summary>
         /// Obsahuje (najde) control, který řídí layout a vkládání nových prvků a odebírání existujících
@@ -581,6 +586,8 @@ namespace TestDevExpress.Components
         DevExpress.XtraEditors.SimpleButton _AddBottomButton;
         DevExpress.XtraEditors.SimpleButton _AddLeftButton;
         DevExpress.XtraEditors.SimpleButton _AddTopButton;
+        DevExpress.XtraEditors.TextEdit _TextEdit;
+
         #endregion
         #region Pohyb myši a viditelnost buttonů
         /// <summary>
@@ -662,44 +669,45 @@ namespace TestDevExpress.Components
         string ILayoutUserControl.TitleText { get { return this.TitleText; } }
         string ILayoutUserControl.TitleSubstitute { get { return this.TitleSubstitute; } }
         string ILayoutUserControl.TitleImageName { get { return this.TitleImageName; } }
-        /// <summary>
-        /// Šířka linky pod textem v pixelech. Násobí se Zoomem. Pokud je null nebo 0, pak se nekreslí.
-        /// Může být extrémně vysoká, pak je barvou podbarven celý titulek.
-        /// Barva je dána v <see cref="LineColor"/> a <see cref="LineColorEnd"/>.
-        /// </summary>
-        int? ILayoutUserControl.LineWidth { get { return this.LineWidth; } }
-        /// <summary>
-        /// Barva linky pod titulkem.
-        /// Šířka linky je dána v pixelech v <see cref="LineWidth"/>.
-        /// Pokud je null, pak linka se nekreslí.
-        /// Pokud má hodnotu, pak hodnota A (Alpha) vyjadřuje "průhlednost" barvy pozadí = míru překrytí defaultní barvy (dle skinu) barvou zde deklarovanou.
-        /// </summary>
-        Color? ILayoutUserControl.LineColor { get { return this.LineColor; } }
-        /// <summary>
-        /// Barva linky pod titulkem na konci (Gradient zleva doprava).
-        /// Pokud je null, pak se nepoužívá gradientní barva.
-        /// Šířka linky je dána v pixelech v <see cref="LineWidth"/>.
-        /// Pokud má hodnotu, pak hodnota A (Alpha) vyjadřuje "průhlednost" barvy pozadí = míru překrytí defaultní barvy (dle skinu) barvou zde deklarovanou.
-        /// </summary>
-        Color? ILayoutUserControl.LineColorEnd { get { return this.LineColorEnd; } }
-        /// <summary>
-        /// Okraje mezi TitlePanel a barvou pozadí, default = 0
-        /// </summary>
-        int? ILayoutUserControl.TitleBackMargins { get { return this.TitleBackMargins; } }
-        /// <summary>
-        /// Barva pozadí titulku.
-        /// Pokud je null, pak titulek má defaultní barvu pozadí podle skinu.
-        /// Pokud má hodnotu, pak hodnota A (Alpha) vyjadřuje "průhlednost" barvy pozadí = míru překrytí defaultní barvy (dle skinu) barvou zde deklarovanou.
-        /// </summary>
-        Color? ILayoutUserControl.TitleBackColor { get { return this.TitleBackColor; } }
-        /// <summary>
-        /// Barva pozadí titulku, konec gradientu vpravo, null = SolidColor.
-        /// Pokud je null, pak titulek má defaultní barvu pozadí podle skinu.
-        /// Pokud má hodnotu, pak hodnota A (Alpha) vyjadřuje "průhlednost" barvy pozadí = míru překrytí defaultní barvy (dle skinu) barvou zde deklarovanou.
-        /// </summary>
-        Color? ILayoutUserControl.TitleBackColorEnd { get { return this.TitleBackColorEnd; } }
-        Color? ILayoutUserControl.TitleTextColor { get { return this.TitleTextColor; } }
-        event EventHandler ILayoutUserControl.TitleChanged { add { this.TitleChanged += value; } remove { this.TitleChanged -= value; } }
+        ///// <summary>
+        ///// Šířka linky pod textem v pixelech. Násobí se Zoomem. Pokud je null nebo 0, pak se nekreslí.
+        ///// Může být extrémně vysoká, pak je barvou podbarven celý titulek.
+        ///// Barva je dána v <see cref="LineColor"/> a <see cref="LineColorEnd"/>.
+        ///// </summary>
+        //int? ILayoutUserControl.LineWidth { get { return this.LineWidth; } }
+        ///// <summary>
+        ///// Barva linky pod titulkem.
+        ///// Šířka linky je dána v pixelech v <see cref="LineWidth"/>.
+        ///// Pokud je null, pak linka se nekreslí.
+        ///// Pokud má hodnotu, pak hodnota A (Alpha) vyjadřuje "průhlednost" barvy pozadí = míru překrytí defaultní barvy (dle skinu) barvou zde deklarovanou.
+        ///// </summary>
+        //Color? ILayoutUserControl.LineColor { get { return this.LineColor; } }
+        ///// <summary>
+        ///// Barva linky pod titulkem na konci (Gradient zleva doprava).
+        ///// Pokud je null, pak se nepoužívá gradientní barva.
+        ///// Šířka linky je dána v pixelech v <see cref="LineWidth"/>.
+        ///// Pokud má hodnotu, pak hodnota A (Alpha) vyjadřuje "průhlednost" barvy pozadí = míru překrytí defaultní barvy (dle skinu) barvou zde deklarovanou.
+        ///// </summary>
+        //Color? ILayoutUserControl.LineColorEnd { get { return this.LineColorEnd; } }
+        ///// <summary>
+        ///// Okraje mezi TitlePanel a barvou pozadí, default = 0
+        ///// </summary>
+        //int? ILayoutUserControl.TitleBackMargins { get { return this.TitleBackMargins; } }
+        ///// <summary>
+        ///// Barva pozadí titulku.
+        ///// Pokud je null, pak titulek má defaultní barvu pozadí podle skinu.
+        ///// Pokud má hodnotu, pak hodnota A (Alpha) vyjadřuje "průhlednost" barvy pozadí = míru překrytí defaultní barvy (dle skinu) barvou zde deklarovanou.
+        ///// </summary>
+        //Color? ILayoutUserControl.TitleBackColor { get { return this.TitleBackColor; } }
+        ///// <summary>
+        ///// Barva pozadí titulku, konec gradientu vpravo, null = SolidColor.
+        ///// Pokud je null, pak titulek má defaultní barvu pozadí podle skinu.
+        ///// Pokud má hodnotu, pak hodnota A (Alpha) vyjadřuje "průhlednost" barvy pozadí = míru překrytí defaultní barvy (dle skinu) barvou zde deklarovanou.
+        ///// </summary>
+        //Color? ILayoutUserControl.TitleBackColorEnd { get { return this.TitleBackColorEnd; } }
+        //Color? ILayoutUserControl.TitleTextColor { get { return this.TitleTextColor; } }
+        //event EventHandler ILayoutUserControl.TitleChanged { add { this.TitleChanged += value; } remove { this.TitleChanged -= value; } }
+        //bool ILayoutUserControl.UseDxPainter { get { return true; } }
         #endregion
     }
 }
