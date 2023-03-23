@@ -30,16 +30,6 @@ namespace TestDevExpress.Components
         /// Deklarace tlačítka v <see cref="TestDevExpress.Forms.MainAppForm"/> pro spuštění tohoto formuláře
         /// </summary>
         public static TestDevExpress.Forms.RunFormInfo RunFormInfo { get { return new TestDevExpress.Forms.RunFormInfo() { ButtonText = "Layout", ButtonImage = "devav/layout/pages.svg", ButtonToolTip = "Otevře okno pro testování layoutu (pod-okna)" }; } }
-        protected override void OnFirstShownBefore()
-        {
-            base.OnFirstShownBefore();
-            //if (_LayoutPanel.ControlCount == 0 && !_RunAddFirstPanel)
-            //{
-            //    _RunAddFirstPanel = true;
-            //    this._AddControlAsPanel(new LayoutTestPanel());        // Vložím první control, ten si pak může přidávat další. První panel nemůže zavřít sám sebe.
-            //}
-        }
-        private bool _RunAddFirstPanel;
 
         #region MainContent
         protected override void DxMainContentPrepare()

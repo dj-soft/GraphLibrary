@@ -27,6 +27,13 @@ namespace TestDevExpress.Forms
             this.InitMemoryScan();
             DxComponent.LogClear();
         }
+        /// <summary>
+        /// Deklarace tlačítka v <see cref="TestDevExpress.Forms.MainAppForm"/> pro spuštění tohoto formuláře
+        /// </summary>
+        public static TestDevExpress.Forms.RunFormInfo RunFormInfo { get { return new TestDevExpress.Forms.RunFormInfo() { ButtonText = "Handles", ButtonImage = "svgimages/dashboards/scatterchart.svg", ButtonToolTip = "Otevře okno sledování GUI Handles" }; } }
+        //string resource3 = "devav/actions/printpreview.svg";
+        //string resource4 = "svgimages/dashboards/scatterchart.svg";
+
         protected override void OnClosed(EventArgs e)
         {
             base.OnClosed(e);

@@ -23,7 +23,7 @@ namespace TestDevExpress.Forms
 
             List<DataRibbonPage> pages = new List<DataRibbonPage>();
 
-            DataRibbonPage homePage = this.CreateRibbonHomePage(FormRibbonDesignGroupPart.Default);
+            DataRibbonPage homePage = this.CreateRibbonHomePage(FormRibbonDesignGroupPart.All);
             pages.Add(homePage);
 
             var runFormInfos = RunFormInfo.GetForms();
@@ -232,7 +232,6 @@ namespace TestDevExpress.Forms
         {
             var form = System.Activator.CreateInstance(formType) as System.Windows.Forms.Form;
             DxMainAppForm.ShowChildForm(form, this.RunAsFloating);
-            // form.ShowDialog();
         }
         #endregion
     }

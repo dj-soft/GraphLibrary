@@ -7257,8 +7257,8 @@ namespace Noris.Clients.Win.Components.AsolDX
                 iGroup.Items.Add(new DataRibbonItem()
                 {
                     ItemId = "_SYS__DevExpress_SetLogActivity",
-                    Text = "Dx Images",
-                    ToolTipText = "Zobrazí nabídku ikon a obrázků DevExpress",
+                    Text = "Log Active",
+                    ToolTipText = "Zapíná / vypíná logování aktivity",
                     ItemType = RibbonItemType.CheckButton,
                     ImageName = "svgimages/xaf/action_view_chart.svg",
                     Checked = DxComponent.LogActive,
