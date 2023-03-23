@@ -3598,19 +3598,19 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private void _DoLayout()
         {
-            int height = getPanelHeight();
-
             int buttonSize = _ButtonSize;
+            int panelHeight = getPanelHeight();
+            
             int space = _ButtonSpace;
             int x = _BeginX;
-            int y = ((height - _ButtonSize) / 2) + 1;
+            int y = ((panelHeight - _ButtonSize) / 2) + 1;
             int r = this._EndX;
             bool isPrimaryPanel = IsPrimaryPanel;
 
-            if (this.Height != height)
+            if (this.Height != panelHeight)
             {   // Nastavení jiné výšky než je aktuální vyvolá rekurzivně (přes eventhandler _ClientSizeChanged) this metodu,
                 // v té už nepůjdeme touto větví, ale nastavíme souřadnice buttonů (za else):
-                this.Height = height;
+                this.Height = panelHeight;
             }
             else
             {   // Výška se nemění = můžeme rozmístit prvky dovnitř panelu:
@@ -3647,7 +3647,6 @@ namespace Noris.Clients.Win.Components.AsolDX
                     height = fontHeight + _HeightAdd;
                 }
 
-                int buttonSize = _ButtonSize;
                 int minHeight = buttonSize + 4;
                 if (height < minHeight) height = minHeight;
                 return height;

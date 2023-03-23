@@ -5753,9 +5753,9 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (defaultPalette != null)
                 readFromSvgPalette(defaultPalette);
 
-            var commonColors = skin.Container.GetSkin(DevExpress.Skins.SkinProductId.Common).Colors;
-            if (commonColors != null)
-                readFromSkinCommonColors(commonColors);
+            var skinColors = skin.Container.GetSkin(DevExpress.Skins.SkinProductId.Common).Colors;
+            if (skinColors != null)
+                readFromSkinCommonColors(skinColors);
 
             // Načte barvy Basic z dodané SVG palety; načítá jen hodnoty, dosud nenačtené
             void readFromSvgPalette(SvgPalette svgPalette)
