@@ -44,11 +44,13 @@ namespace Noris.Clients.Win.Components.AsolDX
             this._EmptyPanelButtons = EmptyPanelVisibleButtons.None;
             this._DockButtonLeftToolTip = null;
             this._DockButtonTopToolTip = null;
-            this._TitleCompulsory = false;
             this._DockButtonBottomToolTip = null;
             this._DockButtonRightToolTip = null;
             this._CloseButtonToolTip = null;
             this.__UseSvgIcons = true;
+            this.__UseDxPainter = false;
+            this.__TitleCompulsory = false;
+            this.__HighlightSinglePanel = false;
 
             this.MouseLeave += _MouseLeave;
         }
@@ -103,11 +105,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public bool DragDropEnabled { get; set; }
         /// <summary>
-        /// Povinně zobrazit titulek v panelu i když je panel jen jeden a nemá definován svůj standardní titulek?
-        /// Výchozí = false
-        /// </summary>
-        public bool TitleCompulsory { get { return _TitleCompulsory; } set { _TitleCompulsory = value; this.RunInGui(_RefreshControls); } } private bool _TitleCompulsory;
-        /// <summary>
         /// Viditelnost buttonů Dock
         /// </summary>
         public ControlVisibility DockButtonVisibility { get { return _DockButtonVisibility; } set { _DockButtonVisibility = value; this.RunInGui(_RefreshControls); } } private ControlVisibility _DockButtonVisibility;
@@ -147,6 +144,16 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Kreslit pozadí a linku pomocí DxPaint?
         /// </summary>
         public bool UseDxPainter { get { return __UseDxPainter; } set { __UseDxPainter = value; this.RunInGui(_RefreshControls); } } private bool __UseDxPainter;
+        /// <summary>
+        /// Povinně zobrazit titulek v panelu i když je panel jen jeden a nemá definován svůj standardní titulek?
+        /// Výchozí = false
+        /// </summary>
+        public bool TitleCompulsory { get { return __TitleCompulsory; } set { __TitleCompulsory = value; this.RunInGui(_RefreshControls); } } private bool __TitleCompulsory;
+        /// <summary>
+        /// Vykreslit výrazně záhlaví i pro jediný panel?
+        /// true = i jediný panel bude mít zvýrazněný Header.
+        /// </summary>
+        public bool HighlightSinglePanel { get { return __HighlightSinglePanel; } set { __HighlightSinglePanel = value; this.RunInGui(_RefreshControls); } } private bool __HighlightSinglePanel;
 
         /// <summary>
         /// Šířka linky pod textem v pixelech. Násobí se Zoomem. Pokud je null nebo 0, pak se nekreslí.
@@ -3308,6 +3315,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private bool UseDxPainter { get { return LayoutOwner?.UseDxPainter ?? false; } }
         /// <summary>
+        /// Vykreslit výrazně záhlaví i pro jediný panel?
+        /// true = i jediný panel bude mít zvýrazněný Header.
+        /// </summary>
+        public bool HighlightSinglePanel { get { return LayoutOwner.HighlightSinglePanel; } }
+        /// <summary>
         /// Je povoleno přemístění titulku pomocí Drag And Drop
         /// </summary>
         private bool DragDropEnabled { get { return (LayoutOwner?.DragDropEnabled ?? false); } }
@@ -3799,63 +3811,27 @@ namespace Noris.Clients.Win.Components.AsolDX
             else
                 _PaintDxPanel(cache);
         }
+        /// <summary>
+        /// Vykreslí titulkový panel v režimu DX = vlastními nástroji. Pouze pokud <see cref="UseDxPainter"/> je true.
+        /// </summary>
+        /// <param name="cache"></param>
         private void _PaintDxPanel(GraphicsCache cache)
         {
+            bool isActive = _DrawHeaderAsActive;
             DxSkinColorSet colorSet = DxComponent.SkinColorSet;
-            // _PaintDxBackgroundSkin1(cache, colorSet);
-            // _PaintDxBackgroundSkinHeader(cache, colorSet);
-            _PaintDxBackground(cache, colorSet);
-            _PaintDxTitle(cache, colorSet);
+            _PaintDxBackground(cache, isActive, colorSet);
+            _PaintDxTitle(cache, isActive, colorSet);
         }
-        private void _PaintDxBackgroundSkin1(GraphicsCache cache, DxSkinColorSet colorSet)
-        {
-            var panelObjectState = this.PanelOwner.InteractiveObjectState;
-            var skin = DevExpress.Skins.SkinManager.Default.GetSkin(DevExpress.Skins.SkinProductId.Docking);
-            var allElements = skin.GetElements().OfType<SkinElement>().ToArray();
-            SkinElement element = DevExpress.Skins.SkinManager.GetSkinElement(SkinProductId.Docking, DevExpress.LookAndFeel.UserLookAndFeel.Default, "TabHeader");
-            var imageIndex = SkinElementPainter.Default.CalcDefaultImageIndex(element.Image, panelObjectState);
-
-            SkinElementInfo elementInfo = new SkinElementInfo(element, this.ClientRectangle);
-            elementInfo.Cache = cache;
-            elementInfo.BackAppearance = this.Appearance;
-            elementInfo.State = panelObjectState;
-            elementInfo.ImageIndex = imageIndex;
-            elementInfo.UseBorderRight = false;
-
-            __TitleSuffix = $"   [DxState: {this.PanelOwner.InteractiveState}; State: {panelObjectState}; Image: {imageIndex}]";
-
-            DevExpress.LookAndFeel.UserLookAndFeel.Default.ActiveLookAndFeel.Painter.Header.DrawObject(elementInfo);
-
-        }
-        private void _PaintDxBackgroundSkinHeader(GraphicsCache cache, DxSkinColorSet colorSet)
-        {
-            var panelObjectState = this.PanelOwner.InteractiveObjectState;
-            var skin = DevExpress.Skins.SkinManager.Default.GetSkin(DevExpress.Skins.SkinProductId.Docking);
-            var allElements = skin.GetElements().OfType<SkinElement>().ToArray();
-            SkinElement element = DevExpress.Skins.SkinManager.GetSkinElement(SkinProductId.Docking, DevExpress.LookAndFeel.UserLookAndFeel.Default, "TabHeader");
-            var imageIndex = SkinElementPainter.Default.CalcDefaultImageIndex(element.Image, panelObjectState);
-
-            DevExpress.Utils.Drawing.HeaderObjectInfoArgs elementInfo = new DevExpress.Utils.Drawing.HeaderObjectInfoArgs(cache, this.ClientRectangle, this.Appearance);
-            elementInfo.State = panelObjectState;
-            elementInfo.Caption = this.TitleText;
-            elementInfo.CaptionRect = this._TitleLabel.Bounds;
-            elementInfo.HeaderPosition = HeaderPositionKind.Left;
-            elementInfo.IsDrawOnGlass = true;
-            elementInfo.State = panelObjectState;
-
-            __TitleSuffix = $"   [DxState: {this.PanelOwner.InteractiveState}; State: {panelObjectState}; Image: {imageIndex}]";
-
-            DevExpress.Utils.Drawing.HeaderObjectPainter.DrawObject(cache, DevExpress.LookAndFeel.UserLookAndFeel.Default.ActiveLookAndFeel.Painter.Header, elementInfo);
-
-            // DevExpress.LookAndFeel.UserLookAndFeel.Default.ActiveLookAndFeel.Painter.Header.DrawObject(elementInfo);
-            // DevExpress.LookAndFeel.UserLookAndFeel.Default.ActiveLookAndFeel.Painter.ProgressBar.DrawObject()
-        }
-        
-        private void _PaintDxBackground(GraphicsCache cache, DxSkinColorSet colorSet)
+        /// <summary>
+        /// Vykreslí pozadí pro titulkový panel v režimu DX = vlastními nástroji. Pouze pokud <see cref="UseDxPainter"/> je true.
+        /// </summary>
+        /// <param name="cache"></param>
+        /// <param name="isActive"></param>
+        /// <param name="colorSet"></param>
+        private void _PaintDxBackground(GraphicsCache cache, bool isActive, DxSkinColorSet colorSet)
         {
             base.OnPaintCore(cache);
             var bounds = this.ClientRectangle;
-            bool isActive = this.IsActivePanel;
 
             var backColor = (isActive ? colorSet.HeaderFooterBackColor : colorSet.PanelBackColor);
             if (backColor.HasValue)
@@ -3870,18 +3846,38 @@ namespace Noris.Clients.Win.Components.AsolDX
                 cache.FillRectangle(DxComponent.PaintGetSolidBrush(lineColor.Value), line);
             }
         }
-        private void _PaintDxTitle(GraphicsCache cache, DxSkinColorSet colorSet)
+        /// <summary>
+        /// Vykreslí label pro titulkový panel v režimu DX = vlastními nástroji. Pouze pokud <see cref="UseDxPainter"/> je true.
+        /// </summary>
+        /// <param name="cache"></param>
+        /// <param name="isActive"></param>
+        /// <param name="colorSet"></param>
+        private void _PaintDxTitle(GraphicsCache cache, bool isActive, DxSkinColorSet colorSet)
         {
             var label = _TitleLabel;
             var bounds = label.Bounds;
-            bool isActive = this.IsActivePanel;
-            string text = label.Text + __TitleSuffix;
+            string text = label.Text;
             var font = label.StyleController?.Appearance.GetFont() ?? label.Appearance.GetFont();
             var textColor = (isActive ? colorSet.AccentPaint : colorSet.LabelForeColor);
             var brush = DxComponent.PaintGetSolidBrush(textColor ?? label.ForeColor);
-            cache.DrawString(text, font, brush, label.Bounds, StringFormat.GenericDefault);
+            cache.DrawString(text, font, brush, bounds, StringFormat.GenericDefault);
         }
-        private string __TitleSuffix;
+        /// <summary>
+        /// Obsahuje true, pokud this titulek má být vykreslen jako "Aktivní".
+        /// To je tehdy, když this panel je aktivní, a když parent má více panelů než jeden anebo když má jeden, pak musí mít nastaveno <see cref="HighlightSinglePanel"/> = true.
+        /// false = titulek bude kreslen jako neaktivní.
+        /// </summary>
+        private bool _DrawHeaderAsActive
+        {
+            get
+            {
+                bool isActive = this.IsActivePanel;
+                if (!isActive) return false;
+                bool isSingle = (this.LayoutOwner.ControlCount == 1);
+                if (!isSingle) return true;
+                return this.HighlightSinglePanel;
+            }
+        }
         #endregion
     }
     #endregion
