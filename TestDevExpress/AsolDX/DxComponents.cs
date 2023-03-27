@@ -5570,7 +5570,7 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// Rozšíření se provádí tak, že se nadeklarují potřebné property (barvy, velikost, obrázky, ...),
     /// a vytvoří se nová inicializační metoda (instanční, private) pro naplnění těchto dat. Tato metoda musí mít atribut <see cref="InitializerAttribute"/>.
     /// Konstruktor třídy tyto metody pomocí reflexe najde a postupně je všechny zavolá.
-    /// Výsledkem je plně načtená instance.
+    /// Výsledkem je plně načtená instance!
     /// <para/>
     /// Aplikační kód tedy vždy může získat instanci této třídy a číst hodnotu z libovolných properties, a spolehne se na to, že pochází z aktuálního skinu.
     /// </summary>

@@ -7212,7 +7212,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Vytvoří a vrátí logickou Grupu do Ribbonu s obsahem tlačítek pro skiny (tedy definici pro tuto grupu) a další prvky dle požadavků.
         /// Grupa má ID = <see cref="DesignRibbonGroupId"/>.
-        /// Grupa si svoje tlačítka obsluhuje sama.
+        /// (Grupa si svoje tlačítka obsluhuje sama.)
         /// </summary>
         /// <param name="designGroupParts"></param>
         /// <param name="groupText"></param>

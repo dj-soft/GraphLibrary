@@ -27,7 +27,7 @@ using DevExpress.XtraRichEdit.Model;
 namespace Noris.Clients.Win.Components.AsolDX
 {
     /// <summary>
-    /// Panel, který vkládá controly do svých rámečků se Splittery
+    /// Panel, který vkládá controly do svých rámečků se Splittery.
     /// </summary>
     public class DxLayoutPanel : DxPanelControl
     {

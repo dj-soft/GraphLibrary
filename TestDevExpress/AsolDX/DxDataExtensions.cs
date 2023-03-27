@@ -80,7 +80,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             return result;
         }
         /// <summary>
-        /// Z dodané kolekce vytvoří Dictionary. Umožní ignorovat duplicity klíčů.
+        /// Z dodané kolekce vytvoří Dictionary. Umožní ignorovat duplicity klíčů!
         /// </summary>
         /// <typeparam name="TItem"></typeparam>
         /// <typeparam name="TKey"></typeparam>

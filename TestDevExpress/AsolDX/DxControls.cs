@@ -1012,7 +1012,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         protected abstract void DxMainContentPrepare();
         /// <summary>
-        /// Vytvoří a vrátí standardní stránku Home pro Ribbon, volitelně do ní přidá grupu Design s danými prvky (defaultn = None)
+        /// Vytvoří a vrátí standardní stránku Home pro Ribbon, volitelně do ní přidá grupu Design s danými prvky (defaultn = None).
         /// </summary>
         /// <param name="designGroupParts"></param>
         /// <returns></returns>
