@@ -1043,16 +1043,46 @@ namespace Noris.Clients.Win.Components.AsolDX
     [Flags]
     public enum FormRibbonDesignGroupPart
     {
+        /// <summary>
+        /// Žádný prvek, ani grupa pro Design prvky
+        /// </summary>
         None = 0,
+        /// <summary>
+        /// Button pro volbu Skinu
+        /// </summary>
         SkinButton = 0x0001,
+        /// <summary>
+        /// Button pro volbu Barevné palety
+        /// </summary>
         PaletteButton = 0x0002,
+        /// <summary>
+        /// Galerie pro volbu Barevné palety
+        /// </summary>
         PaletteGallery = 0x0004,
+        /// <summary>
+        /// Button pro přepínání režimu UHD Paint
+        /// </summary>
         UhdSupport = 0x0010,
+        /// <summary>
+        /// Okno pro výběr ikon DevExpress
+        /// </summary>
         ImageGallery = 0x0020,
+        /// <summary>
+        /// Aktivita systémového logu
+        /// </summary>
         LogActivity = 0x0040,
 
+        /// <summary>
+        /// Základ = <see cref="SkinButton"/> + <see cref="PaletteButton"/> + <see cref="ImageGallery"/>
+        /// </summary>
         Basic = SkinButton | PaletteButton | ImageGallery,
+        /// <summary>
+        /// Běžná sada = <see cref="SkinButton"/> + <see cref="PaletteButton"/> + <see cref="UhdSupport"/> + <see cref="ImageGallery"/>
+        /// </summary>
         Default = SkinButton | PaletteButton | UhdSupport | ImageGallery,
+        /// <summary>
+        /// Všechno = <see cref="SkinButton"/> + <see cref="PaletteButton"/> + <see cref="UhdSupport"/> + <see cref="ImageGallery"/> + <see cref="LogActivity"/>
+        /// </summary>
         All = SkinButton | PaletteButton | UhdSupport | ImageGallery | LogActivity,
     }
     /// <summary>

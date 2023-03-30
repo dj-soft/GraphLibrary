@@ -104,7 +104,7 @@ namespace TestDevExpress.Forms
             this.components = new System.ComponentModel.Container();
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.StartPosition = WF.FormStartPosition.CenterScreen;
-            this.ClientSize = new System.Drawing.Size(400, 920);
+            this.ClientSize = new System.Drawing.Size(500, 920);
             this.Text = "DevExpress Resources";
         }
         #endregion
@@ -184,7 +184,7 @@ namespace TestDevExpress.Forms
             this.Ribbon.ShowApplicationButton = DevExpress.Utils.DefaultBoolean.False;
 
             List<DataRibbonPage> pages = new List<DataRibbonPage>();
-            pages.Add(this.CreateRibbonHomePage(FormRibbonDesignGroupPart.SkinButton | FormRibbonDesignGroupPart.ImageGallery));
+            pages.Add(this.CreateRibbonHomePage(FormRibbonDesignGroupPart.SkinButton | FormRibbonDesignGroupPart.PaletteGallery));
             this.DxRibbon.AddPages(pages, true);
         }
         /// <summary>

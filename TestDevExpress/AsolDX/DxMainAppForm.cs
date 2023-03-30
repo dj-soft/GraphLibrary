@@ -195,13 +195,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             tabView.NextDocument += _TabbedViewNextDocument;
 
         }
-
-        private void ClientControl_MouseClick(object sender, MouseEventArgs e)
-        {
-            
-        }
-
-
         /// <summary>
         /// Inicializace komponenty DockManager
         /// </summary>
