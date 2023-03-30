@@ -6691,7 +6691,7 @@ namespace Noris.Clients.Win.Components.AsolDX
     }
     #endregion
     #endregion
-    #region DxImageAreaMap
+    #region DxImageAreaMap : klikací mapa, obsahuje obrázek a jednotlivé prostory v něm, které jsou různě aktivní.
     /// <summary>
     /// <see cref="DxImageAreaMap"/> : klikací mapa, obsahuje obrázek a jednotlivé prostory v něm, které jsou různě aktivní.
     /// <para/>
@@ -6736,6 +6736,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public void Dispose()
         {
+            _DeactivateDelays();
             _ResetOwnerControl();
             _ResetBitmapImage();
             _ResetContentImage();
@@ -6747,7 +6748,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         private bool? __BitmapImageIsExternal;
         private DevExpress.Utils.Svg.SvgImage __SvgImage;
         private float __Zoom;
+        private float? __BmpZoomMaxRatio;
         private PointF __RelativePosition;
+        private TimeSpan? __InitialDelay;
+        private TimeSpan? __ResizeDelay;
         private bool __HasImage;
         /// <summary>
         /// Naváže se do daného Controlu (naváže zdejší handlery na události Controlu)
@@ -6764,6 +6768,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 ownerControl.MouseDown += _OwnerControl_MouseDown;
                 ownerControl.MouseUp += _OwnerControl_MouseUp;
                 ownerControl.MouseLeave += _OwnerControl_MouseLeave;
+                _ActivateInitialDelay();
             }
             __OwnerControl = ownerControl;
         }
@@ -6782,6 +6787,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 ownerControl.MouseLeave -= _OwnerControl_MouseLeave;
             }
             __OwnerControl = null;
+            _DeactivateDelays();
         }
         /// <summary>
         /// Uloží si dodaný obrázek jako externí
@@ -6938,6 +6944,15 @@ namespace Noris.Clients.Win.Components.AsolDX
             _Invalidate();
         }
         /// <summary>
+        /// Uloží platnou hodnotu do <see cref="__BmpZoomMaxRatio"/>
+        /// </summary>
+        /// <param name="ratio"></param>
+        private void _SetBmpZoomMaxRatio(float? ratio)
+        {
+            __BmpZoomMaxRatio = (ratio.HasValue ? (ratio.Value > 1f ? ratio : (float?)1) : (float?)null);
+            _Invalidate();
+        }
+        /// <summary>
         /// Zarovná hodnotu do rozmezí 0-1 včetně
         /// </summary>
         /// <param name="value"></param>
@@ -6960,6 +6975,23 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Vlastník, na něm se odchytávají události myši tak, aby klikací mapa mohla reagovat a klikat.
         /// </summary>
         public Control OwnerControl { get { return __OwnerControl; } set { _SetOwnerControl(value); } }
+        /// <summary>
+        /// Čas, který uplyne mezi zadáním vlastníka do <see cref="OwnerControl"/> a prvním fyzickým vykreslením Image na něj.
+        /// Před uplynutím tohoto času se obrázek nekreslí; důvodem je pravděpodobnost změn velikosti prostoru (umístění okna Desktopu, vkládání dokovacích panelů, Ribbonu, úpravy dokování a velikosti otevřených panelů, atd).
+        /// V této inicializační době vykreslování obrázku je víceméně uživatelsky rušivé a může způsobovat problémy i vlastním komponentám.
+        /// <para/>
+        /// Pokud je zde null (výchozí stav) nebo prázdný nebo záporný čas, akce se provádí okamžitě bez Delay.
+        /// </summary>
+        public TimeSpan? InitialDelay { get { return __InitialDelay; } set { _SetInitialDelay(value); } }
+        /// <summary>
+        /// Čas, který uplyne mezi poslední událostí Resize v <see cref="OwnerControl"/> a fyzickým vykreslením vykreslením Image na něj.
+        /// Pokud Owner provádí více akcí Resize za sebou, pak pokaždé provede svůj Repaint, a tím by provedl i Repaint zdejšího Image. To vede vizuálně k ne moc pěknému poskakování Image.
+        /// Zadáním zdejšího času <see cref="ResizeDelay"/> se po jednotlivém Resize neprovádí přepočet <u>velikosti</u> obrázku, ale jen jeho <u>umístění</u>.
+        /// Teprve po uplynutí intervalu je obrázek dopočten přesně a vykreslen znovu.
+        /// <para/>
+        /// Pokud je zde null (výchozí stav) nebo prázdný nebo záporný čas, akce se provádí okamžitě bez Delay.
+        /// </summary>
+        public TimeSpan? ResizeDelay { get { return __ResizeDelay; } set { _SetResizeDelay(value); } }
         /// <summary>
         /// Obsahuje true tehdy, když máme připravený obrázek k vykreslení
         /// </summary>
@@ -6992,6 +7024,16 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Pro obrázek zabírající například 20% plochy vepište hodnotu 0.20f
         /// </summary>
         public float Zoom { get { return __Zoom; } set { _SetZoom(value); } }
+        /// <summary>
+        /// Maximální poměr mezi nativním rozlišením bitmapy a cílovým vykresleným obrázkem.
+        /// Pokud na vstupu bude bitmapa s velikostí 250 x 50 pixel, a cílový prostor by byl 2160 x 1080, pak by se vstupní bitmapa zvětšila cca 8x, a to už bitmapa vypadá spíš pro ostudu.
+        /// Je tedy vhodné nastavit zdejší hodnotu na Ratio = 2 až 4; obrázek pak bude zvětšen nanejvýš v tomto poměru, i kdyby <see cref="Zoom"/> byl 1.00 a obrázek by tedy mohl mít velikost 2160 x 432  (odpovídající poměru zdroje 250 x 50).
+        /// <para/>
+        /// Zdejší hodnota bude ignorována pro SVG obrázek, tam nedochází k pixelovému rozmazání.<br/>
+        /// Hodnota NULL = bez omezení (lze tedy obrázek zvětšit bez omezení).<br/>
+        /// Hodnoty menší než 1 budou chápány jako 1 (nemá význam zmenšovat vstupní obrázek kvůli kvalitě výsledného obrazu).
+        /// </summary>
+        public float? BmpZoomMaxRatio { get { return __BmpZoomMaxRatio; } set { _SetBmpZoomMaxRatio(value); } }
         /// <summary>
         /// Umístění obrázku relativně v ploše. Default = { 0.50, 0.50 } = uprostřed.
         /// Hodnota X udává pozici na ose X zleva doprava v rozsahu 0.00 - 1.00;
@@ -7049,61 +7091,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Obsahuje true, pokud klikací mapa má použitelné souřadnice
         /// </summary>
         public bool HasValidBounds { get { return __CurrentImageBounds.HasValue; } }
-        /// <summary>
-        /// Metoda vrátí souřadnice pro Image v daném prostoru, s ohledem na měřítko a zarovnání.
-        /// Tuto metodu je nutno volat při každém kreslení controlu v jeho metodě Paint.
-        /// <para/>
-        /// Součástí této metody je i:<br/>
-        /// - Zohlednění měřítka <see cref="Zoom"/> a relativné pozice <see cref="RelativePosition"/>;<br/>
-        /// - Určení souřadnic obrázku v rámci dodaného prostoru;<br/>
-        /// - Kompletní výpočet fyzických souřadnic aktivních prostorů.
-        /// </summary>
-        /// <param name="ownerBounds"></param>
-        /// <returns></returns>
-        public Rectangle? CalculateImageBounds(Rectangle ownerBounds)
-        {
-            if (!this.HasImage || !this.__ImageSize.HasValue) return null;
-            _CheckValidityOwnerBounds(ownerBounds);
-            var imageBounds = __CurrentImageBounds;
-            return (imageBounds.HasValue ? (Rectangle?)Rectangle.Round(imageBounds.Value) : null);
-        }
-        /// <summary>
-        /// Vykreslí do dané grafiky a v rámci daného prostoru svůj obrázek, a uloží si potřebné souřadnice pro interaktivní mapu
-        /// </summary>
-        /// <param name="graphicsCache"></param>
-        /// <param name="ownerBounds"></param>
-        public void PaintImageMap(DevExpress.Utils.Drawing.GraphicsCache graphicsCache, Rectangle ownerBounds)
-        {
-            var imageBounds = this.CalculateImageBounds(ownerBounds);       // Reálný prostor obrázku (odsud si pamatujeme podklady pro interaktivitu)
-            if (imageBounds.HasValue)
-            {
-                if (this.HasBmpImage)
-                    graphicsCache.DrawImage(this.BmpImage, imageBounds.Value);
-                else if (this.HasSvgImage)
-                    graphicsCache.DrawSvgImage(this.SvgImage, imageBounds.Value, null);
-            }
-        }
-        /// <summary>
-        /// Vykreslí do dané grafiky a v rámci daného prostoru svůj obrázek, a uloží si potřebné souřadnice pro interaktivní mapu.
-        /// </summary>
-        /// <param name="graphics"></param>
-        /// <param name="ownerBounds"></param>
-        public void PaintImageMap(System.Drawing.Graphics graphics, Rectangle ownerBounds)
-        {
-            var imageBounds = this.CalculateImageBounds(ownerBounds);       // Reálný prostor obrázku (odsud si pamatujeme podklady pro interaktivitu)
-            if (imageBounds.HasValue)
-            {
-                if (this.HasBmpImage)
-                    graphics.DrawImage(this.BmpImage, imageBounds.Value);
-                else if (this.HasSvgImage)
-                {   // Kterak vykreslíme SvgImage do bitmapové grafiky?   No, převedeme SvgImage na bitmapu, a pak pokračujeme jako s bitmapou :-) :
-                    using (var svgBitmap = DxComponent.RenderSvgImage(this.SvgImage, Size.Round(imageBounds.Value.Size)))
-                    {
-                        graphics.DrawImage(svgBitmap, imageBounds.Value);
-                    }
-                }
-            }
-        }
+
         /// <summary>
         /// Událost, když koncový uživatel klikne v aktivním prostoru.
         /// Pokud volající kód nezadá aktivní prostory (metoda <see cref="AddActiveArea(RectangleF, object, DxCursorType, string, string)"/>),
@@ -7130,6 +7118,160 @@ namespace Noris.Clients.Win.Components.AsolDX
             /// </summary>
             public object UserData { get; private set; }
         }
+        #endregion
+        #region Požadavek na vykreslení a jeho provedení, akceptování Delay
+        /// <summary>
+        /// Vykreslí do dané grafiky a v rámci daného prostoru svůj obrázek, a uloží si potřebné souřadnice pro interaktivní mapu
+        /// </summary>
+        /// <param name="graphicsCache"></param>
+        /// <param name="ownerBounds"></param>
+        public void PaintImageMap(DevExpress.Utils.Drawing.GraphicsCache graphicsCache, Rectangle ownerBounds)
+        {
+            if (_IsPaintDelayed(ownerBounds.Size)) return;                   // Odložené kreslení? => posečkáme...
+
+            var imageBounds = this._CalculateImageBounds(ownerBounds);       // Reálný prostor obrázku (odsud si pamatujeme podklady pro interaktivitu)
+            if (imageBounds.HasValue)
+            {
+                if (this.HasBmpImage)
+                    graphicsCache.DrawImage(this.BmpImage, imageBounds.Value);
+                else if (this.HasSvgImage)
+                    graphicsCache.DrawSvgImage(this.SvgImage, imageBounds.Value, null);
+            }
+        }
+        /// <summary>
+        /// Vykreslí do dané grafiky a v rámci daného prostoru svůj obrázek, a uloží si potřebné souřadnice pro interaktivní mapu.
+        /// </summary>
+        /// <param name="graphics"></param>
+        /// <param name="ownerBounds"></param>
+        public void PaintImageMap(System.Drawing.Graphics graphics, Rectangle ownerBounds)
+        {
+            if (_IsPaintDelayed(ownerBounds.Size)) return;                   // Odložené kreslení? => posečkáme...
+
+            var imageBounds = this._CalculateImageBounds(ownerBounds);       // Reálný prostor obrázku (odsud si pamatujeme podklady pro interaktivitu)
+            if (imageBounds.HasValue)
+            {
+                if (this.HasBmpImage)
+                    graphics.DrawImage(this.BmpImage, imageBounds.Value);
+                else if (this.HasSvgImage)
+                {   // Kterak vykreslíme SvgImage do bitmapové grafiky?   No, převedeme SvgImage na bitmapu, a pak pokračujeme jako s bitmapou :-) :
+                    using (var svgBitmap = DxComponent.RenderSvgImage(this.SvgImage, Size.Round(imageBounds.Value.Size)))
+                    {
+                        graphics.DrawImage(svgBitmap, imageBounds.Value);
+                    }
+                }
+            }
+        }
+        /// <summary>
+        /// Metoda vrátí souřadnice pro Image v daném prostoru, s ohledem na měřítko a zarovnání.
+        /// Tuto metodu je nutno volat při každém kreslení controlu v jeho metodě Paint.
+        /// <para/>
+        /// Součástí této metody je i:<br/>
+        /// - Zohlednění měřítka <see cref="Zoom"/> a relativné pozice <see cref="RelativePosition"/>;<br/>
+        /// - Určení souřadnic obrázku v rámci dodaného prostoru;<br/>
+        /// - Kompletní výpočet fyzických souřadnic aktivních prostorů.
+        /// </summary>
+        /// <param name="ownerBounds"></param>
+        /// <returns></returns>
+        private Rectangle? _CalculateImageBounds(Rectangle ownerBounds)
+        {
+            if (!this.HasImage || !this.__ImageSize.HasValue) return null;
+            _CheckValidityOwnerBounds(ownerBounds);
+            var imageBounds = __CurrentImageBounds;
+            return (imageBounds.HasValue ? (Rectangle?)Rectangle.Round(imageBounds.Value) : null);
+        }
+        /// <summary>
+        /// Zajistí vykreslení Controlu <see cref="OwnerControl"/> z aktuálního threadu (i Working)
+        /// </summary>
+        private void _RunOwnerRepaint()
+        {
+            var ownerControl = this.OwnerControl;
+            if (ownerControl is null || !ownerControl.IsHandleCreated || ownerControl.IsDisposed || ownerControl.Disposing) return;
+
+            if (ownerControl.InvokeRequired)
+                ownerControl.BeginInvoke(new Action(_RunOwnerRepaintGui));
+            else
+                _RunOwnerRepaintGui();
+        }
+        /// <summary>
+        /// Zajistí vykreslení Controlu <see cref="OwnerControl"/> v aktuálním (=GUI) threadu
+        /// </summary>
+        private void _RunOwnerRepaintGui()
+        {
+            var ownerControl = this.OwnerControl;
+            if (ownerControl is null || !ownerControl.IsHandleCreated || ownerControl.IsDisposed || ownerControl.Disposing) return;
+
+            __OwnerSizeLastPainted = __OwnerSizeLastRequested;
+            ownerControl.Invalidate();
+        }
+        #endregion
+        #region Delay v zobrazení
+        /// <summary>
+        /// Nastaví a aktivuje <see cref="InitialDelay"/>
+        /// </summary>
+        /// <param name="initialDelay"></param>
+        private void _SetInitialDelay(TimeSpan? initialDelay)
+        {
+            __InitialDelay = ((initialDelay.HasValue && initialDelay.Value.TotalMilliseconds >= 50d) ? initialDelay : (TimeSpan?)null);
+            _ActivateInitialDelay();
+        }
+        /// <summary>
+        /// Nastaví a aktivuje <see cref="ResizeDelay"/>
+        /// </summary>
+        /// <param name="resizeDelay"></param>
+        private void _SetResizeDelay(TimeSpan? resizeDelay)
+        {
+            __ResizeDelay = ((resizeDelay.HasValue && resizeDelay.Value.TotalMilliseconds >= 50d) ? resizeDelay : (TimeSpan?)null);
+            // Toto delay se neaktivuje nyní, ale až po prvním následujícím Resize, který vyvolá nějakou zdejší metodu 
+        }
+        /// <summary>
+        /// Aktivuje časovač pro InitialDelay
+        /// </summary>
+        private void _ActivateInitialDelay()
+        {
+            __IsActiveInitialDelay = (__InitialDelay.HasValue);
+        }
+        /// <summary>
+        /// Důležitá metoda, řídící tyto algoritmy: vykreslení, start časovače Delay (a volbu odpovídajícího intervalu) i detekci Resize controlu a start jeho časovače...
+        /// Metoda je volána při požadavku na vykreslení. Pokud vrátí true (=paint je delayed), pak fyzický Paint se neprovede!!!
+        /// </summary>
+        /// <returns></returns>
+        private bool _IsPaintDelayed(Size ownerSize)
+        {
+            var initialDelay = __InitialDelay;
+            if (__IsActiveInitialDelay && initialDelay.HasValue && initialDelay.Value.Ticks > 0L)
+            {   // Je aktivní InitialDelay = to je od okamžiku setování OwnerControl nebo InitialDelay, pokud je InitialDelay kladné:
+                // Následující řádek nastartuje časovač, anebo pokud už běží (když __DelayTimerId má hodnotu) tak znovunastartuje timer:
+                __DelayTimerId = WatchTimer.CallMeAfter(_InitialDelayElapsed, (int)initialDelay.Value.TotalMilliseconds, false, __DelayTimerId);
+                // A po tuto dobu nebudeme kreslit nic = opravdu bude prázdná plocha!
+                return true;            // Časovač InitialDelay právě běží..  Nebudeme nic vykreslovat!
+            }
+            // Není aktivní delay:
+            return false;
+        }
+        /// <summary>
+        /// Doběhl časovač času InitialDelay. 
+        /// Běžel od prvního pokusu o vykreslení, a každý další pokus o vykreslení jej znovunastavil na výchozí čas __InitialDelay.
+        /// Nyní je tedy aplikace v relativně klidném stavu a měli bychom vykreslit obrázek.
+        /// Pozor, jsme ve Working threadu.
+        /// </summary>
+        private void _InitialDelayElapsed()
+        {
+            __IsActiveInitialDelay = false;
+            __DelayTimerId = null;
+            _RunOwnerRepaint();
+        }
+        private void _DeactivateDelays()
+        {
+            var id = __DelayTimerId;
+            __DelayTimerId = null;
+            WatchTimer.Remove(id);
+        }
+        private bool __IsActiveInitialDelay;
+        private bool __IsRunningInitialDelay;
+        private bool __IsRunningResizeDelay;
+        private Size? __OwnerSizeLastRequested;
+        private Size? __OwnerSizeLastPainted;
+        private Guid? __DelayTimerId;
         #endregion
         #region Fyzické souřadnice obrázku, odvozené souřadnice klikací mapy
         /// <summary>
@@ -7189,26 +7331,31 @@ namespace Noris.Clients.Win.Components.AsolDX
                 return;
             }
 
+            // Maximální poměr zvětšení (jen pro bitmapu), dolní hodnota = 1f:
+            float? maxRatio = null;
+            if (this.HasBmpImage && this.__BmpZoomMaxRatio.HasValue)
+                maxRatio = (this.__BmpZoomMaxRatio.Value <= 1f ? 1f : this.__BmpZoomMaxRatio.Value);
+
             Rectangle ownerBoundsF = ownerBounds;                    // Int32 => float
-            SizeF fullSize = imageSizeF.Value.ZoomTo(ownerBoundsF.Size);       // Získám velikost obrázku na 100% v dostupném prostoru, se zachováním poměru stran obrázku
-            SizeF zoomSize = fullSize.Multiply(this.__Zoom);         // Cílová velikost obrázku s požadovaným Zoomem (např. 0.25 = 1/4 celkové dostupné velikosti)
+            var zoom = this.__Zoom;
+            SizeF imageSize = imageSizeF.Value.ZoomTo(ownerBoundsF.Size, zoom, maxRatio);
 
             // Malý prostor => nemůžeme pracovat:
-            if (zoomSize.Width < 32 || zoomSize.Height < 32)
+            if (imageSize.Width < 32 || imageSize.Height < 32)
             {
                 __CurrentImageBounds = null;
                 return;
             }
 
             // Umístím cílovou velikost obrázku na relativní pozici:
-            float dx = ownerBoundsF.Width - zoomSize.Width;          // dx a dy je "volný prostor" kolem obrázku v dané ose, v rámci přiděleného prostoru (Size) v ownerBounds
-            float dy = ownerBoundsF.Height - zoomSize.Height;
+            float dx = ownerBoundsF.Width - imageSize.Width;          // dx a dy je "volný prostor" kolem obrázku v dané ose, v rámci přiděleného prostoru (Size) v ownerBounds
+            float dy = ownerBoundsF.Height - imageSize.Height;
             var position = this.RelativePosition;
             float px = dx * position.X;                              // px, py: Pixelová pozice X a Y v rámci přiděleného prostoru (Size) v ownerBounds
             float py = dy * position.Y;
 
             // Finální souřadnice obrázku jako celku:
-            RectangleF imageBounds = new RectangleF(ownerBoundsF.X + px, ownerBoundsF.Y + py, zoomSize.Width, zoomSize.Height);
+            RectangleF imageBounds = new RectangleF(ownerBoundsF.X + px, ownerBoundsF.Y + py, imageSize.Width, imageSize.Height);
 
             // Určíme souřadnice jednotlivých aktivních prostorů v rámci souřadnic celého obrázku (=klikací mapa):
             foreach (var area in __AreaItems)

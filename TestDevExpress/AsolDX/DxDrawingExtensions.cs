@@ -1295,35 +1295,49 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="currentSize"></param>
         /// <param name="targetSize"></param>
+        /// <param name="useTargetRatio">Využití Target prostoru, null = default = 1.00 = plný prostor; hodnota menší než 0 = využít nejvýše daný poměr target prostoru</param>
+        /// <param name="maxCurrentZoom">Maximální zvětšení Current velikosti</param>
         /// <returns></returns>
-        public static SizeF ZoomTo(this SizeF currentSize, SizeF targetSize)
+        public static SizeF ZoomTo(this SizeF currentSize, SizeF targetSize, float? useTargetRatio = null, float? maxCurrentZoom = null)
         {
-            var cw = currentSize.Width;
-            var ch = currentSize.Height;
-            var tw = targetSize.Width;
-            var th = targetSize.Height;
+            var currentWidth = currentSize.Width;
+            var currentHeight = currentSize.Height;
+            var targetWidth = targetSize.Width;
+            var targetHeight = targetSize.Height;
 
-            if (cw <= 0f || ch <= 0f || tw <= 0f || th <= 0f) return SizeF.Empty;
+            if (currentWidth <= 0f || currentHeight <= 0f || targetWidth <= 0f || targetHeight <= 0f) return SizeF.Empty;
 
-            float currentRatio = cw / ch;
-            float targetRatio = tw / th;
-            
-            if (currentRatio == targetRatio) return targetSize;                // Výjimečná zkratka: poměr stran je shodný, takže Zoomed Size == Target Size
+            float currentRatio = currentWidth / currentHeight;
+            float targetRatio = targetWidth / targetHeight;
 
-            if (currentRatio > targetRatio)
-            {   // current Size má poměr stran víc na šířku než target Size:
-                // targetWidth bude výsledná Width, a dopočtu finalHeight podle targetWidth a poměru currentRatio:
-                float fw = tw;
-                float fh = fw / currentRatio;
-                return new SizeF(fw, fh);
-            }
+            // Výjimečná zkratka: poměr stran je shodný a není omezen Zoom, takže Zoomed Size == Target Size
+            if (currentRatio == targetRatio && !maxCurrentZoom.HasValue) return targetSize;
+
+            // zoom = kolkrát zvětšíme currentSize do výsledné resultSize:
+            float zoom;
+
+            // Určíme Zoom tak, aby se vyplnil celý Target prostor:
+            if (currentRatio >= targetRatio)
+                // current Size má poměr stran víc na šířku než target Size (nebo shodný; ale musíme aplikovat maxZoom):
+                // Zoom určíme z poměru šířky tak, aby result šířka == target šířka (do toho ale může zasáhnout maxZoom):
+                zoom = targetWidth / currentWidth;
             else
-            {   // current Size má poměr stran víc na výšku než target Size:
-                // targetHeight bude výsledná Height, a dopočtu finalWidth podle targetHeight a poměru currentRatio:
-                float fh = th;
-                float fw = fh * currentRatio;
-                return new SizeF(fw, fh);
-            }
+                // current Size má poměr stran víc na výšku než target Size:
+                // Zoom určíme z poměru výšky:
+                zoom = targetHeight / currentHeight;
+
+            // Target Ratio = zmenšíme zoom tak, abych result měl např. 75% z target:
+            if (useTargetRatio.HasValue && useTargetRatio.Value > 0f)
+                zoom = useTargetRatio.Value * zoom;
+
+            // Omezení Zoomu z hlediska Current velikosti?
+            if (maxCurrentZoom.HasValue && maxCurrentZoom.Value > 0f && zoom > maxCurrentZoom.Value)
+                zoom = maxCurrentZoom.Value;
+
+            // Finální velikost 
+            float resultWidth = zoom * currentWidth;
+            float resultHeight = zoom * currentHeight;
+            return new SizeF(resultWidth, resultHeight);
         }
         #endregion
         #region Size: AlignTo

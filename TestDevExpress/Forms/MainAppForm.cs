@@ -1,9 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-
+using System.Windows.Forms;
 using Noris.Clients.Win.Components.AsolDX;
 
 namespace TestDevExpress.Forms
@@ -52,7 +53,7 @@ namespace TestDevExpress.Forms
         protected override void InitializeDockPanelsContent()
         {
             var logControl = new TestDevExpress.Components.AppLogPanel();
-            this.AddControlToDockPanels(logControl, "Log aplikace", DevExpress.XtraBars.Docking.DockingStyle.Right, DevExpress.XtraBars.Docking.DockVisibility.AutoHide);
+            this.AddControlToDockPanels(logControl, "Log aplikace", DevExpress.XtraBars.Docking.DockingStyle.Right, DevExpress.XtraBars.Docking.DockVisibility.Visible, 350);
 
             //var logControl2 = new TestDevExpress.Components.AppLogPanel();
             //this.AddControlToDockPanels(logControl2, "Doplňkový log", DevExpress.XtraBars.Docking.DockingStyle.Right, DevExpress.XtraBars.Docking.DockVisibility.AutoHide);
@@ -64,7 +65,87 @@ namespace TestDevExpress.Forms
             //this.AddControlToDockPanels(logControl4, "Jinopohledový log", DevExpress.XtraBars.Docking.DockingStyle.Left, DevExpress.XtraBars.Docking.DockVisibility.AutoHide);
         }
         #endregion
+        #region TabView BackImage a MouseClick
+        /// <summary>
+        /// Inicializuje věci pro kreslení obrázku na pozadí TabView
+        /// </summary>
+        /// <param name="tabbedView"></param>
+        protected override void InitializeImageMapOnTabbedView(DevExpress.XtraBars.Docking2010.Views.Tabbed.TabbedView tabbedView)
+        {
+            __TabViewBackImageMap = new DxImageAreaMap();
+            _PrepareImageMap(__TabViewBackImageMap);
+            __TabViewBackImageMap.Click += __TabViewBackImageMap_Click;
+            tabbedView.CustomDrawBackground += _TabViewCustomDrawBackground;
+        }
+        /// <summary>
+        /// Disposuje věci pro kreslení obrázku na pozadí TabView
+        /// </summary>
+        protected override void DisposeImageMapOnTabbedView(DevExpress.XtraBars.Docking2010.Views.Tabbed.TabbedView tabbedView)
+        {
+            tabbedView.CustomDrawBackground -= _TabViewCustomDrawBackground;
+            __TabViewBackImageMap.OwnerControl = null;
+            __TabViewBackImageMap.Dispose();
+            __TabViewBackImageMap = null;
+        }
+        /// <summary>
+        /// Naplní ImageMap daty dle definice
+        /// </summary>
+        /// <param name="imageMap"></param>
+        private void _PrepareImageMap(DxImageAreaMap imageMap)
+        {
+            string imageFile = @"c:\DavidPrac\VsProjects\TestDevExpress\TestDevExpress\ImagesTest\Image01.png"; // @"c:\DavidPrac\VsProjects\TestDevExpress\TestDevExpress\ImagesTest\Svg\homer-simpson.svg";
+            imageFile = @"Image00a.png"; // @"c:\DavidPrac\VsProjects\TestDevExpress\TestDevExpress\ImagesTest\Svg\homer-simpson.svg";
+            // imageFile = @"c:\DavidPrac\VsProjects\TestDevExpress\TestDevExpress\ImagesTest\Svg\homer-simpson.svg";
 
+            if (!System.IO.File.Exists(imageFile)) return;
+
+            imageMap.ContentImage = System.IO.File.ReadAllBytes(imageFile);
+            imageMap.Zoom = 0.95f;
+            imageMap.RelativePosition = new PointF(0.98f, 0.98f);
+            imageMap.NativeToTargetMaxRatio = 2.0f;
+            imageMap.InitialDelay = TimeSpan.FromMilliseconds(500d);
+            imageMap.ResizeDelay = TimeSpan.FromMilliseconds(400d);
+
+            imageMap.ClearActiveArea();
+            imageMap.AddActiveArea(new RectangleF(0.05f, 0.05f, 0.80f, 0.20f), @"https://www.helios.eu", DxCursorType.Cross);
+            imageMap.AddActiveArea(new RectangleF(0.50f, 0.35f, 0.40f, 0.30f), @"https://www.seznam.cz", DxCursorType.Hand);
+            imageMap.AddActiveArea(new RectangleF(0.05f, 0.60f, 0.40f, 0.30f), @"https://www.idnes.cz", DxCursorType.Hand);
+            imageMap.AddActiveArea(new RectangleF(0.00f, 0.80f, 1.00f, 0.25f), @"c:\Windows\notepad.exe", DxCursorType.Help);
+        }
+        /// <summary>
+        /// Po kliknutí na ImageMap
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void __TabViewBackImageMap_Click(object sender, DxImageAreaMap.AreaClickArgs e)
+        {
+            if (e.UserData is string runCmd && !String.IsNullOrEmpty(runCmd))
+                System.Diagnostics.Process.Start(runCmd);
+        }
+        /// <summary>
+        /// V události CustomDrawBackground vykreslíme obrázek na pozadí.
+        /// To mimo jiné zajistí napojení Controlu na pozadí do klikací mapy, a do klikací mapy i vloží aktuální souřadnice obrázku, tím se zajistí správné rozmístění klikacích ploch.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _TabViewCustomDrawBackground(object sender, DevExpress.XtraBars.Docking2010.CustomDrawBackgroundEventArgs e)
+        {
+            var imageMap = __TabViewBackImageMap;
+            if (!imageMap.HasImage) return;
+            if (!imageMap.WasStoredControl)
+                imageMap.OwnerControl = this.Controls.OfType<MdiClient>().FirstOrDefault();
+
+            if (!this.TabbedView.IsEmpty) return;
+
+            var clientBounds = e.Bounds;
+            var innerBounds = Rectangle.FromLTRB(clientBounds.Left + 12, clientBounds.Top + 48, clientBounds.Right - 12, clientBounds.Bottom - 12);
+            imageMap.PaintImageMap(e.GraphicsCache, innerBounds);
+        }
+        /// <summary>
+        /// Instance klikacího obrázku na pozadí TabView
+        /// </summary>
+        private DxImageAreaMap __TabViewBackImageMap;
+        #endregion
     }
     /// <summary>
     /// Definice spouštěcí ikony pro určitý formulář.

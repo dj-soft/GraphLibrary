@@ -3529,14 +3529,16 @@ namespace Noris.Clients.Win.Components.AsolDX
             string text = this.TitleText;
             if (String.IsNullOrEmpty(text))
                 text = this.TitleSubstitute;
+            bool useDxPainter = this.UseDxPainter;
             this._TitleLabel.Text = text;
-
-            this._TitleLabel.Visible = !this.UseDxPainter;
+            this._TitleLabel.Visible = !useDxPainter;
+            if (useDxPainter)
+                this.Invalidate();               // Požádáme this panel aby se překreslil, protože při jeho překreslení se vypíše nový text (z this._TitleLabel.Text) fyzicky na plochu panelu.
         }
         /// <summary>
         /// Nastaví Visible a Enabled pro buttony podle aktuálního stavu a podle požadavků
         /// </summary>
-        /// <param name="doLayoutTitle">Po doběhnutí určení viditelnosti vyvolat <see cref="DxTitlePanel.DoLayoutTitleLabel()"/> ?</param>
+        /// <param name="doLayoutTitle">Po doběhnutí určení viditelnosti vyvolat <see cref="_DoLayoutTitleLabel()"/> ? = umístí objekt labelu do patřičných souřadnic.</param>
         private void _RefreshButtonVisibility(bool doLayoutTitle)
         {
             int titleLabelRight = this._EndX;
