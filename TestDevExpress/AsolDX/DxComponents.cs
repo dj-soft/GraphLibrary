@@ -4653,8 +4653,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="skinPartName"></param>
         /// <returns></returns>
         public static DevExpress.Skins.Skin GetSkinInfo(string skinPartName) { return Instance._GetSkinByName(skinPartName); }
-        private void _OnSkinChanged()
-        { }
+        /// <summary>
+        /// Vrátí aktuálně platnou barvu dle skinu.
+        /// Vstupní jména by měly pocházet z prvků třídy <see cref="SkinElementColor"/>.
+        /// Například barva textu v labelu je pod jménem <see cref="SkinElementColor.CommonSkins_WindowText"/>
+        /// </summary>
+        /// <param name="name">Typ prvku</param>
+        /// <returns></returns>
         private Color? _GetSkinColor(string name)
         {
             if (String.IsNullOrEmpty(name) || !name.Contains(".")) return null;
@@ -4730,7 +4735,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             return null;
         }
         /// <summary>
-        /// Vrátí daný control z cache / ytvoří nový a umístí tam a vrátí
+        /// Vrátí daný control z cache / vytvoří nový a umístí tam a vrátí.
+        /// Control se používá pro určení jeho appearance a barevnosti.
         /// </summary>
         /// <param name="controlName"></param>
         /// <returns></returns>
@@ -4973,6 +4979,14 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 // jen pro breakpoint...
             }
+
+            bool isPanelDarkSkin = SkinColorSet.IsPanelDark;
+            bool isInputDarkSkin = SkinColorSet.IsEditorDark;
+
+            DxComponent.LogAddLine($"IsDarkSkin: By Ribbon.MenuText: {djIsDarkSkin}");
+            DxComponent.LogAddLine($"IsDarkSkin: By FrameHelper.IsDarkSkin: {dxIsDarkSkin}");
+            DxComponent.LogAddLine($"IsDarkSkin: By SkinColorSet.IsPanelDark: {isPanelDarkSkin}");
+            DxComponent.LogAddLine($"IsDarkSkin: By SkinColorSet.IsInputDark: {isInputDarkSkin}");
 
             return djIsDarkSkin;
         }
@@ -5757,6 +5771,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (skinColors != null)
                 readFromSkinCommonColors(skinColors);
 
+            detectDarkSkin();
+
             // Načte barvy Basic z dodané SVG palety; načítá jen hodnoty, dosud nenačtené
             void readFromSvgPalette(SvgPalette svgPalette)
             {
@@ -5937,7 +5953,29 @@ namespace Noris.Clients.Win.Components.AsolDX
                 if (colorDict.TryGetValue(name, out var color)) return color;
                 return null;
             }
+
+            // Určí hodnoty IsPanelDark a IsEditorDark podle nalezených barev PanelBackColor a EditorBackColor
+            void detectDarkSkin()
+            {
+                this.IsPanelDark = isColorDark(this.PanelBackColor);
+                this.IsEditorDark = isColorDark(this.EditorBackColor);
+            }
+
+            // Vrátí true, pokud daná barva je tmavá
+            bool isColorDark(Color? color)
+            {
+                if (!color.HasValue) return false;
+                return (color.Value.GetBrightness() < 0.5f);
+            }
         }
+        /// <summary>
+        /// Aktuální skin má tmavé pozadí panelů (<see cref="PanelBackColor"/>
+        /// </summary>
+        public bool IsPanelDark { get; private set; }
+        /// <summary>
+        /// Aktuální skin má tmavé pozadí vstupních editor prvků (<see cref="EditorBackColor"/>
+        /// </summary>
+        public bool IsEditorDark { get; private set; }
         /// <summary>
         /// Barva panelu (Container), pozadí
         /// </summary>

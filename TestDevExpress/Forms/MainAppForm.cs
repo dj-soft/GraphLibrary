@@ -102,7 +102,7 @@ namespace TestDevExpress.Forms
             imageMap.ContentImage = System.IO.File.ReadAllBytes(imageFile);
             imageMap.Zoom = 0.95f;
             imageMap.RelativePosition = new PointF(0.98f, 0.98f);
-            imageMap.NativeToTargetMaxRatio = 2.0f;
+            imageMap.BmpZoomMaxRatio = 2.0f;
             imageMap.InitialDelay = TimeSpan.FromMilliseconds(500d);
             imageMap.ResizeDelay = TimeSpan.FromMilliseconds(400d);
 
