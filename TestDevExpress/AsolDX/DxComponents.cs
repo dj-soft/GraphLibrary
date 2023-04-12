@@ -5780,7 +5780,46 @@ namespace Noris.Clients.Win.Components.AsolDX
                 AddSvgColors(svgDict);
 
                 // Palety jsou vícero druhů: starší obsahují názvy barev: "Paint", "Paint High", "Paint Shadow", atd...:
+                /*
+Paint			        Pozadí - Panel
+Paint High		        Pozadí - TextBox
+Paint Shadow		    Pozadí - ColumnHeader a Form Footer
+Paint Deep Shadow
+Brush			        Písmo v Panelu a ColumnHeader a ve Footeru
+Brush Light		        Písmo Disabled v Panelu a ColumnHeader a ve Footeru
+Brush High		        Písmo v TextBoxu
+Brush Major		        Border v Editoru
+Brush Minor		        GridLines v Editoru / Gridu, linky v Panelu
 
+
+Accent Paint		    Zvýrazněné písmo v Panelu, ve Footeru, Pozadí Selected Row
+Accent Paint Light	    Pozadí v Hot Row
+Accent Brush		    Písmo v Selected Row
+Accent Brush Light	    ?
+Key Paint		        Pozadí - Titulek okna
+Key Brush		        Písmo - Titulek okna
+Key Brush Light		    Písmo - Titulek okna šedivý
+
+
+Accent Paint		    Pozadí - Titulek okna
+Accent Paint Dark	    Pozadí - Zmáčknutý button na okně
+Accent Paint Light	    Pozadí - Selected row v Gridu
+Accent Paint Lighter	Pozadí - Hot row v Gridu
+Accent Brush		    Písmo v titulku okna
+Accent Brush Light	    Písmo v titulku okna šedivé
+
+
+Red
+Green
+Blue
+Yellow
+Black
+Gray
+White
+
+
+
+                */
                 // Následující mapování (tzn. jméno barvy => její použití na Controlech) bylo odvozeno pomocí SkinEditoru pro různé skiny a palety...
 
                 if (ContainAllNames(svgDict, "Accent Paint", "Accent Paint Light", "Accent Brush", "Accent Brush Light", "Key Paint", "Key Brush", "Key Brush Light"))
