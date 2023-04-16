@@ -8,6 +8,7 @@ using System.Drawing;
 using WF = System.Windows.Forms;
 using System.Windows.Forms;
 using Noris.Clients.Win.Components.AsolDX;
+using TestDevExpress.Forms;
 
 namespace TestDevExpress.Components
 {
@@ -29,7 +30,7 @@ namespace TestDevExpress.Components
         /// <summary>
         /// Deklarace tlačítka v <see cref="TestDevExpress.Forms.MainAppForm"/> pro spuštění tohoto formuláře
         /// </summary>
-        public static TestDevExpress.Forms.RunFormInfo RunFormInfo { get { return new TestDevExpress.Forms.RunFormInfo() { ButtonText = "Layout", ButtonImage = "devav/layout/pages.svg", ButtonToolTip = "Otevře okno pro testování layoutu (pod-okna)" }; } }
+        public static RunFormInfo RunFormInfo { get { return new RunFormInfo() { ButtonText = "Layout", ButtonImage = "devav/layout/pages.svg", ButtonToolTip = "Otevře okno pro testování layoutu (pod-okna)", GroupText = "Testovací okna", ButtonOrder = 20 }; } }
 
         #region MainContent
         protected override void DxMainContentPrepare()

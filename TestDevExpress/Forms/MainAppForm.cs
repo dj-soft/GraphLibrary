@@ -156,11 +156,11 @@ namespace TestDevExpress.Forms
     /// </code>
     /// Okno aplikace si při spuštění najde tyto formuláře, a sestaví je a do Ribbonu zobrazí jejich tlačítka.
     /// <para/>
-    /// Proč takhle a ne přes interface? Interface předepisuje instanční property, což by znamenalo při hledání vhodných typů: 
+    /// Proč takhle a ne přes interface? Interface předepisuje <u>výhradně instanční</u> property, což by v procesu vyhledání vhodných typů znamenalo:
     /// Vyhledat vhodné typy formulářů implementující nový interface (což jde snadno);
     /// ale potom vytvořit instanci každého takového formuláře (dost časové náročné, zvlášť u komplexních Formů) 
     /// jen proto, abych si přečetl jeho instanční property s deklarací buttonu do Ribbonu.<br/>
-    /// Zdejší varianta
+    /// Zdejší varianta sice není tak efektní jako typově přesný interface, ale je rychlejší...
     /// </summary>
     public class RunFormInfo
     {
@@ -224,7 +224,7 @@ namespace TestDevExpress.Forms
 
             var runFormInfos = new List<Tuple<Type, RunFormInfo>>();
             DxComponent.GetTypes(myAssembly, t => ContainsRunFormInfo(t, runFormInfos));
-
+       
             return runFormInfos.ToArray();
         }
         /// <summary>
@@ -271,6 +271,7 @@ namespace TestDevExpress.Forms
 
             // Grupy za stránky podle PageText, tříděné podle PageOrder, v rámci jedné stránky podle nejvyšší hodnoty PageOrder:
             var rPages = runFormInfos.CreateSortedGroups(i => (i.Item2.PageText ?? ""), i => (i.Item2.PageOrder), (a, b) => (a > b ? a : b));
+            int pageOrder = basicPage.PageOrder;
             foreach (var rPage in rPages)
             {   // V daném pořadí, které vychází z PageOrder:
                 // Stránka Ribbonu: defaultní nebo nová explicitně pojmenovaná:
@@ -279,36 +280,46 @@ namespace TestDevExpress.Forms
                     dxPage = basicPage;
                 else
                 {
-                    dxPage = new DataRibbonPage() { PageText = rPage.Item1 };
+                    dxPage = new DataRibbonPage() { PageText = rPage.Item1, PageOrder = ++pageOrder };
                     pages.Add(dxPage);
                 }
 
                 // RibbonGrupy = z aktuální stránky rPage vezmu prvky (rPage.Item2), vytvořím skupiny podle GroupText a setřídím podle GroupOrder.Max() :
                 var rGroups = rPage.Item2.CreateSortedGroups(i => (i.Item2.GroupText ?? ""), i => (i.Item2.GroupOrder), (a, b) => (a > b ? a : b));
+                int groupOrder = 0;
                 foreach (var rGroup in rGroups)
                 {   // Jedna grupa za druhou, v pořadí GroupOrder:
                     string groupText = (!String.IsNullOrEmpty(rGroup.Item1) ? rGroup.Item1 : "FUNKCE");
-                    DataRibbonGroup dxGroup = new DataRibbonGroup() { GroupText = groupText };
+                    DataRibbonGroup dxGroup = new DataRibbonGroup() { GroupText = groupText, GroupOrder = ++groupOrder };
                     dxPage.Groups.Add(dxGroup);
 
                     // Jednotlivá tlačítka do grupy:
                     var rButtons = rGroup.Item2.ToList();
                     rButtons.Sort((a, b) => a.Item2.ButtonOrder.CompareTo(b.Item2.ButtonOrder));
+                    int buttonOrder = 0;
                     foreach (var rButton in rButtons)
                     {
-                        var dxItem = new DataRibbonItem() { Text = rButton.Item2.ButtonText, ToolTipText = rButton.Item2.ButtonToolTip, ImageName = rButton.Item2.ButtonImage, Tag = rButton };
+                        var dxItem = new DataRibbonItem() { Text = rButton.Item2.ButtonText, ToolTipText = rButton.Item2.ButtonToolTip, ImageName = rButton.Item2.ButtonImage, ItemOrder = ++buttonOrder, Tag = rButton };
                         dxItem.ClickAction = RunFormAction;
                         dxGroup.Items.Add(dxItem);
                     }
                 }
             }
         }
+        /// <summary>
+        /// Akce volaná z buttonu v Ribbnu, jejím úkolem je otevřít dané okno, jehož definice je uložena v Tagu dodaného prvku
+        /// </summary>
+        /// <param name="item"></param>
         private static void RunFormAction(IMenuItem item)
         {
             if (item.Tag is not Tuple<Type, RunFormInfo> runFormInfo) return;
 
             runFormInfo.Item2.Run(runFormInfo.Item1);
         }
+        /// <summary>
+        /// Instanční metoda v <see cref="RunFormInfo"/>, má za úkol otevřít patřičným způsobem svůj formulář
+        /// </summary>
+        /// <param name="formType"></param>
         private void Run(Type formType)
         {
             var form = System.Activator.CreateInstance(formType) as System.Windows.Forms.Form;

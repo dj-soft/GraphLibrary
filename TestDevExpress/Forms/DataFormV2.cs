@@ -84,7 +84,7 @@ namespace TestDevExpress.Forms
         /// <summary>
         /// Deklarace tlačítka v <see cref="MainAppForm"/> pro spuštění tohoto formuláře
         /// </summary>
-        public static RunFormInfo RunFormInfo { get { return new RunFormInfo() { ButtonText = "DataForm 2", ButtonImage = "svgimages/spreadsheet/showtabularformpivottable.svg", GroupText = "DATAFORM" } ; } }
+        public static RunFormInfo RunFormInfo { get { return new RunFormInfo() { ButtonText = "DataForm", ButtonImage = "svgimages/spreadsheet/showtabularformpivottable.svg", GroupText = "Testovací okna", ButtonOrder = 10 } ; } }
         #endregion
         #region Ribbon - obsah a rozcestník
         protected override void DxRibbonPrepare()

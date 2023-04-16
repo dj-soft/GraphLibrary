@@ -30,7 +30,7 @@ namespace TestDevExpress.Forms
         /// <summary>
         /// Deklarace tlačítka v <see cref="TestDevExpress.Forms.MainAppForm"/> pro spuštění tohoto formuláře
         /// </summary>
-        public static TestDevExpress.Forms.RunFormInfo RunFormInfo { get { return new TestDevExpress.Forms.RunFormInfo() { ButtonText = "Handles", ButtonImage = "svgimages/dashboards/scatterchart.svg", ButtonToolTip = "Otevře okno sledování GUI Handles" }; } }
+        public static RunFormInfo RunFormInfo { get { return new RunFormInfo() { ButtonText = "Handles", ButtonImage = "svgimages/dashboards/scatterchart.svg", ButtonToolTip = "Otevře okno sledování GUI Handles", GroupText = "Tools", ButtonOrder = 210, GroupOrder = 100 }; } }
         //string resource3 = "devav/actions/printpreview.svg";
         //string resource4 = "svgimages/dashboards/scatterchart.svg";
 

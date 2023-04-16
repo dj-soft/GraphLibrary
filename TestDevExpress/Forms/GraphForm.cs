@@ -31,7 +31,7 @@ namespace TestDevExpress.Forms
         /// <summary>
         /// Deklarace tlačítka v <see cref="MainAppForm"/> pro spuštění tohoto formuláře
         /// </summary>
-        public static RunFormInfo RunFormInfo { get { return new RunFormInfo() { ButtonText = "Graf", ButtonImage = "svgimages/dashboards/chart.svg" }; } }
+        public static RunFormInfo RunFormInfo { get { return new RunFormInfo() { ButtonText = "Graf", ButtonImage = "svgimages/dashboards/chart.svg", GroupText = "Testovací okna", ButtonOrder = 50 }; } }
         /// <summary>
         /// Inicializace grafu
         /// </summary>

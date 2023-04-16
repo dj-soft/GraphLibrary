@@ -15,6 +15,13 @@ namespace TestDevExpress.Forms
     public class RibbonForm : DxRibbonForm
     {
         #region Konstruktor a proměnné
+        /// <summary>
+        /// Deklarace tlačítka v <see cref="MainAppForm"/> pro spuštění tohoto formuláře
+        /// </summary>
+        public static RunFormInfo RunFormInfo { get { return new RunFormInfo() { ButtonText = "Ribbon", ButtonImage = "svgimages/dashboards/grid.svg", GroupText = "Testovací okna", GroupOrder = 40 }; } }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
         public RibbonForm()
         {
             var moon10 = DxComponent.CreateBitmapImage("Images/Moon10.png");
@@ -30,10 +37,6 @@ namespace TestDevExpress.Forms
 
             DxComponent.SplashUpdate(rightFooter: "Už to jede...");
         }
-        /// <summary>
-        /// Deklarace tlačítka v <see cref="MainAppForm"/> pro spuštění tohoto formuláře
-        /// </summary>
-        public static RunFormInfo RunFormInfo { get { return new RunFormInfo() { ButtonText = "Ribbon", ButtonImage = "svgimages/dashboards/grid.svg", GroupText = "RIBBONY", GroupOrder = 2 }; } }
         protected override void OnShown(EventArgs e)
         {
             DxComponent.SplashHide();
@@ -43,10 +46,6 @@ namespace TestDevExpress.Forms
         {
             base.Dispose(disposing);
             DxComponent.LogTextChanged -= DxComponent_LogTextChanged;
-        }
-        public static void PrepareSkin()
-        {
-            DevExpress.LookAndFeel.UserLookAndFeel.Default.SkinName = "iMaginary";
         }
         protected void InitializeForm()
         {
