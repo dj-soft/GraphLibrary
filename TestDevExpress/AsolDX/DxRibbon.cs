@@ -46,11 +46,18 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="disposing"></param>
         protected override void Dispose(bool disposing)
         {
-            this.DestroyContent();
-            this.DxDisposed = true;
-            DxComponent.UnregisterListener(this);
-            DxQuickAccessToolbar.ConfigValueChanged -= _DxQATItemKeysChanged;
-            base.Dispose(disposing);
+            try
+            {
+                this.DestroyContent();
+                this.DxDisposed = true;
+                DxComponent.UnregisterListener(this);
+                DxQuickAccessToolbar.ConfigValueChanged -= _DxQATItemKeysChanged;
+                base.Dispose(disposing);
+            }
+            catch (Exception exc)
+            { /* Zavření jednoho okna by nemělo shodit klienta jako celek */
+                DxComponent.LogAddException(exc);
+            }
         }
         /// <summary>
         /// Zruší veškerý svůj obsah v procesu Dispose. Volá base.DestroyContent() !!!
@@ -739,6 +746,38 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Není tedy nutno ve zdejší události <see cref="SelectedDxPageChanged"/> reagovat na LazyLoad, stačí to vyřešit v handleru <see cref="PageOnDemandLoad"/>.
         /// </summary>
         public event EventHandler<TEventArgs<IRibbonPage>> SelectedDxPageChanged;
+        #endregion
+        #region Setování obsahu Ribbonu pomocí kompletní sady dat do RibbonContent
+        /// <summary>
+        /// Obsah Ribbonu = stránky, a další přímo vložené prvky.
+        /// <para/>
+        /// Upozornění:<br/>
+        /// Pokud budou prvky vkládány jednotlivě (do property <see cref="QATDirectItems"/> a <see cref="TitleBarItems"/>, a metodou <see cref="AddPages(IEnumerable{IRibbonPage}, bool)"/>),
+        /// pak v této property <see cref="RibbonContent"/> bude null (nebo jiná posledně vložená hodnota) - neprovádíme mergování jednotlivých hodnot do <see cref="RibbonContent"/>.<br/>
+        /// Stejně tak různé Refreshe stránek, grup a prvků a submenu se do této property nepromítají.<br/>
+        /// Property <see cref="RibbonContent"/> slouží primárně k nasetování výchozího stavu. 
+        /// Skoro se tedy jedná o ideálního kandidáta na property, která by neměla mít get accessor - ale to působí tak divně, jako by to byla černá díra :-)
+        /// <para/>
+        /// Účel této property je jednoduchý: aplikační kód si může do instance třídy <see cref="DataRibbonContent"/> průběžně připravit obsah Ribbonu, 
+        /// a ten se pak jedním příkazem nasetuje do fyzického Ribbonu.
+        /// </summary>
+        public IRibbonContent RibbonContent
+        {
+            get { return __RibbonContent; }
+            set { _SetRibbonContent(value); }
+        }
+        /// <summary>
+        /// Vloží dodaná data do this Ribbonu. Stávající data zruší.
+        /// </summary>
+        /// <param name="ribbonContent"></param>
+        private void _SetRibbonContent(IRibbonContent ribbonContent)
+        {
+            this.TitleBarItems = ribbonContent?.TitleBarItems;
+            this.QATDirectItems = ribbonContent?.QATDirectItems;
+            this.AddPages(ribbonContent?.Pages, true);
+            __RibbonContent = ribbonContent;
+        }
+        private IRibbonContent __RibbonContent;
         #endregion
         #region Quick Search menu
         /// <summary>
@@ -4772,7 +4811,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             _QATLocalConfigValue = null;
         }
         /// <summary>
-        /// Ze zadaného stringu vytvoří struktury pro evidenci prvků pro toolbar QAT (pole <see cref="_QATUserItems"/> a <see cref="_QATUserItemDict"/>).
+        /// Ze stringu v singletonu <see cref="DxQuickAccessToolbar"/> vytvoří struktury pro evidenci prvků pro toolbar QAT (pole <see cref="_QATUserItems"/> a <see cref="_QATUserItemDict"/>).
         /// Před tím zruší obsah fyzického QAT. Volitelně na konci znovu naplní fyzický QAT.
         /// </summary>
         /// <param name="refreshToolbar"></param>
@@ -5569,7 +5608,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void _SetQATDirectItemsInner(IRibbonItem[] items)
         {
             _ClearQATDirectItems();
-
             
             List<QatItem> qatItems = new List<QatItem>();
             if (items != null)
@@ -7209,6 +7247,20 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         #endregion
         #region Static helpers
+        /// <summary>
+        /// Vytvoří a vrátí definici Home stránky Ribbonu. Stránka neobsahuje žádné grupy.
+        /// </summary>
+        /// <returns></returns>
+        public static DataRibbonPage CreateStandardHomePage()
+        {
+            DataRibbonPage homePage = new DataRibbonPage()
+            {
+                PageId = "Standard",
+                PageText = "Domů",         // přejdi na lokalizaci
+                MergeOrder = 1
+            };
+            return homePage;
+        }
         /// <summary>
         /// Vytvoří a vrátí logickou Grupu do Ribbonu s obsahem tlačítek pro skiny (tedy definici pro tuto grupu) a další prvky dle požadavků.
         /// Grupa má ID = <see cref="DesignRibbonGroupId"/>.
@@ -9616,6 +9668,41 @@ namespace Noris.Clients.Win.Components.AsolDX
     #endregion
     #region Třídy definující Ribbon : defaultní implementace odpovídajících interface
     /// <summary>
+    /// Kompletní deklarace dat Ribbonu, lze ji setovat do Ribbonu jedním řádkem
+    /// </summary>
+    public class DataRibbonContent : IRibbonContent
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        public DataRibbonContent()
+        {
+            __QATDirectItems = new List<DataRibbonItem>();
+            __TitleBarItems = new List<DataRibbonItem>();
+            __Pages = new List<DataRibbonPage>();
+        }
+        private List<DataRibbonItem> __QATDirectItems;
+        private List<DataRibbonItem> __TitleBarItems;
+        private List<DataRibbonPage> __Pages;
+
+        /// <summary>
+        /// Explicitně přidané prvky do prostoru QAT (Quick Acces Toolbar), nad rámec prvků ze standardních stránek Ribbonu
+        /// </summary>
+        public List<DataRibbonItem> QATDirectItems { get { return __QATDirectItems; } }
+        /// <summary>
+        /// Prvky fixně umístěné vpravo v titulkovém řádku
+        /// </summary>
+        public List<DataRibbonItem> TitleBarItems { get { return __TitleBarItems; } }
+        /// <summary>
+        /// Souhrn standardních stránek Ribbonu
+        /// </summary>
+        public List<DataRibbonPage> Pages { get { return __Pages; } }
+
+        IRibbonItem[] IRibbonContent.QATDirectItems { get { return __QATDirectItems.ToArray(); } }
+        IRibbonItem[] IRibbonContent.TitleBarItems { get { return __TitleBarItems.ToArray(); } }
+        IRibbonPage[] IRibbonContent.Pages { get { return __Pages.ToArray(); } }
+    }
+    /// <summary>
     /// Definice stránky v Ribbonu
     /// </summary>
     [DebuggerDisplay("{DebugText}")]
@@ -10219,7 +10306,25 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
     }
     #endregion
-    #region Interface IRibbonPage, IRibbonCategory, IRibbonGroup, IRibbonItem;  Enumy RibbonPageType, RibbonContentMode, RibbonItemStyles, BarItemPaintStyle, RibbonItemType.
+    #region Interface IRibbonContent, IRibbonPage, IRibbonCategory, IRibbonGroup, IRibbonItem;  Enumy RibbonPageType, RibbonContentMode, RibbonItemStyles, BarItemPaintStyle, RibbonItemType.
+    /// <summary>
+    /// Kompletní deklarace dat Ribbonu, lze ji setovat do Ribbonu jedním řádkem
+    /// </summary>
+    public interface IRibbonContent
+    {
+        /// <summary>
+        /// Explicitně přidané prvky do prostoru QAT (Quick Acces Toolbar), nad rámec prvků ze standardních stránek Ribbonu
+        /// </summary>
+        IRibbonItem[] QATDirectItems { get; }
+        /// <summary>
+        /// Prvky fixně umístěné vpravo v titulkovém řádku
+        /// </summary>
+        IRibbonItem[] TitleBarItems { get; }
+        /// <summary>
+        /// Souhrn standardních stránek Ribbonu
+        /// </summary>
+        IRibbonPage[] Pages { get; }
+    }
     /// <summary>
     /// Definice stránky v Ribbonu
     /// </summary>
@@ -10511,17 +10616,53 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Delete křížek, červený
         /// </summary>
         Delete = 0x0004,
+        /// <summary>
+        /// Zavřít
+        /// </summary>
         Close = 0x0008,
+        /// <summary>
+        /// Šipka doprava
+        /// </summary>
         Right = 0x0010,
+        /// <summary>
+        /// Šipka doleva
+        /// </summary>
         Left = 0x0020,
+        /// <summary>
+        /// Šipka nahoru
+        /// </summary>
         Up = 0x0040,
+        /// <summary>
+        /// Šipka dolů
+        /// </summary>
         Down = 0x0080,
+        /// <summary>
+        /// Ikona OK
+        /// </summary>
         OK = 0x0100,
+        /// <summary>
+        /// Znaménko Plus
+        /// </summary>
         Plus = 0x0200,
+        /// <summary>
+        /// Znaménko Mínus
+        /// </summary>
         Minus = 0x0400,
+        /// <summary>
+        /// Undo
+        /// </summary>
         Undo = 0x1000,
+        /// <summary>
+        /// Redo
+        /// </summary>
         Redo = 0x2000,
+        /// <summary>
+        /// Lupa pro hledání
+        /// </summary>
         Search = 0x4000,
+        /// <summary>
+        /// Smazání
+        /// </summary>
         Clear = 0x8000
     }
 
