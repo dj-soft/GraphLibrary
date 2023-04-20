@@ -14,8 +14,14 @@ namespace TestDevExpress.Forms
     /// <summary>
     /// Formulář obsahující Ribbon a Browse
     /// </summary>
+    [RunFormInfo(groupText: "Testovací okna", buttonText: "Browse", buttonOrder: 30, buttonImage: "svgimages/spreadsheet/chartgridlines.svg", buttonToolTip: "Otevře okno s ukázkou BrowseList standard DX testovací")]
     public class DxBrowseStandardForm : DxRibbonForm
     {
+        /// <summary>
+        /// Deklarace tlačítka v <see cref="TestDevExpress.Forms.MainAppForm"/> pro spuštění tohoto formuláře
+        /// </summary>
+        public static RunFormInfo RunFormInfo { get { return new RunFormInfo() { ButtonText = "Browse", ButtonImage = "svgimages/spreadsheet/chartgridlines.svg", GroupText = "Testovací okna", ButtonOrder = 30 }; } }
+
         #region Konstrukce
         /// <summary>
         /// Konstruktor
@@ -24,10 +30,6 @@ namespace TestDevExpress.Forms
         {
             this.CreateBrowse();
         }
-        /// <summary>
-        /// Deklarace tlačítka v <see cref="TestDevExpress.Forms.MainAppForm"/> pro spuštění tohoto formuláře
-        /// </summary>
-        public static RunFormInfo RunFormInfo { get { return new RunFormInfo() { ButtonText = "Browse", ButtonImage = "svgimages/spreadsheet/chartgridlines.svg", GroupText = "Testovací okna", ButtonOrder = 30 }; } }
         #endregion
         #region Ribbon a StatusBar - obsah a rozcestník
         /// <summary>

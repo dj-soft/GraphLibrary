@@ -27,7 +27,14 @@ namespace TestDevExpress.Forms
             DataRibbonPage homePage = this.CreateRibbonHomePage(FormRibbonDesignGroupPart.All);
             pages.Add(homePage);
 
-            var runFormInfos = RunFormInfo.GetForms();
+            var start = DateTime.Now;
+            // var runFormInfos = RunFormInfo.GetFormsWithProperty();             // Debug mode: 1202, 1307, 1247 milisecs;     Run mode: 224, 222, 233 milisecs
+            var runFormInfos = RunFormInfo.GetFormsWithAttribute();            // Debug mode: 1354, 1283, 1224 milisecs;     Run mode: 219, 241, 238 milisecs
+            var stop = DateTime.Now;
+            int milisecs = (int)((TimeSpan)(stop - start)).TotalMilliseconds;
+            DxComponent.ShowMessageInfo($"Vyhledání aktivních formulářů s metodou RunFormInfo.GetFormsWithProperty(): čas = {milisecs} ms");
+
+
             RunFormInfo.CreateRibbonPages(runFormInfos, pages, homePage);
 
             this.DxRibbon.AddPages(pages, true);
@@ -147,6 +154,7 @@ namespace TestDevExpress.Forms
         private DxImageAreaMap __TabViewBackImageMap;
         #endregion
     }
+    #region class RunFormInfo : řešení pro formulář, který chce umístit svoji ikonu do MainAppForm
     /// <summary>
     /// Definice spouštěcí ikony pro určitý formulář.
     /// <para/>
@@ -164,7 +172,7 @@ namespace TestDevExpress.Forms
     /// </summary>
     public class RunFormInfo
     {
-        #region Public data
+        #region Public definiční data
         /// <summary>
         /// Název stránky, kde se bude button nacházet.
         /// null = výchozí: "ZÁKLADNÍ"
@@ -191,18 +199,18 @@ namespace TestDevExpress.Forms
         /// </summary>
         public string ButtonText { get; set; }
         /// <summary>
-        /// ToolTip k buttonu
+        /// Pořadí tlačítka v rámci grupy.
         /// </summary>
-        public string ButtonToolTip { get; set; }
+        public int ButtonOrder { get; set; }
         /// <summary>
         /// Ikona tlačítka.
         /// Prázdná ikona je přípustná, pokud je dán text <see cref="ButtonText"/>.
         /// </summary>
         public string ButtonImage { get; set; }
         /// <summary>
-        /// Pořadí tlačítka v rámci grupy.
+        /// ToolTip k buttonu
         /// </summary>
-        public int ButtonOrder { get; set; }
+        public string ButtonToolTip { get; set; }
         /// <summary>
         /// Spouštět jako Modální okno
         /// </summary>
@@ -211,19 +219,31 @@ namespace TestDevExpress.Forms
         /// Spouštět jako Floating okno
         /// </summary>
         public bool RunAsFloating { get; set; }
+        /// <summary>
+        /// true pro použitelný prvek
+        /// </summary>
+        internal bool IsValid { get { return (!String.IsNullOrEmpty(ButtonText) || !String.IsNullOrEmpty(ButtonImage)); } }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return $"{GroupText}: {ButtonText}";
+        }
         #endregion
-        #region Static vyhledání typů formulářů, které nabízejí tuto informaci
+        #region Static vyhledání typů formulářů, které obsahují platnou static property RunFormInfo
         /// <summary>
         /// Metoda vrací pole obsahující typy formulářů a jejich instance <see cref="RunFormInfo"/>
         /// </summary>
         /// <returns></returns>
-        public static Tuple<Type, RunFormInfo>[] GetForms()
+        public static Tuple<Type, RunFormInfo>[] GetFormsWithProperty()
         {
             // var allAssemblies = System.AppDomain.CurrentDomain.GetAssemblies();
             var myAssembly = typeof(RunFormInfo).Assembly;
 
             var runFormInfos = new List<Tuple<Type, RunFormInfo>>();
-            DxComponent.GetTypes(myAssembly, t => ContainsRunFormInfo(t, runFormInfos));
+            DxComponent.GetTypes(myAssembly, t => ContainsRunFormInfoProperty(t, runFormInfos));
        
             return runFormInfos.ToArray();
         }
@@ -234,7 +254,7 @@ namespace TestDevExpress.Forms
         /// <param name="t"></param>
         /// <param name="runFormInfos"></param>
         /// <returns></returns>
-        private static bool ContainsRunFormInfo(Type t, List<Tuple<Type, RunFormInfo>> runFormInfos)
+        private static bool ContainsRunFormInfoProperty(Type t, List<Tuple<Type, RunFormInfo>> runFormInfos)
         {
             if (t is null) return false;
             if (!t.IsSubclassOf(typeof(System.Windows.Forms.Form))) return false;
@@ -251,10 +271,65 @@ namespace TestDevExpress.Forms
 
             return false;
         }
+        #endregion
+        #region Static vyhledání typů formulářů, které obsahují platné RunFormInfoAttribute
         /// <summary>
-        /// true pro použitelný prvek
+        /// Metoda vrací pole obsahující typy formulářů a instance <see cref="RunFormInfo"/>, pocházející z atributu třídy <see cref="RunFormInfoAttribute"/>
         /// </summary>
-        private bool IsValid { get { return (!String.IsNullOrEmpty(ButtonText) || !String.IsNullOrEmpty(ButtonImage)); } }
+        /// <returns></returns>
+        public static Tuple<Type, RunFormInfo>[] GetFormsWithAttribute()
+        {
+            // var allAssemblies = System.AppDomain.CurrentDomain.GetAssemblies();
+            var myAssembly = typeof(RunFormInfo).Assembly;
+
+            var runFormInfos = new List<Tuple<Type, RunFormInfo>>();
+            DxComponent.GetTypes(myAssembly, t => ContainsRunFormInfoAttribute(t, runFormInfos));
+
+            return runFormInfos.ToArray();
+        }
+        /// <summary>
+        /// Metoda, která zjistí, zda daný <see cref="Type"/> je/není formulář spustitelný z hlavního okna aplikace.
+        /// Side effectem metody je střádání spustitelných formulářů společně s informacemi <see cref="RunFormInfo"/>, které formuláře deklarují.
+        /// </summary>
+        /// <param name="type"></param>
+        /// <param name="runFormInfos"></param>
+        /// <returns></returns>
+        private static bool ContainsRunFormInfoAttribute(Type type, List<Tuple<Type, RunFormInfo>> runFormInfos)
+        {
+            if (type is null) return false;
+            if (!type.IsSubclassOf(typeof(System.Windows.Forms.Form))) return false;
+
+            var attrs = type.GetCustomAttributes(typeof(RunFormInfoAttribute), true);
+            if (attrs.Length == 0) return false;
+
+            RunFormInfo runFormInfo = RunFormInfo.CreateForAttribute(attrs[0] as RunFormInfoAttribute);
+            if (runFormInfo is null || !runFormInfo.IsValid) return false;
+            
+            runFormInfos.Add(new Tuple<Type, RunFormInfo>(type, runFormInfo));
+
+            return false;
+        }
+        /// <summary>
+        /// Vytvoří, naplní a vrátí instanci <see cref="RunFormInfo"/> z dodaného atributu <see cref="RunFormInfoAttribute"/>
+        /// </summary>
+        /// <param name="runFormInfoAttribute"></param>
+        /// <returns></returns>
+        private static RunFormInfo CreateForAttribute(RunFormInfoAttribute runFormInfoAttribute)
+        {
+            if (runFormInfoAttribute is null) return null;
+            RunFormInfo runFormInfo = new RunFormInfo();
+            runFormInfo.PageText = runFormInfoAttribute.PageText;
+            runFormInfo.PageOrder = runFormInfoAttribute.PageOrder;
+            runFormInfo.GroupText = runFormInfoAttribute.GroupText;
+            runFormInfo.GroupOrder = runFormInfoAttribute.GroupOrder;
+            runFormInfo.ButtonText = runFormInfoAttribute.ButtonText;
+            runFormInfo.ButtonOrder = runFormInfoAttribute.ButtonOrder;
+            runFormInfo.ButtonImage = runFormInfoAttribute.ButtonImage;
+            runFormInfo.ButtonToolTip = runFormInfoAttribute.ButtonToolTip;
+            runFormInfo.RunAsFloating = runFormInfoAttribute.RunAsFloating;
+            runFormInfo.RunAsModal = runFormInfoAttribute.RunAsModal;
+            return runFormInfo;
+        }
         #endregion
         #region Tvorba deklarace Ribbonu
         /// <summary>
@@ -327,4 +402,94 @@ namespace TestDevExpress.Forms
         }
         #endregion
     }
+    #region atribut RunFormInfoAttribute
+    /// <summary>
+    /// Dekorátor třídy, která chce mít svoji ikonu v Ribbonu v Main okně
+    /// </summary>
+    [AttributeUsage(AttributeTargets.Class)]
+    public class RunFormInfoAttribute : Attribute
+    {
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="pageText"></param>
+        /// <param name="pageOrder"></param>
+        /// <param name="groupText"></param>
+        /// <param name="groupOrder"></param>
+        /// <param name="buttonText"></param>
+        /// <param name="buttonOrder"></param>
+        /// <param name="buttonImage"></param>
+        /// <param name="buttonToolTip"></param>
+        /// <param name="runAsFloating"></param>
+        public RunFormInfoAttribute(string pageText = null, int pageOrder = 0, string groupText = null, int groupOrder = 0,
+            string buttonText = null, int buttonOrder = 0, string buttonImage = null,
+            string buttonToolTip = null, bool runAsFloating = false)
+        {
+            this.PageText = pageText;
+            this.PageOrder = pageOrder;
+            this.GroupText = groupText;
+            this.GroupOrder = groupOrder;
+            this.ButtonText = buttonText;
+            this.ButtonOrder = buttonOrder;
+            this.ButtonImage = buttonImage;
+            this.ButtonToolTip = buttonToolTip;
+            this.RunAsFloating = runAsFloating;
+        }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return $"{GroupText}: {ButtonText}";
+        }
+        /// <summary>
+        /// Název stránky, kde se bude button nacházet.
+        /// null = výchozí: "ZÁKLADNÍ"
+        /// </summary>
+        public string PageText { get; private set; }
+        /// <summary>
+        /// Pořadí stránky.
+        /// Když více prvků bude mít shodný text <see cref="PageText"/> a rozdélné pořadí <see cref="PageOrder"/>, pak se do výsledku akceptuje nejvyšší <see cref="PageOrder"/> v rámci stránky.
+        /// </summary>
+        public int PageOrder { get; private set; }
+        /// <summary>
+        /// Název grupy, kde se bude button nacházet.
+        /// null = výchozí = "FUNKCE"
+        /// </summary>
+        public string GroupText { get; private set; }
+        /// <summary>
+        /// Pořadí grupy ve stránce.
+        /// Když více prvků bude mít shodný text <see cref="GroupText"/> a rozdélné pořadí <see cref="GroupOrder"/>, pak se do výsledku akceptuje nejvyšší <see cref="GroupOrder"/> v rámci grupy.
+        /// </summary>
+        public int GroupOrder { get; private set; }
+        /// <summary>
+        /// Název buttonu = zobrazený text.
+        /// Prázdný text je přípustný, pokud je dána ikona <see cref="ButtonImage"/>.
+        /// </summary>
+        public string ButtonText { get; private set; }
+        /// <summary>
+        /// Pořadí tlačítka v rámci grupy.
+        /// </summary>
+        public int ButtonOrder { get; private set; }
+        /// <summary>
+        /// Ikona tlačítka.
+        /// Prázdná ikona je přípustná, pokud je dán text <see cref="ButtonText"/>.
+        /// </summary>
+        public string ButtonImage { get; private set; }
+        /// <summary>
+        /// ToolTip k buttonu
+        /// </summary>
+        public string ButtonToolTip { get; private set; }
+        /// <summary>
+        /// Spouštět jako Modální okno
+        /// </summary>
+        public bool RunAsModal { get; private set; }
+        /// <summary>
+        /// Spouštět jako Floating okno
+        /// </summary>
+        public bool RunAsFloating { get; private set; }
+    }
+    #endregion
+    #endregion
 }

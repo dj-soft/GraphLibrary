@@ -12,8 +12,15 @@ using TestDevExpress.Forms;
 
 namespace TestDevExpress.Components
 {
+    [RunFormInfo(groupText: "Testovací okna", buttonText: "Layout", buttonOrder: 20, buttonImage: "devav/layout/pages.svg", buttonToolTip: "Otevře okno pro testování layoutu (pod-okna)")]
     public class LayoutForm : DxRibbonForm
     {
+        /// <summary>
+        /// Deklarace tlačítka v <see cref="TestDevExpress.Forms.MainAppForm"/> pro spuštění tohoto formuláře
+        /// </summary>
+        public static RunFormInfo RunFormInfo { get { return new RunFormInfo() { ButtonText = "Layout", ButtonImage = "devav/layout/pages.svg", ButtonToolTip = "Otevře okno pro testování layoutu (pod-okna)", GroupText = "Testovací okna", ButtonOrder = 20 }; } }
+
+
         public LayoutForm() : this(false)
         { }
         public LayoutForm(bool useDevExpress)
@@ -27,10 +34,6 @@ namespace TestDevExpress.Components
             this._Timer.Tick += _Timer_Tick;
             this._Timer.Enabled = false;
         }
-        /// <summary>
-        /// Deklarace tlačítka v <see cref="TestDevExpress.Forms.MainAppForm"/> pro spuštění tohoto formuláře
-        /// </summary>
-        public static RunFormInfo RunFormInfo { get { return new RunFormInfo() { ButtonText = "Layout", ButtonImage = "devav/layout/pages.svg", ButtonToolTip = "Otevře okno pro testování layoutu (pod-okna)", GroupText = "Testovací okna", ButtonOrder = 20 }; } }
 
         #region MainContent
         protected override void DxMainContentPrepare()

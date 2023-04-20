@@ -18,8 +18,15 @@ namespace TestDevExpress.Forms
     /// <summary>
     /// Formulář pro měření spotřeby GDI handles
     /// </summary>
+    [RunFormInfo(groupText: "Tools", groupOrder: 100, buttonText: "Handles", buttonOrder: 210, buttonImage: "svgimages/dashboards/scatterchart.svg", buttonToolTip: "Otevře okno sledování GUI Handles")]
     public class HandleScanForm : DxControlForm
     {
+        /// <summary>
+        /// Deklarace tlačítka v <see cref="TestDevExpress.Forms.MainAppForm"/> pro spuštění tohoto formuláře
+        /// </summary>
+        public static RunFormInfo RunFormInfo { get { return new RunFormInfo() { ButtonText = "Handles", ButtonImage = "svgimages/dashboards/scatterchart.svg", ButtonToolTip = "Otevře okno sledování GUI Handles", GroupText = "Tools", ButtonOrder = 210, GroupOrder = 100 }; } }
+
+
         public HandleScanForm()
         {
             this.InitSplitContainer();
@@ -27,10 +34,6 @@ namespace TestDevExpress.Forms
             this.InitMemoryScan();
             DxComponent.LogClear();
         }
-        /// <summary>
-        /// Deklarace tlačítka v <see cref="TestDevExpress.Forms.MainAppForm"/> pro spuštění tohoto formuláře
-        /// </summary>
-        public static RunFormInfo RunFormInfo { get { return new RunFormInfo() { ButtonText = "Handles", ButtonImage = "svgimages/dashboards/scatterchart.svg", ButtonToolTip = "Otevře okno sledování GUI Handles", GroupText = "Tools", ButtonOrder = 210, GroupOrder = 100 }; } }
         //string resource3 = "devav/actions/printpreview.svg";
         //string resource4 = "svgimages/dashboards/scatterchart.svg";
 

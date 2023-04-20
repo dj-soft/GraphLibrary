@@ -12,8 +12,15 @@ namespace TestDevExpress.Forms
     /// <summary>
     /// Formulář pro testy komponenty <see cref="DxDataFormX"/>
     /// </summary>
+    [RunFormInfo(groupText: "Testovací okna", buttonText: "DataForm", buttonOrder: 10, buttonImage: "svgimages/spreadsheet/showtabularformpivottable.svg", buttonToolTip: "Otevře okno DataForm")]
     public class DataFormV2 : DxRibbonForm
     {
+        /// <summary>
+        /// Deklarace tlačítka v <see cref="MainAppForm"/> pro spuštění tohoto formuláře
+        /// </summary>
+        public static RunFormInfo RunFormInfo { get { return new RunFormInfo() { ButtonText = "DataForm", ButtonImage = "svgimages/spreadsheet/showtabularformpivottable.svg", GroupText = "Testovací okna", ButtonOrder = 10 }; } }
+
+
         #region Konstruktor a proměnné
         /// <summary>
         /// Konstruktor
@@ -81,10 +88,6 @@ namespace TestDevExpress.Forms
 
         private DxPanelControl _DxTestPanel;
         private DxMemoEdit _DxLogMemoEdit;
-        /// <summary>
-        /// Deklarace tlačítka v <see cref="MainAppForm"/> pro spuštění tohoto formuláře
-        /// </summary>
-        public static RunFormInfo RunFormInfo { get { return new RunFormInfo() { ButtonText = "DataForm", ButtonImage = "svgimages/spreadsheet/showtabularformpivottable.svg", GroupText = "Testovací okna", ButtonOrder = 10 } ; } }
         #endregion
         #region Ribbon - obsah a rozcestník
         protected override void DxRibbonPrepare()

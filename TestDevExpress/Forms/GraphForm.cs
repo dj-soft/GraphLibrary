@@ -17,8 +17,15 @@ namespace TestDevExpress.Forms
     /// <summary>
     /// Formulář pro hrátky s grafy
     /// </summary>
+    [RunFormInfo(groupText: "Testovací okna", buttonText: "Graf", buttonOrder: 50, buttonImage: "svgimages/dashboards/chart.svg", buttonToolTip: "Otevře okno s ukázkou grafů DevExpress včetně editoru")]
     public partial class GraphForm : DevExpress.XtraEditors.XtraForm //   MdiBaseForm
     {
+        /// <summary>
+        /// Deklarace tlačítka v <see cref="MainAppForm"/> pro spuštění tohoto formuláře
+        /// </summary>
+        public static RunFormInfo RunFormInfo { get { return new RunFormInfo() { ButtonText = "Graf", ButtonImage = "svgimages/dashboards/chart.svg", GroupText = "Testovací okna", ButtonOrder = 50 }; } }
+
+
         /// <summary>
         /// Formulář pro hrátky s grafy.
         /// Konstruktor
@@ -28,10 +35,6 @@ namespace TestDevExpress.Forms
             InitializeComponent();
             InitChart();
         }
-        /// <summary>
-        /// Deklarace tlačítka v <see cref="MainAppForm"/> pro spuštění tohoto formuláře
-        /// </summary>
-        public static RunFormInfo RunFormInfo { get { return new RunFormInfo() { ButtonText = "Graf", ButtonImage = "svgimages/dashboards/chart.svg", GroupText = "Testovací okna", ButtonOrder = 50 }; } }
         /// <summary>
         /// Inicializace grafu
         /// </summary>
