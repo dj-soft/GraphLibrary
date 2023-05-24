@@ -124,6 +124,20 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="media-flash-smartmedia_mount.ico" />
+    <None Include="pic\32px\media-floppy-3.5_mount-2-32.png" />
+    <None Include="pic\32px\document-revert-4-32.png" />
+    <None Include="pic\32px\drive-removable-media-usb-pendrive-32.png" />
+    <None Include="pic\32px\drive-raid-32.png" />
+    <None Include="pic\32px\edit-find-mail-32.png" />
+    <None Include="pic\32px\edit-find-7-32.png" />
+    <None Include="pic\32px\document-save-4-32.png" />
+    <None Include="pic\32px\document-preview-32.png" />
+    <None Include="pic\32px\media-playback-stop-2-32.png" />
+    <None Include="pic\32px\media-playback-start-2-32.png" />
+    <None Include="pic\32px\media-playback-pause-2-32.png" />
+    <None Include="pic\32px\view-refresh-4-32.png" />
+    <None Include="pic\32px\office-chart-pie-32.png" />
+    <None Include="pic\32px\view-refresh-32.png" />
     <None Include="pic\media-playback-stop-2.png" />
     <None Include="pic\media-playback-start-2.png" />
     <None Include="pic\media-playback-pause-2.png" />

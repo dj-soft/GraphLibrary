@@ -12,7 +12,10 @@ namespace DjSoft.Tools.SDCardTester
 {
     public partial class MainForm : Form
     {
-        #region Konstrukce a nativní eventhandlery
+        #region Konstrukce a inicializace
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
         public MainForm()
         {
             InitializeComponent();
@@ -23,6 +26,35 @@ namespace DjSoft.Tools.SDCardTester
             InitEvents();
             ShowControls(ActionState.Dialog, true);
         }
+        private void InitContent()
+        {
+            this.InitDrives();
+        }
+        private void InitEvents()
+        {
+            this.ToolDriveCombo.SelectedIndexChanged += ToolDriveCombo_SelectedIndexChanged;
+            this.ToolDriveTypeFlashButton.Click += ToolDriveTypeFlashButton_Click;
+            this.ToolDriveTypeAllButton.Click += ToolDriveTypeAllButton_Click;
+            this.ToolDriveRefreshButton.Click += ToolDriveRefreshButton_Click;
+
+            this.ToolActionAnalyseButton.Click += ToolActionAnalyseButton_Click;
+            this.ToolActionWriteDataButton.Click += ToolActionWriteDataButton_Click;
+            this.ToolActionReadDataButton.Click += ToolActionReadDataButton_Click;
+            this.ToolActionReadAnyButton.Click += ToolActionReadAnyButton_Click;
+
+            this.ToolFlowControlPauseButton.Click += ToolFlowControlPauseButton_Click;
+            this.ToolFlowControlStopButton.Click += ToolFlowControlStopButton_Click;
+            this.ToolFlowControlRunButton.Click += ToolFlowControlRunButton_Click;
+
+            this.LinearMapControl.ActiveItemChanged += VisualPanel_ActiveItemChanged;
+            this.ClientSizeChanged += _ClientSizeChanged;
+            this.DoLayout();
+        }
+        #endregion
+        #region Windows Taskbar Progress
+        /// <summary>
+        /// Inicializace komponenty pro zobrazení progresu v Taskbaru Windows
+        /// </summary>
         private void InitializeProgress()
         {
             __TaskProgress = new TaskProgress(this);
@@ -41,36 +73,45 @@ namespace DjSoft.Tools.SDCardTester
             __TaskProgress.FormWndProc(ref m);
             base.WndProc(ref m);
         }
+        /// <summary>
+        /// Hodnota progresu.
+        /// Musí být v rozsahu 1 a více.
+        /// Pokud bude setována hodnota nižší, než je aktuální <see cref="_TaskProgressValue"/>, tak bude <see cref="_TaskProgressValue"/> snížena na toto nově zadané maximum.
+        /// </summary>
+        private int _TaskProgressMaximum { get { return __TaskProgress.ProgressMaximum; } set { __TaskProgress.ProgressMaximum = value; } }
+        /// <summary>
+        /// Hodnota progresu.
+        /// Musí být v rozsahu 0 až <see cref="ProgressMaximum"/>.
+        /// </summary>
+        private int _TaskProgressValue { get { return __TaskProgress.ProgressValue; } set { __TaskProgress.ProgressValue = value; } }
+        /// <summary>
+        /// Status progresu = odpovídá barvě
+        /// </summary>
+        private ThumbnailProgressState _TaskProgressState { get { return __TaskProgress.ProgressState; } set { __TaskProgress.ProgressState = value; } }
+        /// <summary>
+        /// Komponenta pro zobrazení progresu v Taskbaru Windows
+        /// </summary>
         private TaskProgress __TaskProgress;
-        private void InitContent()
-        {
-            this.OnlyRemovableCheck.Checked = true;
-            int driveCount = FillDrives();
-            if (driveCount == 0)
-            {
-                this.OnlyRemovableCheck.Checked = false;
-                driveCount = FillDrives();
-            }
-        }
-        private void InitEvents()
-        {
-            this.DriveCombo.SelectedIndexChanged += DriveCombo_SelectedIndexChanged;
-            this.OnlyRemovableCheck.CheckedChanged += OnlyRemovableCheck_CheckedChanged;
-            this.LinearMapControl.ActiveItemChanged += VisualPanel_ActiveItemChanged;
-            this.ClientSizeChanged += _ClientSizeChanged;
-            this.DoLayout();
-        }
-
+        #endregion
+        #region Layout
+        /// <summary>
+        /// Změna velikosti upraví Layout
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void _ClientSizeChanged(object sender, EventArgs e)
         {
             this.DoLayout();
         }
+        /// <summary>
+        /// Upraví Layout formu
+        /// </summary>
         private void DoLayout()
         {
-            if (this.UserPanel is null || this.DrivesPanel is null || this.DriveInfoPanel is null || this.ResultsInfoPanel is null || this.CommandsPanel is null || this.RunPauseStopPanel is null) return;
+            if (this.UserPanel is null || this.DriveInfoPanel is null || this.ResultsInfoPanel is null) return;
 
             // Layout se týká pouze levého panelu: this.UserPanel
-            // Obsahuje prvky: DrivesPanel, DriveInfoPanel, CommandsPanel, RunPauseStopPanel, ResultsInfoPanel
+            // Obsahuje prvky: DriveInfoPanel, ResultsInfoPanel
             var clientSize = this.UserPanel.ClientSize;
             int width = clientSize.Width - 6;
             int height = clientSize.Height - 6;
@@ -78,82 +119,12 @@ namespace DjSoft.Tools.SDCardTester
             int my = 3;
             int x = mx;
             int y = my;
-            int bottom = height - my;
-            int commandHeight = this.CommandsPanel.Height;
-            int commandY = bottom - commandHeight;
 
-            this.DrivesPanel.Bounds = new Rectangle(x, y, width, 86);
-            y = this.DrivesPanel.Bounds.Bottom + 3;
-
-            int centerHeight = commandY - y - my;
-            this.DriveInfoPanel.Bounds = new Rectangle(x, y, width, centerHeight);
-            this.ResultsInfoPanel.Bounds = new Rectangle(x, y, width, centerHeight);
-
-            this.CommandsPanel.Bounds = new Rectangle(x, commandY, width, commandHeight);
-
-            int runPauseStopHeight = this.RunPauseStopPanel.Bounds.Height;
-            int runPauseStopY = bottom - runPauseStopHeight;
-            this.RunPauseStopPanel.Bounds = new Rectangle(x, runPauseStopY, width, runPauseStopHeight);
-        }
-        private void VisualPanel_ActiveItemChanged(object sender, EventArgs e)
-        {
-            switch (CurrentDataPanelState)
-            {
-                case ActionState.AnalyseContent:
-                    AnalyseActiveItemChanged(this.LinearMapControl.ActiveItem);
-                    break;
-                default:
-                    break;
-            }
-        }
-        private void DriveCombo_SelectedIndexChanged(object sender, EventArgs e)
-        {
-            ShowControls(ActionState.Dialog, true);
-            ShowProperties();
-        }
-        private void OnlyRemovableCheck_CheckedChanged(object sender, EventArgs e)
-        {
-            ShowControls(ActionState.Dialog, true);
-            FillDrives();
-        }
-        private void RefreshButton_Click(object sender, EventArgs e)
-        {
-            FillDrives();
-            //ShowProperties();
-            DriveCombo.Focus();
-        }
-        private void AnalyseContentButton_Click(object sender, EventArgs e)
-        {
-            RunDriveAnalyse();
-        }
-        private void TestSaveButton_Click(object sender, EventArgs e)
-        {
-            RunDriveTestSave();
-        }
-        private void TestReadButton_Click(object sender, EventArgs e)
-        {
-            RunDriveTestRead();
-            ShowControls(ActionState.TestRead, true);
-        }
-        private void RunPauseStopPanel_StateChanged(object sender, EventArgs e)
-        {
-            var state = this.RunPauseStopPanel.State;
-            switch (CurrentState)
-            {
-                case ActionState.AnalyseContent:
-                    RunPauseStopDriveAnalyse(state);
-                    break;
-                case ActionState.TestSave:
-                case ActionState.TestRead:
-                    RunPauseStopDriveTest(state);
-                    break;
-                default:
-                    ShowControls(ActionState.Dialog, false);
-                    break;
-            }
+            this.DriveInfoPanel.Bounds = new Rectangle(x, y, width, height);
+            this.ResultsInfoPanel.Bounds = new Rectangle(x, y, width, height);
         }
         #endregion
-        #region Zobrazení controlů v okně podle aktuálního stavu
+        #region Aktuální stav okna a zobrazení odpovídajících controlů podle tohoto aktuálního stavu
         /// <summary>
         /// Zobrazí controly vhodné pro daný stav okna.
         /// Lze volat z Working threadů.
@@ -165,12 +136,15 @@ namespace DjSoft.Tools.SDCardTester
                 this.BeginInvoke(new Action<ActionState, bool>(ShowControls), state, withDataPanel);
             else
             {
-                bool currentWorking = (CurrentState == ActionState.AnalyseContent || CurrentState == ActionState.TestSave || CurrentState == ActionState.TestRead);
+                bool currentWorking = (CurrentState == ActionState.AnalyseContent || CurrentState == ActionState.TestSave || CurrentState == ActionState.TestRead || CurrentState == ActionState.ContentRead);
+                bool isDialog = (state == ActionState.Dialog);
                 bool nextWorking = (state == ActionState.AnalyseContent || state == ActionState.TestSave || state == ActionState.TestRead);
 
-                DriveCombo.Enabled = (state == ActionState.Dialog);
-                OnlyRemovableCheck.Visible = (state == ActionState.Dialog);
-                RefreshButton.Visible = (state == ActionState.Dialog);
+                ToolDriveCombo.Enabled = isDialog;
+                ToolDriveTypeButton.Enabled = isDialog;
+                ToolDriveTypeFlashButton.Enabled = isDialog;
+                ToolDriveTypeAllButton.Enabled = isDialog;
+                ToolDriveRefreshButton.Enabled = isDialog;
 
                 if (withDataPanel)
                 {
@@ -179,18 +153,38 @@ namespace DjSoft.Tools.SDCardTester
                     CurrentDataPanelState = state;
                 }
 
-                CommandsPanel.Visible = (state == ActionState.Dialog);
-                RunPauseStopPanel.Visible = nextWorking;
+                this.ToolActionAnalyseButton.Enabled = isDialog;
+                this.ToolActionWriteDataButton.Enabled = isDialog;
+                this.ToolActionReadDataButton.Enabled = isDialog;
+                this.ToolActionReadAnyButton.Enabled = isDialog;
+
+                this.ToolFlowControlPauseButton.Visible = nextWorking;
+                this.ToolFlowControlStopButton.Visible = nextWorking;
+                this.ToolFlowControlRunButton.Visible = nextWorking;
+                this.ToolFlowControlSeparator.Visible = nextWorking;
+
                 if (!currentWorking && nextWorking)
-                    RunPauseStopPanel.State = RunState.Run;
+                    this.RunState = RunState.Run;
 
                 bool currentIsTest = (CurrentState == ActionState.AnalyseContent || CurrentState == ActionState.TestSave || CurrentState == ActionState.TestRead);
                 bool nextIsTest = (state == ActionState.TestSave || state == ActionState.TestRead);
-                __TaskProgress.ProgressState = (nextIsTest ? ThumbnailProgressState.Normal : ThumbnailProgressState.NoProgress);   // Tam se hlídá změna interně!
+                _TaskProgressState = (nextIsTest ? ThumbnailProgressState.Normal : ThumbnailProgressState.NoProgress);   // Tam se hlídá změna interně!
                 if (currentIsTest && !nextIsTest)
                     this.AppTitleTextCurrent = this.__AppTitleTextStandard;
 
                 CurrentState = state;
+            }
+        }
+        protected void ShowFlowButtons(RunState runState)
+        {
+            if (this.InvokeRequired)
+                this.BeginInvoke(new Action<RunState>(ShowFlowButtons), runState);
+            else
+            {
+                this.ToolFlowControlPauseButton.Enabled = (runState == RunState.Run);
+                this.ToolFlowControlStopButton.Enabled = (runState == RunState.Run || runState == RunState.Pause);
+                this.ToolFlowControlRunButton.Enabled = (runState == RunState.Pause);
+
             }
         }
         /// <summary>
@@ -206,10 +200,26 @@ namespace DjSoft.Tools.SDCardTester
         /// </summary>
         protected enum ActionState
         {
+            /// <summary>
+            /// Stav "Dialog"
+            /// </summary>
             Dialog,
+            /// <summary>
+            /// Analyzuje se obsah disku
+            /// </summary>
             AnalyseContent,
+            /// <summary>
+            /// Zapisují se testovací data
+            /// </summary>
             TestSave,
-            TestRead
+            /// <summary>
+            /// Čtou se testovací data
+            /// </summary>
+            TestRead,
+            /// <summary>
+            /// Čtou se jakákoli data
+            /// </summary>
+            ContentRead
         }
         /// <summary>
         /// Smaže prvky <see cref="WorkingResultControl"/> z panelu informací <see cref="ResultsInfoPanel"/>
@@ -227,83 +237,29 @@ namespace DjSoft.Tools.SDCardTester
             }
         }
         #endregion
-        #region Načtení a zobrazení seznamu Drives a detailních vlastností o zvoleném disku, včetně mapy
-        /// <summary>
-        /// Aktuálně vybraný disk
-        /// </summary>
-        public System.IO.DriveInfo SelectedDrive
-        {
-            get
-            {
-                TextDataInfo selectedItem = this.DriveCombo.SelectedItem as TextDataInfo;
-                return selectedItem?.Data as System.IO.DriveInfo;
-            }
-            set
-            {
-                string name = value?.Name;
-                object selectedItem = null;
-                foreach (var item in this.DriveCombo.Items)
-                {
-                    if (item is TextDataInfo info && info.Data is System.IO.DriveInfo driveInfo && String.Equals(driveInfo.Name, name))
-                    {
-                        selectedItem = item;
-                        break;
-                    }
-                }
-                this.DriveCombo.SelectedItem = selectedItem;
-            }
-        }
-        /// <summary>
-        /// Naplní seznam Drives
-        /// </summary>
-        /// <returns></returns>
-        private int FillDrives()
-        {
-            int driveCount = 0;
-            bool onlyRemovable = this.OnlyRemovableCheck.Checked;
-            decimal oneKB = 1024m;
-            decimal oneMB = oneKB * oneKB;
-            decimal oneGB = oneKB * oneKB * oneKB;
-            string selectedName = SelectedDrive?.Name;
-            TextDataInfo selectedItem = null;
-
-            this.DriveCombo.Items.Clear();
-            var drives = System.IO.DriveInfo.GetDrives();
-            foreach (var drive in drives)
-            {
-                if (!drive.IsReady) continue;
-                if (onlyRemovable  && drive.DriveType!= System.IO.DriveType.Removable) continue;
-
-                string name = drive.Name;
-                string label = drive.VolumeLabel;
-                string total = Math.Round((decimal)drive.TotalSize / oneGB, 1).ToString("### ##0.0") + " GB";
-                string text = $"{name}    '{label}'    [{total}]";
-                TextDataInfo info = new TextDataInfo() { Text = text, Data = drive };
-                this.DriveCombo.Items.Add(info);
-                if (selectedItem is null || String.Equals(drive.Name, selectedName))
-                    selectedItem = info;
-                driveCount++;
-            }
-            this.DriveCombo.SelectedItem = selectedItem;
-            return driveCount;
-        }
-        /// <summary>
-        /// Načte a zobrazí vlastnosti aktuálně vybraného <see cref="SelectedDrive"/>, provede aktuální načtení dat
-        /// </summary>
-        private void ShowProperties()
-        {
-            var selectedDrive = SelectedDrive;
-            if (selectedDrive != null) selectedDrive = new System.IO.DriveInfo(selectedDrive.Name);     // = refresh
-
-            this.DriveInfoPanel.ShowProperties(selectedDrive);
-            VisualMapPanelFillBasicData(selectedDrive);
-        }
+        #region Spolupráce s vizualizačním panelem
         /// <summary>
         /// Inicializace vizuálního controlu
         /// </summary>
         private void VisualMapPanelInit()
         {
             Skin.Palette = Skin.PaletteType.Light;
+        }
+        /// <summary>
+        /// Po změně aktivního prvku ve vizuálním panelu
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void VisualPanel_ActiveItemChanged(object sender, EventArgs e)
+        {
+            switch (CurrentDataPanelState)
+            {
+                case ActionState.AnalyseContent:
+                    AnalyseActiveItemChanged(this.LinearMapControl.ActiveItem);
+                    break;
+                default:
+                    break;
+            }
         }
         /// <summary>
         /// Do mapy <see cref="LinearMapControl"/> načte a vepíše základní informace o daném disku <paramref name="drive"/> (velikost, obsazenost, testovací data).
@@ -373,7 +329,200 @@ namespace DjSoft.Tools.SDCardTester
             return 5;
         }
         #endregion
-        #region Analýza stavu disku
+        #region Obsluha Toolbaru - volba Drive a jeho Refresh, DriveType
+        /// <summary>
+        /// Inicializace dat pro zobrazení disků
+        /// </summary>
+        private void InitDrives()
+        {
+            this._SetIsOnlyRemovable(true, false, false);
+            int driveCount = FillDrives();
+            if (driveCount == 0)
+            {
+                this._SetIsOnlyRemovable(false, false, false);
+                driveCount = FillDrives();
+            }
+            this._SetIsOnlyRemovable(this.IsOnlyRemovable, true, true);
+        }
+        /// <summary>
+        /// Jsou zobrazeny pouze vyjímatelné disky?
+        /// </summary>
+        public bool IsOnlyRemovable
+        {
+            get { return __IsOnlyRemovable; }
+            set { _SetIsOnlyRemovable(value, true, true); }
+        }
+        /// <summary>
+        /// Nastaví hodnotu <see cref="IsOnlyRemovable"/> a promítne ji volitelně do Image v buttonu a do obsahu Combo
+        /// </summary>
+        /// <param name="isOnlyRemovable"></param>
+        /// <param name="refreshDriveTypeButton"></param>
+        /// <param name="runFillDrives"></param>
+        private void _SetIsOnlyRemovable(bool isOnlyRemovable, bool refreshDriveTypeButton, bool runFillDrives)
+        {
+            __IsOnlyRemovable = isOnlyRemovable;
+            if (refreshDriveTypeButton)
+            {
+                this.ToolDriveTypeButton.Image = (isOnlyRemovable ? _ImageDriveTypeFlash : _ImageDriveTypeAll);
+                this.ToolDriveTypeButton.ToolTipText = (isOnlyRemovable ? "Nabízí se pouze vyměnitelné jednotky." : "Nabízí se všechny dostupné jednotky.");
+                this.ToolDriveTypeFlashButton.Font = (isOnlyRemovable ? _ToolFontBold : _ToolFontRegular);
+                this.ToolDriveTypeAllButton.Font = (!isOnlyRemovable ? _ToolFontBold : _ToolFontRegular);
+            }
+            if (runFillDrives)
+                FillDrives();
+        }
+        private Font _ToolFontBold
+        {
+            get
+            {
+                if (__ToolFontBold is null)
+                    __ToolFontBold = new Font(this.ToolDriveTypeButton.Font, FontStyle.Bold);
+                return __ToolFontBold;
+            }
+        }
+        private Font __ToolFontBold;
+        private Font _ToolFontRegular
+        {
+            get
+            {
+                if (__ToolFontRegular is null)
+                    __ToolFontRegular = new Font(this.ToolDriveTypeButton.Font, FontStyle.Regular);
+                return __ToolFontRegular;
+            }
+        }
+        private Font __ToolFontRegular;
+
+        /// <summary>
+        /// Po změně vybraného disku
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void ToolDriveCombo_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            ShowControls(ActionState.Dialog, true);
+            ShowProperties();
+        }
+        /// <summary>
+        /// Po kliknutí na Toolbar "Zobrazit pouze vyměnitelné disky"
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void ToolDriveTypeFlashButton_Click(object sender, EventArgs e)
+        {
+            ShowControls(ActionState.Dialog, true);
+            this.IsOnlyRemovable = true;
+        }
+        /// <summary>
+        /// Po kliknutí na Toolbar "Zobrazit všechny typy disků"
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void ToolDriveTypeAllButton_Click(object sender, EventArgs e)
+        {
+            ShowControls(ActionState.Dialog, true);
+            this.IsOnlyRemovable = false;
+        }
+        /// <summary>
+        /// Po kliknutí na toolbar "Refresh disků"
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void ToolDriveRefreshButton_Click(object sender, EventArgs e)
+        {
+            FillDrives();
+            //ShowProperties();
+        }
+        /// <summary>Image odpovídající typu disku Only Removable</summary>
+        private Image _ImageDriveTypeFlash { get { return this.ToolDriveTypeFlashButton.Image; } }
+        /// <summary>Image odpovídající typu disku All drives</summary>
+        private Image _ImageDriveTypeAll { get { return this.ToolDriveTypeAllButton.Image; } }
+        /// <summary>Hodnota pro <see cref="IsOnlyRemovable"/></summary>
+        private bool __IsOnlyRemovable;
+        #endregion
+        #region Načtení a zobrazení seznamu Drives a detailních vlastností o zvoleném disku, včetně mapy
+        /// <summary>
+        /// Aktuálně vybraný disk
+        /// </summary>
+        public System.IO.DriveInfo SelectedDrive
+        {
+            get
+            {
+                TextDataInfo selectedItem = this.ToolDriveCombo.SelectedItem as TextDataInfo;
+                return selectedItem?.Data as System.IO.DriveInfo;
+            }
+            set
+            {
+                string name = value?.Name;
+                object selectedItem = null;
+                foreach (var item in this.ToolDriveCombo.Items)
+                {
+                    if (item is TextDataInfo info && info.Data is System.IO.DriveInfo driveInfo && String.Equals(driveInfo.Name, name))
+                    {
+                        selectedItem = item;
+                        break;
+                    }
+                }
+                this.ToolDriveCombo.SelectedItem = selectedItem;
+            }
+        }
+        /// <summary>
+        /// Naplní seznam Drives
+        /// </summary>
+        /// <returns></returns>
+        private int FillDrives()
+        {
+            int driveCount = 0;
+            bool onlyRemovable = this.IsOnlyRemovable;
+            decimal oneKB = 1024m;
+            decimal oneMB = oneKB * oneKB;
+            decimal oneGB = oneKB * oneKB * oneKB;
+            string selectedName = SelectedDrive?.Name;
+            TextDataInfo selectedItem = null;
+
+            var driveCombo = this.ToolDriveCombo;
+            driveCombo.Items.Clear();
+            var drives = System.IO.DriveInfo.GetDrives();
+            foreach (var drive in drives)
+            {
+                if (!drive.IsReady) continue;
+                if (onlyRemovable && drive.DriveType != System.IO.DriveType.Removable) continue;
+
+                string name = drive.Name;
+                string label = drive.VolumeLabel;
+                string total = Math.Round((decimal)drive.TotalSize / oneGB, 1).ToString("### ##0.0") + " GB";
+                string text = $"{name}    '{label}'    [{total}]";
+                TextDataInfo info = new TextDataInfo() { Text = text, Data = drive };
+                driveCombo.Items.Add(info);
+                if (selectedItem is null || String.Equals(drive.Name, selectedName))
+                    selectedItem = info;
+                driveCount++;
+            }
+            driveCombo.SelectedItem = selectedItem;
+            return driveCount;
+        }
+        /// <summary>
+        /// Načte a zobrazí vlastnosti aktuálně vybraného <see cref="SelectedDrive"/>, provede aktuální načtení dat
+        /// </summary>
+        private void ShowProperties()
+        {
+            var selectedDrive = SelectedDrive;
+            if (selectedDrive != null) selectedDrive = new System.IO.DriveInfo(selectedDrive.Name);     // = refresh
+
+            this.DriveInfoPanel.ShowProperties(selectedDrive);
+            VisualMapPanelFillBasicData(selectedDrive);
+        }
+        #endregion
+        #region Akce: Analýza obsahu disku
+        /// <summary>
+        /// Kliknutí na button Analýza stavu disku
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void ToolActionAnalyseButton_Click(object sender, EventArgs e)
+        {
+            // media-floppy-3.5_mount-2-32.png
+            RunDriveAnalyse();
+        }
         /// <summary>
         /// Požadavek na start analýzy
         /// </summary>
@@ -500,7 +649,7 @@ namespace DjSoft.Tools.SDCardTester
             var activeGroup = activeItem?.Data as DriveAnalyser.FileGroup;
             var lastActivePanel = _DriveAnalyserGroups?.FirstOrDefault(t => t.Item2.IsActive)?.Item2;
             var currActivePanel = _DriveAnalyserGroups?.FirstOrDefault(t => Object.ReferenceEquals(t.Item1, activeGroup))?.Item2;
-            
+
             if (lastActivePanel != null && (currActivePanel is null || (!Object.ReferenceEquals(lastActivePanel, currActivePanel))))
             {
                 lastActivePanel.IsActive = false;
@@ -523,15 +672,39 @@ namespace DjSoft.Tools.SDCardTester
         /// </summary>
         private List<Tuple<DriveAnalyser.FileGroup, DriveAnalyseGroupControl>> _DriveAnalyserGroups;
         #endregion
-        #region Vepsání testovacích dat do volného prostoru daného disku a jejich čtení a ověření
+        #region Akce: Zápis a čtení testovacích dat na disk
         /// <summary>
-        /// Požadavek na start zápisu dat na disk
+        /// Požadavek na start zápisu testovacích dat na disk
         /// </summary>
-        private void RunDriveTestSave() { RunDriveTest(ActionState.TestSave); }
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void ToolActionWriteDataButton_Click(object sender, EventArgs e)
+        {
+            // image : media-floppy-3.5_mount-2-32         document_save_4_32
+            RunDriveTest(ActionState.TestSave);
+            ShowControls(ActionState.TestSave, true);
+        }
         /// <summary>
-        /// Požadavek na start čtení dat z disku
+        /// Požadavek na start čtení testovacích dat z disku
         /// </summary>
-        private void RunDriveTestRead() { RunDriveTest(ActionState.TestRead); }
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void ToolActionReadDataButton_Click(object sender, EventArgs e)
+        {
+            // image : document-revert-4-32                document_preview_32
+            RunDriveTest(ActionState.TestRead);
+            ShowControls(ActionState.TestRead, true);
+        }
+        /// <summary>
+        /// Požadavek na start čtení jakýchkoli dat z disku
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void ToolActionReadAnyButton_Click(object sender, EventArgs e)
+        {
+            RunDriveTest(ActionState.ContentRead);
+            ShowControls(ActionState.ContentRead, true);
+        }
         /// <summary>
         /// Požadavek na start zápisu / čtení dat z disku
         /// </summary>
@@ -647,12 +820,12 @@ namespace DjSoft.Tools.SDCardTester
 
                 decimal progressRatio = driveTester.ProgressRatio;
 
-                int value = (int)Math.Round(progressRatio * (decimal)__TaskProgress.ProgressMaximum, 0);
+                int value = (int)Math.Round(progressRatio * (decimal)_TaskProgressMaximum, 0);
                 if (value == 0 && driveTester.ProgressRatio > 0m) value = 1;
-                __TaskProgress.ProgressValue = value;
+                _TaskProgressValue = value;
 
                 bool hasError = (driveTester.TimeInfoSaveShort.ErrorBytes > 0 || driveTester.TimeInfoSaveLong.ErrorBytes > 0 || driveTester.TimeInfoReadShort.ErrorBytes > 0 || driveTester.TimeInfoReadLong.ErrorBytes > 0);
-                __TaskProgress.ProgressState = (!hasError ? ThumbnailProgressState.Normal : ThumbnailProgressState.Error);
+                _TaskProgressState = (!hasError ? ThumbnailProgressState.Normal : ThumbnailProgressState.Error);
 
                 // Titulek aplikace = "SD Card tester H: 58%"
                 string drive = driveTester.Drive.Name.Substring(0, 1).ToUpper();
@@ -703,6 +876,51 @@ namespace DjSoft.Tools.SDCardTester
         /// </summary>
         private DriveTester _DriveTester;
         private Dictionary<DriveTester.TestPhase, DriveTestTimePhaseControl> _DriveTesterPhases;
+        #endregion
+        #region Flow: řízení běhu akcí (Pauza - Stop - Run)
+        protected RunState RunState 
+        { 
+            get { return __RunState; } 
+            set  { _SetRunState(value, true, true); }
+        }
+        private void _SetRunState(RunState runState, bool withGui, bool withActions)
+        {
+            __RunState = runState;
+
+            if (withGui)
+                this.ShowFlowButtons(runState);
+
+            if (withActions)
+            {
+                switch (CurrentState)
+                {
+                    case ActionState.AnalyseContent:
+                        RunPauseStopDriveAnalyse(runState);
+                        break;
+                    case ActionState.TestSave:
+                    case ActionState.TestRead:
+                    case ActionState.ContentRead:
+                        RunPauseStopDriveTest(runState);
+                        break;
+                    default:
+                        ShowControls(ActionState.Dialog, false);
+                        break;
+                }
+            }
+        }
+        private RunState __RunState;
+        private void ToolFlowControlPauseButton_Click(object sender, EventArgs e)
+        {
+            RunState = RunState.Pause;
+        }
+        private void ToolFlowControlStopButton_Click(object sender, EventArgs e)
+        {
+            RunState = RunState.Stop;
+        }
+        private void ToolFlowControlRunButton_Click(object sender, EventArgs e)
+        {
+            RunState = RunState.Run;
+        }
         #endregion
     }
 }

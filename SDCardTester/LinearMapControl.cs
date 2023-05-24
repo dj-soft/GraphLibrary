@@ -109,13 +109,26 @@ namespace DjSoft.Tools.SDCardTester
         /// </summary>
         public Item ActiveItem { get { return _ActiveItem; } }
         private Item _ActiveItem;
+        /// <summary>
+        /// Uloží dodaný prvek jako aktivní = do <see cref="ActiveItem"/>.
+        /// Vyvolá metodu <see cref="OnActiveItemChanged"/> a událost <see cref="ActiveItemChanged"/>.
+        /// </summary>
+        /// <param name="activeItem"></param>
         private void CallActiveItemChanged(Item activeItem)
         {
             _ActiveItem = activeItem;
             OnActiveItemChanged();
             ActiveItemChanged?.Invoke(this, EventArgs.Empty);
         }
+        /// <summary>
+        /// Událost, když uživatel pohne myší nad jiný typ prvku, než kde byl dosud.
+        /// Aktuální prvek pod myší je k dispozici v <see cref="ActiveItem"/>.
+        /// </summary>
         protected virtual void OnActiveItemChanged() { }
+        /// <summary>
+        /// Událost, když uživatel pohne myší nad jiný typ prvku, než kde byl dosud.
+        /// Aktuální prvek pod myší je k dispozici v <see cref="ActiveItem"/>.
+        /// </summary>
         public event EventHandler ActiveItemChanged;
         #endregion
         #region Refresh a vykreslení controlu

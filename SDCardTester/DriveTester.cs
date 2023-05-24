@@ -399,7 +399,7 @@ namespace DjSoft.Tools.SDCardTester
         /// </summary>
         protected bool DoTestSave;
         #endregion
-        #region Vlastní test čtení
+        #region Vlastní test čtení testovacích dat
         /// <summary>
         /// Fyzický test čtení
         /// </summary>

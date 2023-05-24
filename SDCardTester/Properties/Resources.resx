@@ -118,40 +118,85 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <assembly alias="System.Windows.Forms" name="System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" />
-  <data name="view-refresh-3" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\pic\view-refresh-3.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="disksearch" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\pic\disksearch.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="view-refresh" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\pic\view-refresh.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="view-refresh-4" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\pic\view-refresh-4.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  <data name="media_playback_stop_2" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\pic\media-playback-stop-2.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
   <data name="office-chart-pie" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\pic\office-chart-pie.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
-  <data name="document-revert-4" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\pic\document-revert-4.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="road-sign-us-stop" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\pic\road-sign-us-stop.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="media-floppy-3.5_mount-2" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\pic\media-floppy-3.5_mount-2.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  <data name="media_playback_pause_2" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\pic\media-playback-pause-2.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
   <data name="dialog_ok_apply_2_16" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\pic\dialog-ok-apply-2-16.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
-  <data name="media_playback_pause_2" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\pic\media-playback-pause-2.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  <data name="office-chart-pie-32" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\pic\32px\office-chart-pie-32.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="media-playback-start-2-32" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\pic\32px\media-playback-start-2-32.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit-find-mail-32" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\pic\32px\edit-find-mail-32.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="view-refresh-4" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\pic\view-refresh-4.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="view-refresh" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\pic\view-refresh.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="media-floppy-3.5_mount-2" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\pic\media-floppy-3.5_mount-2.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="document-preview-32" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\pic\32px\document-preview-32.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="view-refresh-32" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\pic\32px\view-refresh-32.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="edit-find-7-32" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\pic\32px\edit-find-7-32.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="media-playback-pause-2-32" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\pic\32px\media-playback-pause-2-32.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="road-sign-us-stop" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\pic\road-sign-us-stop.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="view-refresh-321" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\pic\32px\view-refresh-32.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="document-revert-4" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\pic\document-revert-4.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="view-refresh-4-32" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\pic\32px\view-refresh-4-32.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="disksearch" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\pic\disksearch.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
   <data name="media_playback_start_2" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\pic\media-playback-start-2.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
-  <data name="media_playback_stop_2" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\pic\media-playback-stop-2.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  <data name="view-refresh-3" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\pic\view-refresh-3.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="media-playback-stop-2-32" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\pic\32px\media-playback-stop-2-32.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="document-save-4-32" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\pic\32px\document-save-4-32.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="drive-raid-32" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\pic\32px\drive-raid-32.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="drive-removable-media-usb-pendrive-32" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\pic\32px\drive-removable-media-usb-pendrive-32.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="document_revert_4_32" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\pic\32px\document-revert-4-32.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="media_floppy_3_5_mount_2_32" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\pic\32px\media-floppy-3.5_mount-2-32.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
 </root>

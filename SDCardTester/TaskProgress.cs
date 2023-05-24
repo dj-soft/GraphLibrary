@@ -135,7 +135,7 @@ namespace DjSoft.Tools.SDCardTester
         }
         /// <summary>
         /// Hodnota progresu.
-        /// Musí být v rozsahu 0 až 1.
+        /// Musí být v rozsahu 1 a více.
         /// Pokud bude setována hodnota nižší, než je aktuální <see cref="ProgressValue"/>, tak bude <see cref="ProgressValue"/> snížena na toto nově zadané maximum.
         /// </summary>
         public int ProgressMaximum

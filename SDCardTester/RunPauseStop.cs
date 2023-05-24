@@ -196,6 +196,9 @@ namespace DjSoft.Tools.SDCardTester
         /// </summary>
         public event EventHandler StateChanged;
     }
+    /// <summary>
+    /// Stav běhu akcí (Run - Pause - Stop)
+    /// </summary>
     public enum RunState
     {
         None,

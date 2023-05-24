@@ -83,9 +83,79 @@ namespace DjSoft.Tools.SDCardTester.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap document_preview_32 {
+            get {
+                object obj = ResourceManager.GetObject("document-preview-32", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap document_revert_4 {
             get {
                 object obj = ResourceManager.GetObject("document-revert-4", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap document_revert_4_32 {
+            get {
+                object obj = ResourceManager.GetObject("document_revert_4_32", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap document_save_4_32 {
+            get {
+                object obj = ResourceManager.GetObject("document-save-4-32", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap drive_raid_32 {
+            get {
+                object obj = ResourceManager.GetObject("drive-raid-32", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap drive_removable_media_usb_pendrive_32 {
+            get {
+                object obj = ResourceManager.GetObject("drive-removable-media-usb-pendrive-32", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap edit_find_7_32 {
+            get {
+                object obj = ResourceManager.GetObject("edit-find-7-32", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap edit_find_mail_32 {
+            get {
+                object obj = ResourceManager.GetObject("edit-find-mail-32", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
@@ -103,9 +173,29 @@ namespace DjSoft.Tools.SDCardTester.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap media_floppy_3_5_mount_2_32 {
+            get {
+                object obj = ResourceManager.GetObject("media_floppy_3_5_mount_2_32", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap media_playback_pause_2 {
             get {
                 object obj = ResourceManager.GetObject("media_playback_pause_2", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap media_playback_pause_2_32 {
+            get {
+                object obj = ResourceManager.GetObject("media-playback-pause-2-32", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
@@ -123,6 +213,16 @@ namespace DjSoft.Tools.SDCardTester.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap media_playback_start_2_32 {
+            get {
+                object obj = ResourceManager.GetObject("media-playback-start-2-32", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap media_playback_stop_2 {
             get {
                 object obj = ResourceManager.GetObject("media_playback_stop_2", resourceCulture);
@@ -133,9 +233,29 @@ namespace DjSoft.Tools.SDCardTester.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap media_playback_stop_2_32 {
+            get {
+                object obj = ResourceManager.GetObject("media-playback-stop-2-32", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap office_chart_pie {
             get {
                 object obj = ResourceManager.GetObject("office-chart-pie", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap office_chart_pie_32 {
+            get {
+                object obj = ResourceManager.GetObject("office-chart-pie-32", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
@@ -173,9 +293,39 @@ namespace DjSoft.Tools.SDCardTester.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap view_refresh_32 {
+            get {
+                object obj = ResourceManager.GetObject("view-refresh-32", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap view_refresh_321 {
+            get {
+                object obj = ResourceManager.GetObject("view-refresh-321", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap view_refresh_4 {
             get {
                 object obj = ResourceManager.GetObject("view-refresh-4", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap view_refresh_4_32 {
+            get {
+                object obj = ResourceManager.GetObject("view-refresh-4-32", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
