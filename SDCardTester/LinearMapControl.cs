@@ -84,8 +84,13 @@ namespace DjSoft.Tools.SDCardTester
         /// </summary>
         private void DetectActiveItem()
         {
-            Point point = this.PointToClient(Control.MousePosition);
-            DetectActiveItem(point);
+            try
+            {
+                Point point = this.PointToClient(Control.MousePosition);
+                DetectActiveItem(point);
+            }
+            catch (Exception exc)
+            { }
         }
         /// <summary>
         /// Detekuje aktivní prvek na daném bodu myši (lokální souřadnice)
@@ -192,71 +197,78 @@ namespace DjSoft.Tools.SDCardTester
         /// <param name="e"></param>
         protected void PaintItems(PaintEventArgs e)
         {
-            var lines = Lines;
-            if (lines is null || lines.Count == 0) return;
-            int linesCount = lines.Count;
-            int pixelLength = lines[linesCount - 1].PixelEnd;
-
-            var items = this.Items;
-            long startPos = 0L;
-            long totalLength = this.TotalLength;
-            foreach (var item in items)
+            try
             {
-                if (startPos >= totalLength) break;                            // Prvek (jeho počátek) se nachází za pozicí konce prostoru => aktuální prvek ani následující prvky už není kam kreslit.
+                var lines = Lines;
+                if (lines is null || lines.Count == 0) return;
+                int linesCount = lines.Count;
+                int pixelLength = lines[linesCount - 1].PixelEnd;
 
-                var itemLength = item.Length;
-                if (itemLength <= 0L) continue;                                // Prvek nemá reálnou velikost, nebude vidět
-
-                decimal relativeBegin = getRelativePosition(startPos);         // Relativní pozice počátku v rozsahu 0 - 1
-                startPos += itemLength;
-                decimal relativeEnd= getRelativePosition(startPos);            // Relativní pozice konce v rozsahu 0 - 1
-
-                if (!item.Color.HasValue) continue;                            // Prvek bez barvy není vidět
-
-                // Aktuální prvek se může nacházet na jednom, dvou i více grafických řádcích:
-                //  například: začíná v 30% řádku 2, řádek 2 obsazuje do konce, poté obsazuje celé řádky 3 a 4, a končí na řádku 5 na jeho 80%:
-                //  anebo začíná na 75% řádku 2 a končí na 10% řádku 3
-                //  anebo se nachází na řádku 6 v jeho rozmezí 25% - 35%:
-                LinePointInfo begin = getLinePoint(relativeBegin, true);
-                LinePointInfo end = getLinePoint(relativeEnd, false);
-                if (begin is null || end is null) continue;
-
-                for (int index = begin.LineIndex; index <= end.LineIndex; index++)
+                var items = this.Items;
+                long startPos = 0L;
+                long totalLength = this.TotalLength;
+                foreach (var item in items)
                 {
-                    var lineInfo = lines[index];
-                    Rectangle? bounds = lineInfo.GetInnerBounds(begin, end);
-                    if (bounds.HasValue)
+                    if (startPos >= totalLength) break;                            // Prvek (jeho počátek) se nachází za pozicí konce prostoru => aktuální prvek ani následující prvky už není kam kreslit.
+
+                    var itemLength = item.Length;
+                    if (itemLength <= 0L) continue;                                // Prvek nemá reálnou velikost, nebude vidět
+
+                    decimal relativeBegin = getRelativePosition(startPos);         // Relativní pozice počátku v rozsahu 0 - 1
+                    startPos += itemLength;
+                    decimal relativeEnd = getRelativePosition(startPos);           // Relativní pozice konce v rozsahu 0 - 1
+
+                    if (!item.Color.HasValue) continue;                            // Prvek bez barvy není vidět
+
+                    // Aktuální prvek se může nacházet na jednom, dvou i více grafických řádcích:
+                    //  například: začíná v 30% řádku 2, řádek 2 obsazuje do konce, poté obsazuje celé řádky 3 a 4, a končí na řádku 5 na jeho 80%:
+                    //  anebo začíná na 75% řádku 2 a končí na 10% řádku 3
+                    //  anebo se nachází na řádku 6 v jeho rozmezí 25% - 35%:
+                    LinePointInfo begin = getLinePoint(relativeBegin, true);
+                    LinePointInfo end = getLinePoint(relativeEnd, false);
+                    if (begin is null || end is null) continue;
+
+                    for (int index = begin.LineIndex; index <= end.LineIndex; index++)
                     {
-                        Painter.PaintBar3D(e.Graphics, item.Color.Value, bounds.Value);
-                        lineInfo.AddPart(item, bounds.Value);
+                        var lineInfo = lines[index];
+                        Rectangle? bounds = lineInfo.GetInnerBounds(begin, end);
+                        if (bounds.HasValue)
+                        {
+                            Painter.PaintBar3D(e.Graphics, item.Color.Value, bounds.Value);
+                            lineInfo.AddPart(item, bounds.Value);
+                        }
                     }
                 }
-            }
 
-            // Vrátí hodnotu v rozsahu { 0 až 1 } (včetně) pro danou Long pozici, relativně k celkové Long délce totalLength.
-            decimal getRelativePosition(long position)
-            {
-                if (totalLength <= 0L) return 0m;
-                if (position <= 0L) return 0m;
-                if (position >= totalLength) return 1m;
-                return ((decimal)position) / ((decimal)totalLength);
-            }
-
-            // Najde a vrátí pozici v prostoru jednotlivých linek pro daný bod
-            LinePointInfo getLinePoint(decimal relativePoint, bool isBegin)
-            {
-                int pixelPosition = (int)Math.Round(relativePoint * (decimal)pixelLength, 0);      // Určíme pozici hledaného pixelu podle jeho relativního umístění (relativePoint); hodnota pixelLength je celkový počet pixelů na všech řádcích.
-                var lineInfo = lines.FirstOrDefault(l => l.ContainsPixel(pixelPosition, !isBegin));// Najdeme řádek, který obsahuje daný pixel. Pokud je pixel == End řádku, akceptujeme ho jen pokud hledáme End tohoto úseku (isBegin je false)
-                if (lineInfo is null)
+                // Vrátí hodnotu v rozsahu { 0 až 1 } (včetně) pro danou Long pozici, relativně k celkové Long délce totalLength.
+                decimal getRelativePosition(long position)
                 {
-                    if (isBegin)                                               // Hledám začátek, a nenašel jsem - to by se stát nemělo:
-                        throw new InvalidOperationException($"Nenalezen řádek pro Begin : relativePoint = {relativePoint}.");
-                    throw new InvalidOperationException($"Nenalezen řádek pro End : relativePoint = {relativePoint}.");
+                    if (totalLength <= 0L) return 0m;
+                    if (position <= 0L) return 0m;
+                    if (position >= totalLength) return 1m;
+                    return ((decimal)position) / ((decimal)totalLength);
                 }
 
-                int linePoint = pixelPosition - lineInfo.PixelBegin;
-                return new LinePointInfo(lineInfo, linePoint);
+                // Najde a vrátí pozici v prostoru jednotlivých linek pro daný bod
+                LinePointInfo getLinePoint(decimal relativePoint, bool isBegin)
+                {
+                    int pixelPosition = (int)Math.Round(relativePoint * (decimal)pixelLength, 0);      // Určíme pozici hledaného pixelu podle jeho relativního umístění (relativePoint); hodnota pixelLength je celkový počet pixelů na všech řádcích.
+                    var lineInfo = lines.FirstOrDefault(l => l.ContainsPixel(pixelPosition, !isBegin));// Najdeme řádek, který obsahuje daný pixel. Pokud je pixel == End řádku, akceptujeme ho jen pokud hledáme End tohoto úseku (isBegin je false)
+                    if (lineInfo is null)
+                    {
+                        if (isBegin)                                               // Hledám začátek, a nenašel jsem - to by se stát nemělo:
+                            throw new InvalidOperationException($"Nenalezen řádek pro Begin : relativePoint = {relativePoint}.");
+                        throw new InvalidOperationException($"Nenalezen řádek pro End : relativePoint = {relativePoint}.");
+                    }
+
+                    int linePoint = pixelPosition - lineInfo.PixelBegin;
+                    return new LinePointInfo(lineInfo, linePoint);
+                }
+
             }
+
+            catch (Exception exc)
+            { }
         }
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         protected List<LineInfo> Lines;

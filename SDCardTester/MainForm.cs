@@ -50,6 +50,32 @@ namespace DjSoft.Tools.SDCardTester
             this.ClientSizeChanged += _ClientSizeChanged;
             this.DoLayout();
         }
+        /// <summary>
+        /// Toolbar font typu Bold
+        /// </summary>
+        private Font _ToolFontBold
+        {
+            get
+            {
+                if (__ToolFontBold is null)
+                    __ToolFontBold = new Font(this.ToolDriveTypeButton.Font, FontStyle.Bold);
+                return __ToolFontBold;
+            }
+        }
+        private Font __ToolFontBold;
+        /// <summary>
+        /// Toolbar font typu Regular
+        /// </summary>
+        private Font _ToolFontRegular
+        {
+            get
+            {
+                if (__ToolFontRegular is null)
+                    __ToolFontRegular = new Font(this.ToolDriveTypeButton.Font, FontStyle.Regular);
+                return __ToolFontRegular;
+            }
+        }
+        private Font __ToolFontRegular;
         #endregion
         #region Windows Taskbar Progress
         /// <summary>
@@ -136,49 +162,63 @@ namespace DjSoft.Tools.SDCardTester
                 this.BeginInvoke(new Action<ActionState, bool>(ShowControls), state, withDataPanel);
             else
             {
-                bool currentWorking = (CurrentState == ActionState.AnalyseContent || CurrentState == ActionState.TestSave || CurrentState == ActionState.TestRead || CurrentState == ActionState.ContentRead);
-                bool isDialog = (state == ActionState.Dialog);
-                bool nextWorking = (state == ActionState.AnalyseContent || state == ActionState.TestSave || state == ActionState.TestRead);
+                bool oldStateWorking = isWorkingState(CurrentState);
+                bool newStateDialog = (state == ActionState.Dialog);
+                bool newStateWorking = isWorkingState(state);
 
-                ToolDriveCombo.Enabled = isDialog;
-                ToolDriveTypeButton.Enabled = isDialog;
-                ToolDriveTypeFlashButton.Enabled = isDialog;
-                ToolDriveTypeAllButton.Enabled = isDialog;
-                ToolDriveRefreshButton.Enabled = isDialog;
+                ToolDriveCombo.Enabled = newStateDialog;
+                ToolDriveTypeButton.Enabled = newStateDialog;
+                ToolDriveTypeFlashButton.Enabled = newStateDialog;
+                ToolDriveTypeAllButton.Enabled = newStateDialog;
+                ToolDriveRefreshButton.Enabled = newStateDialog;
 
                 if (withDataPanel)
                 {
-                    DriveInfoPanel.Visible = (state == ActionState.Dialog);
-                    ResultsInfoPanel.Visible = (state == ActionState.AnalyseContent || state == ActionState.TestSave || state == ActionState.TestRead);
+                    DriveInfoPanel.Visible = newStateDialog;
+                    ResultsInfoPanel.Visible = newStateWorking;
                     CurrentDataPanelState = state;
                 }
 
-                this.ToolActionAnalyseButton.Enabled = isDialog;
-                this.ToolActionWriteDataButton.Enabled = isDialog;
-                this.ToolActionReadDataButton.Enabled = isDialog;
-                this.ToolActionReadAnyButton.Enabled = isDialog;
+                this.ToolActionAnalyseButton.Enabled = newStateDialog;
+                this.ToolActionWriteDataButton.Enabled = newStateDialog;
+                this.ToolActionReadDataButton.Enabled = newStateDialog;
+                this.ToolActionReadAnyButton.Enabled = newStateDialog;
 
-                this.ToolFlowControlPauseButton.Visible = nextWorking;
-                this.ToolFlowControlStopButton.Visible = nextWorking;
-                this.ToolFlowControlRunButton.Visible = nextWorking;
-                this.ToolFlowControlSeparator.Visible = nextWorking;
+                this.ToolFlowControlPauseButton.Visible = newStateWorking;
+                this.ToolFlowControlStopButton.Visible = newStateWorking;
+                this.ToolFlowControlRunButton.Visible = newStateWorking;
+                this.ToolFlowControlSeparator.Visible = newStateWorking;
 
-                if (!currentWorking && nextWorking)
+                // Pokud nyní ZAČÍNÁ stav Working, pak nastavíme RunState na Run = ikonky v Toolbaru:
+                if (!oldStateWorking && newStateWorking)
+                {
                     this.RunState = RunState.Run;
+                    _TaskProgressState = ThumbnailProgressState.Normal;
+                }
 
-                bool currentIsTest = (CurrentState == ActionState.AnalyseContent || CurrentState == ActionState.TestSave || CurrentState == ActionState.TestRead);
-                bool nextIsTest = (state == ActionState.TestSave || state == ActionState.TestRead);
-                _TaskProgressState = (nextIsTest ? ThumbnailProgressState.Normal : ThumbnailProgressState.NoProgress);   // Tam se hlídá změna interně!
-                if (currentIsTest && !nextIsTest)
+                // Pokud nyní KONČÍ stav Working, pak vrátíme titulek okna na standardní:
+                if (oldStateWorking && !newStateWorking)
+                {
                     this.AppTitleTextCurrent = this.__AppTitleTextStandard;
+                    _TaskProgressState = ThumbnailProgressState.NoProgress;
+                }
 
                 CurrentState = state;
             }
+
+            bool isWorkingState(ActionState testState)
+            {
+                return (testState == ActionState.AnalyseContent || testState == ActionState.TestSave || testState == ActionState.TestRead || testState == ActionState.ContentRead);
+            }
         }
-        protected void ShowFlowButtons(RunState runState)
+        /// <summary>
+        /// Zobrazí správně Enabled pro buttony skupiny FlowControl pro zadaný stav.
+        /// </summary>
+        /// <param name="runState"></param>
+        protected void ShowFlowButtonsEnabled(RunState runState)
         {
             if (this.InvokeRequired)
-                this.BeginInvoke(new Action<RunState>(ShowFlowButtons), runState);
+                this.BeginInvoke(new Action<RunState>(ShowFlowButtonsEnabled), runState);
             else
             {
                 this.ToolFlowControlPauseButton.Enabled = (runState == RunState.Run);
@@ -267,7 +307,7 @@ namespace DjSoft.Tools.SDCardTester
         /// <param name="drive"></param>
         private void VisualMapPanelFillBasicData(System.IO.DriveInfo drive)
         {
-            var fileGroups = DriveAnalyser.GetFileGroupsForDrive(drive, false, out long totalSize);
+            var fileGroups = DriveAnalyser.GetFileGroupsForDrive(drive, DriveAnalyser.AnalyseCriteriaType.Default, out long totalSize);
             VisualMapPanelFillData(fileGroups, totalSize);
         }
         /// <summary>
@@ -371,27 +411,6 @@ namespace DjSoft.Tools.SDCardTester
             if (runFillDrives)
                 FillDrives();
         }
-        private Font _ToolFontBold
-        {
-            get
-            {
-                if (__ToolFontBold is null)
-                    __ToolFontBold = new Font(this.ToolDriveTypeButton.Font, FontStyle.Bold);
-                return __ToolFontBold;
-            }
-        }
-        private Font __ToolFontBold;
-        private Font _ToolFontRegular
-        {
-            get
-            {
-                if (__ToolFontRegular is null)
-                    __ToolFontRegular = new Font(this.ToolDriveTypeButton.Font, FontStyle.Regular);
-                return __ToolFontRegular;
-            }
-        }
-        private Font __ToolFontRegular;
-
         /// <summary>
         /// Po změně vybraného disku
         /// </summary>
@@ -710,9 +729,10 @@ namespace DjSoft.Tools.SDCardTester
         /// </summary>
         private void RunDriveTest(ActionState action)
         {
-            bool doSave = (action == ActionState.TestSave);
-            bool doRead = (action == ActionState.TestRead);
-            if (!(doSave || doRead)) return;
+            var testAction = (action == ActionState.TestSave ? DriveTester.TestAction.SaveTestData :
+                             (action == ActionState.TestRead ? DriveTester.TestAction.ReadTestData :
+                             (action == ActionState.ContentRead ? DriveTester.TestAction.ReadContent : DriveTester.TestAction.None)));
+            if (testAction == DriveTester.TestAction.None) return;
 
             ResultsInfoPanelClear();
             ShowControls(action, true);
@@ -722,7 +742,7 @@ namespace DjSoft.Tools.SDCardTester
             driveTester.WorkingStep += DriveTester_TestStep;
             driveTester.WorkingDone += DriveTester_TestDone;
             _DriveTester = driveTester;
-            driveTester.Start(this.SelectedDrive, doSave, doRead);
+            driveTester.Start(this.SelectedDrive, testAction);
         }
         /// <summary>
         /// Požadavek na zastavení testu
@@ -888,7 +908,7 @@ namespace DjSoft.Tools.SDCardTester
             __RunState = runState;
 
             if (withGui)
-                this.ShowFlowButtons(runState);
+                this.ShowFlowButtonsEnabled(runState);
 
             if (withActions)
             {

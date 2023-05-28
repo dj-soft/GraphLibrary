@@ -194,7 +194,8 @@ namespace DjSoft.Tools.SDCardTester
             this.ToolFlowControlRunButton.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.ToolFlowControlRunButton.Name = "ToolFlowControlRunButton";
             this.ToolFlowControlRunButton.Size = new System.Drawing.Size(36, 36);
-            this.ToolFlowControlRunButton.Text = "toolStripButton6";
+            this.ToolFlowControlRunButton.Text = "Run";
+            this.ToolFlowControlRunButton.ToolTipText = "Pokračuje v pozastavené akci";
             // 
             // ToolFlowControlPauseButton
             // 
@@ -204,7 +205,8 @@ namespace DjSoft.Tools.SDCardTester
             this.ToolFlowControlPauseButton.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.ToolFlowControlPauseButton.Name = "ToolFlowControlPauseButton";
             this.ToolFlowControlPauseButton.Size = new System.Drawing.Size(36, 36);
-            this.ToolFlowControlPauseButton.Text = "toolStripButton7";
+            this.ToolFlowControlPauseButton.Text = "Pauza";
+            this.ToolFlowControlPauseButton.ToolTipText = "Pozastaví běžící akci, bude možno v ní pokračovat";
             // 
             // ToolFlowControlStopButton
             // 
@@ -214,7 +216,8 @@ namespace DjSoft.Tools.SDCardTester
             this.ToolFlowControlStopButton.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.ToolFlowControlStopButton.Name = "ToolFlowControlStopButton";
             this.ToolFlowControlStopButton.Size = new System.Drawing.Size(36, 36);
-            this.ToolFlowControlStopButton.Text = "toolStripButton8";
+            this.ToolFlowControlStopButton.Text = "Stop";
+            this.ToolFlowControlStopButton.ToolTipText = "Zruší běžící akci a vrátí okno do výchozího stavu";
             // 
             // ToolDriveTypeButton
             // 
@@ -226,7 +229,8 @@ namespace DjSoft.Tools.SDCardTester
             this.ToolDriveTypeButton.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.ToolDriveTypeButton.Name = "ToolDriveTypeButton";
             this.ToolDriveTypeButton.Size = new System.Drawing.Size(45, 36);
-            this.ToolDriveTypeButton.Text = "toolStripDropDownButton1";
+            this.ToolDriveTypeButton.Text = "Nabízené typy disku";
+            this.ToolDriveTypeButton.ToolTipText = "Volba nabídky disků: výměnné nebo všechny?";
             // 
             // ToolDriveTypeFlashButton
             // 

@@ -31,6 +31,7 @@ namespace DjSoft.Tools.SDCardTester
         public static Color TestFilesProcessingReadGroupColor { get { return Instance._TestFilesProcessingReadGroupColor; } set { Instance._TestFilesProcessingReadGroupColor = value; } }
         public static Color TestFilesExistingGroupColor { get { return Instance._TestFilesExistingGroupColor; } set { Instance._TestFilesExistingGroupColor = value; } }
         public static Color TestFilesProcessingSaveGroupColor { get { return Instance._TestFilesProcessingSaveGroupColor; } set { Instance._TestFilesProcessingSaveGroupColor = value; } }
+        public static Color UsedSpaceReadingGroupColor { get { return Instance._UsedSpaceReadingGroupColor; } set { Instance._UsedSpaceReadingGroupColor = value; } }
 
         public static Color TestPhaseSaveShortFileBackColor { get { return Instance._TestPhaseSaveShortFileBackColor; } set { Instance._TestPhaseSaveShortFileBackColor = value; } }
         public static Color TestPhaseSaveLongFileBackColor { get { return Instance._TestPhaseSaveLongFileBackColor; } set { Instance._TestPhaseSaveLongFileBackColor = value; } }
@@ -89,6 +90,7 @@ namespace DjSoft.Tools.SDCardTester
         private Color _TestFilesProcessingReadGroupColor;
         private Color _TestFilesExistingGroupColor;
         private Color _TestFilesProcessingSaveGroupColor;
+        private Color _UsedSpaceReadingGroupColor;
         private Color _TestPhaseSaveShortFileBackColor;
         private Color _TestPhaseSaveLongFileBackColor;
         private Color _TestPhaseReadShortFileBackColor;
@@ -115,10 +117,10 @@ namespace DjSoft.Tools.SDCardTester
             switch (palette)
             {
                 case PaletteType.Light:
-                    _BackgroundColor = Color.FromArgb(240, 248, 255);
-                    _OtherSpaceColor = Color.FromArgb(160, 160, 160);
-                    _UsedSpaceColor = Color.FromArgb(255, 114, 149);
-                    _FreeSpaceColor = Color.FromArgb(191, 255, 170);
+                    _BackgroundColor = Color.FromArgb(242,242,242);
+                    _OtherSpaceColor = Color.FromArgb(250,133,76);
+                    _UsedSpaceColor = Color.FromArgb(198,142,85);
+                    _FreeSpaceColor = Color.FromArgb(219,255,255);
                     _PictureGroupColor = Color.FromArgb(181, 150, 247);
                     _MovieGroupColor = Color.FromArgb(243, 140, 247);
                     _AudioGroupColor = Color.FromArgb(138, 156, 247);
@@ -126,9 +128,10 @@ namespace DjSoft.Tools.SDCardTester
                     _ApplicationGroupColor = Color.FromArgb(141, 239, 239);
                     _DevelopmentGroupColor = Color.FromArgb(153, 196, 239);
                     _ArchiveGroupColor = Color.FromArgb(212, 239, 129);
-                    _TestFilesProcessingReadGroupColor = Color.FromArgb(180, 215, 195);
-                    _TestFilesExistingGroupColor = Color.FromArgb(226, 160, 232);
-                    _TestFilesProcessingSaveGroupColor = Color.FromArgb(200, 140, 210);
+                    _TestFilesProcessingReadGroupColor = Color.FromArgb(83,188,83);
+                    _TestFilesExistingGroupColor = Color.FromArgb(83,83,193);
+                    _TestFilesProcessingSaveGroupColor = Color.FromArgb(84,137,191);
+                    _UsedSpaceReadingGroupColor = Color.FromArgb(140,196,84);
                     _TestPhaseSaveShortFileBackColor = Color.FromArgb(255, 190, 190);
                     _TestPhaseSaveLongFileBackColor = Color.FromArgb(255, 220, 220);
                     _TestPhaseReadShortFileBackColor = Color.FromArgb(190, 190, 255);
@@ -155,6 +158,7 @@ namespace DjSoft.Tools.SDCardTester
                     _TestFilesProcessingReadGroupColor = Color.FromArgb(196, 232, 204);
                     _TestFilesExistingGroupColor = Color.FromArgb(226, 160, 232);
                     _TestFilesProcessingSaveGroupColor = Color.FromArgb(200, 140, 210);
+                    _UsedSpaceReadingGroupColor = Color.FromArgb(196, 232, 204);
                     _TestPhaseSaveShortFileBackColor = Color.FromArgb(255, 190, 190);
                     _TestPhaseSaveLongFileBackColor = Color.FromArgb(255, 220, 220);
                     _TestPhaseReadShortFileBackColor = Color.FromArgb(190, 190, 255);
@@ -181,6 +185,7 @@ namespace DjSoft.Tools.SDCardTester
                     _TestFilesProcessingReadGroupColor = Color.FromArgb(196, 232, 204);
                     _TestFilesExistingGroupColor = Color.FromArgb(226, 160, 232);
                     _TestFilesProcessingSaveGroupColor = Color.FromArgb(200, 140, 210);
+                    _UsedSpaceReadingGroupColor = Color.FromArgb(196, 232, 204);
                     _TestPhaseSaveShortFileBackColor = Color.FromArgb(255, 190, 190);
                     _TestPhaseSaveLongFileBackColor = Color.FromArgb(255, 220, 220);
                     _TestPhaseReadShortFileBackColor = Color.FromArgb(190, 190, 255);
@@ -375,6 +380,16 @@ namespace DjSoft.Tools.SDCardTester
                 int q = s + d;
                 return (q < 0 ? 0 : (q > 255 ? 255 : q));
             }
+        }
+    }
+
+    public static class Extensions
+    {
+        public static List<T> GetSortedList<T>(this IEnumerable<T> items, Comparison<T> comparison)
+        {
+            List<T> list = items.ToList();
+            list.Sort(comparison);
+            return list;
         }
     }
 }

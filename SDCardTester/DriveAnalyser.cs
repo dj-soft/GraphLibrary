@@ -28,11 +28,10 @@ namespace DjSoft.Tools.SDCardTester
         /// Vrátí pole základních informací o využití prostoru daného disku.
         /// </summary>
         /// <param name="drive"></param>
-        /// <param name="forceTestGroup">Povinně vložit tři grupy, s kódy: { <see cref="FileGroup.CODE_TEST_READ"/>, <see cref="FileGroup.CODE_TEST_FILE"/>, <see cref="FileGroup.CODE_TEST_SAVE"/> },
-        /// v tomto pořadí. Grupy lze pak používat pro znázornění postupu zápisu i čtení, modifikací jejich hodnoty <see cref="IFileGroup.SizeTotalDelta"/>.</param>
+        /// <param name="analyseCriteria">Specifika analýzy</param>
         /// <param name="totalSize"></param>
         /// <returns></returns>
-        public static DriveAnalyser.FileGroup[] GetFileGroupsForDrive(System.IO.DriveInfo drive, bool forceTestGroup, out long totalSize)
+        public static DriveAnalyser.FileGroup[] GetFileGroupsForDrive(System.IO.DriveInfo drive, AnalyseCriteriaType analyseCriteria, out long totalSize)
         {
             totalSize = 0L;
             List<DriveAnalyser.FileGroup> fileGroups = new List<FileGroup>();
@@ -49,19 +48,50 @@ namespace DjSoft.Tools.SDCardTester
                 long freeSize = drive.TotalSize - usedSize - otherSize;
                 if (freeSize < 0L) freeSize = 0L;
 
-                var testFiles = DriveTester.GetTestFiles(drive, null);
-                int testCount = testFiles.Length;
-                long testSize = testFiles.Select(f => f.Length).Sum();
-                if (testSize < 0L) testSize = 0L;
-                if (testSize > 0L) usedSize -= testSize;
-                if (usedSize < 0L) usedSize = 0L;
-
                 int order = 0;
-                if (usedSize > 0L) fileGroups.Add(new FileGroup(++order, "Obsazeno", Skin.UsedSpaceColor, 0, usedSize));
-                if (forceTestGroup) fileGroups.Add(new FileGroup(++order, "Přečtené", Skin.TestFilesProcessingReadGroupColor, 0, 0L, FileGroup.CODE_TEST_READ));
-                if (testSize > 0L || forceTestGroup) fileGroups.Add(new FileGroup(++order, "Testovací", Skin.TestFilesExistingGroupColor, testCount, testSize, FileGroup.CODE_TEST_FILE));
-                if (forceTestGroup) fileGroups.Add(new FileGroup(++order, "Zapsané", Skin.TestFilesProcessingSaveGroupColor, 0, 0L, FileGroup.CODE_TEST_SAVE));
-                if (otherSize > 0L) fileGroups.Add(new FileGroup(++order, "Ostatní", Skin.OtherSpaceColor, 0, otherSize));
+                System.IO.FileInfo[] testFiles;
+                int testCount;
+                long testSize;
+                switch (analyseCriteria)
+                {
+                    case AnalyseCriteriaType.Default:
+                        // Testovací soubory detekuji a zobrazím, ale nepřidávám grupy CODE_TEST_READ a CODE_TEST_SAVE:
+                        testFiles = DriveTester.GetTestFiles(drive, null);
+                        testCount = testFiles.Length;
+                        testSize = testFiles.Select(f => f.Length).Sum();
+                        if (testSize < 0L) testSize = 0L;
+                        if (testSize > 0L) usedSize -= testSize;
+                        if (usedSize < 0L) usedSize = 0L;
+
+                        if (usedSize > 0L) fileGroups.Add(new FileGroup(++order, "Obsazeno", Skin.UsedSpaceColor, 0, usedSize, FileGroup.CODE_ANY_FILE));
+                        if (testSize > 0L) fileGroups.Add(new FileGroup(++order, "Testovací", Skin.TestFilesExistingGroupColor, testCount, testSize, FileGroup.CODE_TEST_FILE));
+                        if (otherSize > 0L) fileGroups.Add(new FileGroup(++order, "Ostatní", Skin.OtherSpaceColor, 0, otherSize));
+                        break;
+
+                    case AnalyseCriteriaType.TestFiles:
+                        // Testovací soubory přidávám vždy a přidávám i grupy CODE_TEST_READ a CODE_TEST_SAVE:
+                        testFiles = DriveTester.GetTestFiles(drive, null);
+                        testCount = testFiles.Length;
+                        testSize = testFiles.Select(f => f.Length).Sum();
+                        if (testSize < 0L) testSize = 0L;
+                        if (testSize > 0L) usedSize -= testSize;
+                        if (usedSize < 0L) usedSize = 0L;
+
+                        if (usedSize > 0L) fileGroups.Add(new FileGroup(++order, "Obsazeno", Skin.UsedSpaceColor, 0, usedSize, FileGroup.CODE_ANY_FILE));
+                        fileGroups.Add(new FileGroup(++order, "Přečtené", Skin.TestFilesProcessingReadGroupColor, 0, 0L, FileGroup.CODE_TEST_READ));
+                        fileGroups.Add(new FileGroup(++order, "Testovací", Skin.TestFilesExistingGroupColor, testCount, testSize, FileGroup.CODE_TEST_FILE));
+                        fileGroups.Add(new FileGroup(++order, "Zapsané", Skin.TestFilesProcessingSaveGroupColor, 0, 0L, FileGroup.CODE_TEST_SAVE));
+                        if (otherSize > 0L) fileGroups.Add(new FileGroup(++order, "Ostatní", Skin.OtherSpaceColor, 0, otherSize));
+                        break;
+
+                    case AnalyseCriteriaType.ReadContent:
+                        // Testovací soubory neřeším, před obsazené soubory (CODE_ANY_FILE) přidávám grupu CODE_TEST_READ:
+                        fileGroups.Add(new FileGroup(++order, "Přečtené", Skin.UsedSpaceReadingGroupColor, 0, 0L, FileGroup.CODE_TEST_READ));
+                        fileGroups.Add(new FileGroup(++order, "Obsazeno", Skin.UsedSpaceColor, 0, usedSize, FileGroup.CODE_ANY_FILE));
+                        if (otherSize > 0L) fileGroups.Add(new FileGroup(++order, "Ostatní", Skin.OtherSpaceColor, 0, otherSize));
+                        break;
+
+                }
             }
 
             return fileGroups.ToArray();
@@ -435,6 +465,10 @@ namespace DjSoft.Tools.SDCardTester
             /// Kód skupiny testovacích souborů, které jsou aktuálně zapisovány
             /// </summary>
             public const string CODE_TEST_SAVE = "TEST_SAVE";
+            /// <summary>
+            /// Kód skupiny jakýchkoli souborů, které jsou čteny bez kontroly
+            /// </summary>
+            public const string CODE_ANY_FILE = "ANY_FILE";
         }
         /// <summary>
         /// Interface pro interní přístup na data grupy
@@ -452,8 +486,14 @@ namespace DjSoft.Tools.SDCardTester
             int FilesCount { get; }
             long TotalLength { get; }
         }
+        public enum AnalyseCriteriaType
+        {
+            Default,
+            TestFiles,
+            ReadContent
+        }
         #endregion
-    }
+        }
     #region Vizuální control pro orientační zobrazení obsahu jedné grupy v přehledném panelu
     /// <summary>
     /// Vizuální control pro orientační zobrazení obsahu jedné grupy v přehledném panelu

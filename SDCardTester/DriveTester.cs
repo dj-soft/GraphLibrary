@@ -26,11 +26,10 @@ namespace DjSoft.Tools.SDCardTester
         /// Požádá o provedení testu zápisu a čtení daného disku
         /// </summary>
         /// <param name="drive"></param>
-        /// <param name="doRead"></param>
-        /// <param name="doSave"></param>
-        public void Start(System.IO.DriveInfo drive, bool doSave, bool doRead)
+        /// <param name="actions"></param>
+        public void Start(System.IO.DriveInfo drive, TestAction actions)
         {
-            StartAction(drive, () => { DoTestSave = doSave; DoTestRead = doRead; });
+            StartAction(drive, () => { Actions = actions; });
         }
         #endregion
         #region Privátní řízení běhu
@@ -46,6 +45,7 @@ namespace DjSoft.Tools.SDCardTester
             this.RestartStopwatch();
             if (DoTestSave) RunTestSave(ref testDir);
             if (DoTestRead) RunTestRead(ref testDir);
+            if (DoContentRead) RunContentRead();
             CallWorkingDone();
         }
         /// <summary>
@@ -108,6 +108,14 @@ namespace DjSoft.Tools.SDCardTester
             TimeInfoReadShortDone = new FileTimeInfo(TestPhase.ReadShortFile);
             TimeInfoReadLongDone = new FileTimeInfo(TestPhase.ReadLongFile);
         }
+        /// <summary>
+        /// Akce testeru požadované
+        /// </summary>
+        public TestAction Actions { get; private set; }
+        /// <summary>
+        /// Akce testeru právě probíhající
+        /// </summary>
+        public TestAction CurrentAction { get; private set; }
         /// <summary>
         /// Aktuálně prováděný typ test. 
         /// Zde je fáze skutečně probíhající aktivity. Tato hodnota určuje sadu výsledků, které se právě aktualizují.
@@ -173,7 +181,6 @@ namespace DjSoft.Tools.SDCardTester
         protected long TestSizeTotal { get; set; }
         protected long TestSizeProcessed { get; set; }
         protected long TestSizeProcessedDone { get; set; }
-
         #endregion
         #region Vlastní test zápisu
         /// <summary>
@@ -230,7 +237,7 @@ namespace DjSoft.Tools.SDCardTester
                 }
                 CurrentWorkingPhase = TestPhase.None;
             }
-            catch (Exception exc) { }
+            catch (Exception) { }
             CallTestStep(true);
         }
         /// <summary>
@@ -395,9 +402,9 @@ namespace DjSoft.Tools.SDCardTester
             return reserve;
         }
         /// <summary>
-        /// Provést test zápisu
+        /// Provést test zápisu?
         /// </summary>
-        protected bool DoTestSave;
+        protected bool DoTestSave { get { return this.Actions.HasFlag(TestAction.SaveTestData); } }
         #endregion
         #region Vlastní test čtení testovacích dat
         /// <summary>
@@ -444,9 +451,9 @@ namespace DjSoft.Tools.SDCardTester
             CallTestStep(true);
         }
         /// <summary>
-        /// Provést test čtení
+        /// Provést test čtení?
         /// </summary>
-        protected bool DoTestRead;
+        protected bool DoTestRead { get { return this.Actions.HasFlag(TestAction.ReadTestData); } }
         /// <summary>
         /// Provede test čtení daného souboru
         /// </summary>
@@ -502,14 +509,18 @@ namespace DjSoft.Tools.SDCardTester
 
                     var readData = new byte[bufferLength];
                     using (var task = fst.ReadAsync(readData, 0, bufferLength))
-                    {   // Začalo načítání dat ze souboru; a než doběhne, tak v tomto threadu mám chvilku čas: provedu porovnání předchozích načtených dat (prevData) s očekávanými daty pro daný soubor a index:
+                    {   // Začalo načítání dat (readData) ze souboru;
+                        // a než doběhne, tak v tomto threadu mám chvilku čas:
+                        // provedu porovnání předchozích načtených dat (prevData) s očekávanými daty pro daný soubor a index:
                         errorBytes += VerifyTestData(prevData, fileNumber, bufferIndex);
 
-                        // Počkáme na doběhnutí načtení dat:
+                        // Až teď (po verifikaci předešlých dat) počkáme na doběhnutí načtení aktuálních dat (readData):
+                        // Právě tady řešíme výsledek - kdo je rychlejší? Načtení nových dat anebo verifikace předchozích dat?
                         if (!task.IsCompleted)
                             task.Wait();
 
-                        // Nyní načtená data přesuneme do prevData, ale nyní je nebudeme ověřovat...
+                        // Nyní načtená data (readData) přesuneme do prevData, ale právě teď v tomto threadu je nebudeme ověřovat,
+                        // protože chci co nejdříve zahájit čtení nového bloku s daty...
                         currentLength += task.Result;
                         prevData = readData;
                         bufferIndex++;
@@ -547,6 +558,211 @@ namespace DjSoft.Tools.SDCardTester
             }
         }
         #endregion
+        #region Vlastní test čitelnosti existujících souborů na disku
+        /// <summary>
+        /// Čtení všech souborů, pouze test čitelnosti a nikoli obsahu
+        /// </summary>
+        protected void RunContentRead()
+        {
+            if (Stopping) return;
+
+            this.TestSizeTotal = AnyFileGroup.SizeTotalBase;
+            this.TestSizeProcessed = 0L;
+            this.TestSizeProcessedDone = 0L;
+
+            CurrentWorkingPhase = TestPhase.ReadLongFile;
+            try
+            {
+                Stack<DirectoryContent> directories = new Stack<DirectoryContent>();
+                directories.Push(new DirectoryContent(this.Drive.RootDirectory));
+                while (directories.Count > 0)
+                {
+                    if (Stopping) break;
+
+                    var directory = directories.Pop();
+
+                    while (directory.HasNextFile)
+                    {
+                        if (Stopping) break;
+
+                        var fileInfo = directory.GetNextFile();
+                        var timeInfoReadLong = RunContentReadOneFile(fileInfo);
+                        TimeInfoReadLongDone.Add(timeInfoReadLong);
+                        TestSizeProcessedDone += fileInfo.Length;
+                    }
+                    if (Stopping) break;
+
+                    while (directory.HasNextSubDirectory)
+                        directories.Push(new DirectoryContent(directory.GetNextSubDirectory()));
+
+                }
+            }
+            catch { }
+            CallTestStep(true);
+        }
+        /// <summary>
+        /// Provést čtení všech souborů, pouze test čitelnosti a nikoli obsahu?
+        /// </summary>
+        protected bool DoContentRead { get { return this.Actions.HasFlag(TestAction.ReadContent); } }
+        /// <summary>
+        /// Kontrola čtení obsahu jednoho souboru
+        /// </summary>
+        /// <param name="fileInfo"></param>
+        protected FileTimeInfo RunContentReadOneFile(System.IO.FileInfo fileInfo)
+        {
+            int errorCount = 0;
+            long startTime = this.CurrentTime;
+            var workingPhase = TestPhase.ReadLongFile;
+            long currentLength = 0L;
+            try
+            {
+                string fileName = fileInfo.FullName;
+                long totalLength = fileInfo.Length;
+                using (System.IO.FileStream fst = new System.IO.FileStream(fileName, System.IO.FileMode.Open, System.IO.FileAccess.Read))
+                {
+                    bool doRead = true;
+                    while (doRead && !Stopping)
+                    {
+                        doRead = (fst.Position < totalLength);
+                        if (!doRead) break;
+
+                        int bufferLength = GetBufferLength(workingPhase, currentLength, totalLength);
+                        if (bufferLength == 0) break;
+
+                        var readData = new byte[bufferLength];
+                        try
+                        {
+                            using (var task = fst.ReadAsync(readData, 0, bufferLength))
+                            {
+                                if (!task.IsCompleted)
+                                    task.Wait();
+
+                                currentLength += task.Result;
+                            }
+                        }
+                        catch (Exception)
+                        {
+                            errorCount++;
+                        }
+                        var currentTime = this.CurrentTime;
+                        CallTestStep(false, currentLength, startTime, currentTime, errorCount, false);
+                    }
+                    fst.Close();
+                }
+            }
+            catch (Exception)
+            {
+                errorCount++;
+            }
+
+            decimal elapsedTime = this.GetSeconds(startTime);
+            int errorFiles = (errorCount <= 0 ? 0 : 1);
+            return new FileTimeInfo(workingPhase, 1, currentLength, elapsedTime, errorCount, errorFiles);
+        }
+        #region class DirectoryContent : obsah jednoho adresáře
+        /// <summary>
+        /// Obsah adresáře (soubory a podadresáře). 
+        /// Nabízí bezstavový enumerátor (property <see cref="HasNextSubDirectory"/> a <see cref="HasNextFile"/>
+        /// a metody <see cref="GetNextSubDirectory"/> a <see cref="GetNextFile"/>).
+        /// </summary>
+        protected class DirectoryContent
+        {
+            /// <summary>
+            /// Konstruktor
+            /// </summary>
+            /// <param name="direcory"></param>
+            public DirectoryContent(System.IO.DirectoryInfo direcory)
+            {
+                __CurrentDirectory = new System.IO.DirectoryInfo(direcory.FullName);
+                if (__CurrentDirectory.Exists)
+                {
+                    __SubDirectories = __CurrentDirectory.GetDirectories().GetSortedList((a, b) => String.Compare(b.Name, a.Name, StringComparison.CurrentCultureIgnoreCase)).ToArray();
+                    __Files = __CurrentDirectory.GetFiles().GetSortedList((a, b) => String.Compare(a.Name, b.Name, StringComparison.CurrentCultureIgnoreCase)).ToArray();
+                }
+            }
+            /// <summary>
+            /// Vizualizace
+            /// </summary>
+            /// <returns></returns>
+            public override string ToString()
+            {
+                return $"Directory: {__CurrentDirectory.FullName}; " +
+                    $"[ Files - Count: {_FilesCount}; NextIndex: {_NextFileIndex}; Next: {NextFile?.Name} ]; " +
+                    $"[ SubDirectories - Count: {_SubDirectoryCount}; NextIndex: {_NextSubDirectoryIndex}; Next: {NextSubDirectory?.Name} ]";
+            }
+            /// <summary>
+            /// Já
+            /// </summary>
+            private System.IO.DirectoryInfo __CurrentDirectory;
+
+            /// <summary>
+            /// Obsahuje true, pokud máme nějaký další podadresář, který nám vrátí metoda <see cref="GetNextSubDirectory"/>
+            /// </summary>
+            public bool HasNextSubDirectory { get { return (_NextSubDirectoryIndex < _SubDirectoryCount); } }
+            /// <summary>
+            /// Obsahuje následující SubDirectory, nebo null.
+            /// </summary>
+            public System.IO.DirectoryInfo NextSubDirectory { get { return (HasNextSubDirectory ? __SubDirectories[_NextSubDirectoryIndex] : null); } }
+            /// <summary>
+            /// Pokud máme další podadresář, vrátíme jej. Pokud ne, dojde k chybě.
+            /// </summary>
+            /// <returns></returns>
+            public System.IO.DirectoryInfo GetNextSubDirectory()
+            {
+                if (!HasNextSubDirectory) throw new InvalidOperationException($"Nelze získat Next SubDirectory, protože NextIndex={_NextSubDirectoryIndex} a Count={_SubDirectoryCount}.");
+                var value = NextSubDirectory;
+                _NextSubDirectoryIndex++;
+                return value;
+            }
+            /// <summary>
+            /// Moje podadresáře
+            /// </summary>
+            private System.IO.DirectoryInfo[] __SubDirectories;
+            /// <summary>
+            /// Počet podadresářů
+            /// </summary>
+            private int _SubDirectoryCount { get { return (__SubDirectories?.Length ?? 0); } }
+            /// <summary>
+            /// Index podadresáře, který vrátí metoda <see cref="GetNextSubDirectory"/>.
+            /// Výchozí je 0.
+            /// </summary>
+            private int _NextSubDirectoryIndex;
+
+            /// <summary>
+            /// Obsahuje true, pokud máme nějaký další soubor, který nám vrátí metoda <see cref="GetNextFile"/>
+            /// </summary>
+            public bool HasNextFile { get { return (_NextFileIndex < _FilesCount); } }
+            /// <summary>
+            /// Obsahuje následující File, nebo null.
+            /// </summary>
+            public System.IO.FileInfo NextFile { get { return (HasNextFile ? __Files[_NextFileIndex] : null); } }
+            /// <summary>
+            /// Pokud máme další soubor, vrátíme jej. Pokud ne, dojde k chybě.
+            /// </summary>
+            /// <returns></returns>
+            public System.IO.FileInfo GetNextFile()
+            {
+                if (!HasNextFile) throw new InvalidOperationException($"Nelze získat Next File, protože NextIndex={_NextFileIndex} a Count={_FilesCount}.");
+                var value = NextFile;
+                _NextFileIndex++;
+                return value;
+            }
+            /// <summary>
+            /// Moje soubory
+            /// </summary>
+            private System.IO.FileInfo[] __Files;
+            /// <summary>
+            /// Počet souborů
+            /// </summary>
+            private int _FilesCount { get { return (__Files?.Length ?? 0); } }
+            /// <summary>
+            /// Index podadresáře, který vrátí metoda <see cref="GetNextFile"/>.
+            /// Výchozí je 0.
+            /// </summary>
+            private int _NextFileIndex;
+        }
+        #endregion
+        #endregion
         #region Obsah disku
         /// <summary>
         /// Připraví základní informace o obsahu aktuálního disku
@@ -554,30 +770,48 @@ namespace DjSoft.Tools.SDCardTester
         private void PrepareFileGroups()
         {
             var drive = Drive;
-            FileGroups = DriveAnalyser.GetFileGroupsForDrive(drive, true, out long totalSize);
-            TestReadGroup = FileGroups.First(g => g.Code == DriveAnalyser.FileGroup.CODE_TEST_READ);
-            TestFileGroup = FileGroups.First(g => g.Code == DriveAnalyser.FileGroup.CODE_TEST_FILE);
-            TestSaveGroup = FileGroups.First(g => g.Code == DriveAnalyser.FileGroup.CODE_TEST_SAVE);
+            var analyseCriteria = (Actions == TestAction.SaveTestData || Actions == TestAction.ReadTestData) ? DriveAnalyser.AnalyseCriteriaType.TestFiles :
+                                  (Actions == TestAction.ReadContent) ? DriveAnalyser.AnalyseCriteriaType.ReadContent : DriveAnalyser.AnalyseCriteriaType.Default;
+
+            FileGroups = DriveAnalyser.GetFileGroupsForDrive(drive, analyseCriteria, out long totalSize);
+
+            TestReadGroup = FileGroups.FirstOrDefault(g => g.Code == DriveAnalyser.FileGroup.CODE_TEST_READ);
+            TestFileGroup = FileGroups.FirstOrDefault(g => g.Code == DriveAnalyser.FileGroup.CODE_TEST_FILE);
+            TestSaveGroup = FileGroups.FirstOrDefault(g => g.Code == DriveAnalyser.FileGroup.CODE_TEST_SAVE);
+            AnyFileGroup = FileGroups.FirstOrDefault(g => g.Code == DriveAnalyser.FileGroup.CODE_ANY_FILE);
             TotalSize = totalSize;
         }
         /// <summary>
-        /// Aktualizuje hodnoty v testovacích grupách <see cref="TestReadGroup"/>, <see cref="TestFileGroup"/>, <see cref="TestSaveGroup"/>
+        /// Aktualizuje hodnoty v testovacích grupách <see cref="TestReadGroup"/>, <see cref="TestFileGroup"/>, <see cref="TestSaveGroup"/> a <see cref="AnyFileGroup"/>,
         /// podle aktuálního stavu čtení a zápisu.
         /// </summary>
         private void RefreshFileGroups()
         {
             bool doRead = DoTestRead;
             bool doSave = DoTestSave;
-            int readCount = (doRead ? TimeInfoReadShort.FileCount + TimeInfoReadLong.FileCount : 0);
-            long readSize = (doRead ? TimeInfoReadShort.SizeTotal + TimeInfoReadLong.SizeTotal : 0L);
-            int saveCount = (doSave ? TimeInfoSaveShort.FileCount + TimeInfoSaveLong.FileCount : 0);
-            long saveSize = (doSave ? TimeInfoSaveShort.SizeTotal + TimeInfoSaveLong.SizeTotal : 0L);
-            TestReadGroup.FilesCountDelta = readCount;
-            TestReadGroup.SizeTotalDelta = readSize;
-            TestFileGroup.FilesCountDelta = -readCount;
-            TestFileGroup.SizeTotalDelta = -readSize;
-            TestSaveGroup.FilesCountDelta = saveCount;
-            TestSaveGroup.SizeTotalDelta = saveSize;
+            bool doContent = DoContentRead;
+            if (doRead || doSave)
+            {
+                int readCount = (doRead ? TimeInfoReadShort.FileCount + TimeInfoReadLong.FileCount : 0);
+                long readSize = (doRead ? TimeInfoReadShort.SizeTotal + TimeInfoReadLong.SizeTotal : 0L);
+                int saveCount = (doSave ? TimeInfoSaveShort.FileCount + TimeInfoSaveLong.FileCount : 0);
+                long saveSize = (doSave ? TimeInfoSaveShort.SizeTotal + TimeInfoSaveLong.SizeTotal : 0L);
+                TestReadGroup.FilesCountDelta = readCount;
+                TestReadGroup.SizeTotalDelta = readSize;
+                TestFileGroup.FilesCountDelta = -readCount;
+                TestFileGroup.SizeTotalDelta = -readSize;
+                TestSaveGroup.FilesCountDelta = saveCount;
+                TestSaveGroup.SizeTotalDelta = saveSize;
+            }
+            else if (doContent)
+            {
+                int readCount = TimeInfoReadLong.FileCount;
+                long readSize = TimeInfoReadLong.SizeTotal;
+                TestReadGroup.FilesCountDelta = readCount;
+                TestReadGroup.SizeTotalDelta = readSize;
+                AnyFileGroup.FilesCountDelta = -readCount;
+                AnyFileGroup.SizeTotalDelta = -readSize;
+            }
         }
         /// <summary>
         /// Obsah disku, základní složení.
@@ -604,6 +838,10 @@ namespace DjSoft.Tools.SDCardTester
         /// V procesu zápisu bude do této grupy navyšována hodnota obsazeného prostoru.
         /// </summary>
         private DriveAnalyser.IFileGroup TestSaveGroup { get; set; }
+        /// <summary>
+        /// Data, popisující grupu (<see cref="DriveAnalyser.FileGroup"/>) obsahující běžné ne-testovací soubory.
+        /// </summary>
+        private DriveAnalyser.IFileGroup AnyFileGroup { get; set; }
         // private int TestFileInitCount { get; set; }
         // private long TestFileInitLength { get; set; }
         #endregion
@@ -863,7 +1101,7 @@ namespace DjSoft.Tools.SDCardTester
         protected const int KBi = 1024;
         protected const int MBi = KBi * KBi;
         #endregion
-        #region SubClass
+        #region SubClass a enumy
         /// <summary>
         /// Třída obsahující údaje o počtu testovaných souborů, o jejich celkové délce a celkové době času testu
         /// </summary>
@@ -996,11 +1234,49 @@ namespace DjSoft.Tools.SDCardTester
         /// </summary>
         public enum TestPhase
         {
+            /// <summary>
+            /// Neurčeno
+            /// </summary>
             None,
+            /// <summary>
+            /// Zapisuji krátké soubory
+            /// </summary>
             SaveShortFile,
+            /// <summary>
+            /// Zapisuji dlouhé soubory
+            /// </summary>
             SaveLongFile,
+            /// <summary>
+            /// Čtu krátké soubory
+            /// </summary>
             ReadShortFile,
+            /// <summary>
+            /// Čtu dlouhé soubory
+            /// </summary>
             ReadLongFile
+        }
+        /// <summary>
+        /// Akce požadované od <see cref="DriveTester"/>
+        /// </summary>
+        [Flags]
+        public enum TestAction
+        {
+            /// <summary>
+            /// Žádná akce
+            /// </summary>
+            None = 0,
+            /// <summary>
+            /// Zápis testovacích dat
+            /// </summary>
+            SaveTestData = 0x0001,
+            /// <summary>
+            /// Čtení testovacích dat
+            /// </summary>
+            ReadTestData = 0x0002,
+            /// <summary>
+            /// Čtení všech dat na disku
+            /// </summary>
+            ReadContent = 0x0010
         }
         #endregion
     }

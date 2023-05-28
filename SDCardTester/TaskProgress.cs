@@ -216,25 +216,24 @@ namespace DjSoft.Tools.SDCardTester
     public enum ThumbnailProgressState
     {
         /// <summary>
-        /// No progress is displayed.<br>
-        /// yourFormName.Value is ignored.</br> </summary>
+        /// Normální stav, žádný progress.
+        /// </summary>
         NoProgress = 0,
         /// <summary>
-        /// Normal progress is displayed.<br>
-        /// The bar is GREEN.</br> </summary>
+        /// Normální progress v barvě zelené.
+        /// </summary>
         Normal = 0x2,
         /// <summary>
-        /// The operation is paused.<br>
-        /// The bar is YELLOW.</br></summary>
+        /// Pauza v operaci. Barva žlutá.
+        /// </summary>
         Paused = 0x8,
         /// <summary>
-        /// An error occurred.<br>
-        /// The bar is RED.</br> </summary>
+        /// Chyba, červená
+        /// </summary>
         Error = 0x4,
         /// <summary>
-        /// The progress is indeterminate.<br>
-        /// Marquee style bar (constant scroll).</br> </summary>
+        /// Neurčitý stav, vyčkávací situae, Marquee style.
+        /// </summary>
         Indeterminate = 0x1
     }
-
 }
