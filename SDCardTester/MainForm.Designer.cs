@@ -35,22 +35,22 @@ namespace DjSoft.Tools.SDCardTester
             this.DriveInfoPanel = new DjSoft.Tools.SDCardTester.DriveInfoPanel();
             this.ResultsInfoPanel = new System.Windows.Forms.Panel();
             this.LinearMapControl = new DjSoft.Tools.SDCardTester.LinearMapControl();
-            this.ToolDriveCombo = new System.Windows.Forms.ToolStripComboBox();
             this.ToolDriveLabel = new System.Windows.Forms.ToolStripLabel();
-            this.ToolDriveSeparator = new System.Windows.Forms.ToolStripSeparator();
-            this.ToolActionSeparator = new System.Windows.Forms.ToolStripSeparator();
-            this.ToolFlowControlSeparator = new System.Windows.Forms.ToolStripSeparator();
+            this.ToolDriveCombo = new System.Windows.Forms.ToolStripComboBox();
             this.ToolDriveRefreshButton = new System.Windows.Forms.ToolStripButton();
-            this.ToolActionAnalyseButton = new System.Windows.Forms.ToolStripButton();
-            this.ToolActionWriteDataButton = new System.Windows.Forms.ToolStripButton();
-            this.ToolActionReadDataButton = new System.Windows.Forms.ToolStripButton();
-            this.ToolActionReadAnyButton = new System.Windows.Forms.ToolStripButton();
-            this.ToolFlowControlRunButton = new System.Windows.Forms.ToolStripButton();
-            this.ToolFlowControlPauseButton = new System.Windows.Forms.ToolStripButton();
-            this.ToolFlowControlStopButton = new System.Windows.Forms.ToolStripButton();
             this.ToolDriveTypeButton = new System.Windows.Forms.ToolStripDropDownButton();
             this.ToolDriveTypeFlashButton = new System.Windows.Forms.ToolStripMenuItem();
             this.ToolDriveTypeAllButton = new System.Windows.Forms.ToolStripMenuItem();
+            this.ToolDriveSeparator = new System.Windows.Forms.ToolStripSeparator();
+            this.ToolActionAnalyseButton = new System.Windows.Forms.ToolStripButton();
+            this.ToolActionSeparator = new System.Windows.Forms.ToolStripSeparator();
+            this.ToolActionReadAnyButton = new System.Windows.Forms.ToolStripButton();
+            this.ToolActionWriteDataButton = new System.Windows.Forms.ToolStripButton();
+            this.ToolActionReadDataButton = new System.Windows.Forms.ToolStripButton();
+            this.ToolFlowControlSeparator = new System.Windows.Forms.ToolStripSeparator();
+            this.ToolFlowControlRunButton = new System.Windows.Forms.ToolStripButton();
+            this.ToolFlowControlPauseButton = new System.Windows.Forms.ToolStripButton();
+            this.ToolFlowControlStopButton = new System.Windows.Forms.ToolStripButton();
             this.ToolBar.SuspendLayout();
             this.UserPanel.SuspendLayout();
             this.ResultsInfoPanel.SuspendLayout();
@@ -66,9 +66,9 @@ namespace DjSoft.Tools.SDCardTester
             this.ToolDriveRefreshButton,
             this.ToolDriveSeparator,
             this.ToolActionAnalyseButton,
+            this.ToolActionReadAnyButton,
             this.ToolActionWriteDataButton,
             this.ToolActionReadDataButton,
-            this.ToolActionReadAnyButton,
             this.ToolActionSeparator,
             this.ToolFlowControlRunButton,
             this.ToolFlowControlPauseButton,
