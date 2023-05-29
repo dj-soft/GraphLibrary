@@ -148,7 +148,8 @@ namespace DjSoft.Tools.SDCardTester
             this.ToolDriveRefreshButton.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.ToolDriveRefreshButton.Name = "ToolDriveRefreshButton";
             this.ToolDriveRefreshButton.Size = new System.Drawing.Size(36, 36);
-            this.ToolDriveRefreshButton.Text = "toolStripButton2";
+            this.ToolDriveRefreshButton.Text = "Refresh";
+            this.ToolDriveRefreshButton.ToolTipText = "Refresh a zobrazení základních dat o disku v panelu vlevo";
             // 
             // ToolActionAnalyseButton
             // 

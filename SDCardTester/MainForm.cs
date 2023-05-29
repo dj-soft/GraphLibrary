@@ -850,7 +850,8 @@ namespace DjSoft.Tools.SDCardTester
                 // Titulek aplikace = "SD Card tester H: 58%"
                 string drive = driveTester.Drive.Name.Substring(0, 1).ToUpper();
                 string appName = (testPhase == DriveTester.TestPhase.SaveShortFile || testPhase == DriveTester.TestPhase.SaveLongFile ? "SD Card Write" :
-                                (testPhase == DriveTester.TestPhase.ReadShortFile || testPhase == DriveTester.TestPhase.ReadLongFile ? "SD Card Read" : ""));
+                                 (testPhase == DriveTester.TestPhase.ReadShortFile || testPhase == DriveTester.TestPhase.ReadLongFile ? "SD Card Verify" :
+                                 (testPhase == DriveTester.TestPhase.ReadAnyContent ? "SD Card Read" : "")));
                 string percent = ((int)Math.Round(100m * progressRatio, 0)).ToString();
                 string title = $"{appName} {drive}: {percent}%";
 

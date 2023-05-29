@@ -85,6 +85,7 @@ namespace DjSoft.Tools.SDCardTester
                         TimeInfoReadShort = new FileTimeInfo(TimeInfoReadShortDone, 0, currentLength.Value, elapsedTime, errorBytes.Value, errorFiles);
                         break;
                     case TestPhase.ReadLongFile:
+                    case TestPhase.ReadAnyContent:
                         TimeInfoReadLong = new FileTimeInfo(TimeInfoReadLongDone, 0, currentLength.Value, elapsedTime, errorBytes.Value, errorFiles);
                         break;
                 }
@@ -569,8 +570,8 @@ namespace DjSoft.Tools.SDCardTester
             this.TestSizeTotal = AnyFileGroup.SizeTotalBase;
             this.TestSizeProcessed = 0L;
             this.TestSizeProcessedDone = 0L;
-
-            CurrentWorkingPhase = TestPhase.ReadLongFile;
+            CurrentWorkingPhase = TestPhase.ReadAnyContent;
+            CurrentTestPhase = TestPhase.ReadAnyContent;
             try
             {
                 Stack<DirectoryContent> directories = new Stack<DirectoryContent>();
@@ -612,7 +613,7 @@ namespace DjSoft.Tools.SDCardTester
         {
             int errorCount = 0;
             long startTime = this.CurrentTime;
-            var workingPhase = TestPhase.ReadLongFile;
+            var workingPhase = CurrentWorkingPhase;
             long currentLength = 0L;
             try
             {
@@ -1253,7 +1254,11 @@ namespace DjSoft.Tools.SDCardTester
             /// <summary>
             /// Čtu dlouhé soubory
             /// </summary>
-            ReadLongFile
+            ReadLongFile,
+            /// <summary>
+            /// Čtu obsah
+            /// </summary>
+            ReadAnyContent
         }
         /// <summary>
         /// Akce požadované od <see cref="DriveTester"/>
@@ -1362,6 +1367,7 @@ namespace DjSoft.Tools.SDCardTester
                     case DriveTester.TestPhase.SaveLongFile: return "Zápis dlouhých souborů";
                     case DriveTester.TestPhase.ReadShortFile: return "Čtení krátkých souborů";
                     case DriveTester.TestPhase.ReadLongFile: return "Čtení dlouhých souborů";
+                    case DriveTester.TestPhase.ReadAnyContent: return "Kontrola čitelnosti";
                 }
                 return "?";
             }
@@ -1393,6 +1399,7 @@ namespace DjSoft.Tools.SDCardTester
                             text = "file/sec";
                             break;
                         case DriveTester.TestPhase.ReadLongFile:
+                        case DriveTester.TestPhase.ReadAnyContent:
                             value = ((decimal)timeInfo.SizeTotal) / 1000000m;
                             text = "MB/sec";
                             break;
@@ -1421,6 +1428,7 @@ namespace DjSoft.Tools.SDCardTester
                     case DriveTester.TestPhase.SaveLongFile: return Skin.TestPhaseSaveLongFileBackColor;
                     case DriveTester.TestPhase.ReadShortFile: return Skin.TestPhaseReadShortFileBackColor;
                     case DriveTester.TestPhase.ReadLongFile: return Skin.TestPhaseReadLongFileBackColor;
+                    case DriveTester.TestPhase.ReadAnyContent: return Skin.TestPhaseReadLongFileBackColor;
                 }
                 return this.BackColor;
             }
