@@ -73,8 +73,8 @@ namespace TestDevExpress.Forms
             _TestPanel1 = new RibbonTestPanel();
             _TestPanel1.UseLazyLoad = this.UseLazyLoad;
             _TestPanel1.Ribbon.DebugName = "Slave 1";
-            _TestPanel1.Ribbon.ImageRightFull = DxComponent.CreateBitmapImage("Images/ImagesBig/Homer 01b.png");
-            _TestPanel1.Ribbon.ImageRightMini = DxComponent.CreateBitmapImage("Images/ImagesBig/Homer 01c.png");
+            //     _TestPanel1.Ribbon.ImageRightFull = DxComponent.CreateBitmapImage("Images/ImagesBig/Homer 01b.png");
+            //     _TestPanel1.Ribbon.ImageRightMini = DxComponent.CreateBitmapImage("Images/ImagesBig/Homer 01c.png");
             _TestPanel1.ParentRibbon = DxRibbon;
             _TestPanel1.PageMergeOrder = 100;
             _TestPanel1.CategoryName = "SKUPINA 1";
@@ -85,8 +85,8 @@ namespace TestDevExpress.Forms
             _TestPanel2a = new RibbonTestPanel();
             _TestPanel2a.UseLazyLoad = this.UseLazyLoad;
             _TestPanel2a.Ribbon.DebugName = "Slave 2A";
-            _TestPanel2a.Ribbon.ImageRightFull = DxComponent.CreateBitmapImage("Images/ImagesBig/Lisa 01b.png");
-            _TestPanel2a.Ribbon.ImageRightMini = DxComponent.CreateBitmapImage("Images/ImagesBig/Lisa 01c.png");
+            //     _TestPanel2a.Ribbon.ImageRightFull = DxComponent.CreateBitmapImage("Images/ImagesBig/Lisa 01b.png");
+            //     _TestPanel2a.Ribbon.ImageRightMini = DxComponent.CreateBitmapImage("Images/ImagesBig/Lisa 01c.png");
             _TestPanel2a.ParentRibbon = _TestPanel1.Ribbon;
             _TestPanel2a.PageMergeOrder = 200;
             _TestPanel2a.CategoryName = "SKUPINA 2A";
@@ -97,8 +97,8 @@ namespace TestDevExpress.Forms
             _TestPanel2b = new RibbonTestPanel();
             _TestPanel2b.UseLazyLoad = this.UseLazyLoad;
             _TestPanel2b.Ribbon.DebugName = "Slave 2B";
-            _TestPanel2b.Ribbon.ImageRightFull = DxComponent.CreateBitmapImage("Images/ImagesBig/Marge 01b.png");
-            _TestPanel2b.Ribbon.ImageRightMini = DxComponent.CreateBitmapImage("Images/ImagesBig/Marge 01c.png");
+            //     _TestPanel2b.Ribbon.ImageRightFull = DxComponent.CreateBitmapImage("Images/ImagesBig/Marge 01b.png");
+            //     _TestPanel2b.Ribbon.ImageRightMini = DxComponent.CreateBitmapImage("Images/ImagesBig/Marge 01c.png");
             _TestPanel2b.ParentRibbon = _TestPanel1.Ribbon;
             _TestPanel2b.PageMergeOrder = 300;
             _TestPanel2b.CategoryName = "SKUPINA 2B";
@@ -155,8 +155,8 @@ namespace TestDevExpress.Forms
             this.DxRibbon.ApplicationButtonText = " SYSTEM ";
             this.DxRibbon.LogActive = true;
 
-            this.DxRibbon.ImageRightFull = DxComponent.CreateBitmapImage("Images/ImagesBig/Bart 01bt.png");
-            this.DxRibbon.ImageRightMini = DxComponent.CreateBitmapImage("Images/ImagesBig/Bart 01c.png");
+            //     this.DxRibbon.ImageRightFull = DxComponent.CreateBitmapImage("Images/ImagesBig/Bart 01bt.png");
+            //     this.DxRibbon.ImageRightMini = DxComponent.CreateBitmapImage("Images/ImagesBig/Bart 01c.png");
 
             string imgLogClear = "svgimages/snap/cleartablestyle.svg";
             string imgInfo = "svgimages/xaf/action_aboutinfo.svg";

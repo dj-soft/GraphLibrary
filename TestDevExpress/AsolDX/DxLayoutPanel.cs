@@ -18,7 +18,6 @@ using WSXmlSerializer = Noris.WS.Parser.XmlSerializer;
 using WSForms = Noris.WS.DataContracts.Desktop.Forms;
 using DevExpress.Utils.Drawing;
 using DevExpress.Skins;
-using static DevExpress.XtraEditors.RoundedSkinPanel;
 using DevExpress.XtraBars.Navigation;
 using DevExpress.XtraBars.Objects;
 using System.Web.Caching;
@@ -1115,8 +1114,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             if (!this.IsHandleCreated || this.Disposing || this.IsDisposed) return;
 
-            foreach (LayoutTileInfo tileInfo in _Controls)
-                tileInfo.HostControl?.RefreshControlGui();
+            using (SystemAdapter.TraceTextScope(TraceLevel.Info, this.GetType(), "_RefreshControls", "Performance"))
+            {
+                foreach (LayoutTileInfo tileInfo in _Controls)
+                    tileInfo.HostControl?.RefreshControlGui();
+            }
         }
         /// <summary>
         /// Pole User controlů, v páru s jejich posledně známým parentem
@@ -2990,11 +2992,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private void _RefreshControlGui()
         {
-            _TitleBarSetVisible();
-            if (_TitleBarIsVisible)
-                _TitleBar.RefreshControl();
+            using (SystemAdapter.TraceTextScope(TraceLevel.Info, this.GetType(), "_RefreshControlGui", "Performance"))
+            {
+                _TitleBarSetVisible();
+                if (_TitleBarIsVisible)
+                    _TitleBar.RefreshControl();
+            }
         }
-        
         /// <summary>
         /// Uživatel kliknul na button Dock (strana je v argumentu)
         /// </summary>
@@ -3799,8 +3803,95 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Okraje panelu
         /// </summary>
         private int _PanelMargin { get { return 3; } }
+        /// <summary>
+        /// Obsahuje true, pokud this titulek má být vykreslen jako "Aktivní".
+        /// To je tehdy, když this panel je aktivní, a když parent má více panelů než jeden anebo když má jeden, pak musí mít nastaveno <see cref="HighlightSinglePanel"/> = true.
+        /// false = titulek bude kreslen jako neaktivní.
+        /// </summary>
+        private bool _DrawHeaderAsActive
+        {
+            get
+            {
+                bool isActive = this.IsActivePanel;
+                if (!isActive) return false;
+                bool isSingle = (this.LayoutOwner.ControlCount == 1);
+                if (!isSingle) return true;
+                return this.HighlightSinglePanel;
+            }
+        }
         #endregion
-        #region Vykreslení
+        #region Vykreslení Dx 21.1
+        /// <summary>
+        /// Vykreslí pozadí panelu
+        /// </summary>
+        /// <param name="e"></param>
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            using (SystemAdapter.TraceTextScope(TraceLevel.Info, this.GetType(), "OnPaint", "Performance"))
+            {
+                if (!this.UseDxPainter)
+                    base.OnPaint(e);
+                else
+                    _PaintDxPanel(e);
+            }
+        }
+        /// <summary>
+        /// Vykreslí titulkový panel v režimu DX = vlastními nástroji. Pouze pokud <see cref="UseDxPainter"/> je true.
+        /// </summary>
+        /// <param name="e"></param>
+        private void _PaintDxPanel(PaintEventArgs e)
+        {
+            bool isActive = _DrawHeaderAsActive;
+            DxSkinColorSet colorSet = DxComponent.SkinColorSet;
+            _PaintDxBackground(e, isActive, colorSet);
+            _PaintDxTitle(e, isActive, colorSet);
+        }
+        /// <summary>
+        /// Vykreslí pozadí pro titulkový panel v režimu DX = vlastními nástroji. Pouze pokud <see cref="UseDxPainter"/> je true.
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="isActive"></param>
+        /// <param name="colorSet"></param>
+        private void _PaintDxBackground(PaintEventArgs e, bool isActive, DxSkinColorSet colorSet)
+        {
+            this.BackColorUserSilent = (isActive ? colorSet.HeaderFooterBackColor : colorSet.PanelBackColor);
+            base.OnPaint(e);           // base.OnPaint() provede vykreslení pozadí barvou BackColorUser a poté vykreslí obrázky z PaintedItems, tedy i naší ikonu
+
+            var bounds = this.ClientRectangle;
+
+            //var backColor = (isActive ? colorSet.HeaderFooterBackColor : colorSet.PanelBackColor);
+            //if (backColor.HasValue)
+            //{
+            //    e.Graphics.FillRectangle(DxComponent.PaintGetSolidBrush(backColor.Value), bounds);
+            //}
+
+            var lineColor = (isActive ? colorSet.AccentPaint : null);
+            if (lineColor.HasValue)
+            {
+                var line = new Rectangle(bounds.X + 0, bounds.Y + 1, bounds.Width - 1, 2);
+                e.Graphics.FillRectangle(DxComponent.PaintGetSolidBrush(lineColor.Value), line);
+            }
+        }
+        /// <summary>
+        /// Vykreslí label pro titulkový panel v režimu DX = vlastními nástroji. Pouze pokud <see cref="UseDxPainter"/> je true.
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="isActive"></param>
+        /// <param name="colorSet"></param>
+        private void _PaintDxTitle(PaintEventArgs e, bool isActive, DxSkinColorSet colorSet)
+        {
+            var label = _TitleLabel;
+            var bounds = label.Bounds;
+            string text = label.Text;
+            var font = label.StyleController?.Appearance.GetFont() ?? label.Appearance.GetFont();
+            var textColor = (isActive ? colorSet.AccentPaint : colorSet.LabelForeColor);
+            var brush = DxComponent.PaintGetSolidBrush(textColor ?? label.ForeColor);
+            e.Graphics.DrawString(text, font, brush, bounds, StringFormat.GenericDefault);
+        }
+        #endregion
+        #region Vykreslení Dx 22.2      --     deaktivováno !!!
+        // 46.27 test    deaktivováno
+        /*
         /// <summary>
         /// Vykreslí pozadí panelu
         /// </summary>
@@ -3863,22 +3954,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             var brush = DxComponent.PaintGetSolidBrush(textColor ?? label.ForeColor);
             cache.DrawString(text, font, brush, bounds, StringFormat.GenericDefault);
         }
-        /// <summary>
-        /// Obsahuje true, pokud this titulek má být vykreslen jako "Aktivní".
-        /// To je tehdy, když this panel je aktivní, a když parent má více panelů než jeden anebo když má jeden, pak musí mít nastaveno <see cref="HighlightSinglePanel"/> = true.
-        /// false = titulek bude kreslen jako neaktivní.
-        /// </summary>
-        private bool _DrawHeaderAsActive
-        {
-            get
-            {
-                bool isActive = this.IsActivePanel;
-                if (!isActive) return false;
-                bool isSingle = (this.LayoutOwner.ControlCount == 1);
-                if (!isSingle) return true;
-                return this.HighlightSinglePanel;
-            }
-        }
+        */
         #endregion
     }
     #endregion

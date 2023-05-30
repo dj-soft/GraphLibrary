@@ -72,9 +72,6 @@ namespace Noris.Clients.Win.Components.AsolDX
             _Groups?.ForEach(g => g?.Dispose());
             _Groups = null;
 
-            _ImageRightFull = null;
-            _ImageRightMini = null;
-
             SelectedDxPageChanged = null;
 
             _SearchEditItems = null;
@@ -94,6 +91,8 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             _QATDirectItems?.ForEach(q => q?.Dispose());
             _QATDirectItems = null;
+
+            ImageRightDestroy();
 
             SearchMenuDestroyContent();
         }
@@ -144,12 +143,12 @@ namespace Noris.Clients.Win.Components.AsolDX
             UseLazyContentCreate = true;
             CheckLazyContentEnabled = true;
 
-            _ImageHideOnMouse = true;       // Logo nekreslit, když v tom místě je myš
 
             SearchMenuGroupSort = SearchMenuGroupSortMode.PageOrderGroupCaption;
             SearchMenuMaxResultCount = 24;
             SearchMenuShrinkResultCount = 0;
 
+            ImageRightInit();
             Visible = true;
             DxDisposed = false;
         }
@@ -237,8 +236,17 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Volá se před zahájením prvního vykreslení Ribbonu.
         /// V tuto dobu je <see cref="IsRibbonAlreadyPainted"/> = false.
         /// </summary>
-        protected virtual void BeforeFirstPaint()
-        { }
+        protected virtual void BeforeFirstPaint() { }
+        /// <summary>
+        /// Vykreslí ikonu vpravo.
+        /// V tuto dobu je <see cref="IsRibbonAlreadyPainted"/> = podle stavu vykreslení: při prvním kreslení je false, při dalším je true.
+        /// </summary>
+        /// <param name="e"></param>
+        protected virtual void PaintAfter(PaintEventArgs e)
+        {
+            // Bez tohoto řádku je obtížnější změnit stránku ribbonu "Domů" na jinou stránku po prvním otevření okna (musí se kliknout dvakrát):
+            this.SelectedPageFixed = null;
+        }
         /// <summary>
         /// Zajistí nastavení <see cref="IsContentAlreadyPainted"/> pro všechny aktuálně mergované Ribbony.
         /// </summary>
@@ -381,6 +389,16 @@ namespace Noris.Clients.Win.Components.AsolDX
         private int LastTimeStamp;
         #endregion
         #region Obrázek vpravo. Od verze DevExpress 21.1 bude možno použít property RibbonControl.EmptyAreaImageOptions, aktuálně jsme na 20.2
+        private void ImageRightInit()
+        {
+            // _ImageHideOnMouse = true;       // Logo nekreslit, když v tom místě je myš
+        }
+        private void ImageRightDestroy()
+        {
+            // _ImageRightFull = null;
+            // _ImageRightMini = null;
+        }
+        /*
         /// <summary>
         /// Ikona vpravo pro velký Ribbon
         /// </summary>
@@ -401,7 +419,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// V tuto dobu je <see cref="IsRibbonAlreadyPainted"/> = podle stavu vykreslení: při prvním kreslení je false, při dalším je true.
         /// </summary>
         /// <param name="e"></param>
-        private void PaintAfter(PaintEventArgs e)
+        private void PaintImageRight(PaintEventArgs e)
         {
             OnPaintImageRightBefore(e);
 
@@ -506,6 +524,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Volá se po vykreslení obrázku vpravo v ribbonu
         /// </summary>
         public event EventHandler<PaintEventArgs> PaintImageRightAfter;
+        */
         #endregion
         #region Aktivní stránka Ribbonu, její aktivace, změna
         /// <summary>

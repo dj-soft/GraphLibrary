@@ -4527,6 +4527,8 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
         }
         private void PrepareSvgIconsContent()
         {
+            _PanelSvgIcons.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.Simple;
+
             _PanelSvgIcons.ClientSizeChanged += _PanelSvgIcons_ClientSizeChanged;
             _SvgIconXmlText = new DxMemoEdit();
             _SvgIconXmlText.Font = new Font(FontFamily.GenericMonospace, 11f, FontStyle.Bold);

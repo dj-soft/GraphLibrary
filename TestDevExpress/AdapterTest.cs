@@ -24,7 +24,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         event EventHandler ISystemAdapter.InteractiveZoomChanged { add { } remove { } }
         decimal ISystemAdapter.ZoomRatio { get { return 1.0m; } }
         string ISystemAdapter.GetMessage(MsgCode messageCode, params object[] parameters) { return AdapterSupport.GetMessage(messageCode, parameters); }
-        StyleInfo ISystemAdapter.GetStyleInfo(string styleName) { return AdapterSupport.GetStyleInfo(styleName); }
+        StyleInfo ISystemAdapter.GetStyleInfo(string styleName, Color? exactAttributeColor) { return AdapterSupport.GetStyleInfo(styleName, exactAttributeColor); }
         bool ISystemAdapter.IsPreferredVectorImage { get { return true; } }
         ResourceImageSizeType ISystemAdapter.ImageSizeStandard { get { return ResourceImageSizeType.Medium; } }
         IEnumerable<IResourceItem> ISystemAdapter.GetResources() { return DataResources.GetResources(); }
@@ -36,6 +36,15 @@ namespace Noris.Clients.Win.Components.AsolDX
         System.ComponentModel.ISynchronizeInvoke ISystemAdapter.Host { get { return DxComponent.MainForm ?? WinForm.Form.ActiveForm; } }
         WinForm.Shortcut ISystemAdapter.GetShortcutKeys(string shortCut) { return WinForm.Shortcut.None; }
         void ISystemAdapter.TraceText(TraceLevel level, Type type, string method, string keyword, params object[] arguments) { }
+        /// <summary>
+        /// Zapíše do trace dané informace a vrátí using blok, který na svém konci v Dispose zapíše konec bloku (Begin - End)
+        /// </summary>
+        /// <param name="level"></param>
+        /// <param name="type"></param>
+        /// <param name="method"></param>
+        /// <param name="keyword"></param>
+        /// <param name="arguments"></param>
+        IDisposable ISystemAdapter.TraceTextScope(TraceLevel level, Type type, string method, string keyword, params object[] arguments) { return null; }
     }
     /// <summary>
     /// Rozhraní předepisuje metodu <see cref="HandleEscapeKey()"/>, která umožní řešit klávesu Escape v rámci systému
@@ -199,8 +208,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Vrátí definici daného stylu
         /// </summary>
         /// <param name="styleName"></param>
+        /// <param name="exactAttributeColor"></param>
         /// <returns></returns>
-        public static StyleInfo GetStyleInfo(string styleName) 
+        public static StyleInfo GetStyleInfo(string styleName, Color? exactAttributeColor)
         {
             if (_Styles is null) return null;
             var key = _GetStyleKey(styleName, DxComponent.IsDarkTheme);
@@ -222,10 +232,10 @@ namespace Noris.Clients.Win.Components.AsolDX
             else
                 _Styles.Add(key, styleInfo);
         }
-        private static string _GetStyleKey(string styleName, bool isDark)
+        private static string _GetStyleKey(string styleName, bool? isDark)
         {
             if (styleName is null) return null;
-            return styleName + (isDark ? "~D" : "~L");
+            return styleName + (isDark.HasValue ? (isDark.Value ? "~D" : "~L") : "~N");
         }
         private static Dictionary<string, StyleInfo> _Styles;
     }

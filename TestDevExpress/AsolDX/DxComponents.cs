@@ -75,6 +75,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             this._InitStyles();
             this._InitZoom();
             this._InitFontCache();
+            this._InitSkinStaticInfo();
             this._InitDrawing();
             this._InitListeners();
             this._InitSvgConvertor();
@@ -86,6 +87,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private void _Prepare()
         {
+            this._ReadSkinColorSet();
             this._PrepareImageLists();
         }
         private static bool __IsInitialized = false;
@@ -1474,7 +1476,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void DevExpress_StyleChanged(object sender, EventArgs e)
         {
             _ResetControlColors();                         // Tady se nuluje příznak __IsDarkTheme
-            bool nowIsDark = _IsDarkTheme();               // Tady se napočte příznak __IsDarkTheme
+            bool nowIsDark = _IsDarkTheme();               // Tady se napočte příznak __IsDarkTheme, a současně se načte SkinColorSet
             _CallListeners<IListenerStyleChanged>();
             bool isChange = (!__WasDarkTheme.HasValue || (__WasDarkTheme.HasValue && __WasDarkTheme.Value != nowIsDark));
             __WasDarkTheme = nowIsDark;
@@ -4653,6 +4655,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="skinPartName"></param>
         /// <returns></returns>
         public static DevExpress.Skins.Skin GetSkinInfo(string skinPartName) { return Instance._GetSkinByName(skinPartName); }
+        private void _OnSkinChanged()
+        { }
         /// <summary>
         /// Vrátí aktuálně platnou barvu dle skinu.
         /// Vstupní jména by měly pocházet z prvků třídy <see cref="SkinElementColor"/>.
@@ -5010,8 +5014,60 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Vrátí definici daného stylu
         /// </summary>
         /// <param name="styleName"></param>
+        /// <param name="exactAttributeColor"></param>
         /// <returns></returns>
-        public static StyleInfo GetStyleInfo(string styleName) { return SystemAdapter.GetStyleInfo(styleName); }
+        public static StyleInfo GetStyleInfo(string styleName, Color? exactAttributeColor = null) { return SystemAdapter.GetStyleInfo(styleName, exactAttributeColor); }
+        #endregion
+        #region SkinStaticInfo
+        /// <summary>
+        /// Připraví statickou kolekci informací o všech Skinech.
+        /// Tato metoda nepotřebuje přístup k funkční instanci <see cref="DxComponent"/>.
+        /// </summary>
+        private void _InitSkinStaticInfo()
+        {
+            __SkinStaticInfos = SkinStaticInfo.CreateDictionary();
+        }
+        /// <summary>
+        /// Vrátí statickou informaci o skinu daného jména.
+        /// Jméno skinu <paramref name="skinNameCompact"/> generuje <see cref="DxSkinColorSet.CurrentSkinNameCompact"/> nebo <see cref="DxSkinColorSet.GetSkinNameCompact(string, bool)"/>.
+        /// Nebo je k dispozici v <see cref="DxSkinColorSet.SkinNameCompact"/>.
+        /// </summary>
+        /// <param name="skinNameCompact"></param>
+        /// <param name="skinStaticInfo"></param>
+        /// <returns></returns>
+        internal static bool TryFindStaticSkinInfo(string skinNameCompact, out SkinStaticInfo skinStaticInfo) { return Instance._TryFindStaticSkinInfo(skinNameCompact, out skinStaticInfo); }
+        /// <summary>
+        /// Statická informace o aktuálním skinu
+        /// </summary>
+        internal static SkinStaticInfo CurrentStaticSkinInfo { get { return Instance._GetCurrentStaticSkinInfo(); } }
+        /// <summary>
+        /// Vrátí statickou informaci o aktuálním skinu <see cref="DxSkinColorSet.CurrentSkinNameCompact"/>.
+        /// </summary>
+        /// <returns></returns>
+        private SkinStaticInfo _GetCurrentStaticSkinInfo()
+        {
+            var skinNameCompact = DxSkinColorSet.CurrentSkinNameCompact;
+            if (_TryFindStaticSkinInfo(skinNameCompact, out SkinStaticInfo skinInfo)) return skinInfo;
+            return null;
+        }
+        /// <summary>
+        /// Vrátí statickou informaci o skinu daného jména.
+        /// Jméno skinu <paramref name="skinNameCompact"/> generuje <see cref="DxSkinColorSet.CurrentSkinNameCompact"/> nebo <see cref="DxSkinColorSet.GetSkinNameCompact(string, bool)"/>.
+        /// Nebo je k dispozici v <see cref="DxSkinColorSet.SkinNameCompact"/>.
+        /// </summary>
+        /// <param name="skinNameCompact"></param>
+        /// <param name="skinStaticInfo"></param>
+        /// <returns></returns>
+        private bool _TryFindStaticSkinInfo(string skinNameCompact, out SkinStaticInfo skinStaticInfo)
+        {
+            if (!String.IsNullOrEmpty(skinNameCompact) && __SkinStaticInfos.TryGetValue(skinNameCompact, out skinStaticInfo)) return true;      // OK: našli jsme
+
+            SystemAdapter.TraceText(TraceLevel.Warning, this.GetType(), "_GetCurrentStaticSkinInfo", "Skin", $"Current skin {skinNameCompact} not found in Static Skin List.");
+
+            skinStaticInfo = null;
+            return false;
+        }
+        private Dictionary<string, SkinStaticInfo> __SkinStaticInfos;
         #endregion
         #region DxSkinColorSet
         /// <summary>
@@ -5023,19 +5079,35 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public static DxSkinColorSet SkinColorSet { get { return Instance._SkinColorSet; } }
         /// <summary>Standardizovaný set barev aktuálního skinu a palety</summary>
-        private DxSkinColorSet _SkinColorSet
+        private DxSkinColorSet _SkinColorSet { get { _CheckSkinColorSet(); return __SkinColorSet; } }
+        /// <summary>
+        /// Metoda načte data do <see cref="__SkinColorSet"/>:
+        /// buď bezpodmínečně (když <paramref name="force"/> je true);
+        /// anebo (když <paramref name="force"/> je false) tak jen pokud je aktivní Debugger (pro ladění)...
+        /// <para/>
+        /// Typicky se volá při startu a po změně skinu / palety, a s parametrem <paramref name="force"/> = false.
+        /// Tím je zajištěno načtení skinu jen pro vývojáře.
+        /// Běžný uživatel si skin/paletu načte OnDemand, až si požádá o <see cref="SkinColorSet"/> (tam bude vyhodnocen stav a aktuálnost v metodě <see cref="_CheckSkinColorSet(bool)"/>).
+        /// </summary>
+        /// <param name="force"></param>
+        private void _ReadSkinColorSet(bool force = false)
         {
-            get
-            {
-                var skinColorSet = __SkinColorSet;
-                if (skinColorSet is null || !skinColorSet.IsCurrent)
-                {
-                    skinColorSet = DxSkinColorSet.CreateCurrent();
-                    __SkinColorSet = skinColorSet;
-                }
-                return skinColorSet;
-            }
+            if (force || IsDebuggerActive)
+                _CheckSkinColorSet(true);
         }
+        /// <summary>
+        /// Metoda zajistí, že v <see cref="__SkinColorSet"/> bude instance platná pro aktuální skin a paletu.
+        /// </summary>
+        /// <param name="force"></param>
+        private void _CheckSkinColorSet(bool force = false)
+        {
+            var skinColorSet = __SkinColorSet;
+            if (force || skinColorSet is null || !skinColorSet.IsCurrent)
+                __SkinColorSet = DxSkinColorSet.CreateCurrent();
+        }
+        /// <summary>
+        /// Úložiště poslední verifikované instance <see cref="DxSkinColorSet"/>
+        /// </summary>
         private DxSkinColorSet __SkinColorSet;
         #endregion
         #region Static helpers
@@ -5574,7 +5646,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         #endregion
     }
-    #region class DxSkinColorSet
+    #region class DxSkinColorSet a SkinStaticInfo
     /// <summary>
     /// Standardizovaný set barev aktuálního skinu a palety.
     /// Existuje jediná instance, je dostupná přes <see cref="DxComponent.SkinColorSet"/> a je zajištěno, že bude vrácena vždy instance odpovídající aktuálnímu skinu a paletě.
@@ -5594,22 +5666,27 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Konstruktor
         /// </summary>
-        private DxSkinColorSet(DevExpress.Skins.Skin skin, string skinName, string paletteName)
+        private DxSkinColorSet(DevExpress.Skins.Skin skin, string skinName, bool isCompact, string paletteName)
         {
             this.Skin = skin;
             this.SkinName = skinName;
+            this.IsCompact = isCompact;
             this.PaletteName = paletteName;
-            this.SvgColors = new Dictionary<string, Color>();
-            this.ControlColors = new Dictionary<string, Color>();
+            this.__SvgColors = new Dictionary<string, Color>();
+            this.__ControlColors = new Dictionary<string, Color>();
         }
         /// <summary>
-        /// Vizualizace
+        /// Vizualizace: obsahuje Název skinu, příznak Compact, a jméno palety
         /// </summary>
         /// <returns></returns>
         public override string ToString()
         {
-            return $"{SkinName} {PaletteName}";
+            return SkinNameCompactPalette;
         }
+        /// <summary>
+        /// Suffix " Compact"
+        /// </summary>
+        private static string _SuffixCompact { get { return "; Compact"; } }
         /// <summary>
         /// Instance Skinu
         /// </summary>
@@ -5619,9 +5696,21 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public string SkinName { get; private set; }
         /// <summary>
+        /// Skin je "Kompaktní" (=zmenšený prostor), tak se odlišuje WXI ... WXI Compact
+        /// </summary>
+        public bool IsCompact { get; private set; }
+        /// <summary>
         /// Jméno palety
         /// </summary>
         public string PaletteName { get; private set; }
+        /// <summary>
+        /// Text obsahující název skinu [a suffix; Compact]
+        /// </summary>
+        public string SkinNameCompact { get { return GetSkinNameCompact(this.SkinName, this.IsCompact); } }
+        /// <summary>
+        /// Text obsahující název skinu [a suffix; Compact]
+        /// </summary>
+        public string SkinNameCompactPalette { get { return GetSkinNameCompactPalette(this.SkinName, this.IsCompact, this.PaletteName); } }
         /// <summary>
         /// Obsahuje true, pokud zdejší instance je platná pro aktuální skin a paletu.
         /// </summary>
@@ -5629,22 +5718,77 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             get
             {
-                _ReadSkinPalette(out var _, out string skinName, out string paletteName);
-                return String.Equals(SkinName, skinName) && String.Equals(PaletteName, paletteName);
+                _ReadSkinPalette(out var _, out string skinName, out bool isCompact, out string paletteName);
+                bool isCurrent = String.Equals(SkinName, skinName) && String.Equals(PaletteName, paletteName) && (IsCompact == isCompact);
+                if (!isCurrent)
+                    SystemAdapter.TraceText(TraceLevel.Info, typeof(DxSkinColorSet), "IsCurrent", "Skin", "SkinChange detect", $"OldSkin: {SkinName}; NewSkin: {skinName}; OldPalette: {PaletteName}; NewPalette: {paletteName}; OldCompact: {IsCompact}; NewCompact: {isCompact}.");
+                return isCurrent;
             }
+        }
+        #endregion
+        #region Static support - načtení aktuálního skinu, formátování textu
+        /// <summary>
+        /// Obsahuje jméno a suffix compact aktuálního skinu, např. "High Contrast Classic" nebo "WXI; Compact": aktuální = nyní platný (proto je static),
+        /// nikoliv zde uložený skin, pro který jsme vytvořeni (to je k dispozici v instanční <see cref="SkinNameCompact"/>.
+        /// </summary>
+        public static string CurrentSkinNameCompact
+        {
+            get
+            {
+                _ReadSkinPalette(out var _, out string skinName, out bool isCompact, out string paletteName);
+                return GetSkinNameCompact(skinName, isCompact);
+            }
+        }
+        /// <summary>
+        /// Obsahuje jméno a suffix compact aktuálního skinu a jméno palety
+        /// </summary>
+        public static string CurrentSkinNameCompactPalette
+        {
+            get
+            {
+                _ReadSkinPalette(out var _, out string skinName, out bool isCompact, out string paletteName);
+                return GetSkinNameCompactPalette(skinName, isCompact, paletteName);
+            }
+        }
+        /// <summary>
+        /// Vrátí jméno a suffix ; Compact zadaného skinu, např. "High Contrast Classic" nebo "WXI; Compact"
+        /// </summary>
+        public static string GetSkinNameCompact(string skinName, bool isCompact)
+        {
+            return skinName + (isCompact ? _SuffixCompact : "");
+        }
+        /// <summary>
+        /// Vrátí jméno a suffix ; Compact a jméno palety zadaného skinu, např. "High Contrast Classic" nebo "Basic : Pine Light"
+        /// </summary>
+        public static string GetSkinNameCompactPalette(string skinName, bool isCompact, string paletteName)
+        {
+            return skinName + (isCompact ? _SuffixCompact : "") + (!String.IsNullOrEmpty(paletteName) ? " : " + paletteName : "");
         }
         /// <summary>
         /// Načte a vrátí aktuální jméno skinu a SVG palety
         /// </summary>
         /// <param name="skin"></param>
         /// <param name="skinName"></param>
+        /// <param name="isCompact"></param>
         /// <param name="paletteName"></param>
-        private static void _ReadSkinPalette(out DevExpress.Skins.Skin skin, out string skinName, out string paletteName)
+        private static void _ReadSkinPalette(out DevExpress.Skins.Skin skin, out string skinName, out bool isCompact, out string paletteName)
         {
-            var ulaf = DevExpress.LookAndFeel.UserLookAndFeel.Default;
-            skin = DevExpress.Skins.CommonSkins.GetSkin(ulaf);
-            skinName = (ulaf.ActiveSkinName ?? "").Trim();
-            paletteName = (ulaf.ActiveSvgPaletteName ?? "").Trim();
+            skin = null;
+            skinName = null;
+            isCompact = false;
+            paletteName = null;
+            try
+            {
+                var ulaf = DevExpress.LookAndFeel.UserLookAndFeel.Default;
+                skin = DevExpress.Skins.CommonSkins.GetSkin(ulaf);
+                skinName = (ulaf.ActiveSkinName ?? "").Trim();
+                isCompact = ulaf.CompactUIModeForced;
+                paletteName = (ulaf.ActiveSvgPaletteName ?? "").Trim();
+            }
+            catch (Exception exc)
+            {
+                SystemAdapter.TraceText(TraceLevel.SysError, typeof(DxSkinColorSet), "ReadSkinPalette", "Skin", "Exception", $"Type: {exc.GetType().FullName}; Message: {exc.Message}.");
+            }
         }
         /// <summary>
         /// Vytvoří, naplní a vrátí instanci obsahující data aktuálního skinu a palety
@@ -5652,8 +5796,28 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <returns></returns>
         internal static DxSkinColorSet CreateCurrent()
         {
-            _ReadSkinPalette(out var skin, out var skinName, out var paletteName);
-            DxSkinColorSet colorSet = new DxSkinColorSet(skin, skinName, paletteName);
+            DxSkinColorSet dxSkinColorSet = null;
+            try
+            {
+                SystemAdapter.TraceText(TraceLevel.Info, typeof(DxSkinColorSet), "CreateCurrent", "Skin", "Begin");
+                dxSkinColorSet = _CreateCurrent();
+                SystemAdapter.TraceText(TraceLevel.Info, typeof(DxSkinColorSet), "CreateCurrent", "Skin", "Done", $"SkinName: {dxSkinColorSet.SkinName}; SkinPalette: {dxSkinColorSet.PaletteName}");
+            }
+            catch (Exception exc)
+            {
+                SystemAdapter.TraceText(TraceLevel.SysError, typeof(DxSkinColorSet), "CreateCurrent", "Skin", "Exception", $"Type: {exc.GetType().FullName}; Message: {exc.Message}.");
+            }
+
+            return dxSkinColorSet;
+        }
+        /// <summary>
+        /// Vytvoří, naplní a vrátí instanci obsahující data aktuálního skinu a palety
+        /// </summary>
+        /// <returns></returns>
+        private static DxSkinColorSet _CreateCurrent()
+        {
+            _ReadSkinPalette(out var skin, out var skinName, out bool isCompact, out var paletteName);
+            DxSkinColorSet colorSet = new DxSkinColorSet(skin, skinName, isCompact, paletteName);
 
             // Zajistíme spuštění všech metod, které mají atribut Initializer:
             var initializers = colorSet.GetType()
@@ -5682,15 +5846,15 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         #endregion
         #region Pojmenované barvy
-        public Dictionary<string, Color> SvgColors { get; private set; }
-        private void AddSvgColors(Dictionary<string, Color> svgColors)
+        private Dictionary<string, Color> __SvgColors;
+        private void _AddSvgColors(Dictionary<string, Color> svgColors)
         {
-            _AddColorsTo(this.SvgColors, svgColors);
+            _AddColorsTo(this.__SvgColors, svgColors);
         }
-        public Dictionary<string, Color> ControlColors { get; private set; }
-        private void AddControlColors(Dictionary<string, Color> controlColors)
+        private Dictionary<string, Color> __ControlColors;
+        private void _AddControlColors(Dictionary<string, Color> controlColors)
         {
-            _AddColorsTo(this.ControlColors, controlColors);
+            _AddColorsTo(this.__ControlColors, controlColors);
         }
         private static void _AddColorsTo(Dictionary<string, Color> target, Dictionary<string, Color> source)
         {
@@ -5749,8 +5913,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Z aktuálního skinu a palety načte základní barvy
         /// </summary>
-        [Initializer(-1)]
-        private void _BasicRead()
+        [Initializer(-10)]
+        private void _ColorsRead()
         {
             var skin = this.Skin;
 
@@ -5777,7 +5941,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             void readFromSvgPalette(SvgPalette svgPalette)
             {
                 var svgDict = GetColorsDictionary(svgPalette);
-                AddSvgColors(svgDict);
+                _AddSvgColors(svgDict);
 
                 // Palety jsou vícero druhů: starší obsahují názvy barev: "Paint", "Paint High", "Paint Shadow", atd...:
                 /*
@@ -5903,7 +6067,7 @@ White
 
                 // Pozor: jméno barvy (Color.Name) může mít formu "@SvgColorName",
                 //        pak vepsaná konkrétní barva je bezvýznamná a je třeba získat barvu definovanou pro SVG = ze zdejší Dictionary this.SvgColors !!
-                var svgColors = this.SvgColors;
+                var svgColors = this.__SvgColors;
                 var colorDict = new Dictionary<string, Color>();
                 foreach (var kvp in commonDict)
                 {
@@ -5919,7 +6083,7 @@ White
                 }
 
                 // Konkrétní barvy vložíme do zdejší instanční Dictionary:
-                AddControlColors(colorDict);
+                _AddControlColors(colorDict);
 
                 // debug barev:
                 //string colors1 = commonDict.Select(i => $"\"{i.Key}\" = {i.Value}").ToOneString();
@@ -6237,6 +6401,63 @@ White
         public Color? NamedCritical { get; private set; }
 
         #endregion
+        #region Rozměrová data a jejich načtení
+        /// <summary>
+        /// Z aktuálního skinu a palety načte základní rozměry
+        /// </summary>
+        [Initializer(-9)]
+        private void _SizesRead()
+        {
+            var skin = this.Skin;
+
+            DxComponent.TryFindStaticSkinInfo(this.SkinNameCompact, out var staticInfo);
+            this.TabHeaderHeight = staticInfo?.TabHeaderHeight ?? 33;
+
+
+
+            //  TAKHLE JSEM NAČÍTAL VLASTNOSTI SKINU:
+            // Tady jsem si jen získal SkinNameCompact do Clipboardu, a následně na živé aplikaci změřil skin, a výsledky opisuji do SkinStaticInfo.CreateDictionary() ...
+
+            //var skinElements = skin.GetElements();
+            //var tabElements = skin.Container.GetSkin(DevExpress.Skins.SkinProductId.Tab).GetElements();
+
+            //if (SumSkinNames is null) SumSkinNames = new List<string>();
+            //string skinText = this.SkinNameCompact;
+            //DxComponent.ClipboardInsert(skinText);
+
+
+            //string skinName = $"\"{skinText}\"";
+            //if (!SumSkinNames.Contains(skinName))
+            //{
+            //    SumSkinNames.Add(skinName);
+            //    SumSkinNames.Sort();
+            //}
+            //string skinNames = String.Join(", ", SumSkinNames);
+            //DxComponent.ClipboardInsert(skinNames);
+
+            // MultiMonitor, Windows Zoom, UHD
+
+            /*
+            b) NonUHD, WinZoom 100%, prvek výšky 22px je vykreslen na 22px a je čistý       DPI controlu je  96
+            b) NonUHD, WinZoom 150%, prvek výšky 22px je vykreslen na 35px a je rozmazaný   DPI controlu je  96  (resize na 150% si řeší DevExpess a Windows)
+            b) UHD,    WinZoom 150%, prvek výšky 22px je vykreslen na 35px a je čistý       DPI controlu je 144  (měli bychom zadávat reálnou výšku controlu = to řeší sekvence: var formDpi = this.FindForm()?.DeviceDpi ?? 96;   var currentHeight = DxComponent.ZoomToGui(tabSkinHeight, formDpi);  )
+
+
+
+
+
+
+            */
+        }
+        // private static List<string> SumSkinNames;
+
+
+        /// <summary>
+        /// Výška záložky na TabHeaderu, Pro neznámé skiny je zde 33.
+        /// </summary>
+        public int TabHeaderHeight { get; private set; }
+
+        #endregion
     }
     /// <summary>
     /// Atribut deklarující metodu, která je rozpoznána a vyvolána v procesu generické inicializace třídy.
@@ -6259,6 +6480,119 @@ White
         /// Priorita zpracování, metoda s nižším číslem bude volána dříve
         /// </summary>
         public int Priority { get; private set; }
+    }
+    /// <summary>
+    /// Statické informace o skinu, vlastnosti jsou získané měřením, nikoli dynamicky detekcí vlastností skinu.
+    /// </summary>
+    internal class SkinStaticInfo
+    {
+        #region Konstruktor a public vlastnosti
+        /// <summary>
+        /// Konstruktor je privátní
+        /// </summary>
+        /// <param name="skinName"></param>
+        /// <param name="tabHeaderHeight"></param>
+        /// <param name="hasTwoDarkState"></param>
+        private SkinStaticInfo(string skinName, int tabHeaderHeight, bool hasTwoDarkState)
+        {
+            this.SkinName = skinName;
+            this.TabHeaderHeight = tabHeaderHeight;
+            this.HasTwoDarkState = hasTwoDarkState;
+        }
+        /// <summary>
+        /// Jméno skinu odpovídající kódu
+        /// </summary>
+        public string SkinName { get; private set; }
+        /// <summary>
+        /// Výška prostoru TabHeader
+        /// </summary>
+        public int TabHeaderHeight { get; private set; }
+        /// <summary>
+        /// Má dva stavy IsDark: liší se světlost Panelu od světlosti TextBoxu
+        /// </summary>
+        public bool HasTwoDarkState { get; private set; }
+        #endregion
+        #region Static tvorba Dictionary
+        /// <summary>
+        /// Vygeneruje a vrátí statickou Dictionary, obsahující fixní výčet skinů a jejich vlastnosti získané měřením, nikoli dynamicky detekcí vlastností skinu.
+        /// Tato metoda nepotřebuje přístup k funkční instanci <see cref="DxComponent"/>.
+        /// </summary>
+        /// <returns></returns>
+        internal static Dictionary<string, SkinStaticInfo> CreateDictionary()
+        {
+            Dictionary<string, SkinStaticInfo> result = new Dictionary<string, SkinStaticInfo>();
+
+            addInfo("Basic", 33, false);
+            addInfo("Bezier", 27, false);
+            addInfo("WXI", 41, false);
+            addInfo("WXI; Compact", 32, false);
+            addInfo("Office 2019 Colorful", 37, false);
+            addInfo("Office 2019 Black", 37, false);
+            addInfo("Office 2019 White", 37, false);
+            addInfo("Office 2019 Dark Gray", 37, false);
+            addInfo("High Contrast", 27, false);
+            addInfo("DevExpress Style", 32, false);
+            addInfo("DevExpress Dark Style", 32, false);
+            addInfo("Office 2016 Colorful", 27, false);
+            addInfo("Office 2016 Dark", 27, true);
+            addInfo("Office 2016 Black", 27, false);
+            addInfo("Office 2013", 27, false);
+            addInfo("Office 2013 Dark Gray", 27, false);
+            addInfo("Office 2013 Light Gray", 27, false);
+            addInfo("Visual Studio 2013 Blue", 27, false);
+            addInfo("Visual Studio 2013 Dark", 27, false);
+            addInfo("Visual Studio 2013 Light", 27, false);
+            addInfo("VS2010", 28, false);
+            addInfo("Office 2010 Blue", 29, false);
+            addInfo("Office 2010 Black", 29, true);
+            addInfo("Office 2010 Silver", 29, false);
+            addInfo("Office 2007 Black", 23, false);
+            addInfo("Office 2007 Blue", 23, false);
+            addInfo("Office 2007 Green", 23, false);
+            addInfo("Office 2007 Pink", 23, false);
+            addInfo("Office 2007 Silver", 23, false);
+            addInfo("Blueprint", 24, false);
+            addInfo("High Contrast Classic", 21, true);
+            addInfo("Metropolis", 21, false);
+            addInfo("Metropolis Dark", 21, false);
+            addInfo("Whiteprint", 24, false);
+            addInfo("Pumpkin", 22, true);
+            addInfo("Springtime", 22, false);
+            addInfo("Summer 2008", 22, false);
+            addInfo("Valentine", 22, false);
+            addInfo("Xmas 2008 Blue", 22, false);
+            addInfo("McSkin", 22, false);
+            addInfo("Seven Classic", 31, false);
+            addInfo("Black", 22, false);
+            addInfo("Blue", 22, false);
+            addInfo("Darkroom", 21, true);
+            addInfo("Money Twins", 22, false);
+            addInfo("Seven", 23, false);
+            addInfo("Foggy", 22, false);
+            addInfo("Sharp", 22, true);
+            addInfo("Sharp Plus", 23, true);
+            addInfo("Caramel", 22, false);
+            addInfo("Coffee", 22, false);
+            addInfo("Dark Side", 22, true);
+            addInfo("Glass Oceans", 22, false);
+            addInfo("iMaginary", 23, false);
+            addInfo("Lilian", 22, false);
+            addInfo("Liquid Sky", 22, false);
+            addInfo("London Liquid Sky", 22, false);
+            addInfo("Stardust", 22, false);
+            addInfo("The Asphalt World", 22, false);
+
+            addInfo("HELIOS Nephrite Black", 37, false);
+            addInfo("HELIOS Nephrite Colorful", 37, false);
+
+            return result;
+
+            void addInfo(string skinName, int tabHeaderHeight, bool hasTwoDarkState)
+            {
+                result.Add(skinName, new SkinStaticInfo(skinName, tabHeaderHeight, hasTwoDarkState));
+            }
+        }
+        #endregion
     }
     #endregion
     #region Enumy
@@ -7117,8 +7451,9 @@ White
         /// Vrátí definici daného stylu
         /// </summary>
         /// <param name="styleName"></param>
+        /// <param name="exactAttributeColor"></param>
         /// <returns></returns>
-        public static StyleInfo GetStyleInfo(string styleName) { return Current.GetStyleInfo(styleName); }
+        public static StyleInfo GetStyleInfo(string styleName, Color? exactAttributeColor) { return Current.GetStyleInfo(styleName, exactAttributeColor); }
         /// <summary>
         /// Obsahuje true, pokud jsou preferovány vektorové ikony
         /// </summary>
@@ -7183,6 +7518,15 @@ White
         /// <param name="keyword"></param>
         /// <param name="arguments"></param>
         internal static void TraceText(TraceLevel level, Type type, string method, string keyword, params object[] arguments) { Current.TraceText(level, type, method, keyword, arguments); }
+        /// <summary>
+        /// Zapíše do trace dané informace a vrátí using blok, který na svém konci v Dispose zapíše konec bloku (Begin - End)
+        /// </summary>
+        /// <param name="level"></param>
+        /// <param name="type"></param>
+        /// <param name="method"></param>
+        /// <param name="keyword"></param>
+        /// <param name="arguments"></param>
+        internal static IDisposable TraceTextScope(TraceLevel level, Type type, string method, string keyword, params object[] arguments) { return Current.TraceTextScope(level, type, method, keyword, arguments); }
         #endregion
     }
     #region interface ISystemAdapter : Požadavky na adapter na support systém
@@ -7210,8 +7554,9 @@ White
         /// Vrátí definici daného stylu
         /// </summary>
         /// <param name="styleName"></param>
+        /// <param name="exactAttributeColor"></param>
         /// <returns></returns>
-        StyleInfo GetStyleInfo(string styleName);
+        StyleInfo GetStyleInfo(string styleName, Color? exactAttributeColor);
         /// <summary>
         /// Obsahuje true, pokud na klientu máme preferovat Vektorové ikony.
         /// </summary>
@@ -7276,6 +7621,15 @@ White
         /// <param name="keyword"></param>
         /// <param name="arguments"></param>
         void TraceText(TraceLevel level, Type type, string method, string keyword, params object[] arguments);
+        /// <summary>
+        /// Zapíše do trace dané informace a vrátí using blok, který na svém konci v Dispose zapíše konec bloku (Begin - End)
+        /// </summary>
+        /// <param name="level"></param>
+        /// <param name="type"></param>
+        /// <param name="method"></param>
+        /// <param name="keyword"></param>
+        /// <param name="arguments"></param>
+        IDisposable TraceTextScope(TraceLevel level, Type type, string method, string keyword, params object[] arguments);
     }
     /// <summary>
     /// Popis jednoho prvku resource (odpovídá typicky jednomu souboru, který obsahuje jednu verzi obrázku).
@@ -7434,9 +7788,9 @@ White
         /// <param name="labelFontSize"></param>
         /// <param name="labelBgColor"></param>
         /// <param name="labelColor"></param>
-        public StyleInfo(string name, bool isForDarkTheme, 
-            FontStyle? attributeFontStyle, string attributeFontFamily, float? attributeFontSize, Color? attributeBgColor, Color? attributeColor,
-            FontStyle? labelFontStyle, string labelFontFamily, float? labelFontSize, Color? labelBgColor, Color? labelColor)
+        public StyleInfo(string name, bool? isForDarkTheme, 
+            FontStyle? attributeFontStyle =null, string attributeFontFamily = "", float? attributeFontSize = null, Color? attributeBgColor = null, Color? attributeColor = null,
+            FontStyle? labelFontStyle = null, string labelFontFamily = "", float? labelFontSize = null, Color? labelBgColor = null, Color? labelColor = null)
         {
             Name = name;
             IsForDarkTheme = isForDarkTheme;
@@ -7458,9 +7812,9 @@ White
         /// </summary>
         public string Name { get; private set; }
         /// <summary>
-        /// Určeno pro tmavý skin
+        /// Určeno pro tmavý skin. Pokud je null, tak je pro oba režimy.
         /// </summary>
-        public bool IsForDarkTheme { get; private set; }
+        public bool? IsForDarkTheme { get; private set; }
 
         /// <summary>
         /// FontStyle: AttrBold + AttrUnderline + AttrItalic

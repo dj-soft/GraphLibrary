@@ -1012,7 +1012,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         protected abstract void DxMainContentPrepare();
         /// <summary>
-        /// Vytvoří a vrátí standardní stránku Home pro Ribbon, volitelně do ní přidá grupu Design s danými prvky (defaultn = None).
+        /// Vytvoří a vrátí standardní stránku Home pro Ribbon, volitelně do ní přidá grupu Design s danými prvky (defaultně = None).
         /// </summary>
         /// <param name="designGroupParts"></param>
         /// <returns></returns>
@@ -1230,9 +1230,35 @@ namespace Noris.Clients.Win.Components.AsolDX
             _PaintedItems = null;
         }
         /// <summary>
+        /// Barva pozadí uživatelská, má přednost před skinem, aplikuje se na hotový skin, může obsahovat Alpha kanál = pak skrz tuto barvu prosvítá podkladový skin.
+        /// Silent = setování této hodnoty neprovádí Invalidate.
+        /// </summary>
+        internal Color? BackColorUserSilent
+        {
+            get { return _BackColorUser; }
+            set
+            {
+                if (value != _BackColorUser)
+                {
+                    _BackColorUser = value;
+                }
+            }
+        }
+        /// <summary>
         /// Barva pozadí uživatelská, má přednost před skinem, aplikuje se na hotový skin, může obsahovat Alpha kanál = pak skrz tuto barvu prosvítá podkladový skin
         /// </summary>
-        public Color? BackColorUser { get { return _BackColorUser; } set { _BackColorUser = value; Invalidate(); } }
+        public Color? BackColorUser 
+        { 
+            get { return _BackColorUser; } 
+            set 
+            {
+                if (value != _BackColorUser)
+                {
+                    _BackColorUser = value;
+                    Invalidate();
+                }
+            }
+        }
         private Color? _BackColorUser;
         /// <summary>
         /// Počet pixelů aktuálního rámečku (na každé straně)

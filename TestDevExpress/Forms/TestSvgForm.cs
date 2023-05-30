@@ -24,8 +24,8 @@ namespace TestDevExpress.Forms
             this.DxRibbon.ShowApplicationButton = DevExpress.Utils.DefaultBoolean.False;
             this.DxRibbon.LogActive = false;
 
-            this.DxRibbon.ImageRightFull = DxComponent.CreateBitmapImage("Images/ImagesBig/Bart 01bt.png");
-            this.DxRibbon.ImageRightMini = DxComponent.CreateBitmapImage("Images/ImagesBig/Bart 01c.png");
+            //     this.DxRibbon.ImageRightFull = DxComponent.CreateBitmapImage("Images/ImagesBig/Bart 01bt.png");
+            //     this.DxRibbon.ImageRightMini = DxComponent.CreateBitmapImage("Images/ImagesBig/Bart 01c.png");
 
             List<DataRibbonPage> pages = new List<DataRibbonPage>();
             DataRibbonPage page;

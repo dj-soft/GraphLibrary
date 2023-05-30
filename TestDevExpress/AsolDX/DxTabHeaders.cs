@@ -1362,6 +1362,11 @@ namespace Noris.Clients.Win.Components.AsolDX
             int headerHeight = 0;
             if (this.Pages.Count > 0)
             {
+                /*   Nebudu hledat informace v this.ViewInfo?.ButtonsBounds; neboť je to nespolehlivé.
+                     Vytvořil jsem DxComponent.SkinColorSet a tam hodnotu TabHeaderHeight; která je specifická pro každý známý skin.
+                     Tu hodnotu dole načtu, upravím pomocí Zoomu a použiju.
+
+
                 int minHeight = 10;
 
                 // První naplnění stránkami dělá problémy, protože velikost může být menší než je potřebná, a pak ViewInfo obsahuje "náhradní záporné hodnoty".
@@ -1404,10 +1409,20 @@ namespace Noris.Clients.Win.Components.AsolDX
                     headerHeight = (isTop ? (this.DisplayRectangle.Y + 2) : (this.ClientSize.Height - this.DisplayRectangle.Height));
                 }
                 if (headerHeight < minHeight) headerHeight = minHeight;
+
+
+                */
+
+                // Využijeme statickou informaci o Skinu:
+                var tabSkinHeight = DxComponent.SkinColorSet.TabHeaderHeight;
+                var formDpi = this.FindForm()?.DeviceDpi ?? 96;
+                var currentHeight = DxComponent.ZoomToGui(tabSkinHeight, formDpi);
+                headerHeight = currentHeight;
             }
-            _Trace("_CheckHeaderSizeChange", $"OldHeight: {_HeaderHeight}; NewHeight: {headerHeight}");
+
             if (headerHeight != _HeaderHeight)
             {   // Výška záhlaví byla změněna:
+                _Trace("_CheckHeaderSizeChange", $"OldHeight: {_HeaderHeight}; NewHeight: {headerHeight}");
                 _HeaderHeight = headerHeight;
                 OnHeaderSizeChanged();
                 HeaderSizeChanged?.Invoke(this, EventArgs.Empty);
