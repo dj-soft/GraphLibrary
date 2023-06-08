@@ -184,7 +184,7 @@ namespace Noris.Clients.Win.Components
         /// <returns></returns>
         public bool EditChartLayout()
         {
-            return _MenuActionEdit();
+            return _MenuActionEdit(MenuAction.Edit);
         }
         /// <summary>
         /// Událost vyvolaná po jakékoli změně grafu
@@ -422,6 +422,7 @@ namespace Noris.Clients.Win.Components
             var imageClone = AsolDX.DxComponent.GetBitmapImage("images/xaf/action_clonemerge_clone_object_32x32.png");
             var imagePaste = AsolDX.DxComponent.GetBitmapImage("images/edit/paste_32x32.png");
             var imageRename = AsolDX.DxComponent.GetBitmapImage("images/richedit/highlight_32x32.png");
+            var imageWizard = AsolDX.DxComponent.GetBitmapImage("images/miscellaneous/runchartdesigner_32x32.png");
             var imageEditor = AsolDX.DxComponent.GetBitmapImage("images/chart/chartchangestyle_32x32.png");
             var imageCopy = AsolDX.DxComponent.GetBitmapImage("images/edit/copy_32x32.png");
             var imageDelete = AsolDX.DxComponent.GetBitmapImage("images/actions/deletelist_32x32.png");
@@ -431,7 +432,8 @@ namespace Noris.Clients.Win.Components
             _EditDxMenu.Items.Add(CreateMenuItem("Nový z aktuálního grafu", "Vytvoří novou definici grafu nad týmiž daty, vzhled převezme z aktuálního grafu.", imageClone, MenuAction.NewCopy));
             _EditDxMenu.Items.Add(CreateMenuItem("Nový ze schránky", "Pokusí se najít ve schránce (Clipboard) definici grafu a vloží ji jako novou.", imagePaste, MenuAction.PasteFromClipboard));
             _EditDxMenu.Items.Add(CreateMenuItem("Přejmenovat název nabídky", "Umožní změnit název aktuální definice grafu.", imageRename, MenuAction.Rename));
-            _EditDxMenu.Items.Add(CreateMenuItem("Upravit vzhled", "Otevře editor vzhledu grafu.", imageEditor, MenuAction.Edit));
+            _EditDxMenu.Items.Add(CreateMenuItem("Navrhnout vzhled", "Otevře Wizard vzhledu grafu.", imageWizard, MenuAction.Wizard));
+            _EditDxMenu.Items.Add(CreateMenuItem("Upravit vzhled", "Otevře Editor vzhledu grafu.", imageEditor, MenuAction.Edit));
             _EditDxMenu.Items.Add(CreateMenuItem("Uložit do schránky", "Aktuální vzhled grafu uloží do schránky (Clipboard), bude možno jej např. vložit jako soubor nebo přílohu mailu (Ctrl+V)", imageCopy, MenuAction.CopyToClipboard));
             _EditDxMenu.Items.Add(CreateMenuItem("Odstranit definici", "Aktuální definici odebere a zahodí.", imageDelete, MenuAction.Delete));
             _EditDxMenu.Items.Add(CreateMenuItem("Tisk do PDF", "Aktuální graf uloží jako PDF.", imagePrintPdf, MenuAction.ExportPdf));
@@ -467,7 +469,7 @@ namespace Noris.Clients.Win.Components
         /// <summary>
         /// Akce v menu
         /// </summary>
-        private enum MenuAction { None, NewEmpty, NewCopy, PasteFromClipboard, Edit, Rename, CopyToClipboard, Delete, ExportPdf }
+        private enum MenuAction { None, NewEmpty, NewCopy, PasteFromClipboard, Wizard, Edit, Rename, CopyToClipboard, Delete, ExportPdf }
         /// <summary>
         /// Provedení akce v menu
         /// </summary>
@@ -488,8 +490,11 @@ namespace Noris.Clients.Win.Components
                 case MenuAction.Rename:
                     _MenuActionRename();
                     break;
+                case MenuAction.Wizard:
+                    _MenuActionEdit(MenuAction.Wizard);
+                    break;
                 case MenuAction.Edit:
-                    _MenuActionEdit();
+                    _MenuActionEdit(MenuAction.Edit);
                     break;
                 case MenuAction.CopyToClipboard:
                     _MenuActionCopyToClipboard();
@@ -508,7 +513,7 @@ namespace Noris.Clients.Win.Components
             if (_EditChartName(ref name))
             {
                 string layout = "";
-                if (_EditChartLayout(ref layout))
+                if (_EditChartLayout(ref layout, MenuAction.Wizard))
                 {
                     ChartSetting setting = new ChartSetting(name, layout);
                     _ChartChanged(ChartChangeType.NewSettings, setting);
@@ -523,7 +528,7 @@ namespace Noris.Clients.Win.Components
             if (_EditChartName(ref name))
             {
                 string layout = _GetLayout();
-                if (_EditChartLayout(ref layout))
+                if (_EditChartLayout(ref layout, MenuAction.Wizard))
                 {
                     ChartSetting setting = new ChartSetting(name, layout);
                     _ChartChanged(ChartChangeType.NewSettings, setting);
@@ -547,7 +552,7 @@ namespace Noris.Clients.Win.Components
                 return;
 
             string layout = setting.Layout;
-            if (_EditChartLayout(ref layout))
+            if (_EditChartLayout(ref layout, MenuAction.Wizard))
             {
                 setting.Layout = layout;
                 _ChartChanged(ChartChangeType.NewSettings, setting);
@@ -571,12 +576,12 @@ namespace Noris.Clients.Win.Components
         /// Akce: edituj vzhled grafu
         /// </summary>
         /// <returns></returns>
-        private bool _MenuActionEdit()
+        private bool _MenuActionEdit(MenuAction action)
         {
             var setting = _CurrentSetting;
             if (setting is null) return false;
             string layout = null;
-            bool result = _EditChartLayout(ref layout);
+            bool result = _EditChartLayout(ref layout, action);
             if (result)
             {
                 setting.Layout = layout;
@@ -673,8 +678,9 @@ namespace Noris.Clients.Win.Components
         /// Layout neukládá do žádného <see cref="ChartSetting"/>.
         /// </summary>
         /// <param name="layout"></param>
+        /// <param name="action"></param>
         /// <returns></returns>
-        private bool _EditChartLayout(ref string layout)
+        private bool _EditChartLayout(ref string layout, MenuAction action)
         {
             bool result = false;
 
@@ -685,14 +691,16 @@ namespace Noris.Clients.Win.Components
                 _SetLayout(layout);
             }
 
-            DC.Designer.ChartDesigner designer = new DC.Designer.ChartDesigner(_Chart)
-            {
-                Caption = "Upravte graf...",
-                ShowActualData = true
-            };
+            var chart = _Chart;
 
-            var response = designer.ShowDialog();
-            result = (response == WF.DialogResult.OK);
+            if (action == MenuAction.Wizard)
+            {   // Wizard
+                result = Noris.Clients.Win.Components.AsolDX.DxChartWizard.ShowWizard(chart, "Chart Wizard", true, false);
+            }
+            else
+            {   // Editor
+                result = Noris.Clients.Win.Components.AsolDX.DxChartDesigner.DesignChart(chart, "Chart Designer", true, false);
+            }
 
             if (result)
                 layout = _GetLayout();
