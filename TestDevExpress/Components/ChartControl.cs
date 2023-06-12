@@ -434,7 +434,8 @@ namespace Noris.Clients.Win.Components
             _EditDxMenu.Items.Add(CreateMenuItem("Přejmenovat název nabídky", "Umožní změnit název aktuální definice grafu.", imageRename, MenuAction.Rename));
             _EditDxMenu.Items.Add(CreateMenuItem("Navrhnout vzhled", "Otevře Wizard vzhledu grafu.", imageWizard, MenuAction.Wizard));
             _EditDxMenu.Items.Add(CreateMenuItem("Upravit vzhled", "Otevře Editor vzhledu grafu.", imageEditor, MenuAction.Edit));
-            _EditDxMenu.Items.Add(CreateMenuItem("Uložit do schránky", "Aktuální vzhled grafu uloží do schránky (Clipboard), bude možno jej např. vložit jako soubor nebo přílohu mailu (Ctrl+V)", imageCopy, MenuAction.CopyToClipboard));
+            _EditDxMenu.Items.Add(CreateMenuItem("Uložit definici grafu do schránky", "Aktuální definici vzhledu grafu uloží jako XML data do schránky (Clipboard), bude možno jej např. vložit jako soubor nebo přílohu mailu (Ctrl+V)", imageCopy, MenuAction.CopyXmlLayoutToClipboard));
+            _EditDxMenu.Items.Add(CreateMenuItem("Uložit obrázek grafu do schránky jak SVG", "Aktuální obrázek grafu uloží do schránky (Clipboard), bude možno jej např. vložit jako soubor nebo přílohu mailu (Ctrl+V)", imageCopy, MenuAction.CopyChartImageToClipboardAsSvg));
             _EditDxMenu.Items.Add(CreateMenuItem("Odstranit definici", "Aktuální definici odebere a zahodí.", imageDelete, MenuAction.Delete));
             _EditDxMenu.Items.Add(CreateMenuItem("Tisk do PDF", "Aktuální graf uloží jako PDF.", imagePrintPdf, MenuAction.ExportPdf));
         }
@@ -469,7 +470,7 @@ namespace Noris.Clients.Win.Components
         /// <summary>
         /// Akce v menu
         /// </summary>
-        private enum MenuAction { None, NewEmpty, NewCopy, PasteFromClipboard, Wizard, Edit, Rename, CopyToClipboard, Delete, ExportPdf }
+        private enum MenuAction { None, NewEmpty, NewCopy, PasteFromClipboard, Wizard, Edit, Rename, CopyXmlLayoutToClipboard, CopyChartImageToClipboardAsSvg, Delete, ExportPdf }
         /// <summary>
         /// Provedení akce v menu
         /// </summary>
@@ -496,8 +497,11 @@ namespace Noris.Clients.Win.Components
                 case MenuAction.Edit:
                     _MenuActionEdit(MenuAction.Edit);
                     break;
-                case MenuAction.CopyToClipboard:
-                    _MenuActionCopyToClipboard();
+                case MenuAction.CopyXmlLayoutToClipboard:
+                    _MenuActionCopyXmlLayoutToClipboard();
+                    break;
+                case MenuAction.CopyChartImageToClipboardAsSvg:
+                    _MenuActionCopyChartImageToClipboardAsSvg();
                     break;
                 case MenuAction.Delete:
                     _MenuActionDelete();
@@ -589,11 +593,21 @@ namespace Noris.Clients.Win.Components
             }
             return result;
         }
-        private void _MenuActionCopyToClipboard()
+        private void _MenuActionCopyXmlLayoutToClipboard()
         {
             var setting = _CurrentSetting;
             if (setting is null) return;
             WF.Clipboard.SetText(setting.Definition);
+        }
+        private void _MenuActionCopyChartImageToClipboardAsSvg()
+        {
+            var chart = _Chart;
+            using (var stream = new SIO.MemoryStream())
+            {
+                chart.ExportToSvg(stream);
+                var buffer = stream.ToArray();
+                string content = System.Text.Encoding.UTF8.GetString(buffer);
+            }
         }
         private void _MenuActionDelete()
         {
@@ -703,7 +717,9 @@ namespace Noris.Clients.Win.Components
             }
 
             if (result)
+            {
                 layout = _GetLayout();
+            }
             else if (oldLayout != null)
                 // Storno v Designeru, a my máme uschován původní layout grafu => vrátíme jej:
                 _SetLayout(oldLayout);
