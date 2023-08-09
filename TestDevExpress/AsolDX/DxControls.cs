@@ -4218,6 +4218,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Vytvoří a vrátí standardní SuperToolTip pro daný titulek a text.
         /// Pokud nebude zadán text <paramref name="text"/>, ani titulek (<paramref name="title"/> nebo <paramref name="defaultTitle"/>), pak vrátí null.
+        /// Pokud je zadán text v <paramref name="defaultTitle"/>, a k němu je dán jen jeden z <paramref name="title"/> anebo <paramref name="text"/>, a ten je shodný,
+        /// pak se ToolTip negeneruje = obsahoval by totéž, co už je uvedeno v prvku.
         /// </summary>
         /// <param name="title"></param>
         /// <param name="text"></param>
@@ -6358,8 +6360,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             header.OptionsMultiColumn.ImageHorizontalAlignment = DevExpress.Utils.Drawing.ItemHorizontalAlignment.Left;
             header.OptionsMultiColumn.ImageVerticalAlignment = DevExpress.Utils.Drawing.ItemVerticalAlignment.Top;
             header.OptionsMultiColumn.LargeImages = (headerItem.UseLargeImages ? DefaultBoolean.True : DefaultBoolean.False);
-            header.OptionsMultiColumn.ItemDisplayMode = DevExpress.Utils.Menu.MultiColumnItemDisplayMode.Default;
-            header.OptionsMultiColumn.ItemDisplayMode = DevExpress.Utils.Menu.MultiColumnItemDisplayMode.Image;
+            // Remove 46.27   Dx 21.1.5    header.OptionsMultiColumn.ItemDisplayMode = DevExpress.Utils.Menu.MultiColumnItemDisplayMode.Default;
+            // Remove 46.27   Dx 21.1.5    header.OptionsMultiColumn.ItemDisplayMode = DevExpress.Utils.Menu.MultiColumnItemDisplayMode.Image;
             header.OptionsMultiColumn.UseMaxItemWidth = DevExpress.Utils.DefaultBoolean.False;
             barItems.Add(header);
 
@@ -7956,6 +7958,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="layout"></param>
         private void _SetLayoutToControlDirect(string layout)
         {
+            if (System.Diagnostics.Debugger.IsAttached)
+            {
+                System.Windows.Forms.Clipboard.SetText(layout);
+                layout = System.Windows.Forms.Clipboard.GetText();
+            }
+
             byte[] buffer = (!String.IsNullOrEmpty(layout) ? Encoding.UTF8.GetBytes(layout) : new byte[0]);
             if (buffer.Length > 0)
             {
@@ -8662,16 +8670,16 @@ namespace Noris.Clients.Win.Components.AsolDX
         public virtual DevExpress.Utils.Svg.SvgImage SvgImage { get; set; }
         /// <summary>
         /// Jméno běžné ikony.
-        /// Pro prvek typu <see cref="RibbonItemType.CheckBoxToggle"/> a <see cref="RibbonItemType.CheckButton"/> tato ikona reprezentuje stav, kdy <see cref="Checked"/> = NULL.
+        /// Pro prvek typu <see cref="RibbonItemType.CheckBoxToggle"/> a <see cref="RibbonItemType.CheckButton"/> a <see cref="RibbonItemType.CheckButtonPassive"/> tato ikona reprezentuje stav, kdy <see cref="Checked"/> = NULL.
         /// </summary>
         public virtual string ImageName { get; set; }
         /// <summary>
-        /// Jméno ikony pro stav UnChecked u typu <see cref="RibbonItemType.CheckBoxToggle"/> a <see cref="RibbonItemType.CheckButton"/>.
+        /// Jméno ikony pro stav UnChecked u typu <see cref="RibbonItemType.CheckBoxToggle"/> a <see cref="RibbonItemType.CheckButton"/> a <see cref="RibbonItemType.CheckButtonPassive"/>.
         /// Pokud je prázdné, pak se pro stav UnChecked použije <see cref="ImageName"/>.
         /// </summary>
         public virtual string ImageNameUnChecked { get; set; }
         /// <summary>
-        /// Jméno ikony pro stav Checked u typu <see cref="RibbonItemType.CheckBoxToggle"/> a <see cref="RibbonItemType.CheckButton"/>.
+        /// Jméno ikony pro stav Checked u typu <see cref="RibbonItemType.CheckBoxToggle"/> a <see cref="RibbonItemType.CheckButton"/> a <see cref="RibbonItemType.CheckButtonPassive"/>.
         /// Pokud je prázdné, pak se pro stav Checked použije <see cref="ImageName"/>.
         /// </summary>
         public virtual string ImageNameChecked { get; set; }

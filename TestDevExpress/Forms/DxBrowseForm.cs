@@ -72,7 +72,7 @@ namespace TestDevExpress.Forms
 
             this.DxRibbon.RibbonItemClick += _DxRibbonControl_RibbonItemClick;
         }
-        private void _DxRibbonControl_RibbonItemClick(object sender, TEventArgs<IRibbonItem> e)
+        private void _DxRibbonControl_RibbonItemClick(object sender, DxRibbonItemClickArgs e)
         {
             switch (e.Item.ItemId)
             {
@@ -241,7 +241,7 @@ namespace TestDevExpress.Forms
             view.OptionsScrollAnnotations.ShowSelectedRows = DevExpress.Utils.DefaultBoolean.True;  // Anotace . https://docs.devexpress.com/WindowsForms/120556/controls-and-libraries/data-grid/scrolling/scrollbar-annotations
 
             var gvColumnData = CreateGridViewColumnData();
-            view.InitColumns(gvColumnData);
+            // view.InitColumns(gvColumnData);
             InitColumnsSummary(gvColumnData);
 
 
@@ -273,7 +273,7 @@ namespace TestDevExpress.Forms
 
         private void RegisterViewEvents()
         {
-            _View.FilterRowChanged += _View_FilterRowChanged;
+            // _View.FilterRowChanged += _View_FilterRowChanged;
             _View.DxDoubleClick += _View_DxDoubleClick;
             _View.DxKeyDown += _View_DxKeyDown;
         }
@@ -303,10 +303,10 @@ namespace TestDevExpress.Forms
             MessageBox.Show(strBld.ToString());
         }
 
-        private void _View_FilterRowChanged(object sender, DxGridFilterRowChangeEventArgs e)
-        {
-            _FilterString.Text = e.FilterString;
-        }
+        //private void _View_FilterRowChanged(object sender, DxGridFilterRowChangeEventArgs e)
+        //{
+        //    _FilterString.Text = e.FilterString;
+        //}
 
         private void CreateDataColumns()
         {
@@ -562,10 +562,7 @@ namespace TestDevExpress.Forms
             //na zakladě indexu generuj jinou dataTable.. test na to až přijdou nová data ze serveru (změna šablony)
             _Grid.DataSource = null;
 
-            _View.InitColumns(CreateGridViewColumnData());
-
-
-
+            // _View.InitColumns(CreateGridViewColumnData());
         }
 
         private void MoveDataSourceIndex()

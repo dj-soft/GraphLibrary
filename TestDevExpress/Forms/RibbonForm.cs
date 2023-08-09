@@ -36,7 +36,7 @@ namespace TestDevExpress.Forms
             DxQuickAccessToolbar.ConfigValueChanged += DxQuickAccessToolbar_QATItemKeysChanged;
 
             this.InitializeForm();
-            _SetUseLazyLoad(_UseLazyLoad);
+            _SetUseLazyLoad(__UseLazyContentCreate);
 
             DxComponent.SplashUpdate(rightFooter: "Už to jede...");
         }
@@ -71,7 +71,7 @@ namespace TestDevExpress.Forms
             _DxLogMemoEdit = DxComponent.CreateDxMemoEdit(_DxMainSplit.Panel2, System.Windows.Forms.DockStyle.Fill, readOnly: true, tabStop: false);
 
             _TestPanel1 = new RibbonTestPanel();
-            _TestPanel1.UseLazyLoad = this.UseLazyLoad;
+            _TestPanel1.UseLazyContentCreate = this.UseLazyContentCreate;
             _TestPanel1.Ribbon.DebugName = "Slave 1";
             //     _TestPanel1.Ribbon.ImageRightFull = DxComponent.CreateBitmapImage("Images/ImagesBig/Homer 01b.png");
             //     _TestPanel1.Ribbon.ImageRightMini = DxComponent.CreateBitmapImage("Images/ImagesBig/Homer 01c.png");
@@ -83,7 +83,7 @@ namespace TestDevExpress.Forms
             _DxLeftSplit.Panel1.Controls.Add(_TestPanel1);
 
             _TestPanel2a = new RibbonTestPanel();
-            _TestPanel2a.UseLazyLoad = this.UseLazyLoad;
+            _TestPanel2a.UseLazyContentCreate = this.UseLazyContentCreate;
             _TestPanel2a.Ribbon.DebugName = "Slave 2A";
             //     _TestPanel2a.Ribbon.ImageRightFull = DxComponent.CreateBitmapImage("Images/ImagesBig/Lisa 01b.png");
             //     _TestPanel2a.Ribbon.ImageRightMini = DxComponent.CreateBitmapImage("Images/ImagesBig/Lisa 01c.png");
@@ -95,7 +95,7 @@ namespace TestDevExpress.Forms
             _DxBottomSplit.Panel1.Controls.Add(_TestPanel2a);
 
             _TestPanel2b = new RibbonTestPanel();
-            _TestPanel2b.UseLazyLoad = this.UseLazyLoad;
+            _TestPanel2b.UseLazyContentCreate = this.UseLazyContentCreate;
             _TestPanel2b.Ribbon.DebugName = "Slave 2B";
             //     _TestPanel2b.Ribbon.ImageRightFull = DxComponent.CreateBitmapImage("Images/ImagesBig/Marge 01b.png");
             //     _TestPanel2b.Ribbon.ImageRightMini = DxComponent.CreateBitmapImage("Images/ImagesBig/Marge 01c.png");
@@ -148,7 +148,7 @@ namespace TestDevExpress.Forms
         /// </summary>
         protected override void DxRibbonPrepare()
         {
-            this.UseLazyLoad = true;
+            this.UseLazyContentCreate = DxRibbonControl.LazyContentMode.Auto;
 
             this.DxRibbon.DebugName = "MainRibbon";
             this.DxRibbon.ShowApplicationButton = DevExpress.Utils.DefaultBoolean.True;
@@ -169,7 +169,7 @@ namespace TestDevExpress.Forms
 
             group = new DataRibbonGroup() { GroupId = "params", GroupText = "RIBBON TEST" };
             homePage.Groups.Add(group);
-            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Test.UseLazyInit", Text = "Use Lazy Init", ToolTipText = "Zaškrtnuto: používat opožděné plnění stránek Ribbonu (=až bude potřeba)\r\nNezaškrtnuto: fyzicky naplní celý Ribbon okamžitě, delší čas přípravy okna", ItemType = RibbonItemType.CheckButton, Checked = UseLazyLoad, RibbonStyle = RibbonItemStyles.Large });
+            group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Test.UseLazyInit", Text = "Use Lazy Init", ToolTipText = "Zaškrtnuto: používat opožděné plnění stránek Ribbonu (=až bude potřeba)\r\nNezaškrtnuto: fyzicky naplní celý Ribbon okamžitě, delší čas přípravy okna", ItemType = RibbonItemType.CheckButton, Checked = (UseLazyContentCreate == DxRibbonControl.LazyContentMode.Auto), RibbonStyle = RibbonItemStyles.Large });
             // group.Items.Add(new DataRibbonItem() { ItemId = "Dx.Test.LogClear", Text = "Clear log", ToolTipText = "Smaže obsah logu vpravo", ImageName = imgLogClear, RibbonStyle = RibbonItemStyles.Large });
             group.Items.Add(new DataRibbonItem() { ItemId = "Dx.ShowTextInQat", Text = "Show Text in QAT", ToolTipText = "Aktivuje / Deaktivuje text u prvků QAT", ItemType = RibbonItemType.CheckButton, Checked = this.ShowTextInQAT, RibbonStyle = RibbonItemStyles.Large });
 
@@ -186,12 +186,12 @@ namespace TestDevExpress.Forms
 
             this.DxRibbon.RibbonItemClick += _DxRibbonControl_RibbonItemClick;
         }
-        private void _DxRibbonControl_RibbonItemClick(object sender, TEventArgs<IRibbonItem> e)
+        private void _DxRibbonControl_RibbonItemClick(object sender, DxRibbonItemClickArgs e)
         {
             switch (e.Item.ItemId)
             {
                 case "Dx.Test.UseLazyInit":
-                    UseLazyLoad = e.Item.Checked ?? false;           // Do ribbonů hodnotu vepíše set metoda.
+                    UseLazyContentCreate = ((e.Item.Checked ?? false) ? DxRibbonControl.LazyContentMode.Auto : DxRibbonControl.LazyContentMode.CreateAllItems);           // Do ribbonů hodnotu vepíše set metoda.
                     break;
                 case "Dx.Test.ImgPick":
                     ImagePickerForm.ShowForm(this);
@@ -208,8 +208,8 @@ namespace TestDevExpress.Forms
         /// <summary>
         /// Bude se používat LazyLoad?
         /// </summary>
-        public bool UseLazyLoad { get { return _UseLazyLoad; } set { _SetUseLazyLoad(value); } }
-        private bool _UseLazyLoad;
+        public DxRibbonControl.LazyContentMode UseLazyContentCreate { get { return __UseLazyContentCreate; } set { _SetUseLazyLoad(value); } }
+        private DxRibbonControl.LazyContentMode __UseLazyContentCreate;
         /// <summary>
         /// Zobrazovat v Toolbaru u tlačítek i text?
         /// </summary>
@@ -225,17 +225,17 @@ namespace TestDevExpress.Forms
             }
         }
         /// <summary>
-        /// Nastaví hodnotu <see cref="UseLazyLoad"/> a vepíše ji do ribbonů. Neřeší ale hodnotu v CheckBoxu v Ribbonu.
+        /// Nastaví hodnotu <see cref="UseLazyContentCreate"/> a vepíše ji do ribbonů. Neřeší ale hodnotu v CheckBoxu v Ribbonu.
         /// </summary>
-        /// <param name="useLazyLoad"></param>
-        private void _SetUseLazyLoad(bool useLazyLoad)
+        /// <param name="useLazyContentCreate"></param>
+        private void _SetUseLazyLoad(DxRibbonControl.LazyContentMode useLazyContentCreate)
         {
-            _UseLazyLoad = useLazyLoad;
+            __UseLazyContentCreate = useLazyContentCreate;
 
-            if (this.DxRibbon != null) this.DxRibbon.UseLazyContentCreate = this.UseLazyLoad;
-            if (this._TestPanel1 != null) this._TestPanel1.UseLazyLoad = UseLazyLoad;
-            if (this._TestPanel2a != null) this._TestPanel2a.UseLazyLoad = UseLazyLoad;
-            if (this._TestPanel2b != null) this._TestPanel2b.UseLazyLoad = UseLazyLoad;
+            if (this.DxRibbon != null) this.DxRibbon.UseLazyContentCreate = useLazyContentCreate;
+            if (this._TestPanel1 != null) this._TestPanel1.UseLazyContentCreate = useLazyContentCreate;
+            if (this._TestPanel2a != null) this._TestPanel2a.UseLazyContentCreate = useLazyContentCreate;
+            if (this._TestPanel2b != null) this._TestPanel2b.UseLazyContentCreate = useLazyContentCreate;
         }
         /// <summary>
         /// Připraví obsah StatusBaru
@@ -530,7 +530,7 @@ namespace TestDevExpress.Forms
                 RibbonStyle = RibbonItemStyles.Large,
                 ToolTipTitle = "Menu se šablonami",
                 ToolTipText = "Zobrazí menu, kde některé položky budou Checked",
-                SubItems = new List<IRibbonItem>()
+                SubItems = new ListExt<IRibbonItem>()
             };
             addSubItem();
             addSubItem(true);
@@ -762,7 +762,7 @@ namespace TestDevExpress.Forms
         /// <summary>
         /// Bude se používat LazyLoad na Ribbonu tohoto panelu
         /// </summary>
-        public bool UseLazyLoad { get { return this._Ribbon.UseLazyContentCreate; } set { this._Ribbon.UseLazyContentCreate = value; } }
+        public DxRibbonControl.LazyContentMode UseLazyContentCreate { get { return this._Ribbon.UseLazyContentCreate; } set { this._Ribbon.UseLazyContentCreate = value; } }
         /// <summary>
         /// Naplní Ribbon nějakým počtem stránek a grup
         /// </summary>
@@ -898,7 +898,7 @@ namespace TestDevExpress.Forms
         /// </summary>
         public void FillRibbonQAT()
         {
-            _Ribbon.QATDirectItems = DxRibbonSample.CreateItems(3, 8);
+            _Ribbon.QATDirectItems = DxRibbonSample.CreateItems(3, 8).ToArray();
         }
         private DxRibbonControl _Ribbon;
         private DxPanelControl _MainPanel;
@@ -1117,7 +1117,7 @@ namespace TestDevExpress.Forms
             dialogArgs.Owner = this.FindForm();
             Noris.Clients.Win.Components.DialogForm.ShowDialog(dialogArgs);
         }
-        private void _Ribbon_RibbonItemClick(object sender, TEventArgs<IRibbonItem> e)
+        private void _Ribbon_RibbonItemClick(object sender, DxRibbonItemClickArgs e)
         {
             IRibbonItem iRibbonItem = e.Item;
 
@@ -1231,16 +1231,16 @@ namespace TestDevExpress.Forms
         /// <param name="itemCountMin"></param>
         /// <param name="itemCountMax"></param>
         /// <returns></returns>
-        public static IRibbonItem[] CreateItems(int itemCountMin, int itemCountMax)
+        public static ListExt<IRibbonItem> CreateItems(int itemCountMin, int itemCountMax)
         {
-            List<IRibbonItem> items = new List<IRibbonItem>();
+            ListExt<IRibbonItem> items = new ListExt<IRibbonItem>();
             int count = Rand.Next(itemCountMin, itemCountMax + 1);
             for (int i = 0; i < count; i++)
             {
                 DataRibbonItem item = _GetItem();
                 items.Add(item);
             }
-            return items.ToArray();
+            return items;
         }
         /// <summary>
         /// Do pole přidá stránky
@@ -1562,7 +1562,7 @@ namespace TestDevExpress.Forms
         /// <param name="subItemsCountMax"></param>
         /// <param name="level"></param>
         /// <returns></returns>
-        public static List<IRibbonItem> CreateSubItems(DataRibbonItem parentItem, RibbonItemType itemType, int subItemsCountMin, int subItemsCountMax, int level = 0)
+        public static ListExt<IRibbonItem> CreateSubItems(DataRibbonItem parentItem, RibbonItemType itemType, int subItemsCountMin, int subItemsCountMax, int level = 0)
         {
             if ((itemType == RibbonItemType.SplitButton || itemType == RibbonItemType.Menu) && Rand.Next(100) < 65 && level == 0)
             {   // SplitButton nebo Menu někdy dáme OnDemandLoadOnce:
@@ -1573,7 +1573,7 @@ namespace TestDevExpress.Forms
             }
             parentItem.SubItemsContentMode = RibbonContentMode.Static;
 
-            List<IRibbonItem> subItems = new List<IRibbonItem>();
+            ListExt<IRibbonItem> subItems = new ListExt<IRibbonItem>();
 
             int sc = Rand.Next(subItemsCountMin, subItemsCountMax + 1);
             for (int i = 0; i < sc; i++)

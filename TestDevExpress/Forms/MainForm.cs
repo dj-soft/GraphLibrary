@@ -900,7 +900,7 @@ namespace TestDevExpress.Forms
                 ToolTipText = "Nabídka AKTUÁLNĚ POUŽITELNÝCH systémových zvuků.\r\nKliknutí na zvuk jej přehraje, a do clipboardu vloží jeho EventName.",
                 ItemType = RibbonItemType.Menu,
                 RibbonStyle = RibbonItemStyles.Large,
-                SubItems = new List<IRibbonItem>(),
+                SubItems = new ListExt<IRibbonItem>(),
                 ItemIsFirstInGroup = true,
                 ClickAction = null
             };
@@ -914,7 +914,7 @@ namespace TestDevExpress.Forms
                 ToolTipText = "Nabídka systémových zvuků, které NEMAJÍ definovaný konkrétní zvuk.\r\nKliknutí na zvuk jej zkusí přehrát, a do clipboardu vloží jeho EventName.",
                 ItemType = RibbonItemType.Menu,
                 RibbonStyle = RibbonItemStyles.Large,
-                SubItems = new List<IRibbonItem>(),
+                SubItems = new ListExt<IRibbonItem>(),
                 ItemIsFirstInGroup = false,
                 ClickAction = null
             };
@@ -972,7 +972,7 @@ namespace TestDevExpress.Forms
                 ToolTipText = $"Nabídka zvuků z adresáře '{path}', které lze přehrát.\r\nKliknutí na soubor jej zkusí přehrát, a do clipboardu vloží jeho FullName.",
                 ItemType = RibbonItemType.Menu,
                 RibbonStyle = RibbonItemStyles.Large,
-                SubItems = new List<IRibbonItem>(),
+                SubItems = new ListExt<IRibbonItem>(),
                 ItemIsFirstInGroup = false,
                 ClickAction = null
             };
@@ -1185,7 +1185,7 @@ namespace TestDevExpress.Forms
 
         }
 
-        private void TitleBarDxRibbon_RibbonItemClick(object sender, TEventArgs<IRibbonItem> e)
+        private void TitleBarDxRibbon_RibbonItemClick(object sender, DxRibbonItemClickArgs e)
         {
             if (e.Item is null) return;
             var itemId = e.Item.ItemId;
@@ -1207,7 +1207,7 @@ namespace TestDevExpress.Forms
             string resourcePreview = "svgimages/print/preview.svg";
             string resourceCancel = "svgimages/hybriddemoicons/bottompanel/hybriddemo_cancel.svg";
 
-            var sysMenu3SubItems = new List<IRibbonItem>();
+            var sysMenu3SubItems = new ListExt<IRibbonItem>();
             sysMenu3SubItems.Add(new DataRibbonItem() { ItemId = "SysMenu3_01", Text = "Uložit pozici okna", ImageName = resourceSave });
             sysMenu3SubItems.Add(new DataRibbonItem() { ItemId = "SysMenu3_02", Text = "Resetovat pozici okna", ImageName = resourceReset });
             sysMenu3SubItems.Add(new DataRibbonItem() { ItemId = "SysMenu3_03", Text = "Zobrazit pozici okna", ImageName = resourcePreview });
@@ -1417,7 +1417,7 @@ namespace TestDevExpress.Forms
             ClickRibbonSvgMenuAny(2, 3, false);
             ClickRibbonSvgMenuAny(3, 0, false);
 
-            this.DxRibbon.UseLazyContentCreate = false;           // Potřebuji, aby v době FirstShown existovaly všechny prvky Ribbonu (i na druhé Page), protože do Result buttonu chci vyrenderovat kombinovanou ikonu v metodě ApplyRibbonSvgImagesResult()
+            this.DxRibbon.UseLazyContentCreate = DxRibbonControl.LazyContentMode.CreateAllItems;           // Potřebuji, aby v době FirstShown existovaly všechny prvky Ribbonu (i na druhé Page), protože do Result buttonu chci vyrenderovat kombinovanou ikonu v metodě ApplyRibbonSvgImagesResult()
 
             return page;
         }
@@ -1580,9 +1580,9 @@ namespace TestDevExpress.Forms
         /// Obsahuje prvky: ImageName základ; ContentAlignment; Size; ImageName přídavek
         /// </summary>
         private object[] _SvgCombineData;
-        private List<IRibbonItem> CreateRibbonSvgMenu0()
+        private ListExt<IRibbonItem> CreateRibbonSvgMenu0()
         {
-            List<IRibbonItem> subItems = new List<IRibbonItem>();
+            ListExt<IRibbonItem> subItems = new ListExt<IRibbonItem>();
             subItems.Add(new DataRibbonItem() { ImageName = "devav/actions/printexcludeevaluations.svg", Text = "printexcludeevaluations", ClickAction = ClickRibbonSvgMenu0 });
             subItems.Add(new DataRibbonItem() { ImageName = "devav/actions/printincludeevaluations.svg", Text = "printincludeevaluations", ClickAction = ClickRibbonSvgMenu0 });
             subItems.Add(new DataRibbonItem() { ImageName = "devav/actions/save.svg", Text = "save", ClickAction = ClickRibbonSvgMenu0 });
@@ -1621,9 +1621,9 @@ namespace TestDevExpress.Forms
 
             return subItems;
         }
-        private List<IRibbonItem> CreateRibbonSvgMenu1()
+        private ListExt<IRibbonItem> CreateRibbonSvgMenu1()
         {
-            List<IRibbonItem> subItems = new List<IRibbonItem>();
+            ListExt<IRibbonItem> subItems = new ListExt<IRibbonItem>();
             subItems.Add(new DataRibbonItem() { ImageName = "svgimages/dashboards/alignmenttopleft.svg", Text = "Nahoře vlevo", Tag = (int)ContentAlignment.TopLeft, ClickAction = ClickRibbonSvgMenu1 });
             subItems.Add(new DataRibbonItem() { ImageName = "svgimages/dashboards/alignmenttopcenter.svg", Text = "Nahoře uprostřed", Tag = (int)ContentAlignment.TopCenter, ClickAction = ClickRibbonSvgMenu1 });
             subItems.Add(new DataRibbonItem() { ImageName = "svgimages/dashboards/alignmenttopright.svg", Text = "Nahoře vpravo", Tag = (int)ContentAlignment.TopRight, ClickAction = ClickRibbonSvgMenu1 });
@@ -1637,9 +1637,9 @@ namespace TestDevExpress.Forms
             subItems.Add(new DataRibbonItem() { ImageName = "svgimages/icon%20builder/actions_arrow2right.svg", Text = "Pouze PŘÍDAVEK", Tag = (int)4096, ClickAction = ClickRibbonSvgMenu1 });
             return subItems;
         }
-        private List<IRibbonItem> CreateRibbonSvgMenu2()
+        private ListExt<IRibbonItem> CreateRibbonSvgMenu2()
         {
-            List<IRibbonItem> subItems = new List<IRibbonItem>();
+            ListExt<IRibbonItem> subItems = new ListExt<IRibbonItem>();
             subItems.Add(new DataRibbonItem() { Text = "Velikost 25%", Tag = (int)25, ClickAction = ClickRibbonSvgMenu2 });
             subItems.Add(new DataRibbonItem() { Text = "Velikost 33%", Tag = (int)33, ClickAction = ClickRibbonSvgMenu2 });
             subItems.Add(new DataRibbonItem() { Text = "Velikost 40%", Tag = (int)40, ClickAction = ClickRibbonSvgMenu2 });
@@ -1649,9 +1649,9 @@ namespace TestDevExpress.Forms
             subItems.Add(new DataRibbonItem() { Text = "Velikost 100%", Tag = (int)100, ClickAction = ClickRibbonSvgMenu2 });
             return subItems;
         }
-        private List<IRibbonItem> CreateRibbonSvgMenu3()
+        private ListExt<IRibbonItem> CreateRibbonSvgMenu3()
         {
-            List<IRibbonItem> subItems = new List<IRibbonItem>();
+            ListExt<IRibbonItem> subItems = new ListExt<IRibbonItem>();
             subItems.Add(new DataRibbonItem() { ImageName = "devav/actions/about.svg", Text = "about", ClickAction = ClickRibbonSvgMenu3 });
             subItems.Add(new DataRibbonItem() { ImageName = "devav/actions/add.svg", Text = "add", ClickAction = ClickRibbonSvgMenu3 });
             subItems.Add(new DataRibbonItem() { ImageName = "devav/actions/apply.svg", Text = "apply", ClickAction = ClickRibbonSvgMenu3 });
@@ -5498,11 +5498,11 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
             comboItem.ImageName = "devav/print/summary.svg";
             comboItem.ToolTipTitle = "ComboBox";
             comboItem.ToolTipText = "Měl by nabízet sadu prvků";
-            comboItem.Buttons = PredefinedButtonType.DropDown | PredefinedButtonType.Ellipsis | PredefinedButtonType.Delete;
+            comboItem.SubButtons = "DropDown;Ellipsis;Delete";
             comboItem.BorderStyle = DxBorderStyle.None;
             comboItem.Width = 280;
 
-            comboItem.SubItems = new List<IRibbonItem>();
+            comboItem.SubItems = new ListExt<IRibbonItem>();
             comboItem.SubItems.Add(new DataRibbonItem() { Text = "První šablona" });
             comboItem.SubItems.Add(new DataRibbonItem() { Text = "Druhá šablona" });
             comboItem.SubItems.Add(new DataRibbonItem() { Text = "Třetí šablona" });
@@ -5519,11 +5519,11 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
             comboItem.ImageName = "devav/actions/filter.svg";
             comboItem.ToolTipTitle = "ComboBox";
             comboItem.ToolTipText = "Měl by nabízet sadu prvků";
-            comboItem.Buttons = PredefinedButtonType.DropDown | PredefinedButtonType.Ellipsis | PredefinedButtonType.OK;
+            comboItem.SubButtons = "DropDown;Ellipsis;OK";
             comboItem.BorderStyle = DxBorderStyle.HotFlat;
             comboItem.Width = 280;
 
-            comboItem.SubItems = new List<IRibbonItem>();
+            comboItem.SubItems = new ListExt<IRibbonItem>();
             comboItem.SubItems.Add(new DataRibbonItem() { Text = "První filtr" });
             comboItem.SubItems.Add(new DataRibbonItem() { Text = "Druhý filtr" });
             comboItem.SubItems.Add(new DataRibbonItem() { Text = "Třetí filtr" });
@@ -5540,11 +5540,11 @@ Změny provedené do tohoto dokladu nejsou dosud uloženy do databáze.
             comboItem.ImageName = "svgimages/dashboards/chartstackedline.svg";
             comboItem.ToolTipTitle = "ComboBox";
             comboItem.ToolTipText = "Měl by nabízet sadu prvků";
-            comboItem.Buttons = PredefinedButtonType.DropDown | PredefinedButtonType.Ellipsis | PredefinedButtonType.Plus;
+            comboItem.SubButtons = "DropDown;Ellipsis;Plus";
             comboItem.BorderStyle = DxBorderStyle.Style3D;
             comboItem.Width = 280;
 
-            comboItem.SubItems = new List<IRibbonItem>();
+            comboItem.SubItems = new ListExt<IRibbonItem>();
             comboItem.SubItems.Add(new DataRibbonItem() { Text = "Načte se po otevření..." });
             comboItem.SubItems[0].Checked = true;
             comboItem.SubItemsContentMode = RibbonContentMode.OnDemandLoadOnce;

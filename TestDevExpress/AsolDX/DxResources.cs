@@ -661,8 +661,14 @@ namespace Noris.Clients.Win.Components.AsolDX
                 }
                 else
                 {
-                    imageOptions.SvgImage = null;
-                    imageOptions.Image = null;
+                    try
+                    {
+                        imageOptions.SvgImage = null;
+                        imageOptions.Image = null;
+                        imageOptions.ImageUri = null;
+                        imageOptions.Reset();
+                    }
+                    catch { }
                 }
             }
             catch (Exception) { /* Někdy může dojít k chybě uvnitř DevExpress. I jejich vývojáři jsou jen lidé... */ }
@@ -839,7 +845,9 @@ namespace Noris.Clients.Win.Components.AsolDX
                 }
             }
             else if (imageOptions is DevExpress.Utils.ImageCollectionImageOptions iciOptions)
-            {   // Můžeme využívat Index:
+            {
+                if (iciOptions.Image != null) iciOptions.Image = null;
+                // Můžeme využívat Index?
                 if (iciOptions.Images is SvgImageCollection svgCollection)
                 {   // Máme připravenou podporu pro vektorový index, můžeme tam dát index prvku - ale právě v té velikosti, která je použita v svgCollection,
                     //  protože právě v té kolekci se bude pro zadaný index hledat reálná ikona!
@@ -862,7 +870,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
             else
             {   // Musíme vepsat přímo jeden obrázek:
-                imageOptions.Image = null;
+                if (imageOptions.Image != null) imageOptions.Image = null;
                 imageOptions.SvgImage = _GetVectorImageApplication(resourceItems, args);
                 if (imageOptions.SvgImage != null)
                     _ApplySvgImageSize(imageOptions, args);

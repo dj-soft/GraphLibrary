@@ -110,7 +110,7 @@ namespace TestDevExpress.Components
 
             this.DxRibbon.RibbonItemClick += _DxRibbonControl_RibbonItemClick;
         }
-        private void _DxRibbonControl_RibbonItemClick(object sender, TEventArgs<IRibbonItem> e)
+        private void _DxRibbonControl_RibbonItemClick(object sender, DxRibbonItemClickArgs e)
         {
             switch (e.Item.ItemId)
             {

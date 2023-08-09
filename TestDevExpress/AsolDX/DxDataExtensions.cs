@@ -370,6 +370,16 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
         }
         /// <summary>
+        /// Vrátí <see cref="ListExt{T}"/> z dodané kolekce prvků
+        /// </summary>
+        /// <typeparam name="TItem"></typeparam>
+        /// <param name="items"></param>
+        /// <returns></returns>
+        public static ListExt<TItem> ToListExt<TItem>(this IEnumerable<TItem> items)
+        {
+            return (items is null ? null : new ListExt<TItem>(items));
+        }
+        /// <summary>
         /// Z dodané kolekce odebere všechny prvky, které vyhoví danému filtru.
         /// Pokud je zadaná akce <paramref name="onRemove"/>, tak tato akce je provedena ihned po odebrání prvku z listu.
         /// </summary>

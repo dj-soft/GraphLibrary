@@ -26,6 +26,7 @@ using DevExpress.Utils.Svg;
 using DevExpress.Utils.Design;
 using System.Globalization;
 using DevExpress.Utils.Filtering.Internal;
+using System.Diagnostics.Eventing.Reader;
 
 // using BAR = DevExpress.XtraBars;
 // using EDI = DevExpress.XtraEditors;
@@ -3101,6 +3102,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Pokud není naplněn <paramref name="title"/> ani <paramref name="text"/>, pak se ToolTip nebude generovat = vrací se false.<br/>
         /// Pokud je naplněn <paramref name="text"/> ale není <paramref name="title"/>, pak se jako titulek použije <paramref name="defaultTitle"/> a vrátí se true.<br/>
         /// Pokud je naplněn <paramref name="title"/> a není dán <paramref name="text"/>, pak bude ToolTip bez textu (titulek stačí) a vrátí se true.
+        /// <para/>
+        /// Pokud je zadán text v <paramref name="defaultTitle"/>, a k němu je dán jen jeden z <paramref name="title"/> anebo <paramref name="text"/>, a ten je shodný,
+        /// pak se ToolTip negeneruje = obsahoval by totéž, co už je uvedeno v prvku.
         /// </summary>
         /// <param name="title"></param>
         /// <param name="text"></param>
@@ -3115,8 +3119,50 @@ namespace Noris.Clients.Win.Components.AsolDX
             bool isTitle = !String.IsNullOrEmpty(title);
             bool isText = !String.IsNullOrEmpty(text);
             bool isDefaultTitle = !String.IsNullOrEmpty(defaultTitle);
+            if (isTitle && isText && String.Equals(title, text))
+            {   // Pokud máme dán Title i Text a oba jsou shodné,
+                // pak Title zahodím (a případně použiju DefaultTitle jako titulek):
+                title = null;
+                isTitle = false;
+            }
             if (!isTitle && !isText) return false;                       // Pokud není Title ani Text, pak Default Title sám o sobě neznamená existenci ToolTipu.
 
+            if (isTitle && isText)
+            {   // Máme titulek i text a ty jsou navzájem odlišné (to se řešilo před chvilkou):
+                // : Jde o jednoznačnou věc:
+                toolTipTitle = title;
+                toolTipText = text;
+                return true;
+            }
+
+            if (isDefaultTitle && (isTitle != isText))
+            {   // Mám defaultní titulek (= text ve viditelném prvku - Ribbon BarItem, Menu Item),
+                // a k tomu mám jen Titulek nebo jen Text (tedy XOR: jeden ano, a druhý ne),
+                // Pak pokud ten zadaný 'Title' anebo 'Text' je stejný jako 'DefaultTitle', pak ToolTip nebude:
+                if (isTitle)
+                {   // Máme DefaultTitle a Title, a nemáme Text:
+                    // : pokud Title == DefaultTitle, pak nemá význam zobrazit ToolTip (bylo by tam jen to, co už je vidět):
+                    if (String.Equals(title, defaultTitle)) return false;
+                    // : Jinak dám DefaultTitle => toolTipTitle a Title => toolTipText:
+                    toolTipTitle = defaultTitle;
+                    toolTipText = title;
+                    return true;
+                }
+
+                if (isText)
+                {   // Máme DefaultTitle a Text, a nemáme Title:
+                    // : pokud Text == DefaultTitle, pak nemá význam zobrazit ToolTip (bylo by tam jen to, co už je vidět):
+                    if (String.Equals(text, defaultTitle)) return false;
+                    // : Jinak dám DefaultTitle => toolTipTitle a Text => toolTipText:
+                    toolTipTitle = defaultTitle;
+                    toolTipText = text;
+                    return true;
+                }
+
+                return false;
+            }
+
+            // Defaultní chování:
             toolTipTitle = (isTitle ? title : (isDefaultTitle ? defaultTitle : null));
             toolTipText = (isText ? text : null);
             return true;
@@ -3184,8 +3230,10 @@ namespace Noris.Clients.Win.Components.AsolDX
                 case RibbonItemType.Button:
                     return _CreateBarItemButton(ribbonItem, level);
                 case RibbonItemType.CheckButton:
+                case RibbonItemType.CheckButtonPassive:
                     return _CreateBarItemCheckButton(ribbonItem, level);
                 case RibbonItemType.CheckBoxStandard:
+                case RibbonItemType.CheckBoxPasive:
                     return _CreateBarItemCheckBoxStandard(ribbonItem, level);
             }
             return null;
@@ -3213,23 +3261,66 @@ namespace Noris.Clients.Win.Components.AsolDX
 
         private static void _FillBarItemProperties(IRibbonItem ribbonItem, DevExpress.XtraBars.BarItem barItem, int level)
         {
+            FillBarItemFrom(barItem, ribbonItem, level);
+
+            // Vzájemné provázání:
+            barItem.Tag = ribbonItem;            // Vizuální prvek zná data
+            ribbonItem.RibbonItem = barItem;     // Datový prvek má Weakreferenci na vizuál
+        }
+        /// <summary>
+        /// Naplní veškeré patřičné hodnoty do BarItemu { Caption, Visible, Tagy, Tooltip;  Styl písma;  Velikost, barvy, alignment;  Image;  HotKeys }
+        /// </summary>
+        /// <param name="barItem"></param>
+        /// <param name="ribbonItem"></param>
+        /// <param name="level"></param>
+        internal static void FillBarItemFrom(DevExpress.XtraBars.BarItem barItem, IRibbonItem ribbonItem, int level = 0)
+        {
+            // Systémové prvky Ribbonu nebudu modifikovat:
+            bool isSystemItem = (ribbonItem.ItemType == RibbonItemType.SkinSetDropDown || ribbonItem.ItemType == RibbonItemType.SkinPaletteDropDown || ribbonItem.ItemType == RibbonItemType.SkinPaletteGallery);
+            if (isSystemItem)
+            {
+                _FillBarItemSystem(ribbonItem, barItem, level);          // Style
+            }
+            else
+            {
+                _FillBarItemCommon(ribbonItem, barItem, level);          // Caption, Visible, Tagy, Tooltip
+                _FillBarItemFontStyle(ribbonItem, barItem, level);       // Styl písma
+                _FillBarItemSizeColors(ribbonItem, barItem, level);      // Velikost, barvy, alignment
+                _FillBarItemImage(ribbonItem, barItem, level);           // Image můžu řešit až po vložení velikosti, protože Image se řídí i podle velikosti prvku 
+                _FillBarItemHotKey(ribbonItem, barItem, level);          // HotKeys
+                _FillBarItemReload(ribbonItem, barItem, level);          // Speciální itemy mají svůj Reload (ComboBox)
+            }
+        }
+        /// <summary>
+        /// Nastaví základní běžné hodnoty do do daného prvku = systémový prvek, jen některé věci
+        /// </summary>
+        /// <param name="ribbonItem"></param>
+        /// <param name="barItem"></param>
+        /// <param name="level"></param>
+        private static void _FillBarItemSystem(IRibbonItem ribbonItem, DevExpress.XtraBars.BarItem barItem, int level)
+        {
+            barItem.Enabled = ribbonItem.Enabled;
+            barItem.Visibility = ribbonItem.Visible ? DevExpress.XtraBars.BarItemVisibility.Always : DevExpress.XtraBars.BarItemVisibility.Never;
+            barItem.VisibleInSearchMenu = ribbonItem.VisibleInSearchMenu;
+            barItem.RibbonStyle = (ribbonItem.RibbonStyle == RibbonItemStyles.Default ? DevExpress.XtraBars.Ribbon.RibbonItemStyles.All : DxRibbonControl.Convert(ribbonItem.RibbonStyle));
+        }
+        /// <summary>
+        /// Nastaví základní běžné hodnoty do do daného prvku
+        /// </summary>
+        /// <param name="ribbonItem"></param>
+        /// <param name="barItem"></param>
+        /// <param name="level"></param>
+        private static void _FillBarItemCommon(IRibbonItem ribbonItem, DevExpress.XtraBars.BarItem barItem, int level)
+        {
             barItem.Caption = ribbonItem.Text ?? "";
             barItem.Enabled = ribbonItem.Enabled;
             barItem.Visibility = ribbonItem.Visible ? DevExpress.XtraBars.BarItemVisibility.Always : DevExpress.XtraBars.BarItemVisibility.Never;
             barItem.VisibleInSearchMenu = ribbonItem.VisibleInSearchMenu;
             barItem.SearchTags = ribbonItem.SearchTags;
-            barItem.PaintStyle = DxRibbonControl.Convert(ribbonItem.ItemPaintStyle);
+            barItem.PaintStyle = DxRibbonControl.ConvertPaintStyle(ribbonItem, level);
             barItem.RibbonStyle = (ribbonItem.RibbonStyle == RibbonItemStyles.Default ? DevExpress.XtraBars.Ribbon.RibbonItemStyles.All : DxRibbonControl.Convert(ribbonItem.RibbonStyle));
 
-            _FillBarItemFontStyle(ribbonItem, barItem, level);
-            _FillBarItemImage(ribbonItem, barItem, level);          // Image můžu řešit až po vložení velikosti, protože Image se řídí i podle velikosti prvku 
-            _FillBarItemHotKey(ribbonItem, barItem, level);
-
             barItem.SuperTip = DxComponent.CreateDxSuperTip(ribbonItem);
-
-            // Vzájemné provázání:
-            barItem.Tag = ribbonItem;            // Vizuální prvek zná data
-            ribbonItem.RibbonItem = barItem;     // Datový prvek má Weakreferenci na vizuál
         }
         /// <summary>
         /// Nastaví dodaný styl písma do daného prvku, do jeho odpovídající Appearance, do všech stavů
@@ -3250,6 +3341,62 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
         }
         /// <summary>
+        /// Nastaví barvy a velikost do daného prvku, do jeho odpovídající Appearance, do všech stavů
+        /// </summary>
+        /// <param name="ribbonItem"></param>
+        /// <param name="barItem"></param>
+        /// <param name="level"></param>
+        private static void _FillBarItemSizeColors(IRibbonItem ribbonItem, DevExpress.XtraBars.BarItem barItem, int level)
+        {
+            if (ribbonItem.Size.HasValue)
+            {
+                barItem.Size = ribbonItem.Size.Value;
+            }
+
+            // Barvy:
+            Color? backColor = null;
+            Color? textColor = null;
+            if (ribbonItem.BackColor.HasValue || ribbonItem.TextColor.HasValue)
+            {   // Explicitní barvy z deklarace prvku:
+                backColor = ribbonItem.BackColor;
+                textColor = ribbonItem.TextColor;
+            }
+            else if (!String.IsNullOrEmpty(ribbonItem.StyleName))
+            {   // Barvy definované v kalíšku:
+                StyleInfo style = GetStyleInfo(ribbonItem.StyleName);
+                backColor = style?.LabelBgColor;
+                textColor = style?.LabelColor;
+            }
+
+            // Pokud jsme určili nějakou barvu, aplikuji jí do prvku:
+            if (backColor.HasValue || textColor.HasValue)
+            {
+                var appearance = ((level == 0) ? barItem.ItemAppearance : barItem.ItemInMenuAppearance);
+                if (backColor.HasValue)
+                {
+                    appearance.Normal.BackColor = backColor.Value;
+                    appearance.Hovered.BackColor = backColor.Value;
+                    appearance.Pressed.BackColor = backColor.Value;
+                    appearance.Disabled.BackColor = backColor.Value;
+                }
+                if (textColor.HasValue)
+                {
+                    appearance.Normal.ForeColor = textColor.Value;
+                    appearance.Hovered.ForeColor = textColor.Value;
+                    appearance.Pressed.ForeColor = textColor.Value;
+                    appearance.Disabled.ForeColor = textColor.Value;
+                }
+            }
+
+            // Zarovnání dle požadavku:
+            if (ribbonItem.Alignment.HasValue)
+            {
+                barItem.Alignment = (ribbonItem.Alignment.Value == BarItemAlignment.Default ? DevExpress.XtraBars.BarItemLinkAlignment.Default :
+                                    (ribbonItem.Alignment.Value == BarItemAlignment.Left ? DevExpress.XtraBars.BarItemLinkAlignment.Left :
+                                    (ribbonItem.Alignment.Value == BarItemAlignment.Right ? DevExpress.XtraBars.BarItemLinkAlignment.Right : DevExpress.XtraBars.BarItemLinkAlignment.Default)));
+            }
+        }
+        /// <summary>
         /// Nastaví dodaný styl písma do daného prvku, do jeho odpovídající Appearance, do všech stavů
         /// </summary>
         /// <param name="ribbonItem"></param>
@@ -3258,7 +3405,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         private static void _FillBarItemImage(IRibbonItem ribbonItem, DevExpress.XtraBars.BarItem barItem, int level)
         {
             var itemType = ribbonItem.ItemType;
-            if ((itemType == RibbonItemType.CheckButton || itemType == RibbonItemType.CheckBoxStandard || itemType == RibbonItemType.RadioItem) && barItem is DevExpress.XtraBars.BarBaseButtonItem barButton)
+            if ((itemType == RibbonItemType.CheckButton || itemType == RibbonItemType.CheckButtonPassive || itemType == RibbonItemType.CheckBoxStandard || itemType == RibbonItemType.CheckBoxPasive || itemType == RibbonItemType.RadioItem) && barItem is DevExpress.XtraBars.BarBaseButtonItem barButton)
                 _FillBarItemImageChecked(ribbonItem, barButton, level);    // S možností volby podle Checked
             else
                 _FillBarItemImageStandard(ribbonItem, barItem, level);
@@ -3280,10 +3427,14 @@ namespace Noris.Clients.Win.Components.AsolDX
             bool isLargeIcon = (isRootItem && (ribbonItem.RibbonStyle.HasFlag(RibbonItemStyles.Large) || ribbonItem.RibbonStyle == RibbonItemStyles.Default));
             ResourceImageSizeType sizeType = (isLargeIcon ? ResourceImageSizeType.Large : ResourceImageSizeType.Small);
 
-            // Náhradní ikonky (pro nezadané nebo neexistující ImageName) budeme generovat jen pro level = 0 = Ribbon, a ne pro Menu!
-            bool enableImageFromCaption = (ribbonItem.ImageFromCaption == ImageFromCaptionType.OnlyForRootMenuLevel ? isRootItem : (ribbonItem.ImageFromCaption == ImageFromCaptionType.Enabled));
-            string caption = (enableImageFromCaption ? ribbonItem.Text : null);
-            DxComponent.ApplyImage(barItem.ImageOptions, ribbonItem.ImageName, ribbonItem.Image, sizeType, caption: caption, prepareDisabledImage: ribbonItem.PrepareDisabledImage);
+            // Náhradní ikonka (pro nezadané nebo neexistující ImageName) budeme generovat jen pro level = 0 = Ribbon, a ne pro Menu!
+            string imageCaption = GetCaptionForRibbonImage(ribbonItem, level);
+            DxComponent.ApplyImage(barItem.ImageOptions, ribbonItem.ImageName, ribbonItem.Image, sizeType, caption: imageCaption, prepareDisabledImage: ribbonItem.PrepareDisabledImage);
+
+            // Pokud nemám Image ani imageCaption, pak je třeba upravit PaintStyle tak, aby BarStatic prvek nezobrazoval přeškrtnutý Image:
+            barItem.PaintStyle = DxRibbonControl.ConvertPaintStyle(ribbonItem, out bool hasImage, level);
+            if (!hasImage)
+                barItem.ImageOptions.Reset();
         }
         /// <summary>
         /// Připraví do prvku Ribbonu obrázek (ikonu) podle aktuálního stavu a dodané definice, pro button typu CheckButton nebo CheckBox
@@ -3302,8 +3453,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             bool isLargeIcon = (isRootItem && (ribbonItem.RibbonStyle.HasFlag(RibbonItemStyles.Large) || ribbonItem.RibbonStyle == RibbonItemStyles.Default));
             ResourceImageSizeType sizeType = (isLargeIcon ? ResourceImageSizeType.Large : ResourceImageSizeType.Small);
 
-            // Náhradní ikonky (pro nezadané nebo neexistující ImageName) budeme generovat jen pro level = 0 = Ribbon, a ne pro Menu!
-            string caption = (isRootItem ? ribbonItem.Text : null);
+            // Náhradní ikonka (pro nezadané nebo neexistující ImageName) budeme generovat jen pro level = 0 = Ribbon, a ne pro Menu!
+            string imageCaption = GetCaptionForRibbonImage(ribbonItem, level);
 
             // Zvolíme aktuálně platný obrázek - podle hodnoty iRibbonItem.Checked a pro zadáné obrázky:
             string imageName = (!ribbonItem.Checked.HasValue ? ribbonItem.ImageName :                                                                     // Pro hodnotu NULL
@@ -3319,7 +3470,31 @@ namespace Noris.Clients.Win.Components.AsolDX
                 imageName = null;
                 image = null;
             }
-            DxComponent.ApplyImage(barButton.ImageOptions, imageName, ribbonItem.Image, sizeType, caption: caption, prepareDisabledImage: ribbonItem.PrepareDisabledImage);
+            DxComponent.ApplyImage(barButton.ImageOptions, imageName, ribbonItem.Image, sizeType, caption: imageCaption, prepareDisabledImage: ribbonItem.PrepareDisabledImage);
+
+            // Pokud nemám Image ani imageCaption, pak je třeba upravit PaintStyle tak, aby BarStatic prvek nezobrazoval přeškrtnutý Image:
+            barButton.PaintStyle = DxRibbonControl.ConvertPaintStyle(ribbonItem, level);
+        }
+        /// <summary>
+        /// Metoda vrátí text, z něhož bude možno vytvořit náhradní Image pro daný prvek Ribbonu <paramref name="ribbonItem"/>.
+        /// Metoda akceptuje nastavení prvku, danou úroveň zanoření prvku i jeho text.
+        /// </summary>
+        /// <param name="ribbonItem"></param>
+        /// <param name="level"></param>
+        /// <returns></returns>
+        internal static string GetCaptionForRibbonImage(IRibbonItem ribbonItem, int? level)
+        {
+            // Určíme, zda prvek je přímo v Ribbonu nebo až jako subpoložka:
+            //  Hodnota level se předává v procesu prvotní tvorby, pak Root prvek má level == 0;
+            //  Pokud hodnota level není předána, pak jsme volání z obsluhy kliknutí na prvek, a tam se spolehneme na hodnotu IRibbonItem.ParentItem.
+            bool isRootItem = (level.HasValue ? (level.Value == 0) : (ribbonItem.ParentItem is null));
+            var mode = ribbonItem.ImageFromCaption;
+
+            bool enableImageFromCaption =
+                    (ribbonItem.CreateImageFromCaption.HasValue ? ribbonItem.CreateImageFromCaption.Value :
+                    (mode == ImageFromCaptionType.OnlyForRootMenuLevel ? isRootItem : (mode == ImageFromCaptionType.Enabled)));
+            string imageCaption = (enableImageFromCaption ? ribbonItem.Text : null);
+            return imageCaption;
         }
         /// <summary>
         /// Vrátí první neprázdný obrázek
@@ -3330,7 +3505,6 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             return images.FirstOrDefault(i => !String.IsNullOrEmpty(i));
         }
-
         /// <summary>
         /// Do daného prvku Ribbonu vepíše vše pro jeho HotKey
         /// </summary>
@@ -3345,6 +3519,17 @@ namespace Noris.Clients.Win.Components.AsolDX
                 barItem.ItemShortcut = new DevExpress.XtraBars.BarShortcut(ribbonItem.Shortcut.Value);
             else if (!string.IsNullOrEmpty(ribbonItem.HotKey) && !(barItem is DevExpress.XtraBars.BarSubItem))
                 barItem.ItemShortcut = new DevExpress.XtraBars.BarShortcut(SystemAdapter.GetShortcutKeys(ribbonItem.HotKey));
+        }
+        /// <summary>
+        /// Pro daný prvek Ribbonu, pokud implementuje <see cref="IReloadable"/>, zavolá jeho metodu <see cref="IReloadable.Reload"/>
+        /// </summary>
+        /// <param name="ribbonItem"></param>
+        /// <param name="barItem"></param>
+        /// <param name="level"></param>
+        private static void _FillBarItemReload(IRibbonItem ribbonItem, DevExpress.XtraBars.BarItem barItem, int level)
+        {
+            if (barItem is IReloadable reloadable)
+                reloadable.ReloadFrom(ribbonItem);
         }
         #endregion
         #region Pozice okna
@@ -5782,7 +5967,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 var ulaf = DevExpress.LookAndFeel.UserLookAndFeel.Default;
                 skin = DevExpress.Skins.CommonSkins.GetSkin(ulaf);
                 skinName = (ulaf.ActiveSkinName ?? "").Trim();
-                isCompact = ulaf.CompactUIModeForced;
+                // Remove 46.27   Dx 21.1.5    isCompact = ulaf.CompactUIModeForced;
                 paletteName = (ulaf.ActiveSvgPaletteName ?? "").Trim();
             }
             catch (Exception exc)
@@ -5883,6 +6068,24 @@ namespace Noris.Clients.Win.Components.AsolDX
         private static Dictionary<string, Color> GetColorsDictionary(DevExpress.Skins.SkinColors skinColors)
         {
             Dictionary<string, Color> dictionary = new Dictionary<string, Color>();
+
+            try
+            {
+                var pp = skinColors.GetType().GetProperty("CustomProperties", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic);
+                var names = pp.GetValue(skinColors) as System.Collections.Hashtable;
+                foreach (var key in names.Keys)
+                {
+                    string name = key as string;
+                    Color color = (Color)names[key];
+                    if (key != null && !dictionary.ContainsKey(name))
+                        dictionary.Add(name, color);
+                }
+            }
+            catch { }
+
+            // 46.27 test    deaktivováno         
+
+            /*
             var properties = skinColors.GetProperties();
             foreach (System.Collections.DictionaryEntry property in properties)
             {
@@ -5894,6 +6097,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                         dictionary.Add(key, color);
                 }
             }
+            */
             return dictionary;
         }
         /// <summary>
@@ -9658,6 +9862,50 @@ White
         /// </summary>
         /// <param name="source"></param>
         public static implicit operator WeakTarget<T>(T source) { return (source is null ? null : new WeakTarget<T>(source)); }
+    }
+    #endregion
+    #region class ListExt<T> : extended List
+    /// <summary>
+    /// Represents a strongly typed list of objects that can be accessed by index. Provides methods to search, sort, and manipulate lists.
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    public class ListExt<T> : List<T>
+    {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ListExt{T}"/> class that is empty and has the default initial capacity.
+        /// </summary>
+        public ListExt() : base() { }
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ListExt{T}"/> class that is empty and has the specified initial capacity.
+        /// </summary>
+        /// <param name="capacity">The number of elements that the new list can initially store.</param>
+        public ListExt(int capacity) : base(capacity) { }
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ListExt{T}"/> class that contains elements copied from the specified collection and has sufficient capacity to accommodate the number of elements copied.
+        /// </summary>
+        /// <param name="collection">The collection whose elements are copied to the new list.</param>
+        public ListExt(IEnumerable<T> collection) : base(collection) { }
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ListExt{T}"/> class that contains elements copied from the specified collection and has sufficient capacity to accommodate the number of elements copied.
+        /// </summary>
+        /// <param name="items"></param>
+        public ListExt(params T[] items) : base(items) { }
+        /// <summary>
+        /// Vizualizace
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return $"List<{typeof(T).Name}>: Count= {Count}";
+        }
+        /// <summary>
+        /// Do this Listu přidá sadu dodaných prvků.
+        /// </summary>
+        /// <param name="items"></param>
+        public void AddItems(params T[] items)
+        {
+            this.AddRange(items);
+        }
     }
     #endregion
     #region class TEventArgs<T> : Třída argumentů obsahující jeden prvek generického typu Item

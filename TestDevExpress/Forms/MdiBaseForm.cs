@@ -42,7 +42,7 @@ namespace TestDevExpress.Forms
 
             this.RibbonVisibility = DXR.RibbonVisibility.Visible;
         }
-        private void _Ribbon_RibbonItemClick(object sender, TEventArgs<IRibbonItem> e)
+        private void _Ribbon_RibbonItemClick(object sender, DxRibbonItemClickArgs e)
         {
             if (e.Item is null) return;
             if (e.Item.ItemType == RibbonItemType.Menu) return;           // Pouze došlo k aktivaci Menu, nikoli k výběru konkrétní položky...

@@ -2165,6 +2165,10 @@ namespace Noris.Clients.Win.Components.AsolDX
             {
                 _SilentMode = true;
                 nodePair = _RemoveAddNodesSilent(clearAll, removeNodeKeys, addNodes, preserveProperties);
+
+                //STR0073789 - 2023.05.24 - UI_Číslování otevřených pořad.- záložky : chybějící synchronizace "Selected" po refreschi celého stromu
+                if (clearAll)
+                    _SynchronizeINodes();
             }
             finally
             {

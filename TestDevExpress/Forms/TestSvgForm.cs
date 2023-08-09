@@ -166,7 +166,7 @@ namespace TestDevExpress.Forms
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void _DxRibbonControl_RibbonItemClick(object sender, TEventArgs<IRibbonItem> e)
+        private void _DxRibbonControl_RibbonItemClick(object sender, DxRibbonItemClickArgs e)
         {
             if (e.Item.ParentGroup.GroupId == "DEVEXPRESS" || e.Item.ParentGroup.GroupId == "ASOL")
             {   // 

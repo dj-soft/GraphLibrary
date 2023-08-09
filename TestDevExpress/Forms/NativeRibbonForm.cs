@@ -427,7 +427,7 @@ namespace TestDevExpress.Forms
                         ItemType = RibbonItemType.Menu,
                         Text = text,
                         ImageName = svgImage,
-                        SubItems = DxRibbonSample.CreateItems(3, 6).ToList(),
+                        SubItems = DxRibbonSample.CreateItems(3, 6),
                         RibbonStyle = Noris.Clients.Win.Components.AsolDX.RibbonItemStyles.Large
                     };
                 case 4:
@@ -436,7 +436,7 @@ namespace TestDevExpress.Forms
                         ItemType = RibbonItemType.Menu,
                         Text = text,
                         ImageName = svgImage,
-                        SubItems = DxRibbonSample.CreateItems(3, 6).ToList(),
+                        SubItems = DxRibbonSample.CreateItems(3, 6),
                         RibbonStyle = Noris.Clients.Win.Components.AsolDX.RibbonItemStyles.SmallWithText
                     };
                 default:

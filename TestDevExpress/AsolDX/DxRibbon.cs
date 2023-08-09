@@ -140,7 +140,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             ShowItemCaptionsInQAT = true;
 
             SelectChildActivePageOnMerge = true;
-            UseLazyContentCreate = true;
+            UseLazyContentCreate = LazyContentMode.DefaultLazy;
             CheckLazyContentEnabled = true;
 
 
@@ -791,9 +791,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="ribbonContent"></param>
         private void _SetRibbonContent(IRibbonContent ribbonContent)
         {
+            this.ApplicationButtonText = ribbonContent?.ApplicationButtonText;
             this.TitleBarItems = ribbonContent?.TitleBarItems;
             this.QATDirectItems = ribbonContent?.QATDirectItems;
             this.AddPages(ribbonContent?.Pages, true);
+            this.StatusBarItems = ribbonContent?.StatusBarItems;
             __RibbonContent = ribbonContent;
         }
         private IRibbonContent __RibbonContent;
@@ -1661,7 +1663,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         private bool _SearchEditItemsLoading;
         #endregion
-        #region TitleButtons
+        #region TitleBarItems
         /// <summary>
         /// Prvky zobrazené v TitleBaru = titulek okna, napravo, doleva od tří systémových buttonů (Minimize - Maximize - Close).
         /// </summary>
@@ -1677,6 +1679,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         /// <summary>Prvky zobrazené v TitleBaru</summary>
         private IRibbonItem[] _TitleBarItems;
+        /// <summary>
+        /// Metoda přidá do titulkového baru 'CaptionBarItemLinks' dodané prvky.
+        /// </summary>
+        /// <param name="items"></param>
+        /// <param name="clear"></param>
         private void _TitleBarAddItems(IEnumerable<IRibbonItem> items, bool clear = false)
         {
             if (clear) _TitleBarClearItems();
@@ -1705,6 +1712,59 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             BarItemLink[] links = captionLinks.OfType<BarItemLink>().ToArray();
             captionLinks.Clear();
+
+            foreach (var link in links)
+            {
+                var item = link.Item;
+                if (this.Items.Contains(item))
+                    this.Items.Remove(item);
+            }
+        }
+        #endregion
+        #region StatusBarItems
+        /// <summary>
+        /// Prvky zobrazené v TitleBaru = titulek okna, napravo, doleva od tří systémových buttonů (Minimize - Maximize - Close).
+        /// </summary>
+        public IRibbonItem[] StatusBarItems
+        {
+            get { return _StatusBarItems; }
+            set
+            {
+                _StatusBarRemoveItems(_StatusBarItems);
+                _StatusBarAddItems(value, true);
+                _StatusBarItems = value;
+            }
+        }
+        /// <summary>Prvky zobrazené v StatusBaru</summary>
+        private IRibbonItem[] _StatusBarItems;
+        private void _StatusBarAddItems(IEnumerable<IRibbonItem> items, bool clear = false)
+        {
+            if (clear) _StatusBarClearItems();
+            if (items is null) return;
+
+            var mode = DxRibbonCreateContentMode.CreateAllSubItems;
+            int count = 0;
+            foreach (var iRibbonItem in items)
+            {
+                var item = this.GetItem(iRibbonItem, null, 0, mode, ref count);
+                this.StatusBar.ItemLinks.Add(item);
+            }
+        }
+        private void _StatusBarRemoveItems(IEnumerable<IRibbonItem> items)
+        {
+            if (items is null) return;
+
+        }
+        /// <summary>
+        /// Smaže všechny prvky zobrazované v TitleBaru
+        /// </summary>
+        private void _StatusBarClearItems()
+        {
+            var statusBarLinks = this.StatusBar.ItemLinks;
+            if (statusBarLinks is null || statusBarLinks.Count == 0) return;
+
+            BarItemLink[] links = statusBarLinks.OfType<BarItemLink>().ToArray();
+            statusBarLinks.Clear();
 
             foreach (var link in links)
             {
@@ -2015,7 +2075,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 this.PageCategories.Clear();
                 this.Toolbar.ItemLinks.Clear();
                 this._QATDirectItems = null;
-                this._ClearItems(true, ref removeItemsCount);
+                this._ClearItems(true, true, true, ref removeItemsCount);
             }
             finally
             {
@@ -2027,31 +2087,53 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         /// <summary>
         /// Korektně smaže BarItemy z this.Items.
-        /// Ponechává tam systémové prvky a volitelně DirectQAT prvky!
+        /// Ponechává tam systémové prvky a volitelně DirectQAT prvky + CaptionBar !
         /// </summary>
         /// <param name="removeDirectQatItems"></param>
+        /// <param name="removeCaptionItems"></param>
+        /// <param name="removeStatusItems"></param>
         /// <param name="removeItemsCount"></param>
-        private void _ClearItems(bool removeDirectQatItems, ref int removeItemsCount)
+        private void _ClearItems(bool removeDirectQatItems, bool removeCaptionItems, bool removeStatusItems, ref int removeItemsCount)
         {
             // Pokud bych dal this.Items.Clear(), tak přijdu o všechny prvky celého Ribbonu,
             //   a to i o "servisní" = RibbonSearchEditItem, RibbonExpandCollapseItem, AutoHiddenPagesMenuItem.
             // Ale když nevyčistím Itemy, budou tady pořád strašit...
             // Ponecháme prvky těchto typů: "DevExpress.XtraBars.RibbonSearchEditItem", "DevExpress.XtraBars.InternalItems.RibbonExpandCollapseItem", "DevExpress.XtraBars.InternalItems.AutoHiddenPagesMenuItem"
+            // Ponecháme volitelně prvky QAT panelu, a CaptionBar
             // Následující algoritmus NENÍ POMALÝ: smazání 700 Itemů trvá 11 milisekund.
-            // Pokud by Clear náhodou smazal i nějaké další sytémové prvky, je nutno je určit = určit jejich FullType a přidat jej do metody _IsSystemItem() !
-            var qatDirectKeys = _QATDirectAllItemKeys;
-            bool hasQatDirectKeys = (qatDirectKeys != null && qatDirectKeys.Count > 0);
+            // Pokud by Clear náhodou smazal i nějaké další systémové prvky, je nutno je určit = určit jejich FullType a přidat jej do metody _IsSystemItem() !
+
+            var qatItems = _QATDirectAllItemKeys;
+            var captionItems = this.CaptionBarItemLinks?.Where(l => !String.IsNullOrEmpty(l.Item.Name)).CreateDictionary(l => l.Item.Name, true);
+            var statusBarItems = this.StatusBar?.ItemLinks.Where(l => !String.IsNullOrEmpty(l.Item.Name)).CreateDictionary(l => l.Item.Name, true);
+
             int count = this.Items.Count;
             for (int i = count - 1; i >= 0; i--)
             {
                 var item = this.Items[i];
-                var key = GetValidQATKey(item.Name);
-                bool isDelete = (!_IsSystemItem(item) && (removeDirectQatItems || (hasQatDirectKeys && !qatDirectKeys.ContainsKey(key))));
-                if (isDelete)
+                var name = item.Name;
+
+                if (_IsSystemItem(item)) continue;                   // Systémové nesmažu
+
+                if (!removeDirectQatItems && qatItems != null)
                 {
-                    this.Items.RemoveAt(i);
-                    removeItemsCount++;
+                    var qatKey = GetValidQATKey(name);
+                    if (qatItems.ContainsKey(qatKey)) continue;      // QAT nemám mazat, a toto je QAT prvek
                 }
+
+                if (!removeCaptionItems && captionItems != null)
+                {
+                    if (captionItems.ContainsKey(name)) continue;    // Caption prvky nemám mazat, a tento prvek je na Caption baru
+                }
+
+                if (!removeStatusItems && statusBarItems != null)
+                {
+                    if (statusBarItems.ContainsKey(name)) continue;  // Status prvky nemám mazat, a tento prvek je na Status baru
+                }
+
+                // Nic ho nezachránilo => smažu ho:
+                this.Items.RemoveAt(i);
+                removeItemsCount++;
             }
         }
         /// <summary>
@@ -2104,7 +2186,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 DxRibbonPage.ClearContentPage(page);
 
             int removeItemsCount = 0;
-            this._ClearItems(false, ref removeItemsCount);
+            this._ClearItems(false, false, false, ref removeItemsCount);
 
             if (LogActive) DxComponent.LogAddLineTime($" === ClearPageContents {this.DebugName}; Removed {removeItemsCount} items; {DxComponent.LogTokenTimeMilisec} === ", startTime);
         }
@@ -2209,12 +2291,12 @@ namespace Noris.Clients.Win.Components.AsolDX
             //   - příznak isReFill určíme podle toho, že ve vstupních datech je alespoň jedna stránka typu OnDemand, která už v sobě obsahuje data
             bool isEmptyRibbon = (this.GetPages(PagePosition.AllOwn).Count == 0);
             bool isCalledFromReFill = iRibbonPages.Any(p => ((p.PageContentMode == RibbonContentMode.OnDemandLoadOnce || p.PageContentMode == RibbonContentMode.OnDemandLoadEveryTime) && p.Groups.Any()));
+            DxRibbonCreateContentMode createMode = _ConvertLazyMode(this.UseLazyContentCreate);
             this.ParentOwner.RunInGui(() =>
             {
                 _UnMergeModifyMergeCurrentRibbon(() =>
                 {
                     if (clearCurrentContent) _ClearPagesContents();
-                    DxRibbonCreateContentMode createMode = (this.UseLazyContentCreate ? DxRibbonCreateContentMode.None : DxRibbonCreateContentMode.CreateGroupsContent);
                     _AddPages(iRibbonPages, createMode, "Fill");
                     if (clearCurrentContent) _RemoveVoidContainers();
                 }
@@ -2224,6 +2306,22 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             // Do první stránky (v aktuálním Ribbonu) vepsat, že má být Aktivní:
             if (isEmptyRibbon || (clearCurrentContent && !preserveActivePage)) StoreFirstPageAsLastActivePage();
+        }
+        /// <summary>
+        /// Konvertuje vstupní požadavek na CreateLazy <see cref="LazyContentMode"/> do interního režimu <see cref="DxRibbonCreateContentMode"/>
+        /// </summary>
+        /// <param name="lazyMode"></param>
+        /// <returns></returns>
+        private DxRibbonCreateContentMode _ConvertLazyMode(LazyContentMode lazyMode)
+        {
+            switch (lazyMode)
+            {
+                case LazyContentMode.DefaultLazy: return DxRibbonCreateContentMode.None;                                 // Původní Lazy
+                case LazyContentMode.Auto: return DxRibbonCreateContentMode.CreateAutoByCount;
+                case LazyContentMode.CreateVisibleBarsOnly: return DxRibbonCreateContentMode.CreateGroupsContent;        // Původní NonLazy
+                case LazyContentMode.CreateAllItems: return DxRibbonCreateContentMode.CreateAll;
+            }
+            return DxRibbonCreateContentMode.CreateAll;
         }
         /// <summary>
         /// Metoda vrátí seznam těch zdejších stránek, jejichž Name se vyskytují v dodaném seznamu nových prvků.
@@ -2745,11 +2843,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         #region LazyLoad page content : OnSelectedPageChanged => CheckLazyContent; OnDemand loading Page
         /// <summary>
         /// Požadavek na používání opožděné tvorby obsahu stránek Ribbonu.
-        /// Pokud bude true, pak jednotlivé prvky na stránce Ribbonu budou fyzicky vygenerovány až tehdy, až bude stránka vybrána k zobrazení.
+        /// Podle nastavení budou jednotlivé prvky na stránce Ribbonu fyzicky vygenerovány až tehdy, až bude stránka vybrána k zobrazení.
         /// Změna hodnoty se projeví až při následujícím přidávání prvků do Ribbonu. 
-        /// Pokud tedy byla hodnota false (=výchozí stav), pak se přidá 600 prvků, a teprve pak se nastaví <see cref="UseLazyContentCreate"/> = true, je to fakt pozdě.
+        /// Pokud tedy byla hodnota <see cref="LazyContentMode.DefaultLazy"/> (=výchozí stav), pak se přidá 600 prvků, 
+        /// a teprve pak se nastaví <see cref="LazyContentMode.CreateAllItems"/> = true, je to fakt pozdě.
         /// </summary>
-        public bool UseLazyContentCreate { get; set; }
+        public LazyContentMode UseLazyContentCreate { get; set; }
         /// <summary>
         /// Prověří, zda aktuální stránka <see cref="DevExpress.XtraBars.Ribbon.RibbonControl.SelectedPage"/> 
         /// má na sobě nějaké HasLazyContentItems, a pokud ano, tak je fyzicky vytvoří
@@ -2854,6 +2953,30 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// tato metoda zajistí zobrazení nově dodaných dat v daném prvku.
         /// </summary>
         public event EventHandler<TEventArgs<IRibbonItem>> ItemOnDemandLoad;
+        /// <summary>
+        /// Režim vytváření prvků "ihned" / "lazy" (až budou potřeba)
+        /// </summary>
+        public enum LazyContentMode
+        {
+            /// <summary>
+            /// Defaultní = lazy
+            /// </summary>
+            DefaultLazy,
+            /// <summary>
+            /// Vytvořit všechno, pokud toho není mnoho.
+            /// Tedy vytvoří i prvky pro neaktivní stránky, pokud prvků základní viditelné úrovně je méně než 50.
+            /// Vytvoří i SubItems, pokud jich na stránce celkem je méně než 50.
+            /// </summary>
+            Auto,
+            /// <summary>
+            /// Vytvořit jen viditelné prvky = aktivní stránka a její grupy a jejich BarItems první úrovně, nikoli SubItems
+            /// </summary>
+            CreateVisibleBarsOnly,
+            /// <summary>
+            /// Vytvořit zcela všechny prvky = všechny stránky, grupy, prvky, i včetně subitems
+            /// </summary>
+            CreateAllItems
+        }
         #endregion
         #region LazyLoadOnIdle : dovolujeme provést opožděné plnění stránek (typu LazyLoad: Static) v režimu Application.OnIdle = "když je vhodná chvíle"
         /// <summary>
@@ -3111,6 +3234,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         internal DxRibbonGroup CreateGroup(IRibbonGroup iRibbonGroup, DxRibbonPage dxPage)
         {
             var dxGroup = new DxRibbonGroup(iRibbonGroup, dxPage?.Groups);
+            // event  dxGroup.CaptionButtonClick   nám řeší Ribbon,
+            //   jehož event PageGroupCaptionButtonClick vede do metody:
+            //   RibbonControl_PageGroupCaptionButtonClick(object sender, RibbonPageGroupEventArgs e)
+            //     a tato pak vyvolá Ribbonový event RibbonGroupButtonClick.
             this._Groups.Add(dxGroup);
             return dxGroup;
         }
@@ -3348,6 +3475,26 @@ namespace Noris.Clients.Win.Components.AsolDX
             bool createSubItems = reallyCreateSubItems;
             switch (itemType)
             {
+                case RibbonItemType.Label:
+                    count++;
+                    var labelItem = new BarStaticItem() { Manager = this.Manager };
+                    this.Items.Add(labelItem);
+                    barItem = labelItem;
+                    break;
+                case RibbonItemType.Static:
+                    count++;
+                    var staticItem = new BarStaticItem() { Manager = this.Manager };
+                    this.Items.Add(staticItem);
+                    barItem = staticItem;
+                    break;
+                case RibbonItemType.CheckButton:
+                case RibbonItemType.CheckButtonPassive:
+                    count++;
+                    BarButtonItem checkButton = Items.CreateButton(iRibbonItem.Text);
+                    checkButton.ButtonStyle = BarButtonStyle.Check;
+                    checkButton.Down = (iRibbonItem.Checked ?? false);
+                    barItem = checkButton;
+                    break;
                 case RibbonItemType.ButtonGroup:
                     count++;
                     createSubItems |= (iRibbonItem.SubItems != null && ContainsQAT(iRibbonItem));
@@ -3364,14 +3511,8 @@ namespace Noris.Clients.Win.Components.AsolDX
                     DevExpress.XtraBars.BarButtonItem splitButton = Items.CreateSplitButton(iRibbonItem.Text, dxPopup);
                     barItem = splitButton;
                     break;
-                case RibbonItemType.Menu:
-                    count++;
-                    createSubItems |= (iRibbonItem.SubItems != null && ContainsQAT(iRibbonItem));
-                    DevExpress.XtraBars.BarSubItem menu = Items.CreateMenu(iRibbonItem.Text);
-                    PrepareBarMenu(iRibbonItem, level, dxGroup, iRibbonItem.SubItems, menu, createSubItems, ref count);
-                    barItem = menu;
-                    break;
                 case RibbonItemType.CheckBoxStandard:
+                case RibbonItemType.CheckBoxPasive:
                     count++;
                     DevExpress.XtraBars.BarCheckItem checkItem = Items.CreateCheckItem(iRibbonItem.Text, iRibbonItem.Checked ?? false);
                     checkItem.CheckBoxVisibility = DevExpress.XtraBars.CheckBoxVisibility.BeforeText;
@@ -3393,11 +3534,20 @@ namespace Noris.Clients.Win.Components.AsolDX
                     //DevExpress.XtraBars.BarCheckItem trackBarItem = Items.createtr .CreateCheckItem(iRibbonItem.Text, iRibbonItem.Checked ?? false);
                     //barItem = radioItem;
                     break;
-                case RibbonItemType.ComboListBox:
+                case RibbonItemType.Menu:
                     count++;
-                    BarItem comboItem = CreateComboListBoxItem(iRibbonItem, level, dxGroup);
-                    this.Items.Add(comboItem);
-                    barItem = comboItem;
+                    createSubItems |= (iRibbonItem.SubItems != null && ContainsQAT(iRibbonItem));
+                    DevExpress.XtraBars.BarSubItem menu = Items.CreateMenu(iRibbonItem.Text);
+                    PrepareBarMenu(iRibbonItem, level, dxGroup, iRibbonItem.SubItems, menu, createSubItems, ref count);
+                    barItem = menu;
+                    break;
+                case RibbonItemType.PopupMenuDropDown:
+                    count++;
+                    createSubItems |= (iRibbonItem.SubItems != null && ContainsQAT(iRibbonItem));
+                    DevExpress.XtraBars.BarButtonItem dropDownItem = CreatePopupMenuDropDown(iRibbonItem, level, dxGroup, createSubItems, ref count);
+                    if (dropDownItem != null)
+                        this.Items.Add(dropDownItem);
+                    barItem = dropDownItem;
                     break;
                 case RibbonItemType.InRibbonGallery:
                     count++;
@@ -3420,12 +3570,18 @@ namespace Noris.Clients.Win.Components.AsolDX
                     barItem = new DevExpress.XtraBars.SkinPaletteRibbonGalleryBarItem();
                     this.Items.Add(barItem);
                     break;
-                case RibbonItemType.CheckButton:
+                case RibbonItemType.ComboListBox:
                     count++;
-                    BarButtonItem checkButton = Items.CreateButton(iRibbonItem.Text);
-                    checkButton.ButtonStyle = BarButtonStyle.Check;
-                    checkButton.Down = (iRibbonItem.Checked ?? false);
-                    barItem = checkButton;
+                    BarItem comboItem = CreateComboListBoxItem(iRibbonItem, level, dxGroup);
+                    this.Items.Add(comboItem);
+                    barItem = comboItem;
+                    break;
+                case RibbonItemType.RepositoryEditor:
+                    count++;
+                    BarEditItem editItem = CreateRepositoryEditorItem(iRibbonItem, level, dxGroup);
+                    if (editItem != null)
+                        this.Items.Add(editItem);
+                    barItem = editItem;
                     break;
                 case RibbonItemType.Button:
                 default:
@@ -3478,14 +3634,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="withReset"></param>
         protected void FillBarItem(DevExpress.XtraBars.BarItem barItem, IRibbonItem iRibbonItem, int level, bool withReset = false)
         {
-            if (iRibbonItem.Text != null || withReset)
-                barItem.Caption = iRibbonItem.Text ?? "";
-
-            barItem.Enabled = iRibbonItem.Enabled;
-            barItem.Visibility = iRibbonItem.Visible ? BarItemVisibility.Always : BarItemVisibility.Never;
-            barItem.VisibleInSearchMenu = iRibbonItem.VisibleInSearchMenu;
-            barItem.SearchTags = iRibbonItem.SearchTags;
-            FillBarItemHotKey(barItem, iRibbonItem, level, withReset);
+            // Společné hodnoty:
+            DxComponent.FillBarItemFrom(barItem, iRibbonItem, level);
 
             // Specifické styly:
             if (barItem is DevExpress.XtraBars.BarCheckItem checkItem)
@@ -3496,7 +3646,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                     (iRibbonItem.ItemType == RibbonItemType.CheckBoxToggle ? BarCheckStyles.Standard : BarCheckStyles.Standard));
                 checkItem.Checked = iRibbonItem.Checked ?? false;
             }
-            if (iRibbonItem.ItemType == RibbonItemType.CheckButton && barItem is BarBaseButtonItem barButton)
+            if ((iRibbonItem.ItemType == RibbonItemType.CheckButton || iRibbonItem.ItemType == RibbonItemType.CheckButton) && barItem is BarBaseButtonItem barButton)
             {   // CheckButton:
                 barButton.ButtonStyle = BarButtonStyle.Check;
                 barButton.Down = (iRibbonItem.Checked.HasValue && iRibbonItem.Checked.Value);
@@ -3509,14 +3659,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 if (iRibbonItem.ImageNameChecked != null) dxCheckBoxToggle.ImageNameChecked = iRibbonItem.ImageNameChecked;
             }
 
-            barItem.PaintStyle = Convert(iRibbonItem.ItemPaintStyle);
-            barItem.RibbonStyle = (iRibbonItem.RibbonStyle == RibbonItemStyles.Default ? DevExpress.XtraBars.Ribbon.RibbonItemStyles.All : Convert(iRibbonItem.RibbonStyle));
-            if (iRibbonItem.FontStyle.HasValue) FillBarItemFontStyle(barItem, iRibbonItem.FontStyle.Value, level, withReset);
-
-            FillBarItemImage(barItem, iRibbonItem, level, withReset);          // Image můžu řešit až po vložení velikosti, protože Image se řídí i podle velikosti prvku 
-
-            if (iRibbonItem.ToolTipText != null || withReset)
-                barItem.SuperTip = DxComponent.CreateDxSuperTip(iRibbonItem);
+            // FillBarItemImage(barItem, iRibbonItem, level, withReset);          // Image můžu řešit až po vložení velikosti, protože Image se řídí i podle velikosti prvku 
 
             RefreshBarItemTag(barItem, iRibbonItem);
         }
@@ -3546,7 +3689,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             if (barItem is DxBarCheckBoxToggle) return;                        // DxCheckBoxToggle si řídí Image sám
 
-            if ((iRibbonItem.ItemType == RibbonItemType.CheckButton || iRibbonItem.ItemType == RibbonItemType.CheckBoxStandard || iRibbonItem.ItemType == RibbonItemType.RadioItem) && barItem is BarBaseButtonItem barButton)
+            if ((iRibbonItem.ItemType == RibbonItemType.CheckButton || iRibbonItem.ItemType == RibbonItemType.CheckButtonPassive || iRibbonItem.ItemType == RibbonItemType.CheckBoxStandard || iRibbonItem.ItemType == RibbonItemType.CheckBoxPasive || iRibbonItem.ItemType == RibbonItemType.RadioItem) && barItem is BarBaseButtonItem barButton)
                 RibbonItemSetImageByChecked(iRibbonItem, barButton, level);    // S možností volby podle Checked
             else
                 RibbonItemSetImageStandard(iRibbonItem, barItem, level);
@@ -3569,9 +3712,8 @@ namespace Noris.Clients.Win.Components.AsolDX
             ResourceImageSizeType sizeType = (isLargeIcon ? ResourceImageSizeType.Large : ResourceImageSizeType.Small);
 
             // Náhradní ikonky (pro nezadané nebo neexistující ImageName) budeme generovat jen pro level = 0 = Ribbon, a ne pro Menu!
-            bool enableImageFromCaption = (iRibbonItem.ImageFromCaption == ImageFromCaptionType.OnlyForRootMenuLevel ? isRootItem : (iRibbonItem.ImageFromCaption == ImageFromCaptionType.Enabled));
-            string caption = (enableImageFromCaption ? iRibbonItem.Text : null);
-            DxComponent.ApplyImage(barItem.ImageOptions, iRibbonItem.ImageName, iRibbonItem.Image, sizeType, caption: caption, prepareDisabledImage: iRibbonItem.PrepareDisabledImage);
+            string imageCaption = DxComponent.GetCaptionForRibbonImage(iRibbonItem, level);
+            DxComponent.ApplyImage(barItem.ImageOptions, iRibbonItem.ImageName, iRibbonItem.Image, sizeType, caption: imageCaption, prepareDisabledImage: iRibbonItem.PrepareDisabledImage);
         }
         /// <summary>
         /// Připraví do prvku Ribbonu obrázek (ikonu) podle aktuálního stavu a dodané definice, pro button typu CheckButton nebo CheckBox
@@ -3591,7 +3733,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             ResourceImageSizeType sizeType = (isLargeIcon ? ResourceImageSizeType.Large : ResourceImageSizeType.Small);
 
             // Náhradní ikonky (pro nezadané nebo neexistující ImageName) budeme generovat jen pro level = 0 = Ribbon, a ne pro Menu!
-            string caption = (isRootItem ? iRibbonItem.Text : null);
+            string imageCaption = DxComponent.GetCaptionForRibbonImage(iRibbonItem, level);
 
             // Zvolíme aktuálně platný obrázek - podle hodnoty iRibbonItem.Checked a pro zadáné obrázky:
             string imageName = (!iRibbonItem.Checked.HasValue ? iRibbonItem.ImageName :                                                                        // Pro hodnotu NULL
@@ -3607,7 +3749,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 imageName = null;
                 image = null;
             }
-            DxComponent.ApplyImage(barButton.ImageOptions, imageName, iRibbonItem.Image, sizeType, caption: caption, prepareDisabledImage: iRibbonItem.PrepareDisabledImage);
+            DxComponent.ApplyImage(barButton.ImageOptions, imageName, iRibbonItem.Image, sizeType, caption: imageCaption, prepareDisabledImage: iRibbonItem.PrepareDisabledImage);
         }
         /// <summary>
         /// Vrátí první neprázdný obrázek
@@ -3674,6 +3816,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                     baseButton = buttonItem;
                     break;
                 case RibbonItemType.CheckBoxStandard:
+                case RibbonItemType.CheckBoxPasive:
                     DevExpress.XtraBars.BarCheckItem checkItem = new DevExpress.XtraBars.BarCheckItem(this.Manager);
                     baseButton = checkItem;
                     break;
@@ -3714,19 +3857,25 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             switch (subItemType)
             {   // Toto jsou náhrady za prvek Ribbonu, kdy některé požadované typy prvků neze používat, na jejich místo dáme prvek jiného typu:
+                case RibbonItemType.Label: return RibbonItemType.Label;
+                case RibbonItemType.Static: return RibbonItemType.Static;
+                case RibbonItemType.CheckButton: return null;
+                case RibbonItemType.CheckButtonPassive: return null;
                 case RibbonItemType.ButtonGroup: return RibbonItemType.Menu;
                 case RibbonItemType.SplitButton: return RibbonItemType.Menu;             // SplitButton dělá chyby, nahrazuji dočasně Menu            KEY: COLLAPSEDGROUP ERROR
-                case RibbonItemType.Menu: return RibbonItemType.Menu;
                 case RibbonItemType.CheckBoxStandard: return null;
+                case RibbonItemType.CheckBoxPasive: return null;
                 case RibbonItemType.CheckBoxToggle: return RibbonItemType.CheckBoxStandard;
                 case RibbonItemType.RadioItem: return null;
                 case RibbonItemType.TrackBar: return null;
-                case RibbonItemType.InRibbonGallery: return RibbonItemType.Menu;         // InRibbonGallery dělá chyby, nahrazuji dočasně Menu        KEY: COLLAPSEDGROUP ERROR
+                case RibbonItemType.Menu: return RibbonItemType.Menu;
+                case RibbonItemType.PopupMenuDropDown: return RibbonItemType.PopupMenuDropDown;
+                case RibbonItemType.InRibbonGallery: return null;  // otestujeme v nových DX, namísto:  RibbonItemType.Menu;         // InRibbonGallery dělá chyby, nahrazuji dočasně Menu        KEY: COLLAPSEDGROUP ERROR
                 case RibbonItemType.SkinSetDropDown: return null;
                 case RibbonItemType.SkinPaletteDropDown: return null;
                 case RibbonItemType.SkinPaletteGallery: return null;
-                case RibbonItemType.CheckButton: return null;
                 case RibbonItemType.ComboListBox: return RibbonItemType.ComboListBox;
+                case RibbonItemType.RepositoryEditor: return RibbonItemType.RepositoryEditor;
                 case RibbonItemType.Button:
                 default:
                     return RibbonItemType.Button;
@@ -3742,19 +3891,25 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             switch (subItemType)
             {   // Toto jsou náhrady za prvek SubMenu, kdy některé požadované typy prvků neze používat, na jejich místo dáme prvek jiného typu:
+                case RibbonItemType.Label: return RibbonItemType.Button;
+                case RibbonItemType.Static: return RibbonItemType.Button;
+                case RibbonItemType.CheckButton: return null;
+                case RibbonItemType.CheckButtonPassive: return null;
                 case RibbonItemType.ButtonGroup: return RibbonItemType.Menu;                          // Menu        KEY: COLLAPSEDGROUP ERROR
                 case RibbonItemType.SplitButton: return RibbonItemType.Menu;                          // Menu        KEY: COLLAPSEDGROUP ERROR
-                case RibbonItemType.Menu: return null;
                 case RibbonItemType.CheckBoxStandard: return null;
+                case RibbonItemType.CheckBoxPasive: return null;
                 case RibbonItemType.CheckBoxToggle: return RibbonItemType.CheckBoxStandard;           // Std         KEY: COLLAPSEDGROUP ERROR
                 case RibbonItemType.RadioItem: return null;
                 case RibbonItemType.TrackBar: return null;
-                case RibbonItemType.InRibbonGallery: return RibbonItemType.Menu;                      // Menu        KEY: COLLAPSEDGROUP ERROR
+                case RibbonItemType.Menu: return null;
+                case RibbonItemType.PopupMenuDropDown: return RibbonItemType.PopupMenuDropDown;
+                case RibbonItemType.InRibbonGallery: return null;  // otestujeme v nových DX, namísto:  RibbonItemType.Menu;                      // Menu        KEY: COLLAPSEDGROUP ERROR
                 case RibbonItemType.SkinSetDropDown: return null;
                 case RibbonItemType.SkinPaletteDropDown: return null;
                 case RibbonItemType.SkinPaletteGallery: return null;
-                case RibbonItemType.CheckButton: return null;
                 case RibbonItemType.ComboListBox: return RibbonItemType.Menu;
+                case RibbonItemType.RepositoryEditor: return RibbonItemType.RepositoryEditor;
                 case RibbonItemType.Button:
                 default:
                     return RibbonItemType.Button;
@@ -4356,6 +4511,22 @@ namespace Noris.Clients.Win.Components.AsolDX
             return hit?.Item;
         }
 
+        // PopupMenuDropDown
+        private BarButtonItem CreatePopupMenuDropDown(IRibbonItem iRibbonItem, int level, DxRibbonGroup dxGroup, bool createSubItems, ref int count)
+        {
+            var popup = DxPopupMenu.CreateDxPopupMenu(iRibbonItem.SubItems, null, null, this.Manager);
+            popup.Ribbon = this;
+
+            BarButtonItem barButtonItem = new BarButtonItem() 
+            {
+                ActAsDropDown = true, 
+                ButtonStyle = DevExpress.XtraBars.BarButtonStyle.DropDown, 
+                DropDownControl = popup
+            };
+            count++;
+            return barButtonItem;
+        }
+
         // Gallery
         /// <summary>
         /// Vytvoří a vrátí Galerii buttonů
@@ -4424,7 +4595,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void GalleryBarItem_GalleryItemClick(object sender, DevExpress.XtraBars.Ribbon.GalleryItemClickEventArgs e)
         {
             if (e.Item?.Tag is BarItemTagInfo itemInfo)
-                this.RaiseRibbonItemClick(itemInfo.Data);
+                this.RaiseRibbonItemClick(new DxRibbonItemClickArgs(itemInfo.Data));
         }
 
         // Combo
@@ -4440,6 +4611,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             DxRibbonComboBox dxRibbonCombo = new DxRibbonComboBox();
             dxRibbonCombo.IRibbonItem = iRibbonItem;
             dxRibbonCombo.SelectedDxItemChanged += DxRibbonCombo_SelectedDxItemChanged;
+            dxRibbonCombo.ComboButtonClick += DxRibbonCombo_ComboButtonClick;
             return dxRibbonCombo;
         }
         /// <summary>
@@ -4450,6 +4622,38 @@ namespace Noris.Clients.Win.Components.AsolDX
         private void DxRibbonCombo_SelectedDxItemChanged(object sender, DxRibbonItemClickArgs e)
         {
             _RibbonItem_ItemClick(sender, e);
+        }
+        /// <summary>
+        /// Klik na button vedle ComboBoxu
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void DxRibbonCombo_ComboButtonClick(object sender, DxRibbonItemButtonClickArgs e)
+        {
+            DxRibbonItemClickArgs args = new DxRibbonItemClickArgs(e.Item, e.ButtonName);
+            _RibbonItem_ItemClick(sender, args);
+        }
+
+        // RepositoryEditor
+        private BarEditItem CreateRepositoryEditorItem(IRibbonItem iRibbonItem, int level, DxRibbonGroup dxGroup)
+        {
+            // My v Ribbonu nevíme, jaký konkrétní RepositoryEditor si volající přeje. A ani nás to netrápí.
+            // My ho skrz RepositoryEditorInfo požádáme o vygenerování jeho potřebné instance.
+            var repoInfo = iRibbonItem.RepositoryEditorInfo;
+            if (repoInfo is null) return null;
+            if (repoInfo.RepositoryCreator is null) return null;
+
+            BarEditItem barEdit = null;
+            if (repoInfo.EditorCreator != null) barEdit = repoInfo.EditorCreator(iRibbonItem);
+            if (barEdit is null) barEdit = new BarEditItem();
+            repoInfo.EditorModifier?.Invoke(iRibbonItem, barEdit);
+
+            DevExpress.XtraEditors.Repository.RepositoryItem repoItem = repoInfo.RepositoryCreator(iRibbonItem, barEdit);
+            if (repoItem is null) return null;
+
+            this.RepositoryItems.Add(repoItem);
+
+            return barEdit;
         }
 
         /// <summary>
@@ -4479,6 +4683,44 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             int styles = (int)itemPaintStyle;
             return (DevExpress.XtraBars.BarItemPaintStyle)styles;
+        }
+        /// <summary>
+        /// Konvertuje typ <see cref="BarItemPaintStyle"/> na typ <see cref="DevExpress.XtraBars.BarItemPaintStyle"/>.
+        /// Zohlední kompletní obsah prvku Ribbonu, nejen jeho PaintStyle.
+        /// </summary>
+        /// <param name="iRibbonItem"></param>
+        /// <param name="level"></param>
+        /// <returns></returns>
+        internal static DevExpress.XtraBars.BarItemPaintStyle ConvertPaintStyle(IRibbonItem iRibbonItem, int? level = null)
+        {
+            return ConvertPaintStyle(iRibbonItem, out bool _, level);
+        }
+        /// <summary>
+        /// Konvertuje typ <see cref="BarItemPaintStyle"/> na typ <see cref="DevExpress.XtraBars.BarItemPaintStyle"/>.
+        /// Zohlední kompletní obsah prvku Ribbonu, nejen jeho PaintStyle.
+        /// </summary>
+        /// <param name="iRibbonItem"></param>
+        /// <param name="hasImage"></param>
+        /// <param name="level"></param>
+        /// <returns></returns>
+        internal static DevExpress.XtraBars.BarItemPaintStyle ConvertPaintStyle(IRibbonItem iRibbonItem, out bool hasImage, int? level = null)
+        {
+            // Zjistím, zda pro prvek budeme mít Image:
+            hasImage = iRibbonItem.Image != null || !String.IsNullOrEmpty(iRibbonItem.ImageName);
+            if (!hasImage)
+            {   // Přímo obrázek definován není. Může být generován náhradní podle Caption?
+                string imageCaption = DxComponent.GetCaptionForRibbonImage(iRibbonItem, level);
+                hasImage = !String.IsNullOrEmpty(imageCaption);
+            }
+
+            switch (iRibbonItem.ItemPaintStyle)
+            {   // Pokud máme Image, pak výstupní PaintStyle bude odpovídat požadavku. Pokud Image nemáme, pak výstupem bude Caption:
+                case BarItemPaintStyle.Standard: return (hasImage ? DevExpress.XtraBars.BarItemPaintStyle.Standard : DevExpress.XtraBars.BarItemPaintStyle.Caption);
+                case BarItemPaintStyle.Caption: return DevExpress.XtraBars.BarItemPaintStyle.Caption;
+                case BarItemPaintStyle.CaptionGlyph: return (hasImage ? DevExpress.XtraBars.BarItemPaintStyle.CaptionGlyph : DevExpress.XtraBars.BarItemPaintStyle.Caption);
+                case BarItemPaintStyle.CaptionInMenu: return (hasImage ? DevExpress.XtraBars.BarItemPaintStyle.CaptionInMenu : DevExpress.XtraBars.BarItemPaintStyle.Caption);
+            }
+            return Convert(iRibbonItem.ItemPaintStyle);
         }
         /// <summary>
         /// Konvertuje typ <see cref="RibbonItemStyles"/> na typ <see cref="DevExpress.XtraBars.Ribbon.RibbonItemStyles"/>
@@ -6153,7 +6395,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         #endregion
         #endregion
-        #region Kliknutí na prvek Ribbonu
+        #region Kliknutí na prvek Ribbonu (včetně Grupy)
         private void InitEvents()
         {
             ApplicationButtonClick += RibbonControl_ApplicationButtonClick;
@@ -6277,30 +6519,102 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             if (!this.IsActive) return;
 
+            // Prvky deklarované v DevExpress vůbec nebudu odchytávat:
+            if (_IsDxRibbonItem(e.Item)) return;
+
             // poznámka: tady nemusím řešit přechod z Ribbonu "kde se kliklo" do Ribbonu "kde byl prvek definován", tady to už interně vyřešil DevExpress!
             // Tady jsem v té instanci Ribbonu, která deklarovala BarItem a navázala do něj svůj Click eventhandler...
             if (_TryGetIRibbonItem(e.Item, out IRibbonItem iRibbonItem))
             {
-                _RibbonItemTestCheckChanges(e.Item, iRibbonItem);
-                _RibbonItemClick(iRibbonItem);
+                var dxArgs = _SearchItemClickInfo(iRibbonItem, e);
+                _RibbonItemTestCheckChanges(e.Item, dxArgs);
+                _RibbonItemClick(dxArgs);
             }
         }
         /// <summary>
-        /// Uživatel kliknul na prvek Ribbonu, který sám určil <see cref="IRibbonItem"/> a předává nám jej
+        /// Vrátí true, pokud daný prvek je specifický DevExpress a nebudeme tedy řešit jeho eventy
+        /// </summary>
+        /// <param name="barItem"></param>
+        /// <returns></returns>
+        private static bool _IsDxRibbonItem(DevExpress.XtraBars.BarItem barItem)
+        {
+            if (barItem is null) return true;
+
+            if ((barItem is DevExpress.XtraBars.SkinDropDownButtonItem) ||
+                (barItem is DevExpress.XtraBars.SkinPaletteDropDownButtonItem) ||
+                (barItem is DevExpress.XtraBars.SkinPaletteRibbonGalleryBarItem))
+                return true;
+
+            return false;
+        }
+        /// <summary>
+        /// Uživatel kliknul na prvek Ribbonu, který sám určil <see cref="IRibbonItem"/> a předává nám jej.
+        /// Typicky sem chodíme z ComboBoxu.
         /// </summary>
         /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void _RibbonItem_ItemClick(object sender, DxRibbonItemClickArgs e)
+        /// <param name="dxArgs"></param>
+        private void _RibbonItem_ItemClick(object sender, DxRibbonItemClickArgs dxArgs)
         {
             if (!this.IsActive) return;
 
             // poznámka: tady nemusím řešit přechod z Ribbonu "kde se kliklo" do Ribbonu "kde byl prvek definován", tady to už interně vyřešil DevExpress!
             // Tady jsem v té instanci Ribbonu, která deklarovala BarItem a navázala do něj svůj Click eventhandler...
-            IRibbonItem iRibbonItem = e.Item;
-            if (iRibbonItem != null)
+            if (dxArgs.Item != null)
             {
-                _RibbonItemClick(iRibbonItem);
+                _RibbonItemClick(dxArgs);
             }
+        }
+        /// <summary>
+        /// Metoda dohledá informace o tom, ve kterém místě se nachází prvek Ribbonu, na který bylo kliknuto; 
+        /// a vloží vše do <see cref="DxRibbonItemClickArgs"/>.
+        /// </summary>
+        /// <param name="iRibbonItem"></param>
+        /// <param name="eArgs"></param>
+        /// <returns></returns>
+        private DxRibbonItemClickArgs _SearchItemClickInfo(IRibbonItem iRibbonItem, DevExpress.XtraBars.ItemClickEventArgs eArgs)
+        {
+            if (eArgs.Link is null)
+                // Není žádný vizuální Link => je to HotKey:
+                return new DxRibbonItemClickArgs(iRibbonItem, DxRibbonItemClickArea.HotKey);
+
+            if (eArgs.Link.LinkedObject is null)
+                // Link je, ale nemá LinkedObject => nevíme:
+                return new DxRibbonItemClickArgs(iRibbonItem, DxRibbonItemClickArea.Other);
+
+            if (eArgs.Link.LinkedObject is DevExpress.XtraBars.Ribbon.RibbonQuickToolbarItemLinkCollection qats)
+                // QAT:
+                return new DxRibbonItemClickArgs(iRibbonItem, DxRibbonItemClickArea.QatPanel);
+
+            if (eArgs.Link.LinkedObject is DevExpress.XtraBars.Ribbon.RibbonPageGroupItemLinkCollection group)
+            {   // Button přímo v grupě:
+                string groupId = group.PageGroup?.Name;
+                if (groupId != null && groupId.Length > 3 && groupId.StartsWith("G_#")) groupId = groupId.Substring(3);
+                string pageId = group.PageGroup?.Page?.Name;
+                if (pageId != null && pageId.Length > 3 && pageId.StartsWith("P_#")) pageId = pageId.Substring(3);
+                return new DxRibbonItemClickArgs(iRibbonItem, DxRibbonItemClickArea.RibbonGroup, pageId, groupId);
+            }
+
+            if (eArgs.Link.LinkedObject is DevExpress.XtraBars.Ribbon.RibbonStatusBarItemLinkCollection status)
+            {   // Prevk StatusBaru:
+                return new DxRibbonItemClickArgs(iRibbonItem, DxRibbonItemClickArea.StatusBar);
+            }
+
+            if (eArgs.Link.LinkedObject is DevExpress.XtraBars.Ribbon.RibbonCaptionBarItemLinkCollection caption)
+            {   // Prevk StatusBaru:
+                return new DxRibbonItemClickArgs(iRibbonItem, DxRibbonItemClickArea.CaptionPanel);
+            }
+
+            if (eArgs.Link.LinkedObject is DevExpress.XtraBars.BarItem barItem)
+            {   // SubItem v Menu/atd:
+                var name = barItem.Name;
+                return new DxRibbonItemClickArgs(iRibbonItem, DxRibbonItemClickArea.RibbonGroup, null, null);
+            }
+
+            if (eArgs.Link.LinkedObject is DevExpress.XtraBars.PopupMenu popup)
+                // Vyhledání v Ribbonu:
+                return new DxRibbonItemClickArgs(iRibbonItem, DxRibbonItemClickArea.SearchCombo);
+
+            return new DxRibbonItemClickArgs(iRibbonItem, DxRibbonItemClickArea.Other);
         }
         /// <summary>
         /// Tato metoda řeší změnu hodnoty <see cref="ITextItem.Checked"/> na daném prvku Ribbonu poté, kdy na něj uživatel klikl.
@@ -6310,19 +6624,21 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Volá event <see cref="RibbonItemCheck"/> a související pro každý prvek, jemuž je změněna hodnota Checked.
         /// </summary>
         /// <param name="barItem"></param>
-        /// <param name="iRibbonItem"></param>
-        private void _RibbonItemTestCheckChanges(BarItem barItem, IRibbonItem iRibbonItem)
+        /// <param name="dxArgs"></param>
+        private void _RibbonItemTestCheckChanges(BarItem barItem, DxRibbonItemClickArgs dxArgs)
         {
             if (!this.IsActive) return;
 
-            // Z vizuálního objektu BarCheckItem si opíšu jeho Checked do datového objektu:
+            var itemType = dxArgs.Item.ItemType;
+            // Z vizuálního objektu BarCheckItem si opíšu jeho Checked do datového objektu, anebo pro pasivní prvky vrátím stav:
+            bool isPasive = (itemType == RibbonItemType.CheckButtonPassive || itemType == RibbonItemType.CheckBoxPasive);
             if (barItem is BarCheckItem checkItem)
             {   // CheckBox i RadioButton (jde o stejný prvek, pouze s jiným stylem zobrazení):
-                _RibbonCheckBoxItemClick(checkItem, iRibbonItem);
+                _RibbonCheckBoxItemClick(checkItem, dxArgs, isPasive);
             }
-            else if (iRibbonItem.ItemType == RibbonItemType.CheckButton && barItem is BarBaseButtonItem barButton)
+            else if ((itemType == RibbonItemType.CheckButton || itemType == RibbonItemType.CheckButtonPassive) && barItem is BarBaseButtonItem barButton)
             {   // BarButton v obou režimech:
-                _RibbonCheckButtonItemClick(barButton, iRibbonItem);
+                _RibbonCheckButtonItemClick(barButton, dxArgs, isPasive);
             }
         }
         /// <summary>
@@ -6330,16 +6646,23 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Zpracuje režim CheckBox (samostaný CheckButton) i RadioButton (skupinový CheckButton).
         /// </summary>
         /// <param name="checkButton"></param>
-        /// <param name="iRibbonItem"></param>
-        private void _RibbonCheckBoxItemClick(BarCheckItem checkButton, IRibbonItem iRibbonItem)
+        /// <param name="dxArgs"></param>
+        /// <param name="isPasive">Pasivní chování = do viditelného prvku vrátit stav z datového, a neřešit návaznosti</param>
+        private void _RibbonCheckBoxItemClick(BarCheckItem checkButton, DxRibbonItemClickArgs dxArgs, bool isPasive)
         {
-            if (String.IsNullOrEmpty(iRibbonItem.RadioButtonGroupName))
+            var iRibbonItem = dxArgs.Item;
+            bool itemChecked = (iRibbonItem.Checked ?? false);
+            if (isPasive)
+            {   // Pasivní prvek: do Buttonu i do IRibbonItem vepíšu hodnotu Checked z datového objektu = beze změny:
+                _RibbonItemSetChecked(dxArgs, itemChecked, true, false, null, true, checkButton);
+            }
+            else if (String.IsNullOrEmpty(iRibbonItem.RadioButtonGroupName))
             {   // Není daná grupa RadioButtonGroupName? Jde o obyčejný CheckBox:
-                _RibbonItemSetChecked(iRibbonItem, !(iRibbonItem.Checked ?? false), true, false, null, true, checkButton);
+                _RibbonItemSetChecked(dxArgs, !itemChecked, true, false, null, true, checkButton);
             }
             else
             {   // Máme řešit Radio grupu:
-                _RibbonRadioButtonItemClick(iRibbonItem, true, false, true);
+                _RibbonRadioButtonItemClick(dxArgs, true, false, true);
             }
         }
         /// <summary>
@@ -6347,58 +6670,67 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Zpracuje režim CheckBox (samostaný CheckButton) i RadioButton (skupinový CheckButton).
         /// </summary>
         /// <param name="barButton"></param>
-        /// <param name="iRibbonItem"></param>
-        private void _RibbonCheckButtonItemClick(BarBaseButtonItem barButton, IRibbonItem iRibbonItem)
+        /// <param name="dxArgs"></param>
+        /// <param name="isPasive">Pasivní chování = do viditelného prvku vrátit stav z datového, a neřešit návaznosti</param>
+        private void _RibbonCheckButtonItemClick(BarBaseButtonItem barButton, DxRibbonItemClickArgs dxArgs, bool isPasive)
         {
-            if (String.IsNullOrEmpty(iRibbonItem.RadioButtonGroupName))
+            var iRibbonItem = dxArgs.Item;
+            bool itemChecked = (iRibbonItem.Checked ?? false);
+            if (isPasive)
+            {   // Pasivní prvek: do Buttonu i do IRibbonItem vepíšu hodnotu Checked z datového objektu = beze změny:
+                _RibbonItemSetChecked(dxArgs, itemChecked, true, true, barButton, false, null);
+            }
+            else if (String.IsNullOrEmpty(iRibbonItem.RadioButtonGroupName))
             {   // Není daná grupa RadioButtonGroupName? Jde o obyčejný CheckBox:
-                _RibbonItemSetChecked(iRibbonItem, !(iRibbonItem.Checked ?? false), true, true, barButton, false, null);
+                _RibbonItemSetChecked(dxArgs, !itemChecked, true, true, barButton, false, null);
             }
             else
             {   // Máme řešit Radio grupu:
-                _RibbonRadioButtonItemClick(iRibbonItem, true, true, false);
+                _RibbonRadioButtonItemClick(dxArgs, true, true, false);
             }
         }
         /// <summary>
-        /// Metoda najde všechny prvky jedné Radiogrupy (se shodným <see cref="IRibbonItem.RadioButtonGroupName"/> jako má dodaný prvek <paramref name="iRibbonItem"/>),
-        /// a pro všechny prvky této grupy jiné než dodaný <paramref name="iRibbonItem"/> nastaví jejich Checked = false,
+        /// Metoda najde všechny prvky jedné Radiogrupy (se shodným <see cref="IRibbonItem.RadioButtonGroupName"/> jako má dodaný prvek v <paramref name="dxArgs"/>),
+        /// a pro všechny prvky této grupy jiné než dodaný v <paramref name="dxArgs"/> nastaví jejich Checked = false,
         /// a poté pro dodaný prvek nastaví jeho Checked = true.
         /// <para/>
         /// Podle požadavku volá event změny pro každý dotčený prvek, a nastaví do vizuálního prvku stav down a Checked.
         /// </summary>
-        /// <param name="iRibbonItem"></param>
+        /// <param name="dxArgs"></param>
         /// <param name="callEvent"></param>
         /// <param name="setDownState"></param>
         /// <param name="setChecked"></param>
-        private void _RibbonRadioButtonItemClick(IRibbonItem iRibbonItem, bool callEvent, bool setDownState, bool setChecked)
+        private void _RibbonRadioButtonItemClick(DxRibbonItemClickArgs dxArgs, bool callEvent, bool setDownState, bool setChecked)
         {
             // Získáme všechny prvky té skupiny RadioButtonGroupName, na jejíhož člena se kliklo:
+            var iRibbonItem = dxArgs.Item;
             var groupName = iRibbonItem.RadioButtonGroupName;
             var groupItems = iRibbonItem.ParentGroup?.Items.Where(i => (!String.IsNullOrEmpty(i.RadioButtonGroupName) && i.RadioButtonGroupName == groupName)).ToArray();
             if (groupItems is null || groupItems.Length == 0) return;
 
             // Nejprve nastavím všechny ostatní prvky (nikoli ten aktivní) na Checked = false:
-            groupItems.Where(i => !Object.ReferenceEquals(i, iRibbonItem)).ForEachExec(i => _RibbonItemSetChecked(i, false, callEvent, setDownState, null, setChecked, null));
+            groupItems.Where(i => !Object.ReferenceEquals(i, iRibbonItem)).ForEachExec(i => _RibbonItemSetChecked(new DxRibbonItemClickArgs(i), false, callEvent, setDownState, null, setChecked, null));
 
             // A až poté nastavím ten jeden aktivní na Checked = true:
-            _RibbonItemSetChecked(iRibbonItem, true, callEvent, setDownState, null, setChecked, null);
+            _RibbonItemSetChecked(dxArgs, true, callEvent, setDownState, null, setChecked, null);
         }
         /// <summary>
-        /// Do daného datového prvku <paramref name="iRibbonItem"/> vloží danou hodnotu Checked <paramref name="isChecked"/>.
+        /// Do daného datového prvku v <paramref name="dxArgs"/> vloží danou hodnotu Checked <paramref name="isChecked"/>.
         /// Pokud je požadováno nastavení hodnoty <see cref="BarBaseButtonItem.Down"/> pro odpovídajcí vizuální prvek, provede to 
         /// (může být předán button v parametru <paramref name="barButton"/>, anebo bude vyhledán v <see cref="IRibbonItem.RibbonItem"/>).
-        /// Pokud došlo ke změně hodnoty IsChecked v <paramref name="iRibbonItem"/> a pokud je požadováno v <paramref name="callEvent"/>, 
+        /// Pokud došlo ke změně hodnoty IsChecked v <paramref name="dxArgs"/> a pokud je požadováno v <paramref name="callEvent"/>, 
         /// vyvolá se událost <see cref="RibbonItemCheck"/> a související.
         /// </summary>
-        /// <param name="iRibbonItem"></param>
+        /// <param name="dxArgs"></param>
         /// <param name="isChecked"></param>
         /// <param name="callEvent"></param>
         /// <param name="setDownState"></param>
         /// <param name="barButton"></param>
         /// <param name="setChecked"></param>
         /// <param name="checkButton"></param>
-        private void _RibbonItemSetChecked(IRibbonItem iRibbonItem, bool isChecked, bool callEvent, bool setDownState, BarBaseButtonItem barButton, bool setChecked, BarCheckItem checkButton)
+        private void _RibbonItemSetChecked(DxRibbonItemClickArgs dxArgs, bool isChecked, bool callEvent, bool setDownState, BarBaseButtonItem barButton, bool setChecked, BarCheckItem checkButton)
         {
+            var iRibbonItem = dxArgs.Item;
             bool oldChecked = (iRibbonItem.Checked ?? false);
             bool isChanged = (isChecked != oldChecked);
             iRibbonItem.Checked = isChecked;
@@ -6421,68 +6753,66 @@ namespace Noris.Clients.Win.Components.AsolDX
                 }
             }
             if (callEvent && isChanged)
-                _RibbonItemCheck(iRibbonItem);
+                _RibbonItemCheck(dxArgs);
         }
 
         /// <summary>
         /// Provede akci odpovídající kliknutí na prvek Ribbonu, na vstupu jsou data prvku
         /// </summary>
-        /// <param name="iRibbonItem"></param>
-        internal void RaiseRibbonItemClick(IRibbonItem iRibbonItem) { _RibbonItemClick(iRibbonItem); }
+        /// <param name="dxArgs"></param>
+        internal void RaiseRibbonItemClick(DxRibbonItemClickArgs dxArgs) { _RibbonItemClick(dxArgs); }
         /// <summary>
         /// Vyvolá reakce na kliknutí na prvek Ribbonu:
         /// event <see cref="RibbonItemClick"/>.
         /// </summary>
-        /// <param name="iRibbonItem"></param>
-        private void _RibbonItemClick(IRibbonItem iRibbonItem)
+        /// <param name="dxArgs"></param>
+        private void _RibbonItemClick(DxRibbonItemClickArgs dxArgs)
         {
             if (!this.IsActive) return;
 
-            iRibbonItem?.ClickAction?.Invoke(iRibbonItem);
-            var args = new TEventArgs<IRibbonItem>(iRibbonItem);
-            OnRibbonItemClick(args);
-            RibbonItemClick?.Invoke(this, args);
+            dxArgs.Item?.ClickAction?.Invoke(dxArgs.Item);
+            OnRibbonItemClick(dxArgs);
+            RibbonItemClick?.Invoke(this, dxArgs);
         }
         /// <summary>
         /// Proběhne po kliknutí na prvek Ribbonu
         /// </summary>
         /// <param name="args"></param>
-        protected virtual void OnRibbonItemClick(TEventArgs<IRibbonItem> args) { }
+        protected virtual void OnRibbonItemClick(DxRibbonItemClickArgs args) { }
         /// <summary>
         /// Událost volaná po kliknutí na prvek Ribbonu
         /// </summary>
-        public event EventHandler<TEventArgs<IRibbonItem>> RibbonItemClick;
+        public event EventHandler<DxRibbonItemClickArgs> RibbonItemClick;
 
         /// <summary>
         /// Provede akci odpovídající změně hodnoty <see cref="ITextItem.Checked"/> tohoto prvku Ribbonu.
         /// V době volání této akce už je hodnota změněna. Volající garantuje, že skutečně došlo ke změně.
         /// </summary>
-        /// <param name="iRibbonItem"></param>
-        internal void RaiseRibbonItemCheck(IRibbonItem iRibbonItem) { _RibbonItemCheck(iRibbonItem); }
+        /// <param name="dxArgs"></param>
+        internal void RaiseRibbonItemCheck(DxRibbonItemClickArgs dxArgs) { _RibbonItemCheck(dxArgs); }
         /// <summary>
         /// Vyvolá reakce na změnu hodnoty <see cref="ITextItem.Checked"/> tohoto prvku Ribbonu.
         /// V době volání této akce už je hodnota změněna. Volající garantuje, že skutečně došlo ke změně.
         /// event <see cref="RibbonItemCheck"/>.
         /// </summary>
-        /// <param name="iRibbonItem"></param>
-        private void _RibbonItemCheck(IRibbonItem iRibbonItem)
+        /// <param name="dxArgs"></param>
+        private void _RibbonItemCheck(DxRibbonItemClickArgs dxArgs)
         {
-            iRibbonItem?.ClickAction?.Invoke(iRibbonItem);
-            var args = new TEventArgs<IRibbonItem>(iRibbonItem);
-            OnRibbonItemCheck(args);
-            RibbonItemCheck?.Invoke(this, args);
+            dxArgs.Item?.ClickAction?.Invoke(dxArgs.Item);
+            OnRibbonItemCheck(dxArgs);
+            RibbonItemCheck?.Invoke(this, dxArgs);
         }
         /// <summary>
         /// Proběhne po změně hodnoty <see cref="ITextItem.Checked"/> tohoto prvku Ribbonu.
         /// V době volání této akce už je hodnota změněna. Volající garantuje, že skutečně došlo ke změně.
         /// </summary>
-        /// <param name="args"></param>
-        protected virtual void OnRibbonItemCheck(TEventArgs<IRibbonItem> args) { }
+        /// <param name="dxArgs"></param>
+        protected virtual void OnRibbonItemCheck(DxRibbonItemClickArgs dxArgs) { }
         /// <summary>
         /// Událost volaná po změně hodnoty <see cref="ITextItem.Checked"/> tohoto prvku Ribbonu.
         /// V době volání této akce už je hodnota změněna. Volající garantuje, že skutečně došlo ke změně.
         /// </summary>
-        public event EventHandler<TEventArgs<IRibbonItem>> RibbonItemCheck;
+        public event EventHandler<DxRibbonItemClickArgs> RibbonItemCheck;
 
         /// <summary>
         /// V rámci dané kategorie se pokusí najít odpovídající definici kategorie <see cref="IRibbonCategory"/> v některém tagu.
@@ -7381,7 +7711,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (item != null && item.Tag is BarItemTagInfo itemInfo)
             {
                 if (itemInfo.Data != null) itemInfo.Data.Checked = isChecked;
-                if (itemInfo.DxGroup.OwnerDxRibbon != null) itemInfo.DxGroup.OwnerDxRibbon.RaiseRibbonItemClick(itemInfo.Data);
+                if (itemInfo.DxGroup.OwnerDxRibbon != null) itemInfo.DxGroup.OwnerDxRibbon.RaiseRibbonItemClick(new DxRibbonItemClickArgs(itemInfo.Data));
             }
         }
         #endregion
@@ -7512,11 +7842,65 @@ namespace Noris.Clients.Win.Components.AsolDX
         public DxRibbonItemClickArgs(IRibbonItem item)
         {
             this.Item = item;
+            this.Area = DxRibbonItemClickArea.None;
+        }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="item"></param>
+        /// <param name="subButtonName"></param>
+        public DxRibbonItemClickArgs(IRibbonItem item, string subButtonName)
+        {
+            this.Item = item;
+            this.SubButtonName = subButtonName;
+            this.Area = DxRibbonItemClickArea.None;
+        }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="item"></param>
+        /// <param name="area"></param>
+        public DxRibbonItemClickArgs(IRibbonItem item, DxRibbonItemClickArea area)
+        {
+            this.Item = item;
+            this.Area = area;
+        }
+        /// <summary>
+        /// Konstruktor
+        /// </summary>
+        /// <param name="item"></param>
+        /// <param name="area"></param>
+        /// <param name="pageId"></param>
+        /// <param name="groupId"></param>
+        public DxRibbonItemClickArgs(IRibbonItem item, DxRibbonItemClickArea area, string pageId, string groupId)
+        {
+            this.Item = item;
+            this.Area = area;
+            this.PageId = pageId;
+            this.GroupId = groupId;
         }
         /// <summary>
         /// Prvek
         /// </summary>
         public IRibbonItem Item { get; private set; }
+        /// <summary>
+        /// Button, na který bylo kliknuto - jeho Name.
+        /// Pokud nebylo kliknuto na button, pak je zde null (=klik přímo na prvek).
+        /// Pokud bylo kliknuto na SubButton typu DropDown, pak se rozbalí combo, ale odpovídající událost se nevyvolá.
+        /// </summary>
+        public string SubButtonName { get; private set; }
+        /// <summary>
+        /// V jaké části bylo kliknuto na prvek Ribbonu
+        /// </summary>
+        public DxRibbonItemClickArea Area { get; private set; }
+        /// <summary>
+        /// Na jaké stránce bylo kliknuto na prvek Ribbonu
+        /// </summary>
+        public string PageId { get; private set; }
+        /// <summary>
+        /// Na jaké grupě bylo kliknuto na prvek Ribbonu
+        /// </summary>
+        public string GroupId { get; private set; }
     }
     /// <summary>
     /// Třída argumentu pro eventy, kde se aktivuje specifický Button v prvku <see cref="IRibbonItem"/> v Ribbonu.
@@ -7528,7 +7912,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="item">Prvek, na který bylo kliknuto</param>
         /// <param name="button">Button, na který bylo kliknuto</param>
-        public DxRibbonItemButtonClickArgs(IRibbonItem item, PredefinedButtonType button)
+        public DxRibbonItemButtonClickArgs(IRibbonItem item, DevExpress.XtraEditors.Controls.EditorButton button)
         {
             this.Item = item;
             this.Button = button;
@@ -7540,7 +7924,53 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Button, na který bylo kliknuto
         /// </summary>
-        public PredefinedButtonType Button { get; private set; }
+        public DevExpress.XtraEditors.Controls.EditorButton Button { get; private set; }
+        /// <summary>
+        /// Druh buttonu
+        /// </summary>
+        public DevExpress.XtraEditors.Controls.ButtonPredefines Kind { get { return this.Button.Kind; } }
+        /// <summary>
+        /// Name buttonu
+        /// </summary>
+        public string ButtonName { get { return this.Button.Tag as string; } }
+    }
+    /// <summary>
+    /// Oblast Ribbonu, na které bylo na prvek kliknuto
+    /// </summary>
+    public enum DxRibbonItemClickArea
+    {
+        /// <summary>
+        /// Nebylo určeno
+        /// </summary>
+        None,
+        /// <summary>
+        /// Standardní oblast Ribbonu = stránka a grupa
+        /// </summary>
+        RibbonGroup,
+        /// <summary>
+        /// QAT panel
+        /// </summary>
+        QatPanel,
+        /// <summary>
+        /// Caption (titulkový) panel
+        /// </summary>
+        CaptionPanel,
+        /// <summary>
+        /// Vyhledávací políčko
+        /// </summary>
+        SearchCombo,
+        /// <summary>
+        /// Status bar
+        /// </summary>
+        StatusBar,
+        /// <summary>
+        /// Klávesová zkratka
+        /// </summary>
+        HotKey,
+        /// <summary>
+        /// Hledáno a nelze určit
+        /// </summary>
+        Other
     }
     /// <summary>
     /// Režim, v jakém jsou vytvářeny a přidávány fyzické prvky (BarItems) do Ribbonu.
@@ -7564,6 +7994,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         CreateAllSubItems = 0x0004,
         /// <summary>
+        /// Pokud je položek málo, udělej je všechny, jinak je odlož na Lazy
+        /// </summary>
+        CreateAutoByCount = 0x0008,
+        /// <summary>
         /// Pokud je nastaveno, MAJÍ se generovat alespoň ty prvky, které jsou obsaženy v QAT seznamu (podle jejich ItemId se detekují pomocí metody <see cref="DxRibbonControl.ContainsQAT(IRibbonItem)"/>.
         /// Tato hodnota se akceptuje jen tehdy, když NENÍ aktivní hodnota <see cref="CreateGroupsContent"/> ani <see cref="CreateAllSubItems"/>.
         /// </summary>
@@ -7583,7 +8017,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// připravit nějaký obsah (sumární příznak v procesu analýzy, nezadávat přímo - bude vyhodnocen na základě ostatních požadavků a dle aktuálního stavu)
         /// </summary>
-        PrepareAnyContent = 0x2000
+        PrepareAnyContent = 0x2000,
+
+        /// <summary>
+        /// Vytvoř grupy i SubItems
+        /// </summary>
+        CreateAll = CreateGroupsContent | CreateAllSubItems
+
     }
     #endregion
     #region IDxRibbonInternal : Interface pro interní přístup do ribbonu
@@ -7863,8 +8303,13 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             bool isOnDemandFill = createMode.HasFlag(DxRibbonCreateContentMode.RunningOnDemandFill);              // OnDemand Fill - ovlivní tvorbu a přenáší se do výstupu
             bool isOnIdleFill = createMode.HasFlag(DxRibbonCreateContentMode.RunningOnIdleFill);                  // OnIdle Fill - ovlivní tvorbu a přenáší se do výstupu
-            bool isCreateAllSubItems = createMode.HasFlag(DxRibbonCreateContentMode.CreateAllSubItems) || isOnIdleFill;                              // Subpoložky: dle požadavku anebo v OnIdleFill
-            bool isCreateGroupContent = createMode.HasFlag(DxRibbonCreateContentMode.CreateGroupsContent) || isCreateAllSubItems || isActivePage;    // Základní obsah stránky generuji když je to vyžádáno, nebo když se generují SubItems (tedy v OnIdleFill), anebo když je stránka aktivní
+            bool isCreateAuto = createMode.HasFlag(DxRibbonCreateContentMode.CreateAutoByCount);                  // Auto = podle počtu věcí na stránce
+            bool canAutoCreateGroups = false;
+            bool canAutoCreateSubItems = false;
+            if (isCreateAuto) _DetectAutoCreateMode(iRibbonPage, ref canAutoCreateGroups, ref canAutoCreateSubItems);    // Auto režim určí možnosti podle obsahu stránky
+
+            bool isCreateAllSubItems = createMode.HasFlag(DxRibbonCreateContentMode.CreateAllSubItems) || canAutoCreateSubItems || isOnIdleFill;                            // Subpoložky: dle požadavku anebo v OnIdleFill
+            bool isCreateGroupContent = createMode.HasFlag(DxRibbonCreateContentMode.CreateGroupsContent) || isCreateAllSubItems || canAutoCreateGroups || isActivePage;    // Základní obsah stránky generuji když je to vyžádáno, nebo když se generují SubItems (tedy v OnIdleFill), anebo když je stránka aktivní
             bool isCreateOnlyQatItems = (!isCreateGroupContent && (pageContainsQatItems && createMode.HasFlag(DxRibbonCreateContentMode.CreateOnlyQATItems)));
             bool isPrepareAnyContent = (isCreateGroupContent || isCreateAllSubItems || isCreateOnlyQatItems);     // Budu vůbec něco generovat?
             var pageContentMode = iRibbonPage.PageContentMode;
@@ -7894,6 +8339,34 @@ namespace Noris.Clients.Win.Components.AsolDX
                 (isPrepareAnyContent ? DxRibbonCreateContentMode.PrepareAnyContent : DxRibbonCreateContentMode.None);
 
             return currentMode;
+        }
+        /// <summary>
+        /// Auto režim určí možnosti Lazy/Direct load prvků podle obsahu stránky
+        /// </summary>
+        /// <param name="iRibbonPage"></param>
+        /// <param name="canAutoCreateGroups"></param>
+        /// <param name="canAutoCreateSubItems"></param>
+        private void _DetectAutoCreateMode(IRibbonPage iRibbonPage, ref bool canAutoCreateGroups, ref bool canAutoCreateSubItems)
+        {
+            if (iRibbonPage is null) return;
+
+            if (iRibbonPage.Groups is null || !iRibbonPage.Groups.Any())
+            {   // žádná grupa:
+                canAutoCreateGroups = true;
+                canAutoCreateSubItems = true;
+                return;
+            }
+
+            // Automaticky vytvořit grupy pro stránku tehdy, pokud počet prvků v základní úrovni nepřesáhne 50:
+            int itemsCount = iRibbonPage.Groups.Sum(g => g.Items.Count());     // Součet počtu prvků z jednotlivých skupin v Root úrovni
+            if (itemsCount <= 50)
+                canAutoCreateGroups = true;
+
+            // Automaticky vytvořit SubItems pro stránku tehdy, pokud počet SubItems všech Items v základní úrovni nepřesáhne 50:
+            var items = iRibbonPage.Groups.SelectMany(g => g.Items).Where(i => i.SubItems != null).ToArray();   // Souhrn Root prvků ze všech grup, kde tyto prvky mají SubItems
+            int subItemsCount = items.Sum(i => i.SubItems.Count());            // Součet počtu SubItems z Root prvků z jednotlivých skupin
+            if (subItemsCount <= 50)
+                canAutoCreateSubItems = true;
         }
         /// <summary>
         /// Zajistí přípravu prvku LazyInfo pro režim definovaný v daném prvku. Prvek si uschová.
@@ -8818,10 +9291,9 @@ namespace Noris.Clients.Win.Components.AsolDX
     /// <summary>
     /// Prvek Ribbonu reprezentující ComboBox
     /// </summary>
-    public class DxRibbonComboBox : BarEditItem
+    public class DxRibbonComboBox : BarEditItem, IReloadable
     {
         #region Public
-
         /// <summary>
         /// Konstruktor
         /// </summary>
@@ -8885,6 +9357,48 @@ namespace Noris.Clients.Win.Components.AsolDX
                 this.EditValue = selectedItem;
             }
         }
+        /// <summary>
+        /// Data, která deklarují obsah tohoto prvku.
+        /// Setováním prvku dojde k naplnění specifických položek (Items a Buttons) ComboBoxu.
+        /// Přenačtení těchto dat lze vyvolat i metodou <see cref="Reload()"/>.
+        /// Nicméně tímto plněním se <u>neprovádí běžné setování dat</u> (Caption, Image, SuperTip, Enabled atd), to provádí Ribbon standardně sám - tak jako u jiných BarItems.
+        /// </summary>
+        public IRibbonItem IRibbonItem
+        {
+            get { return __IRibbonItem; }
+            set { this._SetIRibbonItem(value); }
+        }
+        private IRibbonItem __IRibbonItem;
+        /// <summary>
+        /// Znovu vytvoří prvky ComboBoxu : Items a Buttons.
+        /// Používá se pro Refresh obsahu.
+        /// Nenaplní běžné hodnoty BarItemu (Caption, Image, SuperTip, Enabled atd), to provádí Ribbon tak jako u jiných BarItems.
+        /// </summary>
+        public void Reload()
+        {
+            try
+            {
+                __SilentChange = true;
+                _ClearItems();
+                _ClearButtons(false);
+                _ReloadIRibbonData();
+            }
+            finally
+            {
+                __SilentChange = false;
+                _CheckChangeItem();
+            }
+        }
+        /// <summary>
+        /// Uloží do sebe daný definiční prvek a znovu vytvoří prvky ComboBoxu : Items a Buttons.
+        /// Používá se pro Refresh obsahu.
+        /// Nenaplní běžné hodnoty BarItemu (Caption, Image, SuperTip, Enabled atd), to provádí Ribbon tak jako u jiných BarItems.
+        /// </summary>
+        public void ReloadFrom(IRibbonItem iRibbonItem)
+        {
+            if (iRibbonItem != null)
+                _SetIRibbonItem(iRibbonItem);
+        }
         #endregion
         #region Privátní život - tvorba, vnitřní eventy
         /// <summary>
@@ -8924,17 +9438,14 @@ namespace Noris.Clients.Win.Components.AsolDX
             // this.Size = new Size(250, 25);       // Nefunguje
             this.__ComboBox = comboBox;
         }
-
         private void ComboBox_BeforeShowMenu(object sender, DevExpress.XtraEditors.Controls.BeforeShowMenuEventArgs e)
         {
             DxComponent.LogAddLine($"DxRibbonComboBox.ComboBox_BeforeShowMenu: IsPopupOpen={__IsPopupOpen}; SelectedItem={this.SelectedDxItem}");
         }
-
         private void ComboBox_BeforePopup(object sender, EventArgs e)
         {
             DxComponent.LogAddLine($"DxRibbonComboBox.ComboBox_BeforePopup: IsPopupOpen={__IsPopupOpen}; SelectedItem={this.SelectedDxItem}");
         }
-
         /// <summary>
         /// Obsahuje true, když se nemá aktivovat událost o změně vybrané hodnoty
         /// </summary>
@@ -8943,12 +9454,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Obsahuje hodnotu, která byla posledně hlášena jako <see cref="SelectedDxItem"/> v eventu <see cref="SelectedDxItemChanged"/>.
         /// </summary>
         private object __LastSelectedItem;
-
         private void ComboBox_Click(object sender, EventArgs e)
         {
             DxComponent.LogAddLine($"DxRibbonComboBox.ComboBox_Click: IsPopupOpen={__IsPopupOpen}; SelectedItem={this.SelectedDxItem}");
         }
-
         /// <summary>
         /// Před otevřením Popup
         /// </summary>
@@ -8963,19 +9472,16 @@ namespace Noris.Clients.Win.Components.AsolDX
             DxComponent.LogAddLine($"DxRibbonComboBox.ComboBox_Popup: IsPopupOpen={__IsPopupOpen}; SelectedItem={this.SelectedDxItem}");
             __IsPopupOpen = true;
         }
-
         private void ComboBox_Closed(object sender, DevExpress.XtraEditors.Controls.ClosedEventArgs e)
         {
             DxComponent.LogAddLine($"DxRibbonComboBox.ComboBox_Closed: IsPopupOpen={__IsPopupOpen}; SelectedItem={this.SelectedDxItem}");
             __IsPopupOpen = false;
         }
         private bool __IsPopupOpen;
-
         private void ComboBox_Validating(object sender, System.ComponentModel.CancelEventArgs e)
         {
             DxComponent.LogAddLine($"DxRibbonComboBox.ComboBox_Validating: IsPopupOpen={__IsPopupOpen}; SelectedItem={this.SelectedDxItem}");
         }
-
         /// <summary>
         /// Po změně vybrané hodnoty
         /// </summary>
@@ -8990,51 +9496,18 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             DxComponent.LogAddLine($"DxRibbonComboBox.ComboBox_ButtonPressed: IsPopupOpen={__IsPopupOpen}; SelectedItem={this.SelectedDxItem}; Button={e.Button.Kind}");
         }
-
         private void ComboBox_ButtonClick(object sender, DevExpress.XtraEditors.Controls.ButtonPressedEventArgs e)
         {
             DxComponent.LogAddLine($"DxRibbonComboBox.ComboBox_ButtonClick: IsPopupOpen={__IsPopupOpen}; SelectedItem={this.SelectedDxItem}; Button={e.Button.Kind}");
             if (e.Button.Kind != DevExpress.XtraEditors.Controls.ButtonPredefines.DropDown)
-                this._RunComboButtonClick(e.Button.Kind);
+                this._RunComboButtonClick(e.Button);
         }
-
         /// <summary>
         /// Repository Item ComboBox
         /// </summary>
         private DevExpress.XtraEditors.Repository.RepositoryItemComboBox __ComboBox;
         /// <summary>
-        /// Data, která deklarují obsah tohoto prvku.
-        /// Setováním prvku dojde k naplnění specifických položek (Items a Buttons) ComboBoxu.
-        /// Přenačtení těchto dat lze vyvolat i metodou <see cref="Reload()"/>.
-        /// Nicméně tímto plněním se <u>neprovádí běžné setování dat</u> (Caption, Image, SuperTip, Enabled atd), to provádí Ribbon standardně sám - tak jako u jiných BarItems.
-        /// </summary>
-        public IRibbonItem IRibbonItem
-        {
-            get { return __IRibbonItem; }
-            set { this._SetIRibbonItem(value); }
-        }
-        private IRibbonItem __IRibbonItem;
-        /// <summary>
-        /// Znovu vytvoří prvky ComboBoxu : Items a Buttons.
-        /// Používá se pro Refresh obsahu.
-        /// Nenaplní běžné hodnoty BarItemu (Caption, Image, SuperTip, Enabled atd), to provádí Ribbon tak jako u jiných BarItems.
-        /// </summary>
-        public void Reload()
-        {
-            try
-            {
-                __SilentChange = true;
-                _ClearItems();
-                _ReloadIRibbonData();
-            }
-            finally
-            {
-                __SilentChange = false;
-                _CheckChangeItem();
-            }
-        }
-        /// <summary>
-        /// Naplní prvek daty z 
+        /// Naplní prvek daty z dodaného <see cref="IRibbonItem"/>.
         /// </summary>
         /// <param name="iRibbonItem"></param>
         private void _SetIRibbonItem(IRibbonItem iRibbonItem)
@@ -9057,11 +9530,12 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
         }
         /// <summary>
-        /// Resetuje svůj obsah (Items a Buttons) a odpojí se z aktuálního prvku <see cref="IRibbonItem"/>
+        /// Resetuje svůj obsah (Items a Buttons), ponechá buttonDropDown, a odpojí se z aktuálního prvku <see cref="IRibbonItem"/>
         /// </summary>
         private void _Reset()
         {
             _ClearItems();
+            _ClearButtons(false);
 
             var iRibbonItem = __IRibbonItem;
             if (iRibbonItem != null)
@@ -9071,19 +9545,33 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
         }
         /// <summary>
-        /// Z prvku odebere Items a Buttons, ponechá jen button DropDown
+        /// Z prvku odebere Items
         /// </summary>
         private void _ClearItems()
         {
-            var comboBox = __ComboBox;
-
             // Items:
+            var comboBox = __ComboBox;
             comboBox.Items.Clear();
-
+        }
+        /// <summary>
+        /// Z prvku odebere Buttons, volitelně ponechá nebo přidá button DropDown
+        /// </summary>
+        /// <param name="clearAll">Smazat vše = smazat i DropDown</param>
+        private void _ClearButtons(bool clearAll = false)
+        {
             // Buttons: ponechat jen DropDown, anebo pokud by tam nebyl, tak jej přidat:
-            comboBox.Buttons.RemoveWhere(b => b.Kind != DevExpress.XtraEditors.Controls.ButtonPredefines.DropDown);
-            if (comboBox.Buttons.Count == 0)
-                comboBox.Buttons.Add(new DevExpress.XtraEditors.Controls.EditorButton(DevExpress.XtraEditors.Controls.ButtonPredefines.DropDown));
+            var comboBox = __ComboBox;
+            if (clearAll)
+            {
+                if (comboBox.Buttons.Count > 0)
+                    comboBox.Buttons.Clear();
+            }
+            else
+            {
+                comboBox.Buttons.RemoveWhere(b => b.Kind != DevExpress.XtraEditors.Controls.ButtonPredefines.DropDown);
+                if (comboBox.Buttons.Count == 0)
+                    comboBox.Buttons.Add(new DevExpress.XtraEditors.Controls.EditorButton(DevExpress.XtraEditors.Controls.ButtonPredefines.DropDown));
+            }
         }
         /// <summary>
         /// Z aktuálně přítomného prvku <see cref="__IRibbonItem"/> z jeho SubItems do this combo naplní Items a Buttons, a nastaví Value podle Checked prvku
@@ -9106,64 +9594,124 @@ namespace Noris.Clients.Win.Components.AsolDX
 
                 if (iRibbonItem is IRibbonComboItem iRibbonCombo)
                 {   // Buttons a další vlastnosti:
-                    var buttons = iRibbonCombo.Buttons;
-                    checkComboButton(comboBox, buttons, PredefinedButtonType.DropDown);
-                    checkComboButton(comboBox, buttons, PredefinedButtonType.Ellipsis);
-                    checkComboButton(comboBox, buttons, PredefinedButtonType.Delete);
-                    checkComboButton(comboBox, buttons, PredefinedButtonType.Clear);
-                    checkComboButton(comboBox, buttons, PredefinedButtonType.OK);
-                    checkComboButton(comboBox, buttons, PredefinedButtonType.Close);
-                    checkComboButton(comboBox, buttons, PredefinedButtonType.Plus);
-                    checkComboButton(comboBox, buttons, PredefinedButtonType.Minus);
-                    checkComboButton(comboBox, buttons, PredefinedButtonType.Undo);
-                    checkComboButton(comboBox, buttons, PredefinedButtonType.Redo);
-                    checkComboButton(comboBox, buttons, PredefinedButtonType.Search);
-
-                    var border = iRibbonCombo.BorderStyle;
-                    switch (border)
+                    _ClearButtons(true);
+                    var subButtons = iRibbonCombo.SubButtons;
+                    if (subButtons is null) subButtons = "DropDown";
+                    if (subButtons.Length > 0)
                     {
-                        case DxBorderStyle.None:
-                            comboBox.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder;
-                            comboBox.ButtonsStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder;
-                            comboBox.HighlightedItemStyle = DevExpress.XtraEditors.HighlightStyle.Skinned;
-                            comboBox.HotTrackItems = true;
-                            break;
-                        case DxBorderStyle.HotFlat:
-                            comboBox.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.HotFlat;
-                            comboBox.ButtonsStyle = DevExpress.XtraEditors.Controls.BorderStyles.HotFlat;
-                            comboBox.HighlightedItemStyle = DevExpress.XtraEditors.HighlightStyle.Skinned;
-                            comboBox.HotTrackItems = true;
-                            break;
-                        case DxBorderStyle.Single:
-                            comboBox.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.Simple;
-                            comboBox.ButtonsStyle = DevExpress.XtraEditors.Controls.BorderStyles.Simple;
-                            comboBox.HighlightedItemStyle = DevExpress.XtraEditors.HighlightStyle.Skinned;
-                            comboBox.HotTrackItems = true;
-                            break;
-                        case DxBorderStyle.Style3D:
-                            comboBox.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.Style3D;
-                            comboBox.ButtonsStyle = DevExpress.XtraEditors.Controls.BorderStyles.Style3D;
-                            comboBox.HighlightedItemStyle = DevExpress.XtraEditors.HighlightStyle.Skinned;
-                            comboBox.HotTrackItems = true;
-                            break;
+                        var buttons = subButtons.Split(';');
+                        foreach (var button in buttons)
+                            addComboButton(comboBox, button);
                     }
 
+                    // Border:
+                    applyBorderStyle(iRibbonCombo.BorderStyle);
+              
+                    // Width:
                     if (iRibbonCombo.Width.HasValue)
                         this.Width = iRibbonCombo.Width.Value;       // Tohle jediné nastaví šířku cca přesně
                 }
             }
 
-            // Přidá nebo odebere daný button. na pořadí tedy záleží.
-            void checkComboButton(DevExpress.XtraEditors.Repository.RepositoryItemComboBox combo, PredefinedButtonType buttons, PredefinedButtonType button)
+            // Přidá daný button. Na pořadí záleží.
+            void addComboButton(DevExpress.XtraEditors.Repository.RepositoryItemComboBox combo, string button)
             {
-                bool needButton = buttons.HasFlag(button);
+                // Vstupní formát: "Name=Image:ToolTip
+                string name = getPart(ref button, '=');
+                string image = getPart(ref button, ':');
+                string toolTip = button;
 
-                var buttonKind = _ConvertButtonType(button);
-                bool hasButton = combo.Buttons.Any(b => b.Kind == buttonKind);
-                if (needButton && !hasButton)
-                    comboBox.Buttons.Add(new DevExpress.XtraEditors.Controls.EditorButton(buttonKind));
-                else if (!needButton && hasButton)
-                    comboBox.Buttons.RemoveWhere(b => b.Kind == buttonKind);
+                // Umístění Vlevo?
+                bool isLeft = (!String.IsNullOrEmpty(name) && name.Contains('<'));
+                if (isLeft) name = name.Replace("<", "");                      // Pokud v Name je znak < značí to umístění vlevo; a nebude součástí jména. Typicky se dává na začátek jména, např. <Clear
+
+                // Zkratka pro jednoduché zadání např.: "DropDown"
+                if (String.IsNullOrEmpty(image)) image = name;
+
+                // Určení typu buttonu (Predefines):
+                var kind = (!String.IsNullOrEmpty(image) && Enum.TryParse<DevExpress.XtraEditors.Controls.ButtonPredefines>(image, false, out var predef)) ? predef : DevExpress.XtraEditors.Controls.ButtonPredefines.Glyph;
+
+                var dxButton = new DevExpress.XtraEditors.Controls.EditorButton()
+                {
+                    Tag = name,
+                    Caption = "",
+                    Kind = kind,
+                    IsLeft = isLeft
+                };
+                if (!String.IsNullOrEmpty(toolTip))
+                    dxButton.SuperTip = DxComponent.CreateDxSuperTip(toolTip, null);
+
+                if (kind == DevExpress.XtraEditors.Controls.ButtonPredefines.Glyph)
+                    DxComponent.ApplyImage(dxButton.ImageOptions, image, sizeType: ResourceImageSizeType.Small);
+
+                comboBox.Buttons.Add(dxButton);
+            }
+
+            // V dodaném textu najde delimiter. Vrací část před ním, a v parametru 'text' ponechá část za delimiterem.
+            string getPart(ref string text, char delimiter)
+            {
+                if (String.IsNullOrEmpty(text)) return "";
+                int last = text.Length - 1;
+                int index = text.IndexOf(delimiter);
+                string part = "";
+                if (index < 0)
+                {   // Delimiter nenalezen
+                    part = text;
+                    text = "";
+                }
+                else if (index == 0)
+                {   // Delimiterem to začíná
+                    part = "";
+                    text = last > 0 ? text.Substring(index + 1) : "";
+                }
+                else if (index < last)
+                {   // Delimiter je uprostřed, není ale posledním znakem
+                    part = text.Substring(0, index);
+                    text = text.Substring(index + 1);
+                }
+                else if (index == last)
+                {   // Delimiter je na konci textu, za ním není nic
+                    part = text.Substring(0, index);
+                    text = "";
+                }
+                else
+                {   // Cože - ona je i jiná možnost?
+                    part = text;
+                    text = "";
+                }
+                return part;
+            }
+
+            // Aplikuje styl borderu
+            void applyBorderStyle(DxBorderStyle border)
+            {
+                switch (border)
+                {
+                    case DxBorderStyle.None:
+                        comboBox.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder;
+                        comboBox.ButtonsStyle = DevExpress.XtraEditors.Controls.BorderStyles.NoBorder;
+                        comboBox.HighlightedItemStyle = DevExpress.XtraEditors.HighlightStyle.Skinned;
+                        comboBox.HotTrackItems = true;
+                        break;
+                    case DxBorderStyle.HotFlat:
+                        comboBox.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.HotFlat;
+                        comboBox.ButtonsStyle = DevExpress.XtraEditors.Controls.BorderStyles.HotFlat;
+                        comboBox.HighlightedItemStyle = DevExpress.XtraEditors.HighlightStyle.Skinned;
+                        comboBox.HotTrackItems = true;
+                        break;
+                    case DxBorderStyle.Single:
+                        comboBox.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.Simple;
+                        comboBox.ButtonsStyle = DevExpress.XtraEditors.Controls.BorderStyles.Simple;
+                        comboBox.HighlightedItemStyle = DevExpress.XtraEditors.HighlightStyle.Skinned;
+                        comboBox.HotTrackItems = true;
+                        break;
+                    case DxBorderStyle.Style3D:
+                        comboBox.BorderStyle = DevExpress.XtraEditors.Controls.BorderStyles.Style3D;
+                        comboBox.ButtonsStyle = DevExpress.XtraEditors.Controls.BorderStyles.Style3D;
+                        comboBox.HighlightedItemStyle = DevExpress.XtraEditors.HighlightStyle.Skinned;
+                        comboBox.HotTrackItems = true;
+                        break;
+                }
             }
         }
         /// <summary>
@@ -9223,10 +9771,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Metoda zajistí vyvolání metody <see cref="OnComboButtonClick(DxRibbonItemButtonClickArgs)"/> a eventu <see cref="ComboButtonClick"/> pro daný typ Buttonu.
         /// </summary>
-        /// <param name="buttonKind"></param>
-        private void _RunComboButtonClick(DevExpress.XtraEditors.Controls.ButtonPredefines buttonKind)
+        /// <param name="button"></param>
+        private void _RunComboButtonClick(DevExpress.XtraEditors.Controls.EditorButton button)
         {
-            var args = new DxRibbonItemButtonClickArgs(this.SelectedDxItem, _ConvertButtonType(buttonKind));
+            var args = new DxRibbonItemButtonClickArgs(this.IRibbonItem, button);
             OnComboButtonClick(args);
             ComboButtonClick?.Invoke(this, args);
         }
@@ -9261,6 +9809,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             this.__LastSelectedItem = selectedDxItem;
             var args = new DxRibbonItemClickArgs(selectedDxItem);
+
+            this.OnSelectedDxItemChanged(args);
+            this.SelectedDxItemChanged?.Invoke(this, args);
+
             this.OnSelectedDxItemActivated(args); ;
             this.SelectedDxItemActivated?.Invoke(this, args);
         }
@@ -9696,30 +10248,102 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public DataRibbonContent()
         {
-            __QATDirectItems = new List<DataRibbonItem>();
-            __TitleBarItems = new List<DataRibbonItem>();
-            __Pages = new List<DataRibbonPage>();
+            __ApplicationButtonText = null;
+            __QATDirectItems = new ListExt<DataRibbonItem>();
+            __TitleBarItems = new ListExt<DataRibbonItem>();
+            __Pages = new ListExt<DataRibbonPage>();
+            __StatusBarItems = new ListExt<DataRibbonItem>();
         }
-        private List<DataRibbonItem> __QATDirectItems;
-        private List<DataRibbonItem> __TitleBarItems;
-        private List<DataRibbonPage> __Pages;
+        private string __ApplicationButtonText;
+        private ListExt<DataRibbonItem> __QATDirectItems;
+        private ListExt<DataRibbonItem> __TitleBarItems;
+        private ListExt<DataRibbonPage> __Pages;
+        private ListExt<DataRibbonItem> __StatusBarItems;
 
+        /// <summary>
+        /// Text tlačítka BackStage (typicky "HELIOS")
+        /// </summary>
+        public string ApplicationButtonText { get { return __ApplicationButtonText; } set { __ApplicationButtonText = value; } }
         /// <summary>
         /// Explicitně přidané prvky do prostoru QAT (Quick Acces Toolbar), nad rámec prvků ze standardních stránek Ribbonu
         /// </summary>
-        public List<DataRibbonItem> QATDirectItems { get { return __QATDirectItems; } }
+        public ListExt<DataRibbonItem> QATDirectItems { get { return __QATDirectItems; } }
         /// <summary>
         /// Prvky fixně umístěné vpravo v titulkovém řádku
         /// </summary>
-        public List<DataRibbonItem> TitleBarItems { get { return __TitleBarItems; } }
+        public ListExt<DataRibbonItem> TitleBarItems { get { return __TitleBarItems; } }
         /// <summary>
         /// Souhrn standardních stránek Ribbonu
         /// </summary>
-        public List<DataRibbonPage> Pages { get { return __Pages; } }
+        public ListExt<DataRibbonPage> Pages { get { return __Pages; } }
+        /// <summary>
+        /// Prvky umístěné dole ve stavovém řádku
+        /// </summary>
+        public ListExt<DataRibbonItem> StatusBarItems { get { return __StatusBarItems; } }
+        /// <summary>
+        /// Metoda najde a vrátí prvek daného jména <paramref name="itemId"/>.
+        /// Metoda prohledává všechny prvky ve své deklaraci = ve všech polích.
+        /// Pokud takový prvek neexistuje, anebo je jich více, pak vrátí false.
+        /// Je možno použít metodu <see cref="GetDataItems(string)"/>, která je stejně rychlá, ale vrací pole všech nalezených prvků - pokud si s nimi volající poradí.
+        /// </summary>
+        /// <param name="itemId"></param>
+        /// <param name="dataItem"></param>
+        /// <returns></returns>
+        public bool TryGetDataItem(string itemId, out DataRibbonItem dataItem)
+        {
+            var items = GetDataItems(itemId);
+            if (items.Length == 1)
+            {
+                dataItem = items[0];
+                return true;
+            }
+            dataItem = null;
+            return false;
+        }
+        /// <summary>
+        /// Metoda najde a vrátí prvky daného jména <paramref name="itemId"/>.
+        /// Metoda prohledává všechny prvky ve své deklaraci = ve všech polích.
+        /// </summary>
+        /// <param name="itemId"></param>
+        /// <returns></returns>
+        public DataRibbonItem[] GetDataItems(string itemId)
+        {
+            return GetDataItems(i => String.Equals(i?.ItemId, itemId));
+        }
+        /// <summary>
+        /// Metoda najde a vrátí prvky vyhovující danému filtru <paramref name="filter"/>.
+        /// Metoda prohledává všechny prvky ve své deklaraci = ve všech polích.
+        /// </summary>
+        /// <param name="filter"></param>
+        /// <returns></returns>
+        public DataRibbonItem[] GetDataItems(Func<DataRibbonItem, bool> filter)
+        {
+            List<DataRibbonItem> result = new List<DataRibbonItem>();
+            addDItems(this.QATDirectItems);
+            addDItems(this.TitleBarItems);
+            addIItems(this.Pages.SelectMany(p => p.Groups).SelectMany(g => g.Items));
+            addDItems(this.StatusBarItems);
 
+
+            return result.ToArray();
+
+            void addIItems(IEnumerable<IRibbonItem> items)
+            {
+                if (items != null)
+                    result.AddRange(items.OfType<DataRibbonItem>().Where(i => filter(i)));
+            }
+            void addDItems(IEnumerable<DataRibbonItem> items)
+            {
+                if (items != null)
+                    result.AddRange(items.Where(i => filter(i)));
+            }
+        }
+
+        string IRibbonContent.ApplicationButtonText { get { return __ApplicationButtonText; } }
         IRibbonItem[] IRibbonContent.QATDirectItems { get { return __QATDirectItems.ToArray(); } }
         IRibbonItem[] IRibbonContent.TitleBarItems { get { return __TitleBarItems.ToArray(); } }
         IRibbonPage[] IRibbonContent.Pages { get { return __Pages.ToArray(); } }
+        IRibbonItem[] IRibbonContent.StatusBarItems { get { return __StatusBarItems.ToArray(); } }
     }
     /// <summary>
     /// Definice stránky v Ribbonu
@@ -9735,7 +10359,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             this._PageId = null;
             this.Visible = true;
             this.ChangeMode = ContentChangeMode.Add;
-            this.Groups = new List<IRibbonGroup>();
+            this.Groups = new ListExt<IRibbonGroup>();
         }
         /// <summary>
         /// Vizualizace
@@ -9761,9 +10385,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="pages"></param>
         /// <returns></returns>
-        public static List<IRibbonPage> SortPages(IEnumerable<IRibbonPage> pages)
+        public static ListExt<IRibbonPage> SortPages(IEnumerable<IRibbonPage> pages)
         {
-            List<IRibbonPage> list = new List<IRibbonPage>();
+            var list = new ListExt<IRibbonPage>();
             if (pages != null)
                 list.AddRange(pages.Where(p => p != null));
             if (list.Count > 1)
@@ -9837,7 +10461,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Pole skupin v této stránce
         /// Výchozí hodnota je prázdný List.
         /// </summary>
-        public virtual List<IRibbonGroup> Groups { get; set; }
+        public virtual ListExt<IRibbonGroup> Groups { get; set; }
         /// <summary>
         /// V deklaraci interface je IEnumerable...
         /// </summary>
@@ -9948,7 +10572,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             this.GroupState = RibbonGroupState.Expanded;
             this.AllowTextClipping = true;
             this.Visible = true;
-            this.Items = new List<IRibbonItem>();
+            this.Items = new ListExt<IRibbonItem>();
         }
         /// <summary>
         /// Vizualizace
@@ -9974,9 +10598,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="groups"></param>
         /// <returns></returns>
-        public static List<IRibbonGroup> SortGroups(IEnumerable<IRibbonGroup> groups)
+        public static ListExt<IRibbonGroup> SortGroups(IEnumerable<IRibbonGroup> groups)
         {
-            List<IRibbonGroup> list = new List<IRibbonGroup>();
+            var list = new ListExt<IRibbonGroup>();
             if (groups != null)
                 list.AddRange(groups.Where(p => p != null));
             if (list.Count > 1)
@@ -10055,7 +10679,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Soupis prvků grupy (tlačítka, menu, checkboxy, galerie)
         /// Výchozí hodnota je prázdný List.
         /// </summary>
-        public virtual List<IRibbonItem> Items { get; set; }
+        public virtual ListExt<IRibbonItem> Items { get; set; }
         /// <summary>
         /// V deklaraci interface je IEnumerable...
         /// </summary>
@@ -10088,7 +10712,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         {
             this.ItemType = RibbonItemType.ComboListBox;
             BorderStyle = DxBorderStyle.None;
-            Buttons = PredefinedButtonType.DropDown;
+            SubButtons = null;
         }
         /// <summary>
         /// Šířka prvku v pixelech
@@ -10099,15 +10723,26 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public virtual DxBorderStyle BorderStyle { get; set; }
         /// <summary>
-        /// Buttony
+        /// SubButtony zobrazené vedle prvku (podporuje je zatím jen typ <see cref="RibbonItemType.ComboListBox"/>).
+        /// Typicky tlačítko "+", třitečky, Clear, Search, Delete, a libovolné další.<br/>
+        /// String má formu: "Name=Image[;Name=Image[;...]]<br/>
+        /// Kde Name = jméno buttonu, které se následně přidává ke jménu vlastního prvku (za tečku) po kliknutí na něj, když se volá aplikační server (MenuItemClick).
+        /// Jako název Image lze použít buď hodnotu z enumu <see cref="PredefinedButtonType"/>, anebo standardní jméno ikony v rámci systému.<br/>
+        /// Pořadí ve stringu definuje pořadí buttonů.
+        /// Například <see cref="SubButtons"/> <![CDATA[Clear=Close;Manager=pic_0/Menu/bigfilter]]> definuje dva buttony, 
+        /// první má význam "Zrušit" a vyvolá Command = "command.Clear", druhý má význam "Nabídni okno filtrů" (ikona pic_0/Menu/bigfilter) a vyvolá Command = "command.Manager"
+        /// <para/>
+        /// Pokud zde bude null, pak bude ComboBox obsahovat standardní DropDown button (šipka dolů, rozbalující ComboBox).<br/>
+        /// Pokud uživatel chce přidat DropDown button a poté i další svoje Buttony, pak na začátek stringu vloží definici <u><c>"DropDown"</c></u> (netřeba definovat Image); a pak za středníkem dává svoje buttony.<br/>
+        /// Pokud uživatel naplní definici a nebude v ní DropDown, pak prostě nebude zobrazen!
         /// </summary>
-        public virtual PredefinedButtonType Buttons { get; set; }
+        public virtual string SubButtons { get; set; }
     }
     /// <summary>
     /// Definice prvku umístěného v Ribbonu nebo podpoložka prvku Ribbonu (položka menu / split ribbonu atd) nebo jako prvek ListBoxu nebo ComboBoxu
     /// </summary>
     [DebuggerDisplay("{DebugText}")]
-    public class DataRibbonItem : DataMenuItem, IRibbonItem
+    public class DataRibbonItem : DataMenuItem, IRibbonItem, IRibbonComboItem
     {
         /// <summary>
         /// Konstruktor
@@ -10147,8 +10782,9 @@ namespace Noris.Clients.Win.Components.AsolDX
             ItemType = source.ItemType;
             RibbonStyle = source.RibbonStyle;
             VisibleInSearchMenu = source.VisibleInSearchMenu;
+            Size = source.Size;
             SubItemsContentMode = source.SubItemsContentMode;
-            SubItems = source.SubItems?.ToList();
+            SubItems = source.SubItems?.ToListExt();
         }
         /// <summary>
         /// Vizualizace = pro přímé použití v GUI objektech (např. jako prvek ListBoxu)
@@ -10180,9 +10816,9 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="items"></param>
         /// <returns></returns>
-        public static List<IRibbonItem> SortRibbonItems(IEnumerable<IRibbonItem> items)
+        public static ListExt<IRibbonItem> SortRibbonItems(IEnumerable<IRibbonItem> items)
         {
-            List<IRibbonItem> list = new List<IRibbonItem>();
+            var list = new ListExt<IRibbonItem>();
             if (items != null)
                 list.AddRange(items.Where(p => p != null));
             if (list.Count > 1)
@@ -10233,7 +10869,12 @@ namespace Noris.Clients.Win.Components.AsolDX
             if (itemA.Shortcut != itemB.Shortcut) return false;
             if (itemA.Visible != itemB.Visible) return false;
             if (itemA.VisibleInSearchMenu != itemB.VisibleInSearchMenu) return false;
-            if ((itemA.ItemType == RibbonItemType.CheckBoxStandard || itemA.ItemType == RibbonItemType.CheckBoxToggle) && itemA.Checked != itemB.Checked) return false;
+            if (itemA.PrepareDisabledImage != itemB.PrepareDisabledImage) return false;
+            if (itemA.Size != itemB.Size) return false;
+            if (itemA.BackColor != itemB.BackColor) return false;
+            if (itemA.TextColor != itemB.TextColor) return false;
+
+            if ((itemA.ItemType == RibbonItemType.CheckBoxStandard || itemA.ItemType == RibbonItemType.CheckBoxPasive || itemA.ItemType == RibbonItemType.CheckBoxToggle) && itemA.Checked != itemB.Checked) return false;
 
             // a SubItems:
             nullA = (itemA.SubItems is null);
@@ -10273,8 +10914,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public new RibbonItemType ItemType { get; set; }
         /// <summary>
-        /// Jméno grupy, v jejímž rámci se buttony typu <see cref="RibbonItemType.RadioItem"/> a <see cref="RibbonItemType.CheckButton"/> přetahují o stav <see cref="ITextItem.Checked"/>.
-        /// Pokud je zde prázdný string, pak buttony typu <see cref="RibbonItemType.CheckButton"/> fungují jako samostatný CheckBox.
+        /// Jméno grupy, v jejímž rámci se buttony typu <see cref="RibbonItemType.RadioItem"/> a <see cref="RibbonItemType.CheckButton"/> a <see cref="RibbonItemType.CheckButtonPassive"/> přetahují o stav <see cref="ITextItem.Checked"/>.
+        /// Pokud je zde prázdný string, pak buttony typu <see cref="RibbonItemType.CheckButton"/> a <see cref="RibbonItemType.CheckButtonPassive"/> fungují jako samostatný CheckBox.
         /// </summary>
         public string RadioButtonGroupName { get; set; }
         /// <summary>
@@ -10289,6 +10930,37 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// V Nephrite může zůstat false, protože Nephrite mění hodnotu Enabled pomocí refreshe celého prvku, a po změně Enabled se vygeneruje správný Image automaticky.
         /// </summary>
         public virtual bool PrepareDisabledImage { get; set; }
+        /// <summary>
+        /// Cílová velikost; využije se jen u některých prvků
+        /// </summary>
+        public virtual System.Drawing.Size? Size { get; set; }
+        /// <summary>
+        /// Barva pozadí; využije se jen u některých prvků, pokud není null
+        /// </summary>
+        public virtual System.Drawing.Color? BackColor { get; set; }
+        /// <summary>
+        /// Barva textu; využije se jen u některých prvků, pokud není null
+        /// </summary>
+        public virtual System.Drawing.Color? TextColor { get; set; }
+        /// <summary>
+        /// Kalíšek s barvami
+        /// </summary>
+        public virtual string StyleName { get; set; }
+        /// <summary>
+        /// Vytvořit ikonu pro prvek z písmen textu prvku? (=Náhradní ikona, typicky se používá pro tlačítka Vztahy).
+        /// <para/>
+        /// Hodnota se použije jen tehdy, kdyý ImageName je prázdné (=když není definována ikona).
+        /// Default = null: pro prvky základní úrovně ano (viditelná tlačítka v Ribbonu), pro SubItems = prvky v menu ne;<br/>
+        /// true: vytvořit ikonu z písmenek i pro SubMenu<br/>
+        /// false: nevytvářet ikonu ani pro základní úroveň
+        /// </summary>
+        public virtual bool? CreateImageFromCaption { get; set; }
+
+        /// <summary>
+        /// Zarovnání prvku; uplatní se u StatusBaru
+        /// </summary>
+        public virtual BarItemAlignment? Alignment { get; set; }
+
         /// <summary>
         /// Zobrazit v Search menu?
         /// </summary>
@@ -10305,7 +10977,35 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Subpoložky (definují prvky Menu, DropDown, SplitButton). Mohou být rekurzivně naplněné = vnořená menu.
         /// Výchozí hodnota je null.
         /// </summary>
-        public new List<IRibbonItem> SubItems { get; set; }
+        public new ListExt<IRibbonItem> SubItems { get; set; }
+        /// <summary>
+        /// Šířka prvku v pixelech, pro <see cref="RibbonItemType.ComboListBox"/>
+        /// </summary>
+        public virtual int? Width { get; set; }
+        /// <summary>
+        /// Typ okraje, pro <see cref="RibbonItemType.ComboListBox"/>
+        /// </summary>
+        public virtual DxBorderStyle BorderStyle { get; set; }
+        /// <summary>
+        /// SubButtony zobrazené vedle prvku (podporuje je zatím jen typ <see cref="RibbonItemType.ComboListBox"/>).
+        /// Typicky tlačítko "+", třitečky, Clear, Search, Delete, a libovolné další.<br/>
+        /// String má formu: "Name=Image[;Name=Image[;...]]<br/>
+        /// Kde Name = jméno buttonu, které se následně přidává ke jménu vlastního prvku (za tečku) po kliknutí na něj, když se volá aplikační server (MenuItemClick).
+        /// Jako název Image lze použít buď hodnotu z enumu <see cref="PredefinedButtonType"/>, anebo standardní jméno ikony v rámci systému.<br/>
+        /// Pořadí ve stringu definuje pořadí buttonů.
+        /// Například <see cref="SubButtons"/> <![CDATA[Clear=Close;Manager=pic_0/Menu/bigfilter]]> definuje dva buttony, 
+        /// první má význam "Zrušit" a vyvolá Command = "command.Clear", druhý má význam "Nabídni okno filtrů" (ikona pic_0/Menu/bigfilter) a vyvolá Command = "command.Manager"
+        /// <para/>
+        /// Pokud zde bude null, pak bude ComboBox obsahovat standardní DropDown button (šipka dolů, rozbalující ComboBox).<br/>
+        /// Pokud uživatel chce přidat DropDown button a poté i další svoje Buttony, pak na začátek stringu vloží definici <u><c>"DropDown"</c></u> (netřeba definovat Image); a pak za středníkem dává svoje buttony.<br/>
+        /// Pokud uživatel naplní definici a nebude v ní DropDown, pak prostě nebude zobrazen!
+        /// </summary>
+        public virtual string SubButtons { get; set; }
+
+        /// <summary>
+        /// Data pro RepositoryEditor
+        /// </summary>
+        public virtual IRepositoryEditorInfo RepositoryEditorInfo { get; set; }
         /// <summary>
         /// V deklaraci interface je IEnumerable...
         /// </summary>
@@ -10315,6 +11015,22 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         [XS.PersistingEnabled(false)]
         public virtual WeakTarget<BarItem> RibbonItem { get; set; }
+        /// <summary>
+        /// Zkusí získat a vrátit fyzický GUI prvek z tohoto datového prvku.
+        /// </summary>
+        /// <param name="ribbonItem"></param>
+        /// <returns></returns>
+        public bool TryGetRibbonItem(out BarItem ribbonItem)
+        {
+            var weakItem = RibbonItem;
+            if (weakItem != null && weakItem.IsAlive)
+            {
+                ribbonItem = weakItem.Target;
+                return (ribbonItem != null);
+            }
+            ribbonItem = null;
+            return false;
+        }
         /// <summary>
         /// Metoda zajistí aktualizaci vizuálního buttonu <see cref="RibbonItem"/> z dat, která jsou aktuálně přítomna v this instanci.
         /// Je vhodné volat tehdy, když podle this definice už byl vytvořen prvek v reálném Ribbonu, a my jsme v definici provedli nějaké změny a přejeme si je promítnout do vizuálního prvku.
@@ -10332,6 +11048,10 @@ namespace Noris.Clients.Win.Components.AsolDX
     public interface IRibbonContent
     {
         /// <summary>
+        /// Text tlačítka BackStage (typicky "HELIOS")
+        /// </summary>
+        string ApplicationButtonText { get; }
+        /// <summary>
         /// Explicitně přidané prvky do prostoru QAT (Quick Acces Toolbar), nad rámec prvků ze standardních stránek Ribbonu
         /// </summary>
         IRibbonItem[] QATDirectItems { get; }
@@ -10343,6 +11063,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Souhrn standardních stránek Ribbonu
         /// </summary>
         IRibbonPage[] Pages { get; }
+        /// <summary>
+        /// Prvky umístěné dole ve stavovém řádku
+        /// </summary>
+        IRibbonItem[] StatusBarItems { get; }
     }
     /// <summary>
     /// Definice stránky v Ribbonu
@@ -10517,9 +11241,20 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         DxBorderStyle BorderStyle { get; }
         /// <summary>
-        /// Buttony
+        /// SubButtony zobrazené vedle prvku (podporuje je zatím jen typ <see cref="RibbonItemType.ComboListBox"/>).
+        /// Typicky tlačítko "+", třitečky, Clear, Search, Delete, a libovolné další.<br/>
+        /// String má formu: "Name=Image[;Name=Image[;...]]<br/>
+        /// Kde Name = jméno buttonu, které se následně přidává ke jménu vlastního prvku (za tečku) po kliknutí na něj, když se volá aplikační server (MenuItemClick).
+        /// Jako název Image lze použít buď hodnotu z enumu <see cref="PredefinedButtonType"/>, anebo standardní jméno ikony v rámci systému.<br/>
+        /// Pořadí ve stringu definuje pořadí buttonů.
+        /// Například <see cref="SubButtons"/> <![CDATA[Clear=Close;Manager=pic_0/Menu/bigfilter]]> definuje dva buttony, 
+        /// první má význam "Zrušit" a vyvolá Command = "command.Clear", druhý má význam "Nabídni okno filtrů" (ikona pic_0/Menu/bigfilter) a vyvolá Command = "command.Manager"
+        /// <para/>
+        /// Pokud zde bude null, pak bude ComboBox obsahovat standardní DropDown button (šipka dolů, rozbalující ComboBox).<br/>
+        /// Pokud uživatel chce přidat DropDown button a poté i další svoje Buttony, pak na začátek stringu vloží definici <u><c>"DropDown"</c></u> (netřeba definovat Image); a pak za středníkem dává svoje buttony.<br/>
+        /// Pokud uživatel naplní definici a nebude v ní DropDown, pak prostě nebude zobrazen!
         /// </summary>
-        PredefinedButtonType Buttons { get; }
+        string SubButtons { get; }
     }
     /// <summary>
     /// Definice prvku umístěného v Ribbonu nebo podpoložka prvku Ribbonu (položka menu / split ribbonu atd)
@@ -10543,8 +11278,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         new RibbonItemType ItemType { get; }
         /// <summary>
-        /// Jméno grupy, v jejímž rámci se buttony typu <see cref="RibbonItemType.RadioItem"/> a <see cref="RibbonItemType.CheckButton"/> přetahují o stav <see cref="ITextItem.Checked"/>.
-        /// Pokud je zde prázdný string, pak buttony typu <see cref="RibbonItemType.CheckButton"/> fungují jako samostatný CheckBox.
+        /// Jméno grupy, v jejímž rámci se buttony typu <see cref="RibbonItemType.RadioItem"/> a <see cref="RibbonItemType.CheckButton"/> a <see cref="RibbonItemType.CheckButtonPassive"/> přetahují o stav <see cref="ITextItem.Checked"/>.
+        /// Pokud je zde prázdný string, pak buttony typu <see cref="RibbonItemType.CheckButton"/> a <see cref="RibbonItemType.CheckButtonPassive"/> fungují jako samostatný CheckBox.
         /// </summary>
         string RadioButtonGroupName { get; }
         /// <summary>
@@ -10559,6 +11294,35 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// V Nephrite může zůstat false, protože Nephrite mění hodnotu Enabled pomocí refreshe celého prvku, a po změně Enabled se vygeneruje správný Image automaticky.
         /// </summary>
         bool PrepareDisabledImage { get; }
+        /// <summary>
+        /// Cílová velikost; využije se jen u některých prvků
+        /// </summary>
+        System.Drawing.Size? Size { get; }
+        /// <summary>
+        /// Barva pozadí; využije se jen u některých prvků, pokud není null
+        /// </summary>
+        System.Drawing.Color? BackColor { get; }
+        /// <summary>
+        /// Barva textu; využije se jen u některých prvků, pokud není null
+        /// </summary>
+        System.Drawing.Color? TextColor { get; }
+        /// <summary>
+        /// Kalíšek s barvami
+        /// </summary>
+        string StyleName { get; }
+        /// <summary>
+        /// Vytvořit ikonu pro prvek z písmen textu prvku? (=Náhradní ikona, typicky se používá pro tlačítka Vztahy).
+        /// <para/>
+        /// Hodnota se použije jen tehdy, kdyý ImageName je prázdné (=když není definována ikona).
+        /// Default = null: pro prvky základní úrovně ano (viditelná tlačítka v Ribbonu), pro SubItems = prvky v menu ne;<br/>
+        /// true: vytvořit ikonu z písmenek i pro SubMenu<br/>
+        /// false: nevytvářet ikonu ani pro základní úroveň
+        /// </summary>
+        bool? CreateImageFromCaption { get; }
+        /// <summary>
+        /// Zarovnání prvku; uplatní se u StatusBaru
+        /// </summary>
+        BarItemAlignment? Alignment { get; }
         /// <summary>
         /// Zobrazit v Search menu?
         /// </summary>
@@ -10576,9 +11340,66 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         new IEnumerable<IRibbonItem> SubItems { get; }
         /// <summary>
+        /// Data pro RepositoryEditor.
+        /// Musí být naplněna pro prvek typu <see cref="ItemType"/> == <see cref="RibbonItemType.RepositoryEditor"/>.
+        /// Pro jiné prvky je ignorováno.
+        /// </summary>
+        IRepositoryEditorInfo RepositoryEditorInfo { get; }
+        /// <summary>
         /// Sem bude umístěn fyzický BarItem po jeho vytvoření.
         /// </summary>
         WeakTarget<BarItem> RibbonItem { get; set; }
+    }
+    /// <summary>
+    /// Rozšířená data pro typ prvku Ribbonu <see cref="RibbonItemType.RepositoryEditor"/>,
+    /// jsou ukládána do <see cref="IRibbonItem.RepositoryEditorInfo"/>.
+    /// </summary>
+    public class DataRepositoryEditorInfo : IRepositoryEditorInfo
+    {
+        /// <summary>
+        /// Funkce, která vygeneruje BarItem = součást Ribbonu.
+        /// Pokud je null, je vytvořen standardní <see cref="DevExpress.XtraBars.BarEditItem"/>.
+        /// </summary>
+        public Func<IRibbonItem, BarEditItem> EditorCreator { get; set; }
+        /// <summary>
+        /// Funkce, která modifikuje BarItem = součást Ribbonu.
+        /// </summary>
+        public Action<IRibbonItem, BarEditItem> EditorModifier { get; set; }
+        /// <summary>
+        /// Funkce, která vygeneruje RepositoryItem = editor umístěný v BarItem.
+        /// Pokud funkce není zadána nebo nic nevytvoří, pak se prvek do Ribbonu nepřidává.
+        /// </summary>
+        public Func<IRibbonItem, BarEditItem, DevExpress.XtraEditors.Repository.RepositoryItem> RepositoryCreator { get; set; }
+        /// <summary>
+        /// Typ a další informace pro editor
+        /// </summary>
+        public string RepositoryEditorType { get; set; }
+    }
+    /// <summary>
+    /// Rozšířená data pro typ prvku Ribbonu <see cref="RibbonItemType.RepositoryEditor"/>,
+    /// jsou ukládána do <see cref="IRibbonItem.RepositoryEditorInfo"/>.
+    /// </summary>
+    public interface IRepositoryEditorInfo
+    {
+        /// <summary>
+        /// Funkce, která vygeneruje BarItem = součást Ribbonu.
+        /// Pokud je null, pak se vytvoří standardní new instance.
+        /// </summary>
+        Func<IRibbonItem, BarEditItem> EditorCreator { get; }
+        /// <summary>
+        /// Funkce, která modifikuje BarItem = součást Ribbonu.
+        /// Je volána po <see cref="EditorCreator"/>, před <see cref="RepositoryCreator"/>.
+        /// </summary>
+        Action<IRibbonItem, BarEditItem> EditorModifier { get; }
+        /// <summary>
+        /// Funkce, která vygeneruje RepositoryItem = editor umístěný v BarItem.
+        /// Na vstupu je hostitelský BarItem, vytvořený v metodě <see cref="EditorCreator"/>, anebo standardní.
+        /// </summary>
+        Func<IRibbonItem, BarEditItem, DevExpress.XtraEditors.Repository.RepositoryItem> RepositoryCreator { get; }
+        /// <summary>
+        /// Typ a další informace pro editor
+        /// </summary>
+        string RepositoryEditorType { get; }
     }
     /// <summary>
     /// Společný interface pro prvek definice Ribbonu (Stránka - Kategorie - Grupa - Prvek - SubPrvek)
@@ -10589,6 +11410,22 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Režim pro vytvoření / refill / remove tohoto prvku
         /// </summary>
         ContentChangeMode ChangeMode { get; }
+    }
+    /// <summary>
+    /// Interface, který zaručuje možnost provést <see cref="Reload"/> specifických hodnot prvku nad rámec běžného Refreshe pro obecný BarItem.
+    /// </summary>
+    public interface IReloadable
+    {
+        /// <summary>
+        /// Znovu načte prvky z <see cref="IRibbonItem"/> nad rámec běžného Refreshe pro obecný BarItem.
+        /// </summary>
+        void Reload();
+        /// <summary>
+        /// Uloží do sebe daný definiční prvek a znovu vytvoří prvky ComboBoxu : Items a Buttons.
+        /// Používá se pro Refresh obsahu.
+        /// Nenaplní běžné hodnoty BarItemu (Caption, Image, SuperTip, Enabled atd), to provádí Ribbon tak jako u jiných BarItems.
+        /// </summary>
+        void ReloadFrom(IRibbonItem iRibbonItem);
     }
     /// <summary>
     /// Druh Borderu
@@ -10834,11 +11671,15 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// Neurčeno
         /// </summary>
-        None,
+        None = 0,
         /// <summary>
         /// Používá se ve StatusBaru
         /// </summary>
         Label,
+        /// <summary>
+        /// Vypadá jako Button ale chová se jako mrtvej brouk, nicméně se na něj dá kliknout
+        /// </summary>
+        Static,
         /// <summary>
         /// Tlačítko
         /// </summary>
@@ -10850,6 +11691,15 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         CheckButton,
         /// <summary>
+        /// Button bez CheckBoxu, ale s možností jeho zvýraznění ve stylu "Button je stále zamáčknutý".<br/>
+        /// Využívá tedy hodnotu v <see cref="ITextItem.Checked"/>.<br/>
+        /// Pokud prvek Ribbonu <see cref="IRibbonItem"/> má tento typ prvku, a současně má určenou Radiogrupu <see cref="IRibbonItem.RadioButtonGroupName"/>, pak se toto označování chová jako RadioButton (prvky se vzájemně přetahují o stav .
+        /// <para/>
+        /// Passive = kliknutí na GUI prvek nezmění jeho vizuální ani datový stav Checked, ale odesílá se akce na server, 
+        /// a server teprve rozhodne o změně Checked a může tedy poslat Refresh prvků (přebírá se ze stavu <see cref="ITextItem.Checked"/>).
+        /// </summary>
+        CheckButtonPassive,
+        /// <summary>
         /// Skupina tlačítek ???
         /// </summary>
         ButtonGroup,
@@ -10858,9 +11708,14 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         SplitButton,
         /// <summary>
-        /// Standardní CheckBox
+        /// Standardní CheckBox s automatickým přepínáním stavu Checked po kliknutí.
         /// </summary>
         CheckBoxStandard,
+        /// <summary>
+        /// Pasivní CheckBox, jehož stav Checked se nezmění po kliknutí na něj, ale pouze pokynem ze serveru v odpovědi Refresh 
+        /// (přebírá se ze stavu <see cref="ITextItem.Checked"/>).
+        /// </summary>
+        CheckBoxPasive,
         /// <summary>
         /// Button se stavem Checked, který může být NULL (výchozí hodnota). 
         /// Pokud má být výchozí stav false, je třeba jej do <see cref="ITextItem.Checked"/> vložit!
@@ -10881,6 +11736,12 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         Menu,
         /// <summary>
+        /// PopupMenu vytvořené ze SubItems. 
+        /// Button s hodnotou ButtonStyle = DevExpress.XtraBars.BarButtonStyle.DropDown;
+        /// a s DropDownControl = new DevExpress.XtraBars.PopupMenu(..)
+        /// </summary>
+        PopupMenuDropDown,
+        /// <summary>
         /// Galerie v Ribbonu
         /// </summary>
         InRibbonGallery,
@@ -10899,7 +11760,30 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <summary>
         /// ComboListBox
         /// </summary>
-        ComboListBox
+        ComboListBox, 
+        /// <summary>
+        /// Speciální prvek s Repository editorem (TrackBar, TextBox, a další).
+        /// Prvek musí mít naplněnou instanci <see cref="IRibbonItem.RepositoryEditorInfo"/>
+        /// </summary>
+        RepositoryEditor
+    }
+    /// <summary>
+    /// Zarovnání prvku v Ribbonu / StatusBaru
+    /// </summary>
+    public enum BarItemAlignment
+    {
+        /// <summary>
+        /// Defaultní
+        /// </summary>
+        Default = 0,
+        /// <summary>
+        /// Vlevo
+        /// </summary>
+        Left = 1,
+        /// <summary>
+        /// Vpravo
+        /// </summary>
+        Right = 2
     }
     #endregion
 }
