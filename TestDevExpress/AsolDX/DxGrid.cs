@@ -402,7 +402,7 @@ namespace Noris.Clients.Win.Components.AsolDX
             OptionsMenu.ShowSummaryItemMode = DefaultBoolean.True;
             OptionsMenu.EnableFooterMenu = true;
             OptionsMenu.EnableGroupRowMenu = true;
-
+    
 
             //this.OptionsBehavior.AlignGroupSummaryInGroupRow = DefaultBoolean.True;
             _SetAlignGroupSummaryInGroupRow();
@@ -646,7 +646,7 @@ namespace Noris.Clients.Win.Components.AsolDX
         }
         private void _SetAlignGroupSummaryInGroupRow()
         {
-            this.OptionsBehavior.AlignGroupSummaryInGroupRow = DxComponent.Convert(AlignGroupSummaryInGroupRow);
+            this.OptionsBehavior.AlignGroupSummaryInGroupRow = DxComponent.ConvertBool(AlignGroupSummaryInGroupRow);
         }
 
         private void _OnCustomDrawCell(object sender, RowCellCustomDrawEventArgs e)
@@ -877,7 +877,7 @@ namespace Noris.Clients.Win.Components.AsolDX
                 if (strVal.Count(x => x == '%') > 1 //více jak jedno % ve výrazu
                     || strVal.Count(x => x == '%') == 1 && !strVal.StartsWith("%")) //jen jedno procento, ale ne na začátku
                 {
-                    condition = DevExpress.XtraGrid.Columns.AutoFilterCondition.Like;                   
+                    condition = DevExpress.XtraGrid.Columns.AutoFilterCondition.Like;
                 }
                 else if (strVal.StartsWith("%"))
                 {
@@ -1644,6 +1644,9 @@ namespace Noris.Clients.Win.Components.AsolDX
             //šířka sloupce
             if (gridViewColumn.Width > 0) gc.Width = gridViewColumn.Width;
             if (gridViewColumn.IsImageColumnType) gc.OptionsColumn.FixedWidth = true;   //důležité aby se obrázek vykreslil podle šířky sloupce
+            gc.OptionsColumn.AllowSize = gridViewColumn.AllowSize;
+            //změna pořadí sloupců
+            gc.OptionsColumn.AllowMove = gridViewColumn.AllowMove;
 
             //Merge stejných hodnot (distinct)
             gc.OptionsColumn.AllowMerge = DxComponent.ConvertBool(gridViewColumn.AllowMerge);
@@ -1951,8 +1954,11 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// <param name="visible"></param>
         /// <param name="allowSort"></param>
         /// <param name="allowFilter"></param>
+        /// <param name="width"></param>
+        /// <param name="fixedWidth"></param>
+        /// <param name="allowMove"></param>
         public GridViewColumnData(string fieldName, string caption, Type columnType, int visibleIndex,
-            bool visible = true, bool allowSort = true, bool allowFilter = true)
+            bool visible = true, bool allowSort = true, bool allowFilter = true, int width = 30, bool fixedWidth = false, bool allowMove = true)
         {
             FieldName = fieldName;
             Caption = caption;
@@ -1962,6 +1968,9 @@ namespace Noris.Clients.Win.Components.AsolDX
             AllowSort = allowSort;
             AllowFilter = allowFilter;
             CodeTable = new List<(string DisplayText, string Value, string ImageName)>();
+            Width = width;
+            AllowSize = fixedWidth;
+            AllowMove = allowMove;
             //todo přidat ostaní vlastnosti až jich bude více aby to to bylo slušně srovnané... zatím se nastavují mimo ctor.
         }
 
@@ -2021,6 +2030,10 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Šírka sloupce v px
         /// </summary>
         public virtual int Width { get; set; }
+        /// <inheritdoc/>
+        public virtual bool AllowSize { get; set; }
+        /// <inheritdoc/>
+        public virtual bool AllowMove { get; set; }
         /// <summary>
         /// Systemový sloupec, nezobrazuje se v výběru sloupců
         /// </summary>
@@ -2140,6 +2153,14 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// Šírka sloupce v px
         /// </summary>
         int Width { get; }
+        /// <summary>
+        /// Povolení změny šířky sloupce
+        /// </summary>
+        bool AllowSize { get; }
+        /// <summary>
+        /// Povolení přesouvat sloupec (pořadí)
+        /// </summary>
+        bool AllowMove { get; }
         /// <summary>
         /// Systemový sloupec, nezobrazuje se v výběru sloupců
         /// </summary>

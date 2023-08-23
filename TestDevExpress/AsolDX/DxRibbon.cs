@@ -2654,19 +2654,31 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="iRibbonItem">Definice prvku</param>
         /// <param name="force">Provést refresh povinně, i když se prvek zdá být nezměněn</param>
-        public void RefreshItem(IRibbonItem iRibbonItem, bool force = false)
+        /// <param name="refreshInSite">Pro refresh prvku neprováděj Unmerge - Modify - Merge. Změna je malá a režie by byla zbytečná.</param>
+        public void RefreshItem(IRibbonItem iRibbonItem, bool force = false, bool refreshInSite = false)
         {
             if (iRibbonItem == null) return;
             if (!force && !NeedRefreshItem(iRibbonItem)) return;               // Zkratka
 
-            this.ParentOwner.RunInGui(() =>
-            {
-                _UnMergeModifyMergeCurrentRibbon(() =>
+            if (!refreshInSite)
+            {   // UmMerge - Modify - Merge :
+                this.ParentOwner.RunInGui(() =>
+                {
+                    _UnMergeModifyMergeCurrentRibbon(() =>
+                    {
+                        RefreshCurrentItem(iRibbonItem);
+                    }, true);
+                    DoOpenMenu();
+                });
+            }
+            else
+            {   // In Site:
+                this.ParentOwner.RunInGui(() =>
                 {
                     RefreshCurrentItem(iRibbonItem);
-                }, true);
-                DoOpenMenu();
-            });
+                    DoOpenMenu();
+                });
+            }
         }
         /// <summary>
         /// Metoda zajistí, že vizuální prvek (BarItem nebo obdobná instance) v jeho Ribbonu bude refreshován.
@@ -2677,7 +2689,8 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         /// <param name="iRibbonItem">Definice prvku</param>
         /// <param name="force">Provést refresh povinně, i když se prvek zdá být nezměněn</param>
-        public static void RefreshIRibbonItem(IRibbonItem iRibbonItem, bool force = false)
+        /// <param name="refreshInSite">Pro refresh prvku neprováděj Unmerge - Modify - Merge. Změna je malá a režie by byla zbytečná.</param>
+        public static void RefreshIRibbonItem(IRibbonItem iRibbonItem, bool force = false, bool refreshInSite = false)
         {
             if (iRibbonItem == null) return;
             var barItem = iRibbonItem.RibbonItem?.Target;
@@ -2685,7 +2698,7 @@ namespace Noris.Clients.Win.Components.AsolDX
 
             // Musíme najít instanci toho Ribbonu, který je majitelem daného prvku (který jej vytvořil), a nikoli tu, která jej právě nyní zobrazuje (případ mergovaného Ribbonu):
             var dxRibbon = (barItem.Manager as RibbonBarManager)?.Ribbon as DxRibbonControl;
-            dxRibbon?.RefreshItem(iRibbonItem, force);
+            dxRibbon?.RefreshItem(iRibbonItem, force, refreshInSite);
         }
         /// <summary>
         /// Provede refresh dodaných objektů. Provede se jedním chodem.
@@ -7355,21 +7368,22 @@ namespace Noris.Clients.Win.Components.AsolDX
             var ribbonsUp = this.MergedRibbonsUp;
             int count = ribbonsUp.Count;
 
+            int last = count - 1;
+            var topRibbon = ribbonsUp[last].Item1;
+            var topRibbonSelectedPage1 = topRibbon.SelectedPageFullId;
+
             // Pokud this Ribbon není nikam mergován (když počet nahoru mergovaných je 1):
             if (count == 1)
             {   // Provedu požadovanou akci rovnou (není třeba dělat UnMerge a Merge), a skončíme:
                 SetModifiedState(true, true);
                 _RunUnMergedAction(action);
                 SetModifiedState(ribbonsUp[0].Item2, true);          // Vrátím stav CurrentModifiedState původní, nikoliv false - ono tam mohlo být true!
+                activateOriginPage(true);
                 if (LogActive) DxComponent.LogAddLineTime($"ModifyRibbon {this.DebugName}: Current; Time: {DxComponent.LogTokenTimeMilisec}", startTime);
                 return;
             }
 
             // Odmergovat - Provést akci (pokud je) - Mergovat zpátky (vše nebo jen UpRibbony):
-            int last = count - 1;
-            var topRibbon = ribbonsUp[last].Item1;
-            var topRibbonSelectedPage1 = topRibbon.SelectedPageFullId;
-
             try
             {
                 // Top Ribbon pozastaví svoji práci:
@@ -7391,6 +7405,8 @@ namespace Noris.Clients.Win.Components.AsolDX
                 int mergeFrom = (mergeBack ? 0 : 1);
                 for (int m = mergeFrom; m < last; m++)
                     ribbonsUp[m].Item1._MergeCurrentDxToParent(ribbonsUp[m + 1].Item1, true);
+                // Součástí tohoto zpětného mergování je i aktivace naposledy aktivní stránky v rámci Child ribbonu.
+                // Proto finální activateOriginPage(false); má hodnotu doActivate = false.
             }
             finally
             {
@@ -7405,11 +7421,21 @@ namespace Noris.Clients.Win.Components.AsolDX
             }
 
             // A protože po celou dobu byl potlačen CheckLazyContentEnabled, tak pro Top Ribbon to nyní provedu explicitně (pokud už je to povoleno : topRibbon.CheckLazyContentEnabled == true):
-            var topRibbonSelectedPage2 = topRibbon.SelectedPageFullId;
-            if (topRibbonSelectedPage2 != topRibbonSelectedPage1 && topRibbon.CheckLazyContentEnabled)
-                topRibbon.CheckLazyContent(topRibbon.SelectedPage, false);
+            activateOriginPage(false);
 
             if (LogActive) DxComponent.LogAddLineTime($"ModifyRibbon {this.DebugName}: UnMerge + Action + Merge; Total Count: {count}; Time: {DxComponent.LogTokenTimeMilisec}", startTime);
+
+            void activateOriginPage(bool doActivate)
+            {
+                var topRibbonSelectedPage2 = topRibbon.SelectedPageFullId;
+                bool isChanged = (topRibbonSelectedPage2 != topRibbonSelectedPage1);
+
+                if (isChanged && doActivate)
+                    topRibbon.SelectedPageFullId = topRibbonSelectedPage1;
+
+                if (isChanged && topRibbon.CheckLazyContentEnabled)
+                    topRibbon.CheckLazyContent(topRibbon.SelectedPage, false);
+            }
         }
         /// <summary>
         /// Z aktuálního Ribbonu odmerguje jeho současný ChildRibbon (pokud je);
@@ -11037,7 +11063,16 @@ namespace Noris.Clients.Win.Components.AsolDX
         /// </summary>
         public virtual void Refresh()
         {
-            DxRibbonControl.RefreshIRibbonItem(this);
+            DxRibbonControl.RefreshIRibbonItem(this, false, false);
+        }
+        /// <summary>
+        /// Metoda zajistí aktualizaci vizuálního buttonu <see cref="RibbonItem"/> z dat, která jsou aktuálně přítomna v this instanci.
+        /// Je vhodné volat tehdy, když podle this definice už byl vytvořen prvek v reálném Ribbonu, a my jsme v definici provedli nějaké změny a přejeme si je promítnout do vizuálního prvku.
+        /// </summary>
+        /// <param name="refreshInSite">Pro refresh prvku neprováděj Unmerge - Modify - Merge. Změna je malá a režie by byla zbytečná.</param>
+        public virtual void Refresh(bool refreshInSite)
+        {
+            DxRibbonControl.RefreshIRibbonItem(this, false, refreshInSite);
         }
     }
     #endregion
