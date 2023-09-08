@@ -80,5 +80,14 @@
   <ItemGroup>
     <None Include="App.config" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="Pics\32px\system-settings.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pics\32px\edit-6-32.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Pics\48px\edit-6-48.png" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
