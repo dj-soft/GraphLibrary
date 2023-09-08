@@ -485,6 +485,14 @@ namespace DjSoft.Tools.ProgramLauncher.Components
         }
         #endregion
         #endregion
+        #region ScrollBars
+        /// <summary>
+        /// Potřebná velikost obsahu. 
+        /// Výchozí je null = control zobrazuje to, co je vidět, a nikdy nepoužívá Scrollbary.
+        /// Lze setovat hodnotu = velikost zobrazených dat, pak se aktivuje virtuální režim se zobrazením výřezu.
+        /// </summary>
+        public Size? ContentSize { get { return __ContentSize; } set { __ContentSize = value; _RefreshContentArea(); } } private Size? __ContentSize;
+        #endregion
         #region PODPORA KRESLENÍ - KONVERZE BAREV, BORDER, DRAW STRING, ATD
         #region COLOR SHIFT
         /// <summary>
